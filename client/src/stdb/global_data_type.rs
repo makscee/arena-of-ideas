@@ -16,3 +16,43 @@ pub struct GlobalData {
 impl __sdk::InModule for GlobalData {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `GlobalData`.
+///
+/// Provides typed access to columns for query building.
+pub struct GlobalDataCols {
+    pub always_zero: __sdk::__query_builder::Col<GlobalData, u32>,
+    pub next_id: __sdk::__query_builder::Col<GlobalData, u64>,
+    pub game_version: __sdk::__query_builder::Col<GlobalData, String>,
+    pub last_sync: __sdk::__query_builder::Col<GlobalData, __sdk::Timestamp>,
+}
+
+impl __sdk::__query_builder::HasCols for GlobalData {
+    type Cols = GlobalDataCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        GlobalDataCols {
+            always_zero: __sdk::__query_builder::Col::new(table_name, "always_zero"),
+            next_id: __sdk::__query_builder::Col::new(table_name, "next_id"),
+            game_version: __sdk::__query_builder::Col::new(table_name, "game_version"),
+            last_sync: __sdk::__query_builder::Col::new(table_name, "last_sync"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `GlobalData`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct GlobalDataIxCols {
+    pub always_zero: __sdk::__query_builder::IxCol<GlobalData, u32>,
+}
+
+impl __sdk::__query_builder::HasIxCols for GlobalData {
+    type IxCols = GlobalDataIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        GlobalDataIxCols {
+            always_zero: __sdk::__query_builder::IxCol::new(table_name, "always_zero"),
+        }
+    }
+}
+
+impl __sdk::__query_builder::CanBeLookupTable for GlobalData {}

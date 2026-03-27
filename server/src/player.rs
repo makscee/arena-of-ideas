@@ -6,7 +6,7 @@ use schema::NodeKind;
 fn register(ctx: &ReducerContext, name: String) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
     let name = NPlayer::validate_name(ctx, name)?;
-    NPlayer::clear_identity(ctx, &ctx.rctx().sender);
+    NPlayer::clear_identity(ctx, &ctx.rctx().sender());
     let mut player = NPlayer::new(ctx.next_id(), ID_PLAYERS, name);
     player
         .player_data
@@ -14,7 +14,7 @@ fn register(ctx: &ReducerContext, name: String) -> Result<(), String> {
     player.identity.set_loaded(NPlayerIdentity::new(
         ctx.next_id(),
         ID_PLAYERS,
-        Some(ctx.rctx().sender.to_string()),
+        Some(ctx.rctx().sender().to_string()),
     ));
     ctx.source_mut().commit(player)?;
     Ok(())
@@ -91,7 +91,7 @@ pub trait GetPlayer {
 
 impl GetPlayer for ServerContext<'_> {
     fn player(&self) -> NodeResult<NPlayer> {
-        let identity = NPlayer::find_identity(self, &self.source().rctx().sender)
+        let identity = NPlayer::find_identity(self, &self.source().rctx().sender())
             .ok_or_else(|| NodeError::custom("NPlayerIdentity not found"))
             .track()?;
         let id = self

@@ -1,6 +1,6 @@
 use super::*;
 
-#[table(name = battle, public)]
+#[table(accessor = battle, public)]
 pub struct TBattle {
     #[primary_key]
     pub id: u64,

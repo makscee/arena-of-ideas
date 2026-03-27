@@ -19,7 +19,7 @@ impl TopBar {
             });
         } else {
             if text.button(ui).clicked() {
-                state.set_next(world);
+                state.proceed_to_target(world);
             }
         }
     }

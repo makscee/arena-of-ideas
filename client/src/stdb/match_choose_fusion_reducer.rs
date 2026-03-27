@@ -22,8 +22,6 @@ impl __sdk::InModule for MatchChooseFusionArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct MatchChooseFusionCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `match_choose_fusion`.
 ///
@@ -33,77 +31,38 @@ pub trait match_choose_fusion {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_match_choose_fusion`] callbacks.
-    fn match_choose_fusion(&self, fusion_choice: String) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `match_choose_fusion`.
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`match_choose_fusion:match_choose_fusion_then`] to run a callback after the reducer completes.
+    fn match_choose_fusion(&self, fusion_choice: String) -> __sdk::Result<()> {
+        self.match_choose_fusion_then(fusion_choice, |_, _| {})
+    }
+
+    /// Request that the remote module invoke the reducer `match_choose_fusion` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
     ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`MatchChooseFusionCallbackId`] can be passed to [`Self::remove_on_match_choose_fusion`]
-    /// to cancel the callback.
-    fn on_match_choose_fusion(
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn match_choose_fusion_then(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &String) + Send + 'static,
-    ) -> MatchChooseFusionCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_match_choose_fusion`],
-    /// causing it not to run in the future.
-    fn remove_on_match_choose_fusion(&self, callback: MatchChooseFusionCallbackId);
+        fusion_choice: String,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
 }
 
 impl match_choose_fusion for super::RemoteReducers {
-    fn match_choose_fusion(&self, fusion_choice: String) -> __sdk::Result<()> {
-        self.imp.call_reducer(
-            "match_choose_fusion",
-            MatchChooseFusionArgs { fusion_choice },
-        )
-    }
-    fn on_match_choose_fusion(
+    fn match_choose_fusion_then(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &String) + Send + 'static,
-    ) -> MatchChooseFusionCallbackId {
-        MatchChooseFusionCallbackId(self.imp.on_reducer(
-            "match_choose_fusion",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer: super::Reducer::MatchChooseFusion { fusion_choice },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, fusion_choice)
-            }),
-        ))
-    }
-    fn remove_on_match_choose_fusion(&self, callback: MatchChooseFusionCallbackId) {
-        self.imp
-            .remove_on_reducer("match_choose_fusion", callback.0)
-    }
-}
+        fusion_choice: String,
 
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `match_choose_fusion`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_match_choose_fusion {
-    /// Set the call-reducer flags for the reducer `match_choose_fusion` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn match_choose_fusion(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_match_choose_fusion for super::SetReducerFlags {
-    fn match_choose_fusion(&self, flags: __ws::CallReducerFlags) {
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
         self.imp
-            .set_call_reducer_flags("match_choose_fusion", flags);
+            .invoke_reducer_with_callback(MatchChooseFusionArgs { fusion_choice }, callback)
     }
 }

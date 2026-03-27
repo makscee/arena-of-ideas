@@ -78,21 +78,21 @@ impl<'ctx> __sdk::Table for GlobalDataTableHandle<'ctx> {
     }
 }
 
-#[doc(hidden)]
-pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<GlobalData>("global_data");
-    _table.add_unique_constraint::<u32>("always_zero", |row| &row.always_zero);
-}
+pub struct GlobalDataUpdateCallbackId(__sdk::CallbackId);
 
-#[doc(hidden)]
-pub(super) fn parse_table_update(
-    raw_updates: __ws::TableUpdate<__ws::BsatnFormat>,
-) -> __sdk::Result<__sdk::TableUpdate<GlobalData>> {
-    __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<GlobalData>", "TableUpdate")
-            .with_cause(e)
-            .into()
-    })
+impl<'ctx> __sdk::TableWithPrimaryKey for GlobalDataTableHandle<'ctx> {
+    type UpdateCallbackId = GlobalDataUpdateCallbackId;
+
+    fn on_update(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row, &Self::Row) + Send + 'static,
+    ) -> GlobalDataUpdateCallbackId {
+        GlobalDataUpdateCallbackId(self.imp.on_update(Box::new(callback)))
+    }
+
+    fn remove_on_update(&self, callback: GlobalDataUpdateCallbackId) {
+        self.imp.remove_on_update(callback.0)
+    }
 }
 
 /// Access to the `always_zero` unique index on the table `global_data`,
@@ -122,5 +122,38 @@ impl<'ctx> GlobalDataAlwaysZeroUnique<'ctx> {
     /// if such a row is present in the client cache.
     pub fn find(&self, col_val: &u32) -> Option<GlobalData> {
         self.imp.find(col_val)
+    }
+}
+
+#[doc(hidden)]
+pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
+    let _table = client_cache.get_or_make_table::<GlobalData>("global_data");
+    _table.add_unique_constraint::<u32>("always_zero", |row| &row.always_zero);
+}
+
+#[doc(hidden)]
+pub(super) fn parse_table_update(
+    raw_updates: __ws::v2::TableUpdate,
+) -> __sdk::Result<__sdk::TableUpdate<GlobalData>> {
+    __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
+        __sdk::InternalError::failed_parse("TableUpdate<GlobalData>", "TableUpdate")
+            .with_cause(e)
+            .into()
+    })
+}
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `GlobalData`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait global_dataQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `GlobalData`.
+    fn global_data(&self) -> __sdk::__query_builder::Table<GlobalData>;
+}
+
+impl global_dataQueryTableAccess for __sdk::QueryTableAccessor {
+    fn global_data(&self) -> __sdk::__query_builder::Table<GlobalData> {
+        __sdk::__query_builder::Table::new("global_data")
     }
 }

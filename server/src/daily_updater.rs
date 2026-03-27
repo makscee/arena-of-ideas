@@ -2,7 +2,7 @@ use spacetimedb::ScheduleAt;
 
 use super::*;
 
-#[spacetimedb::table(public, name = daily_update_timer, scheduled(daily_update_reducer))]
+#[spacetimedb::table(public, accessor = daily_update_timer, scheduled(daily_update_reducer))]
 pub struct DailyUpdateTimer {
     #[primary_key]
     #[auto_inc]

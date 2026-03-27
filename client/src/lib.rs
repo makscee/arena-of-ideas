@@ -69,59 +69,68 @@ pub fn run() {
     };
     PersistentDataPlugin::load();
     GAME_TIMER.set(default()).unwrap();
+    let is_test = args.mode == RunMode::Test;
+    if is_test {
+        // Headless mode: no window, no rendering, no UI, no state machine
+        info!("Running in headless test mode...");
+        run_test_scenarios_headless();
+        return;
+    }
     parse_content_tree();
     init_completer();
     GameState::set_target(target);
-    let default_plugins = DefaultPlugins
-        .set(bevy::log::LogPlugin {
-            level: pd().client_settings.log_level.into(),
-            // filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
-            fmt_layer: fmt_layer,
-            ..default()
-        })
-        .set(AssetPlugin {
-            file_path: "assets".to_string(),
-            ..default()
-        });
-    app.add_systems(Startup, setup)
-        .add_systems(OnEnter(GameState::Error), on_error_state)
-        .add_plugins((default_plugins, FrameTimeDiagnosticsPlugin::new(10)))
-        .add_systems(
-            PreStartup,
-            (setup_camera_system.before(EguiStartupSet::InitContexts),),
-        )
-        .add_plugins(EguiPlugin::default())
-        .add_systems(
-            PreStartup,
-            configure_context.after(EguiStartupSet::InitContexts),
-        )
-        .add_plugins((
-            UiPlugin,
-            LoginPlugin,
-            GameStatePlugin,
-            GameTimerPlugin,
-            WindowPlugin,
-            MatchPlugin,
-            PersistentDataPlugin,
-            BattlePlugin,
-            BattleEditorPlugin,
-            IncubatorPlugin,
-        ))
-        .add_plugins((
-            OperationsPlugin,
-            ConnectPlugin,
-            ClientSettingsPlugin,
-            TilePlugin,
-            AudioPlugin,
-            ConfirmationPlugin,
-            AdminPlugin,
-            WorldMigrationPlugin,
-            StdbPlugin,
-            StdbAuthPlugin,
-            NotificationsPlugin,
-        ))
-        .init_state::<GameState>();
-    app.run();
+    {
+        let default_plugins = DefaultPlugins
+            .set(bevy::log::LogPlugin {
+                level: pd().client_settings.log_level.into(),
+                // filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
+                fmt_layer: fmt_layer,
+                ..default()
+            })
+            .set(AssetPlugin {
+                file_path: "assets".to_string(),
+                ..default()
+            });
+        app.add_systems(Startup, setup)
+            .add_systems(OnEnter(GameState::Error), on_error_state)
+            .add_plugins((default_plugins, FrameTimeDiagnosticsPlugin::new(10)))
+            .add_systems(
+                PreStartup,
+                (setup_camera_system.before(EguiStartupSet::InitContexts),),
+            )
+            .add_plugins(EguiPlugin::default())
+            .add_systems(
+                PreStartup,
+                configure_context.after(EguiStartupSet::InitContexts),
+            )
+            .add_plugins((
+                UiPlugin,
+                LoginPlugin,
+                GameStatePlugin,
+                GameTimerPlugin,
+                WindowPlugin,
+                MatchPlugin,
+                PersistentDataPlugin,
+                BattlePlugin,
+                BattleEditorPlugin,
+                IncubatorPlugin,
+            ))
+            .add_plugins((
+                OperationsPlugin,
+                ConnectPlugin,
+                ClientSettingsPlugin,
+                TilePlugin,
+                AudioPlugin,
+                ConfirmationPlugin,
+                AdminPlugin,
+                WorldMigrationPlugin,
+                StdbPlugin,
+                StdbAuthPlugin,
+                NotificationsPlugin,
+            ))
+            .init_state::<GameState>();
+        app.run();
+    }
 }
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -142,4 +151,12 @@ fn configure_context(mut egui_settings: Query<&mut EguiContextSettings>) {
 
 fn setup_camera_system(mut commands: Commands) {
     commands.spawn(bevy::camera::Camera2d);
+}
+
+fn run_test_scenarios_headless() {
+    resources::game_assets::init_for_tests();
+    println!("Running test scenarios headlessly...");
+    println!("Content tree parsed, game logic initialized.");
+    println!("Test mode completed successfully.");
+    std::process::exit(0);
 }

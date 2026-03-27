@@ -17,7 +17,7 @@ pub trait AdminCheck {
 
 impl AdminCheck for &ServerContext<'_> {
     fn is_admin(self) -> Result<(), String> {
-        if is_admin(&self.rctx().sender)? {
+        if is_admin(&self.rctx().sender())? {
             Ok(())
         } else {
             Err("Need admin access".to_owned())

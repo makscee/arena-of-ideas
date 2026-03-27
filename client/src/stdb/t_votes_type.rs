@@ -15,3 +15,41 @@ pub struct TVotes {
 impl __sdk::InModule for TVotes {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `TVotes`.
+///
+/// Provides typed access to columns for query building.
+pub struct TVotesCols {
+    pub player_id: __sdk::__query_builder::Col<TVotes, u64>,
+    pub upvotes: __sdk::__query_builder::Col<TVotes, i32>,
+    pub downvotes: __sdk::__query_builder::Col<TVotes, i32>,
+}
+
+impl __sdk::__query_builder::HasCols for TVotes {
+    type Cols = TVotesCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        TVotesCols {
+            player_id: __sdk::__query_builder::Col::new(table_name, "player_id"),
+            upvotes: __sdk::__query_builder::Col::new(table_name, "upvotes"),
+            downvotes: __sdk::__query_builder::Col::new(table_name, "downvotes"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `TVotes`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct TVotesIxCols {
+    pub player_id: __sdk::__query_builder::IxCol<TVotes, u64>,
+}
+
+impl __sdk::__query_builder::HasIxCols for TVotes {
+    type IxCols = TVotesIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        TVotesIxCols {
+            player_id: __sdk::__query_builder::IxCol::new(table_name, "player_id"),
+        }
+    }
+}
+
+impl __sdk::__query_builder::CanBeLookupTable for TVotes {}

@@ -17,3 +17,49 @@ pub struct TVotesHistory {
 impl __sdk::InModule for TVotesHistory {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `TVotesHistory`.
+///
+/// Provides typed access to columns for query building.
+pub struct TVotesHistoryCols {
+    pub id: __sdk::__query_builder::Col<TVotesHistory, u64>,
+    pub player_id: __sdk::__query_builder::Col<TVotesHistory, u64>,
+    pub node_id: __sdk::__query_builder::Col<TVotesHistory, u64>,
+    pub is_upvote: __sdk::__query_builder::Col<TVotesHistory, bool>,
+    pub timestamp: __sdk::__query_builder::Col<TVotesHistory, u64>,
+}
+
+impl __sdk::__query_builder::HasCols for TVotesHistory {
+    type Cols = TVotesHistoryCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        TVotesHistoryCols {
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
+            player_id: __sdk::__query_builder::Col::new(table_name, "player_id"),
+            node_id: __sdk::__query_builder::Col::new(table_name, "node_id"),
+            is_upvote: __sdk::__query_builder::Col::new(table_name, "is_upvote"),
+            timestamp: __sdk::__query_builder::Col::new(table_name, "timestamp"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `TVotesHistory`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct TVotesHistoryIxCols {
+    pub id: __sdk::__query_builder::IxCol<TVotesHistory, u64>,
+    pub node_id: __sdk::__query_builder::IxCol<TVotesHistory, u64>,
+    pub player_id: __sdk::__query_builder::IxCol<TVotesHistory, u64>,
+}
+
+impl __sdk::__query_builder::HasIxCols for TVotesHistory {
+    type IxCols = TVotesHistoryIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        TVotesHistoryIxCols {
+            id: __sdk::__query_builder::IxCol::new(table_name, "id"),
+            node_id: __sdk::__query_builder::IxCol::new(table_name, "node_id"),
+            player_id: __sdk::__query_builder::IxCol::new(table_name, "player_id"),
+        }
+    }
+}
+
+impl __sdk::__query_builder::CanBeLookupTable for TVotesHistory {}

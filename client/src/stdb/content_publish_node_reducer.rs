@@ -24,8 +24,6 @@ impl __sdk::InModule for ContentPublishNodeArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct ContentPublishNodeCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `content_publish_node`.
 ///
@@ -35,77 +33,40 @@ pub trait content_publish_node {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_content_publish_node`] callbacks.
-    fn content_publish_node(&self, pack: String, parent: Option<u64>) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `content_publish_node`.
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`content_publish_node:content_publish_node_then`] to run a callback after the reducer completes.
+    fn content_publish_node(&self, pack: String, parent: Option<u64>) -> __sdk::Result<()> {
+        self.content_publish_node_then(pack, parent, |_, _| {})
+    }
+
+    /// Request that the remote module invoke the reducer `content_publish_node` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
     ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`ContentPublishNodeCallbackId`] can be passed to [`Self::remove_on_content_publish_node`]
-    /// to cancel the callback.
-    fn on_content_publish_node(
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn content_publish_node_then(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &String, &Option<u64>) + Send + 'static,
-    ) -> ContentPublishNodeCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_content_publish_node`],
-    /// causing it not to run in the future.
-    fn remove_on_content_publish_node(&self, callback: ContentPublishNodeCallbackId);
+        pack: String,
+        parent: Option<u64>,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
 }
 
 impl content_publish_node for super::RemoteReducers {
-    fn content_publish_node(&self, pack: String, parent: Option<u64>) -> __sdk::Result<()> {
-        self.imp.call_reducer(
-            "content_publish_node",
-            ContentPublishNodeArgs { pack, parent },
-        )
-    }
-    fn on_content_publish_node(
+    fn content_publish_node_then(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &String, &Option<u64>) + Send + 'static,
-    ) -> ContentPublishNodeCallbackId {
-        ContentPublishNodeCallbackId(self.imp.on_reducer(
-            "content_publish_node",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer: super::Reducer::ContentPublishNode { pack, parent },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, pack, parent)
-            }),
-        ))
-    }
-    fn remove_on_content_publish_node(&self, callback: ContentPublishNodeCallbackId) {
-        self.imp
-            .remove_on_reducer("content_publish_node", callback.0)
-    }
-}
+        pack: String,
+        parent: Option<u64>,
 
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `content_publish_node`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_content_publish_node {
-    /// Set the call-reducer flags for the reducer `content_publish_node` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn content_publish_node(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_content_publish_node for super::SetReducerFlags {
-    fn content_publish_node(&self, flags: __ws::CallReducerFlags) {
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
         self.imp
-            .set_call_reducer_flags("content_publish_node", flags);
+            .invoke_reducer_with_callback(ContentPublishNodeArgs { pack, parent }, callback)
     }
 }

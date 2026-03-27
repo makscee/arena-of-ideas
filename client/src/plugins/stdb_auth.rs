@@ -31,10 +31,18 @@ impl StdbAuthPlugin {
                     .label(ui);
                 br(ui);
                 if pd().client_settings.auto_login || Button::new("Login").ui(ui).clicked() {
-                    ld.id_token = creds_store().load().expect("Token not found");
-                    op(|world| {
-                        GameState::proceed(world);
-                    });
+                    match creds_store().load() {
+                        Ok(Some(token)) => {
+                            ld.id_token = Some(token);
+                            op(|world| {
+                                GameState::proceed(world);
+                            });
+                        }
+                        _ => {
+                            // Saved credentials not found, clear stale login state
+                            pd_mut(|pd| pd.client_state.last_logged_in = None);
+                        }
+                    }
                 }
                 if Button::new("Logout").ui(ui).clicked() {
                     pd_mut(|data| data.client_state.last_logged_in = None);
@@ -109,14 +117,14 @@ fn spacetimeauth_login(_: On<SpaceLogin>, mut ev_request: MessageWriter<HttpRequ
     let verifier_str =
         String::from_utf8(verifier).expect("Code verifier bytes were not valid UTF-8");
     let body = format!(
-        "client_id={}&\
-                      code={}&\
-                      code_verifier={}&\
-                      grant_type=authorization_code&\
-                      redirect_uri=http://127.0.0.1:42069",
+        "client_id={}&code={}&code_verifier={}&grant_type=authorization_code&redirect_uri=http://127.0.0.1:42069",
         stdb_client_id, auth_code, &verifier_str
     );
-    match HttpClient::new().post(url).form_encoded(&body).try_build() {
+    let mut request = ehttp::Request::post(&url, body.into_bytes());
+    request
+        .headers
+        .insert("Content-Type", "application/x-www-form-urlencoded");
+    match HttpClient::new().request(request).try_build() {
         Ok(request) => {
             ev_request.write(request);
         }
@@ -128,20 +136,27 @@ fn spacetimeauth_login(_: On<SpaceLogin>, mut ev_request: MessageWriter<HttpRequ
 
 #[derive(Deserialize, Debug)]
 pub struct TokenResponse {
-    pub access_token: String,
+    pub access_token: Option<String>,
     pub id_token: String,
 }
 
-fn handle_response(mut ev_resp: MessageReader<HttpResponse>, mut cmd: Commands) {
+fn handle_response(mut ev_resp: MessageReader<HttpResponse>) {
     for response in ev_resp.read() {
-        let token_response: TokenResponse = response.json().unwrap();
-        info!("response {:#?}", token_response);
-        cmd.insert_resource(AuthOption {
-            id_token: Some(token_response.id_token),
-        });
-        op(|world| {
-            GameState::proceed(world);
-        });
+        match response.json::<TokenResponse>() {
+            Ok(token_response) => {
+                info!("response {:#?}", token_response);
+                let id_token = token_response.id_token;
+                op(move |world| {
+                    world.insert_resource(AuthOption {
+                        id_token: Some(id_token),
+                    });
+                    GameState::proceed(world);
+                });
+            }
+            Err(e) => {
+                error!("Failed to parse token response: {e}");
+            }
+        }
     }
 }
 

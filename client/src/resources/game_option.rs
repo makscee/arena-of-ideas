@@ -35,18 +35,15 @@ pub fn currently_fulfilling() -> GameOption {
 impl GameOption {
     pub fn is_fulfilled(&self, world: &World) -> bool {
         match self {
-            GameOption::Auth => {
-                info!("got option {:#?}", world.get_resource::<AuthOption>());
-                world
-                    .get_resource::<AuthOption>()
-                    .is_some_and(|ao| ao.id_token.is_some())
-            }
+            GameOption::Auth => world
+                .get_resource::<AuthOption>()
+                .is_some_and(|ao| ao.id_token.is_some()),
             GameOption::Connect => world.get_resource::<ConnectOption>().is_some(),
             GameOption::Login | GameOption::ForceLogin => {
                 world.get_resource::<LoginOption>().is_some()
             }
-            GameOption::TestScenariosLoad => todo!(),
-            GameOption::ActiveRun => todo!(),
+            GameOption::TestScenariosLoad => true,
+            GameOption::ActiveRun => true,
             GameOption::ForceTablesSubscribe => world.contains_resource::<TablesSubscribeOption>(),
         }
     }

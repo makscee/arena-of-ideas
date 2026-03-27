@@ -49,16 +49,17 @@ epaint_default_fonts = { workspace = true }
 backtrace = { workspace = true }
 mlua = { workspace = true }
 rhai = { workspace = true }
-egui_code_editor = "0.2.20"
+egui_code_editor = "0.2.21"
 
 anyhow = "1.0.100"
 clap = { version = "4.5.51", features = ["derive"] }
 hex = "0.4.3"
 home = "0.5.12"
 egui_commonmark = "0.22.0"
-bevy_tasks = "0.17.2"
+bevy_tasks = "0.18.1"
 regex = "1.12.2"
-bevy_http_client = { git = "https://github.com/izarma/bevy_http_client", branch = "master" }
+bevy_http_client = "0.10.0"
+ehttp = "0.5.0"
 open = "5.3.2"
 base64 = "0.22.1"
 sha2 = "0.10.9"

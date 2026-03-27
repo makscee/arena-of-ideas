@@ -18,8 +18,6 @@ impl __sdk::InModule for AdminDailyUpdateArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct AdminDailyUpdateCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `admin_daily_update`.
 ///
@@ -29,73 +27,36 @@ pub trait admin_daily_update {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_admin_daily_update`] callbacks.
-    fn admin_daily_update(&self) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `admin_daily_update`.
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`admin_daily_update:admin_daily_update_then`] to run a callback after the reducer completes.
+    fn admin_daily_update(&self) -> __sdk::Result<()> {
+        self.admin_daily_update_then(|_, _| {})
+    }
+
+    /// Request that the remote module invoke the reducer `admin_daily_update` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
     ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`AdminDailyUpdateCallbackId`] can be passed to [`Self::remove_on_admin_daily_update`]
-    /// to cancel the callback.
-    fn on_admin_daily_update(
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn admin_daily_update_then(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext) + Send + 'static,
-    ) -> AdminDailyUpdateCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_admin_daily_update`],
-    /// causing it not to run in the future.
-    fn remove_on_admin_daily_update(&self, callback: AdminDailyUpdateCallbackId);
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
 }
 
 impl admin_daily_update for super::RemoteReducers {
-    fn admin_daily_update(&self) -> __sdk::Result<()> {
-        self.imp
-            .call_reducer("admin_daily_update", AdminDailyUpdateArgs {})
-    }
-    fn on_admin_daily_update(
+    fn admin_daily_update_then(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext) + Send + 'static,
-    ) -> AdminDailyUpdateCallbackId {
-        AdminDailyUpdateCallbackId(self.imp.on_reducer(
-            "admin_daily_update",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer: super::Reducer::AdminDailyUpdate {},
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx)
-            }),
-        ))
-    }
-    fn remove_on_admin_daily_update(&self, callback: AdminDailyUpdateCallbackId) {
-        self.imp.remove_on_reducer("admin_daily_update", callback.0)
-    }
-}
 
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `admin_daily_update`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_admin_daily_update {
-    /// Set the call-reducer flags for the reducer `admin_daily_update` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn admin_daily_update(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_admin_daily_update for super::SetReducerFlags {
-    fn admin_daily_update(&self, flags: __ws::CallReducerFlags) {
-        self.imp.set_call_reducer_flags("admin_daily_update", flags);
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
+        self.imp
+            .invoke_reducer_with_callback(AdminDailyUpdateArgs {}, callback)
     }
 }

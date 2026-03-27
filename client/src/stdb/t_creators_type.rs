@@ -14,3 +14,41 @@ pub struct TCreators {
 impl __sdk::InModule for TCreators {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `TCreators`.
+///
+/// Provides typed access to columns for query building.
+pub struct TCreatorsCols {
+    pub node_id: __sdk::__query_builder::Col<TCreators, u64>,
+    pub player_id: __sdk::__query_builder::Col<TCreators, u64>,
+}
+
+impl __sdk::__query_builder::HasCols for TCreators {
+    type Cols = TCreatorsCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        TCreatorsCols {
+            node_id: __sdk::__query_builder::Col::new(table_name, "node_id"),
+            player_id: __sdk::__query_builder::Col::new(table_name, "player_id"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `TCreators`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct TCreatorsIxCols {
+    pub node_id: __sdk::__query_builder::IxCol<TCreators, u64>,
+    pub player_id: __sdk::__query_builder::IxCol<TCreators, u64>,
+}
+
+impl __sdk::__query_builder::HasIxCols for TCreators {
+    type IxCols = TCreatorsIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        TCreatorsIxCols {
+            node_id: __sdk::__query_builder::IxCol::new(table_name, "node_id"),
+            player_id: __sdk::__query_builder::IxCol::new(table_name, "player_id"),
+        }
+    }
+}
+
+impl __sdk::__query_builder::CanBeLookupTable for TCreators {}

@@ -17,3 +17,51 @@ pub struct TNode {
 impl __sdk::InModule for TNode {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `TNode`.
+///
+/// Provides typed access to columns for query building.
+pub struct TNodeCols {
+    pub id: __sdk::__query_builder::Col<TNode, u64>,
+    pub owner: __sdk::__query_builder::Col<TNode, u64>,
+    pub kind: __sdk::__query_builder::Col<TNode, String>,
+    pub data: __sdk::__query_builder::Col<TNode, String>,
+    pub rating: __sdk::__query_builder::Col<TNode, i32>,
+}
+
+impl __sdk::__query_builder::HasCols for TNode {
+    type Cols = TNodeCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        TNodeCols {
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
+            owner: __sdk::__query_builder::Col::new(table_name, "owner"),
+            kind: __sdk::__query_builder::Col::new(table_name, "kind"),
+            data: __sdk::__query_builder::Col::new(table_name, "data"),
+            rating: __sdk::__query_builder::Col::new(table_name, "rating"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `TNode`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct TNodeIxCols {
+    pub data: __sdk::__query_builder::IxCol<TNode, String>,
+    pub id: __sdk::__query_builder::IxCol<TNode, u64>,
+    pub kind: __sdk::__query_builder::IxCol<TNode, String>,
+    pub owner: __sdk::__query_builder::IxCol<TNode, u64>,
+}
+
+impl __sdk::__query_builder::HasIxCols for TNode {
+    type IxCols = TNodeIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        TNodeIxCols {
+            data: __sdk::__query_builder::IxCol::new(table_name, "data"),
+            id: __sdk::__query_builder::IxCol::new(table_name, "id"),
+            kind: __sdk::__query_builder::IxCol::new(table_name, "kind"),
+            owner: __sdk::__query_builder::IxCol::new(table_name, "owner"),
+        }
+    }
+}
+
+impl __sdk::__query_builder::CanBeLookupTable for TNode {}

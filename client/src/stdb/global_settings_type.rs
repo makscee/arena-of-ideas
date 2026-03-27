@@ -17,3 +17,41 @@ pub struct GlobalSettings {
 impl __sdk::InModule for GlobalSettings {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `GlobalSettings`.
+///
+/// Provides typed access to columns for query building.
+pub struct GlobalSettingsCols {
+    pub always_zero: __sdk::__query_builder::Col<GlobalSettings, u32>,
+    pub team_slots: __sdk::__query_builder::Col<GlobalSettings, u8>,
+    pub match_settings: __sdk::__query_builder::Col<GlobalSettings, MatchSettings>,
+}
+
+impl __sdk::__query_builder::HasCols for GlobalSettings {
+    type Cols = GlobalSettingsCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        GlobalSettingsCols {
+            always_zero: __sdk::__query_builder::Col::new(table_name, "always_zero"),
+            team_slots: __sdk::__query_builder::Col::new(table_name, "team_slots"),
+            match_settings: __sdk::__query_builder::Col::new(table_name, "match_settings"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `GlobalSettings`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct GlobalSettingsIxCols {
+    pub always_zero: __sdk::__query_builder::IxCol<GlobalSettings, u32>,
+}
+
+impl __sdk::__query_builder::HasIxCols for GlobalSettings {
+    type IxCols = GlobalSettingsIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        GlobalSettingsIxCols {
+            always_zero: __sdk::__query_builder::IxCol::new(table_name, "always_zero"),
+        }
+    }
+}
+
+impl __sdk::__query_builder::CanBeLookupTable for GlobalSettings {}

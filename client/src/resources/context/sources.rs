@@ -34,6 +34,10 @@ pub fn init_static_sources() {
     }
 }
 
+pub fn static_sources_initialized() -> bool {
+    unsafe { (*std::ptr::addr_of!(STATIC_SOURCES)).is_some() }
+}
+
 pub fn with_static_sources<R, F>(f: F) -> R
 where
     F: FnOnce(&mut StaticSources) -> R,

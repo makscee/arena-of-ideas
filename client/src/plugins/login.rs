@@ -24,31 +24,29 @@ pub struct LoginData {
 
 impl LoginPlugin {
     fn login() {
-        cn().reducers.on_login_by_identity(|e| {
-            if !e.check_identity() {
-                return;
-            }
-            match &e.event.status {
-                spacetimedb_sdk::Status::Committed => {
+        cn().reducers.login_by_identity_then(|_ctx, result| {
+            match result {
+                Ok(Ok(())) => {
                     op(|world| {
                         if let Some(mut ld) = world.get_resource_mut::<LoginData>() {
                             ld.user_exists = true;
                         }
                     });
-                    e.event.on_success_error(LoginPlugin::complete, || {
-                        info!("Logging in with identity");
-                        pd_mut(|pd| pd.client_state.last_logged_in = None);
-                    });
+                    LoginPlugin::complete();
                 }
-                spacetimedb_sdk::Status::Failed(err) => {
-                    let err_str = err.to_string();
-                    if err_str.contains("NO_IDENTITY_FOUND") {
+                Ok(Err(err)) => {
+                    if err.contains("not found") {
                         info!("No player found for identity");
+                    } else {
+                        err.notify_error_op();
                     }
+                    pd_mut(|pd| pd.client_state.last_logged_in = None);
                 }
-                _ => panic!(),
+                Err(e) => {
+                    format!("{e:?}").notify_error_op();
+                }
             }
-        });
+        }).ok();
     }
     fn complete() {
         subscribe_game(Self::on_subscribed);
@@ -101,13 +99,14 @@ impl LoginPlugin {
 
                 Input::new("username").ui_string(&mut ld.username, ui);
                 if Button::new("Register").ui(ui).clicked() {
-                    cn().reducers.on_register(|e, _| {
-                        if !e.check_identity() {
-                            return;
+                    let username = ld.username.clone();
+                    cn().reducers.register_then(username, |_ctx, result| {
+                        match result {
+                            Ok(Ok(())) => LoginPlugin::complete(),
+                            Ok(Err(e)) => e.notify_error_op(),
+                            Err(e) => format!("{e:?}").notify_error_op(),
                         }
-                        e.event.on_success(LoginPlugin::complete);
-                    });
-                    cn().reducers.register(ld.username.clone()).unwrap();
+                    }).ok();
                 }
             }
         });

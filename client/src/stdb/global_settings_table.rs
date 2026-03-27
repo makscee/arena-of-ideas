@@ -79,21 +79,21 @@ impl<'ctx> __sdk::Table for GlobalSettingsTableHandle<'ctx> {
     }
 }
 
-#[doc(hidden)]
-pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<GlobalSettings>("global_settings");
-    _table.add_unique_constraint::<u32>("always_zero", |row| &row.always_zero);
-}
+pub struct GlobalSettingsUpdateCallbackId(__sdk::CallbackId);
 
-#[doc(hidden)]
-pub(super) fn parse_table_update(
-    raw_updates: __ws::TableUpdate<__ws::BsatnFormat>,
-) -> __sdk::Result<__sdk::TableUpdate<GlobalSettings>> {
-    __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
-        __sdk::InternalError::failed_parse("TableUpdate<GlobalSettings>", "TableUpdate")
-            .with_cause(e)
-            .into()
-    })
+impl<'ctx> __sdk::TableWithPrimaryKey for GlobalSettingsTableHandle<'ctx> {
+    type UpdateCallbackId = GlobalSettingsUpdateCallbackId;
+
+    fn on_update(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row, &Self::Row) + Send + 'static,
+    ) -> GlobalSettingsUpdateCallbackId {
+        GlobalSettingsUpdateCallbackId(self.imp.on_update(Box::new(callback)))
+    }
+
+    fn remove_on_update(&self, callback: GlobalSettingsUpdateCallbackId) {
+        self.imp.remove_on_update(callback.0)
+    }
 }
 
 /// Access to the `always_zero` unique index on the table `global_settings`,
@@ -123,5 +123,38 @@ impl<'ctx> GlobalSettingsAlwaysZeroUnique<'ctx> {
     /// if such a row is present in the client cache.
     pub fn find(&self, col_val: &u32) -> Option<GlobalSettings> {
         self.imp.find(col_val)
+    }
+}
+
+#[doc(hidden)]
+pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
+    let _table = client_cache.get_or_make_table::<GlobalSettings>("global_settings");
+    _table.add_unique_constraint::<u32>("always_zero", |row| &row.always_zero);
+}
+
+#[doc(hidden)]
+pub(super) fn parse_table_update(
+    raw_updates: __ws::v2::TableUpdate,
+) -> __sdk::Result<__sdk::TableUpdate<GlobalSettings>> {
+    __sdk::TableUpdate::parse_table_update(raw_updates).map_err(|e| {
+        __sdk::InternalError::failed_parse("TableUpdate<GlobalSettings>", "TableUpdate")
+            .with_cause(e)
+            .into()
+    })
+}
+
+#[allow(non_camel_case_types)]
+/// Extension trait for query builder access to the table `GlobalSettings`.
+///
+/// Implemented for [`__sdk::QueryTableAccessor`].
+pub trait global_settingsQueryTableAccess {
+    #[allow(non_snake_case)]
+    /// Get a query builder for the table `GlobalSettings`.
+    fn global_settings(&self) -> __sdk::__query_builder::Table<GlobalSettings>;
+}
+
+impl global_settingsQueryTableAccess for __sdk::QueryTableAccessor {
+    fn global_settings(&self) -> __sdk::__query_builder::Table<GlobalSettings> {
+        __sdk::__query_builder::Table::new("global_settings")
     }
 }

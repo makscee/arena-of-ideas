@@ -107,7 +107,17 @@ impl BattlePlugin {
                     Self::on_done_callback(
                         |id, result, hash| {
                             cn().reducers
-                                .match_submit_battle_result(id, result, hash)
+                                .match_submit_battle_result_then(id, result, hash, |_ctx, res| {
+                                    match res {
+                                        Ok(Ok(())) => {
+                                            op(|world| {
+                                                GameState::Shop.set_next(world);
+                                            });
+                                        }
+                                        Ok(Err(e)) => e.notify_error_op(),
+                                        Err(e) => format!("{e:?}").notify_error_op(),
+                                    }
+                                })
                                 .notify_op();
                         },
                         world,

@@ -1,6 +1,6 @@
 use super::*;
 
-#[spacetimedb::table(name = creation_parts, public)]
+#[spacetimedb::table(accessor = creation_parts, public)]
 pub struct TCreationParts {
     #[primary_key]
     pub node_id: u64,

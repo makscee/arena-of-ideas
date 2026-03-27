@@ -14,3 +14,39 @@ pub struct TCreationParts {
 impl __sdk::InModule for TCreationParts {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `TCreationParts`.
+///
+/// Provides typed access to columns for query building.
+pub struct TCreationPartsCols {
+    pub node_id: __sdk::__query_builder::Col<TCreationParts, u64>,
+    pub kinds: __sdk::__query_builder::Col<TCreationParts, Vec<String>>,
+}
+
+impl __sdk::__query_builder::HasCols for TCreationParts {
+    type Cols = TCreationPartsCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        TCreationPartsCols {
+            node_id: __sdk::__query_builder::Col::new(table_name, "node_id"),
+            kinds: __sdk::__query_builder::Col::new(table_name, "kinds"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `TCreationParts`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct TCreationPartsIxCols {
+    pub node_id: __sdk::__query_builder::IxCol<TCreationParts, u64>,
+}
+
+impl __sdk::__query_builder::HasIxCols for TCreationParts {
+    type IxCols = TCreationPartsIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        TCreationPartsIxCols {
+            node_id: __sdk::__query_builder::IxCol::new(table_name, "node_id"),
+        }
+    }
+}
+
+impl __sdk::__query_builder::CanBeLookupTable for TCreationParts {}

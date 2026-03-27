@@ -25,6 +25,9 @@ impl StdbPlugin {
         if !is_need_update() {
             return;
         }
+        if !static_sources_initialized() {
+            return;
+        }
         set_need_update(false);
         let mut queue = UPDATE_QUEUE.lock();
         if queue.is_empty() {
@@ -56,7 +59,6 @@ impl StdbPlugin {
 
 pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
     info!("Apply stdb subscriptions");
-    init_static_sources();
     subscribe_table_updates();
     cn().subscription_builder()
         .on_error(|_, error| error.to_string().notify_error_op())
@@ -147,142 +149,9 @@ fn queue_update(update: StdbUpdate) {
     set_need_update(true);
 }
 
-fn default_callback(e: &ReducerEventContext) {
-    if !e.check_identity() {
-        return;
-    }
-    e.event.notify_error();
-}
-
-pub fn subscribe_reducers() {
-    for r in reducer_registry::AllReducers::iter() {
-        subscribe_reducer(r);
-    }
-}
-
-fn subscribe_reducer(reducer: reducer_registry::AllReducers) {
-    use reducer_registry::AllReducers;
-
-    let r = &cn().reducers;
-    match reducer {
-        AllReducers::AdminAddGold => {
-            r.on_admin_add_gold(|e| default_callback(e));
-        }
-        AllReducers::AdminAddVotes => {
-            r.on_admin_add_votes(|e, _| default_callback(e));
-        }
-        AllReducers::AdminDailyUpdate => {
-            r.on_admin_daily_update(|e| default_callback(e));
-        }
-        AllReducers::AdminDeleteNodeRecursive => {
-            r.on_admin_delete_node_recursive(|e, _| default_callback(e));
-        }
-        AllReducers::AdminUploadWorld => {
-            r.on_admin_upload_world(|e, _, _, _| default_callback(e));
-        }
-        AllReducers::ContentDeleteNode => {
-            r.on_content_delete_node(|e, _| default_callback(e));
-        }
-        AllReducers::ContentDownvoteNode => {
-            r.on_content_downvote_node(|e, _| default_callback(e));
-        }
-        AllReducers::ContentPublishNode => {
-            r.on_content_publish_node(|e, _, _| default_callback(e));
-        }
-        AllReducers::ContentResetCore => {
-            r.on_content_reset_core(|e| default_callback(e));
-        }
-        AllReducers::ContentSuggestNode => {
-            r.on_content_suggest_node(|e, _, _, _| default_callback(e));
-        }
-        AllReducers::ContentUpvoteNode => {
-            r.on_content_upvote_node(|e, _| default_callback(e));
-        }
-        AllReducers::DailyUpdateReducer => {
-            r.on_daily_update_reducer(|e, _| default_callback(e));
-        }
-        AllReducers::IdentityDisconnected => {
-            r.on_identity_disconnected(|e| default_callback(e));
-        }
-        AllReducers::LoginByIdentity => {
-            r.on_login_by_identity(|e| default_callback(e));
-        }
-        AllReducers::Logout => {
-            r.on_logout(|e| default_callback(e));
-        }
-        AllReducers::MatchAbandon => {
-            r.on_match_abandon(|e| default_callback(e));
-        }
-        AllReducers::MatchBenchUnit => {
-            r.on_match_bench_unit(|e, _| default_callback(e));
-        }
-        AllReducers::MatchBossBattle => {
-            r.on_match_boss_battle(|e| default_callback(e));
-        }
-        AllReducers::MatchCancelFusion => {
-            r.on_match_cancel_fusion(|e| default_callback(e));
-        }
-        AllReducers::MatchChooseFusion => {
-            r.on_match_choose_fusion(|e, _| default_callback(e));
-        }
-        AllReducers::MatchComplete => {
-            r.on_match_complete(|e| default_callback(e));
-        }
-        AllReducers::MatchInsert => {
-            r.on_match_insert(|e| default_callback(e));
-        }
-        AllReducers::MatchMoveUnit => {
-            r.on_match_move_unit(|e, _, _| default_callback(e));
-        }
-        AllReducers::MatchSellUnit => {
-            r.on_match_sell_unit(|e, _| default_callback(e));
-        }
-        AllReducers::MatchShopBuy => {
-            r.on_match_shop_buy(|e, _| default_callback(e));
-        }
-        AllReducers::MatchShopReroll => {
-            r.on_match_shop_reroll(|e| default_callback(e));
-        }
-        AllReducers::MatchStackUnit => {
-            r.on_match_stack_unit(|e, _, _| default_callback(e));
-        }
-        AllReducers::MatchStartBattle => {
-            r.on_match_start_battle(|e| default_callback(e));
-        }
-        AllReducers::MatchStartFusion => {
-            r.on_match_start_fusion(|e, _, _| default_callback(e));
-        }
-        AllReducers::Register => {
-            r.on_register(|e, _| default_callback(e));
-        }
-        AllReducers::MatchSubmitBattleResult => {
-            cn().reducers.on_match_submit_battle_result(|e, _, _, _| {
-                if !e.check_identity() {
-                    return;
-                }
-                e.event.on_success(|| {
-                    op(|world| {
-                        GameState::Shop.set_next(world);
-                    });
-                });
-            });
-        }
-        AllReducers::AdminEditOwner => {
-            cn().reducers.on_admin_edit_owner(|e, _, _| {
-                default_callback(e);
-            });
-        }
-        AllReducers::AdminEditNodes => {
-            cn().reducers.on_admin_edit_nodes(|e, _| {
-                default_callback(e);
-            });
-        }
-    }
-}
-
-mod reducer_registry {
-    include!(concat!(env!("OUT_DIR"), "/generated_reducers.rs"));
-}
+/// No-op in 2.x: persistent reducer callbacks were removed.
+/// Error handling is done at each call site via `_then` callbacks.
+pub fn subscribe_reducers() {}
 
 #[cfg(test)]
 mod tests {

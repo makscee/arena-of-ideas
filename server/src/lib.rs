@@ -30,7 +30,7 @@ use player::*;
 use schema::*;
 use serde::de::DeserializeOwned;
 use spacetimedb::Table;
-use spacetimedb::{Identity, ReducerContext, SpacetimeType, Timestamp, reducer, table};
+use spacetimedb::{DbContext, Identity, ReducerContext, SpacetimeType, Timestamp, reducer, table};
 use std::collections::HashMap;
 
 use crate::global_data::global_data as _;

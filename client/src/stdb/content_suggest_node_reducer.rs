@@ -26,8 +26,6 @@ impl __sdk::InModule for ContentSuggestNodeArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct ContentSuggestNodeCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `content_suggest_node`.
 ///
@@ -37,91 +35,47 @@ pub trait content_suggest_node {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_content_suggest_node`] callbacks.
-    fn content_suggest_node(
-        &self,
-        kind: String,
-        data: String,
-        parent: Option<u64>,
-    ) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `content_suggest_node`.
-    ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`ContentSuggestNodeCallbackId`] can be passed to [`Self::remove_on_content_suggest_node`]
-    /// to cancel the callback.
-    fn on_content_suggest_node(
-        &self,
-        callback: impl FnMut(&super::ReducerEventContext, &String, &String, &Option<u64>)
-        + Send
-        + 'static,
-    ) -> ContentSuggestNodeCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_content_suggest_node`],
-    /// causing it not to run in the future.
-    fn remove_on_content_suggest_node(&self, callback: ContentSuggestNodeCallbackId);
-}
-
-impl content_suggest_node for super::RemoteReducers {
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`content_suggest_node:content_suggest_node_then`] to run a callback after the reducer completes.
     fn content_suggest_node(
         &self,
         kind: String,
         data: String,
         parent: Option<u64>,
     ) -> __sdk::Result<()> {
-        self.imp.call_reducer(
-            "content_suggest_node",
-            ContentSuggestNodeArgs { kind, data, parent },
-        )
+        self.content_suggest_node_then(kind, data, parent, |_, _| {})
     }
-    fn on_content_suggest_node(
-        &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &String, &String, &Option<u64>)
-        + Send
-        + 'static,
-    ) -> ContentSuggestNodeCallbackId {
-        ContentSuggestNodeCallbackId(self.imp.on_reducer(
-            "content_suggest_node",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer: super::Reducer::ContentSuggestNode { kind, data, parent },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, kind, data, parent)
-            }),
-        ))
-    }
-    fn remove_on_content_suggest_node(&self, callback: ContentSuggestNodeCallbackId) {
-        self.imp
-            .remove_on_reducer("content_suggest_node", callback.0)
-    }
-}
 
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `content_suggest_node`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_content_suggest_node {
-    /// Set the call-reducer flags for the reducer `content_suggest_node` to `flags`.
+    /// Request that the remote module invoke the reducer `content_suggest_node` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
     ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn content_suggest_node(&self, flags: __ws::CallReducerFlags);
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn content_suggest_node_then(
+        &self,
+        kind: String,
+        data: String,
+        parent: Option<u64>,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
 }
 
-impl set_flags_for_content_suggest_node for super::SetReducerFlags {
-    fn content_suggest_node(&self, flags: __ws::CallReducerFlags) {
+impl content_suggest_node for super::RemoteReducers {
+    fn content_suggest_node_then(
+        &self,
+        kind: String,
+        data: String,
+        parent: Option<u64>,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
         self.imp
-            .set_call_reducer_flags("content_suggest_node", flags);
+            .invoke_reducer_with_callback(ContentSuggestNodeArgs { kind, data, parent }, callback)
     }
 }

@@ -1,4 +1,4 @@
-use spacetimedb_sdk::{ReducerEvent, Table};
+use spacetimedb_sdk::{DbContext, ReducerEvent, Table};
 
 use super::*;
 
@@ -19,13 +19,13 @@ pub trait StdbStatusExt {
     fn on_success_op(&self, f: impl FnOnce(&mut World) + Send + Sync + 'static);
     fn on_success_error(
         &self,
-        f: impl FnOnce() + Send + Sync + 'static,
-        f: impl FnOnce() + Send + Sync + 'static,
+        sfn: impl FnOnce() + Send + Sync + 'static,
+        efn: impl FnOnce() + Send + Sync + 'static,
     );
     fn on_success_error_op(
         &self,
-        f: impl FnOnce(&mut World) + Send + Sync + 'static,
-        f: impl FnOnce(&mut World) + Send + Sync + 'static,
+        s: impl FnOnce(&mut World) + Send + Sync + 'static,
+        e: impl FnOnce(&mut World) + Send + Sync + 'static,
     );
     fn notify_error(&self);
 }
@@ -34,8 +34,9 @@ impl<R> StdbStatusExt for ReducerEvent<R> {
     fn on_success(&self, f: impl FnOnce() + Send + Sync + 'static) {
         match &self.status {
             spacetimedb_sdk::Status::Committed => f(),
-            spacetimedb_sdk::Status::Failed(e) => e.notify_error_op(),
-            _ => panic!(),
+            spacetimedb_sdk::Status::Err(e) => e.notify_error_op(),
+            spacetimedb_sdk::Status::Panic(e) => format!("{e:?}").notify_error_op(),
+            _ => {}
         }
     }
     fn on_success_op(&self, f: impl FnOnce(&mut World) + Send + Sync + 'static) {
@@ -48,11 +49,15 @@ impl<R> StdbStatusExt for ReducerEvent<R> {
     ) {
         match &self.status {
             spacetimedb_sdk::Status::Committed => sfn(),
-            spacetimedb_sdk::Status::Failed(e) => {
+            spacetimedb_sdk::Status::Err(e) => {
                 format!("STDB error: {e}").notify_error_op();
                 efn()
             }
-            _ => panic!(),
+            spacetimedb_sdk::Status::Panic(e) => {
+                format!("STDB panic: {e:?}").notify_error_op();
+                efn()
+            }
+            _ => {}
         }
     }
     fn on_success_error_op(
@@ -69,7 +74,7 @@ impl<R> StdbStatusExt for ReducerEvent<R> {
 
 impl ReducerEventContext {
     pub fn check_identity(&self) -> bool {
-        self.event.caller_identity == player_identity()
+        self.try_identity().is_some_and(|id| id == player_identity())
     }
 }
 

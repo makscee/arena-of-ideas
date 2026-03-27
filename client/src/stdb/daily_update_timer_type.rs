@@ -14,3 +14,39 @@ pub struct DailyUpdateTimer {
 impl __sdk::InModule for DailyUpdateTimer {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `DailyUpdateTimer`.
+///
+/// Provides typed access to columns for query building.
+pub struct DailyUpdateTimerCols {
+    pub scheduled_id: __sdk::__query_builder::Col<DailyUpdateTimer, u64>,
+    pub scheduled_at: __sdk::__query_builder::Col<DailyUpdateTimer, __sdk::ScheduleAt>,
+}
+
+impl __sdk::__query_builder::HasCols for DailyUpdateTimer {
+    type Cols = DailyUpdateTimerCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        DailyUpdateTimerCols {
+            scheduled_id: __sdk::__query_builder::Col::new(table_name, "scheduled_id"),
+            scheduled_at: __sdk::__query_builder::Col::new(table_name, "scheduled_at"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `DailyUpdateTimer`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct DailyUpdateTimerIxCols {
+    pub scheduled_id: __sdk::__query_builder::IxCol<DailyUpdateTimer, u64>,
+}
+
+impl __sdk::__query_builder::HasIxCols for DailyUpdateTimer {
+    type IxCols = DailyUpdateTimerIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        DailyUpdateTimerIxCols {
+            scheduled_id: __sdk::__query_builder::IxCol::new(table_name, "scheduled_id"),
+        }
+    }
+}
+
+impl __sdk::__query_builder::CanBeLookupTable for DailyUpdateTimer {}

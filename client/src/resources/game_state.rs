@@ -272,27 +272,15 @@ impl Pane {
                                     .button(ui)
                                     .clicked()
                                 {
-                                    cn().reducers.match_insert().notify_error_op();
-                                    static ON_MATCH_CALLBACK: Mutex<Option<MatchInsertCallbackId>> =
-                                        Mutex::new(None);
-                                    let callback_id = cn().reducers.on_match_insert(|e| {
-                                        if !e.check_identity() {
-                                            return;
-                                        }
-                                        if matches!(
-                                            e.event.status,
-                                            spacetimedb_sdk::Status::Committed
-                                        ) {
-                                            if let Some(callback_id) =
-                                                ON_MATCH_CALLBACK.lock().take()
-                                            {
-                                                debug!("removed callback");
-                                                cn().reducers.remove_on_match_insert(callback_id);
+                                    cn().reducers.match_insert_then(|_ctx, result| {
+                                        match result {
+                                            Ok(Ok(())) => {
+                                                GameState::Shop.set_next_op();
                                             }
-                                            GameState::Shop.set_next_op();
+                                            Ok(Err(e)) => e.notify_error_op(),
+                                            Err(e) => format!("{e:?}").notify_error_op(),
                                         }
-                                    });
-                                    *ON_MATCH_CALLBACK.lock() = Some(callback_id);
+                                    }).notify_error_op();
                                 }
                             }
                         }
@@ -385,16 +373,34 @@ impl GameState {
         op(move |world| self.set_next(world));
     }
     pub fn proceed(world: &mut World) {
+        static FULFILLING_OPTION: Mutex<Option<GameOption>> = Mutex::new(None);
         let to = *TARGET_STATE.lock();
-        info!("Proceed to {to}");
+        let current = cur_state(world);
+        if current == to {
+            *FULFILLING_OPTION.lock() = None;
+            return;
+        }
+        // If we're currently fulfilling an option, check if it's done
+        {
+            let fulfilling = FULFILLING_OPTION.lock();
+            if let Some(ref opt) = *fulfilling {
+                if !opt.is_fulfilled(world) {
+                    return;
+                }
+            }
+        }
         if let Some(options) = STATE_OPTIONS.get(&to) {
             for option in options {
                 if !option.is_fulfilled(world) {
+                    *FULFILLING_OPTION.lock() = Some(option.clone());
+                    info!("Proceed to {to}: fulfill {option:?}");
                     option.fulfill(world);
                     return;
                 }
             }
         }
+        *FULFILLING_OPTION.lock() = None;
+        info!("Proceed to {to}");
         to.set_next(world);
     }
     pub fn proceed_op() {
@@ -416,6 +422,7 @@ pub struct GameStatePlugin;
 
 impl Plugin for GameStatePlugin {
     fn build(&self, app: &mut App) {
+        init_static_sources();
         app.add_systems(OnEnter(GameState::Loaded), GameState::proceed)
             .add_systems(Update, on_change.run_if(state_changed::<GameState>));
     }

@@ -1,8 +1,8 @@
 use super::*;
 
-#[spacetimedb::table(public, name = global_settings)]
+#[spacetimedb::table(public, accessor = global_settings)]
 pub struct GlobalSettings {
-    #[unique]
+    #[primary_key]
     always_zero: u32,
     pub team_slots: u8,
     pub match_settings: MatchSettings,

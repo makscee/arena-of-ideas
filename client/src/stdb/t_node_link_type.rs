@@ -17,3 +17,53 @@ pub struct TNodeLink {
 impl __sdk::InModule for TNodeLink {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `TNodeLink`.
+///
+/// Provides typed access to columns for query building.
+pub struct TNodeLinkCols {
+    pub id: __sdk::__query_builder::Col<TNodeLink, u64>,
+    pub parent: __sdk::__query_builder::Col<TNodeLink, u64>,
+    pub child: __sdk::__query_builder::Col<TNodeLink, u64>,
+    pub parent_kind: __sdk::__query_builder::Col<TNodeLink, String>,
+    pub child_kind: __sdk::__query_builder::Col<TNodeLink, String>,
+}
+
+impl __sdk::__query_builder::HasCols for TNodeLink {
+    type Cols = TNodeLinkCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        TNodeLinkCols {
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
+            parent: __sdk::__query_builder::Col::new(table_name, "parent"),
+            child: __sdk::__query_builder::Col::new(table_name, "child"),
+            parent_kind: __sdk::__query_builder::Col::new(table_name, "parent_kind"),
+            child_kind: __sdk::__query_builder::Col::new(table_name, "child_kind"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `TNodeLink`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct TNodeLinkIxCols {
+    pub child: __sdk::__query_builder::IxCol<TNodeLink, u64>,
+    pub child_kind: __sdk::__query_builder::IxCol<TNodeLink, String>,
+    pub id: __sdk::__query_builder::IxCol<TNodeLink, u64>,
+    pub parent: __sdk::__query_builder::IxCol<TNodeLink, u64>,
+    pub parent_kind: __sdk::__query_builder::IxCol<TNodeLink, String>,
+}
+
+impl __sdk::__query_builder::HasIxCols for TNodeLink {
+    type IxCols = TNodeLinkIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        TNodeLinkIxCols {
+            child: __sdk::__query_builder::IxCol::new(table_name, "child"),
+            child_kind: __sdk::__query_builder::IxCol::new(table_name, "child_kind"),
+            id: __sdk::__query_builder::IxCol::new(table_name, "id"),
+            parent: __sdk::__query_builder::IxCol::new(table_name, "parent"),
+            parent_kind: __sdk::__query_builder::IxCol::new(table_name, "parent_kind"),
+        }
+    }
+}
+
+impl __sdk::__query_builder::CanBeLookupTable for TNodeLink {}

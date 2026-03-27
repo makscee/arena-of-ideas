@@ -1,4 +1,4 @@
-set shell := ["powershell", "-NoProfile", "-Command"]
+set shell := ["bash", "-cu"]
 
 [private]
 default:
@@ -14,4 +14,4 @@ publishiza:
     spacetime publish -p server -s iza-web aoi-dev --delete-data -y
 
 gen-binds:
-    spacetime generate --lang rust --out-dir client/src/stdb --project-path server -y
+    spacetime generate --lang rust --out-dir client/src/stdb --module-path server -y

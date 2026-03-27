@@ -78,13 +78,25 @@ impl ConnectPlugin {
             "Connect start {} {} with token {:?}",
             uri, module, default_token
         );
-        let c = DbConnection::builder()
+        let c = match DbConnection::builder()
             .with_token(default_token)
             .with_uri(uri)
-            .with_module_name(module)
+            .with_database_name(module)
             .on_connect(on_connect)
             .build()
-            .unwrap();
+        {
+            Ok(c) => c,
+            Err(e) => {
+                error!("Connection failed: {e}");
+                op(|world| {
+                    pd_mut(|pd| pd.client_state.last_logged_in = None);
+                    world.remove_resource::<AuthOption>();
+                    world.remove_resource::<ConnectOption>();
+                    GameState::Auth.set_next(world);
+                });
+                return;
+            }
+        };
         c.run_threaded();
         CONNECTION.set(c).ok().unwrap();
         if let Some(ops) = ON_CONNECT_OPERATIONS.get() {

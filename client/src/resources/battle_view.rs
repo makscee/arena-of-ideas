@@ -207,7 +207,7 @@ impl<'a> BattleCameraBuilder<'a> {
                     let id = ids
                         .into_iter()
                         .next()
-                        .ok_or(NodeError::entity_not_found(entity.index() as u64))?;
+                        .ok_or(NodeError::entity_not_found(entity.to_bits()))?;
                     ctx.with_owner(id, |ctx| {
                         if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() {
                             return Ok(());

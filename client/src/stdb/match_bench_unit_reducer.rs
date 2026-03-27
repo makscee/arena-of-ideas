@@ -22,8 +22,6 @@ impl __sdk::InModule for MatchBenchUnitArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct MatchBenchUnitCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `match_bench_unit`.
 ///
@@ -33,73 +31,38 @@ pub trait match_bench_unit {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_match_bench_unit`] callbacks.
-    fn match_bench_unit(&self, unit_id: u64) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `match_bench_unit`.
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`match_bench_unit:match_bench_unit_then`] to run a callback after the reducer completes.
+    fn match_bench_unit(&self, unit_id: u64) -> __sdk::Result<()> {
+        self.match_bench_unit_then(unit_id, |_, _| {})
+    }
+
+    /// Request that the remote module invoke the reducer `match_bench_unit` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
     ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`MatchBenchUnitCallbackId`] can be passed to [`Self::remove_on_match_bench_unit`]
-    /// to cancel the callback.
-    fn on_match_bench_unit(
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn match_bench_unit_then(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u64) + Send + 'static,
-    ) -> MatchBenchUnitCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_match_bench_unit`],
-    /// causing it not to run in the future.
-    fn remove_on_match_bench_unit(&self, callback: MatchBenchUnitCallbackId);
+        unit_id: u64,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
 }
 
 impl match_bench_unit for super::RemoteReducers {
-    fn match_bench_unit(&self, unit_id: u64) -> __sdk::Result<()> {
-        self.imp
-            .call_reducer("match_bench_unit", MatchBenchUnitArgs { unit_id })
-    }
-    fn on_match_bench_unit(
+    fn match_bench_unit_then(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u64) + Send + 'static,
-    ) -> MatchBenchUnitCallbackId {
-        MatchBenchUnitCallbackId(self.imp.on_reducer(
-            "match_bench_unit",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer: super::Reducer::MatchBenchUnit { unit_id },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, unit_id)
-            }),
-        ))
-    }
-    fn remove_on_match_bench_unit(&self, callback: MatchBenchUnitCallbackId) {
-        self.imp.remove_on_reducer("match_bench_unit", callback.0)
-    }
-}
+        unit_id: u64,
 
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `match_bench_unit`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_match_bench_unit {
-    /// Set the call-reducer flags for the reducer `match_bench_unit` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn match_bench_unit(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_match_bench_unit for super::SetReducerFlags {
-    fn match_bench_unit(&self, flags: __ws::CallReducerFlags) {
-        self.imp.set_call_reducer_flags("match_bench_unit", flags);
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
+        self.imp
+            .invoke_reducer_with_callback(MatchBenchUnitArgs { unit_id }, callback)
     }
 }

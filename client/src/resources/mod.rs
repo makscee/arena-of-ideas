@@ -7,7 +7,7 @@ mod client_state;
 pub mod context;
 mod event;
 mod expression;
-mod game_assets;
+pub(crate) mod game_assets;
 mod game_option;
 mod game_state;
 mod painter;

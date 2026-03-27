@@ -21,3 +21,53 @@ pub struct TBattle {
 impl __sdk::InModule for TBattle {
     type Module = super::RemoteModule;
 }
+
+/// Column accessor struct for the table `TBattle`.
+///
+/// Provides typed access to columns for query building.
+pub struct TBattleCols {
+    pub id: __sdk::__query_builder::Col<TBattle, u64>,
+    pub owner: __sdk::__query_builder::Col<TBattle, u64>,
+    pub ts: __sdk::__query_builder::Col<TBattle, u64>,
+    pub hash: __sdk::__query_builder::Col<TBattle, u64>,
+    pub result: __sdk::__query_builder::Col<TBattle, Option<bool>>,
+    pub left_team_name: __sdk::__query_builder::Col<TBattle, String>,
+    pub right_team_name: __sdk::__query_builder::Col<TBattle, String>,
+    pub left_team: __sdk::__query_builder::Col<TBattle, String>,
+    pub right_team: __sdk::__query_builder::Col<TBattle, String>,
+}
+
+impl __sdk::__query_builder::HasCols for TBattle {
+    type Cols = TBattleCols;
+    fn cols(table_name: &'static str) -> Self::Cols {
+        TBattleCols {
+            id: __sdk::__query_builder::Col::new(table_name, "id"),
+            owner: __sdk::__query_builder::Col::new(table_name, "owner"),
+            ts: __sdk::__query_builder::Col::new(table_name, "ts"),
+            hash: __sdk::__query_builder::Col::new(table_name, "hash"),
+            result: __sdk::__query_builder::Col::new(table_name, "result"),
+            left_team_name: __sdk::__query_builder::Col::new(table_name, "left_team_name"),
+            right_team_name: __sdk::__query_builder::Col::new(table_name, "right_team_name"),
+            left_team: __sdk::__query_builder::Col::new(table_name, "left_team"),
+            right_team: __sdk::__query_builder::Col::new(table_name, "right_team"),
+        }
+    }
+}
+
+/// Indexed column accessor struct for the table `TBattle`.
+///
+/// Provides typed access to indexed columns for query building.
+pub struct TBattleIxCols {
+    pub id: __sdk::__query_builder::IxCol<TBattle, u64>,
+}
+
+impl __sdk::__query_builder::HasIxCols for TBattle {
+    type IxCols = TBattleIxCols;
+    fn ix_cols(table_name: &'static str) -> Self::IxCols {
+        TBattleIxCols {
+            id: __sdk::__query_builder::IxCol::new(table_name, "id"),
+        }
+    }
+}
+
+impl __sdk::__query_builder::CanBeLookupTable for TBattle {}

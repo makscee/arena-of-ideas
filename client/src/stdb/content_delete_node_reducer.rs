@@ -22,8 +22,6 @@ impl __sdk::InModule for ContentDeleteNodeArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct ContentDeleteNodeCallbackId(__sdk::CallbackId);
-
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `content_delete_node`.
 ///
@@ -33,75 +31,38 @@ pub trait content_delete_node {
     ///
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
-    ///  and its status can be observed by listening for [`Self::on_content_delete_node`] callbacks.
-    fn content_delete_node(&self, node_id: u64) -> __sdk::Result<()>;
-    /// Register a callback to run whenever we are notified of an invocation of the reducer `content_delete_node`.
+    ///  and this method provides no way to listen for its completion status.
+    /// /// Use [`content_delete_node:content_delete_node_then`] to run a callback after the reducer completes.
+    fn content_delete_node(&self, node_id: u64) -> __sdk::Result<()> {
+        self.content_delete_node_then(node_id, |_, _| {})
+    }
+
+    /// Request that the remote module invoke the reducer `content_delete_node` to run as soon as possible,
+    /// registering `callback` to run when we are notified that the reducer completed.
     ///
-    /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
-    /// to determine the reducer's status.
-    ///
-    /// The returned [`ContentDeleteNodeCallbackId`] can be passed to [`Self::remove_on_content_delete_node`]
-    /// to cancel the callback.
-    fn on_content_delete_node(
+    /// This method returns immediately, and errors only if we are unable to send the request.
+    /// The reducer will run asynchronously in the future,
+    ///  and its status can be observed with the `callback`.
+    fn content_delete_node_then(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u64) + Send + 'static,
-    ) -> ContentDeleteNodeCallbackId;
-    /// Cancel a callback previously registered by [`Self::on_content_delete_node`],
-    /// causing it not to run in the future.
-    fn remove_on_content_delete_node(&self, callback: ContentDeleteNodeCallbackId);
+        node_id: u64,
+
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()>;
 }
 
 impl content_delete_node for super::RemoteReducers {
-    fn content_delete_node(&self, node_id: u64) -> __sdk::Result<()> {
-        self.imp
-            .call_reducer("content_delete_node", ContentDeleteNodeArgs { node_id })
-    }
-    fn on_content_delete_node(
+    fn content_delete_node_then(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u64) + Send + 'static,
-    ) -> ContentDeleteNodeCallbackId {
-        ContentDeleteNodeCallbackId(self.imp.on_reducer(
-            "content_delete_node",
-            Box::new(move |ctx: &super::ReducerEventContext| {
-                #[allow(irrefutable_let_patterns)]
-                let super::ReducerEventContext {
-                    event:
-                        __sdk::ReducerEvent {
-                            reducer: super::Reducer::ContentDeleteNode { node_id },
-                            ..
-                        },
-                    ..
-                } = ctx
-                else {
-                    unreachable!()
-                };
-                callback(ctx, node_id)
-            }),
-        ))
-    }
-    fn remove_on_content_delete_node(&self, callback: ContentDeleteNodeCallbackId) {
-        self.imp
-            .remove_on_reducer("content_delete_node", callback.0)
-    }
-}
+        node_id: u64,
 
-#[allow(non_camel_case_types)]
-#[doc(hidden)]
-/// Extension trait for setting the call-flags for the reducer `content_delete_node`.
-///
-/// Implemented for [`super::SetReducerFlags`].
-///
-/// This type is currently unstable and may be removed without a major version bump.
-pub trait set_flags_for_content_delete_node {
-    /// Set the call-reducer flags for the reducer `content_delete_node` to `flags`.
-    ///
-    /// This type is currently unstable and may be removed without a major version bump.
-    fn content_delete_node(&self, flags: __ws::CallReducerFlags);
-}
-
-impl set_flags_for_content_delete_node for super::SetReducerFlags {
-    fn content_delete_node(&self, flags: __ws::CallReducerFlags) {
+        callback: impl FnOnce(&super::ReducerEventContext, Result<Result<(), String>, __sdk::InternalError>)
+            + Send
+            + 'static,
+    ) -> __sdk::Result<()> {
         self.imp
-            .set_call_reducer_flags("content_delete_node", flags);
+            .invoke_reducer_with_callback(ContentDeleteNodeArgs { node_id }, callback)
     }
 }

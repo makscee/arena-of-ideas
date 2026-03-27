@@ -24,7 +24,7 @@ trace_tracy = ["client/trace_tracy"]
 
 
 [workspace.dependencies]
-bevy = { version = "0.17", default-features = false, features = [
+bevy = { version = "0.18.1", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_winit",
     "bevy_audio",
@@ -37,10 +37,10 @@ bevy = { version = "0.17", default-features = false, features = [
     "bevy_state",
     "bevy_log",
 ] }
-spacetimedb = "1.11.1"
-spacetimedb-sdk = "1.11.1"
-spacetimedb-sats = "1.11.1"
-spacetimedb-lib = "1.11.1"
+spacetimedb = "2.1.0"
+spacetimedb-sdk = "2.1.0"
+spacetimedb-sats = "2.1.0"
+spacetimedb-lib = "2.1.0"
 rand = "0.10.0-rc.1"
 rand_core = "0.10.0-rc-2"
 rand_chacha = "0.10.0-rc.1"
@@ -52,9 +52,9 @@ serde = "1"
 include_dir = "0.7.4"
 thiserror = "2.0.17"
 convert_case = "0.10.0"
-bevy-trait-query = "0.17.3"
+bevy-trait-query = "0.18.0"
 once_cell = "1.21.3"
-bevy_egui = { version = "0.38", default-features = false, features = [
+bevy_egui = { version = "0.39.1", default-features = false, features = [
     "serde",
     "open_url",
     "render",
@@ -86,7 +86,7 @@ log = "0.4.29"
 glam = { version = "0.30.9", features = ["serde"] }
 color-hex = "0.2.0"
 
-rhai = { version = "1.23.6", default-features = false, features = [
+rhai = { version = "=1.23.6", default-features = false, features = [
     "std",
     "serde",
     "sync",
@@ -96,11 +96,12 @@ rhai = { version = "1.23.6", default-features = false, features = [
 ] }
 bimap = { version = "0.6.3", features = ["serde"] }
 backtrace = "0.3.76"
-mlua = { version = "0.11.5", features = ["lua54", "vendored"] }
+mlua = { version = "0.11.6", features = ["lua54", "vendored"] }
 epaint_default_fonts = "0.33.3"
 
 [dependencies]
 client = { path = "client" }
+itertools.workspace = true
 log-once = "0.4.1"
 
 [build-dependencies]

@@ -1,9 +1,9 @@
 use super::*;
 use std::collections::{HashSet, VecDeque};
 
-#[table(public, name = nodes_world,
-    index(name = kind_owner, btree(columns = [kind, owner])),
-    index(name = kind_data_owner, btree(columns = [kind, data, owner])))]
+#[table(public, accessor = nodes_world,
+    index(accessor = kind_owner, btree(columns = [kind, owner])),
+    index(accessor = kind_data_owner, btree(columns = [kind, data, owner])))]
 #[derive(Clone, Debug)]
 pub struct TNode {
     #[primary_key]
@@ -17,7 +17,7 @@ pub struct TNode {
     pub rating: i32,
 }
 
-#[spacetimedb::table(name = votes, public)]
+#[spacetimedb::table(accessor = votes, public)]
 pub struct TVotes {
     #[primary_key]
     pub player_id: u64,
@@ -25,7 +25,7 @@ pub struct TVotes {
     pub downvotes: i32,
 }
 
-#[spacetimedb::table(name = votes_history, public)]
+#[spacetimedb::table(accessor = votes_history, public)]
 pub struct TVotesHistory {
     #[primary_key]
     #[auto_inc]
@@ -38,7 +38,7 @@ pub struct TVotesHistory {
     pub timestamp: u64,
 }
 
-#[spacetimedb::table(name = creators, public)]
+#[spacetimedb::table(accessor = creators, public)]
 pub struct TCreators {
     #[primary_key]
     pub node_id: u64,
@@ -46,10 +46,10 @@ pub struct TCreators {
     pub player_id: u64,
 }
 
-#[table(public, name = node_links,
-    index(name = parent_child, btree(columns = [parent, child])),
-    index(name = parent_child_kind, btree(columns = [parent, child_kind])),
-    index(name = child_parent_kind, btree(columns = [child, parent_kind])))]
+#[table(public, accessor = node_links,
+    index(accessor = parent_child, btree(columns = [parent, child])),
+    index(accessor = parent_child_kind, btree(columns = [parent, child_kind])),
+    index(accessor = child_parent_kind, btree(columns = [child, parent_kind])))]
 #[derive(Debug)]
 pub struct TNodeLink {
     #[primary_key]
