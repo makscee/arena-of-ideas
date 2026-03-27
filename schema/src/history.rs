@@ -94,7 +94,7 @@ impl<T: Clone + PartialEq> History<T> {
                     None
                 } else if pos == self.entries.len() {
                     // t is after last entry, return last value
-                    Some(self.entries.last().unwrap().1.clone())
+                    self.entries.last().map(|e| e.1.clone())
                 } else {
                     // Interpolate between pos-1 and pos
                     let (t1, v1) = &self.entries[pos - 1];

@@ -52,22 +52,31 @@ impl<T> RhaiScript<T> {
 
     /// Get the compiled AST, compiling if necessary
     pub fn get_ast(&self, engine: &rhai::Engine) -> Result<rhai::AST, Box<rhai::EvalAltResult>> {
-        let mut ast_guard = self.compiled_ast.write().unwrap();
+        let Ok(mut ast_guard) = self.compiled_ast.write() else {
+            return Err("AST lock poisoned".into());
+        };
 
         if let Some(ast) = ast_guard.as_ref() {
             return Ok(ast.clone());
-        } else if let Some(e) = self.compile_error.read().unwrap().as_ref() {
-            return Err(format!("Compile err: {e}").into());
+        }
+        if let Ok(guard) = self.compile_error.read() {
+            if let Some(e) = guard.as_ref() {
+                return Err(format!("Compile err: {e}").into());
+            }
         }
 
         match engine.compile(&self.code) {
             Ok(ast) => {
-                self.compile_error.write().unwrap().take();
+                if let Ok(mut guard) = self.compile_error.write() {
+                    guard.take();
+                }
                 *ast_guard = Some(ast.clone());
                 Ok(ast)
             }
             Err(e) => {
-                *self.compile_error.write().unwrap() = Some(format!("{}", e));
+                if let Ok(mut guard) = self.compile_error.write() {
+                    *guard = Some(format!("{}", e));
+                }
                 Err(e.into())
             }
         }
@@ -75,12 +84,17 @@ impl<T> RhaiScript<T> {
 
     /// Clear the compiled AST (useful when code changes)
     pub fn clear_compiled(&self) {
-        *self.compiled_ast.write().unwrap() = None;
+        if let Ok(mut guard) = self.compiled_ast.write() {
+            *guard = None;
+        }
     }
 
     /// Check if the script is already compiled
     pub fn is_compiled(&self) -> bool {
-        self.compiled_ast.read().unwrap().is_some()
+        self.compiled_ast
+            .read()
+            .map(|g| g.is_some())
+            .unwrap_or(false)
     }
 }
 

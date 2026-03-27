@@ -27,7 +27,7 @@ pub struct NodeLink {
 
 impl ToString for PackedNodes {
     fn to_string(&self) -> String {
-        ron::to_string(self).unwrap()
+        ron::to_string(self).unwrap_or_default()
     }
 }
 
@@ -35,8 +35,12 @@ impl PackedNodes {
     pub fn from_string(s: &str) -> NodeResult<Self> {
         ron::from_str(s).map_err(|e| NodeError::custom(e.to_string()))
     }
-    pub fn kind(&self) -> &String {
-        &self.nodes.get(&self.root).unwrap().kind
+    pub fn kind(&self) -> NodeResult<&String> {
+        Ok(&self
+            .nodes
+            .get(&self.root)
+            .ok_or_else(|| NodeError::custom("Root node not found in pack"))?
+            .kind)
     }
     pub fn get<'a>(&'a self, id: u64) -> Option<&'a NodeData> {
         self.nodes.get(&id)
@@ -113,7 +117,9 @@ impl PackedNodes {
             }
             l
         }));
-        self.root = *remap.get(&self.root).unwrap();
+        if let Some(&new_root) = remap.get(&self.root) {
+            self.root = new_root;
+        }
     }
 
     pub fn unpack<T: Node>(&self) -> NodeResult<T> {

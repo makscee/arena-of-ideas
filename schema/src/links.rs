@@ -62,11 +62,15 @@ pub trait MultipleLink<T: Node> {
         match self {
             _ if self.is_loaded() => {
                 self.get_mut()?.push(node);
-                Ok(self.get_mut()?.last_mut().unwrap())
+                self.get_mut()?
+                    .last_mut()
+                    .ok_or_else(|| NodeError::custom("Vec empty after push"))
             }
             _ if self.is_none() => {
                 self.set_loaded(vec![node]);
-                Ok(self.get_mut()?.first_mut().unwrap())
+                self.get_mut()?
+                    .first_mut()
+                    .ok_or_else(|| NodeError::custom("Vec empty after init"))
             }
             _ => Err(NodeError::invalid_state(
                 "Cannot push to link that is not Loaded or None",
