@@ -1,8 +1,10 @@
-use shared::battle::{BattleAction, BattleSide, BattleResult, StatKind};
+use shared::battle::{BattleAction, BattleResult, BattleSide, StatKind};
 use shared::target::TargetType;
 use shared::trigger::Trigger;
 
-use super::rhai_engine::{self, ScriptAction, ScriptUnit, compile_script, create_engine, execute_ability_script};
+use super::rhai_engine::{
+    ScriptAction, ScriptUnit, compile_script, create_engine, execute_ability_script,
+};
 
 const MAX_TURNS: u32 = 50;
 const FATIGUE_START_TURN: u32 = 30;
@@ -49,21 +51,26 @@ impl BattleUnit {
 
 /// Runs a complete battle simulation between two teams.
 /// Returns the battle result with all actions logged.
-pub fn simulate_battle(
-    left_team: Vec<BattleUnit>,
-    right_team: Vec<BattleUnit>,
-) -> BattleResult {
+pub fn simulate_battle(left_team: Vec<BattleUnit>, right_team: Vec<BattleUnit>) -> BattleResult {
     let engine = create_engine();
     let mut units: Vec<BattleUnit> = Vec::new();
     let mut actions: Vec<BattleAction> = Vec::new();
 
     // Spawn units
     for unit in left_team {
-        actions.push(BattleAction::Spawn { unit: unit.id, slot: unit.slot, side: BattleSide::Left });
+        actions.push(BattleAction::Spawn {
+            unit: unit.id,
+            slot: unit.slot,
+            side: BattleSide::Left,
+        });
         units.push(unit);
     }
     for unit in right_team {
-        actions.push(BattleAction::Spawn { unit: unit.id, slot: unit.slot, side: BattleSide::Right });
+        actions.push(BattleAction::Spawn {
+            unit: unit.id,
+            slot: unit.slot,
+            side: BattleSide::Right,
+        });
         units.push(unit);
     }
 
@@ -72,7 +79,14 @@ pub fn simulate_battle(
     let right_ability_levels = calculate_ability_levels(&units, BattleSide::Right);
 
     // Fire BattleStart triggers
-    fire_trigger(&engine, &mut units, &mut actions, &Trigger::BattleStart, &left_ability_levels, &right_ability_levels);
+    fire_trigger(
+        &engine,
+        &mut units,
+        &mut actions,
+        &Trigger::BattleStart,
+        &left_ability_levels,
+        &right_ability_levels,
+    );
     apply_deaths(&mut units, &mut actions);
 
     let mut turn = 0;
@@ -87,7 +101,9 @@ pub fn simulate_battle(
         // Fatigue
         if turn >= FATIGUE_START_TURN {
             let fatigue_amount = (turn - FATIGUE_START_TURN + 1) as i32;
-            actions.push(BattleAction::Fatigue { amount: fatigue_amount });
+            actions.push(BattleAction::Fatigue {
+                amount: fatigue_amount,
+            });
             for unit in units.iter_mut().filter(|u| u.alive) {
                 unit.dmg += fatigue_amount;
             }
@@ -98,21 +114,42 @@ pub fn simulate_battle(
         }
 
         // BeforeStrike triggers
-        fire_trigger(&engine, &mut units, &mut actions, &Trigger::BeforeStrike, &left_ability_levels, &right_ability_levels);
+        fire_trigger(
+            &engine,
+            &mut units,
+            &mut actions,
+            &Trigger::BeforeStrike,
+            &left_ability_levels,
+            &right_ability_levels,
+        );
         apply_deaths(&mut units, &mut actions);
         if check_winner(&units).is_some() {
             break;
         }
 
         // AfterStrike triggers
-        fire_trigger(&engine, &mut units, &mut actions, &Trigger::AfterStrike, &left_ability_levels, &right_ability_levels);
+        fire_trigger(
+            &engine,
+            &mut units,
+            &mut actions,
+            &Trigger::AfterStrike,
+            &left_ability_levels,
+            &right_ability_levels,
+        );
         apply_deaths(&mut units, &mut actions);
         if check_winner(&units).is_some() {
             break;
         }
 
         // TurnEnd triggers
-        fire_trigger(&engine, &mut units, &mut actions, &Trigger::TurnEnd, &left_ability_levels, &right_ability_levels);
+        fire_trigger(
+            &engine,
+            &mut units,
+            &mut actions,
+            &Trigger::TurnEnd,
+            &left_ability_levels,
+            &right_ability_levels,
+        );
         apply_deaths(&mut units, &mut actions);
         if check_winner(&units).is_some() {
             break;
@@ -194,7 +231,14 @@ fn fire_trigger(
                 });
 
                 let script_actions = match execute_ability_script(
-                    engine, &ast, pwr, level, &owner_su, &target_su, source_id, &ability.name,
+                    engine,
+                    &ast,
+                    pwr,
+                    level,
+                    &owner_su,
+                    &target_su,
+                    source_id,
+                    &ability.name,
                 ) {
                     Ok(a) => a,
                     Err(_) => continue,
@@ -229,14 +273,12 @@ fn resolve_targets(
             // Deterministic: pick first living enemy
             enemies.into_iter().take(1).collect()
         }
-        TargetType::AllEnemies => {
-            units
-                .iter()
-                .enumerate()
-                .filter(|(_, u)| u.alive && u.side != source_side)
-                .map(|(i, _)| i)
-                .collect()
-        }
+        TargetType::AllEnemies => units
+            .iter()
+            .enumerate()
+            .filter(|(_, u)| u.alive && u.side != source_side)
+            .map(|(i, _)| i)
+            .collect(),
         TargetType::RandomAlly => {
             let allies: Vec<usize> = units
                 .iter()
@@ -246,43 +288,35 @@ fn resolve_targets(
                 .collect();
             allies.into_iter().take(1).collect()
         }
-        TargetType::AllAllies => {
-            units
-                .iter()
-                .enumerate()
-                .filter(|(_, u)| u.alive && u.side == source_side)
-                .map(|(i, _)| i)
-                .collect()
-        }
-        TargetType::All => {
-            units
-                .iter()
-                .enumerate()
-                .filter(|(_, u)| u.alive)
-                .map(|(i, _)| i)
-                .collect()
-        }
+        TargetType::AllAllies => units
+            .iter()
+            .enumerate()
+            .filter(|(_, u)| u.alive && u.side == source_side)
+            .map(|(i, _)| i)
+            .collect(),
+        TargetType::All => units
+            .iter()
+            .enumerate()
+            .filter(|(_, u)| u.alive)
+            .map(|(i, _)| i)
+            .collect(),
         TargetType::Attacker => vec![source_idx], // Fallback
         TargetType::AdjacentBack | TargetType::AdjacentFront => {
             // For now, treat as owner
             vec![source_idx]
         }
-        TargetType::AllyAtSlot(slot) => {
-            units
-                .iter()
-                .enumerate()
-                .filter(|(_, u)| u.alive && u.side == source_side && u.slot == *slot)
-                .map(|(i, _)| i)
-                .collect()
-        }
-        TargetType::EnemyAtSlot(slot) => {
-            units
-                .iter()
-                .enumerate()
-                .filter(|(_, u)| u.alive && u.side != source_side && u.slot == *slot)
-                .map(|(i, _)| i)
-                .collect()
-        }
+        TargetType::AllyAtSlot(slot) => units
+            .iter()
+            .enumerate()
+            .filter(|(_, u)| u.alive && u.side == source_side && u.slot == *slot)
+            .map(|(i, _)| i)
+            .collect(),
+        TargetType::EnemyAtSlot(slot) => units
+            .iter()
+            .enumerate()
+            .filter(|(_, u)| u.alive && u.side != source_side && u.slot == *slot)
+            .map(|(i, _)| i)
+            .collect(),
     }
 }
 
@@ -295,7 +329,10 @@ fn apply_script_action(
 ) {
     match action {
         ScriptAction::DealDamage { target_id, amount } => {
-            if let Some(unit) = units.iter_mut().find(|u| u.id == target_id as u64 && u.alive) {
+            if let Some(unit) = units
+                .iter_mut()
+                .find(|u| u.id == target_id as u64 && u.alive)
+            {
                 let actual = if unit.shield > 0 {
                     let absorbed = amount.min(unit.shield);
                     unit.shield -= absorbed;
@@ -305,30 +342,56 @@ fn apply_script_action(
                 };
                 if actual > 0 {
                     unit.dmg += actual;
-                    actions.push(BattleAction::Damage { source: source_id, target: target_id as u64, amount: actual });
+                    actions.push(BattleAction::Damage {
+                        source: source_id,
+                        target: target_id as u64,
+                        amount: actual,
+                    });
                 }
             }
         }
         ScriptAction::HealDamage { target_id, amount } => {
-            if let Some(unit) = units.iter_mut().find(|u| u.id == target_id as u64 && u.alive) {
+            if let Some(unit) = units
+                .iter_mut()
+                .find(|u| u.id == target_id as u64 && u.alive)
+            {
                 let actual = amount.min(unit.dmg);
                 if actual > 0 {
                     unit.dmg -= actual;
-                    actions.push(BattleAction::Heal { source: source_id, target: target_id as u64, amount: actual });
+                    actions.push(BattleAction::Heal {
+                        source: source_id,
+                        target: target_id as u64,
+                        amount: actual,
+                    });
                 }
             }
         }
-        ScriptAction::StealStat { target_id, stat, amount } => {
-            if let Some(target) = units.iter_mut().find(|u| u.id == target_id as u64 && u.alive) {
+        ScriptAction::StealStat {
+            target_id,
+            stat,
+            amount,
+        } => {
+            if let Some(target) = units
+                .iter_mut()
+                .find(|u| u.id == target_id as u64 && u.alive)
+            {
                 match stat.as_str() {
                     "pwr" => {
                         let actual = amount.min(target.pwr);
                         target.pwr -= actual;
-                        actions.push(BattleAction::StatChange { unit: target_id as u64, stat: StatKind::Pwr, delta: -actual });
+                        actions.push(BattleAction::StatChange {
+                            unit: target_id as u64,
+                            stat: StatKind::Pwr,
+                            delta: -actual,
+                        });
                         // Give to source
                         if let Some(src) = units.iter_mut().find(|u| u.id == source_id) {
                             src.pwr += actual;
-                            actions.push(BattleAction::StatChange { unit: source_id, stat: StatKind::Pwr, delta: actual });
+                            actions.push(BattleAction::StatChange {
+                                unit: source_id,
+                                stat: StatKind::Pwr,
+                                delta: actual,
+                            });
                         }
                     }
                     _ => {}
@@ -336,20 +399,38 @@ fn apply_script_action(
             }
         }
         ScriptAction::AddShield { target_id, amount } => {
-            if let Some(unit) = units.iter_mut().find(|u| u.id == target_id as u64 && u.alive) {
+            if let Some(unit) = units
+                .iter_mut()
+                .find(|u| u.id == target_id as u64 && u.alive)
+            {
                 unit.shield += amount;
             }
         }
-        ScriptAction::ChangeStat { target_id, stat, delta } => {
-            if let Some(unit) = units.iter_mut().find(|u| u.id == target_id as u64 && u.alive) {
+        ScriptAction::ChangeStat {
+            target_id,
+            stat,
+            delta,
+        } => {
+            if let Some(unit) = units
+                .iter_mut()
+                .find(|u| u.id == target_id as u64 && u.alive)
+            {
                 match stat.as_str() {
                     "pwr" => {
                         unit.pwr = (unit.pwr + delta).max(0);
-                        actions.push(BattleAction::StatChange { unit: target_id as u64, stat: StatKind::Pwr, delta });
+                        actions.push(BattleAction::StatChange {
+                            unit: target_id as u64,
+                            stat: StatKind::Pwr,
+                            delta,
+                        });
                     }
                     "hp" => {
                         unit.hp = (unit.hp + delta).max(1);
-                        actions.push(BattleAction::StatChange { unit: target_id as u64, stat: StatKind::Hp, delta });
+                        actions.push(BattleAction::StatChange {
+                            unit: target_id as u64,
+                            stat: StatKind::Hp,
+                            delta,
+                        });
                     }
                     _ => {}
                 }
@@ -384,10 +465,28 @@ fn check_winner(units: &[BattleUnit]) -> Option<BattleSide> {
 // ===== Test Helpers =====
 
 #[cfg(test)]
-fn make_unit(id: u64, name: &str, hp: i32, pwr: i32, trigger: Trigger, abilities: Vec<BattleAbility>, side: BattleSide, slot: u8) -> BattleUnit {
+fn make_unit(
+    id: u64,
+    name: &str,
+    hp: i32,
+    pwr: i32,
+    trigger: Trigger,
+    abilities: Vec<BattleAbility>,
+    side: BattleSide,
+    slot: u8,
+) -> BattleUnit {
     BattleUnit {
-        id, name: name.to_string(), hp, pwr, dmg: 0, shield: 0,
-        trigger, abilities, side, slot, alive: true,
+        id,
+        name: name.to_string(),
+        hp,
+        pwr,
+        dmg: 0,
+        shield: 0,
+        trigger,
+        abilities,
+        side,
+        slot,
+        alive: true,
     }
 }
 
@@ -437,8 +536,26 @@ mod tests {
 
     #[test]
     fn battle_one_vs_one_striker_wins() {
-        let left = vec![make_unit(1, "Strong", 5, 5, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Left, 0)];
-        let right = vec![make_unit(2, "Weak", 3, 2, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Right, 0)];
+        let left = vec![make_unit(
+            1,
+            "Strong",
+            5,
+            5,
+            Trigger::BeforeStrike,
+            vec![strike_ability(100)],
+            BattleSide::Left,
+            0,
+        )];
+        let right = vec![make_unit(
+            2,
+            "Weak",
+            3,
+            2,
+            Trigger::BeforeStrike,
+            vec![strike_ability(100)],
+            BattleSide::Right,
+            0,
+        )];
 
         let result = simulate_battle(left, right);
         assert_eq!(result.winner, BattleSide::Left);
@@ -446,33 +563,105 @@ mod tests {
 
     #[test]
     fn battle_produces_spawn_actions() {
-        let left = vec![make_unit(1, "A", 3, 2, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Left, 0)];
-        let right = vec![make_unit(2, "B", 3, 2, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Right, 0)];
+        let left = vec![make_unit(
+            1,
+            "A",
+            3,
+            2,
+            Trigger::BeforeStrike,
+            vec![strike_ability(100)],
+            BattleSide::Left,
+            0,
+        )];
+        let right = vec![make_unit(
+            2,
+            "B",
+            3,
+            2,
+            Trigger::BeforeStrike,
+            vec![strike_ability(100)],
+            BattleSide::Right,
+            0,
+        )];
 
         let result = simulate_battle(left, right);
-        let spawn_count = result.actions.iter().filter(|a| matches!(a, BattleAction::Spawn { .. })).count();
+        let spawn_count = result
+            .actions
+            .iter()
+            .filter(|a| matches!(a, BattleAction::Spawn { .. }))
+            .count();
         assert_eq!(spawn_count, 2);
     }
 
     #[test]
     fn battle_dead_units_dont_trigger() {
         // Unit with 1 HP vs 5 PWR — dies immediately
-        let left = vec![make_unit(1, "Glass", 1, 10, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Left, 0)];
-        let right = vec![make_unit(2, "Tank", 20, 5, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Right, 0)];
+        let left = vec![make_unit(
+            1,
+            "Glass",
+            1,
+            10,
+            Trigger::BeforeStrike,
+            vec![strike_ability(100)],
+            BattleSide::Left,
+            0,
+        )];
+        let right = vec![make_unit(
+            2,
+            "Tank",
+            20,
+            5,
+            Trigger::BeforeStrike,
+            vec![strike_ability(100)],
+            BattleSide::Right,
+            0,
+        )];
 
         let result = simulate_battle(left, right);
         // Both fire BeforeStrike on same turn, but one should die
-        assert!(result.actions.iter().any(|a| matches!(a, BattleAction::Death { .. })));
+        assert!(
+            result
+                .actions
+                .iter()
+                .any(|a| matches!(a, BattleAction::Death { .. }))
+        );
     }
 
     #[test]
     fn battle_turn_end_trigger_fires() {
         // Healer needs an ally to target with RandomAlly
         let left = vec![
-            make_unit(1, "Healer", 10, 3, Trigger::TurnEnd, vec![heal_ability(200)], BattleSide::Left, 0),
-            make_unit(3, "Ally", 10, 2, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Left, 1),
+            make_unit(
+                1,
+                "Healer",
+                10,
+                3,
+                Trigger::TurnEnd,
+                vec![heal_ability(200)],
+                BattleSide::Left,
+                0,
+            ),
+            make_unit(
+                3,
+                "Ally",
+                10,
+                2,
+                Trigger::BeforeStrike,
+                vec![strike_ability(100)],
+                BattleSide::Left,
+                1,
+            ),
         ];
-        let right = vec![make_unit(2, "Attacker", 5, 2, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Right, 0)];
+        let right = vec![make_unit(
+            2,
+            "Attacker",
+            5,
+            2,
+            Trigger::BeforeStrike,
+            vec![strike_ability(100)],
+            BattleSide::Right,
+            0,
+        )];
 
         let result = simulate_battle(left, right);
         let ability_used = result.actions.iter().filter(|a| matches!(a, BattleAction::AbilityUsed { ability_name, .. } if ability_name == "Heal")).count();
@@ -481,8 +670,26 @@ mod tests {
 
     #[test]
     fn battle_guard_adds_shield() {
-        let left = vec![make_unit(1, "Guardian", 5, 3, Trigger::BattleStart, vec![guard_ability(300)], BattleSide::Left, 0)];
-        let right = vec![make_unit(2, "Hitter", 5, 2, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Right, 0)];
+        let left = vec![make_unit(
+            1,
+            "Guardian",
+            5,
+            3,
+            Trigger::BattleStart,
+            vec![guard_ability(300)],
+            BattleSide::Left,
+            0,
+        )];
+        let right = vec![make_unit(
+            2,
+            "Hitter",
+            5,
+            2,
+            Trigger::BeforeStrike,
+            vec![strike_ability(100)],
+            BattleSide::Right,
+            0,
+        )];
 
         let result = simulate_battle(left, right);
         // Guardian should survive longer due to shield
@@ -492,8 +699,26 @@ mod tests {
 
     #[test]
     fn battle_curse_reduces_pwr() {
-        let left = vec![make_unit(1, "Curser", 10, 2, Trigger::BattleStart, vec![curse_ability(400)], BattleSide::Left, 0)];
-        let right = vec![make_unit(2, "Target", 10, 5, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Right, 0)];
+        let left = vec![make_unit(
+            1,
+            "Curser",
+            10,
+            2,
+            Trigger::BattleStart,
+            vec![curse_ability(400)],
+            BattleSide::Left,
+            0,
+        )];
+        let right = vec![make_unit(
+            2,
+            "Target",
+            10,
+            5,
+            Trigger::BeforeStrike,
+            vec![strike_ability(100)],
+            BattleSide::Right,
+            0,
+        )];
 
         let result = simulate_battle(left, right);
         let stat_changes = result.actions.iter().filter(|a| matches!(a, BattleAction::StatChange { stat: StatKind::Pwr, delta, .. } if *delta < 0)).count();
@@ -509,16 +734,49 @@ mod tests {
             effect_script: "deal_damage(target[\"id\"], X);".to_string(),
         };
 
-        let left = vec![make_unit(1, "AoE", 10, 2, Trigger::BeforeStrike, vec![aoe], BattleSide::Left, 0)];
+        let left = vec![make_unit(
+            1,
+            "AoE",
+            10,
+            2,
+            Trigger::BeforeStrike,
+            vec![aoe],
+            BattleSide::Left,
+            0,
+        )];
         let right = vec![
-            make_unit(2, "E1", 5, 1, Trigger::TurnEnd, vec![], BattleSide::Right, 0),
-            make_unit(3, "E2", 5, 1, Trigger::TurnEnd, vec![], BattleSide::Right, 1),
+            make_unit(
+                2,
+                "E1",
+                5,
+                1,
+                Trigger::TurnEnd,
+                vec![],
+                BattleSide::Right,
+                0,
+            ),
+            make_unit(
+                3,
+                "E2",
+                5,
+                1,
+                Trigger::TurnEnd,
+                vec![],
+                BattleSide::Right,
+                1,
+            ),
         ];
 
         let result = simulate_battle(left, right);
         // Both enemies should take damage
-        let damage_to_2 = result.actions.iter().any(|a| matches!(a, BattleAction::Damage { target: 2, .. }));
-        let damage_to_3 = result.actions.iter().any(|a| matches!(a, BattleAction::Damage { target: 3, .. }));
+        let damage_to_2 = result
+            .actions
+            .iter()
+            .any(|a| matches!(a, BattleAction::Damage { target: 2, .. }));
+        let damage_to_3 = result
+            .actions
+            .iter()
+            .any(|a| matches!(a, BattleAction::Damage { target: 3, .. }));
         assert!(damage_to_2, "Enemy 1 should take damage");
         assert!(damage_to_3, "Enemy 2 should take damage");
     }
@@ -527,30 +785,90 @@ mod tests {
     fn battle_ability_level_scaling() {
         // 3 units with same ability → level 2 → X * 2
         let left = vec![
-            make_unit(1, "A", 5, 3, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Left, 0),
-            make_unit(2, "B", 5, 3, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Left, 1),
-            make_unit(3, "C", 5, 3, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Left, 2),
+            make_unit(
+                1,
+                "A",
+                5,
+                3,
+                Trigger::BeforeStrike,
+                vec![strike_ability(100)],
+                BattleSide::Left,
+                0,
+            ),
+            make_unit(
+                2,
+                "B",
+                5,
+                3,
+                Trigger::BeforeStrike,
+                vec![strike_ability(100)],
+                BattleSide::Left,
+                1,
+            ),
+            make_unit(
+                3,
+                "C",
+                5,
+                3,
+                Trigger::BeforeStrike,
+                vec![strike_ability(100)],
+                BattleSide::Left,
+                2,
+            ),
         ];
-        let right = vec![
-            make_unit(10, "Enemy", 100, 1, Trigger::TurnEnd, vec![], BattleSide::Right, 0),
-        ];
+        let right = vec![make_unit(
+            10,
+            "Enemy",
+            100,
+            1,
+            Trigger::TurnEnd,
+            vec![],
+            BattleSide::Right,
+            0,
+        )];
 
         let result = simulate_battle(left, right);
         // Each unit does 3 * 2 = 6 damage per turn (level 2 because 3 units share Strike)
         // Total = 18 damage per turn, should kill 100hp enemy in ~6 turns
-        let total_damage: i32 = result.actions.iter().filter_map(|a| match a {
-            BattleAction::Damage { amount, .. } => Some(*amount),
-            _ => None,
-        }).sum();
+        let total_damage: i32 = result
+            .actions
+            .iter()
+            .filter_map(|a| match a {
+                BattleAction::Damage { amount, .. } => Some(*amount),
+                _ => None,
+            })
+            .sum();
         // With level 2, each of 3 units deals 6 damage = 18/turn
-        assert!(total_damage >= 18, "Level scaling should boost damage, got {}", total_damage);
+        assert!(
+            total_damage >= 18,
+            "Level scaling should boost damage, got {}",
+            total_damage
+        );
     }
 
     #[test]
     fn battle_multi_ability_unit() {
         // Unit with both Strike and Guard
-        let left = vec![make_unit(1, "Paladin", 10, 3, Trigger::BeforeStrike, vec![strike_ability(100), guard_ability(300)], BattleSide::Left, 0)];
-        let right = vec![make_unit(2, "Enemy", 10, 2, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Right, 0)];
+        let left = vec![make_unit(
+            1,
+            "Paladin",
+            10,
+            3,
+            Trigger::BeforeStrike,
+            vec![strike_ability(100), guard_ability(300)],
+            BattleSide::Left,
+            0,
+        )];
+        let right = vec![make_unit(
+            2,
+            "Enemy",
+            10,
+            2,
+            Trigger::BeforeStrike,
+            vec![strike_ability(100)],
+            BattleSide::Right,
+            0,
+        )];
 
         let result = simulate_battle(left, right);
         // Should use both Strike AND Guard
@@ -562,8 +880,26 @@ mod tests {
 
     #[test]
     fn battle_ends_when_one_side_eliminated() {
-        let left = vec![make_unit(1, "Killer", 10, 10, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Left, 0)];
-        let right = vec![make_unit(2, "Weak", 1, 1, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Right, 0)];
+        let left = vec![make_unit(
+            1,
+            "Killer",
+            10,
+            10,
+            Trigger::BeforeStrike,
+            vec![strike_ability(100)],
+            BattleSide::Left,
+            0,
+        )];
+        let right = vec![make_unit(
+            2,
+            "Weak",
+            1,
+            1,
+            Trigger::BeforeStrike,
+            vec![strike_ability(100)],
+            BattleSide::Right,
+            0,
+        )];
 
         let result = simulate_battle(left, right);
         assert_eq!(result.winner, BattleSide::Left);
@@ -573,24 +909,76 @@ mod tests {
     #[test]
     fn battle_fatigue_prevents_infinite() {
         // Two units with only Guard — neither can kill the other
-        let left = vec![make_unit(1, "A", 10, 1, Trigger::BattleStart, vec![guard_ability(300)], BattleSide::Left, 0)];
-        let right = vec![make_unit(2, "B", 10, 1, Trigger::BattleStart, vec![guard_ability(300)], BattleSide::Right, 0)];
+        let left = vec![make_unit(
+            1,
+            "A",
+            10,
+            1,
+            Trigger::BattleStart,
+            vec![guard_ability(300)],
+            BattleSide::Left,
+            0,
+        )];
+        let right = vec![make_unit(
+            2,
+            "B",
+            10,
+            1,
+            Trigger::BattleStart,
+            vec![guard_ability(300)],
+            BattleSide::Right,
+            0,
+        )];
 
         let result = simulate_battle(left, right);
-        assert!(result.turns <= MAX_TURNS, "Battle should end within max turns");
-        assert!(result.actions.iter().any(|a| matches!(a, BattleAction::Fatigue { .. })), "Fatigue should kick in");
+        assert!(
+            result.turns <= MAX_TURNS,
+            "Battle should end within max turns"
+        );
+        assert!(
+            result
+                .actions
+                .iter()
+                .any(|a| matches!(a, BattleAction::Fatigue { .. })),
+            "Fatigue should kick in"
+        );
     }
 
     #[test]
     fn battle_deterministic() {
         let make_teams = || {
             let left = vec![
-                make_unit(1, "A", 5, 3, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Left, 0),
-                make_unit(2, "B", 3, 5, Trigger::TurnEnd, vec![curse_ability(400)], BattleSide::Left, 1),
+                make_unit(
+                    1,
+                    "A",
+                    5,
+                    3,
+                    Trigger::BeforeStrike,
+                    vec![strike_ability(100)],
+                    BattleSide::Left,
+                    0,
+                ),
+                make_unit(
+                    2,
+                    "B",
+                    3,
+                    5,
+                    Trigger::TurnEnd,
+                    vec![curse_ability(400)],
+                    BattleSide::Left,
+                    1,
+                ),
             ];
-            let right = vec![
-                make_unit(3, "C", 8, 2, Trigger::BeforeStrike, vec![strike_ability(100), guard_ability(300)], BattleSide::Right, 0),
-            ];
+            let right = vec![make_unit(
+                3,
+                "C",
+                8,
+                2,
+                Trigger::BeforeStrike,
+                vec![strike_ability(100), guard_ability(300)],
+                BattleSide::Right,
+                0,
+            )];
             (left, right)
         };
 

@@ -78,7 +78,7 @@ mod tests {
     #[test]
     fn tier_stats_valid() {
         let t1 = Tier::new(1).unwrap();
-        assert!(t1.stats_valid(3, 2));  // 3 + 2 = 5 <= 5
+        assert!(t1.stats_valid(3, 2)); // 3 + 2 = 5 <= 5
         assert!(!t1.stats_valid(3, 3)); // 3 + 3 = 6 > 5
         assert!(!t1.stats_valid(0, 5)); // hp must be > 0
         assert!(!t1.stats_valid(5, 0)); // pwr must be > 0

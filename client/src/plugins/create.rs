@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContexts};
+use bevy_egui::{EguiContexts, egui};
 
 use crate::plugins::collection::GameContent;
 use crate::plugins::ui::{colors, tier_color};
@@ -10,10 +10,7 @@ pub struct CreatePlugin;
 impl Plugin for CreatePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<CreateState>()
-            .add_systems(
-                Update,
-                create_ui.run_if(in_state(GameState::Create)),
-            );
+            .add_systems(Update, create_ui.run_if(in_state(GameState::Create)));
     }
 }
 
@@ -69,8 +66,14 @@ pub struct UnitResult {
 }
 
 const TRIGGERS: &[&str] = &[
-    "Battle Start", "Turn End", "Before Death", "Ally Death",
-    "Before Strike", "After Strike", "Damage Taken", "Damage Dealt",
+    "Battle Start",
+    "Turn End",
+    "Before Death",
+    "Ally Death",
+    "Before Strike",
+    "After Strike",
+    "Damage Taken",
+    "Damage Dealt",
 ];
 
 fn create_ui(
@@ -89,28 +92,28 @@ fn create_ui(
             ui.separator();
             ui.heading("Create");
             ui.separator();
-            if ui.selectable_label(state.tab == CreateTab::BreedAbility, "Breed Ability").clicked() {
+            if ui
+                .selectable_label(state.tab == CreateTab::BreedAbility, "Breed Ability")
+                .clicked()
+            {
                 state.tab = CreateTab::BreedAbility;
             }
-            if ui.selectable_label(state.tab == CreateTab::AssembleUnit, "Assemble Unit").clicked() {
+            if ui
+                .selectable_label(state.tab == CreateTab::AssembleUnit, "Assemble Unit")
+                .clicked()
+            {
                 state.tab = CreateTab::AssembleUnit;
             }
         });
     });
 
-    egui::CentralPanel::default().show(ctx, |ui| {
-        match state.tab {
-            CreateTab::BreedAbility => breed_ability_ui(ui, &mut state, &content),
-            CreateTab::AssembleUnit => assemble_unit_ui(ui, &mut state, &content),
-        }
+    egui::CentralPanel::default().show(ctx, |ui| match state.tab {
+        CreateTab::BreedAbility => breed_ability_ui(ui, &mut state, &content),
+        CreateTab::AssembleUnit => assemble_unit_ui(ui, &mut state, &content),
     });
 }
 
-fn breed_ability_ui(
-    ui: &mut egui::Ui,
-    state: &mut ResMut<CreateState>,
-    content: &GameContent,
-) {
+fn breed_ability_ui(ui: &mut egui::Ui, state: &mut ResMut<CreateState>, content: &GameContent) {
     ui.heading("Breed New Ability");
     ui.label("Pick two parent abilities and describe how to combine them.");
     ui.separator();
@@ -120,7 +123,10 @@ fn breed_ability_ui(
         columns[0].label("Parent A:");
         for (i, ability) in content.abilities.iter().enumerate() {
             let selected = state.selected_parent_a == Some(i);
-            if columns[0].selectable_label(selected, &ability.name).clicked() {
+            if columns[0]
+                .selectable_label(selected, &ability.name)
+                .clicked()
+            {
                 state.selected_parent_a = Some(i);
             }
         }
@@ -129,7 +135,10 @@ fn breed_ability_ui(
         columns[1].label("Parent B:");
         for (i, ability) in content.abilities.iter().enumerate() {
             let selected = state.selected_parent_b == Some(i);
-            if columns[1].selectable_label(selected, &ability.name).clicked() {
+            if columns[1]
+                .selectable_label(selected, &ability.name)
+                .clicked()
+            {
                 state.selected_parent_b = Some(i);
             }
         }
@@ -152,10 +161,13 @@ fn breed_ability_ui(
             ui.label("How should these combine?");
             ui.text_edit_multiline(&mut state.breeding_prompt);
 
-            let can_submit = !state.breeding_prompt.is_empty()
-                && state.breeding_status == RequestStatus::Idle;
+            let can_submit =
+                !state.breeding_prompt.is_empty() && state.breeding_status == RequestStatus::Idle;
 
-            if ui.add_enabled(can_submit, egui::Button::new("Breed with AI")).clicked() {
+            if ui
+                .add_enabled(can_submit, egui::Button::new("Breed with AI"))
+                .clicked()
+            {
                 state.breeding_status = RequestStatus::Pending;
                 // TODO: Call gen_breed_ability reducer
                 // For now, show pending state
@@ -208,11 +220,7 @@ fn breed_ability_ui(
     }
 }
 
-fn assemble_unit_ui(
-    ui: &mut egui::Ui,
-    state: &mut ResMut<CreateState>,
-    content: &GameContent,
-) {
+fn assemble_unit_ui(ui: &mut egui::Ui, state: &mut ResMut<CreateState>, content: &GameContent) {
     ui.heading("Assemble New Unit");
     ui.label("Pick a trigger, abilities, and tier. AI generates the name and visuals.");
     ui.separator();
@@ -221,10 +229,18 @@ fn assemble_unit_ui(
     ui.horizontal(|ui| {
         ui.label("Tier:");
         for t in 1..=5u8 {
-            if ui.selectable_label(state.unit_tier == t, format!("T{}", t))
-                .on_hover_text(format!("Budget: {}, Abilities: {}", t as i32 * 5, match t {
-                    1..=2 => 1, 3..=4 => 2, 5 => 3, _ => 0
-                }))
+            if ui
+                .selectable_label(state.unit_tier == t, format!("T{}", t))
+                .on_hover_text(format!(
+                    "Budget: {}, Abilities: {}",
+                    t as i32 * 5,
+                    match t {
+                        1..=2 => 1,
+                        3..=4 => 2,
+                        5 => 3,
+                        _ => 0,
+                    }
+                ))
                 .clicked()
             {
                 state.unit_tier = t;
@@ -264,7 +280,13 @@ fn assemble_unit_ui(
         let selected = state.unit_selected_abilities.contains(&i);
         let can_select = selected || state.unit_selected_abilities.len() < max_abilities;
 
-        if ui.add_enabled(can_select, egui::SelectableLabel::new(selected, &ability.name)).clicked() {
+        if ui
+            .add_enabled(
+                can_select,
+                egui::SelectableLabel::new(selected, &ability.name),
+            )
+            .clicked()
+        {
             if selected {
                 state.unit_selected_abilities.retain(|&x| x != i);
             } else if state.unit_selected_abilities.len() < max_abilities {
@@ -277,21 +299,34 @@ fn assemble_unit_ui(
     ui.separator();
     ui.label(format!("Stats (budget: {}):", budget));
 
-    if state.unit_hp == 0 { state.unit_hp = budget / 2; }
-    if state.unit_pwr == 0 { state.unit_pwr = budget - state.unit_hp; }
+    if state.unit_hp == 0 {
+        state.unit_hp = budget / 2;
+    }
+    if state.unit_pwr == 0 {
+        state.unit_pwr = budget - state.unit_hp;
+    }
 
     ui.horizontal(|ui| {
         ui.label("HP:");
-        if ui.add(egui::DragValue::new(&mut state.unit_hp).range(1..=budget - 1)).changed() {
+        if ui
+            .add(egui::DragValue::new(&mut state.unit_hp).range(1..=budget - 1))
+            .changed()
+        {
             state.unit_pwr = (budget - state.unit_hp).max(1);
         }
         ui.label("PWR:");
-        if ui.add(egui::DragValue::new(&mut state.unit_pwr).range(1..=budget - 1)).changed() {
+        if ui
+            .add(egui::DragValue::new(&mut state.unit_pwr).range(1..=budget - 1))
+            .changed()
+        {
             state.unit_hp = (budget - state.unit_pwr).max(1);
         }
         let total = state.unit_hp + state.unit_pwr;
         if total > budget {
-            ui.colored_label(egui::Color32::RED, format!("Over budget! {}/{}", total, budget));
+            ui.colored_label(
+                egui::Color32::RED,
+                format!("Over budget! {}/{}", total, budget),
+            );
         } else {
             ui.label(format!("{}/{}", total, budget));
         }
@@ -307,7 +342,10 @@ fn assemble_unit_ui(
         && state.unit_hp + state.unit_pwr <= budget
         && state.unit_status == RequestStatus::Idle;
 
-    if ui.add_enabled(can_submit, egui::Button::new("Generate Name & Visual")).clicked() {
+    if ui
+        .add_enabled(can_submit, egui::Button::new("Generate Name & Visual"))
+        .clicked()
+    {
         state.unit_status = RequestStatus::Pending;
         // TODO: Call gen_create_unit reducer
     }

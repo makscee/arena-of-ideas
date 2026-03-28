@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, Table};
 
-use crate::{ability, gen_request, gen_result, GenRequest, GenResult, GenStatus, GenTargetKind};
+use crate::{GenRequest, GenResult, GenStatus, GenTargetKind, ability, gen_request, gen_result};
 
 /// System prompt for Claude when breeding abilities.
 pub const ABILITY_SYSTEM_PROMPT: &str = r##"You are a game designer for Arena of Ideas, an auto-battler.
@@ -143,9 +143,17 @@ pub fn gen_breed_ability(
     }
 
     // Validate parents exist
-    let parent_a = ctx.db.ability().id().find(parent_a_id)
+    let parent_a = ctx
+        .db
+        .ability()
+        .id()
+        .find(parent_a_id)
         .ok_or_else(|| format!("Parent ability {} not found", parent_a_id))?;
-    let parent_b = ctx.db.ability().id().find(parent_b_id)
+    let parent_b = ctx
+        .db
+        .ability()
+        .id()
+        .find(parent_b_id)
         .ok_or_else(|| format!("Parent ability {} not found", parent_b_id))?;
 
     if parent_a_id == parent_b_id {
@@ -174,10 +182,7 @@ pub fn gen_breed_ability(
 
 /// Request AI to generate a unit name and painter script.
 #[spacetimedb::reducer]
-pub fn gen_create_unit(
-    ctx: &ReducerContext,
-    prompt: String,
-) -> Result<(), String> {
+pub fn gen_create_unit(ctx: &ReducerContext, prompt: String) -> Result<(), String> {
     if prompt.is_empty() {
         return Err("Prompt cannot be empty".to_string());
     }
@@ -209,7 +214,11 @@ pub fn gen_submit_result(
     data: String,
     explanation: String,
 ) -> Result<(), String> {
-    let mut request = ctx.db.gen_request().id().find(request_id)
+    let mut request = ctx
+        .db
+        .gen_request()
+        .id()
+        .find(request_id)
         .ok_or_else(|| format!("GenRequest {} not found", request_id))?;
 
     if data.is_empty() {
@@ -232,11 +241,12 @@ pub fn gen_submit_result(
 
 /// Mark a generation request as failed.
 #[spacetimedb::reducer]
-pub fn gen_mark_failed(
-    ctx: &ReducerContext,
-    request_id: u64,
-) -> Result<(), String> {
-    let mut request = ctx.db.gen_request().id().find(request_id)
+pub fn gen_mark_failed(ctx: &ReducerContext, request_id: u64) -> Result<(), String> {
+    let mut request = ctx
+        .db
+        .gen_request()
+        .id()
+        .find(request_id)
         .ok_or_else(|| format!("GenRequest {} not found", request_id))?;
 
     request.status = GenStatus::Failed;

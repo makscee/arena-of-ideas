@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, Table};
 
-use crate::{ability, unit, Ability, ContentStatus, TargetType, Trigger, Unit};
+use crate::{Ability, ContentStatus, TargetType, Trigger, Unit, ability, unit};
 
 /// Seeds the database with primordial abilities and sample units.
 pub fn seed_primordial_abilities(ctx: &ReducerContext) {
@@ -75,7 +75,10 @@ pub fn seed_primordial_abilities(ctx: &ReducerContext) {
 
     log::info!(
         "Seeded primordial abilities: Strike({}), Guard({}), Heal({}), Curse({})",
-        strike.id, guard.id, heal.id, curse.id
+        strike.id,
+        guard.id,
+        heal.id,
+        curse.id
     );
 
     // ===== Sample Units =====
@@ -85,48 +88,64 @@ pub fn seed_primordial_abilities(ctx: &ReducerContext) {
         id: 0,
         name: "Footsoldier".to_string(),
         description: "A basic melee fighter".to_string(),
-        hp: 3, pwr: 2, tier: 1,
+        hp: 3,
+        pwr: 2,
+        tier: 1,
         trigger: Trigger::BeforeStrike,
         abilities: vec![strike.id],
         painter_script: "painter.circle(25.0, \"#aa4444\");".to_string(),
-        rating: 0, status: ContentStatus::Active,
-        created_by: ctx.sender(), created_at: now,
+        rating: 0,
+        status: ContentStatus::Active,
+        created_by: ctx.sender(),
+        created_at: now,
     });
 
     ctx.db.unit().insert(Unit {
         id: 0,
         name: "Shieldbearer".to_string(),
         description: "A defensive unit that protects itself".to_string(),
-        hp: 4, pwr: 1, tier: 1,
+        hp: 4,
+        pwr: 1,
+        tier: 1,
         trigger: Trigger::BattleStart,
         abilities: vec![guard.id],
         painter_script: "painter.circle(25.0, \"#4444aa\");".to_string(),
-        rating: 0, status: ContentStatus::Active,
-        created_by: ctx.sender(), created_at: now,
+        rating: 0,
+        status: ContentStatus::Active,
+        created_by: ctx.sender(),
+        created_at: now,
     });
 
     ctx.db.unit().insert(Unit {
         id: 0,
         name: "Medic".to_string(),
         description: "Heals allies at the end of each turn".to_string(),
-        hp: 2, pwr: 3, tier: 1,
+        hp: 2,
+        pwr: 3,
+        tier: 1,
         trigger: Trigger::TurnEnd,
         abilities: vec![heal.id],
         painter_script: "painter.circle(25.0, \"#44aa44\");".to_string(),
-        rating: 0, status: ContentStatus::Active,
-        created_by: ctx.sender(), created_at: now,
+        rating: 0,
+        status: ContentStatus::Active,
+        created_by: ctx.sender(),
+        created_at: now,
     });
 
     ctx.db.unit().insert(Unit {
         id: 0,
         name: "Hexer".to_string(),
         description: "Curses enemies, weakening their attacks".to_string(),
-        hp: 2, pwr: 3, tier: 1,
+        hp: 2,
+        pwr: 3,
+        tier: 1,
         trigger: Trigger::BattleStart,
         abilities: vec![curse.id],
         painter_script: "painter.circle(25.0, \"#aa44aa\");".to_string(),
-        rating: 0, status: ContentStatus::Active,
-        created_by: ctx.sender(), created_at: now,
+        rating: 0,
+        status: ContentStatus::Active,
+        created_by: ctx.sender(),
+        created_at: now,
     });
 
     // Tier 2 units (1 ability, budget = 10)
@@ -134,24 +153,32 @@ pub fn seed_primordial_abilities(ctx: &ReducerContext) {
         id: 0,
         name: "Knight".to_string(),
         description: "A powerful striker with high health".to_string(),
-        hp: 6, pwr: 4, tier: 2,
+        hp: 6,
+        pwr: 4,
+        tier: 2,
         trigger: Trigger::BeforeStrike,
         abilities: vec![strike.id],
         painter_script: "painter.circle(30.0, \"#cc6644\");".to_string(),
-        rating: 0, status: ContentStatus::Active,
-        created_by: ctx.sender(), created_at: now,
+        rating: 0,
+        status: ContentStatus::Active,
+        created_by: ctx.sender(),
+        created_at: now,
     });
 
     ctx.db.unit().insert(Unit {
         id: 0,
         name: "Priest".to_string(),
         description: "A strong healer who restores allies after damage".to_string(),
-        hp: 5, pwr: 5, tier: 2,
+        hp: 5,
+        pwr: 5,
+        tier: 2,
         trigger: Trigger::DamageTaken,
         abilities: vec![heal.id],
         painter_script: "painter.circle(30.0, \"#66cc66\");".to_string(),
-        rating: 0, status: ContentStatus::Active,
-        created_by: ctx.sender(), created_at: now,
+        rating: 0,
+        status: ContentStatus::Active,
+        created_by: ctx.sender(),
+        created_at: now,
     });
 
     // Tier 3 units (2 abilities, budget = 15)
@@ -159,24 +186,32 @@ pub fn seed_primordial_abilities(ctx: &ReducerContext) {
         id: 0,
         name: "Paladin".to_string(),
         description: "A holy warrior that strikes and guards".to_string(),
-        hp: 8, pwr: 6, tier: 3,
+        hp: 8,
+        pwr: 6,
+        tier: 3,
         trigger: Trigger::BeforeStrike,
         abilities: vec![strike.id, guard.id],
         painter_script: "painter.circle(35.0, \"#cccc44\");".to_string(),
-        rating: 0, status: ContentStatus::Active,
-        created_by: ctx.sender(), created_at: now,
+        rating: 0,
+        status: ContentStatus::Active,
+        created_by: ctx.sender(),
+        created_at: now,
     });
 
     ctx.db.unit().insert(Unit {
         id: 0,
         name: "Warlock".to_string(),
         description: "A dark caster that strikes and curses".to_string(),
-        hp: 7, pwr: 7, tier: 3,
+        hp: 7,
+        pwr: 7,
+        tier: 3,
         trigger: Trigger::TurnEnd,
         abilities: vec![strike.id, curse.id],
         painter_script: "painter.circle(35.0, \"#8844cc\");".to_string(),
-        rating: 0, status: ContentStatus::Active,
-        created_by: ctx.sender(), created_at: now,
+        rating: 0,
+        status: ContentStatus::Active,
+        created_by: ctx.sender(),
+        created_at: now,
     });
 
     log::info!("Seeded 8 sample units across tiers 1-3");

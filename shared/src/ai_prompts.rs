@@ -1,6 +1,5 @@
 /// AI prompt building and response parsing logic.
 /// Shared so both server and tests can use it.
-
 use serde::{Deserialize, Serialize};
 
 /// Parsed response from Claude for ability breeding.
@@ -24,8 +23,8 @@ pub fn parse_ability_response(json: &str) -> Result<AbilityGenResponse, String> 
     // Strip markdown code fences if present
     let cleaned = strip_code_fences(json);
 
-    let response: AbilityGenResponse =
-        serde_json::from_str(&cleaned).map_err(|e| format!("Failed to parse ability response: {}", e))?;
+    let response: AbilityGenResponse = serde_json::from_str(&cleaned)
+        .map_err(|e| format!("Failed to parse ability response: {}", e))?;
 
     // Validate required fields
     if response.name.is_empty() {
@@ -37,7 +36,12 @@ pub fn parse_ability_response(json: &str) -> Result<AbilityGenResponse, String> 
 
     // Validate target_type
     let valid_targets = [
-        "RandomEnemy", "AllEnemies", "RandomAlly", "AllAllies", "Owner", "All",
+        "RandomEnemy",
+        "AllEnemies",
+        "RandomAlly",
+        "AllAllies",
+        "Owner",
+        "All",
     ];
     if !valid_targets.contains(&response.target_type.as_str()) {
         return Err(format!("Invalid target_type: {}", response.target_type));
@@ -50,8 +54,8 @@ pub fn parse_ability_response(json: &str) -> Result<AbilityGenResponse, String> 
 pub fn parse_unit_response(json: &str) -> Result<UnitGenResponse, String> {
     let cleaned = strip_code_fences(json);
 
-    let response: UnitGenResponse =
-        serde_json::from_str(&cleaned).map_err(|e| format!("Failed to parse unit response: {}", e))?;
+    let response: UnitGenResponse = serde_json::from_str(&cleaned)
+        .map_err(|e| format!("Failed to parse unit response: {}", e))?;
 
     if response.name.is_empty() {
         return Err("Unit name cannot be empty".to_string());
@@ -123,7 +127,8 @@ mod tests {
 
     #[test]
     fn parse_valid_unit_response() {
-        let json = r##"{"name": "Cinderpaw", "painter_script": "painter.circle(25.0, \"#ff4444\");"}"##;
+        let json =
+            r##"{"name": "Cinderpaw", "painter_script": "painter.circle(25.0, \"#ff4444\");"}"##;
 
         let result = parse_unit_response(json).unwrap();
         assert_eq!(result.name, "Cinderpaw");
@@ -146,12 +151,23 @@ mod tests {
 
     #[test]
     fn parse_all_valid_target_types() {
-        for target in ["RandomEnemy", "AllEnemies", "RandomAlly", "AllAllies", "Owner", "All"] {
+        for target in [
+            "RandomEnemy",
+            "AllEnemies",
+            "RandomAlly",
+            "AllAllies",
+            "Owner",
+            "All",
+        ] {
             let json = format!(
                 r#"{{"name": "T", "description": "d", "target_type": "{}", "effect_script": "x"}}"#,
                 target
             );
-            assert!(parse_ability_response(&json).is_ok(), "Should accept target: {}", target);
+            assert!(
+                parse_ability_response(&json).is_ok(),
+                "Should accept target: {}",
+                target
+            );
         }
     }
 }

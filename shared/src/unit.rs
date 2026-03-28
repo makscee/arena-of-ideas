@@ -62,7 +62,11 @@ impl std::fmt::Display for UnitValidationError {
         match self {
             UnitValidationError::EmptyName => write!(f, "Unit name cannot be empty"),
             UnitValidationError::StatsOverBudget { hp, pwr, budget } => {
-                write!(f, "Stats {hp}hp + {pwr}pwr = {} exceeds budget {budget}", hp + pwr)
+                write!(
+                    f,
+                    "Stats {hp}hp + {pwr}pwr = {} exceeds budget {budget}",
+                    hp + pwr
+                )
             }
             UnitValidationError::InvalidAbilityCount { count, max } => {
                 write!(f, "Ability count {count} invalid (must be 1-{max})")
@@ -103,7 +107,11 @@ mod tests {
         let unit = make_unit(3, 3, 1, vec![100]);
         assert_eq!(
             unit.validate(),
-            Err(UnitValidationError::StatsOverBudget { hp: 3, pwr: 3, budget: 5 })
+            Err(UnitValidationError::StatsOverBudget {
+                hp: 3,
+                pwr: 3,
+                budget: 5
+            })
         );
     }
 

@@ -1,12 +1,9 @@
 use spacetimedb::{ReducerContext, Table};
 
-use crate::{feature_request, FeatureRequest};
+use crate::{FeatureRequest, feature_request};
 
 #[spacetimedb::reducer]
-pub fn feature_request_create(
-    ctx: &ReducerContext,
-    description: String,
-) -> Result<(), String> {
+pub fn feature_request_create(ctx: &ReducerContext, description: String) -> Result<(), String> {
     if description.is_empty() {
         return Err("Description cannot be empty".to_string());
     }
@@ -27,10 +24,7 @@ pub fn feature_request_create(
 }
 
 #[spacetimedb::reducer]
-pub fn feature_request_accept(
-    ctx: &ReducerContext,
-    request_id: u64,
-) -> Result<(), String> {
+pub fn feature_request_accept(ctx: &ReducerContext, request_id: u64) -> Result<(), String> {
     let mut request = ctx
         .db
         .feature_request()

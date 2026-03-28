@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, Table};
 
-use crate::{ability, season, unit, Ability, ContentStatus, Season};
+use crate::{Ability, ContentStatus, Season, ability, season, unit};
 
 const ACTIVE_ABILITY_COUNT: usize = 20;
 const ACTIVE_UNIT_COUNT: usize = 100;
@@ -11,7 +11,8 @@ const RATING_DECAY_AMOUNT: i32 = 1;
 #[spacetimedb::reducer]
 pub fn season_start(ctx: &ReducerContext) -> Result<(), String> {
     // Count units per ability
-    let mut ability_unit_counts: std::collections::HashMap<u64, usize> = std::collections::HashMap::new();
+    let mut ability_unit_counts: std::collections::HashMap<u64, usize> =
+        std::collections::HashMap::new();
     for unit in ctx.db.unit().iter() {
         if unit.status == ContentStatus::Active || unit.status == ContentStatus::Incubator {
             for &ability_id in &unit.abilities {
@@ -60,7 +61,9 @@ pub fn season_start(ctx: &ReducerContext) -> Result<(), String> {
         .iter()
         .filter(|u| {
             (u.status == ContentStatus::Active || u.status == ContentStatus::Incubator)
-                && u.abilities.iter().all(|aid| active_ability_ids.contains(aid))
+                && u.abilities
+                    .iter()
+                    .all(|aid| active_ability_ids.contains(aid))
         })
         .collect();
 

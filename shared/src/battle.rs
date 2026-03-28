@@ -6,15 +6,31 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum BattleAction {
     /// Unit deals damage to another unit
-    Damage { source: u64, target: u64, amount: i32 },
+    Damage {
+        source: u64,
+        target: u64,
+        amount: i32,
+    },
     /// Unit heals another unit
-    Heal { source: u64, target: u64, amount: i32 },
+    Heal {
+        source: u64,
+        target: u64,
+        amount: i32,
+    },
     /// Unit dies
     Death { unit: u64 },
     /// Unit spawns / appears at start of battle
-    Spawn { unit: u64, slot: u8, side: BattleSide },
+    Spawn {
+        unit: u64,
+        slot: u8,
+        side: BattleSide,
+    },
     /// A stat changes on a unit
-    StatChange { unit: u64, stat: StatKind, delta: i32 },
+    StatChange {
+        unit: u64,
+        stat: StatKind,
+        delta: i32,
+    },
     /// Visual effect
     Vfx { unit: u64, effect: String },
     /// Pause for animation timing
@@ -53,15 +69,37 @@ mod tests {
     #[test]
     fn battle_action_serde_roundtrip() {
         let actions = vec![
-            BattleAction::Spawn { unit: 1, slot: 0, side: BattleSide::Left },
-            BattleAction::Damage { source: 1, target: 2, amount: 5 },
-            BattleAction::Heal { source: 1, target: 1, amount: 3 },
+            BattleAction::Spawn {
+                unit: 1,
+                slot: 0,
+                side: BattleSide::Left,
+            },
+            BattleAction::Damage {
+                source: 1,
+                target: 2,
+                amount: 5,
+            },
+            BattleAction::Heal {
+                source: 1,
+                target: 1,
+                amount: 3,
+            },
             BattleAction::Death { unit: 2 },
-            BattleAction::StatChange { unit: 1, stat: StatKind::Pwr, delta: 2 },
-            BattleAction::Vfx { unit: 1, effect: "fire".to_string() },
+            BattleAction::StatChange {
+                unit: 1,
+                stat: StatKind::Pwr,
+                delta: 2,
+            },
+            BattleAction::Vfx {
+                unit: 1,
+                effect: "fire".to_string(),
+            },
             BattleAction::Wait { seconds: 0.5 },
             BattleAction::Fatigue { amount: 1 },
-            BattleAction::AbilityUsed { source: 1, ability_name: "Steal Gold".to_string() },
+            BattleAction::AbilityUsed {
+                source: 1,
+                ability_name: "Steal Gold".to_string(),
+            },
         ];
 
         for action in actions {
@@ -75,8 +113,16 @@ mod tests {
         let result = BattleResult {
             winner: BattleSide::Left,
             actions: vec![
-                BattleAction::Spawn { unit: 1, slot: 0, side: BattleSide::Left },
-                BattleAction::Damage { source: 1, target: 2, amount: 3 },
+                BattleAction::Spawn {
+                    unit: 1,
+                    slot: 0,
+                    side: BattleSide::Left,
+                },
+                BattleAction::Damage {
+                    source: 1,
+                    target: 2,
+                    amount: 3,
+                },
                 BattleAction::Death { unit: 2 },
             ],
             turns: 5,

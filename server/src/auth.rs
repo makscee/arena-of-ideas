@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, Table};
 
-use crate::{player, Player};
+use crate::{Player, player};
 
 #[spacetimedb::reducer]
 pub fn register(ctx: &ReducerContext, name: String) -> Result<(), String> {

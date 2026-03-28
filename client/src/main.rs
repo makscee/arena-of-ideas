@@ -1,5 +1,8 @@
 use bevy::prelude::*;
-use client::plugins::{collection::CollectionPlugin, create::CreatePlugin, game::GamePlugin, incubator::IncubatorPlugin, ui::UiPlugin};
+use client::plugins::{
+    collection::CollectionPlugin, create::CreatePlugin, game::GamePlugin,
+    incubator::IncubatorPlugin, ui::UiPlugin,
+};
 
 fn main() {
     App::new()

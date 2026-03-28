@@ -66,7 +66,11 @@ pub fn validate_fusion(
         ));
     }
 
-    let combined: Vec<u64> = abilities_a.iter().chain(abilities_b.iter()).copied().collect();
+    let combined: Vec<u64> = abilities_a
+        .iter()
+        .chain(abilities_b.iter())
+        .copied()
+        .collect();
     for &chosen in chosen_abilities {
         if !combined.contains(&chosen) {
             return Err(format!("Ability {} not from either parent", chosen));

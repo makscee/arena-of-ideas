@@ -28,7 +28,9 @@ fn call(reducer: &str, args: &[&str]) -> Result<String, String> {
         }
     }
 
-    let output = cmd.output().map_err(|e| format!("Failed to run spacetime: {}", e))?;
+    let output = cmd
+        .output()
+        .map_err(|e| format!("Failed to run spacetime: {}", e))?;
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
 
     if !output.status.success() || stderr.contains("Error:") {
@@ -203,7 +205,11 @@ fn test_09_vote_upvote() {
     call("vote_cast", &["\"ability\"", "1", "1"]).unwrap();
 
     let output = sql("SELECT rating FROM ability WHERE id = 1");
-    assert!(output_contains(&output, "1"), "Rating should include 1: {}", output);
+    assert!(
+        output_contains(&output, "1"),
+        "Rating should include 1: {}",
+        output
+    );
 }
 
 #[test]
@@ -211,7 +217,11 @@ fn test_10_vote_downvote() {
     call("vote_cast", &["\"ability\"", "2", "-1"]).unwrap();
 
     let output = sql("SELECT rating FROM ability WHERE id = 2");
-    assert!(output_contains(&output, "-1"), "Rating should be -1: {}", output);
+    assert!(
+        output_contains(&output, "-1"),
+        "Rating should be -1: {}",
+        output
+    );
 }
 
 // ===== Match Flow Tests =====
@@ -230,7 +240,11 @@ fn test_12_match_buy_unit() {
     call("match_shop_buy", &["0"]).unwrap();
 
     let output = sql("SELECT gold FROM game_match");
-    assert!(output_contains(&output, "9"), "Gold should be 9: {}", output);
+    assert!(
+        output_contains(&output, "9"),
+        "Gold should be 9: {}",
+        output
+    );
 }
 
 #[test]
@@ -238,7 +252,11 @@ fn test_13_match_buy_second_unit() {
     call("match_shop_buy", &["1"]).unwrap();
 
     let output = sql("SELECT gold FROM game_match");
-    assert!(output_contains(&output, "8"), "Gold should be 8: {}", output);
+    assert!(
+        output_contains(&output, "8"),
+        "Gold should be 8: {}",
+        output
+    );
 }
 
 #[test]
@@ -246,7 +264,11 @@ fn test_14_match_sell_unit() {
     call("match_sell_unit", &["0"]).unwrap();
 
     let output = sql("SELECT gold FROM game_match");
-    assert!(output_contains(&output, "9"), "Gold should be 9 after sell: {}", output);
+    assert!(
+        output_contains(&output, "9"),
+        "Gold should be 9 after sell: {}",
+        output
+    );
 }
 
 #[test]
@@ -254,7 +276,11 @@ fn test_15_match_reroll() {
     call("match_shop_reroll", &[]).unwrap();
 
     let output = sql("SELECT gold FROM game_match");
-    assert!(output_contains(&output, "8"), "Gold should be 8 after reroll: {}", output);
+    assert!(
+        output_contains(&output, "8"),
+        "Gold should be 8 after reroll: {}",
+        output
+    );
 }
 
 #[test]
@@ -264,7 +290,11 @@ fn test_16_match_submit_win() {
     // Use SELECT * to avoid reserved word issues with column names
     let output = sql("SELECT * FROM game_match");
     // Floor should be 2 — look for it in the output
-    assert!(output_contains(&output, "| 2"), "Floor should advance to 2: {}", output);
+    assert!(
+        output_contains(&output, "| 2"),
+        "Floor should advance to 2: {}",
+        output
+    );
 }
 
 #[test]
@@ -273,7 +303,11 @@ fn test_17_match_submit_loss() {
 
     let output = sql("SELECT * FROM game_match");
     // Lives should be 2 (was 3, lost 1)
-    assert!(output_contains(&output, "lives") || output_contains(&output, "2"), "Should have 2 lives: {}", output);
+    assert!(
+        output_contains(&output, "lives") || output_contains(&output, "2"),
+        "Should have 2 lives: {}",
+        output
+    );
 }
 
 #[test]
@@ -320,13 +354,22 @@ fn test_20_match_cleanup() {
 #[test]
 fn test_21_gen_breed_ability() {
     // Breed Strike (1) + Guard (2)
-    let result = call("gen_breed_ability", &["1", "2", "\"combine offense and defense\""]);
+    let result = call(
+        "gen_breed_ability",
+        &["1", "2", "\"combine offense and defense\""],
+    );
     assert!(result.is_ok(), "Should create breed request: {:?}", result);
 
     let output = sql("SELECT * FROM gen_request");
-    assert!(output_contains(&output, "combine offense"), "Should have the prompt");
-    assert!(output_contains(&output, "Pending") || output_contains(&output, "pending"),
-        "Status should be Pending: {}", output);
+    assert!(
+        output_contains(&output, "combine offense"),
+        "Should have the prompt"
+    );
+    assert!(
+        output_contains(&output, "Pending") || output_contains(&output, "pending"),
+        "Status should be Pending: {}",
+        output
+    );
 }
 
 #[test]
@@ -350,7 +393,11 @@ fn test_24_gen_breed_empty_prompt_fails() {
 #[test]
 fn test_25_gen_create_unit() {
     let result = call("gen_create_unit", &["\"a fierce fire warrior\""]);
-    assert!(result.is_ok(), "Should create unit gen request: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Should create unit gen request: {:?}",
+        result
+    );
 
     let output = sql("SELECT * FROM gen_request");
     assert!(output_contains(&output, "fire warrior"));
@@ -365,7 +412,11 @@ fn test_26_gen_submit_result() {
     assert!(result.is_ok(), "Should submit result: {:?}", result);
 
     let output = sql("SELECT * FROM gen_result");
-    assert!(output_contains(&output, "result data here"), "Should have result: {}", output);
+    assert!(
+        output_contains(&output, "result data here"),
+        "Should have result: {}",
+        output
+    );
 }
 
 #[test]
@@ -383,7 +434,11 @@ fn test_28_season_start() {
 
     let output = sql("SELECT * FROM season");
     // Season record should exist — check for created_at timestamp
-    assert!(output_contains(&output, "2026"), "Should have season record: {}", output);
+    assert!(
+        output_contains(&output, "2026"),
+        "Should have season record: {}",
+        output
+    );
 }
 
 #[test]
@@ -396,11 +451,18 @@ fn test_29_rating_decay() {
 
 #[test]
 fn test_30_feature_request_create() {
-    let result = call("feature_request_create", &["\"Add position swapping mechanic\""]);
+    let result = call(
+        "feature_request_create",
+        &["\"Add position swapping mechanic\""],
+    );
     assert!(result.is_ok(), "Should create request: {:?}", result);
 
     let output = sql("SELECT * FROM feature_request");
-    assert!(output_contains(&output, "position swapping"), "Should have request: {}", output);
+    assert!(
+        output_contains(&output, "position swapping"),
+        "Should have request: {}",
+        output
+    );
 }
 
 #[test]
@@ -409,7 +471,11 @@ fn test_31_feature_request_accept() {
     assert!(result.is_ok(), "Should accept: {:?}", result);
 
     let output = sql("SELECT * FROM feature_request");
-    assert!(output_contains(&output, "accepted"), "Should be accepted: {}", output);
+    assert!(
+        output_contains(&output, "accepted"),
+        "Should be accepted: {}",
+        output
+    );
 }
 
 #[test]
@@ -420,7 +486,11 @@ fn test_32_feature_request_reject() {
     assert!(result.is_ok(), "Should reject: {:?}", result);
 
     let output = sql("SELECT * FROM feature_request WHERE id = 2");
-    assert!(output_contains(&output, "rejected"), "Should be rejected: {}", output);
+    assert!(
+        output_contains(&output, "rejected"),
+        "Should be rejected: {}",
+        output
+    );
 }
 
 #[test]

@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, Table};
 
-use crate::{ability, unit, Ability, ContentStatus, TargetType, Trigger, Unit};
+use crate::{Ability, ContentStatus, TargetType, Trigger, Unit, ability, unit};
 
 // ===== Tier Validation =====
 

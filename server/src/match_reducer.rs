@@ -1,7 +1,7 @@
 use spacetimedb::{ReducerContext, Table};
 
 #[allow(unused_imports)]
-use crate::{ability, game_match, player, unit, ContentStatus, GameMatch, TeamSlot, Unit};
+use crate::{ContentStatus, GameMatch, TeamSlot, Unit, ability, game_match, player, unit};
 
 // ===== Match Table =====
 // Match table is defined in lib.rs. This module contains the reducers.
@@ -60,12 +60,19 @@ pub fn match_shop_buy(ctx: &ReducerContext, shop_index: u32) -> Result<(), Strin
         return Err("Shop slot is empty".to_string());
     }
 
-    let unit = ctx.db.unit().id().find(unit_id)
+    let unit = ctx
+        .db
+        .unit()
+        .id()
+        .find(unit_id)
         .ok_or_else(|| "Unit not found".to_string())?;
 
     let cost = tier_cost(unit.tier);
     if game_match.gold < cost {
-        return Err(format!("Not enough gold (have {}, need {})", game_match.gold, cost));
+        return Err(format!(
+            "Not enough gold (have {}, need {})",
+            game_match.gold, cost
+        ));
     }
 
     // Check for stacking (duplicate unit)
@@ -117,7 +124,12 @@ pub fn match_sell_unit(ctx: &ReducerContext, slot_index: u32) -> Result<(), Stri
     let tier = if slot.is_fused {
         slot.fused_tier
     } else {
-        ctx.db.unit().id().find(slot.unit_id).map(|u| u.tier).unwrap_or(1)
+        ctx.db
+            .unit()
+            .id()
+            .find(slot.unit_id)
+            .map(|u| u.tier)
+            .unwrap_or(1)
     };
 
     game_match.gold += sell_value(tier);
@@ -226,9 +238,17 @@ pub fn match_fuse_units(
         return Err("Cannot fuse already-fused units".to_string());
     }
 
-    let unit_a = ctx.db.unit().id().find(slot_a_data.unit_id)
+    let unit_a = ctx
+        .db
+        .unit()
+        .id()
+        .find(slot_a_data.unit_id)
         .ok_or("Unit A not found")?;
-    let unit_b = ctx.db.unit().id().find(slot_b_data.unit_id)
+    let unit_b = ctx
+        .db
+        .unit()
+        .id()
+        .find(slot_b_data.unit_id)
         .ok_or("Unit B not found")?;
 
     // Calculate result
@@ -244,12 +264,17 @@ pub fn match_fuse_units(
     if chosen_abilities.len() != result_ability_count {
         return Err(format!(
             "Must choose exactly {} abilities, got {}",
-            result_ability_count, chosen_abilities.len()
+            result_ability_count,
+            chosen_abilities.len()
         ));
     }
 
     // Validate chosen abilities come from parents
-    let combined: Vec<u64> = abilities_a.iter().chain(abilities_b.iter()).copied().collect();
+    let combined: Vec<u64> = abilities_a
+        .iter()
+        .chain(abilities_b.iter())
+        .copied()
+        .collect();
     for &chosen in &chosen_abilities {
         if !combined.contains(&chosen) {
             return Err(format!("Ability {} not from either parent", chosen));
@@ -265,7 +290,11 @@ pub fn match_fuse_units(
     // Remove slot B first (higher index if b > a)
     let (remove_first, remove_second) = if a > b { (a, b) } else { (b, a) };
     game_match.team.remove(remove_first);
-    let fuse_idx = if a > b { remove_second } else { a.min(game_match.team.len()) };
+    let fuse_idx = if a > b {
+        remove_second
+    } else {
+        a.min(game_match.team.len())
+    };
 
     // Update slot A to be fused
     if fuse_idx < game_match.team.len() {
@@ -305,7 +334,11 @@ pub fn match_feed_unit(
     }
 
     // Check donor abilities are subset of fused abilities
-    let donor_unit = ctx.db.unit().id().find(game_match.team[d].unit_id)
+    let donor_unit = ctx
+        .db
+        .unit()
+        .id()
+        .find(game_match.team[d].unit_id)
         .ok_or("Donor unit not found")?;
 
     for &donor_ability in &donor_unit.abilities {
@@ -337,7 +370,10 @@ fn find_player_match(ctx: &ReducerContext) -> Result<crate::GameMatch, String> {
 }
 
 fn generate_shop_offers(ctx: &ReducerContext, count: usize) -> Vec<u64> {
-    let active_units: Vec<u64> = ctx.db.unit().iter()
+    let active_units: Vec<u64> = ctx
+        .db
+        .unit()
+        .iter()
         .filter(|u| u.status == ContentStatus::Active)
         .map(|u| u.id)
         .collect();

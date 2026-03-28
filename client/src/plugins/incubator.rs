@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContexts};
+use bevy_egui::{EguiContexts, egui};
 
 use crate::plugins::collection::GameContent;
 use crate::plugins::ui::{colors, rating_color, tier_color};
@@ -10,10 +10,7 @@ pub struct IncubatorPlugin;
 impl Plugin for IncubatorPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<IncubatorState>()
-            .add_systems(
-                Update,
-                incubator_ui.run_if(in_state(GameState::Incubator)),
-            );
+            .add_systems(Update, incubator_ui.run_if(in_state(GameState::Incubator)));
     }
 }
 
@@ -48,13 +45,22 @@ fn incubator_ui(
             ui.separator();
             ui.heading("Incubator");
             ui.separator();
-            if ui.selectable_label(state.tab == IncubatorTab::Abilities, "Abilities").clicked() {
+            if ui
+                .selectable_label(state.tab == IncubatorTab::Abilities, "Abilities")
+                .clicked()
+            {
                 state.tab = IncubatorTab::Abilities;
             }
-            if ui.selectable_label(state.tab == IncubatorTab::Units, "Units").clicked() {
+            if ui
+                .selectable_label(state.tab == IncubatorTab::Units, "Units")
+                .clicked()
+            {
                 state.tab = IncubatorTab::Units;
             }
-            if ui.selectable_label(state.tab == IncubatorTab::EvolutionTree, "Evolution Tree").clicked() {
+            if ui
+                .selectable_label(state.tab == IncubatorTab::EvolutionTree, "Evolution Tree")
+                .clicked()
+            {
                 state.tab = IncubatorTab::EvolutionTree;
             }
             ui.separator();
@@ -62,12 +68,10 @@ fn incubator_ui(
         });
     });
 
-    egui::CentralPanel::default().show(ctx, |ui| {
-        match state.tab {
-            IncubatorTab::Abilities => incubator_abilities(ui, &content, &state),
-            IncubatorTab::Units => incubator_units(ui, &content, &state),
-            IncubatorTab::EvolutionTree => evolution_tree(ui, &content),
-        }
+    egui::CentralPanel::default().show(ctx, |ui| match state.tab {
+        IncubatorTab::Abilities => incubator_abilities(ui, &content, &state),
+        IncubatorTab::Units => incubator_units(ui, &content, &state),
+        IncubatorTab::EvolutionTree => evolution_tree(ui, &content),
     });
 }
 
@@ -130,10 +134,7 @@ fn incubator_units(ui: &mut egui::Ui, content: &GameContent, state: &IncubatorSt
                         if ui.small_button("▼").clicked() {
                             // TODO: vote_cast -1
                         }
-                        ui.colored_label(
-                            rating_color(unit.rating),
-                            format!("{:+}", unit.rating),
-                        );
+                        ui.colored_label(rating_color(unit.rating), format!("{:+}", unit.rating));
                         if ui.small_button("▲").clicked() {
                             // TODO: vote_cast +1
                         }

@@ -1,17 +1,32 @@
-use rhai::{Dynamic, Engine, Map, Scope, AST};
+use rhai::{AST, Dynamic, Engine, Map, Scope};
 use std::cell::RefCell;
 use std::rc::Rc;
-
-use shared::battle::BattleAction;
 
 /// A collected action from a Rhai ability script execution.
 #[derive(Debug, Clone)]
 pub enum ScriptAction {
-    DealDamage { target_id: u64, amount: i32 },
-    HealDamage { target_id: u64, amount: i32 },
-    StealStat { target_id: u64, stat: String, amount: i32 },
-    AddShield { target_id: u64, amount: i32 },
-    ChangeStat { target_id: u64, stat: String, delta: i32 },
+    DealDamage {
+        target_id: u64,
+        amount: i32,
+    },
+    HealDamage {
+        target_id: u64,
+        amount: i32,
+    },
+    StealStat {
+        target_id: u64,
+        stat: String,
+        amount: i32,
+    },
+    AddShield {
+        target_id: u64,
+        amount: i32,
+    },
+    ChangeStat {
+        target_id: u64,
+        stat: String,
+        delta: i32,
+    },
 }
 
 /// Actions collector passed into Rhai scripts as `ability_actions`.
@@ -71,14 +86,14 @@ pub fn compile_script(engine: &Engine, script: &str) -> Result<AST, String> {
 /// Execute an ability script with the given context.
 /// Returns the list of actions the script produced.
 pub fn execute_ability_script(
-    engine: &Engine,
+    _engine: &Engine,
     ast: &AST,
     x: i32,
     level: i32,
     owner: &ScriptUnit,
     target: &ScriptUnit,
-    source_unit_id: u64,
-    ability_name: &str,
+    _source_unit_id: u64,
+    _ability_name: &str,
 ) -> Result<Vec<ScriptAction>, String> {
     let actions = AbilityActions::new();
     let actions_clone = actions.actions.clone();
@@ -112,13 +127,16 @@ pub fn execute_ability_script(
         });
 
         let ac = actions_clone.clone();
-        e.register_fn("steal_stat", move |target_id: i64, stat: String, amount: i64| {
-            ac.borrow_mut().push(ScriptAction::StealStat {
-                target_id: target_id as u64,
-                stat,
-                amount: amount as i32,
-            });
-        });
+        e.register_fn(
+            "steal_stat",
+            move |target_id: i64, stat: String, amount: i64| {
+                ac.borrow_mut().push(ScriptAction::StealStat {
+                    target_id: target_id as u64,
+                    stat,
+                    amount: amount as i32,
+                });
+            },
+        );
 
         let ac = actions_clone.clone();
         e.register_fn("add_shield", move |target_id: i64, amount: i64| {
@@ -129,13 +147,16 @@ pub fn execute_ability_script(
         });
 
         let ac = actions_clone.clone();
-        e.register_fn("change_stat", move |target_id: i64, stat: String, delta: i64| {
-            ac.borrow_mut().push(ScriptAction::ChangeStat {
-                target_id: target_id as u64,
-                stat,
-                delta: delta as i32,
-            });
-        });
+        e.register_fn(
+            "change_stat",
+            move |target_id: i64, stat: String, delta: i64| {
+                ac.borrow_mut().push(ScriptAction::ChangeStat {
+                    target_id: target_id as u64,
+                    stat,
+                    delta: delta as i32,
+                });
+            },
+        );
 
         e
     };
@@ -168,10 +189,21 @@ mod tests {
         let engine = create_engine();
         let ast = compile_script(&engine, "deal_damage(target[\"id\"], X * level);").unwrap();
 
-        let owner = ScriptUnit { id: 1, hp: 10, pwr: 3, dmg: 0 };
-        let target = ScriptUnit { id: 2, hp: 8, pwr: 2, dmg: 0 };
+        let owner = ScriptUnit {
+            id: 1,
+            hp: 10,
+            pwr: 3,
+            dmg: 0,
+        };
+        let target = ScriptUnit {
+            id: 2,
+            hp: 8,
+            pwr: 2,
+            dmg: 0,
+        };
 
-        let actions = execute_ability_script(&engine, &ast, 3, 2, &owner, &target, 1, "Strike").unwrap();
+        let actions =
+            execute_ability_script(&engine, &ast, 3, 2, &owner, &target, 1, "Strike").unwrap();
 
         assert_eq!(actions.len(), 1);
         match &actions[0] {
@@ -188,10 +220,21 @@ mod tests {
         let engine = create_engine();
         let ast = compile_script(&engine, "heal_damage(owner[\"id\"], X * level);").unwrap();
 
-        let owner = ScriptUnit { id: 1, hp: 5, pwr: 4, dmg: 3 };
-        let target = ScriptUnit { id: 2, hp: 8, pwr: 2, dmg: 0 };
+        let owner = ScriptUnit {
+            id: 1,
+            hp: 5,
+            pwr: 4,
+            dmg: 3,
+        };
+        let target = ScriptUnit {
+            id: 2,
+            hp: 8,
+            pwr: 2,
+            dmg: 0,
+        };
 
-        let actions = execute_ability_script(&engine, &ast, 4, 1, &owner, &target, 1, "Heal").unwrap();
+        let actions =
+            execute_ability_script(&engine, &ast, 4, 1, &owner, &target, 1, "Heal").unwrap();
 
         assert_eq!(actions.len(), 1);
         match &actions[0] {
@@ -212,10 +255,22 @@ mod tests {
         "#;
         let ast = compile_script(&engine, script).unwrap();
 
-        let owner = ScriptUnit { id: 1, hp: 10, pwr: 5, dmg: 0 };
-        let target = ScriptUnit { id: 2, hp: 8, pwr: 3, dmg: 0 };
+        let owner = ScriptUnit {
+            id: 1,
+            hp: 10,
+            pwr: 5,
+            dmg: 0,
+        };
+        let target = ScriptUnit {
+            id: 2,
+            hp: 8,
+            pwr: 3,
+            dmg: 0,
+        };
 
-        let actions = execute_ability_script(&engine, &ast, 5, 2, &owner, &target, 1, "Strike+Curse").unwrap();
+        let actions =
+            execute_ability_script(&engine, &ast, 5, 2, &owner, &target, 1, "Strike+Curse")
+                .unwrap();
 
         assert_eq!(actions.len(), 2);
     }
@@ -234,9 +289,20 @@ mod tests {
         let ast = compile_script(&engine, script).unwrap();
 
         // Owner has low HP — should heal
-        let owner = ScriptUnit { id: 1, hp: 3, pwr: 4, dmg: 0 };
-        let target = ScriptUnit { id: 2, hp: 8, pwr: 2, dmg: 0 };
-        let actions = execute_ability_script(&engine, &ast, 4, 1, &owner, &target, 1, "Smart").unwrap();
+        let owner = ScriptUnit {
+            id: 1,
+            hp: 3,
+            pwr: 4,
+            dmg: 0,
+        };
+        let target = ScriptUnit {
+            id: 2,
+            hp: 8,
+            pwr: 2,
+            dmg: 0,
+        };
+        let actions =
+            execute_ability_script(&engine, &ast, 4, 1, &owner, &target, 1, "Smart").unwrap();
         assert_eq!(actions.len(), 1);
         match &actions[0] {
             ScriptAction::HealDamage { amount, .. } => assert_eq!(*amount, 8),
@@ -244,8 +310,15 @@ mod tests {
         }
 
         // Owner has high HP — should deal damage
-        let owner_healthy = ScriptUnit { id: 1, hp: 10, pwr: 4, dmg: 0 };
-        let actions = execute_ability_script(&engine, &ast, 4, 1, &owner_healthy, &target, 1, "Smart").unwrap();
+        let owner_healthy = ScriptUnit {
+            id: 1,
+            hp: 10,
+            pwr: 4,
+            dmg: 0,
+        };
+        let actions =
+            execute_ability_script(&engine, &ast, 4, 1, &owner_healthy, &target, 1, "Smart")
+                .unwrap();
         assert_eq!(actions.len(), 1);
         match &actions[0] {
             ScriptAction::DealDamage { amount, .. } => assert_eq!(*amount, 4),
@@ -258,8 +331,18 @@ mod tests {
         let engine = create_engine();
         let ast = compile_script(&engine, "loop {}").unwrap();
 
-        let owner = ScriptUnit { id: 1, hp: 10, pwr: 3, dmg: 0 };
-        let target = ScriptUnit { id: 2, hp: 8, pwr: 2, dmg: 0 };
+        let owner = ScriptUnit {
+            id: 1,
+            hp: 10,
+            pwr: 3,
+            dmg: 0,
+        };
+        let target = ScriptUnit {
+            id: 2,
+            hp: 8,
+            pwr: 2,
+            dmg: 0,
+        };
 
         let result = execute_ability_script(&engine, &ast, 3, 1, &owner, &target, 1, "Bad");
         assert!(result.is_err());

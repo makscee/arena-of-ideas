@@ -1,6 +1,5 @@
 /// Shared validation logic that mirrors server-side checks.
 /// These can be tested natively (not WASM-only like server code).
-
 use crate::tier::Tier;
 
 /// Validate ability creation parameters.
@@ -130,10 +129,7 @@ pub fn validate_fusion(
 }
 
 /// Validate feeding parameters.
-pub fn validate_feed(
-    fused_abilities: &[u64],
-    donor_abilities: &[u64],
-) -> Result<(), String> {
+pub fn validate_feed(fused_abilities: &[u64], donor_abilities: &[u64]) -> Result<(), String> {
     // All donor abilities must be a subset of fused unit's abilities
     for &donor_ability in donor_abilities {
         if !fused_abilities.contains(&donor_ability) {

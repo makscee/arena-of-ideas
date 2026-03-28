@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, Table};
 
-use crate::{ability, unit, vote, Vote};
+use crate::{Vote, ability, unit, vote};
 
 #[spacetimedb::reducer]
 pub fn vote_cast(
