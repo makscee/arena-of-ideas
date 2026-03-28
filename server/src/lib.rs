@@ -1,5 +1,6 @@
 mod auth;
 mod content;
+mod generation;
 mod match_reducer;
 mod seed;
 mod voting;

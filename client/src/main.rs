@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use client::plugins::{collection::CollectionPlugin, game::GamePlugin, ui::UiPlugin};
+use client::plugins::{collection::CollectionPlugin, create::CreatePlugin, game::GamePlugin, ui::UiPlugin};
 
 fn main() {
     App::new()
@@ -14,6 +14,7 @@ fn main() {
         .add_plugins(UiPlugin)
         .add_plugins(GamePlugin)
         .add_plugins(CollectionPlugin)
+        .add_plugins(CreatePlugin)
         .add_systems(Startup, setup_camera)
         .run();
 }

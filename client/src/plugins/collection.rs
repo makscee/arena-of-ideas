@@ -157,7 +157,7 @@ fn collection_ui(
     mut contexts: EguiContexts,
     mut state: ResMut<CollectionState>,
     content: Res<GameContent>,
-    _next_game_state: ResMut<NextState<GameState>>,
+    mut next_game_state: ResMut<NextState<GameState>>,
 ) {
     let Ok(ctx) = contexts.ctx_mut() else { return };
 
@@ -170,6 +170,10 @@ fn collection_ui(
             }
             if ui.selectable_label(state.tab == CollectionTab::Units, "Units").clicked() {
                 state.tab = CollectionTab::Units;
+            }
+            ui.separator();
+            if ui.button("Create").clicked() {
+                next_game_state.set(GameState::Create);
             }
         });
     });

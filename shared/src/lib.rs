@@ -1,4 +1,5 @@
 pub mod ability;
+pub mod ai_prompts;
 pub mod battle;
 pub mod content_status;
 pub mod generation;

@@ -311,6 +311,66 @@ fn test_19_stacking_flow() {
 }
 
 #[test]
-fn test_20_cleanup() {
+fn test_20_match_cleanup() {
     let _ = call("match_abandon", &[]);
+}
+
+// ===== Generation Tests =====
+
+#[test]
+fn test_21_gen_breed_ability() {
+    // Breed Strike (1) + Guard (2)
+    let result = call("gen_breed_ability", &["1", "2", "\"combine offense and defense\""]);
+    assert!(result.is_ok(), "Should create breed request: {:?}", result);
+
+    let output = sql("SELECT * FROM gen_request");
+    assert!(output_contains(&output, "combine offense"), "Should have the prompt");
+    assert!(output_contains(&output, "Pending") || output_contains(&output, "pending"),
+        "Status should be Pending: {}", output);
+}
+
+#[test]
+fn test_22_gen_breed_same_parent_fails() {
+    let result = call("gen_breed_ability", &["1", "1", "\"self breed\""]);
+    assert!(result.is_err(), "Should not breed with itself");
+}
+
+#[test]
+fn test_23_gen_breed_invalid_parent_fails() {
+    let result = call("gen_breed_ability", &["9999", "1", "\"bad parent\""]);
+    assert!(result.is_err(), "Should fail with invalid parent");
+}
+
+#[test]
+fn test_24_gen_breed_empty_prompt_fails() {
+    let result = call("gen_breed_ability", &["1", "2", "\"\""]);
+    assert!(result.is_err(), "Should fail with empty prompt");
+}
+
+#[test]
+fn test_25_gen_create_unit() {
+    let result = call("gen_create_unit", &["\"a fierce fire warrior\""]);
+    assert!(result.is_ok(), "Should create unit gen request: {:?}", result);
+
+    let output = sql("SELECT * FROM gen_request");
+    assert!(output_contains(&output, "fire warrior"));
+}
+
+#[test]
+fn test_26_gen_submit_result() {
+    let result = call(
+        "gen_submit_result",
+        &["1", "\"result data here\"", "\"AI reasoning\""],
+    );
+    assert!(result.is_ok(), "Should submit result: {:?}", result);
+
+    let output = sql("SELECT * FROM gen_result");
+    assert!(output_contains(&output, "result data here"), "Should have result: {}", output);
+}
+
+#[test]
+fn test_27_gen_mark_failed() {
+    // Mark request 2 as failed
+    let result = call("gen_mark_failed", &["2"]);
+    assert!(result.is_ok(), "Should mark as failed: {:?}", result);
 }
