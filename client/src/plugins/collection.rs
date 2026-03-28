@@ -175,6 +175,9 @@ fn collection_ui(
             if ui.button("Create").clicked() {
                 next_game_state.set(GameState::Create);
             }
+            if ui.button("Incubator").clicked() {
+                next_game_state.set(GameState::Incubator);
+            }
         });
     });
 

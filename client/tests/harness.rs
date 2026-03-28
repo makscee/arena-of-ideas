@@ -370,7 +370,61 @@ fn test_26_gen_submit_result() {
 
 #[test]
 fn test_27_gen_mark_failed() {
-    // Mark request 2 as failed
     let result = call("gen_mark_failed", &["2"]);
     assert!(result.is_ok(), "Should mark as failed: {:?}", result);
+}
+
+// ===== Season Tests =====
+
+#[test]
+fn test_28_season_start() {
+    let result = call("season_start", &[]);
+    assert!(result.is_ok(), "Should start season: {:?}", result);
+
+    let output = sql("SELECT * FROM season");
+    // Season record should exist — check for created_at timestamp
+    assert!(output_contains(&output, "2026"), "Should have season record: {}", output);
+}
+
+#[test]
+fn test_29_rating_decay() {
+    let result = call("apply_rating_decay", &[]);
+    assert!(result.is_ok(), "Should apply decay: {:?}", result);
+}
+
+// ===== Feature Request Tests =====
+
+#[test]
+fn test_30_feature_request_create() {
+    let result = call("feature_request_create", &["\"Add position swapping mechanic\""]);
+    assert!(result.is_ok(), "Should create request: {:?}", result);
+
+    let output = sql("SELECT * FROM feature_request");
+    assert!(output_contains(&output, "position swapping"), "Should have request: {}", output);
+}
+
+#[test]
+fn test_31_feature_request_accept() {
+    let result = call("feature_request_accept", &["1"]);
+    assert!(result.is_ok(), "Should accept: {:?}", result);
+
+    let output = sql("SELECT * FROM feature_request");
+    assert!(output_contains(&output, "accepted"), "Should be accepted: {}", output);
+}
+
+#[test]
+fn test_32_feature_request_reject() {
+    // Create another request first
+    call("feature_request_create", &["\"Make units fly\""]).unwrap();
+    let result = call("feature_request_reject", &["2", "\"Too complex for now\""]);
+    assert!(result.is_ok(), "Should reject: {:?}", result);
+
+    let output = sql("SELECT * FROM feature_request WHERE id = 2");
+    assert!(output_contains(&output, "rejected"), "Should be rejected: {}", output);
+}
+
+#[test]
+fn test_33_feature_request_empty_fails() {
+    let result = call("feature_request_create", &["\"\""]);
+    assert!(result.is_err(), "Empty description should fail");
 }

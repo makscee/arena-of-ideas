@@ -1,7 +1,9 @@
 mod auth;
 mod content;
+mod feature_requests;
 mod generation;
 mod match_reducer;
+mod season_logic;
 mod seed;
 mod voting;
 
