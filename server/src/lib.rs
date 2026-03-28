@@ -1,5 +1,6 @@
 mod auth;
 mod content;
+mod match_reducer;
 mod seed;
 mod voting;
 
@@ -173,5 +174,33 @@ pub struct FeatureRequest {
     pub description: String,
     pub rating: i32,
     pub status: String,
+    pub created_at: spacetimedb::Timestamp,
+}
+
+// ===== Match Types =====
+
+#[derive(spacetimedb::SpacetimeType, Clone, Debug)]
+pub struct TeamSlot {
+    pub unit_id: u64,
+    pub copies: u8,
+    pub bonus_hp: i32,
+    pub bonus_pwr: i32,
+    pub is_fused: bool,
+    pub fused_trigger: String,
+    pub fused_abilities: Vec<u64>,
+    pub fused_tier: u8,
+}
+
+#[spacetimedb::table(accessor = game_match, public)]
+pub struct GameMatch {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u64,
+    pub player: spacetimedb::Identity,
+    pub floor: u8,
+    pub gold: i32,
+    pub lives: i32,
+    pub team: Vec<TeamSlot>,
+    pub shop_offers: Vec<u64>,
     pub created_at: spacetimedb::Timestamp,
 }

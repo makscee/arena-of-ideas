@@ -6,4 +6,5 @@ pub mod target;
 pub mod tier;
 pub mod trigger;
 pub mod unit;
+pub mod match_logic;
 pub mod validation;
