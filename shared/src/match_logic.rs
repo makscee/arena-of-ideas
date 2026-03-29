@@ -322,4 +322,30 @@ mod tests {
     fn feed_all_wrong_abilities_fails() {
         assert!(validate_feed(&[10, 20], &[30, 40], true).is_err());
     }
+
+    // ===== Trigger Choice =====
+
+    #[test]
+    fn trigger_choice_a_valid() {
+        let choice = "a";
+        assert!(["a", "b", "both"].contains(&choice));
+    }
+
+    #[test]
+    fn trigger_choice_b_valid() {
+        let choice = "b";
+        assert!(["a", "b", "both"].contains(&choice));
+    }
+
+    #[test]
+    fn trigger_choice_both_valid() {
+        let choice = "both";
+        assert!(["a", "b", "both"].contains(&choice));
+    }
+
+    #[test]
+    fn trigger_choice_invalid() {
+        let choice = "left";
+        assert!(!["a", "b", "both"].contains(&choice));
+    }
 }

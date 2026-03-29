@@ -380,7 +380,7 @@ pub fn match_fuse_units(
     ctx: &ReducerContext,
     slot_a: u32,
     slot_b: u32,
-    trigger_from_a: bool,
+    trigger_choice: String,
     chosen_abilities: Vec<u64>,
 ) -> Result<(), String> {
     let mut game_match = find_player_match(ctx)?;
@@ -430,10 +430,11 @@ pub fn match_fuse_units(
         }
     }
 
-    let trigger_str = if trigger_from_a {
-        format!("{:?}", unit_a.trigger)
-    } else {
-        format!("{:?}", unit_b.trigger)
+    let trigger_str = match trigger_choice.as_str() {
+        "a" => format!("{:?}", unit_a.trigger),
+        "b" => format!("{:?}", unit_b.trigger),
+        "both" => format!("Any({:?}, {:?})", unit_a.trigger, unit_b.trigger),
+        _ => return Err("trigger_choice must be 'a', 'b', or 'both'".to_string()),
     };
 
     let (remove_first, remove_second) = if a > b { (a, b) } else { (b, a) };

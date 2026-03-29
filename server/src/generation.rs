@@ -3,6 +3,7 @@ use spacetimedb::{ReducerContext, Table};
 use crate::{GenRequest, GenResult, GenStatus, GenTargetKind, ability, gen_request, gen_result};
 
 /// System prompt for Claude when breeding abilities.
+#[allow(dead_code)]
 pub const ABILITY_SYSTEM_PROMPT: &str = r##"You are a game designer for Arena of Ideas, an auto-battler.
 You create abilities using Rhai scripts. Abilities are named mechanics that units use in battle.
 
@@ -41,6 +42,7 @@ Respond with ONLY a JSON object, no markdown, no explanation outside the JSON:
 "##;
 
 /// System prompt for Claude when generating unit names and painter scripts.
+#[allow(dead_code)]
 pub const UNIT_SYSTEM_PROMPT: &str = r##"You are a game designer for Arena of Ideas, an auto-battler.
 Generate a unique unit name and visual description based on the given abilities and trigger.
 
@@ -68,6 +70,7 @@ Respond with ONLY a JSON object:
 "##;
 
 /// Build the full prompt for ability breeding.
+#[allow(dead_code)]
 pub fn build_ability_breeding_prompt(
     parent_a_name: &str,
     parent_a_description: &str,
@@ -101,6 +104,7 @@ The new ability should be distinct from either parent — not just a stat change
 }
 
 /// Build the full prompt for unit name/visual generation.
+#[allow(dead_code)]
 pub fn build_unit_generation_prompt(
     trigger: &str,
     ability_names: &[String],
