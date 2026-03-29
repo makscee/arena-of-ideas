@@ -227,9 +227,7 @@ fn build_effects(actions: &[BattleAction], units: &[BattleUnitVisual]) -> Vec<Vi
 
     for action in actions {
         match action {
-            BattleAction::Spawn { .. } => {
-                // No visual effect for spawn
-            }
+            BattleAction::Spawn { .. } => {}
             BattleAction::AbilityUsed {
                 source,
                 ability_name,
@@ -237,13 +235,13 @@ fn build_effects(actions: &[BattleAction], units: &[BattleUnitVisual]) -> Vec<Vi
                 let name = unit_name(units, *source);
                 effects.push(VisualEffect {
                     start: t,
-                    duration: 0.6,
+                    duration: 1.2,
                     kind: EffectKind::Card {
-                        text: format!("{} uses {}", name, ability_name),
+                        text: format!("⚔ {} uses {}", name, ability_name),
                         color: egui::Color32::from_rgb(100, 170, 255),
                     },
                 });
-                t += 0.15;
+                t += 0.4;
             }
             BattleAction::Damage {
                 source,
@@ -252,22 +250,22 @@ fn build_effects(actions: &[BattleAction], units: &[BattleUnitVisual]) -> Vec<Vi
             } => {
                 effects.push(VisualEffect {
                     start: t,
-                    duration: 0.8,
+                    duration: 1.5,
                     kind: EffectKind::Line {
                         source_id: *source,
                         target_id: *target,
                         color: egui::Color32::from_rgb(255, 80, 80),
-                        label: format!("-{}", amount),
+                        label: format!("{}", amount),
                     },
                 });
                 effects.push(VisualEffect {
-                    start: t,
-                    duration: 0.5,
+                    start: t + 0.1,
+                    duration: 0.6,
                     kind: EffectKind::Flash { unit_id: *target },
                 });
                 effects.push(VisualEffect {
-                    start: t,
-                    duration: 0.7,
+                    start: t + 0.1,
+                    duration: 1.0,
                     kind: EffectKind::Popup {
                         unit_id: *target,
                         text: format!("-{}", amount),
@@ -288,7 +286,7 @@ fn build_effects(actions: &[BattleAction], units: &[BattleUnitVisual]) -> Vec<Vi
                         color: egui::Color32::from_rgb(255, 120, 120),
                     },
                 });
-                t += 0.35;
+                t += 0.6;
             }
             BattleAction::Heal {
                 source,
@@ -297,17 +295,17 @@ fn build_effects(actions: &[BattleAction], units: &[BattleUnitVisual]) -> Vec<Vi
             } => {
                 effects.push(VisualEffect {
                     start: t,
-                    duration: 0.8,
+                    duration: 1.5,
                     kind: EffectKind::Line {
                         source_id: *source,
                         target_id: *target,
-                        color: egui::Color32::from_rgb(80, 255, 80),
+                        color: egui::Color32::from_rgb(80, 230, 80),
                         label: format!("+{}", amount),
                     },
                 });
                 effects.push(VisualEffect {
-                    start: t,
-                    duration: 0.7,
+                    start: t + 0.1,
+                    duration: 1.0,
                     kind: EffectKind::Popup {
                         unit_id: *target,
                         text: format!("+{}", amount),
@@ -316,55 +314,55 @@ fn build_effects(actions: &[BattleAction], units: &[BattleUnitVisual]) -> Vec<Vi
                 });
                 effects.push(VisualEffect {
                     start: t,
-                    duration: 0.6,
+                    duration: 1.2,
                     kind: EffectKind::Card {
                         text: format!(
-                            "{} heals {} +{}",
+                            "✚ {} heals {} for {}",
                             unit_name(units, *source),
                             unit_name(units, *target),
                             amount
                         ),
-                        color: egui::Color32::from_rgb(120, 255, 120),
+                        color: egui::Color32::from_rgb(80, 220, 80),
                     },
                 });
-                t += 0.3;
+                t += 0.5;
             }
             BattleAction::Death { unit } => {
                 let name = unit_name(units, *unit);
                 effects.push(VisualEffect {
                     start: t,
-                    duration: 1.0,
+                    duration: 1.5,
                     kind: EffectKind::Card {
-                        text: format!("💀 {} dies!", name),
+                        text: format!("☠ {} has fallen!", name),
                         color: egui::Color32::from_rgb(255, 50, 50),
                     },
                 });
+                // Dummy card for state tracking
                 effects.push(VisualEffect {
                     start: t,
-                    duration: 0.6,
+                    duration: 0.01,
                     kind: EffectKind::Card {
                         text: String::new(),
                         color: egui::Color32::TRANSPARENT,
                     },
                 });
-                t += 0.4;
+                t += 0.7;
             }
             BattleAction::Fatigue { amount } => {
                 effects.push(VisualEffect {
                     start: t,
-                    duration: 0.8,
+                    duration: 1.5,
                     kind: EffectKind::Card {
-                        text: format!("⚡ FATIGUE! All take {} dmg", amount),
+                        text: format!("⚡ FATIGUE! All units take {} damage", amount),
                         color: egui::Color32::from_rgb(255, 200, 50),
                     },
                 });
-                t += 0.4;
+                t += 0.6;
             }
             BattleAction::StatChange { unit, stat, delta } => {
-                let name = unit_name(units, *unit);
                 effects.push(VisualEffect {
                     start: t,
-                    duration: 0.5,
+                    duration: 0.8,
                     kind: EffectKind::Popup {
                         unit_id: *unit,
                         text: format!("{:?}{:+}", stat, delta),
@@ -613,16 +611,66 @@ fn battle_scene_ui(
                             color.b(),
                             alpha,
                         );
-                        painter.line_segment([from, to], egui::Stroke::new(2.0, c));
-                        // Label at midpoint
-                        let mid = egui::pos2((from.x + to.x) * 0.5, (from.y + to.y) * 0.5);
-                        painter.text(
-                            mid,
-                            egui::Align2::CENTER_CENTER,
-                            label,
-                            egui::FontId::proportional(16.0),
-                            c,
+
+                        // Animated line: grows from source to target
+                        let line_progress = (progress * 2.0).min(1.0);
+                        let current_to = egui::pos2(
+                            from.x + (to.x - from.x) * line_progress,
+                            from.y + (to.y - from.y) * line_progress,
                         );
+
+                        // Main line (thick, glowing)
+                        painter.line_segment([from, current_to], egui::Stroke::new(3.0, c));
+                        // Glow line
+                        let glow = egui::Color32::from_rgba_premultiplied(
+                            color.r(),
+                            color.g(),
+                            color.b(),
+                            alpha / 3,
+                        );
+                        painter.line_segment([from, current_to], egui::Stroke::new(8.0, glow));
+
+                        // Arrowhead at current_to
+                        if line_progress > 0.1 {
+                            let dir = egui::vec2(to.x - from.x, to.y - from.y);
+                            let len = (dir.x * dir.x + dir.y * dir.y).sqrt();
+                            if len > 0.0 {
+                                let norm = egui::vec2(dir.x / len, dir.y / len);
+                                let perp = egui::vec2(-norm.y, norm.x);
+                                let arrow_size = 10.0;
+                                let tip = current_to;
+                                let left = egui::pos2(
+                                    tip.x - norm.x * arrow_size + perp.x * arrow_size * 0.5,
+                                    tip.y - norm.y * arrow_size + perp.y * arrow_size * 0.5,
+                                );
+                                let right = egui::pos2(
+                                    tip.x - norm.x * arrow_size - perp.x * arrow_size * 0.5,
+                                    tip.y - norm.y * arrow_size - perp.y * arrow_size * 0.5,
+                                );
+                                painter.line_segment([left, tip], egui::Stroke::new(3.0, c));
+                                painter.line_segment([right, tip], egui::Stroke::new(3.0, c));
+                            }
+                        }
+
+                        // Label at midpoint with background
+                        if line_progress > 0.3 {
+                            let mid = egui::pos2(
+                                (from.x + current_to.x) * 0.5,
+                                (from.y + current_to.y) * 0.5,
+                            );
+                            let label_bg =
+                                egui::Color32::from_rgba_premultiplied(0, 0, 0, alpha * 3 / 4);
+                            let label_rect =
+                                egui::Rect::from_center_size(mid, egui::vec2(40.0, 22.0));
+                            painter.rect_filled(label_rect, 4.0, label_bg);
+                            painter.text(
+                                mid,
+                                egui::Align2::CENTER_CENTER,
+                                label,
+                                egui::FontId::proportional(16.0),
+                                c,
+                            );
+                        }
                     }
                 }
                 EffectKind::Popup {
@@ -637,23 +685,25 @@ fn battle_scene_ui(
                             color.b(),
                             alpha,
                         );
-                        let offset_y = -unit_size * 0.5 - progress * 20.0;
+                        // Float upward
+                        let offset_y = -unit_size * 0.5 - progress * 30.0;
+                        let scale = 1.0 + progress * 0.3; // grow slightly
                         painter.text(
                             egui::pos2(pos.x, pos.y + offset_y),
                             egui::Align2::CENTER_CENTER,
                             text,
-                            egui::FontId::proportional(18.0),
+                            egui::FontId::proportional(18.0 * scale),
                             c,
                         );
                     }
                 }
                 EffectKind::Flash { unit_id } => {
                     if let Some(&pos) = unit_positions.get(unit_id) {
-                        let a = (alpha as f32 * 0.4) as u8;
+                        let flash_alpha = (alpha as f32 * 0.5 * (1.0 - progress)) as u8;
                         painter.circle_filled(
                             pos,
-                            unit_size * 0.5,
-                            egui::Color32::from_rgba_premultiplied(255, 255, 255, a),
+                            unit_size * 0.45 * (1.0 + progress * 0.2),
+                            egui::Color32::from_rgba_premultiplied(255, 255, 255, flash_alpha),
                         );
                     }
                 }
@@ -667,12 +717,39 @@ fn battle_scene_ui(
                         color.b(),
                         alpha,
                     );
-                    let card_y = mid_y - 10.0 + progress * 5.0;
+                    let card_y = mid_y;
+
+                    // Card background
+                    let card_width = (text.len() as f32 * 8.0).max(120.0).min(350.0);
+                    let card_rect = egui::Rect::from_center_size(
+                        egui::pos2(avail.center().x, card_y),
+                        egui::vec2(card_width, 28.0),
+                    );
+                    let bg_alpha = alpha * 3 / 4;
+                    painter.rect_filled(
+                        card_rect,
+                        6.0,
+                        egui::Color32::from_rgba_premultiplied(20, 20, 30, bg_alpha),
+                    );
+                    // Card border
+                    let border_c = egui::Color32::from_rgba_premultiplied(
+                        color.r(),
+                        color.g(),
+                        color.b(),
+                        alpha / 2,
+                    );
+                    painter.rect_stroke(
+                        card_rect,
+                        6.0,
+                        egui::Stroke::new(1.5, border_c),
+                        egui::StrokeKind::Outside,
+                    );
+                    // Card text
                     painter.text(
                         egui::pos2(avail.center().x, card_y),
                         egui::Align2::CENTER_CENTER,
                         text,
-                        egui::FontId::proportional(16.0),
+                        egui::FontId::proportional(15.0),
                         c,
                     );
                 }
