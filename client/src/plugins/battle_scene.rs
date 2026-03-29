@@ -241,24 +241,24 @@ fn build_effects(actions: &[BattleAction], units: &[BattleUnitVisual]) -> Vec<Vi
                 let name = unit_name(units, *source);
                 effects.push(VisualEffect {
                     start: t,
-                    duration: 1.0,
+                    duration: 1.5,
                     kind: EffectKind::Card {
                         text: format!("⚔ {} uses {}", name, ability_name),
                         color: egui::Color32::from_rgb(100, 170, 255),
                         source_id: *source,
                     },
                 });
-                t += 0.5;
+                t += 0.3;
             }
             BattleAction::Damage {
                 source,
                 target,
                 amount,
             } => {
-                // Arrow: 0.5s
+                // Arrow: 0.3s, card: 1.5s
                 effects.push(VisualEffect {
                     start: t,
-                    duration: 0.5,
+                    duration: 0.3,
                     kind: EffectKind::Line {
                         source_id: *source,
                         target_id: *target,
@@ -268,7 +268,7 @@ fn build_effects(actions: &[BattleAction], units: &[BattleUnitVisual]) -> Vec<Vi
                 });
                 effects.push(VisualEffect {
                     start: t + 0.1,
-                    duration: 0.4,
+                    duration: 0.3,
                     kind: EffectKind::Flash { unit_id: *target },
                 });
                 effects.push(VisualEffect {
@@ -282,7 +282,7 @@ fn build_effects(actions: &[BattleAction], units: &[BattleUnitVisual]) -> Vec<Vi
                 });
                 effects.push(VisualEffect {
                     start: t,
-                    duration: 1.0,
+                    duration: 1.5,
                     kind: EffectKind::Card {
                         text: format!(
                             "{} → {} → {}",
@@ -294,7 +294,7 @@ fn build_effects(actions: &[BattleAction], units: &[BattleUnitVisual]) -> Vec<Vi
                         source_id: *source,
                     },
                 });
-                t += 0.7;
+                t += 0.5;
             }
             BattleAction::Heal {
                 source,
@@ -303,7 +303,7 @@ fn build_effects(actions: &[BattleAction], units: &[BattleUnitVisual]) -> Vec<Vi
             } => {
                 effects.push(VisualEffect {
                     start: t,
-                    duration: 0.5,
+                    duration: 0.3,
                     kind: EffectKind::Line {
                         source_id: *source,
                         target_id: *target,
@@ -322,7 +322,7 @@ fn build_effects(actions: &[BattleAction], units: &[BattleUnitVisual]) -> Vec<Vi
                 });
                 effects.push(VisualEffect {
                     start: t,
-                    duration: 1.0,
+                    duration: 1.5,
                     kind: EffectKind::Card {
                         text: format!(
                             "✚ {} → +{} → {}",
@@ -720,16 +720,15 @@ fn battle_scene_ui(
                         alpha,
                     );
 
-                    // Position at source unit's column
-                    let card_x = if *source_id == 0 {
-                        avail.center().x
+                    // Position at source unit's column, offset toward their row
+                    let (card_x, card_y) = if *source_id == 0 {
+                        (avail.center().x, mid_y)
+                    } else if let Some(&pos) = unit_positions.get(source_id) {
+                        // Place card between unit and center, closer to unit
+                        (pos.x, pos.y + (mid_y - pos.y) * 0.4)
                     } else {
-                        unit_positions
-                            .get(source_id)
-                            .map(|p| p.x)
-                            .unwrap_or(avail.center().x)
+                        (avail.center().x, mid_y)
                     };
-                    let card_y = mid_y;
 
                     // Card background
                     let card_w = (text.len() as f32 * 9.0).max(140.0).min(300.0);
