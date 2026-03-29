@@ -139,6 +139,10 @@ fn battle_scene_ui(
     mut next_state: ResMut<NextState<GameState>>,
 ) {
     let Ok(ctx) = contexts.ctx_mut() else { return };
+    // Guard: skip first frame where egui hasn't run yet
+    if ctx.input(|i| i.screen_rect().size().length() < 1.0) {
+        return;
+    }
 
     if state.result.is_none() {
         egui::CentralPanel::default().show(ctx, |ui| {

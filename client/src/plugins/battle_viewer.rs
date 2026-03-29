@@ -11,7 +11,8 @@ pub struct BattleViewerPlugin;
 impl Plugin for BattleViewerPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<BattleViewerState>()
-            .add_systems(Update, battle_viewer_ui.run_if(in_state(GameState::Battle)));
+            // Disabled — superseded by BattleScenePlugin
+            ;
     }
 }
 

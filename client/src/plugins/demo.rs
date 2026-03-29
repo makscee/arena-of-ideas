@@ -12,7 +12,8 @@ pub struct DemoPlugin;
 
 impl Plugin for DemoPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, check_demo_mode);
+        // Run on first Update in Title state so egui has initialized
+        app.add_systems(Update, check_demo_mode.run_if(in_state(GameState::Title)));
     }
 }
 
