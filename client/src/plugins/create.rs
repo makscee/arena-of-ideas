@@ -11,8 +11,10 @@ pub struct CreatePlugin;
 
 impl Plugin for CreatePlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<CreateState>()
-            .add_systems(Update, create_ui.run_if(in_state(GameState::Create)));
+        app.init_resource::<CreateState>().add_systems(
+            bevy_egui::EguiPrimaryContextPass,
+            create_ui.run_if(in_state(GameState::Create)),
+        );
     }
 }
 

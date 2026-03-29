@@ -11,8 +11,10 @@ pub struct IncubatorPlugin;
 
 impl Plugin for IncubatorPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<IncubatorState>()
-            .add_systems(Update, incubator_ui.run_if(in_state(GameState::Incubator)));
+        app.init_resource::<IncubatorState>().add_systems(
+            bevy_egui::EguiPrimaryContextPass,
+            incubator_ui.run_if(in_state(GameState::Incubator)),
+        );
     }
 }
 

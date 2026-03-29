@@ -13,7 +13,10 @@ impl Plugin for BattleScenePlugin {
         app.init_resource::<BattleSceneState>()
             .init_resource::<BattleFrameCount>()
             .add_systems(OnEnter(GameState::Battle), reset_frame_count)
-            .add_systems(Update, battle_scene_ui.run_if(in_state(GameState::Battle)));
+            .add_systems(
+                bevy_egui::EguiPrimaryContextPass,
+                battle_scene_ui.run_if(in_state(GameState::Battle)),
+            );
     }
 }
 

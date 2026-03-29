@@ -8,7 +8,7 @@ pub struct OnboardingPlugin;
 impl Plugin for OnboardingPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<OnboardingState>()
-            .add_systems(Update, onboarding_ui);
+            .add_systems(bevy_egui::EguiPrimaryContextPass, onboarding_ui);
     }
 }
 

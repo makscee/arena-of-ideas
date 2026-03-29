@@ -11,7 +11,10 @@ impl Plugin for CollectionPlugin {
         app.init_resource::<CollectionState>()
             .init_resource::<GameContent>()
             .add_systems(OnEnter(GameState::Home), init_mock_content)
-            .add_systems(Update, collection_ui.run_if(in_state(GameState::Home)));
+            .add_systems(
+                bevy_egui::EguiPrimaryContextPass,
+                collection_ui.run_if(in_state(GameState::Home)),
+            );
     }
 }
 
