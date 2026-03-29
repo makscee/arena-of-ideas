@@ -238,7 +238,11 @@ fn test_11_match_start() {
     call("match_start", &[]).unwrap();
 
     let output = sql("SELECT gold FROM game_match");
-    assert!(output_contains(&output, "7"), "Should start with 7 gold: {}", output);
+    assert!(
+        output_contains(&output, "7"),
+        "Should start with 7 gold: {}",
+        output
+    );
 }
 
 #[test]

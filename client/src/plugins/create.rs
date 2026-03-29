@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContexts};
+use bevy_egui::{EguiContexts, egui};
 
 use crate::module_bindings::*;
 use crate::plugins::collection::GameContent;
@@ -185,8 +185,7 @@ fn breed_ability_ui(
                             info!("Breeding request sent: {} × {}", pa.name, pb.name);
                         }
                         Err(e) => {
-                            state.breeding_status =
-                                RequestStatus::Error(format!("{:?}", e));
+                            state.breeding_status = RequestStatus::Error(format!("{:?}", e));
                         }
                     }
                 } else {
@@ -247,7 +246,9 @@ fn breed_ability_ui(
                         result.description.clone(),
                         target_type,
                         result.effect_script.clone(),
-                        0, 0, 0,
+                        0,
+                        0,
+                        0,
                     ) {
                         warn!("Failed to create ability: {:?}", e);
                     }
@@ -396,10 +397,7 @@ fn assemble_unit_ui(
         .clicked()
     {
         if let Some(ref conn) = stdb.conn {
-            match conn
-                .reducers
-                .gen_create_unit(state.unit_prompt.clone())
-            {
+            match conn.reducers.gen_create_unit(state.unit_prompt.clone()) {
                 Ok(_) => {
                     state.unit_status = RequestStatus::Pending;
                     info!("Unit generation request sent");

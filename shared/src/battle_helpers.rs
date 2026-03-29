@@ -1,7 +1,6 @@
 /// Battle helper functions shared between client and server.
 /// The full simulation (Rhai execution) stays in client,
 /// but data structures and analysis utilities live here.
-
 use crate::battle::{BattleAction, BattleResult, BattleSide};
 
 /// Count total damage dealt in a battle.
@@ -84,14 +83,43 @@ mod tests {
             winner: BattleSide::Left,
             turns: 3,
             actions: vec![
-                BattleAction::Spawn { unit: 1, slot: 0, side: BattleSide::Left },
-                BattleAction::Spawn { unit: 2, slot: 0, side: BattleSide::Right },
-                BattleAction::AbilityUsed { source: 1, ability_name: "Strike".to_string() },
-                BattleAction::Damage { source: 1, target: 2, amount: 5 },
-                BattleAction::AbilityUsed { source: 2, ability_name: "Strike".to_string() },
-                BattleAction::Damage { source: 2, target: 1, amount: 3 },
-                BattleAction::AbilityUsed { source: 1, ability_name: "Strike".to_string() },
-                BattleAction::Damage { source: 1, target: 2, amount: 5 },
+                BattleAction::Spawn {
+                    unit: 1,
+                    slot: 0,
+                    side: BattleSide::Left,
+                },
+                BattleAction::Spawn {
+                    unit: 2,
+                    slot: 0,
+                    side: BattleSide::Right,
+                },
+                BattleAction::AbilityUsed {
+                    source: 1,
+                    ability_name: "Strike".to_string(),
+                },
+                BattleAction::Damage {
+                    source: 1,
+                    target: 2,
+                    amount: 5,
+                },
+                BattleAction::AbilityUsed {
+                    source: 2,
+                    ability_name: "Strike".to_string(),
+                },
+                BattleAction::Damage {
+                    source: 2,
+                    target: 1,
+                    amount: 3,
+                },
+                BattleAction::AbilityUsed {
+                    source: 1,
+                    ability_name: "Strike".to_string(),
+                },
+                BattleAction::Damage {
+                    source: 1,
+                    target: 2,
+                    amount: 5,
+                },
                 BattleAction::Death { unit: 2 },
             ],
         }

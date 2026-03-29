@@ -1,6 +1,9 @@
 use spacetimedb::{ReducerContext, Table};
 
-use crate::{Ability, ArenaState, ContentStatus, GlobalSettings, TargetType, Trigger, Unit, ability, arena_state, global_settings, unit};
+use crate::{
+    Ability, ArenaState, ContentStatus, GlobalSettings, TargetType, Trigger, Unit, ability,
+    arena_state, global_settings, unit,
+};
 
 /// Seeds the database with primordial abilities and sample units.
 pub fn seed_primordial_abilities(ctx: &ReducerContext) {

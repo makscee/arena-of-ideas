@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContexts};
+use bevy_egui::{EguiContexts, egui};
 
 use shared::battle::{BattleAction, BattleResult, BattleSide};
 
@@ -71,17 +71,29 @@ fn apply_actions_to(state: &mut BattleSceneState) {
             break;
         }
         match action {
-            BattleAction::Damage { source, target, amount } => {
+            BattleAction::Damage {
+                source,
+                target,
+                amount,
+            } => {
                 if let Some(u) = state.units.iter_mut().find(|u| u.id == *target) {
                     u.dmg += amount;
                 }
-                state.log.push(format!("{} deals {} dmg to {}", source, amount, target));
+                state
+                    .log
+                    .push(format!("{} deals {} dmg to {}", source, amount, target));
             }
-            BattleAction::Heal { source, target, amount } => {
+            BattleAction::Heal {
+                source,
+                target,
+                amount,
+            } => {
                 if let Some(u) = state.units.iter_mut().find(|u| u.id == *target) {
                     u.dmg = (u.dmg - amount).max(0);
                 }
-                state.log.push(format!("{} heals {} for {}", source, target, amount));
+                state
+                    .log
+                    .push(format!("{} heals {} for {}", source, target, amount));
             }
             BattleAction::Death { unit } => {
                 if let Some(u) = state.units.iter_mut().find(|u| u.id == *unit) {
@@ -97,10 +109,17 @@ fn apply_actions_to(state: &mut BattleSceneState) {
                         _ => {}
                     }
                 }
-                state.log.push(format!("Unit {} {:?} {:+}", unit, stat, delta));
+                state
+                    .log
+                    .push(format!("Unit {} {:?} {:+}", unit, stat, delta));
             }
-            BattleAction::AbilityUsed { source, ability_name } => {
-                state.log.push(format!("Unit {} uses {}", source, ability_name));
+            BattleAction::AbilityUsed {
+                source,
+                ability_name,
+            } => {
+                state
+                    .log
+                    .push(format!("Unit {} uses {}", source, ability_name));
             }
             BattleAction::Fatigue { amount } => {
                 for u in state.units.iter_mut().filter(|u| u.alive) {
@@ -203,44 +222,59 @@ fn battle_scene_ui(
         let log_height = available.height() * 0.4;
 
         // Unit rendering area
-        let battle_rect = egui::Rect::from_min_size(
-            available.min,
-            egui::vec2(available.width(), battle_height),
-        );
+        let battle_rect =
+            egui::Rect::from_min_size(available.min, egui::vec2(available.width(), battle_height));
 
         // Draw battlefield background
-        ui.painter().rect_filled(battle_rect, 0.0, egui::Color32::from_rgb(20, 20, 30));
+        ui.painter()
+            .rect_filled(battle_rect, 0.0, egui::Color32::from_rgb(20, 20, 30));
 
         // Draw units
         let unit_size = (battle_rect.height() * 0.35).min(80.0);
-        let left_units: Vec<_> = state.units.iter().filter(|u| u.side == BattleSide::Left).collect();
-        let right_units: Vec<_> = state.units.iter().filter(|u| u.side == BattleSide::Right).collect();
+        let left_units: Vec<_> = state
+            .units
+            .iter()
+            .filter(|u| u.side == BattleSide::Left)
+            .collect();
+        let right_units: Vec<_> = state
+            .units
+            .iter()
+            .filter(|u| u.side == BattleSide::Right)
+            .collect();
 
         let left_x = battle_rect.left() + battle_rect.width() * 0.25;
         let right_x = battle_rect.left() + battle_rect.width() * 0.75;
 
         for (i, unit) in left_units.iter().enumerate() {
-            let y = battle_rect.top() + (i as f32 + 0.5) * battle_rect.height() / left_units.len().max(1) as f32;
+            let y = battle_rect.top()
+                + (i as f32 + 0.5) * battle_rect.height() / left_units.len().max(1) as f32;
             let rect = egui::Rect::from_center_size(
                 egui::pos2(left_x, y),
                 egui::vec2(unit_size, unit_size),
             );
             let alpha = if unit.alive { 255 } else { 60 };
             let color = egui::Color32::from_rgba_premultiplied(
-                unit.color.r(), unit.color.g(), unit.color.b(), alpha,
+                unit.color.r(),
+                unit.color.g(),
+                unit.color.b(),
+                alpha,
             );
             paint_default_unit(rect, color, unit.hp, unit.pwr, unit.dmg, &unit.name, ui);
         }
 
         for (i, unit) in right_units.iter().enumerate() {
-            let y = battle_rect.top() + (i as f32 + 0.5) * battle_rect.height() / right_units.len().max(1) as f32;
+            let y = battle_rect.top()
+                + (i as f32 + 0.5) * battle_rect.height() / right_units.len().max(1) as f32;
             let rect = egui::Rect::from_center_size(
                 egui::pos2(right_x, y),
                 egui::vec2(unit_size, unit_size),
             );
             let alpha = if unit.alive { 255 } else { 60 };
             let color = egui::Color32::from_rgba_premultiplied(
-                unit.color.r(), unit.color.g(), unit.color.b(), alpha,
+                unit.color.r(),
+                unit.color.g(),
+                unit.color.b(),
+                alpha,
             );
             paint_default_unit(rect, color, unit.hp, unit.pwr, unit.dmg, &unit.name, ui);
         }

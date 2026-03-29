@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContexts};
+use bevy_egui::{EguiContexts, egui};
 
 use crate::module_bindings::*;
 use crate::plugins::collection::GameContent;
@@ -32,11 +32,10 @@ enum IncubatorTab {
 
 fn call_vote(stdb: &StdbConnection, entity_kind: &str, entity_id: u64, value: i8) {
     if let Some(ref conn) = stdb.conn {
-        if let Err(e) = conn.reducers.vote_cast(
-            entity_kind.to_string(),
-            entity_id,
-            value,
-        ) {
+        if let Err(e) = conn
+            .reducers
+            .vote_cast(entity_kind.to_string(), entity_id, value)
+        {
             warn!("Vote failed: {:?}", e);
         }
     }
@@ -157,10 +156,7 @@ fn incubator_units(
                         if ui.small_button("▼").clicked() {
                             call_vote(stdb, "unit", unit.id, -1);
                         }
-                        ui.colored_label(
-                            rating_color(unit.rating),
-                            format!("{:+}", unit.rating),
-                        );
+                        ui.colored_label(rating_color(unit.rating), format!("{:+}", unit.rating));
                         if ui.small_button("▲").clicked() {
                             call_vote(stdb, "unit", unit.id, 1);
                         }
@@ -242,15 +238,9 @@ fn evolution_tree(ui: &mut egui::Ui, content: &GameContent) {
                     ui.label(&ability.description);
                     ui.horizontal(|ui| {
                         ui.label("Parents:");
-                        ui.colored_label(
-                            colors::ABILITY_COLOR,
-                            name_of(ability.parent_a),
-                        );
+                        ui.colored_label(colors::ABILITY_COLOR, name_of(ability.parent_a));
                         ui.label("×");
-                        ui.colored_label(
-                            colors::ABILITY_COLOR,
-                            name_of(ability.parent_b),
-                        );
+                        ui.colored_label(colors::ABILITY_COLOR, name_of(ability.parent_b));
                     });
                 });
             }

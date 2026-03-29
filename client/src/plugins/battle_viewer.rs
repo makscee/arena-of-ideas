@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContexts};
+use bevy_egui::{EguiContexts, egui};
 
 use shared::battle::{BattleAction, BattleResult, BattleSide};
 
@@ -142,10 +142,18 @@ fn format_action(action: &BattleAction) -> String {
         BattleAction::Spawn { unit, slot, side } => {
             format!("Unit {} spawns at slot {} ({:?})", unit, slot, side)
         }
-        BattleAction::Damage { source, target, amount } => {
+        BattleAction::Damage {
+            source,
+            target,
+            amount,
+        } => {
             format!("Unit {} deals {} damage to Unit {}", source, amount, target)
         }
-        BattleAction::Heal { source, target, amount } => {
+        BattleAction::Heal {
+            source,
+            target,
+            amount,
+        } => {
             format!("Unit {} heals Unit {} for {}", source, target, amount)
         }
         BattleAction::Death { unit } => {
@@ -163,7 +171,10 @@ fn format_action(action: &BattleAction) -> String {
         BattleAction::Fatigue { amount } => {
             format!("Fatigue! All units take {} damage", amount)
         }
-        BattleAction::AbilityUsed { source, ability_name } => {
+        BattleAction::AbilityUsed {
+            source,
+            ability_name,
+        } => {
             format!("Unit {} uses {}", source, ability_name)
         }
     }

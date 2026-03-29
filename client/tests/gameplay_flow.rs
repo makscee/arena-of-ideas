@@ -8,7 +8,7 @@
 
 use std::process::Command;
 
-use client::plugins::battle::{simulate_battle, BattleAbility, BattleUnit};
+use client::plugins::battle::{BattleAbility, BattleUnit, simulate_battle};
 use shared::battle::BattleSide;
 use shared::target::TargetType;
 use shared::trigger::Trigger;
@@ -39,8 +39,13 @@ fn call(reducer: &str, args: &[&str]) -> Result<String, String> {
 
 fn sql(query: &str) -> String {
     let output = Command::new("spacetime")
-        .arg("sql").arg(DB_NAME).arg(query).arg("--server").arg(SERVER)
-        .output().expect("Failed to run sql");
+        .arg("sql")
+        .arg(DB_NAME)
+        .arg(query)
+        .arg("--server")
+        .arg(SERVER)
+        .output()
+        .expect("Failed to run sql");
     String::from_utf8_lossy(&output.stdout).to_string()
 }
 
@@ -55,13 +60,22 @@ fn reset_db() {
     static RESET: Once = Once::new();
     RESET.call_once(|| {
         let output = Command::new("spacetime")
-            .arg("publish").arg("-p").arg("server")
-            .arg("--server").arg(SERVER)
-            .arg(DB_NAME).arg("--delete-data").arg("-y")
+            .arg("publish")
+            .arg("-p")
+            .arg("server")
+            .arg("--server")
+            .arg(SERVER)
+            .arg(DB_NAME)
+            .arg("--delete-data")
+            .arg("-y")
             .current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/.."))
             .output()
             .expect("Failed to republish");
-        assert!(output.status.success(), "Republish failed: {}", String::from_utf8_lossy(&output.stderr));
+        assert!(
+            output.status.success(),
+            "Republish failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
         // Brief pause to let module initialize after republish
         std::thread::sleep(std::time::Duration::from_millis(500));
         // Register player after fresh DB
@@ -85,7 +99,8 @@ fn fresh_match() {
         Ok(_) => {}
         Err(e) => {
             let _ = call("match_abandon", &[]);
-            call("match_start", &[]).unwrap_or_else(|e2| panic!("Cannot start match: {}\nOriginal: {}", e2, e));
+            call("match_start", &[])
+                .unwrap_or_else(|e2| panic!("Cannot start match: {}\nOriginal: {}", e2, e));
         }
     }
 }
@@ -95,73 +110,114 @@ fn fresh_match() {
 /// Create a BattleUnit from known data (mirrors seeded units).
 fn make_striker(id: u64, name: &str, hp: i32, pwr: i32, slot: u8, side: BattleSide) -> BattleUnit {
     BattleUnit {
-        id, name: name.to_string(), hp, pwr, dmg: 0, shield: 0,
+        id,
+        name: name.to_string(),
+        hp,
+        pwr,
+        dmg: 0,
+        shield: 0,
         trigger: Trigger::BeforeStrike,
         abilities: vec![BattleAbility {
-            id: 1, name: "Strike".to_string(),
+            id: 1,
+            name: "Strike".to_string(),
             target_type: TargetType::RandomEnemy,
             effect_script: "deal_damage(target[\"id\"], X * level);".to_string(),
         }],
-        side, slot, alive: true,
+        side,
+        slot,
+        alive: true,
     }
 }
 
 fn make_healer(id: u64, name: &str, hp: i32, pwr: i32, slot: u8, side: BattleSide) -> BattleUnit {
     BattleUnit {
-        id, name: name.to_string(), hp, pwr, dmg: 0, shield: 0,
+        id,
+        name: name.to_string(),
+        hp,
+        pwr,
+        dmg: 0,
+        shield: 0,
         trigger: Trigger::TurnEnd,
         abilities: vec![BattleAbility {
-            id: 3, name: "Heal".to_string(),
+            id: 3,
+            name: "Heal".to_string(),
             target_type: TargetType::RandomAlly,
             effect_script: "heal_damage(target[\"id\"], X * level);".to_string(),
         }],
-        side, slot, alive: true,
+        side,
+        slot,
+        alive: true,
     }
 }
 
 fn make_guardian(id: u64, name: &str, hp: i32, pwr: i32, slot: u8, side: BattleSide) -> BattleUnit {
     BattleUnit {
-        id, name: name.to_string(), hp, pwr, dmg: 0, shield: 0,
+        id,
+        name: name.to_string(),
+        hp,
+        pwr,
+        dmg: 0,
+        shield: 0,
         trigger: Trigger::BattleStart,
         abilities: vec![BattleAbility {
-            id: 2, name: "Guard".to_string(),
+            id: 2,
+            name: "Guard".to_string(),
             target_type: TargetType::Owner,
             effect_script: "add_shield(owner[\"id\"], X * level);".to_string(),
         }],
-        side, slot, alive: true,
+        side,
+        slot,
+        alive: true,
     }
 }
 
 fn make_curser(id: u64, name: &str, hp: i32, pwr: i32, slot: u8, side: BattleSide) -> BattleUnit {
     BattleUnit {
-        id, name: name.to_string(), hp, pwr, dmg: 0, shield: 0,
+        id,
+        name: name.to_string(),
+        hp,
+        pwr,
+        dmg: 0,
+        shield: 0,
         trigger: Trigger::BattleStart,
         abilities: vec![BattleAbility {
-            id: 4, name: "Curse".to_string(),
+            id: 4,
+            name: "Curse".to_string(),
             target_type: TargetType::RandomEnemy,
             effect_script: "change_stat(target[\"id\"], \"pwr\", -level);".to_string(),
         }],
-        side, slot, alive: true,
+        side,
+        slot,
+        alive: true,
     }
 }
 
 fn make_paladin(id: u64, name: &str, hp: i32, pwr: i32, slot: u8, side: BattleSide) -> BattleUnit {
     BattleUnit {
-        id, name: name.to_string(), hp, pwr, dmg: 0, shield: 0,
+        id,
+        name: name.to_string(),
+        hp,
+        pwr,
+        dmg: 0,
+        shield: 0,
         trigger: Trigger::BeforeStrike,
         abilities: vec![
             BattleAbility {
-                id: 1, name: "Strike".to_string(),
+                id: 1,
+                name: "Strike".to_string(),
                 target_type: TargetType::RandomEnemy,
                 effect_script: "deal_damage(target[\"id\"], X * level);".to_string(),
             },
             BattleAbility {
-                id: 2, name: "Guard".to_string(),
+                id: 2,
+                name: "Guard".to_string(),
                 target_type: TargetType::Owner,
                 effect_script: "add_shield(owner[\"id\"], X * level);".to_string(),
             },
         ],
-        side, slot, alive: true,
+        side,
+        slot,
+        alive: true,
     }
 }
 
@@ -178,7 +234,11 @@ fn scenario_01_equal_strikers_left_wins() {
     let left = vec![make_striker(1, "Left", 3, 2, 0, BattleSide::Left)];
     let right = vec![make_striker(2, "Right", 3, 2, 0, BattleSide::Right)];
     let result = simulate_battle(left, right);
-    assert_eq!(result.winner, BattleSide::Left, "Left should win (first mover advantage)");
+    assert_eq!(
+        result.winner,
+        BattleSide::Left,
+        "Left should win (first mover advantage)"
+    );
 }
 
 #[test]
@@ -189,7 +249,11 @@ fn scenario_02_stronger_unit_wins() {
     let right = vec![make_striker(2, "Footsoldier", 3, 2, 0, BattleSide::Right)];
     let result = simulate_battle(left, right);
     assert_eq!(result.winner, BattleSide::Left);
-    assert!(result.turns <= 2, "Should win quickly: {} turns", result.turns);
+    assert!(
+        result.turns <= 2,
+        "Should win quickly: {} turns",
+        result.turns
+    );
 }
 
 #[test]
@@ -226,7 +290,9 @@ fn scenario_04_healer_sustains_team() {
     // Healer fires on TurnEnd targeting RandomAlly (excluding self)
     // The healing helps sustain but outcome depends on damage race
     // Just verify the battle completes and healer actually healed
-    let heal_count = result.actions.iter()
+    let heal_count = result
+        .actions
+        .iter()
         .filter(|a| matches!(a, shared::battle::BattleAction::Heal { .. }))
         .count();
     assert!(heal_count > 0, "Healer should have healed at least once");
@@ -296,8 +362,16 @@ fn scenario_08_ability_level_scaling_matters() {
     ];
     let result = simulate_battle(left, right);
     // Left has level 3 Strike (each hit does 6 damage), right has mixed level 1
-    assert_eq!(result.winner, BattleSide::Left, "Ability scaling should dominate");
-    assert!(result.turns <= 5, "Should win fast with level 3: {} turns", result.turns);
+    assert_eq!(
+        result.winner,
+        BattleSide::Left,
+        "Ability scaling should dominate"
+    );
+    assert!(
+        result.turns <= 5,
+        "Should win fast with level 3: {} turns",
+        result.turns
+    );
 }
 
 #[test]
@@ -322,7 +396,11 @@ fn scenario_09_deterministic_same_result() {
 
     assert_eq!(result1.winner, result2.winner, "Must be deterministic");
     assert_eq!(result1.turns, result2.turns, "Same turn count");
-    assert_eq!(result1.actions.len(), result2.actions.len(), "Same action count");
+    assert_eq!(
+        result1.actions.len(),
+        result2.actions.len(),
+        "Same action count"
+    );
 }
 
 #[test]
@@ -348,7 +426,9 @@ fn scenario_10_full_5v5_battle() {
     assert!(result.turns > 0);
     assert!(!result.actions.is_empty(), "Should produce battle actions");
     // Both teams should have fought
-    let deaths = result.actions.iter()
+    let deaths = result
+        .actions
+        .iter()
         .filter(|a| matches!(a, shared::battle::BattleAction::Death { .. }))
         .count();
     assert!(deaths >= 1, "At least one unit should die");
@@ -363,7 +443,11 @@ fn scenario_10_full_5v5_battle() {
 fn flow_01_complete_match_run() {
     fresh_match();
     let output = sql("SELECT gold FROM game_match");
-    assert!(contains(&output, "7"), "Should start with 7 gold: {}", output);
+    assert!(
+        contains(&output, "7"),
+        "Should start with 7 gold: {}",
+        output
+    );
 
     // Buy units from shop (second buy may fail if not enough gold for higher tier)
     call("match_shop_buy", &["0"]).unwrap();
@@ -374,12 +458,8 @@ fn flow_01_complete_match_run() {
     assert!(contains(&output, "unit_id"), "Should have units in team");
 
     // Simulate a battle (client-side)
-    let left = vec![
-        make_striker(1, "MyUnit1", 3, 2, 0, BattleSide::Left),
-    ];
-    let right = vec![
-        make_striker(100, "Opponent", 4, 2, 0, BattleSide::Right),
-    ];
+    let left = vec![make_striker(1, "MyUnit1", 3, 2, 0, BattleSide::Left)];
+    let right = vec![make_striker(100, "Opponent", 4, 2, 0, BattleSide::Right)];
     let battle_result = simulate_battle(left, right);
     let won = battle_result.winner == BattleSide::Left;
 
@@ -395,15 +475,19 @@ fn flow_01_complete_match_run() {
     let _ = call("match_shop_buy", &["0"]);
 
     // Second battle
-    let left = vec![
-        make_striker(1, "U1", 3, 2, 0, BattleSide::Left),
-    ];
-    let right = vec![
-        make_striker(100, "Opp1", 5, 3, 0, BattleSide::Right),
-    ];
+    let left = vec![make_striker(1, "U1", 3, 2, 0, BattleSide::Left)];
+    let right = vec![make_striker(100, "Opp1", 5, 3, 0, BattleSide::Right)];
     let result2 = simulate_battle(left, right);
     call("match_start_battle", &[]).unwrap();
-    call("match_submit_result", &[if result2.winner == BattleSide::Left { "true" } else { "false" }]).unwrap();
+    call(
+        "match_submit_result",
+        &[if result2.winner == BattleSide::Left {
+            "true"
+        } else {
+            "false"
+        }],
+    )
+    .unwrap();
 
     // Match may or may not still exist depending on win/loss sequence
     // Just verify the server didn't error out
@@ -418,19 +502,31 @@ fn flow_02_lose_three_times_game_over() {
 
     // Verify match exists
     let output = sql("SELECT * FROM game_match");
-    assert!(contains(&output, "gold"), "Match should exist after start: {}", output);
+    assert!(
+        contains(&output, "gold"),
+        "Match should exist after start: {}",
+        output
+    );
 
     // Lose first time — lives: 3 → 2 (regular battle: must start battle first)
     call("match_start_battle", &[]).unwrap();
     call("match_submit_result", &["false"]).unwrap();
     let output = sql("SELECT * FROM game_match");
-    assert!(contains(&output, "gold"), "Match should exist after loss 1: {}", output);
+    assert!(
+        contains(&output, "gold"),
+        "Match should exist after loss 1: {}",
+        output
+    );
 
     // Lose second time — lives: 2 → 1
     call("match_start_battle", &[]).unwrap();
     call("match_submit_result", &["false"]).unwrap();
     let output = sql("SELECT * FROM game_match");
-    assert!(contains(&output, "gold"), "Match should exist after loss 2: {}", output);
+    assert!(
+        contains(&output, "gold"),
+        "Match should exist after loss 2: {}",
+        output
+    );
 
     // Lose third time — lives: 1 → 0 → game over → match deleted
     call("match_start_battle", &[]).unwrap();
@@ -440,9 +536,15 @@ fn flow_02_lose_three_times_game_over() {
     // Data rows contain "0x" (identity hex) or actual numbers after separator
     let has_data = output.lines().any(|line| {
         let trimmed = line.trim();
-        trimmed.starts_with("0x") || (trimmed.contains('|') && trimmed.chars().next().map_or(false, |c| c.is_ascii_digit()))
+        trimmed.starts_with("0x")
+            || (trimmed.contains('|')
+                && trimmed.chars().next().map_or(false, |c| c.is_ascii_digit()))
     });
-    assert!(!has_data, "Match should be deleted after 3 losses: {}", output);
+    assert!(
+        !has_data,
+        "Match should be deleted after 3 losses: {}",
+        output
+    );
 }
 
 #[test]
@@ -455,19 +557,35 @@ fn flow_03_buy_sell_economy() {
 
     // Verify we have a unit in team
     let output = sql("SELECT team FROM game_match");
-    assert!(contains(&output, "unit_id"), "Should have unit after buy: {}", output);
+    assert!(
+        contains(&output, "unit_id"),
+        "Should have unit after buy: {}",
+        output
+    );
 
     // Sell slot 0
     let sell_result = call("match_sell_unit", &["0"]);
-    assert!(sell_result.is_ok(), "Sell should succeed: {:?}", sell_result);
+    assert!(
+        sell_result.is_ok(),
+        "Sell should succeed: {:?}",
+        sell_result
+    );
 
     // Reroll
     let reroll_result = call("match_shop_reroll", &[]);
-    assert!(reroll_result.is_ok(), "Reroll should succeed: {:?}", reroll_result);
+    assert!(
+        reroll_result.is_ok(),
+        "Reroll should succeed: {:?}",
+        reroll_result
+    );
 
     // Match should still exist
     let output = sql("SELECT * FROM game_match");
-    assert!(contains(&output, "gold"), "Match should still exist: {}", output);
+    assert!(
+        contains(&output, "gold"),
+        "Match should still exist: {}",
+        output
+    );
 
     let _ = call("match_abandon", &[]);
 }
@@ -483,7 +601,11 @@ fn flow_04_buy_multiple_units() {
 
     // Verify team has entries (may or may not have stacked)
     let output = sql("SELECT team FROM game_match");
-    assert!(contains(&output, "unit_id"), "Should have units in team: {}", output);
+    assert!(
+        contains(&output, "unit_id"),
+        "Should have units in team: {}",
+        output
+    );
 
     let _ = call("match_abandon", &[]);
 }
@@ -563,7 +685,11 @@ fn flow_07_team_full_cant_buy() {
 
     // Verify match still exists
     let output = sql("SELECT * FROM game_match");
-    assert!(contains(&output, "gold"), "Match should still exist: {}", output);
+    assert!(
+        contains(&output, "gold"),
+        "Match should still exist: {}",
+        output
+    );
 
     let _ = call("match_abandon", &[]);
 }
@@ -590,9 +716,14 @@ fn flow_08_multi_round_progression() {
                 BattleSide::Left,
             ));
         }
-        let right = vec![
-            make_striker(100, "Opp", 3 + round, 2 + round / 2, 0, BattleSide::Right),
-        ];
+        let right = vec![make_striker(
+            100,
+            "Opp",
+            3 + round,
+            2 + round / 2,
+            0,
+            BattleSide::Right,
+        )];
 
         let result = simulate_battle(left, right);
         let won = result.winner == BattleSide::Left;

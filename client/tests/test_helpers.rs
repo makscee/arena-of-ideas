@@ -1,6 +1,5 @@
 /// Structured test helpers for SpacetimeDB integration tests.
 /// Wraps CLI calls and parses SQL output into usable data.
-
 use std::process::Command;
 
 pub const DB_NAME: &str = "aoi-test";
@@ -9,7 +8,11 @@ pub const SERVER: &str = "local";
 /// Call a reducer, return Ok(stdout) or Err(stderr).
 pub fn call(reducer: &str, args: &[&str]) -> Result<String, String> {
     let mut cmd = Command::new("spacetime");
-    cmd.arg("call").arg(DB_NAME).arg(reducer).arg("--server").arg(SERVER);
+    cmd.arg("call")
+        .arg(DB_NAME)
+        .arg(reducer)
+        .arg("--server")
+        .arg(SERVER);
     if !args.is_empty() {
         cmd.arg("--");
         for arg in args {
@@ -28,8 +31,13 @@ pub fn call(reducer: &str, args: &[&str]) -> Result<String, String> {
 /// Run SQL query, return raw output.
 pub fn sql(query: &str) -> String {
     let output = Command::new("spacetime")
-        .arg("sql").arg(DB_NAME).arg(query).arg("--server").arg(SERVER)
-        .output().expect("Failed to run sql");
+        .arg("sql")
+        .arg(DB_NAME)
+        .arg(query)
+        .arg("--server")
+        .arg(SERVER)
+        .output()
+        .expect("Failed to run sql");
     String::from_utf8_lossy(&output.stdout).to_string()
 }
 
@@ -43,8 +51,7 @@ pub fn has_data(output: &str) -> bool {
     output.lines().any(|line| {
         let t = line.trim();
         t.contains("0x")
-            || (t.contains('|')
-                && t.chars().next().map_or(false, |c| c.is_ascii_digit()))
+            || (t.contains('|') && t.chars().next().map_or(false, |c| c.is_ascii_digit()))
     })
 }
 
@@ -58,8 +65,7 @@ pub fn count_data_rows(output: &str) -> usize {
                 && !t.starts_with("WARNING")
                 && !t.starts_with('-')
                 && !t.contains("---")
-                && (t.contains("0x")
-                    || t.chars().next().map_or(false, |c| c.is_ascii_digit()))
+                && (t.contains("0x") || t.chars().next().map_or(false, |c| c.is_ascii_digit()))
         })
         .count()
 }
@@ -88,14 +94,22 @@ pub fn parse_int_value(output: &str) -> Option<i64> {
 /// Republish the module with clean data.
 pub fn republish() {
     let output = Command::new("spacetime")
-        .arg("publish").arg("-p").arg("server")
-        .arg("--server").arg(SERVER)
-        .arg(DB_NAME).arg("--delete-data").arg("-y")
+        .arg("publish")
+        .arg("-p")
+        .arg("server")
+        .arg("--server")
+        .arg(SERVER)
+        .arg(DB_NAME)
+        .arg("--delete-data")
+        .arg("-y")
         .current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/.."))
         .output()
         .expect("Failed to republish");
-    assert!(output.status.success(), "Republish failed: {}",
-        String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "Republish failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 }
 
 /// Set arena last_floor high so floor 1+ are regular battles.
@@ -154,22 +168,13 @@ pub fn assert_table_has_rows(table: &str, min_rows: usize) {
 /// Assert a reducer call succeeds.
 pub fn assert_call_ok(reducer: &str, args: &[&str]) {
     let result = call(reducer, args);
-    assert!(
-        result.is_ok(),
-        "{} should succeed: {:?}",
-        reducer,
-        result
-    );
+    assert!(result.is_ok(), "{} should succeed: {:?}", reducer, result);
 }
 
 /// Assert a reducer call fails.
 pub fn assert_call_err(reducer: &str, args: &[&str]) {
     let result = call(reducer, args);
-    assert!(
-        result.is_err(),
-        "{} should fail but succeeded",
-        reducer
-    );
+    assert!(result.is_err(), "{} should fail but succeeded", reducer);
 }
 
 /// Assert match has a specific gold amount.

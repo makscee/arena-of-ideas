@@ -1,9 +1,8 @@
 use bevy::prelude::*;
 use client::plugins::{
     battle_scene::BattleScenePlugin, battle_viewer::BattleViewerPlugin,
-    collection::CollectionPlugin, connect::ConnectPlugin, create::CreatePlugin,
-    demo::DemoPlugin, game::GamePlugin, incubator::IncubatorPlugin,
-    onboarding::OnboardingPlugin, ui::UiPlugin,
+    collection::CollectionPlugin, connect::ConnectPlugin, create::CreatePlugin, demo::DemoPlugin,
+    game::GamePlugin, incubator::IncubatorPlugin, onboarding::OnboardingPlugin, ui::UiPlugin,
 };
 
 fn main() {

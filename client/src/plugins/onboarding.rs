@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContexts};
+use bevy_egui::{EguiContexts, egui};
 
 // Onboarding tutorial overlay
 
@@ -43,10 +43,7 @@ const STEPS: &[(&str, &str)] = &[
     ),
 ];
 
-fn onboarding_ui(
-    mut contexts: EguiContexts,
-    mut state: ResMut<OnboardingState>,
-) {
+fn onboarding_ui(mut contexts: EguiContexts, mut state: ResMut<OnboardingState>) {
     if !state.show {
         return;
     }

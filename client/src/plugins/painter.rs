@@ -41,7 +41,8 @@ impl UnitPainter {
                     let r = radius * self.size;
                     let pos = self.center + self.offset;
                     if let Some(w) = self.hollow {
-                        ui.painter().circle_stroke(pos, r, Stroke::new(w, self.color));
+                        ui.painter()
+                            .circle_stroke(pos, r, Stroke::new(w, self.color));
                     } else {
                         ui.painter().circle_filled(pos, r, self.color);
                     }
@@ -52,7 +53,12 @@ impl UnitPainter {
                     let pos = self.center + self.offset;
                     let rect = Rect::from_center_size(pos, egui::vec2(w * 2.0, h * 2.0));
                     if let Some(sw) = self.hollow {
-                        ui.painter().rect_stroke(rect, 0.0, Stroke::new(sw, self.color), egui::StrokeKind::Middle);
+                        ui.painter().rect_stroke(
+                            rect,
+                            0.0,
+                            Stroke::new(sw, self.color),
+                            egui::StrokeKind::Middle,
+                        );
                     } else {
                         ui.painter().rect_filled(rect, 0.0, self.color);
                     }
@@ -99,12 +105,15 @@ pub fn paint_default_unit(
     painter.circle_stroke(
         center,
         up * 0.95,
-        Stroke::new(2.0, Color32::from_rgba_premultiplied(
-            color.r().saturating_add(50),
-            color.g().saturating_add(50),
-            color.b().saturating_add(50),
-            200,
-        )),
+        Stroke::new(
+            2.0,
+            Color32::from_rgba_premultiplied(
+                color.r().saturating_add(50),
+                color.g().saturating_add(50),
+                color.b().saturating_add(50),
+                200,
+            ),
+        ),
     );
 
     // Inner filled circle
@@ -113,8 +122,16 @@ pub fn paint_default_unit(
     // HP indicator (bottom-right)
     let hp_pos = center + egui::vec2(up * 0.55, up * 0.55);
     painter.circle_filled(hp_pos, up * 0.22, Color32::from_rgb(30, 30, 30));
-    painter.circle_stroke(hp_pos, up * 0.22, Stroke::new(1.5, Color32::from_rgb(213, 0, 0)));
-    let hp_color = if dmg > 0 { Color32::from_rgb(255, 80, 80) } else { Color32::WHITE };
+    painter.circle_stroke(
+        hp_pos,
+        up * 0.22,
+        Stroke::new(1.5, Color32::from_rgb(213, 0, 0)),
+    );
+    let hp_color = if dmg > 0 {
+        Color32::from_rgb(255, 80, 80)
+    } else {
+        Color32::WHITE
+    };
     painter.text(
         hp_pos,
         egui::Align2::CENTER_CENTER,
@@ -126,7 +143,11 @@ pub fn paint_default_unit(
     // PWR indicator (bottom-left)
     let pwr_pos = center + egui::vec2(-up * 0.55, up * 0.55);
     painter.circle_filled(pwr_pos, up * 0.22, Color32::from_rgb(30, 30, 30));
-    painter.circle_stroke(pwr_pos, up * 0.22, Stroke::new(1.5, Color32::from_rgb(255, 145, 0)));
+    painter.circle_stroke(
+        pwr_pos,
+        up * 0.22,
+        Stroke::new(1.5, Color32::from_rgb(255, 145, 0)),
+    );
     painter.text(
         pwr_pos,
         egui::Align2::CENTER_CENTER,

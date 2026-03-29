@@ -2,9 +2,9 @@ use spacetimedb::{ReducerContext, Table};
 
 #[allow(unused_imports)]
 use crate::{
-    arena_state, floor_boss, floor_pool_team, game_match, global_settings, player, unit,
     ArenaState, ContentStatus, FloorBoss, FloorPoolTeam, GameMatch, GlobalSettings, MatchState,
-    TeamSlot, Unit,
+    TeamSlot, Unit, arena_state, floor_boss, floor_pool_team, game_match, global_settings, player,
+    unit,
 };
 
 const STARTING_GOLD: i32 = 7;
@@ -110,12 +110,7 @@ pub fn match_shop_buy(ctx: &ReducerContext, shop_index: u32) -> Result<(), Strin
         return Err("Shop slot is empty".to_string());
     }
 
-    let unit = ctx
-        .db
-        .unit()
-        .id()
-        .find(unit_id)
-        .ok_or("Unit not found")?;
+    let unit = ctx.db.unit().id().find(unit_id).ok_or("Unit not found")?;
 
     let cost = tier_cost(unit.tier);
     if game_match.gold < cost {
@@ -174,7 +169,12 @@ pub fn match_sell_unit(ctx: &ReducerContext, slot_index: u32) -> Result<(), Stri
     let tier = if slot.is_fused {
         slot.fused_tier
     } else {
-        ctx.db.unit().id().find(slot.unit_id).map(|u| u.tier).unwrap_or(1)
+        ctx.db
+            .unit()
+            .id()
+            .find(slot.unit_id)
+            .map(|u| u.tier)
+            .unwrap_or(1)
     };
 
     game_match.gold += sell_value(ctx, tier);
@@ -332,8 +332,7 @@ pub fn match_submit_result(ctx: &ReducerContext, won: bool) -> Result<(), String
                 // Advance floor, get gold, continue
                 game_match.floor += 1;
                 game_match.gold += settings.gold_reward;
-                game_match.shop_offers =
-                    generate_shop_offers(ctx, shop_size(game_match.floor));
+                game_match.shop_offers = generate_shop_offers(ctx, shop_size(game_match.floor));
                 game_match.state = MatchState::Shop;
                 ctx.db.game_match().id().update(game_match);
             } else {
@@ -423,8 +422,18 @@ pub fn match_fuse_units(
         return Err("Cannot fuse already-fused units".to_string());
     }
 
-    let unit_a = ctx.db.unit().id().find(slot_a_data.unit_id).ok_or("Unit A not found")?;
-    let unit_b = ctx.db.unit().id().find(slot_b_data.unit_id).ok_or("Unit B not found")?;
+    let unit_a = ctx
+        .db
+        .unit()
+        .id()
+        .find(slot_a_data.unit_id)
+        .ok_or("Unit A not found")?;
+    let unit_b = ctx
+        .db
+        .unit()
+        .id()
+        .find(slot_b_data.unit_id)
+        .ok_or("Unit B not found")?;
 
     let result_tier = unit_a.tier.max(unit_b.tier) + 1;
     if result_tier > 5 {
@@ -443,7 +452,11 @@ pub fn match_fuse_units(
         ));
     }
 
-    let combined: Vec<u64> = abilities_a.iter().chain(abilities_b.iter()).copied().collect();
+    let combined: Vec<u64> = abilities_a
+        .iter()
+        .chain(abilities_b.iter())
+        .copied()
+        .collect();
     for &chosen in &chosen_abilities {
         if !combined.contains(&chosen) {
             return Err(format!("Ability {} not from either parent", chosen));
@@ -485,7 +498,11 @@ pub fn match_fuse_units(
 }
 
 #[spacetimedb::reducer]
-pub fn match_feed_unit(ctx: &ReducerContext, fused_slot: u32, donor_slot: u32) -> Result<(), String> {
+pub fn match_feed_unit(
+    ctx: &ReducerContext,
+    fused_slot: u32,
+    donor_slot: u32,
+) -> Result<(), String> {
     let mut game_match = find_player_match(ctx)?;
     require_state(&game_match, &MatchState::Shop)?;
 
@@ -500,7 +517,12 @@ pub fn match_feed_unit(ctx: &ReducerContext, fused_slot: u32, donor_slot: u32) -
         return Err("Target must be a fused unit".to_string());
     }
 
-    let donor_unit = ctx.db.unit().id().find(game_match.team[d].unit_id).ok_or("Donor not found")?;
+    let donor_unit = ctx
+        .db
+        .unit()
+        .id()
+        .find(game_match.team[d].unit_id)
+        .ok_or("Donor not found")?;
 
     for &donor_ability in &donor_unit.abilities {
         if !game_match.team[f].fused_abilities.contains(&donor_ability) {

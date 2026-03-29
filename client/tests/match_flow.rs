@@ -13,7 +13,11 @@ const SERVER: &str = "local";
 
 fn call(reducer: &str, args: &[&str]) -> Result<String, String> {
     let mut cmd = Command::new("spacetime");
-    cmd.arg("call").arg(DB_NAME).arg(reducer).arg("--server").arg(SERVER);
+    cmd.arg("call")
+        .arg(DB_NAME)
+        .arg(reducer)
+        .arg("--server")
+        .arg(SERVER);
     if !args.is_empty() {
         cmd.arg("--");
         for arg in args {
@@ -31,8 +35,13 @@ fn call(reducer: &str, args: &[&str]) -> Result<String, String> {
 
 fn sql(query: &str) -> String {
     let output = Command::new("spacetime")
-        .arg("sql").arg(DB_NAME).arg(query).arg("--server").arg(SERVER)
-        .output().expect("Failed to run sql");
+        .arg("sql")
+        .arg(DB_NAME)
+        .arg(query)
+        .arg("--server")
+        .arg(SERVER)
+        .output()
+        .expect("Failed to run sql");
     String::from_utf8_lossy(&output.stdout).to_string()
 }
 
@@ -44,14 +53,22 @@ fn reset_db() {
     static RESET: Once = Once::new();
     RESET.call_once(|| {
         let output = Command::new("spacetime")
-            .arg("publish").arg("-p").arg("server")
-            .arg("--server").arg(SERVER)
-            .arg(DB_NAME).arg("--delete-data").arg("-y")
+            .arg("publish")
+            .arg("-p")
+            .arg("server")
+            .arg("--server")
+            .arg(SERVER)
+            .arg(DB_NAME)
+            .arg("--delete-data")
+            .arg("-y")
             .current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/.."))
             .output()
             .expect("Failed to republish");
-        assert!(output.status.success(), "Republish failed: {}",
-            String::from_utf8_lossy(&output.stderr));
+        assert!(
+            output.status.success(),
+            "Republish failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
         let _ = call("register", &["\"MatchFlowPlayer\""]);
     });
 }
@@ -96,7 +113,8 @@ fn match_exists() -> bool {
     // Check for data rows (contain 0x for identity or digits)
     output.lines().any(|line| {
         let t = line.trim();
-        t.contains("0x") || (t.contains('|') && t.chars().next().map_or(false, |c| c.is_ascii_digit()))
+        t.contains("0x")
+            || (t.contains('|') && t.chars().next().map_or(false, |c| c.is_ascii_digit()))
     })
 }
 
@@ -120,7 +138,11 @@ fn test_02_shop_has_3_offers_floor1() {
     let output = sql("SELECT shop_offers FROM game_match");
     // Shop offers should have 3 entries for floor 1
     // They appear as comma-separated numbers in the output
-    assert!(contains(&output, "shop_offers"), "Should have shop_offers column: {}", output);
+    assert!(
+        contains(&output, "shop_offers"),
+        "Should have shop_offers column: {}",
+        output
+    );
     let _ = call("match_abandon", &[]);
 }
 
@@ -137,7 +159,11 @@ fn test_03_buy_deducts_gold() {
         output
     );
     // But not negative
-    assert!(!contains(&output, "| -"), "Gold should not be negative: {}", output);
+    assert!(
+        !contains(&output, "| -"),
+        "Gold should not be negative: {}",
+        output
+    );
     let _ = call("match_abandon", &[]);
 }
 
@@ -153,7 +179,11 @@ fn test_04_sell_recovers_some_gold() {
     // Can't check exact values since buy cost varies by tier
     // Just verify sell didn't crash and team is empty
     let team = sql("SELECT team FROM game_match");
-    assert!(!contains(&team, "unit_id"), "Team should be empty after sell: {}", team);
+    assert!(
+        !contains(&team, "unit_id"),
+        "Team should be empty after sell: {}",
+        team
+    );
     let _ = call("match_abandon", &[]);
 }
 
@@ -163,7 +193,11 @@ fn test_05_reroll_costs_1_gold() {
     // 7 gold, reroll costs 1
     call("match_shop_reroll", &[]).unwrap();
     let output = sql("SELECT gold FROM game_match");
-    assert!(contains(&output, "6"), "Gold should be 6 after reroll: {}", output);
+    assert!(
+        contains(&output, "6"),
+        "Gold should be 6 after reroll: {}",
+        output
+    );
     let _ = call("match_abandon", &[]);
 }
 
@@ -213,7 +247,11 @@ fn test_10_win_advances_floor() {
     call("match_start_battle", &[]).unwrap();
     call("match_submit_result", &["true"]).unwrap();
     let output = sql("SELECT * FROM game_match");
-    assert!(contains(&output, "| 2"), "Floor should be 2 after win: {}", output);
+    assert!(
+        contains(&output, "| 2"),
+        "Floor should be 2 after win: {}",
+        output
+    );
     let _ = call("match_abandon", &[]);
 }
 
@@ -224,7 +262,11 @@ fn test_11_lose_also_advances_floor() {
     call("match_submit_result", &["false"]).unwrap();
     // Should advance to floor 2 even on loss
     let output = sql("SELECT * FROM game_match");
-    assert!(contains(&output, "| 2"), "Floor should be 2 even after loss: {}", output);
+    assert!(
+        contains(&output, "| 2"),
+        "Floor should be 2 even after loss: {}",
+        output
+    );
     let _ = call("match_abandon", &[]);
 }
 
@@ -234,7 +276,11 @@ fn test_12_lose_costs_life() {
     call("match_start_battle", &[]).unwrap();
     call("match_submit_result", &["false"]).unwrap();
     let output = sql("SELECT * FROM game_match");
-    assert!(contains(&output, "| 2"), "Lives should be 2 after loss: {}", output);
+    assert!(
+        contains(&output, "| 2"),
+        "Lives should be 2 after loss: {}",
+        output
+    );
     let _ = call("match_abandon", &[]);
 }
 
@@ -246,7 +292,11 @@ fn test_13_gold_reward_on_win() {
     call("match_submit_result", &["true"]).unwrap();
     // 7 + 3 (reward) = 10
     let output = sql("SELECT gold FROM game_match");
-    assert!(contains(&output, "10"), "Gold should be 10 after win reward: {}", output);
+    assert!(
+        contains(&output, "10"),
+        "Gold should be 10 after win reward: {}",
+        output
+    );
     let _ = call("match_abandon", &[]);
 }
 
@@ -257,7 +307,11 @@ fn test_14_gold_reward_on_loss_too() {
     call("match_submit_result", &["false"]).unwrap();
     // 7 + 3 (reward even on loss) = 10
     let output = sql("SELECT gold FROM game_match");
-    assert!(contains(&output, "10"), "Gold should be 10 even after loss: {}", output);
+    assert!(
+        contains(&output, "10"),
+        "Gold should be 10 even after loss: {}",
+        output
+    );
     let _ = call("match_abandon", &[]);
 }
 
@@ -280,10 +334,17 @@ fn test_15_three_losses_game_over() {
         }
         call("match_submit_result", &["false"]).unwrap();
         if i < 2 {
-            assert!(match_exists(), "Match should exist after regular loss {}", i + 1);
+            assert!(
+                match_exists(),
+                "Match should exist after regular loss {}",
+                i + 1
+            );
         }
     }
-    assert!(!match_exists(), "Match should be deleted after 3 regular losses");
+    assert!(
+        !match_exists(),
+        "Match should be deleted after 3 regular losses"
+    );
 }
 
 #[test]
@@ -292,7 +353,9 @@ fn test_16_multi_floor_progression() {
     // Win battles and advance floors. May hit boss along the way.
     let mut floors_advanced = 0;
     for _ in 0..4 {
-        if !match_exists() { break; }
+        if !match_exists() {
+            break;
+        }
         call("match_start_battle", &[]).unwrap();
         call("match_submit_result", &["true"]).unwrap();
         floors_advanced += 1;
@@ -360,7 +423,9 @@ fn test_30_boss_battle_loss_ends_match() {
     // Win regular battles until we reach the frontier
     for _ in 0..10 {
         let output = sql("SELECT * FROM game_match");
-        if !match_exists() { break; }
+        if !match_exists() {
+            break;
+        }
         call("match_start_battle", &[]).unwrap();
 
         let state_output = sql("SELECT state FROM game_match");
@@ -385,7 +450,9 @@ fn test_31_boss_win_advances() {
 
     // Win regular battles until boss
     for _ in 0..10 {
-        if !match_exists() { break; }
+        if !match_exists() {
+            break;
+        }
         call("match_start_battle", &[]).unwrap();
         let state_output = sql("SELECT state FROM game_match");
         if contains(&state_output, "boss") || contains(&state_output, "Boss") {
@@ -419,9 +486,12 @@ fn test_40_champion_battle_beyond_frontier() {
     // Could be boss or champion depending on frontier
     // Either way, verify it enters a battle state
     assert!(
-        contains(&output, "boss") || contains(&output, "Boss")
-            || contains(&output, "champion") || contains(&output, "Champion")
-            || contains(&output, "regular") || contains(&output, "Regular"),
+        contains(&output, "boss")
+            || contains(&output, "Boss")
+            || contains(&output, "champion")
+            || contains(&output, "Champion")
+            || contains(&output, "regular")
+            || contains(&output, "Regular"),
         "Should be in a battle state: {}",
         output
     );
@@ -443,7 +513,11 @@ fn test_50_buy_multiple_units() {
     let _ = call("match_shop_buy", &["2"]);
     // Should have units in team (some may have stacked if duplicates)
     let output = sql("SELECT team FROM game_match");
-    assert!(contains(&output, "unit_id"), "Should have units in team: {}", output);
+    assert!(
+        contains(&output, "unit_id"),
+        "Should have units in team: {}",
+        output
+    );
     let _ = call("match_abandon", &[]);
 }
 
@@ -452,7 +526,11 @@ fn test_51_team_has_units_after_buy() {
     fresh_match();
     call("match_shop_buy", &["0"]).unwrap();
     let output = sql("SELECT team FROM game_match");
-    assert!(contains(&output, "unit_id"), "Should have unit in team: {}", output);
+    assert!(
+        contains(&output, "unit_id"),
+        "Should have unit in team: {}",
+        output
+    );
     let _ = call("match_abandon", &[]);
 }
 
@@ -466,7 +544,9 @@ fn test_60_shop_size_scales_with_floor() {
     // Floor 1: 3 offers
     let output = sql("SELECT shop_offers FROM game_match");
     // Count non-zero offers
-    let offer_count = output.matches(|c: char| c.is_ascii_digit() && c != '0').count();
+    let offer_count = output
+        .matches(|c: char| c.is_ascii_digit() && c != '0')
+        .count();
     // At least verify shop_offers exists
     assert!(contains(&output, "shop_offers"), "Should have shop offers");
 
@@ -518,7 +598,9 @@ fn test_71_full_game_loss_run() {
 
     let mut alive = true;
     for _ in 0..10 {
-        if !alive { break; }
+        if !alive {
+            break;
+        }
 
         // Battle and lose
         match call("match_start_battle", &[]) {
@@ -542,7 +624,9 @@ fn test_72_mixed_wins_and_losses() {
     // Win, lose, win, lose, win, lose — should die on 3rd loss
     let results = [true, false, true, false, true, false];
     for (i, &won) in results.iter().enumerate() {
-        if !match_exists() { break; }
+        if !match_exists() {
+            break;
+        }
 
         let _ = call("match_shop_buy", &["0"]);
         match call("match_start_battle", &[]) {

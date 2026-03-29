@@ -18,7 +18,10 @@ impl Plugin for ConnectPlugin {
             .add_systems(Update, tick_connection.run_if(in_state(GameState::Home)))
             .add_systems(Update, tick_connection.run_if(in_state(GameState::Shop)))
             .add_systems(Update, tick_connection.run_if(in_state(GameState::Create)))
-            .add_systems(Update, tick_connection.run_if(in_state(GameState::Incubator)));
+            .add_systems(
+                Update,
+                tick_connection.run_if(in_state(GameState::Incubator)),
+            );
     }
 }
 
@@ -66,22 +69,21 @@ fn start_connection(mut stdb: ResMut<StdbConnection>) {
     match builder.build() {
         Ok(conn) => {
             // Subscribe to all public tables
-            conn.subscription_builder()
-                .subscribe(vec![
-                    "SELECT * FROM ability",
-                    "SELECT * FROM unit",
-                    "SELECT * FROM player",
-                    "SELECT * FROM game_match",
-                    "SELECT * FROM vote",
-                    "SELECT * FROM floor_boss",
-                    "SELECT * FROM arena_state",
-                    "SELECT * FROM global_settings",
-                    "SELECT * FROM season",
-                    "SELECT * FROM feature_request",
-                    "SELECT * FROM gen_request",
-                    "SELECT * FROM gen_result",
-                    "SELECT * FROM floor_pool_team",
-                ]);
+            conn.subscription_builder().subscribe(vec![
+                "SELECT * FROM ability",
+                "SELECT * FROM unit",
+                "SELECT * FROM player",
+                "SELECT * FROM game_match",
+                "SELECT * FROM vote",
+                "SELECT * FROM floor_boss",
+                "SELECT * FROM arena_state",
+                "SELECT * FROM global_settings",
+                "SELECT * FROM season",
+                "SELECT * FROM feature_request",
+                "SELECT * FROM gen_request",
+                "SELECT * FROM gen_result",
+                "SELECT * FROM floor_pool_team",
+            ]);
 
             // Start processing messages in a background thread
             conn.run_threaded();
