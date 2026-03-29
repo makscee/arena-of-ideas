@@ -182,7 +182,17 @@ pub struct FeatureRequest {
 
 // ===== Match Types =====
 
-#[derive(spacetimedb::SpacetimeType, Clone, Debug)]
+#[derive(spacetimedb::SpacetimeType, Clone, Debug, PartialEq)]
+pub enum MatchState {
+    Shop,
+    RegularBattle,
+    BossBattle,
+    ChampionBattle,
+    GameOver,
+    Victory,
+}
+
+#[derive(spacetimedb::SpacetimeType, Clone, Debug, serde::Serialize)]
 pub struct TeamSlot {
     pub unit_id: u64,
     pub copies: u8,
@@ -203,7 +213,42 @@ pub struct GameMatch {
     pub floor: u8,
     pub gold: i32,
     pub lives: i32,
+    pub state: MatchState,
     pub team: Vec<TeamSlot>,
     pub shop_offers: Vec<u64>,
+    pub pending_battle_id: u64,
     pub created_at: spacetimedb::Timestamp,
+}
+
+// ===== Floor Pool / Boss Tables =====
+
+#[spacetimedb::table(accessor = floor_pool_team, public)]
+pub struct FloorPoolTeam {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u64,
+    pub floor: u8,
+    pub player: spacetimedb::Identity,
+    /// JSON snapshot of team at time of battle
+    pub team_snapshot: String,
+    pub created_at: spacetimedb::Timestamp,
+}
+
+#[spacetimedb::table(accessor = floor_boss, public)]
+pub struct FloorBoss {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u64,
+    pub floor: u8,
+    pub player: spacetimedb::Identity,
+    /// JSON snapshot of boss team
+    pub team_snapshot: String,
+    pub created_at: spacetimedb::Timestamp,
+}
+
+#[spacetimedb::table(accessor = arena_state, public)]
+pub struct ArenaState {
+    #[primary_key]
+    pub always_zero: u32,
+    pub last_floor: u8,
 }

@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, Table};
 
-use crate::{Ability, ContentStatus, TargetType, Trigger, Unit, ability, unit};
+use crate::{Ability, ArenaState, ContentStatus, TargetType, Trigger, Unit, ability, arena_state, unit};
 
 /// Seeds the database with primordial abilities and sample units.
 pub fn seed_primordial_abilities(ctx: &ReducerContext) {
@@ -215,4 +215,11 @@ pub fn seed_primordial_abilities(ctx: &ReducerContext) {
     });
 
     log::info!("Seeded 8 sample units across tiers 1-3");
+
+    // Initialize arena state
+    ctx.db.arena_state().insert(ArenaState {
+        always_zero: 0,
+        last_floor: 1,
+    });
+    log::info!("Arena state initialized with last_floor=1");
 }

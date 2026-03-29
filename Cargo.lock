@@ -5000,6 +5000,8 @@ name = "server"
 version = "0.1.0"
 dependencies = [
  "log",
+ "serde",
+ "serde_json",
  "shared",
  "spacetimedb",
 ]

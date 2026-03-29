@@ -9,4 +9,6 @@ crate-type = ["cdylib"]
 [dependencies]
 shared = { path = "../shared" }
 spacetimedb = "2.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 log = "0.4"
