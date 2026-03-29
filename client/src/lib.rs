@@ -1,3 +1,4 @@
+pub mod module_bindings;
 pub mod plugins;
 pub mod resources;
 

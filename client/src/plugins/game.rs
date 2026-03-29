@@ -63,7 +63,7 @@ fn handle_title_input(
     mut next_state: ResMut<NextState<GameState>>,
 ) {
     if keys.just_pressed(KeyCode::Space) {
-        next_state.set(GameState::Home);
+        next_state.set(GameState::Login);
     }
 }
 

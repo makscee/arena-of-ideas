@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use client::plugins::{
-    collection::CollectionPlugin, create::CreatePlugin, game::GamePlugin,
+    collection::CollectionPlugin, connect::ConnectPlugin, create::CreatePlugin, game::GamePlugin,
     incubator::IncubatorPlugin, ui::UiPlugin,
 };
 
@@ -16,6 +16,7 @@ fn main() {
         }))
         .add_plugins(UiPlugin)
         .add_plugins(GamePlugin)
+        .add_plugins(ConnectPlugin)
         .add_plugins(CollectionPlugin)
         .add_plugins(CreatePlugin)
         .add_plugins(IncubatorPlugin)
