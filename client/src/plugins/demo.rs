@@ -188,34 +188,26 @@ fn check_demo_mode(
 
     let mut visuals = Vec::new();
     for (i, u) in left_team.iter().enumerate() {
-        visuals.push(BattleUnitVisual {
-            id: u.id,
-            name: u.name.clone(),
-            initial_hp: u.hp,
-            initial_pwr: u.pwr,
-            hp: u.hp,
-            pwr: u.pwr,
-            dmg: 0,
-            alive: true,
-            side: BattleSide::Left,
-            slot: u.slot,
-            color: colors_left[i % colors_left.len()],
-        });
+        visuals.push(BattleUnitVisual::new(
+            u.id,
+            u.name.clone(),
+            u.hp,
+            u.pwr,
+            BattleSide::Left,
+            u.slot,
+            colors_left[i % colors_left.len()],
+        ));
     }
     for (i, u) in right_team.iter().enumerate() {
-        visuals.push(BattleUnitVisual {
-            id: u.id,
-            name: u.name.clone(),
-            initial_hp: u.hp,
-            initial_pwr: u.pwr,
-            hp: u.hp,
-            pwr: u.pwr,
-            dmg: 0,
-            alive: true,
-            side: BattleSide::Right,
-            slot: u.slot,
-            color: colors_right[i % colors_right.len()],
-        });
+        visuals.push(BattleUnitVisual::new(
+            u.id,
+            u.name.clone(),
+            u.hp,
+            u.pwr,
+            BattleSide::Right,
+            u.slot,
+            colors_right[i % colors_right.len()],
+        ));
     }
 
     // Run simulation
