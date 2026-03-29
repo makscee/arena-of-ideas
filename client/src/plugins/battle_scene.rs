@@ -172,6 +172,19 @@ impl BattleSceneState {
             self.last_processed += 1;
         }
 
+        // Clear transient animation state (flash, popups, offsets)
+        // These only make sense during live playback, not on seek
+        for u in &mut self.units {
+            u.flash_timer = 0.0;
+            u.offset_x = 0.0;
+            u.damage_popup = None;
+            u.heal_popup = None;
+            // Death timer should be fully faded for dead units on seek
+            if !u.alive {
+                u.death_timer = 1.0;
+            }
+        }
+
         // Animate the current action if we're in the middle of one
         self.update_animations();
     }
@@ -500,28 +513,25 @@ fn battle_scene_ui(
 }
 
 fn render_unit(ui: &mut egui::Ui, unit: &BattleUnitVisual, center: egui::Pos2, size: f32) {
+    // Dead units fade: alpha goes 255→30 as death_timer goes 0→1
     let alpha = if unit.alive {
-        255
+        255u8
     } else {
-        (255.0 * (1.0 - unit.death_timer) * 0.3) as u8
+        (255.0 * (1.0 - unit.death_timer * 0.88)).max(30.0) as u8
     };
 
-    // Flash effect on damage
-    let color = if unit.flash_timer > 0.0 {
-        egui::Color32::from_rgba_premultiplied(255, 255, 255, alpha)
-    } else {
-        egui::Color32::from_rgba_premultiplied(
-            unit.color.r(),
-            unit.color.g(),
-            unit.color.b(),
-            alpha,
-        )
-    };
+    // Flash effect: blend toward white based on flash_timer
+    let flash = (unit.flash_timer / 0.3).clamp(0.0, 1.0);
+    let r = ((unit.color.r() as f32) * (1.0 - flash) + 255.0 * flash) as u8;
+    let g = ((unit.color.g() as f32) * (1.0 - flash) + 255.0 * flash) as u8;
+    let b = ((unit.color.b() as f32) * (1.0 - flash) + 255.0 * flash) as u8;
+    let color = egui::Color32::from_rgba_premultiplied(r, g, b, alpha);
 
+    // Dead units shrink
     let actual_size = if unit.alive {
         size
     } else {
-        size * (1.0 - unit.death_timer * 0.3)
+        size * (1.0 - unit.death_timer * 0.5).max(0.3)
     };
     let rect = egui::Rect::from_center_size(center, egui::vec2(actual_size, actual_size));
 
