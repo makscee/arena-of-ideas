@@ -191,6 +191,8 @@ fn check_demo_mode(
         visuals.push(BattleUnitVisual {
             id: u.id,
             name: u.name.clone(),
+            initial_hp: u.hp,
+            initial_pwr: u.pwr,
             hp: u.hp,
             pwr: u.pwr,
             dmg: 0,
@@ -204,6 +206,8 @@ fn check_demo_mode(
         visuals.push(BattleUnitVisual {
             id: u.id,
             name: u.name.clone(),
+            initial_hp: u.hp,
+            initial_pwr: u.pwr,
             hp: u.hp,
             pwr: u.pwr,
             dmg: 0,

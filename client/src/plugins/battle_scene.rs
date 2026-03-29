@@ -29,6 +29,8 @@ fn reset_frame_count(mut count: ResMut<BattleFrameCount>) {
 pub struct BattleUnitVisual {
     pub id: u64,
     pub name: String,
+    pub initial_hp: i32,
+    pub initial_pwr: i32,
     pub hp: i32,
     pub pwr: i32,
     pub dmg: i32,
@@ -42,101 +44,135 @@ pub struct BattleUnitVisual {
 #[derive(Resource, Default)]
 pub struct BattleSceneState {
     pub result: Option<BattleResult>,
+    pub initial_units: Vec<BattleUnitVisual>,
     pub units: Vec<BattleUnitVisual>,
     pub action_index: usize,
     pub playing: bool,
     pub timer: f32,
     pub speed: f32,
-    pub log: Vec<String>,
+    pub log: Vec<(String, egui::Color32)>,
 }
 
 impl BattleSceneState {
     pub fn load(&mut self, result: BattleResult, units: Vec<BattleUnitVisual>) {
-        self.result = Some(result);
+        self.initial_units = units.clone();
         self.units = units;
+        self.result = Some(result);
         self.action_index = 0;
         self.playing = false;
         self.timer = 0.0;
-        self.speed = 0.5;
+        self.speed = 0.3;
         self.log.clear();
     }
-}
 
-/// Apply battle actions up to the current index, mutating unit visuals.
-fn apply_actions_to(state: &mut BattleSceneState) {
-    // Reset units to initial state
-    for u in &mut state.units {
-        u.dmg = 0;
-        u.alive = true;
-    }
-    state.log.clear();
+    /// Reset units to initial state and replay actions up to current index.
+    fn rebuild_state(&mut self) {
+        self.units = self.initial_units.clone();
+        self.log.clear();
 
-    let Some(ref result) = state.result else {
-        return;
-    };
+        let Some(ref result) = self.result else {
+            return;
+        };
 
-    for (i, action) in result.actions.iter().enumerate() {
-        if i >= state.action_index {
-            break;
-        }
-        match action {
-            BattleAction::Damage {
-                source,
-                target,
-                amount,
-            } => {
-                if let Some(u) = state.units.iter_mut().find(|u| u.id == *target) {
-                    u.dmg += amount;
-                }
-                state
-                    .log
-                    .push(format!("{} deals {} dmg to {}", source, amount, target));
-            }
-            BattleAction::Heal {
-                source,
-                target,
-                amount,
-            } => {
-                if let Some(u) = state.units.iter_mut().find(|u| u.id == *target) {
-                    u.dmg = (u.dmg - amount).max(0);
-                }
-                state
-                    .log
-                    .push(format!("{} heals {} for {}", source, target, amount));
-            }
-            BattleAction::Death { unit } => {
-                if let Some(u) = state.units.iter_mut().find(|u| u.id == *unit) {
-                    u.alive = false;
-                }
-                state.log.push(format!("Unit {} dies!", unit));
-            }
-            BattleAction::StatChange { unit, stat, delta } => {
-                if let Some(u) = state.units.iter_mut().find(|u| u.id == *unit) {
-                    match stat {
-                        shared::battle::StatKind::Pwr => u.pwr = (u.pwr + delta).max(0),
-                        shared::battle::StatKind::Hp => u.hp = (u.hp + delta).max(0),
-                        _ => {}
+        for i in 0..self.action_index.min(result.actions.len()) {
+            let action = &result.actions[i];
+            let (text, color) = match action {
+                BattleAction::Damage {
+                    source,
+                    target,
+                    amount,
+                } => {
+                    if let Some(u) = self.units.iter_mut().find(|u| u.id == *target) {
+                        u.dmg += amount;
+                        if u.hp - u.dmg <= 0 {
+                            u.alive = false;
+                        }
                     }
+                    (
+                        format!("#{} → {} dmg → #{}", source, amount, target),
+                        egui::Color32::from_rgb(255, 120, 120),
+                    )
                 }
-                state
-                    .log
-                    .push(format!("Unit {} {:?} {:+}", unit, stat, delta));
-            }
-            BattleAction::AbilityUsed {
-                source,
-                ability_name,
-            } => {
-                state
-                    .log
-                    .push(format!("Unit {} uses {}", source, ability_name));
-            }
-            BattleAction::Fatigue { amount } => {
-                for u in state.units.iter_mut().filter(|u| u.alive) {
-                    u.dmg += amount;
+                BattleAction::Heal {
+                    source,
+                    target,
+                    amount,
+                } => {
+                    if let Some(u) = self.units.iter_mut().find(|u| u.id == *target) {
+                        u.dmg = (u.dmg - amount).max(0);
+                    }
+                    (
+                        format!("#{} heals #{} for {}", source, target, amount),
+                        egui::Color32::from_rgb(120, 255, 120),
+                    )
                 }
-                state.log.push(format!("Fatigue! All take {} dmg", amount));
-            }
-            _ => {}
+                BattleAction::Death { unit } => {
+                    if let Some(u) = self.units.iter_mut().find(|u| u.id == *unit) {
+                        u.alive = false;
+                    }
+                    let name = self
+                        .units
+                        .iter()
+                        .find(|u| u.id == *unit)
+                        .map(|u| u.name.as_str())
+                        .unwrap_or("?");
+                    (
+                        format!("{} dies!", name),
+                        egui::Color32::from_rgb(255, 50, 50),
+                    )
+                }
+                BattleAction::StatChange { unit, stat, delta } => {
+                    if let Some(u) = self.units.iter_mut().find(|u| u.id == *unit) {
+                        match stat {
+                            shared::battle::StatKind::Pwr => u.pwr = (u.pwr + delta).max(0),
+                            shared::battle::StatKind::Hp => u.hp = (u.hp + delta).max(0),
+                            _ => {}
+                        }
+                    }
+                    (
+                        format!("#{} {:?} {:+}", unit, stat, delta),
+                        egui::Color32::from_rgb(200, 200, 100),
+                    )
+                }
+                BattleAction::AbilityUsed {
+                    source,
+                    ability_name,
+                } => {
+                    let name = self
+                        .units
+                        .iter()
+                        .find(|u| u.id == *source)
+                        .map(|u| u.name.as_str())
+                        .unwrap_or("?");
+                    (
+                        format!("{} uses {}", name, ability_name),
+                        egui::Color32::from_rgb(120, 180, 255),
+                    )
+                }
+                BattleAction::Fatigue { amount } => {
+                    for u in self.units.iter_mut().filter(|u| u.alive) {
+                        u.dmg += amount;
+                    }
+                    (
+                        format!("FATIGUE! All take {} dmg", amount),
+                        egui::Color32::from_rgb(255, 200, 50),
+                    )
+                }
+                BattleAction::Spawn { unit, side, .. } => {
+                    let name = self
+                        .units
+                        .iter()
+                        .find(|u| u.id == *unit)
+                        .map(|u| u.name.as_str())
+                        .unwrap_or("?");
+                    (
+                        format!("{} enters ({:?})", name, side),
+                        egui::Color32::from_rgb(180, 180, 180),
+                    )
+                }
+                _ => continue,
+            };
+            self.log.push((text, color));
         }
     }
 }
@@ -148,104 +184,104 @@ fn battle_scene_ui(
     mut next_state: ResMut<NextState<GameState>>,
     mut frame_count: ResMut<BattleFrameCount>,
 ) {
-    // Skip first 2 frames to let egui initialize
     frame_count.0 += 1;
     if frame_count.0 < 3 {
         return;
     }
+
     let Ok(ctx) = contexts.ctx_mut() else { return };
 
     if state.result.is_none() {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("No battle loaded");
-            if ui.button("Back").clicked() {
-                next_state.set(GameState::Home);
-            }
+            ui.centered_and_justified(|ui| {
+                ui.heading("No battle loaded");
+            });
         });
         return;
     }
 
-    let total_actions = state.result.as_ref().unwrap().actions.len();
+    let total = state.result.as_ref().unwrap().actions.len();
+    let winner = state.result.as_ref().unwrap().winner;
+    let turns = state.result.as_ref().unwrap().turns;
 
     // Auto-play
-    if state.playing && state.action_index < total_actions {
+    if state.playing && state.action_index < total {
         state.timer += time.delta_secs();
         if state.timer >= state.speed {
             state.timer = 0.0;
             state.action_index += 1;
-            apply_actions_to(&mut state);
+            state.rebuild_state();
         }
     }
 
-    let winner = state.result.as_ref().unwrap().winner;
-    let turns = state.result.as_ref().unwrap().turns;
-
-    // Top bar
-    egui::TopBottomPanel::top("battle_scene_top").show(ctx, |ui| {
+    // === TOP BAR ===
+    egui::TopBottomPanel::top("battle_top").show(ctx, |ui| {
         ui.horizontal(|ui| {
             ui.heading("Battle");
             ui.separator();
-            let (text, color) = match winner {
+            let (label, color) = match winner {
                 BattleSide::Left => ("Left Wins!", egui::Color32::from_rgb(100, 255, 100)),
                 BattleSide::Right => ("Right Wins!", egui::Color32::from_rgb(255, 100, 100)),
             };
-            ui.colored_label(color, text);
-            ui.label(format!("{} turns", turns));
+            ui.colored_label(color, label);
+            ui.label(format!("• {} turns • {} actions", turns, total));
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                if ui.button("Exit").clicked() {
+                    state.result = None;
+                    next_state.set(GameState::Home);
+                }
+            });
         });
     });
 
-    // Controls
-    egui::TopBottomPanel::bottom("battle_scene_controls").show(ctx, |ui| {
+    // === BOTTOM CONTROLS ===
+    egui::TopBottomPanel::bottom("battle_controls").show(ctx, |ui| {
         ui.horizontal(|ui| {
-            if ui.button("⏮").clicked() {
+            if ui.button("⏮ Start").clicked() {
                 state.action_index = 0;
-                apply_actions_to(&mut state);
+                state.rebuild_state();
             }
-            if ui.button("⏪").clicked() {
+            if ui.button("◀ Step").clicked() {
                 state.action_index = state.action_index.saturating_sub(1);
-                apply_actions_to(&mut state);
+                state.rebuild_state();
             }
             if state.playing {
-                if ui.button("⏸").clicked() {
+                if ui.button("⏸ Pause").clicked() {
                     state.playing = false;
                 }
-            } else if ui.button("▶").clicked() {
+            } else if ui.button("▶ Play").clicked() {
                 state.playing = true;
             }
-            if ui.button("⏩").clicked() {
-                state.action_index = (state.action_index + 1).min(total_actions);
-                apply_actions_to(&mut state);
+            if ui.button("Step ▶").clicked() {
+                state.action_index = (state.action_index + 1).min(total);
+                state.rebuild_state();
             }
-            if ui.button("⏭").clicked() {
-                state.action_index = total_actions;
-                apply_actions_to(&mut state);
+            if ui.button("End ⏭").clicked() {
+                state.action_index = total;
+                state.rebuild_state();
             }
             ui.separator();
-            ui.label(format!("{} / {}", state.action_index, total_actions));
-            ui.add(egui::Slider::new(&mut state.speed, 0.05..=2.0).text("speed"));
+            ui.label(format!("{}/{}", state.action_index, total));
             ui.separator();
-            if ui.button("Back").clicked() {
-                next_state.set(GameState::Home);
-            }
+            ui.label("Speed:");
+            ui.add(egui::Slider::new(&mut state.speed, 0.02..=1.0).logarithmic(true));
         });
     });
 
-    // Battle area
+    // === MAIN AREA ===
     egui::CentralPanel::default().show(ctx, |ui| {
-        let available = ui.available_rect_before_wrap();
-        let battle_height = available.height() * 0.6;
-        let log_height = available.height() * 0.4;
+        let avail = ui.available_rect_before_wrap();
 
-        // Unit rendering area
-        let battle_rect =
-            egui::Rect::from_min_size(available.min, egui::vec2(available.width(), battle_height));
+        // Split: left half = units, right half = log
+        let mid_x = avail.left() + avail.width() * 0.55;
 
-        // Draw battlefield background
+        // --- UNIT DISPLAY ---
+        let unit_area = egui::Rect::from_min_max(avail.min, egui::pos2(mid_x, avail.max.y));
+
+        // Background
         ui.painter()
-            .rect_filled(battle_rect, 0.0, egui::Color32::from_rgb(20, 20, 30));
+            .rect_filled(unit_area, 4.0, egui::Color32::from_rgb(15, 15, 25));
 
-        // Draw units
-        let unit_size = (battle_rect.height() * 0.35).min(80.0);
         let left_units: Vec<_> = state
             .units
             .iter()
@@ -257,72 +293,71 @@ fn battle_scene_ui(
             .filter(|u| u.side == BattleSide::Right)
             .collect();
 
-        let left_x = battle_rect.left() + battle_rect.width() * 0.25;
-        let right_x = battle_rect.left() + battle_rect.width() * 0.75;
+        let unit_size = (unit_area.height() / 5.5).min(90.0);
+        let left_x = unit_area.left() + unit_area.width() * 0.25;
+        let right_x = unit_area.left() + unit_area.width() * 0.75;
 
         for (i, unit) in left_units.iter().enumerate() {
-            let y = battle_rect.top()
-                + (i as f32 + 0.5) * battle_rect.height() / left_units.len().max(1) as f32;
+            let y = unit_area.top()
+                + 20.0
+                + (i as f32 + 0.5) * (unit_area.height() - 40.0) / left_units.len().max(1) as f32;
             let rect = egui::Rect::from_center_size(
                 egui::pos2(left_x, y),
                 egui::vec2(unit_size, unit_size),
             );
-            let alpha = if unit.alive { 255 } else { 60 };
-            let color = egui::Color32::from_rgba_premultiplied(
+            let alpha = if unit.alive { 255 } else { 50 };
+            let c = egui::Color32::from_rgba_premultiplied(
                 unit.color.r(),
                 unit.color.g(),
                 unit.color.b(),
                 alpha,
             );
-            paint_default_unit(rect, color, unit.hp, unit.pwr, unit.dmg, &unit.name, ui);
+            paint_default_unit(rect, c, unit.hp, unit.pwr, unit.dmg, &unit.name, ui);
         }
 
         for (i, unit) in right_units.iter().enumerate() {
-            let y = battle_rect.top()
-                + (i as f32 + 0.5) * battle_rect.height() / right_units.len().max(1) as f32;
+            let y = unit_area.top()
+                + 20.0
+                + (i as f32 + 0.5) * (unit_area.height() - 40.0) / right_units.len().max(1) as f32;
             let rect = egui::Rect::from_center_size(
                 egui::pos2(right_x, y),
                 egui::vec2(unit_size, unit_size),
             );
-            let alpha = if unit.alive { 255 } else { 60 };
-            let color = egui::Color32::from_rgba_premultiplied(
+            let alpha = if unit.alive { 255 } else { 50 };
+            let c = egui::Color32::from_rgba_premultiplied(
                 unit.color.r(),
                 unit.color.g(),
                 unit.color.b(),
                 alpha,
             );
-            paint_default_unit(rect, color, unit.hp, unit.pwr, unit.dmg, &unit.name, ui);
+            paint_default_unit(rect, c, unit.hp, unit.pwr, unit.dmg, &unit.name, ui);
         }
 
         // VS label
         ui.painter().text(
-            battle_rect.center(),
+            unit_area.center(),
             egui::Align2::CENTER_CENTER,
             "VS",
-            egui::FontId::proportional(24.0),
-            egui::Color32::from_rgb(150, 150, 150),
+            egui::FontId::proportional(28.0),
+            egui::Color32::from_rgb(100, 100, 100),
         );
 
-        // Battle log
-        ui.separator();
-        egui::ScrollArea::vertical()
-            .max_height(log_height)
-            .stick_to_bottom(true)
-            .show(ui, |ui| {
-                for (i, entry) in state.log.iter().enumerate() {
-                    let color = if entry.contains("dies") {
-                        egui::Color32::from_rgb(255, 50, 50)
-                    } else if entry.contains("heals") {
-                        egui::Color32::from_rgb(100, 255, 100)
-                    } else if entry.contains("uses") {
-                        egui::Color32::from_rgb(100, 180, 255)
-                    } else if entry.contains("Fatigue") {
-                        egui::Color32::from_rgb(255, 200, 50)
-                    } else {
-                        egui::Color32::GRAY
-                    };
-                    ui.colored_label(color, format!("[{}] {}", i + 1, entry));
-                }
-            });
+        // --- BATTLE LOG ---
+        let log_area = egui::Rect::from_min_max(egui::pos2(mid_x + 8.0, avail.top()), avail.max);
+        ui.allocate_new_ui(egui::UiBuilder::new().max_rect(log_area), |ui| {
+            ui.heading("Battle Log");
+            ui.separator();
+            egui::ScrollArea::vertical()
+                .stick_to_bottom(true)
+                .max_height(log_area.height() - 40.0)
+                .show(ui, |ui| {
+                    for (text, color) in &state.log {
+                        ui.colored_label(*color, text);
+                    }
+                    if state.log.is_empty() {
+                        ui.colored_label(egui::Color32::GRAY, "Press ▶ Play to start...");
+                    }
+                });
+        });
     });
 }
