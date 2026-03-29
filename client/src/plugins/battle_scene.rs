@@ -658,8 +658,12 @@ fn battle_scene_ui(
                                 (from.x + current_to.x) * 0.5,
                                 (from.y + current_to.y) * 0.5,
                             );
-                            let label_bg =
-                                egui::Color32::from_rgba_premultiplied(0, 0, 0, alpha * 3 / 4);
+                            let label_bg = egui::Color32::from_rgba_premultiplied(
+                                0,
+                                0,
+                                0,
+                                (alpha as u16 * 3 / 4) as u8,
+                            );
                             let label_rect =
                                 egui::Rect::from_center_size(mid, egui::vec2(40.0, 22.0));
                             painter.rect_filled(label_rect, 4.0, label_bg);
@@ -725,7 +729,7 @@ fn battle_scene_ui(
                         egui::pos2(avail.center().x, card_y),
                         egui::vec2(card_width, 28.0),
                     );
-                    let bg_alpha = alpha * 3 / 4;
+                    let bg_alpha = (alpha as u16 * 3 / 4) as u8;
                     painter.rect_filled(
                         card_rect,
                         6.0,
