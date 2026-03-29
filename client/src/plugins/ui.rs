@@ -6,11 +6,19 @@ pub struct UiPlugin;
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(EguiPlugin::default())
-            .add_systems(Startup, setup_fonts);
+            .init_resource::<FontsLoaded>()
+            .add_systems(bevy_egui::EguiPrimaryContextPass, setup_fonts);
     }
 }
 
-fn setup_fonts(mut contexts: EguiContexts) {
+#[derive(Resource, Default)]
+struct FontsLoaded(bool);
+
+fn setup_fonts(mut contexts: EguiContexts, mut loaded: ResMut<FontsLoaded>) {
+    if loaded.0 {
+        return;
+    }
+
     let Ok(ctx) = contexts.ctx_mut() else { return };
 
     let mut fonts = egui::FontDefinitions::default();
@@ -33,26 +41,22 @@ fn setup_fonts(mut contexts: EguiContexts) {
             .insert(0, "SometypeMono".to_owned());
     }
 
-    // Load NotoEmoji as fallback for unicode symbols
+    // Load NotoEmoji as fallback for emoji/symbol characters
     if let Ok(font_data) = std::fs::read("assets/fonts/NotoEmoji-VariableFont_wght.ttf") {
         fonts.font_data.insert(
             "NotoEmoji".to_owned(),
             std::sync::Arc::new(egui::FontData::from_owned(font_data)),
         );
-        // Add as fallback after main font
+        // Add as last fallback — only used when main fonts don't have the glyph
         fonts
             .families
             .entry(egui::FontFamily::Proportional)
             .or_default()
             .push("NotoEmoji".to_owned());
-        fonts
-            .families
-            .entry(egui::FontFamily::Monospace)
-            .or_default()
-            .push("NotoEmoji".to_owned());
     }
 
     ctx.set_fonts(fonts);
+    loaded.0 = true;
 }
 
 /// Standard colors used throughout the UI.
@@ -72,7 +76,6 @@ pub mod colors {
     pub const RATING_NEGATIVE: egui::Color32 = egui::Color32::from_rgb(255, 100, 100);
 }
 
-/// Helper to get tier color by tier number (1-5).
 pub fn tier_color(tier: u8) -> bevy_egui::egui::Color32 {
     colors::TIER_COLORS
         .get(tier.saturating_sub(1) as usize)
@@ -80,7 +83,6 @@ pub fn tier_color(tier: u8) -> bevy_egui::egui::Color32 {
         .unwrap_or(bevy_egui::egui::Color32::WHITE)
 }
 
-/// Helper to format rating with color.
 pub fn rating_color(rating: i32) -> bevy_egui::egui::Color32 {
     if rating > 0 {
         colors::RATING_POSITIVE
