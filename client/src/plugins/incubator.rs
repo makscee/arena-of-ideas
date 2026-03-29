@@ -1,7 +1,9 @@
 use bevy::prelude::*;
-use bevy_egui::{EguiContexts, egui};
+use bevy_egui::{egui, EguiContexts};
 
+use crate::module_bindings::*;
 use crate::plugins::collection::GameContent;
+use crate::plugins::connect::StdbConnection;
 use crate::plugins::ui::{colors, rating_color, tier_color};
 use crate::resources::game_state::GameState;
 
@@ -17,7 +19,6 @@ impl Plugin for IncubatorPlugin {
 #[derive(Resource, Default)]
 struct IncubatorState {
     tab: IncubatorTab,
-    filter_ability: Option<usize>,
     sort_by_rating: bool,
 }
 
@@ -29,10 +30,23 @@ enum IncubatorTab {
     EvolutionTree,
 }
 
+fn call_vote(stdb: &StdbConnection, entity_kind: &str, entity_id: u64, value: i8) {
+    if let Some(ref conn) = stdb.conn {
+        if let Err(e) = conn.reducers.vote_cast(
+            entity_kind.to_string(),
+            entity_id,
+            value,
+        ) {
+            warn!("Vote failed: {:?}", e);
+        }
+    }
+}
+
 fn incubator_ui(
     mut contexts: EguiContexts,
     mut state: ResMut<IncubatorState>,
     content: Res<GameContent>,
+    stdb: Res<StdbConnection>,
     mut next_game_state: ResMut<NextState<GameState>>,
 ) {
     let Ok(ctx) = contexts.ctx_mut() else { return };
@@ -69,13 +83,18 @@ fn incubator_ui(
     });
 
     egui::CentralPanel::default().show(ctx, |ui| match state.tab {
-        IncubatorTab::Abilities => incubator_abilities(ui, &content, &state),
-        IncubatorTab::Units => incubator_units(ui, &content, &state),
+        IncubatorTab::Abilities => incubator_abilities(ui, &content, &state, &stdb),
+        IncubatorTab::Units => incubator_units(ui, &content, &state, &stdb),
         IncubatorTab::EvolutionTree => evolution_tree(ui, &content),
     });
 }
 
-fn incubator_abilities(ui: &mut egui::Ui, content: &GameContent, state: &IncubatorState) {
+fn incubator_abilities(
+    ui: &mut egui::Ui,
+    content: &GameContent,
+    state: &IncubatorState,
+    stdb: &StdbConnection,
+) {
     ui.heading("Ability Incubator");
     ui.label("Vote on abilities to decide what enters the game.");
     ui.separator();
@@ -93,16 +112,15 @@ fn incubator_abilities(ui: &mut egui::Ui, content: &GameContent, state: &Incubat
                     ui.label("→");
                     ui.label(&ability.target_type);
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        // Vote buttons
                         if ui.small_button("▼").clicked() {
-                            // TODO: call vote_cast reducer with -1
+                            call_vote(stdb, "ability", ability.id, -1);
                         }
                         ui.colored_label(
                             rating_color(ability.rating),
                             format!("{:+}", ability.rating),
                         );
                         if ui.small_button("▲").clicked() {
-                            // TODO: call vote_cast reducer with +1
+                            call_vote(stdb, "ability", ability.id, 1);
                         }
                         ui.label(&ability.status);
                     });
@@ -113,7 +131,12 @@ fn incubator_abilities(ui: &mut egui::Ui, content: &GameContent, state: &Incubat
     });
 }
 
-fn incubator_units(ui: &mut egui::Ui, content: &GameContent, state: &IncubatorState) {
+fn incubator_units(
+    ui: &mut egui::Ui,
+    content: &GameContent,
+    state: &IncubatorState,
+    stdb: &StdbConnection,
+) {
     ui.heading("Unit Incubator");
     ui.label("Vote on units to decide what enters the game.");
     ui.separator();
@@ -132,11 +155,14 @@ fn incubator_units(ui: &mut egui::Ui, content: &GameContent, state: &IncubatorSt
                     ui.label(format!("{}hp / {}pwr", unit.hp, unit.pwr));
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         if ui.small_button("▼").clicked() {
-                            // TODO: vote_cast -1
+                            call_vote(stdb, "unit", unit.id, -1);
                         }
-                        ui.colored_label(rating_color(unit.rating), format!("{:+}", unit.rating));
+                        ui.colored_label(
+                            rating_color(unit.rating),
+                            format!("{:+}", unit.rating),
+                        );
                         if ui.small_button("▲").clicked() {
-                            // TODO: vote_cast +1
+                            call_vote(stdb, "unit", unit.id, 1);
                         }
                         ui.label(&unit.status);
                     });
@@ -159,20 +185,15 @@ fn evolution_tree(ui: &mut egui::Ui, content: &GameContent) {
     ui.label("All abilities trace back to the primordial set.");
     ui.separator();
 
-    // Simple tree visualization: list abilities with parent info
-    // Full tree visualization would use a graph layout library
     egui::ScrollArea::vertical().show(ui, |ui| {
-        // Primordial abilities (no parents)
         ui.heading("Primordial");
         for ability in &content.abilities {
-            // Mock: all current abilities are primordial
             ui.horizontal(|ui| {
                 ui.colored_label(colors::ABILITY_COLOR, &ability.name);
                 ui.label("—");
                 ui.label(&ability.description);
             });
         }
-
         ui.separator();
         ui.label("(Bred abilities will appear here with parent lineage)");
     });

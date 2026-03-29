@@ -1,7 +1,9 @@
 use bevy::prelude::*;
-use bevy_egui::{EguiContexts, egui};
+use bevy_egui::{egui, EguiContexts};
 
+use crate::module_bindings::*;
 use crate::plugins::collection::GameContent;
+use crate::plugins::connect::StdbConnection;
 use crate::plugins::ui::{colors, tier_color};
 use crate::resources::game_state::GameState;
 
@@ -80,6 +82,7 @@ fn create_ui(
     mut contexts: EguiContexts,
     mut state: ResMut<CreateState>,
     content: Res<GameContent>,
+    stdb: Res<StdbConnection>,
     mut next_game_state: ResMut<NextState<GameState>>,
 ) {
     let Ok(ctx) = contexts.ctx_mut() else { return };
@@ -108,18 +111,22 @@ fn create_ui(
     });
 
     egui::CentralPanel::default().show(ctx, |ui| match state.tab {
-        CreateTab::BreedAbility => breed_ability_ui(ui, &mut state, &content),
-        CreateTab::AssembleUnit => assemble_unit_ui(ui, &mut state, &content),
+        CreateTab::BreedAbility => breed_ability_ui(ui, &mut state, &content, &stdb),
+        CreateTab::AssembleUnit => assemble_unit_ui(ui, &mut state, &content, &stdb),
     });
 }
 
-fn breed_ability_ui(ui: &mut egui::Ui, state: &mut ResMut<CreateState>, content: &GameContent) {
+fn breed_ability_ui(
+    ui: &mut egui::Ui,
+    state: &mut ResMut<CreateState>,
+    content: &GameContent,
+    stdb: &StdbConnection,
+) {
     ui.heading("Breed New Ability");
     ui.label("Pick two parent abilities and describe how to combine them.");
     ui.separator();
 
     ui.columns(2, |columns| {
-        // Parent A
         columns[0].label("Parent A:");
         for (i, ability) in content.abilities.iter().enumerate() {
             let selected = state.selected_parent_a == Some(i);
@@ -131,7 +138,6 @@ fn breed_ability_ui(ui: &mut egui::Ui, state: &mut ResMut<CreateState>, content:
             }
         }
 
-        // Parent B
         columns[1].label("Parent B:");
         for (i, ability) in content.abilities.iter().enumerate() {
             let selected = state.selected_parent_b == Some(i);
@@ -146,7 +152,6 @@ fn breed_ability_ui(ui: &mut egui::Ui, state: &mut ResMut<CreateState>, content:
 
     ui.separator();
 
-    // Show selected parents
     if let (Some(a), Some(b)) = (state.selected_parent_a, state.selected_parent_b) {
         if a == b {
             ui.colored_label(egui::Color32::RED, "Cannot breed an ability with itself!");
@@ -168,18 +173,38 @@ fn breed_ability_ui(ui: &mut egui::Ui, state: &mut ResMut<CreateState>, content:
                 .add_enabled(can_submit, egui::Button::new("Breed with AI"))
                 .clicked()
             {
-                state.breeding_status = RequestStatus::Pending;
-                // TODO: Call gen_breed_ability reducer
-                // For now, show pending state
+                // Call the gen_breed_ability reducer
+                if let Some(ref conn) = stdb.conn {
+                    match conn.reducers.gen_breed_ability(
+                        pa.id,
+                        pb.id,
+                        state.breeding_prompt.clone(),
+                    ) {
+                        Ok(_) => {
+                            state.breeding_status = RequestStatus::Pending;
+                            info!("Breeding request sent: {} × {}", pa.name, pb.name);
+                        }
+                        Err(e) => {
+                            state.breeding_status =
+                                RequestStatus::Error(format!("{:?}", e));
+                        }
+                    }
+                } else {
+                    state.breeding_status =
+                        RequestStatus::Error("Not connected to server".to_string());
+                }
             }
 
             match &state.breeding_status {
                 RequestStatus::Pending => {
                     ui.spinner();
-                    ui.label("AI is generating...");
+                    ui.label("AI generation request submitted. Waiting for result...");
                 }
                 RequestStatus::Error(e) => {
                     ui.colored_label(egui::Color32::RED, format!("Error: {}", e));
+                    if ui.button("Dismiss").clicked() {
+                        state.breeding_status = RequestStatus::Idle;
+                    }
                 }
                 _ => {}
             }
@@ -187,7 +212,8 @@ fn breed_ability_ui(ui: &mut egui::Ui, state: &mut ResMut<CreateState>, content:
     }
 
     // Show result
-    if let Some(result) = &state.breeding_result {
+    let result_clone = state.breeding_result.clone();
+    if let Some(result) = &result_clone {
         ui.separator();
         ui.heading("Result");
         ui.group(|ui| {
@@ -207,7 +233,25 @@ fn breed_ability_ui(ui: &mut egui::Ui, state: &mut ResMut<CreateState>, content:
 
         ui.horizontal(|ui| {
             if ui.button("Accept → Incubator").clicked() {
-                // TODO: Create ability from result
+                if let Some(ref conn) = stdb.conn {
+                    let target_type = match result.target_type.as_str() {
+                        "RandomEnemy" => TargetType::RandomEnemy,
+                        "AllEnemies" => TargetType::AllEnemies,
+                        "RandomAlly" => TargetType::RandomAlly,
+                        "AllAllies" => TargetType::AllAllies,
+                        "Owner" => TargetType::Owner,
+                        _ => TargetType::RandomEnemy,
+                    };
+                    if let Err(e) = conn.reducers.ability_create(
+                        result.name.clone(),
+                        result.description.clone(),
+                        target_type,
+                        result.effect_script.clone(),
+                        0, 0, 0,
+                    ) {
+                        warn!("Failed to create ability: {:?}", e);
+                    }
+                }
                 state.breeding_result = None;
                 state.breeding_status = RequestStatus::Idle;
                 state.breeding_prompt.clear();
@@ -220,7 +264,12 @@ fn breed_ability_ui(ui: &mut egui::Ui, state: &mut ResMut<CreateState>, content:
     }
 }
 
-fn assemble_unit_ui(ui: &mut egui::Ui, state: &mut ResMut<CreateState>, content: &GameContent) {
+fn assemble_unit_ui(
+    ui: &mut egui::Ui,
+    state: &mut ResMut<CreateState>,
+    content: &GameContent,
+    stdb: &StdbConnection,
+) {
     ui.heading("Assemble New Unit");
     ui.label("Pick a trigger, abilities, and tier. AI generates the name and visuals.");
     ui.separator();
@@ -346,23 +395,41 @@ fn assemble_unit_ui(ui: &mut egui::Ui, state: &mut ResMut<CreateState>, content:
         .add_enabled(can_submit, egui::Button::new("Generate Name & Visual"))
         .clicked()
     {
-        state.unit_status = RequestStatus::Pending;
-        // TODO: Call gen_create_unit reducer
+        if let Some(ref conn) = stdb.conn {
+            match conn
+                .reducers
+                .gen_create_unit(state.unit_prompt.clone())
+            {
+                Ok(_) => {
+                    state.unit_status = RequestStatus::Pending;
+                    info!("Unit generation request sent");
+                }
+                Err(e) => {
+                    state.unit_status = RequestStatus::Error(format!("{:?}", e));
+                }
+            }
+        } else {
+            state.unit_status = RequestStatus::Error("Not connected".to_string());
+        }
     }
 
     match &state.unit_status {
         RequestStatus::Pending => {
             ui.spinner();
-            ui.label("AI is generating...");
+            ui.label("AI generation request submitted...");
         }
         RequestStatus::Error(e) => {
             ui.colored_label(egui::Color32::RED, format!("Error: {}", e));
+            if ui.button("Dismiss").clicked() {
+                state.unit_status = RequestStatus::Idle;
+            }
         }
         _ => {}
     }
 
     // Show result
-    if let Some(result) = &state.unit_result {
+    let unit_result_clone = state.unit_result.clone();
+    if let Some(result) = &unit_result_clone {
         ui.separator();
         ui.group(|ui| {
             ui.colored_label(
@@ -377,7 +444,38 @@ fn assemble_unit_ui(ui: &mut egui::Ui, state: &mut ResMut<CreateState>, content:
 
         ui.horizontal(|ui| {
             if ui.button("Submit to Incubator").clicked() {
-                // TODO: Call unit_create reducer
+                // Call unit_create reducer
+                if let Some(ref conn) = stdb.conn {
+                    let trigger = match state.unit_trigger_idx {
+                        0 => Trigger::BattleStart,
+                        1 => Trigger::TurnEnd,
+                        2 => Trigger::BeforeDeath,
+                        3 => Trigger::AllyDeath,
+                        4 => Trigger::BeforeStrike,
+                        5 => Trigger::AfterStrike,
+                        6 => Trigger::DamageTaken,
+                        7 => Trigger::DamageDealt,
+                        _ => Trigger::BeforeStrike,
+                    };
+                    let ability_ids: Vec<u64> = state
+                        .unit_selected_abilities
+                        .iter()
+                        .filter_map(|&idx| content.abilities.get(idx).map(|a| a.id))
+                        .collect();
+
+                    if let Err(e) = conn.reducers.unit_create(
+                        result.name.clone(),
+                        state.unit_prompt.clone(),
+                        state.unit_hp,
+                        state.unit_pwr,
+                        state.unit_tier,
+                        trigger,
+                        ability_ids,
+                        result.painter_script.clone(),
+                    ) {
+                        warn!("Failed to create unit: {:?}", e);
+                    }
+                }
                 state.unit_result = None;
                 state.unit_status = RequestStatus::Idle;
                 state.unit_prompt.clear();
