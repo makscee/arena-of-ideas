@@ -1,12 +1,58 @@
 use bevy::prelude::*;
-use bevy_egui::EguiPlugin;
+use bevy_egui::{EguiContexts, EguiPlugin, egui};
 
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(EguiPlugin::default());
+        app.add_plugins(EguiPlugin::default())
+            .add_systems(Startup, setup_fonts);
     }
+}
+
+fn setup_fonts(mut contexts: EguiContexts) {
+    let Ok(ctx) = contexts.ctx_mut() else { return };
+
+    let mut fonts = egui::FontDefinitions::default();
+
+    // Load SometypeMono as main font
+    if let Ok(font_data) = std::fs::read("assets/fonts/SometypeMono-Regular.ttf") {
+        fonts.font_data.insert(
+            "SometypeMono".to_owned(),
+            std::sync::Arc::new(egui::FontData::from_owned(font_data)),
+        );
+        fonts
+            .families
+            .entry(egui::FontFamily::Proportional)
+            .or_default()
+            .insert(0, "SometypeMono".to_owned());
+        fonts
+            .families
+            .entry(egui::FontFamily::Monospace)
+            .or_default()
+            .insert(0, "SometypeMono".to_owned());
+    }
+
+    // Load NotoEmoji as fallback for unicode symbols
+    if let Ok(font_data) = std::fs::read("assets/fonts/NotoEmoji-VariableFont_wght.ttf") {
+        fonts.font_data.insert(
+            "NotoEmoji".to_owned(),
+            std::sync::Arc::new(egui::FontData::from_owned(font_data)),
+        );
+        // Add as fallback after main font
+        fonts
+            .families
+            .entry(egui::FontFamily::Proportional)
+            .or_default()
+            .push("NotoEmoji".to_owned());
+        fonts
+            .families
+            .entry(egui::FontFamily::Monospace)
+            .or_default()
+            .push("NotoEmoji".to_owned());
+    }
+
+    ctx.set_fonts(fonts);
 }
 
 /// Standard colors used throughout the UI.

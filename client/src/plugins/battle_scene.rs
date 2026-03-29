@@ -408,6 +408,19 @@ fn battle_scene_ui(
     let winner = state.result.as_ref().unwrap().winner;
     let turns = state.result.as_ref().unwrap().turns;
 
+    // Space key toggles pause
+    if ctx.input(|i| i.key_pressed(egui::Key::Space)) {
+        if state.playing {
+            state.playing = false;
+        } else {
+            if state.time >= total_dur {
+                state.time = 0.0;
+                state.rebuild_units_at_time();
+            }
+            state.playing = true;
+        }
+    }
+
     // Advance time
     let prev_time = state.time;
     if state.playing && state.time < total_dur {
