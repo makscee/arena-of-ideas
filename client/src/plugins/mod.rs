@@ -1,10 +1,13 @@
 pub mod battle;
+pub mod battle_scene;
 pub mod battle_viewer;
 pub mod collection;
 pub mod connect;
 pub mod create;
+pub mod demo;
 pub mod game;
 pub mod incubator;
 pub mod onboarding;
+pub mod painter;
 pub mod rhai_engine;
 pub mod ui;
