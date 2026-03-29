@@ -760,10 +760,11 @@ fn battle_scene_ui(
         );
 
         ui.allocate_new_ui(egui::UiBuilder::new().max_rect(controls_rect), |ui| {
-            // Full-width progress slider
+            // Force slider to take full width
+            ui.spacing_mut().slider_width = controls_rect.width() - 20.0;
             let mut t = state.time;
             let slider = egui::Slider::new(&mut t, 0.0..=total_dur.max(0.01)).show_value(false);
-            if ui.add_sized([ui.available_width(), 18.0], slider).changed() {
+            if ui.add(slider).changed() {
                 state.time = t;
                 state.rebuild_units_at_time();
             }
