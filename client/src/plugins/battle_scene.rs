@@ -11,8 +11,17 @@ pub struct BattleScenePlugin;
 impl Plugin for BattleScenePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<BattleSceneState>()
+            .init_resource::<BattleFrameCount>()
+            .add_systems(OnEnter(GameState::Battle), reset_frame_count)
             .add_systems(Update, battle_scene_ui.run_if(in_state(GameState::Battle)));
     }
+}
+
+#[derive(Resource, Default)]
+struct BattleFrameCount(u32);
+
+fn reset_frame_count(mut count: ResMut<BattleFrameCount>) {
+    count.0 = 0;
 }
 
 /// A unit's visual state during battle replay.
@@ -137,12 +146,14 @@ fn battle_scene_ui(
     mut state: ResMut<BattleSceneState>,
     time: Res<Time>,
     mut next_state: ResMut<NextState<GameState>>,
+    mut frame_count: ResMut<BattleFrameCount>,
 ) {
-    let Ok(ctx) = contexts.ctx_mut() else { return };
-    // Guard: skip first frame where egui hasn't run yet
-    if ctx.input(|i| i.screen_rect().size().length() < 1.0) {
+    // Skip first 2 frames to let egui initialize
+    frame_count.0 += 1;
+    if frame_count.0 < 3 {
         return;
     }
+    let Ok(ctx) = contexts.ctx_mut() else { return };
 
     if state.result.is_none() {
         egui::CentralPanel::default().show(ctx, |ui| {
