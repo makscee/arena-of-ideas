@@ -1,6 +1,6 @@
 use spacetimedb::{ReducerContext, Table};
 
-use crate::{Ability, ArenaState, ContentStatus, TargetType, Trigger, Unit, ability, arena_state, unit};
+use crate::{Ability, ArenaState, ContentStatus, GlobalSettings, TargetType, Trigger, Unit, ability, arena_state, global_settings, unit};
 
 /// Seeds the database with primordial abilities and sample units.
 pub fn seed_primordial_abilities(ctx: &ReducerContext) {
@@ -222,4 +222,15 @@ pub fn seed_primordial_abilities(ctx: &ReducerContext) {
         last_floor: 1,
     });
     log::info!("Arena state initialized with last_floor=1");
+
+    // Initialize global settings
+    ctx.db.global_settings().insert(GlobalSettings {
+        always_zero: 0,
+        starting_gold: 7,
+        unit_sell_value: 1,
+        reroll_cost: 1,
+        gold_reward: 3,
+        fatigue_start_turn: 10,
+    });
+    log::info!("Global settings initialized");
 }

@@ -78,6 +78,113 @@ pub fn simulate_battle(left_team: Vec<BattleUnit>, right_team: Vec<BattleUnit>) 
     let left_ability_levels = calculate_ability_levels(&units, BattleSide::Left);
     let right_ability_levels = calculate_ability_levels(&units, BattleSide::Right);
 
+    // Helper: process deaths and fire reactive triggers (BeforeDeath, AllyDeath)
+    let process_deaths = |engine: &rhai::Engine,
+                          units: &mut Vec<BattleUnit>,
+                          actions: &mut Vec<BattleAction>,
+                          left_levels: &std::collections::HashMap<u64, i32>,
+                          right_levels: &std::collections::HashMap<u64, i32>| {
+        // Fire BeforeDeath for units about to die
+        let dying: Vec<usize> = units
+            .iter()
+            .enumerate()
+            .filter(|(_, u)| u.alive && u.effective_hp() <= 0)
+            .map(|(i, _)| i)
+            .collect();
+
+        for &idx in &dying {
+            if units[idx].trigger == Trigger::BeforeDeath {
+                let firing = vec![(
+                    idx,
+                    units[idx].abilities.clone(),
+                    units[idx].pwr,
+                    units[idx].side,
+                )];
+                for (unit_idx, abilities, pwr, side) in firing {
+                    let levels = match side {
+                        BattleSide::Left => left_levels,
+                        BattleSide::Right => right_levels,
+                    };
+                    for ability in &abilities {
+                        let level = levels.get(&ability.id).copied().unwrap_or(1);
+                        let targets = resolve_targets(&ability.target_type, unit_idx, units);
+                        for target_idx in targets {
+                            let owner_su = units[unit_idx].to_script_unit();
+                            let target_su = units[target_idx].to_script_unit();
+                            let ast = match compile_script(engine, &ability.effect_script) {
+                                Ok(ast) => ast,
+                                Err(_) => continue,
+                            };
+                            let source_id = units[unit_idx].id;
+                            actions.push(BattleAction::AbilityUsed {
+                                source: source_id,
+                                ability_name: ability.name.clone(),
+                            });
+                            let script_actions = match execute_ability_script(
+                                engine, &ast, pwr, level, &owner_su, &target_su, source_id, &ability.name,
+                            ) {
+                                Ok(a) => a,
+                                Err(_) => continue,
+                            };
+                            for sa in script_actions {
+                                apply_script_action(sa, source_id, units, actions);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Now actually kill them
+        let died = apply_deaths(units, actions);
+
+        // Fire AllyDeath triggers for teammates of dead units
+        for (dead_id, dead_side) in &died {
+            let ally_death_units: Vec<(usize, Vec<BattleAbility>, i32, BattleSide)> = units
+                .iter()
+                .enumerate()
+                .filter(|(_, u)| u.alive && u.side == *dead_side && u.id != *dead_id && u.trigger == Trigger::AllyDeath)
+                .map(|(i, u)| (i, u.abilities.clone(), u.pwr, u.side))
+                .collect();
+
+            for (unit_idx, abilities, pwr, side) in ally_death_units {
+                let levels = match side {
+                    BattleSide::Left => left_levels,
+                    BattleSide::Right => right_levels,
+                };
+                for ability in &abilities {
+                    let level = levels.get(&ability.id).copied().unwrap_or(1);
+                    let targets = resolve_targets(&ability.target_type, unit_idx, units);
+                    for target_idx in targets {
+                        let owner_su = units[unit_idx].to_script_unit();
+                        let target_su = units[target_idx].to_script_unit();
+                        let ast = match compile_script(engine, &ability.effect_script) {
+                            Ok(ast) => ast,
+                            Err(_) => continue,
+                        };
+                        let source_id = units[unit_idx].id;
+                        actions.push(BattleAction::AbilityUsed {
+                            source: source_id,
+                            ability_name: ability.name.clone(),
+                        });
+                        let script_actions = match execute_ability_script(
+                            engine, &ast, pwr, level, &owner_su, &target_su, source_id, &ability.name,
+                        ) {
+                            Ok(a) => a,
+                            Err(_) => continue,
+                        };
+                        for sa in script_actions {
+                            apply_script_action(sa, source_id, units, actions);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Process any deaths caused by reactive triggers
+        apply_deaths(units, actions);
+    };
+
     // Fire BattleStart triggers
     fire_trigger(
         &engine,
@@ -87,7 +194,7 @@ pub fn simulate_battle(left_team: Vec<BattleUnit>, right_team: Vec<BattleUnit>) 
         &left_ability_levels,
         &right_ability_levels,
     );
-    apply_deaths(&mut units, &mut actions);
+    process_deaths(&engine, &mut units, &mut actions, &left_ability_levels, &right_ability_levels);
 
     let mut turn = 0;
 
@@ -107,7 +214,7 @@ pub fn simulate_battle(left_team: Vec<BattleUnit>, right_team: Vec<BattleUnit>) 
             for unit in units.iter_mut().filter(|u| u.alive) {
                 unit.dmg += fatigue_amount;
             }
-            apply_deaths(&mut units, &mut actions);
+            process_deaths(&engine, &mut units, &mut actions, &left_ability_levels, &right_ability_levels);
             if check_winner(&units).is_some() {
                 break;
             }
@@ -122,7 +229,16 @@ pub fn simulate_battle(left_team: Vec<BattleUnit>, right_team: Vec<BattleUnit>) 
             &left_ability_levels,
             &right_ability_levels,
         );
-        apply_deaths(&mut units, &mut actions);
+        // Fire DamageTaken for units that took damage this phase
+        fire_trigger(
+            &engine,
+            &mut units,
+            &mut actions,
+            &Trigger::DamageTaken,
+            &left_ability_levels,
+            &right_ability_levels,
+        );
+        process_deaths(&engine, &mut units, &mut actions, &left_ability_levels, &right_ability_levels);
         if check_winner(&units).is_some() {
             break;
         }
@@ -136,7 +252,7 @@ pub fn simulate_battle(left_team: Vec<BattleUnit>, right_team: Vec<BattleUnit>) 
             &left_ability_levels,
             &right_ability_levels,
         );
-        apply_deaths(&mut units, &mut actions);
+        process_deaths(&engine, &mut units, &mut actions, &left_ability_levels, &right_ability_levels);
         if check_winner(&units).is_some() {
             break;
         }
@@ -150,7 +266,7 @@ pub fn simulate_battle(left_team: Vec<BattleUnit>, right_team: Vec<BattleUnit>) 
             &left_ability_levels,
             &right_ability_levels,
         );
-        apply_deaths(&mut units, &mut actions);
+        process_deaths(&engine, &mut units, &mut actions, &left_ability_levels, &right_ability_levels);
         if check_winner(&units).is_some() {
             break;
         }
@@ -439,14 +555,17 @@ fn apply_script_action(
     }
 }
 
-/// Check for and process unit deaths.
-fn apply_deaths(units: &mut Vec<BattleUnit>, actions: &mut Vec<BattleAction>) {
+/// Check for and process unit deaths. Returns (died_unit_ids, died_unit_sides).
+fn apply_deaths(units: &mut Vec<BattleUnit>, actions: &mut Vec<BattleAction>) -> Vec<(u64, BattleSide)> {
+    let mut died = Vec::new();
     for unit in units.iter_mut() {
         if unit.alive && unit.effective_hp() <= 0 {
             unit.alive = false;
+            died.push((unit.id, unit.side));
             actions.push(BattleAction::Death { unit: unit.id });
         }
     }
+    died
 }
 
 /// Check if a side has won (all enemies dead).
@@ -1195,5 +1314,106 @@ mod tests {
             .iter()
             .any(|a| matches!(a, BattleAction::Fatigue { .. }));
         assert!(has_fatigue, "Healers-only battle should end via fatigue");
+    }
+
+    // ===== Edge Case Tests =====
+
+    #[test]
+    fn battle_1v5_outnumbered() {
+        // 1 strong unit vs 5 weak ones
+        let left = vec![make_unit(1, "Tank", 20, 8, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Left, 0)];
+        let right = vec![
+            make_unit(10, "W1", 2, 1, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Right, 0),
+            make_unit(11, "W2", 2, 1, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Right, 1),
+            make_unit(12, "W3", 2, 1, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Right, 2),
+            make_unit(13, "W4", 2, 1, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Right, 3),
+            make_unit(14, "W5", 2, 1, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Right, 4),
+        ];
+        let result = simulate_battle(left, right);
+        // 5 weak units have level 3 Strike (5 share it): each does 1*3=3, total 15/turn
+        // Tank does 8*1=8 per turn, kills one per turn
+        // Should be a close fight
+        assert!(result.turns > 1, "Should be multi-turn");
+        let deaths = result.actions.iter().filter(|a| matches!(a, BattleAction::Death { .. })).count();
+        assert!(deaths >= 2, "Multiple units should die");
+    }
+
+    #[test]
+    fn battle_empty_team_right_loses() {
+        let left = vec![make_unit(1, "Solo", 3, 2, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Left, 0)];
+        let right: Vec<BattleUnit> = vec![];
+        let result = simulate_battle(left, right);
+        assert_eq!(result.winner, BattleSide::Left, "Non-empty team should win");
+    }
+
+    #[test]
+    fn battle_both_empty_left_wins() {
+        let left: Vec<BattleUnit> = vec![];
+        let right: Vec<BattleUnit> = vec![];
+        let result = simulate_battle(left, right);
+        // Both empty — left wins by default (tie goes to left)
+        assert_eq!(result.winner, BattleSide::Left);
+    }
+
+    #[test]
+    fn battle_high_pwr_one_shots() {
+        // Unit with 100 pwr should one-shot anything
+        let left = vec![make_unit(1, "God", 1, 100, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Left, 0)];
+        let right = vec![make_unit(2, "Mortal", 50, 1, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Right, 0)];
+        let result = simulate_battle(left, right);
+        assert_eq!(result.winner, BattleSide::Left);
+        // Should end very quickly
+        assert!(result.turns <= 2, "Should one-shot in 1-2 turns, took {}", result.turns);
+    }
+
+    #[test]
+    fn battle_damage_taken_trigger_fires_on_hit() {
+        // Unit with DamageTaken trigger should fire when hit
+        let counter_ability = BattleAbility {
+            id: 600,
+            name: "Counter".to_string(),
+            target_type: TargetType::RandomEnemy,
+            effect_script: "deal_damage(target[\"id\"], X);".to_string(),
+        };
+        let left = vec![make_unit(1, "Counter", 10, 3, Trigger::DamageTaken, vec![counter_ability], BattleSide::Left, 0)];
+        let right = vec![make_unit(2, "Hitter", 10, 2, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Right, 0)];
+        let result = simulate_battle(left, right);
+        // Counter should fire when hit, dealing damage back
+        let counter_used = result.actions.iter().any(|a| matches!(a, BattleAction::AbilityUsed { ability_name, .. } if ability_name == "Counter"));
+        assert!(counter_used, "DamageTaken trigger should fire Counter ability");
+    }
+
+    #[test]
+    fn battle_ally_death_trigger_fires() {
+        let avenge = BattleAbility {
+            id: 700,
+            name: "Avenge".to_string(),
+            target_type: TargetType::RandomEnemy,
+            effect_script: "deal_damage(target[\"id\"], X * 3);".to_string(),
+        };
+        let left = vec![
+            make_unit(1, "Fodder", 1, 1, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Left, 0),
+            make_unit(2, "Avenger", 10, 5, Trigger::AllyDeath, vec![avenge], BattleSide::Left, 1),
+        ];
+        let right = vec![make_unit(3, "Killer", 10, 5, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Right, 0)];
+        let result = simulate_battle(left, right);
+        let avenge_used = result.actions.iter().any(|a| matches!(a, BattleAction::AbilityUsed { ability_name, .. } if ability_name == "Avenge"));
+        // Avenge fires when Fodder dies
+        assert!(avenge_used, "AllyDeath trigger should fire Avenge when ally dies");
+    }
+
+    #[test]
+    fn battle_before_death_trigger_fires() {
+        let last_stand = BattleAbility {
+            id: 800,
+            name: "LastStand".to_string(),
+            target_type: TargetType::AllEnemies,
+            effect_script: "deal_damage(target[\"id\"], X * 5);".to_string(),
+        };
+        let left = vec![make_unit(1, "Martyr", 1, 3, Trigger::BeforeDeath, vec![last_stand], BattleSide::Left, 0)];
+        let right = vec![make_unit(2, "Killer", 20, 5, Trigger::BeforeStrike, vec![strike_ability(100)], BattleSide::Right, 0)];
+        let result = simulate_battle(left, right);
+        let last_stand_used = result.actions.iter().any(|a| matches!(a, BattleAction::AbilityUsed { ability_name, .. } if ability_name == "LastStand"));
+        assert!(last_stand_used, "BeforeDeath trigger should fire LastStand");
     }
 }

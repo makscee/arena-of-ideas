@@ -2,6 +2,28 @@ use spacetimedb::{ReducerContext, Table};
 
 use crate::{GenRequest, GenResult, GenStatus, GenTargetKind, ability, gen_request, gen_result};
 
+const DAILY_ABILITY_BREED_LIMIT: usize = 5;
+const DAILY_UNIT_GEN_LIMIT: usize = 10;
+const MICROS_PER_DAY: u64 = 86_400_000_000;
+
+fn count_recent_requests(
+    ctx: &ReducerContext,
+    player: spacetimedb::Identity,
+    kind: &GenTargetKind,
+) -> usize {
+    let now_micros = ctx.timestamp.to_micros_since_unix_epoch();
+    let cutoff_micros = now_micros - MICROS_PER_DAY as i64;
+    ctx.db
+        .gen_request()
+        .iter()
+        .filter(|r| {
+            r.player == player
+                && r.target_kind == *kind
+                && r.created_at.to_micros_since_unix_epoch() >= cutoff_micros
+        })
+        .count()
+}
+
 /// System prompt for Claude when breeding abilities.
 #[allow(dead_code)]
 pub const ABILITY_SYSTEM_PROMPT: &str = r##"You are a game designer for Arena of Ideas, an auto-battler.
@@ -164,6 +186,14 @@ pub fn gen_breed_ability(
         return Err("Cannot breed an ability with itself".to_string());
     }
 
+    let count = count_recent_requests(ctx, ctx.sender(), &GenTargetKind::Ability);
+    if count >= DAILY_ABILITY_BREED_LIMIT {
+        return Err(format!(
+            "Daily limit reached ({} ability breeds per day)",
+            DAILY_ABILITY_BREED_LIMIT
+        ));
+    }
+
     ctx.db.gen_request().insert(GenRequest {
         id: 0,
         player: ctx.sender(),
@@ -192,6 +222,14 @@ pub fn gen_create_unit(ctx: &ReducerContext, prompt: String) -> Result<(), Strin
     }
     if prompt.len() > 500 {
         return Err("Prompt too long (max 500 chars)".to_string());
+    }
+
+    let count = count_recent_requests(ctx, ctx.sender(), &GenTargetKind::Unit);
+    if count >= DAILY_UNIT_GEN_LIMIT {
+        return Err(format!(
+            "Daily limit reached ({} unit generations per day)",
+            DAILY_UNIT_GEN_LIMIT
+        ));
     }
 
     ctx.db.gen_request().insert(GenRequest {

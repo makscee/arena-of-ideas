@@ -2,8 +2,9 @@ use spacetimedb::{ReducerContext, Table};
 
 #[allow(unused_imports)]
 use crate::{
-    arena_state, floor_boss, floor_pool_team, game_match, player, unit, ArenaState, ContentStatus,
-    FloorBoss, FloorPoolTeam, GameMatch, MatchState, TeamSlot, Unit,
+    arena_state, floor_boss, floor_pool_team, game_match, global_settings, player, unit,
+    ArenaState, ContentStatus, FloorBoss, FloorPoolTeam, GameMatch, GlobalSettings, MatchState,
+    TeamSlot, Unit,
 };
 
 const STARTING_GOLD: i32 = 7;
@@ -24,8 +25,23 @@ fn tier_cost(tier: u8) -> i32 {
     tier as i32
 }
 
-fn sell_value(_tier: u8) -> i32 {
-    1
+fn get_settings(ctx: &ReducerContext) -> GlobalSettings {
+    ctx.db
+        .global_settings()
+        .always_zero()
+        .find(0)
+        .unwrap_or(GlobalSettings {
+            always_zero: 0,
+            starting_gold: STARTING_GOLD,
+            unit_sell_value: 1,
+            reroll_cost: REROLL_COST,
+            gold_reward: GOLD_REWARD,
+            fatigue_start_turn: 10,
+        })
+}
+
+fn sell_value(ctx: &ReducerContext, _tier: u8) -> i32 {
+    get_settings(ctx).unit_sell_value
 }
 
 fn get_last_floor(ctx: &ReducerContext) -> u8 {
@@ -51,13 +67,14 @@ pub fn match_start(ctx: &ReducerContext) -> Result<(), String> {
         }
     }
 
+    let settings = get_settings(ctx);
     let offers = generate_shop_offers(ctx, shop_size(1));
 
     ctx.db.game_match().insert(GameMatch {
         id: 0,
         player: ctx.sender(),
         floor: 1,
-        gold: STARTING_GOLD,
+        gold: settings.starting_gold,
         lives: STARTING_LIVES,
         state: MatchState::Shop,
         team: Vec::new(),
@@ -160,7 +177,7 @@ pub fn match_sell_unit(ctx: &ReducerContext, slot_index: u32) -> Result<(), Stri
         ctx.db.unit().id().find(slot.unit_id).map(|u| u.tier).unwrap_or(1)
     };
 
-    game_match.gold += sell_value(tier);
+    game_match.gold += sell_value(ctx, tier);
     game_match.team.remove(idx);
 
     ctx.db.game_match().id().update(game_match);
@@ -172,11 +189,12 @@ pub fn match_shop_reroll(ctx: &ReducerContext) -> Result<(), String> {
     let mut game_match = find_player_match(ctx)?;
     require_state(&game_match, &MatchState::Shop)?;
 
-    if game_match.gold < REROLL_COST {
+    let settings = get_settings(ctx);
+    if game_match.gold < settings.reroll_cost {
         return Err("Not enough gold to reroll".to_string());
     }
 
-    game_match.gold -= REROLL_COST;
+    game_match.gold -= settings.reroll_cost;
     game_match.shop_offers = generate_shop_offers(ctx, shop_size(game_match.floor));
 
     ctx.db.game_match().id().update(game_match);
@@ -253,11 +271,13 @@ pub fn match_submit_result(ctx: &ReducerContext, won: bool) -> Result<(), String
 
     let battle_state = game_match.state.clone();
 
+    let settings = get_settings(ctx);
+
     match battle_state {
         MatchState::RegularBattle => {
             // Win or lose: advance floor, get gold
             game_match.floor += 1;
-            game_match.gold += GOLD_REWARD;
+            game_match.gold += settings.gold_reward;
 
             if !won {
                 game_match.lives -= 1;
@@ -311,7 +331,7 @@ pub fn match_submit_result(ctx: &ReducerContext, won: bool) -> Result<(), String
 
                 // Advance floor, get gold, continue
                 game_match.floor += 1;
-                game_match.gold += GOLD_REWARD;
+                game_match.gold += settings.gold_reward;
                 game_match.shop_offers =
                     generate_shop_offers(ctx, shop_size(game_match.floor));
                 game_match.state = MatchState::Shop;

@@ -252,3 +252,14 @@ pub struct ArenaState {
     pub always_zero: u32,
     pub last_floor: u8,
 }
+
+#[spacetimedb::table(accessor = global_settings, public)]
+pub struct GlobalSettings {
+    #[primary_key]
+    pub always_zero: u32,
+    pub starting_gold: i32,
+    pub unit_sell_value: i32,
+    pub reroll_cost: i32,
+    pub gold_reward: i32,
+    pub fatigue_start_turn: i32,
+}
