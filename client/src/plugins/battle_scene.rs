@@ -442,8 +442,16 @@ fn battle_scene_ui(
         });
     });
 
-    // === CONTROLS ===
+    // === CONTROLS (full width bottom) ===
     egui::TopBottomPanel::bottom("battle_controls").show(ctx, |ui| {
+        // Full-width progress bar
+        let mut t = state.time;
+        let slider = egui::Slider::new(&mut t, 0.0..=total_dur.max(0.01)).show_value(false);
+        if ui.add_sized([ui.available_width(), 20.0], slider).changed() {
+            state.time = t;
+            state.rebuild_units_at_time();
+        }
+        // Controls row
         ui.horizontal(|ui| {
             if ui.button("⏮").clicked() {
                 state.time = 0.0;
@@ -453,28 +461,19 @@ fn battle_scene_ui(
                 if ui.button("⏸ Pause").clicked() {
                     state.playing = false;
                 }
-            } else {
-                if ui.button("▶ Play").clicked() {
-                    if state.time >= total_dur {
-                        state.time = 0.0;
-                        state.rebuild_units_at_time();
-                    }
-                    state.playing = true;
+            } else if ui.button("▶ Play").clicked() {
+                if state.time >= total_dur {
+                    state.time = 0.0;
+                    state.rebuild_units_at_time();
                 }
+                state.playing = true;
             }
             if ui.button("⏭").clicked() {
                 state.time = total_dur;
                 state.rebuild_units_at_time();
             }
             ui.separator();
-            let mut t = state.time;
-            if ui
-                .add(egui::Slider::new(&mut t, 0.0..=total_dur.max(0.01)).text("time"))
-                .changed()
-            {
-                state.time = t;
-                state.rebuild_units_at_time();
-            }
+            ui.label(format!("{:.1}s / {:.1}s", state.time, total_dur));
             ui.separator();
             ui.label("Speed:");
             ui.add(egui::Slider::new(&mut state.speed, 0.25..=4.0).logarithmic(true));
@@ -575,6 +574,9 @@ fn battle_scene_ui(
         );
 
         // Draw active effects
+        // Track how many cards are active per source_id for stacking
+        let mut card_count_per_source: std::collections::HashMap<u64, usize> =
+            std::collections::HashMap::new();
         let current_time = state.time;
         for effect in &state.effects {
             let progress = (current_time - effect.start) / effect.duration;
@@ -720,14 +722,19 @@ fn battle_scene_ui(
                         alpha,
                     );
 
-                    // Position at source unit's column, offset toward their row
+                    // Position halfway between unit and center, stack if multiple active
+                    let stack_idx = card_count_per_source.entry(*source_id).or_insert(0);
+                    let stack_offset = *stack_idx as f32 * 36.0;
+                    *card_count_per_source.get_mut(source_id).unwrap() += 1;
+
                     let (card_x, card_y) = if *source_id == 0 {
-                        (avail.center().x, mid_y)
+                        (avail.center().x, mid_y + stack_offset)
                     } else if let Some(&pos) = unit_positions.get(source_id) {
-                        // Place card between unit and center, closer to unit
-                        (pos.x, pos.y + (mid_y - pos.y) * 0.4)
+                        // Halfway between unit and center
+                        let half_y = (pos.y + mid_y) * 0.5;
+                        (pos.x, half_y + stack_offset)
                     } else {
-                        (avail.center().x, mid_y)
+                        (avail.center().x, mid_y + stack_offset)
                     };
 
                     // Card background
