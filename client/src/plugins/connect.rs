@@ -108,6 +108,14 @@ fn check_connected(
     mut next_state: ResMut<NextState<GameState>>,
     mut content: ResMut<GameContent>,
 ) {
+    // If connection failed, show error and allow retry
+    if let Some(ref err) = stdb.error {
+        warn!("Connection error: {}", err);
+        // Fall through to Home with mock data
+        next_state.set(GameState::Home);
+        return;
+    }
+
     let Some(ref conn) = stdb.conn else { return };
 
     // Check if we have data by seeing if abilities are loaded

@@ -230,6 +230,11 @@ fn abilities_panel(ui: &mut egui::Ui, content: &GameContent, state: &mut Collect
     ui.heading("Abilities");
     ui.separator();
 
+    if content.abilities.is_empty() {
+        ui.label("No abilities loaded yet. Connect to server to see content.");
+        return;
+    }
+
     egui::ScrollArea::vertical().show(ui, |ui| {
         for (i, ability) in content.abilities.iter().enumerate() {
             let selected = state.selected_ability == Some(i);
@@ -266,6 +271,11 @@ fn abilities_panel(ui: &mut egui::Ui, content: &GameContent, state: &mut Collect
 fn units_panel(ui: &mut egui::Ui, content: &GameContent, state: &mut CollectionState) {
     ui.heading("Units");
     ui.separator();
+
+    if content.units.is_empty() {
+        ui.label("No units loaded yet. Connect to server to see content.");
+        return;
+    }
 
     egui::ScrollArea::vertical().show(ui, |ui| {
         for (i, unit) in content.units.iter().enumerate() {

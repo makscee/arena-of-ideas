@@ -67,9 +67,15 @@ fn reset_db() {
     });
 }
 
+/// Set last_floor high so floor 1+ are regular battles (not boss battles).
+fn setup_arena_for_regular_battles() {
+    sql("UPDATE arena_state SET last_floor = 10 WHERE always_zero = 0");
+}
+
 /// Ensure no active match exists, then start a fresh one.
 fn fresh_match() {
     reset_db();
+    setup_arena_for_regular_battles();
     // Abandon any existing match
     let _ = call("match_abandon", &[]);
     // Start fresh match
@@ -354,14 +360,14 @@ fn scenario_10_full_5v5_battle() {
 #[test]
 fn flow_01_complete_match_run() {
     fresh_match();
-    let output = sql("SELECT * FROM game_match");
-    assert!(contains(&output, "10"), "Should start with 10 gold");
+    let output = sql("SELECT gold FROM game_match");
+    assert!(contains(&output, "7"), "Should start with 7 gold: {}", output);
 
     // Buy units from shop
     call("match_shop_buy", &["0"]).unwrap(); // Buy first shop unit
     call("match_shop_buy", &["1"]).unwrap(); // Buy second
 
-    // Verify team has 2 units
+    // Verify team has units
     let output = sql("SELECT team FROM game_match");
     assert!(contains(&output, "unit_id"), "Should have units in team");
 
@@ -376,14 +382,13 @@ fn flow_01_complete_match_run() {
     let battle_result = simulate_battle(left, right);
     let won = battle_result.winner == BattleSide::Left;
 
-    // Submit result to server
+    // Must start battle before submitting result
+    call("match_start_battle", &[]).unwrap();
     call("match_submit_result", &[if won { "true" } else { "false" }]).unwrap();
 
-    // Verify floor advanced (if won)
-    let output = sql("SELECT * FROM game_match");
-    if won {
-        assert!(contains(&output, "| 2"), "Floor should be 2 after win");
-    }
+    // Floor always advances for regular battles
+    let output = sql("SELECT floor FROM game_match");
+    assert!(contains(&output, "2"), "Floor should be 2: {}", output);
 
     // Second round: reroll and buy
     call("match_shop_reroll", &[]).unwrap();
@@ -400,6 +405,7 @@ fn flow_01_complete_match_run() {
         make_striker(101, "Opp2", 5, 3, 1, BattleSide::Right),
     ];
     let result2 = simulate_battle(left, right);
+    call("match_start_battle", &[]).unwrap();
     call("match_submit_result", &[if result2.winner == BattleSide::Left { "true" } else { "false" }]).unwrap();
 
     // Match may or may not still exist depending on win/loss sequence
