@@ -1,6 +1,7 @@
 pub mod ability;
 pub mod ai_prompts;
 pub mod battle;
+pub mod battle_helpers;
 pub mod content_status;
 pub mod generation;
 pub mod match_logic;
