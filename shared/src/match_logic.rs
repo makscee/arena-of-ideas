@@ -1,6 +1,6 @@
 /// Match-related validation and logic that can be tested natively.
 
-const STARTING_GOLD: i32 = 10;
+const _STARTING_GOLD: i32 = 7;
 const TEAM_SIZE: usize = 5;
 const REROLL_COST: i32 = 1;
 
@@ -95,6 +95,23 @@ pub fn validate_feed(
         }
     }
     Ok(())
+}
+
+/// Calculate fused stats from two parent units.
+/// Formula: max(a, b) + min(a, b) / 2
+pub fn fused_stats(hp_a: i32, hp_b: i32, pwr_a: i32, pwr_b: i32) -> (i32, i32) {
+    let hp = hp_a.max(hp_b) + hp_a.min(hp_b) / 2;
+    let pwr = pwr_a.max(pwr_b) + pwr_a.min(pwr_b) / 2;
+    (hp, pwr)
+}
+
+/// Shop size for a given floor.
+pub fn shop_size(floor: u8) -> usize {
+    match floor {
+        1..=2 => 3,
+        3..=4 => 4,
+        _ => 5,
+    }
 }
 
 #[cfg(test)]
@@ -231,5 +248,78 @@ mod tests {
     #[test]
     fn feed_empty_donor() {
         assert!(validate_feed(&[10, 20], &[], true).is_ok());
+    }
+
+    // ===== Fused Stats =====
+
+    #[test]
+    fn fused_stats_equal_parents() {
+        // 3hp/2pwr + 3hp/2pwr = max(3,3) + min(3,3)/2 = 3+1 = 4hp, same for pwr
+        let (hp, pwr) = fused_stats(3, 3, 2, 2);
+        assert_eq!(hp, 4);
+        assert_eq!(pwr, 3);
+    }
+
+    #[test]
+    fn fused_stats_different_parents() {
+        // 8hp/6pwr (paladin) + 3hp/2pwr (foot)
+        // hp = max(8,3) + min(8,3)/2 = 8 + 1 = 9
+        // pwr = max(6,2) + min(6,2)/2 = 6 + 1 = 7
+        let (hp, pwr) = fused_stats(8, 3, 6, 2);
+        assert_eq!(hp, 9);
+        assert_eq!(pwr, 7);
+    }
+
+    #[test]
+    fn fused_stats_asymmetric() {
+        // 10hp/1pwr + 1hp/10pwr
+        // hp = 10 + 0 = 10, pwr = 10 + 0 = 10
+        let (hp, pwr) = fused_stats(10, 1, 1, 10);
+        assert_eq!(hp, 10);
+        assert_eq!(pwr, 10);
+    }
+
+    // ===== Shop Size =====
+
+    #[test]
+    fn shop_size_scales_with_floor() {
+        assert_eq!(shop_size(1), 3);
+        assert_eq!(shop_size(2), 3);
+        assert_eq!(shop_size(3), 4);
+        assert_eq!(shop_size(4), 4);
+        assert_eq!(shop_size(5), 5);
+        assert_eq!(shop_size(10), 5);
+    }
+
+    // ===== Negative Path Tests =====
+
+    #[test]
+    fn cant_buy_with_zero_gold() {
+        assert!(!can_buy(0, 1));
+    }
+
+    #[test]
+    fn cant_reroll_with_zero_gold() {
+        assert!(!can_reroll(0));
+    }
+
+    #[test]
+    fn fusion_with_zero_copies_fails() {
+        assert!(validate_fusion(0, false, false, 1, 1, &[10], &[20], &[10, 20]).is_err());
+    }
+
+    #[test]
+    fn fusion_with_one_copy_fails() {
+        assert!(validate_fusion(1, false, false, 1, 1, &[10], &[20], &[10, 20]).is_err());
+    }
+
+    #[test]
+    fn fusion_both_fused_fails() {
+        assert!(validate_fusion(3, true, true, 1, 1, &[10], &[20], &[10, 20]).is_err());
+    }
+
+    #[test]
+    fn feed_all_wrong_abilities_fails() {
+        assert!(validate_feed(&[10, 20], &[30, 40], true).is_err());
     }
 }

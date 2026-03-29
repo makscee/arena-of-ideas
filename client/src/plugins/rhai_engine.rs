@@ -206,13 +206,10 @@ mod tests {
             execute_ability_script(&engine, &ast, 3, 2, &owner, &target, 1, "Strike").unwrap();
 
         assert_eq!(actions.len(), 1);
-        match &actions[0] {
-            ScriptAction::DealDamage { target_id, amount } => {
-                assert_eq!(*target_id, 2);
-                assert_eq!(*amount, 6); // X=3 * level=2
-            }
-            _ => panic!("Expected DealDamage"),
-        }
+        assert!(
+            matches!(&actions[0], ScriptAction::DealDamage { target_id, amount } if *target_id == 2 && *amount == 6),
+            "Expected DealDamage with target_id=2, amount=6, got {:?}", actions[0]
+        );
     }
 
     #[test]
@@ -237,13 +234,10 @@ mod tests {
             execute_ability_script(&engine, &ast, 4, 1, &owner, &target, 1, "Heal").unwrap();
 
         assert_eq!(actions.len(), 1);
-        match &actions[0] {
-            ScriptAction::HealDamage { target_id, amount } => {
-                assert_eq!(*target_id, 1);
-                assert_eq!(*amount, 4);
-            }
-            _ => panic!("Expected HealDamage"),
-        }
+        assert!(
+            matches!(&actions[0], ScriptAction::HealDamage { target_id, amount } if *target_id == 1 && *amount == 4),
+            "Expected HealDamage with target_id=1, amount=4, got {:?}", actions[0]
+        );
     }
 
     #[test]
@@ -304,10 +298,10 @@ mod tests {
         let actions =
             execute_ability_script(&engine, &ast, 4, 1, &owner, &target, 1, "Smart").unwrap();
         assert_eq!(actions.len(), 1);
-        match &actions[0] {
-            ScriptAction::HealDamage { amount, .. } => assert_eq!(*amount, 8),
-            _ => panic!("Expected HealDamage"),
-        }
+        assert!(
+            matches!(&actions[0], ScriptAction::HealDamage { amount, .. } if *amount == 8),
+            "Expected HealDamage with amount=8, got {:?}", actions[0]
+        );
 
         // Owner has high HP — should deal damage
         let owner_healthy = ScriptUnit {
@@ -320,10 +314,10 @@ mod tests {
             execute_ability_script(&engine, &ast, 4, 1, &owner_healthy, &target, 1, "Smart")
                 .unwrap();
         assert_eq!(actions.len(), 1);
-        match &actions[0] {
-            ScriptAction::DealDamage { amount, .. } => assert_eq!(*amount, 4),
-            _ => panic!("Expected DealDamage"),
-        }
+        assert!(
+            matches!(&actions[0], ScriptAction::DealDamage { amount, .. } if *amount == 4),
+            "Expected DealDamage with amount=4, got {:?}", actions[0]
+        );
     }
 
     #[test]

@@ -992,4 +992,208 @@ mod tests {
         assert_eq!(result1.turns, result2.turns);
         assert_eq!(result1.actions.len(), result2.actions.len());
     }
+
+    #[test]
+    fn test_steal_stat_transfers_pwr() {
+        let steal = BattleAbility {
+            id: 600,
+            name: "Steal".to_string(),
+            target_type: TargetType::RandomEnemy,
+            effect_script: "steal_stat(target[\"id\"], \"pwr\", level);".to_string(),
+        };
+
+        let left = vec![make_unit(
+            1,
+            "Thief",
+            10,
+            2,
+            Trigger::BattleStart,
+            vec![steal],
+            BattleSide::Left,
+            0,
+        )];
+        let right = vec![make_unit(
+            2,
+            "Victim",
+            10,
+            5,
+            Trigger::TurnEnd,
+            vec![],
+            BattleSide::Right,
+            0,
+        )];
+
+        let result = simulate_battle(left, right);
+
+        // Target should lose pwr (negative StatChange)
+        let target_pwr_loss = result
+            .actions
+            .iter()
+            .any(|a| matches!(a, BattleAction::StatChange { unit: 2, stat: StatKind::Pwr, delta } if *delta < 0));
+        assert!(target_pwr_loss, "Target pwr should decrease via steal");
+
+        // Source should gain pwr (positive StatChange)
+        let source_pwr_gain = result
+            .actions
+            .iter()
+            .any(|a| matches!(a, BattleAction::StatChange { unit: 1, stat: StatKind::Pwr, delta } if *delta > 0));
+        assert!(source_pwr_gain, "Source pwr should increase via steal");
+    }
+
+    #[test]
+    fn test_shield_absorbs_damage() {
+        // Guardian gets shield on BattleStart, then enemy strikes
+        let left = vec![make_unit(
+            1,
+            "Guardian",
+            10,
+            3,
+            Trigger::BattleStart,
+            vec![guard_ability(300)],
+            BattleSide::Left,
+            0,
+        )];
+        let right = vec![make_unit(
+            2,
+            "Striker",
+            10,
+            2,
+            Trigger::BeforeStrike,
+            vec![strike_ability(100)],
+            BattleSide::Right,
+            0,
+        )];
+
+        let result = simulate_battle(left, right);
+
+        // Guardian has pwr=3, level=1, so shield = 3*1 = 3
+        // Striker has pwr=2, level=1, so damage = 2*1 = 2
+        // First strike should be fully absorbed by shield (2 < 3), so no Damage action for first hit
+        // Count damage actions targeting unit 1
+        let damage_to_guardian: Vec<&BattleAction> = result
+            .actions
+            .iter()
+            .filter(|a| matches!(a, BattleAction::Damage { target: 1, .. }))
+            .collect();
+
+        // With shield=3 absorbing first hit of 2, first Damage event to guardian should be delayed
+        // The guardian should survive longer than without shield
+        // After shield absorbs 2 damage, 1 shield remains, next hit 2-1=1 actual damage
+        // So first damage action should have amount=1 (partial absorption)
+        if let Some(first_dmg) = damage_to_guardian.first() {
+            match first_dmg {
+                BattleAction::Damage { amount, .. } => {
+                    assert!(
+                        *amount < 2,
+                        "Shield should reduce first damage below full strike amount, got {}",
+                        amount
+                    );
+                }
+                _ => unreachable!(),
+            }
+        }
+        // Guardian should survive more turns than a 10hp unit vs 2pwr without shield (5 turns)
+        assert!(result.turns > 5, "Shield should help guardian survive longer, got {} turns", result.turns);
+    }
+
+    #[test]
+    fn test_zero_pwr_deals_no_damage() {
+        let left = vec![make_unit(
+            1,
+            "Weakling",
+            10,
+            0,
+            Trigger::BeforeStrike,
+            vec![strike_ability(100)],
+            BattleSide::Left,
+            0,
+        )];
+        let right = vec![make_unit(
+            2,
+            "Target",
+            5,
+            3,
+            Trigger::BeforeStrike,
+            vec![strike_ability(100)],
+            BattleSide::Right,
+            0,
+        )];
+
+        let result = simulate_battle(left, right);
+
+        // Unit 1 has pwr=0, so X=0, damage = 0*level = 0 -> no Damage action from unit 1
+        let damage_from_weakling = result
+            .actions
+            .iter()
+            .filter(|a| matches!(a, BattleAction::Damage { source: 1, .. }))
+            .count();
+        assert_eq!(
+            damage_from_weakling, 0,
+            "Unit with 0 pwr should deal no damage"
+        );
+    }
+
+    #[test]
+    fn test_all_healers_end_via_fatigue() {
+        // Two teams of healers targeting allies — neither can kill the other
+        let left = vec![
+            make_unit(
+                1,
+                "Healer1",
+                10,
+                3,
+                Trigger::TurnEnd,
+                vec![heal_ability(200)],
+                BattleSide::Left,
+                0,
+            ),
+            make_unit(
+                3,
+                "Healer2",
+                10,
+                3,
+                Trigger::TurnEnd,
+                vec![heal_ability(200)],
+                BattleSide::Left,
+                1,
+            ),
+        ];
+        let right = vec![
+            make_unit(
+                2,
+                "Healer3",
+                10,
+                3,
+                Trigger::TurnEnd,
+                vec![heal_ability(200)],
+                BattleSide::Right,
+                0,
+            ),
+            make_unit(
+                4,
+                "Healer4",
+                10,
+                3,
+                Trigger::TurnEnd,
+                vec![heal_ability(200)],
+                BattleSide::Right,
+                1,
+            ),
+        ];
+
+        let result = simulate_battle(left, right);
+
+        // Battle must end (not hang forever)
+        assert!(
+            result.turns <= MAX_TURNS,
+            "Battle should end within max turns"
+        );
+
+        // Fatigue should be the mechanism that ends it
+        let has_fatigue = result
+            .actions
+            .iter()
+            .any(|a| matches!(a, BattleAction::Fatigue { .. }));
+        assert!(has_fatigue, "Healers-only battle should end via fatigue");
+    }
 }

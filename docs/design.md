@@ -261,7 +261,7 @@ Fusion choices:
   Trigger: pick BeforeStrike OR TurnEnd
   Abilities: min(2, 1) + 1 = 2, pick from {Steal Gold, Sneak, Burning}
   Tier: max(2, 1) + 1 = 3
-  Stats: [combined with penalty, TBD exact formula]
+  Stats: hp = max(a,b) + min(a,b)/2, pwr = max(a,b) + min(a,b)/2
 
 Result: Tier 3 fused unit with chosen trigger and 2 chosen abilities
 ```
@@ -325,7 +325,7 @@ No sidecar service needed.
 
 ### Rate Limiting
 
-Limited prompts per player (exact number TBD).
+5 ability breeds + 10 unit generations per player per day.
 Ability breeding costs more prompts than unit naming/visuals.
 
 ### Generation Tables

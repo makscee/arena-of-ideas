@@ -451,8 +451,12 @@ pub fn match_fuse_units(
         slot.fused_abilities = chosen_abilities;
         slot.fused_tier = result_tier;
         slot.copies = 1;
-        slot.bonus_hp += unit_b.hp / 2;
-        slot.bonus_pwr += unit_b.pwr / 2;
+        // Fused stats: max(a,b) + min(a,b)/2
+        // The slot already carries unit_a's base stats, so bonus = fused - base_a
+        let fused_hp = unit_a.hp.max(unit_b.hp) + unit_a.hp.min(unit_b.hp) / 2;
+        let fused_pwr = unit_a.pwr.max(unit_b.pwr) + unit_a.pwr.min(unit_b.pwr) / 2;
+        slot.bonus_hp = fused_hp - unit_a.hp;
+        slot.bonus_pwr = fused_pwr - unit_a.pwr;
     }
 
     ctx.db.game_match().id().update(game_match);
@@ -513,6 +517,17 @@ fn require_state(game_match: &GameMatch, expected: &MatchState) -> Result<(), St
     }
 }
 
+/// Simple hash-based PRNG (no rand crate needed for WASM).
+/// Uses FNV-1a-style mixing on a u64 seed.
+fn simple_hash(mut seed: u64) -> u64 {
+    seed ^= seed >> 33;
+    seed = seed.wrapping_mul(0xff51afd7ed558ccd);
+    seed ^= seed >> 33;
+    seed = seed.wrapping_mul(0xc4ceb9fe1a85ec53);
+    seed ^= seed >> 33;
+    seed
+}
+
 fn generate_shop_offers(ctx: &ReducerContext, count: usize) -> Vec<u64> {
     let active_units: Vec<u64> = ctx
         .db
@@ -526,9 +541,25 @@ fn generate_shop_offers(ctx: &ReducerContext, count: usize) -> Vec<u64> {
         return vec![0; count];
     }
 
+    // Seed from timestamp (nanos) — each reroll/floor gets a different timestamp
+    let base_seed = ctx.timestamp.to_micros_since_unix_epoch() as u64;
+
+    // Find current floor for extra entropy
+    let floor_seed: u64 = ctx
+        .db
+        .game_match()
+        .iter()
+        .find(|m| m.player == ctx.sender())
+        .map(|m| m.floor as u64)
+        .unwrap_or(0);
+
     let mut offers = Vec::new();
     for i in 0..count {
-        let idx = i % active_units.len();
+        let seed = base_seed
+            .wrapping_add(floor_seed.wrapping_mul(31))
+            .wrapping_add(i as u64);
+        let hash = simple_hash(seed);
+        let idx = (hash as usize) % active_units.len();
         offers.push(active_units[idx]);
     }
     offers
