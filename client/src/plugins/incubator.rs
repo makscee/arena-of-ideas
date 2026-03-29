@@ -185,16 +185,78 @@ fn evolution_tree(ui: &mut egui::Ui, content: &GameContent) {
     ui.label("All abilities trace back to the primordial set.");
     ui.separator();
 
+    if content.abilities.is_empty() {
+        ui.label("No abilities loaded.");
+        return;
+    }
+
+    // Build name lookup
+    let name_of = |id: u64| -> String {
+        content
+            .abilities
+            .iter()
+            .find(|a| a.id == id)
+            .map(|a| a.name.clone())
+            .unwrap_or_else(|| format!("#{}", id))
+    };
+
+    // Split into primordial (no parents) and bred (has parents)
+    let primordial: Vec<_> = content
+        .abilities
+        .iter()
+        .filter(|a| a.parent_a == 0 && a.parent_b == 0)
+        .collect();
+    let bred: Vec<_> = content
+        .abilities
+        .iter()
+        .filter(|a| a.parent_a != 0 || a.parent_b != 0)
+        .collect();
+
     egui::ScrollArea::vertical().show(ui, |ui| {
-        ui.heading("Primordial");
-        for ability in &content.abilities {
+        // Primordial abilities
+        ui.heading("Primordial Abilities");
+        for ability in &primordial {
             ui.horizontal(|ui| {
                 ui.colored_label(colors::ABILITY_COLOR, &ability.name);
                 ui.label("—");
                 ui.label(&ability.description);
+                ui.colored_label(
+                    rating_color(ability.rating),
+                    format!("{:+}", ability.rating),
+                );
             });
         }
-        ui.separator();
-        ui.label("(Bred abilities will appear here with parent lineage)");
+
+        if !bred.is_empty() {
+            ui.separator();
+            ui.heading("Bred Abilities");
+            for ability in &bred {
+                ui.group(|ui| {
+                    ui.horizontal(|ui| {
+                        ui.colored_label(colors::ABILITY_COLOR, &ability.name);
+                        ui.colored_label(
+                            rating_color(ability.rating),
+                            format!("{:+}", ability.rating),
+                        );
+                    });
+                    ui.label(&ability.description);
+                    ui.horizontal(|ui| {
+                        ui.label("Parents:");
+                        ui.colored_label(
+                            colors::ABILITY_COLOR,
+                            name_of(ability.parent_a),
+                        );
+                        ui.label("×");
+                        ui.colored_label(
+                            colors::ABILITY_COLOR,
+                            name_of(ability.parent_b),
+                        );
+                    });
+                });
+            }
+        } else {
+            ui.separator();
+            ui.label("No bred abilities yet. Use Create → Breed Ability to start evolving!");
+        }
     });
 }

@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 use client::plugins::{
-    collection::CollectionPlugin, connect::ConnectPlugin, create::CreatePlugin, game::GamePlugin,
-    incubator::IncubatorPlugin, ui::UiPlugin,
+    battle_viewer::BattleViewerPlugin, collection::CollectionPlugin, connect::ConnectPlugin,
+    create::CreatePlugin, game::GamePlugin, incubator::IncubatorPlugin,
+    onboarding::OnboardingPlugin, ui::UiPlugin,
 };
 
 fn main() {
@@ -20,6 +21,8 @@ fn main() {
         .add_plugins(CollectionPlugin)
         .add_plugins(CreatePlugin)
         .add_plugins(IncubatorPlugin)
+        .add_plugins(BattleViewerPlugin)
+        .add_plugins(OnboardingPlugin)
         .add_systems(Startup, setup_camera)
         .run();
 }

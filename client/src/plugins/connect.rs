@@ -135,6 +135,8 @@ fn check_connected(
             description: a.description.clone(),
             target_type: format!("{:?}", a.target_type),
             effect_script: a.effect_script.clone(),
+            parent_a: a.parent_a,
+            parent_b: a.parent_b,
             rating: a.rating,
             status: format!("{:?}", a.status),
         })
