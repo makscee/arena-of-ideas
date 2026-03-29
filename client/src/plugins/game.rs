@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_egui::{EguiContexts, egui};
 
 use crate::resources::game_state::GameState;
 
@@ -8,91 +9,58 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<GameState>()
             .add_systems(
-                Update,
-                handle_title_input.run_if(in_state(GameState::Title)),
+                bevy_egui::EguiPrimaryContextPass,
+                title_ui.run_if(in_state(GameState::Title)),
             )
-            .add_systems(OnEnter(GameState::Title), setup_title)
-            .add_systems(OnExit(GameState::Title), cleanup::<TitleScreen>)
-            .add_systems(OnEnter(GameState::Login), setup_login)
-            .add_systems(OnExit(GameState::Login), cleanup::<LoginScreen>);
+            .add_systems(
+                bevy_egui::EguiPrimaryContextPass,
+                login_ui.run_if(in_state(GameState::Login)),
+            );
     }
 }
 
-#[derive(Component)]
-struct TitleScreen;
+fn title_ui(mut contexts: EguiContexts, mut next_state: ResMut<NextState<GameState>>) {
+    let Ok(ctx) = contexts.ctx_mut() else { return };
 
-#[derive(Component)]
-struct LoginScreen;
-
-fn setup_title(mut commands: Commands) {
-    commands
-        .spawn((
-            TitleScreen,
-            Node {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                flex_direction: FlexDirection::Column,
-                row_gap: Val::Px(20.0),
-                ..default()
-            },
-        ))
-        .with_children(|parent| {
-            parent.spawn((
-                Text::new("Arena of Ideas"),
-                TextFont {
-                    font_size: 48.0,
-                    ..default()
-                },
-                TextColor(Color::WHITE),
-            ));
-            parent.spawn((
-                Text::new("Press SPACE to start"),
-                TextFont {
-                    font_size: 24.0,
-                    ..default()
-                },
-                TextColor(Color::srgba(0.7, 0.7, 0.7, 1.0)),
-            ));
+    egui::CentralPanel::default().show(ctx, |ui| {
+        ui.vertical_centered(|ui| {
+            ui.add_space(ui.available_height() * 0.3);
+            ui.heading(
+                egui::RichText::new("Arena of Ideas")
+                    .size(48.0)
+                    .color(egui::Color32::WHITE),
+            );
+            ui.add_space(20.0);
+            if ui
+                .button(egui::RichText::new("Start Game").size(24.0))
+                .clicked()
+            {
+                next_state.set(GameState::Login);
+            }
+            ui.add_space(10.0);
+            ui.colored_label(egui::Color32::from_rgb(150, 150, 150), "or press SPACE");
         });
-}
+    });
 
-fn handle_title_input(
-    keys: Res<ButtonInput<KeyCode>>,
-    mut next_state: ResMut<NextState<GameState>>,
-) {
-    if keys.just_pressed(KeyCode::Space) {
+    // Also handle keyboard
+    if ctx.input(|i| i.key_pressed(egui::Key::Space)) {
         next_state.set(GameState::Login);
     }
 }
 
-fn setup_login(mut commands: Commands) {
-    commands
-        .spawn((
-            LoginScreen,
-            Node {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                ..default()
-            },
-        ))
-        .with_children(|parent| {
-            parent.spawn((
-                Text::new("Connecting..."),
-                TextFont {
-                    font_size: 32.0,
-                    ..default()
-                },
-                TextColor(Color::WHITE),
-            ));
-        });
-}
+fn login_ui(mut contexts: EguiContexts) {
+    let Ok(ctx) = contexts.ctx_mut() else { return };
 
-fn cleanup<T: Component>(mut commands: Commands, query: Query<Entity, With<T>>) {
-    for entity in query.iter() {
-        commands.entity(entity).despawn();
-    }
+    egui::CentralPanel::default().show(ctx, |ui| {
+        ui.vertical_centered(|ui| {
+            ui.add_space(ui.available_height() * 0.4);
+            ui.heading(
+                egui::RichText::new("Connecting...")
+                    .size(32.0)
+                    .color(egui::Color32::WHITE),
+            );
+            ui.add_space(10.0);
+            ui.spinner();
+        });
+    });
 }
