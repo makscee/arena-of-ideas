@@ -442,7 +442,135 @@ fn battle_scene_ui(
         });
     });
 
-    // === MAIN AREA (controls rendered inside at bottom) ===
+    // === RIGHT PANEL: Battle Log (collapsible) ===
+    egui::SidePanel::right("battle_log_panel")
+        .resizable(true)
+        .default_width(250.0)
+        .min_width(100.0)
+        .show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.heading("Battle Log");
+            });
+            ui.separator();
+            // Collect log for display (clone to avoid borrow issues)
+            let log: Vec<(String, egui::Color32)> = state
+                .effects
+                .iter()
+                .filter(|e| {
+                    let progress = (state.time - e.start) / e.duration;
+                    progress >= 0.0
+                        && progress <= 1.0
+                        && matches!(&e.kind, EffectKind::Card { text, .. } if !text.is_empty())
+                })
+                .filter_map(|e| {
+                    if let EffectKind::Card { text, color, .. } = &e.kind {
+                        Some((text.clone(), *color))
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+
+            // Also show past cards
+            let past_log: Vec<(String, egui::Color32)> = state
+                .effects
+                .iter()
+                .filter(|e| {
+                    let progress = (state.time - e.start) / e.duration;
+                    progress > 0.0
+                        && progress <= 2.0
+                        && matches!(&e.kind, EffectKind::Card { text, .. } if !text.is_empty())
+                })
+                .filter_map(|e| {
+                    if let EffectKind::Card { text, color, .. } = &e.kind {
+                        let progress = (state.time - e.start) / e.duration;
+                        let fade = if progress > 1.0 {
+                            ((2.0 - progress) * 255.0) as u8
+                        } else {
+                            255u8
+                        };
+                        let c = egui::Color32::from_rgba_premultiplied(
+                            color.r(),
+                            color.g(),
+                            color.b(),
+                            fade,
+                        );
+                        Some((text.clone(), c))
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+
+            egui::ScrollArea::vertical()
+                .stick_to_bottom(true)
+                .show(ui, |ui| {
+                    for (text, color) in &past_log {
+                        ui.colored_label(*color, text);
+                    }
+                    if past_log.is_empty() {
+                        ui.colored_label(egui::Color32::GRAY, "Press ▶ to start...");
+                    }
+                });
+        });
+
+    // === BOTTOM PANEL: Playback Controls ===
+    egui::TopBottomPanel::bottom("battle_controls")
+        .exact_height(50.0)
+        .show(ctx, |ui| {
+            // Full-width slider
+            ui.spacing_mut().slider_width = ui.available_width() - 16.0;
+            let mut t = state.time;
+            let slider = egui::Slider::new(&mut t, 0.0..=total_dur.max(0.01)).show_value(false);
+            if ui.add(slider).changed() {
+                state.time = t;
+                state.rebuild_units_at_time();
+            }
+            // Buttons
+            ui.horizontal(|ui| {
+                if ui.button("⏮").clicked() {
+                    state.time = 0.0;
+                    state.rebuild_units_at_time();
+                }
+                if ui.button("⏪").clicked() {
+                    state.time = (state.time - 1.0).max(0.0);
+                    state.rebuild_units_at_time();
+                }
+                if state.playing {
+                    if ui.button("⏸").clicked() {
+                        state.playing = false;
+                    }
+                } else if ui.button("▶").clicked() {
+                    if state.time >= total_dur {
+                        state.time = 0.0;
+                        state.rebuild_units_at_time();
+                    }
+                    state.playing = true;
+                }
+                if ui.button("⏩").clicked() {
+                    state.time = (state.time + 1.0).min(total_dur);
+                    state.rebuild_units_at_time();
+                }
+                if ui.button("⏭").clicked() {
+                    state.time = total_dur;
+                    state.rebuild_units_at_time();
+                }
+                ui.separator();
+                ui.label(format!("{:.1}s / {:.1}s", state.time, total_dur));
+                ui.separator();
+                ui.label("Speed:");
+                for &s in &[1.0f32, 2.0, 4.0] {
+                    if ui
+                        .selectable_label((state.speed - s).abs() < 0.01, format!("x{}", s as i32))
+                        .clicked()
+                    {
+                        state.speed = s;
+                    }
+                }
+            });
+        });
+
+    // === CENTRAL PANEL: Battle Area ===
     egui::CentralPanel::default().show(ctx, |ui| {
         let avail = ui.available_rect_before_wrap();
         let painter = ui.painter().clone();
@@ -450,12 +578,12 @@ fn battle_scene_ui(
         // Background
         painter.rect_filled(avail, 4.0, egui::Color32::from_rgb(12, 12, 20));
 
-        // Layout: top row = left team, middle = action cards, bottom row = right team
-        let row_height = (avail.height() * 0.25).min(100.0);
-        let unit_size = (row_height * 0.85).min(80.0);
+        // Layout: top row = left team, bottom row = right team
+        let row_height = (avail.height() * 0.3).min(120.0);
+        let unit_size = (row_height * 0.8).min(80.0);
 
-        let top_y = avail.top() + row_height * 0.5;
-        let bottom_y = avail.bottom() - row_height * 0.5;
+        let top_y = avail.top() + row_height * 0.5 + 10.0;
+        let bottom_y = avail.bottom() - row_height * 0.5 - 10.0;
         let mid_y = (top_y + bottom_y) * 0.5;
 
         let left_units: Vec<&BattleUnitVisual> = state
@@ -744,74 +872,5 @@ fn battle_scene_ui(
                 }
             }
         }
-
-        // === PLAYBACK CONTROLS at bottom of battle area ===
-        let controls_height = 50.0;
-        let controls_rect = egui::Rect::from_min_size(
-            egui::pos2(avail.left(), avail.bottom() - controls_height),
-            egui::vec2(avail.width(), controls_height),
-        );
-
-        // Semi-transparent background
-        painter.rect_filled(
-            controls_rect,
-            0.0,
-            egui::Color32::from_rgba_premultiplied(10, 10, 18, 200),
-        );
-
-        ui.allocate_new_ui(egui::UiBuilder::new().max_rect(controls_rect), |ui| {
-            // Force slider to take full width
-            ui.spacing_mut().slider_width = controls_rect.width() - 20.0;
-            let mut t = state.time;
-            let slider = egui::Slider::new(&mut t, 0.0..=total_dur.max(0.01)).show_value(false);
-            if ui.add(slider).changed() {
-                state.time = t;
-                state.rebuild_units_at_time();
-            }
-            // Buttons row
-            ui.horizontal(|ui| {
-                if ui.button("⏮").clicked() {
-                    state.time = 0.0;
-                    state.rebuild_units_at_time();
-                }
-                if ui.button("⏪").clicked() {
-                    state.time = (state.time - 1.0).max(0.0);
-                    state.rebuild_units_at_time();
-                }
-                if state.playing {
-                    if ui.button("⏸").clicked() {
-                        state.playing = false;
-                    }
-                } else if ui.button("▶").clicked() {
-                    if state.time >= total_dur {
-                        state.time = 0.0;
-                        state.rebuild_units_at_time();
-                    }
-                    state.playing = true;
-                }
-                if ui.button("⏩").clicked() {
-                    state.time = (state.time + 1.0).min(total_dur);
-                    state.rebuild_units_at_time();
-                }
-                if ui.button("⏭").clicked() {
-                    state.time = total_dur;
-                    state.rebuild_units_at_time();
-                }
-                ui.separator();
-                ui.label(format!("{:.1}s / {:.1}s", state.time, total_dur));
-                ui.separator();
-                ui.label("Speed:");
-                let speeds = [1.0, 2.0, 4.0];
-                for &s in &speeds {
-                    let active = (state.speed - s).abs() < 0.01;
-                    if ui
-                        .selectable_label(active, format!("x{}", s as i32))
-                        .clicked()
-                    {
-                        state.speed = s;
-                    }
-                }
-            });
-        });
     });
 }
