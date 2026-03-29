@@ -442,45 +442,7 @@ fn battle_scene_ui(
         });
     });
 
-    // === CONTROLS (full width bottom) ===
-    egui::TopBottomPanel::bottom("battle_controls").show(ctx, |ui| {
-        // Full-width progress bar
-        let mut t = state.time;
-        let slider = egui::Slider::new(&mut t, 0.0..=total_dur.max(0.01)).show_value(false);
-        if ui.add_sized([ui.available_width(), 20.0], slider).changed() {
-            state.time = t;
-            state.rebuild_units_at_time();
-        }
-        // Controls row
-        ui.horizontal(|ui| {
-            if ui.button("⏮").clicked() {
-                state.time = 0.0;
-                state.rebuild_units_at_time();
-            }
-            if state.playing {
-                if ui.button("⏸ Pause").clicked() {
-                    state.playing = false;
-                }
-            } else if ui.button("▶ Play").clicked() {
-                if state.time >= total_dur {
-                    state.time = 0.0;
-                    state.rebuild_units_at_time();
-                }
-                state.playing = true;
-            }
-            if ui.button("⏭").clicked() {
-                state.time = total_dur;
-                state.rebuild_units_at_time();
-            }
-            ui.separator();
-            ui.label(format!("{:.1}s / {:.1}s", state.time, total_dur));
-            ui.separator();
-            ui.label("Speed:");
-            ui.add(egui::Slider::new(&mut state.speed, 0.25..=4.0).logarithmic(true));
-        });
-    });
-
-    // === MAIN AREA ===
+    // === MAIN AREA (controls rendered inside at bottom) ===
     egui::CentralPanel::default().show(ctx, |ui| {
         let avail = ui.available_rect_before_wrap();
         let painter = ui.painter().clone();
@@ -782,5 +744,73 @@ fn battle_scene_ui(
                 }
             }
         }
+
+        // === PLAYBACK CONTROLS at bottom of battle area ===
+        let controls_height = 50.0;
+        let controls_rect = egui::Rect::from_min_size(
+            egui::pos2(avail.left(), avail.bottom() - controls_height),
+            egui::vec2(avail.width(), controls_height),
+        );
+
+        // Semi-transparent background
+        painter.rect_filled(
+            controls_rect,
+            0.0,
+            egui::Color32::from_rgba_premultiplied(10, 10, 18, 200),
+        );
+
+        ui.allocate_new_ui(egui::UiBuilder::new().max_rect(controls_rect), |ui| {
+            // Full-width progress slider
+            let mut t = state.time;
+            let slider = egui::Slider::new(&mut t, 0.0..=total_dur.max(0.01)).show_value(false);
+            if ui.add_sized([ui.available_width(), 18.0], slider).changed() {
+                state.time = t;
+                state.rebuild_units_at_time();
+            }
+            // Buttons row
+            ui.horizontal(|ui| {
+                if ui.button("⏮").clicked() {
+                    state.time = 0.0;
+                    state.rebuild_units_at_time();
+                }
+                if ui.button("⏪").clicked() {
+                    state.time = (state.time - 1.0).max(0.0);
+                    state.rebuild_units_at_time();
+                }
+                if state.playing {
+                    if ui.button("⏸").clicked() {
+                        state.playing = false;
+                    }
+                } else if ui.button("▶").clicked() {
+                    if state.time >= total_dur {
+                        state.time = 0.0;
+                        state.rebuild_units_at_time();
+                    }
+                    state.playing = true;
+                }
+                if ui.button("⏩").clicked() {
+                    state.time = (state.time + 1.0).min(total_dur);
+                    state.rebuild_units_at_time();
+                }
+                if ui.button("⏭").clicked() {
+                    state.time = total_dur;
+                    state.rebuild_units_at_time();
+                }
+                ui.separator();
+                ui.label(format!("{:.1}s / {:.1}s", state.time, total_dur));
+                ui.separator();
+                ui.label("Speed:");
+                let speeds = [1.0, 2.0, 4.0];
+                for &s in &speeds {
+                    let active = (state.speed - s).abs() < 0.01;
+                    if ui
+                        .selectable_label(active, format!("x{}", s as i32))
+                        .clicked()
+                    {
+                        state.speed = s;
+                    }
+                }
+            });
+        });
     });
 }
