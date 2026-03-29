@@ -22,52 +22,41 @@ impl Plugin for BattleScenePlugin {
 
 #[derive(Resource, Default)]
 struct BattleFrameCount(u32);
-
 fn reset_frame_count(mut count: ResMut<BattleFrameCount>) {
     count.0 = 0;
 }
 
-// ===== Animated Action Timeline =====
+// ===== Visual Effect on the Timeline =====
 
-/// An action placed on a timeline with a start time and duration.
 #[derive(Clone, Debug)]
-struct TimedAction {
-    action: BattleAction,
+struct VisualEffect {
     start: f32,
     duration: f32,
+    kind: EffectKind,
 }
 
-/// Build a timeline from battle actions: each action gets a start time.
-fn build_timeline(actions: &[BattleAction]) -> (Vec<TimedAction>, f32) {
-    let mut timeline = Vec::new();
-    let mut t = 0.0;
-
-    for action in actions {
-        let duration = match action {
-            BattleAction::Spawn { .. } => 0.0, // instant
-            BattleAction::AbilityUsed { .. } => 0.1,
-            BattleAction::Damage { .. } => 0.4,
-            BattleAction::Heal { .. } => 0.3,
-            BattleAction::Death { .. } => 0.5,
-            BattleAction::StatChange { .. } => 0.15,
-            BattleAction::Fatigue { .. } => 0.3,
-            BattleAction::Vfx { .. } => 0.2,
-            BattleAction::Wait { seconds } => *seconds,
-        };
-
-        timeline.push(TimedAction {
-            action: action.clone(),
-            start: t,
-            duration,
-        });
-
-        t += duration;
-    }
-
-    (timeline, t)
+#[derive(Clone, Debug)]
+enum EffectKind {
+    /// Line from source unit to target unit
+    Line {
+        source_id: u64,
+        target_id: u64,
+        color: egui::Color32,
+        label: String,
+    },
+    /// Popup text on a unit
+    Popup {
+        unit_id: u64,
+        text: String,
+        color: egui::Color32,
+    },
+    /// Flash a unit's color
+    Flash { unit_id: u64 },
+    /// Action card text between teams
+    Card { text: String, color: egui::Color32 },
 }
 
-// ===== Unit Visual State =====
+// ===== Unit Visual =====
 
 #[derive(Clone, Debug)]
 pub struct BattleUnitVisual {
@@ -82,12 +71,6 @@ pub struct BattleUnitVisual {
     pub side: BattleSide,
     pub slot: u8,
     pub color: egui::Color32,
-    // Animation state
-    pub offset_x: f32,                    // horizontal offset for strike animation
-    pub flash_timer: f32,                 // damage flash countdown
-    pub death_timer: f32,                 // death fade (1.0 = alive, 0.0 = gone)
-    pub damage_popup: Option<(i32, f32)>, // (amount, timer)
-    pub heal_popup: Option<(i32, f32)>,
 }
 
 impl BattleUnitVisual {
@@ -112,11 +95,6 @@ impl BattleUnitVisual {
             side,
             slot,
             color,
-            offset_x: 0.0,
-            flash_timer: 0.0,
-            death_timer: 1.0,
-            damage_popup: None,
-            heal_popup: None,
         }
     }
 }
@@ -128,202 +106,286 @@ pub struct BattleSceneState {
     pub result: Option<BattleResult>,
     pub initial_units: Vec<BattleUnitVisual>,
     pub units: Vec<BattleUnitVisual>,
-    pub timeline: Vec<TimedAction>,
+    pub effects: Vec<VisualEffect>,
     pub total_duration: f32,
     pub time: f32,
     pub playing: bool,
     pub speed: f32,
-    pub log: Vec<(String, egui::Color32)>,
-    pub last_processed: usize, // last action index applied
 }
 
 impl BattleSceneState {
     pub fn load(&mut self, result: BattleResult, units: Vec<BattleUnitVisual>) {
-        let (timeline, total_duration) = build_timeline(&result.actions);
+        let effects = build_effects(&result.actions, &units);
+        let total_duration = effects.last().map(|e| e.start + e.duration).unwrap_or(0.0) + 0.5;
         self.initial_units = units.clone();
         self.units = units;
-        self.timeline = timeline;
+        self.effects = effects;
         self.total_duration = total_duration;
         self.result = Some(result);
         self.time = 0.0;
         self.playing = false;
         self.speed = 1.0;
-        self.log.clear();
-        self.last_processed = 0;
     }
 
-    /// Rebuild from scratch up to current time.
-    fn rebuild_to_time(&mut self) {
+    fn rebuild_units_at_time(&mut self) {
         self.units = self.initial_units.clone();
-        self.log.clear();
-        self.last_processed = 0;
+        let Some(ref result) = self.result else {
+            return;
+        };
 
-        let actions: Vec<(f32, BattleAction)> = self
-            .timeline
-            .iter()
-            .map(|t| (t.start, t.action.clone()))
-            .collect();
+        for action in &result.actions {
+            let action_time = self
+                .effects
+                .iter()
+                .find(|e| {
+                    matches!(&e.kind, EffectKind::Card { .. })
+                        || matches!(&e.kind, EffectKind::Line { .. })
+                })
+                .map(|_| 0.0) // we use a simpler approach below
+                .unwrap_or(0.0);
+            let _ = action_time; // unused, we just apply all actions up to time
+        }
 
-        for (start, action) in &actions {
-            if *start > self.time {
+        // Re-derive: apply actions whose effects have started
+        self.units = self.initial_units.clone();
+        let actions = self.result.as_ref().unwrap().actions.clone();
+        let mut action_idx = 0;
+        for effect in &self.effects {
+            if effect.start > self.time {
                 break;
             }
-            self.apply_action(action);
-            self.last_processed += 1;
-        }
-
-        // Clear transient animation state (flash, popups, offsets)
-        // These only make sense during live playback, not on seek
-        for u in &mut self.units {
-            u.flash_timer = 0.0;
-            u.offset_x = 0.0;
-            u.damage_popup = None;
-            u.heal_popup = None;
-            // Death timer should be fully faded for dead units on seek
-            if !u.alive {
-                u.death_timer = 1.0;
+            // Only Card effects correspond to actual state changes
+            if matches!(effect.kind, EffectKind::Card { .. }) {
+                // Find the next unprocessed action that generates a card
+                while action_idx < actions.len() {
+                    let applied = apply_action_to_units(&actions[action_idx], &mut self.units);
+                    action_idx += 1;
+                    if applied {
+                        break;
+                    }
+                }
             }
         }
-
-        // Animate the current action if we're in the middle of one
-        self.update_animations();
     }
+}
 
-    fn apply_action(&mut self, action: &BattleAction) {
+fn apply_action_to_units(action: &BattleAction, units: &mut [BattleUnitVisual]) -> bool {
+    match action {
+        BattleAction::Damage { target, amount, .. } => {
+            if let Some(u) = units.iter_mut().find(|u| u.id == *target) {
+                u.dmg += amount;
+                if u.hp - u.dmg <= 0 {
+                    u.alive = false;
+                }
+            }
+            true
+        }
+        BattleAction::Heal { target, amount, .. } => {
+            if let Some(u) = units.iter_mut().find(|u| u.id == *target) {
+                u.dmg = (u.dmg - amount).max(0);
+            }
+            true
+        }
+        BattleAction::Death { unit } => {
+            if let Some(u) = units.iter_mut().find(|u| u.id == *unit) {
+                u.alive = false;
+            }
+            true
+        }
+        BattleAction::StatChange { unit, stat, delta } => {
+            if let Some(u) = units.iter_mut().find(|u| u.id == *unit) {
+                match stat {
+                    shared::battle::StatKind::Pwr => u.pwr = (u.pwr + delta).max(0),
+                    shared::battle::StatKind::Hp => u.hp = (u.hp + delta).max(0),
+                    _ => {}
+                }
+            }
+            true
+        }
+        BattleAction::Fatigue { amount } => {
+            for u in units.iter_mut().filter(|u| u.alive) {
+                u.dmg += amount;
+            }
+            true
+        }
+        _ => false, // Spawn, AbilityUsed, etc. don't change state
+    }
+}
+
+fn unit_name(units: &[BattleUnitVisual], id: u64) -> String {
+    units
+        .iter()
+        .find(|u| u.id == id)
+        .map(|u| u.name.clone())
+        .unwrap_or_else(|| format!("#{}", id))
+}
+
+/// Build visual effects timeline from battle actions.
+fn build_effects(actions: &[BattleAction], units: &[BattleUnitVisual]) -> Vec<VisualEffect> {
+    let mut effects = Vec::new();
+    let mut t = 0.0;
+
+    for action in actions {
         match action {
+            BattleAction::Spawn { .. } => {
+                // No visual effect for spawn
+            }
+            BattleAction::AbilityUsed {
+                source,
+                ability_name,
+            } => {
+                let name = unit_name(units, *source);
+                effects.push(VisualEffect {
+                    start: t,
+                    duration: 0.6,
+                    kind: EffectKind::Card {
+                        text: format!("{} uses {}", name, ability_name),
+                        color: egui::Color32::from_rgb(100, 170, 255),
+                    },
+                });
+                t += 0.15;
+            }
             BattleAction::Damage {
                 source,
                 target,
                 amount,
             } => {
-                if let Some(u) = self.units.iter_mut().find(|u| u.id == *target) {
-                    u.dmg += amount;
-                    u.flash_timer = 0.3;
-                    u.damage_popup = Some((*amount, 0.5));
-                }
-                // Strike animation: source slides toward target
-                if let Some(u) = self.units.iter_mut().find(|u| u.id == *source) {
-                    let dir = if u.side == BattleSide::Left {
-                        1.0
-                    } else {
-                        -1.0
-                    };
-                    u.offset_x = dir * 30.0;
-                }
-                let sname = self.unit_name(*source);
-                let tname = self.unit_name(*target);
-                self.log.push((
-                    format!("{} → {} dmg → {}", sname, amount, tname),
-                    egui::Color32::from_rgb(255, 120, 120),
-                ));
+                effects.push(VisualEffect {
+                    start: t,
+                    duration: 0.8,
+                    kind: EffectKind::Line {
+                        source_id: *source,
+                        target_id: *target,
+                        color: egui::Color32::from_rgb(255, 80, 80),
+                        label: format!("-{}", amount),
+                    },
+                });
+                effects.push(VisualEffect {
+                    start: t,
+                    duration: 0.5,
+                    kind: EffectKind::Flash { unit_id: *target },
+                });
+                effects.push(VisualEffect {
+                    start: t,
+                    duration: 0.7,
+                    kind: EffectKind::Popup {
+                        unit_id: *target,
+                        text: format!("-{}", amount),
+                        color: egui::Color32::from_rgb(255, 80, 80),
+                    },
+                });
+                // Card for state tracking
+                effects.push(VisualEffect {
+                    start: t,
+                    duration: 0.6,
+                    kind: EffectKind::Card {
+                        text: format!(
+                            "{} → {} dmg → {}",
+                            unit_name(units, *source),
+                            amount,
+                            unit_name(units, *target)
+                        ),
+                        color: egui::Color32::from_rgb(255, 120, 120),
+                    },
+                });
+                t += 0.35;
             }
             BattleAction::Heal {
                 source,
                 target,
                 amount,
             } => {
-                if let Some(u) = self.units.iter_mut().find(|u| u.id == *target) {
-                    u.dmg = (u.dmg - amount).max(0);
-                    u.heal_popup = Some((*amount, 0.5));
-                }
-                let sname = self.unit_name(*source);
-                let tname = self.unit_name(*target);
-                self.log.push((
-                    format!("{} heals {} +{}", sname, tname, amount),
-                    egui::Color32::from_rgb(120, 255, 120),
-                ));
+                effects.push(VisualEffect {
+                    start: t,
+                    duration: 0.8,
+                    kind: EffectKind::Line {
+                        source_id: *source,
+                        target_id: *target,
+                        color: egui::Color32::from_rgb(80, 255, 80),
+                        label: format!("+{}", amount),
+                    },
+                });
+                effects.push(VisualEffect {
+                    start: t,
+                    duration: 0.7,
+                    kind: EffectKind::Popup {
+                        unit_id: *target,
+                        text: format!("+{}", amount),
+                        color: egui::Color32::from_rgb(80, 255, 80),
+                    },
+                });
+                effects.push(VisualEffect {
+                    start: t,
+                    duration: 0.6,
+                    kind: EffectKind::Card {
+                        text: format!(
+                            "{} heals {} +{}",
+                            unit_name(units, *source),
+                            unit_name(units, *target),
+                            amount
+                        ),
+                        color: egui::Color32::from_rgb(120, 255, 120),
+                    },
+                });
+                t += 0.3;
             }
             BattleAction::Death { unit } => {
-                if let Some(u) = self.units.iter_mut().find(|u| u.id == *unit) {
-                    u.alive = false;
-                    u.death_timer = 0.0;
-                }
-                let name = self.unit_name(*unit);
-                self.log.push((
-                    format!("{} dies!", name),
-                    egui::Color32::from_rgb(255, 50, 50),
-                ));
-            }
-            BattleAction::StatChange { unit, stat, delta } => {
-                if let Some(u) = self.units.iter_mut().find(|u| u.id == *unit) {
-                    match stat {
-                        shared::battle::StatKind::Pwr => u.pwr = (u.pwr + delta).max(0),
-                        shared::battle::StatKind::Hp => u.hp = (u.hp + delta).max(0),
-                        _ => {}
-                    }
-                }
-            }
-            BattleAction::AbilityUsed {
-                source,
-                ability_name,
-            } => {
-                let name = self.unit_name(*source);
-                self.log.push((
-                    format!("{} uses {}", name, ability_name),
-                    egui::Color32::from_rgb(120, 180, 255),
-                ));
+                let name = unit_name(units, *unit);
+                effects.push(VisualEffect {
+                    start: t,
+                    duration: 1.0,
+                    kind: EffectKind::Card {
+                        text: format!("💀 {} dies!", name),
+                        color: egui::Color32::from_rgb(255, 50, 50),
+                    },
+                });
+                effects.push(VisualEffect {
+                    start: t,
+                    duration: 0.6,
+                    kind: EffectKind::Card {
+                        text: String::new(),
+                        color: egui::Color32::TRANSPARENT,
+                    },
+                });
+                t += 0.4;
             }
             BattleAction::Fatigue { amount } => {
-                for u in self.units.iter_mut().filter(|u| u.alive) {
-                    u.dmg += amount;
-                    u.flash_timer = 0.2;
-                }
-                self.log.push((
-                    format!("FATIGUE! All take {} dmg", amount),
-                    egui::Color32::from_rgb(255, 200, 50),
-                ));
+                effects.push(VisualEffect {
+                    start: t,
+                    duration: 0.8,
+                    kind: EffectKind::Card {
+                        text: format!("⚡ FATIGUE! All take {} dmg", amount),
+                        color: egui::Color32::from_rgb(255, 200, 50),
+                    },
+                });
+                t += 0.4;
             }
-            BattleAction::Spawn { unit, side, .. } => {
-                let name = self.unit_name(*unit);
-                self.log.push((
-                    format!("{} enters ({:?})", name, side),
-                    egui::Color32::from_rgb(150, 150, 150),
-                ));
+            BattleAction::StatChange { unit, stat, delta } => {
+                let name = unit_name(units, *unit);
+                effects.push(VisualEffect {
+                    start: t,
+                    duration: 0.5,
+                    kind: EffectKind::Popup {
+                        unit_id: *unit,
+                        text: format!("{:?}{:+}", stat, delta),
+                        color: egui::Color32::from_rgb(200, 200, 100),
+                    },
+                });
+                effects.push(VisualEffect {
+                    start: t,
+                    duration: 0.01,
+                    kind: EffectKind::Card {
+                        text: String::new(),
+                        color: egui::Color32::TRANSPARENT,
+                    },
+                });
+                t += 0.15;
             }
             _ => {}
         }
     }
 
-    fn update_animations(&mut self) {
-        let dt = 0.016; // ~60fps frame
-        for u in &mut self.units {
-            // Slide back from strike
-            u.offset_x *= 0.8;
-            if u.offset_x.abs() < 0.5 {
-                u.offset_x = 0.0;
-            }
-
-            // Flash decay
-            u.flash_timer = (u.flash_timer - dt).max(0.0);
-
-            // Death fade
-            if !u.alive && u.death_timer < 1.0 {
-                u.death_timer = (u.death_timer + dt * 3.0).min(1.0);
-            }
-
-            // Popup decay
-            if let Some((_, ref mut t)) = u.damage_popup {
-                *t -= dt;
-                if *t <= 0.0 {
-                    u.damage_popup = None;
-                }
-            }
-            if let Some((_, ref mut t)) = u.heal_popup {
-                *t -= dt;
-                if *t <= 0.0 {
-                    u.heal_popup = None;
-                }
-            }
-        }
-    }
-
-    fn unit_name(&self, id: u64) -> String {
-        self.units
-            .iter()
-            .find(|u| u.id == id)
-            .map(|u| u.name.clone())
-            .unwrap_or_else(|| format!("#{}", id))
-    }
+    effects
 }
 
 // ===== Rendering =====
@@ -339,7 +401,6 @@ fn battle_scene_ui(
     if frame_count.0 < 3 {
         return;
     }
-
     let Ok(ctx) = contexts.ctx_mut() else { return };
 
     if state.result.is_none() {
@@ -354,29 +415,20 @@ fn battle_scene_ui(
     let total_dur = state.total_duration;
     let winner = state.result.as_ref().unwrap().winner;
     let turns = state.result.as_ref().unwrap().turns;
-    let total_actions = state.result.as_ref().unwrap().actions.len();
 
     // Advance time
+    let prev_time = state.time;
     if state.playing && state.time < total_dur {
         state.time += time.delta_secs() * state.speed;
         if state.time > total_dur {
             state.time = total_dur;
         }
-
-        // Apply new actions that are now in range
-        while state.last_processed < state.timeline.len() {
-            if state.timeline[state.last_processed].start <= state.time {
-                let action = state.timeline[state.last_processed].action.clone();
-                state.apply_action(&action);
-                state.last_processed += 1;
-            } else {
-                break;
-            }
-        }
     }
 
-    // Always update animations
-    state.update_animations();
+    // Rebuild unit state when time changes
+    if (state.time - prev_time).abs() > 0.001 || frame_count.0 == 3 {
+        state.rebuild_units_at_time();
+    }
 
     // === TOP BAR ===
     egui::TopBottomPanel::top("battle_top").show(ctx, |ui| {
@@ -388,7 +440,7 @@ fn battle_scene_ui(
                 BattleSide::Right => ("Right Wins!", egui::Color32::from_rgb(255, 100, 100)),
             };
             ui.colored_label(color, label);
-            ui.label(format!("• {} turns • {} actions", turns, total_actions));
+            ui.label(format!("• {} turns", turns));
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if ui.button("Exit").clicked() {
                     state.result = None;
@@ -398,12 +450,12 @@ fn battle_scene_ui(
         });
     });
 
-    // === BOTTOM CONTROLS ===
+    // === CONTROLS ===
     egui::TopBottomPanel::bottom("battle_controls").show(ctx, |ui| {
         ui.horizontal(|ui| {
             if ui.button("⏮").clicked() {
                 state.time = 0.0;
-                state.rebuild_to_time();
+                state.rebuild_units_at_time();
             }
             if state.playing {
                 if ui.button("⏸ Pause").clicked() {
@@ -413,29 +465,24 @@ fn battle_scene_ui(
                 if ui.button("▶ Play").clicked() {
                     if state.time >= total_dur {
                         state.time = 0.0;
-                        state.rebuild_to_time();
+                        state.rebuild_units_at_time();
                     }
                     state.playing = true;
                 }
             }
             if ui.button("⏭").clicked() {
                 state.time = total_dur;
-                state.rebuild_to_time();
+                state.rebuild_units_at_time();
             }
             ui.separator();
-
-            // Time slider
             let mut t = state.time;
-            let response = ui.add(
-                egui::Slider::new(&mut t, 0.0..=total_dur.max(0.01))
-                    .text("time")
-                    .show_value(true),
-            );
-            if response.changed() {
+            if ui
+                .add(egui::Slider::new(&mut t, 0.0..=total_dur.max(0.01)).text("time"))
+                .changed()
+            {
                 state.time = t;
-                state.rebuild_to_time();
+                state.rebuild_units_at_time();
             }
-
             ui.separator();
             ui.label("Speed:");
             ui.add(egui::Slider::new(&mut state.speed, 0.25..=4.0).logarithmic(true));
@@ -445,121 +492,191 @@ fn battle_scene_ui(
     // === MAIN AREA ===
     egui::CentralPanel::default().show(ctx, |ui| {
         let avail = ui.available_rect_before_wrap();
-        let mid_x = avail.left() + avail.width() * 0.55;
+        let painter = ui.painter().clone();
 
-        // --- BATTLEFIELD ---
-        let bf = egui::Rect::from_min_max(avail.min, egui::pos2(mid_x, avail.max.y));
-        ui.painter()
-            .rect_filled(bf, 4.0, egui::Color32::from_rgb(12, 12, 20));
+        // Background
+        painter.rect_filled(avail, 4.0, egui::Color32::from_rgb(12, 12, 20));
 
-        // Dividing line
-        ui.painter().line_segment(
-            [
-                egui::pos2(bf.center().x, bf.top() + 10.0),
-                egui::pos2(bf.center().x, bf.bottom() - 10.0),
-            ],
-            egui::Stroke::new(1.0, egui::Color32::from_rgb(40, 40, 60)),
-        );
+        // Layout: top row = left team, middle = action cards, bottom row = right team
+        let row_height = (avail.height() * 0.25).min(100.0);
+        let unit_size = (row_height * 0.85).min(80.0);
 
-        let unit_size = (bf.height() / 6.0).min(80.0);
-        let left_x = bf.left() + bf.width() * 0.25;
-        let right_x = bf.left() + bf.width() * 0.75;
+        let top_y = avail.top() + row_height * 0.5;
+        let bottom_y = avail.bottom() - row_height * 0.5;
+        let mid_y = (top_y + bottom_y) * 0.5;
 
-        // Render units
-        let units_snapshot: Vec<BattleUnitVisual> = state.units.clone();
-        let left_units: Vec<&BattleUnitVisual> = units_snapshot
+        let left_units: Vec<&BattleUnitVisual> = state
+            .units
             .iter()
             .filter(|u| u.side == BattleSide::Left)
             .collect();
-        let right_units: Vec<&BattleUnitVisual> = units_snapshot
+        let right_units: Vec<&BattleUnitVisual> = state
+            .units
             .iter()
             .filter(|u| u.side == BattleSide::Right)
             .collect();
 
+        // Unit positions (stored for line drawing)
+        let mut unit_positions: std::collections::HashMap<u64, egui::Pos2> =
+            std::collections::HashMap::new();
+
+        // Draw left team (top row)
         for (i, unit) in left_units.iter().enumerate() {
-            let base_y = bf.top()
-                + 20.0
-                + (i as f32 + 0.5) * (bf.height() - 40.0) / left_units.len().max(1) as f32;
-            let x = left_x + unit.offset_x;
-            render_unit(ui, unit, egui::pos2(x, base_y), unit_size);
+            let x =
+                avail.left() + (i as f32 + 0.5) * avail.width() / left_units.len().max(1) as f32;
+            let pos = egui::pos2(x, top_y);
+            unit_positions.insert(unit.id, pos);
+
+            let alpha = if unit.alive { 255 } else { 60 };
+            let c = egui::Color32::from_rgba_premultiplied(
+                unit.color.r(),
+                unit.color.g(),
+                unit.color.b(),
+                alpha,
+            );
+            let sz = if unit.alive {
+                unit_size
+            } else {
+                unit_size * 0.6
+            };
+            let rect = egui::Rect::from_center_size(pos, egui::vec2(sz, sz));
+            paint_default_unit(rect, c, unit.hp, unit.pwr, unit.dmg, &unit.name, ui);
         }
 
+        // Draw right team (bottom row)
         for (i, unit) in right_units.iter().enumerate() {
-            let base_y = bf.top()
-                + 20.0
-                + (i as f32 + 0.5) * (bf.height() - 40.0) / right_units.len().max(1) as f32;
-            let x = right_x + unit.offset_x;
-            render_unit(ui, unit, egui::pos2(x, base_y), unit_size);
+            let x =
+                avail.left() + (i as f32 + 0.5) * avail.width() / right_units.len().max(1) as f32;
+            let pos = egui::pos2(x, bottom_y);
+            unit_positions.insert(unit.id, pos);
+
+            let alpha = if unit.alive { 255 } else { 60 };
+            let c = egui::Color32::from_rgba_premultiplied(
+                unit.color.r(),
+                unit.color.g(),
+                unit.color.b(),
+                alpha,
+            );
+            let sz = if unit.alive {
+                unit_size
+            } else {
+                unit_size * 0.6
+            };
+            let rect = egui::Rect::from_center_size(pos, egui::vec2(sz, sz));
+            paint_default_unit(rect, c, unit.hp, unit.pwr, unit.dmg, &unit.name, ui);
         }
 
-        // --- BATTLE LOG ---
-        let log_area = egui::Rect::from_min_max(egui::pos2(mid_x + 8.0, avail.top()), avail.max);
-        ui.allocate_new_ui(egui::UiBuilder::new().max_rect(log_area), |ui| {
-            ui.heading("Battle Log");
-            ui.separator();
-            egui::ScrollArea::vertical()
-                .stick_to_bottom(true)
-                .max_height(log_area.height() - 40.0)
-                .show(ui, |ui| {
-                    for (text, color) in &state.log {
-                        ui.colored_label(*color, text);
+        // Team labels
+        painter.text(
+            egui::pos2(avail.left() + 10.0, avail.top() + 5.0),
+            egui::Align2::LEFT_TOP,
+            "Left Team",
+            egui::FontId::proportional(14.0),
+            egui::Color32::from_rgb(150, 150, 150),
+        );
+        painter.text(
+            egui::pos2(avail.left() + 10.0, avail.bottom() - row_height - 5.0),
+            egui::Align2::LEFT_TOP,
+            "Right Team",
+            egui::FontId::proportional(14.0),
+            egui::Color32::from_rgb(150, 150, 150),
+        );
+
+        // Draw active effects
+        let current_time = state.time;
+        for effect in &state.effects {
+            let progress = (current_time - effect.start) / effect.duration;
+            if progress < 0.0 || progress > 1.0 {
+                continue;
+            }
+
+            let fade = if progress > 0.7 {
+                (1.0 - progress) / 0.3
+            } else {
+                1.0
+            };
+            let alpha = (fade * 255.0) as u8;
+
+            match &effect.kind {
+                EffectKind::Line {
+                    source_id,
+                    target_id,
+                    color,
+                    label,
+                } => {
+                    if let (Some(&from), Some(&to)) =
+                        (unit_positions.get(source_id), unit_positions.get(target_id))
+                    {
+                        let c = egui::Color32::from_rgba_premultiplied(
+                            color.r(),
+                            color.g(),
+                            color.b(),
+                            alpha,
+                        );
+                        painter.line_segment([from, to], egui::Stroke::new(2.0, c));
+                        // Label at midpoint
+                        let mid = egui::pos2((from.x + to.x) * 0.5, (from.y + to.y) * 0.5);
+                        painter.text(
+                            mid,
+                            egui::Align2::CENTER_CENTER,
+                            label,
+                            egui::FontId::proportional(16.0),
+                            c,
+                        );
                     }
-                    if state.log.is_empty() {
-                        ui.colored_label(egui::Color32::GRAY, "Press ▶ Play to start...");
+                }
+                EffectKind::Popup {
+                    unit_id,
+                    text,
+                    color,
+                } => {
+                    if let Some(&pos) = unit_positions.get(unit_id) {
+                        let c = egui::Color32::from_rgba_premultiplied(
+                            color.r(),
+                            color.g(),
+                            color.b(),
+                            alpha,
+                        );
+                        let offset_y = -unit_size * 0.5 - progress * 20.0;
+                        painter.text(
+                            egui::pos2(pos.x, pos.y + offset_y),
+                            egui::Align2::CENTER_CENTER,
+                            text,
+                            egui::FontId::proportional(18.0),
+                            c,
+                        );
                     }
-                });
-        });
+                }
+                EffectKind::Flash { unit_id } => {
+                    if let Some(&pos) = unit_positions.get(unit_id) {
+                        let a = (alpha as f32 * 0.4) as u8;
+                        painter.circle_filled(
+                            pos,
+                            unit_size * 0.5,
+                            egui::Color32::from_rgba_premultiplied(255, 255, 255, a),
+                        );
+                    }
+                }
+                EffectKind::Card { text, color } => {
+                    if text.is_empty() {
+                        continue;
+                    }
+                    let c = egui::Color32::from_rgba_premultiplied(
+                        color.r(),
+                        color.g(),
+                        color.b(),
+                        alpha,
+                    );
+                    let card_y = mid_y - 10.0 + progress * 5.0;
+                    painter.text(
+                        egui::pos2(avail.center().x, card_y),
+                        egui::Align2::CENTER_CENTER,
+                        text,
+                        egui::FontId::proportional(16.0),
+                        c,
+                    );
+                }
+            }
+        }
     });
-}
-
-fn render_unit(ui: &mut egui::Ui, unit: &BattleUnitVisual, center: egui::Pos2, size: f32) {
-    // Dead units fade: alpha goes 255→30 as death_timer goes 0→1
-    let alpha = if unit.alive {
-        255u8
-    } else {
-        (255.0 * (1.0 - unit.death_timer * 0.88)).max(30.0) as u8
-    };
-
-    // Flash effect: blend toward white based on flash_timer
-    let flash = (unit.flash_timer / 0.3).clamp(0.0, 1.0);
-    let r = ((unit.color.r() as f32) * (1.0 - flash) + 255.0 * flash) as u8;
-    let g = ((unit.color.g() as f32) * (1.0 - flash) + 255.0 * flash) as u8;
-    let b = ((unit.color.b() as f32) * (1.0 - flash) + 255.0 * flash) as u8;
-    let color = egui::Color32::from_rgba_premultiplied(r, g, b, alpha);
-
-    // Dead units shrink
-    let actual_size = if unit.alive {
-        size
-    } else {
-        size * (1.0 - unit.death_timer * 0.5).max(0.3)
-    };
-    let rect = egui::Rect::from_center_size(center, egui::vec2(actual_size, actual_size));
-
-    paint_default_unit(rect, color, unit.hp, unit.pwr, unit.dmg, &unit.name, ui);
-
-    // Damage popup
-    if let Some((amount, timer)) = unit.damage_popup {
-        let popup_y = center.y - size * 0.5 - (0.5 - timer) * 40.0;
-        let popup_alpha = (timer * 2.0 * 255.0).min(255.0) as u8;
-        ui.painter().text(
-            egui::pos2(center.x, popup_y),
-            egui::Align2::CENTER_CENTER,
-            format!("-{}", amount),
-            egui::FontId::proportional(size * 0.25),
-            egui::Color32::from_rgba_premultiplied(255, 80, 80, popup_alpha),
-        );
-    }
-
-    // Heal popup
-    if let Some((amount, timer)) = unit.heal_popup {
-        let popup_y = center.y - size * 0.5 - (0.5 - timer) * 40.0;
-        let popup_alpha = (timer * 2.0 * 255.0).min(255.0) as u8;
-        ui.painter().text(
-            egui::pos2(center.x, popup_y),
-            egui::Align2::CENTER_CENTER,
-            format!("+{}", amount),
-            egui::FontId::proportional(size * 0.25),
-            egui::Color32::from_rgba_premultiplied(80, 255, 80, popup_alpha),
-        );
-    }
 }
