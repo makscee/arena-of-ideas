@@ -1,0 +1,12 @@
+[application]
+name = "arena-of-ideas"
+
+[web.app]
+title = "Arena of Ideas - Battle Viewer"
+
+[web.watcher]
+reload_html = true
+watch_path = ["src", "style"]
+
+[web.resource]
+style = ["style/main.css"]
