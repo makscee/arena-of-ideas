@@ -4,3 +4,4 @@ ArenaOfIdeas.*
 *.code-workspace
 flamegraph*
 screenshots/
+web/dist/
