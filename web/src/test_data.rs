@@ -44,47 +44,147 @@ pub fn sample_battle() -> BattleResult {
         turns: 4,
         actions: vec![
             // Spawns
-            Spawn { unit: 1, slot: 0, side: BattleSide::Left },
-            Spawn { unit: 2, slot: 1, side: BattleSide::Left },
-            Spawn { unit: 3, slot: 2, side: BattleSide::Left },
-            Spawn { unit: 4, slot: 0, side: BattleSide::Right },
-            Spawn { unit: 5, slot: 1, side: BattleSide::Right },
-            Spawn { unit: 6, slot: 2, side: BattleSide::Right },
+            Spawn {
+                unit: 1,
+                slot: 0,
+                side: BattleSide::Left,
+            },
+            Spawn {
+                unit: 2,
+                slot: 1,
+                side: BattleSide::Left,
+            },
+            Spawn {
+                unit: 3,
+                slot: 2,
+                side: BattleSide::Left,
+            },
+            Spawn {
+                unit: 4,
+                slot: 0,
+                side: BattleSide::Right,
+            },
+            Spawn {
+                unit: 5,
+                slot: 1,
+                side: BattleSide::Right,
+            },
+            Spawn {
+                unit: 6,
+                slot: 2,
+                side: BattleSide::Right,
+            },
             // Turn 1
-            AbilityUsed { source: 4, ability_name: "Frost Nova".into() },
-            Damage { source: 4, target: 1, amount: 3 },
+            AbilityUsed {
+                source: 4,
+                ability_name: "Frost Nova".into(),
+            },
+            Damage {
+                source: 4,
+                target: 1,
+                amount: 3,
+            },
             Wait { seconds: 0.3 },
-            AbilityUsed { source: 1, ability_name: "Flame Burst".into() },
-            Damage { source: 1, target: 4, amount: 4 },
+            AbilityUsed {
+                source: 1,
+                ability_name: "Flame Burst".into(),
+            },
+            Damage {
+                source: 1,
+                target: 4,
+                amount: 4,
+            },
             Wait { seconds: 0.3 },
             // Strike phase
-            Damage { source: 1, target: 4, amount: 4 },
-            StatChange { unit: 1, stat: StatKind::Pwr, delta: 1 },
-            Damage { source: 4, target: 1, amount: 5 },
+            Damage {
+                source: 1,
+                target: 4,
+                amount: 4,
+            },
+            StatChange {
+                unit: 1,
+                stat: StatKind::Pwr,
+                delta: 1,
+            },
+            Damage {
+                source: 4,
+                target: 1,
+                amount: 5,
+            },
             Wait { seconds: 0.5 },
             // Turn 2
-            AbilityUsed { source: 2, ability_name: "Shadow Bolt".into() },
-            Damage { source: 2, target: 5, amount: 6 },
-            Heal { source: 2, target: 2, amount: 2 },
+            AbilityUsed {
+                source: 2,
+                ability_name: "Shadow Bolt".into(),
+            },
+            Damage {
+                source: 2,
+                target: 5,
+                amount: 6,
+            },
+            Heal {
+                source: 2,
+                target: 2,
+                amount: 2,
+            },
             Wait { seconds: 0.3 },
-            Damage { source: 5, target: 2, amount: 7 },
-            Damage { source: 2, target: 5, amount: 6 },
+            Damage {
+                source: 5,
+                target: 2,
+                amount: 7,
+            },
+            Damage {
+                source: 2,
+                target: 5,
+                amount: 6,
+            },
             Death { unit: 5 },
             Wait { seconds: 0.5 },
             // Turn 3
-            Damage { source: 1, target: 6, amount: 5 },
-            AbilityUsed { source: 6, ability_name: "Earthquake".into() },
-            Damage { source: 6, target: 1, amount: 2 },
-            Damage { source: 6, target: 2, amount: 2 },
-            Damage { source: 6, target: 3, amount: 2 },
+            Damage {
+                source: 1,
+                target: 6,
+                amount: 5,
+            },
+            AbilityUsed {
+                source: 6,
+                ability_name: "Earthquake".into(),
+            },
+            Damage {
+                source: 6,
+                target: 1,
+                amount: 2,
+            },
+            Damage {
+                source: 6,
+                target: 2,
+                amount: 2,
+            },
+            Damage {
+                source: 6,
+                target: 3,
+                amount: 2,
+            },
             Wait { seconds: 0.3 },
-            Damage { source: 3, target: 6, amount: 3 },
+            Damage {
+                source: 3,
+                target: 6,
+                amount: 3,
+            },
             Death { unit: 4 },
             Wait { seconds: 0.5 },
             // Turn 4
             Fatigue { amount: 1 },
-            Damage { source: 1, target: 6, amount: 5 },
-            Damage { source: 3, target: 6, amount: 3 },
+            Damage {
+                source: 1,
+                target: 6,
+                amount: 5,
+            },
+            Damage {
+                source: 3,
+                target: 6,
+                amount: 3,
+            },
             Death { unit: 6 },
         ],
     }

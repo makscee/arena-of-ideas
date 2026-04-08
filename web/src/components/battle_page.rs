@@ -1,9 +1,9 @@
 use dioxus::prelude::*;
 
-use crate::state::BattlePlaybackState;
 use super::action_log::ActionLog;
 use super::controls::Controls;
 use super::unit_card::UnitCard;
+use crate::state::BattlePlaybackState;
 
 #[component]
 pub fn BattlePage(playback: Signal<BattlePlaybackState>) -> Element {

@@ -31,7 +31,11 @@ fn render_action_card(action: &BattleAction, state: &BattlePlaybackState) -> Ele
                 }
             }
         }
-        BattleAction::Damage { source, target, amount } => {
+        BattleAction::Damage {
+            source,
+            target,
+            amount,
+        } => {
             let src = state.unit_name(*source);
             let tgt = state.unit_name(*target);
             rsx! {
@@ -44,7 +48,11 @@ fn render_action_card(action: &BattleAction, state: &BattlePlaybackState) -> Ele
                 }
             }
         }
-        BattleAction::Heal { source, target, amount } => {
+        BattleAction::Heal {
+            source,
+            target,
+            amount,
+        } => {
             let src = state.unit_name(*source);
             let tgt = state.unit_name(*target);
             rsx! {
@@ -66,7 +74,10 @@ fn render_action_card(action: &BattleAction, state: &BattlePlaybackState) -> Ele
                 }
             }
         }
-        BattleAction::AbilityUsed { source, ability_name } => {
+        BattleAction::AbilityUsed {
+            source,
+            ability_name,
+        } => {
             let name = state.unit_name(*source);
             rsx! {
                 div { class: "action-card ability",

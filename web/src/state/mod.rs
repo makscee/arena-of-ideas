@@ -157,7 +157,10 @@ impl BattlePlaybackState {
     }
 
     /// Get teams as (left, right) sorted by slot.
-    pub fn teams(&self, snaps: &HashMap<u64, UnitSnapshot>) -> (Vec<UnitSnapshot>, Vec<UnitSnapshot>) {
+    pub fn teams(
+        &self,
+        snaps: &HashMap<u64, UnitSnapshot>,
+    ) -> (Vec<UnitSnapshot>, Vec<UnitSnapshot>) {
         let mut left: Vec<_> = snaps
             .values()
             .filter(|s| s.side == BattleSide::Left)
@@ -174,7 +177,10 @@ impl BattlePlaybackState {
     }
 
     /// Get the first alive unit on each side (the active fighters).
-    pub fn active_fighters(&self, snaps: &HashMap<u64, UnitSnapshot>) -> (Option<u64>, Option<u64>) {
+    pub fn active_fighters(
+        &self,
+        snaps: &HashMap<u64, UnitSnapshot>,
+    ) -> (Option<u64>, Option<u64>) {
         let (left, right) = self.teams(snaps);
         let left_active = left.iter().find(|s| s.alive).map(|s| s.id);
         let right_active = right.iter().find(|s| s.alive).map(|s| s.id);
