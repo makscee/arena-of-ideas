@@ -33,28 +33,15 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
-          targets: wasm32-unknown-unknown
-
-      - name: Install Linux dependencies
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
 
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-      - name: Build shared + client
-        run: cargo build -p shared -p client
-
-      - name: Build server (WASM)
-        run: cargo build -p server --target wasm32-unknown-unknown
+      - name: Build shared + web
+        run: cargo build -p shared -p web
 
       - name: Run unit tests
-        run: cargo test -p shared -p client --lib
+        run: cargo test -p shared -p web --lib
 
-      - name: Build client for WASM
-        run: cargo build -p client --target wasm32-unknown-unknown
-
-      - name: Clippy (shared + client)
-        run: cargo clippy -p shared -p client -- -W clippy::all
-
-      - name: Clippy (server)
-        run: cargo clippy -p server --target wasm32-unknown-unknown -- -W clippy::all
+      - name: Clippy (shared + web)
+        run: cargo clippy -p shared -p web -- -W clippy::all
