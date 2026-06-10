@@ -3,8 +3,12 @@
 export const KERNEL_VERSION = "5.0.0-alpha.0";
 
 export { battle, toJSONL, winnerOf, TEAM_SIZE, FATIGUE_START, FATIGUE_RAMP, TURN_CAP } from "./battle.js";
-export { initRun, buy, reroll, reorder, fight, applyDecision, playRun, runToJSONL, toBattleTeam, InvalidDecisionError } from "./run.js";
-export type { RunInput, RunState, RunUnit, RunDecision, RunEvent, RunEventBody, RunEventType } from "./run.js";
+export { initRun, buy, reroll, reorder, fight, ladderFight, applyDecision, playRun, runToJSONL, toBattleTeam, InvalidDecisionError } from "./run.js";
+export type { RunInput, RunState, RunStatus, RunEndReason, RunUnit, RunDecision, RunEvent, RunEventBody, RunEventType } from "./run.js";
+// The file backing (FileLadderStore) lives in ladder-file.ts, off this index:
+// it needs node:fs and the browser client imports this module.
+export { InMemoryLadderStore, openLadder, BOOTSTRAP_RUN_ID } from "./ladder.js";
+export type { LadderStore, TeamSnapshot } from "./ladder.js";
 export * from "./tunables.js";
 export { sweep, sweepSeeds, sweepOutcome, summarizeSweep } from "./sweep.js";
 export type { SweepInput, SweepOutcome, SweepStats, SweepResult } from "./sweep.js";
@@ -13,7 +17,7 @@ export { displayNames, ancestry, abilityRefDesc, shortDesc, deathCauseChain } fr
 export type { NameOf } from "./trace.js";
 export { boardAt } from "./board.js";
 export type { BoardState, BoardUnit } from "./board.js";
-export { assertValidContent, validateTeam, validateRegistry, ValidationError } from "./validate.js";
+export { assertValidContent, assertValidPool, validateTeam, validatePool, validateRegistry, ValidationError } from "./validate.js";
 export type { ValidationIssue } from "./validate.js";
 export type * from "./types.js";
 export * from "./content/stress.js";

@@ -67,6 +67,34 @@ export function validateTeam(units: unknown, registry: StatusRegistry, label = "
   return issues;
 }
 
+/** Validate a draft pool: every unit content-valid (the same per-unit gate as
+ * validateTeam, without its 1..TEAM_SIZE cap — a pool is a market, not a line)
+ * and every name unique, because the shop stacks copies by name: two pool
+ * units sharing a name would silently stack into each other on buy. */
+export function validatePool(units: unknown, registry: StatusRegistry, label = "pool"): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  if (!Array.isArray(units)) {
+    issues.push({ path: label, message: "expected an array of units" });
+    return issues;
+  }
+  if (units.length === 0) {
+    issues.push({ path: label, message: "a pool needs ≥1 units" });
+  }
+  const seen = new Map<string, number>();
+  units.forEach((u, i) => {
+    validateUnit(u, registry, `${label}[${i}]`, issues);
+    const name = isObject(u) && typeof u["name"] === "string" ? u["name"] : undefined;
+    if (name === undefined) return;
+    const first = seen.get(name);
+    if (first !== undefined) {
+      issues.push({ path: `${label}[${i}].name`, message: `duplicate unit name "${name}" (also at ${label}[${first}]) — the shop stacks copies by name, so these would silently merge` });
+    } else {
+      seen.set(name, i);
+    }
+  });
+  return issues;
+}
+
 /** Validate the status registry itself — each StatusDef is content and can be just as typo'd. */
 export function validateRegistry(registry: StatusRegistry, label = "registry"): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
@@ -101,6 +129,12 @@ export function validateRegistry(registry: StatusRegistry, label = "registry"): 
 /** Throw a ValidationError (listing every issue) if the team or registry is invalid. */
 export function assertValidContent(units: unknown, registry: StatusRegistry, label = "team"): asserts units is UnitDef[] {
   const issues = [...validateRegistry(registry), ...validateTeam(units, registry, label)];
+  if (issues.length > 0) throw new ValidationError(issues);
+}
+
+/** The assertValidContent of pools — same gate, validatePool's rules. */
+export function assertValidPool(units: unknown, registry: StatusRegistry, label = "pool"): asserts units is UnitDef[] {
+  const issues = [...validateRegistry(registry), ...validatePool(units, registry, label)];
   if (issues.length > 0) throw new ValidationError(issues);
 }
 

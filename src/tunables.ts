@@ -1,7 +1,10 @@
-// Run-economy tunables — every number in the shop/run layer, in one place.
+// Run/ladder tunables — every knob in the shop/run/ladder layer, in one place.
 // All of these are sim-tunable knobs, not design pins (SPEC §6 spirit): the
 // simulation farm tunes them; content and the run kernel never hardcode them.
 // Battle-side constants (TEAM_SIZE, FATIGUE_*, TURN_CAP) stay in battle.ts.
+
+import { Necromancer, Silencer, Summoner, Venomancer } from "./content/stress.js";
+import type { UnitDef } from "./types.js";
 
 /** Gold in hand when a run begins — round 1's shopping budget (SAP-like 10). */
 export const STARTING_GOLD = 10;
@@ -35,6 +38,16 @@ export const STACK_THRESHOLD = 3;
 
 /** Fight losses a run survives; ending the run at 0 is the ladder's rule (slice 2). */
 export const STARTING_LIVES = 5;
+
+/** Teams seeding round 1 of an empty ladder (openLadder), so a first-ever run
+ * has opponents. Composed from the shipped stress units (SPEC §7) the way the
+ * example team files are; composition is a knob like any other. Their only
+ * status reference is Venomancer's Poison, so any registry containing the
+ * stress statuses (the CLI and tests use stressRegistry) fields them. */
+export const BOOTSTRAP_TEAMS: readonly UnitDef[][] = [
+  [Venomancer, Summoner, { name: "Brawler", base: { hp: 12, pwr: 2 } }],
+  [Silencer, Necromancer, { name: "Bulwark", base: { hp: 10, pwr: 3 } }],
+];
 
 /** Base hp gained per level-up. */
 export const LEVEL_HP_GROWTH = 2;

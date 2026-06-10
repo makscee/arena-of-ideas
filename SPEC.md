@@ -168,7 +168,6 @@ Ten abilities, shipped **as DSL data with behavior tests**. The kernel passes wh
 
 ## 8. Out of scope for v1 (pointers, not promises)
 
-- **Run/shop layer:** gold carryover + round income, buy/reroll, 3–6 offers, duplicate-stacking → level-up → fusion eligibility.
 - **Fusion & the budget:** fused units compose any subset of parents' parts *within a level-grown budget*; one pricing formula serves the creation gate and fusion alike; multi-when/multi-selector priced superlinearly (their value is multiplicative).
 - **Creation pipeline:** LLM text→parts interface; sim gate (candidate parts vs live meta, win-rate band); vote gate (fun/flavor only).
 - **Client:** a replay renderer over the event log; chosen last.
@@ -186,3 +185,15 @@ In-code decisions made during the stress build of `src/battle.ts`; recorded here
 - **Silence scope:** disables a unit's own abilities (including statuses) but not its basic kernel strike; statuses applied *after* the silence event still function (Silence is a point-in-time effect, not an ongoing shield against future application).
 - **Pair memory survives death and resurrection:** first-striker rolls are keyed to the (a, b) pair; a resurrected unit rejoins with its prior rolls intact (§4).
 - **Kernel passed:** all 10 stress abilities expressible as DSL data; no unresolved kernel-breakers remain.
+
+## 10. Run & ladder layer (normative)
+
+The layer above battle(): `src/run.ts` (transitions), `src/ladder.ts` (the storage boundary), numbers in `src/tunables.ts`.
+
+- **Decision-sourced determinism [PINNED].** A run is `seed + decision sequence → RunState + run log`; every transition (initRun/buy/reroll/reorder/fight/ladderFight) is a pure function of its inputs, battle seeds come off the run's one RNG stream, and the run log is byte-comparable JSONL like the battle log. A ladder run is reproducible from (seed, decisions, ladder contents). No wall-clock reads anywhere in the kernel; a timestamp, if wanted, comes in as data.
+- **The ladder is built out of played runs [PINNED, v3 arc].** A Ladder holds, per round, a pool of team snapshots (ghosts) plus one champion spot, behind the `LadderStore` interface (in-memory and file backings); the kernel logic depends only on the interface.
+- **Snapshot-before-fight:** a run fighting at round R first ghosts its fielded team into the round-R pool — before any outcome is known. Ghosts persist after the run ends.
+- **Opponent draw:** one seeded draw, uniform over the round-R pool minus the run's own ghosts — deterministic given the run's RNG state and pool contents. Every drawn team passes the content gate, like any battle input.
+- **Champion rule:** an empty draw means the run has outrun every ghost at this round and challenges the champion. A win — or a vacant spot — crowns the fielded team: the run ends `crown`, and the spot persists across runs. A dethroned champion loses only the spot; its ghosts stay. A lost challenge is a normal loss.
+- **Run-end states:** a loss costs a life; at 0 lives the run ends `out-of-lives`. An over run rejects every further decision, loudly.
+- **Bootstrap:** an empty ladder seeds round 1 from the shipped bootstrap teams (tunables), so a first-ever run has opponents. A played-on ladder can never have an empty round-1 pool — snapshot-before-fight fills it.
