@@ -115,6 +115,8 @@ Grows without bound → battles end. TURN_CAP is the hard backstop → draw.
 
 end: a team has no living units → BattleEnd {winner};
 both empty simultaneously, or TURN_CAP reached → BattleEnd {draw}.
+BattleEnd {turns} = the turn the battle was decided on (the last turn that
+started); 0 if it was decided in the BattleStart cascade, before turn 1.
 ```
 
 - **Death and line collapse:** when a `Death` event applies, the unit leaves the line immediately and the team compacts forward (positions shift). Pairings are re-evaluated next strike; a fresh pairing rolls `PairFaced`.

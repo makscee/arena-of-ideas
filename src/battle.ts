@@ -103,8 +103,10 @@ class Engine {
     if (bs) this.applyInitialStatuses(bs.id);
     this.settle();
 
+    let turns = 0; // the turn the battle was decided on; 0 = decided before turn 1
     for (this.turn = 1; this.turn <= TURN_CAP; this.turn++) {
       if (!this.bothAlive()) break;
+      turns = this.turn;
       const ts = this.propose({ type: "TurnStart" }, null, "kernel");
       this.settle();
       if (!ts || !this.bothAlive()) break;
@@ -138,7 +140,8 @@ class Engine {
     const aAlive = this.lines.A.length > 0;
     const bAlive = this.lines.B.length > 0;
     const winner: Side | "draw" = aAlive === bAlive ? "draw" : aAlive ? "A" : "B";
-    this.propose({ type: "BattleEnd", winner, turns: Math.min(this.turn, TURN_CAP) }, null, "kernel");
+    this.turn = turns; // BattleEnd is stamped with the deciding turn, not the loop's overshoot
+    this.propose({ type: "BattleEnd", winner, turns }, null, "kernel");
     return this.log;
   }
 

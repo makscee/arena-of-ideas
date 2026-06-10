@@ -138,6 +138,29 @@ describe("alternation", () => {
 });
 
 // ---------------------------------------------------------------------------
+// 3b. Turn count: BattleEnd reports the deciding turn, not the loop's overshoot
+// ---------------------------------------------------------------------------
+
+describe("turn count", () => {
+  test("BattleEnd.turns equals the turn the last Death happened on", () => {
+    // Knight needs 4 hits, Brute needs 4 hits; with alternating strikes the
+    // first-striker kills on its 4th hit — turn 4, whoever wins the coin.
+    const teamA: UnitDef[] = [vanilla("Knight", 10, 2)];
+    const teamB: UnitDef[] = [vanilla("Brute", 8, 3)];
+    for (let seed = 1; seed <= 5; seed++) {
+      const log = runBattle({ teamA, teamB, seed });
+      const end = ofType(log, "BattleEnd")[0]!;
+      const lastDeath = ofType(log, "Death").pop()!;
+      const lastTurnStart = ofType(log, "TurnStart").pop()!;
+      expect(end.turns).toBe(4);
+      expect(end.turns).toBe(lastDeath.turn);
+      expect(end.turns).toBe(lastTurnStart.turn);
+      expect(end.turn).toBe(end.turns); // the event itself is stamped with the deciding turn
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // 4. Fatigue / draw
 // ---------------------------------------------------------------------------
 
