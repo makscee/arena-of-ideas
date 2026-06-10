@@ -18,6 +18,8 @@
  *   Statuses referenced in units[].statuses must be present in the stress
  *   registry; for custom status sets pass a registry via the API directly.
  *   The CLI always uses the stressRegistry exported from src/content/stress.ts.
+ *   Team content runs through the validator (src/validate.ts) before battle():
+ *   unknown kinds, wrong-context parts, and dangling references fail loudly.
  *
  * All logic below (except the top-level main() entrypoint) is exported for
  * unit testing without spawning a subprocess.
@@ -26,6 +28,7 @@
 import { readFileSync } from "node:fs";
 import { battle, renderReplay, winnerOf } from "./index.js";
 import { stressRegistry } from "./content/stress.js";
+import { assertValidContent } from "./validate.js";
 import type { UnitDef } from "./types.js";
 import type { Side } from "./types.js";
 
@@ -65,7 +68,7 @@ export function validateTeamFile(data: unknown, label = "<input>"): TeamFile {
   if (units.length === 0 || units.length > 5) {
     throw new Error(`Team file ${label}: "units" must have 1..5 entries, got ${units.length}`);
   }
-  // Light structural check — the engine will throw on deeper schema errors.
+  // Light structural check first (readable errors for malformed files)…
   for (let i = 0; i < units.length; i++) {
     const u = units[i] as Record<string, unknown>;
     if (typeof u !== "object" || u === null) {
@@ -78,6 +81,9 @@ export function validateTeamFile(data: unknown, label = "<input>"): TeamFile {
       throw new Error(`Team file ${label}: units[${i}].base must be an object`);
     }
   }
+  // …then the content validator: a typo'd part would be silently inert in
+  // battle(), so it must fail loudly here, before the kernel ever sees it.
+  assertValidContent(units, stressRegistry, `${label} units`);
   return { units: units as UnitDef[] };
 }
 

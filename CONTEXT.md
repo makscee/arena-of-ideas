@@ -197,8 +197,12 @@ CLI sweep mode: run the same two teams across seeds 0..N−1 and report the win-
 _Avoid_: monte carlo, batch sim
 
 **Team file**:
-The CLI's input format: JSON `{ "units": UnitDef[] }`, 1–5 units; statuses resolve via the stress registry.
+The CLI's input format: JSON `{ "units": UnitDef[] }`, 1–5 units; statuses resolve via the stress registry. Runs through the validator before battle().
 _Avoid_: roster file, deck
+
+**Validator**:
+The content gate in front of the kernel (`src/validate.ts`): rejects unknown trigger/effect/selector kinds, wrong-context parts (an atom whose ability has no when it could fire in), malformed status bundles, and dangling references — with a path-addressed error, before battle() ever sees them. Without it a typo'd creation is silently inert. The embryo of the sim-gate content linter.
+_Avoid_: schema checker, linter (the sim gate is the linter; this is its content-validity layer)
 
 **Stress set**:
 The kernel acceptance content — the abilities in `src/content/stress.ts` (Strength, Vitality, Curse, Poison, Shield, Freeze, Blessing, Summon, Silence, Resurrect) shipped as DSL data with behavior tests. The kernel passes when all are expressible; where one isn't, the kernel grows consciously.
