@@ -2,46 +2,11 @@
 // It owns zero rules: pick teams, pick a seed, call battle(), hand the event
 // log to the visual viewer and the text replay. Both views read the same log.
 
-import {
-  KERNEL_VERSION,
-  battle,
-  renderReplay,
-  assertValidContent,
-  stressRegistry,
-  validateTeam,
-  Summoner,
-  Silencer,
-  Necromancer,
-  Venomancer,
-  type UnitDef,
-} from "../src/index.js";
-import teamAlphaJson from "../examples/team-alpha.json";
-import teamBetaJson from "../examples/team-beta.json";
+import { KERNEL_VERSION, battle, renderReplay, stressRegistry, type UnitDef } from "../src/index.js";
+import { resolveUnits, teamOptions } from "./catalogue.js";
 import { createViewer } from "./viewer.js";
 import { createEditor } from "./editor.js";
-import { loadTeams } from "./teams.js";
-
-// ---------------------------------------------------------------------------
-// Team catalogue — the shipped example files plus a squad of stress-set units.
-// Everything goes through the validator before battle(), same as the CLI.
-// Edited teams (localStorage) appear alongside, re-validated at run time —
-// an invalid team can be edited but never reaches battle().
-// ---------------------------------------------------------------------------
-
-function loadTeam(name: string, units: unknown): UnitDef[] {
-  assertValidContent(units, stressRegistry, name);
-  return units;
-}
-
-const TEAMS: Record<string, UnitDef[]> = {
-  "Team Alpha (aggro venom)": loadTeam("Team Alpha", teamAlphaJson.units),
-  "Team Beta (control/sustain)": loadTeam("Team Beta", teamBetaJson.units),
-  "Stress Squad (kernel units)": loadTeam("Stress Squad", [Venomancer, Summoner, Silencer, Necromancer]),
-};
-
-// Picker values are namespaced so a saved team may share a shipped team's name.
-const SHIPPED_PREFIX = "shipped:";
-const EDITED_PREFIX = "edited:";
+import { createGauntlet } from "./gauntlet.js";
 
 // ---------------------------------------------------------------------------
 // DOM wiring
@@ -79,20 +44,17 @@ const viewer = createViewer({
 });
 
 function fillTeamPickers(): void {
+  const options = teamOptions(); // invalid saved teams come pre-marked in the label
   for (const select of [teamASelect, teamBSelect]) {
     const kept = select.value; // keep the selection across editor saves when possible
     select.innerHTML = "";
     const shipped = document.createElement("optgroup");
     shipped.label = "shipped";
-    for (const name of Object.keys(TEAMS)) shipped.append(new Option(name, SHIPPED_PREFIX + name));
+    const edited = document.createElement("optgroup");
+    edited.label = "edited";
+    for (const opt of options) (opt.shipped ? shipped : edited).append(new Option(opt.label, opt.value));
     select.append(shipped);
-    const editedNames = Object.keys(loadTeams()).sort();
-    if (editedNames.length > 0) {
-      const edited = document.createElement("optgroup");
-      edited.label = "edited";
-      for (const name of editedNames) edited.append(new Option(name, EDITED_PREFIX + name));
-      select.append(edited);
-    }
+    if (edited.children.length > 0) select.append(edited);
     if ([...select.options].some((o) => o.value === kept)) select.value = kept;
   }
 }
@@ -139,28 +101,18 @@ function showTab(which: "board" | "text"): void {
 tabBoard.addEventListener("click", () => showTab("board"));
 tabText.addEventListener("click", () => showTab("text"));
 
-/** Resolve a picker value to units. Edited teams are re-validated here —
- * the gate before battle(), same role the CLI loader plays. */
+/** Resolve a picker value to units via the catalogue's gate; a failure
+ * surfaces as the run error (the validator's own message for saved teams). */
 function resolveTeam(value: string): UnitDef[] | null {
-  if (value.startsWith(SHIPPED_PREFIX)) return TEAMS[value.slice(SHIPPED_PREFIX.length)] ?? null;
-  const name = value.slice(EDITED_PREFIX.length);
-  const units = loadTeams()[name];
-  if (!units) {
-    flagRun(`Team "${name}" is no longer saved.`);
+  const resolved = resolveUnits(value);
+  if ("error" in resolved) {
+    flagRun(resolved.error);
     return null;
   }
-  const issues = validateTeam(units, stressRegistry, name);
-  if (issues.length > 0) {
-    flagRun(
-      `Team "${name}" is invalid (${issues.length} issue${issues.length === 1 ? "" : "s"}) — fix it in the editor. First: ${issues[0]!.path}: ${issues[0]!.message}`,
-    );
-    return null;
-  }
-  return units;
+  return resolved.units;
 }
 
-form.addEventListener("submit", (event) => {
-  event.preventDefault();
+function runFromControls(): void {
   clearRunFlag();
   const teamA = resolveTeam(teamASelect.value);
   const teamB = resolveTeam(teamBSelect.value);
@@ -184,27 +136,68 @@ form.addEventListener("submit", (event) => {
     replayBlock.textContent = `Battle failed: ${(err as Error).message}`;
     showTab("text");
   }
+}
+
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  runFromControls();
 });
 
 // ---------------------------------------------------------------------------
-// Views: battle (pickers + replay) and editor. The editor refreshes the
-// battle pickers on every persisted change, so edited teams are always live.
+// Views: battle (pickers + replay), gauntlet (win-rate sweeps), editor.
+// The editor refreshes both teams' pickers on every persisted change, so
+// edited teams are always live everywhere.
 // ---------------------------------------------------------------------------
 
-const battleView = el<HTMLElement>("battle-view");
-const editorView = el<HTMLElement>("editor-view");
-const viewBattle = el<HTMLButtonElement>("view-battle");
-const viewEditor = el<HTMLButtonElement>("view-editor");
+const views = {
+  battle: el<HTMLElement>("battle-view"),
+  gauntlet: el<HTMLElement>("gauntlet-view"),
+  editor: el<HTMLElement>("editor-view"),
+};
+const viewTabs = {
+  battle: el<HTMLButtonElement>("view-battle"),
+  gauntlet: el<HTMLButtonElement>("view-gauntlet"),
+  editor: el<HTMLButtonElement>("view-editor"),
+};
 
-function showView(which: "battle" | "editor"): void {
-  battleView.hidden = which !== "battle";
-  editorView.hidden = which !== "editor";
-  viewBattle.classList.toggle("active", which === "battle");
-  viewEditor.classList.toggle("active", which === "editor");
+function showView(which: keyof typeof views): void {
+  for (const key of Object.keys(views) as (keyof typeof views)[]) {
+    views[key].hidden = key !== which;
+    viewTabs[key].classList.toggle("active", key === which);
+  }
   if (which !== "battle") viewer.stop();
 }
-viewBattle.addEventListener("click", () => showView("battle"));
-viewEditor.addEventListener("click", () => showView("editor"));
+for (const key of Object.keys(viewTabs) as (keyof typeof viewTabs)[]) {
+  viewTabs[key].addEventListener("click", () => showView(key));
+}
+
+// Watch a gauntlet matchup: load it into the battle controls and run — the
+// viewer shows exactly the battle that produced that row's result.
+const gauntlet = createGauntlet(
+  {
+    form: el<HTMLFormElement>("gauntlet-controls"),
+    challenger: el<HTMLSelectElement>("g-challenger"),
+    seeds: el<HTMLInputElement>("g-seeds"),
+    includeSaved: el<HTMLInputElement>("g-include-saved"),
+    error: el<HTMLElement>("g-error"),
+    progress: el<HTMLElement>("g-progress"),
+    results: el<HTMLElement>("g-results"),
+    tableBody: el<HTMLElement>("g-rows"),
+    tableFoot: el<HTMLElement>("g-overall"),
+  },
+  (challengerValue, opponentValue, seed) => {
+    teamASelect.value = challengerValue;
+    teamBSelect.value = opponentValue;
+    seedInput.value = String(seed);
+    showView("battle");
+    runFromControls();
+  },
+);
+
+function onTeamsChanged(): void {
+  fillTeamPickers();
+  gauntlet.refresh();
+}
 
 createEditor(
   {
@@ -222,7 +215,7 @@ createEditor(
     issuesList: el<HTMLElement>("ed-issues"),
     importError: el<HTMLElement>("ed-import-error"),
   },
-  fillTeamPickers,
+  onTeamsChanged,
 );
 
 el<HTMLElement>("kernel-version").textContent = `kernel v${KERNEL_VERSION}`;

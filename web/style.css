@@ -589,8 +589,100 @@ button:disabled:hover {
   padding: 0 0.2rem;
 }
 
+/* ---------- gauntlet ----------
+   Same dark panel for controls; the results table is compact enough for
+   375px and gets a horizontal scroll as a last resort. */
+
+.g-blurb {
+  color: var(--dim);
+  font-size: 0.8rem;
+  margin: 0 0 0.75rem;
+}
+
+#gauntlet-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+#g-seeds {
+  width: 8rem;
+}
+
+.g-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+#g-run {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+#g-error {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--warn);
+  font-size: 0.8rem;
+}
+
+#g-progress {
+  color: var(--dim);
+  font-size: 0.8rem;
+  margin: 0 0 0.75rem;
+}
+
+#g-results {
+  overflow-x: auto;
+}
+
+#g-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+#g-table th,
+#g-table td {
+  text-align: left;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+#g-table th {
+  color: var(--dim);
+  font-weight: 400;
+}
+
+#g-table .g-name {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+#g-table tfoot td {
+  border-top: 2px solid var(--border);
+  border-bottom: none;
+  color: var(--accent);
+}
+
+.g-watch {
+  padding: 0.15rem 0.4rem;
+  font-size: 0.75rem;
+}
+
 @media (max-width: 480px) {
-  #controls {
+  #controls,
+  #gauntlet-controls {
     flex-direction: column;
     align-items: stretch;
   }

@@ -14,6 +14,7 @@
 
       <nav id="views" role="tablist">
         <button type="button" id="view-battle" class="tab active">battle</button>
+        <button type="button" id="view-gauntlet" class="tab">gauntlet</button>
         <button type="button" id="view-editor" class="tab">editor</button>
       </nav>
 
@@ -68,6 +69,42 @@
 
         <pre id="replay" hidden></pre>
       </section>
+      </section>
+
+      <section id="gauntlet-view" hidden>
+        <p class="g-blurb">A matchup is a distribution: each row sweeps seeds 0..N−1 and counts wins.</p>
+        <form id="gauntlet-controls">
+          <label>
+            Challenger
+            <select id="g-challenger"></select>
+          </label>
+          <label>
+            Seeds per matchup
+            <input id="g-seeds" type="number" value="50" min="1" step="1" />
+          </label>
+          <label class="g-check">
+            <input id="g-include-saved" type="checkbox" />
+            also fight saved teams
+          </label>
+          <button type="submit" id="g-run">Run gauntlet</button>
+          <p id="g-error" role="alert" hidden></p>
+        </form>
+        <p id="g-progress" role="status" hidden></p>
+        <div id="g-results" hidden>
+          <table id="g-table">
+            <thead>
+              <tr>
+                <th>opponent</th>
+                <th title="challenger wins / losses / draws">W/L/D</th>
+                <th>win&nbsp;rate</th>
+                <th title="average turns per battle">avg&nbsp;turns</th>
+                <th>watch</th>
+              </tr>
+            </thead>
+            <tbody id="g-rows"></tbody>
+            <tfoot id="g-overall"></tfoot>
+          </table>
+        </div>
       </section>
 
       <section id="editor-view" hidden>
