@@ -9,6 +9,7 @@
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
+import { assertSeqInOrder, jsonClone } from "./ladder.js";
 import type { LadderStore, TeamSnapshot } from "./ladder.js";
 
 /** The on-disk shape — pools keyed by round number (JSON keys are strings). */
@@ -34,7 +35,12 @@ export class FileLadderStore implements LadderStore {
   }
 
   addSnapshot(snap: TeamSnapshot): void {
-    (this.data.pools[String(snap.round)] ??= []).push(snap);
+    const pool = (this.data.pools[String(snap.round)] ??= []);
+    assertSeqInOrder(snap, pool.length);
+    // Clone on write, like InMemoryLadderStore: holding the caller's object by
+    // reference would let a later mutation corrupt the stored ghost and the
+    // next persist would write the corruption to disk.
+    pool.push(jsonClone(snap));
     this.persist();
   }
 
@@ -43,7 +49,7 @@ export class FileLadderStore implements LadderStore {
   }
 
   setChampion(snap: TeamSnapshot): void {
-    this.data.champion = snap;
+    this.data.champion = jsonClone(snap);
     this.persist();
   }
 

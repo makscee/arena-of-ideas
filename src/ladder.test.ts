@@ -8,7 +8,7 @@ import type { LadderStore, TeamSnapshot } from "./ladder.js";
 import { FileLadderStore } from "./ladder-file.js";
 import { buy, fight, initRun, InvalidDecisionError, ladderFight, reorder, reroll, runToJSONL } from "./run.js";
 import type { RunEvent, RunInput, RunState } from "./run.js";
-import { BOOTSTRAP_TEAMS, STARTING_LIVES } from "./tunables.js";
+import { BOOTSTRAP_DEPTH, BOOTSTRAP_TEAMS, STARTING_LIVES } from "./tunables.js";
 import { ValidationError, validateTeam } from "./validate.js";
 import type { UnitDef } from "./types.js";
 
@@ -45,27 +45,38 @@ function playLadderRun(inp: RunInput, ladder: LadderStore): RunState {
 }
 
 function freshLadder(): LadderStore {
-  return openLadder(new InMemoryLadderStore());
+  return openLadder(new InMemoryLadderStore(), stressRegistry);
 }
 
 // ---------------------------------------------------------------------------
-// 1. Bootstrap: an empty ladder seeds round 1 from the shipped teams
+// 1. Bootstrap: an empty ladder seeds rounds 1..DEPTH from the shipped teams
 // ---------------------------------------------------------------------------
 
 describe("bootstrap", () => {
-  test("openLadder seeds round 1 of an empty ladder with valid bootstrap ghosts", () => {
-    const pool = freshLadder().poolAt(1);
-    expect(pool.length).toBe(BOOTSTRAP_TEAMS.length);
-    pool.forEach((g, i) => {
-      expect(g).toMatchObject({ runId: BOOTSTRAP_RUN_ID, round: 1, seq: i });
-      expect(validateTeam(g.team, stressRegistry)).toEqual([]); // a first run's opponents pass the gate
-    });
+  test("openLadder seeds rounds 1..BOOTSTRAP_DEPTH of an empty ladder with valid ghosts", () => {
+    const store = freshLadder();
+    for (let round = 1; round <= BOOTSTRAP_DEPTH; round++) {
+      const pool = store.poolAt(round);
+      expect(pool.length).toBe(BOOTSTRAP_TEAMS[round - 1]!.length);
+      pool.forEach((g, i) => {
+        expect(g).toMatchObject({ runId: BOOTSTRAP_RUN_ID, round, seq: i });
+        expect(validateTeam(g.team, stressRegistry)).toEqual([]); // a first run's opponents pass the gate
+      });
+    }
+    expect(store.poolAt(BOOTSTRAP_DEPTH + 1)).toEqual([]); // the climb ends at the vacant spot
   });
 
   test("a non-empty ladder is never reseeded", () => {
     const store = freshLadder();
-    openLadder(store);
-    expect(store.poolAt(1).length).toBe(BOOTSTRAP_TEAMS.length);
+    openLadder(store, stressRegistry);
+    expect(store.poolAt(1).length).toBe(BOOTSTRAP_TEAMS[0]!.length);
+  });
+
+  test("a bootstrap team failing the content gate fails at open, loudly", () => {
+    // An empty registry leaves Venomancer's Poison dangling — the gate must
+    // catch it at seed time, not seed-dependently mid-run on an unlucky draw.
+    expect(() => openLadder(new InMemoryLadderStore(), {})).toThrow(ValidationError);
+    expect(() => openLadder(new InMemoryLadderStore(), {})).toThrow(/bootstrap round 1 team 0/);
   });
 });
 
@@ -78,7 +89,7 @@ describe("snapshot-before-fight", () => {
     const store = freshLadder();
     const s = ladderFight(buy(initRun(input(7, "titan", TITAN)), 0), store);
     const ghost = store.poolAt(1).find((g) => g.runId === "titan")!;
-    expect(ghost).toMatchObject({ round: 1, seq: BOOTSTRAP_TEAMS.length });
+    expect(ghost).toMatchObject({ round: 1, seq: BOOTSTRAP_TEAMS[0]!.length });
     expect(ghost.team.map((u) => u.name)).toEqual(["Titan"]);
     // The log shows the order: Snapshotted, then the draw, then the fight.
     const types = s.log.map((e) => e.type);
@@ -122,7 +133,7 @@ describe("opponent draw", () => {
       const s = ladderFight(buy(initRun(input(seed, "self", TITAN)), 0), store);
       const drawn = ofType(s.log, "OpponentDrawn")[0]!;
       expect(drawn.opponent).toBe(BOOTSTRAP_RUN_ID);
-      expect(drawn.candidates).toBe(BOOTSTRAP_TEAMS.length); // 6 in the pool, own 4 excluded
+      expect(drawn.candidates).toBe(BOOTSTRAP_TEAMS[0]!.length); // 6 in the pool, own 4 excluded
     }
   });
 
@@ -173,13 +184,13 @@ describe("champion", () => {
   test("an empty pool with a vacant spot crowns the run outright", () => {
     const store = freshLadder();
     const s = playLadderRun(input(1, "titan", TITAN), store);
-    // Round 1 fought a bootstrap ghost; round 2's pool held only the run's
-    // own ghost, the spot was vacant — crowned without a champion fight.
-    expect(s).toMatchObject({ status: "over", endedBy: "crown", round: 2 });
+    // Rounds 1..DEPTH fought bootstrap ghosts; the next round's pool held only
+    // the run's own ghost, the spot was vacant — crowned without a champion fight.
+    expect(s).toMatchObject({ status: "over", endedBy: "crown", round: BOOTSTRAP_DEPTH + 1 });
     expect(ofType(s.log, "ChampionChallenged")).toEqual([]);
     expect(ofType(s.log, "Crowned")[0]).toMatchObject({ dethroned: null });
     expect(s.log[s.log.length - 1]).toMatchObject({ type: "RunEnded", reason: "crown" });
-    expect(store.champion()).toMatchObject({ runId: "titan", round: 2 });
+    expect(store.champion()).toMatchObject({ runId: "titan", round: BOOTSTRAP_DEPTH + 1 });
   });
 
   test("the champion persists across runs and falls only to a winner", () => {
@@ -196,23 +207,26 @@ describe("champion", () => {
 
   test("the dethroned champion's team stays in the pools as a ghost", () => {
     const store = freshLadder();
-    playLadderRun(input(1, "titan", TITAN), store);
+    const titan = playLadderRun(input(1, "titan", TITAN), store);
     playLadderRun(input(2, "goliath", GOLIATH), store);
-    const titanGhosts = [1, 2].flatMap((r) => store.poolAt(r).filter((g) => g.runId === "titan"));
-    expect(titanGhosts.length).toBe(2); // one per round it fought, crown round included
+    const rounds = Array.from({ length: titan.round }, (_, i) => i + 1);
+    const titanGhosts = rounds.flatMap((r) => store.poolAt(r).filter((g) => g.runId === "titan"));
+    expect(titanGhosts.length).toBe(titan.round); // one per round it fought, crown round included
     expect(titanGhosts.every((g) => g.team[0]!.name === "Titan")).toBe(true);
   });
 
   test("a lost champion challenge is a normal loss — the run carries on", () => {
     const store = freshLadder();
-    playLadderRun(input(1, "titan", TITAN), store);
-    const s = playLadderRun(input(2, "grunt", GRUNT), store);
-    // Grunt outlives the ghost rounds into repeated champion challenges,
-    // losing a life per challenge until out of lives — never crowned.
+    // A champion no Titan beats, installed directly: Titan clears every ghost
+    // round, so each round past the bootstrap repeats the challenge.
+    store.setChampion({ runId: "wall", round: 9, seq: 0, team: [vanilla("Wall", 1000, 500)] });
+    const s = playLadderRun(input(2, "titan", TITAN), store);
+    // Losing a challenge costs a life like any loss — the run carries on into
+    // the next round's (empty) pool and challenges again, never crowned.
     expect(ofType(s.log, "ChampionChallenged").length).toBeGreaterThan(1);
     expect(ofType(s.log, "Crowned")).toEqual([]);
     expect(s).toMatchObject({ status: "over", endedBy: "out-of-lives" });
-    expect(store.champion()!.runId).toBe("titan");
+    expect(store.champion()!.runId).toBe("wall");
   });
 });
 
@@ -240,20 +254,33 @@ describe("file backing", () => {
 
   test("write through one store, read through a fresh one — equal", () => {
     const path = join(dir, "roundtrip.json");
-    const store = openLadder(new FileLadderStore(path));
-    const ghost: TeamSnapshot = { runId: "titan", round: 1, seq: BOOTSTRAP_TEAMS.length, team: [TITAN] };
+    const store = openLadder(new FileLadderStore(path), stressRegistry);
+    const ghost: TeamSnapshot = { runId: "titan", round: 1, seq: BOOTSTRAP_TEAMS[0]!.length, team: [TITAN] };
     store.addSnapshot(ghost);
     store.setChampion(ghost);
     const reread = new FileLadderStore(path);
     expect(reread.poolAt(1)).toEqual(store.poolAt(1));
     expect(reread.champion()).toEqual(store.champion());
-    expect(reread.poolAt(2)).toEqual([]); // untouched rounds stay empty
+    expect(reread.poolAt(BOOTSTRAP_DEPTH + 1)).toEqual([]); // untouched rounds stay empty
   });
 
   test("a ladder run plays byte-identically on file and in-memory backings", () => {
-    const onFile = playLadderRun(input(1, "titan", TITAN), openLadder(new FileLadderStore(join(dir, "parity.json"))));
+    const onFile = playLadderRun(input(1, "titan", TITAN), openLadder(new FileLadderStore(join(dir, "parity.json")), stressRegistry));
     const inMemory = playLadderRun(input(1, "titan", TITAN), freshLadder());
     expect(runToJSONL(onFile.log)).toBe(runToJSONL(inMemory.log));
+  });
+
+  test("stored ghosts and champion are isolated from later caller mutation", () => {
+    const path = join(dir, "clone.json");
+    const store = new FileLadderStore(path);
+    const ghost: TeamSnapshot = { runId: "m", round: 1, seq: 0, team: [vanilla("Keeper", 5, 1)] };
+    store.addSnapshot(ghost);
+    store.setChampion(ghost);
+    ghost.team[0]!.name = "Corrupted"; // mutation after write must not reach the store…
+    expect(store.poolAt(1)[0]!.team[0]!.name).toBe("Keeper");
+    expect(store.champion()!.team[0]!.name).toBe("Keeper");
+    store.addSnapshot({ runId: "m", round: 2, seq: 0, team: [TITAN] }); // …or the next disk persist
+    expect(new FileLadderStore(path).champion()!.team[0]!.name).toBe("Keeper");
   });
 
   test("a missing file opens an empty ladder; a corrupt one throws loudly", () => {
@@ -265,7 +292,27 @@ describe("file backing", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 8. The pool gate: initRun rejects bad content and duplicate names
+// 8. The seq precondition: enforced by both backings, not a comment
+// ---------------------------------------------------------------------------
+
+describe("addSnapshot seq precondition", () => {
+  test("a desynced seq throws in both backings and lands nowhere", () => {
+    const backings: LadderStore[] = [
+      new InMemoryLadderStore(),
+      new FileLadderStore(join(mkdtempSync(join(tmpdir(), "ladder-seq-")), "seq.json")),
+    ];
+    for (const store of backings) {
+      store.addSnapshot({ runId: "a", round: 1, seq: 0, team: [TITAN] });
+      // A wrong seq means the caller drew from a pool other than the one it
+      // is writing to — rejected, not silently appended under a false ordinal.
+      expect(() => store.addSnapshot({ runId: "a", round: 1, seq: 2, team: [TITAN] })).toThrow(/desyncs/);
+      expect(store.poolAt(1).length).toBe(1);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 9. The pool gate: initRun rejects bad content and duplicate names
 // ---------------------------------------------------------------------------
 
 describe("pool validation", () => {

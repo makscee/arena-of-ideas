@@ -39,14 +39,49 @@ export const STACK_THRESHOLD = 3;
 /** Fight losses a run survives; ending the run at 0 is the ladder's rule (slice 2). */
 export const STARTING_LIVES = 5;
 
-/** Teams seeding round 1 of an empty ladder (openLadder), so a first-ever run
- * has opponents. Composed from the shipped stress units (SPEC §7) the way the
- * example team files are; composition is a knob like any other. Their only
- * status reference is Venomancer's Poison, so any registry containing the
- * stress statuses (the CLI and tests use stressRegistry) fields them. */
-export const BOOTSTRAP_TEAMS: readonly UnitDef[][] = [
-  [Venomancer, Summoner, { name: "Brawler", base: { hp: 12, pwr: 2 } }],
-  [Silencer, Necromancer, { name: "Bulwark", base: { hp: 10, pwr: 3 } }],
+/** How many rounds of an empty ladder get bootstrap ghosts. Depth 1 made a
+ * first-ever run crown at round 2 — no climb, no game. Seeding rounds 1..DEPTH
+ * gives the first session a real ladder to outclimb before the vacant spot. */
+export const BOOTSTRAP_DEPTH = 3;
+
+/** Teams seeding rounds 1..BOOTSTRAP_DEPTH of an empty ladder (openLadder):
+ * BOOTSTRAP_TEAMS[r-1] is round r's pool, so a first-ever run has opponents
+ * at every bootstrap round. Composed from the shipped stress units (SPEC §7)
+ * the way the example team files are; composition is a knob like any other.
+ * Strength escalates with the round to track what a played run fields there —
+ * round 1 ≈ one 10-gold shop phase (3 bodies), each later round adds a body
+ * and fatter vanilla stats, round 3 opens with status stacks. Status
+ * references (Poison via Venomancer, Strength/Vitality below) resolve in any
+ * registry containing the stress statuses (the CLI and tests use
+ * stressRegistry); openLadder gates every team at seed time. */
+export const BOOTSTRAP_TEAMS: readonly (readonly UnitDef[][])[] = [
+  // round 1 — three bodies, the scale of a first shop phase
+  [
+    [Venomancer, Summoner, { name: "Brawler", base: { hp: 12, pwr: 2 } }],
+    [Silencer, Necromancer, { name: "Bulwark", base: { hp: 10, pwr: 3 } }],
+  ],
+  // round 2 — a fourth body, vanilla stats grown a notch
+  [
+    [Venomancer, Summoner, Necromancer, { name: "Brawler", base: { hp: 14, pwr: 3 } }],
+    [Silencer, Venomancer, { name: "Bulwark", base: { hp: 13, pwr: 4 } }, { name: "Squire", base: { hp: 8, pwr: 2 } }],
+  ],
+  // round 3 — full lines; status openers stand in for a level-up's worth of growth
+  [
+    [
+      Venomancer,
+      Summoner,
+      Silencer,
+      { name: "Brawler", base: { hp: 16, pwr: 4 }, statuses: [{ status: "Strength", stacks: 2 }] },
+      { name: "Bulwark", base: { hp: 14, pwr: 4 }, statuses: [{ status: "Vitality", stacks: 3 }] },
+    ],
+    [
+      Necromancer,
+      Summoner,
+      Venomancer,
+      { name: "Warden", base: { hp: 15, pwr: 5 } },
+      { name: "Squire", base: { hp: 10, pwr: 3 } },
+    ],
+  ],
 ];
 
 /** Base hp gained per level-up. */

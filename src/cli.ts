@@ -1,7 +1,7 @@
 /**
- * Arena of Ideas — battle CLI (slice 6)
+ * Arena of Ideas — battle CLI (slice 6; autoplay in run-loop slice 3)
  *
- * Two modes:
+ * Three modes:
  *
  * RUN MODE — play a single battle and print the full replay:
  *   node --import=tsx/esm src/cli.ts <teamA.json> <teamB.json> [--seed N]
@@ -9,6 +9,14 @@
  *
  * SWEEP MODE — run N seeds and report win-rate distribution:
  *   node --import=tsx/esm src/cli.ts <teamA.json> <teamB.json> --sweep N
+ *
+ * AUTOPLAY MODE — a deterministic policy bot plays whole runs on a ladder file:
+ *   node --import=tsx/esm src/cli.ts autoplay <ladder.json> [--seed N] [--runs N] [--log <path>]
+ *   The ladder file is created (bootstrap-seeded) if missing. N runs play
+ *   sequentially with seeds seed..seed+N−1, so pools fill and the crown can
+ *   change hands over a sweep. --log writes the concatenated run logs as
+ *   JSONL — the determinism artifact: same ladder starting state + same seed
+ *   → byte-identical.
  *
  * Team file format (JSON):
  *   {
@@ -25,10 +33,25 @@
  * unit testing without spawning a subprocess.
  */
 
-import { readFileSync } from "node:fs";
-import { battle, renderReplay, sweep, winnerOf } from "./index.js";
-import type { SweepStats } from "./index.js";
-import { stressRegistry } from "./content/stress.js";
+import { readFileSync, writeFileSync } from "node:fs";
+import {
+  battle,
+  buy,
+  initRun,
+  ladderFight,
+  openLadder,
+  renderReplay,
+  reroll,
+  runToJSONL,
+  sweep,
+  winnerOf,
+  REROLL_COST,
+  TEAM_SIZE,
+  UNIT_COST,
+} from "./index.js";
+import type { LadderStore, RunEvent, RunEventType, RunInput, RunState, SweepStats } from "./index.js";
+import { FileLadderStore } from "./ladder-file.js";
+import { Necromancer, Silencer, Summoner, Venomancer, stressRegistry } from "./content/stress.js";
 import { assertValidContent } from "./validate.js";
 import type { UnitDef } from "./types.js";
 import type { Side } from "./types.js";
@@ -139,26 +162,148 @@ export function formatSweepReport(stats: SweepStats, teamAPath: string, teamBPat
 }
 
 // ---------------------------------------------------------------------------
+// Autoplay mode — a policy bot plays whole runs against a file-backed ladder
+// ---------------------------------------------------------------------------
+
+/** The pool autoplay runs draft from: the stress casters (SPEC §7) plus
+ * vanilla bodies, the bootstrap-team composition. A knob, not a pin — the
+ * point of autoplay is filling ladder pools, not curating a meta. */
+export const AUTOPLAY_POOL: UnitDef[] = [
+  Venomancer,
+  Summoner,
+  Silencer,
+  Necromancer,
+  { name: "Brawler", base: { hp: 12, pwr: 2 } },
+  { name: "Bulwark", base: { hp: 10, pwr: 3 } },
+  { name: "Squire", base: { hp: 8, pwr: 2 } },
+];
+
+const ofType = <T extends RunEventType>(log: readonly RunEvent[], t: T): Extract<RunEvent, { type: T }>[] =>
+  log.filter((e): e is Extract<RunEvent, { type: T }> => e.type === t);
+
+/** One greedy shop pass: stack copies first (levels compound), then fill the
+ * line, and reroll dead gold — gold a full line of strangers can't spend —
+ * while a buy could still follow. The policy is deterministic given the state
+ * and draws no randomness of its own, so everything random in an autoplay run
+ * (shop rolls, battle seeds, opponent draws) comes off the run's one seeded
+ * stream and a replay is byte-identical. Gold strictly decreases every step,
+ * so the pass terminates. */
+export function shopGreedily(state: RunState): RunState {
+  let s = state;
+  while (s.gold >= UNIT_COST) {
+    const stack = s.offers.findIndex((o) => s.team.some((u) => u.name === o.name));
+    if (stack >= 0) {
+      s = buy(s, stack);
+    } else if (s.team.length < TEAM_SIZE && s.offers.length > 0) {
+      s = buy(s, 0);
+    } else if (s.gold >= UNIT_COST + REROLL_COST) {
+      s = reroll(s); // dead gold: full line, no copy on offer — dig for one
+    } else {
+      break;
+    }
+  }
+  return s;
+}
+
+/** Play one whole run with the greedy policy — shop, then fight the ladder,
+ * until the run ends: crowned or out of lives. */
+export function playPolicyRun(input: RunInput, ladder: LadderStore): RunState {
+  let s = initRun(input);
+  while (s.status === "active") {
+    s = shopGreedily(s);
+    s = ladderFight(s, ladder);
+  }
+  return s;
+}
+
+export interface AutoplayResult {
+  state: RunState;
+  /** The raw run log as JSONL — the determinism artifact. */
+  jsonl: string;
+}
+
+/** Play `runs` sequential policy runs against one ladder. Run i's seed is
+ * seed+i — derived but deterministic, so a whole sweep replays from a single
+ * seed — and its runId carries the seed, keeping runs on a shared ladder
+ * distinct (own-ghost exclusion is by runId). */
+export function autoplayRuns(ladder: LadderStore, seed: number, runs: number): AutoplayResult[] {
+  const results: AutoplayResult[] = [];
+  for (let i = 0; i < runs; i++) {
+    const runSeed = seed + i;
+    const state = playPolicyRun(
+      { seed: runSeed, runId: `auto-${runSeed}`, pool: AUTOPLAY_POOL, statuses: stressRegistry },
+      ladder,
+    );
+    results.push({ state, jsonl: runToJSONL(state.log) });
+  }
+  return results;
+}
+
+/** One run's summary, human-readable: how far it climbed, the fight record,
+ * the final line, and what happened to the crown. */
+export function formatRunSummary(state: RunState): string {
+  const fights = ofType(state.log, "FightFought");
+  const won = fights.filter((f) => f.winner === "A").length;
+  const lost = fights.filter((f) => f.winner === "B").length;
+  const drawn = fights.length - won - lost;
+  const head = state.endedBy === "crown" ? "crowned" : "out of lives";
+  const lines = [
+    `Run ${state.runId} (seed ${state.seed}): ${head} at round ${state.round} — ${won}W/${lost}L/${drawn}D, ${state.lives} ${state.lives === 1 ? "life" : "lives"} left`,
+    `  line:  ${state.team.map((u) => `${u.name} L${u.level}`).join(", ")}`,
+  ];
+  const crowned = ofType(state.log, "Crowned")[0];
+  if (crowned !== undefined) {
+    lines.push(`  crown: ${crowned.dethroned === null ? "the spot was vacant" : `dethroned ${crowned.dethroned}`} — ${state.runId} reigns`);
+  }
+  return lines.join("\n");
+}
+
+/** The whole autoplay report: a summary per run, then the ladder after —
+ * champion lineage and pool sizes, so a sweep shows the pools filling. */
+export function formatAutoplayReport(results: readonly AutoplayResult[], ladder: LadderStore): string {
+  const lines = results.map((r) => formatRunSummary(r.state));
+  const crowns = results.filter((r) => r.state.endedBy === "crown");
+  if (crowns.length > 0) {
+    const first = ofType(crowns[0]!.state.log, "Crowned")[0]!.dethroned ?? "(vacant)";
+    lines.push(`Champion lineage: ${[first, ...crowns.map((r) => r.state.runId)].join(" → ")}`);
+  }
+  const pools: string[] = [];
+  for (let r = 1; ladder.poolAt(r).length > 0; r++) pools.push(`r${r}:${ladder.poolAt(r).length}`);
+  const champ = ladder.champion();
+  lines.push(`Ladder: champion ${champ === null ? "(vacant)" : champ.runId} | pools ${pools.join(" ")}`);
+  return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------------
 // Arg parsing
 // ---------------------------------------------------------------------------
 
 export interface ParsedArgs {
-  mode: "run" | "sweep";
+  mode: "run" | "sweep" | "autoplay";
   teamAPath: string;
   teamBPath: string;
-  seed: number;     // run mode
+  seed: number;     // run + autoplay modes
   sweepN: number;   // sweep mode
+  ladderPath: string;     // autoplay mode
+  runs: number;           // autoplay mode
+  logPath: string | null; // autoplay mode
 }
+
+const USAGE =
+  "Usage:\n" +
+  "  Run mode:      battle <teamA.json> <teamB.json> [--seed N]\n" +
+  "  Sweep mode:    battle <teamA.json> <teamB.json> --sweep N\n" +
+  "  Autoplay mode: battle autoplay <ladder.json> [--seed N] [--runs N] [--log <path>]";
 
 export function parseArgs(argv: string[]): ParsedArgs {
   const args = argv.slice(2); // drop node + script
 
+  if (args[0] === "autoplay") {
+    return parseAutoplayArgs(args.slice(1));
+  }
+
   if (args.length < 2) {
-    throw new Error(
-      "Usage:\n" +
-        "  Run mode:   battle <teamA.json> <teamB.json> [--seed N]\n" +
-        "  Sweep mode: battle <teamA.json> <teamB.json> --sweep N",
-    );
+    throw new Error(USAGE);
   }
 
   const teamAPath = args[0]!;
@@ -185,9 +330,41 @@ export function parseArgs(argv: string[]): ParsedArgs {
   }
 
   if (sweepN > 0) {
-    return { mode: "sweep", teamAPath, teamBPath, seed: 0, sweepN };
+    return { mode: "sweep", teamAPath, teamBPath, seed: 0, sweepN, ladderPath: "", runs: 0, logPath: null };
   }
-  return { mode: "run", teamAPath, teamBPath, seed, sweepN: 0 };
+  return { mode: "run", teamAPath, teamBPath, seed, sweepN: 0, ladderPath: "", runs: 0, logPath: null };
+}
+
+function parseAutoplayArgs(args: string[]): ParsedArgs {
+  if (args.length < 1) {
+    throw new Error(USAGE);
+  }
+  const ladderPath = args[0]!;
+  let seed = 0;
+  let runs = 1;
+  let logPath: string | null = null;
+
+  for (let i = 1; i < args.length; i++) {
+    if (args[i] === "--seed") {
+      const val = Number(args[i + 1]);
+      if (!Number.isFinite(val) || val < 0) throw new Error("--seed must be a non-negative integer");
+      seed = Math.floor(val);
+      i++;
+    } else if (args[i] === "--runs") {
+      const val = Number(args[i + 1]);
+      if (!Number.isFinite(val) || val < 1) throw new Error("--runs N must be a positive integer");
+      runs = Math.floor(val);
+      i++;
+    } else if (args[i] === "--log") {
+      const val = args[i + 1];
+      if (val === undefined || val.startsWith("--")) throw new Error("--log needs a file path");
+      logPath = val;
+      i++;
+    } else {
+      throw new Error(`Unknown argument: ${args[i]}`);
+    }
+  }
+  return { mode: "autoplay", teamAPath: "", teamBPath: "", seed, sweepN: 0, ladderPath, runs, logPath };
 }
 
 // ---------------------------------------------------------------------------
@@ -203,26 +380,28 @@ function main(): void {
     process.exit(1);
   }
 
-  if (parsed.mode === "run") {
-    try {
+  try {
+    if (parsed.mode === "run") {
       const result = runBattle(parsed.teamAPath, parsed.teamBPath, parsed.seed);
       process.stdout.write(result.replay);
       process.stdout.write(
         `\nWinner: ${result.winner === "draw" ? "Draw" : "Side " + result.winner}  (${result.turns} turns, seed ${parsed.seed})\n`,
       );
-    } catch (err) {
-      process.stderr.write((err as Error).message + "\n");
-      process.exit(1);
-    }
-  } else {
-    try {
+    } else if (parsed.mode === "sweep") {
       const stats = sweepBattles(parsed.teamAPath, parsed.teamBPath, parsed.sweepN);
       const report = formatSweepReport(stats, parsed.teamAPath, parsed.teamBPath);
       process.stdout.write(report + "\n");
-    } catch (err) {
-      process.stderr.write((err as Error).message + "\n");
-      process.exit(1);
+    } else {
+      const store = openLadder(new FileLadderStore(parsed.ladderPath), stressRegistry);
+      const results = autoplayRuns(store, parsed.seed, parsed.runs);
+      process.stdout.write(formatAutoplayReport(results, store) + "\n");
+      if (parsed.logPath !== null) {
+        writeFileSync(parsed.logPath, results.map((r) => r.jsonl).join(""), "utf8");
+      }
     }
+  } catch (err) {
+    process.stderr.write((err as Error).message + "\n");
+    process.exit(1);
   }
 }
 

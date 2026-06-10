@@ -15,8 +15,9 @@
 // ordinal (insertion order within a pool); a real timestamp, if a client ever
 // wants one, comes in as data.
 
-import { BOOTSTRAP_TEAMS } from "./tunables.js";
-import type { UnitDef } from "./types.js";
+import { BOOTSTRAP_DEPTH, BOOTSTRAP_TEAMS } from "./tunables.js";
+import { assertValidContent } from "./validate.js";
+import type { StatusRegistry, UnitDef } from "./types.js";
 
 /** A ghost: a fielded team frozen into a round's pool, plus where it came from. */
 export interface TeamSnapshot {
@@ -35,7 +36,9 @@ export interface TeamSnapshot {
 export interface LadderStore {
   /** The round-R pool in insertion (seq) order; [] for an untouched round. */
   poolAt(round: number): readonly TeamSnapshot[];
-  /** Append a ghost to its round's pool (snap.seq must be poolAt(round).length). */
+  /** Append a ghost to its round's pool. snap.seq must be poolAt(round).length —
+   * a backing throws on desync, because a wrong seq means the caller drew from
+   * a pool other than the one it is writing to. */
   addSnapshot(snap: TeamSnapshot): void;
   /** The current champion team, or null while the spot is vacant. */
   champion(): TeamSnapshot | null;
@@ -57,9 +60,10 @@ export class InMemoryLadderStore implements LadderStore {
   }
 
   addSnapshot(snap: TeamSnapshot): void {
-    const pool = this.pools.get(snap.round);
-    if (pool === undefined) this.pools.set(snap.round, [jsonClone(snap)]);
-    else pool.push(jsonClone(snap));
+    const pool = this.pools.get(snap.round) ?? [];
+    assertSeqInOrder(snap, pool.length);
+    pool.push(jsonClone(snap));
+    this.pools.set(snap.round, pool);
   }
 
   champion(): TeamSnapshot | null {
@@ -74,20 +78,39 @@ export class InMemoryLadderStore implements LadderStore {
 /** The ladder's id for ghosts that came from no run (the bootstrap seed). */
 export const BOOTSTRAP_RUN_ID = "bootstrap";
 
-/** Open a ladder over a store, seeding round 1 from the shipped bootstrap
- * teams if the ladder is empty — a first-ever run always has opponents.
- * (A ladder any run has played on cannot have an empty round-1 pool:
- * snapshot-before-fight put the run's own ghost there.) */
-export function openLadder(store: LadderStore): LadderStore {
+/** Open a ladder over a store, seeding rounds 1..BOOTSTRAP_DEPTH from the
+ * shipped bootstrap teams if the ladder is empty — a first-ever run has a
+ * real climb, not a round-2 crown. (A ladder any run has played on cannot
+ * have an empty round-1 pool: snapshot-before-fight put the run's own ghost
+ * there.) Every bootstrap team passes the content gate against `registry`
+ * here, at seed time — a bad team fails loudly at open, never seed-dependently
+ * mid-run when a draw happens to land on it. */
+export function openLadder(store: LadderStore, registry: StatusRegistry): LadderStore {
   if (store.poolAt(1).length === 0) {
-    BOOTSTRAP_TEAMS.forEach((team, seq) => {
-      store.addSnapshot({ runId: BOOTSTRAP_RUN_ID, round: 1, seq, team: jsonClone(team) as UnitDef[] });
+    BOOTSTRAP_TEAMS.slice(0, BOOTSTRAP_DEPTH).forEach((teams, i) => {
+      const round = i + 1;
+      teams.forEach((team, seq) => {
+        assertValidContent(team, registry, `bootstrap round ${round} team ${seq}`);
+        store.addSnapshot({ runId: BOOTSTRAP_RUN_ID, round, seq, team: jsonClone(team) });
+      });
     });
   }
   return store;
 }
 
-/** The clone every write path shares — JSON-safe data in, isolated copy out. */
-function jsonClone<T>(v: T): T {
+/** The seq precondition, enforced (LadderStore.addSnapshot) — shared by both backings. */
+export function assertSeqInOrder(snap: TeamSnapshot, poolLength: number): void {
+  if (snap.seq !== poolLength) {
+    throw new Error(
+      `snapshot seq ${snap.seq} desyncs from the round-${snap.round} pool (next seq is ${poolLength})`,
+    );
+  }
+}
+
+/** The clone every write path shares — JSON-safe data in, isolated copy out.
+ * Both backings clone on write so a stored ghost is exactly what the file
+ * backing round-trips: isolated from later caller mutation, byte-equivalent
+ * across backings. */
+export function jsonClone<T>(v: T): T {
   return JSON.parse(JSON.stringify(v)) as T;
 }

@@ -4,8 +4,10 @@
 import { describe, expect, test } from "vitest";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import {
+  autoplayRuns,
+  formatAutoplayReport,
   formatSweepReport,
   loadTeamFile,
   parseArgs,
@@ -13,6 +15,10 @@ import {
   sweepBattles,
   validateTeamFile,
 } from "./cli.js";
+import { stressRegistry } from "./content/stress.js";
+import { openLadder } from "./ladder.js";
+import { FileLadderStore } from "./ladder-file.js";
+import { BOOTSTRAP_DEPTH, BOOTSTRAP_TEAMS } from "./tunables.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -195,7 +201,69 @@ describe("sweepBattles", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 5. Minimal team file written to tmp — exercises the full load→battle path
+// 5. Autoplay mode — the policy bot plays whole runs on a file-backed ladder
+// ---------------------------------------------------------------------------
+
+describe("autoplay", () => {
+  const dir = mkdtempSync(join(tmpdir(), "aoi-autoplay-"));
+  const freshFileLadder = (name: string) => openLadder(new FileLadderStore(join(dir, name)), stressRegistry);
+
+  test("parseArgs autoplay mode with defaults and flags", () => {
+    const wrap = (args: string[]) => ["node", "cli.ts", ...args];
+    expect(parseArgs(wrap(["autoplay", "ladder.json"]))).toMatchObject({
+      mode: "autoplay", ladderPath: "ladder.json", seed: 0, runs: 1, logPath: null,
+    });
+    expect(parseArgs(wrap(["autoplay", "l.json", "--seed", "7", "--runs", "5", "--log", "out.jsonl"]))).toMatchObject({
+      mode: "autoplay", ladderPath: "l.json", seed: 7, runs: 5, logPath: "out.jsonl",
+    });
+    expect(() => parseArgs(wrap(["autoplay"]))).toThrow(/Usage/);
+    expect(() => parseArgs(wrap(["autoplay", "l.json", "--runs", "0"]))).toThrow(/positive integer/);
+    expect(() => parseArgs(wrap(["autoplay", "l.json", "--log"]))).toThrow(/needs a file path/);
+    expect(() => parseArgs(wrap(["autoplay", "l.json", "--policy"]))).toThrow(/Unknown argument/);
+  });
+
+  test("a policy run plays a whole run to its end, headless", () => {
+    const [r] = autoplayRuns(freshFileLadder("single.json"), 0, 1);
+    expect(r!.state.status).toBe("over");
+    expect(["crown", "out-of-lives"]).toContain(r!.state.endedBy);
+    expect(r!.state.team.length).toBeGreaterThan(0);
+    expect(r!.state.log[r!.state.log.length - 1]).toMatchObject({ type: "RunEnded" });
+  });
+
+  test("determinism: same ladder starting state + same seed → byte-identical run log, twice", () => {
+    // Two fresh files are the same starting state (the bootstrap seed); the
+    // run log JSONL is the determinism artifact and must match to the byte.
+    const play = (name: string) => autoplayRuns(freshFileLadder(name), 7, 1)[0]!.jsonl;
+    expect(play("det-a.json")).toBe(play("det-b.json"));
+  });
+
+  test("an N-run sweep fills the pools, and the growth persists on disk", () => {
+    const path = join(dir, "sweep.json");
+    const N = 4;
+    const results = autoplayRuns(openLadder(new FileLadderStore(path), stressRegistry), 0, N);
+    expect(results).toHaveLength(N);
+    expect(results.every((r) => r.state.status === "over")).toBe(true);
+    // Every run fights at round 1, so its ghost joined the round-1 pool.
+    const reread = new FileLadderStore(path); // growth read back from disk, not memory
+    expect(reread.poolAt(1).length).toBe(BOOTSTRAP_TEAMS[0]!.length + N);
+    // Runs outlive the bootstrap rounds: pools past the seeded depth exist now.
+    expect(reread.poolAt(BOOTSTRAP_DEPTH + 1).length).toBeGreaterThan(0);
+  });
+
+  test("the report reads as run summaries plus the ladder line", () => {
+    const store = freshFileLadder("report.json");
+    const results = autoplayRuns(store, 42, 2);
+    const report = formatAutoplayReport(results, store);
+    expect(report).toContain("Run auto-42 (seed 42):");
+    expect(report).toContain("Run auto-43 (seed 43):");
+    expect(report).toMatch(/(crowned|out of lives) at round \d+ — \d+W\/\d+L\/\d+D/);
+    expect(report).toMatch(/line: {2}\w+ L\d+/);
+    expect(report).toMatch(/Ladder: champion \S+ \| pools r1:\d+/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 6. Minimal team file written to tmp — exercises the full load→battle path
 // ---------------------------------------------------------------------------
 
 describe("tmp team file round-trip", () => {

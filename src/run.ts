@@ -91,7 +91,7 @@ export type RunDecision =
   | { kind: "buy"; offer: number } // index into the current offers
   | { kind: "reroll" }
   | { kind: "reorder"; from: number; to: number } // line positions
-  | { kind: "fight"; opponent: UnitDef[] }; // the ladder picks opponents in slice 2
+  | { kind: "fight"; opponent: UnitDef[] }; // an explicit opponent; ladderFight draws its own from the store
 
 export type RunEventBody =
   | { type: "RunStart"; seed: number; runId: string; gold: number; lives: number }

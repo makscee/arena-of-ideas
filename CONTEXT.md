@@ -186,6 +186,36 @@ _Avoid_: spawn
 The effect returning a dead ally (via `lastDeadAlly`) to the back of the line at N hp, floored at 1 — a 0-hp revival would be an instant corpse. The stress test that forced the graveyard into the kernel.
 _Avoid_: revive, respawn
 
+### Run & ladder
+
+**Run**:
+One playthrough of the shop/fight loop: `seed + decision sequence → RunState + run log`. Ends `crown` or `out-of-lives`; an over run rejects every further decision, loudly.
+_Avoid_: game, session, playthrough
+
+**Ghost**:
+A fielded team frozen into a round's pool by snapshot-before-fight, tagged with the run that fielded it. Ghosts persist after their run ends — every fight leaves an opponent behind.
+_Avoid_: snapshot (the type name; fine in code), saved team, replay team
+
+**Pool**:
+The per-round list of ghosts, in insertion (seq) order. The opponent draw is one seeded pick, uniform over the round's pool minus the run's own ghosts.
+_Avoid_: bracket, matchmaking queue
+
+**Champion spot**:
+The single seat at the ladder's top, vacant or held; it persists across runs until a run dethrones it. A dethroned champion loses only the spot — its ghosts stay.
+_Avoid_: throne, leaderboard #1
+
+**Crown**:
+The run-end where the fielded team takes the champion spot: the run outran every ghost at its round (an empty draw) and beat the champion — or found the spot vacant.
+_Avoid_: victory, win (a battle word)
+
+**Bootstrap**:
+The seeding of an empty ladder's rounds 1..BOOTSTRAP_DEPTH with shipped, escalating teams (tunables), so a first-ever run has a real climb. Gated at open; bootstrap ghosts carry the runId `bootstrap`.
+_Avoid_: seed data (seed is the RNG word), fixtures
+
+**Autoplay / policy bot**:
+The CLI mode where a deterministic greedy policy plays whole runs against a file-backed ladder — pools fill without a human. The policy draws no randomness of its own; everything random comes off the run's one seeded stream.
+_Avoid_: AI player, agent, auto-battler (the genre word)
+
 ### Tooling & acceptance
 
 **Replay**:
