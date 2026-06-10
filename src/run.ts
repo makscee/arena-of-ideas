@@ -241,8 +241,11 @@ export function fight(state: RunState, opponent: UnitDef[]): RunState {
 
 /** Fight on the ladder. Snapshot-before-fight: the fielded team enters the
  * round's pool as a ghost before any outcome is known, so even a run about to
- * die leaves an opponent behind. Then a seeded draw from that pool, own ghosts
- * excluded — deterministic given the run's RNG state and the pool contents.
+ * die leaves an opponent behind. The opponent is a seeded draw from that pool,
+ * own ghosts excluded — deterministic given the run's RNG state and the pool
+ * contents — and it passes the content gate BEFORE the run's own ghost
+ * persists: a gate-failing opponent aborts the whole fight, and a retried
+ * fight must not grow the pool with the aborted attempt's ghost on every try.
  * An empty draw means the run has outrun every ghost at this round and
  * challenges the champion: win (or find the spot vacant) and the fielded team
  * takes the spot — the run ends crowned; a loss is a normal loss.
@@ -256,24 +259,32 @@ export function ladderFight(state: RunState, ladder: LadderStore): RunState {
     throw new InvalidDecisionError("fight", "the line is empty — buy a unit first");
   }
   const s = clone(state);
-  const ghost: TeamSnapshot = { runId: s.runId, round: s.round, seq: ladder.poolAt(s.round).length, team: toBattleTeam(s.team) };
-  ladder.addSnapshot(ghost);
-  emit(s, { type: "Snapshotted", seq: ghost.seq });
-  const candidates = ladder.poolAt(s.round).filter((g) => g.runId !== s.runId);
+  // Draw and gate first (own ghosts are excluded from candidates, so the draw
+  // is the same whether or not the ghost is in the pool yet); persist after.
+  const pool = ladder.poolAt(s.round);
+  const candidates = pool.filter((g) => g.runId !== s.runId);
+  let pick: TeamSnapshot | undefined;
+  let champion: TeamSnapshot | null = null;
   if (candidates.length > 0) {
     const draw = rngStep(s.rng);
     s.rng = draw.state;
-    const pick = candidates[Math.floor(draw.value * candidates.length)]!;
-    emit(s, { type: "OpponentDrawn", opponent: pick.runId, seq: pick.seq, candidates: candidates.length });
+    pick = candidates[Math.floor(draw.value * candidates.length)]!;
     assertValidContent(pick.team, s.statuses, "opponent"); // a stored ghost passes the same gate as any opponent
+  } else {
+    champion = ladder.champion();
+    if (champion !== null) assertValidContent(champion.team, s.statuses, "champion");
+  }
+  const ghost: TeamSnapshot = { runId: s.runId, round: s.round, seq: pool.length, team: toBattleTeam(s.team) };
+  ladder.addSnapshot(ghost);
+  emit(s, { type: "Snapshotted", seq: ghost.seq });
+  if (pick !== undefined) {
+    emit(s, { type: "OpponentDrawn", opponent: pick.runId, seq: pick.seq, candidates: candidates.length });
     resolveFight(s, pick.team);
     turnRound(s);
     return s;
   }
-  const champion = ladder.champion();
   if (champion !== null) {
     emit(s, { type: "ChampionChallenged", champion: champion.runId });
-    assertValidContent(champion.team, s.statuses, "champion");
     const winner = resolveFight(s, champion.team);
     if (winner !== "A") {
       // A loss is a normal loss (a draw costs nothing) — the run carries on:

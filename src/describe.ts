@@ -160,8 +160,12 @@ export function describeEffect(e: Effect, target: string, opts: DescribeOpts = {
       return `summon ${e.unit.name} (${e.unit.base.hp} hp, ${e.unit.base.pwr} pwr) at the back of ${target}'s side`;
     case "silence":
       return `silence ${target} — strip its statuses and disable its abilities for the battle`;
-    case "resurrect":
-      return `return ${target} to the back of the line at ${amountClause(e.hp, opts)} hp`;
+    case "resurrect": {
+      // "hp" leads the derived form ("at hp equal to its level"), the
+      // preventDeathHeal pattern — trailing it ("at … its level hp") is not English.
+      const at = e.hp.kind === "const" ? `${e.hp.value} hp` : `hp equal to ${describeAmount(e.hp, opts)}`;
+      return `return ${target} to the back of the line at ${at}`;
+    }
     case "cancel":
       return `cancel it${e.consumeSelf !== undefined ? `, consuming ${plural(e.consumeSelf, "stack")}` : ""}`;
     case "absorbHurt":

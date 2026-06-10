@@ -41,7 +41,7 @@ export const STARTING_LIVES = 5;
 
 /** How many rounds of an empty ladder get bootstrap ghosts. Depth 1 made a
  * first-ever run crown at round 2 — no climb, no game. Seeding rounds 1..DEPTH
- * gives the first session a real ladder to outclimb before the vacant spot. */
+ * gives the first session a real ladder to outclimb before the champion. */
 export const BOOTSTRAP_DEPTH = 3;
 
 /** Teams seeding rounds 1..BOOTSTRAP_DEPTH of an empty ladder (openLadder):
@@ -82,6 +82,22 @@ export const BOOTSTRAP_TEAMS: readonly (readonly UnitDef[][])[] = [
       { name: "Squire", base: { hp: 10, pwr: 3 } },
     ],
   ],
+];
+
+/** The team seated in the champion spot when an empty ladder opens — the
+ * strongest shipped bootstrap team, one notch past round BOOTSTRAP_DEPTH's
+ * pool. Sweeps showed a fresh ladder crowning every run at round
+ * BOOTSTRAP_DEPTH+1 through the vacant spot (20/20, 13 with losing records):
+ * no spot to take, no game. With this team seated, a crown is always earned
+ * by beating someone; the kernel's vacant-spot rule stays only for the
+ * truly-vacant edge (unreachable on a fresh ladder). Gated at open like
+ * every bootstrap team. */
+export const BOOTSTRAP_CHAMPION: readonly UnitDef[] = [
+  Venomancer,
+  Summoner,
+  Necromancer,
+  { name: "Warlord", base: { hp: 18, pwr: 5 }, statuses: [{ status: "Strength", stacks: 3 }] },
+  { name: "Bulwark", base: { hp: 16, pwr: 5 }, statuses: [{ status: "Vitality", stacks: 4 }] },
 ];
 
 /** The draftable pool a run's shop rolls from while no curated pool exists:

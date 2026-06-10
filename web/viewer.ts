@@ -37,7 +37,9 @@ function describeEvent(e: BattleEvent, name: NameOf): string {
     case "Strike":
       return `${name(e.striker)} strikes ${name(e.defender)}`;
     case "Hurt": {
-      const absorbed = e.absorbed !== undefined ? ` (${e.absorbed} absorbed by Shield)` : "";
+      // Neutral wording (battle-log.ts's): any absorb status may be the cause,
+      // not just Shield — the cause line below names the actual interceptor.
+      const absorbed = e.absorbed !== undefined ? ` (${e.absorbed} absorbed)` : "";
       return `${name(e.unit)} takes ${e.amount}${absorbed}${hp(e.hpAfter)}`;
     }
     case "Heal":

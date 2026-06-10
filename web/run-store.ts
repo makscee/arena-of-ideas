@@ -80,6 +80,16 @@ export function clearRun(storage: KVStorage): void {
   storage.removeItem(BATTLE_KEY);
 }
 
+/** Delete the stored ladder — every ghost and the champion. The explicit
+ * destructive way out of a corrupt ladder (which is refused loudly and would
+ * otherwise dead-end the run screen until localStorage is hand-cleared);
+ * callers own the confirm step. The active run goes with it (clearRun): a run
+ * mid-climb on a deleted ladder would fight pools that no longer exist. */
+export function resetLadder(storage: KVStorage): void {
+  storage.removeItem(LADDER_KEY);
+  clearRun(storage);
+}
+
 /** The next run's id — "web-N" off a persisted counter, so runs sharing this
  * browser's ladder stay distinct (own-ghost exclusion is by runId) without a
  * wall-clock read. */

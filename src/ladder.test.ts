@@ -8,7 +8,7 @@ import type { LadderStore, TeamSnapshot } from "./ladder.js";
 import { FileLadderStore } from "./ladder-file.js";
 import { buy, fight, initRun, InvalidDecisionError, ladderFight, reorder, reroll, runToJSONL } from "./run.js";
 import type { RunEvent, RunInput, RunState } from "./run.js";
-import { BOOTSTRAP_DEPTH, BOOTSTRAP_TEAMS, STARTING_LIVES } from "./tunables.js";
+import { BOOTSTRAP_CHAMPION, BOOTSTRAP_DEPTH, BOOTSTRAP_TEAMS, STARTING_LIVES } from "./tunables.js";
 import { ValidationError, validateTeam } from "./validate.js";
 import type { UnitDef } from "./types.js";
 
@@ -63,13 +63,27 @@ describe("bootstrap", () => {
         expect(validateTeam(g.team, stressRegistry)).toEqual([]); // a first run's opponents pass the gate
       });
     }
-    expect(store.poolAt(BOOTSTRAP_DEPTH + 1)).toEqual([]); // the climb ends at the vacant spot
+    expect(store.poolAt(BOOTSTRAP_DEPTH + 1)).toEqual([]); // the climb ends at the champion
+  });
+
+  test("openLadder seats the bootstrap champion — a fresh ladder's spot is never vacant", () => {
+    const champ = freshLadder().champion()!;
+    expect(champ).toMatchObject({ runId: BOOTSTRAP_RUN_ID, round: BOOTSTRAP_DEPTH + 1 });
+    expect(champ.team.map((u) => u.name)).toEqual(BOOTSTRAP_CHAMPION.map((u) => u.name));
+    expect(validateTeam(champ.team, stressRegistry)).toEqual([]); // the gate covers the seat too
   });
 
   test("a non-empty ladder is never reseeded", () => {
     const store = freshLadder();
     openLadder(store, stressRegistry);
     expect(store.poolAt(1).length).toBe(BOOTSTRAP_TEAMS[0]!.length);
+  });
+
+  test("a played-on ladder keeps its earned champion across opens", () => {
+    const store = freshLadder();
+    playLadderRun(input(1, "titan", TITAN), store); // dethrones the bootstrap champion
+    openLadder(store, stressRegistry);
+    expect(store.champion()!.runId).toBe("titan"); // never reseated
   });
 
   test("a bootstrap team failing the content gate fails at open, loudly", () => {
@@ -114,6 +128,23 @@ describe("snapshot-before-fight", () => {
     const snapshot = JSON.stringify(s0);
     ladderFight(s0, store);
     expect(JSON.stringify(s0)).toBe(snapshot);
+  });
+
+  test("a gate-failing draw aborts before the run's own ghost persists", () => {
+    const store = new InMemoryLadderStore();
+    // A poisoned pool: one ghost whose status resolves in no registry. The
+    // gate runs on the draw BEFORE addSnapshot, so a retried fight must not
+    // grow the pool with the aborted attempt's ghost on every try.
+    store.addSnapshot({
+      runId: "evil",
+      round: 1,
+      seq: 0,
+      team: [{ name: "Hexed", base: { hp: 5, pwr: 1 }, statuses: [{ status: "Bogus", stacks: 1 }] }],
+    });
+    const s0 = buy(initRun(input(3, "titan", TITAN)), 0);
+    expect(() => ladderFight(s0, store)).toThrow(ValidationError);
+    expect(() => ladderFight(s0, store)).toThrow(ValidationError); // the retry…
+    expect(store.poolAt(1).map((g) => g.runId)).toEqual(["evil"]); // …never grew the pool
   });
 });
 
@@ -181,16 +212,26 @@ describe("run-end states", () => {
 // ---------------------------------------------------------------------------
 
 describe("champion", () => {
-  test("an empty pool with a vacant spot crowns the run outright", () => {
+  test("a fresh ladder's crown is earned — the bootstrap champion must fall", () => {
     const store = freshLadder();
     const s = playLadderRun(input(1, "titan", TITAN), store);
-    // Rounds 1..DEPTH fought bootstrap ghosts; the next round's pool held only
-    // the run's own ghost, the spot was vacant — crowned without a champion fight.
-    expect(s).toMatchObject({ status: "over", endedBy: "crown", round: BOOTSTRAP_DEPTH + 1 });
-    expect(ofType(s.log, "ChampionChallenged")).toEqual([]);
-    expect(ofType(s.log, "Crowned")[0]).toMatchObject({ dethroned: null });
+    // Rounds 1..DEPTH fought bootstrap ghosts; past them the pool held only
+    // the run's own ghosts — every crown goes through the seated champion.
+    expect(s).toMatchObject({ status: "over", endedBy: "crown" });
+    expect(ofType(s.log, "ChampionChallenged")[0]).toMatchObject({ champion: BOOTSTRAP_RUN_ID });
+    expect(ofType(s.log, "Crowned")[0]).toMatchObject({ dethroned: BOOTSTRAP_RUN_ID });
     expect(s.log[s.log.length - 1]).toMatchObject({ type: "RunEnded", reason: "crown" });
-    expect(store.champion()).toMatchObject({ runId: "titan", round: BOOTSTRAP_DEPTH + 1 });
+    expect(store.champion()).toMatchObject({ runId: "titan", round: s.round });
+  });
+
+  test("a truly vacant spot still crowns outright — the kernel edge behind the seated champion", () => {
+    const store = new InMemoryLadderStore(); // unopened: no ghosts, no champion
+    const s = ladderFight(buy(initRun(input(1, "titan", TITAN)), 0), store);
+    expect(s).toMatchObject({ status: "over", endedBy: "crown", round: 1 });
+    expect(ofType(s.log, "ChampionChallenged")).toEqual([]);
+    expect(ofType(s.log, "FightFought")).toEqual([]); // crowned without a battle
+    expect(ofType(s.log, "Crowned")[0]).toMatchObject({ dethroned: null });
+    expect(store.champion()).toMatchObject({ runId: "titan", round: 1 });
   });
 
   test("the champion persists across runs and falls only to a winner", () => {

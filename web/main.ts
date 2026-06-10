@@ -9,7 +9,7 @@ import { createViewer } from "./viewer.js";
 import { createEditor } from "./editor.js";
 import { createGauntlet } from "./gauntlet.js";
 import { createRunScreen, type RunScreen } from "./run-screen.js";
-import { openLocalLadder } from "./run-store.js";
+import { openLocalLadder, resetLadder } from "./run-store.js";
 
 // ---------------------------------------------------------------------------
 // DOM wiring
@@ -188,6 +188,7 @@ try {
       fightButton: el<HTMLButtonElement>("run-fight"),
       error: el("run-error"),
       inspect: el("run-inspect"),
+      notice: el("run-notice"),
       battlePanel: el("run-battle"),
       battleHead: el("run-battle-head"),
       battleMount: el("run-battle-mount"),
@@ -195,8 +196,11 @@ try {
       continueButton: el<HTMLButtonElement>("run-continue"),
       endPanel: el("run-end"),
       endHead: el("run-end-head"),
+      endStats: el("run-end-stats"),
       endLine: el("run-end-line"),
       newRunButton: el<HTMLButtonElement>("run-new-run"),
+      ladderPanel: el("run-ladder"),
+      ladderBody: el("run-ladder-body"),
     },
     {
       storage: window.localStorage,
@@ -210,12 +214,45 @@ try {
   );
   runScreen.setVisible(true); // the app opens on the run tab
 } catch (err) {
-  el("run-view").innerHTML = "";
+  // Loud, but not a dead end: the error stays on screen, and an explicit
+  // two-step reset is the way out — deleting every ghost and the champion is
+  // destructive, so nothing happens on a single stray click.
+  const view = el("run-view");
+  view.innerHTML = "";
   const msg = document.createElement("p");
   msg.className = "run-warn";
   msg.setAttribute("role", "alert");
   msg.textContent = `The run screen could not open: ${(err as Error).message}`;
-  el("run-view").append(msg);
+  const actions = document.createElement("div");
+  actions.className = "run-bar";
+  const offerReset = (): void => {
+    actions.innerHTML = "";
+    const reset = document.createElement("button");
+    reset.type = "button";
+    reset.textContent = "reset ladder…";
+    reset.addEventListener("click", () => {
+      actions.innerHTML = "";
+      const warn = document.createElement("span");
+      warn.className = "run-warn";
+      warn.textContent = "This deletes every ghost, the champion, and the active run — there is no undo.";
+      const really = document.createElement("button");
+      really.type = "button";
+      really.className = "danger";
+      really.textContent = "really reset";
+      really.addEventListener("click", () => {
+        resetLadder(window.localStorage);
+        window.location.reload(); // reopen everything over the fresh (re-bootstrapped) ladder
+      });
+      const keep = document.createElement("button");
+      keep.type = "button";
+      keep.textContent = "keep it";
+      keep.addEventListener("click", offerReset);
+      actions.append(warn, really, keep);
+    });
+    actions.append(reset);
+  };
+  offerReset();
+  view.append(msg, actions);
 }
 
 // Watch a gauntlet matchup: load it into the battle controls and run — the

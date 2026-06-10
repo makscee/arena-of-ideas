@@ -205,11 +205,11 @@ The single seat at the ladder's top, vacant or held; it persists across runs unt
 _Avoid_: throne, leaderboard #1
 
 **Crown**:
-The run-end where the fielded team takes the champion spot: the run outran every ghost at its round (an empty draw) and beat the champion — or found the spot vacant.
+The run-end where the fielded team takes the champion spot: the run outran every ghost at its round (an empty draw) and beat the champion. (A vacant spot also crowns — a kernel edge unreachable on an opened ladder, which always seats a champion.)
 _Avoid_: victory, win (a battle word)
 
 **Bootstrap**:
-The seeding of an empty ladder's rounds 1..BOOTSTRAP_DEPTH with shipped, escalating teams (tunables), so a first-ever run has a real climb. Gated at open; bootstrap ghosts carry the runId `bootstrap`.
+The seeding of an empty ladder's rounds 1..BOOTSTRAP_DEPTH with shipped, escalating teams, plus BOOTSTRAP_CHAMPION seated in the champion spot (tunables) — a first-ever run has a real climb, and a crown is always earned by beating someone. Gated at open; bootstrap ghosts and the seated champion carry the runId `bootstrap`.
 _Avoid_: seed data (seed is the RNG word), fixtures
 
 **Run screen**:

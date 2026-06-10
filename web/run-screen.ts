@@ -6,10 +6,11 @@
 // existing viewer: its DOM (#result) is reparented in here while a run battle
 // shows, and returned to the battle tab after.
 //
-// Slice-4 scope: run-end shows a plain end state; the champion-chase UI and a
-// good end screen are slice 5's.
+// The champion chase reads off the ladder view (ladder-view.ts): pools and
+// the champion, refreshed on every render so a fight's ghost shows at once.
 
 import {
+  BOOTSTRAP_RUN_ID,
   InvalidDecisionError,
   REROLL_COST,
   STACK_THRESHOLD,
@@ -26,10 +27,12 @@ import {
   type RunState,
   type RunUnit,
   type StatusRegistry,
+  type TeamSnapshot,
   type UnitDef,
 } from "../src/index.js";
 import { shapeSvg } from "./board-render.js";
 import { renderUnitInspect } from "./inspect.js";
+import { createLadderView, ghostLabel } from "./ladder-view.js";
 import { clearRun, loadRun, nextRunId, saveRun, type KVStorage, type StoredBattle } from "./run-store.js";
 import type { Viewer } from "./viewer.js";
 
@@ -52,6 +55,7 @@ interface RunScreenEls {
   shopPanel: HTMLElement;
   head: HTMLElement;
   next: HTMLElement;
+  notice: HTMLElement;
   shopRow: HTMLElement;
   rerollButton: HTMLButtonElement;
   line: HTMLElement;
@@ -65,8 +69,12 @@ interface RunScreenEls {
   continueButton: HTMLButtonElement;
   endPanel: HTMLElement;
   endHead: HTMLElement;
+  endStats: HTMLElement;
   endLine: HTMLElement;
   newRunButton: HTMLButtonElement;
+  /** The ladder section (shown beside new/shop) and the view's render root. */
+  ladderPanel: HTMLElement;
+  ladderBody: HTMLElement;
 }
 
 export interface RunScreenDeps {
@@ -96,6 +104,13 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   let phase: Phase = "new";
   let visible = false;
   let selected: { where: "offer" | "line"; index: number; status?: string } | undefined;
+  let notice: string | undefined; // the last transition's level-up moment, if any
+
+  const ladderView = createLadderView(els.ladderBody, { store: deps.store, registry: deps.registry });
+
+  /** The champion as a phrase — bootstrap is shipped content, not a rival run. */
+  const championPhrase = (c: TeamSnapshot): string =>
+    c.runId === BOOTSTRAP_RUN_ID ? "the shipped champion" : `champion ${c.runId} (crowned at round ${c.round})`;
 
   // ---------- cards (reuse the board's card classes + shapes) ----------
 
@@ -148,6 +163,12 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     els.shopPanel.hidden = which !== "shop";
     els.battlePanel.hidden = which !== "battle";
     els.endPanel.hidden = which !== "end";
+    // The ladder rides along with the planning phases; a battle or an end
+    // screen has its own focus. Refreshed on every show — pools visibly fill.
+    els.ladderPanel.hidden = which === "battle" || which === "end";
+    if (!els.ladderPanel.hidden) {
+      ladderView.refresh(which === "shop" && state !== undefined ? { round: state.round, runId: state.runId } : undefined);
+    }
     if (which === "battle") mountViewer();
     else unmountViewer();
   }
@@ -155,7 +176,9 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   function renderNew(): void {
     const champ = deps.store.champion();
     els.champ.textContent =
-      champ === null ? "the champion spot is vacant" : `current champion: ${champ.runId} (crowned at round ${champ.round})`;
+      champ === null
+        ? "the champion spot is vacant — the first crown is free"
+        : `holding the spot: ${championPhrase(champ)} — beat it to take the crown`;
     show("new");
   }
 
@@ -170,10 +193,12 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     const champ = deps.store.champion();
     els.next.textContent =
       rivals > 0
-        ? `next fight: a ghost from this round's pool (${rivals} waiting)`
+        ? `next fight: a ghost from round ${s.round}'s pool — ${rivals} waiting (peek below)`
         : champ !== null
-          ? `no ghosts left at round ${s.round} — next fight challenges the champion (${champ.runId})`
+          ? `no ghosts left to fight at round ${s.round} — next fight challenges ${championPhrase(champ)} for the crown`
           : `no ghosts left at round ${s.round} and the spot is vacant — fighting takes the crown`;
+    els.notice.textContent = notice ?? "";
+    els.notice.hidden = notice === undefined;
     els.shopRow.innerHTML =
       s.offers.map((o, i) => offerCard(o, i, s.gold)).join("") ||
       '<span class="run-dim">the shop is empty — reroll or fight</span>';
@@ -224,21 +249,51 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     els.battleHead.textContent = `vs ${b.opponentLabel} — battle seed ${b.seed}`;
     els.outcome.textContent =
       last.winner === "A"
-        ? "you won"
+        ? "you won — no life lost"
         : last.winner === "B"
-          ? `you lost — ${s.lives} ${s.lives === 1 ? "life" : "lives"} left`
+          ? `you lost — a life spent, ${s.lives} ${s.lives === 1 ? "life" : "lives"} left`
           : "a draw — no life lost";
+    // Why the gold jumps on return: the new round's income rides the button.
+    const started = ofType(s.log, "RoundStarted");
+    const income = started[started.length - 1];
     els.continueButton.textContent =
-      s.status === "over" ? (s.endedBy === "crown" ? "claim the crown" : "see the end") : `continue to round ${s.round}`;
+      s.status === "over"
+        ? s.endedBy === "crown"
+          ? "claim the crown"
+          : "see the end"
+        : `continue to round ${s.round}${income !== undefined && income.round === s.round ? ` · +${income.income}g income` : ""}`;
     show("battle");
   }
 
   function renderEnd(): void {
     const s = state!;
-    els.endHead.textContent =
-      s.endedBy === "crown"
-        ? `crowned at round ${s.round} — your team holds the champion spot`
-        : `out of lives at round ${s.round} — the run is over (your ghosts stay on the ladder)`;
+    const crown = s.endedBy === "crown";
+    els.endPanel.classList.toggle("crowned", crown);
+    const dethroned = ofType(s.log, "Crowned")[0]?.dethroned;
+    els.endHead.textContent = crown
+      ? `👑 crowned at round ${s.round} — ` +
+        (dethroned === undefined || dethroned === null
+          ? "the spot was vacant; your team takes it"
+          : dethroned === BOOTSTRAP_RUN_ID
+            ? "the shipped champion falls; your team takes the spot"
+            : `${dethroned} is dethroned; your team takes the spot`)
+      : `out of lives at round ${s.round} — the run is over (your ghosts stay on the ladder)`;
+    // The climb, derived from the run log: one fight per round, W/L/D per round.
+    const fights = ofType(s.log, "FightFought");
+    const won = fights.filter((f) => f.winner === "A").length;
+    const lost = fights.filter((f) => f.winner === "B").length;
+    const drawn = fights.length - won - lost;
+    const marks = fights
+      .map(
+        (f) =>
+          `<span class="end-mark ${f.winner === "A" ? "w" : f.winner === "B" ? "l" : "d"}" ` +
+          `title="round ${f.round}: ${f.winner === "A" ? "won" : f.winner === "B" ? "lost" : "draw"}">${f.round}</span>`,
+      )
+      .join("");
+    els.endStats.innerHTML =
+      `<span class="end-record">${won}W/${lost}L/${drawn}D over ${fights.length} round${fights.length === 1 ? "" : "s"}` +
+      `${crown ? ` · ${s.lives} ${s.lives === 1 ? "life" : "lives"} to spare` : ""}</span>` +
+      `<span class="end-marks">${marks}</span>`;
     els.endLine.innerHTML = s.team.map((u, i) => lineCard(u, i, s.team.length - 1, false)).join("");
     show("end");
   }
@@ -279,6 +334,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
    * on the error line (anything else propagates — it is a bug, not a play). */
   function transition(step: (s: RunState) => RunState): void {
     els.error.hidden = true;
+    const before = state!.log.length;
     try {
       state = step(state!);
     } catch (err) {
@@ -288,6 +344,14 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       }
       throw err;
     }
+    // The fuse moment, surfaced: a level-up only changes a small "L2" badge,
+    // so the shop says it happened — derived from the transition's own events.
+    const ups = ofType(state.log.slice(before), "LeveledUp");
+    const up = ups[ups.length - 1];
+    notice =
+      up === undefined
+        ? undefined
+        : `⬆ ${up.unit} fused ${STACK_THRESHOLD} copies into level ${up.level} — now ${up.hp} hp, ${up.pwr} pwr`;
     selected = undefined;
     saveRun(deps.storage, state, pending);
     render();
@@ -312,6 +376,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     }
     state = next;
     selected = undefined;
+    notice = undefined;
     const fresh = next.log.slice(before.log.length);
     const fought = ofType(fresh, "FightFought")[0];
     if (fought === undefined) {
@@ -330,7 +395,10 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       teamA: toBattleTeam(before.team),
       teamB: opponent.team,
       seed: fought.battleSeed,
-      opponentLabel: drawn !== undefined ? `ghost ${opponent.runId} (round ${before.round})` : `champion ${opponent.runId}`,
+      opponentLabel:
+        drawn !== undefined
+          ? `the ghost of ${ghostLabel(opponent.runId)} from round ${before.round}`
+          : championPhrase(opponent),
     };
     saveRun(deps.storage, next, pending);
     render();
@@ -357,6 +425,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     state = initRun({ seed, runId: nextRunId(deps.storage), pool: deps.pool, statuses: deps.registry });
     pending = undefined;
     selected = undefined;
+    notice = undefined;
     saveRun(deps.storage, state);
     render();
   });

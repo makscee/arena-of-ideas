@@ -15,7 +15,7 @@
 // ordinal (insertion order within a pool); a real timestamp, if a client ever
 // wants one, comes in as data.
 
-import { BOOTSTRAP_DEPTH, BOOTSTRAP_TEAMS } from "./tunables.js";
+import { BOOTSTRAP_CHAMPION, BOOTSTRAP_DEPTH, BOOTSTRAP_TEAMS } from "./tunables.js";
 import { assertValidContent } from "./validate.js";
 import type { StatusRegistry, UnitDef } from "./types.js";
 
@@ -149,7 +149,9 @@ export const BOOTSTRAP_RUN_ID = "bootstrap";
 
 /** Open a ladder over a store, seeding rounds 1..BOOTSTRAP_DEPTH from the
  * shipped bootstrap teams if the ladder is empty — a first-ever run has a
- * real climb, not a round-2 crown. (A ladder any run has played on cannot
+ * real climb, not a round-2 crown — and seating BOOTSTRAP_CHAMPION in the
+ * champion spot, so the spot is never vacant on a fresh ladder and a crown is
+ * always earned by beating someone. (A ladder any run has played on cannot
  * have an empty round-1 pool: snapshot-before-fight put the run's own ghost
  * there.) Every bootstrap team passes the content gate against `registry`
  * here, at seed time — a bad team fails loudly at open, never seed-dependently
@@ -163,6 +165,11 @@ export function openLadder(store: LadderStore, registry: StatusRegistry): Ladder
         store.addSnapshot({ runId: BOOTSTRAP_RUN_ID, round, seq, team: jsonClone(team) });
       });
     });
+    if (store.champion() === null) {
+      assertValidContent(BOOTSTRAP_CHAMPION, registry, "bootstrap champion");
+      // The round it guards: the first round past the seeded climb.
+      store.setChampion({ runId: BOOTSTRAP_RUN_ID, round: BOOTSTRAP_DEPTH + 1, seq: 0, team: jsonClone([...BOOTSTRAP_CHAMPION]) });
+    }
   }
   return store;
 }

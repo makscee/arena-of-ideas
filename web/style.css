@@ -1025,6 +1025,176 @@ button:disabled:hover {
   max-width: 28rem;
 }
 
+.run-notice {
+  color: var(--accent);
+  font-size: 0.8rem;
+  margin: 0.3rem 0 0.6rem;
+}
+
+/* ---------- run end screens ----------
+   The crown moment gets weight: a gold frame on the whole panel; the record
+   strip reads the climb round by round (green won, red lost, dim draw). */
+
+#run-end.crowned {
+  border: 1px solid #c9a227;
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  background: rgba(201, 162, 39, 0.07);
+}
+
+#run-end.crowned #run-end-head {
+  color: #e8c547;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+#run-end-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+}
+
+.end-record {
+  color: var(--dim);
+}
+
+.end-marks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+}
+
+.end-mark {
+  min-width: 1.3rem;
+  text-align: center;
+  padding: 0.1rem 0.2rem;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  border: 1px solid var(--border);
+}
+
+.end-mark.w {
+  color: var(--accent);
+  border-color: currentColor;
+}
+
+.end-mark.l {
+  color: var(--hurt);
+  border-color: currentColor;
+}
+
+.end-mark.d {
+  color: var(--dim);
+}
+
+/* ---------- ladder view ----------
+   The champion chase: champion team on top, pools per round below — the same
+   unit cards and inspector as the shop, scaled down a notch so a full pool
+   still reads on a phone. */
+
+#run-ladder {
+  margin-top: 1.2rem;
+}
+
+.lv-champ {
+  background: var(--panel);
+  border: 1px solid #c9a227;
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  margin: 0.3rem 0 0.6rem;
+  font-size: 0.8rem;
+}
+
+.lv-k {
+  color: #e8c547;
+  font-weight: 600;
+}
+
+.lv-who {
+  color: var(--dim);
+}
+
+.lv-rounds {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.lv-round {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.15rem 0.4rem;
+}
+
+.lv-round.here {
+  border-color: var(--accent);
+}
+
+.lv-round-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0.25rem 0.1rem;
+  font-size: 0.78rem;
+  color: var(--text);
+}
+
+.lv-tri {
+  color: var(--dim);
+}
+
+.lv-here {
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 0.7rem;
+}
+
+.lv-ghost {
+  border-top: 1px dashed var(--border);
+  padding: 0.3rem 0.1rem;
+}
+
+.lv-gid {
+  display: block;
+  color: var(--dim);
+  font-size: 0.68rem;
+  margin-bottom: 0.15rem;
+}
+
+.lv-team {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.lv-team .unit {
+  flex: 0 1 5.6rem;
+  min-width: 3.6rem;
+}
+
+.lv-inspect {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.72rem;
+  margin-top: 0.6rem;
+  max-width: 28rem;
+}
+
+button.danger {
+  color: var(--hurt);
+  border-color: var(--hurt);
+}
+
 @media (max-width: 700px) {
   /* One column: board, log, then details — the log keeps a small window so
      the inspector stays within a thumb's reach. */

@@ -57,6 +57,17 @@ describe("describeAbility", () => {
     );
   });
 
+  test("a derived resurrect hp reads 'at hp equal to …', never a trailing ' hp'", () => {
+    const text = describeAbility({
+      whens: [{ kind: "trigger", on: { on: "Death", unit: "ally" } }],
+      selectors: [{ kind: "lastDeadAlly" }],
+      effects: [{ kind: "resurrect", hp: { kind: "level", of: "holder" } }],
+    });
+    expect(text).toMatchInlineSnapshot(
+      `"After an ally dies: return the most recently dead ally to the back of the line at hp equal to this unit's level."`,
+    );
+  });
+
   test("a status-held ability speaks of the holder", () => {
     const text = describeAbility(stressRegistry.Poison!.abilities[0]!, { holder: "the holder" });
     expect(text).toContain("the holder");
