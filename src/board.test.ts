@@ -55,10 +55,10 @@ const findUnit = (board: ReturnType<typeof boardAt>, id: string) =>
 describe("boardAt vs the raw log, event by event", () => {
   const log = battle(stressBattle);
 
-  test("projected hp equals the kernel-stamped hpAfter at every Hurt/Heal", () => {
+  test("projected hp equals the kernel-stamped hpAfter at every Hurt/Heal/hp StatChanged", () => {
     let checked = 0;
     for (const e of log) {
-      if ((e.type !== "Hurt" && e.type !== "Heal") || e.hpAfter === undefined) continue;
+      if ((e.type !== "Hurt" && e.type !== "Heal" && e.type !== "StatChanged") || e.hpAfter === undefined) continue;
       const u = findUnit(boardAt(log, e.id), e.unit);
       expect(u, `unit ${e.unit} at event ${e.id}`).toBeDefined();
       expect(u!.hp, `hp of ${e.unit} after event ${e.id}`).toBe(Math.max(0, e.hpAfter));
@@ -151,6 +151,29 @@ describe("boardAt vs the raw log, event by event", () => {
       expect(final.lines.A).toEqual([]);
       expect(final.lines.B.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("hp StatChanged stamp", () => {
+  test("a mid-battle hp statMod stamps hpAfter (current hp), distinct from now (the new max)", () => {
+    // Gains Vitality when hurt — the StatChanged lands while damage is outstanding,
+    // so hpAfter (current) and now (effective max) must disagree.
+    const grower: UnitDef = {
+      name: "Grower",
+      base: { hp: 10, pwr: 1 },
+      abilities: [
+        {
+          whens: [{ kind: "trigger", on: { on: "Hurt", unit: "holder" } }],
+          selectors: [{ kind: "holder" }],
+          effects: [{ kind: "applyStatus", status: "Vitality", stacks: { kind: "const", value: 2 } }],
+        },
+      ],
+    };
+    const log = battle({ teamA: [grower], teamB: [dummy("Hitter", 12, 3)], seed: 1, statuses: stressRegistry });
+    const sc = log.find((e) => e.type === "StatChanged" && e.stat === "hp" && e.hpAfter !== undefined && e.hpAfter !== e.now);
+    expect(sc, "an hp StatChanged with outstanding damage").toBeDefined();
+    if (sc?.type !== "StatChanged") throw new Error("unreachable");
+    expect(findUnit(boardAt(log, sc.id), sc.unit)!.hp).toBe(Math.max(0, sc.hpAfter!));
   });
 });
 

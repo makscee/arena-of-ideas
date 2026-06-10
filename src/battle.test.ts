@@ -142,7 +142,7 @@ describe("alternation", () => {
 // ---------------------------------------------------------------------------
 
 describe("hpAfter", () => {
-  test("every Hurt/Heal carries hpAfter consistent with the hp deltas", () => {
+  test("every hp-changing event (Hurt/Heal/hp StatChanged) carries hpAfter consistent with the hp deltas", () => {
     // Stress content exercises Heals (Blessing), absorbed Hurts (Shield), and StatChanged (Vitality).
     const teamA: UnitDef[] = [
       { name: "Blessed", base: { hp: 8, pwr: 2 }, statuses: [{ status: "Blessing", stacks: 3 }] },
@@ -163,8 +163,18 @@ describe("hpAfter", () => {
       damage.set(r.id, 0);
     }
     let checked = 0;
+    let hpStatChanges = 0;
     for (const e of log) {
-      if (e.type === "StatChanged" && e.stat === "hp") maxHp.set(e.unit, e.now);
+      if (e.type === "StatChanged") {
+        if (e.stat === "hp") {
+          // An hp statMod moves current hp with the max — the kernel stamps the result.
+          maxHp.set(e.unit, e.now);
+          expect(e.hpAfter).toBe(maxHp.get(e.unit)! - damage.get(e.unit)!);
+          hpStatChanges++;
+        } else {
+          expect(e.hpAfter).toBeUndefined(); // a pwr change moves no hp
+        }
+      }
       if (e.type === "Hurt") {
         damage.set(e.unit, (damage.get(e.unit) ?? 0) + e.amount);
         expect(e.hpAfter).toBe(maxHp.get(e.unit)! - damage.get(e.unit)!);
@@ -177,6 +187,7 @@ describe("hpAfter", () => {
       }
     }
     expect(checked).toBeGreaterThan(0);
+    expect(hpStatChanges).toBeGreaterThan(0); // Vitality fired, so hp StatChanged was checked too
     expect(ofType(log, "Heal").length).toBeGreaterThan(0); // Blessing fired, so Heals were checked too
   });
 });

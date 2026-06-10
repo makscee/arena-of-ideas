@@ -81,7 +81,7 @@ Effective stat = max(0, base + Σ statMod contributions per stack) — computed 
 _Avoid_: applied buffs, stat snapshot
 
 **statMod**:
-A status's per-stack stat contribution while attached (e.g. Strength: +pwr per stack). Changes surface as `StatChanged` events.
+A status's per-stack stat contribution while attached (e.g. Strength: +pwr per stack). Changes surface as `StatChanged` events; an hp StatChanged carries `hpAfter` like Hurt/Heal, since current hp moves with the max.
 _Avoid_: stat buff, modifier stack
 
 ### Battle loop

@@ -112,7 +112,8 @@ export type EventBody =
   | { type: "Summon"; unit: string; name: string; side: Side; hp: number; pwr: number; resurrected?: boolean; atHp?: number }
   | { type: "StatusApplied"; unit: string; status: string; stacks: number; total: number }
   | { type: "StatusRemoved"; unit: string; status: string; stacks: number; remaining: number }
-  | { type: "StatChanged"; unit: string; stat: StatName; delta: number; now: number }
+  // hpAfter is present on hp StatChanged events only (a pwr change moves no hp).
+  | { type: "StatChanged"; unit: string; stat: StatName; delta: number; now: number; hpAfter?: number }
   | { type: "Silenced"; unit: string }
   | { type: "Fatigue"; amount: number }
   | { type: "ChainBlocked"; ability: AbilityRef; at: number }

@@ -126,8 +126,7 @@ export function boardAt(log: BattleEvent[], upto: number): BoardState {
         const u = units.get(e.unit);
         if (!u) break;
         if (e.stat === "hp") {
-          // Damage taken is what persists; current hp shifts with the max (kernel: cur = effective − damage).
-          u.hp = Math.max(0, u.hp + e.delta);
+          if (e.hpAfter !== undefined) u.hp = Math.max(0, e.hpAfter);
           u.maxHp = e.now;
         } else {
           u.pwr = e.now;

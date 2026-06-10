@@ -608,13 +608,21 @@ class Engine {
         if (inst.stacks <= 0) u.statuses = u.statuses.filter((s) => s !== inst);
         return;
       }
+      case "StatChanged": {
+        // An hp statMod shifts current hp with the max (cur = effective − damage);
+        // stamp the resulting hp so consumers read it instead of re-deriving it.
+        if (ev.stat !== "hp") return;
+        const u = this.units.get(ev.unit);
+        if (u) ev.hpAfter = this.curHp(u);
+        return;
+      }
       case "Silenced": {
         const u = this.units.get(ev.unit);
         if (u) u.silenced = true;
         return;
       }
       default:
-        return; // BattleStart/TurnStart/TurnEnd/Strike/Fatigue/StatChanged/ChainBlocked/Intercepted/BattleEnd mutate nothing
+        return; // BattleStart/TurnStart/TurnEnd/Strike/Fatigue/ChainBlocked/Intercepted/BattleEnd mutate nothing
     }
   }
 
