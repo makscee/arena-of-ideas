@@ -8,6 +8,12 @@
   --accent: #6fc28a;
   --warn: #e0876f;
   --border: #2c3038;
+  /* battle-log palette — one colour per event family, kept small on purpose */
+  --side-a: #7da7e0;
+  --side-b: #e0a36f;
+  --hurt: #e06c75;
+  --status: #b48ad6;
+  --block: #d6c46f;
 }
 
 * {
@@ -115,13 +121,7 @@ button:disabled:hover {
   font-weight: 600;
 }
 
-/* ---------- tabs ---------- */
-
-#tabs {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 0.6rem;
-}
+/* ---------- view tabs ---------- */
 
 .tab {
   color: var(--dim);
@@ -164,6 +164,15 @@ button:disabled:hover {
 .side-tag {
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+/* Side tints — the same hues the log uses for unit names. */
+.side[data-side="A"] .side-tag {
+  color: var(--side-a);
+}
+
+.side[data-side="B"] .side-tag {
+  color: var(--side-b);
 }
 
 .line,
@@ -209,10 +218,16 @@ button:disabled:hover {
   border-radius: 5px;
   padding: 0.4rem 0.15rem 0.3rem;
   text-align: center;
+  cursor: pointer; /* every card opens the inspector */
 }
 
 .unit.front {
   border-color: var(--accent);
+}
+
+.unit.sel {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
 }
 
 .front-tag {
@@ -286,6 +301,7 @@ button:disabled:hover {
   background: var(--border);
   border-radius: 3px;
   padding: 0 0.2rem;
+  cursor: pointer; /* a chip opens the inspector on its status */
 }
 
 .chip.mute {
@@ -384,20 +400,201 @@ button:disabled:hover {
   color: var(--text);
 }
 
-/* ---------- text replay ----------
-   Wrap-vs-scroll: the replay WRAPS (pre-wrap). Its lines are prose sentences,
-   so wrapping reads better on a phone than a side-scroll (slice 8 carry-over);
-   anywhere-breaks only kick in on words longer than the viewport. */
+/* ---------- battle readout: inline log + inspector + event panel ----------
+   Two columns on a desk (log left, details right), one stacked column at
+   phone width. The log pane scrolls itself — the page never grows with the
+   battle — and lines appear/disappear in step with the playhead. */
 
-#replay {
+#battle-readout {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+  align-items: start;
+}
+
+#log-pane {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 1rem;
-  font-size: 0.8rem;
-  white-space: pre-wrap;
+  padding: 0.5rem 0.6rem;
+}
+
+.pane-k {
+  color: var(--accent);
+  text-transform: uppercase;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+}
+
+#battle-log {
+  position: relative; /* line offsetTop is measured against this scroll box */
+  overflow-y: auto;
+  max-height: 19rem;
+  margin-top: 0.3rem;
+  font-size: 0.72rem;
+}
+
+.log-line {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.05rem 0.3rem;
+  border-radius: 3px;
+  cursor: pointer; /* a line drives the playhead to its event */
   overflow-wrap: anywhere;
-  margin: 0;
+}
+
+.log-line:hover {
+  background: var(--bg);
+}
+
+.log-line.cur {
+  background: var(--bg);
+  outline: 1px solid var(--border);
+}
+
+.log-ico {
+  flex: none;
+  width: 1.1rem;
+  text-align: center;
+}
+
+/* one colour per event family; names keep their side tints */
+.ev-turn {
+  justify-content: center;
+  color: var(--dim);
+}
+
+.ev-dim {
+  color: var(--dim);
+}
+
+.ev-dim .u,
+.ev-turn .u {
+  color: inherit;
+}
+
+.ev-mark .log-ico,
+.ev-mark .log-text {
+  color: var(--accent);
+}
+
+.ev-hurt .log-ico,
+.ev-death .log-ico {
+  color: var(--hurt);
+}
+
+.ev-death .log-text {
+  color: var(--hurt);
+}
+
+.ev-heal .log-ico,
+.ev-summon .log-ico {
+  color: var(--accent);
+}
+
+.ev-status .log-ico {
+  color: var(--status);
+}
+
+.ev-block .log-ico {
+  color: var(--block);
+}
+
+.ev-warn .log-ico {
+  color: var(--warn);
+}
+
+.u.ua {
+  color: var(--side-a);
+}
+
+.u.ub {
+  color: var(--side-b);
+}
+
+#detail-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+/* ---------- unit inspector ---------- */
+
+#inspect-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.72rem;
+}
+
+.ins-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.2rem;
+}
+
+.ins-name {
+  font-weight: 600;
+}
+
+.ins-stats {
+  color: var(--dim);
+  margin-left: auto;
+}
+
+.ins-dead {
+  color: var(--hurt);
+}
+
+#ins-close {
+  font-size: 0.65rem;
+  padding: 0.05rem 0.35rem;
+  margin-left: auto;
+}
+
+.ins-head .ins-stats + #ins-close {
+  margin-left: 0;
+}
+
+.ins-k {
+  color: var(--accent);
+  text-transform: uppercase;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  margin-top: 0.4rem;
+}
+
+.ins-row {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.1rem 0.2rem;
+  border-radius: 3px;
+}
+
+.ins-row.sel {
+  background: var(--bg);
+  outline: 1px solid var(--status);
+}
+
+.ins-row .ins-ico {
+  flex: none;
+  color: var(--status);
+}
+
+.ins-row.ins-ab .ins-ico {
+  color: var(--dim);
+}
+
+.ins-warn {
+  color: var(--warn);
+}
+
+.ins-dim {
+  color: var(--dim);
 }
 
 #kernel-version {
@@ -680,15 +877,23 @@ button:disabled:hover {
   font-size: 0.75rem;
 }
 
+@media (max-width: 700px) {
+  /* One column: board, log, then details — the log keeps a small window so
+     the inspector stays within a thumb's reach. */
+  #battle-readout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #battle-log {
+    max-height: 11rem;
+  }
+}
+
 @media (max-width: 480px) {
   #controls,
   #gauntlet-controls {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  #replay {
-    font-size: 0.7rem;
   }
 
   .uname {

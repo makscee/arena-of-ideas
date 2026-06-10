@@ -14,6 +14,16 @@ export { sweep, sweepSeeds, sweepOutcome, summarizeSweep } from "./sweep.js";
 export type { SweepInput, SweepOutcome, SweepStats, SweepResult } from "./sweep.js";
 export { renderReplay } from "./replay.js";
 export { displayNames, ancestry, abilityRefDesc, shortDesc, deathCauseChain } from "./trace.js";
+export {
+  describeAbility,
+  describeAmount,
+  describeCondition,
+  describeEffect,
+  describeSelector,
+  describeStatus,
+  describeWhen,
+} from "./describe.js";
+export type { DescribeOpts } from "./describe.js";
 export type { NameOf } from "./trace.js";
 export { boardAt } from "./board.js";
 export type { BoardState, BoardUnit } from "./board.js";

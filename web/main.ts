@@ -1,8 +1,9 @@
 // Web shell — a thin, disposable client over the kernel's public API.
 // It owns zero rules: pick teams, pick a seed, call battle(), hand the event
-// log to the visual viewer and the text replay. Both views read the same log.
+// log (and the content it ran on) to the battle screen — board, inline log,
+// and inspector all read that one log.
 
-import { KERNEL_VERSION, battle, renderReplay, stressRegistry, type UnitDef } from "../src/index.js";
+import { KERNEL_VERSION, battle, stressRegistry, type UnitDef } from "../src/index.js";
 import { resolveUnits, teamOptions } from "./catalogue.js";
 import { createViewer } from "./viewer.js";
 import { createEditor } from "./editor.js";
@@ -26,10 +27,6 @@ const runError = el<HTMLElement>("run-error");
 const randomizeButton = el<HTMLButtonElement>("randomize");
 const form = el<HTMLFormElement>("controls");
 const result = el<HTMLElement>("result");
-const boardPanel = el<HTMLElement>("board-panel");
-const replayBlock = el<HTMLPreElement>("replay");
-const tabBoard = el<HTMLButtonElement>("tab-board");
-const tabText = el<HTMLButtonElement>("tab-text");
 
 const viewer = createViewer({
   board: el("board"),
@@ -41,6 +38,8 @@ const viewer = createViewer({
   stepLabel: el("step-label"),
   eventDesc: el("event-desc"),
   eventCause: el("event-cause"),
+  log: el("battle-log"),
+  inspect: el("inspect-panel"),
 });
 
 function fillTeamPickers(): void {
@@ -90,17 +89,6 @@ randomizeButton.addEventListener("click", () => {
   clearSeedFlag();
 });
 
-// Tabs: the board is the watchable replay; the text replay stays ground truth.
-function showTab(which: "board" | "text"): void {
-  boardPanel.hidden = which !== "board";
-  replayBlock.hidden = which !== "text";
-  tabBoard.classList.toggle("active", which === "board");
-  tabText.classList.toggle("active", which === "text");
-  if (which !== "board") viewer.stop();
-}
-tabBoard.addEventListener("click", () => showTab("board"));
-tabText.addEventListener("click", () => showTab("text"));
-
 /** Resolve a picker value to units via the catalogue's gate; a failure
  * surfaces as the run error (the validator's own message for saved teams). */
 function resolveTeam(value: string): UnitDef[] | null {
@@ -126,15 +114,13 @@ function runFromControls(): void {
   }
   clearSeedFlag();
 
-  result.hidden = false;
   try {
     const log = battle({ teamA, teamB, seed, statuses: stressRegistry });
-    viewer.load(log);
-    replayBlock.textContent = `${renderReplay(log)}\n\n(seed ${seed})`;
-    showTab("board");
+    viewer.load(log, { teams: { A: teamA, B: teamB }, registry: stressRegistry });
+    result.hidden = false;
   } catch (err) {
-    replayBlock.textContent = `Battle failed: ${(err as Error).message}`;
-    showTab("text");
+    result.hidden = true;
+    flagRun(`Battle failed: ${(err as Error).message}`);
   }
 }
 

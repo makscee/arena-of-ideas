@@ -1,7 +1,8 @@
 // Replay viewer — steps a causal event log and shows the board at each step.
 // Board state comes from the kernel's boardAt projection; cause chains come
-// from the kernel's trace helpers. This file owns only stepping, transport
-// controls, and one-line event formatting for the readout.
+// from the kernel's trace helpers; the inline log and the unit inspector live
+// in their own modules. This file owns stepping, transport controls, selection,
+// and one-line event formatting for the readout.
 
 import {
   abilityRefDesc,
@@ -12,8 +13,12 @@ import {
   shortDesc,
   type BattleEvent,
   type NameOf,
+  type StatusRegistry,
+  type UnitDef,
 } from "../src/index.js";
 import { renderBoard } from "./board-render.js";
+import { createBattleLog } from "./battle-log.js";
+import { renderInspect, unitDefs } from "./inspect.js";
 
 const BASE_STEP_MS = 350; // 1x ≈ 3 events/second
 
@@ -97,10 +102,19 @@ interface ViewerEls {
   stepLabel: HTMLElement;
   eventDesc: HTMLElement;
   eventCause: HTMLElement;
+  log: HTMLElement;
+  inspect: HTMLElement;
+}
+
+/** What the battle ran on — the viewer derives ability/status descriptions
+ * from the same data, so the inspector can never drift from the rules. */
+export interface BattleContent {
+  teams: { A: UnitDef[]; B: UnitDef[] };
+  registry: StatusRegistry;
 }
 
 export interface Viewer {
-  load(log: BattleEvent[]): void;
+  load(log: BattleEvent[], content: BattleContent): void;
   stop(): void;
   /** Detach the viewer's document-level listeners (and stop playback).
    * Anything that creates viewers more than once must destroy the old one,
@@ -113,13 +127,23 @@ export function createViewer(els: ViewerEls): Viewer {
   let name: NameOf = (id) => id;
   let step = 0;
   let timer: number | undefined;
+  let defs = new Map<string, UnitDef>();
+  let registry: StatusRegistry = {};
+  let selected: { unit: string; status?: string } | undefined;
 
   const playing = () => timer !== undefined;
+
+  const battleLog = createBattleLog(els.log, (eventId) => {
+    pause();
+    goTo(eventId);
+  });
 
   function render(): void {
     const e = log[step];
     if (!e) return;
-    renderBoard(els.board, boardAt(log, step), name, subjectsOf(e));
+    const board = boardAt(log, step);
+    renderBoard(els.board, board, name, subjectsOf(e), selected?.unit);
+    battleLog.syncTo(step);
     els.scrub.value = String(step);
     els.stepLabel.textContent = `event ${step + 1}/${log.length} · turn ${e.turn}`;
     els.eventDesc.textContent = describeEvent(e, name);
@@ -127,6 +151,17 @@ export function createViewer(els: ViewerEls): Viewer {
     els.prev.disabled = step === 0;
     els.next.disabled = step === log.length - 1;
     els.play.textContent = playing() ? "pause" : "play";
+    els.inspect.hidden = selected === undefined;
+    if (selected !== undefined) {
+      renderInspect(els.inspect, {
+        unitId: selected.unit,
+        ...(selected.status !== undefined ? { status: selected.status } : {}),
+        board,
+        def: defs.get(selected.unit),
+        registry,
+        name,
+      });
+    }
   }
 
   /** The selected event's lineage: source, the causedBy chain, and a death's narrated why. */
@@ -200,6 +235,24 @@ export function createViewer(els: ViewerEls): Viewer {
     pause();
     goTo(Number(a.getAttribute("data-goto")));
   });
+  // Selecting on the board: a unit card opens the inspector (again = close);
+  // a status chip opens it with that status highlighted.
+  els.board.addEventListener("click", (ev) => {
+    const target = ev.target as HTMLElement;
+    const card = target.closest("[data-unit]");
+    if (!card) return;
+    const unit = card.getAttribute("data-unit")!;
+    const chip = target.closest("[data-status]");
+    if (chip) selected = { unit, status: chip.getAttribute("data-status")! };
+    else if (selected?.unit === unit && selected.status === undefined) selected = undefined;
+    else selected = { unit };
+    render();
+  });
+  els.inspect.addEventListener("click", (ev) => {
+    if (!(ev.target as HTMLElement).closest("#ins-close")) return;
+    selected = undefined;
+    render();
+  });
   // Arrow keys step when focus is not on a control with its own arrow behavior.
   // Named so destroy() can detach it — a document-level listener must not
   // outlive its viewer.
@@ -216,11 +269,15 @@ export function createViewer(els: ViewerEls): Viewer {
   document.addEventListener("keydown", onKeydown);
 
   return {
-    load(newLog: BattleEvent[]): void {
+    load(newLog: BattleEvent[], content: BattleContent): void {
       pause();
       log = newLog;
       name = displayNames(log);
       step = 0;
+      defs = unitDefs(log, content.teams, content.registry);
+      registry = content.registry;
+      selected = undefined;
+      battleLog.load(log, name);
       els.scrub.min = "0";
       els.scrub.max = String(log.length - 1);
       render();

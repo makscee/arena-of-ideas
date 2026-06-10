@@ -36,12 +36,18 @@ function shapeSvg(unitName: string, dead: boolean): string {
 const esc = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
-function unitCard(u: BoardUnit, displayName: string, opts: { front: boolean; dead: boolean; hit: boolean }): string {
-  const cls = ["unit", opts.front && "front", opts.dead && "dead", opts.hit && "hit"].filter(Boolean).join(" ");
+function unitCard(
+  u: BoardUnit,
+  displayName: string,
+  opts: { front: boolean; dead: boolean; hit: boolean; sel: boolean },
+): string {
+  const cls = ["unit", opts.front && "front", opts.dead && "dead", opts.hit && "hit", opts.sel && "sel"]
+    .filter(Boolean)
+    .join(" ");
   const chips = u.statuses
     .map(
       (s) =>
-        `<span class="chip" title="${esc(s.status)} ×${s.stacks}">${esc(s.status.slice(0, 3))}${s.stacks}</span>`,
+        `<span class="chip" data-status="${esc(s.status)}" title="${esc(s.status)} ×${s.stacks}">${esc(s.status.slice(0, 3))}${s.stacks}</span>`,
     )
     .join("");
   const silenced = u.silenced ? '<span class="chip mute" title="Silenced">mut</span>' : "";
@@ -55,12 +61,18 @@ function unitCard(u: BoardUnit, displayName: string, opts: { front: boolean; dea
     </div>`;
 }
 
-function sideHtml(board: BoardState, side: Side, name: (id: string) => string, hit: Set<string>): string {
+function sideHtml(
+  board: BoardState,
+  side: Side,
+  name: (id: string) => string,
+  hit: Set<string>,
+  selected: string | undefined,
+): string {
   const line = board.lines[side]
-    .map((u, i) => unitCard(u, name(u.id), { front: i === 0, dead: false, hit: hit.has(u.id) }))
+    .map((u, i) => unitCard(u, name(u.id), { front: i === 0, dead: false, hit: hit.has(u.id), sel: u.id === selected }))
     .join("");
   const grave = board.graves[side]
-    .map((u) => unitCard(u, name(u.id), { front: false, dead: true, hit: hit.has(u.id) }))
+    .map((u) => unitCard(u, name(u.id), { front: false, dead: true, hit: hit.has(u.id), sel: u.id === selected }))
     .join("");
   return `
     <div class="side" data-side="${side}">
@@ -70,15 +82,17 @@ function sideHtml(board: BoardState, side: Side, name: (id: string) => string, h
     </div>`;
 }
 
-/** Replaces `root`'s content with the board: side A's line, a divider, side B's. */
+/** Replaces `root`'s content with the board: side A's line, a divider, side B's.
+ * `selected` marks the unit the inspector is open on. */
 export function renderBoard(
   root: HTMLElement,
   board: BoardState,
   name: (id: string) => string,
   hit: Set<string>,
+  selected?: string,
 ): void {
   const verdict = board.ended
     ? `<span class="verdict">${board.ended.winner === "draw" ? "draw" : `side ${board.ended.winner} wins`} · turn ${board.ended.turns}</span>`
     : `<span class="verdict dim">turn ${board.turn}</span>`;
-  root.innerHTML = `${sideHtml(board, "A", name, hit)}<div class="divider">${verdict}</div>${sideHtml(board, "B", name, hit)}`;
+  root.innerHTML = `${sideHtml(board, "A", name, hit, selected)}<div class="divider">${verdict}</div>${sideHtml(board, "B", name, hit, selected)}`;
 }
