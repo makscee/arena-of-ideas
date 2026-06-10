@@ -267,8 +267,12 @@ export function createEditor(els: EditorEls, onTeamsChanged: () => void): Editor
     const u = units[Number(t.getAttribute("data-i"))];
     if (!u) return;
     if (field === "name") u.name = t.value;
-    else if (field === "hp") u.base.hp = numField(t.value);
-    else if (field === "pwr") u.base.pwr = numField(t.value);
+    else if (field === "hp" || field === "pwr") {
+      // An imported unit may lack a base object entirely (the validator flags
+      // it) — editing a stat field must repair it, not throw.
+      if (typeof u.base !== "object" || u.base === null) u.base = { hp: Number.NaN, pwr: Number.NaN };
+      u.base[field] = numField(t.value);
+    }
     else if (field === "stacks") {
       const s = u.statuses?.[Number(t.getAttribute("data-j"))];
       if (s) s.stacks = numField(t.value);

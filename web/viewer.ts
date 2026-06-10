@@ -102,6 +102,10 @@ interface ViewerEls {
 export interface Viewer {
   load(log: BattleEvent[]): void;
   stop(): void;
+  /** Detach the viewer's document-level listeners (and stop playback).
+   * Anything that creates viewers more than once must destroy the old one,
+   * or stale keydown handlers pile up on document. */
+  destroy(): void;
 }
 
 export function createViewer(els: ViewerEls): Viewer {
@@ -197,7 +201,9 @@ export function createViewer(els: ViewerEls): Viewer {
     goTo(Number(a.getAttribute("data-goto")));
   });
   // Arrow keys step when focus is not on a control with its own arrow behavior.
-  document.addEventListener("keydown", (ev) => {
+  // Named so destroy() can detach it — a document-level listener must not
+  // outlive its viewer.
+  const onKeydown = (ev: KeyboardEvent): void => {
     if (log.length === 0 || els.board.closest("[hidden]")) return;
     const tag = (document.activeElement?.tagName ?? "").toLowerCase();
     if (tag === "input" || tag === "select" || tag === "textarea") return;
@@ -206,7 +212,8 @@ export function createViewer(els: ViewerEls): Viewer {
       pause();
       goTo(step + (ev.key === "ArrowRight" ? 1 : -1));
     }
-  });
+  };
+  document.addEventListener("keydown", onKeydown);
 
   return {
     load(newLog: BattleEvent[]): void {
@@ -219,5 +226,9 @@ export function createViewer(els: ViewerEls): Viewer {
       render();
     },
     stop: pause,
+    destroy(): void {
+      pause();
+      document.removeEventListener("keydown", onKeydown);
+    },
   };
 }
