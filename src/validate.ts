@@ -35,7 +35,7 @@ const WHEN_KINDS = ["trigger", "interceptor"] as const;
 const UNIT_FILTERS = ["holder", "ally", "enemy", "any"] as const;
 const CONDITION_KINDS = ["holderHpAtMost"] as const;
 const SELECTOR_KINDS = ["holder", "eventUnit", "frontEnemy", "allEnemies", "allAllies", "randomEnemy", "lastDeadAlly"] as const;
-const AMOUNT_KINDS = ["const", "stat", "stacks"] as const;
+const AMOUNT_KINDS = ["const", "stat", "level", "stacks"] as const;
 const STAT_NAMES = ["hp", "pwr"] as const;
 // Which atoms run in which context (runEffect vs runInterceptor — the other side is a silent no-op).
 const TRIGGER_EFFECTS = ["damage", "heal", "applyStatus", "consumeStacks", "summon", "silence", "resurrect"] as const;
@@ -308,6 +308,9 @@ function validateAmount(a: unknown, owner: Owner, path: string, issues: Validati
     case "stat":
       if (!oneOf(a["stat"], STAT_NAMES)) issues.push({ path: `${path}.stat`, message: `unknown stat ${JSON.stringify(a["stat"])} — stats are ${list(STAT_NAMES)}` });
       if (a["of"] !== "holder") issues.push({ path: `${path}.of`, message: 'stat amounts read the holder: of must be "holder"' });
+      return;
+    case "level":
+      if (a["of"] !== "holder") issues.push({ path: `${path}.of`, message: 'level amounts read the holder: of must be "holder"' });
       return;
     case "stacks":
       if (owner === "unit") {

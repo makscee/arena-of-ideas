@@ -3,6 +3,9 @@
 export const KERNEL_VERSION = "5.0.0-alpha.0";
 
 export { battle, toJSONL, winnerOf, TEAM_SIZE, FATIGUE_START, FATIGUE_RAMP, TURN_CAP } from "./battle.js";
+export { initRun, buy, reroll, reorder, fight, applyDecision, playRun, runToJSONL, toBattleTeam, InvalidDecisionError } from "./run.js";
+export type { RunInput, RunState, RunUnit, RunDecision, RunEvent, RunEventBody, RunEventType } from "./run.js";
+export * from "./tunables.js";
 export { sweep, sweepSeeds, sweepOutcome, summarizeSweep } from "./sweep.js";
 export type { SweepInput, SweepOutcome, SweepStats, SweepResult } from "./sweep.js";
 export { renderReplay } from "./replay.js";

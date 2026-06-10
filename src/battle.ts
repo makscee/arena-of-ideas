@@ -699,6 +699,8 @@ class Engine {
         return a.value;
       case "stat":
         return this.effStat(ctx.holder, a.stat);
+      case "level":
+        return ctx.holder.level;
       case "stacks": {
         if (ctx.ref.status === undefined) return 0;
         return ctx.holder.statuses.find((s) => s.def.name === ctx.ref.status)?.stacks ?? 0;

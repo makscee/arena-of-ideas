@@ -56,6 +56,7 @@ export type Selector =
 export type Amount =
   | { kind: "const"; value: number }
   | { kind: "stat"; stat: StatName; of: "holder" } // holder's effective stat
+  | { kind: "level"; of: "holder" } // holder's level — shop-layer growth, readable like a stat
   | { kind: "stacks" }; // current stacks of the owning status instance (status content only)
 
 export type Effect =

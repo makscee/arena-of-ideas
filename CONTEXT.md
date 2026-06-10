@@ -51,7 +51,7 @@ An atomic state-change instruction; effects run in sequence order. Trigger-conte
 _Avoid_: action, operation
 
 **Amount**:
-A magnitude expression: `const`, holder's effective `stat`, or `stacks` of the owning status. Stat scaling is opt-in content, priced by the budget, never an engine rule.
+A magnitude expression: `const`, holder's effective `stat`, holder's `level` (shop-layer growth), or `stacks` of the owning status. Stat scaling is opt-in content, priced by the budget, never an engine rule.
 _Avoid_: value, magnitude
 
 **Status**:
