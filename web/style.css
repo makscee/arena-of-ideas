@@ -1,0 +1,122 @@
+/* Plain, dark, monospace. The UI is a disposable renderer over the event log. */
+
+:root {
+  --bg: #14161a;
+  --panel: #1d2026;
+  --text: #d6d9de;
+  --dim: #8b919b;
+  --accent: #6fc28a;
+  --border: #2c3038;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  line-height: 1.5;
+}
+
+main {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 0.25rem;
+}
+
+.tagline {
+  color: var(--dim);
+  font-size: 0.85rem;
+  margin: 0 0 1.5rem;
+}
+
+#controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--dim);
+}
+
+select,
+input,
+button {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+}
+
+input#seed {
+  width: 8rem;
+}
+
+.seed-row {
+  display: flex;
+  gap: 0.4rem;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+#run {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+#replay {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+  font-size: 0.8rem;
+  overflow-x: auto;
+  white-space: pre;
+  margin: 0;
+}
+
+#kernel-version {
+  margin-top: 1rem;
+  color: var(--dim);
+  font-size: 0.75rem;
+}
+
+@media (max-width: 480px) {
+  #controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #replay {
+    font-size: 0.7rem;
+  }
+}

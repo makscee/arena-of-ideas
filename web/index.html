@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Arena of Ideas — battle replay</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Arena of Ideas</h1>
+      <p class="tagline">battle(teamA, teamB, seed) → causal event log — replayed below, computed in your browser.</p>
+
+      <form id="controls">
+        <label>
+          Team A
+          <select id="team-a"></select>
+        </label>
+        <label>
+          Team B
+          <select id="team-b"></select>
+        </label>
+        <label>
+          Seed
+          <span class="seed-row">
+            <input id="seed" type="number" value="0" step="1" />
+            <button type="button" id="randomize" title="Random seed">🎲</button>
+          </span>
+        </label>
+        <button type="submit" id="run">Run battle</button>
+      </form>
+
+      <pre id="replay" hidden></pre>
+      <footer id="kernel-version"></footer>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
