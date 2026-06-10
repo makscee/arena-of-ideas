@@ -1,0 +1,14 @@
+{
+  "name": "arena-of-ideas",
+  "version": "5.0.0-alpha.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.0"
+  }
+}
