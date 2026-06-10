@@ -75,11 +75,13 @@ Event {
 }
 ```
 
-EventTypes v1: `BattleStart, TurnStart, PairFaced, Strike, Hurt, Heal, Death, Summon, StatusApplied, StatusRemoved, StatChanged, Fatigue, ChainBlocked, BattleEnd`.
+EventTypes v1: `BattleStart, TurnStart, PairFaced, Strike, Hurt, Heal, Death, Summon, StatusApplied, StatusRemoved, StatChanged, Fatigue, ChainBlocked, TurnEnd, Silenced, Intercepted, BattleEnd`.
 
 - `PairFaced {first}` — emitted when two units face each other for the first time; records the seeded first-striker roll **[PINNED]** (glass-cannon design space: a roll, observable in the log).
-- `Hurt {unit, amount, cause}` / `Heal {unit, amount}` — hp deltas. `Strike` proposes a `Hurt` of the striker's effective pwr.
+- `Hurt {unit, amount, cause, absorbed?}` / `Heal {unit, amount}` — hp deltas. `Strike` proposes a `Hurt` of the striker's effective pwr. `absorbed?` records how many hp a Shield interceptor consumed; a fully-absorbed Hurt still applies with `amount` 0.
 - `ChainBlocked {ability, at}` — a would-be firing suppressed by the no-self-retrigger law (§5). The replay explains chain stops with this event.
+- `Intercepted {by, original, unit?}` — emitted when an interceptor cancels a proposed event (e.g. Freeze cancelling a Strike, Blessing cancelling a Death); cancellations must be visible or the replay can't explain them. Interceptor side-effects (stack consumption, the replacement Heal) are caused by this event.
+- `Silenced {unit}` — the unit's own abilities are disabled for the battle (ability disabling is kernel state, not removable content).
 - The log is JSONL, one event per line. It is the *only* output of the battle; replays, attribution stats, and the sim gate all consume it.
 
 ## 3. Determinism
@@ -103,8 +105,8 @@ while both teams have living units and turn ≤ TURN_CAP:
   // alternating strikes [PINNED]:
   strike(first → other); settle      // Strike proposes Hurt = striker's effective pwr
   if other.alive and battle not decided:
-      strike(other → first); settle
-  emit TurnEnd-phase events: fatigue (below); settle
+      strike(other → first); settle   // back-strike only if BOTH units still alive
+  emit TurnEnd; settle; then Fatigue (caused by TurnEnd, from FATIGUE_START on); settle
   turn += 1
 
 fatigue [PINNED, v3]: from turn FATIGUE_START onward, every living unit
@@ -116,7 +118,7 @@ both empty simultaneously, or TURN_CAP reached → BattleEnd {draw}.
 ```
 
 - **Death and line collapse:** when a `Death` event applies, the unit leaves the line immediately and the team compacts forward (positions shift). Pairings are re-evaluated next strike; a fresh pairing rolls `PairFaced`.
-- Dead units go to the **graveyard** — an append-only per-team list. **[DEFER]** The graveyard exists only if Resurrect's stress test demands it (§7); if it survives, it is the one zone besides the line.
+- Dead units go to the **graveyard** — an append-only per-team list, the one zone besides the line **[PINNED]**. Death clears the unit's statuses (the corpse is clean). A resurrected unit returns at the back of the line and keeps its pair memory (first-striker rolls).
 
 ## 5. Cascade algorithm (normative)
 
@@ -130,8 +132,8 @@ Every state change flows through one pipeline: **propose → intercept → apply
 **[PINNED] Ordering rule (position priority):** whenever multiple abilities react to the same event, order is: side A front→back, then side B front→back; within a unit, ability list order; unit statuses after unit abilities, in attach order.
 
 **[PINNED] The no-self-retrigger law:** an ability instance X may not fire in response to event E if any event in E's `causedBy` ancestry has `source` = X. One sentence for players: *an ability never triggers itself, directly or through others.* A suppressed firing emits `ChainBlocked`.
-*Termination:* every causal path can contain each ability instance at most once as a source, so cascade depth is bounded by the number of ability instances on the board; the queue always drains.
-**[DEFER]** Fallback if play disproves the law: a global cascade-energy cap per settle. Decide at the stress test.
+*Termination:* every causal path can contain each ability instance at most once as a source, so cascade depth is bounded by the number of ability instances on the board; the queue always drains. **Validated at stress test (2026-06-10):** ChainBlocked observed, queue always drained; the cascade-energy fallback was not needed and stays dormant **[DEFER]**.
+Enqueued trigger firings resolve even if their holder has since died (MTG rule: triggers on the stack survive their source) — this is what lets on-death abilities like Summon fire.
 
 ## 6. Constants (tunable; sim-tunable, not design pins)
 
@@ -167,3 +169,17 @@ Nine abilities, shipped **as DSL data with behavior tests**. The kernel passes w
 - **Fusion & the budget:** fused units compose any subset of parents' parts *within a level-grown budget*; one pricing formula serves the creation gate and fusion alike; multi-when/multi-selector priced superlinearly (their value is multiplicative).
 - **Creation pipeline:** LLM text→parts interface; sim gate (candidate parts vs live meta, win-rate band); vote gate (fun/flavor only).
 - **Client:** a replay renderer over the event log; chosen last.
+
+## 9. Stress-test resolutions (2026-06-10)
+
+In-code decisions made during the stress build of `src/battle.ts`; recorded here per spec doctrine (conscious disagreement → fix one side).
+
+- **Event types added:** `TurnEnd`, `Intercepted`, `Silenced` are now first-class event types (§2).
+- **Graveyard adopted:** graveyard zone is real — per-team append-only list (§4). Resurrect's stress test demanded it; verdict: kernel, not content.
+- **Death clears statuses:** the corpse is clean; statMod contributions vanish with the statuses (consistent with the computed-stat law, §1).
+- **Fully-absorbed Hurt applies at amount 0:** the event still lands, causality is visible; Shield's interceptor records `absorbed` on it (§2).
+- **Back-strike requires both units alive:** if the first striker kills the second, the return strike does not occur (§4).
+- **Enqueued firings outlive their holder:** a trigger on the queue fires even if its source unit has since died — MTG rule; enables on-death abilities (§5).
+- **Silence scope:** disables a unit's own abilities (including statuses) but not its basic kernel strike; statuses applied *after* the silence event still function (Silence is a point-in-time effect, not an ongoing shield against future application).
+- **Pair memory survives death and resurrection:** first-striker rolls are keyed to the (a, b) pair; a resurrected unit rejoins with its prior rolls intact (§4).
+- **Kernel passed:** all 9 stress abilities expressible as DSL data; no unresolved kernel-breakers remain.
