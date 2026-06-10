@@ -2,10 +2,12 @@
 // The bar: a reader who has never seen the code can tell WHY the battle went
 // the way it did. Every consequential line carries its cause chain, walked
 // straight off the `causedBy` links the log records (SPEC §0.3).
+// The chain-walking itself lives in trace.ts, shared with the web viewer.
 //
 // Deterministic: same log in, byte-identical text out. No clock, no randomness.
 
 import type { AbilityRef, BattleEvent } from "./types.js";
+import { abilityRefDesc, deathCauseChain, displayNames, shortDesc, type NameOf } from "./trace.js";
 
 export function renderReplay(log: BattleEvent[]): string {
   return new Renderer(log).render();
@@ -22,13 +24,13 @@ class Renderer {
   private readonly log: BattleEvent[];
   private readonly lines: string[] = [];
   private readonly units = new Map<string, UnitView>();
-  private readonly display = new Map<string, string>(); // unit id → display name
+  private readonly nameOf: NameOf;
   private readonly depth: number[] = []; // event id → causal depth
   private readonly mergedHurts = new Set<number>(); // Hurts folded into their Strike line
 
   constructor(log: BattleEvent[]) {
     this.log = log;
-    this.computeDisplayNames();
+    this.nameOf = displayNames(log);
     for (const e of log) {
       this.depth[e.id] = e.causedBy === null ? 0 : (this.depth[e.causedBy] ?? 0) + 1;
     }
@@ -41,32 +43,12 @@ class Renderer {
 
   // ---------- naming ----------
 
-  /** Unit names when unique, instance ids (already readable, e.g. "A1:Dummy") when not. */
-  private computeDisplayNames(): void {
-    const owners = new Map<string, Set<string>>(); // name → unit ids
-    const claim = (id: string, name: string) => {
-      if (!owners.has(name)) owners.set(name, new Set());
-      owners.get(name)!.add(id);
-    };
-    for (const e of this.log) {
-      if (e.type === "BattleStart") {
-        for (const side of ["A", "B"] as const) for (const r of e.teams[side]) claim(r.id, r.name);
-      } else if (e.type === "Summon") {
-        claim(e.unit, e.name);
-      }
-    }
-    for (const [name, ids] of owners) {
-      for (const id of ids) this.display.set(id, ids.size === 1 ? name : id);
-    }
-  }
-
   private name(id: string): string {
-    return this.display.get(id) ?? id;
+    return this.nameOf(id);
   }
 
-  /** "Poison on Orc" for status abilities, "Witch's ability" for unit abilities. */
   private refDesc(ref: AbilityRef): string {
-    return ref.status !== undefined ? `${ref.status} on ${this.name(ref.unit)}` : `${this.name(ref.unit)}'s ability`;
+    return abilityRefDesc(ref, this.nameOf);
   }
 
   // ---------- hp bookkeeping ----------
@@ -248,103 +230,13 @@ class Renderer {
     }
   }
 
-  // ---------- cause chains ----------
+  // ---------- cause chains (shared narration: trace.ts) ----------
 
-  /**
-   * Walk `causedBy` ancestry from a death's proximate cause and narrate it
-   * compactly: "Poison tick (3 dmg) ← Poison applied turn 4 by Witch".
-   */
   private causeChain(startId: number): string[] {
-    const parts: string[] = [];
-    let id: number | null = startId;
-    for (let hops = 0; id !== null && hops < 6; hops++) {
-      const e: BattleEvent | undefined = this.log[id];
-      if (!e) break;
-      switch (e.type) {
-        case "Hurt": {
-          if (e.source !== "kernel" && e.source.status !== undefined) {
-            parts.push(`${e.source.status} tick (${e.amount} dmg)`);
-            const origin = this.statusOrigin(e.unit, e.source.status, e.id);
-            if (origin) parts.push(origin);
-            return parts;
-          }
-          if (e.source !== "kernel") {
-            parts.push(`hit by ${this.name(e.source.unit)}'s ability (${e.amount} dmg)`);
-            return parts;
-          }
-          const parent = e.causedBy !== null ? this.log[e.causedBy] : undefined;
-          if (parent?.type === "Strike") {
-            parts.push(`struck by ${this.name(parent.striker)} for ${e.amount}`);
-            return parts;
-          }
-          if (parent?.type === "Fatigue") {
-            parts.push(`fatigue (${e.amount} dmg)`);
-            return parts;
-          }
-          parts.push(`${e.amount} damage`);
-          id = e.causedBy;
-          continue;
-        }
-        case "StatChanged":
-          parts.push(`max ${e.stat} ${e.delta >= 0 ? "rose" : "fell"} to ${e.now}`);
-          id = e.causedBy;
-          continue;
-        case "StatusRemoved": {
-          const by = e.source !== "kernel" && e.source.unit !== e.unit ? ` by ${this.name(e.source.unit)}` : "";
-          parts.push(`${e.status} stripped${by}`);
-          id = e.causedBy;
-          continue;
-        }
-        case "Heal":
-          parts.push(`after healing ${e.amount}`);
-          id = e.causedBy;
-          continue;
-        default:
-          return parts; // turn structure and the rest add no story to a death
-      }
-    }
-    return parts;
+    return deathCauseChain(this.log, startId, this.nameOf);
   }
 
-  /** Where did this status come from? The most recent application before the given event. */
-  private statusOrigin(unitId: string, status: string, beforeId: number): string | undefined {
-    for (let i = beforeId - 1; i >= 0; i--) {
-      const e = this.log[i];
-      if (e && e.type === "StatusApplied" && e.unit === unitId && e.status === status) {
-        if (e.turn === 0) return `${status} carried from the start`;
-        const by = e.source !== "kernel" ? ` by ${this.name(e.source.unit)}` : "";
-        return `${status} applied turn ${e.turn}${by}`;
-      }
-    }
-    return undefined;
-  }
-
-  /** One-clause description of an event, for ChainBlocked explanations. */
   private shortDesc(e: BattleEvent | undefined): string {
-    if (!e) return "an earlier event";
-    switch (e.type) {
-      case "Hurt":
-        return `${this.name(e.unit)} was hurt`;
-      case "Heal":
-        return `${this.name(e.unit)} healed`;
-      case "Death":
-        return `${this.name(e.unit)} died`;
-      case "Strike":
-        return `${this.name(e.striker)}'s strike`;
-      case "Summon":
-        return `${this.name(e.unit)} appeared`;
-      case "StatusApplied":
-        return `${e.status} landed on ${this.name(e.unit)}`;
-      case "StatusRemoved":
-        return `${e.status} left ${this.name(e.unit)}`;
-      case "TurnStart":
-        return "the turn began";
-      case "TurnEnd":
-        return "the turn ended";
-      case "Fatigue":
-        return "fatigue struck";
-      default:
-        return `a ${e.type} event`;
-    }
+    return shortDesc(e, this.nameOf);
   }
 }
