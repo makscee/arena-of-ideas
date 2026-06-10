@@ -29,9 +29,39 @@
           </span>
         </label>
         <button type="submit" id="run">Run battle</button>
+        <p id="seed-error" role="alert" hidden></p>
       </form>
 
-      <pre id="replay" hidden></pre>
+      <section id="result" hidden>
+        <div id="tabs" role="tablist">
+          <button type="button" id="tab-board" class="tab active">board</button>
+          <button type="button" id="tab-text" class="tab">text replay</button>
+        </div>
+
+        <section id="board-panel">
+          <div id="board"></div>
+          <div id="transport">
+            <button type="button" id="step-prev" title="Previous event (←)">‹ prev</button>
+            <button type="button" id="step-play">play</button>
+            <button type="button" id="step-next" title="Next event (→)">next ›</button>
+            <select id="speed" title="Playback speed">
+              <option value="0.5">0.5×</option>
+              <option value="1" selected>1×</option>
+              <option value="2">2×</option>
+              <option value="4">4×</option>
+            </select>
+            <span id="step-label"></span>
+          </div>
+          <input id="scrub" type="range" min="0" max="0" value="0" step="1" title="Scrub events" />
+          <div id="event-panel">
+            <div id="event-desc"></div>
+            <div id="event-cause"></div>
+          </div>
+        </section>
+
+        <pre id="replay" hidden></pre>
+      </section>
+
       <footer id="kernel-version"></footer>
     </main>
     <script type="module" src="./main.ts"></script>

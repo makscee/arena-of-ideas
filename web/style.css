@@ -6,6 +6,7 @@
   --text: #d6d9de;
   --dim: #8b919b;
   --accent: #6fc28a;
+  --warn: #e0876f;
   --border: #2c3038;
 }
 
@@ -73,6 +74,17 @@ input#seed {
   width: 8rem;
 }
 
+input#seed[aria-invalid="true"] {
+  border-color: var(--warn);
+}
+
+#seed-error {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--warn);
+  font-size: 0.8rem;
+}
+
 .seed-row {
   display: flex;
   gap: 0.4rem;
@@ -86,6 +98,15 @@ button:hover {
   border-color: var(--accent);
 }
 
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+button:disabled:hover {
+  border-color: var(--border);
+}
+
 #run {
   color: var(--bg);
   background: var(--accent);
@@ -93,14 +114,288 @@ button:hover {
   font-weight: 600;
 }
 
+/* ---------- tabs ---------- */
+
+#tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.tab {
+  color: var(--dim);
+  background: transparent;
+  border: 1px solid var(--border);
+  font-size: 0.8rem;
+  padding: 0.3rem 0.8rem;
+}
+
+.tab.active {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ---------- board ----------
+   Wrap-vs-scroll: the board WRAPS nothing and SCROLLS nothing — a line is at
+   most TEAM_SIZE (5) cards, and the cards flex-shrink to fit five abreast at
+   375px. Stacked rows (A above B) keep both fronts at the left edge, so the
+   striker position reads the same on phone and desktop. */
+
+#board {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.side-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--dim);
+  margin-bottom: 0.3rem;
+}
+
+.side-tag {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.line,
+.grave {
+  display: flex;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.wiped {
+  color: var(--dim);
+  font-size: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.divider {
+  text-align: center;
+  font-size: 0.75rem;
+  border-top: 1px dashed var(--border);
+  border-bottom: 1px dashed var(--border);
+  padding: 0.15rem 0;
+}
+
+.verdict {
+  color: var(--accent);
+}
+
+.verdict.dim {
+  color: var(--dim);
+}
+
+.unit {
+  position: relative;
+  flex: 1 1 0;
+  max-width: 7rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.4rem 0.15rem 0.3rem;
+  text-align: center;
+}
+
+.unit.front {
+  border-color: var(--accent);
+}
+
+.front-tag {
+  position: absolute;
+  top: -0.55rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  color: var(--bg);
+  background: var(--accent);
+  border-radius: 3px;
+  padding: 0 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.unit.hit {
+  outline: 2px solid var(--warn);
+  outline-offset: -1px;
+}
+
+.unit .shape {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.uname {
+  font-size: 0.6rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unums {
+  display: flex;
+  gap: 0.3rem;
+  font-size: 0.6rem;
+}
+
+.unums .hp {
+  color: var(--accent);
+}
+
+.unums .hp::after {
+  content: "hp";
+  color: var(--dim);
+}
+
+.unums .pwr {
+  color: var(--warn);
+}
+
+.unums .pwr::after {
+  content: "pw";
+  color: var(--dim);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.15rem;
+  min-height: 0.8rem;
+}
+
+.chip {
+  font-size: 0.55rem;
+  line-height: 1.2;
+  color: var(--text);
+  background: var(--border);
+  border-radius: 3px;
+  padding: 0 0.2rem;
+}
+
+.chip.mute {
+  color: var(--warn);
+}
+
+.grave {
+  margin-top: 0.3rem;
+  align-items: center;
+}
+
+.grave-tag {
+  font-size: 0.6rem;
+  color: var(--dim);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+.unit.dead {
+  opacity: 0.45;
+  max-width: 4.5rem;
+  padding: 0.25rem 0.1rem;
+}
+
+.unit.dead .shape {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.unit.dead .chips {
+  display: none;
+}
+
+/* ---------- transport ---------- */
+
+#transport {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+#transport button,
+#transport select {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+}
+
+#step-label {
+  font-size: 0.7rem;
+  color: var(--dim);
+  margin-left: auto;
+}
+
+#scrub {
+  width: 100%;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  accent-color: var(--accent);
+}
+
+#event-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  margin-top: 0.6rem;
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+#event-desc {
+  margin-bottom: 0.3rem;
+}
+
+#event-cause {
+  color: var(--dim);
+  font-size: 0.7rem;
+}
+
+#event-cause .k {
+  color: var(--accent);
+  text-transform: uppercase;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  margin-right: 0.3rem;
+}
+
+#event-cause a {
+  color: var(--dim);
+  text-decoration: underline dotted;
+}
+
+#event-cause a:hover {
+  color: var(--text);
+}
+
+/* ---------- text replay ----------
+   Wrap-vs-scroll: the replay WRAPS (pre-wrap). Its lines are prose sentences,
+   so wrapping reads better on a phone than a side-scroll (slice 8 carry-over);
+   anywhere-breaks only kick in on words longer than the viewport. */
+
 #replay {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 1rem;
   font-size: 0.8rem;
-  overflow-x: auto;
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   margin: 0;
 }
 
@@ -118,5 +413,9 @@ button:hover {
 
   #replay {
     font-size: 0.7rem;
+  }
+
+  .uname {
+    font-size: 0.55rem;
   }
 }
