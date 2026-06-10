@@ -26,7 +26,8 @@
  */
 
 import { readFileSync } from "node:fs";
-import { battle, renderReplay, winnerOf } from "./index.js";
+import { battle, renderReplay, sweep, winnerOf } from "./index.js";
+import type { SweepStats } from "./index.js";
 import { stressRegistry } from "./content/stress.js";
 import { assertValidContent } from "./validate.js";
 import type { UnitDef } from "./types.js";
@@ -112,31 +113,14 @@ export function runBattle(teamAPath: string, teamBPath: string, seed: number): R
 // Sweep mode
 // ---------------------------------------------------------------------------
 
-export interface SweepStats {
-  n: number;
-  aWins: number;
-  bWins: number;
-  draws: number;
-  totalTurns: number;
-}
+export type { SweepStats } from "./index.js";
 
 export function sweepBattles(teamAPath: string, teamBPath: string, n: number): SweepStats {
   const a = loadTeamFile(teamAPath);
   const b = loadTeamFile(teamBPath);
-  let aWins = 0;
-  let bWins = 0;
-  let draws = 0;
-  let totalTurns = 0;
-  for (let seed = 0; seed < n; seed++) {
-    const log = battle({ teamA: a.units, teamB: b.units, seed, statuses: stressRegistry });
-    const w = winnerOf(log);
-    if (w === "A") aWins++;
-    else if (w === "B") bWins++;
-    else draws++;
-    const end = log[log.length - 1];
-    if (end && end.type === "BattleEnd") totalTurns += end.turns;
-  }
-  return { n, aWins, bWins, draws, totalTurns };
+  // The distribution itself is the kernel's sweep helper — shared with the
+  // web gauntlet, so browser and CLI can never disagree on a win-rate.
+  return sweep({ teamA: a.units, teamB: b.units, statuses: stressRegistry }, n);
 }
 
 export function formatSweepReport(stats: SweepStats, teamAPath: string, teamBPath: string): string {
