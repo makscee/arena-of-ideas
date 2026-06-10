@@ -877,6 +877,154 @@ button:disabled:hover {
   font-size: 0.75rem;
 }
 
+/* ---------- run screen ----------
+   The primary screen: shop row + line reuse the board's unit cards (same
+   shapes, same chips, same inspector), so a unit looks the same in the shop
+   as on the battle board. Rows WRAP — a shop can hold up to 6 offers and a
+   375px screen takes two rows over a scrollbar. */
+
+#run-new-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.run-blurb {
+  color: var(--dim);
+  font-size: 0.8rem;
+  margin: 0 0 0.75rem;
+}
+
+.run-dim {
+  color: var(--dim);
+  font-size: 0.75rem;
+  margin: 0.3rem 0 0.6rem;
+}
+
+.run-warn {
+  color: var(--warn);
+  font-size: 0.8rem;
+  margin: 0 0 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+#run-start,
+#run-fight,
+#run-continue {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+#run-new-error,
+#run-error {
+  margin: 0.5rem 0 0;
+  color: var(--warn);
+  font-size: 0.8rem;
+}
+
+#run-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: baseline;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+#run-head .run-gold {
+  color: var(--block);
+}
+
+#run-head .run-lives {
+  color: var(--hurt);
+}
+
+#run-head .run-id {
+  color: var(--dim);
+  font-size: 0.7rem;
+  margin-left: auto;
+}
+
+#run-shop-row,
+#run-line,
+#run-end-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0.3rem 0 0.6rem;
+  min-width: 0;
+}
+
+#run-shop-row .unit,
+#run-line .unit,
+#run-end-line .unit {
+  flex: 0 1 7rem;
+  min-width: 4.2rem;
+}
+
+.run-lvl {
+  font-size: 0.55rem;
+  color: var(--dim);
+}
+
+.run-buy {
+  font-size: 0.6rem;
+  padding: 0.15rem 0.3rem;
+  margin-top: 0.15rem;
+}
+
+.run-move {
+  display: flex;
+  gap: 0.15rem;
+  margin-top: 0.15rem;
+}
+
+.run-move button {
+  font-size: 0.6rem;
+  padding: 0.1rem 0.35rem;
+}
+
+.run-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.3rem 0 0.9rem;
+}
+
+#run-battle-bar {
+  margin-top: 0.8rem;
+}
+
+#run-outcome {
+  font-size: 0.85rem;
+}
+
+#run-battle-head,
+#run-end-head {
+  font-size: 0.85rem;
+  margin: 0 0 0.6rem;
+}
+
+#run-inspect {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.72rem;
+  margin-top: 0.6rem;
+  max-width: 28rem;
+}
+
 @media (max-width: 700px) {
   /* One column: board, log, then details — the log keeps a small window so
      the inspector stays within a thumb's reach. */

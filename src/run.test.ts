@@ -4,6 +4,7 @@ import { Necromancer, Silencer, stressRegistry, Summoner, Venomancer } from "./c
 import {
   applyDecision,
   buy,
+  deserializeRun,
   fight,
   initRun,
   InvalidDecisionError,
@@ -11,6 +12,7 @@ import {
   reorder,
   reroll,
   runToJSONL,
+  serializeRun,
   toBattleTeam,
 } from "./run.js";
 import type { RunDecision, RunEvent, RunInput, RunState, RunUnit } from "./run.js";
@@ -335,5 +337,53 @@ describe("invalid decisions", () => {
     const s = buy(initRun(INPUT), 0);
     const bad = [{ name: "Bad", base: { hp: -1, pwr: 1 } }] as UnitDef[];
     expect(() => fight(s, bad)).toThrow(ValidationError);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 9. Serialization: a stored run revives and continues byte-identically
+// ---------------------------------------------------------------------------
+
+describe("serialization", () => {
+  // The decisions a run makes after the round-trip — they draw on the shop,
+  // the line, and the RNG stream, so any divergence in the revived state
+  // (aliasing, rng, gold) would show up in the continued log.
+  const before: RunDecision[] = [
+    { kind: "buy", offer: 0 },
+    { kind: "reroll" },
+    { kind: "buy", offer: 0 },
+    { kind: "fight", opponent: PUSHOVER },
+  ];
+  const after: RunDecision[] = [
+    { kind: "buy", offer: 1 },
+    { kind: "reorder", from: 0, to: 1 },
+    { kind: "fight", opponent: PUSHOVER },
+    { kind: "reroll" },
+    { kind: "buy", offer: 0 },
+    { kind: "fight", opponent: WALL },
+  ];
+
+  test("round-trip mid-run → the continued run log is byte-identical", () => {
+    const mid = playRun(INPUT, before);
+    const revived = deserializeRun(serializeRun(mid));
+    expect(revived).toEqual(mid); // same state by value (aliases split, nothing else)
+    const straight = after.reduce(applyDecision, mid);
+    const resumed = after.reduce(applyDecision, revived);
+    expect(runToJSONL(resumed.log)).toBe(runToJSONL(straight.log));
+    expect(JSON.stringify(resumed)).toBe(JSON.stringify(straight));
+  });
+
+  test("a revived over run still rejects every decision", () => {
+    let s = buy(initRun({ seed: 9, pool: [vanilla("Grunt", 1, 0)] }), 0);
+    for (let i = 0; i < STARTING_LIVES; i++) s = fight(s, WALL);
+    const revived = deserializeRun(serializeRun(s));
+    expect(revived).toMatchObject({ status: "over", endedBy: "out-of-lives" });
+    expect(() => buy(revived, 0)).toThrow(InvalidDecisionError);
+  });
+
+  test("corrupt stored runs are refused loudly", () => {
+    expect(() => deserializeRun("not json")).toThrow(/not valid JSON/);
+    expect(() => deserializeRun('{"status":"weird"}')).toThrow(/not a RunState/);
+    expect(() => deserializeRun(JSON.stringify({ ...playRun(INPUT, before), pool: [] }))).toThrow(ValidationError);
   });
 });

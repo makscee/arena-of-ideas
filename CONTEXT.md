@@ -212,6 +212,10 @@ _Avoid_: victory, win (a battle word)
 The seeding of an empty ladder's rounds 1..BOOTSTRAP_DEPTH with shipped, escalating teams (tunables), so a first-ever run has a real climb. Gated at open; bootstrap ghosts carry the runId `bootstrap`.
 _Avoid_: seed data (seed is the RNG word), fixtures
 
+**Run screen**:
+The browser's primary view: shop row, line, and fight button over the run kernel, battles replayed in the one viewer. Run and ladder persist in localStorage (the same LadderData shape the file backing writes), so an abandoned run resumes on reload — mid-shop or mid-battle.
+_Avoid_: game screen, lobby
+
 **Autoplay / policy bot**:
 The CLI mode where a deterministic greedy policy plays whole runs against a file-backed ladder — pools fill without a human. The policy draws no randomness of its own; everything random comes off the run's one seeded stream.
 _Avoid_: AI player, agent, auto-battler (the genre word)

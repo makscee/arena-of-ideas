@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Arena of Ideas — battle replay</title>
+    <title>Arena of Ideas</title>
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="./style.css" />
   </head>
@@ -13,12 +13,66 @@
       <p class="tagline">battle(teamA, teamB, seed) → causal event log — replayed below, computed in your browser.</p>
 
       <nav id="views" role="tablist">
-        <button type="button" id="view-battle" class="tab active">battle</button>
+        <button type="button" id="view-run" class="tab active">run</button>
+        <button type="button" id="view-battle" class="tab">battle</button>
         <button type="button" id="view-gauntlet" class="tab">gauntlet</button>
         <button type="button" id="view-editor" class="tab">editor</button>
       </nav>
 
-      <section id="battle-view">
+      <section id="run-view">
+        <div id="run-new" hidden>
+          <p class="run-blurb">Climb the ladder: shop, fight a ghost of a past run each round, take the champion spot. A loss costs a life; ghosts you leave behind fight future runs.</p>
+          <p id="run-champ" class="run-dim"></p>
+          <p id="run-warn" class="run-warn" role="alert" hidden></p>
+          <form id="run-new-form">
+            <label>
+              Seed
+              <span class="seed-row">
+                <input id="run-seed" type="number" value="0" step="1" min="0" />
+                <button type="button" id="run-seed-dice" title="Random seed">🎲</button>
+              </span>
+            </label>
+            <button type="submit" id="run-start">Start run</button>
+            <p id="run-new-error" role="alert" hidden></p>
+          </form>
+        </div>
+
+        <div id="run-shop" hidden>
+          <div id="run-head"></div>
+          <p id="run-next" class="run-dim"></p>
+          <span class="pane-k">shop</span>
+          <div id="run-shop-row"></div>
+          <div class="run-bar">
+            <button type="button" id="run-reroll"></button>
+          </div>
+          <span class="pane-k">your line</span>
+          <div id="run-line"></div>
+          <div class="run-bar">
+            <button type="button" id="run-fight">fight</button>
+          </div>
+          <p id="run-error" role="alert" hidden></p>
+          <div id="run-inspect" hidden></div>
+        </div>
+
+        <div id="run-battle" hidden>
+          <p id="run-battle-head" class="run-dim"></p>
+          <div id="run-battle-mount"></div>
+          <div class="run-bar" id="run-battle-bar">
+            <span id="run-outcome"></span>
+            <button type="button" id="run-continue"></button>
+          </div>
+        </div>
+
+        <div id="run-end" hidden>
+          <p id="run-end-head"></p>
+          <div id="run-end-line"></div>
+          <div class="run-bar">
+            <button type="button" id="run-new-run">new run</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="battle-view" hidden>
       <form id="controls">
         <label>
           Team A

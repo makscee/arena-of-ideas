@@ -3,12 +3,14 @@
 export const KERNEL_VERSION = "5.0.0-alpha.0";
 
 export { battle, toJSONL, winnerOf, TEAM_SIZE, FATIGUE_START, FATIGUE_RAMP, TURN_CAP } from "./battle.js";
-export { initRun, buy, reroll, reorder, fight, ladderFight, applyDecision, playRun, runToJSONL, toBattleTeam, InvalidDecisionError } from "./run.js";
+export { initRun, buy, reroll, reorder, fight, ladderFight, applyDecision, playRun, runToJSONL, serializeRun, deserializeRun, toBattleTeam, InvalidDecisionError } from "./run.js";
 export type { RunInput, RunState, RunStatus, RunEndReason, RunUnit, RunDecision, RunEvent, RunEventBody, RunEventType } from "./run.js";
 // The file backing (FileLadderStore) lives in ladder-file.ts, off this index:
-// it needs node:fs and the browser client imports this module.
-export { InMemoryLadderStore, openLadder, BOOTSTRAP_RUN_ID } from "./ladder.js";
-export type { LadderStore, TeamSnapshot } from "./ladder.js";
+// it needs node:fs and the browser client imports this module. Its engine
+// (PersistedLadderStore + the LadderData shape) is medium-free and exported
+// here — the web's localStorage backing builds on it.
+export { InMemoryLadderStore, PersistedLadderStore, openLadder, emptyLadderData, parseLadderData, BOOTSTRAP_RUN_ID } from "./ladder.js";
+export type { LadderStore, LadderData, TeamSnapshot } from "./ladder.js";
 export * from "./tunables.js";
 export { sweep, sweepSeeds, sweepOutcome, summarizeSweep } from "./sweep.js";
 export type { SweepInput, SweepOutcome, SweepStats, SweepResult } from "./sweep.js";

@@ -3,62 +3,28 @@
 // kernel modules stay free of node built-ins; CLI-side callers import this
 // module directly, the cli.ts way.
 //
-// One file holds the whole ladder; every mutation rewrites it synchronously.
-// A ladder file is small (teams, not battle logs) and the CLI is the only
-// writer, so plain write-through beats anything cleverer here.
+// The store semantics and the serialized shape (LadderData) live in ladder.ts
+// as PersistedLadderStore — shared with the web client's localStorage backing.
+// This module owns only the file medium: one file holds the whole ladder and
+// every mutation rewrites it synchronously. A ladder file is small (teams,
+// not battle logs) and the CLI is the only writer, so plain write-through
+// beats anything cleverer here.
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import { assertSeqInOrder, jsonClone } from "./ladder.js";
-import type { LadderStore, TeamSnapshot } from "./ladder.js";
+import { emptyLadderData, parseLadderData, PersistedLadderStore } from "./ladder.js";
+import type { LadderData } from "./ladder.js";
 
-/** The on-disk shape — pools keyed by round number (JSON keys are strings). */
-interface LadderFile {
-  champion: TeamSnapshot | null;
-  pools: Record<string, TeamSnapshot[]>;
-}
-
-export class FileLadderStore implements LadderStore {
-  private readonly path: string;
-  private data: LadderFile;
-
+export class FileLadderStore extends PersistedLadderStore {
   /** Open the ladder at `path`, creating an empty one (and its directory) if
    * the file does not exist. A present-but-unreadable file throws loudly —
    * silently starting a fresh ladder would orphan every ghost in the old one. */
   constructor(path: string) {
-    this.path = path;
-    this.data = load(path);
-  }
-
-  poolAt(round: number): readonly TeamSnapshot[] {
-    return this.data.pools[String(round)] ?? [];
-  }
-
-  addSnapshot(snap: TeamSnapshot): void {
-    const pool = (this.data.pools[String(snap.round)] ??= []);
-    assertSeqInOrder(snap, pool.length);
-    // Clone on write, like InMemoryLadderStore: holding the caller's object by
-    // reference would let a later mutation corrupt the stored ghost and the
-    // next persist would write the corruption to disk.
-    pool.push(jsonClone(snap));
-    this.persist();
-  }
-
-  champion(): TeamSnapshot | null {
-    return this.data.champion;
-  }
-
-  setChampion(snap: TeamSnapshot): void {
-    this.data.champion = jsonClone(snap);
-    this.persist();
-  }
-
-  private persist(): void {
-    writeFileSync(this.path, JSON.stringify(this.data, null, 2) + "\n", "utf8");
+    super(load(path), (data) => writeFileSync(path, JSON.stringify(data, null, 2) + "\n", "utf8"));
   }
 }
 
-function load(path: string): LadderFile {
+function load(path: string): LadderData {
   let raw: string;
   try {
     raw = readFileSync(path, "utf8");
@@ -67,17 +33,7 @@ function load(path: string): LadderFile {
       throw new Error(`Cannot read ladder file "${path}": ${(err as Error).message}`);
     }
     mkdirSync(dirname(path), { recursive: true });
-    return { champion: null, pools: {} };
+    return emptyLadderData();
   }
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (err) {
-    throw new Error(`Ladder file "${path}" is not valid JSON: ${(err as Error).message}`);
-  }
-  const data = parsed as Partial<LadderFile>;
-  if (typeof data !== "object" || data === null || typeof data.pools !== "object" || data.pools === null) {
-    throw new Error(`Ladder file "${path}" has no pools object — not a ladder file`);
-  }
-  return { champion: data.champion ?? null, pools: data.pools };
+  return parseLadderData(raw, `file "${path}"`);
 }

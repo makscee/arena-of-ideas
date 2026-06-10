@@ -3,11 +3,13 @@
 // log (and the content it ran on) to the battle screen — board, inline log,
 // and inspector all read that one log.
 
-import { KERNEL_VERSION, battle, stressRegistry, type UnitDef } from "../src/index.js";
+import { DEFAULT_RUN_POOL, KERNEL_VERSION, battle, openLadder, stressRegistry, type UnitDef } from "../src/index.js";
 import { resolveUnits, teamOptions } from "./catalogue.js";
 import { createViewer } from "./viewer.js";
 import { createEditor } from "./editor.js";
 import { createGauntlet } from "./gauntlet.js";
+import { createRunScreen, type RunScreen } from "./run-screen.js";
+import { openLocalLadder } from "./run-store.js";
 
 // ---------------------------------------------------------------------------
 // DOM wiring
@@ -130,21 +132,27 @@ form.addEventListener("submit", (event) => {
 });
 
 // ---------------------------------------------------------------------------
-// Views: battle (pickers + replay), gauntlet (win-rate sweeps), editor.
-// The editor refreshes both teams' pickers on every persisted change, so
-// edited teams are always live everywhere.
+// Views: run (the primary screen — shop/fight loop), battle (pickers +
+// replay), gauntlet (win-rate sweeps), editor. The editor refreshes both
+// teams' pickers on every persisted change, so edited teams are always live
+// everywhere. The run screen borrows the battle viewer's DOM while a run
+// battle shows, so setVisible must hear every tab change.
 // ---------------------------------------------------------------------------
 
 const views = {
+  run: el<HTMLElement>("run-view"),
   battle: el<HTMLElement>("battle-view"),
   gauntlet: el<HTMLElement>("gauntlet-view"),
   editor: el<HTMLElement>("editor-view"),
 };
 const viewTabs = {
+  run: el<HTMLButtonElement>("view-run"),
   battle: el<HTMLButtonElement>("view-battle"),
   gauntlet: el<HTMLButtonElement>("view-gauntlet"),
   editor: el<HTMLButtonElement>("view-editor"),
 };
+
+let runScreen: RunScreen | undefined;
 
 function showView(which: keyof typeof views): void {
   for (const key of Object.keys(views) as (keyof typeof views)[]) {
@@ -152,9 +160,62 @@ function showView(which: keyof typeof views): void {
     viewTabs[key].classList.toggle("active", key === which);
   }
   if (which !== "battle") viewer.stop();
+  runScreen?.setVisible(which === "run");
 }
 for (const key of Object.keys(viewTabs) as (keyof typeof viewTabs)[]) {
   viewTabs[key].addEventListener("click", () => showView(key));
+}
+
+// The run screen — the app opens on it. A failure to revive the stored
+// ladder is loud (a silent fresh ladder would orphan its ghosts), but it
+// must not take the other views down with it.
+try {
+  runScreen = createRunScreen(
+    {
+      newPanel: el("run-new"),
+      newForm: el<HTMLFormElement>("run-new-form"),
+      seed: el<HTMLInputElement>("run-seed"),
+      dice: el<HTMLButtonElement>("run-seed-dice"),
+      newError: el("run-new-error"),
+      champ: el("run-champ"),
+      warn: el("run-warn"),
+      shopPanel: el("run-shop"),
+      head: el("run-head"),
+      next: el("run-next"),
+      shopRow: el("run-shop-row"),
+      rerollButton: el<HTMLButtonElement>("run-reroll"),
+      line: el("run-line"),
+      fightButton: el<HTMLButtonElement>("run-fight"),
+      error: el("run-error"),
+      inspect: el("run-inspect"),
+      battlePanel: el("run-battle"),
+      battleHead: el("run-battle-head"),
+      battleMount: el("run-battle-mount"),
+      outcome: el("run-outcome"),
+      continueButton: el<HTMLButtonElement>("run-continue"),
+      endPanel: el("run-end"),
+      endHead: el("run-end-head"),
+      endLine: el("run-end-line"),
+      newRunButton: el<HTMLButtonElement>("run-new-run"),
+    },
+    {
+      storage: window.localStorage,
+      store: openLadder(openLocalLadder(window.localStorage), stressRegistry),
+      pool: DEFAULT_RUN_POOL,
+      registry: stressRegistry,
+      viewer,
+      viewerHost: result,
+      viewerHome: el("battle-view"),
+    },
+  );
+  runScreen.setVisible(true); // the app opens on the run tab
+} catch (err) {
+  el("run-view").innerHTML = "";
+  const msg = document.createElement("p");
+  msg.className = "run-warn";
+  msg.setAttribute("role", "alert");
+  msg.textContent = `The run screen could not open: ${(err as Error).message}`;
+  el("run-view").append(msg);
 }
 
 // Watch a gauntlet matchup: load it into the battle controls and run — the

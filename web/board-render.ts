@@ -24,7 +24,9 @@ const SHAPES = [
   '<polygon points="16,3 29,12 24,28 8,28 3,12"/>', // pentagon
 ];
 
-function shapeSvg(unitName: string, dead: boolean): string {
+/** Exported for the run screen — shop offers and line units wear the same
+ * code-drawn shape they will wear on the battle board. */
+export function shapeSvg(unitName: string, dead: boolean): string {
   const h = hashName(unitName);
   const shape = SHAPES[h % SHAPES.length];
   const hue = (h * 137.508) % 360;

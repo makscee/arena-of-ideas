@@ -67,26 +67,33 @@ export interface InspectArgs {
   name: (id: string) => string;
 }
 
-/** Render the inspector panel for the selected unit at the current position. */
-export function renderInspect(root: HTMLElement, args: InspectArgs): void {
-  const { unitId, status, board, def, registry, name } = args;
-  const found = findUnit(board, unitId);
+/** What renderUnitInspect needs — board-free, so the run screen can inspect
+ * shop offers and line units with the same derived descriptions the battle
+ * inspector shows. The head's state line arrives pre-formatted as HTML. */
+export interface UnitInspectArgs {
+  title: string;
+  /** The head's state line, as HTML (hp/pwr numbers, "☠ dead", level…). */
+  state: string;
+  def: UnitDef | undefined;
+  /** Attached (battle) or initial (shop) statuses, in order. */
+  statuses: { status: string; stacks: number }[];
+  registry: StatusRegistry;
+  /** Highlight this status row (a chip was clicked). */
+  highlight?: string;
+  silenced?: boolean;
+  /** The dim line shown when `statuses` is empty. */
+  noStatuses?: string;
+}
+
+/** Render the inspector body: head, abilities, statuses — every description
+ * derived from the DSL data by the kernel's describe helpers. */
+export function renderUnitInspect(root: HTMLElement, args: UnitInspectArgs): void {
+  const { title, state, def, statuses, registry, highlight, silenced, noStatuses } = args;
   const rows: string[] = [];
-
-  const title = esc(name(unitId));
-  if (!found) {
-    rows.push(`<div class="ins-head"><span class="ins-name">${title}</span><button type="button" id="ins-close" title="Close">✕</button></div>`);
-    rows.push(`<div class="ins-dim">not on the board at this point — step forward to meet it</div>`);
-    root.innerHTML = rows.join("");
-    return;
-  }
-
-  const { unit, dead } = found;
-  const state = dead ? '<span class="ins-dead">☠ dead</span>' : `${unit.hp}/${unit.maxHp} hp · ${unit.pwr} pwr`;
   rows.push(
-    `<div class="ins-head"><span class="ins-name">${title}</span><span class="ins-stats">${state}</span><button type="button" id="ins-close" title="Close">✕</button></div>`,
+    `<div class="ins-head"><span class="ins-name">${esc(title)}</span><span class="ins-stats">${state}</span><button type="button" id="ins-close" title="Close">✕</button></div>`,
   );
-  if (unit.silenced) rows.push(`<div class="ins-warn">⊘ silenced — its own abilities are dead for the battle</div>`);
+  if (silenced) rows.push(`<div class="ins-warn">⊘ silenced — its own abilities are dead for the battle</div>`);
 
   rows.push(`<div class="ins-k">abilities</div>`);
   const abilities = def?.abilities ?? [];
@@ -101,13 +108,13 @@ export function renderInspect(root: HTMLElement, args: InspectArgs): void {
   }
 
   rows.push(`<div class="ins-k">statuses</div>`);
-  if (unit.statuses.length === 0) {
-    rows.push(`<div class="ins-dim">${dead ? "none — the corpse is clean" : "none"}</div>`);
+  if (statuses.length === 0) {
+    rows.push(`<div class="ins-dim">${esc(noStatuses ?? "none")}</div>`);
   } else {
-    for (const s of unit.statuses) {
-      const def = registry[s.status];
-      const text = def ? describeStatus(def) : "(unknown status)";
-      const sel = s.status === status ? " sel" : "";
+    for (const s of statuses) {
+      const sdef = registry[s.status];
+      const text = sdef ? describeStatus(sdef) : "(unknown status)";
+      const sel = s.status === highlight ? " sel" : "";
       rows.push(
         `<div class="ins-row${sel}"><span class="ins-ico">◉</span><span><b>${esc(s.status)} ×${s.stacks}</b> — ${esc(text)}</span></div>`,
       );
@@ -115,4 +122,28 @@ export function renderInspect(root: HTMLElement, args: InspectArgs): void {
   }
 
   root.innerHTML = rows.join("");
+}
+
+/** Render the inspector panel for the selected unit at the current position. */
+export function renderInspect(root: HTMLElement, args: InspectArgs): void {
+  const { unitId, status, board, def, registry, name } = args;
+  const found = findUnit(board, unitId);
+  const title = esc(name(unitId));
+  if (!found) {
+    root.innerHTML =
+      `<div class="ins-head"><span class="ins-name">${title}</span><button type="button" id="ins-close" title="Close">✕</button></div>` +
+      `<div class="ins-dim">not on the board at this point — step forward to meet it</div>`;
+    return;
+  }
+  const { unit, dead } = found;
+  renderUnitInspect(root, {
+    title: name(unitId),
+    state: dead ? '<span class="ins-dead">☠ dead</span>' : `${unit.hp}/${unit.maxHp} hp · ${unit.pwr} pwr`,
+    def,
+    statuses: unit.statuses,
+    registry,
+    ...(status !== undefined ? { highlight: status } : {}),
+    silenced: unit.silenced,
+    ...(dead ? { noStatuses: "none — the corpse is clean" } : {}),
+  });
 }

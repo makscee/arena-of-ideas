@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import { stressRegistry } from "./content/stress.js";
-import { BOOTSTRAP_RUN_ID, InMemoryLadderStore, openLadder } from "./ladder.js";
+import { BOOTSTRAP_RUN_ID, InMemoryLadderStore, PersistedLadderStore, emptyLadderData, openLadder, parseLadderData } from "./ladder.js";
 import type { LadderStore, TeamSnapshot } from "./ladder.js";
 import { FileLadderStore } from "./ladder-file.js";
 import { buy, fight, initRun, InvalidDecisionError, ladderFight, reorder, reroll, runToJSONL } from "./run.js";
@@ -330,5 +330,54 @@ describe("pool validation", () => {
 
   test("an empty pool is rejected", () => {
     expect(() => initRun({ seed: 1, pool: [] })).toThrow(ValidationError);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 10. PersistedLadderStore: the shared engine of every persistent backing
+// ---------------------------------------------------------------------------
+
+describe("PersistedLadderStore", () => {
+  /** A localStorage-like medium: the last persisted JSON string. */
+  function memoryMedium(): { read(): string | null; store(): LadderStore } {
+    let raw: string | null = null;
+    return {
+      read: () => raw,
+      store: () =>
+        new PersistedLadderStore(raw === null ? emptyLadderData() : parseLadderData(raw, "memory"), (d) => {
+          raw = JSON.stringify(d);
+        }),
+    };
+  }
+
+  test("same drives as InMemory → same pools and champion, byte-identical run logs", () => {
+    const medium = memoryMedium();
+    const persisted = openLadder(medium.store(), stressRegistry);
+    const inMemory = freshLadder();
+    const logs = [persisted, inMemory].map((store) => {
+      playLadderRun(input(1, "titan", TITAN), store);
+      return runToJSONL(playLadderRun(input(2, "goliath", GOLIATH), store).log);
+    });
+    expect(logs[0]).toBe(logs[1]);
+    for (let round = 1; persisted.poolAt(round).length > 0 || inMemory.poolAt(round).length > 0; round++) {
+      expect(persisted.poolAt(round)).toEqual(inMemory.poolAt(round));
+    }
+    expect(persisted.champion()).toEqual(inMemory.champion());
+  });
+
+  test("every mutation writes through — a store reopened from the medium is equal", () => {
+    const medium = memoryMedium();
+    const store = openLadder(medium.store(), stressRegistry);
+    playLadderRun(input(1, "titan", TITAN), store);
+    const reopened = medium.store(); // parses the last persisted JSON
+    for (let round = 1; store.poolAt(round).length > 0; round++) {
+      expect(reopened.poolAt(round)).toEqual(store.poolAt(round));
+    }
+    expect(reopened.champion()).toEqual(store.champion());
+  });
+
+  test("corrupt stored ladders are refused loudly, not silently reset", () => {
+    expect(() => parseLadderData("not json", "memory")).toThrow(/not valid JSON/);
+    expect(() => parseLadderData('{"champion":null}', "memory")).toThrow(/no pools object/);
   });
 });

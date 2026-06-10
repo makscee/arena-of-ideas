@@ -45,13 +45,14 @@ import {
   runToJSONL,
   sweep,
   winnerOf,
+  DEFAULT_RUN_POOL,
   REROLL_COST,
   TEAM_SIZE,
   UNIT_COST,
 } from "./index.js";
 import type { LadderStore, RunEvent, RunEventType, RunInput, RunState, SweepStats } from "./index.js";
 import { FileLadderStore } from "./ladder-file.js";
-import { Necromancer, Silencer, Summoner, Venomancer, stressRegistry } from "./content/stress.js";
+import { stressRegistry } from "./content/stress.js";
 import { assertValidContent } from "./validate.js";
 import type { UnitDef } from "./types.js";
 import type { Side } from "./types.js";
@@ -165,18 +166,9 @@ export function formatSweepReport(stats: SweepStats, teamAPath: string, teamBPat
 // Autoplay mode — a policy bot plays whole runs against a file-backed ladder
 // ---------------------------------------------------------------------------
 
-/** The pool autoplay runs draft from: the stress casters (SPEC §7) plus
- * vanilla bodies, the bootstrap-team composition. A knob, not a pin — the
- * point of autoplay is filling ladder pools, not curating a meta. */
-export const AUTOPLAY_POOL: UnitDef[] = [
-  Venomancer,
-  Summoner,
-  Silencer,
-  Necromancer,
-  { name: "Brawler", base: { hp: 12, pwr: 2 } },
-  { name: "Bulwark", base: { hp: 10, pwr: 3 } },
-  { name: "Squire", base: { hp: 8, pwr: 2 } },
-];
+/** The pool autoplay runs draft from — the shared default (tunables.ts), so
+ * autoplay and the web run screen fill the same ladder with the same meta. */
+export const AUTOPLAY_POOL: UnitDef[] = DEFAULT_RUN_POOL;
 
 const ofType = <T extends RunEventType>(log: readonly RunEvent[], t: T): Extract<RunEvent, { type: T }>[] =>
   log.filter((e): e is Extract<RunEvent, { type: T }> => e.type === t);

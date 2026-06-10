@@ -84,6 +84,20 @@ export const BOOTSTRAP_TEAMS: readonly (readonly UnitDef[][])[] = [
   ],
 ];
 
+/** The draftable pool a run's shop rolls from while no curated pool exists:
+ * the stress casters (SPEC §7) plus vanilla bodies, the bootstrap-team
+ * composition. Shared by CLI autoplay and the web run screen, so both fill
+ * the same ladder with the same meta. A knob, not a pin. */
+export const DEFAULT_RUN_POOL: UnitDef[] = [
+  Venomancer,
+  Summoner,
+  Silencer,
+  Necromancer,
+  { name: "Brawler", base: { hp: 12, pwr: 2 } },
+  { name: "Bulwark", base: { hp: 10, pwr: 3 } },
+  { name: "Squire", base: { hp: 8, pwr: 2 } },
+];
+
 /** Base hp gained per level-up. */
 export const LEVEL_HP_GROWTH = 2;
 

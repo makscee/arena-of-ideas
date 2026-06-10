@@ -316,6 +316,48 @@ export function runToJSONL(log: readonly RunEvent[]): string {
   return log.map((e) => JSON.stringify(e)).join("\n") + "\n";
 }
 
+/** RunState as JSON — the persistence shape for an abandoned run.
+ *
+ * Everything serializes BY VALUE, `pool` and `statuses` included: the DSL is
+ * data (RunState holds no functions anywhere — the RNG stream is a plain
+ * number), so JSON captures the whole state and a revived run is
+ * self-contained. It continues against exactly the pool and registry it
+ * started with, even if the shipped content drifts between sessions; the cost
+ * is one copy of the pool per stored run, and pools are a handful of UnitDefs.
+ *
+ * Identity note: in a live state `offers[i]` and `team[i].def` alias pool
+ * entries; a round-trip splits those aliases into equal-but-distinct objects.
+ * No transition compares by identity (the shop stacks copies by *name*), so a
+ * revived run continues byte-identically — pinned by test. */
+export function serializeRun(state: RunState): string {
+  return JSON.stringify(state);
+}
+
+/** Revive a serialized run. Structure is checked loudly (a corrupt store must
+ * never become a silently wrong run) and the pool re-passes the content gate,
+ * the initRun way — a revived run holds initRun's guarantees. */
+export function deserializeRun(raw: string): RunState {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (err) {
+    throw new Error(`stored run is not valid JSON: ${(err as Error).message}`);
+  }
+  const s = parsed as Partial<RunState>;
+  const intact =
+    typeof s === "object" &&
+    s !== null &&
+    (s.status === "active" || s.status === "over") &&
+    [s.seed, s.round, s.gold, s.lives, s.rng].every((n) => typeof n === "number") &&
+    typeof s.runId === "string" &&
+    [s.team, s.offers, s.log, s.pool].every(Array.isArray) &&
+    typeof s.statuses === "object" &&
+    s.statuses !== null;
+  if (!intact) throw new Error("stored run is not a RunState — refusing to revive it");
+  assertValidPool(s.pool!, s.statuses!, "pool");
+  return s as RunState;
+}
+
 /** The line as battle() input: the drafted def with the grown base and level on it.
  * This projection is the run layer's whole interface to the battle kernel. */
 export function toBattleTeam(team: readonly RunUnit[]): UnitDef[] {

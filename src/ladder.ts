@@ -75,6 +75,75 @@ export class InMemoryLadderStore implements LadderStore {
   }
 }
 
+/** The serialized ladder — the one shape every persistent backing stores:
+ * pools keyed by round number (JSON keys are strings) plus the champion spot.
+ * FileLadderStore (ladder-file.ts) writes it to disk; the web client writes
+ * it to localStorage; both round-trip byte-equivalent ladders. */
+export interface LadderData {
+  champion: TeamSnapshot | null;
+  pools: Record<string, TeamSnapshot[]>;
+}
+
+/** A fresh, empty ladder — what a backing starts from when nothing is stored. */
+export function emptyLadderData(): LadderData {
+  return { champion: null, pools: {} };
+}
+
+/** Parse stored ladder JSON, loudly: a present-but-unreadable ladder must
+ * never silently become a fresh one — that would orphan every ghost in it.
+ * `label` names the backing in the error (a file path, a storage key). */
+export function parseLadderData(raw: string, label: string): LadderData {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (err) {
+    throw new Error(`Ladder ${label} is not valid JSON: ${(err as Error).message}`);
+  }
+  const data = parsed as Partial<LadderData>;
+  if (typeof data !== "object" || data === null || typeof data.pools !== "object" || data.pools === null) {
+    throw new Error(`Ladder ${label} has no pools object — not a ladder`);
+  }
+  return { champion: data.champion ?? null, pools: data.pools };
+}
+
+/** A LadderStore over a LadderData record with a write-through persist hook —
+ * the shared engine of every persistent backing (file, localStorage): same
+ * clone-on-write isolation as InMemoryLadderStore, plus `persist(data)` after
+ * every mutation. The hook owns serialization and the medium; this class owns
+ * the LadderStore semantics, so backings can never disagree on them. */
+export class PersistedLadderStore implements LadderStore {
+  private readonly data: LadderData;
+  private readonly persist: (data: LadderData) => void;
+
+  constructor(data: LadderData, persist: (data: LadderData) => void) {
+    this.data = data;
+    this.persist = persist;
+  }
+
+  poolAt(round: number): readonly TeamSnapshot[] {
+    return this.data.pools[String(round)] ?? [];
+  }
+
+  addSnapshot(snap: TeamSnapshot): void {
+    const pool = (this.data.pools[String(snap.round)] ??= []);
+    assertSeqInOrder(snap, pool.length);
+    // Clone on write, like InMemoryLadderStore: holding the caller's object by
+    // reference would let a later mutation corrupt the stored ghost and the
+    // next persist would write the corruption through.
+    pool.push(jsonClone(snap));
+    this.persist(this.data);
+  }
+
+  champion(): TeamSnapshot | null {
+    return this.data.champion;
+  }
+
+  setChampion(snap: TeamSnapshot): void {
+    this.data.champion = jsonClone(snap);
+    this.persist(this.data);
+  }
+}
+
 /** The ladder's id for ghosts that came from no run (the bootstrap seed). */
 export const BOOTSTRAP_RUN_ID = "bootstrap";
 
