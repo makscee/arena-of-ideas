@@ -91,4 +91,41 @@ describe("active run persistence", () => {
     expect(nextRunId(storage)).toBe("web-1");
     expect(nextRunId(storage)).toBe("web-2"); // survives "reload": same storage, same counter
   });
+
+  test("nextRunId: corrupt counter falls back to 0 and yields web-1", () => {
+    const storage = fakeStorage();
+    storage.setItem("aoi.run-seq.v1", "not-a-number");
+    // No ladder data — base is 0, so n = 1.
+    expect(nextRunId(storage)).toBe("web-1");
+    // Counter is now written correctly; subsequent calls increment normally.
+    expect(nextRunId(storage)).toBe("web-2");
+  });
+
+  test("nextRunId: corrupt counter with ladder data falls back to max web-N in ladder", () => {
+    const storage = fakeStorage();
+    storage.setItem("aoi.run-seq.v1", "NaN");
+    // Simulate ladder JSON that contains run ids web-3 and web-5.
+    storage.setItem("aoi.ladder.v1", JSON.stringify({ pools: [], champion: { runId: "web-5", round: 4, team: [] } }));
+    // Should scan and find max = 5, so next = web-6.
+    expect(nextRunId(storage)).toBe("web-6");
+    expect(nextRunId(storage)).toBe("web-7");
+  });
+});
+
+describe("saveRun quota exhaustion", () => {
+  function throwingStorage(): KVStorage {
+    return {
+      getItem: (_k) => null,
+      setItem: (_k, _v) => {
+        throw new DOMException("QuotaExceededError", "QuotaExceededError");
+      },
+      removeItem: (_k) => undefined,
+    };
+  }
+
+  test("saveRun propagates a storage write failure (callers are responsible for catch)", () => {
+    const storage = throwingStorage();
+    const state = buy(initRun({ seed: 1, runId: "web-1", pool: [TITAN], statuses: stressRegistry }), 0);
+    expect(() => saveRun(storage, state)).toThrow();
+  });
 });

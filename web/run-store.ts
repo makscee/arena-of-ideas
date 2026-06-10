@@ -92,9 +92,29 @@ export function resetLadder(storage: KVStorage): void {
 
 /** The next run's id — "web-N" off a persisted counter, so runs sharing this
  * browser's ladder stay distinct (own-ghost exclusion is by runId) without a
- * wall-clock read. */
+ * wall-clock read.
+ *
+ * If the stored counter is corrupt (not an integer), falls back to the highest
+ * web-N already on the ladder plus one, or 1 if the ladder is empty — so a
+ * hand-corrupted RUN_SEQ_KEY never yields "web-NaN". */
 export function nextRunId(storage: KVStorage): string {
-  const n = Number(storage.getItem(RUN_SEQ_KEY) ?? "0") + 1;
+  const stored = Number(storage.getItem(RUN_SEQ_KEY) ?? "0");
+  let base: number;
+  if (Number.isInteger(stored)) {
+    base = stored;
+  } else {
+    // Corrupt counter: scan existing ladder run ids for the highest web-N.
+    const ladderRaw = storage.getItem(LADDER_KEY);
+    let maxSeen = 0;
+    if (ladderRaw !== null) {
+      for (const m of ladderRaw.matchAll(/"web-(\d+)"/g)) {
+        const n = Number(m[1]);
+        if (n > maxSeen) maxSeen = n;
+      }
+    }
+    base = maxSeen;
+  }
+  const n = base + 1;
   storage.setItem(RUN_SEQ_KEY, String(n));
   return `web-${n}`;
 }

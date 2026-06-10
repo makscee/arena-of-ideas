@@ -330,6 +330,19 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     els.error.hidden = false;
   }
 
+  /** Persist the run; if localStorage is full, show a one-line warning and
+   * carry on in-memory — the game is never blocked by a quota failure. */
+  function persist(s: RunState, b?: StoredBattle): void {
+    try {
+      saveRun(deps.storage, s, b);
+    } catch (err) {
+      // QuotaExceededError (and any other write failure): warn once, keep playing.
+      const reason = err instanceof Error ? err.message : String(err);
+      els.warn.textContent = `progress is no longer being saved: ${reason}`;
+      els.warn.hidden = false;
+    }
+  }
+
   /** Apply a transition, persist, re-render; an InvalidDecisionError surfaces
    * on the error line (anything else propagates — it is a bug, not a play). */
   function transition(step: (s: RunState) => RunState): void {
@@ -353,7 +366,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
         ? undefined
         : `⬆ ${up.unit} fused ${STACK_THRESHOLD} copies into level ${up.level} — now ${up.hp} hp, ${up.pwr} pwr`;
     selected = undefined;
-    saveRun(deps.storage, state, pending);
+    persist(state, pending);
     render();
   }
 
@@ -382,7 +395,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     if (fought === undefined) {
       // A vacant champion spot: crowned without a battle (slice-5 feel flag).
       pending = undefined;
-      saveRun(deps.storage, next);
+      persist(next);
       render();
       return;
     }
@@ -400,7 +413,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
           ? `the ghost of ${ghostLabel(opponent.runId)} from round ${before.round}`
           : championPhrase(opponent),
     };
-    saveRun(deps.storage, next, pending);
+    persist(next, pending);
     render();
   }
 
@@ -426,7 +439,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     pending = undefined;
     selected = undefined;
     notice = undefined;
-    saveRun(deps.storage, state);
+    persist(state);
     render();
   });
 
@@ -476,7 +489,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
 
   els.continueButton.addEventListener("click", () => {
     pending = undefined;
-    saveRun(deps.storage, state!);
+    persist(state!);
     render();
   });
 
