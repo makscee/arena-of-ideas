@@ -6,12 +6,16 @@
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "battle": "node --import tsx/esm src/cli.ts"
+    "battle": "node --import tsx/esm src/cli.ts",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "devDependencies": {
     "@types/node": "^25.9.2",
     "tsx": "^4.22.4",
     "typescript": "^5.8.3",
+    "vite": "^6.4.3",
     "vitest": "^3.2.0"
   }
 }

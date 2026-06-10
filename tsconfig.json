@@ -8,7 +8,8 @@
     "exactOptionalPropertyTypes": true,
     "noEmit": true,
     "skipLibCheck": true,
+    "resolveJsonModule": true,
     "types": ["node"]
   },
-  "include": ["src"]
+  "include": ["src", "web", "vite.config.ts", "vitest.config.ts"]
 }
