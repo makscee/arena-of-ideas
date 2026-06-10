@@ -462,6 +462,7 @@ class Engine {
             hp: target.base.hp,
             pwr: target.base.pwr,
             resurrected: true,
+            atHp: hp, // hp/pwr above are the unit's base; atHp is the hp it actually returns at
           },
           f.event.id,
           f.ref,

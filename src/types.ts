@@ -107,7 +107,7 @@ export type EventBody =
   | { type: "Hurt"; unit: string; amount: number; absorbed?: number }
   | { type: "Heal"; unit: string; amount: number }
   | { type: "Death"; unit: string }
-  | { type: "Summon"; unit: string; name: string; side: Side; hp: number; pwr: number; resurrected?: boolean }
+  | { type: "Summon"; unit: string; name: string; side: Side; hp: number; pwr: number; resurrected?: boolean; atHp?: number }
   | { type: "StatusApplied"; unit: string; status: string; stacks: number; total: number }
   | { type: "StatusRemoved"; unit: string; status: string; stacks: number; remaining: number }
   | { type: "StatChanged"; unit: string; stat: StatName; delta: number; now: number }
