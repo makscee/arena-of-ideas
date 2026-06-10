@@ -78,7 +78,8 @@ input#seed[aria-invalid="true"] {
   border-color: var(--warn);
 }
 
-#seed-error {
+#seed-error,
+#run-error {
   flex-basis: 100%;
   margin: 0;
   color: var(--warn);
@@ -403,6 +404,189 @@ button:disabled:hover {
   margin-top: 1rem;
   color: var(--dim);
   font-size: 0.75rem;
+}
+
+/* ---------- views (battle / editor) ---------- */
+
+#views {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+/* ---------- team editor ----------
+   Same dark panels as the battle controls. Cards stack vertically — one
+   column reads fine at 375px and wide screens don't need more. */
+
+#editor-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.ed-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+#ed-import-error {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--warn);
+  font-size: 0.8rem;
+}
+
+#ed-name-row {
+  margin-bottom: 1rem;
+}
+
+#ed-name {
+  max-width: 16rem;
+}
+
+#ed-units {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.ed-unit {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ed-unit-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ed-unit-head input {
+  flex: 1 1 6rem;
+  min-width: 0;
+}
+
+.ed-pos {
+  color: var(--dim);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.ed-stats {
+  display: flex;
+  gap: 1rem;
+}
+
+.ed-stats label {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ed-stats input {
+  width: 5rem;
+}
+
+.ed-attach {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  border-top: 1px dashed var(--border);
+  padding-top: 0.4rem;
+}
+
+.ed-k {
+  color: var(--dim);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ed-none {
+  color: var(--dim);
+  font-size: 0.75rem;
+}
+
+.ed-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  min-width: 0;
+}
+
+.ed-row select {
+  flex: 1 1 8rem;
+  min-width: 0;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.4rem;
+}
+
+.ed-row input {
+  width: 4rem;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.4rem;
+}
+
+.ed-row button {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.ed-desc {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#ed-add-row {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.8rem;
+}
+
+#ed-add-row select {
+  min-width: 0;
+}
+
+#ed-verdict {
+  margin-top: 1rem;
+  font-size: 0.8rem;
+}
+
+#ed-verdict.ok {
+  color: var(--accent);
+}
+
+#ed-verdict.bad {
+  color: var(--warn);
+}
+
+#ed-issues {
+  margin: 0.4rem 0 0;
+  padding-left: 1.2rem;
+  font-size: 0.75rem;
+  color: var(--warn);
+  overflow-wrap: anywhere;
+}
+
+#ed-issues code {
+  color: var(--text);
+  background: var(--panel);
+  border-radius: 3px;
+  padding: 0 0.2rem;
 }
 
 @media (max-width: 480px) {

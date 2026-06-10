@@ -12,6 +12,12 @@
       <h1>Arena of Ideas</h1>
       <p class="tagline">battle(teamA, teamB, seed) → causal event log — replayed below, computed in your browser.</p>
 
+      <nav id="views" role="tablist">
+        <button type="button" id="view-battle" class="tab active">battle</button>
+        <button type="button" id="view-editor" class="tab">editor</button>
+      </nav>
+
+      <section id="battle-view">
       <form id="controls">
         <label>
           Team A
@@ -30,6 +36,7 @@
         </label>
         <button type="submit" id="run">Run battle</button>
         <p id="seed-error" role="alert" hidden></p>
+        <p id="run-error" role="alert" hidden></p>
       </form>
 
       <section id="result" hidden>
@@ -60,6 +67,39 @@
         </section>
 
         <pre id="replay" hidden></pre>
+      </section>
+      </section>
+
+      <section id="editor-view" hidden>
+        <div id="editor-bar">
+          <label>
+            Saved teams
+            <select id="ed-team-select"></select>
+          </label>
+          <span class="ed-buttons">
+            <button type="button" id="ed-new">new</button>
+            <button type="button" id="ed-delete">delete</button>
+            <button type="button" id="ed-import">import</button>
+            <button type="button" id="ed-export">export</button>
+          </span>
+          <input id="ed-file" type="file" accept=".json,application/json" hidden />
+          <p id="ed-import-error" role="alert" hidden></p>
+        </div>
+
+        <label id="ed-name-row">
+          Team name
+          <input id="ed-name" placeholder="name this team" />
+        </label>
+
+        <div id="ed-units"></div>
+
+        <div id="ed-add-row">
+          <select id="ed-template" title="Unit template"></select>
+          <button type="button" id="ed-add">add unit</button>
+        </div>
+
+        <div id="ed-verdict" role="status"></div>
+        <ul id="ed-issues"></ul>
       </section>
 
       <footer id="kernel-version"></footer>
