@@ -1,0 +1,35 @@
+{
+  "_comment": "Team Beta — control/sustain lineup. Built from stress-set units (SPEC §7).",
+  "units": [
+    {
+      "name": "Silencer",
+      "base": { "hp": 8, "pwr": 2 },
+      "abilities": [
+        {
+          "whens": [{ "kind": "trigger", "on": { "on": "BattleStart" } }],
+          "selectors": [{ "kind": "frontEnemy" }],
+          "effects": [{ "kind": "silence" }]
+        }
+      ]
+    },
+    {
+      "name": "Necromancer",
+      "base": { "hp": 7, "pwr": 1 },
+      "abilities": [
+        {
+          "whens": [{ "kind": "trigger", "on": { "on": "Death", "unit": "ally" } }],
+          "selectors": [{ "kind": "lastDeadAlly" }],
+          "effects": [{ "kind": "resurrect", "hp": { "kind": "const", "value": 1 } }]
+        }
+      ]
+    },
+    {
+      "name": "FrozenBrute",
+      "base": { "hp": 10, "pwr": 3 },
+      "statuses": [
+        { "status": "Freeze", "stacks": 2 },
+        { "status": "Blessing", "stacks": 4 }
+      ]
+    }
+  ]
+}

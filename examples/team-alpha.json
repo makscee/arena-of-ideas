@@ -1,0 +1,35 @@
+{
+  "_comment": "Team Alpha — aggro venom squad. Built from stress-set units (SPEC §7).",
+  "units": [
+    {
+      "name": "Venomancer",
+      "base": { "hp": 6, "pwr": 1 },
+      "abilities": [
+        {
+          "whens": [{ "kind": "trigger", "on": { "on": "Strike", "striker": "holder" } }],
+          "selectors": [{ "kind": "frontEnemy" }],
+          "effects": [{ "kind": "applyStatus", "status": "Poison", "stacks": { "kind": "const", "value": 2 } }]
+        }
+      ]
+    },
+    {
+      "name": "Summoner",
+      "base": { "hp": 6, "pwr": 1 },
+      "abilities": [
+        {
+          "whens": [{ "kind": "trigger", "on": { "on": "Death", "unit": "holder" } }],
+          "selectors": [{ "kind": "holder" }],
+          "effects": [{ "kind": "summon", "unit": { "name": "Imp", "base": { "hp": 2, "pwr": 1 } } }]
+        }
+      ]
+    },
+    {
+      "name": "Champion",
+      "base": { "hp": 12, "pwr": 2 },
+      "statuses": [
+        { "status": "Strength", "stacks": 1 },
+        { "status": "Shield", "stacks": 2 }
+      ]
+    }
+  ]
+}
