@@ -1,7 +1,0 @@
-/target/
-.DS_Store
-ArenaOfIdeas.*
-*.code-workspace
-flamegraph*
-screenshots/
-web/dist/
