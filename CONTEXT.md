@@ -171,7 +171,7 @@ _Avoid_: history, trace, combat log
 ### Named events worth knowing
 
 **Hurt**:
-The hp-loss event (`damage` is the effect atom that proposes it). A fully Shield-absorbed Hurt still applies with `amount` 0 and an `absorbed` field — causality stays visible.
+The hp-loss event (`damage` is the effect atom that proposes it). Like Heal, it carries `hpAfter` — the unit's current hp after application, stamped by the kernel so consumers never re-derive hp bookkeeping. A fully Shield-absorbed Hurt still applies with `amount` 0 and an `absorbed` field — causality stays visible.
 _Avoid_: damage event, hit event
 
 **Silence / Silenced**:

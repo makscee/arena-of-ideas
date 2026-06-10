@@ -138,6 +138,50 @@ describe("alternation", () => {
 });
 
 // ---------------------------------------------------------------------------
+// 2b. hpAfter: every hp-changing event carries the unit's hp after application
+// ---------------------------------------------------------------------------
+
+describe("hpAfter", () => {
+  test("every Hurt/Heal carries hpAfter consistent with the hp deltas", () => {
+    // Stress content exercises Heals (Blessing), absorbed Hurts (Shield), and StatChanged (Vitality).
+    const teamA: UnitDef[] = [
+      { name: "Blessed", base: { hp: 8, pwr: 2 }, statuses: [{ status: "Blessing", stacks: 3 }] },
+      Venomancer,
+    ];
+    const teamB: UnitDef[] = [
+      { name: "Shielded", base: { hp: 10, pwr: 2 }, statuses: [{ status: "Shield", stacks: 4 }] },
+      { name: "Vital", base: { hp: 6, pwr: 1 }, statuses: [{ status: "Vitality", stacks: 2 }] },
+    ];
+    const log = runBattle({ teamA, teamB, seed: 7, statuses: stressRegistry });
+
+    // Re-derive current hp per unit (effective max via StatChanged, deltas via Hurt/Heal)
+    // and check each event's hpAfter against it.
+    const maxHp = new Map<string, number>();
+    const damage = new Map<string, number>();
+    for (const r of [...ofType(log, "BattleStart")[0]!.teams.A, ...ofType(log, "BattleStart")[0]!.teams.B]) {
+      maxHp.set(r.id, r.hp);
+      damage.set(r.id, 0);
+    }
+    let checked = 0;
+    for (const e of log) {
+      if (e.type === "StatChanged" && e.stat === "hp") maxHp.set(e.unit, e.now);
+      if (e.type === "Hurt") {
+        damage.set(e.unit, (damage.get(e.unit) ?? 0) + e.amount);
+        expect(e.hpAfter).toBe(maxHp.get(e.unit)! - damage.get(e.unit)!);
+        checked++;
+      }
+      if (e.type === "Heal") {
+        damage.set(e.unit, Math.max(0, (damage.get(e.unit) ?? 0) - e.amount));
+        expect(e.hpAfter).toBe(maxHp.get(e.unit)! - damage.get(e.unit)!);
+        checked++;
+      }
+    }
+    expect(checked).toBeGreaterThan(0);
+    expect(ofType(log, "Heal").length).toBeGreaterThan(0); // Blessing fired, so Heals were checked too
+  });
+});
+
+// ---------------------------------------------------------------------------
 // 3b. Turn count: BattleEnd reports the deciding turn, not the loop's overshoot
 // ---------------------------------------------------------------------------
 

@@ -104,8 +104,10 @@ export type EventBody =
   | { type: "TurnEnd" }
   | { type: "PairFaced"; a: string; b: string; first: string }
   | { type: "Strike"; striker: string; defender: string }
-  | { type: "Hurt"; unit: string; amount: number; absorbed?: number }
-  | { type: "Heal"; unit: string; amount: number }
+  // hpAfter = the unit's current hp after the event applied; stamped at apply time
+  // (optional only because proposals are drafted without it — every logged event carries it).
+  | { type: "Hurt"; unit: string; amount: number; hpAfter?: number; absorbed?: number }
+  | { type: "Heal"; unit: string; amount: number; hpAfter?: number }
   | { type: "Death"; unit: string }
   | { type: "Summon"; unit: string; name: string; side: Side; hp: number; pwr: number; resurrected?: boolean; atHp?: number }
   | { type: "StatusApplied"; unit: string; status: string; stacks: number; total: number }

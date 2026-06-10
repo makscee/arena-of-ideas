@@ -11,13 +11,11 @@ export function renderReplay(log: BattleEvent[]): string {
   return new Renderer(log).render();
 }
 
-/** Per-unit view state the renderer tracks to show readable hp counters. */
+/** Per-unit view state the renderer tracks to show readable hp counters.
+ * Current hp comes off the events themselves (`hpAfter`); only the max needs tracking. */
 interface UnitView {
-  name: string;
   baseHp: number;
   maxHp: number; // effective max hp (follows StatChanged)
-  damage: number;
-  alive: boolean;
 }
 
 class Renderer {
@@ -73,11 +71,10 @@ class Renderer {
 
   // ---------- hp bookkeeping ----------
 
-  private hpText(id: string, extraDamage = 0): string {
+  private hpText(id: string, cur: number | undefined): string {
     const u = this.units.get(id);
-    if (!u) return "";
-    const cur = Math.max(0, u.maxHp - u.damage - extraDamage);
-    return `${cur}/${u.maxHp} hp`;
+    if (!u || cur === undefined) return "";
+    return `${Math.max(0, cur)}/${u.maxHp} hp`;
   }
 
   // ---------- emission ----------
@@ -94,7 +91,7 @@ class Renderer {
         this.lines.push("=== BATTLE ===");
         for (const side of ["A", "B"] as const) {
           const roster = e.teams[side].map((r) => {
-            this.units.set(r.id, { name: r.name, baseHp: r.hp, maxHp: r.hp, damage: 0, alive: true });
+            this.units.set(r.id, { baseHp: r.hp, maxHp: r.hp });
             return `${this.name(r.id)} (${r.hp} hp, ${r.pwr} pwr)`;
           });
           this.lines.push(`Side ${side}: ${roster.join(", ")}`);
@@ -126,7 +123,7 @@ class Renderer {
           return;
         }
         this.mergedHurts.add(hurt.id);
-        const after = this.hpText(e.defender, hurt.amount);
+        const after = this.hpText(e.defender, hurt.hpAfter);
         if (hurt.amount === 0 && hurt.absorbed !== undefined) {
           this.push(e, `${striker} strikes ${defender} — Shield absorbs all ${hurt.absorbed}, no harm done (${after}).`);
         } else if (hurt.amount === 0) {
@@ -140,11 +137,9 @@ class Renderer {
       }
 
       case "Hurt": {
-        const u = this.units.get(e.unit);
-        if (u && u.alive) u.damage += e.amount;
         if (this.mergedHurts.has(e.id)) return; // already told as part of its Strike line
         const who = this.name(e.unit);
-        const at = this.hpText(e.unit);
+        const at = this.hpText(e.unit, e.hpAfter);
         const parent = e.causedBy !== null ? this.log[e.causedBy] : undefined;
         const absorbNote = e.absorbed !== undefined ? ` (${e.absorbed} absorbed by Shield)` : "";
         if (parent?.type === "Fatigue") {
@@ -160,16 +155,12 @@ class Renderer {
       }
 
       case "Heal": {
-        const u = this.units.get(e.unit);
-        if (u) u.damage = Math.max(0, u.damage - e.amount);
         const by = e.source !== "kernel" ? ` (${this.refDesc(e.source)})` : "";
-        this.push(e, `${this.name(e.unit)} heals ${e.amount}${by} — back to ${this.hpText(e.unit)}.`);
+        this.push(e, `${this.name(e.unit)} heals ${e.amount}${by} — back to ${this.hpText(e.unit, e.hpAfter)}.`);
         return;
       }
 
       case "Death": {
-        const u = this.units.get(e.unit);
-        if (u) u.alive = false;
         const chain = e.causedBy !== null ? this.causeChain(e.causedBy) : [];
         const tail = chain.length > 0 ? ` ← ${chain.join(" ← ")}` : "";
         this.push(e, `${this.name(e.unit)} dies${tail}`);
@@ -180,15 +171,11 @@ class Renderer {
         const by = e.source !== "kernel" ? this.name(e.source.unit) : "the kernel";
         if (e.resurrected) {
           const u = this.units.get(e.unit);
-          if (u) {
-            u.alive = true;
-            u.maxHp = u.baseHp; // the corpse was clean: stat-modding statuses ended at death
-            u.damage = e.atHp !== undefined ? Math.max(0, u.maxHp - e.atHp) : 0;
-          }
+          if (u) u.maxHp = u.baseHp; // the corpse was clean: stat-modding statuses ended at death
           const at = e.atHp !== undefined ? ` at ${e.atHp} hp` : "";
           this.push(e, `${this.name(e.unit)} rises from the grave${at}, back of side ${e.side} — ${by}'s doing.`);
         } else {
-          this.units.set(e.unit, { name: e.name, baseHp: e.hp, maxHp: e.hp, damage: 0, alive: true });
+          this.units.set(e.unit, { baseHp: e.hp, maxHp: e.hp });
           this.push(e, `${by} summons ${this.name(e.unit)} (${e.hp} hp, ${e.pwr} pwr) to the back of side ${e.side}.`);
         }
         return;

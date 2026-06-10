@@ -552,11 +552,13 @@ class Engine {
       case "Hurt": {
         const u = this.units.get(ev.unit);
         if (u && u.alive) u.damage += ev.amount;
+        if (u) ev.hpAfter = this.curHp(u);
         return;
       }
       case "Heal": {
         const u = this.units.get(ev.unit);
         if (u) u.damage = Math.max(0, u.damage - ev.amount);
+        if (u) ev.hpAfter = this.curHp(u);
         return;
       }
       case "Death": {

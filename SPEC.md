@@ -78,7 +78,7 @@ Event {
 EventTypes v1: `BattleStart, TurnStart, PairFaced, Strike, Hurt, Heal, Death, Summon, StatusApplied, StatusRemoved, StatChanged, Fatigue, ChainBlocked, TurnEnd, Silenced, Intercepted, BattleEnd`.
 
 - `PairFaced {first}` — emitted when two units face each other for the first time; records the seeded first-striker roll **[PINNED]** (glass-cannon design space: a roll, observable in the log).
-- `Hurt {unit, amount, cause, absorbed?}` / `Heal {unit, amount}` — hp deltas. `Strike` proposes a `Hurt` of the striker's effective pwr. `absorbed?` records how many hp a Shield interceptor consumed; a fully-absorbed Hurt still applies with `amount` 0.
+- `Hurt {unit, amount, hpAfter, absorbed?}` / `Heal {unit, amount, hpAfter}` — hp deltas. `Strike` proposes a `Hurt` of the striker's effective pwr. `hpAfter` is the unit's current hp after the event applied, stamped by the kernel at apply time — consumers (replay, client) read it instead of re-deriving hp bookkeeping. `absorbed?` records how many hp a Shield interceptor consumed; a fully-absorbed Hurt still applies with `amount` 0.
 - `ChainBlocked {ability, at}` — a would-be firing suppressed by the no-self-retrigger law (§5). The replay explains chain stops with this event.
 - `Intercepted {by, original, unit?}` — emitted when an interceptor cancels a proposed event (e.g. Freeze cancelling a Strike, Blessing cancelling a Death); cancellations must be visible or the replay can't explain them. Interceptor side-effects (stack consumption, the replacement Heal) are caused by this event.
 - `Silenced {unit}` — the unit's own abilities are disabled for the battle (ability disabling is kernel state, not removable content).
