@@ -14,7 +14,7 @@ Normative spec for the v5 battle kernel. The resolver is built against this docu
 ### Stats
 Units have two base stats: `hp` and `pwr` (non-negative integers).
 
-**[PINNED] Effective stats are computed, never baked:** `effective = base + Σ(status statMod contributions)`. Removing a status (e.g. Silence) makes its contribution vanish with it — there is no "unapply" step and no layering bug class.
+**[PINNED] Effective stats are computed, never baked:** `effective = max(0, base + Σ(status statMod contributions))` — negative contributions (Curse) floor at 0, never below. Removing a status (e.g. Silence) makes its contribution vanish with it — there is no "unapply" step and no layering bug class.
 
 ### Unit
 ```
@@ -120,7 +120,7 @@ started); 0 if it was decided in the BattleStart cascade, before turn 1.
 ```
 
 - **Death and line collapse:** when a `Death` event applies, the unit leaves the line immediately and the team compacts forward (positions shift). Pairings are re-evaluated next strike; a fresh pairing rolls `PairFaced`.
-- Dead units go to the **graveyard** — an append-only per-team list, the one zone besides the line **[PINNED]**. Death clears the unit's statuses (the corpse is clean). A resurrected unit returns at the back of the line and keeps its pair memory (first-striker rolls).
+- Dead units go to the **graveyard** — a per-team list, the one zone besides the line **[PINNED]**: units are appended on death and spliced out on resurrection (death-ordered while there, not append-only). Death clears the unit's statuses (the corpse is clean). A resurrected unit returns at the back of the line at the effect's hp, floored at 1 (`max(1, N)` — a 0-hp revival would be an instant corpse), and keeps its pair memory (first-striker rolls).
 
 ## 5. Cascade algorithm (normative)
 
@@ -148,7 +148,7 @@ Enqueued trigger firings resolve even if their holder has since died (MTG rule: 
 
 ## 7. Stress set — the kernel acceptance content
 
-Nine abilities, shipped **as DSL data with behavior tests**. The kernel passes when all nine are expressible; where one isn't, the kernel grows consciously (a written verdict, then the schema change).
+Ten abilities, shipped **as DSL data with behavior tests**. The kernel passes when all ten are expressible; where one isn't, the kernel grows consciously (a written verdict, then the schema change).
 
 | name | composition | what it stress-tests |
 |---|---|---|
@@ -161,7 +161,7 @@ Nine abilities, shipped **as DSL data with behavior tests**. The kernel passes w
 | Blessing | status; interceptor: holder's Death → Heal to `stacks` hp instead; remove status | death interception |
 | Summon | effect: spawn a defined unit at the back of caster's team | mid-cascade board mutation, fresh pairings |
 | Silence | effect: remove all statuses from target; disable its abilities for the battle | layering (statMods must vanish), ability disabling |
-| Resurrect | effect: return most recently dead ally at N hp | **likely kernel-breaker**: needs the graveyard zone |
+| Resurrect | effect: return most recently dead ally at N hp (floored at 1) | **likely kernel-breaker**: needs the graveyard zone |
 
 (Silence and Resurrect are the designated kernel-breakers; their verdicts get written into the project notes before any schema change.)
 
@@ -177,11 +177,11 @@ Nine abilities, shipped **as DSL data with behavior tests**. The kernel passes w
 In-code decisions made during the stress build of `src/battle.ts`; recorded here per spec doctrine (conscious disagreement → fix one side).
 
 - **Event types added:** `TurnEnd`, `Intercepted`, `Silenced` are now first-class event types (§2).
-- **Graveyard adopted:** graveyard zone is real — per-team append-only list (§4). Resurrect's stress test demanded it; verdict: kernel, not content.
+- **Graveyard adopted:** graveyard zone is real — per-team death-ordered list, spliced on resurrection (§4). Resurrect's stress test demanded it; verdict: kernel, not content.
 - **Death clears statuses:** the corpse is clean; statMod contributions vanish with the statuses (consistent with the computed-stat law, §1).
 - **Fully-absorbed Hurt applies at amount 0:** the event still lands, causality is visible; Shield's interceptor records `absorbed` on it (§2).
 - **Back-strike requires both units alive:** if the first striker kills the second, the return strike does not occur (§4).
 - **Enqueued firings outlive their holder:** a trigger on the queue fires even if its source unit has since died — MTG rule; enables on-death abilities (§5).
 - **Silence scope:** disables a unit's own abilities (including statuses) but not its basic kernel strike; statuses applied *after* the silence event still function (Silence is a point-in-time effect, not an ongoing shield against future application).
 - **Pair memory survives death and resurrection:** first-striker rolls are keyed to the (a, b) pair; a resurrected unit rejoins with its prior rolls intact (§4).
-- **Kernel passed:** all 9 stress abilities expressible as DSL data; no unresolved kernel-breakers remain.
+- **Kernel passed:** all 10 stress abilities expressible as DSL data; no unresolved kernel-breakers remain.

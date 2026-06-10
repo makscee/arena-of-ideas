@@ -183,7 +183,7 @@ The event for a unit entering the line mid-battle, at the back; skipped if the l
 _Avoid_: spawn
 
 **Resurrect**:
-The effect returning a dead ally (via `lastDeadAlly`) to the back of the line at N hp. The stress test that forced the graveyard into the kernel.
+The effect returning a dead ally (via `lastDeadAlly`) to the back of the line at N hp, floored at 1 — a 0-hp revival would be an instant corpse. The stress test that forced the graveyard into the kernel.
 _Avoid_: revive, respawn
 
 ### Tooling & acceptance
