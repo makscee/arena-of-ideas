@@ -1515,6 +1515,34 @@ button.danger {
     inset: -0.075rem calc(-0.075rem - 2px) -0.075rem -0.075rem;
   }
 
+  /* Slice-3 close: on the run rows the chip STRIP is the thumb target — N
+     exclusive 44px-wide boxes cannot fit a card-wide row, but the strip can
+     be 44px TALL with nearest-chip ownership splitting its full width. The
+     chips grow to tile the strip (wrapping is unchanged: flex bases stay
+     natural), the midpoint seams above keep ownership exclusive, and each
+     chip's hit band is a flat 44px anchored at its bottom half-gap, so it
+     reaches up over the card's inert body and never contests the buy/arrow
+     row below. A mis-tap costs ~nothing: every chip opens the same panel
+     with all rows visible — the nearest is just the one highlighted. */
+  #run-shop-row .chips,
+  #run-line .chips,
+  #run-end-line .chips {
+    width: 100%;
+  }
+
+  #run-shop-row .chip,
+  #run-line .chip,
+  #run-end-line .chip {
+    flex: 1 1 auto;
+  }
+
+  #run-shop-row .chip::after,
+  #run-line .chip::after,
+  #run-end-line .chip::after {
+    top: auto;
+    height: 44px;
+  }
+
   /* The inspector's close button is a real ≥44px target — it has no adjacent
      control, so it grows for thumbs instead of clipping. */
   #ins-close {
@@ -1603,6 +1631,21 @@ button.danger {
     z-index: 1;
   }
 
+  /* Slice-3 close: exclusivity clipped the old extensions down to sub-44px
+     effective boxes (arrows ~33×27, buy ~46×28) — ownership was exclusive
+     but no longer big. The VISUAL buttons grow to 44px instead: the card has
+     no second claimant on that space, so size costs nothing but card height,
+     and the line/shop reserves measure cards as rendered. Two 44px arrows +
+     their gap (90.4px) fit the 112px line card. */
+  .run-buy {
+    min-height: 44px;
+  }
+
+  .run-move button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
   .run-buy::after {
     content: "";
     position: absolute;
@@ -1616,7 +1659,10 @@ button.danger {
   .run-move button::after {
     content: "";
     position: absolute;
-    inset: -0.15rem -12px -0.3rem -12px;
+    /* Outer edges: a bare half-gap. The old -12px widened the tiny visuals;
+       44px visuals need no reach, and 12px past a 44px pair would cross the
+       card's own edge into the row gap (cross-card stealing). */
+    inset: -0.15rem -0.075rem -0.3rem -0.075rem;
   }
 
   /* The pair's inner edges split at the midpoint of their 0.15rem gap. The

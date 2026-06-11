@@ -9,6 +9,7 @@ import { chromium } from "playwright";
 import {
   DEFAULT_RUN_POOL,
   STACK_THRESHOLD,
+  UNIT_COST,
   initRun,
   serializeRun,
   stressRegistry,
@@ -87,6 +88,28 @@ export const lineFullRun = () =>
     ];
     s.offers = [byName.Bulwark, byName.Squire, byName.Venomancer];
     s.gold = 10;
+  });
+
+/** Two distinct units + three distinct offers + gold for exactly three buys:
+ * the slice-3 close line-growth scenario — each buy adds a NEW name, so the
+ * line wraps rows 2→3 and 4→5; the reachable-count reserve must already hold
+ * every row a buy can reach. */
+export const lineGrowthRun = () =>
+  shaped((s) => {
+    s.team = [unitOf(byName.Brawler), unitOf(byName.Squire)];
+    s.offers = [byName.Venomancer, byName.Summoner, byName.Bulwark];
+    s.gold = 3 * UNIT_COST;
+  });
+
+/** Two units, gold below UNIT_COST (slice-3 close): the reachable count is
+ * just the team — the reserve must not burn rows gold cannot fill. Lives are
+ * topped up so the round-1 fight always continues into round 2's shop. */
+export const poorGoldRun = () =>
+  shaped((s) => {
+    s.team = [unitOf(byName.Brawler), unitOf(byName.Squire)];
+    s.offers = [byName.Venomancer, byName.Summoner, byName.Bulwark];
+    s.gold = UNIT_COST - 1;
+    s.lives = 5;
   });
 
 /** Plain 3-offer shop, nothing fuses: the buy → collapse and reroll probes. */

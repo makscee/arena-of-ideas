@@ -15,6 +15,7 @@ import {
   InvalidDecisionError,
   REROLL_COST,
   STACK_THRESHOLD,
+  TEAM_SIZE,
   UNIT_COST,
   battle,
   buy,
@@ -137,6 +138,12 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   let notice: string | undefined; // the last transition's level-up moment, if any
   let fused: string | undefined; // the just-fused unit's name — flashes once, consumed by the next shop render
   let revealed = false; // the pending battle's outcome has been shown (reset per fight)
+  // The line's reserved card count, captured once per shop phase (keyed by
+  // run + round): every card REACHABLE this phase, so mid-phase growth stays
+  // inside the reserve and any height change lands on a phase render, where
+  // scroll resets (slice-3 close). Gold only falls during a shop phase, so
+  // the entry-time count is the phase's maximum.
+  let lineReserve: { runId: string; round: number; count: number } | undefined;
 
   const ladderView = createLadderView(els.ladderBody, { store: deps.store, registry: deps.registry });
 
@@ -224,6 +231,12 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
 
   function renderShop(): void {
     const s = state!;
+    // Shown FIRST (slice-3 close): the reserves below measure real layout,
+    // and a hidden panel measures 0 — a continue → shop render used to come
+    // up with no reserve standing, so the next buy moved the fight button.
+    // Mid-phase this is a no-op re-show; the scroll reset rides every shop
+    // render either way, and nothing here paints between the two states.
+    show("shop");
     els.head.innerHTML =
       `<span class="run-round">round ${s.round}</span>` +
       `<span class="run-gold">${s.gold} gold</span>` +
@@ -247,15 +260,12 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     renderShopRow(s);
     els.rerollButton.textContent = `reroll ${REROLL_COST}g`;
     els.rerollButton.disabled = s.gold < REROLL_COST;
-    els.line.innerHTML =
-      s.team.map((u, i) => lineCard(u, i, s.team.length - 1, true)).join("") ||
-      '<span class="run-dim">no one yet — buy a unit</span>';
+    renderLine(s);
     els.fightButton.disabled = s.team.length === 0;
     els.stakes.textContent = stakesLine(s.lives);
     fused = undefined; // the flash renders once — re-renders must not replay it
     if (selected !== undefined) renderInspector();
     else closeInspectOverlay("run");
-    show("shop");
   }
 
   /** Render the shop row and lock its min-height to the ROLLED offer count's
@@ -281,6 +291,41 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     const reserve = els.shopRow.getBoundingClientRect().height;
     els.shopRow.innerHTML = real;
     if (reserve > 0) els.shopRow.style.minHeight = `${reserve}px`;
+  }
+
+  /** Render the line and lock its min-height to the layout of every card
+   * REACHABLE this shop phase (slice-3 close): the one-row CSS floor let the
+   * third distinct buy wrap a new row — the fight button jumped +131px under
+   * the tap at 375px. Reachable = min(TEAM_SIZE, units + gold/UNIT_COST),
+   * captured at phase entry (gold only falls mid-phase, so that is the max;
+   * a buy conserves it, a fuse or reroll only lowers it — the held reserve
+   * always covers the row that growth can wrap). The renderShopRow() pattern:
+   * fill to the reachable count with representative pool cards, measure the
+   * fractional rect height invisibly within one task, hold it for the phase.
+   * A small team with poor gold reserves only what it can reach — no burning
+   * three rows while key info needs the fold. Where layout doesn't run
+   * (height 0), the CSS one-row floor stands. */
+  function renderLine(s: RunState): void {
+    if (lineReserve === undefined || lineReserve.runId !== s.runId || lineReserve.round !== s.round) {
+      lineReserve = {
+        runId: s.runId,
+        round: s.round,
+        count: Math.min(TEAM_SIZE, s.team.length + Math.floor(s.gold / UNIT_COST)),
+      };
+    }
+    const cards = s.team.map((u, i) => lineCard(u, i, s.team.length - 1, true)).join("");
+    const real = cards || '<span class="run-dim">no one yet — buy a unit</span>';
+    const fill = deps.pool.length === 0 ? 0 : Math.max(0, lineReserve.count - s.team.length);
+    const last = s.team.length + fill - 1;
+    const fillers = Array.from({ length: fill }, (_, k) => {
+      const def = deps.pool[k % deps.pool.length]!;
+      return lineCard({ name: def.name, base: { ...def.base }, level: 1, stacks: 1, def }, s.team.length + k, last, true);
+    }).join("");
+    els.line.style.minHeight = "";
+    els.line.innerHTML = cards + fillers;
+    const reserve = els.line.getBoundingClientRect().height;
+    els.line.innerHTML = real;
+    if (reserve > 0) els.line.style.minHeight = `${reserve}px`;
   }
 
   /** Inspector over a shop offer or line unit: the def's derived descriptions
@@ -643,11 +688,16 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   });
 
   els.rerollButton.addEventListener("click", () => transition(reroll));
-  // The shop reserve is measured at the current width — a rotation/resize
-  // re-measures in place (no full re-render: renderShop would reset scroll,
-  // and phone browsers fire resize on every URL-bar collapse).
+  // The shop and line reserves are measured at the current width — a
+  // rotation/resize re-measures in place (no full re-render: renderShop would
+  // reset scroll, and phone browsers fire resize on every URL-bar collapse).
+  // The line keeps its captured reachable count: a URL-bar resize after a
+  // fuse must not shrink the reserve mid-phase.
   window.addEventListener("resize", () => {
-    if (phase === "shop" && state !== undefined) renderShopRow(state);
+    if (phase === "shop" && state !== undefined) {
+      renderShopRow(state);
+      renderLine(state);
+    }
   });
   els.fightButton.addEventListener("click", fightLadder);
   els.skipButton.addEventListener("click", () => deps.viewer.toEnd()); // landing on the end reveals the bar via onEnded
@@ -687,6 +737,14 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       visible = v;
       if (v && phase === "battle") mountViewer();
       else if (!v) unmountViewer();
+      // The reserves measure 0 while the tab is display:none (the initial
+      // render precedes the first show) — re-measure the moment layout is
+      // real, so the line's reachable-count reserve is standing BEFORE the
+      // first mid-phase tap, never applied by one (slice-3 close).
+      if (v && phase === "shop" && state !== undefined) {
+        renderShopRow(state);
+        renderLine(state);
+      }
     },
   };
 }

@@ -196,8 +196,13 @@ describe("hit extensions clip at gap midpoints (refutation 4 + low e)", () => {
     const pair = ruleBody(".run-move button::after");
     expect(pair).not.toMatch(/translate\(-50%, -50%\)/);
     expect(pair).not.toMatch(/max\(100%, 44px\)/);
-    const inset = pair.match(/inset:\s*(-?[\d.]+)rem\s+(-?[\d.]+)px\s+(-?[\d.]+)rem\s+(-?[\d.]+)px/);
+    // Slice-3 close: the visuals are 44px now, so the outer edges carry a
+    // bare half-gap — the old -12px reach past a 44px pair would cross the
+    // card's own edge and steal cross-card taps.
+    const inset = pair.match(/inset:\s*(-?[\d.]+)rem\s+(-?[\d.]+)rem\s+(-?[\d.]+)rem\s+(-?[\d.]+)rem/);
     expect(inset, "arrow ::after should use explicit insets").not.toBeNull();
+    const gapOuter = Number(ruleBody(".run-move").match(/gap:\s*([\d.]+)rem/)![1]);
+    expect(Number(inset![2]) * -2).toBeLessThanOrEqual(gapOuter + 1e-9); // outer reach never past the half-gap
     const first = ruleBody(".run-move button:first-child::after");
     const last = ruleBody(".run-move button:last-child::after");
     const right = first.match(/right:\s*calc\((-?[\d.]+)rem - 2px\)/);
@@ -323,6 +328,14 @@ describe("shop row reserves the rolled offer count's layout (refutation 3)", () 
         return cards === 0 ? 18 : Math.ceil(cards / CARDS_PER_ROW) * ROW_PX;
       },
     });
+    // The line under the same model (slice-3 close): renderLine measures the
+    // reachable-count layout the same way renderShopRow measures the roll's.
+    Object.defineProperty(els.line, "offsetHeight", {
+      get() {
+        const cards = (els.line.innerHTML.match(/data-line=/g) ?? []).length;
+        return cards === 0 ? 18 : Math.ceil(cards / CARDS_PER_ROW) * ROW_PX;
+      },
+    });
     const kv = new Map<string, string>();
     const deps = {
       storage: {
@@ -369,5 +382,77 @@ describe("shop row reserves the rolled offer count's layout (refutation 3)", () 
     // Real cards only: indices 0..1 — the measuring fillers are gone.
     expect(els.shopRow.innerHTML).not.toContain('data-offer="2"');
     vi.unstubAllGlobals();
+  });
+
+  // ----- slice-3 close: the line reserves every card REACHABLE this phase --
+
+  const buyOffer = (els: ReturnType<typeof harness>, i: number) =>
+    els.shopRow.fire("click", {
+      target: { closest: (sel: string) => (sel === "[data-buy]" ? { getAttribute: () => String(i) } : null) },
+    });
+
+  test("the line reserves min(TEAM_SIZE, units + gold/UNIT_COST) cards' rows at phase entry", () => {
+    const els = harness();
+    // Round 1: empty team, 10 gold → 3 reachable cards → two modeled rows,
+    // not the one-row CSS floor that let the third buy wrap a new row.
+    expect(els.line.style.minHeight).toBe(`${2 * ROW_PX}px`);
+    vi.unstubAllGlobals();
+  });
+
+  test("a buy keeps the line reserve — the row a buy wraps is already reserved", () => {
+    const els = harness();
+    buyOffer(els, 0);
+    // Team 1, gold 7: the captured count (3) holds — buying conserves
+    // units + gold/UNIT_COST, so the reserve never moves under the tap.
+    expect((els.line.innerHTML.match(/data-line=/g) ?? []).length).toBe(1);
+    expect(els.line.style.minHeight).toBe(`${2 * ROW_PX}px`);
+    buyOffer(els, 1);
+    expect(els.line.style.minHeight).toBe(`${2 * ROW_PX}px`);
+    vi.unstubAllGlobals();
+  });
+
+  test("the line measurement leaves no filler cards behind", () => {
+    const els = harness();
+    buyOffer(els, 0);
+    // One real card (index 0) — the reachable-count fillers are gone.
+    expect(els.line.innerHTML).toContain('data-line="0"');
+    expect(els.line.innerHTML).not.toContain('data-line="1"');
+    expect(els.line.innerHTML).not.toContain('data-line="2"');
+    vi.unstubAllGlobals();
+  });
+});
+
+describe("touch targets are 44px visuals at phone width (slice-3 close)", () => {
+  // Exclusive clipping (the fix round) shrank the effective boxes below 44px:
+  // arrows ~33×27, chips ~30×19, buy ~46×28. Ownership stays exclusive; the
+  // boxes grow instead — visuals where the card has the space, a strip-wide
+  // bottom-anchored band where N×44px can never fit (chips).
+  const phone480 = css.slice(css.indexOf("@media (max-width: 480px)"));
+  const phone700 = css.slice(css.indexOf("@media (max-width: 700px)"));
+
+  test("reorder arrows: 44px visual minimums", () => {
+    // `.run-move button` also heads the shared position/z-index rule — the
+    // visual minimums may live in any of its rules, so scan them all.
+    const bodies = [...phone480.matchAll(/\.run-move button\s*\{([^}]*)\}/g)].map((m) => m[1]!);
+    expect(bodies.some((b) => /min-width:\s*44px/.test(b) && /min-height:\s*44px/.test(b))).toBe(true);
+  });
+
+  test("buy: 44px visual min-height", () => {
+    const body = phone480.match(/\.run-buy\s*\{([^}]*)\}/)![1]!;
+    expect(body).toMatch(/min-height:\s*44px/);
+  });
+
+  test("chips: the run-row strip tiles its full width and each chip's band is 44px anchored at its bottom half-gap", () => {
+    // N chips × 44px exclusive boxes cannot fit one row — the STRIP is the
+    // target: chips grow to tile it (nearest-chip ownership splits the full
+    // width at the existing midpoint seams) and the hit band is a flat 44px
+    // anchored at the bottom, so it never contests the buy/arrow row below.
+    const strip = phone700.match(/#run-shop-row \.chips,\s*#run-line \.chips,\s*#run-end-line \.chips\s*\{([^}]*)\}/)![1]!;
+    expect(strip).toMatch(/width:\s*100%/);
+    const chip = phone700.match(/#run-shop-row \.chip,\s*#run-line \.chip,\s*#run-end-line \.chip\s*\{([^}]*)\}/)![1]!;
+    expect(chip).toMatch(/flex:\s*1 1 auto/);
+    const band = phone700.match(/#run-shop-row \.chip::after,\s*#run-line \.chip::after,\s*#run-end-line \.chip::after\s*\{([^}]*)\}/)![1]!;
+    expect(band).toMatch(/top:\s*auto/);
+    expect(band).toMatch(/height:\s*44px/);
   });
 });
