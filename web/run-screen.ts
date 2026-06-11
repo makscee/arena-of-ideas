@@ -176,6 +176,12 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     }
     if (which === "battle") mountViewer();
     else unmountViewer();
+    // Phase transitions reset scroll so the new panel head is visible (LS-7,
+    // GA-6): continue → shop lands on the gold/lives header, not mid-page;
+    // run-end → end screen starts at top. Battle is handled in mountViewer()
+    // via battlePanel.scrollIntoView. New-run leaves scroll wherever it is
+    // (it's the first screen and always starts at the top anyway).
+    if (which === "shop" || which === "end") window.scrollTo({ top: 0, behavior: "instant" });
   }
 
   function renderNew(): void {
@@ -202,8 +208,9 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
         : champ !== null
           ? `no ghosts left to fight at round ${s.round} — next fight challenges ${championPhrase(champ)} for the crown`
           : `no ghosts left at round ${s.round} and the spot is vacant — fighting takes the crown`;
+    // Notice strip stays in flow at all times — content cleared when empty
+    // so the reserved min-height holds without showing stale text (LS-5).
     els.notice.textContent = notice ?? "";
-    els.notice.hidden = notice === undefined;
     els.shopRow.innerHTML =
       s.offers.map((o, i) => offerCard(o, i, s.gold)).join("") ||
       '<span class="run-dim">the shop is empty — reroll or fight</span>';
@@ -369,8 +376,9 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   // ---------- transitions ----------
 
   function flag(message: string): void {
+    // Error strip stays in flow (reserved min-height) — set text, no
+    // hidden toggle, so nothing below the fight button shifts (LS-5).
     els.error.textContent = message;
-    els.error.hidden = false;
   }
 
   /** Persist the run; if localStorage is full, show a one-line warning and
@@ -389,7 +397,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   /** Apply a transition, persist, re-render; an InvalidDecisionError surfaces
    * on the error line (anything else propagates — it is a bug, not a play). */
   function transition(step: (s: RunState) => RunState): void {
-    els.error.hidden = true;
+    els.error.textContent = ""; // clear in-flow error strip
     const before = state!.log.length;
     try {
       state = step(state!);
@@ -417,7 +425,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
    * records the battle seed and the drawn opponent; the teams pin it by value
    * (the champion may already be dethroned in the store by the time we look). */
   function fightLadder(): void {
-    els.error.hidden = true;
+    els.error.textContent = ""; // clear in-flow error strip
     const before = state!;
     const championBefore = deps.store.champion();
     let next: RunState;

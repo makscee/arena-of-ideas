@@ -114,7 +114,8 @@ export function createLadderView(root: HTMLElement, deps: LadderViewDeps): Ladde
         `<span class="lv-tri">${open.has(r) ? "▾" : "▸"}</span> round ${r} — ${pool.length} ghost${pool.length === 1 ? "" : "s"}` +
         `${here ? '<span class="lv-here">you fight here</span>' : ""}</button>`;
       const body = open.has(r)
-        ? pool
+        ? `<div class="lv-pool-body">` +
+          pool
             .map((g) => {
               const yours = run !== undefined && g.runId === run.runId;
               return (
@@ -124,7 +125,8 @@ export function createLadderView(root: HTMLElement, deps: LadderViewDeps): Ladde
                 `</div>`
               );
             })
-            .join("")
+            .join("") +
+          `</div>`
         : "";
       rows.push(`<div class="lv-round${here ? " here" : ""}">${head}${body}</div>`);
     }

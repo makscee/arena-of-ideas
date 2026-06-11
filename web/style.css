@@ -943,7 +943,14 @@ button:disabled:hover {
    The primary screen: shop row + line reuse the board's unit cards (same
    shapes, same chips, same inspector), so a unit looks the same in the shop
    as on the battle board. Rows WRAP — a shop can hold up to 6 offers and a
-   375px screen takes two rows over a scrollbar. */
+   375px screen takes two rows over a scrollbar.
+
+   Layout stability (LS-4 through LS-7):
+   - #run-notice is always in flow (never hidden), swapping content in place.
+   - #run-error is always in flow (never hidden), swapping content in place.
+   - #run-shop-row and #run-line reserve a minimum card-row height so the
+     fight button doesn't drop 112px when the first unit is bought.
+   - Phase transitions call window.scrollTo(0,0) so gold/lives are on screen. */
 
 #run-new-form {
   display: flex;
@@ -984,11 +991,21 @@ button:disabled:hover {
   font-weight: 600;
 }
 
-#run-new-error,
-#run-error {
+#run-new-error {
   margin: 0.5rem 0 0;
   color: var(--warn);
   font-size: 0.8rem;
+}
+
+/* Always in flow — reserved one-line strip so appearing/vanishing never
+   shifts the fight button or anything below (LS-5). Content is cleared
+   instead of toggling hidden. */
+#run-error {
+  min-height: 1.4rem; /* one line of 0.8rem text + breathing room */
+  margin: 0.5rem 0 0;
+  color: var(--warn);
+  font-size: 0.8rem;
+  overflow: hidden;
 }
 
 #run-head {
@@ -1017,8 +1034,21 @@ button:disabled:hover {
   margin-left: auto;
 }
 
+/* Reserved-height rows: a one-card-row worth of space is always occupied so
+   the first buy (18px placeholder → 130px card) and an empty-shop never
+   reflow the fight button or the ladder below (LS-6). */
 #run-shop-row,
-#run-line,
+#run-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0.3rem 0 0.6rem;
+  min-width: 0;
+  min-height: 8.2rem; /* card ~130px; placeholder text is centered via align-items */
+  align-items: center;
+  align-content: flex-start; /* cards pack top when they exist */
+}
+
 #run-end-line {
   display: flex;
   flex-wrap: wrap;
@@ -1091,10 +1121,19 @@ button:disabled:hover {
   margin: 0 0 0.6rem;
 }
 
+/* Reserved notice strip — always in flow so fusion notices and run errors
+   swap content without nudging the shop (LS-5). Non-empty content shows
+   in accent colour; empty content is invisible but the height is held. */
 .run-notice {
-  color: var(--accent);
+  min-height: 1.4rem; /* one line reserved */
   font-size: 0.8rem;
-  margin: 0.3rem 0 0.6rem;
+  margin: 0.3rem 0 0.3rem;
+  overflow: hidden;
+  color: transparent; /* invisible when empty */
+}
+
+.run-notice:not(:empty) {
+  color: var(--accent);
 }
 
 /* ---------- run end screens ----------
@@ -1220,6 +1259,14 @@ button:disabled:hover {
   margin-left: auto;
   color: var(--accent);
   font-size: 0.7rem;
+}
+
+/* Pool body: capped height with internal scroll so a large round pool never
+   trampolines the ladder when expanded (LS-4). */
+.lv-pool-body {
+  max-height: 16rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .lv-ghost {
@@ -1378,5 +1425,25 @@ button.danger {
 
   .uname {
     font-size: 0.55rem;
+  }
+
+  /* Touch targets ≥44px (GA-4): buy and reorder arrows keep their visual
+     size but hit area extends to thumb-friendly 44×44px via a pseudo-element,
+     matching the chip treatment in the 700px breakpoint above. */
+  .run-buy,
+  .run-move button {
+    position: relative;
+    z-index: 1;
+  }
+
+  .run-buy::after,
+  .run-move button::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
   }
 }
