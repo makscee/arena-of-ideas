@@ -10,7 +10,7 @@
   <body>
     <main>
       <h1>Arena of Ideas</h1>
-      <p class="tagline">battle(teamA, teamB, seed) → causal event log — replayed below, computed in your browser.</p>
+      <p class="tagline">Build a team. Fight the ghosts of past runs. Take the crown.</p>
 
       <nav id="views" role="tablist">
         <button type="button" id="view-run" class="tab active">run</button>
@@ -27,7 +27,7 @@
           <p id="run-warn" class="run-warn" role="alert" hidden></p>
           <form id="run-new-form">
             <label>
-              Seed
+              <span>Seed <span class="seed-why">(same seed = same run)</span></span>
               <span class="seed-row">
                 <input id="run-seed" type="number" value="0" step="1" min="0" />
                 <button type="button" id="run-seed-dice" title="Random seed">🎲</button>
@@ -51,6 +51,7 @@
           <div id="run-line"></div>
           <div class="run-bar">
             <button type="button" id="run-fight">fight</button>
+            <span id="run-stakes" class="run-dim"></span>
           </div>
           <p id="run-error" role="alert"></p>
         </div>
@@ -206,7 +207,10 @@
         <div id="codex-container"></div>
       </section>
 
-      <footer id="kernel-version"></footer>
+      <footer id="app-footer">
+        <span id="kernel-version"></span>
+        <span>battle(teamA, teamB, seed) → causal event log — every fight computed in your browser.</span>
+      </footer>
     </main>
     <script type="module" src="./main.ts"></script>
   </body>

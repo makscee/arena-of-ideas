@@ -169,6 +169,16 @@ export function createEditor(els: EditorEls, onTeamsChanged: () => void): Editor
 
   function validate(): void {
     issues = validateTeam(units, stressRegistry, "team");
+    if (units.length === 0) {
+      // An empty editor is a starting point, not a mistake (GA-3): neutral
+      // guidance, no red verdict until there is a team to judge. The export
+      // gate below still holds (the validator's empty-team issue stands).
+      els.verdict.textContent = `add 1–${TEAM_SIZE} units to build a team`;
+      els.verdict.className = "dim";
+      els.issuesList.innerHTML = "";
+      els.exportButton.disabled = true; // an exported file must run via the CLI
+      return;
+    }
     if (issues.length === 0) {
       els.verdict.textContent = `✓ valid — ${units.length} unit${units.length === 1 ? "" : "s"}, ready for battle`;
       els.verdict.className = "ok";

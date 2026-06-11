@@ -50,8 +50,12 @@ function unitCard(
     .join(" ");
   const chips = chipsHtml(u.statuses, registry);
   const silenced = u.silenced ? '<span class="chip mute" title="Silenced">mut</span>' : "";
+  // The tooltip slot carries player-useful state, never the internal id (IA-7).
+  const title = opts.dead
+    ? `${displayName} — dead · tap to inspect`
+    : `${displayName} — ${u.hp}/${u.maxHp} hp, ${u.pwr} pwr · tap to inspect`;
   return `
-    <div class="${cls}" data-unit="${esc(u.id)}" title="${esc(u.id)}">
+    <div class="${cls}" data-unit="${esc(u.id)}" title="${esc(title)}">
       ${opts.front ? '<span class="front-tag">front</span>' : ""}
       ${shapeSvg(u.name, opts.dead)}
       <span class="uname">${esc(displayName)}</span>
@@ -83,7 +87,7 @@ function sideHtml(
   // never change the board's height mid-replay (audit LS-1).
   return `
     <div class="side" data-side="${side}">
-      <div class="side-head"><span class="side-tag">side ${side}</span><span class="front-hint">front first ▸</span></div>
+      <div class="side-head"><span class="side-tag">side ${side}</span><a class="front-hint" href="#codex/rule/strike-order" title="Front units fight first — tap for the strike-order rule">front first ▸</a></div>
       <div class="line">${line || '<span class="wiped">— no one standing —</span>'}</div>
       <div class="grave"><span class="grave-tag">grave</span>${grave}</div>
     </div>`;

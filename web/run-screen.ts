@@ -11,12 +11,14 @@
 
 import {
   BOOTSTRAP_RUN_ID,
+  INCOME_PER_ROUND,
   InvalidDecisionError,
   REROLL_COST,
   STACK_THRESHOLD,
   UNIT_COST,
   battle,
   buy,
+  incomeForRound,
   initRun,
   ladderFight,
   reorder,
@@ -41,6 +43,24 @@ const esc = (s: string): string =>
 
 const ofType = <T extends RunEvent["type"]>(log: readonly RunEvent[], t: T): Extract<RunEvent, { type: T }>[] =>
   log.filter((e): e is Extract<RunEvent, { type: T }> => e.type === t);
+
+// ---------- economy copy (IA-6) — pure, exported for the vitest suite ----------
+
+/** Fusion pips on a line card: ● per copy held, ○ per copy still missing. */
+export const fusionPips = (stacks: number): string =>
+  "●".repeat(Math.min(stacks, STACK_THRESHOLD)) + "○".repeat(Math.max(0, STACK_THRESHOLD - stacks));
+
+/** The shop header's income line — derived from the tunables' curve like the
+ * codex is: a flat curve reads as one standing fact, a growing curve names
+ * the next round's figure. Never a typed number. */
+export const incomeLine = (round: number): string =>
+  INCOME_PER_ROUND === 0
+    ? `+${incomeForRound(round + 1)}g each round`
+    : `+${incomeForRound(round + 1)}g next round`;
+
+/** The stakes line at the fight button: what a loss costs, right now. */
+export const stakesLine = (lives: number): string =>
+  `a loss costs a life — ${lives} ${lives === 1 ? "life" : "lives"} left`;
 
 /** Feel flag (PRD #012 slice 2 — a staging call, kept one boolean from
  * revert): false = the replay auto-plays and the outcome + continue stay
@@ -67,10 +87,12 @@ interface RunScreenEls {
   rerollButton: HTMLButtonElement;
   line: HTMLElement;
   fightButton: HTMLButtonElement;
+  stakes: HTMLElement;
   error: HTMLElement;
   battlePanel: HTMLElement;
   battleHead: HTMLElement;
   battleMount: HTMLElement;
+  battleBar: HTMLElement;
   outcome: HTMLElement;
   continueButton: HTMLButtonElement;
   skipButton: HTMLButtonElement;
@@ -110,8 +132,9 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   let pending: StoredBattle | undefined; // the fought battle awaiting continue
   let phase: Phase = "new";
   let visible = false;
-  let selected: { where: "offer" | "line"; index: number; status?: string } | undefined;
+  let selected: { where: "offer" | "line" | "end"; index: number; status?: string } | undefined;
   let notice: string | undefined; // the last transition's level-up moment, if any
+  let fused: string | undefined; // the just-fused unit's name — flashes once, consumed by the next shop render
   let revealed = false; // the pending battle's outcome has been shown (reset per fight)
 
   const ladderView = createLadderView(els.ladderBody, { store: deps.store, registry: deps.registry });
@@ -127,8 +150,9 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
 
   function offerCard(def: UnitDef, i: number, gold: number): string {
     const sel = selected?.where === "offer" && selected.index === i;
+    const title = `${def.name} — ${def.base.hp} hp, ${def.base.pwr} pwr · ${UNIT_COST}g · tap to inspect`;
     return `
-      <div class="unit run-card${sel ? " sel" : ""}" data-offer="${i}" title="${esc(def.name)}">
+      <div class="unit run-card${sel ? " sel" : ""}" data-offer="${i}" title="${esc(title)}">
         ${shapeSvg(def.name, false)}
         <span class="uname">${esc(def.name)}</span>
         <span class="unums"><span class="hp">${def.base.hp}</span><span class="pwr">${def.base.pwr}</span></span>
@@ -138,20 +162,24 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   }
 
   function lineCard(u: RunUnit, i: number, last: number, buttons: boolean): string {
-    const sel = selected?.where === "line" && selected.index === i;
-    const stacks = u.stacks > 1 ? ` · ${u.stacks}/${STACK_THRESHOLD}` : "";
+    const where = buttons ? "line" : "end";
+    const sel = selected?.where === where && selected.index === i;
     const move = buttons
       ? `<span class="run-move">
           <button type="button" data-move="${i}:-1" title="Move toward the front"${i === 0 ? " disabled" : ""}>◂</button>
           <button type="button" data-move="${i}:1" title="Move toward the back"${i === last ? " disabled" : ""}>▸</button>
         </span>`
       : "";
+    // Pips (IA-6): copies toward the next fuse, visible at a glance — the
+    // title carries the words. The just-fused card flashes once (GA-7).
+    const pips = `<span class="run-pips">${fusionPips(u.stacks)}</span>`;
+    const flash = u.name === fused ? " fused" : "";
     return `
-      <div class="unit run-card${i === 0 ? " front" : ""}${sel ? " sel" : ""}" data-line="${i}" title="${esc(u.name)} — level ${u.level}, ${u.stacks}/${STACK_THRESHOLD} copies toward the next">
+      <div class="unit run-card${i === 0 ? " front" : ""}${sel ? " sel" : ""}${flash}" data-line="${i}" title="${esc(u.name)} — level ${u.level}, ${u.stacks}/${STACK_THRESHOLD} copies toward the next · tap to inspect">
         ${i === 0 ? '<span class="front-tag">front</span>' : ""}
         ${shapeSvg(u.name, false)}
         <span class="uname">${esc(u.name)}</span>
-        <span class="run-lvl">L${u.level}${stacks}</span>
+        <span class="run-lvl">L${u.level} ${pips}</span>
         <span class="unums"><span class="hp">${u.base.hp}</span><span class="pwr">${u.base.pwr}</span></span>
         <span class="chips">${chips(u.def.statuses)}</span>
         ${move}
@@ -198,6 +226,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     els.head.innerHTML =
       `<span class="run-round">round ${s.round}</span>` +
       `<span class="run-gold">${s.gold} gold</span>` +
+      `<span class="run-income">${esc(incomeLine(s.round))}</span>` +
       `<span class="run-lives">${s.lives} ${s.lives === 1 ? "life" : "lives"}</span>` +
       `<span class="run-id">${esc(s.runId)}</span>`;
     const rivals = deps.store.poolAt(s.round).filter((g) => g.runId !== s.runId).length;
@@ -220,6 +249,8 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       s.team.map((u, i) => lineCard(u, i, s.team.length - 1, true)).join("") ||
       '<span class="run-dim">no one yet — buy a unit</span>';
     els.fightButton.disabled = s.team.length === 0;
+    els.stakes.textContent = stakesLine(s.lives);
+    fused = undefined; // the flash renders once — re-renders must not replay it
     if (selected !== undefined) renderInspector();
     else closeInspectOverlay("run");
     show("shop");
@@ -244,13 +275,14 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     const anchor =
       sel.where === "offer"
         ? els.shopRow.querySelector<HTMLElement>(`[data-offer="${sel.index}"]`)
-        : els.line.querySelector<HTMLElement>(`[data-line="${sel.index}"]`);
+        : (sel.where === "line" ? els.line : els.endLine).querySelector<HTMLElement>(`[data-line="${sel.index}"]`);
     openInspectOverlay("run", {
       anchor,
       onClose: () => {
         if (selected === undefined) return;
         selected = undefined;
         if (phase === "shop") renderShop();
+        else if (phase === "end") renderEnd();
       },
       render: (body) =>
         renderUnitInspect(body, {
@@ -332,6 +364,10 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       `${crown ? ` · ${s.lives} ${s.lives === 1 ? "life" : "lives"} to spare` : ""}</span>` +
       `<span class="end-marks">${marks}</span>`;
     els.endLine.innerHTML = s.team.map((u, i) => lineCard(u, i, s.team.length - 1, false)).join("");
+    // Post-mortem (GA-5): the final team's cards open the same inspector the
+    // shop uses — the pointer cursor they wear is a real affordance now.
+    if (selected !== undefined) renderInspector();
+    else closeInspectOverlay("run");
     show("end");
   }
 
@@ -348,6 +384,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     if (!visible || pending === undefined) return;
     els.battleMount.append(deps.viewerHost);
     deps.viewerHost.hidden = false;
+    reserveBattleBar();
     const s = state!;
     const log = battle({ teamA: pending.teamA, teamB: pending.teamB, seed: pending.seed, statuses: s.statuses });
     // The replay is this phase's whole focus: start it at the top of the
@@ -364,6 +401,35 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
         },
       },
     );
+    // Nudge past the sticky bar: at 375px the auto-scrolled position left the
+    // scrub 17px under it (slice-2 low) — scroll on until the whole transport
+    // clears. The board top may slide off by the same few px; the controls win.
+    const scrub = deps.viewerHost.querySelector<HTMLElement>("#scrub");
+    if (scrub !== null) {
+      const overlap = scrub.getBoundingClientRect().bottom - els.battleBar.getBoundingClientRect().top;
+      if (overlap > 0) window.scrollBy(0, overlap + 8);
+    }
+  }
+
+  /** Lock the battle bar at its revealed height before the replay starts:
+   * both states (skip / outcome + continue) are measured invisibly within one
+   * task and the max reserved, so the outcome reveal never grows the bar over
+   * the transport (slice-2 low: 61→104px at 375px). */
+  function reserveBattleBar(): void {
+    const bar = els.battleBar;
+    bar.style.minHeight = "";
+    const stash = [els.skipButton.hidden, els.outcome.hidden, els.continueButton.hidden] as const;
+    els.skipButton.hidden = false;
+    els.outcome.hidden = true;
+    els.continueButton.hidden = true;
+    const skipState = bar.offsetHeight;
+    els.skipButton.hidden = true;
+    els.outcome.hidden = false;
+    els.continueButton.hidden = false;
+    const revealedState = bar.offsetHeight;
+    [els.skipButton.hidden, els.outcome.hidden, els.continueButton.hidden] = stash;
+    const max = Math.max(skipState, revealedState);
+    if (max > 0) bar.style.minHeight = `${max}px`;
   }
 
   function unmountViewer(): void {
@@ -416,6 +482,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       up === undefined
         ? undefined
         : `⬆ ${up.unit} fused ${STACK_THRESHOLD} copies into level ${up.level} — now ${up.hp} hp, ${up.pwr} pwr`;
+    fused = up?.unit; // the card itself flashes too (GA-7)
     selected = undefined;
     persist(state, pending);
     render();
@@ -441,6 +508,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     state = next;
     selected = undefined;
     notice = undefined;
+    fused = undefined;
     const fresh = next.log.slice(before.log.length);
     const fought = ofType(fresh, "FightFought")[0];
     if (fought === undefined) {
@@ -528,6 +596,19 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     else if (selected?.where === "line" && selected.index === index && selected.status === undefined) selected = undefined;
     else selected = { where: "line", index };
     renderShop();
+  });
+
+  // End-screen post-mortem: the final team's cards open the inspector (GA-5).
+  els.endLine.addEventListener("click", (ev) => {
+    const target = ev.target as HTMLElement;
+    const card = target.closest("[data-line]");
+    if (!card) return;
+    const index = Number(card.getAttribute("data-line"));
+    const chip = target.closest("[data-status]");
+    if (chip) selected = { where: "end", index, status: chip.getAttribute("data-status")! };
+    else if (selected?.where === "end" && selected.index === index && selected.status === undefined) selected = undefined;
+    else selected = { where: "end", index };
+    renderEnd();
   });
 
   els.rerollButton.addEventListener("click", () => transition(reroll));

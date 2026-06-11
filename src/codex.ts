@@ -8,7 +8,7 @@
 //   web/codex.ts  — renders this as the Codex screen
 //   src/codex.test.ts — verifies coverage and tunable matching
 
-import { FATIGUE_START, TURN_CAP, fatigueAmount } from "./battle.js";
+import { FATIGUE_RAMP, FATIGUE_START, TURN_CAP, fatigueAmount } from "./battle.js";
 import {
   BOOTSTRAP_CHAMPION,
   BOOTSTRAP_DEPTH,
@@ -131,6 +131,13 @@ export function buildCodex(registry: StatusRegistry, units: UnitDef[]): CodexDat
       : `Round income starts at ${incomeForRound(1)} gold and grows by ${INCOME_PER_ROUND} each round, ` +
         `capped at ${INCOME_CAP}; unspent gold carries over.`;
 
+  // Fatigue growth: phrased off FATIGUE_RAMP — "grows without limit" is only
+  // true while the ramp ramps; at RAMP=0 the damage holds steady instead.
+  const fatigueGrowth =
+    FATIGUE_RAMP > 0
+      ? "Damage grows every turn without limit — battles always end."
+      : "The damage holds steady each turn.";
+
   const rules: CodexRuleEntry[] = [
     {
       key: "fatigue",
@@ -140,7 +147,7 @@ export function buildCodex(registry: StatusRegistry, units: UnitDef[]): CodexDat
       text:
         `From turn ${FATIGUE_START}, every living unit takes ` +
         `${fatigueAmount(FATIGUE_START)}, ${fatigueAmount(FATIGUE_START + 1)}, ${fatigueAmount(FATIGUE_START + 2)}… ` +
-        `damage at the end of each turn. Damage grows every turn without limit — battles always end. ` +
+        `damage at the end of each turn. ${fatigueGrowth} ` +
         `(Hard cap: ${TURN_CAP} turns; reaching it is a draw.)`,
     },
     {

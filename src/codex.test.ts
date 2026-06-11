@@ -27,7 +27,7 @@ import {
   UNIT_COST,
   incomeForRound,
 } from "./tunables.js";
-import { FATIGUE_START, TURN_CAP, fatigueAmount } from "./battle.js";
+import { FATIGUE_RAMP, FATIGUE_START, TURN_CAP, fatigueAmount } from "./battle.js";
 
 const codex = buildCodex(stressRegistry, codexUnits());
 const rule = (key: string) => {
@@ -131,6 +131,16 @@ describe("codex — fatigue derives from the kernel's formula", () => {
 
   it("cites TURN_CAP", () => {
     expect(rule("fatigue").text).toContain(String(TURN_CAP));
+  });
+
+  it("growth phrasing derives from FATIGUE_RAMP — 'without limit' only while the ramp ramps", () => {
+    const text = rule("fatigue").text;
+    if (FATIGUE_RAMP > 0) {
+      expect(text).toContain("grows every turn");
+    } else {
+      expect(text).toContain("holds steady");
+      expect(text).not.toContain("without limit");
+    }
   });
 });
 
