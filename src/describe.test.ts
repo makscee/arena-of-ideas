@@ -9,7 +9,10 @@ import {
   describeAbilitySegments,
   describeStatus,
   describeStatusSegments,
+  describeWhen,
+  describeWhenSegments,
 } from "./describe.js";
+import type { Ability, When } from "./types.js";
 import { Necromancer, Silencer, Summoner, Venomancer, stressRegistry } from "./content/stress.js";
 import { BOOTSTRAP_CHAMPION, DEFAULT_RUN_POOL } from "./tunables.js";
 
@@ -149,5 +152,76 @@ describe("describe segments / status refs", () => {
   test("consumeStacks of the owning status ('this status') is not a ref", () => {
     const refs = stressRegistry.Poison!.abilities.flatMap((ab) => abilityStatusRefs(ab));
     expect(refs).toEqual([]);
+  });
+});
+
+describe("when-clause status refs (constructed content — shipped whens carry no status)", () => {
+  // Editor-made content can put a status name in the when itself ("after
+  // Poison lands on an ally"); those names must be tappable refs exactly like
+  // effect clauses. No shipped when names a status, so the cases are built.
+  const onAllyPoisoned: Ability = {
+    whens: [{ kind: "trigger", on: { on: "StatusApplied", unit: "ally", status: "Poison" } }],
+    selectors: [{ kind: "holder" }],
+    effects: [{ kind: "heal", amount: { kind: "const", value: 2 } }],
+  };
+
+  test("a status-pattern when reads the same and marks the status as a ref", () => {
+    expect(describeAbility(onAllyPoisoned)).toMatchInlineSnapshot(
+      `"After Poison lands on an ally: heal this unit for 2."`,
+    );
+    const refs = describeAbilitySegments(onAllyPoisoned).filter((s) => s.statusRef !== undefined);
+    expect(refs).toEqual([{ text: "Poison", statusRef: "Poison" }]);
+    expect(abilityStatusRefs(onAllyPoisoned)).toEqual(["Poison"]);
+  });
+
+  test("joined when segments reproduce describeWhen exactly, for every pattern shape", () => {
+    const patterns: When[] = [];
+    for (const kind of ["trigger", "interceptor"] as const) {
+      patterns.push(
+        { kind, on: { on: "BattleStart" } },
+        { kind, on: { on: "Strike", striker: "enemy" } },
+        { kind, on: { on: "Hurt", unit: "holder" } },
+        { kind, on: { on: "StatusApplied", unit: "ally", status: "Poison" } },
+        { kind, on: { on: "StatusApplied", unit: "any" } },
+        { kind, on: { on: "StatusRemoved", unit: "enemy", status: "Shield" } },
+        { kind, on: { on: "StatusRemoved" } },
+      );
+    }
+    for (const w of patterns) {
+      const joined = describeWhenSegments(w)
+        .map((s) => s.text)
+        .join("");
+      expect(joined, `${w.kind} on ${w.on.on} should join to its clause`).toBe(describeWhen(w));
+    }
+  });
+
+  test("a statusless when pattern yields no ref", () => {
+    const w: When = { kind: "interceptor", on: { on: "StatusApplied", unit: "holder" } };
+    expect(describeWhenSegments(w).every((s) => s.statusRef === undefined)).toBe(true);
+    expect(describeWhen(w)).toBe("when a status would land on this unit");
+  });
+});
+
+describe("explicit-status consumeStacks refs (constructed — shipped content has none)", () => {
+  // consumeStacks naming a status (not the owning "this status") must surface
+  // that status as a ref; no shipped effect uses the explicit form, so the
+  // extraction is pinned with a built ability — the in-browser probe, kept.
+  const shieldBreaker: Ability = {
+    whens: [{ kind: "trigger", on: { on: "Strike", striker: "holder" } }],
+    selectors: [{ kind: "frontEnemy" }],
+    effects: [
+      { kind: "consumeStacks", status: "Shield", stacks: { kind: "const", value: 2 } },
+      { kind: "damage", amount: { kind: "const", value: 3 } },
+    ],
+  };
+
+  test("the named status is a ref and the sentence still joins exactly", () => {
+    expect(describeAbility(shieldBreaker)).toMatchInlineSnapshot(
+      `"After this unit strikes: consume 2 stacks of Shield, then deal 3 damage to the front enemy."`,
+    );
+    const segs = describeAbilitySegments(shieldBreaker);
+    expect(segs.filter((s) => s.statusRef !== undefined)).toEqual([{ text: "Shield", statusRef: "Shield" }]);
+    expect(segs.map((s) => s.text).join("")).toBe(describeAbility(shieldBreaker));
+    expect(abilityStatusRefs(shieldBreaker)).toEqual(["Shield"]);
   });
 });

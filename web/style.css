@@ -648,6 +648,12 @@ button:disabled:hover {
   border-radius: 3px;
 }
 
+/* display: flex beats the UA's [hidden] rule — restore it, or the ref-def
+   rows inspect.ts keeps "hidden until its ref is tapped" render visible. */
+.ins-row[hidden] {
+  display: none;
+}
+
 .ins-row.sel {
   background: var(--bg);
   outline: 1px solid var(--status);
@@ -1486,9 +1492,12 @@ button.danger {
     transform: translate(-50%, -50%);
   }
 
-  /* Touch pass (GA-4/IA-5): chips keep their small visual but tap with a
-     ≥44px effective target; the inspector's close button grows to match.
-     The z-index keeps the extended hit area above later-painted neighbours. */
+  /* Touch pass (GA-4/IA-5), reshaped by the slice-3 fix round: a chip's hit
+     area extends only to the midpoint of the 0.15rem gap around it. Centered
+     44px boxes overlapped on adjacent chips and the later sibling won
+     hit-testing over the earlier one's right half (exclusive width ≈30px) —
+     ownership must be exclusive before it is big. Each chip owns exactly its
+     visual plus its half-gap share; neighbours never steal a tap. */
   .chip {
     position: relative;
     z-index: 1;
@@ -1497,15 +1506,77 @@ button.danger {
   .chip::after {
     content: "";
     position: absolute;
-    left: 50%;
-    top: 50%;
-    width: max(100%, 44px);
-    height: max(100%, 44px);
-    transform: translate(-50%, -50%);
+    /* Half the 0.15rem chip gap each side, with the reorder arrows' seam
+       scheme sideways: the LEFT edge sits exactly at the gap midpoint (this
+       chip, the later sibling, wins where both paint) and the RIGHT edge
+       carries a 2px snap guard so Chromium's pixel-snapped hit rects can
+       never open a dead seam between adjacent chips. Vertical stays at the
+       bare half-gap: a boosted reach would contest the buy row below. */
+    inset: -0.075rem calc(-0.075rem - 2px) -0.075rem -0.075rem;
   }
 
+  /* The inspector's close button is a real ≥44px target — it has no adjacent
+     control, so it grows for thumbs instead of clipping. */
   #ins-close {
     padding: 0.55rem 0.9rem;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Fixed two-line strips (slice-3 fix round): every real fusion notice and
+     the full-line error wrap at 375px — a one-line min-height let the wrap
+     grow the strip and move the fight button (−87px on every fuse) or the
+     ladder (+16px on every error). Fixed height kills the class: content can
+     never resize the strip. Anything past two lines ellipsizes; the full
+     string rides the element's title (run-screen.ts sets it with the text). */
+  .run-notice,
+  #run-error {
+    height: 2.4rem; /* exactly two lines of 0.8rem text */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+
+  /* The shop head wraps at phone width, and a wrapping flex row re-flows
+     with its content: 10 gold → 9 gold moved every panel below by 4px on
+     each buy/reroll (slice-3 fix round). A pinned two-row grid makes the
+     head's height content-independent — numbers change inside their cells,
+     never the layout. Cells stay one line; the free-text id ellipsizes. */
+  #run-head {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    column-gap: 0.75rem;
+    row-gap: 0.2rem;
+  }
+
+  #run-head .run-round {
+    grid-area: 1 / 1;
+  }
+
+  #run-head .run-gold {
+    grid-area: 1 / 2;
+  }
+
+  #run-head .run-lives {
+    grid-area: 1 / 3;
+    justify-self: end;
+  }
+
+  #run-head .run-income {
+    grid-area: 2 / 1 / 2 / 3;
+    white-space: nowrap;
+  }
+
+  #run-head .run-id {
+    grid-area: 2 / 3;
+    justify-self: end;
+    margin-left: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
@@ -1520,23 +1591,52 @@ button.danger {
     font-size: 0.55rem;
   }
 
-  /* Touch targets ≥44px (GA-4): buy and reorder arrows keep their visual
-     size but hit area extends to thumb-friendly 44×44px via a pseudo-element,
-     matching the chip treatment in the 700px breakpoint above. */
+  /* Touch targets (GA-4), reshaped by the slice-3 fix round: extensions are
+     clipped at the midpoint of the gap to each adjacent interactive thing,
+     never centered 44px boxes — those overlapped, and the later sibling won
+     hit-testing (◂'s right half fired ▸; a tap just above buy bought instead
+     of inspecting). Vertically both clip at half the 0.3rem gap to the row
+     above and stop at the card's own bottom edge. */
   .run-buy,
   .run-move button {
     position: relative;
     z-index: 1;
   }
 
-  .run-buy::after,
-  .run-move button::after {
+  .run-buy::after {
     content: "";
     position: absolute;
     left: 50%;
-    top: 50%;
-    width: max(100%, 44px);
-    height: max(100%, 44px);
-    transform: translate(-50%, -50%);
+    transform: translateX(-50%);
+    width: max(100%, 44px); /* nothing sits beside buy — wide is safe */
+    top: -0.15rem; /* half the gap to the chips above */
+    bottom: -0.3rem; /* the card's bottom padding — stays inside this card */
+  }
+
+  .run-move button::after {
+    content: "";
+    position: absolute;
+    inset: -0.15rem -12px -0.3rem -12px;
+  }
+
+  /* The pair's inner edges split at the midpoint of their 0.15rem gap. The
+     later sibling's hit edge sits EXACTLY at the midpoint and wins where both
+     paint; the earlier sibling carries a 2px snap guard past the midpoint,
+     because Chromium snaps pseudo-element hit rects to whole pixels and
+     exactly-tiled halves left a 1px dead seam at fractional layouts. Net
+     ownership: exclusive, within 1px of the geometric midpoint (snap only),
+     crack-free — a tap just right of ◂'s visual still fires ◂, never ▸. */
+  .run-move button:first-child::after {
+    right: calc(-0.075rem - 2px);
+  }
+
+  .run-move button:last-child::after {
+    left: -0.075rem;
+  }
+
+  /* A disabled arrow owns no taps at all: the point falls through to the live
+     sibling's hit area or the card (= inspect) — never a dead tap. */
+  .run-move button:disabled {
+    pointer-events: none;
   }
 }

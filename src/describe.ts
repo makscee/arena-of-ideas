@@ -77,45 +77,61 @@ const amountClause = (a: Amount, opts: DescribeOpts): string =>
 
 /** A when as a clause: triggers read "after X", interceptors "when X would …". */
 export function describeWhen(w: When, opts: DescribeOpts = {}): string {
+  return joinSegments(describeWhenSegments(w, opts));
+}
+
+/** describeWhen as segments — identical text, with an explicit status pattern
+ * (StatusApplied/StatusRemoved naming a status) marked as a ref, so
+ * editor-made content like "After Poison lands on an ally" gets a tappable
+ * Poison exactly like effect clauses do. */
+export function describeWhenSegments(w: When, opts: DescribeOpts = {}): DescribeSegment[] {
   const holder = opts.holder ?? HOLDER_DEFAULT;
   const p: EventPattern = w.on;
   const intercept = w.kind === "interceptor";
   switch (p.on) {
     case "BattleStart":
-      return "when the battle begins";
+      return [seg("when the battle begins")];
     case "TurnStart":
-      return "at the start of each turn";
+      return [seg("at the start of each turn")];
     case "TurnEnd":
-      return "at the end of each turn";
+      return [seg("at the end of each turn")];
     case "Strike": {
       const who = filterPhrase(p.striker, holder);
-      return intercept ? `when ${who} would strike` : `after ${who} strikes`;
+      return [seg(intercept ? `when ${who} would strike` : `after ${who} strikes`)];
     }
     case "Hurt": {
       const who = filterPhrase(p.unit, holder);
-      return intercept ? `when ${who} would be hurt` : `after ${who} is hurt`;
+      return [seg(intercept ? `when ${who} would be hurt` : `after ${who} is hurt`)];
     }
     case "Heal": {
       const who = filterPhrase(p.unit, holder);
-      return intercept ? `when ${who} would be healed` : `after ${who} is healed`;
+      return [seg(intercept ? `when ${who} would be healed` : `after ${who} is healed`)];
     }
     case "Death": {
       const who = filterPhrase(p.unit, holder);
-      return intercept ? `when ${who} would die` : `after ${who} dies`;
+      return [seg(intercept ? `when ${who} would die` : `after ${who} dies`)];
     }
     case "Summon": {
       const who = filterPhrase(p.unit, holder);
-      return intercept ? `when ${who} would be summoned` : `after ${who} is summoned`;
+      return [seg(intercept ? `when ${who} would be summoned` : `after ${who} is summoned`)];
     }
     case "StatusApplied": {
       const who = filterPhrase(p.unit, holder);
-      const status = p.status ?? "a status";
-      return intercept ? `when ${status} would land on ${who}` : `after ${status} lands on ${who}`;
+      if (p.status === undefined)
+        return [seg(intercept ? `when a status would land on ${who}` : `after a status lands on ${who}`)];
+      const ref: DescribeSegment = { text: p.status, statusRef: p.status };
+      return intercept
+        ? [seg("when "), ref, seg(` would land on ${who}`)]
+        : [seg("after "), ref, seg(` lands on ${who}`)];
     }
     case "StatusRemoved": {
       const who = filterPhrase(p.unit, holder);
-      const status = p.status ?? "a status";
-      return intercept ? `when ${status} would leave ${who}` : `after ${status} leaves ${who}`;
+      if (p.status === undefined)
+        return [seg(intercept ? `when a status would leave ${who}` : `after a status leaves ${who}`)];
+      const ref: DescribeSegment = { text: p.status, statusRef: p.status };
+      return intercept
+        ? [seg("when "), ref, seg(` would leave ${who}`)]
+        : [seg("after "), ref, seg(` leaves ${who}`)];
     }
   }
 }
@@ -214,10 +230,18 @@ export function describeAbility(ab: Ability, opts: DescribeOpts = {}): string {
 
 /** describeAbility as segments — identical text, with status refs marked. */
 export function describeAbilitySegments(ab: Ability, opts: DescribeOpts = {}): DescribeSegment[] {
-  const whens = ab.whens.map((w) => describeWhen(w, opts)).join(", or ");
   const cond = ab.condition !== undefined ? `, ${describeCondition(ab.condition, opts)}` : "";
   const target = ab.selectors.map((s) => describeSelector(s, opts)).join(" and ");
-  const segs: DescribeSegment[] = [seg(`${capitalize(whens)}${cond}: `)];
+  // The when clauses keep their segment shape (a status-pattern when carries a
+  // ref); every clause opens with plain lead text ("after"/"when"/"at"), so
+  // capitalizing the first segment is capitalizing the sentence.
+  const segs: DescribeSegment[] = [];
+  ab.whens.forEach((w, i) => {
+    if (i > 0) segs.push(seg(", or "));
+    segs.push(...describeWhenSegments(w, opts));
+  });
+  if (segs.length > 0) segs[0] = { ...segs[0]!, text: capitalize(segs[0]!.text) };
+  segs.push(seg(`${cond}: `));
   ab.effects.forEach((e, i) => {
     if (i > 0) segs.push(seg(", then "));
     segs.push(...describeEffectSegments(e, target, opts));

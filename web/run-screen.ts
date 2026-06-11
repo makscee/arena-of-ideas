@@ -23,6 +23,7 @@ import {
   ladderFight,
   reorder,
   reroll,
+  shopSizeForRound,
   toBattleTeam,
   type LadderStore,
   type RunEvent,
@@ -238,11 +239,12 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
           ? `no ghosts left to fight at round ${s.round} — next fight challenges ${championPhrase(champ)} for the crown`
           : `no ghosts left at round ${s.round} and the spot is vacant — fighting takes the crown`;
     // Notice strip stays in flow at all times — content cleared when empty
-    // so the reserved min-height holds without showing stale text (LS-5).
+    // so the reserved strip holds without showing stale text (LS-5). The
+    // title carries the full string: at phone width the strip is a fixed
+    // two-line clamp (slice-3 fix), so an over-long notice ellipsizes.
     els.notice.textContent = notice ?? "";
-    els.shopRow.innerHTML =
-      s.offers.map((o, i) => offerCard(o, i, s.gold)).join("") ||
-      '<span class="run-dim">the shop is empty — reroll or fight</span>';
+    els.notice.title = notice ?? "";
+    renderShopRow(s);
     els.rerollButton.textContent = `reroll ${REROLL_COST}g`;
     els.rerollButton.disabled = s.gold < REROLL_COST;
     els.line.innerHTML =
@@ -254,6 +256,31 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     if (selected !== undefined) renderInspector();
     else closeInspectOverlay("run");
     show("shop");
+  }
+
+  /** Render the shop row and lock its min-height to the ROLLED offer count's
+   * layout at the current width (slice-3 fix): three offers wrap to two rows
+   * at 375px and a one-row min-height let buying collapse the row — the
+   * fight button jumped −103px on the loop's most common action. The bought
+   * slots are refilled with representative pool cards, the full rolled row is
+   * measured invisibly within one task and removed (the reserveBattleBar()
+   * pattern), and the measured height holds for the rest of the roll. The
+   * measure is the fractional getBoundingClientRect height — offsetHeight
+   * rounds down and the lost ~0.2px moved everything below on collapse.
+   * Where layout doesn't run (height 0), the CSS one-row floor stands. */
+  function renderShopRow(s: RunState): void {
+    const real =
+      s.offers.map((o, i) => offerCard(o, i, s.gold)).join("") ||
+      '<span class="run-dim">the shop is empty — reroll or fight</span>';
+    const fill = deps.pool.length === 0 ? 0 : Math.max(0, shopSizeForRound(s.round) - s.offers.length);
+    const fillers = Array.from({ length: fill }, (_, k) =>
+      offerCard(deps.pool[k % deps.pool.length]!, s.offers.length + k, s.gold),
+    ).join("");
+    els.shopRow.style.minHeight = "";
+    els.shopRow.innerHTML = s.offers.map((o, i) => offerCard(o, i, s.gold)).join("") + fillers;
+    const reserve = els.shopRow.getBoundingClientRect().height;
+    els.shopRow.innerHTML = real;
+    if (reserve > 0) els.shopRow.style.minHeight = `${reserve}px`;
   }
 
   /** Inspector over a shop offer or line unit: the def's derived descriptions
@@ -442,9 +469,11 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   // ---------- transitions ----------
 
   function flag(message: string): void {
-    // Error strip stays in flow (reserved min-height) — set text, no
-    // hidden toggle, so nothing below the fight button shifts (LS-5).
+    // Error strip stays in flow (reserved, fixed-height at phone width) — set
+    // text, no hidden toggle, so nothing below the fight button shifts (LS-5).
+    // The title carries the full string past the phone strip's two-line clamp.
     els.error.textContent = message;
+    els.error.title = message;
   }
 
   /** Persist the run; if localStorage is full, show a one-line warning and
@@ -464,6 +493,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
    * on the error line (anything else propagates — it is a bug, not a play). */
   function transition(step: (s: RunState) => RunState): void {
     els.error.textContent = ""; // clear in-flow error strip
+    els.error.title = "";
     const before = state!.log.length;
     try {
       state = step(state!);
@@ -493,6 +523,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
    * (the champion may already be dethroned in the store by the time we look). */
   function fightLadder(): void {
     els.error.textContent = ""; // clear in-flow error strip
+    els.error.title = "";
     const before = state!;
     const championBefore = deps.store.champion();
     let next: RunState;
@@ -612,6 +643,12 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   });
 
   els.rerollButton.addEventListener("click", () => transition(reroll));
+  // The shop reserve is measured at the current width — a rotation/resize
+  // re-measures in place (no full re-render: renderShop would reset scroll,
+  // and phone browsers fire resize on every URL-bar collapse).
+  window.addEventListener("resize", () => {
+    if (phase === "shop" && state !== undefined) renderShopRow(state);
+  });
   els.fightButton.addEventListener("click", fightLadder);
   els.skipButton.addEventListener("click", () => deps.viewer.toEnd()); // landing on the end reveals the bar via onEnded
 

@@ -49,7 +49,10 @@ function unitCard(
     .filter(Boolean)
     .join(" ");
   const chips = chipsHtml(u.statuses, registry);
-  const silenced = u.silenced ? '<span class="chip mute" title="Silenced">mut</span>' : "";
+  // Like every other chip, the title explains the state, not just names it.
+  const silenced = u.silenced
+    ? '<span class="chip mute" title="Silenced — its statuses are stripped and its own abilities are disabled for the battle">mut</span>'
+    : "";
   // The tooltip slot carries player-useful state, never the internal id (IA-7).
   const title = opts.dead
     ? `${displayName} — dead · tap to inspect`

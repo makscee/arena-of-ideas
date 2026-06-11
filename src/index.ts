@@ -28,6 +28,7 @@ export {
   describeStatus,
   describeStatusSegments,
   describeWhen,
+  describeWhenSegments,
 } from "./describe.js";
 export type { DescribeOpts, DescribeSegment } from "./describe.js";
 export type { NameOf } from "./trace.js";

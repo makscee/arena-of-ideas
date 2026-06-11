@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
+    "e2e": "node e2e/run.mjs",
     "typecheck": "tsc --noEmit",
     "battle": "node --import tsx/esm src/cli.ts",
     "dev": "vite",
@@ -13,6 +14,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.9.2",
+    "playwright": "^1.60.0",
     "tsx": "^4.22.4",
     "typescript": "^5.8.3",
     "vite": "^6.4.3",
