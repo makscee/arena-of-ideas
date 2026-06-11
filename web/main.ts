@@ -3,7 +3,7 @@
 // log (and the content it ran on) to the battle screen — board, inline log,
 // and inspector all read that one log.
 
-import { DEFAULT_RUN_POOL, KERNEL_VERSION, battle, openLadder, stressRegistry, type UnitDef } from "../src/index.js";
+import { DEFAULT_RUN_POOL, KERNEL_VERSION, battle, codexUnits, openLadder, stressRegistry, type UnitDef } from "../src/index.js";
 import { resolveUnits, teamOptions } from "./catalogue.js";
 import { dismissInspectOverlay } from "./inspect.js";
 import { createViewer } from "./viewer.js";
@@ -157,15 +157,19 @@ const viewTabs = {
 
 let runScreen: RunScreen | undefined;
 
-// Codex: initialised once, lives in #codex-container
+// Codex: initialised once, lives in #codex-container. codexUnits() covers
+// every unit a player can meet — shop pool, bootstrap ghosts/champion, summons.
 const codexScreen: CodexScreen = createCodex(
   el("codex-container"),
   stressRegistry,
-  DEFAULT_RUN_POOL,
+  codexUnits(),
 );
 codexScreen.setVisible(false);
 
-// Handle deep-link navigation on page load (e.g. #codex/status/Poison)
+// Deep-link navigation (e.g. #codex/status/Poison): handled on hash change,
+// on cold load (the applyHashNav() call at the end of this module), and on
+// every in-app codex-link click — the click handler navigates even when the
+// hash is already the target, so a repeat click is never a dead click.
 function applyHashNav(): void {
   const hash = window.location.hash.slice(1); // strip leading "#"
   if (hash.startsWith("codex/")) {
@@ -174,6 +178,15 @@ function applyHashNav(): void {
   }
 }
 window.addEventListener("hashchange", applyHashNav);
+document.addEventListener("click", (ev) => {
+  const link = (ev.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#codex/"]');
+  if (!link) return;
+  ev.preventDefault(); // hashchange wouldn't fire when the hash is unchanged
+  const fragment = link.getAttribute("href")!.slice(1);
+  history.replaceState(null, "", `#${fragment}`);
+  showView("codex");
+  codexScreen.navigate(fragment);
+});
 
 function showView(which: keyof typeof views): void {
   dismissInspectOverlay(); // an inspector never outlives its screen
@@ -326,3 +339,7 @@ createEditor(
 );
 
 el<HTMLElement>("kernel-version").textContent = `kernel v${KERNEL_VERSION}`;
+
+// Cold-load deep links: a shared #codex/... URL must land on the entry, not
+// the run tab. After every view is wired so showView can hide them all.
+applyHashNav();

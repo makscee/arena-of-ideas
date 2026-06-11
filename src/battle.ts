@@ -28,6 +28,11 @@ export const FATIGUE_START = 10;
 export const FATIGUE_RAMP = 1;
 export const TURN_CAP = 200;
 
+/** Fatigue damage dealt at the end of a turn (>= FATIGUE_START) — exported so
+ * display layers (the codex) derive the ramp from the same formula the loop
+ * runs, never a re-written copy of it. */
+export const fatigueAmount = (turn: number): number => (turn - FATIGUE_START + 1) * FATIGUE_RAMP;
+
 interface StatusInstance {
   def: StatusDef;
   stacks: number;
@@ -131,7 +136,7 @@ class Engine {
       const te = this.propose({ type: "TurnEnd" }, null, "kernel");
       this.settle();
       if (te && this.turn >= FATIGUE_START && this.bothAlive()) {
-        const amount = (this.turn - FATIGUE_START + 1) * FATIGUE_RAMP;
+        const amount = fatigueAmount(this.turn);
         this.propose({ type: "Fatigue", amount }, te.id, "kernel");
         this.settle();
       }

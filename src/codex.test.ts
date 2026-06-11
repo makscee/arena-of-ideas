@@ -1,25 +1,40 @@
 // Codex acceptance tests
-// (a) Every registry status and every shipped unit appears in the codex data.
+// (a) Every registry status and every meetable unit appears in the codex data.
 // (b) Each named rule section is present.
-// (c) Numbers in codex output match tunables (change-detector against drift).
+// (c) Numbers in codex output match the code that runs the game — formulas are
+//     asserted by CALLING them (fatigueAmount, incomeForRound), so retuning a
+//     knob cannot silently leave the codex lying.
+// (d) The ghosts rule is asserted against the actual ladder semantics
+//     (one random draw per round; pre-seeded champion) — the codex must never
+//     re-grow the "beat every ghost" / "vacant spot" misreadings.
 
 import { describe, it, expect } from "vitest";
-import { buildCodex } from "./codex.js";
+import { buildCodex, codexUnits } from "./codex.js";
 import { stressRegistry } from "./content/stress.js";
-import { DEFAULT_RUN_POOL } from "./tunables.js";
 import {
-  INCOME_BASE,
-  STARTING_LIVES,
-  STACK_THRESHOLD,
+  BOOTSTRAP_DEPTH,
+  DEFAULT_RUN_POOL,
+  INCOME_PER_ROUND,
+  INCOME_CAP,
+  LEVEL_HP_GROWTH,
+  LEVEL_PWR_GROWTH,
+  REROLL_COST,
   SHOP_SIZE_BASE,
   SHOP_SIZE_MAX,
   SHOP_SIZE_STEP,
+  STACK_THRESHOLD,
+  STARTING_LIVES,
   UNIT_COST,
-  REROLL_COST,
+  incomeForRound,
 } from "./tunables.js";
-import { FATIGUE_START, FATIGUE_RAMP, TURN_CAP } from "./battle.js";
+import { FATIGUE_START, TURN_CAP, fatigueAmount } from "./battle.js";
 
-const codex = buildCodex(stressRegistry, DEFAULT_RUN_POOL);
+const codex = buildCodex(stressRegistry, codexUnits());
+const rule = (key: string) => {
+  const r = codex.rules.find((r) => r.key === key);
+  expect(r, `rule "${key}" missing`).toBeDefined();
+  return r!;
+};
 
 describe("codex — status coverage", () => {
   const registryNames = Object.keys(stressRegistry).sort();
@@ -45,11 +60,26 @@ describe("codex — status coverage", () => {
 });
 
 describe("codex — unit coverage", () => {
-  const poolNames = [...new Set(DEFAULT_RUN_POOL.map((u) => u.name))].sort();
-  const codexNames = codex.units.map((u) => u.name).sort();
+  const codexNames = codex.units.map((u) => u.name);
 
   it("contains every unit from DEFAULT_RUN_POOL", () => {
-    expect(codexNames).toEqual(poolNames);
+    for (const u of DEFAULT_RUN_POOL) expect(codexNames, `${u.name} missing`).toContain(u.name);
+  });
+
+  it("contains the units a player faces but cannot buy (bootstrap + summons)", () => {
+    // Warden/Warlord live only in bootstrap ghosts/champion; Imp only as a summon.
+    for (const name of ["Warden", "Warlord", "Imp"]) {
+      expect(codexNames, `${name} missing`).toContain(name);
+    }
+  });
+
+  it("dedup favors the buyable variant (shop pool first)", () => {
+    // Brawler is 12/2 in the shop pool and 14/3, 16/4 as bootstrap ghosts —
+    // the codex must show what the shop sells.
+    const brawler = codex.units.find((u) => u.name === "Brawler")!;
+    const poolBrawler = DEFAULT_RUN_POOL.find((u) => u.name === "Brawler")!;
+    expect(brawler.hp).toBe(poolBrawler.base.hp);
+    expect(brawler.pwr).toBe(poolBrawler.base.pwr);
   });
 
   it("each unit entry carries hp and pwr", () => {
@@ -67,14 +97,17 @@ describe("codex — unit coverage", () => {
     const text = v!.abilities.join(" ").toLowerCase();
     expect(text).toMatch(/poison/);
   });
+
+  it("Warlord entry carries its starting Strength stacks", () => {
+    const w = codex.units.find((u) => u.name === "Warlord")!;
+    expect(w.statuses.join(" ")).toMatch(/Strength ×\d/);
+  });
 });
 
 describe("codex — rule sections", () => {
-  const ruleKeys = codex.rules.map((r) => r.key);
-
   for (const key of ["fatigue", "income", "lives", "fusion", "shop", "strike-order", "ghosts", "draws"]) {
     it(`rule "${key}" is present`, () => {
-      expect(ruleKeys).toContain(key);
+      rule(key);
     });
   }
 
@@ -86,59 +119,86 @@ describe("codex — rule sections", () => {
   });
 });
 
-describe("codex — tunable/constant drift detection", () => {
-  it("fatigue rule cites FATIGUE_START", () => {
-    const rule = codex.rules.find((r) => r.key === "fatigue")!;
-    expect(rule.text).toContain(String(FATIGUE_START));
+describe("codex — fatigue derives from the kernel's formula", () => {
+  it("cites FATIGUE_START and the first three ramp values from fatigueAmount()", () => {
+    const r = rule("fatigue");
+    expect(r.text).toContain(`From turn ${FATIGUE_START}`);
+    // The sequence is asserted as one string so an additive re-write of a
+    // multiplicative ramp (e.g. RAMP=2 → "2, 3, 4" instead of "2, 4, 6") fails.
+    const seq = `${fatigueAmount(FATIGUE_START)}, ${fatigueAmount(FATIGUE_START + 1)}, ${fatigueAmount(FATIGUE_START + 2)}`;
+    expect(r.text).toContain(seq);
   });
 
-  it("fatigue rule cites FATIGUE_RAMP", () => {
-    const rule = codex.rules.find((r) => r.key === "fatigue")!;
-    expect(rule.text).toContain(String(FATIGUE_RAMP));
+  it("cites TURN_CAP", () => {
+    expect(rule("fatigue").text).toContain(String(TURN_CAP));
+  });
+});
+
+describe("codex — income derives from incomeForRound()", () => {
+  it("cites round-1 income from the curve, not a raw constant", () => {
+    expect(rule("income").text).toContain(`${incomeForRound(1)} gold`);
   });
 
-  it("fatigue rule cites TURN_CAP", () => {
-    const rule = codex.rules.find((r) => r.key === "fatigue")!;
-    expect(rule.text).toContain(String(TURN_CAP));
+  it("matches the curve's shape: flat text iff INCOME_PER_ROUND is 0", () => {
+    const text = rule("income").text;
+    if (INCOME_PER_ROUND === 0) {
+      expect(text).toContain("each new round");
+      expect(text).not.toContain("grows");
+    } else {
+      expect(text).toContain(`grows by ${INCOME_PER_ROUND}`);
+      expect(text).toContain(String(INCOME_CAP));
+    }
   });
+});
 
-  it("income rule cites INCOME_BASE", () => {
-    const rule = codex.rules.find((r) => r.key === "income")!;
-    expect(rule.text).toContain(String(INCOME_BASE));
-  });
-
+describe("codex — lives / fusion / shop tunables", () => {
   it("lives rule cites STARTING_LIVES", () => {
-    const rule = codex.rules.find((r) => r.key === "lives")!;
-    expect(rule.text).toContain(String(STARTING_LIVES));
+    expect(rule("lives").text).toContain(`${STARTING_LIVES} lives`);
   });
 
-  it("fusion rule cites STACK_THRESHOLD", () => {
-    const rule = codex.rules.find((r) => r.key === "fusion")!;
-    expect(rule.text).toContain(String(STACK_THRESHOLD));
+  it("fusion rule cites STACK_THRESHOLD and the level growth", () => {
+    const text = rule("fusion").text;
+    expect(text).toContain(`${STACK_THRESHOLD} copies`);
+    expect(text).toContain(`+${LEVEL_HP_GROWTH} base hp`);
+    expect(text).toContain(`+${LEVEL_PWR_GROWTH} base pwr`);
+    // Levels continue: the count resets, THRESHOLD−1 more copies fuse again.
+    expect(text).toContain(`${STACK_THRESHOLD - 1} more copies`);
   });
 
-  it("fusion rule cites UNIT_COST", () => {
-    const rule = codex.rules.find((r) => r.key === "fusion")!;
-    expect(rule.text).toContain(String(UNIT_COST));
+  it("fusion rule cites UNIT_COST and REROLL_COST", () => {
+    const text = rule("fusion").text;
+    expect(text).toContain(`${UNIT_COST}g`);
+    expect(text).toContain(`${REROLL_COST}g`);
   });
 
-  it("fusion rule cites REROLL_COST", () => {
-    const rule = codex.rules.find((r) => r.key === "fusion")!;
-    expect(rule.text).toContain(String(REROLL_COST));
+  it("shop rule cites SHOP_SIZE_BASE/STEP/MAX", () => {
+    const text = rule("shop").text;
+    expect(text).toContain(`${SHOP_SIZE_BASE} offers`);
+    expect(text).toContain(`every ${SHOP_SIZE_STEP} rounds`);
+    expect(text).toContain(`${SHOP_SIZE_MAX} offers`);
+  });
+});
+
+describe("codex — ghosts rule matches ladder semantics", () => {
+  it("states the one-random-draw rule, not pool-clearing", () => {
+    const text = rule("ghosts").text;
+    expect(text).toContain("one ghost drawn at random");
+    // The misreadings the first version shipped with — pinned dead:
+    expect(text.toLowerCase()).not.toMatch(/beat every ghost/);
+    expect(text.toLowerCase()).not.toMatch(/every ghost in your round/);
   });
 
-  it("shop rule cites SHOP_SIZE_BASE", () => {
-    const rule = codex.rules.find((r) => r.key === "shop")!;
-    expect(rule.text).toContain(String(SHOP_SIZE_BASE));
+  it("states the pre-seeded champion, never fresh-ladder vacancy", () => {
+    const text = rule("ghosts").text;
+    expect(text).toContain("champion holding the spot");
+    expect(text.toLowerCase()).not.toMatch(/vacant/);
   });
 
-  it("shop rule cites SHOP_SIZE_MAX", () => {
-    const rule = codex.rules.find((r) => r.key === "shop")!;
-    expect(rule.text).toContain(String(SHOP_SIZE_MAX));
+  it("cites BOOTSTRAP_DEPTH for the seeded rounds", () => {
+    expect(rule("ghosts").text).toContain(`rounds 1–${BOOTSTRAP_DEPTH}`);
   });
 
-  it("shop rule cites SHOP_SIZE_STEP", () => {
-    const rule = codex.rules.find((r) => r.key === "shop")!;
-    expect(rule.text).toContain(String(SHOP_SIZE_STEP));
+  it("states that the round advances win or lose", () => {
+    expect(rule("ghosts").text).toContain("win or lose");
   });
 });

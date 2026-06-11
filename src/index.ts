@@ -2,7 +2,7 @@
 
 export const KERNEL_VERSION = "5.0.0-alpha.0";
 
-export { battle, toJSONL, winnerOf, TEAM_SIZE, FATIGUE_START, FATIGUE_RAMP, TURN_CAP } from "./battle.js";
+export { battle, toJSONL, winnerOf, TEAM_SIZE, FATIGUE_START, FATIGUE_RAMP, TURN_CAP, fatigueAmount } from "./battle.js";
 export { initRun, buy, reroll, reorder, fight, ladderFight, applyDecision, playRun, runToJSONL, serializeRun, deserializeRun, toBattleTeam, InvalidDecisionError } from "./run.js";
 export type { RunInput, RunState, RunStatus, RunEndReason, RunUnit, RunDecision, RunEvent, RunEventBody, RunEventType } from "./run.js";
 // The file backing (FileLadderStore) lives in ladder-file.ts, off this index:
@@ -37,5 +37,5 @@ export { assertValidContent, assertValidPool, validateTeam, validatePool, valida
 export type { ValidationIssue } from "./validate.js";
 export type * from "./types.js";
 export * from "./content/stress.js";
-export { buildCodex } from "./codex.js";
+export { buildCodex, codexUnits } from "./codex.js";
 export type { CodexData, CodexStatusEntry, CodexUnitEntry, CodexRuleEntry } from "./codex.js";

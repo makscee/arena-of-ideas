@@ -74,7 +74,7 @@ export function createCodex(
     const card = document.createElement("div");
     card.className = "codex-entry";
     card.id = `codex-unit-${encodeId(u.name)}`;
-    const searchText = [u.name, `${u.hp}hp`, `${u.pwr}pwr`, ...u.abilities].join(" ").toLowerCase();
+    const searchText = [u.name, `${u.hp}hp`, `${u.pwr}pwr`, ...u.abilities, ...u.statuses].join(" ").toLowerCase();
     card.dataset.search = searchText;
 
     const heading = document.createElement("div");
@@ -84,7 +84,8 @@ export function createCodex(
     nameEl.textContent = u.name;
     const stats = document.createElement("span");
     stats.className = "codex-entry-stats";
-    stats.textContent = `${u.hp} hp · ${u.pwr} pwr`;
+    stats.textContent =
+      `${u.hp} hp · ${u.pwr} pwr` + (u.statuses.length > 0 ? ` · starts with ${u.statuses.join(", ")}` : "");
     const anchor = anchorLink(`codex/unit/${u.name}`);
     heading.append(nameEl, stats, anchor);
 
