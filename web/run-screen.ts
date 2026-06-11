@@ -42,6 +42,13 @@ const esc = (s: string): string =>
 const ofType = <T extends RunEvent["type"]>(log: readonly RunEvent[], t: T): Extract<RunEvent, { type: T }>[] =>
   log.filter((e): e is Extract<RunEvent, { type: T }> => e.type === t);
 
+/** Feel flag (PRD #012 slice 2 — a staging call, kept one boolean from
+ * revert): false = the replay auto-plays and the outcome + continue stay
+ * hidden until the playhead reaches the end (skip jumps straight there;
+ * no spoiler at event 0 — audit GA-1). true = instant result: outcome and
+ * continue shown from event 0, no autoplay. */
+const INSTANT_RESULT = false;
+
 type Phase = "new" | "shop" | "battle" | "end";
 
 interface RunScreenEls {
@@ -67,6 +74,7 @@ interface RunScreenEls {
   battleMount: HTMLElement;
   outcome: HTMLElement;
   continueButton: HTMLButtonElement;
+  skipButton: HTMLButtonElement;
   endPanel: HTMLElement;
   endHead: HTMLElement;
   endStats: HTMLElement;
@@ -105,6 +113,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   let visible = false;
   let selected: { where: "offer" | "line"; index: number; status?: string } | undefined;
   let notice: string | undefined; // the last transition's level-up moment, if any
+  let revealed = false; // the pending battle's outcome has been shown (reset per fight)
 
   const ladderView = createLadderView(els.ladderBody, { store: deps.store, registry: deps.registry });
 
@@ -241,6 +250,16 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     });
   }
 
+  /** The battle bar's staging: skip while the replay runs, outcome +
+   * continue once it ends. Direct DOM toggles — no re-render, so revealing
+   * never remounts (and restarts) the replay. */
+  function syncBattleBar(): void {
+    const shown = INSTANT_RESULT || revealed;
+    els.outcome.hidden = !shown;
+    els.continueButton.hidden = !shown;
+    els.skipButton.hidden = shown;
+  }
+
   function renderBattle(): void {
     const s = state!;
     const b = pending!;
@@ -262,6 +281,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
           ? "claim the crown"
           : "see the end"
         : `continue to round ${s.round}${income !== undefined && income.round === s.round ? ` · +${income.income}g income` : ""}`;
+    syncBattleBar();
     show("battle");
   }
 
@@ -313,7 +333,20 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     deps.viewerHost.hidden = false;
     const s = state!;
     const log = battle({ teamA: pending.teamA, teamB: pending.teamB, seed: pending.seed, statuses: s.statuses });
-    deps.viewer.load(log, { teams: { A: pending.teamA, B: pending.teamB }, registry: s.statuses });
+    // The replay is this phase's whole focus: start it at the top of the
+    // viewport, so board + transport fit above the sticky bar at phone width.
+    els.battlePanel.scrollIntoView({ block: "start" });
+    deps.viewer.load(
+      log,
+      { teams: { A: pending.teamA, B: pending.teamB }, registry: s.statuses },
+      {
+        autoplay: !INSTANT_RESULT,
+        onEnded: () => {
+          revealed = true;
+          syncBattleBar();
+        },
+      },
+    );
   }
 
   function unmountViewer(): void {
@@ -413,6 +446,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
           ? `the ghost of ${ghostLabel(opponent.runId)} from round ${before.round}`
           : championPhrase(opponent),
     };
+    revealed = false; // a fresh battle stages its outcome again
     persist(next, pending);
     render();
   }
@@ -486,9 +520,11 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
 
   els.rerollButton.addEventListener("click", () => transition(reroll));
   els.fightButton.addEventListener("click", fightLadder);
+  els.skipButton.addEventListener("click", () => deps.viewer.toEnd()); // landing on the end reveals the bar via onEnded
 
   els.continueButton.addEventListener("click", () => {
     pending = undefined;
+    revealed = false;
     persist(state!);
     render();
   });

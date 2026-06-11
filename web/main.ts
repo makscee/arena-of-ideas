@@ -119,8 +119,8 @@ function runFromControls(): void {
 
   try {
     const log = battle({ teamA, teamB, seed, statuses: stressRegistry });
+    result.hidden = false; // visible before load — the board height lock measures real layout
     viewer.load(log, { teams: { A: teamA, B: teamB }, registry: stressRegistry });
-    result.hidden = false;
   } catch (err) {
     result.hidden = true;
     flagRun(`Battle failed: ${(err as Error).message}`);
@@ -216,6 +216,7 @@ try {
       battleMount: el("run-battle-mount"),
       outcome: el("run-outcome"),
       continueButton: el<HTMLButtonElement>("run-continue"),
+      skipButton: el<HTMLButtonElement>("run-skip"),
       endPanel: el("run-end"),
       endHead: el("run-end-head"),
       endStats: el("run-end-stats"),

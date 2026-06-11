@@ -182,6 +182,14 @@ button:disabled:hover {
   min-width: 0;
 }
 
+/* Reserved heights (LS-1): a line keeps a card's height through a wipe and
+   the grave row holds a dead card's space from event 0, so the board's
+   shape never jumps mid-replay. The viewer also locks #board's min-height
+   per battle (measured over the log), which guarantees the total. */
+.line {
+  min-height: 5.2rem;
+}
+
 .wiped {
   color: var(--dim);
   font-size: 0.75rem;
@@ -311,6 +319,7 @@ button:disabled:hover {
 .grave {
   margin-top: 0.3rem;
   align-items: center;
+  min-height: 3rem;
 }
 
 .grave-tag {
@@ -349,6 +358,10 @@ button:disabled:hover {
 #transport select {
   font-size: 0.75rem;
   padding: 0.25rem 0.6rem;
+}
+
+#step-play {
+  min-width: 4.3rem; /* "play"/"pause" swap must not shift the buttons beside it */
 }
 
 #step-label {
@@ -441,7 +454,7 @@ button:disabled:hover {
 #battle-log {
   position: relative; /* line offsetTop is measured against this scroll box */
   overflow-y: auto;
-  max-height: 19rem;
+  height: 19rem; /* fixed from event 0 — the log scrolls itself, never grows the page (LS-2) */
   margin-top: 0.3rem;
   font-size: 0.72rem;
 }
@@ -1012,8 +1025,22 @@ button:disabled:hover {
   margin: 0.3rem 0 0.9rem;
 }
 
+#run-skip,
+#run-continue {
+  min-height: 44px; /* the loop's most important taps stay thumb-sized */
+}
+
 #run-battle-bar {
-  margin-top: 0.8rem;
+  /* Pinned to the viewport bottom while the battle is on screen: continue
+     (and skip before it) is always reachable without scrolling past the
+     readout (LS-2). */
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin: 0.8rem 0 0;
+  padding: 0.5rem 0;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
 }
 
 #run-outcome {
@@ -1298,7 +1325,7 @@ button.danger {
   }
 
   #battle-log {
-    max-height: 11rem;
+    height: 11rem;
   }
 }
 

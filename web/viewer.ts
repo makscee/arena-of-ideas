@@ -115,8 +115,18 @@ export interface BattleContent {
   registry: StatusRegistry;
 }
 
+export interface LoadOpts {
+  /** Start playback immediately (the staged-reveal default for run battles). */
+  autoplay?: boolean;
+  /** Called once per load, the first time the playhead reaches the final
+   * event — however it got there (playback, skip, scrub, log click). */
+  onEnded?: () => void;
+}
+
 export interface Viewer {
-  load(log: BattleEvent[], content: BattleContent): void;
+  load(log: BattleEvent[], content: BattleContent, opts?: LoadOpts): void;
+  /** Jump the playhead to the final event — the skip control's landing. */
+  toEnd(): void;
   stop(): void;
   /** Detach the viewer's document-level listeners (and stop playback).
    * Anything that creates viewers more than once must destroy the old one,
@@ -132,6 +142,8 @@ export function createViewer(els: ViewerEls): Viewer {
   let defs = new Map<string, UnitDef>();
   let registry: StatusRegistry = {};
   let selected: { unit: string; status?: string } | undefined;
+  let onEnded: (() => void) | undefined;
+  let endedNotified = false;
 
   const playing = () => timer !== undefined;
 
@@ -164,6 +176,27 @@ export function createViewer(els: ViewerEls): Viewer {
         name,
       });
     }
+    if (log.length > 0 && step === log.length - 1 && !endedNotified) {
+      endedNotified = true;
+      onEnded?.();
+    }
+  }
+
+  /** Reserve the tallest board this replay will show. Graves fill, lines
+   * wipe, chips land — all knowable up front from the log — so render each
+   * height-affecting step once and lock the max in (audit LS-1: the board
+   * must never change height mid-replay, or the transport jumps under the
+   * cursor). No-op while the board is display:none (offsetHeight reads 0). */
+  function lockBoardHeight(): void {
+    els.board.style.minHeight = "";
+    let max = 0;
+    for (let i = 0; i < log.length; i++) {
+      const t = log[i]!.type;
+      if (i !== 0 && t !== "Death" && t !== "Summon" && t !== "StatusApplied" && t !== "StatusRemoved" && t !== "Silenced" && t !== "BattleEnd") continue;
+      renderBoard(els.board, boardAt(log, i), name, new Set());
+      max = Math.max(max, els.board.offsetHeight);
+    }
+    if (max > 0) els.board.style.minHeight = `${max}px`;
   }
 
   /** The selected event's lineage: source, the causedBy chain, and a death's narrated why. */
@@ -271,7 +304,7 @@ export function createViewer(els: ViewerEls): Viewer {
   document.addEventListener("keydown", onKeydown);
 
   return {
-    load(newLog: BattleEvent[], content: BattleContent): void {
+    load(newLog: BattleEvent[], content: BattleContent, opts?: LoadOpts): void {
       pause();
       log = newLog;
       name = displayNames(log);
@@ -279,10 +312,18 @@ export function createViewer(els: ViewerEls): Viewer {
       defs = unitDefs(log, content.teams, content.registry);
       registry = content.registry;
       selected = undefined;
+      onEnded = opts?.onEnded;
+      endedNotified = false;
       battleLog.load(log, name);
       els.scrub.min = "0";
       els.scrub.max = String(log.length - 1);
+      lockBoardHeight();
       render();
+      if (opts?.autoplay === true && log.length > 1) playPause();
+    },
+    toEnd(): void {
+      pause();
+      goTo(log.length - 1);
     },
     stop: pause,
     destroy(): void {

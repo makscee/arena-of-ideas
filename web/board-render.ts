@@ -76,12 +76,29 @@ function sideHtml(
   const grave = board.graves[side]
     .map((u) => unitCard(u, name(u.id), { front: false, dead: true, hit: hit.has(u.id), sel: u.id === selected }))
     .join("");
+  // The grave row is part of a side's shape from event 0 — empty until the
+  // first death — and the line survives a wipe as a placeholder, so deaths
+  // never change the board's height mid-replay (audit LS-1).
   return `
     <div class="side" data-side="${side}">
       <div class="side-head"><span class="side-tag">side ${side}</span><span class="front-hint">front first ▸</span></div>
       <div class="line">${line || '<span class="wiped">— no one standing —</span>'}</div>
-      ${grave ? `<div class="grave"><span class="grave-tag">grave</span>${grave}</div>` : ""}
+      <div class="grave"><span class="grave-tag">grave</span>${grave}</div>
     </div>`;
+}
+
+/** The board as markup — pure, so layout-stability invariants (grave rows
+ * always present) are testable without a DOM. */
+export function boardHtml(
+  board: BoardState,
+  name: (id: string) => string,
+  hit: Set<string>,
+  selected?: string,
+): string {
+  const verdict = board.ended
+    ? `<span class="verdict">${board.ended.winner === "draw" ? "draw" : `side ${board.ended.winner} wins`} · turn ${board.ended.turns}</span>`
+    : `<span class="verdict dim">turn ${board.turn}</span>`;
+  return `${sideHtml(board, "A", name, hit, selected)}<div class="divider">${verdict}</div>${sideHtml(board, "B", name, hit, selected)}`;
 }
 
 /** Replaces `root`'s content with the board: side A's line, a divider, side B's.
@@ -93,8 +110,5 @@ export function renderBoard(
   hit: Set<string>,
   selected?: string,
 ): void {
-  const verdict = board.ended
-    ? `<span class="verdict">${board.ended.winner === "draw" ? "draw" : `side ${board.ended.winner} wins`} · turn ${board.ended.turns}</span>`
-    : `<span class="verdict dim">turn ${board.turn}</span>`;
-  root.innerHTML = `${sideHtml(board, "A", name, hit, selected)}<div class="divider">${verdict}</div>${sideHtml(board, "B", name, hit, selected)}`;
+  root.innerHTML = boardHtml(board, name, hit, selected);
 }
