@@ -93,7 +93,7 @@ export function createBattleLog(root: HTMLElement, onPick: (eventId: number) => 
       case "Silenced":
         return make("ev-warn", "⊘", `${unit(e.unit)} is silenced`);
       case "Fatigue":
-        return make("ev-warn", "⌛", `fatigue ${e.amount} wears everyone down`);
+        return make("ev-warn", "⌛", `fatigue ${e.amount} wears everyone down — <a href="#codex/rule/fatigue" class="log-link">what is fatigue?</a>`);
       case "ChainBlocked":
         return make("ev-dim", "⊘", `chain stopped: ${esc(abilityRefDesc(e.ability, name))} stays quiet`);
       case "Intercepted": {

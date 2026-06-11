@@ -400,6 +400,17 @@ button:disabled:hover {
   color: var(--text);
 }
 
+/* in-log links (e.g. fatigue → codex entry) */
+.log-link {
+  color: var(--dim);
+  text-decoration: underline dotted;
+  font-size: inherit;
+}
+
+.log-link:hover {
+  color: var(--text);
+}
+
 /* ---------- battle readout: inline log + inspector + event panel ----------
    Two columns on a desk (log left, details right), one stacked column at
    phone width. The log pane scrolls itself — the page never grows with the
@@ -1193,6 +1204,90 @@ button:disabled:hover {
 button.danger {
   color: var(--hurt);
   border-color: var(--hurt);
+}
+
+/* ---------- codex screen ----------
+   Statuses, units, and rules — fully generated, zero hand-written facts. */
+
+.codex-search-row {
+  margin-bottom: 0.75rem;
+}
+
+.codex-search {
+  width: 100%;
+  max-width: 24rem;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.6rem;
+}
+
+.codex-section {
+  margin-bottom: 1.2rem;
+}
+
+.codex-section-head {
+  margin-bottom: 0.4rem;
+}
+
+.codex-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.codex-entry {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+}
+
+.codex-entry-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.2rem;
+}
+
+.codex-entry-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.codex-entry-stats {
+  color: var(--dim);
+  font-size: 0.75rem;
+}
+
+.codex-entry-desc {
+  font-size: 0.8rem;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.codex-dim {
+  color: var(--dim);
+}
+
+.codex-anchor {
+  color: var(--dim);
+  text-decoration: none;
+  font-size: 0.7rem;
+  margin-left: auto;
+}
+
+.codex-anchor:hover {
+  color: var(--accent);
+}
+
+@keyframes codex-flash {
+  0% { outline-color: var(--accent); }
+  100% { outline-color: transparent; }
+}
+
+.codex-highlight {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  animation: codex-flash 1.8s ease-out forwards;
 }
 
 @media (max-width: 700px) {

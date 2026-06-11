@@ -10,6 +10,7 @@ import { createEditor } from "./editor.js";
 import { createGauntlet } from "./gauntlet.js";
 import { createRunScreen, type RunScreen } from "./run-screen.js";
 import { openLocalLadder, resetLadder } from "./run-store.js";
+import { createCodex, type CodexScreen } from "./codex.js";
 
 // ---------------------------------------------------------------------------
 // DOM wiring
@@ -144,15 +145,35 @@ const views = {
   battle: el<HTMLElement>("battle-view"),
   gauntlet: el<HTMLElement>("gauntlet-view"),
   editor: el<HTMLElement>("editor-view"),
+  codex: el<HTMLElement>("codex-view"),
 };
 const viewTabs = {
   run: el<HTMLButtonElement>("view-run"),
   battle: el<HTMLButtonElement>("view-battle"),
   gauntlet: el<HTMLButtonElement>("view-gauntlet"),
   editor: el<HTMLButtonElement>("view-editor"),
+  codex: el<HTMLButtonElement>("view-codex"),
 };
 
 let runScreen: RunScreen | undefined;
+
+// Codex: initialised once, lives in #codex-container
+const codexScreen: CodexScreen = createCodex(
+  el("codex-container"),
+  stressRegistry,
+  DEFAULT_RUN_POOL,
+);
+codexScreen.setVisible(false);
+
+// Handle deep-link navigation on page load (e.g. #codex/status/Poison)
+function applyHashNav(): void {
+  const hash = window.location.hash.slice(1); // strip leading "#"
+  if (hash.startsWith("codex/")) {
+    showView("codex");
+    codexScreen.navigate(hash);
+  }
+}
+window.addEventListener("hashchange", applyHashNav);
 
 function showView(which: keyof typeof views): void {
   for (const key of Object.keys(views) as (keyof typeof views)[]) {
@@ -161,6 +182,7 @@ function showView(which: keyof typeof views): void {
   }
   if (which !== "battle") viewer.stop();
   runScreen?.setVisible(which === "run");
+  codexScreen.setVisible(which === "codex");
 }
 for (const key of Object.keys(viewTabs) as (keyof typeof viewTabs)[]) {
   viewTabs[key].addEventListener("click", () => showView(key));

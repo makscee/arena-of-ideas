@@ -33,3 +33,5 @@ export { assertValidContent, assertValidPool, validateTeam, validatePool, valida
 export type { ValidationIssue } from "./validate.js";
 export type * from "./types.js";
 export * from "./content/stress.js";
+export { buildCodex } from "./codex.js";
+export type { CodexData, CodexStatusEntry, CodexUnitEntry, CodexRuleEntry } from "./codex.js";
