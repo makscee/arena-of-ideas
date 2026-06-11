@@ -13,7 +13,7 @@ import {
   type UnitDef,
 } from "../src/index.js";
 import { shapeSvg } from "./board-render.js";
-import { renderUnitInspect } from "./inspect.js";
+import { chipsHtml, closeInspectOverlay, openInspectOverlay, renderUnitInspect } from "./inspect.js";
 
 const esc = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
@@ -59,12 +59,7 @@ export function createLadderView(root: HTMLElement, deps: LadderViewDeps): Ladde
   let run: LadderViewRun | undefined;
 
   const chips = (statuses: readonly { status: string; stacks: number }[] | undefined): string =>
-    (statuses ?? [])
-      .map(
-        (s) =>
-          `<span class="chip" data-status="${esc(s.status)}" title="${esc(s.status)} ×${s.stacks}">${esc(s.status.slice(0, 3))}${s.stacks}</span>`,
-      )
-      .join("");
+    chipsHtml(statuses, deps.registry);
 
   function unitCard(u: UnitDef, addr: string, i: number, selected: boolean): string {
     const level = u.level ?? 1;
@@ -152,34 +147,39 @@ export function createLadderView(root: HTMLElement, deps: LadderViewDeps): Ladde
   function render(): void {
     const found = selectedUnit();
     if (found === undefined) sel = undefined;
-    root.innerHTML =
-      championHtml() + `<div class="lv-rounds">${roundsHtml()}</div>` + `<div class="lv-inspect" hidden></div>`;
-    const inspect = root.querySelector<HTMLElement>(".lv-inspect")!;
+    root.innerHTML = championHtml() + `<div class="lv-rounds">${roundsHtml()}</div>`;
     if (found !== undefined && sel !== undefined) {
-      inspect.hidden = false;
       const { def, snap } = found;
-      renderUnitInspect(inspect, {
-        title: def.name,
-        state:
-          `${def.base.hp} hp · ${def.base.pwr} pwr` +
-          ((def.level ?? 1) > 1 ? ` · L${def.level}` : "") +
-          ` · ${sel.champ ? "champion" : `ghost of ${esc(ghostLabel(snap.runId))}, round ${snap.round}`}`,
-        def,
-        statuses: def.statuses ?? [],
-        registry: deps.registry,
-        ...(sel.status !== undefined ? { highlight: sel.status } : {}),
-        noStatuses: "none to start with",
+      const which = sel;
+      const addr = `${which.champ ? "c" : "g"}:${which.round}:${which.seq}:${which.unit}`;
+      openInspectOverlay("ladder", {
+        anchor: root.querySelector<HTMLElement>(`[data-lv="${addr}"]`),
+        onClose: () => {
+          if (sel === undefined) return;
+          sel = undefined;
+          render();
+        },
+        render: (body) =>
+          renderUnitInspect(body, {
+            title: def.name,
+            state:
+              `${def.base.hp} hp · ${def.base.pwr} pwr` +
+              ((def.level ?? 1) > 1 ? ` · L${def.level}` : "") +
+              ` · ${which.champ ? "champion" : `ghost of ${esc(ghostLabel(snap.runId))}, round ${snap.round}`}`,
+            def,
+            statuses: def.statuses ?? [],
+            registry: deps.registry,
+            ...(which.status !== undefined ? { highlight: which.status } : {}),
+            noStatuses: "none to start with",
+          }),
       });
+    } else {
+      closeInspectOverlay("ladder");
     }
   }
 
   root.addEventListener("click", (ev) => {
     const target = ev.target as HTMLElement;
-    if (target.closest("#ins-close")) {
-      sel = undefined;
-      render();
-      return;
-    }
     const head = target.closest("[data-lvround]");
     if (head) {
       const r = Number(head.getAttribute("data-lvround"));

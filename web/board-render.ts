@@ -3,7 +3,8 @@
 // boardAt; nothing here knows a rule (generative-graphics pillar: units are
 // cheap code-drawn SVG shapes, no image assets).
 
-import type { BoardState, BoardUnit, Side } from "../src/index.js";
+import type { BoardState, BoardUnit, Side, StatusRegistry } from "../src/index.js";
+import { chipsHtml } from "./inspect.js";
 
 /** Small string hash — picks a stable shape + hue per unit name. */
 function hashName(name: string): number {
@@ -41,17 +42,13 @@ const esc = (s: string): string =>
 function unitCard(
   u: BoardUnit,
   displayName: string,
+  registry: StatusRegistry,
   opts: { front: boolean; dead: boolean; hit: boolean; sel: boolean },
 ): string {
   const cls = ["unit", opts.front && "front", opts.dead && "dead", opts.hit && "hit", opts.sel && "sel"]
     .filter(Boolean)
     .join(" ");
-  const chips = u.statuses
-    .map(
-      (s) =>
-        `<span class="chip" data-status="${esc(s.status)}" title="${esc(s.status)} ×${s.stacks}">${esc(s.status.slice(0, 3))}${s.stacks}</span>`,
-    )
-    .join("");
+  const chips = chipsHtml(u.statuses, registry);
   const silenced = u.silenced ? '<span class="chip mute" title="Silenced">mut</span>' : "";
   return `
     <div class="${cls}" data-unit="${esc(u.id)}" title="${esc(u.id)}">
@@ -68,13 +65,18 @@ function sideHtml(
   side: Side,
   name: (id: string) => string,
   hit: Set<string>,
+  registry: StatusRegistry,
   selected: string | undefined,
 ): string {
   const line = board.lines[side]
-    .map((u, i) => unitCard(u, name(u.id), { front: i === 0, dead: false, hit: hit.has(u.id), sel: u.id === selected }))
+    .map((u, i) =>
+      unitCard(u, name(u.id), registry, { front: i === 0, dead: false, hit: hit.has(u.id), sel: u.id === selected }),
+    )
     .join("");
   const grave = board.graves[side]
-    .map((u) => unitCard(u, name(u.id), { front: false, dead: true, hit: hit.has(u.id), sel: u.id === selected }))
+    .map((u) =>
+      unitCard(u, name(u.id), registry, { front: false, dead: true, hit: hit.has(u.id), sel: u.id === selected }),
+    )
     .join("");
   // The grave row is part of a side's shape from event 0 — empty until the
   // first death — and the line survives a wipe as a placeholder, so deaths
@@ -93,12 +95,13 @@ export function boardHtml(
   board: BoardState,
   name: (id: string) => string,
   hit: Set<string>,
+  registry: StatusRegistry,
   selected?: string,
 ): string {
   const verdict = board.ended
     ? `<span class="verdict">${board.ended.winner === "draw" ? "draw" : `side ${board.ended.winner} wins`} · turn ${board.ended.turns}</span>`
     : `<span class="verdict dim">turn ${board.turn}</span>`;
-  return `${sideHtml(board, "A", name, hit, selected)}<div class="divider">${verdict}</div>${sideHtml(board, "B", name, hit, selected)}`;
+  return `${sideHtml(board, "A", name, hit, registry, selected)}<div class="divider">${verdict}</div>${sideHtml(board, "B", name, hit, registry, selected)}`;
 }
 
 /** Replaces `root`'s content with the board: side A's line, a divider, side B's.
@@ -108,7 +111,8 @@ export function renderBoard(
   board: BoardState,
   name: (id: string) => string,
   hit: Set<string>,
+  registry: StatusRegistry,
   selected?: string,
 ): void {
-  root.innerHTML = boardHtml(board, name, hit, selected);
+  root.innerHTML = boardHtml(board, name, hit, registry, selected);
 }

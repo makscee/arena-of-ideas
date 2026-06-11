@@ -5,6 +5,7 @@
 
 import { DEFAULT_RUN_POOL, KERNEL_VERSION, battle, openLadder, stressRegistry, type UnitDef } from "../src/index.js";
 import { resolveUnits, teamOptions } from "./catalogue.js";
+import { dismissInspectOverlay } from "./inspect.js";
 import { createViewer } from "./viewer.js";
 import { createEditor } from "./editor.js";
 import { createGauntlet } from "./gauntlet.js";
@@ -42,7 +43,6 @@ const viewer = createViewer({
   eventDesc: el("event-desc"),
   eventCause: el("event-cause"),
   log: el("battle-log"),
-  inspect: el("inspect-panel"),
 });
 
 function fillTeamPickers(): void {
@@ -176,6 +176,7 @@ function applyHashNav(): void {
 window.addEventListener("hashchange", applyHashNav);
 
 function showView(which: keyof typeof views): void {
+  dismissInspectOverlay(); // an inspector never outlives its screen
   for (const key of Object.keys(views) as (keyof typeof views)[]) {
     views[key].hidden = key !== which;
     viewTabs[key].classList.toggle("active", key === which);
@@ -209,7 +210,6 @@ try {
       line: el("run-line"),
       fightButton: el<HTMLButtonElement>("run-fight"),
       error: el("run-error"),
-      inspect: el("run-inspect"),
       notice: el("run-notice"),
       battlePanel: el("run-battle"),
       battleHead: el("run-battle-head"),

@@ -544,14 +544,52 @@ button:disabled:hover {
   min-width: 0;
 }
 
-/* ---------- unit inspector ---------- */
+/* ---------- unit inspector ----------
+   One overlay instance app-wide, position: fixed — opening it never reflows
+   the page (LS-3/IA-2). A popover pinned to the clicked card on a desk
+   (.pop, placed by inspect.ts), a bottom sheet at phone width (.sheet). */
 
-#inspect-panel {
+#inspect-overlay {
+  position: fixed;
+  z-index: 40;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.5rem 0.7rem;
   font-size: 0.72rem;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+
+#inspect-overlay.pop {
+  width: min(28rem, calc(100vw - 16px));
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+}
+
+#inspect-overlay.sheet {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 10px 10px 0 0;
+  border-bottom: none;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+/* A status name inside an ability sentence — tap to see its definition. */
+.ins-ref {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--status);
+  text-decoration: underline dotted;
+  cursor: pointer;
+}
+
+.ins-ref:hover {
+  color: var(--text);
 }
 
 .ins-head {
@@ -1053,16 +1091,6 @@ button:disabled:hover {
   margin: 0 0 0.6rem;
 }
 
-#run-inspect {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.5rem 0.7rem;
-  font-size: 0.72rem;
-  margin-top: 0.6rem;
-  max-width: 28rem;
-}
-
 .run-notice {
   color: var(--accent);
   font-size: 0.8rem;
@@ -1218,16 +1246,6 @@ button:disabled:hover {
   min-width: 3.6rem;
 }
 
-.lv-inspect {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.5rem 0.7rem;
-  font-size: 0.72rem;
-  margin-top: 0.6rem;
-  max-width: 28rem;
-}
-
 button.danger {
   color: var(--hurt);
   border-color: var(--hurt);
@@ -1326,6 +1344,28 @@ button.danger {
 
   #battle-log {
     height: 11rem;
+  }
+
+  /* Touch pass (GA-4/IA-5): chips keep their small visual but tap with a
+     ≥44px effective target; the inspector's close button grows to match.
+     The z-index keeps the extended hit area above later-painted neighbours. */
+  .chip {
+    position: relative;
+    z-index: 1;
+  }
+
+  .chip::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+
+  #ins-close {
+    padding: 0.55rem 0.9rem;
   }
 }
 

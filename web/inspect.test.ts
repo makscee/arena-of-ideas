@@ -3,8 +3,8 @@
 // its source ability, so a mid-battle arrival can still show its abilities.
 
 import { describe, expect, test } from "vitest";
-import { Imp, Summoner, battle, stressRegistry, type UnitDef } from "../src/index.js";
-import { unitDefs } from "./inspect.js";
+import { Imp, Summoner, Venomancer, battle, stressRegistry, type UnitDef } from "../src/index.js";
+import { chipsHtml, renderUnitInspect, unitDefs } from "./inspect.js";
 
 const dummy = (name: string, hp = 10, pwr = 3): UnitDef => ({ name, base: { hp, pwr } });
 
@@ -25,5 +25,77 @@ describe("unitDefs", () => {
     expect(summon).toBeDefined();
     const defs = unitDefs(log, teams, stressRegistry);
     expect(defs.get((summon as { unit: string }).unit)?.name).toBe(Imp.name);
+  });
+});
+
+// renderUnitInspect only writes innerHTML, so a bare object stands in for the
+// panel element — no DOM needed to assert what the inspector says.
+const fakeRoot = (): HTMLElement => ({ innerHTML: "" }) as HTMLElement;
+
+describe("renderUnitInspect status refs", () => {
+  test("a status name in an ability sentence renders as a tappable ref with a hidden definition row", () => {
+    const root = fakeRoot();
+    renderUnitInspect(root, {
+      title: Venomancer.name,
+      state: "10 hp · 2 pwr",
+      def: Venomancer,
+      statuses: [],
+      registry: stressRegistry,
+    });
+    expect(root.innerHTML).toContain('data-status-ref="Poison"');
+    expect(root.innerHTML).toContain('class="ins-ref"');
+    // The definition is in the same panel, hidden until the ref is tapped.
+    expect(root.innerHTML).toContain('data-status-def="Poison" hidden');
+    expect(root.innerHTML).toContain("deal damage equal to its stacks to the holder");
+  });
+
+  test("a carried status renders its row (no duplicate hidden definition), unknown names stay plain", () => {
+    const root = fakeRoot();
+    renderUnitInspect(root, {
+      title: Venomancer.name,
+      state: "10 hp · 2 pwr",
+      def: Venomancer,
+      statuses: [{ status: "Poison", stacks: 2 }],
+      registry: stressRegistry,
+    });
+    expect(root.innerHTML).toContain('data-status-row="Poison"');
+    expect(root.innerHTML).not.toContain('data-status-def="Poison"');
+  });
+
+  test("a status the registry cannot resolve is not tappable", () => {
+    const root = fakeRoot();
+    renderUnitInspect(root, {
+      title: "Mystery",
+      state: "1 hp · 1 pwr",
+      def: {
+        name: "Mystery",
+        base: { hp: 1, pwr: 1 },
+        abilities: [
+          {
+            whens: [{ kind: "trigger", on: { on: "TurnEnd" } }],
+            selectors: [{ kind: "holder" }],
+            effects: [{ kind: "applyStatus", status: "Unregistered", stacks: { kind: "const", value: 1 } }],
+          },
+        ],
+      },
+      statuses: [],
+      registry: stressRegistry,
+    });
+    expect(root.innerHTML).toContain("Unregistered");
+    expect(root.innerHTML).not.toContain("data-status-ref");
+    expect(root.innerHTML).not.toContain("data-status-def");
+  });
+});
+
+describe("chipsHtml", () => {
+  test("the chip title carries the derived definition, not just name×count", () => {
+    const html = chipsHtml([{ status: "Poison", stacks: 2 }], stressRegistry);
+    expect(html).toContain("Poi2");
+    expect(html).toContain("Poison ×2 — At the end of each turn:");
+  });
+
+  test("an unknown status falls back to name×count", () => {
+    const html = chipsHtml([{ status: "Mystery", stacks: 1 }], stressRegistry);
+    expect(html).toContain('title="Mystery ×1"');
   });
 });

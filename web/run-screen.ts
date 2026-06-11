@@ -31,7 +31,7 @@ import {
   type UnitDef,
 } from "../src/index.js";
 import { shapeSvg } from "./board-render.js";
-import { renderUnitInspect } from "./inspect.js";
+import { chipsHtml, closeInspectOverlay, dismissInspectOverlay, openInspectOverlay, renderUnitInspect } from "./inspect.js";
 import { createLadderView, ghostLabel } from "./ladder-view.js";
 import { clearRun, loadRun, nextRunId, saveRun, type KVStorage, type StoredBattle } from "./run-store.js";
 import type { Viewer } from "./viewer.js";
@@ -68,7 +68,6 @@ interface RunScreenEls {
   line: HTMLElement;
   fightButton: HTMLButtonElement;
   error: HTMLElement;
-  inspect: HTMLElement;
   battlePanel: HTMLElement;
   battleHead: HTMLElement;
   battleMount: HTMLElement;
@@ -124,12 +123,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   // ---------- cards (reuse the board's card classes + shapes) ----------
 
   const chips = (statuses: readonly { status: string; stacks: number }[] | undefined): string =>
-    (statuses ?? [])
-      .map(
-        (s) =>
-          `<span class="chip" data-status="${esc(s.status)}" title="${esc(s.status)} ×${s.stacks}">${esc(s.status.slice(0, 3))}${s.stacks}</span>`,
-      )
-      .join("");
+    chipsHtml(statuses, state?.statuses ?? deps.registry);
 
   function offerCard(def: UnitDef, i: number, gold: number): string {
     const sel = selected?.where === "offer" && selected.index === i;
@@ -167,6 +161,8 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   // ---------- rendering ----------
 
   function show(which: Phase): void {
+    // A screen change takes the open inspector with it, whoever owns it.
+    if (which !== phase) dismissInspectOverlay();
     phase = which;
     els.newPanel.hidden = which !== "new";
     els.shopPanel.hidden = which !== "shop";
@@ -217,36 +213,50 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       s.team.map((u, i) => lineCard(u, i, s.team.length - 1, true)).join("") ||
       '<span class="run-dim">no one yet — buy a unit</span>';
     els.fightButton.disabled = s.team.length === 0;
-    els.inspect.hidden = selected === undefined;
     if (selected !== undefined) renderInspector();
+    else closeInspectOverlay("run");
     show("shop");
   }
 
   /** Inspector over a shop offer or line unit: the def's derived descriptions
    * (the same describe helpers the battle inspector uses) — players decide
-   * buys by reading abilities, not by guessing from names. */
+   * buys by reading abilities, not by guessing from names. Shown in the one
+   * overlay, pinned to the clicked card — never in the page flow. */
   function renderInspector(): void {
     const s = state!;
     const sel = selected!;
     const subject = sel.where === "offer" ? s.offers[sel.index] : s.team[sel.index];
     if (subject === undefined) {
       selected = undefined;
-      els.inspect.hidden = true;
+      closeInspectOverlay("run");
       return;
     }
     const def = "def" in subject ? subject.def : subject;
     const unit = "def" in subject ? subject : undefined;
     const base = unit?.base ?? def.base;
-    renderUnitInspect(els.inspect, {
-      title: def.name,
-      state:
-        `${base.hp} hp · ${base.pwr} pwr` +
-        (unit !== undefined ? ` · L${unit.level}` : ` · ${UNIT_COST}g`),
-      def,
-      statuses: def.statuses ?? [],
-      registry: s.statuses,
-      ...(sel.status !== undefined ? { highlight: sel.status } : {}),
-      noStatuses: "none to start with",
+    const anchor =
+      sel.where === "offer"
+        ? els.shopRow.querySelector<HTMLElement>(`[data-offer="${sel.index}"]`)
+        : els.line.querySelector<HTMLElement>(`[data-line="${sel.index}"]`);
+    openInspectOverlay("run", {
+      anchor,
+      onClose: () => {
+        if (selected === undefined) return;
+        selected = undefined;
+        if (phase === "shop") renderShop();
+      },
+      render: (body) =>
+        renderUnitInspect(body, {
+          title: def.name,
+          state:
+            `${base.hp} hp · ${base.pwr} pwr` +
+            (unit !== undefined ? ` · L${unit.level}` : ` · ${UNIT_COST}g`),
+          def,
+          statuses: def.statuses ?? [],
+          registry: s.statuses,
+          ...(sel.status !== undefined ? { highlight: sel.status } : {}),
+          noStatuses: "none to start with",
+        }),
     });
   }
 
@@ -509,12 +519,6 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     if (chip) selected = { where: "line", index, status: chip.getAttribute("data-status")! };
     else if (selected?.where === "line" && selected.index === index && selected.status === undefined) selected = undefined;
     else selected = { where: "line", index };
-    renderShop();
-  });
-
-  els.inspect.addEventListener("click", (ev) => {
-    if (!(ev.target as HTMLElement).closest("#ins-close")) return;
-    selected = undefined;
     renderShop();
   });
 

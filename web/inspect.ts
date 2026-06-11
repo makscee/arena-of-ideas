@@ -5,11 +5,13 @@
 // Display only; the registry and unit defs are the same data battle() ran on.
 
 import {
-  describeAbility,
+  describeAbilitySegments,
   describeStatus,
+  describeStatusSegments,
   type BattleEvent,
   type BoardState,
   type BoardUnit,
+  type DescribeSegment,
   type StatusRegistry,
   type UnitDef,
 } from "../src/index.js";
@@ -46,6 +48,49 @@ export function unitDefs(
 
 const esc = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+
+/** Description segments → HTML: a status name the registry knows becomes a
+ * tappable ref (IA-1 — "what does Poison do?" answered where Poison is said);
+ * everything else is the plain describe* text. */
+function segmentsHtml(segs: DescribeSegment[], registry: StatusRegistry): string {
+  return segs
+    .map((s) =>
+      s.statusRef !== undefined && registry[s.statusRef] !== undefined
+        ? `<button type="button" class="ins-ref" data-status-ref="${esc(s.statusRef)}">${esc(s.text)}</button>`
+        : esc(s.text),
+    )
+    .join("");
+}
+
+/** Every status the given segments reference, chased transitively through the
+ * registry (a referenced status's own definition may reference further ones). */
+function referencedStatuses(segs: DescribeSegment[], registry: StatusRegistry): string[] {
+  const seen: string[] = [];
+  const queue = segs.filter((s) => s.statusRef !== undefined).map((s) => s.statusRef!);
+  while (queue.length > 0) {
+    const name = queue.shift()!;
+    const def = registry[name];
+    if (def === undefined || seen.includes(name)) continue;
+    seen.push(name);
+    for (const s of describeStatusSegments(def)) if (s.statusRef !== undefined) queue.push(s.statusRef);
+  }
+  return seen;
+}
+
+/** Status chips, shared by every chip render site (board, shop, ladder): the
+ * title carries the derived definition, not just name×count (IA-5). */
+export function chipsHtml(
+  statuses: readonly { status: string; stacks: number }[] | undefined,
+  registry: StatusRegistry,
+): string {
+  return (statuses ?? [])
+    .map((s) => {
+      const def = registry[s.status];
+      const title = `${s.status} ×${s.stacks}${def !== undefined ? ` — ${describeStatus(def)}` : ""}`;
+      return `<span class="chip" data-status="${esc(s.status)}" title="${esc(title)}">${esc(s.status.slice(0, 3))}${s.stacks}</span>`;
+    })
+    .join("");
+}
 
 function findUnit(board: BoardState, id: string): { unit: BoardUnit; dead: boolean } | undefined {
   for (const side of ["A", "B"] as const) {
@@ -97,13 +142,14 @@ export function renderUnitInspect(root: HTMLElement, args: UnitInspectArgs): voi
 
   rows.push(`<div class="ins-k">abilities</div>`);
   const abilities = def?.abilities ?? [];
+  const mentioned: DescribeSegment[] = []; // every segment shown — its refs get definition rows below
   if (abilities.length === 0) {
     rows.push(`<div class="ins-dim">none — it only strikes</div>`);
   } else {
     for (const ab of abilities) {
-      rows.push(
-        `<div class="ins-row ins-ab"><span class="ins-ico">⚙</span><span>${esc(describeAbility(ab))}</span></div>`,
-      );
+      const segs = describeAbilitySegments(ab);
+      mentioned.push(...segs);
+      rows.push(`<div class="ins-row ins-ab"><span class="ins-ico">⚙</span><span>${segmentsHtml(segs, registry)}</span></div>`);
     }
   }
 
@@ -113,15 +159,166 @@ export function renderUnitInspect(root: HTMLElement, args: UnitInspectArgs): voi
   } else {
     for (const s of statuses) {
       const sdef = registry[s.status];
-      const text = sdef ? describeStatus(sdef) : "(unknown status)";
+      const segs = sdef ? describeStatusSegments(sdef) : [{ text: "(unknown status)" }];
+      mentioned.push(...segs);
       const sel = s.status === highlight ? " sel" : "";
       rows.push(
-        `<div class="ins-row${sel}"><span class="ins-ico">◉</span><span><b>${esc(s.status)} ×${s.stacks}</b> — ${esc(text)}</span></div>`,
+        `<div class="ins-row${sel}" data-status-row="${esc(s.status)}"><span class="ins-ico">◉</span><span><b>${esc(s.status)} ×${s.stacks}</b> — ${segmentsHtml(segs, registry)}</span></div>`,
       );
     }
   }
 
+  // Definitions for every status the text above mentions but the unit does
+  // not carry — hidden until its ref is tapped, revealed in this same panel.
+  const attached = new Set(statuses.map((s) => s.status));
+  for (const name of referencedStatuses(mentioned, registry)) {
+    if (attached.has(name)) continue;
+    rows.push(
+      `<div class="ins-row ins-refdef sel" data-status-def="${esc(name)}" hidden>` +
+        `<span class="ins-ico">◉</span><span><b>${esc(name)}</b> — ${segmentsHtml(describeStatusSegments(registry[name]!), registry)}</span></div>`,
+    );
+  }
+
   root.innerHTML = rows.join("");
+}
+
+// ---------------------------------------------------------------------------
+// The one inspector overlay (LS-3 / IA-2). A single instance app-wide: a
+// popover pinned to the clicked card on a desk, a bottom sheet at phone
+// width. position: fixed — opening or closing never reflows the page, and it
+// is always where the user clicked. Owners (shop, ladder, viewer) render
+// their content in; the overlay owns closing (✕, Escape, outside tap) and
+// status-ref taps, so every call site gets them for free.
+// ---------------------------------------------------------------------------
+
+export interface InspectOverlayArgs {
+  /** The clicked card — the desktop popover pins to it. Owners re-resolve it
+   * on every render (innerHTML re-renders replace card nodes). */
+  anchor: HTMLElement | null;
+  /** Renders the panel body (renderUnitInspect / renderInspect). */
+  render: (body: HTMLElement) => void;
+  /** The overlay closed itself (✕, Escape, outside tap, another owner opened,
+   * a screen change) — the owner clears its selection state here. */
+  onClose: () => void;
+}
+
+const PHONE_WIDTH = "(max-width: 700px)";
+const EDGE_MARGIN = 8; // px the popover keeps from the viewport edge
+const ANCHOR_GAP = 6; // px between the card and the popover
+
+let overlayEl: HTMLElement | undefined;
+let current: { key: string; args: InspectOverlayArgs } | undefined;
+let openedThisTask = false; // the click that opened must not read as an outside tap
+
+/** Show the inspector overlay, replacing whatever it held. `key` names the
+ * owner: a different owner's open dismisses the previous one (single
+ * instance); the same owner's open is an in-place update. */
+export function openInspectOverlay(key: string, args: InspectOverlayArgs): void {
+  const el = ensureOverlay();
+  if (current !== undefined && current.key !== key) {
+    const prev = current;
+    current = undefined;
+    prev.args.onClose(); // the other owner clears its selection
+  }
+  current = { key, args };
+  el.hidden = false;
+  args.render(el);
+  positionOverlay();
+  openedThisTask = true;
+  window.setTimeout(() => {
+    openedThisTask = false;
+  }, 0);
+}
+
+/** Owner-initiated close — its selection cleared through its own logic. Only
+ * the open panel's owner may close it; no onClose echo. */
+export function closeInspectOverlay(key: string): void {
+  if (current === undefined || current.key !== key) return;
+  current = undefined;
+  if (overlayEl !== undefined) overlayEl.hidden = true;
+}
+
+/** Close from the overlay's side (✕, Escape, outside tap, screen change) —
+ * fires the owner's onClose so its selection state follows. */
+export function dismissInspectOverlay(): void {
+  if (current === undefined) return;
+  const prev = current;
+  current = undefined;
+  if (overlayEl !== undefined) overlayEl.hidden = true;
+  prev.args.onClose();
+}
+
+function ensureOverlay(): HTMLElement {
+  if (overlayEl !== undefined) return overlayEl;
+  const el = document.createElement("div");
+  el.id = "inspect-overlay";
+  el.hidden = true;
+  document.body.append(el);
+  el.addEventListener("click", (ev) => {
+    const target = ev.target as HTMLElement;
+    if (target.closest("#ins-close") !== null) {
+      dismissInspectOverlay();
+      return;
+    }
+    const ref = target.closest("[data-status-ref]");
+    if (ref !== null) revealStatusDef(el, ref.getAttribute("data-status-ref")!);
+  });
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && current !== undefined) dismissInspectOverlay();
+  });
+  document.addEventListener("click", (ev) => {
+    if (current === undefined || openedThisTask) return;
+    const target = ev.target as Node;
+    if (el.contains(target)) return;
+    // A click on the anchor card is the owner's toggle, not an outside tap.
+    if (current.args.anchor?.contains(target) ?? false) return;
+    dismissInspectOverlay();
+  });
+  // The popover is fixed; the page scrolls and resizes under it.
+  window.addEventListener("scroll", () => positionOverlay(), true);
+  window.addEventListener("resize", () => positionOverlay());
+  overlayEl = el;
+  return el;
+}
+
+/** A status ref was tapped: reveal its definition in the same panel — the
+ * unit's own status row if it carries it, the hidden ref row otherwise. */
+function revealStatusDef(panel: HTMLElement, name: string): void {
+  const row =
+    panel.querySelector<HTMLElement>(`[data-status-row="${CSS.escape(name)}"]`) ??
+    panel.querySelector<HTMLElement>(`[data-status-def="${CSS.escape(name)}"]`);
+  if (row === null) return;
+  row.hidden = false;
+  row.classList.add("sel");
+  positionOverlay(); // the panel grew — keep it in the viewport
+  row.scrollIntoView({ block: "nearest" });
+}
+
+/** Popover above/below the anchor on a desk (clamped to the viewport),
+ * bottom sheet at phone width — the CSS classes carry the two shapes. */
+function positionOverlay(): void {
+  if (overlayEl === undefined || current === undefined || overlayEl.hidden) return;
+  const el = overlayEl;
+  if (window.matchMedia(PHONE_WIDTH).matches) {
+    el.classList.add("sheet");
+    el.classList.remove("pop");
+    el.style.left = "";
+    el.style.top = "";
+    return;
+  }
+  el.classList.add("pop");
+  el.classList.remove("sheet");
+  const anchor = current.args.anchor;
+  if (anchor === null || !anchor.isConnected) return; // keep the last spot
+  const r = anchor.getBoundingClientRect();
+  const left = Math.max(EDGE_MARGIN, Math.min(r.left, window.innerWidth - el.offsetWidth - EDGE_MARGIN));
+  let top = r.bottom + ANCHOR_GAP;
+  if (top + el.offsetHeight > window.innerHeight - EDGE_MARGIN) {
+    const above = r.top - el.offsetHeight - ANCHOR_GAP;
+    top = above >= EDGE_MARGIN ? above : Math.max(EDGE_MARGIN, window.innerHeight - el.offsetHeight - EDGE_MARGIN);
+  }
+  el.style.left = `${left}px`;
+  el.style.top = `${top}px`;
 }
 
 /** Render the inspector panel for the selected unit at the current position. */

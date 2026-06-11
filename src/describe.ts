@@ -24,6 +24,19 @@ export interface DescribeOpts {
 
 const HOLDER_DEFAULT = "this unit";
 
+/** One run of a described sentence. `statusRef` marks a status name a UI can
+ * make tappable (the registry defines it); joining every segment's `text`
+ * reproduces the plain describe* string exactly. */
+export interface DescribeSegment {
+  text: string;
+  /** Set when `text` is a status name (applyStatus / consumeStacks). */
+  statusRef?: string;
+}
+
+const seg = (text: string): DescribeSegment => ({ text });
+
+const joinSegments = (segs: DescribeSegment[]): string => segs.map((s) => s.text).join("");
+
 const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 const capitalize = (s: string): string => (s.length > 0 ? s[0]!.toUpperCase() + s.slice(1) : s);
@@ -137,44 +150,57 @@ export function describeSelector(s: Selector, opts: DescribeOpts = {}): string {
   }
 }
 
-/** An effect as a verb phrase against a target phrase. */
-export function describeEffect(e: Effect, target: string, opts: DescribeOpts = {}): string {
+/** An effect as segments: the same verb phrase describeEffect yields, with
+ * status names (applyStatus / consumeStacks) marked as refs a UI can wire to
+ * the registry's definition. */
+export function describeEffectSegments(e: Effect, target: string, opts: DescribeOpts = {}): DescribeSegment[] {
   switch (e.kind) {
     case "damage":
-      return e.amount.kind === "const"
-        ? `deal ${e.amount.value} damage to ${target}`
-        : `deal damage equal to ${describeAmount(e.amount, opts)} to ${target}`;
+      return [
+        seg(
+          e.amount.kind === "const"
+            ? `deal ${e.amount.value} damage to ${target}`
+            : `deal damage equal to ${describeAmount(e.amount, opts)} to ${target}`,
+        ),
+      ];
     case "heal":
-      return `heal ${target} for ${amountClause(e.amount, opts)}`;
-    case "applyStatus":
+      return [seg(`heal ${target} for ${amountClause(e.amount, opts)}`)];
+    case "applyStatus": {
+      const ref: DescribeSegment = { text: e.status, statusRef: e.status };
       return e.stacks.kind === "const"
-        ? `apply ${e.stacks.value} ${e.status} to ${target}`
-        : `apply ${e.status} equal to ${describeAmount(e.stacks, opts)} to ${target}`;
+        ? [seg(`apply ${e.stacks.value} `), ref, seg(` to ${target}`)]
+        : [seg("apply "), ref, seg(` equal to ${describeAmount(e.stacks, opts)} to ${target}`)];
+    }
     case "consumeStacks": {
-      const which = e.status ?? "this status";
+      const which: DescribeSegment = e.status !== undefined ? { text: e.status, statusRef: e.status } : seg("this status");
       return e.stacks.kind === "const"
-        ? `consume ${plural(e.stacks.value, "stack")} of ${which}`
-        : `consume stacks of ${which} equal to ${describeAmount(e.stacks, opts)}`;
+        ? [seg(`consume ${plural(e.stacks.value, "stack")} of `), which]
+        : [seg("consume stacks of "), which, seg(` equal to ${describeAmount(e.stacks, opts)}`)];
     }
     case "summon":
-      return `summon ${e.unit.name} (${e.unit.base.hp} hp, ${e.unit.base.pwr} pwr) at the back of ${target}'s side`;
+      return [seg(`summon ${e.unit.name} (${e.unit.base.hp} hp, ${e.unit.base.pwr} pwr) at the back of ${target}'s side`)];
     case "silence":
-      return `silence ${target} — strip its statuses and disable its abilities for the battle`;
+      return [seg(`silence ${target} — strip its statuses and disable its abilities for the battle`)];
     case "resurrect": {
       // "hp" leads the derived form ("at hp equal to its level"), the
       // preventDeathHeal pattern — trailing it ("at … its level hp") is not English.
       const at = e.hp.kind === "const" ? `${e.hp.value} hp` : `hp equal to ${describeAmount(e.hp, opts)}`;
-      return `return ${target} to the back of the line at ${at}`;
+      return [seg(`return ${target} to the back of the line at ${at}`)];
     }
     case "cancel":
-      return `cancel it${e.consumeSelf !== undefined ? `, consuming ${plural(e.consumeSelf, "stack")}` : ""}`;
+      return [seg(`cancel it${e.consumeSelf !== undefined ? `, consuming ${plural(e.consumeSelf, "stack")}` : ""}`)];
     case "absorbHurt":
-      return "absorb the damage up to its stacks, consuming what it absorbs";
+      return [seg("absorb the damage up to its stacks, consuming what it absorbs")];
     case "preventDeathHeal": {
       const to = e.toHp.kind === "const" ? `${e.toHp.value} hp` : `hp equal to ${describeAmount(e.toHp, opts)}`;
-      return `cancel the death and heal ${target} to ${to}${e.removeSelf ? ", spending this status" : ""}`;
+      return [seg(`cancel the death and heal ${target} to ${to}${e.removeSelf ? ", spending this status" : ""}`)];
     }
   }
+}
+
+/** An effect as a verb phrase against a target phrase. */
+export function describeEffect(e: Effect, target: string, opts: DescribeOpts = {}): string {
+  return joinSegments(describeEffectSegments(e, target, opts));
 }
 
 /**
@@ -183,11 +209,32 @@ export function describeEffect(e: Effect, target: string, opts: DescribeOpts = {
  * the front enemy."
  */
 export function describeAbility(ab: Ability, opts: DescribeOpts = {}): string {
+  return joinSegments(describeAbilitySegments(ab, opts));
+}
+
+/** describeAbility as segments — identical text, with status refs marked. */
+export function describeAbilitySegments(ab: Ability, opts: DescribeOpts = {}): DescribeSegment[] {
   const whens = ab.whens.map((w) => describeWhen(w, opts)).join(", or ");
   const cond = ab.condition !== undefined ? `, ${describeCondition(ab.condition, opts)}` : "";
   const target = ab.selectors.map((s) => describeSelector(s, opts)).join(" and ");
-  const effects = ab.effects.map((e) => describeEffect(e, target, opts)).join(", then ");
-  return `${capitalize(whens)}${cond}: ${effects}.`;
+  const segs: DescribeSegment[] = [seg(`${capitalize(whens)}${cond}: `)];
+  ab.effects.forEach((e, i) => {
+    if (i > 0) segs.push(seg(", then "));
+    segs.push(...describeEffectSegments(e, target, opts));
+  });
+  segs.push(seg("."));
+  return segs;
+}
+
+/** Status names an ability's effects reference (applyStatus, and
+ * consumeStacks with an explicit status), deduped in encounter order — the
+ * refs a UI renders tappable, and the codex resolves in the registry. */
+export function abilityStatusRefs(ab: Ability): string[] {
+  const refs: string[] = [];
+  for (const s of describeAbilitySegments(ab)) {
+    if (s.statusRef !== undefined && !refs.includes(s.statusRef)) refs.push(s.statusRef);
+  }
+  return refs;
 }
 
 /**
@@ -197,16 +244,24 @@ export function describeAbility(ab: Ability, opts: DescribeOpts = {}): string {
  * absorbHurt, removeSelf all say what they spend.
  */
 export function describeStatus(def: StatusDef): string {
-  const parts: string[] = [];
+  return joinSegments(describeStatusSegments(def));
+}
+
+/** describeStatus as segments — identical text, with status refs marked. */
+export function describeStatusSegments(def: StatusDef): DescribeSegment[] {
+  const segs: DescribeSegment[] = [];
   if (def.statMods !== undefined) {
     const mods: string[] = [];
     for (const stat of ["hp", "pwr"] as const) {
       const v = def.statMods[stat];
       if (v !== undefined && v !== 0) mods.push(`${v > 0 ? "+" : ""}${v} ${stat} per stack`);
     }
-    if (mods.length > 0) parts.push(`${capitalize(mods.join(", "))}.`);
+    if (mods.length > 0) segs.push(seg(`${capitalize(mods.join(", "))}.`));
   }
-  for (const ab of def.abilities) parts.push(describeAbility(ab, { holder: "the holder" }));
-  if (parts.length === 0) parts.push("No effect.");
-  return parts.join(" ");
+  for (const ab of def.abilities) {
+    if (segs.length > 0) segs.push(seg(" "));
+    segs.push(...describeAbilitySegments(ab, { holder: "the holder" }));
+  }
+  if (segs.length === 0) segs.push(seg("No effect."));
+  return segs;
 }

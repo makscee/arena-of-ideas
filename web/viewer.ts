@@ -18,7 +18,7 @@ import {
 } from "../src/index.js";
 import { renderBoard } from "./board-render.js";
 import { createBattleLog } from "./battle-log.js";
-import { renderInspect, unitDefs } from "./inspect.js";
+import { closeInspectOverlay, openInspectOverlay, renderInspect, unitDefs } from "./inspect.js";
 
 const BASE_STEP_MS = 350; // 1x ≈ 3 events/second
 
@@ -105,7 +105,6 @@ interface ViewerEls {
   eventDesc: HTMLElement;
   eventCause: HTMLElement;
   log: HTMLElement;
-  inspect: HTMLElement;
 }
 
 /** What the battle ran on — the viewer derives ability/status descriptions
@@ -156,7 +155,7 @@ export function createViewer(els: ViewerEls): Viewer {
     const e = log[step];
     if (!e) return;
     const board = boardAt(log, step);
-    renderBoard(els.board, board, name, subjectsOf(e), selected?.unit);
+    renderBoard(els.board, board, name, subjectsOf(e), registry, selected?.unit);
     battleLog.syncTo(step);
     els.scrub.value = String(step);
     els.stepLabel.textContent = `event ${step + 1}/${log.length} · turn ${e.turn}`;
@@ -165,16 +164,28 @@ export function createViewer(els: ViewerEls): Viewer {
     els.prev.disabled = step === 0;
     els.next.disabled = step === log.length - 1;
     els.play.textContent = playing() ? "pause" : "play";
-    els.inspect.hidden = selected === undefined;
     if (selected !== undefined) {
-      renderInspect(els.inspect, {
-        unitId: selected.unit,
-        ...(selected.status !== undefined ? { status: selected.status } : {}),
-        board,
-        def: defs.get(selected.unit),
-        registry,
-        name,
+      // The board just re-rendered — pin the overlay to the fresh card node.
+      const sel = selected;
+      openInspectOverlay("viewer", {
+        anchor: els.board.querySelector<HTMLElement>(`[data-unit="${sel.unit}"]`),
+        onClose: () => {
+          if (selected === undefined) return;
+          selected = undefined;
+          render();
+        },
+        render: (body) =>
+          renderInspect(body, {
+            unitId: sel.unit,
+            ...(sel.status !== undefined ? { status: sel.status } : {}),
+            board,
+            def: defs.get(sel.unit),
+            registry,
+            name,
+          }),
       });
+    } else {
+      closeInspectOverlay("viewer");
     }
     if (log.length > 0 && step === log.length - 1 && !endedNotified) {
       endedNotified = true;
@@ -193,7 +204,7 @@ export function createViewer(els: ViewerEls): Viewer {
     for (let i = 0; i < log.length; i++) {
       const t = log[i]!.type;
       if (i !== 0 && t !== "Death" && t !== "Summon" && t !== "StatusApplied" && t !== "StatusRemoved" && t !== "Silenced" && t !== "BattleEnd") continue;
-      renderBoard(els.board, boardAt(log, i), name, new Set());
+      renderBoard(els.board, boardAt(log, i), name, new Set(), registry);
       max = Math.max(max, els.board.offsetHeight);
     }
     if (max > 0) els.board.style.minHeight = `${max}px`;
@@ -281,11 +292,6 @@ export function createViewer(els: ViewerEls): Viewer {
     if (chip) selected = { unit, status: chip.getAttribute("data-status")! };
     else if (selected?.unit === unit && selected.status === undefined) selected = undefined;
     else selected = { unit };
-    render();
-  });
-  els.inspect.addEventListener("click", (ev) => {
-    if (!(ev.target as HTMLElement).closest("#ins-close")) return;
-    selected = undefined;
     render();
   });
   // Arrow keys step when focus is not on a control with its own arrow behavior.
