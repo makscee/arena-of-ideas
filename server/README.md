@@ -51,18 +51,35 @@ npm start --workspace server
   (1..10000) — anything else is 400.
 - `POST /v1/runs/open` (bearer) `{runId}` → 200 `{opened:true, runId}` or 422
   `{opened:false, reason}` — open a run **before playing it**. One-shot per
-  runId (1–128 chars, `bootstrap` reserved); pins the pool watermark the
-  eventual submission's claimed prefixes are checked against (see below).
+  runId (1–128 chars, `bootstrap` reserved; a submitted runId never reopens),
+  and opens **expire 14 days after opening** (`RUN_OPEN_TTL_DAYS`).
+- `GET /v1/runs/:runId/pool/:round` (bearer) → 200 `{served:true, round,
+  pool, champion}` or 422 `{served:false, reason}` — **the play read**: the
+  round's pool as this run's owner sees it (own ghosts excluded) plus the
+  champion seated right now. The server **records every view it serves**
+  (length + champion, per runId and round), and submission replay accepts
+  only recorded views — so every fight of a run to be submitted must read
+  through this endpoint. Re-reads are free and never brick a submission.
+  Refused for runs not opened by the caller and for expired opens.
 - `POST /v1/runs` (bearer) `{run: serializeRun(state)}` → 200
   `{accepted:true, runId, endedBy, finalRound, crowned}` or 422
   `{accepted:false, reason}` — submit a finished run for re-derivation. The
-  runId must have been opened by the same user. Cost-bounded before replay:
-  max 256 KiB serialized, max 5000 log events.
+  runId must have been opened by the same user, within the open TTL.
+  Cost-bounded before replay: max 256 KiB serialized, max 5000 log events.
 
-**Client flow** (what the slice-3 web backing implements): open the runId →
-play, fetching `/v1/ladder/pool/:round?exclude=me` + `/v1/ladder/champion`
-per fight → submit the finished run. Skipping the open makes the submission
-unverifiable and it is rejected.
+**Client flow** (the contract the slice-3 web backing implements):
+
+1. `POST /v1/runs/open` with a fresh unique runId, right when the run starts.
+2. Per ladder fight at round R: `GET /v1/runs/:runId/pool/:round` and build
+   the kernel's per-fight `LadderStore` view from **that one response** —
+   `poolAt(R)` returns `pool`, `champion()` returns `champion`. Do not mix a
+   pool from one read with a champion from another (the leaderboard reads
+   below are for display only): a challenge replays only against the champion
+   co-served with the claimed pool view.
+3. Submit the finished run within the 14-day open TTL.
+
+Skipping the open, or fighting against any view the server did not serve for
+that runId, makes the submission unverifiable and it is rejected.
 
 ## The shared ladder
 
@@ -95,21 +112,41 @@ are written, re-sequenced onto the end of the current pools. Inflated stats,
 fabricated wins, illegal decisions, wrong seeds, foreign content,
 resubmissions: all 422 with the reason.
 
-**The open handshake bounds the claimed prefix.** A `Snapshotted` seq is
-client-claimed, and without a floor it is forgeable *downward*: claiming a
-shorter prefix than the player observed cherry-picks the deterministic
-opponent draw, and claiming an empty pool turns the kernel's
-outran-every-ghost rule into a free champion challenge at round 1. So every
-run is opened before play (`POST /v1/runs/open`): the open row records the
-owner and the ladder's ghost watermark (highest `ladder_ghosts` row id — ids
-are monotonic, pools append-only, so the watermark reconstructs exactly how
-long each user-visible pool prefix already was at open time). Replay then
-holds every claimed seq to `[visible length at open, visible length now]`: a
-player cannot un-see a ghost, and a longer-than-now prefix never existed.
-Everything inside the window is accepted — pools grow during play, and each
-such prefix really was the player's view at some moment of their run. A run
-left open a long time may legally replay against its open-time view (the
-player could have fought then); tighter staleness bounds are a later concern.
+**Serve-time pinning: replay accepts only views the server handed out.** A
+`Snapshotted` seq is client-claimed, and forgeable: claiming a shorter prefix
+than the player observed cherry-picks the deterministic opponent draw, and
+claiming an empty pool turns the kernel's outran-every-ghost rule into a free
+champion challenge. Window checks are not enough — bounding each claim to
+`[visible at open, visible now]` leaves the open itself bankable: an open
+taken at ladder genesis and cashed in much later legally claims genesis
+prefixes, dodges every ghost that landed since, and converts the genesis-empty
+round 4 into a free challenge against *today's* champion (the banked-open
+forgery that killed the previous build). So nothing is trusted that the server
+did not itself serve: every play read (`GET /v1/runs/:runId/pool/:round`) is
+**recorded** — runId, round, served prefix length, and the champion seated at
+that moment (`run_pool_serves`) — and replay holds the run to that record. A
+claimed seq must *equal* a served length for that (runId, round), and a
+champion challenge must name the champion **co-served** with that very view: a
+run cannot fight the past's pool against the present's champion. Honest play
+is untouched — each fight's view is one serve, pools growing mid-run just mean
+different serves at different lengths, re-reads add rows (any of them
+replays), and a slow run resumed days later replays the views it actually
+fetched. What banking still buys is exactly what honest slow play would get:
+a challenge against the long-dethroned champion co-served back then, whose
+crown lapses under the crown-race rule below.
+
+Two supplements bound the residue. **Opens expire** (14 days,
+`RUN_OPEN_TTL_DAYS` in `runs.ts`) — generously above an honest run's lifetime,
+so it only kills parked opens; expired opens neither serve nor submit, and the
+cleanup sweep prunes them with their serves (serves of submitted runs go too —
+a runId never replays twice). The open row also records the ladder's ghost
+watermark as provenance, though replay relies on the strictly stronger serve
+record. A third remedy was considered and **rejected as primary**: flooring
+champion-challenge rounds to the ladder's current first-empty round. It blocks
+the genesis-challenge trick but still allows within-window cherry-picking at
+earlier rounds, and it would falsely reject an honest challenge made just
+before another ghost landed at that round — serve-time pinning has neither
+problem.
 
 **The crown race.** Two runs can legally beat the same champion. The first
 submission takes the spot; a later submission whose beaten champion has since

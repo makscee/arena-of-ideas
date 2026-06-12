@@ -16,9 +16,12 @@
  *   GET  /v1/ladder/pool/:round       public — the round's ghost pool;
  *                                     ?exclude=me (bearer) = the pool as the
  *                                     caller's runs see it, own ghosts out
- *   POST /v1/runs/open                bearer — open a run BEFORE playing it:
- *                                     pins the pool watermark its submission's
- *                                     claimed prefixes are checked against
+ *   POST /v1/runs/open                bearer — open a run BEFORE playing it
+ *                                     (one-shot, expires after the open TTL)
+ *   GET  /v1/runs/:runId/pool/:round  bearer — THE play read: the round's
+ *                                     pool as this run sees it + the seated
+ *                                     champion; the server records the view
+ *                                     and replay accepts only recorded views
  *   POST /v1/runs                     bearer — submit a finished run for
  *                                     re-derivation (runs.ts)
  *
@@ -47,7 +50,7 @@ import { SqliteLadderStore } from "./ladder-store.js";
 import type { MailClient } from "./mail.js";
 import { renderOtpEmail } from "./otp-email.js";
 import { createRateLimiter, type RateLimiter } from "./rate-limit.js";
-import { openRun, submitRun } from "./runs.js";
+import { openRun, servePool, submitRun } from "./runs.js";
 import { users } from "./schema.js";
 import { mint, revoke, verify } from "./sessions.js";
 
@@ -221,6 +224,16 @@ export function createApp(deps: AppDeps): Hono<AuthEnv> {
     const session = c.get("session");
     const outcome = openRun({ db, store, clock }, session.userId, runId);
     return c.json(outcome, outcome.opened ? 200 : 422);
+  });
+
+  app.get("/v1/runs/:runId/pool/:round", auth, (c) => {
+    const round = Number(c.req.param("round"));
+    if (!Number.isInteger(round) || round < 1 || round > MAX_POOL_ROUND) {
+      return c.json({ error: "invalid_round" }, 400);
+    }
+    const session = c.get("session");
+    const outcome = servePool({ db, store, clock }, session.userId, c.req.param("runId"), round);
+    return c.json(outcome, outcome.served ? 200 : 422);
   });
 
   app.post("/v1/runs", auth, async (c) => {

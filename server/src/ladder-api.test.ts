@@ -3,11 +3,13 @@
  * submission with kernel re-derivation, tamper rejection, own-ghost exclusion
  * across users and across one user's runs, and the crown race.
  *
- * The test client plays the way the slice-3 remote backing will: kernel
- * transitions against a per-fight view fetched over HTTP (`?exclude=me` pool
- * + current champion), then submits the finished run in serializeRun form.
- * Content is injected as a one-unit Titan pool — the kernel ladder tests'
- * deterministic climber — so outcomes are pinned by seed, not luck.
+ * The test client plays the way the slice-3 remote backing will: open the
+ * runId, then kernel transitions against per-fight views fetched through the
+ * run-scoped play read (GET /v1/runs/:runId/pool/:round — pool + co-served
+ * champion, recorded server-side), then submit the finished run in
+ * serializeRun form. Content is injected as a one-unit Titan pool — the
+ * kernel ladder tests' deterministic climber — so outcomes are pinned by
+ * seed, not luck.
  */
 import { describe, expect, test } from "vitest";
 import type { Hono } from "hono";
@@ -23,6 +25,7 @@ import {
   serializeRun,
   STARTING_LIVES,
   stressRegistry,
+  UNIT_COST,
   type LadderStore,
   type RunEvent,
   type RunState,
@@ -30,7 +33,7 @@ import {
   type UnitDef,
 } from "../../src/index.js";
 import { createApp } from "./app.js";
-import { MAX_RUN_BYTES, MAX_RUN_LOG_EVENTS } from "./runs.js";
+import { MAX_RUN_BYTES, MAX_RUN_LOG_EVENTS, RUN_OPEN_TTL_SECONDS } from "./runs.js";
 import type { AuthEnv } from "./auth.js";
 import { openDb } from "./db.js";
 import { createMockMailClient, type MockMailClient } from "./mail.js";
@@ -47,12 +50,15 @@ const BASE = BOOTSTRAP_TEAMS[0]!.length; // round-1 bootstrap ghost count
 interface Ctx {
   app: Hono<AuthEnv>;
   mailer: MockMailClient;
+  /** Mutable server time (unix seconds) — TTL tests advance it. */
+  now: { sec: number };
 }
 
 function makeCtx(): Ctx {
   const { db } = openDb(":memory:");
   const mailer = createMockMailClient();
-  const clock = () => 1_750_000_000;
+  const now = { sec: 1_750_000_000 };
+  const clock = () => now.sec;
   const app = createApp({
     db,
     clock,
@@ -63,7 +69,7 @@ function makeCtx(): Ctx {
     },
     content: { pool: [TITAN], statuses: stressRegistry },
   });
-  return { app, mailer };
+  return { app, mailer, now };
 }
 
 async function login(ctx: Ctx, email: string): Promise<string> {
@@ -113,30 +119,62 @@ async function openRun(ctx: Ctx, token: string, runId: string): Promise<{ status
   return { status: res.status, body: (await res.json()) as Record<string, unknown> };
 }
 
-/** Play a whole run the remote-backing way: open the runId, then each fight
- * against a view freshly fetched over HTTP (own ghosts excluded), writes
- * staying local. */
-async function playSharedRun(ctx: Ctx, token: string, seed: number, runId: string): Promise<RunState> {
-  expect((await openRun(ctx, token, runId)).status).toBe(200);
-  return playUnopenedRun(ctx, token, seed, runId);
+/** One per-fight view, as the run-scoped play read serves it: the
+ * user-filtered pool plus the champion seated at serve time. The server
+ * records exactly this — submission replays only against recorded views. */
+interface RunView {
+  pool: TeamSnapshot[];
+  champion: TeamSnapshot;
 }
 
-/** The play loop without the open handshake — what a client that skips the
- * handshake produces (its submission must be rejected). */
+/** THE play read — GET /v1/runs/:runId/pool/:round. */
+async function fetchRunView(ctx: Ctx, token: string, runId: string, round: number): Promise<RunView> {
+  const res = await ctx.app.request(`/v1/runs/${runId}/pool/${round}`, {
+    headers: { authorization: `Bearer ${token}` },
+  });
+  expect(res.status).toBe(200);
+  const body = (await res.json()) as { pool: TeamSnapshot[]; champion: TeamSnapshot };
+  return { pool: body.pool, champion: body.champion };
+}
+
+/** The kernel view over one served per-fight view, writes staying local. */
+function viewOf(round: number, v: RunView): LadderStore {
+  return {
+    poolAt: (r) => (r === round ? v.pool : []),
+    addSnapshot: () => {},
+    champion: () => v.champion,
+    setChampion: () => {},
+  };
+}
+
+/** Play a whole run the remote-backing way: open the runId, then each fight
+ * against a per-fight view served through the run-scoped play read. */
+async function playSharedRun(ctx: Ctx, token: string, seed: number, runId: string): Promise<RunState> {
+  expect((await openRun(ctx, token, runId)).status).toBe(200);
+  return playOpenedRun(ctx, token, seed, runId);
+}
+
+/** The play loop after the open — each fight against a fresh served view. */
+async function playOpenedRun(ctx: Ctx, token: string, seed: number, runId: string): Promise<RunState> {
+  let s = buy(initRun({ seed, runId, pool: [TITAN], statuses: stressRegistry }), 0);
+  for (let guard = 0; s.status === "active"; guard++) {
+    if (guard > 200) throw new Error(`run ${runId} did not terminate`);
+    const round = s.round;
+    s = ladderFight(s, viewOf(round, await fetchRunView(ctx, token, runId, round)));
+  }
+  return s;
+}
+
+/** The play loop of a client that ignores the contract: no open, no run-scoped
+ * reads — public/exclude=me views only (its submission must be rejected). */
 async function playUnopenedRun(ctx: Ctx, token: string, seed: number, runId: string): Promise<RunState> {
   let s = buy(initRun({ seed, runId, pool: [TITAN], statuses: stressRegistry }), 0);
   for (let guard = 0; s.status === "active"; guard++) {
     if (guard > 200) throw new Error(`run ${runId} did not terminate`);
     const pool = await fetchMyPool(ctx, token, s.round);
-    const champ = (await fetchChampion(ctx)).champion;
+    const champ = (await fetchChampion(ctx)).champion!;
     const round = s.round;
-    const view: LadderStore = {
-      poolAt: (r) => (r === round ? pool : []),
-      addSnapshot: () => {},
-      champion: () => champ,
-      setChampion: () => {},
-    };
-    s = ladderFight(s, view);
+    s = ladderFight(s, viewOf(round, { pool, champion: champ }));
   }
   return s;
 }
@@ -361,29 +399,23 @@ describe("prefix forgeries are rejected", () => {
     // Forge: play locally against an EMPTY pool view — the log then claims
     // round-1's pool held 0 ghosts, so the kernel reads the empty draw as
     // "outran every ghost" and challenges the champion at round 1. On a
-    // bootstrap-seeded ladder the round-1 pool is never smaller than BASE,
-    // so no player can ever have observed this.
-    const champ = (await fetchChampion(ctx)).champion;
-    const emptyView: LadderStore = {
-      poolAt: () => [],
-      addSnapshot: () => {},
-      champion: () => champ,
-      setChampion: () => {},
-    };
+    // bootstrap-seeded ladder the round-1 pool is never smaller than BASE:
+    // the server never served (and would never serve) that view.
+    const champ = (await fetchChampion(ctx)).champion!;
     let s = buy(initRun({ seed: 1, runId: "forged", pool: [TITAN], statuses: stressRegistry }), 0);
-    while (s.status === "active") s = ladderFight(s, emptyView);
+    while (s.status === "active") s = ladderFight(s, viewOf(s.round, { pool: [], champion: champ }));
     expect(s.endedBy).toBe("crown"); // seed 1: a lone round-1 Titan beats the bootstrap champion
     expect(ofType(s.log, "Snapshotted")[0]!.seq).toBe(0); // the impossible claim
 
     const { status, body } = await submit(ctx, ada, serializeRun(s));
     expect(status).toBe(422);
-    expect(body["reason"]).toMatch(/impossibly short/);
+    expect(body["reason"]).toMatch(/never served/);
     // Nothing landed: no ghost, and the bootstrap champion still holds the seat.
     expect((await fetchPublicPool(ctx, 1)).length).toBe(BASE);
     expect((await fetchChampion(ctx)).champion!.runId).toBe(BOOTSTRAP_RUN_ID);
   });
 
-  test("claiming a shorter-than-observed prefix to cherry-pick the opponent draw is rejected", async () => {
+  test("claiming a shorter-than-served prefix to cherry-pick the opponent draw is rejected", async () => {
     const ctx = makeCtx();
     const ada = await login(ctx, "ada@example.com");
     const bob = await login(ctx, "bob@example.com");
@@ -393,32 +425,142 @@ describe("prefix forgeries are rejected", () => {
     const runA = await playSharedRun(ctx, ada, 1, "titan-a");
     expect((await submit(ctx, ada, serializeRun(runA))).body).toMatchObject({ accepted: true });
 
-    // Forge: Bob opens AFTER Ada's ghosts landed, then plays against views
+    // Forge: Bob opens AFTER Ada's ghosts landed and reads his views through
+    // the run-scoped play read (so serves exist), but plays against views
     // truncated to the bootstrap-only prefix — claiming the pool as it stood
-    // BEFORE Ada, cherry-picking the weaker deterministic draw. His open
-    // pinned the longer pool: he cannot claim not to have seen it.
+    // BEFORE Ada, cherry-picking the weaker deterministic draw. The server
+    // served him the longer pool: the shorter claim matches no serve.
     expect((await openRun(ctx, bob, "cherry")).status).toBe(200);
-    expect((await fetchMyPool(ctx, bob, 1)).length).toBe(BASE + 1);
+    expect((await fetchRunView(ctx, bob, "cherry", 1)).pool.length).toBe(BASE + 1);
     let s = buy(initRun({ seed: 2, runId: "cherry", pool: [TITAN], statuses: stressRegistry }), 0);
     for (let guard = 0; s.status === "active"; guard++) {
       if (guard > 200) throw new Error("forged run did not terminate");
       const round = s.round;
-      const visible = await fetchMyPool(ctx, bob, round);
-      const truncated = visible.filter((g) => g.runId === BOOTSTRAP_RUN_ID); // bootstrap rows are the pool's prefix
-      const champ = (await fetchChampion(ctx)).champion;
-      const view: LadderStore = {
-        poolAt: (r) => (r === round ? truncated : []),
-        addSnapshot: () => {},
-        champion: () => champ,
-        setChampion: () => {},
-      };
-      s = ladderFight(s, view);
+      const served = await fetchRunView(ctx, bob, "cherry", round);
+      const truncated = served.pool.filter((g) => g.runId === BOOTSTRAP_RUN_ID); // bootstrap rows are the pool's prefix
+      s = ladderFight(s, viewOf(round, { pool: truncated, champion: served.champion }));
     }
 
     const { status, body } = await submit(ctx, bob, serializeRun(s));
     expect(status).toBe(422);
-    expect(body["reason"]).toMatch(/impossibly short/);
+    expect(body["reason"]).toMatch(/never served/);
     expect((await fetchPublicPool(ctx, 1)).map((g) => g.runId)).not.toContain("cherry");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The banked-open forgery (Cass's refutation of the second slice-2 build):
+// an open whose accepted-prefix floor is pinned at open time and never
+// expires can be BANKED — opened at ladder genesis, cashed in after the
+// ladder has grown, replaying against genesis views to dodge every
+// post-genesis ghost and grab a free challenge against TODAY's champion.
+// Serve-time pinning kills it: a challenge replays only against the champion
+// co-served with the claimed view, and what a banked open was served is the
+// genesis world — not the present one.
+// ---------------------------------------------------------------------------
+
+/** Eve's offline forge: greedy buying (outlevels the honest lone titans),
+ * each fight against a banked view, the challenge against `champion`. */
+function forgeRun(
+  runId: string,
+  seed: number,
+  bankedPools: ReadonlyMap<number, TeamSnapshot[]>,
+  champion: TeamSnapshot,
+): RunState {
+  let s = initRun({ seed, runId, pool: [TITAN], statuses: stressRegistry });
+  for (let guard = 0; s.status === "active"; guard++) {
+    if (guard > 50) throw new Error("forged run did not terminate");
+    while (s.gold >= UNIT_COST && s.offers.length > 0) s = buy(s, 0);
+    const round = s.round;
+    s = ladderFight(s, viewOf(round, { pool: bankedPools.get(round) ?? [], champion }));
+  }
+  return s;
+}
+
+describe("banked-open forgeries are rejected", () => {
+  /** Genesis bank + ladder growth: eve opens `banked` and reads (= banks)
+   * rounds 1..4 through the play read while the ladder is pristine; then five
+   * honest users play and submit, and the crown leaves the bootstrap seat. */
+  async function bankAndGrow(ctx: Ctx) {
+    const eve = await login(ctx, "eve@example.com");
+    expect((await openRun(ctx, eve, "banked")).status).toBe(200);
+    const genesisPools = new Map<number, TeamSnapshot[]>();
+    let genesisChampion: TeamSnapshot | undefined;
+    for (let r = 1; r <= 4; r++) {
+      const v = await fetchRunView(ctx, eve, "banked", r);
+      genesisPools.set(r, v.pool);
+      genesisChampion = v.champion;
+    }
+    expect(genesisPools.get(1)!.length).toBe(BASE);
+    expect(genesisPools.get(4)!.length).toBe(0); // genesis round 4: nothing to outrun
+    expect(genesisChampion!.runId).toBe(BOOTSTRAP_RUN_ID); // the world eve's bank was served
+
+    for (let i = 1; i <= 5; i++) {
+      const u = await login(ctx, `user${i}@example.com`);
+      const run = await playSharedRun(ctx, u, i, `titan-${i}`);
+      expect((await submit(ctx, u, serializeRun(run))).body).toMatchObject({ accepted: true });
+    }
+    const seated = (await fetchChampion(ctx)).champion!;
+    expect(seated.runId).not.toBe(BOOTSTRAP_RUN_ID);
+    expect((await fetchPublicPool(ctx, 1)).length).toBeGreaterThan(BASE); // round 1 grew…
+    expect((await fetchPublicPool(ctx, 4)).length).toBeGreaterThan(0); // …and round 4 is no longer empty
+    return { eve, genesisPools, genesisChampion: genesisChampion!, seated };
+  }
+
+  test("a genesis open cashed in after the ladder grew cannot crown over the current champion", async () => {
+    const ctx = makeCtx();
+    const { eve, genesisPools, seated } = await bankAndGrow(ctx);
+
+    // Eve forges against her banked genesis views: rounds 1-3 fight only the
+    // bootstrap ghosts (dodging every post-genesis ghost), round 4 claims the
+    // genesis-empty pool — a free champion challenge — against the champion
+    // seated NOW, whom her banked round-4 view was never served with.
+    const s = forgeRun("banked", 7, genesisPools, seated);
+    expect(s).toMatchObject({ endedBy: "crown", round: 4 }); // locally: crowned at round 4 over the current champion
+    expect(ofType(s.log, "Snapshotted").map((e) => e.seq)).toEqual([BASE, BASE, BASE, 0]); // the banked claims
+    expect(ofType(s.log, "ChampionChallenged")[0]!.champion).toBe(seated.runId);
+
+    const { status, body } = await submit(ctx, eve, serializeRun(s));
+    expect(status).toBe(422);
+    expect(body["reason"]).toMatch(/never served with that champion seated/);
+    // Nothing landed: the seat held, no banked ghosts entered the pools.
+    expect((await fetchChampion(ctx)).champion!.runId).toBe(seated.runId);
+    expect((await fetchPublicPool(ctx, 4)).map((g) => g.runId)).not.toContain("banked");
+  });
+
+  test("control: the same forgery from a fresh open has no genesis serves and is rejected outright", async () => {
+    const ctx = makeCtx();
+    const { eve, genesisPools, seated } = await bankAndGrow(ctx);
+
+    // A fresh open is served TODAY's views — the genesis prefixes it claims
+    // were never served for it, so the very first fight fails the record.
+    expect((await openRun(ctx, eve, "control")).status).toBe(200);
+    expect((await fetchRunView(ctx, eve, "control", 1)).pool.length).toBeGreaterThan(BASE);
+    const s = forgeRun("control", 7, genesisPools, seated);
+    const { status, body } = await submit(ctx, eve, serializeRun(s));
+    expect(status).toBe(422);
+    expect(body["reason"]).toMatch(/never served/);
+  });
+
+  test("a banked open can cash in only the world it was served: the co-served champion, whose crown lapses", async () => {
+    const ctx = makeCtx();
+    const { eve, genesisPools, genesisChampion, seated } = await bankAndGrow(ctx);
+
+    // Eve plays her banked views coherently end to end: the round-4 challenge
+    // goes against the champion CO-SERVED at genesis (the bootstrap). That is
+    // indistinguishable from a slow honest run, so it must replay — but the
+    // crown race applies: the bootstrap seat is long gone, the crown lapses,
+    // and only the ghosts land. Banking buys nothing an honest slow run
+    // would not also get.
+    const s = forgeRun("banked", 7, genesisPools, genesisChampion);
+    expect(s).toMatchObject({ endedBy: "crown", round: 4 });
+    expect(ofType(s.log, "ChampionChallenged")[0]!.champion).toBe(BOOTSTRAP_RUN_ID);
+
+    const { status, body } = await submit(ctx, eve, serializeRun(s));
+    expect(status).toBe(200);
+    expect(body).toMatchObject({ accepted: true, crowned: false }); // ghosts land, the crown does not
+    expect((await fetchChampion(ctx)).champion!.runId).toBe(seated.runId); // the seat held
+    expect((await fetchPublicPool(ctx, 1)).map((g) => g.runId)).toContain("banked");
   });
 });
 
@@ -471,40 +613,130 @@ describe("the open handshake", () => {
     expect(body["reason"]).toMatch(/different user/);
   });
 
-  test("a stale-but-real prefix still replays: the pool grew mid-run", async () => {
+  test("a stale-but-served prefix still replays: the pool grew mid-run", async () => {
     const ctx = makeCtx();
     const ada = await login(ctx, "ada@example.com");
     const bob = await login(ctx, "bob@example.com");
 
-    // Ada's run is played but NOT yet submitted when Bob opens and takes his
-    // first look at round 1 — so Bob's open-time floor is the bootstrap pool.
+    // Ada's run is played but NOT yet submitted when Bob opens and is served
+    // his round-1 view — the bootstrap pool, which the server now has on record.
     const runA = await playSharedRun(ctx, ada, 1, "titan-a");
     expect((await openRun(ctx, bob, "stale")).status).toBe(200);
-    const stalePool = await fetchMyPool(ctx, bob, 1);
-    const staleChamp = (await fetchChampion(ctx)).champion;
-    expect(stalePool.length).toBe(BASE);
+    const staleView = await fetchRunView(ctx, bob, "stale", 1);
+    expect(staleView.pool.length).toBe(BASE);
 
     // Ada's submission lands her ghosts mid-Bob's-run…
     expect((await submit(ctx, ada, serializeRun(runA))).body).toMatchObject({ accepted: true, crowned: true });
 
-    // …and Bob finishes against his stale round-1 view + fresh later views.
+    // …and Bob finishes against his stale (served) round-1 view + fresh later views.
     let s = buy(initRun({ seed: 2, runId: "stale", pool: [TITAN], statuses: stressRegistry }), 0);
     for (let guard = 0; s.status === "active"; guard++) {
       if (guard > 200) throw new Error("stale run did not terminate");
       const round = s.round;
-      const pool = round === 1 ? stalePool : await fetchMyPool(ctx, bob, round);
-      const champ = round === 1 ? staleChamp : (await fetchChampion(ctx)).champion;
-      const view: LadderStore = {
-        poolAt: (r) => (r === round ? pool : []),
-        addSnapshot: () => {},
-        champion: () => champ,
-        setChampion: () => {},
-      };
-      s = ladderFight(s, view);
+      const v = round === 1 ? staleView : await fetchRunView(ctx, bob, "stale", round);
+      s = ladderFight(s, viewOf(round, v));
     }
 
     const { status, body } = await submit(ctx, bob, serializeRun(s));
-    expect(status).toBe(200); // round 1 claims the BASE-long prefix — exactly his open-time floor
+    expect(status).toBe(200); // round 1 claims the BASE-long prefix — exactly the view he was served
+    expect(body).toMatchObject({ accepted: true });
+  });
+
+  test("a re-read round replays against either served view — refreshing never bricks a submission", async () => {
+    const ctx = makeCtx();
+    const ada = await login(ctx, "ada@example.com");
+    const bob = await login(ctx, "bob@example.com");
+
+    // Bob is served round 1 twice: once at the bootstrap length, once after
+    // Ada's ghosts landed — both views are on record now.
+    expect((await openRun(ctx, bob, "reread")).status).toBe(200);
+    const first = await fetchRunView(ctx, bob, "reread", 1);
+    expect(first.pool.length).toBe(BASE);
+    const runA = await playSharedRun(ctx, ada, 1, "titan-a");
+    expect((await submit(ctx, ada, serializeRun(runA))).body).toMatchObject({ accepted: true });
+    const second = await fetchRunView(ctx, bob, "reread", 1);
+    expect(second.pool.length).toBe(BASE + 1);
+
+    // Bob plays round 1 against the LATEST view (the refresh) and the rest fresh.
+    let s = buy(initRun({ seed: 2, runId: "reread", pool: [TITAN], statuses: stressRegistry }), 0);
+    for (let guard = 0; s.status === "active"; guard++) {
+      if (guard > 200) throw new Error("reread run did not terminate");
+      const round = s.round;
+      const v = round === 1 ? second : await fetchRunView(ctx, bob, "reread", round);
+      s = ladderFight(s, viewOf(round, v));
+    }
+    expect((await submit(ctx, bob, serializeRun(s))).body).toMatchObject({ accepted: true });
+  });
+
+  test("the play read is run-scoped: no bearer, foreign runId, unopened runId, junk round", async () => {
+    const ctx = makeCtx();
+    const ada = await login(ctx, "ada@example.com");
+    const bob = await login(ctx, "bob@example.com");
+    expect((await openRun(ctx, ada, "mine")).status).toBe(200);
+
+    expect((await ctx.app.request("/v1/runs/mine/pool/1")).status).toBe(401);
+    const foreign = await ctx.app.request("/v1/runs/mine/pool/1", { headers: { authorization: `Bearer ${bob}` } });
+    expect(foreign.status).toBe(422); // bob does not own it — same answer as a runId that is not open
+    expect(((await foreign.json()) as Loose)["reason"]).toMatch(/not open for this user/);
+    const unopened = await ctx.app.request("/v1/runs/ghost/pool/1", { headers: { authorization: `Bearer ${ada}` } });
+    expect(unopened.status).toBe(422);
+    const badRound = await ctx.app.request("/v1/runs/mine/pool/zero", { headers: { authorization: `Bearer ${ada}` } });
+    expect(badRound.status).toBe(400);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Open expiry — the supplemental bound on banking. Generously above an honest
+// run's lifetime: slow play survives it, only a parked open dies of it.
+// ---------------------------------------------------------------------------
+
+describe("run opens expire", () => {
+  const DAY = 24 * 60 * 60;
+
+  test("an expired open neither serves nor submits", async () => {
+    const ctx = makeCtx();
+    const ada = await login(ctx, "ada@example.com");
+    expect((await openRun(ctx, ada, "parked")).status).toBe(200);
+    const view = await fetchRunView(ctx, ada, "parked", 1); // banked while fresh
+
+    ctx.now.sec += RUN_OPEN_TTL_SECONDS + 1;
+
+    // Serving is refused…
+    const res = await ctx.app.request("/v1/runs/parked/pool/1", { headers: { authorization: `Bearer ${ada}` } });
+    expect(res.status).toBe(422);
+    expect(((await res.json()) as Loose)["reason"]).toMatch(/expire/);
+
+    // …and so is submitting a run played against the banked pre-expiry view
+    // (round 1 vs the banked pool, then empty rounds to the champion — the
+    // rejection happens at the TTL gate, before any view is even checked).
+    let s = buy(initRun({ seed: 1, runId: "parked", pool: [TITAN], statuses: stressRegistry }), 0);
+    s = ladderFight(s, viewOf(1, view));
+    for (let guard = 0; s.status === "active"; guard++) {
+      if (guard > 20) throw new Error("parked run did not terminate");
+      s = ladderFight(s, viewOf(s.round, { pool: [], champion: view.champion }));
+    }
+    const { status, body } = await submit(ctx, ada, serializeRun(s));
+    expect(status).toBe(422);
+    expect(body["reason"]).toMatch(/expire/);
+  });
+
+  test("an honest slow run resumed days later still replays", async () => {
+    const ctx = makeCtx();
+    const ada = await login(ctx, "ada@example.com");
+    expect((await openRun(ctx, ada, "slow")).status).toBe(200);
+
+    // Round 1 today, the rest after a two-day pause — well inside the TTL.
+    let s = buy(initRun({ seed: 1, runId: "slow", pool: [TITAN], statuses: stressRegistry }), 0);
+    s = ladderFight(s, viewOf(s.round, await fetchRunView(ctx, ada, "slow", s.round)));
+    ctx.now.sec += 2 * DAY;
+    for (let guard = 0; s.status === "active"; guard++) {
+      if (guard > 200) throw new Error("slow run did not terminate");
+      const round = s.round;
+      s = ladderFight(s, viewOf(round, await fetchRunView(ctx, ada, "slow", round)));
+    }
+
+    const { status, body } = await submit(ctx, ada, serializeRun(s));
+    expect(status).toBe(200);
     expect(body).toMatchObject({ accepted: true });
   });
 });

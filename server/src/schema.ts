@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 /**
  * Arena-owned auth tables. Shapes follow void-auth's schema (the OTP/session
@@ -74,18 +74,43 @@ export const ladderChampions = sqliteTable("ladder_champions", {
 
 /** Run-open handshake — the anti-forgery pin. A run must be opened (POST
  * /v1/runs/open) by its owner before it is played; submission requires the
- * matching row. `ghostWatermark` is the highest ladder_ghosts.id at open
- * time: pools are append-only with monotonic row ids, so re-derivation can
- * recompute exactly how long each visible pool prefix already was when the
- * run began — a submission claiming a shorter prefix is a forgery (a player
- * cannot un-see a ghost), not a stale-but-real view. */
+ * matching row, and opens EXPIRE (`RUN_OPEN_TTL_SECONDS` in runs.ts): an open
+ * is not a bankable asset whose recorded views appreciate as the ladder grows.
+ * `openedAt` is what the TTL is measured from. */
 export const runOpens = sqliteTable("run_opens", {
   runId: text("run_id").primaryKey(),
   userId: text("user_id").notNull(),
-  /** Highest ladder_ghosts.id at open — 0 on an unghosted ladder. */
+  /** Highest ladder_ghosts.id at open — provenance of the ladder state the
+   * run began against. Replay checks the serve record (run_pool_serves),
+   * which is strictly stronger; this stays as a recorded fact. */
   ghostWatermark: integer("ghost_watermark").notNull(),
   openedAt: integer("opened_at").notNull(),
 });
+
+/** Pool views the server HANDED OUT for an open run — the replay's ground
+ * truth. Every play read (GET /v1/runs/:runId/pool/:round) records the
+ * user-filtered prefix length it served and the champion seated at that
+ * moment; submission replay accepts a claimed Snapshotted.seq only if it
+ * equals a served length for that (runId, round), and a champion challenge
+ * only against the champion CO-SERVED with that view. Nothing is trusted
+ * that the server did not itself serve, at the time it served it. Re-reads
+ * append rows (identical views dedupe via the unique index), so refreshing
+ * a round's pool never bricks a submission. */
+export const runPoolServes = sqliteTable(
+  "run_pool_serves",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    runId: text("run_id").notNull(),
+    round: integer("round").notNull(),
+    /** Length of the user-filtered pool prefix served — what Snapshotted.seq
+     * must equal for this round. */
+    servedLen: integer("served_len").notNull(),
+    /** runId of the champion seated when this view was served. */
+    championRunId: text("champion_run_id").notNull(),
+    servedAt: integer("served_at").notNull(),
+  },
+  (t) => [uniqueIndex("run_pool_serves_view_idx").on(t.runId, t.round, t.servedLen, t.championRunId)],
+);
 
 /** Accepted run submissions — one row per re-derived run. The primary key
  * makes runIds globally unique: a resubmission (or a cross-user runId
@@ -105,5 +130,6 @@ export type Session = typeof sessions.$inferSelect;
 export type EmailCode = typeof emailCodes.$inferSelect;
 export type LadderGhost = typeof ladderGhosts.$inferSelect;
 export type RunOpen = typeof runOpens.$inferSelect;
+export type RunPoolServe = typeof runPoolServes.$inferSelect;
 export type LadderChampion = typeof ladderChampions.$inferSelect;
 export type RunSubmission = typeof runSubmissions.$inferSelect;

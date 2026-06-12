@@ -17,19 +17,33 @@
  * still produce. Replaying against those historical views reproduces the run
  * byte-for-byte — or doesn't, and the submission is rejected with the reason.
  *
- * The claimed prefix is bounded on BOTH sides — that is the open handshake.
- * The upper bound is free: a prefix longer than today's pool never existed.
- * The lower bound needs a pin, or the claim is forgeable downward: a log
- * claiming a SHORTER prefix than the player observed cherry-picks the
- * deterministic draw, and a log claiming an EMPTY pool turns the kernel's
- * outran-every-ghost rule into a free champion challenge at round 1. So a
- * run must be opened (openRun, POST /v1/runs/open) before it is played: the
- * open row pins the ladder's ghost watermark, and replay rejects any claimed
- * prefix shorter than what was already visible to that user at open time —
- * a player cannot un-see a ghost. Every length between open-time and now is
- * accepted: pools grow during play, and each such prefix really was the
- * user's view at some moment of their run. Submitting unopened, or another
- * user's runId, is rejected before replay.
+ * The claimed prefix is forgeable in both directions, so it is never taken
+ * at face value: a log claiming a SHORTER prefix than the player observed
+ * cherry-picks the deterministic draw, and a log claiming an EMPTY pool turns
+ * the kernel's outran-every-ghost rule into a free champion challenge. Window
+ * checks ([what was visible at open, what is visible now]) are not enough —
+ * an open never cashed in is a bankable asset whose window widens as the
+ * ladder grows, until a genesis open can dodge every ghost that came after it
+ * (the banked-open forgery). So the server accepts only views IT HANDED OUT:
+ *
+ *   1. A run is opened before play (openRun, POST /v1/runs/open) — the row
+ *      records the owner, and opens expire after RUN_OPEN_TTL_SECONDS.
+ *   2. Every play read goes through the run-scoped serve (servePool, GET
+ *      /v1/runs/:runId/pool/:round), which returns the user-filtered pool
+ *      AND the seated champion, and RECORDS what it served (run_pool_serves:
+ *      prefix length + champion, per runId and round).
+ *   3. Replay accepts a claimed Snapshotted.seq only if it equals a length
+ *      the server served for that (runId, round), and a champion challenge
+ *      only against the champion CO-SERVED with that very view — a run
+ *      cannot fight "the past's pool" against "the present's champion".
+ *
+ * Honest play is never rejected: each fight's view is one serve, re-reads
+ * just add rows, a slow run resumed days later replays against the views it
+ * actually fetched (the generous TTL only kills banking, not slow play).
+ * What remains for a cheater is exactly what an honest slow player could
+ * produce anyway — the views the server really served them, inside the TTL.
+ * Submitting unopened, expired, or another user's runId is rejected before
+ * replay.
  *
  * What acceptance writes: the re-derived ghosts, re-sequenced onto the END of
  * the current pools (the historical seq pinned the draw; insertion order is
@@ -57,7 +71,7 @@ import { eq } from "drizzle-orm";
 import type { ArenaContent } from "./content.js";
 import type { DB } from "./db.js";
 import type { SqliteLadderStore } from "./ladder-store.js";
-import { runOpens, runSubmissions } from "./schema.js";
+import { runOpens, runPoolServes, runSubmissions } from "./schema.js";
 
 export interface SubmitDeps {
   db: DB;
@@ -81,10 +95,20 @@ export const MAX_RUN_BYTES = 256 * 1024;
 export const MAX_RUN_LOG_EVENTS = 5_000;
 export const MAX_RUN_ID_LENGTH = 128;
 
-/** Open a run before playing it: records who owns the runId and pins the
- * ladder's ghost watermark — the floor every claimed pool prefix in the
- * eventual submission is checked against. One-shot per runId, like
- * submission itself. */
+/** How long an open run stays submittable. Generously above any honest run's
+ * lifetime (a run is a play session, maybe resumed over a few days) — the TTL
+ * exists only to bound open-banking: without it, an open held back at ladder
+ * genesis stays cashable forever, its recorded views ever more anomalous. */
+export const RUN_OPEN_TTL_DAYS = 14;
+export const RUN_OPEN_TTL_SECONDS = RUN_OPEN_TTL_DAYS * 24 * 60 * 60;
+
+export type PoolServeOutcome =
+  | { served: true; round: number; pool: readonly TeamSnapshot[]; champion: TeamSnapshot }
+  | { served: false; reason: string };
+
+/** Open a run before playing it: records who owns the runId, and from when
+ * the open TTL counts. One-shot per runId, like submission itself (and a
+ * submitted runId can never be re-opened, even after its open row is swept). */
 export function openRun(deps: Pick<SubmitDeps, "db" | "store" | "clock">, userId: string, runId: string): OpenOutcome {
   if (runId === BOOTSTRAP_RUN_ID) {
     return { opened: false, reason: `runId "${BOOTSTRAP_RUN_ID}" is reserved for the ladder's seed ghosts` };
@@ -95,11 +119,52 @@ export function openRun(deps: Pick<SubmitDeps, "db" | "store" | "clock">, userId
   if (deps.db.select().from(runOpens).where(eq(runOpens.runId, runId)).all().length > 0) {
     return { opened: false, reason: `run "${runId}" is already open — runIds are one-shot` };
   }
+  if (deps.db.select().from(runSubmissions).where(eq(runSubmissions.runId, runId)).all().length > 0) {
+    return { opened: false, reason: `run "${runId}" was already submitted — runIds are one-shot` };
+  }
   deps.db
     .insert(runOpens)
     .values({ runId, userId, ghostWatermark: deps.store.maxGhostId(), openedAt: deps.clock() })
     .run();
   return { opened: true, runId };
+}
+
+/** THE play read: the round's pool as this run's owner sees it (own ghosts
+ * excluded) plus the champion seated right now — and a RECORD of exactly that
+ * view (run_pool_serves), which is what submission replay later holds every
+ * claimed Snapshotted.seq and champion challenge to. Re-reads are free:
+ * each distinct view adds a row (identical ones dedupe), and any of them
+ * replays — a refresh never bricks a submission. */
+export function servePool(
+  deps: Pick<SubmitDeps, "db" | "store" | "clock">,
+  userId: string,
+  runId: string,
+  round: number,
+): PoolServeOutcome {
+  const open = deps.db.select().from(runOpens).where(eq(runOpens.runId, runId)).all()[0];
+  if (open === undefined || open.userId !== userId) {
+    // One answer for "not open" and "not yours" — no probing other users' runs.
+    return { served: false, reason: `run "${runId}" is not open for this user — open it first (POST /v1/runs/open)` };
+  }
+  if (deps.clock() - open.openedAt > RUN_OPEN_TTL_SECONDS) {
+    return { served: false, reason: openExpiredReason(runId) };
+  }
+  const champion = deps.store.championRecord();
+  if (champion === null) {
+    // openLadder seats the bootstrap at boot — a vacant seat here is a server bug.
+    throw new Error("ladder has no champion — cannot serve a play view");
+  }
+  const pool = deps.store.poolVisibleTo(round, userId);
+  deps.db
+    .insert(runPoolServes)
+    .values({ runId, round, servedLen: pool.length, championRunId: champion.snap.runId, servedAt: deps.clock() })
+    .onConflictDoNothing()
+    .run();
+  return { served: true, round, pool, champion: champion.snap };
+}
+
+function openExpiredReason(runId: string): string {
+  return `run "${runId}" was opened more than ${RUN_OPEN_TTL_DAYS} days ago — opens expire; start a fresh run`;
 }
 
 /** Submit a finished run for `userId`. Returns the outcome; writes (ghosts,
@@ -157,7 +222,8 @@ function replay(deps: SubmitDeps, userId: string, raw: string): Rederived {
     throw new SubmissionRejected(`run "${claimed.runId}" was already submitted — runIds are one-shot`);
   }
   // The open handshake's other half: the run must have been opened, by this
-  // user — its watermark is the floor every claimed pool prefix is held to.
+  // user, and inside the open's lifetime — an expired open is the banked-open
+  // forgery's raw material, never a submittable run.
   const open = deps.db.select().from(runOpens).where(eq(runOpens.runId, claimed.runId)).all()[0];
   if (open === undefined) {
     throw new SubmissionRejected(`run "${claimed.runId}" was never opened — open a run before playing it`);
@@ -165,14 +231,26 @@ function replay(deps: SubmitDeps, userId: string, raw: string): Rederived {
   if (open.userId !== userId) {
     throw new SubmissionRejected(`run "${claimed.runId}" was opened by a different user`);
   }
+  if (deps.clock() - open.openedAt > RUN_OPEN_TTL_SECONDS) {
+    throw new SubmissionRejected(openExpiredReason(claimed.runId));
+  }
   // The pool and registry travel by value in a serialized run; pin them to the
   // arena's content or the replay would verify a run against invented units.
   if (!isDeepStrictEqual(claimed.pool, content.pool) || !isDeepStrictEqual(claimed.statuses, content.statuses)) {
     throw new SubmissionRejected("run was not played with the arena's content (pool/statuses differ)");
   }
 
+  // The serve record — every pool view the server handed out for this run.
+  // The replay below accepts claimed views only from this set.
+  const serves = new Map<number, { len: number; championRunId: string }[]>();
+  for (const row of deps.db.select().from(runPoolServes).where(eq(runPoolServes.runId, claimed.runId)).all()) {
+    const list = serves.get(row.round) ?? [];
+    list.push({ len: row.servedLen, championRunId: row.championRunId });
+    serves.set(row.round, list);
+  }
+
   const steps = extractSteps(claimed.log);
-  const view = new ReplayLadderView(store, userId, open.ghostWatermark);
+  const view = new ReplayLadderView(store, userId, serves);
   let state = initRun({ seed: claimed.seed, runId: claimed.runId, pool: content.pool, statuses: content.statuses });
   for (const step of steps) {
     if (step.kind === "ladder") {
@@ -241,41 +319,40 @@ function extractSteps(log: readonly RunEvent[]): ReplayStep[] {
 
 /** The LadderStore the replay runs against: per fight, the historical view
  * the submitted log pins — the user-filtered pool truncated to the claimed
- * prefix, and the claimed champion looked up in the append-only history. The
- * claimed prefix must fall inside what the player could have observed:
- * no shorter than the open-time view (the watermark floor), no longer than
- * the current pool. Writes are staged, never stored: the store mutates only
- * on acceptance. */
+ * prefix, and the claimed champion looked up in the append-only history. A
+ * claimed view is accepted only if the server SERVED it for this run: the
+ * prefix length must equal a recorded serve for (runId, round), and a
+ * champion challenge must name the champion co-served with that view —
+ * nothing replays that the server did not itself hand out. Writes are
+ * staged, never stored: the store mutates only on acceptance. */
 class ReplayLadderView implements LadderStore {
   frame: { claimedSeq: number; championRunId: string | null } | null = null;
   readonly staged: TeamSnapshot[] = [];
   stagedCrown: { snap: TeamSnapshot; challengedRunId: string | null } | null = null;
+  /** The round of the in-flight fight — set by poolAt, which the kernel
+   * always calls before champion() inside a ladder fight. */
+  private round = 0;
 
   constructor(
     private readonly store: SqliteLadderStore,
     private readonly userId: string,
-    private readonly ghostWatermark: number,
+    private readonly serves: ReadonlyMap<number, { len: number; championRunId: string }[]>,
   ) {}
 
   poolAt(round: number): readonly TeamSnapshot[] {
     const frame = this.mustFrame();
-    const visible = this.store.poolVisibleTo(round, this.userId);
-    // Pools are append-only: the user's round-R view was already `floor` long
-    // when they opened the run, and a player cannot un-see a ghost. A shorter
-    // claim cherry-picks the draw (at zero: a free champion challenge).
-    const floor = this.store.poolVisibleCountAt(round, this.userId, this.ghostWatermark);
-    if (frame.claimedSeq < floor) {
+    this.round = round;
+    const served = this.serves.get(round) ?? [];
+    if (!served.some((s) => s.len === frame.claimedSeq)) {
       throw new SubmissionRejected(
-        `run claims a round-${round} pool of ${frame.claimedSeq} ghosts; this ladder already had ${floor} ` +
-          `when the run opened — the claimed prefix is impossibly short`,
+        `run claims a round-${round} pool of ${frame.claimedSeq} ghosts — a view this server never served for ` +
+          `this run (play reads go through GET /v1/runs/:runId/pool/:round)`,
       );
     }
-    if (visible.length < frame.claimedSeq) {
-      throw new SubmissionRejected(
-        `run claims a round-${round} pool of ${frame.claimedSeq} ghosts; this ladder has ${visible.length}`,
-      );
-    }
-    return visible.slice(0, frame.claimedSeq);
+    // Pools are append-only and every serve precedes its submission, so the
+    // served length never exceeds the current pool; were the slice ever to
+    // come up short anyway, the re-derived Snapshotted.seq would diverge.
+    return this.store.poolVisibleTo(round, this.userId).slice(0, frame.claimedSeq);
   }
 
   addSnapshot(snap: TeamSnapshot): void {
@@ -292,6 +369,16 @@ class ReplayLadderView implements LadderStore {
     const rec = this.store.championByRunId(frame.championRunId);
     if (rec === null) {
       throw new SubmissionRejected(`run claims a champion "${frame.championRunId}" this ladder never seated`);
+    }
+    // Temporal coherence: the challenge replays only against the champion
+    // CO-SERVED with the claimed pool view. A banked view from the past does
+    // not buy a challenge against whoever is seated today.
+    const served = this.serves.get(this.round) ?? [];
+    if (!served.some((s) => s.len === frame.claimedSeq && s.championRunId === frame.championRunId)) {
+      throw new SubmissionRejected(
+        `run challenges champion "${frame.championRunId}" from a round-${this.round} view this server never ` +
+          `served with that champion seated`,
+      );
     }
     return rec.snap;
   }

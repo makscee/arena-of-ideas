@@ -62,6 +62,16 @@ CREATE TABLE IF NOT EXISTS run_opens (
   ghost_watermark INTEGER NOT NULL,
   opened_at INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS run_pool_serves (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id TEXT NOT NULL,
+  round INTEGER NOT NULL,
+  served_len INTEGER NOT NULL,
+  champion_run_id TEXT NOT NULL,
+  served_at INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS run_pool_serves_view_idx
+  ON run_pool_serves (run_id, round, served_len, champion_run_id);
 CREATE TABLE IF NOT EXISTS run_submissions (
   run_id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
