@@ -29,6 +29,7 @@ import {
   launch,
   openRun,
   plainShopRun,
+  sweepOcclusion,
 } from "./lib.mjs";
 
 const disarm = armGuard();
@@ -38,43 +39,12 @@ const menuVisible = (page) => page.locator("#run-menu-button").isVisible();
 const overlayOpen = (page) => page.locator("#run-menu-overlay").isVisible();
 const scrubAt = (page) => page.locator("#scrub").inputValue();
 
-/** Sweep `targetSel`'s bounding box with a grid of points and count how many
- * resolve to ANYTHING other than the target (or its own descendants/ancestors)
- * via elementFromPoint. Returns { stolen, total, thieves } — stolen > 0 means
- * some element occludes the target and will intercept taps. Generalized from
- * the original menu-button-only sweep (#015 slice 4 carry): a future fixed
- * header or floating control fails this guard too, not just #run-menu-button.
- * Ancestors are allowed — a rounded corner inside the bounding box resolves
- * to the parent, which is layout, not occlusion. The grid step is 5px.
- *
- * Cass reproduced 63/420 stolen for #run-continue at 375px (seed 42, natural
- * run): a 5-column × 84-row grid over the 181×87px button. The guard fires at
- * stolen > 0 so even a 1px corner grab fails. */
-async function sweepOcclusion(page, targetSel) {
-  const b = await page.locator(targetSel).boundingBox();
-  if (b === null) return { stolen: 0, total: 0, thieves: [] }; // element not visible — skip
-  return page.evaluate(
-    ([sel, x0, y0, w, h]) => {
-      const target = document.querySelector(sel);
-      const step = 5;
-      let stolen = 0;
-      let total = 0;
-      const thieves = new Set();
-      for (let x = x0 + 2; x < x0 + w - 2; x += step) {
-        for (let y = y0 + 2; y < y0 + h - 2; y += step) {
-          const el = document.elementFromPoint(x, y);
-          if (el !== null && el !== target && !target.contains(el) && !el.contains(target)) {
-            stolen++;
-            thieves.add(el.id !== "" ? `#${el.id}` : el.tagName.toLowerCase() + (el.className ? `.${el.className}` : ""));
-          }
-          total++;
-        }
-      }
-      return { stolen, total, thieves: [...thieves] };
-    },
-    [targetSel, b.x, b.y, b.width, b.height],
-  );
-}
+// The occlusion sweep lives in lib.mjs now (#016 slice 3): the Cass carry —
+// below-the-fold targets swept vacuously (elementFromPoint null off-viewport
+// counted as not-stolen) — is fixed there with scrollIntoViewIfNeeded +
+// fresh client-rect coords, and the login probe shares the same guard.
+// Cass reproduced 63/420 stolen for #run-continue at 375px (seed 42, natural
+// run); the guard fires at stolen > 0 so even a 1px corner grab fails.
 
 /** Open the menu, abandon WITHOUT confirming twice, and prove the run survives
  * a single stray click; then confirm and prove it lands on the TITLE screen

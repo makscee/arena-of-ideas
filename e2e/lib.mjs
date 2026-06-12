@@ -220,3 +220,54 @@ export async function box(page, selector) {
   if (b === null) throw new Error(`no box for ${selector}`);
   return b;
 }
+
+/** Sweep `targetSel`'s surface with a 5px grid of elementFromPoint probes and
+ * count how many resolve to ANYTHING other than the target (or its own
+ * descendants/ancestors). { stolen, total, thieves } — stolen > 0 means some
+ * element occludes the target and will intercept taps.
+ *
+ * Cass #015-slice-4 carry, fixed here: the target is scrolled into view FIRST
+ * and the grid uses fresh client-rect coords, clamped to the viewport —
+ * elementFromPoint is viewport-relative, so a below-the-fold target used to
+ * yield null at every point and count as "not stolen" (a vacuous pass). A
+ * sweep that still lands zero in-viewport points throws rather than passing;
+ * an in-viewport null (nothing hittable at a visible point) counts stolen.
+ * Ancestors are allowed — a rounded corner inside the bounding box resolves
+ * to the parent, which is layout, not occlusion. */
+export async function sweepOcclusion(page, targetSel) {
+  const target = page.locator(targetSel);
+  if ((await target.count()) === 0 || !(await target.isVisible())) {
+    return { stolen: 0, total: 0, thieves: [] }; // element not on screen — caller's call
+  }
+  await target.scrollIntoViewIfNeeded();
+  return page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    const r = el.getBoundingClientRect();
+    const x0 = Math.max(r.left + 2, 0);
+    const x1 = Math.min(r.right - 2, window.innerWidth - 1);
+    const y0 = Math.max(r.top + 2, 0);
+    const y1 = Math.min(r.bottom - 2, window.innerHeight - 1);
+    const step = 5;
+    let stolen = 0;
+    let total = 0;
+    const thieves = new Set();
+    for (let x = x0; x < x1; x += step) {
+      for (let y = y0; y < y1; y += step) {
+        total++;
+        const hit = document.elementFromPoint(x, y);
+        if (hit === null || (hit !== el && !el.contains(hit) && !hit.contains(el))) {
+          stolen++;
+          thieves.add(
+            hit === null
+              ? "(null)"
+              : hit.id !== ""
+                ? `#${hit.id}`
+                : hit.tagName.toLowerCase() + (hit.className ? `.${hit.className}` : ""),
+          );
+        }
+      }
+    }
+    if (total === 0) throw new Error(`occlusion sweep of ${sel} is vacuous — no in-viewport points`);
+    return { stolen, total, thieves: [...thieves] };
+  }, targetSel);
+}

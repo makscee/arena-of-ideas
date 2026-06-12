@@ -33,10 +33,37 @@
           <button type="button" id="title-play" class="title-primary">Play</button>
           <button type="button" id="title-leaderboard">Leaderboard</button>
           <button type="button" id="title-codex">Codex</button>
-          <!-- #016 mounts real auth here: replace this inert placeholder
-               behind the same #title-login id. -->
-          <button type="button" id="title-login" disabled title="Login is coming soon — runs stay local until then">Login · coming soon</button>
+          <!-- #016 slice 3: real auth. Logged out shows the Login entry;
+               logged in swaps it for the identity strip below. -->
+          <button type="button" id="title-login" title="Log in to play on the shared ladder">Login</button>
         </div>
+        <div id="title-id" class="title-id" hidden>
+          <span id="title-name"></span>
+          <button type="button" id="title-logout" title="Log out — runs go back to this device's local ladder">log out</button>
+        </div>
+        <!-- The login steps (email → code → first-login name), one form, one
+             visible row at a time; login.ts drives it. -->
+        <form id="login-panel" hidden>
+          <p id="login-blurb" class="run-dim"></p>
+          <label id="login-email-row">
+            <span>Email</span>
+            <input id="login-email" type="email" autocomplete="email" />
+          </label>
+          <label id="login-code-row" hidden>
+            <span>6-digit code</span>
+            <input id="login-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" />
+          </label>
+          <label id="login-name-row" hidden>
+            <span>Display name</span>
+            <input id="login-name" maxlength="24" />
+          </label>
+          <div class="run-bar">
+            <button type="submit" id="login-submit">Send code</button>
+            <button type="button" id="login-cancel">cancel</button>
+          </div>
+          <p id="login-error" role="alert" hidden></p>
+        </form>
+        <p id="title-net-warn" class="run-warn" role="alert" hidden></p>
         <button type="button" id="title-dev" title="Battle sandbox, gauntlet sweeps, team editor">dev tools</button>
       </section>
 
@@ -119,6 +146,8 @@
           <p id="run-end-head"></p>
           <div id="run-end-stats"></div>
           <div id="run-end-line"></div>
+          <!-- #016 slice 3: the shared-ladder submit verdict (remote runs only). -->
+          <p id="run-end-status" role="status" hidden></p>
           <div class="run-bar">
             <button type="button" id="run-new-run">back to title</button>
           </div>

@@ -4,14 +4,26 @@
 // and inspector all read that one log.
 
 import { DEFAULT_RUN_POOL, KERNEL_VERSION, battle, codexUnits, mergePool, openLadder, stressRegistry, type UnitDef } from "../src/index.js";
-import { approvedUnits } from "./approved.js";
+import { approvedUnits, committedApproved } from "./approved.js";
+import { createArenaApi, type MeInfo } from "./api.js";
 import { resolveUnits, teamOptions } from "./catalogue.js";
 import { dismissInspectOverlay } from "./inspect.js";
 import { createViewer } from "./viewer.js";
 import { createEditor } from "./editor.js";
 import { createGauntlet } from "./gauntlet.js";
+import { createLogin } from "./login.js";
+import { RemoteLadder } from "./remote-ladder.js";
 import { createRunScreen, type RunScreen } from "./run-screen.js";
-import { loadRun, openLocalLadder, resetLadder } from "./run-store.js";
+import {
+  clearSession,
+  loadRun,
+  loadSession,
+  openLocalLadder,
+  prefixedStorage,
+  resetLadder,
+  saveSession,
+  type KVStorage,
+} from "./run-store.js";
 import { createCodex, type CodexScreen } from "./codex.js";
 import { createLadderView, type LadderView, type LadderViewRun } from "./ladder-view.js";
 import { createTitleScreen } from "./title-screen.js";
@@ -31,6 +43,43 @@ function el<T extends HTMLElement>(id: string): T {
 // and the codex both read it, so an approved unit is draftable AND catalogued.
 const approved = approvedUnits();
 const runPool = mergePool(DEFAULT_RUN_POOL, approved);
+
+// ---------------------------------------------------------------------------
+// Arena server session (#016 slice 3) — decided ONCE at boot: a stored token
+// is verified against /v1/auth/me and the whole app wires remote (shared
+// ladder, namespaced run storage) or local. Login/logout reload the page to
+// re-run this — a mode switch, not a hot swap. With no stored token nothing
+// here touches the network: logged-out play is byte-identical to before.
+// ---------------------------------------------------------------------------
+
+const api = createArenaApi();
+const sessionToken = loadSession(window.localStorage);
+let me: MeInfo | null = null;
+let bootNetWarn: string | null = null;
+if (sessionToken !== null) {
+  const res = await api.me(sessionToken);
+  if (res.ok) {
+    me = res.value;
+  } else if (res.kind === "unauthorized") {
+    clearSession(window.localStorage); // dead token: a clean logged-out boot
+  } else {
+    bootNetWarn = "the arena server didn't answer — playing on this device's local ladder for now";
+  }
+}
+let remote: RemoteLadder | null = null;
+if (me !== null && sessionToken !== null) {
+  const candidate = new RemoteLadder(api, sessionToken);
+  const sync = await candidate.sync();
+  if (sync.ok) remote = candidate;
+  else bootNetWarn = `the shared ladder couldn't load (${sync.reason}) — playing locally this session`;
+}
+// Remote runs are pinned to the arena's committed content: the server rejects
+// any other pool at submit, so the localStorage approved-override (a local
+// playground affordance) joins local runs only.
+const remoteRunPool = mergePool(DEFAULT_RUN_POOL, committedApproved());
+// Logged-in runs live under namespaced keys: logging in never clobbers the
+// local run, and a remote run never revives into a logged-out session.
+const runStorage: KVStorage = remote !== null ? prefixedStorage(window.localStorage, "remote:") : window.localStorage;
 
 const teamASelect = el<HTMLSelectElement>("team-a");
 const teamBSelect = el<HTMLSelectElement>("team-b");
@@ -211,7 +260,7 @@ document.addEventListener("click", (ev) => {
  * gets no marker; a corrupt stored run is the run screen's to surface. */
 function activeRunMarker(): LadderViewRun | undefined {
   try {
-    const stored = loadRun(window.localStorage);
+    const stored = loadRun(runStorage);
     if (stored === null || stored.state.status !== "active") return undefined;
     return { round: stored.state.round, runId: stored.state.runId };
   } catch {
@@ -239,7 +288,17 @@ function showView(which: keyof typeof views): void {
   runScreen?.setVisible(which === "run");
   codexScreen.setVisible(which === "codex");
   if (which === "title") titleScreen.refresh(); // Play vs Continue, read fresh
-  if (which === "leaderboard") leaderboardView?.refresh(activeRunMarker()); // pools fill live, own run marked
+  if (which === "leaderboard") {
+    leaderboardView?.refresh(activeRunMarker()); // pools fill live, own run marked
+    // The shared ladder refreshes from the server on every show (#016 slice 3):
+    // render what we have NOW, re-render when the sync lands — a dead server
+    // costs freshness, never the screen.
+    if (remote !== null) {
+      void remote.sync().then((r) => {
+        if (r.ok && !views.leaderboard.hidden) leaderboardView?.refresh(activeRunMarker());
+      });
+    }
+  }
 }
 for (const key of Object.keys(viewTabs) as (keyof typeof viewTabs)[]) {
   viewTabs[key].addEventListener("click", () => showView(key));
@@ -264,22 +323,59 @@ const titleScreen = createTitleScreen(
 el<HTMLButtonElement>("title-play").addEventListener("click", () => showView("run"));
 el<HTMLButtonElement>("title-leaderboard").addEventListener("click", () => showView("leaderboard"));
 el<HTMLButtonElement>("title-codex").addEventListener("click", () => showView("codex"));
-// #title-login is the inert #016 mount point — no handler until auth lands.
+// #016 slice 3: the login flow behind the title's Login entry. Reloads on
+// success/logout — the session boot above re-decides the whole wiring.
+createLogin(
+  {
+    loginButton: el<HTMLButtonElement>("title-login"),
+    identity: el("title-id"),
+    identityName: el("title-name"),
+    logoutButton: el<HTMLButtonElement>("title-logout"),
+    panel: el("login-panel"),
+    form: el<HTMLFormElement>("login-panel"),
+    blurb: el("login-blurb"),
+    emailRow: el("login-email-row"),
+    email: el<HTMLInputElement>("login-email"),
+    codeRow: el("login-code-row"),
+    code: el<HTMLInputElement>("login-code"),
+    nameRow: el("login-name-row"),
+    name: el<HTMLInputElement>("login-name"),
+    submit: el<HTMLButtonElement>("login-submit"),
+    cancel: el<HTMLButtonElement>("login-cancel"),
+    error: el("login-error"),
+  },
+  {
+    api,
+    identity: me,
+    token: sessionToken,
+    saveToken: (t) => saveSession(window.localStorage, t),
+    clearToken: () => clearSession(window.localStorage),
+    reload: () => window.location.reload(),
+  },
+);
+if (bootNetWarn !== null) {
+  const warn = el("title-net-warn");
+  warn.textContent = bootNetWarn;
+  warn.hidden = false;
+}
 el<HTMLButtonElement>("title-dev").addEventListener("click", () => {
   viewsNav.hidden = false; // revealed for the session — tabs work as ever
   showView("battle");
 });
 homeButton.addEventListener("click", () => showView("title"));
 
-// The run screen and the leaderboard share one ladder store. A failure to
-// revive the stored ladder is loud (a silent fresh ladder would orphan its
-// ghosts), but it must not take the other views down with it.
+// The run screen and the leaderboard share one ladder store: the shared
+// server ladder when logged in (already synced above), the localStorage one
+// otherwise. A failure to revive the stored ladder is loud (a silent fresh
+// ladder would orphan its ghosts), but it must not take the other views down
+// with it.
 try {
-  const ladderStore = openLadder(openLocalLadder(window.localStorage), stressRegistry);
+  const ladderStore = remote ?? openLadder(openLocalLadder(window.localStorage), stressRegistry);
   leaderboardView = createLadderView(el("leaderboard-body"), {
     store: ladderStore,
     registry: stressRegistry,
     openFirstRound: true, // the screen opens showing teams, not closed drawers
+    ...(remote !== null ? { holderName: () => remote!.holder() } : {}),
   });
   runScreen = createRunScreen(
     {
@@ -287,6 +383,7 @@ try {
       newForm: el<HTMLFormElement>("run-new-form"),
       seed: el<HTMLInputElement>("run-seed"),
       dice: el<HTMLButtonElement>("run-seed-dice"),
+      startButton: el<HTMLButtonElement>("run-start"),
       newError: el("run-new-error"),
       champ: el("run-champ"),
       warn: el("run-warn"),
@@ -311,6 +408,7 @@ try {
       endHead: el("run-end-head"),
       endStats: el("run-end-stats"),
       endLine: el("run-end-line"),
+      endStatus: el("run-end-status"),
       newRunButton: el<HTMLButtonElement>("run-new-run"),
       ladderPanel: el("run-ladder"),
       ladderBody: el("run-ladder-body"),
@@ -323,14 +421,15 @@ try {
       abandonNo: el<HTMLButtonElement>("run-abandon-no"),
     },
     {
-      storage: window.localStorage,
+      storage: runStorage,
       store: ladderStore,
-      pool: runPool,
+      pool: remote !== null ? remoteRunPool : runPool,
       registry: stressRegistry,
       viewer,
       viewerHost: result,
       viewerHome: el("battle-view"),
       onExitToTitle: () => showView("title"), // abandon/run-end land here, reading "Play"
+      ...(remote !== null ? { remote } : {}),
     },
   );
 } catch (err) {

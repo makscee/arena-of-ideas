@@ -30,6 +30,9 @@ export interface LadderViewDeps {
    * slice 4) opens showing teams, not a list of closed drawers; the run
    * screen's side ladder keeps its compact default. */
   openFirstRound?: boolean;
+  /** The champion holder's display name, when the backing knows one (#016
+   * slice 3: the shared ladder names its players; local backings don't). */
+  holderName?: () => string | null;
 }
 
 /** The active run, when one is in the shop — marks "you are here" and "yours". */
@@ -52,9 +55,12 @@ interface Selection {
   status?: string;
 }
 
-/** A ghost's display name: bootstrap ghosts are shipped content, not a run. */
+/** A ghost's display name: bootstrap ghosts are shipped content, not a run.
+ * Shared-ladder runIds are minted globally unique (#016: `web-<uuid>`) and
+ * read as noise past a prefix — the label keeps enough to tell runs apart. */
 export function ghostLabel(runId: string): string {
-  return runId === BOOTSTRAP_RUN_ID ? "shipped" : runId;
+  if (runId === BOOTSTRAP_RUN_ID) return "shipped";
+  return runId.length > 20 ? `${runId.slice(0, 12)}…` : runId;
 }
 
 export function createLadderView(root: HTMLElement, deps: LadderViewDeps): LadderView {
@@ -99,10 +105,11 @@ export function createLadderView(root: HTMLElement, deps: LadderViewDeps): Ladde
     if (champ === null) {
       return `<div class="lv-champ"><span class="lv-k">champion</span> <span class="run-dim">the spot is vacant — the next crown is free</span></div>`;
     }
+    const holder = deps.holderName?.() ?? null;
     const who =
       champ.runId === BOOTSTRAP_RUN_ID
         ? "the shipped champion — dethrone it to take the crown"
-        : `${esc(champ.runId)} — crowned at round ${champ.round}`;
+        : `${holder !== null ? `${esc(holder)} · ` : ""}${esc(ghostLabel(champ.runId))} — crowned at round ${champ.round}`;
     return `
       <div class="lv-champ">
         <div><span class="lv-k">👑 champion</span> <span class="lv-who">${who}</span></div>

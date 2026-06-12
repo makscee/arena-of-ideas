@@ -906,9 +906,88 @@ button:disabled:hover {
   border-color: var(--text);
 }
 
-/* The #016 mount point: visibly present, visibly not wired yet. */
-#title-login:disabled {
-  opacity: 0.45;
+/* ---------- login (#016 slice 3) ----------
+   The step panel rides under the title menu, same width: one visible input
+   row per step, errors in flow. The identity strip replaces the Login entry
+   once a session stands. */
+
+#login-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: min(18rem, 100%);
+  margin-top: 0.8rem;
+  text-align: left;
+}
+
+#login-panel label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+}
+
+#login-panel input {
+  min-height: 44px;
+  font-size: 1rem;
+}
+
+#login-panel .run-bar {
+  margin: 0;
+}
+
+#login-panel button {
+  min-height: 44px;
+}
+
+#login-error {
+  color: var(--bad, #e66);
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.title-id {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.8rem;
+  font-size: 0.9rem;
+}
+
+/* display: flex beats the UA's [hidden] rule — keep the attribute
+   authoritative for the login surfaces (the title-view pattern above). */
+.title-id[hidden],
+#login-panel[hidden],
+#login-panel label[hidden] {
+  display: none;
+}
+
+.title-id button {
+  min-height: 44px;
+}
+
+#title-net-warn {
+  width: min(22rem, 100%);
+  margin-top: 0.8rem;
+}
+
+/* The shared-ladder submit verdict on the run-end screen (#016 slice 3). */
+#run-end-status {
+  margin: 0.6rem 0 0;
+  font-size: 0.9rem;
+}
+
+#run-end-status.ok {
+  color: var(--good, #7c7);
+}
+
+#run-end-status.bad {
+  color: var(--bad, #e66);
+}
+
+#run-end-status button {
+  margin-left: 0.5rem;
+  min-height: 36px;
 }
 
 /* Dev tools: reachable, never greeting — a dim footnote link under the menu. */

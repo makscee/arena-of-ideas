@@ -22,9 +22,42 @@ const LADDER_KEY = "aoi.ladder.v1";
 const RUN_KEY = "aoi.run.v1";
 const BATTLE_KEY = "aoi.run-battle.v1";
 const RUN_SEQ_KEY = "aoi.run-seq.v1";
+const SUBMIT_KEY = "aoi.submit.v1";
+const SESSION_KEY = "aoi.session.v1";
 
 /** The storage surface this module needs — window.localStorage, or a test stub. */
 export type KVStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+
+/** A key-prefixed view over a storage (#016 slice 3): logged-in play keeps its
+ * run under different keys than local play, so logging in never clobbers the
+ * local run and a remote run never revives into a logged-out session. The
+ * session token itself stays unprefixed — it is what picks the namespace. */
+export function prefixedStorage(storage: KVStorage, prefix: string): KVStorage {
+  return {
+    getItem: (key) => storage.getItem(prefix + key),
+    setItem: (key, value) => storage.setItem(prefix + key, value),
+    removeItem: (key) => storage.removeItem(prefix + key),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Session token (#016 slice 3) — the bearer the arena server minted, persisted
+// so a reload stays logged in. Stored raw: localStorage is this device's
+// session boundary, same as a cookie jar.
+// ---------------------------------------------------------------------------
+
+export function loadSession(storage: KVStorage): string | null {
+  const token = storage.getItem(SESSION_KEY);
+  return token === null || token === "" ? null : token;
+}
+
+export function saveSession(storage: KVStorage, token: string): void {
+  storage.setItem(SESSION_KEY, token);
+}
+
+export function clearSession(storage: KVStorage): void {
+  storage.removeItem(SESSION_KEY);
+}
 
 /** Open the localStorage-backed ladder. Corrupt stored JSON throws loudly
  * (the FileLadderStore rule: silently starting fresh would orphan every
@@ -82,6 +115,43 @@ export function loadRun(storage: KVStorage): StoredRun | null {
 export function clearRun(storage: KVStorage): void {
   storage.removeItem(RUN_KEY);
   storage.removeItem(BATTLE_KEY);
+  storage.removeItem(SUBMIT_KEY);
+}
+
+// ---------------------------------------------------------------------------
+// Submit outcome (#016 slice 3) — the server's verdict on a finished remote
+// run, persisted per runId so a reload on the end screen neither re-submits an
+// accepted run nor forgets a rejection. Transient failures (offline) are NOT
+// stored — those retry.
+// ---------------------------------------------------------------------------
+
+/** The durable verdicts: the server accepted (crown confirmed or lapsed in
+ * the crown race) or rejected with its reason. */
+export interface StoredSubmit {
+  runId: string;
+  accepted: boolean;
+  /** Present when accepted: whether the crown really landed. */
+  crowned?: boolean;
+  /** Present when rejected: the server's reason. */
+  reason?: string;
+}
+
+export function saveSubmitResult(storage: KVStorage, result: StoredSubmit): void {
+  storage.setItem(SUBMIT_KEY, JSON.stringify(result));
+}
+
+/** The stored verdict for `runId`, or null (none stored, another run's, or
+ * corrupt — a bad stored verdict must never block a retry). */
+export function loadSubmitResult(storage: KVStorage, runId: string): StoredSubmit | null {
+  const raw = storage.getItem(SUBMIT_KEY);
+  if (raw === null) return null;
+  try {
+    const parsed = JSON.parse(raw) as Partial<StoredSubmit>;
+    if (parsed?.runId !== runId || typeof parsed.accepted !== "boolean") return null;
+    return parsed as StoredSubmit;
+  } catch {
+    return null;
+  }
 }
 
 /** Delete the stored ladder — every ghost and the champion. The explicit

@@ -16,7 +16,20 @@ import {
   type RunState,
   type UnitDef,
 } from "../src/index.js";
-import { clearRun, loadRun, nextRunId, openLocalLadder, saveRun, type KVStorage } from "./run-store.js";
+import {
+  clearRun,
+  clearSession,
+  loadRun,
+  loadSession,
+  loadSubmitResult,
+  nextRunId,
+  openLocalLadder,
+  prefixedStorage,
+  saveRun,
+  saveSession,
+  saveSubmitResult,
+  type KVStorage,
+} from "./run-store.js";
 
 function fakeStorage(): KVStorage {
   const m = new Map<string, string>();
@@ -199,5 +212,57 @@ describe("saveRun quota exhaustion", () => {
     const storage = throwingStorage();
     const state = buy(initRun({ seed: 1, runId: "web-1", pool: [TITAN], statuses: stressRegistry }), 0);
     expect(() => saveRun(storage, state)).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// #016 slice 3: namespaced storage, session token, submit verdicts
+// ---------------------------------------------------------------------------
+
+describe("prefixedStorage", () => {
+  test("namespaces every key — a remote run never touches the local run's keys", () => {
+    const storage = fakeStorage();
+    const remote = prefixedStorage(storage, "remote:");
+    const localState = buy(initRun({ seed: 1, runId: "web-1", pool: [TITAN], statuses: stressRegistry }), 0);
+    const remoteState = buy(initRun({ seed: 2, runId: "web-uuid", pool: [TITAN], statuses: stressRegistry }), 0);
+    saveRun(storage, localState);
+    saveRun(remote, remoteState);
+    expect(loadRun(storage)!.state.runId).toBe("web-1"); // logging in clobbered nothing
+    expect(loadRun(remote)!.state.runId).toBe("web-uuid");
+    clearRun(remote);
+    expect(loadRun(storage)!.state.runId).toBe("web-1"); // and clearing one side spares the other
+    expect(loadRun(remote)).toBeNull();
+  });
+});
+
+describe("session token", () => {
+  test("round-trips, clears, and treats empty as absent", () => {
+    const storage = fakeStorage();
+    expect(loadSession(storage)).toBeNull();
+    saveSession(storage, "tok-123");
+    expect(loadSession(storage)).toBe("tok-123");
+    clearSession(storage);
+    expect(loadSession(storage)).toBeNull();
+    storage.setItem("aoi.session.v1", "");
+    expect(loadSession(storage)).toBeNull(); // an empty token is no token
+  });
+});
+
+describe("submit verdicts", () => {
+  test("a verdict is per-runId: another run's (or corrupt) verdict reads as none", () => {
+    const storage = fakeStorage();
+    expect(loadSubmitResult(storage, "web-a")).toBeNull();
+    saveSubmitResult(storage, { runId: "web-a", accepted: true, crowned: false });
+    expect(loadSubmitResult(storage, "web-a")).toEqual({ runId: "web-a", accepted: true, crowned: false });
+    expect(loadSubmitResult(storage, "web-b")).toBeNull(); // never another run's verdict
+    storage.setItem("aoi.submit.v1", "{corrupt");
+    expect(loadSubmitResult(storage, "web-a")).toBeNull(); // corrupt must not block a retry
+  });
+
+  test("clearRun drops the stored verdict with the run", () => {
+    const storage = fakeStorage();
+    saveSubmitResult(storage, { runId: "web-a", accepted: false, reason: "diverged" });
+    clearRun(storage);
+    expect(loadSubmitResult(storage, "web-a")).toBeNull();
   });
 });

@@ -53,8 +53,15 @@ async function freshScenario(viewport, tag) {
   check(await page.locator("#title-view").isVisible(), `${tag} fresh load lands on the title`);
   check(await page.locator("#run-new").isHidden(), `${tag} the run form is not the landing`);
   check((await playLabel(page)) === "Play", `${tag} no active run: the entry reads Play`);
-  check(await page.locator("#title-login").isVisible(), `${tag} login placeholder is visible`);
-  check(await page.locator("#title-login").isDisabled(), `${tag} login placeholder is inert (disabled)`);
+  // #016 slice 3: Login is live — enabled, and a click opens the email step
+  // (probe-arena walks the full flow; this stays the title's smoke check).
+  check(await page.locator("#title-login").isVisible(), `${tag} login entry is visible`);
+  check(await page.locator("#title-login").isEnabled(), `${tag} login entry is enabled (#016 wired it)`);
+  await page.click("#title-login");
+  await page.waitForSelector("#login-email-row:not([hidden])");
+  check(await page.locator("#login-panel").isVisible(), `${tag} login opens the email step`);
+  await page.click("#login-cancel");
+  check(await page.locator("#login-panel").isHidden(), `${tag} cancel closes the login panel`);
   check(await page.locator("#views").isHidden(), `${tag} dev tab nav hidden on the title`);
   check(await page.locator("#home-button").isHidden(), `${tag} home link hidden on the title itself`);
   check(await noHorizontalOverflow(page), `${tag} title has no horizontal overflow`);

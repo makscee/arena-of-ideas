@@ -319,10 +319,10 @@ describe("shop row reserves the rolled offer count's layout (refutation 3)", () 
     // screen (production has a real one).
     vi.stubGlobal("document", { addEventListener() {} });
     const names = [
-      "newPanel", "newForm", "seed", "dice", "newError", "champ", "warn", "shopPanel", "head", "next",
+      "newPanel", "newForm", "seed", "dice", "startButton", "newError", "champ", "warn", "shopPanel", "head", "next",
       "notice", "shopRow", "rerollButton", "line", "fightButton", "stakes", "error", "battlePanel",
       "battleHead", "battleMount", "battleBar", "outcome", "continueButton", "skipButton", "endPanel",
-      "endHead", "endStats", "endLine", "newRunButton", "ladderPanel", "ladderBody",
+      "endHead", "endStats", "endLine", "endStatus", "newRunButton", "ladderPanel", "ladderBody",
       "menuButton", "menuOverlay", "menuClose", "abandonButton", "abandonConfirm", "abandonYes", "abandonNo",
     ] as const;
     const els = Object.fromEntries(names.map((n) => [n, makeEl()])) as Record<(typeof names)[number], FakeEl>;

@@ -29,6 +29,7 @@ npm start --workspace server
 | `MAIL_TOKEN` | yes | — | void-mail bearer token |
 | `DB_PATH` | no | `./data/arena.db` | SQLite file (created on boot) |
 | `PORT` | no | `8787` | listen port — a non-integer or out-of-range value fails boot |
+| `MOCK_MODE` | no | — | `1` = e2e harness mode: the mailer is an in-memory mock (`MAIL_*` not required) and `GET /_mock/last-code?email=…` returns the last OTP code sent to that address. Never set in prod — it mounts a code oracle. |
 
 ## Endpoints
 
@@ -40,6 +41,11 @@ npm start --workspace server
   (`displayName` null until the first-login name pick).
 - `POST /v1/auth/logout` (bearer) → `{ok:true}` — revokes the session.
 - `GET /v1/auth/me` (bearer) → session + user.
+- `POST /v1/auth/display-name` (bearer) `{displayName}` → `{displayName}` —
+  the first-login name pick (and renames later: the name is display identity,
+  not a key). Trimmed, then validated: 2–24 chars, starting with a letter or
+  digit, then letters/digits/spaces/`_ . ' -`; anything else is 400. The
+  leaderboard's champion `holder` reads it.
 - `GET /healthz` → `{ok:true}`.
 - `GET /v1/ladder/champion` → `{champion, holder}` — **public**: the title
   screen shows the leaderboard to logged-out players, so reads need no login.

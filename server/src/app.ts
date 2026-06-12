@@ -6,6 +6,9 @@
  *   POST /v1/auth/login/email/verify  verify code, mint session, return token
  *   POST /v1/auth/logout              revoke the current session
  *   GET  /v1/auth/me                  current session + user
+ *   POST /v1/auth/display-name        set the caller's display name (slice 3:
+ *                                     the first-login name pick; what the
+ *                                     leaderboard and creator credit show)
  *   GET  /healthz                     liveness
  *
  * Shared ladder (slice 2) — one ladder per server instance, opened from the
@@ -80,6 +83,11 @@ export function defaultRateLimiters(): AppDeps["rateLimiters"] {
 // Pragmatic shape check, not RFC 5322 — void-mail does the real bounce.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CODE_RE = /^\d{6}$/;
+
+/** Display names: 2–24 chars, letters/digits to start, then also spaces and
+ * light punctuation. Unicode letters allowed — names are identity, not slugs;
+ * control characters, angle brackets and the like have nowhere to live here. */
+const DISPLAY_NAME_RE = /^[\p{L}\p{N}][\p{L}\p{N} _.'-]{1,23}$/u;
 
 /** Pool reads are bounded: no real run climbs anywhere near this, so a bigger
  * :round is junk input, not a query. */
@@ -186,6 +194,23 @@ export function createApp(deps: AppDeps): Hono<AuthEnv> {
     const session = c.get("session");
     revoke(db, session.sessionId);
     return c.json({ ok: true as const }, 200);
+  });
+
+  // The first-login name pick (slice 3). Setting it again just renames — the
+  // name is display identity, not a key; ghosts and crowns hang off user id.
+  app.post("/v1/auth/display-name", auth, async (c) => {
+    const body = await jsonBody(c.req.raw);
+    const raw = body?.displayName;
+    const name = typeof raw === "string" ? raw.trim() : "";
+    if (!DISPLAY_NAME_RE.test(name)) {
+      return c.json({ error: "invalid_display_name" }, 400);
+    }
+    const session = c.get("session");
+    db.update(users)
+      .set({ displayName: name, updatedAt: clock() })
+      .where(eq(users.id, session.userId))
+      .run();
+    return c.json({ displayName: name }, 200);
   });
 
   app.get("/v1/ladder/champion", (c) => {

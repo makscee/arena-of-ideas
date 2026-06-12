@@ -24,6 +24,7 @@ import {
   ladderFight,
   reorder,
   reroll,
+  serializeRun,
   shopSizeForRound,
   toBattleTeam,
   type LadderStore,
@@ -37,7 +38,17 @@ import {
 import { closeInspectOverlay, dismissInspectOverlay, openInspectOverlay, renderUnitInspect } from "./inspect.js";
 import { createLadderView, ghostLabel } from "./ladder-view.js";
 import { unitCardHtml } from "./unit-card.js";
-import { clearRun, loadRun, nextRunId, saveRun, type KVStorage, type StoredBattle } from "./run-store.js";
+import {
+  clearRun,
+  loadRun,
+  loadSubmitResult,
+  nextRunId,
+  saveRun,
+  saveSubmitResult,
+  type KVStorage,
+  type StoredBattle,
+} from "./run-store.js";
+import type { RemoteRun } from "./remote-ladder.js";
 import type { Viewer } from "./viewer.js";
 
 const esc = (s: string): string =>
@@ -78,6 +89,8 @@ interface RunScreenEls {
   newForm: HTMLFormElement;
   seed: HTMLInputElement;
   dice: HTMLButtonElement;
+  /** The form's submit button — disabled while a remote open is in flight. */
+  startButton: HTMLButtonElement;
   newError: HTMLElement;
   champ: HTMLElement;
   warn: HTMLElement;
@@ -102,6 +115,8 @@ interface RunScreenEls {
   endHead: HTMLElement;
   endStats: HTMLElement;
   endLine: HTMLElement;
+  /** Shared-ladder submit verdict (#016 slice 3) — hidden for local runs. */
+  endStatus: HTMLElement;
   newRunButton: HTMLButtonElement;
   /** The ladder section (shown beside new/shop) and the view's render root. */
   ladderPanel: HTMLElement;
@@ -135,6 +150,11 @@ export interface RunScreenDeps {
    * the title screen is the landing now (#015 slice 3), so leaving a run
    * navigates there instead of squatting on the new-run form. */
   onExitToTitle?: () => void;
+  /** The shared-ladder protocol (#016 slice 3) — present only when logged in.
+   * With it, runs open before play, every ladder fight draws from a served
+   * view, and a finished run is submitted for server-side re-derivation.
+   * Without it, play is byte-identical to local-only: zero network. */
+  remote?: RemoteRun;
 }
 
 export interface RunScreen {
@@ -165,12 +185,24 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   // scroll resets (slice-3 close). Gold only falls during a shop phase, so
   // the entry-time count is the phase's maximum.
   let lineReserve: { runId: string; round: number; count: number } | undefined;
+  // The shared-ladder submit verdict for the current remote run (#016 slice 3).
+  // "none" also covers local runs; "failed" (no server) may retry, the two
+  // durable verdicts (accepted/rejected) never re-submit.
+  let submitState:
+    | { kind: "none" }
+    | { kind: "pending" }
+    | { kind: "accepted"; crowned: boolean }
+    | { kind: "rejected"; reason: string }
+    | { kind: "failed"; reason: string } = { kind: "none" };
+  // The (runId, round) a shop-entry serve prefetch was already fired for —
+  // once per round, so the "rivals waiting" line reads the served truth.
+  let served: { runId: string; round: number } | undefined;
 
   const ladderView = createLadderView(els.ladderBody, { store: deps.store, registry: deps.registry });
 
   /** The champion as a phrase — bootstrap is shipped content, not a rival run. */
   const championPhrase = (c: TeamSnapshot): string =>
-    c.runId === BOOTSTRAP_RUN_ID ? "the shipped champion" : `champion ${c.runId} (crowned at round ${c.round})`;
+    c.runId === BOOTSTRAP_RUN_ID ? "the shipped champion" : `champion ${ghostLabel(c.runId)} (crowned at round ${c.round})`;
 
   // ---------- cards (the one shared unit card, run-screen flavoured) ----------
 
@@ -274,14 +306,8 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       `<span class="run-income">${esc(incomeLine(s.round))}</span>` +
       `<span class="run-lives">${s.lives} ${s.lives === 1 ? "life" : "lives"}</span>` +
       `<span class="run-id">${esc(s.runId)}</span>`;
-    const rivals = deps.store.poolAt(s.round).filter((g) => g.runId !== s.runId).length;
-    const champ = deps.store.champion();
-    els.next.textContent =
-      rivals > 0
-        ? `next fight: a ghost from round ${s.round}'s pool — ${rivals} waiting (peek below)`
-        : champ !== null
-          ? `no ghosts left to fight at round ${s.round} — next fight challenges ${championPhrase(champ)} for the crown`
-          : `no ghosts left at round ${s.round} and the spot is vacant — fighting takes the crown`;
+    els.next.textContent = nextLine(s);
+    prefetchServe(s);
     // Notice strip stays in flow at all times — content cleared when empty
     // so the reserved strip holds without showing stale text (LS-5). The
     // title carries the full string: at phone width the strip is a fixed
@@ -297,6 +323,38 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     fused = undefined; // the flash renders once — re-renders must not replay it
     if (selected !== undefined) renderInspector();
     else closeInspectOverlay("run");
+  }
+
+  /** The "next fight" line — what the round's pool holds for THIS run. */
+  function nextLine(s: RunState): string {
+    const rivals = deps.store.poolAt(s.round).filter((g) => g.runId !== s.runId).length;
+    const champ = deps.store.champion();
+    return rivals > 0
+      ? `next fight: a ghost from round ${s.round}'s pool — ${rivals} waiting (peek below)`
+      : champ !== null
+        ? `no ghosts left to fight at round ${s.round} — next fight challenges ${championPhrase(champ)} for the crown`
+        : `no ghosts left at round ${s.round} and the spot is vacant — fighting takes the crown`;
+  }
+
+  /** Remote shops read the round's pool through the play endpoint (#016
+   * slice 3), once per round: the public pool can't say which ghosts are the
+   * player's own across runs, so the "N waiting" count is only honest off a
+   * served (own-ghost-excluded) view. Re-reads are free server-side; only the
+   * next-fight line re-renders, so a slow answer never yanks the scroll. */
+  function prefetchServe(s: RunState): void {
+    const remote = deps.remote;
+    if (remote === undefined || s.status !== "active") return;
+    if (served !== undefined && served.runId === s.runId && served.round === s.round) return;
+    served = { runId: s.runId, round: s.round };
+    void remote.serve(s.runId, s.round).then((r) => {
+      if (!r.ok) {
+        // Let a later shop render retry; the fight gate serves again anyway.
+        if (served !== undefined && served.runId === s.runId && served.round === s.round) served = undefined;
+        return;
+      }
+      if (state === undefined || state.runId !== s.runId || state.round !== s.round) return;
+      if (phase === "shop" && pending === undefined) els.next.textContent = nextLine(state);
+    });
   }
 
   /** Render the shop row and lock its min-height to the ROLLED offer count's
@@ -467,11 +525,82 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       `${crown ? ` · ${s.lives} ${s.lives === 1 ? "life" : "lives"} to spare` : ""}</span>` +
       `<span class="end-marks">${marks}</span>`;
     els.endLine.innerHTML = s.team.map((u, i) => lineCard(u, i, s.team.length - 1, false)).join("");
+    renderSubmitStatus();
     // Post-mortem (GA-5): the final team's cards open the same inspector the
     // shop uses — the pointer cursor they wear is a real affordance now.
     if (selected !== undefined) renderInspector();
     else closeInspectOverlay("run");
     show("end");
+  }
+
+  /** The shared-ladder verdict on the end screen (#016 slice 3) — honest in
+   * every state: pending says so, a rejection says the run is NOT on the
+   * ladder and why, a dead server offers a retry, and an accepted crown that
+   * lapsed in the crown race is named, not glossed. Local runs show nothing. */
+  function renderSubmitStatus(): void {
+    const s = state;
+    if (deps.remote === undefined || s === undefined) {
+      els.endStatus.hidden = true;
+      return;
+    }
+    els.endStatus.hidden = false;
+    els.endStatus.classList.remove("ok", "bad");
+    switch (submitState.kind) {
+      case "none":
+      case "pending":
+        els.endStatus.textContent = "submitting this run to the shared ladder…";
+        break;
+      case "accepted":
+        els.endStatus.classList.add("ok");
+        els.endStatus.textContent =
+          s.endedBy === "crown" && !submitState.crowned
+            ? "your ghosts joined the shared ladder — but the champion you beat had already been dethroned, so the crown passed you by (the crown race)"
+            : `your ghosts joined the shared ladder${submitState.crowned ? " — and the crown is yours" : " — they fight other players now"}`;
+        break;
+      case "rejected":
+        els.endStatus.classList.add("bad");
+        els.endStatus.textContent = `the server refused this run — it does not enter the shared ladder. Its reason: ${submitState.reason}`;
+        break;
+      case "failed":
+        els.endStatus.classList.add("bad");
+        els.endStatus.innerHTML =
+          `couldn't reach the server — this run is not on the shared ladder yet (${esc(submitState.reason)}) ` +
+          `<button type="button" id="run-submit-retry">try again</button>`;
+        break;
+    }
+  }
+
+  /** Submit the finished remote run for re-derivation. Fired the moment a run
+   * ends and again from the retry button; the two durable verdicts persist so
+   * a reload on the end screen neither re-submits nor forgets. */
+  function submitRemote(): void {
+    const remote = deps.remote;
+    if (remote === undefined || state === undefined || state.status !== "over") return;
+    if (submitState.kind !== "none" && submitState.kind !== "failed") return;
+    const s = state;
+    submitState = { kind: "pending" };
+    void remote.submit(serializeRun(s)).then((r) => {
+      if (state === undefined || state.runId !== s.runId) return; // run dropped while in flight
+      if (r.ok) {
+        submitState = { kind: "accepted", crowned: r.crowned };
+        persistSubmit(s.runId, { accepted: true, crowned: r.crowned });
+      } else if (r.kind === "rejected") {
+        submitState = { kind: "rejected", reason: r.reason };
+        persistSubmit(s.runId, { accepted: false, reason: r.reason });
+      } else {
+        submitState = { kind: "failed", reason: r.reason };
+      }
+      if (phase === "end") renderEnd();
+    });
+  }
+
+  function persistSubmit(runId: string, verdict: { accepted: boolean; crowned?: boolean; reason?: string }): void {
+    try {
+      saveSubmitResult(deps.storage, { runId, ...verdict });
+    } catch {
+      // A quota failure only costs the don't-resubmit-after-reload guard;
+      // the verdict on screen stands.
+    }
   }
 
   function render(): void {
@@ -606,10 +735,41 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     render();
   }
 
-  /** Fight the ladder, then reconstruct the battle for the viewer: the run log
-   * records the battle seed and the drawn opponent; the teams pin it by value
-   * (the champion may already be dethroned in the store by the time we look). */
+  /** Fight the ladder. Remote runs (#016 slice 3) gate the fight behind the
+   * play read: the server serves (and RECORDS) the round's view, the store
+   * pins it, and only then does the kernel draw — submission replay accepts
+   * only served views. A dead network refuses the fight with the reason and
+   * changes nothing: the run state is untouched, the button comes back. */
   function fightLadder(): void {
+    const remote = deps.remote;
+    const s = state;
+    if (remote === undefined || s === undefined) {
+      doFightLadder();
+      return;
+    }
+    els.error.textContent = "";
+    els.error.title = "";
+    els.fightButton.disabled = true;
+    void remote.serve(s.runId, s.round).then((r) => {
+      els.fightButton.disabled = false;
+      // The run may have been abandoned (or already fought) while the serve
+      // was in flight — a buy/reroll is fine, the view doesn't depend on it.
+      if (state === undefined || state.runId !== s.runId || state.round !== s.round) return;
+      if (state.status !== "active" || pending !== undefined) return;
+      if (!r.ok) {
+        flag(`the fight needs the server and it didn't answer: ${r.reason}`);
+        return;
+      }
+      doFightLadder();
+    });
+  }
+
+  /** The fight itself: draw from the store (for remote runs, the view the
+   * serve above just pinned), then reconstruct the battle for the viewer: the
+   * run log records the battle seed and the drawn opponent; the teams pin it
+   * by value (the champion may already be dethroned in the store by the time
+   * we look). */
+  function doFightLadder(): void {
     els.error.textContent = ""; // clear in-flow error strip
     els.error.title = "";
     const before = state!;
@@ -634,6 +794,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       // A vacant champion spot: crowned without a battle (slice-5 feel flag).
       pending = undefined;
       persist(next);
+      if (next.status === "over") submitRemote();
       render();
       return;
     }
@@ -653,6 +814,9 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     };
     revealed = false; // a fresh battle stages its outcome again
     persist(next, pending);
+    // A run that just ended submits NOW, behind the replay — by the time the
+    // player reaches the end screen the verdict is usually already in.
+    if (next.status === "over") submitRemote();
     render();
   }
 
@@ -662,6 +826,19 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     els.seed.value = String(Math.floor(Math.random() * 1_000_000));
     els.newError.hidden = true;
   });
+
+  /** Start the run — shared tail of the local path and the remote open. */
+  function startRun(seed: number, runId: string): void {
+    els.warn.hidden = true;
+    submitState = { kind: "none" };
+    served = undefined;
+    state = initRun({ seed, runId, pool: deps.pool, statuses: deps.registry });
+    pending = undefined;
+    selected = undefined;
+    notice = undefined;
+    persist(state);
+    render();
+  }
 
   els.newForm.addEventListener("submit", (ev) => {
     ev.preventDefault();
@@ -673,13 +850,27 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       return;
     }
     els.newError.hidden = true;
-    els.warn.hidden = true;
-    state = initRun({ seed, runId: nextRunId(deps.storage), pool: deps.pool, statuses: deps.registry });
-    pending = undefined;
-    selected = undefined;
-    notice = undefined;
-    persist(state);
-    render();
+    const remote = deps.remote;
+    if (remote === undefined) {
+      startRun(seed, nextRunId(deps.storage));
+      return;
+    }
+    // Remote runs open BEFORE play (the server's anti-forgery handshake, see
+    // server/README.md): the run starts only once the server says so — a
+    // refusal or dead network leaves the form standing with the reason, never
+    // a half-open run. runIds are minted globally unique (`run-<n>` collides).
+    const runId = remote.mintRunId();
+    els.startButton.disabled = true;
+    void remote.open(runId).then((r) => {
+      els.startButton.disabled = false;
+      if (state !== undefined) return; // a run appeared meanwhile — never clobber it
+      if (!r.ok) {
+        els.newError.textContent = `couldn't start an online run: ${r.reason}`;
+        els.newError.hidden = false;
+        return;
+      }
+      startRun(seed, runId);
+    });
   });
 
   els.shopRow.addEventListener("click", (ev) => {
@@ -781,11 +972,21 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     notice = undefined;
     fused = undefined;
     battleResume = undefined;
+    submitState = { kind: "none" };
+    served = undefined;
     render();
     deps.onExitToTitle?.();
   }
 
   els.newRunButton.addEventListener("click", clearActiveRun);
+
+  // Submit retry (#016 slice 3): only the "failed" state renders the button,
+  // and submitRemote() re-fires only from there — a stray click is inert.
+  els.endStatus.addEventListener("click", (ev) => {
+    if (!(ev.target as HTMLElement).closest("#run-submit-retry")) return;
+    submitRemote();
+    if (phase === "end") renderEnd();
+  });
 
   // ---------- run menu (#014) ----------
 
@@ -864,6 +1065,19 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       // The parked replay position, revived (#015 slice 4) — fed through the
       // same resumeAt seam a tab switch uses; clamping is the viewer's job.
       if (typeof stored.battle?.position === "number") battleResume = stored.battle.position;
+      // A finished remote run revives with its stored verdict; without one
+      // (the reload beat the submit) it submits now — runIds are one-shot
+      // server-side, so a race here resolves to one accepted copy.
+      if (deps.remote !== undefined && state.status === "over") {
+        const verdict = loadSubmitResult(deps.storage, state.runId);
+        if (verdict !== null) {
+          submitState = verdict.accepted
+            ? { kind: "accepted", crowned: verdict.crowned ?? false }
+            : { kind: "rejected", reason: verdict.reason ?? "the server refused this run" };
+        } else {
+          submitRemote();
+        }
+      }
     }
   } catch (err) {
     // A corrupt stored run is refused loudly (never silently replayed wrong),

@@ -295,6 +295,60 @@ describe("session verification", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Display name (slice 3): the first-login name pick
+// ---------------------------------------------------------------------------
+
+describe("display name", () => {
+  test("starts null, set persists to /me, renaming overwrites", async () => {
+    const ctx = makeCtx();
+    const token = await login(ctx, "ada@b.co");
+    const auth = { authorization: `Bearer ${token}` };
+
+    let who = (await (await me(ctx.app, token)).json()) as { displayName: string | null };
+    expect(who.displayName).toBeNull(); // first login: no name until the pick
+
+    const set = await post(ctx.app, "/v1/auth/display-name", { displayName: "Ada L." }, auth);
+    expect(set.status).toBe(200);
+    expect(await set.json()).toEqual({ displayName: "Ada L." });
+    who = (await (await me(ctx.app, token)).json()) as { displayName: string | null };
+    expect(who.displayName).toBe("Ada L.");
+
+    // Renaming just renames — display identity, not a key.
+    const again = await post(ctx.app, "/v1/auth/display-name", { displayName: "Ada" }, auth);
+    expect(again.status).toBe(200);
+    who = (await (await me(ctx.app, token)).json()) as { displayName: string | null };
+    expect(who.displayName).toBe("Ada");
+  });
+
+  test("requires auth and rejects bad shapes/lengths/charsets", async () => {
+    const ctx = makeCtx();
+    const token = await login(ctx, "ada@b.co");
+    const auth = { authorization: `Bearer ${token}` };
+
+    expect((await post(ctx.app, "/v1/auth/display-name", { displayName: "Ada" })).status).toBe(401);
+
+    const bad = [
+      undefined, // missing
+      42, // not a string
+      "A", // too short
+      "x".repeat(25), // too long
+      " leading-dash-after-trim-is-fine-but-this-starts-with-punct".slice(0, 24).replace(/^ /, "-"),
+      "<script>alert(1)</script>",
+      "two\nlines",
+    ];
+    for (const displayName of bad) {
+      const res = await post(ctx.app, "/v1/auth/display-name", { displayName }, auth);
+      expect(res.status, `displayName ${JSON.stringify(displayName)}`).toBe(400);
+    }
+
+    // Whitespace trims before validation; unicode letters are fine.
+    const ok = await post(ctx.app, "/v1/auth/display-name", { displayName: "  Максим Ч.  " }, auth);
+    expect(ok.status).toBe(200);
+    expect(await ok.json()).toEqual({ displayName: "Максим Ч." });
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Storage hygiene: raw codes and tokens never touch the DB
 // ---------------------------------------------------------------------------
 
