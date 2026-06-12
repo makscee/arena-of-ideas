@@ -103,8 +103,13 @@ describe("every unit render site draws through the one component", () => {
   // route the old codex used. Test files are excluded (they quote the banned
   // strings to ban them); unit-card.ts is the one legitimate source.
   const cardIdioms: [string, RegExp][] = [
-    ["markup string", /<(div|span)[^>]*class="unit[\s"]/],
+    // double-quoted markup on any tag (div, span, article, li, section …)
+    ["markup string double-quoted", /<[a-z][^>]*class="unit[\s"]/],
+    // single-quoted markup (same breadth)
+    ["markup string single-quoted", /<[a-z][^>]*class='unit[\s']/],
     ["className assignment", /className\s*=\s*["'`]unit\b/],
+    // template-literal className starting with "unit " (e.g. `unit ${extra}`)
+    ["className template literal", /className\s*=\s*`unit\s/],
     ["classList.add", /classList\.add\(\s*["'`]unit\b/],
     ["setAttribute(class)", /setAttribute\(\s*["'`]class["'`]\s*,\s*["'`]unit\b/],
   ];

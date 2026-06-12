@@ -151,6 +151,54 @@ for (const [viewport, tag] of [
   await ctx.close();
 }
 
+// ---------- real tap on a unit anchor (not just bounding-box geometry) ------
+// This is the Cass repro: without z-index on .codex-anchor the .unit card
+// intercepts the pointer event and tap() times out.
+
+{
+  const { ctx, page } = await openCodex(PHONE);
+  // Scroll the Brawler card into view so the tap lands correctly.
+  await page.$eval("#codex-unit-Brawler", (el) => el.scrollIntoView({ block: "center" }));
+  await page.waitForTimeout(200);
+  await page.locator("#codex-unit-Brawler .codex-anchor").tap();
+  const hash = await page.evaluate(() => location.hash);
+  check(
+    hash === "#codex/unit/Brawler",
+    "tap on unit anchor updates location hash",
+    `hash=${hash}`,
+  );
+  // Anchor glyph must be visible (not obscured by the card's opaque gradient).
+  const anchorVisible = await page.locator("#codex-unit-Brawler .codex-anchor").isVisible();
+  check(anchorVisible, "unit anchor glyph is visible (not occluded by card)");
+  await ctx.close();
+}
+
+// ---------- deep link to a filter-hidden card clears the filter -------------
+// Cass low: navigate() must reveal the card, not silently land nowhere.
+
+{
+  const { ctx, page } = await openCodex(DESKTOP);
+  // Hide Brawler behind a search that matches only Necromancer.
+  await page.fill(".codex-search", "necro");
+  check(await page.locator("#codex-unit-Brawler").isHidden(), "pre-condition: Brawler hidden by filter");
+  // Navigate via hash to Brawler while filter is active.
+  await page.evaluate(() => (window.location.hash = "#codex/unit/Brawler"));
+  // The card must become visible and highlighted — navigate() should clear the filter.
+  await page.waitForFunction(() => {
+    const el = document.querySelector("#codex-unit-Brawler");
+    return el && !el.hidden;
+  }, { timeout: 3000 });
+  check(
+    await page.locator("#codex-unit-Brawler").isVisible(),
+    "deep link to filter-hidden card reveals the card (filter cleared)",
+  );
+  check(
+    await page.$eval("#codex-unit-Brawler", (el) => el.classList.contains("codex-highlight")),
+    "deep link to filter-hidden card highlights the target",
+  );
+  await ctx.close();
+}
+
 await browser.close();
 disarm();
 finish("probe-codex-grid");

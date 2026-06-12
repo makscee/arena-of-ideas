@@ -142,6 +142,12 @@ export function createCodex(
       const target = container.querySelector<HTMLElement>(`#${CSS.escape(id)}`);
       if (target) {
         container.hidden = false;
+        // If a search filter is hiding the target, clear it so the card is
+        // actually visible — the user asked for this specific card.
+        if (target.hidden) {
+          searchInput.value = "";
+          searchInput.dispatchEvent(new Event("input"));
+        }
         target.scrollIntoView({ block: "center", behavior: "smooth" });
         target.classList.add("codex-highlight");
         setTimeout(() => target.classList.remove("codex-highlight"), 1800);

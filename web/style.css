@@ -1731,11 +1731,13 @@ button.danger {
 
 /* Each card's deep-link anchor: a real ≥44px target — it has no adjacent
    control, so it grows for thumbs (the #ins-close pattern) instead of a
-   pseudo-element seam scheme. */
+   pseudo-element seam scheme. z-index: 1 lifts it above position:relative
+   siblings (e.g. the .unit card) that would otherwise steal pointer events. */
 .codex-anchor {
   position: absolute;
   top: 0;
   right: 0;
+  z-index: 1;
   min-width: 44px;
   min-height: 44px;
   display: flex;
