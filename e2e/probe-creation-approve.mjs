@@ -42,6 +42,9 @@ await page.addInitScript((approved) => {
   localStorage.removeItem("aoi.run.v1");
 }, APPROVED_OVERRIDE);
 await page.goto(BASE, { waitUntil: "domcontentloaded" });
+// The app lands on the title (#015 slice 3); Play opens the new-run form.
+await page.waitForSelector("#title-view:not([hidden])");
+await page.click("#title-play");
 await page.waitForSelector("#run-new:not([hidden])");
 
 // --- start a NEW run at the deterministic seed -----------------------------
@@ -74,7 +77,9 @@ await page.click("#ins-close");
 await page.waitForSelector("#inspect-overlay", { state: "hidden" });
 
 // --- 3. the codex lists it with its creator credit -------------------------
-await page.click("#view-codex");
+await page.click("#home-button");
+await page.waitForSelector("#title-view:not([hidden])");
+await page.click("#title-codex");
 await page.waitForSelector("#codex-view:not([hidden])");
 const codexCard = page.locator("#codex-unit-Probeling");
 check((await codexCard.count()) === 1, "codex lists the approved unit", `cards=${await codexCard.count()}`);

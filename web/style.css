@@ -815,6 +815,125 @@ button:disabled:hover {
   font-size: 0.75rem;
 }
 
+/* ---------- app chrome (#015 slice 3) ----------
+   A slim header off the title screen: the home link back to the title, and
+   the dev tab nav — hidden until the title's "dev tools" entry reveals it. */
+
+#app-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1rem;
+}
+
+#home-button {
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-size: 0.8rem;
+  padding: 0.3rem 0.5rem 0.3rem 0;
+  min-height: 44px;
+  margin-bottom: 0.4rem;
+}
+
+#home-button:hover {
+  color: var(--accent);
+  border: none;
+}
+
+/* ---------- title screen (#015 slice 3) ----------
+   The landing: the generative cast as ornament, the game's name, and a short
+   stacked menu — Play/Continue first, dev tools a small footnote. The same
+   dark monospace language as the cards; everything code-drawn. */
+
+#title-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2.5rem 0 1.5rem;
+}
+
+/* display: flex would beat [hidden]'s UA display: none — keep the attribute
+   authoritative (the run-menu-confirm rule's lesson). */
+#title-view[hidden],
+#views[hidden] {
+  display: none;
+}
+
+#title-ornament {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+#title-ornament .shape {
+  width: 2.2rem;
+  height: 2.2rem;
+}
+
+.title-name {
+  font-size: 2rem;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.3rem;
+}
+
+#title-view .tagline {
+  margin-bottom: 2rem;
+}
+
+.title-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: min(18rem, 100%);
+}
+
+.title-menu button {
+  min-height: 48px; /* every title tap is thumb-sized */
+  font-size: 0.95rem;
+}
+
+.title-primary {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.title-primary:hover {
+  border-color: var(--text);
+}
+
+/* The #016 mount point: visibly present, visibly not wired yet. */
+#title-login:disabled {
+  opacity: 0.45;
+}
+
+/* Dev tools: reachable, never greeting — a dim footnote link under the menu. */
+#title-dev {
+  margin-top: 2.2rem;
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-size: 0.75rem;
+  text-decoration: underline dotted;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+#title-dev:hover {
+  color: var(--text);
+  border: none;
+}
+
+/* ---------- leaderboard screen (#015 slice 3 seam) ---------- */
+
+#leaderboard-view {
+  margin-top: 0.5rem;
+}
+
 /* ---------- views (battle / editor) ---------- */
 
 #views {

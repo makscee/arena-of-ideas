@@ -9,18 +9,45 @@
   </head>
   <body>
     <main>
-      <h1>Arena of Ideas</h1>
-      <p class="tagline">Build a team. Fight the ghosts of past runs. Take the crown.</p>
+      <!-- App chrome (#015 slice 3): off the title screen, a small home link
+           leads back to it; the dev tab nav stays hidden until the title's
+           low-prominence "dev tools" entry reveals it (then tabs work as ever). -->
+      <header id="app-top">
+        <button type="button" id="home-button" hidden title="Back to the title screen">‹ Arena of Ideas</button>
+        <nav id="views" role="tablist" hidden>
+          <button type="button" id="view-run" class="tab">run</button>
+          <button type="button" id="view-battle" class="tab">battle</button>
+          <button type="button" id="view-gauntlet" class="tab">gauntlet</button>
+          <button type="button" id="view-editor" class="tab">editor</button>
+          <button type="button" id="view-codex" class="tab" title="Rules &amp; glossary">?</button>
+        </nav>
+      </header>
 
-      <nav id="views" role="tablist">
-        <button type="button" id="view-run" class="tab active">run</button>
-        <button type="button" id="view-battle" class="tab">battle</button>
-        <button type="button" id="view-gauntlet" class="tab">gauntlet</button>
-        <button type="button" id="view-editor" class="tab">editor</button>
-        <button type="button" id="view-codex" class="tab" title="Rules &amp; glossary">?</button>
-      </nav>
+      <!-- Title screen (#015 slice 3) — the landing. The ornament strip is
+           filled by title-screen.ts with the shared generative shape art. -->
+      <section id="title-view">
+        <div id="title-ornament" aria-hidden="true"></div>
+        <h1 class="title-name">Arena of Ideas</h1>
+        <p class="tagline">Build a team. Fight the ghosts of past runs. Take the crown.</p>
+        <div class="title-menu">
+          <button type="button" id="title-play" class="title-primary">Play</button>
+          <button type="button" id="title-leaderboard">Leaderboard</button>
+          <button type="button" id="title-codex">Codex</button>
+          <!-- #016 mounts real auth here: replace this inert placeholder
+               behind the same #title-login id. -->
+          <button type="button" id="title-login" disabled title="Login is coming soon — runs stay local until then">Login · coming soon</button>
+        </div>
+        <button type="button" id="title-dev" title="Battle sandbox, gauntlet sweeps, team editor">dev tools</button>
+      </section>
 
-      <section id="run-view">
+      <!-- Leaderboard (#015 slice 3 seam, slice 4 fleshes it out): the same
+           ladder view the run screen shows, reachable without starting a run. -->
+      <section id="leaderboard-view" hidden>
+        <span class="pane-k">leaderboard</span>
+        <div id="leaderboard-body"></div>
+      </section>
+
+      <section id="run-view" hidden>
         <!-- Run menu (#014): a persistent control, shown in every in-run phase
              (shop/battle/end), opening an overlay with abandon-run behind a
              two-step confirm. Button and overlay are both position: fixed — the
@@ -90,7 +117,7 @@
           <div id="run-end-stats"></div>
           <div id="run-end-line"></div>
           <div class="run-bar">
-            <button type="button" id="run-new-run">new run</button>
+            <button type="button" id="run-new-run">back to title</button>
           </div>
         </div>
 

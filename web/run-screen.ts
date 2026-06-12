@@ -131,11 +131,18 @@ export interface RunScreenDeps {
   viewerHost: HTMLElement;
   /** Where the viewer DOM lives otherwise (the battle view). */
   viewerHome: HTMLElement;
+  /** Called after the run is dropped (abandon, or the end screen's exit) —
+   * the title screen is the landing now (#015 slice 3), so leaving a run
+   * navigates there instead of squatting on the new-run form. */
+  onExitToTitle?: () => void;
 }
 
 export interface RunScreen {
   /** The run tab was shown/hidden — mounts or returns the shared viewer DOM. */
   setVisible(visible: boolean): void;
+  /** Whether a run is in progress (including a finished one not yet
+   * dismissed) — the title screen's Play/Continue label reads this. */
+  hasActiveRun(): boolean;
 }
 
 export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScreen {
@@ -740,10 +747,12 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     render();
   });
 
-  /** Drop the active run and land on the new-run screen, stored run cleared —
-   * the seam both the end screen's "new run" and the menu's "abandon" share.
-   * Ghosts already snapshotted into the ladder stay (the snapshot is taken
-   * before each fight); an abandoned run simply never reaches a crown. */
+  /** Drop the active run, stored run cleared — the seam both the end screen's
+   * exit and the menu's "abandon" share. Ghosts already snapshotted into the
+   * ladder stay (the snapshot is taken before each fight); an abandoned run
+   * simply never reaches a crown. The screen resets to the new-run phase
+   * (so the next Play opens on the seed form), then hands navigation to the
+   * title (#015 slice 3) — which re-reads hasActiveRun() and shows "Play". */
   function clearActiveRun(): void {
     clearRun(deps.storage);
     state = undefined;
@@ -753,6 +762,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     fused = undefined;
     battleResume = undefined;
     render();
+    deps.onExitToTitle?.();
   }
 
   els.newRunButton.addEventListener("click", clearActiveRun);
@@ -821,7 +831,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   });
   els.abandonYes.addEventListener("click", () => {
     closeMenu();
-    clearActiveRun(); // lands on new-run, stored run cleared, ready to start again
+    clearActiveRun(); // stored run cleared, lands on the title reading "Play"
   });
 
   // ---------- resume on load ----------
@@ -862,6 +872,9 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
         renderShopRow(state);
         renderLine(state);
       }
+    },
+    hasActiveRun(): boolean {
+      return state !== undefined;
     },
   };
 }

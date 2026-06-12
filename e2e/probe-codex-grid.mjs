@@ -27,7 +27,9 @@ async function openCodex(viewport, hash = "") {
   await page.addInitScript(() => localStorage.removeItem("aoi.run.v1"));
   await page.goto(BASE + hash, { waitUntil: "domcontentloaded" });
   if (hash === "") {
-    await page.click("#view-codex");
+    // The app lands on the title (#015 slice 3); its Codex entry navigates.
+    await page.waitForSelector("#title-view:not([hidden])");
+    await page.click("#title-codex");
   }
   await page.waitForSelector("#codex-view:not([hidden])");
   return { ctx, page };

@@ -4,11 +4,14 @@
 //     as a fixed overlay, and opening/closing shifts nothing — fight/continue/
 //     board positions are pixel-stable (the #012 layout-lock holds).
 //  2. Abandon is a two-step confirm from shop, mid-battle, and end: a single
-//     click never destroys the run; after confirm the screen lands on new-run
-//     with the stored run cleared and a fresh run startable at once.
-//  3. Reload after abandon lands on new-run — the abandoned run never revives.
-//  4. Tab away mid-battle and back preserves the replay position (kills the
-//     #012 gate-note re-mount-to-event-0 bug).
+//     click never destroys the run; after confirm the screen lands on the
+//     title (#015 slice 3) reading "Play", with the stored run cleared and a
+//     fresh run startable at once.
+//  3. Reload after abandon lands on the title reading "Play" — the abandoned
+//     run never revives.
+//  4. Leave the run mid-battle (home → title → codex) and resume via Continue:
+//     the replay position is preserved (kills the #012 gate-note
+//     re-mount-to-event-0 bug).
 //  5. Static-occlusion guard (Cass #014 refutation): elementFromPoint sweep over
 //     continue/fight/skip surfaces — 0% may resolve to #run-menu-button in every
 //     phase, at both 375px and desktop. This guard would have caught the original
@@ -66,7 +69,8 @@ async function sweepOcclusion(page, targetSel) {
 }
 
 /** Open the menu, abandon WITHOUT confirming twice, and prove the run survives
- * a single stray click; then confirm and prove it lands on new-run cleared. */
+ * a single stray click; then confirm and prove it lands on the TITLE screen
+ * (#015 slice 3) cleared, reading "Play". */
 async function abandonFlow(page, tag, reopenSelector) {
   // Single click on "abandon" only arms the confirm — the run is untouched.
   await page.click("#run-menu-button");
@@ -74,8 +78,8 @@ async function abandonFlow(page, tag, reopenSelector) {
   check(await page.locator("#run-abandon-confirm").isHidden(), `${tag} confirm not armed before first abandon click`);
   await page.click("#run-abandon");
   check(await page.locator("#run-abandon-confirm").isVisible(), `${tag} first abandon click arms the confirm`);
-  // The destructive screen is NOT showing yet: new-run is still hidden.
-  check(await page.locator("#run-new").isHidden(), `${tag} single click never destroys the run`);
+  // The destructive exit has NOT happened yet: the title screen is still hidden.
+  check(await page.locator("#title-view").isHidden(), `${tag} single click never destroys the run`);
   // Back out — keep playing — and prove the run is intact (the phase returns).
   await page.click("#run-abandon-no");
   check(await page.locator("#run-abandon-confirm").isHidden(), `${tag} 'keep playing' disarms the confirm`);
@@ -90,14 +94,17 @@ async function abandonFlow(page, tag, reopenSelector) {
   await page.click("#run-menu-button");
   await page.click("#run-abandon");
   await page.click("#run-abandon-yes");
-  await page.waitForSelector("#run-new:not([hidden])");
-  check(await page.locator("#run-new").isVisible(), `${tag} confirm lands on new-run`);
-  check(await menuVisible(page) === false, `${tag} menu control hidden on new-run`);
+  await page.waitForSelector("#title-view:not([hidden])");
+  check(await page.locator("#title-view").isVisible(), `${tag} confirm lands on the title screen`);
+  check((await page.locator("#title-play").textContent()) === "Play", `${tag} title reads Play after abandon`);
+  check(await menuVisible(page) === false, `${tag} menu control hidden on the title`);
   check(await overlayOpen(page) === false, `${tag} menu overlay closed after abandon`);
   // The stored run is cleared: nothing under the run key.
   const stored = await page.evaluate(() => localStorage.getItem("aoi.run.v1"));
   check(stored === null, `${tag} stored run cleared after abandon`, JSON.stringify(stored));
-  // A fresh run is startable immediately.
+  // A fresh run is startable immediately: Play → seed form → shop.
+  await page.click("#title-play");
+  await page.waitForSelector("#run-new:not([hidden])");
   await page.fill("#run-seed", "123");
   await page.click("#run-start");
   await page.waitForSelector("#run-shop:not([hidden])");
@@ -157,14 +164,18 @@ async function battleScenario(viewport, tag) {
   check(boardY1 === boardY0, `${tag} battle: board Y pixel-stable across menu open`, `${boardY0} → ${boardY1}`);
   await page.keyboard.press("Escape");
 
-  // The folded-in fix: leave the battle tab (codex) and return — the replay
-  // resumes at the parked event, never event 0.
-  await page.click("#view-codex");
+  // The folded-in fix: leave the run screen (home → title → codex) and return
+  // through Continue — the replay resumes at the parked event, never event 0.
+  await page.click("#home-button");
+  await page.waitForSelector("#title-view:not([hidden])");
+  check((await page.locator("#title-play").textContent()) === "Continue run", `${tag} battle: title reads Continue run mid-battle`);
+  await page.click("#title-codex");
   await page.waitForSelector("#codex-view:not([hidden])");
-  await page.click("#view-run");
+  await page.click("#home-button");
+  await page.click("#title-play");
   await page.waitForSelector("#run-battle:not([hidden])");
   const posAfter = await scrubAt(page);
-  check(posAfter === posBefore, `${tag} battle: replay position preserved across tab switch`, `${posBefore} → ${posAfter}`);
+  check(posAfter === posBefore, `${tag} battle: replay position preserved across leaving and resuming`, `${posBefore} → ${posAfter}`);
 
   // Abandon mid-battle: two-step, lands on new-run.
   await abandonFlow(page, `${tag} battle`, "#run-battle:not([hidden])");
@@ -190,7 +201,7 @@ async function reloadScenario(viewport, tag) {
   await page.click("#run-menu-button");
   await page.click("#run-abandon");
   await page.click("#run-abandon-yes");
-  await page.waitForSelector("#run-new:not([hidden])");
+  await page.waitForSelector("#title-view:not([hidden])");
   check((await page.evaluate(() => localStorage.getItem("aoi.run.v1"))) === null, `${tag} stored run cleared before reload`);
   // "Reload" via a fresh page in the SAME context (shared localStorage), with
   // NO run injected — exactly what a real reload reads after the abandon. (The
@@ -198,8 +209,11 @@ async function reloadScenario(viewport, tag) {
   const fresh = await ctx.newPage();
   fresh.setDefaultTimeout(15_000);
   await fresh.goto(BASE, { waitUntil: "domcontentloaded" });
+  await fresh.waitForSelector("#title-view:not([hidden])");
+  check((await fresh.locator("#title-play").textContent()) === "Play", `${tag} reload after abandon lands on the title reading Play`);
+  await fresh.click("#title-play");
   await fresh.waitForSelector("#run-new:not([hidden])");
-  check(await fresh.locator("#run-new").isVisible(), `${tag} reload after abandon lands on new-run`);
+  check(await fresh.locator("#run-new").isVisible(), `${tag} Play after abandoned-run reload opens the new-run form`);
   check(await fresh.locator("#run-shop").isHidden(), `${tag} reload after abandon does not revive the shop`);
   await ctx.close();
 }

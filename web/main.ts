@@ -13,6 +13,8 @@ import { createGauntlet } from "./gauntlet.js";
 import { createRunScreen, type RunScreen } from "./run-screen.js";
 import { openLocalLadder, resetLadder } from "./run-store.js";
 import { createCodex, type CodexScreen } from "./codex.js";
+import { createLadderView, type LadderView } from "./ladder-view.js";
+import { createTitleScreen } from "./title-screen.js";
 
 // ---------------------------------------------------------------------------
 // DOM wiring
@@ -140,14 +142,18 @@ form.addEventListener("submit", (event) => {
 });
 
 // ---------------------------------------------------------------------------
-// Views: run (the primary screen — shop/fight loop), battle (pickers +
-// replay), gauntlet (win-rate sweeps), editor. The editor refreshes both
-// teams' pickers on every persisted change, so edited teams are always live
-// everywhere. The run screen borrows the battle viewer's DOM while a run
-// battle shows, so setVisible must hear every tab change.
+// Views (#015 slice 3): title (the landing), run (the shop/fight loop),
+// leaderboard (the ladder without a run), codex, and the dev tools — battle
+// (pickers + replay), gauntlet (win-rate sweeps), editor — whose tab nav stays
+// hidden until the title's "dev tools" entry reveals it. The editor refreshes
+// both teams' pickers on every persisted change, so edited teams are always
+// live everywhere. The run screen borrows the battle viewer's DOM while a run
+// battle shows, so setVisible must hear every view change.
 // ---------------------------------------------------------------------------
 
 const views = {
+  title: el<HTMLElement>("title-view"),
+  leaderboard: el<HTMLElement>("leaderboard-view"),
   run: el<HTMLElement>("run-view"),
   battle: el<HTMLElement>("battle-view"),
   gauntlet: el<HTMLElement>("gauntlet-view"),
@@ -161,8 +167,11 @@ const viewTabs = {
   editor: el<HTMLButtonElement>("view-editor"),
   codex: el<HTMLButtonElement>("view-codex"),
 };
+const viewsNav = el<HTMLElement>("views");
+const homeButton = el<HTMLButtonElement>("home-button");
 
 let runScreen: RunScreen | undefined;
+let leaderboardView: LadderView | undefined;
 
 // Codex: initialised once, lives in #codex-container. codexUnits() covers
 // every unit a player can meet — shop pool, bootstrap ghosts/champion, summons.
@@ -199,20 +208,56 @@ function showView(which: keyof typeof views): void {
   dismissInspectOverlay(); // an inspector never outlives its screen
   for (const key of Object.keys(views) as (keyof typeof views)[]) {
     views[key].hidden = key !== which;
+  }
+  for (const key of Object.keys(viewTabs) as (keyof typeof viewTabs)[]) {
     viewTabs[key].classList.toggle("active", key === which);
   }
+  homeButton.hidden = which === "title"; // every other screen can walk home
   if (which !== "battle") viewer.stop();
   runScreen?.setVisible(which === "run");
   codexScreen.setVisible(which === "codex");
+  if (which === "title") titleScreen.refresh(); // Play vs Continue, read fresh
+  if (which === "leaderboard") leaderboardView?.refresh(); // pools fill live
 }
 for (const key of Object.keys(viewTabs) as (keyof typeof viewTabs)[]) {
   viewTabs[key].addEventListener("click", () => showView(key));
 }
 
-// The run screen — the app opens on it. A failure to revive the stored
-// ladder is loud (a silent fresh ladder would orphan its ghosts), but it
-// must not take the other views down with it.
+// ---------------------------------------------------------------------------
+// Title screen (#015 slice 3) — the landing. The Play entry reads the run
+// screen's state at refresh time; dev tools hide behind one low-prominence
+// entry that reveals the existing tab nav (it then works exactly as before).
+// ---------------------------------------------------------------------------
+
+const titleScreen = createTitleScreen(
+  {
+    ornament: el("title-ornament"),
+    play: el<HTMLButtonElement>("title-play"),
+  },
+  {
+    unitNames: runPool.map((u) => u.name),
+    hasActiveRun: () => runScreen?.hasActiveRun() ?? false,
+  },
+);
+el<HTMLButtonElement>("title-play").addEventListener("click", () => showView("run"));
+el<HTMLButtonElement>("title-leaderboard").addEventListener("click", () => showView("leaderboard"));
+el<HTMLButtonElement>("title-codex").addEventListener("click", () => showView("codex"));
+// #title-login is the inert #016 mount point — no handler until auth lands.
+el<HTMLButtonElement>("title-dev").addEventListener("click", () => {
+  viewsNav.hidden = false; // revealed for the session — tabs work as ever
+  showView("battle");
+});
+homeButton.addEventListener("click", () => showView("title"));
+
+// The run screen and the leaderboard share one ladder store. A failure to
+// revive the stored ladder is loud (a silent fresh ladder would orphan its
+// ghosts), but it must not take the other views down with it.
 try {
+  const ladderStore = openLadder(openLocalLadder(window.localStorage), stressRegistry);
+  leaderboardView = createLadderView(el("leaderboard-body"), {
+    store: ladderStore,
+    registry: stressRegistry,
+  });
   runScreen = createRunScreen(
     {
       newPanel: el("run-new"),
@@ -256,15 +301,15 @@ try {
     },
     {
       storage: window.localStorage,
-      store: openLadder(openLocalLadder(window.localStorage), stressRegistry),
+      store: ladderStore,
       pool: runPool,
       registry: stressRegistry,
       viewer,
       viewerHost: result,
       viewerHome: el("battle-view"),
+      onExitToTitle: () => showView("title"), // abandon/run-end land here, reading "Play"
     },
   );
-  runScreen.setVisible(true); // the app opens on the run tab
 } catch (err) {
   // Loud, but not a dead end: the error stays on screen, and an explicit
   // two-step reset is the way out — deleting every ghost and the champion is
@@ -356,6 +401,9 @@ createEditor(
 
 el<HTMLElement>("kernel-version").textContent = `kernel v${KERNEL_VERSION}`;
 
-// Cold-load deep links: a shared #codex/... URL must land on the entry, not
-// the run tab. After every view is wired so showView can hide them all.
+// The app opens on the title screen (#015 slice 3) — Play/Continue read from
+// the freshly revived run state. Cold-load deep links override it: a shared
+// #codex/... URL must land on the entry, not the title. After every view is
+// wired so showView can hide them all.
+showView("title");
 applyHashNav();

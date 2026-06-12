@@ -190,9 +190,11 @@ export const refsRun = () => {
 
 // ---------- browser ----------
 
-/** A fresh page with the run injected before any script runs. `ready` is the
- * selector to wait on (the shop panel by default; pass "#run-end:not([hidden])"
- * for an injected finished run). */
+/** A fresh page with the run injected before any script runs. The app lands
+ * on the title screen (#015 slice 3) where an active run reads "Continue run"
+ * — this resumes through that entry, exactly like a returning player. `ready`
+ * is the selector to wait on (the shop panel by default; pass
+ * "#run-end:not([hidden])" for an injected finished run). */
 export async function openRun(browser, serializedRun, viewport, ready = "#run-shop:not([hidden])") {
   const ctx = await browser.newContext({ viewport, hasTouch: viewport.width < 700 });
   const page = await ctx.newPage();
@@ -202,6 +204,8 @@ export async function openRun(browser, serializedRun, viewport, ready = "#run-sh
     ["aoi.run.v1", serializedRun],
   );
   await page.goto(BASE, { waitUntil: "domcontentloaded" });
+  await page.waitForSelector("#title-view:not([hidden])");
+  await page.click("#title-play");
   await page.waitForSelector(ready);
   return { ctx, page };
 }
