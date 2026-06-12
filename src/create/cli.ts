@@ -8,7 +8,11 @@
  * run actually converged (or failed) unattended.
  *
  * Usage (from the repo root):
- *   npm run create -- <taskDir> [--max-attempts N] [--model M] [--timeout-ms MS]
+ *   npm run create -- <taskDir> [--max-attempts N] [--model M] [--timeout-ms MS] [--bin PATH]
+ *
+ * --bin overrides the harness binary (default the `claude` CLI); a faithful
+ * stand-in lets the whole loop run end-to-end when the live CLI is
+ * unauthenticated in CI/sandboxes.
  *
  * Example:
  *   npm run create -- tasks/frostbite-striker
@@ -30,13 +34,16 @@ const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000; // 10 min per headless attempt
 const OUT_REL = join("out", "candidate.json");
 
 const USAGE =
-  "Usage: create <taskDir> [--max-attempts N] [--model M] [--timeout-ms MS]";
+  "Usage: create <taskDir> [--max-attempts N] [--model M] [--timeout-ms MS] [--bin PATH]";
 
 interface Args {
   taskDir: string;
   maxAttempts: number;
   model: string | undefined;
   timeoutMs: number;
+  /** Override the harness binary (default "claude"). Lets a faithful stand-in
+   * drive a real end-to-end run when the live CLI is unauthenticated. */
+  bin: string | undefined;
 }
 
 /** Parse argv into the worker args. Exported for the unit test. */
@@ -45,17 +52,19 @@ export function parseArgs(argv: string[]): Args {
   let maxAttempts = DEFAULT_MAX_ATTEMPTS;
   let timeoutMs = DEFAULT_TIMEOUT_MS;
   let model: string | undefined;
+  let bin: string | undefined;
 
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
     if (a === "--max-attempts") maxAttempts = mustInt(argv[++i], "--max-attempts");
     else if (a === "--timeout-ms") timeoutMs = mustInt(argv[++i], "--timeout-ms");
     else if (a === "--model") model = mustStr(argv[++i], "--model");
+    else if (a === "--bin") bin = mustStr(argv[++i], "--bin");
     else if (a.startsWith("--")) throw new Error(`unknown flag: ${a}`);
     else positionals.push(a);
   }
   if (positionals.length !== 1) throw new Error(USAGE);
-  return { taskDir: positionals[0]!, maxAttempts, model, timeoutMs };
+  return { taskDir: positionals[0]!, maxAttempts, model, timeoutMs, bin };
 }
 
 function mustInt(v: string | undefined, flag: string): number {
@@ -94,6 +103,7 @@ function main(): void {
     repoRoot,
     timeoutMs: args.timeoutMs,
     model: args.model,
+    bin: args.bin,
   });
   const gauntlet = subprocessGauntlet({
     repoRoot,

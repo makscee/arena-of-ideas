@@ -19,7 +19,7 @@ import type {
   HarnessOutcome,
   WorkerConfig,
 } from "./worker.js";
-import { buildArgs } from "./claude-code.js";
+import { buildArgs, parseEnvelope } from "./claude-code.js";
 import { parseMachineLine } from "./gauntlet.js";
 import { parseArgs } from "./cli.js";
 
@@ -255,6 +255,37 @@ describe("claude-code buildArgs", () => {
   });
 });
 
+describe("claude-code parseEnvelope", () => {
+  test("pulls the result element from the json *array* envelope (-p --output-format json)", () => {
+    // The real CLI (v2.1.175) emits an array of stream objects; the last
+    // type:"result" element carries result/session_id/is_error.
+    const stdout = JSON.stringify([
+      { type: "system", subtype: "init", session_id: "abc" },
+      { type: "assistant", message: {} },
+      { type: "result", subtype: "success", is_error: false, result: "done", session_id: "abc", num_turns: 4 },
+    ]);
+    const env = parseEnvelope(stdout)!;
+    expect(env.type).toBe("result");
+    expect(env.session_id).toBe("abc");
+    expect(env.is_error).toBe(false);
+  });
+
+  test("surfaces an auth/api error envelope (is_error true)", () => {
+    const stdout = JSON.stringify([
+      { type: "system", subtype: "init", session_id: "x" },
+      { type: "result", is_error: true, result: "Failed to authenticate. API Error: 401" },
+    ]);
+    const env = parseEnvelope(stdout)!;
+    expect(env.is_error).toBe(true);
+    expect(env.result).toContain("401");
+  });
+
+  test("accepts a bare object and rejects non-JSON", () => {
+    expect(parseEnvelope(JSON.stringify({ type: "result", result: "ok" }))!.result).toBe("ok");
+    expect(parseEnvelope("not json")).toBeNull();
+  });
+});
+
 describe("gauntlet parseMachineLine", () => {
   test("pulls the last JSON line out of a human-then-machine transcript", () => {
     const stdout = [
@@ -273,18 +304,20 @@ describe("gauntlet parseMachineLine", () => {
 });
 
 describe("cli parseArgs", () => {
-  test("defaults: maxAttempts 5, no model", () => {
+  test("defaults: maxAttempts 5, no model, no bin override", () => {
     const a = parseArgs(["tasks/frostbite-striker"]);
     expect(a.taskDir).toBe("tasks/frostbite-striker");
     expect(a.maxAttempts).toBe(5);
     expect(a.model).toBeUndefined();
+    expect(a.bin).toBeUndefined();
   });
 
   test("flags parse", () => {
-    const a = parseArgs(["tasks/x", "--max-attempts", "3", "--model", "sonnet", "--timeout-ms", "60000"]);
+    const a = parseArgs(["tasks/x", "--max-attempts", "3", "--model", "sonnet", "--timeout-ms", "60000", "--bin", "/usr/bin/fake"]);
     expect(a.maxAttempts).toBe(3);
     expect(a.model).toBe("sonnet");
     expect(a.timeoutMs).toBe(60000);
+    expect(a.bin).toBe("/usr/bin/fake");
   });
 
   test("a missing task dir, an unknown flag, or a bad number is rejected", () => {
