@@ -8,6 +8,21 @@
  *   GET  /v1/auth/me                  current session + user
  *   GET  /healthz                     liveness
  *
+ * Shared ladder (slice 2) — one ladder per server instance, opened from the
+ * kernel's bootstrap at factory time (idempotent: a played-on DB is never
+ * reseeded), users identified by the session's user id:
+ *
+ *   GET  /v1/ladder/champion          public — current champion + holder name
+ *   GET  /v1/ladder/pool/:round       public — the round's ghost pool;
+ *                                     ?exclude=me (bearer) = the pool as the
+ *                                     caller's runs see it, own ghosts out
+ *   POST /v1/runs                     bearer — submit a finished run for
+ *                                     re-derivation (runs.ts)
+ *
+ * Leaderboard reads are deliberately public: the title screen shows the
+ * champion to logged-out players, and ghost teams are not secrets — they are
+ * the opponents everyone fights. Only submission (writing) needs identity.
+ *
  * Pure factory — all dependencies injected; no module-level globals. Tests
  * wire the mock mailer + tiny-window rate limiters; prod (main.ts) wires the
  * real void-mail client + 5/10min limiters.
@@ -20,14 +35,18 @@
 import { Hono } from "hono";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
+import { openLadder } from "../../src/index.js";
 import { createAuthMiddleware, type AuthEnv } from "./auth.js";
+import { defaultArenaContent, type ArenaContent } from "./content.js";
 import type { DB } from "./db.js";
 import { createEmailCodes, OTP_TTL_SECONDS } from "./email-codes.js";
+import { SqliteLadderStore } from "./ladder-store.js";
 import type { MailClient } from "./mail.js";
 import { renderOtpEmail } from "./otp-email.js";
 import { createRateLimiter, type RateLimiter } from "./rate-limit.js";
+import { submitRun } from "./runs.js";
 import { users } from "./schema.js";
-import { mint, revoke } from "./sessions.js";
+import { mint, revoke, verify } from "./sessions.js";
 
 const SESSION_LIFETIME_DAYS = 30;
 const SESSION_LABEL = "arena-web";
@@ -38,6 +57,9 @@ export interface AppDeps {
   clock: () => number;
   mailClient: MailClient;
   rateLimiters: { ipStart: RateLimiter; emailStart: RateLimiter };
+  /** The run content submissions are pinned to; defaults to the arena's
+   * shipped pool + approved registry. Tests inject a tiny deterministic pool. */
+  content?: ArenaContent;
 }
 
 /** Prod limiters: 5 starts per IP and 5 per email, per 10 minutes. */
@@ -65,8 +87,13 @@ async function jsonBody(req: Request): Promise<Record<string, unknown> | null> {
 
 export function createApp(deps: AppDeps): Hono<AuthEnv> {
   const { db, clock, mailClient, rateLimiters } = deps;
+  const content = deps.content ?? defaultArenaContent();
   const emailCodes = createEmailCodes(db, clock);
   const auth = createAuthMiddleware({ db, clock });
+  // The shared ladder, bootstrap-seated at open (kernel rule: a vacant
+  // champion spot is a free crown — openLadder never leaves one).
+  const store = new SqliteLadderStore(db);
+  openLadder(store, content.statuses);
 
   const app = new Hono<AuthEnv>();
 
@@ -146,6 +173,44 @@ export function createApp(deps: AppDeps): Hono<AuthEnv> {
     const session = c.get("session");
     revoke(db, session.sessionId);
     return c.json({ ok: true as const }, 200);
+  });
+
+  app.get("/v1/ladder/champion", (c) => {
+    const rec = store.championRecord();
+    if (rec === null) return c.json({ champion: null, holder: null });
+    const holder =
+      rec.userId === null
+        ? null
+        : (db.select().from(users).where(eq(users.id, rec.userId)).limit(1).all()[0]?.displayName ?? null);
+    return c.json({ champion: rec.snap, holder });
+  });
+
+  app.get("/v1/ladder/pool/:round", (c) => {
+    const round = Number(c.req.param("round"));
+    if (!Number.isInteger(round) || round < 1) {
+      return c.json({ error: "invalid_round" }, 400);
+    }
+    if (c.req.query("exclude") !== "me") {
+      return c.json({ round, pool: store.poolAt(round) });
+    }
+    // Play reads: the pool as this user's runs see it — own ghosts (across
+    // all the user's runs) excluded. Needs identity, hence the bearer.
+    const header = c.req.header("authorization");
+    const token = header?.startsWith("Bearer ") ? header.slice("Bearer ".length).trim() : "";
+    const session = token === "" ? null : verify(db, token, clock);
+    if (session === null) return c.json({ error: "unauthorized" }, 401);
+    return c.json({ round, pool: store.poolVisibleTo(round, session.userId) });
+  });
+
+  app.post("/v1/runs", auth, async (c) => {
+    const body = await jsonBody(c.req.raw);
+    const run = body?.run;
+    if (typeof run !== "string") {
+      return c.json({ error: "invalid_body" }, 400);
+    }
+    const session = c.get("session");
+    const outcome = submitRun({ db, store, content, clock }, session.userId, run);
+    return c.json(outcome, outcome.accepted ? 200 : 422);
   });
 
   app.get("/v1/auth/me", auth, (c) => {

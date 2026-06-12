@@ -41,6 +41,53 @@ export const emailCodes = sqliteTable("email_codes", {
   consumedAt: integer("consumed_at"),
 });
 
+/**
+ * Shared-ladder tables (slice 2). One ladder per server instance, opened from
+ * the kernel's bootstrap at boot. Ghost pools are append-only — (round, seq)
+ * is the kernel's insertion ordinal, unique per pool. `userId` is the owner
+ * of the run that fielded the team (null for bootstrap ghosts): a user's
+ * ghosts span their runs and are excluded from that user's own draws.
+ */
+
+export const ladderGhosts = sqliteTable("ladder_ghosts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  round: integer("round").notNull(),
+  seq: integer("seq").notNull(),
+  runId: text("run_id").notNull(),
+  userId: text("user_id"),
+  /** JSON UnitDef[] — the snapshot's team, stored as the kernel serializes it. */
+  team: text("team").notNull(),
+});
+
+/** Champion history, append-only — the current champion is the latest row.
+ * History stays queryable by runId so run re-derivation can replay a champion
+ * challenge against the champion that was actually seated at the time. */
+export const ladderChampions = sqliteTable("ladder_champions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  runId: text("run_id").notNull(),
+  userId: text("user_id"),
+  round: integer("round").notNull(),
+  seq: integer("seq").notNull(),
+  /** JSON UnitDef[]. */
+  team: text("team").notNull(),
+});
+
+/** Accepted run submissions — one row per re-derived run. The primary key
+ * makes runIds globally unique: a resubmission (or a cross-user runId
+ * collision, which would corrupt the kernel's own-ghost runId filter) is
+ * rejected at the door. */
+export const runSubmissions = sqliteTable("run_submissions", {
+  runId: text("run_id").primaryKey(),
+  userId: text("user_id").notNull(),
+  seed: integer("seed").notNull(),
+  endedBy: text("ended_by").notNull(),
+  finalRound: integer("final_round").notNull(),
+  submittedAt: integer("submitted_at").notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type EmailCode = typeof emailCodes.$inferSelect;
+export type LadderGhost = typeof ladderGhosts.$inferSelect;
+export type LadderChampion = typeof ladderChampions.$inferSelect;
+export type RunSubmission = typeof runSubmissions.$inferSelect;
