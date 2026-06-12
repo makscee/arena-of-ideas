@@ -596,11 +596,10 @@ button:disabled:hover {
    a bottom sheet at phone width — the inspector's two shapes). */
 
 #run-menu-button {
-  /* Bottom-right corner, fixed: clear of the in-flow nav tabs at the top (the
-     "?" codex tab sits top-right at phone width) and of the battle bar's
-     left-aligned skip/continue, so the persistent control never blocks a tab
-     or a loop tap. position: fixed keeps the #012 layout-lock — it is out of
-     flow, so showing/hiding it reflows nothing. */
+  /* Bottom-right corner, fixed. position: fixed keeps the #012 layout-lock —
+     it is out of flow, so showing/hiding it reflows nothing. At phone width a
+     media override raises the bottom value above the sticky battle bar (see the
+     @media 700px block) so the button never occludes continue/skip/fight. */
   position: fixed;
   bottom: max(0.6rem, env(safe-area-inset-bottom));
   right: 0.6rem;
@@ -1530,6 +1529,19 @@ button.danger {
   /* Run menu (#014): bottom sheet at phone width — the inspector's phone shape
      (LS-3 lineage). Kept inside this existing block so the inspector's phone
      rules stay the file's first 700px media query. */
+
+  /* Occlusion fix (Cass #014 refutation): the sticky battle bar at phone width
+     is ~7rem tall (revealed state: outcome + continue + padding). The default
+     bottom: 0.6rem put the menu button inside that zone — elementFromPoint
+     returned the menu button for ~15% of continue's surface, causing a thumb
+     tap on continue's right side to open the menu instead of advancing the
+     round. Raise the button above the bar; 7rem (112px) clears the ~95px bar
+     with a comfortable gap. During shop and end phases (no sticky bar) the
+     button floats harmlessly above the bottom edge. */
+  #run-menu-button {
+    bottom: max(7rem, env(safe-area-inset-bottom));
+  }
+
   #run-menu-overlay {
     top: auto;
     left: 0;

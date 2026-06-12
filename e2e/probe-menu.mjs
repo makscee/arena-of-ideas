@@ -9,6 +9,10 @@
 //  3. Reload after abandon lands on new-run — the abandoned run never revives.
 //  4. Tab away mid-battle and back preserves the replay position (kills the
 //     #012 gate-note re-mount-to-event-0 bug).
+//  5. Static-occlusion guard (Cass #014 refutation): elementFromPoint sweep over
+//     continue/fight/skip surfaces — 0% may resolve to #run-menu-button in every
+//     phase, at both 375px and desktop. This guard would have caught the original
+//     collision (63/420 of continue's surface stolen at 375px, seed 42).
 
 import {
   BASE,
@@ -30,6 +34,36 @@ const browser = await launch();
 const menuVisible = (page) => page.locator("#run-menu-button").isVisible();
 const overlayOpen = (page) => page.locator("#run-menu-overlay").isVisible();
 const scrubAt = (page) => page.locator("#scrub").inputValue();
+
+/** Sweep `targetSel`'s bounding box with a grid of points and count how many
+ * resolve to `#run-menu-button` (or a descendant of it) via elementFromPoint.
+ * Returns { stolen, total } — stolen > 0 means the menu button occludes the
+ * target and will intercept taps. The grid step is 5px for reliable coverage.
+ *
+ * Cass reproduced 63/420 stolen for #run-continue at 375px (seed 42, natural
+ * run): a 5-column × 84-row grid over the 181×87px button. The guard fires at
+ * stolen > 0 so even a 1px corner grab fails. */
+async function sweepOcclusion(page, targetSel) {
+  const b = await page.locator(targetSel).boundingBox();
+  if (b === null) return { stolen: 0, total: 0 }; // element not visible — skip
+  return page.evaluate(
+    ([x0, y0, w, h]) => {
+      const menuBtn = document.getElementById("run-menu-button");
+      const step = 5;
+      let stolen = 0;
+      let total = 0;
+      for (let x = x0 + 2; x < x0 + w - 2; x += step) {
+        for (let y = y0 + 2; y < y0 + h - 2; y += step) {
+          const el = document.elementFromPoint(x, y);
+          if (el !== null && (el === menuBtn || menuBtn.contains(el))) stolen++;
+          total++;
+        }
+      }
+      return { stolen, total };
+    },
+    [b.x, b.y, b.width, b.height],
+  );
+}
 
 /** Open the menu, abandon WITHOUT confirming twice, and prove the run survives
  * a single stray click; then confirm and prove it lands on new-run cleared. */
@@ -178,6 +212,64 @@ for (const [viewport, tag] of [
   await battleScenario(viewport, tag);
   await endScenario(viewport, tag);
   await reloadScenario(viewport, tag);
+}
+
+// ---- static-occlusion guard (Cass #014 refutation) -------------------------
+// Sweep the interactive surfaces of continue/fight/skip vs #run-menu-button in
+// every phase at 375px and desktop. 0 stolen points required in all cases.
+// The original defect: 63/420 of continue's surface stolen at 375px (seed 42)
+// because the fixed bottom: 0.6rem button sat inside the sticky bar's zone.
+//
+// Fight (shop) and skip (battle pre-reveal) are checked for completeness —
+// Cass found 0% for those in the original run; this guard keeps them at 0.
+
+async function occlusionScenario(viewport, tag) {
+  // --- shop phase: check #run-fight ---
+  {
+    const { ctx, page } = await openRun(browser, plainShopRun(), viewport);
+    const { stolen, total } = await sweepOcclusion(page, "#run-fight");
+    check(stolen === 0, `${tag} shop: #run-fight not occluded by menu button`, `${stolen}/${total} surface points stolen`);
+    await ctx.close();
+  }
+
+  // --- battle pre-reveal: check #run-skip ---
+  {
+    const { ctx, page } = await openRun(browser, plainShopRun(), viewport);
+    await page.click("#run-fight");
+    await page.waitForSelector("#run-skip:not([hidden])");
+    // Pause autoplay so skip stays visible long enough to sweep.
+    await page.click("#step-next");
+    const { stolen, total } = await sweepOcclusion(page, "#run-skip");
+    check(stolen === 0, `${tag} battle pre-reveal: #run-skip not occluded by menu button`, `${stolen}/${total} surface points stolen`);
+    await ctx.close();
+  }
+
+  // --- battle revealed: check #run-continue (the Cass-reproduced collision) ---
+  {
+    const { ctx, page } = await openRun(browser, plainShopRun(), viewport);
+    await page.click("#run-fight");
+    await page.waitForSelector("#run-skip:not([hidden])");
+    await page.click("#run-skip");
+    await page.waitForSelector("#run-continue:not([hidden])");
+    const { stolen, total } = await sweepOcclusion(page, "#run-continue");
+    check(stolen === 0, `${tag} battle revealed: #run-continue not occluded by menu button`, `${stolen}/${total} surface points stolen`);
+    await ctx.close();
+  }
+
+  // --- end phase: check #run-new-run ---
+  {
+    const { ctx, page } = await openRun(browser, endedRun(), viewport, "#run-end:not([hidden])");
+    const { stolen, total } = await sweepOcclusion(page, "#run-new-run");
+    check(stolen === 0, `${tag} end: #run-new-run not occluded by menu button`, `${stolen}/${total} surface points stolen`);
+    await ctx.close();
+  }
+}
+
+for (const [viewport, tag] of [
+  [PHONE, "375px"],
+  [DESKTOP, "desktop"],
+]) {
+  await occlusionScenario(viewport, tag);
 }
 
 await browser.close();
