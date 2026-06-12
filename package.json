@@ -8,6 +8,8 @@
     "e2e": "node e2e/run.mjs",
     "typecheck": "tsc --noEmit",
     "battle": "node --import tsx/esm src/cli.ts",
+    "check-candidate": "node --import tsx/esm src/check-candidate.ts",
+    "create": "node --import tsx/esm src/create/cli.ts",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"

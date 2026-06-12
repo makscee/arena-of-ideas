@@ -6,8 +6,11 @@
 // A candidate's overall win-rate across these teams is what the sim gate
 // (src/gate.ts) judges against the band. Three archetypes span the strategy
 // space the stress set affords — aggro tempo, attrition/sustain, and a fat
-// status-stacked frontline — so a candidate can't sit inside the band by
-// beating one shape while folding to another.
+// status-stacked frontline. The pooled band alone does NOT stop a candidate
+// from beating one shape while folding to another (those average out); the
+// gate's per-matchup floor (GATE_MATCHUP_FLOOR) is what forces viability
+// against every archetype here, so spanning the space only bites with the
+// floor on.
 
 import {
   Necromancer,

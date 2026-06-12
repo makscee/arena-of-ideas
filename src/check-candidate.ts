@@ -35,7 +35,7 @@ import { runGate, formatGateReport } from "./gate.js";
 import type { GateConfig, GateReport } from "./gate.js";
 import { REFERENCE_META } from "./content/reference-meta.js";
 import { stressRegistry } from "./content/stress.js";
-import { GATE_BAND_MIN, GATE_BAND_MAX, GATE_SEEDS } from "./tunables.js";
+import { GATE_BAND_MIN, GATE_BAND_MAX, GATE_MATCHUP_FLOOR, GATE_SEEDS } from "./tunables.js";
 import { validateTeamFile } from "./cli.js";
 import { ValidationError } from "./validate.js";
 import type { UnitDef } from "./types.js";
@@ -46,11 +46,11 @@ import type { UnitDef } from "./types.js";
 
 /** The default gate config, derived from the tunables — never hardcoded prose. */
 export function defaultGateConfig(): GateConfig {
-  return { bandMin: GATE_BAND_MIN, bandMax: GATE_BAND_MAX, seeds: GATE_SEEDS };
+  return { bandMin: GATE_BAND_MIN, bandMax: GATE_BAND_MAX, floor: GATE_MATCHUP_FLOOR, seeds: GATE_SEEDS };
 }
 
 /** Read a task dir's gate.json if present, else the tunable defaults. A
- * gate.json may override any subset of { bandMin, bandMax, seeds }. */
+ * gate.json may override any subset of { bandMin, bandMax, floor, seeds }. */
 export function loadGateConfig(taskDir: string): GateConfig {
   const base = defaultGateConfig();
   let raw: string;
@@ -85,6 +85,7 @@ export function mergeGateConfig(base: GateConfig, override: unknown, label = "ga
   const cfg: GateConfig = {
     bandMin: num("bandMin", 0, 1),
     bandMax: num("bandMax", 0, 1),
+    floor: num("floor", 0, 1),
     seeds: num("seeds", 1, 100000),
   };
   if (!Number.isInteger(cfg.seeds)) throw new Error(`${label}: "seeds" must be an integer`);

@@ -1,6 +1,7 @@
 {
-  "_comment": "Per-task sim-gate config. Omitted keys fall back to the GATE_* tunables (src/tunables.ts). The band is a number here, never prose in the README.",
+  "_comment": "Per-task sim-gate config. Omitted keys fall back to the GATE_* tunables (src/tunables.ts). The band and per-matchup floor are numbers here, never prose in the README. 'floor' is the minimum win-rate every matchup must clear so a candidate can't pass by hard-countering one team and folding to another.",
   "bandMin": 0.35,
   "bandMax": 0.65,
+  "floor": 0.25,
   "seeds": 50
 }

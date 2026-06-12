@@ -1,2 +1,6 @@
 node_modules/
 dist/
+
+# Creation-worker output — a worker emits its candidate here per task; the
+# committed golden inputs live in tasks/*/fixtures/, never clobbered.
+tasks/*/out/

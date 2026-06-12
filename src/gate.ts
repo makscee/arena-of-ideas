@@ -27,12 +27,23 @@ export interface ReferenceTeam {
 /** The gate's tunable knobs. The band is [min, max] win-rate (0..1) the
  * candidate must land in across the whole reference meta; seeds is how many
  * seeds each matchup sweeps. A candidate at exactly the band edge passes
- * (inclusive) — the edges are the design intent, not a no-man's-land. */
+ * (inclusive) — the edges are the design intent, not a no-man's-land.
+ *
+ * The pooled band alone is gameable: a candidate can hard-counter one
+ * reference team to 100% and fold to another at 0%, yet sit in the pooled band
+ * on average — exactly the "beat one shape, fold to another" line an AI
+ * magnitude-tuner steers into. The per-matchup `floor` closes that hole: every
+ * matchup must clear it, so an in-band pool means broadly playable, not lucky
+ * on the average. */
 export interface GateConfig {
   /** Inclusive lower bound on overall win-rate (0..1). Below → underpowered. */
   bandMin: number;
   /** Inclusive upper bound on overall win-rate (0..1). Above → overtuned. */
   bandMax: number;
+  /** Inclusive per-matchup floor (0..1): every matchup's win-rate must be at
+   * least this, else the verdict is "counter-folded" even when the pool is
+   * in-band. Closes the gameable-pool hole. */
+  floor: number;
   /** Seeds swept per matchup. Larger N tightens the win-rate estimate. */
   seeds: number;
 }
@@ -53,8 +64,9 @@ export interface MatchupResult {
  * numbers are what a bounce feeds back to the creation loop. */
 export interface GateReport {
   pass: boolean;
-  /** "in-band" | "underpowered" | "overtuned" — the reason, when failing. */
-  verdict: "in-band" | "underpowered" | "overtuned";
+  /** The reason, when failing. "counter-folded" = pool was in-band but at
+   * least one matchup fell below the per-matchup floor. */
+  verdict: "in-band" | "underpowered" | "overtuned" | "counter-folded";
   /** Candidate win-rate across every matchup pooled together (0..1). */
   overallWinRate: number;
   totalSeeds: number;
@@ -62,6 +74,10 @@ export interface GateReport {
   totalLosses: number;
   totalDraws: number;
   band: { min: number; max: number };
+  /** The per-matchup floor every matchup must clear (0..1). */
+  floor: number;
+  /** Opponent names whose win-rate fell below the floor (empty when none). */
+  foldedTo: string[];
   matchups: MatchupResult[];
 }
 
@@ -103,9 +119,18 @@ export function runGate(
   const totalSeeds = totalWins + totalLosses + totalDraws;
   const overallWinRate = totalSeeds === 0 ? 0 : totalWins / totalSeeds;
 
+  // Matchups that fall below the per-matchup floor — the gameable-pool fold.
+  const foldedTo = matchups.filter((m) => m.winRate < config.floor).map((m) => m.opponent);
+
+  // Pooled verdicts are the broad signal and take precedence: too weak or too
+  // strong overall is a magnitude problem before it is a coverage problem. Only
+  // when the pool sits in-band does the per-matchup floor get the final word —
+  // an otherwise-balanced candidate that hard-counters one shape and folds to
+  // another is "counter-folded", and the loop is told exactly which opponents.
   let verdict: GateReport["verdict"];
   if (overallWinRate < config.bandMin) verdict = "underpowered";
   else if (overallWinRate > config.bandMax) verdict = "overtuned";
+  else if (foldedTo.length > 0) verdict = "counter-folded";
   else verdict = "in-band";
 
   return {
@@ -117,6 +142,8 @@ export function runGate(
     totalLosses,
     totalDraws,
     band: { min: config.bandMin, max: config.bandMax },
+    floor: config.floor,
+    foldedTo,
     matchups,
   };
 }
@@ -135,10 +162,15 @@ export function formatGateReport(report: GateReport): string {
   lines.push(
     `  totals: ${report.totalWins}W / ${report.totalLosses}L / ${report.totalDraws}D`,
   );
+  lines.push(`  per-matchup floor: ${pct(report.floor)}`);
+  if (report.foldedTo.length > 0) {
+    lines.push(`  folded below floor: ${report.foldedTo.join(", ")}`);
+  }
   lines.push(`  matchups:`);
   for (const m of report.matchups) {
+    const flag = m.winRate < report.floor ? "  ← below floor" : "";
     lines.push(
-      `    vs ${m.opponent}: ${pct(m.winRate)} (${m.wins}W/${m.losses}L/${m.draws}D over ${m.seeds} seeds)`,
+      `    vs ${m.opponent}: ${pct(m.winRate)} (${m.wins}W/${m.losses}L/${m.draws}D over ${m.seeds} seeds)${flag}`,
     );
   }
   return lines.join("\n");

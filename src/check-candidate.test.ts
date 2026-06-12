@@ -20,14 +20,16 @@ import { runGate, formatGateReport } from "./gate.js";
 import { REFERENCE_META } from "./content/reference-meta.js";
 import { stressRegistry } from "./content/stress.js";
 import { ValidationError } from "./validate.js";
-import { GATE_BAND_MIN, GATE_BAND_MAX } from "./tunables.js";
+import { GATE_BAND_MIN, GATE_BAND_MAX, GATE_MATCHUP_FLOOR } from "./tunables.js";
 import type { UnitDef } from "./types.js";
 
 const TASK = join(new URL(".", import.meta.url).pathname, "..", "tasks", "frostbite-striker");
 
-// The committed fixtures — the hand-proven contract.
-const SANE = join(TASK, "candidate.json");
-const OVERTUNED = join(TASK, "candidate-overtuned.json");
+// The committed fixtures — the hand-proven contract. They live in fixtures/ so
+// the task root's candidate.json / out/ are free for a worker's emitted output
+// to land without clobbering the golden inputs (slice 2).
+const SANE = join(TASK, "fixtures", "candidate.json");
+const OVERTUNED = join(TASK, "fixtures", "candidate-overtuned.json");
 
 function writeTmp(name: string, content: string): string {
   const p = join(mkdtempSync(join(tmpdir(), "aoi-cand-")), name);
@@ -42,7 +44,7 @@ function writeTmp(name: string, content: string): string {
 describe("checkCandidate verdicts", () => {
   const cfg = defaultGateConfig();
 
-  test("an in-band candidate passes (exit 0)", () => {
+  test("an in-band candidate passes (exit 0) — pooled in band AND every matchup above the floor", () => {
     const result = checkCandidate(loadCandidate(SANE), cfg);
     expect(result.status).toBe("passed");
     expect(result.exitCode).toBe(0);
@@ -50,6 +52,47 @@ describe("checkCandidate verdicts", () => {
     expect(result.gate!.verdict).toBe("in-band");
     expect(result.gate!.overallWinRate).toBeGreaterThanOrEqual(cfg.bandMin);
     expect(result.gate!.overallWinRate).toBeLessThanOrEqual(cfg.bandMax);
+    // Passing means broadly viable, not lucky on the average: no matchup folds.
+    expect(result.gate!.foldedTo).toEqual([]);
+    for (const m of result.gate!.matchups) {
+      expect(m.winRate).toBeGreaterThanOrEqual(cfg.floor);
+    }
+  });
+
+  test("a pooled-in-band candidate that folds one matchup is bounced as counter-folded (the floor closes the gameable-pool hole)", () => {
+    // The pre-floor "sane" fixture: curse-only striker fronted by a body. It
+    // pools to ~54% (in [35,65]) yet folds StatStack to 0% — it would have
+    // passed a pooled-only gate. The per-matchup floor catches it.
+    const gameable: UnitDef[] = [
+      { name: "Vanguard", base: { hp: 11, pwr: 3 } },
+      {
+        name: "Frostmage",
+        base: { hp: 8, pwr: 2 },
+        abilities: [
+          {
+            whens: [{ kind: "trigger", on: { on: "Strike", striker: "holder" } }],
+            selectors: [{ kind: "frontEnemy" }],
+            effects: [{ kind: "applyStatus", status: "Curse", stacks: { kind: "const", value: 1 } }],
+          },
+        ],
+      },
+      { name: "Squire", base: { hp: 7, pwr: 2 } },
+    ];
+    const result = checkCandidate(gameable, cfg);
+    // Pooled win-rate sits inside the band — a pooled-only gate would pass it.
+    expect(result.gate!.overallWinRate).toBeGreaterThanOrEqual(cfg.bandMin);
+    expect(result.gate!.overallWinRate).toBeLessThanOrEqual(cfg.bandMax);
+    // But the floor bounces it: at least one matchup is below the floor.
+    expect(result.status).toBe("gate-bounced");
+    expect(result.exitCode).toBe(2);
+    expect(result.gate!.pass).toBe(false);
+    expect(result.gate!.verdict).toBe("counter-folded");
+    expect(result.gate!.foldedTo.length).toBeGreaterThan(0);
+    // The bounce names which opponents folded — the signal the loop adjusts to.
+    for (const name of result.gate!.foldedTo) {
+      const m = result.gate!.matchups.find((x) => x.opponent === name)!;
+      expect(m.winRate).toBeLessThan(cfg.floor);
+    }
   });
 
   test("the overtuned candidate ('deal 999 damage') is bounced (exit 2) with its win-rate data", () => {
@@ -127,13 +170,19 @@ describe("validator path", () => {
 
 describe("gate config", () => {
   test("defaults come from the tunables, never hardcoded prose", () => {
-    expect(defaultGateConfig()).toEqual({ bandMin: GATE_BAND_MIN, bandMax: GATE_BAND_MAX, seeds: 50 });
+    expect(defaultGateConfig()).toEqual({
+      bandMin: GATE_BAND_MIN,
+      bandMax: GATE_BAND_MAX,
+      floor: GATE_MATCHUP_FLOOR,
+      seeds: 50,
+    });
   });
 
   test("the task dir's gate.json is read", () => {
     const cfg = loadGateConfig(TASK);
     expect(cfg.bandMin).toBe(0.35);
     expect(cfg.bandMax).toBe(0.65);
+    expect(cfg.floor).toBe(0.25);
     expect(cfg.seeds).toBe(50);
   });
 
@@ -144,7 +193,13 @@ describe("gate config", () => {
 
   test("an override merges over the defaults", () => {
     const merged = mergeGateConfig(defaultGateConfig(), { bandMin: 0.4, seeds: 10 });
-    expect(merged).toEqual({ bandMin: 0.4, bandMax: GATE_BAND_MAX, seeds: 10 });
+    expect(merged).toEqual({ bandMin: 0.4, bandMax: GATE_BAND_MAX, floor: GATE_MATCHUP_FLOOR, seeds: 10 });
+  });
+
+  test("the per-matchup floor is overridable like the band", () => {
+    const merged = mergeGateConfig(defaultGateConfig(), { floor: 0.3 });
+    expect(merged.floor).toBe(0.3);
+    expect(() => mergeGateConfig(defaultGateConfig(), { floor: 1.5 })).toThrow(/in \[0, 1\]/);
   });
 
   test("an out-of-range knob is rejected", () => {

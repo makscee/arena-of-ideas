@@ -124,6 +124,14 @@ export const DEFAULT_RUN_POOL: UnitDef[] = [
 export const GATE_BAND_MIN = 0.35;
 export const GATE_BAND_MAX = 0.65;
 
+/** Per-matchup win-rate floor — every matchup vs the reference meta must clear
+ * it, or the candidate is "counter-folded" even when its pooled win-rate sits
+ * in-band. The pooled band alone is gameable: a candidate that hard-counters
+ * one reference team to 100% and folds to another at 0% averages into the band
+ * yet is unplayable — the exact line an AI magnitude-tuner steers into. The
+ * floor forces broad viability. A knob, overridable per task via gate.json. */
+export const GATE_MATCHUP_FLOOR = 0.25;
+
 /** Seeds the gate sweeps per matchup. Enough to make a win-rate estimate
  * stable across the band edges without making a hand-run slow. */
 export const GATE_SEEDS = 50;
