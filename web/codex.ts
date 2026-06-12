@@ -1,9 +1,14 @@
 // Codex screen — fully generated from registry + tunables via buildCodex().
-// Renders statuses, units, and rule entries; supports deep-link anchors of
-// the form #codex/status/<name>, #codex/unit/<name>, #codex/rule/<key>.
+// Renders statuses, units, and rule entries as responsive card grids (#015
+// slice 2): units wear the one shared unit card (unit-card.ts), statuses get
+// a matching card with a hash-stable colour identity, rules a prose card.
+// Presentation only — every sentence comes from buildCodex()/describe output.
+// Supports deep-link anchors of the form #codex/status/<name>,
+// #codex/unit/<name>, #codex/rule/<key>.
 
 import { buildCodex } from "../src/codex.js";
 import type { StatusRegistry, UnitDef } from "../src/types.js";
+import { nameHue, unitCardHtml } from "./unit-card.js";
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -16,12 +21,20 @@ export interface CodexScreen {
   navigate(fragment: string): void;
 }
 
+const esc = (s: string): string =>
+  s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+
 export function createCodex(
   container: HTMLElement,
   registry: StatusRegistry,
   units: UnitDef[],
 ): CodexScreen {
   const data = buildCodex(registry, units);
+  // The raw def behind each derived entry (first occurrence wins — the same
+  // dedup buildCodex applies): the unit card needs the statuses' stacks and
+  // the level, which the derived entry doesn't carry.
+  const defByName = new Map<string, UnitDef>();
+  for (const u of units) if (!defByName.has(u.name)) defByName.set(u.name, u);
 
   // ---- shell ---------------------------------------------------------------
   container.innerHTML = "";
@@ -38,111 +51,68 @@ export function createCodex(
   searchRow.append(searchInput);
   container.append(searchRow);
 
-  // Section: statuses
-  const statusSection = buildSection("statuses", "Statuses");
-  const statusList = document.createElement("div");
-  statusList.className = "codex-list";
-  for (const s of data.statuses) {
-    const card = document.createElement("div");
-    card.className = "codex-entry";
-    card.id = `codex-status-${encodeId(s.name)}`;
-    card.dataset.search = s.name.toLowerCase() + " " + s.description.toLowerCase();
+  // Section: statuses — name + colour identity + the kernel-derived sentence.
+  const statusCards = data.statuses.map((s) => {
+    const hue = nameHue(s.name);
+    return (
+      `<div class="codex-entry codex-status-entry" id="codex-status-${encodeId(s.name)}"` +
+      ` data-search="${esc(`${s.name} ${s.description}`.toLowerCase())}" style="--codex-hue: ${hue.toFixed(0)}">` +
+      anchorHtml(`codex/status/${s.name}`) +
+      `<div class="codex-entry-head"><span class="codex-swatch" aria-hidden="true"></span>` +
+      `<span class="codex-entry-name">${esc(s.name)}</span></div>` +
+      `<div class="codex-entry-desc">${esc(s.description)}</div></div>`
+    );
+  });
+  container.append(sectionEl("statuses", "Statuses", grid(statusCards, "codex-grid-statuses")));
 
-    const heading = document.createElement("div");
-    heading.className = "codex-entry-head";
-    const nameEl = document.createElement("span");
-    nameEl.className = "codex-entry-name";
-    nameEl.textContent = s.name;
-    const anchor = anchorLink(`codex/status/${s.name}`);
-    heading.append(nameEl, anchor);
-
-    const desc = document.createElement("div");
-    desc.className = "codex-entry-desc";
-    desc.textContent = s.description;
-
-    card.append(heading, desc);
-    statusList.append(card);
-  }
-  statusSection.append(statusList);
-  container.append(statusSection);
-
-  // Section: units
-  const unitSection = buildSection("units", "Units");
-  const unitList = document.createElement("div");
-  unitList.className = "codex-list";
-  for (const u of data.units) {
-    const card = document.createElement("div");
-    card.className = "codex-entry";
-    card.id = `codex-unit-${encodeId(u.name)}`;
-    const searchText = [u.name, `${u.hp}hp`, `${u.pwr}pwr`, ...u.abilities, ...u.statuses].join(" ").toLowerCase();
-    card.dataset.search = searchText;
-
-    const heading = document.createElement("div");
-    heading.className = "codex-entry-head";
-    const nameEl = document.createElement("span");
-    nameEl.className = "codex-entry-name";
-    nameEl.textContent = u.name;
-    const stats = document.createElement("span");
-    stats.className = "codex-entry-stats";
-    stats.textContent =
-      `${u.hp} hp · ${u.pwr} pwr` + (u.statuses.length > 0 ? ` · starts with ${u.statuses.join(", ")}` : "");
-    const anchor = anchorLink(`codex/unit/${u.name}`);
-    heading.append(nameEl, stats, anchor);
-
-    card.append(heading);
-    for (const ab of u.abilities) {
-      const row = document.createElement("div");
-      row.className = "codex-entry-desc";
-      row.textContent = ab;
-      card.append(row);
-    }
-    if (u.abilities.length === 0) {
-      const row = document.createElement("div");
-      row.className = "codex-entry-desc codex-dim";
-      row.textContent = "No abilities.";
-      card.append(row);
-    }
+  // Section: units — the shared card (art, framed stats, chips) over the
+  // derived ability sentences; credit line for approved creation-loop units.
+  const unitCards = data.units.map((u) => {
+    const def = defByName.get(u.name);
+    const level = def?.level ?? 1;
+    const search = [u.name, `${u.hp}hp`, `${u.pwr}pwr`, ...u.abilities, ...u.statuses].join(" ").toLowerCase();
+    const card = unitCardHtml({
+      artName: u.name,
+      label: u.name,
+      hp: u.hp,
+      pwr: u.pwr,
+      registry,
+      statuses: def?.statuses,
+      ...(level > 1 ? { level } : {}),
+      classes: "codex-unit",
+      attrs: "",
+      title: u.name,
+    });
+    const abilities =
+      u.abilities.length > 0
+        ? u.abilities.map((ab) => `<div class="codex-entry-desc">${esc(ab)}</div>`).join("")
+        : `<div class="codex-entry-desc codex-dim">No abilities.</div>`;
     // Authorship credit for an approved creation-loop unit (PRD #013 slice 4).
-    if (u.creator !== undefined) {
-      const credit = document.createElement("div");
-      credit.className = "codex-entry-credit codex-dim";
-      credit.dataset.creator = u.creator;
-      credit.textContent = `made by ${u.creator}`;
-      card.append(credit);
-    }
+    const credit =
+      u.creator !== undefined
+        ? `<div class="codex-entry-credit codex-dim" data-creator="${esc(u.creator)}">made by ${esc(u.creator)}</div>`
+        : "";
+    return (
+      `<div class="codex-entry codex-unit-entry" id="codex-unit-${encodeId(u.name)}" data-search="${esc(search)}">` +
+      anchorHtml(`codex/unit/${u.name}`) +
+      card +
+      abilities +
+      credit +
+      `</div>`
+    );
+  });
+  container.append(sectionEl("units", "Units", grid(unitCards, "codex-grid-units")));
 
-    unitList.append(card);
-  }
-  unitSection.append(unitList);
-  container.append(unitSection);
-
-  // Section: rules
-  const rulesSection = buildSection("rules", "Rules");
-  const ruleList = document.createElement("div");
-  ruleList.className = "codex-list";
-  for (const r of data.rules) {
-    const card = document.createElement("div");
-    card.className = "codex-entry";
-    card.id = `codex-rule-${encodeId(r.key)}`;
-    card.dataset.search = (r.title + " " + r.text).toLowerCase();
-
-    const heading = document.createElement("div");
-    heading.className = "codex-entry-head";
-    const titleEl = document.createElement("span");
-    titleEl.className = "codex-entry-name";
-    titleEl.textContent = r.title;
-    const anchor = anchorLink(`codex/rule/${r.key}`);
-    heading.append(titleEl, anchor);
-
-    const desc = document.createElement("div");
-    desc.className = "codex-entry-desc";
-    desc.textContent = r.text;
-
-    card.append(heading, desc);
-    ruleList.append(card);
-  }
-  rulesSection.append(ruleList);
-  container.append(rulesSection);
+  // Section: rules — prose cards.
+  const ruleCards = data.rules.map(
+    (r) =>
+      `<div class="codex-entry codex-rule-entry" id="codex-rule-${encodeId(r.key)}"` +
+      ` data-search="${esc(`${r.title} ${r.text}`.toLowerCase())}">` +
+      anchorHtml(`codex/rule/${r.key}`) +
+      `<div class="codex-entry-head"><span class="codex-entry-name">${esc(r.title)}</span></div>` +
+      `<div class="codex-entry-desc">${esc(r.text)}</div></div>`,
+  );
+  container.append(sectionEl("rules", "Rules", grid(ruleCards, "codex-grid-rules")));
 
   // ---- search filter -------------------------------------------------------
   searchInput.addEventListener("input", () => {
@@ -184,24 +154,20 @@ export function createCodex(
 // Helpers
 // ---------------------------------------------------------------------------
 
-function buildSection(id: string, title: string): HTMLElement {
+function grid(cards: string[], cls: string): string {
+  return `<div class="codex-grid ${cls}">${cards.join("")}</div>`;
+}
+
+function sectionEl(id: string, title: string, bodyHtml: string): HTMLElement {
   const section = document.createElement("div");
   section.className = "codex-section";
   section.id = `codex-sec-${id}`;
-  const heading = document.createElement("div");
-  heading.className = "pane-k codex-section-head";
-  heading.textContent = title;
-  section.append(heading);
+  section.innerHTML = `<div class="pane-k codex-section-head">${esc(title)}</div>${bodyHtml}`;
   return section;
 }
 
-function anchorLink(fragment: string): HTMLAnchorElement {
-  const a = document.createElement("a");
-  a.href = `#${fragment}`;
-  a.className = "codex-anchor";
-  a.textContent = "#";
-  a.title = `Deep link: #${fragment}`;
-  return a;
+function anchorHtml(fragment: string): string {
+  return `<a href="#${esc(fragment)}" class="codex-anchor" title="Deep link: #${esc(fragment)}">#</a>`;
 }
 
 function encodeId(name: string): string {

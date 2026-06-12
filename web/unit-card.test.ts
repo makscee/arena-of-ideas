@@ -3,7 +3,7 @@
 // the markup itself (child order, badge, battle affordances, escaping) and
 // the call sites (no hand-rolled `<div class="unit` anywhere else).
 
-import { readFileSync } from "fs";
+import { readFileSync, readdirSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import { describe, expect, test } from "vitest";
@@ -90,11 +90,31 @@ describe("unitCardHtml", () => {
 
 describe("every unit render site draws through the one component", () => {
   const here = dirname(fileURLToPath(import.meta.url));
-  for (const f of ["run-screen.ts", "board-render.ts", "ladder-view.ts"]) {
-    test(`${f} imports unit-card and hand-rolls no card markup`, () => {
+  for (const f of ["run-screen.ts", "board-render.ts", "ladder-view.ts", "codex.ts"]) {
+    test(`${f} imports unit-card`, () => {
       const src = readFileSync(resolve(here, f), "utf8");
       expect(src).toMatch(/from "\.\/unit-card\.js"/);
-      expect(src).not.toContain('<div class="unit'); // the card's markup lives in unit-card.ts only
+    });
+  }
+
+  // A rogue card is impossible anywhere in web/ (slice-2 carry from Cass):
+  // every idiom that could mint a `unit`-classed element outside unit-card.ts
+  // is banned across the whole layer — markup strings AND the createElement
+  // route the old codex used. Test files are excluded (they quote the banned
+  // strings to ban them); unit-card.ts is the one legitimate source.
+  const cardIdioms: [string, RegExp][] = [
+    ["markup string", /<(div|span)[^>]*class="unit[\s"]/],
+    ["className assignment", /className\s*=\s*["'`]unit\b/],
+    ["classList.add", /classList\.add\(\s*["'`]unit\b/],
+    ["setAttribute(class)", /setAttribute\(\s*["'`]class["'`]\s*,\s*["'`]unit\b/],
+  ];
+  const sources = readdirSync(here).filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts") && f !== "unit-card.ts");
+  for (const f of sources) {
+    test(`${f} mints no card by any idiom`, () => {
+      const src = readFileSync(resolve(here, f), "utf8");
+      for (const [idiom, pattern] of cardIdioms) {
+        expect(src, `${f}: hand-rolled card via ${idiom}`).not.toMatch(pattern);
+      }
     });
   }
 });

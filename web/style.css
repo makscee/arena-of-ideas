@@ -1498,7 +1498,8 @@ button.danger {
 }
 
 /* ---------- codex screen ----------
-   Statuses, units, and rules — fully generated, zero hand-written facts. */
+   Statuses, units, and rules — fully generated, zero hand-written facts.
+   #015 slice 2: the vertical lists became responsive card grids. */
 
 .codex-search-row {
   margin-bottom: 0.75rem;
@@ -1509,6 +1510,7 @@ button.danger {
   max-width: 24rem;
   font-size: 0.8rem;
   padding: 0.35rem 0.6rem;
+  min-height: 44px; /* a real tap target at every width */
 }
 
 .codex-section {
@@ -1519,17 +1521,66 @@ button.danger {
   margin-bottom: 0.4rem;
 }
 
-.codex-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+/* The grids: each column minimum picks the column count by itself — unit
+   cards (~10rem) sit two abreast at 375px, statuses and rules drop to one
+   column there; a desk fits several of each. No breakpoint needed. */
+.codex-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 0.6rem;
+  align-items: stretch;
+}
+
+.codex-grid-units {
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+}
+
+.codex-grid-rules {
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
 }
 
 .codex-entry {
+  position: relative; /* anchors the deep-link corner target */
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 0.5rem 0.75rem;
+}
+
+/* The search filter hides entries via [hidden] — a display rule on
+   .codex-entry would silently beat the UA's [hidden] and resurrect filtered
+   cards, so the guard is explicit and the entries stay block-level. */
+.codex-entry[hidden] {
+  display: none;
+}
+
+/* Status colour identity: a hash-stable hue (the unit art's own scheme,
+   unit-card.ts nameHue) rides each status card as --codex-hue. */
+.codex-status-entry {
+  border-color: hsl(var(--codex-hue, 0) 30% 28%);
+}
+
+.codex-swatch {
+  flex: 0 0 auto;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  align-self: center;
+  background: hsl(var(--codex-hue, 0) 45% 58%);
+  border: 1px solid hsl(var(--codex-hue, 0) 50% 38%);
+}
+
+/* The shared unit card, codex-sized: a reference page, not an inspector
+   trigger — centred, a touch larger art than the board's. */
+.codex-unit-entry .unit {
+  margin: 0 auto 0.45rem;
+  max-width: 8.5rem;
+  cursor: default;
+}
+
+.codex-unit-entry .unit .shape {
+  width: 3rem;
+  height: 3rem;
 }
 
 .codex-entry-head {
@@ -1537,16 +1588,12 @@ button.danger {
   align-items: baseline;
   gap: 0.5rem;
   margin-bottom: 0.2rem;
+  padding-right: 1.4rem; /* clear of the corner anchor */
 }
 
 .codex-entry-name {
   font-weight: 600;
   font-size: 0.85rem;
-}
-
-.codex-entry-stats {
-  color: var(--dim);
-  font-size: 0.75rem;
 }
 
 .codex-entry-desc {
@@ -1555,15 +1602,29 @@ button.danger {
   overflow-wrap: anywhere;
 }
 
+.codex-entry-desc + .codex-entry-desc {
+  margin-top: 0.25rem;
+}
+
 .codex-dim {
   color: var(--dim);
 }
 
+/* Each card's deep-link anchor: a real ≥44px target — it has no adjacent
+   control, so it grows for thumbs (the #ins-close pattern) instead of a
+   pseudo-element seam scheme. */
 .codex-anchor {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--dim);
   text-decoration: none;
   font-size: 0.7rem;
-  margin-left: auto;
 }
 
 .codex-anchor:hover {

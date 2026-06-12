@@ -22,6 +22,13 @@ function hashName(name: string): number {
   return h >>> 0;
 }
 
+/** Hash-stable hue for a name — the colour identity the shape art wears,
+ * exported so a non-unit card (the codex's status cards) can carry the same
+ * scheme without re-deriving it. */
+export function nameHue(name: string): number {
+  return (hashName(name) * 137.508) % 360;
+}
+
 const SHAPES = [
   '<circle cx="16" cy="16" r="12"/>',
   '<rect x="5" y="5" width="22" height="22" rx="3"/>',
@@ -39,7 +46,7 @@ export function shapeSvg(unitName: string, dead: boolean): string {
   const shape = SHAPES[h % SHAPES.length]!;
   const inner = SHAPES[(h >>> 3) % SHAPES.length]!;
   const spin = ((h >>> 7) % 8) * 45; // the accent's rotation — hash-stable
-  const hue = (h * 137.508) % 360;
+  const hue = nameHue(unitName);
   const fill = dead ? "hsl(0 0% 35%)" : `hsl(${hue.toFixed(0)} 45% 58%)`;
   const stroke = dead ? "hsl(0 0% 25%)" : `hsl(${hue.toFixed(0)} 50% 38%)`;
   const aura = dead ? "hsl(0 0% 30% / 0.15)" : `hsl(${hue.toFixed(0)} 60% 60% / 0.16)`;
