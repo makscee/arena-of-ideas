@@ -1,0 +1,4 @@
+A frost-themed front-line striker that chills the enemy it hits — its attacks
+should slow or weaken the unit in front of it, so it trades up against an
+aggressive opponent. A small, durable bruiser, not a glass cannon. It should
+hold its own against the existing meta without dominating it.

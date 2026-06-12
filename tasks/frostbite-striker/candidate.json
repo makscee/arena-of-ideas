@@ -1,0 +1,18 @@
+{
+  "_comment": "A passing candidate, hand-authored to prove the contract (slice 1). Frost striker: curses the front enemy on strike, fronted by a durable body. Overall win-rate ~54% vs the reference meta — inside the band.",
+  "units": [
+    { "name": "Vanguard", "base": { "hp": 11, "pwr": 3 } },
+    {
+      "name": "Frostmage",
+      "base": { "hp": 8, "pwr": 2 },
+      "abilities": [
+        {
+          "whens": [{ "kind": "trigger", "on": { "on": "Strike", "striker": "holder" } }],
+          "selectors": [{ "kind": "frontEnemy" }],
+          "effects": [{ "kind": "applyStatus", "status": "Curse", "stacks": { "kind": "const", "value": 1 } }]
+        }
+      ]
+    },
+    { "name": "Squire", "base": { "hp": 7, "pwr": 2 } }
+  ]
+}

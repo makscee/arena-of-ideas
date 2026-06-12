@@ -14,6 +14,9 @@ export type { LadderStore, LadderData, TeamSnapshot } from "./ladder.js";
 export * from "./tunables.js";
 export { sweep, sweepSeeds, sweepOutcome, summarizeSweep } from "./sweep.js";
 export type { SweepInput, SweepOutcome, SweepStats, SweepResult } from "./sweep.js";
+export { runGate, formatGateReport } from "./gate.js";
+export type { GateConfig, GateReport, MatchupResult, ReferenceTeam } from "./gate.js";
+export { REFERENCE_META } from "./content/reference-meta.js";
 export { renderReplay } from "./replay.js";
 export { displayNames, ancestry, abilityRefDesc, shortDesc, deathCauseChain } from "./trace.js";
 export {

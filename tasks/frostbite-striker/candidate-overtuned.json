@@ -1,0 +1,28 @@
+{
+  "_comment": "The PRD's overtuned candidate — 'deal 999 damage every turn'. Content-valid (so it clears the validator) but it annihilates the whole reference meta, so the sim gate bounces it as overtuned with its win-rate data.",
+  "units": [
+    {
+      "name": "Annihilator",
+      "base": { "hp": 20, "pwr": 6 },
+      "abilities": [
+        {
+          "whens": [{ "kind": "trigger", "on": { "on": "TurnStart" } }],
+          "selectors": [{ "kind": "allEnemies" }],
+          "effects": [{ "kind": "damage", "amount": { "kind": "const", "value": 999 } }]
+        }
+      ]
+    },
+    {
+      "name": "Annihilator2",
+      "base": { "hp": 18, "pwr": 6 },
+      "abilities": [
+        {
+          "whens": [{ "kind": "trigger", "on": { "on": "TurnStart" } }],
+          "selectors": [{ "kind": "allEnemies" }],
+          "effects": [{ "kind": "damage", "amount": { "kind": "const", "value": 999 } }]
+        }
+      ]
+    },
+    { "name": "Guard", "base": { "hp": 14, "pwr": 4 } }
+  ]
+}

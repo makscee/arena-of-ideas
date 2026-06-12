@@ -114,6 +114,20 @@ export const DEFAULT_RUN_POOL: UnitDef[] = [
   { name: "Squire", base: { hp: 8, pwr: 2 } },
 ];
 
+/** The creation sim-gate's default win-rate band and sweep depth — the
+ * empirical "balanced" definition a candidate must clear (src/gate.ts). A
+ * candidate's overall win-rate vs the reference meta must land in
+ * [GATE_BAND_MIN, GATE_BAND_MAX] inclusive: below is filler, above is
+ * overtuned. Empirical for now — the budget formula slots in later as one more
+ * check (vision). A knob, never prose in a README; a per-task gate config may
+ * override these. */
+export const GATE_BAND_MIN = 0.35;
+export const GATE_BAND_MAX = 0.65;
+
+/** Seeds the gate sweeps per matchup. Enough to make a win-rate estimate
+ * stable across the band edges without making a hand-run slow. */
+export const GATE_SEEDS = 50;
+
 /** Base hp gained per level-up. */
 export const LEVEL_HP_GROWTH = 2;
 

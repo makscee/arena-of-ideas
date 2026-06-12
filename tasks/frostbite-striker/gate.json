@@ -1,0 +1,6 @@
+{
+  "_comment": "Per-task sim-gate config. Omitted keys fall back to the GATE_* tunables (src/tunables.ts). The band is a number here, never prose in the README.",
+  "bandMin": 0.35,
+  "bandMax": 0.65,
+  "seeds": 50
+}
