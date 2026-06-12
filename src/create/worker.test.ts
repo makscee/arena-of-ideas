@@ -21,7 +21,7 @@ import type {
 } from "./worker.js";
 import { buildArgs, parseEnvelope } from "./claude-code.js";
 import { parseMachineLine } from "./gauntlet.js";
-import { parseArgs } from "./cli.js";
+import { parseArgs, buildHarness } from "./cli.js";
 
 const CONFIG: WorkerConfig = {
   taskDir: "/repo/tasks/frostbite-striker",
@@ -307,27 +307,81 @@ describe("gauntlet parseMachineLine", () => {
 });
 
 describe("cli parseArgs", () => {
-  test("defaults: maxAttempts 5, no model, no bin override", () => {
+  test("defaults: claude-code adapter, maxAttempts 5, no model/bin/base-url/key", () => {
     const a = parseArgs(["tasks/frostbite-striker"]);
     expect(a.taskDir).toBe("tasks/frostbite-striker");
+    expect(a.adapter).toBe("claude-code");
     expect(a.maxAttempts).toBe(5);
     expect(a.model).toBeUndefined();
     expect(a.bin).toBeUndefined();
+    expect(a.baseUrl).toBeUndefined();
+    expect(a.key).toBeUndefined();
   });
 
-  test("flags parse", () => {
+  test("claude-code flags parse", () => {
     const a = parseArgs(["tasks/x", "--max-attempts", "3", "--model", "sonnet", "--timeout-ms", "60000", "--bin", "/usr/bin/fake"]);
+    expect(a.adapter).toBe("claude-code");
     expect(a.maxAttempts).toBe(3);
     expect(a.model).toBe("sonnet");
     expect(a.timeoutMs).toBe(60000);
     expect(a.bin).toBe("/usr/bin/fake");
   });
 
-  test("a missing task dir, an unknown flag, or a bad number is rejected", () => {
+  test("the chat adapter and its --base-url / --key / --model parse (space form)", () => {
+    const a = parseArgs([
+      "tasks/x", "--adapter", "chat",
+      "--base-url", "https://api.deepseek.com", "--model", "deepseek-chat", "--key", "sk-abc",
+    ]);
+    expect(a.adapter).toBe("chat");
+    expect(a.baseUrl).toBe("https://api.deepseek.com");
+    expect(a.model).toBe("deepseek-chat");
+    expect(a.key).toBe("sk-abc");
+  });
+
+  test("--flag=value form parses identically (the documented one-command shape)", () => {
+    const a = parseArgs(["tasks/x", "--adapter=chat", "--base-url=https://api.deepseek.com", "--model=deepseek-chat"]);
+    expect(a.adapter).toBe("chat");
+    expect(a.baseUrl).toBe("https://api.deepseek.com");
+    expect(a.model).toBe("deepseek-chat");
+  });
+
+  test("a missing task dir, an unknown flag, a bad number, or a bad adapter is rejected", () => {
     expect(() => parseArgs([])).toThrow();
     expect(() => parseArgs(["a", "b"])).toThrow();
     expect(() => parseArgs(["t", "--nope"])).toThrow(/unknown flag/);
     expect(() => parseArgs(["t", "--max-attempts", "0"])).toThrow(/positive integer/);
+    expect(() => parseArgs(["t", "--adapter", "gemini"])).toThrow(/claude-code\|chat/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 7. buildHarness — adapter selection wiring (rules-blind transport config)
+// ---------------------------------------------------------------------------
+
+describe("buildHarness adapter selection", () => {
+  test("chat without a base-url (and no env) is a loud usage error", () => {
+    const saved = { base: process.env.OPENAI_BASE_URL, key1: process.env.OPENAI_API_KEY, key2: process.env.DEEPSEEK_API_KEY };
+    delete process.env.OPENAI_BASE_URL;
+    try {
+      const args = parseArgs(["tasks/x", "--adapter", "chat", "--model", "m"]);
+      expect(() => buildHarness(args, "/repo")).toThrow(/base-url/);
+    } finally {
+      if (saved.base !== undefined) process.env.OPENAI_BASE_URL = saved.base;
+      if (saved.key1 !== undefined) process.env.OPENAI_API_KEY = saved.key1;
+      if (saved.key2 !== undefined) process.env.DEEPSEEK_API_KEY = saved.key2;
+    }
+  });
+
+  test("chat without a model is a loud usage error", () => {
+    const args = parseArgs(["tasks/x", "--adapter", "chat", "--base-url", "https://x.test"]);
+    expect(() => buildHarness(args, "/repo")).toThrow(/model/);
+  });
+
+  test("both adapters build a callable harness when their fields are present", () => {
+    const cc = buildHarness(parseArgs(["tasks/x"]), "/repo");
+    expect(typeof cc).toBe("function");
+    const chat = buildHarness(parseArgs(["tasks/x", "--adapter", "chat", "--base-url", "https://x.test", "--model", "m"]), "/repo");
+    expect(typeof chat).toBe("function");
   });
 });
 

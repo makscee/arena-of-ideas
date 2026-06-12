@@ -1,21 +1,34 @@
 /**
- * Creation worker CLI (PRD #013 slice 2) — `npm run create`.
+ * Creation worker CLI (PRD #013 slices 2–3) — `npm run create`.
  *
- * Drives the Claude Code headless harness at a creation task until it produces
- * an in-band candidate, or fails loudly after the attempt bound. Writes the full
- * bounce log (machine-readable JSONL + a final JSON summary) to the task's out/
- * directory — that log is the provenance slice 4 consumes, and the evidence a
- * run actually converged (or failed) unattended.
+ * Drives a harness at a creation task until it produces an in-band candidate, or
+ * fails loudly after the attempt bound. Writes the full bounce log
+ * (machine-readable JSONL + a final JSON summary) to the task's out/ directory —
+ * that log is the provenance slice 4 consumes, and the evidence a run actually
+ * converged (or failed) unattended.
+ *
+ * Two interchangeable harness adapters sit behind the SAME worker bounce loop
+ * (harness-agnosticism is the PRD's bet): `--adapter=claude-code` (default) shells
+ * out to the Claude Code CLI; `--adapter=chat` drives any OpenAI-compatible
+ * `/v1/chat/completions` endpoint over HTTP. Neither adapter knows game rules —
+ * the task README + the gauntlet carry them.
  *
  * Usage (from the repo root):
- *   npm run create -- <taskDir> [--max-attempts N] [--model M] [--timeout-ms MS] [--bin PATH]
+ *   npm run create -- <taskDir> [--adapter claude-code|chat]
+ *     [--max-attempts N] [--model M] [--timeout-ms MS]
+ *     claude-code: [--bin PATH]
+ *     chat:        [--base-url URL] [--key KEY]
+ *                  (key also via OPENAI_API_KEY / DEEPSEEK_API_KEY;
+ *                   base-url also via OPENAI_BASE_URL)
  *
- * --bin overrides the harness binary (default the `claude` CLI); a faithful
+ * --bin overrides the Claude Code binary (default the `claude` CLI); a faithful
  * stand-in lets the whole loop run end-to-end when the live CLI is
  * unauthenticated in CI/sandboxes.
  *
- * Example:
+ * Examples:
  *   npm run create -- tasks/frostbite-striker
+ *   npm run create -- tasks/frostbite-striker --adapter=chat \
+ *       --base-url=https://api.deepseek.com --model=deepseek-chat
  *
  * Exit codes: 0 = converged (an attempt passed the gauntlet); 1 = loud failure
  * (bound hit, or a usage error). The worker holds no game rules — it relays the
@@ -25,46 +38,73 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
 import { runLoop } from "./worker.js";
-import type { WorkerConfig, RunResult } from "./worker.js";
+import type { Harness, WorkerConfig, RunResult } from "./worker.js";
 import { claudeCodeHarness } from "./claude-code.js";
+import { chatCompletionsHarness } from "./chat-completions.js";
 import { subprocessGauntlet } from "./gauntlet.js";
 
 const DEFAULT_MAX_ATTEMPTS = 5;
 const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000; // 10 min per headless attempt
+const DEFAULT_ADAPTER = "claude-code";
 const OUT_REL = join("out", "candidate.json");
 
+const ADAPTERS = ["claude-code", "chat"] as const;
+type Adapter = (typeof ADAPTERS)[number];
+
 const USAGE =
-  "Usage: create <taskDir> [--max-attempts N] [--model M] [--timeout-ms MS] [--bin PATH]";
+  "Usage: create <taskDir> [--adapter claude-code|chat] [--max-attempts N] " +
+  "[--model M] [--timeout-ms MS] [--bin PATH] [--base-url URL] [--key KEY]";
 
 interface Args {
   taskDir: string;
+  adapter: Adapter;
   maxAttempts: number;
   model: string | undefined;
   timeoutMs: number;
-  /** Override the harness binary (default "claude"). Lets a faithful stand-in
-   * drive a real end-to-end run when the live CLI is unauthenticated. */
+  /** claude-code: override the harness binary (default "claude"). */
   bin: string | undefined;
+  /** chat: the OpenAI-compatible endpoint base URL. */
+  baseUrl: string | undefined;
+  /** chat: the API key (Bearer). */
+  key: string | undefined;
 }
 
-/** Parse argv into the worker args. Exported for the unit test. */
+/** Parse argv into the worker args. A flag is accepted in either `--flag value`
+ * or `--flag=value` form. Exported for the unit test. */
 export function parseArgs(argv: string[]): Args {
   const positionals: string[] = [];
+  let adapter: Adapter = DEFAULT_ADAPTER;
   let maxAttempts = DEFAULT_MAX_ATTEMPTS;
   let timeoutMs = DEFAULT_TIMEOUT_MS;
   let model: string | undefined;
   let bin: string | undefined;
+  let baseUrl: string | undefined;
+  let key: string | undefined;
 
   for (let i = 0; i < argv.length; i++) {
-    const a = argv[i]!;
-    if (a === "--max-attempts") maxAttempts = mustInt(argv[++i], "--max-attempts");
-    else if (a === "--timeout-ms") timeoutMs = mustInt(argv[++i], "--timeout-ms");
-    else if (a === "--model") model = mustStr(argv[++i], "--model");
-    else if (a === "--bin") bin = mustStr(argv[++i], "--bin");
-    else if (a.startsWith("--")) throw new Error(`unknown flag: ${a}`);
-    else positionals.push(a);
+    const tok = argv[i]!;
+    // Support both "--flag value" and "--flag=value".
+    let flag = tok;
+    let inlineVal: string | undefined;
+    const eq = tok.indexOf("=");
+    if (tok.startsWith("--") && eq !== -1) {
+      flag = tok.slice(0, eq);
+      inlineVal = tok.slice(eq + 1);
+    }
+    const next = (): string | undefined => (inlineVal !== undefined ? inlineVal : argv[++i]);
+
+    if (flag === "--adapter") adapter = mustAdapter(next());
+    else if (flag === "--max-attempts") maxAttempts = mustInt(next(), "--max-attempts");
+    else if (flag === "--timeout-ms") timeoutMs = mustInt(next(), "--timeout-ms");
+    else if (flag === "--model") model = mustStr(next(), "--model");
+    else if (flag === "--bin") bin = mustStr(next(), "--bin");
+    else if (flag === "--base-url") baseUrl = mustStr(next(), "--base-url");
+    else if (flag === "--key") key = mustStr(next(), "--key");
+    else if (tok.startsWith("--")) throw new Error(`unknown flag: ${flag}`);
+    else positionals.push(tok);
   }
   if (positionals.length !== 1) throw new Error(USAGE);
-  return { taskDir: positionals[0]!, maxAttempts, model, timeoutMs, bin };
+  return { taskDir: positionals[0]!, adapter, maxAttempts, model, timeoutMs, bin, baseUrl, key };
 }
 
 function mustInt(v: string | undefined, flag: string): number {
@@ -77,6 +117,45 @@ function mustInt(v: string | undefined, flag: string): number {
 function mustStr(v: string | undefined, flag: string): string {
   if (v === undefined) throw new Error(`${flag} expects a value`);
   return v;
+}
+function mustAdapter(v: string | undefined): Adapter {
+  if (v === undefined || !ADAPTERS.includes(v as Adapter)) {
+    throw new Error(`--adapter expects one of ${ADAPTERS.join("|")}`);
+  }
+  return v as Adapter;
+}
+
+/** Build the harness the chosen adapter names. Reads endpoint/key from the
+ * environment when the flags are absent, so a real chat run is one command +
+ * exported key. Throws a usage error if a required chat field is missing.
+ * Exported for the unit test (it must stay rules-blind — it only wires
+ * transport config). */
+export function buildHarness(args: Args, repoRoot: string): Harness {
+  if (args.adapter === "chat") {
+    const baseUrl = args.baseUrl ?? process.env.OPENAI_BASE_URL;
+    const apiKey = args.key ?? process.env.OPENAI_API_KEY ?? process.env.DEEPSEEK_API_KEY;
+    if (!baseUrl) {
+      throw new Error("--adapter=chat needs --base-url (or OPENAI_BASE_URL)");
+    }
+    if (!args.model) {
+      throw new Error("--adapter=chat needs --model (the endpoint's model id)");
+    }
+    return chatCompletionsHarness({
+      baseUrl,
+      model: args.model,
+      apiKey,
+      repoRoot,
+      maxTurns: 12,
+      maxTokens: 100_000,
+      requestTimeoutMs: args.timeoutMs,
+    });
+  }
+  return claudeCodeHarness({
+    repoRoot,
+    timeoutMs: args.timeoutMs,
+    model: args.model,
+    bin: args.bin,
+  });
 }
 
 function main(): void {
@@ -99,12 +178,13 @@ function main(): void {
     maxAttempts: args.maxAttempts,
   };
 
-  const harness = claudeCodeHarness({
-    repoRoot,
-    timeoutMs: args.timeoutMs,
-    model: args.model,
-    bin: args.bin,
-  });
+  let harness: Harness;
+  try {
+    harness = buildHarness(args, repoRoot);
+  } catch (err) {
+    process.stderr.write((err as Error).message + "\n");
+    process.exit(1);
+  }
   const gauntlet = subprocessGauntlet({
     repoRoot,
     taskDir,
@@ -112,7 +192,7 @@ function main(): void {
   });
 
   process.stderr.write(
-    `[create] task=${taskDir} maxAttempts=${args.maxAttempts} model=${args.model ?? "(default)"}\n`,
+    `[create] task=${taskDir} adapter=${args.adapter} maxAttempts=${args.maxAttempts} model=${args.model ?? "(default)"}\n`,
   );
 
   runLoop(config, harness, gauntlet)
