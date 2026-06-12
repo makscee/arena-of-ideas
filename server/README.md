@@ -8,7 +8,9 @@ vitest — same toolchain as the kernel, which the server imports directly
 The OTP/session services are copied from void-auth (pinned decision: copy,
 don't call) and keep its security properties: codes and tokens are stored
 sha256-only, compared timing-safe; codes live 10 minutes and die after 5 wrong
-attempts; sessions are 32-byte bearer tokens with a 30-day lifetime.
+attempts; sessions are 32-byte bearer tokens with a 30-day lifetime. A
+5-minute interval sweep (`cleanup.ts`, the void-auth pattern) prunes expired
+sessions and hour-stale email codes.
 
 ## Run
 
@@ -26,7 +28,7 @@ npm start --workspace server
 | `MAIL_BASE_URL` | yes | — | void-mail base URL (codes go out via `POST /v1/mail/send`) |
 | `MAIL_TOKEN` | yes | — | void-mail bearer token |
 | `DB_PATH` | no | `./data/arena.db` | SQLite file (created on boot) |
-| `PORT` | no | `8787` | listen port |
+| `PORT` | no | `8787` | listen port — a non-integer or out-of-range value fails boot |
 
 ## Endpoints
 
@@ -45,10 +47,22 @@ npm start --workspace server
 - `GET /v1/ladder/pool/:round` → `{round, pool}` — **public** full pool; with
   `?exclude=me` (bearer required, 401 without) the pool as the caller's runs
   see it: every ghost that user owns is filtered out. Play reads use the
-  filtered form; display reads use the public one.
+  filtered form; display reads use the public one. `:round` is bounded
+  (1..10000) — anything else is 400.
+- `POST /v1/runs/open` (bearer) `{runId}` → 200 `{opened:true, runId}` or 422
+  `{opened:false, reason}` — open a run **before playing it**. One-shot per
+  runId (1–128 chars, `bootstrap` reserved); pins the pool watermark the
+  eventual submission's claimed prefixes are checked against (see below).
 - `POST /v1/runs` (bearer) `{run: serializeRun(state)}` → 200
   `{accepted:true, runId, endedBy, finalRound, crowned}` or 422
-  `{accepted:false, reason}` — submit a finished run for re-derivation.
+  `{accepted:false, reason}` — submit a finished run for re-derivation. The
+  runId must have been opened by the same user. Cost-bounded before replay:
+  max 256 KiB serialized, max 5000 log events.
+
+**Client flow** (what the slice-3 web backing implements): open the runId →
+play, fetching `/v1/ladder/pool/:round?exclude=me` + `/v1/ladder/champion`
+per fight → submit the finished run. Skipping the open makes the submission
+unverifiable and it is rejected.
 
 ## The shared ladder
 
@@ -79,9 +93,23 @@ the append-only history can still produce. The re-derived state must match the
 claim exactly (final stats, lives, every event); only re-derived ghosts/crowns
 are written, re-sequenced onto the end of the current pools. Inflated stats,
 fabricated wins, illegal decisions, wrong seeds, foreign content,
-resubmissions: all 422 with the reason. A submission that replays against an
-old-but-real prefix is accepted (it is a run that legally happened); staleness
-bounds are a later concern.
+resubmissions: all 422 with the reason.
+
+**The open handshake bounds the claimed prefix.** A `Snapshotted` seq is
+client-claimed, and without a floor it is forgeable *downward*: claiming a
+shorter prefix than the player observed cherry-picks the deterministic
+opponent draw, and claiming an empty pool turns the kernel's
+outran-every-ghost rule into a free champion challenge at round 1. So every
+run is opened before play (`POST /v1/runs/open`): the open row records the
+owner and the ladder's ghost watermark (highest `ladder_ghosts` row id — ids
+are monotonic, pools append-only, so the watermark reconstructs exactly how
+long each user-visible pool prefix already was at open time). Replay then
+holds every claimed seq to `[visible length at open, visible length now]`: a
+player cannot un-see a ghost, and a longer-than-now prefix never existed.
+Everything inside the window is accepted — pools grow during play, and each
+such prefix really was the player's view at some moment of their run. A run
+left open a long time may legally replay against its open-time view (the
+player could have fought then); tighter staleness bounds are a later concern.
 
 **The crown race.** Two runs can legally beat the same champion. The first
 submission takes the spot; a later submission whose beaten champion has since

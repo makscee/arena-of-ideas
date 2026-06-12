@@ -10,6 +10,7 @@
  */
 import { serve } from "@hono/node-server";
 import { createApp, defaultRateLimiters } from "./app.js";
+import { startCleanupTimer } from "./cleanup.js";
 import { openDb } from "./db.js";
 import { createMailClient } from "./mail.js";
 
@@ -22,18 +23,31 @@ function requireEnv(name: string): string {
   return v;
 }
 
+/** A garbage PORT must die at boot, not become NaN and a bind surprise. */
+function parsePort(raw: string | undefined): number {
+  if (raw === undefined || raw === "") return 8787;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1 || n > 65535) {
+    console.error(`Invalid PORT "${raw}" — expected an integer in 1..65535`);
+    process.exit(1);
+  }
+  return n;
+}
+
 const mailBaseUrl = requireEnv("MAIL_BASE_URL");
 const mailToken = requireEnv("MAIL_TOKEN");
 const dbPath = process.env.DB_PATH ?? "./data/arena.db";
-const port = Number(process.env.PORT ?? 8787);
+const port = parsePort(process.env.PORT);
 
+const clock = (): number => Math.floor(Date.now() / 1000);
 const { db } = openDb(dbPath);
 const app = createApp({
   db,
-  clock: () => Math.floor(Date.now() / 1000),
+  clock,
   mailClient: createMailClient({ baseUrl: mailBaseUrl, token: mailToken }),
   rateLimiters: defaultRateLimiters(),
 });
+startCleanupTimer(db, clock);
 
 serve({ fetch: app.fetch, port }, (info) => {
   console.log(`arena server listening on :${info.port} (db: ${dbPath})`);

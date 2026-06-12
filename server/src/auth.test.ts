@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import type { Hono } from "hono";
 import { createApp } from "./app.js";
 import type { AuthEnv } from "./auth.js";
 import { openDb } from "./db.js";
-import { createMockMailClient, type MockMailClient } from "./mail.js";
+import { createMockMailClient, type MailClient, type MockMailClient } from "./mail.js";
 import { createRateLimiter } from "./rate-limit.js";
 import { emailCodes, sessions, users } from "./schema.js";
 
@@ -319,6 +319,36 @@ describe("storage hygiene", () => {
     expect(sessionRow.tokenHash).toMatch(/^[0-9a-f]{64}$/);
     for (const value of Object.values(sessionRow)) {
       expect(value).not.toBe(token);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Mail send failure: constant response shape, but never silent server-side
+// ---------------------------------------------------------------------------
+
+describe("mail send failure", () => {
+  test("/start still answers {sent:true}; the failure lands in the server log", async () => {
+    const { db } = openDb(":memory:");
+    const failingMailer: MailClient = { send: async () => ({ ok: false, error: "smtp boom" }) };
+    const clockMs = () => 1_750_000_000_000;
+    const app = createApp({
+      db,
+      clock: () => 1_750_000_000,
+      mailClient: failingMailer,
+      rateLimiters: {
+        ipStart: createRateLimiter({ limit: 5, windowMs: WINDOW_MS, clock: clockMs }),
+        emailStart: createRateLimiter({ limit: 5, windowMs: WINDOW_MS, clock: clockMs }),
+      },
+    });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const res = await post(app, "/v1/auth/login/email/start", { email: "ada@example.com" });
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ sent: true }); // shape stays constant — no enumeration, no leak
+      expect(errSpy).toHaveBeenCalledWith(expect.stringContaining("smtp boom"));
+    } finally {
+      errSpy.mockRestore();
     }
   });
 });

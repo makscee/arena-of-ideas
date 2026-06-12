@@ -56,6 +56,12 @@ CREATE TABLE IF NOT EXISTS ladder_champions (
   seq INTEGER NOT NULL,
   team TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS run_opens (
+  run_id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  ghost_watermark INTEGER NOT NULL,
+  opened_at INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS run_submissions (
   run_id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,

@@ -30,6 +30,7 @@ import {
   type UnitDef,
 } from "../../src/index.js";
 import { createApp } from "./app.js";
+import { MAX_RUN_BYTES, MAX_RUN_LOG_EVENTS } from "./runs.js";
 import type { AuthEnv } from "./auth.js";
 import { openDb } from "./db.js";
 import { createMockMailClient, type MockMailClient } from "./mail.js";
@@ -102,9 +103,27 @@ async function fetchChampion(ctx: Ctx): Promise<{ champion: TeamSnapshot | null;
   return (await res.json()) as { champion: TeamSnapshot | null; holder: string | null };
 }
 
-/** Play a whole run the remote-backing way: each fight against a view freshly
- * fetched over HTTP (own ghosts excluded), writes staying local. */
+/** Open a run — the handshake every legit client performs before playing. */
+async function openRun(ctx: Ctx, token: string, runId: string): Promise<{ status: number; body: Record<string, unknown> }> {
+  const res = await ctx.app.request("/v1/runs/open", {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+    body: JSON.stringify({ runId }),
+  });
+  return { status: res.status, body: (await res.json()) as Record<string, unknown> };
+}
+
+/** Play a whole run the remote-backing way: open the runId, then each fight
+ * against a view freshly fetched over HTTP (own ghosts excluded), writes
+ * staying local. */
 async function playSharedRun(ctx: Ctx, token: string, seed: number, runId: string): Promise<RunState> {
+  expect((await openRun(ctx, token, runId)).status).toBe(200);
+  return playUnopenedRun(ctx, token, seed, runId);
+}
+
+/** The play loop without the open handshake — what a client that skips the
+ * handshake produces (its submission must be rejected). */
+async function playUnopenedRun(ctx: Ctx, token: string, seed: number, runId: string): Promise<RunState> {
   let s = buy(initRun({ seed, runId, pool: [TITAN], statuses: stressRegistry }), 0);
   for (let guard = 0; s.status === "active"; guard++) {
     if (guard > 200) throw new Error(`run ${runId} did not terminate`);
@@ -152,6 +171,7 @@ describe("leaderboard reads work logged-out", () => {
   test("a bad round is 400; exclude=me without a session is 401; submission needs auth", async () => {
     const ctx = makeCtx();
     expect((await ctx.app.request("/v1/ladder/pool/zero")).status).toBe(400);
+    expect((await ctx.app.request("/v1/ladder/pool/10001")).status).toBe(400); // bounded above too
     expect((await ctx.app.request("/v1/ladder/pool/1?exclude=me")).status).toBe(401);
     const res = await ctx.app.request("/v1/runs", {
       method: "POST",
@@ -278,6 +298,7 @@ describe("tampered submissions are rejected", () => {
     const ctx = makeCtx();
     const ada = await login(ctx, "ada@example.com");
     // Legally played and serialized — but against a pool the arena never shipped.
+    expect((await openRun(ctx, ada, "goliath")).status).toBe(200);
     const local = openLadder(new InMemoryLadderStore(), stressRegistry);
     let s = buy(initRun({ seed: 1, runId: "goliath", pool: [GOLIATH], statuses: stressRegistry }), 0);
     while (s.status === "active") s = ladderFight(s, local);
@@ -289,6 +310,7 @@ describe("tampered submissions are rejected", () => {
   test("explicit-opponent fights don't belong on the shared ladder", async () => {
     const ctx = makeCtx();
     const ada = await login(ctx, "ada@example.com");
+    expect((await openRun(ctx, ada, "offline")).status).toBe(200);
     let s = buy(initRun({ seed: 1, runId: "offline", pool: [TITAN], statuses: stressRegistry }), 0);
     for (let i = 0; i < STARTING_LIVES; i++) s = fight(s, [{ name: "Wall", base: { hp: 9999, pwr: 9999 } }]);
     expect(s.status).toBe("over");
@@ -321,6 +343,194 @@ describe("tampered submissions are rejected", () => {
       body: JSON.stringify({ run: 42 }),
     });
     expect(bad.status).toBe(400);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Prefix forgeries — the claimed pool prefix must be one the player could
+// actually have observed (Cass's refutation of the first slice-2 build)
+// ---------------------------------------------------------------------------
+
+describe("prefix forgeries are rejected", () => {
+  test("claiming an empty round-1 pool to grab a free champion challenge is rejected", async () => {
+    const ctx = makeCtx();
+    const ada = await login(ctx, "ada@example.com");
+    // The handshake is performed honestly — the forgery is in the claimed prefix.
+    expect((await openRun(ctx, ada, "forged")).status).toBe(200);
+
+    // Forge: play locally against an EMPTY pool view — the log then claims
+    // round-1's pool held 0 ghosts, so the kernel reads the empty draw as
+    // "outran every ghost" and challenges the champion at round 1. On a
+    // bootstrap-seeded ladder the round-1 pool is never smaller than BASE,
+    // so no player can ever have observed this.
+    const champ = (await fetchChampion(ctx)).champion;
+    const emptyView: LadderStore = {
+      poolAt: () => [],
+      addSnapshot: () => {},
+      champion: () => champ,
+      setChampion: () => {},
+    };
+    let s = buy(initRun({ seed: 1, runId: "forged", pool: [TITAN], statuses: stressRegistry }), 0);
+    while (s.status === "active") s = ladderFight(s, emptyView);
+    expect(s.endedBy).toBe("crown"); // seed 1: a lone round-1 Titan beats the bootstrap champion
+    expect(ofType(s.log, "Snapshotted")[0]!.seq).toBe(0); // the impossible claim
+
+    const { status, body } = await submit(ctx, ada, serializeRun(s));
+    expect(status).toBe(422);
+    expect(body["reason"]).toMatch(/impossibly short/);
+    // Nothing landed: no ghost, and the bootstrap champion still holds the seat.
+    expect((await fetchPublicPool(ctx, 1)).length).toBe(BASE);
+    expect((await fetchChampion(ctx)).champion!.runId).toBe(BOOTSTRAP_RUN_ID);
+  });
+
+  test("claiming a shorter-than-observed prefix to cherry-pick the opponent draw is rejected", async () => {
+    const ctx = makeCtx();
+    const ada = await login(ctx, "ada@example.com");
+    const bob = await login(ctx, "bob@example.com");
+
+    // Ada's accepted run lands a ghost in every round she fought: Bob's
+    // visible round-1 pool is now BASE+1 long.
+    const runA = await playSharedRun(ctx, ada, 1, "titan-a");
+    expect((await submit(ctx, ada, serializeRun(runA))).body).toMatchObject({ accepted: true });
+
+    // Forge: Bob opens AFTER Ada's ghosts landed, then plays against views
+    // truncated to the bootstrap-only prefix — claiming the pool as it stood
+    // BEFORE Ada, cherry-picking the weaker deterministic draw. His open
+    // pinned the longer pool: he cannot claim not to have seen it.
+    expect((await openRun(ctx, bob, "cherry")).status).toBe(200);
+    expect((await fetchMyPool(ctx, bob, 1)).length).toBe(BASE + 1);
+    let s = buy(initRun({ seed: 2, runId: "cherry", pool: [TITAN], statuses: stressRegistry }), 0);
+    for (let guard = 0; s.status === "active"; guard++) {
+      if (guard > 200) throw new Error("forged run did not terminate");
+      const round = s.round;
+      const visible = await fetchMyPool(ctx, bob, round);
+      const truncated = visible.filter((g) => g.runId === BOOTSTRAP_RUN_ID); // bootstrap rows are the pool's prefix
+      const champ = (await fetchChampion(ctx)).champion;
+      const view: LadderStore = {
+        poolAt: (r) => (r === round ? truncated : []),
+        addSnapshot: () => {},
+        champion: () => champ,
+        setChampion: () => {},
+      };
+      s = ladderFight(s, view);
+    }
+
+    const { status, body } = await submit(ctx, bob, serializeRun(s));
+    expect(status).toBe(422);
+    expect(body["reason"]).toMatch(/impossibly short/);
+    expect((await fetchPublicPool(ctx, 1)).map((g) => g.runId)).not.toContain("cherry");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The open handshake contract
+// ---------------------------------------------------------------------------
+
+describe("the open handshake", () => {
+  test("a finished run whose runId was never opened is rejected", async () => {
+    const ctx = makeCtx();
+    const ada = await login(ctx, "ada@example.com");
+    const run = await playUnopenedRun(ctx, ada, 1, "no-handshake");
+    const { status, body } = await submit(ctx, ada, serializeRun(run));
+    expect(status).toBe(422);
+    expect(body["reason"]).toMatch(/never opened/);
+  });
+
+  test("runIds open once, are length-bounded, and the bootstrap's is reserved", async () => {
+    const ctx = makeCtx();
+    const ada = await login(ctx, "ada@example.com");
+    expect((await openRun(ctx, ada, "once")).status).toBe(200);
+    const again = await openRun(ctx, ada, "once");
+    expect(again.status).toBe(422);
+    expect(again.body["reason"]).toMatch(/already open/);
+    expect((await openRun(ctx, ada, BOOTSTRAP_RUN_ID)).body["reason"]).toMatch(/reserved/);
+    expect((await openRun(ctx, ada, "")).status).toBe(422);
+    expect((await openRun(ctx, ada, "x".repeat(129))).status).toBe(422);
+    const badBody = await ctx.app.request("/v1/runs/open", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${ada}` },
+      body: JSON.stringify({ runId: 42 }),
+    });
+    expect(badBody.status).toBe(400);
+    const noAuth = await ctx.app.request("/v1/runs/open", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ runId: "anon" }),
+    });
+    expect(noAuth.status).toBe(401);
+  });
+
+  test("a run opened by one user cannot be submitted by another", async () => {
+    const ctx = makeCtx();
+    const ada = await login(ctx, "ada@example.com");
+    const bob = await login(ctx, "bob@example.com");
+    expect((await openRun(ctx, ada, "stolen")).status).toBe(200);
+    const run = await playUnopenedRun(ctx, bob, 1, "stolen");
+    const { status, body } = await submit(ctx, bob, serializeRun(run));
+    expect(status).toBe(422);
+    expect(body["reason"]).toMatch(/different user/);
+  });
+
+  test("a stale-but-real prefix still replays: the pool grew mid-run", async () => {
+    const ctx = makeCtx();
+    const ada = await login(ctx, "ada@example.com");
+    const bob = await login(ctx, "bob@example.com");
+
+    // Ada's run is played but NOT yet submitted when Bob opens and takes his
+    // first look at round 1 — so Bob's open-time floor is the bootstrap pool.
+    const runA = await playSharedRun(ctx, ada, 1, "titan-a");
+    expect((await openRun(ctx, bob, "stale")).status).toBe(200);
+    const stalePool = await fetchMyPool(ctx, bob, 1);
+    const staleChamp = (await fetchChampion(ctx)).champion;
+    expect(stalePool.length).toBe(BASE);
+
+    // Ada's submission lands her ghosts mid-Bob's-run…
+    expect((await submit(ctx, ada, serializeRun(runA))).body).toMatchObject({ accepted: true, crowned: true });
+
+    // …and Bob finishes against his stale round-1 view + fresh later views.
+    let s = buy(initRun({ seed: 2, runId: "stale", pool: [TITAN], statuses: stressRegistry }), 0);
+    for (let guard = 0; s.status === "active"; guard++) {
+      if (guard > 200) throw new Error("stale run did not terminate");
+      const round = s.round;
+      const pool = round === 1 ? stalePool : await fetchMyPool(ctx, bob, round);
+      const champ = round === 1 ? staleChamp : (await fetchChampion(ctx)).champion;
+      const view: LadderStore = {
+        poolAt: (r) => (r === round ? pool : []),
+        addSnapshot: () => {},
+        champion: () => champ,
+        setChampion: () => {},
+      };
+      s = ladderFight(s, view);
+    }
+
+    const { status, body } = await submit(ctx, bob, serializeRun(s));
+    expect(status).toBe(200); // round 1 claims the BASE-long prefix — exactly his open-time floor
+    expect(body).toMatchObject({ accepted: true });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Submission cost bounds — the replay is synchronous
+// ---------------------------------------------------------------------------
+
+describe("submission cost bounds", () => {
+  test("an oversized submission is rejected before replay", async () => {
+    const ctx = makeCtx();
+    const ada = await login(ctx, "ada@example.com");
+    const { status, body } = await submit(ctx, ada, "x".repeat(MAX_RUN_BYTES + 1));
+    expect(status).toBe(422);
+    expect(body["reason"]).toMatch(/bytes/);
+  });
+
+  test("a log padded past the event cap is rejected before replay", async () => {
+    const ctx = makeCtx();
+    const ada = await login(ctx, "ada@example.com");
+    const run = await playSharedRun(ctx, ada, 1, "padded");
+    const claimed = JSON.parse(serializeRun(run)) as Loose;
+    (claimed["log"] as unknown[]).push(...Array.from({ length: MAX_RUN_LOG_EVENTS }, () => 0));
+    const { status, body } = await submit(ctx, ada, JSON.stringify(claimed));
+    expect(status).toBe(422);
+    expect(body["reason"]).toMatch(/events/);
   });
 });
 

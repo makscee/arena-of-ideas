@@ -12,7 +12,7 @@
  * is append-only (current = latest row) so run re-derivation can replay a
  * challenge against the champion that was actually seated when the run fought.
  */
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, lte, max } from "drizzle-orm";
 import { assertSeqInOrder } from "../../src/ladder.js";
 import type { LadderStore, TeamSnapshot } from "../../src/index.js";
 import type { UnitDef } from "../../src/index.js";
@@ -82,6 +82,26 @@ export class SqliteLadderStore implements LadderStore {
   /** The full (unfiltered) length of a round's pool — the next seq. */
   poolLength(round: number): number {
     return this.db.select().from(ladderGhosts).where(eq(ladderGhosts.round, round)).all().length;
+  }
+
+  /** The highest ladder_ghosts row id (0 on an unghosted ladder) — the
+   * watermark a run open pins, so poolVisibleCountAt can answer "how long was
+   * this prefix when the run began" long after the pool has grown. */
+  maxGhostId(): number {
+    return this.db.select({ m: max(ladderGhosts.id) }).from(ladderGhosts).all()[0]?.m ?? 0;
+  }
+
+  /** How many round-`round` ghosts were visible to `excludeUserId` when
+   * `ghostWatermark` was taken. Row ids are monotonic and pools append-only,
+   * so the rows with id ≤ watermark ARE the pool as it stood then — the
+   * historical prefix length the open handshake holds submissions to. */
+  poolVisibleCountAt(round: number, excludeUserId: string | null, ghostWatermark: number): number {
+    const rows = this.db
+      .select()
+      .from(ladderGhosts)
+      .where(and(eq(ladderGhosts.round, round), lte(ladderGhosts.id, ghostWatermark)))
+      .all();
+    return rows.filter((r) => excludeUserId === null || r.userId === null || r.userId !== excludeUserId).length;
   }
 
   /** The current champion row, owner included; null only before bootstrap. */

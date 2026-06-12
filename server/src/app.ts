@@ -16,6 +16,9 @@
  *   GET  /v1/ladder/pool/:round       public — the round's ghost pool;
  *                                     ?exclude=me (bearer) = the pool as the
  *                                     caller's runs see it, own ghosts out
+ *   POST /v1/runs/open                bearer — open a run BEFORE playing it:
+ *                                     pins the pool watermark its submission's
+ *                                     claimed prefixes are checked against
  *   POST /v1/runs                     bearer — submit a finished run for
  *                                     re-derivation (runs.ts)
  *
@@ -44,7 +47,7 @@ import { SqliteLadderStore } from "./ladder-store.js";
 import type { MailClient } from "./mail.js";
 import { renderOtpEmail } from "./otp-email.js";
 import { createRateLimiter, type RateLimiter } from "./rate-limit.js";
-import { submitRun } from "./runs.js";
+import { openRun, submitRun } from "./runs.js";
 import { users } from "./schema.js";
 import { mint, revoke, verify } from "./sessions.js";
 
@@ -74,6 +77,10 @@ export function defaultRateLimiters(): AppDeps["rateLimiters"] {
 // Pragmatic shape check, not RFC 5322 — void-mail does the real bounce.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CODE_RE = /^\d{6}$/;
+
+/** Pool reads are bounded: no real run climbs anywhere near this, so a bigger
+ * :round is junk input, not a query. */
+const MAX_POOL_ROUND = 10_000;
 
 async function jsonBody(req: Request): Promise<Record<string, unknown> | null> {
   try {
@@ -121,13 +128,16 @@ export function createApp(deps: AppDeps): Hono<AuthEnv> {
     const { code } = emailCodes.issue(email);
     const rendered = renderOtpEmail({ code, ttl: OTP_TTL_SECONDS });
     // Send failures are not leaked to clients (still 200 sent:true) — the
-    // response shape is constant by design.
-    await mailClient.send({
+    // response shape is constant by design. The operator still sees them.
+    const sent = await mailClient.send({
       to: email,
       subject: rendered.subject,
       html: rendered.html,
       text: rendered.text,
     });
+    if (!sent.ok) {
+      console.error(`[mail] OTP send to ${email} failed: ${sent.error}`);
+    }
 
     return c.json({ sent: true as const }, 200);
   });
@@ -187,7 +197,7 @@ export function createApp(deps: AppDeps): Hono<AuthEnv> {
 
   app.get("/v1/ladder/pool/:round", (c) => {
     const round = Number(c.req.param("round"));
-    if (!Number.isInteger(round) || round < 1) {
+    if (!Number.isInteger(round) || round < 1 || round > MAX_POOL_ROUND) {
       return c.json({ error: "invalid_round" }, 400);
     }
     if (c.req.query("exclude") !== "me") {
@@ -200,6 +210,17 @@ export function createApp(deps: AppDeps): Hono<AuthEnv> {
     const session = token === "" ? null : verify(db, token, clock);
     if (session === null) return c.json({ error: "unauthorized" }, 401);
     return c.json({ round, pool: store.poolVisibleTo(round, session.userId) });
+  });
+
+  app.post("/v1/runs/open", auth, async (c) => {
+    const body = await jsonBody(c.req.raw);
+    const runId = body?.runId;
+    if (typeof runId !== "string") {
+      return c.json({ error: "invalid_body" }, 400);
+    }
+    const session = c.get("session");
+    const outcome = openRun({ db, store, clock }, session.userId, runId);
+    return c.json(outcome, outcome.opened ? 200 : 422);
   });
 
   app.post("/v1/runs", auth, async (c) => {

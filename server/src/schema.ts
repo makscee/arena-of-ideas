@@ -72,6 +72,21 @@ export const ladderChampions = sqliteTable("ladder_champions", {
   team: text("team").notNull(),
 });
 
+/** Run-open handshake — the anti-forgery pin. A run must be opened (POST
+ * /v1/runs/open) by its owner before it is played; submission requires the
+ * matching row. `ghostWatermark` is the highest ladder_ghosts.id at open
+ * time: pools are append-only with monotonic row ids, so re-derivation can
+ * recompute exactly how long each visible pool prefix already was when the
+ * run began — a submission claiming a shorter prefix is a forgery (a player
+ * cannot un-see a ghost), not a stale-but-real view. */
+export const runOpens = sqliteTable("run_opens", {
+  runId: text("run_id").primaryKey(),
+  userId: text("user_id").notNull(),
+  /** Highest ladder_ghosts.id at open — 0 on an unghosted ladder. */
+  ghostWatermark: integer("ghost_watermark").notNull(),
+  openedAt: integer("opened_at").notNull(),
+});
+
 /** Accepted run submissions — one row per re-derived run. The primary key
  * makes runIds globally unique: a resubmission (or a cross-user runId
  * collision, which would corrupt the kernel's own-ghost runId filter) is
@@ -89,5 +104,6 @@ export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 export type EmailCode = typeof emailCodes.$inferSelect;
 export type LadderGhost = typeof ladderGhosts.$inferSelect;
+export type RunOpen = typeof runOpens.$inferSelect;
 export type LadderChampion = typeof ladderChampions.$inferSelect;
 export type RunSubmission = typeof runSubmissions.$inferSelect;

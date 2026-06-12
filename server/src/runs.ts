@@ -17,6 +17,20 @@
  * still produce. Replaying against those historical views reproduces the run
  * byte-for-byte — or doesn't, and the submission is rejected with the reason.
  *
+ * The claimed prefix is bounded on BOTH sides — that is the open handshake.
+ * The upper bound is free: a prefix longer than today's pool never existed.
+ * The lower bound needs a pin, or the claim is forgeable downward: a log
+ * claiming a SHORTER prefix than the player observed cherry-picks the
+ * deterministic draw, and a log claiming an EMPTY pool turns the kernel's
+ * outran-every-ghost rule into a free champion challenge at round 1. So a
+ * run must be opened (openRun, POST /v1/runs/open) before it is played: the
+ * open row pins the ladder's ghost watermark, and replay rejects any claimed
+ * prefix shorter than what was already visible to that user at open time —
+ * a player cannot un-see a ghost. Every length between open-time and now is
+ * accepted: pools grow during play, and each such prefix really was the
+ * user's view at some moment of their run. Submitting unopened, or another
+ * user's runId, is rejected before replay.
+ *
  * What acceptance writes: the re-derived ghosts, re-sequenced onto the END of
  * the current pools (the historical seq pinned the draw; insertion order is
  * the server's). A re-derived crown is applied only if the champion the run
@@ -43,7 +57,7 @@ import { eq } from "drizzle-orm";
 import type { ArenaContent } from "./content.js";
 import type { DB } from "./db.js";
 import type { SqliteLadderStore } from "./ladder-store.js";
-import { runSubmissions } from "./schema.js";
+import { runOpens, runSubmissions } from "./schema.js";
 
 export interface SubmitDeps {
   db: DB;
@@ -57,8 +71,36 @@ export type SubmitOutcome =
   | { accepted: true; runId: string; endedBy: RunEndReason; finalRound: number; crowned: boolean }
   | { accepted: false; reason: string };
 
+export type OpenOutcome = { opened: true; runId: string } | { opened: false; reason: string };
+
 /** A submission failing re-derivation — carries the reason the client sees. */
 class SubmissionRejected extends Error {}
+
+// Replay is synchronous — bound what a submission may cost before replaying.
+export const MAX_RUN_BYTES = 256 * 1024;
+export const MAX_RUN_LOG_EVENTS = 5_000;
+export const MAX_RUN_ID_LENGTH = 128;
+
+/** Open a run before playing it: records who owns the runId and pins the
+ * ladder's ghost watermark — the floor every claimed pool prefix in the
+ * eventual submission is checked against. One-shot per runId, like
+ * submission itself. */
+export function openRun(deps: Pick<SubmitDeps, "db" | "store" | "clock">, userId: string, runId: string): OpenOutcome {
+  if (runId === BOOTSTRAP_RUN_ID) {
+    return { opened: false, reason: `runId "${BOOTSTRAP_RUN_ID}" is reserved for the ladder's seed ghosts` };
+  }
+  if (runId.length === 0 || runId.length > MAX_RUN_ID_LENGTH) {
+    return { opened: false, reason: `runId must be 1–${MAX_RUN_ID_LENGTH} characters` };
+  }
+  if (deps.db.select().from(runOpens).where(eq(runOpens.runId, runId)).all().length > 0) {
+    return { opened: false, reason: `run "${runId}" is already open — runIds are one-shot` };
+  }
+  deps.db
+    .insert(runOpens)
+    .values({ runId, userId, ghostWatermark: deps.store.maxGhostId(), openedAt: deps.clock() })
+    .run();
+  return { opened: true, runId };
+}
 
 /** Submit a finished run for `userId`. Returns the outcome; writes (ghosts,
  * crown, the submission row) happen only on acceptance, in one transaction. */
@@ -88,6 +130,13 @@ interface Rederived {
 function replay(deps: SubmitDeps, userId: string, raw: string): Rederived {
   const { store, content } = deps;
 
+  // Cost gates first — the replay below is synchronous, so nothing oversized
+  // gets to spend server time on it.
+  const bytes = Buffer.byteLength(raw, "utf8");
+  if (bytes > MAX_RUN_BYTES) {
+    throw new SubmissionRejected(`submission is ${bytes} bytes — the limit is ${MAX_RUN_BYTES}`);
+  }
+
   let claimed: RunState;
   try {
     claimed = deserializeRun(raw); // loud structure + content gate, the kernel's own check
@@ -95,6 +144,9 @@ function replay(deps: SubmitDeps, userId: string, raw: string): Rederived {
     throw new SubmissionRejected(`unreadable run: ${(err as Error).message}`);
   }
 
+  if (claimed.log.length > MAX_RUN_LOG_EVENTS) {
+    throw new SubmissionRejected(`run log has ${claimed.log.length} events — the limit is ${MAX_RUN_LOG_EVENTS}`);
+  }
   if (claimed.status !== "over") {
     throw new SubmissionRejected("only finished runs are submitted — this one is still active");
   }
@@ -104,6 +156,15 @@ function replay(deps: SubmitDeps, userId: string, raw: string): Rederived {
   if (deps.db.select().from(runSubmissions).where(eq(runSubmissions.runId, claimed.runId)).all().length > 0) {
     throw new SubmissionRejected(`run "${claimed.runId}" was already submitted — runIds are one-shot`);
   }
+  // The open handshake's other half: the run must have been opened, by this
+  // user — its watermark is the floor every claimed pool prefix is held to.
+  const open = deps.db.select().from(runOpens).where(eq(runOpens.runId, claimed.runId)).all()[0];
+  if (open === undefined) {
+    throw new SubmissionRejected(`run "${claimed.runId}" was never opened — open a run before playing it`);
+  }
+  if (open.userId !== userId) {
+    throw new SubmissionRejected(`run "${claimed.runId}" was opened by a different user`);
+  }
   // The pool and registry travel by value in a serialized run; pin them to the
   // arena's content or the replay would verify a run against invented units.
   if (!isDeepStrictEqual(claimed.pool, content.pool) || !isDeepStrictEqual(claimed.statuses, content.statuses)) {
@@ -111,7 +172,7 @@ function replay(deps: SubmitDeps, userId: string, raw: string): Rederived {
   }
 
   const steps = extractSteps(claimed.log);
-  const view = new ReplayLadderView(store, userId);
+  const view = new ReplayLadderView(store, userId, open.ghostWatermark);
   let state = initRun({ seed: claimed.seed, runId: claimed.runId, pool: content.pool, statuses: content.statuses });
   for (const step of steps) {
     if (step.kind === "ladder") {
@@ -180,8 +241,11 @@ function extractSteps(log: readonly RunEvent[]): ReplayStep[] {
 
 /** The LadderStore the replay runs against: per fight, the historical view
  * the submitted log pins — the user-filtered pool truncated to the claimed
- * prefix, and the claimed champion looked up in the append-only history.
- * Writes are staged, never stored: the store mutates only on acceptance. */
+ * prefix, and the claimed champion looked up in the append-only history. The
+ * claimed prefix must fall inside what the player could have observed:
+ * no shorter than the open-time view (the watermark floor), no longer than
+ * the current pool. Writes are staged, never stored: the store mutates only
+ * on acceptance. */
 class ReplayLadderView implements LadderStore {
   frame: { claimedSeq: number; championRunId: string | null } | null = null;
   readonly staged: TeamSnapshot[] = [];
@@ -190,11 +254,22 @@ class ReplayLadderView implements LadderStore {
   constructor(
     private readonly store: SqliteLadderStore,
     private readonly userId: string,
+    private readonly ghostWatermark: number,
   ) {}
 
   poolAt(round: number): readonly TeamSnapshot[] {
     const frame = this.mustFrame();
     const visible = this.store.poolVisibleTo(round, this.userId);
+    // Pools are append-only: the user's round-R view was already `floor` long
+    // when they opened the run, and a player cannot un-see a ghost. A shorter
+    // claim cherry-picks the draw (at zero: a free champion challenge).
+    const floor = this.store.poolVisibleCountAt(round, this.userId, this.ghostWatermark);
+    if (frame.claimedSeq < floor) {
+      throw new SubmissionRejected(
+        `run claims a round-${round} pool of ${frame.claimedSeq} ghosts; this ladder already had ${floor} ` +
+          `when the run opened — the claimed prefix is impossibly short`,
+      );
+    }
     if (visible.length < frame.claimedSeq) {
       throw new SubmissionRejected(
         `run claims a round-${round} pool of ${frame.claimedSeq} ghosts; this ladder has ${visible.length}`,
