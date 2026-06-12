@@ -244,6 +244,25 @@ async function occlusionScenario(viewport, tag) {
     await ctx.close();
   }
 
+  // --- battle transport AT the mountViewer landing scroll (Cass #014 round-2) ---
+  // The structural finding: a fixed bottom-right menu button overlaps the scrub
+  // (and the step buttons beside it) at exactly the scroll offset mountViewer's
+  // nudge lands the player on — the scrub parked just above the battle bar. The
+  // round-1 raise (bottom: 7rem) only relocated the collision to that landing y.
+  // Sweep scrub/step-prev/step-next here, at the landing scroll (NOT scroll-top):
+  // this block FAILS on pre-fix main and passes once the button docks in the bar.
+  for (const target of ["#scrub", "#step-prev", "#step-next"]) {
+    const { ctx, page } = await openRun(browser, plainShopRun(), viewport);
+    await page.click("#run-fight");
+    await page.waitForSelector("#run-skip:not([hidden])");
+    // Pause autoplay (step-next pauses wherever it is) so the transport holds
+    // still for the sweep; the landing scroll is left untouched.
+    await page.click("#step-next");
+    const { stolen, total } = await sweepOcclusion(page, target);
+    check(stolen === 0, `${tag} battle landing: ${target} not occluded by menu button`, `${stolen}/${total} surface points stolen`);
+    await ctx.close();
+  }
+
   // --- battle revealed: check #run-continue (the Cass-reproduced collision) ---
   {
     const { ctx, page } = await openRun(browser, plainShopRun(), viewport);

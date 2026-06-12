@@ -596,16 +596,27 @@ button:disabled:hover {
    a bottom sheet at phone width — the inspector's two shapes). */
 
 #run-menu-button {
-  /* Bottom-right corner, fixed. position: fixed keeps the #012 layout-lock —
-     it is out of flow, so showing/hiding it reflows nothing. At phone width a
-     media override raises the bottom value above the sticky battle bar (see the
-     @media 700px block) so the button never occludes continue/skip/fight. */
+  /* Out of battle (shop/end — no sticky bar): a fixed bottom-right control.
+     position: fixed keeps the #012 layout-lock — out of flow, so showing or
+     hiding it reflows nothing. In battle the button is docked INTO the sticky
+     bar instead (.in-bar below), where it can never occlude the transport at
+     any scroll offset — Cass #014 round-2: a fixed bottom-right y collides
+     with the scrub at the mountViewer landing scroll by construction. */
   position: fixed;
   bottom: max(0.6rem, env(safe-area-inset-bottom));
   right: 0.6rem;
   z-index: 45; /* above the sticky battle bar (z 5) and the inspector (z 40) */
   min-width: 44px;
   min-height: 44px;
+}
+
+/* Docked in the battle bar: a normal in-flow flex child, right-aligned past
+   the left-aligned skip/continue (margin-left: auto). Inside the bar it
+   occludes nothing — the bar owns the bottom edge, and the button rides with
+   it. min-height matches skip/continue so it never grows the bar's row. */
+#run-menu-button.in-bar {
+  position: static;
+  margin-left: auto;
 }
 
 #run-menu-overlay {
@@ -1530,17 +1541,12 @@ button.danger {
      (LS-3 lineage). Kept inside this existing block so the inspector's phone
      rules stay the file's first 700px media query. */
 
-  /* Occlusion fix (Cass #014 refutation): the sticky battle bar at phone width
-     is ~7rem tall (revealed state: outcome + continue + padding). The default
-     bottom: 0.6rem put the menu button inside that zone — elementFromPoint
-     returned the menu button for ~15% of continue's surface, causing a thumb
-     tap on continue's right side to open the menu instead of advancing the
-     round. Raise the button above the bar; 7rem (112px) clears the ~95px bar
-     with a comfortable gap. During shop and end phases (no sticky bar) the
-     button floats harmlessly above the bottom edge. */
-  #run-menu-button {
-    bottom: max(7rem, env(safe-area-inset-bottom));
-  }
+  /* Occlusion (Cass #014 round-2): the round-1 fix raised the fixed button to
+     bottom: 7rem to dodge the sticky bar, but that only relocated the collision
+     — at the mountViewer landing scroll the button still overlapped the scrub's
+     right end. The structural fix docks the button INSIDE the bar in battle
+     (see #run-menu-button.in-bar) — no fixed-y override is needed at phone
+     width any more, so shop/end keep the plain bottom: 0.6rem home. */
 
   #run-menu-overlay {
     top: auto;

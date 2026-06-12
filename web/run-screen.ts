@@ -224,9 +224,12 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     if (!els.ladderPanel.hidden) {
       ladderView.refresh(which === "shop" && state !== undefined ? { round: state.round, runId: state.runId } : undefined);
     }
+    // Place the menu button BEFORE mounting: in battle it docks into the bar,
+    // so the reserveBattleBar() measure inside mountViewer() sees it (the bar
+    // height stays honest even if the button ever changes it).
+    syncMenuButton(); // the menu control rides the run, appearing/leaving with the phase
     if (which === "battle") mountViewer();
     else unmountViewer();
-    syncMenuButton(); // the menu control rides the run, appearing/leaving with the phase
     // Phase transitions reset scroll so the new panel head is visible (LS-7,
     // GA-6): continue → shop lands on the gold/lives header, not mid-page;
     // run-end → end screen starts at top. Battle is handled in mountViewer()
@@ -753,8 +756,24 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   /** The menu rides every in-run phase (shop/battle/end); the new-run screen
    * is its own start point and needs no abandon. Driven off the phase so the
    * button appears/disappears with the run, not the tab. */
+  // The menu button's out-of-battle home: a fixed bottom-right control, the
+  // same parent it ships in (#run-view). Captured once so dock/undock returns
+  // it exactly where it started.
+  const menuButtonHome = els.menuButton.parentElement!;
+
+  /** Show the menu button by phase, and place it so it occludes nothing by
+   * construction (Cass #014 round-2 finding): in battle it docks INSIDE the
+   * sticky battle bar, right-aligned (skip/continue are left-aligned, the bar
+   * owns the bottom edge — a control inside the bar can never steal the
+   * transport's surface at any scroll offset). Out of battle there is no bar,
+   * so it returns to its fixed bottom-right home. Docking happens before the
+   * reserveBattleBar() measure in mountViewer(), so the reserve sees the
+   * button's real contribution to bar height. */
   function syncMenuButton(): void {
     els.menuButton.hidden = state === undefined || phase === "new";
+    const dock = phase === "battle" ? els.battleBar : menuButtonHome;
+    if (els.menuButton.parentElement !== dock) dock.append(els.menuButton);
+    els.menuButton.classList.toggle("in-bar", phase === "battle");
   }
 
   function closeMenu(): void {
