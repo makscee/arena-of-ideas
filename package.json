@@ -3,6 +3,9 @@
   "version": "5.0.0-alpha.0",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "server"
+  ],
   "scripts": {
     "test": "vitest run",
     "e2e": "node e2e/run.mjs",
