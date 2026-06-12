@@ -26,6 +26,10 @@ const ROUND_SCAN_CAP = 200;
 export interface LadderViewDeps {
   store: LadderStore;
   registry: StatusRegistry;
+  /** Start with round 1's pool expanded — the leaderboard screen (#015
+   * slice 4) opens showing teams, not a list of closed drawers; the run
+   * screen's side ladder keeps its compact default. */
+  openFirstRound?: boolean;
 }
 
 /** The active run, when one is in the shop — marks "you are here" and "yours". */
@@ -55,6 +59,7 @@ export function ghostLabel(runId: string): string {
 
 export function createLadderView(root: HTMLElement, deps: LadderViewDeps): LadderView {
   const open = new Set<number>(); // expanded rounds survive re-renders
+  if (deps.openFirstRound === true) open.add(1);
   let sel: Selection | undefined;
   let run: LadderViewRun | undefined;
 
@@ -122,7 +127,7 @@ export function createLadderView(root: HTMLElement, deps: LadderViewDeps): Ladde
               const yours = run !== undefined && g.runId === run.runId;
               return (
                 `<div class="lv-ghost">` +
-                `<span class="lv-gid">${esc(ghostLabel(g.runId))}${yours ? " (you)" : ""}</span>` +
+                `<span class="lv-gid">${esc(ghostLabel(g.runId))}${yours ? ' <span class="lv-you">(you)</span>' : ""}</span>` +
                 teamRow(g, `g:${g.round}:${g.seq}`, false) +
                 `</div>`
               );

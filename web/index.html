@@ -40,10 +40,13 @@
         <button type="button" id="title-dev" title="Battle sandbox, gauntlet sweeps, team editor">dev tools</button>
       </section>
 
-      <!-- Leaderboard (#015 slice 3 seam, slice 4 fleshes it out): the same
-           ladder view the run screen shows, reachable without starting a run. -->
+      <!-- Leaderboard (#015 slice 4): a proper screen off the title — who
+           holds the crown, then the round pools climbing toward it. The body
+           is the shared ladder view (champion + pools, same cards, same
+           inspector); main.ts marks the player's own run when one is active. -->
       <section id="leaderboard-view" hidden>
-        <span class="pane-k">leaderboard</span>
+        <h2 class="lb-title">Leaderboard</h2>
+        <p class="lb-tagline">One crown. Beat every ghost on the way up, then the champion, and it's yours.</p>
         <div id="leaderboard-body"></div>
       </section>
 

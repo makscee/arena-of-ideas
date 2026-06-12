@@ -39,32 +39,40 @@ const overlayOpen = (page) => page.locator("#run-menu-overlay").isVisible();
 const scrubAt = (page) => page.locator("#scrub").inputValue();
 
 /** Sweep `targetSel`'s bounding box with a grid of points and count how many
- * resolve to `#run-menu-button` (or a descendant of it) via elementFromPoint.
- * Returns { stolen, total } — stolen > 0 means the menu button occludes the
- * target and will intercept taps. The grid step is 5px for reliable coverage.
+ * resolve to ANYTHING other than the target (or its own descendants/ancestors)
+ * via elementFromPoint. Returns { stolen, total, thieves } — stolen > 0 means
+ * some element occludes the target and will intercept taps. Generalized from
+ * the original menu-button-only sweep (#015 slice 4 carry): a future fixed
+ * header or floating control fails this guard too, not just #run-menu-button.
+ * Ancestors are allowed — a rounded corner inside the bounding box resolves
+ * to the parent, which is layout, not occlusion. The grid step is 5px.
  *
  * Cass reproduced 63/420 stolen for #run-continue at 375px (seed 42, natural
  * run): a 5-column × 84-row grid over the 181×87px button. The guard fires at
  * stolen > 0 so even a 1px corner grab fails. */
 async function sweepOcclusion(page, targetSel) {
   const b = await page.locator(targetSel).boundingBox();
-  if (b === null) return { stolen: 0, total: 0 }; // element not visible — skip
+  if (b === null) return { stolen: 0, total: 0, thieves: [] }; // element not visible — skip
   return page.evaluate(
-    ([x0, y0, w, h]) => {
-      const menuBtn = document.getElementById("run-menu-button");
+    ([sel, x0, y0, w, h]) => {
+      const target = document.querySelector(sel);
       const step = 5;
       let stolen = 0;
       let total = 0;
+      const thieves = new Set();
       for (let x = x0 + 2; x < x0 + w - 2; x += step) {
         for (let y = y0 + 2; y < y0 + h - 2; y += step) {
           const el = document.elementFromPoint(x, y);
-          if (el !== null && (el === menuBtn || menuBtn.contains(el))) stolen++;
+          if (el !== null && el !== target && !target.contains(el) && !el.contains(target)) {
+            stolen++;
+            thieves.add(el.id !== "" ? `#${el.id}` : el.tagName.toLowerCase() + (el.className ? `.${el.className}` : ""));
+          }
           total++;
         }
       }
-      return { stolen, total };
+      return { stolen, total, thieves: [...thieves] };
     },
-    [b.x, b.y, b.width, b.height],
+    [targetSel, b.x, b.y, b.width, b.height],
   );
 }
 
@@ -241,8 +249,8 @@ async function occlusionScenario(viewport, tag) {
   // --- shop phase: check #run-fight ---
   {
     const { ctx, page } = await openRun(browser, plainShopRun(), viewport);
-    const { stolen, total } = await sweepOcclusion(page, "#run-fight");
-    check(stolen === 0, `${tag} shop: #run-fight not occluded by menu button`, `${stolen}/${total} surface points stolen`);
+    const { stolen, total, thieves } = await sweepOcclusion(page, "#run-fight");
+    check(stolen === 0, `${tag} shop: #run-fight not occluded`, `${stolen}/${total} surface points stolen${stolen > 0 ? ` by ${thieves.join(", ")}` : ""}`);
     await ctx.close();
   }
 
@@ -253,8 +261,8 @@ async function occlusionScenario(viewport, tag) {
     await page.waitForSelector("#run-skip:not([hidden])");
     // Pause autoplay so skip stays visible long enough to sweep.
     await page.click("#step-next");
-    const { stolen, total } = await sweepOcclusion(page, "#run-skip");
-    check(stolen === 0, `${tag} battle pre-reveal: #run-skip not occluded by menu button`, `${stolen}/${total} surface points stolen`);
+    const { stolen, total, thieves } = await sweepOcclusion(page, "#run-skip");
+    check(stolen === 0, `${tag} battle pre-reveal: #run-skip not occluded`, `${stolen}/${total} surface points stolen${stolen > 0 ? ` by ${thieves.join(", ")}` : ""}`);
     await ctx.close();
   }
 
@@ -272,8 +280,8 @@ async function occlusionScenario(viewport, tag) {
     // Pause autoplay (step-next pauses wherever it is) so the transport holds
     // still for the sweep; the landing scroll is left untouched.
     await page.click("#step-next");
-    const { stolen, total } = await sweepOcclusion(page, target);
-    check(stolen === 0, `${tag} battle landing: ${target} not occluded by menu button`, `${stolen}/${total} surface points stolen`);
+    const { stolen, total, thieves } = await sweepOcclusion(page, target);
+    check(stolen === 0, `${tag} battle landing: ${target} not occluded`, `${stolen}/${total} surface points stolen${stolen > 0 ? ` by ${thieves.join(", ")}` : ""}`);
     await ctx.close();
   }
 
@@ -284,16 +292,16 @@ async function occlusionScenario(viewport, tag) {
     await page.waitForSelector("#run-skip:not([hidden])");
     await page.click("#run-skip");
     await page.waitForSelector("#run-continue:not([hidden])");
-    const { stolen, total } = await sweepOcclusion(page, "#run-continue");
-    check(stolen === 0, `${tag} battle revealed: #run-continue not occluded by menu button`, `${stolen}/${total} surface points stolen`);
+    const { stolen, total, thieves } = await sweepOcclusion(page, "#run-continue");
+    check(stolen === 0, `${tag} battle revealed: #run-continue not occluded`, `${stolen}/${total} surface points stolen${stolen > 0 ? ` by ${thieves.join(", ")}` : ""}`);
     await ctx.close();
   }
 
   // --- end phase: check #run-new-run ---
   {
     const { ctx, page } = await openRun(browser, endedRun(), viewport, "#run-end:not([hidden])");
-    const { stolen, total } = await sweepOcclusion(page, "#run-new-run");
-    check(stolen === 0, `${tag} end: #run-new-run not occluded by menu button`, `${stolen}/${total} surface points stolen`);
+    const { stolen, total, thieves } = await sweepOcclusion(page, "#run-new-run");
+    check(stolen === 0, `${tag} end: #run-new-run not occluded`, `${stolen}/${total} surface points stolen${stolen > 0 ? ` by ${thieves.join(", ")}` : ""}`);
     await ctx.close();
   }
 }

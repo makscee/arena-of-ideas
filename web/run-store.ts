@@ -46,6 +46,10 @@ export interface StoredBattle {
   seed: number;
   /** Display line: who the opponent was ("ghost auto-3", "champion web-2"). */
   opponentLabel: string;
+  /** The replay position the viewer last held (#015 slice 4): a hard reload
+   * mid-battle resumes the parked event, not event 0. Absent on a battle
+   * stored before its first unmount/pagehide — resume starts fresh then. */
+  position?: number;
 }
 
 /** The persisted active run: its state, plus the pending battle when the

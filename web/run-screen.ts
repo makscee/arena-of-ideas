@@ -543,7 +543,12 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     if (deps.viewerHost.parentElement !== els.battleMount) return;
     // Capture the playhead before detaching, so the next mount resumes here
     // rather than resetting to event 0 (#014 tab-switch position preservation).
-    if (phase === "battle" && pending !== undefined) battleResume = deps.viewer.position();
+    if (phase === "battle" && pending !== undefined) {
+      battleResume = deps.viewer.position();
+      // And durably (#015 slice 4): a hard reload while parked on another
+      // screen must still resume here — memory alone dies with the page.
+      persist(state!, { ...pending, position: battleResume });
+    }
     deps.viewer.stop();
     deps.viewerHost.hidden = true;
     deps.viewerHome.append(deps.viewerHost);
@@ -737,6 +742,21 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       renderLine(state);
     }
   });
+  // Hard reload / tab close while the replay is on screen (#015 slice 4
+  // carry): battleResume is captured on unmount, but a reload never unmounts —
+  // write the live playhead into the stored battle on the way out. pagehide,
+  // not beforeunload: it also covers bfcache entry and never blocks unload.
+  window.addEventListener("pagehide", () => {
+    if (state === undefined || pending === undefined) return;
+    const position = visible && phase === "battle" ? deps.viewer.position() : battleResume;
+    if (position === undefined) return;
+    try {
+      saveRun(deps.storage, state, { ...pending, position });
+    } catch {
+      // A quota failure on the way out has nowhere to surface — the run
+      // itself was already persisted when the fight resolved.
+    }
+  });
   els.fightButton.addEventListener("click", fightLadder);
   els.skipButton.addEventListener("click", () => deps.viewer.toEnd()); // landing on the end reveals the bar via onEnded
 
@@ -841,6 +861,9 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     if (stored !== null) {
       state = stored.state;
       pending = stored.battle;
+      // The parked replay position, revived (#015 slice 4) — fed through the
+      // same resumeAt seam a tab switch uses; clamping is the viewer's job.
+      if (typeof stored.battle?.position === "number") battleResume = stored.battle.position;
     }
   } catch (err) {
     // A corrupt stored run is refused loudly (never silently replayed wrong),

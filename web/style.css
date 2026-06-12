@@ -928,10 +928,49 @@ button:disabled:hover {
   border: none;
 }
 
-/* ---------- leaderboard screen (#015 slice 3 seam) ---------- */
+/* ---------- leaderboard screen (#015 slice 4) ----------
+   The champion chase as a destination: the crown front and center, the round
+   pools climbing under it. The body is the shared ladder view — these rules
+   only re-stage it for a full screen (the run screen's side ladder keeps the
+   compact defaults in the ladder-view section). */
 
 #leaderboard-view {
+  max-width: 46rem;
+  margin: 0.5rem auto 0;
+}
+
+.lb-title {
+  text-align: center;
+  font-size: 1.4rem;
+  letter-spacing: 0.05em;
+  margin: 0.5rem 0 0.2rem;
+}
+
+.lb-tagline {
+  text-align: center;
+  color: var(--dim);
+  font-size: 0.8rem;
+  margin: 0 0 1.2rem;
+}
+
+/* The crown, front and center: the shared champion panel, staged larger. */
+#leaderboard-view .lv-champ {
+  text-align: center;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  box-shadow: 0 0 18px rgba(201, 162, 39, 0.15);
+}
+
+#leaderboard-view .lv-champ .lv-team {
+  justify-content: center;
   margin-top: 0.5rem;
+}
+
+/* Round heads are the screen's primary taps — full thumb-sized rows. */
+#leaderboard-view .lv-round-head {
+  min-height: 44px;
+  font-size: 0.85rem;
 }
 
 /* ---------- views (battle / editor) ---------- */
@@ -1597,6 +1636,12 @@ button:disabled:hover {
   color: var(--dim);
   font-size: 0.68rem;
   margin-bottom: 0.15rem;
+}
+
+/* The player's own ghost, marked — reads at a glance among rivals. */
+.lv-you {
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .lv-team {

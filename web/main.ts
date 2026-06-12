@@ -11,9 +11,9 @@ import { createViewer } from "./viewer.js";
 import { createEditor } from "./editor.js";
 import { createGauntlet } from "./gauntlet.js";
 import { createRunScreen, type RunScreen } from "./run-screen.js";
-import { openLocalLadder, resetLadder } from "./run-store.js";
+import { loadRun, openLocalLadder, resetLadder } from "./run-store.js";
 import { createCodex, type CodexScreen } from "./codex.js";
-import { createLadderView, type LadderView } from "./ladder-view.js";
+import { createLadderView, type LadderView, type LadderViewRun } from "./ladder-view.js";
 import { createTitleScreen } from "./title-screen.js";
 
 // ---------------------------------------------------------------------------
@@ -204,8 +204,30 @@ document.addEventListener("click", (ev) => {
   codexScreen.navigate(fragment);
 });
 
+/** The active climb, for the leaderboard's "you" markers — read from the
+ * stored run (the same record the run screen revives from), not from the
+ * ladder: the ladder store is #016's server-swap seam and knows nothing of
+ * whose run is whose. A finished-but-undismissed run no longer climbs, so it
+ * gets no marker; a corrupt stored run is the run screen's to surface. */
+function activeRunMarker(): LadderViewRun | undefined {
+  try {
+    const stored = loadRun(window.localStorage);
+    if (stored === null || stored.state.status !== "active") return undefined;
+    return { round: stored.state.round, runId: stored.state.runId };
+  } catch {
+    return undefined;
+  }
+}
+
 function showView(which: keyof typeof views): void {
   dismissInspectOverlay(); // an inspector never outlives its screen
+  // Leaving the codex drops its deep-link hash (#015 slice 4 carry): a stale
+  // #codex/... would otherwise put the NEXT reload back in the codex instead
+  // of the title. replaceState, not location.hash = "" — no hashchange echo,
+  // no extra history entry.
+  if (which !== "codex" && window.location.hash.startsWith("#codex/")) {
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+  }
   for (const key of Object.keys(views) as (keyof typeof views)[]) {
     views[key].hidden = key !== which;
   }
@@ -217,7 +239,7 @@ function showView(which: keyof typeof views): void {
   runScreen?.setVisible(which === "run");
   codexScreen.setVisible(which === "codex");
   if (which === "title") titleScreen.refresh(); // Play vs Continue, read fresh
-  if (which === "leaderboard") leaderboardView?.refresh(); // pools fill live
+  if (which === "leaderboard") leaderboardView?.refresh(activeRunMarker()); // pools fill live, own run marked
 }
 for (const key of Object.keys(viewTabs) as (keyof typeof viewTabs)[]) {
   viewTabs[key].addEventListener("click", () => showView(key));
@@ -257,6 +279,7 @@ try {
   leaderboardView = createLadderView(el("leaderboard-body"), {
     store: ladderStore,
     registry: stressRegistry,
+    openFirstRound: true, // the screen opens showing teams, not closed drawers
   });
   runScreen = createRunScreen(
     {
@@ -403,7 +426,9 @@ el<HTMLElement>("kernel-version").textContent = `kernel v${KERNEL_VERSION}`;
 
 // The app opens on the title screen (#015 slice 3) — Play/Continue read from
 // the freshly revived run state. Cold-load deep links override it: a shared
-// #codex/... URL must land on the entry, not the title. After every view is
-// wired so showView can hide them all.
-showView("title");
-applyHashNav();
+// #codex/... URL must land on the entry, not the title — routed FIRST, never
+// through showView("title"), whose stale-hash sweep (slice 4) would eat the
+// link before applyHashNav could read it. After every view is wired so
+// showView can hide them all.
+if (window.location.hash.startsWith("#codex/")) applyHashNav();
+else showView("title");

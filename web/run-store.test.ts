@@ -80,6 +80,14 @@ describe("active run persistence", () => {
     expect(loadRun(storage)).toBeNull();
   });
 
+  test("a stored battle's replay position round-trips (#015 slice 4: reload mid-battle resumes parked)", () => {
+    const storage = fakeStorage();
+    const state = buy(initRun({ seed: 7, runId: "web-1", pool: [TITAN], statuses: stressRegistry }), 0);
+    const battle = { teamA: [TITAN], teamB: [TITAN], seed: 42, opponentLabel: "ghost bootstrap (round 1)", position: 17 };
+    saveRun(storage, state, battle);
+    expect(loadRun(storage)?.battle?.position).toBe(17);
+  });
+
   test("a corrupt stored run is refused loudly", () => {
     const storage = fakeStorage();
     storage.setItem("aoi.run.v1", '{"status":"weird"}');
