@@ -75,16 +75,22 @@ export function parseEnvelope(stdout: string): ClaudeEnvelope | null {
 }
 
 /** Build the argv for one headless attempt. Exported for the unit test that
- * proves the adapter passes the right flags without spawning anything. */
-export function buildArgs(opts: ClaudeCodeOptions, prompt: string): string[] {
+ * proves the adapter passes the right flags without spawning anything.
+ *
+ * The prompt is fed on STDIN, not argv: `--add-dir` is variadic
+ * (`<directories...>`) and greedily swallows any trailing positional, so a
+ * prompt appended after it is consumed as a directory and the CLI then errors
+ * "Input must be provided … when using --print". Stdin sidesteps the
+ * flag-parsing entirely and is robust for multi-line prompts. */
+export function buildArgs(opts: ClaudeCodeOptions): string[] {
   const args = [
     "-p",
     "--output-format", "json",
     "--permission-mode", "bypassPermissions",
-    "--add-dir", opts.repoRoot,
   ];
   if (opts.model) args.push("--model", opts.model);
-  args.push(prompt);
+  // --add-dir is variadic and must be last on argv — nothing may trail it.
+  args.push("--add-dir", opts.repoRoot);
   return args;
 }
 
@@ -94,14 +100,17 @@ export function claudeCodeHarness(opts: ClaudeCodeOptions): Harness {
   const progress = opts.onProgress ?? ((l: string) => process.stderr.write(l + "\n"));
 
   return async (attempt: Attempt): Promise<HarnessOutcome> => {
-    const args = buildArgs(opts, attempt.feedback);
+    const args = buildArgs(opts);
     progress(`[claude-code] attempt ${attempt.index} (${attempt.kind}) — spawning ${bin} -p …`);
 
     return await new Promise<HarnessOutcome>((resolve) => {
       const child = spawn(bin, args, {
         cwd: opts.repoRoot,
-        stdio: ["ignore", "pipe", "pipe"],
+        stdio: ["pipe", "pipe", "pipe"],
       });
+      // Prompt on stdin (see buildArgs: --add-dir would otherwise eat it).
+      child.stdin.write(attempt.feedback);
+      child.stdin.end();
 
       let stdout = "";
       let stderr = "";

@@ -236,8 +236,8 @@ describe("prompts are rules-blind transport", () => {
 // ---------------------------------------------------------------------------
 
 describe("claude-code buildArgs", () => {
-  test("builds a headless, json, dir-scoped invocation with the prompt last", () => {
-    const args = buildArgs({ repoRoot: "/repo", timeoutMs: 1000 }, "do the task");
+  test("builds a headless, json, dir-scoped invocation (prompt goes on stdin, not argv)", () => {
+    const args = buildArgs({ repoRoot: "/repo", timeoutMs: 1000 });
     expect(args).toContain("-p");
     expect(args.slice(args.indexOf("--output-format"), args.indexOf("--output-format") + 2)).toEqual([
       "--output-format",
@@ -245,13 +245,16 @@ describe("claude-code buildArgs", () => {
     ]);
     expect(args).toContain("--permission-mode");
     expect(args[args.indexOf("--permission-mode") + 1]).toBe("bypassPermissions");
-    expect(args[args.indexOf("--add-dir") + 1]).toBe("/repo");
-    expect(args[args.length - 1]).toBe("do the task"); // prompt is the final arg
+    // --add-dir must be LAST among the args: it is variadic, so nothing may
+    // follow it on argv (the prompt is fed via stdin for exactly this reason).
+    expect(args[args.length - 2]).toBe("--add-dir");
+    expect(args[args.length - 1]).toBe("/repo");
   });
 
-  test("a model override is passed through", () => {
-    const args = buildArgs({ repoRoot: "/repo", timeoutMs: 1000, model: "opus" }, "x");
+  test("a model override is passed through (before the trailing --add-dir)", () => {
+    const args = buildArgs({ repoRoot: "/repo", timeoutMs: 1000, model: "opus" });
     expect(args[args.indexOf("--model") + 1]).toBe("opus");
+    expect(args[args.length - 2]).toBe("--add-dir");
   });
 });
 
