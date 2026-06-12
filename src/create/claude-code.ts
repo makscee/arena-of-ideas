@@ -40,14 +40,38 @@ export interface ClaudeCodeOptions {
   onProgress?: ((line: string) => void) | undefined;
 }
 
-/** The CLI's `--output-format json` envelope, the fields we read for the log. */
+/** The CLI's result envelope, the fields we read for the log. With
+ * `--output-format json` the CLI emits a JSON *array* of stream objects; the
+ * final `type:"result"` element carries these. */
 interface ClaudeEnvelope {
+  type?: string;
   is_error?: boolean;
   result?: string;
   session_id?: string;
   num_turns?: number;
   total_cost_usd?: number;
   subtype?: string;
+}
+
+/** Extract the result envelope from `claude -p --output-format json` stdout.
+ * The output is a JSON array of stream objects (system/assistant/user/result);
+ * we take the last `type:"result"` element, else the last element, else — if a
+ * bare object was emitted — that object. Returns null if stdout isn't JSON.
+ * Exported for the unit test. */
+export function parseEnvelope(stdout: string): ClaudeEnvelope | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(stdout);
+  } catch {
+    return null;
+  }
+  if (Array.isArray(parsed)) {
+    const objs = parsed.filter((x): x is ClaudeEnvelope => typeof x === "object" && x !== null);
+    const result = [...objs].reverse().find((x) => x.type === "result");
+    return result ?? objs[objs.length - 1] ?? null;
+  }
+  if (typeof parsed === "object" && parsed !== null) return parsed as ClaudeEnvelope;
+  return null;
 }
 
 /** Build the argv for one headless attempt. Exported for the unit test that
@@ -104,12 +128,7 @@ export function claudeCodeHarness(opts: ClaudeCodeOptions): Harness {
         }
         // Parse the json envelope for a session handle + error flag. A parse
         // failure is itself a harness error (the run did not complete cleanly).
-        let env: ClaudeEnvelope | null = null;
-        try {
-          env = JSON.parse(stdout) as ClaudeEnvelope;
-        } catch {
-          env = null;
-        }
+        const env = parseEnvelope(stdout);
         const handle = env?.session_id ? `session:${env.session_id}` : `exit:${code}`;
         progress(
           `[claude-code] attempt ${attempt.index} done — ${handle}` +
