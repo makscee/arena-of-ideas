@@ -120,12 +120,20 @@ export interface LoadOpts {
   /** Called once per load, the first time the playhead reaches the final
    * event — however it got there (playback, skip, scrub, log click). */
   onEnded?: () => void;
+  /** Resume the playhead at this event index instead of 0, paused (#014: a
+   * tab switch mid-battle re-mounts the same replay — it must return to where
+   * the player left it, never reset to event 0). Clamped to the log; when it
+   * is the final event, onEnded fires as it would on any landing there. */
+  resumeAt?: number;
 }
 
 export interface Viewer {
   load(log: BattleEvent[], content: BattleContent, opts?: LoadOpts): void;
   /** Jump the playhead to the final event — the skip control's landing. */
   toEnd(): void;
+  /** The current playhead index — captured before a re-mount so load's
+   * resumeAt can restore it (#014 tab-switch position preservation). */
+  position(): number;
   stop(): void;
   /** Detach the viewer's document-level listeners (and stop playback).
    * Anything that creates viewers more than once must destroy the old one,
@@ -314,7 +322,9 @@ export function createViewer(els: ViewerEls): Viewer {
       pause();
       log = newLog;
       name = displayNames(log);
-      step = 0;
+      // Resume where the player left off (#014), else the top. Clamped to the
+      // log; the render below fires onEnded if this lands on the final event.
+      step = opts?.resumeAt === undefined ? 0 : Math.max(0, Math.min(opts.resumeAt, log.length - 1));
       defs = unitDefs(log, content.teams, content.registry);
       registry = content.registry;
       selected = undefined;
@@ -325,11 +335,16 @@ export function createViewer(els: ViewerEls): Viewer {
       els.scrub.max = String(log.length - 1);
       lockBoardHeight();
       render();
-      if (opts?.autoplay === true && log.length > 1) playPause();
+      // A resume lands paused, wherever the player was — autoplay only on a
+      // fresh load (resuming and then auto-playing would override the position).
+      if (opts?.autoplay === true && opts?.resumeAt === undefined && log.length > 1) playPause();
     },
     toEnd(): void {
       pause();
       goTo(log.length - 1);
+    },
+    position(): number {
+      return step;
     },
     stop: pause,
     destroy(): void {

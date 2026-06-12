@@ -588,6 +588,85 @@ button:disabled:hover {
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
 
+/* ---------- run menu (#014) ----------
+   A persistent control + an overlay, both position: fixed — opening or closing
+   never reflows the page (the #012 layout-lock contract holds for the menu just
+   as it does for the inspector). The button rides the top-right corner in every
+   in-run phase; the overlay is a small fixed panel (a centered card on a desk,
+   a bottom sheet at phone width — the inspector's two shapes). */
+
+#run-menu-button {
+  /* Bottom-right corner, fixed: clear of the in-flow nav tabs at the top (the
+     "?" codex tab sits top-right at phone width) and of the battle bar's
+     left-aligned skip/continue, so the persistent control never blocks a tab
+     or a loop tap. position: fixed keeps the #012 layout-lock — it is out of
+     flow, so showing/hiding it reflows nothing. */
+  position: fixed;
+  bottom: max(0.6rem, env(safe-area-inset-bottom));
+  right: 0.6rem;
+  z-index: 45; /* above the sticky battle bar (z 5) and the inspector (z 40) */
+  min-width: 44px;
+  min-height: 44px;
+}
+
+#run-menu-overlay {
+  position: fixed;
+  z-index: 46; /* above its own button */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(22rem, calc(100vw - 16px));
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem 0.8rem;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+
+.run-menu-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+
+.run-menu-title {
+  font-weight: 600;
+}
+
+#run-menu-close {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.run-menu-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.run-menu-body button {
+  min-height: 44px; /* every menu tap is thumb-sized */
+}
+
+.run-menu-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.6rem;
+}
+
+/* The explicit display above would otherwise beat [hidden]'s UA display:none —
+   keep the hidden attribute authoritative so the confirm stays a real step. */
+.run-menu-confirm[hidden] {
+  display: none;
+}
+
+/* The menu overlay's phone bottom-sheet shape lives in the existing phone
+   media block below (alongside the inspector's), so that block stays the
+   file's first 700px media query. */
+
 /* A status name inside an ability sentence — tap to see its definition. */
 .ins-ref {
   background: none;
@@ -1448,6 +1527,21 @@ button.danger {
 }
 
 @media (max-width: 700px) {
+  /* Run menu (#014): bottom sheet at phone width — the inspector's phone shape
+     (LS-3 lineage). Kept inside this existing block so the inspector's phone
+     rules stay the file's first 700px media query. */
+  #run-menu-overlay {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: none;
+    width: auto;
+    border-radius: 10px 10px 0 0;
+    border-bottom: none;
+    padding-bottom: max(0.8rem, env(safe-area-inset-bottom));
+  }
+
   /* One column: board, log, then details — the log keeps a small window so
      the inspector stays within a thumb's reach. */
   #battle-readout {

@@ -106,6 +106,15 @@ interface RunScreenEls {
   /** The ladder section (shown beside new/shop) and the view's render root. */
   ladderPanel: HTMLElement;
   ladderBody: HTMLElement;
+  /** Run menu (#014): a persistent control + an overlay with abandon behind a
+   * two-step confirm. Both position: fixed — opening/closing never reflows. */
+  menuButton: HTMLButtonElement;
+  menuOverlay: HTMLElement;
+  menuClose: HTMLButtonElement;
+  abandonButton: HTMLButtonElement;
+  abandonConfirm: HTMLElement;
+  abandonYes: HTMLButtonElement;
+  abandonNo: HTMLButtonElement;
 }
 
 export interface RunScreenDeps {
@@ -138,6 +147,11 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   let notice: string | undefined; // the last transition's level-up moment, if any
   let fused: string | undefined; // the just-fused unit's name — flashes once, consumed by the next shop render
   let revealed = false; // the pending battle's outcome has been shown (reset per fight)
+  // The replay position the viewer held when it was last unmounted (#014): a
+  // tab switch / menu open mid-battle unmounts the shared viewer, and the
+  // re-mount must resume here, not reset to event 0. Undefined = start fresh
+  // (a new fight, or the first mount of a reloaded pending battle).
+  let battleResume: number | undefined;
   // The line's reserved card count, captured once per shop phase (keyed by
   // run + round): every card REACHABLE this phase, so mid-phase growth stays
   // inside the reserve and any height change lands on a phase render, where
@@ -212,6 +226,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     }
     if (which === "battle") mountViewer();
     else unmountViewer();
+    syncMenuButton(); // the menu control rides the run, appearing/leaving with the phase
     // Phase transitions reset scroll so the new panel head is visible (LS-7,
     // GA-6): continue → shop lands on the gold/lives header, not mid-page;
     // run-end → end screen starts at top. Battle is handled in mountViewer()
@@ -467,12 +482,16 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       { teams: { A: pending.teamA, B: pending.teamB }, registry: s.statuses },
       {
         autoplay: !INSTANT_RESULT,
+        // Resume where the player left off if this is a re-mount (#014 tab
+        // switch); a fresh fight has no saved position and starts at the top.
+        ...(battleResume !== undefined ? { resumeAt: battleResume } : {}),
         onEnded: () => {
           revealed = true;
           syncBattleBar();
         },
       },
     );
+    battleResume = undefined; // consumed — the next unmount recaptures it
     // Nudge past the sticky bar: at 375px the auto-scrolled position left the
     // scrub 17px under it (slice-2 low) — scroll on until the whole transport
     // clears. The board top may slide off by the same few px; the controls win.
@@ -506,6 +525,9 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
 
   function unmountViewer(): void {
     if (deps.viewerHost.parentElement !== els.battleMount) return;
+    // Capture the playhead before detaching, so the next mount resumes here
+    // rather than resetting to event 0 (#014 tab-switch position preservation).
+    if (phase === "battle" && pending !== undefined) battleResume = deps.viewer.position();
     deps.viewer.stop();
     deps.viewerHost.hidden = true;
     deps.viewerHome.append(deps.viewerHost);
@@ -709,11 +731,72 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     render();
   });
 
-  els.newRunButton.addEventListener("click", () => {
+  /** Drop the active run and land on the new-run screen, stored run cleared —
+   * the seam both the end screen's "new run" and the menu's "abandon" share.
+   * Ghosts already snapshotted into the ladder stay (the snapshot is taken
+   * before each fight); an abandoned run simply never reaches a crown. */
+  function clearActiveRun(): void {
     clearRun(deps.storage);
     state = undefined;
     pending = undefined;
+    selected = undefined;
+    notice = undefined;
+    fused = undefined;
+    battleResume = undefined;
     render();
+  }
+
+  els.newRunButton.addEventListener("click", clearActiveRun);
+
+  // ---------- run menu (#014) ----------
+
+  /** The menu rides every in-run phase (shop/battle/end); the new-run screen
+   * is its own start point and needs no abandon. Driven off the phase so the
+   * button appears/disappears with the run, not the tab. */
+  function syncMenuButton(): void {
+    els.menuButton.hidden = state === undefined || phase === "new";
+  }
+
+  function closeMenu(): void {
+    els.menuOverlay.hidden = true;
+    els.menuButton.setAttribute("aria-expanded", "false");
+    els.abandonConfirm.hidden = true; // a re-open starts at step one — no armed confirm
+  }
+
+  function openMenu(): void {
+    els.abandonConfirm.hidden = true;
+    els.menuOverlay.hidden = false;
+    els.menuButton.setAttribute("aria-expanded", "true");
+  }
+
+  els.menuButton.addEventListener("click", () => {
+    if (els.menuOverlay.hidden) openMenu();
+    else closeMenu();
+  });
+  els.menuClose.addEventListener("click", closeMenu);
+  // Outside tap and Escape close the menu (the overlay's own discipline, like
+  // the inspector's) — never a half-open state left behind.
+  document.addEventListener("click", (ev) => {
+    if (els.menuOverlay.hidden) return;
+    const target = ev.target as Node;
+    if (els.menuOverlay.contains(target) || els.menuButton.contains(target)) return;
+    closeMenu();
+  });
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && !els.menuOverlay.hidden) closeMenu();
+  });
+
+  // Two-step confirm (a single click never destroys a run): the first tap arms
+  // the confirm, the second abandons.
+  els.abandonButton.addEventListener("click", () => {
+    els.abandonConfirm.hidden = false;
+  });
+  els.abandonNo.addEventListener("click", () => {
+    els.abandonConfirm.hidden = true;
+  });
+  els.abandonYes.addEventListener("click", () => {
+    closeMenu();
+    clearActiveRun(); // lands on new-run, stored run cleared, ready to start again
   });
 
   // ---------- resume on load ----------
@@ -737,6 +820,15 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       visible = v;
       if (v && phase === "battle") mountViewer();
       else if (!v) unmountViewer();
+      // The fixed menu button (and its overlay) must not float over OTHER tabs:
+      // hide it (and close any open menu) when the run tab is hidden, restore it
+      // by phase when the run tab returns (#014).
+      if (!v) {
+        els.menuButton.hidden = true;
+        closeMenu();
+      } else {
+        syncMenuButton();
+      }
       // The reserves measure 0 while the tab is display:none (the initial
       // render precedes the first show) — re-measure the moment layout is
       // real, so the line's reachable-count reserve is standing BEFORE the

@@ -239,6 +239,13 @@ try {
       newRunButton: el<HTMLButtonElement>("run-new-run"),
       ladderPanel: el("run-ladder"),
       ladderBody: el("run-ladder-body"),
+      menuButton: el<HTMLButtonElement>("run-menu-button"),
+      menuOverlay: el("run-menu-overlay"),
+      menuClose: el<HTMLButtonElement>("run-menu-close"),
+      abandonButton: el<HTMLButtonElement>("run-abandon"),
+      abandonConfirm: el("run-abandon-confirm"),
+      abandonYes: el<HTMLButtonElement>("run-abandon-yes"),
+      abandonNo: el<HTMLButtonElement>("run-abandon-no"),
     },
     {
       storage: window.localStorage,

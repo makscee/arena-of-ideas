@@ -314,11 +314,16 @@ describe("shop row reserves the rolled offer count's layout (refutation 3)", () 
 
   function harness() {
     vi.stubGlobal("window", { scrollTo() {}, addEventListener() {}, matchMedia: () => ({ matches: false }) });
+    // The run menu (#014) wires document-level outside-tap/Escape listeners at
+    // construction — stub document so this browserless harness can build the
+    // screen (production has a real one).
+    vi.stubGlobal("document", { addEventListener() {} });
     const names = [
       "newPanel", "newForm", "seed", "dice", "newError", "champ", "warn", "shopPanel", "head", "next",
       "notice", "shopRow", "rerollButton", "line", "fightButton", "stakes", "error", "battlePanel",
       "battleHead", "battleMount", "battleBar", "outcome", "continueButton", "skipButton", "endPanel",
       "endHead", "endStats", "endLine", "newRunButton", "ladderPanel", "ladderBody",
+      "menuButton", "menuOverlay", "menuClose", "abandonButton", "abandonConfirm", "abandonYes", "abandonNo",
     ] as const;
     const els = Object.fromEntries(names.map((n) => [n, makeEl()])) as Record<(typeof names)[number], FakeEl>;
     // The layout model: rows of two cards, 130px per row, 18px placeholder.
@@ -346,7 +351,7 @@ describe("shop row reserves the rolled offer count's layout (refutation 3)", () 
       store: new InMemoryLadderStore(),
       pool: DEFAULT_RUN_POOL,
       registry,
-      viewer: { load() {}, stop() {}, toEnd() {} },
+      viewer: { load() {}, stop() {}, toEnd() {}, position: () => 0 },
       viewerHost: makeEl(),
       viewerHome: makeEl(),
     } as unknown as RunScreenDeps;

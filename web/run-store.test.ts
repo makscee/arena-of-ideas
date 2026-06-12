@@ -112,6 +112,70 @@ describe("active run persistence", () => {
   });
 });
 
+describe("abandon (#014): the run-lifecycle act, no kernel change", () => {
+  // Abandon is clearRun + a client state reset; the ladder is untouched. These
+  // tests pin the two semantics the PRD names: the abandoned run's ghosts (each
+  // snapshotted before its fight) stay in the pools and the run never crowns,
+  // and the stored run is gone so a reload lands on new-run.
+
+  test("ladder integrity: a mid-run abandon leaves the fought rounds' ghosts, no crown, own-ghost exclusion intact next run", () => {
+    const storage = fakeStorage();
+    const ladder = openLadder(openLocalLadder(storage), stressRegistry);
+    const championBefore = ladder.champion(); // the bootstrap champion holds the spot
+
+    // web-1 fights round 1 once, then is abandoned mid-climb. ladderFight
+    // snapshots the fielded team into round 1's pool BEFORE resolving, so the
+    // ghost is on the ladder the instant it fights — win, lose, or abandon.
+    const s1 = buy(initRun({ seed: 1, runId: "web-1", pool: [TITAN], statuses: stressRegistry }), 0);
+    const afterFight = ladderFight(s1, ladder);
+    expect(ladder.poolAt(1).some((g) => g.runId === "web-1")).toBe(true); // the ghost stays
+    expect(afterFight.status).toBe("active"); // round 1 had ghosts to fight — not crowned
+
+    // The abandon: only the stored run is cleared (the client also drops its
+    // in-memory state). The ladder — pools and champion — is never touched.
+    saveRun(storage, afterFight); // the run was persisted as it climbed
+    expect(loadRun(storage)).not.toBeNull();
+    clearRun(storage);
+    expect(loadRun(storage)).toBeNull(); // reload would land on new-run
+
+    // No crown from the abandoned run: the champion spot is exactly as it was
+    // before web-1 ever fought — web-1 never reached it, abandon or not.
+    const reopened = openLadder(openLocalLadder(storage), stressRegistry);
+    expect(reopened.champion()).toEqual(championBefore);
+    expect(reopened.champion()?.runId).not.toBe("web-1");
+    expect(reopened.poolAt(1).some((g) => g.runId === "web-1")).toBe(true); // the ghost persists
+
+    // The next run (web-2) sees web-1's ghost as an eligible rival; its own
+    // ghosts are excluded. After web-2 fights, web-2 excludes its OWN ghost but
+    // still sees web-1's — exclusion is by runId, unaffected by the abandon.
+    const s2 = buy(initRun({ seed: 2, runId: "web-2", pool: [TITAN], statuses: stressRegistry }), 0);
+    const web2Candidates = reopened.poolAt(s2.round).filter((g) => g.runId !== s2.runId);
+    expect(web2Candidates.some((g) => g.runId === "web-1")).toBe(true);
+    const s2AfterFight = ladderFight(s2, reopened);
+    expect(s2AfterFight.log.some((e) => e.type === "OpponentDrawn")).toBe(true); // fought a ghost, not the vacant spot
+    expect(reopened.poolAt(1).filter((g) => g.runId === "web-2").length).toBe(1); // web-2's own ghost now in the pool
+    const web2OwnExcluded = reopened.poolAt(1).filter((g) => g.runId !== "web-2");
+    expect(web2OwnExcluded.some((g) => g.runId === "web-1")).toBe(true); // web-1's ghost still eligible
+  });
+
+  test("stored-run-cleared: clearRun removes run + pending battle; ladder keys survive", () => {
+    const storage = fakeStorage();
+    const ladder = openLadder(openLocalLadder(storage), stressRegistry);
+    const state = buy(initRun({ seed: 7, runId: "web-1", pool: [TITAN], statuses: stressRegistry }), 0);
+    ladderFight(state, ladder); // writes a ghost to the ladder key
+    const battle = { teamA: [TITAN], teamB: [TITAN], seed: 42, opponentLabel: "ghost web-1 (round 1)" };
+    saveRun(storage, state, battle); // mid-battle: a pending battle is stored too
+    expect(loadRun(storage)).toEqual({ state, battle });
+
+    clearRun(storage); // the abandon
+    expect(loadRun(storage)).toBeNull(); // both run and pending battle gone
+
+    // The ladder is a separate key — abandoning a run never wipes it.
+    const reopened = openLadder(openLocalLadder(storage), stressRegistry);
+    expect(reopened.poolAt(1).some((g) => g.runId === "web-1")).toBe(true);
+  });
+});
+
 describe("saveRun quota exhaustion", () => {
   function throwingStorage(): KVStorage {
     return {

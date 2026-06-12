@@ -21,6 +21,25 @@
       </nav>
 
       <section id="run-view">
+        <!-- Run menu (#014): a persistent control, shown in every in-run phase
+             (shop/battle/end), opening an overlay with abandon-run behind a
+             two-step confirm. Button and overlay are both position: fixed — the
+             #012 layout-lock holds: opening/closing reflows nothing. -->
+        <button type="button" id="run-menu-button" hidden aria-haspopup="true" aria-expanded="false" title="Run menu">menu</button>
+        <div id="run-menu-overlay" role="dialog" aria-label="Run menu" hidden>
+          <div class="run-menu-head">
+            <span class="run-menu-title">run menu</span>
+            <button type="button" id="run-menu-close" title="Close">✕</button>
+          </div>
+          <div class="run-menu-body">
+            <button type="button" id="run-abandon" class="danger">abandon run…</button>
+            <div id="run-abandon-confirm" class="run-menu-confirm" hidden>
+              <span class="run-warn">This ends the run for good — your ghosts already on the ladder stay, but this climb is over.</span>
+              <button type="button" id="run-abandon-yes" class="danger">really abandon</button>
+              <button type="button" id="run-abandon-no">keep playing</button>
+            </div>
+          </div>
+        </div>
         <div id="run-new" hidden>
           <p class="run-blurb">Climb the ladder: shop, fight a ghost of a past run each round, take the champion spot. A loss costs a life; ghosts you leave behind fight future runs.</p>
           <p id="run-champ" class="run-dim"></p>

@@ -120,6 +120,19 @@ export const plainShopRun = () =>
     s.gold = 10;
   });
 
+/** A finished run (#014): status "over", out of lives — the run-end screen,
+ * where the menu must still appear and abandon must still work. A small team
+ * so the end screen renders a couple of post-mortem cards. */
+export const endedRun = () =>
+  shaped((s) => {
+    s.team = [unitOf(byName.Brawler), unitOf(byName.Squire)];
+    s.offers = [];
+    s.gold = 0;
+    s.lives = 0;
+    s.status = "over";
+    s.endedBy = "out-of-lives";
+  });
+
 /** Three line units (middle card shows both arrows enabled, last card has ▸
  * disabled); the front card carries three adjacent chips for the chip sweep. */
 export const targetsRun = () => {
@@ -177,8 +190,10 @@ export const refsRun = () => {
 
 // ---------- browser ----------
 
-/** A fresh page with the run injected before any script runs. */
-export async function openRun(browser, serializedRun, viewport) {
+/** A fresh page with the run injected before any script runs. `ready` is the
+ * selector to wait on (the shop panel by default; pass "#run-end:not([hidden])"
+ * for an injected finished run). */
+export async function openRun(browser, serializedRun, viewport, ready = "#run-shop:not([hidden])") {
   const ctx = await browser.newContext({ viewport, hasTouch: viewport.width < 700 });
   const page = await ctx.newPage();
   page.setDefaultTimeout(15_000);
@@ -187,7 +202,7 @@ export async function openRun(browser, serializedRun, viewport) {
     ["aoi.run.v1", serializedRun],
   );
   await page.goto(BASE, { waitUntil: "domcontentloaded" });
-  await page.waitForSelector("#run-shop:not([hidden])");
+  await page.waitForSelector(ready);
   return { ctx, page };
 }
 
