@@ -198,7 +198,7 @@ button:disabled:hover {
    shape never jumps mid-replay. The viewer also locks #board's min-height
    per battle (measured over the log), which guarantees the total. */
 .line {
-  min-height: 5.2rem;
+  min-height: 6.5rem; /* one card of the #015 frame — the wipe placeholder holds it */
 }
 
 .wiped {
@@ -223,6 +223,10 @@ button:disabled:hover {
   color: var(--dim);
 }
 
+/* The one card frame (#015 slice 1): every context (shop, line, board,
+   ladder) renders unit-card.ts into this. Depth from a soft gradient + shadow;
+   the gap stays 0.15rem and bottom padding ≥0.3rem — the touch-target seam
+   geometry below (buy/arrow/chip ::after extensions) is tuned to them. */
 .unit {
   position: relative;
   flex: 1 1 0;
@@ -232,16 +236,27 @@ button:disabled:hover {
   flex-direction: column;
   align-items: center;
   gap: 0.15rem;
-  background: var(--bg);
+  background: linear-gradient(180deg, #22262e 0%, #181b21 80%);
   border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 0.4rem 0.15rem 0.3rem;
+  border-radius: 8px;
+  padding: 0.5rem 0.2rem 0.3rem;
   text-align: center;
   cursor: pointer; /* every card opens the inspector */
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.unit:hover {
+  border-color: #3d4452;
 }
 
 .unit.front {
   border-color: var(--accent);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.35),
+    0 0 10px rgba(111, 194, 138, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .unit.sel {
@@ -268,27 +283,48 @@ button:disabled:hover {
   outline-offset: -1px;
 }
 
+/* The art is the card's centrepiece — sized so five board cards still sit
+   abreast at 375px (≈60px wide each). */
 .unit .shape {
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
 }
 
 .uname {
-  font-size: 0.6rem;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* Framed stats: each number in its own tinted cell. The row wraps rather than
+   bleed past a narrow board card; the widest string per unit (full hp at max
+   digits) occurs at events the viewer's height lock already measures. */
 .unums {
   display: flex;
-  gap: 0.3rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.15rem;
   font-size: 0.6rem;
+}
+
+.unums .hp,
+.unums .pwr {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 0.25rem;
+  line-height: 1.4;
+  white-space: nowrap;
 }
 
 .unums .hp {
   color: var(--accent);
+  border-color: rgba(111, 194, 138, 0.35);
 }
 
 .unums .hp::after {
@@ -298,6 +334,7 @@ button:disabled:hover {
 
 .unums .pwr {
   color: var(--warn);
+  border-color: rgba(224, 135, 111, 0.35);
 }
 
 .unums .pwr::after {
@@ -317,7 +354,8 @@ button:disabled:hover {
   font-size: 0.55rem;
   line-height: 1.2;
   color: var(--text);
-  background: var(--border);
+  background: rgba(180, 138, 214, 0.14); /* the status family's tint */
+  border: 1px solid rgba(180, 138, 214, 0.3);
   border-radius: 3px;
   padding: 0 0.2rem;
   cursor: pointer; /* a chip opens the inspector on its status */
@@ -347,8 +385,8 @@ button:disabled:hover {
 }
 
 .unit.dead .shape {
-  width: 1.1rem;
-  height: 1.1rem;
+  width: 1.3rem;
+  height: 1.3rem;
 }
 
 .unit.dead .chips {
@@ -1185,9 +1223,16 @@ button:disabled:hover {
   min-width: 4.2rem;
 }
 
+/* Level badge — a real pill on the card; fusion pips ride inside it. */
 .run-lvl {
   font-size: 0.55rem;
-  color: var(--dim);
+  color: var(--accent);
+  background: rgba(111, 194, 138, 0.1);
+  border: 1px solid rgba(111, 194, 138, 0.4);
+  border-radius: 999px;
+  padding: 0 0.35rem;
+  line-height: 1.5;
+  white-space: nowrap;
 }
 
 /* Fusion pips (IA-6): ● per copy held, ○ per copy missing — the level badge

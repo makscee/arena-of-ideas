@@ -34,9 +34,9 @@ import {
   type TeamSnapshot,
   type UnitDef,
 } from "../src/index.js";
-import { shapeSvg } from "./board-render.js";
-import { chipsHtml, closeInspectOverlay, dismissInspectOverlay, openInspectOverlay, renderUnitInspect } from "./inspect.js";
+import { closeInspectOverlay, dismissInspectOverlay, openInspectOverlay, renderUnitInspect } from "./inspect.js";
 import { createLadderView, ghostLabel } from "./ladder-view.js";
+import { unitCardHtml } from "./unit-card.js";
 import { clearRun, loadRun, nextRunId, saveRun, type KVStorage, type StoredBattle } from "./run-store.js";
 import type { Viewer } from "./viewer.js";
 
@@ -165,22 +165,23 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   const championPhrase = (c: TeamSnapshot): string =>
     c.runId === BOOTSTRAP_RUN_ID ? "the shipped champion" : `champion ${c.runId} (crowned at round ${c.round})`;
 
-  // ---------- cards (reuse the board's card classes + shapes) ----------
-
-  const chips = (statuses: readonly { status: string; stacks: number }[] | undefined): string =>
-    chipsHtml(statuses, state?.statuses ?? deps.registry);
+  // ---------- cards (the one shared unit card, run-screen flavoured) ----------
 
   function offerCard(def: UnitDef, i: number, gold: number): string {
     const sel = selected?.where === "offer" && selected.index === i;
-    const title = `${def.name} — ${def.base.hp} hp, ${def.base.pwr} pwr · ${UNIT_COST}g · tap to inspect`;
-    return `
-      <div class="unit run-card${sel ? " sel" : ""}" data-offer="${i}" title="${esc(title)}">
-        ${shapeSvg(def.name, false)}
-        <span class="uname">${esc(def.name)}</span>
-        <span class="unums"><span class="hp">${def.base.hp}</span><span class="pwr">${def.base.pwr}</span></span>
-        <span class="chips">${chips(def.statuses)}</span>
-        <button type="button" class="run-buy" data-buy="${i}"${gold < UNIT_COST ? " disabled" : ""}>buy ${UNIT_COST}g</button>
-      </div>`;
+    return unitCardHtml({
+      artName: def.name,
+      label: def.name,
+      hp: def.base.hp,
+      pwr: def.base.pwr,
+      statuses: def.statuses,
+      registry: state?.statuses ?? deps.registry,
+      sel,
+      classes: "run-card",
+      attrs: `data-offer="${i}"`,
+      title: `${def.name} — ${def.base.hp} hp, ${def.base.pwr} pwr · ${UNIT_COST}g · tap to inspect`,
+      footer: `<button type="button" class="run-buy" data-buy="${i}"${gold < UNIT_COST ? " disabled" : ""}>buy ${UNIT_COST}g</button>`,
+    });
   }
 
   function lineCard(u: RunUnit, i: number, last: number, buttons: boolean): string {
@@ -194,18 +195,23 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       : "";
     // Pips (IA-6): copies toward the next fuse, visible at a glance — the
     // title carries the words. The just-fused card flashes once (GA-7).
-    const pips = `<span class="run-pips">${fusionPips(u.stacks)}</span>`;
-    const flash = u.name === fused ? " fused" : "";
-    return `
-      <div class="unit run-card${i === 0 ? " front" : ""}${sel ? " sel" : ""}${flash}" data-line="${i}" title="${esc(u.name)} — level ${u.level}, ${u.stacks}/${STACK_THRESHOLD} copies toward the next · tap to inspect">
-        ${i === 0 ? '<span class="front-tag">front</span>' : ""}
-        ${shapeSvg(u.name, false)}
-        <span class="uname">${esc(u.name)}</span>
-        <span class="run-lvl">L${u.level} ${pips}</span>
-        <span class="unums"><span class="hp">${u.base.hp}</span><span class="pwr">${u.base.pwr}</span></span>
-        <span class="chips">${chips(u.def.statuses)}</span>
-        ${move}
-      </div>`;
+    return unitCardHtml({
+      artName: u.name,
+      label: u.name,
+      hp: u.base.hp,
+      pwr: u.base.pwr,
+      statuses: u.def.statuses,
+      registry: state?.statuses ?? deps.registry,
+      level: u.level,
+      pips: fusionPips(u.stacks),
+      front: i === 0,
+      sel,
+      fused: u.name === fused,
+      classes: "run-card",
+      attrs: `data-line="${i}"`,
+      title: `${u.name} — level ${u.level}, ${u.stacks}/${STACK_THRESHOLD} copies toward the next · tap to inspect`,
+      footer: move,
+    });
   }
 
   // ---------- rendering ----------

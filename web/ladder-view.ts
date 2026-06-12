@@ -12,8 +12,8 @@ import {
   type TeamSnapshot,
   type UnitDef,
 } from "../src/index.js";
-import { shapeSvg } from "./board-render.js";
-import { chipsHtml, closeInspectOverlay, openInspectOverlay, renderUnitInspect } from "./inspect.js";
+import { closeInspectOverlay, openInspectOverlay, renderUnitInspect } from "./inspect.js";
+import { unitCardHtml } from "./unit-card.js";
 
 const esc = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
@@ -58,19 +58,21 @@ export function createLadderView(root: HTMLElement, deps: LadderViewDeps): Ladde
   let sel: Selection | undefined;
   let run: LadderViewRun | undefined;
 
-  const chips = (statuses: readonly { status: string; stacks: number }[] | undefined): string =>
-    chipsHtml(statuses, deps.registry);
-
   function unitCard(u: UnitDef, addr: string, i: number, selected: boolean): string {
     const level = u.level ?? 1;
-    return `
-      <div class="unit run-card lv-unit${selected ? " sel" : ""}" data-lv="${addr}:${i}" title="${esc(u.name)}">
-        ${shapeSvg(u.name, false)}
-        <span class="uname">${esc(u.name)}</span>
-        ${level > 1 ? `<span class="run-lvl">L${level}</span>` : ""}
-        <span class="unums"><span class="hp">${u.base.hp}</span><span class="pwr">${u.base.pwr}</span></span>
-        <span class="chips">${chips(u.statuses)}</span>
-      </div>`;
+    return unitCardHtml({
+      artName: u.name,
+      label: u.name,
+      hp: u.base.hp,
+      pwr: u.base.pwr,
+      statuses: u.statuses,
+      registry: deps.registry,
+      ...(level > 1 ? { level } : {}),
+      sel: selected,
+      classes: "run-card lv-unit",
+      attrs: `data-lv="${addr}:${i}"`,
+      title: u.name,
+    });
   }
 
   function teamRow(snap: TeamSnapshot, addr: string, isChamp: boolean): string {
