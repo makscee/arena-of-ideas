@@ -1,0 +1,50 @@
+# Production compose for the arena (hub pattern, mirrors void-mail):
+# Caddy (separate stack) reverse-proxies to the service on the shared docker
+# network; no host port mapping by design.
+#
+# Secrets: decrypt the SOPS file -> .env at deploy time
+# (sops -d secrets.enc.yaml > .env). See .env.example for the variables.
+#
+# Divergence from void-mail: the arena's state is a SQLite FILE, so this
+# service carries a named volume at /data. The image chowns /data to its
+# non-root user and named-volume init copies that ownership; a bind mount
+# would need the chown done host-side. Back up by archiving the volume, e.g.
+# docker run --rm -v arena-data:/data -v "$PWD":/out alpine \
+#   tar czf /out/arena-data.tgz -C /data .
+services:
+  arena:
+    image: ${IMAGE_TAG:-ghcr.io/makscee/arena-of-ideas:latest}
+    container_name: arena
+    restart: unless-stopped
+    # Node 22 idle RSS ~80-120 MB (void-mail's measured baseline); the replay
+    # path is synchronous and cost-bounded, so 512m is headroom plus a clean
+    # OOM signal if a regression leaks.
+    mem_limit: 512m
+    mem_reservation: 128m
+    expose:
+      - "8787"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: "8787"
+      DB_PATH: /data/arena.db
+      # MOCK_MODE is deliberately absent: it mounts an OTP-code oracle
+      # (/_mock/last-code) and must never exist in prod. e2e/dev only.
+    volumes:
+      - arena-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8787/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - void
+
+volumes:
+  arena-data:
+
+networks:
+  void:
+    external: true

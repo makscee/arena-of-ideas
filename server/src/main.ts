@@ -5,6 +5,11 @@
  *   MAIL_TOKEN     required — void-mail bearer token
  *   DB_PATH        optional — SQLite file path (default ./data/arena.db)
  *   PORT           optional — listen port (default 8787)
+ *   STATIC_DIR     optional — directory of the built web client (vite dist/);
+ *                  when set, the server serves it same-origin so one container
+ *                  ships the whole game. API routes keep precedence (they are
+ *                  registered first); unknown non-API GETs fall back to
+ *                  index.html. Unset = API-only (dev: vite proxies instead).
  *   MOCK_MODE      optional — "1" swaps the real mailer for an in-memory mock
  *                  and mounts GET /_mock/last-code?email=… returning the last
  *                  OTP code sent to that address (the void-mail _mock/last
@@ -15,6 +20,8 @@
  * Run: `npm start --workspace server` (tsx, matching the arena toolchain).
  */
 import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
+import { join, relative } from "node:path";
 import { createApp, defaultRateLimiters } from "./app.js";
 import { startCleanupTimer } from "./cleanup.js";
 import { openDb } from "./db.js";
@@ -66,6 +73,24 @@ if (mockMailer !== null) {
     if (code === undefined) return c.json({ error: "no_code_sent" }, 404);
     return c.json({ email, code });
   });
+}
+
+// Static web client (deployment: one container ships the whole game). The
+// client talks same-origin relative URLs ("/v1/..."), so serving it here
+// needs no CORS at all. Registered after every API route — Hono dispatches
+// in registration order, so /v1/*, /healthz and /_mock keep precedence.
+const staticDir = process.env.STATIC_DIR;
+if (staticDir !== undefined && staticDir !== "") {
+  // serve-static resolves roots against cwd; normalize whatever was given.
+  const root = relative(process.cwd(), staticDir) || ".";
+  app.use("*", serveStatic({ root }));
+  // SPA fallback for non-API GETs (the client routes via location.hash, so
+  // this mostly covers "/" and stray deep links). API misses stay JSON 404s.
+  app.get("*", (c, next) => {
+    if (c.req.path.startsWith("/v1/")) return next();
+    return serveStatic({ path: join(root, "index.html") })(c, next);
+  });
+  console.log(`serving static client from ${staticDir}`);
 }
 
 serve({ fetch: app.fetch, port }, (info) => {

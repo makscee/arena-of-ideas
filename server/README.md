@@ -29,7 +29,25 @@ npm start --workspace server
 | `MAIL_TOKEN` | yes | — | void-mail bearer token |
 | `DB_PATH` | no | `./data/arena.db` | SQLite file (created on boot) |
 | `PORT` | no | `8787` | listen port — a non-integer or out-of-range value fails boot |
+| `STATIC_DIR` | no | — | directory of the built web client (vite `dist/`); when set, served same-origin with API routes keeping precedence and unknown non-API GETs falling back to `index.html`. The container sets `/app/public`; unset locally, where vite's dev proxy plays this role. |
 | `MOCK_MODE` | no | — | `1` = e2e harness mode: the mailer is an in-memory mock (`MAIL_*` not required) and `GET /_mock/last-code?email=…` returns the last OTP code sent to that address. Never set in prod — it mounts a code oracle. |
+
+Deployment (container image, compose, secrets-via-env) is documented in the
+[root README](../README.md#deploy).
+
+## Rate limits and bounds
+
+All limiters are process-local sliding windows (`rate-limit.ts`) — fine for
+the single-container deployment; replicas would need a shared store.
+
+- `/v1/auth/login/email/start`: 5 per IP and 5 per email, per 10 minutes.
+- `GET /v1/runs/:runId/pool/:round` (the play read): **300 per session per 10
+  minutes** — honest play reads one view per ladder fight, so this is an
+  order of magnitude of headroom — and only for rounds up to the ladder's
+  deepest ghost round + 16 (422 beyond). Both exist because every serve can
+  record a `run_pool_serves` row: unbounded, one open run could sweep all
+  10,000 admissible rounds into recorded views.
+- Submissions: max 256 KiB serialized, max 5,000 log events, runIds one-shot.
 
 ## Endpoints
 
@@ -66,7 +84,8 @@ npm start --workspace server
   (length + champion, per runId and round), and submission replay accepts
   only recorded views — so every fight of a run to be submitted must read
   through this endpoint. Re-reads are free and never brick a submission.
-  Refused for runs not opened by the caller and for expired opens.
+  Refused for runs not opened by the caller and for expired opens; bounded
+  and rate-limited per session (see "Rate limits and bounds" above).
 - `POST /v1/runs` (bearer) `{run: serializeRun(state)}` → 200
   `{accepted:true, runId, endedBy, finalRound, crowned}` or 422
   `{accepted:false, reason}` — submit a finished run for re-derivation. The

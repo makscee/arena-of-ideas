@@ -14,6 +14,7 @@
 import { describe, expect, test } from "vitest";
 import type { Hono } from "hono";
 import {
+  BOOTSTRAP_DEPTH,
   BOOTSTRAP_RUN_ID,
   BOOTSTRAP_TEAMS,
   buy,
@@ -54,7 +55,7 @@ interface Ctx {
   now: { sec: number };
 }
 
-function makeCtx(): Ctx {
+function makeCtx(opts: { poolServeLimit?: number } = {}): Ctx {
   const { db } = openDb(":memory:");
   const mailer = createMockMailClient();
   const now = { sec: 1_750_000_000 };
@@ -66,6 +67,8 @@ function makeCtx(): Ctx {
     rateLimiters: {
       ipStart: createRateLimiter({ limit: 100, windowMs: 60_000, clock: () => clock() * 1000 }),
       emailStart: createRateLimiter({ limit: 100, windowMs: 60_000, clock: () => clock() * 1000 }),
+      // Out of the way by default; the serve rate-limit tests tighten it.
+      poolServe: createRateLimiter({ limit: opts.poolServeLimit ?? 10_000, windowMs: 60_000, clock: () => clock() * 1000 }),
     },
     content: { pool: [TITAN], statuses: stressRegistry },
   });
@@ -682,6 +685,55 @@ describe("the open handshake", () => {
     expect(unopened.status).toBe(422);
     const badRound = await ctx.app.request("/v1/runs/mine/pool/zero", { headers: { authorization: `Bearer ${ada}` } });
     expect(badRound.status).toBe(400);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Serve-route write-amplification guards (deployment hardening): every serve
+// can record a run_pool_serves row, so the route is frontier-bounded and
+// per-session rate-limited — neither bound is reachable by honest play.
+// ---------------------------------------------------------------------------
+
+describe("the play read is bounded", () => {
+  test("serves past the ladder frontier are refused; rounds honest play can reach still serve", async () => {
+    const ctx = makeCtx();
+    const ada = await login(ctx, "ada@example.com");
+    expect((await openRun(ctx, ada, "mine")).status).toBe(200);
+
+    // Fresh ladder: ghosts reach BOOTSTRAP_DEPTH. One round past an empty
+    // pool is the outran-every-ghost champion challenge, so honest reads stay
+    // within the margin — they serve fine.
+    const justPast = await ctx.app.request(`/v1/runs/mine/pool/${BOOTSTRAP_DEPTH + 1}`, {
+      headers: { authorization: `Bearer ${ada}` },
+    });
+    expect(justPast.status).toBe(200);
+
+    // A round sweep beyond frontier + margin records nothing and is 422.
+    const far = await ctx.app.request(`/v1/runs/mine/pool/${BOOTSTRAP_DEPTH + 17}`, {
+      headers: { authorization: `Bearer ${ada}` },
+    });
+    expect(far.status).toBe(422);
+    expect(((await far.json()) as Loose)["reason"]).toMatch(/beyond the ladder's frontier/);
+  });
+
+  test("serves are rate-limited per session; another session is unaffected", async () => {
+    const ctx = makeCtx({ poolServeLimit: 3 });
+    const ada = await login(ctx, "ada@example.com");
+    const bob = await login(ctx, "bob@example.com");
+    expect((await openRun(ctx, ada, "mine")).status).toBe(200);
+    expect((await openRun(ctx, bob, "his")).status).toBe(200);
+
+    for (let i = 0; i < 3; i++) {
+      const ok = await ctx.app.request("/v1/runs/mine/pool/1", { headers: { authorization: `Bearer ${ada}` } });
+      expect(ok.status).toBe(200);
+    }
+    const limited = await ctx.app.request("/v1/runs/mine/pool/1", { headers: { authorization: `Bearer ${ada}` } });
+    expect(limited.status).toBe(429);
+    expect(((await limited.json()) as Loose)["retryAfterMs"]).toBeGreaterThan(0);
+
+    // The limiter keys on the session — bob's play reads still serve.
+    const other = await ctx.app.request("/v1/runs/his/pool/1", { headers: { authorization: `Bearer ${bob}` } });
+    expect(other.status).toBe(200);
   });
 });
 

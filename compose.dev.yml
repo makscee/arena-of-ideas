@@ -1,0 +1,25 @@
+# Local compose — self-contained on purpose (no hub network, no .env, no ghcr
+# pull): builds the image from this checkout and maps a host port, which the
+# prod compose never does (Caddy fronts it there).
+#
+#   MOCK_MODE=1 docker compose -f compose.dev.yml up --build
+#
+# MOCK_MODE=1 swaps the mailer for an in-memory mock (MAIL_* not needed) and
+# mounts GET /_mock/last-code — the e2e/manual-poke configuration, never
+# production. To exercise real mail instead, leave MOCK_MODE unset and pass
+# MAIL_BASE_URL + MAIL_TOKEN.
+services:
+  arena:
+    build: .
+    container_name: arena-dev
+    ports:
+      - "${HOST_PORT:-8787}:8787"
+    environment:
+      MOCK_MODE: ${MOCK_MODE:-}
+      MAIL_BASE_URL: ${MAIL_BASE_URL:-}
+      MAIL_TOKEN: ${MAIL_TOKEN:-}
+    volumes:
+      - arena-dev-data:/data
+
+volumes:
+  arena-dev-data:

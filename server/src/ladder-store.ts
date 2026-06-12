@@ -92,6 +92,15 @@ export class SqliteLadderStore implements LadderStore {
     return this.db.select({ m: max(ladderGhosts.id) }).from(ladderGhosts).all()[0]?.m ?? 0;
   }
 
+  /** The deepest round any ghost sits at (0 on an unghosted ladder) — the
+   * ladder's frontier. Honest play cannot read far past it: a round with no
+   * visible ghosts is the kernel's outran-every-ghost champion challenge, and
+   * the run ends there. The serve route uses this to bound which rounds it
+   * will record views for. */
+  maxPoolRound(): number {
+    return this.db.select({ m: max(ladderGhosts.round) }).from(ladderGhosts).all()[0]?.m ?? 0;
+  }
+
   /** The current champion row, owner included; null only before bootstrap. */
   championRecord(): ChampionRecord | null {
     const row = this.db.select().from(ladderChampions).orderBy(desc(ladderChampions.id)).limit(1).all()[0];

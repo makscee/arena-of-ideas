@@ -65,18 +65,24 @@ export interface AppDeps {
   /** Unix seconds. */
   clock: () => number;
   mailClient: MailClient;
-  rateLimiters: { ipStart: RateLimiter; emailStart: RateLimiter };
+  rateLimiters: { ipStart: RateLimiter; emailStart: RateLimiter; poolServe: RateLimiter };
   /** The run content submissions are pinned to; defaults to the arena's
    * shipped pool + approved registry. Tests inject a tiny deterministic pool. */
   content?: ArenaContent;
 }
 
-/** Prod limiters: 5 starts per IP and 5 per email, per 10 minutes. */
+/** Prod limiters: 5 starts per IP and 5 per email, per 10 minutes; 300 pool
+ * serves per session per 10 minutes. The serve limit is sized off honest play
+ * — one serve per ladder fight, so even a speedrun reads a few per minute;
+ * 300/10min (one every 2s) is an order of magnitude of headroom, while a
+ * round-sweeping client (each distinct round = one recorded row) gets cut off
+ * three decimal orders below the old MAX_POOL_ROUND amplification. */
 export function defaultRateLimiters(): AppDeps["rateLimiters"] {
   const windowMs = 10 * 60 * 1000;
   return {
     ipStart: createRateLimiter({ limit: 5, windowMs }),
     emailStart: createRateLimiter({ limit: 5, windowMs }),
+    poolServe: createRateLimiter({ limit: 300, windowMs }),
   };
 }
 
@@ -92,6 +98,14 @@ const DISPLAY_NAME_RE = /^[\p{L}\p{N}][\p{L}\p{N} _.'-]{1,23}$/u;
 /** Pool reads are bounded: no real run climbs anywhere near this, so a bigger
  * :round is junk input, not a query. */
 const MAX_POOL_ROUND = 10_000;
+
+/** How far past the ladder's deepest ghost round a play read may go. Honest
+ * play needs at most frontier + 1: a round with no visible ghosts is the
+ * kernel's outran-every-ghost champion challenge and the run ends there, so
+ * serves beyond the frontier are a sweep, not a game — each distinct round
+ * writes a run_pool_serves row, and without this bound one open run could
+ * record MAX_POOL_ROUND of them. */
+const SERVE_ROUND_MARGIN = 16;
 
 async function jsonBody(req: Request): Promise<Record<string, unknown> | null> {
   try {
@@ -257,6 +271,20 @@ export function createApp(deps: AppDeps): Hono<AuthEnv> {
       return c.json({ error: "invalid_round" }, 400);
     }
     const session = c.get("session");
+    // Authed write-amplification guards (each serve can record a row): a
+    // per-session rate limit with generous honest headroom, and a frontier
+    // bound — no run plays rounds the ladder's ghosts don't reach.
+    const limited = rateLimiters.poolServe.check(`serve:${session.sessionId}`);
+    if (!limited.ok) {
+      return c.json({ error: "rate_limited", retryAfterMs: limited.retryAfterMs }, 429);
+    }
+    const frontier = store.maxPoolRound() + SERVE_ROUND_MARGIN;
+    if (round > frontier) {
+      return c.json(
+        { served: false, reason: `round ${round} is beyond the ladder's frontier — no pool to serve past round ${frontier}` },
+        422,
+      );
+    }
     const outcome = servePool({ db, store, clock }, session.userId, c.req.param("runId"), round);
     return c.json(outcome, outcome.served ? 200 : 422);
   });

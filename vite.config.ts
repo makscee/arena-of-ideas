@@ -15,6 +15,11 @@ export default defineConfig({
   build: {
     outDir: "../dist",
     emptyOutDir: true,
+    // The login boot path (web/main.ts, #016 slice 3) uses top-level await,
+    // which vite's default es2020 target refuses at build time (dev never
+    // hit it — esbuild only transpiles down for production builds). es2022
+    // is the first target with TLA; every browser this game supports has it.
+    target: "es2022",
   },
   server: {
     proxy: {

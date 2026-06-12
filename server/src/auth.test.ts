@@ -36,6 +36,7 @@ function makeCtx(): Ctx {
     rateLimiters: {
       ipStart: createRateLimiter({ limit: 5, windowMs: WINDOW_MS, clock: clockMs }),
       emailStart: createRateLimiter({ limit: 5, windowMs: WINDOW_MS, clock: clockMs }),
+      poolServe: createRateLimiter({ limit: 100, windowMs: WINDOW_MS, clock: clockMs }),
     },
   });
   return { app, db, mailer, advance: (s) => (nowSec += s) };
@@ -393,6 +394,7 @@ describe("mail send failure", () => {
       rateLimiters: {
         ipStart: createRateLimiter({ limit: 5, windowMs: WINDOW_MS, clock: clockMs }),
         emailStart: createRateLimiter({ limit: 5, windowMs: WINDOW_MS, clock: clockMs }),
+        poolServe: createRateLimiter({ limit: 100, windowMs: WINDOW_MS, clock: clockMs }),
       },
     });
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});

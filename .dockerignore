@@ -1,0 +1,16 @@
+node_modules
+dist
+data
+.git
+.github
+e2e
+tasks
+candidates
+artifacts
+**/*.test.ts
+*.md
+.env
+.env.*
+!.env.example
+Dockerfile
+compose*.yml
