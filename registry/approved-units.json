@@ -1,0 +1,4 @@
+{
+  "_comment": "The playable approved-units registry (PRD #013 slice 4). Passing candidates from the creation loop are approved into this file by `npm run approve`; the web run screen merges these onto the shipped DEFAULT_RUN_POOL so a new run can draft them. Each unit is a team-file UnitDef, validated like all content; an optional `_creator` field carries authorship credit the codex displays. Ships empty — the game grows its pool one approval at a time.",
+  "units": []
+}

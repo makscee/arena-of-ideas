@@ -10,6 +10,8 @@
     "battle": "node --import tsx/esm src/cli.ts",
     "check-candidate": "node --import tsx/esm src/check-candidate.ts",
     "create": "node --import tsx/esm src/create/cli.ts",
+    "mint-candidate": "node --import tsx/esm src/create/mint-candidate.ts",
+    "approve": "node --import tsx/esm src/create/approve-cli.ts",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"

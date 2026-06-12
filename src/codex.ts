@@ -49,6 +49,10 @@ export interface CodexUnitEntry {
   abilities: string[];
   /** Starting statuses, e.g. "Strength ×3" — empty for most units. */
   statuses: string[];
+  /** Authorship credit for an approved (creation-loop) unit; absent for shipped
+   * units. The codex shows it as a "made by …" line — the minimal credit display
+   * the brief calls for (PRD #013 slice 4). */
+  creator?: string;
 }
 
 export interface CodexRuleEntry {
@@ -74,8 +78,8 @@ export interface CodexData {
  * wins the name dedup), then bootstrap ghosts and the shipped champion
  * (Warden, Warlord, scaled vanillas), then anything those units summon (Imp).
  * The codex must cover what a player can FACE, not only what they can buy. */
-export function codexUnits(): UnitDef[] {
-  const queue: UnitDef[] = [...DEFAULT_RUN_POOL, ...BOOTSTRAP_TEAMS.flat(2), ...BOOTSTRAP_CHAMPION];
+export function codexUnits(approved: readonly UnitDef[] = []): UnitDef[] {
+  const queue: UnitDef[] = [...DEFAULT_RUN_POOL, ...approved, ...BOOTSTRAP_TEAMS.flat(2), ...BOOTSTRAP_CHAMPION];
   const seen = new Set<string>();
   const out: UnitDef[] = [];
   while (queue.length > 0) {
@@ -111,12 +115,16 @@ export function buildCodex(registry: StatusRegistry, units: UnitDef[]): CodexDat
   for (const u of units) {
     if (seen.has(u.name)) continue;
     seen.add(u.name);
+    // Creator credit rides on approved units as a non-DSL `_creator` field
+    // (src/registry.ts) — the kernel ignores it, the codex shows it.
+    const creator = (u as { _creator?: unknown })._creator;
     unitEntries.push({
       name: u.name,
       hp: u.base.hp,
       pwr: u.base.pwr,
       abilities: (u.abilities ?? []).map((ab) => describeAbility(ab)),
       statuses: (u.statuses ?? []).map((s) => `${s.status} ×${s.stacks}`),
+      ...(typeof creator === "string" && creator.length > 0 ? { creator } : {}),
     });
   }
   unitEntries.sort((a, b) => a.name.localeCompare(b.name));

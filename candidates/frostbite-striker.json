@@ -1,0 +1,129 @@
+{
+  "id": "frostbite-striker",
+  "units": [
+    {
+      "name": "Frostbiter",
+      "base": {
+        "hp": 11,
+        "pwr": 2
+      },
+      "statuses": [
+        {
+          "status": "Shield",
+          "stacks": 3
+        }
+      ],
+      "abilities": [
+        {
+          "whens": [
+            {
+              "kind": "trigger",
+              "on": {
+                "on": "Strike",
+                "striker": "holder"
+              }
+            }
+          ],
+          "selectors": [
+            {
+              "kind": "frontEnemy"
+            }
+          ],
+          "effects": [
+            {
+              "kind": "applyStatus",
+              "status": "Poison",
+              "stacks": {
+                "kind": "const",
+                "value": 3
+              }
+            }
+          ]
+        },
+        {
+          "whens": [
+            {
+              "kind": "trigger",
+              "on": {
+                "on": "Strike",
+                "striker": "holder"
+              }
+            }
+          ],
+          "selectors": [
+            {
+              "kind": "frontEnemy"
+            }
+          ],
+          "effects": [
+            {
+              "kind": "applyStatus",
+              "status": "Curse",
+              "stacks": {
+                "kind": "const",
+                "value": 1
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Glacier",
+      "base": {
+        "hp": 12,
+        "pwr": 2
+      }
+    },
+    {
+      "name": "Squire",
+      "base": {
+        "hp": 8,
+        "pwr": 2
+      }
+    }
+  ],
+  "provenance": {
+    "ideaText": "A frost-themed front-line striker that chills the enemy it hits — its attacks\nshould slow or weaken the unit in front of it, so it trades up against an\naggressive opponent. A small, durable bruiser, not a glass cannon. It should\nhold its own against the existing meta without dominating it.",
+    "creator": "maks",
+    "harness": "claude-code",
+    "model": "opus",
+    "timestamp": "2026-06-12T10:02:22.399Z",
+    "attempts": 6
+  },
+  "gate": {
+    "verdict": "in-band",
+    "overallWinRate": 0.6466666666666666,
+    "band": {
+      "min": 0.35,
+      "max": 0.65
+    },
+    "floor": 0.25,
+    "matchups": [
+      {
+        "opponent": "AggroVenom",
+        "winRate": 1,
+        "wins": 50,
+        "losses": 0,
+        "draws": 0,
+        "seeds": 50
+      },
+      {
+        "opponent": "SustainControl",
+        "winRate": 0.64,
+        "wins": 32,
+        "losses": 18,
+        "draws": 0,
+        "seeds": 50
+      },
+      {
+        "opponent": "StatStack",
+        "winRate": 0.3,
+        "wins": 15,
+        "losses": 35,
+        "draws": 0,
+        "seeds": 50
+      }
+    ]
+  }
+}

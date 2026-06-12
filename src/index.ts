@@ -43,3 +43,5 @@ export type * from "./types.js";
 export * from "./content/stress.js";
 export { buildCodex, codexUnits } from "./codex.js";
 export type { CodexData, CodexStatusEntry, CodexUnitEntry, CodexRuleEntry } from "./codex.js";
+export { mergePool, parseApprovedRegistry, creditsOf } from "./registry.js";
+export type { ApprovedRegistry, ApprovedUnit } from "./registry.js";

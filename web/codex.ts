@@ -102,6 +102,14 @@ export function createCodex(
       row.textContent = "No abilities.";
       card.append(row);
     }
+    // Authorship credit for an approved creation-loop unit (PRD #013 slice 4).
+    if (u.creator !== undefined) {
+      const credit = document.createElement("div");
+      credit.className = "codex-entry-credit codex-dim";
+      credit.dataset.creator = u.creator;
+      credit.textContent = `made by ${u.creator}`;
+      card.append(credit);
+    }
 
     unitList.append(card);
   }

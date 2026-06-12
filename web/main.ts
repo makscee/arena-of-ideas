@@ -3,7 +3,8 @@
 // log (and the content it ran on) to the battle screen — board, inline log,
 // and inspector all read that one log.
 
-import { DEFAULT_RUN_POOL, KERNEL_VERSION, battle, codexUnits, openLadder, stressRegistry, type UnitDef } from "../src/index.js";
+import { DEFAULT_RUN_POOL, KERNEL_VERSION, battle, codexUnits, mergePool, openLadder, stressRegistry, type UnitDef } from "../src/index.js";
+import { approvedUnits } from "./approved.js";
 import { resolveUnits, teamOptions } from "./catalogue.js";
 import { dismissInspectOverlay } from "./inspect.js";
 import { createViewer } from "./viewer.js";
@@ -22,6 +23,12 @@ function el<T extends HTMLElement>(id: string): T {
   if (!node) throw new Error(`missing #${id}`);
   return node as T;
 }
+
+// The playable pool a new run drafts from: the shipped pool plus every approved
+// creation-loop unit (PRD #013 slice 4). Computed once at load — the run screen
+// and the codex both read it, so an approved unit is draftable AND catalogued.
+const approved = approvedUnits();
+const runPool = mergePool(DEFAULT_RUN_POOL, approved);
 
 const teamASelect = el<HTMLSelectElement>("team-a");
 const teamBSelect = el<HTMLSelectElement>("team-b");
@@ -162,7 +169,7 @@ let runScreen: RunScreen | undefined;
 const codexScreen: CodexScreen = createCodex(
   el("codex-container"),
   stressRegistry,
-  codexUnits(),
+  codexUnits(approved),
 );
 codexScreen.setVisible(false);
 
@@ -250,7 +257,7 @@ try {
     {
       storage: window.localStorage,
       store: openLadder(openLocalLadder(window.localStorage), stressRegistry),
-      pool: DEFAULT_RUN_POOL,
+      pool: runPool,
       registry: stressRegistry,
       viewer,
       viewerHost: result,
