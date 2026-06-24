@@ -33,20 +33,13 @@
           <button type="button" id="title-dev" title="Battle sandbox, gauntlet sweeps, team editor" hidden>dev tools</button>
         </div>
         <p id="title-net-warn" class="run-warn" role="alert" hidden></p>
-        <!-- #066 slice 1: an always-visible Settings entry — account/logout +
-             the dev-mode toggle live in the Settings surface (#settings-view). -->
-        <button type="button" id="title-settings" class="title-settings" title="Settings — account and dev mode">⚙ Settings</button>
-      </section>
 
-      <!-- Settings (#066 slice 1) — reached from the title ⚙. Two blocks: the
-           account/logout block (the login state machine, login.ts) and the
-           dev-mode toggle (aoi.dev.v1, off by default; gates the dev surfaces
-           on this device). -->
-      <section id="settings-view" hidden>
-        <h2 class="settings-title">Settings</h2>
-
-        <div class="settings-block">
-          <span class="pane-k">account</span>
+        <!-- #066 slice 6: account/login lives on the title (Maks's gate call —
+             slice 1 had buried it in Settings). Logged out shows the Login
+             entry; logged in swaps it for the identity strip (the account's
+             display name + log out). login.ts drives the email→code→name flow
+             and the logged-in/out swap; main.ts wires it by id. -->
+        <div class="title-account">
           <!-- #016 slice 3: real auth. Logged out shows the Login entry;
                logged in swaps it for the identity strip below. -->
           <button type="button" id="title-login" title="Log in to play on the shared ladder">Login</button>
@@ -77,6 +70,17 @@
             <p id="login-error" role="alert" hidden></p>
           </form>
         </div>
+
+        <!-- #066 slice 1: an always-visible Settings entry — the dev-mode
+             toggle lives in the Settings surface (#settings-view). -->
+        <button type="button" id="title-settings" class="title-settings" title="Settings — dev mode">⚙ Settings</button>
+      </section>
+
+      <!-- Settings (#066 slice 6) — reached from the title ⚙. Holds ONLY the
+           dev-mode toggle (aoi.dev.v1, off by default; gates the dev surfaces
+           on this device); the account/login block moved back to the title. -->
+      <section id="settings-view" hidden>
+        <h2 class="settings-title">Settings</h2>
 
         <div class="settings-block">
           <span class="pane-k">dev mode</span>

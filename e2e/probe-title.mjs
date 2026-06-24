@@ -63,23 +63,20 @@ async function freshScenario(viewport, tag) {
   check(await page.locator("#title-view").isVisible(), `${tag} fresh load lands on the title`);
   check(await page.locator("#run-new").isHidden(), `${tag} the run form is not the landing`);
   check((await playLabel(page)) === "Play", `${tag} no active run: the entry reads Play`);
-  // #066 slice 1: account/login moved into Settings (⚙). The login entry is no
-  // longer on the title — it lives in the Settings surface, live and enabled,
-  // and a click opens the email step (probe-arena walks the full flow; this
-  // and probe-settings stay the smoke checks).
-  check(await page.locator("#title-login").isHidden(), `${tag} login entry is not on the title (moved to Settings)`);
-  check(await page.locator("#title-settings").isVisible(), `${tag} Settings entry is visible on the title`);
-  await page.click("#title-settings");
-  await page.waitForSelector("#settings-view:not([hidden])");
-  check(await page.locator("#title-login").isVisible(), `${tag} Settings shows the login entry`);
+  // #066 slice 6: account/login is back ON the title (Maks's gate call —
+  // slice 1 had buried it in Settings). Logged out shows the Login entry, live
+  // and enabled, and a click opens the email step. The logged-in case (account
+  // NAME + Logout) is exercised end-to-end against the real server in
+  // probe-arena; this stays the logged-out smoke check.
+  check(await page.locator("#title-login").isVisible(), `${tag} login entry is on the title (logged out)`);
   check(await page.locator("#title-login").isEnabled(), `${tag} login entry is enabled (#016 wired it)`);
+  check(await page.locator("#title-id").isHidden(), `${tag} identity strip hidden while logged out`);
   await page.click("#title-login");
   await page.waitForSelector("#login-email-row:not([hidden])");
-  check(await page.locator("#login-panel").isVisible(), `${tag} login opens the email step`);
+  check(await page.locator("#login-panel").isVisible(), `${tag} login opens the email step on the title`);
   await page.click("#login-cancel");
   check(await page.locator("#login-panel").isHidden(), `${tag} cancel closes the login panel`);
-  await page.click("#home-button");
-  await page.waitForSelector("#title-view:not([hidden])");
+  check(await page.locator("#title-settings").isVisible(), `${tag} Settings entry is visible on the title`);
   check(await page.locator("#title-dev").isHidden(), `${tag} dev tools entry hidden when dev mode off (#066)`);
   check(await page.locator("#home-button").isHidden(), `${tag} home link hidden on the title itself`);
   check(await noHorizontalOverflow(page), `${tag} title has no horizontal overflow`);
@@ -87,7 +84,7 @@ async function freshScenario(viewport, tag) {
   // Every visible title action is a ≥44px effective target (the buttons are
   // real boxes, no pseudo-element tricks — measure the rendered rect). #title-dev
   // is gated off here (#066), so it is not measured on the fresh title.
-  for (const sel of ["#title-play", "#title-leaderboard", "#title-codex", "#title-settings"]) {
+  for (const sel of ["#title-play", "#title-leaderboard", "#title-codex", "#title-login", "#title-settings"]) {
     const b = await box(page, sel);
     check(b.height >= 44 && b.width >= 44, `${tag} ${sel} is a ≥44px target`, `${Math.round(b.width)}×${Math.round(b.height)}`);
   }

@@ -10,6 +10,9 @@
 //      differs from the first run at the SAME seed (the edit changed the
 //      result). This is the slice's whole point: a locked seed isolates the
 //      edit, so a different log proves the edit, not RNG, moved the outcome.
+//   + (#066 slice 6 fixes) statuses MERGE on re-add (no duplicate rows), and
+//     clicking a placed hero opens the inspector for that unit at its current
+//     edited stats — the edit controls still edit.
 //
 // The replay signature is the live viewer's own output — the full battle-log
 // text plus the event count — never anything the probe computes.
@@ -112,6 +115,80 @@ async function scenario(viewport, tag) {
   await aHp.fill("9");
   await aHp.dispatchEvent("input");
   check((await aHp.inputValue()) === "9", `${tag} a per-slot hp override sticks on Team A`);
+
+  // 2d. (#066 slice 6 / Fix 2) Statuses MERGE: adding a status the slot already
+  //     carries must bump the existing row's stacks, never append a second row.
+  //     Pick a status, add it twice, and assert exactly ONE row for that name.
+  {
+    const slot0 = '#be-col-a .be-slot[data-i="0"]';
+    const statusName = await page
+      .locator(`${slot0} select[data-pick-status] option`)
+      .nth(1)
+      .getAttribute("value");
+    const rowsFor = () =>
+      page.locator(`${slot0} .be-statuses .be-row .be-status-name`).filter({ hasText: statusName }).count();
+    const before = await rowsFor();
+    await page.selectOption(`${slot0} select[data-pick-status]`, statusName);
+    await page.click(`${slot0} button[data-act="add-status"]`);
+    await page.waitForFunction(
+      ([sel, name, n]) =>
+        [...document.querySelectorAll(`${sel} .be-statuses .be-row .be-status-name`)].filter(
+          (e) => e.textContent === name,
+        ).length === n,
+      [slot0, statusName, before + 1],
+    );
+    // Add the SAME status a second time — it must merge, not duplicate.
+    await page.selectOption(`${slot0} select[data-pick-status]`, statusName);
+    await page.click(`${slot0} button[data-act="add-status"]`);
+    // Give a duplicate a chance to (wrongly) appear before asserting.
+    await page.waitForTimeout(100);
+    check(
+      (await rowsFor()) === 1,
+      `${tag} re-adding an existing status MERGES — only one "${statusName}" row`,
+      `${await rowsFor()} rows`,
+    );
+    // The merge bumped the stacks (1 → 2), proving it accumulated rather than
+    // dropped the second add on the floor.
+    const stacks = await page
+      .locator(`${slot0} .be-statuses .be-row`)
+      .filter({ has: page.locator(`.be-status-name:text-is("${statusName}")`) })
+      .locator('input[data-field="stacks"]')
+      .inputValue();
+    check(Number(stacks) === 2, `${tag} the merged status accumulated stacks (1+1=2)`, `stacks=${stacks}`);
+  }
+
+  // 2e. (#066 slice 6 / Fix 3) Click a placed hero → the inspector overlay opens
+  //     for THAT unit, reflecting its current edited stats. The card area opens
+  //     the inspector; the per-slot edit controls still edit (disambiguated by
+  //     target, like the run screen).
+  {
+    const card = page.locator('#be-col-a .be-slot[data-i="0"] .be-card');
+    const cardName = (await card.locator(".uname").innerText()).trim();
+    await card.click();
+    await page.waitForSelector("#inspect-overlay:not([hidden])");
+    check(await page.locator("#inspect-overlay").isVisible(), `${tag} clicking a placed hero opens the inspector`);
+    check(
+      (await page.locator("#inspect-overlay .ins-name").innerText()).trim() === cardName,
+      `${tag} the inspector is for the clicked unit`,
+      cardName,
+    );
+    // It reflects the CURRENT edited stat (hp was overridden to 9 in 2c).
+    check(
+      (await page.locator("#inspect-overlay .ins-stats").innerText()).includes("9 hp"),
+      `${tag} the inspector reflects the unit's current edited hp (9)`,
+      await page.locator("#inspect-overlay .ins-stats").innerText(),
+    );
+    // The edit controls still work: editing hp after inspecting takes.
+    await page.locator("#ins-close").click();
+    await page.locator("#inspect-overlay").waitFor({ state: "hidden" });
+    const hp = page.locator('#be-col-a .be-slot[data-i="0"] input[data-field="hp"]');
+    await hp.fill("7");
+    await hp.dispatchEvent("input");
+    check((await hp.inputValue()) === "7", `${tag} the per-slot edit controls still edit after inspecting`);
+    // Restore the override the fight steps below expect.
+    await hp.fill("9");
+    await hp.dispatchEvent("input");
+  }
 
   // 3. Lock a known seed and fight — capture the first replay's signature.
   check(await page.locator("#be-lock").isChecked(), `${tag} seed still locked before the first fight`);

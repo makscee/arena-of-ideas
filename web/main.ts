@@ -276,9 +276,10 @@ if (bootNetWarn !== null) {
 // surface (#066 slice 5 deleted the legacy battle/gauntlet tabs).
 titleDev.addEventListener("click", () => showView("editor"));
 
-// #066 slice 1: Settings (the ⚙ entry). The account block is the login state
-// machine (wired above); the dev-mode toggle persists aoi.dev.v1 and takes
-// effect the moment the player walks back to the title.
+// #066 slice 6: Settings (the ⚙ entry) holds ONLY the dev-mode toggle now —
+// the account/login block moved back to the title (Maks's gate call). The
+// toggle persists aoi.dev.v1 and takes effect the moment the player walks back
+// to the title.
 const settingsDevToggle = el<HTMLInputElement>("settings-dev-toggle");
 el<HTMLButtonElement>("title-settings").addEventListener("click", () => {
   settingsDevToggle.checked = loadDevMode(window.localStorage); // reflect the stored state on open

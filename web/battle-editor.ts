@@ -23,9 +23,34 @@ import { SHIPPED_TEAMS } from "./catalogue.js";
 import { createPalette, type Palette } from "./unit-palette.js";
 import { loadTeams } from "./teams.js";
 import { unitCardHtml } from "./unit-card.js";
+import { closeInspectOverlay, openInspectOverlay, renderUnitInspect } from "./inspect.js";
 import type { Viewer } from "./viewer.js";
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
+
+/** Collapse any duplicate-name status rows on a unit into one, summing stacks —
+ * the kernel already enforces one instance per status name (battle.ts finds by
+ * name and accumulates stacks), so two rows of the same name only ever confuse
+ * the editor. Applied wherever a unit enters the editor (palette pick, quick
+ * loader, boot defaults) so the invariant "at most one row per status name"
+ * holds everywhere, not just on the add-status path. Mutates and returns u. */
+function dedupeStatuses(u: UnitDef): UnitDef {
+  if (u.statuses === undefined || u.statuses.length < 2) return u;
+  const merged: { status: string; stacks: number }[] = [];
+  for (const s of u.statuses) {
+    const existing = merged.find((m) => m.status === s.status);
+    if (existing !== undefined) existing.stacks = Number(existing.stacks) + Number(s.stacks);
+    else merged.push({ status: s.status, stacks: s.stacks });
+  }
+  u.statuses = merged;
+  return u;
+}
+
+/** Dedupe every unit in a team in place. */
+const dedupeTeam = (team: UnitDef[]): UnitDef[] => {
+  team.forEach(dedupeStatuses);
+  return team;
+};
 
 const esc = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
@@ -76,8 +101,8 @@ export function createBattleEditor(els: BattleEditorEls, deps: BattleEditorDeps)
   // aliases the pool, a saved team, or a shipped template). Defaults give the
   // sandbox something to fight on first open.
   const teams: Record<SideKey, UnitDef[]> = {
-    A: clone(SHIPPED_TEAMS["Team Alpha (aggro venom)"] ?? []),
-    B: clone(SHIPPED_TEAMS["Team Beta (control/sustain)"] ?? []),
+    A: dedupeTeam(clone(SHIPPED_TEAMS["Team Alpha (aggro venom)"] ?? [])),
+    B: dedupeTeam(clone(SHIPPED_TEAMS["Team Beta (control/sustain)"] ?? [])),
   };
   let visible = false;
   let mounted = false; // the shared viewer is currently parented into our mount
@@ -95,7 +120,7 @@ export function createBattleEditor(els: BattleEditorEls, deps: BattleEditorDeps)
       const team = teams[pickTarget];
       pickTarget = undefined;
       if (team.length >= TEAM_SIZE) return;
-      team.push(def);
+      team.push(dedupeStatuses(def)); // a pool unit could carry duplicates — collapse on entry
       renderBoth();
     },
   });
@@ -241,8 +266,42 @@ export function createBattleEditor(els: BattleEditorEls, deps: BattleEditorDeps)
     renderBoth();
   }
 
+  /** Inspect a placed unit — the same overlay + renderUnitInspect seam the run
+   * screen uses (inspect.ts), reflecting the unit's CURRENT edited stats and
+   * statuses so the card is useful as a balance read. The empty-number editor
+   * fields read as NaN mid-edit; show "?" rather than "NaN" in the head. */
+  function inspectSlot(side: SideKey, i: number, anchor: HTMLElement): void {
+    const u = teams[side]?.[i];
+    if (u === undefined) return;
+    const num = (v: number | undefined): string => (v === undefined || Number.isNaN(v) ? "?" : String(v));
+    openInspectOverlay("battle-editor", {
+      anchor,
+      onClose: () => {}, // the editor keeps no selection highlight; nothing to clear
+      render: (body) =>
+        renderUnitInspect(body, {
+          title: u.name ?? "?",
+          state:
+            `${num(u.base?.hp)} hp · ${num(u.base?.pwr)} pwr` + (u.level !== undefined ? ` · L${num(u.level)}` : ""),
+          def: u,
+          statuses: (u.statuses ?? []).map((s) => ({ status: String(s.status), stacks: Number(s.stacks) })),
+          registry: deps.registry,
+        }),
+    });
+  }
+
   function onClick(ev: Event): void {
     const target = ev.target as HTMLElement;
+    // A click on the card itself (not the edit controls / status rows below it)
+    // opens the inspector — the run-screen tap-to-inspect, reused. Edit controls
+    // live in .be-edit / .be-statuses and are handled by the branches below.
+    const cardHit = target.closest<HTMLElement>(".be-card");
+    if (cardHit !== null) {
+      const wrap = cardHit.closest<HTMLElement>(".be-slot");
+      if (wrap !== null) {
+        inspectSlot(wrap.getAttribute("data-side") as SideKey, Number(wrap.getAttribute("data-i")), cardHit);
+      }
+      return;
+    }
     const addBtn = target.closest<HTMLElement>("[data-add]");
     if (addBtn !== null) {
       pickTarget = addBtn.getAttribute("data-add") as SideKey;
@@ -272,7 +331,15 @@ export function createBattleEditor(els: BattleEditorEls, deps: BattleEditorDeps)
       const pick = (side === "A" ? els.columnA : els.columnB).querySelector<HTMLSelectElement>(
         `select[data-pick-status][data-side="${side}"][data-i="${i}"]`,
       );
-      if (pick !== null && pick.value !== "") (u.statuses ??= []).push({ status: pick.value, stacks: 1 });
+      if (pick !== null && pick.value !== "") {
+        // Merge into the existing row if the unit already carries this status —
+        // a second row would only confuse: the kernel keeps one instance per
+        // name and accumulates stacks (battle.ts), so the editor must too.
+        const statuses = (u.statuses ??= []);
+        const existing = statuses.find((s) => s.status === pick.value);
+        if (existing !== undefined) existing.stacks = Number(existing.stacks) + 1;
+        else statuses.push({ status: pick.value, stacks: 1 });
+      }
     } else return;
     renderColumn(side);
     renderBoth();
@@ -286,13 +353,13 @@ export function createBattleEditor(els: BattleEditorEls, deps: BattleEditorDeps)
     sel.value = ""; // reset to the resting label; loading the same option must re-fire
     if (value.startsWith("copy:")) {
       const from = value.slice("copy:".length) as SideKey;
-      teams[side] = clone(teams[from]);
+      teams[side] = dedupeTeam(clone(teams[from]));
     } else if (value.startsWith("shipped:")) {
       const units = SHIPPED_TEAMS[value.slice("shipped:".length)];
-      if (units !== undefined) teams[side] = clone(units);
+      if (units !== undefined) teams[side] = dedupeTeam(clone(units));
     } else if (value.startsWith("saved:")) {
       const units = loadTeams()[value.slice("saved:".length)];
-      if (units !== undefined) teams[side] = clone(units);
+      if (units !== undefined) teams[side] = dedupeTeam(clone(units));
     }
     renderBoth();
   }
@@ -456,6 +523,7 @@ export function createBattleEditor(els: BattleEditorEls, deps: BattleEditorDeps)
       } else {
         unmountViewer();
         palette.close();
+        closeInspectOverlay("battle-editor"); // leaving the editor takes its inspector with it
       }
     },
   };

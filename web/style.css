@@ -922,6 +922,21 @@ button:disabled:hover {
   min-height: 44px;
 }
 
+/* #066 slice 6: the account block back on the title (under the menu), same
+   column width as the menu so Login / identity strip line up with it. */
+.title-account {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.6rem;
+  width: min(18rem, 100%);
+  margin-top: 0.8rem;
+}
+
+.title-account > #title-login {
+  min-height: 44px;
+}
+
 #title-net-warn {
   width: min(22rem, 100%);
   margin-top: 0.8rem;

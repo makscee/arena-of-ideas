@@ -1,7 +1,8 @@
 // PRD #066 slice 1 — the Settings surface and the dev-mode gate. Pins, against
 // the LIVE app at desktop and 375×667:
-//  1. ⚙ is reachable from the title and opens Settings (account block + the
-//     dev-mode toggle); home walks back.
+//  1. ⚙ is reachable from the title and opens Settings (ONLY the dev-mode
+//     toggle now — #066 slice 6 moved the account block back to the title);
+//     home walks back.
 //  2. The dev toggle is OFF by default (fresh profile) — and with it off the
 //     dev tools entry is hidden on the title (no dev surface leaks).
 //  3. Turning it ON reveals the dev tools entry on the title; the entry opens
@@ -80,7 +81,12 @@ async function scenario(viewport, tag) {
   await openSettings(page);
   check(await page.locator("#settings-view").isVisible(), `${tag} ⚙ opens the Settings surface`);
   check(await page.locator("#settings-dev-toggle").isVisible(), `${tag} Settings shows the dev-mode toggle`);
-  check(await page.locator("#title-login").isVisible(), `${tag} Settings shows the account block (login/logout)`);
+  // #066 slice 6: Settings holds ONLY the dev toggle now — the account/login
+  // block moved back to the title (asserted in noLeakScenario + probe-title).
+  check(
+    (await page.locator("#settings-view #title-login").count()) === 0,
+    `${tag} Settings no longer holds the account/login block (moved to the title)`,
+  );
 
   // 2. The toggle is OFF by default, and dev tools are hidden on the title.
   check(!(await page.locator("#settings-dev-toggle").isChecked()), `${tag} dev toggle is OFF by default`);
@@ -140,8 +146,9 @@ async function scenario(viewport, tag) {
 async function noLeakScenario(viewport, tag) {
   const { ctx, page } = await openFresh(viewport);
 
-  // The title shows the player entries plus ⚙ — and NOT the dev tools entry.
-  for (const sel of ["#title-play", "#title-leaderboard", "#title-codex", "#title-settings"]) {
+  // The title shows the player entries plus Login (#066 slice 6: account back on
+  // the title) and ⚙ — and NOT the dev tools entry.
+  for (const sel of ["#title-play", "#title-leaderboard", "#title-codex", "#title-login", "#title-settings"]) {
     check(await page.locator(sel).isVisible(), `${tag} non-dev title shows ${sel}`);
   }
   check(await page.locator("#title-dev").isHidden(), `${tag} non-dev title hides the dev tools entry`);
