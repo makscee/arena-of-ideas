@@ -217,13 +217,17 @@ button:disabled:hover {
 
 /* ---------- stage centre: beat card / turn divider (#065 slice 1) ----------
    The centre slot between side A and side B. A hero-affecting beat opens a
-   card here (root title + its caused lines, streamed in as an indented causal
-   tree); a structural-only beat shows a thin "turn N" divider. The card's
-   tallest state is reserved by the viewer's lockBoardHeight, so the stage
-   never changes height mid-beat (LS-1). */
+   COMPACT card FLOATING between the teams (root title + its caused lines,
+   streamed in as an indented causal tree); a structural-only beat shows a
+   thin "turn N" divider. The card's tallest state is reserved by the viewer's
+   lockBoardHeight, so the stage never changes height mid-beat (LS-1).
+   The slot is a flex row so the card centres in it without stretching
+   edge-to-edge (defect 2/3: a full-width bar buried the streamed tree). */
 
 .stage-center {
   min-width: 0;
+  display: flex;
+  justify-content: center;
 }
 
 .turn-divider {
@@ -236,12 +240,20 @@ button:disabled:hover {
   font-size: 0.7rem;
 }
 
+/* A compact card that floats between the teams — capped width and centred in
+   the stage slot (defect 2). Min-width keeps a one-word line from collapsing
+   the card to a sliver; max-width stops it stretching across the board. */
 .beat-card {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.5rem 0.7rem;
   font-size: 0.75rem;
+  width: 100%;
+  max-width: 22rem;
+  min-width: min(14rem, 100%);
+  margin: 0 auto;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
 
 .bc-title {
@@ -520,8 +532,14 @@ button:disabled:hover {
   overflow-wrap: anywhere;
 }
 
+/* A dim section label now (#065 defect 5): the panel carries the cross-beat
+   cause trace, not a copy of the centre card's headline. */
 #event-desc {
   margin-bottom: 0.3rem;
+  color: var(--dim);
+  text-transform: uppercase;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
 }
 
 #event-cause {
@@ -2001,15 +2019,55 @@ button.danger {
     padding-bottom: max(0.8rem, env(safe-area-inset-bottom));
   }
 
-  /* One column: stage on top (board + its card + transport + readout), the
-     log in a capped-scroll pane below (#065 slice 1) — no page reflow, no
-     horizontal scroll at 375px. */
+  /* One column at phone width (#065 slice 1). The log must be REACHABLE on an
+     early scroll, not buried under the whole stage (board + transport + scrub
+     + readout ≈ 700px > a 667px viewport — defect 1). So the stage's children
+     join the panel's grid flow (#stage-col: display contents) and the log is
+     ORDERED directly under the board, above the transport/readout: the player
+     sees board → log without hunting. A single-column GRID (not flex) keeps the
+     minmax(0,1fr) track that lets the five-card board line shrink to fit 375px —
+     a flex column's min-width:auto let the board overflow the viewport. */
   #board-panel {
     grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.6rem;
+  }
+
+  #stage-col {
+    display: contents;
+  }
+
+  #board {
+    order: 1;
+  }
+
+  #log-col {
+    order: 2;
+  }
+
+  #transport {
+    order: 3;
+  }
+
+  #scrub {
+    order: 4;
+  }
+
+  #detail-pane {
+    order: 5;
   }
 
   #battle-log {
     height: 11rem;
+  }
+
+  /* Out-of-battle the menu button is a FIXED bottom-right control (#014). At
+     phone width it sat over the bottom of the scrolled content — the shop's
+     "your line" front tag (defect 6). Reserve a clearance strip below the run
+     view so its last content scrolls clear of the button instead of under it.
+     The battle phase pins its own sticky bar to the viewport bottom and docks
+     the menu into it, so this extra tail space is harmless there. */
+  #run-view {
+    padding-bottom: calc(44px + 1.6rem);
   }
 
   /* Reserved readout strip (slice-2 low): the desc/cause swap per event must
@@ -2159,6 +2217,27 @@ button.danger {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* Battle-bar outcome (#065 defect 4): a long "continue to round N · +Ng
+     income" balloons and, with the menu's margin-left:auto, crushes the menu
+     against the edge. Let the bar WRAP and drop the menu to its own row — the
+     outcome + continue own the first row, the menu sits on the second, nothing
+     collides. The continue button takes the row it needs without ballooning
+     into a three-line sliver. */
+  #run-battle-bar {
+    flex-wrap: wrap;
+    row-gap: 0.4rem;
+  }
+
+  #run-battle-bar #run-continue {
+    flex: 1 1 100%; /* full row — readable, never crushed beside the menu */
+  }
+
+  #run-battle-bar #run-menu-button.in-bar {
+    margin-left: 0;
+    flex: 1 1 100%; /* its own row, full width, clear of the outcome text */
+    order: 1; /* after skip/outcome/continue regardless of source order */
   }
 }
 

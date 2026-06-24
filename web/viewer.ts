@@ -177,7 +177,12 @@ export function createViewer(els: ViewerEls): Viewer {
     battleLog.syncTo(step);
     els.scrub.value = String(step);
     els.stepLabel.textContent = `event ${step + 1}/${log.length} · turn ${e.turn}`;
-    els.eventDesc.textContent = describeEvent(e, name);
+    // The readout no longer mirrors the centre card's title (defect 5): the
+    // within-beat story already reads off the card. The panel instead carries
+    // what the card does NOT — the event's cross-beat CAUSE ancestry — which
+    // slice 4 will key off the selected line/log row. A neutral label heads it
+    // so the panel never repeats the card's headline verbatim.
+    els.eventDesc.textContent = "cause trace";
     els.eventCause.innerHTML = causeHtml(e);
     els.prev.disabled = step === 0;
     els.next.disabled = step === log.length - 1;
@@ -222,7 +227,13 @@ export function createViewer(els: ViewerEls): Viewer {
     const measure = (i: number): void => {
       const center = beatCenterHtml(log, beats, i, (ev) => describeEvent(ev, name), verdictHtml(boardAt(log, i)));
       renderBoard(els.board, boardAt(log, i), name, new Set(), registry, undefined, center);
-      max = Math.max(max, els.board.offsetHeight);
+      // Fractional height (getBoundingClientRect), not the integer offsetHeight:
+      // a natural content height of 534.28px rounds offsetHeight to 534, so a
+      // min-height of 534 fails to contain it and the board grows ~0.3px at that
+      // step — nudging the transport a device pixel mid-replay (LS-1). Measuring
+      // the true fractional height and ceil-ing the lock keeps the reserve at or
+      // above every step's real height.
+      max = Math.max(max, els.board.getBoundingClientRect().height);
     };
     // Height-affecting board steps (graves fill, lines wipe, chips land).
     for (let i = 0; i < log.length; i++) {
@@ -236,7 +247,7 @@ export function createViewer(els: ViewerEls): Viewer {
     for (const beat of beats) {
       if (!beat.structural) measure(beat.end);
     }
-    if (max > 0) els.board.style.minHeight = `${max}px`;
+    if (max > 0) els.board.style.minHeight = `${Math.ceil(max)}px`;
   }
 
   /** The selected event's lineage: source, the causedBy chain, and a death's narrated why. */

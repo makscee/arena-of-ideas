@@ -67,10 +67,11 @@ async function layout(viewport, tag) {
   const { ctx, page } = await openRun(browser, plainShopRun(), viewport);
   await intoBattle(page);
 
-  const stage = await box(page, "#stage-col");
   const logCol = await box(page, "#log-col");
+  const boardBox = await box(page, "#board");
 
   if (viewport.width >= 700) {
+    const stage = await box(page, "#stage-col");
     check(
       logCol.x >= stage.x + stage.width - 2,
       `${tag} log column sits to the RIGHT of the stage`,
@@ -82,10 +83,29 @@ async function layout(viewport, tag) {
       `stage y=${Math.round(stage.y)}, log y=${Math.round(logCol.y)}`,
     );
   } else {
+    // #065 defect 1: at phone width the log must be REACHABLE — it sits
+    // directly UNDER the board (not buried below the whole stage: board +
+    // transport + scrub + readout overflow a phone viewport). The reorder puts
+    // the log between the board and the transport, so its top is just past the
+    // board bottom and ABOVE the transport.
+    const transport = await box(page, "#transport");
     check(
-      logCol.y >= stage.y + stage.height - 2,
-      `${tag} log STACKS below the stage`,
-      `stage bottom=${Math.round(stage.y + stage.height)}, log top=${Math.round(logCol.y)}`,
+      logCol.y >= boardBox.y + boardBox.height - 2,
+      `${tag} log sits directly below the board`,
+      `board bottom=${Math.round(boardBox.y + boardBox.height)}, log top=${Math.round(logCol.y)}`,
+    );
+    check(
+      logCol.y < transport.y,
+      `${tag} log is ABOVE the transport (reachable on an early scroll, not buried under the whole stage)`,
+      `log top=${Math.round(logCol.y)}, transport top=${Math.round(transport.y)}`,
+    );
+    // The log's bottom must land within an early scroll of the board top — not
+    // pushed a full extra viewport down behind the transport/readout (the
+    // pre-fix bug: log started ~700px below a 667px fold).
+    check(
+      logCol.y - (boardBox.y + boardBox.height) < 40,
+      `${tag} log is tight under the board (no large gap)`,
+      `gap=${Math.round(logCol.y - (boardBox.y + boardBox.height))}px`,
     );
     const hScroll = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
@@ -103,6 +123,48 @@ async function layout(viewport, tag) {
 // =====================================================================
 // 2. Card streams line by line; structural beats are dividers; clears on next beat
 // =====================================================================
+/** Geometry + visibility of the open card and its revealed lines, measured in
+ * the page: the card's own width and the stage column's width, and for every
+ * `.bc-line` whether it actually paints (non-zero offset box AND in the
+ * viewport). The old `streaming()` greened while the lines were buried in a
+ * full-width bar (defect 2/3) — counting `.bc-line` nodes is not enough; the
+ * lines must be VISIBLE and the card must be a floating card, not a stage-wide
+ * bar. */
+async function cardGeometry(page) {
+  return page.evaluate(() => {
+    const card = document.querySelector(".beat-card");
+    const stage = document.querySelector("#stage-col");
+    if (!card) return { hasCard: false };
+    // The card may sit above/below the current scroll — "visible" means it
+    // paints and lands in the viewport WHEN scrolled to, not that it happens to
+    // be in view at an arbitrary scroll. Bring it into view first (the sweep
+    // helper's pattern), then measure the painted/in-viewport state of lines.
+    card.scrollIntoView({ block: "center" });
+    const cr = card.getBoundingClientRect();
+    const sr = stage.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const lines = [...document.querySelectorAll(".beat-card .bc-line")].map((l) => {
+      const r = l.getBoundingClientRect();
+      const cs = getComputedStyle(l);
+      const painted =
+        l.offsetHeight > 0 &&
+        l.offsetWidth > 0 &&
+        cs.visibility !== "hidden" &&
+        cs.display !== "none" &&
+        Number(cs.opacity) > 0;
+      const inView = r.bottom > 0 && r.top < vh && r.right > 0 && r.left < vw;
+      return { painted, inView, h: Math.round(r.height), w: Math.round(r.width) };
+    });
+    return {
+      hasCard: true,
+      cardW: cr.width,
+      stageW: sr.width,
+      lines,
+    };
+  });
+}
+
 async function streaming(viewport, tag) {
   const { ctx, page } = await openRun(browser, plainShopRun(), viewport);
   await intoBattle(page);
@@ -120,6 +182,13 @@ async function streaming(viewport, tag) {
   let prevLines = await cardLines(page);
   let sawClear = false;
 
+  // Visibility / sizing accumulators (defect 2/3 close): track the worst case
+  // seen across the whole playback — a single invisible or zero-height line, or
+  // a single full-stage-width card, must turn the probe red.
+  let anyVisibleLine = false; // at least one beat actually painted its lines
+  let everyLineVisible = true; // no revealed line was invisible / off-screen
+  let maxCardFrac = 0; // widest card / stage ratio seen (must stay well under 1)
+
   for (let s = 0; s < total; s++) {
     await stepNext(page);
     const card = await hasCard(page);
@@ -136,12 +205,64 @@ async function streaming(viewport, tag) {
     if (card && beat !== prevBeat && prevBeat !== null) sawClear = true; // card cleared → new beat
     prevBeat = beat;
     prevLines = lines;
+
+    if (card) {
+      const g = await cardGeometry(page);
+      if (g.hasCard) {
+        maxCardFrac = Math.max(maxCardFrac, g.cardW / g.stageW);
+        for (const ln of g.lines) {
+          if (ln.painted && ln.inView) anyVisibleLine = true;
+          else everyLineVisible = false;
+        }
+      }
+    }
   }
 
   check(sawCard, `${tag} hero-affecting beats open a centre card`);
   check(sawDivider, `${tag} structural beats render a turn divider (not a card)`);
   check(sawStream, `${tag} card lines stream in as the playhead advances within a beat`);
   check(sawClear, `${tag} the card clears when the next beat opens`);
+
+  // The headline feature must be VISIBLE, not merely present in the DOM.
+  check(
+    anyVisibleLine,
+    `${tag} at least one beat's streamed lines actually render (non-zero box, in viewport)`,
+  );
+  check(
+    everyLineVisible,
+    `${tag} every revealed card line is visible (painted + within the viewport) — no invisible/zero-height lines`,
+  );
+  // A floating card, not a stage-wide bar. On a WIDE stage the card must be
+  // meaningfully narrower than its column (the desktop defect: it stretched
+  // edge-to-edge). On a NARROW phone column the card legitimately fills most of
+  // the width, so there the contract is its absolute width cap (≈22rem) — a card
+  // wider than that is the un-capped bar regardless of column width.
+  if (viewport.width >= 700) {
+    check(
+      maxCardFrac > 0 && maxCardFrac <= 0.9,
+      `${tag} the beat card floats (width < stage column width), not a full-stage-width bar`,
+      `widest card/stage = ${maxCardFrac.toFixed(3)}`,
+    );
+  } else {
+    const widest = await page.evaluate(() => {
+      // Replay once measuring the widest card the run ever shows.
+      const scrub = document.querySelector("#scrub");
+      const max = Number(scrub.max);
+      let w = 0;
+      for (let i = 0; i <= max; i++) {
+        scrub.value = String(i);
+        scrub.dispatchEvent(new Event("input", { bubbles: true }));
+        const c = document.querySelector(".beat-card");
+        if (c) w = Math.max(w, c.getBoundingClientRect().width);
+      }
+      return w;
+    });
+    check(
+      widest > 0 && widest <= 22 * 16 + 1,
+      `${tag} the beat card is width-capped (≤22rem), not an un-capped bar`,
+      `widest card = ${Math.round(widest)}px`,
+    );
+  }
 
   await ctx.close();
 }
