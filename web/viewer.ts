@@ -183,6 +183,7 @@ export function createViewer(els: ViewerEls): Viewer {
     const overlays = { by: overlaysAt(log, step) };
     const coinHolder = coinHolderAt(log, step) ?? undefined;
     renderBoard(els.board, board, name, hitSetAt(log, beats, step), registry, selected?.unit, center, overlays, coinHolder);
+    scrollNewestLineIntoView();
     battleLog.syncTo(step);
     els.scrub.value = String(step);
     els.stepLabel.textContent = `event ${step + 1}/${log.length} · turn ${e.turn}`;
@@ -233,6 +234,24 @@ export function createViewer(els: ViewerEls): Viewer {
       endedNotified = true;
       onEnded?.();
     }
+  }
+
+  /** Keep the line currently streaming in visible. On phone the card's lines sit
+   * in a capped, own-scrolling pane (.bc-lines, style.css phone block) so a tall
+   * cascade beat (~19 lines) can't push its last lines past the 667px fold (#065
+   * closure defect): without this the resurrection lines after a wave of deaths
+   * streamed in below the fold and the player never saw them before the read-
+   * pause cleared the card. Scrolling the pane (NOT scrollIntoView, which would
+   * scroll the page/ancestors and move the locked board under the cursor — LS-1)
+   * pins the newest line to the bottom of the pane each step; it stays there
+   * through the read-pause. On desktop the pane is uncapped (scrollHeight ===
+   * clientHeight), so this is a no-op and desktop tall beats still show in full. */
+  function scrollNewestLineIntoView(): void {
+    const pane = els.board.querySelector<HTMLElement>(".beat-card .bc-lines");
+    if (pane === null) return;
+    // The pane only overflows when capped (phone). Bottom-anchor the scroll so
+    // the newest line — appended last — sits at the pane's visible bottom edge.
+    if (pane.scrollHeight > pane.clientHeight) pane.scrollTop = pane.scrollHeight;
   }
 
   /** Reserve the tallest board this replay will show. The stage is now a

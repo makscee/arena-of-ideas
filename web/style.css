@@ -2449,6 +2449,35 @@ button.danger {
     padding: 0.5rem;
   }
 
+  /* Tall cascade beats stay readable on phone (#065 closure defect). A big
+     fatigue beat streams ~19 lines and grows the card past the 667px fold; with
+     the card in normal flow the last lines (e.g. the resurrections after a wave
+     of deaths) streamed in BELOW the fold and the player never saw them before
+     the read-pause cleared the card. The Layout clause's "capped internal-scroll
+     pane" is the fix: the title stays pinned and the LINES get a capped, own-
+     scrolling pane. The viewer scrolls the newest line into this pane as each
+     line streams in (viewer.ts: scrollNewestLineIntoView), so the line currently
+     being added is always visible and held through the read-pause. The cap is
+     viewport-relative so it shrinks with the device; the card top sits ~134px
+     down its centre track, so ~58svh leaves the title + newest line clearly in
+     the fold with margin to spare. Desktop is untouched (this is phone-only and
+     desktop already shows tall beats in full).
+
+     LS-1 stays honoured: capping the lines pane SHRINKS the card's outer height,
+     and lockBoardHeight measures the (now-capped) board height at the same phone
+     CSS — so the locked outer board height is stable across playback and the
+     internal pane scroll never changes any outer geometry (no transport/continue
+     nudge). The coin/PairFaced card streams no lines, so its pane stays empty and
+     uncapped in effect. */
+  .beat-card .bc-lines {
+    max-height: 58svh;
+    overflow-y: auto;
+    /* A faint scrollbar gutter so the newest line never hides under a hairline
+       overlay scrollbar on the platforms that draw one. */
+    scrollbar-width: thin;
+    overscroll-behavior: contain;
+  }
+
   #log-col {
     order: 2;
   }

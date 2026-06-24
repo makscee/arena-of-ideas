@@ -18,7 +18,7 @@
 import { mkdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { DESKTOP, bigBattleRun, duelistRun, launch, openRun, plainShopRun } from "./lib.mjs";
+import { DESKTOP, PHONE, bigBattleRun, duelistRun, launch, openRun, plainShopRun } from "./lib.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const outDir = process.env.SHOTS_DIR ?? join(here, ".shots", "motion");
@@ -369,6 +369,66 @@ await ctx.close();
   }
   await ctx.close();
 }
+
+// (vii) The PHONE FOLD on a big cascade beat (#065 closure defect) — a tall
+// fatigue beat streams ~19 lines; before the fix its last lines (the
+// resurrections after a wave of deaths) streamed in BELOW the 667px fold and
+// the player never saw them. After the fix the card's lines sit in a capped,
+// own-scrolling pane and the viewer scrolls the NEWEST line into view each step,
+// so the line being added is always within the fold. Read 17-phone-* in order:
+// the last several streaming steps of the tall beat — the newest line (a
+// resurrection at the tail) is visible at the bottom of the capped pane in EACH,
+// and the heroes/coin stay in view above. The matching 18-desktop-* frames show
+// the SAME beat on desktop in full (uncapped, unchanged). Captured at the page's
+// TOP scroll — exactly what autoplay shows; no scrollIntoView cheat.
+async function captureFold(viewport, tag) {
+  const { ctx, page } = await openRun(browser, bigBattleRun(), viewport);
+  await intoBattle(page);
+  const fmax = await maxStep(page);
+  // Find the tallest cascade beat and its step range.
+  const info = await page.evaluate((m) => {
+    const scrub = document.querySelector("#scrub");
+    const byBeat = {};
+    for (let i = 0; i <= m; i++) {
+      scrub.value = String(i);
+      scrub.dispatchEvent(new Event("input", { bubbles: true }));
+      const c = document.querySelector(".beat-card");
+      if (!c) continue;
+      const b = c.getAttribute("data-beat");
+      const lines = c.querySelectorAll(".bc-line").length;
+      (byBeat[b] ??= { beat: b, steps: [], maxLines: 0 });
+      byBeat[b].steps.push(i);
+      byBeat[b].maxLines = Math.max(byBeat[b].maxLines, lines);
+    }
+    const tall = Object.values(byBeat).sort((a, b) => b.maxLines - a.maxLines)[0];
+    return tall ? { beat: tall.beat, first: tall.steps[0], last: tall.steps[tall.steps.length - 1], lines: tall.maxLines } : null;
+  }, fmax);
+  if (info === null) {
+    console.log(`no cascade beat to capture (${tag})`);
+    await ctx.close();
+    return;
+  }
+  console.log(`${tag} cascade beat ${info.beat}: ${info.lines} lines, steps ${info.first}..${info.last}`);
+  // Capture the last 6 streaming steps (where the pre-fix overflow landed).
+  const start = Math.max(info.first, info.last - 5);
+  for (let s = start; s <= info.last; s++) {
+    await stepTo(page, s);
+    // Page at TOP — the autoplay reality. shot() scrolls #board to start.
+    const m = await page.evaluate(() => {
+      const c = document.querySelector(".beat-card");
+      const lines = [...c.querySelectorAll(".bc-line")];
+      const last = lines[lines.length - 1];
+      const r = last.getBoundingClientRect();
+      return { n: lines.length, bottom: Math.round(r.bottom), vh: window.innerHeight, text: last.textContent.trim() };
+    });
+    const label = `${tag === "phone" ? "17-phone" : "18-desktop"}-fold-step${s}-line${m.n}`;
+    await shot(page, label);
+    console.log(`  ${label}: newest line "${m.text}" bottom=${m.bottom} fold=${m.vh} ${m.bottom <= m.vh ? "IN FOLD" : "*** BELOW FOLD ***"}`);
+  }
+  await ctx.close();
+}
+await captureFold(PHONE, "phone");
+await captureFold(DESKTOP, "desktop");
 
 await browser.close();
 console.log(`\nmotion frames in ${outDir} — step through f00..fNN to see the animation play out`);

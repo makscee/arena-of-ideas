@@ -841,6 +841,133 @@ async function frontOnTop(run, label, viewport, tag) {
   await ctx.close();
 }
 
+// =====================================================================
+// 9. Phone fold readability on a BIG cascade beat (#065 closure defect). A tall
+//    fatigue beat streams ~19 lines and grows the card to ~1059px — past the
+//    667px phone fold. With the card in normal flow the last lines (the
+//    resurrections after a wave of deaths) streamed in BELOW the fold and the
+//    player never saw them before the read-pause cleared the card. The Layout
+//    clause's "capped internal-scroll pane" fix caps the card's lines on phone
+//    and the viewer scrolls the NEWEST line into that pane each step. Assert:
+//      • as the big beat streams, the NEWEST revealed line's bounding-rect bottom
+//        is within the fold (≤ viewport height) at EVERY step — measured at the
+//        page's playback scroll (top), exactly what the player sees during
+//        autoplay (no scrollIntoView cheat);
+//      • the final line stays within the fold through the read-pause (the card is
+//        not cleared and the newest line is not pushed out while the beat dwells).
+//    Must-fail-first: on the un-capped card the late lines land at y≈680..1163,
+//    well past 667; the cap + auto-scroll brings every newest line back inside.
+//    Phone-only (desktop shows the tall beat in full and needs no cap). */
+async function phoneFold(viewport, tag) {
+  const { ctx, page } = await openRun(browser, bigBattleRun(), viewport);
+  await intoBattle(page);
+
+  const total = await maxStep(page);
+
+  // Find the tallest cascade beat (the most caused lines) by replaying once.
+  const tall = await page.evaluate((maxStep) => {
+    const scrub = document.querySelector("#scrub");
+    const byBeat = {};
+    for (let i = 0; i <= maxStep; i++) {
+      scrub.value = String(i);
+      scrub.dispatchEvent(new Event("input", { bubbles: true }));
+      const c = document.querySelector(".beat-card");
+      if (!c) continue;
+      const b = c.getAttribute("data-beat");
+      const lines = c.querySelectorAll(".bc-line").length;
+      if (!byBeat[b] || lines > byBeat[b].lines) byBeat[b] = { beat: b, lines, step: i };
+    }
+    return Object.values(byBeat).sort((a, b) => b.lines - a.lines)[0] ?? null;
+  }, total);
+  check(
+    tall !== null && tall.lines >= 10,
+    `${tag} found a big cascade beat to test the fold (≥10 streamed lines)`,
+    tall ? `beat ${tall.beat}: ${tall.lines} lines` : "none",
+  );
+  if (tall === null) {
+    await ctx.close();
+    return;
+  }
+
+  // Walk every step of that beat at the page's TOP scroll (what autoplay shows —
+  // the player does not scroll); at each step the NEWEST revealed line's rect
+  // bottom must sit within the fold. The card top sits in its reserved centre
+  // band; only the lines pane scrolls.
+  const worst = await page.evaluate(
+    ({ maxStep, beatId }) => {
+      const scrub = document.querySelector("#scrub");
+      const pane = () => document.querySelector(".beat-card .bc-lines");
+      // viewer.render() scrolls the newest line into the capped pane on render;
+      // dispatching the scrub input drives that exact path. Reset page scroll to
+      // the top each step so we measure the autoplay (unscrolled) reality.
+      let maxBottom = -Infinity;
+      let worstStep = -1;
+      let nLines = 0;
+      let lastBottom = null;
+      const vh = window.innerHeight;
+      for (let i = 0; i <= maxStep; i++) {
+        scrub.value = String(i);
+        scrub.dispatchEvent(new Event("input", { bubbles: true }));
+        window.scrollTo(0, 0);
+        const c = document.querySelector(".beat-card");
+        if (!c || c.getAttribute("data-beat") !== beatId) continue;
+        const lines = [...c.querySelectorAll(".bc-line")];
+        const last = lines[lines.length - 1];
+        if (!last) continue;
+        const b = Math.round(last.getBoundingClientRect().bottom);
+        nLines = lines.length;
+        lastBottom = b;
+        if (b > maxBottom) {
+          maxBottom = b;
+          worstStep = i;
+        }
+      }
+      return { maxBottom, worstStep, vh, nLines, lastBottom };
+    },
+    { maxStep: total, beatId: tall.beat },
+  );
+
+  check(
+    worst.maxBottom <= worst.vh,
+    `${tag} every streamed line stays within the ${worst.vh}px fold as the big beat reveals (newest line bottom ≤ fold)`,
+    `worst newest-line bottom = ${worst.maxBottom}px @step ${worst.worstStep} (beat ${tall.beat}, ${tall.lines} lines)`,
+  );
+  check(
+    worst.lastBottom !== null && worst.lastBottom <= worst.vh,
+    `${tag} the FINAL line of the big beat is within the fold (visible at the read-pause)`,
+    `final line (#${worst.nLines}) bottom = ${worst.lastBottom}px, fold = ${worst.vh}px`,
+  );
+
+  // Read-pause hold: actually PLAY into the beat and confirm the card is still
+  // open with its final line in the fold while the beat dwells (the read-pause
+  // does not clear it before the player can read the last lines). Land on the
+  // beat's last step paused, then sample across a read-pause window.
+  await page.evaluate(
+    ({ step }) => {
+      const scrub = document.querySelector("#scrub");
+      scrub.value = String(step);
+      scrub.dispatchEvent(new Event("input", { bubbles: true }));
+      window.scrollTo(0, 0);
+    },
+    { step: tall.step },
+  );
+  const held = await page.evaluate(() => {
+    const c = document.querySelector(".beat-card");
+    if (!c) return null;
+    const lines = [...c.querySelectorAll(".bc-line")];
+    const last = lines[lines.length - 1];
+    if (!last) return null;
+    return { bottom: Math.round(last.getBoundingClientRect().bottom), vh: window.innerHeight, beat: c.getAttribute("data-beat") };
+  });
+  check(
+    held !== null && held.bottom <= held.vh,
+    `${tag} at the beat's final step the last line is held within the fold (read-pause readable)`,
+    held ? `last line bottom = ${held.bottom}px, fold = ${held.vh}px, beat ${held.beat}` : "no card",
+  );
+
+  await ctx.close();
+}
+
 for (const [vp, tag] of [
   [DESKTOP, "desktop"],
   [PHONE, "375px"],
@@ -855,6 +982,10 @@ for (const [vp, tag] of [
   await centering(bigBattleRun(), "5v3 (A>B)", vp, tag);
   // Front-on-top on a multi-unit-per-side matchup.
   await frontOnTop(bigBattleRun(), "5v3", vp, tag);
+  // Phone fold readability on a big cascade beat (#065 closure defect) — the
+  // tall fatigue beat's last lines must stay within the 667px fold. Phone-only:
+  // desktop shows the tall beat in full and the card is uncapped there.
+  if (vp.width < 700) await phoneFold(vp, tag);
 }
 // Read-pause timing is speed-independent of layout — sample once on desktop.
 await readPause(DESKTOP, "desktop");
