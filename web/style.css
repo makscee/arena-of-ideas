@@ -1007,6 +1007,76 @@ button:disabled:hover {
   border: none;
 }
 
+/* ---------- Settings entry + surface (#066 slice 1) ----------
+   The ⚙ entry is always visible under the menu (account + dev mode live one
+   tap away); the surface stacks two blocks at the title menu's width. */
+
+#title-settings {
+  margin-top: 1.4rem;
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-size: 0.85rem;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+#title-settings:hover {
+  color: var(--text);
+  border: none;
+}
+
+#settings-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.4rem;
+  padding: 1.5rem 0;
+}
+
+/* display: flex beats the UA [hidden] rule — keep the attribute authoritative
+   (the title-view pattern above). */
+#settings-view[hidden] {
+  display: none;
+}
+
+.settings-title {
+  margin: 0;
+}
+
+.settings-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: min(20rem, 100%);
+  text-align: left;
+}
+
+.settings-block button,
+.settings-block input {
+  min-height: 44px;
+}
+
+.settings-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+}
+
+.settings-toggle input {
+  min-height: auto;
+  width: 1.2rem;
+  height: 1.2rem;
+  flex: none;
+  margin-top: 0.1rem;
+}
+
+.settings-block .run-dim {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
 /* ---------- leaderboard screen (#015 slice 4) ----------
    The champion chase as a destination: the crown front and center, the round
    pools climbing under it. The body is the shared ladder view — these rules

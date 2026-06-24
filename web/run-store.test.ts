@@ -19,6 +19,7 @@ import {
 import {
   clearRun,
   clearSession,
+  loadDevMode,
   loadRun,
   loadSession,
   loadSubmitResult,
@@ -28,6 +29,7 @@ import {
   saveRun,
   saveSession,
   saveSubmitResult,
+  setDevMode,
   type KVStorage,
 } from "./run-store.js";
 
@@ -245,6 +247,34 @@ describe("session token", () => {
     expect(loadSession(storage)).toBeNull();
     storage.setItem("aoi.session.v1", "");
     expect(loadSession(storage)).toBeNull(); // an empty token is no token
+  });
+});
+
+describe("dev mode (#066 slice 1)", () => {
+  test("off by default; round-trips on/off through the injected storage", () => {
+    const storage = fakeStorage();
+    expect(loadDevMode(storage)).toBe(false); // a fresh profile is never dev
+    setDevMode(storage, true);
+    expect(loadDevMode(storage)).toBe(true); // survives a "reload": same storage
+    setDevMode(storage, false);
+    expect(loadDevMode(storage)).toBe(false);
+  });
+
+  test("only the exact on marker reads as on — a stray value is off", () => {
+    const storage = fakeStorage();
+    storage.setItem("aoi.dev.v1", "true"); // not the "1" marker
+    expect(loadDevMode(storage)).toBe(false);
+    storage.setItem("aoi.dev.v1", "0");
+    expect(loadDevMode(storage)).toBe(false);
+    storage.setItem("aoi.dev.v1", "1");
+    expect(loadDevMode(storage)).toBe(true);
+  });
+
+  test("turning it off clears the key (no lingering off-marker)", () => {
+    const storage = fakeStorage();
+    setDevMode(storage, true);
+    setDevMode(storage, false);
+    expect(storage.getItem("aoi.dev.v1")).toBeNull();
   });
 });
 

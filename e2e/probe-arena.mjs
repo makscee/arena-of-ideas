@@ -44,8 +44,12 @@ async function zeroNetworkScenario() {
 
   await page.goto(BASE, { waitUntil: "domcontentloaded" });
   await page.waitForSelector("#title-view:not([hidden])");
-  check((await page.locator("#title-login").textContent()) === "Login", "logged out: title offers Login");
+  // #066 slice 1: account/login lives in Settings (⚙), not on the title.
+  await openSettings(page);
+  check((await page.locator("#title-login").textContent()) === "Login", "logged out: Settings offers Login");
   check(await page.locator("#title-id").isHidden(), "logged out: no identity strip");
+  await page.click("#home-button");
+  await page.waitForSelector("#title-view:not([hidden])");
 
   // Leaderboard (local backing), then a full local round: start → fight →
   // skip → continue — the whole loop must run without a server.
@@ -87,6 +91,13 @@ async function lastCode(email) {
   return (await res.json()).code;
 }
 
+/** Open the Settings surface from the title (#066 slice 1: the account/login
+ * block moved here from the title menu). */
+async function openSettings(page) {
+  await page.click("#title-settings");
+  await page.waitForSelector("#settings-view:not([hidden])");
+}
+
 /** Register a fresh user through the real title-screen flow and land logged
  * in (the app reloads itself after the first-login name pick). */
 async function register(ctx, email, name) {
@@ -94,6 +105,7 @@ async function register(ctx, email, name) {
   page.setDefaultTimeout(15_000);
   await page.goto(BASE, { waitUntil: "domcontentloaded" });
   await page.waitForSelector("#title-view:not([hidden])");
+  await openSettings(page);
   await page.click("#title-login");
   await page.waitForSelector("#login-email-row:not([hidden])");
   await page.fill("#login-email", email);
@@ -105,11 +117,17 @@ async function register(ctx, email, name) {
   await page.waitForSelector("#login-name-row:not([hidden])");
   await page.fill("#login-name", name);
   await page.click("#login-submit"); // → reload, boot reads the session
+  await page.waitForSelector("#title-view:not([hidden])");
+  // The identity strip lives in Settings now (#066 slice 1) — open it to read
+  // the picked display name back.
+  await openSettings(page);
   await page.waitForSelector("#title-id:not([hidden])");
   check(
     (await page.locator("#title-name").textContent()) === name,
-    `${name}: logged-in title shows the picked display name`,
+    `${name}: logged-in Settings shows the picked display name`,
   );
+  await page.click("#home-button");
+  await page.waitForSelector("#title-view:not([hidden])");
   return page;
 }
 
@@ -237,6 +255,7 @@ async function loginOcclusionScenario() {
   page.setDefaultTimeout(15_000);
   await page.goto(BASE, { waitUntil: "domcontentloaded" });
   await page.waitForSelector("#title-view:not([hidden])");
+  await openSettings(page); // #066 slice 1: login lives in Settings now
   await page.click("#title-login");
   await page.waitForSelector("#login-email-row:not([hidden])");
   for (const target of ["#login-email", "#login-submit", "#login-cancel"]) {

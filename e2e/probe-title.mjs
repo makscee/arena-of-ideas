@@ -32,12 +32,21 @@ import {
 const disarm = armGuard();
 const browser = await launch();
 
-/** A fresh page with NO stored run — the new player's cold load. */
-async function openFresh(viewport) {
+/** A fresh page with NO stored run — the new player's cold load. With
+ * `dev` set, aoi.dev.v1 is on before boot so the dev surfaces are revealed
+ * (#066 slice 1: dev tools are gated on the dev-mode toggle). */
+async function openFresh(viewport, dev = false) {
   const ctx = await browser.newContext({ viewport, hasTouch: viewport.width < 700 });
   const page = await ctx.newPage();
   page.setDefaultTimeout(15_000);
-  await page.addInitScript(() => localStorage.removeItem("aoi.run.v1"));
+  await page.addInitScript(
+    (devOn) => {
+      localStorage.removeItem("aoi.run.v1");
+      if (devOn) localStorage.setItem("aoi.dev.v1", "1");
+      else localStorage.removeItem("aoi.dev.v1");
+    },
+    dev,
+  );
   await page.goto(BASE, { waitUntil: "domcontentloaded" });
   await page.waitForSelector("#title-view:not([hidden])");
   return { ctx, page };
@@ -53,22 +62,32 @@ async function freshScenario(viewport, tag) {
   check(await page.locator("#title-view").isVisible(), `${tag} fresh load lands on the title`);
   check(await page.locator("#run-new").isHidden(), `${tag} the run form is not the landing`);
   check((await playLabel(page)) === "Play", `${tag} no active run: the entry reads Play`);
-  // #016 slice 3: Login is live — enabled, and a click opens the email step
-  // (probe-arena walks the full flow; this stays the title's smoke check).
-  check(await page.locator("#title-login").isVisible(), `${tag} login entry is visible`);
+  // #066 slice 1: account/login moved into Settings (⚙). The login entry is no
+  // longer on the title — it lives in the Settings surface, live and enabled,
+  // and a click opens the email step (probe-arena walks the full flow; this
+  // and probe-settings stay the smoke checks).
+  check(await page.locator("#title-login").isHidden(), `${tag} login entry is not on the title (moved to Settings)`);
+  check(await page.locator("#title-settings").isVisible(), `${tag} Settings entry is visible on the title`);
+  await page.click("#title-settings");
+  await page.waitForSelector("#settings-view:not([hidden])");
+  check(await page.locator("#title-login").isVisible(), `${tag} Settings shows the login entry`);
   check(await page.locator("#title-login").isEnabled(), `${tag} login entry is enabled (#016 wired it)`);
   await page.click("#title-login");
   await page.waitForSelector("#login-email-row:not([hidden])");
   check(await page.locator("#login-panel").isVisible(), `${tag} login opens the email step`);
   await page.click("#login-cancel");
   check(await page.locator("#login-panel").isHidden(), `${tag} cancel closes the login panel`);
+  await page.click("#home-button");
+  await page.waitForSelector("#title-view:not([hidden])");
   check(await page.locator("#views").isHidden(), `${tag} dev tab nav hidden on the title`);
+  check(await page.locator("#title-dev").isHidden(), `${tag} dev tools entry hidden when dev mode off (#066)`);
   check(await page.locator("#home-button").isHidden(), `${tag} home link hidden on the title itself`);
   check(await noHorizontalOverflow(page), `${tag} title has no horizontal overflow`);
 
-  // Every title action is a ≥44px effective target (the buttons are real
-  // boxes, no pseudo-element tricks needed — measure the rendered rect).
-  for (const sel of ["#title-play", "#title-leaderboard", "#title-codex", "#title-login", "#title-dev"]) {
+  // Every visible title action is a ≥44px effective target (the buttons are
+  // real boxes, no pseudo-element tricks — measure the rendered rect). #title-dev
+  // is gated off here (#066), so it is not measured on the fresh title.
+  for (const sel of ["#title-play", "#title-leaderboard", "#title-codex", "#title-settings"]) {
     const b = await box(page, sel);
     check(b.height >= 44 && b.width >= 44, `${tag} ${sel} is a ≥44px target`, `${Math.round(b.width)}×${Math.round(b.height)}`);
   }
@@ -170,7 +189,8 @@ async function exitScenario(viewport, tag) {
 
 // ---- 6. codex / leaderboard / dev navigation --------------------------------
 async function navScenario(viewport, tag) {
-  const { ctx, page } = await openFresh(viewport);
+  // Dev mode on so the dev tools entry is revealed (#066 slice 1 gate).
+  const { ctx, page } = await openFresh(viewport, true);
 
   // Codex, and home back.
   await page.click("#title-codex");

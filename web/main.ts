@@ -16,12 +16,14 @@ import { RemoteLadder } from "./remote-ladder.js";
 import { createRunScreen, type RunScreen } from "./run-screen.js";
 import {
   clearSession,
+  loadDevMode,
   loadRun,
   loadSession,
   openLocalLadder,
   prefixedStorage,
   resetLadder,
   saveSession,
+  setDevMode,
   type KVStorage,
 } from "./run-store.js";
 import { createCodex, type CodexScreen } from "./codex.js";
@@ -202,6 +204,7 @@ form.addEventListener("submit", (event) => {
 
 const views = {
   title: el<HTMLElement>("title-view"),
+  settings: el<HTMLElement>("settings-view"),
   leaderboard: el<HTMLElement>("leaderboard-view"),
   run: el<HTMLElement>("run-view"),
   battle: el<HTMLElement>("battle-view"),
@@ -218,6 +221,18 @@ const viewTabs = {
 };
 const viewsNav = el<HTMLElement>("views");
 const homeButton = el<HTMLButtonElement>("home-button");
+const titleDev = el<HTMLButtonElement>("title-dev");
+
+// Dev-mode gate (#066 slice 1) — the dev surfaces (title's "dev tools" entry +
+// the tab nav) are shown iff aoi.dev.v1 is on, hidden when off. Replaces the
+// ungated #title-dev reveal: the gate is now the Settings toggle, with
+// immediate effect. Off also tucks the nav away again, so toggling off while
+// the nav happens to be revealed for the session re-hides it.
+function reflectDevGate(): void {
+  const on = loadDevMode(window.localStorage);
+  titleDev.hidden = !on;
+  if (!on) viewsNav.hidden = true;
+}
 
 let runScreen: RunScreen | undefined;
 let leaderboardView: LadderView | undefined;
@@ -287,7 +302,10 @@ function showView(which: keyof typeof views): void {
   if (which !== "battle") viewer.stop();
   runScreen?.setVisible(which === "run");
   codexScreen.setVisible(which === "codex");
-  if (which === "title") titleScreen.refresh(); // Play vs Continue, read fresh
+  if (which === "title") {
+    titleScreen.refresh(); // Play vs Continue, read fresh
+    reflectDevGate(); // dev tools entry shown iff dev mode is on
+  }
   if (which === "leaderboard") {
     leaderboardView?.refresh(activeRunMarker()); // pools fill live, own run marked
     // The shared ladder refreshes from the server on every show (#016 slice 3):
@@ -358,10 +376,27 @@ if (bootNetWarn !== null) {
   warn.textContent = bootNetWarn;
   warn.hidden = false;
 }
-el<HTMLButtonElement>("title-dev").addEventListener("click", () => {
+// #066 slice 1: the dev tools entry is gated by dev mode (reflectDevGate keeps
+// it hidden when off). When shown, it reveals the existing tab nav and lands on
+// the battle sandbox exactly as before — this slice changes only the GATE, not
+// the dev surfaces themselves (slice 2 replaces them).
+titleDev.addEventListener("click", () => {
   viewsNav.hidden = false; // revealed for the session — tabs work as ever
   showView("battle");
 });
+
+// #066 slice 1: Settings (the ⚙ entry). The account block is the login state
+// machine (wired above); the dev-mode toggle persists aoi.dev.v1 and takes
+// effect the moment the player walks back to the title.
+const settingsDevToggle = el<HTMLInputElement>("settings-dev-toggle");
+el<HTMLButtonElement>("title-settings").addEventListener("click", () => {
+  settingsDevToggle.checked = loadDevMode(window.localStorage); // reflect the stored state on open
+  showView("settings");
+});
+settingsDevToggle.addEventListener("change", () => {
+  setDevMode(window.localStorage, settingsDevToggle.checked);
+});
+
 homeButton.addEventListener("click", () => showView("title"));
 
 // The run screen and the leaderboard share one ladder store: the shared

@@ -24,6 +24,7 @@ const BATTLE_KEY = "aoi.run-battle.v1";
 const RUN_SEQ_KEY = "aoi.run-seq.v1";
 const SUBMIT_KEY = "aoi.submit.v1";
 const SESSION_KEY = "aoi.session.v1";
+const DEV_KEY = "aoi.dev.v1";
 
 /** The storage surface this module needs — window.localStorage, or a test stub. */
 export type KVStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
@@ -57,6 +58,25 @@ export function saveSession(storage: KVStorage, token: string): void {
 
 export function clearSession(storage: KVStorage): void {
   storage.removeItem(SESSION_KEY);
+}
+
+// ---------------------------------------------------------------------------
+// Dev mode (#066 slice 1) — a local convenience switch, off by default, that
+// gates the dev surfaces on this device. Stored raw "1"/absent, same medium as
+// the session token: localStorage is this device's boundary. This is NOT a
+// security boundary (the arena is client-authoritative; a cheated run is
+// structurally unsubmittable) — only which surfaces a developer sees here.
+// ---------------------------------------------------------------------------
+
+/** Whether dev mode is on. Off unless the flag is explicitly set — a fresh
+ * profile, a cleared key, or any non-"1" value all read as off. */
+export function loadDevMode(storage: KVStorage): boolean {
+  return storage.getItem(DEV_KEY) === "1";
+}
+
+export function setDevMode(storage: KVStorage, on: boolean): void {
+  if (on) storage.setItem(DEV_KEY, "1");
+  else storage.removeItem(DEV_KEY);
 }
 
 /** Open the localStorage-backed ladder. Corrupt stored JSON throws loudly
