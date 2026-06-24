@@ -363,13 +363,21 @@ button:disabled:hover {
   padding-left: calc(var(--d, 0) * 0.9rem);
   font-size: 0.72rem;
   overflow-wrap: anywhere;
-  /* Smooth line-in (Maks: "smoother when the card is expanded"): each line
-     fades + slides down a few px as it appears, so the card's downward growth
-     reads as an animated reveal, not a jump. The card grows in its own centre
-     column, so this never moves the teams. The keyframe starts at a non-ZERO
-     opacity (0.01, visually nil) so a frame sampled at t=0 still counts the line
-     as painted — the e2e visibility probe requires opacity > 0. Respects
-     reduced-motion below. */
+  /* Already-revealed lines paint statically: fully opaque, no transform. The
+     card re-renders its whole inner HTML each step, so arming the reveal on
+     EVERY .bc-line re-ran the fade/slide on all of them every step (defect A).
+     Only the just-revealed line (.bc-line-new, set by beat-card.ts) animates. */
+  opacity: 1;
+}
+
+/* Smooth line-in (Maks: "smoother when the card is expanded"): the newly
+   revealed line fades + slides down a few px as it appears, so the card's
+   downward growth reads as an animated reveal, not a jump. The card grows in
+   its own centre column, so this never moves the teams. The keyframe starts at
+   a non-ZERO opacity (0.01, visually nil) so a frame sampled at t=0 still counts
+   the line as painted — the e2e visibility probe requires opacity > 0. Respects
+   reduced-motion below. Scoped to .bc-line-new so prior lines stay put. */
+.bc-line.bc-line-new {
   animation: bc-line-in 0.22s ease-out both;
 }
 
@@ -385,7 +393,7 @@ button:disabled:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bc-line {
+  .bc-line.bc-line-new {
     animation: none;
   }
 }

@@ -45,12 +45,20 @@ export function beatCenterHtml(
   }
 
   // Lines for caused events revealed so far, indented by within-beat depth.
-  const lines = beat.caused
-    .filter((e) => e.id <= step)
+  // The card re-renders its whole inner HTML each step, so the `bc-line-in`
+  // reveal animation must be scoped to the ONE line that just appeared — else
+  // every prior line re-runs its fade/slide each step (defect A: all lines
+  // re-animate). The newest revealed line is the one with the greatest id ≤ step
+  // (caused is in log/id order); it alone carries `bc-line-new` (which arms the
+  // animation in CSS), so already-shown lines stay static across re-renders.
+  const revealed = beat.caused.filter((e) => e.id <= step);
+  const newestId = revealed.length > 0 ? revealed[revealed.length - 1]!.id : -1;
+  const lines = revealed
     .map((e) => {
       const depth = Math.max(0, depthInBeat(beat, log, e.id) - 1); // root is depth 1's parent → 0 indent
       const cls = lineClass(e);
-      return `<div class="bc-line ${cls}" data-id="${e.id}" style="--d:${depth}">${esc(text(e))}</div>`;
+      const fresh = e.id === newestId ? " bc-line-new" : "";
+      return `<div class="bc-line ${cls}${fresh}" data-id="${e.id}" style="--d:${depth}">${esc(text(e))}</div>`;
     })
     .join("");
 

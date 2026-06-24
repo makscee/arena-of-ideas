@@ -79,27 +79,24 @@ function describeEvent(e: BattleEvent, name: NameOf): string {
   }
 }
 
-/** Units a step should visibly mark — the event's subjects. */
-function subjectsOf(e: BattleEvent): Set<string> {
-  switch (e.type) {
-    case "Strike":
-      return new Set([e.striker, e.defender]);
-    case "PairFaced":
-      return new Set([e.a, e.b]);
-    case "Hurt":
-    case "Heal":
-    case "Death":
-    case "Summon":
-    case "StatusApplied":
-    case "StatusRemoved":
-    case "StatChanged":
-    case "Silenced":
-      return new Set([e.unit]);
-    case "Intercepted":
-      return new Set(e.unit !== undefined ? [e.unit] : []);
-    default:
-      return new Set();
+/** The units the red hit mark reddens at `step`: those with a Hurt event in the
+ * current beat at or before the playhead. The kernel is the source of truth — a
+ * Strike deals damage one-directionally (battle.ts kernelConsequences: a Strike
+ * proposes exactly one Hurt, on the defender), and each Strike is its own beat,
+ * so a riposte is a separate beat that re-derives its own hit set. Keying the
+ * mark off Hurt events (not the Strike's two subjects) fixes defect B: at strike
+ * start the Strike event itself hurts no one, so nobody flashes; the defender
+ * reddens only once its Hurt lands and STAYS marked through the rest of the beat
+ * (every Hurt with id ≤ step is included). If a beat genuinely hurts two units
+ * (e.g. a fatigue tick), both stay marked — the set always equals the truth. */
+function hitSetAt(log: BattleEvent[], beats: Beat[], step: number): Set<string> {
+  const at = beatAtStep(beats, step);
+  if (!at) return new Set();
+  const hit = new Set<string>();
+  for (const e of at.beat.caused) {
+    if (e.id <= step && e.type === "Hurt") hit.add(e.unit);
   }
+  return hit;
 }
 
 interface ViewerEls {
@@ -173,7 +170,7 @@ export function createViewer(els: ViewerEls): Viewer {
     if (!e) return;
     const board = boardAt(log, step);
     const center = beatCenterHtml(log, beats, step, (ev) => describeEvent(ev, name), verdictHtml(board));
-    renderBoard(els.board, board, name, subjectsOf(e), registry, selected?.unit, center);
+    renderBoard(els.board, board, name, hitSetAt(log, beats, step), registry, selected?.unit, center);
     battleLog.syncTo(step);
     els.scrub.value = String(step);
     els.stepLabel.textContent = `event ${step + 1}/${log.length} · turn ${e.turn}`;
