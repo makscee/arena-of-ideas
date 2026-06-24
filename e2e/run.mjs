@@ -138,8 +138,17 @@ const viteReady = await awaitReady(vite, "Local:");
 // Fault injection for the leak-check (no effect unless AOI_E2E_FAULT is set):
 // `throw` exercises the uncaughtException path; `reject` the unhandledRejection
 // path. Children are up here, so teardown must still reap them on a crash.
+//
+// The `reject` case must yield the event loop so the unhandledRejection handler
+// actually fires before the synchronous probe loop begins. We schedule the
+// rejection via setImmediate (guaranteeing it lands on the next event-loop turn)
+// then await a never-resolving Promise — the event loop runs, the handler fires,
+// teardown + process.exit(1) execute, and the probe loop is never reached.
 if (process.env.AOI_E2E_FAULT === "throw") throw new Error("injected fault (throw)");
-if (process.env.AOI_E2E_FAULT === "reject") Promise.reject(new Error("injected fault (reject)"));
+if (process.env.AOI_E2E_FAULT === "reject") {
+  setImmediate(() => Promise.reject(new Error("injected fault (reject)")));
+  await new Promise(() => {}); // suspend so the event loop turns and the handler fires
+}
 
 let failed = false;
 try {
