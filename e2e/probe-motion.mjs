@@ -26,7 +26,7 @@
 // Run under `npm run e2e` (the probe-*.mjs glob). A companion capture script,
 // e2e/motion-frames.mjs, writes step-through frames for a human to scrub.
 
-import { armGuard, check, duelistRun, finish, launch, openRun, plainShopRun, DESKTOP } from "./lib.mjs";
+import { armGuard, check, bigBattleRun, duelistRun, finish, launch, openRun, plainShopRun, DESKTOP } from "./lib.mjs";
 
 const disarm = armGuard();
 const browser = await launch();
@@ -425,9 +425,130 @@ async function badgesInSyncWithLines(page, { requireMultiHit }) {
   );
 }
 
-// Each probe gets a fresh run/page so the transport starts clean (the battle is
-// one-shot per fight — a second probe cannot re-click #run-fight on a page that
-// already left the shop).
+// ----------------------------------------------------------------------
+// Slice 3 — the COIN: a pure coin-holder projection (coinHolderAt) drives a
+// coin-flip beat card on a PairFaced and a PERSISTENT coin marker on the holder.
+// The director reported "there is no coin visual as we've planned" — this probe
+// reads the marker and the flip card straight off the live DOM and proves the
+// coin is a visible, attributable state that changes hands on each new pairing.
+// ----------------------------------------------------------------------
+//
+// We assert, sweeping the transport:
+//   • a PairFaced beat opens a `.coin-card` flip card naming the pairing's winner
+//     (data-coin-winner), and the same step paints exactly ONE `.coin-marker` —
+//     on the card whose data-unit IS that winner (the coin landed on the holder);
+//   • PERSIST — across every step from a pairing's flip up to (not including) the
+//     next pairing's flip, exactly one marker shows and it stays on that holder;
+//   • MOVE — at the next pairing the single marker is on the NEW holder (≠ the old
+//     one for a genuine re-flip), so the coin visibly changed hands.
+//
+// Must-fail-first: STUB_COIN_OFF=1 strips the marker via injected CSS, so the
+// "marker on the holder" assertions go red (0 markers) — proving the checks bind
+// to the real DOM, not a tautology. Run once with it set (expect FAIL on those),
+// once without (expect PASS). The flip-card check is independent of the stub.
+
+/** The coin state at the current step: the flip card's declared winner (or null
+ * when no coin card is open) and the set of data-units wearing a VISIBLE
+ * `.coin-marker`. Visibility (not mere DOM presence) is the truth — "if the coin
+ * isn't visibly on a hero, it's not done" — so a display:none stub genuinely
+ * reds the marker checks (must-fail-first), and a painted coin passes them. */
+const coinState = (page) =>
+  page.evaluate(() => {
+    const card = document.querySelector(".coin-card");
+    const winner = card ? card.getAttribute("data-coin-winner") : null;
+    const markers = [];
+    for (const m of document.querySelectorAll(".unit[data-unit] .coin-marker")) {
+      const cs = getComputedStyle(m);
+      const r = m.getBoundingClientRect();
+      const visible = cs.display !== "none" && cs.visibility !== "hidden" && Number(cs.opacity) > 0 && r.width > 0 && r.height > 0;
+      if (visible) markers.push(m.closest(".unit[data-unit]").getAttribute("data-unit"));
+    }
+    return { winner, markers };
+  });
+
+async function coinVisibleAndChangesHands(page, { stubbed }) {
+  const max = await maxStep(page);
+
+  // Walk every step; record at each: the open coin-card winner (if any) and the
+  // marker-bearing units. From this we reconstruct the holder timeline.
+  const timeline = [];
+  for (let n = 0; n <= max; n++) {
+    await stepTo(page, n);
+    const beat = await beatIndex(page);
+    const { winner, markers } = await coinState(page);
+    timeline.push({ n, beat, winner, markers });
+  }
+
+  // (a) The flip card: every PairFaced step that opens a coin-card declares a
+  // winner. There must be ≥2 such cards across the battle (a coin that re-flips).
+  const flips = timeline.filter((t) => t.winner !== null);
+  check(
+    flips.length >= 2,
+    "coin: a PairFaced opens a coin-flip card on ≥2 pairings (the coin re-flips)",
+    `${flips.length} coin-flip card step(s); winners=[${[...new Set(flips.map((f) => f.winner))].join(", ")}]`,
+  );
+
+  // (b) On each flip step the coin LANDS on the holder: exactly one marker, on
+  // the declared winner. (Skipped under the stub — the marker is intentionally
+  // off there, which is what makes the next checks fail-first.)
+  let landMismatches = 0;
+  let firstLand = "";
+  for (const f of flips) {
+    const ok = f.markers.length === 1 && f.markers[0] === f.winner;
+    if (!ok && firstLand === "") firstLand = `step ${f.n}: winner=${f.winner} markers=[${f.markers.join(",")}]`;
+    if (!ok) landMismatches++;
+  }
+  check(
+    landMismatches === 0,
+    "coin: the flip card's winner wears the single coin marker (the coin lands on the holder)",
+    landMismatches === 0
+      ? `all ${flips.length} flip step(s) land the marker on the winner`
+      : `${landMismatches} mismatch(es); first: ${firstLand}`,
+  );
+
+  // (c) PERSIST + (d) MOVE. The holder is the most recent flip's winner; the
+  // marker must equal exactly that holder at EVERY step after the first flip,
+  // through intervening strikes, and switch at the next flip. We derive the
+  // expected holder by carrying the last winner forward and compare to the marker
+  // set at each step.
+  let holder = null;
+  let persistMismatches = 0;
+  let firstPersist = "";
+  let strikeStepsHeld = 0; // steps that are NOT a flip yet still show the marker (persistence proof)
+  let moveSeen = false;
+  let prevHolder = null;
+  for (const t of timeline) {
+    if (t.winner !== null) {
+      if (holder !== null && t.winner !== holder) moveSeen = true; // the coin changed hands
+      prevHolder = holder;
+      holder = t.winner;
+    }
+    if (holder === null) continue; // before the first pairing — no marker expected
+    const ok = t.markers.length === 1 && t.markers[0] === holder;
+    if (!ok && firstPersist === "")
+      firstPersist = `step ${t.n}: expected holder=${holder} markers=[${t.markers.join(",")}]`;
+    if (!ok) persistMismatches++;
+    if (ok && t.winner === null) strikeStepsHeld++; // held steady on a non-flip (intervening) step
+  }
+
+  check(
+    persistMismatches === 0,
+    "coin: the marker sits on the holder at EVERY step and stays through intervening strikes (persists)",
+    persistMismatches === 0
+      ? `holder consistent across all ${timeline.length} steps; ${strikeStepsHeld} intervening (non-flip) step(s) held the marker steady`
+      : `${persistMismatches} mismatch(es); first: ${firstPersist}`,
+  );
+  check(
+    strikeStepsHeld > 0,
+    "coin: the marker persists across a pairing's strikes (≥1 non-flip step holds it)",
+    `${strikeStepsHeld} non-flip step(s) carried the marker on the same holder`,
+  );
+  check(
+    moveSeen,
+    "coin: the marker MOVES to a new holder on a re-flip (changes hands)",
+    moveSeen ? `coin changed hands (e.g. ${prevHolder} → ${holder})` : "no re-flip to a different holder observed",
+  );
+}
 {
   const { ctx, page } = await openRun(browser, plainShopRun(), DESKTOP);
   await intoBattle(page);
@@ -453,6 +574,18 @@ async function badgesInSyncWithLines(page, { requireMultiHit }) {
   const { ctx, page } = await openRun(browser, duelistRun(), DESKTOP);
   await intoBattle(page);
   await badgesInSyncWithLines(page, { requireMultiHit: true });
+  await ctx.close();
+}
+{
+  // The coin (#065 slice 3). The big battle (5 vs a smaller side) kills units, so
+  // the front advances and the coin re-flips to new pairings — exactly the
+  // "changes hands" behaviour. STUB_COIN_OFF=1 hides the marker via injected CSS
+  // so the must-fail-first run reddens the marker checks; without it they pass.
+  const stubbed = process.env.STUB_COIN_OFF === "1";
+  const { ctx, page } = await openRun(browser, bigBattleRun(), DESKTOP);
+  if (stubbed) await page.addStyleTag({ content: ".coin-marker { display: none !important; }" });
+  await intoBattle(page);
+  await coinVisibleAndChangesHands(page, { stubbed });
   await ctx.close();
 }
 

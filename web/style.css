@@ -657,6 +657,69 @@ button:disabled:hover {
   pointer-events: none;
 }
 
+/* The persistent COIN MARKER (#065 slice 3): the unit that holds the coin (the
+   most recent pairing's first striker — coinHolderAt) wears a gold coin chip,
+   pinned TOP-RIGHT so it never collides with the top-left damage/heal/status
+   delta badges (`.ov-layer`). It is a PERSISTENT STATE marker — it stays on the
+   holder across that pairing's strikes and moves only on the next PairFaced — so
+   it gets a distinct gold-on-dark coin look, never the red −N delta-pill family.
+   A bright ◉ glyph on a dark disc reads at a glance over the card art and the
+   red hit-halo alike. Inside the card edge so it never trips the no-overflow LS
+   check (probe-beats). */
+.coin-marker {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.15rem;
+  z-index: 4;
+  width: 1.05rem;
+  height: 1.05rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  line-height: 1;
+  color: #ffd45e; /* gold — distinct from the red/green/purple/amber delta hues */
+  background: radial-gradient(circle at 50% 40%, #5a4716, #1a1407);
+  border: 1.5px solid rgba(255, 212, 94, 0.85);
+  border-radius: 50%;
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.7),
+    0 0 6px rgba(255, 200, 70, 0.35);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+
+/* The coin-flip CARD (#065 slice 3): a PairFaced opens this in the stage centre
+   in place of the structural turn divider — the pairing forms and the coin lands
+   on the first striker. Reuses the .beat-card frame so it sits consistently with
+   every other beat card; a gold accent + a centred pairing line distinguish it. */
+.coin-card {
+  border-color: rgba(255, 212, 94, 0.5);
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 212, 94, 0.15);
+}
+
+.coin-title {
+  color: #ffd45e;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.68rem;
+}
+
+.coin-pip {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.coin-pair {
+  font-size: 0.72rem;
+  color: var(--text);
+}
+
 /* The art is the card's centrepiece — sized so five board cards still sit
    abreast at 375px (≈60px wide each). */
 .unit .shape {

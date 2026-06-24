@@ -212,6 +212,32 @@ export function overlaysAt(log: BattleEvent[], step: number): Map<string, BeatOv
 }
 
 /**
+ * The unit that holds the coin at `step` (or null before the first pairing).
+ *
+ * Pure projection over the log — same `(log, step)` in, same id out (#065 slice
+ * 3). The coin is the kernel's strike-first token: a NEW pairing emits a single
+ * `PairFaced{a,b,first}`, and `first` is the unit the kernel rolled to strike
+ * first (battle.ts: `first = rng() < 0.5 ? a.id : b.id`). The coin LANDS on that
+ * `first`. The kernel only re-emits `PairFaced` when the front pairing CHANGES
+ * (a death advances a new front unit); while the same two units keep trading
+ * blows no new `PairFaced` fires, so the holder PERSISTS across that pairing's
+ * intervening strikes — the projection just carries the last `PairFaced.first`
+ * forward. The next `PairFaced` re-flips it to the new pairing's first striker.
+ *
+ * Visual-only: this names "who holds the coin" for the marker and the flip card;
+ * it confers no kernel state (that is out of scope). Returns null for any step at
+ * or before the first `PairFaced`'s predecessors — i.e. until a pairing is faced.
+ */
+export function coinHolderAt(log: BattleEvent[], step: number): string | null {
+  let holder: string | null = null;
+  for (const e of log) {
+    if (e.id > step) break; // log is in id order; nothing past the playhead counts
+    if (e.type === "PairFaced") holder = e.first;
+  }
+  return holder;
+}
+
+/**
  * Within-beat causal nesting depth of an event: how many `causedBy` hops back
  * to the beat root (0 = the root itself, 1 = directly caused by the root, …).
  * Derived purely from `causedBy`; the chain is followed only while it stays

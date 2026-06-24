@@ -43,11 +43,24 @@ export interface UnitOverlays {
   by: Map<string, BeatOverlay>;
 }
 
+/** The persistent coin marker (#065 slice 3): a unit that HOLDS the coin (the
+ * most recent pairing's first striker — `coinHolderAt`) wears a small coin chip
+ * pinned to its card. Unlike the per-beat damage/heal/status badges, this is a
+ * PERSISTENT STATE marker: it stays on the holder across that pairing's strikes
+ * and only moves when the next PairFaced re-flips the coin — so it gets its own
+ * layer (`.coin-marker`, top-RIGHT) and a distinct gold look, never the red
+ * `.ov-layer` delta pills. Empty for a non-holder; the shop/team/ladder never
+ * pass a holder, so the card contract is unchanged for them. */
+function coinMarkerHtml(holds: boolean): string {
+  if (!holds) return "";
+  return `<span class="coin-marker" aria-hidden="true" title="Holds the coin — struck first this pairing">◉</span>`;
+}
+
 function unitCard(
   u: BoardUnit,
   displayName: string,
   registry: StatusRegistry,
-  opts: { front: boolean; dead: boolean; dying: boolean; hit: boolean; sel: boolean; overlay?: BeatOverlay | undefined },
+  opts: { front: boolean; dead: boolean; dying: boolean; hit: boolean; sel: boolean; overlay?: BeatOverlay | undefined; coin?: boolean },
 ): string {
   // The tooltip slot carries player-useful state, never the internal id (IA-7).
   const title = opts.dead
@@ -69,6 +82,7 @@ function unitCard(
     attrs: `data-unit="${esc(u.id)}"`,
     title,
     overlay: overlayBadgesHtml(opts.overlay),
+    marker: coinMarkerHtml(opts.coin === true),
   });
 }
 
@@ -80,8 +94,10 @@ function sideHtml(
   registry: StatusRegistry,
   selected: string | undefined,
   overlays: UnitOverlays | undefined,
+  coinHolder: string | undefined,
 ): string {
   const ov = (id: string): BeatOverlay | undefined => overlays?.by.get(id);
+  const holdsCoin = (id: string): boolean => coinHolder !== undefined && id === coinHolder;
   // A unit whose Death landed in the OPEN beat greys + ✕ IN PLACE for the rest
   // of its beat, then collapses to the grave at the next beat (#065 slice 2).
   // boardAt has already moved it to the grave at the Death step, so the render
@@ -104,6 +120,7 @@ function sideHtml(
           hit: hit.has(u.id),
           sel: u.id === selected,
           overlay: ov(u.id),
+          coin: holdsCoin(u.id),
         }),
       )
       .join("") +
@@ -116,6 +133,7 @@ function sideHtml(
           hit: hit.has(u.id),
           sel: u.id === selected,
           overlay: ov(u.id),
+          coin: holdsCoin(u.id),
         }),
       )
       .join("");
@@ -127,6 +145,7 @@ function sideHtml(
         dying: false,
         hit: hit.has(u.id),
         sel: u.id === selected,
+        coin: holdsCoin(u.id),
       }),
     )
     .join("");
@@ -160,15 +179,17 @@ export function boardHtml(
   selected?: string,
   centerHtml?: string,
   overlays?: UnitOverlays,
+  coinHolder?: string,
 ): string {
   const center = centerHtml ?? `<div class="divider">${verdictHtml(board)}</div>`;
-  return `${sideHtml(board, "A", name, hit, registry, selected, overlays)}<div class="stage-center">${center}</div>${sideHtml(board, "B", name, hit, registry, selected, overlays)}`;
+  return `${sideHtml(board, "A", name, hit, registry, selected, overlays, coinHolder)}<div class="stage-center">${center}</div>${sideHtml(board, "B", name, hit, registry, selected, overlays, coinHolder)}`;
 }
 
 /** Replaces `root`'s content with the board: side A's line, the stage centre,
  * side B's. `selected` marks the unit the inspector is open on; `centerHtml`
  * is the beat card / turn divider for the current beat; `overlays` carries the
- * per-unit beat badges + dying-in-place state (#065 slice 2). */
+ * per-unit beat badges + dying-in-place state (#065 slice 2); `coinHolder` is
+ * the unit that wears the persistent coin marker (#065 slice 3). */
 export function renderBoard(
   root: HTMLElement,
   board: BoardState,
@@ -178,6 +199,7 @@ export function renderBoard(
   selected?: string,
   centerHtml?: string,
   overlays?: UnitOverlays,
+  coinHolder?: string,
 ): void {
-  root.innerHTML = boardHtml(board, name, hit, registry, selected, centerHtml, overlays);
+  root.innerHTML = boardHtml(board, name, hit, registry, selected, centerHtml, overlays, coinHolder);
 }

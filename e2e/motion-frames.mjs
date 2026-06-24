@@ -18,7 +18,7 @@
 import { mkdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { DESKTOP, duelistRun, launch, openRun, plainShopRun } from "./lib.mjs";
+import { DESKTOP, bigBattleRun, duelistRun, launch, openRun, plainShopRun } from "./lib.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const outDir = process.env.SHOTS_DIR ?? join(here, ".shots", "motion");
@@ -243,6 +243,68 @@ await ctx.close();
     console.log(`death-in-place captured at step ${deathStep}`);
   } else {
     console.log("no death-in-place step found to capture");
+  }
+  await ctx.close();
+}
+
+// (v) The COIN (#065 slice 3) — a coin-flip card on a PairFaced, the persistent
+// marker sitting on the holder THROUGH a strike, and the marker MOVING to a new
+// holder on the next pairing. Read 10→13 in order: 10 the first flip card (coin
+// lands on the holder), 11 a later non-flip strike step (the same holder still
+// wears the marker — it persisted), 12 the NEXT flip card, 13 the step after it
+// (the marker now on the NEW holder — it changed hands). Captured from the big
+// battle, whose deaths advance the front and re-flip the coin.
+{
+  const { ctx, page } = await openRun(browser, bigBattleRun(), DESKTOP);
+  await intoBattle(page);
+  const cmax = await maxStep(page);
+
+  const coinAt = () =>
+    page.evaluate(() => {
+      const card = document.querySelector(".coin-card");
+      const winner = card ? card.getAttribute("data-coin-winner") : null;
+      const markerUnit = (() => {
+        const m = document.querySelector(".unit[data-unit] .coin-marker");
+        return m ? m.closest(".unit[data-unit]").getAttribute("data-unit") : null;
+      })();
+      return { winner, markerUnit };
+    });
+
+  // Find the steps of the first two coin flips (PairFaced cards).
+  const flipSteps = [];
+  for (let n = 0; n <= cmax && flipSteps.length < 2; n++) {
+    await stepTo(page, n);
+    const { winner } = await coinAt();
+    if (winner !== null) flipSteps.push(n);
+  }
+
+  if (flipSteps.length >= 1) {
+    await stepTo(page, flipSteps[0]);
+    const first = await coinAt();
+    await shot(page, "10-coin-flip-first-card");
+    console.log(`coin flip 1 at step ${flipSteps[0]} — winner ${first.winner}, marker on ${first.markerUnit}`);
+
+    // A non-flip step BETWEEN the two flips: the same holder still wears the coin.
+    if (flipSteps.length >= 2) {
+      const between = Math.floor((flipSteps[0] + flipSteps[1]) / 2);
+      await stepTo(page, Math.max(flipSteps[0] + 1, between));
+      const held = await coinAt();
+      await shot(page, "11-coin-marker-held-through-strike");
+      console.log(`coin held at step ${Math.max(flipSteps[0] + 1, between)} — flip card ${held.winner ? "open" : "closed"}, marker still on ${held.markerUnit}`);
+
+      await stepTo(page, flipSteps[1]);
+      const second = await coinAt();
+      await shot(page, "12-coin-flip-second-card");
+      console.log(`coin flip 2 at step ${flipSteps[1]} — winner ${second.winner}, marker on ${second.markerUnit}`);
+
+      // One step past the second flip: the marker now sits on the new holder.
+      await stepTo(page, Math.min(flipSteps[1] + 1, cmax));
+      const moved = await coinAt();
+      await shot(page, "13-coin-marker-moved-new-holder");
+      console.log(`coin moved at step ${Math.min(flipSteps[1] + 1, cmax)} — marker now on ${moved.markerUnit}`);
+    }
+  } else {
+    console.log("no coin flip found to capture");
   }
   await ctx.close();
 }

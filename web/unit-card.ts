@@ -87,6 +87,11 @@ export interface UnitCardOpts {
    * ON the card. Empty for every non-replay surface, so the card contract the
    * shop/team/ladder rely on is unchanged. */
   overlay?: string;
+  /** Persistent coin marker (#065 slice 3): pre-built HTML for the coin chip the
+   * holder wears (the most recent pairing's first striker). A PERSISTENT state
+   * marker, separate from the per-beat `overlay` deltas. Empty everywhere but the
+   * replay board, so the shop/team/ladder card contract is unchanged. */
+  marker?: string;
   /** Context classes (run-card, lv-unit) — widths are the context's to size. */
   classes?: string;
   /** The caller's wiring, pre-escaped: `data-offer="0"`, `data-unit="A1:X"`… */
@@ -132,5 +137,6 @@ export function unitCardHtml(o: UnitCardOpts): string {
       ${o.footer ?? ""}
       ${o.dying === true ? '<span class="dying-x" aria-hidden="true">✕</span>' : ""}
       ${o.overlay ?? ""}
+      ${o.marker ?? ""}
     </div>`;
 }

@@ -39,6 +39,21 @@ export function beatCenterHtml(
   if (!at) return `<div class="divider">${fallback}</div>`;
   const { beat } = at;
 
+  // A PairFaced opens a coin-flip card (#065 slice 3): the pairing forms and the
+  // coin lands on the unit that strikes first. PairFaced carries no caused events
+  // (the kernel emits it, then a separate Strike), so it would otherwise read as a
+  // structural-only turn divider — instead it gets its own card naming the two
+  // strikers and which won the coin. The card streams nothing (no caused lines),
+  // so the streaming/line model below is untouched; this is a self-contained root.
+  if (beat.root.type === "PairFaced") {
+    const r = beat.root;
+    return `
+    <div class="beat-card coin-card" data-beat="${beat.index}" data-coin-winner="${esc(r.first)}">
+      <div class="bc-title coin-title"><span class="coin-pip" aria-hidden="true">◉</span> coin flip</div>
+      <div class="coin-pair">${esc(text(r))}</div>
+    </div>`;
+  }
+
   if (beat.structural) {
     // A bare turn — the read pause lands here with nothing to narrate.
     return `<div class="divider turn-divider"><span class="turn-n">turn ${beat.root.turn}</span></div>`;
