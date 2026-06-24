@@ -309,5 +309,66 @@ await ctx.close();
   await ctx.close();
 }
 
+// (vi) The SELECTED-LINE cause readout (#065 slice 4) — the repurposed deep
+// cross-beat ancestry panel, now keyed off a clicked card line or log row. Read
+// 14→16 in order: 14 the neutral empty state (nothing selected → a prompt, NOT
+// a trace); 15 a card `.bc-line` clicked (the readout populated with that
+// event's cause chain, the clicked line rail-marked); 16 a right-log DEATH row
+// clicked (the readout now shows that death's full cross-beat `why died ← …`
+// trace). Captured from the big battle so a death's ancestry spans beats.
+{
+  const { ctx, page } = await openRun(browser, bigBattleRun(), DESKTOP);
+  await intoBattle(page);
+  const rmax = await maxStep(page);
+
+  const readoutShot = async (name) => {
+    // The readout sits below the board/transport — bring the detail pane into
+    // view so the captured frame actually shows the cause panel, not just the board.
+    await page.evaluate(() => document.querySelector("#detail-pane")?.scrollIntoView({ block: "center" }));
+    await page.screenshot({ path: join(outDir, `${name}.png`), fullPage: false });
+    const txt = (await page.locator("#event-cause").innerText()).replace(/\s+/g, " ").trim();
+    console.log(`frame ${name} — readout: "${txt}"`);
+  };
+
+  // 14 — empty state at a fresh, paused load (nothing selected yet).
+  await stepTo(page, 0);
+  await readoutShot("14-readout-empty");
+
+  // 15 — click a card line and capture the populated trace. Advance to a beat
+  // that shows a caused line, then click it (selection is decoupled from the
+  // playhead, so the playhead stays put).
+  let lineId = null;
+  for (let n = 0; n < rmax; n++) {
+    await stepTo(page, n);
+    if ((await lineCount(page)) >= 1) {
+      lineId = await page.evaluate(() =>
+        Number(document.querySelector(".beat-card .bc-line[data-id]").getAttribute("data-id")),
+      );
+      break;
+    }
+  }
+  if (lineId !== null) {
+    await page.locator(`.beat-card .bc-line[data-id="${lineId}"]`).click();
+    await readoutShot("15-readout-card-line-clicked");
+    console.log(`  (clicked card line for event ${lineId}; playhead at ${await page.evaluate(() => document.querySelector("#scrub").value)})`);
+  } else {
+    console.log("no card line found to capture readout");
+  }
+
+  // 16 — click a DEATH log row: jump to the end so every row is materialised,
+  // then click the first death. The readout updates to its deep cross-beat trace.
+  await stepTo(page, rmax);
+  const deathRow = page.locator("#battle-log .log-line.ev-death[data-id]").first();
+  if ((await deathRow.count()) >= 1) {
+    const deathId = await deathRow.evaluate((el) => Number(el.getAttribute("data-id")));
+    await deathRow.click();
+    await readoutShot("16-readout-death-log-row-clicked");
+    console.log(`  (clicked death log row for event ${deathId})`);
+  } else {
+    console.log("no death log row found to capture readout");
+  }
+  await ctx.close();
+}
+
 await browser.close();
 console.log(`\nmotion frames in ${outDir} — step through f00..fNN to see the animation play out`);

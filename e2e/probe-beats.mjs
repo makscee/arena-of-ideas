@@ -323,6 +323,141 @@ async function transport(viewport, tag) {
 }
 
 // =====================================================================
+// 3b. Selected-line cause readout (#065 slice 4)
+//   The deep cross-beat ancestry readout (`why died ← poison ← strike …`) is
+//   repurposed as the SELECTED-line detail: nothing selected → a neutral prompt;
+//   clicking a card `.bc-line` OR a right-log row selects that event and the
+//   readout traces ITS full cross-beat ancestry. Within-beat causality reads off
+//   the card; this is the deep trace on demand. Uses bigBattleRun so Venomancer's
+//   poison produces a death whose cause chain spans earlier beats.
+// =====================================================================
+const causeText = (page) => page.locator("#event-cause").innerText();
+const causeHtml = (page) => page.locator("#event-cause").innerHTML();
+
+async function causeReadout(viewport, tag) {
+  const { ctx, page } = await openRun(browser, bigBattleRun(), viewport);
+  await intoBattle(page);
+
+  // 1) Empty state: a fresh, paused load has nothing selected → neutral prompt,
+  //    NOT a populated cause/why trace. (Pre-slice-4 the readout mirrored the
+  //    playhead event, so this assertion FAILs on the old code.)
+  const emptyHtml = await causeHtml(page);
+  check(
+    emptyHtml.includes("cause-empty") && !emptyHtml.includes(">cause<") && !emptyHtml.includes(">why<"),
+    `${tag} nothing selected → neutral cause prompt (no trace)`,
+    emptyHtml.slice(0, 120),
+  );
+
+  // Advance until the open beat shows at least one caused card line to click.
+  const total = await maxStep(page);
+  let lineId = -1;
+  for (let s = 0; s < total && lineId < 0; s++) {
+    await stepNext(page);
+    if ((await cardLines(page)) >= 1) {
+      lineId = await page.evaluate(() =>
+        Number(document.querySelector(".beat-card .bc-line[data-id]").getAttribute("data-id")),
+      );
+    }
+  }
+  check(lineId >= 0, `${tag} found a card line to click`, `event ${lineId}`);
+
+  // 2) Click that card line → the readout populates with ITS cross-beat cause
+  //    trace, and the line is marked selected. The playhead does NOT move (the
+  //    deep trace is on demand; selection is decoupled from the playhead).
+  const headBefore = await playhead(page);
+  await page.locator(`.beat-card .bc-line[data-id="${lineId}"]`).click();
+  const afterLine = await causeHtml(page);
+  check(
+    !afterLine.includes("cause-empty") && (afterLine.includes(">cause<") || afterLine.includes(">why<")),
+    `${tag} clicking a card line populates the cause readout`,
+    afterLine.slice(0, 160),
+  );
+  check(
+    (await page.locator(`.beat-card .bc-line[data-id="${lineId}"].bc-line-sel`).count()) === 1,
+    `${tag} the clicked card line is marked selected`,
+  );
+  check(
+    (await playhead(page)) === headBefore,
+    `${tag} selecting a card line does NOT move the playhead (trace is on demand)`,
+    `head ${headBefore} → ${await playhead(page)}`,
+  );
+
+  // 3) Cross-beat span — select a DEATH via its log row and assert the trace
+  //    reaches back across beat boundaries. A Venomancer poison death's cause
+  //    chain is several `←` hops (poison tick ← poison applied … / a multi-link
+  //    ancestry), and the ancestor events live in EARLIER beats than the death.
+  //    The log only renders rows up to the playhead (syncTo), so jump to the end
+  //    first to materialise every row — selection is decoupled from the playhead.
+  await page.evaluate(() => {
+    const scrub = document.querySelector("#scrub");
+    scrub.value = scrub.max;
+    scrub.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  const deathRow = page.locator("#battle-log .log-line.ev-death[data-id]").first();
+  check((await deathRow.count()) >= 1, `${tag} battle produced a death to trace`);
+  const deathId = await deathRow.evaluate((el) => Number(el.getAttribute("data-id")));
+  await deathRow.click();
+  const deathTrace = await causeText(page);
+  const deathTraceHtml = await causeHtml(page);
+  check(
+    deathTrace.includes("←"),
+    `${tag} a death's readout shows a multi-hop cause chain (←)`,
+    deathTrace.slice(0, 200),
+  );
+  // Cross-beat: at least one ancestor link points to an event in a DIFFERENT
+  // beat than the death. The ancestry links carry data-goto=<ancestorId>; map
+  // each id (and the death) to its beat index via the page's own segmentation,
+  // observed by stepping the scrub and reading data-beat at each event.
+  const gotoIds = await page.evaluate(() =>
+    [...document.querySelectorAll("#event-cause a[data-goto]")].map((a) => Number(a.getAttribute("data-goto"))),
+  );
+  const beatOfEvent = async (id) => {
+    await page.evaluate((i) => {
+      const scrub = document.querySelector("#scrub");
+      scrub.value = String(i);
+      scrub.dispatchEvent(new Event("input", { bubbles: true }));
+    }, id);
+    return page.evaluate(() => {
+      const c = document.querySelector(".beat-card");
+      return c ? c.getAttribute("data-beat") : document.querySelector(".turn-divider, .divider") ? "structural" : null;
+    });
+  };
+  const deathBeat = await beatOfEvent(deathId);
+  let spans = false;
+  for (const gid of gotoIds) {
+    const b = await beatOfEvent(gid);
+    if (b !== null && b !== deathBeat) spans = true;
+  }
+  check(
+    spans || deathTraceHtml.includes(">why<"),
+    `${tag} the death's cause trace spans beats (an ancestor lives in an earlier beat) or carries a why-died chain`,
+    `death beat=${deathBeat}, ancestor beats via ${JSON.stringify(gotoIds)}`,
+  );
+
+  // 4) Selecting a different (non-death) log row updates the readout to that
+  //    event — selection is live, not stuck on the first pick.
+  const otherRow = page.locator("#battle-log .log-line.ev-strike[data-id], #battle-log .log-line.ev-hurt[data-id]").first();
+  if ((await otherRow.count()) >= 1) {
+    const otherId = await otherRow.evaluate((el) => Number(el.getAttribute("data-id")));
+    await otherRow.click();
+    const moved = await page.evaluate(() => Number(document.querySelector("#scrub").value));
+    check(
+      moved === otherId,
+      `${tag} clicking another log row re-selects (readout follows the new event)`,
+      `→ ${moved} (want ${otherId})`,
+    );
+    const updated = await causeHtml(page);
+    check(
+      !updated.includes("cause-empty"),
+      `${tag} the readout updated for the newly selected log row`,
+      updated.slice(0, 120),
+    );
+  }
+
+  await ctx.close();
+}
+
+// =====================================================================
 // 4. Read-pause at beat boundaries during play (longer than a per-line gap)
 // =====================================================================
 async function readPause(viewport, tag) {
@@ -723,6 +858,9 @@ for (const [vp, tag] of [
 }
 // Read-pause timing is speed-independent of layout — sample once on desktop.
 await readPause(DESKTOP, "desktop");
+// The selected-line cause readout (#065 slice 4) is layout-independent logic —
+// sample once on desktop.
+await causeReadout(DESKTOP, "desktop");
 
 await browser.close();
 disarm();

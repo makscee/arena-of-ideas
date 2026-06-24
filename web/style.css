@@ -370,6 +370,21 @@ button:disabled:hover {
   opacity: 1;
 }
 
+/* Card lines (and the title) are clickable: each picks its event for the
+   cross-beat cause readout (#065 slice 4). The pointer cursor advertises it. */
+.bc-line,
+.bc-title {
+  cursor: pointer;
+}
+
+/* The line whose cause the readout is tracing — a faint accent rail and tint
+   tie the readout's subject back to the card it came from. */
+.bc-line-sel {
+  box-shadow: inset 2px 0 0 var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-radius: 2px;
+}
+
 /* Smooth line-in (Maks: "smoother when the card is expanded"): the newly
    revealed line fades + slides down a few px as it appears, so the card's
    downward growth reads as an animated reveal, not a jump. The card grows in
@@ -897,6 +912,12 @@ button:disabled:hover {
 #event-cause {
   color: var(--dim);
   font-size: 0.7rem;
+}
+
+/* Neutral state before anything is selected (#065 slice 4). */
+.cause-empty {
+  color: var(--dim);
+  font-style: italic;
 }
 
 #event-cause .k {

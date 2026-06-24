@@ -157,6 +157,11 @@ export function createViewer(els: ViewerEls): Viewer {
   let defs = new Map<string, UnitDef>();
   let registry: StatusRegistry = {};
   let selected: { unit: string; status?: string } | undefined;
+  // The event whose cross-beat cause trace the readout shows (#065 slice 4).
+  // Decoupled from the playhead: clicking a card line or a right-log row picks
+  // an event and the readout traces ITS ancestry — within-beat causality reads
+  // off the card, this is the deep trace on demand. Undefined → neutral panel.
+  let selectedEvent: number | undefined;
   let onEnded: (() => void) | undefined;
   let endedNotified = false;
 
@@ -164,6 +169,9 @@ export function createViewer(els: ViewerEls): Viewer {
 
   const battleLog = createBattleLog(els.log, (eventId) => {
     pause();
+    // A log row both drives the playhead there (its long-standing contract) and
+    // selects that event for the cross-beat cause readout (#065 slice 4).
+    selectEvent(eventId);
     goTo(eventId);
   });
 
@@ -180,11 +188,21 @@ export function createViewer(els: ViewerEls): Viewer {
     els.stepLabel.textContent = `event ${step + 1}/${log.length} · turn ${e.turn}`;
     // The readout no longer mirrors the centre card's title (defect 5): the
     // within-beat story already reads off the card. The panel instead carries
-    // what the card does NOT — the event's cross-beat CAUSE ancestry — which
-    // slice 4 will key off the selected line/log row. A neutral label heads it
-    // so the panel never repeats the card's headline verbatim.
+    // what the card does NOT — the event's cross-beat CAUSE ancestry — keyed
+    // off the SELECTED line/log row (#065 slice 4), not the playhead. A neutral
+    // label heads it so the panel never repeats the card's headline verbatim.
+    // Nothing selected → a neutral prompt; selecting a line or row traces it.
     els.eventDesc.textContent = "cause trace";
-    els.eventCause.innerHTML = causeHtml(e);
+    const picked = selectedEvent !== undefined ? log[selectedEvent] : undefined;
+    els.eventCause.innerHTML = picked
+      ? causeHtml(picked)
+      : `<div class="cause-empty">select a card line or a log row to trace its cause</div>`;
+    // Mark the selected card line so the readout's subject is visible on the card.
+    if (selectedEvent !== undefined) {
+      els.board
+        .querySelector<HTMLElement>(`.bc-line[data-id="${selectedEvent}"], .bc-title[data-id="${selectedEvent}"]`)
+        ?.classList.add("bc-line-sel");
+    }
     els.prev.disabled = step === 0;
     els.next.disabled = step === log.length - 1;
     els.play.textContent = playing() ? "pause" : "play";
@@ -296,6 +314,12 @@ export function createViewer(els: ViewerEls): Viewer {
     render();
   }
 
+  /** Select an event for the cross-beat cause readout (#065 slice 4). Clamped
+   * to the log; out-of-range ids are ignored so a stale data-id can't break it. */
+  function selectEvent(id: number): void {
+    if (Number.isFinite(id) && id >= 0 && id < log.length) selectedEvent = id;
+  }
+
   function pause(): void {
     if (timer !== undefined) window.clearTimeout(timer);
     timer = undefined;
@@ -366,6 +390,17 @@ export function createViewer(els: ViewerEls): Viewer {
   // a status chip opens it with that status highlighted.
   els.board.addEventListener("click", (ev) => {
     const target = ev.target as HTMLElement;
+    // A centre-card line (or the card title) carries its event id in data-id —
+    // clicking it selects that event for the cross-beat cause readout (#065
+    // slice 4) without moving the playhead: within-beat causality is on the
+    // card, the deep trace is on demand. Re-clicking the selected line clears it.
+    const line = target.closest<HTMLElement>(".bc-line[data-id], .bc-title[data-id]");
+    if (line) {
+      const id = Number(line.getAttribute("data-id"));
+      selectedEvent = selectedEvent === id ? undefined : id;
+      render();
+      return;
+    }
     const card = target.closest("[data-unit]");
     if (!card) return;
     const unit = card.getAttribute("data-unit")!;
@@ -402,6 +437,7 @@ export function createViewer(els: ViewerEls): Viewer {
       defs = unitDefs(log, content.teams, content.registry);
       registry = content.registry;
       selected = undefined;
+      selectedEvent = undefined;
       onEnded = opts?.onEnded;
       endedNotified = false;
       battleLog.load(log, name);
