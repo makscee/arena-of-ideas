@@ -12,8 +12,9 @@
 //  5. Abandon (the #014 menu) and run-end exit both land on the title reading
 //     "Play" with the stored run cleared.
 //  6. Codex and Leaderboard open from the title without starting a run; the
-//     leaderboard shows the champion row; home walks back. The dev entry
-//     reveals the tab nav and the existing tabs keep switching views.
+//     leaderboard shows the champion row; home walks back. The dev entry opens
+//     the Battle Editor — the one dev surface (#066 slice 5 deleted the legacy
+//     tab nav + battle/gauntlet views, which are now absent from the DOM).
 
 import {
   BASE,
@@ -79,7 +80,6 @@ async function freshScenario(viewport, tag) {
   check(await page.locator("#login-panel").isHidden(), `${tag} cancel closes the login panel`);
   await page.click("#home-button");
   await page.waitForSelector("#title-view:not([hidden])");
-  check(await page.locator("#views").isHidden(), `${tag} dev tab nav hidden on the title`);
   check(await page.locator("#title-dev").isHidden(), `${tag} dev tools entry hidden when dev mode off (#066)`);
   check(await page.locator("#home-button").isHidden(), `${tag} home link hidden on the title itself`);
   check(await noHorizontalOverflow(page), `${tag} title has no horizontal overflow`);
@@ -211,23 +211,27 @@ async function navScenario(viewport, tag) {
   await page.click("#home-button");
   await page.waitForSelector("#title-view:not([hidden])");
 
-  // Dev: one low-prominence entry reveals the tab nav and lands on the Battle
-  // Editor — the one dev surface (#066 slice 2). The legacy battle/gauntlet
-  // tabs stay reachable until slice 5 deletes them.
+  // Dev: the one low-prominence entry opens the Battle Editor — the ONE dev
+  // surface (#066 slice 5 deleted the legacy tab nav + battle/gauntlet views).
   await page.click("#title-dev");
-  await page.waitForSelector("#views:not([hidden])");
-  check(await page.locator("#editor-view").isVisible(), `${tag} dev entry lands on the Battle Editor (#066 slice 2)`);
-  await page.click("#view-battle");
-  check(await page.locator("#battle-view").isVisible(), `${tag} battle tab still switches once revealed`);
-  await page.click("#view-gauntlet");
-  check(await page.locator("#gauntlet-view").isVisible(), `${tag} gauntlet tab switches once revealed`);
-  await page.click("#view-editor");
-  check(await page.locator("#editor-view").isVisible(), `${tag} editor tab switches once revealed`);
-  await page.click("#view-run");
-  check(await page.locator("#run-view").isVisible(), `${tag} run tab switches once revealed`);
+  await page.waitForSelector("#editor-view:not([hidden])");
+  check(await page.locator("#editor-view").isVisible(), `${tag} dev entry opens the Battle Editor (#066 slice 5: the one dev surface)`);
+  // The legacy tab nav and its battle/gauntlet views are gone from the DOM —
+  // even with dev on, there is no door to them.
+  check(
+    (await page.locator("#views").count()) === 0,
+    `${tag} the legacy dev tab nav (#views) is deleted from the DOM`,
+  );
+  check(
+    (await page.locator("#gauntlet-view").count()) === 0,
+    `${tag} the standalone gauntlet view is deleted from the DOM`,
+  );
+  check(
+    (await page.locator("#controls").count()) === 0,
+    `${tag} the inline battle picker (#controls) is deleted from the DOM`,
+  );
   await page.click("#home-button");
   await page.waitForSelector("#title-view:not([hidden])");
-  check(await page.locator("#views").isVisible(), `${tag} dev nav stays revealed for the session`);
   await ctx.close();
 }
 

@@ -3,14 +3,12 @@
 // log (and the content it ran on) to the battle screen — board, inline log,
 // and inspector all read that one log.
 
-import { DEFAULT_RUN_POOL, KERNEL_VERSION, battle, codexUnits, mergePool, openLadder, stressRegistry, type UnitDef } from "../src/index.js";
+import { DEFAULT_RUN_POOL, KERNEL_VERSION, codexUnits, mergePool, openLadder, stressRegistry } from "../src/index.js";
 import { approvedUnits, committedApproved } from "./approved.js";
 import { createArenaApi, type MeInfo } from "./api.js";
-import { resolveUnits, teamOptions } from "./catalogue.js";
 import { dismissInspectOverlay } from "./inspect.js";
 import { createViewer } from "./viewer.js";
 import { createBattleEditor, type BattleEditor } from "./battle-editor.js";
-import { createGauntlet } from "./gauntlet.js";
 import { createLogin } from "./login.js";
 import { RemoteLadder } from "./remote-ladder.js";
 import { createRunScreen, type RunScreen } from "./run-screen.js";
@@ -83,13 +81,9 @@ const remoteRunPool = mergePool(DEFAULT_RUN_POOL, committedApproved());
 // local run, and a remote run never revives into a logged-out session.
 const runStorage: KVStorage = remote !== null ? prefixedStorage(window.localStorage, "remote:") : window.localStorage;
 
-const teamASelect = el<HTMLSelectElement>("team-a");
-const teamBSelect = el<HTMLSelectElement>("team-b");
-const seedInput = el<HTMLInputElement>("seed");
-const seedError = el<HTMLElement>("seed-error");
-const runError = el<HTMLElement>("battle-run-error");
-const randomizeButton = el<HTMLButtonElement>("randomize");
-const form = el<HTMLFormElement>("controls");
+// #battle-view is no longer a navigable surface (#066 slice 5 deleted the inline
+// picker); it survives only as the home for #result, the shared viewer DOM the
+// run screen and the Battle Editor reparent into their own mounts.
 const result = el<HTMLElement>("result");
 
 const viewer = createViewer({
@@ -105,101 +99,15 @@ const viewer = createViewer({
   log: el("battle-log"),
 });
 
-function fillTeamPickers(): void {
-  const options = teamOptions(); // invalid saved teams come pre-marked in the label
-  for (const select of [teamASelect, teamBSelect]) {
-    const kept = select.value; // keep the selection across editor saves when possible
-    select.innerHTML = "";
-    const shipped = document.createElement("optgroup");
-    shipped.label = "shipped";
-    const edited = document.createElement("optgroup");
-    edited.label = "edited";
-    for (const opt of options) (opt.shipped ? shipped : edited).append(new Option(opt.label, opt.value));
-    select.append(shipped);
-    if (edited.children.length > 0) select.append(edited);
-    if ([...select.options].some((o) => o.value === kept)) select.value = kept;
-  }
-}
-
-fillTeamPickers();
-teamBSelect.selectedIndex = 1; // default to an Alpha-vs-Beta matchup
-
-function flagSeed(message: string): void {
-  seedError.textContent = message;
-  seedError.hidden = false;
-  seedInput.setAttribute("aria-invalid", "true");
-  seedInput.focus();
-}
-
-function clearSeedFlag(): void {
-  seedError.hidden = true;
-  seedInput.removeAttribute("aria-invalid");
-}
-
-seedInput.addEventListener("input", clearSeedFlag);
-
-function flagRun(message: string): void {
-  runError.textContent = message;
-  runError.hidden = false;
-}
-
-function clearRunFlag(): void {
-  runError.hidden = true;
-}
-
-randomizeButton.addEventListener("click", () => {
-  seedInput.value = String(Math.floor(Math.random() * 1_000_000));
-  clearSeedFlag();
-});
-
-/** Resolve a picker value to units via the catalogue's gate; a failure
- * surfaces as the run error (the validator's own message for saved teams). */
-function resolveTeam(value: string): UnitDef[] | null {
-  const resolved = resolveUnits(value);
-  if ("error" in resolved) {
-    flagRun(resolved.error);
-    return null;
-  }
-  return resolved.units;
-}
-
-function runFromControls(): void {
-  clearRunFlag();
-  const teamA = resolveTeam(teamASelect.value);
-  const teamB = resolveTeam(teamBSelect.value);
-  if (!teamA || !teamB) return;
-  // An empty or non-numeric seed flags the user — never a silent no-op.
-  const raw = seedInput.value.trim();
-  const seed = Number(raw);
-  if (raw === "" || !Number.isInteger(seed)) {
-    flagSeed(raw === "" ? "Seed is empty — type a whole number or roll the dice." : "Seed must be a whole number.");
-    return;
-  }
-  clearSeedFlag();
-
-  try {
-    const log = battle({ teamA, teamB, seed, statuses: stressRegistry });
-    result.hidden = false; // visible before load — the board height lock measures real layout
-    viewer.load(log, { teams: { A: teamA, B: teamB }, registry: stressRegistry });
-  } catch (err) {
-    result.hidden = true;
-    flagRun(`Battle failed: ${(err as Error).message}`);
-  }
-}
-
-form.addEventListener("submit", (event) => {
-  event.preventDefault();
-  runFromControls();
-});
-
 // ---------------------------------------------------------------------------
 // Views (#015 slice 3): title (the landing), run (the shop/fight loop),
-// leaderboard (the ladder without a run), codex, and the dev tools — battle
-// (pickers + replay), gauntlet (win-rate sweeps), editor — whose tab nav stays
-// hidden until the title's "dev tools" entry reveals it. The editor refreshes
-// both teams' pickers on every persisted change, so edited teams are always
-// live everywhere. The run screen borrows the battle viewer's DOM while a run
-// battle shows, so setVisible must hear every view change.
+// leaderboard (the ladder without a run), codex, and the one dev surface —
+// the Battle Editor, reached via the dev-gated title entry. #066 slice 5
+// removed the legacy dev surfaces (inline battle picker, gauntlet view, and the
+// tab-nav reveal); #battle-view stays only as the home for the shared viewer
+// DOM (#result), which the run screen and the editor reparent. The run screen
+// borrows that viewer DOM while a run battle shows, so setVisible must hear
+// every view change.
 // ---------------------------------------------------------------------------
 
 const views = {
@@ -208,30 +116,18 @@ const views = {
   leaderboard: el<HTMLElement>("leaderboard-view"),
   run: el<HTMLElement>("run-view"),
   battle: el<HTMLElement>("battle-view"),
-  gauntlet: el<HTMLElement>("gauntlet-view"),
   editor: el<HTMLElement>("editor-view"),
   codex: el<HTMLElement>("codex-view"),
 };
-const viewTabs = {
-  run: el<HTMLButtonElement>("view-run"),
-  battle: el<HTMLButtonElement>("view-battle"),
-  gauntlet: el<HTMLButtonElement>("view-gauntlet"),
-  editor: el<HTMLButtonElement>("view-editor"),
-  codex: el<HTMLButtonElement>("view-codex"),
-};
-const viewsNav = el<HTMLElement>("views");
 const homeButton = el<HTMLButtonElement>("home-button");
 const titleDev = el<HTMLButtonElement>("title-dev");
 
-// Dev-mode gate (#066 slice 1) — the dev surfaces (title's "dev tools" entry +
-// the tab nav) are shown iff aoi.dev.v1 is on, hidden when off. Replaces the
-// ungated #title-dev reveal: the gate is now the Settings toggle, with
-// immediate effect. Off also tucks the nav away again, so toggling off while
-// the nav happens to be revealed for the session re-hides it.
+// Dev-mode gate (#066 slice 1) — the dev entry (the title's "dev tools" button,
+// the only door to the Battle Editor) is shown iff aoi.dev.v1 is on, hidden when
+// off. The gate is the Settings toggle, with immediate effect on every title
+// show. With the tab nav deleted (#066 slice 5), this is the whole gate.
 function reflectDevGate(): void {
-  const on = loadDevMode(window.localStorage);
-  titleDev.hidden = !on;
-  if (!on) viewsNav.hidden = true;
+  titleDev.hidden = !loadDevMode(window.localStorage);
 }
 
 let runScreen: RunScreen | undefined;
@@ -296,9 +192,6 @@ function showView(which: keyof typeof views): void {
   for (const key of Object.keys(views) as (keyof typeof views)[]) {
     views[key].hidden = key !== which;
   }
-  for (const key of Object.keys(viewTabs) as (keyof typeof viewTabs)[]) {
-    viewTabs[key].classList.toggle("active", key === which);
-  }
   homeButton.hidden = which === "title"; // every other screen can walk home
   if (which !== "battle") viewer.stop();
   runScreen?.setVisible(which === "run");
@@ -323,14 +216,11 @@ function showView(which: keyof typeof views): void {
     }
   }
 }
-for (const key of Object.keys(viewTabs) as (keyof typeof viewTabs)[]) {
-  viewTabs[key].addEventListener("click", () => showView(key));
-}
 
 // ---------------------------------------------------------------------------
 // Title screen (#015 slice 3) — the landing. The Play entry reads the run
-// screen's state at refresh time; dev tools hide behind one low-prominence
-// entry that reveals the existing tab nav (it then works exactly as before).
+// screen's state at refresh time; the dev tools hide behind one low-prominence,
+// dev-gated entry that opens the Battle Editor (#066 slice 5: the one dev door).
 // ---------------------------------------------------------------------------
 
 const titleScreen = createTitleScreen(
@@ -382,13 +272,9 @@ if (bootNetWarn !== null) {
   warn.hidden = false;
 }
 // #066 slice 2: the dev tools entry is gated by dev mode (reflectDevGate keeps
-// it hidden when off). When shown, it reveals the tab nav and lands on the
-// Battle Editor — the one dev surface (slice 2). The legacy battle/gauntlet
-// tabs stay reachable for now (slice 5 deletes them).
-titleDev.addEventListener("click", () => {
-  viewsNav.hidden = false; // revealed for the session — tabs work as ever
-  showView("editor");
-});
+// it hidden when off). When shown, it opens the Battle Editor — the one dev
+// surface (#066 slice 5 deleted the legacy battle/gauntlet tabs).
+titleDev.addEventListener("click", () => showView("editor"));
 
 // #066 slice 1: Settings (the ⚙ entry). The account block is the login state
 // machine (wired above); the dev-mode toggle persists aoi.dev.v1 and takes
@@ -527,36 +413,8 @@ try {
   view.append(msg, actions);
 }
 
-// Watch a gauntlet matchup: load it into the battle controls and run — the
-// viewer shows exactly the battle that produced that row's result.
-const gauntlet = createGauntlet(
-  {
-    form: el<HTMLFormElement>("gauntlet-controls"),
-    challenger: el<HTMLSelectElement>("g-challenger"),
-    seeds: el<HTMLInputElement>("g-seeds"),
-    includeSaved: el<HTMLInputElement>("g-include-saved"),
-    error: el<HTMLElement>("g-error"),
-    progress: el<HTMLElement>("g-progress"),
-    results: el<HTMLElement>("g-results"),
-    tableBody: el<HTMLElement>("g-rows"),
-    tableFoot: el<HTMLElement>("g-overall"),
-  },
-  (challengerValue, opponentValue, seed) => {
-    teamASelect.value = challengerValue;
-    teamBSelect.value = opponentValue;
-    seedInput.value = String(seed);
-    showView("battle");
-    runFromControls();
-  },
-);
-
-// The gauntlet (slice 3/5) still refreshes its picker on team changes; with the
-// legacy editor gone the only remaining source is the saved-team store, kept
-// fresh on each gauntlet show by its own refresh.
-void (function keepGauntletFresh(): void {
-  fillTeamPickers();
-  gauntlet.refresh();
-})();
+// #066 slice 5: the standalone gauntlet view is gone — its win-rate sweep lives
+// in the Battle Editor's Run ×N (slice 3, on the pure sweep in src/sweep.ts).
 
 // #066 slice 2: the Battle Editor — two team columns, a shared unit palette,
 // per-slot overrides, quick loaders, and a locked-seed Fight that mounts the

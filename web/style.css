@@ -45,18 +45,6 @@ h1 {
   margin: 0 0 1.5rem;
 }
 
-#controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: flex-end;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-}
-
 label {
   display: flex;
   flex-direction: column;
@@ -76,15 +64,6 @@ button {
   padding: 0.4rem 0.6rem;
 }
 
-input#seed {
-  width: 8rem;
-}
-
-input#seed[aria-invalid="true"] {
-  border-color: var(--warn);
-}
-
-#seed-error,
 #run-error {
   flex-basis: 100%;
   margin: 0;
@@ -112,28 +91,6 @@ button:disabled {
 
 button:disabled:hover {
   border-color: var(--border);
-}
-
-#run {
-  color: var(--bg);
-  background: var(--accent);
-  border-color: var(--accent);
-  font-weight: 600;
-}
-
-/* ---------- view tabs ---------- */
-
-.tab {
-  color: var(--dim);
-  background: transparent;
-  border: 1px solid var(--border);
-  font-size: 0.8rem;
-  padding: 0.3rem 0.8rem;
-}
-
-.tab.active {
-  color: var(--accent);
-  border-color: var(--accent);
 }
 
 /* ---------- board ----------
@@ -856,8 +813,7 @@ button:disabled:hover {
 
 /* display: flex would beat [hidden]'s UA display: none — keep the attribute
    authoritative (the run-menu-confirm rule's lesson). */
-#title-view[hidden],
-#views[hidden] {
+#title-view[hidden] {
   display: none;
 }
 
@@ -1120,193 +1076,6 @@ button:disabled:hover {
 #leaderboard-view .lv-round-head {
   min-height: 44px;
   font-size: 0.85rem;
-}
-
-/* ---------- views (battle / editor) ---------- */
-
-#views {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 1rem;
-}
-
-/* ---------- team editor ----------
-   Same dark panels as the battle controls. Cards stack vertically — one
-   column reads fine at 375px and wide screens don't need more. */
-
-#editor-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: flex-end;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-}
-
-.ed-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-#ed-import-error {
-  flex-basis: 100%;
-  margin: 0;
-  color: var(--warn);
-  font-size: 0.8rem;
-}
-
-#ed-name-row {
-  margin-bottom: 1rem;
-}
-
-#ed-name {
-  max-width: 16rem;
-}
-
-#ed-units {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.ed-unit {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.6rem 0.8rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.ed-unit-head {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.ed-unit-head input {
-  flex: 1 1 6rem;
-  min-width: 0;
-}
-
-.ed-pos {
-  color: var(--dim);
-  font-size: 0.7rem;
-  white-space: nowrap;
-}
-
-.ed-stats {
-  display: flex;
-  gap: 1rem;
-}
-
-.ed-stats label {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.ed-stats input {
-  width: 5rem;
-}
-
-.ed-attach {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  border-top: 1px dashed var(--border);
-  padding-top: 0.4rem;
-}
-
-.ed-k {
-  color: var(--dim);
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.ed-none {
-  color: var(--dim);
-  font-size: 0.75rem;
-}
-
-.ed-row {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.75rem;
-  min-width: 0;
-}
-
-.ed-row select {
-  flex: 1 1 8rem;
-  min-width: 0;
-  font-size: 0.75rem;
-  padding: 0.25rem 0.4rem;
-}
-
-.ed-row input {
-  width: 4rem;
-  font-size: 0.75rem;
-  padding: 0.25rem 0.4rem;
-}
-
-.ed-row button {
-  font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;
-}
-
-.ed-desc {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-#ed-add-row {
-  display: flex;
-  gap: 0.4rem;
-  margin-top: 0.8rem;
-}
-
-#ed-add-row select {
-  min-width: 0;
-}
-
-#ed-verdict {
-  margin-top: 1rem;
-  font-size: 0.8rem;
-}
-
-#ed-verdict.ok {
-  color: var(--accent);
-}
-
-#ed-verdict.dim {
-  color: var(--dim); /* the empty editor guides, it doesn't shout (GA-3) */
-}
-
-#ed-verdict.bad {
-  color: var(--warn);
-}
-
-#ed-issues {
-  margin: 0.4rem 0 0;
-  padding-left: 1.2rem;
-  font-size: 0.75rem;
-  color: var(--warn);
-  overflow-wrap: anywhere;
-}
-
-#ed-issues code {
-  color: var(--text);
-  background: var(--panel);
-  border-radius: 3px;
-  padding: 0 0.2rem;
 }
 
 /* ---------- battle editor (#066 slice 2) ----------
@@ -1583,97 +1352,6 @@ button:disabled:hover {
 .palette-empty {
   color: var(--dim);
   font-size: 0.8rem;
-}
-
-/* ---------- gauntlet ----------
-   Same dark panel for controls; the results table is compact enough for
-   375px and gets a horizontal scroll as a last resort. */
-
-.g-blurb {
-  color: var(--dim);
-  font-size: 0.8rem;
-  margin: 0 0 0.75rem;
-}
-
-#gauntlet-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: flex-end;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-}
-
-#g-seeds {
-  width: 8rem;
-}
-
-.g-check {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-#g-run {
-  color: var(--bg);
-  background: var(--accent);
-  border-color: var(--accent);
-  font-weight: 600;
-}
-
-#g-error {
-  flex-basis: 100%;
-  margin: 0;
-  color: var(--warn);
-  font-size: 0.8rem;
-}
-
-#g-progress {
-  color: var(--dim);
-  font-size: 0.8rem;
-  margin: 0 0 0.75rem;
-}
-
-#g-results {
-  overflow-x: auto;
-}
-
-#g-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.8rem;
-}
-
-#g-table th,
-#g-table td {
-  text-align: left;
-  padding: 0.35rem 0.5rem;
-  border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-}
-
-#g-table th {
-  color: var(--dim);
-  font-weight: 400;
-}
-
-#g-table .g-name {
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
-#g-table tfoot td {
-  border-top: 2px solid var(--border);
-  border-bottom: none;
-  color: var(--accent);
-}
-
-.g-watch {
-  padding: 0.15rem 0.4rem;
-  font-size: 0.75rem;
 }
 
 /* ---------- run screen ----------
@@ -2320,33 +1998,6 @@ button.danger {
     overflow-y: auto;
   }
 
-  /* Nav, reachable from anywhere (slice-4 lows): sticky at phone width so a
-     codex deep link's scroll never strands the tabs above the fold, and each
-     tab taps at ≥44px via the same pseudo-element pattern as the chips below. */
-  #views {
-    position: sticky;
-    top: 0;
-    z-index: 30; /* over the sticky battle bar (5), under the inspector (40) */
-    background: var(--bg);
-    padding: 0.5rem 0;
-    margin-bottom: 0.6rem;
-  }
-
-  .tab {
-    position: relative;
-    z-index: 1;
-  }
-
-  .tab::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: max(100%, 44px);
-    height: max(100%, 44px);
-    transform: translate(-50%, -50%);
-  }
-
   /* Touch pass (GA-4/IA-5), reshaped by the slice-3 fix round: a chip's hit
      area extends only to the midpoint of the 0.15rem gap around it. Centered
      44px boxes overlapped on adjacent chips and the later sibling won
@@ -2464,12 +2115,6 @@ button.danger {
 }
 
 @media (max-width: 480px) {
-  #controls,
-  #gauntlet-controls {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
   .uname {
     font-size: 0.55rem;
   }

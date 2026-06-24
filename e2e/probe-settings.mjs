@@ -12,6 +12,10 @@
 //  6. (#066 slice 4) In a run: the DEV panel is hidden when dev is off, shown
 //     when dev is on; +gold raises the spendable gold; spawn-any-unit drops a
 //     unit into the shop (the palette, reused from slice 2).
+//  7. (#066 slice 5, the fresh-context verify) A non-dev player sees ONLY the
+//     player entries (Play/Continue, Leaderboard, Codex, ⚙) and NO dev surface
+//     by ANY path: the legacy inline picker, gauntlet view, and dev tab nav are
+//     gone from the DOM, a direct dev hash does not route, and #codex/ still does.
 //
 // The gate is a local convenience switch, not a security boundary — this probe
 // measures only which surfaces a developer sees on this device.
@@ -98,7 +102,7 @@ async function scenario(viewport, tag) {
   await homeToTitle(page);
   check(await page.locator("#title-dev").isVisible(), `${tag} dev tools entry revealed on the title while dev on`);
   await page.click("#title-dev");
-  await page.waitForSelector("#views:not([hidden])");
+  await page.waitForSelector("#editor-view:not([hidden])");
   check(await page.locator("#editor-view").isVisible(), `${tag} the dev tools entry opens the Battle Editor (#066 slice 2)`);
   await homeToTitle(page);
 
@@ -124,6 +128,53 @@ async function scenario(viewport, tag) {
   check(await page.locator("#title-dev").isVisible(), `${tag} dev entry survives a reload (still revealed)`);
   await openSettings(page);
   check(await page.locator("#settings-dev-toggle").isChecked(), `${tag} the toggle survives a reload (still on)`);
+
+  await ctx.close();
+}
+
+/** #066 slice 5 — the fresh-context play-through verify, folded in: a non-dev
+ * player sees ONLY the player entries (Play/Continue, Leaderboard, Codex, ⚙)
+ * and NO dev surface by ANY path — the legacy surfaces (inline battle picker,
+ * gauntlet view, dev tab nav) are gone from the DOM, and a direct dev hash does
+ * not route to them. */
+async function noLeakScenario(viewport, tag) {
+  const { ctx, page } = await openFresh(viewport);
+
+  // The title shows the player entries plus ⚙ — and NOT the dev tools entry.
+  for (const sel of ["#title-play", "#title-leaderboard", "#title-codex", "#title-settings"]) {
+    check(await page.locator(sel).isVisible(), `${tag} non-dev title shows ${sel}`);
+  }
+  check(await page.locator("#title-dev").isHidden(), `${tag} non-dev title hides the dev tools entry`);
+
+  // The legacy dev surfaces are deleted from the DOM entirely — not merely
+  // hidden. There is nothing to reveal, by any path.
+  for (const [sel, name] of [
+    ["#views", "the dev tab nav"],
+    ["#gauntlet-view", "the standalone gauntlet view"],
+    ["#controls", "the inline battle picker"],
+    ["#g-challenger", "the gauntlet challenger picker"],
+    ["#team-a", "the inline team-A select"],
+    ["#view-battle", "the battle tab"],
+    ["#view-gauntlet", "the gauntlet tab"],
+  ]) {
+    check((await page.locator(sel).count()) === 0, `${tag} ${name} (${sel}) is absent from the DOM`);
+  }
+
+  // A direct hash to a legacy dev view does NOT route there: only #codex/ is a
+  // hash route; any other hash leaves the title showing (the dev surfaces are
+  // unreachable by URL too). #battle-view survives only as the viewer's DOM
+  // home, never shown as a screen — it stays hidden under a battle hash.
+  for (const hash of ["#battle", "#gauntlet", "#editor", "#views"]) {
+    await page.evaluate((h) => { window.location.hash = h; }, hash);
+    await page.waitForSelector("#title-view:not([hidden])"); // still the title
+    check(await page.locator("#title-view").isVisible(), `${tag} ${hash} does not route to a dev surface (title still shown)`);
+    check(await page.locator("#editor-view").isHidden(), `${tag} ${hash} does not reveal the editor`);
+    check(await page.locator("#battle-view").isHidden(), `${tag} ${hash} does not reveal the battle host`);
+  }
+  // The codex deep-link route still works (regression guard for the one real hash route).
+  await page.evaluate(() => { window.location.hash = "#codex/"; });
+  await page.waitForSelector("#codex-view:not([hidden])");
+  check(await page.locator("#codex-view").isVisible(), `${tag} the codex deep-link hash still routes`);
 
   await ctx.close();
 }
@@ -184,6 +235,7 @@ for (const [viewport, tag] of [
   [DESKTOP, "desktop"],
 ]) {
   await scenario(viewport, tag);
+  await noLeakScenario(viewport, tag);
   await devPanelScenario(viewport, tag);
 }
 
