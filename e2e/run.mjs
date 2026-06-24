@@ -8,7 +8,7 @@
 // from vitest: probes are plain scripts, not *.test.* files.
 
 import { spawn, spawnSync } from "node:child_process";
-import { mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,6 +18,78 @@ const root = join(here, "..");
 const PORT = process.env.AOI_E2E_PORT ?? "5280";
 const SERVER_PORT = process.env.AOI_E2E_SERVER_PORT ?? "5285";
 const BASE = `http://localhost:${PORT}`;
+const PIDFILE = join(root, ".e2e-serve.json");
+
+// CLI shape: `--`-prefixed args are FLAGS, bare words are probe-filter TOKENS.
+// `--serve` holds the warm stack open; `--down` reaps a held stack; tokens
+// (when present, no serve/down flag) scope the suite to matching probes. The
+// three are mutually exclusive in effect — serve/down ignore any tokens.
+const args = process.argv.slice(2);
+const flags = new Set(args.filter((a) => a.startsWith("--")));
+const cliTokens = args.filter((a) => !a.startsWith("--"));
+const envTokens = (process.env.PROBE ?? "").split(/[\s,]+/).filter(Boolean);
+const tokens = [...cliTokens, ...envTokens];
+
+/** Normalize a token to a substring match against a probe filename: strip a
+ * leading `probe-` and trailing `.mjs` the user may have typed, lower-case it,
+ * then test it as a substring of the (lower-cased) filename. */
+function probeMatches(file, token) {
+  const t = token.toLowerCase().replace(/^probe-/, "").replace(/\.mjs$/, "");
+  return file.toLowerCase().includes(t);
+}
+
+/** All probe filenames, sorted — the suite's stable order. */
+function allProbes() {
+  return readdirSync(here)
+    .filter((f) => f.startsWith("probe-") && f.endsWith(".mjs"))
+    .sort();
+}
+
+// `--down`: reap a stack a previous `--serve` left warm, found via the pidfile
+// (no terminal needed). We SIGTERM the serve process by its POSITIVE pid so its
+// own handler runs teardown() — the same per-child group-kill that the normal
+// run uses, never duplicated here. If it doesn't die within the grace, escalate
+// to SIGKILL on the serve group AND each recorded child group (SIGKILL can't be
+// caught, so the handler won't run — we reap the children directly). No pidfile
+// → nothing to reap → clean exit 0.
+if (flags.has("--down")) {
+  let info;
+  try {
+    info = JSON.parse(readFileSync(PIDFILE, "utf8"));
+  } catch {
+    console.log("e2e: no warm server to stop (no pidfile)");
+    process.exit(0);
+  }
+  const { pid, children = [] } = info;
+  const alive = (p) => {
+    try {
+      process.kill(p, 0);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  try {
+    process.kill(pid, "SIGTERM");
+  } catch {}
+  const deadline = Date.now() + 800;
+  while (Date.now() < deadline && alive(pid)) spawnSync("sleep", ["0.05"]);
+  if (alive(pid)) {
+    for (const c of children) {
+      try {
+        process.kill(-c, "SIGKILL");
+      } catch {}
+    }
+    try {
+      process.kill(-pid, "SIGKILL");
+    } catch {}
+  }
+  try {
+    rmSync(PIDFILE, { force: true });
+  } catch {}
+  console.log(`e2e: warm server (pid ${pid}) stopped`);
+  process.exit(0);
+}
 
 // Children we boot (arena, vite) outlive a clean run only if we let them: each
 // spawns its own grandchildren (esbuild/tsx workers, and a probe under us may
@@ -47,6 +119,7 @@ function boot(name, cmd, args, env) {
 // wedged child still dies. Guarded so a second call (e.g. a signal mid-cleanup)
 // is a no-op.
 let cleanedUp = false;
+let wroteServeFile = false;
 function teardown() {
   if (cleanedUp) return;
   cleanedUp = true;
@@ -80,6 +153,13 @@ function teardown() {
   try {
     rmSync(dbDir, { recursive: true, force: true });
   } catch {}
+  // In --serve mode this process owns the pidfile; clear it on the way out
+  // (clean exit or signal) so --down never chases a dead pid.
+  if (wroteServeFile) {
+    try {
+      rmSync(PIDFILE, { force: true });
+    } catch {}
+  }
 }
 
 // Wire teardown to the abnormal exit paths. SIGINT/SIGTERM re-exit with the
@@ -150,6 +230,41 @@ if (process.env.AOI_E2E_FAULT === "reject") {
   await new Promise(() => {}); // suspend so the event loop turns and the handler fires
 }
 
+// --serve: the stack is up; hold it open instead of running probes, so an agent
+// can fire scoped probes against the warm origin repeatedly. We write a pidfile
+// (our own pid + ports) so `--down` can reap us without the terminal, then idle
+// forever — only a signal (handlers above) or `--down`'s group-kill ends us, and
+// teardown reaps the children + clears the pidfile on the way out.
+if (flags.has("--serve")) {
+  if (!arenaReady || !viteReady) {
+    if (!arenaReady) console.error(`arena server did not become ready on :${SERVER_PORT} within 30s\n${arena.out}`);
+    if (!viteReady) console.error(`vite did not become ready on :${PORT} within 30s\n${vite.out}`);
+    teardown();
+    process.exit(1);
+  }
+  // Record our pid AND the children's group-leader pids. Our children are each
+  // their OWN process group (boot() spawns them detached), so reaping the warm
+  // stack means signalling our pid (whose handler runs teardown → per-child
+  // group-kill) and, as a SIGKILL fallback, each child's group directly.
+  try {
+    writeFileSync(
+      PIDFILE,
+      JSON.stringify({
+        pid: process.pid,
+        children: groups.map((c) => c.pid).filter(Boolean),
+        port: Number(PORT),
+        serverPort: Number(SERVER_PORT),
+      }),
+    );
+    wroteServeFile = true;
+  } catch {}
+  console.log(`e2e server warm at ${BASE}`);
+  console.log(`  vite :${PORT}  arena :${SERVER_PORT}  (pid ${process.pid})`);
+  console.log(`  run a scoped probe: AOI_BASE_URL=${BASE} npm run probe <name>`);
+  console.log(`  stop: npm run e2e:stop`);
+  await new Promise(() => {}); // idle until a signal / --down reaps us
+}
+
 let failed = false;
 try {
   if (!arenaReady) {
@@ -161,9 +276,18 @@ try {
     console.error(`vite did not become ready on :${PORT} within 30s\n${vite.out}`);
   }
   if (!failed) {
-    const probes = readdirSync(here)
-      .filter((f) => f.startsWith("probe-") && f.endsWith(".mjs"))
-      .sort();
+    // No tokens → full suite (sorted). Tokens → only probes matching ANY token
+    // (generous substring). Tokens that match nothing is an error, not a vacuous
+    // pass — list what's available and fail.
+    let probes = allProbes();
+    if (tokens.length > 0) {
+      probes = probes.filter((f) => tokens.some((t) => probeMatches(f, t)));
+      if (probes.length === 0) {
+        console.error(`no probe matches ${JSON.stringify(tokens)}. available:`);
+        for (const p of allProbes()) console.error(`  ${p}`);
+        failed = true;
+      }
+    }
     for (const probe of probes) {
       console.log(`\n=== ${probe} ===`);
       const r = spawnSync("node", ["--import", "tsx/esm", join(here, probe)], {

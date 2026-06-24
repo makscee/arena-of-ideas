@@ -7,3 +7,6 @@ tasks/*/out/
 
 # Screenshot-walk output — human-inspection PNGs, never committed.
 e2e/.shots/
+
+# Warm-stack pidfile written by `npm run e2e:serve`, read by `npm run e2e:stop`.
+.e2e-serve.json
