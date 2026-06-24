@@ -65,23 +65,32 @@ function sideHtml(
     </div>`;
 }
 
+/** The verdict/turn pill the stage centre carries when no beat card is open. */
+export function verdictHtml(board: BoardState): string {
+  return board.ended
+    ? `<span class="verdict">${board.ended.winner === "draw" ? "draw" : `side ${board.ended.winner} wins`} · turn ${board.ended.turns}</span>`
+    : `<span class="verdict dim">turn ${board.turn}</span>`;
+}
+
 /** The board as markup — pure, so layout-stability invariants (grave rows
- * always present) are testable without a DOM. */
+ * always present) are testable without a DOM. The stage centre (between side A
+ * and side B) is `centerHtml` — the beat card or a turn divider the viewer
+ * computes; default is the plain verdict divider. */
 export function boardHtml(
   board: BoardState,
   name: (id: string) => string,
   hit: Set<string>,
   registry: StatusRegistry,
   selected?: string,
+  centerHtml?: string,
 ): string {
-  const verdict = board.ended
-    ? `<span class="verdict">${board.ended.winner === "draw" ? "draw" : `side ${board.ended.winner} wins`} · turn ${board.ended.turns}</span>`
-    : `<span class="verdict dim">turn ${board.turn}</span>`;
-  return `${sideHtml(board, "A", name, hit, registry, selected)}<div class="divider">${verdict}</div>${sideHtml(board, "B", name, hit, registry, selected)}`;
+  const center = centerHtml ?? `<div class="divider">${verdictHtml(board)}</div>`;
+  return `${sideHtml(board, "A", name, hit, registry, selected)}<div class="stage-center">${center}</div>${sideHtml(board, "B", name, hit, registry, selected)}`;
 }
 
-/** Replaces `root`'s content with the board: side A's line, a divider, side B's.
- * `selected` marks the unit the inspector is open on. */
+/** Replaces `root`'s content with the board: side A's line, the stage centre,
+ * side B's. `selected` marks the unit the inspector is open on; `centerHtml`
+ * is the beat card / turn divider for the current beat. */
 export function renderBoard(
   root: HTMLElement,
   board: BoardState,
@@ -89,6 +98,7 @@ export function renderBoard(
   hit: Set<string>,
   registry: StatusRegistry,
   selected?: string,
+  centerHtml?: string,
 ): void {
-  root.innerHTML = boardHtml(board, name, hit, registry, selected);
+  root.innerHTML = boardHtml(board, name, hit, registry, selected, centerHtml);
 }

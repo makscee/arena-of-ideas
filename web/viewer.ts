@@ -7,20 +7,28 @@
 import {
   abilityRefDesc,
   ancestry,
+  beatsOf,
+  beatAtStep,
   boardAt,
   deathCauseChain,
   displayNames,
   shortDesc,
+  type Beat,
   type BattleEvent,
   type NameOf,
   type StatusRegistry,
   type UnitDef,
 } from "../src/index.js";
-import { renderBoard } from "./board-render.js";
+import { renderBoard, verdictHtml } from "./board-render.js";
+import { beatCenterHtml } from "./beat-card.js";
 import { createBattleLog } from "./battle-log.js";
 import { closeInspectOverlay, openInspectOverlay, renderInspect, unitDefs } from "./inspect.js";
 
-const BASE_STEP_MS = 350; // 1x ≈ 3 events/second
+const BASE_STEP_MS = 350; // 1x ≈ 3 events/second (per-line reveal cadence)
+// The read-pause that lands at a beat boundary: the tick that ENDS a beat
+// dwells longer so the player reads the final state before the next beat opens.
+// ~0.85s at 1×; both this and the per-line reveal scale with the speed control.
+const BASE_PAUSE_MS = 850;
 
 /** One-line readout for the selected event (display only; amounts/hp come off the event). */
 function describeEvent(e: BattleEvent, name: NameOf): string {
@@ -143,6 +151,7 @@ export interface Viewer {
 
 export function createViewer(els: ViewerEls): Viewer {
   let log: BattleEvent[] = [];
+  let beats: Beat[] = [];
   let name: NameOf = (id) => id;
   let step = 0;
   let timer: number | undefined;
@@ -163,7 +172,8 @@ export function createViewer(els: ViewerEls): Viewer {
     const e = log[step];
     if (!e) return;
     const board = boardAt(log, step);
-    renderBoard(els.board, board, name, subjectsOf(e), registry, selected?.unit);
+    const center = beatCenterHtml(log, beats, step, (ev) => describeEvent(ev, name), verdictHtml(board));
+    renderBoard(els.board, board, name, subjectsOf(e), registry, selected?.unit, center);
     battleLog.syncTo(step);
     els.scrub.value = String(step);
     els.stepLabel.textContent = `event ${step + 1}/${log.length} · turn ${e.turn}`;
@@ -209,11 +219,22 @@ export function createViewer(els: ViewerEls): Viewer {
   function lockBoardHeight(): void {
     els.board.style.minHeight = "";
     let max = 0;
+    const measure = (i: number): void => {
+      const center = beatCenterHtml(log, beats, i, (ev) => describeEvent(ev, name), verdictHtml(boardAt(log, i)));
+      renderBoard(els.board, boardAt(log, i), name, new Set(), registry, undefined, center);
+      max = Math.max(max, els.board.offsetHeight);
+    };
+    // Height-affecting board steps (graves fill, lines wipe, chips land).
     for (let i = 0; i < log.length; i++) {
       const t = log[i]!.type;
       if (i !== 0 && t !== "Death" && t !== "Summon" && t !== "StatusApplied" && t !== "StatusRemoved" && t !== "Silenced" && t !== "BattleEnd") continue;
-      renderBoard(els.board, boardAt(log, i), name, new Set(), registry);
-      max = Math.max(max, els.board.offsetHeight);
+      measure(i);
+    }
+    // The beat card grows with every line it reveals — its tallest state is the
+    // last event of each hero-affecting beat. Measure those so the card area is
+    // reserved up front and the stage never grows mid-beat (LS-1).
+    for (const beat of beats) {
+      if (!beat.structural) measure(beat.end);
     }
     if (max > 0) els.board.style.minHeight = `${max}px`;
   }
@@ -242,8 +263,33 @@ export function createViewer(els: ViewerEls): Viewer {
   }
 
   function pause(): void {
-    if (timer !== undefined) window.clearInterval(timer);
+    if (timer !== undefined) window.clearTimeout(timer);
     timer = undefined;
+  }
+
+  /** Dwell before advancing OFF the event at `at`: a longer read-pause when
+   * that event ends a beat (the last event before the next beat opens), the
+   * base per-line cadence otherwise. Both scale with the speed control. */
+  function dwellAfter(at: number): number {
+    const speed = Number(els.speed.value);
+    const beat = beatAtStep(beats, at)?.beat;
+    const endsBeat = beat !== undefined && at === beat.end && at < log.length - 1;
+    return (endsBeat ? BASE_PAUSE_MS : BASE_STEP_MS) / speed;
+  }
+
+  /** Self-rescheduling tick: auto-advance one event, then arm the next at a
+   * dwell that depends on whether we just finished a beat (read-pause) — a
+   * fixed interval cannot vary the gap, so playback uses a chained timeout. */
+  function schedule(): void {
+    timer = window.setTimeout(() => {
+      if (step >= log.length - 1) {
+        pause();
+        render();
+        return;
+      }
+      goTo(step + 1);
+      if (playing()) schedule();
+    }, dwellAfter(step));
   }
 
   function playPause(): void {
@@ -251,14 +297,7 @@ export function createViewer(els: ViewerEls): Viewer {
       pause();
     } else {
       if (step >= log.length - 1) step = 0; // play again from the top
-      timer = window.setInterval(() => {
-        if (step >= log.length - 1) {
-          pause();
-          render();
-          return;
-        }
-        goTo(step + 1);
-      }, BASE_STEP_MS / Number(els.speed.value));
+      schedule(); // setTimeout returns its id synchronously → playing() true at once
     }
     render();
   }
@@ -321,6 +360,7 @@ export function createViewer(els: ViewerEls): Viewer {
     load(newLog: BattleEvent[], content: BattleContent, opts?: LoadOpts): void {
       pause();
       log = newLog;
+      beats = beatsOf(log);
       name = displayNames(log);
       // Resume where the player left off (#014), else the top. Clamped to the
       // log; the render below fires onEnded if this lands on the final event.

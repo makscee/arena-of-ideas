@@ -215,6 +215,90 @@ button:disabled:hover {
   padding: 0.15rem 0;
 }
 
+/* ---------- stage centre: beat card / turn divider (#065 slice 1) ----------
+   The centre slot between side A and side B. A hero-affecting beat opens a
+   card here (root title + its caused lines, streamed in as an indented causal
+   tree); a structural-only beat shows a thin "turn N" divider. The card's
+   tallest state is reserved by the viewer's lockBoardHeight, so the stage
+   never changes height mid-beat (LS-1). */
+
+.stage-center {
+  min-width: 0;
+}
+
+.turn-divider {
+  color: var(--dim);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.turn-n {
+  font-size: 0.7rem;
+}
+
+.beat-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.75rem;
+}
+
+.bc-title {
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.35rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.bc-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+/* Each line nests under its cause: indent grows with the within-beat depth. */
+.bc-line {
+  padding-left: calc(var(--d, 0) * 0.9rem);
+  font-size: 0.72rem;
+  overflow-wrap: anywhere;
+}
+
+.bc-line::before {
+  content: "› ";
+  color: var(--dim);
+}
+
+.bc-hurt {
+  color: var(--side-b);
+}
+
+.bc-heal {
+  color: var(--accent);
+}
+
+.bc-death {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.bc-summon {
+  color: var(--accent);
+}
+
+.bc-status {
+  color: var(--dim);
+}
+
+.bc-warn {
+  color: var(--side-b);
+}
+
+.bc-dim {
+  color: var(--dim);
+}
+
 .verdict {
   color: var(--accent);
 }
@@ -473,17 +557,23 @@ button:disabled:hover {
   color: var(--text);
 }
 
-/* ---------- battle readout: inline log + inspector + event panel ----------
-   Two columns on a desk (log left, details right), one stacked column at
-   phone width. The log pane scrolls itself — the page never grows with the
-   battle — and lines appear/disappear in step with the playhead. */
+/* ---------- stage / log split (#065 slice 1) ----------
+   The stage (board + its centre action card + transport + the event readout)
+   sits LEFT; the running event log sits RIGHT. Two columns on a desk, one
+   stacked column at phone width (stage over a capped-scroll log). The log pane
+   scrolls itself — the page never grows with the battle — and lines
+   appear/disappear in step with the playhead. */
 
-#battle-readout {
+#board-panel {
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  gap: 0.6rem;
-  margin-top: 0.6rem;
+  gap: 0.8rem;
   align-items: start;
+}
+
+#stage-col,
+#log-col {
+  min-width: 0;
 }
 
 #log-pane {
@@ -503,7 +593,7 @@ button:disabled:hover {
 #battle-log {
   position: relative; /* line offsetTop is measured against this scroll box */
   overflow-y: auto;
-  height: 19rem; /* fixed from event 0 — the log scrolls itself, never grows the page (LS-2) */
+  height: 26rem; /* fixed from event 0 — the log scrolls itself, never grows the page (LS-2); taller in the right column */
   margin-top: 0.3rem;
   font-size: 0.72rem;
 }
@@ -1911,9 +2001,10 @@ button.danger {
     padding-bottom: max(0.8rem, env(safe-area-inset-bottom));
   }
 
-  /* One column: board, log, then details — the log keeps a small window so
-     the inspector stays within a thumb's reach. */
-  #battle-readout {
+  /* One column: stage on top (board + its card + transport + readout), the
+     log in a capped-scroll pane below (#065 slice 1) — no page reflow, no
+     horizontal scroll at 375px. */
+  #board-panel {
     grid-template-columns: minmax(0, 1fr);
   }
 
