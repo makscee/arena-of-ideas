@@ -136,52 +136,87 @@ button:disabled:hover {
   border-color: var(--accent);
 }
 
-/* ---------- board ----------
-   Wrap-vs-scroll: the board WRAPS nothing and SCROLLS nothing — a line is at
-   most TEAM_SIZE (5) cards, and the cards flex-shrink to fit five abreast at
-   375px.
+/* ---------- board (#065 slice-1 redesign: strikers-on-top vertical columns) --
+   The settled stage shape: each TEAM is a VERTICAL COLUMN (front/striking unit
+   on TOP, the rest of its line stacked straight DOWN, graves at the column
+   bottom), the action card in a FIXED-WIDTH centre column between them. Three
+   tracks, symmetric side tracks:
 
-   Desktop layout is HORIZONTAL (#065 defect 1, the grilled design): Side A on
-   the LEFT, the action card centred in a lane BETWEEN the teams, Side B on the
-   RIGHT. The card grows VERTICALLY in that centre lane, so it never displaces
-   either team — the teams sit to its left/right and hold their Y as lines
-   stream in. align-items:start keeps each team pinned to the top of the row,
-   so a growing centre lane stretches the row's height (the outer box is
-   already reserved by lockBoardHeight) without nudging a team down.
+       grid-template-columns: 1fr  CENTER  1fr
 
-   Phone (<700px) cannot fit A|card|B abreast (five cards per side already fill
-   375px), so it STACKS — see the phone media block, where the centre card
-   becomes a centred overlay over a reserved band so streaming lines still
-   never move the teams. */
+   With both side tracks `1fr` (equal by definition), the centre track's centre-x
+   IS the grid's centre-x — independent of how many units a side has. So the card
+   is ALWAYS horizontally centred (1v5, 5v1, 5v5 centre it identically): the old
+   "horizontal row" stage put the card's x at the mercy of each team's width;
+   this makes it structural (hard req 1).
+
+   Each team being ONE card wide (its line stacks vertically, not abreast) means
+   the stage width is constant = card + centre + card REGARDLESS of side size —
+   a team's size changes only its column HEIGHT, never the card's position. The
+   two FRONT units (line index 0, the strikers) sit in the TOP row flanking the
+   card (hard req 3); bench units stack beneath, slightly dimmed so the striking
+   pair pops.
+
+   Card growth (Maks: "smoother when expanded"): as lines stream in the card
+   grows DOWNWARD inside its own centre column, so NOTHING around it moves — the
+   side columns hold their cards' Y (hard req 2). Each line fades/slides in (see
+   .bc-line animation) and the outer height is reserved worst-case by the
+   viewer's lockBoardHeight (LS-1), so the growing card never pushes the
+   transport.
+
+   Phone (<700px): the SAME three-column focal layout, scaled to fit 375px — the
+   centre track shrinks under pressure (minmax) while the symmetric side tracks
+   keep the card centred; cards smaller but readable. The log stays below the
+   stage (the phone media block reorders it under the board). */
 
 #board {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.75rem;
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  /* Symmetric side tracks → the centre track is mathematically centred in the
+     stage at every width. The centre is capped at the card's 22rem but shrinks
+     toward 0 under width pressure (phone), giving its room back to the side
+     tracks first; the side tracks never collapse below one readable card. */
+  /* Three tracks: two EQUAL, FIXED side tracks (`var(--side-col)`, one card
+     each — identical → symmetric → the centre track's centre is always the
+     board's centre) and a flexible centre that fills the rest. The board fills
+     its stage column at a constant width, so the two fixed side tracks are
+     pinned at the board's edges and NEVER move as the card streams — only the
+     centre track's content (the card) grows, inside its own column (hard reqs 1
+     and 2). The card itself is capped at 22rem and centred within this centre
+     track (.stage-center), so on a wide desktop it sits a fixed 22rem wide in
+     the middle of a wider centre lane — still dead-centre because the lane is
+     symmetric. Each team is exactly one card wide; team size changes only
+     column HEIGHT, never the card's x. */
+  --side-col: 6rem;
+  grid-template-columns: var(--side-col) minmax(0, 1fr) var(--side-col);
   align-items: start;
-  gap: 0.5rem;
+  column-gap: 0.5rem;
+  width: 100%;
   min-width: 0;
 }
 
-/* Each team sizes to its CONTENT, not an equal half (#065 slice-1 regression:
-   `flex: 1 1 0` gave a 1-unit side and a 5-unit side the same width, crushing
-   the larger team to a sliver). `flex: 0 1 auto` lets a side be as wide as its
-   own cards lay out and shrink only under genuine width pressure — an
-   asymmetric matchup renders both teams at their natural card width, the
-   bigger side simply wider. min-width:0 still lets a full five-card line
-   flex-shrink rather than overflow the panel when the stage is truly tight. */
+/* Each team is a grid item in a side track (#065 redesign): one card wide, its
+   line stacked vertically. A flex COLUMN holds side-head / line / grave; the
+   whole column hugs the CENTRE — Side A's cards align to its track's RIGHT edge,
+   Side B's to its track's LEFT — so the two striking fronts flank the card
+   symmetrically. min-width:0 lets a card shrink to fit a 375px stage. */
 #board > .side {
-  flex: 0 1 auto;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch; /* head/line/grave fill the fixed side track */
 }
 
+/* The side header sits atop a one-card-wide column now (#065 redesign): tag +
+   the "front first ▸" hint stack so neither is crushed in the narrow column. */
 .side-head {
   display: flex;
-  justify-content: space-between;
-  font-size: 0.7rem;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 0.65rem;
   color: var(--dim);
   margin-bottom: 0.3rem;
 }
@@ -211,9 +246,14 @@ button:disabled:hover {
   color: var(--text);
 }
 
+/* Vertical team columns (#065 redesign): the line stacks its cards straight
+   DOWN — front/striker (index 0) on TOP, the rest beneath — and the grave
+   continues the same column below. One card wide; the side's align-items pulls
+   the whole stack toward the centre card. */
 .line,
 .grave {
   display: flex;
+  flex-direction: column;
   gap: 0.3rem;
   min-width: 0;
 }
@@ -224,6 +264,21 @@ button:disabled:hover {
    per battle (measured over the log), which guarantees the total. */
 .line {
   min-height: 6.5rem; /* one card of the #015 frame — the wipe placeholder holds it */
+}
+
+/* A unit card in a team column takes its side track's full width so the front
+   and bench cards are the same size and the column is exactly one card wide. */
+.side .unit {
+  width: 100%;
+}
+
+/* Bench (non-front) units: same size as the striking pair but dimmed/
+   desaturated so the front pair pops (Maks). The front card stays full-emphasis
+   (its .front accent ring is untouched). Dead grave cards keep their own .dead
+   dimming below — this only touches the LIVING bench in the line. */
+.line .unit:not(.front) {
+  opacity: 0.72;
+  filter: saturate(0.6);
 }
 
 .wiped {
@@ -249,19 +304,14 @@ button:disabled:hover {
    The slot is a flex row so the card centres in it without stretching
    edge-to-edge (defect 2/3: a full-width bar buried the streamed tree). */
 
-/* The centre lane between the two teams (desktop). It YIELDS to the teams:
-   takes only the width left after both sides lay out their cards, capped at the
-   card's 22rem, and shrinks toward 0 under pressure (#065 slice-1 regression:
-   `flex: 0 1 22rem` reserved a 352px band even at battle start, starving the
-   teams). `flex: 1 1 0` + max-width:22rem means the lane grows into free space
-   up to the card cap but gives that space back to the teams first when the
-   board is tight. The beat-card's own min-width keeps it readable; an empty /
-   small beat reserves no large band. */
+/* The fixed-width centre column (#065 redesign): the middle grid track. Its
+   width is the track (capped at 22rem, shrinking under phone pressure via the
+   #board minmax); symmetric side tracks keep it centred at every width. It
+   aligns to the TOP of the row (align-self: start) so the card's title sits
+   level with the two strikers and the causal lines stream DOWNWARD from there. */
 .stage-center {
-  flex: 1 1 0;
-  max-width: 22rem;
   min-width: 0;
-  align-self: center;
+  align-self: start;
   display: flex;
   justify-content: center;
 }
@@ -276,9 +326,11 @@ button:disabled:hover {
   font-size: 0.7rem;
 }
 
-/* A compact card that floats between the teams — capped width and centred in
-   the stage slot (defect 2). Min-width keeps a one-word line from collapsing
-   the card to a sliver; max-width stops it stretching across the board. */
+/* The action card fills its fixed centre track and centres there (#065
+   redesign). Its width is the TRACK's (≤22rem on desktop, shrinking under phone
+   pressure via the #board grid minmax), so min-width is 0 — the track, not the
+   card, governs sizing; a hard card min-width would force the centre track wide
+   and overflow a 375px stage. max-width caps it on a very wide desktop track. */
 .beat-card {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -287,7 +339,7 @@ button:disabled:hover {
   font-size: 0.75rem;
   width: 100%;
   max-width: 22rem;
-  min-width: min(14rem, 100%);
+  min-width: 0;
   margin: 0 auto;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
@@ -311,6 +363,31 @@ button:disabled:hover {
   padding-left: calc(var(--d, 0) * 0.9rem);
   font-size: 0.72rem;
   overflow-wrap: anywhere;
+  /* Smooth line-in (Maks: "smoother when the card is expanded"): each line
+     fades + slides down a few px as it appears, so the card's downward growth
+     reads as an animated reveal, not a jump. The card grows in its own centre
+     column, so this never moves the teams. The keyframe starts at a non-ZERO
+     opacity (0.01, visually nil) so a frame sampled at t=0 still counts the line
+     as painted — the e2e visibility probe requires opacity > 0. Respects
+     reduced-motion below. */
+  animation: bc-line-in 0.22s ease-out both;
+}
+
+@keyframes bc-line-in {
+  from {
+    opacity: 0.01;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bc-line {
+    animation: none;
+  }
 }
 
 .bc-line::before {
@@ -533,6 +610,8 @@ button:disabled:hover {
   color: var(--warn);
 }
 
+/* The grave continues the team column below the line (#065 redesign): dead
+   units stack DOWN under a small horizontal "grave" label, dead as today. */
 .grave {
   margin-top: 0.3rem;
   align-items: center;
@@ -542,8 +621,8 @@ button:disabled:hover {
 .grave-tag {
   font-size: 0.6rem;
   color: var(--dim);
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .unit.dead {
@@ -2136,61 +2215,25 @@ button.danger {
     display: contents;
   }
 
-  /* Phone stacks the board (A|card|B abreast won't fit five-card lines at
-     375px): Side A over the centre card over Side B, the pre-#065 column.
-     But the streaming card must NOT push Side B down (defect 1). So the centre
-     lane is a position:absolute overlay centred over a RESERVED band: the band
-     holds the card's worst-case height from event 0 (set per-battle by the
-     viewer's lockBoardHeight via --beat-band), and the card floats over it. As
-     lines stream in the card grows within the fixed band — Side B, which sits
-     after the band in the column, never moves. */
+  /* Phone keeps the SAME three-column focal stage (#065 redesign): striker A |
+     card | striker B, benches stacked below each, scaled to fit 375px. The
+     base #board grid already centres the card via its symmetric side tracks; at
+     phone width the side tracks shrink to a readable card minimum and the centre
+     track gives its room back first, so 5v5 still fits without crushing. The
+     board is reordered to the top of the single-column panel; the log follows
+     directly under it (reachable on an early scroll, not buried under the whole
+     stage — defect 1). Card and teams sit in independent grid tracks, so the
+     streaming card grows in its own column and never moves the teams. */
   #board {
     order: 1;
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  /* Reserve each team's per-battle max height (set by lockBoardHeight): stacked,
-     a team that grows mid-replay (a grave fills, a chip reflows a line taller)
-     would push the team below it down. Pinning each side to its worst-case
-     height keeps every hero's Y fixed across the whole playback (#065 defect 1). */
-  #board > .side[data-side="A"] {
-    flex: none;
-    min-height: var(--side-a-h, auto);
-  }
-
-  #board > .side[data-side="B"] {
-    flex: none;
-    min-height: var(--side-b-h, auto);
-  }
-
-  .stage-center {
-    position: relative;
-    flex: none;
-    align-self: auto;
-    /* The reserved band: the tallest the card will ever be this battle (the
-       viewer measures it into --beat-band); falls back to a sane minimum for a
-       structural divider. Teams below it never move as the card grows. */
-    min-height: var(--beat-band, 2.5rem);
-  }
-
-  .stage-center > .beat-card {
-    /* Float over the band, centred — growth happens inside the reserved height,
-       so it cannot push Side B. */
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-  }
-
-  /* A structural beat shows a thin divider — it stays in flow, harmlessly
-     short, inside the same reserved band. */
-  .stage-center > .divider {
-    position: absolute;
-    top: 50%;
-    left: 0;
-    right: 0;
-    transform: translateY(-50%);
+    /* Narrower fixed side columns at phone width so two readable cards + a
+       readable centre fit a 375px stage: 2×4rem sides + ~0.3rem gaps + 0.5rem
+       padding leaves ~14.4rem for the centre track — the card stays centred and
+       legible, every card well above the 48px floor. The board's max-width drops
+       to match so it can't widen past the stage. */
+    --side-col: 5.4rem;
+    column-gap: 0.3rem;
+    padding: 0.5rem;
   }
 
   #log-col {

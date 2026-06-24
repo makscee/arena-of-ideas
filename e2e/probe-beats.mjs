@@ -409,22 +409,39 @@ async function stability(viewport, tag) {
   const boardH0 = px((await box(page, "#board")).height);
   const transportY0 = px((await box(page, "#transport")).y);
 
-  // Per-hero Y baseline (#065 defect 1): the outer #board box was locked, but
-  // the inner teams still moved — as the centre card grew its lines the flex
-  // COLUMN pushed Side B down, and snapped back when the beat cleared. Measure
-  // the rounded Y of EVERY hero unit card on BOTH sides, keyed by data-unit, so
-  // a team that shifts under the streaming card turns this probe red even while
-  // the outer box holds. (Graves are excluded — a death legitimately moves a
-  // card from the line into the grave; the LIVING line is what must not jump.)
-  const heroYs = (p) =>
+  // Per-hero Y stability (#065 redesign — strikers-on-top vertical columns).
+  // The stage is now three grid columns: Side A | card | Side B, each team a
+  // VERTICAL column with the front/striker on top. The headline invariant
+  // (hard req 2) is that CARD STREAMING never moves a hero: as the centre card
+  // grows its 1→N lines and clears, every living line card holds its x AND y.
+  //
+  // What legitimately DOES move a living card is a DEATH or SUMMON that changes
+  // the column's composition — the front falls and the bench promotes up; a
+  // resurrection grows the column back. (Cards differ in height, so a promotion
+  // also re-flows the slots below it.) That is the column compacting/expanding,
+  // not a card-streaming jump. So we compare CONSECUTIVE steps and flag a unit's
+  // y/x change only when the step did NOT change either side's line composition
+  // (same set of unit ids on the line) — isolating movement caused by the card,
+  // which is the defect. If the streaming card ever pushed a team (the original
+  // bug), the composition is unchanged across those steps yet a hero's y moves →
+  // caught. Keyed by data-unit so a unit is tracked through promotions.
+  const lineState = (p) =>
     p.evaluate(() => {
-      const out = {};
-      for (const u of document.querySelectorAll('#board .side .line .unit[data-unit]')) {
-        out[u.getAttribute("data-unit")] = Math.round(u.getBoundingClientRect().y);
+      const sides = {};
+      const pos = {};
+      for (const side of ["A", "B"]) {
+        const ids = [];
+        for (const u of document.querySelectorAll(`.side[data-side="${side}"] .line .unit[data-unit]`)) {
+          const id = u.getAttribute("data-unit");
+          ids.push(id);
+          const r = u.getBoundingClientRect();
+          pos[id] = { x: Math.round(r.x), y: Math.round(r.y) };
+        }
+        sides[side] = ids.join(",");
       }
-      return out;
+      return { sides, pos };
     });
-  const heroY0 = await heroYs(page);
+  let prevLine = await lineState(page);
 
   // Skip to the outcome so the run "continue" button reveals, then measure it.
   await page.click("#run-skip");
@@ -439,6 +456,7 @@ async function stability(viewport, tag) {
     scrub.value = "0";
     scrub.dispatchEvent(new Event("input", { bubbles: true }));
   });
+  prevLine = await lineState(page); // re-baseline at the rewound top
   const total = await maxStep(page);
   let moved = "";
   let heroMoved = "";
@@ -451,21 +469,29 @@ async function stability(viewport, tag) {
     if (boardH !== boardH0) moved ||= `board H ${boardH0}→${boardH} @${s}`;
     if (transportY !== transportY0) moved ||= `transport Y ${transportY0}→${transportY} @${s}`;
     if (continueY !== continueY0) moved ||= `continue Y ${continueY0}→${continueY} @${s}`;
-    // Each hero still on the line must hold the Y it had at the baseline. A
-    // unit absent now (it died into the grave) is skipped — only a LIVING card
-    // that jumped is a failure.
-    const hy = await heroYs(page);
-    for (const [id, y0] of Object.entries(heroY0)) {
-      if (hy[id] !== undefined && hy[id] !== y0) {
-        heroMoved ||= `hero ${id} Y ${y0}→${hy[id]} @${s}`;
+    // Compare to the PREVIOUS step. If neither side's line composition changed
+    // (no death/summon reordered the column), every unit still on the line must
+    // hold the x AND y it had a step ago — any move is a card-streaming push,
+    // the defect. When the composition DID change, the column legitimately
+    // re-flowed (a promotion/resurrection), so that step's moves are allowed and
+    // the next step re-baselines against the new geometry.
+    const cur = await lineState(page);
+    const compositionStable = cur.sides.A === prevLine.sides.A && cur.sides.B === prevLine.sides.B;
+    if (compositionStable) {
+      for (const [id, p0] of Object.entries(prevLine.pos)) {
+        const p1 = cur.pos[id];
+        if (p1 !== undefined && (p1.x !== p0.x || p1.y !== p0.y)) {
+          heroMoved ||= `hero ${id} (${p0.x},${p0.y})→(${p1.x},${p1.y}) @${s} (no death/summon — card-streaming push)`;
+        }
       }
     }
+    prevLine = cur;
     if (s < total) await stepNext(page);
   }
   check(moved === "", `${tag} board/transport/continue pixel-stable across full playback (LS-1)`, moved);
   check(
     heroMoved === "",
-    `${tag} every hero unit card on BOTH sides is pixel-stable across full playback (#065 defect 1)`,
+    `${tag} no hero card moves (x or y) while the card streams — only death/summon re-flows a column (#065 hard req 2)`,
     heroMoved,
   );
 
@@ -559,6 +585,127 @@ async function teamSizing(viewport, tag) {
   await ctx.close();
 }
 
+// =====================================================================
+// 7. Card horizontally CENTRED, SIZE-INDEPENDENT (#065 redesign, hard req 1).
+//    The settled stage is three grid columns — Side A | card | Side B — with
+//    symmetric side tracks, so the card's centre-x equals the stage's centre-x
+//    REGARDLESS of how many units a side has. This is the headline failure the
+//    redesign fixes: the old horizontal stage put the card's x at the mercy of
+//    each team's width, so an asymmetric matchup (1vN, Nv1) shoved the card off
+//    centre. We assert |card centre-x − stage centre-x| is within a pixel across
+//    the WHOLE playback, on TWO asymmetric matchups in OPPOSITE directions
+//    (A<B: a 1-unit side A vs the 3-body round-1 opponent — the "1v3"; A>B: a
+//    full five-unit side A vs the same 3-body opponent — the "3v1"/Nv1 case,
+//    since the bootstrap opponent is fixed at three bodies in round 1), at
+//    desktop AND 375px. Must-fail-first: on a reverted horizontal stage the
+//    card rides whichever team is wider, so the offset blows past a pixel. */
+const CENTER_TOL = 1.5; // px — a sub-pixel grid rounding is not an off-centre card
+
+async function centering(run, label, viewport, tag) {
+  const { ctx, page } = await openRun(browser, run, viewport);
+  await intoBattle(page);
+
+  // Confirm the matchup is actually asymmetric (else the probe greens vacuously).
+  const counts = await page.evaluate(() => ({
+    A: document.querySelectorAll('.side[data-side="A"] .line .unit').length,
+    B: document.querySelectorAll('.side[data-side="B"] .line .unit').length,
+  }));
+  check(
+    counts.A !== counts.B,
+    `${tag} ${label}: matchup is asymmetric (size-independence is non-trivial)`,
+    `A=${counts.A} vs B=${counts.B}`,
+  );
+
+  // Walk the whole playback; at every step measure the centre-x of whichever
+  // centre element shows (the beat card, or the divider between beats) against
+  // the stage centre-x (the #board centre). The card must hold the centre at
+  // every width the layout takes as it streams 1→N lines.
+  const total = await maxStep(page);
+  let worstOff = 0;
+  let worstAt = "";
+  for (let s = 0; s <= total; s++) {
+    const off = await page.evaluate(() => {
+      const board = document.querySelector("#board").getBoundingClientRect();
+      const el =
+        document.querySelector(".beat-card") ??
+        document.querySelector(".stage-center > .divider");
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return Math.abs(r.x + r.width / 2 - (board.x + board.width / 2));
+    });
+    if (off !== null && off > worstOff) {
+      worstOff = off;
+      worstAt = `@${s}`;
+    }
+    if (s < total) await stepNext(page);
+  }
+  check(
+    worstOff <= CENTER_TOL,
+    `${tag} ${label}: card centre-x ≈ stage centre-x across playback (size-independent, hard req 1)`,
+    `worst |Δ| = ${worstOff.toFixed(2)}px ${worstAt}`,
+  );
+
+  await ctx.close();
+}
+
+// =====================================================================
+// 8. FRONT/striking unit is at the TOP of its team column (#065 redesign,
+//    hard req 3). Each team is a vertical column with the front unit (line
+//    index 0, the one that strikes) on TOP and the rest stacked DOWN. Assert
+//    the front card's Y is strictly ABOVE every bench card's Y on its side — by
+//    at least most of a card height, so the column is genuinely vertical — on
+//    both sides, across the whole playback (the front identity changes as units
+//    fall; whoever is front must still be topmost). Must-fail-first: a reverted
+//    horizontal line lays the cards left-to-right at ONE Y, so the front is NOT
+//    above the bench (equal Ys → the strict gap never holds). */
+const FRONT_GAP = 24; // px — the front must sit clearly above bench, not level with it
+
+async function frontOnTop(run, label, viewport, tag) {
+  const { ctx, page } = await openRun(browser, run, viewport);
+  await intoBattle(page);
+
+  const total = await maxStep(page);
+  let broke = "";
+  let proven = false; // a step where a side had ≥2 line units AND the front led
+  for (let s = 0; s <= total; s++) {
+    const r = await page.evaluate(() => {
+      const out = {};
+      for (const side of ["A", "B"]) {
+        const units = [...document.querySelectorAll(`.side[data-side="${side}"] .line .unit`)];
+        out[side] = units.map((u) => ({
+          front: u.classList.contains("front"),
+          y: Math.round(u.getBoundingClientRect().y),
+        }));
+      }
+      return out;
+    });
+    for (const side of ["A", "B"]) {
+      const us = r[side];
+      const front = us.find((u) => u.front);
+      const bench = us.filter((u) => !u.front);
+      if (!front || bench.length === 0) continue; // need a front + ≥1 bench to test
+      // The front must sit a clear card-gap ABOVE every bench card (vertical
+      // column). A horizontal line has them at the same Y → this fails.
+      for (const u of bench) {
+        if (u.y < front.y + FRONT_GAP) {
+          broke ||= `side ${side} @${s}: bench y=${u.y} not ${FRONT_GAP}px below front y=${front.y}`;
+        } else {
+          proven = true;
+        }
+      }
+    }
+    if (s < total) await stepNext(page);
+  }
+  check(proven, `${tag} ${label}: a side fielded a front + bench to test verticality`);
+  check(
+    broke === "",
+    `${tag} ${label}: the front/striking unit is the TOPMOST card in its column, clearly above the bench (hard req 3)`,
+    broke,
+  );
+
+  await ctx.close();
+}
+
 for (const [vp, tag] of [
   [DESKTOP, "desktop"],
   [PHONE, "375px"],
@@ -568,6 +715,11 @@ for (const [vp, tag] of [
   await transport(vp, tag);
   await stability(vp, tag);
   await teamSizing(vp, tag);
+  // Card-centring on asymmetric matchups in both directions (A<B and A>B).
+  await centering(plainShopRun(), "1v3 (A<B)", vp, tag);
+  await centering(bigBattleRun(), "5v3 (A>B)", vp, tag);
+  // Front-on-top on a multi-unit-per-side matchup.
+  await frontOnTop(bigBattleRun(), "5v3", vp, tag);
 }
 // Read-pause timing is speed-independent of layout — sample once on desktop.
 await readPause(DESKTOP, "desktop");

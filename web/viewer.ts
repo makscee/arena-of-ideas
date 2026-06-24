@@ -216,16 +216,20 @@ export function createViewer(els: ViewerEls): Viewer {
     }
   }
 
-  /** Reserve the tallest board this replay will show. Graves fill, lines
-   * wipe, chips land — all knowable up front from the log — so render each
-   * height-affecting step once and lock the max in (audit LS-1: the board
+  /** Reserve the tallest board this replay will show. The stage is now a
+   * three-column grid — Side A | centre card | Side B (#065 redesign) — so the
+   * board's height at any step is the MAX of the tallest team column and the
+   * card's current height. Both are knowable up front from the log: graves fill,
+   * lines wipe, chips land (team height), and each hero-affecting beat ends at
+   * the card's tallest state. Rendering every height-affecting step once and
+   * locking the outer max naturally covers "max of the tallest team column and
+   * the max card height across the battle" — a grid row is as tall as its
+   * tallest cell. So the streaming card never pushes the transport, and a team
+   * that grows mid-replay extends only its own column (audit LS-1: the board
    * must never change height mid-replay, or the transport jumps under the
    * cursor). No-op while the board is display:none (offsetHeight reads 0). */
   function lockBoardHeight(): void {
     els.board.style.minHeight = "";
-    els.board.style.removeProperty("--beat-band");
-    els.board.style.removeProperty("--side-a-h");
-    els.board.style.removeProperty("--side-b-h");
     // The set of steps that can change the board's height: event 0, the
     // height-affecting board steps (graves fill, lines wipe, chips land), and
     // the last event of every hero-affecting beat (the card's tallest state).
@@ -243,38 +247,7 @@ export function createViewer(els: ViewerEls): Viewer {
       renderBoard(els.board, boardAt(log, i), name, new Set(), registry, undefined, center);
     };
 
-    // Pass 1 — the centre band: the tallest the centre card/divider ever gets.
-    // On phone the stage-center is an absolute overlay over a band reserved to
-    // this height (--beat-band), so the streaming card grows WITHIN a fixed
-    // band and never pushes Side B down (#065 defect 1). On desktop the card
-    // grows in its own column and the reserve is unused. Measured before the
-    // outer lock so pass 2 sees the real reserved band (else the absolute card
-    // collapses the stage-center and the outer max undercounts on phone).
-    let band = 0;
-    // Each team's tallest state too. On phone the board STACKS (Side A over the
-    // card over Side B), so a team that grows mid-replay — a grave fills, a
-    // status chip lands and reflows a line card taller — pushes everything
-    // below it down, moving the other team (#065 defect 1, the team-side twin
-    // of the card-side push). Reserve each side to its per-battle max height so
-    // neither team's internal growth ever moves the other. Desktop lays the
-    // teams side by side, where a taller team extends only its own column and
-    // moves nobody, so this reserve is applied only in the phone media block.
-    let sideAH = 0;
-    let sideBH = 0;
-    for (const i of steps) {
-      renderAt(i);
-      const center0 = els.board.querySelector<HTMLElement>(".stage-center > .beat-card, .stage-center > .divider");
-      if (center0) band = Math.max(band, center0.getBoundingClientRect().height);
-      const a = els.board.querySelector<HTMLElement>('.side[data-side="A"]');
-      const b = els.board.querySelector<HTMLElement>('.side[data-side="B"]');
-      if (a) sideAH = Math.max(sideAH, a.getBoundingClientRect().height);
-      if (b) sideBH = Math.max(sideBH, b.getBoundingClientRect().height);
-    }
-    if (band > 0) els.board.style.setProperty("--beat-band", `${Math.ceil(band)}px`);
-    if (sideAH > 0) els.board.style.setProperty("--side-a-h", `${Math.ceil(sideAH)}px`);
-    if (sideBH > 0) els.board.style.setProperty("--side-b-h", `${Math.ceil(sideBH)}px`);
-
-    // Pass 2 — the outer board height, now with the centre band reserved.
+    // The outer board height = the tallest grid row across every height-step.
     // Fractional height (getBoundingClientRect), not the integer offsetHeight:
     // a natural content height of 534.28px rounds offsetHeight to 534, so a
     // min-height of 534 fails to contain it and the board grows ~0.3px at that
