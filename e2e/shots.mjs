@@ -9,7 +9,7 @@
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { DESKTOP, PHONE, launch, openRun, plainShopRun } from "./lib.mjs";
+import { DESKTOP, PHONE, launch, openRun, plainShopRun, bigBattleRun } from "./lib.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const outDir = process.env.SHOTS_DIR ?? join(here, ".shots");
@@ -68,6 +68,30 @@ for (const [vp, tag] of [
   await page.waitForTimeout(400);
   await shot(page, `${tag}-5-outcome`);
 
+  await ctx.close();
+}
+
+// A near-max ASYMMETRIC matchup (full five-unit side A vs the bootstrap
+// opponent on side B) — the #065 slice-1 crush case. Captured at battle start
+// (all units alive, the widest the board ever is) and mid-stream (a beat card
+// open between the two full lines) so a human confirms BOTH teams render their
+// cards at full, readable size with no crush/overlap/overflow.
+for (const [vp, tag] of [
+  [DESKTOP, "desktop"],
+  [PHONE, "phone"],
+]) {
+  const { ctx, page } = await openRun(browser, bigBattleRun(), vp);
+  await pauseAtTop(page);
+  // The board is the subject here (not the transport): scroll the board to the
+  // top of the viewport so both full lines + the centre lane are captured.
+  const toBoard = async () =>
+    page.evaluate(() => document.querySelector("#board").scrollIntoView({ block: "start" }));
+  await toBoard();
+  await shot(page, `${tag}-6-bigteam-start`);
+  const total = await maxStep(page);
+  await stepTo(page, Math.min(6, Math.floor(total / 3)));
+  await toBoard();
+  await shot(page, `${tag}-7-bigteam-mid`);
   await ctx.close();
 }
 

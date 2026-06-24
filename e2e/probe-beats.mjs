@@ -23,6 +23,7 @@ import {
   launch,
   openRun,
   plainShopRun,
+  bigBattleRun,
 } from "./lib.mjs";
 
 const disarm = armGuard();
@@ -471,6 +472,93 @@ async function stability(viewport, tag) {
   await ctx.close();
 }
 
+// =====================================================================
+// 6. Team sizing — neither team is CRUSHED, neither line OVERFLOWS (#065
+//    slice-1 regression). The original probe asserted heroes don't MOVE but
+//    not that they stay READABLE: `#board > .side { flex: 1 1 0 }` gave a
+//    1-unit side and a multi-unit side the same width, so the bigger team's
+//    cards collapsed to ~16px and the line overflowed (scrollWidth > client
+//    width). This drives an ASYMMETRIC, near-max matchup (a full five-unit
+//    side A vs the bootstrap opponent on side B) so the crush reproduces, and
+//    asserts across the WHOLE playback (the centre card streams through every
+//    width the layout ever takes):
+//      • every living hero card is ≥ MIN_CARD wide (no card crushed below its
+//        readable natural width — 48px clears the 40px art + padding);
+//      • neither side's line overflows (scrollWidth ≤ clientWidth + 1);
+//      • the page never scrolls horizontally.
+//    On BOTH sides, at desktop AND 375px. Graves are excluded — a dead card
+//    legitimately leaves the line; the LIVING line is what must stay readable. */
+const MIN_CARD = 48; // px — a hero card narrower than this has lost its art/stats
+
+async function teamSizing(viewport, tag) {
+  const { ctx, page } = await openRun(browser, bigBattleRun(), viewport);
+  await intoBattle(page);
+
+  // Per-frame geometry of every LIVING hero card on both sides, plus each
+  // line's overflow and the page's horizontal scroll.
+  const frame = () =>
+    page.evaluate(() => {
+      const sides = {};
+      for (const side of ["A", "B"]) {
+        const sideEl = document.querySelector(`#board .side[data-side="${side}"]`);
+        const line = sideEl.querySelector(".line");
+        const widths = [...line.querySelectorAll(".unit")].map((u) =>
+          Math.round(u.getBoundingClientRect().width),
+        );
+        sides[side] = {
+          count: widths.length,
+          min: widths.length ? Math.min(...widths) : null,
+          overflow: line.scrollWidth > line.clientWidth + 1,
+          scrollW: line.scrollWidth,
+          clientW: line.clientWidth,
+        };
+      }
+      return {
+        sides,
+        pageH: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+      };
+    });
+
+  // Confirm the matchup is actually asymmetric and large — otherwise the probe
+  // would green vacuously on a 1v1 that never crushes.
+  const f0 = await frame();
+  check(
+    f0.sides.A.count >= 4 && f0.sides.B.count >= 1 && f0.sides.A.count !== f0.sides.B.count,
+    `${tag} sizing matchup is asymmetric and near-max (the crush case)`,
+    `A=${f0.sides.A.count} vs B=${f0.sides.B.count}`,
+  );
+
+  const total = await maxStep(page);
+  const worst = { A: 9999, B: 9999 };
+  let overflowed = "";
+  let pageScrolled = "";
+  for (let s = 0; s <= total; s++) {
+    const f = await frame();
+    for (const side of ["A", "B"]) {
+      const d = f.sides[side];
+      if (d.count > 0 && d.min !== null) worst[side] = Math.min(worst[side], d.min);
+      if (d.overflow) overflowed ||= `side ${side} @${s}: scrollW ${d.scrollW} > clientW ${d.clientW}`;
+    }
+    if (f.pageH) pageScrolled ||= `@${s}`;
+    if (s < total) await stepNext(page);
+  }
+
+  check(
+    worst.A >= MIN_CARD,
+    `${tag} side A hero cards never crushed below ${MIN_CARD}px across playback`,
+    `narrowest A card = ${worst.A}px`,
+  );
+  check(
+    worst.B >= MIN_CARD,
+    `${tag} side B hero cards never crushed below ${MIN_CARD}px across playback`,
+    `narrowest B card = ${worst.B}px`,
+  );
+  check(overflowed === "", `${tag} neither side's line overflows across playback`, overflowed);
+  check(pageScrolled === "", `${tag} no horizontal page scroll across playback`, pageScrolled);
+
+  await ctx.close();
+}
+
 for (const [vp, tag] of [
   [DESKTOP, "desktop"],
   [PHONE, "375px"],
@@ -479,6 +567,7 @@ for (const [vp, tag] of [
   await streaming(vp, tag);
   await transport(vp, tag);
   await stability(vp, tag);
+  await teamSizing(vp, tag);
 }
 // Read-pause timing is speed-independent of layout — sample once on desktop.
 await readPause(DESKTOP, "desktop");

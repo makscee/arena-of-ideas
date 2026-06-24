@@ -120,6 +120,27 @@ export const plainShopRun = () =>
     s.gold = 10;
   });
 
+/** A FULL five-unit line vs the round-1 bootstrap opponent (#065 slice-1
+ * regression): an ASYMMETRIC, near-max matchup so the desktop "equal halves"
+ * crush reproduces. The injected run fields all TEAM_SIZE units; the ladder
+ * draw seats the bootstrap round-1 enemy (two/three bodies) on side B, so the
+ * battle opens 5 (side A) vs a smaller side B — the case that crushed B to a
+ * sliver under `flex: 1 1 0`. The names are five distinct pool units so each
+ * card renders its own art + stats (no stacking). */
+export const bigBattleRun = () =>
+  shaped((s) => {
+    s.team = [
+      unitOf(byName.Venomancer),
+      unitOf(byName.Summoner),
+      unitOf(byName.Silencer),
+      unitOf(byName.Necromancer),
+      unitOf(byName.Brawler),
+    ];
+    s.offers = [byName.Bulwark, byName.Squire, byName.Venomancer];
+    s.gold = 10;
+    s.lives = 5;
+  });
+
 /** A finished run (#014): status "over", out of lives — the run-end screen,
  * where the menu must still appear and abandon must still work. A small team
  * so the end screen renders a couple of post-mortem cards. */

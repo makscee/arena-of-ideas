@@ -166,11 +166,15 @@ button:disabled:hover {
   min-width: 0;
 }
 
-/* Each team takes an equal share of the row; the centre lane sizes to its
-   content (the card's cap). min-width:0 lets a five-card line flex-shrink
-   rather than overflow the panel. */
+/* Each team sizes to its CONTENT, not an equal half (#065 slice-1 regression:
+   `flex: 1 1 0` gave a 1-unit side and a 5-unit side the same width, crushing
+   the larger team to a sliver). `flex: 0 1 auto` lets a side be as wide as its
+   own cards lay out and shrink only under genuine width pressure — an
+   asymmetric matchup renders both teams at their natural card width, the
+   bigger side simply wider. min-width:0 still lets a full five-card line
+   flex-shrink rather than overflow the panel when the stage is truly tight. */
 #board > .side {
-  flex: 1 1 0;
+  flex: 0 1 auto;
   min-width: 0;
 }
 
@@ -245,11 +249,17 @@ button:disabled:hover {
    The slot is a flex row so the card centres in it without stretching
    edge-to-edge (defect 2/3: a full-width bar buried the streamed tree). */
 
-/* The centre lane between the two teams (desktop). It sizes to the card's cap
-   and centres the card vertically in the row, so the card grows DOWN into its
-   own column without touching Side A or Side B. */
+/* The centre lane between the two teams (desktop). It YIELDS to the teams:
+   takes only the width left after both sides lay out their cards, capped at the
+   card's 22rem, and shrinks toward 0 under pressure (#065 slice-1 regression:
+   `flex: 0 1 22rem` reserved a 352px band even at battle start, starving the
+   teams). `flex: 1 1 0` + max-width:22rem means the lane grows into free space
+   up to the card cap but gives that space back to the teams first when the
+   board is tight. The beat-card's own min-width keeps it readable; an empty /
+   small beat reserves no large band. */
 .stage-center {
-  flex: 0 1 22rem;
+  flex: 1 1 0;
+  max-width: 22rem;
   min-width: 0;
   align-self: center;
   display: flex;
@@ -658,6 +668,25 @@ button:disabled:hover {
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   gap: 0.8rem;
   align-items: start;
+}
+
+/* Battle stage width budget (#065 slice-1 regression): the run battle shows the
+   horizontal A | centre card | B stage, and at most TEAM_SIZE (5) cards per
+   side. Five-plus-five full-size cards plus the centre lane need ≈900px of
+   board — more than the 3fr share of main's 56rem (≈511px), which crushed both
+   teams (and then the centre card) to slivers. While the viewer is mounted in
+   the run battle, the panel breaks OUT of main's width to use the viewport (up
+   to 75rem) and the log takes a fixed readable column, so the stage gets the
+   rest: 5v5 + the centre card render at full size at 1280px. The break-out is
+   scoped to the run battle mount — the dev #result view and the capped shop
+   panels above keep main's narrow column. */
+@media (min-width: 701px) {
+  #board-panel {
+    width: min(75rem, calc(100vw - 2rem));
+    /* Centre the wider panel under main's centred narrow column. */
+    margin-left: calc(-1 * (min(75rem, calc(100vw - 2rem)) - 100%) / 2);
+    grid-template-columns: minmax(0, 1fr) 20rem;
+  }
 }
 
 #stage-col,
