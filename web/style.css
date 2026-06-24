@@ -536,6 +536,101 @@ button:disabled:hover {
   }
 }
 
+/* ---------- beat overlays (#065 slice 2) ---------- */
+/* Typed badges drawn ON each affected hero, live-incrementing as the card's
+   lines reveal and summed within the beat. They sit ABOVE the card content
+   (z over the art/stats, like the hit halo) so the result is read off the hero
+   itself, not a side panel. The layer is non-interactive — taps still reach the
+   card for the inspector. Stacked top-to-bottom from the card's top edge so
+   several badges on one unit (−dmg, +heal, ±status, +pwr) all stay legible. */
+.ov-layer {
+  position: absolute;
+  /* Inside the card's right edge — a negative offset would extend the line's
+     scroll width and trip the no-overflow LS check (probe-beats). The badges
+     overlay the card's own top-right corner, clear of the art. */
+  top: 0.15rem;
+  right: 0.15rem;
+  /* Stay within the card so a long status badge ("+2 Strength") never bleeds
+     past either edge and trips the no-overflow LS check. */
+  max-width: calc(100% - 0.3rem);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.12rem;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.ov-badge {
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 0.02rem 0.28rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #fff;
+  /* A dark ring + drop shadow so a red −N badge stays legible even where it
+     overlaps the red `.unit.hit` damage halo (which shares the damage colour);
+     without the outline the pill bleeds into the glow. */
+  border: 1px solid rgba(0, 0, 0, 0.55);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(0, 0, 0, 0.25);
+  animation: ov-pop 0.22s ease-out;
+}
+
+@keyframes ov-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.ov-dmg {
+  background: var(--hit-mark); /* red — matches the damage hit mark */
+}
+
+.ov-heal {
+  background: #3fbf6f; /* green — kept separate from damage, never netted */
+}
+
+.ov-status {
+  background: rgba(180, 138, 214, 0.92); /* the status family's purple */
+}
+
+.ov-stat {
+  background: #d8a23a; /* amber — a stat buff (+pwr, +maxHp) */
+}
+
+/* Dying-in-place (#065 slice 2): the unit greys and shows a ✕ in its line slot
+   for the rest of the beat, then the next beat collapses it to the grave. The
+   grey reuses the dead look without removing it from the line; the ✕ is a big
+   centred mark over the art. */
+.unit.dying {
+  opacity: 0.5;
+  filter: grayscale(1);
+}
+
+.unit.dying .dying-x {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--hit-mark);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+  z-index: 4;
+  pointer-events: none;
+}
+
 /* The art is the card's centrepiece — sized so five board cards still sit
    abreast at 375px (≈60px wide each). */
 .unit .shape {

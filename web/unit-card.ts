@@ -79,6 +79,14 @@ export interface UnitCardOpts {
   sel?: boolean;
   silenced?: boolean;
   fused?: boolean;
+  /** Dying-in-place (#065 slice 2): a unit whose Death landed this beat shows
+   * greyed with a ✕ in its line slot until the next beat collapses it to the
+   * grave — distinct from `dead` (already in the grave). */
+  dying?: boolean;
+  /** Beat-overlay badge layer (#065 slice 2): pre-built typed-badge HTML drawn
+   * ON the card. Empty for every non-replay surface, so the card contract the
+   * shop/team/ladder rely on is unchanged. */
+  overlay?: string;
   /** Context classes (run-card, lv-unit) — widths are the context's to size. */
   classes?: string;
   /** The caller's wiring, pre-escaped: `data-offer="0"`, `data-unit="A1:X"`… */
@@ -97,6 +105,7 @@ export function unitCardHtml(o: UnitCardOpts): string {
     o.classes,
     o.front === true && "front",
     o.dead === true && "dead",
+    o.dying === true && "dying",
     o.hit === true && "hit",
     o.sel === true && "sel",
     o.fused === true && "fused",
@@ -121,5 +130,7 @@ export function unitCardHtml(o: UnitCardOpts): string {
       <span class="unums"><span class="hp">${o.hp}</span><span class="pwr">${o.pwr}</span></span>
       <span class="chips">${chipsHtml(o.statuses, o.registry)}${silenced}</span>
       ${o.footer ?? ""}
+      ${o.dying === true ? '<span class="dying-x" aria-hidden="true">✕</span>' : ""}
+      ${o.overlay ?? ""}
     </div>`;
 }

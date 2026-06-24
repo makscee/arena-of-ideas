@@ -18,7 +18,7 @@
 import { mkdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { DESKTOP, launch, openRun, plainShopRun } from "./lib.mjs";
+import { DESKTOP, duelistRun, launch, openRun, plainShopRun } from "./lib.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const outDir = process.env.SHOTS_DIR ?? join(here, ".shots", "motion");
@@ -134,5 +134,118 @@ if (strikeStart !== null) {
 }
 
 await ctx.close();
+
+// (iii) Hero OVERLAY badges (#065 slice 2) — the feature the director twice
+// reported missing. Capture, on the Duelist run (which lands TWO hits on one
+// enemy in a single Strike beat), the moment a damage badge appears on a hero
+// and then increments 1 → 2 as the second Hurt line reveals; then a step into
+// the NEXT beat where the badge has cleared. Read 05→07 in order: 05 shows the
+// hero with no badge (strike start), 06 the −1 badge as the first Hurt reveals,
+// 07 the badge incremented to −2 as the second Hurt reveals, 08 the next beat
+// with the badge gone.
+{
+  const { ctx, page } = await openRun(browser, duelistRun(), DESKTOP);
+  await intoBattle(page);
+  const dmax = await maxStep(page);
+  // Find a Strike beat that reveals two Hurt lines on ONE unit across its steps.
+  const hurtCountsByUnit = async () =>
+    page.evaluate(() => {
+      const counts = {};
+      for (const l of document.querySelectorAll(".beat-card .bc-line.bc-hurt")) {
+        const m = (l.textContent ?? "").match(/^(\S+)/);
+        if (m) counts[m[1]] = (counts[m[1]] ?? 0) + 1;
+      }
+      return counts;
+    });
+  let twoHitStart = null;
+  for (let n = 0; n < dmax; n++) {
+    await stepTo(page, n);
+    const b0 = await beatIndex(page);
+    if (b0 === null) continue;
+    // Walk to the end of this beat counting the max hits any one unit takes.
+    let maxOne = 0;
+    let m = n;
+    while (m <= dmax) {
+      await stepTo(page, m);
+      if ((await beatIndex(page)) !== b0) break;
+      const counts = await hurtCountsByUnit();
+      maxOne = Math.max(maxOne, ...Object.values(counts), 0);
+      m++;
+    }
+    if (maxOne >= 2) {
+      twoHitStart = n;
+      break;
+    }
+  }
+  if (twoHitStart !== null) {
+    // n = beat start (no hurt). Find the two consecutive hurt-reveal steps.
+    await stepTo(page, twoHitStart);
+    await shot(page, "05-overlay-strike-start"); // hero present, no badge yet
+    const b0 = await beatIndex(page);
+    let firstHurt = null;
+    for (let m = twoHitStart + 1; m <= dmax; m++) {
+      await stepTo(page, m);
+      if ((await beatIndex(page)) !== b0) break;
+      if ((await hurtLineCount(page)) >= 1) {
+        firstHurt = m;
+        break;
+      }
+    }
+    if (firstHurt !== null) {
+      await stepTo(page, firstHurt);
+      await shot(page, "06-overlay-badge-appears"); // −1 badge appears
+      // Advance within the beat until a unit shows two hurt lines.
+      for (let m = firstHurt + 1; m <= dmax; m++) {
+        await stepTo(page, m);
+        if ((await beatIndex(page)) !== b0) break;
+        const counts = await hurtCountsByUnit();
+        if (Object.values(counts).some((c) => c >= 2)) {
+          await shot(page, "07-overlay-badge-increments"); // badge now −2 (summed)
+          // One more step into the NEXT beat: the badge clears.
+          for (let k = m + 1; k <= dmax; k++) {
+            await stepTo(page, k);
+            if ((await beatIndex(page)) !== b0) {
+              await shot(page, "08-overlay-badge-cleared-next-beat");
+              break;
+            }
+          }
+          break;
+        }
+      }
+    }
+    console.log(`overlay badges captured from beat at step ${twoHitStart}`);
+  } else {
+    console.log("no two-hit beat found to capture overlay increment");
+  }
+  await ctx.close();
+}
+
+// (iv) A DEATH beat — a hero greys + ✕ in place, with its death overlay, for
+// the rest of the beat. Read 09: the dying unit shows the ✕ mark on its card in
+// the line area (not the grave). Captured from the plain run, which kills a unit.
+{
+  const { ctx, page } = await openRun(browser, plainShopRun(), DESKTOP);
+  await intoBattle(page);
+  const pmax = await maxStep(page);
+  let deathStep = null;
+  for (let n = 0; n <= pmax; n++) {
+    await stepTo(page, n);
+    const hasDeath = await page.evaluate(() => !!document.querySelector(".beat-card .bc-line.bc-death"));
+    const hasDying = await page.evaluate(() => !!document.querySelector(".unit.dying .dying-x"));
+    if (hasDeath && hasDying) {
+      deathStep = n;
+      break;
+    }
+  }
+  if (deathStep !== null) {
+    await stepTo(page, deathStep);
+    await shot(page, "09-death-greys-x-in-place");
+    console.log(`death-in-place captured at step ${deathStep}`);
+  } else {
+    console.log("no death-in-place step found to capture");
+  }
+  await ctx.close();
+}
+
 await browser.close();
 console.log(`\nmotion frames in ${outDir} — step through f00..fNN to see the animation play out`);

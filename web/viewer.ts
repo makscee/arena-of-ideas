@@ -12,6 +12,7 @@ import {
   boardAt,
   deathCauseChain,
   displayNames,
+  overlaysAt,
   shortDesc,
   type Beat,
   type BattleEvent,
@@ -170,7 +171,8 @@ export function createViewer(els: ViewerEls): Viewer {
     if (!e) return;
     const board = boardAt(log, step);
     const center = beatCenterHtml(log, beats, step, (ev) => describeEvent(ev, name), verdictHtml(board));
-    renderBoard(els.board, board, name, hitSetAt(log, beats, step), registry, selected?.unit, center);
+    const overlays = { by: overlaysAt(log, step) };
+    renderBoard(els.board, board, name, hitSetAt(log, beats, step), registry, selected?.unit, center, overlays);
     battleLog.syncTo(step);
     els.scrub.value = String(step);
     els.stepLabel.textContent = `event ${step + 1}/${log.length} · turn ${e.turn}`;
@@ -241,7 +243,11 @@ export function createViewer(els: ViewerEls): Viewer {
 
     const renderAt = (i: number): void => {
       const center = beatCenterHtml(log, beats, i, (ev) => describeEvent(ev, name), verdictHtml(boardAt(log, i)));
-      renderBoard(els.board, boardAt(log, i), name, new Set(), registry, undefined, center);
+      // Overlays at beat.end are the beat's tallest badge state (and a dying
+      // unit is pulled into the line) — both can grow the line column, so the
+      // height lock must measure them or a badge-laden beat overflows the
+      // reserve and nudges the transport (LS-1).
+      renderBoard(els.board, boardAt(log, i), name, new Set(), registry, undefined, center, { by: overlaysAt(log, i) });
     };
 
     // The outer board height = the tallest grid row across every height-step.

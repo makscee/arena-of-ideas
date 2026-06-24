@@ -26,7 +26,7 @@
 // Run under `npm run e2e` (the probe-*.mjs glob). A companion capture script,
 // e2e/motion-frames.mjs, writes step-through frames for a human to scrub.
 
-import { armGuard, check, finish, launch, openRun, plainShopRun, DESKTOP } from "./lib.mjs";
+import { armGuard, check, duelistRun, finish, launch, openRun, plainShopRun, DESKTOP } from "./lib.mjs";
 
 const disarm = armGuard();
 const browser = await launch();
@@ -217,6 +217,171 @@ async function defectBHitTruth(page) {
   );
 }
 
+// ----------------------------------------------------------------------
+// Slice 2 — hero overlays: typed badges appear/increment in sync with the
+// lines, sum on multi-hit, persist through the read-pause, clear at the next
+// beat. This is the feature the director twice reported missing ("no text
+// appears on top of heroes when they take damage"); the probe reads the badge
+// numbers straight off the DOM and ties them to the kernel Hurt truth.
+// ----------------------------------------------------------------------
+//
+// The badge is drawn ON the affected hero card (`.unit .ov-layer .ov-dmg` etc.)
+// — NOT a side panel. We assert:
+//   • appear/increment in sync — a unit's red −N damage badge equals the SUM of
+//     the revealed `bc-hurt` lines for that unit at every step in the beat (so
+//     the number grows as Hurt lines reveal, and is absent before the first).
+//   • sum on multi-hit — a beat with ≥2 Hurts on one unit shows the summed
+//     total, not the last hit.
+//   • persist through the read-pause — the badge is still present at beat.end.
+//   • clear at the next beat — stepping into the next beat removes it.
+
+/** The damage badge total drawn on each unit at the current step:
+ * data-unit → the integer in its `.ov-dmg` badge (absent → not present). */
+const damageBadges = (page) =>
+  page.evaluate(() => {
+    const out = {};
+    for (const u of document.querySelectorAll(".unit[data-unit]")) {
+      const b = u.querySelector(".ov-layer .ov-dmg");
+      if (b) out[u.getAttribute("data-unit")] = Number(b.textContent.replace(/[^0-9]/g, ""));
+    }
+    return out;
+  });
+
+/** The kernel-truth damage per unit at the current step: the SUM of the amounts
+ * named on the revealed `bc-hurt` card lines, resolved by display name. Read
+ * from a SECOND DOM source (the card lines) so the assertion is not a tautology
+ * with the badge it checks. Line text is e.g. "Silencer takes 2 → 0 hp". */
+async function expectedDamage(page, nameMap) {
+  return page.evaluate((names) => {
+    const labels = Object.keys(names).sort((a, b) => b.length - a.length);
+    const out = {};
+    for (const l of document.querySelectorAll(".beat-card .bc-line.bc-hurt")) {
+      const txt = l.textContent ?? "";
+      const label = labels.find((n) => txt.startsWith(n));
+      if (!label) continue;
+      // "… takes N" or "… takes N (M absorbed)" — the first number after "takes".
+      const m = txt.match(/takes\s+(\d+)/);
+      if (!m) continue;
+      const unit = names[label];
+      out[unit] = (out[unit] ?? 0) + Number(m[1]);
+    }
+    return out;
+  }, nameMap);
+}
+
+async function badgesInSyncWithLines(page, { requireMultiHit }) {
+  const max = await maxStep(page);
+  const nameMap = await page.evaluate(() => {
+    const m = {};
+    for (const u of document.querySelectorAll(".side .unit[data-unit]")) {
+      const label = u.querySelector(".uname")?.textContent?.trim();
+      if (label) m[label] = u.getAttribute("data-unit");
+    }
+    return m;
+  });
+
+  const eqMap = (a, b) => {
+    const ka = Object.keys(a).sort();
+    const kb = Object.keys(b).sort();
+    if (ka.join("|") !== kb.join("|")) return false;
+    return ka.every((k) => a[k] === b[k]);
+  };
+
+  let mismatches = 0;
+  let firstMismatch = "";
+  let badgeSteps = 0; // steps where at least one damage badge is on a hero
+  let multiHitSeen = false; // a beat where one unit's badge summed ≥2 hits
+  let clearSeen = false; // a badge present in one beat, gone at the next step's new beat
+
+  let prevBeat = null;
+  let prevHadBadge = false;
+  for (let n = 0; n <= max; n++) {
+    await stepTo(page, n);
+    const badges = await damageBadges(page);
+    const expected = await expectedDamage(page, nameMap);
+    if (!eqMap(badges, expected)) {
+      mismatches++;
+      if (firstMismatch === "")
+        firstMismatch = `step ${n}: badges=${JSON.stringify(badges)} expected=${JSON.stringify(expected)}`;
+    }
+    if (Object.keys(badges).length > 0) badgeSteps++;
+    // Multi-hit: an expected total that exceeds any single hit implies ≥2 summed.
+    // We detect it structurally — a unit whose damage total is present AND the
+    // beat revealed ≥2 hurt lines for it.
+    const multi = await page.evaluate((names) => {
+      const labels = Object.keys(names).sort((a, b) => b.length - a.length);
+      const counts = {};
+      for (const l of document.querySelectorAll(".beat-card .bc-line.bc-hurt")) {
+        const txt = l.textContent ?? "";
+        const label = labels.find((x) => txt.startsWith(x));
+        if (label) counts[names[label]] = (counts[names[label]] ?? 0) + 1;
+      }
+      return Object.values(counts).some((c) => c >= 2);
+    }, nameMap);
+    if (multi && Object.keys(badges).length > 0) multiHitSeen = true;
+
+    const curBeat = await beatIndex(page);
+    const hasBadge = Object.keys(badges).length > 0;
+    // Clear at the next beat: previous step had a badge in beat X, this step is
+    // beat Y≠X and shows no badge for the previously-badged unit.
+    if (prevBeat !== null && curBeat !== null && curBeat !== prevBeat && prevHadBadge && !hasBadge) {
+      clearSeen = true;
+    }
+    prevBeat = curBeat;
+    prevHadBadge = hasBadge;
+  }
+
+  // Persistence: re-walk to find a beat with a damage badge and assert the badge
+  // is STILL present at that beat's last step (the read-pause dwells there).
+  // beat.end = the step before the beat index changes (or the final step).
+  let persistOk = false;
+  let persistDetail = "no badged beat found";
+  {
+    let beatStartBadge = null; // { beat, unit } at first badge sighting
+    for (let n = 0; n <= max; n++) {
+      await stepTo(page, n);
+      const badges = await damageBadges(page);
+      const beat = await beatIndex(page);
+      const units = Object.keys(badges);
+      if (beat !== null && units.length > 0 && beatStartBadge === null) {
+        beatStartBadge = { beat, unit: units[0], n };
+        continue;
+      }
+      if (beatStartBadge !== null) {
+        const nextBeat = await beatIndex(page);
+        if (nextBeat !== beatStartBadge.beat) {
+          // n-1 was the last step of the badged beat; re-check it.
+          await stepTo(page, n - 1);
+          const endBadges = await damageBadges(page);
+          persistOk = endBadges[beatStartBadge.unit] !== undefined;
+          persistDetail = `beat ${beatStartBadge.beat}: badge on ${beatStartBadge.unit} present at its last step (read-pause)=${persistOk}`;
+          break;
+        }
+      }
+    }
+  }
+
+  check(
+    badgeSteps > 0,
+    "overlay: damage badges actually render ON heroes during the battle",
+    `${badgeSteps} step(s) show a −N damage badge on a hero card`,
+  );
+  check(
+    mismatches === 0,
+    "overlay: each hero's red −N badge EQUALS the summed revealed Hurt lines at every step",
+    mismatches === 0 ? `all ${max + 1} steps consistent` : `${mismatches} mismatch(es); first: ${firstMismatch}`,
+  );
+  if (requireMultiHit) {
+    check(
+      multiHitSeen,
+      "overlay: a multi-hit beat sums into one badge total (≥2 hurt lines, one badge)",
+      multiHitSeen ? "found a beat with ≥2 hurts on one unit carrying a summed badge" : "no multi-hit beat reached",
+    );
+  }
+  check(persistOk, "overlay: a damage badge PERSISTS through the read-pause (present at beat.end)", persistDetail);
+  check(clearSeen, "overlay: badges CLEAR at the next beat (badged → next beat shows none)", clearSeen ? "badge present in a beat, gone at the next beat" : "no clear transition observed");
+}
+
 // Each probe gets a fresh run/page so the transport starts clean (the battle is
 // one-shot per fight — a second probe cannot re-click #run-fight on a page that
 // already left the shop).
@@ -230,6 +395,21 @@ async function defectBHitTruth(page) {
   const { ctx, page } = await openRun(browser, plainShopRun(), DESKTOP);
   await intoBattle(page);
   await defectBHitTruth(page);
+  await ctx.close();
+}
+{
+  // The plain shop battle: appear/increment-in-sync, persist, clear.
+  const { ctx, page } = await openRun(browser, plainShopRun(), DESKTOP);
+  await intoBattle(page);
+  await badgesInSyncWithLines(page, { requireMultiHit: false });
+  await ctx.close();
+}
+{
+  // The Duelist battle lands TWO Hurts on one defender in a single Strike beat
+  // — the multi-hit summing the plain battle never produces.
+  const { ctx, page } = await openRun(browser, duelistRun(), DESKTOP);
+  await intoBattle(page);
+  await badgesInSyncWithLines(page, { requireMultiHit: true });
   await ctx.close();
 }
 

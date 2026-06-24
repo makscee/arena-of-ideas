@@ -270,6 +270,44 @@ export const refsRun = () => {
   );
 };
 
+/** Constructed content (#065 slice 2): a Duelist whose Strike trigger ALSO
+ * deals direct damage to the front enemy — so a single Strike beat lands TWO
+ * Hurts on the same defender. The injected fight reaches that beat, and the
+ * hero-overlay probe asserts the two hits SUM into one red −N badge (the
+ * "summed on repeated hits within the beat" clause). A tanky defender survives
+ * both hits so the badge shows the live-incrementing total, not a death. */
+export const duelistRun = () => {
+  // pwr 1 + a +1 bonus to the front enemy: both hits are small, so the struck
+  // enemy survives BOTH within the one Strike beat — its two Hurt lines stay on
+  // the board and its red badge increments 1 → 2 (the live-incrementing sum).
+  // A tanky body sits IN FRONT of the Duelist so the bootstrap Silencer's
+  // BattleStart silence lands on the (ability-less) tank, never on the Duelist
+  // — a silenced Duelist would lose its bonus-damage ability and the beat would
+  // carry a single hit. The tank trades down, the Duelist reaches the front
+  // with its ability intact, and its strikes then land the double hit.
+  const Duelist = {
+    name: "Duelist",
+    base: { hp: 8, pwr: 1 },
+    abilities: [
+      {
+        whens: [{ kind: "trigger", on: { on: "Strike", striker: "holder" } }],
+        selectors: [{ kind: "frontEnemy" }],
+        effects: [{ kind: "damage", amount: { kind: "const", value: 1 } }],
+      },
+    ],
+  };
+  const Bodyguard = { name: "Bodyguard", base: { hp: 20, pwr: 1 } };
+  return shaped(
+    (s) => {
+      s.team = [unitOf(Bodyguard), unitOf(Duelist)];
+      s.offers = [byName.Venomancer, byName.Summoner, byName.Bulwark];
+      s.gold = 10;
+      s.lives = 5;
+    },
+    [...DEFAULT_RUN_POOL, Duelist, Bodyguard],
+  );
+};
+
 // ---------- browser ----------
 
 /** A fresh page with the run injected before any script runs. The app lands

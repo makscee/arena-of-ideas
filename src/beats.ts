@@ -108,6 +108,110 @@ export function beatAtStep(beats: Beat[], step: number): { beat: Beat; revealedT
 }
 
 /**
+ * Per-unit overlay accumulated from the start of a beat up to the current step.
+ * The typed badges the viewer draws on each affected hero are a pure function of
+ * this. The decision encoded in the shape (from the design grill): damage and
+ * heal are kept SEPARATE — an absorb that heals back must stay visible as both a
+ * red −N and a green +N, never netted to zero. Status and stat changes are net
+ * (a +2/-1 poison swing shows +1) because there a player reads the resulting
+ * level, not the churn.
+ */
+export interface BeatOverlay {
+  /** Summed Hurt amounts since beat start (shown red −N). */
+  damage: number;
+  /** Summed Heal amounts since beat start (shown green +N), never netted against damage. */
+  heal: number;
+  /** Net ± per status name (StatusApplied stacks +, StatusRemoved stacks −). */
+  statusDeltas: Record<string, number>;
+  /** Net ± per stat name (pwr, maxHp) from StatChanged deltas. */
+  statChanges: Record<string, number>;
+  /** A Death for this unit landed in the open beat. */
+  died: boolean;
+}
+
+/** True when an overlay carries anything worth drawing — an all-zero overlay
+ * (e.g. a 0-stack status churn that nets out, no damage/heal/death) draws no
+ * badges, so the card stays clean. */
+export function overlayHasContent(o: BeatOverlay): boolean {
+  return (
+    o.damage !== 0 ||
+    o.heal !== 0 ||
+    o.died ||
+    Object.values(o.statusDeltas).some((v) => v !== 0) ||
+    Object.values(o.statChanges).some((v) => v !== 0)
+  );
+}
+
+/**
+ * The per-unit overlays at `step`: accumulated from the start of the beat that
+ * contains `step` up to `step` (inclusive). Pure projection over the log — same
+ * `(log, step)` in, same map out — so scrubbing mid-beat shows partial overlays
+ * and the playhead reset at each beat boundary clears them for free (a new beat
+ * starts a fresh window). Returns an empty map for an out-of-range step, an
+ * empty log, or a structural-only beat with nothing to accumulate.
+ *
+ * Damage and heal sum separately (the absorb/heal-back must both show); status
+ * and stat changes net per name. `StatChanged` keys by stat — `hp` is reported
+ * as `maxHp` (the badge is a max-hp buff, not the live current-hp the bar shows;
+ * the kernel stamps `now` as the new effective maximum). A repeated hit within
+ * the beat simply adds another term — "summed on repeated hits" falls out of
+ * the fold, no special case.
+ */
+export function overlaysAt(log: BattleEvent[], step: number): Map<string, BeatOverlay> {
+  const overlays = new Map<string, BeatOverlay>();
+  const beats = beatsOf(log);
+  const at = beatAtStep(beats, step);
+  if (!at) return overlays;
+  const { beat } = at;
+
+  const get = (unit: string): BeatOverlay => {
+    let o = overlays.get(unit);
+    if (!o) {
+      o = { damage: 0, heal: 0, statusDeltas: {}, statChanges: {}, died: false };
+      overlays.set(unit, o);
+    }
+    return o;
+  };
+
+  // Only the caused events the playhead has reached count — a caused event shows
+  // its badge once revealed (id ≤ step), exactly when its card line reveals, so
+  // the badge total tracks the revealed step, not the whole beat at once.
+  for (const e of beat.caused) {
+    if (e.id > step) break; // caused is in id order; nothing past the playhead
+    switch (e.type) {
+      case "Hurt":
+        get(e.unit).damage += e.amount;
+        break;
+      case "Heal":
+        get(e.unit).heal += e.amount;
+        break;
+      case "StatusApplied": {
+        const o = get(e.unit);
+        o.statusDeltas[e.status] = (o.statusDeltas[e.status] ?? 0) + e.stacks;
+        break;
+      }
+      case "StatusRemoved": {
+        const o = get(e.unit);
+        o.statusDeltas[e.status] = (o.statusDeltas[e.status] ?? 0) - e.stacks;
+        break;
+      }
+      case "StatChanged": {
+        const o = get(e.unit);
+        const key = e.stat === "hp" ? "maxHp" : e.stat;
+        o.statChanges[key] = (o.statChanges[key] ?? 0) + e.delta;
+        break;
+      }
+      case "Death":
+        get(e.unit).died = true;
+        break;
+      default:
+        break; // Strike/Summon/Silenced/trace events carry no badge of their own
+    }
+  }
+  return overlays;
+}
+
+/**
  * Within-beat causal nesting depth of an event: how many `causedBy` hops back
  * to the beat root (0 = the root itself, 1 = directly caused by the root, …).
  * Derived purely from `causedBy`; the chain is followed only while it stays
