@@ -12,6 +12,7 @@ export type MailSendInput = {
   subject: string;
   html: string;
   text: string;
+  fromName?: string;
 };
 
 export type MailSendResult = { ok: true } | { ok: false; error: string };

@@ -59,6 +59,7 @@ import { mint, revoke, verify } from "./sessions.js";
 
 const SESSION_LIFETIME_DAYS = 30;
 const SESSION_LABEL = "arena-web";
+const OTP_FROM_NAME = "Arena of Ideas";
 
 export interface AppDeps {
   db: DB;
@@ -159,6 +160,7 @@ export function createApp(deps: AppDeps): Hono<AuthEnv> {
       subject: rendered.subject,
       html: rendered.html,
       text: rendered.text,
+      fromName: OTP_FROM_NAME,
     });
     if (!sent.ok) {
       console.error(`[mail] OTP send to ${email} failed: ${sent.error}`);

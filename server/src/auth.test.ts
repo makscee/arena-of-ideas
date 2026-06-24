@@ -104,6 +104,7 @@ describe("OTP login happy path", () => {
     expect(await start.json()).toEqual({ sent: true });
     expect(ctx.mailer.sent).toHaveLength(1);
     expect(ctx.mailer.sent[0]!.to).toBe("maks@example.com");
+    expect(ctx.mailer.sent[0]!.fromName).toBe("Arena of Ideas");
 
     const verify = await post(ctx.app, "/v1/auth/login/email/verify", {
       email: "maks@example.com",
