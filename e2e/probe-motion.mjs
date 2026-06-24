@@ -549,10 +549,260 @@ async function coinVisibleAndChangesHands(page, { stubbed }) {
     moveSeen ? `coin changed hands (e.g. ${prevHolder} → ${holder})` : "no re-flip to a different holder observed",
   );
 }
+
+// ----------------------------------------------------------------------
+// Item 1 (#065 feedback) — the hero OVERLAY BADGES must animate ONLY the newly
+// appearing badge, exactly as the card LINES were fixed (defect A). The overlay
+// layer re-renders its whole HTML each step, so arming `ov-pop` on every
+// `.ov-badge` re-ran the pop on ALL of them whenever a new badge appeared (the
+// director's "all of them play the fade in when a new one appears"). We read each
+// badge's computed `animation-name`: when a SECOND badge lands on a hero, the
+// first (already-shown) badge must read `none` and only the new one `ov-pop`.
+// Mirror of defectALineAnimation, for badges. Must FAIL pre-fix (every badge
+// reads `ov-pop` each step), PASS after.
+// ----------------------------------------------------------------------
+
+/** Per-badge motion state on every hero at the current step: the unit's
+ * data-unit, the badge's text (its stable identity), and its computed
+ * animation-name (the signal it is mid-reveal vs static). */
+const badgeStates = (page) =>
+  page.evaluate(() => {
+    const out = [];
+    for (const u of document.querySelectorAll(".side .unit[data-unit]")) {
+      const unit = u.getAttribute("data-unit");
+      for (const b of u.querySelectorAll(".ov-layer .ov-badge")) {
+        out.push({ unit, text: (b.textContent ?? "").trim(), anim: getComputedStyle(b).animationName });
+      }
+    }
+    return out;
+  });
+
+async function defectABadgeAnimation(page) {
+  const max = await maxStep(page);
+
+  // Walk to two consecutive steps inside one beat where a hero's badge COUNT
+  // grows (a new badge streams in alongside ≥1 already-shown badge). The big
+  // battle lands a damage badge then a status/heal badge on the same unit within
+  // a beat — exactly the second-badge-appears moment.
+  let found = null;
+  for (let n = 0; n < max; n++) {
+    await stepTo(page, n);
+    const beatN = await beatIndex(page);
+    const before = await badgeStates(page);
+    if (beatN === null) continue;
+    await stepTo(page, n + 1);
+    const beatN1 = await beatIndex(page);
+    const after = await badgeStates(page);
+    if (beatN1 !== beatN) continue;
+    // A unit that had ≥1 badge at N and gained ≥1 more at N+1.
+    const cntBefore = (u) => before.filter((b) => b.unit === u).length;
+    const cntAfter = (u) => after.filter((b) => b.unit === u).length;
+    const grower = [...new Set(after.map((b) => b.unit))].find((u) => cntBefore(u) >= 1 && cntAfter(u) === cntBefore(u) + 1);
+    if (grower) {
+      found = { n, unit: grower, before: before.filter((b) => b.unit === grower), after: after.filter((b) => b.unit === grower) };
+      break;
+    }
+  }
+
+  if (!found) {
+    check(false, "item-1: located a hero who gains a 2nd badge while keeping a 1st", "no such consecutive step found");
+    return;
+  }
+
+  const beforeTexts = new Set(found.before.map((b) => b.text));
+  const newBadges = found.after.filter((b) => !beforeTexts.has(b.text));
+  const oldBadges = found.after.filter((b) => beforeTexts.has(b.text));
+
+  check(
+    newBadges.length >= 1 && oldBadges.length >= 1,
+    "item-1: a new badge appears on a hero that already wears ≥1 badge",
+    `unit ${found.unit}: prior=[${found.before.map((b) => b.text).join(", ")}] → now=[${found.after.map((b) => b.text).join(", ")}] (step ${found.n}→${found.n + 1})`,
+  );
+
+  // The crux: the ALREADY-SHOWN badges must NOT re-run their pop. Pre-fix every
+  // badge re-armed `ov-pop` on the re-render → old badges read "ov-pop" → FAIL.
+  const reanimated = oldBadges.filter((b) => b.anim !== "none");
+  check(
+    reanimated.length === 0,
+    "item-1: already-shown badges do NOT re-animate when a new badge appears",
+    reanimated.length === 0
+      ? `${oldBadges.length} prior badge(s) static (animation-name: none)`
+      : `badges [${reanimated.map((b) => `"${b.text}":${b.anim}`).join(", ")}] re-ran their pop`,
+  );
+
+  // And the new badge DID animate in — the reveal still happens, just scoped.
+  check(
+    newBadges.every((b) => b.anim === "ov-pop"),
+    "item-1: the newly appearing badge DOES animate in (ov-pop)",
+    newBadges.map((b) => `"${b.text}":${b.anim}`).join(", "),
+  );
+}
+
+// ----------------------------------------------------------------------
+// Item 3 (#065 feedback) — the displayed hero NAME drops the "A1:"/"B3:" instance
+// prefix. The card LABEL (.uname) must never match /^[AB]\d+:/, while the card's
+// `data-unit` attr still carries the FULL id (the data-layer disambiguator the
+// probes, kernel ids, and cause-trace keying depend on). Must FAIL pre-fix on a
+// battle with a name collision (today the colliding unit shows "A1:Brawler"); the
+// big battle's rosters share names, so the prefix shows pre-fix.
+// ----------------------------------------------------------------------
+
+async function namePrefixStripped(page) {
+  const max = await maxStep(page);
+  // Sweep every step; collect each board card's displayed label and its data-unit.
+  const PREFIX = /^[A-Z]\+?\d+:/; // A1: / B3: / A+1: (a summon) — the instance prefix
+  let labelsSeen = 0;
+  let prefixed = 0;
+  let firstPrefixed = "";
+  let idMismatch = 0; // a card whose data-unit LOST its prefix (would mean we broke the data layer)
+  let collisionConfirmed = false; // ≥2 cards sharing a display label (so the prefix WOULD have shown)
+  for (let n = 0; n <= max; n++) {
+    await stepTo(page, n);
+    const cards = await page.evaluate(() => {
+      const out = [];
+      for (const u of document.querySelectorAll(".side .unit[data-unit]")) {
+        out.push({ id: u.getAttribute("data-unit"), label: (u.querySelector(".uname")?.textContent ?? "").trim() });
+      }
+      return out;
+    });
+    const labels = cards.map((c) => c.label);
+    if (new Set(labels).size < labels.length) collisionConfirmed = true;
+    for (const c of cards) {
+      labelsSeen++;
+      if (PREFIX.test(c.label)) {
+        prefixed++;
+        if (firstPrefixed === "") firstPrefixed = `step ${n}: label="${c.label}" data-unit="${c.id}"`;
+      }
+      // The data-unit MUST keep the full prefixed id — a bare id here means the
+      // strip leaked into the data layer (probe/selector/cause-trace breakage).
+      if (!PREFIX.test(c.id)) idMismatch++;
+    }
+  }
+
+  check(labelsSeen > 0, "item-3: swept board card labels across the battle", `${labelsSeen} card-label reads`);
+  check(
+    collisionConfirmed,
+    "item-3: the battle has a NAME COLLISION (two cards share a display label) — so a prefix WOULD show if not stripped",
+    collisionConfirmed ? "≥2 cards share a display label" : "no collision seen (probe can't prove the strip)",
+  );
+  check(
+    prefixed === 0,
+    "item-3: no displayed card label carries an A1:/B3: instance prefix",
+    prefixed === 0 ? `all ${labelsSeen} labels are bare names` : `${prefixed} prefixed label(s); first: ${firstPrefixed}`,
+  );
+  check(
+    idMismatch === 0,
+    "item-3: every card's data-unit STILL carries the full instance id (the data layer is intact)",
+    idMismatch === 0 ? "all data-unit attrs keep their prefix" : `${idMismatch} card(s) lost the data-unit prefix`,
+  );
+}
+
+// ----------------------------------------------------------------------
+// Item 4 (#065 feedback) — a DISTINCT death animation plays at the death-reveal
+// step. At the step a Death is revealed the dying card carries `.dying-new` and a
+// computed `animation-name` of `death-strike`; it still ends on the grey+✕ state
+// (.dying + a visible .dying-x). Under reduced-motion the animation is skipped
+// but the grey+✕ end-state stays. Must FAIL pre-fix (no death-strike anim exists).
+// ----------------------------------------------------------------------
+
+/** The dying cards at the current step: data-unit, whether it wears `.dying-new`,
+ * its computed animation-name, and whether its ✕ end-mark is painted. */
+const dyingStates = (page) =>
+  page.evaluate(() => {
+    const out = [];
+    for (const u of document.querySelectorAll(".side .unit.dying[data-unit]")) {
+      const x = u.querySelector(".dying-x");
+      const xVisible = x ? getComputedStyle(x).display !== "none" && x.getBoundingClientRect().width > 0 : false;
+      out.push({
+        unit: u.getAttribute("data-unit"),
+        isNew: u.classList.contains("dying-new"),
+        anim: getComputedStyle(u).animationName,
+        grey: getComputedStyle(u).filter.includes("grayscale") || Number(getComputedStyle(u).opacity) < 1,
+        xVisible,
+      });
+    }
+    return out;
+  });
+
+async function deathAnimationPlays(page, { reducedMotion }) {
+  const max = await maxStep(page);
+  let revealStepFound = false;
+  let animPlayed = false;
+  let firstReveal = "";
+  let endStateHeld = true;
+  for (let n = 0; n <= max; n++) {
+    await stepTo(page, n);
+    const dying = await dyingStates(page);
+    const fresh = dying.filter((d) => d.isNew);
+    if (fresh.length > 0) {
+      revealStepFound = true;
+      if (firstReveal === "") firstReveal = `step ${n}: ${fresh.map((d) => d.unit).join(", ")}`;
+      // At the reveal step the card must show the grey+✕ end-state regardless of
+      // motion, and (motion on) be running death-strike.
+      for (const d of fresh) {
+        if (!(d.grey && d.xVisible)) endStateHeld = false;
+        if (d.anim === "death-strike") animPlayed = true;
+      }
+    }
+  }
+
+  check(revealStepFound, "item-4: a death-reveal step (.dying-new) occurs in the battle", revealStepFound ? `e.g. ${firstReveal}` : "no .dying-new step seen");
+  check(
+    endStateHeld,
+    "item-4: the dying card holds the grey + ✕ end-state at the reveal step",
+    endStateHeld ? "grey + visible ✕ at every reveal step" : "a reveal step lacked grey/✕",
+  );
+  if (reducedMotion) {
+    check(
+      !animPlayed,
+      "item-4 (reduced-motion): the death animation is SUPPRESSED — end-state stays grey + ✕",
+      animPlayed ? "death-strike ran under reduced-motion" : "no death-strike under reduced-motion (end-state intact)",
+    );
+  } else {
+    check(
+      animPlayed,
+      "item-4: the dying card plays the distinct death-strike animation at the reveal step",
+      animPlayed ? "death-strike armed at the reveal step" : "no death-strike animation-name seen (still static grey+✕)",
+    );
+  }
+}
+
 {
   const { ctx, page } = await openRun(browser, plainShopRun(), DESKTOP);
   await intoBattle(page);
   await defectALineAnimation(page);
+  await ctx.close();
+}
+{
+  // Item 1 — the badge re-animation defect. The big battle stacks a damage badge
+  // then a status/heal badge on one unit within a beat (a 2nd badge appears).
+  const { ctx, page } = await openRun(browser, bigBattleRun(), DESKTOP);
+  await intoBattle(page);
+  await defectABadgeAnimation(page);
+  await ctx.close();
+}
+{
+  // Item 3 — the displayed name has no instance prefix. The big battle's rosters
+  // share names (a collision), so a prefix WOULD show pre-fix.
+  const { ctx, page } = await openRun(browser, bigBattleRun(), DESKTOP);
+  await intoBattle(page);
+  await namePrefixStripped(page);
+  await ctx.close();
+}
+{
+  // Item 4 — the death animation plays at the death-reveal step (motion on).
+  const { ctx, page } = await openRun(browser, bigBattleRun(), DESKTOP);
+  await intoBattle(page);
+  await deathAnimationPlays(page, { reducedMotion: false });
+  await ctx.close();
+}
+{
+  // Item 4 — under reduced-motion the animation is suppressed but the grey+✕
+  // end-state stays. Emulate the media query before the battle renders.
+  const { ctx, page } = await openRun(browser, bigBattleRun(), DESKTOP);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await intoBattle(page);
+  await deathAnimationPlays(page, { reducedMotion: true });
   await ctx.close();
 }
 {

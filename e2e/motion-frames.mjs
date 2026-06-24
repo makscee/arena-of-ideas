@@ -430,5 +430,137 @@ async function captureFold(viewport, tag) {
 await captureFold(PHONE, "phone");
 await captureFold(DESKTOP, "desktop");
 
+// (viii) Item 1 (#065 feedback) — TWO badges appearing in sequence on ONE hero.
+// Burst-capture the moment a SECOND badge lands on a hero that already wears one,
+// so a human can confirm by eye that the FIRST badge holds still (no re-fade)
+// while the second pops in. Read 19-badge-2nd-* in order: across the burst the
+// already-shown badge does NOT flicker; only the new badge animates. Big battle
+// (poison + strikes) stacks a −dmg then a +Poison badge on one unit in a beat.
+{
+  const { ctx, page } = await openRun(browser, bigBattleRun(), DESKTOP);
+  await intoBattle(page);
+  const bmax = await maxStep(page);
+  const badgesOn = () =>
+    page.evaluate(() => {
+      const out = {};
+      for (const u of document.querySelectorAll(".side .unit[data-unit]")) {
+        const texts = [...u.querySelectorAll(".ov-layer .ov-badge")].map((b) => b.textContent.trim());
+        if (texts.length) out[u.getAttribute("data-unit")] = texts;
+      }
+      return out;
+    });
+  let secondBadgeStep = null;
+  for (let n = 0; n < bmax; n++) {
+    await stepTo(page, n);
+    const b0 = await beatIndex(page);
+    if (b0 === null) continue;
+    const before = await badgesOn(page);
+    await stepTo(page, n + 1);
+    if ((await beatIndex(page)) !== b0) continue;
+    const after = await badgesOn(page);
+    const grew = Object.keys(after).find((u) => (before[u]?.length ?? 0) >= 1 && after[u].length === before[u].length + 1);
+    if (grew) {
+      secondBadgeStep = { n, unit: grew, before: before[grew], after: after[grew] };
+      break;
+    }
+  }
+  if (secondBadgeStep !== null) {
+    await stepTo(page, secondBadgeStep.n);
+    await shot(page, "19-badge-1st-only");
+    await stepTo(page, secondBadgeStep.n + 1); // the 2nd badge streams in
+    await burst(page, "19-badge-2nd-appears"); // burst across the 0.22s pop
+    console.log(
+      `2nd-badge captured on ${secondBadgeStep.unit} at step ${secondBadgeStep.n}→${secondBadgeStep.n + 1}: [${secondBadgeStep.before.join(", ")}] → [${secondBadgeStep.after.join(", ")}] (the first badge should hold still across 19-badge-2nd-appears-f00..f07)`,
+    );
+  } else {
+    console.log("no second-badge step found to capture");
+  }
+  await ctx.close();
+}
+
+// (ix) Item 4 (#065 feedback) — the DISTINCT DEATH ANIMATION. Burst-capture the
+// death-reveal step so a human can watch the new red-flash + shake play and
+// settle into grey+✕. Read 20-death-anim-* in order: across the burst the dying
+// card flashes red and shakes, then greys. Big battle kills several units.
+{
+  const { ctx, page } = await openRun(browser, bigBattleRun(), DESKTOP);
+  await intoBattle(page);
+  const dmax = await maxStep(page);
+  let deathRevealStep = null;
+  for (let n = 0; n <= dmax; n++) {
+    await stepTo(page, n);
+    const fresh = await page.evaluate(() => !!document.querySelector(".unit.dying-new[data-unit]"));
+    if (fresh) {
+      deathRevealStep = n;
+      break;
+    }
+  }
+  if (deathRevealStep !== null) {
+    // Step to just before, capture the live card, then step ONTO the reveal and
+    // burst across the 0.5s death-strike animation.
+    await stepTo(page, Math.max(0, deathRevealStep - 1));
+    await shot(page, "20-death-before");
+    await stepTo(page, deathRevealStep); // the death is revealed → death-strike arms
+    await burst(page, "20-death-anim", 12, 40); // 12 frames × 40ms ≈ 0.48s ≈ the anim
+    const who = await page.evaluate(() => {
+      const u = document.querySelector(".unit.dying-new[data-unit]");
+      return u ? u.getAttribute("data-unit") : null;
+    });
+    console.log(`death-anim captured at step ${deathRevealStep} on ${who} — watch 20-death-anim-f00..f11 flash red, shake, then grey`);
+  } else {
+    console.log("no death-reveal step found to capture");
+  }
+  await ctx.close();
+}
+
+// (x) Item 2 + item 3 (#065 feedback) — a single still that shows TEAM-COLORED
+// names (side A vs side B distinct hues), DISTINCT STATUS colors on the chips,
+// and NO instance-id prefix on any displayed name. Captured a few steps in (so
+// statuses have landed) from the big battle (two sides, shared names → the prefix
+// would show if not stripped). The console dumps the labels + their team class +
+// chip colors so the frame can be read alongside the numbers.
+{
+  const { ctx, page } = await openRun(browser, bigBattleRun(), DESKTOP);
+  await intoBattle(page);
+  const cmax = await maxStep(page);
+  // Walk to a step where at least one chip (status) is on the board for color.
+  let colorStep = Math.min(cmax, 6);
+  for (let n = 0; n <= cmax; n++) {
+    await stepTo(page, n);
+    if (await page.evaluate(() => !!document.querySelector(".side .unit .chips .chip"))) {
+      colorStep = n;
+      break;
+    }
+  }
+  await stepTo(page, colorStep);
+  await shot(page, "21-colors-and-no-prefix");
+  const dump = await page.evaluate(() => {
+    const PREFIX = /^[A-Z]\+?\d+:/;
+    const names = [];
+    for (const u of document.querySelectorAll(".side .unit[data-unit]")) {
+      const nameEl = u.querySelector(".uname");
+      const side = u.closest(".side")?.getAttribute("data-side");
+      names.push({
+        side,
+        label: nameEl?.textContent.trim(),
+        dataUnit: u.getAttribute("data-unit"),
+        nameColor: nameEl ? getComputedStyle(nameEl).color : null,
+        prefixed: PREFIX.test(nameEl?.textContent.trim() ?? ""),
+      });
+    }
+    const chips = [];
+    for (const c of document.querySelectorAll(".side .unit .chips .chip[data-status]")) {
+      chips.push({ status: c.getAttribute("data-status"), text: c.textContent.trim(), color: getComputedStyle(c).color });
+    }
+    return { names, chips };
+  });
+  console.log(`\ncolors/no-prefix frame at step ${colorStep}:`);
+  for (const n of dump.names)
+    console.log(`  side ${n.side}  label="${n.label}"  data-unit="${n.dataUnit}"  nameColor=${n.nameColor}  prefixed=${n.prefixed}`);
+  const distinctChipColors = [...new Set(dump.chips.map((c) => `${c.status}:${c.color}`))];
+  for (const c of distinctChipColors) console.log(`  chip ${c}`);
+  await ctx.close();
+}
+
 await browser.close();
 console.log(`\nmotion frames in ${outDir} — step through f00..fNN to see the animation play out`);

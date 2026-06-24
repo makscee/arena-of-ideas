@@ -211,6 +211,52 @@ export function overlaysAt(log: BattleEvent[], step: number): Map<string, BeatOv
   return overlays;
 }
 
+/** The stable badge keys an overlay would draw, mapped to the value each badge
+ * shows — the same set/order `overlayBadgesHtml` renders (damage → `dmg`, heal →
+ * `heal`, each non-zero stat → `stat:<name>`, each non-zero status →
+ * `status:<name>`). A zero/netted-out term draws no badge, so it carries no key.
+ * Shared by the badge renderer and the new-badge diff so the two never drift. */
+export function badgeValues(o: BeatOverlay): Map<string, number> {
+  const v = new Map<string, number>();
+  if (o.damage > 0) v.set("dmg", o.damage);
+  if (o.heal > 0) v.set("heal", o.heal);
+  for (const [stat, d] of Object.entries(o.statChanges)) if (d !== 0) v.set(`stat:${stat}`, d);
+  for (const [status, d] of Object.entries(o.statusDeltas)) if (d !== 0) v.set(`status:${status}`, d);
+  return v;
+}
+
+/**
+ * Per-unit set of overlay-badge keys that are NEWLY appearing (or have changed
+ * value) at `step` versus the step before it — the badges that should play their
+ * reveal animation THIS step. Every other badge already shown stays static.
+ *
+ * The overlay layer re-renders its whole HTML each step, so arming the `ov-pop`
+ * reveal on every badge re-ran it on all of them every step — the same defect the
+ * card LINES had (every prior line re-faded). Mirror that fix for badges: diff the
+ * badge values at `step` against `step - 1` and animate only the keys that
+ * appeared or changed. At a beat's first revealed step the prior overlay is empty,
+ * so all of that step's badges count as new (they genuinely just appeared); within
+ * the beat only the badge whose number just moved animates. Pure projection over
+ * the log — same `(log, step)` in, same map out.
+ */
+export function newBadgeKeysAt(log: BattleEvent[], step: number): Map<string, Set<string>> {
+  const fresh = new Map<string, Set<string>>();
+  const cur = overlaysAt(log, step);
+  // The previous step's overlays: step-1 inside the same beat carries the badges
+  // already shown; if step-1 falls in the prior beat, overlaysAt windows to that
+  // beat and returns this beat's units as empty — so this beat's first badges all
+  // read as new, which is correct (they appear as the beat opens).
+  const prev = step > 0 ? overlaysAt(log, step - 1) : new Map<string, BeatOverlay>();
+  for (const [unit, o] of cur) {
+    const now = badgeValues(o);
+    const before = prev.has(unit) ? badgeValues(prev.get(unit)!) : new Map<string, number>();
+    const newKeys = new Set<string>();
+    for (const [k, val] of now) if (before.get(k) !== val) newKeys.add(k);
+    if (newKeys.size > 0) fresh.set(unit, newKeys);
+  }
+  return fresh;
+}
+
 /**
  * The unit that holds the coin at `step` (or null before the first pairing).
  *

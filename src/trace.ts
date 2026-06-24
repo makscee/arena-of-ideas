@@ -9,25 +9,27 @@ import type { AbilityRef, BattleEvent } from "./types.js";
 export type NameOf = (unitId: string) => string;
 
 /**
- * Display-name resolver for a log: unit names when unique, instance ids
- * (already readable, e.g. "A1:Dummy") when a name is shared.
+ * Display-name resolver for a log: the unit's bare NAME, never the instance-id
+ * prefix (#065 item 3). An instance id is `A1:Brawler` / `B3:Silencer` (battle.ts
+ * stamps `${side}${i}:${name}`); the leading `Xn:` is a DATA-layer disambiguator
+ * (the kernel event unit ids, the board cards' `data-unit`, probe selectors, the
+ * cause-trace keying) and must never leak into player-facing text. The player
+ * reads just "Brawler" / "Silencer"; when two units share a name the TEAM TINT
+ * (board card + battle log) is what tells the two sides apart, not an id prefix.
+ *
+ * So this strips the prefix unconditionally: a name claimed by the log resolves
+ * to that bare name (`A1:Brawler` → "Brawler"); an unknown id still passes
+ * through verbatim (it is no longer a player-facing unit, e.g. a stale ref).
  */
 export function displayNames(log: BattleEvent[]): NameOf {
-  const owners = new Map<string, Set<string>>(); // name → unit ids
-  const claim = (id: string, name: string) => {
-    if (!owners.has(name)) owners.set(name, new Set());
-    owners.get(name)!.add(id);
-  };
+  const display = new Map<string, string>(); // instance id → bare name
+  const claim = (id: string, name: string) => display.set(id, name);
   for (const e of log) {
     if (e.type === "BattleStart") {
       for (const side of ["A", "B"] as const) for (const r of e.teams[side]) claim(r.id, r.name);
     } else if (e.type === "Summon") {
       claim(e.unit, e.name);
     }
-  }
-  const display = new Map<string, string>();
-  for (const [name, ids] of owners) {
-    for (const id of ids) display.set(id, ids.size === 1 ? name : id);
   }
   return (id) => display.get(id) ?? id;
 }

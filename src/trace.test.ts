@@ -20,11 +20,13 @@ const poisonBattle: BattleInput = {
 };
 
 describe("displayNames", () => {
-  test("unique names display as names, duplicates as instance ids", () => {
+  test("resolves every unit id to its bare name — the Xn: instance prefix never shows (#065 item 3)", () => {
     const log = battle({ teamA: [dummy("Twin"), dummy("Twin")], teamB: [dummy("Solo")], seed: 1 });
     const name = displayNames(log);
-    expect(name("A1:Twin")).toBe("A1:Twin");
-    expect(name("A2:Twin")).toBe("A2:Twin");
+    // Duplicates show the same bare name — the team tint, not an id prefix, tells
+    // the two apart in the UI; the full id stays on data-unit / event ids.
+    expect(name("A1:Twin")).toBe("Twin");
+    expect(name("A2:Twin")).toBe("Twin");
     expect(name("B1:Solo")).toBe("Solo");
     expect(name("nobody")).toBe("nobody"); // unknown ids pass through
   });

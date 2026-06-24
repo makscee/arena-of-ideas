@@ -13,6 +13,7 @@ import {
   coinHolderAt,
   deathCauseChain,
   displayNames,
+  newBadgeKeysAt,
   overlaysAt,
   shortDesc,
   type Beat,
@@ -23,8 +24,11 @@ import {
 } from "../src/index.js";
 import { renderBoard, verdictHtml } from "./board-render.js";
 import { beatCenterHtml } from "./beat-card.js";
-import { createBattleLog } from "./battle-log.js";
+import { createBattleLog, sideMap, type SideOf } from "./battle-log.js";
 import { closeInspectOverlay, openInspectOverlay, renderInspect, unitDefs } from "./inspect.js";
+
+const escHtml = (s: string): string =>
+  s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
 const BASE_STEP_MS = 350; // 1x ≈ 3 events/second (per-line reveal cadence)
 // The read-pause that lands at a beat boundary: the tick that ENDS a beat
@@ -101,6 +105,23 @@ function hitSetAt(log: BattleEvent[], beats: Beat[], step: number): Set<string> 
   return hit;
 }
 
+/** Units whose Death is REVEALED at exactly `step` — the death-reveal moment that
+ * plays the distinct death animation (#065 item 4). A Death event in the open
+ * beat with `id === step` is being revealed right now; on any later step it has
+ * already settled to the static grey+✕ end-state, so it is NOT in this set then.
+ * Scrubbing directly onto the Death step still plays it (the step IS the reveal);
+ * scrubbing past it lands on the settled state — the animation is the transition,
+ * not a persistent flag. */
+function dyingRevealedAt(log: BattleEvent[], beats: Beat[], step: number): Set<string> {
+  const at = beatAtStep(beats, step);
+  if (!at) return new Set();
+  const fresh = new Set<string>();
+  for (const e of at.beat.caused) {
+    if (e.id === step && e.type === "Death") fresh.add(e.unit);
+  }
+  return fresh;
+}
+
 interface ViewerEls {
   board: HTMLElement;
   prev: HTMLButtonElement;
@@ -152,6 +173,7 @@ export function createViewer(els: ViewerEls): Viewer {
   let log: BattleEvent[] = [];
   let beats: Beat[] = [];
   let name: NameOf = (id) => id;
+  let sideOf: SideOf = () => undefined;
   let step = 0;
   let timer: number | undefined;
   let defs = new Map<string, UnitDef>();
@@ -179,8 +201,9 @@ export function createViewer(els: ViewerEls): Viewer {
     const e = log[step];
     if (!e) return;
     const board = boardAt(log, step);
-    const center = beatCenterHtml(log, beats, step, (ev) => describeEvent(ev, name), verdictHtml(board));
-    const overlays = { by: overlaysAt(log, step) };
+    const tint = (id: string) => ({ name: name(id), side: sideOf(id) });
+    const center = beatCenterHtml(log, beats, step, (ev) => describeEvent(ev, name), verdictHtml(board), tint);
+    const overlays = { by: overlaysAt(log, step), newBadges: newBadgeKeysAt(log, step), dyingNew: dyingRevealedAt(log, beats, step) };
     const coinHolder = coinHolderAt(log, step) ?? undefined;
     renderBoard(els.board, board, name, hitSetAt(log, beats, step), registry, selected?.unit, center, overlays, coinHolder);
     scrollNewestLineIntoView();
@@ -312,15 +335,25 @@ export function createViewer(els: ViewerEls): Viewer {
 
   /** The selected event's lineage: source, the causedBy chain, and a death's narrated why. */
   function causeHtml(e: BattleEvent): string {
+    // A name resolver that returns a TEAM-TINTED, escaped span (#065 item 2): the
+    // cause readout names units, so each reads as its side here too. Passed in
+    // place of the plain `name` to the shared narration helpers — they only
+    // interpolate the resolver's output, so the span rides through unchanged
+    // (and escaping the name here closes the prior unescaped-into-innerHTML gap).
+    const nameHtml: NameOf = (id) => {
+      const side = sideOf(id);
+      const cls = side === "A" ? "u ua" : side === "B" ? "u ub" : "u";
+      return `<span class="${cls}">${escHtml(name(id))}</span>`;
+    };
     const rows: string[] = [];
-    if (e.source !== "kernel") rows.push(`<div><span class="k">source</span> ${abilityRefDesc(e.source, name)}</div>`);
+    if (e.source !== "kernel") rows.push(`<div><span class="k">source</span> ${abilityRefDesc(e.source, nameHtml)}</div>`);
     if (e.type === "Death" && e.causedBy !== null) {
-      const why = deathCauseChain(log, e.causedBy, name);
+      const why = deathCauseChain(log, e.causedBy, nameHtml);
       if (why.length > 0) rows.push(`<div><span class="k">why</span> died ← ${why.join(" ← ")}</div>`);
     }
     const chain = ancestry(log, e.id);
     if (chain.length > 0) {
-      const links = chain.map((a) => `<a href="#" data-goto="${a.id}">${shortDesc(a, name)}</a>`).join(" ← ");
+      const links = chain.map((a) => `<a href="#" data-goto="${a.id}">${shortDesc(a, nameHtml)}</a>`).join(" ← ");
       rows.push(`<div><span class="k">cause</span> ${links}</div>`);
     } else {
       rows.push(`<div><span class="k">cause</span> kernel beat — nothing caused it</div>`);
@@ -450,6 +483,7 @@ export function createViewer(els: ViewerEls): Viewer {
       log = newLog;
       beats = beatsOf(log);
       name = displayNames(log);
+      sideOf = sideMap(log);
       // Resume where the player left off (#014), else the top. Clamped to the
       // log; the render below fires onEnded if this lands on the final event.
       step = opts?.resumeAt === undefined ? 0 : Math.max(0, Math.min(opts.resumeAt, log.length - 1));

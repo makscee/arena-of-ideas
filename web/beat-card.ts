@@ -14,6 +14,17 @@ const esc = (s: string): string =>
  * event readout never drift (both narrate off the same describeEvent). */
 export type LineText = (e: BattleEvent) => string;
 
+/** A unit id resolved to its bare display name plus its team side — lets the
+ * coin card tint the two strikers by side (#065 item 2) from structured ids,
+ * never a regex over narrated text. Undefined side → no tint (unknown unit). */
+export type NameTint = (id: string) => { name: string; side: "A" | "B" | undefined };
+
+/** Side → battle-log tint class suffix (` ua`/` ub`), matching the log palette
+ * so a team colour means the same thing on the card, the log, and the coin. */
+function tintCls(side: "A" | "B" | undefined): string {
+  return side === "A" ? " ua" : side === "B" ? " ub" : "";
+}
+
 /** A short label for a beat's root, the card's title. Falls back to the full
  * line text; callers can special-case roots (e.g. a Strike headline). */
 function rootTitle(beat: Beat, text: LineText): string {
@@ -34,6 +45,7 @@ export function beatCenterHtml(
   step: number,
   text: LineText,
   fallback: string,
+  nameTint?: NameTint,
 ): string {
   const at = beatAtStep(beats, step);
   if (!at) return `<div class="divider">${fallback}</div>`;
@@ -47,10 +59,19 @@ export function beatCenterHtml(
   // so the streaming/line model below is untouched; this is a self-contained root.
   if (beat.root.type === "PairFaced") {
     const r = beat.root;
+    // The two strikers are team-tinted (#065 item 2) so the player reads which
+    // side won the coin at a glance — built from structured ids, not regex over
+    // free text. `nameTint` returns the escaped, side-tinted name span; with no
+    // tint (text-replay callers) it falls back to the plain narrated line.
+    const pair = nameTint
+      ? `<span class="u${tintCls(nameTint(r.a).side)}">${esc(nameTint(r.a).name)}</span> faces ` +
+        `<span class="u${tintCls(nameTint(r.b).side)}">${esc(nameTint(r.b).name)}</span> — the coin says ` +
+        `<span class="u${tintCls(nameTint(r.first).side)}">${esc(nameTint(r.first).name)}</span> strikes first`
+      : esc(text(r));
     return `
     <div class="beat-card coin-card" data-beat="${beat.index}" data-coin-winner="${esc(r.first)}">
       <div class="bc-title coin-title"><span class="coin-pip" aria-hidden="true">◉</span> coin flip</div>
-      <div class="coin-pair">${esc(text(r))}</div>
+      <div class="coin-pair">${pair}</div>
     </div>`;
   }
 

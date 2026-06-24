@@ -408,7 +408,8 @@ button:disabled:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bc-line.bc-line-new {
+  .bc-line.bc-line-new,
+  .ov-badge.ov-new {
     animation: none;
   }
 }
@@ -612,6 +613,16 @@ button:disabled:hover {
     0 1px 3px rgba(0, 0, 0, 0.7),
     0 0 0 1.5px rgba(0, 0, 0, 0.55);
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.8);
+  /* Already-shown badges paint statically. The overlay layer re-renders its whole
+     HTML each step, so arming `ov-pop` on EVERY badge re-ran the pop on all of
+     them whenever a new badge appeared (the director's "all of them play the fade
+     in when a new one appears", the same defect the card LINES had). Only a newly-
+     appearing/changed badge (.ov-new, set by board-render from newBadgeKeysAt)
+     animates; the rest stay put. */
+}
+
+/* Only the just-appeared badge plays its reveal — mirrors `.bc-line-new`. */
+.ov-badge.ov-new {
   animation: ov-pop 0.22s ease-out;
 }
 
@@ -670,6 +681,64 @@ button:disabled:hover {
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
   z-index: 4;
   pointer-events: none;
+}
+
+/* Distinct DEATH animation (#065 item 4): at the moment a unit's death is
+   REVEALED it gets `.dying-new` for one step and plays `death-strike` — a sharp
+   red flash + a brief shake, settling into the static grey end-state the card
+   already renders (.unit.dying: grey + ✕). Animates ONLY transform/filter/box-
+   shadow (never layout), so the locked board geometry is untouched (LS-1). The
+   keyframe ends ON the grey end-state (filter: grayscale) so there is no snap-
+   back when the animation finishes and the card keeps the settled look. It reads
+   at battle speed (~0.5s) and sits on a separate property (transform/filter) from
+   the badges' opacity/scale `ov-pop`, so the two don't fight. The ✕ rides above
+   via its own z-index; the shake moves the whole card, ✕ included. */
+.unit.dying-new {
+  animation: death-strike 0.5s ease-out both;
+  z-index: 5; /* lift the dying card over its neighbours while it shakes */
+}
+
+@keyframes death-strike {
+  0% {
+    transform: translateX(0) scale(1);
+    filter: grayscale(0) brightness(1.6) saturate(1.4);
+    box-shadow:
+      0 0 0 2px rgba(255, 59, 84, 0.95),
+      0 0 18px 4px rgba(255, 59, 84, 0.85);
+  }
+  18% {
+    transform: translateX(-3px) scale(1.05);
+    filter: grayscale(0) brightness(1.5) saturate(1.4);
+  }
+  36% {
+    transform: translateX(3px) scale(1.03);
+    filter: grayscale(0.3) brightness(1.2);
+  }
+  54% {
+    transform: translateX(-2px) scale(1.01);
+    filter: grayscale(0.6) brightness(1);
+  }
+  72% {
+    transform: translateX(2px) scale(1);
+    filter: grayscale(0.85);
+    box-shadow:
+      0 0 0 1px rgba(255, 59, 84, 0.4),
+      0 0 8px 2px rgba(255, 59, 84, 0.25);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    filter: grayscale(1);
+    box-shadow: none;
+  }
+}
+
+/* Reduced motion: no flash/shake — the card lands directly on the grey + ✕ end-
+   state (the .unit.dying styles still apply), so death is still unmistakable, just
+   not animated. */
+@media (prefers-reduced-motion: reduce) {
+  .unit.dying-new {
+    animation: none;
+  }
 }
 
 /* The persistent COIN MARKER (#065 slice 3): the unit that holds the coin (the

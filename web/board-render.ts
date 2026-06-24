@@ -5,6 +5,7 @@
 
 import type { BeatOverlay, BoardState, BoardUnit, Side, StatusRegistry } from "../src/index.js";
 import { overlayHasContent } from "../src/index.js";
+import { statusColorStyle } from "./status-color.js";
 import { unitCardHtml } from "./unit-card.js";
 
 const esc = (s: string): string =>
@@ -18,18 +19,31 @@ const esc = (s: string): string =>
  * an absorb that heals back stays visible as both, never netted). An empty/
  * netted-out overlay draws nothing. The death ✕ is the dying-in-place mark on
  * the card itself, so it is NOT repeated here. */
-function overlayBadgesHtml(o: BeatOverlay | undefined): string {
+function overlayBadgesHtml(o: BeatOverlay | undefined, newKeys: Set<string> | undefined): string {
   if (!o || !overlayHasContent(o)) return "";
+  // Only a NEWLY-appearing (or changed) badge plays the reveal — `ov-new` arms
+  // the `ov-pop` animation in CSS, exactly as `bc-line-new` does for card lines.
+  // The overlay layer re-renders its whole HTML each step, so without this every
+  // badge re-ran its pop each step a new badge appeared (the director's "all of
+  // them play the fade in when a new one appears"). `newKeys` (from
+  // newBadgeKeysAt) names the keys whose number just moved; the rest paint static.
+  // Each key mirrors badgeValues (`dmg`/`heal`/`stat:<n>`/`status:<n>`) so the
+  // diff and the render never drift. A status badge carries a hash-stable colour
+  // (#065 item 2: same status → same hue everywhere) via statusColorStyle, which
+  // tints the badge family's --ov-fg/--ov-ring to the per-status hue.
+  const fresh = (key: string): string => (newKeys?.has(key) === true ? " ov-new" : "");
   const badges: string[] = [];
-  if (o.damage > 0) badges.push(`<span class="ov-badge ov-dmg">−${o.damage}</span>`);
-  if (o.heal > 0) badges.push(`<span class="ov-badge ov-heal">+${o.heal}</span>`);
+  if (o.damage > 0) badges.push(`<span class="ov-badge ov-dmg${fresh("dmg")}">−${o.damage}</span>`);
+  if (o.heal > 0) badges.push(`<span class="ov-badge ov-heal${fresh("heal")}">+${o.heal}</span>`);
   for (const [stat, delta] of Object.entries(o.statChanges)) {
     if (delta === 0) continue;
-    badges.push(`<span class="ov-badge ov-stat">${delta > 0 ? "+" : ""}${delta} ${esc(stat)}</span>`);
+    badges.push(`<span class="ov-badge ov-stat${fresh(`stat:${stat}`)}">${delta > 0 ? "+" : ""}${delta} ${esc(stat)}</span>`);
   }
   for (const [status, delta] of Object.entries(o.statusDeltas)) {
     if (delta === 0) continue;
-    badges.push(`<span class="ov-badge ov-status">${delta > 0 ? "+" : ""}${delta} ${esc(status)}</span>`);
+    badges.push(
+      `<span class="ov-badge ov-status${fresh(`status:${status}`)}" style="${statusColorStyle(status)}">${delta > 0 ? "+" : ""}${delta} ${esc(status)}</span>`,
+    );
   }
   if (badges.length === 0) return "";
   return `<span class="ov-layer" aria-hidden="true">${badges.join("")}</span>`;
@@ -41,6 +55,14 @@ function overlayBadgesHtml(o: BeatOverlay | undefined): string {
 export interface UnitOverlays {
   /** unit id → its accumulated beat overlay (drives badges + dying mark). */
   by: Map<string, BeatOverlay>;
+  /** unit id → the overlay-badge keys that just appeared/changed THIS step, so
+   * only a newly-revealed badge plays its reveal (the rest stay static — mirrors
+   * the card-line `bc-line-new` fix). Absent/empty → every badge paints static. */
+  newBadges?: Map<string, Set<string>>;
+  /** unit ids whose Death is REVEALED this step (died flips false→true) — they
+   * play the distinct death animation once, at the death-reveal moment (#065
+   * item 4). On any later step in the beat they keep the static grey+✕ end-state. */
+  dyingNew?: Set<string>;
 }
 
 /** The persistent coin marker (#065 slice 3): a unit that HOLDS the coin (the
@@ -59,8 +81,9 @@ function coinMarkerHtml(holds: boolean): string {
 function unitCard(
   u: BoardUnit,
   displayName: string,
+  side: Side,
   registry: StatusRegistry,
-  opts: { front: boolean; dead: boolean; dying: boolean; hit: boolean; sel: boolean; overlay?: BeatOverlay | undefined; coin?: boolean },
+  opts: { front: boolean; dead: boolean; dying: boolean; dyingNew?: boolean; hit: boolean; sel: boolean; overlay?: BeatOverlay | undefined; newKeys?: Set<string> | undefined; coin?: boolean },
 ): string {
   // The tooltip slot carries player-useful state, never the internal id (IA-7).
   const title = opts.dead
@@ -69,6 +92,7 @@ function unitCard(
   return unitCardHtml({
     artName: u.name,
     label: displayName,
+    side, // tints the name by team (#065 item 2)
     hp: `${u.hp}/${u.maxHp}`,
     pwr: u.pwr,
     statuses: u.statuses,
@@ -76,12 +100,13 @@ function unitCard(
     front: opts.front,
     dead: opts.dead,
     dying: opts.dying,
+    dyingNew: opts.dyingNew === true,
     hit: opts.hit,
     sel: opts.sel,
     silenced: u.silenced,
     attrs: `data-unit="${esc(u.id)}"`,
     title,
-    overlay: overlayBadgesHtml(opts.overlay),
+    overlay: overlayBadgesHtml(opts.overlay, opts.newKeys),
     marker: coinMarkerHtml(opts.coin === true),
   });
 }
@@ -97,6 +122,8 @@ function sideHtml(
   coinHolder: string | undefined,
 ): string {
   const ov = (id: string): BeatOverlay | undefined => overlays?.by.get(id);
+  const nb = (id: string): Set<string> | undefined => overlays?.newBadges?.get(id);
+  const dyingNow = (id: string): boolean => overlays?.dyingNew?.has(id) === true;
   const holdsCoin = (id: string): boolean => coinHolder !== undefined && id === coinHolder;
   // A unit whose Death landed in the OPEN beat greys + ✕ IN PLACE for the rest
   // of its beat, then collapses to the grave at the next beat (#065 slice 2).
@@ -113,33 +140,36 @@ function sideHtml(
   const line =
     lineUnits
       .map((u, i) =>
-        unitCard(u, name(u.id), registry, {
+        unitCard(u, name(u.id), side, registry, {
           front: i === 0,
           dead: false,
           dying: false,
           hit: hit.has(u.id),
           sel: u.id === selected,
           overlay: ov(u.id),
+          newKeys: nb(u.id),
           coin: holdsCoin(u.id),
         }),
       )
       .join("") +
     dyingFromGrave
       .map((u) =>
-        unitCard(u, name(u.id), registry, {
+        unitCard(u, name(u.id), side, registry, {
           front: false,
           dead: false,
           dying: true,
+          dyingNew: dyingNow(u.id),
           hit: hit.has(u.id),
           sel: u.id === selected,
           overlay: ov(u.id),
+          newKeys: nb(u.id),
           coin: holdsCoin(u.id),
         }),
       )
       .join("");
   const grave = restGrave
     .map((u) =>
-      unitCard(u, name(u.id), registry, {
+      unitCard(u, name(u.id), side, registry, {
         front: false,
         dead: true,
         dying: false,
