@@ -235,6 +235,14 @@ async function defectBHitTruth(page) {
 //   • persist through the read-pause — the badge is still present at beat.end.
 //   • clear at the next beat — stepping into the next beat removes it.
 
+// Legibility floor for the rendered damage badge (#065 damage-legibility fix).
+// Measured layout (offset) sizes: the old red-on-red "−N" pill that drowned in
+// the hit-halo is 22×14px; the enlarged, darkened badge is 27×17px. The floor
+// sits strictly between, so the old size FAILS and the new PASSES — a shrink back
+// toward the unreadable original turns the probe red (must-fail-first verified).
+const MIN_BADGE_W = 24; // px — old 22px wide; new 27px
+const MIN_BADGE_H = 15; // px — old 14px tall; new 17px
+
 /** The damage badge total drawn on each unit at the current step:
  * data-unit → the integer in its `.ov-dmg` badge (absent → not present). */
 const damageBadges = (page) =>
@@ -292,6 +300,15 @@ async function badgesInSyncWithLines(page, { requireMultiHit }) {
   let badgeSteps = 0; // steps where at least one damage badge is on a hero
   let multiHitSeen = false; // a beat where one unit's badge summed ≥2 hits
   let clearSeen = false; // a badge present in one beat, gone at the next step's new beat
+  // Legibility-size accumulator (#065 damage-legibility fix): the widest/tallest
+  // rendered damage badge seen across the walk. The original badge was ~13×8px —
+  // small enough that, sat on the red hit-halo as a red-on-red pill, the −N number
+  // drowned in the glow (the director's twice-reported "no text on heroes"). The
+  // fix enlarged + darkened it; this records the painted size so a future shrink
+  // back toward that reddened size turns the probe red. Measured ON a hero card
+  // (`.unit .ov-layer .ov-dmg`), so it is the real rendered pill, not the markup.
+  let maxBadgeW = 0;
+  let maxBadgeH = 0;
 
   let prevBeat = null;
   let prevHadBadge = false;
@@ -305,6 +322,21 @@ async function badgesInSyncWithLines(page, { requireMultiHit }) {
         firstMismatch = `step ${n}: badges=${JSON.stringify(badges)} expected=${JSON.stringify(expected)}`;
     }
     if (Object.keys(badges).length > 0) badgeSteps++;
+    // Record the rendered size of the damage badge at this step (if shown). The
+    // pop animation scales 0.6→1 over 0.22s; the offset (layout) box is immune to
+    // that transform, so it reports the SETTLED size even on a mid-pop frame. Take
+    // the max across the walk so the widest "−N" the run shows sets the floor.
+    const dim = await page.evaluate(() => {
+      const b = document.querySelector(".unit[data-unit] .ov-layer .ov-dmg");
+      if (!b) return null;
+      // offset size is the LAYOUT box — unaffected by the `ov-pop` scale transform,
+      // so it reports the settled badge size even on a mid-pop frame.
+      return { w: b.offsetWidth, h: b.offsetHeight };
+    });
+    if (dim) {
+      maxBadgeW = Math.max(maxBadgeW, dim.w);
+      maxBadgeH = Math.max(maxBadgeH, dim.h);
+    }
     // Multi-hit: an expected total that exceeds any single hit implies ≥2 summed.
     // We detect it structurally — a unit whose damage total is present AND the
     // beat revealed ≥2 hurt lines for it.
@@ -380,6 +412,17 @@ async function badgesInSyncWithLines(page, { requireMultiHit }) {
   }
   check(persistOk, "overlay: a damage badge PERSISTS through the read-pause (present at beat.end)", persistDetail);
   check(clearSeen, "overlay: badges CLEAR at the next beat (badged → next beat shows none)", clearSeen ? "badge present in a beat, gone at the next beat" : "no clear transition observed");
+  // Minimum legible size (#065 damage-legibility fix). A badge below this is the
+  // ~13×8px red-on-red pill that drowned in the hit-halo; the enlarged, darkened
+  // badge clears it comfortably. Asserting a floor (not the exact size) keeps the
+  // pill free to grow with a longer number but reddens the probe if someone
+  // shrinks it back toward the unreadable original. Must-fail-first: lowering the
+  // badge `font-size`/`padding` toward the old values drops it under this floor.
+  check(
+    maxBadgeW >= MIN_BADGE_W && maxBadgeH >= MIN_BADGE_H,
+    `overlay: the damage badge is rendered at a legible size (≥${MIN_BADGE_W}×${MIN_BADGE_H}px), not the old red-on-red sliver`,
+    `widest damage badge seen = ${Math.round(maxBadgeW)}×${Math.round(maxBadgeH)}px`,
+  );
 }
 
 // Each probe gets a fresh run/page so the transport starts clean (the battle is

@@ -545,40 +545,58 @@ button:disabled:hover {
    several badges on one unit (−dmg, +heal, ±status, +pwr) all stay legible. */
 .ov-layer {
   position: absolute;
-  /* Inside the card's right edge — a negative offset would extend the line's
-     scroll width and trip the no-overflow LS check (probe-beats). The badges
-     overlay the card's own top-right corner, clear of the art. */
+  /* Top-LEFT corner now (#065 damage-legibility fix): the hit halo's glow is
+     strongest at its CENTRE (`radial-gradient circle at 50% 45%`), so a badge
+     in a corner already sits off the brightest red — and the left corner keeps
+     the damage number clear of the level badge / front-tag, which ride the top
+     centre/right. A negative offset would extend the line's scroll width and
+     trip the no-overflow LS check (probe-beats), so the layer stays INSIDE the
+     card edge. */
   top: 0.15rem;
-  right: 0.15rem;
+  left: 0.15rem;
   /* Stay within the card so a long status badge ("+2 Strength") never bleeds
      past either edge and trips the no-overflow LS check. */
   max-width: calc(100% - 0.3rem);
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 0.12rem;
   z-index: 3;
   pointer-events: none;
 }
 
+/* The badge family is DARK-on-card with a bold COLOURED number (#065 damage-
+   legibility fix). The old scheme filled each pill with its family colour and
+   wrote the number in white — so the red −N pill sat red-on-red on the `.unit.hit`
+   damage halo and the white digit drowned in the glow (the director's twice-
+   reported "no text on heroes"). Inverting it — a near-black fill with the
+   number in a BRIGHT family colour — makes every badge read DARK against the red
+   halo (and against the card art), and the coloured digit, not the pill, carries
+   the family meaning. Bigger + heavier than before so the number pops at a glance
+   in motion; a coloured ring + black halo keep its edge crisp over any backdrop. */
 .ov-badge {
-  font-size: 0.58rem;
-  font-weight: 700;
-  line-height: 1.2;
-  padding: 0.02rem 0.28rem;
-  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  padding: 0.05rem 0.34rem;
+  border-radius: 6px;
   white-space: nowrap;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #fff;
-  /* A dark ring + drop shadow so a red −N badge stays legible even where it
-     overlaps the red `.unit.hit` damage halo (which shares the damage colour);
-     without the outline the pill bleeds into the glow. */
-  border: 1px solid rgba(0, 0, 0, 0.55);
+  /* Near-opaque dark fill so the pill reads dark over the red hit-halo, the card
+     art, or a side tint — the number's contrast comes from dark-vs-bright, not
+     a same-hue pill on a same-hue glow. */
+  background: rgba(10, 11, 14, 0.92);
+  border: 1px solid var(--ov-ring, rgba(0, 0, 0, 0.6));
+  color: var(--ov-fg, #fff);
+  /* A black halo (outer ring + drop shadow) seats the dark pill on any backdrop;
+     the per-type ring above tints its edge so the family still reads at a glance. */
   box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(0, 0, 0, 0.25);
+    0 1px 3px rgba(0, 0, 0, 0.7),
+    0 0 0 1.5px rgba(0, 0, 0, 0.55);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.8);
   animation: ov-pop 0.22s ease-out;
 }
 
@@ -593,20 +611,28 @@ button:disabled:hover {
   }
 }
 
+/* Per-type: a BRIGHT number colour (the family hue) + a tinted edge ring. The
+   damage badge's number is the same bright red as the hit mark — red still means
+   damage — but now it is red text on a near-black pill, not a red pill, so it
+   stays legible sitting on the red halo. */
 .ov-dmg {
-  background: var(--hit-mark); /* red — matches the damage hit mark */
+  --ov-fg: #ff6b7e; /* bright red — damage, the hit-mark hue lightened to read on dark */
+  --ov-ring: rgba(255, 59, 84, 0.85);
 }
 
 .ov-heal {
-  background: #3fbf6f; /* green — kept separate from damage, never netted */
+  --ov-fg: #58e08c; /* green — kept separate from damage, never netted */
+  --ov-ring: rgba(63, 191, 111, 0.8);
 }
 
 .ov-status {
-  background: rgba(180, 138, 214, 0.92); /* the status family's purple */
+  --ov-fg: #cba6e8; /* the status family's purple */
+  --ov-ring: rgba(180, 138, 214, 0.8);
 }
 
 .ov-stat {
-  background: #d8a23a; /* amber — a stat buff (+pwr, +maxHp) */
+  --ov-fg: #f0bf5a; /* amber — a stat buff (+pwr, +maxHp) */
+  --ov-ring: rgba(216, 162, 58, 0.8);
 }
 
 /* Dying-in-place (#065 slice 2): the unit greys and shows a ✕ in its line slot
