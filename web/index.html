@@ -301,8 +301,15 @@
             🔒 lock seed
           </label>
           <button type="button" id="be-fight" class="be-fight">Fight</button>
+          <label class="be-runs-row" title="Run both teams across N seeds and report the win-rate band. A matchup is a distribution, not one fight — this is the real balance read.">
+            ×
+            <input id="be-runs" type="number" value="100" min="1" step="1" />
+          </label>
+          <button type="button" id="be-run-n" class="be-run-n">Run ×N</button>
           <p id="be-error" role="alert" hidden></p>
         </div>
+
+        <div id="be-band" hidden></div>
 
         <div id="be-mount"></div>
       </section>

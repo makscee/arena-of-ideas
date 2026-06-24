@@ -1498,11 +1498,61 @@ button:disabled:hover {
   font-weight: 600;
 }
 
+.be-runs-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.be-runs-row input {
+  width: 4.5rem;
+}
+
+.be-run-n {
+  font-weight: 600;
+}
+
 #be-error {
   flex-basis: 100%;
   margin: 0;
   color: var(--warn);
   font-size: 0.8rem;
+}
+
+/* ---------- Run ×N win-rate band (#066 slice 3) ---------- */
+
+#be-band {
+  margin: 1rem 0;
+  padding: 0.8rem 1rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.be-band-head {
+  font-size: 0.8rem;
+  color: var(--muted, #888);
+  margin-bottom: 0.4rem;
+}
+
+.be-band-rates {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.be-band-sep {
+  color: var(--muted, #888);
+  font-weight: 400;
+}
+
+.be-band-counts {
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--muted, #888);
 }
 
 /* ---------- unit palette popover (#066 slice 2, reused by slice 4) ---------- */

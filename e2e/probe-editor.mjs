@@ -146,6 +146,24 @@ async function scenario(viewport, tag) {
     `${first.label} → ${second.label}`,
   );
 
+  // 5. Run ×N (slice 3): sweep both teams across N seeds and report a win-rate
+  //    band instead of mounting a replay. Set a small, fast N, click, and assert
+  //    a band with a percentage and W/L/D counts appears. Exercise the click —
+  //    the readout is the editor's own output, not anything the probe computes.
+  check(await page.locator("#be-run-n").isVisible(), `${tag} Run ×N button is shown`);
+  check(await page.locator("#be-band").isHidden(), `${tag} no band before Run ×N is clicked`);
+  await page.fill("#be-runs", "20");
+  await page.click("#be-run-n");
+  await page.waitForSelector("#be-band:not([hidden])");
+  const bandRates = await page.locator("#be-band .be-band-rates").innerText();
+  const bandCounts = await page.locator("#be-band .be-band-counts").innerText();
+  check(/A \d+(\.\d+)?%/.test(bandRates), `${tag} the band reports a win-rate percentage`, bandRates);
+  check(
+    /\d+W \/ \d+L \/ \d+D over 20 runs/.test(bandCounts),
+    `${tag} the band reports W/L/D counts over the N runs`,
+    bandCounts,
+  );
+
   await ctx.close();
 }
 

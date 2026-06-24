@@ -64,3 +64,11 @@ export function sweep(input: SweepInput, n: number, startSeed = 0): SweepResult 
   const outcomes = [...sweepSeeds(input, n, startSeed)];
   return { ...summarizeSweep(outcomes), outcomes };
 }
+
+/** A side's win-rate as a 0..1 fraction (0 when no battles ran). The "band"
+ * Run ×N reports is just summarizeSweep's counts read this way — the same
+ * percentage the gauntlet's table prints, named once. */
+export function winRate(stats: SweepStats, side: Side = "A"): number {
+  if (stats.n === 0) return 0;
+  return (side === "A" ? stats.aWins : stats.bWins) / stats.n;
+}

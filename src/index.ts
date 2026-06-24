@@ -12,7 +12,7 @@ export type { RunInput, RunState, RunStatus, RunEndReason, RunUnit, RunDecision,
 export { InMemoryLadderStore, PersistedLadderStore, openLadder, emptyLadderData, parseLadderData, BOOTSTRAP_RUN_ID } from "./ladder.js";
 export type { LadderStore, LadderData, TeamSnapshot } from "./ladder.js";
 export * from "./tunables.js";
-export { sweep, sweepSeeds, sweepOutcome, summarizeSweep } from "./sweep.js";
+export { sweep, sweepSeeds, sweepOutcome, summarizeSweep, winRate } from "./sweep.js";
 export type { SweepInput, SweepOutcome, SweepStats, SweepResult } from "./sweep.js";
 export { runGate, formatGateReport } from "./gate.js";
 export type { GateConfig, GateReport, MatchupResult, ReferenceTeam } from "./gate.js";

@@ -14,6 +14,8 @@ import {
   battle,
   codexUnits,
   stressRegistry,
+  sweep,
+  winRate,
   type StatusRegistry,
   type UnitDef,
 } from "../src/index.js";
@@ -43,6 +45,11 @@ export interface BattleEditorEls {
   reroll: HTMLButtonElement;
   lock: HTMLInputElement;
   fight: HTMLButtonElement;
+  /** Run ×N: the seed-sweep count and its trigger. */
+  runs: HTMLInputElement;
+  runN: HTMLButtonElement;
+  /** Where the win-rate band is reported (instead of a replay). */
+  band: HTMLElement;
   error: HTMLElement;
   /** Where the shared viewer DOM is reparented while a fight plays. */
   mount: HTMLElement;
@@ -202,8 +209,10 @@ export function createBattleEditor(els: BattleEditorEls, deps: BattleEditorDeps)
   function renderBoth(): void {
     renderColumn("A");
     renderColumn("B");
-    // Fight needs at least one unit a side — an empty team can't battle.
-    els.fight.disabled = teams.A.length === 0 || teams.B.length === 0;
+    // Fight / Run ×N need at least one unit a side — an empty team can't battle.
+    const empty = teams.A.length === 0 || teams.B.length === 0;
+    els.fight.disabled = empty;
+    els.runN.disabled = empty;
   }
 
   // ----- editing (delegated, so a re-render rebuilds freely) -----
@@ -325,6 +334,7 @@ export function createBattleEditor(els: BattleEditorEls, deps: BattleEditorDeps)
 
   function fight(): void {
     clearError();
+    els.band.hidden = true; // a single replay supersedes a prior band readout
     if (teams.A.length === 0 || teams.B.length === 0) {
       flag("both teams need at least one unit.");
       return;
@@ -351,6 +361,59 @@ export function createBattleEditor(els: BattleEditorEls, deps: BattleEditorDeps)
   }
 
   els.fight.addEventListener("click", fight);
+
+  // ----- Run ×N: the win-rate band (the real balance read; one fight is noise) -----
+
+  /** Read the runs box; an empty/non-positive value flags rather than sweeping
+   * zero seeds. */
+  function readRuns(): number | undefined {
+    const raw = els.runs.value.trim();
+    const n = Number(raw);
+    if (raw === "" || !Number.isInteger(n) || n < 1) {
+      flag("Run count must be a positive whole number.");
+      return undefined;
+    }
+    return n;
+  }
+
+  // Run the two CURRENT teams across N seeds from the editor's current seed and
+  // report the win-rate band — no replay mounted. The sweep is the pure kernel
+  // function (src/sweep.ts), so the same teams + seed + N give the same band
+  // every time. The viewer is left as-is (a prior replay stays visible below).
+  function runN(): void {
+    clearError();
+    if (teams.A.length === 0 || teams.B.length === 0) {
+      flag("both teams need at least one unit.");
+      return;
+    }
+    const n = readRuns();
+    if (n === undefined) return;
+    const baseSeed = readSeed();
+    if (baseSeed === undefined) return;
+    const teamA = clone(teams.A);
+    const teamB = clone(teams.B);
+    let result;
+    try {
+      result = sweep({ teamA, teamB, statuses: deps.registry }, n, baseSeed);
+    } catch (err) {
+      flag(`Sweep failed: ${(err as Error).message}`);
+      return;
+    }
+    const aPct = (winRate(result, "A") * 100).toFixed(1);
+    const bPct = (winRate(result, "B") * 100).toFixed(1);
+    els.band.innerHTML =
+      `<div class="be-band-head">Win-rate band — ${n} seeds from ${baseSeed}</div>` +
+      `<div class="be-band-rates">` +
+      `<span class="be-band-a">A ${aPct}%</span>` +
+      `<span class="be-band-sep">·</span>` +
+      `<span class="be-band-b">B ${bPct}%</span>` +
+      `</div>` +
+      `<div class="be-band-counts">${result.aWins}W / ${result.bWins}L / ${result.draws}D over ${result.n} runs</div>`;
+    els.band.hidden = false;
+    els.band.scrollIntoView({ block: "nearest" });
+  }
+
+  els.runN.addEventListener("click", runN);
 
   // ----- the shared viewer DOM (borrowed exactly like run-screen) -----
 

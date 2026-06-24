@@ -3,7 +3,7 @@
 
 import { describe, expect, test } from "vitest";
 import { battle, winnerOf } from "./battle.js";
-import { summarizeSweep, sweep, sweepOutcome, sweepSeeds } from "./sweep.js";
+import { summarizeSweep, sweep, sweepOutcome, sweepSeeds, winRate } from "./sweep.js";
 import { stressRegistry, Venomancer, Summoner } from "./content/stress.js";
 import type { SweepInput } from "./sweep.js";
 import type { UnitDef } from "./types.js";
@@ -87,5 +87,48 @@ describe("sweep", () => {
     const head = sweep(COIN, 10);
     const tail = sweep(COIN, 5, 5);
     expect(tail.outcomes).toEqual(head.outcomes.slice(5));
+  });
+});
+
+// The Run ×N band — the editor's win-rate readout. A band is summarizeSweep's
+// counts, read as a win-rate fraction; these pin the four properties the editor
+// surfaces: deterministic, lopsided extremes, counts close, mirror sane.
+describe("Run ×N band (winRate)", () => {
+  // A wall that can't be hurt vs a wall that can't hurt: A always wins.
+  const LOPSIDED: SweepInput = { teamA: [grunt("Hammer", 50, 50)], teamB: [grunt("Paper", 1, 0)] };
+
+  test("deterministic band: same inputs run twice give the identical band", () => {
+    const a = sweep(STRESS, 50);
+    const b = sweep(STRESS, 50);
+    expect(winRate(a)).toBe(winRate(b)); // byte-identical, not just close
+    expect(a.aWins).toBe(b.aWins);
+    expect(a.bWins).toBe(b.bWins);
+    expect(a.draws).toBe(b.draws);
+  });
+
+  test("a lopsided matchup reports ~100% for A and ~0% for B", () => {
+    const r = sweep(LOPSIDED, 50);
+    expect(winRate(r, "A")).toBe(1);
+    expect(winRate(r, "B")).toBe(0);
+  });
+
+  test("the counts sum to runs", () => {
+    const r = sweep(STRESS, 37);
+    expect(r.n).toBe(37);
+    expect(r.aWins + r.bWins + r.draws).toBe(37);
+  });
+
+  test("a mirror matchup is sane: a side's win-rate is in [0,1] and A+B+draws cover it", () => {
+    const mirror: SweepInput = { teamA: [grunt("Twin", 6, 3)], teamB: [grunt("Twin", 6, 3)] };
+    const r = sweep(mirror, 40);
+    const wA = winRate(r, "A");
+    const wB = winRate(r, "B");
+    expect(wA).toBeGreaterThanOrEqual(0);
+    expect(wA).toBeLessThanOrEqual(1);
+    expect(wA + wB + r.draws / r.n).toBeCloseTo(1, 10);
+  });
+
+  test("winRate of an empty sweep is 0, not NaN", () => {
+    expect(winRate({ n: 0, aWins: 0, bWins: 0, draws: 0, totalTurns: 0 })).toBe(0);
   });
 });
