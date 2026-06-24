@@ -9,6 +9,8 @@
 //      explicitly approved, validated record reaches mergePool's output.
 
 import { describe, expect, test } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { stressRegistry } from "../content/stress.js";
 import { DEFAULT_RUN_POOL } from "../tunables.js";
 import { mergePool, parseApprovedRegistry } from "../registry.js";
@@ -19,10 +21,10 @@ import {
   readConvergedAttempt,
   serializeRecord,
 } from "./provenance.js";
-import type { RunManifest } from "./provenance.js";
+import type { CandidateRecord, RunManifest } from "./provenance.js";
 import type { GauntletResult } from "./worker.js";
 import { parseCandidateRecord } from "./candidates.js";
-import { approveInto } from "./approve.js";
+import { approveInto, reSimCandidate, ResimRejectedError, RESIM_WIN_RATE_TOLERANCE } from "./approve.js";
 
 // --- fixtures --------------------------------------------------------------
 
@@ -61,6 +63,21 @@ const FROSTER: UnitDef = {
     },
   ],
 };
+
+// The real committed frostbite-striker team + its true recorded gate stats. Used
+// by the approve / pool-isolation blocks because PRD #067 slice 3 makes approve
+// RE-SIM: a record only approves if its units genuinely re-sim in-band AND its
+// recorded win-rate matches the re-sim. FROSTER alone re-sims underpowered (0%),
+// so the bookkeeping tests below drive the honest, in-band team the gate accepts.
+// (Loaded from the committed candidate so the fixture and the real artifact never
+// drift — the frostbite-striker convergence is the slice's honest reference.)
+const HONEST: CandidateRecord = parseCandidateRecord(
+  JSON.parse(readFileSync(join(import.meta.dirname, "..", "..", "candidates", "frostbite-striker.json"), "utf8")),
+  stressRegistry,
+  "frostbite-striker.json",
+);
+/** The honest team's NEW unit (Glacier and Squire are shipped/skipped). */
+const HONEST_NEW_NAME = "Frostbiter";
 
 const MANIFEST: RunManifest = {
   ideaText: "A frosty striker.",
@@ -139,22 +156,29 @@ describe("readConvergedAttempt", () => {
 
 describe("approve", () => {
   const shippedNames = DEFAULT_RUN_POOL.map((u) => u.name);
-  const record = buildRecord("froster", [FROSTER], MANIFEST, PASSED, 3);
+  // The bookkeeping tests drive the HONEST team — approve RE-SIMS (PRD #067 s3),
+  // so only a record whose units genuinely land in-band reaches the merge logic.
+  // Frostbiter + Glacier are new; Squire is shipped (skipped).
+  const honest = (id: string, creator = "maks"): CandidateRecord => ({
+    ...HONEST,
+    id,
+    provenance: { ...HONEST.provenance, creator },
+  });
 
-  test("adds the new unit, stamps creator credit, validates the pool", () => {
-    const next = approveInto({ units: [] }, record, shippedNames, stressRegistry);
-    expect(next.units.map((u) => u.name)).toEqual(["Froster"]);
-    expect(next.units[0]!._creator).toBe("maks");
+  test("adds the new units, stamps creator credit, validates the pool", () => {
+    const next = approveInto({ units: [] }, honest("frostbite-striker"), shippedNames, stressRegistry);
+    expect(next.units.map((u) => u.name)).toEqual(["Frostbiter", "Glacier"]); // Squire shipped → skipped
+    expect(next.units.every((u) => u._creator === "maks")).toBe(true);
     // the merged playable pool is valid and draftable.
     const pool = mergePool(DEFAULT_RUN_POOL, next.units);
-    expect(pool.some((u) => u.name === "Froster")).toBe(true);
+    expect(pool.some((u) => u.name === HONEST_NEW_NAME)).toBe(true);
     expect(() => parseApprovedRegistry(next, stressRegistry)).not.toThrow();
   });
 
   test("skips shipped support units in the candidate team (only new ones move)", () => {
-    const team = buildRecord("mix", [FROSTER, { name: "Squire", base: { hp: 8, pwr: 2 } }], MANIFEST, PASSED, 1);
-    const next = approveInto({ units: [] }, team, shippedNames, stressRegistry);
-    expect(next.units.map((u) => u.name)).toEqual(["Froster"]); // Squire is shipped — skipped
+    // Squire is part of the honest team and is shipped — it is skipped, not moved.
+    const next = approveInto({ units: [] }, honest("frostbite-striker"), shippedNames, stressRegistry);
+    expect(next.units.map((u) => u.name)).not.toContain("Squire");
   });
 
   test("refuses a candidate that introduces no new unit", () => {
@@ -163,9 +187,9 @@ describe("approve", () => {
   });
 
   test("refuses a name collision with an already-approved unit", () => {
-    const current = approveInto({ units: [] }, record, shippedNames, stressRegistry);
-    const dup = buildRecord("froster-2", [{ ...FROSTER }], { ...MANIFEST, creator: "eve" }, PASSED, 1);
-    expect(() => approveInto(current, dup, shippedNames, stressRegistry)).toThrow(/collides/);
+    const current = approveInto({ units: [] }, honest("frostbite-striker"), shippedNames, stressRegistry);
+    // A second honest record (same in-band team, different id/creator) collides on Frostbiter.
+    expect(() => approveInto(current, honest("frostbite-2", "eve"), shippedNames, stressRegistry)).toThrow(/collides/);
   });
 
   test("refuses a name collision with a shipped unit (renamed-candidate guard)", () => {
@@ -174,6 +198,100 @@ describe("approve", () => {
     // is the right loud refusal. A mixed team's shipped-name unit is skipped (above).
     const collide = buildRecord("c", [{ name: "Venomancer", base: { hp: 9, pwr: 3 } }], MANIFEST, PASSED, 1);
     expect(() => approveInto({ units: [] }, collide, shippedNames, stressRegistry)).toThrow();
+  });
+});
+
+// --- 2b. approve RE-SIMS — a forged in-band record cannot self-approve --------
+//
+// PRD #067 slice 3. The hole (Cass, #013 slice 4): approve TRUSTED the candidate
+// file's recorded gate stats and promoted with no re-sim, so a hand-forged
+// "in-band" stat over truly-overtuned data (a 999-power unit) got approved. This
+// block reproduces that forge and proves approve now re-sims and refuses it.
+
+describe("approve re-sims (forge containment)", () => {
+  const shippedNames = DEFAULT_RUN_POOL.map((u) => u.name);
+
+  // THE FORGE: a 999-power unit whose recorded gate LIES — it claims the honest
+  // in-band stats (PASSED, 0.5) while the unit data is wildly overtuned. Content-
+  // valid (a big base stat is legal DSL), so it sails past the validator; only a
+  // re-sim catches that it is not actually in-band.
+  const OVERTUNED: UnitDef = { name: "OvertunedOgre", base: { hp: 999, pwr: 999 } };
+  const forged = buildRecord("forged-ogre", [OVERTUNED], MANIFEST, PASSED, 1);
+
+  test("the forged record CLAIMS in-band (the lie the old approve trusted)", () => {
+    // The record on disk asserts an in-band verdict — exactly what pre-slice
+    // approve read and believed. The data underneath does not earn it.
+    expect(forged.gate.verdict).toBe("in-band");
+    expect(forged.gate.overallWinRate).toBe(0.5);
+  });
+
+  test("PRE-slice behaviour: trusting the record would approve the forge", () => {
+    // Simulate the OLD approve (bookkeeping only, no re-sim): the structural guards
+    // pass (OvertunedOgre is new + non-colliding), so a trust-the-record approve
+    // would have promoted it. This is the hole the slice closes.
+    const newUnits = forged.units.filter((u) => !new Set(shippedNames).has(u.name));
+    expect(newUnits.map((u) => u.name)).toEqual(["OvertunedOgre"]); // would have been promoted
+  });
+
+  test("POST-slice: approve re-sims and REJECTS the forge loudly with the real numbers", () => {
+    let thrown: unknown;
+    try {
+      approveInto({ units: [] }, forged, shippedNames, stressRegistry);
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown).toBeInstanceOf(ResimRejectedError);
+    const e = thrown as ResimRejectedError;
+    // Loud: the message names the out-of-band verdict and the re-sim win-rate.
+    expect(e.message).toMatch(/OUT OF BAND/);
+    expect(e.message).toMatch(/overtuned/);
+    // The re-sim numbers are the truth, not the forged 0.5 — a 999-power unit
+    // crushes the reference meta, so the real win-rate is far above the band.
+    expect(e.report.verdict).toBe("overtuned");
+    expect(e.report.pass).toBe(false);
+    expect(e.report.overallWinRate).toBeGreaterThan(forged.gate.band.max);
+    expect(e.report.overallWinRate).not.toBe(forged.gate.overallWinRate);
+  });
+
+  test("the forged unit never reaches the registry", () => {
+    expect(() => approveInto({ units: [] }, forged, shippedNames, stressRegistry)).toThrow(ResimRejectedError);
+    // and nothing was promoted (approveInto is pure; it throws before returning).
+  });
+
+  // A subtler forge: honest-LOOKING units but a recorded win-rate that disagrees
+  // with the truth. Even if the verdict were in-band, a lied-about number is
+  // rejected by the tolerance check — the record must match the re-sim.
+  test("rejects a record whose recorded win-rate disagrees with the re-sim (the record lied)", () => {
+    // Start from the honest team (re-sims in-band at 0.6467) but tamper the
+    // recorded win-rate to a different in-band value (0.40). Verdict would pass,
+    // but the recorded number no longer matches the re-sim → rejected.
+    const lied: CandidateRecord = {
+      ...HONEST,
+      id: "honest-but-lied",
+      gate: { ...HONEST.gate, overallWinRate: 0.4 },
+    };
+    let thrown: unknown;
+    try {
+      approveInto({ units: [] }, lied, shippedNames, stressRegistry);
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown).toBeInstanceOf(ResimRejectedError);
+    expect((thrown as Error).message).toMatch(/disagrees with the re-sim|record lied/);
+  });
+
+  test("an honest in-band candidate still approves (the re-sim matches its receipt)", () => {
+    // The honest frostbite-striker convergence: its recorded stats ARE the re-sim,
+    // so it passes both checks and promotes. The honest path is unaffected.
+    const report = reSimCandidate(HONEST, stressRegistry);
+    expect(report.pass).toBe(true);
+    expect(report.verdict).toBe("in-band");
+    // recorded == re-sim, within tolerance (deterministic sim → exact match).
+    expect(Math.abs(HONEST.gate.overallWinRate - report.overallWinRate)).toBeLessThanOrEqual(
+      RESIM_WIN_RATE_TOLERANCE,
+    );
+    const next = approveInto({ units: [] }, HONEST, shippedNames, stressRegistry);
+    expect(next.units.map((u) => u.name)).toEqual(["Frostbiter", "Glacier"]);
   });
 });
 
@@ -202,11 +320,11 @@ describe("pool isolation", () => {
   });
 
   test("approving one candidate leaves an un-approved peer out of the pool", () => {
-    const a = buildRecord("a", [FROSTER], MANIFEST, PASSED, 1);
+    // Approve the honest (re-simmable) team; an un-approved peer stays out.
     const bUnit: UnitDef = { name: "Emberling", base: { hp: 9, pwr: 3 } };
-    const next = approveInto({ units: [] }, a, shippedNames, stressRegistry);
+    const next = approveInto({ units: [] }, HONEST, shippedNames, stressRegistry);
     const pool = mergePool(DEFAULT_RUN_POOL, next.units);
-    expect(pool.some((u) => u.name === "Froster")).toBe(true);
+    expect(pool.some((u) => u.name === HONEST_NEW_NAME)).toBe(true);
     expect(pool.some((u) => u.name === bUnit.name)).toBe(false); // never approved
   });
 });
