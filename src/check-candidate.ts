@@ -13,10 +13,23 @@
  *
  * Usage:
  *   node --import=tsx/esm src/check-candidate.ts <taskDir> <candidate.json>
+ *                                                [--trust-task-gate]
  *
- * <taskDir> is a self-contained creation task (see tasks/<id>/README.md). If it
- * contains a gate.json, that config wins; otherwise the tunable defaults
- * (GATE_* in tunables.ts) apply — the band is never prose, always a number.
+ * <taskDir> is a self-contained creation task (see tasks/<id>/README.md).
+ *
+ * THE BAR IS OUT-OF-BAND BY DEFAULT (PRD #067 slice 2). The authoritative gate
+ * — worker-time convergence and any run acting as the authority — judges a
+ * candidate against the TRUSTED tunable defaults (GATE_* in tunables.ts), NOT
+ * a gate.json shipped inside the task dir. The task dir is untrusted input: in
+ * the server era a submitter ships the whole task, gate.json included, so a
+ * malicious `{"bandMin":0,"bandMax":1,"floor":0}` would wave any garbage
+ * through. The bar a candidate is judged against must come from the trusted
+ * driver, not the untrusted task it's judging.
+ *
+ * Local dev tuning of a task's gate.json stays reachable — but only behind the
+ * explicit `--trust-task-gate` flag (a "this task dir is trusted/dev" opt-in).
+ * With the flag, a task gate.json overrides the defaults (the old behaviour);
+ * without it, gate.json is ignored. The band is never prose, always a number.
  *
  * Output is BOTH machine- and human-readable:
  *   - stdout ends with one JSON line: the GateReport plus the validator verdict
@@ -41,18 +54,34 @@ import { ValidationError } from "./validate.js";
 import type { UnitDef } from "./types.js";
 
 // ---------------------------------------------------------------------------
-// Gate config — tunable defaults, overridable per task by a gate.json
+// Gate config — TRUSTED tunable defaults by default; a task gate.json is
+// honoured only when the task dir is explicitly trusted (--trust-task-gate).
 // ---------------------------------------------------------------------------
 
-/** The default gate config, derived from the tunables — never hardcoded prose. */
+/** The default gate config, derived from the tunables — never hardcoded prose.
+ * This is the TRUSTED, out-of-band bar: it comes from the driving process's
+ * own source (tunables.ts), never from the task dir under judgement. */
 export function defaultGateConfig(): GateConfig {
   return { bandMin: GATE_BAND_MIN, bandMax: GATE_BAND_MAX, floor: GATE_MATCHUP_FLOOR, seeds: GATE_SEEDS };
 }
 
-/** Read a task dir's gate.json if present, else the tunable defaults. A
- * gate.json may override any subset of { bandMin, bandMax, floor, seeds }. */
-export function loadGateConfig(taskDir: string): GateConfig {
+/**
+ * Resolve the gate config for a task dir.
+ *
+ * By default (`trustTaskGate` false — the authoritative, untrusted-submission
+ * path), the task dir's gate.json is IGNORED and the trusted tunable defaults
+ * win. The task dir is untrusted input; the bar it is judged against must not
+ * be sourced from it (PRD #067 slice 2). A gate.json present in the task dir
+ * has no effect on the verdict.
+ *
+ * When `trustTaskGate` is true (the explicit "this task dir is trusted/dev"
+ * opt-in, e.g. local tuning), a gate.json present in the task dir overrides any
+ * subset of { bandMin, bandMax, floor, seeds } over the defaults — the old
+ * behaviour, now reachable only on purpose.
+ */
+export function loadGateConfig(taskDir: string, trustTaskGate = false): GateConfig {
   const base = defaultGateConfig();
+  if (!trustTaskGate) return base; // untrusted task dir → trusted out-of-band bar
   let raw: string;
   try {
     raw = readFileSync(join(taskDir, "gate.json"), "utf8");
@@ -172,10 +201,15 @@ export function humanReport(result: CheckResult): string {
 // Entrypoint
 // ---------------------------------------------------------------------------
 
-const USAGE = "Usage: check-candidate <taskDir> <candidate.json>";
+const USAGE = "Usage: check-candidate <taskDir> <candidate.json> [--trust-task-gate]";
 
 function main(): void {
-  const args = process.argv.slice(2);
+  const argv = process.argv.slice(2);
+  // --trust-task-gate (explicit trusted/dev opt-in) is the only flag; strip it
+  // out so the positionals are taskDir + candidate as before. Default is the
+  // safe, out-of-band bar — a task dir's gate.json is ignored unless trusted.
+  const trustTaskGate = argv.includes("--trust-task-gate");
+  const args = argv.filter((a) => a !== "--trust-task-gate");
   if (args.length < 2) {
     process.stderr.write(USAGE + "\n");
     process.exit(1);
@@ -190,7 +224,7 @@ function main(): void {
   let config: GateConfig;
   let candidate: UnitDef[];
   try {
-    config = loadGateConfig(taskDir);
+    config = loadGateConfig(taskDir, trustTaskGate);
     candidate = loadCandidate(candidatePath);
   } catch (err) {
     // Validator (or config) failure: loud, with the issue text, exit 1.

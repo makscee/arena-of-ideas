@@ -78,9 +78,13 @@ Emit `out/candidate.json` that:
    another (high pooled rate, one matchup near 0%) is bounced as
    `counter-folded` — broad viability is the bar, not a lucky average.
 
-The band, floor, and sweep depth are config, not prose — see
-[`gate.json`](./gate.json) in this directory (it overrides the `GATE_*` defaults
-in `src/tunables.ts`). The reference meta is the fixed set of teams in
-`src/content/reference-meta.ts`.
+The band, floor, and sweep depth are config, not prose. The **authoritative**
+bar is the trusted `GATE_*` defaults in `src/tunables.ts` — the task dir is
+untrusted input, so by default `check-candidate` ignores any `gate.json` shipped
+here and judges against those defaults (PRD #067 slice 2). The
+[`gate.json`](./gate.json) below mirrors the defaults and documents the bar; it
+only *overrides* them when you pass `--trust-task-gate` (a local-dev / trusted
+opt-in). The reference meta is the fixed set of teams in
+`src/content/reference-meta.ts`, loaded from source, never from this task dir.
 
 When `check-candidate` exits **0**, the task is done.

@@ -178,17 +178,37 @@ describe("gate config", () => {
     });
   });
 
-  test("the task dir's gate.json is read", () => {
-    const cfg = loadGateConfig(TASK);
-    expect(cfg.bandMin).toBe(0.35);
-    expect(cfg.bandMax).toBe(0.65);
-    expect(cfg.floor).toBe(0.25);
-    expect(cfg.seeds).toBe(50);
+  test("DEFAULT (untrusted task dir): gate.json is IGNORED, the trusted out-of-band bar wins", () => {
+    // The authoritative path. The frostbite task ships a gate.json; the default
+    // loader must NOT read it — the bar comes from the trusted tunables, not the
+    // (untrusted) task dir. PRD #067 slice 2.
+    expect(loadGateConfig(TASK)).toEqual(defaultGateConfig());
   });
 
-  test("a task dir without gate.json falls back to the defaults", () => {
-    const dir = mkdtempSync(join(tmpdir(), "aoi-nogate-"));
+  test("a permissive task gate.json (band 0–1, floor 0) does NOT widen the bar by default", () => {
+    // The untrusted-submission attack: a submitter ships a gate.json that would
+    // wave any garbage through. By default it is ignored — the trusted band/floor
+    // stand. The post-slice repro for the acceptance check (the before/after is
+    // exercised end-to-end in the "untrusted-submission threat model" block below).
+    const dir = mkdtempSync(join(tmpdir(), "aoi-permissive-"));
+    writeFileSync(join(dir, "gate.json"), JSON.stringify({ bandMin: 0, bandMax: 1, floor: 0 }), "utf8");
     expect(loadGateConfig(dir)).toEqual(defaultGateConfig());
+  });
+
+  test("--trust-task-gate (explicit opt-in): the task dir's gate.json is read and overrides the defaults", () => {
+    // Local dev tuning stays reachable behind the explicit trusted flag.
+    const dir = mkdtempSync(join(tmpdir(), "aoi-trusted-"));
+    writeFileSync(join(dir, "gate.json"), JSON.stringify({ bandMin: 0.4, bandMax: 0.7, floor: 0.3 }), "utf8");
+    const cfg = loadGateConfig(dir, true);
+    expect(cfg.bandMin).toBe(0.4);
+    expect(cfg.bandMax).toBe(0.7);
+    expect(cfg.floor).toBe(0.3);
+    expect(cfg.seeds).toBe(50); // omitted key falls back to the default
+  });
+
+  test("a trusted task dir without gate.json still falls back to the defaults", () => {
+    const dir = mkdtempSync(join(tmpdir(), "aoi-nogate-"));
+    expect(loadGateConfig(dir, true)).toEqual(defaultGateConfig());
   });
 
   test("an override merges over the defaults", () => {
@@ -206,6 +226,53 @@ describe("gate config", () => {
     expect(() => mergeGateConfig(defaultGateConfig(), { bandMin: 1.5 })).toThrow(/in \[0, 1\]/);
     expect(() => mergeGateConfig(defaultGateConfig(), { seeds: 0 })).toThrow(/in \[1,/);
     expect(() => mergeGateConfig(defaultGateConfig(), { bandMin: 0.8, bandMax: 0.6 })).toThrow(/must not exceed/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 3b. Untrusted-submission threat model — a permissive task gate.json must NOT
+//     wave an overtuned candidate through (PRD #067 slice 2). The authoritative
+//     gate sources its bar from the trusted out-of-band config, not the task dir.
+// ---------------------------------------------------------------------------
+
+describe("untrusted-submission threat model (permissive gate.json must not wave garbage through)", () => {
+  // A malicious submitter ships the whole task dir, gate.json included.
+  const PERMISSIVE = JSON.stringify({ bandMin: 0, bandMax: 1, floor: 0 });
+
+  function taskDirWith(gateJson: string): string {
+    const dir = mkdtempSync(join(tmpdir(), "aoi-untrusted-"));
+    writeFileSync(join(dir, "gate.json"), gateJson, "utf8");
+    return dir;
+  }
+
+  test("PRE-slice behaviour (trust the task gate.json): the permissive gate waves the overtuned candidate through", () => {
+    // This is the HOLE, demonstrated: when the task gate.json is honoured (the
+    // old default, now only reachable via --trust-task-gate / trustTaskGate=true),
+    // band 0–1 + floor 0 makes the 999-power candidate "pass" — a garbage unit
+    // looks legitimate purely because the submitter shipped a permissive config.
+    const dir = taskDirWith(PERMISSIVE);
+    const cfg = loadGateConfig(dir, true); // trust the task dir's gate.json
+    expect(cfg).toEqual({ bandMin: 0, bandMax: 1, floor: 0, seeds: 50 });
+    const result = checkCandidate(loadCandidate(OVERTUNED), cfg);
+    expect(result.status).toBe("passed"); // the lie: overtuned, but "in band 0–1"
+    expect(result.exitCode).toBe(0);
+  });
+
+  test("POST-slice behaviour (default, untrusted): the same permissive gate.json is IGNORED — the overtuned candidate is still bounced", () => {
+    // The authoritative path: trustTaskGate defaults to false, so the permissive
+    // gate.json shipped with the task has NO effect. The trusted band 0.35–0.65
+    // stands and the 999-power candidate is bounced "overtuned".
+    const dir = taskDirWith(PERMISSIVE);
+    const cfg = loadGateConfig(dir); // default — out-of-band trusted bar
+    expect(cfg).toEqual(defaultGateConfig());
+    const result = checkCandidate(loadCandidate(OVERTUNED), cfg);
+    expect(result.status).toBe("gate-bounced");
+    expect(result.exitCode).toBe(2);
+    expect(result.gate!.pass).toBe(false);
+    expect(result.gate!.verdict).toBe("overtuned");
+    expect(result.gate!.overallWinRate).toBeGreaterThan(GATE_BAND_MAX);
+    // The band judged against is the trusted one, not the submitter's 0–1.
+    expect(result.gate!.band).toEqual({ min: GATE_BAND_MIN, max: GATE_BAND_MAX });
   });
 });
 
