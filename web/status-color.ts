@@ -1,9 +1,14 @@
 // Per-status colour (#065 item 2): each status name gets its OWN stable colour
 // so "Poison" and "Shield" are always told apart at a glance, and a given status
 // is the SAME colour everywhere it shows — the chip on a card, the ±N status
-// badge in the overlay, and the card lines that mention it. Reuses the unit
-// card's `nameHue` (a hash-stable hue per name), so the scheme is one shared
-// hash, never two drifting palettes.
+// badge in the overlay, and the card lines that mention it.
+//
+// Built-in statuses get a CURATED hue — hand-picked so the seven shipped
+// statuses are clearly distinct (no two share a neighbourhood on the hue wheel).
+// Author-made statuses fall back to the hash-stable hue from the unit card's
+// `nameHue`, which kept the old per-status identity for everything not in the
+// curated map. The function signature is unchanged; only the source of the hue
+// changed for built-ins.
 //
 // Legibility is the constraint, not the hue: a status renders on three very
 // different backdrops (the near-black overlay pill, the dim card chip bg, and
@@ -14,9 +19,34 @@
 
 import { nameHue } from "./unit-card.js";
 
-/** The hash-stable hue (0–360) for a status name — the shared identity. */
+// Curated hues for the seven built-in statuses (src/content/stress.ts).
+// Spread across the wheel so no two built-ins land in the same neighbourhood.
+// Hue values chosen for semantic sense where possible, distinctness first:
+//   Strength  20   — orange-red (power, aggression)
+//   Blessing  45   — amber-gold (divine, positive)
+//   Poison   120   — green (toxic, the classic poison colour)
+//   Freeze   185   — cyan (cold, ice)
+//   Shield   210   — steel blue (protection)
+//   Curse    280   — violet (dark, negative)
+//   Vitality 345   — rose (life, health)
+//
+// Author-made statuses get nameHue() — the original hash-stable fallback — so
+// no player-authored status is ever colourless.
+const CURATED_HUES: Record<string, number> = {
+  Strength: 20,
+  Blessing: 45,
+  Poison: 120,
+  Freeze: 185,
+  Shield: 210,
+  Curse: 280,
+  Vitality: 345,
+};
+
+/** The hue (0–360) for a status name: curated for built-ins, hash-stable for
+ * author-made statuses. */
 export function statusHue(status: string): number {
-  return nameHue(status);
+  const curated = CURATED_HUES[status];
+  return curated !== undefined ? curated : nameHue(status);
 }
 
 /** Inline style for an overlay `.ov-status` badge: a bright per-status number
