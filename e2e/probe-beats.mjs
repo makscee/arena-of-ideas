@@ -408,6 +408,23 @@ async function stability(viewport, tag) {
   const boardH0 = px((await box(page, "#board")).height);
   const transportY0 = px((await box(page, "#transport")).y);
 
+  // Per-hero Y baseline (#065 defect 1): the outer #board box was locked, but
+  // the inner teams still moved — as the centre card grew its lines the flex
+  // COLUMN pushed Side B down, and snapped back when the beat cleared. Measure
+  // the rounded Y of EVERY hero unit card on BOTH sides, keyed by data-unit, so
+  // a team that shifts under the streaming card turns this probe red even while
+  // the outer box holds. (Graves are excluded — a death legitimately moves a
+  // card from the line into the grave; the LIVING line is what must not jump.)
+  const heroYs = (p) =>
+    p.evaluate(() => {
+      const out = {};
+      for (const u of document.querySelectorAll('#board .side .line .unit[data-unit]')) {
+        out[u.getAttribute("data-unit")] = Math.round(u.getBoundingClientRect().y);
+      }
+      return out;
+    });
+  const heroY0 = await heroYs(page);
+
   // Skip to the outcome so the run "continue" button reveals, then measure it.
   await page.click("#run-skip");
   await page.waitForSelector("#run-continue:not([hidden])");
@@ -423,6 +440,7 @@ async function stability(viewport, tag) {
   });
   const total = await maxStep(page);
   let moved = "";
+  let heroMoved = "";
   for (let s = 0; s <= total; s++) {
     const boardY = px((await box(page, "#board")).y);
     const boardH = px((await box(page, "#board")).height);
@@ -432,9 +450,23 @@ async function stability(viewport, tag) {
     if (boardH !== boardH0) moved ||= `board H ${boardH0}→${boardH} @${s}`;
     if (transportY !== transportY0) moved ||= `transport Y ${transportY0}→${transportY} @${s}`;
     if (continueY !== continueY0) moved ||= `continue Y ${continueY0}→${continueY} @${s}`;
+    // Each hero still on the line must hold the Y it had at the baseline. A
+    // unit absent now (it died into the grave) is skipped — only a LIVING card
+    // that jumped is a failure.
+    const hy = await heroYs(page);
+    for (const [id, y0] of Object.entries(heroY0)) {
+      if (hy[id] !== undefined && hy[id] !== y0) {
+        heroMoved ||= `hero ${id} Y ${y0}→${hy[id]} @${s}`;
+      }
+    }
     if (s < total) await stepNext(page);
   }
   check(moved === "", `${tag} board/transport/continue pixel-stable across full playback (LS-1)`, moved);
+  check(
+    heroMoved === "",
+    `${tag} every hero unit card on BOTH sides is pixel-stable across full playback (#065 defect 1)`,
+    heroMoved,
+  );
 
   await ctx.close();
 }

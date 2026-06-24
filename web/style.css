@@ -139,8 +139,20 @@ button:disabled:hover {
 /* ---------- board ----------
    Wrap-vs-scroll: the board WRAPS nothing and SCROLLS nothing — a line is at
    most TEAM_SIZE (5) cards, and the cards flex-shrink to fit five abreast at
-   375px. Stacked rows (A above B) keep both fronts at the left edge, so the
-   striker position reads the same on phone and desktop. */
+   375px.
+
+   Desktop layout is HORIZONTAL (#065 defect 1, the grilled design): Side A on
+   the LEFT, the action card centred in a lane BETWEEN the teams, Side B on the
+   RIGHT. The card grows VERTICALLY in that centre lane, so it never displaces
+   either team — the teams sit to its left/right and hold their Y as lines
+   stream in. align-items:start keeps each team pinned to the top of the row,
+   so a growing centre lane stretches the row's height (the outer box is
+   already reserved by lockBoardHeight) without nudging a team down.
+
+   Phone (<700px) cannot fit A|card|B abreast (five cards per side already fill
+   375px), so it STACKS — see the phone media block, where the centre card
+   becomes a centred overlay over a reserved band so streaming lines still
+   never move the teams. */
 
 #board {
   background: var(--panel);
@@ -148,8 +160,17 @@ button:disabled:hover {
   border-radius: 6px;
   padding: 0.75rem;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: start;
   gap: 0.5rem;
+  min-width: 0;
+}
+
+/* Each team takes an equal share of the row; the centre lane sizes to its
+   content (the card's cap). min-width:0 lets a five-card line flex-shrink
+   rather than overflow the panel. */
+#board > .side {
+  flex: 1 1 0;
   min-width: 0;
 }
 
@@ -224,8 +245,13 @@ button:disabled:hover {
    The slot is a flex row so the card centres in it without stretching
    edge-to-edge (defect 2/3: a full-width bar buried the streamed tree). */
 
+/* The centre lane between the two teams (desktop). It sizes to the card's cap
+   and centres the card vertically in the row, so the card grows DOWN into its
+   own column without touching Side A or Side B. */
 .stage-center {
+  flex: 0 1 22rem;
   min-width: 0;
+  align-self: center;
   display: flex;
   justify-content: center;
 }
@@ -374,9 +400,45 @@ button:disabled:hover {
   letter-spacing: 0.05em;
 }
 
+/* The struck-hero mark (#065 defect 2): unmistakable and genuinely LAYERED, in
+   a colour that contrasts BOTH side tints. The old 2px --warn outline failed
+   twice — it was only an edge line (not layered over the card), and --warn
+   (#e0876f) reads almost identical to Side B's --side-b (#e0a36f), so a struck
+   B unit looked unmarked. Now: a bright halo glow (box-shadow ring + a flashing
+   ::after overlay) in --hit-mark, a saturated red distinct from the blue
+   Side-A and orange Side-B tints. The overlay sits ON TOP of the card (z above
+   its content) and pulses, so a hit is impossible to miss on either side. */
+:root {
+  --hit-mark: #ff3b54; /* bright red — clears both side tints (blue / orange) */
+}
+
 .unit.hit {
-  outline: 2px solid var(--warn);
+  outline: 2px solid var(--hit-mark);
   outline-offset: -1px;
+  box-shadow:
+    0 0 0 2px var(--hit-mark),
+    0 0 14px 2px rgba(255, 59, 84, 0.7);
+}
+
+.unit.hit::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 45%, rgba(255, 59, 84, 0.45), rgba(255, 59, 84, 0) 70%);
+  box-shadow: inset 0 0 12px 2px rgba(255, 59, 84, 0.55);
+  z-index: 2; /* over the card's art/stats — a layer, not just an edge */
+  animation: hit-flash 0.6s ease-out infinite alternate;
+}
+
+@keyframes hit-flash {
+  0% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 /* The art is the card's centrepiece — sized so five board cards still sit
@@ -522,6 +584,13 @@ button:disabled:hover {
   accent-color: var(--accent);
 }
 
+/* Reserved readout strip: the cause trace swaps per event and wraps to a
+   varying number of lines. With the stage now laid out horizontally (#065
+   defect 1) the board is shorter, so the stage column sits just under the log
+   column's height — an unbounded event-panel that grew to a 3-line trace would
+   tip the stage column past the log column and nudge the run "continue" button
+   a pixel (LS-1). A fixed height with internal scroll makes the panel's height
+   content-independent, exactly as the phone block already does it. */
 #event-panel {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -530,6 +599,8 @@ button:disabled:hover {
   margin-top: 0.6rem;
   font-size: 0.75rem;
   overflow-wrap: anywhere;
+  height: 5.5rem;
+  overflow-y: auto;
 }
 
 /* A dim section label now (#065 defect 5): the panel carries the cross-beat
@@ -2036,8 +2107,61 @@ button.danger {
     display: contents;
   }
 
+  /* Phone stacks the board (A|card|B abreast won't fit five-card lines at
+     375px): Side A over the centre card over Side B, the pre-#065 column.
+     But the streaming card must NOT push Side B down (defect 1). So the centre
+     lane is a position:absolute overlay centred over a RESERVED band: the band
+     holds the card's worst-case height from event 0 (set per-battle by the
+     viewer's lockBoardHeight via --beat-band), and the card floats over it. As
+     lines stream in the card grows within the fixed band — Side B, which sits
+     after the band in the column, never moves. */
   #board {
     order: 1;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Reserve each team's per-battle max height (set by lockBoardHeight): stacked,
+     a team that grows mid-replay (a grave fills, a chip reflows a line taller)
+     would push the team below it down. Pinning each side to its worst-case
+     height keeps every hero's Y fixed across the whole playback (#065 defect 1). */
+  #board > .side[data-side="A"] {
+    flex: none;
+    min-height: var(--side-a-h, auto);
+  }
+
+  #board > .side[data-side="B"] {
+    flex: none;
+    min-height: var(--side-b-h, auto);
+  }
+
+  .stage-center {
+    position: relative;
+    flex: none;
+    align-self: auto;
+    /* The reserved band: the tallest the card will ever be this battle (the
+       viewer measures it into --beat-band); falls back to a sane minimum for a
+       structural divider. Teams below it never move as the card grows. */
+    min-height: var(--beat-band, 2.5rem);
+  }
+
+  .stage-center > .beat-card {
+    /* Float over the band, centred — growth happens inside the reserved height,
+       so it cannot push Side B. */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* A structural beat shows a thin divider — it stays in flow, harmlessly
+     short, inside the same reserved band. */
+  .stage-center > .divider {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    transform: translateY(-50%);
   }
 
   #log-col {

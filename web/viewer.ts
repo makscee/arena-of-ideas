@@ -223,29 +223,68 @@ export function createViewer(els: ViewerEls): Viewer {
    * cursor). No-op while the board is display:none (offsetHeight reads 0). */
   function lockBoardHeight(): void {
     els.board.style.minHeight = "";
-    let max = 0;
-    const measure = (i: number): void => {
-      const center = beatCenterHtml(log, beats, i, (ev) => describeEvent(ev, name), verdictHtml(boardAt(log, i)));
-      renderBoard(els.board, boardAt(log, i), name, new Set(), registry, undefined, center);
-      // Fractional height (getBoundingClientRect), not the integer offsetHeight:
-      // a natural content height of 534.28px rounds offsetHeight to 534, so a
-      // min-height of 534 fails to contain it and the board grows ~0.3px at that
-      // step — nudging the transport a device pixel mid-replay (LS-1). Measuring
-      // the true fractional height and ceil-ing the lock keeps the reserve at or
-      // above every step's real height.
-      max = Math.max(max, els.board.getBoundingClientRect().height);
-    };
-    // Height-affecting board steps (graves fill, lines wipe, chips land).
+    els.board.style.removeProperty("--beat-band");
+    els.board.style.removeProperty("--side-a-h");
+    els.board.style.removeProperty("--side-b-h");
+    // The set of steps that can change the board's height: event 0, the
+    // height-affecting board steps (graves fill, lines wipe, chips land), and
+    // the last event of every hero-affecting beat (the card's tallest state).
+    const steps: number[] = [];
     for (let i = 0; i < log.length; i++) {
       const t = log[i]!.type;
-      if (i !== 0 && t !== "Death" && t !== "Summon" && t !== "StatusApplied" && t !== "StatusRemoved" && t !== "Silenced" && t !== "BattleEnd") continue;
-      measure(i);
+      if (i === 0 || t === "Death" || t === "Summon" || t === "StatusApplied" || t === "StatusRemoved" || t === "Silenced" || t === "BattleEnd") {
+        steps.push(i);
+      }
     }
-    // The beat card grows with every line it reveals — its tallest state is the
-    // last event of each hero-affecting beat. Measure those so the card area is
-    // reserved up front and the stage never grows mid-beat (LS-1).
-    for (const beat of beats) {
-      if (!beat.structural) measure(beat.end);
+    for (const beat of beats) if (!beat.structural) steps.push(beat.end);
+
+    const renderAt = (i: number): void => {
+      const center = beatCenterHtml(log, beats, i, (ev) => describeEvent(ev, name), verdictHtml(boardAt(log, i)));
+      renderBoard(els.board, boardAt(log, i), name, new Set(), registry, undefined, center);
+    };
+
+    // Pass 1 — the centre band: the tallest the centre card/divider ever gets.
+    // On phone the stage-center is an absolute overlay over a band reserved to
+    // this height (--beat-band), so the streaming card grows WITHIN a fixed
+    // band and never pushes Side B down (#065 defect 1). On desktop the card
+    // grows in its own column and the reserve is unused. Measured before the
+    // outer lock so pass 2 sees the real reserved band (else the absolute card
+    // collapses the stage-center and the outer max undercounts on phone).
+    let band = 0;
+    // Each team's tallest state too. On phone the board STACKS (Side A over the
+    // card over Side B), so a team that grows mid-replay — a grave fills, a
+    // status chip lands and reflows a line card taller — pushes everything
+    // below it down, moving the other team (#065 defect 1, the team-side twin
+    // of the card-side push). Reserve each side to its per-battle max height so
+    // neither team's internal growth ever moves the other. Desktop lays the
+    // teams side by side, where a taller team extends only its own column and
+    // moves nobody, so this reserve is applied only in the phone media block.
+    let sideAH = 0;
+    let sideBH = 0;
+    for (const i of steps) {
+      renderAt(i);
+      const center0 = els.board.querySelector<HTMLElement>(".stage-center > .beat-card, .stage-center > .divider");
+      if (center0) band = Math.max(band, center0.getBoundingClientRect().height);
+      const a = els.board.querySelector<HTMLElement>('.side[data-side="A"]');
+      const b = els.board.querySelector<HTMLElement>('.side[data-side="B"]');
+      if (a) sideAH = Math.max(sideAH, a.getBoundingClientRect().height);
+      if (b) sideBH = Math.max(sideBH, b.getBoundingClientRect().height);
+    }
+    if (band > 0) els.board.style.setProperty("--beat-band", `${Math.ceil(band)}px`);
+    if (sideAH > 0) els.board.style.setProperty("--side-a-h", `${Math.ceil(sideAH)}px`);
+    if (sideBH > 0) els.board.style.setProperty("--side-b-h", `${Math.ceil(sideBH)}px`);
+
+    // Pass 2 — the outer board height, now with the centre band reserved.
+    // Fractional height (getBoundingClientRect), not the integer offsetHeight:
+    // a natural content height of 534.28px rounds offsetHeight to 534, so a
+    // min-height of 534 fails to contain it and the board grows ~0.3px at that
+    // step — nudging the transport a device pixel mid-replay (LS-1). Measuring
+    // the true fractional height and ceil-ing the lock keeps the reserve at or
+    // above every step's real height.
+    let max = 0;
+    for (const i of steps) {
+      renderAt(i);
+      max = Math.max(max, els.board.getBoundingClientRect().height);
     }
     if (max > 0) els.board.style.minHeight = `${Math.ceil(max)}px`;
   }
