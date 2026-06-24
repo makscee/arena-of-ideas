@@ -8,28 +8,47 @@
  * The adapter is game-rules-blind: it relays the worker's prompt text and hands
  * back a process outcome. The contract lives in the task README the agent reads.
  *
- * Flags (verified against `claude --help`, v2.1.175):
+ * Containment (PRD #067 slice 1): reads are repo-wide (the README points at the
+ * schema/validator/describe entry points and examples across the repo), but
+ * WRITES are confined to the task's `out/`. The hostile-model hole the old flags
+ * left open was `--permission-mode bypassPermissions`, which skips ALL permission
+ * checks — under it a model could write anywhere `--add-dir` reached (the whole
+ * repo). We replace it with an explicit permission policy:
+ *   - `--settings {"permissions":{"allow":["Read","Write(<out>/**)","Edit(<out>/**)"]}}`
+ *     allows reads everywhere and Write/Edit only under the task's out/.
+ *   - `--permission-mode dontAsk` denies anything not matched by an allow rule
+ *     *without prompting* — in a headless -p run a denied write becomes a silent
+ *     tool error the model sees, never an interactive hang. (bypassPermissions
+ *     would have ignored the allow list entirely.)
+ *
+ * Flags (verified against `claude --help`, v2.x):
  *   -p / --print                 headless: run the prompt and exit, no TTY UI.
  *   --output-format json         one JSON envelope on stdout (result, is_error,
  *                                session_id, num_turns, cost) — parseable.
- *   --permission-mode <mode>     "bypassPermissions" for an unattended sandbox
- *                                run (the operator's `claude` alias already
- *                                skips permission prompts; this makes the
- *                                non-interactive run explicit and self-contained).
- *   --add-dir <repoRoot>         scope file tools to the repo working tree.
+ *   --permission-mode dontAsk    auto-deny anything outside the allow list, no
+ *                                prompt — safe for an unattended sandbox run.
+ *   --settings <json>            the read-wide / write-to-out permission policy.
+ *   --add-dir <repoRoot>         grant repo-wide read access to the file tools.
  *   --model <model>              optional override (else the subscription default).
  * There is no --max-turns in this CLI; the worker bounds *attempts* itself.
  *
- * The prompt is passed as the final positional arg (the CLI reads the prompt
- * from argv in -p mode, not stdin). A hard timeout guards the unattended run.
+ * The prompt is fed on STDIN (see buildArgs). A hard timeout guards the run.
  */
 
 import { spawn } from "node:child_process";
 import type { Attempt, Harness, HarnessOutcome } from "./worker.js";
+import { writeAllowGlob } from "./write-jail.js";
 
 export interface ClaudeCodeOptions {
-  /** Repo working tree to scope the agent to (cwd + --add-dir). */
+  /** Repo working tree the agent may READ across (cwd + --add-dir). The schema,
+   * validator, describe entry points and examples the README points at live all
+   * over the repo, so reads stay repo-wide. */
   repoRoot: string;
+  /** The task directory whose `out/` is the single writable surface (PRD #067
+   * slice 1). Writes outside `<taskDir>/out/` are denied — see buildArgs, which
+   * confines Write/Edit to that glob and runs --permission-mode dontAsk so a
+   * denied write is a silent tool error, never an interactive hang. */
+  taskDir: string;
   /** Hard per-attempt timeout (ms). A headless run may take minutes. */
   timeoutMs: number;
   /** Optional model override (alias like "opus"/"sonnet", or a full id). */
@@ -74,6 +93,25 @@ export function parseEnvelope(stdout: string): ClaudeEnvelope | null {
   return null;
 }
 
+/** The permission policy that contains a hostile model (PRD #067 slice 1):
+ * reads everywhere, Write/Edit only under the task's `out/`. Serialised into the
+ * `--settings` JSON. Deny rules take precedence over allow in this CLI and a
+ * broad deny would block the narrow out/ allow, so we express the jail purely as
+ * an allow list + dontAsk mode (anything unmatched is denied). Exported so the
+ * unit test can assert the writable surface is the task out/ and nothing wider.
+ */
+export function buildSettings(opts: ClaudeCodeOptions): {
+  permissions: { allow: string[] };
+} {
+  const out = writeAllowGlob(opts.taskDir); // <taskDir>/out/**
+  return {
+    permissions: {
+      // "Read" (no path) = repo-wide reads; Write/Edit jailed to the task out/.
+      allow: ["Read", `Write(${out})`, `Edit(${out})`],
+    },
+  };
+}
+
 /** Build the argv for one headless attempt. Exported for the unit test that
  * proves the adapter passes the right flags without spawning anything.
  *
@@ -86,7 +124,11 @@ export function buildArgs(opts: ClaudeCodeOptions): string[] {
   const args = [
     "-p",
     "--output-format", "json",
-    "--permission-mode", "bypassPermissions",
+    // dontAsk: deny anything outside the allow list without prompting (the
+    // headless run has no user to answer). Replaces bypassPermissions, which
+    // would have skipped the allow list and left the repo writable.
+    "--permission-mode", "dontAsk",
+    "--settings", JSON.stringify(buildSettings(opts)),
   ];
   if (opts.model) args.push("--model", opts.model);
   // --add-dir is variadic and must be last on argv — nothing may trail it.

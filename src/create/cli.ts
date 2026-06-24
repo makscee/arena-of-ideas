@@ -42,6 +42,7 @@ import type { Harness, WorkerConfig, RunResult } from "./worker.js";
 import { claudeCodeHarness } from "./claude-code.js";
 import { chatCompletionsHarness } from "./chat-completions.js";
 import { subprocessGauntlet } from "./gauntlet.js";
+import { writeRootForTask } from "./write-jail.js";
 
 const DEFAULT_MAX_ATTEMPTS = 5;
 const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000; // 10 min per headless attempt
@@ -130,7 +131,7 @@ function mustAdapter(v: string | undefined): Adapter {
  * exported key. Throws a usage error if a required chat field is missing.
  * Exported for the unit test (it must stay rules-blind — it only wires
  * transport config). */
-export function buildHarness(args: Args, repoRoot: string): Harness {
+export function buildHarness(args: Args, repoRoot: string, taskDir: string): Harness {
   if (args.adapter === "chat") {
     const baseUrl = args.baseUrl ?? process.env.OPENAI_BASE_URL;
     const apiKey = args.key ?? process.env.OPENAI_API_KEY ?? process.env.DEEPSEEK_API_KEY;
@@ -145,6 +146,8 @@ export function buildHarness(args: Args, repoRoot: string): Harness {
       model: args.model,
       apiKey,
       repoRoot,
+      // PRD #067 slice 1: writes confine to the task's out/, reads stay repo-wide.
+      writeRoot: writeRootForTask(taskDir),
       maxTurns: 12,
       maxTokens: 100_000,
       requestTimeoutMs: args.timeoutMs,
@@ -152,6 +155,7 @@ export function buildHarness(args: Args, repoRoot: string): Harness {
   }
   return claudeCodeHarness({
     repoRoot,
+    taskDir,
     timeoutMs: args.timeoutMs,
     model: args.model,
     bin: args.bin,
@@ -180,7 +184,7 @@ function main(): void {
 
   let harness: Harness;
   try {
-    harness = buildHarness(args, repoRoot);
+    harness = buildHarness(args, repoRoot, taskDir);
   } catch (err) {
     process.stderr.write((err as Error).message + "\n");
     process.exit(1);

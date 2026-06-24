@@ -39,8 +39,9 @@
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { dirname } from "node:path";
 import type { Attempt, Harness, HarnessOutcome } from "./worker.js";
+import { resolveReadInRepo, resolveWriteInJail } from "./write-jail.js";
 
 // ---------------------------------------------------------------------------
 // Config
@@ -57,8 +58,16 @@ export interface ChatCompletionsOptions {
   /** API key (Bearer). Empty/undefined sends no Authorization header — fine for
    * a keyless local server, a loud 401 for a real provider. */
   apiKey?: string | undefined;
-  /** Repo working tree the file tools are scoped to (read/write jailed here). */
+  /** Repo working tree READS are scoped to — the worker must reach the schema,
+   * validator, describe entry points and examples the README points at, all
+   * over the repo. */
   repoRoot: string;
+  /** The single writable root (PRD #067 slice 1): the task's `out/` directory.
+   * WRITES are jailed here — a write to the repo, the task dir root, `../`, an
+   * absolute path, or a normalize-back escape is rejected loudly. The honest
+   * emit target (`out/candidate.json`) lives under it, so the cooperative path
+   * is unaffected. */
+  writeRoot: string;
   /** Max assistant turns inside one attempt before the adapter gives up loudly.
    * Bounds an endpoint that loops without ever finishing. Default 12. */
   maxTurns: number;
@@ -133,12 +142,13 @@ const TOOLS = [
     function: {
       name: "write_file",
       description:
-        "Write a UTF-8 text file in the repository (creating parent directories). " +
-        "Use this to emit the output file the task README names.",
+        "Write a UTF-8 text file under the task's output directory (creating " +
+        "parent directories). Writes are confined to that directory — the path " +
+        "the task README names for your output. A write anywhere else is refused.",
       parameters: {
         type: "object",
         properties: {
-          path: { type: "string", description: "Repo-relative or absolute path to write." },
+          path: { type: "string", description: "Path to write (under the task output directory)." },
           content: { type: "string", description: "Full file contents to write." },
         },
         required: ["path", "content"],
@@ -181,20 +191,18 @@ export function resolveEndpoint(baseUrl: string): string {
 // path the model invented should not crash the whole attempt.
 // ---------------------------------------------------------------------------
 
-function resolveInRepo(repoRoot: string, p: string): string {
-  const abs = isAbsolute(p) ? p : resolve(repoRoot, p);
-  const rel = relative(repoRoot, abs);
-  if (rel.startsWith("..") || isAbsolute(rel)) {
-    throw new Error(`path escapes repo: ${p}`);
-  }
-  return abs;
+/** The two roots a tool call is scoped against: reads jail to `repoRoot`,
+ * writes jail to the narrower `writeRoot` (the task's `out/`). */
+export interface ToolJail {
+  repoRoot: string;
+  writeRoot: string;
 }
 
-function runReadFile(repoRoot: string, args: { path?: unknown }): string {
+function runReadFile(jail: ToolJail, args: { path?: unknown }): string {
   if (typeof args.path !== "string") return "ERROR: read_file requires a string `path`.";
   let abs: string;
   try {
-    abs = resolveInRepo(repoRoot, args.path);
+    abs = resolveReadInRepo(jail.repoRoot, args.path);
   } catch (err) {
     return `ERROR: ${(err as Error).message}`;
   }
@@ -205,12 +213,13 @@ function runReadFile(repoRoot: string, args: { path?: unknown }): string {
   }
 }
 
-function runWriteFile(repoRoot: string, args: { path?: unknown; content?: unknown }): string {
+function runWriteFile(jail: ToolJail, args: { path?: unknown; content?: unknown }): string {
   if (typeof args.path !== "string") return "ERROR: write_file requires a string `path`.";
   if (typeof args.content !== "string") return "ERROR: write_file requires a string `content`.";
   let abs: string;
   try {
-    abs = resolveInRepo(repoRoot, args.path);
+    // PRD #067 slice 1: writes confine to the task's out/, not the repo.
+    abs = resolveWriteInJail(jail.writeRoot, args.path);
   } catch (err) {
     return `ERROR: ${(err as Error).message}`;
   }
@@ -224,7 +233,7 @@ function runWriteFile(repoRoot: string, args: { path?: unknown; content?: unknow
 }
 
 /** Dispatch one tool call to its executor. Exported for the test. */
-export function executeToolCall(repoRoot: string, call: ToolCall): string {
+export function executeToolCall(jail: ToolJail, call: ToolCall): string {
   let args: Record<string, unknown>;
   try {
     args = JSON.parse(call.function.arguments || "{}");
@@ -233,9 +242,9 @@ export function executeToolCall(repoRoot: string, call: ToolCall): string {
   }
   switch (call.function.name) {
     case "read_file":
-      return runReadFile(repoRoot, args);
+      return runReadFile(jail, args);
     case "write_file":
-      return runWriteFile(repoRoot, args);
+      return runWriteFile(jail, args);
     default:
       return `ERROR: unknown tool ${call.function.name}`;
   }
@@ -348,8 +357,9 @@ export function chatCompletionsHarness(opts: ChatCompletionsOptions): Harness {
         }
 
         // Execute each requested tool and append its result as a tool message.
+        const jail: ToolJail = { repoRoot: opts.repoRoot, writeRoot: opts.writeRoot };
         for (const call of toolCalls) {
-          const result = executeToolCall(opts.repoRoot, call);
+          const result = executeToolCall(jail, call);
           progress(
             `[chat]   turn ${turn}: ${call.function.name}(${truncateArgs(call.function.arguments)}) -> ${summarize(result)}`,
           );

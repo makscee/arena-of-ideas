@@ -237,14 +237,17 @@ describe("prompts are rules-blind transport", () => {
 
 describe("claude-code buildArgs", () => {
   test("builds a headless, json, dir-scoped invocation (prompt goes on stdin, not argv)", () => {
-    const args = buildArgs({ repoRoot: "/repo", timeoutMs: 1000 });
+    const args = buildArgs({ repoRoot: "/repo", taskDir: "/repo/tasks/x", timeoutMs: 1000 });
     expect(args).toContain("-p");
     expect(args.slice(args.indexOf("--output-format"), args.indexOf("--output-format") + 2)).toEqual([
       "--output-format",
       "json",
     ]);
+    // PRD #067 slice 1: the old bypassPermissions hole is gone — writes are
+    // confined to the task out/ via a dontAsk permission policy.
     expect(args).toContain("--permission-mode");
-    expect(args[args.indexOf("--permission-mode") + 1]).toBe("bypassPermissions");
+    expect(args[args.indexOf("--permission-mode") + 1]).toBe("dontAsk");
+    expect(args).not.toContain("bypassPermissions");
     // --add-dir must be LAST among the args: it is variadic, so nothing may
     // follow it on argv (the prompt is fed via stdin for exactly this reason).
     expect(args[args.length - 2]).toBe("--add-dir");
@@ -252,9 +255,26 @@ describe("claude-code buildArgs", () => {
   });
 
   test("a model override is passed through (before the trailing --add-dir)", () => {
-    const args = buildArgs({ repoRoot: "/repo", timeoutMs: 1000, model: "opus" });
+    const args = buildArgs({ repoRoot: "/repo", taskDir: "/repo/tasks/x", timeoutMs: 1000, model: "opus" });
     expect(args[args.indexOf("--model") + 1]).toBe("opus");
     expect(args[args.length - 2]).toBe("--add-dir");
+  });
+
+  test("the permission policy confines Write/Edit to the task out/, reads stay repo-wide", () => {
+    const args = buildArgs({ repoRoot: "/repo", taskDir: "/repo/tasks/x", timeoutMs: 1000 });
+    const settingsJson = args[args.indexOf("--settings") + 1]!;
+    const { permissions } = JSON.parse(settingsJson) as { permissions: { allow: string[] } };
+    // Reads are repo-wide (bare Read).
+    expect(permissions.allow).toContain("Read");
+    // Writes/Edits are jailed to <taskDir>/out/** and NOTHING wider — no rule
+    // grants the repo, the task dir root, or an absolute escape.
+    expect(permissions.allow).toContain("Write(/repo/tasks/x/out/**)");
+    expect(permissions.allow).toContain("Edit(/repo/tasks/x/out/**)");
+    const writeRules = permissions.allow.filter((r) => r.startsWith("Write(") || r.startsWith("Edit("));
+    expect(writeRules.every((r) => r.includes("/repo/tasks/x/out/"))).toBe(true);
+    // The repo root and the task dir root are NOT writable.
+    expect(permissions.allow).not.toContain("Write(/repo/**)");
+    expect(permissions.allow).not.toContain("Write(/repo/tasks/x/**)");
   });
 });
 
@@ -364,7 +384,7 @@ describe("buildHarness adapter selection", () => {
     delete process.env.OPENAI_BASE_URL;
     try {
       const args = parseArgs(["tasks/x", "--adapter", "chat", "--model", "m"]);
-      expect(() => buildHarness(args, "/repo")).toThrow(/base-url/);
+      expect(() => buildHarness(args, "/repo", "/repo/tasks/x")).toThrow(/base-url/);
     } finally {
       if (saved.base !== undefined) process.env.OPENAI_BASE_URL = saved.base;
       if (saved.key1 !== undefined) process.env.OPENAI_API_KEY = saved.key1;
@@ -374,13 +394,13 @@ describe("buildHarness adapter selection", () => {
 
   test("chat without a model is a loud usage error", () => {
     const args = parseArgs(["tasks/x", "--adapter", "chat", "--base-url", "https://x.test"]);
-    expect(() => buildHarness(args, "/repo")).toThrow(/model/);
+    expect(() => buildHarness(args, "/repo", "/repo/tasks/x")).toThrow(/model/);
   });
 
   test("both adapters build a callable harness when their fields are present", () => {
-    const cc = buildHarness(parseArgs(["tasks/x"]), "/repo");
+    const cc = buildHarness(parseArgs(["tasks/x"]), "/repo", "/repo/tasks/x");
     expect(typeof cc).toBe("function");
-    const chat = buildHarness(parseArgs(["tasks/x", "--adapter", "chat", "--base-url", "https://x.test", "--model", "m"]), "/repo");
+    const chat = buildHarness(parseArgs(["tasks/x", "--adapter", "chat", "--base-url", "https://x.test", "--model", "m"]), "/repo", "/repo/tasks/x");
     expect(typeof chat).toBe("function");
   });
 });

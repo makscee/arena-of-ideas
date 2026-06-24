@@ -17,10 +17,24 @@ import {
   resolveEndpoint,
   executeToolCall,
 } from "./chat-completions.js";
+import type { ToolJail } from "./chat-completions.js";
 import type { Attempt } from "./worker.js";
-import { mkdtempSync, readFileSync, existsSync } from "node:fs";
+import { mkdtempSync, readFileSync, existsSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+
+// A jail where reads see the whole repo (dir) and writes confine to the task's
+// out/ — the PRD #067 slice 1 shape. Helper so each test states both roots once.
+function jailFor(dir: string): ToolJail {
+  return { repoRoot: dir, writeRoot: join(dir, "out") };
+}
+// Seed a file via the OS, bypassing the jailed tool — used to set up README/etc
+// that the model then READS (the write jail would refuse a repo-root seed).
+function seed(dir: string, rel: string, content: string): void {
+  const abs = join(dir, rel);
+  mkdirSync(join(abs, ".."), { recursive: true });
+  writeFileSync(abs, content, "utf8");
+}
 
 const INITIAL: Attempt = {
   kind: "initial",
@@ -90,31 +104,124 @@ describe("resolveEndpoint", () => {
 describe("executeToolCall", () => {
   test("read_file returns file contents, write_file writes and confirms", () => {
     const dir = mkdtempSync(join(tmpdir(), "aoi-chat-"));
-    const w = executeToolCall(dir, {
+    // The candidate target lives under out/ — the writable jail (path is
+    // relative to the writeRoot = <dir>/out).
+    const w = executeToolCall(jailFor(dir), {
       id: "1", type: "function",
-      function: { name: "write_file", arguments: JSON.stringify({ path: "out/candidate.json", content: "{}" }) },
+      function: { name: "write_file", arguments: JSON.stringify({ path: "candidate.json", content: "{}" }) },
     });
     expect(w).toMatch(/^OK: wrote/);
     expect(existsSync(join(dir, "out/candidate.json"))).toBe(true);
-    const r = executeToolCall(dir, {
+    const r = executeToolCall(jailFor(dir), {
       id: "2", type: "function",
       function: { name: "read_file", arguments: JSON.stringify({ path: "out/candidate.json" }) },
     });
     expect(r).toBe("{}");
   });
 
-  test("a path escaping the repo is refused (jailed), not honoured", () => {
+  test("read_file still reads repo-wide (the README/schema/examples the worker needs)", () => {
     const dir = mkdtempSync(join(tmpdir(), "aoi-chat-"));
-    const r = executeToolCall(dir, {
+    // A file at the repo root, OUTSIDE out/ — reads are not constrained by #067
+    // slice 1, only writes are.
+    seed(dir, "src/types.ts", "export type UnitDef = {};");
+    const r = executeToolCall(jailFor(dir), {
+      id: "1", type: "function",
+      function: { name: "read_file", arguments: JSON.stringify({ path: "src/types.ts" }) },
+    });
+    expect(r).toBe("export type UnitDef = {};");
+  });
+
+  test("a path escaping the repo is refused (read jail), not honoured", () => {
+    const dir = mkdtempSync(join(tmpdir(), "aoi-chat-"));
+    const r = executeToolCall(jailFor(dir), {
       id: "1", type: "function",
       function: { name: "read_file", arguments: JSON.stringify({ path: "../../etc/passwd" }) },
     });
-    expect(r).toMatch(/ERROR: path escapes repo/);
+    expect(r).toMatch(/ERROR: path escapes jail/);
+  });
+
+  // ── PRD #067 slice 1: the write jail confines writes to the task's out/ ──
+  // The honest path (out/candidate.json) is allowed; every escape is rejected
+  // loudly. The model passes the ABSOLUTE emit path the worker hands it
+  // (initialPrompt joins taskDir+out), so cases are stated as absolute paths
+  // plus the relative/escape forms a hostile model could try.
+  describe("write jail (slice 1) — writes confine to the task out/", () => {
+    test("out/candidate.json (the honest emit) is ALLOWED", () => {
+      const dir = mkdtempSync(join(tmpdir(), "aoi-chat-"));
+      const out = join(dir, "out", "candidate.json"); // absolute, what the worker names
+      const r = executeToolCall(jailFor(dir), {
+        id: "1", type: "function",
+        function: { name: "write_file", arguments: JSON.stringify({ path: out, content: '{"units":[]}' }) },
+      });
+      expect(r).toMatch(/^OK: wrote/);
+      expect(readFileSync(join(dir, "out/candidate.json"), "utf8")).toBe('{"units":[]}');
+    });
+
+    test("a write to the REPO ROOT is rejected", () => {
+      const dir = mkdtempSync(join(tmpdir(), "aoi-chat-"));
+      const r = executeToolCall(jailFor(dir), {
+        id: "1", type: "function",
+        function: { name: "write_file", arguments: JSON.stringify({ path: join(dir, "pwned.txt"), content: "x" }) },
+      });
+      expect(r).toMatch(/ERROR: path escapes jail/);
+      expect(existsSync(join(dir, "pwned.txt"))).toBe(false);
+    });
+
+    test("a write to the TASK DIR ROOT (e.g. gate.json sibling of out/) is rejected", () => {
+      const dir = mkdtempSync(join(tmpdir(), "aoi-chat-"));
+      // The task dir IS `dir` here (writeRoot = dir/out); gate.json sits beside
+      // out/, not under it — the slice-2 forge target — and must be unwritable.
+      const r = executeToolCall(jailFor(dir), {
+        id: "1", type: "function",
+        function: { name: "write_file", arguments: JSON.stringify({ path: join(dir, "gate.json"), content: '{"pass":true}' }) },
+      });
+      expect(r).toMatch(/ERROR: path escapes jail/);
+      expect(existsSync(join(dir, "gate.json"))).toBe(false);
+    });
+
+    test("a relative ../ escape out of out/ is rejected", () => {
+      const dir = mkdtempSync(join(tmpdir(), "aoi-chat-"));
+      const r = executeToolCall(jailFor(dir), {
+        id: "1", type: "function",
+        function: { name: "write_file", arguments: JSON.stringify({ path: "../gate.json", content: "x" }) },
+      });
+      expect(r).toMatch(/ERROR: path escapes jail/);
+      expect(existsSync(join(dir, "gate.json"))).toBe(false);
+    });
+
+    test("an absolute path outside out/ is rejected", () => {
+      const dir = mkdtempSync(join(tmpdir(), "aoi-chat-"));
+      const r = executeToolCall(jailFor(dir), {
+        id: "1", type: "function",
+        function: { name: "write_file", arguments: JSON.stringify({ path: "/etc/cron.d/pwn", content: "x" }) },
+      });
+      expect(r).toMatch(/ERROR: path escapes jail/);
+      expect(existsSync("/etc/cron.d/pwn")).toBe(false);
+    });
+
+    test("a normalize-back escape (out/../../etc) is rejected", () => {
+      const dir = mkdtempSync(join(tmpdir(), "aoi-chat-"));
+      const r = executeToolCall(jailFor(dir), {
+        id: "1", type: "function",
+        function: { name: "write_file", arguments: JSON.stringify({ path: "subdir/../../gate.json", content: "x" }) },
+      });
+      expect(r).toMatch(/ERROR: path escapes jail/);
+      expect(existsSync(join(dir, "gate.json"))).toBe(false);
+    });
+
+    test("writing out/ itself (not a file under it) is rejected", () => {
+      const dir = mkdtempSync(join(tmpdir(), "aoi-chat-"));
+      const r = executeToolCall(jailFor(dir), {
+        id: "1", type: "function",
+        function: { name: "write_file", arguments: JSON.stringify({ path: join(dir, "out"), content: "x" }) },
+      });
+      expect(r).toMatch(/ERROR: path escapes jail/);
+    });
   });
 
   test("malformed tool arguments are returned as an error string, not thrown", () => {
     const dir = mkdtempSync(join(tmpdir(), "aoi-chat-"));
-    const r = executeToolCall(dir, {
+    const r = executeToolCall(jailFor(dir), {
       id: "1", type: "function", function: { name: "read_file", arguments: "{not json" },
     });
     expect(r).toMatch(/ERROR: tool arguments were not valid JSON/);
@@ -129,21 +236,22 @@ describe("chatCompletionsHarness tool loop", () => {
   test("converges: reads a file, writes the candidate, stops -> ok outcome", async () => {
     const dir = mkdtempSync(join(tmpdir(), "aoi-chat-"));
     const { fetchImpl, requests } = scriptedFetch([
-      asstToolCall("read_file", { path: "README.md" }), // turn 1: read
-      asstToolCall("write_file", { path: "out/candidate.json", content: '{"units":[]}' }), // turn 2: write
+      asstToolCall("read_file", { path: "README.md" }), // turn 1: read (repo-wide)
+      asstToolCall("write_file", { path: "candidate.json", content: '{"units":[]}' }), // turn 2: write under out/
       asstStop("done — wrote the candidate."), // turn 3: stop
     ]);
-    // The repo must hold a README.md for the read to succeed.
-    executeToolCall(dir, { id: "0", type: "function", function: { name: "write_file", arguments: JSON.stringify({ path: "README.md", content: "hi" }) } });
+    // The repo must hold a README.md for the read to succeed (seeded via the OS;
+    // the write jail would refuse a repo-root write).
+    seed(dir, "README.md", "hi");
 
     const harness = chatCompletionsHarness({
-      baseUrl: "https://example.test", model: "m", repoRoot: dir,
+      baseUrl: "https://example.test", model: "m", repoRoot: dir, writeRoot: join(dir, "out"),
       maxTurns: 12, maxTokens: 100_000, requestTimeoutMs: 5000, fetchImpl, ...silent,
     });
     const outcome = await harness(INITIAL);
     expect(outcome.ok).toBe(true);
     expect(outcome.handle).toContain("turns=3");
-    // The candidate was actually written by the tool.
+    // The candidate was actually written by the tool, under out/.
     expect(readFileSync(join(dir, "out/candidate.json"), "utf8")).toBe('{"units":[]}');
     // The wire request carried system + user + tools and stream:false.
     const first = requests[0]!.body;
@@ -161,7 +269,7 @@ describe("chatCompletionsHarness tool loop", () => {
     const dir = mkdtempSync(join(tmpdir(), "aoi-chat-"));
     const { fetchImpl, requests } = scriptedFetch([asstStop("ok")]);
     const harness = chatCompletionsHarness({
-      baseUrl: "https://example.test", model: "m", repoRoot: dir,
+      baseUrl: "https://example.test", model: "m", repoRoot: dir, writeRoot: join(dir, "out"),
       maxTurns: 12, maxTokens: 100_000, requestTimeoutMs: 5000, fetchImpl, ...silent,
     });
     const bounce: Attempt = {
@@ -178,7 +286,7 @@ describe("chatCompletionsHarness tool loop", () => {
     const dir = mkdtempSync(join(tmpdir(), "aoi-chat-"));
     const { fetchImpl } = scriptedFetch([{ usage: {} }]); // no choices[]
     const harness = chatCompletionsHarness({
-      baseUrl: "https://example.test", model: "m", repoRoot: dir,
+      baseUrl: "https://example.test", model: "m", repoRoot: dir, writeRoot: join(dir, "out"),
       maxTurns: 12, maxTokens: 100_000, requestTimeoutMs: 5000, fetchImpl, ...silent,
     });
     const outcome = await harness(INITIAL);
@@ -191,7 +299,7 @@ describe("chatCompletionsHarness tool loop", () => {
     const fetchImpl = (async () =>
       new Response("nope", { status: 401 })) as unknown as typeof fetch;
     const harness = chatCompletionsHarness({
-      baseUrl: "https://example.test", model: "m", repoRoot: dir,
+      baseUrl: "https://example.test", model: "m", repoRoot: dir, writeRoot: join(dir, "out"),
       maxTurns: 12, maxTokens: 100_000, requestTimeoutMs: 5000, fetchImpl, ...silent,
     });
     const outcome = await harness(INITIAL);
@@ -203,7 +311,7 @@ describe("chatCompletionsHarness tool loop", () => {
     const dir = mkdtempSync(join(tmpdir(), "aoi-chat-"));
     const fetchImpl = (async () => { throw new Error("ECONNREFUSED"); }) as unknown as typeof fetch;
     const harness = chatCompletionsHarness({
-      baseUrl: "https://example.test", model: "m", repoRoot: dir,
+      baseUrl: "https://example.test", model: "m", repoRoot: dir, writeRoot: join(dir, "out"),
       maxTurns: 12, maxTokens: 100_000, requestTimeoutMs: 5000, fetchImpl, ...silent,
     });
     const outcome = await harness(INITIAL);
@@ -213,12 +321,12 @@ describe("chatCompletionsHarness tool loop", () => {
 
   test("turn budget: a model that loops on tools forever stops loudly at maxTurns", async () => {
     const dir = mkdtempSync(join(tmpdir(), "aoi-chat-"));
-    executeToolCall(dir, { id: "0", type: "function", function: { name: "write_file", arguments: JSON.stringify({ path: "f", content: "x" }) } });
+    seed(dir, "f", "x"); // a repo file the model will read (reads stay repo-wide)
     // Always asks to read — never stops.
     const fetchImpl = (async () =>
       new Response(JSON.stringify(asstToolCall("read_file", { path: "f" })), { status: 200 })) as unknown as typeof fetch;
     const harness = chatCompletionsHarness({
-      baseUrl: "https://example.test", model: "m", repoRoot: dir,
+      baseUrl: "https://example.test", model: "m", repoRoot: dir, writeRoot: join(dir, "out"),
       maxTurns: 3, maxTokens: 100_000, requestTimeoutMs: 5000, fetchImpl, ...silent,
     });
     const outcome = await harness(INITIAL);
@@ -228,14 +336,14 @@ describe("chatCompletionsHarness tool loop", () => {
 
   test("token budget: completion tokens summed past maxTokens stops loudly", async () => {
     const dir = mkdtempSync(join(tmpdir(), "aoi-chat-"));
-    executeToolCall(dir, { id: "0", type: "function", function: { name: "write_file", arguments: JSON.stringify({ path: "f", content: "x" }) } });
+    seed(dir, "f", "x"); // a repo file the model will read (reads stay repo-wide)
     const fetchImpl = (async () => {
       const r = asstToolCall("read_file", { path: "f" });
       r.usage = { completion_tokens: 1000 } as any;
       return new Response(JSON.stringify(r), { status: 200 });
     }) as unknown as typeof fetch;
     const harness = chatCompletionsHarness({
-      baseUrl: "https://example.test", model: "m", repoRoot: dir,
+      baseUrl: "https://example.test", model: "m", repoRoot: dir, writeRoot: join(dir, "out"),
       maxTurns: 50, maxTokens: 500, requestTimeoutMs: 5000, fetchImpl, ...silent,
     });
     const outcome = await harness(INITIAL);
@@ -281,13 +389,12 @@ describe("integration: stub OpenAI server drives the full runLoop", () => {
     const dir = mkdtempSync(join(tmpdir(), "aoi-chat-e2e-"));
     // The model needs a README.md to read; the worker prompt points at it.
     const taskDir = join(dir, "tasks", "frostbite-striker");
-    executeToolCall(dir, {
-      id: "0", type: "function",
-      function: { name: "write_file", arguments: JSON.stringify({ path: "tasks/frostbite-striker/README.md", content: "Self-test: write out/candidate.json" }) },
-    });
+    // README seeded via the OS (a repo read target); the write jail confines the
+    // model to the task's out/ (PRD #067 slice 1).
+    seed(dir, join("tasks", "frostbite-striker", "README.md"), "Self-test: write out/candidate.json");
 
     const harness = chatCompletionsHarness({
-      baseUrl: `http://127.0.0.1:${port}`, model: "stub-openai", repoRoot: dir,
+      baseUrl: `http://127.0.0.1:${port}`, model: "stub-openai", repoRoot: dir, writeRoot: join(taskDir, "out"),
       maxTurns: 12, maxTokens: 100_000, requestTimeoutMs: 5000, ...silent,
     });
 
