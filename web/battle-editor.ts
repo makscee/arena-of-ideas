@@ -87,6 +87,7 @@ export function createBattleEditor(els: BattleEditorEls, deps: BattleEditorDeps)
   // captured on open and consumed on pick.
   let pickTarget: SideKey | undefined;
   const palette: Palette = createPalette({
+    id: "be-palette",
     pool: deps.pool,
     registry: deps.registry,
     onPick: (def) => {

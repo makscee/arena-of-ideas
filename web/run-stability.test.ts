@@ -276,6 +276,7 @@ describe("shop row reserves the rolled offer count's layout (refutation 3)", () 
     fire(type: string, ev: unknown): void;
     querySelector(sel: string): null;
     append(): void;
+    setAttribute(): void;
     classList: { toggle(): void };
     scrollIntoView(): void;
   }
@@ -304,6 +305,7 @@ describe("shop row reserves the rolled offer count's layout (refutation 3)", () 
       },
       querySelector: () => null,
       append() {},
+      setAttribute() {},
       classList: { toggle() {} },
       scrollIntoView() {},
     };
@@ -317,13 +319,18 @@ describe("shop row reserves the rolled offer count's layout (refutation 3)", () 
     // The run menu (#014) wires document-level outside-tap/Escape listeners at
     // construction — stub document so this browserless harness can build the
     // screen (production has a real one).
-    vi.stubGlobal("document", { addEventListener() {} });
+    // createElement too: the DEV panel (#066 slice 4) builds the shared unit
+    // palette at construction (createPalette → document.createElement).
+    vi.stubGlobal("document", { addEventListener() {}, createElement: () => makeEl() });
     const names = [
       "newPanel", "newForm", "seed", "dice", "startButton", "newError", "champ", "warn", "shopPanel", "head", "next",
       "notice", "shopRow", "rerollButton", "line", "fightButton", "stakes", "error", "battlePanel",
       "battleHead", "battleMount", "battleBar", "outcome", "continueButton", "skipButton", "endPanel",
       "endHead", "endStats", "endLine", "endStatus", "newRunButton", "ladderPanel", "ladderBody",
       "menuButton", "menuOverlay", "menuClose", "abandonButton", "abandonConfirm", "abandonYes", "abandonNo",
+      // #066 slice 4 DEV panel els — present so construction wires them.
+      "devPanel", "devGoldPlus", "devGoldSetInput", "devGoldSet", "devSpawnShop", "devSpawnTeam",
+      "devResetLadder", "devResetConfirm", "devResetYes", "devResetNo", "devNote",
     ] as const;
     const els = Object.fromEntries(names.map((n) => [n, makeEl()])) as Record<(typeof names)[number], FakeEl>;
     // The layout model: rows of two cards, 130px per row, 18px placeholder.
@@ -350,6 +357,8 @@ describe("shop row reserves the rolled offer count's layout (refutation 3)", () 
       },
       store: new InMemoryLadderStore(),
       pool: DEFAULT_RUN_POOL,
+      devPool: () => DEFAULT_RUN_POOL,
+      devEnabled: () => false,
       registry,
       viewer: { load() {}, stop() {}, toEnd() {}, position: () => 0 },
       viewerHost: makeEl(),

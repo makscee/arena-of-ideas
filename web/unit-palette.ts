@@ -22,6 +22,10 @@ export interface PaletteDeps {
   registry: StatusRegistry;
   /** Fired once per pick with a fresh deep clone of the chosen def. */
   onPick: (def: UnitDef) => void;
+  /** Optional DOM id for the popover root — lets callers (and tests) target a
+   * specific palette when more than one lives in the page (the editor's and the
+   * run DEV panel's, #066 slice 4). Omitted: no id, just the `.palette` class. */
+  id?: string;
 }
 
 export interface Palette {
@@ -35,6 +39,7 @@ export interface Palette {
 export function createPalette(deps: PaletteDeps): Palette {
   const root = document.createElement("div");
   root.className = "palette";
+  if (deps.id !== undefined) root.id = deps.id;
   root.hidden = true;
   root.setAttribute("role", "dialog");
   root.setAttribute("aria-label", "Pick a unit");

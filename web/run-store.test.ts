@@ -103,6 +103,17 @@ describe("active run persistence", () => {
     expect(loadRun(storage)?.battle?.position).toBe(17);
   });
 
+  test("the local-only flag (#066 slice 4) round-trips and clears", () => {
+    const storage = fakeStorage();
+    const state = buy(initRun({ seed: 7, runId: "web-1", pool: [TITAN], statuses: stressRegistry }), 0);
+    saveRun(storage, state); // no cheat: the flag is absent, shape stays { state }
+    expect(loadRun(storage)).toEqual({ state });
+    saveRun(storage, state, undefined, true); // a dev cheat marks it local-only
+    expect(loadRun(storage)).toEqual({ state, localOnly: true });
+    saveRun(storage, state, undefined, false); // a fresh run clears it
+    expect(loadRun(storage)).toEqual({ state });
+  });
+
   test("a corrupt stored run is refused loudly", () => {
     const storage = fakeStorage();
     storage.setItem("aoi.run.v1", '{"status":"weird"}');

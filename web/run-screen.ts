@@ -35,14 +35,17 @@ import {
   type TeamSnapshot,
   type UnitDef,
 } from "../src/index.js";
+import { addGold, setGold, spawnUnit } from "./dev-ops.js";
 import { closeInspectOverlay, dismissInspectOverlay, openInspectOverlay, renderUnitInspect } from "./inspect.js";
 import { createLadderView, ghostLabel } from "./ladder-view.js";
+import { createPalette } from "./unit-palette.js";
 import { unitCardHtml } from "./unit-card.js";
 import {
   clearRun,
   loadRun,
   loadSubmitResult,
   nextRunId,
+  resetLadder,
   saveRun,
   saveSubmitResult,
   type KVStorage,
@@ -104,6 +107,18 @@ interface RunScreenEls {
   fightButton: HTMLButtonElement;
   stakes: HTMLElement;
   error: HTMLElement;
+  /** DEV panel (#066 slice 4) — shown only when dev mode is on. */
+  devPanel: HTMLDetailsElement;
+  devGoldPlus: HTMLButtonElement;
+  devGoldSetInput: HTMLInputElement;
+  devGoldSet: HTMLButtonElement;
+  devSpawnShop: HTMLButtonElement;
+  devSpawnTeam: HTMLButtonElement;
+  devResetLadder: HTMLButtonElement;
+  devResetConfirm: HTMLElement;
+  devResetYes: HTMLButtonElement;
+  devResetNo: HTMLButtonElement;
+  devNote: HTMLElement;
   battlePanel: HTMLElement;
   battleHead: HTMLElement;
   battleMount: HTMLElement;
@@ -139,6 +154,14 @@ export interface RunScreenDeps {
   /** The draftable pool new runs open with — a stable module-level object
    * (RunState holds it by reference; mutating it would desync stored runs). */
   pool: UnitDef[];
+  /** The pool the DEV panel's spawn-any-unit offers (#066 slice 4) — the full
+   * set a player can meet (shipped + approved + codex), read live so approvals
+   * grow it; reuses slice 2's palette. Read via a function, never mutated. */
+  devPool: () => readonly UnitDef[];
+  /** Whether dev mode is on (#066 slice 4) — gates the DEV panel. Read live
+   * from the device-wide aoi.dev.v1, NOT deps.storage (which is session-prefixed
+   * for remote play); a Settings flip takes effect on the next shop render. */
+  devEnabled: () => boolean;
   /** Registry new runs fight with — threaded, never hardwired deeper. */
   registry: StatusRegistry;
   viewer: Viewer;
@@ -170,6 +193,12 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   let pending: StoredBattle | undefined; // the fought battle awaiting continue
   let phase: Phase = "new";
   let visible = false;
+  // #066 slice 4: a dev cheat was applied to the active run. The run is then
+  // local-only — the client skips submission (a cheated run can't re-derive,
+  // so submitting only earns a 422). Persisted on the stored run; cleared on a
+  // fresh run. Not a security boundary — the server rejects a cheated run
+  // regardless (server/src/ladder-api.test.ts); this just skips a doomed call.
+  let localOnly = false;
   let selected: { where: "offer" | "line" | "end"; index: number; status?: string } | undefined;
   let notice: string | undefined; // the last transition's level-up moment, if any
   let fused: string | undefined; // the just-fused unit's name — flashes once, consumed by the next shop render
@@ -199,6 +228,44 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   let served: { runId: string; round: number } | undefined;
 
   const ladderView = createLadderView(els.ladderBody, { store: deps.store, registry: deps.registry });
+
+  // ---------- DEV panel (#066 slice 4) ----------
+
+  // Spawn-any-unit reuses slice 2's palette verbatim: the same component, a
+  // different pool and onPick. The dest (shop/team) is captured when the open
+  // button is clicked, so one palette serves both spawn buttons.
+  let spawnDest: "shop" | "team" = "shop";
+  const devPalette = createPalette({
+    id: "dev-palette",
+    pool: deps.devPool,
+    registry: deps.registry,
+    onPick: (def) => devMutate((s) => spawnUnit(s, def, spawnDest)),
+  });
+  els.devPanel.append(devPalette.element);
+
+  /** Apply a dev cheat: mutate the active run, mark it local-only (so it skips
+   * submission — see submitRemote), persist, re-render. A dev op is NOT a
+   * kernel transition (it sidesteps the decision log on purpose), so it never
+   * routes through transition(); it has its own funnel. */
+  function devMutate(step: (s: RunState) => RunState): void {
+    if (state === undefined || state.status !== "active") return;
+    state = step(state);
+    localOnly = true; // this run can no longer re-derive — keep it off the ladder
+    selected = undefined;
+    persist(state, pending);
+    render();
+  }
+
+  /** Show the DEV panel only when dev mode is on (read live, so a Settings
+   * toggle takes effect on the next shop render), and reflect local-only. */
+  function renderDevPanel(): void {
+    const on = deps.devEnabled();
+    els.devPanel.hidden = !on;
+    if (!on) return;
+    els.devNote.textContent = localOnly
+      ? "this run is dev-cheated — it stays local and won't be submitted to the shared ladder"
+      : "cheats mark the run local-only — the server can't re-derive a cheated run anyway";
+  }
 
   /** The champion as a phrase — bootstrap is shipped content, not a rival run. */
   const championPhrase = (c: TeamSnapshot): string =>
@@ -320,6 +387,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     renderLine(s);
     els.fightButton.disabled = s.team.length === 0;
     els.stakes.textContent = stakesLine(s.lives);
+    renderDevPanel(); // gated on dev mode, read live so a Settings flip takes
     fused = undefined; // the flash renders once — re-renders must not replay it
     if (selected !== undefined) renderInspector();
     else closeInspectOverlay("run");
@@ -545,6 +613,12 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     }
     els.endStatus.hidden = false;
     els.endStatus.classList.remove("ok", "bad");
+    // #066 slice 4: a dev-cheated run never went to the server — say so plainly
+    // rather than leaving "submitting…" hanging on a call that never fires.
+    if (localOnly) {
+      els.endStatus.textContent = "dev-cheated run — kept local, not submitted to the shared ladder";
+      return;
+    }
     switch (submitState.kind) {
       case "none":
       case "pending":
@@ -576,6 +650,11 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   function submitRemote(): void {
     const remote = deps.remote;
     if (remote === undefined || state === undefined || state.status !== "over") return;
+    // #066 slice 4: a dev-cheated run is local-only — skip submission entirely.
+    // It can't re-derive (the cheat is outside the decision log), so a submit
+    // would only earn a 422; the server is immune either way. The end screen
+    // says so via renderSubmitStatus()'s local-only branch.
+    if (localOnly) return;
     if (submitState.kind !== "none" && submitState.kind !== "failed") return;
     const s = state;
     submitState = { kind: "pending" };
@@ -697,7 +776,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
    * carry on in-memory — the game is never blocked by a quota failure. */
   function persist(s: RunState, b?: StoredBattle): void {
     try {
-      saveRun(deps.storage, s, b);
+      saveRun(deps.storage, s, b, localOnly);
     } catch (err) {
       // QuotaExceededError (and any other write failure): warn once, keep playing.
       const reason = err instanceof Error ? err.message : String(err);
@@ -832,6 +911,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     els.warn.hidden = true;
     submitState = { kind: "none" };
     served = undefined;
+    localOnly = false; // a fresh run is submittable until a cheat touches it
     state = initRun({ seed, runId, pool: deps.pool, statuses: deps.registry });
     pending = undefined;
     selected = undefined;
@@ -922,6 +1002,39 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   });
 
   els.rerollButton.addEventListener("click", () => transition(reroll));
+
+  // DEV panel wiring (#066 slice 4). The +gold/set re-render the shop so the
+  // new gold is immediately spendable; spawn opens the palette anchored on its
+  // button; reset-ladder repeats the error path's two-step confirm.
+  els.devGoldPlus.addEventListener("click", () => devMutate((s) => addGold(s, 10)));
+  els.devGoldSet.addEventListener("click", () => {
+    const n = Number(els.devGoldSetInput.value);
+    if (els.devGoldSetInput.value.trim() === "" || !Number.isFinite(n)) return;
+    devMutate((s) => setGold(s, n));
+    els.devGoldSetInput.value = "";
+  });
+  els.devSpawnShop.addEventListener("click", () => {
+    spawnDest = "shop";
+    devPalette.open(els.devSpawnShop);
+  });
+  els.devSpawnTeam.addEventListener("click", () => {
+    spawnDest = "team";
+    devPalette.open(els.devSpawnTeam);
+  });
+  // Reset-ladder MOVED here from main.ts's error-recovery path: a healthy-run
+  // dev convenience, behind the same two-step confirm (a single click never
+  // wipes the ladder). The error path keeps its own copy — it must work even
+  // when the run screen failed to open, where this panel never renders.
+  els.devResetLadder.addEventListener("click", () => {
+    els.devResetConfirm.hidden = false;
+  });
+  els.devResetNo.addEventListener("click", () => {
+    els.devResetConfirm.hidden = true;
+  });
+  els.devResetYes.addEventListener("click", () => {
+    resetLadder(deps.storage);
+    window.location.reload(); // reopen over the fresh, re-bootstrapped ladder
+  });
   // The shop and line reserves are measured at the current width — a
   // rotation/resize re-measures in place (no full re-render: renderShop would
   // reset scroll, and phone browsers fire resize on every URL-bar collapse).
@@ -942,7 +1055,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     const position = visible && phase === "battle" ? deps.viewer.position() : battleResume;
     if (position === undefined) return;
     try {
-      saveRun(deps.storage, state, { ...pending, position });
+      saveRun(deps.storage, state, { ...pending, position }, localOnly);
     } catch {
       // A quota failure on the way out has nowhere to surface — the run
       // itself was already persisted when the fight resolved.
@@ -974,6 +1087,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     battleResume = undefined;
     submitState = { kind: "none" };
     served = undefined;
+    localOnly = false;
     render();
     deps.onExitToTitle?.();
   }
@@ -1062,6 +1176,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     if (stored !== null) {
       state = stored.state;
       pending = stored.battle;
+      localOnly = stored.localOnly ?? false; // a revived cheated run stays off the ladder
       // The parked replay position, revived (#015 slice 4) — fed through the
       // same resumeAt seam a tab switch uses; clamping is the viewer's job.
       if (typeof stored.battle?.position === "number") battleResume = stored.battle.position;

@@ -94,15 +94,15 @@ async function scenario(viewport, tag) {
   await page.click("#be-col-b .be-clear");
   check((await waitSlots(page, "B", 0)) === 0, `${tag} clear empties Team B`);
   await page.click('#be-col-b [data-add="B"]');
-  await page.waitForSelector(".palette:not([hidden]) [data-pick]");
-  check(await page.locator(".palette").isVisible(), `${tag} the unit palette opens`);
-  await page.click(".palette [data-pick]"); // place the first pool unit
+  await page.waitForSelector("#be-palette:not([hidden]) [data-pick]");
+  check(await page.locator("#be-palette").isVisible(), `${tag} the unit palette opens`);
+  await page.click("#be-palette [data-pick]"); // place the first pool unit
   check((await waitSlots(page, "B", 1)) === 1, `${tag} palette pick places a unit in Team B`);
   // Place two more so B is a real team, not a single unit.
   for (let k = 2; k <= 3; k++) {
     await page.click('#be-col-b [data-add="B"]');
-    await page.waitForSelector(".palette:not([hidden]) [data-pick]");
-    await page.click(".palette [data-pick]");
+    await page.waitForSelector("#be-palette:not([hidden]) [data-pick]");
+    await page.click("#be-palette [data-pick]");
     await waitSlots(page, "B", k);
   }
   check((await slotCount(page, "B")) === 3, `${tag} Team B has 3 units after palette picks`);

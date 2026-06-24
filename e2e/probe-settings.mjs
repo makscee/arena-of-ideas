@@ -9,6 +9,9 @@
 //  4. Turning it OFF again hides the dev tools entry on the title.
 //  5. The toggle state SURVIVES a page reload — on stays on, persisted in
 //     aoi.dev.v1 (the run-store key), reflected by both Settings and the title.
+//  6. (#066 slice 4) In a run: the DEV panel is hidden when dev is off, shown
+//     when dev is on; +gold raises the spendable gold; spawn-any-unit drops a
+//     unit into the shop (the palette, reused from slice 2).
 //
 // The gate is a local convenience switch, not a security boundary — this probe
 // measures only which surfaces a developer sees on this device.
@@ -39,6 +42,28 @@ async function openSettings(page) {
 async function homeToTitle(page) {
   await page.click("#home-button");
   await page.waitForSelector("#title-view:not([hidden])");
+}
+
+/** The visible gold in the run header, as a number. */
+async function shopGold(page) {
+  const text = await page.locator("#run-head .run-gold").textContent();
+  return Number(text.replace(/[^0-9]/g, ""));
+}
+
+/** Set dev mode, start a fresh run, land on the shop. Returns the page/ctx. */
+async function startRunWithDev(viewport, on) {
+  const { ctx, page } = await openFresh(viewport);
+  if (on) {
+    await openSettings(page);
+    await page.click("#settings-dev-toggle");
+    await homeToTitle(page);
+  }
+  await page.click("#title-play");
+  await page.waitForSelector("#run-new:not([hidden])");
+  await page.fill("#run-seed", "123");
+  await page.click("#run-start");
+  await page.waitForSelector("#run-shop:not([hidden])");
+  return { ctx, page };
 }
 
 async function scenario(viewport, tag) {
@@ -103,11 +128,63 @@ async function scenario(viewport, tag) {
   await ctx.close();
 }
 
+/** #066 slice 4: the in-run DEV panel — gated, and its cheats mutate the run. */
+async function devPanelScenario(viewport, tag) {
+  // Dev OFF: a run shows NO DEV panel — a normal player never sees cheats.
+  {
+    const { ctx, page } = await startRunWithDev(viewport, false);
+    check(await page.locator("#run-dev").isHidden(), `${tag} DEV panel hidden in a run while dev off`);
+    await ctx.close();
+  }
+
+  // Dev ON: the DEV panel is there, and its cheats take.
+  const { ctx, page } = await startRunWithDev(viewport, true);
+  check(await page.locator("#run-dev").isVisible(), `${tag} DEV panel shown in a run while dev on`);
+
+  // Open the collapsible panel (a <details>) and read the starting gold.
+  await page.click("#run-dev > summary");
+  const gold0 = await shopGold(page);
+
+  // +gold raises the visible, spendable gold (the shop re-renders).
+  await page.click("#dev-gold-plus");
+  const gold1 = await shopGold(page);
+  check(gold1 === gold0 + 10, `${tag} +gold raises the run's visible gold`, `${gold0} → ${gold1}`);
+
+  // spawn-any-unit → shop: the palette (slice 2's component) opens; a pick
+  // lands a new offer in the shop row.
+  const offers0 = await page.locator("#run-shop-row [data-offer]").count();
+  await page.click("#dev-spawn-shop");
+  await page.waitForSelector("#dev-palette:not([hidden]) [data-pick]");
+  check(await page.locator("#dev-palette").isVisible(), `${tag} spawn-any-unit opens the palette`);
+  await page.click("#dev-palette [data-pick]");
+  await page.waitForFunction(
+    (n) => document.querySelectorAll("#run-shop-row [data-offer]").length > n,
+    offers0,
+  );
+  const offers1 = await page.locator("#run-shop-row [data-offer]").count();
+  check(offers1 === offers0 + 1, `${tag} spawn-any-unit adds a unit to the shop`, `${offers0} → ${offers1}`);
+
+  // spawn-any-unit → team: a pick lands a new line unit.
+  const line0 = await page.locator("#run-line [data-line]").count();
+  await page.click("#dev-spawn-team");
+  await page.waitForSelector("#dev-palette:not([hidden]) [data-pick]");
+  await page.click("#dev-palette [data-pick]");
+  await page.waitForFunction(
+    (n) => document.querySelectorAll("#run-line [data-line]").length > n,
+    line0,
+  );
+  const line1 = await page.locator("#run-line [data-line]").count();
+  check(line1 === line0 + 1, `${tag} spawn-any-unit adds a unit to the team`, `${line0} → ${line1}`);
+
+  await ctx.close();
+}
+
 for (const [viewport, tag] of [
   [PHONE, "375px"],
   [DESKTOP, "desktop"],
 ]) {
   await scenario(viewport, tag);
+  await devPanelScenario(viewport, tag);
 }
 
 await browser.close();

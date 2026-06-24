@@ -1897,6 +1897,52 @@ button:disabled:hover {
   font-size: 0.85rem;
 }
 
+/* DEV panel (#066 slice 4): in-run cheats, collapsed by default so it never
+   crowds the shop. Boxed off and dimmed — clearly a tool, not part of play. */
+.run-dev {
+  margin: 0.3rem 0 0.9rem;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.run-dev > summary {
+  cursor: pointer;
+  color: var(--dim, inherit);
+  letter-spacing: 0.04em;
+}
+
+.run-dev-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.run-dev-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.run-dev-k {
+  min-width: 3.2rem;
+  color: var(--dim, inherit);
+}
+
+#dev-gold-set-input {
+  width: 5rem;
+}
+
+.run-dev-confirm {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
 #run-battle-head,
 #run-end-head {
   font-size: 0.85rem;

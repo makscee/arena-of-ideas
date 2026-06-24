@@ -25,6 +25,7 @@ const RUN_SEQ_KEY = "aoi.run-seq.v1";
 const SUBMIT_KEY = "aoi.submit.v1";
 const SESSION_KEY = "aoi.session.v1";
 const DEV_KEY = "aoi.dev.v1";
+const LOCAL_ONLY_KEY = "aoi.run-local-only.v1";
 
 /** The storage surface this module needs — window.localStorage, or a test stub. */
 export type KVStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
@@ -110,12 +111,18 @@ export interface StoredBattle {
 export interface StoredRun {
   state: RunState;
   battle?: StoredBattle;
+  /** #066 slice 4: a dev cheat was applied to this run, so the client skips
+   * submission for it (a cheated run can't re-derive — it would only generate a
+   * doomed 422). Hygiene, not security: the server is immune regardless. */
+  localOnly?: boolean;
 }
 
-export function saveRun(storage: KVStorage, state: RunState, battle?: StoredBattle): void {
+export function saveRun(storage: KVStorage, state: RunState, battle?: StoredBattle, localOnly?: boolean): void {
   storage.setItem(RUN_KEY, serializeRun(state));
   if (battle !== undefined) storage.setItem(BATTLE_KEY, JSON.stringify(battle));
   else storage.removeItem(BATTLE_KEY);
+  if (localOnly) storage.setItem(LOCAL_ONLY_KEY, "1");
+  else storage.removeItem(LOCAL_ONLY_KEY);
 }
 
 /** The active run, or null when none is stored. Corrupt data throws loudly. */
@@ -123,19 +130,23 @@ export function loadRun(storage: KVStorage): StoredRun | null {
   const raw = storage.getItem(RUN_KEY);
   if (raw === null) return null;
   const state = deserializeRun(raw);
+  // Only carried when set, so a non-cheated run round-trips to exactly { state }
+  // / { state, battle } (the storage shape callers compare against).
+  const localOnly = storage.getItem(LOCAL_ONLY_KEY) === "1" ? { localOnly: true } : {};
   const battleRaw = storage.getItem(BATTLE_KEY);
-  if (battleRaw === null) return { state };
+  if (battleRaw === null) return { state, ...localOnly };
   const battle = JSON.parse(battleRaw) as StoredBattle;
   if (!Array.isArray(battle?.teamA) || !Array.isArray(battle?.teamB) || typeof battle?.seed !== "number") {
     throw new Error(`stored battle ("${BATTLE_KEY}") is not a StoredBattle — refusing to revive it`);
   }
-  return { state, battle };
+  return { state, battle, ...localOnly };
 }
 
 export function clearRun(storage: KVStorage): void {
   storage.removeItem(RUN_KEY);
   storage.removeItem(BATTLE_KEY);
   storage.removeItem(SUBMIT_KEY);
+  storage.removeItem(LOCAL_ONLY_KEY);
 }
 
 // ---------------------------------------------------------------------------

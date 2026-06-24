@@ -156,6 +156,35 @@
             <button type="button" id="run-fight">fight</button>
             <span id="run-stakes" class="run-dim"></span>
           </div>
+          <!-- DEV panel (#066 slice 4): in-run cheats, shown only when dev mode
+               is on (run-screen toggles `hidden` off loadDevMode). Collapsed by
+               default so it never crowds the shop. A cheated run is marked
+               local-only and skips submission — the server is immune anyway. -->
+          <details id="run-dev" class="run-dev" hidden>
+            <summary>DEV cheats</summary>
+            <div class="run-dev-body">
+              <div class="run-dev-row">
+                <span class="run-dev-k">gold</span>
+                <button type="button" id="dev-gold-plus">+10g</button>
+                <input type="number" id="dev-gold-set-input" min="0" step="1" placeholder="set" aria-label="set gold to" />
+                <button type="button" id="dev-gold-set">set</button>
+              </div>
+              <div class="run-dev-row">
+                <span class="run-dev-k">spawn</span>
+                <button type="button" id="dev-spawn-shop">+ unit → shop</button>
+                <button type="button" id="dev-spawn-team">+ unit → team</button>
+              </div>
+              <div class="run-dev-row">
+                <button type="button" id="dev-reset-ladder" class="danger">reset ladder…</button>
+                <span id="dev-reset-confirm" class="run-dev-confirm" hidden>
+                  deletes every ghost, the champion, and this run
+                  <button type="button" id="dev-reset-yes" class="danger">really reset</button>
+                  <button type="button" id="dev-reset-no">keep it</button>
+                </span>
+              </div>
+              <p id="run-dev-note" class="run-dim"></p>
+            </div>
+          </details>
           <p id="run-error" role="alert"></p>
         </div>
 

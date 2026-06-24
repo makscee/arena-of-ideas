@@ -33,6 +33,7 @@ import {
   type TeamSnapshot,
   type UnitDef,
 } from "../../src/index.js";
+import { addGold, spawnUnit } from "../../web/dev-ops.js";
 import { createApp } from "./app.js";
 import { MAX_RUN_BYTES, MAX_RUN_LOG_EVENTS, RUN_OPEN_TTL_SECONDS } from "./runs.js";
 import type { AuthEnv } from "./auth.js";
@@ -384,6 +385,49 @@ describe("tampered submissions are rejected", () => {
       body: JSON.stringify({ run: 42 }),
     });
     expect(bad.status).toBe(400);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Dev cheats are structurally unsubmittable (#066 slice 4): the in-run DEV
+// panel's mutations (web/dev-ops.ts) touch the run state OUTSIDE the decision
+// log, so the re-derivation cannot reproduce them and the submission bounces.
+// This is the real "local-only" guarantee — the architecture, not the client's
+// skip-submission flag. The flag is hygiene; THIS is the boundary.
+// ---------------------------------------------------------------------------
+
+describe("a dev-cheated run is rejected by re-derivation", () => {
+  test("addGold inflates gold off the decision log — the replay diverges", async () => {
+    const ctx = makeCtx();
+    const ada = await login(ctx, "ada@example.com");
+
+    // A wholly legit run, played the contract way — it would be accepted as-is.
+    const honest = await playSharedRun(ctx, ada, 1, "titan-a");
+    expect(honest).toMatchObject({ status: "over" });
+
+    // The dev cheat: the same +gold the DEV panel applies, on the finished run.
+    const cheated = addGold(honest, 1_000);
+    expect(cheated.gold).toBe(honest.gold + 1_000); // the cheat took locally…
+
+    const { status, body } = await submit(ctx, ada, serializeRun(cheated));
+    expect(status).toBe(422); // …but the server re-derives gold from the log and rejects it
+    expect(body).toMatchObject({ accepted: false });
+    expect(body["reason"]).toMatch(/diverges/);
+    // Nothing entered the shared ladder.
+    expect((await fetchPublicPool(ctx, 1)).map((g) => g.runId)).not.toContain("titan-a");
+  });
+
+  test("spawnUnit fabricates a line unit the log never bought — rejected too", async () => {
+    const ctx = makeCtx();
+    const ada = await login(ctx, "ada@example.com");
+    const honest = await playSharedRun(ctx, ada, 1, "titan-b");
+
+    const cheated = spawnUnit(honest, TITAN, "team");
+    expect(cheated.team.length).toBe(honest.team.length + 1); // the spawned unit is there locally
+
+    const { status, body } = await submit(ctx, ada, serializeRun(cheated));
+    expect(status).toBe(422);
+    expect(body["reason"]).toMatch(/diverges/);
   });
 });
 
