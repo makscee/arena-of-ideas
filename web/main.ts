@@ -9,7 +9,7 @@ import { createArenaApi, type MeInfo } from "./api.js";
 import { resolveUnits, teamOptions } from "./catalogue.js";
 import { dismissInspectOverlay } from "./inspect.js";
 import { createViewer } from "./viewer.js";
-import { createEditor } from "./editor.js";
+import { createBattleEditor, type BattleEditor } from "./battle-editor.js";
 import { createGauntlet } from "./gauntlet.js";
 import { createLogin } from "./login.js";
 import { RemoteLadder } from "./remote-ladder.js";
@@ -236,6 +236,7 @@ function reflectDevGate(): void {
 
 let runScreen: RunScreen | undefined;
 let leaderboardView: LadderView | undefined;
+let battleEditor: BattleEditor | undefined;
 
 // Codex: initialised once, lives in #codex-container. codexUnits() covers
 // every unit a player can meet — shop pool, bootstrap ghosts/champion, summons.
@@ -301,6 +302,10 @@ function showView(which: keyof typeof views): void {
   homeButton.hidden = which === "title"; // every other screen can walk home
   if (which !== "battle") viewer.stop();
   runScreen?.setVisible(which === "run");
+  // The battle editor borrows the shared viewer DOM (#result) for its replay,
+  // exactly as the run screen does — so it must hear every view change to mount
+  // it on entry and return it on exit.
+  battleEditor?.setVisible(which === "editor");
   codexScreen.setVisible(which === "codex");
   if (which === "title") {
     titleScreen.refresh(); // Play vs Continue, read fresh
@@ -376,13 +381,13 @@ if (bootNetWarn !== null) {
   warn.textContent = bootNetWarn;
   warn.hidden = false;
 }
-// #066 slice 1: the dev tools entry is gated by dev mode (reflectDevGate keeps
-// it hidden when off). When shown, it reveals the existing tab nav and lands on
-// the battle sandbox exactly as before — this slice changes only the GATE, not
-// the dev surfaces themselves (slice 2 replaces them).
+// #066 slice 2: the dev tools entry is gated by dev mode (reflectDevGate keeps
+// it hidden when off). When shown, it reveals the tab nav and lands on the
+// Battle Editor — the one dev surface (slice 2). The legacy battle/gauntlet
+// tabs stay reachable for now (slice 5 deletes them).
 titleDev.addEventListener("click", () => {
   viewsNav.hidden = false; // revealed for the session — tabs work as ever
-  showView("battle");
+  showView("editor");
 });
 
 // #066 slice 1: Settings (the ⚙ entry). The account block is the login state
@@ -532,28 +537,36 @@ const gauntlet = createGauntlet(
   },
 );
 
-function onTeamsChanged(): void {
+// The gauntlet (slice 3/5) still refreshes its picker on team changes; with the
+// legacy editor gone the only remaining source is the saved-team store, kept
+// fresh on each gauntlet show by its own refresh.
+void (function keepGauntletFresh(): void {
   fillTeamPickers();
   gauntlet.refresh();
-}
+})();
 
-createEditor(
+// #066 slice 2: the Battle Editor — two team columns, a shared unit palette,
+// per-slot overrides, quick loaders, and a locked-seed Fight that mounts the
+// shared viewer (#result) as a black box. The pool the palette offers is the
+// full set a player can meet: shipped run pool + approved + bootstrap + summons.
+battleEditor = createBattleEditor(
   {
-    teamSelect: el<HTMLSelectElement>("ed-team-select"),
-    newButton: el<HTMLButtonElement>("ed-new"),
-    deleteButton: el<HTMLButtonElement>("ed-delete"),
-    exportButton: el<HTMLButtonElement>("ed-export"),
-    importButton: el<HTMLButtonElement>("ed-import"),
-    fileInput: el<HTMLInputElement>("ed-file"),
-    nameInput: el<HTMLInputElement>("ed-name"),
-    unitsBox: el<HTMLElement>("ed-units"),
-    templateSelect: el<HTMLSelectElement>("ed-template"),
-    addButton: el<HTMLButtonElement>("ed-add"),
-    verdict: el<HTMLElement>("ed-verdict"),
-    issuesList: el<HTMLElement>("ed-issues"),
-    importError: el<HTMLElement>("ed-import-error"),
+    columnA: el<HTMLElement>("be-col-a"),
+    columnB: el<HTMLElement>("be-col-b"),
+    seed: el<HTMLInputElement>("be-seed"),
+    reroll: el<HTMLButtonElement>("be-reroll"),
+    lock: el<HTMLInputElement>("be-lock"),
+    fight: el<HTMLButtonElement>("be-fight"),
+    error: el<HTMLElement>("be-error"),
+    mount: el<HTMLElement>("be-mount"),
   },
-  onTeamsChanged,
+  {
+    pool: () => codexUnits(approved),
+    registry: stressRegistry,
+    viewer,
+    viewerHost: result,
+    viewerHome: el("battle-view"),
+  },
 );
 
 el<HTMLElement>("kernel-version").textContent = `kernel v${KERNEL_VERSION}`;

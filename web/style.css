@@ -1309,6 +1309,232 @@ button:disabled:hover {
   padding: 0 0.2rem;
 }
 
+/* ---------- battle editor (#066 slice 2) ----------
+   Two team columns side by side (stacking at phone width), a seed control bar,
+   and the borrowed viewer below. The unit palette is a fixed popover anchored
+   to whichever "+ unit" button opened it. */
+
+.be-title {
+  margin: 0 0 0.3rem;
+}
+
+.be-blurb {
+  margin: 0 0 1rem;
+  color: var(--dim);
+  font-size: 0.8rem;
+}
+
+#be-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  #be-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.be-col {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.be-col-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.be-col-name {
+  font-weight: 600;
+}
+
+.be-col-count {
+  color: var(--dim);
+  font-size: 0.75rem;
+}
+
+.be-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.be-empty {
+  color: var(--dim);
+  font-size: 0.8rem;
+}
+
+.be-slot {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.be-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+}
+
+.be-edit label {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.be-edit input {
+  width: 3.2rem;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.35rem;
+}
+
+.be-edit button {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.45rem;
+}
+
+.be-statuses {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  border-top: 1px dashed var(--border);
+  padding-top: 0.4rem;
+}
+
+.be-none {
+  color: var(--dim);
+  font-size: 0.7rem;
+}
+
+.be-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  min-width: 0;
+}
+
+.be-status-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.be-row select {
+  flex: 1 1 6rem;
+  min-width: 0;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.35rem;
+}
+
+.be-row input {
+  width: 3.2rem;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.35rem;
+}
+
+.be-row button {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.45rem;
+}
+
+.be-col-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.be-load {
+  flex: 1 1 8rem;
+  min-width: 0;
+  font-size: 0.8rem;
+}
+
+#be-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin: 1rem 0;
+  padding: 0.8rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.be-seed-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.be-seed-row input {
+  width: 7rem;
+}
+
+.be-lock-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.be-fight {
+  font-weight: 600;
+}
+
+#be-error {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--warn);
+  font-size: 0.8rem;
+}
+
+/* ---------- unit palette popover (#066 slice 2, reused by slice 4) ---------- */
+
+.palette {
+  position: fixed;
+  z-index: 50;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.6rem;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  max-width: min(92vw, 30rem);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.palette-card {
+  cursor: pointer;
+}
+
+.palette-empty {
+  color: var(--dim);
+  font-size: 0.8rem;
+}
+
 /* ---------- gauntlet ----------
    Same dark panel for controls; the results table is compact enough for
    375px and gets a horizontal scroll as a last resort. */

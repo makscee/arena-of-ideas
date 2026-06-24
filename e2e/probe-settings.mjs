@@ -74,7 +74,7 @@ async function scenario(viewport, tag) {
   check(await page.locator("#title-dev").isVisible(), `${tag} dev tools entry revealed on the title while dev on`);
   await page.click("#title-dev");
   await page.waitForSelector("#views:not([hidden])");
-  check(await page.locator("#battle-view").isVisible(), `${tag} the dev tools entry opens the existing dev surface`);
+  check(await page.locator("#editor-view").isVisible(), `${tag} the dev tools entry opens the Battle Editor (#066 slice 2)`);
   await homeToTitle(page);
 
   // 4. Turn it OFF again → the dev tools entry hides.

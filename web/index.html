@@ -18,7 +18,7 @@
           <button type="button" id="view-run" class="tab">run</button>
           <button type="button" id="view-battle" class="tab">battle</button>
           <button type="button" id="view-gauntlet" class="tab">gauntlet</button>
-          <button type="button" id="view-editor" class="tab">editor</button>
+          <button type="button" id="view-editor" class="tab">battle editor</button>
           <button type="button" id="view-codex" class="tab" title="Rules &amp; glossary">?</button>
         </nav>
       </header>
@@ -276,36 +276,35 @@
         </div>
       </section>
 
+      <!-- Battle Editor (#066 slice 2) — the one dev surface. Two team columns
+           (palette-pick + per-slot stat/status overrides + quick loaders), a
+           seed control (box + reroll + lock, default locked), and Fight, which
+           mounts the existing battle viewer (#result, borrowed here) as a black
+           box to play the replay. Replaces the legacy one-team editor. -->
       <section id="editor-view" hidden>
-        <div id="editor-bar">
-          <label>
-            Saved teams
-            <select id="ed-team-select"></select>
+        <h2 class="be-title">Battle Editor</h2>
+        <p class="be-blurb">Build two teams, fight, edit, replay. The seed is locked by default, so an edit's effect shows at the same seed. Sandbox only — these fights are never runs.</p>
+
+        <div id="be-columns">
+          <div id="be-col-a" class="be-col"></div>
+          <div id="be-col-b" class="be-col"></div>
+        </div>
+
+        <div id="be-controls">
+          <label class="be-seed-row">
+            Seed
+            <input id="be-seed" type="number" value="0" step="1" />
+            <button type="button" id="be-reroll" title="Random seed">🎲</button>
           </label>
-          <span class="ed-buttons">
-            <button type="button" id="ed-new">new</button>
-            <button type="button" id="ed-delete">delete</button>
-            <button type="button" id="ed-import">import</button>
-            <button type="button" id="ed-export">export</button>
-          </span>
-          <input id="ed-file" type="file" accept=".json,application/json" hidden />
-          <p id="ed-import-error" role="alert" hidden></p>
+          <label class="be-lock-row" title="Locked: a re-fight reuses this seed so an edit's effect is isolated. Unlock to reroll each fight and check variance.">
+            <input id="be-lock" type="checkbox" checked />
+            🔒 lock seed
+          </label>
+          <button type="button" id="be-fight" class="be-fight">Fight</button>
+          <p id="be-error" role="alert" hidden></p>
         </div>
 
-        <label id="ed-name-row">
-          Team name
-          <input id="ed-name" placeholder="name this team" />
-        </label>
-
-        <div id="ed-units"></div>
-
-        <div id="ed-add-row">
-          <select id="ed-template" title="Unit template"></select>
-          <button type="button" id="ed-add">add unit</button>
-        </div>
-
-        <div id="ed-verdict" role="status"></div>
-        <ul id="ed-issues"></ul>
+        <div id="be-mount"></div>
       </section>
 
       <section id="codex-view" hidden>

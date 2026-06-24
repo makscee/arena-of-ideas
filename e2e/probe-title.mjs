@@ -211,10 +211,14 @@ async function navScenario(viewport, tag) {
   await page.click("#home-button");
   await page.waitForSelector("#title-view:not([hidden])");
 
-  // Dev: one low-prominence entry reveals the tab nav; tabs then switch views.
+  // Dev: one low-prominence entry reveals the tab nav and lands on the Battle
+  // Editor — the one dev surface (#066 slice 2). The legacy battle/gauntlet
+  // tabs stay reachable until slice 5 deletes them.
   await page.click("#title-dev");
   await page.waitForSelector("#views:not([hidden])");
-  check(await page.locator("#battle-view").isVisible(), `${tag} dev entry lands on the battle sandbox`);
+  check(await page.locator("#editor-view").isVisible(), `${tag} dev entry lands on the Battle Editor (#066 slice 2)`);
+  await page.click("#view-battle");
+  check(await page.locator("#battle-view").isVisible(), `${tag} battle tab still switches once revealed`);
   await page.click("#view-gauntlet");
   check(await page.locator("#gauntlet-view").isVisible(), `${tag} gauntlet tab switches once revealed`);
   await page.click("#view-editor");
