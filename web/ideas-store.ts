@@ -1,0 +1,39 @@
+// Ideas-table persistence — the browser's ideas table, in localStorage.
+// The backing is the kernel's PersistedIdeaStore over a storage key (the same
+// engine and IdeasData shape any persistent backing writes); this file owns the
+// key and the medium only, semantics stay in the kernel.
+//
+// Storage is injected (main.ts passes window.localStorage) so tests drive the
+// same code over an in-memory stub — the same pattern run-store.ts uses for the
+// ladder and active run.
+
+import {
+  PersistedIdeaStore,
+  emptyIdeasData,
+  parseIdeasData,
+  type IdeaStore,
+  type IdeasData,
+} from "../src/index.js";
+import type { KVStorage } from "./run-store.js";
+
+const IDEAS_KEY = "aoi.ideas.v1";
+
+export type { KVStorage } from "./run-store.js";
+
+/** Open the localStorage-backed ideas table. Corrupt stored JSON throws loudly
+ * (the FileLadderStore rule: silently starting fresh would drop every idea and
+ * vote); the caller surfaces the error, never swallows it. */
+export function openLocalIdeas(storage: KVStorage): IdeaStore {
+  const raw = storage.getItem(IDEAS_KEY);
+  const data = raw === null ? emptyIdeasData() : parseIdeasData(raw, `localStorage "${IDEAS_KEY}"`);
+  return new PersistedIdeaStore(data, (d) => storage.setItem(IDEAS_KEY, JSON.stringify(d)));
+}
+
+/** Serialize an ideas table to the stored JSON string. The inverse of
+ * parseIdeasData (re-exported from the kernel): serialize → parse round-trips
+ * the table exactly. */
+export function serializeIdeas(data: IdeasData): string {
+  return JSON.stringify(data);
+}
+
+export { parseIdeasData, emptyIdeasData } from "../src/index.js";
