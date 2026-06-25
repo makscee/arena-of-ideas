@@ -15,6 +15,7 @@ import {
   type StatusRegistry,
   type UnitDef,
 } from "../src/index.js";
+import { statusChipStyle } from "./status-color.js";
 
 /**
  * Unit instance id → its UnitDef. Roster units map by line order; a summoned
@@ -87,7 +88,12 @@ export function chipsHtml(
     .map((s) => {
       const def = registry[s.status];
       const title = `${s.status} ×${s.stacks}${def !== undefined ? ` — ${describeStatus(def)}` : ""}`;
-      return `<span class="chip" data-status="${esc(s.status)}" title="${esc(title)}">${esc(s.status.slice(0, 3))}${s.stacks}</span>`;
+      // Per-status colour (#065 item 2): a hash-stable hue per status name, so a
+      // given status is the same colour on the chip as on its overlay badge and
+      // card line. The class/data-attr contract is untouched (probes, hit-targets
+      // and the inspector still key off `.chip`/`data-status`) — only an inline
+      // tint is layered on, kept bright enough to read on the dim chip bg.
+      return `<span class="chip" data-status="${esc(s.status)}" style="${statusChipStyle(s.status)}" title="${esc(title)}">${esc(s.status.slice(0, 3))}${s.stacks}</span>`;
     })
     .join("");
 }

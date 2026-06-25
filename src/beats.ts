@@ -1,0 +1,309 @@
+// Beat segmentation — the replay's narrative spine. A *beat* is one root event
+// plus everything it causally spawns: the kernel fully resolves a strike's (or
+// a turn-end's) cascade before the next root, so the linear log already
+// partitions cleanly — a beat runs from a root up to (not including) the next
+// root. Pure projection over the log, DOM-free, sat beside boardAt/ancestry so
+// the viewer reads it instead of re-deriving turn structure (SPEC §0.3:
+// observability is structural).
+
+import type { BattleEvent, EventType } from "./types.js";
+
+/** The "spontaneous"/structural events that open a beat. Everything else
+ * (Hurt, Heal, Death, status/stat changes, Summon, Silenced, Intercepted,
+ * ChainBlocked) is a *caused* consequence and belongs to its root's beat.
+ * Classification is by kind, not by `causedBy === null`: the kernel hangs a
+ * turn's strikes off the TurnStart, but each strike is its own beat. */
+const ROOT_KINDS: ReadonlySet<EventType> = new Set<EventType>([
+  "BattleStart",
+  "TurnStart",
+  "TurnEnd",
+  "PairFaced",
+  "Strike",
+  "Fatigue",
+  "BattleEnd",
+]);
+
+/** Caused events that actually touch a hero — their presence makes a beat
+ * worth a card rather than a divider. Turn structure and pure trace events
+ * (ChainBlocked, Intercepted) leave the heroes untouched. */
+const HERO_EFFECT_KINDS: ReadonlySet<EventType> = new Set<EventType>([
+  "Hurt",
+  "Heal",
+  "Death",
+  "Summon",
+  "StatusApplied",
+  "StatusRemoved",
+  "StatChanged",
+  "Silenced",
+]);
+
+export function isRootKind(type: EventType): boolean {
+  return ROOT_KINDS.has(type);
+}
+
+export interface Beat {
+  /** Index of this beat in the segmentation (0-based). */
+  index: number;
+  /** The root event that opens the beat. */
+  root: BattleEvent;
+  /** The root event's kind — what classifies the beat (Strike, TurnStart, …). */
+  kind: EventType;
+  /** First event id in the beat (the root's id). */
+  start: number;
+  /** Last event id in the beat (inclusive) — the event before the next root,
+   * or the final event of the log for the last beat. */
+  end: number;
+  /** The caused events of this beat, in log order (everything after the root
+   * up to `end`). Empty for a beat whose root spawned nothing. */
+  caused: BattleEvent[];
+  /** No caused event touches a hero → render a "turn N" divider, not a card.
+   * A BattleStart that only summons, a Strike that lands a Hurt, a TurnEnd
+   * poison tick are all hero-affecting; a bare TurnStart/TurnEnd/PairFaced is
+   * structural-only. */
+  structural: boolean;
+}
+
+/**
+ * Partition the log into beats. Pure: same log in, same beats out — scrubbing
+ * stays a function of `(log, step)` because the segmentation never depends on
+ * the playhead. A log with no events yields no beats; a log whose first event
+ * is not a root still opens a beat at index 0 (defensive — real kernel logs
+ * always start with BattleStart).
+ */
+export function beatsOf(log: BattleEvent[]): Beat[] {
+  const beats: Beat[] = [];
+  let i = 0;
+  while (i < log.length) {
+    const root = log[i]!;
+    // Walk forward over caused (non-root) events until the next root.
+    let j = i + 1;
+    while (j < log.length && !ROOT_KINDS.has(log[j]!.type)) j++;
+    const caused = log.slice(i + 1, j);
+    const structural = !caused.some((e) => HERO_EFFECT_KINDS.has(e.type));
+    beats.push({
+      index: beats.length,
+      root,
+      kind: root.type,
+      start: root.id,
+      end: j - 1,
+      caused,
+      structural,
+    });
+    i = j;
+  }
+  return beats;
+}
+
+/**
+ * The beat containing event `step`, and the event's position within it. Used
+ * by the viewer to drive the card: which beat is open, and how many of its
+ * lines have revealed (every beat event with id ≤ step). Returns undefined
+ * for an out-of-range step or an empty log.
+ */
+export function beatAtStep(beats: Beat[], step: number): { beat: Beat; revealedThrough: number } | undefined {
+  for (const beat of beats) {
+    if (step >= beat.start && step <= beat.end) return { beat, revealedThrough: step };
+  }
+  return undefined;
+}
+
+/**
+ * Per-unit overlay accumulated from the start of a beat up to the current step.
+ * The typed badges the viewer draws on each affected hero are a pure function of
+ * this. The decision encoded in the shape (from the design grill): damage and
+ * heal are kept SEPARATE — an absorb that heals back must stay visible as both a
+ * red −N and a green +N, never netted to zero. Status and stat changes are net
+ * (a +2/-1 poison swing shows +1) because there a player reads the resulting
+ * level, not the churn.
+ */
+export interface BeatOverlay {
+  /** Summed Hurt amounts since beat start (shown red −N). */
+  damage: number;
+  /** Summed Heal amounts since beat start (shown green +N), never netted against damage. */
+  heal: number;
+  /** Net ± per status name (StatusApplied stacks +, StatusRemoved stacks −). */
+  statusDeltas: Record<string, number>;
+  /** Net ± per stat name (pwr, maxHp) from StatChanged deltas. */
+  statChanges: Record<string, number>;
+  /** A Death for this unit landed in the open beat. */
+  died: boolean;
+}
+
+/** True when an overlay carries anything worth drawing — an all-zero overlay
+ * (e.g. a 0-stack status churn that nets out, no damage/heal/death) draws no
+ * badges, so the card stays clean. */
+export function overlayHasContent(o: BeatOverlay): boolean {
+  return (
+    o.damage !== 0 ||
+    o.heal !== 0 ||
+    o.died ||
+    Object.values(o.statusDeltas).some((v) => v !== 0) ||
+    Object.values(o.statChanges).some((v) => v !== 0)
+  );
+}
+
+/**
+ * The per-unit overlays at `step`: accumulated from the start of the beat that
+ * contains `step` up to `step` (inclusive). Pure projection over the log — same
+ * `(log, step)` in, same map out — so scrubbing mid-beat shows partial overlays
+ * and the playhead reset at each beat boundary clears them for free (a new beat
+ * starts a fresh window). Returns an empty map for an out-of-range step, an
+ * empty log, or a structural-only beat with nothing to accumulate.
+ *
+ * Damage and heal sum separately (the absorb/heal-back must both show); status
+ * and stat changes net per name. `StatChanged` keys by stat — `hp` is reported
+ * as `maxHp` (the badge is a max-hp buff, not the live current-hp the bar shows;
+ * the kernel stamps `now` as the new effective maximum). A repeated hit within
+ * the beat simply adds another term — "summed on repeated hits" falls out of
+ * the fold, no special case.
+ */
+export function overlaysAt(log: BattleEvent[], step: number): Map<string, BeatOverlay> {
+  const overlays = new Map<string, BeatOverlay>();
+  const beats = beatsOf(log);
+  const at = beatAtStep(beats, step);
+  if (!at) return overlays;
+  const { beat } = at;
+
+  const get = (unit: string): BeatOverlay => {
+    let o = overlays.get(unit);
+    if (!o) {
+      o = { damage: 0, heal: 0, statusDeltas: {}, statChanges: {}, died: false };
+      overlays.set(unit, o);
+    }
+    return o;
+  };
+
+  // Only the caused events the playhead has reached count — a caused event shows
+  // its badge once revealed (id ≤ step), exactly when its card line reveals, so
+  // the badge total tracks the revealed step, not the whole beat at once.
+  for (const e of beat.caused) {
+    if (e.id > step) break; // caused is in id order; nothing past the playhead
+    switch (e.type) {
+      case "Hurt":
+        get(e.unit).damage += e.amount;
+        break;
+      case "Heal":
+        get(e.unit).heal += e.amount;
+        break;
+      case "StatusApplied": {
+        const o = get(e.unit);
+        o.statusDeltas[e.status] = (o.statusDeltas[e.status] ?? 0) + e.stacks;
+        break;
+      }
+      case "StatusRemoved": {
+        const o = get(e.unit);
+        o.statusDeltas[e.status] = (o.statusDeltas[e.status] ?? 0) - e.stacks;
+        break;
+      }
+      case "StatChanged": {
+        const o = get(e.unit);
+        const key = e.stat === "hp" ? "maxHp" : e.stat;
+        o.statChanges[key] = (o.statChanges[key] ?? 0) + e.delta;
+        break;
+      }
+      case "Death":
+        get(e.unit).died = true;
+        break;
+      default:
+        break; // Strike/Summon/Silenced/trace events carry no badge of their own
+    }
+  }
+  return overlays;
+}
+
+/** The stable badge keys an overlay would draw, mapped to the value each badge
+ * shows — the same set/order `overlayBadgesHtml` renders (damage → `dmg`, heal →
+ * `heal`, each non-zero stat → `stat:<name>`, each non-zero status →
+ * `status:<name>`). A zero/netted-out term draws no badge, so it carries no key.
+ * Shared by the badge renderer and the new-badge diff so the two never drift. */
+export function badgeValues(o: BeatOverlay): Map<string, number> {
+  const v = new Map<string, number>();
+  if (o.damage > 0) v.set("dmg", o.damage);
+  if (o.heal > 0) v.set("heal", o.heal);
+  for (const [stat, d] of Object.entries(o.statChanges)) if (d !== 0) v.set(`stat:${stat}`, d);
+  for (const [status, d] of Object.entries(o.statusDeltas)) if (d !== 0) v.set(`status:${status}`, d);
+  return v;
+}
+
+/**
+ * Per-unit set of overlay-badge keys that are NEWLY appearing (or have changed
+ * value) at `step` versus the step before it — the badges that should play their
+ * reveal animation THIS step. Every other badge already shown stays static.
+ *
+ * The overlay layer re-renders its whole HTML each step, so arming the `ov-pop`
+ * reveal on every badge re-ran it on all of them every step — the same defect the
+ * card LINES had (every prior line re-faded). Mirror that fix for badges: diff the
+ * badge values at `step` against `step - 1` and animate only the keys that
+ * appeared or changed. At a beat's first revealed step the prior overlay is empty,
+ * so all of that step's badges count as new (they genuinely just appeared); within
+ * the beat only the badge whose number just moved animates. Pure projection over
+ * the log — same `(log, step)` in, same map out.
+ */
+export function newBadgeKeysAt(log: BattleEvent[], step: number): Map<string, Set<string>> {
+  const fresh = new Map<string, Set<string>>();
+  const cur = overlaysAt(log, step);
+  // The previous step's overlays: step-1 inside the same beat carries the badges
+  // already shown; if step-1 falls in the prior beat, overlaysAt windows to that
+  // beat and returns this beat's units as empty — so this beat's first badges all
+  // read as new, which is correct (they appear as the beat opens).
+  const prev = step > 0 ? overlaysAt(log, step - 1) : new Map<string, BeatOverlay>();
+  for (const [unit, o] of cur) {
+    const now = badgeValues(o);
+    const before = prev.has(unit) ? badgeValues(prev.get(unit)!) : new Map<string, number>();
+    const newKeys = new Set<string>();
+    for (const [k, val] of now) if (before.get(k) !== val) newKeys.add(k);
+    if (newKeys.size > 0) fresh.set(unit, newKeys);
+  }
+  return fresh;
+}
+
+/**
+ * The unit that holds the coin at `step` (or null before the first pairing).
+ *
+ * Pure projection over the log — same `(log, step)` in, same id out (#065 slice
+ * 3). The coin is the kernel's strike-first token: a NEW pairing emits a single
+ * `PairFaced{a,b,first}`, and `first` is the unit the kernel rolled to strike
+ * first (battle.ts: `first = rng() < 0.5 ? a.id : b.id`). The coin LANDS on that
+ * `first`. The kernel only re-emits `PairFaced` when the front pairing CHANGES
+ * (a death advances a new front unit); while the same two units keep trading
+ * blows no new `PairFaced` fires, so the holder PERSISTS across that pairing's
+ * intervening strikes — the projection just carries the last `PairFaced.first`
+ * forward. The next `PairFaced` re-flips it to the new pairing's first striker.
+ *
+ * Visual-only: this names "who holds the coin" for the marker and the flip card;
+ * it confers no kernel state (that is out of scope). Returns null for any step at
+ * or before the first `PairFaced`'s predecessors — i.e. until a pairing is faced.
+ */
+export function coinHolderAt(log: BattleEvent[], step: number): string | null {
+  let holder: string | null = null;
+  for (const e of log) {
+    if (e.id > step) break; // log is in id order; nothing past the playhead counts
+    if (e.type === "PairFaced") holder = e.first;
+  }
+  return holder;
+}
+
+/**
+ * Within-beat causal nesting depth of an event: how many `causedBy` hops back
+ * to the beat root (0 = the root itself, 1 = directly caused by the root, …).
+ * Derived purely from `causedBy`; the chain is followed only while it stays
+ * inside the beat, so a stray cross-beat link can never deepen a line. An
+ * event not in the beat returns 0.
+ */
+export function depthInBeat(beat: Beat, log: BattleEvent[], id: number): number {
+  if (id < beat.start || id > beat.end) return 0;
+  let depth = 0;
+  let cur: number | null = id;
+  // Guard against a malformed cycle with a hop cap of the beat's own length.
+  const cap = beat.end - beat.start + 1;
+  while (cur !== null && cur !== beat.root.id && depth <= cap) {
+    const e: BattleEvent | undefined = log[cur];
+    if (!e) break;
+    cur = e.causedBy;
+    depth++;
+    // A parent outside the beat means we've left the local tree — stop here so
+    // the depth is the distance to the beat boundary, not across it.
+    if (cur !== null && (cur < beat.start || cur > beat.end)) break;
+  }
+  return depth;
+}

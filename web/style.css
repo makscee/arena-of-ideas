@@ -93,27 +93,87 @@ button:disabled:hover {
   border-color: var(--border);
 }
 
-/* ---------- board ----------
-   Wrap-vs-scroll: the board WRAPS nothing and SCROLLS nothing — a line is at
-   most TEAM_SIZE (5) cards, and the cards flex-shrink to fit five abreast at
-   375px. Stacked rows (A above B) keep both fronts at the left edge, so the
-   striker position reads the same on phone and desktop. */
+/* ---------- board (#065 slice-1 redesign: strikers-on-top vertical columns) --
+   The settled stage shape: each TEAM is a VERTICAL COLUMN (front/striking unit
+   on TOP, the rest of its line stacked straight DOWN, graves at the column
+   bottom), the action card in a FIXED-WIDTH centre column between them. Three
+   tracks, symmetric side tracks:
+
+       grid-template-columns: 1fr  CENTER  1fr
+
+   With both side tracks `1fr` (equal by definition), the centre track's centre-x
+   IS the grid's centre-x — independent of how many units a side has. So the card
+   is ALWAYS horizontally centred (1v5, 5v1, 5v5 centre it identically): the old
+   "horizontal row" stage put the card's x at the mercy of each team's width;
+   this makes it structural (hard req 1).
+
+   Each team being ONE card wide (its line stacks vertically, not abreast) means
+   the stage width is constant = card + centre + card REGARDLESS of side size —
+   a team's size changes only its column HEIGHT, never the card's position. The
+   two FRONT units (line index 0, the strikers) sit in the TOP row flanking the
+   card (hard req 3); bench units stack beneath, slightly dimmed so the striking
+   pair pops.
+
+   Card growth (Maks: "smoother when expanded"): as lines stream in the card
+   grows DOWNWARD inside its own centre column, so NOTHING around it moves — the
+   side columns hold their cards' Y (hard req 2). Each line fades/slides in (see
+   .bc-line animation) and the outer height is reserved worst-case by the
+   viewer's lockBoardHeight (LS-1), so the growing card never pushes the
+   transport.
+
+   Phone (<700px): the SAME three-column focal layout, scaled to fit 375px — the
+   centre track shrinks under pressure (minmax) while the symmetric side tracks
+   keep the card centred; cards smaller but readable. The log stays below the
+   stage (the phone media block reorders it under the board). */
 
 #board {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  display: grid;
+  /* Symmetric side tracks → the centre track is mathematically centred in the
+     stage at every width. The centre is capped at the card's 22rem but shrinks
+     toward 0 under width pressure (phone), giving its room back to the side
+     tracks first; the side tracks never collapse below one readable card. */
+  /* Three tracks: two EQUAL, FIXED side tracks (`var(--side-col)`, one card
+     each — identical → symmetric → the centre track's centre is always the
+     board's centre) and a flexible centre that fills the rest. The board fills
+     its stage column at a constant width, so the two fixed side tracks are
+     pinned at the board's edges and NEVER move as the card streams — only the
+     centre track's content (the card) grows, inside its own column (hard reqs 1
+     and 2). The card itself is capped at 22rem and centred within this centre
+     track (.stage-center), so on a wide desktop it sits a fixed 22rem wide in
+     the middle of a wider centre lane — still dead-centre because the lane is
+     symmetric. Each team is exactly one card wide; team size changes only
+     column HEIGHT, never the card's x. */
+  --side-col: 6rem;
+  grid-template-columns: var(--side-col) minmax(0, 1fr) var(--side-col);
+  align-items: start;
+  column-gap: 0.5rem;
+  width: 100%;
   min-width: 0;
 }
 
+/* Each team is a grid item in a side track (#065 redesign): one card wide, its
+   line stacked vertically. A flex COLUMN holds side-head / line / grave; the
+   whole column hugs the CENTRE — Side A's cards align to its track's RIGHT edge,
+   Side B's to its track's LEFT — so the two striking fronts flank the card
+   symmetrically. min-width:0 lets a card shrink to fit a 375px stage. */
+#board > .side {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch; /* head/line/grave fill the fixed side track */
+}
+
+/* The side header sits atop a one-card-wide column now (#065 redesign): tag +
+   the "front first ▸" hint stack so neither is crushed in the narrow column. */
 .side-head {
   display: flex;
-  justify-content: space-between;
-  font-size: 0.7rem;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 0.65rem;
   color: var(--dim);
   margin-bottom: 0.3rem;
 }
@@ -143,9 +203,14 @@ button:disabled:hover {
   color: var(--text);
 }
 
+/* Vertical team columns (#065 redesign): the line stacks its cards straight
+   DOWN — front/striker (index 0) on TOP, the rest beneath — and the grave
+   continues the same column below. One card wide; the side's align-items pulls
+   the whole stack toward the centre card. */
 .line,
 .grave {
   display: flex;
+  flex-direction: column;
   gap: 0.3rem;
   min-width: 0;
 }
@@ -156,6 +221,21 @@ button:disabled:hover {
    per battle (measured over the log), which guarantees the total. */
 .line {
   min-height: 6.5rem; /* one card of the #015 frame — the wipe placeholder holds it */
+}
+
+/* A unit card in a team column takes its side track's full width so the front
+   and bench cards are the same size and the column is exactly one card wide. */
+.side .unit {
+  width: 100%;
+}
+
+/* Bench (non-front) units: same size as the striking pair but dimmed/
+   desaturated so the front pair pops (Maks). The front card stays full-emphasis
+   (its .front accent ring is untouched). Dead grave cards keep their own .dead
+   dimming below — this only touches the LIVING bench in the line. */
+.line .unit:not(.front) {
+  opacity: 0.72;
+  filter: saturate(0.6);
 }
 
 .wiped {
@@ -170,6 +250,159 @@ button:disabled:hover {
   border-top: 1px dashed var(--border);
   border-bottom: 1px dashed var(--border);
   padding: 0.15rem 0;
+}
+
+/* ---------- stage centre: beat card / turn divider (#065 slice 1) ----------
+   The centre slot between side A and side B. A hero-affecting beat opens a
+   COMPACT card FLOATING between the teams (root title + its caused lines,
+   streamed in as an indented causal tree); a structural-only beat shows a
+   thin "turn N" divider. The card's tallest state is reserved by the viewer's
+   lockBoardHeight, so the stage never changes height mid-beat (LS-1).
+   The slot is a flex row so the card centres in it without stretching
+   edge-to-edge (defect 2/3: a full-width bar buried the streamed tree). */
+
+/* The fixed-width centre column (#065 redesign): the middle grid track. Its
+   width is the track (capped at 22rem, shrinking under phone pressure via the
+   #board minmax); symmetric side tracks keep it centred at every width. It
+   aligns to the TOP of the row (align-self: start) so the card's title sits
+   level with the two strikers and the causal lines stream DOWNWARD from there. */
+.stage-center {
+  min-width: 0;
+  align-self: start;
+  display: flex;
+  justify-content: center;
+}
+
+.turn-divider {
+  color: var(--dim);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.turn-n {
+  font-size: 0.7rem;
+}
+
+/* The action card fills its fixed centre track and centres there (#065
+   redesign). Its width is the TRACK's (≤22rem on desktop, shrinking under phone
+   pressure via the #board grid minmax), so min-width is 0 — the track, not the
+   card, governs sizing; a hard card min-width would force the centre track wide
+   and overflow a 375px stage. max-width caps it on a very wide desktop track. */
+.beat-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.75rem;
+  width: 100%;
+  max-width: 22rem;
+  min-width: 0;
+  margin: 0 auto;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.bc-title {
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.35rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.bc-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+/* Each line nests under its cause: indent grows with the within-beat depth. */
+.bc-line {
+  padding-left: calc(var(--d, 0) * 0.9rem);
+  font-size: 0.72rem;
+  overflow-wrap: anywhere;
+  /* Already-revealed lines paint statically: fully opaque, no transform. The
+     card re-renders its whole inner HTML each step, so arming the reveal on
+     EVERY .bc-line re-ran the fade/slide on all of them every step (defect A).
+     Only the just-revealed line (.bc-line-new, set by beat-card.ts) animates. */
+  opacity: 1;
+}
+
+/* Card lines (and the title) are clickable: each picks its event for the
+   cross-beat cause readout (#065 slice 4). The pointer cursor advertises it. */
+.bc-line,
+.bc-title {
+  cursor: pointer;
+}
+
+/* The line whose cause the readout is tracing — a faint accent rail and tint
+   tie the readout's subject back to the card it came from. */
+.bc-line-sel {
+  box-shadow: inset 2px 0 0 var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border-radius: 2px;
+}
+
+/* Smooth line-in (Maks: "smoother when the card is expanded"): the newly
+   revealed line fades + slides down a few px as it appears, so the card's
+   downward growth reads as an animated reveal, not a jump. The card grows in
+   its own centre column, so this never moves the teams. The keyframe starts at
+   a non-ZERO opacity (0.01, visually nil) so a frame sampled at t=0 still counts
+   the line as painted — the e2e visibility probe requires opacity > 0. Respects
+   reduced-motion below. Scoped to .bc-line-new so prior lines stay put. */
+.bc-line.bc-line-new {
+  animation: bc-line-in 0.22s ease-out both;
+}
+
+@keyframes bc-line-in {
+  from {
+    opacity: 0.01;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bc-line.bc-line-new,
+  .ov-badge.ov-new {
+    animation: none;
+  }
+}
+
+.bc-line::before {
+  content: "› ";
+  color: var(--dim);
+}
+
+.bc-hurt {
+  color: var(--side-b);
+}
+
+.bc-heal {
+  color: var(--accent);
+}
+
+.bc-death {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.bc-summon {
+  color: var(--accent);
+}
+
+.bc-status {
+  color: var(--dim);
+}
+
+.bc-warn {
+  color: var(--side-b);
+}
+
+.bc-dim {
+  color: var(--dim);
 }
 
 .verdict {
@@ -235,9 +468,297 @@ button:disabled:hover {
   letter-spacing: 0.05em;
 }
 
+/* The struck-hero mark (#065 defect 2): unmistakable and genuinely LAYERED, in
+   a colour that contrasts BOTH side tints. The old 2px --warn outline failed
+   twice — it was only an edge line (not layered over the card), and --warn
+   (#e0876f) reads almost identical to Side B's --side-b (#e0a36f), so a struck
+   B unit looked unmarked. Now: a bright halo glow (box-shadow ring + a flashing
+   ::after overlay) in --hit-mark, a saturated red distinct from the blue
+   Side-A and orange Side-B tints. The overlay sits ON TOP of the card (z above
+   its content) and pulses, so a hit is impossible to miss on either side. */
+:root {
+  --hit-mark: #ff3b54; /* bright red — clears both side tints (blue / orange) */
+}
+
 .unit.hit {
-  outline: 2px solid var(--warn);
+  outline: 2px solid var(--hit-mark);
   outline-offset: -1px;
+  box-shadow:
+    0 0 0 2px var(--hit-mark),
+    0 0 14px 2px rgba(255, 59, 84, 0.7);
+}
+
+.unit.hit::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 45%, rgba(255, 59, 84, 0.45), rgba(255, 59, 84, 0) 70%);
+  box-shadow: inset 0 0 12px 2px rgba(255, 59, 84, 0.55);
+  z-index: 2; /* over the card's art/stats — a layer, not just an edge */
+  animation: hit-flash 0.6s ease-out infinite alternate;
+}
+
+@keyframes hit-flash {
+  0% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* ---------- beat overlays (#065 slice 2) ---------- */
+/* Typed badges drawn ON each affected hero, live-incrementing as the card's
+   lines reveal and summed within the beat. They sit ABOVE the card content
+   (z over the art/stats, like the hit halo) so the result is read off the hero
+   itself, not a side panel. The layer is non-interactive — taps still reach the
+   card for the inspector. Stacked top-to-bottom from the card's top edge so
+   several badges on one unit (−dmg, +heal, ±status, +pwr) all stay legible. */
+.ov-layer {
+  position: absolute;
+  /* Top-LEFT corner now (#065 damage-legibility fix): the hit halo's glow is
+     strongest at its CENTRE (`radial-gradient circle at 50% 45%`), so a badge
+     in a corner already sits off the brightest red — and the left corner keeps
+     the damage number clear of the level badge / front-tag, which ride the top
+     centre/right. A negative offset would extend the line's scroll width and
+     trip the no-overflow LS check (probe-beats), so the layer stays INSIDE the
+     card edge. */
+  top: 0.15rem;
+  left: 0.15rem;
+  /* Stay within the card so a long status badge ("+2 Strength") never bleeds
+     past either edge and trips the no-overflow LS check. */
+  max-width: calc(100% - 0.3rem);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.12rem;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* The badge family is DARK-on-card with a bold COLOURED number (#065 damage-
+   legibility fix). The old scheme filled each pill with its family colour and
+   wrote the number in white — so the red −N pill sat red-on-red on the `.unit.hit`
+   damage halo and the white digit drowned in the glow (the director's twice-
+   reported "no text on heroes"). Inverting it — a near-black fill with the
+   number in a BRIGHT family colour — makes every badge read DARK against the red
+   halo (and against the card art), and the coloured digit, not the pill, carries
+   the family meaning. Bigger + heavier than before so the number pops at a glance
+   in motion; a coloured ring + black halo keep its edge crisp over any backdrop. */
+.ov-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  padding: 0.05rem 0.34rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Near-opaque dark fill so the pill reads dark over the red hit-halo, the card
+     art, or a side tint — the number's contrast comes from dark-vs-bright, not
+     a same-hue pill on a same-hue glow. */
+  background: rgba(10, 11, 14, 0.92);
+  border: 1px solid var(--ov-ring, rgba(0, 0, 0, 0.6));
+  color: var(--ov-fg, #fff);
+  /* A black halo (outer ring + drop shadow) seats the dark pill on any backdrop;
+     the per-type ring above tints its edge so the family still reads at a glance. */
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.7),
+    0 0 0 1.5px rgba(0, 0, 0, 0.55);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.8);
+  /* Already-shown badges paint statically. The overlay layer re-renders its whole
+     HTML each step, so arming `ov-pop` on EVERY badge re-ran the pop on all of
+     them whenever a new badge appeared (the director's "all of them play the fade
+     in when a new one appears", the same defect the card LINES had). Only a newly-
+     appearing/changed badge (.ov-new, set by board-render from newBadgeKeysAt)
+     animates; the rest stay put. */
+}
+
+/* Only the just-appeared badge plays its reveal — mirrors `.bc-line-new`. */
+.ov-badge.ov-new {
+  animation: ov-pop 0.22s ease-out;
+}
+
+@keyframes ov-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Per-type: a BRIGHT number colour (the family hue) + a tinted edge ring. The
+   damage badge's number is the same bright red as the hit mark — red still means
+   damage — but now it is red text on a near-black pill, not a red pill, so it
+   stays legible sitting on the red halo. */
+.ov-dmg {
+  --ov-fg: #ff6b7e; /* bright red — damage, the hit-mark hue lightened to read on dark */
+  --ov-ring: rgba(255, 59, 84, 0.85);
+}
+
+.ov-heal {
+  --ov-fg: #58e08c; /* green — kept separate from damage, never netted */
+  --ov-ring: rgba(63, 191, 111, 0.8);
+}
+
+.ov-status {
+  --ov-fg: #cba6e8; /* the status family's purple */
+  --ov-ring: rgba(180, 138, 214, 0.8);
+}
+
+.ov-stat {
+  --ov-fg: #f0bf5a; /* amber — a stat buff (+pwr, +maxHp) */
+  --ov-ring: rgba(216, 162, 58, 0.8);
+}
+
+/* Dying-in-place (#065 slice 2): the unit greys and shows a ✕ in its line slot
+   for the rest of the beat, then the next beat collapses it to the grave. The
+   grey reuses the dead look without removing it from the line; the ✕ is a big
+   centred mark over the art. */
+.unit.dying {
+  opacity: 0.5;
+  filter: grayscale(1);
+}
+
+.unit.dying .dying-x {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--hit-mark);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* Distinct DEATH animation (#065 item 4): at the moment a unit's death is
+   REVEALED it gets `.dying-new` for one step and plays `death-strike` — a sharp
+   red flash + a brief shake, settling into the static grey end-state the card
+   already renders (.unit.dying: grey + ✕). Animates ONLY transform/filter/box-
+   shadow (never layout), so the locked board geometry is untouched (LS-1). The
+   keyframe ends ON the grey end-state (filter: grayscale) so there is no snap-
+   back when the animation finishes and the card keeps the settled look. It reads
+   at battle speed (~0.5s) and sits on a separate property (transform/filter) from
+   the badges' opacity/scale `ov-pop`, so the two don't fight. The ✕ rides above
+   via its own z-index; the shake moves the whole card, ✕ included. */
+.unit.dying-new {
+  animation: death-strike 0.5s ease-out both;
+  z-index: 5; /* lift the dying card over its neighbours while it shakes */
+}
+
+@keyframes death-strike {
+  0% {
+    transform: translateX(0) scale(1);
+    filter: grayscale(0) brightness(1.6) saturate(1.4);
+    box-shadow:
+      0 0 0 2px rgba(255, 59, 84, 0.95),
+      0 0 18px 4px rgba(255, 59, 84, 0.85);
+  }
+  18% {
+    transform: translateX(-3px) scale(1.05);
+    filter: grayscale(0) brightness(1.5) saturate(1.4);
+  }
+  36% {
+    transform: translateX(3px) scale(1.03);
+    filter: grayscale(0.3) brightness(1.2);
+  }
+  54% {
+    transform: translateX(-2px) scale(1.01);
+    filter: grayscale(0.6) brightness(1);
+  }
+  72% {
+    transform: translateX(2px) scale(1);
+    filter: grayscale(0.85);
+    box-shadow:
+      0 0 0 1px rgba(255, 59, 84, 0.4),
+      0 0 8px 2px rgba(255, 59, 84, 0.25);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    filter: grayscale(1);
+    box-shadow: none;
+  }
+}
+
+/* Reduced motion: no flash/shake — the card lands directly on the grey + ✕ end-
+   state (the .unit.dying styles still apply), so death is still unmistakable, just
+   not animated. */
+@media (prefers-reduced-motion: reduce) {
+  .unit.dying-new {
+    animation: none;
+  }
+}
+
+/* The persistent COIN MARKER (#065 slice 3): the unit that holds the coin (the
+   most recent pairing's first striker — coinHolderAt) wears a gold coin chip,
+   pinned TOP-RIGHT so it never collides with the top-left damage/heal/status
+   delta badges (`.ov-layer`). It is a PERSISTENT STATE marker — it stays on the
+   holder across that pairing's strikes and moves only on the next PairFaced — so
+   it gets a distinct gold-on-dark coin look, never the red −N delta-pill family.
+   A bright ◉ glyph on a dark disc reads at a glance over the card art and the
+   red hit-halo alike. Inside the card edge so it never trips the no-overflow LS
+   check (probe-beats). */
+.coin-marker {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.15rem;
+  z-index: 4;
+  width: 1.05rem;
+  height: 1.05rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  line-height: 1;
+  color: #ffd45e; /* gold — distinct from the red/green/purple/amber delta hues */
+  background: radial-gradient(circle at 50% 40%, #5a4716, #1a1407);
+  border: 1.5px solid rgba(255, 212, 94, 0.85);
+  border-radius: 50%;
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.7),
+    0 0 6px rgba(255, 200, 70, 0.35);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+
+/* The coin-flip CARD (#065 slice 3): a PairFaced opens this in the stage centre
+   in place of the structural turn divider — the pairing forms and the coin lands
+   on the first striker. Reuses the .beat-card frame so it sits consistently with
+   every other beat card; a gold accent + a centred pairing line distinguish it. */
+.coin-card {
+  border-color: rgba(255, 212, 94, 0.5);
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 212, 94, 0.15);
+}
+
+.coin-title {
+  color: #ffd45e;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.68rem;
+}
+
+.coin-pip {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.coin-pair {
+  font-size: 0.72rem;
+  color: var(--text);
 }
 
 /* The art is the card's centrepiece — sized so five board cards still sit
@@ -322,6 +843,8 @@ button:disabled:hover {
   color: var(--warn);
 }
 
+/* The grave continues the team column below the line (#065 redesign): dead
+   units stack DOWN under a small horizontal "grave" label, dead as today. */
 .grave {
   margin-top: 0.3rem;
   align-items: center;
@@ -331,8 +854,8 @@ button:disabled:hover {
 .grave-tag {
   font-size: 0.6rem;
   color: var(--dim);
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .unit.dead {
@@ -383,6 +906,13 @@ button:disabled:hover {
   accent-color: var(--accent);
 }
 
+/* Reserved readout strip: the cause trace swaps per event and wraps to a
+   varying number of lines. With the stage now laid out horizontally (#065
+   defect 1) the board is shorter, so the stage column sits just under the log
+   column's height — an unbounded event-panel that grew to a 3-line trace would
+   tip the stage column past the log column and nudge the run "continue" button
+   a pixel (LS-1). A fixed height with internal scroll makes the panel's height
+   content-independent, exactly as the phone block already does it. */
 #event-panel {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -391,15 +921,29 @@ button:disabled:hover {
   margin-top: 0.6rem;
   font-size: 0.75rem;
   overflow-wrap: anywhere;
+  height: 5.5rem;
+  overflow-y: auto;
 }
 
+/* A dim section label now (#065 defect 5): the panel carries the cross-beat
+   cause trace, not a copy of the centre card's headline. */
 #event-desc {
   margin-bottom: 0.3rem;
+  color: var(--dim);
+  text-transform: uppercase;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
 }
 
 #event-cause {
   color: var(--dim);
   font-size: 0.7rem;
+}
+
+/* Neutral state before anything is selected (#065 slice 4). */
+.cause-empty {
+  color: var(--dim);
+  font-style: italic;
 }
 
 #event-cause .k {
@@ -430,17 +974,42 @@ button:disabled:hover {
   color: var(--text);
 }
 
-/* ---------- battle readout: inline log + inspector + event panel ----------
-   Two columns on a desk (log left, details right), one stacked column at
-   phone width. The log pane scrolls itself — the page never grows with the
-   battle — and lines appear/disappear in step with the playhead. */
+/* ---------- stage / log split (#065 slice 1) ----------
+   The stage (board + its centre action card + transport + the event readout)
+   sits LEFT; the running event log sits RIGHT. Two columns on a desk, one
+   stacked column at phone width (stage over a capped-scroll log). The log pane
+   scrolls itself — the page never grows with the battle — and lines
+   appear/disappear in step with the playhead. */
 
-#battle-readout {
+#board-panel {
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  gap: 0.6rem;
-  margin-top: 0.6rem;
+  gap: 0.8rem;
   align-items: start;
+}
+
+/* Battle stage width budget (#065 slice-1 regression): the run battle shows the
+   horizontal A | centre card | B stage, and at most TEAM_SIZE (5) cards per
+   side. Five-plus-five full-size cards plus the centre lane need ≈900px of
+   board — more than the 3fr share of main's 56rem (≈511px), which crushed both
+   teams (and then the centre card) to slivers. While the viewer is mounted in
+   the run battle, the panel breaks OUT of main's width to use the viewport (up
+   to 75rem) and the log takes a fixed readable column, so the stage gets the
+   rest: 5v5 + the centre card render at full size at 1280px. The break-out is
+   scoped to the run battle mount — the dev #result view and the capped shop
+   panels above keep main's narrow column. */
+@media (min-width: 701px) {
+  #board-panel {
+    width: min(75rem, calc(100vw - 2rem));
+    /* Centre the wider panel under main's centred narrow column. */
+    margin-left: calc(-1 * (min(75rem, calc(100vw - 2rem)) - 100%) / 2);
+    grid-template-columns: minmax(0, 1fr) 20rem;
+  }
+}
+
+#stage-col,
+#log-col {
+  min-width: 0;
 }
 
 #log-pane {
@@ -460,7 +1029,7 @@ button:disabled:hover {
 #battle-log {
   position: relative; /* line offsetTop is measured against this scroll box */
   overflow-y: auto;
-  height: 19rem; /* fixed from event 0 — the log scrolls itself, never grows the page (LS-2) */
+  height: 26rem; /* fixed from event 0 — the log scrolls itself, never grows the page (LS-2); taller in the right column */
   margin-top: 0.3rem;
   font-size: 0.72rem;
 }
@@ -1996,14 +2565,101 @@ button.danger {
     padding-bottom: max(0.8rem, env(safe-area-inset-bottom));
   }
 
-  /* One column: board, log, then details — the log keeps a small window so
-     the inspector stays within a thumb's reach. */
-  #battle-readout {
+  /* One column at phone width (#065 slice 1). The log must be REACHABLE on an
+     early scroll, not buried under the whole stage (board + transport + scrub
+     + readout ≈ 700px > a 667px viewport — defect 1). So the stage's children
+     join the panel's grid flow (#stage-col: display contents) and the log is
+     ORDERED directly under the board, above the transport/readout: the player
+     sees board → log without hunting. A single-column GRID (not flex) keeps the
+     minmax(0,1fr) track that lets the five-card board line shrink to fit 375px —
+     a flex column's min-width:auto let the board overflow the viewport. */
+  #board-panel {
     grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.6rem;
+  }
+
+  #stage-col {
+    display: contents;
+  }
+
+  /* Phone keeps the SAME three-column focal stage (#065 redesign): striker A |
+     card | striker B, benches stacked below each, scaled to fit 375px. The
+     base #board grid already centres the card via its symmetric side tracks; at
+     phone width the side tracks shrink to a readable card minimum and the centre
+     track gives its room back first, so 5v5 still fits without crushing. The
+     board is reordered to the top of the single-column panel; the log follows
+     directly under it (reachable on an early scroll, not buried under the whole
+     stage — defect 1). Card and teams sit in independent grid tracks, so the
+     streaming card grows in its own column and never moves the teams. */
+  #board {
+    order: 1;
+    /* Narrower fixed side columns at phone width so two readable cards + a
+       readable centre fit a 375px stage: 2×4rem sides + ~0.3rem gaps + 0.5rem
+       padding leaves ~14.4rem for the centre track — the card stays centred and
+       legible, every card well above the 48px floor. The board's max-width drops
+       to match so it can't widen past the stage. */
+    --side-col: 5.4rem;
+    column-gap: 0.3rem;
+    padding: 0.5rem;
+  }
+
+  /* Tall cascade beats stay readable on phone (#065 closure defect). A big
+     fatigue beat streams ~19 lines and grows the card past the 667px fold; with
+     the card in normal flow the last lines (e.g. the resurrections after a wave
+     of deaths) streamed in BELOW the fold and the player never saw them before
+     the read-pause cleared the card. The Layout clause's "capped internal-scroll
+     pane" is the fix: the title stays pinned and the LINES get a capped, own-
+     scrolling pane. The viewer scrolls the newest line into this pane as each
+     line streams in (viewer.ts: scrollNewestLineIntoView), so the line currently
+     being added is always visible and held through the read-pause. The cap is
+     viewport-relative so it shrinks with the device; the card top sits ~134px
+     down its centre track, so ~58svh leaves the title + newest line clearly in
+     the fold with margin to spare. Desktop is untouched (this is phone-only and
+     desktop already shows tall beats in full).
+
+     LS-1 stays honoured: capping the lines pane SHRINKS the card's outer height,
+     and lockBoardHeight measures the (now-capped) board height at the same phone
+     CSS — so the locked outer board height is stable across playback and the
+     internal pane scroll never changes any outer geometry (no transport/continue
+     nudge). The coin/PairFaced card streams no lines, so its pane stays empty and
+     uncapped in effect. */
+  .beat-card .bc-lines {
+    max-height: 58svh;
+    overflow-y: auto;
+    /* A faint scrollbar gutter so the newest line never hides under a hairline
+       overlay scrollbar on the platforms that draw one. */
+    scrollbar-width: thin;
+    overscroll-behavior: contain;
+  }
+
+  #log-col {
+    order: 2;
+  }
+
+  #transport {
+    order: 3;
+  }
+
+  #scrub {
+    order: 4;
+  }
+
+  #detail-pane {
+    order: 5;
   }
 
   #battle-log {
     height: 11rem;
+  }
+
+  /* Out-of-battle the menu button is a FIXED bottom-right control (#014). At
+     phone width it sat over the bottom of the scrolled content — the shop's
+     "your line" front tag (defect 6). Reserve a clearance strip below the run
+     view so its last content scrolls clear of the button instead of under it.
+     The battle phase pins its own sticky bar to the viewport bottom and docks
+     the menu into it, so this extra tail space is harmless there. */
+  #run-view {
+    padding-bottom: calc(44px + 1.6rem);
   }
 
   /* Reserved readout strip (slice-2 low): the desc/cause swap per event must
@@ -2126,6 +2782,27 @@ button.danger {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* Battle-bar outcome (#065 defect 4): a long "continue to round N · +Ng
+     income" balloons and, with the menu's margin-left:auto, crushes the menu
+     against the edge. Let the bar WRAP and drop the menu to its own row — the
+     outcome + continue own the first row, the menu sits on the second, nothing
+     collides. The continue button takes the row it needs without ballooning
+     into a three-line sliver. */
+  #run-battle-bar {
+    flex-wrap: wrap;
+    row-gap: 0.4rem;
+  }
+
+  #run-battle-bar #run-continue {
+    flex: 1 1 100%; /* full row — readable, never crushed beside the menu */
+  }
+
+  #run-battle-bar #run-menu-button.in-bar {
+    margin-left: 0;
+    flex: 1 1 100%; /* its own row, full width, clear of the outcome text */
+    order: 1; /* after skip/outcome/continue regardless of source order */
   }
 }
 

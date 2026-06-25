@@ -65,6 +65,10 @@ export interface UnitCardOpts {
   artName: string;
   /** The name shown on the card (board instances may carry a display name). */
   label: string;
+  /** The unit's team (#065 item 2): tints the name by side so the player reads it
+   * as "their side". Only the battle board passes it; the shop/team/ladder omit
+   * it (those screens aren't two-sided) — the card contract there is unchanged. */
+  side?: "A" | "B";
   /** Pre-formatted stat text: "7", or "3/9" for a board card's current/max. */
   hp: string | number;
   pwr: string | number;
@@ -79,6 +83,25 @@ export interface UnitCardOpts {
   sel?: boolean;
   silenced?: boolean;
   fused?: boolean;
+  /** Dying-in-place (#065 slice 2): a unit whose Death landed this beat shows
+   * greyed with a ✕ in its line slot until the next beat collapses it to the
+   * grave — distinct from `dead` (already in the grave). */
+  dying?: boolean;
+  /** Death-reveal moment (#065 item 4): the dying unit plays a distinct death
+   * animation (red flash + shake, settling to the grey+✕ end-state) the single
+   * step its Death is revealed. Set only at that step; on later steps it stays
+   * `dying` (static grey+✕). Honors prefers-reduced-motion (the anim is skipped,
+   * the end-state stays) via CSS. */
+  dyingNew?: boolean;
+  /** Beat-overlay badge layer (#065 slice 2): pre-built typed-badge HTML drawn
+   * ON the card. Empty for every non-replay surface, so the card contract the
+   * shop/team/ladder rely on is unchanged. */
+  overlay?: string;
+  /** Persistent coin marker (#065 slice 3): pre-built HTML for the coin chip the
+   * holder wears (the most recent pairing's first striker). A PERSISTENT state
+   * marker, separate from the per-beat `overlay` deltas. Empty everywhere but the
+   * replay board, so the shop/team/ladder card contract is unchanged. */
+  marker?: string;
   /** Context classes (run-card, lv-unit) — widths are the context's to size. */
   classes?: string;
   /** The caller's wiring, pre-escaped: `data-offer="0"`, `data-unit="A1:X"`… */
@@ -97,12 +120,17 @@ export function unitCardHtml(o: UnitCardOpts): string {
     o.classes,
     o.front === true && "front",
     o.dead === true && "dead",
+    o.dying === true && "dying",
+    o.dyingNew === true && "dying-new",
     o.hit === true && "hit",
     o.sel === true && "sel",
     o.fused === true && "fused",
   ]
     .filter(Boolean)
     .join(" ");
+  // Team tint on the name (#065 item 2): side A / side B get distinct hues so a
+  // name reads as its side. Reuses the battle log's .u/.ua/.ub side palette.
+  const unameCls = ["uname", o.side === "A" && "u ua", o.side === "B" && "u ub"].filter(Boolean).join(" ");
   const badge =
     o.level !== undefined
       ? `<span class="run-lvl">L${o.level}${o.pips !== undefined ? ` <span class="run-pips">${o.pips}</span>` : ""}</span>`
@@ -116,10 +144,13 @@ export function unitCardHtml(o: UnitCardOpts): string {
     <div class="${cls}" ${o.attrs} title="${esc(o.title)}">
       ${o.front === true ? '<span class="front-tag">front</span>' : ""}
       ${shapeSvg(o.artName, o.dead === true)}
-      <span class="uname">${esc(o.label)}</span>
+      <span class="${unameCls}">${esc(o.label)}</span>
       ${badge}
       <span class="unums"><span class="hp">${o.hp}</span><span class="pwr">${o.pwr}</span></span>
       <span class="chips">${chipsHtml(o.statuses, o.registry)}${silenced}</span>
       ${o.footer ?? ""}
+      ${o.dying === true ? '<span class="dying-x" aria-hidden="true">✕</span>' : ""}
+      ${o.overlay ?? ""}
+      ${o.marker ?? ""}
     </div>`;
 }

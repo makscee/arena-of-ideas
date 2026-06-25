@@ -125,18 +125,30 @@ for (const [viewport, tag] of [
     `${tag} board front card keeps its marker`,
   );
   if (viewport === PHONE) {
-    // The 5-unit line sits five abreast inside 375px — no wrap, no overflow.
+    // #065 redesign: each team is a VERTICAL column — the line stacks its cards
+    // straight down (front on top), one card wide. So the five units share one
+    // COLUMN (one x, distinct stacked Ys), not one row, and the column fits the
+    // 375px stage with no overflow.
     const cards = await page.$$eval('#board .side[data-side="A"] .line .unit', (els) =>
       els.map((el) => {
         const r = el.getBoundingClientRect();
-        return { y: r.y, right: r.right };
+        return { x: r.x, y: r.y, right: r.right };
       }),
     );
     check(cards.length === 5, "375px board line renders all five cards", `${cards.length}`);
-    check(new Set(cards.map((c) => Math.round(c.y))).size === 1, "375px five cards share one row");
+    check(
+      new Set(cards.map((c) => Math.round(c.x))).size === 1,
+      "375px five cards share one column (vertical team column, #065 redesign)",
+      `distinct x = ${new Set(cards.map((c) => Math.round(c.x))).size}`,
+    );
+    check(
+      new Set(cards.map((c) => Math.round(c.y))).size === 5,
+      "375px the five cards stack vertically (distinct Ys, front on top)",
+      `distinct y = ${new Set(cards.map((c) => Math.round(c.y))).size}`,
+    );
     check(
       Math.max(...cards.map((c) => c.right)) <= PHONE.width,
-      "375px five-card line fits the viewport",
+      "375px the team column fits the viewport",
       `right edge ${Math.max(...cards.map((c) => c.right)).toFixed(1)}`,
     );
     check(await noHorizontalOverflow(page), "375px battle screen has no horizontal overflow");

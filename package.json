@@ -9,6 +9,9 @@
   "scripts": {
     "test": "vitest run",
     "e2e": "node e2e/run.mjs",
+    "e2e:serve": "node e2e/run.mjs --serve",
+    "e2e:stop": "node e2e/run.mjs --down",
+    "probe": "node e2e/probe.mjs",
     "typecheck": "tsc --noEmit",
     "battle": "node --import tsx/esm src/cli.ts",
     "check-candidate": "node --import tsx/esm src/check-candidate.ts",

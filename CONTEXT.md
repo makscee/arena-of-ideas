@@ -241,3 +241,20 @@ _Avoid_: schema checker, linter (the sim gate is the linter; this is its content
 **Stress set**:
 The kernel acceptance content — the abilities in `src/content/stress.ts` (Strength, Vitality, Curse, Poison, Shield, Freeze, Blessing, Summon, Silence, Resurrect) shipped as DSL data with behavior tests. The kernel passes when all are expressible; where one isn't, the kernel grows consciously.
 _Avoid_: test fixtures, sample content
+
+## Dev loop (fast iteration)
+
+Compile is cheap — `npm run typecheck` ~2s, `npm run build` ~0.25s. The cost is the e2e stack boot (arena server + vite, ~60s of churn for a full cold run), so don't cold-boot the stack per edit.
+
+**Fast loop.** Boot the stack ONCE and hold it warm, then fire scoped probes against it:
+
+1. `npm run e2e:serve &` — boots the stack, prints `e2e server warm at http://localhost:5280`, and stays up. Run it backgrounded.
+2. Per edit, run only the probe(s) for the area you touched against the warm origin:
+   `AOI_BASE_URL=http://localhost:5280 npm run probe <name>` — e.g. `npm run probe beats`. The name is a substring (`probe-` / `.mjs` optional); pass several to run several. ~6s each, no re-boot.
+3. `npm run e2e:stop` when done — reaps the warm stack (server, vite, children) via the pidfile, no terminal needed.
+
+**One-shot scoped run** (no held server): `npm run e2e -- <area>` boots the stack, runs only matching probes, tears down. Good for a single area when you don't want a warm server lingering.
+
+**Full suite** (`npm run e2e`, no args) boots the stack and runs every probe. Run it only as the pre-close / verify gate, not per edit.
+
+Batch related edits before verifying — don't run a probe after every keystroke. The cost is the round-trip, not the probe.

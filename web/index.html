@@ -219,31 +219,37 @@
            screen and the Battle Editor reparent into their own mounts. -->
       <section id="battle-view" hidden>
       <section id="result" hidden>
+        <!-- Beat-card viewer (#065 slice 1): the stage (board + its centre
+             action card + transport) sits LEFT, the running event log RIGHT.
+             At phone width the grid collapses to one column — stage over a
+             capped-scroll log. The board's locked height (LS-1) is unchanged. -->
         <section id="board-panel">
-          <div id="board"></div>
-          <div id="transport">
-            <button type="button" id="step-prev" title="Previous event (←)">‹ prev</button>
-            <button type="button" id="step-play">play</button>
-            <button type="button" id="step-next" title="Next event (→)">next ›</button>
-            <select id="speed" title="Playback speed">
-              <option value="0.5">0.5×</option>
-              <option value="1" selected>1×</option>
-              <option value="2">2×</option>
-              <option value="4">4×</option>
-            </select>
-            <span id="step-label"></span>
-          </div>
-          <input id="scrub" type="range" min="0" max="0" value="0" step="1" title="Scrub events" />
-          <div id="battle-readout">
-            <div id="log-pane">
-              <span class="pane-k">battle log</span>
-              <div id="battle-log"></div>
+          <div id="stage-col">
+            <div id="board"></div>
+            <div id="transport">
+              <button type="button" id="step-prev" title="Previous event (←)">‹ prev</button>
+              <button type="button" id="step-play">play</button>
+              <button type="button" id="step-next" title="Next event (→)">next ›</button>
+              <select id="speed" title="Playback speed">
+                <option value="0.5">0.5×</option>
+                <option value="1" selected>1×</option>
+                <option value="2">2×</option>
+                <option value="4">4×</option>
+              </select>
+              <span id="step-label"></span>
             </div>
+            <input id="scrub" type="range" min="0" max="0" value="0" step="1" title="Scrub events" />
             <div id="detail-pane">
               <div id="event-panel">
                 <div id="event-desc"></div>
                 <div id="event-cause"></div>
               </div>
+            </div>
+          </div>
+          <div id="log-col">
+            <div id="log-pane">
+              <span class="pane-k">battle log</span>
+              <div id="battle-log"></div>
             </div>
           </div>
         </section>

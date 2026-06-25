@@ -19,11 +19,72 @@ export const BASE = process.env.AOI_BASE_URL ?? "http://localhost:5280";
 export const PHONE = { width: 375, height: 667 };
 export const DESKTOP = { width: 1280, height: 800 };
 
-/** Kill the probe outright if it wedges — no probe may outlive its budget. */
+// ---------- signal-safe browser teardown ----------
+//
+// Any script that opens a browser (every probe, shots.mjs) must close it on
+// EVERY exit path, not just the happy one. A timed-out or Ctrl-C'd probe used
+// to `process.exit()` straight past `browser.close()`, stranding a chromium
+// (and its renderer children) that reparents to init and pins CPU. We track
+// every launched browser and tear them all down from a single guarded path,
+// wired to the timeout guard AND to process signals/crashes.
+
+const browsers = new Set();
+let tearingDown = false;
+
+/** Best-effort synchronous-ish close of every tracked browser, then exit.
+ * Guarded so re-entry (e.g. a signal during teardown) is a no-op. `code` is
+ * the conventional exit code for the path that called us. */
+async function teardownBrowsers(code) {
+  if (tearingDown) return;
+  tearingDown = true;
+  // Race each close against a short grace — a wedged browser must not hang the
+  // exit; the process leaving will orphan it, but `kill()` below also fires.
+  await Promise.all(
+    [...browsers].map((b) =>
+      Promise.race([
+        b.close().catch(() => {}),
+        new Promise((r) => setTimeout(r, 3000)),
+      ]).then(() => {
+        // If close() stalled, kill the browser process group outright.
+        try {
+          const proc = b.process?.();
+          if (proc?.pid) process.kill(proc.pid, "SIGKILL");
+        } catch {}
+      }),
+    ),
+  );
+  process.exit(code);
+}
+
+let signalsArmed = false;
+/** Install once-per-process handlers so a Ctrl-C/SIGTERM/crash still reaps the
+ * browser. Idempotent — armGuard and launch both call it; only the first wins. */
+function armSignalTeardown() {
+  if (signalsArmed) return;
+  signalsArmed = true;
+  for (const sig of ["SIGINT", "SIGTERM"]) {
+    process.on(sig, () => {
+      const n = { SIGINT: 2, SIGTERM: 15 }[sig];
+      teardownBrowsers(128 + n);
+    });
+  }
+  process.on("uncaughtException", (err) => {
+    console.error("uncaughtException:", err);
+    teardownBrowsers(1);
+  });
+  process.on("unhandledRejection", (err) => {
+    console.error("unhandledRejection:", err);
+    teardownBrowsers(1);
+  });
+}
+
+/** Kill the probe outright if it wedges — no probe may outlive its budget.
+ * Closes any open browser first so a timed-out probe leaks nothing. */
 export function armGuard(ms = 100_000) {
+  armSignalTeardown();
   const t = setTimeout(() => {
     console.error(`PROBE TIMEOUT after ${ms}ms`);
-    process.exit(2);
+    teardownBrowsers(2);
   }, ms);
   return () => clearTimeout(t);
 }
@@ -120,6 +181,27 @@ export const plainShopRun = () =>
     s.gold = 10;
   });
 
+/** A FULL five-unit line vs the round-1 bootstrap opponent (#065 slice-1
+ * regression): an ASYMMETRIC, near-max matchup so the desktop "equal halves"
+ * crush reproduces. The injected run fields all TEAM_SIZE units; the ladder
+ * draw seats the bootstrap round-1 enemy (two/three bodies) on side B, so the
+ * battle opens 5 (side A) vs a smaller side B — the case that crushed B to a
+ * sliver under `flex: 1 1 0`. The names are five distinct pool units so each
+ * card renders its own art + stats (no stacking). */
+export const bigBattleRun = () =>
+  shaped((s) => {
+    s.team = [
+      unitOf(byName.Venomancer),
+      unitOf(byName.Summoner),
+      unitOf(byName.Silencer),
+      unitOf(byName.Necromancer),
+      unitOf(byName.Brawler),
+    ];
+    s.offers = [byName.Bulwark, byName.Squire, byName.Venomancer];
+    s.gold = 10;
+    s.lives = 5;
+  });
+
 /** A finished run (#014): status "over", out of lives — the run-end screen,
  * where the menu must still appear and abandon must still work. A small team
  * so the end screen renders a couple of post-mortem cards. */
@@ -188,6 +270,44 @@ export const refsRun = () => {
   );
 };
 
+/** Constructed content (#065 slice 2): a Duelist whose Strike trigger ALSO
+ * deals direct damage to the front enemy — so a single Strike beat lands TWO
+ * Hurts on the same defender. The injected fight reaches that beat, and the
+ * hero-overlay probe asserts the two hits SUM into one red −N badge (the
+ * "summed on repeated hits within the beat" clause). A tanky defender survives
+ * both hits so the badge shows the live-incrementing total, not a death. */
+export const duelistRun = () => {
+  // pwr 1 + a +1 bonus to the front enemy: both hits are small, so the struck
+  // enemy survives BOTH within the one Strike beat — its two Hurt lines stay on
+  // the board and its red badge increments 1 → 2 (the live-incrementing sum).
+  // A tanky body sits IN FRONT of the Duelist so the bootstrap Silencer's
+  // BattleStart silence lands on the (ability-less) tank, never on the Duelist
+  // — a silenced Duelist would lose its bonus-damage ability and the beat would
+  // carry a single hit. The tank trades down, the Duelist reaches the front
+  // with its ability intact, and its strikes then land the double hit.
+  const Duelist = {
+    name: "Duelist",
+    base: { hp: 8, pwr: 1 },
+    abilities: [
+      {
+        whens: [{ kind: "trigger", on: { on: "Strike", striker: "holder" } }],
+        selectors: [{ kind: "frontEnemy" }],
+        effects: [{ kind: "damage", amount: { kind: "const", value: 1 } }],
+      },
+    ],
+  };
+  const Bodyguard = { name: "Bodyguard", base: { hp: 20, pwr: 1 } };
+  return shaped(
+    (s) => {
+      s.team = [unitOf(Bodyguard), unitOf(Duelist)];
+      s.offers = [byName.Venomancer, byName.Summoner, byName.Bulwark];
+      s.gold = 10;
+      s.lives = 5;
+    },
+    [...DEFAULT_RUN_POOL, Duelist, Bodyguard],
+  );
+};
+
 // ---------- browser ----------
 
 /** A fresh page with the run injected before any script runs. The app lands
@@ -211,7 +331,11 @@ export async function openRun(browser, serializedRun, viewport, ready = "#run-sh
 }
 
 export async function launch() {
-  return chromium.launch();
+  armSignalTeardown();
+  const browser = await chromium.launch();
+  browsers.add(browser);
+  browser.on("disconnected", () => browsers.delete(browser));
+  return browser;
 }
 
 /** Rounded bounding box of a selector (null-safe: fails the probe loudly). */
