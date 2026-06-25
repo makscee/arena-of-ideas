@@ -10,7 +10,7 @@
 
 import { FATIGUE_RAMP, FATIGUE_START, TURN_CAP, fatigueAmount } from "./battle.js";
 import {
-  BOOTSTRAP_CHAMPION,
+  BOSS_TEAMS,
   BOOTSTRAP_DEPTH,
   BOOTSTRAP_TEAMS,
   DEFAULT_RUN_POOL,
@@ -75,11 +75,13 @@ export interface CodexData {
 // ---------------------------------------------------------------------------
 
 /** Every unit a player can meet: the shop pool first (so the buyable variant
- * wins the name dedup), then bootstrap ghosts and the shipped champion
+ * wins the name dedup), then bootstrap climb ghosts and the per-floor bosses
  * (Warden, Warlord, scaled vanillas), then anything those units summon (Imp).
- * The codex must cover what a player can FACE, not only what they can buy. */
+ * The codex must cover what a player can FACE, not only what they can buy — and
+ * with a boss seated on every floor (PRD 075 slice 3) that includes every team
+ * in BOSS_TEAMS, the summit (old BOOTSTRAP_CHAMPION) among them. */
 export function codexUnits(approved: readonly UnitDef[] = []): UnitDef[] {
-  const queue: UnitDef[] = [...DEFAULT_RUN_POOL, ...approved, ...BOOTSTRAP_TEAMS.flat(2), ...BOOTSTRAP_CHAMPION];
+  const queue: UnitDef[] = [...DEFAULT_RUN_POOL, ...approved, ...BOOTSTRAP_TEAMS.flat(2), ...BOSS_TEAMS.flat()];
   const seen = new Set<string>();
   const out: UnitDef[] = [];
   while (queue.length > 0) {

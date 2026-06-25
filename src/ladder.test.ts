@@ -8,7 +8,7 @@ import type { LadderStore, TeamSnapshot } from "./ladder.js";
 import { FileLadderStore } from "./ladder-file.js";
 import { buy, challengeBoss, fight, initRun, InvalidDecisionError, ladderFight, reorder, reroll, runToJSONL } from "./run.js";
 import type { RunEvent, RunInput, RunState } from "./run.js";
-import { BOOTSTRAP_CHAMPION, BOOTSTRAP_DEPTH, BOOTSTRAP_TEAMS, STARTING_LIVES } from "./tunables.js";
+import { BOSS_TEAMS, BOOTSTRAP_DEPTH, BOOTSTRAP_TEAMS, STARTING_LIVES } from "./tunables.js";
 import { ValidationError, validateTeam } from "./validate.js";
 import type { UnitDef } from "./types.js";
 
@@ -67,30 +67,53 @@ function freshLadder(): LadderStore {
 // ---------------------------------------------------------------------------
 
 describe("bootstrap", () => {
-  test("openLadder seeds rounds 1..BOOTSTRAP_DEPTH of an empty ladder with valid ghosts", () => {
+  // The full bootstrap tower (075-3): floors 1..BOOTSTRAP_DEPTH carry a climb
+  // pool AND a seated boss whose team is ALSO in that floor's pool as a ghost,
+  // so each floor's pool is its climb teams plus one boss-ghost. The summit boss
+  // sits one floor higher (BOOTSTRAP_DEPTH+1) with no pool-ghost — the guard a
+  // first-ever run must beat to crown.
+  const poolSizeAt = (floor: number) => BOOTSTRAP_TEAMS[floor - 1]!.length + 1; // climb teams + the boss-ghost
+
+  test("openLadder seeds every floor 1..BOOTSTRAP_DEPTH with a climb pool and a boss-ghost", () => {
     const store = freshLadder();
     for (let round = 1; round <= BOOTSTRAP_DEPTH; round++) {
       const pool = store.poolAt(round);
-      expect(pool.length).toBe(BOOTSTRAP_TEAMS[round - 1]!.length);
+      expect(pool.length).toBe(poolSizeAt(round)); // climb teams + the boss-ghost
       pool.forEach((g, i) => {
         expect(g).toMatchObject({ runId: BOOTSTRAP_RUN_ID, round, seq: i });
         expect(validateTeam(g.team, stressRegistry)).toEqual([]); // a first run's opponents pass the gate
       });
+      // The boss seated on this floor IS the pool's last ghost (snapshot-then-seat),
+      // so demoting it leaves its team drawable as a climb ghost on the floor.
+      const boss = store.bossAt(round)!;
+      expect(boss).toMatchObject({ runId: BOOTSTRAP_RUN_ID, round });
+      expect(boss.team.map((u) => u.name)).toEqual(BOSS_TEAMS[round - 1]!.map((u) => u.name));
+      expect(pool[pool.length - 1]!.team.map((u) => u.name)).toEqual(boss.team.map((u) => u.name));
     }
-    expect(store.poolAt(BOOTSTRAP_DEPTH + 1)).toEqual([]); // the climb ends at the champion
   });
 
-  test("openLadder seats the bootstrap champion — a fresh ladder's spot is never vacant", () => {
+  test("the summit boss is seated on floor BOOTSTRAP_DEPTH+1 with NO pool-ghost — the guard", () => {
+    const store = freshLadder();
+    const summitFloor = BOOTSTRAP_DEPTH + 1;
+    // Empty pool on the summit floor: a run that sailed up the climb floors finds
+    // no ghost to climb here, so it MUST challenge the boss — the crown is earned.
+    expect(store.poolAt(summitFloor)).toEqual([]);
+    const summit = store.bossAt(summitFloor)!;
+    expect(summit).toMatchObject({ runId: BOOTSTRAP_RUN_ID, round: summitFloor });
+    expect(summit.team.map((u) => u.name)).toEqual(BOSS_TEAMS[BOOTSTRAP_DEPTH]!.map((u) => u.name));
+  });
+
+  test("the champion derives to the summit — a fresh ladder's spot is never vacant", () => {
     const champ = freshLadder().champion()!;
     expect(champ).toMatchObject({ runId: BOOTSTRAP_RUN_ID, round: BOOTSTRAP_DEPTH + 1 });
-    expect(champ.team.map((u) => u.name)).toEqual(BOOTSTRAP_CHAMPION.map((u) => u.name));
+    expect(champ.team.map((u) => u.name)).toEqual(BOSS_TEAMS[BOOTSTRAP_DEPTH]!.map((u) => u.name));
     expect(validateTeam(champ.team, stressRegistry)).toEqual([]); // the gate covers the seat too
   });
 
   test("a non-empty ladder is never reseeded", () => {
     const store = freshLadder();
     openLadder(store, stressRegistry);
-    expect(store.poolAt(1).length).toBe(BOOTSTRAP_TEAMS[0]!.length);
+    expect(store.poolAt(1).length).toBe(poolSizeAt(1));
   });
 
   test("a played-on ladder keeps its earned champion across opens", () => {
@@ -100,11 +123,64 @@ describe("bootstrap", () => {
     expect(store.champion()!.runId).toBe("titan"); // never reseated
   });
 
+  test("every seeded boss + climb team passes the content gate", () => {
+    const store = freshLadder();
+    for (let floor = 1; floor <= BOOTSTRAP_DEPTH + 1; floor++) {
+      const boss = store.bossAt(floor)!;
+      expect(validateTeam(boss.team, stressRegistry)).toEqual([]);
+    }
+    for (let floor = 1; floor <= BOOTSTRAP_DEPTH; floor++) {
+      for (const g of store.poolAt(floor)) expect(validateTeam(g.team, stressRegistry)).toEqual([]);
+    }
+  });
+
   test("a bootstrap team failing the content gate fails at open, loudly", () => {
     // An empty registry leaves Venomancer's Poison dangling — the gate must
     // catch it at seed time, not seed-dependently mid-run on an unlucky draw.
     expect(() => openLadder(new InMemoryLadderStore(), {})).toThrow(ValidationError);
     expect(() => openLadder(new InMemoryLadderStore(), {})).toThrow(/bootstrap round 1 team 0/);
+  });
+
+  test("a first-ever run climbs a real pool at every floor, then earns the crown by beating the summit boss", () => {
+    // The "fresh ladder never auto-crowns trivially" property (075's original
+    // pin): a strong run climbs floors 1..BOOTSTRAP_DEPTH (a real fight each) and
+    // crowns ONLY by challenging the seated summit — dethroning someone, never a
+    // free vacant-spot seat.
+    const store = freshLadder();
+    const s = playLadderRun(input(1, "titan", TITAN), store);
+    expect(s).toMatchObject({ status: "over", endedBy: "crown" });
+    expect(s.round).toBe(BOOTSTRAP_DEPTH + 1); // crowned at the summit, not a higher vacant floor
+    // One fight per climbed floor plus the summit challenge — a real climb, no skip.
+    expect(ofType(s.log, "FightFought").length).toBe(BOOTSTRAP_DEPTH + 1);
+    const crowned = ofType(s.log, "Crowned")[0]!;
+    expect(crowned).toMatchObject({ floor: BOOTSTRAP_DEPTH + 1, dethroned: BOOTSTRAP_RUN_ID }); // earned, not vacant
+  });
+
+  test("a first-ever weak run never auto-crowns — it loses the summit challenge", () => {
+    // The dual of the property: a losing-record run still advances a floor per
+    // climb (a loss costs a life but moves up), reaches the summit, and CHALLENGES
+    // it — and loses, ending challenge-lost, never crowning through a vacant spot.
+    const store = freshLadder();
+    const s = playLadderRun(input(1, "grunt", GRUNT), store);
+    expect(s).toMatchObject({ status: "over", endedBy: "challenge-lost", round: BOOTSTRAP_DEPTH + 1 });
+    expect(ofType(s.log, "Crowned")).toEqual([]); // no free crown
+    expect(store.bossAt(BOOTSTRAP_DEPTH + 1)!.runId).toBe(BOOTSTRAP_RUN_ID); // summit stands
+  });
+
+  test("demoting a SEEDED lower boss keeps its team in the floor's pool as a climb ghost", () => {
+    // The demote-keeps-ghost invariant for bootstrap bosses (not only run-won
+    // ones): challenge floor 1's seeded boss head-on and win; the dethroned
+    // bootstrap boss's team must still be drawable as a climb ghost on floor 1.
+    const store = freshLadder();
+    const floor1Boss = store.bossAt(1)!;
+    const bossNames = floor1Boss.team.map((u) => u.name);
+    const s = challengeBoss(buy(initRun(input(1, "titan", TITAN)), 0), store);
+    expect(s).toMatchObject({ status: "over", endedBy: "crown", round: 1 });
+    expect(store.bossAt(1)!.runId).toBe("titan"); // challenger seated over the slot
+    // The dethroned bootstrap boss's team is still in floor 1's pool, drawable.
+    const ghosts = store.poolAt(1).filter((g) => g.runId === BOOTSTRAP_RUN_ID && g.team.map((u) => u.name).join(",") === bossNames.join(","));
+    expect(ghosts.length).toBe(1);
+    expect(ghosts[0]!.team.map((u) => u.name)).toEqual(BOSS_TEAMS[0]!.map((u) => u.name));
   });
 });
 
@@ -117,7 +193,9 @@ describe("snapshot-before-fight", () => {
     const store = freshLadder();
     const s = ladderFight(buy(initRun(input(7, "titan", TITAN)), 0), store);
     const ghost = store.poolAt(1).find((g) => g.runId === "titan")!;
-    expect(ghost).toMatchObject({ round: 1, seq: BOOTSTRAP_TEAMS[0]!.length });
+    // The run's own ghost enters after floor 1's seeded ghosts: the climb teams
+    // AND the floor-1 boss-ghost (075-3's per-floor boss in the pool).
+    expect(ghost).toMatchObject({ round: 1, seq: BOOTSTRAP_TEAMS[0]!.length + 1 });
     expect(ghost.team.map((u) => u.name)).toEqual(["Titan"]);
     // The log shows the order: Snapshotted, then the draw, then the fight.
     const types = s.log.map((e) => e.type);
@@ -176,15 +254,18 @@ describe("opponent draw", () => {
   test("a run's own ghosts are excluded from its draw", () => {
     for (let seed = 0; seed < 20; seed++) {
       const store = freshLadder();
-      // Pre-ghosted rounds: the run already left ghosts at round 1 (as if
-      // re-opened mid-ladder); they outnumber the bootstrap pair 3:2.
-      for (const seq of [2, 3, 4]) {
+      // Floor 1 already holds its seeded ghosts (climb teams + the boss-ghost) at
+      // seq 0..seeded-1; append the run's OWN ghosts after them, as if it had
+      // re-opened mid-ladder. Only the seeded bootstrap ghosts are draw candidates
+      // — the run's own are excluded — so the draw always lands on a bootstrap ghost.
+      const seeded = BOOTSTRAP_TEAMS[0]!.length + 1; // climb teams + boss-ghost
+      for (const seq of [seeded, seeded + 1, seeded + 2]) {
         store.addSnapshot({ runId: "self", round: 1, seq, team: [TITAN] });
       }
       const s = ladderFight(buy(initRun(input(seed, "self", TITAN)), 0), store);
       const drawn = ofType(s.log, "OpponentDrawn")[0]!;
       expect(drawn.opponent).toBe(BOOTSTRAP_RUN_ID);
-      expect(drawn.candidates).toBe(BOOTSTRAP_TEAMS[0]!.length); // 6 in the pool, own 4 excluded
+      expect(drawn.candidates).toBe(seeded); // own ghosts excluded, the seeded bootstrap ghosts remain
     }
   });
 
@@ -478,13 +559,13 @@ describe("file backing", () => {
   test("write through one store, read through a fresh one — equal", () => {
     const path = join(dir, "roundtrip.json");
     const store = openLadder(new FileLadderStore(path), stressRegistry);
-    const ghost: TeamSnapshot = { runId: "titan", round: 1, seq: BOOTSTRAP_TEAMS[0]!.length, team: [TITAN] };
+    const ghost: TeamSnapshot = { runId: "titan", round: 1, seq: BOOTSTRAP_TEAMS[0]!.length + 1, team: [TITAN] }; // after climb teams + boss-ghost
     store.addSnapshot(ghost);
     store.setBoss(ghost.round, ghost);
     const reread = new FileLadderStore(path);
     expect(reread.poolAt(1)).toEqual(store.poolAt(1));
     expect(reread.champion()).toEqual(store.champion());
-    expect(reread.poolAt(BOOTSTRAP_DEPTH + 1)).toEqual([]); // untouched rounds stay empty
+    expect(reread.poolAt(BOOTSTRAP_DEPTH + 2)).toEqual([]); // untouched rounds past the summit stay empty
   });
 
   test("a ladder run plays byte-identically on file and in-memory backings", () => {

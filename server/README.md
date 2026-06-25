@@ -111,9 +111,10 @@ that runId, makes the submission unverifiable and it is rejected.
 One ladder per server instance, stored in SQLite behind the kernel's
 `LadderStore` interface (`ladder-store.ts`) with the same semantics the
 kernel's backings pin (append-only pools, the seq precondition, snapshot
-isolation). Opened from the kernel's bootstrap at boot — `BOOTSTRAP_CHAMPION`
-is seated, because a vacant champion spot is a free crown — and never reseeded
-once played on.
+isolation). Opened from the kernel's bootstrap at boot — the bootstrap tower is
+seeded (a boss on every floor, the summit `BOSS_TEAMS` entry as champion),
+because a vacant champion spot is a free crown — and never reseeded once played
+on.
 
 **Users own ghosts.** A user is identified by the session's user id, and a
 user's ghosts span all their runs: their own draws (`?exclude=me`, and the
@@ -130,7 +131,7 @@ the decision sequence from the run log, and replays it through the kernel's
 pure transitions. Ladder fights replay against the historical view the log
 itself pins: pools are append-only and the server is the only writer, so what
 a client saw is always a prefix of the user-filtered pool — each `Snapshotted`
-seq fixes that prefix's length, and each `ChampionChallenged` names a champion
+seq fixes that prefix's length, and each `BossChallenged` names a champion
 the append-only history can still produce. The re-derived state must match the
 claim exactly (final stats, lives, every event); only re-derived ghosts/crowns
 are written, re-sequenced onto the end of the current pools. Inflated stats,

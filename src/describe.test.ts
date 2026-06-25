@@ -14,7 +14,7 @@ import {
 } from "./describe.js";
 import type { Ability, When } from "./types.js";
 import { Necromancer, Silencer, Summoner, Venomancer, stressRegistry } from "./content/stress.js";
-import { BOOTSTRAP_CHAMPION, DEFAULT_RUN_POOL } from "./tunables.js";
+import { BOSS_TEAMS, DEFAULT_RUN_POOL } from "./tunables.js";
 
 describe("describeStatus", () => {
   test("every entry in the shipped registry yields a non-empty description", () => {
@@ -101,7 +101,7 @@ describe("describeAbility", () => {
 });
 
 describe("describe segments / status refs", () => {
-  const shippedUnits = [...new Set([...DEFAULT_RUN_POOL, ...BOOTSTRAP_CHAMPION])];
+  const shippedUnits = [...new Set([...DEFAULT_RUN_POOL, ...BOSS_TEAMS.flat()])];
 
   test("joined ability segments reproduce describeAbility exactly (all shipped content)", () => {
     for (const unit of shippedUnits) {

@@ -45,7 +45,10 @@ import { createRateLimiter } from "./rate-limit.js";
 
 const TITAN: UnitDef = { name: "Titan", base: { hp: 100, pwr: 50 } };
 const GOLIATH: UnitDef = { name: "Goliath", base: { hp: 200, pwr: 80 } };
-const BASE = BOOTSTRAP_TEAMS[0]!.length; // round-1 bootstrap ghost count
+// Round-1's seeded pool size: the floor-1 climb teams PLUS the floor-1 boss-ghost
+// (075-3 seeds a boss on every floor and leaves its team in the pool). All three
+// climb floors happen to seed the same count, so BASE is the per-floor seeded size.
+const BASE = BOOTSTRAP_TEAMS[0]!.length + 1;
 
 // ---------------------------------------------------------------------------
 // Harness
@@ -224,7 +227,7 @@ describe("leaderboard reads work logged-out", () => {
     expect(champion!.runId).toBe(BOOTSTRAP_RUN_ID);
     expect(holder).toBeNull();
     const pool = await fetchPublicPool(ctx, 1);
-    expect(pool.length).toBe(BASE);
+    expect(pool.length).toBe(BASE); // floor-1 climb teams + the floor-1 boss-ghost (075-3)
     expect(pool.every((g) => g.runId === BOOTSTRAP_RUN_ID)).toBe(true);
   });
 

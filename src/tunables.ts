@@ -84,20 +84,72 @@ export const BOOTSTRAP_TEAMS: readonly (readonly UnitDef[][])[] = [
   ],
 ];
 
-/** The team seated in the champion spot when an empty ladder opens — the
- * strongest shipped bootstrap team, one notch past round BOOTSTRAP_DEPTH's
- * pool. Sweeps showed a fresh ladder crowning every run at round
- * BOOTSTRAP_DEPTH+1 through the vacant spot (20/20, 13 with losing records):
- * no spot to take, no game. With this team seated, a crown is always earned
- * by beating someone; the kernel's vacant-spot rule stays only for the
- * truly-vacant edge (unreachable on a fresh ladder). Gated at open like
- * every bootstrap team. */
-export const BOOTSTRAP_CHAMPION: readonly UnitDef[] = [
-  Venomancer,
-  Summoner,
-  Necromancer,
-  { name: "Warlord", base: { hp: 18, pwr: 5 }, statuses: [{ status: "Strength", stacks: 3 }] },
-  { name: "Bulwark", base: { hp: 16, pwr: 5 }, statuses: [{ status: "Vitality", stacks: 4 }] },
+/** A boss for every floor of the bootstrap tower: BOSS_TEAMS[f-1] is the team
+ * openLadder seats on floor f. The tower runs one floor TALLER than the climb
+ * pools — climb pools fill floors 1..BOOTSTRAP_DEPTH (BOOTSTRAP_TEAMS), bosses
+ * fill floors 1..BOOTSTRAP_DEPTH+1 — so this array has BOOTSTRAP_DEPTH+1 entries.
+ * The extra top entry is the SUMMIT (the derived champion), seated on floor
+ * BOOTSTRAP_DEPTH+1 with no climb pool below it.
+ *
+ * Why a floor taller, not just a boss per climb floor: a run advances a floor on
+ * EVERY climb, win or loss (a climb loss costs a life but still moves up). So a
+ * first-ever run sails up floors 1..BOOTSTRAP_DEPTH regardless of record and its
+ * TERMINAL floor is BOOTSTRAP_DEPTH+1 — the only floor where the climb pool is
+ * empty, so the run stops and challenges. The summit there is the guard that
+ * makes the crown earned; the lower-floor bosses are met head-on only by a run
+ * DIRECTLY challenging that floor, and they exist to hold the demote-keeps-ghost
+ * invariant per floor. Slice 075-2 proved the guard works: its single boss sat
+ * on exactly this summit floor and turned the old free vacant-spot crown into a
+ * real fight; this slice keeps that guard and adds the lower-floor bosses.
+ *
+ * Each boss is a NOTCH above its floor's climb pool (BOOTSTRAP_TEAMS[f-1] for
+ * f≤BOOTSTRAP_DEPTH): the same shipped stress casters, but fatter vanilla bodies
+ * and a stack more status than the climb teams field — beating the boss is a
+ * genuine step past merely clearing the floor's ghosts. Strength escalates with
+ * the floor, tracking BOOTSTRAP_TEAMS' own climb:
+ *   floor 1 — four bodies, a body more than the floor-1 climb pair fields;
+ *   floor 2 — a fifth body and a first status opener, past the floor-2 pool;
+ *   floor 3 — full lines with two status openers, over the floor-3 pool;
+ *   floor 4 — the summit, the strongest shipped team (the old BOOTSTRAP_CHAMPION,
+ *             now folded in here as BOSS_TEAMS' top entry).
+ * Composed from the shipped stress units (SPEC §7) like BOOTSTRAP_TEAMS;
+ * composition is a knob, not a pin. openLadder gates every boss at seed time
+ * (assertValidContent), exactly like a climb team, so a dangling status fails
+ * loudly at open — never seed-dependently mid-run on an unlucky challenge. */
+export const BOSS_TEAMS: readonly (readonly UnitDef[])[] = [
+  // floor 1 boss — a notch over the floor-1 climb pair: a fourth body, fatter stats
+  [
+    Venomancer,
+    Summoner,
+    Silencer,
+    { name: "Warden", base: { hp: 14, pwr: 4 } },
+    { name: "Brawler", base: { hp: 12, pwr: 3 } },
+  ],
+  // floor 2 boss — a fifth body and a first status opener, past the floor-2 pool
+  [
+    Venomancer,
+    Summoner,
+    Necromancer,
+    { name: "Warden", base: { hp: 16, pwr: 4 }, statuses: [{ status: "Strength", stacks: 2 }] },
+    { name: "Bulwark", base: { hp: 14, pwr: 4 }, statuses: [{ status: "Vitality", stacks: 2 }] },
+  ],
+  // floor 3 boss — full lines, two status openers, a notch over the floor-3 pool
+  [
+    Venomancer,
+    Summoner,
+    Silencer,
+    { name: "Warden", base: { hp: 17, pwr: 5 }, statuses: [{ status: "Strength", stacks: 2 }] },
+    { name: "Bulwark", base: { hp: 15, pwr: 4 }, statuses: [{ status: "Vitality", stacks: 3 }] },
+  ],
+  // floor 4 boss — the SUMMIT (derived champion): the strongest shipped team,
+  // the old BOOTSTRAP_CHAMPION, status stacks on two front bodies.
+  [
+    Venomancer,
+    Summoner,
+    Necromancer,
+    { name: "Warlord", base: { hp: 18, pwr: 5 }, statuses: [{ status: "Strength", stacks: 3 }] },
+    { name: "Bulwark", base: { hp: 16, pwr: 5 }, statuses: [{ status: "Vitality", stacks: 4 }] },
+  ],
 ];
 
 /** The draftable pool a run's shop rolls from while no curated pool exists:

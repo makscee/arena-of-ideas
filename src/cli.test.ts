@@ -243,10 +243,12 @@ describe("autoplay", () => {
     const results = autoplayRuns(openLadder(new FileLadderStore(path), stressRegistry), 0, N);
     expect(results).toHaveLength(N);
     expect(results.every((r) => r.state.status === "over")).toBe(true);
-    // Every run fights at round 1, so its ghost joined the round-1 pool.
+    // Every run fights at round 1, so its ghost joined the round-1 pool — which
+    // already held the floor-1 climb teams AND the floor-1 boss-ghost (075-3).
     const reread = new FileLadderStore(path); // growth read back from disk, not memory
-    expect(reread.poolAt(1).length).toBe(BOOTSTRAP_TEAMS[0]!.length + N);
-    // Runs outlive the bootstrap rounds: pools past the seeded depth exist now.
+    expect(reread.poolAt(1).length).toBe(BOOTSTRAP_TEAMS[0]!.length + 1 + N);
+    // Runs climb to the summit floor (BOOTSTRAP_DEPTH+1) and ghost themselves there
+    // when they challenge it — so that floor's pool, seeded empty, has grown.
     expect(reread.poolAt(BOOTSTRAP_DEPTH + 1).length).toBeGreaterThan(0);
   });
 
