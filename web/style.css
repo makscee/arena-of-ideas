@@ -1278,6 +1278,17 @@ button:disabled:hover {
   color: var(--text);
 }
 
+/* A Part term in a behavior sentence (#078 slice 3) — an anchor to its codex
+   Part card, styled like the in-panel status ref so every tappable term reads
+   the same. The accent hue distinguishes "opens the codex" from "reveals here"
+   (the status ref's --status hue). */
+.ins-partref {
+  color: var(--accent);
+}
+.ins-partref:hover {
+  color: var(--text);
+}
+
 .ins-head {
   display: flex;
   align-items: center;
@@ -2519,6 +2530,20 @@ button.danger {
 
 .codex-dim {
   color: var(--dim);
+}
+
+/* Every term in a codex behavior sentence links to its card (#078 slice 3):
+   a referenced status to its Status card, every Part term to its Part card.
+   A quiet dotted underline so the sentence still reads as prose, with the
+   accent on hover marking it tappable. */
+.codex-termref {
+  color: inherit;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.codex-termref:hover {
+  color: var(--accent);
 }
 
 /* Each card's deep-link anchor: a real ≥44px target — it has no adjacent

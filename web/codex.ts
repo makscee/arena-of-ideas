@@ -8,7 +8,9 @@
 // #codex/unit/<name>, #codex/rule/<key>.
 
 import { buildCodex } from "../src/codex.js";
-import type { StatusRegistry, UnitDef } from "../src/types.js";
+import { describeAbilitySegments, describeStatusSegments } from "../src/describe.js";
+import type { DescribeSegment } from "../src/describe.js";
+import type { StatusDef, StatusRegistry, UnitDef } from "../src/types.js";
 import { unitCardHtml } from "./unit-card.js";
 
 // ---------------------------------------------------------------------------
@@ -24,6 +26,25 @@ export interface CodexScreen {
 
 const esc = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+
+/** A derived behavior sentence → HTML where every term links to its codex
+ * card (#078 slice 3): a status name links to its Status card, every Part term
+ * (trigger/interceptor/condition/selector/effect) to its Part card. statusRef
+ * wins when a term is both (an applyStatus name) — the status card is the
+ * closer answer. In the codex the links are real anchors (the global #codex/
+ * handler in main.ts navigates within the open codex); inside the inspector
+ * statusRef reveals in-panel instead, so the two renderers differ on status. */
+function segmentLinksHtml(segs: DescribeSegment[], registry: StatusRegistry): string {
+  return segs
+    .map((s) => {
+      if (s.statusRef !== undefined && registry[s.statusRef] !== undefined)
+        return `<a class="codex-termref" href="#codex/status/${esc(s.statusRef)}" data-status="${esc(s.statusRef)}">${esc(s.text)}</a>`;
+      if (s.partRef !== undefined)
+        return `<a class="codex-termref" href="#codex/part/${esc(s.partRef.family)}/${esc(s.partRef.kind)}" data-part="${esc(s.partRef.family)}:${esc(s.partRef.kind)}">${esc(s.text)}</a>`;
+      return esc(s.text);
+    })
+    .join("");
+}
 
 export function createCodex(
   container: HTMLElement,
@@ -69,12 +90,18 @@ export function createCodex(
       attrs: "",
       title: s.name,
     });
+    // The description's behavior sentence links every term to its codex card
+    // (#078 slice 3): a referenced status to its Status card, every Part term to
+    // its Part card. Derived from the registry def's segments; the plain string
+    // still feeds search.
+    const sdef: StatusDef | undefined = registry[s.name];
+    const descHtml = sdef !== undefined ? segmentLinksHtml(describeStatusSegments(sdef), registry) : esc(s.description);
     return (
       `<div class="codex-entry codex-status-entry" id="codex-status-${encodeId(s.name)}"` +
       ` data-search="${esc(`${s.name} ${s.description}`.toLowerCase())}">` +
       anchorHtml(`codex/status/${s.name}`) +
       card +
-      `<div class="codex-entry-desc">${esc(s.description)}</div></div>`
+      `<div class="codex-entry-desc">${descHtml}</div></div>`
     );
   });
   container.append(sectionEl("statuses", "Statuses", grid(statusCards, "codex-grid-statuses")));
@@ -97,10 +124,18 @@ export function createCodex(
       attrs: "",
       title: u.name,
     });
+    // Render from the def's abilities as segments so every term is a tappable
+    // codex link (#078 slice 3); the derived u.abilities strings still feed
+    // search. A unit not in defByName (shouldn't happen) falls back to plain.
+    const abilityDefs = def?.abilities ?? [];
     const abilities =
-      u.abilities.length > 0
-        ? u.abilities.map((ab) => `<div class="codex-entry-desc">${esc(ab)}</div>`).join("")
-        : `<div class="codex-entry-desc codex-dim">No abilities.</div>`;
+      abilityDefs.length > 0
+        ? abilityDefs
+            .map((ab) => `<div class="codex-entry-desc">${segmentLinksHtml(describeAbilitySegments(ab), registry)}</div>`)
+            .join("")
+        : u.abilities.length > 0
+          ? u.abilities.map((ab) => `<div class="codex-entry-desc">${esc(ab)}</div>`).join("")
+          : `<div class="codex-entry-desc codex-dim">No abilities.</div>`;
     // Authorship credit for an approved creation-loop unit (PRD #013 slice 4).
     const credit =
       u.creator !== undefined

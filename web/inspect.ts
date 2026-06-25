@@ -50,16 +50,26 @@ export function unitDefs(
 const esc = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
-/** Description segments → HTML: a status name the registry knows becomes a
- * tappable ref (IA-1 — "what does Poison do?" answered where Poison is said);
- * everything else is the plain describe* text. */
+/** Description segments → HTML. Every term links to where it's defined: a
+ * status name the registry knows becomes a tappable ref revealed in-panel
+ * (IA-1 — "what does Poison do?" answered where Poison is said); a Part term
+ * (every trigger/interceptor/condition/selector/effect, #078 slice 3) becomes
+ * an anchor to its codex Part card, so the codex is the complete tappable
+ * vocabulary (the global #codex/ handler in main.ts opens the codex and
+ * navigates). statusRef wins when a term is both (an applyStatus name is a
+ * status AND an effect payload) — the in-panel reveal is the closer answer.
+ * Everything else is the plain describe* text. */
 function segmentsHtml(segs: DescribeSegment[], registry: StatusRegistry): string {
   return segs
-    .map((s) =>
-      s.statusRef !== undefined && registry[s.statusRef] !== undefined
-        ? `<button type="button" class="ins-ref" data-status-ref="${esc(s.statusRef)}">${esc(s.text)}</button>`
-        : esc(s.text),
-    )
+    .map((s) => {
+      if (s.statusRef !== undefined && registry[s.statusRef] !== undefined)
+        return `<button type="button" class="ins-ref" data-status-ref="${esc(s.statusRef)}">${esc(s.text)}</button>`;
+      if (s.partRef !== undefined) {
+        const frag = `codex/part/${s.partRef.family}/${s.partRef.kind}`;
+        return `<a class="ins-ref ins-partref" href="#${esc(frag)}" data-part="${esc(s.partRef.family)}:${esc(s.partRef.kind)}">${esc(s.text)}</a>`;
+      }
+      return esc(s.text);
+    })
     .join("");
 }
 

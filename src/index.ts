@@ -20,20 +20,23 @@ export { REFERENCE_META } from "./content/reference-meta.js";
 export { renderReplay } from "./replay.js";
 export { displayNames, ancestry, abilityRefDesc, shortDesc, deathCauseChain } from "./trace.js";
 export {
+  abilityPartRefs,
   abilityStatusRefs,
   describeAbility,
   describeAbilitySegments,
   describeAmount,
   describeCondition,
+  describeConditionSegments,
   describeEffect,
   describeEffectSegments,
   describeSelector,
+  describeSelectorSegments,
   describeStatus,
   describeStatusSegments,
   describeWhen,
   describeWhenSegments,
 } from "./describe.js";
-export type { DescribeOpts, DescribeSegment } from "./describe.js";
+export type { DescribeOpts, DescribeSegment, PartRef } from "./describe.js";
 export type { NameOf } from "./trace.js";
 export { boardAt } from "./board.js";
 export type { BoardState, BoardUnit } from "./board.js";

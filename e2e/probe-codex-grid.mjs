@@ -203,6 +203,43 @@ for (const [viewport, tag] of [
     );
   }
 
+  // -- 5. behavior-sentence term links (#078 slice 3): every Part term in a
+  // unit's ability sentence is a tappable codex link, and tapping it lands on
+  // that Part's card. The codex is the complete, tappable vocabulary. --
+  const termRefs = await page.$$eval("#codex-sec-units .codex-entry .codex-termref", (els) =>
+    els.map((el) => ({ href: el.getAttribute("href"), part: el.getAttribute("data-part"), text: el.textContent })),
+  );
+  // Every term in a behavior sentence links to a codex card: a Part term to its
+  // Part card, a status term to its Status card. Neither is left bare.
+  check(
+    termRefs.length > 0 &&
+      termRefs.every((r) => r.href?.startsWith("#codex/part/") || r.href?.startsWith("#codex/status/")),
+    `${tag} unit ability sentences link every term to a codex card`,
+    JSON.stringify(termRefs.slice(0, 4)),
+  );
+  const partRefs = termRefs.filter((r) => r.href?.startsWith("#codex/part/"));
+  check(
+    partRefs.length > 0 && partRefs.every((r) => (r.part?.length ?? 0) > 0),
+    `${tag} Part terms carry a #codex/part/<family>/<kind> link`,
+    JSON.stringify(partRefs.slice(0, 4)),
+  );
+  // Tap the first Part-term link and confirm it navigates to the matching Part
+  // card (the global #codex/ handler resolves family+kind to its card id).
+  const first = partRefs[0];
+  if (first) {
+    // href is "#codex/part/<family>/<kind>"; family & kind are clean
+    // identifiers, so the card id is the same join codex.ts builds.
+    const [, , family, kind] = first.href.slice(1).split("/");
+    const targetId = `codex-part-${family}-${kind}`;
+    await page.locator(`#codex-sec-units .codex-entry .codex-termref[href="${first.href}"]`).first().click();
+    await waitInView(page, `#${targetId}`);
+    check(
+      await page.$eval(`#${targetId}`, (el) => el.classList.contains("codex-highlight")),
+      `${tag} tapping a Part term lands on its Part card (#${targetId})`,
+      `from term "${first.text}" → ${first.part}`,
+    );
+  }
+
   await ctx.close();
 }
 
