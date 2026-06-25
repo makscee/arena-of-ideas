@@ -14,7 +14,9 @@ import { describe, expect, test } from "vitest";
 import {
   InMemoryLadderStore,
   buy,
+  challengeBoss,
   initRun,
+  InvalidDecisionError,
   ladderFight,
   stressRegistry,
   type TeamSnapshot,
@@ -42,13 +44,25 @@ function fakeRoot(): HTMLElement {
   return el;
 }
 
-// Seed two teams from the built-in pool so the ladder has real ghosts.
+// Seed two teams from the built-in pool so the ladder has real ghosts. The
+// first run starts on an empty (unopened) ladder, so its first move is a boss
+// challenge of the vacant floor 1; later climbs draw the ghosts left behind.
 function buildLadder(): InMemoryLadderStore {
   const store = new InMemoryLadderStore();
   for (let seed = 0; seed < 2; seed++) {
     let s = initRun({ seed, runId: `run-${seed}`, pool: [{ name: "Titan", base: { hp: 100, pwr: 50 } }], statuses: stressRegistry });
     s = buy(s, 0);
-    while (s.status === "active") s = ladderFight(s, store);
+    while (s.status === "active") {
+      try {
+        s = ladderFight(s, store);
+      } catch (err) {
+        if (err instanceof InvalidDecisionError && err.decision === "fight") {
+          s = challengeBoss(s, store);
+        } else {
+          throw err;
+        }
+      }
+    }
   }
   return store;
 }

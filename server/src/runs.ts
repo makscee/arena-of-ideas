@@ -12,7 +12,7 @@
  * PREFIX of the server's pool (per round, in the user-filtered view — a
  * user's own ghosts never appear in their draws). Each Snapshotted event in
  * the log pins that prefix's length (the kernel sets a ghost's seq to the
- * pool length it drew from), and each ChampionChallenged event names the
+ * pool length it drew from), and each BossChallenged event names the
  * champion seated at the time, which the append-only champion history can
  * still produce. Replaying against those historical views reproduces the run
  * byte-for-byte — or doesn't, and the submission is rejected with the reason.
@@ -56,6 +56,7 @@ import { isDeepStrictEqual } from "node:util";
 import {
   applyDecision,
   BOOTSTRAP_RUN_ID,
+  challengeBoss,
   deserializeRun,
   initRun,
   InvalidDecisionError,
@@ -256,6 +257,9 @@ function replay(deps: SubmitDeps, userId: string, raw: string): Rederived {
     if (step.kind === "ladder") {
       view.frame = step;
       state = ladderFight(state, view);
+    } else if (step.kind === "challengeBoss") {
+      view.frame = step;
+      state = challengeBoss(state, view);
     } else {
       state = applyDecision(state, step);
     }
@@ -270,14 +274,16 @@ function replay(deps: SubmitDeps, userId: string, raw: string): Rederived {
   return { state, ghosts: view.staged, crown: view.stagedCrown };
 }
 
-/** The decision sequence, recovered from the run log. Only ladder fights are
- * admissible on the shared ladder: an explicit-opponent fight() leaves a
- * FightFought with no draw before it, and is rejected by name. */
+/** The decision sequence, recovered from the run log. Only ladder moves are
+ * admissible on the shared ladder: a same-floor climb (ladderFight) or a boss
+ * challenge (challengeBoss). An explicit-opponent fight() leaves a FightFought
+ * with no ladder event before it, and is rejected by name. */
 type ReplayStep =
   | { kind: "buy"; offer: number }
   | { kind: "reroll" }
   | { kind: "reorder"; from: number; to: number }
-  | { kind: "ladder"; claimedSeq: number; championRunId: string | null };
+  | { kind: "ladder"; claimedSeq: number; championRunId: string | null }
+  | { kind: "challengeBoss"; claimedSeq: number; championRunId: string | null };
 
 function extractSteps(log: readonly RunEvent[]): ReplayStep[] {
   const steps: ReplayStep[] = [];
@@ -293,19 +299,25 @@ function extractSteps(log: readonly RunEvent[]): ReplayStep[] {
         steps.push({ kind: "reorder", from: e.from, to: e.to });
         break;
       case "Snapshotted": {
-        // The events after the snapshot say what kind of fight the run claims:
-        // a pool draw (championRunId stays null), a champion challenge, or a
-        // vacant-spot crown (dethroned null — never legal here: this ladder
-        // seats a bootstrap champion, so the replay's divergence rejects it).
+        // The event after the snapshot says which ladder move the run claims:
+        // an OpponentDrawn means a same-floor climb (ladderFight, no boss read,
+        // championRunId stays null); a BossChallenged means a boss challenge
+        // (challengeBoss) and names the boss it faced — null for a vacant floor
+        // (never legal on this ladder: it seats a bootstrap champion, so the
+        // replay's divergence rejects a vacant-floor claim). The boss name fills
+        // the same `championRunId` frame the view co-serves against — only the
+        // dispatch differs (ladderFight vs challengeBoss).
         const next = log[i + 1];
-        const championRunId =
-          next?.type === "ChampionChallenged" ? next.champion : next?.type === "Crowned" ? next.dethroned : null;
-        steps.push({ kind: "ladder", claimedSeq: e.seq, championRunId });
+        if (next?.type === "BossChallenged") {
+          steps.push({ kind: "challengeBoss", claimedSeq: e.seq, championRunId: next.boss });
+        } else {
+          steps.push({ kind: "ladder", claimedSeq: e.seq, championRunId: null });
+        }
         break;
       }
       case "FightFought": {
         const prev = log[i - 1];
-        if (prev?.type !== "OpponentDrawn" && prev?.type !== "ChampionChallenged") {
+        if (prev?.type !== "OpponentDrawn" && prev?.type !== "BossChallenged") {
           throw new SubmissionRejected("a shared-ladder run fights only on the ladder — explicit-opponent fight in the log");
         }
         break;
@@ -384,6 +396,10 @@ class ReplayLadderView implements LadderStore {
   }
 
   bossAt(floor: number): TeamSnapshot | null {
+    // challengeBoss reads the boss BEFORE poolAt, so set the in-flight round
+    // here from the queried floor (= s.round): champion()'s co-served check
+    // reads this.round, and a stale round would mis-key the serve lookup.
+    this.round = floor;
     // Replay reads the summit through champion(); a per-floor read only ever
     // resolves the floor that is the seated champion's, vacant otherwise.
     const champ = this.champion();
@@ -391,8 +407,9 @@ class ReplayLadderView implements LadderStore {
   }
 
   setBoss(floor: number, snap: TeamSnapshot): void {
-    // ladderFight seats the run's ghost as a new summit (snap.round === floor):
-    // stage the crown exactly as the old setChampion did — acceptance decides.
+    // challengeBoss seats the run's ghost as a new summit (snap.round === floor)
+    // on a won challenge: stage the crown — acceptance decides. A lost challenge
+    // never reaches here, so stagedCrown stays null and no crown is applied.
     this.stagedCrown = { snap, challengedRunId: this.mustFrame().championRunId };
   }
 

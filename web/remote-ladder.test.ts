@@ -6,7 +6,7 @@
 // accepts nothing else (server/README.md, serve-time pinning).
 
 import { describe, expect, test } from "vitest";
-import { initRun, buy, ladderFight, stressRegistry, type TeamSnapshot, type UnitDef } from "../src/index.js";
+import { initRun, buy, challengeBoss, ladderFight, stressRegistry, type TeamSnapshot, type UnitDef } from "../src/index.js";
 import type { ArenaApi, ApiResult } from "./api.js";
 import { RemoteLadder } from "./remote-ladder.js";
 
@@ -70,7 +70,10 @@ describe("the fight contract (serve-time pinning)", () => {
   });
 
   test("an empty served pool challenges the CO-SERVED champion, never a fresher read", async () => {
-    const servedChamp = snap("old-queen", 4, 0, [WISP]);
+    // The boss of the floor being challenged (floor 1) carries that floor as its
+    // round — challengeBoss reads ladder.bossAt(s.round), so the seat's round
+    // must match the challenged floor.
+    const servedChamp = snap("old-queen", 1, 0, [WISP]);
     const store = new RemoteLadder(
       stubApi({
         servePool: async () => ok({ round: 1, pool: [], champion: servedChamp }),
@@ -84,9 +87,11 @@ describe("the fight contract (serve-time pinning)", () => {
     expect((await store.serve("web-x", 1)).ok).toBe(true);
 
     let s = buy(initRun({ seed: 7, runId: "web-x", pool: [TITAN], statuses: stressRegistry }), 0);
-    s = ladderFight(s, store);
+    // An empty served pool: there is no climb opponent, so the move is to
+    // challenge the floor's boss — the co-served champion, never a fresher read.
+    s = challengeBoss(s, store);
 
-    expect(s.log.find((e) => e.type === "ChampionChallenged")).toMatchObject({ champion: "old-queen" });
+    expect(s.log.find((e) => e.type === "BossChallenged")).toMatchObject({ boss: "old-queen" });
     expect(s.log.find((e) => e.type === "Snapshotted")).toMatchObject({ seq: 0 });
     // Titan beats the wisp champion: crowned — and the crown stays a LOCAL
     // display fact (the server decides the real one at submit).

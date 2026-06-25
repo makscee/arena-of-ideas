@@ -7,7 +7,9 @@ import { describe, expect, test } from "vitest";
 import {
   InMemoryLadderStore,
   buy,
+  challengeBoss,
   initRun,
+  InvalidDecisionError,
   ladderFight,
   openLadder,
   runToJSONL,
@@ -46,7 +48,18 @@ const TITAN: UnitDef = { name: "Titan", base: { hp: 100, pwr: 50 } };
 
 function playLadderRun(seed: number, runId: string, ladder: LadderStore): RunState {
   let s = buy(initRun({ seed, runId, pool: [TITAN], statuses: stressRegistry }), 0);
-  while (s.status === "active") s = ladderFight(s, ladder);
+  while (s.status === "active") {
+    try {
+      s = ladderFight(s, ladder);
+    } catch (err) {
+      // Empty climb pool — challenge the floor's boss, the terminal move.
+      if (err instanceof InvalidDecisionError && err.decision === "fight") {
+        s = challengeBoss(s, ladder);
+      } else {
+        throw err;
+      }
+    }
+  }
   return s;
 }
 

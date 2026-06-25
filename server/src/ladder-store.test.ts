@@ -15,8 +15,10 @@ import {
   BOOTSTRAP_RUN_ID,
   BOOTSTRAP_TEAMS,
   buy,
+  challengeBoss,
   InMemoryLadderStore,
   initRun,
+  InvalidDecisionError,
   ladderFight,
   openLadder,
   runToJSONL,
@@ -44,10 +46,23 @@ function input(seed: number, runId: string, unit: UnitDef): RunInput {
   return { seed, runId, pool: [unit], statuses: stressRegistry };
 }
 
-/** Buy the one unit, then fight the ladder until the run ends. */
+/** Buy the one unit, then climb the ladder until the run ends. A climb draws a
+ * same-floor ghost; when a floor has no climb opponent left, ladderFight rejects
+ * loudly and the only move is to challenge the floor's boss — the terminal move
+ * (mirrors the kernel's own playLadderRun). */
 function playLadderRun(inp: RunInput, ladder: LadderStore): RunState {
   let s = buy(initRun(inp), 0);
-  while (s.status === "active") s = ladderFight(s, ladder);
+  while (s.status === "active") {
+    try {
+      s = ladderFight(s, ladder);
+    } catch (err) {
+      if (err instanceof InvalidDecisionError && err.decision === "fight") {
+        s = challengeBoss(s, ladder);
+      } else {
+        throw err;
+      }
+    }
+  }
   return s;
 }
 

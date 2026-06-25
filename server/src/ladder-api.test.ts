@@ -18,9 +18,11 @@ import {
   BOOTSTRAP_RUN_ID,
   BOOTSTRAP_TEAMS,
   buy,
+  challengeBoss,
   fight,
   InMemoryLadderStore,
   initRun,
+  InvalidDecisionError,
   ladderFight,
   openLadder,
   serializeRun,
@@ -159,13 +161,28 @@ async function playSharedRun(ctx: Ctx, token: string, seed: number, runId: strin
   return playOpenedRun(ctx, token, seed, runId);
 }
 
+/** One ladder move against a per-fight view: climb the same-floor pool, or —
+ * when the climb is refused because the floor has no opponent left — challenge
+ * the floor's boss (the terminal move). Mirrors the kernel/CLI policy so a run
+ * terminates explicitly instead of relying on the gone auto-crown. */
+function ladderMove(s: RunState, view: LadderStore): RunState {
+  try {
+    return ladderFight(s, view);
+  } catch (err) {
+    if (err instanceof InvalidDecisionError && err.decision === "fight") {
+      return challengeBoss(s, view);
+    }
+    throw err;
+  }
+}
+
 /** The play loop after the open — each fight against a fresh served view. */
 async function playOpenedRun(ctx: Ctx, token: string, seed: number, runId: string): Promise<RunState> {
   let s = buy(initRun({ seed, runId, pool: [TITAN], statuses: stressRegistry }), 0);
   for (let guard = 0; s.status === "active"; guard++) {
     if (guard > 200) throw new Error(`run ${runId} did not terminate`);
     const round = s.round;
-    s = ladderFight(s, viewOf(round, await fetchRunView(ctx, token, runId, round)));
+    s = ladderMove(s, viewOf(round, await fetchRunView(ctx, token, runId, round)));
   }
   return s;
 }
@@ -179,7 +196,7 @@ async function playUnopenedRun(ctx: Ctx, token: string, seed: number, runId: str
     const pool = await fetchMyPool(ctx, token, s.round);
     const champ = (await fetchChampion(ctx)).champion!;
     const round = s.round;
-    s = ladderFight(s, viewOf(round, { pool, champion: champ }));
+    s = ladderMove(s, viewOf(round, { pool, champion: champ }));
   }
   return s;
 }
@@ -330,7 +347,7 @@ describe("tampered submissions are rejected", () => {
     const ada = await login(ctx, "ada@example.com");
     const claimed = JSON.parse(serializeRun(await legitRun(ctx, ada))) as Loose;
     for (const e of claimed["log"] as Loose[]) {
-      if (e["type"] === "ChampionChallenged") e["champion"] = "phantom";
+      if (e["type"] === "BossChallenged") e["boss"] = "phantom";
     }
     const { status, body } = await submit(ctx, ada, JSON.stringify(claimed));
     expect(status).toBe(422);
@@ -344,7 +361,7 @@ describe("tampered submissions are rejected", () => {
     expect((await openRun(ctx, ada, "goliath")).status).toBe(200);
     const local = openLadder(new InMemoryLadderStore(), stressRegistry);
     let s = buy(initRun({ seed: 1, runId: "goliath", pool: [GOLIATH], statuses: stressRegistry }), 0);
-    while (s.status === "active") s = ladderFight(s, local);
+    while (s.status === "active") s = ladderMove(s, local);
     const { status, body } = await submit(ctx, ada, serializeRun(s));
     expect(status).toBe(422);
     expect(body["reason"]).toMatch(/content/);
@@ -445,13 +462,13 @@ describe("prefix forgeries are rejected", () => {
     expect((await openRun(ctx, ada, "forged")).status).toBe(200);
 
     // Forge: play locally against an EMPTY pool view — the log then claims
-    // round-1's pool held 0 ghosts, so the kernel reads the empty draw as
-    // "outran every ghost" and challenges the champion at round 1. On a
-    // bootstrap-seeded ladder the round-1 pool is never smaller than BASE:
-    // the server never served (and would never serve) that view.
+    // round-1's pool held 0 ghosts, so the climb is refused and the run
+    // challenges the floor's boss at round 1. On a bootstrap-seeded ladder the
+    // round-1 pool is never smaller than BASE: the server never served (and
+    // would never serve) that view.
     const champ = (await fetchChampion(ctx)).champion!;
     let s = buy(initRun({ seed: 1, runId: "forged", pool: [TITAN], statuses: stressRegistry }), 0);
-    while (s.status === "active") s = ladderFight(s, viewOf(s.round, { pool: [], champion: champ }));
+    while (s.status === "active") s = ladderMove(s, viewOf(s.round, { pool: [], champion: champ }));
     expect(s.endedBy).toBe("crown"); // seed 1: a lone round-1 Titan beats the bootstrap champion
     expect(ofType(s.log, "Snapshotted")[0]!.seq).toBe(0); // the impossible claim
 
@@ -486,7 +503,7 @@ describe("prefix forgeries are rejected", () => {
       const round = s.round;
       const served = await fetchRunView(ctx, bob, "cherry", round);
       const truncated = served.pool.filter((g) => g.runId === BOOTSTRAP_RUN_ID); // bootstrap rows are the pool's prefix
-      s = ladderFight(s, viewOf(round, { pool: truncated, champion: served.champion }));
+      s = ladderMove(s, viewOf(round, { pool: truncated, champion: served.champion }));
     }
 
     const { status, body } = await submit(ctx, bob, serializeRun(s));
@@ -520,7 +537,7 @@ function forgeRun(
     if (guard > 50) throw new Error("forged run did not terminate");
     while (s.gold >= UNIT_COST && s.offers.length > 0) s = buy(s, 0);
     const round = s.round;
-    s = ladderFight(s, viewOf(round, { pool: bankedPools.get(round) ?? [], champion }));
+    s = ladderMove(s, viewOf(round, { pool: bankedPools.get(round) ?? [], champion }));
   }
   return s;
 }
@@ -566,7 +583,7 @@ describe("banked-open forgeries are rejected", () => {
     const s = forgeRun("banked", 7, genesisPools, seated);
     expect(s).toMatchObject({ endedBy: "crown", round: 4 }); // locally: crowned at round 4 over the current champion
     expect(ofType(s.log, "Snapshotted").map((e) => e.seq)).toEqual([BASE, BASE, BASE, 0]); // the banked claims
-    expect(ofType(s.log, "ChampionChallenged")[0]!.champion).toBe(seated.runId);
+    expect(ofType(s.log, "BossChallenged")[0]!.boss).toBe(seated.runId);
 
     const { status, body } = await submit(ctx, eve, serializeRun(s));
     expect(status).toBe(422);
@@ -602,7 +619,7 @@ describe("banked-open forgeries are rejected", () => {
     // would not also get.
     const s = forgeRun("banked", 7, genesisPools, genesisChampion);
     expect(s).toMatchObject({ endedBy: "crown", round: 4 });
-    expect(ofType(s.log, "ChampionChallenged")[0]!.champion).toBe(BOOTSTRAP_RUN_ID);
+    expect(ofType(s.log, "BossChallenged")[0]!.boss).toBe(BOOTSTRAP_RUN_ID);
 
     const { status, body } = await submit(ctx, eve, serializeRun(s));
     expect(status).toBe(200);
@@ -682,7 +699,7 @@ describe("the open handshake", () => {
       if (guard > 200) throw new Error("stale run did not terminate");
       const round = s.round;
       const v = round === 1 ? staleView : await fetchRunView(ctx, bob, "stale", round);
-      s = ladderFight(s, viewOf(round, v));
+      s = ladderMove(s, viewOf(round, v));
     }
 
     const { status, body } = await submit(ctx, bob, serializeRun(s));
@@ -711,7 +728,7 @@ describe("the open handshake", () => {
       if (guard > 200) throw new Error("reread run did not terminate");
       const round = s.round;
       const v = round === 1 ? second : await fetchRunView(ctx, bob, "reread", round);
-      s = ladderFight(s, viewOf(round, v));
+      s = ladderMove(s, viewOf(round, v));
     }
     expect((await submit(ctx, bob, serializeRun(s))).body).toMatchObject({ accepted: true });
   });
@@ -807,10 +824,10 @@ describe("run opens expire", () => {
     // (round 1 vs the banked pool, then empty rounds to the champion — the
     // rejection happens at the TTL gate, before any view is even checked).
     let s = buy(initRun({ seed: 1, runId: "parked", pool: [TITAN], statuses: stressRegistry }), 0);
-    s = ladderFight(s, viewOf(1, view));
+    s = ladderMove(s, viewOf(1, view));
     for (let guard = 0; s.status === "active"; guard++) {
       if (guard > 20) throw new Error("parked run did not terminate");
-      s = ladderFight(s, viewOf(s.round, { pool: [], champion: view.champion }));
+      s = ladderMove(s, viewOf(s.round, { pool: [], champion: view.champion }));
     }
     const { status, body } = await submit(ctx, ada, serializeRun(s));
     expect(status).toBe(422);
@@ -824,12 +841,12 @@ describe("run opens expire", () => {
 
     // Round 1 today, the rest after a two-day pause — well inside the TTL.
     let s = buy(initRun({ seed: 1, runId: "slow", pool: [TITAN], statuses: stressRegistry }), 0);
-    s = ladderFight(s, viewOf(s.round, await fetchRunView(ctx, ada, "slow", s.round)));
+    s = ladderMove(s, viewOf(s.round, await fetchRunView(ctx, ada, "slow", s.round)));
     ctx.now.sec += 2 * DAY;
     for (let guard = 0; s.status === "active"; guard++) {
       if (guard > 200) throw new Error("slow run did not terminate");
       const round = s.round;
-      s = ladderFight(s, viewOf(round, await fetchRunView(ctx, ada, "slow", round)));
+      s = ladderMove(s, viewOf(round, await fetchRunView(ctx, ada, "slow", round)));
     }
 
     const { status, body } = await submit(ctx, ada, serializeRun(s));
