@@ -18,7 +18,9 @@ import {
   initRun,
   InvalidDecisionError,
   ladderFight,
+  openLadder,
   stressRegistry,
+  type LadderStore,
   type TeamSnapshot,
 } from "../src/index.js";
 import { createLadderView } from "./ladder-view.js";
@@ -44,15 +46,21 @@ function fakeRoot(): HTMLElement {
   return el;
 }
 
-// Seed two teams from the built-in pool so the ladder has real ghosts. The
-// first run starts on an empty (unopened) ladder, so its first move is a boss
-// challenge of the vacant floor 1; later climbs draw the ghosts left behind.
-function buildLadder(): InMemoryLadderStore {
-  const store = new InMemoryLadderStore();
+// Open the bootstrap tower so every floor has a real climb pool, then run two
+// teams up it. Each climb leaves a ghost; at the champion's floor the run
+// challenges the boss (the fixed tower has a top — climbing PAST it overshoots,
+// 075-3), so the runs leave ghosts across the floors the accordion renders.
+function buildLadder(): LadderStore {
+  const store = openLadder(new InMemoryLadderStore(), stressRegistry);
   for (let seed = 0; seed < 2; seed++) {
     let s = initRun({ seed, runId: `run-${seed}`, pool: [{ name: "Titan", base: { hp: 100, pwr: 50 } }], statuses: stressRegistry });
     s = buy(s, 0);
     while (s.status === "active") {
+      const top = store.champion();
+      if (top !== null && s.round >= top.round) {
+        s = challengeBoss(s, store); // at the top: challenge, don't climb past into an overshoot
+        continue;
+      }
       try {
         s = ladderFight(s, store);
       } catch (err) {

@@ -39,33 +39,42 @@ export const STACK_THRESHOLD = 3;
 /** Fight losses a run survives; ending the run at 0 is the ladder's rule (slice 2). */
 export const STARTING_LIVES = 5;
 
-/** How many rounds of an empty ladder get bootstrap ghosts. Depth 1 made a
- * first-ever run crown at round 2 — no climb, no game. Seeding rounds 1..DEPTH
- * gives the first session a real ladder to outclimb before the champion. */
-export const BOOTSTRAP_DEPTH = 3;
+/** The bootstrap tower's height — how many floors a fresh ladder seeds. The
+ * tower is a FIXED height: openLadder seeds a full floor (a climb pool + a
+ * seated boss) on floors 1..TOWER_HEIGHT and NOTHING above. Floor TOWER_HEIGHT's
+ * boss is the champion (the highest occupied floor). A run that climbs past the
+ * top lands on a vacant floor and OVERSHOOTS (challengeBoss with no boss = no
+ * crown), so the summit is gated by a real fight at floor TOWER_HEIGHT, never a
+ * free seat above it.
+ *
+ * Height 1 made a first-ever run crown at round 2 — no climb, no game; a tower
+ * this tall gives the first session a real ladder to climb and a real boss to
+ * beat at the top. BOOTSTRAP_TEAMS and BOSS_TEAMS each carry exactly this many
+ * floors. */
+export const TOWER_HEIGHT = 4;
 
-/** Teams seeding rounds 1..BOOTSTRAP_DEPTH of an empty ladder (openLadder):
- * BOOTSTRAP_TEAMS[r-1] is round r's pool, so a first-ever run has opponents
- * at every bootstrap round. Composed from the shipped stress units (SPEC §7)
- * the way the example team files are; composition is a knob like any other.
- * Strength escalates with the round to track what a played run fields there —
- * round 1 ≈ one 10-gold shop phase (3 bodies), each later round adds a body
- * and fatter vanilla stats, round 3 opens with status stacks. Status
- * references (Poison via Venomancer, Strength/Vitality below) resolve in any
- * registry containing the stress statuses (the CLI and tests use
- * stressRegistry); openLadder gates every team at seed time. */
+/** Per-floor climb pools, floors 1..TOWER_HEIGHT (openLadder): BOOTSTRAP_TEAMS[f-1]
+ * is floor f's climb pool — the ghosts a run outclimbs before (or instead of)
+ * challenging that floor's boss. So a first-ever run has opponents at every floor.
+ * Composed from the shipped stress units (SPEC §7) the way the example team files
+ * are; composition is a knob like any other. Strength escalates with the floor to
+ * track what a played run fields there — floor 1 ≈ one 10-gold shop phase (3
+ * bodies), each later floor adds a body and fatter vanilla stats, the upper floors
+ * open with status stacks. Status references (Poison via Venomancer,
+ * Strength/Vitality below) resolve in any registry containing the stress statuses
+ * (the CLI and tests use stressRegistry); openLadder gates every team at seed time. */
 export const BOOTSTRAP_TEAMS: readonly (readonly UnitDef[][])[] = [
-  // round 1 — three bodies, the scale of a first shop phase
+  // floor 1 — three bodies, the scale of a first shop phase
   [
     [Venomancer, Summoner, { name: "Brawler", base: { hp: 12, pwr: 2 } }],
     [Silencer, Necromancer, { name: "Bulwark", base: { hp: 10, pwr: 3 } }],
   ],
-  // round 2 — a fourth body, vanilla stats grown a notch
+  // floor 2 — a fourth body, vanilla stats grown a notch
   [
     [Venomancer, Summoner, Necromancer, { name: "Brawler", base: { hp: 14, pwr: 3 } }],
     [Silencer, Venomancer, { name: "Bulwark", base: { hp: 13, pwr: 4 } }, { name: "Squire", base: { hp: 8, pwr: 2 } }],
   ],
-  // round 3 — full lines; status openers stand in for a level-up's worth of growth
+  // floor 3 — full lines; status openers stand in for a level-up's worth of growth
   [
     [
       Venomancer,
@@ -82,36 +91,47 @@ export const BOOTSTRAP_TEAMS: readonly (readonly UnitDef[][])[] = [
       { name: "Squire", base: { hp: 10, pwr: 3 } },
     ],
   ],
+  // floor 4 — the top climb pool, under the champion: another stack of growth,
+  // status openers on the front line so the climb stays a real fight to the top
+  [
+    [
+      Venomancer,
+      Summoner,
+      Necromancer,
+      { name: "Brawler", base: { hp: 18, pwr: 5 }, statuses: [{ status: "Strength", stacks: 3 }] },
+      { name: "Bulwark", base: { hp: 16, pwr: 5 }, statuses: [{ status: "Vitality", stacks: 3 }] },
+    ],
+    [
+      Silencer,
+      Summoner,
+      Venomancer,
+      { name: "Warden", base: { hp: 17, pwr: 6 }, statuses: [{ status: "Strength", stacks: 2 }] },
+      { name: "Squire", base: { hp: 12, pwr: 4 } },
+    ],
+  ],
 ];
 
-/** A boss for every floor of the bootstrap tower: BOSS_TEAMS[f-1] is the team
- * openLadder seats on floor f. The tower runs one floor TALLER than the climb
- * pools — climb pools fill floors 1..BOOTSTRAP_DEPTH (BOOTSTRAP_TEAMS), bosses
- * fill floors 1..BOOTSTRAP_DEPTH+1 — so this array has BOOTSTRAP_DEPTH+1 entries.
- * The extra top entry is the SUMMIT (the derived champion), seated on floor
- * BOOTSTRAP_DEPTH+1 with no climb pool below it.
+/** A boss for every floor of the UNIFORM bootstrap tower: BOSS_TEAMS[f-1] is the
+ * team openLadder seats on floor f, for f in 1..TOWER_HEIGHT — so this array has
+ * exactly TOWER_HEIGHT entries, one per climb floor. Every floor is the same
+ * shape: a climb pool, a seated boss, and that boss's team left in the pool as a
+ * ghost (the demote-keeps-ghost invariant, uniform across all floors). There is
+ * no special summit slot: floor TOWER_HEIGHT's boss is just the top floor's boss,
+ * and deriveChampion reads it as the champion because it is the highest occupied
+ * floor. Nothing is seeded above TOWER_HEIGHT; a run that climbs past the top hits
+ * a vacant floor and OVERSHOOTS (no boss, no crown) — that overshoot rule, not an
+ * empty guard slot, is what makes the top a real fight.
  *
- * Why a floor taller, not just a boss per climb floor: a run advances a floor on
- * EVERY climb, win or loss (a climb loss costs a life but still moves up). So a
- * first-ever run sails up floors 1..BOOTSTRAP_DEPTH regardless of record and its
- * TERMINAL floor is BOOTSTRAP_DEPTH+1 — the only floor where the climb pool is
- * empty, so the run stops and challenges. The summit there is the guard that
- * makes the crown earned; the lower-floor bosses are met head-on only by a run
- * DIRECTLY challenging that floor, and they exist to hold the demote-keeps-ghost
- * invariant per floor. Slice 075-2 proved the guard works: its single boss sat
- * on exactly this summit floor and turned the old free vacant-spot crown into a
- * real fight; this slice keeps that guard and adds the lower-floor bosses.
- *
- * Each boss is a NOTCH above its floor's climb pool (BOOTSTRAP_TEAMS[f-1] for
- * f≤BOOTSTRAP_DEPTH): the same shipped stress casters, but fatter vanilla bodies
- * and a stack more status than the climb teams field — beating the boss is a
- * genuine step past merely clearing the floor's ghosts. Strength escalates with
- * the floor, tracking BOOTSTRAP_TEAMS' own climb:
+ * Each boss is a NOTCH above its floor's climb pool (BOOTSTRAP_TEAMS[f-1]): the
+ * same shipped stress casters, but fatter vanilla bodies and a stack more status
+ * than the climb teams field — beating the boss is a genuine step past merely
+ * clearing the floor's ghosts. Strength escalates with the floor, tracking
+ * BOOTSTRAP_TEAMS' own climb:
  *   floor 1 — four bodies, a body more than the floor-1 climb pair fields;
  *   floor 2 — a fifth body and a first status opener, past the floor-2 pool;
  *   floor 3 — full lines with two status openers, over the floor-3 pool;
- *   floor 4 — the summit, the strongest shipped team (the old BOOTSTRAP_CHAMPION,
- *             now folded in here as BOSS_TEAMS' top entry).
+ *   floor 4 — the champion (top floor): the strongest shipped team (the old
+ *             BOOTSTRAP_CHAMPION content), status stacks on two front bodies.
  * Composed from the shipped stress units (SPEC §7) like BOOTSTRAP_TEAMS;
  * composition is a knob, not a pin. openLadder gates every boss at seed time
  * (assertValidContent), exactly like a climb team, so a dangling status fails
@@ -141,8 +161,8 @@ export const BOSS_TEAMS: readonly (readonly UnitDef[])[] = [
     { name: "Warden", base: { hp: 17, pwr: 5 }, statuses: [{ status: "Strength", stacks: 2 }] },
     { name: "Bulwark", base: { hp: 15, pwr: 4 }, statuses: [{ status: "Vitality", stacks: 3 }] },
   ],
-  // floor 4 boss — the SUMMIT (derived champion): the strongest shipped team,
-  // the old BOOTSTRAP_CHAMPION, status stacks on two front bodies.
+  // floor 4 boss — the champion (top floor): the strongest shipped team,
+  // the old BOOTSTRAP_CHAMPION content, status stacks on two front bodies.
   [
     Venomancer,
     Summoner,

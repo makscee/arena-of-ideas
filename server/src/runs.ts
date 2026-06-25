@@ -302,11 +302,16 @@ function extractSteps(log: readonly RunEvent[]): ReplayStep[] {
         // The event after the snapshot says which ladder move the run claims:
         // an OpponentDrawn means a same-floor climb (ladderFight, no boss read,
         // championRunId stays null); a BossChallenged means a boss challenge
-        // (challengeBoss) and names the boss it faced — null for a vacant floor
-        // (never legal on this ladder: it seats a bootstrap champion, so the
-        // replay's divergence rejects a vacant-floor claim). The boss name fills
-        // the same `championRunId` frame the view co-serves against — only the
-        // dispatch differs (ladderFight vs challengeBoss).
+        // (challengeBoss) that fought a seated boss and names it. The boss name
+        // fills the same `championRunId` frame the view co-serves against — only
+        // the dispatch differs (ladderFight vs challengeBoss).
+        //
+        // An OVERSHOOT (challengeBoss on a vacant floor, 075-3) emits NO
+        // Snapshotted — no fight, no ghost — so it never reaches this case; its
+        // bare BossChallenged falls through to default and recovers no terminal
+        // step, and the replay diverges from the claimed overshoot end. That is
+        // the intended rejection: a vacant-floor claim is never honest here (the
+        // ladder always seats a champion at the top), so it cannot be cashed in.
         const next = log[i + 1];
         if (next?.type === "BossChallenged") {
           steps.push({ kind: "challengeBoss", claimedSeq: e.seq, championRunId: next.boss });

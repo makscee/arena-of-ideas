@@ -18,7 +18,7 @@
 // ordinal (insertion order within a pool); a real timestamp, if a client ever
 // wants one, comes in as data.
 
-import { BOSS_TEAMS, BOOTSTRAP_DEPTH, BOOTSTRAP_TEAMS } from "./tunables.js";
+import { BOSS_TEAMS, BOOTSTRAP_TEAMS, TOWER_HEIGHT } from "./tunables.js";
 import { assertValidContent } from "./validate.js";
 import type { StatusRegistry, UnitDef } from "./types.js";
 
@@ -167,43 +167,36 @@ export class PersistedLadderStore implements LadderStore {
 /** The ladder's id for ghosts that came from no run (the bootstrap seed). */
 export const BOOTSTRAP_RUN_ID = "bootstrap";
 
-/** Open a ladder over a store, seeding the whole bootstrap tower if the ladder
- * is empty so a first-ever run has a real climb AND a seated boss to beat — never
- * a round-2 crown, never a free summit taken from a vacant spot. The tower has
- * two parts, sized off BOOTSTRAP_DEPTH:
+/** Open a ladder over a store, seeding the bootstrap tower if the ladder is empty
+ * so a first-ever run has a real climb AND a seated boss to beat — never a round-2
+ * crown, never a free crown taken from a vacant spot. The tower is a UNIFORM,
+ * FIXED height (TOWER_HEIGHT floors): every floor f in 1..TOWER_HEIGHT gets the
+ * same three things, in pool-seq order:
  *
- *   • Climb floors 1..BOOTSTRAP_DEPTH. Floor f gets its climb pool
- *     (BOOTSTRAP_TEAMS[f-1]) AND a seated boss (BOSS_TEAMS[f-1]). The boss is
- *     ALSO left in floor f's pool as a ghost (next seq, after the climb teams),
- *     mirroring a run-won boss (snapshot-before-fight, then seat the same
- *     snapshot): that pool-ghost is what makes the "demote keeps the unseated
- *     team in the pool" invariant hold for a SEEDED boss too — dethrone floor f's
- *     boss and its team is still drawable as a climb ghost on f. (Sharing a
- *     floor's pool between climb ghosts and the boss-ghost obeys assertSeqInOrder:
- *     the boss-ghost is just the pool's next entry, seq = climb-team count.)
+ *   1. its climb pool — BOOTSTRAP_TEAMS[f-1], the ghosts a run outclimbs;
+ *   2. its boss — BOSS_TEAMS[f-1], seated via setBoss;
+ *   3. that boss's team ALSO left in floor f's pool as a ghost (next seq, after
+ *      the climb teams), mirroring a run-won boss (snapshot-before-fight, then
+ *      seat the same snapshot). This pool-ghost is what makes the "demote keeps
+ *      the unseated team in the pool" invariant hold for a SEEDED boss too —
+ *      dethrone floor f's boss and its team is still drawable as a climb ghost on
+ *      f. (Sharing a floor's pool between climb ghosts and the boss-ghost obeys
+ *      assertSeqInOrder: the boss-ghost is just the pool's next entry, seq =
+ *      climb-team count.)
  *
- *   • The summit, floor BOOTSTRAP_DEPTH+1 (BOSS_TEAMS[BOOTSTRAP_DEPTH]). It is
- *     the derived champion. It is seated WITHOUT a pool-ghost, and this is
- *     load-bearing, not an oversight: a run advances a floor on EVERY climb,
- *     win OR loss (a climb loss costs a life but still moves up). So a run sails
- *     up floors 1..BOOTSTRAP_DEPTH regardless of record and lands on the summit
- *     floor as its terminal floor — and the climb there must REJECT (no drawable
- *     ghost) so the only move is to challengeBoss the summit. Had the summit a
- *     pool-ghost, that ghost would be a drawable climb opponent: the run would
- *     "climb" the summit and advance to a vacant floor BOOTSTRAP_DEPTH+2, taking
- *     a free crown there — exactly the trivial round-2 crown this bootstrap
- *     exists to kill (075-2's sweeps: every run crowned, many with losing
- *     records). The summit is the guard; a guard with a climbable ghost is no
- *     guard. The lower bosses keep their pool-ghosts because they are never the
- *     run's terminal floor on a climb (it always passes through them upward), so
- *     their ghost can't leak a free crown — only the summit's could.
+ * The champion is DERIVED, never seated as its own concept: floor TOWER_HEIGHT is
+ * the highest occupied floor, so its boss is the champion (deriveChampion). There
+ * is no special empty-pool summit — every floor, the top included, is the same
+ * climb-pool-plus-boss shape.
  *
- * The champion is DERIVED, never seated as its own concept: floor
- * BOOTSTRAP_DEPTH+1 is the highest occupied floor, so its boss is the summit
- * (the old single BOOTSTRAP_CHAMPION, now BOSS_TEAMS' top entry). The tower grows
- * open-endedly ABOVE the summit through real play — a run that out-climbs to a
- * vacant floor auto-seats there (challengeBoss' kept edge) — so the summit
- * advances without openLadder ever pre-seeding past BOOTSTRAP_DEPTH+1.
+ * What gates the top is the OVERSHOOT rule, not an empty guard slot: nothing is
+ * seeded above TOWER_HEIGHT, so a run that climbs past the top (a climb advances a
+ * floor on every fight, win OR loss) lands on a vacant floor and challengeBoss
+ * there ends "overshoot" — no boss, no crown. So a fresh ladder's only crowns come
+ * from beating a seated boss at some floor ≤ TOWER_HEIGHT; a run can neither crown
+ * trivially on a vacant floor (overshoot) nor skip the top (floor TOWER_HEIGHT's
+ * boss is a real fight). A run may also challengeBoss at any floor f ≤ TOWER_HEIGHT
+ * to cash out and seat at f (targeting depth); floor TOWER_HEIGHT's seat is champion.
  *
  * (A ladder any run has played on cannot have an empty floor-1 pool: snapshot-
  * before-fight put the run's own ghost there — so the poolAt(1) guard reseeds
@@ -213,9 +206,9 @@ export const BOOTSTRAP_RUN_ID = "bootstrap";
  * when a draw or a challenge happens to land on it. */
 export function openLadder(store: LadderStore, registry: StatusRegistry): LadderStore {
   if (store.poolAt(1).length === 0) {
-    // Climb floors 1..BOOTSTRAP_DEPTH: a climb pool + a seated boss that ALSO
-    // lives in the pool as a ghost (the demote-keeps-ghost invariant).
-    for (let i = 0; i < BOOTSTRAP_DEPTH; i++) {
+    // Uniform tower, floors 1..TOWER_HEIGHT: each floor is a climb pool + a seated
+    // boss that ALSO lives in the pool as a ghost (the demote-keeps-ghost invariant).
+    for (let i = 0; i < TOWER_HEIGHT; i++) {
       const floor = i + 1;
       const climb = BOOTSTRAP_TEAMS[i] ?? [];
       climb.forEach((team, seq) => {
@@ -228,13 +221,6 @@ export function openLadder(store: LadderStore, registry: StatusRegistry): Ladder
       store.addSnapshot(boss); // boss-ghost in the pool — demote leaves it drawable
       store.setBoss(floor, boss);
     }
-    // The summit, floor BOOTSTRAP_DEPTH+1: seated as the guard with NO pool-ghost,
-    // so a run that sailed up the climb floors must CHALLENGE it (an empty climb
-    // pool rejects) — the crown is earned, never taken from a vacant floor.
-    const summitFloor = BOOTSTRAP_DEPTH + 1;
-    const summitTeam = BOSS_TEAMS[BOOTSTRAP_DEPTH]!;
-    assertValidContent(summitTeam, registry, `bootstrap floor ${summitFloor} boss (summit)`);
-    store.setBoss(summitFloor, { runId: BOOTSTRAP_RUN_ID, round: summitFloor, seq: 0, team: jsonClone([...summitTeam]) });
   }
   return store;
 }

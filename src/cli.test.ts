@@ -18,7 +18,7 @@ import {
 import { stressRegistry } from "./content/stress.js";
 import { openLadder } from "./ladder.js";
 import { FileLadderStore } from "./ladder-file.js";
-import { BOOTSTRAP_DEPTH, BOOTSTRAP_TEAMS } from "./tunables.js";
+import { BOOTSTRAP_TEAMS, TOWER_HEIGHT } from "./tunables.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -247,9 +247,9 @@ describe("autoplay", () => {
     // already held the floor-1 climb teams AND the floor-1 boss-ghost (075-3).
     const reread = new FileLadderStore(path); // growth read back from disk, not memory
     expect(reread.poolAt(1).length).toBe(BOOTSTRAP_TEAMS[0]!.length + 1 + N);
-    // Runs climb to the summit floor (BOOTSTRAP_DEPTH+1) and ghost themselves there
-    // when they challenge it — so that floor's pool, seeded empty, has grown.
-    expect(reread.poolAt(BOOTSTRAP_DEPTH + 1).length).toBeGreaterThan(0);
+    // Runs climb to the champion floor (TOWER_HEIGHT) and ghost themselves there
+    // when they challenge it — so that floor's pool grew past its seeded size.
+    expect(reread.poolAt(TOWER_HEIGHT).length).toBe(BOOTSTRAP_TEAMS[TOWER_HEIGHT - 1]!.length + 1 + N);
   });
 
   test("the report reads as run summaries plus the ladder line", () => {

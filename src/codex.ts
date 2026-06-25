@@ -11,7 +11,6 @@
 import { FATIGUE_RAMP, FATIGUE_START, TURN_CAP, fatigueAmount } from "./battle.js";
 import {
   BOSS_TEAMS,
-  BOOTSTRAP_DEPTH,
   BOOTSTRAP_TEAMS,
   DEFAULT_RUN_POOL,
   INCOME_CAP,
@@ -24,6 +23,7 @@ import {
   SHOP_SIZE_STEP,
   STACK_THRESHOLD,
   STARTING_LIVES,
+  TOWER_HEIGHT,
   UNIT_COST,
   incomeForRound,
 } from "./tunables.js";
@@ -200,18 +200,20 @@ export function buildCodex(registry: StatusRegistry, units: UnitDef[]): CodexDat
     },
     {
       key: "ghosts",
-      title: "Ghosts & champion",
-      // Mirrors ladderFight (run.ts) and openLadder (ladder.ts): one random
-      // ghost per round; an empty draw = the champion challenge; a fresh
-      // ladder is pre-seeded so the spot is never vacant in practice.
+      title: "Ghosts & bosses",
+      // Mirrors ladderFight + challengeBoss (run.ts) and openLadder (ladder.ts):
+      // one random ghost per climb; the boss challenge is the terminal move;
+      // the tower is a fixed TOWER_HEIGHT and climbing past the top overshoots.
       text:
-        `Before every fight your team is frozen as a ghost into your round's pool — future runs fight it. ` +
-        `Each round you fight one ghost drawn at random from that round's pool (never your own); ` +
-        `win or lose, the run moves to the next round. ` +
-        `When your round has no ghosts left to draw, you have outclimbed the ladder and challenge the champion: ` +
-        `win to take the spot and end the run crowned; a loss costs a life and the run continues. ` +
-        `A fresh ladder opens pre-seeded — shipped ghost teams in rounds 1–${BOOTSTRAP_DEPTH} and a shipped ` +
-        `champion holding the spot — so a crown is always earned by beating someone.`,
+        `Before every fight your team is frozen as a ghost into your floor's pool — future runs fight it. ` +
+        `Each floor you climb fights one ghost drawn at random from that floor's pool (never your own); ` +
+        `win or lose, the run moves up a floor. ` +
+        `Each floor also has a seated boss: challenging it is your run's terminal move — beat the boss to take its ` +
+        `seat and end the run crowned; lose or draw and the run ends without the seat. ` +
+        `A fresh ladder opens pre-seeded as a fixed ${TOWER_HEIGHT}-floor tower — every floor has shipped ghost teams ` +
+        `and a shipped boss, the top floor's boss being the champion — so a crown is always earned by beating someone. ` +
+        `Climb past the top and you overshoot onto an empty floor: no boss, no crown, so a winning run challenges a boss ` +
+        `rather than climbing forever.`,
     },
     {
       key: "draws",

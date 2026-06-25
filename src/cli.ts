@@ -200,16 +200,29 @@ export function shopGreedily(state: RunState): RunState {
 }
 
 /** Play one whole run with the greedy policy — shop, then climb the ladder,
- * until the run ends. A climb (ladderFight) draws a same-floor ghost; when the
- * floor has no climb opponent left it rejects loudly, and the only move is to
- * challenge the floor's boss — the terminal move that ends the run, won
- * (crown) or lost (challenge-lost / out-of-lives never applies to a
- * challenge). So the policy climbs while it can and challenges the boss the
- * moment a climb is refused. */
+ * until the run ends. A climb (ladderFight) draws a same-floor ghost.
+ *
+ * The tower is a fixed height now (PRD 075 slice 3): climbing PAST the top floor
+ * lands on a vacant floor, and a challenge there is an OVERSHOOT — no boss, no
+ * crown, the run wasted. So a policy that wants to crown must STOP at the top and
+ * challenge the champion's floor, not climb forever. The champion is the boss of
+ * the highest occupied floor (ladder.champion()), so once the run reaches that
+ * floor it challenges the boss instead of climbing — the terminal move that ends
+ * the run won (crown) or lost (challenge-lost). Below the top it climbs; a climb
+ * refused (no opponent left on a floor) also falls through to a challenge of that
+ * floor's boss. The policy draws no randomness of its own, so an autoplay run
+ * stays deterministic given its seed and the ladder contents. */
 export function playPolicyRun(input: RunInput, ladder: LadderStore): RunState {
   let s = initRun(input);
   while (s.status === "active") {
     s = shopGreedily(s);
+    // At the champion's floor (the tower's top), challenge rather than climb past
+    // it into a vacant floor — climbing past would overshoot and waste the run.
+    const top = ladder.champion();
+    if (top !== null && s.round >= top.round) {
+      s = challengeBoss(s, ladder);
+      continue;
+    }
     try {
       s = ladderFight(s, ladder);
     } catch (err) {
@@ -257,7 +270,13 @@ export function formatRunSummary(state: RunState): string {
   const lost = fights.filter((f) => f.winner === "B").length;
   const drawn = fights.length - won - lost;
   const head =
-    state.endedBy === "crown" ? "crowned" : state.endedBy === "challenge-lost" ? "challenge lost" : "out of lives";
+    state.endedBy === "crown"
+      ? "crowned"
+      : state.endedBy === "challenge-lost"
+        ? "challenge lost"
+        : state.endedBy === "overshoot"
+          ? "overshot"
+          : "out of lives";
   const lines = [
     `Run ${state.runId} (seed ${state.seed}): ${head} at round ${state.round} — ${won}W/${lost}L/${drawn}D, ${state.lives} ${state.lives === 1 ? "life" : "lives"} left`,
     `  line:  ${state.team.map((u) => `${u.name} L${u.level}`).join(", ")}`,

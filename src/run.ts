@@ -65,7 +65,7 @@ export type RunStatus = "active" | "over";
  * name is kept — a seated win still crowns the climber on that floor); a
  * challenge that does not win (loss or draw) ends the run "challenge-lost",
  * distinct in the log because no seat happened and the old boss still stands. */
-export type RunEndReason = "out-of-lives" | "crown" | "challenge-lost";
+export type RunEndReason = "out-of-lives" | "crown" | "challenge-lost" | "overshoot";
 
 export interface RunState {
   seed: number;
@@ -113,12 +113,15 @@ export type RunEventBody =
   | { type: "Snapshotted"; seq: number }
   | { type: "OpponentDrawn"; opponent: string; seq: number; candidates: number }
   // boss challenge — the terminal move (challengeBoss). BossChallenged names
-  // the floor and the boss it faced (null when the floor was vacant — no
-  // fight, an auto-seat); Crowned records a seat and who it unseated (the
-  // dethroned boss, null when the floor was vacant), carrying the floor it
-  // happened on so the run log alone says which floor changed hands.
+  // the floor and the boss it faced; Crowned records a seat and who it unseated
+  // (the dethroned boss, null when an unseated floor was claimed), carrying the
+  // floor it happened on so the run log alone says which floor changed hands.
+  // Overshot is the dual end: challengeBoss landed on a floor with NO boss — the
+  // run climbed past the seeded tower — so there is nothing to fight or seat. No
+  // ghost is snapshotted (no fight happened); the run ends with no crown.
   | { type: "BossChallenged"; floor: number; boss: string | null }
   | { type: "Crowned"; floor: number; dethroned: string | null }
+  | { type: "Overshot"; floor: number }
   | { type: "RunEnded"; reason: RunEndReason; lives: number };
 
 export type RunEvent = { id: number; round: number } & RunEventBody;
@@ -305,15 +308,26 @@ export function ladderFight(state: RunState, ladder: LadderStore): RunState {
  *    ghosted into the floor-s.round pool before any outcome is known, so the
  *    challenger leaves an opponent behind — and on a win this same ghost is the
  *    team that takes the boss seat.
+ *  - A vacant floor (boss === null) is an OVERSHOOT: the run climbed past the
+ *    seeded tower's top, so there is no boss to fight and nothing to claim. The
+ *    run ends "overshoot" with NO crown and — because no fight happened — NO
+ *    ghost snapshotted. This is the dual of a crown: the tower is a fixed height
+ *    (the bootstrap seeds floors 1..TOWER_HEIGHT and nothing above), and a floor
+ *    above it is not a free seat but a dead end. (Reversing slice 2's "vacant
+ *    floor auto-seats" edge: that edge let a run climb past every boss for a free
+ *    crown — the trivial-crown degeneracy. With the overshoot rule the top is
+ *    gated by a real fight at floor TOWER_HEIGHT, not by an empty slot above it.)
  *  - A boss present is gated (like any opponent) and fought off the run's
  *    stream (the same battle-seed draw as a climb, and only that draw — no
- *    climb draw happens, so the RNG order stays deterministic). A win seats the
- *    challenger as the floor's boss and ends the run "crown"; the unseated boss
- *    is overwritten in the slot but its ghosts stay in the pool — it drops to
- *    pool-only. A loss or draw does not seat and ends the run "challenge-lost"
- *    (terminal regardless of lives — a lost challenge never loops to a climb).
- *  - A vacant floor (boss === null) is the kept kernel edge: no fight, the
- *    fielded team auto-seats and the run ends "crown", dethroned null.
+ *    climb draw happens, so the RNG order stays deterministic). Snapshot-before-
+ *    fight, exactly as ladderFight does: the fielded team is ghosted into the
+ *    floor pool before any outcome — so even a lost challenge leaves an opponent
+ *    behind, and on a win this same ghost is the team that takes the seat. A win
+ *    seats the challenger as the floor's boss and ends the run "crown"; the
+ *    unseated boss is overwritten in the slot but its ghosts stay in the pool —
+ *    it drops to pool-only. A loss or draw does not seat and ends the run
+ *    "challenge-lost" (terminal regardless of lives — a lost challenge never
+ *    loops to a climb).
  *
  * Like ladderFight, this is a store-taking transition (NOT part of
  * applyDecision): the store is its one mutable boundary — it gains the
@@ -326,7 +340,16 @@ export function challengeBoss(state: RunState, ladder: LadderStore): RunState {
   }
   const s = clone(state);
   const boss = ladder.bossAt(s.round);
-  if (boss !== null) assertValidContent(boss.team, s.statuses, "boss"); // a seated boss passes the same gate as any opponent
+  if (boss === null) {
+    // Overshoot: climbed past the seeded tower's top. No boss, no fight, no seat,
+    // no crown — and crucially NO snapshot, because no fight happened (snapshot-
+    // before-fight only makes sense when there is a fight to leave a ghost for).
+    emit(s, { type: "BossChallenged", floor: s.round, boss: null });
+    emit(s, { type: "Overshot", floor: s.round });
+    endRun(s, "overshoot");
+    return s;
+  }
+  assertValidContent(boss.team, s.statuses, "boss"); // a seated boss passes the same gate as any opponent
   // Snapshot-before-fight: the challenger's ghost enters the floor's pool
   // before any outcome, so even a lost challenge leaves an opponent behind —
   // and on a win this is exactly the ghost that takes the seat.
@@ -334,23 +357,20 @@ export function challengeBoss(state: RunState, ladder: LadderStore): RunState {
   const ghost: TeamSnapshot = { runId: s.runId, round: s.round, seq: pool.length, team: toBattleTeam(s.team) };
   ladder.addSnapshot(ghost);
   emit(s, { type: "Snapshotted", seq: ghost.seq });
-  emit(s, { type: "BossChallenged", floor: s.round, boss: boss === null ? null : boss.runId });
-  if (boss !== null) {
-    const winner = resolveFight(s, boss.team);
-    if (winner !== "A") {
-      // Not a win (loss or draw): the challenger does not seat, the boss
-      // stands. Terminal whether or not a life remains — a lost challenge does
-      // not loop back to a climb.
-      endRun(s, "challenge-lost");
-      return s;
-    }
+  emit(s, { type: "BossChallenged", floor: s.round, boss: boss.runId });
+  const winner = resolveFight(s, boss.team);
+  if (winner !== "A") {
+    // Not a win (loss or draw): the challenger does not seat, the boss stands.
+    // Terminal whether or not a life remains — a lost challenge does not loop
+    // back to a climb.
+    endRun(s, "challenge-lost");
+    return s;
   }
-  // Won the challenge, or the floor was vacant: the fielded team takes the
-  // seat. It seats as the boss of its own floor (the round it was fielded at).
-  // The unseated boss is overwritten in the slot but its ghosts stay in the
-  // pool — it drops to pool-only; a vacant floor seats with dethroned null.
+  // Won the challenge: the fielded team takes the seat. It seats as the boss of
+  // its own floor (the round it was fielded at). The unseated boss is overwritten
+  // in the slot but its ghosts stay in the pool — it drops to pool-only.
   ladder.setBoss(ghost.round, ghost);
-  emit(s, { type: "Crowned", floor: ghost.round, dethroned: boss === null ? null : boss.runId });
+  emit(s, { type: "Crowned", floor: ghost.round, dethroned: boss.runId });
   endRun(s, "crown");
   return s;
 }
