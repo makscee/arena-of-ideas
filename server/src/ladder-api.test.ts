@@ -146,8 +146,9 @@ function viewOf(round: number, v: RunView): LadderStore {
   return {
     poolAt: (r) => (r === round ? v.pool : []),
     addSnapshot: () => {},
+    bossAt: (floor) => (v.champion !== null && v.champion.round === floor ? v.champion : null),
+    setBoss: () => {},
     champion: () => v.champion,
-    setChampion: () => {},
   };
 }
 

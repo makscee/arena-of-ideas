@@ -293,9 +293,11 @@ export function ladderFight(state: RunState, ladder: LadderStore): RunState {
       return s;
     }
   }
-  // Won the challenge, or the spot was vacant: the fielded team takes it. The
-  // dethroned champion loses only the spot — its ghosts stay in their pools.
-  ladder.setChampion(ghost);
+  // Won the challenge, or the spot was vacant: the fielded team takes it. It
+  // seats as the boss of its own floor (the round it was fielded at) — the new
+  // highest occupied floor, so it becomes the derived champion. The dethroned
+  // champion loses only the summit — its boss seat and ghosts stay put.
+  ladder.setBoss(ghost.round, ghost);
   emit(s, { type: "Crowned", dethroned: champion === null ? null : champion.runId });
   endRun(s, "crown");
   return s;

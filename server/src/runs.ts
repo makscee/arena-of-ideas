@@ -383,7 +383,16 @@ class ReplayLadderView implements LadderStore {
     return rec.snap;
   }
 
-  setChampion(snap: TeamSnapshot): void {
+  bossAt(floor: number): TeamSnapshot | null {
+    // Replay reads the summit through champion(); a per-floor read only ever
+    // resolves the floor that is the seated champion's, vacant otherwise.
+    const champ = this.champion();
+    return champ !== null && champ.round === floor ? champ : null;
+  }
+
+  setBoss(floor: number, snap: TeamSnapshot): void {
+    // ladderFight seats the run's ghost as a new summit (snap.round === floor):
+    // stage the crown exactly as the old setChampion did — acceptance decides.
     this.stagedCrown = { snap, challengedRunId: this.mustFrame().championRunId };
   }
 

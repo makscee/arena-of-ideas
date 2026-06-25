@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
@@ -256,11 +256,34 @@ describe("champion", () => {
     expect(titanGhosts.every((g) => g.team[0]!.name === "Titan")).toBe(true);
   });
 
+  test("champion() derives the boss of the highest occupied floor", () => {
+    const store = new InMemoryLadderStore(); // unopened: an empty tower
+    expect(store.champion()).toBeNull(); // no floor occupied
+    // Seat bosses out of floor order, to prove the read is by max floor, not by
+    // insertion: floor 3 is the summit whichever order the seats arrive in.
+    store.setBoss(2, { runId: "mid", round: 2, seq: 0, team: [vanilla("Mid", 10, 5)] });
+    store.setBoss(5, { runId: "top", round: 5, seq: 0, team: [vanilla("Top", 30, 15)] });
+    store.setBoss(1, { runId: "low", round: 1, seq: 0, team: [vanilla("Low", 5, 1)] });
+    expect(store.champion()).toMatchObject({ runId: "top", round: 5 });
+    expect(store.bossAt(2)).toMatchObject({ runId: "mid" }); // lower floors keep their bosses
+    expect(store.bossAt(4)).toBeNull(); // a vacant floor reads null
+
+    // Multi-digit floors: the summit is the NUMERIC max, not the lexical one —
+    // the tower is open-ended (PRD 075) and climbs past floor 9. Lexically
+    // "10" < "7" and "100" < "11" < "9", so a string comparison would crown the
+    // wrong floor here; deriveChampion's Number() keeps floor 100 the summit.
+    const wide = new InMemoryLadderStore();
+    for (const floor of [9, 11, 7, 100, 10]) {
+      wide.setBoss(floor, { runId: `f${floor}`, round: floor, seq: 0, team: [vanilla(`F${floor}`, 10, 5)] });
+    }
+    expect(wide.champion()).toMatchObject({ runId: "f100", round: 100 });
+  });
+
   test("a lost champion challenge is a normal loss — the run carries on", () => {
     const store = freshLadder();
     // A champion no Titan beats, installed directly: Titan clears every ghost
     // round, so each round past the bootstrap repeats the challenge.
-    store.setChampion({ runId: "wall", round: 9, seq: 0, team: [vanilla("Wall", 1000, 500)] });
+    store.setBoss(9, { runId: "wall", round: 9, seq: 0, team: [vanilla("Wall", 1000, 500)] });
     const s = playLadderRun(input(2, "titan", TITAN), store);
     // Losing a challenge costs a life like any loss — the run carries on into
     // the next round's (empty) pool and challenges again, never crowned.
@@ -298,7 +321,7 @@ describe("file backing", () => {
     const store = openLadder(new FileLadderStore(path), stressRegistry);
     const ghost: TeamSnapshot = { runId: "titan", round: 1, seq: BOOTSTRAP_TEAMS[0]!.length, team: [TITAN] };
     store.addSnapshot(ghost);
-    store.setChampion(ghost);
+    store.setBoss(ghost.round, ghost);
     const reread = new FileLadderStore(path);
     expect(reread.poolAt(1)).toEqual(store.poolAt(1));
     expect(reread.champion()).toEqual(store.champion());
@@ -316,7 +339,7 @@ describe("file backing", () => {
     const store = new FileLadderStore(path);
     const ghost: TeamSnapshot = { runId: "m", round: 1, seq: 0, team: [vanilla("Keeper", 5, 1)] };
     store.addSnapshot(ghost);
-    store.setChampion(ghost);
+    store.setBoss(ghost.round, ghost);
     ghost.team[0]!.name = "Corrupted"; // mutation after write must not reach the store…
     expect(store.poolAt(1)[0]!.team[0]!.name).toBe("Keeper");
     expect(store.champion()!.team[0]!.name).toBe("Keeper");
@@ -420,5 +443,45 @@ describe("PersistedLadderStore", () => {
   test("corrupt stored ladders are refused loudly, not silently reset", () => {
     expect(() => parseLadderData("not json", "memory")).toThrow(/not valid JSON/);
     expect(() => parseLadderData('{"champion":null}', "memory")).toThrow(/no pools object/);
+  });
+
+  test("a multi-floor boss map round-trips byte-equivalent through file and localStorage backings", () => {
+    // Build a tower with bosses on several floors plus a couple of pools, seat
+    // them through a store, and check both persistent media round-trip the same
+    // bytes — the boss map is not a single spot but a per-floor record now.
+    const dir = mkdtempSync(join(tmpdir(), "ladder-tower-"));
+    const seat = (store: LadderStore) => {
+      store.addSnapshot({ runId: "a", round: 1, seq: 0, team: [TITAN] });
+      store.setBoss(2, { runId: "b", round: 2, seq: 0, team: [vanilla("Two", 20, 10)] });
+      store.setBoss(7, { runId: "c", round: 7, seq: 0, team: [GOLIATH] }); // the summit
+      store.setBoss(4, { runId: "d", round: 4, seq: 0, team: [GRUNT] });
+    };
+
+    // File backing: seat, then read the bytes off disk.
+    const path = join(dir, "tower.json");
+    const fileStore = new FileLadderStore(path);
+    seat(fileStore);
+    const fileBytes = readFileSync(path, "utf8");
+
+    // localStorage-like backing: the same seats, the persisted string.
+    const medium = memoryMedium();
+    const memStore = medium.store();
+    seat(memStore);
+    const memBytes = medium.read()!;
+
+    // Both backings derive the same champion (floor 7, the highest occupied)…
+    expect(fileStore.champion()).toMatchObject({ runId: "c", round: 7 });
+    expect(memStore.champion()).toEqual(fileStore.champion());
+    // …and the serialized LadderData is the same object, modulo formatting:
+    // the file backing pretty-prints, the medium does not, so compare parsed.
+    expect(JSON.parse(memBytes)).toEqual(JSON.parse(fileBytes));
+    // Reopened from its own bytes, each backing is byte-stable: persist again
+    // off a fresh parse yields identical bytes (no drift through the round-trip).
+    medium.store(); // parses the persisted string without throwing
+    expect(JSON.stringify(parseLadderData(memBytes, "memory"))).toBe(memBytes);
+    const reread = new FileLadderStore(path);
+    reread.addSnapshot({ runId: "a", round: 1, seq: 1, team: [TITAN] }); // a write re-persists
+    expect(reread.bossAt(7)).toMatchObject({ runId: "c", round: 7 }); // bosses survived the reopen
+    expect(reread.bossAt(4)).toMatchObject({ runId: "d" });
   });
 });

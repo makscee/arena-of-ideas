@@ -2,8 +2,11 @@
 // A Ladder holds, per round number, a pool of team snapshots (ghosts): when a
 // run fights at round R its fielded team is first snapshotted into the round-R
 // pool, so every fight a run plays leaves an opponent behind for future runs —
-// ghosts persist even if the run later dies. At the top sits the champion
-// spot, which persists across runs until a run dethrones it.
+// ghosts persist even if the run later dies. Above the pools sits the tower: a
+// boss seated per floor (a floor = the round a team was fielded at, so all
+// teams on it have comparable power). The champion is no longer a stored spot
+// of its own — it is *derived* as the boss of the highest occupied floor, the
+// summit of the tower; it persists across runs because the boss it reads does.
 //
 // This module owns the storage boundary: the LadderStore interface and its
 // in-memory backing (tests, browser). The file backing lives in
@@ -40,11 +43,15 @@ export interface LadderStore {
    * a backing throws on desync, because a wrong seq means the caller drew from
    * a pool other than the one it is writing to. */
   addSnapshot(snap: TeamSnapshot): void;
-  /** The current champion team, or null while the spot is vacant. */
-  champion(): TeamSnapshot | null;
-  /** Crown a new champion. The dethroned team is not removed from anything —
+  /** The boss seated on `floor`, or null while that floor is vacant. */
+  bossAt(floor: number): TeamSnapshot | null;
+  /** Seat a boss on `floor`. A dethroned boss is not removed from anything —
    * its ghosts stay in their pools. */
-  setChampion(snap: TeamSnapshot): void;
+  setBoss(floor: number, snap: TeamSnapshot): void;
+  /** The current champion: the boss of the highest occupied floor, or null
+   * while no floor is occupied. Derived from the boss map, not stored — every
+   * backing computes it the same way (deriveChampion), so they never disagree. */
+  champion(): TeamSnapshot | null;
 }
 
 /** The in-memory backing — tests now, the browser client in slice 4.
@@ -53,7 +60,7 @@ export interface LadderStore {
  * byte-equivalent across backings. */
 export class InMemoryLadderStore implements LadderStore {
   private pools = new Map<number, TeamSnapshot[]>();
-  private champ: TeamSnapshot | null = null;
+  private bosses = new Map<number, TeamSnapshot>();
 
   poolAt(round: number): readonly TeamSnapshot[] {
     return this.pools.get(round) ?? [];
@@ -66,27 +73,34 @@ export class InMemoryLadderStore implements LadderStore {
     this.pools.set(snap.round, pool);
   }
 
-  champion(): TeamSnapshot | null {
-    return this.champ;
+  bossAt(floor: number): TeamSnapshot | null {
+    return this.bosses.get(floor) ?? null;
   }
 
-  setChampion(snap: TeamSnapshot): void {
-    this.champ = jsonClone(snap);
+  setBoss(floor: number, snap: TeamSnapshot): void {
+    this.bosses.set(floor, jsonClone(snap));
+  }
+
+  champion(): TeamSnapshot | null {
+    return deriveChampion(Object.fromEntries(this.bosses));
   }
 }
 
 /** The serialized ladder — the one shape every persistent backing stores:
- * pools keyed by round number (JSON keys are strings) plus the champion spot.
+ * pools keyed by round number, plus the tower's bosses keyed by floor (both
+ * Records because JSON keys are strings). The champion is not stored — it is
+ * derived from `bosses` on read (deriveChampion), so a backing carries only
+ * the per-floor seats, not a redundant summit that could drift from them.
  * FileLadderStore (ladder-file.ts) writes it to disk; the web client writes
  * it to localStorage; both round-trip byte-equivalent ladders. */
 export interface LadderData {
-  champion: TeamSnapshot | null;
+  bosses: Record<string, TeamSnapshot>;
   pools: Record<string, TeamSnapshot[]>;
 }
 
 /** A fresh, empty ladder — what a backing starts from when nothing is stored. */
 export function emptyLadderData(): LadderData {
-  return { champion: null, pools: {} };
+  return { bosses: {}, pools: {} };
 }
 
 /** Parse stored ladder JSON, loudly: a present-but-unreadable ladder must
@@ -103,7 +117,7 @@ export function parseLadderData(raw: string, label: string): LadderData {
   if (typeof data !== "object" || data === null || typeof data.pools !== "object" || data.pools === null) {
     throw new Error(`Ladder ${label} has no pools object — not a ladder`);
   }
-  return { champion: data.champion ?? null, pools: data.pools };
+  return { bosses: data.bosses ?? {}, pools: data.pools };
 }
 
 /** A LadderStore over a LadderData record with a write-through persist hook —
@@ -134,13 +148,19 @@ export class PersistedLadderStore implements LadderStore {
     this.persist(this.data);
   }
 
-  champion(): TeamSnapshot | null {
-    return this.data.champion;
+  bossAt(floor: number): TeamSnapshot | null {
+    return this.data.bosses[String(floor)] ?? null;
   }
 
-  setChampion(snap: TeamSnapshot): void {
-    this.data.champion = jsonClone(snap);
+  setBoss(floor: number, snap: TeamSnapshot): void {
+    // Clone on write, like addSnapshot: holding the caller's object by
+    // reference would let a later mutation corrupt the seated boss.
+    this.data.bosses[String(floor)] = jsonClone(snap);
     this.persist(this.data);
+  }
+
+  champion(): TeamSnapshot | null {
+    return deriveChampion(this.data.bosses);
   }
 }
 
@@ -149,11 +169,12 @@ export const BOOTSTRAP_RUN_ID = "bootstrap";
 
 /** Open a ladder over a store, seeding rounds 1..BOOTSTRAP_DEPTH from the
  * shipped bootstrap teams if the ladder is empty — a first-ever run has a
- * real climb, not a round-2 crown — and seating BOOTSTRAP_CHAMPION in the
- * champion spot, so the spot is never vacant on a fresh ladder and a crown is
- * always earned by beating someone. (A ladder any run has played on cannot
- * have an empty round-1 pool: snapshot-before-fight put the run's own ghost
- * there.) Every bootstrap team passes the content gate against `registry`
+ * real climb, not a round-2 crown — and seating BOOTSTRAP_CHAMPION as the
+ * boss of the floor past that climb, so the tower's summit is never vacant on
+ * a fresh ladder and a crown is always earned by beating someone. (A ladder
+ * any run has played on cannot have an empty round-1 pool: snapshot-before-
+ * fight put the run's own ghost there.) Every bootstrap team passes the
+ * content gate against `registry`
  * here, at seed time — a bad team fails loudly at open, never seed-dependently
  * mid-run when a draw happens to land on it. */
 export function openLadder(store: LadderStore, registry: StatusRegistry): LadderStore {
@@ -167,11 +188,32 @@ export function openLadder(store: LadderStore, registry: StatusRegistry): Ladder
     });
     if (store.champion() === null) {
       assertValidContent(BOOTSTRAP_CHAMPION, registry, "bootstrap champion");
-      // The round it guards: the first round past the seeded climb.
-      store.setChampion({ runId: BOOTSTRAP_RUN_ID, round: BOOTSTRAP_DEPTH + 1, seq: 0, team: jsonClone([...BOOTSTRAP_CHAMPION]) });
+      // Seat one boss on the floor just past the seeded climb — the highest
+      // (only) occupied floor, so it is the derived champion. Seeding a boss on
+      // every floor is a later slice; here the tower has a single summit.
+      const floor = BOOTSTRAP_DEPTH + 1;
+      store.setBoss(floor, { runId: BOOTSTRAP_RUN_ID, round: floor, seq: 0, team: jsonClone([...BOOTSTRAP_CHAMPION]) });
     }
   }
   return store;
+}
+
+/** The champion, derived once for every backing: the boss of the highest
+ * occupied floor, or null when no floor is occupied. Floor keys are strings
+ * (JSON keys), so compare them as numbers — the summit is the max floor that
+ * has a seated boss. Sharing this means InMemory, file, and localStorage
+ * backings can never disagree on who the champion is. */
+export function deriveChampion(bosses: Record<string, TeamSnapshot>): TeamSnapshot | null {
+  let topFloor = -Infinity;
+  let champ: TeamSnapshot | null = null;
+  for (const key of Object.keys(bosses)) {
+    const floor = Number(key);
+    if (floor > topFloor) {
+      topFloor = floor;
+      champ = bosses[key]!;
+    }
+  }
+  return champ;
 }
 
 /** The seq precondition, enforced (LadderStore.addSnapshot) — shared by both backings. */

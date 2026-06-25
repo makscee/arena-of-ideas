@@ -46,7 +46,19 @@ export class SqliteLadderStore implements LadderStore {
     return this.championRecord()?.snap ?? null;
   }
 
-  setChampion(snap: TeamSnapshot): void {
+  /** The boss seated on `floor`. The shared ladder stores its summit as the
+   * champion-history head (one seat, the floor it was crowned at); a per-floor
+   * boss table is a later slice. So a floor has a boss only when it IS the
+   * current champion's floor — every other floor reads vacant. */
+  bossAt(floor: number): TeamSnapshot | null {
+    const champ = this.champion();
+    return champ !== null && champ.round === floor ? champ : null;
+  }
+
+  /** Seat a boss on `floor`. ladderFight always seats the run's own ghost as a
+   * new summit (snap.round === floor), so this maps to crowning that snap —
+   * behaviour-identical to the old setChampion until per-floor seats land. */
+  setBoss(floor: number, snap: TeamSnapshot): void {
     this.setChampionFor(snap, null);
   }
 

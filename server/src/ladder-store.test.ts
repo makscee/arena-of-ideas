@@ -120,7 +120,7 @@ describe("kernel-semantics parity", () => {
     const store = new SqliteLadderStore(openDb(":memory:").db);
     const ghost: TeamSnapshot = { runId: "m", round: 1, seq: 0, team: [vanilla("Keeper", 5, 1)] };
     store.addSnapshot(ghost);
-    store.setChampion(ghost);
+    store.setBoss(ghost.round, ghost);
     ghost.team[0]!.name = "Corrupted"; // mutation after write must not reach the store
     expect(store.poolAt(1)[0]!.team[0]!.name).toBe("Keeper");
     expect(store.champion()!.team[0]!.name).toBe("Keeper");
