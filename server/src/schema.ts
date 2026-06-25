@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { integer, primaryKey, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 /**
  * Arena-owned auth tables. Shapes follow void-auth's schema (the OTP/session
@@ -124,6 +124,43 @@ export const runSubmissions = sqliteTable("run_submissions", {
   finalRound: integer("final_round").notNull(),
   submittedAt: integer("submitted_at").notNull(),
 });
+
+/**
+ * Ideas table (#076 slice 2) — the server backing for the free-text idea queue
+ * (kernel shape: src/ideas.ts). One row per submitted idea; `seq` is the
+ * submission ordinal that the kernel's `Idea` carries (id = `idea-<seq>`, and
+ * the rank tiebreak), assigned server-side as the next-highest seq. Votes live
+ * in their own table so the one-vote-per-player rule is a DB constraint, not an
+ * app convention. `createdAt` is unix seconds — a real timestamp the kernel
+ * shape leaves to data (it orders by seq, clock-free).
+ */
+export const ideas = sqliteTable("ideas", {
+  /** The kernel id — "idea-<seq>". Stable, globally unique per server. */
+  id: text("id").primaryKey(),
+  /** Submission ordinal: the kernel's seq, also the rank tiebreak. Unique so
+   * two submits can never collide on an ordinal. */
+  seq: integer("seq").notNull().unique(),
+  authorId: text("author_id").notNull(),
+  text: text("text").notNull(),
+  createdAt: integer("created_at").notNull(),
+});
+
+/** One vote per (idea, player) — the composite PK is the one-vote-per-player
+ * guarantee at the DB layer: a player voting twice on one idea hits the primary
+ * key and is a no-op (toggleIdeaVote deletes to un-vote), never a double count.
+ * `votedAt` keeps the order votes arrived, should a later slice want it. */
+export const ideaVotes = sqliteTable(
+  "idea_votes",
+  {
+    ideaId: text("idea_id").notNull(),
+    userId: text("user_id").notNull(),
+    votedAt: integer("voted_at").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.ideaId, t.userId] })],
+);
+
+export type Idea = typeof ideas.$inferSelect;
+export type IdeaVote = typeof ideaVotes.$inferSelect;
 
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;

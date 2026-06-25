@@ -80,6 +80,19 @@ CREATE TABLE IF NOT EXISTS run_submissions (
   final_round INTEGER NOT NULL,
   submitted_at INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS ideas (
+  id TEXT PRIMARY KEY,
+  seq INTEGER NOT NULL UNIQUE,
+  author_id TEXT NOT NULL,
+  text TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS idea_votes (
+  idea_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  voted_at INTEGER NOT NULL,
+  PRIMARY KEY (idea_id, user_id)
+);
 `;
 
 /** Open (and create if missing) the SQLite DB at `path`, or ":memory:". */
