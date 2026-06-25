@@ -59,8 +59,13 @@ export interface RunUnit {
 /** A run accepts decisions while "active"; an "over" run rejects them all. */
 export type RunStatus = "active" | "over";
 
-/** The two ways a run ends: its last life lost, or the champion spot taken. */
-export type RunEndReason = "out-of-lives" | "crown";
+/** The three ways a run ends. A climb death — the last life lost — is
+ * "out-of-lives". A boss challenge is always terminal and splits on its
+ * outcome: a win that seats the challenger as the floor's boss is "crown" (the
+ * name is kept — a seated win still crowns the climber on that floor); a
+ * challenge that does not win (loss or draw) ends the run "challenge-lost",
+ * distinct in the log because no seat happened and the old boss still stands. */
+export type RunEndReason = "out-of-lives" | "crown" | "challenge-lost";
 
 export interface RunState {
   seed: number;
@@ -91,7 +96,8 @@ export type RunDecision =
   | { kind: "buy"; offer: number } // index into the current offers
   | { kind: "reroll" }
   | { kind: "reorder"; from: number; to: number } // line positions
-  | { kind: "fight"; opponent: UnitDef[] }; // an explicit opponent; ladderFight draws its own from the store
+  | { kind: "fight"; opponent: UnitDef[] } // an explicit opponent; ladderFight draws its own from the store
+  | { kind: "challengeBoss" }; // a store-taking, terminal move — like ladderFight, invoked directly, not through applyDecision
 
 export type RunEventBody =
   | { type: "RunStart"; seed: number; runId: string; gold: number; lives: number }
@@ -106,8 +112,13 @@ export type RunEventBody =
   // run log alone explains a ladder fight (the envelope's round = the pool).
   | { type: "Snapshotted"; seq: number }
   | { type: "OpponentDrawn"; opponent: string; seq: number; candidates: number }
-  | { type: "ChampionChallenged"; champion: string }
-  | { type: "Crowned"; dethroned: string | null }
+  // boss challenge — the terminal move (challengeBoss). BossChallenged names
+  // the floor and the boss it faced (null when the floor was vacant — no
+  // fight, an auto-seat); Crowned records a seat and who it unseated (the
+  // dethroned boss, null when the floor was vacant), carrying the floor it
+  // happened on so the run log alone says which floor changed hands.
+  | { type: "BossChallenged"; floor: number; boss: string | null }
+  | { type: "Crowned"; floor: number; dethroned: string | null }
   | { type: "RunEnded"; reason: RunEndReason; lives: number };
 
 export type RunEvent = { id: number; round: number } & RunEventBody;
@@ -239,20 +250,25 @@ export function fight(state: RunState, opponent: UnitDef[]): RunState {
   return s;
 }
 
-/** Fight on the ladder. Snapshot-before-fight: the fielded team enters the
- * round's pool as a ghost before any outcome is known, so even a run about to
- * die leaves an opponent behind. The opponent is a seeded draw from that pool,
- * own ghosts excluded — deterministic given the run's RNG state and the pool
- * contents — and it passes the content gate BEFORE the run's own ghost
- * persists: a gate-failing opponent aborts the whole fight, and a retried
- * fight must not grow the pool with the aborted attempt's ghost on every try.
- * An empty draw means the run has outrun every ghost at this round and
- * challenges the champion: win (or find the spot vacant) and the fielded team
- * takes the spot — the run ends crowned; a loss is a normal loss.
+/** Fight on the ladder — a pure same-floor ghost climb. Snapshot-before-fight:
+ * the fielded team enters the round's pool as a ghost before any outcome is
+ * known, so even a run about to die leaves an opponent behind. The opponent is
+ * a seeded draw from that pool, own ghosts excluded — deterministic given the
+ * run's RNG state and the pool contents — and it passes the content gate
+ * BEFORE the run's own ghost persists: a gate-failing opponent aborts the whole
+ * fight, and a retried fight must not grow the pool with the aborted attempt's
+ * ghost on every try.
+ *
+ * An empty draw means the run has outrun every ghost at this floor — but a
+ * climb is not a boss challenge any more (that is challengeBoss(), the explicit
+ * terminal move). So an empty draw is rejected loudly, and rejected BEFORE the
+ * snapshot, so a rejected climb does not grow the pool (the same no-grow-on-
+ * retry property the gate-failing draw above preserves). The caller's move is
+ * then challengeBoss: the only legal play at a floor with no climb opponent.
  *
  * Depends only on the LadderStore interface — any backing serves. The store is
- * the run layer's one mutable boundary: it gains the ghost (and possibly a new
- * champion) even though the returned RunState is a fresh value as always. */
+ * the run layer's one mutable boundary: it gains the ghost even though the
+ * returned RunState is a fresh value as always. */
 export function ladderFight(state: RunState, ladder: LadderStore): RunState {
   assertActive(state, "fight");
   if (state.team.length === 0) {
@@ -263,49 +279,89 @@ export function ladderFight(state: RunState, ladder: LadderStore): RunState {
   // is the same whether or not the ghost is in the pool yet); persist after.
   const pool = ladder.poolAt(s.round);
   const candidates = pool.filter((g) => g.runId !== s.runId);
-  let pick: TeamSnapshot | undefined;
-  let champion: TeamSnapshot | null = null;
-  if (candidates.length > 0) {
-    const draw = rngStep(s.rng);
-    s.rng = draw.state;
-    pick = candidates[Math.floor(draw.value * candidates.length)]!;
-    assertValidContent(pick.team, s.statuses, "opponent"); // a stored ghost passes the same gate as any opponent
-  } else {
-    champion = ladder.champion();
-    if (champion !== null) assertValidContent(champion.team, s.statuses, "champion");
+  if (candidates.length === 0) {
+    // No climb opponent at this floor — reject BEFORE snapshotting, so the pool
+    // does not grow on the rejected attempt. The boss is the move now.
+    throw new InvalidDecisionError("fight", `no climb opponent at floor ${s.round} — challenge the boss instead`);
   }
+  const draw = rngStep(s.rng);
+  s.rng = draw.state;
+  const pick = candidates[Math.floor(draw.value * candidates.length)]!;
+  assertValidContent(pick.team, s.statuses, "opponent"); // a stored ghost passes the same gate as any opponent
   const ghost: TeamSnapshot = { runId: s.runId, round: s.round, seq: pool.length, team: toBattleTeam(s.team) };
   ladder.addSnapshot(ghost);
   emit(s, { type: "Snapshotted", seq: ghost.seq });
-  if (pick !== undefined) {
-    emit(s, { type: "OpponentDrawn", opponent: pick.runId, seq: pick.seq, candidates: candidates.length });
-    resolveFight(s, pick.team);
-    turnRound(s);
-    return s;
+  emit(s, { type: "OpponentDrawn", opponent: pick.runId, seq: pick.seq, candidates: candidates.length });
+  resolveFight(s, pick.team);
+  turnRound(s);
+  return s;
+}
+
+/** Challenge the current floor's boss — the run's explicit, terminal endgame.
+ * The "current floor" is s.round; the floor's boss is ladder.bossAt(s.round).
+ * The run always ends here, win or lose:
+ *
+ *  - Snapshot-before-fight, exactly as ladderFight does: the fielded team is
+ *    ghosted into the floor-s.round pool before any outcome is known, so the
+ *    challenger leaves an opponent behind — and on a win this same ghost is the
+ *    team that takes the boss seat.
+ *  - A boss present is gated (like any opponent) and fought off the run's
+ *    stream (the same battle-seed draw as a climb, and only that draw — no
+ *    climb draw happens, so the RNG order stays deterministic). A win seats the
+ *    challenger as the floor's boss and ends the run "crown"; the unseated boss
+ *    is overwritten in the slot but its ghosts stay in the pool — it drops to
+ *    pool-only. A loss or draw does not seat and ends the run "challenge-lost"
+ *    (terminal regardless of lives — a lost challenge never loops to a climb).
+ *  - A vacant floor (boss === null) is the kept kernel edge: no fight, the
+ *    fielded team auto-seats and the run ends "crown", dethroned null.
+ *
+ * Like ladderFight, this is a store-taking transition (NOT part of
+ * applyDecision): the store is its one mutable boundary — it gains the
+ * challenger's ghost and, on a seat, the new boss — while the returned
+ * RunState is a fresh value as always. */
+export function challengeBoss(state: RunState, ladder: LadderStore): RunState {
+  assertActive(state, "challengeBoss");
+  if (state.team.length === 0) {
+    throw new InvalidDecisionError("challengeBoss", "the line is empty — buy a unit first");
   }
-  if (champion !== null) {
-    emit(s, { type: "ChampionChallenged", champion: champion.runId });
-    const winner = resolveFight(s, champion.team);
+  const s = clone(state);
+  const boss = ladder.bossAt(s.round);
+  if (boss !== null) assertValidContent(boss.team, s.statuses, "boss"); // a seated boss passes the same gate as any opponent
+  // Snapshot-before-fight: the challenger's ghost enters the floor's pool
+  // before any outcome, so even a lost challenge leaves an opponent behind —
+  // and on a win this is exactly the ghost that takes the seat.
+  const pool = ladder.poolAt(s.round);
+  const ghost: TeamSnapshot = { runId: s.runId, round: s.round, seq: pool.length, team: toBattleTeam(s.team) };
+  ladder.addSnapshot(ghost);
+  emit(s, { type: "Snapshotted", seq: ghost.seq });
+  emit(s, { type: "BossChallenged", floor: s.round, boss: boss === null ? null : boss.runId });
+  if (boss !== null) {
+    const winner = resolveFight(s, boss.team);
     if (winner !== "A") {
-      // A loss is a normal loss (a draw costs nothing) — the run carries on:
-      // next round may hold ghosts again, or this challenge repeats.
-      turnRound(s);
+      // Not a win (loss or draw): the challenger does not seat, the boss
+      // stands. Terminal whether or not a life remains — a lost challenge does
+      // not loop back to a climb.
+      endRun(s, "challenge-lost");
       return s;
     }
   }
-  // Won the challenge, or the spot was vacant: the fielded team takes it. It
-  // seats as the boss of its own floor (the round it was fielded at) — the new
-  // highest occupied floor, so it becomes the derived champion. The dethroned
-  // champion loses only the summit — its boss seat and ghosts stay put.
+  // Won the challenge, or the floor was vacant: the fielded team takes the
+  // seat. It seats as the boss of its own floor (the round it was fielded at).
+  // The unseated boss is overwritten in the slot but its ghosts stay in the
+  // pool — it drops to pool-only; a vacant floor seats with dethroned null.
   ladder.setBoss(ghost.round, ghost);
-  emit(s, { type: "Crowned", dethroned: champion === null ? null : champion.runId });
+  emit(s, { type: "Crowned", floor: ghost.round, dethroned: boss === null ? null : boss.runId });
   endRun(s, "crown");
   return s;
 }
 
 // ---------- the decision sequence ----------
 
-/** Apply one decision — the dispatch a stored decision sequence replays through. */
+/** Apply one decision — the dispatch a stored decision sequence replays
+ * through. The store-taking moves (ladderFight, challengeBoss) are invoked
+ * directly with their ladder, never here: applyDecision is pure/store-free, so
+ * a challengeBoss arriving here has no boss to fight and is rejected loudly —
+ * the caller must route it through challengeBoss(state, ladder) instead. */
 export function applyDecision(state: RunState, d: RunDecision): RunState {
   switch (d.kind) {
     case "buy":
@@ -316,6 +372,8 @@ export function applyDecision(state: RunState, d: RunDecision): RunState {
       return reorder(state, d.from, d.to);
     case "fight":
       return fight(state, d.opponent);
+    case "challengeBoss":
+      throw new InvalidDecisionError("challengeBoss", "a boss challenge needs the ladder — call challengeBoss(state, ladder) directly, not applyDecision");
   }
 }
 

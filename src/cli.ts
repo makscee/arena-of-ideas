@@ -37,7 +37,9 @@ import { readFileSync, writeFileSync } from "node:fs";
 import {
   battle,
   buy,
+  challengeBoss,
   initRun,
+  InvalidDecisionError,
   ladderFight,
   openLadder,
   renderReplay,
@@ -197,13 +199,29 @@ export function shopGreedily(state: RunState): RunState {
   return s;
 }
 
-/** Play one whole run with the greedy policy — shop, then fight the ladder,
- * until the run ends: crowned or out of lives. */
+/** Play one whole run with the greedy policy — shop, then climb the ladder,
+ * until the run ends. A climb (ladderFight) draws a same-floor ghost; when the
+ * floor has no climb opponent left it rejects loudly, and the only move is to
+ * challenge the floor's boss — the terminal move that ends the run, won
+ * (crown) or lost (challenge-lost / out-of-lives never applies to a
+ * challenge). So the policy climbs while it can and challenges the boss the
+ * moment a climb is refused. */
 export function playPolicyRun(input: RunInput, ladder: LadderStore): RunState {
   let s = initRun(input);
   while (s.status === "active") {
     s = shopGreedily(s);
-    s = ladderFight(s, ladder);
+    try {
+      s = ladderFight(s, ladder);
+    } catch (err) {
+      // The one expected rejection: no climb opponent at this floor. Any other
+      // error is a real fault and propagates. The boss challenge is terminal,
+      // so this is the run's last move whichever way it goes.
+      if (err instanceof InvalidDecisionError && err.decision === "fight") {
+        s = challengeBoss(s, ladder);
+      } else {
+        throw err;
+      }
+    }
   }
   return s;
 }
@@ -238,7 +256,8 @@ export function formatRunSummary(state: RunState): string {
   const won = fights.filter((f) => f.winner === "A").length;
   const lost = fights.filter((f) => f.winner === "B").length;
   const drawn = fights.length - won - lost;
-  const head = state.endedBy === "crown" ? "crowned" : "out of lives";
+  const head =
+    state.endedBy === "crown" ? "crowned" : state.endedBy === "challenge-lost" ? "challenge lost" : "out of lives";
   const lines = [
     `Run ${state.runId} (seed ${state.seed}): ${head} at round ${state.round} — ${won}W/${lost}L/${drawn}D, ${state.lives} ${state.lives === 1 ? "life" : "lives"} left`,
     `  line:  ${state.team.map((u) => `${u.name} L${u.level}`).join(", ")}`,

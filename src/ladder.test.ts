@@ -6,7 +6,7 @@ import { stressRegistry } from "./content/stress.js";
 import { BOOTSTRAP_RUN_ID, InMemoryLadderStore, PersistedLadderStore, emptyLadderData, openLadder, parseLadderData } from "./ladder.js";
 import type { LadderStore, TeamSnapshot } from "./ladder.js";
 import { FileLadderStore } from "./ladder-file.js";
-import { buy, fight, initRun, InvalidDecisionError, ladderFight, reorder, reroll, runToJSONL } from "./run.js";
+import { buy, challengeBoss, fight, initRun, InvalidDecisionError, ladderFight, reorder, reroll, runToJSONL } from "./run.js";
 import type { RunEvent, RunInput, RunState } from "./run.js";
 import { BOOTSTRAP_CHAMPION, BOOTSTRAP_DEPTH, BOOTSTRAP_TEAMS, STARTING_LIVES } from "./tunables.js";
 import { ValidationError, validateTeam } from "./validate.js";
@@ -37,10 +37,24 @@ function input(seed: number, runId: string, unit: UnitDef): RunInput {
   return { seed, runId, pool: [unit], statuses: stressRegistry };
 }
 
-/** Buy the one unit, then fight the ladder until the run ends. */
+/** Buy the one unit, then climb the ladder until the run ends. A climb draws a
+ * same-floor ghost; when a floor has no climb opponent left, ladderFight
+ * rejects loudly and the only move is to challenge the floor's boss — the
+ * terminal move. So this mirrors the CLI policy: climb while possible, then
+ * challenge the boss as the run's last act. */
 function playLadderRun(inp: RunInput, ladder: LadderStore): RunState {
   let s = buy(initRun(inp), 0);
-  while (s.status === "active") s = ladderFight(s, ladder);
+  while (s.status === "active") {
+    try {
+      s = ladderFight(s, ladder);
+    } catch (err) {
+      if (err instanceof InvalidDecisionError && err.decision === "fight") {
+        s = challengeBoss(s, ladder);
+      } else {
+        throw err;
+      }
+    }
+  }
   return s;
 }
 
@@ -112,8 +126,14 @@ describe("snapshot-before-fight", () => {
   });
 
   test("ghosts persist after the run dies", () => {
-    const store = freshLadder();
-    playLadderRun(input(1, "titan", TITAN), store); // installs a champion
+    const store = new InMemoryLadderStore();
+    // Every floor the run reaches holds an unbeatable wall ghost, so the run
+    // loses each climb and dies out-of-lives on the climb (never reaching a
+    // vacant floor it could auto-seat). Its own ghost is still left at each
+    // round it fought — snapshot-before-fight, even on a doomed run.
+    for (let round = 1; round <= STARTING_LIVES; round++) {
+      store.addSnapshot({ runId: "wall", round, seq: 0, team: [vanilla("Wall", 1000, 500)] });
+    }
     const dead = playLadderRun(input(2, "grunt", GRUNT), store);
     expect(dead).toMatchObject({ status: "over", endedBy: "out-of-lives", lives: 0 });
     // One ghost per round fought, all still in their pools.
@@ -208,51 +228,159 @@ describe("run-end states", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 5. The champion spot: challenge, crown, persistence, dethroning
+// 5. The boss challenge: the explicit terminal move (challengeBoss)
 // ---------------------------------------------------------------------------
 
-describe("champion", () => {
-  test("a fresh ladder's crown is earned — the bootstrap champion must fall", () => {
+describe("boss challenge", () => {
+  test("a fresh ladder's crown is earned — the floor's boss must fall", () => {
     const store = freshLadder();
     const s = playLadderRun(input(1, "titan", TITAN), store);
-    // Rounds 1..DEPTH fought bootstrap ghosts; past them the pool held only
-    // the run's own ghosts — every crown goes through the seated champion.
+    // Rounds 1..DEPTH climbed bootstrap ghosts; past them the climb is refused
+    // (only the run's own ghosts remain) so the run challenges the floor's boss
+    // — the seated bootstrap champion — and seats over it.
     expect(s).toMatchObject({ status: "over", endedBy: "crown" });
-    expect(ofType(s.log, "ChampionChallenged")[0]).toMatchObject({ champion: BOOTSTRAP_RUN_ID });
-    expect(ofType(s.log, "Crowned")[0]).toMatchObject({ dethroned: BOOTSTRAP_RUN_ID });
+    expect(ofType(s.log, "BossChallenged")[0]).toMatchObject({ floor: s.round, boss: BOOTSTRAP_RUN_ID });
+    expect(ofType(s.log, "Crowned")[0]).toMatchObject({ floor: s.round, dethroned: BOOTSTRAP_RUN_ID });
     expect(s.log[s.log.length - 1]).toMatchObject({ type: "RunEnded", reason: "crown" });
+    expect(store.bossAt(s.round)).toMatchObject({ runId: "titan", round: s.round });
     expect(store.champion()).toMatchObject({ runId: "titan", round: s.round });
   });
 
-  test("a truly vacant spot still crowns outright — the kernel edge behind the seated champion", () => {
-    const store = new InMemoryLadderStore(); // unopened: no ghosts, no champion
-    const s = ladderFight(buy(initRun(input(1, "titan", TITAN)), 0), store);
+  test("a win seats the challenger and the old boss's ghost stays in the floor's pool", () => {
+    const store = new InMemoryLadderStore();
+    // A beatable boss seated on floor 1, with its own ghost already in floor 1's
+    // pool (as a prior run would have left). Challenging directly (the floor's
+    // climb pool is the boss's ghost — but challengeBoss does not draw a climb,
+    // it fights the SEATED boss): a win seats the challenger over the slot, and
+    // the unseated boss's ghost must remain in the pool — pool-only, not removed.
+    store.setBoss(1, { runId: "weak-boss", round: 1, seq: 0, team: [GRUNT] });
+    store.addSnapshot({ runId: "weak-boss", round: 1, seq: 0, team: [GRUNT] }); // its ghost in the pool
+    const s = challengeBoss(buy(initRun(input(1, "titan", TITAN)), 0), store);
     expect(s).toMatchObject({ status: "over", endedBy: "crown", round: 1 });
-    expect(ofType(s.log, "ChampionChallenged")).toEqual([]);
+    expect(ofType(s.log, "Crowned")[0]).toMatchObject({ floor: 1, dethroned: "weak-boss" });
+    expect(store.bossAt(1)).toMatchObject({ runId: "titan" }); // challenger seated over the slot
+    expect(store.poolAt(1).some((g) => g.runId === "weak-boss")).toBe(true); // unseated boss's ghost stays
+    expect(store.poolAt(1).some((g) => g.runId === "titan")).toBe(true); // challenger's ghost is there too
+  });
+
+  test("a lost challenge ends the run without seating — terminal, lives or not", () => {
+    const store = freshLadder();
+    // A boss no Titan beats, on the floor just past the bootstrap climb. Titan
+    // climbs the ghost rounds, then challenges and loses — the run ends, the
+    // boss stands, and no Crowned event is emitted. Titan still has lives, so
+    // this proves a lost challenge is terminal regardless of lives.
+    const bossFloor = BOOTSTRAP_DEPTH + 1;
+    store.setBoss(bossFloor, { runId: "wall", round: bossFloor, seq: 0, team: [vanilla("Wall", 1000, 500)] });
+    const s = playLadderRun(input(2, "titan", TITAN), store);
+    expect(s).toMatchObject({ status: "over", endedBy: "challenge-lost" });
+    expect(s.lives).toBeGreaterThan(0); // a life remained — the loss was terminal anyway
+    expect(ofType(s.log, "BossChallenged")[0]).toMatchObject({ boss: "wall" });
+    expect(ofType(s.log, "Crowned")).toEqual([]); // no seat
+    expect(s.log[s.log.length - 1]).toMatchObject({ type: "RunEnded", reason: "challenge-lost" });
+    expect(store.bossAt(bossFloor)!.runId).toBe("wall"); // boss stands
+  });
+
+  test("a draw on a challenge is also terminal, challenge-lost, no seat", () => {
+    const store = new InMemoryLadderStore();
+    // A boss whose 0-power team can never kill, against a 0-power challenger:
+    // the battle draws. A draw is not a win, so the run ends challenge-lost.
+    const stalemate = vanilla("Inert", 50, 0);
+    store.setBoss(1, { runId: "boss", round: 1, seq: 0, team: [stalemate] });
+    const s = challengeBoss(buy(initRun(input(4, "me", vanilla("Mirror", 50, 0))), 0), store);
+    expect(ofType(s.log, "FightFought")[0]!.winner).toBe("draw");
+    expect(s).toMatchObject({ status: "over", endedBy: "challenge-lost" });
+    expect(store.bossAt(1)!.runId).toBe("boss"); // unseated
+  });
+
+  test("a vacant floor auto-seats — the kept kernel edge, no battle", () => {
+    const store = new InMemoryLadderStore(); // unopened: floor 1 is vacant
+    const s = challengeBoss(buy(initRun(input(1, "titan", TITAN)), 0), store);
+    expect(s).toMatchObject({ status: "over", endedBy: "crown", round: 1 });
+    expect(ofType(s.log, "BossChallenged")[0]).toMatchObject({ floor: 1, boss: null });
     expect(ofType(s.log, "FightFought")).toEqual([]); // crowned without a battle
-    expect(ofType(s.log, "Crowned")[0]).toMatchObject({ dethroned: null });
+    expect(ofType(s.log, "Crowned")[0]).toMatchObject({ floor: 1, dethroned: null });
+    expect(store.bossAt(1)).toMatchObject({ runId: "titan", round: 1 });
     expect(store.champion()).toMatchObject({ runId: "titan", round: 1 });
   });
 
-  test("the champion persists across runs and falls only to a winner", () => {
-    const store = freshLadder();
-    playLadderRun(input(1, "titan", TITAN), store);
-    expect(store.champion()!.runId).toBe("titan"); // survives the run that crowned it
-    const s = playLadderRun(input(2, "goliath", GOLIATH), store);
-    // Goliath fought ghosts while any remained, then beat the champion team.
-    expect(ofType(s.log, "ChampionChallenged")[0]).toMatchObject({ champion: "titan" });
-    expect(ofType(s.log, "Crowned")[0]).toMatchObject({ dethroned: "titan" });
-    expect(s).toMatchObject({ status: "over", endedBy: "crown" });
-    expect(store.champion()).toMatchObject({ runId: "goliath" });
+  test("the snapshot precedes the challenge: the challenger ghosts into its floor's pool first", () => {
+    const store = new InMemoryLadderStore();
+    const s = challengeBoss(buy(initRun(input(1, "titan", TITAN)), 0), store);
+    // On a win, the seated boss IS the snapshotted ghost — same team, in the pool.
+    expect(store.poolAt(1).some((g) => g.runId === "titan")).toBe(true);
+    const types = s.log.map((e) => e.type);
+    expect(types.indexOf("Snapshotted")).toBeLessThan(types.indexOf("BossChallenged"));
   });
 
-  test("the dethroned champion's team stays in the pools as a ghost", () => {
+  test("a won challenge rejects every further decision — the run is over", () => {
+    const store = new InMemoryLadderStore();
+    const over = challengeBoss(buy(initRun(input(1, "titan", TITAN)), 0), store);
+    expect(over.status).toBe("over");
+    for (const d of [
+      () => buy(over, 0),
+      () => fight(over, [GRUNT]),
+      () => ladderFight(over, freshLadder()),
+      () => challengeBoss(over, store),
+    ]) {
+      expect(d).toThrow(InvalidDecisionError);
+      expect(d).toThrow(/run is over \(crown\)/);
+    }
+  });
+
+  test("challengeBoss on an empty line throws — buy a unit first", () => {
+    const store = new InMemoryLadderStore();
+    expect(() => challengeBoss(initRun(input(1, "titan", TITAN)), store)).toThrow(/line is empty/);
+  });
+
+  test("challengeBoss never mutates its input state", () => {
+    const store = freshLadder();
+    const s0 = buy(initRun(input(7, "titan", TITAN)), 0);
+    const snapshot = JSON.stringify(s0);
+    challengeBoss(s0, store);
+    expect(JSON.stringify(s0)).toBe(snapshot);
+  });
+
+  test("a seated boss persists across runs; the next crown seats one floor higher", () => {
+    // The open-ended tower's shape: each crowned run leaves a climb ghost on its
+    // own floor, so the next runner climbs that ghost and seats one floor above.
+    // The earlier boss seat is never removed — it persists; the champion (the
+    // highest seat) advances. A boss falls from the SUMMIT only by being out-
+    // climbed, never silently overwritten in place.
+    const store = freshLadder();
+    const titan = playLadderRun(input(1, "titan", TITAN), store);
+    const titanFloor = titan.round;
+    expect(store.bossAt(titanFloor)).toMatchObject({ runId: "titan" });
+    const goliath = playLadderRun(input(2, "goliath", GOLIATH), store);
+    expect(goliath).toMatchObject({ status: "over", endedBy: "crown" });
+    expect(goliath.round).toBeGreaterThan(titanFloor); // seated above titan
+    expect(store.bossAt(titanFloor)).toMatchObject({ runId: "titan" }); // titan's seat persists
+    expect(store.champion()).toMatchObject({ runId: "goliath", round: goliath.round }); // the new summit
+  });
+
+  test("a directly-challenged boss falls only to a winner", () => {
+    // Seat a boss on a vacant floor and challenge it head-on (no climb ghost in
+    // the way): a beatable boss is dethroned and replaced; an unbeatable one
+    // stands and the challenge is lost. Same floor, opposite outcomes.
+    const weak = new InMemoryLadderStore();
+    weak.setBoss(1, { runId: "weak", round: 1, seq: 0, team: [GRUNT] });
+    const won = challengeBoss(buy(initRun(input(1, "titan", TITAN)), 0), weak);
+    expect(won.endedBy).toBe("crown");
+    expect(weak.bossAt(1)).toMatchObject({ runId: "titan" }); // beaten boss replaced
+
+    const strong = new InMemoryLadderStore();
+    strong.setBoss(1, { runId: "strong", round: 1, seq: 0, team: [vanilla("Wall", 1000, 500)] });
+    const lost = challengeBoss(buy(initRun(input(1, "titan", TITAN)), 0), strong);
+    expect(lost.endedBy).toBe("challenge-lost");
+    expect(strong.bossAt(1)).toMatchObject({ runId: "strong" }); // unbeaten boss stands
+  });
+
+  test("the unseated boss's team stays in the pools as a ghost", () => {
     const store = freshLadder();
     const titan = playLadderRun(input(1, "titan", TITAN), store);
     playLadderRun(input(2, "goliath", GOLIATH), store);
     const rounds = Array.from({ length: titan.round }, (_, i) => i + 1);
     const titanGhosts = rounds.flatMap((r) => store.poolAt(r).filter((g) => g.runId === "titan"));
-    expect(titanGhosts.length).toBe(titan.round); // one per round it fought, crown round included
+    expect(titanGhosts.length).toBe(titan.round); // one per round it climbed, challenge round included
     expect(titanGhosts.every((g) => g.team[0]!.name === "Titan")).toBe(true);
   });
 
@@ -279,18 +407,44 @@ describe("champion", () => {
     expect(wide.champion()).toMatchObject({ runId: "f100", round: 100 });
   });
 
-  test("a lost champion challenge is a normal loss — the run carries on", () => {
-    const store = freshLadder();
-    // A champion no Titan beats, installed directly: Titan clears every ghost
-    // round, so each round past the bootstrap repeats the challenge.
-    store.setBoss(9, { runId: "wall", round: 9, seq: 0, team: [vanilla("Wall", 1000, 500)] });
-    const s = playLadderRun(input(2, "titan", TITAN), store);
-    // Losing a challenge costs a life like any loss — the run carries on into
-    // the next round's (empty) pool and challenges again, never crowned.
-    expect(ofType(s.log, "ChampionChallenged").length).toBeGreaterThan(1);
-    expect(ofType(s.log, "Crowned")).toEqual([]);
-    expect(s).toMatchObject({ status: "over", endedBy: "out-of-lives" });
-    expect(store.champion()!.runId).toBe("wall");
+});
+
+// ---------------------------------------------------------------------------
+// 5b. ladderFight is a pure climb: an empty draw rejects, and never grows the pool
+// ---------------------------------------------------------------------------
+
+describe("ladderFight empty draw", () => {
+  test("an empty climb draw throws InvalidDecisionError naming the floor", () => {
+    const store = new InMemoryLadderStore(); // unopened: round-1 pool is empty
+    const s0 = buy(initRun(input(1, "titan", TITAN)), 0);
+    expect(() => ladderFight(s0, store)).toThrow(InvalidDecisionError);
+    expect(() => ladderFight(s0, store)).toThrow(/no climb opponent at floor 1 — challenge the boss instead/);
+  });
+
+  test("a rejected empty draw does NOT grow the pool — no ghost on the aborted attempt", () => {
+    const store = new InMemoryLadderStore();
+    // Pre-seed round 1 with only the run's OWN ghost: candidates (others) are
+    // empty, so the climb is rejected — and the rejection must come BEFORE the
+    // snapshot, so retrying never appends another own-ghost on each try.
+    store.addSnapshot({ runId: "titan", round: 1, seq: 0, team: [TITAN] });
+    const s0 = buy(initRun(input(1, "titan", TITAN)), 0);
+    expect(() => ladderFight(s0, store)).toThrow(/no climb opponent/);
+    expect(() => ladderFight(s0, store)).toThrow(/no climb opponent/); // the retry…
+    expect(store.poolAt(1).length).toBe(1); // …never grew the pool past the pre-seeded ghost
+  });
+
+  test("a climb loss costs a life; 0 lives ends the run out-of-lives", () => {
+    const store = new InMemoryLadderStore();
+    // Every floor the run reaches holds an unbeatable wall: each climb is a loss
+    // costing a life, round after round, until the last life is spent — a pure
+    // climb death, no boss challenge ever (every floor has a climb opponent).
+    for (let round = 1; round <= STARTING_LIVES; round++) {
+      store.addSnapshot({ runId: "wall", round, seq: 0, team: [vanilla("Wall", 1000, 500)] });
+    }
+    let s = buy(initRun(input(3, "grunt", GRUNT)), 0);
+    while (s.status === "active") s = ladderFight(s, store);
+    expect(s).toMatchObject({ status: "over", endedBy: "out-of-lives", lives: 0 });
+    expect(ofType(s.log, "Crowned")).toEqual([]); // a climb death never crowns
   });
 });
 
@@ -305,7 +459,12 @@ describe("determinism", () => {
       playLadderRun(input(1, "titan", TITAN), store); // identical prior history
       return playLadderRun(input(2, "goliath", GOLIATH), store);
     };
-    expect(runToJSONL(play().log)).toBe(runToJSONL(play().log));
+    const a = play();
+    // The replayed run ends in a boss challenge — so this byte-comparison
+    // covers the challengeBoss path (snapshot, BossChallenged, Crowned, RunEnded).
+    expect(a.endedBy).toBe("crown");
+    expect(ofType(a.log, "BossChallenged").length).toBe(1);
+    expect(runToJSONL(a.log)).toBe(runToJSONL(play().log));
   });
 });
 

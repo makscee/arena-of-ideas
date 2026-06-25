@@ -225,7 +225,7 @@ describe("autoplay", () => {
   test("a policy run plays a whole run to its end, headless", () => {
     const [r] = autoplayRuns(freshFileLadder("single.json"), 0, 1);
     expect(r!.state.status).toBe("over");
-    expect(["crown", "out-of-lives"]).toContain(r!.state.endedBy);
+    expect(["crown", "challenge-lost", "out-of-lives"]).toContain(r!.state.endedBy);
     expect(r!.state.team.length).toBeGreaterThan(0);
     expect(r!.state.log[r!.state.log.length - 1]).toMatchObject({ type: "RunEnded" });
   });
@@ -256,7 +256,7 @@ describe("autoplay", () => {
     const report = formatAutoplayReport(results, store);
     expect(report).toContain("Run auto-42 (seed 42):");
     expect(report).toContain("Run auto-43 (seed 43):");
-    expect(report).toMatch(/(crowned|out of lives) at round \d+ — \d+W\/\d+L\/\d+D/);
+    expect(report).toMatch(/(crowned|challenge lost|out of lives) at round \d+ — \d+W\/\d+L\/\d+D/);
     expect(report).toMatch(/line: {2}\w+ L\d+/);
     expect(report).toMatch(/Ladder: champion \S+ \| pools r1:\d+/);
   });
