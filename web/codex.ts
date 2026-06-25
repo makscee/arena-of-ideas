@@ -117,6 +117,44 @@ export function createCodex(
   });
   container.append(sectionEl("units", "Units", grid(unitCards, "codex-grid-units")));
 
+  // Section: parts — every creator atom (#078) on the SAME shared card as a
+  // Unit and a Status, at the same fixed size: a Part frames its family
+  // ("Effect", "Selector", …) where a unit frames hp/pwr. The card is the whole
+  // tappable vocabulary; the describe-derived meaning rides below like a unit's
+  // ability sentence. Coverage is derived (buildCodex → src/parts.ts over the
+  // type space), so a new Part kind shows up here with no hand-edit.
+  const FAMILY_LABELS: Record<string, string> = {
+    trigger: "Trigger",
+    interceptor: "Interceptor",
+    condition: "Condition",
+    selector: "Selector",
+    effect: "Effect",
+  };
+  const partCards = data.parts.map((p) => {
+    const id = `codex-part-${encodeId(p.family)}-${encodeId(p.kind)}`;
+    const fragment = `codex/part/${p.family}/${p.kind}`;
+    const search = `${p.name} ${p.family} ${p.meaning}`.toLowerCase();
+    const card = unitCardHtml({
+      kind: "part",
+      artName: `${p.family}:${p.kind}`,
+      label: p.name,
+      tag: FAMILY_LABELS[p.family] ?? p.family,
+      hp: "",
+      pwr: "",
+      registry,
+      classes: "codex-unit",
+      attrs: "",
+      title: `${p.name} — ${FAMILY_LABELS[p.family] ?? p.family}`,
+    });
+    return (
+      `<div class="codex-entry codex-part-entry" id="${id}" data-search="${esc(search)}">` +
+      anchorHtml(fragment) +
+      card +
+      `<div class="codex-entry-desc">${esc(p.meaning)}</div></div>`
+    );
+  });
+  container.append(sectionEl("parts", "Parts", grid(partCards, "codex-grid-parts")));
+
   // Section: rules — prose cards.
   const ruleCards = data.rules.map(
     (r) =>
@@ -148,11 +186,13 @@ export function createCodex(
       container.hidden = !visible;
     },
     navigate(fragment: string) {
-      // fragment: "codex/status/Poison" or "codex/rule/fatigue" etc.
+      // fragment: "codex/status/Poison", "codex/rule/fatigue", or a part's
+      // "codex/part/<family>/<kind>" (a Part keys on family AND kind, #078).
       const parts = fragment.split("/");
       if (parts.length < 3) return;
-      const [, kind, key] = parts as [string, string, string];
-      const id = `codex-${kind}-${encodeId(key)}`;
+      const [, kind, ...rest] = parts as [string, string, ...string[]];
+      const key = rest.map(encodeId).join("-");
+      const id = `codex-${kind}-${key}`;
       const target = container.querySelector<HTMLElement>(`#${CSS.escape(id)}`);
       if (target) {
         container.hidden = false;

@@ -72,7 +72,12 @@ export interface UnitCardOpts {
    * A `status` frames its per-stack `statMods` in the stat cells where a unit
    * frames base hp/pwr. Defaults to "unit", so every existing caller is
    * unchanged. */
-  kind?: "unit" | "status";
+  kind?: "unit" | "status" | "part";
+  /** For a `part` card (#078): the atom's family label ("Effect", "Selector",
+   * "Trigger", …), shown in the stat band where a unit frames hp/pwr — a Part
+   * is the SAME card at the SAME fixed size, framing its family where a unit
+   * frames stats and a status frames statMods. Ignored for unit/status. */
+  tag?: string;
   /** Drives the generative art — the def name, stable across levels/instances. */
   artName: string;
   /** The name shown on the card (board instances may carry a display name). */
@@ -133,6 +138,7 @@ export function unitCardHtml(o: UnitCardOpts): string {
   const cls = [
     "unit",
     o.kind === "status" && "is-status",
+    o.kind === "part" && "is-part",
     o.classes,
     o.front === true && "front",
     o.dead === true && "dead",
@@ -162,7 +168,11 @@ export function unitCardHtml(o: UnitCardOpts): string {
       ${shapeSvg(o.artName, o.dead === true)}
       <span class="${unameCls}">${esc(o.label)}</span>
       ${badge}
-      <span class="unums"><span class="hp">${o.hp}</span><span class="pwr">${o.pwr}</span></span>
+      <span class="unums">${
+        o.kind === "part"
+          ? `<span class="ptag">${esc(o.tag ?? "")}</span>`
+          : `<span class="hp">${o.hp}</span><span class="pwr">${o.pwr}</span>`
+      }</span>
       <span class="chips">${chipsHtml(o.statuses, o.registry)}${silenced}</span>
       ${o.footer ?? ""}
       ${o.dying === true ? '<span class="dying-x" aria-hidden="true">✕</span>' : ""}

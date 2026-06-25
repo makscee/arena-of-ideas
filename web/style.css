@@ -2443,8 +2443,27 @@ button.danger {
   grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
 }
 
+.codex-grid-parts {
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+}
+
 .codex-grid-rules {
   grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+}
+
+/* A Part card (#078): the SAME card at the SAME fixed size as a Unit/Status —
+   it frames its atom family ("Effect", "Selector", …) in the stat band where a
+   unit frames hp/pwr. The .ptag fills the band as one centred label, so the
+   card geometry (var(--card-w)) is untouched. */
+.unit.is-part .unums {
+  justify-content: center;
+}
+
+.unit.is-part .ptag {
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dim);
 }
 
 .codex-entry {

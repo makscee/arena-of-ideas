@@ -132,6 +132,41 @@ for (const [viewport, tag] of [
     `status ${statusCardW.toFixed(1)} vs unit ${unitCardW.toFixed(1)}`,
   );
 
+  // -- 2b. Part cards (#078) draw the ONE shared card at the fixed size --
+  // Every registry Part atom (Trigger/Interceptor/Condition/Selector/Effect)
+  // is its own card, rendered through unitCardHtml exactly like a Unit/Status.
+  const partCols = await columnCount(page, "#codex-sec-parts");
+  if (viewport === PHONE) {
+    check(partCols === 2, `${tag} parts grid sits two abreast`, `cols=${partCols}`);
+  } else {
+    check(partCols >= 3, `${tag} parts grid is multi-column`, `cols=${partCols}`);
+  }
+  const partCount = await page.$$eval("#codex-sec-parts .codex-entry", (els) => els.length);
+  // The type space defines 35 atoms today (10 triggers + 7 interceptors + 1
+  // condition + 7 selectors + 10 effects); a new Part kind only raises this, so
+  // the floor (not an exact count) is the durable pin against an empty section.
+  check(partCount >= 30, `${tag} parts section shows the full Part vocabulary`, `cards=${partCount}`);
+  const partSkeleton = await skeletonOf("#codex-sec-parts .codex-entry .unit");
+  // A Part frames its family in the stat band (.ptag), not hp/pwr — so it carries
+  // the shared skeleton minus the per-stat cells, but IS the same .unit card with
+  // shape art and chips. Assert the card identity, not the stat cells.
+  check(
+    partSkeleton.includes("svg.shape") && partSkeleton.includes(".uname") && partSkeleton.includes(".chips"),
+    `${tag} codex part entry draws the shared .unit card (art + name + chips)`,
+    partSkeleton,
+  );
+  check(
+    (await page.$("#codex-sec-parts .codex-entry .unit.is-part")) !== null,
+    `${tag} part card routes through unitCardHtml as kind=part (#078)`,
+  );
+  // ONE fixed size: a Part card is the SAME width as a Unit card.
+  const partCardW = await widthOf("#codex-sec-parts .codex-entry .unit");
+  check(
+    Math.abs(partCardW - unitCardW) <= 1,
+    `${tag} codex part card shares the unit card's ONE fixed width (#078)`,
+    `part ${partCardW.toFixed(1)} vs unit ${unitCardW.toFixed(1)}`,
+  );
+
   // -- 3. search filters the grid, sections fold, clear restores --
   await page.fill(".codex-search", "necro");
   check(await page.locator("#codex-unit-Necromancer").isVisible(), `${tag} filter keeps the matching unit card`);
@@ -157,6 +192,8 @@ for (const [viewport, tag] of [
   for (const [frag, id] of [
     ["codex/status/Poison", "codex-status-Poison"],
     ["codex/rule/fusion", "codex-rule-fusion"],
+    // A Part deep link is 4-segment (family + kind, #078) — exercises navigate().
+    ["codex/part/effect/damage", "codex-part-effect-damage"],
   ]) {
     await page.evaluate((f) => (window.location.hash = `#${f}`), frag);
     await waitInView(page, `#${id}`);
