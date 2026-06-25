@@ -68,6 +68,21 @@ for (const [viewport, tag] of [
   );
   check(core(line) === core(offer), `${tag} line card = offer card skeleton`, `${line} vs ${offer}`);
   check(core(ladder) === core(offer), `${tag} ladder card = offer card skeleton`, `${ladder} vs ${offer}`);
+
+  // ONE fixed size (#078): the card size IS the complexity budget, so every
+  // surface renders the card at the SAME width — geometry is baked into .unit,
+  // not set per-surface. This must FAIL against the old per-surface CSS where
+  // the shop card was 7rem, the ladder card 5.6rem (≠), and the codex card
+  // 8.5rem — different sizes on every screen.
+  const offerW = (await box(page, '#run-shop-row [data-offer="0"]')).width;
+  const lineW = (await box(page, '#run-line [data-line="0"]')).width;
+  const ladderW = (await box(page, ".lv-champ .unit:first-child")).width;
+  check(
+    Math.abs(lineW - offerW) <= 1 && Math.abs(ladderW - offerW) <= 1,
+    `${tag} shop / line / ladder cards share ONE fixed width (#078)`,
+    `offer ${offerW.toFixed(1)}, line ${lineW.toFixed(1)}, ladder ${ladderW.toFixed(1)}`,
+  );
+
   check(line.includes("front-tag") && line.includes("run-lvl"), `${tag} front line card adds marker + level badge`, line);
   check(
     await page.$eval('#run-line [data-line="0"] .run-lvl .run-pips', (el) => el.textContent !== ""),
@@ -112,10 +127,23 @@ for (const [viewport, tag] of [
 ]) {
   const { ctx, page } = await openRun(browser, lineFullRun(), viewport);
   const offer = await signature(page, '#run-shop-row [data-offer="0"]');
+  const offerW = (await box(page, '#run-shop-row [data-offer="0"]')).width;
   await page.click("#run-fight");
   await page.waitForSelector('#board .unit[data-unit]');
   const board = await signature(page, '#board .side[data-side="A"] .line .unit');
   check(core(board) === core(offer), `${tag} board card = offer card skeleton`, `${board} vs ${offer}`);
+  // The board renders the SAME card (#078) but is the one surface that SCALES it
+  // to fit its focal three-column replay stage (striker | beat-card lane |
+  // striker, #065): a wrapper resize, not a different card. The budget invariant
+  // that holds at BOTH widths: the board card is never LARGER than the one fixed
+  // catalog size — it never exceeds the card budget, and at 375px shrinks
+  // further (the documented `--side-col` phone override) so 5v5 fits the stage.
+  const boardW = (await box(page, '#board .side[data-side="A"] .line .unit:first-child')).width;
+  check(
+    boardW <= offerW + 1,
+    `${tag} board card never exceeds the one fixed card size (scaled to its focal stage, #078)`,
+    `board ${boardW.toFixed(1)} ≤ fixed ${offerW.toFixed(1)}`,
+  );
   check(
     await page.$eval('#board .side[data-side="A"] .line .unit .hp', (el) => /^\d+\/\d+$/.test(el.textContent)),
     `${tag} board card shows current/max hp`,

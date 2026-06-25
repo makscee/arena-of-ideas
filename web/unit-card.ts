@@ -1,10 +1,14 @@
-// The one unit card (PRD #015 slice 1) — every place a unit renders draws
-// THIS markup: shop offers, the team line, the battle board, ladder pools.
-// Pure presentation over data the kernel already produced: generative
-// code-drawn shape art (hash → layered SVG, no image assets — pillar 3),
-// framed hp/pwr, a level badge with fusion pips, status chips. The card owns
-// zero rules; every description behind it stays kernel-derived (chipsHtml /
-// the inspector's describe helpers).
+// The one card (PRD #015 slice 1, made uniform in #078) — every place a Unit
+// OR a Status renders draws THIS markup at ONE fixed size: shop offers, the
+// team line, the battle board, ladder pools, and the codex (units AND statuses).
+// A Unit and a Status are the same shape (PRD #074 ontology: a bundle of Parts),
+// so they share the card — a Status frames its per-stack statMods where a Unit
+// frames hp/pwr. The fixed size IS the complexity budget (#078): geometry lives
+// in CSS on `.unit` itself (one `--card-w`), never set per-surface. Pure
+// presentation over data the kernel already produced: generative code-drawn
+// shape art (hash → layered SVG, no image assets — pillar 3), framed stats, a
+// level badge with fusion pips, status chips. The card owns zero rules; every
+// description behind it stays kernel-derived (chipsHtml / the describe helpers).
 
 import type { StatusRegistry } from "../src/index.js";
 import { chipsHtml } from "./inspect.js";
@@ -61,6 +65,14 @@ export function shapeSvg(unitName: string, dead: boolean): string {
 }
 
 export interface UnitCardOpts {
+  /** What entity this card renders. The skeleton (art, name, framed stats,
+   * chips) and the fixed size are IDENTICAL for both — a Status is the same
+   * shape as a Unit (a bundle of Parts, PRD #074 ontology), so it wears the
+   * same card at the same size (the card size IS the complexity budget, #078).
+   * A `status` frames its per-stack `statMods` in the stat cells where a unit
+   * frames base hp/pwr. Defaults to "unit", so every existing caller is
+   * unchanged. */
+  kind?: "unit" | "status";
   /** Drives the generative art — the def name, stable across levels/instances. */
   artName: string;
   /** The name shown on the card (board instances may carry a display name). */
@@ -102,7 +114,10 @@ export interface UnitCardOpts {
    * marker, separate from the per-beat `overlay` deltas. Empty everywhere but the
    * replay board, so the shop/team/ladder card contract is unchanged. */
   marker?: string;
-  /** Context classes (run-card, lv-unit) — widths are the context's to size. */
+  /** Context hooks (run-card, lv-unit, codex-unit) — for framing/state only
+   * (selection ring, opacity, layout slot). The card's WIDTH is NOT theirs to
+   * set: size is fixed on `.unit` itself (#078). A surface that needs different
+   * framing wraps the card; it never resizes it. */
   classes?: string;
   /** The caller's wiring, pre-escaped: `data-offer="0"`, `data-unit="A1:X"`… */
   attrs: string;
@@ -117,6 +132,7 @@ export interface UnitCardOpts {
 export function unitCardHtml(o: UnitCardOpts): string {
   const cls = [
     "unit",
+    o.kind === "status" && "is-status",
     o.classes,
     o.front === true && "front",
     o.dead === true && "dead",

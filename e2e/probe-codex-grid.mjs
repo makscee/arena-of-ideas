@@ -77,25 +77,59 @@ for (const [viewport, tag] of [
   }
   check(await noHorizontalOverflow(page), `${tag} codex has no horizontal overflow`);
 
-  // -- 2. the unit entries draw the shared slice-1 card --
-  const skeleton = await page.$eval("#codex-sec-units .codex-entry .unit", (card) =>
-    ["svg.shape", ".uname", ".unums .hp", ".unums .pwr", ".chips"]
-      .filter((w) => card.querySelector(w) !== null)
-      .join(","),
-  );
+  // -- 2. unit AND status entries draw the ONE shared card (#078) --
+  // The shared-card skeleton string a card must carry to BE the shared card.
+  const SHARED_SKELETON = "svg.shape,.uname,.unums .hp,.unums .pwr,.chips";
+  // Null-safe: a section whose entry has NO `.unit` (the old status lookalike)
+  // returns "(no .unit)" so the assertion fails cleanly instead of throwing.
+  const skeletonOf = async (sel) => {
+    const el = await page.$(sel);
+    if (el === null) return "(no .unit)";
+    return el.evaluate((card) =>
+      ["svg.shape", ".uname", ".unums .hp", ".unums .pwr", ".chips"]
+        .filter((w) => card.querySelector(w) !== null)
+        .join(","),
+    );
+  };
+  const widthOf = async (sel) => {
+    const el = await page.$(sel);
+    return el === null ? -1 : el.evaluate((e) => e.getBoundingClientRect().width);
+  };
+  const unitSkeleton = await skeletonOf("#codex-sec-units .codex-entry .unit");
   check(
-    skeleton === "svg.shape,.uname,.unums .hp,.unums .pwr,.chips",
+    unitSkeleton === SHARED_SKELETON,
     `${tag} codex unit entry carries the full shared-card skeleton`,
-    skeleton,
+    unitSkeleton,
   );
-  // Status colour identity: two status cards, two hues.
-  const hues = await page.$$eval("#codex-sec-statuses .codex-entry", (els) =>
-    els.slice(0, 2).map((el) => el.style.getPropertyValue("--codex-hue")),
+  // The Status card is the SAME card (#078): same .unit skeleton, not the old
+  // .codex-status-entry lookalike. This must FAIL against the old codex, whose
+  // status entry had a .codex-swatch + .codex-entry-name and NO .unit / svg.shape
+  // / .unums — the skeleton string would have come back empty (no `.unit` to
+  // match) instead of the shared skeleton.
+  const statusSkeleton = await skeletonOf("#codex-sec-statuses .codex-entry .unit");
+  check(
+    statusSkeleton === SHARED_SKELETON,
+    `${tag} codex STATUS entry carries the full shared-card skeleton (#078)`,
+    statusSkeleton,
   );
   check(
-    hues.length === 2 && hues[0] !== "" && hues[0] !== hues[1],
-    `${tag} status cards carry distinct colour identities`,
-    `hues=[${hues}]`,
+    (await page.$("#codex-sec-statuses .codex-entry .unit.is-status")) !== null,
+    `${tag} status card routes through unitCardHtml as kind=status (#078)`,
+  );
+  // The status lookalike is gone: no card-shaped .codex-swatch survives.
+  check(
+    (await page.$("#codex-sec-statuses .codex-swatch")) === null,
+    `${tag} the old .codex-status-entry swatch lookalike is removed (#078)`,
+  );
+  // ONE fixed size: a status card is the SAME width as a unit card. Must FAIL
+  // against the old codex where the unit card was max-width 8.5rem and the
+  // status lookalike was a full-width text card — wholly different widths.
+  const unitCardW = await widthOf("#codex-sec-units .codex-entry .unit");
+  const statusCardW = await widthOf("#codex-sec-statuses .codex-entry .unit");
+  check(
+    Math.abs(statusCardW - unitCardW) <= 1,
+    `${tag} codex status card shares the unit card's ONE fixed width (#078)`,
+    `status ${statusCardW.toFixed(1)} vs unit ${unitCardW.toFixed(1)}`,
   );
 
   // -- 3. search filters the grid, sections fold, clear restores --

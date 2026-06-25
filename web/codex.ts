@@ -1,14 +1,15 @@
 // Codex screen — fully generated from registry + tunables via buildCodex().
 // Renders statuses, units, and rule entries as responsive card grids (#015
-// slice 2): units wear the one shared unit card (unit-card.ts), statuses get
-// a matching card with a hash-stable colour identity, rules a prose card.
+// slice 2): units AND statuses now wear the ONE shared card (unit-card.ts) at
+// the same fixed size (#078 — a Status is the same shape as a Unit, #074); the
+// old codex-local status lookalike is gone. Rules stay a prose card.
 // Presentation only — every sentence comes from buildCodex()/describe output.
 // Supports deep-link anchors of the form #codex/status/<name>,
 // #codex/unit/<name>, #codex/rule/<key>.
 
 import { buildCodex } from "../src/codex.js";
 import type { StatusRegistry, UnitDef } from "../src/types.js";
-import { nameHue, unitCardHtml } from "./unit-card.js";
+import { unitCardHtml } from "./unit-card.js";
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -51,15 +52,28 @@ export function createCodex(
   searchRow.append(searchInput);
   container.append(searchRow);
 
-  // Section: statuses — name + colour identity + the kernel-derived sentence.
+  // Section: statuses — the SAME shared card as units (#078): a Status is the
+  // same shape as a Unit (a bundle of Parts, #074), so it wears the same card at
+  // the same fixed size, framing its per-stack statMods where a unit frames
+  // hp/pwr. The kernel-derived sentence rides below, exactly as a unit's
+  // abilities do. No codex-local lookalike anymore.
   const statusCards = data.statuses.map((s) => {
-    const hue = nameHue(s.name);
+    const card = unitCardHtml({
+      kind: "status",
+      artName: s.name,
+      label: s.name,
+      hp: s.hp,
+      pwr: s.pwr,
+      registry,
+      classes: "codex-unit",
+      attrs: "",
+      title: s.name,
+    });
     return (
       `<div class="codex-entry codex-status-entry" id="codex-status-${encodeId(s.name)}"` +
-      ` data-search="${esc(`${s.name} ${s.description}`.toLowerCase())}" style="--codex-hue: ${hue.toFixed(0)}">` +
+      ` data-search="${esc(`${s.name} ${s.description}`.toLowerCase())}">` +
       anchorHtml(`codex/status/${s.name}`) +
-      `<div class="codex-entry-head"><span class="codex-swatch" aria-hidden="true"></span>` +
-      `<span class="codex-entry-name">${esc(s.name)}</span></div>` +
+      card +
       `<div class="codex-entry-desc">${esc(s.description)}</div></div>`
     );
   });

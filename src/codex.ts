@@ -38,6 +38,12 @@ export interface CodexStatusEntry {
   /** Status name — also the deep-link anchor fragment: #codex/status/<name> */
   name: string;
   description: string;
+  /** Per-stack stat contributions, formatted for the card's framed stat cells
+   * (e.g. "+2", "-1"); "·" when the status moves that stat by nothing. A Status
+   * renders through the same card as a Unit (#078), framing its statMods where a
+   * Unit frames base hp/pwr. */
+  hp: string;
+  pwr: string;
 }
 
 export interface CodexUnitEntry {
@@ -103,9 +109,15 @@ export function codexUnits(approved: readonly UnitDef[] = []): UnitDef[] {
  * winning the dedup. */
 export function buildCodex(registry: StatusRegistry, units: UnitDef[]): CodexData {
   // -- statuses: every entry in the registry --
+  // A status frames its per-stack statMods in the card's stat cells (#078); a
+  // stat the status doesn't move shows "·". No number is typed — it is the
+  // statMod the kernel already carries.
+  const fmtMod = (v: number | undefined): string => (v === undefined || v === 0 ? "·" : `${v > 0 ? "+" : ""}${v}`);
   const statuses: CodexStatusEntry[] = Object.values(registry).map((def) => ({
     name: def.name,
     description: describeStatus(def),
+    hp: fmtMod(def.statMods?.hp),
+    pwr: fmtMod(def.statMods?.pwr),
   }));
   statuses.sort((a, b) => a.name.localeCompare(b.name));
 
