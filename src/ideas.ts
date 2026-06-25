@@ -13,8 +13,8 @@
 // (seq), the same clock-free ordering the ladder uses for its pools. A real
 // timestamp, if a client ever wants one, comes in as data.
 
-/** An idea on the table, as the store holds and returns it.
- * Returned ideas are owned by the store: treat them as immutable. */
+/** An idea on the table, as the store holds and returns it. list() returns
+ * detached deep copies, so a returned Idea is the caller's to do with freely. */
 export interface Idea {
   /** Stable id — "idea-N" off the store's submission counter. */
   id: string;
@@ -33,7 +33,9 @@ export interface Idea {
 
 /** The storage boundary the ideas feature depends on — nothing else.
  * Backings: InMemoryIdeaStore (below), PersistedIdeaStore (web/ideas-store.ts).
- * Returned ideas are owned by the store: treat them as immutable. */
+ * list() hands back detached deep copies, so a caller (a renderer) may read or
+ * even mutate them freely without reaching the store's state — mutation just
+ * doesn't write back; submit/toggleVote/removeOwn are the only ways in. */
 export interface IdeaStore {
   /** Append a new idea by `authorId` with `text` (trimmed). Throws on empty /
    * whitespace-only text — an idea with nothing in it is not an idea. Returns
@@ -44,7 +46,8 @@ export interface IdeaStore {
    * direction twice never double-counts. Throws on an unknown ideaId. */
   toggleVote(ideaId: string, playerId: string): void;
   /** Every idea, ranked by vote count descending; ties broken by submission
-   * order (lower seq first), so the order is total and stable. */
+   * order (lower seq first), so the order is total and stable. The returned
+   * ideas are detached deep copies — mutating one never touches the store. */
   list(): readonly Idea[];
   /** The author removes their own idea. Throws on an unknown ideaId; throws if
    * `authorId` is not the idea's author — only the author may remove it. */
@@ -105,10 +108,15 @@ export function toggledVotes(votes: readonly string[], playerId: string): string
 }
 
 /** Rank ideas by vote count descending, ties broken by submission order (lower
- * seq first) — the total, stable ordering list() returns. Does not mutate the
- * input; returns a new array of the same (store-owned) ideas. */
+ * seq first) — the total, stable ordering list() returns. Returns DETACHED deep
+ * copies (jsonClone, the same convention writes use): a caller that mutates a
+ * returned idea's `votes` — slice 3 renders this list — can never reach back
+ * into the store's state to corrupt its ranking or persist through the next
+ * write. Does not mutate the input. */
 export function rankIdeas(ideas: readonly Idea[]): Idea[] {
-  return [...ideas].sort((a, b) => b.votes.length - a.votes.length || a.seq - b.seq);
+  return ideas
+    .map((idea) => jsonClone(idea))
+    .sort((a, b) => b.votes.length - a.votes.length || a.seq - b.seq);
 }
 
 /** The in-memory backing — tests now, a parity reference for the web client.

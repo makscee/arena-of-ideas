@@ -106,6 +106,20 @@ describe.each(backings)("IdeaStore: %s", (_name, open) => {
     expect(() => store.toggleVote("idea-999", "bob")).toThrow(/no idea with id/);
     expect(() => store.removeOwn("idea-999", "ada")).toThrow(/no idea with id/);
   });
+
+  test("list() returns detached copies — mutating a returned idea never corrupts the store", () => {
+    const store = open();
+    const a = store.submit("idea A", "ada"); // seq 0, 0 votes
+    const b = store.submit("idea B", "bob"); // seq 1, 0 votes
+    // A reader (slice 3 renders this list) reaches into a returned idea's votes
+    // and mutates the array. If list() leaked the store's own arrays, this would
+    // give B two votes inside the store and swap the ranking on the next read.
+    const returned = store.list();
+    returned[1]!.votes.push("x", "y");
+    const after = store.list();
+    expect(after.map((i) => i.id)).toEqual([a.id, b.id]); // order unchanged (tie → seq)
+    expect(after.map((i) => i.votes.length)).toEqual([0, 0]); // counts unchanged
+  });
 });
 
 describe("openLocalIdeas (localStorage backing)", () => {
