@@ -16,9 +16,11 @@ import {
   REROLL_COST,
   STACK_THRESHOLD,
   TEAM_SIZE,
+  TOWER_HEIGHT,
   UNIT_COST,
   battle,
   buy,
+  challengeBoss,
   incomeForRound,
   initRun,
   ladderFight,
@@ -28,6 +30,7 @@ import {
   shopSizeForRound,
   toBattleTeam,
   type LadderStore,
+  type RunEndReason,
   type RunEvent,
   type RunState,
   type RunUnit,
@@ -78,6 +81,58 @@ export const incomeLine = (round: number): string =>
 export const stakesLine = (lives: number): string =>
   `a loss costs a life — ${lives} ${lives === 1 ? "life" : "lives"} left`;
 
+// ---------- boss-challenge copy (#075 slice 4) — pure, exported for vitest ----------
+
+/** Whether `floor` is the tower's summit — its boss is the champion (the
+ * highest seeded floor, TOWER_HEIGHT), and a floor past it is an overshoot. */
+export const isSummitFloor = (floor: number): boolean => floor === TOWER_HEIGHT;
+export const isAboveTower = (floor: number): boolean => floor > TOWER_HEIGHT;
+
+/** The boss panel's heading: which floor the run stands on and what its boss
+ * is — the champion at the summit, a lower boss to cash out against, or nothing
+ * at all above the top (an overshoot if challenged). `hasBoss` is whether the
+ * store seats a boss here; only an above-the-top floor is vacant. */
+export const bossFloorLine = (floor: number, hasBoss: boolean): string =>
+  !hasBoss
+    ? `floor ${floor} — above the tower's top (${TOWER_HEIGHT} floors); there is no boss here`
+    : isSummitFloor(floor)
+      ? `floor ${floor} — the champion holds the summit`
+      : `floor ${floor} of ${TOWER_HEIGHT} — this floor's boss`;
+
+/** The note beside the Challenge button: terminal, and what a win means here.
+ * Higher floors are harder but a win there crowns; a lower floor cashes out. */
+export const challengeNoteLine = (floor: number, hasBoss: boolean): string =>
+  !hasBoss
+    ? "challenging here ends the run with no crown — climb back is impossible, so there is no boss to take"
+    : isSummitFloor(floor)
+      ? "terminal: beat the champion to take the crown — lose and the run is over"
+      : `terminal: win to seat your team as floor ${floor}'s boss (a lower, easier seat than the summit) — lose and the run is over`;
+
+/** The end-screen heading for every terminal reason (#075 slice 4). Pure so
+ * the four states are pinned by vitest, not just eyeballed in a screenshot.
+ * `crown` splits on whether the seized floor is the summit (champion) or a
+ * lower seat; `overshoot` and `challenge-lost` each read as their own outcome;
+ * `out-of-lives` keeps the climb-death wording. `dethronedNote` is the prose
+ * naming who was unseated (crown only); the rest ignore it. */
+export const endHeadLine = (
+  reason: RunEndReason,
+  round: number,
+  dethronedNote: string,
+): string => {
+  switch (reason) {
+    case "crown":
+      return isSummitFloor(round)
+        ? `👑 champion — you took the summit (floor ${round}) — ${dethronedNote}`
+        : `👑 seated at floor ${round} — ${dethronedNote}`;
+    case "challenge-lost":
+      return `challenge lost at floor ${round} — the boss held its seat; the run is over (your ghosts stay on the ladder)`;
+    case "overshoot":
+      return `overshot at floor ${round} — you climbed past the tower's top (${TOWER_HEIGHT} floors), so there was no boss to take; no crown, the run is over`;
+    case "out-of-lives":
+      return `out of lives at round ${round} — the run is over (your ghosts stay on the ladder)`;
+  }
+};
+
 /** Feel flag (PRD #012 slice 2 — a staging call, kept one boolean from
  * revert): false = the replay auto-plays and the outcome + continue stay
  * hidden until the playhead reaches the end (skip jumps straight there;
@@ -106,6 +161,14 @@ interface RunScreenEls {
   line: HTMLElement;
   fightButton: HTMLButtonElement;
   stakes: HTMLElement;
+  /** Boss challenge (#075 slice 4): the current floor's boss + the terminal
+   * Challenge control, shown at the shop so the climb-vs-challenge choice is
+   * legible. The boss team renders read-only, like the ladder view's rows. */
+  bossPanel: HTMLElement;
+  bossHead: HTMLElement;
+  bossTeam: HTMLElement;
+  challengeButton: HTMLButtonElement;
+  challengeNote: HTMLElement;
   error: HTMLElement;
   /** DEV panel (#066 slice 4) — shown only when dev mode is on. */
   devPanel: HTMLDetailsElement;
@@ -385,8 +448,8 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     els.rerollButton.textContent = `reroll ${REROLL_COST}g`;
     els.rerollButton.disabled = s.gold < REROLL_COST;
     renderLine(s);
-    els.fightButton.disabled = s.team.length === 0;
-    els.stakes.textContent = stakesLine(s.lives);
+    renderClimb(s);
+    renderBoss(s);
     renderDevPanel(); // gated on dev mode, read live so a Settings flip takes
     fused = undefined; // the flash renders once — re-renders must not replay it
     if (selected !== undefined) renderInspector();
@@ -485,6 +548,66 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     if (reserve > 0) els.line.style.minHeight = `${reserve}px`;
   }
 
+  /** The climb (fight) button's availability + stakes. A climb draws a random
+   * same-floor ghost; with the line empty there is nothing to field, and at a
+   * floor with no rival ghost (the top, or a floor climbed PAST the tower) a
+   * climb would throw in the kernel — challenge is the move there. So the climb
+   * button disables in both cases and the stakes line says why, rather than
+   * letting a click reach an InvalidDecisionError (the brief's "not stuck on an
+   * exception" path). The boss panel below carries the challenge control. */
+  function renderClimb(s: RunState): void {
+    const empty = s.team.length === 0;
+    const noRival = !empty && deps.store.poolAt(s.round).filter((g) => g.runId !== s.runId).length === 0;
+    els.fightButton.disabled = empty || noRival;
+    els.stakes.textContent = empty
+      ? stakesLine(s.lives)
+      : noRival
+        ? `no ghost left to climb at floor ${s.round} — challenge the boss below to make your move`
+        : stakesLine(s.lives);
+  }
+
+  /** The boss panel: the current floor's boss shown read-only (the same card
+   * the ladder view renders, so it reads like any ghost), the floor named, and
+   * the terminal Challenge control. A vacant floor (above the tower's top) is
+   * an overshoot — no boss to show, the challenge there ends the run with no
+   * crown; the panel says so rather than hiding the control and stranding a
+   * run that climbed too high. The button stays live whenever a unit is
+   * fielded (challengeBoss needs a non-empty line); it's the move at the top. */
+  function renderBoss(s: RunState): void {
+    const boss = deps.store.bossAt(s.round);
+    const hasBoss = boss !== null;
+    els.bossHead.textContent = bossFloorLine(s.round, hasBoss);
+    els.bossTeam.innerHTML = hasBoss
+      ? boss.team.map((u) => bossUnitCard(u)).join("")
+      : '<span class="run-dim">no boss seated above the tower — challenging here overshoots</span>';
+    els.challengeNote.textContent = challengeNoteLine(s.round, hasBoss);
+    // A win seats at the summit only at the top floor; flag the champion fight.
+    els.challengeButton.classList.toggle("champion", hasBoss && isSummitFloor(s.round));
+    els.challengeButton.textContent = !hasBoss
+      ? "challenge here (overshoot — no crown)"
+      : isSummitFloor(s.round)
+        ? "challenge the champion"
+        : "challenge this floor's boss";
+    els.challengeButton.disabled = s.team.length === 0;
+  }
+
+  /** A boss-team unit card — read-only, the ladder-view idiom: no buy/move
+   * footer, just the card so the player sees what they'd face. */
+  function bossUnitCard(u: UnitDef): string {
+    return unitCardHtml({
+      artName: u.name,
+      label: u.name,
+      hp: u.base.hp,
+      pwr: u.base.pwr,
+      statuses: u.statuses,
+      registry: state?.statuses ?? deps.registry,
+      ...((u.level ?? 1) > 1 ? { level: u.level } : {}),
+      classes: "run-card boss-card",
+      attrs: "", // read-only — no inspect/buy/move affordance on a boss card
+      title: `${u.name} — ${u.base.hp} hp, ${u.base.pwr} pwr`,
+    });
+  }
+
   /** Inspector over a shop offer or line unit: the def's derived descriptions
    * (the same describe helpers the battle inspector uses) — players decide
    * buys by reading abilities, not by guessing from names. Shown in the one
@@ -565,17 +688,18 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
 
   function renderEnd(): void {
     const s = state!;
-    const crown = s.endedBy === "crown";
+    const reason = s.endedBy ?? "out-of-lives";
+    const crown = reason === "crown";
     els.endPanel.classList.toggle("crowned", crown);
+    // Who the seat was taken from (crown only) — the Crowned event names it.
     const dethroned = ofType(s.log, "Crowned")[0]?.dethroned;
-    els.endHead.textContent = crown
-      ? `👑 crowned at round ${s.round} — ` +
-        (dethroned === undefined || dethroned === null
-          ? "the spot was vacant; your team takes it"
-          : dethroned === BOOTSTRAP_RUN_ID
-            ? "the shipped champion falls; your team takes the spot"
-            : `${dethroned} is dethroned; your team takes the spot`)
-      : `out of lives at round ${s.round} — the run is over (your ghosts stay on the ladder)`;
+    const dethronedNote =
+      dethroned === undefined || dethroned === null
+        ? "the seat was vacant; your team takes it"
+        : dethroned === BOOTSTRAP_RUN_ID
+          ? "the shipped boss falls; your team takes the seat"
+          : `${dethroned} is dethroned; your team takes the seat`;
+    els.endHead.textContent = endHeadLine(reason, s.round, dethronedNote);
     // The climb, derived from the run log: one fight per round, W/L/D per round.
     const fights = ofType(s.log, "FightFought");
     const won = fights.filter((f) => f.winner === "A").length;
@@ -899,6 +1023,82 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     render();
   }
 
+  /** Challenge the current floor's boss — the terminal endgame (#075 slice 4).
+   * Remote runs gate it behind the same serve read fightLadder uses (the
+   * server records the round-view), so a submitted run re-derives; a dead
+   * network refuses and changes nothing. The challenge itself is doChallengeBoss. */
+  function challenge(): void {
+    const remote = deps.remote;
+    const s = state;
+    if (remote === undefined || s === undefined) {
+      doChallengeBoss();
+      return;
+    }
+    els.error.textContent = "";
+    els.error.title = "";
+    els.challengeButton.disabled = true;
+    void remote.serve(s.runId, s.round).then((r) => {
+      els.challengeButton.disabled = false;
+      if (state === undefined || state.runId !== s.runId || state.round !== s.round) return;
+      if (state.status !== "active" || pending !== undefined) return;
+      if (!r.ok) {
+        flag(`challenging the boss needs the server and it didn't answer: ${r.reason}`);
+        return;
+      }
+      doChallengeBoss();
+    });
+  }
+
+  /** The challenge itself: capture the boss BEFORE the call (a win overwrites
+   * the seat in the store), run the terminal challengeBoss, then reconstruct
+   * the boss battle for the viewer from the logged battle seed and the captured
+   * boss team. An overshoot (a floor above the tower's top) logs no FightFought
+   * — there is no boss and no battle — so it goes straight to the end screen,
+   * exactly as the vacant-spot path in doFightLadder does. */
+  function doChallengeBoss(): void {
+    els.error.textContent = "";
+    els.error.title = "";
+    const before = state!;
+    const boss = deps.store.bossAt(before.round); // captured before any seat overwrite
+    let next: RunState;
+    try {
+      next = challengeBoss(before, deps.store);
+    } catch (err) {
+      if (err instanceof InvalidDecisionError) {
+        flag(err.message);
+        return;
+      }
+      throw err;
+    }
+    state = next;
+    selected = undefined;
+    notice = undefined;
+    fused = undefined;
+    const fresh = next.log.slice(before.log.length);
+    const fought = ofType(fresh, "FightFought")[0];
+    if (fought === undefined) {
+      // Overshoot: a floor above the tower — no boss, no battle, no crown.
+      pending = undefined;
+      persist(next);
+      if (next.status === "over") submitRemote();
+      render();
+      return;
+    }
+    pending = {
+      teamA: toBattleTeam(before.team),
+      teamB: boss!.team, // pinned by value — the seat may now hold this very team
+      seed: fought.battleSeed,
+      opponentLabel:
+        isSummitFloor(before.round)
+          ? `the champion at floor ${before.round}`
+          : `floor ${before.round}'s boss`,
+    };
+    revealed = false; // a fresh battle stages its outcome again
+    persist(next, pending);
+    if (next.status === "over") submitRemote();
+    render();
+  }
+
   // ---------- wiring ----------
 
   els.dice.addEventListener("click", () => {
@@ -1062,6 +1262,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     }
   });
   els.fightButton.addEventListener("click", fightLadder);
+  els.challengeButton.addEventListener("click", challenge);
   els.skipButton.addEventListener("click", () => deps.viewer.toEnd()); // landing on the end reveals the bar via onEnded
 
   els.continueButton.addEventListener("click", () => {

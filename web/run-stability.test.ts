@@ -347,6 +347,8 @@ describe("shop row reserves the rolled offer count's layout (refutation 3)", () 
     const names = [
       "newPanel", "newForm", "seed", "dice", "startButton", "newError", "champ", "warn", "shopPanel", "head", "next",
       "notice", "shopRow", "rerollButton", "line", "fightButton", "stakes", "error", "battlePanel",
+      // #075 slice 4 boss-challenge els — present so construction wires them.
+      "bossPanel", "bossHead", "bossTeam", "challengeButton", "challengeNote",
       "battleHead", "battleMount", "battleBar", "outcome", "continueButton", "skipButton", "endPanel",
       "endHead", "endStats", "endLine", "endStatus", "newRunButton", "ladderPanel", "ladderBody",
       "menuButton", "menuOverlay", "menuClose", "abandonButton", "abandonConfirm", "abandonYes", "abandonNo",

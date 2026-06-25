@@ -2226,6 +2226,53 @@ button:disabled:hover {
   color: var(--accent);
 }
 
+/* ---------- boss challenge (#075 slice 4) ----------
+   The current floor's boss, shown so the climb-vs-challenge choice is legible,
+   and the terminal Challenge control. Boxed off from the shop like the dev
+   panel, but live (not dimmed) — it is a real move, not a tool. The champion
+   variant (the summit boss) wears the gold accent the crown moment does. */
+
+#run-boss {
+  margin: 0.3rem 0 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+}
+
+.run-boss-head {
+  margin: 0 0 0.4rem;
+  font-size: 0.82rem;
+  color: var(--text);
+}
+
+#run-boss-team {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0 0 0.5rem;
+  min-width: 0;
+}
+
+#run-boss-team .unit {
+  flex: 0 1 5.6rem;
+  min-width: 3.6rem;
+}
+
+#run-boss .run-bar {
+  margin: 0;
+}
+
+#run-challenge {
+  min-height: 44px; /* a terminal decision is a thumb-sized, deliberate tap */
+}
+
+#run-challenge.champion {
+  color: var(--bg);
+  background: #c9a227;
+  border-color: #c9a227;
+  font-weight: 600;
+}
+
 /* ---------- run end screens ----------
    The crown moment gets weight: a gold frame on the whole panel; the record
    strip reads the climb round by round (green won, red lost, dim draw). */

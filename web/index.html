@@ -154,6 +154,20 @@
             <button type="button" id="run-fight">fight</button>
             <span id="run-stakes" class="run-dim"></span>
           </div>
+          <!-- Boss challenge (#075 slice 4): the current floor's boss, shown so
+               the climb-vs-challenge choice is legible, and the terminal
+               Challenge control beside it. challengeBoss seats the team at this
+               floor on a win (ends "crown"; floor TOWER_HEIGHT's seat is the
+               champion) or ends the run on a loss/draw. A vacant floor above
+               the tower's top is an overshoot — no boss, no crown. -->
+          <div id="run-boss">
+            <p id="run-boss-head" class="run-boss-head"></p>
+            <div id="run-boss-team"></div>
+            <div class="run-bar">
+              <button type="button" id="run-challenge">challenge the boss</button>
+              <span id="run-challenge-note" class="run-dim"></span>
+            </div>
+          </div>
           <!-- DEV panel (#066 slice 4): in-run cheats, shown only when dev mode
                is on (run-screen toggles `hidden` off loadDevMode). Collapsed by
                default so it never crowds the shop. A cheated run is marked
