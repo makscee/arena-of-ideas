@@ -21,9 +21,25 @@ const browser = await launch();
 const noHorizontalOverflow = (page) =>
   page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
 
+// The login-start rate limiter keys on X-Forwarded-For (server/src/app.ts) —
+// 5 starts per IP per 10 min, and Playwright sends no XFF, so EVERY probe's
+// logins would otherwise share one `ip:unknown` budget. This probe logs in
+// several times (a scenario + the funnel, per viewport); give each context its
+// OWN forwarded IP so each gets a fresh 5-start budget, isolated from the other
+// probes and from this probe's other passes.
+let ipCounter = 0;
+function freshContext(viewport) {
+  ipCounter += 1;
+  return browser.newContext({
+    viewport,
+    hasTouch: viewport.width < 700,
+    extraHTTPHeaders: { "x-forwarded-for": `10.0.0.${ipCounter}` },
+  });
+}
+
 /** A fresh logged-OUT page, landed on the ideas screen. No stored run. */
 async function openIdeas(viewport) {
-  const ctx = await browser.newContext({ viewport, hasTouch: viewport.width < 700 });
+  const ctx = await freshContext(viewport);
   const page = await ctx.newPage();
   page.setDefaultTimeout(15_000);
   await page.addInitScript(() => localStorage.removeItem("aoi.run.v1"));
@@ -194,12 +210,87 @@ async function scenario(viewport, tag, email) {
   await ctx.close();
 }
 
+// ---- the first-time-contributor funnel (Cass round-2 regression) ----------
+// Reach login the OTHER way: via #home-button before any authed submit (the
+// nudge path scenario() uses skips the home round-trip). Then submit ideas in a
+// TIGHT sequence — fill+click with no settle wait between, exactly as a real
+// user mashing the form. The defect this guards: a phantom EMPTY submit fired
+// between two real ones (an async re-entrancy race — onSubmit cleared the input
+// inside its await window, so a racing second submit read ""), surfacing as a
+// spurious "Type an idea before sending it." and a swallowed idea. After the
+// fix every idea must LAND, in order, with no spurious error.
+async function funnelScenario(viewport, tag, email) {
+  const ctx = await freshContext(viewport);
+  const page = await ctx.newPage();
+  page.setDefaultTimeout(15_000);
+  await page.addInitScript(() => localStorage.removeItem("aoi.run.v1"));
+  await page.goto(BASE, { waitUntil: "domcontentloaded" });
+  await page.waitForSelector("#title-view:not([hidden])");
+
+  // logged-out → ideas → home → login (the home-button route to auth).
+  await page.click("#title-ideas");
+  await page.waitForSelector("#ideas-view:not([hidden])");
+  await page.click("#home-button");
+  await page.waitForSelector("#title-view:not([hidden])");
+  await loginViaUi(page, email, `Funnel ${tag}`);
+  await page.click("#title-ideas");
+  await page.waitForSelector("#ideas-view:not([hidden])");
+
+  // Spy on the actual submit events: their count and the input value at dispatch
+  // is the ground truth for "a phantom empty submit fired".
+  await page.evaluate(() => {
+    window.__ideaSubmits = [];
+    document
+      .querySelector("#ideas-form")
+      .addEventListener("submit", () => window.__ideaSubmits.push(document.querySelector("#ideas-text").value), true);
+  });
+
+  const ideas = [`${tag}-Alpha`, `${tag}-Beta`, `${tag}-Gamma`];
+  for (const text of ideas) {
+    await page.fill("#ideas-text", text);
+    await page.click("#ideas-submit"); // no settle wait — mash the form
+  }
+  // Let the in-flight submits drain, then assert ALL landed with no phantom.
+  await page.waitForFunction(
+    (want) => {
+      const rows = [...document.querySelectorAll("#ideas-list .ideas-text")].map((e) => e.textContent);
+      return want.every((t) => rows.includes(t));
+    },
+    ideas,
+    { timeout: 10_000 },
+  ).catch(() => {}); // a miss is the defect — asserted explicitly below, not thrown
+
+  const fired = await page.evaluate(() => window.__ideaSubmits);
+  check(
+    !fired.some((v) => v.trim() === ""),
+    `${tag} funnel: no phantom EMPTY submit fires`,
+    `fired ${JSON.stringify(fired)}`,
+  );
+  const status = (await page.locator("#ideas-status").textContent().catch(() => "")) ?? "";
+  check(
+    !status.includes("Type an idea"),
+    `${tag} funnel: no spurious "type an idea" error after real submits`,
+    `status ${JSON.stringify(status)}`,
+  );
+  const rows = await rowTexts(page);
+  for (const text of ideas) {
+    check(rows.includes(text), `${tag} funnel: "${text}" landed in the table`, `rows ${rows.length}`);
+  }
+  // No swallowed idea AND no phantom duplicate: exactly the three we sent reach
+  // the table (the unfixed code dropped one and double-landed another).
+  const sent = rows.filter((t) => ideas.includes(t));
+  check(sent.length === ideas.length, `${tag} funnel: exactly the submitted ideas land, no dup/drop`, `${sent.length} of ${ideas.length}`);
+
+  await ctx.close();
+}
+
 for (const [viewport, tag] of [
   [DESKTOP, "desktop"],
   [PHONE, "375px"],
 ]) {
   // Distinct email per pass: a fresh account so the one-vote rule is real.
   await scenario(viewport, tag, `ideas-${tag.replace(/[^a-z0-9]/gi, "")}@probe.test`);
+  await funnelScenario(viewport, tag, `funnel-${tag.replace(/[^a-z0-9]/gi, "")}@probe.test`);
 }
 
 await browser.close();

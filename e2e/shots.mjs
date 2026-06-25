@@ -100,10 +100,24 @@ for (const [vp, tag] of [
 // desktop AND 375px, so a human confirms the list, submit box and vote pills
 // fit and read at phone width. Requires the live MOCK_MODE server (the e2e
 // orchestrator's `--serve`), so loginViaUi can complete a real login.
-for (const [vp, tag] of [
+//
+// FRESH SERVER PER VIEWPORT: the ideas table is global server state, so running
+// both viewports against ONE server would show the phone pass the desktop pass's
+// ideas + inherited votes — misleading to a reviewer. Set SHOTS_IDEAS_VIEWPORT
+// to "desktop" or "phone" to capture ONE viewport only, and run the script once
+// per viewport against a freshly (re)started serve, e.g.:
+//   npm run e2e:stop; npm run e2e:serve  # fresh empty ideas table
+//   SHOTS_IDEAS_VIEWPORT=desktop AOI_BASE_URL=… node --import tsx/esm e2e/shots.mjs
+//   npm run e2e:stop; npm run e2e:serve  # fresh again
+//   SHOTS_IDEAS_VIEWPORT=phone   AOI_BASE_URL=… node --import tsx/esm e2e/shots.mjs
+// Unset, it captures both against the current server (fine for the battle shots
+// above, which inject their own per-page state and share nothing).
+const ideasViewports = [
   [DESKTOP, "desktop"],
   [PHONE, "phone"],
-]) {
+].filter(([, tag]) => !process.env.SHOTS_IDEAS_VIEWPORT || process.env.SHOTS_IDEAS_VIEWPORT === tag);
+
+for (const [vp, tag] of ideasViewports) {
   const ctx = await browser.newContext({ viewport: vp, hasTouch: vp.width < 700 });
   const page = await ctx.newPage();
   page.setDefaultTimeout(15_000);

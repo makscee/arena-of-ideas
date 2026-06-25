@@ -124,16 +124,29 @@ export function createIdeasScreen(els: IdeasScreenEls, deps: IdeasScreenDeps): I
     render(res.value);
   }
 
+  // Re-entrancy latch. onSubmit is async (a server round-trip plus a refresh),
+  // but Enter/click can fire a SECOND submit before the first resolves — and a
+  // submit dispatched mid-flight reads the input AFTER the first submit cleared
+  // it, so it carries an empty string: a phantom "" submit between two real
+  // ones. Disabling the button isn't enough (Enter bypasses it, and the clear
+  // happens inside the await window), so we gate on this flag: a submit while
+  // one is in flight is dropped, not queued with a stale/empty value. */
+  let submitting = false;
+
   async function onSubmit(): Promise<void> {
     if (!loggedIn) {
       deps.onNeedLogin();
       return;
     }
+    if (submitting) return; // a submit is already in flight — never double-fire
+    // Snapshot the text BEFORE any await: the field is cleared on success, so
+    // reading it post-await would see "" (or the next idea the user typed).
     const text = els.text.value.trim();
     if (text === "") {
       setStatus("Type an idea before sending it.");
       return;
     }
+    submitting = true;
     els.submit.disabled = true;
     try {
       const res = await deps.ideas.submit(text);
@@ -141,10 +154,13 @@ export function createIdeasScreen(els: IdeasScreenEls, deps: IdeasScreenDeps): I
         setStatus(res.reason);
         return;
       }
-      els.text.value = "";
+      // Clear only if the field still holds the text we just submitted — a
+      // racing keystroke between submit() resolving and here must not be eaten.
+      if (els.text.value.trim() === text) els.text.value = "";
       setStatus("Idea added.", "ok");
       await refresh(); // re-pull so the new idea lands in its ranked place
     } finally {
+      submitting = false;
       els.submit.disabled = false;
     }
   }
