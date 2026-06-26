@@ -46,14 +46,19 @@ import {
   reroll,
   runToJSONL,
   sweep,
+  transitionSeason,
   winnerOf,
   DEFAULT_RUN_POOL,
   REROLL_COST,
   TEAM_SIZE,
   UNIT_COST,
 } from "./index.js";
+import { emptyLadderData } from "./ladder.js";
 import type { LadderStore, RunEvent, RunEventType, RunInput, RunState, SweepStats } from "./index.js";
+import type { SeasonTransitionResult } from "./index.js";
 import { FileLadderStore } from "./ladder-file.js";
+import { FileSeasonArchiveStore } from "./season-archive-file.js";
+import { FileSeasonPointerStore } from "./season-file.js";
 import { stressRegistry } from "./content/stress.js";
 import { assertValidContent } from "./validate.js";
 import type { UnitDef } from "./types.js";
@@ -313,31 +318,77 @@ export function formatAutoplayReport(results: readonly AutoplayResult[], ladder:
 }
 
 // ---------------------------------------------------------------------------
+// Season mode — the MANUAL season transition (#077 slice 2). Maks triggers it
+// out-of-band after shipping the top-N voted ideas as a new content version;
+// it is NOT a player-facing button. Over file-backed stores it archives the
+// final tower, resets the live tower to a fresh bootstrap, bumps the content
+// version, and opens the next season. The reset writes an empty ladder to disk
+// then re-bootstraps it (openLadder), so the new season starts seeded.
+// ---------------------------------------------------------------------------
+
+/** Roll the season over the three file-backed stores at the given paths. The
+ * ladder file is snapshotted (the archived final tower), then wiped + re-seeded;
+ * the archive file gains the finished season's record; the pointer file advances
+ * to the next season on the bumped version. Returns the transition result for
+ * the report. */
+export function runSeasonTransition(
+  ladderPath: string,
+  archivePath: string,
+  pointerPath: string,
+): SeasonTransitionResult {
+  const live = openLadder(new FileLadderStore(ladderPath), stressRegistry);
+  const archive = new FileSeasonArchiveStore(archivePath);
+  const pointer = new FileSeasonPointerStore(pointerPath);
+  const reset = () => {
+    // Wipe the live tower on disk, then re-bootstrap a fresh seeded one — the
+    // new season opens on a real tower, carrying no prior-season ghost.
+    writeFileSync(ladderPath, JSON.stringify(emptyLadderData(), null, 2) + "\n", "utf8");
+    openLadder(new FileLadderStore(ladderPath), stressRegistry);
+  };
+  return transitionSeason({ live, archive, pointer, reset });
+}
+
+export function formatSeasonReport(result: SeasonTransitionResult): string {
+  const { archived, pointer } = result;
+  return [
+    `Season ${archived.season} (content v${archived.version}) archived — final tower frozen.`,
+    `New season ${pointer.season} opened on content v${pointer.version} (fresh tower).`,
+  ].join("\n");
+}
+
+// ---------------------------------------------------------------------------
 // Arg parsing
 // ---------------------------------------------------------------------------
 
 export interface ParsedArgs {
-  mode: "run" | "sweep" | "autoplay";
+  mode: "run" | "sweep" | "autoplay" | "season";
   teamAPath: string;
   teamBPath: string;
   seed: number;     // run + autoplay modes
   sweepN: number;   // sweep mode
-  ladderPath: string;     // autoplay mode
+  ladderPath: string;     // autoplay + season modes
   runs: number;           // autoplay mode
   logPath: string | null; // autoplay mode
+  archivePath: string;    // season mode
+  pointerPath: string;    // season mode
 }
 
 const USAGE =
   "Usage:\n" +
   "  Run mode:      battle <teamA.json> <teamB.json> [--seed N]\n" +
   "  Sweep mode:    battle <teamA.json> <teamB.json> --sweep N\n" +
-  "  Autoplay mode: battle autoplay <ladder.json> [--seed N] [--runs N] [--log <path>]";
+  "  Autoplay mode: battle autoplay <ladder.json> [--seed N] [--runs N] [--log <path>]\n" +
+  "  Season mode:   battle season <ladder.json> <archive.json> <pointer.json>";
 
 export function parseArgs(argv: string[]): ParsedArgs {
   const args = argv.slice(2); // drop node + script
 
   if (args[0] === "autoplay") {
     return parseAutoplayArgs(args.slice(1));
+  }
+
+  if (args[0] === "season") {
+    return parseSeasonArgs(args.slice(1));
   }
 
   if (args.length < 2) {
@@ -368,9 +419,31 @@ export function parseArgs(argv: string[]): ParsedArgs {
   }
 
   if (sweepN > 0) {
-    return { mode: "sweep", teamAPath, teamBPath, seed: 0, sweepN, ladderPath: "", runs: 0, logPath: null };
+    return { mode: "sweep", teamAPath, teamBPath, seed: 0, sweepN, ladderPath: "", runs: 0, logPath: null, archivePath: "", pointerPath: "" };
   }
-  return { mode: "run", teamAPath, teamBPath, seed, sweepN: 0, ladderPath: "", runs: 0, logPath: null };
+  return { mode: "run", teamAPath, teamBPath, seed, sweepN: 0, ladderPath: "", runs: 0, logPath: null, archivePath: "", pointerPath: "" };
+}
+
+function parseSeasonArgs(args: string[]): ParsedArgs {
+  if (args.length < 3) {
+    throw new Error(USAGE);
+  }
+  const [ladderPath, archivePath, pointerPath, ...rest] = args;
+  if (rest.length > 0) {
+    throw new Error(`Unknown argument: ${rest[0]}`);
+  }
+  return {
+    mode: "season",
+    teamAPath: "",
+    teamBPath: "",
+    seed: 0,
+    sweepN: 0,
+    ladderPath: ladderPath!,
+    runs: 0,
+    logPath: null,
+    archivePath: archivePath!,
+    pointerPath: pointerPath!,
+  };
 }
 
 function parseAutoplayArgs(args: string[]): ParsedArgs {
@@ -402,7 +475,7 @@ function parseAutoplayArgs(args: string[]): ParsedArgs {
       throw new Error(`Unknown argument: ${args[i]}`);
     }
   }
-  return { mode: "autoplay", teamAPath: "", teamBPath: "", seed, sweepN: 0, ladderPath, runs, logPath };
+  return { mode: "autoplay", teamAPath: "", teamBPath: "", seed, sweepN: 0, ladderPath, runs, logPath, archivePath: "", pointerPath: "" };
 }
 
 // ---------------------------------------------------------------------------
@@ -429,13 +502,16 @@ function main(): void {
       const stats = sweepBattles(parsed.teamAPath, parsed.teamBPath, parsed.sweepN);
       const report = formatSweepReport(stats, parsed.teamAPath, parsed.teamBPath);
       process.stdout.write(report + "\n");
-    } else {
+    } else if (parsed.mode === "autoplay") {
       const store = openLadder(new FileLadderStore(parsed.ladderPath), stressRegistry);
       const results = autoplayRuns(store, parsed.seed, parsed.runs);
       process.stdout.write(formatAutoplayReport(results, store) + "\n");
       if (parsed.logPath !== null) {
         writeFileSync(parsed.logPath, results.map((r) => r.jsonl).join(""), "utf8");
       }
+    } else {
+      const result = runSeasonTransition(parsed.ladderPath, parsed.archivePath, parsed.pointerPath);
+      process.stdout.write(formatSeasonReport(result) + "\n");
     }
   } catch (err) {
     process.stderr.write((err as Error).message + "\n");
