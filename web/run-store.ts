@@ -9,16 +9,22 @@
 
 import {
   PersistedLadderStore,
+  PersistedSeasonArchiveStore,
   deserializeRun,
   emptyLadderData,
+  emptySeasonArchiveData,
   parseLadderData,
+  parseSeasonArchiveData,
   serializeRun,
+  serializeSeasonArchive,
   type LadderStore,
   type RunState,
+  type SeasonArchiveStore,
   type UnitDef,
 } from "../src/index.js";
 
 const LADDER_KEY = "aoi.ladder.v1";
+const ARCHIVE_KEY = "aoi.season-archive.v1";
 const RUN_KEY = "aoi.run.v1";
 const BATTLE_KEY = "aoi.run-battle.v1";
 const RUN_SEQ_KEY = "aoi.run-seq.v1";
@@ -87,6 +93,18 @@ export function openLocalLadder(storage: KVStorage): LadderStore {
   const raw = storage.getItem(LADDER_KEY);
   const data = raw === null ? emptyLadderData() : parseLadderData(raw, `localStorage "${LADDER_KEY}"`);
   return new PersistedLadderStore(data, (d) => storage.setItem(LADDER_KEY, JSON.stringify(d)));
+}
+
+/** Open the localStorage-backed season archive (PRD #077 slice 3) — the same
+ * engine and SeasonArchiveData shape FileSeasonArchiveStore writes to disk. The
+ * history view reads it; the season transition (slice 2) is what writes it, so
+ * until a season ends this is empty on a player's device. Corrupt stored JSON
+ * throws loudly (the archive's whole point is never to lose finished history —
+ * a silent fresh archive would erase it); the caller surfaces the error. */
+export function openLocalArchive(storage: KVStorage): SeasonArchiveStore {
+  const raw = storage.getItem(ARCHIVE_KEY);
+  const data = raw === null ? emptySeasonArchiveData() : parseSeasonArchiveData(raw, `localStorage "${ARCHIVE_KEY}"`);
+  return new PersistedSeasonArchiveStore(data, (d) => storage.setItem(ARCHIVE_KEY, serializeSeasonArchive(d)));
 }
 
 /** A fought battle awaiting its replay/result screen — stored BY VALUE

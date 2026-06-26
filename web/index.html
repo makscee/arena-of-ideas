@@ -27,6 +27,7 @@
           <button type="button" id="title-play" class="title-primary">Play</button>
           <button type="button" id="title-leaderboard">Leaderboard</button>
           <button type="button" id="title-ideas">Ideas</button>
+          <button type="button" id="title-history">History</button>
           <button type="button" id="title-codex">Codex</button>
           <!-- #066 slice 1: the dev tab nav appears here only when dev mode is
                on (set in Settings). main.ts renders/hides it on every title
@@ -119,6 +120,22 @@
         <p id="ideas-status" role="alert" hidden></p>
         <p id="ideas-login-note" class="ideas-login-note" hidden>You're reading the table — <strong>log in</strong> from the title to add ideas and vote.</p>
         <div id="ideas-list"></div>
+      </section>
+
+      <!-- History (#077 slice 3): past seasons' final leaderboards, kept from
+           day one and read back here. A list of completed seasons (number +
+           content version + champion); opening one shows that season's final
+           tower, floor by floor. PUBLIC like the ladder — no auth, reads the
+           device's local archive directly. The season transition (slice 2) is
+           what fills it; until a season ends the list is empty.
+           history-screen.ts drives it; main.ts wires it by id. -->
+      <section id="history-view" hidden>
+        <h2 class="history-title">Season history</h2>
+        <p class="history-tagline">Every season's final leaderboard, kept for good. Open one to see the tower as it stood when the season ended.</p>
+        <div id="history-list"></div>
+        <div id="history-detail" hidden>
+          <button type="button" id="history-back">← all seasons</button>
+        </div>
       </section>
 
       <section id="run-view" hidden>

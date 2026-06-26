@@ -11,13 +11,17 @@ import {
   formatSweepReport,
   loadTeamFile,
   parseArgs,
+  readHistory,
   runBattle,
   sweepBattles,
   validateTeamFile,
 } from "./cli.js";
 import { stressRegistry } from "./content/stress.js";
-import { openLadder } from "./ladder.js";
+import { InMemoryLadderStore, openLadder } from "./ladder.js";
+import type { LadderData } from "./ladder.js";
 import { FileLadderStore } from "./ladder-file.js";
+import { FileSeasonArchiveStore } from "./season-archive-file.js";
+import { FIRST_CONTENT_VERSION } from "./season-archive.js";
 import { BOOTSTRAP_TEAMS, TOWER_HEIGHT } from "./tunables.js";
 
 // ---------------------------------------------------------------------------
@@ -265,7 +269,80 @@ describe("autoplay", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 6. Minimal team file written to tmp — exercises the full load→battle path
+// 6. History mode — read the season archive (PRD #077 slice 3)
+// ---------------------------------------------------------------------------
+
+describe("history mode parseArgs", () => {
+  const wrap = (args: string[]) => ["node", "cli.ts", ...args];
+
+  test("lists when given only an archive path", () => {
+    expect(parseArgs(wrap(["history", "archive.json"]))).toMatchObject({
+      mode: "history", archivePath: "archive.json", season: null,
+    });
+  });
+
+  test("reads one season when given a season number", () => {
+    expect(parseArgs(wrap(["history", "archive.json", "2"]))).toMatchObject({
+      mode: "history", archivePath: "archive.json", season: 2,
+    });
+  });
+
+  test("rejects a missing archive path, a non-positive season, and extra args", () => {
+    expect(() => parseArgs(wrap(["history"]))).toThrow(/Usage/);
+    expect(() => parseArgs(wrap(["history", "a.json", "0"]))).toThrow(/positive integer/);
+    expect(() => parseArgs(wrap(["history", "a.json", "1", "extra"]))).toThrow(/Unknown argument/);
+  });
+});
+
+describe("readHistory", () => {
+  function towerSnapshot(): LadderData {
+    const ladder = openLadder(new InMemoryLadderStore(), stressRegistry);
+    const bosses: LadderData["bosses"] = {};
+    const pools: LadderData["pools"] = {};
+    for (let floor = 1; ladder.bossAt(floor) !== null; floor++) bosses[String(floor)] = ladder.bossAt(floor)!;
+    for (let round = 1; ladder.poolAt(round).length > 0; round++) pools[String(round)] = [...ladder.poolAt(round)];
+    return { bosses, pools };
+  }
+
+  function seededArchive(): string {
+    const dir = mkdtempSync(join(tmpdir(), "cli-history-"));
+    const path = join(dir, "archive.json");
+    const store = new FileSeasonArchiveStore(path);
+    store.archive({ season: 1, version: FIRST_CONTENT_VERSION, finalTower: towerSnapshot() });
+    store.archive({ season: 2, version: 4, finalTower: towerSnapshot() });
+    return path;
+  }
+
+  test("a missing archive file lists as empty (no seasons yet)", () => {
+    const path = join(mkdtempSync(join(tmpdir(), "cli-history-empty-")), "missing.json");
+    expect(readHistory(path, null)).toBe("No seasons archived yet.");
+  });
+
+  test("lists archived seasons with their numbers and versions", () => {
+    const out = readHistory(seededArchive(), null);
+    const lines = out.split("\n");
+    expect(lines.length).toBe(2);
+    expect(lines[0]).toContain("Season 1");
+    expect(lines[0]).toContain("content v1");
+    expect(lines[1]).toContain("Season 2");
+    expect(lines[1]).toContain("content v4");
+  });
+
+  test("reads back one season's final tower, champion marked", () => {
+    const out = readHistory(seededArchive(), 2);
+    expect(out).toContain("Season 2");
+    expect(out).toContain("content v4");
+    expect(out).toContain("★ champion");
+    expect(out).toMatch(/Floor \d+:/);
+  });
+
+  test("a season past the archive's end is reported, not silently empty", () => {
+    expect(() => readHistory(seededArchive(), 9)).toThrow(/not archived/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 7. Minimal team file written to tmp — exercises the full load→battle path
 // ---------------------------------------------------------------------------
 
 describe("tmp team file round-trip", () => {

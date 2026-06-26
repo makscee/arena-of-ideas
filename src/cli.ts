@@ -18,6 +18,15 @@
  *   JSONL — the determinism artifact: same ladder starting state + same seed
  *   → byte-identical.
  *
+ * HISTORY MODE — read the season archive (PRD #077 slice 3): past seasons'
+ * final leaderboards, kept from day one and read back here.
+ *   node --import=tsx/esm src/cli.ts history <archive.json>       — list seasons
+ *   node --import=tsx/esm src/cli.ts history <archive.json> <n>   — season n's
+ *                                                                   final tower
+ *   A missing archive file lists as empty (no seasons yet); a present-but-
+ *   unreadable one throws loudly (FileSeasonArchiveStore never resets history).
+ *   READ ONLY — no archiving here; the season transition that writes is slice 2.
+ *
  * Team file format (JSON):
  *   {
  *     "units": UnitDef[]   // 1..5 units; see src/types.ts for UnitDef schema
@@ -59,6 +68,7 @@ import type { SeasonTransitionResult } from "./index.js";
 import { FileLadderStore } from "./ladder-file.js";
 import { FileSeasonArchiveStore } from "./season-archive-file.js";
 import { FileSeasonPointerStore } from "./season-file.js";
+import { formatFinalTower, formatHistoryList } from "./season-history.js";
 import { stressRegistry } from "./content/stress.js";
 import { assertValidContent } from "./validate.js";
 import type { UnitDef } from "./types.js";
@@ -357,11 +367,38 @@ export function formatSeasonReport(result: SeasonTransitionResult): string {
 }
 
 // ---------------------------------------------------------------------------
+// History mode — read the season archive (PRD #077 slice 3)
+// ---------------------------------------------------------------------------
+
+/** List the archive's completed seasons (season number + content version + the
+ * champion of each frozen final tower), or — when `season` is given — print that
+ * one season's final tower, floor by floor. READ ONLY: opens the archive through
+ * the file backing (a missing file is an empty archive; a corrupt one throws
+ * loudly) and renders it; nothing is written. A season number past the archive's
+ * end is reported rather than silently producing empty output. */
+export function readHistory(archivePath: string, season: number | null): string {
+  const store = new FileSeasonArchiveStore(archivePath);
+  if (season === null) {
+    return formatHistoryList(store.list());
+  }
+  const record = store.seasonAt(season);
+  if (record === null) {
+    const count = store.list().length;
+    throw new Error(
+      count === 0
+        ? `No seasons are archived yet — nothing to read at season ${season}.`
+        : `Season ${season} is not archived (the archive holds seasons 1..${count}).`,
+    );
+  }
+  return formatFinalTower(record);
+}
+
+// ---------------------------------------------------------------------------
 // Arg parsing
 // ---------------------------------------------------------------------------
 
 export interface ParsedArgs {
-  mode: "run" | "sweep" | "autoplay" | "season";
+  mode: "run" | "sweep" | "autoplay" | "season" | "history";
   teamAPath: string;
   teamBPath: string;
   seed: number;     // run + autoplay modes
@@ -369,8 +406,9 @@ export interface ParsedArgs {
   ladderPath: string;     // autoplay + season modes
   runs: number;           // autoplay mode
   logPath: string | null; // autoplay mode
-  archivePath: string;    // season mode
+  archivePath: string;    // season + history modes
   pointerPath: string;    // season mode
+  season: number | null;  // history mode — null lists, a number reads one season
 }
 
 const USAGE =
@@ -378,7 +416,8 @@ const USAGE =
   "  Run mode:      battle <teamA.json> <teamB.json> [--seed N]\n" +
   "  Sweep mode:    battle <teamA.json> <teamB.json> --sweep N\n" +
   "  Autoplay mode: battle autoplay <ladder.json> [--seed N] [--runs N] [--log <path>]\n" +
-  "  Season mode:   battle season <ladder.json> <archive.json> <pointer.json>";
+  "  Season mode:   battle season <ladder.json> <archive.json> <pointer.json>\n" +
+  "  History mode:  battle history <archive.json> [season]";
 
 export function parseArgs(argv: string[]): ParsedArgs {
   const args = argv.slice(2); // drop node + script
@@ -389,6 +428,10 @@ export function parseArgs(argv: string[]): ParsedArgs {
 
   if (args[0] === "season") {
     return parseSeasonArgs(args.slice(1));
+  }
+
+  if (args[0] === "history") {
+    return parseHistoryArgs(args.slice(1));
   }
 
   if (args.length < 2) {
@@ -419,9 +462,9 @@ export function parseArgs(argv: string[]): ParsedArgs {
   }
 
   if (sweepN > 0) {
-    return { mode: "sweep", teamAPath, teamBPath, seed: 0, sweepN, ladderPath: "", runs: 0, logPath: null, archivePath: "", pointerPath: "" };
+    return { mode: "sweep", teamAPath, teamBPath, seed: 0, sweepN, ladderPath: "", runs: 0, logPath: null, archivePath: "", pointerPath: "", season: null };
   }
-  return { mode: "run", teamAPath, teamBPath, seed, sweepN: 0, ladderPath: "", runs: 0, logPath: null, archivePath: "", pointerPath: "" };
+  return { mode: "run", teamAPath, teamBPath, seed, sweepN: 0, ladderPath: "", runs: 0, logPath: null, archivePath: "", pointerPath: "", season: null };
 }
 
 function parseSeasonArgs(args: string[]): ParsedArgs {
@@ -443,7 +486,23 @@ function parseSeasonArgs(args: string[]): ParsedArgs {
     logPath: null,
     archivePath: archivePath!,
     pointerPath: pointerPath!,
+    season: null,
   };
+}
+
+function parseHistoryArgs(args: string[]): ParsedArgs {
+  if (args.length < 1) {
+    throw new Error(USAGE);
+  }
+  const archivePath = args[0]!;
+  let season: number | null = null;
+  if (args.length > 1) {
+    const val = Number(args[1]);
+    if (!Number.isInteger(val) || val < 1) throw new Error("history season must be a positive integer");
+    season = val;
+  }
+  if (args.length > 2) throw new Error(`Unknown argument: ${args[2]}`);
+  return { mode: "history", teamAPath: "", teamBPath: "", seed: 0, sweepN: 0, ladderPath: "", runs: 0, logPath: null, archivePath, pointerPath: "", season };
 }
 
 function parseAutoplayArgs(args: string[]): ParsedArgs {
@@ -475,7 +534,7 @@ function parseAutoplayArgs(args: string[]): ParsedArgs {
       throw new Error(`Unknown argument: ${args[i]}`);
     }
   }
-  return { mode: "autoplay", teamAPath: "", teamBPath: "", seed, sweepN: 0, ladderPath, runs, logPath, archivePath: "", pointerPath: "" };
+  return { mode: "autoplay", teamAPath: "", teamBPath: "", seed, sweepN: 0, ladderPath, runs, logPath, archivePath: "", pointerPath: "", season: null };
 }
 
 // ---------------------------------------------------------------------------
@@ -502,6 +561,8 @@ function main(): void {
       const stats = sweepBattles(parsed.teamAPath, parsed.teamBPath, parsed.sweepN);
       const report = formatSweepReport(stats, parsed.teamAPath, parsed.teamBPath);
       process.stdout.write(report + "\n");
+    } else if (parsed.mode === "history") {
+      process.stdout.write(readHistory(parsed.archivePath, parsed.season) + "\n");
     } else if (parsed.mode === "autoplay") {
       const store = openLadder(new FileLadderStore(parsed.ladderPath), stressRegistry);
       const results = autoplayRuns(store, parsed.seed, parsed.runs);
