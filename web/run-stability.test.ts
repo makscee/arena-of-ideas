@@ -299,7 +299,7 @@ describe("shop row reserves the rolled offer count's layout (refutation 3)", () 
     querySelector(sel: string): null;
     append(): void;
     setAttribute(): void;
-    classList: { toggle(): void };
+    classList: { toggle(): void; add(): void; remove(): void };
     scrollIntoView(): void;
   }
 
@@ -328,7 +328,7 @@ describe("shop row reserves the rolled offer count's layout (refutation 3)", () 
       querySelector: () => null,
       append() {},
       setAttribute() {},
-      classList: { toggle() {} },
+      classList: { toggle() {}, add() {}, remove() {} },
       scrollIntoView() {},
     };
   }
@@ -347,8 +347,9 @@ describe("shop row reserves the rolled offer count's layout (refutation 3)", () 
     const names = [
       "newPanel", "newForm", "seed", "dice", "startButton", "newError", "champ", "warn", "shopPanel", "head", "next",
       "notice", "shopRow", "rerollButton", "line", "fightButton", "stakes", "error", "battlePanel",
-      // #075 slice 4 boss-challenge els — present so construction wires them.
-      "bossPanel", "bossHead", "bossTeam", "challengeButton", "challengeNote",
+      // #075 slice 4 boss-challenge els (+ slice 7 challengeCancel) — present so
+      // construction wires them.
+      "bossPanel", "bossHead", "bossTeam", "challengeButton", "challengeCancel", "challengeNote",
       "battleHead", "battleMount", "battleBar", "outcome", "continueButton", "skipButton", "endPanel",
       "endHead", "endStats", "endLine", "endStatus", "newRunButton", "ladderPanel", "ladderBody",
       "menuButton", "menuOverlay", "menuClose", "abandonButton", "abandonConfirm", "abandonYes", "abandonNo",

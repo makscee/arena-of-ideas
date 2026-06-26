@@ -2273,6 +2273,32 @@ button:disabled:hover {
   font-weight: 600;
 }
 
+/* The champion's floor: the boss panel wears the gold border so the top of the
+   tower reads as the crown's lineage. A lower lineage boss stays plain — only
+   the last can be crowned (#075 slice 7, Maks). */
+#run-boss.at-champion {
+  border-color: #c9a227;
+  background: rgba(201, 162, 39, 0.06);
+}
+
+/* The armed challenge (#075 slice 7): the two-step confirm's second state. The
+   button turns danger-red so the terminal tap reads as deliberate, distinct
+   from the gold champion fight; the cancel sits beside it. */
+#run-challenge.armed {
+  color: #fff;
+  background: #a32b2b;
+  border-color: #a32b2b;
+  font-weight: 600;
+}
+
+#run-challenge-cancel {
+  min-height: 44px;
+}
+
+#run-challenge-cancel[hidden] {
+  display: none;
+}
+
 /* ---------- run end screens ----------
    The crown moment gets weight: a gold frame on the whole panel; the record
    strip reads the climb round by round (green won, red lost, dim draw). */

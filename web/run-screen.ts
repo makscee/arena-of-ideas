@@ -81,32 +81,47 @@ export const incomeLine = (round: number): string =>
 export const stakesLine = (lives: number): string =>
   `a loss costs a life — ${lives} ${lives === 1 ? "life" : "lives"} left`;
 
-// ---------- boss-challenge copy (#075 slice 4) — pure, exported for vitest ----------
+// ---------- boss-challenge copy (#075 slice 4; champion-floor made dynamic in
+// slice 7) — pure, exported for vitest ----------
 
-/** Whether `floor` is the tower's summit — its boss is the champion (the
- * highest seeded floor, TOWER_HEIGHT), and a floor past it is an overshoot. */
+/** Whether `floor` is the bootstrap tower's seeded summit (the highest SEEDED
+ * floor, TOWER_HEIGHT) — kept for the seeded-tower tests. NOT the same as the
+ * live champion's floor once the tower has grown by a crown (see
+ * isChampionFloor): a crown ascends the champion to TOWER_HEIGHT+1, so the floor
+ * that crowns is whatever ladder.champion().round is, not a fixed constant. */
 export const isSummitFloor = (floor: number): boolean => floor === TOWER_HEIGHT;
 export const isAboveTower = (floor: number): boolean => floor > TOWER_HEIGHT;
 
+/** Whether the run stands on the CHAMPION's floor — the live top of the tower,
+ * the only floor where a win crowns (and a climb would overshoot). The kernel's
+ * own crown-vs-seat split is exactly `champion().round === floor` (run.ts), so
+ * the UI reads the same predicate: dynamic, because a crown grows the tower past
+ * TOWER_HEIGHT. `championFloor` is ladder.champion()?.round (undefined = an
+ * empty ladder, no champion — then no floor is the champion's). */
+export const isChampionFloor = (floor: number, championFloor: number | undefined): boolean =>
+  championFloor !== undefined && championFloor === floor;
+
 /** The boss panel's heading: which floor the run stands on and what its boss
- * is — the champion at the summit, a lower boss to cash out against, or nothing
- * at all above the top (an overshoot if challenged). `hasBoss` is whether the
- * store seats a boss here; only an above-the-top floor is vacant. */
-export const bossFloorLine = (floor: number, hasBoss: boolean): string =>
+ * is — the champion at the live summit, a lower boss to cash out against, or
+ * nothing at all above the top (an overshoot if challenged). `hasBoss` is
+ * whether the store seats a boss here; only an above-the-top floor is vacant.
+ * `championFloor` is the live champion's floor, so a grown tower's summit reads
+ * as the champion even above TOWER_HEIGHT. */
+export const bossFloorLine = (floor: number, hasBoss: boolean, championFloor?: number): string =>
   !hasBoss
-    ? `floor ${floor} — above the tower's top (${TOWER_HEIGHT} floors); there is no boss here`
-    : isSummitFloor(floor)
-      ? `floor ${floor} — the champion holds the summit`
-      : `floor ${floor} of ${TOWER_HEIGHT} — this floor's boss`;
+    ? `floor ${floor} — above the tower's top; there is no boss here`
+    : isChampionFloor(floor, championFloor)
+      ? `floor ${floor} — the champion holds this floor, the top of the tower`
+      : `floor ${floor} — a lineage boss below the champion`;
 
 /** The note beside the Challenge button: terminal, and what a win means here.
- * Higher floors are harder but a win there crowns; a lower floor cashes out. */
-export const challengeNoteLine = (floor: number, hasBoss: boolean): string =>
+ * The champion's floor crowns; a lower floor cashes out (a seat, not a crown). */
+export const challengeNoteLine = (floor: number, hasBoss: boolean, championFloor?: number): string =>
   !hasBoss
     ? "challenging here ends the run with no crown — climb back is impossible, so there is no boss to take"
-    : isSummitFloor(floor)
-      ? "terminal: beat the champion to take the crown — lose and the run is over"
-      : `terminal: win to seat your team as floor ${floor}'s boss (a lower, easier seat than the summit) — lose and the run is over`;
+    : isChampionFloor(floor, championFloor)
+      ? "terminal: beat the champion to take the crown and grow the tower — lose and the run is over"
+      : `terminal: win to seat your team as floor ${floor}'s boss (a lower, easier cash-out seat — no crown) — lose and the run is over`;
 
 /** The end-screen heading for every terminal reason (#075 slice 4; `seated`
  * added in slice 6 — final copy is slice 7). Pure so the states are pinned by
@@ -123,9 +138,9 @@ export const endHeadLine = (
 ): string => {
   switch (reason) {
     case "crown":
-      return `👑 champion — you out-topped the summit and seated at floor ${round} — ${dethronedNote}`;
+      return `👑 champion — you took the summit and seated at floor ${round} — ${dethronedNote}`;
     case "seated":
-      return `seated at floor ${round} — ${dethronedNote} (a lower seat; the summit stands)`;
+      return `seated at floor ${round} — you took its boss's place — ${dethronedNote} (a lower seat; the summit stands, no crown)`;
     case "challenge-lost":
       return `challenge lost at floor ${round} — the boss held its seat; the run is over (your ghosts stay on the ladder)`;
     case "overshoot":
@@ -170,6 +185,9 @@ interface RunScreenEls {
   bossHead: HTMLElement;
   bossTeam: HTMLElement;
   challengeButton: HTMLButtonElement;
+  /** The challenge confirm's cancel control (#075 slice 7) — visible only while
+   * the terminal challenge is armed, so a player can back out before it fires. */
+  challengeCancel: HTMLButtonElement;
   challengeNote: HTMLElement;
   error: HTMLElement;
   /** DEV panel (#066 slice 4) — shown only when dev mode is on. */
@@ -291,6 +309,15 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   // The (runId, round) a shop-entry serve prefetch was already fired for —
   // once per round, so the "rivals waiting" line reads the served truth.
   let served: { runId: string; round: number } | undefined;
+  // Challenge confirm (#075 slice 7): the challenge is terminal (win → seat/
+  // crown, lose → run over), so a single tap must not fire it. The first tap
+  // ARMS — the button reads the warning and a "cancel" appears beside it; the
+  // second tap (or pressing Enter on the armed button) fires. Disarmed on every
+  // shop render (renderBoss), and on cancel. The fight/climb button stays
+  // one-tap — a climb is recoverable (a life), a challenge is not.
+  let challengeArmed = false;
+  let challengeArmLabel = ""; // the warning the armed button reads — rebuilt per render
+  let challengeFireLabel = ""; // the resting button label — rebuilt per render
 
   const ladderView = createLadderView(els.ladderBody, { store: deps.store, registry: deps.registry });
 
@@ -551,21 +578,32 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   }
 
   /** The climb (fight) button's availability + stakes. A climb draws a random
-   * same-floor ghost; with the line empty there is nothing to field, and at a
-   * floor with no rival ghost (the top, or a floor climbed PAST the tower) a
-   * climb would throw in the kernel — challenge is the move there. So the climb
-   * button disables in both cases and the stakes line says why, rather than
-   * letting a click reach an InvalidDecisionError (the brief's "not stuck on an
-   * exception" path). The boss panel below carries the challenge control. */
+   * same-floor ghost and advances a floor; it disables in three cases, each with
+   * its own stakes line:
+   *  - empty line: nothing to field;
+   *  - no rival ghost left at this floor: a climb would throw in the kernel —
+   *    challenge is the only move;
+   *  - the CHAMPION's floor (#075 slice 7): even with rival ghosts to climb,
+   *    climbing past the champion lands on a vacant floor above the tower's top
+   *    and the next challenge OVERSHOOTS (no crown). So at the top the only
+   *    forward move is to challenge the champion for the crown — the climb is
+   *    disabled to keep a player from accidentally climbing past it. The
+   *    champion's floor is the live top (champion().round), not a fixed constant,
+   *    because a crown grows the tower. The boss panel below carries the
+   *    challenge control. */
   function renderClimb(s: RunState): void {
     const empty = s.team.length === 0;
-    const noRival = !empty && deps.store.poolAt(s.round).filter((g) => g.runId !== s.runId).length === 0;
-    els.fightButton.disabled = empty || noRival;
+    const championFloor = deps.store.champion()?.round;
+    const atTop = isChampionFloor(s.round, championFloor);
+    const noRival = !empty && !atTop && deps.store.poolAt(s.round).filter((g) => g.runId !== s.runId).length === 0;
+    els.fightButton.disabled = empty || atTop || noRival;
     els.stakes.textContent = empty
       ? stakesLine(s.lives)
-      : noRival
-        ? `no ghost left to climb at floor ${s.round} — challenge the boss below to make your move`
-        : stakesLine(s.lives);
+      : atTop
+        ? "the champion holds this floor — challenge to take the crown, or climbing past would overshoot"
+        : noRival
+          ? `no ghost left to climb at floor ${s.round} — challenge the boss below to make your move`
+          : stakesLine(s.lives);
   }
 
   /** The boss panel: the current floor's boss shown read-only (the same card
@@ -578,19 +616,75 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   function renderBoss(s: RunState): void {
     const boss = deps.store.bossAt(s.round);
     const hasBoss = boss !== null;
-    els.bossHead.textContent = bossFloorLine(s.round, hasBoss);
+    const championFloor = deps.store.champion()?.round;
+    const atTop = hasBoss && isChampionFloor(s.round, championFloor);
+    els.bossHead.textContent = bossFloorLine(s.round, hasBoss, championFloor);
     els.bossTeam.innerHTML = hasBoss
       ? boss.team.map((u) => bossUnitCard(u)).join("")
       : '<span class="run-dim">no boss seated above the tower — challenging here overshoots</span>';
-    els.challengeNote.textContent = challengeNoteLine(s.round, hasBoss);
-    // A win seats at the summit only at the top floor; flag the champion fight.
-    els.challengeButton.classList.toggle("champion", hasBoss && isSummitFloor(s.round));
-    els.challengeButton.textContent = !hasBoss
+    els.challengeNote.textContent = challengeNoteLine(s.round, hasBoss, championFloor);
+    // Only the champion's floor wears the gold crown treatment — a lower seat is
+    // a plain cash-out (Maks: "only the last can be crowned"). The champion floor
+    // is the live top of the (growing) tower, not a fixed TOWER_HEIGHT.
+    els.challengeButton.classList.toggle("champion", atTop);
+    els.bossPanel.classList.toggle("at-champion", atTop);
+    // The confirm gate (#075 slice 7) resets on every render: a re-render must
+    // never leave the button mid-armed. The labels/note below are rebuilt fresh,
+    // so clear the armed state without restoring stale text.
+    challengeArmed = false;
+    els.challengeButton.classList.remove("armed");
+    els.challengeButton.title = "";
+    els.challengeCancel.hidden = true;
+    challengeArmLabel = !hasBoss
+      ? "Challenge here? This overshoots — no crown — and ends your run."
+      : atTop
+        ? "Challenge the champion? This ends your run — win to take the crown."
+        : `Challenge floor ${s.round}'s boss? This ends your run — win to take the seat.`;
+    challengeFireLabel = !hasBoss
       ? "challenge here (overshoot — no crown)"
-      : isSummitFloor(s.round)
+      : atTop
         ? "challenge the champion"
         : "challenge this floor's boss";
+    els.challengeButton.textContent = challengeFireLabel;
     els.challengeButton.disabled = s.team.length === 0;
+  }
+
+  /** Arm the challenge confirm: the button reads the warning, a cancel control
+   * appears beside it, and the note restates the stakes. A second tap on the
+   * button (now armed) fires the challenge; cancel (or any shop re-render)
+   * disarms. The button itself carries both steps — no separate confirm panel —
+   * so the terminal control stays one thumb-sized target at phone width. */
+  function armChallenge(): void {
+    challengeArmed = true;
+    els.challengeButton.classList.add("armed");
+    els.challengeButton.textContent = "tap again to confirm";
+    els.challengeButton.title = challengeArmLabel;
+    els.challengeNote.textContent = challengeArmLabel;
+    els.challengeCancel.hidden = false;
+  }
+
+  /** Disarm the confirm — back to a resting button. Idempotent (renderBoss
+   * calls it before rebuilding the labels), so a re-render never strands the
+   * armed state and a stale "tap again" never fires the wrong floor's challenge. */
+  function disarmChallenge(): void {
+    challengeArmed = false;
+    els.challengeButton.classList.remove("armed");
+    els.challengeButton.title = "";
+    els.challengeCancel.hidden = true;
+    // The resting label/note are restored by renderBoss; on a bare disarm
+    // (cancel) restore them here too, so cancel doesn't leave the armed text.
+    els.challengeButton.textContent = challengeFireLabel;
+    els.challengeNote.textContent = challengeNoteForState();
+  }
+
+  /** The resting challenge note for the current state — recomputed on a cancel
+   * so disarming restores it without a full shop re-render (which would reset
+   * scroll). Mirrors renderBoss's challengeNoteLine call. */
+  function challengeNoteForState(): string {
+    const s = state;
+    if (s === undefined) return "";
+    const hasBoss = deps.store.bossAt(s.round) !== null;
+    return challengeNoteLine(s.round, hasBoss, deps.store.champion()?.round);
   }
 
   /** A boss-team unit card — read-only, the ladder-view idiom: no buy/move
@@ -1063,6 +1157,12 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     els.error.title = "";
     const before = state!;
     const boss = deps.store.bossAt(before.round); // captured before any seat overwrite
+    // The champion's floor, captured BEFORE the challenge — a win moves the
+    // champion (an ascend re-seats it a floor up), so the label must read the
+    // pre-fight top. Dynamic, like the crown/climb decisions: the champion's
+    // floor is champion().round (a grown tower's summit can sit above
+    // TOWER_HEIGHT), not the fixed isSummitFloor constant.
+    const championFloorBefore = deps.store.champion()?.round;
     let next: RunState;
     try {
       next = challengeBoss(before, deps.store);
@@ -1092,7 +1192,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       teamB: boss!.team, // pinned by value — the seat may now hold this very team
       seed: fought.battleSeed,
       opponentLabel:
-        isSummitFloor(before.round)
+        isChampionFloor(before.round, championFloorBefore)
           ? `the champion at floor ${before.round}`
           : `floor ${before.round}'s boss`,
     };
@@ -1265,7 +1365,18 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     }
   });
   els.fightButton.addEventListener("click", fightLadder);
-  els.challengeButton.addEventListener("click", challenge);
+  // Two-step confirm (#075 slice 7): the first tap arms (the button reads the
+  // warning, a cancel appears), the second fires the terminal challenge. A
+  // single tap can NEVER end the run. The climb stays one-tap (it's recoverable).
+  els.challengeButton.addEventListener("click", () => {
+    if (challengeArmed) {
+      challengeArmed = false; // consumed — challenge() may re-render, but guard the double-fire
+      challenge();
+      return;
+    }
+    armChallenge();
+  });
+  els.challengeCancel.addEventListener("click", disarmChallenge);
   els.skipButton.addEventListener("click", () => deps.viewer.toEnd()); // landing on the end reveals the bar via onEnded
 
   els.continueButton.addEventListener("click", () => {

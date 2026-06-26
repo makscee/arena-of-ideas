@@ -91,12 +91,25 @@ for (const [vp, tag] of [
     await ctx.close();
   }
 
-  // 2. At the summit (floor TOWER_HEIGHT): the challenge is the crown fight, and
-  //    the boss panel names the champion.
+  // 1b. The challenge ARMED (#075 slice 7): one tap on the lower floor's
+  //    challenge button puts it in the confirm state — "tap again to confirm",
+  //    the cancel showing — the terminal two-step gate.
+  {
+    const { ctx, page } = await openRun(browser, atFloor(1), vp);
+    await toBoss(page);
+    await page.click("#run-challenge"); // arm the confirm
+    await page.waitForSelector("#run-challenge-cancel:not([hidden])");
+    await shot(page, `${tag}-1b-challenge-confirm-armed`);
+    await ctx.close();
+  }
+
+  // 2. At the champion's floor (the seeded summit, TOWER_HEIGHT): the climb is
+  //    DISABLED (climbing past would overshoot), the challenge is the gold crown
+  //    fight, and the boss panel names the champion at the top.
   {
     const { ctx, page } = await openRun(browser, atFloor(TOWER_HEIGHT), vp);
     await toBoss(page);
-    await shot(page, `${tag}-2-summit-challenge`);
+    await shot(page, `${tag}-2-champion-floor-climb-disabled`);
     await ctx.close();
   }
 
@@ -109,10 +122,13 @@ for (const [vp, tag] of [
     await ctx.close();
   }
 
-  // 4–7. The four terminal end states, each read on its own end screen.
+  // 4–8. The FIVE terminal end states, each read on its own end screen. Slice 7
+  //    splits crown (the champion — gold/crown) from seated (a lower cash-out —
+  //    NO gold, NO crown emoji): #4 crown is the ascend over the summit (seated
+  //    one floor higher, at TOWER_HEIGHT+1), #5 seated is the lower-floor seat.
   const endShots = [
-    ["crown", TOWER_HEIGHT, [{ type: "Crowned", floor: TOWER_HEIGHT, dethroned: "bootstrap" }], "4-end-crown-champion"],
-    ["crown", 2, [{ type: "Crowned", floor: 2, dethroned: "bootstrap" }], "5-end-crown-lowerseat"],
+    ["crown", TOWER_HEIGHT + 1, [{ type: "Crowned", floor: TOWER_HEIGHT + 1, dethroned: "bootstrap" }], "4-end-crown-champion-gold"],
+    ["seated", 2, [{ type: "Seated", floor: 2, dethroned: "bootstrap" }], "5-end-seated-cashout-nogold"],
     ["challenge-lost", 3, [{ type: "BossChallenged", floor: 3, boss: "bootstrap" }], "6-end-challenge-lost"],
     ["overshoot", TOWER_HEIGHT + 1, [{ type: "Overshot", floor: TOWER_HEIGHT + 1 }], "7-end-overshoot"],
     ["out-of-lives", 3, [], "8-end-out-of-lives"],

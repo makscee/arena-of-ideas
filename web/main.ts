@@ -326,6 +326,7 @@ try {
       bossHead: el("run-boss-head"),
       bossTeam: el("run-boss-team"),
       challengeButton: el<HTMLButtonElement>("run-challenge"),
+      challengeCancel: el<HTMLButtonElement>("run-challenge-cancel"),
       challengeNote: el("run-challenge-note"),
       error: el("run-error"),
       devPanel: el<HTMLDetailsElement>("run-dev"),

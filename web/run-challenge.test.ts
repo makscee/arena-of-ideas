@@ -25,6 +25,7 @@ import {
   challengeNoteLine,
   endHeadLine,
   isAboveTower,
+  isChampionFloor,
   isSummitFloor,
 } from "./run-screen.js";
 
@@ -40,41 +41,62 @@ describe("summit/above-tower derive from TOWER_HEIGHT", () => {
   });
 });
 
-describe("bossFloorLine names the floor and what its boss is", () => {
-  test("a lower floor names the floor and that it carries a boss", () => {
-    const line = bossFloorLine(1, true);
-    expect(line).toContain("floor 1");
-    expect(line).toContain(String(TOWER_HEIGHT)); // "of N" — the tower height is visible
-    expect(line.toLowerCase()).toContain("boss");
+describe("isChampionFloor — the dynamic top, not a fixed constant (#075 slice 7)", () => {
+  test("the champion's floor IS the champion floor; any other floor is not", () => {
+    // The tower grows past TOWER_HEIGHT after a crown, so the predicate is the
+    // live champion().round, exactly as the kernel's crown-vs-seat split is.
+    expect(isChampionFloor(TOWER_HEIGHT, TOWER_HEIGHT)).toBe(true);
+    expect(isChampionFloor(TOWER_HEIGHT + 1, TOWER_HEIGHT + 1)).toBe(true); // a grown tower's summit
+    expect(isChampionFloor(TOWER_HEIGHT - 1, TOWER_HEIGHT)).toBe(false); // a lower lineage boss
+    expect(isChampionFloor(TOWER_HEIGHT + 1, TOWER_HEIGHT)).toBe(false); // above a not-yet-grown tower
   });
-  test("the summit floor names the champion, not a generic boss", () => {
-    const line = bossFloorLine(TOWER_HEIGHT, true);
-    expect(line).toContain(`floor ${TOWER_HEIGHT}`);
+  test("an empty ladder (no champion) means no floor is the champion's", () => {
+    expect(isChampionFloor(1, undefined)).toBe(false);
+    expect(isChampionFloor(TOWER_HEIGHT, undefined)).toBe(false);
+  });
+});
+
+describe("bossFloorLine names the floor and what its boss is", () => {
+  test("a lower floor reads as a lineage boss BELOW the champion (not the top)", () => {
+    const line = bossFloorLine(1, true, TOWER_HEIGHT);
+    expect(line).toContain("floor 1");
+    expect(line.toLowerCase()).toContain("boss");
+    expect(line.toLowerCase()).toContain("below the champion");
+    expect(line.toLowerCase()).not.toContain("the champion holds"); // must-fail: not the summit copy
+  });
+  test("the champion's floor names the champion at the top — dynamic, even above TOWER_HEIGHT", () => {
+    const grown = TOWER_HEIGHT + 1; // a tower grown by a crown
+    const line = bossFloorLine(grown, true, grown);
+    expect(line).toContain(`floor ${grown}`);
     expect(line.toLowerCase()).toContain("champion");
+    expect(line.toLowerCase()).toContain("top of the tower");
   });
   test("above the top says there is NO boss here", () => {
-    const line = bossFloorLine(TOWER_HEIGHT + 1, false);
+    const line = bossFloorLine(TOWER_HEIGHT + 1, false, TOWER_HEIGHT);
     expect(line.toLowerCase()).toContain("no boss");
     expect(line.toLowerCase()).toContain("above the tower");
   });
 });
 
-describe("challengeNoteLine makes the decision legible — terminal + harder higher", () => {
+describe("challengeNoteLine makes the decision legible — terminal, crown-vs-cash-out", () => {
   test("every present-boss note says it is terminal", () => {
-    for (const floor of [1, TOWER_HEIGHT - 1, TOWER_HEIGHT]) {
-      expect(challengeNoteLine(floor, true).toLowerCase()).toContain("terminal");
+    for (const [floor, champ] of [[1, TOWER_HEIGHT], [TOWER_HEIGHT - 1, TOWER_HEIGHT], [TOWER_HEIGHT, TOWER_HEIGHT]] as const) {
+      expect(challengeNoteLine(floor, true, champ).toLowerCase()).toContain("terminal");
     }
   });
-  test("a lower floor reads as a cash-out (easier than the summit)", () => {
-    const note = challengeNoteLine(1, true).toLowerCase();
+  test("a lower floor reads as a cash-out seat — explicitly NO crown", () => {
+    const note = challengeNoteLine(1, true, TOWER_HEIGHT).toLowerCase();
     expect(note).toContain("seat");
-    expect(note).toContain("easier");
+    expect(note).toContain("cash-out");
+    expect(note).toContain("no crown"); // must-fail: a lower seat is not crowned
   });
-  test("the summit note is the crown fight", () => {
-    expect(challengeNoteLine(TOWER_HEIGHT, true).toLowerCase()).toContain("crown");
+  test("the champion's-floor note is the crown fight (and grows the tower)", () => {
+    const note = challengeNoteLine(TOWER_HEIGHT, true, TOWER_HEIGHT).toLowerCase();
+    expect(note).toContain("crown");
+    expect(note).not.toContain("cash-out"); // must-fail: the crown is not a cash-out
   });
   test("a vacant floor warns the challenge wins no crown", () => {
-    expect(challengeNoteLine(TOWER_HEIGHT + 1, false).toLowerCase()).toContain("no crown");
+    expect(challengeNoteLine(TOWER_HEIGHT + 1, false, TOWER_HEIGHT).toLowerCase()).toContain("no crown");
   });
 });
 
@@ -117,6 +139,22 @@ describe("endHeadLine — all four terminal reasons read distinctly", () => {
     const reasons: RunEndReason[] = ["crown", "seated", "challenge-lost", "overshoot", "out-of-lives"];
     const heads = reasons.map((r) => endHeadLine(r, TOWER_HEIGHT, note));
     expect(new Set(heads).size).toBe(reasons.length);
+  });
+
+  test("the crown emoji (the gold treatment's text proxy) appears for crown and NOTHING else", () => {
+    // Maks: "only the last can be crowned" — a seated cash-out is not a crown.
+    // The 👑 is the textual stand-in for the gold frame; the run screen toggles
+    // the .crowned gold class on exactly `reason === "crown"`, so pinning the
+    // emoji here pins gold-only-for-crown without a browser.
+    const reasons: RunEndReason[] = ["crown", "seated", "challenge-lost", "overshoot", "out-of-lives"];
+    const crowned = reasons.filter((r) => endHeadLine(r, TOWER_HEIGHT, note).includes("👑"));
+    expect(crowned).toEqual(["crown"]);
+  });
+
+  test("seated reads as taking the boss's place (the slice-7 cash-out copy)", () => {
+    const head = endHeadLine("seated", 2, note).toLowerCase();
+    expect(head).toContain("took its boss's place");
+    expect(head).toContain("no crown");
   });
 });
 
