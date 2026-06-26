@@ -11,6 +11,21 @@ export type { RunInput, RunState, RunStatus, RunEndReason, RunUnit, RunDecision,
 // here — the web's localStorage backing builds on it.
 export { InMemoryLadderStore, PersistedLadderStore, openLadder, emptyLadderData, parseLadderData, BOOTSTRAP_RUN_ID } from "./ladder.js";
 export type { LadderStore, LadderData, TeamSnapshot } from "./ladder.js";
+// The season archive — immutable, append-only history of finished seasons. Like
+// the ladder, the file backing (FileSeasonArchiveStore) lives off this index in
+// season-archive-file.ts (it needs node:fs); its medium-free engine
+// (PersistedSeasonArchiveStore + the SeasonArchiveData shape) is exported here.
+export {
+  InMemorySeasonArchiveStore,
+  PersistedSeasonArchiveStore,
+  emptySeasonArchiveData,
+  parseSeasonArchiveData,
+  serializeSeasonArchive,
+  emptyFinalTower,
+  assertSeasonInOrder,
+  FIRST_CONTENT_VERSION,
+} from "./season-archive.js";
+export type { SeasonArchiveStore, SeasonArchiveData, SeasonRecord, ContentVersion } from "./season-archive.js";
 // The ideas table (#076) — the same store-interface pattern as the ladder: one
 // IdeaStore interface, an in-memory backing and a persisted engine, a serialized
 // IdeasData shape that round-trips. The web's localStorage backing builds on it.
