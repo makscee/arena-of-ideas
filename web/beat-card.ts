@@ -94,7 +94,15 @@ export function beatCenterHtml(
       const depth = Math.max(0, depthInBeat(beat, log, e.id) - 1); // root is depth 1's parent → 0 indent
       const cls = lineClass(e);
       const fresh = e.id === newestId ? " bc-line-new" : "";
-      return `<div class="bc-line ${cls}${fresh}" data-id="${e.id}" style="--d:${depth}">${esc(text(e))}</div>`;
+      // Stamp the line's SUBJECT instance id (the kernel `unit` it narrates) so a
+      // consumer resolves "which hero" from the structured id, never a regex over
+      // the bare display name — two units that share a name (e.g. A1:Brawler vs
+      // B5:Brawler) read identically in the line text, so the id is the only
+      // disambiguator. Mirrors the board card's own `data-unit`; absent on lines
+      // with no single subject (e.g. Strike/Fatigue), which name no hero to mark.
+      const subj = lineSubject(e);
+      const subjAttr = subj === undefined ? "" : ` data-unit="${esc(subj)}"`;
+      return `<div class="bc-line ${cls}${fresh}" data-id="${e.id}"${subjAttr} style="--d:${depth}">${esc(text(e))}</div>`;
     })
     .join("");
 
@@ -103,6 +111,28 @@ export function beatCenterHtml(
       <div class="bc-title" data-id="${beat.root.id}">${esc(rootTitle(beat, text))}</div>
       <div class="bc-lines">${lines}</div>
     </div>`;
+}
+
+/** The instance id of the single hero a caused line is ABOUT — the kernel `unit`
+ * the line narrates ("Brawler takes 1" → the hurt unit's id). Events with no one
+ * hero subject (a Strike names two; Fatigue/turn structure name none) return
+ * undefined, so those lines carry no `data-unit` and mark no card. This is the
+ * structured handle a consumer keys off instead of regex-matching the bare,
+ * collision-prone display name in the line text. */
+function lineSubject(e: BattleEvent): string | undefined {
+  switch (e.type) {
+    case "Hurt":
+    case "Heal":
+    case "Death":
+    case "Summon":
+    case "StatusApplied":
+    case "StatusRemoved":
+    case "StatChanged":
+    case "Silenced":
+      return e.unit;
+    default:
+      return undefined;
+  }
 }
 
 /** Family colour for a card line, mirroring the battle log's palette. */

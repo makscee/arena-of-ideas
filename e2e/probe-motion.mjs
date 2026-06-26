@@ -149,30 +149,23 @@ async function defectALineAnimation(page) {
 async function defectBHitTruth(page) {
   const max = await maxStep(page);
 
-  // label → data-unit, read off every board card (lines AND graves) so a Hurt
-  // line's leading display name resolves to the unit it marks.
-  const nameMap = await page.evaluate(() => {
-    const m = {};
-    for (const u of document.querySelectorAll(".side .unit[data-unit]")) {
-      const label = u.querySelector(".uname")?.textContent?.trim();
-      if (label) m[label] = u.getAttribute("data-unit");
-    }
-    return m;
-  });
-
-  /** The truth set at the current step: units named by a revealed `bc-hurt`
-   * line, resolved via the display-name map. */
+  /** The truth set at the current step: the units a revealed `bc-hurt` line is
+   * ABOUT, read off each line's `data-unit` — the structured instance id the
+   * line narrates. NOT a regex over the bare display name: two units that share
+   * a name (A1:Brawler vs B5:Brawler — the round-1 opponent now fields a Brawler,
+   * colliding with side A's) read identically in the line text, so a name→id map
+   * is ambiguous (last-wins) and would mis-attribute the hit. The line's
+   * `data-unit` is the same instance id the kernel stamped on the Hurt event and
+   * the board card carries, so this is a true id-vs-id check against the marked
+   * set below. */
   const expectedHit = async () =>
-    page.evaluate((names) => {
-      const labels = Object.keys(names).sort((a, b) => b.length - a.length); // longest first: avoid prefix clashes
+    page.evaluate(() => {
       const out = new Set();
-      for (const l of document.querySelectorAll(".beat-card .bc-line.bc-hurt")) {
-        const txt = l.textContent ?? "";
-        const label = labels.find((n) => txt.startsWith(n));
-        if (label) out.add(names[label]);
+      for (const l of document.querySelectorAll(".beat-card .bc-line.bc-hurt[data-unit]")) {
+        out.add(l.getAttribute("data-unit"));
       }
       return [...out];
-    }, nameMap);
+    });
 
   /** The marked set at the current step. */
   const markedHit = () =>
@@ -256,37 +249,28 @@ const damageBadges = (page) =>
   });
 
 /** The kernel-truth damage per unit at the current step: the SUM of the amounts
- * named on the revealed `bc-hurt` card lines, resolved by display name. Read
- * from a SECOND DOM source (the card lines) so the assertion is not a tautology
- * with the badge it checks. Line text is e.g. "Silencer takes 2 → 0 hp". */
-async function expectedDamage(page, nameMap) {
-  return page.evaluate((names) => {
-    const labels = Object.keys(names).sort((a, b) => b.length - a.length);
+ * named on the revealed `bc-hurt` card lines, keyed by each line's `data-unit`
+ * (the structured instance id it narrates — NOT a regex over the bare, collision-
+ * prone display name: two same-named units would alias onto one key). Read from a
+ * SECOND DOM source (the card lines) so the assertion is not a tautology with the
+ * badge it checks. Line text is e.g. "Silencer takes 2 → 0 hp". */
+async function expectedDamage(page) {
+  return page.evaluate(() => {
     const out = {};
-    for (const l of document.querySelectorAll(".beat-card .bc-line.bc-hurt")) {
+    for (const l of document.querySelectorAll(".beat-card .bc-line.bc-hurt[data-unit]")) {
       const txt = l.textContent ?? "";
-      const label = labels.find((n) => txt.startsWith(n));
-      if (!label) continue;
       // "… takes N" or "… takes N (M absorbed)" — the first number after "takes".
       const m = txt.match(/takes\s+(\d+)/);
       if (!m) continue;
-      const unit = names[label];
+      const unit = l.getAttribute("data-unit");
       out[unit] = (out[unit] ?? 0) + Number(m[1]);
     }
     return out;
-  }, nameMap);
+  });
 }
 
 async function badgesInSyncWithLines(page, { requireMultiHit }) {
   const max = await maxStep(page);
-  const nameMap = await page.evaluate(() => {
-    const m = {};
-    for (const u of document.querySelectorAll(".side .unit[data-unit]")) {
-      const label = u.querySelector(".uname")?.textContent?.trim();
-      if (label) m[label] = u.getAttribute("data-unit");
-    }
-    return m;
-  });
 
   const eqMap = (a, b) => {
     const ka = Object.keys(a).sort();
@@ -315,7 +299,7 @@ async function badgesInSyncWithLines(page, { requireMultiHit }) {
   for (let n = 0; n <= max; n++) {
     await stepTo(page, n);
     const badges = await damageBadges(page);
-    const expected = await expectedDamage(page, nameMap);
+    const expected = await expectedDamage(page);
     if (!eqMap(badges, expected)) {
       mismatches++;
       if (firstMismatch === "")
@@ -340,16 +324,14 @@ async function badgesInSyncWithLines(page, { requireMultiHit }) {
     // Multi-hit: an expected total that exceeds any single hit implies ≥2 summed.
     // We detect it structurally — a unit whose damage total is present AND the
     // beat revealed ≥2 hurt lines for it.
-    const multi = await page.evaluate((names) => {
-      const labels = Object.keys(names).sort((a, b) => b.length - a.length);
+    const multi = await page.evaluate(() => {
       const counts = {};
-      for (const l of document.querySelectorAll(".beat-card .bc-line.bc-hurt")) {
-        const txt = l.textContent ?? "";
-        const label = labels.find((x) => txt.startsWith(x));
-        if (label) counts[names[label]] = (counts[names[label]] ?? 0) + 1;
+      for (const l of document.querySelectorAll(".beat-card .bc-line.bc-hurt[data-unit]")) {
+        const u = l.getAttribute("data-unit");
+        counts[u] = (counts[u] ?? 0) + 1;
       }
       return Object.values(counts).some((c) => c >= 2);
-    }, nameMap);
+    });
     if (multi && Object.keys(badges).length > 0) multiHitSeen = true;
 
     const curBeat = await beatIndex(page);

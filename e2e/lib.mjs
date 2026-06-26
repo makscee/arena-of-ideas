@@ -120,9 +120,15 @@ const unitOf = (def, stacks = 1, level = 1) => ({
   def,
 });
 
-/** A real initRun state, then hand-shaped team/offers/gold for the scenario. */
-function shaped(mutate, pool = DEFAULT_RUN_POOL) {
-  const s = initRun({ seed: 7, pool, statuses: stressRegistry });
+/** A real initRun state, then hand-shaped team/offers/gold for the scenario.
+ * `seed` steers the ladder OPPONENT DRAW: #075's run/ladder rework seeds every
+ * floor's boss as a ghost in its round's pool, so round 1 now draws from {the
+ * 3-body climb teams, the 5-body floor-1 boss}. A fixture that needs a specific
+ * opponent SIZE (e.g. bigBattleRun's asymmetric A>B matchup) pins a seed that
+ * draws the 3-body climb team rather than the 5-body boss — the draw is a pure
+ * function of the run rng, so a pinned seed is deterministic. */
+function shaped(mutate, pool = DEFAULT_RUN_POOL, seed = 7) {
+  const s = initRun({ seed, pool, statuses: stressRegistry });
   mutate(s);
   return serializeRun(s);
 }
@@ -183,24 +189,32 @@ export const plainShopRun = () =>
 
 /** A FULL five-unit line vs the round-1 bootstrap opponent (#065 slice-1
  * regression): an ASYMMETRIC, near-max matchup so the desktop "equal halves"
- * crush reproduces. The injected run fields all TEAM_SIZE units; the ladder
- * draw seats the bootstrap round-1 enemy (two/three bodies) on side B, so the
- * battle opens 5 (side A) vs a smaller side B — the case that crushed B to a
+ * crush reproduces. The injected run fields all TEAM_SIZE units; the pinned seed
+ * (below) draws the 3-body round-1 climb team on side B, so the battle opens 5
+ * (side A) vs 3 (side B) — the case that crushed B to a
  * sliver under `flex: 1 1 0`. The names are five distinct pool units so each
  * card renders its own art + stats (no stacking). */
 export const bigBattleRun = () =>
-  shaped((s) => {
-    s.team = [
-      unitOf(byName.Venomancer),
-      unitOf(byName.Summoner),
-      unitOf(byName.Silencer),
-      unitOf(byName.Necromancer),
-      unitOf(byName.Brawler),
-    ];
-    s.offers = [byName.Bulwark, byName.Squire, byName.Venomancer];
-    s.gold = 10;
-    s.lives = 5;
-  });
+  shaped(
+    (s) => {
+      s.team = [
+        unitOf(byName.Venomancer),
+        unitOf(byName.Summoner),
+        unitOf(byName.Silencer),
+        unitOf(byName.Necromancer),
+        unitOf(byName.Brawler),
+      ];
+      s.offers = [byName.Bulwark, byName.Squire, byName.Venomancer];
+      s.gold = 10;
+      s.lives = 5;
+    },
+    DEFAULT_RUN_POOL,
+    // Seed 2 draws the 3-body round-1 climb team (not the 5-body floor-1 boss
+    // ghost #075 now seeds into the pool), so side A's five units face three —
+    // the ASYMMETRIC A>B matchup the sizing/centring probes require. With the
+    // default seed 7 the draw lands the 5-body boss, making it a vacuous 5v5.
+    2,
+  );
 
 /** A finished run (#014): status "over", out of lives — the run-end screen,
  * where the menu must still appear and abandon must still work. A small team
