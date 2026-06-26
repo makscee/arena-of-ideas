@@ -108,12 +108,14 @@ export const challengeNoteLine = (floor: number, hasBoss: boolean): string =>
       ? "terminal: beat the champion to take the crown — lose and the run is over"
       : `terminal: win to seat your team as floor ${floor}'s boss (a lower, easier seat than the summit) — lose and the run is over`;
 
-/** The end-screen heading for every terminal reason (#075 slice 4). Pure so
- * the four states are pinned by vitest, not just eyeballed in a screenshot.
- * `crown` splits on whether the seized floor is the summit (champion) or a
- * lower seat; `overshoot` and `challenge-lost` each read as their own outcome;
- * `out-of-lives` keeps the climb-death wording. `dethronedNote` is the prose
- * naming who was unseated (crown only); the rest ignore it. */
+/** The end-screen heading for every terminal reason (#075 slice 4; `seated`
+ * added in slice 6 — final copy is slice 7). Pure so the states are pinned by
+ * vitest, not just eyeballed in a screenshot. `crown` is now an ascend — beating
+ * the champion seats you one floor higher as the new summit; `seated` is the
+ * cash-out — beating a lower boss seizes that seat without growing the tower;
+ * `overshoot` and `challenge-lost` each read as their own outcome; `out-of-lives`
+ * keeps the climb-death wording. `dethronedNote` is the prose naming who was
+ * unseated (crown/seated only); the rest ignore it. */
 export const endHeadLine = (
   reason: RunEndReason,
   round: number,
@@ -121,9 +123,9 @@ export const endHeadLine = (
 ): string => {
   switch (reason) {
     case "crown":
-      return isSummitFloor(round)
-        ? `👑 champion — you took the summit (floor ${round}) — ${dethronedNote}`
-        : `👑 seated at floor ${round} — ${dethronedNote}`;
+      return `👑 champion — you out-topped the summit and seated at floor ${round} — ${dethronedNote}`;
+    case "seated":
+      return `seated at floor ${round} — ${dethronedNote} (a lower seat; the summit stands)`;
     case "challenge-lost":
       return `challenge lost at floor ${round} — the boss held its seat; the run is over (your ghosts stay on the ladder)`;
     case "overshoot":
@@ -691,8 +693,9 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     const reason = s.endedBy ?? "out-of-lives";
     const crown = reason === "crown";
     els.endPanel.classList.toggle("crowned", crown);
-    // Who the seat was taken from (crown only) — the Crowned event names it.
-    const dethroned = ofType(s.log, "Crowned")[0]?.dethroned;
+    // Who the seat was taken from — a crown (ascend) names it via Crowned, a
+    // cash-out via Seated; either terminal seat carries the dethroned boss.
+    const dethroned = (ofType(s.log, "Crowned")[0] ?? ofType(s.log, "Seated")[0])?.dethroned;
     const dethronedNote =
       dethroned === undefined || dethroned === null
         ? "the seat was vacant; your team takes it"

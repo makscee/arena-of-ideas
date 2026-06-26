@@ -59,13 +59,25 @@ export interface RunUnit {
 /** A run accepts decisions while "active"; an "over" run rejects them all. */
 export type RunStatus = "active" | "over";
 
-/** The three ways a run ends. A climb death — the last life lost — is
- * "out-of-lives". A boss challenge is always terminal and splits on its
- * outcome: a win that seats the challenger as the floor's boss is "crown" (the
- * name is kept — a seated win still crowns the climber on that floor); a
- * challenge that does not win (loss or draw) ends the run "challenge-lost",
- * distinct in the log because no seat happened and the old boss still stands. */
-export type RunEndReason = "out-of-lives" | "crown" | "challenge-lost" | "overshoot";
+/** The ways a run ends. A climb death — the last life lost — is "out-of-lives".
+ * A boss challenge is always terminal and splits on WHICH boss fell and the
+ * outcome:
+ *
+ *  - "crown" — beat the CHAMPION (the boss of the highest occupied floor). The
+ *    challenger ASCENDS: it seats one floor higher (f+1) as the new champion and
+ *    the tower grows by a floor; the old champion stays seated at f. This is the
+ *    only end that grows the tower, and the only one that crowns — a crown means
+ *    you out-topped the reigning summit, not merely seized a seat.
+ *  - "seated" — beat a LOWER boss (a floor below the champion). A cash-out: the
+ *    challenger seats at f IN PLACE, demoting the old boss to a pool-ghost as a
+ *    climb does; the tower does NOT grow and no crown is taken. Distinct from
+ *    "crown" because seizing a mid-tower seat is targeting depth, not the summit.
+ *  - "challenge-lost" — a challenge that does not win (loss or draw). No seat
+ *    happened and the old boss still stands; terminal regardless of lives.
+ *  - "overshoot" — challengeBoss on a VACANT floor (above the tower's top): no
+ *    boss to fight, no seat, no crown. The guard that keeps a run from climbing
+ *    past the champion into a free seat. */
+export type RunEndReason = "out-of-lives" | "crown" | "seated" | "challenge-lost" | "overshoot";
 
 export interface RunState {
   seed: number;
@@ -113,14 +125,24 @@ export type RunEventBody =
   | { type: "Snapshotted"; seq: number }
   | { type: "OpponentDrawn"; opponent: string; seq: number; candidates: number }
   // boss challenge — the terminal move (challengeBoss). BossChallenged names
-  // the floor and the boss it faced; Crowned records a seat and who it unseated
-  // (the dethroned boss, null when an unseated floor was claimed), carrying the
-  // floor it happened on so the run log alone says which floor changed hands.
+  // the floor fought at and the boss it faced.
+  //
+  // The two winning ends carry distinct events so the run log alone says what
+  // the tower did:
+  //   Crowned — beat the champion and ASCENDED. `floor` is the SEAT taken (f+1,
+  //     one above the fight), `dethroned` the champion that was out-topped (which
+  //     STAYS seated below — a crown adds a floor, it does not remove the old
+  //     summit). The seat at `floor` carries round = `floor`, so the server shim's
+  //     `snap.round === floor` invariant holds for the ascended champion.
+  //   Seated — beat a lower boss and CASHED OUT. `floor` is the floor fought at
+  //     (= the seat, replaced in place), `dethroned` the boss demoted to a
+  //     pool-ghost. The tower height is unchanged; this is not a crown.
   // Overshot is the dual end: challengeBoss landed on a floor with NO boss — the
-  // run climbed past the seeded tower — so there is nothing to fight or seat. No
+  // run climbed past the tower's top — so there is nothing to fight or seat. No
   // ghost is snapshotted (no fight happened); the run ends with no crown.
   | { type: "BossChallenged"; floor: number; boss: string | null }
   | { type: "Crowned"; floor: number; dethroned: string | null }
+  | { type: "Seated"; floor: number; dethroned: string | null }
   | { type: "Overshot"; floor: number }
   | { type: "RunEnded"; reason: RunEndReason; lives: number };
 
@@ -322,17 +344,30 @@ export function ladderFight(state: RunState, ladder: LadderStore): RunState {
  *    climb draw happens, so the RNG order stays deterministic). Snapshot-before-
  *    fight, exactly as ladderFight does: the fielded team is ghosted into the
  *    floor pool before any outcome — so even a lost challenge leaves an opponent
- *    behind, and on a win this same ghost is the team that takes the seat. A win
- *    seats the challenger as the floor's boss and ends the run "crown"; the
- *    unseated boss is overwritten in the slot but its ghosts stay in the pool —
- *    it drops to pool-only. A loss or draw does not seat and ends the run
- *    "challenge-lost" (terminal regardless of lives — a lost challenge never
- *    loops to a climb).
+ *    behind. A loss or draw does not seat and ends the run "challenge-lost"
+ *    (terminal regardless of lives — a lost challenge never loops to a climb).
+ *
+ *    A WIN splits on whether the boss fought IS the champion — i.e. whether the
+ *    challenged floor f is the highest occupied floor (no boss seated above it):
+ *      ASCEND (champion case) — beating the reigning summit grows the tower. The
+ *        challenger seats at f+1 as the NEW champion; the old champion STAYS
+ *        seated at f (a crown adds a floor above, it does not demote the summit).
+ *        The seat snapshot at f+1 carries round = f+1 (its seated floor, NOT f) so
+ *        the server shim's `snap.round === floor` invariant holds; the same team
+ *        is ALSO left in pool@f+1 as a ghost, mirroring the bootstrap's
+ *        boss-in-its-own-pool pattern, so the demote-keeps-ghost invariant holds
+ *        when this champion is itself later dethroned. End reason "crown".
+ *      CASH OUT (lower-boss case) — beating a boss below the champion seizes a
+ *        mid-tower seat without growing the tower. The challenger seats at f in
+ *        place; the demoted boss drops to a pool-ghost (its ghosts stay in the
+ *        pool), exactly as the climb-demote does. End reason "seated", NOT a crown.
+ *    Either way the snapshot-before-fight ghost (round = f) is what the climb
+ *    pool keeps; the SEAT is a distinct write (round = its seated floor).
  *
  * Like ladderFight, this is a store-taking transition (NOT part of
  * applyDecision): the store is its one mutable boundary — it gains the
- * challenger's ghost and, on a seat, the new boss — while the returned
- * RunState is a fresh value as always. */
+ * challenger's ghost and, on a win, the new seat (and, on an ascend, the new
+ * champion's pool-ghost) — while the returned RunState is a fresh value. */
 export function challengeBoss(state: RunState, ladder: LadderStore): RunState {
   assertActive(state, "challengeBoss");
   if (state.team.length === 0) {
@@ -366,12 +401,38 @@ export function challengeBoss(state: RunState, ladder: LadderStore): RunState {
     endRun(s, "challenge-lost");
     return s;
   }
-  // Won the challenge: the fielded team takes the seat. It seats as the boss of
-  // its own floor (the round it was fielded at). The unseated boss is overwritten
-  // in the slot but its ghosts stay in the pool — it drops to pool-only.
+  // Won the challenge. Whether this is a CROWN (ascend) or a cash-out SEAT turns
+  // on whether the boss just beaten is the champion — i.e. whether the challenged
+  // floor is the highest occupied floor. The champion is the boss of the highest
+  // occupied floor (ladder.champion()), so the test is "no boss sits above f":
+  // the challenged boss IS the champion exactly when champion().round === f.
+  const champ = ladder.champion();
+  const atChampionFloor = champ !== null && champ.round === s.round;
+  if (atChampionFloor) {
+    // Ascend: the tower grows. Seat the challenger ONE floor higher as the new
+    // champion; the old champion stays seated at f (do not demote it). The seat
+    // snapshot carries round = f+1 (its seated floor) — distinct from the
+    // snapshot-before-fight ghost (round = f) already in pool@f — so the server
+    // shim's `snap.round === floor` invariant holds for the ascended champion.
+    const seatFloor = s.round + 1;
+    const seat: TeamSnapshot = { runId: s.runId, round: seatFloor, seq: ladder.poolAt(seatFloor).length, team: toBattleTeam(s.team) };
+    // Mirror the bootstrap's "boss also lives in its floor's pool": leave the new
+    // champion's team in pool@f+1 as a ghost too, so the demote-keeps-ghost
+    // invariant holds when IT is later dethroned. (Pool write before the seat, so
+    // seat.seq pins the pool length the ghost just took.)
+    ladder.addSnapshot(seat);
+    ladder.setBoss(seatFloor, seat);
+    emit(s, { type: "Crowned", floor: seatFloor, dethroned: boss.runId });
+    endRun(s, "crown");
+    return s;
+  }
+  // Cash out: a lower seat, the tower does not grow. The challenger seats at its
+  // own floor (the round it was fielded at), demoting the old boss in the slot —
+  // its ghosts stay in the pool, exactly as a climb-demote leaves them. The seat
+  // is the snapshot-before-fight ghost itself (round = f), already in pool@f.
   ladder.setBoss(ghost.round, ghost);
-  emit(s, { type: "Crowned", floor: ghost.round, dethroned: boss.runId });
-  endRun(s, "crown");
+  emit(s, { type: "Seated", floor: ghost.round, dethroned: boss.runId });
+  endRun(s, "seated");
   return s;
 }
 

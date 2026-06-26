@@ -142,20 +142,28 @@ describe("bootstrap", () => {
     expect(() => openLadder(new InMemoryLadderStore(), {})).toThrow(/bootstrap round 1 team 0/);
   });
 
-  test("a first-ever strong run climbs a real pool at every floor, then earns the crown by beating floor TOWER_HEIGHT's boss", () => {
+  test("a first-ever strong run climbs a real pool at every floor, then ASCENDS by beating floor TOWER_HEIGHT's champion", () => {
     // The "fresh ladder never auto-crowns trivially" property (075's original
-    // pin): a strong run climbs floors 1..TOWER_HEIGHT-1 (a real fight each) and
-    // crowns ONLY by challenging the seated champion at floor TOWER_HEIGHT —
-    // dethroning someone, never a free vacant-spot seat.
+    // pin) PLUS the ascend rule (slice 6): a strong run climbs floors
+    // 1..TOWER_HEIGHT-1 (a real fight each) and crowns ONLY by beating the seated
+    // CHAMPION at floor TOWER_HEIGHT — dethroning the reigning summit, never a
+    // free vacant-spot seat. The crown ASCENDS: the new champion seats one floor
+    // higher, at TOWER_HEIGHT+1, and the tower grows.
     const store = freshLadder();
     const s = playLadderRun(input(1, "titan", TITAN), store);
     expect(s).toMatchObject({ status: "over", endedBy: "crown" });
-    expect(s.round).toBe(TOWER_HEIGHT); // crowned at the top floor, not a higher vacant one
+    expect(s.round).toBe(TOWER_HEIGHT); // fought the champion at the top floor, not a higher vacant one
     // One fight per climbed floor plus the champion challenge — a real climb, no skip.
     expect(ofType(s.log, "FightFought").length).toBe(TOWER_HEIGHT);
     const crowned = ofType(s.log, "Crowned")[0]!;
-    expect(crowned).toMatchObject({ floor: TOWER_HEIGHT, dethroned: BOOTSTRAP_RUN_ID }); // earned, not vacant
+    expect(crowned).toMatchObject({ floor: TOWER_HEIGHT + 1, dethroned: BOOTSTRAP_RUN_ID }); // seated one floor higher
     expect(ofType(s.log, "Overshot")).toEqual([]); // never overshot
+    // The tower grew: the new champion derives to floor TOWER_HEIGHT+1, and the
+    // old champion still stands at TOWER_HEIGHT (a crown adds a floor, never demotes).
+    expect(store.champion()).toMatchObject({ runId: "titan", round: TOWER_HEIGHT + 1 });
+    expect(store.bossAt(TOWER_HEIGHT)!.runId).toBe(BOOTSTRAP_RUN_ID); // old champion stays seated below
+    // The seat snapshot carries round = its seated floor (the server-shim invariant).
+    expect(store.bossAt(TOWER_HEIGHT + 1)).toMatchObject({ runId: "titan", round: TOWER_HEIGHT + 1 });
   });
 
   test("a first-ever 0-pwr run CANNOT crown on a fresh ladder — it loses the top challenge, never auto-seats", () => {
@@ -192,16 +200,23 @@ describe("bootstrap", () => {
     expect(store.bossAt(TOWER_HEIGHT + 1)).toBeNull(); // nothing seated above the tower
   });
 
-  test("demoting a SEEDED boss keeps its team in the floor's pool as a climb ghost", () => {
+  test("CASHING OUT a SEEDED lower boss keeps its team in the floor's pool as a climb ghost", () => {
     // The demote-keeps-ghost invariant for bootstrap bosses (not only run-won
-    // ones): challenge floor 1's seeded boss head-on and win; the dethroned
-    // bootstrap boss's team must still be drawable as a climb ghost on floor 1.
+    // ones): challenge floor 1's seeded boss head-on and win. Floor 1 is NOT the
+    // champion floor on a fresh tower (the champion is at TOWER_HEIGHT), so this is
+    // a CASH-OUT — the challenger seats at floor 1 in place, end reason "seated",
+    // and the dethroned bootstrap boss's team must still be drawable as a climb
+    // ghost on floor 1. The tower does not grow.
     const store = freshLadder();
     const floor1Boss = store.bossAt(1)!;
     const bossNames = floor1Boss.team.map((u) => u.name);
+    const championBefore = store.champion()!.round;
     const s = challengeBoss(buy(initRun(input(1, "titan", TITAN)), 0), store);
-    expect(s).toMatchObject({ status: "over", endedBy: "crown", round: 1 });
-    expect(store.bossAt(1)!.runId).toBe("titan"); // challenger seated over the slot
+    expect(s).toMatchObject({ status: "over", endedBy: "seated", round: 1 }); // a cash-out, NOT a crown
+    expect(ofType(s.log, "Crowned")).toEqual([]); // no crown taken
+    expect(ofType(s.log, "Seated")[0]).toMatchObject({ floor: 1, dethroned: BOOTSTRAP_RUN_ID });
+    expect(store.bossAt(1)!.runId).toBe("titan"); // challenger seated over the slot, in place
+    expect(store.champion()!.round).toBe(championBefore); // the tower did not grow
     // The dethroned bootstrap boss's team is still in floor 1's pool, drawable.
     const ghosts = store.poolAt(1).filter((g) => g.runId === BOOTSTRAP_RUN_ID && g.team.map((u) => u.name).join(",") === bossNames.join(","));
     expect(ghosts.length).toBe(1);
@@ -338,35 +353,42 @@ describe("run-end states", () => {
 // ---------------------------------------------------------------------------
 
 describe("boss challenge", () => {
-  test("a fresh ladder's crown is earned — the floor's boss must fall", () => {
+  test("a fresh ladder's crown is earned and ASCENDS — the champion must fall, the challenger seats one floor higher", () => {
     const store = freshLadder();
     const s = playLadderRun(input(1, "titan", TITAN), store);
     // The run climbs the lower floors, then at floor TOWER_HEIGHT challenges the
     // seated bootstrap champion — the policy stops at the top rather than climbing
-    // past into an overshoot — and Titan beats it and seats over it.
+    // past into an overshoot — and Titan beats it. A crown ASCENDS: Titan seats at
+    // TOWER_HEIGHT+1 (one above the fight), the old champion stays below.
     expect(s).toMatchObject({ status: "over", endedBy: "crown" });
+    expect(s.round).toBe(TOWER_HEIGHT); // fought the champion at the top floor
     expect(ofType(s.log, "BossChallenged")[0]).toMatchObject({ floor: s.round, boss: BOOTSTRAP_RUN_ID });
-    expect(ofType(s.log, "Crowned")[0]).toMatchObject({ floor: s.round, dethroned: BOOTSTRAP_RUN_ID });
+    expect(ofType(s.log, "Crowned")[0]).toMatchObject({ floor: s.round + 1, dethroned: BOOTSTRAP_RUN_ID }); // seated one floor higher
     expect(s.log[s.log.length - 1]).toMatchObject({ type: "RunEnded", reason: "crown" });
-    expect(store.bossAt(s.round)).toMatchObject({ runId: "titan", round: s.round });
-    expect(store.champion()).toMatchObject({ runId: "titan", round: s.round });
+    expect(store.bossAt(s.round + 1)).toMatchObject({ runId: "titan", round: s.round + 1 }); // new champion above
+    expect(store.bossAt(s.round)!.runId).toBe(BOOTSTRAP_RUN_ID); // old champion still seated
+    expect(store.champion()).toMatchObject({ runId: "titan", round: s.round + 1 });
   });
 
-  test("a win seats the challenger and the old boss's ghost stays in the floor's pool", () => {
+  test("beating the CHAMPION ascends: the new champion seats one floor up and ALSO ghosts there; the old champion stays", () => {
     const store = new InMemoryLadderStore();
-    // A beatable boss seated on floor 1, with its own ghost already in floor 1's
-    // pool (as a prior run would have left). Challenging directly (the floor's
-    // climb pool is the boss's ghost — but challengeBoss does not draw a climb,
-    // it fights the SEATED boss): a win seats the challenger over the slot, and
-    // the unseated boss's ghost must remain in the pool — pool-only, not removed.
-    store.setBoss(1, { runId: "weak-boss", round: 1, seq: 0, team: [GRUNT] });
-    store.addSnapshot({ runId: "weak-boss", round: 1, seq: 0, team: [GRUNT] }); // its ghost in the pool
+    // A beatable boss seated on floor 1 is the ONLY seat, so it is the champion
+    // (highest occupied floor). Challenging and winning ASCENDS: Titan seats at
+    // floor 2 as the new champion, the old champion stays at floor 1, and Titan's
+    // team is ALSO left in floor 2's pool as a ghost (the demote-keeps-ghost
+    // invariant for when Titan is itself later dethroned).
+    store.setBoss(1, { runId: "weak-champ", round: 1, seq: 0, team: [GRUNT] });
+    store.addSnapshot({ runId: "weak-champ", round: 1, seq: 0, team: [GRUNT] }); // its ghost in floor 1's pool
     const s = challengeBoss(buy(initRun(input(1, "titan", TITAN)), 0), store);
-    expect(s).toMatchObject({ status: "over", endedBy: "crown", round: 1 });
-    expect(ofType(s.log, "Crowned")[0]).toMatchObject({ floor: 1, dethroned: "weak-boss" });
-    expect(store.bossAt(1)).toMatchObject({ runId: "titan" }); // challenger seated over the slot
-    expect(store.poolAt(1).some((g) => g.runId === "weak-boss")).toBe(true); // unseated boss's ghost stays
-    expect(store.poolAt(1).some((g) => g.runId === "titan")).toBe(true); // challenger's ghost is there too
+    expect(s).toMatchObject({ status: "over", endedBy: "crown", round: 1 }); // fought at floor 1
+    expect(ofType(s.log, "Crowned")[0]).toMatchObject({ floor: 2, dethroned: "weak-champ" }); // seated at floor 2
+    expect(store.bossAt(2)).toMatchObject({ runId: "titan", round: 2 }); // new champion one floor up
+    expect(store.bossAt(1)).toMatchObject({ runId: "weak-champ" }); // old champion STAYS seated (not demoted)
+    expect(store.champion()).toMatchObject({ runId: "titan", round: 2 }); // the tower grew
+    // Floor 1's pool keeps the challenger's snapshot-before-fight ghost (round 1)…
+    expect(store.poolAt(1).some((g) => g.runId === "titan")).toBe(true);
+    // …and floor 2 holds the new champion's pool-ghost (round 2), seq 0 on the fresh floor.
+    expect(store.poolAt(2)).toMatchObject([{ runId: "titan", round: 2, seq: 0 }]);
   });
 
   test("a lost challenge ends the run without seating — terminal, lives or not", () => {
@@ -455,36 +477,86 @@ describe("boss challenge", () => {
     expect(JSON.stringify(s0)).toBe(snapshot);
   });
 
-  test("the fixed-height champion seat is contested in place — a stronger run dethrones the champion at the top floor", () => {
-    // The fixed tower's shape (075-3, open-ended growth removed): the champion seat
-    // is floor TOWER_HEIGHT, and runs contest it THERE. Titan crowns at the top;
-    // Goliath (beats Titan) climbs to the top and dethrones Titan on the SAME floor,
-    // taking the champion seat — the tower does not grow a floor taller.
+  test("the tower GROWS as champions are crowned — two successive crowns climb the summit TOWER_HEIGHT → +1 → +2", () => {
+    // The lineage rule (slice 6): a crown ASCENDS, so each champion-beat grows the
+    // tower by a floor and every dethroned champion STAYS seated below. Titan beats
+    // the bootstrap champion at floor TOWER_HEIGHT and seats at TOWER_HEIGHT+1;
+    // Goliath (beats Titan) climbs to TOWER_HEIGHT+1, beats Titan there, and seats
+    // at TOWER_HEIGHT+2 — growth compounds, and the lineage stacks up the floors.
     const store = freshLadder();
     const titan = playLadderRun(input(1, "titan", TITAN), store);
-    expect(titan).toMatchObject({ status: "over", endedBy: "crown", round: TOWER_HEIGHT });
-    expect(store.bossAt(TOWER_HEIGHT)).toMatchObject({ runId: "titan" });
+    expect(titan).toMatchObject({ status: "over", endedBy: "crown", round: TOWER_HEIGHT }); // fought at the top
+    expect(store.champion()).toMatchObject({ runId: "titan", round: TOWER_HEIGHT + 1 }); // summit climbed one floor
+    expect(store.bossAt(TOWER_HEIGHT)!.runId).toBe(BOOTSTRAP_RUN_ID); // the out-topped champion stays
+
     const goliath = playLadderRun(input(2, "goliath", GOLIATH), store);
-    expect(goliath).toMatchObject({ status: "over", endedBy: "crown", round: TOWER_HEIGHT }); // same top floor
-    expect(store.bossAt(TOWER_HEIGHT)).toMatchObject({ runId: "goliath" }); // dethroned titan in place
-    expect(store.champion()).toMatchObject({ runId: "goliath", round: TOWER_HEIGHT }); // the champion seat changed hands
+    expect(goliath).toMatchObject({ status: "over", endedBy: "crown", round: TOWER_HEIGHT + 1 }); // fought one floor higher
+    expect(store.champion()).toMatchObject({ runId: "goliath", round: TOWER_HEIGHT + 2 }); // summit climbed again
+    // The full lineage is seated, each at its own floor — nothing was demoted.
+    expect(store.bossAt(TOWER_HEIGHT)!.runId).toBe(BOOTSTRAP_RUN_ID);
+    expect(store.bossAt(TOWER_HEIGHT + 1)!.runId).toBe("titan");
+    expect(store.bossAt(TOWER_HEIGHT + 2)!.runId).toBe("goliath");
   });
 
-  test("a directly-challenged boss falls only to a winner", () => {
-    // Seat a boss on a vacant floor and challenge it head-on (no climb ghost in
-    // the way): a beatable boss is dethroned and replaced; an unbeatable one
-    // stands and the challenge is lost. Same floor, opposite outcomes.
+  test("a 0-pwr team can neither crown nor cash-out-seat — it must actually win a fight", () => {
+    // The must-fail-first guard: if the win-path didn't require actually winning,
+    // a 0-pwr team would crown (ascend) or seat (cash out) for free. Against a real
+    // seated boss a 0-pwr challenger loses the fight, so neither end is reachable.
+    // At the champion floor (the only seat) → a beaten challenge is challenge-lost.
+    const top = new InMemoryLadderStore();
+    top.setBoss(1, { runId: "champ", round: 1, seq: 0, team: [vanilla("Wall", 1000, 500)] });
+    const crownAttempt = challengeBoss(buy(initRun(input(1, "grunt", GRUNT)), 0), top);
+    expect(crownAttempt.endedBy).toBe("challenge-lost");
+    expect(crownAttempt.endedBy).not.toBe("crown");
+    expect(top.champion()).toMatchObject({ runId: "champ", round: 1 }); // the tower did not grow, no seat
+
+    // Below the champion (a lower boss seated, a champion above it) → a beaten
+    // cash-out is also challenge-lost, never "seated".
+    const lower = new InMemoryLadderStore();
+    lower.setBoss(1, { runId: "lower-boss", round: 1, seq: 0, team: [vanilla("Wall", 1000, 500)] });
+    lower.setBoss(3, { runId: "champ", round: 3, seq: 0, team: [vanilla("Top", 30, 15)] }); // a champion above floor 1
+    const seatAttempt = challengeBoss(buy(initRun(input(1, "grunt", GRUNT)), 0), lower);
+    expect(seatAttempt.endedBy).toBe("challenge-lost");
+    expect(seatAttempt.endedBy).not.toBe("seated");
+    expect(lower.bossAt(1)).toMatchObject({ runId: "lower-boss" }); // boss held its seat
+  });
+
+  test("CASHING OUT a lower boss seats in place and does NOT grow the tower — distinct from a crown", () => {
+    // The cash-out (slice 6): below the champion, a win seats at the fought floor in
+    // place, demotes the old boss to a pool-ghost (still drawable), and ends "seated"
+    // — NOT a crown, and the tower's top is unchanged.
+    const store = new InMemoryLadderStore();
+    store.setBoss(1, { runId: "lower-boss", round: 1, seq: 0, team: [GRUNT] });
+    store.addSnapshot({ runId: "lower-boss", round: 1, seq: 0, team: [GRUNT] }); // the boss's ghost in floor 1's pool
+    store.setBoss(3, { runId: "champ", round: 3, seq: 0, team: [vanilla("Top", 30, 15)] }); // the summit, above floor 1
+    const s = challengeBoss(buy(initRun(input(1, "titan", TITAN)), 0), store);
+    expect(s).toMatchObject({ status: "over", endedBy: "seated", round: 1 }); // a cash-out, not a crown
+    expect(ofType(s.log, "Crowned")).toEqual([]); // no crown
+    expect(ofType(s.log, "Seated")[0]).toMatchObject({ floor: 1, dethroned: "lower-boss" });
+    expect(store.bossAt(1)).toMatchObject({ runId: "titan", round: 1 }); // seated in place at floor 1
+    expect(store.champion()).toMatchObject({ runId: "champ", round: 3 }); // the tower's top is unchanged
+    expect(store.poolAt(1).some((g) => g.runId === "lower-boss")).toBe(true); // demoted boss stays drawable
+    expect(store.poolAt(1).some((g) => g.runId === "titan")).toBe(true); // challenger's ghost is there too
+  });
+
+  test("a directly-challenged champion falls only to a winner — a win ascends, a loss leaves it seated", () => {
+    // Seat a lone boss (so it is the champion) and challenge it head-on: a beatable
+    // champion is out-topped and the challenger ASCENDS one floor (the old champion
+    // stays seated); an unbeatable one stands and the challenge is lost. Same floor,
+    // opposite outcomes.
     const weak = new InMemoryLadderStore();
     weak.setBoss(1, { runId: "weak", round: 1, seq: 0, team: [GRUNT] });
     const won = challengeBoss(buy(initRun(input(1, "titan", TITAN)), 0), weak);
     expect(won.endedBy).toBe("crown");
-    expect(weak.bossAt(1)).toMatchObject({ runId: "titan" }); // beaten boss replaced
+    expect(weak.bossAt(2)).toMatchObject({ runId: "titan", round: 2 }); // challenger ascended to floor 2
+    expect(weak.bossAt(1)).toMatchObject({ runId: "weak" }); // the out-topped champion stays seated
 
     const strong = new InMemoryLadderStore();
     strong.setBoss(1, { runId: "strong", round: 1, seq: 0, team: [vanilla("Wall", 1000, 500)] });
     const lost = challengeBoss(buy(initRun(input(1, "titan", TITAN)), 0), strong);
     expect(lost.endedBy).toBe("challenge-lost");
     expect(strong.bossAt(1)).toMatchObject({ runId: "strong" }); // unbeaten boss stands
+    expect(strong.bossAt(2)).toBeNull(); // nothing ascended
   });
 
   test("the unseated boss's team stays in the pools as a ghost", () => {
@@ -573,11 +645,37 @@ describe("determinism", () => {
       return playLadderRun(input(2, "goliath", GOLIATH), store);
     };
     const a = play();
-    // The replayed run ends in a boss challenge — so this byte-comparison
-    // covers the challengeBoss path (snapshot, BossChallenged, Crowned, RunEnded).
+    // The replayed run ends in an ascend-crown boss challenge — so this
+    // byte-comparison covers the challengeBoss path (snapshot, BossChallenged,
+    // Crowned, RunEnded) AND the ascend seat write.
     expect(a.endedBy).toBe("crown");
     expect(ofType(a.log, "BossChallenged").length).toBe(1);
     expect(runToJSONL(a.log)).toBe(runToJSONL(play().log));
+  });
+
+  test("a run threading an ascend-crown and a cash-out replays byte-identical", () => {
+    // One play sequence that exercises BOTH winning challenge ends: a cash-out
+    // (beat a lower boss → "seated") and an ascend-crown (beat the champion →
+    // "crown" at f+1). Replaying the same (seed, decisions, ladder contents)
+    // reproduces every run log byte-for-byte — the determinism artifact.
+    const play = () => {
+      const store = freshLadder();
+      // Run A: a cash-out — challenge floor 1's seeded boss directly (a lower
+      // floor; the champion is at TOWER_HEIGHT), winning seats in place → "seated".
+      const cashOut = challengeBoss(buy(initRun(input(1, "titan", TITAN)), 0), store);
+      // Run B: an ascend-crown — climb to the champion floor and beat it → "crown",
+      // seated one floor higher.
+      const crown = playLadderRun(input(2, "goliath", GOLIATH), store);
+      return { cashOut, crown };
+    };
+    const a = play();
+    expect(a.cashOut.endedBy).toBe("seated");
+    expect(ofType(a.cashOut.log, "Seated").length).toBe(1);
+    expect(a.crown.endedBy).toBe("crown");
+    expect(ofType(a.crown.log, "Crowned")[0]).toMatchObject({ floor: TOWER_HEIGHT + 1 });
+    const b = play();
+    expect(runToJSONL(a.cashOut.log)).toBe(runToJSONL(b.cashOut.log));
+    expect(runToJSONL(a.crown.log)).toBe(runToJSONL(b.crown.log));
   });
 });
 

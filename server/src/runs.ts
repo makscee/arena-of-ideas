@@ -343,12 +343,20 @@ function extractSteps(log: readonly RunEvent[]): ReplayStep[] {
  * nothing replays that the server did not itself hand out. Writes are
  * staged, never stored: the store mutates only on acceptance. */
 class ReplayLadderView implements LadderStore {
-  frame: { claimedSeq: number; championRunId: string | null } | null = null;
+  private _frame: { claimedSeq: number; championRunId: string | null } | null = null;
   readonly staged: TeamSnapshot[] = [];
   stagedCrown: { snap: TeamSnapshot; challengedRunId: string | null } | null = null;
   /** The round of the in-flight fight — set by poolAt, which the kernel
    * always calls before champion() inside a ladder fight. */
   private round = 0;
+  /** The floor this step's serve-check was satisfied at — the floor the run
+   * actually drew from (a climb) or fought the boss at (a challenge). An ascend
+   * crown reads ONE MORE pool — floor f+1, to seq the new champion's pool-ghost —
+   * but that floor is bookkeeping, never a play-time view; the serve-check binds
+   * the served floor only, and the f+1 read returns the live (append-only) pool
+   * un-gated (its seq is re-assigned at accept anyway). null until the served
+   * read happens, reset per step when `frame` is set. */
+  private servedFloor: number | null = null;
 
   constructor(
     private readonly store: SqliteLadderStore,
@@ -356,9 +364,23 @@ class ReplayLadderView implements LadderStore {
     private readonly serves: ReadonlyMap<number, { len: number; championRunId: string }[]>,
   ) {}
 
+  /** Set the in-flight step. Resets the per-step served-floor latch so each
+   * step's serve-check binds its own floor. */
+  set frame(f: { claimedSeq: number; championRunId: string | null } | null) {
+    this._frame = f;
+    this.servedFloor = null;
+  }
+
   poolAt(round: number): readonly TeamSnapshot[] {
     const frame = this.mustFrame();
     this.round = round;
+    // An ascend crown's f+1 pool read (after the served floor is already
+    // latched, on a higher floor) is kernel bookkeeping to seq the new
+    // champion's pool-ghost, not a play-time draw. Serve it the live pool
+    // un-gated — accept re-sequences the staged ghost regardless.
+    if (this.servedFloor !== null && round !== this.servedFloor) {
+      return this.store.poolVisibleTo(round, this.userId);
+    }
     const served = this.serves.get(round) ?? [];
     if (!served.some((s) => s.len === frame.claimedSeq)) {
       throw new SubmissionRejected(
@@ -366,6 +388,7 @@ class ReplayLadderView implements LadderStore {
           `this run (play reads go through GET /v1/runs/:runId/pool/:round)`,
       );
     }
+    this.servedFloor = round;
     // Pools are append-only and every serve precedes its submission, so the
     // served length never exceeds the current pool; were the slice ever to
     // come up short anyway, the re-derived Snapshotted.seq would diverge.
@@ -419,8 +442,8 @@ class ReplayLadderView implements LadderStore {
   }
 
   private mustFrame(): { claimedSeq: number; championRunId: string | null } {
-    if (this.frame === null) throw new SubmissionRejected("ladder access outside a ladder fight — malformed run log");
-    return this.frame;
+    if (this._frame === null) throw new SubmissionRejected("ladder access outside a ladder fight — malformed run log");
+    return this._frame;
   }
 }
 

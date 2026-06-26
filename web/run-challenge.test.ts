@@ -81,17 +81,17 @@ describe("challengeNoteLine makes the decision legible — terminal + harder hig
 describe("endHeadLine — all four terminal reasons read distinctly", () => {
   const note = "the shipped boss falls; your team takes the seat";
 
-  test("crown at the summit reads as the champion", () => {
-    const head = endHeadLine("crown", TOWER_HEIGHT, note);
+  test("crown reads as the champion — an ascend over the summit", () => {
+    const head = endHeadLine("crown", TOWER_HEIGHT + 1, note);
     expect(head).toContain("👑");
     expect(head.toLowerCase()).toContain("champion");
     expect(head).toContain(note);
   });
-  test("crown at a lower floor reads as a floor seat, not the champion", () => {
-    const head = endHeadLine("crown", 1, note);
-    expect(head).toContain("👑");
+  test("seated reads as a lower floor seat, not the champion (a cash-out)", () => {
+    const head = endHeadLine("seated", 1, note);
     expect(head).toContain("floor 1");
     expect(head.toLowerCase()).not.toContain("champion");
+    expect(head).not.toContain("👑"); // a cash-out is not a crown
   });
   test("challenge-lost says the boss held, the run is over", () => {
     const head = endHeadLine("challenge-lost", 2, note).toLowerCase();
@@ -113,8 +113,8 @@ describe("endHeadLine — all four terminal reasons read distinctly", () => {
     expect(head).not.toContain("👑");
   });
 
-  test("the four reasons produce four DISTINCT heads (no fall-through to a wrong state)", () => {
-    const reasons: RunEndReason[] = ["crown", "challenge-lost", "overshoot", "out-of-lives"];
+  test("the five reasons produce five DISTINCT heads (no fall-through to a wrong state)", () => {
+    const reasons: RunEndReason[] = ["crown", "seated", "challenge-lost", "overshoot", "out-of-lives"];
     const heads = reasons.map((r) => endHeadLine(r, TOWER_HEIGHT, note));
     expect(new Set(heads).size).toBe(reasons.length);
   });
@@ -151,18 +151,19 @@ function climbTo(s: RunState, store: LadderStore, targetFloor: number): RunState
 }
 
 describe("the challenge flow reaches every terminal state on the seeded tower", () => {
-  test("challenging a LOWER floor's boss and winning ends 'crown' (a cash-out seat)", () => {
+  test("challenging a LOWER floor's boss and winning ends 'seated' (a cash-out, not a crown)", () => {
     const store = fresh();
     let s = startRun(strong);
-    // Floor 1 has a seeded boss — challenge it straight away (the cash-out).
+    // Floor 1 has a seeded boss below the champion — challenge it straight away.
     expect(store.bossAt(1)).not.toBeNull();
     s = challengeBoss(s, store);
     expect(s.status).toBe("over");
-    expect(s.endedBy).toBe("crown");
+    expect(s.endedBy).toBe("seated"); // a cash-out seat, NOT a crown
     expect(s.round).toBeLessThan(TOWER_HEIGHT); // a lower seat, not the summit
+    expect(store.bossAt(1)!.runId).toBe("me"); // seated in place at floor 1
   });
 
-  test("challenging the SUMMIT boss and winning ends 'crown' at floor TOWER_HEIGHT (champion)", () => {
+  test("challenging the SUMMIT champion and winning ends 'crown' and ASCENDS to floor TOWER_HEIGHT+1", () => {
     const store = fresh();
     let s = startRun(strong);
     s = climbTo(s, store, TOWER_HEIGHT);
@@ -170,8 +171,9 @@ describe("the challenge flow reaches every terminal state on the seeded tower", 
     expect(s.round).toBe(TOWER_HEIGHT);
     expect(store.bossAt(TOWER_HEIGHT)).not.toBeNull();
     s = challengeBoss(s, store);
-    expect(s.endedBy).toBe("crown");
-    expect(s.round).toBe(TOWER_HEIGHT); // the summit — this crown IS the champion
+    expect(s.endedBy).toBe("crown"); // beating the champion crowns
+    expect(s.round).toBe(TOWER_HEIGHT); // fought at the summit
+    expect(store.champion()).toMatchObject({ runId: "me", round: TOWER_HEIGHT + 1 }); // ascended one floor
   });
 
   test("challenging a boss and LOSING ends 'challenge-lost', not out-of-lives", () => {

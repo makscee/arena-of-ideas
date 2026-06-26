@@ -39,18 +39,25 @@ export const STACK_THRESHOLD = 3;
 /** Fight losses a run survives; ending the run at 0 is the ladder's rule (slice 2). */
 export const STARTING_LIVES = 5;
 
-/** The bootstrap tower's height — how many floors a fresh ladder seeds. The
- * tower is a FIXED height: openLadder seeds a full floor (a climb pool + a
- * seated boss) on floors 1..TOWER_HEIGHT and NOTHING above. Floor TOWER_HEIGHT's
- * boss is the champion (the highest occupied floor). A run that climbs past the
- * top lands on a vacant floor and OVERSHOOTS (challengeBoss with no boss = no
- * crown), so the summit is gated by a real fight at floor TOWER_HEIGHT, never a
- * free seat above it.
+/** The tower's SEASON-START height — how many floors a fresh ladder seeds, NOT
+ * a cap. openLadder seeds a full floor (a climb pool + a seated boss) on floors
+ * 1..TOWER_HEIGHT and nothing above, so a first-ever run climbs that many floors
+ * and faces a real champion at the top. But the tower GROWS above this: beating
+ * the champion (the boss of the highest occupied floor) is an ASCEND — the
+ * challenger seats one floor HIGHER as the new champion (the old champion stays
+ * seated below), so a played-on ladder's summit climbs past TOWER_HEIGHT crown by
+ * crown. TOWER_HEIGHT is only where the season opens.
+ *
+ * What gates the top is still the OVERSHOOT rule, not a cap: nothing is seeded
+ * above the CURRENT summit, so a run that climbs past it (challengeBoss on a
+ * vacant floor with no boss) overshoots — no crown — rather than free-seating. A
+ * crown is always a real fight against the reigning champion, whatever floor that
+ * has grown to.
  *
  * Height 1 made a first-ever run crown at round 2 — no climb, no game; a tower
  * this tall gives the first session a real ladder to climb and a real boss to
  * beat at the top. BOOTSTRAP_TEAMS and BOSS_TEAMS each carry exactly this many
- * floors. */
+ * floors (the season-start seed; growth above is run-won, not seeded). */
 export const TOWER_HEIGHT = 4;
 
 /** Per-floor climb pools, floors 1..TOWER_HEIGHT (openLadder): BOOTSTRAP_TEAMS[f-1]

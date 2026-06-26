@@ -272,18 +272,26 @@ export function formatRunSummary(state: RunState): string {
   const head =
     state.endedBy === "crown"
       ? "crowned"
-      : state.endedBy === "challenge-lost"
-        ? "challenge lost"
-        : state.endedBy === "overshoot"
-          ? "overshot"
-          : "out of lives";
+      : state.endedBy === "seated"
+        ? "seated"
+        : state.endedBy === "challenge-lost"
+          ? "challenge lost"
+          : state.endedBy === "overshoot"
+            ? "overshot"
+            : "out of lives";
   const lines = [
     `Run ${state.runId} (seed ${state.seed}): ${head} at round ${state.round} — ${won}W/${lost}L/${drawn}D, ${state.lives} ${state.lives === 1 ? "life" : "lives"} left`,
     `  line:  ${state.team.map((u) => `${u.name} L${u.level}`).join(", ")}`,
   ];
+  // A crown ascends (seated one floor higher as the new champion); a cash-out
+  // seats in place. Either way the seat names the boss it dethroned.
   const crowned = ofType(state.log, "Crowned")[0];
   if (crowned !== undefined) {
-    lines.push(`  crown: ${crowned.dethroned === null ? "the spot was vacant" : `dethroned ${crowned.dethroned}`} — ${state.runId} reigns`);
+    lines.push(`  crown: ${crowned.dethroned === null ? "the spot was vacant" : `out-topped ${crowned.dethroned}`} — ${state.runId} reigns at floor ${crowned.floor}`);
+  }
+  const seated = ofType(state.log, "Seated")[0];
+  if (seated !== undefined) {
+    lines.push(`  seat:  ${seated.dethroned === null ? "the spot was vacant" : `dethroned ${seated.dethroned}`} — ${state.runId} holds floor ${seated.floor}`);
   }
   return lines.join("\n");
 }

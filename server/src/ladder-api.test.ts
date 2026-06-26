@@ -535,20 +535,29 @@ describe("prefix forgeries are rejected", () => {
 // genesis world — not the present one.
 // ---------------------------------------------------------------------------
 
-/** Eve's offline forge: greedy buying (outlevels the honest lone titans),
- * each fight against a banked view, the challenge against `champion`. */
+/** Eve's offline forge: greedy buying (outlevels the honest lone titans), each
+ * fight against a banked view, the challenge against `champion`. The tower GROWS
+ * now (slice 6): the live champion has ascended past the genesis top floor, so a
+ * banked run that only ever read floors 1..genesisTop can never honestly REACH
+ * the live champion's floor. The forgery instead PINS the claimed champion at the
+ * genesis top floor (`genesisTop`) — claiming the live champion's team sits where
+ * the bootstrap one did — so the run challenges there with a banked view. That is
+ * the exact claim serve-time pinning must reject: a round-`genesisTop` view was
+ * never co-served with the live champion. */
 function forgeRun(
   runId: string,
   seed: number,
   bankedPools: ReadonlyMap<number, TeamSnapshot[]>,
   champion: TeamSnapshot,
+  genesisTop: number,
 ): RunState {
+  const claimedChampion: TeamSnapshot = { ...champion, round: genesisTop };
   let s = initRun({ seed, runId, pool: [TITAN], statuses: stressRegistry });
   for (let guard = 0; s.status === "active"; guard++) {
     if (guard > 50) throw new Error("forged run did not terminate");
     while (s.gold >= UNIT_COST && s.offers.length > 0) s = buy(s, 0);
     const round = s.round;
-    s = ladderMove(s, viewOf(round, { pool: bankedPools.get(round) ?? [], champion }));
+    s = ladderMove(s, viewOf(round, { pool: bankedPools.get(round) ?? [], champion: claimedChampion }));
   }
   return s;
 }
@@ -589,10 +598,12 @@ describe("banked-open forgeries are rejected", () => {
 
     // Eve forges against her banked genesis views: rounds 1-3 fight only the
     // bootstrap ghosts (dodging every post-genesis ghost), round 4 claims the
-    // genesis round-4 pool and challenges the champion seated NOW, whom her banked
+    // genesis round-4 pool and challenges the champion seated NOW — PINNED at the
+    // genesis top floor (TOWER_HEIGHT), since the live champion has since ascended
+    // higher than a banked floors-1..4 run could honestly reach — whom her banked
     // round-4 view was never served with.
-    const s = forgeRun("banked", 7, genesisPools, seated);
-    expect(s).toMatchObject({ endedBy: "crown", round: 4 }); // locally: crowned at round 4 over the current champion
+    const s = forgeRun("banked", 7, genesisPools, seated, TOWER_HEIGHT);
+    expect(s).toMatchObject({ endedBy: "crown", round: TOWER_HEIGHT }); // locally: crowned at the genesis top floor over the current champion's team
     // Each banked round was claimed at its genesis pool length (all BASE on the
     // uniform tower), so every snapshot — climbs and the round-4 challenge — sits at BASE.
     expect(ofType(s.log, "Snapshotted").map((e) => e.seq)).toEqual([BASE, BASE, BASE, BASE]); // the banked claims
@@ -614,7 +625,7 @@ describe("banked-open forgeries are rejected", () => {
     // were never served for it, so the very first fight fails the record.
     expect((await openRun(ctx, eve, "control")).status).toBe(200);
     expect((await fetchRunView(ctx, eve, "control", 1)).pool.length).toBeGreaterThan(BASE);
-    const s = forgeRun("control", 7, genesisPools, seated);
+    const s = forgeRun("control", 7, genesisPools, seated, TOWER_HEIGHT);
     const { status, body } = await submit(ctx, eve, serializeRun(s));
     expect(status).toBe(422);
     expect(body["reason"]).toMatch(/never served/);
@@ -630,8 +641,8 @@ describe("banked-open forgeries are rejected", () => {
     // crown race applies: the bootstrap seat is long gone, the crown lapses,
     // and only the ghosts land. Banking buys nothing an honest slow run
     // would not also get.
-    const s = forgeRun("banked", 7, genesisPools, genesisChampion);
-    expect(s).toMatchObject({ endedBy: "crown", round: 4 });
+    const s = forgeRun("banked", 7, genesisPools, genesisChampion, TOWER_HEIGHT);
+    expect(s).toMatchObject({ endedBy: "crown", round: TOWER_HEIGHT });
     expect(ofType(s.log, "BossChallenged")[0]!.boss).toBe(BOOTSTRAP_RUN_ID);
 
     const { status, body } = await submit(ctx, eve, serializeRun(s));
