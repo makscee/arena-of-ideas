@@ -14,6 +14,15 @@
   --hurt: #e06c75;
   --status: #b48ad6;
   --block: #d6c46f;
+  /* The one card size (#078) — the single source of truth for how wide a card
+     is as a catalog/roster item: shop, line, ladder, and the codex (Unit AND
+     Status, same size). The card size IS the complexity budget, so it lives in
+     exactly one place; no catalog surface overrides it. 7rem is the width the
+     card's content (3-chip strip + its 44px touch bands, framed stats) is tuned
+     to. The battle board is the one surface that SCALES this same card down to
+     fit its focal three-column replay stage (a wrapper resize, not a different
+     card) — it keeps its own `--side-col`, always has (#065). */
+  --card-w: 7rem;
 }
 
 * {
@@ -147,6 +156,10 @@ button:disabled:hover {
      the middle of a wider centre lane — still dead-centre because the lane is
      symmetric. Each team is exactly one card wide; team size changes only
      column HEIGHT, never the card's x. */
+  /* The board scales the one card down to fit its focal three-column replay
+     stage (#065): the side track is a touch under the catalog card-width on a
+     desk and narrower still at 375px (phone override below). Same card, sized to
+     its wrapper — never wider than the fixed catalog size (#078). */
   --side-col: 6rem;
   grid-template-columns: var(--side-col) minmax(0, 1fr) var(--side-col);
   align-items: start;
@@ -419,8 +432,17 @@ button:disabled:hover {
    geometry below (buy/arrow/chip ::after extensions) is tuned to them. */
 .unit {
   position: relative;
-  flex: 1 1 0;
-  max-width: 7rem;
+  /* ONE fixed size, everywhere (#078): the card never stretches to its row or
+     grows in the codex — its width is the budget. A surface that needs more
+     framing (a board team column, an inspect overlay) wraps the card; it does
+     not resize it. The board's `.side .unit` fills a `--card-w`-wide track, so
+     even that "100%" resolves to exactly this size. */
+  width: var(--card-w);
+  /* `flex: none` — the card sizes to its `width` on the cross axis and to its
+     content on the main axis, in BOTH a row container (shop/line/ladder) and a
+     column container (the board team column). A flex-basis here would wrongly
+     pin the board card's HEIGHT to the card width. */
+  flex: none;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -1256,6 +1278,17 @@ button:disabled:hover {
   color: var(--text);
 }
 
+/* A Part term in a behavior sentence (#078 slice 3) — an anchor to its codex
+   Part card, styled like the in-panel status ref so every tappable term reads
+   the same. The accent hue distinguishes "opens the codex" from "reveals here"
+   (the status ref's --status hue). */
+.ins-partref {
+  color: var(--accent);
+}
+.ins-partref:hover {
+  color: var(--text);
+}
+
 .ins-head {
   display: flex;
   align-items: center;
@@ -2061,12 +2094,6 @@ button:disabled:hover {
   min-width: 0;
 }
 
-#run-shop-row .unit,
-#run-line .unit,
-#run-end-line .unit {
-  flex: 0 1 7rem;
-  min-width: 4.2rem;
-}
 
 /* Level badge — a real pill on the card; fusion pips ride inside it. */
 .run-lvl {
@@ -2457,11 +2484,6 @@ button:disabled:hover {
   min-width: 0;
 }
 
-.lv-team .unit {
-  flex: 0 1 5.6rem;
-  min-width: 3.6rem;
-}
-
 button.danger {
   color: var(--hurt);
   border-color: var(--hurt);
@@ -2505,8 +2527,27 @@ button.danger {
   grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
 }
 
+.codex-grid-parts {
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+}
+
 .codex-grid-rules {
   grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+}
+
+/* A Part card (#078): the SAME card at the SAME fixed size as a Unit/Status —
+   it frames its atom family ("Effect", "Selector", …) in the stat band where a
+   unit frames hp/pwr. The .ptag fills the band as one centred label, so the
+   card geometry (var(--card-w)) is untouched. */
+.unit.is-part .unums {
+  justify-content: center;
+}
+
+.unit.is-part .ptag {
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dim);
 }
 
 .codex-entry {
@@ -2525,32 +2566,16 @@ button.danger {
 }
 
 /* Status colour identity: a hash-stable hue (the unit art's own scheme,
-   unit-card.ts nameHue) rides each status card as --codex-hue. */
-.codex-status-entry {
-  border-color: hsl(var(--codex-hue, 0) 30% 28%);
-}
+   unit-card.ts nameHue) rides each unit/status card as the shape art's hue. */
 
-.codex-swatch {
-  flex: 0 0 auto;
-  width: 0.7rem;
-  height: 0.7rem;
-  border-radius: 50%;
-  align-self: center;
-  background: hsl(var(--codex-hue, 0) 45% 58%);
-  border: 1px solid hsl(var(--codex-hue, 0) 50% 38%);
-}
-
-/* The shared unit card, codex-sized: a reference page, not an inspector
-   trigger — centred, a touch larger art than the board's. */
-.codex-unit-entry .unit {
+/* The shared card in the codex (unit AND status, #078): a reference page, not
+   an inspector trigger — centred in its grid cell with a little breathing room
+   below. It is the SAME card at the SAME fixed size as everywhere else: no
+   width or art-size override lives here anymore (that was the per-surface
+   resizing #078 removed). */
+.codex-unit {
   margin: 0 auto 0.45rem;
-  max-width: 8.5rem;
   cursor: default;
-}
-
-.codex-unit-entry .unit .shape {
-  width: 3rem;
-  height: 3rem;
 }
 
 .codex-entry-head {
@@ -2578,6 +2603,20 @@ button.danger {
 
 .codex-dim {
   color: var(--dim);
+}
+
+/* Every term in a codex behavior sentence links to its card (#078 slice 3):
+   a referenced status to its Status card, every Part term to its Part card.
+   A quiet dotted underline so the sentence still reads as prose, with the
+   accent on hover marking it tappable. */
+.codex-termref {
+  color: inherit;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.codex-termref:hover {
+  color: var(--accent);
 }
 
 /* Each card's deep-link anchor: a real ≥44px target — it has no adjacent

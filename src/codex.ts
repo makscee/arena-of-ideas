@@ -28,6 +28,7 @@ import {
   incomeForRound,
 } from "./tunables.js";
 import { describeAbility, describeStatus } from "./describe.js";
+import { partAtoms } from "./parts.js";
 import type { StatusRegistry, UnitDef } from "./types.js";
 
 // ---------------------------------------------------------------------------
@@ -38,6 +39,12 @@ export interface CodexStatusEntry {
   /** Status name — also the deep-link anchor fragment: #codex/status/<name> */
   name: string;
   description: string;
+  /** Per-stack stat contributions, formatted for the card's framed stat cells
+   * (e.g. "+2", "-1"); "·" when the status moves that stat by nothing. A Status
+   * renders through the same card as a Unit (#078), framing its statMods where a
+   * Unit frames base hp/pwr. */
+  hp: string;
+  pwr: string;
 }
 
 export interface CodexUnitEntry {
@@ -55,6 +62,19 @@ export interface CodexUnitEntry {
   creator?: string;
 }
 
+export interface CodexPartEntry {
+  /** Atom family — the codex section + first deep-link segment:
+   * #codex/part/<family>/<kind>. */
+  family: "trigger" | "interceptor" | "condition" | "selector" | "effect";
+  /** The atom's union discriminant — unique within its family. */
+  kind: string;
+  /** Display label, e.g. "Apply status", "Front enemy". */
+  name: string;
+  /** One-line meaning, derived from describe.ts (presentation, kernel
+   * untouched) — what this atom does when slotted into an ability. */
+  meaning: string;
+}
+
 export interface CodexRuleEntry {
   /** Short key used as anchor fragment: #codex/rule/<key> */
   key: string;
@@ -67,6 +87,10 @@ export interface CodexRuleEntry {
 export interface CodexData {
   statuses: CodexStatusEntry[];
   units: CodexUnitEntry[];
+  /** Every creator atom (Part) the type space defines — one entry per Trigger,
+   * Interceptor, Condition, Selector, Effect (#078). Derived from the type
+   * space (src/parts.ts), not a hand-maintained list. */
+  parts: CodexPartEntry[];
   rules: CodexRuleEntry[];
 }
 
@@ -105,9 +129,15 @@ export function codexUnits(approved: readonly UnitDef[] = []): UnitDef[] {
  * winning the dedup. */
 export function buildCodex(registry: StatusRegistry, units: UnitDef[]): CodexData {
   // -- statuses: every entry in the registry --
+  // A status frames its per-stack statMods in the card's stat cells (#078); a
+  // stat the status doesn't move shows "·". No number is typed — it is the
+  // statMod the kernel already carries.
+  const fmtMod = (v: number | undefined): string => (v === undefined || v === 0 ? "·" : `${v > 0 ? "+" : ""}${v}`);
   const statuses: CodexStatusEntry[] = Object.values(registry).map((def) => ({
     name: def.name,
     description: describeStatus(def),
+    hp: fmtMod(def.statMods?.hp),
+    pwr: fmtMod(def.statMods?.pwr),
   }));
   statuses.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -130,6 +160,18 @@ export function buildCodex(registry: StatusRegistry, units: UnitDef[]): CodexDat
     });
   }
   unitEntries.sort((a, b) => a.name.localeCompare(b.name));
+
+  // -- parts: every creator atom the type space defines (#078) --
+  // One card per Trigger / Interceptor / Condition / Selector / Effect kind,
+  // enumerated from the discriminated unions in types.ts (src/parts.ts) so a
+  // newly-added Part kind gets a card automatically. Each meaning is derived
+  // from the describe.ts helpers — presentation only, kernel untouched.
+  const parts: CodexPartEntry[] = partAtoms().map((a) => ({
+    family: a.family,
+    kind: a.kind,
+    name: a.name,
+    meaning: a.meaning,
+  }));
 
   // -- rules: templated sentences; every number computed, never typed --
 
@@ -222,5 +264,5 @@ export function buildCodex(registry: StatusRegistry, units: UnitDef[]): CodexDat
     },
   ];
 
-  return { statuses, units: unitEntries, rules };
+  return { statuses, units: unitEntries, parts, rules };
 }

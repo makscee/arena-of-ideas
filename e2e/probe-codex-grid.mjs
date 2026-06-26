@@ -77,25 +77,94 @@ for (const [viewport, tag] of [
   }
   check(await noHorizontalOverflow(page), `${tag} codex has no horizontal overflow`);
 
-  // -- 2. the unit entries draw the shared slice-1 card --
-  const skeleton = await page.$eval("#codex-sec-units .codex-entry .unit", (card) =>
-    ["svg.shape", ".uname", ".unums .hp", ".unums .pwr", ".chips"]
-      .filter((w) => card.querySelector(w) !== null)
-      .join(","),
-  );
+  // -- 2. unit AND status entries draw the ONE shared card (#078) --
+  // The shared-card skeleton string a card must carry to BE the shared card.
+  const SHARED_SKELETON = "svg.shape,.uname,.unums .hp,.unums .pwr,.chips";
+  // Null-safe: a section whose entry has NO `.unit` (the old status lookalike)
+  // returns "(no .unit)" so the assertion fails cleanly instead of throwing.
+  const skeletonOf = async (sel) => {
+    const el = await page.$(sel);
+    if (el === null) return "(no .unit)";
+    return el.evaluate((card) =>
+      ["svg.shape", ".uname", ".unums .hp", ".unums .pwr", ".chips"]
+        .filter((w) => card.querySelector(w) !== null)
+        .join(","),
+    );
+  };
+  const widthOf = async (sel) => {
+    const el = await page.$(sel);
+    return el === null ? -1 : el.evaluate((e) => e.getBoundingClientRect().width);
+  };
+  const unitSkeleton = await skeletonOf("#codex-sec-units .codex-entry .unit");
   check(
-    skeleton === "svg.shape,.uname,.unums .hp,.unums .pwr,.chips",
+    unitSkeleton === SHARED_SKELETON,
     `${tag} codex unit entry carries the full shared-card skeleton`,
-    skeleton,
+    unitSkeleton,
   );
-  // Status colour identity: two status cards, two hues.
-  const hues = await page.$$eval("#codex-sec-statuses .codex-entry", (els) =>
-    els.slice(0, 2).map((el) => el.style.getPropertyValue("--codex-hue")),
+  // The Status card is the SAME card (#078): same .unit skeleton, not the old
+  // .codex-status-entry lookalike. This must FAIL against the old codex, whose
+  // status entry had a .codex-swatch + .codex-entry-name and NO .unit / svg.shape
+  // / .unums — the skeleton string would have come back empty (no `.unit` to
+  // match) instead of the shared skeleton.
+  const statusSkeleton = await skeletonOf("#codex-sec-statuses .codex-entry .unit");
+  check(
+    statusSkeleton === SHARED_SKELETON,
+    `${tag} codex STATUS entry carries the full shared-card skeleton (#078)`,
+    statusSkeleton,
   );
   check(
-    hues.length === 2 && hues[0] !== "" && hues[0] !== hues[1],
-    `${tag} status cards carry distinct colour identities`,
-    `hues=[${hues}]`,
+    (await page.$("#codex-sec-statuses .codex-entry .unit.is-status")) !== null,
+    `${tag} status card routes through unitCardHtml as kind=status (#078)`,
+  );
+  // The status lookalike is gone: no card-shaped .codex-swatch survives.
+  check(
+    (await page.$("#codex-sec-statuses .codex-swatch")) === null,
+    `${tag} the old .codex-status-entry swatch lookalike is removed (#078)`,
+  );
+  // ONE fixed size: a status card is the SAME width as a unit card. Must FAIL
+  // against the old codex where the unit card was max-width 8.5rem and the
+  // status lookalike was a full-width text card — wholly different widths.
+  const unitCardW = await widthOf("#codex-sec-units .codex-entry .unit");
+  const statusCardW = await widthOf("#codex-sec-statuses .codex-entry .unit");
+  check(
+    Math.abs(statusCardW - unitCardW) <= 1,
+    `${tag} codex status card shares the unit card's ONE fixed width (#078)`,
+    `status ${statusCardW.toFixed(1)} vs unit ${unitCardW.toFixed(1)}`,
+  );
+
+  // -- 2b. Part cards (#078) draw the ONE shared card at the fixed size --
+  // Every registry Part atom (Trigger/Interceptor/Condition/Selector/Effect)
+  // is its own card, rendered through unitCardHtml exactly like a Unit/Status.
+  const partCols = await columnCount(page, "#codex-sec-parts");
+  if (viewport === PHONE) {
+    check(partCols === 2, `${tag} parts grid sits two abreast`, `cols=${partCols}`);
+  } else {
+    check(partCols >= 3, `${tag} parts grid is multi-column`, `cols=${partCols}`);
+  }
+  const partCount = await page.$$eval("#codex-sec-parts .codex-entry", (els) => els.length);
+  // The type space defines 35 atoms today (10 triggers + 7 interceptors + 1
+  // condition + 7 selectors + 10 effects); a new Part kind only raises this, so
+  // the floor (not an exact count) is the durable pin against an empty section.
+  check(partCount >= 30, `${tag} parts section shows the full Part vocabulary`, `cards=${partCount}`);
+  const partSkeleton = await skeletonOf("#codex-sec-parts .codex-entry .unit");
+  // A Part frames its family in the stat band (.ptag), not hp/pwr — so it carries
+  // the shared skeleton minus the per-stat cells, but IS the same .unit card with
+  // shape art and chips. Assert the card identity, not the stat cells.
+  check(
+    partSkeleton.includes("svg.shape") && partSkeleton.includes(".uname") && partSkeleton.includes(".chips"),
+    `${tag} codex part entry draws the shared .unit card (art + name + chips)`,
+    partSkeleton,
+  );
+  check(
+    (await page.$("#codex-sec-parts .codex-entry .unit.is-part")) !== null,
+    `${tag} part card routes through unitCardHtml as kind=part (#078)`,
+  );
+  // ONE fixed size: a Part card is the SAME width as a Unit card.
+  const partCardW = await widthOf("#codex-sec-parts .codex-entry .unit");
+  check(
+    Math.abs(partCardW - unitCardW) <= 1,
+    `${tag} codex part card shares the unit card's ONE fixed width (#078)`,
+    `part ${partCardW.toFixed(1)} vs unit ${unitCardW.toFixed(1)}`,
   );
 
   // -- 3. search filters the grid, sections fold, clear restores --
@@ -123,12 +192,51 @@ for (const [viewport, tag] of [
   for (const [frag, id] of [
     ["codex/status/Poison", "codex-status-Poison"],
     ["codex/rule/fusion", "codex-rule-fusion"],
+    // A Part deep link is 4-segment (family + kind, #078) — exercises navigate().
+    ["codex/part/effect/damage", "codex-part-effect-damage"],
   ]) {
     await page.evaluate((f) => (window.location.hash = `#${f}`), frag);
     await waitInView(page, `#${id}`);
     check(
       await page.$eval(`#${id}`, (el) => el.classList.contains("codex-highlight")),
       `${tag} deep link #${frag} reveals and highlights its card`,
+    );
+  }
+
+  // -- 5. behavior-sentence term links (#078 slice 3): every Part term in a
+  // unit's ability sentence is a tappable codex link, and tapping it lands on
+  // that Part's card. The codex is the complete, tappable vocabulary. --
+  const termRefs = await page.$$eval("#codex-sec-units .codex-entry .codex-termref", (els) =>
+    els.map((el) => ({ href: el.getAttribute("href"), part: el.getAttribute("data-part"), text: el.textContent })),
+  );
+  // Every term in a behavior sentence links to a codex card: a Part term to its
+  // Part card, a status term to its Status card. Neither is left bare.
+  check(
+    termRefs.length > 0 &&
+      termRefs.every((r) => r.href?.startsWith("#codex/part/") || r.href?.startsWith("#codex/status/")),
+    `${tag} unit ability sentences link every term to a codex card`,
+    JSON.stringify(termRefs.slice(0, 4)),
+  );
+  const partRefs = termRefs.filter((r) => r.href?.startsWith("#codex/part/"));
+  check(
+    partRefs.length > 0 && partRefs.every((r) => (r.part?.length ?? 0) > 0),
+    `${tag} Part terms carry a #codex/part/<family>/<kind> link`,
+    JSON.stringify(partRefs.slice(0, 4)),
+  );
+  // Tap the first Part-term link and confirm it navigates to the matching Part
+  // card (the global #codex/ handler resolves family+kind to its card id).
+  const first = partRefs[0];
+  if (first) {
+    // href is "#codex/part/<family>/<kind>"; family & kind are clean
+    // identifiers, so the card id is the same join codex.ts builds.
+    const [, , family, kind] = first.href.slice(1).split("/");
+    const targetId = `codex-part-${family}-${kind}`;
+    await page.locator(`#codex-sec-units .codex-entry .codex-termref[href="${first.href}"]`).first().click();
+    await waitInView(page, `#${targetId}`);
+    check(
+      await page.$eval(`#${targetId}`, (el) => el.classList.contains("codex-highlight")),
+      `${tag} tapping a Part term lands on its Part card (#${targetId})`,
+      `from term "${first.text}" → ${first.part}`,
     );
   }
 

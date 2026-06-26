@@ -1,14 +1,17 @@
 // Codex screen — fully generated from registry + tunables via buildCodex().
 // Renders statuses, units, and rule entries as responsive card grids (#015
-// slice 2): units wear the one shared unit card (unit-card.ts), statuses get
-// a matching card with a hash-stable colour identity, rules a prose card.
+// slice 2): units AND statuses now wear the ONE shared card (unit-card.ts) at
+// the same fixed size (#078 — a Status is the same shape as a Unit, #074); the
+// old codex-local status lookalike is gone. Rules stay a prose card.
 // Presentation only — every sentence comes from buildCodex()/describe output.
 // Supports deep-link anchors of the form #codex/status/<name>,
 // #codex/unit/<name>, #codex/rule/<key>.
 
 import { buildCodex } from "../src/codex.js";
-import type { StatusRegistry, UnitDef } from "../src/types.js";
-import { nameHue, unitCardHtml } from "./unit-card.js";
+import { describeAbilitySegments, describeStatusSegments } from "../src/describe.js";
+import type { DescribeSegment } from "../src/describe.js";
+import type { StatusDef, StatusRegistry, UnitDef } from "../src/types.js";
+import { unitCardHtml } from "./unit-card.js";
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -23,6 +26,25 @@ export interface CodexScreen {
 
 const esc = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+
+/** A derived behavior sentence → HTML where every term links to its codex
+ * card (#078 slice 3): a status name links to its Status card, every Part term
+ * (trigger/interceptor/condition/selector/effect) to its Part card. statusRef
+ * wins when a term is both (an applyStatus name) — the status card is the
+ * closer answer. In the codex the links are real anchors (the global #codex/
+ * handler in main.ts navigates within the open codex); inside the inspector
+ * statusRef reveals in-panel instead, so the two renderers differ on status. */
+function segmentLinksHtml(segs: DescribeSegment[], registry: StatusRegistry): string {
+  return segs
+    .map((s) => {
+      if (s.statusRef !== undefined && registry[s.statusRef] !== undefined)
+        return `<a class="codex-termref" href="#codex/status/${esc(s.statusRef)}" data-status="${esc(s.statusRef)}">${esc(s.text)}</a>`;
+      if (s.partRef !== undefined)
+        return `<a class="codex-termref" href="#codex/part/${esc(s.partRef.family)}/${esc(s.partRef.kind)}" data-part="${esc(s.partRef.family)}:${esc(s.partRef.kind)}">${esc(s.text)}</a>`;
+      return esc(s.text);
+    })
+    .join("");
+}
 
 export function createCodex(
   container: HTMLElement,
@@ -51,16 +73,35 @@ export function createCodex(
   searchRow.append(searchInput);
   container.append(searchRow);
 
-  // Section: statuses — name + colour identity + the kernel-derived sentence.
+  // Section: statuses — the SAME shared card as units (#078): a Status is the
+  // same shape as a Unit (a bundle of Parts, #074), so it wears the same card at
+  // the same fixed size, framing its per-stack statMods where a unit frames
+  // hp/pwr. The kernel-derived sentence rides below, exactly as a unit's
+  // abilities do. No codex-local lookalike anymore.
   const statusCards = data.statuses.map((s) => {
-    const hue = nameHue(s.name);
+    const card = unitCardHtml({
+      kind: "status",
+      artName: s.name,
+      label: s.name,
+      hp: s.hp,
+      pwr: s.pwr,
+      registry,
+      classes: "codex-unit",
+      attrs: "",
+      title: s.name,
+    });
+    // The description's behavior sentence links every term to its codex card
+    // (#078 slice 3): a referenced status to its Status card, every Part term to
+    // its Part card. Derived from the registry def's segments; the plain string
+    // still feeds search.
+    const sdef: StatusDef | undefined = registry[s.name];
+    const descHtml = sdef !== undefined ? segmentLinksHtml(describeStatusSegments(sdef), registry) : esc(s.description);
     return (
       `<div class="codex-entry codex-status-entry" id="codex-status-${encodeId(s.name)}"` +
-      ` data-search="${esc(`${s.name} ${s.description}`.toLowerCase())}" style="--codex-hue: ${hue.toFixed(0)}">` +
+      ` data-search="${esc(`${s.name} ${s.description}`.toLowerCase())}">` +
       anchorHtml(`codex/status/${s.name}`) +
-      `<div class="codex-entry-head"><span class="codex-swatch" aria-hidden="true"></span>` +
-      `<span class="codex-entry-name">${esc(s.name)}</span></div>` +
-      `<div class="codex-entry-desc">${esc(s.description)}</div></div>`
+      card +
+      `<div class="codex-entry-desc">${descHtml}</div></div>`
     );
   });
   container.append(sectionEl("statuses", "Statuses", grid(statusCards, "codex-grid-statuses")));
@@ -83,10 +124,18 @@ export function createCodex(
       attrs: "",
       title: u.name,
     });
+    // Render from the def's abilities as segments so every term is a tappable
+    // codex link (#078 slice 3); the derived u.abilities strings still feed
+    // search. A unit not in defByName (shouldn't happen) falls back to plain.
+    const abilityDefs = def?.abilities ?? [];
     const abilities =
-      u.abilities.length > 0
-        ? u.abilities.map((ab) => `<div class="codex-entry-desc">${esc(ab)}</div>`).join("")
-        : `<div class="codex-entry-desc codex-dim">No abilities.</div>`;
+      abilityDefs.length > 0
+        ? abilityDefs
+            .map((ab) => `<div class="codex-entry-desc">${segmentLinksHtml(describeAbilitySegments(ab), registry)}</div>`)
+            .join("")
+        : u.abilities.length > 0
+          ? u.abilities.map((ab) => `<div class="codex-entry-desc">${esc(ab)}</div>`).join("")
+          : `<div class="codex-entry-desc codex-dim">No abilities.</div>`;
     // Authorship credit for an approved creation-loop unit (PRD #013 slice 4).
     const credit =
       u.creator !== undefined
@@ -102,6 +151,44 @@ export function createCodex(
     );
   });
   container.append(sectionEl("units", "Units", grid(unitCards, "codex-grid-units")));
+
+  // Section: parts — every creator atom (#078) on the SAME shared card as a
+  // Unit and a Status, at the same fixed size: a Part frames its family
+  // ("Effect", "Selector", …) where a unit frames hp/pwr. The card is the whole
+  // tappable vocabulary; the describe-derived meaning rides below like a unit's
+  // ability sentence. Coverage is derived (buildCodex → src/parts.ts over the
+  // type space), so a new Part kind shows up here with no hand-edit.
+  const FAMILY_LABELS: Record<string, string> = {
+    trigger: "Trigger",
+    interceptor: "Interceptor",
+    condition: "Condition",
+    selector: "Selector",
+    effect: "Effect",
+  };
+  const partCards = data.parts.map((p) => {
+    const id = `codex-part-${encodeId(p.family)}-${encodeId(p.kind)}`;
+    const fragment = `codex/part/${p.family}/${p.kind}`;
+    const search = `${p.name} ${p.family} ${p.meaning}`.toLowerCase();
+    const card = unitCardHtml({
+      kind: "part",
+      artName: `${p.family}:${p.kind}`,
+      label: p.name,
+      tag: FAMILY_LABELS[p.family] ?? p.family,
+      hp: "",
+      pwr: "",
+      registry,
+      classes: "codex-unit",
+      attrs: "",
+      title: `${p.name} — ${FAMILY_LABELS[p.family] ?? p.family}`,
+    });
+    return (
+      `<div class="codex-entry codex-part-entry" id="${id}" data-search="${esc(search)}">` +
+      anchorHtml(fragment) +
+      card +
+      `<div class="codex-entry-desc">${esc(p.meaning)}</div></div>`
+    );
+  });
+  container.append(sectionEl("parts", "Parts", grid(partCards, "codex-grid-parts")));
 
   // Section: rules — prose cards.
   const ruleCards = data.rules.map(
@@ -134,11 +221,13 @@ export function createCodex(
       container.hidden = !visible;
     },
     navigate(fragment: string) {
-      // fragment: "codex/status/Poison" or "codex/rule/fatigue" etc.
+      // fragment: "codex/status/Poison", "codex/rule/fatigue", or a part's
+      // "codex/part/<family>/<kind>" (a Part keys on family AND kind, #078).
       const parts = fragment.split("/");
       if (parts.length < 3) return;
-      const [, kind, key] = parts as [string, string, string];
-      const id = `codex-${kind}-${encodeId(key)}`;
+      const [, kind, ...rest] = parts as [string, string, ...string[]];
+      const key = rest.map(encodeId).join("-");
+      const id = `codex-${kind}-${key}`;
       const target = container.querySelector<HTMLElement>(`#${CSS.escape(id)}`);
       if (target) {
         container.hidden = false;

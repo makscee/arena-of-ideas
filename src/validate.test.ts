@@ -2,8 +2,9 @@
 // would otherwise accept and silently never fire.
 
 import { describe, expect, test } from "vitest";
-import { ValidationError, assertValidContent, validateRegistry, validateTeam } from "./validate.js";
+import { MAX_DEFINITION_COMPLEXITY, ValidationError, assertValidContent, complexityOf, validateRegistry, validateTeam } from "./validate.js";
 import { Necromancer, Silencer, Summoner, Venomancer, stressRegistry } from "./content/stress.js";
+import { BOOTSTRAP_CHAMPION, BOOTSTRAP_TEAMS, DEFAULT_RUN_POOL } from "./tunables.js";
 import { loadTeamFile } from "./cli.js";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -271,5 +272,138 @@ describe("CLI team loading rejects bad content", () => {
       "utf8",
     );
     expect(() => loadTeamFile(path)).toThrow(/interceptor-context effect.*can never run/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 5. The complexity cap — a card is a fixed budget (PRD #078 slice 4)
+// ---------------------------------------------------------------------------
+//
+// A card has ONE fixed size, and its size IS the behavior budget: a Unit or
+// Status whose composed Parts overflow the card cannot exist. Enforced as
+// content here, so the cap holds against authored AND AI-generated content
+// alike. Cap = MAX_DEFINITION_COMPLEXITY (8); the metric is complexityOf.
+
+describe("complexity cap", () => {
+  // All shipped content must keep fitting — the cap must not retroactively
+  // reject a unit/status the game already ships.
+  test("every shipped status fits the budget", () => {
+    for (const [name, def] of Object.entries(stressRegistry)) {
+      expect(complexityOf(def as unknown as Record<string, unknown>),
+        `status ${name}`).toBeLessThanOrEqual(MAX_DEFINITION_COMPLEXITY);
+    }
+    expect(validateRegistry(stressRegistry)).toEqual([]);
+  });
+
+  test("the richest shipped status (Poison) scores 4, well under the cap", () => {
+    expect(complexityOf(stressRegistry["Poison"] as unknown as Record<string, unknown>)).toBe(4);
+  });
+
+  test("the shipped run pool and bootstrap teams all fit", () => {
+    for (const u of DEFAULT_RUN_POOL) {
+      expect(validateTeam([u], stressRegistry)).toEqual([]);
+    }
+    for (const team of BOOTSTRAP_TEAMS.flat()) {
+      expect(validateTeam([...team], stressRegistry)).toEqual([]);
+    }
+    expect(validateTeam([...BOOTSTRAP_CHAMPION], stressRegistry)).toEqual([]);
+  });
+
+  // A unit assembled exactly to the budget: 1 when + 1 selector + 6 effects = 8.
+  const atCap: UnitDef = {
+    name: "AtCap",
+    base: { hp: 9, pwr: 2 },
+    abilities: [
+      {
+        whens: [{ kind: "trigger", on: { on: "BattleStart" } }],
+        selectors: [{ kind: "holder" }],
+        effects: [
+          { kind: "heal", amount: { kind: "const", value: 1 } },
+          { kind: "heal", amount: { kind: "const", value: 1 } },
+          { kind: "heal", amount: { kind: "const", value: 1 } },
+          { kind: "heal", amount: { kind: "const", value: 1 } },
+          { kind: "heal", amount: { kind: "const", value: 1 } },
+          { kind: "heal", amount: { kind: "const", value: 1 } },
+        ],
+      },
+    ],
+  };
+
+  test("an at-cap unit (complexity 8) passes", () => {
+    expect(complexityOf(atCap as unknown as Record<string, unknown>)).toBe(MAX_DEFINITION_COMPLEXITY);
+    expect(validateTeam([atCap], stressRegistry)).toEqual([]);
+    expect(() => assertValidContent([atCap], stressRegistry)).not.toThrow();
+  });
+
+  // Just-over the boundary: the at-cap unit plus one more effect = complexity 9.
+  const justOver: UnitDef = {
+    ...atCap,
+    name: "JustOver",
+    abilities: [
+      {
+        ...atCap.abilities![0]!,
+        effects: [...atCap.abilities![0]!.effects, { kind: "heal", amount: { kind: "const", value: 1 } }],
+      },
+    ],
+  };
+
+  test("a just-over-cap unit (complexity 9) is rejected with a clear error", () => {
+    expect(complexityOf(justOver as unknown as Record<string, unknown>)).toBe(MAX_DEFINITION_COMPLEXITY + 1);
+    const issues = validateTeam([justOver], stressRegistry, "teamA");
+    expect(issues).toHaveLength(1);
+    expect(issues[0]!.path).toBe("teamA[0]");
+    expect(issues[0]!.message).toMatch(/complexity 9 exceeds the card budget of 8/);
+    expect(() => assertValidContent([justOver], stressRegistry, "teamA")).toThrow(ValidationError);
+  });
+
+  // A clearly over-cap unit: a single 2-when × 2-selector × 2-effect ability,
+  // the multiplicative depth the budget exists to stop. Parts = 6, surcharge =
+  // 2·2·2 − 2 = 6, complexity = 12.
+  const wayOver: UnitDef = {
+    name: "WayOver",
+    base: { hp: 9, pwr: 2 },
+    abilities: [
+      {
+        whens: [
+          { kind: "trigger", on: { on: "BattleStart" } },
+          { kind: "trigger", on: { on: "TurnStart" } },
+        ],
+        selectors: [{ kind: "holder" }, { kind: "allEnemies" }],
+        effects: [
+          { kind: "damage", amount: { kind: "const", value: 1 } },
+          { kind: "heal", amount: { kind: "const", value: 1 } },
+        ],
+      },
+    ],
+  };
+
+  test("a multiplicative-depth unit (complexity 12) is rejected", () => {
+    expect(complexityOf(wayOver as unknown as Record<string, unknown>)).toBe(12);
+    const issues = validateTeam([wayOver], stressRegistry, "teamA");
+    expect(issues.some((i) => /complexity 12 exceeds the card budget/.test(i.message))).toBe(true);
+    expect(() => assertValidContent([wayOver], stressRegistry, "teamA")).toThrow(ValidationError);
+  });
+
+  test("an over-cap StatusDef is rejected at registry validation", () => {
+    const fatRegistry = {
+      ...stressRegistry,
+      Overloaded: {
+        name: "Overloaded",
+        abilities: [justOver.abilities![0]!],
+      },
+    };
+    const issues = validateRegistry(fatRegistry as never);
+    expect(issues.some((i) => i.path === "registry.Overloaded" && /complexity 9 exceeds/.test(i.message))).toBe(true);
+  });
+
+  // Must-fail-first: the over-cap unit is otherwise content-valid — every part
+  // is a real, correctly-wired atom. Before the cap predicate existed, all the
+  // shape/context/reference checks pass it (no issues), so ONLY the complexity
+  // check rejects it. We prove that by stripping the complexity issues and
+  // confirming nothing else complained.
+  test("must-fail-first: the over-cap unit is rejected by the cap alone, not pre-existing checks", () => {
+    const issues = validateTeam([justOver], stressRegistry, "teamA");
+    const nonComplexity = issues.filter((i) => !/exceeds the card budget/.test(i.message));
+    expect(nonComplexity).toEqual([]); // would have been the entire result pre-predicate → no failure
   });
 });

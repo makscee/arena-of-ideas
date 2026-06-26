@@ -51,6 +51,68 @@ const PATTERN_FIELDS: Record<(typeof EVENT_NAMES)[number], string[]> = {
 /** Where an ability lives: on a unit, or on a status (whose stacks "own"-references can read). */
 type Owner = "unit" | "status";
 
+// ---------- complexity cap: a card is a fixed budget ----------
+//
+// PRD #078: a card has ONE fixed size, and its size IS the behavior budget — a
+// Unit or Status whose composed behavior doesn't fit the card cannot exist.
+// This is enforced as content, not pixels: an over-budget definition is rejected
+// here, so the cap holds against authored AND AI-generated content alike.
+//
+// The metric counts a definition's composed *Parts* (SPEC §4: a Part is a single
+// trigger, interceptor, condition, selector, or effect) across all its abilities,
+// plus a superlinear surcharge for the multiplicative depth a single ability can
+// pack (SPEC §8/§0.1: each `when` fires independently and effects apply once per
+// selected target per selector — so whens × selectors × effects is the real
+// firing count, not their sum). A `summon`'s nested unit folds its own Parts in,
+// because that unit's behavior also rides on this card.
+
+/** The card budget: a definition whose complexity exceeds this cannot exist.
+ *
+ * Felt out at build against the shipped content (SPEC §7): the richest shipped
+ * definition is Poison at 4 (1 when + 1 selector + 2 effects, no surcharge);
+ * every other shipped unit/status scores ≤3. The cap of 8 clears all shipped
+ * content with headroom (a shipped unit could grow a second simple ability and
+ * still fit) while rejecting runaway depth: a single 2-when × 2-selector ×
+ * 2-effect ability scores 12, a 1×1 ability with 6 effects scores 9 — both
+ * over. The cap bites exactly where the multiplicative depth engine explodes a
+ * card's behavior past what one fixed card can hold. A tunable knob, not a pin. */
+export const MAX_DEFINITION_COMPLEXITY = 8;
+
+/** Complexity of a single ability: its Part count (whens + condition + selectors
+ * + effects) plus a superlinear surcharge for the firings its multiplicative
+ * structure packs beyond a single linear pass. A 1-when/1-selector ability pays
+ * no surcharge; a 2×2×2 ability pays 12−2 = 10 on top of its 6 Parts. */
+function abilityComplexity(ab: Record<string, unknown>): number {
+  const whens = Array.isArray(ab["whens"]) ? ab["whens"].length : 0;
+  const selectors = Array.isArray(ab["selectors"]) ? ab["selectors"].length : 0;
+  const effects = Array.isArray(ab["effects"]) ? ab["effects"] : [];
+  const parts = whens + selectors + effects.length + (ab["condition"] !== undefined ? 1 : 0);
+  const product = whens * selectors * effects.length;
+  const surcharge = Math.max(0, product - Math.max(whens, selectors, effects.length));
+  let total = parts + surcharge;
+  for (const e of effects) {
+    if (isObject(e) && e["kind"] === "summon" && isObject(e["unit"])) {
+      total += complexityOf(e["unit"]); // the summoned unit's behavior rides on this card too
+    }
+  }
+  return total;
+}
+
+/** Complexity of a Unit or Status definition: the sum over its abilities. Pure;
+ * tolerant of malformed input (shape errors are reported by the other checks). */
+export function complexityOf(def: Record<string, unknown>): number {
+  const abilities = Array.isArray(def["abilities"]) ? def["abilities"] : [];
+  return abilities.reduce((sum, ab) => sum + (isObject(ab) ? abilityComplexity(ab) : 0), 0);
+}
+
+/** Reject a definition whose composed behavior overflows the fixed card budget. */
+function checkComplexity(def: Record<string, unknown>, path: string, issues: ValidationIssue[]): void {
+  const c = complexityOf(def);
+  if (c > MAX_DEFINITION_COMPLEXITY) {
+    issues.push({ path, message: `complexity ${c} exceeds the card budget of ${MAX_DEFINITION_COMPLEXITY} — a card has one fixed size, so this definition's composed behavior cannot fit on it (count its whens, condition, selectors, effects across all abilities, plus the superlinear cost of a single ability's whens × selectors × effects)` });
+  }
+}
+
 // ---------- entry points ----------
 
 /** Validate a team's units against a status registry. Returns all issues found (empty = valid). */
@@ -121,6 +183,7 @@ export function validateRegistry(registry: StatusRegistry, label = "registry"): 
       issues.push({ path: `${path}.abilities`, message: "StatusDef.abilities must be an array (may be empty)" });
     } else {
       def.abilities.forEach((ab, i) => validateAbility(ab, registry, "status", `${path}.abilities[${i}]`, issues));
+      checkComplexity(def, path, issues); // a Status is content on a card too — same fixed budget
     }
   }
   return issues;
@@ -140,11 +203,16 @@ export function assertValidPool(units: unknown, registry: StatusRegistry, label 
 
 // ---------- units ----------
 
-function validateUnit(u: unknown, registry: StatusRegistry, path: string, issues: ValidationIssue[]): void {
+// `topLevel` is true for a drafted/approved/team unit and false for a unit
+// nested inside a summon effect: a summoned unit's complexity is already folded
+// into its summoner's score (via complexityOf), so the cap is checked once, on
+// the outermost definition, never double-counted on the nested one.
+function validateUnit(u: unknown, registry: StatusRegistry, path: string, issues: ValidationIssue[], topLevel = true): void {
   if (!isObject(u)) {
     issues.push({ path, message: "unit must be an object" });
     return;
   }
+  if (topLevel) checkComplexity(u, path, issues);
   if (typeof u["name"] !== "string" || u["name"].length === 0) {
     issues.push({ path: `${path}.name`, message: "unit name must be a non-empty string" });
   }
@@ -307,7 +375,7 @@ function validateEffect(e: unknown, registry: StatusRegistry, owner: Owner, cont
       }
       return validateAmount(e["stacks"], owner, `${path}.stacks`, issues);
     case "summon":
-      return validateUnit(e["unit"], registry, `${path}.unit`, issues);
+      return validateUnit(e["unit"], registry, `${path}.unit`, issues, false);
     case "silence":
       return;
     case "resurrect":
