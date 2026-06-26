@@ -1,7 +1,7 @@
 // The stress set (SPEC §7) — all of it is DSL data. Nothing here is engine code;
 // if one of these can't be expressed, the kernel grows consciously, never silently.
 
-import type { StatusDef, StatusRegistry, UnitDef } from "../types.js";
+import type { AbilityDef, AbilityRegistry, StatusDef, StatusRegistry, UnitDef } from "../types.js";
 
 export const Strength: StatusDef = { name: "Strength", statMods: { pwr: 1 }, abilities: [] };
 export const Vitality: StatusDef = { name: "Vitality", statMods: { hp: 1 }, abilities: [] };
@@ -62,6 +62,43 @@ export const stressRegistry: StatusRegistry = {
   Shield,
   Freeze,
   Blessing,
+};
+
+// ---- Abilities — named, referenceable bundles (PRD #081) ----
+//
+// Each named Unit references exactly one of these by id, and the ability's
+// `family` is the unit's color. The bodies are the SAME whens/selectors/effects
+// the units carried inline before #081, so resolving a ref produces a
+// byte-identical firing list (the migration is behavior-preserving).
+
+/** The vanilla "basic attacker" ability — a unit whose whole act is the kernel
+ * strike. It carries the Strike family (its color) but no extra mechanic, so its
+ * body is provably inert: it fires once at BattleStart and heals the holder for
+ * 0, which `runEffect` drops before any event is emitted (heal's `amount <= 0`
+ * guard). A vanilla body therefore contributes one reactor entry that never
+ * appends to the log, consumes no RNG, and mutates nothing — byte-identical to
+ * the old ability-less body, while still giving every unit the one-ability/one-
+ * color identity #081 requires. */
+export const StrikeAbility: AbilityDef = {
+  name: "Strike",
+  family: "Strike",
+  whens: [{ kind: "trigger", on: { on: "BattleStart" } }],
+  selectors: [{ kind: "holder" }],
+  effects: [{ kind: "heal", amount: { kind: "const", value: 0 } }],
+};
+
+/** Venomancer's ability — apply 2 Poison to the front enemy after it strikes. */
+export const Venom: AbilityDef = {
+  name: "Venom",
+  family: "Poison",
+  whens: [{ kind: "trigger", on: { on: "Strike", striker: "holder" } }],
+  selectors: [{ kind: "frontEnemy" }],
+  effects: [{ kind: "applyStatus", status: "Poison", stacks: { kind: "const", value: 2 } }],
+};
+
+export const stressAbilities: AbilityRegistry = {
+  Strike: StrikeAbility,
+  Venom,
 };
 
 // ---- Units exercising the effect atoms (Summon, Silence, Resurrect) ----

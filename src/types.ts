@@ -15,6 +15,14 @@ export interface UnitDef {
   name: string;
   base: Stats;
   level?: number;
+  /** The unit's single ability, by id into the AbilityRegistry — the ontology's
+   * spine (PRD #081): a Unit references exactly one named Ability, and that
+   * Ability's `family` is the unit's color. Optional only during the #081
+   * migration; `abilities?` below is the legacy inline path being retired. */
+  ability?: string;
+  /** @deprecated #081 — inline abilities are being migrated to a single
+   * `ability` ref. The battle resolver still reads this behind a back-compat
+   * read while the corpus migrates; dropped once every unit carries a ref. */
   abilities?: Ability[];
   /** Initial statuses, applied (as events) right after BattleStart. Names resolve via the status registry. */
   statuses?: { status: string; stacks: number }[];
@@ -26,6 +34,23 @@ export interface Ability {
   selectors: Selector[]; // ≥1; effect sequence applies once per selected target, per selector
   effects: Effect[]; // ≥1; run in sequence order
 }
+
+/** The color axis (PRD #081): every Ability declares one family, and a Unit's
+ * color is its Ability's family — derived, never stored on the unit. The 7
+ * families and their hexes are pinned by the mockup; the family→hex palette is
+ * centralized in tunables.ts (FAMILY_HEX). */
+export type Family = "Poison" | "Strike" | "Shield" | "Summon" | "Arcane" | "Control" | "Heal";
+
+/** A named, referenceable Ability — today's inline `Ability` shape plus a `name`
+ * and a `family`. Mirrors `StatusDef`/`StatusRegistry`: the AbilityRegistry is
+ * the unit-ability analogue of the status registry. A Unit references exactly
+ * one of these by id (`UnitDef.ability`). */
+export interface AbilityDef extends Ability {
+  name: string;
+  family: Family;
+}
+
+export type AbilityRegistry = Record<string, AbilityDef>;
 
 export interface When {
   kind: "trigger" | "interceptor";
@@ -137,4 +162,8 @@ export interface BattleInput {
   teamB: UnitDef[];
   seed: number;
   statuses?: StatusRegistry;
+  /** The ability registry a unit's `ability` ref resolves through (PRD #081),
+   * the analogue of `statuses`. Optional during the migration: a unit still on
+   * the legacy inline `abilities[]` path needs no registry. */
+  abilities?: AbilityRegistry;
 }

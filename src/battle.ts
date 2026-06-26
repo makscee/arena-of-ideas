@@ -4,6 +4,7 @@
 import type {
   Ability,
   AbilityRef,
+  AbilityRegistry,
   Amount,
   BattleEvent,
   BattleInput,
@@ -91,6 +92,7 @@ class Engine {
   private pairs = new Map<string, string>();
   private rng: () => number;
   private registry: StatusRegistry;
+  private abilities: AbilityRegistry;
   private turn = 0;
   private attachCounter = 0;
   private summonCounter = 0;
@@ -100,6 +102,7 @@ class Engine {
     this.input = input;
     this.rng = mulberry32(input.seed);
     this.registry = input.statuses ?? {};
+    this.abilities = input.abilities ?? {};
   }
 
   run(): BattleEvent[] {
@@ -176,12 +179,27 @@ class Engine {
       side,
       base: { ...def.base },
       level: def.level ?? 1,
-      abilities: def.abilities ?? [],
+      abilities: this.resolveAbilities(def),
       statuses: [],
       damage: 0,
       silenced: false,
       alive: true,
     };
+  }
+
+  /** The unit's firing list — the ordering loop's `Ability[]` (SPEC §5). The new
+   * ontology (PRD #081) is one `ability` ref resolved through the registry to a
+   * single entry; the legacy inline `abilities[]` is the back-compat read kept
+   * while the corpus migrates. An AbilityDef IS an Ability (plus name/family),
+   * so the ordering loop consumes it unchanged — one ref means one unit-ability
+   * entry at index 0, exactly where an inline single ability sat. */
+  private resolveAbilities(def: UnitDef): Ability[] {
+    if (def.ability !== undefined) {
+      const ab = this.abilities[def.ability];
+      if (!ab) throw new Error(`unknown ability "${def.ability}" — not in the ability registry`);
+      return [ab];
+    }
+    return def.abilities ?? [];
   }
 
   private applyInitialStatuses(causeId: number): void {

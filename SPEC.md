@@ -23,25 +23,31 @@ Unit {
   name: string
   base: { hp, pwr }
   level: number         // shop concern; kernel reads it only for content that references it
-  abilities: Ability[]  // usually 1
+  ability: string       // [PINNED #081] exactly one — a ref into the AbilityRegistry
   statuses: StatusInstance[]   // runtime
 }
 ```
 Damage reduces a unit's *current* hp (tracked separately from base.hp = max). A unit whose hp reaches 0 dies (→ Death event, §4).
+
+**[PINNED #081] A Unit references exactly one Ability, by id.** No inline ability array, no stray effects: every effect a unit carries is packaged inside its one named Ability (a plain attacker references the vanilla `Strike` ability, whose body is inert — the strike itself is the kernel). The resolver looks `ability` up in the `AbilityRegistry` (supplied alongside the status registry) to the same `Ability[]` firing list the ordering rule (§5) consumes — one ref = one unit-ability entry, deterministically placed. Mechanical, referenceable entities are exactly three: **Ability, Summon, Status** (ADR `docs/adr/0001-ability-first-class.md`).
 
 ### Team
 Ordered list of up to **5** units **[PINNED]**. Index 0 is the front. Sides are `A` (attacker — the player who initiated this async battle) and `B` (defender — the saved team).
 
 ### Ability
 ```
-Ability {
+AbilityDef {
+  name: string           // [PINNED #081] registry key — the ability's identity
+  family: Family         // [PINNED #081] the color axis; the unit's color is derived from it
   whens: When[]          // ≥1; Trigger or Interceptor
   condition?: Condition  // optional gate, checked at fire time
   selectors: Selector[]  // ≥1
   effects: Effect[]      // ≥1; a sequence
 }
 When = { kind: "trigger" | "interceptor", on: EventPattern }
+AbilityRegistry = Record<string, AbilityDef>   // mirrors StatusRegistry
 ```
+**[PINNED #081] Family = color, derived not stored.** `Family` is one of 7 — Poison, Strike, Shield, Summon, Arcane, Control, Heal — each with a pinned hex (the palette lives in `tunables.ts`). A unit's color is its Ability's family; it is never stored on the unit. The codex carries an Ability catalogue beside the Status catalogue.
 **[PINNED] Firing semantics (v3 fusion semantics):** each matching `when` fires independently (more whens = more firings); on a firing, the effect sequence is applied **once per selected target, per selector** (more selectors = more applications); effects run in sequence order. This multiplicative structure is the depth engine; pricing it is the budget's job (out of scope v1, §8).
 
 - **Trigger** — fires *after* its event pattern has applied.
