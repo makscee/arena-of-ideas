@@ -118,22 +118,40 @@ async function register(ctx, email, name) {
   return page;
 }
 
-/** Play the active run to its end through the UI: buy when the line is empty,
- * fight, skip the replay, continue — until the end screen. */
+/** Play the active run to its end through the UI. The post-#075 tower has two
+ * forward moves: a CLIMB (#run-fight) up a floor, and — at the champion's floor,
+ * where a climb would overshoot — a terminal CHALLENGE (#run-challenge, a
+ * two-tap confirm) for the crown. So: buy until the line can field, then climb
+ * while #run-fight is enabled, and challenge the champion when it disables at
+ * the top. Either fight skips its replay and continues; the challenge is
+ * terminal and lands straight on the end screen. */
 async function playRunToEnd(page, tag) {
   let runId = null;
   for (let i = 0; i < 30; i++) {
     await page.waitForSelector("#run-shop:not([hidden]), #run-end:not([hidden])");
     if (await page.locator("#run-end").isVisible()) break;
     if (runId === null) runId = (await page.locator("#run-head .run-id").textContent()).trim();
-    if (await page.locator("#run-fight").isDisabled()) {
-      await page.locator("#run-shop-row .run-buy").first().click();
+    const lineEmpty = (await page.locator("#run-line [data-move]").count()) === 0;
+    if (lineEmpty) await page.locator("#run-shop-row .run-buy").first().click();
+    if (!(await page.locator("#run-fight").isDisabled())) {
+      // A floor below the champion: climb.
+      await page.click("#run-fight");
+      await page.waitForSelector("#run-battle:not([hidden])");
+      await page.click("#run-skip");
+      await page.waitForSelector("#run-continue:not([hidden])");
+      await page.click("#run-continue");
+    } else {
+      // The climb is disabled with a fielded line — the champion's floor (#075):
+      // challenge the champion for the crown. Two taps: arm, then fire.
+      await page.click("#run-challenge"); // arm
+      await page.click("#run-challenge"); // fire → battle, then the end screen
+      await page.waitForSelector("#run-battle:not([hidden]), #run-end:not([hidden])");
+      if (await page.locator("#run-battle").isVisible()) {
+        await page.click("#run-skip");
+        await page.waitForSelector("#run-continue:not([hidden])");
+        await page.click("#run-continue");
+      }
     }
-    await page.click("#run-fight");
-    await page.waitForSelector("#run-battle:not([hidden])");
-    await page.click("#run-skip");
-    await page.waitForSelector("#run-continue:not([hidden])");
-    await page.click("#run-continue");
   }
   check(await page.locator("#run-end").isVisible(), `${tag}: the run reached its end screen`);
   return runId;
