@@ -2226,6 +2226,79 @@ button:disabled:hover {
   color: var(--accent);
 }
 
+/* ---------- boss challenge (#075 slice 4) ----------
+   The current floor's boss, shown so the climb-vs-challenge choice is legible,
+   and the terminal Challenge control. Boxed off from the shop like the dev
+   panel, but live (not dimmed) — it is a real move, not a tool. The champion
+   variant (the summit boss) wears the gold accent the crown moment does. */
+
+#run-boss {
+  margin: 0.3rem 0 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+}
+
+.run-boss-head {
+  margin: 0 0 0.4rem;
+  font-size: 0.82rem;
+  color: var(--text);
+}
+
+#run-boss-team {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0 0 0.5rem;
+  min-width: 0;
+}
+
+#run-boss-team .unit {
+  flex: 0 1 5.6rem;
+  min-width: 3.6rem;
+}
+
+#run-boss .run-bar {
+  margin: 0;
+}
+
+#run-challenge {
+  min-height: 44px; /* a terminal decision is a thumb-sized, deliberate tap */
+}
+
+#run-challenge.champion {
+  color: var(--bg);
+  background: #c9a227;
+  border-color: #c9a227;
+  font-weight: 600;
+}
+
+/* The champion's floor: the boss panel wears the gold border so the top of the
+   tower reads as the crown's lineage. A lower lineage boss stays plain — only
+   the last can be crowned (#075 slice 7, Maks). */
+#run-boss.at-champion {
+  border-color: #c9a227;
+  background: rgba(201, 162, 39, 0.06);
+}
+
+/* The armed challenge (#075 slice 7): the two-step confirm's second state. The
+   button turns danger-red so the terminal tap reads as deliberate, distinct
+   from the gold champion fight; the cancel sits beside it. */
+#run-challenge.armed {
+  color: #fff;
+  background: #a32b2b;
+  border-color: #a32b2b;
+  font-weight: 600;
+}
+
+#run-challenge-cancel {
+  min-height: 44px;
+}
+
+#run-challenge-cancel[hidden] {
+  display: none;
+}
+
 /* ---------- run end screens ----------
    The crown moment gets weight: a gold frame on the whole panel; the record
    strip reads the climb round by round (green won, red lost, dim draw). */

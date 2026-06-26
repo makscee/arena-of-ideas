@@ -37,7 +37,9 @@ import { readFileSync, writeFileSync } from "node:fs";
 import {
   battle,
   buy,
+  challengeBoss,
   initRun,
+  InvalidDecisionError,
   ladderFight,
   openLadder,
   renderReplay,
@@ -197,13 +199,42 @@ export function shopGreedily(state: RunState): RunState {
   return s;
 }
 
-/** Play one whole run with the greedy policy — shop, then fight the ladder,
- * until the run ends: crowned or out of lives. */
+/** Play one whole run with the greedy policy — shop, then climb the ladder,
+ * until the run ends. A climb (ladderFight) draws a same-floor ghost.
+ *
+ * The tower is a fixed height now (PRD 075 slice 3): climbing PAST the top floor
+ * lands on a vacant floor, and a challenge there is an OVERSHOOT — no boss, no
+ * crown, the run wasted. So a policy that wants to crown must STOP at the top and
+ * challenge the champion's floor, not climb forever. The champion is the boss of
+ * the highest occupied floor (ladder.champion()), so once the run reaches that
+ * floor it challenges the boss instead of climbing — the terminal move that ends
+ * the run won (crown) or lost (challenge-lost). Below the top it climbs; a climb
+ * refused (no opponent left on a floor) also falls through to a challenge of that
+ * floor's boss. The policy draws no randomness of its own, so an autoplay run
+ * stays deterministic given its seed and the ladder contents. */
 export function playPolicyRun(input: RunInput, ladder: LadderStore): RunState {
   let s = initRun(input);
   while (s.status === "active") {
     s = shopGreedily(s);
-    s = ladderFight(s, ladder);
+    // At the champion's floor (the tower's top), challenge rather than climb past
+    // it into a vacant floor — climbing past would overshoot and waste the run.
+    const top = ladder.champion();
+    if (top !== null && s.round >= top.round) {
+      s = challengeBoss(s, ladder);
+      continue;
+    }
+    try {
+      s = ladderFight(s, ladder);
+    } catch (err) {
+      // The one expected rejection: no climb opponent at this floor. Any other
+      // error is a real fault and propagates. The boss challenge is terminal,
+      // so this is the run's last move whichever way it goes.
+      if (err instanceof InvalidDecisionError && err.decision === "fight") {
+        s = challengeBoss(s, ladder);
+      } else {
+        throw err;
+      }
+    }
   }
   return s;
 }
@@ -238,14 +269,29 @@ export function formatRunSummary(state: RunState): string {
   const won = fights.filter((f) => f.winner === "A").length;
   const lost = fights.filter((f) => f.winner === "B").length;
   const drawn = fights.length - won - lost;
-  const head = state.endedBy === "crown" ? "crowned" : "out of lives";
+  const head =
+    state.endedBy === "crown"
+      ? "crowned"
+      : state.endedBy === "seated"
+        ? "seated"
+        : state.endedBy === "challenge-lost"
+          ? "challenge lost"
+          : state.endedBy === "overshoot"
+            ? "overshot"
+            : "out of lives";
   const lines = [
     `Run ${state.runId} (seed ${state.seed}): ${head} at round ${state.round} — ${won}W/${lost}L/${drawn}D, ${state.lives} ${state.lives === 1 ? "life" : "lives"} left`,
     `  line:  ${state.team.map((u) => `${u.name} L${u.level}`).join(", ")}`,
   ];
+  // A crown ascends (seated one floor higher as the new champion); a cash-out
+  // seats in place. Either way the seat names the boss it dethroned.
   const crowned = ofType(state.log, "Crowned")[0];
   if (crowned !== undefined) {
-    lines.push(`  crown: ${crowned.dethroned === null ? "the spot was vacant" : `dethroned ${crowned.dethroned}`} — ${state.runId} reigns`);
+    lines.push(`  crown: ${crowned.dethroned === null ? "the spot was vacant" : `out-topped ${crowned.dethroned}`} — ${state.runId} reigns at floor ${crowned.floor}`);
+  }
+  const seated = ofType(state.log, "Seated")[0];
+  if (seated !== undefined) {
+    lines.push(`  seat:  ${seated.dethroned === null ? "the spot was vacant" : `dethroned ${seated.dethroned}`} — ${state.runId} holds floor ${seated.floor}`);
   }
   return lines.join("\n");
 }

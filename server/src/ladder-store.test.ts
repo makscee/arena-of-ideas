@@ -10,17 +10,19 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import {
-  BOOTSTRAP_CHAMPION,
-  BOOTSTRAP_DEPTH,
+  BOSS_TEAMS,
   BOOTSTRAP_RUN_ID,
   BOOTSTRAP_TEAMS,
   buy,
+  challengeBoss,
   InMemoryLadderStore,
   initRun,
+  InvalidDecisionError,
   ladderFight,
   openLadder,
   runToJSONL,
   stressRegistry,
+  TOWER_HEIGHT,
   validateTeam,
   type LadderStore,
   type RunInput,
@@ -44,10 +46,28 @@ function input(seed: number, runId: string, unit: UnitDef): RunInput {
   return { seed, runId, pool: [unit], statuses: stressRegistry };
 }
 
-/** Buy the one unit, then fight the ladder until the run ends. */
+/** Buy the one unit, then climb to the top of the (fixed-height) tower and
+ * challenge the champion. Climbing PAST the top overshoots (no crown), so the
+ * policy stops at the champion's floor and challenges there — mirroring the
+ * kernel's playLadderRun / the CLI's playPolicyRun. */
 function playLadderRun(inp: RunInput, ladder: LadderStore): RunState {
   let s = buy(initRun(inp), 0);
-  while (s.status === "active") s = ladderFight(s, ladder);
+  while (s.status === "active") {
+    const top = ladder.champion();
+    if (top !== null && s.round >= top.round) {
+      s = challengeBoss(s, ladder); // at the top: challenge, don't climb past into an overshoot
+      continue;
+    }
+    try {
+      s = ladderFight(s, ladder);
+    } catch (err) {
+      if (err instanceof InvalidDecisionError && err.decision === "fight") {
+        s = challengeBoss(s, ladder);
+      } else {
+        throw err;
+      }
+    }
+  }
   return s;
 }
 
@@ -58,20 +78,34 @@ function freshSqlite(): SqliteLadderStore {
 }
 
 describe("bootstrap", () => {
-  test("openLadder seeds rounds 1..BOOTSTRAP_DEPTH with valid ghosts and seats the champion", () => {
+  test("openLadder seeds the uniform tower; the SQLite backing keeps the champion + every boss-ghost", () => {
+    // The uniform fixed-height tower (075-3): floors 1..TOWER_HEIGHT each carry a
+    // climb pool plus a boss whose team is ALSO in that floor's pool (the boss-ghost).
+    // Floor TOWER_HEIGHT's boss is the champion. Nothing is seeded above the top.
+    //
+    // The SQLite backing stores only the champion-history head and does not (yet)
+    // have a per-floor boss table — bossAt reads a seated boss only on the champion's
+    // own floor (see SqliteLadderStore.bossAt). openLadder setBoss's every floor, so
+    // the LAST seat (floor TOWER_HEIGHT) is the champion; every floor's per-floor boss
+    // is retained as its POOL-GHOST (which DOES persist). A shared-ladder run challenges
+    // the champion floor, so this loses no reachable behaviour; a per-floor boss table
+    // on SQLite is a follow-up if lower seats ever need to be queryable server-side.
     const store = freshSqlite();
-    for (let round = 1; round <= BOOTSTRAP_DEPTH; round++) {
+    for (let round = 1; round <= TOWER_HEIGHT; round++) {
       const pool = store.poolAt(round);
-      expect(pool.length).toBe(BOOTSTRAP_TEAMS[round - 1]!.length);
+      expect(pool.length).toBe(BOOTSTRAP_TEAMS[round - 1]!.length + 1); // climb teams + the boss-ghost
       pool.forEach((g, i) => {
         expect(g).toMatchObject({ runId: BOOTSTRAP_RUN_ID, round, seq: i });
         expect(validateTeam(g.team, stressRegistry)).toEqual([]);
       });
+      // The floor's boss team is its pool's last ghost — drawable, so a demote of
+      // this floor's boss would leave it in the pool (the invariant, ghost-side).
+      expect(pool[pool.length - 1]!.team.map((u) => u.name)).toEqual(BOSS_TEAMS[round - 1]!.map((u) => u.name));
     }
-    expect(store.poolAt(BOOTSTRAP_DEPTH + 1)).toEqual([]);
+    expect(store.poolAt(TOWER_HEIGHT + 1)).toEqual([]); // nothing seeded above the tower
     const champ = store.champion()!;
-    expect(champ).toMatchObject({ runId: BOOTSTRAP_RUN_ID, round: BOOTSTRAP_DEPTH + 1 });
-    expect(champ.team.map((u) => u.name)).toEqual(BOOTSTRAP_CHAMPION.map((u) => u.name));
+    expect(champ).toMatchObject({ runId: BOOTSTRAP_RUN_ID, round: TOWER_HEIGHT });
+    expect(champ.team.map((u) => u.name)).toEqual(BOSS_TEAMS[TOWER_HEIGHT - 1]!.map((u) => u.name));
   });
 
   test("a non-empty ladder is never reseeded; an earned champion survives reopen", () => {
@@ -82,7 +116,8 @@ describe("bootstrap", () => {
     playLadderRun(input(1, "titan", TITAN), store); // dethrones the bootstrap champion
     const reopened = new SqliteLadderStore(openDb(path).db);
     openLadder(reopened, stressRegistry);
-    expect(reopened.poolAt(1).length).toBe(BOOTSTRAP_TEAMS[0]!.length + 1); // bootstrap + the run's ghost, no reseed
+    // Floor 1 held its climb teams + boss-ghost; the run added its own — no reseed.
+    expect(reopened.poolAt(1).length).toBe(BOOTSTRAP_TEAMS[0]!.length + 1 + 1);
     expect(reopened.champion()!.runId).toBe("titan"); // never reseated
   });
 });
@@ -120,7 +155,7 @@ describe("kernel-semantics parity", () => {
     const store = new SqliteLadderStore(openDb(":memory:").db);
     const ghost: TeamSnapshot = { runId: "m", round: 1, seq: 0, team: [vanilla("Keeper", 5, 1)] };
     store.addSnapshot(ghost);
-    store.setChampion(ghost);
+    store.setBoss(ghost.round, ghost);
     ghost.team[0]!.name = "Corrupted"; // mutation after write must not reach the store
     expect(store.poolAt(1)[0]!.team[0]!.name).toBe("Keeper");
     expect(store.champion()!.team[0]!.name).toBe("Keeper");

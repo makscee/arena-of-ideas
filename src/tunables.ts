@@ -39,33 +39,49 @@ export const STACK_THRESHOLD = 3;
 /** Fight losses a run survives; ending the run at 0 is the ladder's rule (slice 2). */
 export const STARTING_LIVES = 5;
 
-/** How many rounds of an empty ladder get bootstrap ghosts. Depth 1 made a
- * first-ever run crown at round 2 — no climb, no game. Seeding rounds 1..DEPTH
- * gives the first session a real ladder to outclimb before the champion. */
-export const BOOTSTRAP_DEPTH = 3;
+/** The tower's SEASON-START height — how many floors a fresh ladder seeds, NOT
+ * a cap. openLadder seeds a full floor (a climb pool + a seated boss) on floors
+ * 1..TOWER_HEIGHT and nothing above, so a first-ever run climbs that many floors
+ * and faces a real champion at the top. But the tower GROWS above this: beating
+ * the champion (the boss of the highest occupied floor) is an ASCEND — the
+ * challenger seats one floor HIGHER as the new champion (the old champion stays
+ * seated below), so a played-on ladder's summit climbs past TOWER_HEIGHT crown by
+ * crown. TOWER_HEIGHT is only where the season opens.
+ *
+ * What gates the top is still the OVERSHOOT rule, not a cap: nothing is seeded
+ * above the CURRENT summit, so a run that climbs past it (challengeBoss on a
+ * vacant floor with no boss) overshoots — no crown — rather than free-seating. A
+ * crown is always a real fight against the reigning champion, whatever floor that
+ * has grown to.
+ *
+ * Height 1 made a first-ever run crown at round 2 — no climb, no game; a tower
+ * this tall gives the first session a real ladder to climb and a real boss to
+ * beat at the top. BOOTSTRAP_TEAMS and BOSS_TEAMS each carry exactly this many
+ * floors (the season-start seed; growth above is run-won, not seeded). */
+export const TOWER_HEIGHT = 4;
 
-/** Teams seeding rounds 1..BOOTSTRAP_DEPTH of an empty ladder (openLadder):
- * BOOTSTRAP_TEAMS[r-1] is round r's pool, so a first-ever run has opponents
- * at every bootstrap round. Composed from the shipped stress units (SPEC §7)
- * the way the example team files are; composition is a knob like any other.
- * Strength escalates with the round to track what a played run fields there —
- * round 1 ≈ one 10-gold shop phase (3 bodies), each later round adds a body
- * and fatter vanilla stats, round 3 opens with status stacks. Status
- * references (Poison via Venomancer, Strength/Vitality below) resolve in any
- * registry containing the stress statuses (the CLI and tests use
- * stressRegistry); openLadder gates every team at seed time. */
+/** Per-floor climb pools, floors 1..TOWER_HEIGHT (openLadder): BOOTSTRAP_TEAMS[f-1]
+ * is floor f's climb pool — the ghosts a run outclimbs before (or instead of)
+ * challenging that floor's boss. So a first-ever run has opponents at every floor.
+ * Composed from the shipped stress units (SPEC §7) the way the example team files
+ * are; composition is a knob like any other. Strength escalates with the floor to
+ * track what a played run fields there — floor 1 ≈ one 10-gold shop phase (3
+ * bodies), each later floor adds a body and fatter vanilla stats, the upper floors
+ * open with status stacks. Status references (Poison via Venomancer,
+ * Strength/Vitality below) resolve in any registry containing the stress statuses
+ * (the CLI and tests use stressRegistry); openLadder gates every team at seed time. */
 export const BOOTSTRAP_TEAMS: readonly (readonly UnitDef[][])[] = [
-  // round 1 — three bodies, the scale of a first shop phase
+  // floor 1 — three bodies, the scale of a first shop phase
   [
     [Venomancer, Summoner, { name: "Brawler", base: { hp: 12, pwr: 2 } }],
     [Silencer, Necromancer, { name: "Bulwark", base: { hp: 10, pwr: 3 } }],
   ],
-  // round 2 — a fourth body, vanilla stats grown a notch
+  // floor 2 — a fourth body, vanilla stats grown a notch
   [
     [Venomancer, Summoner, Necromancer, { name: "Brawler", base: { hp: 14, pwr: 3 } }],
     [Silencer, Venomancer, { name: "Bulwark", base: { hp: 13, pwr: 4 } }, { name: "Squire", base: { hp: 8, pwr: 2 } }],
   ],
-  // round 3 — full lines; status openers stand in for a level-up's worth of growth
+  // floor 3 — full lines; status openers stand in for a level-up's worth of growth
   [
     [
       Venomancer,
@@ -82,22 +98,85 @@ export const BOOTSTRAP_TEAMS: readonly (readonly UnitDef[][])[] = [
       { name: "Squire", base: { hp: 10, pwr: 3 } },
     ],
   ],
+  // floor 4 — the top climb pool, under the champion: another stack of growth,
+  // status openers on the front line so the climb stays a real fight to the top
+  [
+    [
+      Venomancer,
+      Summoner,
+      Necromancer,
+      { name: "Brawler", base: { hp: 18, pwr: 5 }, statuses: [{ status: "Strength", stacks: 3 }] },
+      { name: "Bulwark", base: { hp: 16, pwr: 5 }, statuses: [{ status: "Vitality", stacks: 3 }] },
+    ],
+    [
+      Silencer,
+      Summoner,
+      Venomancer,
+      { name: "Warden", base: { hp: 17, pwr: 6 }, statuses: [{ status: "Strength", stacks: 2 }] },
+      { name: "Squire", base: { hp: 12, pwr: 4 } },
+    ],
+  ],
 ];
 
-/** The team seated in the champion spot when an empty ladder opens — the
- * strongest shipped bootstrap team, one notch past round BOOTSTRAP_DEPTH's
- * pool. Sweeps showed a fresh ladder crowning every run at round
- * BOOTSTRAP_DEPTH+1 through the vacant spot (20/20, 13 with losing records):
- * no spot to take, no game. With this team seated, a crown is always earned
- * by beating someone; the kernel's vacant-spot rule stays only for the
- * truly-vacant edge (unreachable on a fresh ladder). Gated at open like
- * every bootstrap team. */
-export const BOOTSTRAP_CHAMPION: readonly UnitDef[] = [
-  Venomancer,
-  Summoner,
-  Necromancer,
-  { name: "Warlord", base: { hp: 18, pwr: 5 }, statuses: [{ status: "Strength", stacks: 3 }] },
-  { name: "Bulwark", base: { hp: 16, pwr: 5 }, statuses: [{ status: "Vitality", stacks: 4 }] },
+/** A boss for every floor of the UNIFORM bootstrap tower: BOSS_TEAMS[f-1] is the
+ * team openLadder seats on floor f, for f in 1..TOWER_HEIGHT — so this array has
+ * exactly TOWER_HEIGHT entries, one per climb floor. Every floor is the same
+ * shape: a climb pool, a seated boss, and that boss's team left in the pool as a
+ * ghost (the demote-keeps-ghost invariant, uniform across all floors). There is
+ * no special summit slot: floor TOWER_HEIGHT's boss is just the top floor's boss,
+ * and deriveChampion reads it as the champion because it is the highest occupied
+ * floor. Nothing is seeded above TOWER_HEIGHT; a run that climbs past the top hits
+ * a vacant floor and OVERSHOOTS (no boss, no crown) — that overshoot rule, not an
+ * empty guard slot, is what makes the top a real fight.
+ *
+ * Each boss is a NOTCH above its floor's climb pool (BOOTSTRAP_TEAMS[f-1]): the
+ * same shipped stress casters, but fatter vanilla bodies and a stack more status
+ * than the climb teams field — beating the boss is a genuine step past merely
+ * clearing the floor's ghosts. Strength escalates with the floor, tracking
+ * BOOTSTRAP_TEAMS' own climb:
+ *   floor 1 — four bodies, a body more than the floor-1 climb pair fields;
+ *   floor 2 — a fifth body and a first status opener, past the floor-2 pool;
+ *   floor 3 — full lines with two status openers, over the floor-3 pool;
+ *   floor 4 — the champion (top floor): the strongest shipped team (the old
+ *             BOOTSTRAP_CHAMPION content), status stacks on two front bodies.
+ * Composed from the shipped stress units (SPEC §7) like BOOTSTRAP_TEAMS;
+ * composition is a knob, not a pin. openLadder gates every boss at seed time
+ * (assertValidContent), exactly like a climb team, so a dangling status fails
+ * loudly at open — never seed-dependently mid-run on an unlucky challenge. */
+export const BOSS_TEAMS: readonly (readonly UnitDef[])[] = [
+  // floor 1 boss — a notch over the floor-1 climb pair: a fourth body, fatter stats
+  [
+    Venomancer,
+    Summoner,
+    Silencer,
+    { name: "Warden", base: { hp: 14, pwr: 4 } },
+    { name: "Brawler", base: { hp: 12, pwr: 3 } },
+  ],
+  // floor 2 boss — a fifth body and a first status opener, past the floor-2 pool
+  [
+    Venomancer,
+    Summoner,
+    Necromancer,
+    { name: "Warden", base: { hp: 16, pwr: 4 }, statuses: [{ status: "Strength", stacks: 2 }] },
+    { name: "Bulwark", base: { hp: 14, pwr: 4 }, statuses: [{ status: "Vitality", stacks: 2 }] },
+  ],
+  // floor 3 boss — full lines, two status openers, a notch over the floor-3 pool
+  [
+    Venomancer,
+    Summoner,
+    Silencer,
+    { name: "Warden", base: { hp: 17, pwr: 5 }, statuses: [{ status: "Strength", stacks: 2 }] },
+    { name: "Bulwark", base: { hp: 15, pwr: 4 }, statuses: [{ status: "Vitality", stacks: 3 }] },
+  ],
+  // floor 4 boss — the champion (top floor): the strongest shipped team,
+  // the old BOOTSTRAP_CHAMPION content, status stacks on two front bodies.
+  [
+    Venomancer,
+    Summoner,
+    Necromancer,
+    { name: "Warlord", base: { hp: 18, pwr: 5 }, statuses: [{ status: "Strength", stacks: 3 }] },
+    { name: "Bulwark", base: { hp: 16, pwr: 5 }, statuses: [{ status: "Vitality", stacks: 4 }] },
+  ],
 ];
 
 /** The draftable pool a run's shop rolls from while no curated pool exists:

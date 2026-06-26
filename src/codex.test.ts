@@ -12,7 +12,7 @@ import { describe, it, expect } from "vitest";
 import { buildCodex, codexUnits } from "./codex.js";
 import { stressRegistry } from "./content/stress.js";
 import {
-  BOOTSTRAP_DEPTH,
+  TOWER_HEIGHT,
   DEFAULT_RUN_POOL,
   INCOME_PER_ROUND,
   INCOME_CAP,
@@ -198,17 +198,21 @@ describe("codex — ghosts rule matches ladder semantics", () => {
     expect(text.toLowerCase()).not.toMatch(/every ghost in your round/);
   });
 
-  it("states the pre-seeded champion, never fresh-ladder vacancy", () => {
+  it("states the pre-seeded boss-per-floor tower, never a fresh-ladder free crown", () => {
     const text = rule("ghosts").text;
-    expect(text).toContain("champion holding the spot");
-    expect(text.toLowerCase()).not.toMatch(/vacant/);
+    expect(text).toContain("the top floor's boss being the champion");
+    // The fixed tower's guard is the overshoot rule, stated plainly:
+    expect(text.toLowerCase()).toMatch(/overshoot/);
+    expect(text.toLowerCase()).toMatch(/no boss, no crown/);
   });
 
-  it("cites BOOTSTRAP_DEPTH for the seeded rounds", () => {
-    expect(rule("ghosts").text).toContain(`rounds 1–${BOOTSTRAP_DEPTH}`);
+  it("cites TOWER_HEIGHT for the fixed tower's floor count", () => {
+    expect(rule("ghosts").text).toContain(`fixed ${TOWER_HEIGHT}-floor tower`);
   });
 
-  it("states that the round advances win or lose", () => {
-    expect(rule("ghosts").text).toContain("win or lose");
+  it("states that the floor advances win or lose, and the boss challenge is terminal", () => {
+    const text = rule("ghosts").text;
+    expect(text).toContain("win or lose");
+    expect(text).toContain("terminal move");
   });
 });

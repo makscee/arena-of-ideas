@@ -18,7 +18,7 @@ import {
 import { stressRegistry } from "./content/stress.js";
 import { openLadder } from "./ladder.js";
 import { FileLadderStore } from "./ladder-file.js";
-import { BOOTSTRAP_DEPTH, BOOTSTRAP_TEAMS } from "./tunables.js";
+import { BOOTSTRAP_TEAMS, TOWER_HEIGHT } from "./tunables.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -225,7 +225,7 @@ describe("autoplay", () => {
   test("a policy run plays a whole run to its end, headless", () => {
     const [r] = autoplayRuns(freshFileLadder("single.json"), 0, 1);
     expect(r!.state.status).toBe("over");
-    expect(["crown", "out-of-lives"]).toContain(r!.state.endedBy);
+    expect(["crown", "challenge-lost", "out-of-lives"]).toContain(r!.state.endedBy);
     expect(r!.state.team.length).toBeGreaterThan(0);
     expect(r!.state.log[r!.state.log.length - 1]).toMatchObject({ type: "RunEnded" });
   });
@@ -243,11 +243,13 @@ describe("autoplay", () => {
     const results = autoplayRuns(openLadder(new FileLadderStore(path), stressRegistry), 0, N);
     expect(results).toHaveLength(N);
     expect(results.every((r) => r.state.status === "over")).toBe(true);
-    // Every run fights at round 1, so its ghost joined the round-1 pool.
+    // Every run fights at round 1, so its ghost joined the round-1 pool — which
+    // already held the floor-1 climb teams AND the floor-1 boss-ghost (075-3).
     const reread = new FileLadderStore(path); // growth read back from disk, not memory
-    expect(reread.poolAt(1).length).toBe(BOOTSTRAP_TEAMS[0]!.length + N);
-    // Runs outlive the bootstrap rounds: pools past the seeded depth exist now.
-    expect(reread.poolAt(BOOTSTRAP_DEPTH + 1).length).toBeGreaterThan(0);
+    expect(reread.poolAt(1).length).toBe(BOOTSTRAP_TEAMS[0]!.length + 1 + N);
+    // Runs climb to the champion floor (TOWER_HEIGHT) and ghost themselves there
+    // when they challenge it — so that floor's pool grew past its seeded size.
+    expect(reread.poolAt(TOWER_HEIGHT).length).toBe(BOOTSTRAP_TEAMS[TOWER_HEIGHT - 1]!.length + 1 + N);
   });
 
   test("the report reads as run summaries plus the ladder line", () => {
@@ -256,7 +258,7 @@ describe("autoplay", () => {
     const report = formatAutoplayReport(results, store);
     expect(report).toContain("Run auto-42 (seed 42):");
     expect(report).toContain("Run auto-43 (seed 43):");
-    expect(report).toMatch(/(crowned|out of lives) at round \d+ — \d+W\/\d+L\/\d+D/);
+    expect(report).toMatch(/(crowned|challenge lost|out of lives) at round \d+ — \d+W\/\d+L\/\d+D/);
     expect(report).toMatch(/line: {2}\w+ L\d+/);
     expect(report).toMatch(/Ladder: champion \S+ \| pools r1:\d+/);
   });

@@ -98,9 +98,18 @@ export class RemoteLadder implements LadderStore, RemoteRun {
     return this.localCrown ?? this.champ;
   }
 
-  setChampion(snap: TeamSnapshot): void {
+  bossAt(floor: number): TeamSnapshot | null {
+    // The remote ladder tracks only its summit (the served/synced champion); a
+    // per-floor read resolves the floor that summit sits on, vacant elsewhere.
+    const champ = this.champion();
+    return champ !== null && champ.round === floor ? champ : null;
+  }
+
+  setBoss(floor: number, snap: TeamSnapshot): void {
     // Local display only — whether the crown really lands is the server's
     // call at submit (the crown race; `crowned: false` when it lapsed).
+    // ladderFight seats the run's ghost as a new summit (snap.round === floor),
+    // so this is the old setChampion: the locally-won crown to display.
     this.localCrown = jsonClone(snap);
   }
 

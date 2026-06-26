@@ -14,18 +14,20 @@
 import { describe, expect, test } from "vitest";
 import type { Hono } from "hono";
 import {
-  BOOTSTRAP_DEPTH,
   BOOTSTRAP_RUN_ID,
   BOOTSTRAP_TEAMS,
   buy,
+  challengeBoss,
   fight,
   InMemoryLadderStore,
   initRun,
+  InvalidDecisionError,
   ladderFight,
   openLadder,
   serializeRun,
   STARTING_LIVES,
   stressRegistry,
+  TOWER_HEIGHT,
   UNIT_COST,
   type LadderStore,
   type RunEvent,
@@ -43,7 +45,10 @@ import { createRateLimiter } from "./rate-limit.js";
 
 const TITAN: UnitDef = { name: "Titan", base: { hp: 100, pwr: 50 } };
 const GOLIATH: UnitDef = { name: "Goliath", base: { hp: 200, pwr: 80 } };
-const BASE = BOOTSTRAP_TEAMS[0]!.length; // round-1 bootstrap ghost count
+// Round-1's seeded pool size: the floor-1 climb teams PLUS the floor-1 boss-ghost
+// (075-3 seeds a boss on every floor and leaves its team in the pool). All three
+// climb floors happen to seed the same count, so BASE is the per-floor seeded size.
+const BASE = BOOTSTRAP_TEAMS[0]!.length + 1;
 
 // ---------------------------------------------------------------------------
 // Harness
@@ -146,8 +151,9 @@ function viewOf(round: number, v: RunView): LadderStore {
   return {
     poolAt: (r) => (r === round ? v.pool : []),
     addSnapshot: () => {},
+    bossAt: (floor) => (v.champion !== null && v.champion.round === floor ? v.champion : null),
+    setBoss: () => {},
     champion: () => v.champion,
-    setChampion: () => {},
   };
 }
 
@@ -158,13 +164,33 @@ async function playSharedRun(ctx: Ctx, token: string, seed: number, runId: strin
   return playOpenedRun(ctx, token, seed, runId);
 }
 
+/** One ladder move against a per-fight view: at the champion's floor (the fixed
+ * tower's top) challenge the boss; below it, climb the same-floor pool, or — when
+ * the climb is refused because the floor has no opponent left — challenge the
+ * floor's boss. Mirrors the kernel/CLI policy: stop at the top and challenge,
+ * never climb PAST it into a vacant floor (that overshoots — no crown). */
+function ladderMove(s: RunState, view: LadderStore): RunState {
+  const top = view.champion();
+  if (top !== null && s.round >= top.round) {
+    return challengeBoss(s, view);
+  }
+  try {
+    return ladderFight(s, view);
+  } catch (err) {
+    if (err instanceof InvalidDecisionError && err.decision === "fight") {
+      return challengeBoss(s, view);
+    }
+    throw err;
+  }
+}
+
 /** The play loop after the open — each fight against a fresh served view. */
 async function playOpenedRun(ctx: Ctx, token: string, seed: number, runId: string): Promise<RunState> {
   let s = buy(initRun({ seed, runId, pool: [TITAN], statuses: stressRegistry }), 0);
   for (let guard = 0; s.status === "active"; guard++) {
     if (guard > 200) throw new Error(`run ${runId} did not terminate`);
     const round = s.round;
-    s = ladderFight(s, viewOf(round, await fetchRunView(ctx, token, runId, round)));
+    s = ladderMove(s, viewOf(round, await fetchRunView(ctx, token, runId, round)));
   }
   return s;
 }
@@ -178,7 +204,7 @@ async function playUnopenedRun(ctx: Ctx, token: string, seed: number, runId: str
     const pool = await fetchMyPool(ctx, token, s.round);
     const champ = (await fetchChampion(ctx)).champion!;
     const round = s.round;
-    s = ladderFight(s, viewOf(round, { pool, champion: champ }));
+    s = ladderMove(s, viewOf(round, { pool, champion: champ }));
   }
   return s;
 }
@@ -206,7 +232,7 @@ describe("leaderboard reads work logged-out", () => {
     expect(champion!.runId).toBe(BOOTSTRAP_RUN_ID);
     expect(holder).toBeNull();
     const pool = await fetchPublicPool(ctx, 1);
-    expect(pool.length).toBe(BASE);
+    expect(pool.length).toBe(BASE); // floor-1 climb teams + the floor-1 boss-ghost (075-3)
     expect(pool.every((g) => g.runId === BOOTSTRAP_RUN_ID)).toBe(true);
   });
 
@@ -329,7 +355,7 @@ describe("tampered submissions are rejected", () => {
     const ada = await login(ctx, "ada@example.com");
     const claimed = JSON.parse(serializeRun(await legitRun(ctx, ada))) as Loose;
     for (const e of claimed["log"] as Loose[]) {
-      if (e["type"] === "ChampionChallenged") e["champion"] = "phantom";
+      if (e["type"] === "BossChallenged") e["boss"] = "phantom";
     }
     const { status, body } = await submit(ctx, ada, JSON.stringify(claimed));
     expect(status).toBe(422);
@@ -343,7 +369,7 @@ describe("tampered submissions are rejected", () => {
     expect((await openRun(ctx, ada, "goliath")).status).toBe(200);
     const local = openLadder(new InMemoryLadderStore(), stressRegistry);
     let s = buy(initRun({ seed: 1, runId: "goliath", pool: [GOLIATH], statuses: stressRegistry }), 0);
-    while (s.status === "active") s = ladderFight(s, local);
+    while (s.status === "active") s = ladderMove(s, local);
     const { status, body } = await submit(ctx, ada, serializeRun(s));
     expect(status).toBe(422);
     expect(body["reason"]).toMatch(/content/);
@@ -444,19 +470,22 @@ describe("prefix forgeries are rejected", () => {
     expect((await openRun(ctx, ada, "forged")).status).toBe(200);
 
     // Forge: play locally against an EMPTY pool view — the log then claims
-    // round-1's pool held 0 ghosts, so the kernel reads the empty draw as
-    // "outran every ghost" and challenges the champion at round 1. On a
-    // bootstrap-seeded ladder the round-1 pool is never smaller than BASE:
-    // the server never served (and would never serve) that view.
+    // round-1's pool held 0 ghosts, so the climb is refused and the run
+    // challengeBosses at round 1. On the fixed tower floor 1 is not the champion
+    // floor, so that challenge overshoots locally — but the point is the CLAIM:
+    // on a bootstrap-seeded ladder the round-1 pool is never smaller than BASE, so
+    // the server never served (and would never serve) that empty view.
     const champ = (await fetchChampion(ctx)).champion!;
     let s = buy(initRun({ seed: 1, runId: "forged", pool: [TITAN], statuses: stressRegistry }), 0);
-    while (s.status === "active") s = ladderFight(s, viewOf(s.round, { pool: [], champion: champ }));
-    expect(s.endedBy).toBe("crown"); // seed 1: a lone round-1 Titan beats the bootstrap champion
-    expect(ofType(s.log, "Snapshotted")[0]!.seq).toBe(0); // the impossible claim
+    while (s.status === "active") s = ladderMove(s, viewOf(s.round, { pool: [], champion: champ }));
+    expect(ofType(s.log, "OpponentDrawn")).toEqual([]); // an empty pool: no climb opponent ever drawn — the impossible claim
 
     const { status, body } = await submit(ctx, ada, serializeRun(s));
     expect(status).toBe(422);
-    expect(body["reason"]).toMatch(/never served/);
+    // Rejected either way: the empty-pool prefix was never served, OR (since floor 1
+    // is not the champion floor) the overshoot the empty view forced doesn't replay
+    // against the real seeded pool. Both are the server refusing the impossible claim.
+    expect(body["reason"]).toMatch(/never served|does not replay/);
     // Nothing landed: no ghost, and the bootstrap champion still holds the seat.
     expect((await fetchPublicPool(ctx, 1)).length).toBe(BASE);
     expect((await fetchChampion(ctx)).champion!.runId).toBe(BOOTSTRAP_RUN_ID);
@@ -485,7 +514,7 @@ describe("prefix forgeries are rejected", () => {
       const round = s.round;
       const served = await fetchRunView(ctx, bob, "cherry", round);
       const truncated = served.pool.filter((g) => g.runId === BOOTSTRAP_RUN_ID); // bootstrap rows are the pool's prefix
-      s = ladderFight(s, viewOf(round, { pool: truncated, champion: served.champion }));
+      s = ladderMove(s, viewOf(round, { pool: truncated, champion: served.champion }));
     }
 
     const { status, body } = await submit(ctx, bob, serializeRun(s));
@@ -506,20 +535,29 @@ describe("prefix forgeries are rejected", () => {
 // genesis world — not the present one.
 // ---------------------------------------------------------------------------
 
-/** Eve's offline forge: greedy buying (outlevels the honest lone titans),
- * each fight against a banked view, the challenge against `champion`. */
+/** Eve's offline forge: greedy buying (outlevels the honest lone titans), each
+ * fight against a banked view, the challenge against `champion`. The tower GROWS
+ * now (slice 6): the live champion has ascended past the genesis top floor, so a
+ * banked run that only ever read floors 1..genesisTop can never honestly REACH
+ * the live champion's floor. The forgery instead PINS the claimed champion at the
+ * genesis top floor (`genesisTop`) — claiming the live champion's team sits where
+ * the bootstrap one did — so the run challenges there with a banked view. That is
+ * the exact claim serve-time pinning must reject: a round-`genesisTop` view was
+ * never co-served with the live champion. */
 function forgeRun(
   runId: string,
   seed: number,
   bankedPools: ReadonlyMap<number, TeamSnapshot[]>,
   champion: TeamSnapshot,
+  genesisTop: number,
 ): RunState {
+  const claimedChampion: TeamSnapshot = { ...champion, round: genesisTop };
   let s = initRun({ seed, runId, pool: [TITAN], statuses: stressRegistry });
   for (let guard = 0; s.status === "active"; guard++) {
     if (guard > 50) throw new Error("forged run did not terminate");
     while (s.gold >= UNIT_COST && s.offers.length > 0) s = buy(s, 0);
     const round = s.round;
-    s = ladderFight(s, viewOf(round, { pool: bankedPools.get(round) ?? [], champion }));
+    s = ladderMove(s, viewOf(round, { pool: bankedPools.get(round) ?? [], champion: claimedChampion }));
   }
   return s;
 }
@@ -539,7 +577,7 @@ describe("banked-open forgeries are rejected", () => {
       genesisChampion = v.champion;
     }
     expect(genesisPools.get(1)!.length).toBe(BASE);
-    expect(genesisPools.get(4)!.length).toBe(0); // genesis round 4: nothing to outrun
+    expect(genesisPools.get(4)!.length).toBe(BASE); // genesis round 4: the champion floor is seeded too (075-3 uniform tower)
     expect(genesisChampion!.runId).toBe(BOOTSTRAP_RUN_ID); // the world eve's bank was served
 
     for (let i = 1; i <= 5; i++) {
@@ -550,7 +588,7 @@ describe("banked-open forgeries are rejected", () => {
     const seated = (await fetchChampion(ctx)).champion!;
     expect(seated.runId).not.toBe(BOOTSTRAP_RUN_ID);
     expect((await fetchPublicPool(ctx, 1)).length).toBeGreaterThan(BASE); // round 1 grew…
-    expect((await fetchPublicPool(ctx, 4)).length).toBeGreaterThan(0); // …and round 4 is no longer empty
+    expect((await fetchPublicPool(ctx, 4)).length).toBeGreaterThan(BASE); // …and round 4 grew past its seeded size
     return { eve, genesisPools, genesisChampion: genesisChampion!, seated };
   }
 
@@ -560,12 +598,16 @@ describe("banked-open forgeries are rejected", () => {
 
     // Eve forges against her banked genesis views: rounds 1-3 fight only the
     // bootstrap ghosts (dodging every post-genesis ghost), round 4 claims the
-    // genesis-empty pool — a free champion challenge — against the champion
-    // seated NOW, whom her banked round-4 view was never served with.
-    const s = forgeRun("banked", 7, genesisPools, seated);
-    expect(s).toMatchObject({ endedBy: "crown", round: 4 }); // locally: crowned at round 4 over the current champion
-    expect(ofType(s.log, "Snapshotted").map((e) => e.seq)).toEqual([BASE, BASE, BASE, 0]); // the banked claims
-    expect(ofType(s.log, "ChampionChallenged")[0]!.champion).toBe(seated.runId);
+    // genesis round-4 pool and challenges the champion seated NOW — PINNED at the
+    // genesis top floor (TOWER_HEIGHT), since the live champion has since ascended
+    // higher than a banked floors-1..4 run could honestly reach — whom her banked
+    // round-4 view was never served with.
+    const s = forgeRun("banked", 7, genesisPools, seated, TOWER_HEIGHT);
+    expect(s).toMatchObject({ endedBy: "crown", round: TOWER_HEIGHT }); // locally: crowned at the genesis top floor over the current champion's team
+    // Each banked round was claimed at its genesis pool length (all BASE on the
+    // uniform tower), so every snapshot — climbs and the round-4 challenge — sits at BASE.
+    expect(ofType(s.log, "Snapshotted").map((e) => e.seq)).toEqual([BASE, BASE, BASE, BASE]); // the banked claims
+    expect(ofType(s.log, "BossChallenged")[0]!.boss).toBe(seated.runId);
 
     const { status, body } = await submit(ctx, eve, serializeRun(s));
     expect(status).toBe(422);
@@ -583,7 +625,7 @@ describe("banked-open forgeries are rejected", () => {
     // were never served for it, so the very first fight fails the record.
     expect((await openRun(ctx, eve, "control")).status).toBe(200);
     expect((await fetchRunView(ctx, eve, "control", 1)).pool.length).toBeGreaterThan(BASE);
-    const s = forgeRun("control", 7, genesisPools, seated);
+    const s = forgeRun("control", 7, genesisPools, seated, TOWER_HEIGHT);
     const { status, body } = await submit(ctx, eve, serializeRun(s));
     expect(status).toBe(422);
     expect(body["reason"]).toMatch(/never served/);
@@ -599,9 +641,9 @@ describe("banked-open forgeries are rejected", () => {
     // crown race applies: the bootstrap seat is long gone, the crown lapses,
     // and only the ghosts land. Banking buys nothing an honest slow run
     // would not also get.
-    const s = forgeRun("banked", 7, genesisPools, genesisChampion);
-    expect(s).toMatchObject({ endedBy: "crown", round: 4 });
-    expect(ofType(s.log, "ChampionChallenged")[0]!.champion).toBe(BOOTSTRAP_RUN_ID);
+    const s = forgeRun("banked", 7, genesisPools, genesisChampion, TOWER_HEIGHT);
+    expect(s).toMatchObject({ endedBy: "crown", round: TOWER_HEIGHT });
+    expect(ofType(s.log, "BossChallenged")[0]!.boss).toBe(BOOTSTRAP_RUN_ID);
 
     const { status, body } = await submit(ctx, eve, serializeRun(s));
     expect(status).toBe(200);
@@ -681,7 +723,7 @@ describe("the open handshake", () => {
       if (guard > 200) throw new Error("stale run did not terminate");
       const round = s.round;
       const v = round === 1 ? staleView : await fetchRunView(ctx, bob, "stale", round);
-      s = ladderFight(s, viewOf(round, v));
+      s = ladderMove(s, viewOf(round, v));
     }
 
     const { status, body } = await submit(ctx, bob, serializeRun(s));
@@ -710,7 +752,7 @@ describe("the open handshake", () => {
       if (guard > 200) throw new Error("reread run did not terminate");
       const round = s.round;
       const v = round === 1 ? second : await fetchRunView(ctx, bob, "reread", round);
-      s = ladderFight(s, viewOf(round, v));
+      s = ladderMove(s, viewOf(round, v));
     }
     expect((await submit(ctx, bob, serializeRun(s))).body).toMatchObject({ accepted: true });
   });
@@ -744,16 +786,15 @@ describe("the play read is bounded", () => {
     const ada = await login(ctx, "ada@example.com");
     expect((await openRun(ctx, ada, "mine")).status).toBe(200);
 
-    // Fresh ladder: ghosts reach BOOTSTRAP_DEPTH. One round past an empty
-    // pool is the outran-every-ghost champion challenge, so honest reads stay
-    // within the margin — they serve fine.
-    const justPast = await ctx.app.request(`/v1/runs/mine/pool/${BOOTSTRAP_DEPTH + 1}`, {
+    // Fresh ladder: ghosts reach TOWER_HEIGHT (the top floor is seeded too). One
+    // round past it is still well within the serve margin, so honest reads serve fine.
+    const justPast = await ctx.app.request(`/v1/runs/mine/pool/${TOWER_HEIGHT + 1}`, {
       headers: { authorization: `Bearer ${ada}` },
     });
     expect(justPast.status).toBe(200);
 
     // A round sweep beyond frontier + margin records nothing and is 422.
-    const far = await ctx.app.request(`/v1/runs/mine/pool/${BOOTSTRAP_DEPTH + 17}`, {
+    const far = await ctx.app.request(`/v1/runs/mine/pool/${TOWER_HEIGHT + 17}`, {
       headers: { authorization: `Bearer ${ada}` },
     });
     expect(far.status).toBe(422);
@@ -806,10 +847,10 @@ describe("run opens expire", () => {
     // (round 1 vs the banked pool, then empty rounds to the champion — the
     // rejection happens at the TTL gate, before any view is even checked).
     let s = buy(initRun({ seed: 1, runId: "parked", pool: [TITAN], statuses: stressRegistry }), 0);
-    s = ladderFight(s, viewOf(1, view));
+    s = ladderMove(s, viewOf(1, view));
     for (let guard = 0; s.status === "active"; guard++) {
       if (guard > 20) throw new Error("parked run did not terminate");
-      s = ladderFight(s, viewOf(s.round, { pool: [], champion: view.champion }));
+      s = ladderMove(s, viewOf(s.round, { pool: [], champion: view.champion }));
     }
     const { status, body } = await submit(ctx, ada, serializeRun(s));
     expect(status).toBe(422);
@@ -823,12 +864,12 @@ describe("run opens expire", () => {
 
     // Round 1 today, the rest after a two-day pause — well inside the TTL.
     let s = buy(initRun({ seed: 1, runId: "slow", pool: [TITAN], statuses: stressRegistry }), 0);
-    s = ladderFight(s, viewOf(s.round, await fetchRunView(ctx, ada, "slow", s.round)));
+    s = ladderMove(s, viewOf(s.round, await fetchRunView(ctx, ada, "slow", s.round)));
     ctx.now.sec += 2 * DAY;
     for (let guard = 0; s.status === "active"; guard++) {
       if (guard > 200) throw new Error("slow run did not terminate");
       const round = s.round;
-      s = ladderFight(s, viewOf(round, await fetchRunView(ctx, ada, "slow", round)));
+      s = ladderMove(s, viewOf(round, await fetchRunView(ctx, ada, "slow", round)));
     }
 
     const { status, body } = await submit(ctx, ada, serializeRun(s));

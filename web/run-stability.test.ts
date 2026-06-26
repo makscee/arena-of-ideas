@@ -14,9 +14,13 @@ import { describe, expect, test } from "vitest";
 import {
   InMemoryLadderStore,
   buy,
+  challengeBoss,
   initRun,
+  InvalidDecisionError,
   ladderFight,
+  openLadder,
   stressRegistry,
+  type LadderStore,
   type TeamSnapshot,
 } from "../src/index.js";
 import { createLadderView } from "./ladder-view.js";
@@ -42,13 +46,31 @@ function fakeRoot(): HTMLElement {
   return el;
 }
 
-// Seed two teams from the built-in pool so the ladder has real ghosts.
-function buildLadder(): InMemoryLadderStore {
-  const store = new InMemoryLadderStore();
+// Open the bootstrap tower so every floor has a real climb pool, then run two
+// teams up it. Each climb leaves a ghost; at the champion's floor the run
+// challenges the boss (the fixed tower has a top — climbing PAST it overshoots,
+// 075-3), so the runs leave ghosts across the floors the accordion renders.
+function buildLadder(): LadderStore {
+  const store = openLadder(new InMemoryLadderStore(), stressRegistry);
   for (let seed = 0; seed < 2; seed++) {
     let s = initRun({ seed, runId: `run-${seed}`, pool: [{ name: "Titan", base: { hp: 100, pwr: 50 } }], statuses: stressRegistry });
     s = buy(s, 0);
-    while (s.status === "active") s = ladderFight(s, store);
+    while (s.status === "active") {
+      const top = store.champion();
+      if (top !== null && s.round >= top.round) {
+        s = challengeBoss(s, store); // at the top: challenge, don't climb past into an overshoot
+        continue;
+      }
+      try {
+        s = ladderFight(s, store);
+      } catch (err) {
+        if (err instanceof InvalidDecisionError && err.decision === "fight") {
+          s = challengeBoss(s, store);
+        } else {
+          throw err;
+        }
+      }
+    }
   }
   return store;
 }
@@ -277,7 +299,7 @@ describe("shop row reserves the rolled offer count's layout (refutation 3)", () 
     querySelector(sel: string): null;
     append(): void;
     setAttribute(): void;
-    classList: { toggle(): void };
+    classList: { toggle(): void; add(): void; remove(): void };
     scrollIntoView(): void;
   }
 
@@ -306,7 +328,7 @@ describe("shop row reserves the rolled offer count's layout (refutation 3)", () 
       querySelector: () => null,
       append() {},
       setAttribute() {},
-      classList: { toggle() {} },
+      classList: { toggle() {}, add() {}, remove() {} },
       scrollIntoView() {},
     };
   }
@@ -325,6 +347,9 @@ describe("shop row reserves the rolled offer count's layout (refutation 3)", () 
     const names = [
       "newPanel", "newForm", "seed", "dice", "startButton", "newError", "champ", "warn", "shopPanel", "head", "next",
       "notice", "shopRow", "rerollButton", "line", "fightButton", "stakes", "error", "battlePanel",
+      // #075 slice 4 boss-challenge els (+ slice 7 challengeCancel) — present so
+      // construction wires them.
+      "bossPanel", "bossHead", "bossTeam", "challengeButton", "challengeCancel", "challengeNote",
       "battleHead", "battleMount", "battleBar", "outcome", "continueButton", "skipButton", "endPanel",
       "endHead", "endStats", "endLine", "endStatus", "newRunButton", "ladderPanel", "ladderBody",
       "menuButton", "menuOverlay", "menuClose", "abandonButton", "abandonConfirm", "abandonYes", "abandonNo",
