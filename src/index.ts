@@ -26,6 +26,28 @@ export {
   FIRST_CONTENT_VERSION,
 } from "./season-archive.js";
 export type { SeasonArchiveStore, SeasonArchiveData, SeasonRecord, ContentVersion } from "./season-archive.js";
+// The season clock (#077 slice 2) — the live season pointer and the
+// archive→reset→bump→open transition. Same off-index split as the ladder/archive:
+// the file backing (FileSeasonPointerStore) needs node:fs and lives in
+// season-file.ts; the medium-free engine + the transition op are exported here.
+export {
+  InMemorySeasonPointerStore,
+  PersistedSeasonPointerStore,
+  emptySeasonPointer,
+  emptySeasonPointerData,
+  parseSeasonPointerData,
+  serializeSeasonPointer,
+  snapshotLadder,
+  transitionSeason,
+  FIRST_SEASON,
+} from "./season.js";
+export type {
+  SeasonPointer,
+  SeasonPointerStore,
+  SeasonPointerData,
+  SeasonTransitionOps,
+  SeasonTransitionResult,
+} from "./season.js";
 // The ideas table (#076) — the same store-interface pattern as the ladder: one
 // IdeaStore interface, an in-memory backing and a persisted engine, a serialized
 // IdeasData shape that round-trips. The web's localStorage backing builds on it.
