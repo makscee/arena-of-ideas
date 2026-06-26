@@ -1695,6 +1695,146 @@ button:disabled:hover {
   font-size: 0.85rem;
 }
 
+/* ---------- ideas screen (#076 slice 3) ----------
+   The ideas table as a screen off the title: a submit box, then the ranked
+   list. One row per idea — a vote pill (the tap target, ≥44px) and the text.
+   Sized to fit 375px: the pill is fixed-width, the text takes the rest and
+   wraps; nothing overflows. Matches the leaderboard's centred column + the
+   shared panel/border/accent palette. */
+
+#ideas-view {
+  max-width: 46rem;
+  margin: 0.5rem auto 0;
+}
+
+.ideas-title {
+  text-align: center;
+  font-size: 1.4rem;
+  letter-spacing: 0.05em;
+  margin: 0.5rem 0 0.2rem;
+}
+
+.ideas-tagline {
+  text-align: center;
+  color: var(--dim);
+  font-size: 0.8rem;
+  margin: 0 0 1.2rem;
+}
+
+#ideas-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+#ideas-text {
+  flex: 1 1 auto;
+  min-width: 0; /* lets the input shrink inside the flex row at 375px */
+  min-height: 44px;
+  font-size: 1rem;
+}
+
+#ideas-submit {
+  flex: 0 0 auto;
+  min-height: 44px;
+  min-width: 4.5rem;
+  font-weight: 600;
+}
+
+#ideas-status {
+  margin: 0 0 0.8rem;
+  font-size: 0.85rem;
+}
+
+#ideas-status[hidden] {
+  display: none;
+}
+
+.ideas-status-bad {
+  color: var(--bad, #e66);
+}
+
+.ideas-status-ok {
+  color: var(--good, #7c7);
+}
+
+.ideas-login-note {
+  color: var(--dim);
+  font-size: 0.85rem;
+  margin: 0 0 0.8rem;
+}
+
+.ideas-login-note[hidden] {
+  display: none;
+}
+
+#ideas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ideas-empty {
+  color: var(--dim);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.ideas-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.6rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem;
+}
+
+/* The vote pill IS the tap target — the whole thing is ≥44px, with the count
+   inside it so a thumb hits one element, never a gap. */
+.ideas-vote {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.ideas-vote-mark {
+  font-size: 1.1rem;
+}
+
+.ideas-vote-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--dim);
+}
+
+/* A held vote reads as filled + accent — the toggle's "voted" state. */
+.ideas-vote.ideas-voted {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.ideas-vote.ideas-voted .ideas-vote-count {
+  color: var(--accent);
+}
+
+.ideas-text {
+  flex: 1 1 auto;
+  min-width: 0; /* allows wrap, never pushes the row past the viewport */
+  align-self: center;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere; /* a long unbroken token wraps, never overflows */
+}
+
 /* ---------- battle editor (#066 slice 2) ----------
    Two team columns side by side (stacking at phone width), a seed control bar,
    and the borrowed viewer below. The unit palette is a fixed popover anchored

@@ -338,6 +338,44 @@ export async function launch() {
   return browser;
 }
 
+/** Drive the REAL login UI on `page` (the title's Login entry → email → the
+ * mock OTP → a first-login display name), so the session lands in localStorage
+ * exactly as a real login would and the next reload boots the app remote.
+ *
+ * MOCK_MODE (e2e/run.mjs boots the server with it) exposes
+ * GET /_mock/last-code?email=… returning the OTP just emailed — the probe reads
+ * it the way a player reads their inbox. `email` must be unique per player so
+ * the one-vote-per-player rule is exercised against a distinct account. Returns
+ * once the title shows the logged-in identity strip. */
+export async function loginViaUi(page, email, name = "Probe Player") {
+  await page.waitForSelector("#title-view:not([hidden])");
+  // The panel may already be open (a prior login nudge opened it); only click
+  // the Login entry when it's still showing.
+  if (await page.locator("#title-login").isVisible()) await page.click("#title-login");
+  await page.waitForSelector("#login-email-row:not([hidden])");
+  await page.fill("#login-email", email);
+  await page.click("#login-submit");
+  await page.waitForSelector("#login-code-row:not([hidden])");
+  // Read the OTP the mock mailer "sent" — the code oracle MOCK_MODE mounts.
+  const res = await page.request.get(`${BASE}/_mock/last-code?email=${encodeURIComponent(email)}`);
+  const { code } = await res.json();
+  if (!code) throw new Error(`no mock OTP for ${email}`);
+  await page.fill("#login-code", code);
+  await page.click("#login-submit");
+  // First login → name step (the page reloads after, booting remote). A second
+  // login of the same email skips the name step and reloads straight away.
+  const named = await page
+    .waitForSelector("#login-name-row:not([hidden])", { timeout: 5000 })
+    .then(() => true)
+    .catch(() => false);
+  if (named) {
+    await page.fill("#login-name", name);
+    await page.click("#login-submit");
+  }
+  // The reload lands back on the title; identity strip means we're in.
+  await page.waitForSelector("#title-id:not([hidden])", { timeout: 15_000 });
+}
+
 /** Rounded bounding box of a selector (null-safe: fails the probe loudly). */
 export async function box(page, selector) {
   const b = await page.locator(selector).boundingBox();

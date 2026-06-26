@@ -9,7 +9,7 @@
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { DESKTOP, PHONE, launch, openRun, plainShopRun, bigBattleRun } from "./lib.mjs";
+import { BASE, DESKTOP, PHONE, launch, loginViaUi, openRun, plainShopRun, bigBattleRun } from "./lib.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const outDir = process.env.SHOTS_DIR ?? join(here, ".shots");
@@ -92,6 +92,77 @@ for (const [vp, tag] of [
   await stepTo(page, Math.min(6, Math.floor(total / 3)));
   await toBoard();
   await shot(page, `${tag}-7-bigteam-mid`);
+  await ctx.close();
+}
+
+// Ideas screen (#076 slice 3) — empty state (logged out, read-only), then with
+// a few ideas (logged in), then after voting (rank moved, a vote held). Each at
+// desktop AND 375px, so a human confirms the list, submit box and vote pills
+// fit and read at phone width. Requires the live MOCK_MODE server (the e2e
+// orchestrator's `--serve`), so loginViaUi can complete a real login.
+//
+// FRESH SERVER PER VIEWPORT: the ideas table is global server state, so running
+// both viewports against ONE server would show the phone pass the desktop pass's
+// ideas + inherited votes — misleading to a reviewer. Set SHOTS_IDEAS_VIEWPORT
+// to "desktop" or "phone" to capture ONE viewport only, and run the script once
+// per viewport against a freshly (re)started serve, e.g.:
+//   npm run e2e:stop; npm run e2e:serve  # fresh empty ideas table
+//   SHOTS_IDEAS_VIEWPORT=desktop AOI_BASE_URL=… node --import tsx/esm e2e/shots.mjs
+//   npm run e2e:stop; npm run e2e:serve  # fresh again
+//   SHOTS_IDEAS_VIEWPORT=phone   AOI_BASE_URL=… node --import tsx/esm e2e/shots.mjs
+// Unset, it captures both against the current server (fine for the battle shots
+// above, which inject their own per-page state and share nothing).
+const ideasViewports = [
+  [DESKTOP, "desktop"],
+  [PHONE, "phone"],
+].filter(([, tag]) => !process.env.SHOTS_IDEAS_VIEWPORT || process.env.SHOTS_IDEAS_VIEWPORT === tag);
+
+for (const [vp, tag] of ideasViewports) {
+  const ctx = await browser.newContext({ viewport: vp, hasTouch: vp.width < 700 });
+  const page = await ctx.newPage();
+  page.setDefaultTimeout(15_000);
+  await page.addInitScript(() => localStorage.removeItem("aoi.run.v1"));
+  await page.goto(BASE, { waitUntil: "domcontentloaded" });
+  await page.waitForSelector("#title-view:not([hidden])");
+
+  // Empty/read-only state — logged out, the login note shows.
+  await page.click("#title-ideas");
+  await page.waitForSelector("#ideas-view:not([hidden])");
+  await page.waitForFunction(() => document.querySelector("#ideas-list").children.length > 0);
+  await shot(page, `${tag}-8-ideas-empty`);
+
+  // Walk back to the title, then log in and add a few ideas.
+  await page.click("#home-button");
+  await page.waitForSelector("#title-view:not([hidden])");
+  await loginViaUi(page, `shots-${tag}@probe.test`, `Shots ${tag}`);
+  await page.click("#title-ideas");
+  await page.waitForSelector("#ideas-view:not([hidden])");
+  for (const text of [
+    "Make poison stack faster",
+    "Add a draft phase before the run",
+    "Let me rename my champion",
+  ]) {
+    await page.fill("#ideas-text", text);
+    await page.click("#ideas-submit");
+    await page.waitForFunction(
+      (t) => [...document.querySelectorAll("#ideas-list .ideas-text")].some((e) => e.textContent === t),
+      text,
+    );
+  }
+  await shot(page, `${tag}-9-ideas-list`);
+
+  // Vote the third (bottom) idea up — its rank moves and the pill reads voted.
+  await page.evaluate(() => {
+    const rows = [...document.querySelectorAll("#ideas-list .ideas-row")];
+    rows.find((r) => r.querySelector(".ideas-text")?.textContent === "Let me rename my champion")
+      .querySelector(".ideas-vote")
+      .click();
+  });
+  await page.waitForFunction(
+    () => document.querySelector("#ideas-list .ideas-row .ideas-vote.ideas-voted") !== null,
+  );
+  await shot(page, `${tag}-10-ideas-voted`);
+
   await ctx.close();
 }
 

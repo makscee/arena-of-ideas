@@ -28,6 +28,17 @@
  *   POST /v1/runs                     bearer — submit a finished run for
  *                                     re-derivation (runs.ts)
  *
+ * Ideas table (#076 slice 2) — the free-text idea queue, ranked by votes, one
+ * vote per player (DB-enforced on the session's user id):
+ *
+ *   GET  /v1/ideas                    public — every idea, ranked by votes
+ *   POST /v1/ideas                    bearer — submit an idea (the author)
+ *   POST /v1/ideas/:id/vote           bearer — toggle the caller's vote
+ *
+ * Listing is public for the same reason the leaderboard reads are: reading the
+ * ranked queue logged-out is reasonable, and the ideas are not secrets. Only
+ * submitting and voting need identity — both key on session.userId.
+ *
  * Leaderboard reads are deliberately public: the title screen shows the
  * champion to logged-out players, and ghost teams are not secrets — they are
  * the opponents everyone fights. Only submission (writing) needs identity.
@@ -53,6 +64,7 @@ import { SqliteLadderStore } from "./ladder-store.js";
 import type { MailClient } from "./mail.js";
 import { renderOtpEmail } from "./otp-email.js";
 import { createRateLimiter, type RateLimiter } from "./rate-limit.js";
+import { listIdeas, submitIdea, toggleIdeaVote } from "./ideas.js";
 import { openRun, servePool, submitRun } from "./runs.js";
 import { users } from "./schema.js";
 import { mint, revoke, verify } from "./sessions.js";
@@ -300,6 +312,28 @@ export function createApp(deps: AppDeps): Hono<AuthEnv> {
     const session = c.get("session");
     const outcome = submitRun({ db, store, content, clock }, session.userId, run);
     return c.json(outcome, outcome.accepted ? 200 : 422);
+  });
+
+  // Ideas table — public list, authed submit/vote (one vote per session user).
+  app.get("/v1/ideas", (c) => {
+    return c.json({ ideas: listIdeas({ db, clock }) });
+  });
+
+  app.post("/v1/ideas", auth, async (c) => {
+    const body = await jsonBody(c.req.raw);
+    const text = body?.text;
+    if (typeof text !== "string") {
+      return c.json({ error: "invalid_body" }, 400);
+    }
+    const session = c.get("session");
+    const outcome = submitIdea({ db, clock }, session.userId, text);
+    return c.json(outcome, outcome.submitted ? 200 : 422);
+  });
+
+  app.post("/v1/ideas/:id/vote", auth, (c) => {
+    const session = c.get("session");
+    const outcome = toggleIdeaVote({ db, clock }, session.userId, c.req.param("id"));
+    return c.json(outcome, outcome.toggled ? 200 : 422);
   });
 
   app.get("/v1/auth/me", auth, (c) => {

@@ -11,6 +11,11 @@ export type { RunInput, RunState, RunStatus, RunEndReason, RunUnit, RunDecision,
 // here — the web's localStorage backing builds on it.
 export { InMemoryLadderStore, PersistedLadderStore, openLadder, emptyLadderData, parseLadderData, BOOTSTRAP_RUN_ID } from "./ladder.js";
 export type { LadderStore, LadderData, TeamSnapshot } from "./ladder.js";
+// The ideas table (#076) — the same store-interface pattern as the ladder: one
+// IdeaStore interface, an in-memory backing and a persisted engine, a serialized
+// IdeasData shape that round-trips. The web's localStorage backing builds on it.
+export { InMemoryIdeaStore, PersistedIdeaStore, emptyIdeasData, parseIdeasData, assertSubmittableText, toggledVotes, rankIdeas } from "./ideas.js";
+export type { IdeaStore, IdeasData, Idea } from "./ideas.js";
 export * from "./tunables.js";
 export { sweep, sweepSeeds, sweepOutcome, summarizeSweep, winRate } from "./sweep.js";
 export type { SweepInput, SweepOutcome, SweepStats, SweepResult } from "./sweep.js";

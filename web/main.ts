@@ -27,6 +27,8 @@ import {
 import { createCodex, type CodexScreen } from "./codex.js";
 import { createLadderView, type LadderView, type LadderViewRun } from "./ladder-view.js";
 import { createTitleScreen } from "./title-screen.js";
+import { RemoteIdeas } from "./remote-ideas.js";
+import { createIdeasScreen, type IdeasScreen } from "./ideas-screen.js";
 
 // ---------------------------------------------------------------------------
 // DOM wiring
@@ -118,6 +120,7 @@ const views = {
   battle: el<HTMLElement>("battle-view"),
   editor: el<HTMLElement>("editor-view"),
   codex: el<HTMLElement>("codex-view"),
+  ideas: el<HTMLElement>("ideas-view"),
 };
 const homeButton = el<HTMLButtonElement>("home-button");
 const titleDev = el<HTMLButtonElement>("title-dev");
@@ -133,6 +136,7 @@ function reflectDevGate(): void {
 let runScreen: RunScreen | undefined;
 let leaderboardView: LadderView | undefined;
 let battleEditor: BattleEditor | undefined;
+let ideasScreen: IdeasScreen | undefined;
 
 // Codex: initialised once, lives in #codex-container. codexUnits() covers
 // every unit a player can meet — shop pool, bootstrap ghosts/champion, summons.
@@ -204,6 +208,12 @@ function showView(which: keyof typeof views): void {
     titleScreen.refresh(); // Play vs Continue, read fresh
     reflectDevGate(); // dev tools entry shown iff dev mode is on
   }
+  if (which === "ideas") {
+    // Re-pull the public table on every show — list() is the source of truth
+    // for ranking, so a vote/submit made elsewhere (or by another player) is
+    // reflected the moment the screen opens.
+    void ideasScreen?.refresh();
+  }
   if (which === "leaderboard") {
     leaderboardView?.refresh(activeRunMarker()); // pools fill live, own run marked
     // The shared ladder refreshes from the server on every show (#016 slice 3):
@@ -235,6 +245,7 @@ const titleScreen = createTitleScreen(
 );
 el<HTMLButtonElement>("title-play").addEventListener("click", () => showView("run"));
 el<HTMLButtonElement>("title-leaderboard").addEventListener("click", () => showView("leaderboard"));
+el<HTMLButtonElement>("title-ideas").addEventListener("click", () => showView("ideas"));
 el<HTMLButtonElement>("title-codex").addEventListener("click", () => showView("codex"));
 // #016 slice 3: the login flow behind the title's Login entry. Reloads on
 // success/logout — the session boot above re-decides the whole wiring.
@@ -447,6 +458,34 @@ battleEditor = createBattleEditor(
     viewer,
     viewerHost: result,
     viewerHome: el("battle-view"),
+  },
+);
+
+// #076 slice 3: the ideas screen. The backing is RemoteIdeas (slice 2) over
+// the same arena api — list() is public (a logged-out player reads the ranked
+// table), submit/vote carry the session token. Logged out we still construct
+// the backing for its public list(); a submit/vote tap routes to login instead
+// of the server (onNeedLogin), the same nudge every other authed action gives.
+const ideasBacking = new RemoteIdeas(api, sessionToken ?? "");
+ideasScreen = createIdeasScreen(
+  {
+    form: el<HTMLFormElement>("ideas-form"),
+    text: el<HTMLInputElement>("ideas-text"),
+    submit: el<HTMLButtonElement>("ideas-submit"),
+    status: el("ideas-status"),
+    list: el("ideas-list"),
+    loginNote: el("ideas-login-note"),
+  },
+  {
+    ideas: ideasBacking,
+    userId: me?.userId ?? null,
+    // A logged-out submit/vote walks home and opens the login panel — the same
+    // door the title's Login entry opens, so the player completes auth and
+    // comes back to take part.
+    onNeedLogin: () => {
+      showView("title");
+      el<HTMLButtonElement>("title-login").click();
+    },
   },
 );
 

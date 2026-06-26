@@ -26,6 +26,7 @@
         <div class="title-menu">
           <button type="button" id="title-play" class="title-primary">Play</button>
           <button type="button" id="title-leaderboard">Leaderboard</button>
+          <button type="button" id="title-ideas">Ideas</button>
           <button type="button" id="title-codex">Codex</button>
           <!-- #066 slice 1: the dev tab nav appears here only when dev mode is
                on (set in Settings). main.ts renders/hides it on every title
@@ -100,6 +101,24 @@
         <h2 class="lb-title">Leaderboard</h2>
         <p class="lb-tagline">One crown. Beat every ghost on the way up, then the champion, and it's yours.</p>
         <div id="leaderboard-body"></div>
+      </section>
+
+      <!-- Ideas (#076 slice 3): the ideas table as a proper screen off the
+           title. A free-text submit box, then the ranked list — one toggleable
+           vote per player reorders it (votes RANK, they never gate). list() is
+           public, so a logged-out player reads the table; submit/vote route to
+           login (the login note shows while logged out). ideas-screen.ts drives
+           it; main.ts wires it by id. -->
+      <section id="ideas-view" hidden>
+        <h2 class="ideas-title">Ideas</h2>
+        <p class="ideas-tagline">What should the arena become? Write one, vote the best up — the top ideas get taken into work.</p>
+        <form id="ideas-form">
+          <input id="ideas-text" type="text" maxlength="280" placeholder="Add an idea — anything: content, gameplay, a feature…" autocomplete="off" />
+          <button type="submit" id="ideas-submit">Send</button>
+        </form>
+        <p id="ideas-status" role="alert" hidden></p>
+        <p id="ideas-login-note" class="ideas-login-note" hidden>You're reading the table — <strong>log in</strong> from the title to add ideas and vote.</p>
+        <div id="ideas-list"></div>
       </section>
 
       <section id="run-view" hidden>
