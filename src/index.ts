@@ -26,6 +26,19 @@ export {
   FIRST_CONTENT_VERSION,
 } from "./season-archive.js";
 export type { SeasonArchiveStore, SeasonArchiveData, SeasonRecord, ContentVersion } from "./season-archive.js";
+// The season-history READ surface (#077 slice 3) over the archive store: list
+// summaries (season + version + champion) and a single season's final tower,
+// rendered. Pure presentation, shared by the CLI and the web history view.
+export {
+  seasonChampion,
+  summarizeSeason,
+  summarizeSeasons,
+  championLabel,
+  formatSeasonLine,
+  formatHistoryList,
+  formatFinalTower,
+} from "./season-history.js";
+export type { SeasonSummary } from "./season-history.js";
 // The ideas table (#076) — the same store-interface pattern as the ladder: one
 // IdeaStore interface, an in-memory backing and a persisted engine, a serialized
 // IdeasData shape that round-trips. The web's localStorage backing builds on it.

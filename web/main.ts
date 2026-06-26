@@ -17,6 +17,7 @@ import {
   loadDevMode,
   loadRun,
   loadSession,
+  openLocalArchive,
   openLocalLadder,
   prefixedStorage,
   resetLadder,
@@ -29,6 +30,7 @@ import { createLadderView, type LadderView, type LadderViewRun } from "./ladder-
 import { createTitleScreen } from "./title-screen.js";
 import { RemoteIdeas } from "./remote-ideas.js";
 import { createIdeasScreen, type IdeasScreen } from "./ideas-screen.js";
+import { createHistoryScreen, type HistoryScreen } from "./history-screen.js";
 
 // ---------------------------------------------------------------------------
 // DOM wiring
@@ -121,6 +123,7 @@ const views = {
   editor: el<HTMLElement>("editor-view"),
   codex: el<HTMLElement>("codex-view"),
   ideas: el<HTMLElement>("ideas-view"),
+  history: el<HTMLElement>("history-view"),
 };
 const homeButton = el<HTMLButtonElement>("home-button");
 const titleDev = el<HTMLButtonElement>("title-dev");
@@ -137,6 +140,7 @@ let runScreen: RunScreen | undefined;
 let leaderboardView: LadderView | undefined;
 let battleEditor: BattleEditor | undefined;
 let ideasScreen: IdeasScreen | undefined;
+let historyScreen: HistoryScreen | undefined;
 
 // Codex: initialised once, lives in #codex-container. codexUnits() covers
 // every unit a player can meet — shop pool, bootstrap ghosts/champion, summons.
@@ -214,6 +218,12 @@ function showView(which: keyof typeof views): void {
     // reflected the moment the screen opens.
     void ideasScreen?.refresh();
   }
+  if (which === "history") {
+    // Re-read the local archive on every show — a season that ended since the
+    // last visit appears the moment the screen opens (and we land on the list,
+    // not a stale season detail).
+    historyScreen?.refresh();
+  }
   if (which === "leaderboard") {
     leaderboardView?.refresh(activeRunMarker()); // pools fill live, own run marked
     // The shared ladder refreshes from the server on every show (#016 slice 3):
@@ -246,6 +256,7 @@ const titleScreen = createTitleScreen(
 el<HTMLButtonElement>("title-play").addEventListener("click", () => showView("run"));
 el<HTMLButtonElement>("title-leaderboard").addEventListener("click", () => showView("leaderboard"));
 el<HTMLButtonElement>("title-ideas").addEventListener("click", () => showView("ideas"));
+el<HTMLButtonElement>("title-history").addEventListener("click", () => showView("history"));
 el<HTMLButtonElement>("title-codex").addEventListener("click", () => showView("codex"));
 // #016 slice 3: the login flow behind the title's Login entry. Reloads on
 // success/logout — the session boot above re-decides the whole wiring.
@@ -488,6 +499,31 @@ ideasScreen = createIdeasScreen(
     },
   },
 );
+
+// #077 slice 3: the season-history screen. It reads the device's local season
+// archive (openLocalArchive) — public, no auth, like the ladder. The archive is
+// written by the season transition (slice 2); until a season ends it is empty,
+// which is the screen's empty state, not an error. A corrupt stored archive
+// throws loudly (a silent fresh archive would erase finished history) — surfaced
+// inline, not as a dead app: the rest of the title still works.
+try {
+  historyScreen = createHistoryScreen(
+    {
+      list: el("history-list"),
+      detail: el("history-detail"),
+      back: el<HTMLButtonElement>("history-back"),
+    },
+    { archive: openLocalArchive(window.localStorage) },
+  );
+} catch (err) {
+  const list = el("history-list");
+  list.textContent = "";
+  const msg = document.createElement("p");
+  msg.className = "history-empty";
+  msg.setAttribute("role", "alert");
+  msg.textContent = `Season history could not open: ${(err as Error).message}`;
+  list.append(msg);
+}
 
 el<HTMLElement>("kernel-version").textContent = `kernel v${KERNEL_VERSION}`;
 

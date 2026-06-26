@@ -1835,6 +1835,117 @@ button:disabled:hover {
   overflow-wrap: anywhere; /* a long unbroken token wraps, never overflows */
 }
 
+/* ---------- season history (#077 slice 3) ----------
+   A list of completed seasons (number + content version + champion); opening a
+   row shows that season's final tower, floor by floor. Mirrors the ideas
+   screen's visual language — centred title/tagline, panel rows, ≥44px taps. */
+
+.history-title {
+  text-align: center;
+  font-size: 1.4rem;
+  letter-spacing: 0.05em;
+  margin: 0.5rem 0 0.2rem;
+}
+
+.history-tagline {
+  text-align: center;
+  color: var(--dim);
+  font-size: 0.8rem;
+  margin: 0 0 1.2rem;
+}
+
+#history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* [hidden] must win over the flex display above (the showSeason/showList swap
+   toggles the attribute). */
+#history-list[hidden],
+#history-detail[hidden] {
+  display: none;
+}
+
+.history-empty {
+  color: var(--dim);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+/* A whole season row is one tap target — opens that season's final tower. */
+.history-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 0.8rem;
+  width: 100%;
+  min-height: 44px;
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.6rem 0.7rem;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.history-row-head {
+  font-weight: 600;
+}
+
+.history-row-meta {
+  color: var(--dim);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.history-row-champ {
+  flex: 1 1 100%;
+  color: var(--dim);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+#history-back {
+  min-height: 44px;
+  margin-bottom: 0.8rem;
+}
+
+.history-detail-head {
+  margin: 0 0 0.3rem;
+  font-size: 1.1rem;
+}
+
+.history-detail-champ {
+  margin: 0 0 0.9rem;
+  color: var(--dim);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.history-tower {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.history-floor {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.history-floor-champ {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* ---------- battle editor (#066 slice 2) ----------
    Two team columns side by side (stacking at phone width), a seed control bar,
    and the borrowed viewer below. The unit palette is a fixed popover anchored
