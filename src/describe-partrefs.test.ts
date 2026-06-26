@@ -23,7 +23,7 @@ import { describe, expect, it } from "vitest";
 import { abilityPartRefs, describeAbilitySegments, type PartRef } from "./describe.js";
 import { partAtoms } from "./parts.js";
 import { Necromancer, Silencer, Summoner, Venomancer, stressRegistry } from "./content/stress.js";
-import { DEFAULT_RUN_POOL, BOOTSTRAP_CHAMPION } from "./tunables.js";
+import { DEFAULT_RUN_POOL, BOSS_TEAMS, TOWER_HEIGHT } from "./tunables.js";
 import type { Ability } from "./types.js";
 
 /** The Part cards the codex actually carries, keyed "family:kind". */
@@ -52,7 +52,7 @@ const unlinkedText = (ab: Ability): string =>
     .join("");
 
 const allShippedAbilities = (): Ability[] => {
-  const abilities: Ability[] = [...new Set([...DEFAULT_RUN_POOL, ...BOOTSTRAP_CHAMPION]).values()].flatMap(
+  const abilities: Ability[] = [...new Set([...DEFAULT_RUN_POOL, ...BOSS_TEAMS[TOWER_HEIGHT - 1]!]).values()].flatMap(
     (u) => u.abilities ?? [],
   );
   // Status abilities cover the interceptor family (Shield/Freeze/Blessing).

@@ -4,7 +4,7 @@
 import { describe, expect, test } from "vitest";
 import { MAX_DEFINITION_COMPLEXITY, ValidationError, assertValidContent, complexityOf, validateRegistry, validateTeam } from "./validate.js";
 import { Necromancer, Silencer, Summoner, Venomancer, stressRegistry } from "./content/stress.js";
-import { BOOTSTRAP_CHAMPION, BOOTSTRAP_TEAMS, DEFAULT_RUN_POOL } from "./tunables.js";
+import { BOSS_TEAMS, BOOTSTRAP_TEAMS, DEFAULT_RUN_POOL, TOWER_HEIGHT } from "./tunables.js";
 import { loadTeamFile } from "./cli.js";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -306,7 +306,7 @@ describe("complexity cap", () => {
     for (const team of BOOTSTRAP_TEAMS.flat()) {
       expect(validateTeam([...team], stressRegistry)).toEqual([]);
     }
-    expect(validateTeam([...BOOTSTRAP_CHAMPION], stressRegistry)).toEqual([]);
+    expect(validateTeam([...BOSS_TEAMS[TOWER_HEIGHT - 1]!], stressRegistry)).toEqual([]);
   });
 
   // A unit assembled exactly to the budget: 1 when + 1 selector + 6 effects = 8.
