@@ -26,6 +26,7 @@ import {
   UNIT_COST,
   incomeForRound,
   shopSizeForRound,
+  synthClimbTeam,
 } from "./tunables.js";
 import type { AbilityRegistry, Side, Stats, StatusRegistry, UnitDef } from "./types.js";
 
@@ -140,6 +141,12 @@ export type RunEventBody =
   // run log alone explains a ladder fight (the envelope's round = the pool).
   | { type: "Snapshotted"; seq: number }
   | { type: "OpponentDrawn"; opponent: string; seq: number; candidates: number }
+  // Cold-start fallback (PRD #085): the floor's ghost pool held no live candidate,
+  // so the climb opponent was SYNTHESIZED from the seed units (synthClimbTeam) off
+  // the run's RNG. `floor` is the floor fought at; `seq` is where the run's own
+  // ghost landed in that floor's pool (0 on a fresh floor). Mirrors OpponentDrawn
+  // so the run log alone explains the fight; fires only when candidates is empty.
+  | { type: "OpponentSynthesized"; floor: number; seq: number }
   // boss challenge — the terminal move (challengeBoss). BossChallenged names
   // the floor fought at and the boss it faced.
   //
@@ -340,12 +347,15 @@ export function fight(state: RunState, opponent: UnitDef[]): RunState {
  * fight, and a retried fight must not grow the pool with the aborted attempt's
  * ghost on every try.
  *
- * An empty draw means the run has outrun every ghost at this floor — but a
- * climb is not a boss challenge any more (that is challengeBoss(), the explicit
- * terminal move). So an empty draw is rejected loudly, and rejected BEFORE the
- * snapshot, so a rejected climb does not grow the pool (the same no-grow-on-
- * retry property the gate-failing draw above preserves). The caller's move is
- * then challengeBoss: the only legal play at a floor with no climb opponent.
+ * An empty draw means no live ghost stands at this floor — a cold-start, unplayed
+ * tower (PRD #085). Rather than stall the climb, the opponent is SYNTHESIZED from
+ * the run's seed pool (synthClimbTeam) off the run's own RNG stream, scaled to the
+ * floor. Live ghosts always win: synthesis is the fallback, fired ONLY when
+ * candidates is empty, never overriding a real ghost — and as runs play, their
+ * snapshots accumulate in the pool and supersede it. The synthesized team passes
+ * the same content gate every opponent passes, and (gate first, persist after) a
+ * gate failure aborts before the run's ghost is snapshotted, so a retried climb
+ * does not grow the pool with an aborted attempt.
  *
  * Depends only on the LadderStore interface — any backing serves. The store is
  * the run layer's one mutable boundary: it gains the ghost even though the
@@ -360,20 +370,29 @@ export function ladderFight(state: RunState, ladder: LadderStore): RunState {
   // is the same whether or not the ghost is in the pool yet); persist after.
   const pool = ladder.poolAt(s.round);
   const candidates = pool.filter((g) => g.runId !== s.runId);
+  let opponent: UnitDef[];
+  let drawEvent: RunEventBody;
   if (candidates.length === 0) {
-    // No climb opponent at this floor — reject BEFORE snapshotting, so the pool
-    // does not grow on the rejected attempt. The boss is the move now.
-    throw new InvalidDecisionError("fight", `no climb opponent at floor ${s.round} — challenge the boss instead`);
+    // Cold start: no live ghost here. Synthesize a floor-sized seed-unit team off
+    // the run's RNG so the climb never stalls. (Live ghosts win — this branch is
+    // reached only when there is no candidate to draw.)
+    const made = synthClimbTeam(s.round, s.rng, s.pool);
+    s.rng = made.rng;
+    opponent = made.team;
+    drawEvent = { type: "OpponentSynthesized", floor: s.round, seq: pool.length };
+  } else {
+    const draw = rngStep(s.rng);
+    s.rng = draw.state;
+    const pick = candidates[Math.floor(draw.value * candidates.length)]!;
+    opponent = pick.team;
+    drawEvent = { type: "OpponentDrawn", opponent: pick.runId, seq: pick.seq, candidates: candidates.length };
   }
-  const draw = rngStep(s.rng);
-  s.rng = draw.state;
-  const pick = candidates[Math.floor(draw.value * candidates.length)]!;
-  assertValidContent(pick.team, s.statuses, s.abilities, "opponent"); // a stored ghost passes the same gate as any opponent
+  assertValidContent(opponent, s.statuses, s.abilities, "opponent"); // a synthesized or stored team passes the same gate as any opponent
   const ghost: TeamSnapshot = { runId: s.runId, round: s.round, seq: pool.length, team: toBattleTeam(s.team) };
   ladder.addSnapshot(ghost);
   emit(s, { type: "Snapshotted", seq: ghost.seq });
-  emit(s, { type: "OpponentDrawn", opponent: pick.runId, seq: pick.seq, candidates: candidates.length });
-  resolveFight(s, pick.team);
+  emit(s, drawEvent);
+  resolveFight(s, opponent);
   turnRound(s);
   return s;
 }

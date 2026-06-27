@@ -504,22 +504,23 @@ describe("prefix forgeries are rejected", () => {
     // The handshake is performed honestly — the forgery is in the claimed prefix.
     expect((await openRun(ctx, ada, "forged")).status).toBe(200);
 
-    // Forge: play locally against an EMPTY pool view — the log then claims
-    // round-1's pool held 0 ghosts, so the climb is refused and the run
-    // challengeBosses at round 1. On the fixed tower floor 1 is not the champion
-    // floor, so that challenge overshoots locally — but the point is the CLAIM:
-    // on a bootstrap-seeded ladder the round-1 pool is never smaller than BASE, so
-    // the server never served (and would never serve) that empty view.
+    // Forge: play locally against an EMPTY pool view at every floor — the log then
+    // claims each floor's pool held 0 ghosts. With #085's cold-start synthesis a
+    // climb on an empty pool no longer stalls; it synthesizes an opponent (no live
+    // OpponentDrawn) and advances, so the forged run climbs to the champion floor
+    // and challenges there. But the point is the CLAIM: on a bootstrap-seeded ladder
+    // the per-floor pools are never empty, and this run fetched no run-scoped view at
+    // all, so the server never served those empty views.
     const champ = (await fetchChampion(ctx)).champion!;
     let s = buy(initRun({ seed: 1, runId: "forged", pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities }), 0);
     while (s.status === "active") s = ladderMove(s, viewOf(s.round, { pool: [], champion: champ }));
-    expect(ofType(s.log, "OpponentDrawn")).toEqual([]); // an empty pool: no climb opponent ever drawn — the impossible claim
+    expect(ofType(s.log, "OpponentDrawn")).toEqual([]); // an empty pool: no LIVE climb opponent ever drawn — the impossible claim
 
     const { status, body } = await submit(ctx, ada, serializeRun(s));
     expect(status).toBe(422);
-    // Rejected either way: the empty-pool prefix was never served, OR (since floor 1
-    // is not the champion floor) the overshoot the empty view forced doesn't replay
-    // against the real seeded pool. Both are the server refusing the impossible claim.
+    // Rejected: the empty-pool prefix the synth climb claimed was never served for
+    // this run (the seeded pools are non-empty and this run fetched no view), so
+    // re-derivation refuses the impossible claim.
     expect(body["reason"]).toMatch(/never served|does not replay/);
     // Nothing landed: no ghost, and the bootstrap champion still holds the seat.
     expect((await fetchPublicPool(ctx, 1)).length).toBe(BASE);

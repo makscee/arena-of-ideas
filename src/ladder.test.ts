@@ -8,7 +8,8 @@ import type { LadderData, LadderStore, TeamSnapshot } from "./ladder.js";
 import { FileLadderStore } from "./ladder-file.js";
 import { buy, challengeBoss, fight, initRun, InvalidDecisionError, ladderFight, reorder, reroll, runToJSONL } from "./run.js";
 import type { RunEvent, RunInput, RunState } from "./run.js";
-import { BOSS_TEAMS, BOOTSTRAP_TEAMS, STARTING_LIVES, TOWER_HEIGHT } from "./tunables.js";
+import { TEAM_SIZE } from "./battle.js";
+import { BOSS_TEAMS, BOOTSTRAP_TEAMS, DEFAULT_RUN_POOL, STARTING_LIVES, synthClimbTeam, TOWER_HEIGHT } from "./tunables.js";
 import { ValidationError, validateTeam } from "./validate.js";
 import type { UnitDef } from "./types.js";
 
@@ -209,20 +210,19 @@ describe("bootstrap", () => {
     expect(store.bossAt(TOWER_HEIGHT)!.runId).toBe(BOOTSTRAP_RUN_ID); // champion stands
   });
 
-  test("climbing PAST the top floor overshoots — no boss, no crown, no ghost", () => {
-    // A run that keeps climbing instead of challenging at the top reaches a vacant
-    // floor and challengeBoss there is an overshoot: the run ends with no crown and
-    // — because no fight happened — leaves no ghost on the overshot floor.
+  test("challengeBoss on a vacant floor ABOVE the champion overshoots — no boss, no crown, no ghost", () => {
+    // The climb itself never stalls now (an empty floor synthesizes an opponent,
+    // #085 slice 2), so overshoot is reached by CHALLENGING a vacant floor above
+    // the tower's top while a champion is seated below: no boss, no crown, and —
+    // because no fight happened — no ghost on the overshot floor. (The seeded
+    // floors 1..TOWER_HEIGHT have bootstrap ghosts, so the climb up draws them,
+    // not synthesis; Titan beats them, so it arrives alive.)
     const store = freshLadder();
     let s = buy(initRun(input(1, "titan", TITAN)), 0);
-    // Greedy-climb every floor, including past the top, then challenge the vacant floor.
-    while (s.status === "active") {
-      try {
-        s = ladderFight(s, store);
-      } catch {
-        s = challengeBoss(s, store);
-      }
-    }
+    for (let i = 0; i < TOWER_HEIGHT; i++) s = ladderFight(s, store); // climb to a floor above the top
+    expect(s.status).toBe("active");
+    expect(s.round).toBe(TOWER_HEIGHT + 1);
+    s = challengeBoss(s, store); // challenge the vacant floor above the champion
     expect(s).toMatchObject({ status: "over", endedBy: "overshoot", round: TOWER_HEIGHT + 1 });
     expect(ofType(s.log, "Overshot")[0]).toMatchObject({ floor: TOWER_HEIGHT + 1 });
     expect(ofType(s.log, "Crowned")).toEqual([]); // no crown
@@ -628,24 +628,55 @@ describe("boss challenge", () => {
 // 5b. ladderFight is a pure climb: an empty draw rejects, and never grows the pool
 // ---------------------------------------------------------------------------
 
-describe("ladderFight empty draw", () => {
-  test("an empty climb draw throws InvalidDecisionError naming the floor", () => {
-    const store = new InMemoryLadderStore(); // unopened: round-1 pool is empty
+describe("ladderFight cold-start synth (#085 slice 2)", () => {
+  test("an empty climb draw synthesizes a seed-unit opponent and advances — the climb never stalls", () => {
+    const store = new InMemoryLadderStore(); // unopened: round-1 pool is empty (a cold-start tower)
     const s0 = buy(initRun(input(1, "titan", TITAN)), 0);
-    expect(() => ladderFight(s0, store)).toThrow(InvalidDecisionError);
-    expect(() => ladderFight(s0, store)).toThrow(/no climb opponent at floor 1 — challenge the boss instead/);
+    const s1 = ladderFight(s0, store); // no throw — a synthesized opponent is fought
+    expect(s1.round).toBe(2); // the climb advanced rather than stalling
+    const synth = ofType(s1.log, "OpponentSynthesized");
+    expect(synth.length).toBe(1);
+    expect(synth[0]).toMatchObject({ floor: 1, seq: 0 });
+    expect(ofType(s1.log, "OpponentDrawn")).toEqual([]); // synthesized, not a live draw
+    // The run still ghosts its own team into the floor pool, so real ghosts
+    // accumulate and eventually supersede synthesis.
+    expect(store.poolAt(1).map((g) => g.runId)).toEqual(["titan"]);
   });
 
-  test("a rejected empty draw does NOT grow the pool — no ghost on the aborted attempt", () => {
+  test("synthClimbTeam scales to the floor (≈ floor bodies), capped at the pool and TEAM_SIZE", () => {
+    const pool = DEFAULT_RUN_POOL; // 7 seed units
+    expect(synthClimbTeam(1, 123, pool).team.length).toBe(1);
+    expect(synthClimbTeam(3, 123, pool).team.length).toBe(3);
+    expect(synthClimbTeam(99, 123, pool).team.length).toBe(TEAM_SIZE); // capped at the line size
+    const t = synthClimbTeam(5, 7, pool).team;
+    expect(new Set(t.map((u) => u.name)).size).toBe(t.length); // distinct names (drawn without replacement)
+    expect(validateTeam(t, stressRegistry, stressAbilities)).toEqual([]); // content-valid, like any opponent
+    // Deterministic off the run's RNG: same rng → same team AND same advanced rng.
+    expect(synthClimbTeam(4, 42, pool)).toEqual(synthClimbTeam(4, 42, pool));
+    expect(synthClimbTeam(4, 42, pool).rng).not.toBe(42); // it threads the stream forward
+  });
+
+  test("live ghosts supersede synthesis — a seeded candidate is drawn, NOT synthesized", () => {
+    // The must-fail-first guard: synthesis fires ONLY when candidates is empty.
+    // A real (other-run) ghost stands at floor 1, so the draw must use it.
+    // Reverting the `candidates.length === 0` gate (always synthesize) fails this.
     const store = new InMemoryLadderStore();
-    // Pre-seed round 1 with only the run's OWN ghost: candidates (others) are
-    // empty, so the climb is rejected — and the rejection must come BEFORE the
-    // snapshot, so retrying never appends another own-ghost on each try.
-    store.addSnapshot({ runId: "titan", round: 1, seq: 0, team: [TITAN] });
+    store.addSnapshot({ runId: "ghost", round: 1, seq: 0, team: [vanilla("Brute", 8, 3)] });
     const s0 = buy(initRun(input(1, "titan", TITAN)), 0);
-    expect(() => ladderFight(s0, store)).toThrow(/no climb opponent/);
-    expect(() => ladderFight(s0, store)).toThrow(/no climb opponent/); // the retry…
-    expect(store.poolAt(1).length).toBe(1); // …never grew the pool past the pre-seeded ghost
+    const s1 = ladderFight(s0, store);
+    expect(ofType(s1.log, "OpponentDrawn").length).toBe(1);
+    expect(ofType(s1.log, "OpponentDrawn")[0]).toMatchObject({ opponent: "ghost" });
+    expect(ofType(s1.log, "OpponentSynthesized")).toEqual([]); // a live ghost was present — no synthesis
+  });
+
+  test("a cold-start synth climb replays byte-identical run log (determinism)", () => {
+    const play = (): string => {
+      const store = new InMemoryLadderStore();
+      let s = buy(initRun(input(1, "titan", TITAN)), 0);
+      s = ladderFight(s, store); // synthesizes at floor 1
+      return runToJSONL(s.log);
+    };
+    expect(play()).toBe(play());
   });
 
   test("a climb loss costs a life; 0 lives ends the run out-of-lives", () => {

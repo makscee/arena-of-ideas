@@ -308,11 +308,14 @@ function extractSteps(log: readonly RunEvent[]): ReplayStep[] {
         break;
       case "Snapshotted": {
         // The event after the snapshot says which ladder move the run claims:
-        // an OpponentDrawn means a same-floor climb (ladderFight, no boss read,
-        // championRunId stays null); a BossChallenged means a boss challenge
+        // an OpponentDrawn (a live ghost) OR an OpponentSynthesized (a cold-start
+        // synth opponent, #085) means a same-floor climb (ladderFight, no boss
+        // read, championRunId stays null); a BossChallenged means a boss challenge
         // (challengeBoss) that fought a seated boss and names it. The boss name
         // fills the same `championRunId` frame the view co-serves against — only
-        // the dispatch differs (ladderFight vs challengeBoss).
+        // the dispatch differs (ladderFight vs challengeBoss). A synth climb
+        // re-derives deterministically: the replay re-runs ladderFight against the
+        // served view, which synthesizes the same team off the same RNG.
         //
         // An OVERSHOOT (challengeBoss on a vacant floor, 075-3) emits NO
         // Snapshotted — no fight, no ghost — so it never reaches this case; its
@@ -330,7 +333,11 @@ function extractSteps(log: readonly RunEvent[]): ReplayStep[] {
       }
       case "FightFought": {
         const prev = log[i - 1];
-        if (prev?.type !== "OpponentDrawn" && prev?.type !== "BossChallenged") {
+        // A ladder fight is preceded by the opponent's provenance: a live draw
+        // (OpponentDrawn), a cold-start synthesis (OpponentSynthesized, #085), or
+        // a boss challenge (BossChallenged). An explicit-opponent fight() leaves a
+        // FightFought with none of these before it — that is the rejected case.
+        if (prev?.type !== "OpponentDrawn" && prev?.type !== "OpponentSynthesized" && prev?.type !== "BossChallenged") {
           throw new SubmissionRejected("a shared-ladder run fights only on the ladder — explicit-opponent fight in the log");
         }
         break;

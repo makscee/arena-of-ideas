@@ -3,6 +3,8 @@
 // simulation farm tunes them; content and the run kernel never hardcode them.
 // Battle-side constants (TEAM_SIZE, FATIGUE_*, TURN_CAP) stay in battle.ts.
 
+import { TEAM_SIZE } from "./battle.js";
+import { rngStep } from "./rng.js";
 import { Necromancer, Silencer, Summoner, Venomancer } from "./content/stress.js";
 import type { Family, UnitDef } from "./types.js";
 
@@ -256,4 +258,37 @@ export function incomeForRound(round: number): number {
 /** The shop-size curve: 3 offers early, widening to 6 as the run goes long. */
 export function shopSizeForRound(round: number): number {
   return Math.min(SHOP_SIZE_MAX, SHOP_SIZE_BASE + Math.floor((round - 1) / SHOP_SIZE_STEP));
+}
+
+/** The cold-start climb enemy (PRD #085): when a floor's ghost pool is empty
+ * (a fresh, unplayed tower), the climb would stall — so synthesize a floor-sized
+ * team from the SEED UNITS instead. Deterministic: the draw is taken off the
+ * run's own RNG stream via `rngStep` (the same stream the opponent draw and
+ * battle seed use), so it returns the advanced `rng` for the caller to thread
+ * back into the run state — the run log stays byte-comparable.
+ *
+ * Scales to the floor: round R fields ≈ R bodies, matching what a played run
+ * fields there (capped at TEAM_SIZE, and at the seed pool's size). Units are
+ * drawn WITHOUT replacement — distinct names, like a real run's line and the
+ * bootstrap climb teams — and deep-cloned, so the synthesized opponent never
+ * aliases a seed-pool entry. Every drawn team still passes the content gate at
+ * the call site (assertValidContent), exactly like a stored ghost. A knob: the
+ * size curve and the seed pool are both tunable. */
+export function synthClimbTeam(
+  floor: number,
+  rng: number,
+  seedPool: readonly UnitDef[],
+): { team: UnitDef[]; rng: number } {
+  const size = Math.max(1, Math.min(floor, TEAM_SIZE, seedPool.length));
+  const remaining = seedPool.slice();
+  const team: UnitDef[] = [];
+  let state = rng;
+  for (let i = 0; i < size; i++) {
+    const draw = rngStep(state);
+    state = draw.state;
+    const idx = Math.floor(draw.value * remaining.length);
+    const [pick] = remaining.splice(idx, 1);
+    team.push(JSON.parse(JSON.stringify(pick!)) as UnitDef); // own copy — never alias a seed entry into a battle team
+  }
+  return { team, rng: state };
 }
