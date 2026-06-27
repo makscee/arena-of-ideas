@@ -7,7 +7,7 @@
 // fetch is injected so vitest drives this module with a stub (the run-store
 // storage pattern); the browser passes nothing and gets window.fetch.
 
-import type { Idea, TeamSnapshot } from "../src/index.js";
+import type { Idea, TeamSnapshot, VoteDir } from "../src/index.js";
 
 /** What a call can come back as: the payload, a server refusal (4xx/422 with
  * its reason), or no server at all. `unauthorized` is split out because the
@@ -64,7 +64,7 @@ export interface ArenaApi {
   submitRun(token: string, run: string): Promise<ApiResult<SubmitInfo>>;
   listIdeas(): Promise<ApiResult<{ ideas: Idea[] }>>;
   submitIdea(token: string, text: string): Promise<ApiResult<{ submitted: true; idea: Idea }>>;
-  voteIdea(token: string, ideaId: string): Promise<ApiResult<{ toggled: true; voted: boolean; idea: Idea }>>;
+  voteIdea(token: string, ideaId: string, direction: VoteDir): Promise<ApiResult<{ cast: true; direction: VoteDir; idea: Idea }>>;
 }
 
 /** A refusal body's reason, best-effort: the server's `reason`/`error` field,
@@ -123,7 +123,7 @@ export function createArenaApi(fetchImpl?: FetchLike): ArenaApi {
     submitRun: (token, run) => call("/v1/runs", { method: "POST", body: JSON.stringify({ run }), token }),
     listIdeas: () => call("/v1/ideas"),
     submitIdea: (token, text) => call("/v1/ideas", { method: "POST", body: JSON.stringify({ text }), token }),
-    voteIdea: (token, ideaId) =>
-      call(`/v1/ideas/${encodeURIComponent(ideaId)}/vote`, { method: "POST", body: JSON.stringify({}), token }),
+    voteIdea: (token, ideaId, direction) =>
+      call(`/v1/ideas/${encodeURIComponent(ideaId)}/vote`, { method: "POST", body: JSON.stringify({ direction }), token }),
   };
 }

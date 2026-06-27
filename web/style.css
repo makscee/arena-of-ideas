@@ -1791,8 +1791,9 @@ button:disabled:hover {
   padding: 0.5rem;
 }
 
-/* The vote pill IS the tap target — the whole thing is ≥44px, with the count
-   inside it so a thumb hits one element, never a gap. */
+/* The directional vote control: an up arrow, the net score, a down arrow,
+   stacked. Each arrow is its OWN ≥44px tap target (switch-only — there is no
+   remove); the held direction reads filled + accent. */
 .ideas-vote {
   flex: 0 0 auto;
   display: flex;
@@ -1800,30 +1801,34 @@ button:disabled:hover {
   align-items: center;
   justify-content: center;
   gap: 0.1rem;
-  min-width: 48px;
-  min-height: 48px;
-  padding: 0.2rem 0.4rem;
-  font-size: 0.8rem;
-  line-height: 1;
 }
 
-.ideas-vote-mark {
+.ideas-vote-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
   font-size: 1.1rem;
+  line-height: 1;
+  color: var(--dim);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
 .ideas-vote-count {
   font-variant-numeric: tabular-nums;
   color: var(--dim);
+  font-size: 0.85rem;
 }
 
-/* A held vote reads as filled + accent — the toggle's "voted" state. */
-.ideas-vote.ideas-voted {
+/* The held direction reads as accent — the switch's "you voted this way" state. */
+.ideas-vote-arrow.ideas-voted {
+  color: var(--accent);
   border-color: var(--accent);
-  color: var(--accent);
-}
-
-.ideas-vote.ideas-voted .ideas-vote-count {
-  color: var(--accent);
 }
 
 .ideas-text {

@@ -60,14 +60,21 @@ describe("RemoteIdeas over a stub api", () => {
     expect(res).toEqual({ ok: true, value: { ...stored, text: "draft mode" } });
   });
 
-  test("vote returns the post-toggle idea and the caller's vote state", async () => {
-    const after = idea("idea-0", 0, "A", { ada: "up" });
+  test("vote casts a direction and returns the post-cast idea and direction", async () => {
+    const after = idea("idea-0", 0, "A", { ada: "down" });
+    const seen: Array<{ ideaId: string; direction: string }> = [];
     const store = new RemoteIdeas(
-      stubApi({ voteIdea: async () => ok({ toggled: true as const, voted: true, idea: after }) }),
+      stubApi({
+        voteIdea: async (_token, ideaId, direction) => {
+          seen.push({ ideaId, direction });
+          return ok({ cast: true as const, direction, idea: after });
+        },
+      }),
       "token",
     );
-    const res = await store.vote("idea-0");
-    expect(res).toEqual({ ok: true, value: { voted: true, idea: after } });
+    const res = await store.vote("idea-0", "down");
+    expect(res).toEqual({ ok: true, value: { direction: "down", idea: after } });
+    expect(seen).toEqual([{ ideaId: "idea-0", direction: "down" }]); // the direction reached the api
   });
 
   test("failures map to player-shaped reasons, never raw transport", async () => {
@@ -81,6 +88,6 @@ describe("RemoteIdeas over a stub api", () => {
     );
     expect(await store.list()).toMatchObject({ ok: false, reason: expect.stringContaining("unreachable") });
     expect(await store.submit("x")).toMatchObject({ ok: false, reason: expect.stringContaining("log in") });
-    expect(await store.vote("idea-9")).toEqual({ ok: false, reason: "no idea with id idea-9" });
+    expect(await store.vote("idea-9", "up")).toEqual({ ok: false, reason: "no idea with id idea-9" });
   });
 });
