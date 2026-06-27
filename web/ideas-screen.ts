@@ -16,14 +16,87 @@
 // every other authed action on the title prompts a session — a logged-out tap
 // is a login nudge, never a silent error.
 
-import { statusPill, voteScore, type Idea, type IdeaPill, type VoteDir } from "../src/index.js";
+import { statusPill, voteScore, type Idea, type VoteDir } from "../src/index.js";
 import type { RemoteIdeas } from "./remote-ideas.js";
 
+const esc = (s: string): string =>
+  s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+
+/** How the ladder is ordered: `top` is the server's score rank (the default),
+ * `new` is newest-first (submission order, highest seq first). A display-only
+ * re-sort — it never refetches or re-ranks the server's truth. */
+export type IdeasSort = "top" | "new";
+
+export interface IdeasLadderOpts {
+  /** The signed-in player's id (drives the per-row "you voted" toggle), or null. */
+  userId: string | null;
+  /** Top (score rank, as the server returned) or New (newest seq first). */
+  mode: IdeasSort;
+}
+
+/** A short, stable author label off the author id — server ids are opaque, so a
+ * long uuid is trimmed to keep the row legible (never a raw email). */
+function authorLabel(authorId: string): string {
+  return authorId.length > 12 ? `${authorId.slice(0, 10)}…` : authorId;
+}
+
+/** One creation-ladder row (mockup line 79): a 32px vote column — ▲ upvote, the
+ * net score, ▼ downvote — then the idea text over a meta line (@author + a
+ * lifecycle status pill). The arrow matching the player's current direction reads
+ * pressed; a `rejected` (bounced) idea dims its text and shows the bounce reason. */
+function ideaRowHtml(idea: Idea, userId: string | null): string {
+  const myDir: VoteDir | null = userId !== null && userId in idea.votes ? idea.votes[userId]! : null;
+  const pill = statusPill(idea.status);
+  const rowCls = ["ideas-row", pill === "rejected" && "is-rejected"].filter(Boolean).join(" ");
+  const arrow = (dir: VoteDir, glyph: string): string => {
+    const active = myDir === dir;
+    return (
+      `<button type="button" class="ideas-vote-arrow ideas-vote-${dir}${active ? " ideas-voted" : ""}" ` +
+      `data-vote-dir="${dir}" aria-pressed="${active}">${glyph}</button>`
+    );
+  };
+  const bounce =
+    idea.status === "bounced" && idea.bounceReason !== undefined
+      ? `<div class="ideas-bounce-reason">Bounced — ${esc(idea.bounceReason)}</div>`
+      : "";
+  return (
+    `<div class="${rowCls}" data-idea-id="${esc(idea.id)}">` +
+    `<div class="ideas-vote">${arrow("up", "▲")}<span class="ideas-vote-count">${voteScore(idea.votes)}</span>${arrow("down", "▼")}</div>` +
+    `<div class="ideas-body">` +
+    `<div class="ideas-text">${esc(idea.text)}</div>` +
+    `<div class="ideas-meta"><span class="ideas-author">@${esc(authorLabel(idea.authorId))}</span>` +
+    `<span class="ideas-pill ideas-pill-${pill}">${pill}</span></div>` +
+    bounce +
+    `</div></div>`
+  );
+}
+
+/** The creation ladder as markup — one ranked pass over the ideas. Pure
+ * presentation over the data the store returned: takes the ideas + display opts,
+ * returns the rows' HTML to drop into any container (so the title hub can mount
+ * the same ladder later). `new` re-sorts newest-first; `top` keeps the server's
+ * score rank. Empty → an empty-state line. */
+export function ideasLadderHtml(ideas: readonly Idea[], opts: IdeasLadderOpts): string {
+  const ordered = opts.mode === "new" ? [...ideas].sort((a, b) => b.seq - a.seq) : ideas;
+  if (ordered.length === 0) {
+    return `<p class="ideas-empty">${
+      opts.userId !== null ? "No ideas yet — be the first to write one." : "No ideas yet."
+    }</p>`;
+  }
+  return ordered.map((idea) => ideaRowHtml(idea, opts.userId)).join("");
+}
+
 export interface IdeasScreenEls {
-  /** The submit box: a text input + its send button. */
+  /** The submit box: a text input + its send button. Hidden behind the reveal
+   * button until the player opens it (the mockup's footer CTA). */
   form: HTMLFormElement;
   text: HTMLInputElement;
   submit: HTMLButtonElement;
+  /** The footer CTA that reveals the submit box; logged out it routes to login. */
+  reveal: HTMLButtonElement;
+  /** The Top / New ladder-order toggle (Top = score rank, New = newest first). */
+  sortTop: HTMLButtonElement;
+  sortNew: HTMLButtonElement;
   /** Inline status line under the submit box — errors and confirmations. */
   status: HTMLElement;
   /** The ranked list mount — refresh() fills it with one row per idea. */
@@ -69,108 +142,28 @@ export function createIdeasScreen(els: IdeasScreenEls, deps: IdeasScreenDeps): I
     els.status.classList.toggle("ideas-status-ok", kind === "ok");
   }
 
-  /** Render one ranked pass of the table. Each row carries an up/down arrow pair
-   * — directional, SWITCH-ONLY: there is no "remove" affordance (a vote, once
-   * cast, only flips up↔down). The arrow matching the player's current direction
-   * reads pressed (server truth: the player's id maps to "up"/"down" in `votes`),
-   * and the count between them is the idea's net score (the rank metric). */
+  // The ladder's display order, and the last list the server handed back — a
+  // Top/New toggle re-renders THIS cache (a re-sort is display-only; it never
+  // refetches or re-ranks the server's truth).
+  let mode: IdeasSort = "top";
+  let lastIdeas: readonly Idea[] = [];
+
+  /** Render one ranked pass of the ladder from the cached list. The rows are
+   * built by `ideasLadderHtml` (the reusable, hub-droppable render); vote taps
+   * are handled by one delegated listener on the list, not per-button. */
   function render(ideas: readonly Idea[]): void {
-    els.list.textContent = "";
-    if (ideas.length === 0) {
-      const empty = document.createElement("p");
-      empty.className = "ideas-empty";
-      empty.textContent = loggedIn
-        ? "No ideas yet — be the first to write one."
-        : "No ideas yet.";
-      els.list.append(empty);
-      return;
-    }
-    for (const idea of ideas) {
-      const row = document.createElement("div");
-      row.className = "ideas-row";
-      row.dataset.ideaId = idea.id;
-
-      const myDir: VoteDir | null = deps.userId !== null && deps.userId in idea.votes ? idea.votes[deps.userId]! : null;
-
-      const votes = document.createElement("div");
-      votes.className = "ideas-vote";
-      votes.dataset.ideaId = idea.id;
-      votes.append(
-        arrow(idea.id, "up", "▲", myDir),
-        countEl(voteScore(idea.votes)),
-        arrow(idea.id, "down", "▼", myDir),
-      );
-
-      // The idea's body: the sentence, then a meta row (@author + status pill),
-      // the B·Arena ideas-table row (#082 s5 / #083 s5). The pill is display
-      // vocabulary over the lifecycle status; a bounced idea also shows its
-      // reason so a rejection is visible, never a silent vanish.
-      const body = document.createElement("div");
-      body.className = "ideas-body";
-
-      const text = document.createElement("div");
-      text.className = "ideas-text";
-      text.textContent = idea.text;
-      body.append(text);
-
-      const meta = document.createElement("div");
-      meta.className = "ideas-meta";
-      const author = document.createElement("span");
-      author.className = "ideas-author";
-      author.textContent = `@${authorLabel(idea.authorId)}`;
-      meta.append(author, pillEl(statusPill(idea.status)));
-      body.append(meta);
-
-      if (idea.status === "bounced" && idea.bounceReason) {
-        const why = document.createElement("div");
-        why.className = "ideas-bounce-reason";
-        why.textContent = `Bounced — ${idea.bounceReason}`;
-        body.append(why);
-      }
-
-      row.append(votes, body);
-      els.list.append(row);
-    }
+    lastIdeas = ideas;
+    els.list.innerHTML = ideasLadderHtml(ideas, { userId: deps.userId, mode });
   }
 
-  /** A short, stable author label off the author id — server ids are opaque, so
-   * a long uuid is trimmed to keep the row legible (the row never shows a raw
-   * email; the id is what the kernel carries). */
-  function authorLabel(authorId: string): string {
-    return authorId.length > 12 ? `${authorId.slice(0, 10)}…` : authorId;
-  }
-
-  /** A status pill — the mockup's display vocabulary (live/voting/compiling/
-   * rejected) over the lifecycle status. Presentational only: nothing here
-   * computes eligibility (that is #083's selection rule). */
-  function pillEl(pill: IdeaPill): HTMLSpanElement {
-    const span = document.createElement("span");
-    span.className = `ideas-pill ideas-pill-${pill}`;
-    span.textContent = pill;
-    return span;
-  }
-
-  /** One directional arrow — its own ≥44px tap target. Reads pressed when it is
-   * the player's current direction; a tap casts that direction (switch-only). */
-  function arrow(ideaId: string, dir: VoteDir, glyph: string, myDir: VoteDir | null): HTMLButtonElement {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = `ideas-vote-arrow ideas-vote-${dir}`;
-    const active = myDir === dir;
-    btn.classList.toggle("ideas-voted", active);
-    btn.setAttribute("aria-pressed", String(active));
-    btn.dataset.dir = dir;
-    btn.title = loggedIn ? (dir === "up" ? "Vote up" : "Vote down") : "Log in to vote";
-    btn.textContent = glyph;
-    btn.addEventListener("click", () => void onVote(ideaId, dir));
-    return btn;
-  }
-
-  function countEl(score: number): HTMLSpanElement {
-    const span = document.createElement("span");
-    span.className = "ideas-vote-count";
-    span.textContent = String(score);
-    return span;
+  function setMode(next: IdeasSort): void {
+    if (mode === next) return;
+    mode = next;
+    els.sortTop.classList.toggle("is-active", next === "top");
+    els.sortNew.classList.toggle("is-active", next === "new");
+    els.sortTop.setAttribute("aria-pressed", String(next === "top"));
+    els.sortNew.setAttribute("aria-pressed", String(next === "new"));
+    render(lastIdeas);
   }
 
   /** Re-pull and render the per-player currency — the count of ideas this player
@@ -268,6 +261,31 @@ export function createIdeasScreen(els: IdeasScreenEls, deps: IdeasScreenDeps): I
     ev.preventDefault();
     void onSubmit();
   });
+
+  // One delegated vote listener over the whole list — a tap on either arrow
+  // (the only [data-vote-dir] elements) casts that direction on its row's idea.
+  els.list.addEventListener("click", (ev) => {
+    const btn = (ev.target as HTMLElement).closest<HTMLElement>("[data-vote-dir]");
+    if (btn === null) return;
+    const row = btn.closest<HTMLElement>("[data-idea-id]");
+    if (row === null) return;
+    void onVote(row.dataset.ideaId!, btn.dataset.voteDir as VoteDir);
+  });
+
+  // The footer CTA: logged out it's a login nudge (like every other authed
+  // action on the screen); logged in it reveals the submit box and focuses it.
+  els.reveal.addEventListener("click", () => {
+    if (!loggedIn) {
+      deps.onNeedLogin();
+      return;
+    }
+    els.form.hidden = false;
+    els.reveal.hidden = true;
+    els.text.focus();
+  });
+
+  els.sortTop.addEventListener("click", () => setMode("top"));
+  els.sortNew.addEventListener("click", () => setMode("new"));
 
   return { refresh };
 }

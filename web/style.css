@@ -1779,38 +1779,163 @@ button:disabled:hover {
   margin: 0.5rem auto 0;
 }
 
-.lb-title {
-  text-align: center;
-  font-size: 1.4rem;
-  letter-spacing: 0.05em;
-  margin: 0.5rem 0 0.2rem;
+/* ---------- arena tower (slice C) ----------
+   The leaderboard's compact strategy-ladder floor list (mockup line 124): a
+   header, one row per rung (rank · family-coloured sigil chips · @handle), the
+   champion at the top in gold, the player's own rung in teal, then a plinth.
+   Reusable — ladder-view.ts's arenaTowerHtml renders the same markup wherever a
+   tower is dropped (the title hub, later). */
+.tower {
+  display: flex;
+  flex-direction: column;
 }
 
-.lb-tagline {
-  text-align: center;
+.tower-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.3rem 0.1rem 0.8rem;
+}
+
+.tower-title {
+  font-family: var(--font-title);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+.tower-eyebrow {
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--you); /* teal strategy axis */
+  margin-top: 2px;
+}
+
+.tower-hint {
+  font-family: var(--font-body);
+  font-size: 0.68rem;
   color: var(--dim);
-  font-size: 0.8rem;
-  margin: 0 0 1.2rem;
+  white-space: nowrap;
 }
 
-/* The crown, front and center: the shared champion panel, staged larger. */
-#leaderboard-view .lv-champ {
+.tower-floors {
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+}
+
+/* A floor row: rank · sigil chips · handle. Default dark; champion gold, you teal. */
+.tower-floor {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 3px;
+  background: #0c0f16;
+  border: 1px solid #1d2533;
+}
+
+.tower-floor.is-champ {
+  background: linear-gradient(90deg, rgba(255, 210, 74, 0.12), rgba(255, 210, 74, 0.02));
+  border-color: rgba(255, 210, 74, 0.45);
+}
+
+.tower-floor.is-you {
+  background: linear-gradient(90deg, rgba(37, 230, 212, 0.12), rgba(37, 230, 212, 0.02));
+  border-color: rgba(37, 230, 212, 0.5);
+}
+
+.tower-rank {
+  flex: none;
+  width: 1.3rem;
   text-align: center;
-  padding: 0.9rem 1rem;
-  margin-bottom: 1rem;
+  font-family: var(--font-body);
+  font-weight: 700;
   font-size: 0.85rem;
-  box-shadow: 0 0 24px rgba(255, 210, 74, 0.18);
+  color: var(--dim);
 }
 
-#leaderboard-view .lv-champ .lv-team {
+.tower-floor.is-champ .tower-rank {
+  color: var(--gold);
+}
+
+.tower-floor.is-you .tower-rank {
+  color: var(--you);
+}
+
+/* The sigil chips wrap so a wide team never overflows the phone viewport. */
+.tower-sigils {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  min-width: 0;
+}
+
+.tower-chip {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  margin-top: 0.5rem;
+  border: 1px solid var(--fam);
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
 }
 
-/* Round heads are the screen's primary taps — full thumb-sized rows. */
-#leaderboard-view .lv-round-head {
-  min-height: 44px;
-  font-size: 0.85rem;
+.tower-chip.sel {
+  box-shadow: 0 0 0 1px var(--fam);
+}
+
+.tower-sigil {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+
+.tower-handle {
+  margin-left: auto;
+  flex: none;
+  max-width: 7rem;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.7rem;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tower-floor.is-champ .tower-handle {
+  color: #ffe9a8;
+}
+
+.tower-floor.is-you .tower-handle {
+  color: #6cf0e2;
+}
+
+.tower-plinth {
+  margin: 0.6rem 0.7rem 0;
+  height: 8px;
+  border-radius: 0 0 3px 3px;
+  background: linear-gradient(90deg, #11151d, #1a2030, #11151d);
+  border: 1px solid #1d2533;
+  border-top: none;
+}
+
+.tower-empty {
+  color: var(--dim);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 1.5rem 0;
 }
 
 /* ---------- ideas screen (#076 slice 3) ----------
@@ -1825,24 +1950,95 @@ button:disabled:hover {
   margin: 0.5rem auto 0;
 }
 
-.ideas-title {
-  text-align: center;
-  font-size: 1.4rem;
-  letter-spacing: 0.05em;
-  margin: 0.5rem 0 0.2rem;
+/* The creation-ladder header (slice C): the IDEAS title + magenta eyebrow on the
+   left, the Top / New order toggle on the right (mockup line 72). */
+.ideas-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin: 0.5rem 0 0.8rem;
 }
 
-.ideas-tagline {
-  text-align: center;
+.ideas-title {
+  text-align: left;
+  text-transform: uppercase;
+  font-size: 1.25rem;
+  letter-spacing: 0.03em;
+  margin: 0;
+}
+
+.ideas-eyebrow {
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fam-arcane); /* magenta creation axis (mockup #e056fd) */
+  margin-top: 2px;
+}
+
+.ideas-sort {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+
+.ideas-sort-btn {
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.3rem 0.65rem;
+  min-height: 32px;
+  border-radius: 2px;
+  cursor: pointer;
   color: var(--dim);
-  font-size: 0.8rem;
-  margin: 0 0 1.2rem;
+  background: transparent;
+  border: 1px solid var(--border);
+}
+
+/* Top active = teal fill on near-black; New (inactive) = muted outline. */
+.ideas-sort-btn.is-active {
+  color: #04141a;
+  background: var(--you);
+  border-color: var(--you);
+}
+
+/* The footer: a magenta-outline CTA that reveals the (hidden) submit box. */
+.ideas-foot {
+  margin-top: 0.8rem;
+}
+
+.ideas-reveal {
+  width: 100%;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fam-arcane);
+  background: rgba(224, 86, 253, 0.1);
+  border: 1px solid rgba(224, 86, 253, 0.4);
+  border-radius: 2px;
+  padding: 0.7rem 0;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.ideas-reveal[hidden] {
+  display: none;
 }
 
 #ideas-form {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 0.6rem;
+}
+
+#ideas-form[hidden] {
+  display: none;
 }
 
 #ideas-text {
@@ -1943,7 +2139,7 @@ button:disabled:hover {
   padding: 0;
   font-size: 1.1rem;
   line-height: 1;
-  color: var(--dim);
+  color: #46506a; /* muted, un-cast (mockup); the held direction recolours below */
   background: none;
   border: 1px solid transparent;
   border-radius: 6px;
@@ -1987,9 +2183,26 @@ button:disabled:hover {
 
 .ideas-text {
   font-size: 0.9rem;
-  line-height: 1.35;
-  color: var(--text);
+  line-height: 1.4;
+  color: #cdd7e6; /* mockup idea-text ink */
   overflow-wrap: anywhere; /* a long unbroken token wraps, never overflows */
+}
+
+/* Decorative quotes around the idea sentence (mockup line 80) — ::before/::after
+   only, so the text node the e2e probe reads stays the raw idea text. */
+.ideas-text::before {
+  content: "\201C";
+  color: var(--dim);
+}
+
+.ideas-text::after {
+  content: "\201D";
+  color: var(--dim);
+}
+
+/* A rejected (bounced) idea dims its text — candidacy spent (mockup #8a93a8). */
+.ideas-row.is-rejected .ideas-text {
+  color: #8a93a8;
 }
 
 .ideas-meta {

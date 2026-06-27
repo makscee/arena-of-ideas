@@ -337,7 +337,7 @@ try {
     store: ladderStore,
     registry: stressRegistry,
     abilities: stressAbilities,
-    openFirstRound: true, // the screen opens showing teams, not closed drawers
+    variant: "tower", // the leaderboard wears the compact Arena Tower (slice C)
     ...(remote !== null ? { holderName: () => remote!.holder() } : {}),
   });
   runScreen = createRunScreen(
@@ -499,6 +499,9 @@ ideasScreen = createIdeasScreen(
     form: el<HTMLFormElement>("ideas-form"),
     text: el<HTMLInputElement>("ideas-text"),
     submit: el<HTMLButtonElement>("ideas-submit"),
+    reveal: el<HTMLButtonElement>("ideas-reveal"),
+    sortTop: el<HTMLButtonElement>("ideas-sort-top"),
+    sortNew: el<HTMLButtonElement>("ideas-sort-new"),
     status: el("ideas-status"),
     list: el("ideas-list"),
     loginNote: el("ideas-login-note"),

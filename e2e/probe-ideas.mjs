@@ -38,6 +38,14 @@ function freshContext(viewport) {
   });
 }
 
+/** Reveal the (collapsed) submit box — the footer "＋ Submit an idea" CTA opens
+ * it. Logged in it shows the form; call once after each login (a login reload
+ * re-collapses it). Logged out the CTA routes to login instead. */
+async function revealSubmit(page) {
+  await page.click("#ideas-reveal");
+  await page.waitForSelector("#ideas-form:not([hidden])");
+}
+
 /** A fresh logged-OUT page, landed on the ideas screen. No stored run. */
 async function openIdeas(viewport) {
   const ctx = await freshContext(viewport);
@@ -63,6 +71,7 @@ async function seedIdea(viewport, email, displayName, text) {
   await loginViaUi(page, email, displayName);
   await page.click("#title-ideas");
   await page.waitForSelector("#ideas-view:not([hidden])");
+  await revealSubmit(page);
   await page.fill("#ideas-text", text);
   await page.click("#ideas-submit");
   await page.waitForFunction(
@@ -140,10 +149,10 @@ async function scenario(viewport, tag, email) {
   // empty-state paragraph on a fresh server) before asserting the table reads.
   await page.waitForFunction(() => document.querySelector("#ideas-list").children.length > 0);
   check(await page.locator("#ideas-list").isVisible(), `${tag} logged-out player can SEE the table`);
-  // A logged-out vote tap (if any rows exist) or submit must route to the login
-  // panel, not error. Submit is always present — tap Send, expect the title's
-  // login panel to open.
-  await page.click("#ideas-submit");
+  // A logged-out submit attempt must route to the login panel, not error. The
+  // footer "＋ Submit an idea" CTA is the door while logged out — tap it, expect
+  // the title's login panel to open (a nudge, never a silent error).
+  await page.click("#ideas-reveal");
   await page.waitForSelector("#login-panel:not([hidden])", { timeout: 5000 });
   check(await page.locator("#login-panel").isVisible(), `${tag} logged-out submit routes to login (a nudge, not a silent error)`);
 
@@ -152,6 +161,7 @@ async function scenario(viewport, tag, email) {
   await page.click("#title-ideas");
   await page.waitForSelector("#ideas-view:not([hidden])");
   check(await page.locator("#ideas-login-note").isHidden(), `${tag} logged-in hides the login note`);
+  await revealSubmit(page); // open the submit box for the rest of the scenario
   check(await page.locator("#ideas-text").isEnabled(), `${tag} logged-in enables the submit box`);
 
   // ---- 3a. submit free text → it appears in the table ---------------------
@@ -328,6 +338,7 @@ async function funnelScenario(viewport, tag, email) {
   await loginViaUi(page, email, `Funnel ${tag}`);
   await page.click("#title-ideas");
   await page.waitForSelector("#ideas-view:not([hidden])");
+  await revealSubmit(page);
 
   // Spy on the actual submit events: their count and the input value at dispatch
   // is the ground truth for "a phantom empty submit fired".

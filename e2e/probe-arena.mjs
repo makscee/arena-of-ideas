@@ -52,7 +52,7 @@ async function zeroNetworkScenario() {
   // skip → continue — the whole loop must run without a server.
   await page.click("#title-leaderboard");
   await page.waitForSelector("#leaderboard-view:not([hidden])");
-  check((await page.locator(".lv-round").count()) > 0, "logged out: leaderboard shows local bootstrap pools");
+  check((await page.locator(".tower-floor").count()) > 0, "logged out: leaderboard tower shows local bootstrap floors");
   await page.click("#home-button");
   await page.click("#title-play");
   await page.waitForSelector("#run-new:not([hidden])");
@@ -233,19 +233,20 @@ async function sharedLadderScenario() {
   const labelA = `${runIdA.slice(0, 12)}…`;
   const seen = await pageB
     .waitForFunction(
-      (label) => [...document.querySelectorAll(".lv-gid")].some((el) => el.textContent.includes(label)),
+      (label) => [...document.querySelectorAll(".tower-handle")].some((el) => el.textContent.includes(label)),
       labelA,
       { timeout: 15_000 },
     )
     .then(() => true)
     .catch(() => false);
-  check(seen, `Bob's leaderboard lists Alice's ghost (${labelA})`);
+  check(seen, `Bob's leaderboard tower lists Alice's ghost (${labelA})`);
 
   // When Alice's crown really landed, the shared leaderboard names her as the
-  // holder (the display-name → champion `holder` path, end to end).
+  // holder (the display-name → champion `holder` path, end to end) — the
+  // champion rung's handle reads her name.
   if (verdict.includes("crown is yours")) {
-    const champLine = await pageB.locator("#leaderboard-body .lv-who").textContent();
-    check(champLine.includes("Alice"), "Bob's leaderboard names Alice as the crown holder", champLine);
+    const champLine = await pageB.locator("#leaderboard-body .tower-floor.is-champ .tower-handle").textContent();
+    check(champLine.includes("Alice"), "Bob's leaderboard tower names Alice as the crown holder", champLine);
   }
 
   await ctxA.close();

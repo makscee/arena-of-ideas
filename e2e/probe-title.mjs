@@ -199,7 +199,10 @@ async function navScenario(viewport, tag) {
   // Leaderboard: no run started, champion row visible.
   await page.click("#title-leaderboard");
   await page.waitForSelector("#leaderboard-view:not([hidden])");
-  check(await page.locator("#leaderboard-body .lv-champ").isVisible(), `${tag} leaderboard shows the champion row`);
+  check(
+    await page.locator("#leaderboard-body .tower-floor.is-champ").isVisible(),
+    `${tag} leaderboard tower shows the champion floor`,
+  );
   check(
     (await page.evaluate(() => localStorage.getItem("aoi.run.v1"))) === null,
     `${tag} opening the leaderboard starts no run`,

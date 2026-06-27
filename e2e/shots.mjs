@@ -137,6 +137,8 @@ for (const [vp, tag] of ideasViewports) {
   await loginViaUi(page, `shots-${tag}@probe.test`, `Shots ${tag}`);
   await page.click("#title-ideas");
   await page.waitForSelector("#ideas-view:not([hidden])");
+  await page.click("#ideas-reveal"); // open the (collapsed) submit box
+  await page.waitForSelector("#ideas-form:not([hidden])");
   for (const text of [
     "Make poison stack faster",
     "Add a draft phase before the run",
@@ -151,15 +153,15 @@ for (const [vp, tag] of ideasViewports) {
   }
   await shot(page, `${tag}-9-ideas-list`);
 
-  // Vote the third (bottom) idea up — its rank moves and the pill reads voted.
+  // Vote the third (bottom) idea up — its rank moves and the up arrow reads voted.
   await page.evaluate(() => {
     const rows = [...document.querySelectorAll("#ideas-list .ideas-row")];
     rows.find((r) => r.querySelector(".ideas-text")?.textContent === "Let me rename my champion")
-      .querySelector(".ideas-vote")
+      .querySelector(".ideas-vote-up")
       .click();
   });
   await page.waitForFunction(
-    () => document.querySelector("#ideas-list .ideas-row .ideas-vote.ideas-voted") !== null,
+    () => document.querySelector('#ideas-list .ideas-vote-up[aria-pressed="true"]') !== null,
   );
   await shot(page, `${tag}-10-ideas-voted`);
 

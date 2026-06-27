@@ -99,8 +99,8 @@
            is the shared ladder view (champion + pools, same cards, same
            inspector); main.ts marks the player's own run when one is active. -->
       <section id="leaderboard-view" hidden>
-        <h2 class="lb-title">Leaderboard</h2>
-        <p class="lb-tagline">One crown. Beat every ghost on the way up, then the champion, and it's yours.</p>
+        <!-- The Arena Tower (slice C): the compact strategy-ladder floor list.
+             ladder-view.ts renders its own header + floors into the body. -->
         <div id="leaderboard-body"></div>
       </section>
 
@@ -111,16 +111,27 @@
            login (the login note shows while logged out). ideas-screen.ts drives
            it; main.ts wires it by id. -->
       <section id="ideas-view" hidden>
-        <h2 class="ideas-title">Ideas</h2>
-        <p class="ideas-tagline">What should the arena become? Write one, vote the best up — the top ideas get taken into work.</p>
-        <form id="ideas-form">
-          <input id="ideas-text" type="text" maxlength="280" placeholder="Add an idea — anything: content, gameplay, a feature…" autocomplete="off" />
-          <button type="submit" id="ideas-submit">Send</button>
-        </form>
+        <div class="ideas-head">
+          <div>
+            <h2 class="ideas-title">Ideas</h2>
+            <div class="ideas-eyebrow">Creation ladder</div>
+          </div>
+          <div class="ideas-sort" role="group" aria-label="Sort ideas">
+            <button type="button" id="ideas-sort-top" class="ideas-sort-btn is-active" aria-pressed="true">Top</button>
+            <button type="button" id="ideas-sort-new" class="ideas-sort-btn" aria-pressed="false">New</button>
+          </div>
+        </div>
         <p id="ideas-status" role="alert" hidden></p>
         <p id="ideas-login-note" class="ideas-login-note" hidden>You're reading the table — <strong>log in</strong> from the title to add ideas and vote.</p>
         <p id="ideas-currency" class="ideas-currency" hidden></p>
         <div id="ideas-list"></div>
+        <div class="ideas-foot">
+          <button type="button" id="ideas-reveal" class="ideas-reveal">＋ Submit an idea</button>
+          <form id="ideas-form" hidden>
+            <input id="ideas-text" type="text" maxlength="280" placeholder="Add an idea — anything: content, gameplay, a feature…" autocomplete="off" />
+            <button type="submit" id="ideas-submit">Send</button>
+          </form>
+        </div>
       </section>
 
       <!-- History (#077 slice 3): past seasons' final leaderboards, kept from

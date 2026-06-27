@@ -49,56 +49,45 @@ async function openFresh(viewport, url = BASE) {
 const noHorizontalOverflow = (page) =>
   page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
 
-// ---- 1. the leaderboard screen, fresh player --------------------------------
+// ---- 1. the Arena Tower screen, fresh player ---------------------------------
 async function screenScenario(viewport, tag) {
   const { ctx, page } = await openFresh(viewport);
   await page.waitForSelector("#title-view:not([hidden])");
   await page.click("#title-leaderboard");
   await page.waitForSelector("#leaderboard-view:not([hidden])");
 
-  check(await page.locator(".lb-title").isVisible(), `${tag} the screen carries its own title`);
+  // The tower renders its own header (Arena Tower / strategy ladder).
+  check(await page.locator("#leaderboard-body .tower-title").isVisible(), `${tag} the tower carries its own header`);
   check(
     (await page.evaluate(() => localStorage.getItem("aoi.run.v1"))) === null,
     `${tag} opening the leaderboard starts no run`,
   );
 
-  // Champion front and center: the gold panel, its holder named, its team in cards.
-  const champ = page.locator("#leaderboard-body .lv-champ");
-  check(await champ.isVisible(), `${tag} champion panel renders`);
-  const who = await champ.locator(".lv-who").textContent();
-  check(who !== null && who.includes("champion"), `${tag} the crown's holder is named`, who ?? "(missing)");
-  const champCards = await champ.locator(".unit").count();
-  check(champCards > 0, `${tag} champion team renders as cards`, `${champCards} cards`);
+  // The champion sits at the summit: the gold floor at rank 1, its holder named,
+  // its team rendered as family-coloured sigil chips.
+  const champ = page.locator("#leaderboard-body .tower-floor.is-champ");
+  check(await champ.isVisible(), `${tag} champion floor renders in gold`);
+  check((await champ.locator(".tower-rank").textContent()) === "1", `${tag} the champion sits at rank 1`);
+  const handle = await champ.locator(".tower-handle").textContent();
+  check(handle !== null && handle.length > 0, `${tag} the crown's holder is named`, handle ?? "(missing)");
+  const champChips = await champ.locator(".tower-chip").count();
+  check(champChips > 0, `${tag} champion team renders as sigil chips`, `${champChips} chips`);
 
-  // Round 1's pool opens expanded — the climbing teams show without a tap.
-  const firstPool = page.locator("#leaderboard-body .lv-round").first().locator(".lv-pool-body");
-  check(await firstPool.isVisible(), `${tag} round 1's pool is open on arrival`);
-  const ghostCards = await firstPool.locator(".unit").count();
-  check(ghostCards > 0, `${tag} climbing teams render as cards`, `${ghostCards} cards`);
+  // Floors below the champion: the climb (the pool ghosts) reads as floor rows.
+  const floors = await page.locator("#leaderboard-body .tower-floor").count();
+  check(floors > 1, `${tag} the tower lists floors below the champion`, `${floors} floors`);
 
-  // Inspectable: a champion card opens the shared inspector with its name.
-  const firstCard = champ.locator("[data-lv]").first();
-  const cardName = await firstCard.locator(".uname").textContent();
-  await firstCard.click();
+  // Inspectable: a champion sigil chip opens the shared inspector with its unit.
+  const firstChip = champ.locator(".tower-chip").first();
+  const chipName = await firstChip.getAttribute("title");
+  await firstChip.click();
   await page.waitForSelector("#inspect-overlay:not([hidden])");
   const insName = await page.locator("#inspect-overlay .ins-name").textContent();
-  check(insName === cardName, `${tag} champion unit opens the inspector`, `${cardName} → ${insName}`);
-  await page.click("#ins-close");
-  // A pool ghost's card inspects too.
-  const ghostCard = firstPool.locator("[data-lv]").first();
-  const ghostName = await ghostCard.locator(".uname").textContent();
-  await ghostCard.click();
-  await page.waitForSelector("#inspect-overlay:not([hidden])");
-  check(
-    (await page.locator("#inspect-overlay .ins-name").textContent()) === ghostName,
-    `${tag} pool unit opens the inspector`,
-  );
+  check(insName === chipName, `${tag} a tower sigil opens the unit inspector`, `${chipName} → ${insName}`);
   await page.click("#ins-close");
 
-  // Geometry: no sideways scroll; round heads and the way home are real taps.
+  // Geometry: no sideways scroll at phone width; the way home is a real tap.
   check(await noHorizontalOverflow(page), `${tag} no horizontal overflow`);
-  const headBox = await box(page, "#leaderboard-body .lv-round-head >> nth=0");
-  check(headBox.height >= 44, `${tag} round head is a ≥44px tap`, `${Math.round(headBox.height)}px`);
   const homeBox = await box(page, "#home-button");
   check(homeBox.height >= 44, `${tag} back-to-title is a ≥44px tap`, `${Math.round(homeBox.height)}px`);
 
@@ -109,20 +98,23 @@ async function screenScenario(viewport, tag) {
   await ctx.close();
 }
 
-// ---- 2. own-run markers ------------------------------------------------------
+// ---- 2. own-run marker (the teal "you" floor) -------------------------------
 async function ownRunScenario(viewport, tag) {
-  // An active round-1 run: its round is marked "you fight here".
+  // An active round-1 run: the tower renders (no own ghost on the ladder yet —
+  // the climb leaves one only after a fight).
   const { ctx, page } = await openRun(browser, poorGoldRun(), viewport);
   await page.click("#home-button");
   await page.waitForSelector("#title-view:not([hidden])");
   await page.click("#title-leaderboard");
   await page.waitForSelector("#leaderboard-view:not([hidden])");
-  const here1 = page.locator("#leaderboard-body .lv-round.here .lv-here");
-  check(await here1.isVisible(), `${tag} active run's round reads "you fight here"`);
+  check(
+    (await page.locator("#leaderboard-body .tower-floor").count()) > 0,
+    `${tag} the tower renders with an active run`,
+  );
 
   // Fight round 1 (the snapshot lands the player's ghost in pool 1), continue
-  // into round 2's shop, then look again: the ghost reads "(you)" and the
-  // marker moved to round 2.
+  // into round 2's shop, then look again: the own ghost reads as a teal "you"
+  // floor (the mockup's own-run marker).
   await page.click("#home-button");
   await page.click("#title-play");
   await page.waitForSelector("#run-shop:not([hidden])");
@@ -136,13 +128,12 @@ async function ownRunScenario(viewport, tag) {
   await page.waitForSelector("#title-view:not([hidden])");
   await page.click("#title-leaderboard");
   await page.waitForSelector("#leaderboard-view:not([hidden])");
-  const you = page.locator("#leaderboard-body .lv-round").first().locator(".lv-you");
-  check(await you.isVisible(), `${tag} own ghost in the fought pool reads "(you)"`);
-  const hereRound = await page.locator("#leaderboard-body .lv-round.here .lv-round-head").textContent();
+  const you = page.locator("#leaderboard-body .tower-floor.is-you").first();
+  check(await you.isVisible(), `${tag} own ghost reads as a teal "you" floor`);
+  check((await you.locator(".tower-handle").textContent()) === "you", `${tag} the own floor's handle reads "you"`);
   check(
-    hereRound !== null && hereRound.includes("round 2"),
-    `${tag} the "you fight here" marker followed the climb to round 2`,
-    hereRound ?? "(missing)",
+    (await page.locator('#leaderboard-body .tower-floor.is-you[data-round="1"]').count()) > 0,
+    `${tag} the own floor sits at the fought round (round 1)`,
   );
   await ctx.close();
 }
