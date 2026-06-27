@@ -2343,6 +2343,27 @@ button:disabled:hover {
   font-weight: 600;
 }
 
+/* Reroll (#084 slice 2): a neon control — the primary action of the shop row,
+   but a neon OUTLINE so the filled fight button still reads as THE move. Cyan
+   border + glow + cyan label, the 1g price riding the same button. */
+#run-reroll {
+  color: var(--you);
+  background: rgba(37, 230, 212, 0.06);
+  border-color: var(--you);
+  font-family: var(--font-title);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 0 14px rgba(37, 230, 212, 0.18);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+
+#run-reroll:hover:not(:disabled) {
+  background: rgba(37, 230, 212, 0.14);
+  box-shadow: 0 0 18px rgba(37, 230, 212, 0.32);
+}
+
 #run-new-error {
   margin: 0.5rem 0 0;
   color: var(--pwr);
@@ -2360,35 +2381,84 @@ button:disabled:hover {
   overflow: hidden;
 }
 
+/* The B·Arena round bar (#084 slice 2): a chamfered HUD panel of stat cells —
+   gold / lives / wins (the round reached) — over #080's tokens. The numerals
+   ride Mono inside each cell's accent; the cell itself is a cut-corner chip so
+   the bar reads as the game's HUD, not a form row. */
 #run-head {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: baseline;
+  gap: 0.45rem;
+  align-items: stretch;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.5rem 0.8rem;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  padding: 0.5rem 0.7rem;
   font-size: 0.85rem;
+}
+
+/* One stat cell: an uppercase label (the span text) with its big Mono numeral
+   in the cell's accent. The cut corner + hairline border give the HUD chip. */
+.run-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-family: var(--font-title);
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+
+.run-stat b {
+  font-family: var(--font-num);
+  font-weight: 600;
+  font-size: 1.05rem;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+/* Wins = the round reached: the headline progress stat, in you-cyan. */
+#run-head .run-round {
+  color: var(--you);
+}
+
+#run-head .run-round b {
+  color: var(--you);
 }
 
 #run-head .run-gold {
   color: var(--gold);
-  font-family: var(--font-num); /* gold count is a numeral (#080) */
 }
 
-#run-head .run-income {
-  color: var(--dim);
-  font-size: 0.75rem; /* the standing fact beside the gold count (IA-6) */
+#run-head .run-gold b {
+  color: var(--gold);
+  text-shadow: 0 0 10px rgba(255, 210, 74, 0.35);
 }
 
 #run-head .run-lives {
   color: var(--hurt);
 }
 
+#run-head .run-lives b {
+  color: var(--hurt);
+}
+
+#run-head .run-income {
+  align-self: center;
+  color: var(--dim);
+  font-size: 0.75rem; /* the standing fact beside the gold count (IA-6) */
+}
+
 #run-head .run-id {
+  align-self: center;
   color: var(--dim);
   font-size: 0.7rem;
+  font-family: var(--font-num);
   margin-left: auto;
 }
 

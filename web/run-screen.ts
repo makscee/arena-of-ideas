@@ -500,11 +500,17 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     // Mid-phase this is a no-op re-show; the scroll reset rides every shop
     // render either way, and nothing here paints between the two states.
     show("shop");
+    // The B·Arena round bar (#084 slice 2): three stat cells — the round
+    // reached (your wins: every floor climbed is a win), gold to spend, lives
+    // left — plus the income note and the run id. The numerals ride `<b>` so
+    // CSS sets them in Mono at the cell's accent (cyan / gold / red); the span
+    // text stays "round N" / "N gold" / "N lives" so the resume + stability
+    // probes still read the bar.
     els.head.innerHTML =
-      `<span class="run-round">round ${s.round}</span>` +
-      `<span class="run-gold">${s.gold} gold</span>` +
+      `<span class="run-stat run-round" title="floor reached — every climb you win is a step up the tower">round <b>${s.round}</b></span>` +
+      `<span class="run-stat run-gold" title="gold to spend — a unit is ${UNIT_COST}g, a reroll ${REROLL_COST}g"><b>${s.gold}</b> gold</span>` +
+      `<span class="run-stat run-lives" title="lives left — a lost climb costs one"><b>${s.lives}</b> ${s.lives === 1 ? "life" : "lives"}</span>` +
       `<span class="run-income">${esc(incomeLine(s.round))}</span>` +
-      `<span class="run-lives">${s.lives} ${s.lives === 1 ? "life" : "lives"}</span>` +
       `<span class="run-id">${esc(s.runId)}</span>`;
     els.next.textContent = nextLine(s);
     prefetchServe(s);
