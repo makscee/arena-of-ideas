@@ -359,15 +359,20 @@ function variantCardHtml(o: UnitCardOpts): string {
     o.silenced === true
       ? '<span class="chip mute" title="Silenced — its statuses are stripped and its own abilities are disabled for the battle">mut</span>'
       : "";
-  const tail = `<div class="ub-tail"><span class="chips">${chipsHtml(o.statuses, o.registry)}${silenced}</span>${badge}${o.footer ?? ""}</div>`;
+  // Keep the status badges in a DIRECT `.chips` strip (like the legacy card) so
+  // the run rows' gapless 44px touch band + min-height reserve apply unchanged;
+  // the level badge + footer (buy / move) ride a separate `.ub-foot` row below.
+  const chips = `<span class="chips">${chipsHtml(o.statuses, o.registry)}${silenced}</span>`;
+  const foot = badge !== "" || (o.footer ?? "") !== "" ? `<div class="ub-foot">${badge}${o.footer ?? ""}</div>` : "";
 
   const sigil = familySigil(family, hex);
   const sigilMini = familySigil(family, hex, "ub-sigil ub-sigil-mini");
 
-  const body =
+  const head =
     variant === "compact"
-      ? `<div class="ub-head"><div class="ub-mini">${sigilMini}</div><div class="ub-id">${label}${cap}</div>${nums}</div>${ability}${tail}`
-      : `<div class="ub-head"><div class="ub-id">${label}${cap}</div>${nums}</div><div class="ub-art">${sigil}</div>${ability}${tail}`;
+      ? `<div class="ub-head"><div class="ub-mini">${sigilMini}</div><div class="ub-id">${label}${cap}</div>${nums}</div>`
+      : `<div class="ub-head"><div class="ub-id">${label}${cap}</div>${nums}</div>`;
+  const art = variant === "compact" ? "" : `<div class="ub-art">${sigil}</div>`;
 
-  return `<div class="${cls}" style="--fam:${hex}" ${o.attrs} title="${esc(o.title)}">${body}</div>`;
+  return `<div class="${cls}" style="--fam:${hex}" ${o.attrs} title="${esc(o.title)}">${head}${art}${ability}${chips}${foot}</div>`;
 }

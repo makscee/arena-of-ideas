@@ -3464,23 +3464,32 @@ button.danger {
 }
 
 /* ability line: ⚔ trigger ▸ target ▸ ◈ action */
+/* The ability line is a FIXED-height block (content-independent) so every card
+   of a variant is the SAME height — the shop/line min-height reserve then holds
+   to the pixel across buy/reroll/fuse (probe-stability). Long lines clip; the
+   full text always rides the inspector. */
 .unit-b .ub-ability {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 5px;
+  align-content: flex-start;
+  gap: 5px 6px;
   margin: 0 12px;
   padding: 9px 0;
   border-top: 1px solid var(--border);
   font-family: var(--font-body);
   font-weight: 600;
   font-size: 11px;
+  line-height: 1.3;
+  box-sizing: border-box;
+  height: 62px;
+  overflow: hidden;
 }
 .unit-b.is-compact .ub-ability {
   margin: 0 12px;
-  padding: 0;
+  padding: 6px 0 0;
   border-top: none;
   font-size: 11px;
+  height: 28px;
 }
 .unit-b .ub-trig {
   color: #cdd7e6;
@@ -3499,25 +3508,31 @@ button.danger {
   color: #46506a;
 }
 
-/* tail: status badges + level badge + footer (buy / move) */
-.unit-b .ub-tail {
+/* status badges: a DIRECT `.chips` strip (legacy contract) — the run rows' phone
+   rules make it a full-width gapless 44px touch band; min-height reserves a row
+   so the card height is constant whether or not a unit carries statuses. The
+   ::after touch band is tuned to a 0.15rem gap, so the new card uses it too. */
+.unit-b .chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.15rem;
+  margin: 0;
+  /* NO horizontal padding: at phone the chips tile this box edge-to-edge as the
+     gapless 44px touch band — any side padding would open a dead strip there. */
+  padding: 6px 0 0;
+  min-height: 1.3rem;
+}
+/* foot: level badge + footer controls (buy / move) on their own row below */
+.unit-b .ub-foot {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  padding: 9px 12px 12px;
+  padding: 6px 12px 12px;
 }
-.unit-b.is-compact .ub-tail {
-  padding: 0 12px 10px;
-}
-.unit-b .ub-tail .chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin: 0;
-}
-.unit-b .ub-tail:has(.chips:empty):not(:has(.run-lvl)):not(:has(button)) {
-  display: none;
+.unit-b.is-compact .ub-foot {
+  padding: 4px 12px 10px;
 }
 .unit-b .run-lvl {
   font-family: var(--font-num);
