@@ -19,7 +19,7 @@ import type { BattleEvent, BattleInput, EventBody, UnitDef } from "./types.js";
 import { Summoner, Venomancer, Silencer, Necromancer, stressRegistry } from "./content/stress.js";
 import { stressAbilities } from "./content/stress.js";
 
-const tank = (name: string, hp: number, pwr: number): UnitDef => ({ name, base: { hp, pwr } });
+const tank = (name: string, hp: number, pwr: number): UnitDef => ({ name, base: { hp, pwr }, ability: "Strike" });
 
 // A spread of real battles. Deaths advance fresh front units, so each battle
 // faces several pairings — every battle re-flips the coin at least once, and

@@ -11,7 +11,7 @@ import type { BattleInput, UnitDef } from "./types.js";
 import { stressRegistry, Venomancer } from "./content/stress.js";
 import { stressAbilities } from "./content/stress.js";
 
-const dummy = (name: string, hp = 10, pwr = 2): UnitDef => ({ name, base: { hp, pwr } });
+const dummy = (name: string, hp = 10, pwr = 2): UnitDef => ({ name, base: { hp, pwr }, ability: "Strike" });
 
 const poisonBattle: BattleInput = {
   teamA: [Venomancer, dummy("Backup", 20, 1)],
@@ -23,7 +23,7 @@ const poisonBattle: BattleInput = {
 
 describe("displayNames", () => {
   test("resolves every unit id to its bare name — the Xn: instance prefix never shows (#065 item 3)", () => {
-    const log = battle({ teamA: [dummy("Twin"), dummy("Twin")], teamB: [dummy("Solo")], seed: 1 });
+    const log = battle({ teamA: [dummy("Twin"), dummy("Twin")], teamB: [dummy("Solo")], seed: 1, abilities: stressAbilities });
     const name = displayNames(log);
     // Duplicates show the same bare name — the team tint, not an id prefix, tells
     // the two apart in the UI; the full id stays on data-unit / event ids.
@@ -69,7 +69,7 @@ describe("deathCauseChain", () => {
   });
 
   test("a plain strike death names the striker", () => {
-    const log = battle({ teamA: [dummy("Bruiser", 10, 9)], teamB: [dummy("Frail", 8, 1)], seed: 0 });
+    const log = battle({ teamA: [dummy("Bruiser", 10, 9)], teamB: [dummy("Frail", 8, 1)], seed: 0, abilities: stressAbilities });
     const death = log.find((e) => e.type === "Death" && e.unit === "B1:Frail")!;
     const chain = deathCauseChain(log, death.causedBy!, displayNames(log));
     expect(chain.join(" ← ")).toMatch(/struck by Bruiser for \d+/);

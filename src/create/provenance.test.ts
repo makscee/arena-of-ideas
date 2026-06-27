@@ -180,7 +180,7 @@ describe("approve", () => {
   });
 
   test("refuses a candidate that introduces no new unit", () => {
-    const allShipped = buildRecord("dud", [{ name: "Squire", base: { hp: 8, pwr: 2 } }], MANIFEST, PASSED, 1);
+    const allShipped = buildRecord("dud", [{ name: "Squire", base: { hp: 8, pwr: 2 }, ability: "Strike" }], MANIFEST, PASSED, 1);
     expect(() => approveInto({ units: [] }, allShipped, shippedNames, stressRegistry, stressAbilities)).toThrow(/no new unit/);
   });
 
@@ -194,7 +194,7 @@ describe("approve", () => {
     // A new unit deliberately named like a shipped one is NOT skipped silently if
     // it is the only new content path — here it's caught as "no new unit", which
     // is the right loud refusal. A mixed team's shipped-name unit is skipped (above).
-    const collide = buildRecord("c", [{ name: "Venomancer", base: { hp: 9, pwr: 3 } }], MANIFEST, PASSED, 1);
+    const collide = buildRecord("c", [{ name: "Venomancer", base: { hp: 9, pwr: 3 }, ability: "Strike" }], MANIFEST, PASSED, 1);
     expect(() => approveInto({ units: [] }, collide, shippedNames, stressRegistry, stressAbilities)).toThrow();
   });
 });
@@ -213,7 +213,7 @@ describe("approve re-sims (forge containment)", () => {
   // in-band stats (PASSED, 0.5) while the unit data is wildly overtuned. Content-
   // valid (a big base stat is legal DSL), so it sails past the validator; only a
   // re-sim catches that it is not actually in-band.
-  const OVERTUNED: UnitDef = { name: "OvertunedOgre", base: { hp: 999, pwr: 999 } };
+  const OVERTUNED: UnitDef = { name: "OvertunedOgre", base: { hp: 999, pwr: 999 }, ability: "Strike" };
   const forged = buildRecord("forged-ogre", [OVERTUNED], MANIFEST, PASSED, 1);
 
   test("the forged record CLAIMS in-band (the lie the old approve trusted)", () => {
@@ -319,7 +319,7 @@ describe("pool isolation", () => {
 
   test("approving one candidate leaves an un-approved peer out of the pool", () => {
     // Approve the honest (re-simmable) team; an un-approved peer stays out.
-    const bUnit: UnitDef = { name: "Emberling", base: { hp: 9, pwr: 3 } };
+    const bUnit: UnitDef = { name: "Emberling", base: { hp: 9, pwr: 3 }, ability: "Strike" };
     const next = approveInto({ units: [] }, HONEST, shippedNames, stressRegistry, stressAbilities);
     const pool = mergePool(DEFAULT_RUN_POOL, next.units);
     expect(pool.some((u) => u.name === HONEST_NEW_NAME)).toBe(true);

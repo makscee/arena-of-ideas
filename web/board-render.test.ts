@@ -3,16 +3,16 @@
 // after a full wipe — so deaths never change the board's height mid-replay.
 
 import { describe, expect, test } from "vitest";
-import { battle, boardAt, type UnitDef } from "../src/index.js";
+import { battle, boardAt, stressAbilities, type UnitDef } from "../src/index.js";
 import { boardHtml } from "./board-render.js";
 
-const dummy = (name: string, hp = 10, pwr = 3): UnitDef => ({ name, base: { hp, pwr } });
+const dummy = (name: string, hp = 10, pwr = 3): UnitDef => ({ name, base: { hp, pwr }, ability: "Strike" });
 const id = (s: string): string => s;
 
 describe("boardHtml", () => {
   // 1v1 with a lopsided matchup: side A's Frail dies, so the last event's
   // board has a populated grave and a wiped line.
-  const log = battle({ teamA: [dummy("Frail")], teamB: [dummy("Bruiser", 30, 9)], seed: 0 });
+  const log = battle({ teamA: [dummy("Frail")], teamB: [dummy("Bruiser", 30, 9)], seed: 0, abilities: stressAbilities });
 
   test("grave rows render on both sides before any death", () => {
     const html = boardHtml(boardAt(log, 0), id, new Set(), {});

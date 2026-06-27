@@ -76,7 +76,7 @@ function readTower(store: LadderStore): LadderData {
  * reset must wipe. */
 function fieldGhost(store: LadderStore, round: number, runId: string): void {
   const seq = store.poolAt(round).length;
-  const snap: TeamSnapshot = { runId, round, seq, team: [{ name: "Brawler", base: { hp: 9, pwr: 2 } }] };
+  const snap: TeamSnapshot = { runId, round, seq, team: [{ name: "Brawler", base: { hp: 9, pwr: 2 }, ability: "Strike" }] };
   store.addSnapshot(snap);
 }
 
@@ -166,7 +166,7 @@ describe("snapshotLadder", () => {
     let top = 1;
     while (ladder.bossAt(top + 1) !== null) top++;
     const high = top + 3;
-    const boss: TeamSnapshot = { runId: "web-9", round: high, seq: 0, team: [{ name: "Warlord", base: { hp: 30, pwr: 9 } }] };
+    const boss: TeamSnapshot = { runId: "web-9", round: high, seq: 0, team: [{ name: "Warlord", base: { hp: 30, pwr: 9 }, ability: "Strike" }] };
     ladder.setBoss(high, boss);
     const snap = snapshotLadder(ladder);
     expect(snap.bosses[String(high)]).toEqual(boss);

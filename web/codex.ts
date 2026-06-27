@@ -129,11 +129,7 @@ export function createCodex(
     // codex link (#078 slice 3); the derived u.abilities strings still feed
     // search. A unit not in defByName (shouldn't happen) falls back to plain.
     const abilityDefs: Ability[] =
-      def === undefined
-        ? []
-        : def.ability !== undefined
-          ? [abilities[def.ability]].filter((a): a is AbilityDef => a !== undefined)
-          : (def.abilities ?? []);
+      def === undefined ? [] : [abilities[def.ability]].filter((a): a is AbilityDef => a !== undefined);
     const abilitiesHtml =
       abilityDefs.length > 0
         ? abilityDefs

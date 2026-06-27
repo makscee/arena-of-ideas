@@ -133,7 +133,7 @@ export function approveInto(
   // mergePool's guard: a new unit colliding with an already-approved name (or a
   // shipped one, via the stubs) is rejected loudly BEFORE anything is written —
   // an approval never silently shadows an existing unit.
-  const shippedStubs = shippedNames.map((name) => ({ name, base: { hp: 0, pwr: 0 } }));
+  const shippedStubs = shippedNames.map((name) => ({ name, base: { hp: 0, pwr: 0 }, ability: "Strike" }));
   mergePool([...shippedStubs, ...priorApproved], stamped);
 
   // RE-SIM — the trust boundary. Structure is sound (there IS new, non-colliding

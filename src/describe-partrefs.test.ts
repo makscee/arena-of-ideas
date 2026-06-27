@@ -22,7 +22,7 @@
 import { describe, expect, it } from "vitest";
 import { abilityPartRefs, describeAbilitySegments, type PartRef } from "./describe.js";
 import { partAtoms } from "./parts.js";
-import { Necromancer, Silencer, Summoner, Venomancer, stressRegistry } from "./content/stress.js";
+import { Necromancer, Silencer, Summoner, Venomancer, stressAbilities, stressRegistry } from "./content/stress.js";
 import { DEFAULT_RUN_POOL, BOSS_TEAMS, TOWER_HEIGHT } from "./tunables.js";
 import type { Ability } from "./types.js";
 
@@ -52,12 +52,12 @@ const unlinkedText = (ab: Ability): string =>
     .join("");
 
 const allShippedAbilities = (): Ability[] => {
-  const abilities: Ability[] = [...new Set([...DEFAULT_RUN_POOL, ...BOSS_TEAMS[TOWER_HEIGHT - 1]!]).values()].flatMap(
-    (u) => u.abilities ?? [],
+  const abilities: Ability[] = [...new Set([...DEFAULT_RUN_POOL, ...BOSS_TEAMS[TOWER_HEIGHT - 1]!]).values()].map(
+    (u) => stressAbilities[u.ability]!,
   );
   // Status abilities cover the interceptor family (Shield/Freeze/Blessing).
   abilities.push(...Object.values(stressRegistry).flatMap((d) => d.abilities));
-  abilities.push(...[Venomancer, Summoner, Silencer, Necromancer].flatMap((u) => u.abilities ?? []));
+  abilities.push(...[Venomancer, Summoner, Silencer, Necromancer].map((u) => stressAbilities[u.ability]!));
   return abilities;
 };
 

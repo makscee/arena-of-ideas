@@ -26,11 +26,9 @@ import { statusChipStyle } from "./status-color.js";
  * even mid-battle arrivals can show their abilities.
  */
 /** A unit's ability bodies — resolved from its single `ability` ref through the
- * registry (PRD #081), falling back to the legacy inline `abilities[]`. */
+ * registry (PRD #081). */
 function unitAbilities(def: UnitDef, abilities: AbilityRegistry): Ability[] {
-  return def.ability !== undefined
-    ? [abilities[def.ability]].filter((a): a is AbilityDef => a !== undefined)
-    : (def.abilities ?? []);
+  return [abilities[def.ability]].filter((a): a is AbilityDef => a !== undefined);
 }
 
 export function unitDefs(

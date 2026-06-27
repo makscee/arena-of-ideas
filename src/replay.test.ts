@@ -5,7 +5,7 @@
 import { describe, expect, test } from "vitest";
 import { battle } from "./battle.js";
 import { renderReplay } from "./replay.js";
-import type { BattleInput, UnitDef } from "./types.js";
+import type { AbilityRegistry, BattleInput, UnitDef } from "./types.js";
 import { Necromancer, Silencer, stressRegistry, Summoner, Venomancer } from "./content/stress.js";
 import { stressAbilities } from "./content/stress.js";
 
@@ -19,6 +19,7 @@ const stressBattle: BattleInput = {
     {
       name: "Champion",
       base: { hp: 12, pwr: 2 },
+      ability: "Strike",
       statuses: [
         { status: "Strength", stacks: 2 },
         { status: "Shield", stacks: 3 },
@@ -30,6 +31,7 @@ const stressBattle: BattleInput = {
     {
       name: "FrozenBrute",
       base: { hp: 14, pwr: 4 },
+      ability: "Strike",
       statuses: [
         { status: "Freeze", stacks: 2 },
         { status: "Curse", stacks: 1 },
@@ -38,6 +40,7 @@ const stressBattle: BattleInput = {
     {
       name: "Martyr",
       base: { hp: 6, pwr: 2 },
+      ability: "Strike",
       statuses: [
         { status: "Blessing", stacks: 3 },
         { status: "Vitality", stacks: 2 },
@@ -70,7 +73,7 @@ describe("replay renderer", () => {
     // Venomancer (1 pwr, applies Poison 2 per strike) vs a 20 hp punching bag:
     // strikes alone need 20 turns, but poison stacks net +1 per turn while its
     // tick grows — the victim dies to a poison tick, and the chain must say so.
-    const victim: UnitDef = { name: "Victim", base: { hp: 20, pwr: 0 } };
+    const victim: UnitDef = { name: "Victim", base: { hp: 20, pwr: 0 }, ability: "Strike" };
     const log = battle({ teamA: [Venomancer], teamB: [victim], seed: 7, statuses: stressRegistry, abilities: stressAbilities });
     const text = renderReplay(log);
 
@@ -91,21 +94,26 @@ describe("replay renderer", () => {
   test("a ChainBlocked renders an explanation of the no-self-retrigger law", () => {
     // A unit that damages itself whenever it is hurt: the second firing sits
     // in its own causal chain and must be suppressed — and explained.
+    const selfHurterAbilities: AbilityRegistry = {
+      ...stressAbilities,
+      SelfHurt: {
+        name: "SelfHurt",
+        family: "Strike",
+        whens: [{ kind: "trigger", on: { on: "Hurt", unit: "holder" } }],
+        selectors: [{ kind: "holder" }],
+        effects: [{ kind: "damage", amount: { kind: "const", value: 1 } }],
+      },
+    };
     const selfHurter: UnitDef = {
       name: "SelfHurter",
       base: { hp: 100, pwr: 0 },
-      abilities: [
-        {
-          whens: [{ kind: "trigger", on: { on: "Hurt", unit: "holder" } }],
-          selectors: [{ kind: "holder" }],
-          effects: [{ kind: "damage", amount: { kind: "const", value: 1 } }],
-        },
-      ],
+      ability: "SelfHurt",
     };
     const log = battle({
       teamA: [selfHurter],
-      teamB: [{ name: "Attacker", base: { hp: 100, pwr: 2 } }],
+      teamB: [{ name: "Attacker", base: { hp: 100, pwr: 2 }, ability: "Strike" }],
       seed: 1,
+      abilities: selfHurterAbilities,
     });
     expect(log.some((e) => e.type === "ChainBlocked")).toBe(true);
 
@@ -116,8 +124,8 @@ describe("replay renderer", () => {
 
   test("an Intercepted strike shows what cancelled what (Freeze)", () => {
     const log = battle({
-      teamA: [{ name: "Attacker", base: { hp: 20, pwr: 1 } }],
-      teamB: [{ name: "FrozenOne", base: { hp: 20, pwr: 2 }, statuses: [{ status: "Freeze", stacks: 1 }] }],
+      teamA: [{ name: "Attacker", base: { hp: 20, pwr: 1 }, ability: "Strike" }],
+      teamB: [{ name: "FrozenOne", base: { hp: 20, pwr: 2 }, ability: "Strike", statuses: [{ status: "Freeze", stacks: 1 }] }],
       seed: 1,
       statuses: stressRegistry,
   abilities: stressAbilities,
@@ -128,11 +136,12 @@ describe("replay renderer", () => {
 
   test("an intercepted death shows the Blessing refusing it, and Shield absorption is visible", () => {
     const log = battle({
-      teamA: [{ name: "Slayer", base: { hp: 100, pwr: 99 } }],
+      teamA: [{ name: "Slayer", base: { hp: 100, pwr: 99 }, ability: "Strike" }],
       teamB: [
         {
           name: "Blessed",
           base: { hp: 5, pwr: 0 },
+          ability: "Strike",
           statuses: [
             { status: "Blessing", stacks: 2 },
             { status: "Shield", stacks: 3 },
@@ -149,10 +158,10 @@ describe("replay renderer", () => {
   });
 
   test("a resurrection reads as a return from the grave at the right hp", () => {
-    const fodder: UnitDef = { name: "Fodder", base: { hp: 3, pwr: 1 }, statuses: [{ status: "Poison", stacks: 3 }] };
+    const fodder: UnitDef = { name: "Fodder", base: { hp: 3, pwr: 1 }, ability: "Strike", statuses: [{ status: "Poison", stacks: 3 }] };
     const log = battle({
       teamA: [fodder, Necromancer],
-      teamB: [{ name: "Ogre", base: { hp: 3, pwr: 1 } }],
+      teamB: [{ name: "Ogre", base: { hp: 3, pwr: 1 }, ability: "Strike" }],
       seed: 1,
       statuses: stressRegistry,
   abilities: stressAbilities,

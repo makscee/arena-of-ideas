@@ -90,12 +90,12 @@ describe("validateTeamFile", () => {
   });
 
   test("rejects oversized units array (6)", () => {
-    const units = Array.from({ length: 6 }, (_, i) => ({ name: `U${i}`, base: { hp: 1, pwr: 1 } }));
+    const units = Array.from({ length: 6 }, (_, i) => ({ name: `U${i}`, base: { hp: 1, pwr: 1 }, ability: "Strike" }));
     expect(() => validateTeamFile({ units })).toThrow(/1..5/);
   });
 
   test("rejects unit with no name", () => {
-    expect(() => validateTeamFile({ units: [{ base: { hp: 1, pwr: 1 } }] })).toThrow(/name must be a string/);
+    expect(() => validateTeamFile({ units: [{ base: { hp: 1, pwr: 1 }, ability: "Strike" }] })).toThrow(/name must be a string/);
   });
 });
 

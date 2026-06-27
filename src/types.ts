@@ -17,13 +17,10 @@ export interface UnitDef {
   level?: number;
   /** The unit's single ability, by id into the AbilityRegistry — the ontology's
    * spine (PRD #081): a Unit references exactly one named Ability, and that
-   * Ability's `family` is the unit's color. Optional only during the #081
-   * migration; `abilities?` below is the legacy inline path being retired. */
-  ability?: string;
-  /** @deprecated #081 — inline abilities are being migrated to a single
-   * `ability` ref. The battle resolver still reads this behind a back-compat
-   * read while the corpus migrates; dropped once every unit carries a ref. */
-  abilities?: Ability[];
+   * Ability's `family` is the unit's color. A plain attacker references the
+   * inert `Strike` ability; there are no ability-less units and no inline
+   * effects (the validator rejects both). */
+  ability: string;
   /** Initial statuses, applied (as events) right after BattleStart. Names resolve via the status registry. */
   statuses?: { status: string; stacks: number }[];
 }

@@ -50,7 +50,7 @@ describe("mergePool", () => {
   });
 
   test("a name collision with the base is rejected loudly", () => {
-    const dup: ApprovedUnit = { name: DEFAULT_RUN_POOL[0]!.name, base: { hp: 1, pwr: 1 } };
+    const dup: ApprovedUnit = { name: DEFAULT_RUN_POOL[0]!.name, base: { hp: 1, pwr: 1 }, ability: "Strike" };
     expect(() => mergePool(DEFAULT_RUN_POOL, [dup])).toThrow(/collides/);
   });
 
@@ -63,7 +63,7 @@ describe("mergePool", () => {
 
 describe("creditsOf", () => {
   test("maps credited unit names to their creators", () => {
-    expect(creditsOf([FROSTER, { name: "Plain", base: { hp: 5, pwr: 1 } }])).toEqual({ Froster: "maks" });
+    expect(creditsOf([FROSTER, { name: "Plain", base: { hp: 5, pwr: 1 }, ability: "Strike" }])).toEqual({ Froster: "maks" });
   });
 });
 

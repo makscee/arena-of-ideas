@@ -43,7 +43,7 @@ export interface PartAtom {
 
 // A throwaway unit for the `summon` sample — the card shows the effect's shape,
 // not this unit. Kept tiny so the meaning sentence stays about the atom.
-const SAMPLE_SUMMON_UNIT: UnitDef = { name: "a token", base: { hp: 1, pwr: 1 } };
+const SAMPLE_SUMMON_UNIT: UnitDef = { name: "a token", base: { hp: 1, pwr: 1 }, ability: "Strike" };
 
 // ---------------------------------------------------------------------------
 // Sample atoms, one per union kind. The Record key sets ARE the union: TS

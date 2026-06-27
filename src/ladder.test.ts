@@ -277,7 +277,7 @@ describe("snapshot-before-fight", () => {
       runId: "evil",
       round: 1,
       seq: 0,
-      team: [{ name: "Hexed", base: { hp: 5, pwr: 1 }, statuses: [{ status: "Bogus", stacks: 1 }] }],
+      team: [{ name: "Hexed", base: { hp: 5, pwr: 1 }, ability: "Strike", statuses: [{ status: "Bogus", stacks: 1 }] }],
     });
     const s0 = buy(initRun(input(3, "titan", TITAN)), 0);
     expect(() => ladderFight(s0, store)).toThrow(ValidationError);

@@ -35,11 +35,8 @@ import type { Ability, AbilityRegistry, StatusRegistry, UnitDef } from "./types.
  * in the registry, with the legacy inline `abilities[]` as a back-compat read.
  * One place so the codex follows summons and describes abilities identically. */
 function unitAbilityDefs(u: UnitDef, abilities: AbilityRegistry): Ability[] {
-  if (u.ability !== undefined) {
-    const ab = abilities[u.ability];
-    return ab ? [ab] : [];
-  }
-  return u.abilities ?? [];
+  const ab = abilities[u.ability];
+  return ab ? [ab] : [];
 }
 
 // ---------------------------------------------------------------------------

@@ -3,7 +3,7 @@
 
 import { describe, expect, test } from "vitest";
 import { battle } from "./battle.js";
-import type { BattleEvent, BattleInput, UnitDef } from "./types.js";
+import type { AbilityRegistry, BattleEvent, BattleInput, UnitDef } from "./types.js";
 import {
   Blessing,
   Curse,
@@ -46,10 +46,11 @@ describe("stress: Strength", () => {
         {
           name: "Striker",
           base: { hp: 10, pwr: 1 },
+          ability: "Strike",
           statuses: [{ status: "Strength", stacks: 2 }],
         },
       ],
-      teamB: [{ name: "Target", base: { hp: 100, pwr: 0 } }],
+      teamB: [{ name: "Target", base: { hp: 100, pwr: 0 }, ability: "Strike" }],
       seed: 1,
       statuses: stressRegistry,
   abilities: stressAbilities,
@@ -80,11 +81,12 @@ describe("stress: Vitality", () => {
     // Attacker pwr=5: 7-5=2 hp remaining after turn 1 → alive.
     // Turn 2 strike deals 5 more → -3 ≤ 0 → Death.
     const log = run({
-      teamA: [{ name: "Attacker", base: { hp: 100, pwr: 5 } }],
+      teamA: [{ name: "Attacker", base: { hp: 100, pwr: 5 }, ability: "Strike" }],
       teamB: [
         {
           name: "VitalityDef",
           base: { hp: 3, pwr: 0 },
+          ability: "Strike",
           statuses: [{ status: "Vitality", stacks: 4 }],
         },
       ],
@@ -119,10 +121,11 @@ describe("stress: Curse", () => {
         {
           name: "CursedStriker",
           base: { hp: 10, pwr: 2 },
+          ability: "Strike",
           statuses: [{ status: "Curse", stacks: 5 }],
         },
       ],
-      teamB: [{ name: "Target", base: { hp: 100, pwr: 0 } }],
+      teamB: [{ name: "Target", base: { hp: 100, pwr: 0 }, ability: "Strike" }],
       seed: 1,
       statuses: stressRegistry,
   abilities: stressAbilities,
@@ -150,11 +153,12 @@ describe("stress: Poison", () => {
     const poisonUnitDef: UnitDef = {
       name: "PoisonedUnit",
       base: { hp: 20, pwr: 0 },
+      ability: "Strike",
       statuses: [{ status: "Poison", stacks: 3 }],
     };
     const log = run({
       teamA: [poisonUnitDef],
-      teamB: [{ name: "Dummy", base: { hp: 20, pwr: 0 } }],
+      teamB: [{ name: "Dummy", base: { hp: 20, pwr: 0 }, ability: "Strike" }],
       seed: 1,
       statuses: stressRegistry,
   abilities: stressAbilities,
@@ -204,11 +208,12 @@ describe("stress: Poison", () => {
 describe("stress: Shield", () => {
   test("partial absorption: Shield 3 vs 5-pwr → Hurt amount 2, absorbed 3, Shield removed", () => {
     const log = run({
-      teamA: [{ name: "Attacker", base: { hp: 100, pwr: 5 } }],
+      teamA: [{ name: "Attacker", base: { hp: 100, pwr: 5 }, ability: "Strike" }],
       teamB: [
         {
           name: "ShieldUnit",
           base: { hp: 20, pwr: 0 },
+          ability: "Strike",
           statuses: [{ status: "Shield", stacks: 3 }],
         },
       ],
@@ -232,11 +237,12 @@ describe("stress: Shield", () => {
 
   test("full absorption: Shield 9 vs 5-pwr → Hurt amount 0, absorbed 5, stacks 5 consumed remaining 4", () => {
     const log = run({
-      teamA: [{ name: "Attacker", base: { hp: 100, pwr: 5 } }],
+      teamA: [{ name: "Attacker", base: { hp: 100, pwr: 5 }, ability: "Strike" }],
       teamB: [
         {
           name: "ShieldUnit",
           base: { hp: 20, pwr: 0 },
+          ability: "Strike",
           statuses: [{ status: "Shield", stacks: 9 }],
         },
       ],
@@ -271,11 +277,12 @@ describe("stress: Freeze", () => {
     //   - Zero Hurt events on the attacker in turn 1.
     //   - Turn 2: Freeze is gone; FreezeUnit strikes normally → attacker takes 2.
     const log = run({
-      teamA: [{ name: "Attacker", base: { hp: 20, pwr: 1 } }],
+      teamA: [{ name: "Attacker", base: { hp: 20, pwr: 1 }, ability: "Strike" }],
       teamB: [
         {
           name: "FreezeUnit",
           base: { hp: 20, pwr: 2 },
+          ability: "Strike",
           statuses: [{ status: "Freeze", stacks: 1 }],
         },
       ],
@@ -319,11 +326,12 @@ describe("stress: Blessing", () => {
     //   No Death event in turn 1.
     // Turn 2: 99-pwr strike again → dies for real.
     const log = run({
-      teamA: [{ name: "Attacker", base: { hp: 100, pwr: 99 } }],
+      teamA: [{ name: "Attacker", base: { hp: 100, pwr: 99 }, ability: "Strike" }],
       teamB: [
         {
           name: "BlessedUnit",
           base: { hp: 5, pwr: 0 },
+          ability: "Strike",
           statuses: [{ status: "Blessing", stacks: 2 }],
         },
       ],
@@ -378,7 +386,7 @@ describe("stress: Summon", () => {
     // Summoner dies → triggers: summon Imp on A. Imp fights Ogre, loses. B wins.
     const log = run({
       teamA: [Summoner],
-      teamB: [{ name: "Ogre", base: { hp: 30, pwr: 3 } }],
+      teamB: [{ name: "Ogre", base: { hp: 30, pwr: 3 }, ability: "Strike" }],
       seed: 1,
       statuses: stressRegistry,
   abilities: stressAbilities,
@@ -419,23 +427,27 @@ describe("stress: Silence", () => {
     // B has a unit with TurnEnd→damage frontEnemy 5.
     // A has Silencer (BattleStart→silence frontEnemy).
     // After silencing, B's TurnEnd ability cannot fire: zero ability-sourced Hurts on A.
+    const abilityUnitAbilities: AbilityRegistry = {
+      ...stressAbilities,
+      Lash: {
+        name: "Lash",
+        family: "Strike",
+        whens: [{ kind: "trigger", on: { on: "TurnEnd" } }],
+        selectors: [{ kind: "frontEnemy" }],
+        effects: [{ kind: "damage", amount: { kind: "const", value: 5 } }],
+      },
+    };
     const abilityUnit: UnitDef = {
       name: "AbilityUnit",
       base: { hp: 20, pwr: 0 },
-      abilities: [
-        {
-          whens: [{ kind: "trigger", on: { on: "TurnEnd" } }],
-          selectors: [{ kind: "frontEnemy" }],
-          effects: [{ kind: "damage", amount: { kind: "const", value: 5 } }],
-        },
-      ],
+      ability: "Lash",
     };
     const log = run({
       teamA: [Silencer],
       teamB: [abilityUnit],
       seed: 1,
       statuses: stressRegistry,
-  abilities: stressAbilities,
+  abilities: abilityUnitAbilities,
     });
 
     // Silenced event exists.
@@ -457,28 +469,33 @@ describe("stress: Silence", () => {
     // Turn 1: Attacker hits Brute for 4 → curHp 3. TurnEnd: SilenceAlly fires, removes Vitality
     //   → effective hp drops from 7 to 2, damage still 4 → curHp = -2 → Death.
     // The Death's causal ancestry reaches StatusRemoved (from Silence).
+    const silenceAllyAbilities: AbilityRegistry = {
+      ...stressAbilities,
+      SilenceFront: {
+        name: "SilenceFront",
+        family: "Control",
+        whens: [{ kind: "trigger", on: { on: "TurnEnd" } }],
+        selectors: [{ kind: "frontEnemy" }],
+        effects: [{ kind: "silence" }],
+      },
+    };
     const silenceAlly: UnitDef = {
       name: "SilenceAlly",
       base: { hp: 100, pwr: 0 },
-      abilities: [
-        {
-          whens: [{ kind: "trigger", on: { on: "TurnEnd" } }],
-          selectors: [{ kind: "frontEnemy" }],
-          effects: [{ kind: "silence" }],
-        },
-      ],
+      ability: "SilenceFront",
     };
     const brute: UnitDef = {
       name: "Brute",
       base: { hp: 2, pwr: 1 },
+      ability: "Strike",
       statuses: [{ status: "Vitality", stacks: 5 }],
     };
     const log = run({
-      teamA: [{ name: "Attacker", base: { hp: 30, pwr: 4 } }, silenceAlly],
+      teamA: [{ name: "Attacker", base: { hp: 30, pwr: 4 }, ability: "Strike" }, silenceAlly],
       teamB: [brute],
       seed: 1,
       statuses: stressRegistry,
-  abilities: stressAbilities,
+  abilities: silenceAllyAbilities,
     });
 
     const bruteId = ofType(log, "BattleStart")[0]!.teams.B[0]!.id;
@@ -515,11 +532,12 @@ describe("stress: Resurrect", () => {
     const fodder: UnitDef = {
       name: "Fodder",
       base: { hp: 3, pwr: 1 },
+      ability: "Strike",
       statuses: [{ status: "Poison", stacks: 3 }],
     };
     const log = run({
       teamA: [fodder, Necromancer],
-      teamB: [{ name: "Ogre", base: { hp: 3, pwr: 1 } }],
+      teamB: [{ name: "Ogre", base: { hp: 3, pwr: 1 }, ability: "Strike" }],
       seed: 1,
       statuses: stressRegistry,
   abilities: stressAbilities,

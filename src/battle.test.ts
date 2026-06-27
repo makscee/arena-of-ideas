@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { battle, toJSONL } from "./battle.js";
-import type { BattleEvent, BattleInput, UnitDef } from "./types.js";
+import type { AbilityRegistry, BattleEvent, BattleInput, UnitDef } from "./types.js";
 import {
   Blessing,
   Curse,
@@ -29,11 +29,14 @@ const ofType = <T extends BattleEvent["type"]>(
 
 /** Build a simple vanilla UnitDef with no abilities and no statuses. */
 function vanilla(name: string, hp: number, pwr: number): UnitDef {
-  return { name, base: { hp, pwr } };
+  return { name, base: { hp, pwr }, ability: "Strike" };
 }
 
 function runBattle(input: BattleInput): BattleEvent[] {
-  return battle(input);
+  // Vanilla fixtures reference the inert "Strike" ability (PRD #081); the
+  // registry must be present for the ref to resolve. Inputs that pass their own
+  // `abilities` (e.g. a local merged registry) override this default.
+  return battle({ abilities: stressAbilities, ...input });
 }
 
 // ---------------------------------------------------------------------------
@@ -55,6 +58,7 @@ describe("determinism", () => {
       {
         name: "ShieldPoison",
         base: { hp: 10, pwr: 1 },
+        ability: "Strike",
         statuses: [
           { status: "Shield", stacks: 2 },
           { status: "Poison", stacks: 1 },
@@ -146,12 +150,12 @@ describe("hpAfter", () => {
   test("every hp-changing event (Hurt/Heal/hp StatChanged) carries hpAfter consistent with the hp deltas", () => {
     // Stress content exercises Heals (Blessing), absorbed Hurts (Shield), and StatChanged (Vitality).
     const teamA: UnitDef[] = [
-      { name: "Blessed", base: { hp: 8, pwr: 2 }, statuses: [{ status: "Blessing", stacks: 3 }] },
+      { name: "Blessed", base: { hp: 8, pwr: 2 }, ability: "Strike", statuses: [{ status: "Blessing", stacks: 3 }] },
       Venomancer,
     ];
     const teamB: UnitDef[] = [
-      { name: "Shielded", base: { hp: 10, pwr: 2 }, statuses: [{ status: "Shield", stacks: 4 }] },
-      { name: "Vital", base: { hp: 6, pwr: 1 }, statuses: [{ status: "Vitality", stacks: 2 }] },
+      { name: "Shielded", base: { hp: 10, pwr: 2 }, ability: "Strike", statuses: [{ status: "Shield", stacks: 4 }] },
+      { name: "Vital", base: { hp: 6, pwr: 1 }, ability: "Strike", statuses: [{ status: "Vitality", stacks: 2 }] },
     ];
     const log = runBattle({ teamA, teamB, seed: 7, statuses: stressRegistry, abilities: stressAbilities });
 
@@ -281,23 +285,27 @@ describe("line collapse", () => {
 describe("no-self-retrigger law", () => {
   test("a unit that hurts itself when hurt is blocked by ChainBlocked after one Hurt per enemy strike", () => {
     // Unit with: when Hurt on holder → damage holder 1.
+    const selfHurterAbilities: AbilityRegistry = {
+      ...stressAbilities,
+      SelfHurt: {
+        name: "SelfHurt",
+        family: "Strike",
+        whens: [{ kind: "trigger", on: { on: "Hurt", unit: "holder" } }],
+        selectors: [{ kind: "holder" }],
+        effects: [{ kind: "damage", amount: { kind: "const", value: 1 } }],
+      },
+    };
     const selfHurter: UnitDef = {
       name: "SelfHurter",
       base: { hp: 100, pwr: 0 },
-      abilities: [
-        {
-          whens: [{ kind: "trigger", on: { on: "Hurt", unit: "holder" } }],
-          selectors: [{ kind: "holder" }],
-          effects: [{ kind: "damage", amount: { kind: "const", value: 1 } }],
-        },
-      ],
+      ability: "SelfHurt",
     };
     const attacker = vanilla("Attacker", 100, 2);
 
     const teamA: UnitDef[] = [selfHurter];
     const teamB: UnitDef[] = [attacker];
 
-    const log = runBattle({ teamA, teamB, seed: 1 });
+    const log = runBattle({ teamA, teamB, seed: 1, abilities: selfHurterAbilities });
 
     // ChainBlocked events must exist.
     const chainBlocked = ofType(log, "ChainBlocked");

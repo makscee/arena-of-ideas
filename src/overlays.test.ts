@@ -20,7 +20,7 @@ import type { BattleEvent, BattleInput, EventBody, UnitDef } from "./types.js";
 import { Summoner, Venomancer, Silencer, Necromancer, stressRegistry } from "./content/stress.js";
 import { stressAbilities } from "./content/stress.js";
 
-const tank = (name: string, hp: number, pwr: number): UnitDef => ({ name, base: { hp, pwr } });
+const tank = (name: string, hp: number, pwr: number): UnitDef => ({ name, base: { hp, pwr }, ability: "Strike" });
 
 // A spread of real battles that, between them, cover every overlay-bearing
 // event: strikes (Hurt), turn-end Poison (more Hurts, summed per unit across
@@ -32,6 +32,7 @@ const tank = (name: string, hp: number, pwr: number): UnitDef => ({ name, base: 
 const Mosaic: UnitDef = {
   name: "Mosaic",
   base: { hp: 9, pwr: 2 },
+  ability: "Strike",
   statuses: [
     { status: "Strength", stacks: 2 },
     { status: "Vitality", stacks: 1 },
@@ -39,7 +40,7 @@ const Mosaic: UnitDef = {
 };
 // Blessing's preventDeathHeal turns a lethal Hurt into a Heal (a heal-back the
 // overlay must keep SEPARATE from the damage that triggered it).
-const Saint: UnitDef = { name: "Saint", base: { hp: 4, pwr: 1 }, statuses: [{ status: "Blessing", stacks: 3 }] };
+const Saint: UnitDef = { name: "Saint", base: { hp: 4, pwr: 1 }, ability: "Strike", statuses: [{ status: "Blessing", stacks: 3 }] };
 
 const matchups: { name: string; input: BattleInput }[] = [];
 for (const seed of [1, 3, 7, 11, 23, 42, 99]) {

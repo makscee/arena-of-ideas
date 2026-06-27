@@ -6,11 +6,11 @@
 import { describe, expect, test } from "vitest";
 import { battle, winnerOf, TEAM_SIZE } from "./battle.js";
 import { boardAt } from "./board.js";
-import type { BattleInput, UnitDef } from "./types.js";
+import type { AbilityRegistry, BattleInput, UnitDef } from "./types.js";
 import { Necromancer, Silencer, stressRegistry, Summoner, Venomancer } from "./content/stress.js";
 import { stressAbilities } from "./content/stress.js";
 
-const dummy = (name: string, hp = 10, pwr = 2): UnitDef => ({ name, base: { hp, pwr } });
+const dummy = (name: string, hp = 10, pwr = 2): UnitDef => ({ name, base: { hp, pwr }, ability: "Strike" });
 
 // The replay suite's stress battle: statuses, summons, resurrection, silence.
 const stressBattle: BattleInput = {
@@ -21,6 +21,7 @@ const stressBattle: BattleInput = {
     {
       name: "Champion",
       base: { hp: 12, pwr: 2 },
+      ability: "Strike",
       statuses: [
         { status: "Strength", stacks: 2 },
         { status: "Shield", stacks: 3 },
@@ -32,6 +33,7 @@ const stressBattle: BattleInput = {
     {
       name: "FrozenBrute",
       base: { hp: 14, pwr: 4 },
+      ability: "Strike",
       statuses: [
         { status: "Freeze", stacks: 2 },
         { status: "Curse", stacks: 1 },
@@ -40,6 +42,7 @@ const stressBattle: BattleInput = {
     {
       name: "Martyr",
       base: { hp: 6, pwr: 2 },
+      ability: "Strike",
       statuses: [
         { status: "Blessing", stacks: 3 },
         { status: "Vitality", stacks: 2 },
@@ -160,18 +163,22 @@ describe("hp StatChanged stamp", () => {
   test("a mid-battle hp statMod stamps hpAfter (current hp), distinct from now (the new max)", () => {
     // Gains Vitality when hurt — the StatChanged lands while damage is outstanding,
     // so hpAfter (current) and now (effective max) must disagree.
+    const growerAbilities: AbilityRegistry = {
+      ...stressAbilities,
+      Grow: {
+        name: "Grow",
+        family: "Heal",
+        whens: [{ kind: "trigger", on: { on: "Hurt", unit: "holder" } }],
+        selectors: [{ kind: "holder" }],
+        effects: [{ kind: "applyStatus", status: "Vitality", stacks: { kind: "const", value: 2 } }],
+      },
+    };
     const grower: UnitDef = {
       name: "Grower",
       base: { hp: 10, pwr: 1 },
-      abilities: [
-        {
-          whens: [{ kind: "trigger", on: { on: "Hurt", unit: "holder" } }],
-          selectors: [{ kind: "holder" }],
-          effects: [{ kind: "applyStatus", status: "Vitality", stacks: { kind: "const", value: 2 } }],
-        },
-      ],
+      ability: "Grow",
     };
-    const log = battle({ teamA: [grower], teamB: [dummy("Hitter", 12, 3)], seed: 1, statuses: stressRegistry, abilities: stressAbilities });
+    const log = battle({ teamA: [grower], teamB: [dummy("Hitter", 12, 3)], seed: 1, statuses: stressRegistry, abilities: growerAbilities });
     const sc = log.find((e) => e.type === "StatChanged" && e.stat === "hp" && e.hpAfter !== undefined && e.hpAfter !== e.now);
     expect(sc, "an hp StatChanged with outstanding damage").toBeDefined();
     if (sc?.type !== "StatChanged") throw new Error("unreachable");
@@ -181,7 +188,7 @@ describe("hp StatChanged stamp", () => {
 
 describe("display clamping", () => {
   test("overkill hp shows 0, never negative", () => {
-    const log = battle({ teamA: [dummy("Bruiser", 10, 9)], teamB: [dummy("Frail", 2, 1)], seed: 0 });
+    const log = battle({ teamA: [dummy("Bruiser", 10, 9)], teamB: [dummy("Frail", 2, 1)], seed: 0, abilities: stressAbilities });
     const hurt = log.find((e) => e.type === "Hurt" && e.unit === "B1:Frail")!;
     expect(hurt.type === "Hurt" && hurt.hpAfter!).toBeLessThan(0); // raw log is negative
     expect(findUnit(boardAt(log, hurt.id), "B1:Frail")!.hp).toBe(0); // display clamps

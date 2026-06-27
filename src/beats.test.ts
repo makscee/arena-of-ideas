@@ -7,7 +7,7 @@
 import { describe, expect, test } from "vitest";
 import { battle } from "./battle.js";
 import { beatsOf, beatAtStep, depthInBeat, isRootKind } from "./beats.js";
-import type { BattleEvent, BattleInput, EventType, UnitDef } from "./types.js";
+import type { AbilityRegistry, BattleEvent, BattleInput, EventType, UnitDef } from "./types.js";
 import { Poison, Summoner, Venomancer, stressAbilities, stressRegistry } from "./content/stress.js";
 
 const ROOT_KINDS: EventType[] = ["BattleStart", "TurnStart", "TurnEnd", "PairFaced", "Strike", "Fatigue", "BattleEnd"];
@@ -17,19 +17,23 @@ const ROOT_KINDS: EventType[] = ["BattleStart", "TurnStart", "TurnEnd", "PairFac
 // summon off BattleStart, a death cascade, and — with tanky units — enough
 // turns (≥ FATIGUE_START = 10) that fatigue kicks in. Poison'd Venomancer vs a
 // pair of heavy bricks drags the fight long.
-const tank = (name: string, hp: number, pwr: number): UnitDef => ({ name, base: { hp, pwr } });
+const tank = (name: string, hp: number, pwr: number): UnitDef => ({ name, base: { hp, pwr }, ability: "Strike" });
 
 // Summons an Imp at BattleStart — the canonical hero-affecting opening beat.
+const beatsAbilities: AbilityRegistry = {
+  ...stressAbilities,
+  StartSummon: {
+    name: "StartSummon",
+    family: "Summon",
+    whens: [{ kind: "trigger", on: { on: "BattleStart" } }],
+    selectors: [{ kind: "holder" }],
+    effects: [{ kind: "summon", unit: { name: "Imp", base: { hp: 2, pwr: 1 }, ability: "Strike" } }],
+  },
+};
 const StartSummoner: UnitDef = {
   name: "StartSummoner",
   base: { hp: 6, pwr: 1 },
-  abilities: [
-    {
-      whens: [{ kind: "trigger", on: { on: "BattleStart" } }],
-      selectors: [{ kind: "holder" }],
-      effects: [{ kind: "summon", unit: { name: "Imp", base: { hp: 2, pwr: 1 } } }],
-    },
-  ],
+  ability: "StartSummon",
 };
 
 const longBattle: BattleInput = {
@@ -41,7 +45,7 @@ const longBattle: BattleInput = {
   teamB: [tank("Brick", 28, 2), tank("Slab", 26, 1)],
   seed: 7,
   statuses: stressRegistry,
-  abilities: stressAbilities,
+  abilities: beatsAbilities,
 };
 
 describe("beatsOf segmentation vs the raw log", () => {

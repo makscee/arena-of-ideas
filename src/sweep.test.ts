@@ -9,11 +9,11 @@ import { stressAbilities } from "./content/stress.js";
 import type { SweepInput } from "./sweep.js";
 import type { UnitDef } from "./types.js";
 
-const grunt = (name: string, hp: number, pwr: number): UnitDef => ({ name, base: { hp, pwr } });
+const grunt = (name: string, hp: number, pwr: number): UnitDef => ({ name, base: { hp, pwr }, ability: "Strike" });
 
 // A matchup with mixed outcomes across seeds (first-striker roll decides):
 // two identical glass cannons one-shot each other, so each seed is a coin.
-const COIN: SweepInput = { teamA: [grunt("Cannon", 1, 9)], teamB: [grunt("Mirror", 1, 9)] };
+const COIN: SweepInput = { teamA: [grunt("Cannon", 1, 9)], teamB: [grunt("Mirror", 1, 9)], abilities: stressAbilities };
 
 // A stress-set matchup, statuses included — exactly what the gauntlet runs.
 const STRESS: SweepInput = {
@@ -97,7 +97,7 @@ describe("sweep", () => {
 // surfaces: deterministic, lopsided extremes, counts close, mirror sane.
 describe("Run ×N band (winRate)", () => {
   // A wall that can't be hurt vs a wall that can't hurt: A always wins.
-  const LOPSIDED: SweepInput = { teamA: [grunt("Hammer", 50, 50)], teamB: [grunt("Paper", 1, 0)] };
+  const LOPSIDED: SweepInput = { teamA: [grunt("Hammer", 50, 50)], teamB: [grunt("Paper", 1, 0)], abilities: stressAbilities };
 
   test("deterministic band: same inputs run twice give the identical band", () => {
     const a = sweep(STRESS, 50);
@@ -121,7 +121,7 @@ describe("Run ×N band (winRate)", () => {
   });
 
   test("a mirror matchup is sane: a side's win-rate is in [0,1] and A+B+draws cover it", () => {
-    const mirror: SweepInput = { teamA: [grunt("Twin", 6, 3)], teamB: [grunt("Twin", 6, 3)] };
+    const mirror: SweepInput = { teamA: [grunt("Twin", 6, 3)], teamB: [grunt("Twin", 6, 3)], abilities: stressAbilities };
     const r = sweep(mirror, 40);
     const wA = winRate(r, "A");
     const wB = winRate(r, "B");

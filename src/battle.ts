@@ -187,19 +187,16 @@ class Engine {
     };
   }
 
-  /** The unit's firing list — the ordering loop's `Ability[]` (SPEC §5). The new
+  /** The unit's firing list — the ordering loop's `Ability[]` (SPEC §5). The
    * ontology (PRD #081) is one `ability` ref resolved through the registry to a
-   * single entry; the legacy inline `abilities[]` is the back-compat read kept
-   * while the corpus migrates. An AbilityDef IS an Ability (plus name/family),
-   * so the ordering loop consumes it unchanged — one ref means one unit-ability
-   * entry at index 0, exactly where an inline single ability sat. */
+   * single entry: an AbilityDef IS an Ability (plus name/family), so the ordering
+   * loop consumes it unchanged — one ref means one unit-ability entry at index 0,
+   * exactly where an inline single ability sat. `unit.ability` is the only path;
+   * a missing ref is content the validator rejects, loud here if it slips past. */
   private resolveAbilities(def: UnitDef): Ability[] {
-    if (def.ability !== undefined) {
-      const ab = this.abilities[def.ability];
-      if (!ab) throw new Error(`unknown ability "${def.ability}" — not in the ability registry`);
-      return [ab];
-    }
-    return def.abilities ?? [];
+    const ab = this.abilities[def.ability];
+    if (!ab) throw new Error(`unknown ability "${def.ability}" — not in the ability registry`);
+    return [ab];
   }
 
   private applyInitialStatuses(causeId: number): void {

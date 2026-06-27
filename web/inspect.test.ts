@@ -3,7 +3,7 @@
 // its source ability, so a mid-battle arrival can still show its abilities.
 
 import { describe, expect, test } from "vitest";
-import { Imp, Summoner, Venomancer, battle, stressAbilities, stressRegistry, type UnitDef } from "../src/index.js";
+import { Imp, Summoner, Venomancer, battle, stressAbilities, stressRegistry, type AbilityRegistry, type UnitDef } from "../src/index.js";
 import { chipsHtml, renderUnitInspect, unitDefs } from "./inspect.js";
 
 const dummy = (name: string, hp = 10, pwr = 3): UnitDef => ({ name, base: { hp, pwr }, ability: "Strike" });
@@ -72,23 +72,27 @@ describe("renderUnitInspect status refs", () => {
 
   test("a status the registry cannot resolve is not tappable", () => {
     const root = fakeRoot();
+    const mysteryAbilities: AbilityRegistry = {
+      ...stressAbilities,
+      Mystery: {
+        name: "Mystery",
+        family: "Arcane",
+        whens: [{ kind: "trigger", on: { on: "TurnEnd" } }],
+        selectors: [{ kind: "holder" }],
+        effects: [{ kind: "applyStatus", status: "Unregistered", stacks: { kind: "const", value: 1 } }],
+      },
+    };
     renderUnitInspect(root, {
       title: "Mystery",
       state: "1 hp · 1 pwr",
       def: {
         name: "Mystery",
         base: { hp: 1, pwr: 1 },
-        abilities: [
-          {
-            whens: [{ kind: "trigger", on: { on: "TurnEnd" } }],
-            selectors: [{ kind: "holder" }],
-            effects: [{ kind: "applyStatus", status: "Unregistered", stacks: { kind: "const", value: 1 } }],
-          },
-        ],
+        ability: "Mystery",
       },
       statuses: [],
       registry: stressRegistry,
-      abilities: stressAbilities,
+      abilities: mysteryAbilities,
     });
     expect(root.innerHTML).toContain("Unregistered");
     expect(root.innerHTML).not.toContain("data-status-ref");
