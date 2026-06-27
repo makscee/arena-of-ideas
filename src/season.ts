@@ -25,8 +25,11 @@
 
 import { jsonClone } from "./ladder.js";
 import { FIRST_CONTENT_VERSION } from "./season-archive.js";
+import { selectSeason, talliesOf } from "./selection.js";
+import type { Idea } from "./ideas.js";
 import type { LadderData, LadderStore } from "./ladder.js";
 import type { ContentVersion, SeasonArchiveStore, SeasonRecord } from "./season-archive.js";
+import type { SelectionResult, SelectionTunables } from "./selection.js";
 
 /** The live season cursor: which season is running and on which content
  * version. The archive stamps the version onto a FINISHED record; this is the
@@ -213,6 +216,21 @@ export interface SeasonTransitionOps {
   pointer: SeasonPointerStore;
   reset: () => void;
   bumpVersion?: (current: ContentVersion) => ContentVersion;
+  /** OPTIONAL — the season selection input (#083). When present, the transition
+   * runs the selection rule over the live ideas table and returns the slate in
+   * the result. It is READ-ONLY: selectSeason never mutates the table, and the
+   * transition never resets it, so carry-over survives the roll untouched (the
+   * non-shipped ideas keep their votes). When absent (a roll with no ideas
+   * feature wired), no selection runs and the result's `selection` is undefined.
+   * The slate NAMES what the new content version should contain; it does not
+   * itself bump the version — that stays the op's own monotonic step. */
+  selection?: {
+    /** The live ideas table to select over — read, never written. The caller
+     * passes the same store's ideas it leaves in place across the roll. */
+    ideas: readonly Idea[];
+    /** Selection knobs; defaults to the shipped tunables when omitted. */
+    tunables?: SelectionTunables;
+  };
 }
 
 /** What a completed transition reports back: the record that was archived and
@@ -220,6 +238,10 @@ export interface SeasonTransitionOps {
 export interface SeasonTransitionResult {
   archived: SeasonRecord;
   pointer: SeasonPointer;
+  /** The selection slate produced at this roll (#083) — present only when
+   * `ops.selection` was supplied. The build slate Maks ships as the new content
+   * version; the carry-over stays on the live table with its votes intact. */
+  selection?: SelectionResult;
 }
 
 /** Roll the season: ARCHIVE the final tower, RESET the live tower to a fresh
@@ -252,7 +274,7 @@ export interface SeasonTransitionResult {
  * the live tower + pointer are untouched — a failed roll leaves the prior season
  * intact rather than half-rolled. */
 export function transitionSeason(ops: SeasonTransitionOps): SeasonTransitionResult {
-  const { live, archive, pointer, reset, bumpVersion } = ops;
+  const { live, archive, pointer, reset, bumpVersion, selection } = ops;
   const current = pointer.get();
 
   // PRECONDITION — compute and validate the next version up front, BEFORE any
@@ -269,6 +291,17 @@ export function transitionSeason(ops: SeasonTransitionOps): SeasonTransitionResu
       `season transition: content version must strictly increase (was ${current.version}, got ${nextVersion})`,
     );
   }
+
+  // SELECTION (pre-step, read-only) — run the selection rule over the live ideas
+  // table to name the build slate. It mutates NOTHING (selectSeason is pure; the
+  // transition never resets the ideas table), so carry-over survives the roll
+  // with votes intact and the version-boundary invariant is untouched: this
+  // reads the table, it does not bump the version (that stays step 3). Skipped
+  // when no ideas feature is wired (selection undefined).
+  const slate =
+    selection !== undefined
+      ? selectSeason(selection.ideas, talliesOf(selection.ideas), selection.tunables)
+      : undefined;
 
   // 1. ARCHIVE — the final tower, stamped with the OLD version, as the finished
   //    season's record. assertSeasonInOrder (inside archive) throws on a desync
@@ -287,5 +320,5 @@ export function transitionSeason(ops: SeasonTransitionOps): SeasonTransitionResu
   //    on a tower holding live ghosts: that is the version-boundary invariant.
   const next: SeasonPointer = { season: current.season + 1, version: nextVersion };
   pointer.set(next);
-  return { archived, pointer: next };
+  return slate !== undefined ? { archived, pointer: next, selection: slate } : { archived, pointer: next };
 }
