@@ -65,6 +65,7 @@ export interface ArenaApi {
   listIdeas(): Promise<ApiResult<{ ideas: Idea[] }>>;
   submitIdea(token: string, text: string): Promise<ApiResult<{ submitted: true; idea: Idea }>>;
   voteIdea(token: string, ideaId: string, direction: VoteDir): Promise<ApiResult<{ cast: true; direction: VoteDir; idea: Idea }>>;
+  ideaCurrency(token: string): Promise<ApiResult<{ currency: number }>>;
 }
 
 /** A refusal body's reason, best-effort: the server's `reason`/`error` field,
@@ -125,5 +126,6 @@ export function createArenaApi(fetchImpl?: FetchLike): ArenaApi {
     submitIdea: (token, text) => call("/v1/ideas", { method: "POST", body: JSON.stringify({ text }), token }),
     voteIdea: (token, ideaId, direction) =>
       call(`/v1/ideas/${encodeURIComponent(ideaId)}/vote`, { method: "POST", body: JSON.stringify({ direction }), token }),
+    ideaCurrency: (token) => call("/v1/ideas/currency", { token }),
   };
 }

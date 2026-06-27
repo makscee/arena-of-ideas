@@ -235,6 +235,45 @@ describe("directional vote: one vote per player (DB-enforced), switch-only", () 
   });
 });
 
+async function currencyOf(ctx: Ctx, token: string): Promise<number> {
+  const res = await ctx.app.request("/v1/ideas/currency", { headers: { authorization: `Bearer ${token}` } });
+  expect(res.status).toBe(200);
+  return ((await res.json()) as { currency: number }).currency;
+}
+
+describe("vote-currency (derived, no stored counter)", () => {
+  test("counts distinct ideas voted, unchanged by a flip or a re-cast", async () => {
+    const ctx = makeCtx();
+    const ada = await login(ctx, "ada@example.com");
+    const a = (await submitIdea(ctx, ada, "idea A")).body.idea.id;
+    const b = (await submitIdea(ctx, ada, "idea B")).body.idea.id;
+    const c = (await submitIdea(ctx, ada, "idea C")).body.idea.id;
+
+    expect(await currencyOf(ctx, ada)).toBe(0); // voted on nothing yet
+    await voteIdea(ctx, ada, a, "up");
+    await voteIdea(ctx, ada, b, "down");
+    expect(await currencyOf(ctx, ada)).toBe(2); // two distinct ideas, either direction counts
+    await voteIdea(ctx, ada, a, "down"); // flip a's direction
+    expect(await currencyOf(ctx, ada)).toBe(2); // a flip never changes the count
+    await voteIdea(ctx, ada, b, "down"); // re-cast the same direction
+    expect(await currencyOf(ctx, ada)).toBe(2); // a no-op re-cast never changes it
+    await voteIdea(ctx, ada, c, "up"); // a third distinct idea
+    expect(await currencyOf(ctx, ada)).toBe(3);
+  });
+
+  test("currency is per-player and needs a bearer", async () => {
+    const ctx = makeCtx();
+    const ada = await login(ctx, "ada@example.com");
+    const bob = await login(ctx, "bob@example.com");
+    const id = (await submitIdea(ctx, ada, "shared")).body.idea.id;
+    await voteIdea(ctx, ada, id, "up");
+    expect(await currencyOf(ctx, ada)).toBe(1);
+    expect(await currencyOf(ctx, bob)).toBe(0); // bob's footprint is his own
+    // Public/anonymous read is refused — the currency is per-session-user.
+    expect((await ctx.app.request("/v1/ideas/currency")).status).toBe(401);
+  });
+});
+
 describe("list returns ranked order", () => {
   test("ideas rank by directional score desc (up raises, down lowers), ties by seq", async () => {
     const ctx = makeCtx();

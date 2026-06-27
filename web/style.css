@@ -1768,6 +1768,19 @@ button:disabled:hover {
   display: none;
 }
 
+/* The per-player vote-currency counter — a participation footprint, display-only
+   (no sink in v1). Sits above the list when logged in. */
+.ideas-currency {
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0 0 0.8rem;
+}
+
+.ideas-currency[hidden] {
+  display: none;
+}
+
 #ideas-list {
   display: flex;
   flex-direction: column;

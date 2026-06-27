@@ -180,10 +180,24 @@ async function scenario(viewport, tag, email) {
   // ---- 3b. UP-vote → rank MOVES and the up arrow reflects voted -----------
   check((await rowVoteCount(page, mine)) === 0, `${tag} my idea starts at score 0`);
   check((await rowVoteDir(page, mine)) === null, `${tag} my idea starts not-voted`);
+  // The vote-currency counter renders, at 0 before any cast (submitting is not voting).
+  check(await page.locator("#ideas-currency").isVisible(), `${tag} the vote-currency counter renders when logged in`);
+  check(
+    /voted on 0 idea/.test((await page.locator("#ideas-currency").textContent()) ?? ""),
+    `${tag} currency starts at 0 (submitting is not voting)`,
+    (await page.locator("#ideas-currency").textContent()) ?? "",
+  );
   await clickVote(page, mine, "up");
   await waitForCount(page, mine, 1);
   check((await rowVoteCount(page, mine)) === 1, `${tag} an up-vote raises the score to 1`);
   check((await rowVoteDir(page, mine)) === "up", `${tag} the up arrow now reads voted`);
+  // The currency ticked up to 1 — voting on an idea accrues the footprint.
+  await page.waitForFunction(() => /voted on 1 idea\b/.test(document.querySelector("#ideas-currency")?.textContent ?? ""));
+  check(
+    /voted on 1 idea\b/.test((await page.locator("#ideas-currency").textContent()) ?? ""),
+    `${tag} currency updates to 1 after a cast`,
+    (await page.locator("#ideas-currency").textContent()) ?? "",
+  );
   texts = await rowTexts(page);
   check(
     texts.indexOf(mine) < texts.indexOf(other),
@@ -196,6 +210,12 @@ async function scenario(viewport, tag, email) {
   await waitForCount(page, mine, -1);
   check((await rowVoteCount(page, mine)) === -1, `${tag} switching to down lowers the score to -1`);
   check((await rowVoteDir(page, mine)) === "down", `${tag} the vote FLIPPED to down (switch, not remove)`);
+  // Switching direction does NOT change the currency — it's still one idea voted.
+  check(
+    /voted on 1 idea\b/.test((await page.locator("#ideas-currency").textContent()) ?? ""),
+    `${tag} currency unchanged at 1 after a flip (non-farmable)`,
+    (await page.locator("#ideas-currency").textContent()) ?? "",
+  );
   // The vote is still held — there is no affordance that returns it to neutral.
   texts = await rowTexts(page);
   check(

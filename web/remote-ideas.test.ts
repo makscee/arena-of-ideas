@@ -36,6 +36,7 @@ function stubApi(overrides: Partial<ArenaApi>): ArenaApi {
     listIdeas: die("listIdeas"),
     submitIdea: die("submitIdea"),
     voteIdea: die("voteIdea"),
+    ideaCurrency: die("ideaCurrency"),
     ...overrides,
   } as ArenaApi;
 }
@@ -75,6 +76,19 @@ describe("RemoteIdeas over a stub api", () => {
     const res = await store.vote("idea-0", "down");
     expect(res).toEqual({ ok: true, value: { direction: "down", idea: after } });
     expect(seen).toEqual([{ ideaId: "idea-0", direction: "down" }]); // the direction reached the api
+  });
+
+  test("currency returns the caller's vote footprint as a number", async () => {
+    const store = new RemoteIdeas(stubApi({ ideaCurrency: async () => ok({ currency: 3 }) }), "token");
+    expect(await store.currency()).toEqual({ ok: true, value: 3 });
+  });
+
+  test("a currency failure maps to a player-shaped reason", async () => {
+    const store = new RemoteIdeas(
+      stubApi({ ideaCurrency: async () => ({ ok: false, kind: "network", reason: "ECONNREFUSED" }) as ApiResult<never> }),
+      "token",
+    );
+    expect(await store.currency()).toMatchObject({ ok: false, reason: expect.stringContaining("unreachable") });
   });
 
   test("failures map to player-shaped reasons, never raw transport", async () => {

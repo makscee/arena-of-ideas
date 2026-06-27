@@ -51,6 +51,14 @@ export class RemoteIdeas {
     if (!res.ok) return { ok: false, reason: failureReason(res) };
     return { ok: true, value: { direction: res.value.direction, idea: res.value.idea } };
   }
+
+  /** The caller's vote-currency: how many distinct ideas they've voted on — a
+   * participation footprint the server derives live (no stored counter). */
+  async currency(): Promise<IdeasResult<number>> {
+    const res = await this.api.ideaCurrency(this.token);
+    if (!res.ok) return { ok: false, reason: failureReason(res) };
+    return { ok: true, value: res.value.currency };
+  }
 }
 
 function failureReason(res: { ok: false; kind: string; reason?: string }): string {

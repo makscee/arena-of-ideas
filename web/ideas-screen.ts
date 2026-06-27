@@ -30,6 +30,9 @@ export interface IdeasScreenEls {
   list: HTMLElement;
   /** Shown above the list while logged out: read-only, log in to take part. */
   loginNote: HTMLElement;
+  /** The per-player vote-currency counter — how many ideas you've voted on.
+   * Shown only when logged in; refresh() re-pulls it after every cast. */
+  currency: HTMLElement;
 }
 
 export interface IdeasScreenDeps {
@@ -130,7 +133,28 @@ export function createIdeasScreen(els: IdeasScreenEls, deps: IdeasScreenDeps): I
     return span;
   }
 
+  /** Re-pull and render the per-player currency — the count of ideas this player
+   * has voted on. Logged out there is no per-player footprint, so the counter is
+   * hidden. Derived server-side, no stored counter. */
+  async function refreshCurrency(): Promise<void> {
+    if (!loggedIn) {
+      els.currency.hidden = true;
+      return;
+    }
+    const res = await deps.ideas.currency();
+    if (!res.ok) {
+      // A currency read failing is not worth a player-facing error — the table
+      // still works; just leave the counter hidden until the next refresh.
+      els.currency.hidden = true;
+      return;
+    }
+    const n = res.value;
+    els.currency.hidden = false;
+    els.currency.textContent = `You've voted on ${n} idea${n === 1 ? "" : "s"}.`;
+  }
+
   async function refresh(): Promise<void> {
+    await refreshCurrency();
     const res = await deps.ideas.list();
     if (!res.ok) {
       els.list.textContent = "";
