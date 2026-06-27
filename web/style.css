@@ -181,7 +181,8 @@ button:disabled:hover {
 #board {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  /* B·Arena chamfer (#085 slice 5) — the cut-corner HUD frame the shop wears. */
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
   padding: 0.75rem;
   display: grid;
   /* Symmetric side tracks → the centre track is mathematically centred in the
@@ -236,7 +237,14 @@ button:disabled:hover {
 
 .side-tag {
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
+  font-family: var(--font-title);
+  font-weight: 600;
+  /* B·Arena side header (#085 slice 5): a short accent rail under the side tag,
+     coloured by side — cyan you (A) vs magenta ghost (B). */
+  border-bottom: 2px solid currentColor;
+  padding-bottom: 0.15rem;
+  align-self: flex-start;
 }
 
 /* Side tints — the same hues the log uses for unit names. */
@@ -294,6 +302,28 @@ button:disabled:hover {
   filter: saturate(0.6);
 }
 
+/* B·Arena board cards (#085 slice 5): sharp cut corners (not clip-path — the
+   front tag + beat-overlay badges must stay un-clipped above/around the card),
+   and the FRONT striker wears its side's signature ring so the duel reads at a
+   glance — cyan you (A), magenta ghost (B). Side A's front already rings cyan
+   via .unit.front; Side B's front is re-tinted magenta here. */
+.side .unit {
+  border-radius: 3px;
+}
+
+.side[data-side="B"] .unit.front {
+  border-color: var(--side-b);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.35),
+    0 0 10px rgba(255, 61, 127, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.side[data-side="B"] .front-tag {
+  color: var(--bg);
+  background: var(--side-b);
+}
+
 .wiped {
   color: var(--dim);
   font-size: 0.75rem;
@@ -347,19 +377,24 @@ button:disabled:hover {
 .beat-card {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  /* B·Arena chamfer + a cyan top edge (#085 slice 5): the focal beat card reads
+     as the stage's live HUD between the two flanking strikers. */
+  border-top: 2px solid var(--you);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
   padding: 0.5rem 0.7rem;
   font-size: 0.75rem;
   width: 100%;
   max-width: 22rem;
   min-width: 0;
   margin: 0 auto;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 18px rgba(37, 230, 212, 0.08);
 }
 
 .bc-title {
   font-weight: 600;
   color: var(--text);
+  font-family: var(--font-title); /* B·Arena title face on the beat headline (#085 slice 5) */
+  letter-spacing: 0.02em;
   margin-bottom: 0.35rem;
   padding-bottom: 0.3rem;
   border-bottom: 1px solid var(--border);
@@ -959,7 +994,31 @@ button:disabled:hover {
 #transport button,
 #transport select {
   font-size: 0.75rem;
-  padding: 0.25rem 0.6rem;
+  padding: 0.3rem 0.7rem;
+  /* B·Arena transport (#085 slice 5): chamfered chips in the title face. */
+  font-family: var(--font-title);
+  letter-spacing: 0.03em;
+  background: rgba(255, 255, 255, 0.02);
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+}
+
+#transport button:hover:not(:disabled) {
+  border-color: var(--you);
+  color: var(--you);
+  box-shadow: 0 0 12px rgba(37, 230, 212, 0.18);
+}
+
+/* Play/pause is the transport's primary action — a neon cyan fill. */
+#step-play {
+  color: var(--bg);
+  background: var(--you);
+  border-color: var(--you);
+  font-weight: 600;
+}
+
+#step-play:hover:not(:disabled) {
+  color: var(--bg);
+  box-shadow: 0 0 16px rgba(37, 230, 212, 0.4);
 }
 
 #step-play {
@@ -989,7 +1048,8 @@ button:disabled:hover {
 #event-panel {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-left: 2px solid var(--border); /* the cause-trace rail (#085 slice 5) */
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
   padding: 0.6rem 0.8rem;
   margin-top: 0.6rem;
   font-size: 0.75rem;
@@ -1105,6 +1165,13 @@ button:disabled:hover {
   height: 26rem; /* fixed from event 0 — the log scrolls itself, never grows the page (LS-2); taller in the right column */
   margin-top: 0.3rem;
   font-size: 0.72rem;
+  /* B·Arena log rail (#085 slice 5): a bordered panel with a left accent rail,
+     so the running log reads as the replay's transcript column. */
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 2px solid color-mix(in srgb, var(--you) 45%, var(--border));
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+  padding: 0.3rem 0.2rem;
 }
 
 .log-line {
@@ -1121,8 +1188,8 @@ button:disabled:hover {
 }
 
 .log-line.cur {
-  background: var(--bg);
-  outline: 1px solid var(--border);
+  background: rgba(37, 230, 212, 0.08);
+  outline: 1px solid color-mix(in srgb, var(--you) 55%, transparent);
 }
 
 .log-ico {
