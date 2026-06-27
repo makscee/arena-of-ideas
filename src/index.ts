@@ -66,6 +66,10 @@ export type { SeasonSummary } from "./season-history.js";
 // IdeasData shape that round-trips. The web's localStorage backing builds on it.
 export { InMemoryIdeaStore, PersistedIdeaStore, emptyIdeasData, parseIdeasData, assertSubmittableText, castVote, voteScore, votedCount, rankIdeas } from "./ideas.js";
 export type { IdeaStore, IdeasData, Idea, VoteDir, VoteMap } from "./ideas.js";
+// The season selection rule (#083) — a pure partition of the ideas table into
+// the build slate and the carry-over, read off #082's directional vote data.
+export { isEligible, selectSeason, tallyOf, talliesOf, DEFAULT_SELECTION_TUNABLES } from "./selection.js";
+export type { IdeaTally, RankedIdea, SelectionResult, SelectionTunables } from "./selection.js";
 export * from "./tunables.js";
 export { sweep, sweepSeeds, sweepOutcome, summarizeSweep, winRate } from "./sweep.js";
 export type { SweepInput, SweepOutcome, SweepStats, SweepResult } from "./sweep.js";

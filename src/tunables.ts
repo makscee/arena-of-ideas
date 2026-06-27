@@ -244,6 +244,25 @@ export const GATE_MATCHUP_FLOOR = 0.25;
  * stable across the band edges without making a hand-run slow. */
 export const GATE_SEEDS = 50;
 
+/** Season-selection: the engagement FLOOR (PRD #083). An idea is eligible to
+ * build only once it has cleared this many TOTAL votes (up + down both count).
+ * The floor kills "100% approval on a single vote" noise: one enthusiastic vote
+ * is not a mandate. v1 default 5. A sim-tunable knob, not a design pin — raise
+ * it as the player base grows so the bar tracks real engagement. */
+export const SELECTION_VOTE_FLOOR = 5;
+
+/** Season-selection: the APPROVAL ratio (PRD #083). An idea past the floor is
+ * eligible only if its positive ratio (up / total) is at least this. The ratio
+ * kills the divisive 52/48 that the floor alone would pass: a build is content
+ * most voters wanted, not a coin-flip. v1 default 0.6. A knob. */
+export const SELECTION_APPROVAL_RATIO = 0.6;
+
+/** Season-selection: the BUILD capacity (PRD #083) — how many of the top-ranked
+ * eligible ideas are marked selected/building at a roll. Roughly Maks's weekly
+ * build budget: the slate he ships top-down as far as the week allows; the rest
+ * carry over with their votes. v1 default 3. A knob. */
+export const SELECTION_BUILD_CAPACITY = 3;
+
 /** Base hp gained per level-up. */
 export const LEVEL_HP_GROWTH = 2;
 
