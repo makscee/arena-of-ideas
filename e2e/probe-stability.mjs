@@ -129,15 +129,21 @@ await lineGrowth(PHONE, "375px");
 await lineGrowth(DESKTOP, "desktop");
 
 // --- slice-3 close: the reserve recomputes ONLY at a phase render ----------
-// Poor gold (one row reachable): mid-phase actions hold the small reserve —
-// no burning rows gold cannot fill — and the next round's income grows it at
-// the continue → shop render, where scroll has just reset to the top.
+// Poor gold (only the reachable units reserved): mid-phase actions hold the small
+// reserve — no burning rows gold cannot fill — and the next round's income grows
+// it at the continue → shop render, where scroll has just reset to the top.
+// #080: the compact "Your line" card is 212px wide, so at 375px the line STACKS
+// one card per row (two 212px cards can't share a 375px row). poorGoldRun's two
+// reachable units (team 2 + ⌊2/3⌋ buys) therefore reserve TWO stacked rows — the
+// reserve is the reachable count, NOT the full five-unit team (which would burn
+// rows gold can't fill). Assert it stays under three rows: the reachable two,
+// not the team max.
 {
   const { ctx, page } = await openRun(browser, poorGoldRun(), PHONE);
   const y0 = await fightY(page);
   const m0 = await lineMinH(page);
   const oneRow = (await box(page, '[data-line="0"]')).height;
-  check(parseFloat(m0) < oneRow * 2, "375px poor gold reserves only the reachable row", `minH ${m0}, card ${oneRow}px`);
+  check(parseFloat(m0) < oneRow * 3, "375px poor gold reserves only the reachable rows, not the team max", `minH ${m0}, card ${oneRow}px`);
   await page.click("#run-reroll"); // spends gold; the captured count holds
   await page.waitForFunction(() => document.querySelector("#run-head .run-gold").textContent !== "2 gold");
   check((await lineMinH(page)) === m0, "375px line reserve held across reroll", `${m0} → ${await lineMinH(page)}`);

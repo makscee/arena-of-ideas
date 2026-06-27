@@ -7,8 +7,11 @@ import { readFileSync, readdirSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import { describe, expect, test } from "vitest";
-import { stressRegistry } from "../src/index.js";
-import { shapeSvg, unitCardHtml } from "./unit-card.js";
+import { FAMILY_HEX, stressRegistry } from "../src/index.js";
+import type { Family } from "../src/index.js";
+import { nameFamily, shapeSvg, unitCardHtml } from "./unit-card.js";
+
+const FAMILIES: Family[] = ["Poison", "Strike", "Shield", "Summon", "Arcane", "Control", "Heal"];
 
 describe("unitCardHtml", () => {
   const card = unitCardHtml({
@@ -85,6 +88,150 @@ describe("unitCardHtml", () => {
     expect(shapeSvg("Brawler", false)).not.toBe(shapeSvg("Squire", false));
     expect(shapeSvg("Brawler", false)).toContain('<svg class="shape"');
     expect(shapeSvg("Brawler", false)).not.toMatch(/<image|url\(/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// B·Arena card (PRD #080): family + variant. The opt-in path — a call that
+// names a variant/family/colour gets the chamfered, family-coloured card while
+// keeping the card-contract anchors (.unit/.uname/.unums .hp/.pwr/.chips).
+// ---------------------------------------------------------------------------
+describe("B·Arena card (#080): family + full variant", () => {
+  const base = {
+    artName: "Venomancer",
+    label: "Venomancer",
+    hp: 6,
+    pwr: 1,
+    registry: stressRegistry,
+    attrs: 'data-offer="0"',
+    title: "Venomancer",
+  } as const;
+
+  test("opt-in: passing `family` switches to the B·Arena card; legacy stays default", () => {
+    const legacy = unitCardHtml({ ...base });
+    expect(legacy).not.toContain("unit-b");
+    expect(legacy).toContain('<svg class="shape"'); // legacy generative art
+    const b = unitCardHtml({ ...base, family: "Poison" });
+    expect(b).toContain("unit-b");
+    expect(b).toContain("is-full"); // variant defaults to full once opted in
+  });
+
+  test("full card carries header (name + ABILITY cap), art area, ability line, badge", () => {
+    const card = unitCardHtml({
+      ...base,
+      family: "Poison",
+      abilityLabel: "Toxic Strike",
+      trigger: "On strike",
+      target: "Front enemy",
+      action: "Poison 2",
+      statuses: [{ status: "Poison", stacks: 2 }],
+    });
+    expect(card).toContain('class="ub-head"');
+    expect(card).toContain('class="ub-cap-t">TOXIC STRIKE</span>'); // cap-label uppercased
+    expect(card).toContain('class="ub-art"'); // the 84px art area (full only)
+    expect(card).toContain('class="ub-ability"');
+    expect(card).toContain("On strike");
+    expect(card).toContain("Front enemy");
+    expect(card).toContain("Poison 2");
+  });
+
+  test("contract anchors survive: .unit, .uname, .unums with .hp/.pwr, .chips", () => {
+    const card = unitCardHtml({ ...base, family: "Poison", statuses: [{ status: "Poison", stacks: 2 }] });
+    expect(card).toMatch(/class="unit unit-b/);
+    expect(card).toContain('class="uname">Venomancer</span>');
+    expect(card).toContain('class="unums"');
+    expect(card).toContain('<span class="hp">6</span>');
+    expect(card).toContain('<span class="pwr">1</span>');
+    expect(card).toContain('class="chips"');
+  });
+
+  test("each of the 7 families colours the border + sigil from its one hex", () => {
+    for (const fam of FAMILIES) {
+      const card = unitCardHtml({ ...base, family: fam });
+      const hex = FAMILY_HEX[fam];
+      expect(card, `${fam} sets --fam`).toContain(`style="--fam:${hex}"`);
+      expect(card, `${fam} tags the family class`).toContain(`fam-${fam.toLowerCase()}`);
+      // the sigil draws in the family hex (border + glyph both derive from --fam
+      // in CSS; the glyph fill carries the literal hex in markup)
+      expect(card, `${fam} sigil uses its hex`).toContain(`fill="${hex}"`);
+    }
+  });
+
+  test("explicit `color` overrides the family hex on --fam", () => {
+    const card = unitCardHtml({ ...base, family: "Poison", color: "#abcdef" });
+    expect(card).toContain('style="--fam:#abcdef"');
+  });
+
+  test("degrades when `family` is absent: name→family fallback still colours the card", () => {
+    // `color` alone opts in but names no family — the sigil/family class come
+    // from nameFamily(artName), so the card renders coloured pre-081.
+    const card = unitCardHtml({ ...base, variant: "full" });
+    const fam = nameFamily("Venomancer");
+    expect(fam).toBe("Poison"); // keyword heuristic
+    expect(card).toContain(`fam-${fam.toLowerCase()}`);
+    expect(card).toContain(`style="--fam:${FAMILY_HEX[fam]}"`);
+    // every name lands on SOME family (hash fallback) — never uncoloured
+    expect(FAMILIES).toContain(nameFamily("Zzx Nonsense Name"));
+  });
+
+  test("label and title still escaped on the B·Arena card", () => {
+    const card = unitCardHtml({ ...base, family: "Poison", label: '<b>"x"</b>', title: '<t>"q"' });
+    expect(card).not.toContain("<b>");
+    expect(card).toContain("&lt;b&gt;");
+    expect(card).toContain("&lt;t&gt;");
+  });
+});
+
+describe("B·Arena card (#080): compact variant", () => {
+  const base = {
+    artName: "Venomancer",
+    label: "Venomancer",
+    hp: 6,
+    pwr: 1,
+    registry: stressRegistry,
+    family: "Poison" as Family,
+    abilityLabel: "Toxic Strike",
+    trigger: "Front",
+    action: "2",
+    statuses: [{ status: "Poison", stacks: 2 }],
+    attrs: 'data-line="0"',
+    title: "Venomancer",
+  };
+
+  test("compact drops the art area and rides a mini sigil in the header", () => {
+    const compact = unitCardHtml({ ...base, variant: "compact" });
+    expect(compact).toContain("is-compact");
+    expect(compact).not.toContain('class="ub-art"'); // no full art block
+    expect(compact).toContain('class="ub-mini"'); // sigil moves into the header
+    expect(compact).toContain("ub-sigil-mini");
+  });
+
+  test("compact vs full diverge: full has the art area, compact has the header sigil", () => {
+    const full = unitCardHtml({ ...base, variant: "full" });
+    const compact = unitCardHtml({ ...base, variant: "compact" });
+    expect(full).toContain('class="ub-art"');
+    expect(full).not.toContain('class="ub-mini"');
+    expect(compact).not.toContain('class="ub-art"');
+    expect(compact).toContain('class="ub-mini"');
+    // narrower chamfer is the CSS hook `is-compact` (9px) vs `is-full` (12px)
+    expect(full).toContain("is-full");
+    expect(compact).toContain("is-compact");
+  });
+
+  test("compact still carries family colour + the card contract anchors", () => {
+    const compact = unitCardHtml({ ...base, variant: "compact" });
+    expect(compact).toContain('style="--fam:#a06bff"');
+    expect(compact).toContain("fam-poison");
+    expect(compact).toContain('class="uname">Venomancer</span>');
+    expect(compact).toContain('<span class="hp">6</span>');
+    expect(compact).toContain('<span class="pwr">1</span>');
+    expect(compact).toContain('class="chips"');
+    expect(compact).toContain('fill="#a06bff"'); // sigil colour
+  });
+
+  test("compact keeps the level badge + fusion pips for the line card", () => {
+    const compact = unitCardHtml({ ...base, variant: "compact", level: 2, pips: "●●○" });
+    expect(compact).toMatch(/class="run-lvl">L2 <span class="run-pips">●●○<\/span>/);
   });
 });
 

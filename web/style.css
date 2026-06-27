@@ -1,19 +1,59 @@
-/* Plain, dark, monospace. The UI is a disposable renderer over the event log. */
+/* B·Arena visual foundation (PRD #080). Dark arena bg, family-coloured cards,
+   chamfered cut-corners, neon glow on primary actions. Fonts are SELF-HOSTED
+   (web/public/fonts/*.woff2) — no runtime CDN. Chakra Petch = titles, Rajdhani
+   = body/stats, IBM Plex Mono = numerals only. */
+
+/* ---- vendored fonts (no external request at runtime) ---- */
+@font-face { font-family: "Chakra Petch"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/chakra-petch-400.woff2") format("woff2"); }
+@font-face { font-family: "Chakra Petch"; font-style: normal; font-weight: 500; font-display: swap; src: url("/fonts/chakra-petch-500.woff2") format("woff2"); }
+@font-face { font-family: "Chakra Petch"; font-style: normal; font-weight: 600; font-display: swap; src: url("/fonts/chakra-petch-600.woff2") format("woff2"); }
+@font-face { font-family: "Chakra Petch"; font-style: normal; font-weight: 700; font-display: swap; src: url("/fonts/chakra-petch-700.woff2") format("woff2"); }
+@font-face { font-family: "Rajdhani"; font-style: normal; font-weight: 500; font-display: swap; src: url("/fonts/rajdhani-500.woff2") format("woff2"); }
+@font-face { font-family: "Rajdhani"; font-style: normal; font-weight: 600; font-display: swap; src: url("/fonts/rajdhani-600.woff2") format("woff2"); }
+@font-face { font-family: "Rajdhani"; font-style: normal; font-weight: 700; font-display: swap; src: url("/fonts/rajdhani-700.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/ibm-plex-mono-400.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 500; font-display: swap; src: url("/fonts/ibm-plex-mono-500.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 600; font-display: swap; src: url("/fonts/ibm-plex-mono-600.woff2") format("woff2"); }
 
 :root {
-  --bg: #14161a;
-  --panel: #1d2026;
-  --text: #d6d9de;
-  --dim: #8b919b;
-  --accent: #6fc28a;
-  --warn: #e0876f;
-  --border: #2c3038;
-  /* battle-log palette — one colour per event family, kept small on purpose */
-  --side-a: #7da7e0;
-  --side-b: #e0a36f;
-  --hurt: #e06c75;
-  --status: #b48ad6;
-  --block: #d6c46f;
+  /* ---- B·Arena palette (PRD #080; hexes pinned by the mockup + [[v1-goal]]) ---- */
+  --bg: #07080c;
+  --panel: linear-gradient(165deg, #11141d, #0a0c12);
+  --border: #1d2230;
+  --border-soft: #161b27;
+  --you: #25e6d4; /* your side / primary accent */
+  --ghost: #ff3d7f; /* enemy / ghost runs */
+  --hp: #25e6d4; /* HP numerals — cyan */
+  --pwr: #ff5470; /* PWR numerals — red */
+  --gold: #ffd24a;
+  --text: #eaf2ff;
+  --muted: #9fb0c9;
+  --dim: #7c8aa3;
+  /* family colour axis — the 7 ability families (mockup swatches; mirrors the
+     kernel's tunables FAMILY_HEX so CSS and data agree). */
+  --fam-poison: #a06bff;
+  --fam-strike: #ff7a4d;
+  --fam-shield: #4d9bff;
+  --fam-summon: #25e6d4;
+  --fam-arcane: #e056fd;
+  --fam-control: #6b8cff;
+  --fam-heal: #33d98a;
+  /* geometry + depth */
+  --r: 3px;
+  --shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  --glow: 0 0 22px rgba(37, 230, 212, 0.4);
+  /* font stacks */
+  --font-title: "Chakra Petch", system-ui, sans-serif;
+  --font-body: "Rajdhani", system-ui, "Segoe UI", sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  /* battle-log palette — re-pointed onto the B·Arena identity, not orphaned:
+     side A = you-cyan, side B = ghost-magenta, hurt = pwr-red, status = a soft
+     arcane lilac, block = gold. */
+  --side-a: #25e6d4;
+  --side-b: #ff3d7f;
+  --hurt: #ff5470;
+  --status: #c9b5ff;
+  --block: #ffd24a;
   /* The one card size (#078) — the single source of truth for how wide a card
      is as a catalog/roster item: shop, line, ladder, and the codex (Unit AND
      Status, same size). The card size IS the complexity budget, so it lives in
@@ -33,7 +73,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-family: var(--font-body);
   line-height: 1.5;
 }
 
@@ -44,6 +84,9 @@ main {
 }
 
 h1 {
+  font-family: var(--font-title);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
   font-size: 1.4rem;
   margin: 0 0 0.25rem;
 }
@@ -76,7 +119,7 @@ button {
 #run-error {
   flex-basis: 100%;
   margin: 0;
-  color: var(--warn);
+  color: var(--pwr);
   font-size: 0.8rem;
 }
 
@@ -90,7 +133,7 @@ button {
 }
 
 button:hover {
-  border-color: var(--accent);
+  border-color: var(--you);
 }
 
 button:disabled {
@@ -350,8 +393,8 @@ button:disabled:hover {
 /* The line whose cause the readout is tracing — a faint accent rail and tint
    tie the readout's subject back to the card it came from. */
 .bc-line-sel {
-  box-shadow: inset 2px 0 0 var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  box-shadow: inset 2px 0 0 var(--you);
+  background: color-mix(in srgb, var(--you) 8%, transparent);
   border-radius: 2px;
 }
 
@@ -394,7 +437,7 @@ button:disabled:hover {
 }
 
 .bc-heal {
-  color: var(--accent);
+  color: var(--you);
 }
 
 .bc-death {
@@ -403,7 +446,7 @@ button:disabled:hover {
 }
 
 .bc-summon {
-  color: var(--accent);
+  color: var(--you);
 }
 
 .bc-status {
@@ -419,7 +462,7 @@ button:disabled:hover {
 }
 
 .verdict {
-  color: var(--accent);
+  color: var(--you);
 }
 
 .verdict.dim {
@@ -464,10 +507,10 @@ button:disabled:hover {
 }
 
 .unit.front {
-  border-color: var(--accent);
+  border-color: var(--you);
   box-shadow:
     0 2px 6px rgba(0, 0, 0, 0.35),
-    0 0 10px rgba(111, 194, 138, 0.12),
+    0 0 10px rgba(37, 230, 212, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
@@ -483,7 +526,7 @@ button:disabled:hover {
   transform: translateX(-50%);
   font-size: 0.55rem;
   color: var(--bg);
-  background: var(--accent);
+  background: var(--you);
   border-radius: 3px;
   padding: 0 0.25rem;
   text-transform: uppercase;
@@ -820,11 +863,19 @@ button:disabled:hover {
   padding: 0 0.25rem;
   line-height: 1.4;
   white-space: nowrap;
+  font-family: var(--font-num); /* numerals in Mono (#080) */
+  font-weight: 500;
+}
+
+/* the unit labels riding after the number stay in the body face, not Mono */
+.unums .hp::after,
+.unums .pwr::after {
+  font-family: var(--font-body);
 }
 
 .unums .hp {
-  color: var(--accent);
-  border-color: rgba(111, 194, 138, 0.35);
+  color: var(--you);
+  border-color: rgba(37, 230, 212, 0.35);
 }
 
 .unums .hp::after {
@@ -833,8 +884,8 @@ button:disabled:hover {
 }
 
 .unums .pwr {
-  color: var(--warn);
-  border-color: rgba(224, 135, 111, 0.35);
+  color: var(--pwr);
+  border-color: rgba(255, 84, 112, 0.35);
 }
 
 .unums .pwr::after {
@@ -862,7 +913,7 @@ button:disabled:hover {
 }
 
 .chip.mute {
-  color: var(--warn);
+  color: var(--pwr);
 }
 
 /* The grave continues the team column below the line (#065 redesign): dead
@@ -925,7 +976,7 @@ button:disabled:hover {
   width: 100%;
   margin: 0.5rem 0 0;
   padding: 0;
-  accent-color: var(--accent);
+  accent-color: var(--you);
 }
 
 /* Reserved readout strip: the cause trace swaps per event and wraps to a
@@ -969,7 +1020,7 @@ button:disabled:hover {
 }
 
 #event-cause .k {
-  color: var(--accent);
+  color: var(--you);
   text-transform: uppercase;
   font-size: 0.6rem;
   letter-spacing: 0.06em;
@@ -1042,7 +1093,7 @@ button:disabled:hover {
 }
 
 .pane-k {
-  color: var(--accent);
+  color: var(--you);
   text-transform: uppercase;
   font-size: 0.6rem;
   letter-spacing: 0.06em;
@@ -1097,7 +1148,7 @@ button:disabled:hover {
 
 .ev-mark .log-ico,
 .ev-mark .log-text {
-  color: var(--accent);
+  color: var(--you);
 }
 
 .ev-hurt .log-ico,
@@ -1111,7 +1162,7 @@ button:disabled:hover {
 
 .ev-heal .log-ico,
 .ev-summon .log-ico {
-  color: var(--accent);
+  color: var(--you);
 }
 
 .ev-status .log-ico {
@@ -1123,7 +1174,7 @@ button:disabled:hover {
 }
 
 .ev-warn .log-ico {
-  color: var(--warn);
+  color: var(--pwr);
 }
 
 .u.ua {
@@ -1283,7 +1334,7 @@ button:disabled:hover {
    the same. The accent hue distinguishes "opens the codex" from "reveals here"
    (the status ref's --status hue). */
 .ins-partref {
-  color: var(--accent);
+  color: var(--you);
 }
 .ins-partref:hover {
   color: var(--text);
@@ -1320,7 +1371,7 @@ button:disabled:hover {
 }
 
 .ins-k {
-  color: var(--accent);
+  color: var(--you);
   text-transform: uppercase;
   font-size: 0.6rem;
   letter-spacing: 0.06em;
@@ -1355,7 +1406,7 @@ button:disabled:hover {
 }
 
 .ins-warn {
-  color: var(--warn);
+  color: var(--pwr);
 }
 
 .ins-dim {
@@ -1396,7 +1447,7 @@ button:disabled:hover {
 }
 
 #home-button:hover {
-  color: var(--accent);
+  color: var(--you);
   border: none;
 }
 
@@ -1455,8 +1506,8 @@ button:disabled:hover {
 
 .title-primary {
   color: var(--bg);
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--you);
+  border-color: var(--you);
   font-weight: 600;
 }
 
@@ -1771,7 +1822,7 @@ button:disabled:hover {
 /* The per-player vote-currency counter — a participation footprint, display-only
    (no sink in v1). Sits above the list when logged in. */
 .ideas-currency {
-  color: var(--accent);
+  color: var(--you);
   font-size: 0.85rem;
   font-weight: 600;
   margin: 0 0 0.8rem;
@@ -1840,8 +1891,8 @@ button:disabled:hover {
 
 /* The held direction reads as accent — the switch's "you voted this way" state. */
 .ideas-vote-arrow.ideas-voted {
-  color: var(--accent);
-  border-color: var(--accent);
+  color: var(--you);
+  border-color: var(--you);
 }
 
 .ideas-text {
@@ -1960,8 +2011,8 @@ button:disabled:hover {
 }
 
 .history-floor-champ {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--you);
+  color: var(--you);
 }
 
 /* ---------- battle editor (#066 slice 2) ----------
@@ -2171,7 +2222,7 @@ button:disabled:hover {
 #be-error {
   flex-basis: 100%;
   margin: 0;
-  color: var(--warn);
+  color: var(--pwr);
   font-size: 0.8rem;
 }
 
@@ -2277,7 +2328,7 @@ button:disabled:hover {
 }
 
 .run-warn {
-  color: var(--warn);
+  color: var(--pwr);
   font-size: 0.8rem;
   margin: 0 0 0.75rem;
   overflow-wrap: anywhere;
@@ -2287,14 +2338,14 @@ button:disabled:hover {
 #run-fight,
 #run-continue {
   color: var(--bg);
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--you);
+  border-color: var(--you);
   font-weight: 600;
 }
 
 #run-new-error {
   margin: 0.5rem 0 0;
-  color: var(--warn);
+  color: var(--pwr);
   font-size: 0.8rem;
 }
 
@@ -2304,7 +2355,7 @@ button:disabled:hover {
 #run-error {
   min-height: 1.4rem; /* one line of 0.8rem text + breathing room */
   margin: 0.5rem 0 0;
-  color: var(--warn);
+  color: var(--pwr);
   font-size: 0.8rem;
   overflow: hidden;
 }
@@ -2322,7 +2373,8 @@ button:disabled:hover {
 }
 
 #run-head .run-gold {
-  color: var(--block);
+  color: var(--gold);
+  font-family: var(--font-num); /* gold count is a numeral (#080) */
 }
 
 #run-head .run-income {
@@ -2367,9 +2419,9 @@ button:disabled:hover {
 /* Level badge — a real pill on the card; fusion pips ride inside it. */
 .run-lvl {
   font-size: 0.55rem;
-  color: var(--accent);
-  background: rgba(111, 194, 138, 0.1);
-  border: 1px solid rgba(111, 194, 138, 0.4);
+  color: var(--you);
+  background: rgba(37, 230, 212, 0.1);
+  border: 1px solid rgba(37, 230, 212, 0.4);
   border-radius: 999px;
   padding: 0 0.35rem;
   line-height: 1.5;
@@ -2379,7 +2431,7 @@ button:disabled:hover {
 /* Fusion pips (IA-6): ● per copy held, ○ per copy missing — the level badge
    carries progress at a glance, the card title carries the words. */
 .run-pips {
-  color: var(--accent);
+  color: var(--you);
   letter-spacing: 0.1em;
 }
 
@@ -2388,15 +2440,15 @@ button:disabled:hover {
    the persistent state; this is just the dopamine. */
 @keyframes fuse-flash {
   0% {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--you);
     outline-offset: 1px;
-    box-shadow: 0 0 16px rgba(111, 194, 138, 0.75);
+    box-shadow: 0 0 16px rgba(37, 230, 212, 0.75);
   }
 
   100% {
     outline: 2px solid transparent;
     outline-offset: 1px;
-    box-shadow: 0 0 0 rgba(111, 194, 138, 0);
+    box-shadow: 0 0 0 rgba(37, 230, 212, 0);
   }
 }
 
@@ -2519,7 +2571,7 @@ button:disabled:hover {
 }
 
 .run-notice:not(:empty) {
-  color: var(--accent);
+  color: var(--you);
 }
 
 /* ---------- boss challenge (#075 slice 4) ----------
@@ -2641,7 +2693,7 @@ button:disabled:hover {
 }
 
 .end-mark.w {
-  color: var(--accent);
+  color: var(--you);
   border-color: currentColor;
 }
 
@@ -2694,7 +2746,7 @@ button:disabled:hover {
 }
 
 .lv-round.here {
-  border-color: var(--accent);
+  border-color: var(--you);
 }
 
 .lv-round-head {
@@ -2716,7 +2768,7 @@ button:disabled:hover {
 
 .lv-here {
   margin-left: auto;
-  color: var(--accent);
+  color: var(--you);
   font-size: 0.7rem;
 }
 
@@ -2742,7 +2794,7 @@ button:disabled:hover {
 
 /* The player's own ghost, marked — reads at a glance among rivals. */
 .lv-you {
-  color: var(--accent);
+  color: var(--you);
   font-weight: 600;
 }
 
@@ -2885,7 +2937,7 @@ button.danger {
   cursor: pointer;
 }
 .codex-termref:hover {
-  color: var(--accent);
+  color: var(--you);
 }
 
 /* Each card's deep-link anchor: a real ≥44px target — it has no adjacent
@@ -2908,16 +2960,16 @@ button.danger {
 }
 
 .codex-anchor:hover {
-  color: var(--accent);
+  color: var(--you);
 }
 
 @keyframes codex-flash {
-  0% { outline-color: var(--accent); }
+  0% { outline-color: var(--you); }
   100% { outline-color: transparent; }
 }
 
 .codex-highlight {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--you);
   outline-offset: 2px;
   animation: codex-flash 1.8s ease-out forwards;
 }
@@ -3258,4 +3310,352 @@ button.danger {
   .run-move button:disabled {
     pointer-events: none;
   }
+}
+
+/* ===================================================================== *
+ * B·Arena card (PRD #080) — the two-variant, family-coloured unit card.
+ * Opt-in via `variant`/`family` on unitCardHtml; legacy `.unit` is untouched.
+ * Colour rides the inline `--fam` custom property (the ability family hex), so
+ * border, glow, sigil tint and accents all derive from one value. Chamfered
+ * cut-corners via clip-path; the family glow follows the chamfer (drop-shadow
+ * on the clipped box, not box-shadow which the clip would crop).
+ * ===================================================================== */
+.unit.unit-b {
+  --fam: var(--fam-strike); /* overridden inline per card */
+  width: 212px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  text-align: left;
+  color: var(--text);
+  font-family: var(--font-body);
+  background: linear-gradient(165deg, color-mix(in srgb, var(--fam) 12%, #0b0d16), #07080c);
+  border: 1px solid color-mix(in srgb, var(--fam) 50%, transparent);
+  border-radius: var(--r);
+  box-shadow: none;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  filter: drop-shadow(0 0 11px color-mix(in srgb, var(--fam) 22%, transparent));
+}
+.unit.unit-b.is-compact {
+  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+}
+.unit.unit-b:hover {
+  border-color: color-mix(in srgb, var(--fam) 75%, transparent);
+}
+.unit.unit-b.is-front {
+  border-color: color-mix(in srgb, var(--fam) 90%, transparent);
+  filter: drop-shadow(0 0 16px color-mix(in srgb, var(--fam) 34%, transparent));
+}
+.unit.unit-b.sel {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}
+
+/* header: name + ability cap-label on the left, HP·PWR on the right */
+.unit-b .ub-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 12px 0;
+}
+.unit-b.is-compact .ub-head {
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+}
+.unit-b .ub-id {
+  min-width: 0;
+}
+.unit-b .uname {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.unit-b.is-compact .uname {
+  font-size: 13px;
+  line-height: 1;
+}
+.unit-b .ub-cap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  color: color-mix(in srgb, var(--fam) 50%, #eaf2ff);
+}
+.unit-b.is-compact .ub-cap {
+  margin-top: 2px;
+}
+.unit-b .ub-spark {
+  display: block;
+  flex: none;
+}
+.unit-b .ub-cap-t {
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+.unit-b.is-compact .ub-cap-t {
+  font-size: 8px;
+  letter-spacing: 0.06em;
+}
+
+/* HP·PWR — numerals in Mono, HP cyan / PWR red (mockup) */
+.unit-b .unums {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-num);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1;
+}
+.unit-b.is-compact .unums {
+  font-size: 13px;
+}
+.unit-b .unums .hp,
+.unit-b .unums .pwr {
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  font-family: var(--font-num);
+  white-space: nowrap;
+}
+.unit-b .unums .hp {
+  color: var(--hp);
+}
+.unit-b .unums .pwr {
+  color: var(--pwr);
+}
+.unit-b .unums .hp::after,
+.unit-b .unums .pwr::after {
+  content: none;
+}
+.unit-b .ub-sep {
+  color: #2c3344;
+}
+
+/* art area (full only) — family-tinted radial + the animated sigil */
+.unit-b .ub-art {
+  margin: 8px 12px;
+  height: 84px;
+  border-radius: var(--r);
+  border: 1px solid color-mix(in srgb, var(--fam) 22%, transparent);
+  background: radial-gradient(120% 120% at 50% 30%, color-mix(in srgb, var(--fam) 16%, transparent), transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.unit-b .ub-art .ub-sigil {
+  width: 66px;
+  height: 66px;
+  display: block;
+}
+.unit-b .ub-mini {
+  width: 32px;
+  height: 32px;
+  flex: none;
+}
+.unit-b .ub-mini .ub-sigil {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ability line: ⚔ trigger ▸ target ▸ ◈ action */
+/* The ability line is a FIXED-height block (content-independent) so every card
+   of a variant is the SAME height — the shop/line min-height reserve then holds
+   to the pixel across buy/reroll/fuse (probe-stability). Long lines clip; the
+   full text always rides the inspector. */
+.unit-b .ub-ability {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 5px 6px;
+  margin: 0 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 11px;
+  line-height: 1.3;
+  box-sizing: border-box;
+  height: 62px;
+  overflow: hidden;
+}
+.unit-b.is-compact .ub-ability {
+  margin: 0 12px;
+  padding: 6px 0 0;
+  border-top: none;
+  font-size: 11px;
+  height: 28px;
+}
+.unit-b .ub-trig {
+  color: #cdd7e6;
+}
+.unit-b .ub-tgt {
+  color: var(--muted);
+}
+.unit-b.is-compact .ub-tgt {
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.unit-b .ub-act {
+  color: color-mix(in srgb, var(--fam) 55%, #eaf2ff);
+}
+.unit-b .ub-arrow {
+  color: #46506a;
+}
+
+/* status badges: a DIRECT `.chips` strip (legacy contract) — the run rows' phone
+   rules make it a full-width gapless 44px touch band; min-height reserves a row
+   so the card height is constant whether or not a unit carries statuses. The
+   ::after touch band is tuned to a 0.15rem gap, so the new card uses it too. */
+.unit-b .chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.15rem;
+  margin: 0;
+  /* NO horizontal padding: at phone the chips tile this box edge-to-edge as the
+     gapless 44px touch band — any side padding would open a dead strip there. */
+  padding: 6px 0 0;
+  min-height: 1.3rem;
+}
+/* foot: level badge + footer controls (buy / move) on their own row below */
+.unit-b .ub-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 12px;
+}
+.unit-b.is-compact .ub-foot {
+  padding: 4px 12px 10px;
+}
+.unit-b .run-lvl {
+  font-family: var(--font-num);
+  font-size: 9px;
+  color: var(--fam, var(--you));
+  background: color-mix(in srgb, var(--fam) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fam) 40%, transparent);
+  border-radius: 2px;
+  padding: 1px 5px;
+}
+
+/* sigil motion — CSS-driven so prefers-reduced-motion can drop it (#080).
+   transform-box:fill-box centres the rotation on the glyph's own box. */
+.unit-b .ub-sigil .ub-spin,
+.unit-b .ub-sigil .ub-pulse,
+.unit-b .ub-sigil .ub-glow {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+}
+.unit-b .ub-sigil .ub-spin {
+  animation: ub-spin linear infinite;
+}
+.unit-b .ub-sigil .ub-pulse {
+  animation: ub-pulse ease-in-out infinite;
+}
+.unit-b .ub-sigil .ub-glow {
+  animation: ub-glow ease-in-out infinite;
+}
+@keyframes ub-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes ub-pulse {
+  0%,
+  100% {
+    transform: scale(0.82);
+  }
+  50% {
+    transform: scale(1.18);
+  }
+}
+@keyframes ub-glow {
+  0%,
+  100% {
+    stroke-opacity: 0.35;
+  }
+  50% {
+    stroke-opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .unit-b .ub-sigil .ub-spin,
+  .unit-b .ub-sigil .ub-pulse,
+  .unit-b .ub-sigil .ub-glow {
+    animation: none;
+  }
+}
+
+/* primary actions wear the neon glow (#080): Play, start/new run, and the
+   in-card Buy on a B·Arena offer. */
+.title-primary,
+#run-start,
+#run-new-run {
+  border-color: var(--you);
+  box-shadow: var(--glow);
+}
+.title-primary:hover,
+#run-start:hover,
+#run-new-run:hover {
+  border-color: var(--text);
+  box-shadow: 0 0 28px rgba(37, 230, 212, 0.6);
+}
+
+/* the Buy button on a full offer card — a family-coloured neon chip */
+.unit-b .run-buy {
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #07080c;
+  background: var(--fam);
+  border: 1px solid var(--fam);
+  border-radius: 2px;
+  padding: 4px 10px;
+  margin: 0;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--fam) 45%, transparent);
+}
+.unit-b .run-buy:hover {
+  filter: brightness(1.12);
+  border-color: var(--text);
+}
+.unit-b .run-buy:disabled {
+  color: var(--dim);
+  background: transparent;
+  border-color: var(--border);
+  box-shadow: none;
+  filter: none;
+}
+/* compact line card move arrows — quiet, on the family frame */
+.unit-b .run-move button {
+  font-size: 11px;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+  border-radius: 2px;
 }

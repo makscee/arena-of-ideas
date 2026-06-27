@@ -21,6 +21,9 @@ import {
   battle,
   buy,
   challengeBoss,
+  describeEffect,
+  describeSelector,
+  describeWhen,
   incomeForRound,
   initRun,
   ladderFight,
@@ -30,6 +33,7 @@ import {
   shopSizeForRound,
   toBattleTeam,
   type AbilityRegistry,
+  type Family,
   type LadderStore,
   type RunEndReason,
   type RunEvent,
@@ -368,6 +372,34 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
 
   // ---------- cards (the one shared unit card, run-screen flavoured) ----------
 
+  /** The unit's colour family, derived from its ability (PRD #081); the
+   * B·Arena card takes it as an input. Absent when the ability isn't in the
+   * registry — the card then degrades to its own name→family mapping. */
+  function familyOf(def: UnitDef): Family | undefined {
+    return deps.abilities[def.ability]?.family;
+  }
+
+  /** The ability presented as the card's cap-label + `⚔ trigger ▸ target ▸
+   * ◈ action` line, from the kernel's describe helpers (the same text the
+   * inspector derives). Inert abilities (a plain attacker's `Strike`) carry no
+   * when/selector/effect, so their line is empty — only the cap-label shows. */
+  function abilityLine(def: UnitDef): {
+    abilityLabel?: string | undefined;
+    trigger?: string | undefined;
+    target?: string | undefined;
+    action?: string | undefined;
+  } {
+    const ab = deps.abilities[def.ability];
+    if (ab === undefined) return {};
+    const trigger = ab.whens[0] !== undefined ? describeWhen(ab.whens[0]) : undefined;
+    // The effect reads grammatically with its target folded in ("apply 2 Poison
+    // to the front enemy"), so we don't show the selector as a third dangling
+    // segment — `⚔ trigger ▸ ◈ effect` over the kernel's own describe text.
+    const target = ab.selectors[0] !== undefined ? describeSelector(ab.selectors[0]) : "";
+    const action = ab.effects[0] !== undefined ? describeEffect(ab.effects[0], target) : undefined;
+    return { abilityLabel: ab.name, trigger, action };
+  }
+
   function offerCard(def: UnitDef, i: number, gold: number): string {
     const sel = selected?.where === "offer" && selected.index === i;
     return unitCardHtml({
@@ -377,6 +409,9 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       pwr: def.base.pwr,
       statuses: def.statuses,
       registry: state?.statuses ?? deps.registry,
+      family: familyOf(def),
+      variant: "full",
+      ...abilityLine(def),
       sel,
       classes: "run-card",
       attrs: `data-offer="${i}"`,
@@ -403,6 +438,9 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       pwr: u.base.pwr,
       statuses: u.def.statuses,
       registry: state?.statuses ?? deps.registry,
+      family: familyOf(u.def),
+      variant: "compact",
+      ...abilityLine(u.def),
       level: u.level,
       pips: fusionPips(u.stacks),
       front: i === 0,
