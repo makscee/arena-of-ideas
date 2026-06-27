@@ -9,7 +9,7 @@ export type { RunInput, RunState, RunStatus, RunEndReason, RunUnit, RunDecision,
 // it needs node:fs and the browser client imports this module. Its engine
 // (PersistedLadderStore + the LadderData shape) is medium-free and exported
 // here — the web's localStorage backing builds on it.
-export { InMemoryLadderStore, PersistedLadderStore, openLadder, emptyLadderData, parseLadderData, BOOTSTRAP_RUN_ID } from "./ladder.js";
+export { InMemoryLadderStore, PersistedLadderStore, openEmptyLadder, seedBootstrapTower, emptyLadderData, parseLadderData, BOOTSTRAP_RUN_ID } from "./ladder.js";
 export type { LadderStore, LadderData, TeamSnapshot } from "./ladder.js";
 // The season archive — immutable, append-only history of finished seasons. Like
 // the ladder, the file backing (FileSeasonArchiveStore) lives off this index in

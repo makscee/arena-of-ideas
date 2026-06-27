@@ -18,7 +18,7 @@ import {
   initRun,
   InvalidDecisionError,
   ladderFight,
-  openLadder,
+  seedBootstrapTower,
   stressAbilities,
   stressRegistry,
   type LadderStore,
@@ -52,7 +52,7 @@ function fakeRoot(): HTMLElement {
 // challenges the boss (the fixed tower has a top — climbing PAST it overshoots,
 // 075-3), so the runs leave ghosts across the floors the accordion renders.
 function buildLadder(): LadderStore {
-  const store = openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
+  const store = seedBootstrapTower(new InMemoryLadderStore(), stressRegistry, stressAbilities);
   for (let seed = 0; seed < 2; seed++) {
     let s = initRun({ seed, runId: `run-${seed}`, pool: [{ name: "Titan", base: { hp: 100, pwr: 50 }, ability: "Strike" }], statuses: stressRegistry, abilities: stressAbilities });
     s = buy(s, 0);

@@ -19,7 +19,7 @@ import {
   initRun,
   InvalidDecisionError,
   ladderFight,
-  openLadder,
+  seedBootstrapTower,
   runToJSONL,
   stressAbilities,
   stressRegistry,
@@ -74,19 +74,19 @@ function playLadderRun(inp: RunInput, ladder: LadderStore): RunState {
 
 function freshSqlite(): SqliteLadderStore {
   const store = new SqliteLadderStore(openDb(":memory:").db);
-  openLadder(store, stressRegistry, stressAbilities);
+  seedBootstrapTower(store, stressRegistry, stressAbilities);
   return store;
 }
 
 describe("bootstrap", () => {
-  test("openLadder seeds the uniform tower; the SQLite backing keeps the champion + every boss-ghost", () => {
+  test("seedBootstrapTower seeds the uniform tower; the SQLite backing keeps the champion + every boss-ghost", () => {
     // The uniform fixed-height tower (075-3): floors 1..TOWER_HEIGHT each carry a
     // climb pool plus a boss whose team is ALSO in that floor's pool (the boss-ghost).
     // Floor TOWER_HEIGHT's boss is the champion. Nothing is seeded above the top.
     //
     // The SQLite backing stores only the champion-history head and does not (yet)
     // have a per-floor boss table — bossAt reads a seated boss only on the champion's
-    // own floor (see SqliteLadderStore.bossAt). openLadder setBoss's every floor, so
+    // own floor (see SqliteLadderStore.bossAt). seedBootstrapTower setBoss's every floor, so
     // the LAST seat (floor TOWER_HEIGHT) is the champion; every floor's per-floor boss
     // is retained as its POOL-GHOST (which DOES persist). A shared-ladder run challenges
     // the champion floor, so this loses no reachable behaviour; a per-floor boss table
@@ -113,10 +113,10 @@ describe("bootstrap", () => {
     const dir = mkdtempSync(join(tmpdir(), "arena-ladder-"));
     const path = join(dir, "arena.db");
     const store = new SqliteLadderStore(openDb(path).db);
-    openLadder(store, stressRegistry, stressAbilities);
+    seedBootstrapTower(store, stressRegistry, stressAbilities);
     playLadderRun(input(1, "titan", TITAN), store); // dethrones the bootstrap champion
     const reopened = new SqliteLadderStore(openDb(path).db);
-    openLadder(reopened, stressRegistry, stressAbilities);
+    seedBootstrapTower(reopened, stressRegistry, stressAbilities);
     // Floor 1 held its climb teams + boss-ghost; the run added its own — no reseed.
     expect(reopened.poolAt(1).length).toBe(BOOTSTRAP_TEAMS[0]!.length + 1 + 1);
     expect(reopened.champion()!.runId).toBe("titan"); // never reseated
@@ -125,7 +125,7 @@ describe("bootstrap", () => {
 
 describe("kernel-semantics parity", () => {
   test("a ladder run plays byte-identically on sqlite and in-memory backings", () => {
-    const logs = [freshSqlite(), openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities)].map((store) => {
+    const logs = [freshSqlite(), seedBootstrapTower(new InMemoryLadderStore(), stressRegistry, stressAbilities)].map((store) => {
       playLadderRun(input(1, "titan", TITAN), store); // identical prior history
       return runToJSONL(playLadderRun(input(2, "goliath", GOLIATH), store).log);
     });
@@ -134,7 +134,7 @@ describe("kernel-semantics parity", () => {
 
   test("pools and champion match the in-memory backing after the same drives", () => {
     const sqlite = freshSqlite();
-    const memory = openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
+    const memory = seedBootstrapTower(new InMemoryLadderStore(), stressRegistry, stressAbilities);
     for (const store of [sqlite, memory]) {
       playLadderRun(input(1, "titan", TITAN), store);
       playLadderRun(input(2, "goliath", GOLIATH), store);

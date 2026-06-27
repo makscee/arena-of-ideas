@@ -296,7 +296,7 @@ export function buildCodex(registry: StatusRegistry, units: UnitDef[], abilities
     {
       key: "ghosts",
       title: "Ghosts & bosses",
-      // Mirrors ladderFight + challengeBoss (run.ts) and openLadder (ladder.ts):
+      // Mirrors ladderFight + challengeBoss (run.ts) and seedBootstrapTower (ladder.ts):
       // one random ghost per climb; the boss challenge is the terminal move;
       // the tower is a fixed TOWER_HEIGHT and climbing past the top overshoots.
       text:

@@ -50,7 +50,7 @@ import {
   initRun,
   InvalidDecisionError,
   ladderFight,
-  openLadder,
+  seedBootstrapTower,
   renderReplay,
   reroll,
   runToJSONL,
@@ -345,7 +345,7 @@ export function formatAutoplayReport(results: readonly AutoplayResult[], ladder:
 // it is NOT a player-facing button. Over file-backed stores it archives the
 // final tower, resets the live tower to a fresh bootstrap, bumps the content
 // version, and opens the next season. The reset writes an empty ladder to disk
-// then re-bootstraps it (openLadder), so the new season starts seeded.
+// then re-bootstraps it (seedBootstrapTower), so the new season starts seeded.
 // ---------------------------------------------------------------------------
 
 /** Roll the season over the three file-backed stores at the given paths. The
@@ -358,14 +358,14 @@ export function runSeasonTransition(
   archivePath: string,
   pointerPath: string,
 ): SeasonTransitionResult {
-  const live = openLadder(new FileLadderStore(ladderPath), stressRegistry, stressAbilities);
+  const live = seedBootstrapTower(new FileLadderStore(ladderPath), stressRegistry, stressAbilities);
   const archive = new FileSeasonArchiveStore(archivePath);
   const pointer = new FileSeasonPointerStore(pointerPath);
   const reset = () => {
     // Wipe the live tower on disk, then re-bootstrap a fresh seeded one — the
     // new season opens on a real tower, carrying no prior-season ghost.
     writeFileSync(ladderPath, JSON.stringify(emptyLadderData(), null, 2) + "\n", "utf8");
-    openLadder(new FileLadderStore(ladderPath), stressRegistry, stressAbilities);
+    seedBootstrapTower(new FileLadderStore(ladderPath), stressRegistry, stressAbilities);
   };
   return transitionSeason({ live, archive, pointer, reset });
 }
@@ -576,7 +576,7 @@ function main(): void {
     } else if (parsed.mode === "history") {
       process.stdout.write(readHistory(parsed.archivePath, parsed.season) + "\n");
     } else if (parsed.mode === "autoplay") {
-      const store = openLadder(new FileLadderStore(parsed.ladderPath), stressRegistry, stressAbilities);
+      const store = seedBootstrapTower(new FileLadderStore(parsed.ladderPath), stressRegistry, stressAbilities);
       const results = autoplayRuns(store, parsed.seed, parsed.runs);
       process.stdout.write(formatAutoplayReport(results, store) + "\n");
       if (parsed.logPath !== null) {

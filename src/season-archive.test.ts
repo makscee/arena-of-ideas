@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import { stressAbilities, stressRegistry } from "./content/stress.js";
-import { InMemoryLadderStore, openLadder } from "./ladder.js";
+import { InMemoryLadderStore, seedBootstrapTower } from "./ladder.js";
 import type { LadderData } from "./ladder.js";
 import {
   FIRST_CONTENT_VERSION,
@@ -24,7 +24,7 @@ import { FileSeasonArchiveStore } from "./season-archive-file.js";
  * read out of an InMemoryLadderStore. Reusing the live ladder's serialized shape
  * is the point — the embedded snapshot must be exactly what the ladder stores. */
 function towerSnapshot(): LadderData {
-  const ladder = openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
+  const ladder = seedBootstrapTower(new InMemoryLadderStore(), stressRegistry, stressAbilities);
   const bosses: LadderData["bosses"] = {};
   const pools: LadderData["pools"] = {};
   for (let floor = 1; ladder.bossAt(floor) !== null; floor++) {

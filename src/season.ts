@@ -200,7 +200,7 @@ export function snapshotLadder(store: LadderStore): LadderData {
  *  - `pointer` is the live cursor: read for the old season/version, advanced to
  *    the next season on the bumped version.
  *  - `reset` wipes the live tower and re-opens a FRESH bootstrap on it (the
- *    caller reuses #075's openLadder so a fresh season starts seeded). It runs
+ *    caller reuses #075's seedBootstrapTower so a fresh season starts seeded). It runs
  *    AFTER the snapshot is archived, so the archived tower is the pre-reset one
  *    and the new live tower carries no prior-season ghost.
  *  - `bumpVersion` advances the content version; default is +1 (the next dense

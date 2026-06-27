@@ -17,7 +17,7 @@ import {
   validateTeamFile,
 } from "./cli.js";
 import { stressAbilities, stressRegistry } from "./content/stress.js";
-import { InMemoryLadderStore, openLadder } from "./ladder.js";
+import { InMemoryLadderStore, seedBootstrapTower } from "./ladder.js";
 import type { LadderData } from "./ladder.js";
 import { FileLadderStore } from "./ladder-file.js";
 import { FileSeasonArchiveStore } from "./season-archive-file.js";
@@ -210,7 +210,7 @@ describe("sweepBattles", () => {
 
 describe("autoplay", () => {
   const dir = mkdtempSync(join(tmpdir(), "aoi-autoplay-"));
-  const freshFileLadder = (name: string) => openLadder(new FileLadderStore(join(dir, name)), stressRegistry, stressAbilities);
+  const freshFileLadder = (name: string) => seedBootstrapTower(new FileLadderStore(join(dir, name)), stressRegistry, stressAbilities);
 
   test("parseArgs autoplay mode with defaults and flags", () => {
     const wrap = (args: string[]) => ["node", "cli.ts", ...args];
@@ -244,7 +244,7 @@ describe("autoplay", () => {
   test("an N-run sweep fills the pools, and the growth persists on disk", () => {
     const path = join(dir, "sweep.json");
     const N = 4;
-    const results = autoplayRuns(openLadder(new FileLadderStore(path), stressRegistry, stressAbilities), 0, N);
+    const results = autoplayRuns(seedBootstrapTower(new FileLadderStore(path), stressRegistry, stressAbilities), 0, N);
     expect(results).toHaveLength(N);
     expect(results.every((r) => r.state.status === "over")).toBe(true);
     // Every run fights at round 1, so its ghost joined the round-1 pool — which
@@ -296,7 +296,7 @@ describe("history mode parseArgs", () => {
 
 describe("readHistory", () => {
   function towerSnapshot(): LadderData {
-    const ladder = openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
+    const ladder = seedBootstrapTower(new InMemoryLadderStore(), stressRegistry, stressAbilities);
     const bosses: LadderData["bosses"] = {};
     const pools: LadderData["pools"] = {};
     for (let floor = 1; ladder.bossAt(floor) !== null; floor++) bosses[String(floor)] = ladder.bossAt(floor)!;

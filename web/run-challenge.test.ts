@@ -13,7 +13,7 @@ import {
   challengeBoss,
   initRun,
   ladderFight,
-  openLadder,
+  seedBootstrapTower,
   stressAbilities,
   stressRegistry,
   type LadderStore,
@@ -168,7 +168,7 @@ describe("endHeadLine — all four terminal reasons read distinctly", () => {
 // kernel call, or a kernel that stopped reaching a state, breaks this.
 // ---------------------------------------------------------------------------
 
-const fresh = (): LadderStore => openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
+const fresh = (): LadderStore => seedBootstrapTower(new InMemoryLadderStore(), stressRegistry, stressAbilities);
 
 /** A run with one overwhelming unit, so it WINS every climb and challenge —
  * the crown / overshoot paths. A weak pool unit gives the loss path. */

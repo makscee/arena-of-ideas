@@ -3,8 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import { stressAbilities, stressRegistry } from "./content/stress.js";
-import { BOOTSTRAP_RUN_ID, InMemoryLadderStore, PersistedLadderStore, emptyLadderData, openLadder, parseLadderData } from "./ladder.js";
-import type { LadderStore, TeamSnapshot } from "./ladder.js";
+import { BOOTSTRAP_RUN_ID, InMemoryLadderStore, PersistedLadderStore, emptyLadderData, openEmptyLadder, seedBootstrapTower, parseLadderData } from "./ladder.js";
+import type { LadderData, LadderStore, TeamSnapshot } from "./ladder.js";
 import { FileLadderStore } from "./ladder-file.js";
 import { buy, challengeBoss, fight, initRun, InvalidDecisionError, ladderFight, reorder, reroll, runToJSONL } from "./run.js";
 import type { RunEvent, RunInput, RunState } from "./run.js";
@@ -65,8 +65,38 @@ function playLadderRun(inp: RunInput, ladder: LadderStore): RunState {
 }
 
 function freshLadder(): LadderStore {
-  return openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
+  return seedBootstrapTower(new InMemoryLadderStore(), stressRegistry, stressAbilities);
 }
+
+// ---------------------------------------------------------------------------
+// 0. Empty launch: production opens with NOTHING — play founds and grows it
+// ---------------------------------------------------------------------------
+
+describe("empty launch (production genesis, #085)", () => {
+  test("openEmptyLadder seeds nothing — no champion, no bosses, empty pools", () => {
+    const store = openEmptyLadder(new InMemoryLadderStore());
+    expect(store.champion()).toBeNull();
+    for (let f = 1; f <= TOWER_HEIGHT + 2; f++) {
+      expect(store.bossAt(f)).toBeNull();
+      expect(store.poolAt(f)).toEqual([]);
+    }
+  });
+
+  test("an empty ladder round-trips through serialization unchanged", () => {
+    // The production store launches empty; persisting and reparsing it keeps it
+    // empty — no champion materializes, no ghost appears.
+    const data = emptyLadderData();
+    let persisted: LadderData = data;
+    const store = openEmptyLadder(new PersistedLadderStore(data, (d) => { persisted = d; }));
+    expect(store.champion()).toBeNull();
+    expect(store.poolAt(1)).toEqual([]);
+    const reparsed = parseLadderData(JSON.stringify(persisted), "empty-launch-test");
+    const reopened = openEmptyLadder(new PersistedLadderStore(reparsed, () => {}));
+    expect(reopened.champion()).toBeNull();
+    expect(reopened.bossAt(1)).toBeNull();
+    expect(reopened.poolAt(1)).toEqual([]);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // 1. Bootstrap: an empty ladder seeds rounds 1..DEPTH from the shipped teams
@@ -80,7 +110,7 @@ describe("bootstrap", () => {
   // above the top — climbing past it overshoots (no crown), which is the guard.
   const poolSizeAt = (floor: number) => BOOTSTRAP_TEAMS[floor - 1]!.length + 1; // climb teams + the boss-ghost
 
-  test("openLadder seeds every floor 1..TOWER_HEIGHT with a climb pool and a boss-ghost", () => {
+  test("seedBootstrapTower seeds every floor 1..TOWER_HEIGHT with a climb pool and a boss-ghost", () => {
     const store = freshLadder();
     for (let round = 1; round <= TOWER_HEIGHT; round++) {
       const pool = store.poolAt(round);
@@ -115,14 +145,14 @@ describe("bootstrap", () => {
 
   test("a non-empty ladder is never reseeded", () => {
     const store = freshLadder();
-    openLadder(store, stressRegistry, stressAbilities);
+    seedBootstrapTower(store, stressRegistry, stressAbilities);
     expect(store.poolAt(1).length).toBe(poolSizeAt(1));
   });
 
   test("a played-on ladder keeps its earned champion across opens", () => {
     const store = freshLadder();
     playLadderRun(input(1, "titan", TITAN), store); // dethrones the bootstrap champion
-    openLadder(store, stressRegistry, stressAbilities);
+    seedBootstrapTower(store, stressRegistry, stressAbilities);
     expect(store.champion()!.runId).toBe("titan"); // never reseated
   });
 
@@ -138,8 +168,8 @@ describe("bootstrap", () => {
   test("a bootstrap team failing the content gate fails at open, loudly", () => {
     // An empty registry leaves Venomancer's Poison dangling — the gate must
     // catch it at seed time, not seed-dependently mid-run on an unlucky draw.
-    expect(() => openLadder(new InMemoryLadderStore(), {}, {})).toThrow(ValidationError);
-    expect(() => openLadder(new InMemoryLadderStore(), {}, {})).toThrow(/bootstrap round 1 team 0/);
+    expect(() => seedBootstrapTower(new InMemoryLadderStore(), {}, {})).toThrow(ValidationError);
+    expect(() => seedBootstrapTower(new InMemoryLadderStore(), {}, {})).toThrow(/bootstrap round 1 team 0/);
   });
 
   test("a first-ever strong run climbs a real pool at every floor, then ASCENDS by beating floor TOWER_HEIGHT's champion", () => {
@@ -688,7 +718,7 @@ describe("file backing", () => {
 
   test("write through one store, read through a fresh one — equal", () => {
     const path = join(dir, "roundtrip.json");
-    const store = openLadder(new FileLadderStore(path), stressRegistry, stressAbilities);
+    const store = seedBootstrapTower(new FileLadderStore(path), stressRegistry, stressAbilities);
     const ghost: TeamSnapshot = { runId: "titan", round: 1, seq: BOOTSTRAP_TEAMS[0]!.length + 1, team: [TITAN] }; // after climb teams + boss-ghost
     store.addSnapshot(ghost);
     store.setBoss(ghost.round, ghost);
@@ -699,7 +729,7 @@ describe("file backing", () => {
   });
 
   test("a ladder run plays byte-identically on file and in-memory backings", () => {
-    const onFile = playLadderRun(input(1, "titan", TITAN), openLadder(new FileLadderStore(join(dir, "parity.json")), stressRegistry, stressAbilities));
+    const onFile = playLadderRun(input(1, "titan", TITAN), seedBootstrapTower(new FileLadderStore(join(dir, "parity.json")), stressRegistry, stressAbilities));
     const inMemory = playLadderRun(input(1, "titan", TITAN), freshLadder());
     expect(runToJSONL(onFile.log)).toBe(runToJSONL(inMemory.log));
   });
@@ -786,7 +816,7 @@ describe("PersistedLadderStore", () => {
 
   test("same drives as InMemory → same pools and champion, byte-identical run logs", () => {
     const medium = memoryMedium();
-    const persisted = openLadder(medium.store(), stressRegistry, stressAbilities);
+    const persisted = seedBootstrapTower(medium.store(), stressRegistry, stressAbilities);
     const inMemory = freshLadder();
     const logs = [persisted, inMemory].map((store) => {
       playLadderRun(input(1, "titan", TITAN), store);
@@ -801,7 +831,7 @@ describe("PersistedLadderStore", () => {
 
   test("every mutation writes through — a store reopened from the medium is equal", () => {
     const medium = memoryMedium();
-    const store = openLadder(medium.store(), stressRegistry, stressAbilities);
+    const store = seedBootstrapTower(medium.store(), stressRegistry, stressAbilities);
     playLadderRun(input(1, "titan", TITAN), store);
     const reopened = medium.store(); // parses the last persisted JSON
     for (let round = 1; store.poolAt(round).length > 0; round++) {

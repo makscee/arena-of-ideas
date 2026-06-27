@@ -167,9 +167,28 @@ export class PersistedLadderStore implements LadderStore {
 /** The ladder's id for ghosts that came from no run (the bootstrap seed). */
 export const BOOTSTRAP_RUN_ID = "bootstrap";
 
-/** Open a ladder over a store, seeding the bootstrap tower if the ladder is empty
- * so a first-ever run has a real climb AND a seated boss to beat — never a round-2
- * crown, never a free crown taken from a vacant spot. The tower is a UNIFORM,
+/** Open a ladder over a store and seed NOTHING — the production genesis (PRD
+ * #085). The tower launches EMPTY: no seated bosses, no seeded climb ghosts, just
+ * the store as-is (a fresh one is `emptyLadderData()`). Play founds and grows it —
+ * the first completed run founds the champion at floor 1 (challengeBoss's
+ * found-floor-1 branch), and the cold-start synth climb enemy (ladderFight) keeps
+ * the climb from stalling while pools are thin. This is one of the two distinct,
+ * explicitly-named entry points (the other is seedBootstrapTower); the caller picks
+ * the function, no flag branches a single call. `registry`/`abilities` are unused
+ * here — nothing is seeded, so nothing is gated — but the signature mirrors
+ * seedBootstrapTower so the two are drop-in swaps at a call site. */
+export function openEmptyLadder(store: LadderStore): LadderStore {
+  return store;
+}
+
+/** Seed the full bootstrap tower over a store — the SOLO-PLAYTEST convenience
+ * (PRD #085), NOT production. One player cannot populate a tower alone, so the
+ * CLI/dev/solo-playtest path seeds floors 1..TOWER_HEIGHT with climb pools + seated
+ * bosses (the #075 behavior, byte-identical) so a lone session has a real ladder to
+ * climb and a real champion to beat. Production opens EMPTY via openEmptyLadder
+ * instead; this is the other named entry point. Seeds the bootstrap tower if the
+ * ladder is empty so a first-ever run has a real climb AND a seated boss to beat —
+ * never a round-2 crown, never a free crown taken from a vacant spot. The tower is a UNIFORM,
  * FIXED height (TOWER_HEIGHT floors): every floor f in 1..TOWER_HEIGHT gets the
  * same three things, in pool-seq order:
  *
@@ -204,7 +223,7 @@ export const BOOTSTRAP_RUN_ID = "bootstrap";
  * ghost and boss alike — passes the content gate against `registry` here, at
  * seed time, so a bad team fails loudly at open, never seed-dependently mid-run
  * when a draw or a challenge happens to land on it. */
-export function openLadder(store: LadderStore, registry: StatusRegistry, abilities: AbilityRegistry): LadderStore {
+export function seedBootstrapTower(store: LadderStore, registry: StatusRegistry, abilities: AbilityRegistry): LadderStore {
   if (store.poolAt(1).length === 0) {
     // Uniform tower, floors 1..TOWER_HEIGHT: each floor is a climb pool + a seated
     // boss that ALSO lives in the pool as a ghost (the demote-keeps-ghost invariant).

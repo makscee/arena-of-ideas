@@ -55,7 +55,7 @@
 import { Hono } from "hono";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
-import { openLadder } from "../../src/index.js";
+import { openEmptyLadder } from "../../src/index.js";
 import { createAuthMiddleware, type AuthEnv } from "./auth.js";
 import { defaultArenaContent, type ArenaContent } from "./content.js";
 import type { DB } from "./db.js";
@@ -135,10 +135,13 @@ export function createApp(deps: AppDeps): Hono<AuthEnv> {
   const content = deps.content ?? defaultArenaContent();
   const emailCodes = createEmailCodes(db, clock);
   const auth = createAuthMiddleware({ db, clock });
-  // The shared ladder, bootstrap-seated at open (kernel rule: a vacant
-  // champion spot is a free crown — openLadder never leaves one).
+  // The shared ladder launches EMPTY in production (PRD #085 genesis): no seated
+  // bosses, no seeded climb ghosts. Play founds the champion at floor 1 (the first
+  // completed run) and the cold-start synth climb enemy keeps the climb from
+  // stalling while pools are thin. The full-tower bootstrap (seedBootstrapTower) is
+  // the solo-playtest convenience only, never the server.
   const store = new SqliteLadderStore(db);
-  openLadder(store, content.statuses, content.abilities);
+  openEmptyLadder(store);
 
   const app = new Hono<AuthEnv>();
 

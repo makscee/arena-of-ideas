@@ -67,7 +67,7 @@ export const STACK_THRESHOLD = 3;
 export const STARTING_LIVES = 5;
 
 /** The tower's SEASON-START height — how many floors a fresh ladder seeds, NOT
- * a cap. openLadder seeds a full floor (a climb pool + a seated boss) on floors
+ * a cap. seedBootstrapTower seeds a full floor (a climb pool + a seated boss) on floors
  * 1..TOWER_HEIGHT and nothing above, so a first-ever run climbs that many floors
  * and faces a real champion at the top. But the tower GROWS above this: beating
  * the champion (the boss of the highest occupied floor) is an ASCEND — the
@@ -87,7 +87,7 @@ export const STARTING_LIVES = 5;
  * floors (the season-start seed; growth above is run-won, not seeded). */
 export const TOWER_HEIGHT = 4;
 
-/** Per-floor climb pools, floors 1..TOWER_HEIGHT (openLadder): BOOTSTRAP_TEAMS[f-1]
+/** Per-floor climb pools, floors 1..TOWER_HEIGHT (seedBootstrapTower): BOOTSTRAP_TEAMS[f-1]
  * is floor f's climb pool — the ghosts a run outclimbs before (or instead of)
  * challenging that floor's boss. So a first-ever run has opponents at every floor.
  * Composed from the shipped stress units (SPEC §7) the way the example team files
@@ -96,7 +96,7 @@ export const TOWER_HEIGHT = 4;
  * bodies), each later floor adds a body and fatter vanilla stats, the upper floors
  * open with status stacks. Status references (Poison via Venomancer,
  * Strength/Vitality below) resolve in any registry containing the stress statuses
- * (the CLI and tests use stressRegistry); openLadder gates every team at seed time. */
+ * (the CLI and tests use stressRegistry); seedBootstrapTower gates every team at seed time. */
 export const BOOTSTRAP_TEAMS: readonly (readonly UnitDef[][])[] = [
   // floor 1 — three bodies, the scale of a first shop phase
   [
@@ -146,7 +146,7 @@ export const BOOTSTRAP_TEAMS: readonly (readonly UnitDef[][])[] = [
 ];
 
 /** A boss for every floor of the UNIFORM bootstrap tower: BOSS_TEAMS[f-1] is the
- * team openLadder seats on floor f, for f in 1..TOWER_HEIGHT — so this array has
+ * team seedBootstrapTower seats on floor f, for f in 1..TOWER_HEIGHT — so this array has
  * exactly TOWER_HEIGHT entries, one per climb floor. Every floor is the same
  * shape: a climb pool, a seated boss, and that boss's team left in the pool as a
  * ghost (the demote-keeps-ghost invariant, uniform across all floors). There is
@@ -167,7 +167,7 @@ export const BOOTSTRAP_TEAMS: readonly (readonly UnitDef[][])[] = [
  *   floor 4 — the champion (top floor): the strongest shipped team (the old
  *             BOOTSTRAP_CHAMPION content), status stacks on two front bodies.
  * Composed from the shipped stress units (SPEC §7) like BOOTSTRAP_TEAMS;
- * composition is a knob, not a pin. openLadder gates every boss at seed time
+ * composition is a knob, not a pin. seedBootstrapTower gates every boss at seed time
  * (assertValidContent), exactly like a climb team, so a dangling status fails
  * loudly at open — never seed-dependently mid-run on an unlucky challenge. */
 export const BOSS_TEAMS: readonly (readonly UnitDef[])[] = [

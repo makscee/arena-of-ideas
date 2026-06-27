@@ -152,7 +152,11 @@ export function servePool(
   }
   const champion = deps.store.championRecord();
   if (champion === null) {
-    // openLadder seats the bootstrap at boot — a vacant seat here is a server bug.
+    // The tower has no champion yet. Production launches EMPTY (PRD #085,
+    // openEmptyLadder) and is founded by the first completed run (challengeBoss's
+    // found-floor-1 branch); a solo-playtest seeds it via seedBootstrapTower. A
+    // play view needs a seated champion, so until the tower is founded there is
+    // nothing to serve here.
     throw new Error("ladder has no champion — cannot serve a play view");
   }
   const pool = deps.store.poolVisibleTo(round, userId);

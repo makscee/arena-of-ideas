@@ -3,7 +3,7 @@
 // log (and the content it ran on) to the battle screen — board, inline log,
 // and inspector all read that one log.
 
-import { DEFAULT_RUN_POOL, KERNEL_VERSION, codexUnits, mergePool, openLadder, stressAbilities, stressRegistry } from "../src/index.js";
+import { DEFAULT_RUN_POOL, KERNEL_VERSION, codexUnits, mergePool, seedBootstrapTower, stressAbilities, stressRegistry } from "../src/index.js";
 import { approvedUnits, committedApproved } from "./approved.js";
 import { createArenaApi, type MeInfo } from "./api.js";
 import { dismissInspectOverlay } from "./inspect.js";
@@ -320,7 +320,7 @@ homeButton.addEventListener("click", () => showView("title"));
 // ladder would orphan its ghosts), but it must not take the other views down
 // with it.
 try {
-  const ladderStore = remote ?? openLadder(openLocalLadder(window.localStorage), stressRegistry, stressAbilities);
+  const ladderStore = remote ?? seedBootstrapTower(openLocalLadder(window.localStorage), stressRegistry, stressAbilities);
   leaderboardView = createLadderView(el("leaderboard-body"), {
     store: ladderStore,
     registry: stressRegistry,

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { stressAbilities, stressRegistry } from "./content/stress.js";
-import { InMemoryLadderStore, openLadder } from "./ladder.js";
+import { InMemoryLadderStore, seedBootstrapTower } from "./ladder.js";
 import type { LadderData, LadderStore, TeamSnapshot } from "./ladder.js";
 import { FIRST_CONTENT_VERSION, InMemorySeasonArchiveStore } from "./season-archive.js";
 import type { ContentVersion, SeasonArchiveStore } from "./season-archive.js";
@@ -43,7 +43,7 @@ function memoryPointerMedium(): { read(): string | null; store(): SeasonPointerS
 
 /** A live season world: a freshly-bootstrapped ladder behind a holder the reset
  * can swap, an archive, and a pointer. `reset` wipes the live tower and opens a
- * fresh bootstrap on a NEW store (the CLI/web reuse openLadder this way), and
+ * fresh bootstrap on a NEW store (the CLI/web reuse seedBootstrapTower this way), and
  * `ladder()` always reads the current live store. */
 function freshWorld(): {
   ladder: () => LadderStore;
@@ -51,11 +51,11 @@ function freshWorld(): {
   archive: SeasonArchiveStore;
   pointer: SeasonPointerStore;
 } {
-  let live: LadderStore = openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
+  let live: LadderStore = seedBootstrapTower(new InMemoryLadderStore(), stressRegistry, stressAbilities);
   const archive = new InMemorySeasonArchiveStore();
   const pointer = new InMemorySeasonPointerStore();
   const reset = () => {
-    live = openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
+    live = seedBootstrapTower(new InMemoryLadderStore(), stressRegistry, stressAbilities);
   };
   return {
     ladder: () => live,
@@ -149,7 +149,7 @@ describe("season pointer serialized round-trip / corrupt-loud", () => {
 
 describe("snapshotLadder", () => {
   test("reads every boss + pool of a seeded tower in the LadderData shape", () => {
-    const ladder = openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
+    const ladder = seedBootstrapTower(new InMemoryLadderStore(), stressRegistry, stressAbilities);
     const snap = snapshotLadder(ladder);
     // Every seeded floor's boss + pool is present.
     for (let floor = 1; ladder.bossAt(floor) !== null; floor++) {
@@ -159,7 +159,7 @@ describe("snapshotLadder", () => {
   });
 
   test("captures a floor seated ABOVE a vacant one — does not stop at the first gap", () => {
-    const ladder = openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
+    const ladder = seedBootstrapTower(new InMemoryLadderStore(), stressRegistry, stressAbilities);
     // A grown summit: an ascend seats a boss two floors above the top with the
     // intervening floor left vacant (overshoot). A stop-at-first-gap scan would
     // miss it; snapshotLadder must capture it.
@@ -174,7 +174,7 @@ describe("snapshotLadder", () => {
   });
 
   test("the snapshot is detached — mutating it cannot reach the live store", () => {
-    const ladder = openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
+    const ladder = seedBootstrapTower(new InMemoryLadderStore(), stressRegistry, stressAbilities);
     const snap = snapshotLadder(ladder);
     snap.bosses["1"]!.team[0]!.name = "Corrupted";
     expect(snapshotLadder(ladder).bosses["1"]!.team[0]!.name).not.toBe("Corrupted");
@@ -208,8 +208,8 @@ describe("transitionSeason", () => {
     transitionSeason(w.ops());
 
     // The live tower is a FRESH bootstrap (a real seeded tower), not the old one:
-    // it equals a brand-new openLadder and carries no web-1 ghost.
-    const freshSeed = snapshotLadder(openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities));
+    // it equals a brand-new seedBootstrapTower and carries no web-1 ghost.
+    const freshSeed = snapshotLadder(seedBootstrapTower(new InMemoryLadderStore(), stressRegistry, stressAbilities));
     expect(snapshotLadder(w.ladder())).toEqual(freshSeed);
     // The prior-season run ghost is gone (the bootstrap floor-1 pool is shorter
     // than the played-on one was, and no snapshot carries runId web-1).
@@ -301,11 +301,11 @@ describe("version-boundary invariant", () => {
   }
 
   test("the version changes only AFTER the reset — a prior-season ghost is gone by the bump", () => {
-    let live: LadderStore = openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
+    let live: LadderStore = seedBootstrapTower(new InMemoryLadderStore(), stressRegistry, stressAbilities);
     fieldGhost(live, 1, "web-ghost"); // a prior-season ghost
     const archive = new InMemorySeasonArchiveStore();
     const reset = () => {
-      live = openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
+      live = seedBootstrapTower(new InMemoryLadderStore(), stressRegistry, stressAbilities);
     };
     const hadGhost = () => JSON.stringify(snapshotLadder(live)).includes("web-ghost");
     const pointer = boundaryGuardPointer(() => live, hadGhost);
@@ -323,11 +323,11 @@ describe("version-boundary invariant", () => {
   });
 
   test("MUST-FAIL-FIRST: a mutant that bumps the version BEFORE the reset reddens the guard", () => {
-    let live: LadderStore = openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
+    let live: LadderStore = seedBootstrapTower(new InMemoryLadderStore(), stressRegistry, stressAbilities);
     fieldGhost(live, 1, "web-ghost");
     const archive = new InMemorySeasonArchiveStore();
     const reset = () => {
-      live = openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
+      live = seedBootstrapTower(new InMemoryLadderStore(), stressRegistry, stressAbilities);
     };
     const hadGhost = () => JSON.stringify(snapshotLadder(live)).includes("web-ghost");
     const pointer = boundaryGuardPointer(() => live, hadGhost);

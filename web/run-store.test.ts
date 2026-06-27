@@ -11,7 +11,7 @@ import {
   initRun,
   InvalidDecisionError,
   ladderFight,
-  openLadder,
+  seedBootstrapTower,
   runToJSONL,
   stressAbilities,
   stressRegistry,
@@ -67,8 +67,8 @@ function playLadderRun(seed: number, runId: string, ladder: LadderStore): RunSta
 describe("openLocalLadder", () => {
   test("same drives as InMemory → same pools, champion, and run log", () => {
     const storage = fakeStorage();
-    const local = openLadder(openLocalLadder(storage), stressRegistry, stressAbilities);
-    const inMemory = openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
+    const local = seedBootstrapTower(openLocalLadder(storage), stressRegistry, stressAbilities);
+    const inMemory = seedBootstrapTower(new InMemoryLadderStore(), stressRegistry, stressAbilities);
     const logs = [local, inMemory].map((store) => runToJSONL(playLadderRun(1, "titan", store).log));
     expect(logs[0]).toBe(logs[1]);
     for (let round = 1; local.poolAt(round).length > 0 || inMemory.poolAt(round).length > 0; round++) {
@@ -79,9 +79,9 @@ describe("openLocalLadder", () => {
 
   test("write-through: a reopened ladder holds everything, and is never reseeded", () => {
     const storage = fakeStorage();
-    const first = openLadder(openLocalLadder(storage), stressRegistry, stressAbilities);
+    const first = seedBootstrapTower(openLocalLadder(storage), stressRegistry, stressAbilities);
     playLadderRun(1, "titan", first);
-    const reopened = openLadder(openLocalLadder(storage), stressRegistry, stressAbilities); // a page reload
+    const reopened = seedBootstrapTower(openLocalLadder(storage), stressRegistry, stressAbilities); // a page reload
     for (let round = 1; first.poolAt(round).length > 0; round++) {
       expect(reopened.poolAt(round)).toEqual(first.poolAt(round));
     }
@@ -168,7 +168,7 @@ describe("abandon (#014): the run-lifecycle act, no kernel change", () => {
 
   test("ladder integrity: a mid-run abandon leaves the fought rounds' ghosts, no crown, own-ghost exclusion intact next run", () => {
     const storage = fakeStorage();
-    const ladder = openLadder(openLocalLadder(storage), stressRegistry, stressAbilities);
+    const ladder = seedBootstrapTower(openLocalLadder(storage), stressRegistry, stressAbilities);
     const championBefore = ladder.champion(); // the bootstrap champion holds the spot
 
     // web-1 fights round 1 once, then is abandoned mid-climb. ladderFight
@@ -188,7 +188,7 @@ describe("abandon (#014): the run-lifecycle act, no kernel change", () => {
 
     // No crown from the abandoned run: the champion spot is exactly as it was
     // before web-1 ever fought — web-1 never reached it, abandon or not.
-    const reopened = openLadder(openLocalLadder(storage), stressRegistry, stressAbilities);
+    const reopened = seedBootstrapTower(openLocalLadder(storage), stressRegistry, stressAbilities);
     expect(reopened.champion()).toEqual(championBefore);
     expect(reopened.champion()?.runId).not.toBe("web-1");
     expect(reopened.poolAt(1).some((g) => g.runId === "web-1")).toBe(true); // the ghost persists
@@ -208,7 +208,7 @@ describe("abandon (#014): the run-lifecycle act, no kernel change", () => {
 
   test("stored-run-cleared: clearRun removes run + pending battle; ladder keys survive", () => {
     const storage = fakeStorage();
-    const ladder = openLadder(openLocalLadder(storage), stressRegistry, stressAbilities);
+    const ladder = seedBootstrapTower(openLocalLadder(storage), stressRegistry, stressAbilities);
     const state = buy(initRun({ seed: 7, runId: "web-1", pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities }), 0);
     ladderFight(state, ladder); // writes a ghost to the ladder key
     const battle = { teamA: [TITAN], teamB: [TITAN], seed: 42, opponentLabel: "ghost web-1 (round 1)" };
@@ -219,7 +219,7 @@ describe("abandon (#014): the run-lifecycle act, no kernel change", () => {
     expect(loadRun(storage)).toBeNull(); // both run and pending battle gone
 
     // The ladder is a separate key — abandoning a run never wipes it.
-    const reopened = openLadder(openLocalLadder(storage), stressRegistry, stressAbilities);
+    const reopened = seedBootstrapTower(openLocalLadder(storage), stressRegistry, stressAbilities);
     expect(reopened.poolAt(1).some((g) => g.runId === "web-1")).toBe(true);
   });
 });

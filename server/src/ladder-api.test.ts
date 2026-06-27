@@ -23,7 +23,7 @@ import {
   initRun,
   InvalidDecisionError,
   ladderFight,
-  openLadder,
+  seedBootstrapTower,
   serializeRun,
   STARTING_LIVES,
   stressAbilities,
@@ -38,6 +38,7 @@ import {
 } from "../../src/index.js";
 import { addGold, spawnUnit } from "../../web/dev-ops.js";
 import { createApp } from "./app.js";
+import { SqliteLadderStore } from "./ladder-store.js";
 import { MAX_RUN_BYTES, MAX_RUN_LOG_EVENTS, RUN_OPEN_TTL_SECONDS } from "./runs.js";
 import type { AuthEnv } from "./auth.js";
 import { openDb } from "./db.js";
@@ -79,6 +80,11 @@ function makeCtx(opts: { poolServeLimit?: number } = {}): Ctx {
     },
     content: { pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities },
   });
+  // PRD #085: production launches EMPTY (createApp → openEmptyLadder). These #075
+  // ladder-API contract tests assume a seeded tower (a champion to challenge,
+  // BASE-sized floor pools), so the harness seeds it over the same db via the
+  // solo-playtest seam — the exact seam the server itself no longer calls.
+  seedBootstrapTower(new SqliteLadderStore(db), stressRegistry, stressAbilities);
   return { app, mailer, now };
 }
 
@@ -226,6 +232,34 @@ const ofType = <T extends RunEvent["type"]>(log: readonly RunEvent[], t: T) =>
 // Leaderboard reads — public, no login
 // ---------------------------------------------------------------------------
 
+describe("empty launch — the server seeds nothing (#085)", () => {
+  test("a fresh server has no champion and empty pools until play founds the tower", async () => {
+    // Built WITHOUT the harness's seedBootstrapTower: this exercises the raw
+    // production boot, where createApp opens the ladder via openEmptyLadder.
+    const { db } = openDb(":memory:");
+    const clock = () => 1_750_000_000;
+    const app = createApp({
+      db,
+      clock,
+      mailClient: createMockMailClient(),
+      rateLimiters: {
+        ipStart: createRateLimiter({ limit: 100, windowMs: 60_000, clock: () => clock() * 1000 }),
+        emailStart: createRateLimiter({ limit: 100, windowMs: 60_000, clock: () => clock() * 1000 }),
+        poolServe: createRateLimiter({ limit: 10_000, windowMs: 60_000, clock: () => clock() * 1000 }),
+      },
+      content: { pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities },
+    });
+    const champRes = await app.request("/v1/ladder/champion");
+    expect(champRes.status).toBe(200);
+    const { champion, holder } = (await champRes.json()) as { champion: TeamSnapshot | null; holder: string | null };
+    expect(champion).toBeNull(); // no boss seated at boot — the tower is empty
+    expect(holder).toBeNull();
+    const poolRes = await app.request("/v1/ladder/pool/1");
+    expect(poolRes.status).toBe(200);
+    expect(((await poolRes.json()) as { pool: TeamSnapshot[] }).pool).toEqual([]); // no seeded ghosts
+  });
+});
+
 describe("leaderboard reads work logged-out", () => {
   test("champion and pools are readable with no bearer; fresh ladder shows the bootstrap", async () => {
     const ctx = makeCtx();
@@ -368,7 +402,7 @@ describe("tampered submissions are rejected", () => {
     const ada = await login(ctx, "ada@example.com");
     // Legally played and serialized — but against a pool the arena never shipped.
     expect((await openRun(ctx, ada, "goliath")).status).toBe(200);
-    const local = openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
+    const local = seedBootstrapTower(new InMemoryLadderStore(), stressRegistry, stressAbilities);
     let s = buy(initRun({ seed: 1, runId: "goliath", pool: [GOLIATH], statuses: stressRegistry, abilities: stressAbilities }), 0);
     while (s.status === "active") s = ladderMove(s, local);
     const { status, body } = await submit(ctx, ada, serializeRun(s));
