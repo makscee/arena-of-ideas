@@ -53,7 +53,11 @@ async function openFresh(viewport, dev = false) {
   return { ctx, page };
 }
 
-const playLabel = (page) => page.locator("#title-play").textContent();
+// B·Arena slice B: #title-play is the always-present "▸ New Run" primary; the
+// run-state signal that used to live in its text now lives in the #title-continue
+// entry — shown only while a run is in progress, hidden otherwise.
+const continueShown = (page) => page.locator("#title-continue").isVisible();
+const continueHidden = (page) => page.locator("#title-continue").isHidden();
 const noHorizontalOverflow = (page) =>
   page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
 
@@ -62,7 +66,7 @@ async function freshScenario(viewport, tag) {
   const { ctx, page } = await openFresh(viewport);
   check(await page.locator("#title-view").isVisible(), `${tag} fresh load lands on the title`);
   check(await page.locator("#run-new").isHidden(), `${tag} the run form is not the landing`);
-  check((await playLabel(page)) === "Play", `${tag} no active run: the entry reads Play`);
+  check(await continueHidden(page), `${tag} no active run: Continue is hidden`);
   // #066 slice 6: account/login is back ON the title (Maks's gate call —
   // slice 1 had buried it in Settings). Logged out shows the Login entry, live
   // and enabled, and a click opens the email step. The logged-in case (account
@@ -99,7 +103,7 @@ async function freshScenario(viewport, tag) {
   // Home mid-run: the title now reads Continue.
   await page.click("#home-button");
   await page.waitForSelector("#title-view:not([hidden])");
-  check((await playLabel(page)) === "Continue run", `${tag} active run: the entry reads Continue run`);
+  check(await continueShown(page), `${tag} active run: Continue is shown`);
   await ctx.close();
 }
 
@@ -115,7 +119,7 @@ async function shopResumeScenario(viewport, tag) {
   );
   await page.goto(BASE, { waitUntil: "domcontentloaded" });
   await page.waitForSelector("#title-view:not([hidden])");
-  check((await playLabel(page)) === "Continue run", `${tag} stored mid-shop run: entry reads Continue run`);
+  check(await continueShown(page), `${tag} stored mid-shop run: Continue is shown`);
   await page.click("#title-play");
   await page.waitForSelector("#run-shop:not([hidden])");
   const head = await page.locator("#run-head").textContent();
@@ -146,7 +150,7 @@ async function battleResumeScenario(viewport, tag) {
   check(posBefore === "2", `${tag} parked at a known mid-replay event`, `event index ${posBefore}`);
   await page.click("#home-button");
   await page.waitForSelector("#title-view:not([hidden])");
-  check((await playLabel(page)) === "Continue run", `${tag} mid-battle: entry reads Continue run`);
+  check(await continueShown(page), `${tag} mid-battle: Continue is shown`);
   await page.click("#title-play");
   await page.waitForSelector("#run-battle:not([hidden])");
   const posAfter = await page.locator("#scrub").inputValue();
@@ -163,7 +167,7 @@ async function exitScenario(viewport, tag) {
     await page.click("#run-abandon");
     await page.click("#run-abandon-yes");
     await page.waitForSelector("#title-view:not([hidden])");
-    check((await playLabel(page)) === "Play", `${tag} abandon lands on the title reading Play`);
+    check(await continueHidden(page), `${tag} abandon lands on the title with Continue hidden`);
     check(
       (await page.evaluate(() => localStorage.getItem("aoi.run.v1"))) === null,
       `${tag} abandon clears the stored run`,
@@ -175,7 +179,7 @@ async function exitScenario(viewport, tag) {
     const { ctx, page } = await openRun(browser, endedRun(), viewport, "#run-end:not([hidden])");
     await page.click("#run-new-run");
     await page.waitForSelector("#title-view:not([hidden])");
-    check((await playLabel(page)) === "Play", `${tag} run-end exit lands on the title reading Play`);
+    check(await continueHidden(page), `${tag} run-end exit lands on the title with Continue hidden`);
     check(
       (await page.evaluate(() => localStorage.getItem("aoi.run.v1"))) === null,
       `${tag} run-end exit clears the stored run`,

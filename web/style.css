@@ -1518,68 +1518,353 @@ button:disabled:hover {
   border: none;
 }
 
-/* ---------- title screen (#015 slice 3) ----------
-   The landing: the generative cast as ornament, the game's name, and a short
-   stacked menu — Play/Continue first, dev tools a small footnote. The same
-   dark monospace language as the cards; everything code-drawn. */
+/* ---------- title hub (#015 slice 3; B·Arena slice B) ----------
+   The landing is the always-on 3-column HUB: the ideas creation ladder (left),
+   the wordmark + run actions (center), the Arena Tower (right). The two ladders
+   are slice C's reusable renders dropped into the columns; the column headers
+   double as the doors to the full-screen ideas / leaderboard views. The hub
+   panel breaks out of main's 56rem reading cap to the mockup's ~1180px stage,
+   centred on the viewport (a negative margin, not a transform — so the
+   body-level inspect overlay is unaffected). */
 
 #title-view {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 2.5rem 0 1.5rem;
+  display: block;
+  width: min(1180px, calc(100vw - 2rem));
+  /* Centre the oversized panel within main's narrower content box. */
+  margin-left: calc(-0.5 * (min(1180px, calc(100vw - 2rem)) - 100%));
+  padding: 0;
 }
 
-/* display: flex would beat [hidden]'s UA display: none — keep the attribute
+/* display: block would beat [hidden]'s UA display: none — keep the attribute
    authoritative (the run-menu-confirm rule's lesson). */
 #title-view[hidden] {
   display: none;
 }
 
-#title-ornament {
+/* Utility strip — login state / settings / history / dev, thin, top-right. */
+.hub-util {
   display: flex;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.3rem 0.6rem;
+  margin-bottom: 0.5rem;
 }
 
-#title-ornament .shape {
-  width: 2.2rem;
-  height: 2.2rem;
+.hub-util-link {
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-size: 0.8rem;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 0.4rem;
 }
 
-.title-name {
-  font-size: 2rem;
-  letter-spacing: 0.05em;
-  margin: 0 0 0.3rem;
+.hub-util-link:hover {
+  color: var(--text);
+  border: none;
 }
 
-#title-view .tagline {
-  margin-bottom: 2rem;
+/* The 3-column panel — the mockup's outer grid, chamfer and shadow. */
+.hub-grid {
+  display: grid;
+  grid-template-columns: 368px 1fr 332px;
+  min-height: 520px;
+  background: #07080c;
+  border: 1px solid #1d2230;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
 }
 
-.title-menu {
+/* The side columns (ideas left, tower right). */
+.hub-col {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  width: min(18rem, 100%);
+  background: #080a10;
+  min-width: 0;
 }
 
-.title-menu button {
-  min-height: 48px; /* every title tap is thumb-sized */
-  font-size: 0.95rem;
+.hub-ideas-col {
+  border-right: 1px solid #12151f;
 }
 
-.title-primary {
-  color: var(--bg);
-  background: var(--you);
-  border-color: var(--you);
-  font-weight: 600;
+.hub-tower-col {
+  border-left: 1px solid #12151f;
 }
 
-.title-primary:hover {
-  border-color: var(--text);
+.hub-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 44px; /* the header is a tap target (opens the full view) */
+  padding: 15px 16px 12px;
+  border-bottom: 1px solid #161b27;
+}
+
+/* The clickable header title — opens the matching full-screen view. The tower
+   column's header IS this button (one element); the ideas column nests it. */
+.hub-col-titlebtn {
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+button.hub-col-head {
+  width: 100%;
+}
+
+.hub-col-headtext,
+.hub-ideas-col .hub-col-titlebtn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hub-col-title {
+  font: 700 13px "Chakra Petch", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.hub-col-eyebrow {
+  font: 600 9px "Chakra Petch", sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.hub-eyebrow-create {
+  color: #e056fd;
+}
+
+.hub-eyebrow-strategy {
+  color: #25e6d4;
+}
+
+.hub-col-hint {
+  font: 600 9px "Rajdhani", sans-serif;
+  color: #5d6b85;
+}
+
+.hub-col-titlebtn:hover .hub-col-title {
+  color: var(--you);
+}
+
+.hub-ideas-list {
+  flex: 1;
+  padding: 0 16px;
+  overflow: hidden;
+}
+
+.hub-ideas-col .ideas-foot {
+  margin: 0;
+  padding: 12px 16px;
+  border-top: 1px solid #161b27;
+}
+
+.hub-ideas-col .ideas-login-note,
+.hub-ideas-col .ideas-currency,
+.hub-ideas-col #hub-ideas-status {
+  margin: 0.4rem 16px 0;
+}
+
+.hub-tower-body {
+  flex: 1;
+}
+
+/* The reused tower render brings its own header; the hub column supplies the
+   mockup header (which opens the full leaderboard), so hide the inner one. */
+.hub-tower-body .tower-head {
+  display: none;
+}
+
+/* The centre hub. */
+.hub-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 30px 26px;
+  background: radial-gradient(120% 80% at 50% 18%, #0e1322, #07080c);
+}
+
+.hub-sigils {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  opacity: 0.9;
+}
+
+.hub-sigils .shape {
+  width: 30px;
+  height: 30px;
+}
+
+.hub-wordmark {
+  font: 700 46px "Chakra Petch", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 0.96;
+  margin: 0;
+}
+
+.hub-wordmark-sub {
+  color: #25e6d4;
+}
+
+.hub-subtitle {
+  font: 500 13px "Rajdhani", sans-serif;
+  color: #9fb0c9;
+  letter-spacing: 0.04em;
+  margin: 14px 0 0;
+  max-width: 300px;
+}
+
+.hub-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 262px;
+  max-width: 100%;
+  margin-top: 28px;
+}
+
+.hub-actions button {
+  min-height: 44px;
+}
+
+.hub-newrun {
+  font: 700 15px "Chakra Petch", sans-serif;
+  color: #04141a;
+  background: #25e6d4;
+  border: none;
+  border-radius: 2px;
+  padding: 14px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  box-shadow: 0 0 26px rgba(37, 230, 212, 0.4);
+}
+
+.hub-continue {
+  font: 600 13px "Chakra Petch", sans-serif;
+  color: #cdd7e6;
+  background: #0e1018;
+  border: 1px solid #2a3344;
+  border-radius: 2px;
+  padding: 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.hub-continue[hidden] {
+  display: none;
+}
+
+.hub-create {
+  font: 600 13px "Chakra Petch", sans-serif;
+  color: #f0a6ff;
+  background: rgba(224, 86, 253, 0.08);
+  border: 1px solid rgba(224, 86, 253, 0.4);
+  border-radius: 2px;
+  padding: 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.hub-codex {
+  font: 600 13px "Chakra Petch", sans-serif;
+  color: #7c8aa3;
+  background: transparent;
+  border: 1px solid #1d2230;
+  border-radius: 2px;
+  padding: 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.hub-stats {
+  display: flex;
+  gap: 24px;
+  margin-top: 26px;
+}
+
+.hub-stat {
+  text-align: center;
+}
+
+.hub-stat-k {
+  font: 600 9px "Chakra Petch", sans-serif;
+  letter-spacing: 0.12em;
+  color: #5d6b85;
+  text-transform: uppercase;
+}
+
+.hub-stat-v {
+  font: 700 18px "Rajdhani", sans-serif;
+  margin-top: 2px;
+}
+
+.hub-stat-strategy {
+  color: #25e6d4;
+}
+
+.hub-stat-creation {
+  color: #e056fd;
+}
+
+.hub-stat-div {
+  width: 1px;
+  background: #1d2230;
+}
+
+/* Phone (≤700px): the three columns stack — the centre hub first (the mockup's
+   mobile title), then the ideas ladder, then the tower; each full-width, no
+   side-by-side, no horizontal overflow. */
+@media (max-width: 700px) {
+  #title-view {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .hub-grid {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .hub-center {
+    order: 1;
+    padding: 28px 18px;
+  }
+
+  .hub-ideas-col {
+    order: 2;
+    border-right: none;
+    border-top: 1px solid #12151f;
+  }
+
+  .hub-tower-col {
+    order: 3;
+    border-left: none;
+    border-top: 1px solid #12151f;
+  }
+
+  .hub-wordmark {
+    font-size: 40px;
+  }
 }
 
 /* ---------- login (#016 slice 3) ----------
@@ -1626,8 +1911,7 @@ button:disabled:hover {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  margin-top: 0.8rem;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 /* display: flex beats the UA's [hidden] rule — keep the attribute
@@ -1642,24 +1926,16 @@ button:disabled:hover {
   min-height: 44px;
 }
 
-/* #066 slice 6: the account block back on the title (under the menu), same
-   column width as the menu so Login / identity strip line up with it. */
-.title-account {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.6rem;
-  width: min(18rem, 100%);
-  margin-top: 0.8rem;
-}
-
-.title-account > #title-login {
-  min-height: 44px;
+/* #066 slice 6: the account/login lives in the hub utility strip now (B·Arena
+   slice B); the login step panel rides just under the strip. */
+#login-panel {
+  margin-left: auto;
+  margin-right: auto;
 }
 
 #title-net-warn {
   width: min(22rem, 100%);
-  margin-top: 0.8rem;
+  margin: 0.4rem auto 0.6rem;
 }
 
 /* The shared-ladder submit verdict on the run-end screen (#016 slice 3). */
@@ -1681,41 +1957,14 @@ button:disabled:hover {
   min-height: 36px;
 }
 
-/* Dev tools: reachable, never greeting — a dim footnote link under the menu. */
+/* Dev tools: reachable, never greeting — a dim, dotted entry in the hub utility
+   strip (B·Arena slice B), revealed only when dev mode is on. */
 #title-dev {
-  margin-top: 2.2rem;
-  background: none;
-  border: none;
-  color: var(--dim);
-  font-size: 0.75rem;
   text-decoration: underline dotted;
-  min-width: 44px;
-  min-height: 44px;
 }
 
-#title-dev:hover {
-  color: var(--text);
-  border: none;
-}
-
-/* ---------- Settings entry + surface (#066 slice 1) ----------
-   The ⚙ entry is always visible under the menu (account + dev mode live one
-   tap away); the surface stacks two blocks at the title menu's width. */
-
-#title-settings {
-  margin-top: 1.4rem;
-  background: none;
-  border: none;
-  color: var(--dim);
-  font-size: 0.85rem;
-  min-width: 44px;
-  min-height: 44px;
-}
-
-#title-settings:hover {
-  color: var(--text);
-  border: none;
-}
+/* ---------- Settings surface (#066 slice 1) ----------
+   The ⚙ entry rides in the hub utility strip; the surface stacks two blocks. */
 
 #settings-view {
   display: flex;

@@ -141,6 +141,11 @@ let leaderboardView: LadderView | undefined;
 let battleEditor: BattleEditor | undefined;
 let ideasScreen: IdeasScreen | undefined;
 let historyScreen: HistoryScreen | undefined;
+// The title hub's own ladder/tower instances (B·Arena slice B): the same slice-C
+// renders the full screens use, dropped into the hub's left/right columns so the
+// landing shows live ideas + the live tower at once.
+let hubIdeas: IdeasScreen | undefined;
+let hubTower: LadderView | undefined;
 
 // Codex: initialised once, lives in #codex-container. codexUnits() covers
 // every unit a player can meet — shop pool, bootstrap ghosts/champion, summons.
@@ -210,8 +215,9 @@ function showView(which: keyof typeof views): void {
   battleEditor?.setVisible(which === "editor");
   codexScreen.setVisible(which === "codex");
   if (which === "title") {
-    titleScreen.refresh(); // Play vs Continue, read fresh
+    titleScreen.refresh(); // New Run always, Continue gated on an active run
     reflectDevGate(); // dev tools entry shown iff dev mode is on
+    refreshHub(); // the live ideas ladder + Arena Tower in the hub columns
   }
   if (which === "ideas") {
     // Re-pull the public table on every show — list() is the source of truth
@@ -238,6 +244,31 @@ function showView(which: keyof typeof views): void {
   }
 }
 
+/** Re-render the hub's live columns (B·Arena slice B) and the Strategy/Creation
+ * counters. Called on every title show so the landing is never stale. The
+ * counters are derived from what the columns actually rendered — the tower's
+ * floor count is the Strategy number, the ideas count is the Creation number —
+ * so they never drift from the live data (never a hardcoded figure). */
+function refreshHub(): void {
+  // The tower reads the local ladder store (the bootstrap tower logged out, the
+  // synced server ladder logged in) — no network either way, so it renders on
+  // every landing. Strategy # = the tower's floor count.
+  hubTower?.refresh(activeRunMarker());
+  const floors = el("hub-tower-body").querySelectorAll(".tower-floor").length;
+  el("hub-strategy").textContent = `#${floors}`;
+  // The ideas list is a server pull. Logged OUT the landing makes ZERO network
+  // (Maks's gate-call invariant — probe-arena pins it): the ideas column shows
+  // its read-only login-nudge state, and the full ideas screen (one header tap
+  // away) is where an anonymous reader pulls the public table on demand. Logged
+  // IN — already a networked session — pull the live list and count it.
+  if (me !== null) {
+    void hubIdeas?.refresh().then(() => {
+      const ideas = el("hub-ideas-list").querySelectorAll(".ideas-row").length;
+      el("hub-creation").textContent = `#${ideas}`;
+    });
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Title screen (#015 slice 3) — the landing. The Play entry reads the run
 // screen's state at refresh time; the dev tools hide behind one low-prominence,
@@ -247,14 +278,31 @@ function showView(which: keyof typeof views): void {
 const titleScreen = createTitleScreen(
   {
     ornament: el("title-ornament"),
-    play: el<HTMLButtonElement>("title-play"),
+    newRun: el<HTMLButtonElement>("title-play"),
+    continueRun: el<HTMLButtonElement>("title-continue"),
   },
   {
     unitNames: runPool.map((u) => u.name),
     hasActiveRun: () => runScreen?.hasActiveRun() ?? false,
+    // The Continue label's round comes from the SAME stored record the
+    // leaderboard's own-run marker reads (active runs only) — never a guess.
+    activeRound: () => activeRunMarker()?.round ?? null,
   },
 );
+// New Run and Continue both lead to the run view; the run screen decides start
+// vs resume (a fresh device shows the new-run form, an active run resumes).
 el<HTMLButtonElement>("title-play").addEventListener("click", () => showView("run"));
+el<HTMLButtonElement>("title-continue").addEventListener("click", () => showView("run"));
+// The hub's magenta "Create an idea" opens the full ideas screen on its submit
+// box (the reveal is a login nudge when logged out, exactly like every other
+// authed action) — the same funnel the column's footer CTA uses.
+el<HTMLButtonElement>("title-create-idea").addEventListener("click", () => {
+  showView("ideas");
+  el<HTMLButtonElement>("ideas-reveal").click();
+});
+// The column headers double as the doors to the full-screen views; Codex is a
+// center action. Leaderboard/ideas/history keep the old menu's nav ids so every
+// live nav probe still reaches its view by id.
 el<HTMLButtonElement>("title-leaderboard").addEventListener("click", () => showView("leaderboard"));
 el<HTMLButtonElement>("title-ideas").addEventListener("click", () => showView("ideas"));
 el<HTMLButtonElement>("title-history").addEventListener("click", () => showView("history"));
@@ -338,6 +386,17 @@ try {
     registry: stressRegistry,
     abilities: stressAbilities,
     variant: "tower", // the leaderboard wears the compact Arena Tower (slice C)
+    ...(remote !== null ? { holderName: () => remote!.holder() } : {}),
+  });
+  // The hub's right column (B·Arena slice B): the SAME Arena Tower render over
+  // the SAME store, dropped into the title. Its own header is hidden in the hub
+  // (the column supplies the mockup header that opens the full leaderboard); the
+  // floors and chip inspector are the live ones.
+  hubTower = createLadderView(el("hub-tower-body"), {
+    store: ladderStore,
+    registry: stressRegistry,
+    abilities: stressAbilities,
+    variant: "tower",
     ...(remote !== null ? { holderName: () => remote!.holder() } : {}),
   });
   runScreen = createRunScreen(
@@ -517,6 +576,31 @@ ideasScreen = createIdeasScreen(
       showView("title");
       el<HTMLButtonElement>("title-login").click();
     },
+  },
+);
+
+// The hub's left column (B·Arena slice B): the SAME ideas creation ladder over
+// the SAME backing, dropped into the title. Votes and submit route through the
+// SAME login funnel as the full screen — onNeedLogin opens the login panel,
+// which is already on the title. Its own hub-prefixed ids keep it distinct from
+// the full #ideas-view instance.
+hubIdeas = createIdeasScreen(
+  {
+    form: el<HTMLFormElement>("hub-ideas-form"),
+    text: el<HTMLInputElement>("hub-ideas-text"),
+    submit: el<HTMLButtonElement>("hub-ideas-submit"),
+    reveal: el<HTMLButtonElement>("hub-ideas-reveal"),
+    sortTop: el<HTMLButtonElement>("hub-ideas-sort-top"),
+    sortNew: el<HTMLButtonElement>("hub-ideas-sort-new"),
+    status: el("hub-ideas-status"),
+    list: el("hub-ideas-list"),
+    loginNote: el("hub-ideas-login-note"),
+    currency: el("hub-ideas-currency"),
+  },
+  {
+    ideas: ideasBacking,
+    userId: me?.userId ?? null,
+    onNeedLogin: () => el<HTMLButtonElement>("title-login").click(), // already on the title
   },
 );
 

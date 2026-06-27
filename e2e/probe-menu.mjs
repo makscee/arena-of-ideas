@@ -74,7 +74,7 @@ async function abandonFlow(page, tag, reopenSelector) {
   await page.click("#run-abandon-yes");
   await page.waitForSelector("#title-view:not([hidden])");
   check(await page.locator("#title-view").isVisible(), `${tag} confirm lands on the title screen`);
-  check((await page.locator("#title-play").textContent()) === "Play", `${tag} title reads Play after abandon`);
+  check(await page.locator("#title-continue").isHidden(), `${tag} title shows Continue hidden after abandon`);
   check(await menuVisible(page) === false, `${tag} menu control hidden on the title`);
   check(await overlayOpen(page) === false, `${tag} menu overlay closed after abandon`);
   // The stored run is cleared: nothing under the run key.
@@ -146,7 +146,7 @@ async function battleScenario(viewport, tag) {
   // through Continue — the replay resumes at the parked event, never event 0.
   await page.click("#home-button");
   await page.waitForSelector("#title-view:not([hidden])");
-  check((await page.locator("#title-play").textContent()) === "Continue run", `${tag} battle: title reads Continue run mid-battle`);
+  check(await page.locator("#title-continue").isVisible(), `${tag} battle: title shows Continue mid-battle`);
   await page.click("#title-codex");
   await page.waitForSelector("#codex-view:not([hidden])");
   await page.click("#home-button");
@@ -188,7 +188,7 @@ async function reloadScenario(viewport, tag) {
   fresh.setDefaultTimeout(15_000);
   await fresh.goto(BASE, { waitUntil: "domcontentloaded" });
   await fresh.waitForSelector("#title-view:not([hidden])");
-  check((await fresh.locator("#title-play").textContent()) === "Play", `${tag} reload after abandon lands on the title reading Play`);
+  check(await fresh.locator("#title-continue").isHidden(), `${tag} reload after abandon lands on the title with Continue hidden`);
   await fresh.click("#title-play");
   await fresh.waitForSelector("#run-new:not([hidden])");
   check(await fresh.locator("#run-new").isVisible(), `${tag} Play after abandoned-run reload opens the new-run form`);

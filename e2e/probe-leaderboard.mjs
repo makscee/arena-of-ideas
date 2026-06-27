@@ -177,7 +177,7 @@ async function resumeOnFreshPage(ctx, tag, label) {
   await fresh.goto(BASE, { waitUntil: "domcontentloaded" });
   await fresh.waitForSelector("#title-view:not([hidden])");
   check(
-    (await fresh.locator("#title-play").textContent()) === "Continue run",
+    await fresh.locator("#title-continue").isVisible(),
     `${tag} ${label}: title reads Continue run after reload`,
   );
   await fresh.click("#title-play");
