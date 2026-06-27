@@ -49,6 +49,29 @@ async function openIdeas(viewport) {
   return { ctx, page };
 }
 
+/** Seed ONE idea onto the shared table as a DISTINCT player, then close.
+ * One idea per player per day (#082 slice 4) caps each account at a single
+ * submission per run, so a scenario that needs a second idea on the table (to
+ * test vote-driven ranking) seeds it from its own account here. */
+async function seedIdea(viewport, email, displayName, text) {
+  const ctx = await freshContext(viewport);
+  const page = await ctx.newPage();
+  page.setDefaultTimeout(15_000);
+  await page.addInitScript(() => localStorage.removeItem("aoi.run.v1"));
+  await page.goto(BASE, { waitUntil: "domcontentloaded" });
+  await page.waitForSelector("#title-view:not([hidden])");
+  await loginViaUi(page, email, displayName);
+  await page.click("#title-ideas");
+  await page.waitForSelector("#ideas-view:not([hidden])");
+  await page.fill("#ideas-text", text);
+  await page.click("#ideas-submit");
+  await page.waitForFunction(
+    (t) => [...document.querySelectorAll("#ideas-list .ideas-text")].some((e) => e.textContent === t),
+    text,
+  );
+  await ctx.close();
+}
+
 const rowTexts = (page) =>
   page.$$eval("#ideas-list .ideas-row .ideas-text", (els) => els.map((e) => e.textContent));
 
@@ -93,6 +116,13 @@ const waitForCount = (page, text, want) =>
   );
 
 async function scenario(viewport, tag, email) {
+  const mine = `${tag} idea — make poison stack faster`;
+  const other = `${tag} idea — add a draft phase`;
+  // Seed `other` from a SEPARATE account first (one idea per player per day caps
+  // this scenario's player at the single `mine` submission). `other` lands with
+  // an earlier seq, so at equal votes it ranks above `mine` until `mine` is voted.
+  await seedIdea(viewport, `seed-${tag.replace(/[^a-z0-9]/gi, "")}@probe.test`, `Seed ${tag}`, other);
+
   const { ctx, page } = await openIdeas(viewport);
 
   // ---- 1. reachable from the title, renders the screen --------------------
@@ -125,16 +155,13 @@ async function scenario(viewport, tag, email) {
   check(await page.locator("#ideas-text").isEnabled(), `${tag} logged-in enables the submit box`);
 
   // ---- 3a. submit free text → it appears in the table ---------------------
-  const mine = `${tag} idea — make poison stack faster`;
-  const other = `${tag} idea — add a draft phase`;
-  // Submit a SECOND idea first so it sits ABOVE `mine` (equal 0 votes ⇒ earlier
-  // seq ranks higher); voting `mine` must then jump it above `other`.
-  await page.fill("#ideas-text", other);
-  await page.click("#ideas-submit");
+  // The seeded `other` reads on the table — wait for the post-login refresh to
+  // populate the list before asserting. Submit `mine` — the player's ONE idea.
   await page.waitForFunction(
     (t) => [...document.querySelectorAll("#ideas-list .ideas-text")].some((e) => e.textContent === t),
     other,
   );
+  check((await rowTexts(page)).includes(other), `${tag} the seeded idea reads on the table`, other);
   await page.fill("#ideas-text", mine);
   await page.click("#ideas-submit");
   await page.waitForFunction(
@@ -149,6 +176,20 @@ async function scenario(viewport, tag, email) {
     `${tag} with equal votes the earlier idea ranks higher`,
     `${texts.indexOf(other)} < ${texts.indexOf(mine)}`,
   );
+
+  // ---- one idea per player per day: a second submit is refused on the UI ---
+  const extra = `${tag} idea — a second one, same day`;
+  await page.fill("#ideas-text", extra);
+  await page.click("#ideas-submit");
+  await page.waitForFunction(
+    () => /one idea per day/i.test(document.querySelector("#ideas-status")?.textContent ?? ""),
+  );
+  check(
+    /one idea per day/i.test((await page.locator("#ideas-status").textContent()) ?? ""),
+    `${tag} a same-day second submit is refused on the status line`,
+    (await page.locator("#ideas-status").textContent()) ?? "",
+  );
+  check(!(await rowTexts(page)).includes(extra), `${tag} the refused second idea is NOT added to the table`);
 
   // ---- geometry at this viewport (real visibility + sane sizes) -----------
   check(await noHorizontalOverflow(page), `${tag} no horizontal overflow`);
@@ -251,7 +292,9 @@ async function scenario(viewport, tag, email) {
 // between two real ones (an async re-entrancy race — onSubmit cleared the input
 // inside its await window, so a racing second submit read ""), surfacing as a
 // spurious "Type an idea before sending it." and a swallowed idea. After the
-// fix every idea must LAND, in order, with no spurious error.
+// fix NO empty submit fires and no spurious error shows. With one-per-day
+// (#082 slice 4) only the FIRST of the mashed ideas can land — the rest are
+// refused by the day limit (never a phantom-empty "Type an idea" error).
 async function funnelScenario(viewport, tag, email) {
   const ctx = await freshContext(viewport);
   const page = await ctx.newPage();
@@ -283,13 +326,11 @@ async function funnelScenario(viewport, tag, email) {
     await page.fill("#ideas-text", text);
     await page.click("#ideas-submit"); // no settle wait — mash the form
   }
-  // Let the in-flight submits drain, then assert ALL landed with no phantom.
+  // Let the in-flight submits drain — wait for the FIRST idea to land (one-per-
+  // day caps the rest), then assert no phantom fired.
   await page.waitForFunction(
-    (want) => {
-      const rows = [...document.querySelectorAll("#ideas-list .ideas-text")].map((e) => e.textContent);
-      return want.every((t) => rows.includes(t));
-    },
-    ideas,
+    (first) => [...document.querySelectorAll("#ideas-list .ideas-text")].some((e) => e.textContent === first),
+    ideas[0],
     { timeout: 10_000 },
   ).catch(() => {}); // a miss is the defect — asserted explicitly below, not thrown
 
@@ -306,13 +347,12 @@ async function funnelScenario(viewport, tag, email) {
     `status ${JSON.stringify(status)}`,
   );
   const rows = await rowTexts(page);
-  for (const text of ideas) {
-    check(rows.includes(text), `${tag} funnel: "${text}" landed in the table`, `rows ${rows.length}`);
-  }
-  // No swallowed idea AND no phantom duplicate: exactly the three we sent reach
-  // the table (the unfixed code dropped one and double-landed another).
-  const sent = rows.filter((t) => ideas.includes(t));
-  check(sent.length === ideas.length, `${tag} funnel: exactly the submitted ideas land, no dup/drop`, `${sent.length} of ${ideas.length}`);
+  check(rows.includes(ideas[0]), `${tag} funnel: the first idea landed in the table`, `rows ${rows.length}`);
+  // One idea per player per day: exactly ONE of the mashed ideas reaches the
+  // table — the rest are refused by the day limit, never silently swallowed and
+  // never phantom-duplicated.
+  const landed = rows.filter((t) => ideas.includes(t));
+  check(landed.length === 1, `${tag} funnel: exactly one idea lands (one-per-day), no dup/drop`, `${landed.length} of ${ideas.length}`);
 
   await ctx.close();
 }

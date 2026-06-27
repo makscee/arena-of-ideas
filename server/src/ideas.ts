@@ -25,7 +25,7 @@
  * route reads the request, calls one of these, and json's the outcome. No
  * wall-clock reads in the fns — `clock` is injected, unix seconds.
  */
-import { and, eq, max, sql } from "drizzle-orm";
+import { and, eq, gte, lt, max, sql } from "drizzle-orm";
 import {
   assertSubmittableText,
   rankIdeas,
@@ -50,16 +50,36 @@ export type CastVoteOutcome =
   | { cast: true; direction: VoteDir; idea: Idea }
   | { cast: false; reason: string };
 
+/** Seconds in a day — the one-per-day window, measured against UTC midnight
+ * (unix time is anchored to UTC midnight, so flooring to this aligns days). */
+const DAY_SECONDS = 86_400;
+
 /** Submit an idea by `authorId`. Text is trimmed and validated by the kernel's
  * shared rule (empty/whitespace-only is rejected) so this backing can never
- * disagree with the in-memory one on what counts as submittable. The new idea
- * gets the next submission ordinal and an empty vote set. */
+ * disagree with the in-memory one on what counts as submittable. One idea per
+ * player per UTC day: a second submit inside the same day is refused (the limit
+ * is a SERVER rule — the client can't be trusted — read against the injected
+ * `clock` and the already-present `ideas.created_at`, no new state). The new
+ * idea gets the next submission ordinal and an empty vote set. */
 export function submitIdea(deps: IdeaDeps, authorId: string, text: string): SubmitIdeaOutcome {
   let trimmed: string;
   try {
     trimmed = assertSubmittableText(text);
   } catch (err) {
     return { submitted: false, reason: (err as Error).message };
+  }
+  // One-per-day: count this author's ideas created within the current UTC day.
+  const dayStart = Math.floor(deps.clock() / DAY_SECONDS) * DAY_SECONDS;
+  const todays = deps.db
+    .select({ c: sql<number>`count(*)` })
+    .from(ideasTable)
+    .where(and(eq(ideasTable.authorId, authorId), gte(ideasTable.createdAt, dayStart), lt(ideasTable.createdAt, dayStart + DAY_SECONDS)))
+    .all()[0]?.c ?? 0;
+  if (todays >= 1) {
+    return {
+      submitted: false,
+      reason: "You've already shared an idea today — one idea per day. The limit resets at midnight UTC.",
+    };
   }
   const seq = nextSeq(deps.db);
   const id = `idea-${seq}`;

@@ -128,9 +128,50 @@ describe("submit and list", () => {
   test("seq increments per submission — ids stay stable and unique", async () => {
     const ctx = makeCtx();
     const ada = await login(ctx, "ada@example.com");
+    // One idea per author per day — step the clock a day per submit so the same
+    // author may seed several ideas (the seq/id contract is what's under test).
     expect((await submitIdea(ctx, ada, "first")).body.idea).toMatchObject({ id: "idea-0", seq: 0 });
+    ctx.now.sec += DAY;
     expect((await submitIdea(ctx, ada, "second")).body.idea).toMatchObject({ id: "idea-1", seq: 1 });
+    ctx.now.sec += DAY;
     expect((await submitIdea(ctx, ada, "third")).body.idea).toMatchObject({ id: "idea-2", seq: 2 });
+  });
+});
+
+const DAY = 86_400;
+
+describe("one idea per player per day", () => {
+  test("first submit of a day succeeds; a second is refused (422, not stored); next day succeeds", async () => {
+    const ctx = makeCtx();
+    const ada = await login(ctx, "ada@example.com");
+
+    const first = await submitIdea(ctx, ada, "idea one");
+    expect(first.status).toBe(200);
+    expect(first.body).toMatchObject({ submitted: true });
+
+    // Second submit the SAME UTC day → refused with a player-shaped reason, 422.
+    const second = await submitIdea(ctx, ada, "idea two");
+    expect(second.status).toBe(422);
+    expect(second.body).toMatchObject({ submitted: false });
+    expect(second.body.reason).toMatch(/one idea per day/i);
+    expect(await listIdeas(ctx)).toHaveLength(1); // idea two was NOT stored
+
+    // Advance the injected clock past the UTC day boundary → allowed again.
+    ctx.now.sec += DAY;
+    const next = await submitIdea(ctx, ada, "idea three");
+    expect(next.status).toBe(200);
+    expect(next.body).toMatchObject({ submitted: true });
+    expect(await listIdeas(ctx)).toHaveLength(2);
+  });
+
+  test("the limit is per-player — another author may submit the same day", async () => {
+    const ctx = makeCtx();
+    const ada = await login(ctx, "ada@example.com");
+    const bob = await login(ctx, "bob@example.com");
+    expect((await submitIdea(ctx, ada, "ada's idea")).status).toBe(200);
+    expect((await submitIdea(ctx, bob, "bob's idea")).status).toBe(200); // different author, same day → fine
+    expect((await submitIdea(ctx, ada, "ada again")).status).toBe(422); // ada's second → refused
+    expect(await listIdeas(ctx)).toHaveLength(2);
   });
 });
 
@@ -245,8 +286,11 @@ describe("vote-currency (derived, no stored counter)", () => {
   test("counts distinct ideas voted, unchanged by a flip or a re-cast", async () => {
     const ctx = makeCtx();
     const ada = await login(ctx, "ada@example.com");
+    // One idea per author per day — step the clock per submit to seed three.
     const a = (await submitIdea(ctx, ada, "idea A")).body.idea.id;
+    ctx.now.sec += DAY;
     const b = (await submitIdea(ctx, ada, "idea B")).body.idea.id;
+    ctx.now.sec += DAY;
     const c = (await submitIdea(ctx, ada, "idea C")).body.idea.id;
 
     expect(await currencyOf(ctx, ada)).toBe(0); // voted on nothing yet
@@ -281,8 +325,12 @@ describe("list returns ranked order", () => {
     const bob = await login(ctx, "bob@example.com");
     const cat = await login(ctx, "cat@example.com");
 
+    // One idea per author per day — step the clock a day per submit so ada may
+    // seed the three ideas under test.
     const a = (await submitIdea(ctx, ada, "idea A")).body.idea.id; // seq 0
+    ctx.now.sec += DAY;
     const b = (await submitIdea(ctx, ada, "idea B")).body.idea.id; // seq 1
+    ctx.now.sec += DAY;
     const c = (await submitIdea(ctx, ada, "idea C")).body.idea.id; // seq 2
 
     // B gets 3 up (+3), A gets 1 up (+1), C gets a down (−1).
@@ -324,6 +372,7 @@ describe("serialized shape round-trips through a real request cycle", () => {
     const bobId = (await meOf(ctx, bob)).userId;
 
     const id1 = (await submitIdea(ctx, ada, "alpha")).body.idea.id;
+    ctx.now.sec += DAY; // one idea per author per day — step to seed beta
     await submitIdea(ctx, ada, "beta");
     await voteIdea(ctx, ada, id1, "up");
     await voteIdea(ctx, bob, id1, "down");
