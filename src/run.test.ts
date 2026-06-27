@@ -6,6 +6,7 @@ import {
   buy,
   deserializeRun,
   fight,
+  fuse,
   initRun,
   InvalidDecisionError,
   playRun,
@@ -384,5 +385,93 @@ describe("serialization", () => {
     expect(() => deserializeRun("not json")).toThrow(/not valid JSON/);
     expect(() => deserializeRun('{"status":"weird"}')).toThrow(/not a RunState/);
     expect(() => deserializeRun(JSON.stringify({ ...playRun(INPUT, before), pool: [] }))).toThrow(ValidationError);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Fusion gate — different-ability-only, one presented colour (PRD #081 slice 5)
+// ---------------------------------------------------------------------------
+
+describe("fusion gate (#081)", () => {
+  // Build a line of two units with DISTINCT abilities by buying distinct-named
+  // offers (each shipped stress unit has its own ability id).
+  function twoDistinct(seed: number): RunState {
+    let s = initRun({ seed, pool: POOL, statuses: stressRegistry, abilities: stressAbilities });
+    let guard = 0;
+    while (s.team.length < 2 && guard++ < 100) {
+      const idx = s.offers.findIndex((o) => !s.team.some((t) => t.name === o.name));
+      s = idx >= 0 && s.gold >= UNIT_COST ? buy(s, idx) : reroll(s);
+    }
+    return s;
+  }
+
+  test("two units with distinct abilities fuse into one presenting a single ability/colour", () => {
+    const s = twoDistinct(7);
+    expect(s.team.length).toBeGreaterThanOrEqual(2);
+    const a = s.team[0]!;
+    const b = s.team[1]!;
+    expect(a.def.ability).not.toBe(b.def.ability); // distinct → allowed
+    const fused = fuse(s, 0, 1);
+    // The line shrinks by one; the fused unit presents exactly ONE ability — the
+    // primary's — so it has exactly one colour (its def's family).
+    expect(fused.team.length).toBe(s.team.length - 1);
+    const kept = fused.team[0]!;
+    expect(kept.name).toBe(a.name);
+    expect(kept.def.ability).toBe(a.def.ability);
+    // toBattleTeam projects exactly the one presented ability (the secondary's
+    // mechanic does NOT ride into battle in v1 — slot-stacking is deferred).
+    const battleUnit = toBattleTeam(fused.team)[0]!;
+    expect(battleUnit.ability).toBe(a.def.ability);
+    // The absorbed parent's ability is recorded as a (deferred) slot.
+    expect(kept.absorbed).toContain(b.def.ability);
+    // A Fused event records the presented + absorbed abilities.
+    const ev = ofType(fused.log, "Fused");
+    expect(ev).toHaveLength(1);
+    expect(ev[0]!.ability).toBe(a.def.ability);
+    expect(ev[0]!.absorbedAbility).toBe(b.def.ability);
+  });
+
+  test("two units with the SAME ability cannot fuse (that is what copy-stacking is for)", () => {
+    const pool: UnitDef[] = [
+      { name: "Alpha", base: { hp: 6, pwr: 1 }, ability: "Strike" },
+      { name: "Beta", base: { hp: 6, pwr: 1 }, ability: "Strike" },
+    ];
+    let s = initRun({ seed: 4, pool, statuses: stressRegistry, abilities: stressAbilities });
+    let guard = 0;
+    while (s.team.length < 2 && guard++ < 100) {
+      const idx = s.offers.findIndex((o) => !s.team.some((t) => t.name === o.name));
+      s = idx >= 0 && s.gold >= UNIT_COST ? buy(s, idx) : reroll(s);
+    }
+    expect(s.team.length).toBe(2);
+    expect(s.team[0]!.def.ability).toBe(s.team[1]!.def.ability); // same ability
+    expect(() => fuse(s, 0, 1)).toThrow(InvalidDecisionError);
+    expect(() => fuse(s, 0, 1)).toThrow(/distinct abilities/);
+  });
+
+  test("fusing a unit with itself, or an out-of-range index, is rejected loudly", () => {
+    const s = twoDistinct(7);
+    expect(() => fuse(s, 0, 0)).toThrow(/cannot fuse with itself/);
+    expect(() => fuse(s, 0, 99)).toThrow(/outside the line/);
+  });
+
+  test("copy-stacking into levels is untouched by fusion (STACK_THRESHOLD intact)", () => {
+    const soloInput: RunInput = { seed: 3, pool: [vanilla("Grunt", 5, 2)], statuses: stressRegistry, abilities: stressAbilities };
+    let s = initRun(soloInput);
+    for (let i = 0; i < STACK_THRESHOLD; i++) s = buy(s, s.offers.findIndex((o) => o.name === "Grunt"));
+    // Same-name copies still fuse into a LEVEL — a separate mechanic from #081 fusion.
+    expect(s.team[0]!.level).toBe(2);
+    expect(ofType(s.log, "LeveledUp")).toHaveLength(1);
+  });
+
+  test("a fused run replays byte-identical through the decision sequence (determinism)", () => {
+    const s = twoDistinct(7);
+    // Reconstruct the same prefix of decisions is awkward; instead assert fuse is
+    // a pure function: same state + same indices → identical result + log.
+    const a = serializeRun(fuse(s, 0, 1));
+    const b = serializeRun(fuse(s, 0, 1));
+    expect(a).toBe(b);
+    // And applyDecision routes a fuse decision identically.
+    const viaDecision = serializeRun(applyDecision(s, { kind: "fuse", primary: 0, secondary: 1 }));
+    expect(viaDecision).toBe(a);
   });
 });

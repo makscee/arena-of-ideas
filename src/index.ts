@@ -3,7 +3,7 @@
 export const KERNEL_VERSION = "5.0.0-alpha.0";
 
 export { battle, toJSONL, winnerOf, TEAM_SIZE, FATIGUE_START, FATIGUE_RAMP, TURN_CAP, fatigueAmount } from "./battle.js";
-export { initRun, buy, reroll, reorder, fight, ladderFight, challengeBoss, applyDecision, playRun, runToJSONL, serializeRun, deserializeRun, toBattleTeam, InvalidDecisionError } from "./run.js";
+export { initRun, buy, reroll, reorder, fuse, fight, ladderFight, challengeBoss, applyDecision, playRun, runToJSONL, serializeRun, deserializeRun, toBattleTeam, InvalidDecisionError } from "./run.js";
 export type { RunInput, RunState, RunStatus, RunEndReason, RunUnit, RunDecision, RunEvent, RunEventBody, RunEventType } from "./run.js";
 // The file backing (FileLadderStore) lives in ladder-file.ts, off this index:
 // it needs node:fs and the browser client imports this module. Its engine

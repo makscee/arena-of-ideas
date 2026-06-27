@@ -55,8 +55,14 @@ export interface RunUnit {
   level: number;
   /** Copies absorbed since the last level-up (1..STACK_THRESHOLD−1). */
   stacks: number;
-  /** The def as drafted — abilities and initial statuses come from it. */
+  /** The def as drafted — its one ability and initial statuses come from it. */
   def: UnitDef;
+  /** Ability ids fused IN from distinct-ability parents (PRD #081 fusion). The
+   * unit still PRESENTS exactly one ability/colour (its `def.ability`); these are
+   * the absorbed parents' abilities, recorded as the slots they will ride as —
+   * the slot-stacking mechanic and its budget are deferred (SPEC §8), so they do
+   * not affect battle in v1 (toBattleTeam emits only `def`). Empty unless fused. */
+  absorbed?: string[];
 }
 
 /** A run accepts decisions while "active"; an "over" run rejects them all. */
@@ -113,6 +119,7 @@ export type RunDecision =
   | { kind: "buy"; offer: number } // index into the current offers
   | { kind: "reroll" }
   | { kind: "reorder"; from: number; to: number } // line positions
+  | { kind: "fuse"; primary: number; secondary: number } // fuse two distinct-ability units (PRD #081)
   | { kind: "fight"; opponent: UnitDef[] } // an explicit opponent; ladderFight draws its own from the store
   | { kind: "challengeBoss" }; // a store-taking, terminal move — like ladderFight, invoked directly, not through applyDecision
 
@@ -124,6 +131,10 @@ export type RunEventBody =
   | { type: "LeveledUp"; unit: string; level: number; hp: number; pwr: number }
   | { type: "Rerolled"; cost: number; gold: number }
   | { type: "Reordered"; from: number; to: number }
+  // Fusion (PRD #081): two units of DISTINCT abilities combine into one that
+  // presents a single ability/colour (the primary's). `ability` is the presented
+  // (primary's) ability id; `absorbed` is the secondary's, recorded as a slot.
+  | { type: "Fused"; primary: string; absorbed: string; ability: string; absorbedAbility: string }
   | { type: "FightFought"; battleSeed: number; winner: Side | "draw"; turns: number; lives: number }
   // ladder events — the run's side of every store mutation and draw, so the
   // run log alone explains a ladder fight (the envelope's round = the pool).
@@ -262,6 +273,44 @@ export function reorder(state: RunState, from: number, to: number): RunState {
   const [u] = s.team.splice(from, 1);
   s.team.splice(to, 0, u!);
   emit(s, { type: "Reordered", from, to });
+  return s;
+}
+
+/** Fuse two units on the line (PRD #081). The gate: two units may fuse **iff
+ * their ability ids differ** — fusion combines distinct colours/mechanics, so a
+ * same-ability pair is rejected (that is what copy-stacking-into-levels is for,
+ * and STACK_THRESHOLD is untouched). The result presents **exactly one ability
+ * (one colour)**: it keeps the primary (the unit at `primary`, by convention the
+ * front/kept one) — its ability, colour, stats, level, statuses — and the
+ * secondary is consumed, its ability id recorded on the fused unit's `absorbed`
+ * slots. The slot-stacking *mechanic* and its budget are deferred (SPEC §8): in
+ * v1 the absorbed ability rides as data only and does not affect battle. */
+export function fuse(state: RunState, primary: number, secondary: number): RunState {
+  assertActive(state, "fuse");
+  for (const [label, i] of [["primary", primary], ["secondary", secondary]] as const) {
+    if (!Number.isInteger(i) || i < 0 || i >= state.team.length) {
+      throw new InvalidDecisionError("fuse", `${label} ${i} is outside the line (0..${state.team.length - 1})`);
+    }
+  }
+  if (primary === secondary) {
+    throw new InvalidDecisionError("fuse", "a unit cannot fuse with itself — pick two distinct line positions");
+  }
+  const p = state.team[primary]!;
+  const sec = state.team[secondary]!;
+  if (p.def.ability === sec.def.ability) {
+    throw new InvalidDecisionError(
+      "fuse",
+      `${p.name} and ${sec.name} share the ability "${p.def.ability}" — fusion needs distinct abilities (same-ability copies stack into a level instead)`,
+    );
+  }
+  const s = clone(state);
+  const keep = s.team[primary]!;
+  // The fused unit presents the primary's one ability/colour; the secondary's
+  // ability is recorded as an absorbed slot (its own absorbed slots ride along),
+  // the slot mechanic deferred (SPEC §8).
+  keep.absorbed = [...(keep.absorbed ?? []), sec.def.ability, ...(sec.absorbed ?? [])];
+  s.team.splice(secondary, 1);
+  emit(s, { type: "Fused", primary: keep.name, absorbed: sec.name, ability: keep.def.ability, absorbedAbility: sec.def.ability });
   return s;
 }
 
@@ -458,6 +507,8 @@ export function applyDecision(state: RunState, d: RunDecision): RunState {
       return reroll(state);
     case "reorder":
       return reorder(state, d.from, d.to);
+    case "fuse":
+      return fuse(state, d.primary, d.secondary);
     case "fight":
       return fight(state, d.opponent);
     case "challengeBoss":
