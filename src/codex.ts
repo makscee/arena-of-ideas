@@ -27,9 +27,10 @@ import {
   UNIT_COST,
   incomeForRound,
 } from "./tunables.js";
-import { describeAbility, describeStatus } from "./describe.js";
+import { describeAbility, describeAbilityDef, describeStatus } from "./describe.js";
+import { familyHex } from "./tunables.js";
 import { partAtoms } from "./parts.js";
-import type { Ability, AbilityRegistry, StatusRegistry, UnitDef } from "./types.js";
+import type { Ability, AbilityRegistry, Family, StatusRegistry, UnitDef } from "./types.js";
 
 /** A unit's resolved ability bodies (PRD #081): its one `ability` ref looked up
  * in the registry, with the legacy inline `abilities[]` as a back-compat read.
@@ -55,12 +56,34 @@ export interface CodexStatusEntry {
   pwr: string;
 }
 
+/** An entry in the Ability catalogue (PRD #081) — beside the Status catalogue.
+ * Every shipped ability lists with its family (the colour axis), the derived
+ * hex, and its DSL-derived description. */
+export interface CodexAbilityEntry {
+  /** Ability id/name — anchor fragment: #codex/ability/<name> */
+  name: string;
+  /** The colour family (one of 7). */
+  family: Family;
+  /** The family's hex — derived from the one palette (tunables FAMILY_HEX). */
+  hex: string;
+  description: string;
+}
+
 export interface CodexUnitEntry {
   /** Unit name — anchor fragment: #codex/unit/<name> */
   name: string;
   hp: number;
   pwr: number;
-  /** One sentence per ability, or empty array for vanilla bodies. */
+  /** The unit's single ability id (PRD #081) — the ref it carries. */
+  ability: string;
+  /** The unit's colour family, derived from its ability; absent only if the
+   * ability isn't in the registry the codex was built with (shipped: always). */
+  family?: Family;
+  /** The unit's colour hex, derived from its family (tunables FAMILY_HEX). */
+  hex?: string;
+  /** The ability's description sentence(s) — a 1-element array for a unit's one
+   * ability, empty if the ability didn't resolve. Kept as an array for the
+   * search index and the card's ability line. */
   abilities: string[];
   /** Starting statuses, e.g. "Strength ×3" — empty for most units. */
   statuses: string[];
@@ -94,6 +117,9 @@ export interface CodexRuleEntry {
 
 export interface CodexData {
   statuses: CodexStatusEntry[];
+  /** The Ability catalogue (PRD #081) — every shipped ability with its family,
+   * colour hex, and description, beside the Status catalogue. */
+  abilities: CodexAbilityEntry[];
   units: CodexUnitEntry[];
   /** Every creator atom (Part) the type space defines — one entry per Trigger,
    * Interceptor, Condition, Selector, Effect (#078). Derived from the type
@@ -149,6 +175,19 @@ export function buildCodex(registry: StatusRegistry, units: UnitDef[], abilities
   }));
   statuses.sort((a, b) => a.name.localeCompare(b.name));
 
+  // -- abilities: every entry in the ability registry (PRD #081) --
+  // The Ability catalogue beside the Status catalogue: each shipped ability with
+  // its family (the colour axis), the derived hex from the one palette, and its
+  // DSL-derived description. #080's card and #082/#083's displays render colour +
+  // ability-line from here.
+  const abilityEntries: CodexAbilityEntry[] = Object.values(abilities).map((def) => ({
+    name: def.name,
+    family: def.family,
+    hex: familyHex(def.family),
+    description: describeAbilityDef(def),
+  }));
+  abilityEntries.sort((a, b) => a.name.localeCompare(b.name));
+
   // -- units: every unique name in the list --
   const seen = new Set<string>();
   const unitEntries: CodexUnitEntry[] = [];
@@ -158,10 +197,16 @@ export function buildCodex(registry: StatusRegistry, units: UnitDef[], abilities
     // Creator credit rides on approved units as a non-DSL `_creator` field
     // (src/registry.ts) — the kernel ignores it, the codex shows it.
     const creator = (u as { _creator?: unknown })._creator;
+    // The unit's colour is its ability's family, derived here, never stored on
+    // the unit (PRD #081). Resolves for shipped content; absent only if the
+    // codex was built without the ability in its registry.
+    const family: Family | undefined = abilities[u.ability]?.family;
     unitEntries.push({
       name: u.name,
       hp: u.base.hp,
       pwr: u.base.pwr,
+      ability: u.ability,
+      ...(family !== undefined ? { family, hex: familyHex(family) } : {}),
       abilities: unitAbilityDefs(u, abilities).map((ab) => describeAbility(ab)),
       statuses: (u.statuses ?? []).map((s) => `${s.status} ×${s.stacks}`),
       ...(typeof creator === "string" && creator.length > 0 ? { creator } : {}),
@@ -272,5 +317,5 @@ export function buildCodex(registry: StatusRegistry, units: UnitDef[], abilities
     },
   ];
 
-  return { statuses, units: unitEntries, parts, rules };
+  return { statuses, abilities: abilityEntries, units: unitEntries, parts, rules };
 }

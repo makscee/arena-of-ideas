@@ -27,6 +27,8 @@ import {
   STARTING_LIVES,
   UNIT_COST,
   incomeForRound,
+  FAMILY_HEX,
+  familyHex,
 } from "./tunables.js";
 import { FATIGUE_RAMP, FATIGUE_START, TURN_CAP, fatigueAmount } from "./battle.js";
 
@@ -102,6 +104,58 @@ describe("codex — unit coverage", () => {
   it("Warlord entry carries its starting Strength stacks", () => {
     const w = codex.units.find((u) => u.name === "Warlord")!;
     expect(w.statuses.join(" ")).toMatch(/Strength ×\d/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The Ability catalogue + colour-from-family derive (PRD #081 slice 4)
+// ---------------------------------------------------------------------------
+
+describe("codex — ability catalogue (#081)", () => {
+  it("lists every shipped ability with its family and the palette hex", () => {
+    const byName = new Map(codex.abilities.map((a) => [a.name, a]));
+    // Every entry in the shipped registry has a catalogue card.
+    for (const [id, def] of Object.entries(stressAbilities)) {
+      const entry = byName.get(id);
+      expect(entry, `ability ${id} catalogued`).toBeDefined();
+      expect(entry!.family).toBe(def.family);
+      // The hex is derived from the one palette, never re-typed.
+      expect(entry!.hex).toBe(FAMILY_HEX[def.family]);
+    }
+    expect(codex.abilities.length).toBe(Object.keys(stressAbilities).length);
+  });
+
+  it("every catalogued ability's family hex matches the pinned palette", () => {
+    expect(FAMILY_HEX).toEqual({
+      Poison: "#a06bff",
+      Strike: "#ff7a4d",
+      Shield: "#4d9bff",
+      Summon: "#25e6d4",
+      Arcane: "#e056fd",
+      Control: "#6b8cff",
+      Heal: "#33d98a",
+    });
+  });
+
+  it("derives a unit's colour from its ability's family — unit → ability → family → hex", () => {
+    // Venomancer references Venom (Poison family) → #a06bff.
+    const venom = codex.units.find((u) => u.name === "Venomancer")!;
+    expect(venom.ability).toBe("Venom");
+    expect(venom.family).toBe("Poison");
+    expect(venom.hex).toBe(familyHex("Poison"));
+    expect(venom.hex).toBe("#a06bff");
+    // A plain body references the inert Strike ability → Strike family → #ff7a4d.
+    const brawler = codex.units.find((u) => u.name === "Brawler")!;
+    expect(brawler.ability).toBe("Strike");
+    expect(brawler.family).toBe("Strike");
+    expect(brawler.hex).toBe("#ff7a4d");
+  });
+
+  it("every shipped unit derives a family and hex (no colourless unit)", () => {
+    for (const u of codex.units) {
+      expect(u.family, `${u.name} family`).toBeDefined();
+      expect(u.hex, `${u.name} hex`).toBe(familyHex(u.family!));
+    }
   });
 });
 

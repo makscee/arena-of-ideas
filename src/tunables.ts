@@ -4,7 +4,26 @@
 // Battle-side constants (TEAM_SIZE, FATIGUE_*, TURN_CAP) stay in battle.ts.
 
 import { Necromancer, Silencer, Summoner, Venomancer } from "./content/stress.js";
-import type { UnitDef } from "./types.js";
+import type { Family, UnitDef } from "./types.js";
+
+/** The family→colour palette (PRD #081): a Unit's colour is its Ability's family,
+ * and this is the one place that maps the 7 families to their pinned hexes — the
+ * card (#080), the codex Ability catalogue, and every content display read it
+ * here, never a re-typed copy. Pinned by the B·Arena mockup. */
+export const FAMILY_HEX: Record<Family, string> = {
+  Poison: "#a06bff",
+  Strike: "#ff7a4d",
+  Shield: "#4d9bff",
+  Summon: "#25e6d4",
+  Arcane: "#e056fd",
+  Control: "#6b8cff",
+  Heal: "#33d98a",
+};
+
+/** A family's colour hex — the derived unit colour, read from the one palette. */
+export function familyHex(family: Family): string {
+  return FAMILY_HEX[family];
+}
 
 /** Gold in hand when a run begins — round 1's shopping budget (SAP-like 10). */
 export const STARTING_GOLD = 10;

@@ -6,6 +6,7 @@
 
 import type {
   Ability,
+  AbilityDef,
   Amount,
   Condition,
   Effect,
@@ -272,6 +273,15 @@ export function describeEffect(e: Effect, target: string, opts: DescribeOpts = {
  */
 export function describeAbility(ab: Ability, opts: DescribeOpts = {}): string {
   return joinSegments(describeAbilitySegments(ab, opts));
+}
+
+/** One sentence for a named AbilityDef (PRD #081) — the same derived body
+ * sentence describeAbility yields. The name and family (the colour axis) are
+ * presented separately by the codex; the description is the mechanic, derived
+ * from the DSL like everything else. An inert ability (the vanilla Strike,
+ * whose effects emit nothing) reads as a plain basic attack. */
+export function describeAbilityDef(def: AbilityDef, opts: DescribeOpts = {}): string {
+  return describeAbility(def, opts);
 }
 
 /** describeAbility as segments — identical text, with status AND Part refs

@@ -107,6 +107,25 @@ export function createCodex(
   });
   container.append(sectionEl("statuses", "Statuses", grid(statusCards, "codex-grid-statuses")));
 
+  // Section: abilities — the Ability catalogue (PRD #081), beside Statuses. Each
+  // shipped ability lists with its family swatch (the colour axis, hex from the
+  // one palette) and its kernel-derived description. This is the source #080's
+  // card and #082/#083's displays read colour + ability-line from.
+  const abilityCards = data.abilities.map((a) => {
+    return (
+      `<div class="codex-entry codex-ability-entry" id="codex-ability-${encodeId(a.name)}"` +
+      ` data-search="${esc(`${a.name} ${a.family} ${a.description}`.toLowerCase())}">` +
+      anchorHtml(`codex/ability/${a.name}`) +
+      `<div class="codex-ability-head">` +
+      `<span class="codex-ability-swatch" style="background:${esc(a.hex)}" data-hex="${esc(a.hex)}"></span>` +
+      `<span class="codex-ability-name">${esc(a.name)}</span>` +
+      `<span class="codex-ability-family" data-family="${esc(a.family)}">${esc(a.family)}</span>` +
+      `</div>` +
+      `<div class="codex-entry-desc">${esc(a.description)}</div></div>`
+    );
+  });
+  container.append(sectionEl("abilities", "Abilities", grid(abilityCards, "codex-grid-abilities")));
+
   // Section: units — the shared card (art, framed stats, chips) over the
   // derived ability sentences; credit line for approved creation-loop units.
   const unitCards = data.units.map((u) => {

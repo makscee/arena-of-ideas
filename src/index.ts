@@ -102,7 +102,7 @@ export type { ValidationIssue } from "./validate.js";
 export type * from "./types.js";
 export * from "./content/stress.js";
 export { buildCodex, codexUnits } from "./codex.js";
-export type { CodexData, CodexStatusEntry, CodexUnitEntry, CodexPartEntry, CodexRuleEntry } from "./codex.js";
+export type { CodexData, CodexStatusEntry, CodexAbilityEntry, CodexUnitEntry, CodexPartEntry, CodexRuleEntry } from "./codex.js";
 export { partAtoms } from "./parts.js";
 export type { PartAtom } from "./parts.js";
 export { mergePool, parseApprovedRegistry, creditsOf } from "./registry.js";
