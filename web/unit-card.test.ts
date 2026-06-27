@@ -182,6 +182,59 @@ describe("B·Arena card (#080): family + full variant", () => {
   });
 });
 
+describe("B·Arena card (#080): compact variant", () => {
+  const base = {
+    artName: "Venomancer",
+    label: "Venomancer",
+    hp: 6,
+    pwr: 1,
+    registry: stressRegistry,
+    family: "Poison" as Family,
+    abilityLabel: "Toxic Strike",
+    trigger: "Front",
+    action: "2",
+    statuses: [{ status: "Poison", stacks: 2 }],
+    attrs: 'data-line="0"',
+    title: "Venomancer",
+  };
+
+  test("compact drops the art area and rides a mini sigil in the header", () => {
+    const compact = unitCardHtml({ ...base, variant: "compact" });
+    expect(compact).toContain("is-compact");
+    expect(compact).not.toContain('class="ub-art"'); // no full art block
+    expect(compact).toContain('class="ub-mini"'); // sigil moves into the header
+    expect(compact).toContain("ub-sigil-mini");
+  });
+
+  test("compact vs full diverge: full has the art area, compact has the header sigil", () => {
+    const full = unitCardHtml({ ...base, variant: "full" });
+    const compact = unitCardHtml({ ...base, variant: "compact" });
+    expect(full).toContain('class="ub-art"');
+    expect(full).not.toContain('class="ub-mini"');
+    expect(compact).not.toContain('class="ub-art"');
+    expect(compact).toContain('class="ub-mini"');
+    // narrower chamfer is the CSS hook `is-compact` (9px) vs `is-full` (12px)
+    expect(full).toContain("is-full");
+    expect(compact).toContain("is-compact");
+  });
+
+  test("compact still carries family colour + the card contract anchors", () => {
+    const compact = unitCardHtml({ ...base, variant: "compact" });
+    expect(compact).toContain('style="--fam:#a06bff"');
+    expect(compact).toContain("fam-poison");
+    expect(compact).toContain('class="uname">Venomancer</span>');
+    expect(compact).toContain('<span class="hp">6</span>');
+    expect(compact).toContain('<span class="pwr">1</span>');
+    expect(compact).toContain('class="chips"');
+    expect(compact).toContain('fill="#a06bff"'); // sigil colour
+  });
+
+  test("compact keeps the level badge + fusion pips for the line card", () => {
+    const compact = unitCardHtml({ ...base, variant: "compact", level: 2, pips: "●●○" });
+    expect(compact).toMatch(/class="run-lvl">L2 <span class="run-pips">●●○<\/span>/);
+  });
+});
+
 describe("every unit render site draws through the one component", () => {
   const here = dirname(fileURLToPath(import.meta.url));
   for (const f of ["run-screen.ts", "board-render.ts", "ladder-view.ts", "codex.ts"]) {
