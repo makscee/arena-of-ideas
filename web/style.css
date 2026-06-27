@@ -1732,7 +1732,7 @@ button:disabled:hover {
   padding: 0.9rem 1rem;
   margin-bottom: 1rem;
   font-size: 0.85rem;
-  box-shadow: 0 0 18px rgba(201, 162, 39, 0.15);
+  box-shadow: 0 0 24px rgba(255, 210, 74, 0.18);
 }
 
 #leaderboard-view .lv-champ .lv-team {
@@ -2798,38 +2798,53 @@ button:disabled:hover {
   margin-top: 1.2rem;
 }
 
+/* The champion crown — the B·Arena gold floor: a chamfered gold-tinted panel,
+   the family glow following the cut corner. Gold is the summit colour (mockup). */
 .lv-champ {
-  background: var(--panel);
-  border: 1px solid #c9a227;
-  border-radius: 6px;
-  padding: 0.5rem 0.7rem;
+  background: linear-gradient(90deg, rgba(255, 210, 74, 0.12), rgba(255, 210, 74, 0.02));
+  border: 1px solid rgba(255, 210, 74, 0.45);
+  border-radius: 0;
+  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+  padding: 0.55rem 0.75rem;
   margin: 0.3rem 0 0.6rem;
   font-size: 0.8rem;
+  box-shadow: 0 0 22px rgba(255, 210, 74, 0.14);
 }
 
+/* Floor / section labels — Chakra Petch, uppercase, tracked, gold on the crown. */
 .lv-k {
-  color: #e8c547;
-  font-weight: 600;
+  font-family: var(--font-title);
+  color: var(--gold);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.72rem;
 }
 
 .lv-who {
-  color: var(--dim);
+  color: var(--muted);
+  font-family: var(--font-body);
 }
 
 .lv-rounds {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.3rem;
 }
 
+/* A tower floor — a chamfered dark panel, the climb stack reading top-down. */
 .lv-round {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.15rem 0.4rem;
+  background: #0c0f16;
+  border: 1px solid #1d2533;
+  border-radius: 0;
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+  padding: 0.15rem 0.45rem;
 }
 
+/* The floor you fight on — the B·Arena cyan accent (mockup's "you" floor). */
 .lv-round.here {
-  border-color: var(--you);
+  border-color: rgba(37, 230, 212, 0.5);
+  background: linear-gradient(90deg, rgba(37, 230, 212, 0.1), rgba(37, 230, 212, 0.02));
 }
 
 .lv-round-head {
@@ -2840,19 +2855,26 @@ button:disabled:hover {
   text-align: left;
   background: none;
   border: none;
-  padding: 0.25rem 0.1rem;
-  font-size: 0.78rem;
+  padding: 0.3rem 0.1rem;
+  font-family: var(--font-title);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   color: var(--text);
 }
 
 .lv-tri {
-  color: var(--dim);
+  color: var(--you);
 }
 
 .lv-here {
   margin-left: auto;
+  font-family: var(--font-title);
   color: var(--you);
-  font-size: 0.7rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 /* Pool body: capped height with internal scroll so a large round pool never
@@ -2868,10 +2890,14 @@ button:disabled:hover {
   padding: 0.3rem 0.1rem;
 }
 
+/* A ghost run's label — magenta, the B·Arena ghost-run axis (cyan you · magenta
+   rivals · gold crown). Chakra Petch, tracked, so the rivals read at a glance. */
 .lv-gid {
   display: block;
-  color: var(--dim);
-  font-size: 0.68rem;
+  font-family: var(--font-title);
+  color: var(--ghost);
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
   margin-bottom: 0.15rem;
 }
 
