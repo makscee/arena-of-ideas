@@ -11,7 +11,7 @@
 import { describe, expect, test } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { stressRegistry } from "../content/stress.js";
+import { stressAbilities, stressRegistry } from "../content/stress.js";
 import { DEFAULT_RUN_POOL } from "../tunables.js";
 import { mergePool, parseApprovedRegistry } from "../registry.js";
 import type { UnitDef } from "../types.js";
@@ -51,17 +51,14 @@ const BOUNCED: GauntletResult = {
   gate: { ...PASSED.gate!, pass: false, verdict: "overtuned", overallWinRate: 0.9 },
 };
 
+// PRD #081: a unit references one shipped ability by id. Venom IS "apply 2
+// Poison to the front enemy after it strikes" — the same mechanic this fixture
+// carried inline before the migration.
 const FROSTER: UnitDef = {
   name: "Froster",
   base: { hp: 11, pwr: 2 },
   statuses: [{ status: "Shield", stacks: 2 }],
-  abilities: [
-    {
-      whens: [{ kind: "trigger", on: { on: "Strike", striker: "holder" } }],
-      selectors: [{ kind: "frontEnemy" }],
-      effects: [{ kind: "applyStatus", status: "Poison", stacks: { kind: "const", value: 2 } }],
-    },
-  ],
+  ability: "Venom",
 };
 
 // The real committed frostbite-striker team + its true recorded gate stats. Used
@@ -74,6 +71,7 @@ const FROSTER: UnitDef = {
 const HONEST: CandidateRecord = parseCandidateRecord(
   JSON.parse(readFileSync(join(import.meta.dirname, "..", "..", "candidates", "frostbite-striker.json"), "utf8")),
   stressRegistry,
+  stressAbilities,
   "frostbite-striker.json",
 );
 /** The honest team's NEW unit (Glacier and Squire are shipped/skipped). */
@@ -93,7 +91,7 @@ describe("provenance round-trip", () => {
   test("build → serialize → parse → serialize is byte-stable", () => {
     const record = buildRecord("froster", [FROSTER], MANIFEST, PASSED, 3);
     const once = serializeRecord(record);
-    const reparsed = parseCandidateRecord(JSON.parse(once), stressRegistry, "froster.json");
+    const reparsed = parseCandidateRecord(JSON.parse(once), stressRegistry, stressAbilities, "froster.json");
     const twice = serializeRecord(reparsed);
     expect(twice).toBe(once);
   });
@@ -116,8 +114,8 @@ describe("provenance round-trip", () => {
   test("parse re-runs the content validator — a typo'd part fails loudly", () => {
     const record = buildRecord("bad", [FROSTER], MANIFEST, PASSED, 1);
     const raw = JSON.parse(serializeRecord(record));
-    raw.units[0].abilities[0].effects[0].kind = "notARealEffect";
-    expect(() => parseCandidateRecord(raw, stressRegistry, "bad.json")).toThrow();
+    raw.units[0].ability = "notARealAbility"; // a dangling ability ref (#081) is content the validator must catch
+    expect(() => parseCandidateRecord(raw, stressRegistry, stressAbilities, "bad.json")).toThrow();
   });
 
   test("gateStatsOf refuses a non-passing result", () => {
@@ -166,30 +164,30 @@ describe("approve", () => {
   });
 
   test("adds the new units, stamps creator credit, validates the pool", () => {
-    const next = approveInto({ units: [] }, honest("frostbite-striker"), shippedNames, stressRegistry);
+    const next = approveInto({ units: [] }, honest("frostbite-striker"), shippedNames, stressRegistry, stressAbilities);
     expect(next.units.map((u) => u.name)).toEqual(["Frostbiter", "Glacier"]); // Squire shipped → skipped
     expect(next.units.every((u) => u._creator === "maks")).toBe(true);
     // the merged playable pool is valid and draftable.
     const pool = mergePool(DEFAULT_RUN_POOL, next.units);
     expect(pool.some((u) => u.name === HONEST_NEW_NAME)).toBe(true);
-    expect(() => parseApprovedRegistry(next, stressRegistry)).not.toThrow();
+    expect(() => parseApprovedRegistry(next, stressRegistry, stressAbilities)).not.toThrow();
   });
 
   test("skips shipped support units in the candidate team (only new ones move)", () => {
     // Squire is part of the honest team and is shipped — it is skipped, not moved.
-    const next = approveInto({ units: [] }, honest("frostbite-striker"), shippedNames, stressRegistry);
+    const next = approveInto({ units: [] }, honest("frostbite-striker"), shippedNames, stressRegistry, stressAbilities);
     expect(next.units.map((u) => u.name)).not.toContain("Squire");
   });
 
   test("refuses a candidate that introduces no new unit", () => {
     const allShipped = buildRecord("dud", [{ name: "Squire", base: { hp: 8, pwr: 2 } }], MANIFEST, PASSED, 1);
-    expect(() => approveInto({ units: [] }, allShipped, shippedNames, stressRegistry)).toThrow(/no new unit/);
+    expect(() => approveInto({ units: [] }, allShipped, shippedNames, stressRegistry, stressAbilities)).toThrow(/no new unit/);
   });
 
   test("refuses a name collision with an already-approved unit", () => {
-    const current = approveInto({ units: [] }, honest("frostbite-striker"), shippedNames, stressRegistry);
+    const current = approveInto({ units: [] }, honest("frostbite-striker"), shippedNames, stressRegistry, stressAbilities);
     // A second honest record (same in-band team, different id/creator) collides on Frostbiter.
-    expect(() => approveInto(current, honest("frostbite-2", "eve"), shippedNames, stressRegistry)).toThrow(/collides/);
+    expect(() => approveInto(current, honest("frostbite-2", "eve"), shippedNames, stressRegistry, stressAbilities)).toThrow(/collides/);
   });
 
   test("refuses a name collision with a shipped unit (renamed-candidate guard)", () => {
@@ -197,7 +195,7 @@ describe("approve", () => {
     // it is the only new content path — here it's caught as "no new unit", which
     // is the right loud refusal. A mixed team's shipped-name unit is skipped (above).
     const collide = buildRecord("c", [{ name: "Venomancer", base: { hp: 9, pwr: 3 } }], MANIFEST, PASSED, 1);
-    expect(() => approveInto({ units: [] }, collide, shippedNames, stressRegistry)).toThrow();
+    expect(() => approveInto({ units: [] }, collide, shippedNames, stressRegistry, stressAbilities)).toThrow();
   });
 });
 
@@ -236,7 +234,7 @@ describe("approve re-sims (forge containment)", () => {
   test("POST-slice: approve re-sims and REJECTS the forge loudly with the real numbers", () => {
     let thrown: unknown;
     try {
-      approveInto({ units: [] }, forged, shippedNames, stressRegistry);
+      approveInto({ units: [] }, forged, shippedNames, stressRegistry, stressAbilities);
     } catch (err) {
       thrown = err;
     }
@@ -254,7 +252,7 @@ describe("approve re-sims (forge containment)", () => {
   });
 
   test("the forged unit never reaches the registry", () => {
-    expect(() => approveInto({ units: [] }, forged, shippedNames, stressRegistry)).toThrow(ResimRejectedError);
+    expect(() => approveInto({ units: [] }, forged, shippedNames, stressRegistry, stressAbilities)).toThrow(ResimRejectedError);
     // and nothing was promoted (approveInto is pure; it throws before returning).
   });
 
@@ -272,7 +270,7 @@ describe("approve re-sims (forge containment)", () => {
     };
     let thrown: unknown;
     try {
-      approveInto({ units: [] }, lied, shippedNames, stressRegistry);
+      approveInto({ units: [] }, lied, shippedNames, stressRegistry, stressAbilities);
     } catch (err) {
       thrown = err;
     }
@@ -283,14 +281,14 @@ describe("approve re-sims (forge containment)", () => {
   test("an honest in-band candidate still approves (the re-sim matches its receipt)", () => {
     // The honest frostbite-striker convergence: its recorded stats ARE the re-sim,
     // so it passes both checks and promotes. The honest path is unaffected.
-    const report = reSimCandidate(HONEST, stressRegistry);
+    const report = reSimCandidate(HONEST, stressRegistry, stressAbilities);
     expect(report.pass).toBe(true);
     expect(report.verdict).toBe("in-band");
     // recorded == re-sim, within tolerance (deterministic sim → exact match).
     expect(Math.abs(HONEST.gate.overallWinRate - report.overallWinRate)).toBeLessThanOrEqual(
       RESIM_WIN_RATE_TOLERANCE,
     );
-    const next = approveInto({ units: [] }, HONEST, shippedNames, stressRegistry);
+    const next = approveInto({ units: [] }, HONEST, shippedNames, stressRegistry, stressAbilities);
     expect(next.units.map((u) => u.name)).toEqual(["Frostbiter", "Glacier"]);
   });
 });
@@ -322,7 +320,7 @@ describe("pool isolation", () => {
   test("approving one candidate leaves an un-approved peer out of the pool", () => {
     // Approve the honest (re-simmable) team; an un-approved peer stays out.
     const bUnit: UnitDef = { name: "Emberling", base: { hp: 9, pwr: 3 } };
-    const next = approveInto({ units: [] }, HONEST, shippedNames, stressRegistry);
+    const next = approveInto({ units: [] }, HONEST, shippedNames, stressRegistry, stressAbilities);
     const pool = mergePool(DEFAULT_RUN_POOL, next.units);
     expect(pool.some((u) => u.name === HONEST_NEW_NAME)).toBe(true);
     expect(pool.some((u) => u.name === bUnit.name)).toBe(false); // never approved

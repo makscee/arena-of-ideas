@@ -17,9 +17,10 @@ import { describe, it, expect } from "vitest";
 import { buildCodex, codexUnits } from "./codex.js";
 import { partAtoms } from "./parts.js";
 import { stressRegistry } from "./content/stress.js";
+import { stressAbilities } from "./content/stress.js";
 import type { Condition, Effect, EventPattern, Selector } from "./types.js";
 
-const codex = buildCodex(stressRegistry, codexUnits());
+const codex = buildCodex(stressRegistry, codexUnits([], stressAbilities), stressAbilities);
 
 // The full Part vocabulary, enumerated straight off the type space (types.ts).
 // A `satisfies` keeps each array honest: every member must be a real union

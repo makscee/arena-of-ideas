@@ -8,13 +8,14 @@ import {
   DEFAULT_RUN_POOL,
   TEAM_SIZE,
   initRun,
+  stressAbilities,
   stressRegistry,
   type RunState,
   type UnitDef,
 } from "../src/index.js";
 import { addGold, setGold, spawnUnit } from "./dev-ops.js";
 
-const fresh = (): RunState => initRun({ seed: 1, pool: DEFAULT_RUN_POOL, statuses: stressRegistry });
+const fresh = (): RunState => initRun({ seed: 1, pool: DEFAULT_RUN_POOL, statuses: stressRegistry, abilities: stressAbilities });
 const UNIT: UnitDef = DEFAULT_RUN_POOL[0]!;
 
 describe("addGold / setGold", () => {

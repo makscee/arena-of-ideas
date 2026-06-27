@@ -96,59 +96,52 @@ export const Venom: AbilityDef = {
   effects: [{ kind: "applyStatus", status: "Poison", stacks: { kind: "const", value: 2 } }],
 };
 
+/** The summoned body — a vanilla Imp (Strike family). Referenced by `Conjure`. */
+export const Imp: UnitDef = { name: "Imp", base: { hp: 2, pwr: 1 }, ability: "Strike" };
+
+/** Summoner's ability — spawn an Imp at the back of its team when it dies. */
+export const Conjure: AbilityDef = {
+  name: "Conjure",
+  family: "Summon",
+  whens: [{ kind: "trigger", on: { on: "Death", unit: "holder" } }],
+  selectors: [{ kind: "holder" }],
+  effects: [{ kind: "summon", unit: Imp }],
+};
+
+/** Silencer's ability — silence the front enemy when the battle begins. */
+export const Hush: AbilityDef = {
+  name: "Hush",
+  family: "Control",
+  whens: [{ kind: "trigger", on: { on: "BattleStart" } }],
+  selectors: [{ kind: "frontEnemy" }],
+  effects: [{ kind: "silence" }],
+};
+
+/** Necromancer's ability — return the most recently dead ally at 1 hp. */
+export const Reanimate: AbilityDef = {
+  name: "Reanimate",
+  family: "Summon",
+  whens: [{ kind: "trigger", on: { on: "Death", unit: "ally" } }],
+  selectors: [{ kind: "lastDeadAlly" }],
+  effects: [{ kind: "resurrect", hp: { kind: "const", value: 1 } }],
+};
+
 export const stressAbilities: AbilityRegistry = {
   Strike: StrikeAbility,
   Venom,
+  Conjure,
+  Hush,
+  Reanimate,
 };
 
 // ---- Units exercising the effect atoms (Summon, Silence, Resurrect) ----
+// Each references exactly one ability by id (PRD #081); the ability's family is
+// the unit's color.
 
-export const Imp: UnitDef = { name: "Imp", base: { hp: 2, pwr: 1 } };
+export const Summoner: UnitDef = { name: "Summoner", base: { hp: 6, pwr: 1 }, ability: "Conjure" };
 
-export const Summoner: UnitDef = {
-  name: "Summoner",
-  base: { hp: 6, pwr: 1 },
-  abilities: [
-    {
-      whens: [{ kind: "trigger", on: { on: "Death", unit: "holder" } }],
-      selectors: [{ kind: "holder" }],
-      effects: [{ kind: "summon", unit: Imp }],
-    },
-  ],
-};
+export const Silencer: UnitDef = { name: "Silencer", base: { hp: 8, pwr: 2 }, ability: "Hush" };
 
-export const Silencer: UnitDef = {
-  name: "Silencer",
-  base: { hp: 8, pwr: 2 },
-  abilities: [
-    {
-      whens: [{ kind: "trigger", on: { on: "BattleStart" } }],
-      selectors: [{ kind: "frontEnemy" }],
-      effects: [{ kind: "silence" }],
-    },
-  ],
-};
+export const Necromancer: UnitDef = { name: "Necromancer", base: { hp: 7, pwr: 1 }, ability: "Reanimate" };
 
-export const Necromancer: UnitDef = {
-  name: "Necromancer",
-  base: { hp: 7, pwr: 1 },
-  abilities: [
-    {
-      whens: [{ kind: "trigger", on: { on: "Death", unit: "ally" } }],
-      selectors: [{ kind: "lastDeadAlly" }],
-      effects: [{ kind: "resurrect", hp: { kind: "const", value: 1 } }],
-    },
-  ],
-};
-
-export const Venomancer: UnitDef = {
-  name: "Venomancer",
-  base: { hp: 6, pwr: 1 },
-  abilities: [
-    {
-      whens: [{ kind: "trigger", on: { on: "Strike", striker: "holder" } }],
-      selectors: [{ kind: "frontEnemy" }],
-      effects: [{ kind: "applyStatus", status: "Poison", stacks: { kind: "const", value: 2 } }],
-    },
-  ],
-};
+export const Venomancer: UnitDef = { name: "Venomancer", base: { hp: 6, pwr: 1 }, ability: "Venom" };

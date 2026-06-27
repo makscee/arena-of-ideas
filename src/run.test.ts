@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { battle, winnerOf } from "./battle.js";
-import { Necromancer, Silencer, stressRegistry, Summoner, Venomancer } from "./content/stress.js";
+import { Necromancer, Silencer, stressAbilities, stressRegistry, Summoner, Venomancer } from "./content/stress.js";
 import {
   applyDecision,
   buy,
@@ -28,8 +28,8 @@ import {
   STARTING_LIVES,
   UNIT_COST,
 } from "./tunables.js";
-import { ValidationError, validateTeam } from "./validate.js";
-import type { UnitDef } from "./types.js";
+import { ValidationError, validateAbilityRegistry } from "./validate.js";
+import type { AbilityDef, AbilityRegistry, UnitDef } from "./types.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -42,11 +42,11 @@ const ofType = <T extends RunEvent["type"]>(
   log.filter((e): e is Extract<RunEvent, { type: T }> => e.type === t);
 
 function vanilla(name: string, hp: number, pwr: number): UnitDef {
-  return { name, base: { hp, pwr } };
+  return { name, base: { hp, pwr }, ability: "Strike" };
 }
 
 const POOL: UnitDef[] = [Summoner, Silencer, Necromancer, Venomancer];
-const INPUT: RunInput = { seed: 7, pool: POOL, statuses: stressRegistry };
+const INPUT: RunInput = { seed: 7, pool: POOL, statuses: stressRegistry, abilities: stressAbilities };
 
 // Loses to any striker regardless of the coin (1 hp, can't strike back for damage).
 const PUSHOVER: UnitDef[] = [vanilla("Pushover", 1, 0)];
@@ -164,7 +164,7 @@ describe("shop offers", () => {
 
 describe("duplicate stacking and level-up", () => {
   // A single-unit pool makes every offer a copy — the stacking path is forced.
-  const soloInput: RunInput = { seed: 3, pool: [vanilla("Grunt", 5, 2)] };
+  const soloInput: RunInput = { seed: 3, pool: [vanilla("Grunt", 5, 2)], statuses: stressRegistry, abilities: stressAbilities };
 
   test("a first copy joins the line; a second stacks instead of taking a slot", () => {
     let s = buy(initRun(soloInput), 0);
@@ -206,30 +206,29 @@ describe("duplicate stacking and level-up", () => {
 // ---------------------------------------------------------------------------
 
 describe("level in magnitude expressions", () => {
-  const veteran: UnitDef = {
-    name: "Veteran",
-    base: { hp: 20, pwr: 0 },
-    level: 3,
-    abilities: [
-      {
-        whens: [{ kind: "trigger", on: { on: "TurnStart" } }],
-        selectors: [{ kind: "frontEnemy" }],
-        effects: [{ kind: "damage", amount: { kind: "level", of: "holder" } }],
-      },
-    ],
+  // PRD #081: the level-amount ability lives in an AbilityRegistry, referenced by
+  // id from the unit; its body is validated at the registry, not inline on the unit.
+  const LevelStrike: AbilityDef = {
+    name: "LevelStrike",
+    family: "Strike",
+    whens: [{ kind: "trigger", on: { on: "TurnStart" } }],
+    selectors: [{ kind: "frontEnemy" }],
+    effects: [{ kind: "damage", amount: { kind: "level", of: "holder" } }],
   };
+  const vetAbilities: AbilityRegistry = { LevelStrike };
+  const veteran: UnitDef = { name: "Veteran", base: { hp: 20, pwr: 0 }, level: 3, ability: "LevelStrike" };
 
   test("a level amount evaluates to the holder's level", () => {
-    const log = battle({ teamA: [veteran], teamB: [vanilla("Dummy", 30, 0)], seed: 1 });
+    const log = battle({ teamA: [veteran], teamB: [vanilla("Dummy", 30, 0)], seed: 1, abilities: { ...stressAbilities, ...vetAbilities } });
     const abilityHurt = log.find((e) => e.type === "Hurt" && e.source !== "kernel");
     expect(abilityHurt).toMatchObject({ amount: 3 });
   });
 
   test("the validator accepts a level amount and pins it to the holder", () => {
-    expect(validateTeam([veteran], {})).toEqual([]);
-    const bad = JSON.parse(JSON.stringify(veteran)) as Record<string, unknown>;
-    (bad as { abilities: { effects: { amount: { of: string } }[] }[] }).abilities[0]!.effects[0]!.amount.of = "target";
-    const issues = validateTeam([bad], {});
+    expect(validateAbilityRegistry(vetAbilities, {})).toEqual([]);
+    const bad = JSON.parse(JSON.stringify(LevelStrike)) as Record<string, unknown>;
+    (bad as { effects: { amount: { of: string } }[] }).effects[0]!.amount.of = "target";
+    const issues = validateAbilityRegistry({ LevelStrike: bad as unknown as AbilityDef }, {});
     expect(issues.length).toBe(1);
     expect(issues[0]!.message).toMatch(/level amounts read the holder/);
   });
@@ -245,7 +244,7 @@ describe("fight", () => {
     const f = ofType(s.log, "FightFought")[0]!;
     expect(f.winner).toBe("A");
     // The team is unchanged by the fight, so the logged seed replays the same battle.
-    const replay = battle({ teamA: toBattleTeam(s.team), teamB: PUSHOVER, seed: f.battleSeed, statuses: stressRegistry });
+    const replay = battle({ teamA: toBattleTeam(s.team), teamB: PUSHOVER, seed: f.battleSeed, statuses: stressRegistry, abilities: stressAbilities });
     expect(winnerOf(replay)).toBe(f.winner);
   });
 
@@ -260,7 +259,7 @@ describe("fight", () => {
 
   test("a draw costs no life", () => {
     // Two 0-pwr 30-hp units fatigue out together — the battle suite's draw setup.
-    let s = initRun({ seed: 5, pool: [vanilla("Pacifist", 30, 0)] });
+    let s = initRun({ seed: 5, pool: [vanilla("Pacifist", 30, 0)], statuses: stressRegistry, abilities: stressAbilities });
     s = fight(buy(s, 0), [vanilla("Dummy", 30, 0)]);
     expect(ofType(s.log, "FightFought")[0]).toMatchObject({ winner: "draw", lives: STARTING_LIVES });
   });
@@ -311,7 +310,7 @@ describe("invalid decisions", () => {
   });
 
   test("buying to a full line without a copy to stack onto throws; with one it stacks", () => {
-    const base = initRun({ seed: 1, pool: [vanilla("Other", 5, 1)] }); // every offer is "Other"
+    const base = initRun({ seed: 1, pool: [vanilla("Other", 5, 1)], statuses: stressRegistry, abilities: stressAbilities }); // every offer is "Other"
     const full: RunState = { ...base, team: ["A", "B", "C", "D", "E"].map(lineUnit) };
     expect(() => buy(full, 0)).toThrow(InvalidDecisionError);
     expect(() => buy(full, 0)).toThrow(/line is full/);
@@ -374,7 +373,7 @@ describe("serialization", () => {
   });
 
   test("a revived over run still rejects every decision", () => {
-    let s = buy(initRun({ seed: 9, pool: [vanilla("Grunt", 1, 0)] }), 0);
+    let s = buy(initRun({ seed: 9, pool: [vanilla("Grunt", 1, 0)], statuses: stressRegistry, abilities: stressAbilities }), 0);
     for (let i = 0; i < STARTING_LIVES; i++) s = fight(s, WALL);
     const revived = deserializeRun(serializeRun(s));
     expect(revived).toMatchObject({ status: "over", endedBy: "out-of-lives" });

@@ -18,10 +18,10 @@ import {
 } from "./check-candidate.js";
 import { runGate, formatGateReport } from "./gate.js";
 import { REFERENCE_META } from "./content/reference-meta.js";
-import { stressRegistry } from "./content/stress.js";
+import { stressAbilities, stressRegistry } from "./content/stress.js";
 import { ValidationError } from "./validate.js";
 import { GATE_BAND_MIN, GATE_BAND_MAX, GATE_MATCHUP_FLOOR } from "./tunables.js";
-import type { UnitDef } from "./types.js";
+import type { AbilityRegistry, UnitDef } from "./types.js";
 
 const TASK = join(new URL(".", import.meta.url).pathname, "..", "tasks", "frostbite-striker");
 
@@ -45,7 +45,8 @@ describe("checkCandidate verdicts", () => {
   const cfg = defaultGateConfig();
 
   test("an in-band candidate passes (exit 0) — pooled in band AND every matchup above the floor", () => {
-    const result = checkCandidate(loadCandidate(SANE), cfg);
+    const sane = loadCandidate(SANE);
+    const result = checkCandidate(sane.units, cfg, sane.abilities);
     expect(result.status).toBe("passed");
     expect(result.exitCode).toBe(0);
     expect(result.gate!.pass).toBe(true);
@@ -63,22 +64,21 @@ describe("checkCandidate verdicts", () => {
     // The pre-floor "sane" fixture: curse-only striker fronted by a body. It
     // pools to ~54% (in [35,65]) yet folds StatStack to 0% — it would have
     // passed a pooled-only gate. The per-matchup floor catches it.
-    const gameable: UnitDef[] = [
-      { name: "Vanguard", base: { hp: 11, pwr: 3 } },
-      {
-        name: "Frostmage",
-        base: { hp: 8, pwr: 2 },
-        abilities: [
-          {
-            whens: [{ kind: "trigger", on: { on: "Strike", striker: "holder" } }],
-            selectors: [{ kind: "frontEnemy" }],
-            effects: [{ kind: "applyStatus", status: "Curse", stacks: { kind: "const", value: 1 } }],
-          },
-        ],
+    const chill: AbilityRegistry = {
+      Chill: {
+        name: "Chill",
+        family: "Control",
+        whens: [{ kind: "trigger", on: { on: "Strike", striker: "holder" } }],
+        selectors: [{ kind: "frontEnemy" }],
+        effects: [{ kind: "applyStatus", status: "Curse", stacks: { kind: "const", value: 1 } }],
       },
-      { name: "Squire", base: { hp: 7, pwr: 2 } },
+    };
+    const gameable: UnitDef[] = [
+      { name: "Vanguard", base: { hp: 11, pwr: 3 }, ability: "Strike" },
+      { name: "Frostmage", base: { hp: 8, pwr: 2 }, ability: "Chill" },
+      { name: "Squire", base: { hp: 7, pwr: 2 }, ability: "Strike" },
     ];
-    const result = checkCandidate(gameable, cfg);
+    const result = checkCandidate(gameable, cfg, { ...stressAbilities, ...chill });
     // Pooled win-rate sits inside the band — a pooled-only gate would pass it.
     expect(result.gate!.overallWinRate).toBeGreaterThanOrEqual(cfg.bandMin);
     expect(result.gate!.overallWinRate).toBeLessThanOrEqual(cfg.bandMax);
@@ -96,7 +96,8 @@ describe("checkCandidate verdicts", () => {
   });
 
   test("the overtuned candidate ('deal 999 damage') is bounced (exit 2) with its win-rate data", () => {
-    const result = checkCandidate(loadCandidate(OVERTUNED), cfg);
+    const over = loadCandidate(OVERTUNED);
+    const result = checkCandidate(over.units, cfg, over.abilities);
     expect(result.status).toBe("gate-bounced");
     expect(result.exitCode).toBe(2);
     expect(result.gate!.pass).toBe(false);
@@ -109,7 +110,7 @@ describe("checkCandidate verdicts", () => {
 
   test("an underpowered candidate is bounced as such", () => {
     // A lone 1/1 body loses to every reference team → 0% win-rate.
-    const filler: UnitDef[] = [{ name: "Filler", base: { hp: 1, pwr: 1 } }];
+    const filler: UnitDef[] = [{ name: "Filler", base: { hp: 1, pwr: 1 }, ability: "Strike" }];
     const result = checkCandidate(filler, cfg);
     expect(result.status).toBe("gate-bounced");
     expect(result.gate!.verdict).toBe("underpowered");
@@ -126,19 +127,16 @@ describe("validator path", () => {
     const typo = writeTmp(
       "typo.json",
       JSON.stringify({
-        units: [
-          {
-            name: "Typo",
-            base: { hp: 8, pwr: 2 },
-            abilities: [
-              {
-                whens: [{ kind: "trigger", on: { on: "Strike", striker: "holder" } }],
-                selectors: [{ kind: "frontEnemy" }],
-                effects: [{ kind: "damgae", amount: { kind: "const", value: 3 } }],
-              },
-            ],
+        abilities: {
+          Typoed: {
+            name: "Typoed",
+            family: "Strike",
+            whens: [{ kind: "trigger", on: { on: "Strike", striker: "holder" } }],
+            selectors: [{ kind: "frontEnemy" }],
+            effects: [{ kind: "damgae", amount: { kind: "const", value: 3 } }],
           },
-        ],
+        },
+        units: [{ name: "Typo", base: { hp: 8, pwr: 2 }, ability: "Typoed" }],
       }),
     );
     expect(() => loadCandidate(typo)).toThrow(ValidationError);
@@ -148,7 +146,7 @@ describe("validator path", () => {
   test("a dangling status reference fails the validator", () => {
     const bad = writeTmp(
       "dangling.json",
-      JSON.stringify({ units: [{ name: "Ghost", base: { hp: 5, pwr: 1 }, statuses: [{ status: "Nope", stacks: 1 }] }] }),
+      JSON.stringify({ units: [{ name: "Ghost", base: { hp: 5, pwr: 1 }, ability: "Strike", statuses: [{ status: "Nope", stacks: 1 }] }] }),
     );
     expect(() => loadCandidate(bad)).toThrow(/unknown status "Nope"/);
   });
@@ -253,7 +251,8 @@ describe("untrusted-submission threat model (permissive gate.json must not wave 
     const dir = taskDirWith(PERMISSIVE);
     const cfg = loadGateConfig(dir, true); // trust the task dir's gate.json
     expect(cfg).toEqual({ bandMin: 0, bandMax: 1, floor: 0, seeds: 50 });
-    const result = checkCandidate(loadCandidate(OVERTUNED), cfg);
+    const over = loadCandidate(OVERTUNED);
+    const result = checkCandidate(over.units, cfg, over.abilities);
     expect(result.status).toBe("passed"); // the lie: overtuned, but "in band 0–1"
     expect(result.exitCode).toBe(0);
   });
@@ -265,7 +264,8 @@ describe("untrusted-submission threat model (permissive gate.json must not wave 
     const dir = taskDirWith(PERMISSIVE);
     const cfg = loadGateConfig(dir); // default — out-of-band trusted bar
     expect(cfg).toEqual(defaultGateConfig());
-    const result = checkCandidate(loadCandidate(OVERTUNED), cfg);
+    const over = loadCandidate(OVERTUNED);
+    const result = checkCandidate(over.units, cfg, over.abilities);
     expect(result.status).toBe("gate-bounced");
     expect(result.exitCode).toBe(2);
     expect(result.gate!.pass).toBe(false);
@@ -284,13 +284,14 @@ describe("determinism", () => {
   test("the gate report is byte-identical across two runs", () => {
     const candidate = loadCandidate(SANE);
     const cfg = loadGateConfig(TASK);
-    const a = JSON.stringify(runGate(candidate, REFERENCE_META, cfg, stressRegistry));
-    const b = JSON.stringify(runGate(candidate, REFERENCE_META, cfg, stressRegistry));
+    const a = JSON.stringify(runGate(candidate.units, REFERENCE_META, cfg, stressRegistry, candidate.abilities));
+    const b = JSON.stringify(runGate(candidate.units, REFERENCE_META, cfg, stressRegistry, candidate.abilities));
     expect(a).toBe(b);
   });
 
   test("the machine report line is stable and parseable", () => {
-    const result = checkCandidate(loadCandidate(SANE), loadGateConfig(TASK));
+    const sane = loadCandidate(SANE);
+    const result = checkCandidate(sane.units, loadGateConfig(TASK), sane.abilities);
     const line = machineReport(result);
     const parsed = JSON.parse(line);
     expect(parsed.status).toBe("passed");
@@ -304,7 +305,8 @@ describe("determinism", () => {
 
 describe("formatGateReport", () => {
   test("a passing report reads PASS with the band and matchups", () => {
-    const report = runGate(loadCandidate(SANE), REFERENCE_META, loadGateConfig(TASK), stressRegistry);
+    const sane = loadCandidate(SANE);
+    const report = runGate(sane.units, REFERENCE_META, loadGateConfig(TASK), stressRegistry, sane.abilities);
     const text = formatGateReport(report);
     expect(text).toContain("Sim gate: PASS (in-band)");
     expect(text).toContain("band 35.0%–65.0%");

@@ -10,7 +10,7 @@
 import { buildCodex } from "../src/codex.js";
 import { describeAbilitySegments, describeStatusSegments } from "../src/describe.js";
 import type { DescribeSegment } from "../src/describe.js";
-import type { StatusDef, StatusRegistry, UnitDef } from "../src/types.js";
+import type { Ability, AbilityDef, AbilityRegistry, StatusDef, StatusRegistry, UnitDef } from "../src/types.js";
 import { unitCardHtml } from "./unit-card.js";
 
 // ---------------------------------------------------------------------------
@@ -50,8 +50,9 @@ export function createCodex(
   container: HTMLElement,
   registry: StatusRegistry,
   units: UnitDef[],
+  abilities: AbilityRegistry,
 ): CodexScreen {
-  const data = buildCodex(registry, units);
+  const data = buildCodex(registry, units, abilities);
   // The raw def behind each derived entry (first occurrence wins — the same
   // dedup buildCodex applies): the unit card needs the statuses' stacks and
   // the level, which the derived entry doesn't carry.
@@ -127,8 +128,13 @@ export function createCodex(
     // Render from the def's abilities as segments so every term is a tappable
     // codex link (#078 slice 3); the derived u.abilities strings still feed
     // search. A unit not in defByName (shouldn't happen) falls back to plain.
-    const abilityDefs = def?.abilities ?? [];
-    const abilities =
+    const abilityDefs: Ability[] =
+      def === undefined
+        ? []
+        : def.ability !== undefined
+          ? [abilities[def.ability]].filter((a): a is AbilityDef => a !== undefined)
+          : (def.abilities ?? []);
+    const abilitiesHtml =
       abilityDefs.length > 0
         ? abilityDefs
             .map((ab) => `<div class="codex-entry-desc">${segmentLinksHtml(describeAbilitySegments(ab), registry)}</div>`)
@@ -145,7 +151,7 @@ export function createCodex(
       `<div class="codex-entry codex-unit-entry" id="codex-unit-${encodeId(u.name)}" data-search="${esc(search)}">` +
       anchorHtml(`codex/unit/${u.name}`) +
       card +
-      abilities +
+      abilitiesHtml +
       credit +
       `</div>`
     );

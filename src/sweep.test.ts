@@ -5,6 +5,7 @@ import { describe, expect, test } from "vitest";
 import { battle, winnerOf } from "./battle.js";
 import { summarizeSweep, sweep, sweepOutcome, sweepSeeds, winRate } from "./sweep.js";
 import { stressRegistry, Venomancer, Summoner } from "./content/stress.js";
+import { stressAbilities } from "./content/stress.js";
 import type { SweepInput } from "./sweep.js";
 import type { UnitDef } from "./types.js";
 
@@ -19,6 +20,7 @@ const STRESS: SweepInput = {
   teamA: [Venomancer, grunt("Wall", 12, 1)],
   teamB: [Summoner, grunt("Brute", 8, 2)],
   statuses: stressRegistry,
+  abilities: stressAbilities,
 };
 
 describe("sweepOutcome", () => {

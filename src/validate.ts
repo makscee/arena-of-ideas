@@ -11,7 +11,7 @@
 // stacks-on-unit zero, the registry lookups).
 
 import { TEAM_SIZE } from "./battle.js";
-import type { StatusRegistry, UnitDef } from "./types.js";
+import type { AbilityRegistry, StatusRegistry, UnitDef } from "./types.js";
 
 export interface ValidationIssue {
   path: string; // e.g. "teamA[0].abilities[0].effects[1]"
@@ -37,6 +37,9 @@ const CONDITION_KINDS = ["holderHpAtMost"] as const;
 const SELECTOR_KINDS = ["holder", "eventUnit", "frontEnemy", "allEnemies", "allAllies", "randomEnemy", "lastDeadAlly"] as const;
 const AMOUNT_KINDS = ["const", "stat", "level", "stacks"] as const;
 const STAT_NAMES = ["hp", "pwr"] as const;
+// The color axis (PRD #081): an AbilityDef's family must be one of these seven —
+// an unknown family has no hex and no codex catalogue home, so it is rejected.
+const FAMILIES = ["Poison", "Strike", "Shield", "Summon", "Arcane", "Control", "Heal"] as const;
 // Which atoms run in which context (runEffect vs runInterceptor — the other side is a silent no-op).
 const TRIGGER_EFFECTS = ["damage", "heal", "applyStatus", "consumeStacks", "summon", "silence", "resurrect"] as const;
 const INTERCEPTOR_EFFECTS = ["cancel", "absorbHurt", "preventDeathHeal"] as const;
@@ -114,9 +117,14 @@ function checkComplexity(def: Record<string, unknown>, path: string, issues: Val
 }
 
 // ---------- entry points ----------
+//
+// PRD #081: a Unit references exactly one Ability by id (`u.ability`) into the
+// supplied AbilityRegistry. Validation therefore threads BOTH registries — the
+// status registry (as before) and the ability registry — and the ability bodies
+// are validated once, at the registry, not inline on each unit.
 
-/** Validate a team's units against a status registry. Returns all issues found (empty = valid). */
-export function validateTeam(units: unknown, registry: StatusRegistry, label = "team"): ValidationIssue[] {
+/** Validate a team's units against the status + ability registries. Returns all issues found (empty = valid). */
+export function validateTeam(units: unknown, statuses: StatusRegistry, abilities: AbilityRegistry, label = "team"): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   if (!Array.isArray(units)) {
     issues.push({ path: label, message: "expected an array of units" });
@@ -125,7 +133,7 @@ export function validateTeam(units: unknown, registry: StatusRegistry, label = "
   if (units.length === 0 || units.length > TEAM_SIZE) {
     issues.push({ path: label, message: `a team has 1..${TEAM_SIZE} units, got ${units.length}` });
   }
-  units.forEach((u, i) => validateUnit(u, registry, `${label}[${i}]`, issues));
+  units.forEach((u, i) => validateUnit(u, statuses, abilities, `${label}[${i}]`, issues));
   return issues;
 }
 
@@ -133,7 +141,7 @@ export function validateTeam(units: unknown, registry: StatusRegistry, label = "
  * validateTeam, without its 1..TEAM_SIZE cap — a pool is a market, not a line)
  * and every name unique, because the shop stacks copies by name: two pool
  * units sharing a name would silently stack into each other on buy. */
-export function validatePool(units: unknown, registry: StatusRegistry, label = "pool"): ValidationIssue[] {
+export function validatePool(units: unknown, statuses: StatusRegistry, abilities: AbilityRegistry, label = "pool"): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   if (!Array.isArray(units)) {
     issues.push({ path: label, message: "expected an array of units" });
@@ -144,7 +152,7 @@ export function validatePool(units: unknown, registry: StatusRegistry, label = "
   }
   const seen = new Map<string, number>();
   units.forEach((u, i) => {
-    validateUnit(u, registry, `${label}[${i}]`, issues);
+    validateUnit(u, statuses, abilities, `${label}[${i}]`, issues);
     const name = isObject(u) && typeof u["name"] === "string" ? u["name"] : undefined;
     if (name === undefined) return;
     const first = seen.get(name);
@@ -157,8 +165,33 @@ export function validatePool(units: unknown, registry: StatusRegistry, label = "
   return issues;
 }
 
+/** Validate the ability registry itself — each AbilityDef is content (PRD #081):
+ * its `name` keys it, its `family` is the color axis (a known family), and its
+ * body (whens/selectors/effects) is validated once here, in unit-ability context
+ * (`owner: "unit"`), where a unit references it. The card budget applies to the
+ * AbilityDef — a unit's whole behavior is its one ability. */
+export function validateAbilityRegistry(abilities: AbilityRegistry, statuses: StatusRegistry, label = "abilities"): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  for (const [key, def] of Object.entries(abilities)) {
+    const path = `${label}.${key}`;
+    if (!isObject(def)) {
+      issues.push({ path, message: "AbilityDef must be an object" });
+      continue;
+    }
+    if (def["name"] !== key) {
+      issues.push({ path, message: `AbilityDef.name "${String(def["name"])}" must equal its registry key "${key}" — units reference an ability by this key` });
+    }
+    if (!oneOf(def["family"], FAMILIES)) {
+      issues.push({ path: `${path}.family`, message: `unknown family ${JSON.stringify(def["family"])} — an ability's family is its color, one of ${list(FAMILIES)}` });
+    }
+    validateAbility(def, statuses, abilities, "unit", path, issues);
+    checkAbilityComplexity(def, path, issues); // the unit's one ability is its whole card — same fixed budget
+  }
+  return issues;
+}
+
 /** Validate the status registry itself — each StatusDef is content and can be just as typo'd. */
-export function validateRegistry(registry: StatusRegistry, label = "registry"): ValidationIssue[] {
+export function validateRegistry(registry: StatusRegistry, abilities: AbilityRegistry = {}, label = "registry"): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   for (const [key, def] of Object.entries(registry)) {
     const path = `${label}.${key}`;
@@ -182,37 +215,55 @@ export function validateRegistry(registry: StatusRegistry, label = "registry"): 
     if (!Array.isArray(def.abilities)) {
       issues.push({ path: `${path}.abilities`, message: "StatusDef.abilities must be an array (may be empty)" });
     } else {
-      def.abilities.forEach((ab, i) => validateAbility(ab, registry, "status", `${path}.abilities[${i}]`, issues));
+      def.abilities.forEach((ab, i) => validateAbility(ab, registry, abilities, "status", `${path}.abilities[${i}]`, issues));
       checkComplexity(def, path, issues); // a Status is content on a card too — same fixed budget
     }
   }
   return issues;
 }
 
-/** Throw a ValidationError (listing every issue) if the team or registry is invalid. */
-export function assertValidContent(units: unknown, registry: StatusRegistry, label = "team"): asserts units is UnitDef[] {
-  const issues = [...validateRegistry(registry), ...validateTeam(units, registry, label)];
+/** Throw a ValidationError (listing every issue) if the content is invalid —
+ * both registries (status + ability) and the team itself. */
+export function assertValidContent(units: unknown, statuses: StatusRegistry, abilities: AbilityRegistry, label = "team"): asserts units is UnitDef[] {
+  const issues = [
+    ...validateRegistry(statuses),
+    ...validateAbilityRegistry(abilities, statuses),
+    ...validateTeam(units, statuses, abilities, label),
+  ];
   if (issues.length > 0) throw new ValidationError(issues);
 }
 
 /** The assertValidContent of pools — same gate, validatePool's rules. */
-export function assertValidPool(units: unknown, registry: StatusRegistry, label = "pool"): asserts units is UnitDef[] {
-  const issues = [...validateRegistry(registry), ...validatePool(units, registry, label)];
+export function assertValidPool(units: unknown, statuses: StatusRegistry, abilities: AbilityRegistry, label = "pool"): asserts units is UnitDef[] {
+  const issues = [
+    ...validateRegistry(statuses),
+    ...validateAbilityRegistry(abilities, statuses),
+    ...validatePool(units, statuses, abilities, label),
+  ];
   if (issues.length > 0) throw new ValidationError(issues);
 }
 
 // ---------- units ----------
 
-// `topLevel` is true for a drafted/approved/team unit and false for a unit
-// nested inside a summon effect: a summoned unit's complexity is already folded
-// into its summoner's score (via complexityOf), so the cap is checked once, on
-// the outermost definition, never double-counted on the nested one.
-function validateUnit(u: unknown, registry: StatusRegistry, path: string, issues: ValidationIssue[], topLevel = true): void {
+function validateUnit(u: unknown, registry: StatusRegistry, abilities: AbilityRegistry, path: string, issues: ValidationIssue[]): void {
   if (!isObject(u)) {
     issues.push({ path, message: "unit must be an object" });
     return;
   }
-  if (topLevel) checkComplexity(u, path, issues);
+  // PRD #081 — a Unit references exactly one Ability by id, no inline effects.
+  // An inline `abilities[]` array is the retired path; an ability-less unit
+  // would carry no color and no mechanic. The ref must resolve in the registry
+  // (a dangling ref is content the kernel would crash on at resolve time). The
+  // ability's BODY is validated once at the registry (validateAbilityRegistry),
+  // not here — a unit only carries the ref.
+  if (u["abilities"] !== undefined) {
+    issues.push({ path: `${path}.abilities`, message: "inline `abilities[]` on a unit is retired (#081) — a unit references exactly one Ability by id via `ability`" });
+  }
+  if (u["ability"] === undefined) {
+    issues.push({ path: `${path}.ability`, message: "a unit must reference exactly one Ability by id (`ability`) — no ability means no color and no mechanic" });
+  } else {
+    checkAbilityRef(u["ability"], abilities, `${path}.ability`, issues);
+  }
   if (typeof u["name"] !== "string" || u["name"].length === 0) {
     issues.push({ path: `${path}.name`, message: "unit name must be a non-empty string" });
   }
@@ -247,18 +298,11 @@ function validateUnit(u: unknown, registry: StatusRegistry, path: string, issues
       });
     }
   }
-  if (u["abilities"] !== undefined) {
-    if (!Array.isArray(u["abilities"])) {
-      issues.push({ path: `${path}.abilities`, message: "abilities must be an array" });
-    } else {
-      u["abilities"].forEach((ab, i) => validateAbility(ab, registry, "unit", `${path}.abilities[${i}]`, issues));
-    }
-  }
 }
 
 // ---------- abilities ----------
 
-function validateAbility(ab: unknown, registry: StatusRegistry, owner: Owner, path: string, issues: ValidationIssue[]): void {
+function validateAbility(ab: unknown, registry: StatusRegistry, abilities: AbilityRegistry, owner: Owner, path: string, issues: ValidationIssue[]): void {
   if (!isObject(ab)) {
     issues.push({ path, message: "ability must be an object" });
     return;
@@ -310,7 +354,7 @@ function validateAbility(ab: unknown, registry: StatusRegistry, owner: Owner, pa
   if (!Array.isArray(ab["effects"]) || ab["effects"].length === 0) {
     issues.push({ path: `${path}.effects`, message: "an ability needs ≥1 effects" });
   } else {
-    ab["effects"].forEach((e, i) => validateEffect(e, registry, owner, contexts, `${path}.effects[${i}]`, issues));
+    ab["effects"].forEach((e, i) => validateEffect(e, registry, abilities, owner, contexts, `${path}.effects[${i}]`, issues));
   }
 }
 
@@ -340,7 +384,7 @@ function validatePattern(on: unknown, registry: StatusRegistry, path: string, is
 
 // ---------- effects ----------
 
-function validateEffect(e: unknown, registry: StatusRegistry, owner: Owner, contexts: Set<"trigger" | "interceptor">, path: string, issues: ValidationIssue[]): void {
+function validateEffect(e: unknown, registry: StatusRegistry, abilities: AbilityRegistry, owner: Owner, contexts: Set<"trigger" | "interceptor">, path: string, issues: ValidationIssue[]): void {
   if (!isObject(e) || typeof e["kind"] !== "string") {
     issues.push({ path, message: "effect must be an object with a kind" });
     return;
@@ -375,7 +419,7 @@ function validateEffect(e: unknown, registry: StatusRegistry, owner: Owner, cont
       }
       return validateAmount(e["stacks"], owner, `${path}.stacks`, issues);
     case "summon":
-      return validateUnit(e["unit"], registry, `${path}.unit`, issues, false);
+      return validateUnit(e["unit"], registry, abilities, `${path}.unit`, issues);
     case "silence":
       return;
     case "resurrect":
@@ -423,6 +467,29 @@ function validateAmount(a: unknown, owner: Owner, path: string, issues: Validati
 }
 
 // ---------- small helpers ----------
+
+/** A unit's ability ref (PRD #081): a string present in the ability registry.
+ * A dangling ref is content the resolver crashes on — rejected here, loudly,
+ * mirroring the status-registry lookup. */
+function checkAbilityRef(id: unknown, abilities: AbilityRegistry, path: string, issues: ValidationIssue[]): void {
+  if (typeof id !== "string") {
+    issues.push({ path, message: "ability reference must be a string id into the ability registry" });
+    return;
+  }
+  if (!(id in abilities)) {
+    const known = Object.keys(abilities);
+    issues.push({ path, message: `unknown ability "${id}" — the ability registry has ${known.length > 0 ? known.map((k) => `"${k}"`).join(", ") : "no abilities"}` });
+  }
+}
+
+/** The card budget against a single AbilityDef — a unit's whole behavior is its
+ * one ability, so the fixed-card cap (PRD #078) applies to the AbilityDef. */
+function checkAbilityComplexity(def: Record<string, unknown>, path: string, issues: ValidationIssue[]): void {
+  const c = abilityComplexity(def);
+  if (c > MAX_DEFINITION_COMPLEXITY) {
+    issues.push({ path, message: `complexity ${c} exceeds the card budget of ${MAX_DEFINITION_COMPLEXITY} — a card has one fixed size, so this ability's composed behavior cannot fit on it (count its whens, condition, selectors, effects, plus the superlinear cost of whens × selectors × effects)` });
+  }
+}
 
 function checkStatusRef(name: unknown, registry: StatusRegistry, path: string, issues: ValidationIssue[]): void {
   if (typeof name !== "string") {

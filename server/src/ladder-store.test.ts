@@ -21,6 +21,7 @@ import {
   ladderFight,
   openLadder,
   runToJSONL,
+  stressAbilities,
   stressRegistry,
   TOWER_HEIGHT,
   validateTeam,
@@ -34,7 +35,7 @@ import { openDb } from "./db.js";
 import { SqliteLadderStore } from "./ladder-store.js";
 
 function vanilla(name: string, hp: number, pwr: number): UnitDef {
-  return { name, base: { hp, pwr } };
+  return { name, base: { hp, pwr }, ability: "Strike" };
 }
 
 // The kernel ladder tests' deterministic climbers: Titan beats the bootstrap
@@ -43,7 +44,7 @@ const TITAN = vanilla("Titan", 100, 50);
 const GOLIATH = vanilla("Goliath", 200, 80);
 
 function input(seed: number, runId: string, unit: UnitDef): RunInput {
-  return { seed, runId, pool: [unit], statuses: stressRegistry };
+  return { seed, runId, pool: [unit], statuses: stressRegistry, abilities: stressAbilities };
 }
 
 /** Buy the one unit, then climb to the top of the (fixed-height) tower and
@@ -73,7 +74,7 @@ function playLadderRun(inp: RunInput, ladder: LadderStore): RunState {
 
 function freshSqlite(): SqliteLadderStore {
   const store = new SqliteLadderStore(openDb(":memory:").db);
-  openLadder(store, stressRegistry);
+  openLadder(store, stressRegistry, stressAbilities);
   return store;
 }
 
@@ -96,7 +97,7 @@ describe("bootstrap", () => {
       expect(pool.length).toBe(BOOTSTRAP_TEAMS[round - 1]!.length + 1); // climb teams + the boss-ghost
       pool.forEach((g, i) => {
         expect(g).toMatchObject({ runId: BOOTSTRAP_RUN_ID, round, seq: i });
-        expect(validateTeam(g.team, stressRegistry)).toEqual([]);
+        expect(validateTeam(g.team, stressRegistry, stressAbilities)).toEqual([]);
       });
       // The floor's boss team is its pool's last ghost — drawable, so a demote of
       // this floor's boss would leave it in the pool (the invariant, ghost-side).
@@ -112,10 +113,10 @@ describe("bootstrap", () => {
     const dir = mkdtempSync(join(tmpdir(), "arena-ladder-"));
     const path = join(dir, "arena.db");
     const store = new SqliteLadderStore(openDb(path).db);
-    openLadder(store, stressRegistry);
+    openLadder(store, stressRegistry, stressAbilities);
     playLadderRun(input(1, "titan", TITAN), store); // dethrones the bootstrap champion
     const reopened = new SqliteLadderStore(openDb(path).db);
-    openLadder(reopened, stressRegistry);
+    openLadder(reopened, stressRegistry, stressAbilities);
     // Floor 1 held its climb teams + boss-ghost; the run added its own — no reseed.
     expect(reopened.poolAt(1).length).toBe(BOOTSTRAP_TEAMS[0]!.length + 1 + 1);
     expect(reopened.champion()!.runId).toBe("titan"); // never reseated
@@ -124,7 +125,7 @@ describe("bootstrap", () => {
 
 describe("kernel-semantics parity", () => {
   test("a ladder run plays byte-identically on sqlite and in-memory backings", () => {
-    const logs = [freshSqlite(), openLadder(new InMemoryLadderStore(), stressRegistry)].map((store) => {
+    const logs = [freshSqlite(), openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities)].map((store) => {
       playLadderRun(input(1, "titan", TITAN), store); // identical prior history
       return runToJSONL(playLadderRun(input(2, "goliath", GOLIATH), store).log);
     });
@@ -133,7 +134,7 @@ describe("kernel-semantics parity", () => {
 
   test("pools and champion match the in-memory backing after the same drives", () => {
     const sqlite = freshSqlite();
-    const memory = openLadder(new InMemoryLadderStore(), stressRegistry);
+    const memory = openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
     for (const store of [sqlite, memory]) {
       playLadderRun(input(1, "titan", TITAN), store);
       playLadderRun(input(2, "goliath", GOLIATH), store);

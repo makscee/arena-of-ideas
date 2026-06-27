@@ -8,6 +8,7 @@ import { battle, winnerOf, TEAM_SIZE } from "./battle.js";
 import { boardAt } from "./board.js";
 import type { BattleInput, UnitDef } from "./types.js";
 import { Necromancer, Silencer, stressRegistry, Summoner, Venomancer } from "./content/stress.js";
+import { stressAbilities } from "./content/stress.js";
 
 const dummy = (name: string, hp = 10, pwr = 2): UnitDef => ({ name, base: { hp, pwr } });
 
@@ -47,6 +48,7 @@ const stressBattle: BattleInput = {
   ],
   seed: 42,
   statuses: stressRegistry,
+  abilities: stressAbilities,
 };
 
 const findUnit = (board: ReturnType<typeof boardAt>, id: string) =>
@@ -169,7 +171,7 @@ describe("hp StatChanged stamp", () => {
         },
       ],
     };
-    const log = battle({ teamA: [grower], teamB: [dummy("Hitter", 12, 3)], seed: 1, statuses: stressRegistry });
+    const log = battle({ teamA: [grower], teamB: [dummy("Hitter", 12, 3)], seed: 1, statuses: stressRegistry, abilities: stressAbilities });
     const sc = log.find((e) => e.type === "StatChanged" && e.stat === "hp" && e.hpAfter !== undefined && e.hpAfter !== e.now);
     expect(sc, "an hp StatChanged with outstanding damage").toBeDefined();
     if (sc?.type !== "StatChanged") throw new Error("unreachable");

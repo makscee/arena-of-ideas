@@ -16,6 +16,7 @@ import {
   newBadgeKeysAt,
   overlaysAt,
   shortDesc,
+  type AbilityRegistry,
   type Beat,
   type BattleEvent,
   type NameOf,
@@ -140,6 +141,8 @@ interface ViewerEls {
 export interface BattleContent {
   teams: { A: UnitDef[]; B: UnitDef[] };
   registry: StatusRegistry;
+  /** The ability registry a unit's `ability` ref resolves through (PRD #081). */
+  abilities: AbilityRegistry;
 }
 
 export interface LoadOpts {
@@ -178,6 +181,7 @@ export function createViewer(els: ViewerEls): Viewer {
   let timer: number | undefined;
   let defs = new Map<string, UnitDef>();
   let registry: StatusRegistry = {};
+  let abilities: AbilityRegistry = {};
   let selected: { unit: string; status?: string } | undefined;
   // The event whose cross-beat cause trace the readout shows (#065 slice 4).
   // Decoupled from the playhead: clicking a card line or a right-log row picks
@@ -247,6 +251,7 @@ export function createViewer(els: ViewerEls): Viewer {
             board,
             def: defs.get(sel.unit),
             registry,
+            abilities,
             name,
           }),
       });
@@ -487,8 +492,9 @@ export function createViewer(els: ViewerEls): Viewer {
       // Resume where the player left off (#014), else the top. Clamped to the
       // log; the render below fires onEnded if this lands on the final event.
       step = opts?.resumeAt === undefined ? 0 : Math.max(0, Math.min(opts.resumeAt, log.length - 1));
-      defs = unitDefs(log, content.teams, content.registry);
+      defs = unitDefs(log, content.teams, content.registry, content.abilities);
       registry = content.registry;
+      abilities = content.abilities;
       selected = undefined;
       selectedEvent = undefined;
       onEnded = opts?.onEnded;

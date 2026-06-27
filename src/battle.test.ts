@@ -15,6 +15,7 @@ import {
   Venomancer,
   Vitality,
 } from "./content/stress.js";
+import { stressAbilities } from "./content/stress.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -46,7 +47,7 @@ describe("determinism", () => {
       {
         name: "Summoner",
         base: Summoner.base,
-        ...(Summoner.abilities !== undefined ? { abilities: Summoner.abilities } : {}),
+        ability: Summoner.ability!,
       },
     ];
     const teamB: UnitDef[] = [
@@ -60,7 +61,7 @@ describe("determinism", () => {
         ],
       },
     ];
-    const input: BattleInput = { teamA, teamB, seed: 42, statuses: stressRegistry };
+    const input: BattleInput = { teamA, teamB, seed: 42, statuses: stressRegistry, abilities: stressAbilities };
 
     const log1 = toJSONL(battle(input));
     const log2 = toJSONL(battle(input));
@@ -152,7 +153,7 @@ describe("hpAfter", () => {
       { name: "Shielded", base: { hp: 10, pwr: 2 }, statuses: [{ status: "Shield", stacks: 4 }] },
       { name: "Vital", base: { hp: 6, pwr: 1 }, statuses: [{ status: "Vitality", stacks: 2 }] },
     ];
-    const log = runBattle({ teamA, teamB, seed: 7, statuses: stressRegistry });
+    const log = runBattle({ teamA, teamB, seed: 7, statuses: stressRegistry, abilities: stressAbilities });
 
     // Re-derive current hp per unit (effective max via StatChanged, deltas via Hurt/Heal)
     // and check each event's hpAfter against it.

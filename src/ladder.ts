@@ -20,7 +20,7 @@
 
 import { BOSS_TEAMS, BOOTSTRAP_TEAMS, TOWER_HEIGHT } from "./tunables.js";
 import { assertValidContent } from "./validate.js";
-import type { StatusRegistry, UnitDef } from "./types.js";
+import type { AbilityRegistry, StatusRegistry, UnitDef } from "./types.js";
 
 /** A ghost: a fielded team frozen into a round's pool, plus where it came from. */
 export interface TeamSnapshot {
@@ -204,7 +204,7 @@ export const BOOTSTRAP_RUN_ID = "bootstrap";
  * ghost and boss alike — passes the content gate against `registry` here, at
  * seed time, so a bad team fails loudly at open, never seed-dependently mid-run
  * when a draw or a challenge happens to land on it. */
-export function openLadder(store: LadderStore, registry: StatusRegistry): LadderStore {
+export function openLadder(store: LadderStore, registry: StatusRegistry, abilities: AbilityRegistry): LadderStore {
   if (store.poolAt(1).length === 0) {
     // Uniform tower, floors 1..TOWER_HEIGHT: each floor is a climb pool + a seated
     // boss that ALSO lives in the pool as a ghost (the demote-keeps-ghost invariant).
@@ -212,11 +212,11 @@ export function openLadder(store: LadderStore, registry: StatusRegistry): Ladder
       const floor = i + 1;
       const climb = BOOTSTRAP_TEAMS[i] ?? [];
       climb.forEach((team, seq) => {
-        assertValidContent(team, registry, `bootstrap round ${floor} team ${seq}`);
+        assertValidContent(team, registry, abilities, `bootstrap round ${floor} team ${seq}`);
         store.addSnapshot({ runId: BOOTSTRAP_RUN_ID, round: floor, seq, team: jsonClone(team) });
       });
       const bossTeam = BOSS_TEAMS[i]!;
-      assertValidContent(bossTeam, registry, `bootstrap floor ${floor} boss`);
+      assertValidContent(bossTeam, registry, abilities, `bootstrap floor ${floor} boss`);
       const boss: TeamSnapshot = { runId: BOOTSTRAP_RUN_ID, round: floor, seq: climb.length, team: jsonClone([...bossTeam]) };
       store.addSnapshot(boss); // boss-ghost in the pool — demote leaves it drawable
       store.setBoss(floor, boss);

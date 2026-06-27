@@ -15,6 +15,8 @@ import {
   mergePool,
   parseApprovedRegistry,
   stressRegistry,
+  stressAbilities,
+  type AbilityRegistry,
   type StatusRegistry,
   type UnitDef,
 } from "../../src/index.js";
@@ -24,9 +26,16 @@ import approvedJson from "../../registry/approved-units.json";
 export interface ArenaContent {
   pool: UnitDef[];
   statuses: StatusRegistry;
+  abilities: AbilityRegistry;
 }
 
 export function defaultArenaContent(): ArenaContent {
-  const approved = parseApprovedRegistry(approvedJson, stressRegistry, "registry/approved-units.json").units;
-  return { pool: mergePool(DEFAULT_RUN_POOL, approved), statuses: stressRegistry };
+  const reg = parseApprovedRegistry(approvedJson, stressRegistry, stressAbilities, "registry/approved-units.json");
+  // An approved unit travels with its Ability (#081); merge any onto the shipped
+  // registry so a run drafting an approved unit resolves its ability ref.
+  return {
+    pool: mergePool(DEFAULT_RUN_POOL, reg.units),
+    statuses: stressRegistry,
+    abilities: { ...stressAbilities, ...(reg.abilities ?? {}) },
+  };
 }

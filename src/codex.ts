@@ -29,7 +29,18 @@ import {
 } from "./tunables.js";
 import { describeAbility, describeStatus } from "./describe.js";
 import { partAtoms } from "./parts.js";
-import type { StatusRegistry, UnitDef } from "./types.js";
+import type { Ability, AbilityRegistry, StatusRegistry, UnitDef } from "./types.js";
+
+/** A unit's resolved ability bodies (PRD #081): its one `ability` ref looked up
+ * in the registry, with the legacy inline `abilities[]` as a back-compat read.
+ * One place so the codex follows summons and describes abilities identically. */
+function unitAbilityDefs(u: UnitDef, abilities: AbilityRegistry): Ability[] {
+  if (u.ability !== undefined) {
+    const ab = abilities[u.ability];
+    return ab ? [ab] : [];
+  }
+  return u.abilities ?? [];
+}
 
 // ---------------------------------------------------------------------------
 // Shape types
@@ -104,7 +115,7 @@ export interface CodexData {
  * The codex must cover what a player can FACE, not only what they can buy — and
  * with a boss seated on every floor (PRD 075 slice 3) that includes every team
  * in BOSS_TEAMS, the summit (old BOOTSTRAP_CHAMPION) among them. */
-export function codexUnits(approved: readonly UnitDef[] = []): UnitDef[] {
+export function codexUnits(approved: readonly UnitDef[] = [], abilities: AbilityRegistry = {}): UnitDef[] {
   const queue: UnitDef[] = [...DEFAULT_RUN_POOL, ...approved, ...BOOTSTRAP_TEAMS.flat(2), ...BOSS_TEAMS.flat()];
   const seen = new Set<string>();
   const out: UnitDef[] = [];
@@ -113,7 +124,7 @@ export function codexUnits(approved: readonly UnitDef[] = []): UnitDef[] {
     if (seen.has(u.name)) continue;
     seen.add(u.name);
     out.push(u);
-    for (const ab of u.abilities ?? []) {
+    for (const ab of unitAbilityDefs(u, abilities)) {
       for (const e of ab.effects) if (e.kind === "summon") queue.push(e.unit);
     }
   }
@@ -127,7 +138,7 @@ export function codexUnits(approved: readonly UnitDef[] = []): UnitDef[] {
 /** Build the full codex from a live registry and a unit list (codexUnits()
  * for the shipped game). Units are described once per name, first occurrence
  * winning the dedup. */
-export function buildCodex(registry: StatusRegistry, units: UnitDef[]): CodexData {
+export function buildCodex(registry: StatusRegistry, units: UnitDef[], abilities: AbilityRegistry = {}): CodexData {
   // -- statuses: every entry in the registry --
   // A status frames its per-stack statMods in the card's stat cells (#078); a
   // stat the status doesn't move shows "·". No number is typed — it is the
@@ -154,7 +165,7 @@ export function buildCodex(registry: StatusRegistry, units: UnitDef[]): CodexDat
       name: u.name,
       hp: u.base.hp,
       pwr: u.base.pwr,
-      abilities: (u.abilities ?? []).map((ab) => describeAbility(ab)),
+      abilities: unitAbilityDefs(u, abilities).map((ab) => describeAbility(ab)),
       statuses: (u.statuses ?? []).map((s) => `${s.status} ×${s.stacks}`),
       ...(typeof creator === "string" && creator.length > 0 ? { creator } : {}),
     });

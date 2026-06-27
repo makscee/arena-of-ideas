@@ -237,8 +237,12 @@ function replay(deps: SubmitDeps, userId: string, raw: string): Rederived {
   }
   // The pool and registry travel by value in a serialized run; pin them to the
   // arena's content or the replay would verify a run against invented units.
-  if (!isDeepStrictEqual(claimed.pool, content.pool) || !isDeepStrictEqual(claimed.statuses, content.statuses)) {
-    throw new SubmissionRejected("run was not played with the arena's content (pool/statuses differ)");
+  if (
+    !isDeepStrictEqual(claimed.pool, content.pool) ||
+    !isDeepStrictEqual(claimed.statuses, content.statuses) ||
+    !isDeepStrictEqual(claimed.abilities, content.abilities)
+  ) {
+    throw new SubmissionRejected("run was not played with the arena's content (pool/statuses/abilities differ)");
   }
 
   // The serve record — every pool view the server handed out for this run.
@@ -252,7 +256,7 @@ function replay(deps: SubmitDeps, userId: string, raw: string): Rederived {
 
   const steps = extractSteps(claimed.log);
   const view = new ReplayLadderView(store, userId, serves);
-  let state = initRun({ seed: claimed.seed, runId: claimed.runId, pool: content.pool, statuses: content.statuses });
+  let state = initRun({ seed: claimed.seed, runId: claimed.runId, pool: content.pool, statuses: content.statuses, abilities: content.abilities });
   for (const step of steps) {
     if (step.kind === "ladder") {
       view.frame = step;

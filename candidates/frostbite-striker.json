@@ -7,64 +7,11 @@
         "hp": 11,
         "pwr": 2
       },
+      "ability": "Frostbite",
       "statuses": [
         {
           "status": "Shield",
           "stacks": 3
-        }
-      ],
-      "abilities": [
-        {
-          "whens": [
-            {
-              "kind": "trigger",
-              "on": {
-                "on": "Strike",
-                "striker": "holder"
-              }
-            }
-          ],
-          "selectors": [
-            {
-              "kind": "frontEnemy"
-            }
-          ],
-          "effects": [
-            {
-              "kind": "applyStatus",
-              "status": "Poison",
-              "stacks": {
-                "kind": "const",
-                "value": 3
-              }
-            }
-          ]
-        },
-        {
-          "whens": [
-            {
-              "kind": "trigger",
-              "on": {
-                "on": "Strike",
-                "striker": "holder"
-              }
-            }
-          ],
-          "selectors": [
-            {
-              "kind": "frontEnemy"
-            }
-          ],
-          "effects": [
-            {
-              "kind": "applyStatus",
-              "status": "Curse",
-              "stacks": {
-                "kind": "const",
-                "value": 1
-              }
-            }
-          ]
         }
       ]
     },
@@ -73,16 +20,56 @@
       "base": {
         "hp": 12,
         "pwr": 2
-      }
+      },
+      "ability": "Strike"
     },
     {
       "name": "Squire",
       "base": {
         "hp": 8,
         "pwr": 2
-      }
+      },
+      "ability": "Strike"
     }
   ],
+  "abilities": {
+    "Frostbite": {
+      "name": "Frostbite",
+      "family": "Poison",
+      "whens": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "Strike",
+            "striker": "holder"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "frontEnemy"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "applyStatus",
+          "status": "Poison",
+          "stacks": {
+            "kind": "const",
+            "value": 3
+          }
+        },
+        {
+          "kind": "applyStatus",
+          "status": "Curse",
+          "stacks": {
+            "kind": "const",
+            "value": 1
+          }
+        }
+      ]
+    }
+  },
   "provenance": {
     "ideaText": "A frost-themed front-line striker that chills the enemy it hits — its attacks\nshould slow or weaken the unit in front of it, so it trades up against an\naggressive opponent. A small, durable bruiser, not a glass cannon. It should\nhold its own against the existing meta without dominating it.",
     "creator": "maks",

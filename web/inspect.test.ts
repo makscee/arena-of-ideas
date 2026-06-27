@@ -3,16 +3,16 @@
 // its source ability, so a mid-battle arrival can still show its abilities.
 
 import { describe, expect, test } from "vitest";
-import { Imp, Summoner, Venomancer, battle, stressRegistry, type UnitDef } from "../src/index.js";
+import { Imp, Summoner, Venomancer, battle, stressAbilities, stressRegistry, type UnitDef } from "../src/index.js";
 import { chipsHtml, renderUnitInspect, unitDefs } from "./inspect.js";
 
-const dummy = (name: string, hp = 10, pwr = 3): UnitDef => ({ name, base: { hp, pwr } });
+const dummy = (name: string, hp = 10, pwr = 3): UnitDef => ({ name, base: { hp, pwr }, ability: "Strike" });
 
 describe("unitDefs", () => {
   test("roster units map to their defs by line order", () => {
     const teams = { A: [dummy("One"), dummy("Two")], B: [dummy("Three")] };
-    const log = battle({ teamA: teams.A, teamB: teams.B, seed: 0 });
-    const defs = unitDefs(log, teams, stressRegistry);
+    const log = battle({ teamA: teams.A, teamB: teams.B, seed: 0, statuses: stressRegistry, abilities: stressAbilities });
+    const defs = unitDefs(log, teams, stressRegistry, stressAbilities);
     expect(defs.get("A1:One")).toBe(teams.A[0]);
     expect(defs.get("A2:Two")).toBe(teams.A[1]);
     expect(defs.get("B1:Three")).toBe(teams.B[0]);
@@ -20,10 +20,10 @@ describe("unitDefs", () => {
 
   test("a summoned unit's def is recovered from the summoning ability", () => {
     const teams = { A: [Summoner], B: [dummy("Bruiser", 20, 7)] };
-    const log = battle({ teamA: teams.A, teamB: teams.B, seed: 0, statuses: stressRegistry });
+    const log = battle({ teamA: teams.A, teamB: teams.B, seed: 0, statuses: stressRegistry, abilities: stressAbilities });
     const summon = log.find((e) => e.type === "Summon");
     expect(summon).toBeDefined();
-    const defs = unitDefs(log, teams, stressRegistry);
+    const defs = unitDefs(log, teams, stressRegistry, stressAbilities);
     expect(defs.get((summon as { unit: string }).unit)?.name).toBe(Imp.name);
   });
 });
@@ -41,6 +41,7 @@ describe("renderUnitInspect status refs", () => {
       def: Venomancer,
       statuses: [],
       registry: stressRegistry,
+      abilities: stressAbilities,
     });
     expect(root.innerHTML).toContain('data-status-ref="Poison"');
     expect(root.innerHTML).toContain('class="ins-ref"');
@@ -63,6 +64,7 @@ describe("renderUnitInspect status refs", () => {
       def: Venomancer,
       statuses: [{ status: "Poison", stacks: 2 }],
       registry: stressRegistry,
+      abilities: stressAbilities,
     });
     expect(root.innerHTML).toContain('data-status-row="Poison"');
     expect(root.innerHTML).not.toContain('data-status-def="Poison"');
@@ -86,6 +88,7 @@ describe("renderUnitInspect status refs", () => {
       },
       statuses: [],
       registry: stressRegistry,
+      abilities: stressAbilities,
     });
     expect(root.innerHTML).toContain("Unregistered");
     expect(root.innerHTML).not.toContain("data-status-ref");
@@ -104,6 +107,7 @@ describe("renderUnitInspect status refs", () => {
       def: Venomancer,
       statuses: [],
       registry: stressRegistry,
+      abilities: stressAbilities,
     });
     // Venomancer: "After this unit strikes: apply 2 Poison to the front enemy."
     // The trigger, the applyStatus effect, and the frontEnemy selector each link

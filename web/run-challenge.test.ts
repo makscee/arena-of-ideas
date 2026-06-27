@@ -14,6 +14,7 @@ import {
   initRun,
   ladderFight,
   openLadder,
+  stressAbilities,
   stressRegistry,
   type LadderStore,
   type RunEndReason,
@@ -167,15 +168,15 @@ describe("endHeadLine — all four terminal reasons read distinctly", () => {
 // kernel call, or a kernel that stopped reaching a state, breaks this.
 // ---------------------------------------------------------------------------
 
-const fresh = (): LadderStore => openLadder(new InMemoryLadderStore(), stressRegistry);
+const fresh = (): LadderStore => openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
 
 /** A run with one overwhelming unit, so it WINS every climb and challenge —
  * the crown / overshoot paths. A weak pool unit gives the loss path. */
-const strong: UnitDef = { name: "Titan", base: { hp: 200, pwr: 99 } };
-const weak: UnitDef = { name: "Mouse", base: { hp: 1, pwr: 1 } };
+const strong: UnitDef = { name: "Titan", base: { hp: 200, pwr: 99 }, ability: "Strike" };
+const weak: UnitDef = { name: "Mouse", base: { hp: 1, pwr: 1 }, ability: "Strike" };
 
 function startRun(unit: UnitDef): RunState {
-  const s = initRun({ seed: 1, runId: "me", pool: [unit], statuses: stressRegistry });
+  const s = initRun({ seed: 1, runId: "me", pool: [unit], statuses: stressRegistry, abilities: stressAbilities });
   return buy(s, 0); // field the one unit
 }
 

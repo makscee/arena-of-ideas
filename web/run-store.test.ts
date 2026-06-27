@@ -13,6 +13,7 @@ import {
   ladderFight,
   openLadder,
   runToJSONL,
+  stressAbilities,
   stressRegistry,
   type LadderStore,
   type RunState,
@@ -44,10 +45,10 @@ function fakeStorage(): KVStorage {
   };
 }
 
-const TITAN: UnitDef = { name: "Titan", base: { hp: 100, pwr: 50 } };
+const TITAN: UnitDef = { name: "Titan", base: { hp: 100, pwr: 50 }, ability: "Strike" };
 
 function playLadderRun(seed: number, runId: string, ladder: LadderStore): RunState {
-  let s = buy(initRun({ seed, runId, pool: [TITAN], statuses: stressRegistry }), 0);
+  let s = buy(initRun({ seed, runId, pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities }), 0);
   while (s.status === "active") {
     try {
       s = ladderFight(s, ladder);
@@ -66,8 +67,8 @@ function playLadderRun(seed: number, runId: string, ladder: LadderStore): RunSta
 describe("openLocalLadder", () => {
   test("same drives as InMemory → same pools, champion, and run log", () => {
     const storage = fakeStorage();
-    const local = openLadder(openLocalLadder(storage), stressRegistry);
-    const inMemory = openLadder(new InMemoryLadderStore(), stressRegistry);
+    const local = openLadder(openLocalLadder(storage), stressRegistry, stressAbilities);
+    const inMemory = openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
     const logs = [local, inMemory].map((store) => runToJSONL(playLadderRun(1, "titan", store).log));
     expect(logs[0]).toBe(logs[1]);
     for (let round = 1; local.poolAt(round).length > 0 || inMemory.poolAt(round).length > 0; round++) {
@@ -78,9 +79,9 @@ describe("openLocalLadder", () => {
 
   test("write-through: a reopened ladder holds everything, and is never reseeded", () => {
     const storage = fakeStorage();
-    const first = openLadder(openLocalLadder(storage), stressRegistry);
+    const first = openLadder(openLocalLadder(storage), stressRegistry, stressAbilities);
     playLadderRun(1, "titan", first);
-    const reopened = openLadder(openLocalLadder(storage), stressRegistry); // a page reload
+    const reopened = openLadder(openLocalLadder(storage), stressRegistry, stressAbilities); // a page reload
     for (let round = 1; first.poolAt(round).length > 0; round++) {
       expect(reopened.poolAt(round)).toEqual(first.poolAt(round));
     }
@@ -98,7 +99,7 @@ describe("active run persistence", () => {
   test("a stored run (and its pending battle) round-trips; clearRun empties it", () => {
     const storage = fakeStorage();
     expect(loadRun(storage)).toBeNull(); // fresh profile: the new-run flow
-    const state = buy(initRun({ seed: 7, runId: "web-1", pool: [TITAN], statuses: stressRegistry }), 0);
+    const state = buy(initRun({ seed: 7, runId: "web-1", pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities }), 0);
     const battle = { teamA: [TITAN], teamB: [TITAN], seed: 42, opponentLabel: "ghost bootstrap (round 1)" };
     saveRun(storage, state, battle);
     expect(loadRun(storage)).toEqual({ state, battle });
@@ -110,7 +111,7 @@ describe("active run persistence", () => {
 
   test("a stored battle's replay position round-trips (#015 slice 4: reload mid-battle resumes parked)", () => {
     const storage = fakeStorage();
-    const state = buy(initRun({ seed: 7, runId: "web-1", pool: [TITAN], statuses: stressRegistry }), 0);
+    const state = buy(initRun({ seed: 7, runId: "web-1", pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities }), 0);
     const battle = { teamA: [TITAN], teamB: [TITAN], seed: 42, opponentLabel: "ghost bootstrap (round 1)", position: 17 };
     saveRun(storage, state, battle);
     expect(loadRun(storage)?.battle?.position).toBe(17);
@@ -118,7 +119,7 @@ describe("active run persistence", () => {
 
   test("the local-only flag (#066 slice 4) round-trips and clears", () => {
     const storage = fakeStorage();
-    const state = buy(initRun({ seed: 7, runId: "web-1", pool: [TITAN], statuses: stressRegistry }), 0);
+    const state = buy(initRun({ seed: 7, runId: "web-1", pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities }), 0);
     saveRun(storage, state); // no cheat: the flag is absent, shape stays { state }
     expect(loadRun(storage)).toEqual({ state });
     saveRun(storage, state, undefined, true); // a dev cheat marks it local-only
@@ -167,13 +168,13 @@ describe("abandon (#014): the run-lifecycle act, no kernel change", () => {
 
   test("ladder integrity: a mid-run abandon leaves the fought rounds' ghosts, no crown, own-ghost exclusion intact next run", () => {
     const storage = fakeStorage();
-    const ladder = openLadder(openLocalLadder(storage), stressRegistry);
+    const ladder = openLadder(openLocalLadder(storage), stressRegistry, stressAbilities);
     const championBefore = ladder.champion(); // the bootstrap champion holds the spot
 
     // web-1 fights round 1 once, then is abandoned mid-climb. ladderFight
     // snapshots the fielded team into round 1's pool BEFORE resolving, so the
     // ghost is on the ladder the instant it fights — win, lose, or abandon.
-    const s1 = buy(initRun({ seed: 1, runId: "web-1", pool: [TITAN], statuses: stressRegistry }), 0);
+    const s1 = buy(initRun({ seed: 1, runId: "web-1", pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities }), 0);
     const afterFight = ladderFight(s1, ladder);
     expect(ladder.poolAt(1).some((g) => g.runId === "web-1")).toBe(true); // the ghost stays
     expect(afterFight.status).toBe("active"); // round 1 had ghosts to fight — not crowned
@@ -187,7 +188,7 @@ describe("abandon (#014): the run-lifecycle act, no kernel change", () => {
 
     // No crown from the abandoned run: the champion spot is exactly as it was
     // before web-1 ever fought — web-1 never reached it, abandon or not.
-    const reopened = openLadder(openLocalLadder(storage), stressRegistry);
+    const reopened = openLadder(openLocalLadder(storage), stressRegistry, stressAbilities);
     expect(reopened.champion()).toEqual(championBefore);
     expect(reopened.champion()?.runId).not.toBe("web-1");
     expect(reopened.poolAt(1).some((g) => g.runId === "web-1")).toBe(true); // the ghost persists
@@ -195,7 +196,7 @@ describe("abandon (#014): the run-lifecycle act, no kernel change", () => {
     // The next run (web-2) sees web-1's ghost as an eligible rival; its own
     // ghosts are excluded. After web-2 fights, web-2 excludes its OWN ghost but
     // still sees web-1's — exclusion is by runId, unaffected by the abandon.
-    const s2 = buy(initRun({ seed: 2, runId: "web-2", pool: [TITAN], statuses: stressRegistry }), 0);
+    const s2 = buy(initRun({ seed: 2, runId: "web-2", pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities }), 0);
     const web2Candidates = reopened.poolAt(s2.round).filter((g) => g.runId !== s2.runId);
     expect(web2Candidates.some((g) => g.runId === "web-1")).toBe(true);
     const s2AfterFight = ladderFight(s2, reopened);
@@ -207,8 +208,8 @@ describe("abandon (#014): the run-lifecycle act, no kernel change", () => {
 
   test("stored-run-cleared: clearRun removes run + pending battle; ladder keys survive", () => {
     const storage = fakeStorage();
-    const ladder = openLadder(openLocalLadder(storage), stressRegistry);
-    const state = buy(initRun({ seed: 7, runId: "web-1", pool: [TITAN], statuses: stressRegistry }), 0);
+    const ladder = openLadder(openLocalLadder(storage), stressRegistry, stressAbilities);
+    const state = buy(initRun({ seed: 7, runId: "web-1", pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities }), 0);
     ladderFight(state, ladder); // writes a ghost to the ladder key
     const battle = { teamA: [TITAN], teamB: [TITAN], seed: 42, opponentLabel: "ghost web-1 (round 1)" };
     saveRun(storage, state, battle); // mid-battle: a pending battle is stored too
@@ -218,7 +219,7 @@ describe("abandon (#014): the run-lifecycle act, no kernel change", () => {
     expect(loadRun(storage)).toBeNull(); // both run and pending battle gone
 
     // The ladder is a separate key — abandoning a run never wipes it.
-    const reopened = openLadder(openLocalLadder(storage), stressRegistry);
+    const reopened = openLadder(openLocalLadder(storage), stressRegistry, stressAbilities);
     expect(reopened.poolAt(1).some((g) => g.runId === "web-1")).toBe(true);
   });
 });
@@ -236,7 +237,7 @@ describe("saveRun quota exhaustion", () => {
 
   test("saveRun propagates a storage write failure (callers are responsible for catch)", () => {
     const storage = throwingStorage();
-    const state = buy(initRun({ seed: 1, runId: "web-1", pool: [TITAN], statuses: stressRegistry }), 0);
+    const state = buy(initRun({ seed: 1, runId: "web-1", pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities }), 0);
     expect(() => saveRun(storage, state)).toThrow();
   });
 });
@@ -249,8 +250,8 @@ describe("prefixedStorage", () => {
   test("namespaces every key — a remote run never touches the local run's keys", () => {
     const storage = fakeStorage();
     const remote = prefixedStorage(storage, "remote:");
-    const localState = buy(initRun({ seed: 1, runId: "web-1", pool: [TITAN], statuses: stressRegistry }), 0);
-    const remoteState = buy(initRun({ seed: 2, runId: "web-uuid", pool: [TITAN], statuses: stressRegistry }), 0);
+    const localState = buy(initRun({ seed: 1, runId: "web-1", pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities }), 0);
+    const remoteState = buy(initRun({ seed: 2, runId: "web-uuid", pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities }), 0);
     saveRun(storage, localState);
     saveRun(remote, remoteState);
     expect(loadRun(storage)!.state.runId).toBe("web-1"); // logging in clobbered nothing

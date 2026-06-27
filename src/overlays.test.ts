@@ -18,6 +18,7 @@ import { battle } from "./battle.js";
 import { badgeValues, beatsOf, newBadgeKeysAt, overlaysAt, type BeatOverlay } from "./beats.js";
 import type { BattleEvent, BattleInput, EventBody, UnitDef } from "./types.js";
 import { Summoner, Venomancer, Silencer, Necromancer, stressRegistry } from "./content/stress.js";
+import { stressAbilities } from "./content/stress.js";
 
 const tank = (name: string, hp: number, pwr: number): UnitDef => ({ name, base: { hp, pwr } });
 
@@ -49,6 +50,7 @@ for (const seed of [1, 3, 7, 11, 23, 42, 99]) {
       teamB: [Silencer, tank("Brick", 22, 2), tank("Slab", 20, 1)],
       seed,
       statuses: stressRegistry,
+  abilities: stressAbilities,
     },
   });
 }
@@ -62,6 +64,7 @@ for (const seed of [3, 7, 11]) {
       teamB: [Mosaic, tank("Brick", 18, 2)],
       seed,
       statuses: stressRegistry,
+  abilities: stressAbilities,
     },
   });
 }
@@ -74,6 +77,7 @@ for (const seed of [3, 7, 11]) {
       teamB: [tank("Brute", 14, 5), tank("Brick", 12, 2)],
       seed,
       statuses: stressRegistry,
+  abilities: stressAbilities,
     },
   });
 }

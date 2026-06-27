@@ -16,7 +16,7 @@ import {
   sweepBattles,
   validateTeamFile,
 } from "./cli.js";
-import { stressRegistry } from "./content/stress.js";
+import { stressAbilities, stressRegistry } from "./content/stress.js";
 import { InMemoryLadderStore, openLadder } from "./ladder.js";
 import type { LadderData } from "./ladder.js";
 import { FileLadderStore } from "./ladder-file.js";
@@ -39,7 +39,7 @@ function writeTempTeam(name: string, content: string): string {
 }
 
 const minimalTeam = JSON.stringify({
-  units: [{ name: "Grunt", base: { hp: 5, pwr: 1 } }],
+  units: [{ name: "Grunt", base: { hp: 5, pwr: 1 }, ability: "Strike" }],
 });
 
 // ---------------------------------------------------------------------------
@@ -210,7 +210,7 @@ describe("sweepBattles", () => {
 
 describe("autoplay", () => {
   const dir = mkdtempSync(join(tmpdir(), "aoi-autoplay-"));
-  const freshFileLadder = (name: string) => openLadder(new FileLadderStore(join(dir, name)), stressRegistry);
+  const freshFileLadder = (name: string) => openLadder(new FileLadderStore(join(dir, name)), stressRegistry, stressAbilities);
 
   test("parseArgs autoplay mode with defaults and flags", () => {
     const wrap = (args: string[]) => ["node", "cli.ts", ...args];
@@ -244,7 +244,7 @@ describe("autoplay", () => {
   test("an N-run sweep fills the pools, and the growth persists on disk", () => {
     const path = join(dir, "sweep.json");
     const N = 4;
-    const results = autoplayRuns(openLadder(new FileLadderStore(path), stressRegistry), 0, N);
+    const results = autoplayRuns(openLadder(new FileLadderStore(path), stressRegistry, stressAbilities), 0, N);
     expect(results).toHaveLength(N);
     expect(results.every((r) => r.state.status === "over")).toBe(true);
     // Every run fights at round 1, so its ghost joined the round-1 pool — which
@@ -296,7 +296,7 @@ describe("history mode parseArgs", () => {
 
 describe("readHistory", () => {
   function towerSnapshot(): LadderData {
-    const ladder = openLadder(new InMemoryLadderStore(), stressRegistry);
+    const ladder = openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
     const bosses: LadderData["bosses"] = {};
     const pools: LadderData["pools"] = {};
     for (let floor = 1; ladder.bossAt(floor) !== null; floor++) bosses[String(floor)] = ladder.bossAt(floor)!;
@@ -347,8 +347,8 @@ describe("readHistory", () => {
 
 describe("tmp team file round-trip", () => {
   test("battle runs from two tmp team files (no statuses needed)", () => {
-    const pathA = writeTempTeam("a", JSON.stringify({ units: [{ name: "Grunt", base: { hp: 5, pwr: 2 } }] }));
-    const pathB = writeTempTeam("b", JSON.stringify({ units: [{ name: "Orc", base: { hp: 4, pwr: 1 } }] }));
+    const pathA = writeTempTeam("a", JSON.stringify({ units: [{ name: "Grunt", base: { hp: 5, pwr: 2 }, ability: "Strike" }] }));
+    const pathB = writeTempTeam("b", JSON.stringify({ units: [{ name: "Orc", base: { hp: 4, pwr: 1 }, ability: "Strike" }] }));
     const result = runBattle(pathA, pathB, 0);
     expect(["A", "B", "draw"]).toContain(result.winner);
   });

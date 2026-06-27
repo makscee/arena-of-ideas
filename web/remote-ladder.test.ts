@@ -6,12 +6,12 @@
 // accepts nothing else (server/README.md, serve-time pinning).
 
 import { describe, expect, test } from "vitest";
-import { initRun, buy, challengeBoss, ladderFight, stressRegistry, type TeamSnapshot, type UnitDef } from "../src/index.js";
+import { initRun, buy, challengeBoss, ladderFight, stressAbilities, stressRegistry, type TeamSnapshot, type UnitDef } from "../src/index.js";
 import type { ArenaApi, ApiResult } from "./api.js";
 import { RemoteLadder } from "./remote-ladder.js";
 
-const TITAN: UnitDef = { name: "Titan", base: { hp: 100, pwr: 50 } };
-const WISP: UnitDef = { name: "Wisp", base: { hp: 1, pwr: 1 } };
+const TITAN: UnitDef = { name: "Titan", base: { hp: 100, pwr: 50 }, ability: "Strike" };
+const WISP: UnitDef = { name: "Wisp", base: { hp: 1, pwr: 1 }, ability: "Strike" };
 
 const snap = (runId: string, round: number, seq: number, team: UnitDef[]): TeamSnapshot => ({
   runId,
@@ -55,7 +55,7 @@ describe("the fight contract (serve-time pinning)", () => {
     );
     expect((await store.serve("web-x", 1)).ok).toBe(true);
 
-    let s = buy(initRun({ seed: 7, runId: "web-x", pool: [TITAN], statuses: stressRegistry }), 0);
+    let s = buy(initRun({ seed: 7, runId: "web-x", pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities }), 0);
     s = ladderFight(s, store);
 
     // The own ghost enters at the SERVED prefix length — what the server
@@ -86,7 +86,7 @@ describe("the fight contract (serve-time pinning)", () => {
     await store.sync();
     expect((await store.serve("web-x", 1)).ok).toBe(true);
 
-    let s = buy(initRun({ seed: 7, runId: "web-x", pool: [TITAN], statuses: stressRegistry }), 0);
+    let s = buy(initRun({ seed: 7, runId: "web-x", pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities }), 0);
     // An empty served pool: there is no climb opponent, so the move is to
     // challenge the floor's boss — the co-served champion, never a fresher read.
     s = challengeBoss(s, store);

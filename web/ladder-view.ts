@@ -7,6 +7,7 @@
 
 import {
   BOOTSTRAP_RUN_ID,
+  type AbilityRegistry,
   type LadderStore,
   type StatusRegistry,
   type TeamSnapshot,
@@ -26,6 +27,8 @@ const ROUND_SCAN_CAP = 200;
 export interface LadderViewDeps {
   store: LadderStore;
   registry: StatusRegistry;
+  /** The ability registry a unit's `ability` ref resolves through (PRD #081). */
+  abilities: AbilityRegistry;
   /** Start with round 1's pool expanded — the leaderboard screen (#015
    * slice 4) opens showing teams, not a list of closed drawers; the run
    * screen's side ladder keeps its compact default. */
@@ -185,6 +188,7 @@ export function createLadderView(root: HTMLElement, deps: LadderViewDeps): Ladde
             def,
             statuses: def.statuses ?? [],
             registry: deps.registry,
+            abilities: deps.abilities,
             ...(which.status !== undefined ? { highlight: which.status } : {}),
             noStatuses: "none to start with",
           }),

@@ -7,6 +7,7 @@ import { battle } from "./battle.js";
 import { renderReplay } from "./replay.js";
 import type { BattleInput, UnitDef } from "./types.js";
 import { Necromancer, Silencer, stressRegistry, Summoner, Venomancer } from "./content/stress.js";
+import { stressAbilities } from "./content/stress.js";
 
 // A battle exercising the whole stress set: statuses on both sides, a
 // summoner, a necromancer, a silencer, shields, freezes, blessings.
@@ -45,6 +46,7 @@ const stressBattle: BattleInput = {
   ],
   seed: 42,
   statuses: stressRegistry,
+  abilities: stressAbilities,
 };
 
 describe("replay renderer", () => {
@@ -69,7 +71,7 @@ describe("replay renderer", () => {
     // strikes alone need 20 turns, but poison stacks net +1 per turn while its
     // tick grows — the victim dies to a poison tick, and the chain must say so.
     const victim: UnitDef = { name: "Victim", base: { hp: 20, pwr: 0 } };
-    const log = battle({ teamA: [Venomancer], teamB: [victim], seed: 7, statuses: stressRegistry });
+    const log = battle({ teamA: [Venomancer], teamB: [victim], seed: 7, statuses: stressRegistry, abilities: stressAbilities });
     const text = renderReplay(log);
 
     const poisonDeath = log.find(
@@ -118,6 +120,7 @@ describe("replay renderer", () => {
       teamB: [{ name: "FrozenOne", base: { hp: 20, pwr: 2 }, statuses: [{ status: "Freeze", stacks: 1 }] }],
       seed: 1,
       statuses: stressRegistry,
+  abilities: stressAbilities,
     });
     const text = renderReplay(log);
     expect(text).toContain("FrozenOne tries to strike, but Freeze on FrozenOne cancels it");
@@ -138,6 +141,7 @@ describe("replay renderer", () => {
       ],
       seed: 1,
       statuses: stressRegistry,
+  abilities: stressAbilities,
     });
     const text = renderReplay(log);
     expect(text).toContain("Blessed should die, but Blessing on Blessed refuses the death.");
@@ -151,6 +155,7 @@ describe("replay renderer", () => {
       teamB: [{ name: "Ogre", base: { hp: 3, pwr: 1 } }],
       seed: 1,
       statuses: stressRegistry,
+  abilities: stressAbilities,
     });
     const text = renderReplay(log);
     expect(text).toContain("Fodder rises from the grave at 1 hp");

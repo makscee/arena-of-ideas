@@ -57,7 +57,7 @@ describe("mint-candidate parseArgs", () => {
 describe("loadCandidates", () => {
   test("parses valid records, isolates a malformed entry as an error", () => {
     const dir = mkdtempSync(join(tmpdir(), "aoi-cand-"));
-    const good = buildRecord("good", [{ name: "Froster", base: { hp: 11, pwr: 2 } }], MANIFEST, PASSED, 2);
+    const good = buildRecord("good", [{ name: "Froster", base: { hp: 11, pwr: 2 }, ability: "Strike" }], MANIFEST, PASSED, 2);
     writeFileSync(join(dir, "good.json"), serializeRecord(good));
     writeFileSync(join(dir, "bad.json"), "{ not json");
     const { records, errors } = loadCandidates(dir);

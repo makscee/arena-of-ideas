@@ -3,7 +3,7 @@
 // log (and the content it ran on) to the battle screen — board, inline log,
 // and inspector all read that one log.
 
-import { DEFAULT_RUN_POOL, KERNEL_VERSION, codexUnits, mergePool, openLadder, stressRegistry } from "../src/index.js";
+import { DEFAULT_RUN_POOL, KERNEL_VERSION, codexUnits, mergePool, openLadder, stressAbilities, stressRegistry } from "../src/index.js";
 import { approvedUnits, committedApproved } from "./approved.js";
 import { createArenaApi, type MeInfo } from "./api.js";
 import { dismissInspectOverlay } from "./inspect.js";
@@ -147,7 +147,8 @@ let historyScreen: HistoryScreen | undefined;
 const codexScreen: CodexScreen = createCodex(
   el("codex-container"),
   stressRegistry,
-  codexUnits(approved),
+  codexUnits(approved, stressAbilities),
+  stressAbilities,
 );
 codexScreen.setVisible(false);
 
@@ -319,10 +320,11 @@ homeButton.addEventListener("click", () => showView("title"));
 // ladder would orphan its ghosts), but it must not take the other views down
 // with it.
 try {
-  const ladderStore = remote ?? openLadder(openLocalLadder(window.localStorage), stressRegistry);
+  const ladderStore = remote ?? openLadder(openLocalLadder(window.localStorage), stressRegistry, stressAbilities);
   leaderboardView = createLadderView(el("leaderboard-body"), {
     store: ladderStore,
     registry: stressRegistry,
+    abilities: stressAbilities,
     openFirstRound: true, // the screen opens showing teams, not closed drawers
     ...(remote !== null ? { holderName: () => remote!.holder() } : {}),
   });
@@ -390,9 +392,10 @@ try {
       storage: runStorage,
       store: ladderStore,
       pool: remote !== null ? remoteRunPool : runPool,
-      devPool: () => codexUnits(approved), // #066 slice 4 spawn-any-unit — same pool as the editor's palette
+      devPool: () => codexUnits(approved, stressAbilities), // #066 slice 4 spawn-any-unit — same pool as the editor's palette
       devEnabled: () => loadDevMode(window.localStorage), // device-wide gate, not the run's prefixed storage
       registry: stressRegistry,
+      abilities: stressAbilities,
       viewer,
       viewerHost: result,
       viewerHome: el("battle-view"),
@@ -464,8 +467,9 @@ battleEditor = createBattleEditor(
     mount: el<HTMLElement>("be-mount"),
   },
   {
-    pool: () => codexUnits(approved),
+    pool: () => codexUnits(approved, stressAbilities),
     registry: stressRegistry,
+    abilities: stressAbilities,
     viewer,
     viewerHost: result,
     viewerHome: el("battle-view"),

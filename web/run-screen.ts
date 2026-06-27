@@ -29,6 +29,7 @@ import {
   serializeRun,
   shopSizeForRound,
   toBattleTeam,
+  type AbilityRegistry,
   type LadderStore,
   type RunEndReason,
   type RunEvent,
@@ -247,6 +248,8 @@ export interface RunScreenDeps {
   devEnabled: () => boolean;
   /** Registry new runs fight with — threaded, never hardwired deeper. */
   registry: StatusRegistry;
+  /** The ability registry a unit's `ability` ref resolves through (PRD #081). */
+  abilities: AbilityRegistry;
   viewer: Viewer;
   /** The viewer's DOM (#result) — reparented here while a run battle shows. */
   viewerHost: HTMLElement;
@@ -319,7 +322,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   let challengeArmLabel = ""; // the warning the armed button reads — rebuilt per render
   let challengeFireLabel = ""; // the resting button label — rebuilt per render
 
-  const ladderView = createLadderView(els.ladderBody, { store: deps.store, registry: deps.registry });
+  const ladderView = createLadderView(els.ladderBody, { store: deps.store, registry: deps.registry, abilities: deps.abilities });
 
   // ---------- DEV panel (#066 slice 4) ----------
 
@@ -741,6 +744,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
           def,
           statuses: def.statuses ?? [],
           registry: s.statuses,
+          abilities: s.abilities,
           ...(sel.status !== undefined ? { highlight: sel.status } : {}),
           noStatuses: "none to start with",
         }),
@@ -918,13 +922,13 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     deps.viewerHost.hidden = false;
     reserveBattleBar();
     const s = state!;
-    const log = battle({ teamA: pending.teamA, teamB: pending.teamB, seed: pending.seed, statuses: s.statuses });
+    const log = battle({ teamA: pending.teamA, teamB: pending.teamB, seed: pending.seed, statuses: s.statuses, abilities: s.abilities });
     // The replay is this phase's whole focus: start it at the top of the
     // viewport, so board + transport fit above the sticky bar at phone width.
     els.battlePanel.scrollIntoView({ block: "start" });
     deps.viewer.load(
       log,
-      { teams: { A: pending.teamA, B: pending.teamB }, registry: s.statuses },
+      { teams: { A: pending.teamA, B: pending.teamB }, registry: s.statuses, abilities: s.abilities },
       {
         autoplay: !INSTANT_RESULT,
         // Resume where the player left off if this is a re-mount (#014 tab
@@ -1215,7 +1219,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     submitState = { kind: "none" };
     served = undefined;
     localOnly = false; // a fresh run is submittable until a cheat touches it
-    state = initRun({ seed, runId, pool: deps.pool, statuses: deps.registry });
+    state = initRun({ seed, runId, pool: deps.pool, statuses: deps.registry, abilities: deps.abilities });
     pending = undefined;
     selected = undefined;
     notice = undefined;

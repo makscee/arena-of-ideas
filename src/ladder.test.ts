@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { stressRegistry } from "./content/stress.js";
+import { stressAbilities, stressRegistry } from "./content/stress.js";
 import { BOOTSTRAP_RUN_ID, InMemoryLadderStore, PersistedLadderStore, emptyLadderData, openLadder, parseLadderData } from "./ladder.js";
 import type { LadderStore, TeamSnapshot } from "./ladder.js";
 import { FileLadderStore } from "./ladder-file.js";
@@ -23,7 +23,7 @@ const ofType = <T extends RunEvent["type"]>(
   log.filter((e): e is Extract<RunEvent, { type: T }> => e.type === t);
 
 function vanilla(name: string, hp: number, pwr: number): UnitDef {
-  return { name, base: { hp, pwr } };
+  return { name, base: { hp, pwr }, ability: "Strike" };
 }
 
 // One-unit pools with deterministic ladder fates (probed across seeds):
@@ -34,7 +34,7 @@ const GOLIATH = vanilla("Goliath", 200, 80);
 const GRUNT = vanilla("Grunt", 1, 0);
 
 function input(seed: number, runId: string, unit: UnitDef): RunInput {
-  return { seed, runId, pool: [unit], statuses: stressRegistry };
+  return { seed, runId, pool: [unit], statuses: stressRegistry, abilities: stressAbilities };
 }
 
 /** Buy the one unit, then climb the ladder to the top and challenge the
@@ -65,7 +65,7 @@ function playLadderRun(inp: RunInput, ladder: LadderStore): RunState {
 }
 
 function freshLadder(): LadderStore {
-  return openLadder(new InMemoryLadderStore(), stressRegistry);
+  return openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
 }
 
 // ---------------------------------------------------------------------------
@@ -87,7 +87,7 @@ describe("bootstrap", () => {
       expect(pool.length).toBe(poolSizeAt(round)); // climb teams + the boss-ghost
       pool.forEach((g, i) => {
         expect(g).toMatchObject({ runId: BOOTSTRAP_RUN_ID, round, seq: i });
-        expect(validateTeam(g.team, stressRegistry)).toEqual([]); // a first run's opponents pass the gate
+        expect(validateTeam(g.team, stressRegistry, stressAbilities)).toEqual([]); // a first run's opponents pass the gate
       });
       // The boss seated on this floor IS the pool's last ghost (snapshot-then-seat),
       // so demoting it leaves its team drawable as a climb ghost on the floor.
@@ -110,19 +110,19 @@ describe("bootstrap", () => {
     const champ = freshLadder().champion()!;
     expect(champ).toMatchObject({ runId: BOOTSTRAP_RUN_ID, round: TOWER_HEIGHT });
     expect(champ.team.map((u) => u.name)).toEqual(BOSS_TEAMS[TOWER_HEIGHT - 1]!.map((u) => u.name));
-    expect(validateTeam(champ.team, stressRegistry)).toEqual([]); // the gate covers the seat too
+    expect(validateTeam(champ.team, stressRegistry, stressAbilities)).toEqual([]); // the gate covers the seat too
   });
 
   test("a non-empty ladder is never reseeded", () => {
     const store = freshLadder();
-    openLadder(store, stressRegistry);
+    openLadder(store, stressRegistry, stressAbilities);
     expect(store.poolAt(1).length).toBe(poolSizeAt(1));
   });
 
   test("a played-on ladder keeps its earned champion across opens", () => {
     const store = freshLadder();
     playLadderRun(input(1, "titan", TITAN), store); // dethrones the bootstrap champion
-    openLadder(store, stressRegistry);
+    openLadder(store, stressRegistry, stressAbilities);
     expect(store.champion()!.runId).toBe("titan"); // never reseated
   });
 
@@ -130,16 +130,16 @@ describe("bootstrap", () => {
     const store = freshLadder();
     for (let floor = 1; floor <= TOWER_HEIGHT; floor++) {
       const boss = store.bossAt(floor)!;
-      expect(validateTeam(boss.team, stressRegistry)).toEqual([]);
-      for (const g of store.poolAt(floor)) expect(validateTeam(g.team, stressRegistry)).toEqual([]);
+      expect(validateTeam(boss.team, stressRegistry, stressAbilities)).toEqual([]);
+      for (const g of store.poolAt(floor)) expect(validateTeam(g.team, stressRegistry, stressAbilities)).toEqual([]);
     }
   });
 
   test("a bootstrap team failing the content gate fails at open, loudly", () => {
     // An empty registry leaves Venomancer's Poison dangling — the gate must
     // catch it at seed time, not seed-dependently mid-run on an unlucky draw.
-    expect(() => openLadder(new InMemoryLadderStore(), {})).toThrow(ValidationError);
-    expect(() => openLadder(new InMemoryLadderStore(), {})).toThrow(/bootstrap round 1 team 0/);
+    expect(() => openLadder(new InMemoryLadderStore(), {}, {})).toThrow(ValidationError);
+    expect(() => openLadder(new InMemoryLadderStore(), {}, {})).toThrow(/bootstrap round 1 team 0/);
   });
 
   test("a first-ever strong run climbs a real pool at every floor, then ASCENDS by beating floor TOWER_HEIGHT's champion", () => {
@@ -323,7 +323,7 @@ describe("opponent draw", () => {
 
 describe("run-end states", () => {
   test("losing the last life ends the run as out-of-lives", () => {
-    let s = buy(initRun({ seed: 9, pool: [GRUNT] }), 0);
+    let s = buy(initRun({ seed: 9, pool: [GRUNT], statuses: stressRegistry, abilities: stressAbilities }), 0);
     for (let i = 0; i < STARTING_LIVES; i++) s = fight(s, [vanilla("Wall", 100, 99)]);
     expect(s).toMatchObject({ status: "over", endedBy: "out-of-lives", lives: 0 });
     expect(s.log[s.log.length - 1]).toMatchObject({ type: "RunEnded", reason: "out-of-lives", lives: 0 });
@@ -332,7 +332,7 @@ describe("run-end states", () => {
   });
 
   test("every decision on an over run throws", () => {
-    let s = buy(initRun({ seed: 9, pool: [GRUNT] }), 0);
+    let s = buy(initRun({ seed: 9, pool: [GRUNT], statuses: stressRegistry, abilities: stressAbilities }), 0);
     for (let i = 0; i < STARTING_LIVES; i++) s = fight(s, [vanilla("Wall", 100, 99)]);
     const over = s;
     for (const d of [
@@ -688,7 +688,7 @@ describe("file backing", () => {
 
   test("write through one store, read through a fresh one — equal", () => {
     const path = join(dir, "roundtrip.json");
-    const store = openLadder(new FileLadderStore(path), stressRegistry);
+    const store = openLadder(new FileLadderStore(path), stressRegistry, stressAbilities);
     const ghost: TeamSnapshot = { runId: "titan", round: 1, seq: BOOTSTRAP_TEAMS[0]!.length + 1, team: [TITAN] }; // after climb teams + boss-ghost
     store.addSnapshot(ghost);
     store.setBoss(ghost.round, ghost);
@@ -699,7 +699,7 @@ describe("file backing", () => {
   });
 
   test("a ladder run plays byte-identically on file and in-memory backings", () => {
-    const onFile = playLadderRun(input(1, "titan", TITAN), openLadder(new FileLadderStore(join(dir, "parity.json")), stressRegistry));
+    const onFile = playLadderRun(input(1, "titan", TITAN), openLadder(new FileLadderStore(join(dir, "parity.json")), stressRegistry, stressAbilities));
     const inMemory = playLadderRun(input(1, "titan", TITAN), freshLadder());
     expect(runToJSONL(onFile.log)).toBe(runToJSONL(inMemory.log));
   });
@@ -786,7 +786,7 @@ describe("PersistedLadderStore", () => {
 
   test("same drives as InMemory → same pools and champion, byte-identical run logs", () => {
     const medium = memoryMedium();
-    const persisted = openLadder(medium.store(), stressRegistry);
+    const persisted = openLadder(medium.store(), stressRegistry, stressAbilities);
     const inMemory = freshLadder();
     const logs = [persisted, inMemory].map((store) => {
       playLadderRun(input(1, "titan", TITAN), store);
@@ -801,7 +801,7 @@ describe("PersistedLadderStore", () => {
 
   test("every mutation writes through — a store reopened from the medium is equal", () => {
     const medium = memoryMedium();
-    const store = openLadder(medium.store(), stressRegistry);
+    const store = openLadder(medium.store(), stressRegistry, stressAbilities);
     playLadderRun(input(1, "titan", TITAN), store);
     const reopened = medium.store(); // parses the last persisted JSON
     for (let round = 1; store.poolAt(round).length > 0; round++) {

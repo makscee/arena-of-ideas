@@ -19,6 +19,7 @@ import {
   InvalidDecisionError,
   ladderFight,
   openLadder,
+  stressAbilities,
   stressRegistry,
   type LadderStore,
   type TeamSnapshot,
@@ -51,9 +52,9 @@ function fakeRoot(): HTMLElement {
 // challenges the boss (the fixed tower has a top — climbing PAST it overshoots,
 // 075-3), so the runs leave ghosts across the floors the accordion renders.
 function buildLadder(): LadderStore {
-  const store = openLadder(new InMemoryLadderStore(), stressRegistry);
+  const store = openLadder(new InMemoryLadderStore(), stressRegistry, stressAbilities);
   for (let seed = 0; seed < 2; seed++) {
-    let s = initRun({ seed, runId: `run-${seed}`, pool: [{ name: "Titan", base: { hp: 100, pwr: 50 } }], statuses: stressRegistry });
+    let s = initRun({ seed, runId: `run-${seed}`, pool: [{ name: "Titan", base: { hp: 100, pwr: 50 }, ability: "Strike" }], statuses: stressRegistry, abilities: stressAbilities });
     s = buy(s, 0);
     while (s.status === "active") {
       const top = store.champion();
@@ -79,7 +80,7 @@ describe("ladder accordion pool-body wrapper", () => {
   test("collapsed rounds have no .lv-pool-body", () => {
     const store = buildLadder();
     const root = fakeRoot();
-    const view = createLadderView(root, { store, registry: stressRegistry });
+    const view = createLadderView(root, { store, registry: stressRegistry, abilities: stressAbilities });
     view.refresh({ round: 1, runId: "run-0" });
     // No round is expanded on first render — no pool body wrapper.
     expect(root.innerHTML).not.toContain("lv-pool-body");
@@ -96,7 +97,7 @@ describe("ladder accordion pool-body wrapper", () => {
     ) => {
       capturedListener = fn;
     };
-    const view = createLadderView(root, { store, registry: stressRegistry });
+    const view = createLadderView(root, { store, registry: stressRegistry, abilities: stressAbilities });
     view.refresh({ round: 1, runId: "run-0" });
 
     // Simulate a click on the round-1 head button.
@@ -126,7 +127,7 @@ describe("ladder accordion pool-body wrapper", () => {
     ) => {
       capturedListener = fn;
     };
-    const view = createLadderView(root, { store, registry: stressRegistry });
+    const view = createLadderView(root, { store, registry: stressRegistry, abilities: stressAbilities });
     view.refresh({ round: 1, runId: "run-0" });
 
     const fakeBtn = {
@@ -385,6 +386,7 @@ describe("shop row reserves the rolled offer count's layout (refutation 3)", () 
       devPool: () => DEFAULT_RUN_POOL,
       devEnabled: () => false,
       registry,
+      abilities: stressAbilities,
       viewer: { load() {}, stop() {}, toEnd() {}, position: () => 0 },
       viewerHost: makeEl(),
       viewerHome: makeEl(),

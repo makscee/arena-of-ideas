@@ -138,7 +138,7 @@ export function createApp(deps: AppDeps): Hono<AuthEnv> {
   // The shared ladder, bootstrap-seated at open (kernel rule: a vacant
   // champion spot is a free crown — openLadder never leaves one).
   const store = new SqliteLadderStore(db);
-  openLadder(store, content.statuses);
+  openLadder(store, content.statuses, content.abilities);
 
   const app = new Hono<AuthEnv>();
 

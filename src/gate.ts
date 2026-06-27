@@ -16,7 +16,7 @@
 
 import { sweep } from "./sweep.js";
 import type { SweepStats } from "./sweep.js";
-import type { StatusRegistry, UnitDef } from "./types.js";
+import type { AbilityRegistry, StatusRegistry, UnitDef } from "./types.js";
 
 /** A named opponent in the reference meta — the bar a candidate is measured against. */
 export interface ReferenceTeam {
@@ -104,9 +104,10 @@ export function runGate(
   meta: readonly ReferenceTeam[],
   config: GateConfig,
   statuses: StatusRegistry,
+  abilities: AbilityRegistry,
 ): GateReport {
   const matchups = meta.map((ref) =>
-    toMatchup(ref.name, sweep({ teamA: candidate, teamB: ref.units, statuses }, config.seeds)),
+    toMatchup(ref.name, sweep({ teamA: candidate, teamB: ref.units, statuses, abilities }, config.seeds)),
   );
   let totalWins = 0;
   let totalLosses = 0;

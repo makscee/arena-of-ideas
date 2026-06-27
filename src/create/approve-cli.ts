@@ -21,7 +21,7 @@
 
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { stressRegistry } from "../content/stress.js";
+import { stressRegistry, stressAbilities } from "../content/stress.js";
 import { DEFAULT_RUN_POOL } from "../tunables.js";
 import { parseApprovedRegistry } from "../registry.js";
 import type { ApprovedRegistry } from "../registry.js";
@@ -43,7 +43,7 @@ export function loadCandidates(dir: string): { records: CandidateRecord[]; error
   for (const f of files) {
     const path = join(dir, f);
     try {
-      records.push(parseCandidateRecord(JSON.parse(readFileSync(path, "utf8")), stressRegistry, path));
+      records.push(parseCandidateRecord(JSON.parse(readFileSync(path, "utf8")), stressRegistry, stressAbilities, path));
     } catch (err) {
       errors.push(`${path}: ${(err as Error).message}`);
     }
@@ -54,7 +54,7 @@ export function loadCandidates(dir: string): { records: CandidateRecord[]; error
 /** Read the approved-units registry file, or an empty registry if absent. */
 function loadRegistry(path: string): ApprovedRegistry {
   if (!existsSync(path)) return { units: [] };
-  return parseApprovedRegistry(JSON.parse(readFileSync(path, "utf8")), stressRegistry, path);
+  return parseApprovedRegistry(JSON.parse(readFileSync(path, "utf8")), stressRegistry, stressAbilities, path);
 }
 
 function listPending(dir: string): number {
@@ -103,7 +103,7 @@ function main(): void {
   const shippedNames = DEFAULT_RUN_POOL.map((u) => u.name);
   let next: ApprovedRegistry;
   try {
-    next = approveInto(current, record, shippedNames, stressRegistry);
+    next = approveInto(current, record, shippedNames, stressRegistry, stressAbilities);
   } catch (err) {
     process.stderr.write(`[approve] cannot approve "${id}": ${(err as Error).message}\n`);
     process.exit(1);

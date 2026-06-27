@@ -23,7 +23,7 @@
  */
 
 import { assertValidContent } from "./validate.js";
-import type { StatusRegistry, UnitDef } from "./types.js";
+import type { AbilityRegistry, StatusRegistry, UnitDef } from "./types.js";
 
 /** A unit as stored in the approved registry: a plain UnitDef plus an optional
  * creator credit. `_creator` is data the validator tolerates and the kernel
@@ -34,6 +34,10 @@ export type ApprovedUnit = UnitDef & { _creator?: string };
  * file envelope examples/ and candidates use, so one parser fits all. */
 export interface ApprovedRegistry {
   units: ApprovedUnit[];
+  /** Abilities the approved units reference that the shipped registry does not
+   * (PRD #081 — an approved unit travels WITH its Ability). Optional: the
+   * registry ships empty, and units using only shipped abilities carry none. */
+  abilities?: AbilityRegistry;
 }
 
 /** Parse + validate the approved-units file contents. Structure is checked
@@ -41,7 +45,7 @@ export interface ApprovedRegistry {
  * pass the SAME content validator every battle input passes — an approved unit
  * is exactly as gated as a shipped one. An empty registry (`units: []`) is
  * valid: the game ships with no approvals and grows them. */
-export function parseApprovedRegistry(data: unknown, registry: StatusRegistry, label = "approved-units"): ApprovedRegistry {
+export function parseApprovedRegistry(data: unknown, registry: StatusRegistry, abilities: AbilityRegistry, label = "approved-units"): ApprovedRegistry {
   if (typeof data !== "object" || data === null || Array.isArray(data)) {
     throw new Error(`${label}: expected a JSON object with a "units" array`);
   }
@@ -50,9 +54,16 @@ export function parseApprovedRegistry(data: unknown, registry: StatusRegistry, l
     throw new Error(`${label}: missing or non-array "units" field`);
   }
   const units = obj["units"] as unknown[];
+  // The approved units may carry their own abilities (#081); merge onto the
+  // shipped registry for the content gate.
+  const fileAbilities =
+    typeof obj["abilities"] === "object" && obj["abilities"] !== null && !Array.isArray(obj["abilities"])
+      ? (obj["abilities"] as AbilityRegistry)
+      : {};
+  const merged: AbilityRegistry = { ...abilities, ...fileAbilities };
   // Empty is fine; a non-empty registry passes the content gate. The validator
   // reads only the DSL fields, so the `_creator` credit rides along untouched.
-  if (units.length > 0) assertValidContent(units, registry, `${label}.units`);
+  if (units.length > 0) assertValidContent(units, registry, merged, `${label}.units`);
   // Credit, when present, must be a non-empty string — a typo'd credit field is
   // a silent loss of authorship, so it fails loudly like any other content typo.
   units.forEach((u, i) => {
@@ -61,7 +72,7 @@ export function parseApprovedRegistry(data: unknown, registry: StatusRegistry, l
       throw new Error(`${label}.units[${i}]._creator must be a non-empty string when present`);
     }
   });
-  return { units: units as ApprovedUnit[] };
+  return { units: units as ApprovedUnit[], ...(Object.keys(fileAbilities).length > 0 ? { abilities: fileAbilities } : {}) };
 }
 
 /** Merge the approved units onto a base pool, by name. The base (the shipped

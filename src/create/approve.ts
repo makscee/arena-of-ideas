@@ -28,7 +28,7 @@ import { runGate } from "../gate.js";
 import type { GateReport } from "../gate.js";
 import { REFERENCE_META } from "../content/reference-meta.js";
 import { defaultGateConfig } from "../check-candidate.js";
-import type { StatusRegistry } from "../types.js";
+import type { AbilityRegistry, StatusRegistry } from "../types.js";
 import type { CandidateRecord } from "./provenance.js";
 
 /** Tolerance on |recorded overallWinRate − re-sim overallWinRate|.
@@ -71,8 +71,10 @@ export class ResimRejectedError extends Error {
  *   2. The record's overallWinRate disagrees with the re-sim beyond tolerance →
  *      the record lied about a verdict the data does not actually earn.
  */
-export function reSimCandidate(record: CandidateRecord, registry: StatusRegistry): GateReport {
-  const report = runGate(record.units, REFERENCE_META, defaultGateConfig(), registry);
+export function reSimCandidate(record: CandidateRecord, registry: StatusRegistry, abilities: AbilityRegistry): GateReport {
+  // The candidate carries any ability it ships with (#081); merge it onto the
+  // shipped registry so the re-sim resolves the candidate's refs.
+  const report = runGate(record.units, REFERENCE_META, defaultGateConfig(), registry, { ...abilities, ...record.abilities });
   if (!report.pass) {
     throw new ResimRejectedError(
       `candidate "${record.id}" re-sims OUT OF BAND (${report.verdict}): ` +
@@ -112,6 +114,7 @@ export function approveInto(
   record: CandidateRecord,
   shippedNames: readonly string[],
   registry: StatusRegistry,
+  abilities: AbilityRegistry,
 ): ApprovedRegistry {
   // A candidate is a team file (1..5 units): the genuinely new creation plus,
   // often, shipped support bodies (e.g. Squire) that flesh out the gauntlet team.
@@ -139,9 +142,12 @@ export function approveInto(
   // out-of-band team — or one whose record lied about its win-rate — is rejected
   // loudly here (ResimRejectedError, carrying the re-sim numbers) before anything
   // is promoted. The recorded number is a receipt; this is the verdict.
-  reSimCandidate(record, registry);
-  const next: ApprovedRegistry = { units: [...priorApproved, ...stamped] };
+  reSimCandidate(record, registry, abilities);
+  // The approved registry carries the candidate's abilities too (#081 — an
+  // approved unit travels with its Ability), merged with any already approved.
+  const nextAbilities = { ...(current.abilities ?? {}), ...record.abilities };
+  const next: ApprovedRegistry = { units: [...priorApproved, ...stamped], abilities: nextAbilities };
   // Re-parse the result through the same gate the web shell reads it with, so a
   // bad approval can never be written: the file is valid by construction.
-  return parseApprovedRegistry(next, registry, "approved-units(after approve)");
+  return parseApprovedRegistry(next, registry, abilities, "approved-units(after approve)");
 }

@@ -47,11 +47,11 @@ import { isAbsolute, join } from "node:path";
 import { runGate, formatGateReport } from "./gate.js";
 import type { GateConfig, GateReport } from "./gate.js";
 import { REFERENCE_META } from "./content/reference-meta.js";
-import { stressRegistry } from "./content/stress.js";
+import { stressRegistry, stressAbilities } from "./content/stress.js";
 import { GATE_BAND_MIN, GATE_BAND_MAX, GATE_MATCHUP_FLOOR, GATE_SEEDS } from "./tunables.js";
-import { validateTeamFile } from "./cli.js";
+import { validateTeamFile, type TeamFile } from "./cli.js";
 import { ValidationError } from "./validate.js";
-import type { UnitDef } from "./types.js";
+import type { AbilityRegistry, UnitDef } from "./types.js";
 
 // ---------------------------------------------------------------------------
 // Gate config — TRUSTED tunable defaults by default; a task gate.json is
@@ -132,7 +132,7 @@ export function mergeGateConfig(base: GateConfig, override: unknown, label = "ga
  * { units: UnitDef[] } (same as examples/), so a candidate is just a team the
  * gate runs as side A. Throws ValidationError on invalid content — the
  * validator path the brief requires a typo to fail loudly through. */
-export function loadCandidate(path: string): UnitDef[] {
+export function loadCandidate(path: string): TeamFile {
   let raw: string;
   try {
     raw = readFileSync(path, "utf8");
@@ -145,7 +145,9 @@ export function loadCandidate(path: string): UnitDef[] {
   } catch (err) {
     throw new Error(`Candidate "${path}" is not valid JSON: ${(err as Error).message}`);
   }
-  return validateTeamFile(parsed, path).units;
+  // A candidate travels with its Ability (#081); validateTeamFile merges the
+  // file's abilities onto the shipped registry and returns both.
+  return validateTeamFile(parsed, path);
 }
 
 // ---------------------------------------------------------------------------
@@ -165,11 +167,12 @@ export interface CheckResult {
 }
 
 /** Run both checks against an already-loaded candidate. Pure given its inputs. */
-export function checkCandidate(candidate: UnitDef[], config: GateConfig): CheckResult {
+export function checkCandidate(candidate: UnitDef[], config: GateConfig, abilities: AbilityRegistry = stressAbilities): CheckResult {
   // (Loading already ran the validator; this re-check exists so a caller that
   // builds a candidate in-memory still goes through the same loud-failure gate
-  // and so the result records "ok" explicitly.)
-  const report = runGate(candidate, REFERENCE_META, config, stressRegistry);
+  // and so the result records "ok" explicitly.) `abilities` carries any ability
+  // the candidate ships with (#081), merged onto the shipped registry by load.
+  const report = runGate(candidate, REFERENCE_META, config, stressRegistry, abilities);
   if (report.pass) {
     return { status: "passed", validator: "ok", gate: report, exitCode: 0 };
   }
@@ -222,7 +225,7 @@ function main(): void {
   const candidatePath = isAbsolute(candidateArg) ? candidateArg : join(taskDir, candidateArg);
 
   let config: GateConfig;
-  let candidate: UnitDef[];
+  let candidate: TeamFile;
   try {
     config = loadGateConfig(taskDir, trustTaskGate);
     candidate = loadCandidate(candidatePath);
@@ -240,7 +243,7 @@ function main(): void {
     process.exit(isValidation ? 1 : 1);
   }
 
-  const result = checkCandidate(candidate, config);
+  const result = checkCandidate(candidate.units, config, candidate.abilities);
   process.stdout.write(humanReport(result) + "\n");
   process.stdout.write(machineReport(result) + "\n");
   process.exit(result.exitCode);

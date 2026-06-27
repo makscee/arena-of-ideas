@@ -8,7 +8,7 @@ import { describe, expect, test } from "vitest";
 import { battle } from "./battle.js";
 import { beatsOf, beatAtStep, depthInBeat, isRootKind } from "./beats.js";
 import type { BattleEvent, BattleInput, EventType, UnitDef } from "./types.js";
-import { Poison, Summoner, Venomancer, stressRegistry } from "./content/stress.js";
+import { Poison, Summoner, Venomancer, stressAbilities, stressRegistry } from "./content/stress.js";
 
 const ROOT_KINDS: EventType[] = ["BattleStart", "TurnStart", "TurnEnd", "PairFaced", "Strike", "Fatigue", "BattleEnd"];
 
@@ -41,6 +41,7 @@ const longBattle: BattleInput = {
   teamB: [tank("Brick", 28, 2), tank("Slab", 26, 1)],
   seed: 7,
   statuses: stressRegistry,
+  abilities: stressAbilities,
 };
 
 describe("beatsOf segmentation vs the raw log", () => {

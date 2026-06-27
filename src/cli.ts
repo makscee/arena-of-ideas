@@ -69,9 +69,9 @@ import { FileLadderStore } from "./ladder-file.js";
 import { FileSeasonArchiveStore } from "./season-archive-file.js";
 import { FileSeasonPointerStore } from "./season-file.js";
 import { formatFinalTower, formatHistoryList } from "./season-history.js";
-import { stressRegistry } from "./content/stress.js";
+import { stressRegistry, stressAbilities } from "./content/stress.js";
 import { assertValidContent } from "./validate.js";
-import type { UnitDef } from "./types.js";
+import type { AbilityRegistry, UnitDef } from "./types.js";
 import type { Side } from "./types.js";
 
 // ---------------------------------------------------------------------------
@@ -80,6 +80,11 @@ import type { Side } from "./types.js";
 
 export interface TeamFile {
   units: UnitDef[];
+  /** The ability registry the file's units resolve against: the shipped
+   * `stressAbilities` merged with any `abilities` the file carries (PRD #081 —
+   * a created unit travels WITH its Ability). The kernel ships only the stress
+   * abilities; authored content brings its own. */
+  abilities: AbilityRegistry;
 }
 
 export function loadTeamFile(path: string): TeamFile {
@@ -123,10 +128,17 @@ export function validateTeamFile(data: unknown, label = "<input>"): TeamFile {
       throw new Error(`Team file ${label}: units[${i}].base must be an object`);
     }
   }
+  // The ability registry the units resolve against: shipped stress abilities
+  // plus any the file carries (a created unit travels with its Ability, #081).
+  const fileAbilities =
+    typeof obj["abilities"] === "object" && obj["abilities"] !== null && !Array.isArray(obj["abilities"])
+      ? (obj["abilities"] as AbilityRegistry)
+      : {};
+  const abilities: AbilityRegistry = { ...stressAbilities, ...fileAbilities };
   // …then the content validator: a typo'd part would be silently inert in
   // battle(), so it must fail loudly here, before the kernel ever sees it.
-  assertValidContent(units, stressRegistry, `${label} units`);
-  return { units: units as UnitDef[] };
+  assertValidContent(units, stressRegistry, abilities, `${label} units`);
+  return { units: units as UnitDef[], abilities };
 }
 
 // ---------------------------------------------------------------------------
@@ -142,7 +154,7 @@ export interface RunResult {
 export function runBattle(teamAPath: string, teamBPath: string, seed: number): RunResult {
   const a = loadTeamFile(teamAPath);
   const b = loadTeamFile(teamBPath);
-  const log = battle({ teamA: a.units, teamB: b.units, seed, statuses: stressRegistry });
+  const log = battle({ teamA: a.units, teamB: b.units, seed, statuses: stressRegistry, abilities: { ...a.abilities, ...b.abilities } });
   const replay = renderReplay(log);
   const winner = winnerOf(log);
   const end = log[log.length - 1];
@@ -161,7 +173,7 @@ export function sweepBattles(teamAPath: string, teamBPath: string, n: number): S
   const b = loadTeamFile(teamBPath);
   // The distribution itself is the kernel's sweep helper — shared with the
   // web gauntlet, so browser and CLI can never disagree on a win-rate.
-  return sweep({ teamA: a.units, teamB: b.units, statuses: stressRegistry }, n);
+  return sweep({ teamA: a.units, teamB: b.units, statuses: stressRegistry, abilities: { ...a.abilities, ...b.abilities } }, n);
 }
 
 export function formatSweepReport(stats: SweepStats, teamAPath: string, teamBPath: string): string {
@@ -269,7 +281,7 @@ export function autoplayRuns(ladder: LadderStore, seed: number, runs: number): A
   for (let i = 0; i < runs; i++) {
     const runSeed = seed + i;
     const state = playPolicyRun(
-      { seed: runSeed, runId: `auto-${runSeed}`, pool: AUTOPLAY_POOL, statuses: stressRegistry },
+      { seed: runSeed, runId: `auto-${runSeed}`, pool: AUTOPLAY_POOL, statuses: stressRegistry, abilities: stressAbilities },
       ladder,
     );
     results.push({ state, jsonl: runToJSONL(state.log) });
@@ -346,14 +358,14 @@ export function runSeasonTransition(
   archivePath: string,
   pointerPath: string,
 ): SeasonTransitionResult {
-  const live = openLadder(new FileLadderStore(ladderPath), stressRegistry);
+  const live = openLadder(new FileLadderStore(ladderPath), stressRegistry, stressAbilities);
   const archive = new FileSeasonArchiveStore(archivePath);
   const pointer = new FileSeasonPointerStore(pointerPath);
   const reset = () => {
     // Wipe the live tower on disk, then re-bootstrap a fresh seeded one — the
     // new season opens on a real tower, carrying no prior-season ghost.
     writeFileSync(ladderPath, JSON.stringify(emptyLadderData(), null, 2) + "\n", "utf8");
-    openLadder(new FileLadderStore(ladderPath), stressRegistry);
+    openLadder(new FileLadderStore(ladderPath), stressRegistry, stressAbilities);
   };
   return transitionSeason({ live, archive, pointer, reset });
 }
@@ -564,7 +576,7 @@ function main(): void {
     } else if (parsed.mode === "history") {
       process.stdout.write(readHistory(parsed.archivePath, parsed.season) + "\n");
     } else if (parsed.mode === "autoplay") {
-      const store = openLadder(new FileLadderStore(parsed.ladderPath), stressRegistry);
+      const store = openLadder(new FileLadderStore(parsed.ladderPath), stressRegistry, stressAbilities);
       const results = autoplayRuns(store, parsed.seed, parsed.runs);
       process.stdout.write(formatAutoplayReport(results, store) + "\n");
       if (parsed.logPath !== null) {

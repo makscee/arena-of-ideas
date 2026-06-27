@@ -16,6 +16,7 @@ import {
   stressRegistry,
   sweep,
   winRate,
+  type AbilityRegistry,
   type StatusRegistry,
   type UnitDef,
 } from "../src/index.js";
@@ -84,6 +85,8 @@ export interface BattleEditorDeps {
   /** The pool the palette offers — shipped + approved + codex (summons etc.). */
   pool: () => readonly UnitDef[];
   registry: StatusRegistry;
+  /** The ability registry a unit's `ability` ref resolves through (PRD #081). */
+  abilities: AbilityRegistry;
   viewer: Viewer;
   /** The viewer's shared DOM (#result) — reparented into `mount` for a fight. */
   viewerHost: HTMLElement;
@@ -285,6 +288,7 @@ export function createBattleEditor(els: BattleEditorEls, deps: BattleEditorDeps)
           def: u,
           statuses: (u.statuses ?? []).map((s) => ({ status: String(s.status), stacks: Number(s.stacks) })),
           registry: deps.registry,
+          abilities: deps.abilities,
         }),
     });
   }
@@ -417,13 +421,13 @@ export function createBattleEditor(els: BattleEditorEls, deps: BattleEditorDeps)
     const teamB = clone(teams.B);
     let log;
     try {
-      log = battle({ teamA, teamB, seed, statuses: deps.registry });
+      log = battle({ teamA, teamB, seed, statuses: deps.registry, abilities: deps.abilities });
     } catch (err) {
       flag(`Battle failed: ${(err as Error).message}`);
       return;
     }
     mountViewer();
-    deps.viewer.load(log, { teams: { A: teamA, B: teamB }, registry: deps.registry }, { autoplay: true });
+    deps.viewer.load(log, { teams: { A: teamA, B: teamB }, registry: deps.registry, abilities: deps.abilities }, { autoplay: true });
     fought = true;
     els.mount.scrollIntoView({ block: "nearest" });
   }
@@ -462,7 +466,7 @@ export function createBattleEditor(els: BattleEditorEls, deps: BattleEditorDeps)
     const teamB = clone(teams.B);
     let result;
     try {
-      result = sweep({ teamA, teamB, statuses: deps.registry }, n, baseSeed);
+      result = sweep({ teamA, teamB, statuses: deps.registry, abilities: deps.abilities }, n, baseSeed);
     } catch (err) {
       flag(`Sweep failed: ${(err as Error).message}`);
       return;

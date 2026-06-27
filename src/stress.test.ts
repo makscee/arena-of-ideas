@@ -17,6 +17,7 @@ import {
   Summoner,
   Vitality,
 } from "./content/stress.js";
+import { stressAbilities } from "./content/stress.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -51,6 +52,7 @@ describe("stress: Strength", () => {
       teamB: [{ name: "Target", base: { hp: 100, pwr: 0 } }],
       seed: 1,
       statuses: stressRegistry,
+  abilities: stressAbilities,
     });
 
     // StatChanged for pwr +2 emitted at turn 0 (battle start / initial status application).
@@ -88,6 +90,7 @@ describe("stress: Vitality", () => {
       ],
       seed: 1,
       statuses: stressRegistry,
+  abilities: stressAbilities,
     });
 
     const defId = ofType(log, "BattleStart")[0]!.teams.B[0]!.id;
@@ -122,6 +125,7 @@ describe("stress: Curse", () => {
       teamB: [{ name: "Target", base: { hp: 100, pwr: 0 } }],
       seed: 1,
       statuses: stressRegistry,
+  abilities: stressAbilities,
     });
 
     const firstHurtOnTarget = ofType(log, "Hurt")
@@ -153,6 +157,7 @@ describe("stress: Poison", () => {
       teamB: [{ name: "Dummy", base: { hp: 20, pwr: 0 } }],
       seed: 1,
       statuses: stressRegistry,
+  abilities: stressAbilities,
     });
 
     const unitId = ofType(log, "BattleStart")[0]!.teams.A[0]!.id;
@@ -209,6 +214,7 @@ describe("stress: Shield", () => {
       ],
       seed: 1,
       statuses: stressRegistry,
+  abilities: stressAbilities,
     });
 
     const unitId = ofType(log, "BattleStart")[0]!.teams.B[0]!.id;
@@ -236,6 +242,7 @@ describe("stress: Shield", () => {
       ],
       seed: 1,
       statuses: stressRegistry,
+  abilities: stressAbilities,
     });
 
     const unitId = ofType(log, "BattleStart")[0]!.teams.B[0]!.id;
@@ -274,6 +281,7 @@ describe("stress: Freeze", () => {
       ],
       seed: 1,
       statuses: stressRegistry,
+  abilities: stressAbilities,
     });
 
     const attackerId = ofType(log, "BattleStart")[0]!.teams.A[0]!.id;
@@ -321,6 +329,7 @@ describe("stress: Blessing", () => {
       ],
       seed: 1,
       statuses: stressRegistry,
+  abilities: stressAbilities,
     });
 
     const defId = ofType(log, "BattleStart")[0]!.teams.B[0]!.id;
@@ -372,6 +381,7 @@ describe("stress: Summon", () => {
       teamB: [{ name: "Ogre", base: { hp: 30, pwr: 3 } }],
       seed: 1,
       statuses: stressRegistry,
+  abilities: stressAbilities,
     });
 
     // Summoner dies.
@@ -425,6 +435,7 @@ describe("stress: Silence", () => {
       teamB: [abilityUnit],
       seed: 1,
       statuses: stressRegistry,
+  abilities: stressAbilities,
     });
 
     // Silenced event exists.
@@ -467,6 +478,7 @@ describe("stress: Silence", () => {
       teamB: [brute],
       seed: 1,
       statuses: stressRegistry,
+  abilities: stressAbilities,
     });
 
     const bruteId = ofType(log, "BattleStart")[0]!.teams.B[0]!.id;
@@ -510,6 +522,7 @@ describe("stress: Resurrect", () => {
       teamB: [{ name: "Ogre", base: { hp: 3, pwr: 1 } }],
       seed: 1,
       statuses: stressRegistry,
+  abilities: stressAbilities,
     });
 
     const fodderBaseId = ofType(log, "BattleStart")[0]!.teams.A[0]!.id;

@@ -27,7 +27,7 @@ import {
   incomeForRound,
   shopSizeForRound,
 } from "./tunables.js";
-import type { Side, Stats, StatusRegistry, UnitDef } from "./types.js";
+import type { AbilityRegistry, Side, Stats, StatusRegistry, UnitDef } from "./types.js";
 
 // ---------- input & state ----------
 
@@ -42,6 +42,9 @@ export interface RunInput {
   pool: UnitDef[];
   /** Registry the run's battles run with (and the gate fight() validates opponents against). */
   statuses?: StatusRegistry;
+  /** Ability registry every unit's `ability` ref resolves through (PRD #081),
+   * threaded alongside `statuses` into battles and the content gate. */
+  abilities?: AbilityRegistry;
 }
 
 /** A unit on the run's line: the drafted def plus everything the shop grew on it. */
@@ -100,6 +103,8 @@ export interface RunState {
   pool: UnitDef[];
   /** Held by reference from RunInput, never cloned — see initRun's caller contract. */
   statuses: StatusRegistry;
+  /** Held by reference from RunInput, never cloned — see initRun's caller contract. */
+  abilities: AbilityRegistry;
 }
 
 // ---------- decisions & the run log ----------
@@ -173,7 +178,8 @@ export class InvalidDecisionError extends Error {
  * the stored decision sequence silently diverge from this run. */
 export function initRun(input: RunInput): RunState {
   const statuses = input.statuses ?? {};
-  assertValidPool(input.pool, statuses, "pool");
+  const abilities = input.abilities ?? {};
+  assertValidPool(input.pool, statuses, abilities, "pool");
   const s: RunState = {
     seed: input.seed,
     runId: input.runId ?? `run-${input.seed}`,
@@ -187,6 +193,7 @@ export function initRun(input: RunInput): RunState {
     log: [],
     pool: input.pool,
     statuses,
+    abilities,
   };
   emit(s, { type: "RunStart", seed: input.seed, runId: s.runId, gold: s.gold, lives: s.lives });
   rollOffers(s);
@@ -268,7 +275,7 @@ export function fight(state: RunState, opponent: UnitDef[]): RunState {
   if (state.team.length === 0) {
     throw new InvalidDecisionError("fight", "the line is empty — buy a unit first");
   }
-  assertValidContent(opponent, state.statuses, "opponent"); // the same gate every battle input passes
+  assertValidContent(opponent, state.statuses, state.abilities, "opponent"); // the same gate every battle input passes
   const s = clone(state);
   resolveFight(s, opponent);
   turnRound(s);
@@ -312,7 +319,7 @@ export function ladderFight(state: RunState, ladder: LadderStore): RunState {
   const draw = rngStep(s.rng);
   s.rng = draw.state;
   const pick = candidates[Math.floor(draw.value * candidates.length)]!;
-  assertValidContent(pick.team, s.statuses, "opponent"); // a stored ghost passes the same gate as any opponent
+  assertValidContent(pick.team, s.statuses, s.abilities, "opponent"); // a stored ghost passes the same gate as any opponent
   const ghost: TeamSnapshot = { runId: s.runId, round: s.round, seq: pool.length, team: toBattleTeam(s.team) };
   ladder.addSnapshot(ghost);
   emit(s, { type: "Snapshotted", seq: ghost.seq });
@@ -384,7 +391,7 @@ export function challengeBoss(state: RunState, ladder: LadderStore): RunState {
     endRun(s, "overshoot");
     return s;
   }
-  assertValidContent(boss.team, s.statuses, "boss"); // a seated boss passes the same gate as any opponent
+  assertValidContent(boss.team, s.statuses, s.abilities, "boss"); // a seated boss passes the same gate as any opponent
   // Snapshot-before-fight: the challenger's ghost enters the floor's pool
   // before any outcome, so even a lost challenge leaves an opponent behind —
   // and on a win this is exactly the ghost that takes the seat.
@@ -504,9 +511,11 @@ export function deserializeRun(raw: string): RunState {
     typeof s.runId === "string" &&
     [s.team, s.offers, s.log, s.pool].every(Array.isArray) &&
     typeof s.statuses === "object" &&
-    s.statuses !== null;
+    s.statuses !== null &&
+    typeof s.abilities === "object" &&
+    s.abilities !== null;
   if (!intact) throw new Error("stored run is not a RunState — refusing to revive it");
-  assertValidPool(s.pool!, s.statuses!, "pool");
+  assertValidPool(s.pool!, s.statuses!, s.abilities!, "pool");
   return s as RunState;
 }
 
@@ -532,7 +541,7 @@ function resolveFight(s: RunState, opponent: UnitDef[]): Side | "draw" {
   const draw = rngStep(s.rng);
   s.rng = draw.state;
   const battleSeed = Math.floor(draw.value * 4294967296);
-  const log = battle({ teamA: toBattleTeam(s.team), teamB: opponent, seed: battleSeed, statuses: s.statuses });
+  const log = battle({ teamA: toBattleTeam(s.team), teamB: opponent, seed: battleSeed, statuses: s.statuses, abilities: s.abilities });
   const end = log[log.length - 1]!;
   if (end.type !== "BattleEnd") throw new Error("battle log has no BattleEnd");
   if (end.winner === "B") s.lives -= 1; // a draw costs no life

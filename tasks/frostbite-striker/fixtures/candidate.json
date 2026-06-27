@@ -1,24 +1,25 @@
 {
-  "_comment": "A passing candidate, hand-authored to prove the contract under the per-matchup floor (slice 2). Frost striker: a Shielded front body tanks the first hits, poisons what it strikes (chipping fat status-stacked boards over time) and curses to weaken it; a durable mid and a body give it staying power vs the attrition meta. Overall ~64.7% (in [35,65]) with every matchup above the 25% floor (Aggro 100% / SustainControl 64% / StatStack 30%) — broadly viable, not a one-matchup hard-counter. The pre-floor fixture (curse-only, no Shield/Poison) sat at 100/62/0 and passed the pooled band at 54% while folding StatStack to 0%; the floor bounces that, which is the evidence it works.",
+  "_comment": "A passing candidate, hand-authored to prove the contract under the per-matchup floor (slice 2). Frost striker: a Shielded front body tanks the first hits, poisons what it strikes (chipping fat status-stacked boards over time) and curses to weaken it; a durable mid and a body give it staying power vs the attrition meta. Overall ~64.7% (in [35,65]) with every matchup above the 25% floor (Aggro 100% / SustainControl 64% / StatStack 30%) — broadly viable, not a one-matchup hard-counter. #081: the unit references one Ability (Frostbite) carried in-file — the same Poison+Curse-on-strike mechanic it had as two inline abilities, now one ability with two effects (behavior-identical).",
+  "abilities": {
+    "Frostbite": {
+      "name": "Frostbite",
+      "family": "Poison",
+      "whens": [{ "kind": "trigger", "on": { "on": "Strike", "striker": "holder" } }],
+      "selectors": [{ "kind": "frontEnemy" }],
+      "effects": [
+        { "kind": "applyStatus", "status": "Poison", "stacks": { "kind": "const", "value": 3 } },
+        { "kind": "applyStatus", "status": "Curse", "stacks": { "kind": "const", "value": 1 } }
+      ]
+    }
+  },
   "units": [
     {
       "name": "Frostbiter",
       "base": { "hp": 11, "pwr": 2 },
-      "statuses": [{ "status": "Shield", "stacks": 3 }],
-      "abilities": [
-        {
-          "whens": [{ "kind": "trigger", "on": { "on": "Strike", "striker": "holder" } }],
-          "selectors": [{ "kind": "frontEnemy" }],
-          "effects": [{ "kind": "applyStatus", "status": "Poison", "stacks": { "kind": "const", "value": 3 } }]
-        },
-        {
-          "whens": [{ "kind": "trigger", "on": { "on": "Strike", "striker": "holder" } }],
-          "selectors": [{ "kind": "frontEnemy" }],
-          "effects": [{ "kind": "applyStatus", "status": "Curse", "stacks": { "kind": "const", "value": 1 } }]
-        }
-      ]
+      "ability": "Frostbite",
+      "statuses": [{ "status": "Shield", "stacks": 3 }]
     },
-    { "name": "Glacier", "base": { "hp": 12, "pwr": 2 } },
-    { "name": "Squire", "base": { "hp": 8, "pwr": 2 } }
+    { "name": "Glacier", "base": { "hp": 12, "pwr": 2 }, "ability": "Strike" },
+    { "name": "Squire", "base": { "hp": 8, "pwr": 2 }, "ability": "Strike" }
   ]
 }

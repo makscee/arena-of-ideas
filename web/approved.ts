@@ -10,7 +10,7 @@
 // content gate via parseApprovedRegistry — an invalid override is ignored, never
 // crashing the app (a bad stored value must not brick a run).
 
-import { parseApprovedRegistry, stressRegistry, type ApprovedUnit } from "../src/index.js";
+import { parseApprovedRegistry, stressAbilities, stressRegistry, type ApprovedUnit } from "../src/index.js";
 import approvedJson from "../registry/approved-units.json";
 
 const OVERRIDE_KEY = "aoi.approved.v1";
@@ -18,7 +18,7 @@ const OVERRIDE_KEY = "aoi.approved.v1";
 /** The committed approved units, validated. A malformed committed file is a
  * build-time bug, so this throws loudly (unlike the override). */
 export function committedApproved(): ApprovedUnit[] {
-  return parseApprovedRegistry(approvedJson, stressRegistry, "registry/approved-units.json").units;
+  return parseApprovedRegistry(approvedJson, stressRegistry, stressAbilities, "registry/approved-units.json").units;
 }
 
 /** Approved units added via the localStorage override, validated. An invalid or
@@ -32,7 +32,7 @@ function overrideApproved(): ApprovedUnit[] {
   }
   if (raw === null) return [];
   try {
-    return parseApprovedRegistry(JSON.parse(raw), stressRegistry, OVERRIDE_KEY).units;
+    return parseApprovedRegistry(JSON.parse(raw), stressRegistry, stressAbilities, OVERRIDE_KEY).units;
   } catch {
     return []; // a corrupt override is ignored, not fatal
   }

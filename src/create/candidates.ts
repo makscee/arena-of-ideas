@@ -11,14 +11,14 @@
  */
 
 import { assertValidContent } from "../validate.js";
-import type { StatusRegistry, UnitDef } from "../types.js";
+import type { AbilityRegistry, StatusRegistry, UnitDef } from "../types.js";
 import type { CandidateRecord, GateStats } from "./provenance.js";
 
 /** Parse + validate a candidate record from its file contents. Structure is
  * checked loudly, then the units pass the content validator (the same gate a
  * battle input passes). Returns the typed record. Throws on any malformed field
  * or invalid content — a corrupt pool entry must never become a silent bad run. */
-export function parseCandidateRecord(data: unknown, registry: StatusRegistry, label: string): CandidateRecord {
+export function parseCandidateRecord(data: unknown, registry: StatusRegistry, abilities: AbilityRegistry, label: string): CandidateRecord {
   if (typeof data !== "object" || data === null || Array.isArray(data)) {
     throw new Error(`${label}: expected a candidate record object`);
   }
@@ -29,11 +29,18 @@ export function parseCandidateRecord(data: unknown, registry: StatusRegistry, la
   if (!Array.isArray(o["units"])) {
     throw new Error(`${label}: "units" must be an array`);
   }
+  // The candidate's own abilities (#081 — a created unit travels with its
+  // Ability), merged onto the shipped registry for the content gate. Stored on
+  // the record so re-sim/approve resolve the candidate's refs.
+  const fileAbilities =
+    typeof o["abilities"] === "object" && o["abilities"] !== null && !Array.isArray(o["abilities"])
+      ? (o["abilities"] as AbilityRegistry)
+      : {};
   // Content gate: a hand-edited candidate with a typo'd part fails here.
-  assertValidContent(o["units"], registry, `${label}.units`);
+  assertValidContent(o["units"], registry, { ...abilities, ...fileAbilities }, `${label}.units`);
   const prov = parseProvenance(o["provenance"], label);
   const gate = parseGate(o["gate"], label);
-  return { id: o["id"], units: o["units"] as UnitDef[], provenance: prov, gate };
+  return { id: o["id"], units: o["units"] as UnitDef[], abilities: fileAbilities, provenance: prov, gate };
 }
 
 function parseProvenance(data: unknown, label: string): CandidateRecord["provenance"] {

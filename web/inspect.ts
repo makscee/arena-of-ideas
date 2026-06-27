@@ -8,6 +8,9 @@ import {
   describeAbilitySegments,
   describeStatus,
   describeStatusSegments,
+  type Ability,
+  type AbilityDef,
+  type AbilityRegistry,
   type BattleEvent,
   type BoardState,
   type BoardUnit,
@@ -22,10 +25,19 @@ import { statusChipStyle } from "./status-color.js";
  * unit's def is recovered from the summon effect on its source ability — so
  * even mid-battle arrivals can show their abilities.
  */
+/** A unit's ability bodies — resolved from its single `ability` ref through the
+ * registry (PRD #081), falling back to the legacy inline `abilities[]`. */
+function unitAbilities(def: UnitDef, abilities: AbilityRegistry): Ability[] {
+  return def.ability !== undefined
+    ? [abilities[def.ability]].filter((a): a is AbilityDef => a !== undefined)
+    : (def.abilities ?? []);
+}
+
 export function unitDefs(
   log: BattleEvent[],
   teams: { A: UnitDef[]; B: UnitDef[] },
   registry: StatusRegistry,
+  abilities: AbilityRegistry,
 ): Map<string, UnitDef> {
   const defs = new Map<string, UnitDef>();
   for (const e of log) {
@@ -37,10 +49,17 @@ export function unitDefs(
         });
       }
     } else if (e.type === "Summon" && !e.resurrected && e.source !== "kernel") {
-      // The ability that summoned it names the def (first summon effect).
+      // The ability that summoned it names the def (first summon effect). A
+      // status-sourced summon reads the status's ability list; a unit-sourced
+      // one resolves the holder's `ability` ref (PRD #081).
       const holder = defs.get(e.source.unit);
-      const abilities = e.source.status !== undefined ? registry[e.source.status]?.abilities : holder?.abilities;
-      const effect = abilities?.[e.source.ability]?.effects.find((f) => f.kind === "summon");
+      const abilityList =
+        e.source.status !== undefined
+          ? registry[e.source.status]?.abilities
+          : holder !== undefined
+            ? unitAbilities(holder, abilities)
+            : undefined;
+      const effect = abilityList?.[e.source.ability]?.effects.find((f) => f.kind === "summon");
       if (effect?.kind === "summon") defs.set(e.unit, effect.unit);
     }
   }
@@ -125,6 +144,8 @@ export interface InspectArgs {
   board: BoardState;
   def: UnitDef | undefined;
   registry: StatusRegistry;
+  /** The ability registry a unit's `ability` ref resolves through (PRD #081). */
+  abilities: AbilityRegistry;
   name: (id: string) => string;
 }
 
@@ -139,6 +160,8 @@ export interface UnitInspectArgs {
   /** Attached (battle) or initial (shop) statuses, in order. */
   statuses: { status: string; stacks: number }[];
   registry: StatusRegistry;
+  /** The ability registry a unit's `ability` ref resolves through (PRD #081). */
+  abilities: AbilityRegistry;
   /** Highlight this status row (a chip was clicked). */
   highlight?: string;
   silenced?: boolean;
@@ -149,7 +172,7 @@ export interface UnitInspectArgs {
 /** Render the inspector body: head, abilities, statuses — every description
  * derived from the DSL data by the kernel's describe helpers. */
 export function renderUnitInspect(root: HTMLElement, args: UnitInspectArgs): void {
-  const { title, state, def, statuses, registry, highlight, silenced, noStatuses } = args;
+  const { title, state, def, statuses, registry, abilities: abilityRegistry, highlight, silenced, noStatuses } = args;
   const rows: string[] = [];
   rows.push(
     `<div class="ins-head"><span class="ins-name">${esc(title)}</span><span class="ins-stats">${state}</span><button type="button" id="ins-close" title="Close">✕</button></div>`,
@@ -157,7 +180,7 @@ export function renderUnitInspect(root: HTMLElement, args: UnitInspectArgs): voi
   if (silenced) rows.push(`<div class="ins-warn">⊘ silenced — its own abilities are dead for the battle</div>`);
 
   rows.push(`<div class="ins-k">abilities</div>`);
-  const abilities = def?.abilities ?? [];
+  const abilities = def !== undefined ? unitAbilities(def, abilityRegistry) : [];
   const mentioned: DescribeSegment[] = []; // every segment shown — its refs get definition rows below
   if (abilities.length === 0) {
     rows.push(`<div class="ins-dim">none — it only strikes</div>`);
@@ -339,7 +362,7 @@ function positionOverlay(): void {
 
 /** Render the inspector panel for the selected unit at the current position. */
 export function renderInspect(root: HTMLElement, args: InspectArgs): void {
-  const { unitId, status, board, def, registry, name } = args;
+  const { unitId, status, board, def, registry, abilities, name } = args;
   const found = findUnit(board, unitId);
   const title = esc(name(unitId));
   if (!found) {
@@ -355,6 +378,7 @@ export function renderInspect(root: HTMLElement, args: InspectArgs): void {
     def,
     statuses: unit.statuses,
     registry,
+    abilities,
     ...(status !== undefined ? { highlight: status } : {}),
     silenced: unit.silenced,
     ...(dead ? { noStatuses: "none — the corpse is clean" } : {}),

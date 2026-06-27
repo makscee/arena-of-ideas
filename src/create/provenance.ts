@@ -20,7 +20,7 @@
  */
 
 import type { GauntletResult } from "./worker.js";
-import type { UnitDef } from "../types.js";
+import type { AbilityRegistry, UnitDef } from "../types.js";
 
 // ---------------------------------------------------------------------------
 // The run manifest — the provenance the run log alone does not carry.
@@ -69,6 +69,11 @@ export interface CandidateRecord {
   id: string;
   /** The candidate's units, exactly as the gauntlet passed them. */
   units: UnitDef[];
+  /** The abilities the candidate's units reference that the shipped registry
+   * does not (PRD #081 — a created unit travels WITH its Ability). Merged onto
+   * the shipped registry to validate and re-sim the candidate. Empty when the
+   * candidate only uses shipped abilities. */
+  abilities: AbilityRegistry;
   provenance: {
     ideaText: string;
     creator: string;
@@ -149,10 +154,12 @@ export function buildRecord(
   manifest: RunManifest,
   converged: GauntletResult,
   attempts: number,
+  abilities: AbilityRegistry = {},
 ): CandidateRecord {
   return {
     id,
     units,
+    abilities,
     provenance: {
       ideaText: manifest.ideaText,
       creator: manifest.creator,

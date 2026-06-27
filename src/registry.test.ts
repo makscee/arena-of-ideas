@@ -6,7 +6,7 @@ import { describe, expect, test } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { stressRegistry } from "./content/stress.js";
+import { stressAbilities, stressRegistry } from "./content/stress.js";
 import { DEFAULT_RUN_POOL } from "./tunables.js";
 import { creditsOf, mergePool, parseApprovedRegistry } from "./registry.js";
 import type { ApprovedUnit } from "./registry.js";
@@ -14,31 +14,31 @@ import { deserializeRun, initRun, serializeRun } from "./run.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-const FROSTER: ApprovedUnit = { name: "Froster", base: { hp: 11, pwr: 2 }, _creator: "maks" };
+const FROSTER: ApprovedUnit = { name: "Froster", base: { hp: 11, pwr: 2 }, ability: "Strike", _creator: "maks" };
 
 describe("parseApprovedRegistry", () => {
   test("an empty registry is valid", () => {
-    expect(parseApprovedRegistry({ units: [] }, stressRegistry).units).toEqual([]);
+    expect(parseApprovedRegistry({ units: [] }, stressRegistry, stressAbilities).units).toEqual([]);
   });
 
   test("a non-object or missing units array fails loudly", () => {
-    expect(() => parseApprovedRegistry(null, stressRegistry)).toThrow();
-    expect(() => parseApprovedRegistry({}, stressRegistry)).toThrow(/units/);
-    expect(() => parseApprovedRegistry({ units: "no" }, stressRegistry)).toThrow(/units/);
+    expect(() => parseApprovedRegistry(null, stressRegistry, stressAbilities)).toThrow();
+    expect(() => parseApprovedRegistry({}, stressRegistry, stressAbilities)).toThrow(/units/);
+    expect(() => parseApprovedRegistry({ units: "no" }, stressRegistry, stressAbilities)).toThrow(/units/);
   });
 
   test("invalid DSL in a unit fails loudly (content gate)", () => {
     const bad = { units: [{ name: "X", base: { hp: 5, pwr: 1 }, abilities: [{ whens: [], selectors: [], effects: [] }] }] };
-    expect(() => parseApprovedRegistry(bad, stressRegistry)).toThrow();
+    expect(() => parseApprovedRegistry(bad, stressRegistry, stressAbilities)).toThrow();
   });
 
   test("a non-string _creator is rejected", () => {
-    expect(() => parseApprovedRegistry({ units: [{ ...FROSTER, _creator: 7 }] }, stressRegistry)).toThrow(/_creator/);
+    expect(() => parseApprovedRegistry({ units: [{ ...FROSTER, _creator: 7 }] }, stressRegistry, stressAbilities)).toThrow(/_creator/);
   });
 
   test("the committed registry file parses against the live registry", () => {
     const raw = readFileSync(join(here, "..", "registry", "approved-units.json"), "utf8");
-    expect(() => parseApprovedRegistry(JSON.parse(raw), stressRegistry, "approved-units.json")).not.toThrow();
+    expect(() => parseApprovedRegistry(JSON.parse(raw), stressRegistry, stressAbilities, "approved-units.json")).not.toThrow();
   });
 });
 
@@ -73,7 +73,7 @@ describe("stored runs survive an approval", () => {
     // grows the registry merged into NEW runs only — a stored run revives against
     // its own captured pool, unaffected. This pins that an approval can never
     // brick a run started before it (Cass's localStorage-continuity probe).
-    const before = serializeRun(initRun({ seed: 7, pool: [...DEFAULT_RUN_POOL], statuses: stressRegistry }));
+    const before = serializeRun(initRun({ seed: 7, pool: [...DEFAULT_RUN_POOL], statuses: stressRegistry, abilities: stressAbilities }));
     // …an approval happens (the registry now has Froster) — does not touch `before`.
     const merged = mergePool(DEFAULT_RUN_POOL, [FROSTER]);
     expect(merged.some((u) => u.name === "Froster")).toBe(true);

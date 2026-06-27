@@ -26,7 +26,7 @@ const AggroVenom: ReferenceTeam = {
   units: [
     Venomancer,
     Summoner,
-    { name: "Brawler", base: { hp: 12, pwr: 3 } },
+    { name: "Brawler", base: { hp: 12, pwr: 3 }, ability: "Strike" },
   ],
 };
 
@@ -36,7 +36,7 @@ const SustainControl: ReferenceTeam = {
   units: [
     Silencer,
     Necromancer,
-    { name: "Warden", base: { hp: 14, pwr: 2 } },
+    { name: "Warden", base: { hp: 14, pwr: 2 }, ability: "Strike" },
   ],
 };
 
@@ -45,8 +45,8 @@ const StatStack: ReferenceTeam = {
   name: "StatStack",
   units: [
     Venomancer,
-    { name: "Warlord", base: { hp: 16, pwr: 4 }, statuses: [{ status: "Strength", stacks: 2 }] },
-    { name: "Bulwark", base: { hp: 14, pwr: 3 }, statuses: [{ status: "Vitality", stacks: 3 }] },
+    { name: "Warlord", base: { hp: 16, pwr: 4 }, ability: "Strike", statuses: [{ status: "Strength", stacks: 2 }] },
+    { name: "Bulwark", base: { hp: 14, pwr: 3 }, ability: "Strike", statuses: [{ status: "Vitality", stacks: 3 }] },
   ],
 };
 

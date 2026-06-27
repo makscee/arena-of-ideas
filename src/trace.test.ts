@@ -9,6 +9,7 @@ import { renderReplay } from "./replay.js";
 import { ancestry, deathCauseChain, displayNames, shortDesc } from "./trace.js";
 import type { BattleInput, UnitDef } from "./types.js";
 import { stressRegistry, Venomancer } from "./content/stress.js";
+import { stressAbilities } from "./content/stress.js";
 
 const dummy = (name: string, hp = 10, pwr = 2): UnitDef => ({ name, base: { hp, pwr } });
 
@@ -17,6 +18,7 @@ const poisonBattle: BattleInput = {
   teamB: [dummy("Victim", 16, 1)],
   seed: 3,
   statuses: stressRegistry,
+  abilities: stressAbilities,
 };
 
 describe("displayNames", () => {

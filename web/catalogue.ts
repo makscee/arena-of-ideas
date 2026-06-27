@@ -10,6 +10,7 @@ import {
   Summoner,
   Venomancer,
   assertValidContent,
+  stressAbilities,
   stressRegistry,
   validateTeam,
   type UnitDef,
@@ -19,7 +20,7 @@ import teamBetaJson from "../examples/team-beta.json";
 import { loadTeams } from "./teams.js";
 
 function loadShipped(name: string, units: unknown): UnitDef[] {
-  assertValidContent(units, stressRegistry, name);
+  assertValidContent(units, stressRegistry, stressAbilities, name);
   return units;
 }
 
@@ -55,7 +56,7 @@ export function teamOptions(): TeamOption[] {
   }));
   const saved = loadTeams();
   for (const name of Object.keys(saved).sort()) {
-    const invalid = validateTeam(saved[name], stressRegistry, name).length > 0;
+    const invalid = validateTeam(saved[name], stressRegistry, stressAbilities, name).length > 0;
     out.push({
       value: EDITED_PREFIX + name,
       label: invalid ? `${name} — ⚠ invalid` : name,
@@ -78,7 +79,7 @@ export function resolveUnits(value: string): { units: UnitDef[] } | { error: str
   const name = value.slice(EDITED_PREFIX.length);
   const units = loadTeams()[name];
   if (!units) return { error: `Team "${name}" is no longer saved.` };
-  const issues = validateTeam(units, stressRegistry, name);
+  const issues = validateTeam(units, stressRegistry, stressAbilities, name);
   if (issues.length > 0) {
     return {
       error: `Team "${name}" is invalid (${issues.length} issue${issues.length === 1 ? "" : "s"}) — fix it in the editor. First: ${issues[0]!.path}: ${issues[0]!.message}`,

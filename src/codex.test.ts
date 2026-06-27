@@ -11,6 +11,7 @@
 import { describe, it, expect } from "vitest";
 import { buildCodex, codexUnits } from "./codex.js";
 import { stressRegistry } from "./content/stress.js";
+import { stressAbilities } from "./content/stress.js";
 import {
   TOWER_HEIGHT,
   DEFAULT_RUN_POOL,
@@ -29,7 +30,7 @@ import {
 } from "./tunables.js";
 import { FATIGUE_RAMP, FATIGUE_START, TURN_CAP, fatigueAmount } from "./battle.js";
 
-const codex = buildCodex(stressRegistry, codexUnits());
+const codex = buildCodex(stressRegistry, codexUnits([], stressAbilities), stressAbilities);
 const rule = (key: string) => {
   const r = codex.rules.find((r) => r.key === key);
   expect(r, `rule "${key}" missing`).toBeDefined();
