@@ -1,11 +1,12 @@
-// PRD #076 slice 3 — the ideas screen, against the LIVE app at desktop and
-// 375×667. The acceptance, end to end:
+// PRD #076 slice 3, evolved to directional votes in #082 — the ideas screen,
+// against the LIVE app at desktop and 375×667. The acceptance, end to end:
 //   1. Reachable from a title button; renders the ranked list.
 //   2. Logged out: the public table is READABLE, but submit/vote route to login
 //      (a nudge, never a silent error).
-//   3. Logged in: submit free text → it appears; vote → its rank MOVES and the
-//      vote toggle reflects voted/not-voted; one toggleable vote per player.
-//   4. Geometry: usable at 375px — list, submit box, vote pills all fit, are
+//   3. Logged in: submit free text → it appears; UP-vote → its rank rises and
+//      the up arrow reads voted; switching to DOWN lowers it and the vote FLIPS
+//      (switch-only — there is no remove, the vote never returns to neutral).
+//   4. Geometry: usable at 375px — list, submit box, vote arrows all fit, are
 //      visible at real (non-zero) size, ≥44px taps, nothing overflows sideways.
 //   5. Votes only RANK — nothing is gated/admitted by voting.
 //
@@ -48,6 +49,29 @@ async function openIdeas(viewport) {
   return { ctx, page };
 }
 
+/** Seed ONE idea onto the shared table as a DISTINCT player, then close.
+ * One idea per player per day (#082 slice 4) caps each account at a single
+ * submission per run, so a scenario that needs a second idea on the table (to
+ * test vote-driven ranking) seeds it from its own account here. */
+async function seedIdea(viewport, email, displayName, text) {
+  const ctx = await freshContext(viewport);
+  const page = await ctx.newPage();
+  page.setDefaultTimeout(15_000);
+  await page.addInitScript(() => localStorage.removeItem("aoi.run.v1"));
+  await page.goto(BASE, { waitUntil: "domcontentloaded" });
+  await page.waitForSelector("#title-view:not([hidden])");
+  await loginViaUi(page, email, displayName);
+  await page.click("#title-ideas");
+  await page.waitForSelector("#ideas-view:not([hidden])");
+  await page.fill("#ideas-text", text);
+  await page.click("#ideas-submit");
+  await page.waitForFunction(
+    (t) => [...document.querySelectorAll("#ideas-list .ideas-text")].some((e) => e.textContent === t),
+    text,
+  );
+  await ctx.close();
+}
+
 const rowTexts = (page) =>
   page.$$eval("#ideas-list .ideas-row .ideas-text", (els) => els.map((e) => e.textContent));
 
@@ -58,14 +82,47 @@ const rowVoteCount = (page, text) =>
     return row ? Number(row.querySelector(".ideas-vote-count").textContent) : null;
   }, text);
 
-const rowVoted = (page, text) =>
+// Which direction the player currently holds on a row ("up"/"down"/null) — the
+// arrow whose aria-pressed is true. Switch-only: at most one arrow is pressed.
+const rowVoteDir = (page, text) =>
   page.evaluate((t) => {
     const rows = [...document.querySelectorAll("#ideas-list .ideas-row")];
     const row = rows.find((r) => r.querySelector(".ideas-text")?.textContent === t);
-    return row ? row.querySelector(".ideas-vote").getAttribute("aria-pressed") === "true" : null;
+    if (!row) return null;
+    if (row.querySelector(".ideas-vote-up").getAttribute("aria-pressed") === "true") return "up";
+    if (row.querySelector(".ideas-vote-down").getAttribute("aria-pressed") === "true") return "down";
+    return null;
   }, text);
 
+// Click a row's up/down arrow.
+const clickVote = (page, text, dir) =>
+  page.evaluate(
+    ({ t, d }) => {
+      const rows = [...document.querySelectorAll("#ideas-list .ideas-row")];
+      rows.find((r) => r.querySelector(".ideas-text")?.textContent === t).querySelector(`.ideas-vote-${d}`).click();
+    },
+    { t: text, d: dir },
+  );
+
+// Wait until a row's net-score count reaches `want`.
+const waitForCount = (page, text, want) =>
+  page.waitForFunction(
+    ({ t, w }) => {
+      const rows = [...document.querySelectorAll("#ideas-list .ideas-row")];
+      const row = rows.find((r) => r.querySelector(".ideas-text")?.textContent === t);
+      return row && Number(row.querySelector(".ideas-vote-count").textContent) === w;
+    },
+    { t: text, w: want },
+  );
+
 async function scenario(viewport, tag, email) {
+  const mine = `${tag} idea — make poison stack faster`;
+  const other = `${tag} idea — add a draft phase`;
+  // Seed `other` from a SEPARATE account first (one idea per player per day caps
+  // this scenario's player at the single `mine` submission). `other` lands with
+  // an earlier seq, so at equal votes it ranks above `mine` until `mine` is voted.
+  await seedIdea(viewport, `seed-${tag.replace(/[^a-z0-9]/gi, "")}@probe.test`, `Seed ${tag}`, other);
+
   const { ctx, page } = await openIdeas(viewport);
 
   // ---- 1. reachable from the title, renders the screen --------------------
@@ -98,16 +155,13 @@ async function scenario(viewport, tag, email) {
   check(await page.locator("#ideas-text").isEnabled(), `${tag} logged-in enables the submit box`);
 
   // ---- 3a. submit free text → it appears in the table ---------------------
-  const mine = `${tag} idea — make poison stack faster`;
-  const other = `${tag} idea — add a draft phase`;
-  // Submit a SECOND idea first so it sits ABOVE `mine` (equal 0 votes ⇒ earlier
-  // seq ranks higher); voting `mine` must then jump it above `other`.
-  await page.fill("#ideas-text", other);
-  await page.click("#ideas-submit");
+  // The seeded `other` reads on the table — wait for the post-login refresh to
+  // populate the list before asserting. Submit `mine` — the player's ONE idea.
   await page.waitForFunction(
     (t) => [...document.querySelectorAll("#ideas-list .ideas-text")].some((e) => e.textContent === t),
     other,
   );
+  check((await rowTexts(page)).includes(other), `${tag} the seeded idea reads on the table`, other);
   await page.fill("#ideas-text", mine);
   await page.click("#ideas-submit");
   await page.waitForFunction(
@@ -123,83 +177,103 @@ async function scenario(viewport, tag, email) {
     `${texts.indexOf(other)} < ${texts.indexOf(mine)}`,
   );
 
+  // ---- one idea per player per day: a second submit is refused on the UI ---
+  const extra = `${tag} idea — a second one, same day`;
+  await page.fill("#ideas-text", extra);
+  await page.click("#ideas-submit");
+  await page.waitForFunction(
+    () => /one idea per day/i.test(document.querySelector("#ideas-status")?.textContent ?? ""),
+  );
+  check(
+    /one idea per day/i.test((await page.locator("#ideas-status").textContent()) ?? ""),
+    `${tag} a same-day second submit is refused on the status line`,
+    (await page.locator("#ideas-status").textContent()) ?? "",
+  );
+  check(!(await rowTexts(page)).includes(extra), `${tag} the refused second idea is NOT added to the table`);
+
   // ---- geometry at this viewport (real visibility + sane sizes) -----------
   check(await noHorizontalOverflow(page), `${tag} no horizontal overflow`);
   const submitBox = await box(page, "#ideas-submit");
   check(submitBox.height >= 44, `${tag} submit button is a ≥44px tap`, `${Math.round(submitBox.height)}px`);
   const inputBox = await box(page, "#ideas-text");
   check(inputBox.height >= 44 && inputBox.width > 100, `${tag} submit input is a real, sized field`, `${Math.round(inputBox.width)}×${Math.round(inputBox.height)}`);
-  const firstVote = page.locator("#ideas-list .ideas-vote").first();
-  check(await firstVote.isVisible(), `${tag} vote pills are visible`);
-  const voteBox = await box(page, "#ideas-list .ideas-vote >> nth=0");
+  const firstVote = page.locator("#ideas-list .ideas-vote-arrow").first();
+  check(await firstVote.isVisible(), `${tag} vote arrows are visible`);
+  const voteBox = await box(page, "#ideas-list .ideas-vote-arrow >> nth=0");
   check(
     voteBox.height >= 44 && voteBox.width >= 44,
-    `${tag} vote pill is a ≥44px tap`,
+    `${tag} vote arrow is a ≥44px tap`,
     `${Math.round(voteBox.width)}×${Math.round(voteBox.height)}`,
   );
-  // The vote pill must sit inside the viewport, not clipped off the right edge.
+  // The vote arrow must sit inside the viewport, not clipped off the right edge.
   check(
     voteBox.x >= 0 && voteBox.x + voteBox.width <= viewport.width + 1,
-    `${tag} vote pill sits within the viewport`,
+    `${tag} vote arrow sits within the viewport`,
     `x=${Math.round(voteBox.x)} right=${Math.round(voteBox.x + voteBox.width)} vw=${viewport.width}`,
   );
-
-  // ---- 3b. vote → rank MOVES and the toggle reflects voted ----------------
-  check((await rowVoteCount(page, mine)) === 0, `${tag} my idea starts at 0 votes`);
-  check((await rowVoted(page, mine)) === false, `${tag} my idea starts not-voted`);
-  // Click the vote pill on `mine`.
-  await page.evaluate((t) => {
-    const rows = [...document.querySelectorAll("#ideas-list .ideas-row")];
-    rows.find((r) => r.querySelector(".ideas-text")?.textContent === t).querySelector(".ideas-vote").click();
-  }, mine);
-  await page.waitForFunction(
-    (t) => {
-      const rows = [...document.querySelectorAll("#ideas-list .ideas-row")];
-      const row = rows.find((r) => r.querySelector(".ideas-text")?.textContent === t);
-      return row && Number(row.querySelector(".ideas-vote-count").textContent) === 1;
-    },
-    mine,
+  // Both arrows are present per row — the switch-only directional pair.
+  check(
+    (await page.locator("#ideas-list .ideas-row").first().locator(".ideas-vote-up").count()) === 1 &&
+      (await page.locator("#ideas-list .ideas-row").first().locator(".ideas-vote-down").count()) === 1,
+    `${tag} each row carries an up AND a down arrow`,
   );
-  check((await rowVoteCount(page, mine)) === 1, `${tag} voting raises the count to 1`);
-  check((await rowVoted(page, mine)) === true, `${tag} the vote toggle now reads voted`);
+
+  // ---- 3b. UP-vote → rank MOVES and the up arrow reflects voted -----------
+  check((await rowVoteCount(page, mine)) === 0, `${tag} my idea starts at score 0`);
+  check((await rowVoteDir(page, mine)) === null, `${tag} my idea starts not-voted`);
+  // The vote-currency counter renders, at 0 before any cast (submitting is not voting).
+  check(await page.locator("#ideas-currency").isVisible(), `${tag} the vote-currency counter renders when logged in`);
+  check(
+    /voted on 0 idea/.test((await page.locator("#ideas-currency").textContent()) ?? ""),
+    `${tag} currency starts at 0 (submitting is not voting)`,
+    (await page.locator("#ideas-currency").textContent()) ?? "",
+  );
+  await clickVote(page, mine, "up");
+  await waitForCount(page, mine, 1);
+  check((await rowVoteCount(page, mine)) === 1, `${tag} an up-vote raises the score to 1`);
+  check((await rowVoteDir(page, mine)) === "up", `${tag} the up arrow now reads voted`);
+  // The currency ticked up to 1 — voting on an idea accrues the footprint.
+  await page.waitForFunction(() => /voted on 1 idea\b/.test(document.querySelector("#ideas-currency")?.textContent ?? ""));
+  check(
+    /voted on 1 idea\b/.test((await page.locator("#ideas-currency").textContent()) ?? ""),
+    `${tag} currency updates to 1 after a cast`,
+    (await page.locator("#ideas-currency").textContent()) ?? "",
+  );
   texts = await rowTexts(page);
   check(
     texts.indexOf(mine) < texts.indexOf(other),
-    `${tag} voting moved my idea ABOVE the equal-vote one (rank moved)`,
+    `${tag} the up-vote moved my idea ABOVE the neutral one (rank moved)`,
     `${mine}@${texts.indexOf(mine)} vs ${other}@${texts.indexOf(other)}`,
   );
 
-  // ---- one toggleable vote per player: re-tap removes it ------------------
-  await page.evaluate((t) => {
-    const rows = [...document.querySelectorAll("#ideas-list .ideas-row")];
-    rows.find((r) => r.querySelector(".ideas-text")?.textContent === t).querySelector(".ideas-vote").click();
-  }, mine);
-  await page.waitForFunction(
-    (t) => {
-      const rows = [...document.querySelectorAll("#ideas-list .ideas-row")];
-      const row = rows.find((r) => r.querySelector(".ideas-text")?.textContent === t);
-      return row && Number(row.querySelector(".ideas-vote-count").textContent) === 0;
-    },
-    mine,
+  // ---- switch, NEVER remove: flipping to down lowers it, the vote persists -
+  await clickVote(page, mine, "down");
+  await waitForCount(page, mine, -1);
+  check((await rowVoteCount(page, mine)) === -1, `${tag} switching to down lowers the score to -1`);
+  check((await rowVoteDir(page, mine)) === "down", `${tag} the vote FLIPPED to down (switch, not remove)`);
+  // Switching direction does NOT change the currency — it's still one idea voted.
+  check(
+    /voted on 1 idea\b/.test((await page.locator("#ideas-currency").textContent()) ?? ""),
+    `${tag} currency unchanged at 1 after a flip (non-farmable)`,
+    (await page.locator("#ideas-currency").textContent()) ?? "",
   );
-  check((await rowVoteCount(page, mine)) === 0, `${tag} re-tapping toggles the vote off (one vote per player)`);
-  check((await rowVoted(page, mine)) === false, `${tag} the toggle reads not-voted after un-voting`);
+  // The vote is still held — there is no affordance that returns it to neutral.
+  texts = await rowTexts(page);
+  check(
+    texts.indexOf(mine) > texts.indexOf(other),
+    `${tag} the down-vote moved my idea BELOW the neutral one`,
+    `${mine}@${texts.indexOf(mine)} vs ${other}@${texts.indexOf(other)}`,
+  );
+  // Re-tapping the SAME (down) arrow is a no-op — still down, never cleared.
+  await clickVote(page, mine, "down");
+  await waitForCount(page, mine, -1);
+  check((await rowVoteDir(page, mine)) === "down", `${tag} re-tapping the held arrow is a no-op — the vote never clears`);
 
   // ---- 5. votes only RANK — nothing is gated/admitted ---------------------
-  // Re-vote and confirm the un-voted idea is STILL in the table (not removed /
+  // Flip back up and confirm BOTH ideas are STILL in the table (not removed /
   // not "rejected") — voting reorders, it never admits or drops an idea.
-  await page.evaluate((t) => {
-    const rows = [...document.querySelectorAll("#ideas-list .ideas-row")];
-    rows.find((r) => r.querySelector(".ideas-text")?.textContent === t).querySelector(".ideas-vote").click();
-  }, mine);
-  await page.waitForFunction(
-    (t) => {
-      const rows = [...document.querySelectorAll("#ideas-list .ideas-row")];
-      const row = rows.find((r) => r.querySelector(".ideas-text")?.textContent === t);
-      return row && Number(row.querySelector(".ideas-vote-count").textContent) === 1;
-    },
-    mine,
-  );
+  await clickVote(page, mine, "up");
+  await waitForCount(page, mine, 1);
   texts = await rowTexts(page);
   check(
     texts.includes(other) && texts.includes(mine),
@@ -218,7 +292,9 @@ async function scenario(viewport, tag, email) {
 // between two real ones (an async re-entrancy race — onSubmit cleared the input
 // inside its await window, so a racing second submit read ""), surfacing as a
 // spurious "Type an idea before sending it." and a swallowed idea. After the
-// fix every idea must LAND, in order, with no spurious error.
+// fix NO empty submit fires and no spurious error shows. With one-per-day
+// (#082 slice 4) only the FIRST of the mashed ideas can land — the rest are
+// refused by the day limit (never a phantom-empty "Type an idea" error).
 async function funnelScenario(viewport, tag, email) {
   const ctx = await freshContext(viewport);
   const page = await ctx.newPage();
@@ -250,13 +326,11 @@ async function funnelScenario(viewport, tag, email) {
     await page.fill("#ideas-text", text);
     await page.click("#ideas-submit"); // no settle wait — mash the form
   }
-  // Let the in-flight submits drain, then assert ALL landed with no phantom.
+  // Let the in-flight submits drain — wait for the FIRST idea to land (one-per-
+  // day caps the rest), then assert no phantom fired.
   await page.waitForFunction(
-    (want) => {
-      const rows = [...document.querySelectorAll("#ideas-list .ideas-text")].map((e) => e.textContent);
-      return want.every((t) => rows.includes(t));
-    },
-    ideas,
+    (first) => [...document.querySelectorAll("#ideas-list .ideas-text")].some((e) => e.textContent === first),
+    ideas[0],
     { timeout: 10_000 },
   ).catch(() => {}); // a miss is the defect — asserted explicitly below, not thrown
 
@@ -273,13 +347,12 @@ async function funnelScenario(viewport, tag, email) {
     `status ${JSON.stringify(status)}`,
   );
   const rows = await rowTexts(page);
-  for (const text of ideas) {
-    check(rows.includes(text), `${tag} funnel: "${text}" landed in the table`, `rows ${rows.length}`);
-  }
-  // No swallowed idea AND no phantom duplicate: exactly the three we sent reach
-  // the table (the unfixed code dropped one and double-landed another).
-  const sent = rows.filter((t) => ideas.includes(t));
-  check(sent.length === ideas.length, `${tag} funnel: exactly the submitted ideas land, no dup/drop`, `${sent.length} of ${ideas.length}`);
+  check(rows.includes(ideas[0]), `${tag} funnel: the first idea landed in the table`, `rows ${rows.length}`);
+  // One idea per player per day: exactly ONE of the mashed ideas reaches the
+  // table — the rest are refused by the day limit, never silently swallowed and
+  // never phantom-duplicated.
+  const landed = rows.filter((t) => ideas.includes(t));
+  check(landed.length === 1, `${tag} funnel: exactly one idea lands (one-per-day), no dup/drop`, `${landed.length} of ${ideas.length}`);
 
   await ctx.close();
 }

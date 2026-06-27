@@ -490,6 +490,7 @@ ideasScreen = createIdeasScreen(
     status: el("ideas-status"),
     list: el("ideas-list"),
     loginNote: el("ideas-login-note"),
+    currency: el("ideas-currency"),
   },
   {
     ideas: ideasBacking,

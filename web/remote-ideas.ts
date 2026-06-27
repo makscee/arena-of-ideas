@@ -11,7 +11,7 @@
 // server is the source of truth for ranking and vote sets — every method that
 // mutates returns the server's post-mutation view, so the UI never guesses.
 
-import type { Idea } from "../src/index.js";
+import type { Idea, VoteDir } from "../src/index.js";
 import type { ArenaApi } from "./api.js";
 
 export type IdeasResult<T> = { ok: true; value: T } | { ok: false; reason: string };
@@ -42,13 +42,22 @@ export class RemoteIdeas {
     return { ok: true, value: res.value.idea };
   }
 
-  /** Toggle the caller's vote on `ideaId`. Returns the idea in its post-toggle
-   * state plus whether the caller now holds a vote — the server is the source
-   * of truth, so the UI renders the returned count, never a local guess. */
-  async vote(ideaId: string): Promise<IdeasResult<{ voted: boolean; idea: Idea }>> {
-    const res = await this.api.voteIdea(this.token, ideaId);
+  /** Cast the caller's directional vote on `ideaId` (switch-only: up/down, never
+   * removed). Returns the idea in its post-cast state plus the direction now
+   * held — the server is the source of truth, so the UI renders the returned
+   * vote map, never a local guess. */
+  async vote(ideaId: string, direction: VoteDir): Promise<IdeasResult<{ direction: VoteDir; idea: Idea }>> {
+    const res = await this.api.voteIdea(this.token, ideaId, direction);
     if (!res.ok) return { ok: false, reason: failureReason(res) };
-    return { ok: true, value: { voted: res.value.voted, idea: res.value.idea } };
+    return { ok: true, value: { direction: res.value.direction, idea: res.value.idea } };
+  }
+
+  /** The caller's vote-currency: how many distinct ideas they've voted on — a
+   * participation footprint the server derives live (no stored counter). */
+  async currency(): Promise<IdeasResult<number>> {
+    const res = await this.api.ideaCurrency(this.token);
+    if (!res.ok) return { ok: false, reason: failureReason(res) };
+    return { ok: true, value: res.value.currency };
   }
 }
 

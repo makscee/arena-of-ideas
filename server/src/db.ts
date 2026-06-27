@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS ideas (
 CREATE TABLE IF NOT EXISTS idea_votes (
   idea_id TEXT NOT NULL,
   user_id TEXT NOT NULL,
+  direction TEXT NOT NULL,
   voted_at INTEGER NOT NULL,
   PRIMARY KEY (idea_id, user_id)
 );

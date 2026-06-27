@@ -33,7 +33,10 @@
  *
  *   GET  /v1/ideas                    public — every idea, ranked by votes
  *   POST /v1/ideas                    bearer — submit an idea (the author)
- *   POST /v1/ideas/:id/vote           bearer — toggle the caller's vote
+ *   POST /v1/ideas/:id/vote           bearer — cast a directional vote
+ *                                     (body `direction`: "up"|"down", switch-only)
+ *   GET  /v1/ideas/currency           bearer — the caller's vote-currency
+ *                                     (count of distinct ideas they've voted on)
  *
  * Listing is public for the same reason the leaderboard reads are: reading the
  * ranked queue logged-out is reasonable, and the ideas are not secrets. Only
@@ -64,7 +67,7 @@ import { SqliteLadderStore } from "./ladder-store.js";
 import type { MailClient } from "./mail.js";
 import { renderOtpEmail } from "./otp-email.js";
 import { createRateLimiter, type RateLimiter } from "./rate-limit.js";
-import { listIdeas, submitIdea, toggleIdeaVote } from "./ideas.js";
+import { castIdeaVote, listIdeas, submitIdea, votedIdeaCount } from "./ideas.js";
 import { openRun, servePool, submitRun } from "./runs.js";
 import { users } from "./schema.js";
 import { mint, revoke, verify } from "./sessions.js";
@@ -333,10 +336,23 @@ export function createApp(deps: AppDeps): Hono<AuthEnv> {
     return c.json(outcome, outcome.submitted ? 200 : 422);
   });
 
-  app.post("/v1/ideas/:id/vote", auth, (c) => {
+  app.post("/v1/ideas/:id/vote", auth, async (c) => {
+    const body = await jsonBody(c.req.raw);
+    const direction = body?.direction;
+    if (direction !== "up" && direction !== "down") {
+      return c.json({ error: "invalid_direction" }, 400);
+    }
     const session = c.get("session");
-    const outcome = toggleIdeaVote({ db, clock }, session.userId, c.req.param("id"));
-    return c.json(outcome, outcome.toggled ? 200 : 422);
+    const outcome = castIdeaVote({ db, clock }, session.userId, c.req.param("id"), direction);
+    return c.json(outcome, outcome.cast ? 200 : 422);
+  });
+
+  // The caller's vote-currency: the count of distinct ideas they've voted on, in
+  // either direction — derived live (count(*) over their votes), no stored
+  // counter. Authed: it is per-player, so it keys on the session user.
+  app.get("/v1/ideas/currency", auth, (c) => {
+    const session = c.get("session");
+    return c.json({ currency: votedIdeaCount({ db, clock }, session.userId) });
   });
 
   app.get("/v1/auth/me", auth, (c) => {

@@ -1,7 +1,8 @@
-// Ideas screen (PRD #076 slice 3) — the player-facing surface over the ideas
-// table. The ranked list, a free-text submit box, and one toggleable vote per
-// idea, all backed by the RemoteIdeas seam (slice 2: async list/submit/vote
-// over the arena server). Same shape as title-screen.ts / ladder-view.ts:
+// Ideas screen (PRD #076 slice 3, directional votes in #082) — the player-facing
+// surface over the ideas table. The ranked list, a free-text submit box, and one
+// DIRECTIONAL, switch-only vote per idea (an up/down arrow pair, never a remove),
+// all backed by the RemoteIdeas seam (slice 2: async list/submit/vote over the
+// arena server). Same shape as title-screen.ts / ladder-view.ts:
 // takes its DOM in `els`, its behaviour in `deps`, and re-pulls the table on
 // every refresh() — main.ts calls refresh() each time the screen shows.
 //
@@ -15,7 +16,7 @@
 // every other authed action on the title prompts a session — a logged-out tap
 // is a login nudge, never a silent error.
 
-import type { Idea } from "../src/index.js";
+import { voteScore, type Idea, type VoteDir } from "../src/index.js";
 import type { RemoteIdeas } from "./remote-ideas.js";
 
 export interface IdeasScreenEls {
@@ -29,6 +30,9 @@ export interface IdeasScreenEls {
   list: HTMLElement;
   /** Shown above the list while logged out: read-only, log in to take part. */
   loginNote: HTMLElement;
+  /** The per-player vote-currency counter — how many ideas you've voted on.
+   * Shown only when logged in; refresh() re-pulls it after every cast. */
+  currency: HTMLElement;
 }
 
 export interface IdeasScreenDeps {
@@ -65,9 +69,11 @@ export function createIdeasScreen(els: IdeasScreenEls, deps: IdeasScreenDeps): I
     els.status.classList.toggle("ideas-status-ok", kind === "ok");
   }
 
-  /** Render one ranked pass of the table. Each row carries its idea's vote
-   * count and a vote toggle reflecting whether the current player holds a vote
-   * (server truth: the player's id is in the idea's `votes` set). */
+  /** Render one ranked pass of the table. Each row carries an up/down arrow pair
+   * — directional, SWITCH-ONLY: there is no "remove" affordance (a vote, once
+   * cast, only flips up↔down). The arrow matching the player's current direction
+   * reads pressed (server truth: the player's id maps to "up"/"down" in `votes`),
+   * and the count between them is the idea's net score (the rank metric). */
   function render(ideas: readonly Idea[]): void {
     els.list.textContent = "";
     if (ideas.length === 0) {
@@ -84,23 +90,16 @@ export function createIdeasScreen(els: IdeasScreenEls, deps: IdeasScreenDeps): I
       row.className = "ideas-row";
       row.dataset.ideaId = idea.id;
 
-      const votes = document.createElement("button");
-      votes.type = "button";
+      const myDir: VoteDir | null = deps.userId !== null && deps.userId in idea.votes ? idea.votes[deps.userId]! : null;
+
+      const votes = document.createElement("div");
       votes.className = "ideas-vote";
-      const voted = deps.userId !== null && idea.votes.includes(deps.userId);
-      votes.classList.toggle("ideas-voted", voted);
-      votes.setAttribute("aria-pressed", String(voted));
       votes.dataset.ideaId = idea.id;
-      votes.title = loggedIn
-        ? voted
-          ? "Remove your vote"
-          : "Vote for this idea"
-        : "Log in to vote";
-      // The count rides inside the tap target so the whole pill is one ≥44px hit.
-      votes.innerHTML =
-        `<span class="ideas-vote-mark" aria-hidden="true">${voted ? "★" : "☆"}</span>` +
-        `<span class="ideas-vote-count">${idea.votes.length}</span>`;
-      votes.addEventListener("click", () => void onVote(idea.id));
+      votes.append(
+        arrow(idea.id, "up", "▲", myDir),
+        countEl(voteScore(idea.votes)),
+        arrow(idea.id, "down", "▼", myDir),
+      );
 
       const text = document.createElement("span");
       text.className = "ideas-text";
@@ -111,7 +110,51 @@ export function createIdeasScreen(els: IdeasScreenEls, deps: IdeasScreenDeps): I
     }
   }
 
+  /** One directional arrow — its own ≥44px tap target. Reads pressed when it is
+   * the player's current direction; a tap casts that direction (switch-only). */
+  function arrow(ideaId: string, dir: VoteDir, glyph: string, myDir: VoteDir | null): HTMLButtonElement {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `ideas-vote-arrow ideas-vote-${dir}`;
+    const active = myDir === dir;
+    btn.classList.toggle("ideas-voted", active);
+    btn.setAttribute("aria-pressed", String(active));
+    btn.dataset.dir = dir;
+    btn.title = loggedIn ? (dir === "up" ? "Vote up" : "Vote down") : "Log in to vote";
+    btn.textContent = glyph;
+    btn.addEventListener("click", () => void onVote(ideaId, dir));
+    return btn;
+  }
+
+  function countEl(score: number): HTMLSpanElement {
+    const span = document.createElement("span");
+    span.className = "ideas-vote-count";
+    span.textContent = String(score);
+    return span;
+  }
+
+  /** Re-pull and render the per-player currency — the count of ideas this player
+   * has voted on. Logged out there is no per-player footprint, so the counter is
+   * hidden. Derived server-side, no stored counter. */
+  async function refreshCurrency(): Promise<void> {
+    if (!loggedIn) {
+      els.currency.hidden = true;
+      return;
+    }
+    const res = await deps.ideas.currency();
+    if (!res.ok) {
+      // A currency read failing is not worth a player-facing error — the table
+      // still works; just leave the counter hidden until the next refresh.
+      els.currency.hidden = true;
+      return;
+    }
+    const n = res.value;
+    els.currency.hidden = false;
+    els.currency.textContent = `You've voted on ${n} idea${n === 1 ? "" : "s"}.`;
+  }
+
   async function refresh(): Promise<void> {
+    await refreshCurrency();
     const res = await deps.ideas.list();
     if (!res.ok) {
       els.list.textContent = "";
@@ -165,19 +208,19 @@ export function createIdeasScreen(els: IdeasScreenEls, deps: IdeasScreenDeps): I
     }
   }
 
-  async function onVote(ideaId: string): Promise<void> {
+  async function onVote(ideaId: string, dir: VoteDir): Promise<void> {
     if (!loggedIn) {
       deps.onNeedLogin();
       return;
     }
-    const res = await deps.ideas.vote(ideaId);
+    const res = await deps.ideas.vote(ideaId, dir);
     if (!res.ok) {
       setStatus(res.reason);
       return;
     }
     setStatus(null);
     // A vote moves rank — re-pull the whole table so the row lands in its new
-    // position (the server already applied the toggle; we render its order).
+    // position (the server already applied the cast; we render its order).
     await refresh();
   }
 
