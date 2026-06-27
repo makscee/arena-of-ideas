@@ -13,6 +13,7 @@ import {
   initRun,
   serializeRun,
   stressRegistry,
+  stressAbilities,
 } from "../src/index.js";
 
 export const BASE = process.env.AOI_BASE_URL ?? "http://localhost:5280";
@@ -127,8 +128,8 @@ const unitOf = (def, stacks = 1, level = 1) => ({
  * opponent SIZE (e.g. bigBattleRun's asymmetric A>B matchup) pins a seed that
  * draws the 3-body climb team rather than the 5-body boss — the draw is a pure
  * function of the run rng, so a pinned seed is deterministic. */
-function shaped(mutate, pool = DEFAULT_RUN_POOL, seed = 7) {
-  const s = initRun({ seed, pool, statuses: stressRegistry });
+function shaped(mutate, pool = DEFAULT_RUN_POOL, seed = 7, abilities = stressAbilities) {
+  const s = initRun({ seed, pool, statuses: stressRegistry, abilities });
   mutate(s);
   return serializeRun(s);
 }
@@ -235,6 +236,7 @@ export const targetsRun = () => {
   const Mosaic = {
     name: "Mosaic",
     base: { hp: 9, pwr: 2 },
+    ability: "Strike", // a plain body (PRD #081) — the inert vanilla ability
     statuses: [
       { status: "Poison", stacks: 2 },
       { status: "Shield", stacks: 1 },
@@ -255,25 +257,21 @@ export const targetsRun = () => {
  * naming a status and an explicit-status consumeStacks — both must surface as
  * tappable refs in the live inspector. */
 export const refsRun = () => {
-  const Warden = {
-    name: "Warden",
-    base: { hp: 8, pwr: 2 },
-    abilities: [
-      {
-        whens: [{ kind: "trigger", on: { on: "StatusApplied", unit: "ally", status: "Poison" } }],
-        selectors: [{ kind: "holder" }],
-        effects: [{ kind: "heal", amount: { kind: "const", value: 2 } }],
-      },
-      {
-        whens: [{ kind: "trigger", on: { on: "Strike", striker: "holder" } }],
-        selectors: [{ kind: "frontEnemy" }],
-        effects: [
-          { kind: "consumeStacks", status: "Shield", stacks: { kind: "const", value: 2 } },
-          { kind: "damage", amount: { kind: "const", value: 3 } },
-        ],
-      },
+  // PRD #081: a unit references ONE ability. The two ref types this probe checks
+  // — a when clause naming a status (Poison) and an explicit-status consumeStacks
+  // (Shield) — fold into the single ability, both still rendering as tappable
+  // refs in the inspector.
+  const WardenRefs = {
+    name: "WardenRefs",
+    family: "Heal",
+    whens: [{ kind: "trigger", on: { on: "StatusApplied", unit: "ally", status: "Poison" } }],
+    selectors: [{ kind: "holder" }],
+    effects: [
+      { kind: "heal", amount: { kind: "const", value: 2 } },
+      { kind: "consumeStacks", status: "Shield", stacks: { kind: "const", value: 2 } },
     ],
   };
+  const Warden = { name: "Warden", base: { hp: 8, pwr: 2 }, ability: "WardenRefs" };
   return shaped(
     (s) => {
       s.team = [unitOf(Warden), unitOf(byName.Brawler)];
@@ -281,6 +279,8 @@ export const refsRun = () => {
       s.gold = 10;
     },
     [...DEFAULT_RUN_POOL, Warden],
+    7,
+    { ...stressAbilities, WardenRefs },
   );
 };
 
@@ -299,18 +299,18 @@ export const duelistRun = () => {
   // — a silenced Duelist would lose its bonus-damage ability and the beat would
   // carry a single hit. The tank trades down, the Duelist reaches the front
   // with its ability intact, and its strikes then land the double hit.
-  const Duelist = {
-    name: "Duelist",
-    base: { hp: 8, pwr: 1 },
-    abilities: [
-      {
-        whens: [{ kind: "trigger", on: { on: "Strike", striker: "holder" } }],
-        selectors: [{ kind: "frontEnemy" }],
-        effects: [{ kind: "damage", amount: { kind: "const", value: 1 } }],
-      },
-    ],
+  const DuelStrike = {
+    name: "DuelStrike",
+    family: "Strike",
+    whens: [{ kind: "trigger", on: { on: "Strike", striker: "holder" } }],
+    selectors: [{ kind: "frontEnemy" }],
+    effects: [{ kind: "damage", amount: { kind: "const", value: 1 } }],
   };
-  const Bodyguard = { name: "Bodyguard", base: { hp: 20, pwr: 1 } };
+  const Duelist = { name: "Duelist", base: { hp: 8, pwr: 1 }, ability: "DuelStrike" };
+  // The bodyguard is a plain body (the inert Strike ability) — it absorbs the
+  // bootstrap Silencer's BattleStart silence so the Duelist reaches the front
+  // with its ability intact.
+  const Bodyguard = { name: "Bodyguard", base: { hp: 20, pwr: 1 }, ability: "Strike" };
   return shaped(
     (s) => {
       s.team = [unitOf(Bodyguard), unitOf(Duelist)];
@@ -319,6 +319,8 @@ export const duelistRun = () => {
       s.lives = 5;
     },
     [...DEFAULT_RUN_POOL, Duelist, Bodyguard],
+    7,
+    { ...stressAbilities, DuelStrike },
   );
 };
 

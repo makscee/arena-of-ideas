@@ -19,9 +19,11 @@ check(texts.includes("Poison"), "when-clause status renders as a ref", JSON.stri
 check(texts.includes("Shield"), "explicit-status consumeStacks renders as a ref", JSON.stringify(texts));
 
 // The when clause itself carries the ref (not just an effect clause): the
-// sentence around the Poison ref reads "After Poison lands on an ally".
+// sentence around the Poison ref reads "After Poison lands on an ally". PRD #081:
+// a unit references ONE ability, so the heal and the explicit-status
+// consumeStacks fold into that one sentence (both refs still tappable).
 const insText = await page.locator("#inspect-overlay").textContent();
-check(insText.includes("After Poison lands on an ally: heal this unit for 2."), "when-clause sentence intact", JSON.stringify(insText.slice(0, 200)));
+check(insText.includes("After Poison lands on an ally: heal this unit for 2"), "when-clause sentence intact", JSON.stringify(insText.slice(0, 200)));
 check(insText.includes("consume 2 stacks of Shield"), "consumeStacks sentence intact");
 
 // Tap the Poison ref: the definition row (hidden until tapped) reveals, and

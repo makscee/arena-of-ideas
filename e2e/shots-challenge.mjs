@@ -17,6 +17,7 @@ import {
   initRun,
   serializeRun,
   stressRegistry,
+  stressAbilities,
 } from "../src/index.js";
 import { DESKTOP, PHONE, launch, openRun } from "./lib.mjs";
 
@@ -29,7 +30,7 @@ const unitOf = (def, stacks = 1, level = 1) => ({ name: def.name, base: { ...def
 
 /** A real initRun state, then hand-shaped for the scenario. */
 function shaped(mutate) {
-  const s = initRun({ seed: 7, runId: "shots", pool: DEFAULT_RUN_POOL, statuses: stressRegistry });
+  const s = initRun({ seed: 7, runId: "shots", pool: DEFAULT_RUN_POOL, statuses: stressRegistry, abilities: stressAbilities });
   mutate(s);
   return serializeRun(s);
 }

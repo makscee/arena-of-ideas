@@ -28,6 +28,7 @@ import {
   initRun,
   serializeRun,
   stressRegistry,
+  stressAbilities,
 } from "../src/index.js";
 
 const disarm = armGuard();
@@ -39,7 +40,7 @@ const unitOf = (def, stacks = 1, level = 1) => ({ name: def.name, base: { ...def
 /** A real initRun state, hand-shaped to stand on `round` with a fielded line and
  * gold (so both the climb and the challenge controls render and are live). */
 function atFloor(round) {
-  const s = initRun({ seed: 7, runId: "shots", pool: DEFAULT_RUN_POOL, statuses: stressRegistry });
+  const s = initRun({ seed: 7, runId: "shots", pool: DEFAULT_RUN_POOL, statuses: stressRegistry, abilities: stressAbilities });
   s.team = [unitOf(byName.Brawler), unitOf(byName.Squire)];
   s.offers = [byName.Venomancer, byName.Summoner, byName.Bulwark];
   s.gold = 10;

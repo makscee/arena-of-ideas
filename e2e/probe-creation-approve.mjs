@@ -23,6 +23,7 @@ const DESKTOP = { width: 1280, height: 800 };
 const PROBELING = {
   name: "Probeling",
   base: { hp: 10, pwr: 3 },
+  ability: "Strike", // PRD #081 — a plain body references the inert shipped ability
   statuses: [{ status: "Poison", stacks: 2 }],
   _creator: "probe-fixture",
 };
