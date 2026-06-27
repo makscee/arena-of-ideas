@@ -135,6 +135,39 @@ describe("B·Arena card (#080): family + full variant", () => {
     expect(card).toContain("Poison 2");
   });
 
+  test("terse 3-chip line (#082): trigger glyph in <b>, ▸ separators, family glyph on the action", () => {
+    const card = unitCardHtml({
+      ...base,
+      family: "Poison",
+      abilityLabel: "Toxic Strike",
+      trigger: "On strike",
+      triggerGlyph: "⚔",
+      target: "Front enemy",
+      action: "Poison 2",
+    });
+    // trigger chip: its event glyph in <b>, then the terse label
+    expect(card).toContain('<span class="ub-seg ub-trig"><b>⚔</b> On strike</span>');
+    // target chip: muted, no glyph
+    expect(card).toContain('<span class="ub-seg ub-tgt">Front enemy</span>');
+    // action chip: the FAMILY glyph (Poison → ☣) in <b>, then the terse action
+    expect(card).toContain('<span class="ub-seg ub-act"><b>☣</b> Poison 2</span>');
+    // ▸ separators between the three present segments (two of them)
+    expect(card.match(/class="ub-arrow">▸/g)).toHaveLength(2);
+    // the NAMED ability rides the cap-label, uppercased — not the family word
+    expect(card).toContain('class="ub-cap-t">TOXIC STRIKE</span>');
+  });
+
+  test("the trigger glyph defaults to ⚔; the action glyph tracks the family", () => {
+    // no triggerGlyph passed → default ⚔; Shield family → action glyph ⛨
+    const card = unitCardHtml({ ...base, family: "Shield", trigger: "Battle start", target: "Self", action: "Shield 3" });
+    expect(card).toContain("<b>⚔</b> Battle start");
+    expect(card).toContain("<b>⛨</b> Shield 3");
+    // a Summon-family action wears ☠ (mockup action legend)
+    const summon = unitCardHtml({ ...base, family: "Summon", triggerGlyph: "☠", trigger: "On death", target: "Self", action: "Summon Imp" });
+    expect(summon).toContain("<b>☠</b> On death");
+    expect(summon).toContain("<b>☠</b> Summon Imp");
+  });
+
   test("contract anchors survive: .unit, .uname, .unums with .hp/.pwr, .chips", () => {
     const card = unitCardHtml({ ...base, family: "Poison", statuses: [{ status: "Poison", stacks: 2 }] });
     expect(card).toMatch(/class="unit unit-b/);

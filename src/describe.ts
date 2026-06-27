@@ -318,6 +318,111 @@ export function describeAbilitySegments(ab: Ability, opts: DescribeOpts = {}): D
   return segs;
 }
 
+// ---------- Terse chip line for the B·Arena card (PRD #082) ----------
+// Where describeAbility yields one prose sentence ("after this unit strikes:
+// apply 2 Poison to the front enemy"), the card wants three glance-able chips:
+// `<glyph> trigger ▸ target ▸ action`. Same DSL data, read short. Display-only,
+// like the rest of this file; the action's GLYPH is the unit's family glyph, so
+// the card derives it from the colour axis it already holds — only the trigger's
+// glyph (which depends on the event kind) travels with the chips here.
+
+/** The terse ability line as three short labels + the trigger's glyph. Any
+ * field may be absent (an ability with no when/selector/effect); the card drops
+ * an absent chip and its separator. */
+export interface AbilityChips {
+  trigger?: string | undefined;
+  /** Glyph for the trigger chip, by event kind (⚔ strike, ⚑ battle-start, …). */
+  triggerGlyph?: string | undefined;
+  target?: string | undefined;
+  action?: string | undefined;
+}
+
+/** Trigger label + glyph per event kind (mockup trigger legend). Terse: "On
+ * strike", not "after this unit strikes". An interceptor reuses its event's
+ * label — the chip line names the moment, not the trigger/interceptor split. */
+const TRIGGER_CHIP: Record<EventPattern["on"], { label: string; glyph: string }> = {
+  BattleStart: { label: "Battle start", glyph: "⚑" },
+  TurnStart: { label: "Turn start", glyph: "⟳" },
+  TurnEnd: { label: "Turn end", glyph: "⟲" },
+  Strike: { label: "On strike", glyph: "⚔" },
+  Hurt: { label: "On damaged", glyph: "✸" },
+  Heal: { label: "On heal", glyph: "✚" },
+  Death: { label: "On death", glyph: "☠" },
+  Summon: { label: "On summon", glyph: "✦" },
+  StatusApplied: { label: "Status gained", glyph: "✦" },
+  StatusRemoved: { label: "Status lost", glyph: "✦" },
+};
+
+/** Terse target label per selector (mockup target legend). "Front enemy", not
+ * "the front enemy". */
+const SELECTOR_CHIP: Record<Selector["kind"], string> = {
+  holder: "Self",
+  eventUnit: "Trigger unit",
+  frontEnemy: "Front enemy",
+  allEnemies: "All enemies",
+  allAllies: "All allies",
+  randomEnemy: "Random enemy",
+  lastDeadAlly: "Last dead ally",
+};
+
+/** A magnitude as a terse chip token: a const reads as its number, anything
+ * derived as the short name of what it scales on. */
+function terseAmount(a: Amount): string {
+  switch (a.kind) {
+    case "const":
+      return String(a.value);
+    case "stat":
+      return a.stat;
+    case "level":
+      return "level";
+    case "stacks":
+      return "stacks";
+  }
+}
+
+/** An effect as a terse action chip: verb + magnitude, the target folded out
+ * (it has its own chip). "Poison 2", "Deal 3", "Summon Imp", "Silence". */
+function terseAction(e: Effect): string {
+  switch (e.kind) {
+    case "damage":
+      return `Deal ${terseAmount(e.amount)}`;
+    case "heal":
+      return `Heal ${terseAmount(e.amount)}`;
+    case "applyStatus":
+      return e.stacks.kind === "const" ? `${e.status} ${e.stacks.value}` : e.status;
+    case "consumeStacks":
+      return `Spend ${e.status ?? "stacks"}`;
+    case "summon":
+      return `Summon ${e.unit.name}`;
+    case "silence":
+      return "Silence";
+    case "resurrect":
+      return "Revive";
+    case "cancel":
+      return "Cancel";
+    case "absorbHurt":
+      return "Absorb";
+    case "preventDeathHeal":
+      return "Cheat death";
+  }
+}
+
+/** The card's terse 3-chip ability line for an ability — the first when/
+ * selector/effect, each as a short label (PRD #082). The verbose
+ * describeAbility sentence stays the inspector's; this is the at-a-glance read. */
+export function abilityChips(ab: Ability): AbilityChips {
+  const w0 = ab.whens[0];
+  const t = w0 !== undefined ? TRIGGER_CHIP[w0.on.on] : undefined;
+  const s0 = ab.selectors[0];
+  const e0 = ab.effects[0];
+  return {
+    trigger: t?.label,
+    triggerGlyph: t?.glyph,
+    target: s0 !== undefined ? SELECTOR_CHIP[s0.kind] : undefined,
+    action: e0 !== undefined ? terseAction(e0) : undefined,
+  };
+}
+
 /** Status names an ability's effects reference (applyStatus, and
  * consumeStacks with an explicit status), deduped in encounter order — the
  * refs a UI renders tappable, and the codex resolves in the registry. */

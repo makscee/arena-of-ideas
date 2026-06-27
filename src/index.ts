@@ -80,6 +80,7 @@ export { renderReplay } from "./replay.js";
 export { displayNames, ancestry, abilityRefDesc, shortDesc, deathCauseChain } from "./trace.js";
 export {
   abilityPartRefs,
+  abilityChips,
   abilityStatusRefs,
   describeAbility,
   describeAbilitySegments,
@@ -95,7 +96,7 @@ export {
   describeWhen,
   describeWhenSegments,
 } from "./describe.js";
-export type { DescribeOpts, DescribeSegment, PartRef } from "./describe.js";
+export type { AbilityChips, DescribeOpts, DescribeSegment, PartRef } from "./describe.js";
 export type { NameOf } from "./trace.js";
 export { boardAt } from "./board.js";
 export type { BoardState, BoardUnit } from "./board.js";

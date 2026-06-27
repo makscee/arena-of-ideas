@@ -4,6 +4,7 @@
 
 import { describe, expect, test } from "vitest";
 import {
+  abilityChips,
   abilityStatusRefs,
   describeAbility,
   describeAbilitySegments,
@@ -97,6 +98,67 @@ describe("describeAbility", () => {
     expect(text).toMatchInlineSnapshot(
       `"After this unit is hurt, or at the end of each turn, while this unit is at 5 hp or less: heal every ally and a random enemy for an amount equal to this unit's pwr."`,
     );
+  });
+});
+
+describe("abilityChips — the card's terse 3-chip line (#082)", () => {
+  test("the shipped stress units read as short trigger/target/action + glyph", () => {
+    // Venom: ⚔ On strike ▸ Front enemy ▸ ☣ Poison 2 (the mockup's canonical row;
+    // the action glyph ☣ is the family glyph the card derives, not in the chips).
+    expect(abilityChips(stressAbilities[Venomancer.ability!]!)).toEqual({
+      trigger: "On strike",
+      triggerGlyph: "⚔",
+      target: "Front enemy",
+      action: "Poison 2",
+    });
+    expect(abilityChips(stressAbilities[Summoner.ability!]!)).toEqual({
+      trigger: "On death",
+      triggerGlyph: "☠",
+      target: "Self",
+      action: "Summon Imp",
+    });
+    expect(abilityChips(stressAbilities[Silencer.ability!]!)).toEqual({
+      trigger: "Battle start",
+      triggerGlyph: "⚑",
+      target: "Front enemy",
+      action: "Silence",
+    });
+    expect(abilityChips(stressAbilities[Necromancer.ability!]!)).toEqual({
+      trigger: "On death",
+      triggerGlyph: "☠",
+      target: "Last dead ally",
+      action: "Revive",
+    });
+  });
+
+  test("each chip stays short — no prose: trigger ≤ 3 words, no 'the'/'apply'", () => {
+    for (const unit of [Venomancer, Summoner, Silencer, Necromancer]) {
+      const c = abilityChips(stressAbilities[unit.ability!]!);
+      expect(c.trigger!.split(" ").length, `${unit.name} trigger terse`).toBeLessThanOrEqual(3);
+      expect(c.target!.split(" ").length, `${unit.name} target terse`).toBeLessThanOrEqual(3);
+      expect(`${c.trigger} ${c.target} ${c.action}`).not.toMatch(/\bthe\b|\bapply\b|after /i);
+    }
+  });
+
+  test("a const applyStatus reads 'Status N'; a derived magnitude drops the number", () => {
+    const ab: Ability = {
+      whens: [{ kind: "trigger", on: { on: "Strike", striker: "holder" } }],
+      selectors: [{ kind: "frontEnemy" }],
+      effects: [{ kind: "applyStatus", status: "Poison", stacks: { kind: "stacks" } }],
+    };
+    expect(abilityChips(ab).action).toBe("Poison");
+  });
+
+  test("triggers carry their event glyph; absent when/selector/effect drop the chip", () => {
+    expect(abilityChips({ whens: [{ kind: "trigger", on: { on: "TurnEnd" } }], selectors: [], effects: [] })).toEqual({
+      trigger: "Turn end",
+      triggerGlyph: "⟲",
+      target: undefined,
+      action: undefined,
+    });
+    expect(
+      abilityChips({ whens: [], selectors: [{ kind: "allEnemies" }], effects: [{ kind: "damage", amount: { kind: "const", value: 3 } }] }),
+    ).toEqual({ trigger: undefined, triggerGlyph: undefined, target: "All enemies", action: "Deal 3" });
   });
 });
 

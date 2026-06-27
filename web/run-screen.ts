@@ -18,12 +18,10 @@ import {
   TEAM_SIZE,
   TOWER_HEIGHT,
   UNIT_COST,
+  abilityChips,
   battle,
   buy,
   challengeBoss,
-  describeEffect,
-  describeSelector,
-  describeWhen,
   incomeForRound,
   initRun,
   ladderFight,
@@ -399,25 +397,21 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     return deps.abilities[def.ability]?.family;
   }
 
-  /** The ability presented as the card's cap-label + `⚔ trigger ▸ target ▸
-   * ◈ action` line, from the kernel's describe helpers (the same text the
-   * inspector derives). Inert abilities (a plain attacker's `Strike`) carry no
-   * when/selector/effect, so their line is empty — only the cap-label shows. */
+  /** The ability presented as the card's cap-label (the ability's NAME) + the
+   * terse `<glyph> trigger ▸ target ▸ <glyph> action` chip line (PRD #082), from
+   * the kernel's `abilityChips` (the same DSL the inspector reads, read short).
+   * An ability with no when/selector/effect yields empty chips — only the
+   * cap-label shows. */
   function abilityLine(def: UnitDef): {
     abilityLabel?: string | undefined;
     trigger?: string | undefined;
+    triggerGlyph?: string | undefined;
     target?: string | undefined;
     action?: string | undefined;
   } {
     const ab = deps.abilities[def.ability];
     if (ab === undefined) return {};
-    const trigger = ab.whens[0] !== undefined ? describeWhen(ab.whens[0]) : undefined;
-    // The effect reads grammatically with its target folded in ("apply 2 Poison
-    // to the front enemy"), so we don't show the selector as a third dangling
-    // segment — `⚔ trigger ▸ ◈ effect` over the kernel's own describe text.
-    const target = ab.selectors[0] !== undefined ? describeSelector(ab.selectors[0]) : "";
-    const action = ab.effects[0] !== undefined ? describeEffect(ab.effects[0], target) : undefined;
-    return { abilityLabel: ab.name, trigger, action };
+    return { abilityLabel: ab.name, ...abilityChips(ab) };
   }
 
   function offerCard(def: UnitDef, i: number, gold: number): string {
