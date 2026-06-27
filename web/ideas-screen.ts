@@ -87,7 +87,7 @@ export function createIdeasScreen(els: IdeasScreenEls, deps: IdeasScreenDeps): I
       const votes = document.createElement("button");
       votes.type = "button";
       votes.className = "ideas-vote";
-      const voted = deps.userId !== null && idea.votes.includes(deps.userId);
+      const voted = deps.userId !== null && deps.userId in idea.votes;
       votes.classList.toggle("ideas-voted", voted);
       votes.setAttribute("aria-pressed", String(voted));
       votes.dataset.ideaId = idea.id;
@@ -99,7 +99,7 @@ export function createIdeasScreen(els: IdeasScreenEls, deps: IdeasScreenDeps): I
       // The count rides inside the tap target so the whole pill is one ≥44px hit.
       votes.innerHTML =
         `<span class="ideas-vote-mark" aria-hidden="true">${voted ? "★" : "☆"}</span>` +
-        `<span class="ideas-vote-count">${idea.votes.length}</span>`;
+        `<span class="ideas-vote-count">${Object.keys(idea.votes).length}</span>`;
       votes.addEventListener("click", () => void onVote(idea.id));
 
       const text = document.createElement("span");

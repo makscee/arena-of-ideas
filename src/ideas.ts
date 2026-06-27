@@ -1,8 +1,9 @@
 // The ideas table — free-text suggestions players write, ranked by votes.
 // A player submits an idea (any text: content, gameplay, a feature, a removal);
-// every player gets one toggleable vote per idea; the list ranks ideas by vote
-// count so the top N can be taken into work. Votes are a PRIORITY QUEUE, not an
-// entry gate — they reorder ideas, they never admit or reject one.
+// every player gets one DIRECTIONAL vote per idea — up or down, switchable but
+// never removable. The list ranks ideas by a directional metric (up raises,
+// down lowers) so the top N can be taken into work. Votes are a PRIORITY QUEUE,
+// not an entry gate — they reorder ideas, they never admit or reject one.
 //
 // This module owns the storage boundary: the IdeaStore interface and its
 // in-memory backing (tests, browser). It stays free of node built-ins — index.ts,
@@ -12,6 +13,17 @@
 // No wall-clock reads: an idea's order in the table is its submission ordinal
 // (seq), the same clock-free ordering the ladder uses for its pools. A real
 // timestamp, if a client ever wants one, comes in as data.
+
+/** A vote's direction — one player holds at most one per idea. Up raises the
+ * idea's rank, down lowers it; both are participation (they accrue currency). */
+export type VoteDir = "up" | "down";
+
+/** A player's vote on an idea, keyed by playerId → direction. One vote per
+ * player (a map key is unique), directional, and SWITCH-ONLY: a key is added or
+ * its direction flipped, never deleted — once you've voted you have voted
+ * forever (you may only change up↔down). Keys are kept sorted so the serialized
+ * shape is stable across backings. */
+export type VoteMap = Record<string, VoteDir>;
 
 /** An idea on the table, as the store holds and returns it. list() returns
  * detached deep copies, so a returned Idea is the caller's to do with freely. */
@@ -23,32 +35,37 @@ export interface Idea {
   /** The free text, trimmed; never empty (submit rejects empty). */
   text: string;
   /** Submission ordinal — createdAt-style ordering without a clock; also the
-   * stable tiebreak when two ideas have equal votes (earlier seq ranks higher). */
+   * stable tiebreak when two ideas have equal rank (earlier seq ranks higher). */
   seq: number;
-  /** The set of players who have voted for this idea, modelled as a sorted
-   * array of distinct playerIds: one vote per player, so a re-vote in the same
-   * direction never double-counts. Sorted so the serialized shape is stable. */
-  votes: string[];
+  /** The players who have voted on this idea, each mapped to their direction:
+   * one vote per player, switchable up↔down, never removed. Keys are sorted so
+   * the serialized shape is stable. */
+  votes: VoteMap;
 }
 
 /** The storage boundary the ideas feature depends on — nothing else.
  * Backings: InMemoryIdeaStore (below), PersistedIdeaStore (web/ideas-store.ts).
  * list() hands back detached deep copies, so a caller (a renderer) may read or
  * even mutate them freely without reaching the store's state — mutation just
- * doesn't write back; submit/toggleVote/removeOwn are the only ways in. */
+ * doesn't write back; submit/castVote/removeOwn are the only ways in. */
 export interface IdeaStore {
   /** Append a new idea by `authorId` with `text` (trimmed). Throws on empty /
    * whitespace-only text — an idea with nothing in it is not an idea. Returns
    * the stored idea (with its assigned id, seq, and empty vote set). */
   submit(text: string, authorId: string): Idea;
-  /** Toggle `playerId`'s vote on `ideaId`: add it if absent, remove it if
-   * present. One vote per player per idea (votes are a set), so voting the same
-   * direction twice never double-counts. Throws on an unknown ideaId. */
-  toggleVote(ideaId: string, playerId: string): void;
-  /** Every idea, ranked by vote count descending; ties broken by submission
-   * order (lower seq first), so the order is total and stable. The returned
-   * ideas are detached deep copies — mutating one never touches the store. */
+  /** Cast `playerId`'s `dir` vote on `ideaId`: add it if absent, flip it if the
+   * player already voted the other way, no-op if already in this direction. One
+   * vote per player per idea, SWITCH-ONLY — there is no operation that returns a
+   * player to neutral. Throws on an unknown ideaId. */
+  castVote(ideaId: string, playerId: string, dir: VoteDir): void;
+  /** Every idea, ranked by directional vote score descending (up raises, down
+   * lowers); ties broken by submission order (lower seq first), so the order is
+   * total and stable. The returned ideas are detached deep copies — mutating one
+   * never touches the store. */
   list(): readonly Idea[];
+  /** The currency: the count of ideas `playerId` has voted on (in either
+   * direction). Derived from the table, no stored counter. */
+  votedCount(playerId: string): number;
   /** The author removes their own idea. Throws on an unknown ideaId; throws if
    * `authorId` is not the idea's author — only the author may remove it. */
   removeOwn(ideaId: string, authorId: string): void;
@@ -96,27 +113,51 @@ export function assertSubmittableText(text: string): string {
   return trimmed;
 }
 
-/** Add `playerId` to a sorted, distinct vote set if absent, remove it if
- * present — the toggle semantics, shared by every backing. Returns a new sorted
- * array; never mutates the input. One vote per player: a re-add is a no-op on
- * the set, a re-remove leaves it absent. */
-export function toggledVotes(votes: readonly string[], playerId: string): string[] {
-  const next = votes.includes(playerId)
-    ? votes.filter((id) => id !== playerId)
-    : [...votes, playerId];
-  return [...next].sort();
+/** A vote map with its keys in sorted order — the canonical, byte-stable shape
+ * every backing stores, so a serialized table is identical across them. */
+function sortedVotes(votes: VoteMap): VoteMap {
+  const out: VoteMap = {};
+  for (const id of Object.keys(votes).sort()) out[id] = votes[id]!;
+  return out;
 }
 
-/** Rank ideas by vote count descending, ties broken by submission order (lower
- * seq first) — the total, stable ordering list() returns. Returns DETACHED deep
- * copies (jsonClone, the same convention writes use): a caller that mutates a
- * returned idea's `votes` — slice 3 renders this list — can never reach back
- * into the store's state to corrupt its ranking or persist through the next
- * write. Does not mutate the input. */
+/** Cast `playerId`'s `dir` vote — the directional, switch-only semantics every
+ * backing shares. Absent → add `{playerId: dir}`; present same direction →
+ * unchanged (a no-op); present other direction → flip. There is NO branch that
+ * removes a player: once you've voted you have voted, you may only switch
+ * up↔down. Returns a new sorted map; never mutates the input. */
+export function castVote(votes: VoteMap, playerId: string, dir: VoteDir): VoteMap {
+  if (votes[playerId] === dir) return sortedVotes(votes);
+  return sortedVotes({ ...votes, [playerId]: dir });
+}
+
+/** An idea's directional rank weight: +1 per up-vote, −1 per down-vote. Up
+ * raises an idea, down lowers it; an idea with equal up/down nets zero, the same
+ * weight as an unvoted one but ranked behind whatever has net-positive support. */
+export function voteScore(votes: VoteMap): number {
+  let score = 0;
+  for (const dir of Object.values(votes)) score += dir === "up" ? 1 : -1;
+  return score;
+}
+
+/** The currency: the count of ideas `playerId` has voted on, in EITHER
+ * direction — a participation footprint. Non-farmable by construction: votes are
+ * switch-only (you cannot un-vote to re-mint), and a flip leaves the count
+ * unchanged. Derived live from the table; no stored counter. */
+export function votedCount(data: IdeasData, playerId: string): number {
+  return data.ideas.filter((idea) => playerId in idea.votes).length;
+}
+
+/** Rank ideas by directional vote score descending (up raises, down lowers),
+ * ties broken by submission order (lower seq first) — the total, stable ordering
+ * list() returns. Returns DETACHED deep copies (jsonClone, the same convention
+ * writes use): a caller that mutates a returned idea's `votes` — slice 3 renders
+ * this list — can never reach back into the store's state to corrupt its ranking
+ * or persist through the next write. Does not mutate the input. */
 export function rankIdeas(ideas: readonly Idea[]): Idea[] {
   return ideas
     .map((idea) => jsonClone(idea))
-    .sort((a, b) => b.votes.length - a.votes.length || a.seq - b.seq);
+    .sort((a, b) => voteScore(b.votes) - voteScore(a.votes) || a.seq - b.seq);
 }
 
 /** The in-memory backing — tests now, a parity reference for the web client.
@@ -130,12 +171,16 @@ export class InMemoryIdeaStore implements IdeaStore {
     return submitInto(this.data, text, authorId);
   }
 
-  toggleVote(ideaId: string, playerId: string): void {
-    toggleVoteIn(this.data, ideaId, playerId);
+  castVote(ideaId: string, playerId: string, dir: VoteDir): void {
+    castVoteIn(this.data, ideaId, playerId, dir);
   }
 
   list(): readonly Idea[] {
     return rankIdeas(this.data.ideas);
+  }
+
+  votedCount(playerId: string): number {
+    return votedCount(this.data, playerId);
   }
 
   removeOwn(ideaId: string, authorId: string): void {
@@ -163,13 +208,17 @@ export class PersistedIdeaStore implements IdeaStore {
     return idea;
   }
 
-  toggleVote(ideaId: string, playerId: string): void {
-    toggleVoteIn(this.data, ideaId, playerId);
+  castVote(ideaId: string, playerId: string, dir: VoteDir): void {
+    castVoteIn(this.data, ideaId, playerId, dir);
     this.persist(this.data);
   }
 
   list(): readonly Idea[] {
     return rankIdeas(this.data.ideas);
+  }
+
+  votedCount(playerId: string): number {
+    return votedCount(this.data, playerId);
   }
 
   removeOwn(ideaId: string, authorId: string): void {
@@ -185,15 +234,15 @@ export class PersistedIdeaStore implements IdeaStore {
 function submitInto(data: IdeasData, text: string, authorId: string): Idea {
   const trimmed = assertSubmittableText(text);
   const seq = data.nextSeq;
-  const idea: Idea = { id: `idea-${seq}`, authorId, text: trimmed, seq, votes: [] };
+  const idea: Idea = { id: `idea-${seq}`, authorId, text: trimmed, seq, votes: {} };
   data.ideas.push(jsonClone(idea));
   data.nextSeq = seq + 1;
   return idea;
 }
 
-function toggleVoteIn(data: IdeasData, ideaId: string, playerId: string): void {
+function castVoteIn(data: IdeasData, ideaId: string, playerId: string, dir: VoteDir): void {
   const idea = requireIdea(data, ideaId);
-  idea.votes = toggledVotes(idea.votes, playerId);
+  idea.votes = castVote(idea.votes, playerId, dir);
 }
 
 function removeOwnFrom(data: IdeasData, ideaId: string, authorId: string): void {

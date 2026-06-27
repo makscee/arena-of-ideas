@@ -4,11 +4,11 @@
 // every failure becomes a player-shaped reason, never raw transport.
 
 import { describe, expect, test } from "vitest";
-import type { Idea } from "../src/index.js";
+import type { Idea, VoteMap } from "../src/index.js";
 import type { ApiResult, ArenaApi } from "./api.js";
 import { RemoteIdeas } from "./remote-ideas.js";
 
-const idea = (id: string, seq: number, text: string, votes: string[] = []): Idea => ({
+const idea = (id: string, seq: number, text: string, votes: VoteMap = {}): Idea => ({
   id,
   authorId: "ada",
   text,
@@ -44,7 +44,7 @@ const ok = <T,>(value: T): ApiResult<T> => ({ ok: true, value });
 
 describe("RemoteIdeas over a stub api", () => {
   test("list returns the server's ranked ideas (public, no token used)", async () => {
-    const ranked = [idea("idea-1", 1, "B", ["x", "y"]), idea("idea-0", 0, "A", ["x"])];
+    const ranked = [idea("idea-1", 1, "B", { x: "up", y: "up" }), idea("idea-0", 0, "A", { x: "up" })];
     const store = new RemoteIdeas(stubApi({ listIdeas: async () => ok({ ideas: ranked }) }), "token");
     const res = await store.list();
     expect(res).toEqual({ ok: true, value: ranked });
@@ -61,7 +61,7 @@ describe("RemoteIdeas over a stub api", () => {
   });
 
   test("vote returns the post-toggle idea and the caller's vote state", async () => {
-    const after = idea("idea-0", 0, "A", ["ada"]);
+    const after = idea("idea-0", 0, "A", { ada: "up" });
     const store = new RemoteIdeas(
       stubApi({ voteIdea: async () => ok({ toggled: true as const, voted: true, idea: after }) }),
       "token",

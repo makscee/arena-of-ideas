@@ -16,7 +16,12 @@ import {
 } from "../src/index.js";
 import type { KVStorage } from "./run-store.js";
 
-const IDEAS_KEY = "aoi.ideas.v1";
+// v2: the serialized vote shape changed (a flat playerId[] set became a
+// directional playerId→"up"|"down" map), so a v1 blob is not a v2 blob.
+// parseIdeasData throws on a shape mismatch; bumping the key drops any stale v1
+// table instead — the local ideas table is dev-only, so dropping it on the shape
+// change is acceptable (the server backing is the real one).
+const IDEAS_KEY = "aoi.ideas.v2";
 
 export type { KVStorage } from "./run-store.js";
 

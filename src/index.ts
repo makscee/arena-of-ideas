@@ -64,8 +64,8 @@ export type { SeasonSummary } from "./season-history.js";
 // The ideas table (#076) — the same store-interface pattern as the ladder: one
 // IdeaStore interface, an in-memory backing and a persisted engine, a serialized
 // IdeasData shape that round-trips. The web's localStorage backing builds on it.
-export { InMemoryIdeaStore, PersistedIdeaStore, emptyIdeasData, parseIdeasData, assertSubmittableText, toggledVotes, rankIdeas } from "./ideas.js";
-export type { IdeaStore, IdeasData, Idea } from "./ideas.js";
+export { InMemoryIdeaStore, PersistedIdeaStore, emptyIdeasData, parseIdeasData, assertSubmittableText, castVote, voteScore, votedCount, rankIdeas } from "./ideas.js";
+export type { IdeaStore, IdeasData, Idea, VoteDir, VoteMap } from "./ideas.js";
 export * from "./tunables.js";
 export { sweep, sweepSeeds, sweepOutcome, summarizeSweep, winRate } from "./sweep.js";
 export type { SweepInput, SweepOutcome, SweepStats, SweepResult } from "./sweep.js";

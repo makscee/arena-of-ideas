@@ -147,13 +147,18 @@ export const ideas = sqliteTable("ideas", {
 
 /** One vote per (idea, player) — the composite PK is the one-vote-per-player
  * guarantee at the DB layer: a player voting twice on one idea hits the primary
- * key and is a no-op (toggleIdeaVote deletes to un-vote), never a double count.
- * `votedAt` keeps the order votes arrived, should a later slice want it. */
+ * key and is switched in place (castIdeaVote's onConflictDoUpdate), never a
+ * second row. `direction` is the vote's sense ("up"|"down") — switch-only, never
+ * removed, so a row's mere presence is the player's participation (the
+ * currency). `votedAt` keeps the order votes arrived, should a later slice want it. */
 export const ideaVotes = sqliteTable(
   "idea_votes",
   {
     ideaId: text("idea_id").notNull(),
     userId: text("user_id").notNull(),
+    /** "up" raises the idea's rank, "down" lowers it. NOT NULL — every vote has
+     * a direction (there is no neutral vote, only the absence of a row). */
+    direction: text("direction").notNull(),
     votedAt: integer("voted_at").notNull(),
   },
   (t) => [primaryKey({ columns: [t.ideaId, t.userId] })],
