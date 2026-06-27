@@ -77,6 +77,13 @@ describe("bossFloorLine names the floor and what its boss is", () => {
     expect(line.toLowerCase()).toContain("no boss");
     expect(line.toLowerCase()).toContain("above the tower");
   });
+  test("an EMPTY tower's vacant floor reads as founding floor 1, not above-the-top (#085)", () => {
+    const line = bossFloorLine(5, false, undefined).toLowerCase(); // no champion seated = genesis
+    expect(line).toContain("empty");
+    expect(line).toContain("found");
+    expect(line).toContain("floor 1");
+    expect(line).not.toContain("above the tower"); // distinct from the #075 overshoot
+  });
 });
 
 describe("challengeNoteLine makes the decision legible — terminal, crown-vs-cash-out", () => {
@@ -98,6 +105,17 @@ describe("challengeNoteLine makes the decision legible — terminal, crown-vs-ca
   });
   test("a vacant floor warns the challenge wins no crown", () => {
     expect(challengeNoteLine(TOWER_HEIGHT + 1, false, TOWER_HEIGHT).toLowerCase()).toContain("no crown");
+  });
+  test("an EMPTY tower's vacant challenge reads as FOUNDING floor 1, not an overshoot (#085)", () => {
+    // championFloor undefined = no champion seated anywhere = the genesis tower:
+    // a vacant challenge founds the champion at floor 1, distinct from the
+    // championed-tower overshoot. Capped at floor 1 even from a higher floor.
+    const note = challengeNoteLine(7, false, undefined).toLowerCase();
+    expect(note).toContain("found");
+    expect(note).toContain("floor 1");
+    expect(note).not.toContain("no crown"); // a founding IS the first crown
+    // Once a champion exists, the same vacant floor reverts to the overshoot copy.
+    expect(challengeNoteLine(7, false, TOWER_HEIGHT).toLowerCase()).toContain("no crown");
   });
 });
 
@@ -156,6 +174,18 @@ describe("endHeadLine — all four terminal reasons read distinctly", () => {
     const head = endHeadLine("seated", 2, note).toLowerCase();
     expect(head).toContain("took its boss's place");
     expect(head).toContain("no crown");
+  });
+
+  test("found-floor-1 genesis reads DISTINCTLY from a #075 ascend-crown (#085)", () => {
+    // A founding is a crown-class end (reason "crown") carrying a Founded event;
+    // the run screen passes `founded=true` so the genesis reads as founding the
+    // bottom seat — capped at floor 1 even when the run climbed higher (round=7).
+    const found = endHeadLine("crown", 7, note, true);
+    const ascend = endHeadLine("crown", 7, note, false);
+    expect(found).toContain("founded");
+    expect(found).toContain("floor 1"); // always the bottom seat, never `round`
+    expect(found).not.toBe(ascend); // distinct from a #075 ascend over the summit
+    expect(ascend).not.toContain("founded"); // the ascend never reads as a genesis
   });
 });
 

@@ -2699,6 +2699,22 @@ button:disabled:hover {
   background: rgba(201, 162, 39, 0.06);
 }
 
+/* Found-floor-1 genesis (#085): an EMPTY tower's vacant challenge FOUNDS the
+   champion at the bottom — its own moment, a growth-green (the 🌱 seedling),
+   distinct from the gold champion fight and the red overshoot. */
+#run-challenge.founding {
+  color: var(--bg);
+  background: var(--fam-heal);
+  border-color: var(--fam-heal);
+  font-weight: 600;
+  box-shadow: 0 0 16px rgba(51, 217, 138, 0.3);
+}
+
+#run-boss.is-founding {
+  border-color: var(--fam-heal);
+  background: rgba(51, 217, 138, 0.06);
+}
+
 /* The armed challenge (#075 slice 7): the two-step confirm's second state. The
    button turns danger-red so the terminal tap reads as deliberate, distinct
    from the gold champion fight; the cancel sits beside it. */
@@ -2732,6 +2748,18 @@ button:disabled:hover {
   color: #e8c547;
   font-size: 1.05rem;
   font-weight: 600;
+}
+
+/* The found-floor-1 genesis end (#085): a crown-class end, but the FIRST crown
+   on an empty tower — read it apart from a #075 ascend with the growth-green
+   the founding challenge wore, not the gold ascend frame. */
+#run-end.founded {
+  border-color: var(--fam-heal);
+  background: rgba(51, 217, 138, 0.07);
+}
+
+#run-end.founded #run-end-head {
+  color: var(--fam-heal);
 }
 
 #run-end-stats {

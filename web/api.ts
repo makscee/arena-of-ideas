@@ -39,7 +39,9 @@ export interface ChampionInfo {
 export interface ServedView {
   round: number;
   pool: TeamSnapshot[];
-  champion: TeamSnapshot;
+  /** Null on an EMPTY tower (PRD #085) — production launches with no champion
+   * seated; the play read serves the empty tower so a run can found it. */
+  champion: TeamSnapshot | null;
 }
 
 export interface SubmitInfo {

@@ -104,7 +104,7 @@ export const RUN_OPEN_TTL_DAYS = 14;
 export const RUN_OPEN_TTL_SECONDS = RUN_OPEN_TTL_DAYS * 24 * 60 * 60;
 
 export type PoolServeOutcome =
-  | { served: true; round: number; pool: readonly TeamSnapshot[]; champion: TeamSnapshot }
+  | { served: true; round: number; pool: readonly TeamSnapshot[]; champion: TeamSnapshot | null }
   | { served: false; reason: string };
 
 /** Open a run before playing it: records who owns the runId, and from when
@@ -150,22 +150,27 @@ export function servePool(
   if (deps.clock() - open.openedAt > RUN_OPEN_TTL_SECONDS) {
     return { served: false, reason: openExpiredReason(runId) };
   }
+  // An EMPTY tower (PRD #085) has no champion yet — production launches empty
+  // (createApp → openEmptyLadder) and is FOUNDED by the first completed run's
+  // found-floor-1 challenge. The play read must serve that empty tower, not 500:
+  // until the tower is founded there is no champion to read and the visible pool
+  // is empty, but a run still plays it — a cold-start climb fights a seed-unit
+  // team the kernel synthesizes off its own RNG (no served ghost needed), and the
+  // founding challenge needs no seated champion. So serve gracefully with a null
+  // champion rather than throwing. (Before #085 this threw, so a real empty
+  // production tower 500'd its first serve and could never be founded live.)
   const champion = deps.store.championRecord();
-  if (champion === null) {
-    // The tower has no champion yet. Production launches EMPTY (PRD #085,
-    // openEmptyLadder) and is founded by the first completed run (challengeBoss's
-    // found-floor-1 branch); a solo-playtest seeds it via seedBootstrapTower. A
-    // play view needs a seated champion, so until the tower is founded there is
-    // nothing to serve here.
-    throw new Error("ladder has no champion — cannot serve a play view");
-  }
   const pool = deps.store.poolVisibleTo(round, userId);
+  // Record the view served. The serve row binds submission replay's pool-prefix
+  // and champion co-serve checks; an empty tower has no champion, so its row
+  // carries "" for the champion id (the dedup key still holds, and replay's
+  // co-serve check only ever matches a NON-empty challenge frame).
   deps.db
     .insert(runPoolServes)
-    .values({ runId, round, servedLen: pool.length, championRunId: champion.snap.runId, servedAt: deps.clock() })
+    .values({ runId, round, servedLen: pool.length, championRunId: champion?.snap.runId ?? "", servedAt: deps.clock() })
     .onConflictDoNothing()
     .run();
-  return { served: true, round, pool, champion: champion.snap };
+  return { served: true, round, pool, champion: champion?.snap ?? null };
 }
 
 function openExpiredReason(runId: string): string {

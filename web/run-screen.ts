@@ -31,6 +31,7 @@ import {
   reroll,
   serializeRun,
   shopSizeForRound,
+  synthClimbTeam,
   toBattleTeam,
   type AbilityRegistry,
   type Family,
@@ -114,7 +115,13 @@ export const isChampionFloor = (floor: number, championFloor: number | undefined
  * as the champion even above TOWER_HEIGHT. */
 export const bossFloorLine = (floor: number, hasBoss: boolean, championFloor?: number): string =>
   !hasBoss
-    ? `floor ${floor} — above the tower's top; there is no boss here`
+    ? championFloor === undefined
+      ? // An EMPTY tower (#085 genesis): no champion seated anywhere, so a vacant
+        // challenge FOUNDS the champion at floor 1 (capped at the bottom), not an
+        // overshoot. Once any champion exists, championFloor is set and a vacant
+        // floor reads as the #075 overshoot again.
+        `floor ${floor} — the tower is empty; challenging founds the champion at floor 1, the bottom seat`
+      : `floor ${floor} — above the tower's top; there is no boss here`
     : isChampionFloor(floor, championFloor)
       ? `floor ${floor} — the champion holds this floor, the top of the tower`
       : `floor ${floor} — a lineage boss below the champion`;
@@ -123,7 +130,11 @@ export const bossFloorLine = (floor: number, hasBoss: boolean, championFloor?: n
  * The champion's floor crowns; a lower floor cashes out (a seat, not a crown). */
 export const challengeNoteLine = (floor: number, hasBoss: boolean, championFloor?: number): string =>
   !hasBoss
-    ? "challenging here ends the run with no crown — climb back is impossible, so there is no boss to take"
+    ? championFloor === undefined
+      ? // Empty tower (#085): the challenge FOUNDS the champion at floor 1 — no
+        // fight, a guaranteed crown-class end seating the empty tower's first boss.
+        "terminal: founds the champion at floor 1 — the empty tower's first seat, no fight; the run ends here, crowned"
+      : "challenging here ends the run with no crown — climb back is impossible, so there is no boss to take"
     : isChampionFloor(floor, championFloor)
       ? "terminal: beat the champion to take the crown and grow the tower — lose and the run is over"
       : `terminal: win to seat your team as floor ${floor}'s boss (a lower, easier cash-out seat — no crown) — lose and the run is over`;
@@ -140,7 +151,16 @@ export const endHeadLine = (
   reason: RunEndReason,
   round: number,
   dethronedNote: string,
+  founded = false,
 ): string => {
+  // Found-floor-1 genesis (#085): the FIRST completed run on an EMPTY tower
+  // founds the champion at the bottom seat, floor 1. The kernel records it as a
+  // crown-class end (reason "crown") carrying a distinct `Founded` event, so the
+  // UI passes `founded` to read the genesis apart from a #075 ascend-crown — the
+  // seat is ALWAYS floor 1 (founding is capped at the bottom), never `round`.
+  if (founded) {
+    return "🌱 founded the champion at floor 1 — the tower was empty, so your run seats its first boss at the bottom; every climber after you must beat it to grow the lineage";
+  }
   switch (reason) {
     case "crown":
       return `👑 champion — you took the summit and seated at floor ${round} — ${dethronedNote}`;
@@ -641,8 +661,14 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   function renderClimb(s: RunState): void {
     const empty = s.team.length === 0;
     const championFloor = deps.store.champion()?.round;
+    const towerEmpty = championFloor === undefined; // no champion seated anywhere — the genesis tower (#085)
     const atTop = isChampionFloor(s.round, championFloor);
-    const noRival = !empty && !atTop && deps.store.poolAt(s.round).filter((g) => g.runId !== s.runId).length === 0;
+    // A climb with no rival ghost no longer STALLS (#085): the kernel synthesizes
+    // a seed-unit opponent off the run's RNG, so the climb cold-starts instead of
+    // throwing. It is only blocked at noRival when the tower is ALREADY championed
+    // — the seeded-tower UX where a cleared floor steers you to challenge the boss.
+    // On an empty tower every floor is thin, so the climb always cold-starts.
+    const noRival = !empty && !atTop && !towerEmpty && deps.store.poolAt(s.round).filter((g) => g.runId !== s.runId).length === 0;
     els.fightButton.disabled = empty || atTop || noRival;
     els.stakes.textContent = empty
       ? stakesLine(s.lives)
@@ -650,7 +676,9 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
         ? "the champion holds this floor — challenge to take the crown, or climbing past would overshoot"
         : noRival
           ? `no ghost left to climb at floor ${s.round} — challenge the boss below to make your move`
-          : stakesLine(s.lives);
+          : towerEmpty
+            ? `cold start — the tower is empty, so this climb fights a synthesized seed-unit team (${stakesLine(s.lives)})`
+            : stakesLine(s.lives);
   }
 
   /** The boss panel: the current floor's boss shown read-only (the same card
@@ -665,16 +693,24 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     const hasBoss = boss !== null;
     const championFloor = deps.store.champion()?.round;
     const atTop = hasBoss && isChampionFloor(s.round, championFloor);
+    // Empty tower (#085): a vacant floor with no champion seated anywhere is the
+    // genesis — challenging FOUNDS the champion at floor 1, not an overshoot.
+    const founding = !hasBoss && championFloor === undefined;
     els.bossHead.textContent = bossFloorLine(s.round, hasBoss, championFloor);
     els.bossTeam.innerHTML = hasBoss
       ? boss.team.map((u) => bossUnitCard(u)).join("")
-      : '<span class="run-dim">no boss seated above the tower — challenging here overshoots</span>';
+      : founding
+        ? '<span class="run-dim">the tower is empty — challenge to found the champion at floor 1, the first seat of a new lineage</span>'
+        : '<span class="run-dim">no boss seated above the tower — challenging here overshoots</span>';
     els.challengeNote.textContent = challengeNoteLine(s.round, hasBoss, championFloor);
     // Only the champion's floor wears the gold crown treatment — a lower seat is
     // a plain cash-out (Maks: "only the last can be crowned"). The champion floor
-    // is the live top of the (growing) tower, not a fixed TOWER_HEIGHT.
+    // is the live top of the (growing) tower, not a fixed TOWER_HEIGHT. A founding
+    // wears its own genesis treatment.
     els.challengeButton.classList.toggle("champion", atTop);
+    els.challengeButton.classList.toggle("founding", founding);
     els.bossPanel.classList.toggle("at-champion", atTop);
+    els.bossPanel.classList.toggle("is-founding", founding);
     // The confirm gate (#075 slice 7) resets on every render: a re-render must
     // never leave the button mid-armed. The labels/note below are rebuilt fresh,
     // so clear the armed state without restoring stale text.
@@ -683,12 +719,16 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     els.challengeButton.title = "";
     els.challengeCancel.hidden = true;
     challengeArmLabel = !hasBoss
-      ? "Challenge here? This overshoots — no crown — and ends your run."
+      ? founding
+        ? "Found the champion at floor 1? The tower is empty — this seats your team as the first boss and ends the run, crowned."
+        : "Challenge here? This overshoots — no crown — and ends your run."
       : atTop
         ? "Challenge the champion? This ends your run — win to take the crown."
         : `Challenge floor ${s.round}'s boss? This ends your run — win to take the seat.`;
     challengeFireLabel = !hasBoss
-      ? "challenge here (overshoot — no crown)"
+      ? founding
+        ? "found the champion (floor 1)"
+        : "challenge here (overshoot — no crown)"
       : atTop
         ? "challenge the champion"
         : "challenge this floor's boss";
@@ -744,6 +784,9 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       pwr: u.base.pwr,
       statuses: u.statuses,
       registry: state?.statuses ?? deps.registry,
+      family: familyOf(u),
+      variant: "compact", // the boss team reads as a read-only roster — compact, like the line
+      ...abilityLine(u),
       ...((u.level ?? 1) > 1 ? { level: u.level } : {}),
       classes: "run-card boss-card",
       attrs: "", // read-only — no inspect/buy/move affordance on a boss card
@@ -834,7 +877,11 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     const s = state!;
     const reason = s.endedBy ?? "out-of-lives";
     const crown = reason === "crown";
+    // Found-floor-1 genesis (#085): a crown-class end carrying a `Founded` event
+    // is the FIRST crown on an empty tower — read it apart from a #075 ascend.
+    const founded = crown && ofType(s.log, "Founded").length > 0;
     els.endPanel.classList.toggle("crowned", crown);
+    els.endPanel.classList.toggle("founded", founded);
     // Who the seat was taken from — a crown (ascend) names it via Crowned, a
     // cash-out via Seated; either terminal seat carries the dethroned boss.
     const dethroned = (ofType(s.log, "Crowned")[0] ?? ofType(s.log, "Seated")[0])?.dethroned;
@@ -844,7 +891,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
         : dethroned === BOOTSTRAP_RUN_ID
           ? "the shipped boss falls; your team takes the seat"
           : `${dethroned} is dethroned; your team takes the seat`;
-    els.endHead.textContent = endHeadLine(reason, s.round, dethronedNote);
+    els.endHead.textContent = endHeadLine(reason, s.round, dethronedNote, founded);
     // The climb, derived from the run log: one fight per round, W/L/D per round.
     const fights = ofType(s.log, "FightFought");
     const won = fights.filter((f) => f.winner === "A").length;
@@ -1147,18 +1194,31 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       return;
     }
     const drawn = ofType(fresh, "OpponentDrawn")[0];
-    const opponent =
-      drawn !== undefined
-        ? deps.store.poolAt(before.round).find((g) => g.runId === drawn.opponent && g.seq === drawn.seq)!
-        : championBefore!;
+    const synth = ofType(fresh, "OpponentSynthesized")[0];
+    let teamB: UnitDef[];
+    let opponentLabel: string;
+    if (drawn !== undefined) {
+      const opponent = deps.store.poolAt(before.round).find((g) => g.runId === drawn.opponent && g.seq === drawn.seq)!;
+      teamB = opponent.team;
+      opponentLabel = `the ghost of ${ghostLabel(opponent.runId)} from round ${before.round}`;
+    } else if (synth !== undefined) {
+      // Cold-start synth opponent (#085 genesis): an empty/thin floor pool has no
+      // live ghost, so the kernel fought a seed-unit team drawn off the run's RNG
+      // — NOT a stored ghost. Re-synthesize it from the run's PRE-fight RNG (the
+      // same pure draw the kernel made: synthClimbTeam(floor, before.rng,
+      // before.pool)) so the viewer shows the real enemy, labelled as the cold-
+      // start climb team it is — never an empty box.
+      teamB = synthClimbTeam(before.round, before.rng, before.pool).team;
+      opponentLabel = `a cold-start climb team — drawn from the seed units at floor ${before.round}`;
+    } else {
+      teamB = championBefore!.team;
+      opponentLabel = championPhrase(championBefore!);
+    }
     pending = {
       teamA: toBattleTeam(before.team),
-      teamB: opponent.team,
+      teamB,
       seed: fought.battleSeed,
-      opponentLabel:
-        drawn !== undefined
-          ? `the ghost of ${ghostLabel(opponent.runId)} from round ${before.round}`
-          : championPhrase(opponent),
+      opponentLabel,
     };
     revealed = false; // a fresh battle stages its outcome again
     persist(next, pending);

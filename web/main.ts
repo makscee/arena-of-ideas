@@ -3,7 +3,7 @@
 // log (and the content it ran on) to the battle screen — board, inline log,
 // and inspector all read that one log.
 
-import { DEFAULT_RUN_POOL, KERNEL_VERSION, codexUnits, mergePool, seedBootstrapTower, stressAbilities, stressRegistry } from "../src/index.js";
+import { DEFAULT_RUN_POOL, KERNEL_VERSION, codexUnits, mergePool, openEmptyLadder, seedBootstrapTower, stressAbilities, stressRegistry } from "../src/index.js";
 import { approvedUnits, committedApproved } from "./approved.js";
 import { createArenaApi, type MeInfo } from "./api.js";
 import { dismissInspectOverlay } from "./inspect.js";
@@ -320,7 +320,19 @@ homeButton.addEventListener("click", () => showView("title"));
 // ladder would orphan its ghosts), but it must not take the other views down
 // with it.
 try {
-  const ladderStore = remote ?? seedBootstrapTower(openLocalLadder(window.localStorage), stressRegistry, stressAbilities);
+  // Local solo play seeds the #075 bootstrap tower so a lone session has a
+  // ladder to climb. `?ladder=empty` (PRD #085) instead opens the tower EMPTY —
+  // the production genesis path — so the cold-start synth climb and the
+  // found-floor-1 end are reachable (and reviewable) in local play. It seeds
+  // NOTHING over the persisted local store (so a first/cleared visit is a true
+  // empty launch); it never touches the active run. The remote (logged-in)
+  // store is the shared server ladder.
+  const emptyLadder = new URLSearchParams(window.location.search).get("ladder") === "empty";
+  const ladderStore =
+    remote ??
+    (emptyLadder
+      ? openEmptyLadder(openLocalLadder(window.localStorage))
+      : seedBootstrapTower(openLocalLadder(window.localStorage), stressRegistry, stressAbilities));
   leaderboardView = createLadderView(el("leaderboard-body"), {
     store: ladderStore,
     registry: stressRegistry,

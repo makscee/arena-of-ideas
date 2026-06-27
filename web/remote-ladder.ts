@@ -61,7 +61,7 @@ export class RemoteLadder implements LadderStore, RemoteRun {
   // The pinned fight view — the last serve() response, the only thing a
   // ladderFight may read. Kept after the fight so the shop's "rivals waiting"
   // line for that round reads the served (own-ghost-excluded) truth.
-  private fight: { round: number; pool: TeamSnapshot[]; champion: TeamSnapshot } | null = null;
+  private fight: { round: number; pool: TeamSnapshot[]; champion: TeamSnapshot | null } | null = null;
 
   constructor(api: ArenaApi, token: string) {
     this.api = api;
@@ -121,7 +121,8 @@ export class RemoteLadder implements LadderStore, RemoteRun {
   holder(): string | null {
     if (this.localCrown !== null) return null;
     if (this.fight !== null) {
-      return this.champ !== null && this.fight.champion.runId === this.champ.runId ? this.champHolder : null;
+      const fc = this.fight.champion;
+      return fc !== null && this.champ !== null && fc.runId === this.champ.runId ? this.champHolder : null;
     }
     return this.champHolder;
   }

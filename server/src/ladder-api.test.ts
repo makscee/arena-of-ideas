@@ -258,6 +258,38 @@ describe("empty launch — the server seeds nothing (#085)", () => {
     expect(poolRes.status).toBe(200);
     expect(((await poolRes.json()) as { pool: TeamSnapshot[] }).pool).toEqual([]); // no seeded ghosts
   });
+
+  test("the run-scoped play read serves an EMPTY tower without 500 — null champion, empty pool", async () => {
+    // The genesis end-to-end fix (#085): before it, servePool threw when no
+    // champion was seated, so a real empty production tower 500'd its FIRST serve
+    // and could never be founded through the live server. Now it serves the empty
+    // tower gracefully so a run can play it and found floor 1.
+    const mailer = createMockMailClient();
+    const { db } = openDb(":memory:");
+    const clock = () => 1_750_000_000;
+    const app = createApp({
+      db,
+      clock,
+      mailClient: mailer,
+      rateLimiters: {
+        ipStart: createRateLimiter({ limit: 100, windowMs: 60_000, clock: () => clock() * 1000 }),
+        emailStart: createRateLimiter({ limit: 100, windowMs: 60_000, clock: () => clock() * 1000 }),
+        poolServe: createRateLimiter({ limit: 10_000, windowMs: 60_000, clock: () => clock() * 1000 }),
+      },
+      content: { pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities },
+    });
+    const ctx: Ctx = { app, mailer, now: { sec: 1_750_000_000 } };
+    const token = await login(ctx, "genesis@example.com");
+    expect((await openRun(ctx, token, "founder")).status).toBe(200);
+    const res = await ctx.app.request("/v1/runs/founder/pool/1", {
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(res.status).toBe(200); // NOT 500 — the empty tower is served
+    const body = (await res.json()) as { served: boolean; champion: TeamSnapshot | null; pool: TeamSnapshot[] };
+    expect(body.served).toBe(true);
+    expect(body.champion).toBeNull(); // the tower is vacant — no champion to read yet
+    expect(body.pool).toEqual([]); // no ghosts at genesis
+  });
 });
 
 describe("leaderboard reads work logged-out", () => {
