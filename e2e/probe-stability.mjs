@@ -145,7 +145,7 @@ await lineGrowth(DESKTOP, "desktop");
   const oneRow = (await box(page, '[data-line="0"]')).height;
   check(parseFloat(m0) < oneRow * 3, "375px poor gold reserves only the reachable rows, not the team max", `minH ${m0}, card ${oneRow}px`);
   await page.click("#run-reroll"); // spends gold; the captured count holds
-  await page.waitForFunction(() => document.querySelector("#run-head .run-gold").textContent !== "2 gold");
+  await page.waitForFunction(() => document.querySelector("#run-head .run-gold").textContent.replace(/[^0-9]/g, "") !== "2");
   check((await lineMinH(page)) === m0, "375px line reserve held across reroll", `${m0} → ${await lineMinH(page)}`);
   check((await fightY(page)) === y0, "375px fight Y stable across reroll", `${y0} → ${await fightY(page)}`);
   await page.click("#run-fight");

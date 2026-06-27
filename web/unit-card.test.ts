@@ -135,7 +135,7 @@ describe("B·Arena card (#080): family + full variant", () => {
     expect(card).toContain("Poison 2");
   });
 
-  test("terse 3-chip line (#082): trigger glyph in <b>, ▸ separators, family glyph on the action", () => {
+  test("terse 3-chip line (#086): trigger/action marks are inline SVG icons, ▸ separators", () => {
     const card = unitCardHtml({
       ...base,
       family: "Poison",
@@ -145,27 +145,30 @@ describe("B·Arena card (#080): family + full variant", () => {
       target: "Front enemy",
       action: "Poison 2",
     });
-    // trigger chip: its event glyph in <b>, then the terse label
-    expect(card).toContain('<span class="ub-seg ub-trig"><b>⚔</b> On strike</span>');
+    // trigger chip: its event mark is a `currentColor` SVG (data-glyph), then the
+    // terse label — NOT a font glyph (the vendored fonts lack ⚔, it fell to ×).
+    expect(card).toMatch(/class="ub-seg ub-trig"><svg class="gly" data-glyph="strike"[\s\S]*?<\/svg> On strike<\/span>/);
     // target chip: muted, no glyph
     expect(card).toContain('<span class="ub-seg ub-tgt">Front enemy</span>');
-    // action chip: the FAMILY glyph (Poison → ☣) in <b>, then the terse action
-    expect(card).toContain('<span class="ub-seg ub-act"><b>☣</b> Poison 2</span>');
+    // action chip: the FAMILY mark (Poison → the poison droplet), then the action
+    expect(card).toMatch(/class="ub-seg ub-act"><svg class="gly" data-glyph="poison"[\s\S]*?<\/svg> Poison 2<\/span>/);
     // ▸ separators between the three present segments (two of them)
     expect(card.match(/class="ub-arrow">▸/g)).toHaveLength(2);
     // the NAMED ability rides the cap-label, uppercased — not the family word
     expect(card).toContain('class="ub-cap-t">TOXIC STRIKE</span>');
+    // the named-ability star is the inline SVG (data-glyph), not the ✦ font glyph
+    expect(card).toMatch(/class="ub-spark" data-glyph="ability-star"/);
   });
 
-  test("the trigger glyph defaults to ⚔; the action glyph tracks the family", () => {
-    // no triggerGlyph passed → default ⚔; Shield family → action glyph ⛨
+  test("the trigger mark defaults to strike; the action mark tracks the family", () => {
+    // no triggerGlyph passed → default strike (⚔); Shield family → shield mark
     const card = unitCardHtml({ ...base, family: "Shield", trigger: "Battle start", target: "Self", action: "Shield 3" });
-    expect(card).toContain("<b>⚔</b> Battle start");
-    expect(card).toContain("<b>⛨</b> Shield 3");
-    // a Summon-family action wears ☠ (mockup action legend)
+    expect(card).toMatch(/data-glyph="strike"[\s\S]*?<\/svg> Battle start/);
+    expect(card).toMatch(/data-glyph="shield"[\s\S]*?<\/svg> Shield 3/);
+    // a Summon trigger glyph (☠) → death mark; a Summon-family action → summon mark
     const summon = unitCardHtml({ ...base, family: "Summon", triggerGlyph: "☠", trigger: "On death", target: "Self", action: "Summon Imp" });
-    expect(summon).toContain("<b>☠</b> On death");
-    expect(summon).toContain("<b>☠</b> Summon Imp");
+    expect(summon).toMatch(/data-glyph="death"[\s\S]*?<\/svg> On death/);
+    expect(summon).toMatch(/data-glyph="summon"[\s\S]*?<\/svg> Summon Imp/);
   });
 
   test("contract anchors survive: .unit, .uname, .unums with .hp/.pwr, .chips", () => {

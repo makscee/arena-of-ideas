@@ -387,6 +387,20 @@ button:disabled:hover {
 .ac-spark {
   display: block;
   flex: none;
+  width: 11px;
+  height: 11px;
+}
+
+/* Inline glyph icons (#086): the trigger / action / effect marks rendered as
+   tiny `currentColor` SVGs (web/glyphs.ts) — sized to the surrounding text so
+   they inherit the chip's colour and font size, replacing the unicode glyphs
+   the vendored fonts don't carry. Static — prefers-reduced-motion is moot. */
+.gly {
+  display: inline-block;
+  flex: none;
+  width: 1.05em;
+  height: 1.05em;
+  vertical-align: -0.16em;
 }
 .ac-ability span {
   font-family: var(--font-title);
@@ -3335,25 +3349,47 @@ button.hub-col-head {
   font-weight: 600;
 }
 
-/* Reroll (#084 slice 2): a neon control — the primary action of the shop row,
-   but a neon OUTLINE so the filled fight button still reads as THE move. Cyan
-   border + glow + cyan label, the 1g price riding the same button. */
+/* Reroll (#086): a muted secondary action in the header — the filled teal
+   Fight beside it reads as THE move (mockup line 199). Dark fill + hairline. */
 #run-reroll {
-  color: var(--you);
-  background: rgba(37, 230, 212, 0.06);
-  border-color: var(--you);
+  color: var(--muted);
+  background: #0e1018;
+  border: 1px solid #232a3a;
+  border-radius: 2px;
   font-family: var(--font-title);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  font-size: 0.72rem;
   font-weight: 600;
-  box-shadow: 0 0 14px rgba(37, 230, 212, 0.18);
-  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  padding: 0.55rem 0.85rem;
 }
 
 #run-reroll:hover:not(:disabled) {
-  background: rgba(37, 230, 212, 0.14);
-  box-shadow: 0 0 18px rgba(37, 230, 212, 0.32);
+  color: var(--text);
+  border-color: var(--muted);
+  background: #14161f;
+}
+
+/* Fight (#086): the filled teal move, chamfered with the neon glow (mockup
+   line 200). The shared #run-start/#run-fight rule above sets the teal fill. */
+#run-fight {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.55rem 1.6rem;
+  border-radius: 2px;
+  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+  box-shadow: var(--glow);
+}
+
+#run-fight:hover:not(:disabled) {
+  box-shadow: 0 0 26px rgba(37, 230, 212, 0.6);
+}
+
+#run-fight:disabled {
+  box-shadow: none;
 }
 
 #run-new-error {
@@ -3373,84 +3409,105 @@ button.hub-col-head {
   overflow: hidden;
 }
 
-/* The B·Arena round bar (#084 slice 2): a chamfered HUD panel of stat cells —
-   gold / lives / wins (the round reached) — over #080's tokens. The numerals
-   ride Mono inside each cell's accent; the cell itself is a cut-corner chip so
-   the bar reads as the game's HUD, not a form row. */
-#run-head {
+/* The shop header bar (#086, matching the mockup): one bar across the top of
+   the shop — Round + the gold/lives/wins stat group on the left, the reroll +
+   Fight actions right-aligned. The bar is the panel (gradient + hairline,
+   chamfered); the stat readout that used to be the round bar folds in here. */
+.run-headbar {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 0.45rem;
-  align-items: stretch;
-  background: var(--panel);
+  gap: 0.6rem 1.1rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(180deg, #0e1018, #0a0c12);
   border: 1px solid var(--border);
   clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
-  padding: 0.5rem 0.7rem;
-  font-size: 0.85rem;
+  margin-bottom: 0.6rem;
 }
 
-/* One stat cell: an uppercase label (the span text) with its big Mono numeral
-   in the cell's accent. The cut corner + hairline border give the HUD chip. */
-.run-stat {
+#run-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* `Round NN` — the headline, number in you-cyan. */
+.run-round {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text);
+}
+
+.run-round b {
+  font-family: var(--font-num);
+  font-weight: 700;
+  color: var(--you);
+}
+
+/* The stat group: ◈ gold · ♥ lives · N W, Mono, tinted per stat. */
+.run-statline {
   display: flex;
   align-items: baseline;
-  gap: 0.3rem;
-  padding: 0.2rem 0.55rem;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border);
-  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  font-family: var(--font-title);
-  font-size: 0.6rem;
-  color: var(--muted);
-}
-
-.run-stat b {
+  gap: 0.85rem;
   font-family: var(--font-num);
-  font-weight: 600;
-  font-size: 1.05rem;
-  letter-spacing: 0;
-  line-height: 1;
+  font-weight: 700;
+  font-size: 0.95rem;
 }
 
-/* Wins = the round reached: the headline progress stat, in you-cyan. */
-#run-head .run-round {
-  color: var(--you);
+.run-statline b {
+  font-family: var(--font-num);
+  font-weight: 700;
 }
 
-#run-head .run-round b {
-  color: var(--you);
-}
-
-#run-head .run-gold {
+.run-gold {
   color: var(--gold);
 }
 
-#run-head .run-gold b {
-  color: var(--gold);
+.run-gold b {
   text-shadow: 0 0 10px rgba(255, 210, 74, 0.35);
 }
 
-#run-head .run-lives {
+.run-lives {
   color: var(--hurt);
 }
 
-#run-head .run-lives b {
-  color: var(--hurt);
+.run-wins {
+  color: var(--muted);
 }
 
-#run-head .run-income {
-  align-self: center;
+/* Income + run id — a muted sub-line under the bar's main row (not in the
+   mockup's single row, kept because the run id seeds the resume + the income
+   note is the standing economy fact). Wraps to its own line. */
+.run-sub {
+  flex-basis: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
   color: var(--dim);
-  font-size: 0.75rem; /* the standing fact beside the gold count (IA-6) */
+  font-size: 0.68rem;
 }
 
-#run-head .run-id {
-  align-self: center;
-  color: var(--dim);
-  font-size: 0.7rem;
+.run-sub .run-id {
   font-family: var(--font-num);
+  margin-left: auto;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The right-aligned actions: reroll (muted) + Fight (teal) — relocated into the
+   header (#086). */
+.run-headact {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   margin-left: auto;
 }
 
@@ -4331,39 +4388,22 @@ button.danger {
      each buy/reroll (slice-3 fix round). A pinned two-row grid makes the
      head's height content-independent — numbers change inside their cells,
      never the layout. Cells stay one line; the free-text id ellipsizes. */
-  #run-head {
-    display: grid;
-    grid-template-columns: auto auto 1fr;
-    column-gap: 0.75rem;
-    row-gap: 0.2rem;
+  /* Phone: the header bar wraps — Round + stats on the first row, the actions
+     drop to their own full-width row (still right-aligned), the sub-line last.
+     The stat numbers change inside their cells, never the layout. */
+  .run-headbar {
+    gap: 0.5rem 0.8rem;
+    padding: 0.6rem 0.75rem;
   }
 
-  #run-head .run-round {
-    grid-area: 1 / 1;
+  .run-headact {
+    flex: 1 1 100%;
+    justify-content: flex-end;
   }
 
-  #run-head .run-gold {
-    grid-area: 1 / 2;
-  }
-
-  #run-head .run-lives {
-    grid-area: 1 / 3;
-    justify-self: end;
-  }
-
-  #run-head .run-income {
-    grid-area: 2 / 1 / 2 / 3;
-    white-space: nowrap;
-  }
-
-  #run-head .run-id {
-    grid-area: 2 / 3;
-    justify-self: end;
-    margin-left: 0;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  #run-fight,
+  #run-reroll {
+    min-height: 44px; /* the loop's most important taps stay thumb-sized */
   }
 
   /* Battle-bar outcome (#065 defect 4): a long "continue to round N · +Ng
@@ -4550,6 +4590,8 @@ button.danger {
 .unit-b .ub-spark {
   display: block;
   flex: none;
+  width: 10px;
+  height: 10px;
 }
 .unit-b .ub-cap-t {
   font-family: var(--font-title);
@@ -4774,20 +4816,22 @@ button.danger {
   box-shadow: 0 0 28px rgba(37, 230, 212, 0.6);
 }
 
-/* the Buy button on a full offer card — a family-coloured neon chip */
+/* the Buy button on a full offer card — uniform teal across every family
+   (#086, mockup line 214: every `Buy · Ng` is #25e6d4 on #04141a), so price,
+   not family, is what the button communicates. */
 .unit-b .run-buy {
   font-family: var(--font-title);
   font-weight: 600;
   font-size: 9px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #07080c;
-  background: var(--fam);
-  border: 1px solid var(--fam);
+  color: #04141a;
+  background: var(--you);
+  border: 1px solid var(--you);
   border-radius: 2px;
   padding: 4px 10px;
   margin: 0;
-  box-shadow: 0 0 14px color-mix(in srgb, var(--fam) 45%, transparent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--you) 45%, transparent);
 }
 .unit-b .run-buy:hover {
   filter: brightness(1.12);

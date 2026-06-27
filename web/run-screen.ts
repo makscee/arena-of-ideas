@@ -514,18 +514,20 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     // Mid-phase this is a no-op re-show; the scroll reset rides every shop
     // render either way, and nothing here paints between the two states.
     show("shop");
-    // The B·Arena round bar (#084 slice 2): three stat cells — the round
-    // reached (your wins: every floor climbed is a win), gold to spend, lives
-    // left — plus the income note and the run id. The numerals ride `<b>` so
-    // CSS sets them in Mono at the cell's accent (cyan / gold / red); the span
-    // text stays "round N" / "N gold" / "N lives" so the resume + stability
-    // probes still read the bar.
+    // The shop header bar (#086, matching the mockup): `Round NN` (number teal),
+    // then the gold/lives/wins stat group (◈ gold · ♥ lives · N W), with the
+    // income note + run id on a muted sub-line. The reroll + Fight actions live
+    // as real DOM siblings in `.run-headact` (not this innerHTML), so they keep
+    // their handlers/disabled state. The numerals ride `<b>` for the Mono accent.
+    const wins = ofType(s.log, "FightFought").filter((f) => f.winner === "A").length;
     els.head.innerHTML =
-      `<span class="run-stat run-round" title="floor reached — every climb you win is a step up the tower">round <b>${s.round}</b></span>` +
-      `<span class="run-stat run-gold" title="gold to spend — a unit is ${UNIT_COST}g, a reroll ${REROLL_COST}g"><b>${s.gold}</b> gold</span>` +
-      `<span class="run-stat run-lives" title="lives left — a lost climb costs one"><b>${s.lives}</b> ${s.lives === 1 ? "life" : "lives"}</span>` +
-      `<span class="run-income">${esc(incomeLine(s.round))}</span>` +
-      `<span class="run-id">${esc(s.runId)}</span>`;
+      `<span class="run-round" title="floor reached — every climb you win is a step up the tower">round <b>${s.round}</b></span>` +
+      `<span class="run-statline">` +
+      `<span class="run-gold" title="gold to spend — a unit is ${UNIT_COST}g, a reroll ${REROLL_COST}g">◈ <b>${s.gold}</b></span>` +
+      `<span class="run-lives" title="lives left — a lost climb costs one">♥ <b>${s.lives}</b></span>` +
+      `<span class="run-wins" title="climbs won this run"><b>${wins}</b> W</span>` +
+      `</span>` +
+      `<span class="run-sub"><span class="run-income">${esc(incomeLine(s.round))}</span><span class="run-id">${esc(s.runId)}</span></span>`;
     els.next.textContent = nextLine(s);
     prefetchServe(s);
     // Notice strip stays in flow at all times — content cleared when empty

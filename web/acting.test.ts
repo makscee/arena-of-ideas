@@ -188,6 +188,16 @@ describe("actingCardHtml", () => {
     expect(html).toContain(">RESULT<");
     expect(html).toContain("↳ CHAINS");
     expect(html).toContain("Venomancer");
+    // The trigger/action/effect marks render as inline `currentColor` SVG icons
+    // (#086), NOT the unicode glyphs the vendored fonts drop to the wrong char.
+    expect(html).toMatch(/class="ac-now-act"><svg class="gly" data-glyph="[a-z-]+"/);
+    expect(html).toMatch(/class="ac-g [^"]*"><svg class="gly" data-glyph="[a-z-]+"/);
+    // the named-ability star is the inline SVG, not the ✦ font glyph
+    expect(html).toContain('class="ac-spark" data-glyph="ability-star"');
+    // the CHAINS header's reactive mark is the burst SVG, not the ✸ font glyph
+    expect(html).toMatch(/CHAINS ·[\s\S]*?· <svg class="gly" data-glyph="damaged"/);
+    // no raw fallback-prone unicode marks leak into the markup
+    for (const ch of ["⚔", "☠", "✦", "☣", "◆", "✶", "⛨", "✸"]) expect(html).not.toContain(ch);
   });
 
   test("a phase step renders a caption, not a card", () => {

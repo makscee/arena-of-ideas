@@ -22,26 +22,14 @@ import {
   type UnitDef,
 } from "../src/index.js";
 import { nameFamily } from "./unit-card.js";
+import { abilityStar, actionIcon, triggerIcon, triggerIconForGlyph } from "./glyphs.js";
 
 const esc = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
-// The action/effect glyph by family — mirrors unit-card's FAMILY_GLYPH so a
-// status that an ability applies wears the ability family's glyph on the RESULT
-// row (☣ for a Poison-family poison) exactly as the card's action chip does.
-const FAMILY_GLYPH: Record<Family, string> = {
-  Poison: "☣",
-  Strike: "◆",
-  Shield: "⛨",
-  Summon: "☠",
-  Arcane: "✶",
-  Control: "⇄",
-  Heal: "▲",
-};
-
 // Trigger label per event-pattern `on` — mirrors describe.ts's TRIGGER_CHIP
-// labels (the chain callout says "ON DAMAGED", "ON STRIKE", …). The glyph is
-// always ✸ for a reactive chain (the mockup's chain trigger mark).
+// labels (the chain callout says "ON DAMAGED", "ON STRIKE", …). The mark is
+// always the burst (a reactive chain — the mockup's chain trigger mark).
 const TRIGGER_LABEL: Record<string, string> = {
   BattleStart: "On battle start",
   TurnStart: "On turn start",
@@ -129,7 +117,7 @@ export function abilityLineFor(
 
 export interface ResultRow {
   id: number; // the caused event this row narrates (clickable → cause trace)
-  glyph: string;
+  glyph: string; // an inline SVG mark (#086), drawn in the row's `cls` colour
   cls: string; // family/colour class on the glyph
   html: string; // the row text, pre-escaped + tinted spans
 }
@@ -152,7 +140,7 @@ export interface ActingModel {
     family: Family;
     hex: string;
     abilityLabel: string;
-    now: { trigGlyph: string; actGlyph: string; targetName?: string; action?: string };
+    now: { trigGlyph: string; targetName?: string; action?: string };
   };
   result: ResultRow[];
   chains: ChainBox[];
@@ -203,16 +191,19 @@ function effectRow(ctx: ActingCtx, e: BattleEvent, family: Family | undefined): 
     const cls = side === "A" ? "u ua" : side === "B" ? "u ub" : "u";
     return `<span class="${cls}">${esc(ctx.name(id))}</span>`;
   };
-  const famGlyph = family !== undefined ? FAMILY_GLYPH[family] : "✦";
+  // The row glyph is an inline SVG mark (#086) — the vendored fonts lack these
+  // unicode marks; a status the ability applies wears the ability FAMILY's mark
+  // (◆ poison, etc.) exactly as the card's action chip does.
+  const famGlyph = family !== undefined ? actionIcon(family) : abilityStar();
   switch (e.type) {
     case "Hurt": {
       const hp = e.hpAfter === undefined ? "" : ` → <b>${Math.max(0, e.hpAfter)}</b> HP`;
       const abs = e.absorbed !== undefined ? ` <span class="r-dim">(${e.absorbed} absorbed)</span>` : "";
-      return { id: e.id, glyph: "◆", cls: "r-hurt", html: `${who(e.unit)} takes <b class="r-hurt">${e.amount}</b>${abs}${hp}` };
+      return { id: e.id, glyph: actionIcon("damage"), cls: "r-hurt", html: `${who(e.unit)} takes <b class="r-hurt">${e.amount}</b>${abs}${hp}` };
     }
     case "Heal": {
       const hp = e.hpAfter === undefined ? "" : ` → <b>${Math.max(0, e.hpAfter)}</b> HP`;
-      return { id: e.id, glyph: "▲", cls: "r-heal", html: `${who(e.unit)} heals <b class="r-heal">${e.amount}</b>${hp}` };
+      return { id: e.id, glyph: actionIcon("heal"), cls: "r-heal", html: `${who(e.unit)} heals <b class="r-heal">${e.amount}</b>${hp}` };
     }
     case "StatusApplied":
       return {
@@ -224,7 +215,7 @@ function effectRow(ctx: ActingCtx, e: BattleEvent, family: Family | undefined): 
     case "StatusRemoved":
       return {
         id: e.id,
-        glyph: "○",
+        glyph: actionIcon("status-loss"),
         cls: "r-status",
         html:
           e.remaining > 0
@@ -236,24 +227,24 @@ function effectRow(ctx: ActingCtx, e: BattleEvent, family: Family | undefined): 
       const statName = e.stat === "pwr" ? "Power" : "HP";
       return {
         id: e.id,
-        glyph: up ? "▲" : "▼",
+        glyph: actionIcon(up ? "stat-up" : "stat-down"),
         cls: up ? "r-heal" : "r-hurt",
         html: `${who(e.unit)} gains <b class="${up ? "r-heal" : "r-hurt"}">${up ? "+" : ""}${e.delta} ${statName}</b>`,
       };
     }
     case "Death":
-      return { id: e.id, glyph: "☠", cls: "r-death", html: `${who(e.unit)} <b class="r-death">dies</b>` };
+      return { id: e.id, glyph: triggerIcon("death"), cls: "r-death", html: `${who(e.unit)} <b class="r-death">dies</b>` };
     case "Summon":
       return {
         id: e.id,
-        glyph: "✦",
+        glyph: actionIcon("summon"),
         cls: "r-summon",
         html: e.resurrected
           ? `${who(e.unit)} <b>rises</b> at ${e.atHp ?? 1} HP`
           : `${who(e.unit)} is <b>summoned</b> (${e.hp} HP)`,
       };
     case "Silenced":
-      return { id: e.id, glyph: "⊘", cls: "r-warn", html: `${who(e.unit)} is <b class="r-warn">silenced</b>` };
+      return { id: e.id, glyph: actionIcon("silence"), cls: "r-warn", html: `${who(e.unit)} is <b class="r-warn">silenced</b>` };
     default:
       return undefined;
   }
@@ -318,7 +309,6 @@ export function actingModelAt(log: BattleEvent[], beats: Beat[], step: number, c
       abilityLabel: line.abilityLabel ?? actFamily.toUpperCase(),
       now: {
         trigGlyph: line.triggerGlyph ?? "⚔",
-        actGlyph: FAMILY_GLYPH[actFamily],
         ...(line.target !== undefined ? { targetName: line.target } : {}),
         ...(line.action !== undefined ? { action: line.action } : {}),
       },
@@ -331,7 +321,7 @@ export function actingModelAt(log: BattleEvent[], beats: Beat[], step: number, c
 // ---------- render: the centre acting card ----------
 
 function rowHtml(r: ResultRow): string {
-  return `<div class="ac-row" data-id="${r.id}"><span class="ac-g ${r.cls}">${esc(r.glyph)}</span><span class="ac-t">${r.html}</span></div>`;
+  return `<div class="ac-row" data-id="${r.id}"><span class="ac-g ${r.cls}">${r.glyph}</span><span class="ac-t">${r.html}</span></div>`;
 }
 
 /** The centre slot HTML for `model` — the big acting card (family border +
@@ -347,9 +337,9 @@ export function actingCardHtml(model: ActingModel, sigil: string): string {
   const now = a.now;
   const nowSegs: string[] = [];
   if (now.targetName !== undefined)
-    nowSegs.push(`<span class="ac-now-tgt"><b>${esc(now.trigGlyph)}</b> ${esc(now.targetName)}</span>`);
+    nowSegs.push(`<span class="ac-now-tgt">${triggerIconForGlyph(now.trigGlyph)} ${esc(now.targetName)}</span>`);
   if (now.action !== undefined)
-    nowSegs.push(`<span class="ac-now-act"><b>${esc(now.actGlyph)}</b> ${esc(now.action)}</span>`);
+    nowSegs.push(`<span class="ac-now-act">${actionIcon(a.family)} ${esc(now.action)}</span>`);
   const nowRow =
     nowSegs.length > 0
       ? `<div class="ac-now"><span class="ac-now-k">● NOW</span>${nowSegs.join('<span class="ac-arrow">▸</span>')}</div>`
@@ -359,7 +349,7 @@ export function actingCardHtml(model: ActingModel, sigil: string): string {
   const chains = model.chains
     .map(
       (c) =>
-        `<div class="ac-chain"><div class="ac-chain-h">↳ CHAINS · ${esc(c.unit.toUpperCase())} · ✸ ${esc(c.trigger)}</div>${c.rows
+        `<div class="ac-chain"><div class="ac-chain-h">↳ CHAINS · ${esc(c.unit.toUpperCase())} · ${triggerIcon("damaged")} ${esc(c.trigger)}</div>${c.rows
           .map(rowHtml)
           .join("")}</div>`,
     )
@@ -375,7 +365,7 @@ export function actingCardHtml(model: ActingModel, sigil: string): string {
         <div class="ac-sigil">${sigil}</div>
         <div class="ac-id">
           <div class="ac-name ${sideCls}">${esc(a.name)}</div>
-          <div class="ac-ability"><svg class="ac-spark" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M8 1 L9.4 6.6 L15 8 L9.4 9.4 L8 15 L6.6 9.4 L1 8 L6.6 6.6 Z" fill="currentColor"/></svg><span>${esc(a.abilityLabel.toUpperCase())}</span></div>
+          <div class="ac-ability">${abilityStar("ac-spark")}<span>${esc(a.abilityLabel.toUpperCase())}</span></div>
         </div>
         <div class="ac-idx">#${model.triggerIndex}</div>
       </div>
@@ -389,7 +379,7 @@ export function actingCardHtml(model: ActingModel, sigil: string): string {
 export interface TraceChip {
   id: number; // the root event id this chip scrubs to (its beat.end, fully revealed)
   primary: string; // "TXS · VENOMANCER" or "END OF TURN"
-  secondary: string; // a terse effect summary
+  secondary: string; // a terse effect summary — pre-built HTML (an inline glyph + escaped text)
   family?: Family;
   current: boolean;
 }
@@ -405,11 +395,11 @@ function beatSummary(ctx: ActingCtx, beat: Beat): string {
   // The most salient caused hero effect: a status applied, else damage, else
   // the phase's own word.
   for (const e of beat.caused) {
-    if (e.type === "StatusApplied") return `☣ ${e.status} ${e.stacks}`;
-    if (e.type === "Death") return `☠ ${ctx.name(e.unit)} dies`;
+    if (e.type === "StatusApplied") return `${actionIcon("poison")} ${esc(e.status)} ${e.stacks}`;
+    if (e.type === "Death") return `${triggerIcon("death")} ${esc(ctx.name(e.unit))} dies`;
   }
   for (const e of beat.caused) {
-    if (e.type === "Hurt") return `◆ ${ctx.name(e.unit)} −${e.amount}`;
+    if (e.type === "Hurt") return `${actionIcon("damage")} ${esc(ctx.name(e.unit))} −${e.amount}`;
   }
   if (beat.kind === "TurnEnd") return "end ticks";
   if (beat.kind === "Fatigue") return "everyone worn";
@@ -451,7 +441,7 @@ export function traceStripHtml(chips: TraceChip[]): string {
       const style = fam !== "" ? ` style="--fam:${fam}"` : "";
       const cls = ["tr-chip", c.current ? "is-cur" : "", c.family !== undefined ? "has-fam" : ""].filter(Boolean).join(" ");
       const now = c.current ? ' <span class="tr-now">◂ now</span>' : "";
-      return `<button type="button" class="${cls}"${style} data-id="${c.id}" title="${esc(c.primary)}"><span class="tr-p">${esc(c.primary)}${now}</span><span class="tr-s">${esc(c.secondary)}</span></button>`;
+      return `<button type="button" class="${cls}"${style} data-id="${c.id}" title="${esc(c.primary)}"><span class="tr-p">${esc(c.primary)}${now}</span><span class="tr-s">${c.secondary}</span></button>`;
     })
     .join("");
   return `<div class="trace-strip" role="list">${cells}</div>`;

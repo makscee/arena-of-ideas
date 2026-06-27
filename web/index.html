@@ -247,18 +247,23 @@
         </div>
 
         <div id="run-shop" hidden>
-          <div id="run-head"></div>
+          <!-- Shop header bar (#086): Round + the gold/lives/wins stat group on
+               the left, the reroll + Fight actions right-aligned (relocated here
+               from the old below-shop / below-line bars — same handlers). -->
+          <div class="run-headbar">
+            <div id="run-head"></div>
+            <div class="run-headact">
+              <button type="button" id="run-reroll"></button>
+              <button type="button" id="run-fight">fight</button>
+            </div>
+          </div>
           <p id="run-next" class="run-dim"></p>
           <p id="run-notice" class="run-notice" role="status"></p>
           <span class="pane-k">shop</span>
           <div id="run-shop-row"></div>
-          <div class="run-bar">
-            <button type="button" id="run-reroll"></button>
-          </div>
           <span class="pane-k">your line</span>
           <div id="run-line"></div>
-          <div class="run-bar">
-            <button type="button" id="run-fight">fight</button>
+          <div class="run-bar run-stakes-bar">
             <span id="run-stakes" class="run-dim"></span>
           </div>
           <!-- Boss challenge (#075 slice 4): the current floor's boss, shown so

@@ -13,6 +13,7 @@
 import { FAMILY_HEX } from "../src/index.js";
 import type { Family, StatusRegistry } from "../src/index.js";
 import { chipsHtml } from "./inspect.js";
+import { abilityStar, actionIcon, triggerIconForGlyph } from "./glyphs.js";
 
 const esc = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
@@ -81,20 +82,6 @@ const FAMILY_CLASS: Record<Family, string> = {
   Arcane: "fam-arcane",
   Control: "fam-control",
   Heal: "fam-heal",
-};
-
-// The action chip's glyph, by family (mockup action legend): the effect glyph
-// reads off the colour axis the card already holds — ☣ poison, ◆ strike/damage,
-// ⛨ shield, ☠ summon, ✶ arcane, ⇄ control, ▲ heal. The trigger chip's glyph
-// rides in on `triggerGlyph` (it depends on the event kind, not the family).
-const FAMILY_GLYPH: Record<Family, string> = {
-  Poison: "☣",
-  Strike: "◆",
-  Shield: "⛨",
-  Summon: "☠",
-  Arcane: "✶",
-  Control: "⇄",
-  Heal: "▲",
 };
 
 // Presentation-only name→family heuristics (the degrade path). Keyword first,
@@ -366,20 +353,21 @@ function variantCardHtml(o: UnitCardOpts): string {
     .join(" ");
 
   const label = `<span class="uname">${esc(o.label)}</span>`;
-  const cap = `<span class="ub-cap"><svg class="ub-spark" viewBox="0 0 16 16" width="10" height="10" aria-hidden="true"><path d="M8 1 L9.4 6.6 L15 8 L9.4 9.4 L8 15 L6.6 9.4 L1 8 L6.6 6.6 Z" fill="currentColor"/></svg><span class="ub-cap-t">${esc((o.abilityLabel ?? family).toUpperCase())}</span></span>`;
+  const cap = `<span class="ub-cap">${abilityStar("ub-spark")}<span class="ub-cap-t">${esc((o.abilityLabel ?? family).toUpperCase())}</span></span>`;
   const nums = `<span class="unums"><span class="hp">${o.hp}</span><span class="ub-sep">·</span><span class="pwr">${o.pwr}</span></span>`;
 
-  // Ability line: <glyph> trigger ▸ target ▸ <glyph> action — any subset,
-  // separators only between present segments. The trigger glyph travels with the
-  // chips (it's event-kind-specific); the action glyph is the family glyph.
+  // Ability line: <icon> trigger ▸ target ▸ <icon> action — any subset,
+  // separators only between present segments. The trigger mark is event-kind-
+  // specific (carried by `triggerGlyph`, bridged to its SVG); the action mark is
+  // the family mark. Both are inline SVG (#086) — the vendored fonts lack these
+  // unicode marks, so a raw glyph fell back to the wrong character.
   const trigGlyph = o.triggerGlyph ?? "⚔";
-  const actGlyph = FAMILY_GLYPH[family];
   const segs: string[] = [];
   if (o.trigger !== undefined && o.trigger !== "")
-    segs.push(`<span class="ub-seg ub-trig"><b>${esc(trigGlyph)}</b> ${esc(o.trigger)}</span>`);
+    segs.push(`<span class="ub-seg ub-trig">${triggerIconForGlyph(trigGlyph)} ${esc(o.trigger)}</span>`);
   if (o.target !== undefined && o.target !== "") segs.push(`<span class="ub-seg ub-tgt">${esc(o.target)}</span>`);
   if (o.action !== undefined && o.action !== "")
-    segs.push(`<span class="ub-seg ub-act"><b>${esc(actGlyph)}</b> ${esc(o.action)}</span>`);
+    segs.push(`<span class="ub-seg ub-act">${actionIcon(family)} ${esc(o.action)}</span>`);
   const ability = segs.length > 0 ? `<div class="ub-ability">${segs.join('<span class="ub-arrow">▸</span>')}</div>` : "";
 
   const badge =

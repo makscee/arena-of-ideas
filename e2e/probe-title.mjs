@@ -124,7 +124,8 @@ async function shopResumeScenario(viewport, tag) {
   await page.waitForSelector("#run-shop:not([hidden])");
   const head = await page.locator("#run-head").textContent();
   check(head.includes("round 1"), `${tag} resume keeps the round`, head);
-  check(head.includes("10 gold"), `${tag} resume keeps the gold`, head);
+  const gold = (await page.locator("#run-head .run-gold").textContent()).replace(/[^0-9]/g, "");
+  check(gold === "10", `${tag} resume keeps the gold`, head);
   check(
     (await page.locator('#run-line [data-line="0"] .uname').textContent()) === "Brawler",
     `${tag} resume keeps the line`,

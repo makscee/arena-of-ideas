@@ -19,6 +19,7 @@ import {
   type UnitDef,
 } from "../src/index.js";
 import { statusChipStyle } from "./status-color.js";
+import { triggerIcon } from "./glyphs.js";
 
 /**
  * Unit instance id → its UnitDef. Roster units map by line order; a summoned
@@ -152,7 +153,7 @@ export interface InspectArgs {
  * inspector shows. The head's state line arrives pre-formatted as HTML. */
 export interface UnitInspectArgs {
   title: string;
-  /** The head's state line, as HTML (hp/pwr numbers, "☠ dead", level…). */
+  /** The head's state line, as HTML (hp/pwr numbers, the dead mark, level…). */
   state: string;
   def: UnitDef | undefined;
   /** Attached (battle) or initial (shop) statuses, in order. */
@@ -372,7 +373,7 @@ export function renderInspect(root: HTMLElement, args: InspectArgs): void {
   const { unit, dead } = found;
   renderUnitInspect(root, {
     title: name(unitId),
-    state: dead ? '<span class="ins-dead">☠ dead</span>' : `${unit.hp}/${unit.maxHp} hp · ${unit.pwr} pwr`,
+    state: dead ? `<span class="ins-dead">${triggerIcon("death")} dead</span>` : `${unit.hp}/${unit.maxHp} hp · ${unit.pwr} pwr`,
     def,
     statuses: unit.statuses,
     registry,
