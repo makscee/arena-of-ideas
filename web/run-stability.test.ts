@@ -434,21 +434,20 @@ describe("shop row reserves the rolled offer count's layout (refutation 3)", () 
 
   test("the line reserves min(TEAM_SIZE, units + gold/UNIT_COST) cards' rows at phase entry", () => {
     const els = harness();
-    // Round 1: empty team, 10 gold → 3 reachable cards → two modeled rows,
-    // not the one-row CSS floor that let the third buy wrap a new row.
-    expect(els.line.style.minHeight).toBe(`${2 * ROW_PX}px`);
+    // Round 1 (v1 economy): empty team, 4 gold → floor(4/3) = 1 reachable card →
+    // one modeled row, measured from the reachable count, not a bare CSS floor.
+    expect(els.line.style.minHeight).toBe(`${1 * ROW_PX}px`);
     vi.unstubAllGlobals();
   });
 
-  test("a buy keeps the line reserve — the row a buy wraps is already reserved", () => {
+  test("a buy keeps the line reserve — the reserve never shrinks under a tap", () => {
     const els = harness();
     buyOffer(els, 0);
-    // Team 1, gold 7: the captured count (3) holds — buying conserves
-    // units + gold/UNIT_COST, so the reserve never moves under the tap.
+    // Team 1, gold 1: units + floor(gold/UNIT_COST) = 1 + 0 = 1 — buying converts
+    // 3 gold into a unit, conserving the reachable count, so the reserve captured
+    // at phase entry holds and the fight button never moves under the tap.
     expect((els.line.innerHTML.match(/data-line=/g) ?? []).length).toBe(1);
-    expect(els.line.style.minHeight).toBe(`${2 * ROW_PX}px`);
-    buyOffer(els, 1);
-    expect(els.line.style.minHeight).toBe(`${2 * ROW_PX}px`);
+    expect(els.line.style.minHeight).toBe(`${1 * ROW_PX}px`);
     vi.unstubAllGlobals();
   });
 

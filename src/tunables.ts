@@ -25,22 +25,30 @@ export function familyHex(family: Family): string {
   return FAMILY_HEX[family];
 }
 
-/** Gold in hand when a run begins — round 1's shopping budget (SAP-like 10). */
-export const STARTING_GOLD = 10;
+/** Gold in hand when a run begins — round 1's shopping budget. v1 default 4
+ * (one 3g Unit, 1g left, or bank it). A sim-tunable knob, not a design pin. */
+export const STARTING_GOLD = 4;
 
-/** Gold granted when a new round starts, on top of whatever carried over. */
-export const INCOME_BASE = 10;
+/** Gold granted when a new round starts, on top of whatever carried over —
+ * incomeForRound(2) = INCOME_BASE + 1·INCOME_PER_ROUND. v1 default 4 (so round 2
+ * adds 5g: 4 banked + 5 = 9g = three 3g Units, the "4+5=9" curve). A knob. */
+export const INCOME_BASE = 4;
 
-/** Income growth per round; 0 = flat SAP-like income, raise for richer late rounds. */
-export const INCOME_PER_ROUND = 0;
+/** Income growth per round; v1 default 1 → +1g every round, income grows each
+ * round (unlike SAP's flat use-it-or-lose-it). 0 = flat. A knob. */
+export const INCOME_PER_ROUND: number = 1;
 
-/** Ceiling on per-round income so a growth curve can't run away. */
-export const INCOME_CAP = 15;
+/** Ceiling on per-round income so a growth curve can't run away. v1 raises it to
+ * 99 so the +1/round curve is NOT clipped in the play range — effectively retired
+ * as a design constraint, kept only as a runaway guard. A knob, not a pin. */
+export const INCOME_CAP = 99;
 
-/** Price of one shop offer; flat for v1 — per-unit pricing is the budget's job. */
+/** Price of one shop offer; flat for v1 — per-unit pricing is the budget's job.
+ * v1 default 3 (unchanged); a reroll is ⅓ of this, both drawing the same gold. A knob. */
 export const UNIT_COST = 3;
 
-/** Price of refreshing the shop; cheap so digging for a copy is a real line of play. */
+/** Price of refreshing the shop; cheap so digging for a copy is a real line of
+ * play. v1 default 1 (unchanged) — exactly ⅓ of a Unit, competing for the same gold. A knob. */
 export const REROLL_COST = 1;
 
 /** Offers shown in round 1. */

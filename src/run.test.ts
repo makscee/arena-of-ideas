@@ -61,12 +61,11 @@ const WALL: UnitDef[] = [vanilla("Wall", 100, 99)];
 describe("determinism", () => {
   test("byte-identical run-log JSONL for the same seed + decision sequence", () => {
     const decisions: RunDecision[] = [
-      { kind: "buy", offer: 0 },
-      { kind: "reroll" },
-      { kind: "buy", offer: 1 },
+      { kind: "buy", offer: 0 }, // 4 → 1, field a unit
       { kind: "reorder", from: 0, to: 0 },
-      { kind: "fight", opponent: [vanilla("Brute", 8, 3)] },
-      { kind: "buy", offer: 0 },
+      { kind: "fight", opponent: [vanilla("Brute", 8, 3)] }, // turn the round: gold → 6
+      { kind: "reroll" }, // 6 → 5
+      { kind: "buy", offer: 0 }, // 5 → 2
       { kind: "fight", opponent: WALL },
     ];
     const run1 = playRun(INPUT, decisions);
@@ -78,7 +77,8 @@ describe("determinism", () => {
   });
 
   test("a transition never mutates its input state", () => {
-    const s0 = applyDecision(initRun(INPUT), { kind: "buy", offer: 0 });
+    // Round 2, gold 6: enough to afford every transition the assertion exercises.
+    const s0 = fight(buy(initRun(INPUT), 0), PUSHOVER);
     const snapshot = JSON.stringify(s0);
     buy(s0, 0);
     reroll(s0);
@@ -120,6 +120,64 @@ describe("gold economy", () => {
     expect(s.round).toBe(2);
     expect(s.gold).toBe(carry + incomeForRound(2));
     expect(ofType(s.log, "RoundStarted")[0]).toMatchObject({ round: 2, income: incomeForRound(2), gold: s.gold });
+  });
+
+  // --- v1 gold curve (PRD #084 slice 1): 4g round 1, +1/round, carry-over ---
+
+  test("round-1 budget is 4g (the v1 STARTING_GOLD default)", () => {
+    expect(STARTING_GOLD).toBe(4);
+    expect(initRun(INPUT).gold).toBe(4);
+  });
+
+  test("the income curve grows +1/round and is not clipped in the play range", () => {
+    // incomeForRound(2)=5, (3)=6, … — INCOME_BASE 4 + (round-1)·1, no INCOME_CAP clip.
+    expect(incomeForRound(2)).toBe(5);
+    expect(incomeForRound(3)).toBe(6);
+    for (let r = 2; r <= 40; r++) {
+      expect(incomeForRound(r)).toBe(incomeForRound(r - 1) + 1); // strictly +1 each round
+    }
+  });
+
+  test("a Unit costs 3g and a reroll 1g — a reroll is ⅓ of a Unit", () => {
+    expect(UNIT_COST).toBe(3);
+    expect(REROLL_COST).toBe(1);
+    expect(UNIT_COST).toBe(REROLL_COST * 3);
+  });
+
+  test("the 4+5=9 curve identity holds and unspent gold carries over", () => {
+    // The v1-goal's canonical line: round-1 budget (STARTING_GOLD 4) + round-2
+    // income (incomeForRound(2) 5) = 9g, "three 3g Units". That is the curve
+    // identity — a run cannot literally hold all 4g into round 2, because turning
+    // the round needs a fight and a fight needs a fielded unit (3g). So the
+    // mechanic under test is carry-over: whatever is NOT spent persists.
+    expect(STARTING_GOLD + incomeForRound(2)).toBe(9);
+    let s = initRun(INPUT); // 4g
+    s = buy(s, 0); // 4 → 1, the minimum to field a fighter; 1g banked
+    expect(s.gold).toBe(1);
+    s = fight(s, PUSHOVER); // turn the round — the unspent 1g carries
+    expect(s.round).toBe(2);
+    expect(s.gold).toBe(1 + incomeForRound(2)); // 6: carried gold + income, nothing reset
+  });
+
+  test("emergent buy-progression: round 1 affords one Unit; banking to round 2 affords three, with no fourth", () => {
+    // A single-name pool so every buy stacks onto one unit (no TEAM_SIZE ceiling
+    // confound) — the limit under test is gold, not slots. Three buys = one Unit
+    // each in gold; a fourth must be unaffordable on the round-2 budget.
+    const cheapInput: RunInput = { seed: 11, pool: [vanilla("Grunt", 5, 2)], statuses: stressRegistry, abilities: stressAbilities };
+    let s = initRun(cheapInput);
+    expect(s.gold).toBe(4);
+    s = buy(s, 0); // round 1: one 3g Unit, 1g left
+    expect(s.gold).toBe(1);
+    expect(() => buy(s, 0)).toThrow(InvalidDecisionError); // a second Unit is unaffordable at 1g
+    expect(ofType(s.log, "Bought").length).toBe(1); // exactly one Unit acquired round 1
+    s = fight(s, PUSHOVER); // bank the 1g, turn to round 2: 1 + 5 = 6g
+    expect(s.round).toBe(2);
+    expect(s.gold).toBe(6);
+    s = buy(s, 0); // 6 → 3
+    s = buy(s, 0); // 3 → 0
+    expect(s.gold).toBe(0);
+    expect(() => buy(s, 0)).toThrow(InvalidDecisionError); // a fourth Unit is unaffordable at 0g
+    expect(ofType(s.log, "Bought").length).toBe(3); // three Units total, a fourth out of reach
   });
 });
 
@@ -167,18 +225,33 @@ describe("duplicate stacking and level-up", () => {
   // A single-unit pool makes every offer a copy — the stacking path is forced.
   const soloInput: RunInput = { seed: 3, pool: [vanilla("Grunt", 5, 2)], statuses: stressRegistry, abilities: stressAbilities };
 
+  /** Buy `n` Grunt copies, banking income via pushover fights when gold is short
+   * (the v1 4g budget no longer buys 3 copies in round 1). */
+  function buyCopies(s: RunState, n: number): RunState {
+    let bought = 0;
+    let guard = 0;
+    while (bought < n && guard++ < 100) {
+      if (s.gold >= UNIT_COST) {
+        s = buy(s, 0);
+        bought++;
+      } else {
+        s = fight(s, PUSHOVER); // turn the round to bank income
+      }
+    }
+    return s;
+  }
+
   test("a first copy joins the line; a second stacks instead of taking a slot", () => {
     let s = buy(initRun(soloInput), 0);
     expect(s.team.length).toBe(1);
     expect(s.team[0]).toMatchObject({ name: "Grunt", level: 1, stacks: 1 });
-    s = buy(s, 0);
+    s = buyCopies(s, 1); // a second copy (banks income first)
     expect(s.team.length).toBe(1);
     expect(s.team[0]).toMatchObject({ stacks: 2 });
   });
 
   test("at STACK_THRESHOLD copies the unit levels up and its base grows", () => {
-    let s = initRun(soloInput);
-    for (let i = 0; i < STACK_THRESHOLD; i++) s = buy(s, 0);
+    let s = buyCopies(initRun(soloInput), STACK_THRESHOLD);
     expect(s.team[0]).toMatchObject({ name: "Grunt", level: 2, stacks: 1 });
     expect(s.team[0]!.base).toEqual({ hp: 5 + LEVEL_HP_GROWTH, pwr: 2 + LEVEL_PWR_GROWTH });
     expect(ofType(s.log, "LeveledUp")[0]).toMatchObject({
@@ -192,8 +265,7 @@ describe("duplicate stacking and level-up", () => {
   });
 
   test("the grown unit fights with its grown base and level", () => {
-    let s = initRun(soloInput);
-    for (let i = 0; i < STACK_THRESHOLD; i++) s = buy(s, 0);
+    const s = buyCopies(initRun(soloInput), STACK_THRESHOLD);
     expect(toBattleTeam(s.team)[0]).toMatchObject({
       name: "Grunt",
       level: 2,
@@ -273,9 +345,10 @@ describe("fight", () => {
 describe("reorder", () => {
   test("moves a unit to a new line position", () => {
     let s = initRun(INPUT);
-    while (new Set(s.offers.map((o) => o.name)).size < 2) s = reroll(s);
-    s = buy(s, 0);
-    s = buy(s, s.offers.findIndex((o) => o.name !== s.team[0]!.name));
+    s = buy(s, 0); // first unit, gold → 1
+    s = fight(s, PUSHOVER); // bank income (the v1 4g budget buys only one round-1 unit)
+    while (s.offers.findIndex((o) => o.name !== s.team[0]!.name) < 0) s = reroll(s);
+    s = buy(s, s.offers.findIndex((o) => o.name !== s.team[0]!.name)); // a distinct second unit
     expect(s.team.length).toBe(2);
     const [front, back] = s.team.map((u) => u.name);
     s = reorder(s, 1, 0);
@@ -349,17 +422,16 @@ describe("serialization", () => {
   // the line, and the RNG stream, so any divergence in the revived state
   // (aliasing, rng, gold) would show up in the continued log.
   const before: RunDecision[] = [
-    { kind: "buy", offer: 0 },
-    { kind: "reroll" },
-    { kind: "buy", offer: 0 },
-    { kind: "fight", opponent: PUSHOVER },
+    { kind: "buy", offer: 0 }, // 4 → 1
+    { kind: "fight", opponent: PUSHOVER }, // round 2, gold → 6
   ];
   const after: RunDecision[] = [
-    { kind: "buy", offer: 1 },
-    { kind: "reorder", from: 0, to: 1 },
-    { kind: "fight", opponent: PUSHOVER },
-    { kind: "reroll" },
-    { kind: "buy", offer: 0 },
+    { kind: "buy", offer: 0 }, // 6 → 3
+    { kind: "reorder", from: 0, to: 0 },
+    { kind: "buy", offer: 0 }, // 3 → 0
+    { kind: "fight", opponent: PUSHOVER }, // round 3, gold → 6
+    { kind: "reroll" }, // 6 → 5
+    { kind: "buy", offer: 0 }, // 5 → 2
     { kind: "fight", opponent: WALL },
   ];
 
@@ -398,9 +470,12 @@ describe("fusion gate (#081)", () => {
   function twoDistinct(seed: number): RunState {
     let s = initRun({ seed, pool: POOL, statuses: stressRegistry, abilities: stressAbilities });
     let guard = 0;
-    while (s.team.length < 2 && guard++ < 100) {
+    while (s.team.length < 2 && guard++ < 200) {
       const idx = s.offers.findIndex((o) => !s.team.some((t) => t.name === o.name));
-      s = idx >= 0 && s.gold >= UNIT_COST ? buy(s, idx) : reroll(s);
+      if (idx >= 0 && s.gold >= UNIT_COST) s = buy(s, idx);
+      else if (s.team.length > 0) s = fight(s, PUSHOVER); // bank income (v1 4g budget)
+      else if (s.gold >= REROLL_COST) s = reroll(s);
+      else break;
     }
     return s;
   }
@@ -438,9 +513,12 @@ describe("fusion gate (#081)", () => {
     ];
     let s = initRun({ seed: 4, pool, statuses: stressRegistry, abilities: stressAbilities });
     let guard = 0;
-    while (s.team.length < 2 && guard++ < 100) {
+    while (s.team.length < 2 && guard++ < 200) {
       const idx = s.offers.findIndex((o) => !s.team.some((t) => t.name === o.name));
-      s = idx >= 0 && s.gold >= UNIT_COST ? buy(s, idx) : reroll(s);
+      if (idx >= 0 && s.gold >= UNIT_COST) s = buy(s, idx);
+      else if (s.team.length > 0) s = fight(s, PUSHOVER); // bank income (v1 4g budget)
+      else if (s.gold >= REROLL_COST) s = reroll(s);
+      else break;
     }
     expect(s.team.length).toBe(2);
     expect(s.team[0]!.def.ability).toBe(s.team[1]!.def.ability); // same ability
@@ -457,7 +535,13 @@ describe("fusion gate (#081)", () => {
   test("copy-stacking into levels is untouched by fusion (STACK_THRESHOLD intact)", () => {
     const soloInput: RunInput = { seed: 3, pool: [vanilla("Grunt", 5, 2)], statuses: stressRegistry, abilities: stressAbilities };
     let s = initRun(soloInput);
-    for (let i = 0; i < STACK_THRESHOLD; i++) s = buy(s, s.offers.findIndex((o) => o.name === "Grunt"));
+    let bought = 0;
+    let guard = 0;
+    while (bought < STACK_THRESHOLD && guard++ < 100) {
+      const idx = s.offers.findIndex((o) => o.name === "Grunt");
+      if (idx >= 0 && s.gold >= UNIT_COST) { s = buy(s, idx); bought++; }
+      else s = fight(s, PUSHOVER); // bank income (v1 4g budget can't buy 3 in round 1)
+    }
     // Same-name copies still fuse into a LEVEL — a separate mechanic from #081 fusion.
     expect(s.team[0]!.level).toBe(2);
     expect(ofType(s.log, "LeveledUp")).toHaveLength(1);
