@@ -20,7 +20,7 @@ const browser = await launch();
 async function pauseAtTop(page) {
   await page.click("#run-fight");
   await page.waitForSelector("#run-battle:not([hidden])");
-  await page.waitForSelector("#board .side");
+  await page.waitForSelector("#board .bv-side");
   await page.waitForSelector("#step-play");
   if ((await page.locator("#step-play").textContent())?.trim() === "pause") {
     await page.click("#step-play");

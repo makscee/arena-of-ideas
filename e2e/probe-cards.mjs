@@ -104,7 +104,12 @@ for (const [viewport, tag] of [
   await ctx.close();
 }
 
-// ---------- the battle board wears the legacy card --------------------------
+// ---------- the battle board wears the COMPACT B·Arena card (#082 slice D) ----
+// The board's per-feature restyle landed in slice D: it now renders the compact
+// family card (the same `.unit-b.is-compact` the shop's team line wears) with a
+// single current-hp (no /max) and the front striker ringed via `is-front`. So
+// the board shares the COMPACT card with the team line — the "one card" contract
+// holds, just on the B·Arena variant now.
 
 for (const [viewport, tag] of [
   [PHONE, "375px"],
@@ -112,35 +117,37 @@ for (const [viewport, tag] of [
 ]) {
   const { ctx, page } = await openRun(browser, lineFullRun(), viewport);
   await page.click("#run-fight");
-  await page.waitForSelector("#board .unit[data-unit]");
-  const board = await signature(page, '#board .side[data-side="A"] .line .unit');
-  check(board.startsWith(LEGACY_SKELETON), `${tag} board card keeps the legacy skeleton`, board);
+  await page.waitForSelector("#board .bv-side .unit[data-unit]");
+  const SEL = '#board .bv-side[data-side="A"] .bv-stack .unit';
 
-  // The board renders the legacy uniform card and is the one surface that SCALES
-  // it to fit the focal three-column replay stage (#065): a wrapper resize, never
-  // larger than the one fixed legacy size (7rem ≈ 112px), and at 375px it shrinks
-  // further (the --side-col phone override) so 5v5 fits the stage.
-  const boardW = (await box(page, '#board .side[data-side="A"] .line .unit:first-child')).width;
-  check(boardW <= 113, `${tag} board card never exceeds the fixed legacy size (#078)`, `board ${boardW.toFixed(1)}`);
   check(
-    await page.$eval('#board .side[data-side="A"] .line .unit .hp', (el) => /^\d+\/\d+$/.test(el.textContent)),
-    `${tag} board card shows current/max hp`,
+    await page.$eval(SEL, (el) => el.classList.contains("unit-b") && el.classList.contains("is-compact")),
+    `${tag} board card wears the compact B·Arena card`,
   );
   check(
-    (await page.$('#board .side[data-side="A"] .line .unit:first-child .front-tag')) !== null,
-    `${tag} board front card keeps its marker`,
+    await page.$eval(`${SEL} .unums .hp`, (el) => /^\d+$/.test(el.textContent.trim())),
+    `${tag} board card shows a single current hp (no /max)`,
+  );
+  check(
+    await page.$eval(`${SEL} .unums .pwr`, (el) => /^\d+$/.test(el.textContent.trim())),
+    `${tag} board card shows a single pwr`,
+  );
+  // The front striker carries the family ring (is-front), the rest do not.
+  check(
+    await page.$eval(`${SEL}:first-child`, (el) => el.classList.contains("is-front")),
+    `${tag} board front card carries its striker ring (is-front)`,
   );
   if (viewport === PHONE) {
-    const cards = await page.$$eval('#board .side[data-side="A"] .line .unit', (els) =>
+    const cards = await page.$$eval(SEL, (els) =>
       els.map((el) => {
         const r = el.getBoundingClientRect();
         return { x: r.x, y: r.y, right: r.right };
       }),
     );
-    check(cards.length === 5, "375px board line renders all five cards", `${cards.length}`);
+    check(cards.length === 5, "375px board stack renders all five cards", `${cards.length}`);
     check(
       new Set(cards.map((c) => Math.round(c.x))).size === 1,
-      "375px five cards share one column (vertical team column, #065 redesign)",
+      "375px five cards share one column (vertical stack)",
       `distinct x = ${new Set(cards.map((c) => Math.round(c.x))).size}`,
     );
     check(
@@ -150,7 +157,7 @@ for (const [viewport, tag] of [
     );
     check(
       Math.max(...cards.map((c) => c.right)) <= PHONE.width,
-      "375px the team column fits the viewport",
+      "375px the stack fits the viewport",
       `right edge ${Math.max(...cards.map((c) => c.right)).toFixed(1)}`,
     );
     check(await noHorizontalOverflow(page), "375px battle screen has no horizontal overflow");

@@ -1013,7 +1013,14 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     els.battlePanel.scrollIntoView({ block: "start" });
     deps.viewer.load(
       log,
-      { teams: { A: pending.teamA, B: pending.teamB }, registry: s.statuses, abilities: s.abilities },
+      {
+        teams: { A: pending.teamA, B: pending.teamB },
+        registry: s.statuses,
+        abilities: s.abilities,
+        // Header facts the viewer can't derive (#082 slice D): the drawn ghost
+        // and the battle seed, both already on the pending battle record.
+        meta: { opponent: pending.opponentLabel, seed: pending.seed },
+      },
       {
         autoplay: !INSTANT_RESULT,
         // Resume where the player left off if this is a re-mount (#014 tab

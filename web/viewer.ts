@@ -10,11 +10,8 @@ import {
   beatsOf,
   beatAtStep,
   boardAt,
-  coinHolderAt,
   deathCauseChain,
   displayNames,
-  newBadgeKeysAt,
-  overlaysAt,
   shortDesc,
   type AbilityRegistry,
   type Beat,
@@ -23,9 +20,18 @@ import {
   type StatusRegistry,
   type UnitDef,
 } from "../src/index.js";
-import { renderBoard, verdictHtml } from "./board-render.js";
-import { beatCenterHtml } from "./beat-card.js";
-import { createBattleLog, sideMap, type SideOf } from "./battle-log.js";
+import { renderBattle, type BattleAnnotations, type BattleHeader } from "./board-render.js";
+import {
+  actingCardHtml,
+  actingModelAt,
+  actingUnitAt,
+  traceChipsAt,
+  traceStripHtml,
+  usedThisTurnAt,
+  type ActingCtx,
+} from "./acting.js";
+import { familySigil } from "./unit-card.js";
+import { sideMap, type SideOf } from "./battle-log.js";
 import { closeInspectOverlay, openInspectOverlay, renderInspect, unitDefs } from "./inspect.js";
 
 const escHtml = (s: string): string =>
@@ -37,92 +43,6 @@ const BASE_STEP_MS = 350; // 1x ≈ 3 events/second (per-line reveal cadence)
 // ~0.85s at 1×; both this and the per-line reveal scale with the speed control.
 const BASE_PAUSE_MS = 850;
 
-/** One-line readout for the selected event (display only; amounts/hp come off the event). */
-function describeEvent(e: BattleEvent, name: NameOf): string {
-  const hp = (after: number | undefined) => (after === undefined ? "" : ` → ${Math.max(0, after)} hp`);
-  switch (e.type) {
-    case "BattleStart":
-      return `battle begins — ${e.teams.A.length} vs ${e.teams.B.length}`;
-    case "TurnStart":
-      return `turn ${e.turn} begins`;
-    case "TurnEnd":
-      return `turn ${e.turn} ends`;
-    case "PairFaced":
-      return `${name(e.a)} faces ${name(e.b)} — the coin says ${name(e.first)} strikes first`;
-    case "Strike":
-      return `${name(e.striker)} strikes ${name(e.defender)}`;
-    case "Hurt": {
-      // Neutral wording (battle-log.ts's): any absorb status may be the cause,
-      // not just Shield — the cause line below names the actual interceptor.
-      const absorbed = e.absorbed !== undefined ? ` (${e.absorbed} absorbed)` : "";
-      return `${name(e.unit)} takes ${e.amount}${absorbed}${hp(e.hpAfter)}`;
-    }
-    case "Heal":
-      return `${name(e.unit)} heals ${e.amount}${hp(e.hpAfter)}`;
-    case "Death":
-      return `${name(e.unit)} dies`;
-    case "Summon":
-      return e.resurrected
-        ? `${name(e.unit)} rises from the grave at ${e.atHp ?? 1} hp (side ${e.side})`
-        : `${name(e.unit)} is summoned (${e.hp} hp, ${e.pwr} pwr, side ${e.side})`;
-    case "StatusApplied":
-      return `${name(e.unit)} gains ${e.status} ×${e.stacks} (total ${e.total})`;
-    case "StatusRemoved":
-      return e.remaining > 0
-        ? `${name(e.unit)}'s ${e.status} drops by ${e.stacks} to ${e.remaining}`
-        : `${name(e.unit)}'s ${e.status} is spent`;
-    case "StatChanged":
-      return `${name(e.unit)}'s ${e.stat} ${e.delta >= 0 ? "+" : ""}${e.delta} → ${e.now}`;
-    case "Silenced":
-      return `${name(e.unit)} is silenced`;
-    case "Fatigue":
-      return `fatigue ${e.amount} wears everyone down`;
-    case "ChainBlocked":
-      return `chain stopped: ${abilityRefDesc(e.ability, name)} stays quiet — an ability never triggers itself`;
-    case "Intercepted":
-      return `${abilityRefDesc(e.by, name)} intercepts a ${e.original}${e.unit !== undefined ? ` on ${name(e.unit)}` : ""}`;
-    case "BattleEnd":
-      return e.winner === "draw" ? `draw after ${e.turns} turns` : `side ${e.winner} wins after ${e.turns} turns`;
-  }
-}
-
-/** The units the red hit mark reddens at `step`: those with a Hurt event in the
- * current beat at or before the playhead. The kernel is the source of truth — a
- * Strike deals damage one-directionally (battle.ts kernelConsequences: a Strike
- * proposes exactly one Hurt, on the defender), and each Strike is its own beat,
- * so a riposte is a separate beat that re-derives its own hit set. Keying the
- * mark off Hurt events (not the Strike's two subjects) fixes defect B: at strike
- * start the Strike event itself hurts no one, so nobody flashes; the defender
- * reddens only once its Hurt lands and STAYS marked through the rest of the beat
- * (every Hurt with id ≤ step is included). If a beat genuinely hurts two units
- * (e.g. a fatigue tick), both stay marked — the set always equals the truth. */
-function hitSetAt(log: BattleEvent[], beats: Beat[], step: number): Set<string> {
-  const at = beatAtStep(beats, step);
-  if (!at) return new Set();
-  const hit = new Set<string>();
-  for (const e of at.beat.caused) {
-    if (e.id <= step && e.type === "Hurt") hit.add(e.unit);
-  }
-  return hit;
-}
-
-/** Units whose Death is REVEALED at exactly `step` — the death-reveal moment that
- * plays the distinct death animation (#065 item 4). A Death event in the open
- * beat with `id === step` is being revealed right now; on any later step it has
- * already settled to the static grey+✕ end-state, so it is NOT in this set then.
- * Scrubbing directly onto the Death step still plays it (the step IS the reveal);
- * scrubbing past it lands on the settled state — the animation is the transition,
- * not a persistent flag. */
-function dyingRevealedAt(log: BattleEvent[], beats: Beat[], step: number): Set<string> {
-  const at = beatAtStep(beats, step);
-  if (!at) return new Set();
-  const fresh = new Set<string>();
-  for (const e of at.beat.caused) {
-    if (e.id === step && e.type === "Death") fresh.add(e.unit);
-  }
-  return fresh;
-}
-
 interface ViewerEls {
   board: HTMLElement;
   prev: HTMLButtonElement;
@@ -133,7 +53,6 @@ interface ViewerEls {
   stepLabel: HTMLElement;
   eventDesc: HTMLElement;
   eventCause: HTMLElement;
-  log: HTMLElement;
 }
 
 /** What the battle ran on — the viewer derives ability/status descriptions
@@ -143,6 +62,10 @@ export interface BattleContent {
   registry: StatusRegistry;
   /** The ability registry a unit's `ability` ref resolves through (PRD #081). */
   abilities: AbilityRegistry;
+  /** Header facts the viewer can't derive from the log (#082 slice D): the
+   * ghost/opponent label and the battle seed. Both optional — absent → the
+   * header shows "vs ghost" with no name and omits the seed. */
+  meta?: { opponent?: string | undefined; seed?: number | undefined } | undefined;
 }
 
 export interface LoadOpts {
@@ -182,6 +105,7 @@ export function createViewer(els: ViewerEls): Viewer {
   let defs = new Map<string, UnitDef>();
   let registry: StatusRegistry = {};
   let abilities: AbilityRegistry = {};
+  let meta: { opponent?: string | undefined; seed?: number | undefined } | undefined;
   let selected: { unit: string; status?: string } | undefined;
   // The event whose cross-beat cause trace the readout shows (#065 slice 4).
   // Decoupled from the playhead: clicking a card line or a right-log row picks
@@ -193,27 +117,49 @@ export function createViewer(els: ViewerEls): Viewer {
 
   const playing = () => timer !== undefined;
 
-  const battleLog = createBattleLog(els.log, (eventId) => {
-    pause();
-    // A log row both drives the playhead there (its long-standing contract) and
-    // selects that event for the cross-beat cause readout (#065 slice 4).
-    selectEvent(eventId);
-    goTo(eventId);
-  });
+  /** The pure-presentation context the acting-card/side-card model reads. */
+  function ctx(): ActingCtx {
+    return { defs, abilities, registry, name, sideOf: (id) => sideOf(id) };
+  }
 
   function render(): void {
     const e = log[step];
     if (!e) return;
     const board = boardAt(log, step);
-    const tint = (id: string) => ({ name: name(id), side: sideOf(id) });
-    const center = beatCenterHtml(log, beats, step, (ev) => describeEvent(ev, name), verdictHtml(board), tint);
-    const overlays = { by: overlaysAt(log, step), newBadges: newBadgeKeysAt(log, step), dyingNew: dyingRevealedAt(log, beats, step) };
-    const coinHolder = coinHolderAt(log, step) ?? undefined;
-    renderBoard(els.board, board, name, hitSetAt(log, beats, step), registry, selected?.unit, center, overlays, coinHolder);
-    scrollNewestLineIntoView();
-    battleLog.syncTo(step);
+    const c = ctx();
+    // The acting card for the current beat's actor (or a phase caption).
+    const model = actingModelAt(log, beats, step, c);
+    const sigil = model.kind === "card" ? familySigil(model.acting!.family, model.acting!.hex) : "";
+    const center = actingCardHtml(model, sigil);
+    // Side-card battle state: who acts, who is targeted, who already struck.
+    const { acting, target } = actingUnitAt(beats, step);
+    const used = usedThisTurnAt(log, beats, step);
+    const anno: BattleAnnotations = {
+      ...(acting !== undefined ? { acting } : {}),
+      ...(target !== undefined ? { target } : {}),
+      used,
+    };
+    const header: BattleHeader = {
+      opponent: meta?.opponent,
+      seed: meta?.seed,
+      turn: board.turn,
+      ...(board.ended ? { ended: board.ended } : {}),
+    };
+    const trace = traceStripHtml(traceChipsAt(log, beats, step, c));
+    renderBattle(els.board, {
+      board,
+      ctx: c,
+      anno,
+      registry,
+      ...(selected?.unit !== undefined ? { selected: selected.unit } : {}),
+      centerHtml: center,
+      traceHtml: trace,
+      header,
+    });
+    // Keep the current trace chip in view as the playhead moves.
+    els.board.querySelector<HTMLElement>(".tr-chip.is-cur")?.scrollIntoView({ block: "nearest", inline: "center" });
     els.scrub.value = String(step);
-    els.stepLabel.textContent = `event ${step + 1}/${log.length} · turn ${e.turn}`;
+    els.stepLabel.textContent = `trigger ${step + 1}/${log.length}`;
     // The readout no longer mirrors the centre card's title (defect 5): the
     // within-beat story already reads off the card. The panel instead carries
     // what the card does NOT — the event's cross-beat CAUSE ancestry — keyed
@@ -224,11 +170,11 @@ export function createViewer(els: ViewerEls): Viewer {
     const picked = selectedEvent !== undefined ? log[selectedEvent] : undefined;
     els.eventCause.innerHTML = picked
       ? causeHtml(picked)
-      : `<div class="cause-empty">select a card line or a log row to trace its cause</div>`;
-    // Mark the selected card line so the readout's subject is visible on the card.
+      : `<div class="cause-empty">select a result row or a trace chip to trace its cause</div>`;
+    // Mark the selected result row so the readout's subject is visible on the card.
     if (selectedEvent !== undefined) {
       els.board
-        .querySelector<HTMLElement>(`.bc-line[data-id="${selectedEvent}"], .bc-title[data-id="${selectedEvent}"]`)
+        .querySelector<HTMLElement>(`.ac-row[data-id="${selectedEvent}"], .tr-chip[data-id="${selectedEvent}"]`)
         ?.classList.add("bc-line-sel");
     }
     els.prev.disabled = step === 0;
@@ -264,41 +210,17 @@ export function createViewer(els: ViewerEls): Viewer {
     }
   }
 
-  /** Keep the line currently streaming in visible. On phone the card's lines sit
-   * in a capped, own-scrolling pane (.bc-lines, style.css phone block) so a tall
-   * cascade beat (~19 lines) can't push its last lines past the 667px fold (#065
-   * closure defect): without this the resurrection lines after a wave of deaths
-   * streamed in below the fold and the player never saw them before the read-
-   * pause cleared the card. Scrolling the pane (NOT scrollIntoView, which would
-   * scroll the page/ancestors and move the locked board under the cursor — LS-1)
-   * pins the newest line to the bottom of the pane each step; it stays there
-   * through the read-pause. On desktop the pane is uncapped (scrollHeight ===
-   * clientHeight), so this is a no-op and desktop tall beats still show in full. */
-  function scrollNewestLineIntoView(): void {
-    const pane = els.board.querySelector<HTMLElement>(".beat-card .bc-lines");
-    if (pane === null) return;
-    // The pane only overflows when capped (phone). Bottom-anchor the scroll so
-    // the newest line — appended last — sits at the pane's visible bottom edge.
-    if (pane.scrollHeight > pane.clientHeight) pane.scrollTop = pane.scrollHeight;
-  }
-
-  /** Reserve the tallest board this replay will show. The stage is now a
-   * three-column grid — Side A | centre card | Side B (#065 redesign) — so the
-   * board's height at any step is the MAX of the tallest team column and the
-   * card's current height. Both are knowable up front from the log: graves fill,
-   * lines wipe, chips land (team height), and each hero-affecting beat ends at
-   * the card's tallest state. Rendering every height-affecting step once and
-   * locking the outer max naturally covers "max of the tallest team column and
-   * the max card height across the battle" — a grid row is as tall as its
-   * tallest cell. So the streaming card never pushes the transport, and a team
-   * that grows mid-replay extends only its own column (audit LS-1: the board
-   * must never change height mid-replay, or the transport jumps under the
-   * cursor). No-op while the board is display:none (offsetHeight reads 0). */
+  /** Reserve the tallest board this replay will show (audit LS-1: the board must
+   * never change height mid-replay, or the transport jumps under the cursor).
+   * The board is now header + a 3-column grid (compact side cards | acting card |
+   * side cards) + trace strip (#082 slice D). Every height-affecting state is
+   * knowable up front: each side-card state change (a death dims a card, a status
+   * chip lands) and each beat's END (the acting card's fullest RESULT/CHAINS).
+   * Render each once and lock the outer max — a grid row is as tall as its
+   * tallest cell, so this covers the max of the tallest column and the acting
+   * card. No-op while the board is display:none (offsetHeight reads 0). */
   function lockBoardHeight(): void {
     els.board.style.minHeight = "";
-    // The set of steps that can change the board's height: event 0, the
-    // height-affecting board steps (graves fill, lines wipe, chips land), and
-    // the last event of every hero-affecting beat (the card's tallest state).
     const steps: number[] = [];
     for (let i = 0; i < log.length; i++) {
       const t = log[i]!.type;
@@ -306,30 +228,39 @@ export function createViewer(els: ViewerEls): Viewer {
         steps.push(i);
       }
     }
-    // A hero-affecting beat reserves its tallest (badge-laden) state at beat.end;
-    // a PairFaced beat is structural (no caused hero events) but now renders a
-    // coin-flip CARD rather than a divider (#065 slice 3) — taller than a divider
-    // — so its step must be measured too, or the card overflows the reserve and
-    // nudges the transport (LS-1).
-    for (const beat of beats) if (!beat.structural || beat.kind === "PairFaced") steps.push(beat.end);
+    // Every beat ends at the acting card's fullest state — measure each end.
+    for (const beat of beats) steps.push(beat.end);
 
+    const c = ctx();
     const renderAt = (i: number): void => {
-      const center = beatCenterHtml(log, beats, i, (ev) => describeEvent(ev, name), verdictHtml(boardAt(log, i)));
-      // Overlays at beat.end are the beat's tallest badge state (and a dying
-      // unit is pulled into the line) — both can grow the line column, so the
-      // height lock must measure them or a badge-laden beat overflows the
-      // reserve and nudges the transport (LS-1). The coin marker is absolutely
-      // positioned (no height impact) but pass the holder for fidelity.
-      renderBoard(els.board, boardAt(log, i), name, new Set(), registry, undefined, center, { by: overlaysAt(log, i) }, coinHolderAt(log, i) ?? undefined);
+      const board = boardAt(log, i);
+      const model = actingModelAt(log, beats, i, c);
+      const sigil = model.kind === "card" ? familySigil(model.acting!.family, model.acting!.hex) : "";
+      const { acting, target } = actingUnitAt(beats, i);
+      const anno: BattleAnnotations = {
+        ...(acting !== undefined ? { acting } : {}),
+        ...(target !== undefined ? { target } : {}),
+        used: usedThisTurnAt(log, beats, i),
+      };
+      const header: BattleHeader = {
+        opponent: meta?.opponent,
+        seed: meta?.seed,
+        turn: board.turn,
+        ...(board.ended ? { ended: board.ended } : {}),
+      };
+      renderBattle(els.board, {
+        board,
+        ctx: c,
+        anno,
+        registry,
+        centerHtml: actingCardHtml(model, sigil),
+        traceHtml: traceStripHtml(traceChipsAt(log, beats, i, c)),
+        header,
+      });
     };
 
-    // The outer board height = the tallest grid row across every height-step.
-    // Fractional height (getBoundingClientRect), not the integer offsetHeight:
-    // a natural content height of 534.28px rounds offsetHeight to 534, so a
-    // min-height of 534 fails to contain it and the board grows ~0.3px at that
-    // step — nudging the transport a device pixel mid-replay (LS-1). Measuring
-    // the true fractional height and ceil-ing the lock keeps the reserve at or
-    // above every step's real height.
+    // Fractional height (getBoundingClientRect, ceil-ed) so a 534.28px natural
+    // height doesn't slip a device pixel past an integer min-height (LS-1).
     let max = 0;
     for (const i of steps) {
       renderAt(i);
@@ -447,11 +378,21 @@ export function createViewer(els: ViewerEls): Viewer {
   // a status chip opens it with that status highlighted.
   els.board.addEventListener("click", (ev) => {
     const target = ev.target as HTMLElement;
-    // A centre-card line (or the card title) carries its event id in data-id —
-    // clicking it selects that event for the cross-beat cause readout (#065
-    // slice 4) without moving the playhead: within-beat causality is on the
-    // card, the deep trace is on demand. Re-clicking the selected line clears it.
-    const line = target.closest<HTMLElement>(".bc-line[data-id], .bc-title[data-id]");
+    // A bottom trace chip BOTH scrubs the playhead to that beat (its long-
+    // standing log-row contract, re-presented as the strip) AND selects that
+    // event for the cross-beat cause readout (#082 slice D / #065 slice 4).
+    const chipEl = target.closest<HTMLElement>(".tr-chip[data-id]");
+    if (chipEl) {
+      const id = Number(chipEl.getAttribute("data-id"));
+      pause();
+      selectEvent(id);
+      goTo(id);
+      return;
+    }
+    // An acting-card RESULT/CHAIN row carries its event id — clicking it selects
+    // that event for the cause readout WITHOUT moving the playhead (the deep
+    // trace is on demand). Re-clicking the selected row clears it.
+    const line = target.closest<HTMLElement>(".ac-row[data-id]");
     if (line) {
       const id = Number(line.getAttribute("data-id"));
       selectedEvent = selectedEvent === id ? undefined : id;
@@ -495,11 +436,11 @@ export function createViewer(els: ViewerEls): Viewer {
       defs = unitDefs(log, content.teams, content.registry, content.abilities);
       registry = content.registry;
       abilities = content.abilities;
+      meta = content.meta;
       selected = undefined;
       selectedEvent = undefined;
       onEnded = opts?.onEnded;
       endedNotified = false;
-      battleLog.load(log, name);
       els.scrub.min = "0";
       els.scrub.max = String(log.length - 1);
       lockBoardHeight();

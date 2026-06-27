@@ -278,6 +278,13 @@ export interface UnitCardOpts {
    * …). Defaults to ⚔. The action chip's glyph is the family glyph (derived from
    * the card's colour axis). New card only. */
   triggerGlyph?: string | undefined;
+  /** A top state bar drawn as the FIRST child inside the card (#082 slice D):
+   * the battle board's `ACTING` / `TARGET` ribbon. Pre-built HTML; empty
+   * everywhere but the replay board, so every other caller is unchanged. */
+  topTag?: string | undefined;
+  /** This unit already acted this turn (#082 slice D): dims the card and strikes
+   * through its ability line (a `✓ USED` chip is drawn by CSS). New card only. */
+  used?: boolean | undefined;
 }
 
 /** The shared card markup. Class names and child order are the app's card
@@ -353,6 +360,7 @@ function variantCardHtml(o: UnitCardOpts): string {
     o.sel === true && "sel",
     o.fused === true && "fused",
     o.dead === true && "dead",
+    o.used === true && "is-used",
   ]
     .filter(Boolean)
     .join(" ");
@@ -397,5 +405,5 @@ function variantCardHtml(o: UnitCardOpts): string {
       : `<div class="ub-head"><div class="ub-id">${label}${cap}</div>${nums}</div>`;
   const art = variant === "compact" ? "" : `<div class="ub-art">${sigil}</div>`;
 
-  return `<div class="${cls}" style="--fam:${hex}" ${o.attrs} title="${esc(o.title)}">${head}${art}${ability}${chips}${foot}</div>`;
+  return `<div class="${cls}" style="--fam:${hex}" ${o.attrs} title="${esc(o.title)}">${o.topTag ?? ""}${head}${art}${ability}${chips}${foot}</div>`;
 }
