@@ -218,6 +218,23 @@ async function scenario(viewport, tag, email) {
     `${tag} each row carries an up AND a down arrow`,
   );
 
+  // ---- B·Arena redress (#082 s5 / #083 s5): @author + status pill per row ----
+  const firstRow = page.locator("#ideas-list .ideas-row").first();
+  check(
+    (await firstRow.locator(".ideas-author").count()) === 1 &&
+      /^@/.test((await firstRow.locator(".ideas-author").textContent()) ?? ""),
+    `${tag} each row shows its @author`,
+    (await firstRow.locator(".ideas-author").textContent()) ?? "",
+  );
+  // Every fresh idea is on-table → its pill reads "voting" (the display vocabulary
+  // over the lifecycle status; nothing here computes eligibility).
+  const pillText = (await firstRow.locator(".ideas-pill").textContent()) ?? "";
+  check(
+    (await firstRow.locator(".ideas-pill").count()) === 1 && pillText.trim() === "voting",
+    `${tag} each row shows its lifecycle status pill (fresh = voting)`,
+    pillText,
+  );
+
   // ---- 3b. UP-vote → rank MOVES and the up arrow reflects voted -----------
   check((await rowVoteCount(page, mine)) === 0, `${tag} my idea starts at score 0`);
   check((await rowVoteDir(page, mine)) === null, `${tag} my idea starts not-voted`);

@@ -16,7 +16,7 @@
 // every other authed action on the title prompts a session — a logged-out tap
 // is a login nudge, never a silent error.
 
-import { voteScore, type Idea, type VoteDir } from "../src/index.js";
+import { statusPill, voteScore, type Idea, type IdeaPill, type VoteDir } from "../src/index.js";
 import type { RemoteIdeas } from "./remote-ideas.js";
 
 export interface IdeasScreenEls {
@@ -101,13 +101,53 @@ export function createIdeasScreen(els: IdeasScreenEls, deps: IdeasScreenDeps): I
         arrow(idea.id, "down", "▼", myDir),
       );
 
-      const text = document.createElement("span");
+      // The idea's body: the sentence, then a meta row (@author + status pill),
+      // the B·Arena ideas-table row (#082 s5 / #083 s5). The pill is display
+      // vocabulary over the lifecycle status; a bounced idea also shows its
+      // reason so a rejection is visible, never a silent vanish.
+      const body = document.createElement("div");
+      body.className = "ideas-body";
+
+      const text = document.createElement("div");
       text.className = "ideas-text";
       text.textContent = idea.text;
+      body.append(text);
 
-      row.append(votes, text);
+      const meta = document.createElement("div");
+      meta.className = "ideas-meta";
+      const author = document.createElement("span");
+      author.className = "ideas-author";
+      author.textContent = `@${authorLabel(idea.authorId)}`;
+      meta.append(author, pillEl(statusPill(idea.status)));
+      body.append(meta);
+
+      if (idea.status === "bounced" && idea.bounceReason) {
+        const why = document.createElement("div");
+        why.className = "ideas-bounce-reason";
+        why.textContent = `Bounced — ${idea.bounceReason}`;
+        body.append(why);
+      }
+
+      row.append(votes, body);
       els.list.append(row);
     }
+  }
+
+  /** A short, stable author label off the author id — server ids are opaque, so
+   * a long uuid is trimmed to keep the row legible (the row never shows a raw
+   * email; the id is what the kernel carries). */
+  function authorLabel(authorId: string): string {
+    return authorId.length > 12 ? `${authorId.slice(0, 10)}…` : authorId;
+  }
+
+  /** A status pill — the mockup's display vocabulary (live/voting/compiling/
+   * rejected) over the lifecycle status. Presentational only: nothing here
+   * computes eligibility (that is #083's selection rule). */
+  function pillEl(pill: IdeaPill): HTMLSpanElement {
+    const span = document.createElement("span");
+    span.className = `ideas-pill ideas-pill-${pill}`;
+    span.textContent = pill;
+    return span;
   }
 
   /** One directional arrow — its own ≥44px tap target. Reads pressed when it is

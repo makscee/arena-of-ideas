@@ -1,4 +1,6 @@
 import { describe, expect, test } from "vitest";
+import { InMemoryIdeaStore } from "./ideas.js";
+import type { Idea } from "./ideas.js";
 import { stressAbilities, stressRegistry } from "./content/stress.js";
 import { InMemoryLadderStore, seedBootstrapTower } from "./ladder.js";
 import type { LadderData, LadderStore, TeamSnapshot } from "./ladder.js";
@@ -371,5 +373,101 @@ describe("version-boundary invariant", () => {
     expect(snapshotLadder(w.ladder())).toEqual(liveBefore);
     expect(w.pointer.get()).toEqual({ season: 5, version: 9 });
     expect(pointerBefore).toEqual({ season: 2, version: 2 }); // (sanity on the pre-corruption cursor)
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 5. Selection wired into the roll (#083 slice 3) — the roll returns the build
+// slate, the ideas table is NOT reset (carry-over survives with votes intact),
+// and selection is read-only over the version (it never bumps it).
+// ---------------------------------------------------------------------------
+
+describe("transitionSeason with selection wired", () => {
+  /** A seeded ideas table: one HOT idea past the floor (6 up-votes, ratio 1.0,
+   * → eligible+selected) and one MILD idea below the floor (1 up-vote → carried). */
+  function seededIdeas(): { store: InMemoryIdeaStore; hot: Idea; mild: Idea } {
+    const store = new InMemoryIdeaStore();
+    const hot = store.submit("hot idea", "ada");
+    const mild = store.submit("mild idea", "ada");
+    for (let i = 0; i < 6; i++) store.castVote(hot.id, `voter-${i}`, "up"); // 6 ≥ floor 5
+    store.castVote(mild.id, "z", "up"); // 1 < floor 5
+    return { store, hot, mild };
+  }
+
+  const votesById = (ideas: readonly Idea[]) => Object.fromEntries(ideas.map((i) => [i.id, i.votes]));
+
+  test("the roll returns the build slate (selected = top eligible)", () => {
+    const w = freshWorld();
+    const { store, hot, mild } = seededIdeas();
+    const result = transitionSeason({ ...w.ops(), selection: { ideas: store.list() } });
+    expect(result.selection).toBeDefined();
+    expect(result.selection!.selected.map((r) => r.idea.id)).toEqual([hot.id]);
+    expect(result.selection!.carried.map((i) => i.id)).toContain(mild.id);
+  });
+
+  test("carry-over survives the roll: the live ideas table is untouched, votes byte-equal pre/post", () => {
+    const w = freshWorld();
+    const { store } = seededIdeas();
+    const before = store.list();
+    transitionSeason({ ...w.ops(), selection: { ideas: store.list() } });
+    // The transition resets the TOWER but never the ideas table — every idea and
+    // its vote map is exactly as it was (nothing destroyed, the priority queue
+    // carries forward).
+    const after = store.list();
+    expect(after.map((i) => i.id)).toEqual(before.map((i) => i.id));
+    expect(votesById(after)).toEqual(votesById(before));
+  });
+
+  test("the tower still resets while the ideas table carries over — both invariants hold together", () => {
+    const w = freshWorld();
+    fieldGhost(w.ladder(), 1, "web-roll"); // a prior-season tower ghost
+    const { store } = seededIdeas();
+    transitionSeason({ ...w.ops(), selection: { ideas: store.list() } });
+    // Tower: fresh bootstrap, the prior-season ghost wiped.
+    expect(JSON.stringify(snapshotLadder(w.ladder()))).not.toContain("web-roll");
+    // Table: still holds both ideas (carry-over), unreset by the roll.
+    expect(store.list().length).toBe(2);
+  });
+
+  test("selection is READ-ONLY over the version: it never bumps the version itself — bump is still the op's last step", () => {
+    const w = freshWorld();
+    const { store } = seededIdeas();
+    const before = w.pointer.get();
+    const { archived, pointer } = transitionSeason({ ...w.ops(), selection: { ideas: store.list() } });
+    expect(archived.version).toBe(before.version); // OLD version on the record
+    expect(pointer.version).toBe(before.version + 1); // exactly one monotonic bump
+    expect(w.pointer.get().version).toBe(before.version + 1);
+  });
+
+  test("a roll with NO selection input returns no slate (unchanged #077 behaviour)", () => {
+    const w = freshWorld();
+    const result = transitionSeason(w.ops());
+    expect(result.selection).toBeUndefined();
+  });
+
+  test("the version-boundary invariant still holds with selection wired in", () => {
+    let live: LadderStore = seedBootstrapTower(new InMemoryLadderStore(), stressRegistry, stressAbilities);
+    fieldGhost(live, 1, "web-ghost");
+    const archive = new InMemorySeasonArchiveStore();
+    const reset = () => {
+      live = seedBootstrapTower(new InMemoryLadderStore(), stressRegistry, stressAbilities);
+    };
+    const hadGhost = () => JSON.stringify(snapshotLadder(live)).includes("web-ghost");
+    const inner = new InMemorySeasonPointerStore();
+    const pointer: SeasonPointerStore = {
+      get: () => inner.get(),
+      set: (p) => {
+        const prev = inner.get();
+        if (p.version !== prev.version && hadGhost()) {
+          throw new Error("version-boundary violated: content version changed while a prior-season ghost is still live");
+        }
+        inner.set(p);
+      },
+    };
+    const { store } = seededIdeas();
+    expect(() =>
+      transitionSeason({ live, archive, pointer, reset, selection: { ideas: store.list() } }),
+    ).not.toThrow();
+    expect(pointer.get().version).toBe(FIRST_CONTENT_VERSION + 1);
   });
 });

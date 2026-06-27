@@ -14,6 +14,7 @@ const idea = (id: string, seq: number, text: string, votes: VoteMap = {}): Idea 
   text,
   seq,
   votes,
+  status: "on-table",
 });
 
 /** An ArenaApi where every method fails loudly unless overridden — a test

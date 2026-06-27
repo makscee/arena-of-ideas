@@ -20,6 +20,12 @@ import { describe, expect, test } from "vitest";
 import Database from "better-sqlite3";
 import type { Hono } from "hono";
 import { InMemoryIdeaStore, voteScore, type Idea, type VoteDir } from "../../src/index.js";
+import {
+  castIdeaVote,
+  listIdeas as listIdeasFn,
+  recordBuildOutcome,
+  submitIdea as submitIdeaFn,
+} from "./ideas.js";
 import { createApp } from "./app.js";
 import type { AuthEnv } from "./auth.js";
 import { openDb } from "./db.js";
@@ -395,3 +401,55 @@ async function meOf(ctx: Ctx, token: string): Promise<{ userId: string }> {
   const res = await ctx.app.request("/v1/auth/me", { headers: { authorization: `Bearer ${token}` } });
   return (await res.json()) as { userId: string };
 }
+
+// ---------------------------------------------------------------------------
+// Recorded lifecycle outcomes (#083 slice 2) — shipped/bounced written back to
+// the idea, surfaced through the same list() the remote reads. Driven at the
+// pure-function level over an in-memory DB (the recording is a build-tool path,
+// not a public route in v1).
+// ---------------------------------------------------------------------------
+
+describe("recorded lifecycle outcomes (#083 slice 2)", () => {
+  const depsOf = () => ({ db: openDb(":memory:").db, clock: () => 1_750_000_000 });
+
+  test("a fresh idea is on-table with no bounce-reason key (byte-equivalent to in-memory)", () => {
+    const deps = depsOf();
+    submitIdeaFn(deps, "ada", "draft mode");
+    const [idea] = listIdeasFn(deps);
+    expect(idea!.status).toBe("on-table");
+    expect("bounceReason" in idea!).toBe(false); // no stray null key
+  });
+
+  test("a bounce round-trips with its reason; votes intact and the idea stays re-votable", () => {
+    const deps = depsOf();
+    const sub = submitIdeaFn(deps, "ada", "draft mode");
+    const id = (sub as { idea: Idea }).idea.id;
+    castIdeaVote(deps, "bob", id, "up"); // a vote before the bounce
+
+    // Selected → bounced with a visible reason (candidacy ≠ guarantee).
+    const rec = recordBuildOutcome(deps, id, "bounced", "sim gauntlet: folds to poison");
+    expect(rec).toMatchObject({ recorded: true });
+
+    // Surfaced through the public list (what RemoteIdeas reads): status + reason.
+    const bounced = listIdeasFn(deps).find((i) => i.id === id)!;
+    expect(bounced.status).toBe("bounced");
+    expect(bounced.bounceReason).toBe("sim gauntlet: folds to poison");
+    expect(bounced.votes).toEqual({ bob: "up" }); // votes untouched by the bounce
+
+    // Re-votable: a new vote still lands on the bounced idea.
+    castIdeaVote(deps, "cat", id, "up");
+    expect(listIdeasFn(deps).find((i) => i.id === id)!.votes).toEqual({ bob: "up", cat: "up" });
+
+    // Shipping clears the stale bounce reason.
+    recordBuildOutcome(deps, id, "shipped");
+    const shipped = listIdeasFn(deps).find((i) => i.id === id)!;
+    expect(shipped.status).toBe("shipped");
+    expect(shipped.bounceReason).toBeUndefined();
+  });
+
+  test("recording an outcome on an unknown idea is rejected", () => {
+    const res = recordBuildOutcome(depsOf(), "idea-999", "shipped");
+    expect(res).toMatchObject({ recorded: false });
+    expect((res as { reason: string }).reason).toMatch(/no idea/);
+  });
+});
