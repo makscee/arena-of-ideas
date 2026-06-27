@@ -1889,19 +1889,102 @@ button:disabled:hover {
   font-size: 0.85rem;
 }
 
-/* The held direction reads as accent — the switch's "you voted this way" state. */
+/* The held direction reads as accent — the switch's "you voted this way" state.
+   Up reads cyan (raises), down reads pwr-red (lowers), the B·Arena vote axis. */
 .ideas-vote-arrow.ideas-voted {
   color: var(--you);
   border-color: var(--you);
 }
 
-.ideas-text {
+.ideas-vote-down.ideas-voted {
+  color: var(--pwr);
+  border-color: var(--pwr);
+}
+
+.ideas-vote-count {
+  font-family: var(--font-num);
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* The idea's body column — the sentence over a meta row (@author + status pill),
+   the B·Arena ideas-table row. */
+.ideas-body {
   flex: 1 1 auto;
   min-width: 0; /* allows wrap, never pushes the row past the viewport */
   align-self: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.ideas-text {
   font-size: 0.9rem;
   line-height: 1.35;
+  color: var(--text);
   overflow-wrap: anywhere; /* a long unbroken token wraps, never overflows */
+}
+
+.ideas-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ideas-author {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--dim);
+}
+
+/* The status pill — display vocabulary over the lifecycle (#082/#083): a small
+   uppercase chip in the Chakra Petch title face, coloured per stage. */
+.ideas-pill {
+  font-family: var(--font-title);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid;
+}
+
+/* live = shipped (in the game) → heal-green */
+.ideas-pill-live {
+  color: var(--fam-heal);
+  background: rgba(51, 217, 138, 0.12);
+  border-color: rgba(51, 217, 138, 0.35);
+}
+
+/* voting = on the table → you-cyan */
+.ideas-pill-voting {
+  color: var(--you);
+  background: rgba(37, 230, 212, 0.12);
+  border-color: rgba(37, 230, 212, 0.35);
+}
+
+/* compiling = selected/building → gold */
+.ideas-pill-compiling {
+  color: var(--gold);
+  background: rgba(255, 210, 74, 0.12);
+  border-color: rgba(255, 210, 74, 0.35);
+}
+
+/* rejected = bounced → dim */
+.ideas-pill-rejected {
+  color: var(--dim);
+  background: #0c0f16;
+  border-color: var(--border);
+}
+
+/* A bounced idea's visible reason — candidacy ≠ guarantee, never a silent vanish. */
+.ideas-bounce-reason {
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: var(--pwr);
+  overflow-wrap: anywhere;
 }
 
 /* ---------- season history (#077 slice 3) ----------
