@@ -100,7 +100,6 @@ const viewer = createViewer({
   stepLabel: el("step-label"),
   eventDesc: el("event-desc"),
   eventCause: el("event-cause"),
-  log: el("battle-log"),
 });
 
 // ---------------------------------------------------------------------------

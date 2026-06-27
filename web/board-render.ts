@@ -7,6 +7,7 @@ import type { BeatOverlay, BoardState, BoardUnit, Side, StatusRegistry } from ".
 import { overlayHasContent } from "../src/index.js";
 import { statusColorStyle } from "./status-color.js";
 import { unitCardHtml } from "./unit-card.js";
+import { abilityLineFor, familyOf, type ActingCtx } from "./acting.js";
 
 const esc = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
@@ -232,4 +233,127 @@ export function renderBoard(
   coinHolder?: string,
 ): void {
   root.innerHTML = boardHtml(board, name, hit, registry, selected, centerHtml, overlays, coinHolder);
+}
+
+// ============================================================================
+// #082 slice D — the "compact board + acting full card" battle. The board is a
+// flex column: a header bar (vs ghost · seed · Turn N), a 3-column grid of
+// COMPACT side cards (with ACTING/TARGET/USED state) flanking the centre acting
+// card, and a bottom trace strip. Pure presentation over the same boardAt
+// projection; the acting card / trace strip HTML is computed in acting.ts and
+// injected here so this file stays the single DOM writer.
+// ============================================================================
+
+/** The header-bar facts (#082 slice D). `opponent`/`seed` ride in from the run
+ * (the viewer doesn't know them); `turn` comes off the board projection. */
+export interface BattleHeader {
+  opponent?: string | undefined;
+  seed?: number | undefined;
+  turn: number;
+  ended?: { winner: Side | "draw"; turns: number } | undefined;
+}
+
+/** Per-unit battle state for the side cards (#082 slice D). */
+export interface BattleAnnotations {
+  acting?: string | undefined;
+  target?: string | undefined;
+  used: Set<string>;
+}
+
+/** A COMPACT side card with its battle state (ACTING/TARGET ribbon, USED dim). */
+function sideCardB(
+  u: BoardUnit,
+  side: Side,
+  front: boolean,
+  dead: boolean,
+  ctx: ActingCtx,
+  anno: BattleAnnotations,
+  registry: StatusRegistry,
+  selected: string | undefined,
+): string {
+  const family = familyOf(ctx, u.id);
+  const isActing = anno.acting === u.id;
+  const isTarget = anno.target === u.id && !isActing;
+  const used = anno.used.has(u.id) && !isActing && !isTarget;
+  const topTag = isActing
+    ? '<div class="ub-state st-acting">ACTING</div>'
+    : isTarget
+      ? '<div class="ub-state st-target">TARGET</div>'
+      : "";
+  const stateCls = isActing ? "is-acting" : isTarget ? "is-target" : "";
+  const title = dead
+    ? `${ctx.name(u.id)} — dead · tap to inspect`
+    : `${ctx.name(u.id)} — ${u.hp}/${u.maxHp} hp, ${u.pwr} pwr · tap to inspect`;
+  return unitCardHtml({
+    variant: "compact",
+    family,
+    ...abilityLineFor(ctx, u.id),
+    artName: u.name,
+    label: ctx.name(u.id),
+    side,
+    hp: u.hp,
+    pwr: u.pwr,
+    statuses: u.statuses,
+    registry,
+    front,
+    dead,
+    sel: u.id === selected,
+    silenced: u.silenced,
+    used,
+    topTag,
+    classes: stateCls,
+    attrs: `data-unit="${esc(u.id)}"`,
+    title,
+  });
+}
+
+function sideColumnB(
+  board: BoardState,
+  side: Side,
+  ctx: ActingCtx,
+  anno: BattleAnnotations,
+  registry: StatusRegistry,
+  selected: string | undefined,
+): string {
+  const lineUnits = board.lines[side];
+  const dead = board.graves[side];
+  const head =
+    side === "A"
+      ? '<div class="bv-side-head sh-a">◤ You</div>'
+      : '<div class="bv-side-head sh-b">Ghost ◥</div>';
+  const cards =
+    lineUnits.map((u, i) => sideCardB(u, side, i === 0, false, ctx, anno, registry, selected)).join("") +
+    dead.map((u) => sideCardB(u, side, false, true, ctx, anno, registry, selected)).join("");
+  return `<div class="bv-side" data-side="${side}">${head}<div class="bv-stack">${cards || '<span class="bv-wiped">— no one standing —</span>'}</div></div>`;
+}
+
+/** The header bar: `vs ghost · <name>` · `seed N` · right-aligned `Turn N`. */
+function headerHtml(h: BattleHeader): string {
+  const opp = h.opponent !== undefined && h.opponent !== "" ? ` · <span class="bv-ghost">${esc(h.opponent)}</span>` : "";
+  const seed = h.seed !== undefined ? `<span class="bv-seed">seed ${h.seed}</span>` : "";
+  const turn = h.ended
+    ? `<span class="bv-turn">${h.ended.winner === "draw" ? "Draw" : `Side ${h.ended.winner} wins`}</span>`
+    : `<span class="bv-turn">Turn ${h.turn}</span>`;
+  return `<div class="bv-header"><span class="bv-vs">vs ghost${opp}</span>${seed}${turn}</div>`;
+}
+
+export interface RenderBattleArgs {
+  board: BoardState;
+  ctx: ActingCtx;
+  anno: BattleAnnotations;
+  registry: StatusRegistry;
+  selected?: string | undefined;
+  centerHtml: string; // the acting card (acting.ts)
+  traceHtml: string; // the bottom strip (acting.ts)
+  header: BattleHeader;
+}
+
+/** The whole `#board` for the #082 acting-card battle. */
+export function battleHtml(a: RenderBattleArgs): string {
+  const grid = `<div class="bv-grid">${sideColumnB(a.board, "A", a.ctx, a.anno, a.registry, a.selected)}<div class="stage-center">${a.centerHtml}</div>${sideColumnB(a.board, "B", a.ctx, a.anno, a.registry, a.selected)}</div>`;
+  return `${headerHtml(a.header)}${grid}${a.traceHtml}`;
+}
+
+export function renderBattle(root: HTMLElement, a: RenderBattleArgs): void {
+  root.innerHTML = battleHtml(a);
 }

@@ -37,19 +37,19 @@ async function openEditor(viewport) {
 }
 
 /** Drive the borrowed viewer to its last event and read its replay signature:
- * the full battle-log text and the "event M/M" label. Setting #scrub to its max
- * and firing input is the viewer's own seek seam (viewer.ts) — deterministic,
- * no race on autoplay. */
+ * the full bottom trace-strip text (#082 slice D) and the "trigger M/M" label.
+ * Setting #scrub to its max and firing input is the viewer's own seek seam
+ * (viewer.ts) — deterministic, no race on autoplay. */
 async function replaySignature(page) {
   await page.waitForSelector("#be-mount #result:not([hidden])");
-  await page.waitForSelector("#be-mount #battle-log .log-text");
+  await page.waitForSelector("#be-mount .trace-strip .tr-chip");
   await page.evaluate(() => {
     const scrub = document.querySelector("#be-mount #scrub");
     scrub.value = scrub.max;
     scrub.dispatchEvent(new Event("input", { bubbles: true }));
   });
   const label = await page.locator("#be-mount #step-label").innerText();
-  const log = await page.locator("#be-mount #battle-log").innerText();
+  const log = await page.locator("#be-mount .trace-strip").innerText();
   return { label, log };
 }
 
@@ -195,8 +195,8 @@ async function scenario(viewport, tag) {
   await page.fill("#be-seed", "12345");
   await page.click("#be-fight");
   const first = await replaySignature(page);
-  check(/event \d+\/\d+/.test(first.label), `${tag} the first fight plays a replay`, first.label);
-  check(first.log.length > 0, `${tag} the first fight's battle log filled`);
+  check(/trigger \d+\/\d+/.test(first.label), `${tag} the first fight plays a replay`, first.label);
+  check(first.log.length > 0, `${tag} the first fight's trace strip filled`);
   check(
     (await page.locator("#be-seed").inputValue()) === "12345",
     `${tag} the locked seed is unchanged by the first fight`,

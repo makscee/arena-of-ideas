@@ -178,38 +178,422 @@ button:disabled:hover {
    keep the card centred; cards smaller but readable. The log stays below the
    stage (the phone media block reorders it under the board). */
 
+/* The board is now a flex COLUMN (#082 slice D): a header bar, the 3-column
+   compact-board + acting-card grid, and a bottom trace strip. The dark radial
+   stage gradient sits behind the whole frame. The viewer locks its min-height
+   per battle (LS-1) so it never changes height mid-replay. */
 #board {
-  background: var(--panel);
+  background: radial-gradient(120% 90% at 50% 0%, #0d1019, #07080c);
   border: 1px solid var(--border);
   /* B·Arena chamfer (#085 slice 5) — the cut-corner HUD frame the shop wears. */
   clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-  padding: 0.75rem;
-  display: grid;
-  /* Symmetric side tracks → the centre track is mathematically centred in the
-     stage at every width. The centre is capped at the card's 22rem but shrinks
-     toward 0 under width pressure (phone), giving its room back to the side
-     tracks first; the side tracks never collapse below one readable card. */
-  /* Three tracks: two EQUAL, FIXED side tracks (`var(--side-col)`, one card
-     each — identical → symmetric → the centre track's centre is always the
-     board's centre) and a flexible centre that fills the rest. The board fills
-     its stage column at a constant width, so the two fixed side tracks are
-     pinned at the board's edges and NEVER move as the card streams — only the
-     centre track's content (the card) grows, inside its own column (hard reqs 1
-     and 2). The card itself is capped at 22rem and centred within this centre
-     track (.stage-center), so on a wide desktop it sits a fixed 22rem wide in
-     the middle of a wider centre lane — still dead-centre because the lane is
-     symmetric. Each team is exactly one card wide; team size changes only
-     column HEIGHT, never the card's x. */
-  /* The board scales the one card down to fit its focal three-column replay
-     stage (#065): the side track is a touch under the catalog card-width on a
-     desk and narrower still at 375px (phone override below). Same card, sized to
-     its wrapper — never wider than the fixed catalog size (#078). */
-  --side-col: 6rem;
-  grid-template-columns: var(--side-col) minmax(0, 1fr) var(--side-col);
-  align-items: start;
-  column-gap: 0.5rem;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   min-width: 0;
+  overflow: hidden;
+  color: #eaf2ff;
+}
+
+/* ---------- #082 slice D: header bar ---------- */
+.bv-header {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.85rem 1.3rem;
+  border-bottom: 1px solid #161b27;
+  background: linear-gradient(180deg, #0e1018, #0a0c12);
+}
+.bv-vs {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.92rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.bv-vs .bv-ghost {
+  color: var(--side-b);
+}
+.bv-seed {
+  font-family: var(--font-num);
+  font-weight: 500;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.bv-turn {
+  margin-left: auto;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  color: var(--you);
+}
+
+/* ---------- #082 slice D: the 3-column compact board + acting card ----------
+   240px | 1fr | 240px — the side tracks are wide enough for a compact card, the
+   centre fills the rest and holds the acting card (capped, centred). The grid
+   collapses to one column at phone width (override below). */
+.bv-grid {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr) 240px;
+  align-items: start;
+  gap: 0.5rem;
+  padding: 1rem;
+  min-width: 0;
+}
+.bv-side {
+  min-width: 0;
+  padding: 0.3rem 0.2rem;
+}
+.bv-side[data-side="A"] {
+  border-right: 1px solid #12151f;
+}
+.bv-side[data-side="B"] {
+  border-left: 1px solid #12151f;
+}
+.bv-side-head {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 0.7rem;
+}
+.bv-side-head.sh-a {
+  color: var(--side-a);
+}
+.bv-side-head.sh-b {
+  color: var(--side-b);
+  text-align: right;
+}
+.bv-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.bv-wiped {
+  color: var(--dim);
+  font-size: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+/* The compact side cards fill their 240px track. */
+.bv-stack .unit.unit-b {
+  width: 100%;
+}
+
+/* ---------- #082 slice D: side-card battle state ----------
+   ACTING / TARGET top ribbon, family-coloured borders + glow, and the USED dim
+   (the unit has already struck this turn). The ribbon is the card's first child
+   inside its clip-path, so it reads as a full-width bar at the very top. */
+.unit-b .ub-state {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.5rem;
+  letter-spacing: 0.12em;
+  padding: 2px 9px;
+  color: #0a0810;
+}
+.unit-b .ub-state.st-acting {
+  background: var(--fam);
+}
+.unit-b .ub-state.st-target {
+  background: var(--side-b);
+  text-align: right;
+  color: #1a0410;
+}
+.unit-b.is-acting {
+  border-color: var(--fam);
+  filter: drop-shadow(0 0 16px color-mix(in srgb, var(--fam) 42%, transparent));
+}
+.unit-b.is-target {
+  border-color: var(--side-b);
+  filter: drop-shadow(0 0 16px color-mix(in srgb, var(--side-b) 38%, transparent));
+}
+/* USED: dim the whole card, strike through the ability line, append a ✓ USED
+   chip after it. */
+.unit-b.is-used {
+  opacity: 0.6;
+  filter: saturate(0.55);
+}
+.unit-b.is-used .ub-ability {
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+.unit-b.is-used .ub-ability::after {
+  content: "✓ USED";
+  text-decoration: none;
+  align-self: center;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.42rem;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  border: 1px solid #2a3344;
+  border-radius: 2px;
+  padding: 1px 5px;
+}
+
+/* ---------- #082 slice D: the centre acting full card ----------
+   The current step's acting unit blown up: family border + glow, header (sigil +
+   hero name + named ability + #index), the ● NOW chip, then the RESULT rows and
+   any ↳ CHAINS callouts. Capped at 340px and centred in its track. */
+.acting-card {
+  --fam: var(--fam-strike);
+  width: 100%;
+  max-width: 340px;
+  background: linear-gradient(165deg, color-mix(in srgb, var(--fam) 13%, #0a0810), #0a0810);
+  border: 1px solid var(--fam);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  filter: drop-shadow(0 0 26px color-mix(in srgb, var(--fam) 26%, transparent));
+  overflow: hidden;
+  text-align: left;
+}
+.ac-head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.85rem 1rem 0;
+}
+.ac-sigil {
+  width: 36px;
+  height: 36px;
+  flex: none;
+}
+.ac-sigil .ub-sigil {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.ac-id {
+  flex: 1;
+  min-width: 0;
+}
+.ac-name {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.98rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.ac-ability {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.15rem;
+  color: color-mix(in srgb, var(--fam) 55%, #eaf2ff);
+}
+.ac-spark {
+  display: block;
+  flex: none;
+}
+.ac-ability span {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.56rem;
+  letter-spacing: 0.1em;
+}
+.ac-idx {
+  flex: none;
+  font-family: var(--font-num);
+  font-weight: 600;
+  font-size: 0.62rem;
+  color: var(--muted);
+  align-self: flex-start;
+}
+.ac-now {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.7rem 1rem 0;
+  padding: 0.5rem 0.6rem;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--fam) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fam) 40%, transparent);
+  font-family: var(--font-num);
+  font-weight: 600;
+  font-size: 0.72rem;
+}
+.ac-now-k {
+  flex: none;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.5rem;
+  letter-spacing: 0.06em;
+  color: #0a0810;
+  background: var(--fam);
+  border-radius: 2px;
+  padding: 1px 6px;
+}
+.ac-now-tgt {
+  color: color-mix(in srgb, var(--side-b) 70%, #eaf2ff);
+  text-transform: uppercase;
+}
+.ac-now-act {
+  color: color-mix(in srgb, var(--fam) 55%, #eaf2ff);
+}
+.ac-arrow {
+  color: #46506a;
+}
+.ac-result {
+  padding: 0.75rem 1rem 0.9rem;
+}
+.ac-result-k {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.55rem;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin-bottom: 0.6rem;
+}
+.ac-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  font-family: var(--font-num);
+  font-weight: 500;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  padding: 0.12rem 0.2rem;
+  border-radius: 3px;
+  cursor: pointer; /* clicking a row traces its cause */
+}
+.ac-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.ac-row.bc-line-sel {
+  background: rgba(37, 230, 212, 0.1);
+  outline: 1px solid color-mix(in srgb, var(--you) 50%, transparent);
+}
+.ac-g {
+  flex: none;
+}
+.ac-t {
+  color: #cdd7e6;
+}
+.ac-t .u.ua {
+  color: var(--side-a);
+}
+.ac-t .u.ub {
+  color: var(--side-b);
+}
+.r-hurt {
+  color: var(--pwr);
+}
+.r-heal {
+  color: var(--fam-heal);
+}
+.r-status {
+  color: var(--fam-poison);
+}
+.r-death {
+  color: var(--pwr);
+}
+.r-summon {
+  color: var(--you);
+}
+.r-warn {
+  color: var(--pwr);
+}
+.r-dim {
+  color: var(--muted);
+}
+.ac-chain {
+  margin-top: 0.4rem;
+  padding: 0.55rem 0.7rem;
+  border-left: 2px solid var(--fam-strike);
+  background: rgba(255, 122, 77, 0.07);
+  border-radius: 0 3px 3px 0;
+}
+.ac-chain-h {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  color: #ffb38f;
+  margin-bottom: 0.4rem;
+}
+
+/* A beat with no actor (battle begins, end of turn, …) shows a centred caption. */
+.acting-phase {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  width: 100%;
+}
+.ap-cap {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ---------- #082 slice D: the bottom trace strip ----------
+   One chip per beat, horizontally scrollable; the current beat lit. Clicking a
+   chip scrubs the playhead to that beat (preserving the old log-row scrub +
+   cause-select behaviour, re-presented as the strip). */
+.trace-strip {
+  display: flex;
+  gap: 0.45rem;
+  align-items: stretch;
+  padding: 0.7rem 1rem;
+  border-top: 1px solid #161b27;
+  background: linear-gradient(180deg, #0e1018, #0a0c12);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.tr-chip {
+  flex: 0 0 auto;
+  min-width: 6.4rem;
+  text-align: left;
+  padding: 0.35rem 0.5rem;
+  border-radius: 2px;
+  background: #0c0f16;
+  border: 1px solid #1a2030;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.tr-chip:hover {
+  opacity: 1;
+}
+.tr-chip.has-fam {
+  border-color: color-mix(in srgb, var(--fam) 45%, #1a2030);
+}
+.tr-chip.is-cur {
+  opacity: 1;
+  border-color: var(--fam, var(--you));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--fam, var(--you)) 16%, #12060c), #0a0c12);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--fam, var(--you)) 30%, transparent);
+}
+.tr-p {
+  display: block;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  color: color-mix(in srgb, var(--fam, #9fb0c9) 60%, #eaf2ff);
+  white-space: nowrap;
+}
+.tr-chip:not(.has-fam) .tr-p {
+  color: var(--muted);
+}
+.tr-now {
+  color: var(--you);
+}
+.tr-s {
+  display: block;
+  margin-top: 1px;
+  font-family: var(--font-num);
+  font-weight: 600;
+  font-size: 0.56rem;
+  color: var(--dim);
+  white-space: nowrap;
 }
 
 /* Each team is a grid item in a side track (#065 redesign): one card wide, its
@@ -1115,10 +1499,7 @@ button:disabled:hover {
    appear/disappear in step with the playhead. */
 
 #board-panel {
-  display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  gap: 0.8rem;
-  align-items: start;
+  display: block;
 }
 
 /* Battle stage width budget (#065 slice-1 regression): the run battle shows the
@@ -1136,7 +1517,6 @@ button:disabled:hover {
     width: min(75rem, calc(100vw - 2rem));
     /* Centre the wider panel under main's centred narrow column. */
     margin-left: calc(-1 * (min(75rem, calc(100vw - 2rem)) - 100%) / 2);
-    grid-template-columns: minmax(0, 1fr) 20rem;
   }
 }
 
@@ -3769,7 +4149,40 @@ button.danger {
        to match so it can't widen past the stage. */
     --side-col: 5.4rem;
     column-gap: 0.3rem;
-    padding: 0.5rem;
+  }
+
+  /* #082 slice D phone: the 3-column board stacks to one column — side A, the
+     acting card, side B, each full width — so nothing crushes at 375px. The
+     trace strip keeps its horizontal scroll. */
+  .bv-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.7rem;
+    padding: 0.7rem;
+  }
+  .bv-side[data-side="A"],
+  .bv-side[data-side="B"] {
+    border: none;
+  }
+  .bv-side-head.sh-b {
+    text-align: left;
+  }
+  .bv-stack .unit.unit-b {
+    width: 100%;
+    max-width: 320px;
+  }
+  .bv-side[data-side="B"] .bv-stack {
+    align-items: flex-start;
+  }
+  .acting-card {
+    max-width: 100%;
+  }
+  .bv-header {
+    padding: 0.7rem 0.9rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .trace-strip {
+    padding: 0.6rem 0.7rem;
   }
 
   /* Tall cascade beats stay readable on phone (#065 closure defect). A big
