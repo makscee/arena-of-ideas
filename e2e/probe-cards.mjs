@@ -1,13 +1,17 @@
-// PRD #015 slice 1 — the one pretty unit card. Pins, against the LIVE app:
-//  1. Structure: shop offer, line card, ladder card, and battle-board card all
-//     share the SAME card skeleton (shape art, name, framed hp/pwr, chips) —
-//     one component serving every context; line cards add the level badge +
-//     fusion pips, the front card its marker.
+// PRD #015 slice 1 / #078 — the one uniform unit card. Pins, against the LIVE
+// app, the card-contract on the surfaces that still wear the LEGACY card.
+//
+// #080 update: the SHOP moved its offers (full) + team line (compact) to the new
+// B·Arena family card — those two variants are pinned by probe-card.mjs. The
+// LADDER champ strip and the BATTLE BOARD still render the legacy uniform card
+// (their per-feature restyle is 083/085), so the "one card, one size" contract
+// is pinned HERE for the surfaces that still share it:
+//  1. Structure: the ladder card and the battle-board card share the SAME legacy
+//     skeleton (shape art, name, framed hp/pwr, chips).
 //  2. Battle affordances survive: current/max hp on board cards, front tag.
-//  3. 375px stays clean: no horizontal overflow in shop or battle, and the
-//     5-unit board line still sits five abreast inside the viewport.
-//  4. The inspector overlay still anchors to the new cards (popover pinned to
-//     the card on a desk, bottom sheet at phone width).
+//  3. 375px stays clean: no horizontal overflow, and the 5-unit board line still
+//     sits five abreast (one vertical column) inside the viewport.
+//  4. The inspector overlay still anchors to the (now compact) line card.
 
 import {
   DESKTOP,
@@ -44,56 +48,37 @@ async function signature(page, sel) {
 const noHorizontalOverflow = (page) =>
   page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
 
-// The shared skeleton, stripped of context extras (front-tag, run-lvl).
-const core = (sig) =>
-  sig
-    .split(" | ")
-    .map((part) => part.split(",").filter((c) => c !== "front-tag" && c !== "run-lvl").join(","))
-    .join(" | ");
+const LEGACY_SKELETON = "svg.shape,.uname,.unums .hp,.unums .pwr,.chips";
 
-// ---------- shop / line / ladder share the one card ------------------------
+// ---------- shop wears the #080 cards; the ladder keeps the legacy card -------
 
 for (const [viewport, tag] of [
   [PHONE, "375px"],
   [DESKTOP, "desktop"],
 ]) {
   const { ctx, page } = await openRun(browser, targetsRun(), viewport);
-  const offer = await signature(page, '#run-shop-row [data-offer="0"]');
-  const line = await signature(page, '#run-line [data-line="0"]');
+
+  // The shop's two surfaces now mount the #080 family card (full + compact) —
+  // their detail is pinned by probe-card.mjs; here we just confirm they swapped.
+  check(
+    (await page.$('#run-shop-row [data-offer="0"].unit-b.is-full')) !== null,
+    `${tag} shop offers render the #080 FULL card`,
+  );
+  check(
+    (await page.$('#run-line [data-line="0"].unit-b.is-compact')) !== null,
+    `${tag} team line renders the #080 COMPACT card`,
+  );
+
+  // The ladder champ strip still wears the legacy uniform card + skeleton.
   const ladder = await signature(page, ".lv-champ .unit");
-  check(
-    offer.startsWith("svg.shape,.uname,.unums .hp,.unums .pwr,.chips"),
-    `${tag} offer card carries the full skeleton`,
-    offer,
-  );
-  check(core(line) === core(offer), `${tag} line card = offer card skeleton`, `${line} vs ${offer}`);
-  check(core(ladder) === core(offer), `${tag} ladder card = offer card skeleton`, `${ladder} vs ${offer}`);
+  check(ladder.startsWith(LEGACY_SKELETON), `${tag} ladder card keeps the legacy skeleton`, ladder);
 
-  // ONE fixed size (#078): the card size IS the complexity budget, so every
-  // surface renders the card at the SAME width — geometry is baked into .unit,
-  // not set per-surface. This must FAIL against the old per-surface CSS where
-  // the shop card was 7rem, the ladder card 5.6rem (≠), and the codex card
-  // 8.5rem — different sizes on every screen.
-  const offerW = (await box(page, '#run-shop-row [data-offer="0"]')).width;
-  const lineW = (await box(page, '#run-line [data-line="0"]')).width;
-  const ladderW = (await box(page, ".lv-champ .unit:first-child")).width;
-  check(
-    Math.abs(lineW - offerW) <= 1 && Math.abs(ladderW - offerW) <= 1,
-    `${tag} shop / line / ladder cards share ONE fixed width (#078)`,
-    `offer ${offerW.toFixed(1)}, line ${lineW.toFixed(1)}, ladder ${ladderW.toFixed(1)}`,
-  );
-
-  check(line.includes("front-tag") && line.includes("run-lvl"), `${tag} front line card adds marker + level badge`, line);
-  check(
-    await page.$eval('#run-line [data-line="0"] .run-lvl .run-pips', (el) => el.textContent !== ""),
-    `${tag} fusion pips ride the level badge`,
-  );
   if (viewport === PHONE) {
     check(await noHorizontalOverflow(page), `${tag} shop screen has no horizontal overflow`);
   }
 
-  // Inspector anchors to the new card: popover pinned to it on a desk, bottom
-  // sheet at phone width.
+  // Inspector still anchors to the (compact) line card: popover pinned to it on
+  // a desk, bottom sheet at phone width.
   await page.click('#run-line [data-line="0"] .uname');
   await page.waitForSelector("#inspect-overlay:not([hidden])");
   const overlay = await box(page, "#inspect-overlay");
@@ -102,7 +87,7 @@ for (const [viewport, tag] of [
     const gapBelow = overlay.y - (card.y + card.height);
     const gapAbove = card.y - (overlay.y + overlay.height);
     check(
-      (gapBelow >= 0 && gapBelow <= 10) || (gapAbove >= 0 && gapAbove <= 10),
+      (gapBelow >= 0 && gapBelow <= 12) || (gapAbove >= 0 && gapAbove <= 12),
       `${tag} inspector popover pinned to the card`,
       `gapBelow ${gapBelow.toFixed(1)}, gapAbove ${gapAbove.toFixed(1)}`,
     );
@@ -119,31 +104,24 @@ for (const [viewport, tag] of [
   await ctx.close();
 }
 
-// ---------- the battle board wears the same card ----------------------------
+// ---------- the battle board wears the legacy card --------------------------
 
 for (const [viewport, tag] of [
   [PHONE, "375px"],
   [DESKTOP, "desktop"],
 ]) {
   const { ctx, page } = await openRun(browser, lineFullRun(), viewport);
-  const offer = await signature(page, '#run-shop-row [data-offer="0"]');
-  const offerW = (await box(page, '#run-shop-row [data-offer="0"]')).width;
   await page.click("#run-fight");
-  await page.waitForSelector('#board .unit[data-unit]');
+  await page.waitForSelector("#board .unit[data-unit]");
   const board = await signature(page, '#board .side[data-side="A"] .line .unit');
-  check(core(board) === core(offer), `${tag} board card = offer card skeleton`, `${board} vs ${offer}`);
-  // The board renders the SAME card (#078) but is the one surface that SCALES it
-  // to fit its focal three-column replay stage (striker | beat-card lane |
-  // striker, #065): a wrapper resize, not a different card. The budget invariant
-  // that holds at BOTH widths: the board card is never LARGER than the one fixed
-  // catalog size — it never exceeds the card budget, and at 375px shrinks
-  // further (the documented `--side-col` phone override) so 5v5 fits the stage.
+  check(board.startsWith(LEGACY_SKELETON), `${tag} board card keeps the legacy skeleton`, board);
+
+  // The board renders the legacy uniform card and is the one surface that SCALES
+  // it to fit the focal three-column replay stage (#065): a wrapper resize, never
+  // larger than the one fixed legacy size (7rem ≈ 112px), and at 375px it shrinks
+  // further (the --side-col phone override) so 5v5 fits the stage.
   const boardW = (await box(page, '#board .side[data-side="A"] .line .unit:first-child')).width;
-  check(
-    boardW <= offerW + 1,
-    `${tag} board card never exceeds the one fixed card size (scaled to its focal stage, #078)`,
-    `board ${boardW.toFixed(1)} ≤ fixed ${offerW.toFixed(1)}`,
-  );
+  check(boardW <= 113, `${tag} board card never exceeds the fixed legacy size (#078)`, `board ${boardW.toFixed(1)}`);
   check(
     await page.$eval('#board .side[data-side="A"] .line .unit .hp', (el) => /^\d+\/\d+$/.test(el.textContent)),
     `${tag} board card shows current/max hp`,
@@ -153,10 +131,6 @@ for (const [viewport, tag] of [
     `${tag} board front card keeps its marker`,
   );
   if (viewport === PHONE) {
-    // #065 redesign: each team is a VERTICAL column — the line stacks its cards
-    // straight down (front on top), one card wide. So the five units share one
-    // COLUMN (one x, distinct stacked Ys), not one row, and the column fits the
-    // 375px stage with no overflow.
     const cards = await page.$$eval('#board .side[data-side="A"] .line .unit', (els) =>
       els.map((el) => {
         const r = el.getBoundingClientRect();

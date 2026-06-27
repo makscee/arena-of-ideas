@@ -243,23 +243,23 @@ export interface UnitCardOpts {
   /** The unit's ability family — the card's colour, taken as an INPUT. Drives
    * the border, glow, sigil and accents. When absent, `nameFamily(artName)`
    * degrades a name to a stable family (renders coloured pre-081). */
-  family?: Family;
+  family?: Family | undefined;
   /** An explicit colour override (any CSS hex) — used when a caller wants a
    * colour the 7 families don't name. Defaults to the family's FAMILY_HEX. */
-  color?: string;
+  color?: string | undefined;
   /** Which markup the B·Arena card draws. Passing `variant` (or `family`/
    * `color`) opts a call site into the new chamfered, family-coloured card;
    * callers that pass none keep the legacy #078 card unchanged. Default `full`
    * once opted in. */
-  variant?: "full" | "compact";
+  variant?: "full" | "compact" | undefined;
   /** The ABILITY cap-label in the header (e.g. "TOXIC STRIKE"). Falls back to
    * the family name uppercased. New card only. */
-  abilityLabel?: string;
+  abilityLabel?: string | undefined;
   /** Ability line segments (mockup `⚔ trigger ▸ target ▸ ☣ action`). Any subset
    * renders; absent segments (and their separators) are dropped. New card only. */
-  trigger?: string;
-  target?: string;
-  action?: string;
+  trigger?: string | undefined;
+  target?: string | undefined;
+  action?: string | undefined;
 }
 
 /** The shared card markup. Class names and child order are the app's card

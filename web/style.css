@@ -3576,3 +3576,53 @@ button.danger {
     animation: none;
   }
 }
+
+/* primary actions wear the neon glow (#080): Play, start/new run, and the
+   in-card Buy on a B·Arena offer. */
+.title-primary,
+#run-start,
+#run-new-run {
+  border-color: var(--you);
+  box-shadow: var(--glow);
+}
+.title-primary:hover,
+#run-start:hover,
+#run-new-run:hover {
+  border-color: var(--text);
+  box-shadow: 0 0 28px rgba(37, 230, 212, 0.6);
+}
+
+/* the Buy button on a full offer card — a family-coloured neon chip */
+.unit-b .run-buy {
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #07080c;
+  background: var(--fam);
+  border: 1px solid var(--fam);
+  border-radius: 2px;
+  padding: 4px 10px;
+  margin: 0;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--fam) 45%, transparent);
+}
+.unit-b .run-buy:hover {
+  filter: brightness(1.12);
+  border-color: var(--text);
+}
+.unit-b .run-buy:disabled {
+  color: var(--dim);
+  background: transparent;
+  border-color: var(--border);
+  box-shadow: none;
+  filter: none;
+}
+/* compact line card move arrows — quiet, on the family frame */
+.unit-b .run-move button {
+  font-size: 11px;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
