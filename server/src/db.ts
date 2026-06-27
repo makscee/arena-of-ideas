@@ -85,7 +85,9 @@ CREATE TABLE IF NOT EXISTS ideas (
   seq INTEGER NOT NULL UNIQUE,
   author_id TEXT NOT NULL,
   text TEXT NOT NULL,
-  created_at INTEGER NOT NULL
+  created_at INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'on-table',
+  bounce_reason TEXT
 );
 CREATE TABLE IF NOT EXISTS idea_votes (
   idea_id TEXT NOT NULL,

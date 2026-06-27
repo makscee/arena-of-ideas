@@ -30,6 +30,7 @@ import {
   assertSubmittableText,
   rankIdeas,
   type Idea,
+  type IdeaStatus,
   type VoteDir,
   type VoteMap,
 } from "../../src/index.js";
@@ -49,6 +50,10 @@ export type SubmitIdeaOutcome =
 export type CastVoteOutcome =
   | { cast: true; direction: VoteDir; idea: Idea }
   | { cast: false; reason: string };
+
+export type RecordOutcome =
+  | { recorded: true; idea: Idea }
+  | { recorded: false; reason: string };
 
 /** Seconds in a day — the one-per-day window, measured against UTC midnight
  * (unix time is anchored to UTC midnight, so flooring to this aligns days). */
@@ -87,7 +92,30 @@ export function submitIdea(deps: IdeaDeps, authorId: string, text: string): Subm
     .insert(ideasTable)
     .values({ id, seq, authorId, text: trimmed, createdAt: deps.clock() })
     .run();
-  return { submitted: true, idea: { id, authorId, text: trimmed, seq, votes: {} } };
+  return { submitted: true, idea: { id, authorId, text: trimmed, seq, votes: {}, status: "on-table" } };
+}
+
+/** Record a build OUTCOME on an idea (#083): a selected idea that made the new
+ * content version is `shipped`; one that failed the sim/Maks gate is `bounced`
+ * with a visible reason (it returns to the table, re-votable, votes untouched —
+ * this fn never deletes a vote row). Selection ≠ guarantee: this is where a
+ * bounce becomes a recorded, surfaced fact rather than a silent vanish. Unknown
+ * ideaId is a rejected outcome. */
+export function recordBuildOutcome(
+  deps: IdeaDeps,
+  ideaId: string,
+  status: "shipped" | "bounced",
+  reason?: string,
+): RecordOutcome {
+  const { db } = deps;
+  const row = db.select().from(ideasTable).where(eq(ideasTable.id, ideaId)).all()[0];
+  if (row === undefined) {
+    return { recorded: false, reason: `no idea with id ${ideaId}` };
+  }
+  // Only a bounce carries a reason; shipping clears any stale bounce reason.
+  const bounceReason = status === "bounced" ? (reason ?? null) : null;
+  db.update(ideasTable).set({ status, bounceReason }).where(eq(ideasTable.id, ideaId)).run();
+  return { recorded: true, idea: readIdea(db, { ...row, status, bounceReason }) };
 }
 
 /** Cast `userId`'s `direction` vote on `ideaId` — the kernel's directional,
@@ -132,13 +160,7 @@ export function votedIdeaCount(deps: IdeaDeps, userId: string): number {
 export function listIdeas(deps: IdeaDeps): Idea[] {
   const rows = deps.db.select().from(ideasTable).all();
   const votesByIdea = votesByIdeaId(deps.db);
-  const all: Idea[] = rows.map((r) => ({
-    id: r.id,
-    authorId: r.authorId,
-    text: r.text,
-    seq: r.seq,
-    votes: votesByIdea.get(r.id) ?? {},
-  }));
+  const all: Idea[] = rows.map((r) => ideaShape(r, votesByIdea.get(r.id) ?? {}));
   return rankIdeas(all);
 }
 
@@ -157,7 +179,23 @@ function readIdea(db: DB, row: typeof ideasTable.$inferSelect): Idea {
     .from(ideaVotes)
     .where(eq(ideaVotes.ideaId, row.id))
     .all();
-  return { id: row.id, authorId: row.authorId, text: row.text, seq: row.seq, votes: voteMapOf(rows) };
+  return ideaShape(row, voteMapOf(rows));
+}
+
+/** Build one kernel `Idea` from a stored row + its vote map. `bounceReason` is
+ * OMITTED unless the idea is bounced with a reason, so a non-bounced row is
+ * byte-equivalent to what the in-memory backing holds (no stray null key). */
+function ideaShape(row: typeof ideasTable.$inferSelect, votes: VoteMap): Idea {
+  const idea: Idea = {
+    id: row.id,
+    authorId: row.authorId,
+    text: row.text,
+    seq: row.seq,
+    votes,
+    status: row.status as IdeaStatus,
+  };
+  if (row.bounceReason != null) idea.bounceReason = row.bounceReason;
+  return idea;
 }
 
 /** All votes, grouped by ideaId into directional vote maps — the kernel's vote

@@ -134,11 +134,18 @@ export function selectSeason(
   // total and stable across rolls.
   eligible.sort((a, b) => b.tally.ratio - a.tally.ratio || a.idea.seq - b.idea.seq);
 
-  const selected = eligible.slice(0, Math.max(0, tunables.buildCapacity));
-  const unbuilt = eligible.slice(Math.max(0, tunables.buildCapacity)).map((r) => r.idea);
+  const cap = Math.max(0, tunables.buildCapacity);
+  const selected = eligible.slice(0, cap);
+  const unbuilt = eligible.slice(cap);
+  // DERIVE the lifecycle status onto the slate (#083 slice 2): the top-N are
+  // `selected` (building), the rest of the eligible are `eligible`. These are
+  // derived at the roll, not stored mid-season. Below-floor ideas keep their
+  // RECORDED status (on-table, or a prior `bounced` still showing its reason).
+  for (const r of selected) r.idea.status = "selected";
+  for (const r of unbuilt) r.idea.status = "eligible";
   // Carry-over = eligible-but-unbuilt (ranked) ∪ below-floor (seq order), every
   // idea's votes intact: the priority queue survives the roll with no daily work.
-  const carried = [...unbuilt, ...belowFloor.sort((a, b) => a.seq - b.seq)];
+  const carried = [...unbuilt.map((r) => r.idea), ...belowFloor.sort((a, b) => a.seq - b.seq)];
 
   return { eligible, selected, carried };
 }

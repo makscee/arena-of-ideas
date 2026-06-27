@@ -143,6 +143,13 @@ export const ideas = sqliteTable("ideas", {
   authorId: text("author_id").notNull(),
   text: text("text").notNull(),
   createdAt: integer("created_at").notNull(),
+  /** The lifecycle stage (#083) — only the RECORDED states live here: a fresh
+   * idea is "on-table"; a build result writes "shipped" or "bounced". The
+   * derived "eligible"/"selected" are computed at the season roll, never stored. */
+  status: text("status").notNull().default("on-table"),
+  /** Why a "bounced" idea was rejected — null unless status is "bounced". The
+   * bounce is visible: the table shows this reason, the idea stays re-votable. */
+  bounceReason: text("bounce_reason"),
 });
 
 /** One vote per (idea, player) — the composite PK is the one-vote-per-player

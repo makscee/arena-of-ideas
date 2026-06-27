@@ -25,6 +25,39 @@ export type VoteDir = "up" | "down";
  * shape is stable across backings. */
 export type VoteMap = Record<string, VoteDir>;
 
+/** An idea's lifecycle stage (PRD #083) — first-class on the idea. Five states:
+ *  - `on-table`  — submitted, accruing votes, not (yet) past the bar.
+ *  - `eligible`  — cleared both selection gates (floor AND approval); DERIVED at
+ *                  the season roll from the tally, not stored mid-season.
+ *  - `selected`  — ranked within build capacity at the roll (building); DERIVED.
+ *  - `shipped`   — made the new content version (a build succeeded); RECORDED.
+ *  - `bounced`   — selected but failed the sim/Maks gate, back on the table with a
+ *                  reason, re-votable; RECORDED (candidacy ≠ guarantee).
+ * eligible/selected are derived at roll time (selectSeason stamps them on the
+ * slate); shipped/bounced are recorded outcomes a build result writes back. */
+export type IdeaStatus = "on-table" | "eligible" | "selected" | "shipped" | "bounced";
+
+/** The mockup's status-pill vocabulary the UI renders (#082/#083): four pills
+ * over the five lifecycle states. A display vocabulary, not a state machine —
+ * what DRIVES a status is selection (#083) and the season clock, never the pill. */
+export type IdeaPill = "live" | "voting" | "compiling" | "rejected";
+
+/** Map a lifecycle status onto its mockup pill: a shipped idea is `live` (in the
+ * game), a selected/building one is `compiling`, a bounced one is `rejected`, and
+ * everything still on the table (on-table or eligible) reads `voting`. */
+export function statusPill(status: IdeaStatus): IdeaPill {
+  switch (status) {
+    case "shipped":
+      return "live";
+    case "selected":
+      return "compiling";
+    case "bounced":
+      return "rejected";
+    default:
+      return "voting"; // on-table | eligible — still on the table, being voted
+  }
+}
+
 /** An idea on the table, as the store holds and returns it. list() returns
  * detached deep copies, so a returned Idea is the caller's to do with freely. */
 export interface Idea {
@@ -41,6 +74,12 @@ export interface Idea {
    * one vote per player, switchable up↔down, never removed. Keys are sorted so
    * the serialized shape is stable. */
   votes: VoteMap;
+  /** The lifecycle stage (#083). A fresh idea is `on-table`; the season roll
+   * derives `eligible`/`selected` and records `shipped`/`bounced`. */
+  status: IdeaStatus;
+  /** Why a `bounced` idea was rejected — set only when status is `bounced`, so
+   * the bounce is VISIBLE (the UI shows the reason) and never a silent vanish. */
+  bounceReason?: string;
 }
 
 /** The storage boundary the ideas feature depends on — nothing else.
@@ -100,7 +139,11 @@ export function parseIdeasData(raw: string, label: string): IdeasData {
   if (typeof data !== "object" || data === null || !Array.isArray(data.ideas) || typeof data.nextSeq !== "number") {
     throw new Error(`Ideas ${label} has no ideas array — not an ideas table`);
   }
-  return { ideas: data.ideas, nextSeq: data.nextSeq };
+  // Default the lifecycle status for any idea stored before it was first-class
+  // (#083): a status-less idea is one still on the table. New writes always carry
+  // it, so a serialize→parse round-trip of a current table is byte-stable.
+  const ideas = data.ideas.map((idea) => ({ ...idea, status: idea.status ?? "on-table" }));
+  return { ideas, nextSeq: data.nextSeq };
 }
 
 /** Validate and trim submitted text, or throw — shared by every backing so they
@@ -234,7 +277,7 @@ export class PersistedIdeaStore implements IdeaStore {
 function submitInto(data: IdeasData, text: string, authorId: string): Idea {
   const trimmed = assertSubmittableText(text);
   const seq = data.nextSeq;
-  const idea: Idea = { id: `idea-${seq}`, authorId, text: trimmed, seq, votes: {} };
+  const idea: Idea = { id: `idea-${seq}`, authorId, text: trimmed, seq, votes: {}, status: "on-table" };
   data.ideas.push(jsonClone(idea));
   data.nextSeq = seq + 1;
   return idea;

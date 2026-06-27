@@ -19,7 +19,7 @@ function idea(id: string, seq: number, up: number, down: number): Idea {
   const votes: VoteMap = {};
   for (let i = 0; i < up; i++) votes[`${id}-u${i}`] = "up";
   for (let i = 0; i < down; i++) votes[`${id}-d${i}`] = "down";
-  return { id, authorId: "author", text: `idea ${id}`, seq, votes };
+  return { id, authorId: "author", text: `idea ${id}`, seq, votes, status: "on-table" };
 }
 
 // ---------------------------------------------------------------------------
@@ -156,6 +156,23 @@ describe("selectSeason", () => {
     const result = selectSeason([a, orphan], tallies, T);
     expect(result.selected.map((r) => r.idea.id)).toEqual(["a"]);
     expect(result.carried.map((i) => i.id)).toContain("orphan");
+  });
+
+  test("derives lifecycle status: top-N → selected, eligible-but-unbuilt → eligible, below-floor keeps its recorded status", () => {
+    const built = idea("built", 0, 9, 0); // eligible, selected
+    const unbuilt = idea("unbuilt", 1, 6, 1); // eligible, not built
+    const bounced = { ...idea("bounced", 2, 1, 0), status: "bounced" as const, bounceReason: "sim gauntlet: folds to poison" };
+    const ideas = [built, unbuilt, bounced];
+
+    const result = selectSeason(ideas, talliesOf(ideas), { ...T, buildCapacity: 1 });
+
+    expect(result.selected[0]!.idea.status).toBe("selected");
+    expect(result.eligible.find((r) => r.idea.id === "unbuilt")!.idea.status).toBe("eligible");
+    // A carried below-floor idea keeps its RECORDED status + reason (a prior
+    // bounce still reads bounced with its reason — nothing vanishes silently).
+    const carriedBounced = result.carried.find((i) => i.id === "bounced")!;
+    expect(carriedBounced.status).toBe("bounced");
+    expect(carriedBounced.bounceReason).toBe("sim gauntlet: folds to poison");
   });
 
   test("no eligible ideas → empty slate, everything carried", () => {
