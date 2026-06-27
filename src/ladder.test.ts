@@ -226,6 +226,7 @@ describe("bootstrap", () => {
     expect(s).toMatchObject({ status: "over", endedBy: "overshoot", round: TOWER_HEIGHT + 1 });
     expect(ofType(s.log, "Overshot")[0]).toMatchObject({ floor: TOWER_HEIGHT + 1 });
     expect(ofType(s.log, "Crowned")).toEqual([]); // no crown
+    expect(ofType(s.log, "Founded")).toEqual([]); // a championed tower never founds — overshoot, not genesis
     expect(store.poolAt(TOWER_HEIGHT + 1)).toEqual([]); // no ghost snapshotted on the overshot floor
     expect(store.bossAt(TOWER_HEIGHT + 1)).toBeNull(); // nothing seated above the tower
   });
@@ -450,22 +451,78 @@ describe("boss challenge", () => {
     expect(store.bossAt(1)!.runId).toBe("boss"); // unseated
   });
 
-  test("a vacant floor OVERSHOOTS — no boss, no crown, no seat, no ghost (075-3 reversal)", () => {
-    // The reversal of slice 2's "vacant floor auto-seats" edge. Challenging a floor
-    // with no boss is now an overshoot: the run climbed past the tower's top, so
-    // there is nothing to fight or claim. No battle, no crown, no seat — and no
-    // ghost snapshotted, because no fight happened.
-    const store = new InMemoryLadderStore(); // unopened: floor 1 is vacant
-    const s = challengeBoss(buy(initRun(input(1, "titan", TITAN)), 0), store);
-    expect(s).toMatchObject({ status: "over", endedBy: "overshoot", round: 1 });
-    expect(ofType(s.log, "BossChallenged")[0]).toMatchObject({ floor: 1, boss: null });
-    expect(ofType(s.log, "Overshot")[0]).toMatchObject({ floor: 1 });
-    expect(ofType(s.log, "FightFought")).toEqual([]); // no battle
-    expect(ofType(s.log, "Crowned")).toEqual([]); // no crown
-    expect(ofType(s.log, "Snapshotted")).toEqual([]); // no ghost — no fight happened
-    expect(store.bossAt(1)).toBeNull(); // nothing seated
+  test("an empty tower FOUNDS the champion at floor 1 — the first completed run's genesis (#085)", () => {
+    // On an EMPTY tower (no champion seated anywhere) a vacant-floor challenge is
+    // the genesis: it FOUNDS the champion at floor 1 — the only free seat, the
+    // bottom — NOT an overshoot. No fight happened (no boss to fight), so there is
+    // no battle and no snapshot-before-fight ghost; the seat itself is left in
+    // floor 1's pool as a ghost (boss-in-its-own-pool), and the run ends crown-class
+    // with a distinct Founded event.
+    const store = new InMemoryLadderStore(); // unopened: floor 1 is vacant, no champion
     expect(store.champion()).toBeNull();
-    expect(store.poolAt(1)).toEqual([]); // the pool did not grow
+    const s = challengeBoss(buy(initRun(input(1, "titan", TITAN)), 0), store);
+    expect(s).toMatchObject({ status: "over", endedBy: "crown", round: 1 });
+    expect(ofType(s.log, "BossChallenged")[0]).toMatchObject({ floor: 1, boss: null });
+    expect(ofType(s.log, "Founded")[0]).toMatchObject({ floor: 1 });
+    expect(ofType(s.log, "Overshot")).toEqual([]); // an empty tower founds, never overshoots
+    expect(ofType(s.log, "FightFought")).toEqual([]); // no battle — there was no boss
+    expect(ofType(s.log, "Crowned")).toEqual([]); // a founding is not a #075 ascend-crown
+    // The champion now reads the founded floor-1 seat, round === 1 (the shim invariant).
+    expect(store.champion()).toMatchObject({ runId: "titan", round: 1 });
+    expect(store.bossAt(1)).toMatchObject({ runId: "titan", round: 1 });
+    expect(store.poolAt(1).some((g) => g.runId === "titan")).toBe(true); // boss-in-its-own-pool
+  });
+
+  test("founding is CAPPED at floor 1 — a climb up an empty tower still founds at floor 1, never the challenged floor (#085)", () => {
+    // The cap proof: a run climbs an empty tower (synth opponents, champion stays
+    // null) to a floor N>1 and challenges — it still founds at floor 1, NOT floor N.
+    // Founding at s.round instead of 1 would fail this.
+    const store = new InMemoryLadderStore();
+    let s = buy(initRun(input(1, "founder", TITAN)), 0);
+    s = ladderFight(s, store); // floor 1 → round 2 (synth climb)
+    s = ladderFight(s, store); // floor 2 → round 3
+    expect(s.round).toBe(3);
+    expect(store.champion()).toBeNull(); // climbing an empty tower never founds
+    s = challengeBoss(s, store); // challenge the vacant floor 3
+    expect(s.endedBy).toBe("crown");
+    expect(ofType(s.log, "Founded")[0]).toMatchObject({ floor: 1 }); // capped at floor 1, NOT floor 3
+    expect(store.champion()).toMatchObject({ runId: "founder", round: 1 });
+    expect(store.bossAt(1)!.runId).toBe("founder");
+    expect(store.bossAt(3)).toBeNull(); // nothing seated at the challenged floor
+  });
+
+  test("the empty-check bites: a 0-pwr challenge on a vacant floor of a CHAMPIONED tower overshoots, never founds (#085 degeneracy stays dead)", () => {
+    // Once a champion is seated, a vacant-floor challenge OVERSHOOTS — it never
+    // founds. Reverting challengeBoss's empty-check (found whenever a floor is
+    // vacant) would FOUND here, reproducing the #075 free-(high-)crown degeneracy:
+    // a weak team riding climb-losses to a free seat. The empty-check kills it.
+    const store = new InMemoryLadderStore();
+    challengeBoss(buy(initRun(input(1, "champ", TITAN)), 0), store); // run 1 founds floor 1
+    expect(store.champion()).toMatchObject({ runId: "champ", round: 1 });
+    // Run 2: a 0-pwr team climbs floor 1 (drawing the champion's pool-ghost, losing
+    // but a loss still advances the floor) to the vacant floor 2, then challenges.
+    let s = buy(initRun(input(2, "weakling", GRUNT)), 0);
+    s = ladderFight(s, store); // floor 1 climb → round 2
+    expect(s).toMatchObject({ status: "active", round: 2 });
+    s = challengeBoss(s, store); // vacant floor 2, champion seated below → overshoot
+    expect(s).toMatchObject({ status: "over", endedBy: "overshoot" });
+    expect(ofType(s.log, "Founded")).toEqual([]); // NOT founded — the empty-check bit
+    expect(ofType(s.log, "Crowned")).toEqual([]);
+    expect(store.champion()).toMatchObject({ runId: "champ", round: 1 }); // the real champion still holds
+  });
+
+  test("lineage grows from the founded floor 1 — beating the founded champion ascends +1 (#085)", () => {
+    // Once founded, the #075 ascend mechanism takes over unchanged: beating the
+    // reigning champion seats one floor higher, the old champion stays seated below.
+    const store = new InMemoryLadderStore();
+    challengeBoss(buy(initRun(input(1, "founder", GRUNT)), 0), store); // found floor 1 with a beatable champion
+    expect(store.champion()).toMatchObject({ runId: "founder", round: 1 });
+    // Run 2 challenges floor 1 (the champion) and beats it → ascend to floor 2.
+    const s2 = challengeBoss(buy(initRun(input(2, "heir", TITAN)), 0), store);
+    expect(s2).toMatchObject({ status: "over", endedBy: "crown" });
+    expect(ofType(s2.log, "Crowned")[0]).toMatchObject({ floor: 2, dethroned: "founder" });
+    expect(store.champion()).toMatchObject({ runId: "heir", round: 2 }); // the tower grew to floor 2
+    expect(store.bossAt(1)!.runId).toBe("founder"); // the founded champion stays seated below
   });
 
   test("the snapshot precedes the challenge: the challenger ghosts into its floor's pool first", () => {

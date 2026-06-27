@@ -164,6 +164,14 @@ export type RunEventBody =
   // run climbed past the tower's top — so there is nothing to fight or seat. No
   // ghost is snapshotted (no fight happened); the run ends with no crown.
   | { type: "BossChallenged"; floor: number; boss: string | null }
+  // Founded (PRD #085 genesis) — the FIRST completed run on an EMPTY tower founds
+  // the champion at floor 1, the bottom (the only free seat). `floor` is always 1,
+  // never the challenged floor — founding is capped at the bottom. A crown-class
+  // end (endedBy "crown"), but a distinct event so a genesis reads apart from a
+  // #075 ascend-crown. Emitted only when challengeBoss lands on a vacant floor
+  // AND no champion is seated anywhere; once a champion exists, a vacant challenge
+  // is an Overshot instead.
+  | { type: "Founded"; floor: number }
   | { type: "Crowned"; floor: number; dethroned: string | null }
   | { type: "Seated"; floor: number; dethroned: string | null }
   | { type: "Overshot"; floor: number }
@@ -405,15 +413,19 @@ export function ladderFight(state: RunState, ladder: LadderStore): RunState {
  *    ghosted into the floor-s.round pool before any outcome is known, so the
  *    challenger leaves an opponent behind — and on a win this same ghost is the
  *    team that takes the boss seat.
- *  - A vacant floor (boss === null) is an OVERSHOOT: the run climbed past the
- *    seeded tower's top, so there is no boss to fight and nothing to claim. The
- *    run ends "overshoot" with NO crown and — because no fight happened — NO
- *    ghost snapshotted. This is the dual of a crown: the tower is a fixed height
- *    (the bootstrap seeds floors 1..TOWER_HEIGHT and nothing above), and a floor
- *    above it is not a free seat but a dead end. (Reversing slice 2's "vacant
- *    floor auto-seats" edge: that edge let a run climb past every boss for a free
- *    crown — the trivial-crown degeneracy. With the overshoot rule the top is
- *    gated by a real fight at floor TOWER_HEIGHT, not by an empty slot above it.)
+ *  - A vacant floor (boss === null) splits on whether the tower is EMPTY (#085):
+ *      FOUND (empty tower, ladder.champion() === null) — the first completed run
+ *        FOUNDS the champion at floor 1, the bottom (the only free seat). The seat
+ *        is always floor 1, never s.round (founding is capped at the bottom), end
+ *        reason "crown" with a distinct Founded event. No fight, so no
+ *        snapshot-before-fight ghost; the seat itself is left in floor 1's pool.
+ *      OVERSHOOT (a champion exists) — the run climbed past the tower's top into a
+ *        dead end: no boss to fight, nothing to claim. The run ends "overshoot"
+ *        with NO crown and — because no fight happened — NO ghost snapshotted.
+ *        (Reversing slice 2's "vacant floor auto-seats" edge: that edge let a run
+ *        climb past every boss for a free crown — the trivial-crown degeneracy.
+ *        Once any champion is seated, vacant-challenge overshoots, so the top is
+ *        gated by a real fight against the reigning champion, not an empty slot.)
  *  - A boss present is gated (like any opponent) and fought off the run's
  *    stream (the same battle-seed draw as a climb, and only that draw — no
  *    climb draw happens, so the RNG order stays deterministic). Snapshot-before-
@@ -451,10 +463,33 @@ export function challengeBoss(state: RunState, ladder: LadderStore): RunState {
   const s = clone(state);
   const boss = ladder.bossAt(s.round);
   if (boss === null) {
-    // Overshoot: climbed past the seeded tower's top. No boss, no fight, no seat,
-    // no crown — and crucially NO snapshot, because no fight happened (snapshot-
-    // before-fight only makes sense when there is a fight to leave a ghost for).
     emit(s, { type: "BossChallenged", floor: s.round, boss: null });
+    if (ladder.champion() === null) {
+      // Found-floor-1 genesis (#085): the tower is EMPTY — no champion seated
+      // anywhere — so this vacant challenge FOUNDS the champion at floor 1, the
+      // only free seat, the bottom. The seat is ALWAYS floor 1, never s.round:
+      // founding is capped at the bottom, so a run that climbs an empty tower to
+      // floor 7 and challenges still founds at floor 1, not 7. No fight happened,
+      // so there is no snapshot-before-fight ghost; instead the seat itself is
+      // left in floor 1's pool as a ghost (boss-in-its-own-pool, mirroring the
+      // bootstrap/ascend pattern) so the demote-keeps-ghost invariant holds when
+      // it is later dethroned. The seat carries round = 1, so the server shim's
+      // `snap.round === floor` invariant holds. A founding IS the first crown — a
+      // crown-class end — but a distinct Founded event records it so the run log
+      // (and the UI) read a genesis apart from a #075 ascend-crown.
+      const seat: TeamSnapshot = { runId: s.runId, round: 1, seq: ladder.poolAt(1).length, team: toBattleTeam(s.team) };
+      ladder.addSnapshot(seat);
+      ladder.setBoss(1, seat);
+      emit(s, { type: "Founded", floor: 1 });
+      endRun(s, "crown");
+      return s;
+    }
+    // A champion is already seated: a vacant challenge is an OVERSHOOT, exactly as
+    // #075 ships it — the run climbed past the tower's top into a dead end. No
+    // fight, no seat, no crown, and (no fight) NO snapshot. The genesis above never
+    // fires once any champion exists, so the #075 no-free-(high-)crown degeneracy
+    // stays dead: a weak team can found the bottom seat ONCE, but can never ride
+    // climb-losses to a free HIGH crown.
     emit(s, { type: "Overshot", floor: s.round });
     endRun(s, "overshoot");
     return s;

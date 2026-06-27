@@ -22,9 +22,12 @@
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { join, relative } from "node:path";
+import { seedBootstrapTower } from "../../src/index.js";
 import { createApp, defaultRateLimiters } from "./app.js";
 import { startCleanupTimer } from "./cleanup.js";
+import { defaultArenaContent } from "./content.js";
 import { openDb } from "./db.js";
+import { SqliteLadderStore } from "./ladder-store.js";
 import { createMailClient, createMockMailClient } from "./mail.js";
 
 function requireEnv(name: string): string {
@@ -63,6 +66,17 @@ const app = createApp({
   rateLimiters: defaultRateLimiters(),
 });
 startCleanupTimer(db, clock);
+
+// Production launches EMPTY (PRD #085: createApp → openEmptyLadder; play founds
+// the tower). The solo-playtest / e2e harness, which needs a populated tower up
+// front (a champion to read, a ladder to climb), opts into the #075 full-tower
+// seed via AOI_SEED_BOOTSTRAP — the explicit solo-playtest seam, never set in
+// production. One player (or a probe suite) cannot found a whole tower alone.
+if (process.env.AOI_SEED_BOOTSTRAP === "1") {
+  const content = defaultArenaContent();
+  seedBootstrapTower(new SqliteLadderStore(db), content.statuses, content.abilities);
+  console.log("AOI_SEED_BOOTSTRAP: seeded the bootstrap tower (solo-playtest / e2e)");
+}
 
 if (mockMailer !== null) {
   console.log("MOCK_MODE: mail is mocked; /_mock/last-code is mounted");

@@ -201,10 +201,14 @@ function awaitReady(child, marker, timeoutMs = 30_000) {
 }
 
 // The arena server: mock mailer (codes readable via /_mock/last-code), a
-// throwaway DB per e2e run — every run starts from the bootstrap ladder.
+// throwaway DB per e2e run. Production launches the ladder EMPTY (PRD #085), but
+// the probe suite needs a populated tower (a champion to read, a ladder to
+// climb), so the harness opts into the #075 full-tower seed via
+// AOI_SEED_BOOTSTRAP — the solo-playtest seam, never set in production.
 const dbDir = mkdtempSync(join(tmpdir(), "aoi-e2e-"));
 const arena = boot("arena-server", "npx", ["tsx", "server/src/main.ts"], {
   MOCK_MODE: "1",
+  AOI_SEED_BOOTSTRAP: "1",
   PORT: SERVER_PORT,
   DB_PATH: join(dbDir, "arena.db"),
 });
