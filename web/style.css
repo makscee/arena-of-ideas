@@ -3293,3 +3293,286 @@ button.danger {
     pointer-events: none;
   }
 }
+
+/* ===================================================================== *
+ * B·Arena card (PRD #080) — the two-variant, family-coloured unit card.
+ * Opt-in via `variant`/`family` on unitCardHtml; legacy `.unit` is untouched.
+ * Colour rides the inline `--fam` custom property (the ability family hex), so
+ * border, glow, sigil tint and accents all derive from one value. Chamfered
+ * cut-corners via clip-path; the family glow follows the chamfer (drop-shadow
+ * on the clipped box, not box-shadow which the clip would crop).
+ * ===================================================================== */
+.unit.unit-b {
+  --fam: var(--fam-strike); /* overridden inline per card */
+  width: 212px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  text-align: left;
+  color: var(--text);
+  font-family: var(--font-body);
+  background: linear-gradient(165deg, color-mix(in srgb, var(--fam) 12%, #0b0d16), #07080c);
+  border: 1px solid color-mix(in srgb, var(--fam) 50%, transparent);
+  border-radius: var(--r);
+  box-shadow: none;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  filter: drop-shadow(0 0 11px color-mix(in srgb, var(--fam) 22%, transparent));
+}
+.unit.unit-b.is-compact {
+  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+}
+.unit.unit-b:hover {
+  border-color: color-mix(in srgb, var(--fam) 75%, transparent);
+}
+.unit.unit-b.is-front {
+  border-color: color-mix(in srgb, var(--fam) 90%, transparent);
+  filter: drop-shadow(0 0 16px color-mix(in srgb, var(--fam) 34%, transparent));
+}
+.unit.unit-b.sel {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}
+
+/* header: name + ability cap-label on the left, HP·PWR on the right */
+.unit-b .ub-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 12px 0;
+}
+.unit-b.is-compact .ub-head {
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+}
+.unit-b .ub-id {
+  min-width: 0;
+}
+.unit-b .uname {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.unit-b.is-compact .uname {
+  font-size: 13px;
+  line-height: 1;
+}
+.unit-b .ub-cap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  color: color-mix(in srgb, var(--fam) 50%, #eaf2ff);
+}
+.unit-b.is-compact .ub-cap {
+  margin-top: 2px;
+}
+.unit-b .ub-spark {
+  display: block;
+  flex: none;
+}
+.unit-b .ub-cap-t {
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+.unit-b.is-compact .ub-cap-t {
+  font-size: 8px;
+  letter-spacing: 0.06em;
+}
+
+/* HP·PWR — numerals in Mono, HP cyan / PWR red (mockup) */
+.unit-b .unums {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-num);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1;
+}
+.unit-b.is-compact .unums {
+  font-size: 13px;
+}
+.unit-b .unums .hp,
+.unit-b .unums .pwr {
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  font-family: var(--font-num);
+  white-space: nowrap;
+}
+.unit-b .unums .hp {
+  color: var(--hp);
+}
+.unit-b .unums .pwr {
+  color: var(--pwr);
+}
+.unit-b .unums .hp::after,
+.unit-b .unums .pwr::after {
+  content: none;
+}
+.unit-b .ub-sep {
+  color: #2c3344;
+}
+
+/* art area (full only) — family-tinted radial + the animated sigil */
+.unit-b .ub-art {
+  margin: 8px 12px;
+  height: 84px;
+  border-radius: var(--r);
+  border: 1px solid color-mix(in srgb, var(--fam) 22%, transparent);
+  background: radial-gradient(120% 120% at 50% 30%, color-mix(in srgb, var(--fam) 16%, transparent), transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.unit-b .ub-art .ub-sigil {
+  width: 66px;
+  height: 66px;
+  display: block;
+}
+.unit-b .ub-mini {
+  width: 32px;
+  height: 32px;
+  flex: none;
+}
+.unit-b .ub-mini .ub-sigil {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ability line: ⚔ trigger ▸ target ▸ ◈ action */
+.unit-b .ub-ability {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin: 0 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 11px;
+}
+.unit-b.is-compact .ub-ability {
+  margin: 0 12px;
+  padding: 0;
+  border-top: none;
+  font-size: 11px;
+}
+.unit-b .ub-trig {
+  color: #cdd7e6;
+}
+.unit-b .ub-tgt {
+  color: var(--muted);
+}
+.unit-b.is-compact .ub-tgt {
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.unit-b .ub-act {
+  color: color-mix(in srgb, var(--fam) 55%, #eaf2ff);
+}
+.unit-b .ub-arrow {
+  color: #46506a;
+}
+
+/* tail: status badges + level badge + footer (buy / move) */
+.unit-b .ub-tail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 12px 12px;
+}
+.unit-b.is-compact .ub-tail {
+  padding: 0 12px 10px;
+}
+.unit-b .ub-tail .chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+}
+.unit-b .ub-tail:has(.chips:empty):not(:has(.run-lvl)):not(:has(button)) {
+  display: none;
+}
+.unit-b .run-lvl {
+  font-family: var(--font-num);
+  font-size: 9px;
+  color: var(--fam, var(--you));
+  background: color-mix(in srgb, var(--fam) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fam) 40%, transparent);
+  border-radius: 2px;
+  padding: 1px 5px;
+}
+
+/* sigil motion — CSS-driven so prefers-reduced-motion can drop it (#080).
+   transform-box:fill-box centres the rotation on the glyph's own box. */
+.unit-b .ub-sigil .ub-spin,
+.unit-b .ub-sigil .ub-pulse,
+.unit-b .ub-sigil .ub-glow {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+}
+.unit-b .ub-sigil .ub-spin {
+  animation: ub-spin linear infinite;
+}
+.unit-b .ub-sigil .ub-pulse {
+  animation: ub-pulse ease-in-out infinite;
+}
+.unit-b .ub-sigil .ub-glow {
+  animation: ub-glow ease-in-out infinite;
+}
+@keyframes ub-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes ub-pulse {
+  0%,
+  100% {
+    transform: scale(0.82);
+  }
+  50% {
+    transform: scale(1.18);
+  }
+}
+@keyframes ub-glow {
+  0%,
+  100% {
+    stroke-opacity: 0.35;
+  }
+  50% {
+    stroke-opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .unit-b .ub-sigil .ub-spin,
+  .unit-b .ub-sigil .ub-pulse,
+  .unit-b .ub-sigil .ub-glow {
+    animation: none;
+  }
+}
