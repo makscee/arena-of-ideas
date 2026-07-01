@@ -9,5 +9,8 @@ tasks/*/out/
 e2e/.shots/
 e2e/.shots-challenge/
 
+# Local runtime SQLite state; production uses a named volume.
+data/arena.db*
+
 # Warm-stack pidfile written by `npm run e2e:serve`, read by `npm run e2e:stop`.
 .e2e-serve.json
