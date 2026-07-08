@@ -8,9 +8,9 @@
 // #codex/unit/<name>, #codex/rule/<key>.
 
 import { buildCodex } from "../src/codex.js";
-import { describeAbilitySegments, describeStatusSegments } from "../src/describe.js";
+import { abilityChips, describeAbilitySegments, describeStatusSegments } from "../src/describe.js";
 import type { DescribeSegment } from "../src/describe.js";
-import type { Ability, AbilityDef, AbilityRegistry, StatusDef, StatusRegistry, UnitDef } from "../src/types.js";
+import type { Ability, AbilityDef, AbilityRegistry, Family, StatusDef, StatusRegistry, UnitDef } from "../src/types.js";
 import { unitCardHtml } from "./unit-card.js";
 
 // ---------------------------------------------------------------------------
@@ -26,6 +26,24 @@ export interface CodexScreen {
 
 const esc = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+
+const PART_FAMILY: Record<string, Family> = {
+  trigger: "Control",
+  interceptor: "Shield",
+  condition: "Arcane",
+  selector: "Summon",
+  effect: "Strike",
+};
+
+function abilityLine(ab: AbilityDef | undefined): {
+  abilityLabel?: string | undefined;
+  trigger?: string | undefined;
+  triggerGlyph?: string | undefined;
+  target?: string | undefined;
+  action?: string | undefined;
+} {
+  return ab === undefined ? {} : { abilityLabel: ab.name, ...abilityChips(ab) };
+}
 
 /** A derived behavior sentence → HTML where every term links to its codex
  * card (#078 slice 3): a status name links to its Status card, every Part term
@@ -88,6 +106,8 @@ export function createCodex(
       hp: s.hp,
       pwr: s.pwr,
       registry,
+      variant: "reference",
+      abilityLabel: "Status",
       classes: "codex-unit",
       attrs: "",
       title: s.name,
@@ -141,6 +161,9 @@ export function createCodex(
       pwr: u.pwr,
       registry,
       statuses: def?.statuses,
+      family: u.family,
+      variant: "reference",
+      ...abilityLine(abilities[def?.ability ?? u.ability]),
       ...(level > 1 ? { level } : {}),
       classes: "codex-unit",
       attrs: "",
@@ -201,6 +224,9 @@ export function createCodex(
       hp: "",
       pwr: "",
       registry,
+      family: PART_FAMILY[p.family] ?? "Arcane",
+      variant: "reference",
+      abilityLabel: FAMILY_LABELS[p.family] ?? p.family,
       classes: "codex-unit",
       attrs: "",
       title: `${p.name} — ${FAMILY_LABELS[p.family] ?? p.family}`,

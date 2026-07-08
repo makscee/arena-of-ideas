@@ -13,7 +13,7 @@ import { nameFamily, shapeSvg, unitCardHtml } from "./unit-card.js";
 
 const FAMILIES: Family[] = ["Poison", "Strike", "Shield", "Summon", "Arcane", "Control", "Heal"];
 const CARD_SURFACES = ["full", "compact", "board", "codex/reference", "editor/dev", "dead"] as const;
-const PRIMARY_PLAYER_SURFACES = new Set(["full", "compact", "board"]);
+const PRIMARY_PLAYER_SURFACES = new Set(["full", "compact", "board", "codex/reference"]);
 
 interface UnitCardCallInventory {
   file: string;
@@ -383,10 +383,10 @@ describe("every unit render site draws through the one component", () => {
       "battle-editor.ts#1 editor/dev legacy",
       "board-render.ts#1 dead legacy",
       "board-render.ts#2 board b-arena",
-      "codex.ts#1 codex/reference legacy",
-      "codex.ts#2 codex/reference legacy",
-      "codex.ts#3 codex/reference legacy",
-      "ladder-view.ts#1 codex/reference legacy",
+      "codex.ts#1 codex/reference b-arena",
+      "codex.ts#2 codex/reference b-arena",
+      "codex.ts#3 codex/reference b-arena",
+      "ladder-view.ts#1 codex/reference b-arena",
       "run-screen.ts#1 full b-arena",
       "run-screen.ts#2 compact b-arena",
       "run-screen.ts#3 compact b-arena",
