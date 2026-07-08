@@ -6,7 +6,7 @@
 // as bare property bags.
 
 import { describe, expect, test } from "vitest";
-import { createTitleScreen, type TitleScreenEls } from "./title-screen.js";
+import { createTitleScreen, TITLE_HUB_HIERARCHY, type TitleScreenEls } from "./title-screen.js";
 
 /** The elements the screen touches, as bare bags. */
 function makeEls() {
@@ -26,8 +26,22 @@ describe("createTitleScreen", () => {
       activeRound: () => null,
     });
     screen.refresh();
-    expect(els.newRun.textContent).toMatch(/New Run/);
+    expect(els.newRun.textContent).toBe(TITLE_HUB_HIERARCHY.primaryRunAction.label);
     expect(els.continueRun.hidden).toBe(true);
+  });
+
+  test("the title hierarchy names Continue as stateful beside the primary run action", () => {
+    expect(TITLE_HUB_HIERARCHY.continueRunAction.id).toBe("title-continue");
+    expect(TITLE_HUB_HIERARCHY.ideaRoutes).toHaveLength(1);
+    expect(TITLE_HUB_HIERARCHY.towerRoutes).toHaveLength(1);
+    expect(TITLE_HUB_HIERARCHY.secondaryUtilityIds).toEqual([
+      "title-codex",
+      "title-history",
+      "title-settings",
+      "title-login",
+      "title-logout",
+      "title-dev",
+    ]);
   });
 
   test("refresh re-reads the run seam: Continue appears with its round, then hides again", () => {

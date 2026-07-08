@@ -23,13 +23,14 @@
            are slice C's reusable renders (ideasLadderHtml / arenaTowerHtml)
            dropped into the hub columns by main.ts; the column headers double as
            the doors to the full-screen ideas / leaderboard views. The old menu's
-           account, settings, history and dev entries stay reachable in the thin
+           codex, account, settings, history and dev entries stay reachable in the thin
            utility strip so nothing was lost. -->
       <section id="title-view">
-        <!-- Utility strip: login state, settings, history, dev — small, top
-             corner. main.ts wires each by id (unchanged from the old menu). -->
+        <!-- Utility strip: codex, login state, settings, history, dev — small,
+             top corner. main.ts wires each by id (unchanged from the old menu). -->
         <div class="hub-util">
           <button type="button" id="title-history" class="hub-util-link">History</button>
+          <button type="button" id="title-codex" class="hub-util-link">Codex</button>
           <button type="button" id="title-settings" class="hub-util-link" title="Settings — dev mode">⚙ Settings</button>
           <!-- #066: the dev entry is revealed only when dev mode is on. -->
           <button type="button" id="title-dev" class="hub-util-link" title="Battle sandbox, gauntlet sweeps, team editor" hidden>dev tools</button>
@@ -105,7 +106,6 @@
               <button type="button" id="title-play" class="hub-newrun">▸ New Run</button>
               <button type="button" id="title-continue" class="hub-continue" hidden>Continue</button>
               <button type="button" id="title-create-idea" class="hub-create">Create an idea</button>
-              <button type="button" id="title-codex" class="hub-codex">Codex</button>
             </div>
             <div class="hub-stats">
               <div class="hub-stat">

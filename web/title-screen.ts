@@ -11,7 +11,25 @@ import { shapeSvg } from "./unit-card.js";
 
 /** The always-present label on the New Run primary (the mockup's "▸ New Run").
  * Kept on #title-play so the live nav probes still reach the run by that id. */
-const NEW_RUN_LABEL = "▸ New Run";
+export const NEW_RUN_LABEL = "▸ New Run";
+
+/** The intended title hierarchy for the diet work: one primary run action, one
+ * idea route, one tower route, and a small secondary utility strip. This is the
+ * seam later slices use when removing duplicate CTAs/tuning phone order. */
+export const TITLE_HUB_HIERARCHY = {
+  primaryRunAction: { id: "title-play", label: NEW_RUN_LABEL },
+  continueRunAction: { id: "title-continue", label: "Continue" },
+  ideaRoutes: [{ id: "title-ideas", label: "Ideas" }],
+  towerRoutes: [{ id: "title-leaderboard", label: "Arena Tower" }],
+  secondaryUtilityIds: [
+    "title-codex",
+    "title-history",
+    "title-settings",
+    "title-login",
+    "title-logout",
+    "title-dev",
+  ],
+} as const;
 
 export interface TitleScreenEls {
   /** The ornament strip — filled once with one shape per pool unit. */
@@ -51,7 +69,7 @@ export function createTitleScreen(els: TitleScreenEls, deps: TitleScreenDeps): T
     .map((name) => shapeSvg(name, false))
     .join("");
 
-  els.newRun.textContent = NEW_RUN_LABEL; // static — the primary never changes label
+  els.newRun.textContent = TITLE_HUB_HIERARCHY.primaryRunAction.label; // static — the primary never changes label
   els.newRun.title = "Start a new run — shop, fight, climb the ladder";
 
   return {
