@@ -58,6 +58,7 @@ export function createPalette(deps: PaletteDeps): Palette {
         : pool
             .map((def, i) =>
               unitCardHtml({
+                surface: "editor/dev",
                 artName: def.name,
                 label: def.name,
                 hp: def.base.hp,

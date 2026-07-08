@@ -174,7 +174,11 @@ export function familySigil(family: Family, hex: string = FAMILY_HEX[family], cl
   return `<svg class="${cls}" viewBox="0 0 100 100" aria-hidden="true">${familySigilInner(family, hex)}</svg>`;
 }
 
+export type UnitCardSurface = "full" | "compact" | "board" | "codex/reference" | "editor/dev" | "dead";
+
 export interface UnitCardOpts {
+  /** Inventory/guard label for PRD #111: every product call site must name its surface. */
+  surface?: UnitCardSurface;
   /** What entity this card renders. The skeleton (art, name, framed stats,
    * chips) and the fixed size are IDENTICAL for both — a Status is the same
    * shape as a Unit (a bundle of Parts, PRD #074 ontology), so it wears the

@@ -233,6 +233,7 @@ export function createLadderView(root: HTMLElement, deps: LadderViewDeps): Ladde
   function unitCard(u: UnitDef, addr: string, i: number, selected: boolean): string {
     const level = u.level ?? 1;
     return unitCardHtml({
+      surface: "codex/reference",
       artName: u.name,
       label: u.name,
       hp: u.base.hp,

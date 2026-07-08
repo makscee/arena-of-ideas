@@ -146,6 +146,7 @@ export function createBattleEditor(els: BattleEditorEls, deps: BattleEditorDeps)
       .join("");
     const statuses = (u.statuses ?? []).map((s, j) => statusRow(side, i, j, String(s.status), Number(s.stacks))).join("");
     const card = unitCardHtml({
+      surface: "editor/dev",
       artName: u.name ?? "",
       label: u.name ?? "",
       hp: u.base?.hp ?? "",

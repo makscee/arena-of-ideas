@@ -81,6 +81,7 @@ export function createCodex(
   // abilities do. No codex-local lookalike anymore.
   const statusCards = data.statuses.map((s) => {
     const card = unitCardHtml({
+      surface: "codex/reference",
       kind: "status",
       artName: s.name,
       label: s.name,
@@ -133,6 +134,7 @@ export function createCodex(
     const level = def?.level ?? 1;
     const search = [u.name, `${u.hp}hp`, `${u.pwr}pwr`, ...u.abilities, ...u.statuses].join(" ").toLowerCase();
     const card = unitCardHtml({
+      surface: "codex/reference",
       artName: u.name,
       label: u.name,
       hp: u.hp,
@@ -191,6 +193,7 @@ export function createCodex(
     const fragment = `codex/part/${p.family}/${p.kind}`;
     const search = `${p.name} ${p.family} ${p.meaning}`.toLowerCase();
     const card = unitCardHtml({
+      surface: "codex/reference",
       kind: "part",
       artName: `${p.family}:${p.kind}`,
       label: p.name,

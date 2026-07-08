@@ -12,6 +12,103 @@ import type { Family } from "../src/index.js";
 import { nameFamily, shapeSvg, unitCardHtml } from "./unit-card.js";
 
 const FAMILIES: Family[] = ["Poison", "Strike", "Shield", "Summon", "Arcane", "Control", "Heal"];
+const CARD_SURFACES = ["full", "compact", "board", "codex/reference", "editor/dev", "dead"] as const;
+const PRIMARY_PLAYER_SURFACES = new Set(["full", "compact", "board"]);
+
+interface UnitCardCallInventory {
+  file: string;
+  index: number;
+  surface: string;
+  legacy: boolean;
+}
+
+function extractUnitCardCallBodies(src: string): string[] {
+  const bodies: string[] = [];
+  let searchFrom = 0;
+  while (searchFrom < src.length) {
+    const call = src.indexOf("unitCardHtml", searchFrom);
+    if (call < 0) break;
+    let i = call + "unitCardHtml".length;
+    while (/\s/.test(src[i] ?? "")) i++;
+    if (src[i] !== "(") {
+      searchFrom = i;
+      continue;
+    }
+    i++;
+    while (/\s/.test(src[i] ?? "")) i++;
+    if (src[i] !== "{") {
+      searchFrom = i;
+      continue;
+    }
+    const start = i;
+    let depth = 0;
+    let quote: string | undefined;
+    let lineComment = false;
+    let blockComment = false;
+    for (; i < src.length; i++) {
+      const ch = src[i]!;
+      const next = src[i + 1] ?? "";
+      if (lineComment) {
+        if (ch === "\n") lineComment = false;
+        continue;
+      }
+      if (blockComment) {
+        if (ch === "*" && next === "/") {
+          blockComment = false;
+          i++;
+        }
+        continue;
+      }
+      if (quote !== undefined) {
+        if (ch === "\\") {
+          i++;
+          continue;
+        }
+        if (ch === quote) quote = undefined;
+        continue;
+      }
+      if (ch === "/" && next === "/") {
+        lineComment = true;
+        i++;
+        continue;
+      }
+      if (ch === "/" && next === "*") {
+        blockComment = true;
+        i++;
+        continue;
+      }
+      if (ch === '"' || ch === "'" || ch === "`") {
+        quote = ch;
+        continue;
+      }
+      if (ch === "{") depth++;
+      if (ch === "}") {
+        depth--;
+        if (depth === 0) {
+          bodies.push(src.slice(start + 1, i));
+          searchFrom = i + 1;
+          break;
+        }
+      }
+    }
+    if (i >= src.length) break;
+  }
+  return bodies;
+}
+
+function unitCardInventory(here: string): UnitCardCallInventory[] {
+  const calls: UnitCardCallInventory[] = [];
+  const sources = readdirSync(here).filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts") && f !== "unit-card.ts").sort();
+  for (const file of sources) {
+    const src = readFileSync(resolve(here, file), "utf8");
+    extractUnitCardCallBodies(src).forEach((body, i) => {
+      const surface = body.match(/\bsurface\s*:\s*"([^"]+)"/)?.[1] ?? "unclassified";
+      const legacy = !/\b(?:variant|family|color)\s*:/.test(body);
+      calls.push({ file, index: i + 1, surface, legacy });
+    });
+  }
+  return calls;
+}
 
 describe("unitCardHtml", () => {
   const card = unitCardHtml({
@@ -273,12 +370,37 @@ describe("B·Arena card (#080): compact variant", () => {
 
 describe("every unit render site draws through the one component", () => {
   const here = dirname(fileURLToPath(import.meta.url));
-  for (const f of ["run-screen.ts", "board-render.ts", "ladder-view.ts", "codex.ts"]) {
+  for (const f of ["battle-editor.ts", "board-render.ts", "codex.ts", "ladder-view.ts", "run-screen.ts", "unit-palette.ts"]) {
     test(`${f} imports unit-card`, () => {
       const src = readFileSync(resolve(here, f), "utf8");
       expect(src).toMatch(/from "\.\/unit-card\.js"/);
     });
   }
+
+  test("PRD #111 inventory: every product unit-card caller names its surface", () => {
+    const inventory = unitCardInventory(here).map((c) => `${c.file}#${c.index} ${c.surface} ${c.legacy ? "legacy" : "b-arena"}`);
+    expect(inventory).toEqual([
+      "battle-editor.ts#1 editor/dev legacy",
+      "board-render.ts#1 dead legacy",
+      "board-render.ts#2 board b-arena",
+      "codex.ts#1 codex/reference legacy",
+      "codex.ts#2 codex/reference legacy",
+      "codex.ts#3 codex/reference legacy",
+      "ladder-view.ts#1 codex/reference legacy",
+      "run-screen.ts#1 full b-arena",
+      "run-screen.ts#2 compact b-arena",
+      "run-screen.ts#3 compact b-arena",
+      "unit-palette.ts#1 editor/dev legacy",
+    ]);
+    for (const c of unitCardInventory(here)) expect(CARD_SURFACES).toContain(c.surface);
+  });
+
+  test("PRD #111 guard: primary player-facing card surfaces cannot be legacy or unclassified", () => {
+    const offenders = unitCardInventory(here)
+      .filter((c) => c.surface === "unclassified" || (PRIMARY_PLAYER_SURFACES.has(c.surface) && c.legacy))
+      .map((c) => `${c.file}#${c.index} ${c.surface} ${c.legacy ? "legacy" : "b-arena"}`);
+    expect(offenders).toEqual([]);
+  });
 
   // A rogue card is impossible anywhere in web/ (slice-2 carry from Cass):
   // every idiom that could mint a `unit`-classed element outside unit-card.ts

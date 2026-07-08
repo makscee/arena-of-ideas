@@ -417,6 +417,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   function offerCard(def: UnitDef, i: number, gold: number): string {
     const sel = selected?.where === "offer" && selected.index === i;
     return unitCardHtml({
+      surface: "full",
       artName: def.name,
       label: def.name,
       hp: def.base.hp,
@@ -446,6 +447,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     // Pips (IA-6): copies toward the next fuse, visible at a glance — the
     // title carries the words. The just-fused card flashes once (GA-7).
     return unitCardHtml({
+      surface: "compact",
       artName: u.name,
       label: u.name,
       hp: u.base.hp,
@@ -774,6 +776,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
    * footer, just the card so the player sees what they'd face. */
   function bossUnitCard(u: UnitDef): string {
     return unitCardHtml({
+      surface: "compact",
       artName: u.name,
       label: u.name,
       hp: u.base.hp,
