@@ -29,6 +29,9 @@ services:
       NODE_ENV: production
       PORT: "8787"
       DB_PATH: /data/arena.db
+      ARENA_BUILD_IMAGE: ${IMAGE_TAG:-ghcr.io/makscee/arena-of-ideas:latest}
+      ARENA_BUILD_COMMIT: ${ARENA_BUILD_COMMIT:-unknown}
+      ARENA_BUILD_TIME: ${ARENA_BUILD_TIME:-unknown}
       # MOCK_MODE is deliberately absent: it mounts an OTP-code oracle
       # (/_mock/last-code) and must never exist in prod. e2e/dev only.
     volumes:

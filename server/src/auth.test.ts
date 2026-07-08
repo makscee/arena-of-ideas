@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { describe, expect, test, vi } from "vitest";
 import type { Hono } from "hono";
-import { createApp } from "./app.js";
+import { createApp, type AppDeps } from "./app.js";
 import type { AuthEnv } from "./auth.js";
 import { openDb } from "./db.js";
 import { createMockMailClient, type MailClient, type MockMailClient } from "./mail.js";
@@ -23,7 +23,7 @@ interface Ctx {
   advance: (seconds: number) => void;
 }
 
-function makeCtx(): Ctx {
+function makeCtx(overrides: Pick<Partial<AppDeps>, "buildIdentity"> = {}): Ctx {
   const { db } = openDb(":memory:");
   const mailer = createMockMailClient();
   let nowSec = 1_750_000_000;
@@ -38,6 +38,7 @@ function makeCtx(): Ctx {
       emailStart: createRateLimiter({ limit: 5, windowMs: WINDOW_MS, clock: clockMs }),
       poolServe: createRateLimiter({ limit: 100, windowMs: WINDOW_MS, clock: clockMs }),
     },
+    ...overrides,
   });
   return { app, db, mailer, advance: (s) => (nowSec += s) };
 }
@@ -90,6 +91,28 @@ async function login(ctx: Ctx, email: string, ip = "10.0.0.1"): Promise<string> 
   const body = (await verify.json()) as { token: string };
   return body.token;
 }
+
+// ---------------------------------------------------------------------------
+// Operator health
+// ---------------------------------------------------------------------------
+
+describe("healthz", () => {
+  test("exposes the build identity needed for local/image/live proof", async () => {
+    const buildIdentity = {
+      source: "arena-of-ideas" as const,
+      version: "5.0.0-alpha.0",
+      commit: "d0602c52",
+      image: "ghcr.io/makscee/arena-of-ideas:d0602c52",
+      buildTime: "2026-07-08T10:00:00Z",
+    };
+    const ctx = makeCtx({ buildIdentity });
+
+    const res = await ctx.app.request("/healthz");
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, build: buildIdentity });
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Happy path

@@ -44,10 +44,16 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd -r arena && useradd -r -g arena arena
 
+ARG ARENA_BUILD_COMMIT=unknown
+ARG ARENA_BUILD_IMAGE=unknown
+ARG ARENA_BUILD_TIME=unknown
 ENV NODE_ENV=production \
     PORT=8787 \
     DB_PATH=/data/arena.db \
-    STATIC_DIR=/app/public
+    STATIC_DIR=/app/public \
+    ARENA_BUILD_COMMIT=${ARENA_BUILD_COMMIT} \
+    ARENA_BUILD_IMAGE=${ARENA_BUILD_IMAGE} \
+    ARENA_BUILD_TIME=${ARENA_BUILD_TIME}
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
