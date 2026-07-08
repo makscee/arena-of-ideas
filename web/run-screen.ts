@@ -102,7 +102,7 @@ export const nextFightLine = (round: number, rivals: number, champ: TeamSnapshot
   rivals > 0
     ? `next fight: a live ghost from floor ${round}'s pool — ${rivals} waiting (peek below)`
     : champ !== null
-      ? `no live ghosts at floor ${round} — challenge the ${championPhrase(champ)} to take the crown and grow the lineage`
+      ? `no live ghosts at floor ${round} — challenge ${championPhrase(champ)} to take the crown and grow the lineage`
       : `no live ghosts at floor ${round} — this climb uses a synthesized seed-unit team; a completed run can found floor 1`;
 
 // ---------- boss-challenge copy (#075 slice 4; champion-floor made dynamic in
