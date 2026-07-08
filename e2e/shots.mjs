@@ -16,6 +16,27 @@ const outDir = process.env.SHOTS_DIR ?? join(here, ".shots");
 mkdirSync(outDir, { recursive: true });
 
 const browser = await launch();
+const runStamp = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+let ipCounter = 0;
+
+function shotContext(viewport) {
+  ipCounter += 1;
+  return browser.newContext({
+    viewport,
+    hasTouch: viewport.width < 700,
+    extraHTTPHeaders: { "x-forwarded-for": `10.109.1.${ipCounter}` },
+  });
+}
+
+async function freshTitle(viewport, initScript = () => localStorage.removeItem("aoi.run.v1"), initArg) {
+  const ctx = await shotContext(viewport);
+  const page = await ctx.newPage();
+  page.setDefaultTimeout(15_000);
+  await page.addInitScript(initScript, initArg);
+  await page.goto(BASE, { waitUntil: "domcontentloaded" });
+  await page.waitForSelector("#title-view:not([hidden])");
+  return { ctx, page };
+}
 
 async function pauseAtTop(page) {
   await page.click("#run-fight");
@@ -45,6 +66,55 @@ const maxStep = (page) => page.evaluate(() => Number(document.querySelector("#sc
 async function shot(page, name) {
   await page.screenshot({ path: join(outDir, `${name}.png`), fullPage: false });
   console.log(`shot ${name}`);
+}
+
+// Title/nav screens: the cold title, codex, leaderboard tower, and local history
+// are operator-facing proof surfaces. Capture them before battle fixtures so the
+// shot set shows the app's current v1 navigation, not just injected runs.
+const HISTORY_ARCHIVE = JSON.stringify({
+  seasons: [
+    {
+      season: 1,
+      version: 1,
+      finalTower: {
+        bosses: {
+          1: { runId: "alpha-7", round: 1, seq: 2, team: [{ name: "Grunt", base: { hp: 5, pwr: 1 } }] },
+          2: { runId: "beta-3", round: 2, seq: 1, team: [{ name: "Ogre", base: { hp: 9, pwr: 3 } }] },
+        },
+        pools: {},
+      },
+    },
+  ],
+});
+
+for (const [vp, tag] of [
+  [DESKTOP, "desktop"],
+  [PHONE, "phone"],
+]) {
+  const { ctx, page } = await freshTitle(vp, (archive) => {
+    localStorage.removeItem("aoi.run.v1");
+    localStorage.setItem("aoi.season-archive.v1", archive);
+  }, HISTORY_ARCHIVE);
+
+  await shot(page, `${tag}-0-title`);
+
+  await page.click("#title-codex");
+  await page.waitForSelector("#codex-view:not([hidden])");
+  await shot(page, `${tag}-0a-codex`);
+  await page.click("#home-button");
+  await page.waitForSelector("#title-view:not([hidden])");
+
+  await page.click("#title-leaderboard");
+  await page.waitForSelector("#leaderboard-view:not([hidden])");
+  await shot(page, `${tag}-0b-leaderboard`);
+  await page.click("#home-button");
+  await page.waitForSelector("#title-view:not([hidden])");
+
+  await page.click("#title-history");
+  await page.waitForSelector("#history-view:not([hidden])");
+  await shot(page, `${tag}-0c-history`);
+
+  await ctx.close();
 }
 
 for (const [vp, tag] of [
@@ -95,73 +165,91 @@ for (const [vp, tag] of [
   await ctx.close();
 }
 
-// Ideas screen (#076 slice 3) — empty state (logged out, read-only), then with
-// a few ideas (logged in), then after voting (rank moved, a vote held). Each at
-// desktop AND 375px, so a human confirms the list, submit box and vote pills
-// fit and read at phone width. Requires the live MOCK_MODE server (the e2e
-// orchestrator's `--serve`), so loginViaUi can complete a real login.
-//
-// FRESH SERVER PER VIEWPORT: the ideas table is global server state, so running
-// both viewports against ONE server would show the phone pass the desktop pass's
-// ideas + inherited votes — misleading to a reviewer. Set SHOTS_IDEAS_VIEWPORT
-// to "desktop" or "phone" to capture ONE viewport only, and run the script once
-// per viewport against a freshly (re)started serve, e.g.:
-//   npm run e2e:stop; npm run e2e:serve  # fresh empty ideas table
-//   SHOTS_IDEAS_VIEWPORT=desktop AOI_BASE_URL=… node --import tsx/esm e2e/shots.mjs
-//   npm run e2e:stop; npm run e2e:serve  # fresh again
-//   SHOTS_IDEAS_VIEWPORT=phone   AOI_BASE_URL=… node --import tsx/esm e2e/shots.mjs
-// Unset, it captures both against the current server (fine for the battle shots
-// above, which inject their own per-page state and share nothing).
+// Ideas screen (#076 slice 3, current #082 one-idea-per-player/day rule) —
+// capture the public read-only list, then a logged-in submit, then a vote. A
+// table with several ideas is still useful for review, but each idea is seeded
+// by a DISTINCT account; the screenshot walk must never fight the product's
+// one-idea-per-day rule by submitting multiple ideas as one player.
+async function revealSubmit(page) {
+  await page.click("#ideas-reveal");
+  await page.waitForSelector("#ideas-form:not([hidden])");
+}
+
+async function seedIdea(viewport, tag, index, text) {
+  const { ctx, page } = await freshTitle(viewport);
+  await loginViaUi(page, `shots-${tag}-seed-${index}-${runStamp}@probe.test`, `Shots ${tag} seed ${index}`);
+  await page.click("#title-ideas");
+  await page.waitForSelector("#ideas-view:not([hidden])");
+  await revealSubmit(page);
+  await page.fill("#ideas-text", text);
+  await page.click("#ideas-submit");
+  await page.waitForFunction(
+    (t) => [...document.querySelectorAll("#ideas-list .ideas-text")].some((e) => e.textContent === t),
+    text,
+  );
+  await ctx.close();
+}
+
+const clickVote = (page, text, dir) =>
+  page.evaluate(
+    ({ t, d }) => {
+      const rows = [...document.querySelectorAll("#ideas-list .ideas-row")];
+      rows.find((r) => r.querySelector(".ideas-text")?.textContent === t).querySelector(`.ideas-vote-${d}`).click();
+    },
+    { t: text, d: dir },
+  );
+
 const ideasViewports = [
   [DESKTOP, "desktop"],
   [PHONE, "phone"],
 ].filter(([, tag]) => !process.env.SHOTS_IDEAS_VIEWPORT || process.env.SHOTS_IDEAS_VIEWPORT === tag);
 
 for (const [vp, tag] of ideasViewports) {
-  const ctx = await browser.newContext({ viewport: vp, hasTouch: vp.width < 700 });
-  const page = await ctx.newPage();
-  page.setDefaultTimeout(15_000);
-  await page.addInitScript(() => localStorage.removeItem("aoi.run.v1"));
-  await page.goto(BASE, { waitUntil: "domcontentloaded" });
-  await page.waitForSelector("#title-view:not([hidden])");
+  const seeded = [
+    `${tag} idea — add a draft phase`,
+    `${tag} idea — let me rename my champion`,
+  ];
+  for (const [i, text] of seeded.entries()) await seedIdea(vp, tag, i + 1, text);
 
-  // Empty/read-only state — logged out, the login note shows.
+  const { ctx, page } = await freshTitle(vp);
+
+  // Public/read-only state — logged out, the login note shows, and any ideas
+  // already on the table are readable.
   await page.click("#title-ideas");
   await page.waitForSelector("#ideas-view:not([hidden])");
   await page.waitForFunction(() => document.querySelector("#ideas-list").children.length > 0);
-  await shot(page, `${tag}-8-ideas-empty`);
+  await shot(page, `${tag}-8-ideas-readonly`);
 
-  // Walk back to the title, then log in and add a few ideas.
+  // Walk back to the title, log in, and add this player's ONE idea for today.
   await page.click("#home-button");
   await page.waitForSelector("#title-view:not([hidden])");
-  await loginViaUi(page, `shots-${tag}@probe.test`, `Shots ${tag}`);
+  const mine = `${tag} idea — make poison stack faster`;
+  await loginViaUi(page, `shots-${tag}-main-${runStamp}@probe.test`, `Shots ${tag}`);
   await page.click("#title-ideas");
   await page.waitForSelector("#ideas-view:not([hidden])");
-  await page.click("#ideas-reveal"); // open the (collapsed) submit box
-  await page.waitForSelector("#ideas-form:not([hidden])");
-  for (const text of [
-    "Make poison stack faster",
-    "Add a draft phase before the run",
-    "Let me rename my champion",
-  ]) {
-    await page.fill("#ideas-text", text);
-    await page.click("#ideas-submit");
-    await page.waitForFunction(
-      (t) => [...document.querySelectorAll("#ideas-list .ideas-text")].some((e) => e.textContent === t),
-      text,
-    );
-  }
+  await revealSubmit(page);
+  await page.waitForFunction(
+    (texts) => texts.every((t) => [...document.querySelectorAll("#ideas-list .ideas-text")].some((e) => e.textContent === t)),
+    seeded,
+  );
+  await page.fill("#ideas-text", mine);
+  await page.click("#ideas-submit");
+  await page.waitForFunction(
+    (t) => [...document.querySelectorAll("#ideas-list .ideas-text")].some((e) => e.textContent === t),
+    mine,
+  );
   await shot(page, `${tag}-9-ideas-list`);
 
-  // Vote the third (bottom) idea up — its rank moves and the up arrow reads voted.
-  await page.evaluate(() => {
-    const rows = [...document.querySelectorAll("#ideas-list .ideas-row")];
-    rows.find((r) => r.querySelector(".ideas-text")?.textContent === "Let me rename my champion")
-      .querySelector(".ideas-vote-up")
-      .click();
-  });
+  // Vote this player's idea up — its score/rank moves and the up arrow reads
+  // voted. The vote path is real server state, not a DOM-only fixture.
+  await clickVote(page, mine, "up");
   await page.waitForFunction(
-    () => document.querySelector('#ideas-list .ideas-vote-up[aria-pressed="true"]') !== null,
+    (t) => {
+      const rows = [...document.querySelectorAll("#ideas-list .ideas-row")];
+      const row = rows.find((r) => r.querySelector(".ideas-text")?.textContent === t);
+      return row?.querySelector('.ideas-vote-up[aria-pressed="true"]') !== null;
+    },
+    mine,
   );
   await shot(page, `${tag}-10-ideas-voted`);
 
