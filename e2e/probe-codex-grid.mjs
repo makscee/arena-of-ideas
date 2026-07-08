@@ -2,9 +2,9 @@
 //  1. Grid layout: units sit multi-column on a desk and exactly two abreast
 //     at 375px; statuses/rules grids are multi-column on a desk, single at
 //     375px; no horizontal overflow at either width.
-//  2. The unit entries draw the SHARED card (shape art, name, framed hp/pwr,
-//     chips) — the slice-1 component, not a codex-local lookalike; status
-//     cards carry a per-status colour identity (distinct swatch hues).
+//  2. The unit/status/part entries draw the B·Arena reference variant (sigil,
+//     name, framed stats/tag, chips) — the unified card component, not a
+//     codex-local lookalike.
 //  3. The search filter hides non-matching cards (and emptied sections) and
 //     restores them on clear.
 //  4. Deep links land on the right card — #codex/unit/X, #codex/status/X and
@@ -77,16 +77,16 @@ for (const [viewport, tag] of [
   }
   check(await noHorizontalOverflow(page), `${tag} codex has no horizontal overflow`);
 
-  // -- 2. unit AND status entries draw the ONE shared card (#078) --
-  // The shared-card skeleton string a card must carry to BE the shared card.
-  const SHARED_SKELETON = "svg.shape,.uname,.unums .hp,.unums .pwr,.chips";
+  // -- 2. unit AND status entries draw the B·Arena reference card (#111) --
+  // The B·Arena reference skeleton string a card must carry to BE the shared card.
+  const REFERENCE_SKELETON = "svg.ub-sigil,.uname,.unums .hp,.unums .pwr,.chips";
   // Null-safe: a section whose entry has NO `.unit` (the old status lookalike)
   // returns "(no .unit)" so the assertion fails cleanly instead of throwing.
   const skeletonOf = async (sel) => {
     const el = await page.$(sel);
     if (el === null) return "(no .unit)";
     return el.evaluate((card) =>
-      ["svg.shape", ".uname", ".unums .hp", ".unums .pwr", ".chips"]
+      ["svg.ub-sigil", ".uname", ".unums .hp", ".unums .pwr", ".chips"]
         .filter((w) => card.querySelector(w) !== null)
         .join(","),
     );
@@ -97,19 +97,17 @@ for (const [viewport, tag] of [
   };
   const unitSkeleton = await skeletonOf("#codex-sec-units .codex-entry .unit");
   check(
-    unitSkeleton === SHARED_SKELETON,
-    `${tag} codex unit entry carries the full shared-card skeleton`,
+    unitSkeleton === REFERENCE_SKELETON,
+    `${tag} codex unit entry carries the B·Arena reference skeleton`,
     unitSkeleton,
   );
-  // The Status card is the SAME card (#078): same .unit skeleton, not the old
-  // .codex-status-entry lookalike. This must FAIL against the old codex, whose
-  // status entry had a .codex-swatch + .codex-entry-name and NO .unit / svg.shape
-  // / .unums — the skeleton string would have come back empty (no `.unit` to
-  // match) instead of the shared skeleton.
+  // The Status card is the SAME B·Arena reference card: same .unit skeleton, not
+  // the old .codex-status-entry lookalike. The old codex had a .codex-swatch +
+  // .codex-entry-name and NO .unit / ub-sigil / .unums.
   const statusSkeleton = await skeletonOf("#codex-sec-statuses .codex-entry .unit");
   check(
-    statusSkeleton === SHARED_SKELETON,
-    `${tag} codex STATUS entry carries the full shared-card skeleton (#078)`,
+    statusSkeleton === REFERENCE_SKELETON,
+    `${tag} codex STATUS entry carries the B·Arena reference skeleton (#111)`,
     statusSkeleton,
   );
   check(
@@ -148,11 +146,11 @@ for (const [viewport, tag] of [
   check(partCount >= 30, `${tag} parts section shows the full Part vocabulary`, `cards=${partCount}`);
   const partSkeleton = await skeletonOf("#codex-sec-parts .codex-entry .unit");
   // A Part frames its family in the stat band (.ptag), not hp/pwr — so it carries
-  // the shared skeleton minus the per-stat cells, but IS the same .unit card with
-  // shape art and chips. Assert the card identity, not the stat cells.
+  // the shared skeleton minus the per-stat cells, but IS the same B·Arena card
+  // with sigil art and chips. Assert the card identity, not the stat cells.
   check(
-    partSkeleton.includes("svg.shape") && partSkeleton.includes(".uname") && partSkeleton.includes(".chips"),
-    `${tag} codex part entry draws the shared .unit card (art + name + chips)`,
+    partSkeleton.includes("svg.ub-sigil") && partSkeleton.includes(".uname") && partSkeleton.includes(".chips"),
+    `${tag} codex part entry draws the B·Arena reference .unit card (sigil + name + chips)`,
     partSkeleton,
   );
   check(
@@ -253,8 +251,8 @@ for (const [viewport, tag] of [
     "cold-load #codex/unit/Necromancer lands on the highlighted unit card",
   );
   check(
-    await page.$eval("#codex-unit-Necromancer .unit svg.shape", (el) => el !== null),
-    "the deep-linked unit card is the shared card (shape art present)",
+    await page.$eval("#codex-unit-Necromancer .unit.unit-b.is-reference svg.ub-sigil", (el) => el !== null),
+    "the deep-linked unit card is the B·Arena reference card (sigil present)",
   );
   await ctx.close();
 }

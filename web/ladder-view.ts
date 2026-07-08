@@ -8,6 +8,7 @@
 import {
   BOOTSTRAP_RUN_ID,
   FAMILY_HEX,
+  abilityChips,
   type AbilityRegistry,
   type Family,
   type LadderStore,
@@ -156,6 +157,17 @@ export function createLadderView(root: HTMLElement, deps: LadderViewDeps): Ladde
     return deps.abilities[u.ability]?.family ?? nameFamily(u.name);
   }
 
+  function abilityLine(u: UnitDef): {
+    abilityLabel?: string | undefined;
+    trigger?: string | undefined;
+    triggerGlyph?: string | undefined;
+    target?: string | undefined;
+    action?: string | undefined;
+  } {
+    const ab = deps.abilities[u.ability];
+    return ab === undefined ? {} : { abilityLabel: ab.name, ...abilityChips(ab) };
+  }
+
   /** The tower's rungs, top (champion) first: the champion, then every ghost in
    * the pools ordered by floor (round) descending, then submission order. The
    * champion's own boss-ghost is de-duped out of the pool sweep so it appears
@@ -240,6 +252,9 @@ export function createLadderView(root: HTMLElement, deps: LadderViewDeps): Ladde
       pwr: u.base.pwr,
       statuses: u.statuses,
       registry: deps.registry,
+      family: unitFamily(u),
+      variant: "reference",
+      ...abilityLine(u),
       ...(level > 1 ? { level } : {}),
       sel: selected,
       classes: "run-card lv-unit",

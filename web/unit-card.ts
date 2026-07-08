@@ -256,7 +256,7 @@ export interface UnitCardOpts {
    * `color`) opts a call site into the new chamfered, family-coloured card;
    * callers that pass none keep the legacy #078 card unchanged. Default `full`
    * once opted in. */
-  variant?: "full" | "compact" | undefined;
+  variant?: "full" | "compact" | "reference" | undefined;
   /** The ABILITY cap-label in the header (e.g. "TOXIC STRIKE"). Falls back to
    * the family name uppercased. New card only. */
   abilityLabel?: string | undefined;
@@ -345,6 +345,8 @@ function variantCardHtml(o: UnitCardOpts): string {
     "unit",
     "unit-b",
     `is-${variant}`,
+    o.kind === "status" && "is-status",
+    o.kind === "part" && "is-part",
     FAMILY_CLASS[family],
     o.classes,
     o.front === true && "is-front",
@@ -358,7 +360,10 @@ function variantCardHtml(o: UnitCardOpts): string {
 
   const label = `<span class="uname">${esc(o.label)}</span>`;
   const cap = `<span class="ub-cap">${abilityStar("ub-spark")}<span class="ub-cap-t">${esc((o.abilityLabel ?? family).toUpperCase())}</span></span>`;
-  const nums = `<span class="unums"><span class="hp">${o.hp}</span><span class="ub-sep">·</span><span class="pwr">${o.pwr}</span></span>`;
+  const nums =
+    o.kind === "part"
+      ? `<span class="unums"><span class="ptag">${esc(o.tag ?? "")}</span></span>`
+      : `<span class="unums"><span class="hp">${o.hp}</span><span class="ub-sep">·</span><span class="pwr">${o.pwr}</span></span>`;
 
   // Ability line: <icon> trigger ▸ target ▸ <icon> action — any subset,
   // separators only between present segments. The trigger mark is event-kind-
@@ -391,11 +396,11 @@ function variantCardHtml(o: UnitCardOpts): string {
   const sigil = familySigil(family, hex);
   const sigilMini = familySigil(family, hex, "ub-sigil ub-sigil-mini");
 
-  const head =
-    variant === "compact"
-      ? `<div class="ub-head"><div class="ub-mini">${sigilMini}</div><div class="ub-id">${label}${cap}</div>${nums}</div>`
-      : `<div class="ub-head"><div class="ub-id">${label}${cap}</div>${nums}</div>`;
-  const art = variant === "compact" ? "" : `<div class="ub-art">${sigil}</div>`;
+  const compactHead = variant === "compact" || variant === "reference";
+  const head = compactHead
+    ? `<div class="ub-head"><div class="ub-mini">${sigilMini}</div><div class="ub-id">${label}${cap}</div>${nums}</div>`
+    : `<div class="ub-head"><div class="ub-id">${label}${cap}</div>${nums}</div>`;
+  const art = compactHead ? "" : `<div class="ub-art">${sigil}</div>`;
 
   return `<div class="${cls}" style="--fam:${hex}" ${o.attrs} title="${esc(o.title)}">${o.topTag ?? ""}${head}${art}${ability}${chips}${foot}</div>`;
 }
