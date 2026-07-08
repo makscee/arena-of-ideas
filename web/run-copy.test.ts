@@ -61,10 +61,15 @@ describe("run-screen tower vocabulary (PRD #110 slice 2)", () => {
     expect(empty).not.toContain("champion spot");
   });
 
+  test("bootstrap next-fight copy has one article and names the solo convenience champion", () => {
+    const line = nextFightLine(4, 0, bootstrap);
+    expect(line).toBe("no live ghosts at floor 4 — challenge the solo bootstrap champion to take the crown and grow the lineage");
+    expect(line).not.toContain("the the solo bootstrap champion");
+  });
+
   test("championed floors point at the reigning champion and lineage growth", () => {
     const line = nextFightLine(4, 0, champ);
-    expect(line).toContain("reigning champion web-reign");
-    expect(line).toContain("take the crown and grow the lineage");
+    expect(line).toBe("no live ghosts at floor 4 — challenge reigning champion web-reign (crowned at round 4) to take the crown and grow the lineage");
     expect(line.toLowerCase()).not.toContain("fresh ladder");
     expect(line.toLowerCase()).not.toContain("pre-seeded");
   });
