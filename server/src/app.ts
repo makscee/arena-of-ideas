@@ -60,6 +60,7 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { openEmptyLadder } from "../../src/index.js";
 import { createAuthMiddleware, type AuthEnv } from "./auth.js";
+import { readBuildIdentity, type BuildIdentity } from "./build-info.js";
 import { defaultArenaContent, type ArenaContent } from "./content.js";
 import type { DB } from "./db.js";
 import { createEmailCodes, OTP_TTL_SECONDS } from "./email-codes.js";
@@ -85,6 +86,8 @@ export interface AppDeps {
   /** The run content submissions are pinned to; defaults to the arena's
    * shipped pool + approved registry. Tests inject a tiny deterministic pool. */
   content?: ArenaContent;
+  /** Operator-facing identity for local/image/live proof. */
+  buildIdentity?: BuildIdentity;
 }
 
 /** Prod limiters: 5 starts per IP and 5 per email, per 10 minutes; 300 pool
@@ -136,6 +139,7 @@ async function jsonBody(req: Request): Promise<Record<string, unknown> | null> {
 export function createApp(deps: AppDeps): Hono<AuthEnv> {
   const { db, clock, mailClient, rateLimiters } = deps;
   const content = deps.content ?? defaultArenaContent();
+  const buildIdentity = deps.buildIdentity ?? readBuildIdentity();
   const emailCodes = createEmailCodes(db, clock);
   const auth = createAuthMiddleware({ db, clock });
   // The shared ladder launches EMPTY in production (PRD #085 genesis): no seated
@@ -148,7 +152,7 @@ export function createApp(deps: AppDeps): Hono<AuthEnv> {
 
   const app = new Hono<AuthEnv>();
 
-  app.get("/healthz", (c) => c.json({ ok: true }));
+  app.get("/healthz", (c) => c.json({ ok: true, build: buildIdentity }));
 
   app.post("/v1/auth/login/email/start", async (c) => {
     const body = await jsonBody(c.req.raw);

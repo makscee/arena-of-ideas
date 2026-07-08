@@ -64,7 +64,7 @@ the single-container deployment; replicas would need a shared store.
   not a key). Trimmed, then validated: 2–24 chars, starting with a letter or
   digit, then letters/digits/spaces/`_ . ' -`; anything else is 400. The
   leaderboard's champion `holder` reads it.
-- `GET /healthz` → `{ok:true}`.
+- `GET /healthz` → `{ok:true, build:{source, version, commit, image, buildTime}}`; build fields are non-secret and default to `unknown` unless supplied by `ARENA_BUILD_*`/image env.
 - `GET /v1/ladder/champion` → `{champion, holder}` — **public**: the title
   screen shows the leaderboard to logged-out players, so reads need no login.
   `holder` is the owning user's display name (null for the bootstrap seat).
