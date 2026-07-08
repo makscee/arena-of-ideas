@@ -133,11 +133,11 @@ export interface CodexData {
 // ---------------------------------------------------------------------------
 
 /** Every unit a player can meet: the shop pool first (so the buyable variant
- * wins the name dedup), then bootstrap climb ghosts and the per-floor bosses
- * (Warden, Warlord, scaled vanillas), then anything those units summon (Imp).
- * The codex must cover what a player can FACE, not only what they can buy — and
- * with a boss seated on every floor (PRD 075 slice 3) that includes every team
- * in BOSS_TEAMS, the summit (old BOOTSTRAP_CHAMPION) among them. */
+ * wins the name dedup), then solo-bootstrap climb ghosts and the per-floor
+ * bootstrap bosses (Warden, Warlord, scaled vanillas), then anything those units
+ * summon (Imp). The codex must cover what a player can FACE, not only what they
+ * can buy — including the separately named solo/local bootstrap convenience
+ * tower, whose shipped teams remain meetable in that path. */
 export function codexUnits(approved: readonly UnitDef[] = [], abilities: AbilityRegistry = {}): UnitDef[] {
   const queue: UnitDef[] = [...DEFAULT_RUN_POOL, ...approved, ...BOOTSTRAP_TEAMS.flat(2), ...BOSS_TEAMS.flat()];
   const seen = new Set<string>();
@@ -296,19 +296,24 @@ export function buildCodex(registry: StatusRegistry, units: UnitDef[], abilities
     {
       key: "ghosts",
       title: "Ghosts & bosses",
-      // Mirrors ladderFight + challengeBoss (run.ts) and seedBootstrapTower (ladder.ts):
-      // one random ghost per climb; the boss challenge is the terminal move;
-      // the tower is a fixed TOWER_HEIGHT and climbing past the top overshoots.
+      // Mirrors ladderFight + challengeBoss (run.ts), openEmptyLadder, and the
+      // separately named seedBootstrapTower solo/local path (ladder.ts): production
+      // starts empty; cold-start climbs synthesize seed-unit enemies; the first
+      // completed run founds floor 1; later crowns beat the reigning champion and
+      // grow the lineage. Solo/local bootstrap may still pre-seed a tower.
       text:
-        `Before every fight your team is frozen as a ghost into your floor's pool — future runs fight it. ` +
-        `Each floor you climb fights one ghost drawn at random from that floor's pool (never your own); ` +
+        `Production/shared towers start empty: no seated bosses and no seeded climb ghosts. ` +
+        `Before each climb, your current team is frozen as a ghost into your floor's pool — future runs can fight it. ` +
+        `If the floor has a live candidate, you fight one ghost drawn at random from that floor's pool (never your own); ` +
         `win or lose, the run moves up a floor. ` +
-        `Each floor also has a seated boss: challenging it is your run's terminal move — beat the boss to take its ` +
-        `seat and end the run crowned; lose or draw and the run ends without the seat. ` +
-        `A fresh ladder opens pre-seeded as a fixed ${TOWER_HEIGHT}-floor tower — every floor has shipped ghost teams ` +
-        `and a shipped boss, the top floor's boss being the champion — so a crown is always earned by beating someone. ` +
-        `Climb past the top and you overshoot onto an empty floor: no boss, no crown, so a winning run challenges a boss ` +
-        `rather than climbing forever.`,
+        `If no live ghost is available yet, the climb synthesizes a floor-sized enemy from the seed Units off your run seed, ` +
+        `so the climb never stalls; real ghosts replace that fallback as soon as they exist. ` +
+        `Challenging a boss is terminal. On an empty tower, the first completed run founds the champion at floor 1, ` +
+        `no matter how high it climbed. ` +
+        `After that, crowns are earned by beating the reigning champion: the winner seats above the old champion and grows ` +
+        `the lineage. A vacant challenge on a championed tower is an overshoot — no boss, no crown. ` +
+        `Solo/local bootstrap is separate: a convenience path can pre-seed a ${TOWER_HEIGHT}-floor tower with shipped ` +
+        `climb ghosts and seated bosses for one-person playtests.`,
     },
     {
       key: "draws",
