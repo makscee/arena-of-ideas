@@ -36,10 +36,10 @@
           <button type="button" id="title-dev" class="hub-util-link" title="Battle sandbox, gauntlet sweeps, team editor" hidden>dev tools</button>
           <!-- #016 slice 3: real auth. Logged out shows the Login entry; logged
                in swaps it for the identity strip. login.ts drives the swap. -->
-          <button type="button" id="title-login" class="hub-util-link" title="Log in to play on the shared ladder">Login</button>
+          <button type="button" id="title-login" class="hub-util-link" title="Log in to play on the shared tower">Login</button>
           <div id="title-id" class="title-id" hidden>
             <span id="title-name"></span>
-            <button type="button" id="title-logout" title="Log out — runs go back to this device's local ladder">log out</button>
+            <button type="button" id="title-logout" title="Log out — runs go back to this device's solo/local bootstrap tower">log out</button>
           </div>
         </div>
         <p id="title-net-warn" class="run-warn" role="alert" hidden></p>
@@ -128,9 +128,9 @@
             <button type="button" id="title-leaderboard" class="hub-col-head hub-col-titlebtn" title="Open the full leaderboard">
               <span class="hub-col-headtext">
                 <span class="hub-col-title">Arena Tower</span>
-                <span class="hub-col-eyebrow hub-eyebrow-strategy">Strategy ladder</span>
+                <span class="hub-col-eyebrow hub-eyebrow-strategy">Shared tower</span>
               </span>
-              <span class="hub-col-hint">climb ▲</span>
+              <span class="hub-col-hint">empty start → floor 1</span>
             </button>
             <div id="hub-tower-body" class="hub-tower-body"></div>
           </div>
@@ -149,7 +149,7 @@
             <input type="checkbox" id="settings-dev-toggle" />
             <span>Enable dev mode — reveals the dev tools on the title screen.</span>
           </label>
-          <p class="run-dim">A local switch for this device, off by default. Dev-cheated runs never reach the shared ladder.</p>
+          <p class="run-dim">A local switch for this device, off by default. Dev-cheated runs never reach the shared tower.</p>
         </div>
       </section>
 
@@ -230,7 +230,7 @@
           </div>
         </div>
         <div id="run-new" hidden>
-          <p class="run-blurb">Climb the ladder: shop, fight a ghost of a past run each round, take the champion spot. A loss costs a life; ghosts you leave behind fight future runs.</p>
+          <p class="run-blurb">Production/shared towers start empty: climb live ghosts or synthesized seed-unit teams, then found floor 1 or beat the reigning champion to grow the lineage. A loss costs a life; ghosts you leave behind fight future runs.</p>
           <p id="run-champ" class="run-dim"></p>
           <p id="run-warn" class="run-warn" role="alert" hidden></p>
           <form id="run-new-form">
@@ -335,7 +335,7 @@
         </div>
 
         <div id="run-ladder" hidden>
-          <span class="pane-k">the ladder</span>
+          <span class="pane-k">the tower</span>
           <div id="run-ladder-body"></div>
         </div>
       </section>

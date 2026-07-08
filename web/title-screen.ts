@@ -70,7 +70,7 @@ export function createTitleScreen(els: TitleScreenEls, deps: TitleScreenDeps): T
     .join("");
 
   els.newRun.textContent = TITLE_HUB_HIERARCHY.primaryRunAction.label; // static — the primary never changes label
-  els.newRun.title = "Start a new run — shop, fight, climb the ladder";
+  els.newRun.title = "Start a run on the tower — live ghosts first, synthesized seed-unit climbs on an empty start";
 
   return {
     refresh(): void {
