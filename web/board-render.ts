@@ -91,6 +91,7 @@ function unitCard(
     ? `${displayName} — dead · tap to inspect`
     : `${displayName} — ${u.hp}/${u.maxHp} hp, ${u.pwr} pwr · tap to inspect`;
   return unitCardHtml({
+    surface: "dead", // legacy boardHtml/renderBoard is test-only; live viewer uses battleHtml below.
     artName: u.name,
     label: displayName,
     side, // tints the name by team (#065 item 2)
@@ -285,6 +286,7 @@ function sideCardB(
     ? `${ctx.name(u.id)} — dead · tap to inspect`
     : `${ctx.name(u.id)} — ${u.hp}/${u.maxHp} hp, ${u.pwr} pwr · tap to inspect`;
   return unitCardHtml({
+    surface: "board",
     variant: "compact",
     family,
     ...abilityLineFor(ctx, u.id),
