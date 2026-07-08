@@ -157,6 +157,14 @@ export const challengeNoteLine = (floor: number, hasBoss: boolean, championFloor
       ? "terminal: beat the reigning champion to take the crown and grow the lineage — lose and the run is over"
       : `terminal: win to seat your team as floor ${floor}'s boss (a lower, easier cash-out seat — no crown) — lose and the run is over`;
 
+/** Copy for the dethroned boss named by crown/seated end states. */
+export const dethronedNoteLine = (dethroned: string | null | undefined): string =>
+  dethroned === undefined || dethroned === null
+    ? "the seat was vacant; your team takes it"
+    : dethroned === BOOTSTRAP_RUN_ID
+      ? "the solo bootstrap boss falls; your team takes the seat"
+      : `${dethroned} is dethroned; your team takes the seat`;
+
 /** The end-screen heading for every terminal reason (#075 slice 4; `seated`
  * added in slice 6 — final copy is slice 7). Pure so the states are pinned by
  * vitest, not just eyeballed in a screenshot. `crown` is now an ascend — beating
@@ -891,12 +899,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     // Who the seat was taken from — a crown (ascend) names it via Crowned, a
     // cash-out via Seated; either terminal seat carries the dethroned boss.
     const dethroned = (ofType(s.log, "Crowned")[0] ?? ofType(s.log, "Seated")[0])?.dethroned;
-    const dethronedNote =
-      dethroned === undefined || dethroned === null
-        ? "the seat was vacant; your team takes it"
-        : dethroned === BOOTSTRAP_RUN_ID
-          ? "the shipped boss falls; your team takes the seat"
-          : `${dethroned} is dethroned; your team takes the seat`;
+    const dethronedNote = dethronedNoteLine(dethroned);
     els.endHead.textContent = endHeadLine(reason, s.round, dethronedNote, founded);
     // The climb, derived from the run log: one fight per round, W/L/D per round.
     const fights = ofType(s.log, "FightFought");

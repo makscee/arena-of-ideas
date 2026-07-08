@@ -7,6 +7,7 @@
 
 import { describe, expect, test } from "vitest";
 import {
+  BOOTSTRAP_RUN_ID,
   InMemoryLadderStore,
   TOWER_HEIGHT,
   buy,
@@ -24,6 +25,7 @@ import {
 import {
   bossFloorLine,
   challengeNoteLine,
+  dethronedNoteLine,
   endHeadLine,
   isAboveTower,
   isChampionFloor,
@@ -124,7 +126,13 @@ describe("challengeNoteLine makes the decision legible — terminal, crown-vs-ca
 });
 
 describe("endHeadLine — all four terminal reasons read distinctly", () => {
-  const note = "the shipped boss falls; your team takes the seat";
+  const note = "the solo bootstrap boss falls; your team takes the seat";
+
+  test("bootstrap dethroned end-state copy names solo bootstrap, not shipped content", () => {
+    const staleBootstrapLabel = ["shipped", "boss"].join(" ");
+    expect(dethronedNoteLine(BOOTSTRAP_RUN_ID)).toBe(note);
+    expect(dethronedNoteLine(BOOTSTRAP_RUN_ID).toLowerCase()).not.toContain(staleBootstrapLabel);
+  });
 
   test("crown reads as the champion — an ascend over the summit", () => {
     const head = endHeadLine("crown", TOWER_HEIGHT + 1, note);
