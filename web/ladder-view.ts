@@ -107,11 +107,11 @@ export interface TowerRung {
 export function arenaTowerHtml(rungs: readonly TowerRung[], sel?: { rung: number; unit: number }): string {
   const head =
     `<div class="tower-head">` +
-    `<div><div class="tower-title">Arena Tower</div><div class="tower-eyebrow">Strategy ladder</div></div>` +
-    `<div class="tower-hint">climb ▲</div>` +
+    `<div><div class="tower-title">Arena Tower</div><div class="tower-eyebrow">Shared tower</div></div>` +
+    `<div class="tower-hint">empty start → floor 1</div>` +
     `</div>`;
   if (rungs.length === 0) {
-    return `<div class="tower">${head}<div class="tower-empty">the tower is empty — the first crown is free</div></div>`;
+    return `<div class="tower">${head}<div class="tower-empty">production/shared tower is empty — the first completed run founds floor 1</div></div>`;
   }
   const floors = rungs
     .map((rung, ri) => {
@@ -280,12 +280,12 @@ export function createLadderView(root: HTMLElement, deps: LadderViewDeps): Ladde
   function championHtml(): string {
     const champ = deps.store.champion();
     if (champ === null) {
-      return `<div class="lv-champ"><span class="lv-k">champion</span> <span class="run-dim">the spot is vacant — the next crown is free</span></div>`;
+      return `<div class="lv-champ"><span class="lv-k">champion</span> <span class="run-dim">production/shared tower is empty — the first completed run founds floor 1</span></div>`;
     }
     const holder = deps.holderName?.() ?? null;
     const who =
       champ.runId === BOOTSTRAP_RUN_ID
-        ? "the shipped champion — dethrone it to take the crown"
+        ? "the solo bootstrap champion — beat it to take the crown and grow the lineage"
         : `${holder !== null ? `${esc(holder)} · ` : ""}${esc(ghostLabel(champ.runId))} — crowned at round ${champ.round}`;
     return `
       <div class="lv-champ">

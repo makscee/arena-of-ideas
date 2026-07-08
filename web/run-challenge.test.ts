@@ -62,15 +62,15 @@ describe("bossFloorLine names the floor and what its boss is", () => {
     const line = bossFloorLine(1, true, TOWER_HEIGHT);
     expect(line).toContain("floor 1");
     expect(line.toLowerCase()).toContain("boss");
-    expect(line.toLowerCase()).toContain("below the champion");
+    expect(line.toLowerCase()).toContain("below the reigning champion");
     expect(line.toLowerCase()).not.toContain("the champion holds"); // must-fail: not the summit copy
   });
   test("the champion's floor names the champion at the top — dynamic, even above TOWER_HEIGHT", () => {
     const grown = TOWER_HEIGHT + 1; // a tower grown by a crown
     const line = bossFloorLine(grown, true, grown);
     expect(line).toContain(`floor ${grown}`);
-    expect(line.toLowerCase()).toContain("champion");
-    expect(line.toLowerCase()).toContain("top of the tower");
+    expect(line.toLowerCase()).toContain("reigning champion");
+    expect(line.toLowerCase()).toContain("live top of the tower");
   });
   test("above the top says there is NO boss here", () => {
     const line = bossFloorLine(TOWER_HEIGHT + 1, false, TOWER_HEIGHT);
@@ -98,10 +98,14 @@ describe("challengeNoteLine makes the decision legible — terminal, crown-vs-ca
     expect(note).toContain("cash-out");
     expect(note).toContain("no crown"); // must-fail: a lower seat is not crowned
   });
-  test("the champion's-floor note is the crown fight (and grows the tower)", () => {
+  test("the champion's-floor note is the crown fight (and grows the lineage)", () => {
     const note = challengeNoteLine(TOWER_HEIGHT, true, TOWER_HEIGHT).toLowerCase();
+    expect(note).toContain("reigning champion");
     expect(note).toContain("crown");
+    expect(note).toContain("grow the lineage");
     expect(note).not.toContain("cash-out"); // must-fail: the crown is not a cash-out
+    expect(note).not.toContain("fixed");
+    expect(note).not.toContain("pre-seeded");
   });
   test("a vacant floor warns the challenge wins no crown", () => {
     expect(challengeNoteLine(TOWER_HEIGHT + 1, false, TOWER_HEIGHT).toLowerCase()).toContain("no crown");
@@ -125,7 +129,8 @@ describe("endHeadLine — all four terminal reasons read distinctly", () => {
   test("crown reads as the champion — an ascend over the summit", () => {
     const head = endHeadLine("crown", TOWER_HEIGHT + 1, note);
     expect(head).toContain("👑");
-    expect(head.toLowerCase()).toContain("champion");
+    expect(head.toLowerCase()).toContain("reigning champion");
+    expect(head.toLowerCase()).toContain("lineage grows");
     expect(head).toContain(note);
   });
   test("seated reads as a lower floor seat, not the champion (a cash-out)", () => {

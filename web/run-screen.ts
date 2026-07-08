@@ -85,6 +85,26 @@ export const incomeLine = (round: number): string =>
 export const stakesLine = (lives: number): string =>
   `a loss costs a life — ${lives} ${lives === 1 ? "life" : "lives"} left`;
 
+/** A seated champion as player-facing copy. The solo/local bootstrap champion is
+ * a convenience opponent, not the production/shared tower genesis. */
+export const championPhrase = (c: TeamSnapshot): string =>
+  c.runId === BOOTSTRAP_RUN_ID ? "the solo bootstrap champion" : `reigning champion ${ghostLabel(c.runId)} (crowned at round ${c.round})`;
+
+/** New-run tower status: shared production can be truly empty; solo/local
+ * bootstrap is named only when an actual bootstrap champion is present. */
+export const newRunChampionLine = (champ: TeamSnapshot | null): string =>
+  champ === null
+    ? "production/shared tower is empty — the first completed run founds the champion at floor 1"
+    : `reigning champion: ${championPhrase(champ)} — beat it to take the crown and grow the lineage`;
+
+/** The shop's next-fight line, derived from the live floor contents. */
+export const nextFightLine = (round: number, rivals: number, champ: TeamSnapshot | null): string =>
+  rivals > 0
+    ? `next fight: a live ghost from floor ${round}'s pool — ${rivals} waiting (peek below)`
+    : champ !== null
+      ? `no live ghosts at floor ${round} — challenge the ${championPhrase(champ)} to take the crown and grow the lineage`
+      : `no live ghosts at floor ${round} — this climb uses a synthesized seed-unit team; a completed run can found floor 1`;
+
 // ---------- boss-challenge copy (#075 slice 4; champion-floor made dynamic in
 // slice 7) — pure, exported for vitest ----------
 
@@ -121,8 +141,8 @@ export const bossFloorLine = (floor: number, hasBoss: boolean, championFloor?: n
         `floor ${floor} — the tower is empty; challenging founds the champion at floor 1, the bottom seat`
       : `floor ${floor} — above the tower's top; there is no boss here`
     : isChampionFloor(floor, championFloor)
-      ? `floor ${floor} — the champion holds this floor, the top of the tower`
-      : `floor ${floor} — a lineage boss below the champion`;
+      ? `floor ${floor} — the reigning champion holds this live top of the tower`
+      : `floor ${floor} — a lineage boss below the reigning champion`;
 
 /** The note beside the Challenge button: terminal, and what a win means here.
  * The champion's floor crowns; a lower floor cashes out (a seat, not a crown). */
@@ -134,7 +154,7 @@ export const challengeNoteLine = (floor: number, hasBoss: boolean, championFloor
         "terminal: founds the champion at floor 1 — the empty tower's first seat, no fight; the run ends here, crowned"
       : "challenging here ends the run with no crown — climb back is impossible, so there is no boss to take"
     : isChampionFloor(floor, championFloor)
-      ? "terminal: beat the champion to take the crown and grow the tower — lose and the run is over"
+      ? "terminal: beat the reigning champion to take the crown and grow the lineage — lose and the run is over"
       : `terminal: win to seat your team as floor ${floor}'s boss (a lower, easier cash-out seat — no crown) — lose and the run is over`;
 
 /** The end-screen heading for every terminal reason (#075 slice 4; `seated`
@@ -161,7 +181,7 @@ export const endHeadLine = (
   }
   switch (reason) {
     case "crown":
-      return `👑 champion — you took the summit and seated at floor ${round} — ${dethronedNote}`;
+      return `👑 champion — you beat the reigning champion, seated at floor ${round}, and the lineage grows — ${dethronedNote}`;
     case "seated":
       return `seated at floor ${round} — you took its boss's place — ${dethronedNote} (a lower seat; the summit stands, no crown)`;
     case "challenge-lost":
@@ -384,10 +404,6 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       : "cheats mark the run local-only — the server can't re-derive a cheated run anyway";
   }
 
-  /** The champion as a phrase — bootstrap is shipped content, not a rival run. */
-  const championPhrase = (c: TeamSnapshot): string =>
-    c.runId === BOOTSTRAP_RUN_ID ? "the shipped champion" : `champion ${ghostLabel(c.runId)} (crowned at round ${c.round})`;
-
   // ---------- cards (the one shared unit card, run-screen flavoured) ----------
 
   /** The unit's colour family, derived from its ability (PRD #081); the
@@ -500,11 +516,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   }
 
   function renderNew(): void {
-    const champ = deps.store.champion();
-    els.champ.textContent =
-      champ === null
-        ? "the champion spot is vacant — the first crown is free"
-        : `holding the spot: ${championPhrase(champ)} — beat it to take the crown`;
+    els.champ.textContent = newRunChampionLine(deps.store.champion());
     show("new");
   }
 
@@ -553,12 +565,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   /** The "next fight" line — what the round's pool holds for THIS run. */
   function nextLine(s: RunState): string {
     const rivals = deps.store.poolAt(s.round).filter((g) => g.runId !== s.runId).length;
-    const champ = deps.store.champion();
-    return rivals > 0
-      ? `next fight: a ghost from round ${s.round}'s pool — ${rivals} waiting (peek below)`
-      : champ !== null
-        ? `no ghosts left to fight at round ${s.round} — next fight challenges ${championPhrase(champ)} for the crown`
-        : `no ghosts left at round ${s.round} and the spot is vacant — fighting takes the crown`;
+    return nextFightLine(s.round, rivals, deps.store.champion());
   }
 
   /** Remote shops read the round's pool through the play endpoint (#016
@@ -721,7 +728,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
         ? "Found the champion at floor 1? The tower is empty — this seats your team as the first boss and ends the run, crowned."
         : "Challenge here? This overshoots — no crown — and ends your run."
       : atTop
-        ? "Challenge the champion? This ends your run — win to take the crown."
+        ? "Challenge the reigning champion? This ends your run — win to take the crown and grow the lineage."
         : `Challenge floor ${s.round}'s boss? This ends your run — win to take the seat.`;
     challengeFireLabel = !hasBoss
       ? founding
