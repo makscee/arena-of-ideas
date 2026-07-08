@@ -5,8 +5,9 @@
 //     asserted by CALLING them (fatigueAmount, incomeForRound), so retuning a
 //     knob cannot silently leave the codex lying.
 // (d) The ghosts rule is asserted against the actual ladder semantics
-//     (one random draw per round; pre-seeded champion) — the codex must never
-//     re-grow the "beat every ghost" / "vacant spot" misreadings.
+//     (production empty start, synth cold-start climb, floor-1 founding,
+//     lineage growth, and separately named solo/local bootstrap) — the codex
+//     must never re-grow the old fixed pre-seeded tower/champion story.
 
 import { describe, it, expect } from "vitest";
 import { buildCodex, codexUnits } from "./codex.js";
@@ -253,21 +254,43 @@ describe("codex — ghosts rule matches ladder semantics", () => {
     expect(text.toLowerCase()).not.toMatch(/every ghost in your round/);
   });
 
-  it("states the pre-seeded boss-per-floor tower, never a fresh-ladder free crown", () => {
+  it("states production/shared towers start empty", () => {
     const text = rule("ghosts").text;
-    expect(text).toContain("the top floor's boss being the champion");
-    // The fixed tower's guard is the overshoot rule, stated plainly:
+    expect(text).toContain("Production/shared towers start empty");
+    expect(text).toContain("no seated bosses and no seeded climb ghosts");
+    expect(text).not.toContain("A fresh ladder opens pre-seeded");
+    expect(text.toLowerCase()).not.toContain("shipped champion");
+    expect(text).not.toContain("the top floor's boss being the champion");
+  });
+
+  it("states cold-start climb synthesis from seed Units", () => {
+    const text = rule("ghosts").text;
+    expect(text).toContain("synthesizes a floor-sized enemy from the seed Units");
+    expect(text).toContain("so the climb never stalls");
+    expect(text).toContain("real ghosts replace that fallback");
+  });
+
+  it("states floor-1 founding separately from later lineage crowns", () => {
+    const text = rule("ghosts").text;
+    expect(text).toContain("the first completed run founds the champion at floor 1");
+    expect(text).toContain("no matter how high it climbed");
+    expect(text).toContain("crowns are earned by beating the reigning champion");
+    expect(text).toContain("grows the lineage");
     expect(text.toLowerCase()).toMatch(/overshoot/);
     expect(text.toLowerCase()).toMatch(/no boss, no crown/);
   });
 
-  it("cites TOWER_HEIGHT for the fixed tower's floor count", () => {
-    expect(rule("ghosts").text).toContain(`fixed ${TOWER_HEIGHT}-floor tower`);
+  it("names solo/local bootstrap as a separate convenience path", () => {
+    const text = rule("ghosts").text;
+    expect(text).toContain("Solo/local bootstrap is separate");
+    expect(text).toContain(`pre-seed a ${TOWER_HEIGHT}-floor tower`);
+    expect(text).toContain("one-person playtests");
+    expect(text).not.toContain(`fixed ${TOWER_HEIGHT}-floor tower`);
   });
 
   it("states that the floor advances win or lose, and the boss challenge is terminal", () => {
     const text = rule("ghosts").text;
     expect(text).toContain("win or lose");
-    expect(text).toContain("terminal move");
+    expect(text).toContain("terminal");
   });
 });
