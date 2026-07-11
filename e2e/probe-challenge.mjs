@@ -116,7 +116,7 @@ async function climbGuardScenario(viewport, tag) {
       `${tag}: below the champion (floor 1) — climb ENABLED`,
     );
     const head = (await page.locator("#run-boss-head").textContent()).toLowerCase();
-    check(head.includes("below the champion"), `${tag}: floor 1 boss head reads "below the champion"`, head);
+    check(/below the .*champion/.test(head), `${tag}: floor 1 boss head identifies its place below the champion`, head);
     await ctx.close();
   }
 

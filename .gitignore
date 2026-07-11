@@ -5,7 +5,8 @@ dist/
 # committed golden inputs live in tasks/*/fixtures/, never clobbered.
 tasks/*/out/
 
-# Screenshot-walk output — human-inspection PNGs, never committed.
+# Screenshot/motion evidence — deterministic per-task paths, never committed.
+e2e/.evidence/
 e2e/.shots/
 e2e/.shots-challenge/
 

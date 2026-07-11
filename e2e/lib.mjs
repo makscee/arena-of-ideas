@@ -5,7 +5,7 @@
 // produced by the LIVE kernel/run-screen at click time, never by the probe.
 // Run with `node --import tsx/esm` so the kernel imports resolve.
 
-import { chromium } from "playwright";
+import { launchChromium } from "./browser.mjs";
 import {
   DEFAULT_RUN_POOL,
   STACK_THRESHOLD,
@@ -348,7 +348,7 @@ export async function openRun(browser, serializedRun, viewport, ready = "#run-sh
 
 export async function launch() {
   armSignalTeardown();
-  const browser = await chromium.launch();
+  const browser = await launchChromium();
   browsers.add(browser);
   browser.on("disconnected", () => browsers.delete(browser));
   return browser;

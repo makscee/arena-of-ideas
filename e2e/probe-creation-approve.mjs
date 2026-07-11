@@ -12,8 +12,7 @@
 // the existing probes — it injects a NEW pool unit and a fresh run, touching no
 // shared fixture.
 
-import { chromium } from "playwright";
-import { armGuard, check, finish } from "./lib.mjs";
+import { armGuard, check, finish, launch } from "./lib.mjs";
 
 const BASE = process.env.AOI_BASE_URL ?? "http://localhost:5280";
 const DESKTOP = { width: 1280, height: 800 };
@@ -31,7 +30,7 @@ const APPROVED_OVERRIDE = JSON.stringify({ units: [PROBELING] });
 const SEED = 4; // Probeling is in round-1's initial offers at this seed
 
 const disarm = armGuard();
-const browser = await chromium.launch();
+const browser = await launch();
 const ctx = await browser.newContext({ viewport: DESKTOP });
 const page = await ctx.newPage();
 page.setDefaultTimeout(15_000);

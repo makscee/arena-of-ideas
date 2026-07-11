@@ -255,6 +255,10 @@ Compile is cheap — `npm run typecheck` ~2s, `npm run build` ~0.25s. The cost i
 
 **One-shot scoped run** (no held server): `npm run e2e -- <area>` boots the stack, runs only matching probes, tears down. Good for a single area when you don't want a warm server lingering.
 
-**Full suite** (`npm run e2e`, no args) boots the stack and runs every probe. Run it only as the pre-close / verify gate, not per edit.
+**Full suite** (`npm run e2e`, no args) boots one named fresh server fixture (temporary SQLite + bootstrap), runs every desktop/phone probe, then the main, challenge, codex, and motion capture walks. Each child has a hard timeout. Captures are reset on every run and written to the ignored `e2e/.evidence/{probes,walk-main,walk-challenge,walk-codex,walk-motion}/` paths.
+
+**Browser fixture.** `npm run e2e:browser` reports the selected executable. The harness prefers Playwright Chromium and falls back to installed Chrome/Chromium (or `AOI_E2E_BROWSER_PATH`) without source edits. Test the actionable missing-browser path with `AOI_E2E_FORCE_NO_BROWSER=1 npm run e2e:browser`; it must print one install/path instruction and start no listeners.
+
+**Reset and teardown checks.** Every one-shot run deletes prior generated evidence, creates a new temporary DB, and each probe creates fresh browser contexts. Run `npm run e2e` twice to prove equivalent clean runs. `e2e/leak-check.sh INT` proves an interrupted orchestrator reaps the Vite/server/browser process groups; after a normal run, `lsof -nP -iTCP:5280 -iTCP:5285 -sTCP:LISTEN` must print no listeners.
 
 Batch related edits before verifying — don't run a probe after every keystroke. The cost is the round-trip, not the probe.

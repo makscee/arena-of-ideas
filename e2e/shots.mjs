@@ -16,7 +16,7 @@ const outDir = process.env.SHOTS_DIR ?? join(here, ".shots");
 mkdirSync(outDir, { recursive: true });
 
 const browser = await launch();
-const runStamp = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+const runStamp = "deterministic-fixture";
 let ipCounter = 0;
 
 function shotContext(viewport) {

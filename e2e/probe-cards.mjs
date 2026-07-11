@@ -1,13 +1,10 @@
 // PRD #015 slice 1 / #078 — the one uniform unit card. Pins, against the LIVE
-// app, the card-contract on the surfaces that still wear the LEGACY card.
+// app, the card-contract across shop, ladder, and battle surfaces.
 //
-// #080 update: the SHOP moved its offers (full) + team line (compact) to the new
-// B·Arena family card — those two variants are pinned by probe-card.mjs. The
-// LADDER champ strip and the BATTLE BOARD still render the legacy uniform card
-// (their per-feature restyle is 083/085), so the "one card, one size" contract
-// is pinned HERE for the surfaces that still share it:
-//  1. Structure: the ladder card and the battle-board card share the SAME legacy
-//     skeleton (shape art, name, framed hp/pwr, chips).
+// #080 moved shop offers/team line and ladder references to B·Arena cards;
+// #082 moved the battle board. This probe pins those visible contracts:
+//  1. Structure: ladder uses the reference B·Arena variant with its shared
+//     name/stats/chips anchors (the chips strip reserves stable card height).
 //  2. Battle affordances survive: current/max hp on board cards, front tag.
 //  3. 375px stays clean: no horizontal overflow, and the 5-unit board line still
 //     sits five abreast (one vertical column) inside the viewport.
@@ -48,7 +45,7 @@ async function signature(page, sel) {
 const noHorizontalOverflow = (page) =>
   page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
 
-const LEGACY_SKELETON = "svg.shape,.uname,.unums .hp,.unums .pwr,.chips";
+const REFERENCE_SKELETON = ".uname,.unums .hp,.unums .pwr,.chips";
 
 // ---------- shop wears the #080 cards; the ladder keeps the legacy card -------
 
@@ -69,9 +66,15 @@ for (const [viewport, tag] of [
     `${tag} team line renders the #080 COMPACT card`,
   );
 
-  // The ladder champ strip still wears the legacy uniform card + skeleton.
-  const ladder = await signature(page, ".lv-champ .unit");
-  check(ladder.startsWith(LEGACY_SKELETON), `${tag} ladder card keeps the legacy skeleton`, ladder);
+  // The ladder champ strip wears the reference family card and preserves the
+  // empty chips strip as a stable-height contract anchor.
+  const ladderSel = ".lv-champ .unit";
+  const ladder = await signature(page, ladderSel);
+  check(
+    await page.$eval(ladderSel, (el) => el.classList.contains("unit-b") && el.classList.contains("is-reference")),
+    `${tag} ladder card wears the B·Arena reference variant`,
+  );
+  check(ladder.startsWith(REFERENCE_SKELETON), `${tag} ladder reference keeps name/hp/pwr/chips anchors`, ladder);
 
   if (viewport === PHONE) {
     check(await noHorizontalOverflow(page), `${tag} shop screen has no horizontal overflow`);

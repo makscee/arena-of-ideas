@@ -12,6 +12,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "n
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { discoverBrowser, noBrowserMessage } from "./browser.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -19,6 +20,7 @@ const PORT = process.env.AOI_E2E_PORT ?? "5280";
 const SERVER_PORT = process.env.AOI_E2E_SERVER_PORT ?? "5285";
 const BASE = `http://localhost:${PORT}`;
 const PIDFILE = join(root, ".e2e-serve.json");
+const EVIDENCE = join(here, ".evidence");
 
 // CLI shape: `--`-prefixed args are FLAGS, bare words are probe-filter TOKENS.
 // `--serve` holds the warm stack open; `--down` reaps a held stack; tokens
@@ -89,6 +91,24 @@ if (flags.has("--down")) {
   } catch {}
   console.log(`e2e: warm server (pid ${pid}) stopped`);
   process.exit(0);
+}
+
+// Browser discovery happens before either server is started, so an absent
+// browser produces one useful failure rather than one launch stack per probe.
+// `--down` deliberately bypasses it above: stopping a held stack never depends
+// on the current browser installation.
+const browserFixture = discoverBrowser();
+if (flags.has("--check-browser")) {
+  if (!browserFixture) {
+    console.error(noBrowserMessage);
+    process.exit(1);
+  }
+  console.log(`e2e browser: ${browserFixture.kind} (${browserFixture.executablePath})`);
+  process.exit(0);
+}
+if (!browserFixture) {
+  console.error(noBrowserMessage);
+  process.exit(1);
 }
 
 // Children we boot (arena, vite) outlive a clean run only if we let them: each
@@ -185,6 +205,48 @@ process.on("unhandledRejection", (err) => {
   process.exit(1);
 });
 
+function runTask(task, timeoutMs = 180_000) {
+  return new Promise((resolve) => {
+    const child = spawn("node", ["--import", "tsx/esm", join(here, task.file)], {
+      cwd: root,
+      env: {
+        ...process.env,
+        AOI_BASE_URL: BASE,
+        SHOTS_DIR: join(EVIDENCE, task.evidence),
+      },
+      detached: true,
+      stdio: "inherit",
+    });
+    child.tag = task.name;
+    groups.push(child);
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      console.error(`e2e: ${task.name} timed out after ${timeoutMs}ms`);
+      try {
+        process.kill(-child.pid, "SIGTERM");
+      } catch {}
+      setTimeout(() => {
+        if (child.exitCode === null) {
+          try {
+            process.kill(-child.pid, "SIGKILL");
+          } catch {}
+        }
+      }, 3000).unref();
+    }, timeoutMs);
+    child.once("error", (error) => {
+      clearTimeout(timer);
+      console.error(`e2e: could not start ${task.name}: ${error.message}`);
+      resolve({ ok: false });
+    });
+    child.once("close", (code, signal) => {
+      clearTimeout(timer);
+      if (!timedOut && code !== 0) console.error(`e2e: ${task.name} failed (code=${code}, signal=${signal})`);
+      resolve({ ok: !timedOut && code === 0 });
+    });
+  });
+}
+
 function awaitReady(child, marker, timeoutMs = 30_000) {
   return new Promise((resolve) => {
     const t0 = Date.now();
@@ -205,7 +267,10 @@ function awaitReady(child, marker, timeoutMs = 30_000) {
 // the probe suite needs a populated tower (a champion to read, a ladder to
 // climb), so the harness opts into the #075 full-tower seed via
 // AOI_SEED_BOOTSTRAP — the solo-playtest seam, never set in production.
-const dbDir = mkdtempSync(join(tmpdir(), "aoi-e2e-"));
+// A run gets a fresh named server fixture and a freshly reset evidence tree.
+// Browser fixtures are fresh contexts inside each probe/capture task.
+rmSync(EVIDENCE, { recursive: true, force: true });
+const dbDir = mkdtempSync(join(tmpdir(), "aoi-e2e-server-"));
 const arena = boot("arena-server", "npx", ["tsx", "server/src/main.ts"], {
   MOCK_MODE: "1",
   AOI_SEED_BOOTSTRAP: "1",
@@ -292,18 +357,21 @@ try {
         failed = true;
       }
     }
-    for (const probe of probes) {
-      console.log(`\n=== ${probe} ===`);
-      const r = spawnSync("node", ["--import", "tsx/esm", join(here, probe)], {
-        cwd: root,
-        stdio: "inherit",
-        timeout: 150_000,
-        env: { ...process.env, AOI_BASE_URL: BASE },
-      });
-      // A timed-out probe (r.signal set) is a failure too — and its own group
-      // is killed by spawnSync, but the orchestrated server/vite stay up for
-      // the rest of the run; teardown in `finally` reaps them at the end.
-      if (r.status !== 0 || r.signal) failed = true;
+    const tasks = probes.map((file) => ({ name: file, file, evidence: "probes" }));
+    // The unfiltered gate includes every current still and motion walk. Keeping
+    // them in this same stack gives them the same fresh DB and hard teardown.
+    if (tokens.length === 0) {
+      tasks.push(
+        { name: "walk-main", file: "shots.mjs", evidence: "walk-main" },
+        { name: "walk-challenge", file: "shots-challenge.mjs", evidence: "walk-challenge" },
+        { name: "walk-codex", file: "shots-codex.mjs", evidence: "walk-codex" },
+        { name: "walk-motion", file: "motion-frames.mjs", evidence: "walk-motion" },
+      );
+    }
+    for (const task of tasks) {
+      console.log(`\n=== ${task.name} ===`);
+      const result = await runTask(task);
+      if (!result.ok) failed = true;
     }
   }
 } finally {
