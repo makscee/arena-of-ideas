@@ -82,22 +82,16 @@ export function migrateContentEnvelope(data: unknown, label = "content"): Migrat
       selectors: structuredClone(selectors) as Selector[],
       ...(raw.condition !== undefined ? { condition: structuredClone(raw.condition) as UnitDef["condition"] } : {}),
     });
+  }
+  for (const [key, raw] of Object.entries(rawAbilities)) {
+    const ability = raw as Obj;
     abilities[key] = {
-      name: raw.name as string,
-      family: raw.family as AbilityDef["family"],
-      effects: structuredClone(raw.effects) as AbilityDef["effects"],
+      name: ability.name as string,
+      family: ability.family as AbilityDef["family"],
+      effects: migrateLegacyEffects(ability.effects as unknown[], `${label}.abilities.${key}.effects`, recipes),
     };
   }
-  const units = data.units.map((raw, i) => {
-    const path = `${label}.units[${i}]`;
-    if (!isObject(raw)) throw new Error(`${path}: unit must be an object`);
-    rejectMixedUnit(raw, path);
-    if (typeof raw.ability !== "string") throw new Error(`${path}.ability: v1 unit must reference exactly one Ability id`);
-    const recipe = recipes.get(raw.ability) ?? legacyRecipe(raw.ability);
-    if (!recipe) throw new Error(`${path}.ability: unknown ability ${JSON.stringify(raw.ability)} — cannot migrate without legacy recipe context`);
-    const { ability: _old, ...rest } = raw;
-    return { ...structuredClone(rest), ...structuredClone(recipe), abilities: [raw.ability] } as UnitDef;
-  });
+  const units = data.units.map((raw, i) => migrateLegacyUnit(raw, `${label}.units[${i}]`, recipes));
   return { units, abilities, provenance: { grammarVersion: CONTENT_GRAMMAR_VERSION, migratedFrom: LEGACY_CONTENT_GRAMMAR_VERSION } };
 }
 
@@ -118,9 +112,42 @@ function parseCanonicalAbilities(rawAbilities: Obj, label: string): AbilityRegis
       throw new Error(`${label}.abilities.${key}: Ability is only what happens in v2; move Trigger/Selector context to the Unit`);
     }
     if (!Array.isArray(raw.effects)) throw new Error(`${label}.abilities.${key}.effects: Ability needs an effects array describing what happens`);
-    out[key] = structuredClone(raw) as unknown as AbilityDef;
+    out[key] = {
+      ...structuredClone(raw),
+      effects: parseCanonicalEffects(raw.effects, `${label}.abilities.${key}.effects`),
+    } as unknown as AbilityDef;
   }
   return out;
+}
+
+function parseCanonicalEffects(effects: unknown[], path: string): AbilityDef["effects"] {
+  return effects.map((effect, i) => {
+    if (isObject(effect) && effect.kind === "summon") {
+      return { ...structuredClone(effect), unit: parseCanonicalUnit(effect.unit, `${path}[${i}].unit`) };
+    }
+    return structuredClone(effect);
+  }) as AbilityDef["effects"];
+}
+
+type LegacyRecipe = { triggers: When[]; selectors: Selector[]; condition?: UnitDef["condition"] };
+
+function migrateLegacyUnit(raw: unknown, path: string, recipes: Map<string, LegacyRecipe>): UnitDef {
+  if (!isObject(raw)) throw new Error(`${path}: unit must be an object`);
+  rejectMixedUnit(raw, path);
+  if (typeof raw.ability !== "string") throw new Error(`${path}.ability: v1 unit must reference exactly one Ability id`);
+  const recipe = recipes.get(raw.ability) ?? legacyRecipe(raw.ability);
+  if (!recipe) throw new Error(`${path}.ability: unknown ability ${JSON.stringify(raw.ability)} — cannot migrate without legacy recipe context`);
+  const { ability: _old, ...rest } = raw;
+  return { ...structuredClone(rest), ...structuredClone(recipe), abilities: [raw.ability] } as UnitDef;
+}
+
+function migrateLegacyEffects(effects: unknown[], path: string, recipes: Map<string, LegacyRecipe>): AbilityDef["effects"] {
+  return effects.map((effect, i) => {
+    if (isObject(effect) && effect.kind === "summon") {
+      return { ...structuredClone(effect), unit: migrateLegacyUnit(effect.unit, `${path}[${i}].unit`, recipes) };
+    }
+    return structuredClone(effect);
+  }) as AbilityDef["effects"];
 }
 
 export function rejectMixedUnit(unit: Obj, path: string): void {

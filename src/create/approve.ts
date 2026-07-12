@@ -22,6 +22,7 @@
  * approveInto only ever sees a parsed, validated CandidateRecord.
  */
 
+import { isDeepStrictEqual } from "node:util";
 import { mergePool, parseApprovedRegistry } from "../registry.js";
 import type { ApprovedRegistry, ApprovedUnit } from "../registry.js";
 import { runGate } from "../gate.js";
@@ -136,6 +137,23 @@ export function approveInto(
   const shippedStubs = shippedNames.map((name) => ({ name, base: { hp: 0, pwr: 0 }, ability: "Strike" }));
   mergePool([...shippedStubs, ...priorApproved], stamped);
 
+  // Ability ids are semantic identities. A candidate may reuse an existing id
+  // only for the exact same definition; changing it would silently change every
+  // already-approved Unit that references that id. Identical shipped/approved
+  // definitions are retained once, deterministically.
+  const existingAbilities = { ...abilities, ...(current.abilities ?? {}) };
+  const nextAbilities: AbilityRegistry = { ...(current.abilities ?? {}) };
+  for (const [id, definition] of Object.entries(record.abilities)) {
+    const existing = existingAbilities[id];
+    if (existing !== undefined) {
+      if (!isDeepStrictEqual(existing, definition)) {
+        throw new Error(`candidate "${record.id}" Ability id "${id}" collides with an existing different definition`);
+      }
+      continue;
+    }
+    nextAbilities[id] = definition;
+  }
+
   // RE-SIM — the trust boundary. Structure is sound (there IS new, non-colliding
   // content); now re-earn the gate verdict from scratch against the canonical
   // reference meta rather than trusting the candidate's recorded stats. An
@@ -143,9 +161,6 @@ export function approveInto(
   // loudly here (ResimRejectedError, carrying the re-sim numbers) before anything
   // is promoted. The recorded number is a receipt; this is the verdict.
   reSimCandidate(record, registry, abilities);
-  // The approved registry carries the candidate's abilities too (#081 — an
-  // approved unit travels with its Ability), merged with any already approved.
-  const nextAbilities = { ...(current.abilities ?? {}), ...record.abilities };
   const next: ApprovedRegistry = {
     grammarVersion: 2,
     ...(current.migratedFrom === 1 ? { migratedFrom: 1 } : {}),

@@ -116,6 +116,50 @@ describe("provenance round-trip", () => {
     expect(() => parseCandidateRecord(record, stressRegistry, stressAbilities, "custom.json")).not.toThrow();
   });
 
+  test("recursively canonicalizes summoned Units in build records", () => {
+    const abilities = {
+      Spawn: {
+        name: "Spawn", family: "Summon",
+        whens: [{ kind: "trigger", on: { on: "BattleStart" } }],
+        selectors: [{ kind: "holder" }],
+        effects: [{ kind: "summon", unit: { name: "Child", base: { hp: 2, pwr: 0 }, ability: "ChildAct" } }],
+      },
+      ChildAct: {
+        name: "ChildAct", family: "Strike",
+        whens: [{ kind: "trigger", on: { on: "TurnStart" } }],
+        selectors: [{ kind: "frontEnemy" }],
+        effects: [{ kind: "damage", amount: { kind: "const", value: 1 } }],
+      },
+    } as unknown as AbilityRegistry;
+    const record = buildRecord(
+      "nested", [{ name: "Spawner", base: { hp: 5, pwr: 0 }, ability: "Spawn" }],
+      MANIFEST, PASSED, 1, abilities,
+    );
+    expect(record.abilities.Spawn!.effects[0]).toMatchObject({
+      kind: "summon", unit: { abilities: ["ChildAct"] },
+    });
+    expect(() => parseCandidateRecord(record, stressRegistry, stressAbilities, "nested.json")).not.toThrow();
+  });
+
+  test("candidate reader rejects malformed abilities envelopes and leaked nested legacy Units", () => {
+    const canonical = JSON.parse(serializeRecord(buildRecord(
+      "boundary", [{ name: "Boundary", base: { hp: 5, pwr: 1 }, ability: "Strike" }],
+      MANIFEST, PASSED, 1,
+    )));
+    for (const abilities of [[], null, "bad", 42]) {
+      expect(() => parseCandidateRecord({ ...canonical, abilities }, stressRegistry, stressAbilities, "malformed candidate"))
+        .toThrow(/abilities.*object/);
+    }
+    canonical.abilities = {
+      Spawn: {
+        name: "Spawn", family: "Summon",
+        effects: [{ kind: "summon", unit: { name: "Child", base: { hp: 2, pwr: 0 }, ability: "Strike" } }],
+      },
+    };
+    expect(() => parseCandidateRecord(canonical, stressRegistry, stressAbilities, "nested candidate"))
+      .toThrow(/abilities\.Spawn\.effects\[0\]\.unit.*v2 unit/);
+  });
+
   test("preserves migratedFrom through a v2 candidate reread", () => {
     const legacyRecord = JSON.parse(serializeRecord(buildRecord("legacy", [FROSTER], MANIFEST, PASSED, 1)));
     delete legacyRecord.grammarVersion;
@@ -221,6 +265,42 @@ describe("approve", () => {
     const current = approveInto({ units: [] }, honest("frostbite-striker"), shippedNames, stressRegistry, stressAbilities);
     // A second honest record (same in-band team, different id/creator) collides on Frostbiter.
     expect(() => approveInto(current, honest("frostbite-2", "eve"), shippedNames, stressRegistry, stressAbilities)).toThrow(/collides/);
+  });
+
+  test("rejects a differing Ability-ID collision without mutating existing approvals", () => {
+    const current = {
+      grammarVersion: 2 as const,
+      units: [{
+        name: "Old Approved", base: { hp: 5, pwr: 1 },
+        triggers: [{ kind: "trigger" as const, on: { on: "BattleStart" as const } }],
+        selectors: [{ kind: "holder" as const }], abilities: ["Frostbite"], _creator: "old",
+      }],
+      abilities: {
+        Frostbite: {
+          name: "Frostbite", family: "Strike" as const,
+          effects: [{ kind: "heal" as const, amount: { kind: "const" as const, value: 1 } }],
+        },
+      },
+    };
+    const before = structuredClone(current);
+    expect(() => approveInto(current, honest("ability-collision"), shippedNames, stressRegistry, stressAbilities))
+      .toThrow(/Ability.*Frostbite.*collides/);
+    expect(current).toEqual(before);
+  });
+
+  test("deterministically deduplicates an identical Ability-ID on approval", () => {
+    const current = {
+      grammarVersion: 2 as const,
+      units: [{
+        name: "Old Approved", base: { hp: 5, pwr: 1 },
+        triggers: [{ kind: "trigger" as const, on: { on: "BattleStart" as const } }],
+        selectors: [{ kind: "holder" as const }], abilities: ["Frostbite"], _creator: "old",
+      }],
+      abilities: { Frostbite: structuredClone(HONEST.abilities.Frostbite!) },
+    };
+    const next = approveInto(current, honest("identical-ability"), shippedNames, stressRegistry, stressAbilities);
+    expect(next.abilities).toEqual(current.abilities);
+    expect(next.units[0]).toEqual(current.units[0]);
   });
 
   test("refuses a name collision with a shipped unit (renamed-candidate guard)", () => {

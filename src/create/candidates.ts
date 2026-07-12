@@ -10,7 +10,7 @@
  * fails loudly here, never reaches a run.
  */
 
-import { migrateContentEnvelope } from "../content-grammar.js";
+import { isObject, migrateContentEnvelope } from "../content-grammar.js";
 import { assertValidContent } from "../validate.js";
 import type { AbilityRegistry, StatusRegistry, UnitDef } from "../types.js";
 import type { CandidateRecord, GateStats } from "./provenance.js";
@@ -30,16 +30,15 @@ export function parseCandidateRecord(data: unknown, registry: StatusRegistry, ab
   if (!Array.isArray(o["units"])) {
     throw new Error(`${label}: "units" must be an array`);
   }
-  const rawFileAbilities =
-    typeof o["abilities"] === "object" && o["abilities"] !== null && !Array.isArray(o["abilities"])
-      ? (o["abilities"] as AbilityRegistry)
-      : {};
-  const legacy = o["grammarVersion"] === undefined || o["grammarVersion"] === 1;
+  if (o["abilities"] !== undefined && !isObject(o["abilities"])) {
+    throw new Error(`${label}.abilities: expected an object when present`);
+  }
+  const rawFileAbilities = (o["abilities"] ?? {}) as AbilityRegistry;
   const migrated = migrateContentEnvelope({
     grammarVersion: o["grammarVersion"],
     migratedFrom: o["migratedFrom"],
     units: o["units"],
-    abilities: legacy ? { ...abilities, ...rawFileAbilities } : rawFileAbilities,
+    abilities: rawFileAbilities,
   }, label);
   const fileAbilities = Object.fromEntries(Object.keys(rawFileAbilities).map((key) => [key, migrated.abilities[key]!])) as AbilityRegistry;
   assertValidContent(migrated.units, registry, { ...abilities, ...fileAbilities }, `${label}.units`);

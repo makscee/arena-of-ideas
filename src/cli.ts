@@ -70,7 +70,7 @@ import { FileSeasonArchiveStore } from "./season-archive-file.js";
 import { FileSeasonPointerStore } from "./season-file.js";
 import { formatFinalTower, formatHistoryList } from "./season-history.js";
 import { stressRegistry, stressAbilities } from "./content/stress.js";
-import { migrateContentEnvelope } from "./content-grammar.js";
+import { isObject, migrateContentEnvelope } from "./content-grammar.js";
 import { assertValidContent } from "./validate.js";
 import type { AbilityRegistry, UnitDef } from "./types.js";
 import type { Side } from "./types.js";
@@ -124,16 +124,15 @@ export function validateTeamFile(data: unknown, label = "<input>"): TeamFile {
     if (typeof u["name"] !== "string") throw new Error(`Team file ${label}: units[${i}].name must be a string`);
     if (typeof u["base"] !== "object" || u["base"] === null) throw new Error(`Team file ${label}: units[${i}].base must be an object`);
   }
-  const rawFileAbilities =
-    typeof obj["abilities"] === "object" && obj["abilities"] !== null && !Array.isArray(obj["abilities"])
-      ? (obj["abilities"] as AbilityRegistry)
-      : {};
-  const legacy = obj["grammarVersion"] === undefined || obj["grammarVersion"] === 1;
+  if (obj["abilities"] !== undefined && !isObject(obj["abilities"])) {
+    throw new Error(`Team file ${label}: "abilities" must be an object when present`);
+  }
+  const rawFileAbilities = (obj["abilities"] ?? {}) as AbilityRegistry;
   const migrated = migrateContentEnvelope({
     grammarVersion: obj["grammarVersion"],
     migratedFrom: obj["migratedFrom"],
     units: rawUnits,
-    abilities: legacy ? { ...stressAbilities, ...rawFileAbilities } : rawFileAbilities,
+    abilities: rawFileAbilities,
   }, `Team file ${label}`);
   const fileAbilities = Object.fromEntries(
     Object.keys(rawFileAbilities).map((key) => [key, migrated.abilities[key]!]),

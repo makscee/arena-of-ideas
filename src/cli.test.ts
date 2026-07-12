@@ -97,6 +97,32 @@ describe("validateTeamFile", () => {
       .toThrow(/Ability is only what happens in v2/);
   });
 
+  test("rejects explicit malformed abilities envelopes", () => {
+    for (const abilities of [[], null, "bad", 42]) {
+      expect(() => validateTeamFile({
+        units: [{ name: "Probe", base: { hp: 1, pwr: 1 }, ability: "Strike" }],
+        abilities,
+      }, "malformed abilities")).toThrow(/abilities.*object/);
+    }
+  });
+
+  test("rejects a leaked legacy summoned Unit in an explicit v2 team", () => {
+    expect(() => validateTeamFile({
+      grammarVersion: 2,
+      units: [{
+        name: "Spawner", base: { hp: 5, pwr: 0 },
+        triggers: [{ kind: "trigger", on: { on: "BattleStart" } }],
+        selectors: [{ kind: "holder" }], abilities: ["Spawn"],
+      }],
+      abilities: {
+        Spawn: {
+          name: "Spawn", family: "Summon",
+          effects: [{ kind: "summon", unit: { name: "Child", base: { hp: 2, pwr: 0 }, ability: "Strike" } }],
+        },
+      },
+    }, "nested v2 team")).toThrow(/abilities\.Spawn\.effects\[0\]\.unit.*v2 unit/);
+  });
+
   test("rejects non-object", () => {
     expect(() => validateTeamFile([1, 2, 3])).toThrow(/expected a JSON object/);
   });

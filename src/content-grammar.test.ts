@@ -69,6 +69,61 @@ describe("content grammar v1 → v2 migration", () => {
     expect(second).toEqual(first);
   });
 
+  it("recursively migrates summoned Units, rereads them as v2, and preserves execution", () => {
+    const nestedLegacy = {
+      grammarVersion: 1,
+      units: [{ name: "Spawner", base: { hp: 5, pwr: 0 }, ability: "Spawn" }],
+      abilities: {
+        Spawn: {
+          name: "Spawn", family: "Summon",
+          whens: [{ kind: "trigger", on: { on: "BattleStart" } }],
+          selectors: [{ kind: "holder" }],
+          effects: [{ kind: "summon", unit: { name: "Child", base: { hp: 2, pwr: 0 }, ability: "ChildAct" } }],
+        },
+        ChildAct: {
+          name: "ChildAct", family: "Strike",
+          whens: [{ kind: "trigger", on: { on: "TurnStart" } }],
+          selectors: [{ kind: "frontEnemy" }],
+          effects: [{ kind: "damage", amount: { kind: "const", value: 1 } }],
+        },
+      },
+    } as const;
+
+    const migrated = migrateContentEnvelope(nestedLegacy, "nested legacy");
+    const nested = migrated.abilities.Spawn!.effects[0]!;
+    expect(nested).toMatchObject({
+      kind: "summon",
+      unit: { name: "Child", triggers: nestedLegacy.abilities.ChildAct.whens, selectors: nestedLegacy.abilities.ChildAct.selectors, abilities: ["ChildAct"] },
+    });
+    expect((nested as { unit: unknown }).unit).not.toHaveProperty("ability");
+    expect(migrateContentEnvelope({ ...migrated.provenance, units: migrated.units, abilities: migrated.abilities }, "nested v2 reread"))
+      .toEqual(migrated);
+
+    const before = toJSONL(battle({
+      teamA: nestedLegacy.units as never, teamB: [victim] as never, seed: 7,
+      statuses: stressRegistry, abilities: { ...nestedLegacy.abilities, Strike: strike } as never,
+    }));
+    const after = toJSONL(battle({
+      teamA: migrated.units, teamB: [victim] as never, seed: 7,
+      statuses: stressRegistry, abilities: { ...migrated.abilities, Strike: strike } as never,
+    }));
+    expect(after).toBe(before);
+    expect(after).toContain('"name":"Child"');
+  });
+
+  it("rejects a leaked legacy summoned Unit at the explicit v2 boundary", () => {
+    expect(() => migrateContentEnvelope({
+      grammarVersion: 2,
+      units: [],
+      abilities: {
+        Spawn: {
+          name: "Spawn", family: "Summon",
+          effects: [{ kind: "summon", unit: { name: "Child", base: { hp: 2, pwr: 0 }, ability: "Strike" } }],
+        },
+      },
+    }, "leaked nested unit")).toThrow(/leaked nested unit\.abilities\.Spawn\.effects\[0\]\.unit.*v2 unit/);
+  });
+
   it("rejects context smuggled into a canonical Ability", () => {
     expect(() => migrateContentEnvelope({ grammarVersion: 2, units: [], abilities: legacy.abilities }, "mixedAbility"))
       .toThrow(/Ability is only what happens in v2/);

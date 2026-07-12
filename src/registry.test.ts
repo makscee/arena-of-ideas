@@ -31,6 +31,26 @@ describe("parseApprovedRegistry", () => {
     }, stressRegistry, stressAbilities)).toThrow(/Ability is only what happens in v2/);
   });
 
+  test("explicit malformed abilities envelopes fail loudly", () => {
+    for (const abilities of [[], null, "bad", 42]) {
+      expect(() => parseApprovedRegistry({ units: [], abilities }, stressRegistry, stressAbilities, "malformed approved"))
+        .toThrow(/abilities.*object/);
+    }
+  });
+
+  test("rejects a leaked legacy summoned Unit in an explicit v2 registry", () => {
+    expect(() => parseApprovedRegistry({
+      grammarVersion: 2,
+      units: [],
+      abilities: {
+        Spawn: {
+          name: "Spawn", family: "Summon",
+          effects: [{ kind: "summon", unit: { name: "Child", base: { hp: 2, pwr: 0 }, ability: "Strike" } }],
+        },
+      },
+    }, stressRegistry, stressAbilities, "nested approved")).toThrow(/abilities\.Spawn\.effects\[0\]\.unit.*v2 unit/);
+  });
+
   test("a non-object or missing units array fails loudly", () => {
     expect(() => parseApprovedRegistry(null, stressRegistry, stressAbilities)).toThrow();
     expect(() => parseApprovedRegistry({}, stressRegistry, stressAbilities)).toThrow(/units/);

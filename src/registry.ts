@@ -22,7 +22,7 @@
  * code path and one definition of "the playable pool".
  */
 
-import { migrateContentEnvelope } from "./content-grammar.js";
+import { isObject, migrateContentEnvelope } from "./content-grammar.js";
 import { assertValidContent } from "./validate.js";
 import type { AbilityRegistry, StatusRegistry, UnitDef } from "./types.js";
 
@@ -57,16 +57,15 @@ export function parseApprovedRegistry(data: unknown, registry: StatusRegistry, a
   if (!Array.isArray(obj["units"])) {
     throw new Error(`${label}: missing or non-array "units" field`);
   }
-  const rawFileAbilities =
-    typeof obj["abilities"] === "object" && obj["abilities"] !== null && !Array.isArray(obj["abilities"])
-      ? (obj["abilities"] as AbilityRegistry)
-      : {};
-  const legacy = obj["grammarVersion"] === undefined || obj["grammarVersion"] === 1;
+  if (obj["abilities"] !== undefined && !isObject(obj["abilities"])) {
+    throw new Error(`${label}.abilities: expected an object when present`);
+  }
+  const rawFileAbilities = (obj["abilities"] ?? {}) as AbilityRegistry;
   const migrated = migrateContentEnvelope({
     grammarVersion: obj["grammarVersion"],
     migratedFrom: obj["migratedFrom"],
     units: obj["units"],
-    abilities: legacy ? { ...abilities, ...rawFileAbilities } : rawFileAbilities,
+    abilities: rawFileAbilities,
   }, label);
   const fileAbilities = Object.fromEntries(
     Object.keys(rawFileAbilities).map((key) => [key, migrated.abilities[key]!]),
