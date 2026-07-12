@@ -21,6 +21,16 @@ describe("parseApprovedRegistry", () => {
     expect(parseApprovedRegistry({ units: [] }, stressRegistry, stressAbilities).units).toEqual([]);
   });
 
+  test("rejects unsupported versions and contextual Abilities at the public reader", () => {
+    expect(() => parseApprovedRegistry({ grammarVersion: 999, units: [], abilities: {} }, stressRegistry, stressAbilities))
+      .toThrow(/unsupported content grammar version/);
+    expect(() => parseApprovedRegistry({
+      grammarVersion: 2,
+      units: [],
+      abilities: { Probe: { ...stressAbilities.Strike, whens: [{ kind: "trigger", on: { on: "BattleStart" } }] } },
+    }, stressRegistry, stressAbilities)).toThrow(/Ability is only what happens in v2/);
+  });
+
   test("a non-object or missing units array fails loudly", () => {
     expect(() => parseApprovedRegistry(null, stressRegistry, stressAbilities)).toThrow();
     expect(() => parseApprovedRegistry({}, stressRegistry, stressAbilities)).toThrow(/units/);

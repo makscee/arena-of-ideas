@@ -53,7 +53,7 @@ export function loadCandidates(dir: string): { records: CandidateRecord[]; error
 
 /** Read the approved-units registry file, or an empty registry if absent. */
 function loadRegistry(path: string): ApprovedRegistry {
-  if (!existsSync(path)) return { units: [] };
+  if (!existsSync(path)) return { grammarVersion: 2, units: [] };
   return parseApprovedRegistry(JSON.parse(readFileSync(path, "utf8")), stressRegistry, stressAbilities, path);
 }
 
@@ -75,6 +75,24 @@ function listPending(dir: string): number {
   });
   process.stdout.write(`\nApprove one: npm run approve -- <id>\n`);
   return 0;
+}
+
+export function serializeApprovedRegistry(next: ApprovedRegistry): string {
+  if (next.grammarVersion !== 2) {
+    throw new Error("approved registry writer requires parsed canonical grammarVersion 2 content");
+  }
+  return JSON.stringify(
+    {
+      _comment:
+        "The playable approved-units registry (PRD #013 slice 4). Passing candidates from the creation loop are approved into this file by `npm run approve`; the web run screen merges these onto the shipped DEFAULT_RUN_POOL so a new run can draft them. Each unit is a team-file UnitDef, validated like all content; an optional `_creator` field carries authorship credit the codex displays.",
+      grammarVersion: next.grammarVersion,
+      ...(next.migratedFrom === 1 ? { migratedFrom: 1 } : {}),
+      units: next.units,
+      abilities: next.abilities ?? {},
+    },
+    null,
+    2,
+  ) + "\n";
 }
 
 function main(): void {
@@ -111,17 +129,7 @@ function main(): void {
 
   // Write the registry, preserving the leading comment so the file stays legible.
   mkdirSync(resolve(repoRoot, "registry"), { recursive: true });
-  const out =
-    JSON.stringify(
-      {
-        _comment:
-          "The playable approved-units registry (PRD #013 slice 4). Passing candidates from the creation loop are approved into this file by `npm run approve`; the web run screen merges these onto the shipped DEFAULT_RUN_POOL so a new run can draft them. Each unit is a team-file UnitDef, validated like all content; an optional `_creator` field carries authorship credit the codex displays.",
-        units: next.units,
-      },
-      null,
-      2,
-    ) + "\n";
-  writeFileSync(registryPath, out, "utf8");
+  writeFileSync(registryPath, serializeApprovedRegistry(next), "utf8");
 
   // Report the units the approval actually added (the new names), drawn from the
   // diff between the new registry and the prior one.

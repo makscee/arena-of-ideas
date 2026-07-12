@@ -146,7 +146,12 @@ export function approveInto(
   // The approved registry carries the candidate's abilities too (#081 — an
   // approved unit travels with its Ability), merged with any already approved.
   const nextAbilities = { ...(current.abilities ?? {}), ...record.abilities };
-  const next: ApprovedRegistry = { units: [...priorApproved, ...stamped], abilities: nextAbilities };
+  const next: ApprovedRegistry = {
+    grammarVersion: 2,
+    ...(current.migratedFrom === 1 ? { migratedFrom: 1 } : {}),
+    units: [...priorApproved, ...stamped],
+    abilities: nextAbilities,
+  };
   // Re-parse the result through the same gate the web shell reads it with, so a
   // bad approval can never be written: the file is valid by construction.
   return parseApprovedRegistry(next, registry, abilities, "approved-units(after approve)");

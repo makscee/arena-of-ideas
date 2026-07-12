@@ -50,7 +50,17 @@ export function migrateContentEnvelope(data: unknown, label = "content"): Migrat
   if (version === CONTENT_GRAMMAR_VERSION) {
     const units = data.units.map((u, i) => parseCanonicalUnit(u, `${label}.units[${i}]`));
     const abilities = parseCanonicalAbilities(rawAbilities, label);
-    return { units, abilities, provenance: { grammarVersion: CONTENT_GRAMMAR_VERSION } };
+    if (data.migratedFrom !== undefined && data.migratedFrom !== LEGACY_CONTENT_GRAMMAR_VERSION) {
+      throw new Error(`${label}.migratedFrom: unsupported migration provenance ${JSON.stringify(data.migratedFrom)} (expected 1)`);
+    }
+    return {
+      units,
+      abilities,
+      provenance: {
+        grammarVersion: CONTENT_GRAMMAR_VERSION,
+        ...(data.migratedFrom === LEGACY_CONTENT_GRAMMAR_VERSION ? { migratedFrom: LEGACY_CONTENT_GRAMMAR_VERSION } : {}),
+      },
+    };
   }
 
   const abilities: AbilityRegistry = {};
@@ -82,9 +92,9 @@ export function migrateContentEnvelope(data: unknown, label = "content"): Migrat
     const path = `${label}.units[${i}]`;
     if (!isObject(raw)) throw new Error(`${path}: unit must be an object`);
     rejectMixedUnit(raw, path);
-    if (typeof raw.ability !== "string") throw new Error(`${path}.ability: v1 unit needs one ability id`);
-    const recipe = recipes.get(raw.ability);
-    if (!recipe) throw new Error(`${path}.ability: cannot migrate unknown legacy ability ${JSON.stringify(raw.ability)}`);
+    if (typeof raw.ability !== "string") throw new Error(`${path}.ability: v1 unit must reference exactly one Ability id`);
+    const recipe = recipes.get(raw.ability) ?? legacyRecipe(raw.ability);
+    if (!recipe) throw new Error(`${path}.ability: unknown ability ${JSON.stringify(raw.ability)} — cannot migrate without legacy recipe context`);
     const { ability: _old, ...rest } = raw;
     return { ...structuredClone(rest), ...structuredClone(recipe), abilities: [raw.ability] } as UnitDef;
   });
@@ -115,9 +125,9 @@ function parseCanonicalAbilities(rawAbilities: Obj, label: string): AbilityRegis
 
 export function rejectMixedUnit(unit: Obj, path: string): void {
   const old = unit.ability !== undefined;
-  const canonical = unit.triggers !== undefined || unit.selectors !== undefined || unit.abilities !== undefined;
+  const canonical = unit.triggers !== undefined || unit.selectors !== undefined || unit.condition !== undefined || unit.abilities !== undefined;
   if (old && canonical) {
-    throw new Error(`${path}: mixed v1/v2 unit payload (legacy ability with canonical triggers/selectors/abilities); choose one grammar version`);
+    throw new Error(`${path}: mixed v1/v2 unit payload (legacy ability with canonical triggers/selectors/condition/abilities); choose one grammar version`);
   }
 }
 

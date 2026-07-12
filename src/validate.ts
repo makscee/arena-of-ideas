@@ -1,6 +1,6 @@
 // Content validator — stands in front of the kernel, never inside it.
 // Rules are data (SPEC §0.1), so a typo is data too: without this gate a
-// misspelled effect kind, a wrong-context part, or a dangling status reference
+// misspelled effect kind, an effect in the wrong trigger context, or a dangling status reference
 // is silently inert — the battle runs and the ability just never fires.
 // This module rejects such content with a specific, path-addressed error
 // before it reaches battle(). It is the embryo of the sim-gate content linter.
@@ -37,8 +37,8 @@ const CONDITION_KINDS = ["holderHpAtMost"] as const;
 const SELECTOR_KINDS = ["holder", "eventUnit", "frontEnemy", "allEnemies", "allAllies", "randomEnemy", "lastDeadAlly"] as const;
 const AMOUNT_KINDS = ["const", "stat", "level", "stacks"] as const;
 const STAT_NAMES = ["hp", "pwr"] as const;
-// The color axis (PRD #081): an AbilityDef's family must be one of these seven —
-// an unknown family has no hex and no codex catalogue home, so it is rejected.
+// An AbilityDef's family is visual identity only and must be one of these seven;
+// an unknown family has no hex or codex catalogue home, so it is rejected.
 const FAMILIES = ["Poison", "Strike", "Shield", "Summon", "Arcane", "Control", "Heal"] as const;
 // Which atoms run in which context (runEffect vs runInterceptor — the other side is a silent no-op).
 const TRIGGER_EFFECTS = ["damage", "heal", "applyStatus", "consumeStacks", "summon", "silence", "resurrect"] as const;
@@ -54,20 +54,16 @@ const PATTERN_FIELDS: Record<(typeof EVENT_NAMES)[number], string[]> = {
 /** Where an ability lives: on a unit, or on a status (whose stacks "own"-references can read). */
 type Owner = "unit" | "status";
 
-// ---------- complexity cap: a card is a fixed budget ----------
+// ---------- complexity cap: a definition is a fixed behavior budget ----------
 //
 // PRD #078: a card has ONE fixed size, and its size IS the behavior budget — a
 // Unit or Status whose composed behavior doesn't fit the card cannot exist.
 // This is enforced as content, not pixels: an over-budget definition is rejected
 // here, so the cap holds against authored AND AI-generated content alike.
 //
-// The metric counts a definition's composed *Parts* (SPEC §4: a Part is a single
-// trigger, interceptor, condition, selector, or effect) across all its abilities,
-// plus a superlinear surcharge for the multiplicative depth a single ability can
-// pack (SPEC §8/§0.1: each `when` fires independently and effects apply once per
-// selected target per selector — so whens × selectors × effects is the real
-// firing count, not their sum). A `summon`'s nested unit folds its own Parts in,
-// because that unit's behavior also rides on this card.
+// The metric counts canonical recipe elements (Triggers, Condition, Selectors,
+// and Ability Effects), plus a superlinear surcharge for multiplicative firing
+// depth. A `summon`'s nested Unit folds in its own behavior budget.
 
 /** The card budget: a definition whose complexity exceeds this cannot exist.
  *
@@ -81,10 +77,10 @@ type Owner = "unit" | "status";
  * card's behavior past what one fixed card can hold. A tunable knob, not a pin. */
 export const MAX_DEFINITION_COMPLEXITY = 8;
 
-/** Complexity of a single ability: its Part count (whens + condition + selectors
- * + effects) plus a superlinear surcharge for the firings its multiplicative
+/** Complexity of one bound recipe: Trigger + Condition + Selector + Effect count,
+ * plus a superlinear surcharge for the firings its multiplicative
  * structure packs beyond a single linear pass. A 1-when/1-selector ability pays
- * no surcharge; a 2×2×2 ability pays 12−2 = 10 on top of its 6 Parts. */
+ * no surcharge; a 2×2×2 bound recipe pays 12−2 = 10 on top of its 6 elements. */
 function abilityComplexity(ab: Record<string, unknown>): number {
   const whens = Array.isArray(ab["whens"]) ? ab["whens"].length : 0;
   const selectors = Array.isArray(ab["selectors"]) ? ab["selectors"].length : 0;
@@ -121,10 +117,9 @@ function checkComplexity(def: Record<string, unknown>, path: string, issues: Val
 
 // ---------- entry points ----------
 //
-// PRD #081: a Unit references exactly one Ability by id (`u.ability`) into the
-// supplied AbilityRegistry. Validation therefore threads BOTH registries — the
-// status registry (as before) and the ability registry — and the ability bodies
-// are validated once, at the registry, not inline on each unit.
+// Canonical Units carry ordered Ability ids in `u.abilities`; the supplied
+// AbilityRegistry owns only Effect actions. Singular `u.ability` is accepted
+// below solely by the explicitly labelled grammar-v1 compatibility branch.
 
 /** Validate a team's units against the status + ability registries. Returns all issues found (empty = valid). */
 export function validateTeam(units: unknown, statuses: StatusRegistry, abilities: AbilityRegistry, label = "team"): ValidationIssue[] {
@@ -184,9 +179,13 @@ export function validateAbilityRegistry(abilities: AbilityRegistry, statuses: St
     if (!oneOf(def["family"], FAMILIES)) {
       issues.push({ path: `${path}.family`, message: `unknown family ${JSON.stringify(def["family"])} — an ability's family is its color, one of ${list(FAMILIES)}` });
     }
-    if (def["whens"] !== undefined || def["selectors"] !== undefined || def["condition"] !== undefined) {
-      // Explicit grammar-v1 compatibility. Versioned parsers migrate this shape;
-      // direct validator callers still receive all old-shape diagnostics.
+    if (def["whens"] !== undefined || def["triggers"] !== undefined || def["selectors"] !== undefined || def["condition"] !== undefined) {
+      issues.push({
+        path,
+        message: "canonical Ability is only what happens; Trigger/Selector/Condition context belongs on the Unit recipe (migrate grammar-v1 Ability context before validation)",
+      });
+      // Compatibility-only diagnostics keep malformed v1 bodies actionable, but
+      // contextual Ability definitions are always rejected by this public gate.
       validateAbility(def, statuses, abilities, "unit", path, issues);
       checkAbilityComplexity(def, path, issues);
     } else if (!Array.isArray(def["effects"]) || def["effects"].length === 0) {
@@ -267,7 +266,7 @@ function validateUnit(u: unknown, registry: StatusRegistry, abilities: AbilityRe
     return;
   }
   const hasLegacy = u["ability"] !== undefined;
-  const hasCanonical = u["triggers"] !== undefined || u["selectors"] !== undefined || u["abilities"] !== undefined;
+  const hasCanonical = u["triggers"] !== undefined || u["selectors"] !== undefined || u["condition"] !== undefined || u["abilities"] !== undefined;
   if (hasLegacy && hasCanonical) {
     issues.push({ path: `${path}.abilities`, message: "inline `abilities[]` or canonical Ability refs cannot coexist with legacy `ability`; migrate the whole unit instead of mixing grammars" });
   } else if (hasCanonical) {
@@ -328,6 +327,8 @@ function validateUnit(u: unknown, registry: StatusRegistry, abilities: AbilityRe
 
 // ---------- abilities ----------
 
+/** Validate a bound recipe. `whens` is a compatibility-only internal adapter
+ * name; persisted canonical Trigger context is owned by the Unit or Status. */
 function validateAbility(ab: unknown, registry: StatusRegistry, abilities: AbilityRegistry, owner: Owner, path: string, issues: ValidationIssue[]): void {
   if (!isObject(ab)) {
     issues.push({ path, message: "ability must be an object" });
@@ -494,7 +495,7 @@ function validateAmount(a: unknown, owner: Owner, path: string, issues: Validati
 
 // ---------- small helpers ----------
 
-/** A unit's ability ref (PRD #081): a string present in the ability registry.
+/** A Unit Ability ref: a string present in the Ability registry.
  * A dangling ref is content the resolver crashes on — rejected here, loudly,
  * mirroring the status-registry lookup. */
 function checkAbilityRef(id: unknown, abilities: AbilityRegistry, path: string, issues: ValidationIssue[]): void {
@@ -508,8 +509,8 @@ function checkAbilityRef(id: unknown, abilities: AbilityRegistry, path: string, 
   }
 }
 
-/** The card budget against a single AbilityDef — a unit's whole behavior is its
- * one ability, so the fixed-card cap (PRD #078) applies to the AbilityDef. */
+/** Compatibility-only complexity check for a grammar-v1 contextual AbilityDef.
+ * Canonical complexity is checked on the Unit/Status recipe that binds it. */
 function checkAbilityComplexity(def: Record<string, unknown>, path: string, issues: ValidationIssue[]): void {
   const c = abilityComplexity(def);
   if (c > MAX_DEFINITION_COMPLEXITY) {

@@ -51,12 +51,22 @@ describe("content grammar v1 → v2 migration", () => {
     expect(after).toContain('"status":"Poison"');
   });
 
-  it("rejects malformed mixed old/new units actionably", () => {
+  it("rejects mixed canonical recipe fields before they can create replay ambiguity", () => {
     expect(() => migrateContentEnvelope({
       grammarVersion: 2,
       units: [{ ...legacy.units[0], triggers: legacy.abilities.Venom.whens, selectors: legacy.abilities.Venom.selectors, abilities: ["Venom"] }],
       abilities: { Venom: { name: "Venom", family: "Poison", effects: legacy.abilities.Venom.effects } },
     }, "mixed")).toThrow(/mixed\.units\[0\].*mixed v1\/v2 unit payload/);
+    expect(() => migrateContentEnvelope({
+      ...legacy,
+      units: [{ ...legacy.units[0], condition: { kind: "holderHpAtMost", value: 0 } }],
+    }, "mixedCondition")).toThrow(/mixedCondition\.units\[0\].*condition/);
+  });
+
+  it("preserves valid migration provenance on canonical reread", () => {
+    const first = migrateContentEnvelope(legacy, "legacy");
+    const second = migrateContentEnvelope({ ...first.provenance, units: first.units, abilities: first.abilities }, "reread");
+    expect(second).toEqual(first);
   });
 
   it("rejects context smuggled into a canonical Ability", () => {

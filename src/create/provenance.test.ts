@@ -14,7 +14,7 @@ import { join } from "node:path";
 import { stressAbilities, stressRegistry } from "../content/stress.js";
 import { DEFAULT_RUN_POOL } from "../tunables.js";
 import { mergePool, parseApprovedRegistry } from "../registry.js";
-import type { UnitDef } from "../types.js";
+import type { AbilityRegistry, UnitDef } from "../types.js";
 import {
   buildRecord,
   gateStatsOf,
@@ -24,6 +24,7 @@ import {
 import type { CandidateRecord, RunManifest } from "./provenance.js";
 import type { GauntletResult } from "./worker.js";
 import { parseCandidateRecord } from "./candidates.js";
+import { serializeApprovedRegistry } from "./approve-cli.js";
 import { approveInto, reSimCandidate, ResimRejectedError, RESIM_WIN_RATE_TOLERANCE } from "./approve.js";
 
 // --- fixtures --------------------------------------------------------------
@@ -94,6 +95,35 @@ describe("provenance round-trip", () => {
     const reparsed = parseCandidateRecord(JSON.parse(once), stressRegistry, stressAbilities, "froster.json");
     const twice = serializeRecord(reparsed);
     expect(twice).toBe(once);
+  });
+
+  test("canonicalizes a supplied legacy Ability together with its Unit", () => {
+    const custom = {
+      Custom: {
+        name: "Custom", family: "Strike",
+        whens: [{ kind: "trigger", on: { on: "BattleStart" } }],
+        selectors: [{ kind: "holder" }],
+        effects: [{ kind: "heal", amount: { kind: "const", value: 1 } }],
+      },
+    } as unknown as AbilityRegistry;
+    const record = buildRecord(
+      "custom",
+      [{ name: "Custom Unit", base: { hp: 5, pwr: 1 }, ability: "Custom" }],
+      MANIFEST, PASSED, 1, custom,
+    );
+    expect(record.abilities.Custom).not.toHaveProperty("whens");
+    expect(record.units[0]).toMatchObject({ abilities: ["Custom"] });
+    expect(() => parseCandidateRecord(record, stressRegistry, stressAbilities, "custom.json")).not.toThrow();
+  });
+
+  test("preserves migratedFrom through a v2 candidate reread", () => {
+    const legacyRecord = JSON.parse(serializeRecord(buildRecord("legacy", [FROSTER], MANIFEST, PASSED, 1)));
+    delete legacyRecord.grammarVersion;
+    legacyRecord.units = [{ name: "Froster", base: { hp: 11, pwr: 2 }, ability: "Venom" }];
+    const first = parseCandidateRecord(legacyRecord, stressRegistry, stressAbilities, "legacy.json");
+    const second = parseCandidateRecord(JSON.parse(serializeRecord(first)), stressRegistry, stressAbilities, "legacy.json");
+    expect(first.migratedFrom).toBe(1);
+    expect(second).toEqual(first);
   });
 
   test("the record carries every provenance field from the run", () => {
@@ -167,6 +197,9 @@ describe("approve", () => {
     const next = approveInto({ units: [] }, honest("frostbite-striker"), shippedNames, stressRegistry, stressAbilities);
     expect(next.units.map((u) => u.name)).toEqual(["Frostbiter", "Glacier"]); // Squire shipped → skipped
     expect(next.units.every((u) => u._creator === "maks")).toBe(true);
+    const written = JSON.parse(serializeApprovedRegistry(next));
+    expect(written.grammarVersion).toBe(2);
+    expect(written.abilities).toEqual(next.abilities);
     // the merged playable pool is valid and draftable.
     const pool = mergePool(DEFAULT_RUN_POOL, next.units);
     expect(pool.some((u) => u.name === HONEST_NEW_NAME)).toBe(true);

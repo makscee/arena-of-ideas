@@ -21,7 +21,7 @@
 
 import type { GauntletResult } from "./worker.js";
 import type { AbilityRegistry, UnitDef } from "../types.js";
-import { legacyRecipe } from "../content-grammar.js";
+import { migrateContentEnvelope } from "../content-grammar.js";
 
 // ---------------------------------------------------------------------------
 // The run manifest — the provenance the run log alone does not carry.
@@ -160,24 +160,17 @@ export function buildRecord(
   attempts: number,
   abilities: AbilityRegistry = {},
 ): CandidateRecord {
-  const canonicalUnits = units.map((unit) => {
-    if (unit.ability === undefined) return structuredClone(unit);
-    if (unit.triggers !== undefined || unit.selectors !== undefined || unit.abilities !== undefined) {
-      throw new Error(`candidate unit "${unit.name}" mixes legacy ability with canonical recipe fields`);
-    }
-    const action = abilities[unit.ability];
-    const recipe = action?.whens && action.selectors
-      ? { triggers: action.whens, selectors: action.selectors }
-      : legacyRecipe(unit.ability);
-    if (!recipe) throw new Error(`candidate unit "${unit.name}" cannot migrate unknown legacy ability "${unit.ability}"`);
-    const { ability, ...rest } = unit;
-    return { ...structuredClone(rest), ...structuredClone(recipe), abilities: [ability] };
-  });
+  const legacy = units.some((unit) => unit.ability !== undefined);
+  const migrated = migrateContentEnvelope({
+    grammarVersion: legacy ? 1 : 2,
+    units,
+    abilities,
+  }, `candidate ${JSON.stringify(id)}`);
   return {
     grammarVersion: 2,
     id,
-    units: canonicalUnits,
-    abilities,
+    units: migrated.units,
+    abilities: migrated.abilities,
     provenance: {
       ideaText: manifest.ideaText,
       creator: manifest.creator,

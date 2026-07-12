@@ -72,6 +72,13 @@ describe("the one-ability invariant (#081)", () => {
     expect(issues.some((i) => i.path === "abilities.Plasma.family" && /unknown family.*one of/.test(i.message))).toBe(true);
   });
 
+  test.each(["whens", "triggers", "selectors", "condition"])("rejects canonical Ability context field %s", (field) => {
+    const issues = validateAbilityRegistry({
+      Probe: { ...stressAbilities.Strike, [field]: field === "condition" ? { kind: "holderHpAtMost", value: 1 } : [] },
+    } as AbilityRegistry, stressRegistry);
+    expect(issues.some((i) => /Ability is only what happens/.test(i.message))).toBe(true);
+  });
+
   test("an AbilityDef.name that disagrees with its registry key is rejected", () => {
     const issues = validateAbilityRegistry(
       { Key: { name: "Other", family: "Strike", whens: [{ kind: "trigger", on: { on: "TurnEnd" } }], selectors: [{ kind: "holder" }], effects: [{ kind: "heal", amount: { kind: "const", value: 1 } }] } },
@@ -139,7 +146,7 @@ describe("wrong-context parts (ability bodies)", () => {
     expect(issues.map((i) => i.message).join("\n")).toMatch(/trigger-context effect.*only interceptor whens/);
   });
 
-  test("a mixed-when ability may carry both atom families", () => {
+  test("a legacy mixed-trigger Ability is otherwise coherent but rejected until migrated", () => {
     const issues = validateAbilityRegistry(
       reg({
         whens: [
@@ -151,12 +158,13 @@ describe("wrong-context parts (ability bodies)", () => {
       }),
       stressRegistry,
     );
-    expect(issues).toEqual([]);
+    expect(issues).toHaveLength(1);
+    expect(issues[0]!.message).toMatch(/Ability is only what happens/);
   });
 });
 
 // ---------------------------------------------------------------------------
-// 3. Unknown kinds and bad references — in ability bodies
+// 3. Unknown kinds and bad references — compatibility-only v1 bodies
 // ---------------------------------------------------------------------------
 
 describe("unknown kinds (ability bodies)", () => {
@@ -317,8 +325,10 @@ describe("complexity cap", () => {
     effects: Array.from({ length: 6 }, () => ({ kind: "heal", amount: { kind: "const", value: 1 } })),
   };
 
-  test("an at-cap ability (complexity 8) passes", () => {
-    expect(validateAbilityRegistry(reg(atCapBody), stressRegistry)).toEqual([]);
+  test("an at-cap legacy body has no issue beyond its required grammar migration", () => {
+    const issues = validateAbilityRegistry(reg(atCapBody), stressRegistry);
+    expect(issues).toHaveLength(1);
+    expect(issues[0]!.message).toMatch(/Ability is only what happens/);
   });
 
   test("a just-over-cap ability (complexity 9) is rejected with a clear error", () => {
@@ -359,6 +369,7 @@ describe("complexity cap", () => {
     const body = { ...atCapBody, effects: [...atCapBody.effects, { kind: "heal", amount: { kind: "const", value: 1 } }] };
     const issues = validateAbilityRegistry(reg(body), stressRegistry);
     const nonComplexity = issues.filter((i) => !/exceeds the card budget/.test(i.message));
-    expect(nonComplexity).toEqual([]);
+    expect(nonComplexity).toHaveLength(1);
+    expect(nonComplexity[0]!.message).toMatch(/Ability is only what happens/);
   });
 });

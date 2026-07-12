@@ -22,6 +22,7 @@
  * code path and one definition of "the playable pool".
  */
 
+import { migrateContentEnvelope } from "./content-grammar.js";
 import { assertValidContent } from "./validate.js";
 import type { AbilityRegistry, StatusRegistry, UnitDef } from "./types.js";
 
@@ -30,9 +31,12 @@ import type { AbilityRegistry, StatusRegistry, UnitDef } from "./types.js";
  * ignores — it exists for display (codex credit line), never for rules. */
 export type ApprovedUnit = UnitDef & { _creator?: string };
 
-/** The approved-units file shape: `{ units: ApprovedUnit[] }` — the same team-
- * file envelope examples/ and candidates use, so one parser fits all. */
+/** The approved-units file shape is a versioned `{ grammarVersion, units,
+ * abilities }` envelope — the same persisted grammar boundary as team files. */
 export interface ApprovedRegistry {
+  /** Present on every parsed/written registry; optional only for legacy in-memory callers. */
+  grammarVersion?: 2;
+  migratedFrom?: 1;
   units: ApprovedUnit[];
   /** Abilities the approved units reference that the shipped registry does not
    * (PRD #081 — an approved unit travels WITH its Ability). Optional: the
@@ -53,26 +57,33 @@ export function parseApprovedRegistry(data: unknown, registry: StatusRegistry, a
   if (!Array.isArray(obj["units"])) {
     throw new Error(`${label}: missing or non-array "units" field`);
   }
-  const units = obj["units"] as unknown[];
-  // The approved units may carry their own abilities (#081); merge onto the
-  // shipped registry for the content gate.
-  const fileAbilities =
+  const rawFileAbilities =
     typeof obj["abilities"] === "object" && obj["abilities"] !== null && !Array.isArray(obj["abilities"])
       ? (obj["abilities"] as AbilityRegistry)
       : {};
+  const legacy = obj["grammarVersion"] === undefined || obj["grammarVersion"] === 1;
+  const migrated = migrateContentEnvelope({
+    grammarVersion: obj["grammarVersion"],
+    migratedFrom: obj["migratedFrom"],
+    units: obj["units"],
+    abilities: legacy ? { ...abilities, ...rawFileAbilities } : rawFileAbilities,
+  }, label);
+  const fileAbilities = Object.fromEntries(
+    Object.keys(rawFileAbilities).map((key) => [key, migrated.abilities[key]!]),
+  ) as AbilityRegistry;
   const merged: AbilityRegistry = { ...abilities, ...fileAbilities };
-  // Empty is fine; a non-empty registry passes the content gate. The validator
-  // reads only the DSL fields, so the `_creator` credit rides along untouched.
-  if (units.length > 0) assertValidContent(units, registry, merged, `${label}.units`);
-  // Credit, when present, must be a non-empty string — a typo'd credit field is
-  // a silent loss of authorship, so it fails loudly like any other content typo.
-  units.forEach((u, i) => {
-    const cred = (u as Record<string, unknown>)["_creator"];
+  if (migrated.units.length > 0) assertValidContent(migrated.units, registry, merged, `${label}.units`);
+  migrated.units.forEach((u, i) => {
+    const cred = (u as unknown as Record<string, unknown>)["_creator"];
     if (cred !== undefined && (typeof cred !== "string" || cred.length === 0)) {
       throw new Error(`${label}.units[${i}]._creator must be a non-empty string when present`);
     }
   });
-  return { units: units as ApprovedUnit[], ...(Object.keys(fileAbilities).length > 0 ? { abilities: fileAbilities } : {}) };
+  return {
+    ...migrated.provenance,
+    units: migrated.units as ApprovedUnit[],
+    ...(Object.keys(fileAbilities).length > 0 ? { abilities: fileAbilities } : {}),
+  };
 }
 
 /** Merge the approved units onto a base pool, by name. The base (the shipped

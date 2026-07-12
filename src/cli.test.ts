@@ -71,10 +71,30 @@ describe("loadTeamFile", () => {
 });
 
 describe("validateTeamFile", () => {
-  test("accepts a minimal valid team object", () => {
+  test("accepts and migrates a minimal legacy team object", () => {
     const data = JSON.parse(minimalTeam);
     const team = validateTeamFile(data);
     expect(team.units).toHaveLength(1);
+    expect(team).toMatchObject({ grammarVersion: 2, migratedFrom: 1 });
+    expect(team.units[0]).not.toHaveProperty("ability");
+  });
+
+  test("rejects unsupported versions and contextual Abilities at the public reader", () => {
+    expect(() => validateTeamFile({ grammarVersion: 999, units: [{ name: "Probe", base: { hp: 1, pwr: 1 } }], abilities: {} }, "unsupported"))
+      .toThrow(/unsupported content grammar version/);
+    const canonicalUnit = {
+      name: "Probe", base: { hp: 5, pwr: 1 },
+      triggers: [{ kind: "trigger", on: { on: "BattleStart" } }],
+      selectors: [{ kind: "holder" }], abilities: ["Probe"],
+    };
+    const contextual = {
+      name: "Probe", family: "Strike",
+      whens: [{ kind: "trigger", on: { on: "BattleStart" } }],
+      selectors: [{ kind: "holder" }],
+      effects: [{ kind: "heal", amount: { kind: "const", value: 1 } }],
+    };
+    expect(() => validateTeamFile({ grammarVersion: 2, units: [canonicalUnit], abilities: { Probe: contextual } }, "contextual"))
+      .toThrow(/Ability is only what happens in v2/);
   });
 
   test("rejects non-object", () => {

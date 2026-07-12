@@ -70,6 +70,7 @@ import { FileSeasonArchiveStore } from "./season-archive-file.js";
 import { FileSeasonPointerStore } from "./season-file.js";
 import { formatFinalTower, formatHistoryList } from "./season-history.js";
 import { stressRegistry, stressAbilities } from "./content/stress.js";
+import { migrateContentEnvelope } from "./content-grammar.js";
 import { assertValidContent } from "./validate.js";
 import type { AbilityRegistry, UnitDef } from "./types.js";
 import type { Side } from "./types.js";
@@ -79,6 +80,8 @@ import type { Side } from "./types.js";
 // ---------------------------------------------------------------------------
 
 export interface TeamFile {
+  grammarVersion: 2;
+  migratedFrom?: 1;
   units: UnitDef[];
   /** The ability registry the file's units resolve against: the shipped
    * `stressAbilities` merged with any `abilities` the file carries (PRD #081 —
@@ -111,34 +114,33 @@ export function validateTeamFile(data: unknown, label = "<input>"): TeamFile {
   if (!Array.isArray(obj["units"])) {
     throw new Error(`Team file ${label}: missing or non-array "units" field`);
   }
-  const units = obj["units"] as unknown[];
-  if (units.length === 0 || units.length > 5) {
-    throw new Error(`Team file ${label}: "units" must have 1..5 entries, got ${units.length}`);
+  const rawUnits = obj["units"] as unknown[];
+  if (rawUnits.length === 0 || rawUnits.length > 5) {
+    throw new Error(`Team file ${label}: "units" must have 1..5 entries, got ${rawUnits.length}`);
   }
-  // Light structural check first (readable errors for malformed files)…
-  for (let i = 0; i < units.length; i++) {
-    const u = units[i] as Record<string, unknown>;
-    if (typeof u !== "object" || u === null) {
-      throw new Error(`Team file ${label}: units[${i}] is not an object`);
-    }
-    if (typeof u["name"] !== "string") {
-      throw new Error(`Team file ${label}: units[${i}].name must be a string`);
-    }
-    if (typeof u["base"] !== "object" || u["base"] === null) {
-      throw new Error(`Team file ${label}: units[${i}].base must be an object`);
-    }
+  for (let i = 0; i < rawUnits.length; i++) {
+    const u = rawUnits[i] as Record<string, unknown>;
+    if (typeof u !== "object" || u === null) throw new Error(`Team file ${label}: units[${i}] is not an object`);
+    if (typeof u["name"] !== "string") throw new Error(`Team file ${label}: units[${i}].name must be a string`);
+    if (typeof u["base"] !== "object" || u["base"] === null) throw new Error(`Team file ${label}: units[${i}].base must be an object`);
   }
-  // The ability registry the units resolve against: shipped stress abilities
-  // plus any the file carries (a created unit travels with its Ability, #081).
-  const fileAbilities =
+  const rawFileAbilities =
     typeof obj["abilities"] === "object" && obj["abilities"] !== null && !Array.isArray(obj["abilities"])
       ? (obj["abilities"] as AbilityRegistry)
       : {};
+  const legacy = obj["grammarVersion"] === undefined || obj["grammarVersion"] === 1;
+  const migrated = migrateContentEnvelope({
+    grammarVersion: obj["grammarVersion"],
+    migratedFrom: obj["migratedFrom"],
+    units: rawUnits,
+    abilities: legacy ? { ...stressAbilities, ...rawFileAbilities } : rawFileAbilities,
+  }, `Team file ${label}`);
+  const fileAbilities = Object.fromEntries(
+    Object.keys(rawFileAbilities).map((key) => [key, migrated.abilities[key]!]),
+  ) as AbilityRegistry;
   const abilities: AbilityRegistry = { ...stressAbilities, ...fileAbilities };
-  // …then the content validator: a typo'd part would be silently inert in
-  // battle(), so it must fail loudly here, before the kernel ever sees it.
-  assertValidContent(units, stressRegistry, abilities, `${label} units`);
-  return { units: units as UnitDef[], abilities };
+  assertValidContent(migrated.units, stressRegistry, abilities, `${label} units`);
+  return { ...migrated.provenance, units: migrated.units, abilities };
 }
 
 // ---------------------------------------------------------------------------

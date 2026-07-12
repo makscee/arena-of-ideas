@@ -37,6 +37,7 @@ export function parseCandidateRecord(data: unknown, registry: StatusRegistry, ab
   const legacy = o["grammarVersion"] === undefined || o["grammarVersion"] === 1;
   const migrated = migrateContentEnvelope({
     grammarVersion: o["grammarVersion"],
+    migratedFrom: o["migratedFrom"],
     units: o["units"],
     abilities: legacy ? { ...abilities, ...rawFileAbilities } : rawFileAbilities,
   }, label);

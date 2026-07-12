@@ -280,8 +280,8 @@ describe("duplicate stacking and level-up", () => {
 // ---------------------------------------------------------------------------
 
 describe("level in magnitude expressions", () => {
-  // PRD #081: the level-amount ability lives in an AbilityRegistry, referenced by
-  // id from the unit; its body is validated at the registry, not inline on the unit.
+  // Compatibility fixture: this runtime-level test retains a grammar-v1 contextual
+  // Ability; persisted content migrates it before the canonical public validator.
   const LevelStrike: AbilityDef = {
     name: "LevelStrike",
     family: "Strike",
@@ -298,13 +298,15 @@ describe("level in magnitude expressions", () => {
     expect(abilityHurt).toMatchObject({ amount: 3 });
   });
 
-  test("the validator accepts a level amount and pins it to the holder", () => {
-    expect(validateAbilityRegistry(vetAbilities, {})).toEqual([]);
+  test("the validator diagnoses the legacy context and still pins level to the holder", () => {
+    const contextual = validateAbilityRegistry(vetAbilities, {});
+    expect(contextual).toHaveLength(1);
+    expect(contextual[0]!.message).toMatch(/Ability is only what happens/);
     const bad = JSON.parse(JSON.stringify(LevelStrike)) as Record<string, unknown>;
     (bad as { effects: { amount: { of: string } }[] }).effects[0]!.amount.of = "target";
     const issues = validateAbilityRegistry({ LevelStrike: bad as unknown as AbilityDef }, {});
-    expect(issues.length).toBe(1);
-    expect(issues[0]!.message).toMatch(/level amounts read the holder/);
+    expect(issues).toHaveLength(2);
+    expect(issues.some((issue) => /level amounts read the holder/.test(issue.message))).toBe(true);
   });
 });
 
