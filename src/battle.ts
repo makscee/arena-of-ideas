@@ -5,6 +5,7 @@ import type {
   Ability,
   AbilityRef,
   AbilityRegistry,
+  Reaction,
   Amount,
   BattleEvent,
   BattleInput,
@@ -23,6 +24,7 @@ import type {
   UnitFilter,
 } from "./types.js";
 import { mulberry32 } from "./rng.js";
+import { legacyRecipe } from "./content-grammar.js";
 
 export const TEAM_SIZE = 5;
 export const FATIGUE_START = 10;
@@ -46,7 +48,7 @@ interface UnitState {
   side: Side;
   base: { hp: number; pwr: number };
   level: number;
-  abilities: Ability[];
+  abilities: Reaction[];
   statuses: StatusInstance[];
   damage: number; // taken; current hp = effective hp − damage
   silenced: boolean;
@@ -56,7 +58,7 @@ interface UnitState {
 interface ReactorEntry {
   ref: AbilityRef;
   holder: string;
-  ability: Ability;
+  ability: Reaction;
 }
 
 interface Firing extends ReactorEntry {
@@ -187,16 +189,30 @@ class Engine {
     };
   }
 
-  /** The unit's firing list — the ordering loop's `Ability[]` (SPEC §5). The
-   * ontology (PRD #081) is one `ability` ref resolved through the registry to a
-   * single entry: an AbilityDef IS an Ability (plus name/family), so the ordering
-   * loop consumes it unchanged — one ref means one unit-ability entry at index 0,
-   * exactly where an inline single ability sat. `unit.ability` is the only path;
-   * a missing ref is content the validator rejects, loud here if it slips past. */
-  private resolveAbilities(def: UnitDef): Ability[] {
-    const ab = this.abilities[def.ability];
-    if (!ab) throw new Error(`unknown ability "${def.ability}" — not in the ability registry`);
-    return [ab];
+  /** Assemble executable reactions from the canonical Unit recipe. Ability is
+   * only the action; Trigger and Selector context stays on the Unit. The legacy
+   * branch is an explicit v1 compatibility read and rejects mixed payloads. */
+  private resolveAbilities(def: UnitDef): Reaction[] {
+    const canonical = def.triggers !== undefined || def.selectors !== undefined || def.abilities !== undefined;
+    if (canonical && def.ability !== undefined) throw new Error(`unit "${def.name}" mixes v1 ability with v2 triggers/selectors/abilities`);
+    if (canonical) {
+      if (!def.triggers?.length || !def.selectors?.length || !def.abilities?.length) {
+        throw new Error(`unit "${def.name}" needs non-empty triggers, selectors, and abilities`);
+      }
+      return def.abilities.map((id) => {
+        const action = this.abilities[id];
+        if (!action) throw new Error(`unknown ability "${id}" — not in the ability registry`);
+        return { triggers: def.triggers!, selectors: def.selectors!, ...(def.condition ? { condition: def.condition } : {}), effects: action.effects };
+      });
+    }
+    const id = def.ability;
+    const action = id === undefined ? undefined : this.abilities[id];
+    if (!action) throw new Error(`unknown legacy ability "${String(id)}" — not in the ability registry`);
+    const fallback = legacyRecipe(id!);
+    const triggers = action.whens ?? fallback?.triggers;
+    const selectors = action.selectors ?? fallback?.selectors;
+    if (!triggers?.length || !selectors?.length) throw new Error(`legacy ability "${id}" has no migratable Trigger/Selector provenance`);
+    return [{ triggers, selectors, ...(action.condition ? { condition: action.condition } : {}), effects: action.effects }];
   }
 
   private applyInitialStatuses(causeId: number): void {
@@ -222,7 +238,7 @@ class Engine {
     let cancelledBy: AbilityRef | null = null;
 
     for (const r of this.orderedReactors()) {
-      for (const when of r.ability.whens) {
+      for (const when of r.ability.triggers) {
         if (when.kind !== "interceptor" || !this.matches(when.on, draft, r.holder)) continue;
         const k = refKey(r.ref);
         if (handled.has(k)) continue;
@@ -268,7 +284,7 @@ class Engine {
     this.mutate(ev, pending);
     this.log.push(ev);
     for (const r of reactors) {
-      for (const when of r.ability.whens) {
+      for (const when of r.ability.triggers) {
         if (when.kind === "trigger" && this.matches(when.on, ev, r.holder)) {
           this.queue.push({ ...r, event: ev });
         }
@@ -327,9 +343,16 @@ class Engine {
         u.abilities.forEach((ab, i) => out.push({ ref: { unit: u.id, ability: i }, holder: u.id, ability: ab }));
       }
       for (const st of [...u.statuses].sort((p, q) => p.attachedAt - q.attachedAt)) {
-        st.def.abilities.forEach((ab, i) =>
-          out.push({ ref: { unit: u.id, status: st.def.name, ability: i }, holder: u.id, ability: ab }),
-        );
+        st.def.abilities.forEach((ab, i) => {
+          const triggers = st.def.triggers ?? ab.whens;
+          const selectors = st.def.selectors ?? ab.selectors;
+          if (!triggers?.length || !selectors?.length) return;
+          const condition = st.def.condition ?? ab.condition;
+          out.push({
+            ref: { unit: u.id, status: st.def.name, ability: i }, holder: u.id,
+            ability: { triggers, selectors, ...(condition ? { condition } : {}), effects: ab.effects },
+          });
+        });
       }
     };
     for (const side of ["A", "B"] as const) {

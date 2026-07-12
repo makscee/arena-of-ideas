@@ -1,3 +1,4 @@
+import { primaryAbilityIdOf, statusActionsOf, unitActionsOf } from "../src/types.js";
 // The acting-card battle presentation (#082 slice D) — the mockup's "compact
 // board + acting full card". Pure projection over the kernel log: every fact
 // (acting unit, target, the step's effects, the reactive chains, the trace
@@ -85,7 +86,7 @@ export function usedThisTurnAt(log: BattleEvent[], beats: Beat[], step: number):
  * paints coloured). */
 export function familyOf(ctx: ActingCtx, unitId: string): Family {
   const def = ctx.defs.get(unitId);
-  const ab = def !== undefined ? ctx.abilities[def.ability] : undefined;
+  const ab = def !== undefined ? ctx.abilities[primaryAbilityIdOf(def)!] : undefined;
   return ab?.family ?? nameFamily(def?.name ?? unitId);
 }
 
@@ -104,11 +105,12 @@ export function abilityLineFor(
   action?: string | undefined;
 } {
   const def = ctx.defs.get(unitId);
-  const ab = def !== undefined ? ctx.abilities[def.ability] : undefined;
-  if (ab === undefined) return {};
+  const action = def !== undefined ? ctx.abilities[primaryAbilityIdOf(def)!] : undefined;
+  const ab = def !== undefined ? unitActionsOf(def, ctx.abilities)[0] : undefined;
+  if (action === undefined || ab === undefined) return {};
   const chips = abilityChips(ab);
   return {
-    abilityLabel: ab.name,
+    abilityLabel: action.name,
     ...chips,
     // The live defender is more specific than the selector chip ("Front enemy").
     ...(targetName !== undefined ? { target: targetName } : {}),
@@ -175,12 +177,13 @@ function phaseCaption(root: BattleEvent): string {
 function triggerOf(ctx: ActingCtx, ref: AbilityRef): string | undefined {
   let ab: Ability | undefined;
   if (ref.status !== undefined) {
-    ab = ctx.registry[ref.status]?.abilities[ref.ability];
+    const status = ctx.registry[ref.status];
+    ab = status !== undefined ? statusActionsOf(status)[ref.ability] : undefined;
   } else {
     const def = ctx.defs.get(ref.unit);
-    ab = def !== undefined ? ctx.abilities[def.ability] : undefined;
+    ab = def !== undefined ? unitActionsOf(def, ctx.abilities)[ref.ability] : undefined;
   }
-  return ab?.whens[0]?.on.on;
+  return ab?.whens?.[0]?.on.on;
 }
 
 /** A caused hero-effect event → a RESULT/CHAIN row (glyph + tinted text). The
@@ -415,7 +418,7 @@ export function traceChipsAt(log: BattleEvent[], beats: Beat[], step: number, ct
     let family: Family | undefined;
     if (beat.root.type === "Strike") {
       const def = ctx.defs.get(beat.root.striker);
-      const ab = def !== undefined ? ctx.abilities[def.ability] : undefined;
+      const ab = def !== undefined ? ctx.abilities[primaryAbilityIdOf(def)!] : undefined;
       primary = `${abbrev(ab?.name ?? def?.name ?? "act")} · ${ctx.name(beat.root.striker).toUpperCase()}`;
       family = familyOf(ctx, beat.root.striker);
     } else {

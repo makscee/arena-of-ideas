@@ -105,6 +105,9 @@ function abilityComplexity(ab: Record<string, unknown>): number {
  * tolerant of malformed input (shape errors are reported by the other checks). */
 export function complexityOf(def: Record<string, unknown>): number {
   const abilities = Array.isArray(def["abilities"]) ? def["abilities"] : [];
+  if (Array.isArray(def["triggers"]) && Array.isArray(def["selectors"])) {
+    return abilities.reduce((sum, ab) => sum + (isObject(ab) ? abilityComplexity({ ...ab, whens: def["triggers"], selectors: def["selectors"], condition: def["condition"] }) : 0), 0);
+  }
   return abilities.reduce((sum, ab) => sum + (isObject(ab) ? abilityComplexity(ab) : 0), 0);
 }
 
@@ -165,11 +168,8 @@ export function validatePool(units: unknown, statuses: StatusRegistry, abilities
   return issues;
 }
 
-/** Validate the ability registry itself — each AbilityDef is content (PRD #081):
- * its `name` keys it, its `family` is the color axis (a known family), and its
- * body (whens/selectors/effects) is validated once here, in unit-ability context
- * (`owner: "unit"`), where a unit references it. The card budget applies to the
- * AbilityDef — a unit's whole behavior is its one ability. */
+/** Validate named Ability actions. Trigger/Selector context is forbidden here:
+ * v2 keeps when/who on the Unit recipe and what-happens on Ability. */
 export function validateAbilityRegistry(abilities: AbilityRegistry, statuses: StatusRegistry, label = "abilities"): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   for (const [key, def] of Object.entries(abilities)) {
@@ -184,8 +184,17 @@ export function validateAbilityRegistry(abilities: AbilityRegistry, statuses: St
     if (!oneOf(def["family"], FAMILIES)) {
       issues.push({ path: `${path}.family`, message: `unknown family ${JSON.stringify(def["family"])} — an ability's family is its color, one of ${list(FAMILIES)}` });
     }
-    validateAbility(def, statuses, abilities, "unit", path, issues);
-    checkAbilityComplexity(def, path, issues); // the unit's one ability is its whole card — same fixed budget
+    if (def["whens"] !== undefined || def["selectors"] !== undefined || def["condition"] !== undefined) {
+      // Explicit grammar-v1 compatibility. Versioned parsers migrate this shape;
+      // direct validator callers still receive all old-shape diagnostics.
+      validateAbility(def, statuses, abilities, "unit", path, issues);
+      checkAbilityComplexity(def, path, issues);
+    } else if (!Array.isArray(def["effects"]) || def["effects"].length === 0) {
+      issues.push({ path: `${path}.effects`, message: "an Ability needs ≥1 effects describing what happens" });
+    } else {
+      const both = new Set<"trigger" | "interceptor">(["trigger", "interceptor"]);
+      def["effects"].forEach((e, i) => validateEffect(e, statuses, abilities, "unit", both, `${path}.effects[${i}]`, issues));
+    }
   }
   return issues;
 }
@@ -214,9 +223,16 @@ export function validateRegistry(registry: StatusRegistry, abilities: AbilityReg
     }
     if (!Array.isArray(def.abilities)) {
       issues.push({ path: `${path}.abilities`, message: "StatusDef.abilities must be an array (may be empty)" });
-    } else {
-      def.abilities.forEach((ab, i) => validateAbility(ab, registry, abilities, "status", `${path}.abilities[${i}]`, issues));
-      checkComplexity(def, path, issues); // a Status is content on a card too — same fixed budget
+    } else if (def.abilities.length > 0) {
+      const triggers = def.triggers;
+      const selectors = def.selectors;
+      if (!Array.isArray(triggers) || triggers.length === 0 || !Array.isArray(selectors) || selectors.length === 0) {
+        // Explicit v1 compatibility: old status actions carried their own context.
+        def.abilities.forEach((ab, i) => validateAbility(ab, registry, abilities, "status", `${path}.abilities[${i}]`, issues));
+      } else {
+        def.abilities.forEach((ab, i) => validateAbility({ whens: triggers, selectors, ...(def.condition ? { condition: def.condition } : {}), effects: ab.effects }, registry, abilities, "status", `${path}.abilities[${i}]`, issues));
+      }
+      checkComplexity(def, path, issues);
     }
   }
   return issues;
@@ -250,19 +266,29 @@ function validateUnit(u: unknown, registry: StatusRegistry, abilities: AbilityRe
     issues.push({ path, message: "unit must be an object" });
     return;
   }
-  // PRD #081 — a Unit references exactly one Ability by id, no inline effects.
-  // An inline `abilities[]` array is the retired path; an ability-less unit
-  // would carry no color and no mechanic. The ref must resolve in the registry
-  // (a dangling ref is content the kernel would crash on at resolve time). The
-  // ability's BODY is validated once at the registry (validateAbilityRegistry),
-  // not here — a unit only carries the ref.
-  if (u["abilities"] !== undefined) {
-    issues.push({ path: `${path}.abilities`, message: "inline `abilities[]` on a unit is retired (#081) — a unit references exactly one Ability by id via `ability`" });
-  }
-  if (u["ability"] === undefined) {
-    issues.push({ path: `${path}.ability`, message: "a unit must reference exactly one Ability by id (`ability`) — no ability means no color and no mechanic" });
-  } else {
+  const hasLegacy = u["ability"] !== undefined;
+  const hasCanonical = u["triggers"] !== undefined || u["selectors"] !== undefined || u["abilities"] !== undefined;
+  if (hasLegacy && hasCanonical) {
+    issues.push({ path: `${path}.abilities`, message: "inline `abilities[]` or canonical Ability refs cannot coexist with legacy `ability`; migrate the whole unit instead of mixing grammars" });
+  } else if (hasCanonical) {
+    if (Array.isArray(u["abilities"]) && u["abilities"].some((id) => typeof id !== "string") && u["triggers"] === undefined) {
+      issues.push({ path: `${path}.abilities`, message: "inline `abilities[]` is grammar v1 content and must be migrated; canonical Units carry Ability id strings" });
+    } else if (!Array.isArray(u["abilities"]) || u["abilities"].length === 0) {
+      issues.push({ path: `${path}.abilities`, message: "a canonical Unit needs ≥1 ordered Ability refs" });
+    } else {
+      u["abilities"].forEach((id, i) => checkAbilityRef(id, abilities, `${path}.abilities[${i}]`, issues));
+      for (const [i, id] of u["abilities"].entries()) {
+        const action = typeof id === "string" ? abilities[id] : undefined;
+        if (action) validateAbility({ whens: u["triggers"], selectors: u["selectors"], ...(u["condition"] !== undefined ? { condition: u["condition"] } : {}), effects: action.effects }, registry, abilities, "unit", `${path}.recipe[${i}]`, issues);
+      }
+    }
+  } else if (hasLegacy) {
     checkAbilityRef(u["ability"], abilities, `${path}.ability`, issues);
+    const id = typeof u["ability"] === "string" ? u["ability"] : "";
+    const action = abilities[id];
+    if (action?.whens && action.selectors) validateAbility(action, registry, abilities, "unit", `${path}.legacyRecipe`, issues);
+  } else {
+    issues.push({ path: `${path}.ability`, message: "a unit must reference exactly one Ability in v1 or carry canonical Trigger(s), Selector(s), and Ability refs" });
   }
   if (typeof u["name"] !== "string" || u["name"].length === 0) {
     issues.push({ path: `${path}.name`, message: "unit name must be a non-empty string" });

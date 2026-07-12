@@ -23,13 +23,16 @@ Unit {
   name: string
   base: { hp, pwr }
   level: number         // shop concern; kernel reads it only for content that references it
-  ability: string       // [PINNED #081] exactly one — a ref into the AbilityRegistry
+  triggers: Trigger[]    // when
+  condition?: Condition
+  selectors: Selector[]  // who/what receives it
+  abilities: string[]    // what happens; one ref on a base Unit
   statuses: StatusInstance[]   // runtime
 }
 ```
 Damage reduces a unit's *current* hp (tracked separately from base.hp = max). A unit whose hp reaches 0 dies (→ Death event, §4).
 
-**[PINNED #081] A Unit references exactly one Ability, by id.** No inline ability array, no stray effects: every effect a unit carries is packaged inside its one named Ability (a plain attacker references the vanilla `Strike` ability, whose body is inert — the strike itself is the kernel). The resolver looks `ability` up in the `AbilityRegistry` (supplied alongside the status registry) to the same `Ability[]` firing list the ordering rule (§5) consumes — one ref = one unit-ability entry, deterministically placed. Mechanical, referenceable entities are exactly three: **Ability, Summon, Status** (ADR `docs/adr/0001-ability-first-class.md`).
+**[PINNED v2] A Unit's behavior is `Trigger(s) → Selector(s) → Ability/Abilities`.** Trigger is when, Selector is who/what receives it, and Ability is what happens. A base Unit has exactly one Ability ref. Effects are packaged inside that named Ability and never float on the Unit. The plural array reserves the accepted two-inherited-Ability fused representation without implementing fusion here. The four card-bearing entities are **Unit, Ability, Status, Summon**; Trigger, Selector, Effect, Condition, and battle events are lighter grammar/runtime structures.
 
 ### Team
 Ordered list of up to **5** units **[PINNED]**. Index 0 is the front. Sides are `A` (attacker — the player who initiated this async battle) and `B` (defender — the saved team).
@@ -37,36 +40,35 @@ Ordered list of up to **5** units **[PINNED]**. Index 0 is the front. Sides are 
 ### Ability
 ```
 AbilityDef {
-  name: string           // [PINNED #081] registry key — the ability's identity
-  family: Family         // [PINNED #081] the color axis; the unit's color is derived from it
-  whens: When[]          // ≥1; Trigger or Interceptor
-  condition?: Condition  // optional gate, checked at fire time
-  selectors: Selector[]  // ≥1
-  effects: Effect[]      // ≥1; a sequence
+  name: string           // registry key — referenceable action identity
+  family: Family         // visual family; not a behavior axis
+  effects: Effect[]      // what happens, in sequence
 }
-When = { kind: "trigger" | "interceptor", on: EventPattern }
-AbilityRegistry = Record<string, AbilityDef>   // mirrors StatusRegistry
+Trigger = { kind: "trigger" | "interceptor", on: EventPattern }
+AbilityRegistry = Record<string, AbilityDef>
 ```
-**[PINNED #081] Family = color, derived not stored.** `Family` is one of 7 — Poison, Strike, Shield, Summon, Arcane, Control, Heal — each with a pinned hex (the palette lives in `tunables.ts`). A unit's color is its Ability's family; it is never stored on the unit. The codex carries an Ability catalogue beside the Status catalogue.
-**[PINNED] Firing semantics (v3 fusion semantics):** each matching `when` fires independently (more whens = more firings); on a firing, the effect sequence is applied **once per selected target, per selector** (more selectors = more applications); effects run in sequence order. This multiplicative structure is the depth engine; pricing it is the budget's job (out of scope v1, §8).
+**[PINNED v2] Ability means what happens.** It contains no Trigger, Selector, or Condition context. `Family` is one of Poison, Strike, Shield, Summon, Arcane, Control, Heal and supplies visual identity. For a recipe, every matching Trigger fires independently; each ordered Ability executes once per selected recipient, and each Ability's effects run in sequence.
 
 - **Trigger** — fires *after* its event pattern has applied.
 - **Interceptor** — fires *instead of* a proposed event: it may cancel or transform the event before it applies (MTG triggered-vs-replacement split). Shield, Freeze, and death-prevention are inexpressible without interceptors.
 
 ### Status
-A status is a named ability-bundle with a stack count — content, not an engine concept:
+A status is a named recipe with a stack count — content, not an engine concept:
 ```
 StatusDef {
   name: string
-  statMods?: { hp?, pwr? }   // contribution per stack, applied while attached
-  abilities: Ability[]        // whens may reference "holder"
+  statMods?: { hp?, pwr? }
+  triggers?: Trigger[]
+  condition?: Condition
+  selectors?: Selector[]
+  abilities: Ability[]        // packaged actions; empty for modifier-only statuses
 }
 StatusInstance { def: StatusDef, stacks: number }
 ```
 **[PINNED] Stacks only — no durations.** Applying a status adds stacks (`StatusApplied`); a status at 0 stacks is removed (`StatusRemoved`). Decay/consumption is each status's own content (e.g. Poison consumes 1 stack per tick). The kernel knows nothing about decay.
 
-### Part
-The creator-facing atom: a single trigger, interceptor, condition, selector, or effect. Creation assembles abilities from parts; fusion recombines parts across units. (Empirical anchor: all of Super Auto Pets factors into ~25 such atoms.) Pricing/budget: §8.
+### Grammar migration
+Persisted content carries `grammarVersion: 2`. The version-1 compatibility reader deterministically moves `AbilityDef.whens/selectors/condition` onto each Unit as `triggers/selectors/condition`, turns `unit.ability` into ordered `unit.abilities`, and preserves Ability effects. It stamps `{grammarVersion: 2, migratedFrom: 1}`. Payloads mixing old and new fields are rejected with their content path; they are never guessed.
 
 ## 2. Event model
 
@@ -136,7 +138,7 @@ Every state change flows through one pipeline: **propose → intercept → apply
 1. **Propose.** An effect (or the kernel) proposes an event E with `causedBy` = the event that fired its ability (or the kernel beat).
 2. **Intercept.** Eligible interceptors are offered E in **ordering rule** order; each may cancel or transform E. An interceptor instance handles a given proposed event at most once, and is subject to the no-self law below. What survives is the actual E.
 3. **Apply.** E mutates state, gets its `id`, and is appended to the log.
-4. **Trigger.** All trigger-whens matching E are collected in **ordering rule** order and their firings are enqueued FIFO (breadth-first). Processing continues until the queue is empty ("settle"), then the loop advances.
+4. **Trigger.** All recipe Triggers matching E are collected in **ordering rule** order and their firings are enqueued FIFO (breadth-first). Processing continues until the queue is empty ("settle"), then the loop advances.
 
 **[PINNED] Ordering rule (position priority):** whenever multiple abilities react to the same event, order is: side A front→back, then side B front→back; within a unit, ability list order; unit statuses after unit abilities, in attach order.
 
@@ -174,8 +176,8 @@ Ten abilities, shipped **as DSL data with behavior tests**. The kernel passes wh
 
 ## 8. Out of scope for v1 (pointers, not promises)
 
-- **Fusion & the budget:** fused units compose any subset of parents' parts *within a level-grown budget*; one pricing formula serves the creation gate and fusion alike; multi-when/multi-selector priced superlinearly (their value is multiplicative).
-- **Creation pipeline:** LLM text→parts interface; sim gate (candidate parts vs live meta, win-rate band); vote gate (fun/flavor only).
+- **Fusion implementation:** deferred. The semantic contract is already fixed: first parent Trigger set, second parent Selector set, two inherited Abilities in parent/name order; no invented Ability or permutation chooser.
+- **Creation pipeline:** LLM-to-canonical-recipe interface; sim gate (candidate content vs live meta, win-rate band); vote gate (fun/flavor only).
 - **Client:** a replay renderer over the event log; chosen last.
 
 ## 9. Stress-test resolutions (2026-06-10)

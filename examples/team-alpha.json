@@ -1,16 +1,87 @@
 {
-  "_comment": "Team Alpha — aggro venom squad. Built from stress-set units (SPEC §7). #081: units reference one ability by id.",
+  "_comment": "Team Alpha \u2014 aggro venom squad. Built from stress-set units (SPEC \u00a77). #081: units reference one ability by id.",
   "units": [
-    { "name": "Venomancer", "base": { "hp": 6, "pwr": 1 }, "ability": "Venom" },
-    { "name": "Summoner", "base": { "hp": 6, "pwr": 1 }, "ability": "Conjure" },
+    {
+      "name": "Venomancer",
+      "base": {
+        "hp": 6,
+        "pwr": 1
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "Strike",
+            "striker": "holder"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "frontEnemy"
+        }
+      ],
+      "abilities": [
+        "Venom"
+      ]
+    },
+    {
+      "name": "Summoner",
+      "base": {
+        "hp": 6,
+        "pwr": 1
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "Death",
+            "unit": "holder"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "holder"
+        }
+      ],
+      "abilities": [
+        "Conjure"
+      ]
+    },
     {
       "name": "Champion",
-      "base": { "hp": 12, "pwr": 2 },
-      "ability": "Strike",
+      "base": {
+        "hp": 12,
+        "pwr": 2
+      },
       "statuses": [
-        { "status": "Strength", "stacks": 1 },
-        { "status": "Shield", "stacks": 2 }
+        {
+          "status": "Strength",
+          "stacks": 1
+        },
+        {
+          "status": "Shield",
+          "stacks": 2
+        }
+      ],
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "BattleStart"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "holder"
+        }
+      ],
+      "abilities": [
+        "Strike"
       ]
     }
-  ]
+  ],
+  "grammarVersion": 2
 }

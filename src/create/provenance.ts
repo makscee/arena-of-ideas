@@ -21,6 +21,7 @@
 
 import type { GauntletResult } from "./worker.js";
 import type { AbilityRegistry, UnitDef } from "../types.js";
+import { legacyRecipe } from "../content-grammar.js";
 
 // ---------------------------------------------------------------------------
 // The run manifest — the provenance the run log alone does not carry.
@@ -65,6 +66,9 @@ export interface GateStats {
 /** A persisted candidate: the candidate data plus full provenance. One file per
  * candidate in candidates/ — legible, append-only, validated on read. */
 export interface CandidateRecord {
+  /** Persisted domain grammar; v1 reads are migrated and stamped v2. */
+  grammarVersion: 2;
+  migratedFrom?: 1;
   /** Stable id — the basename of the candidate file (e.g. "frostbite-striker"). */
   id: string;
   /** The candidate's units, exactly as the gauntlet passed them. */
@@ -156,9 +160,23 @@ export function buildRecord(
   attempts: number,
   abilities: AbilityRegistry = {},
 ): CandidateRecord {
+  const canonicalUnits = units.map((unit) => {
+    if (unit.ability === undefined) return structuredClone(unit);
+    if (unit.triggers !== undefined || unit.selectors !== undefined || unit.abilities !== undefined) {
+      throw new Error(`candidate unit "${unit.name}" mixes legacy ability with canonical recipe fields`);
+    }
+    const action = abilities[unit.ability];
+    const recipe = action?.whens && action.selectors
+      ? { triggers: action.whens, selectors: action.selectors }
+      : legacyRecipe(unit.ability);
+    if (!recipe) throw new Error(`candidate unit "${unit.name}" cannot migrate unknown legacy ability "${unit.ability}"`);
+    const { ability, ...rest } = unit;
+    return { ...structuredClone(rest), ...structuredClone(recipe), abilities: [ability] };
+  });
   return {
+    grammarVersion: 2,
     id,
-    units,
+    units: canonicalUnits,
     abilities,
     provenance: {
       ideaText: manifest.ideaText,

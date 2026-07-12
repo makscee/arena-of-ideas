@@ -1,6 +1,8 @@
 // Public API of the v5 kernel — everything a CLI or browser client imports.
 
 export const KERNEL_VERSION = "5.0.0-alpha.0";
+export { CONTENT_GRAMMAR_VERSION, LEGACY_CONTENT_GRAMMAR_VERSION, canonicalUnit, migrateContentEnvelope } from "./content-grammar.js";
+export type { ContentMigrationProvenance, MigratedContent } from "./content-grammar.js";
 
 export { battle, toJSONL, winnerOf, TEAM_SIZE, FATIGUE_START, FATIGUE_RAMP, TURN_CAP, fatigueAmount } from "./battle.js";
 export { initRun, buy, reroll, reorder, fuse, fight, ladderFight, challengeBoss, applyDecision, playRun, runToJSONL, serializeRun, deserializeRun, toBattleTeam, InvalidDecisionError } from "./run.js";
@@ -104,6 +106,7 @@ export { beatsOf, beatAtStep, depthInBeat, isRootKind, overlaysAt, overlayHasCon
 export type { Beat, BeatOverlay } from "./beats.js";
 export { assertValidContent, assertValidPool, validateTeam, validatePool, validateRegistry, ValidationError } from "./validate.js";
 export type { ValidationIssue } from "./validate.js";
+export { abilityIdsOf, primaryAbilityIdOf, unitActionsOf, statusActionsOf } from "./types.js";
 export type * from "./types.js";
 export * from "./content/stress.js";
 export { buildCodex, codexUnits } from "./codex.js";

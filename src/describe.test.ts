@@ -13,6 +13,7 @@ import {
   describeWhen,
   describeWhenSegments,
 } from "./describe.js";
+import { statusActionsOf, unitActionsOf } from "./types.js";
 import type { Ability, When } from "./types.js";
 import { Necromancer, Silencer, Summoner, Venomancer, stressAbilities, stressRegistry } from "./content/stress.js";
 import { BOSS_TEAMS, DEFAULT_RUN_POOL } from "./tunables.js";
@@ -47,23 +48,23 @@ describe("describeStatus", () => {
 describe("describeAbility", () => {
   test("every shipped unit ability yields a non-empty description", () => {
     for (const unit of [Venomancer, Summoner, Silencer, Necromancer]) {
-      for (const ab of (unit.ability !== undefined ? [stressAbilities[unit.ability]!] : [])) {
+      for (const ab of unitActionsOf(unit, stressAbilities)) {
         expect(describeAbility(ab).length, `${unit.name} should describe its ability`).toBeGreaterThan(0);
       }
     }
   });
 
   test("known wordings (the shipped stress units)", () => {
-    expect(describeAbility(stressAbilities[Venomancer.ability!]!)).toMatchInlineSnapshot(
+    expect(describeAbility(unitActionsOf(Venomancer, stressAbilities)[0]!)).toMatchInlineSnapshot(
       `"After this unit strikes: apply 2 Poison to the front enemy."`,
     );
-    expect(describeAbility(stressAbilities[Summoner.ability!]!)).toMatchInlineSnapshot(
+    expect(describeAbility(unitActionsOf(Summoner, stressAbilities)[0]!)).toMatchInlineSnapshot(
       `"After this unit dies: summon Imp (2 hp, 1 pwr) at the back of this unit's side."`,
     );
-    expect(describeAbility(stressAbilities[Silencer.ability!]!)).toMatchInlineSnapshot(
+    expect(describeAbility(unitActionsOf(Silencer, stressAbilities)[0]!)).toMatchInlineSnapshot(
       `"When the battle begins: silence the front enemy — strip its statuses and disable its abilities for the battle."`,
     );
-    expect(describeAbility(stressAbilities[Necromancer.ability!]!)).toMatchInlineSnapshot(
+    expect(describeAbility(unitActionsOf(Necromancer, stressAbilities)[0]!)).toMatchInlineSnapshot(
       `"After an ally dies: return the most recently dead ally to the back of the line at 1 hp."`,
     );
   });
@@ -80,7 +81,7 @@ describe("describeAbility", () => {
   });
 
   test("a status-held ability speaks of the holder", () => {
-    const text = describeAbility(stressRegistry.Poison!.abilities[0]!, { holder: "the holder" });
+    const text = describeAbility(statusActionsOf(stressRegistry.Poison!)[0]!, { holder: "the holder" });
     expect(text).toContain("the holder");
     expect(text).not.toContain("this unit");
   });
@@ -105,25 +106,25 @@ describe("abilityChips — the card's terse 3-chip line (#082)", () => {
   test("the shipped stress units read as short trigger/target/action + glyph", () => {
     // Venom: ⚔ On strike ▸ Front enemy ▸ ☣ Poison 2 (the mockup's canonical row;
     // the action glyph ☣ is the family glyph the card derives, not in the chips).
-    expect(abilityChips(stressAbilities[Venomancer.ability!]!)).toEqual({
+    expect(abilityChips(unitActionsOf(Venomancer, stressAbilities)[0]!)).toEqual({
       trigger: "On strike",
       triggerGlyph: "⚔",
       target: "Front enemy",
       action: "Poison 2",
     });
-    expect(abilityChips(stressAbilities[Summoner.ability!]!)).toEqual({
+    expect(abilityChips(unitActionsOf(Summoner, stressAbilities)[0]!)).toEqual({
       trigger: "On death",
       triggerGlyph: "☠",
       target: "Self",
       action: "Summon Imp",
     });
-    expect(abilityChips(stressAbilities[Silencer.ability!]!)).toEqual({
+    expect(abilityChips(unitActionsOf(Silencer, stressAbilities)[0]!)).toEqual({
       trigger: "Battle start",
       triggerGlyph: "⚑",
       target: "Front enemy",
       action: "Silence",
     });
-    expect(abilityChips(stressAbilities[Necromancer.ability!]!)).toEqual({
+    expect(abilityChips(unitActionsOf(Necromancer, stressAbilities)[0]!)).toEqual({
       trigger: "On death",
       triggerGlyph: "☠",
       target: "Last dead ally",
@@ -133,7 +134,7 @@ describe("abilityChips — the card's terse 3-chip line (#082)", () => {
 
   test("each chip stays short — no prose: trigger ≤ 3 words, no 'the'/'apply'", () => {
     for (const unit of [Venomancer, Summoner, Silencer, Necromancer]) {
-      const c = abilityChips(stressAbilities[unit.ability!]!);
+      const c = abilityChips(unitActionsOf(unit, stressAbilities)[0]!);
       expect(c.trigger!.split(" ").length, `${unit.name} trigger terse`).toBeLessThanOrEqual(3);
       expect(c.target!.split(" ").length, `${unit.name} target terse`).toBeLessThanOrEqual(3);
       expect(`${c.trigger} ${c.target} ${c.action}`).not.toMatch(/\bthe\b|\bapply\b|after /i);
@@ -167,7 +168,7 @@ describe("describe segments / status refs", () => {
 
   test("joined ability segments reproduce describeAbility exactly (all shipped content)", () => {
     for (const unit of shippedUnits) {
-      for (const ab of (unit.ability !== undefined ? [stressAbilities[unit.ability]!] : [])) {
+      for (const ab of unitActionsOf(unit, stressAbilities)) {
         const joined = describeAbilitySegments(ab)
           .map((s) => s.text)
           .join("");
@@ -187,8 +188,8 @@ describe("describe segments / status refs", () => {
 
   test("every applyStatus/consumeStacks ability yields refs that resolve in the registry", () => {
     const abilities = [
-      ...shippedUnits.flatMap((u) => (u.ability !== undefined ? [stressAbilities[u.ability]!] : [])),
-      ...Object.values(stressRegistry).flatMap((d) => d.abilities),
+      ...shippedUnits.flatMap((u) => unitActionsOf(u, stressAbilities)),
+      ...Object.values(stressRegistry).flatMap(statusActionsOf),
     ];
     let applying = 0;
     for (const ab of abilities) {
@@ -206,13 +207,13 @@ describe("describe segments / status refs", () => {
   });
 
   test("Venomancer's ability marks Poison as a ref, the rest as plain text", () => {
-    const segs = describeAbilitySegments(stressAbilities[Venomancer.ability!]!);
+    const segs = describeAbilitySegments(unitActionsOf(Venomancer, stressAbilities)[0]!);
     expect(segs.filter((s) => s.statusRef !== undefined)).toEqual([{ text: "Poison", statusRef: "Poison" }]);
-    expect(abilityStatusRefs(stressAbilities[Venomancer.ability!]!)).toEqual(["Poison"]);
+    expect(abilityStatusRefs(unitActionsOf(Venomancer, stressAbilities)[0]!)).toEqual(["Poison"]);
   });
 
   test("consumeStacks of the owning status ('this status') is not a ref", () => {
-    const refs = stressRegistry.Poison!.abilities.flatMap((ab) => abilityStatusRefs(ab));
+    const refs = statusActionsOf(stressRegistry.Poison!).flatMap((ab) => abilityStatusRefs(ab));
     expect(refs).toEqual([]);
   });
 });

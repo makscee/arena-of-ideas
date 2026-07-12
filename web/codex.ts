@@ -1,3 +1,4 @@
+import { primaryAbilityIdOf, unitActionsOf } from "../src/types.js";
 // Codex screen — fully generated from registry + tunables via buildCodex().
 // Renders statuses, units, and rule entries as responsive card grids (#015
 // slice 2): units AND statuses now wear the ONE shared card (unit-card.ts) at
@@ -163,7 +164,7 @@ export function createCodex(
       statuses: def?.statuses,
       family: u.family,
       variant: "reference",
-      ...abilityLine(abilities[def?.ability ?? u.ability]),
+      ...abilityLine(abilities[def !== undefined ? primaryAbilityIdOf(def)! : u.ability]),
       ...(level > 1 ? { level } : {}),
       classes: "codex-unit",
       attrs: "",
@@ -172,8 +173,7 @@ export function createCodex(
     // Render from the def's abilities as segments so every term is a tappable
     // codex link (#078 slice 3); the derived u.abilities strings still feed
     // search. A unit not in defByName (shouldn't happen) falls back to plain.
-    const abilityDefs: Ability[] =
-      def === undefined ? [] : [abilities[def.ability]].filter((a): a is AbilityDef => a !== undefined);
+    const abilityDefs: Ability[] = def === undefined ? [] : unitActionsOf(def, abilities);
     const abilitiesHtml =
       abilityDefs.length > 0
         ? abilityDefs

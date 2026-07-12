@@ -1,3 +1,4 @@
+import { primaryAbilityIdOf, unitActionsOf } from "../src/types.js";
 // Run screen — the shop/fight loop in the browser, over the kernel's run
 // layer. It owns zero rules: every transition is initRun/buy/reroll/reorder/
 // ladderFight, every battle is recomputed from its logged seed, and the whole
@@ -418,7 +419,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
    * B·Arena card takes it as an input. Absent when the ability isn't in the
    * registry — the card then degrades to its own name→family mapping. */
   function familyOf(def: UnitDef): Family | undefined {
-    return deps.abilities[def.ability]?.family;
+    return deps.abilities[primaryAbilityIdOf(def)!]?.family;
   }
 
   /** The ability presented as the card's cap-label (the ability's NAME) + the
@@ -433,9 +434,10 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     target?: string | undefined;
     action?: string | undefined;
   } {
-    const ab = deps.abilities[def.ability];
-    if (ab === undefined) return {};
-    return { abilityLabel: ab.name, ...abilityChips(ab) };
+    const action = deps.abilities[primaryAbilityIdOf(def)!];
+    const ab = unitActionsOf(def, deps.abilities)[0];
+    if (action === undefined || ab === undefined) return {};
+    return { abilityLabel: action.name, ...abilityChips(ab) };
   }
 
   function offerCard(def: UnitDef, i: number, gold: number): string {

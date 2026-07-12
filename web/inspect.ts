@@ -1,3 +1,4 @@
+import { unitActionsOf } from "../src/types.js";
 // Unit inspector — select a unit (or a status chip) on the board and see what
 // it does: its abilities and current statuses, each with a description derived
 // from the DSL data by the kernel's describe helpers. The replay position
@@ -9,7 +10,6 @@ import {
   describeStatus,
   describeStatusSegments,
   type Ability,
-  type AbilityDef,
   type AbilityRegistry,
   type BattleEvent,
   type BoardState,
@@ -29,7 +29,7 @@ import { triggerIcon } from "./glyphs.js";
 /** A unit's ability bodies — resolved from its single `ability` ref through the
  * registry (PRD #081). */
 function unitAbilities(def: UnitDef, abilities: AbilityRegistry): Ability[] {
-  return [abilities[def.ability]].filter((a): a is AbilityDef => a !== undefined);
+  return unitActionsOf(def, abilities);
 }
 
 export function unitDefs(

@@ -6,12 +6,12 @@ Domain glossary for the v5 battle kernel: the DSL, the resolver, and the causal 
 
 ### Content model
 
-**Part**:
-The creator-facing atom: a single trigger, interceptor, condition, selector, or effect. Creation assembles abilities from parts; fusion recombines parts across units.
-_Avoid_: component, building block, module
+**Behavior recipe**:
+The canonical player-facing grammar `Trigger(s) → Selector(s) → Ability/Abilities`: when, who/what, what happens. A base Unit carries one Trigger set, one Selector set, and exactly one Ability ref. Low-level effects are implementation atoms inside an Ability, not player-facing Parts.
+_Avoid_: part bag, axis permutation, component
 
 **Unit**:
-A named combatant with base stats, a level, abilities, and runtime statuses; identified within a battle by an instance id (e.g. `A1:Dummy`).
+A named combatant with base stats, a level, a behavior recipe, and runtime statuses; identified within a battle by an instance id (e.g. `A1:Dummy`).
 _Avoid_: hero (shop-layer word), creature, minion
 
 **Team**:
@@ -23,39 +23,35 @@ _Avoid_: party, squad
 _Avoid_: player 1/2, home/away
 
 **Ability**:
-The unit of behavior: ≥1 whens, an optional condition, ≥1 selectors, ≥1 effects. Each matching when fires independently; the effect sequence applies once per selected target, per selector.
-_Avoid_: skill, power, spell
-
-**When**:
-An ability's binding to an event pattern; its kind is `trigger` or `interceptor`.
-_Avoid_: listener, hook
+A named, referenceable action: **what happens**. Its ordered low-level effects execute for each recipient selected by the Unit or Status recipe. Ability never means the whole when/who/what recipe.
+_Avoid_: recipe, trigger bundle, loose effect
 
 **Trigger**:
-A when that fires *after* its event pattern has applied.
-_Avoid_: reaction, on-event handler
+The **when** context in a behavior recipe. Its kind is `trigger` (after a matching event applies) or `interceptor` (instead of a proposed event).
+_Avoid_: when object, listener, hook
 
 **Interceptor**:
 A when that fires *instead of* a proposed event — it may cancel or transform the event before it applies (MTG triggered-vs-replacement split). Shield, Freeze, and death-prevention are inexpressible without it.
 _Avoid_: replacement effect, guard, middleware
 
 **Condition**:
-An optional gate on an ability, checked at fire time (e.g. `holderHpAtMost`).
+An optional gate on a behavior recipe, checked at fire time (e.g. `holderHpAtMost`).
 _Avoid_: predicate, requirement
 
 **Selector**:
-A target-choosing rule (`holder`, `eventUnit`, `frontEnemy`, `allEnemies`, `allAllies`, `randomEnemy`, `lastDeadAlly`). More selectors = more applications of the effect sequence.
+The **who/what receives it** context (`holder`, `eventUnit`, `frontEnemy`, `allEnemies`, `allAllies`, `randomEnemy`, `lastDeadAlly`). More selectors mean more applications of each ordered Ability.
 _Avoid_: targeter, target selector (just "selector")
 
 **Effect**:
-An atomic state-change instruction; effects run in sequence order. Trigger-context atoms (damage, heal, applyStatus, consumeStacks, summon, silence, resurrect) are inert in interceptor context, and vice versa (cancel, absorbHurt, preventDeathHeal).
-_Avoid_: action, operation
+An internal atomic instruction packaged inside an Ability. Effects run in sequence order but are not standalone player-facing entities. Trigger-context atoms (damage, heal, applyStatus, consumeStacks, summon, silence, resurrect) and interceptor atoms (cancel, absorbHurt, preventDeathHeal) remain validator vocabulary.
+_Avoid_: Ability, card, standalone Part
 
 **Amount**:
 A magnitude expression: `const`, holder's effective `stat`, holder's `level` (shop-layer growth), or `stacks` of the owning status. Stat scaling is opt-in content, priced by the budget, never an engine rule.
 _Avoid_: value, magnitude
 
 **Status**:
-A named ability-bundle with a stack count, attached to a unit at runtime (`Poison 3`). Content, never engine code — the player-creatable magic vocabulary.
+A named recipe with a stack count, attached to a unit at runtime (`Poison 3`). Its Trigger/Selector context invokes its packaged Ability actions. Content, never engine code.
 _Avoid_: buff, debuff, keyword, aura
 
 **Stacks**:
@@ -235,7 +231,7 @@ The CLI's input format: JSON `{ "units": UnitDef[] }`, 1–5 units; statuses res
 _Avoid_: roster file, deck
 
 **Validator**:
-The content gate in front of the kernel (`src/validate.ts`): rejects unknown trigger/effect/selector kinds, wrong-context parts (an atom whose ability has no when it could fire in), malformed status bundles, and dangling references — with a path-addressed error, before battle() ever sees them. Without it a typo'd creation is silently inert. The embryo of the sim-gate content linter.
+The content gate in front of the kernel (`src/validate.ts`): rejects unknown Trigger/Effect/Selector kinds, context-incompatible effects, malformed status bundles, dangling Ability refs, and mixed grammar versions with path-addressed errors before battle() sees them.
 _Avoid_: schema checker, linter (the sim gate is the linter; this is its content-validity layer)
 
 **Stress set**:

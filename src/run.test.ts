@@ -30,6 +30,7 @@ import {
   UNIT_COST,
 } from "./tunables.js";
 import { ValidationError, validateAbilityRegistry } from "./validate.js";
+import { primaryAbilityIdOf } from "./types.js";
 import type { AbilityDef, AbilityRegistry, UnitDef } from "./types.js";
 
 // ---------------------------------------------------------------------------
@@ -485,25 +486,25 @@ describe("fusion gate (#081)", () => {
     expect(s.team.length).toBeGreaterThanOrEqual(2);
     const a = s.team[0]!;
     const b = s.team[1]!;
-    expect(a.def.ability).not.toBe(b.def.ability); // distinct → allowed
+    expect(primaryAbilityIdOf(a.def)).not.toBe(primaryAbilityIdOf(b.def)); // distinct → allowed
     const fused = fuse(s, 0, 1);
     // The line shrinks by one; the fused unit presents exactly ONE ability — the
     // primary's — so it has exactly one colour (its def's family).
     expect(fused.team.length).toBe(s.team.length - 1);
     const kept = fused.team[0]!;
     expect(kept.name).toBe(a.name);
-    expect(kept.def.ability).toBe(a.def.ability);
+    expect(primaryAbilityIdOf(kept.def)).toBe(primaryAbilityIdOf(a.def));
     // toBattleTeam projects exactly the one presented ability (the secondary's
     // mechanic does NOT ride into battle in v1 — slot-stacking is deferred).
     const battleUnit = toBattleTeam(fused.team)[0]!;
-    expect(battleUnit.ability).toBe(a.def.ability);
+    expect(primaryAbilityIdOf(battleUnit)).toBe(primaryAbilityIdOf(a.def));
     // The absorbed parent's ability is recorded as a (deferred) slot.
-    expect(kept.absorbed).toContain(b.def.ability);
+    expect(kept.absorbed).toContain(primaryAbilityIdOf(b.def));
     // A Fused event records the presented + absorbed abilities.
     const ev = ofType(fused.log, "Fused");
     expect(ev).toHaveLength(1);
-    expect(ev[0]!.ability).toBe(a.def.ability);
-    expect(ev[0]!.absorbedAbility).toBe(b.def.ability);
+    expect(ev[0]!.ability).toBe(primaryAbilityIdOf(a.def));
+    expect(ev[0]!.absorbedAbility).toBe(primaryAbilityIdOf(b.def));
   });
 
   test("two units with the SAME ability cannot fuse (that is what copy-stacking is for)", () => {

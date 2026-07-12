@@ -56,10 +56,10 @@ export interface RunUnit {
   level: number;
   /** Copies absorbed since the last level-up (1..STACK_THRESHOLD−1). */
   stacks: number;
-  /** The def as drafted — its one ability and initial statuses come from it. */
+  /** The drafted definition: canonical recipe context, action ref, and initial statuses. */
   def: UnitDef;
   /** Ability ids fused IN from distinct-ability parents (PRD #081 fusion). The
-   * unit still PRESENTS exactly one ability/colour (its `def.ability`); these are
+   * unit still presents the primary Ability/colour; these are
    * the absorbed parents' abilities, recorded as the slots they will ride as —
    * the slot-stacking mechanic and its budget are deferred (SPEC §8), so they do
    * not affect battle in v1 (toBattleTeam emits only `def`). Empty unless fused. */
@@ -133,7 +133,7 @@ export type RunEventBody =
   | { type: "Rerolled"; cost: number; gold: number }
   | { type: "Reordered"; from: number; to: number }
   // Fusion (PRD #081): two units of DISTINCT abilities combine into one that
-  // presents a single ability/colour (the primary's). `ability` is the presented
+  // presents a single Ability/colour (the primary's). `ability` is the event's
   // (primary's) ability id; `absorbed` is the secondary's, recorded as a slot.
   | { type: "Fused"; primary: string; absorbed: string; ability: string; absorbedAbility: string }
   | { type: "FightFought"; battleSeed: number; winner: Side | "draw"; turns: number; lives: number }
@@ -312,20 +312,20 @@ export function fuse(state: RunState, primary: number, secondary: number): RunSt
   }
   const p = state.team[primary]!;
   const sec = state.team[secondary]!;
-  if (p.def.ability === sec.def.ability) {
+  if (primaryAbilityId(p.def) === primaryAbilityId(sec.def)) {
     throw new InvalidDecisionError(
       "fuse",
-      `${p.name} and ${sec.name} share the ability "${p.def.ability}" — fusion needs distinct abilities (same-ability copies stack into a level instead)`,
+      `${p.name} and ${sec.name} share the ability "${primaryAbilityId(p.def)}" — fusion needs distinct abilities (same-ability copies stack into a level instead)`,
     );
   }
   const s = clone(state);
   const keep = s.team[primary]!;
-  // The fused unit presents the primary's one ability/colour; the secondary's
-  // ability is recorded as an absorbed slot (its own absorbed slots ride along),
-  // the slot mechanic deferred (SPEC §8).
-  keep.absorbed = [...(keep.absorbed ?? []), sec.def.ability, ...(sec.absorbed ?? [])];
+  // Preserve the pre-AOI-58 fusion mechanic: the primary recipe stays intact;
+  // the secondary action id is only recorded as an absorbed slot. Ordered-pair
+  // execution is deliberately deferred to AOI-S20 (SPEC §8).
+  keep.absorbed = [...(keep.absorbed ?? []), primaryAbilityId(sec.def), ...(sec.absorbed ?? [])];
   s.team.splice(secondary, 1);
-  emit(s, { type: "Fused", primary: keep.name, absorbed: sec.name, ability: keep.def.ability, absorbedAbility: sec.def.ability });
+  emit(s, { type: "Fused", primary: keep.name, absorbed: sec.name, ability: primaryAbilityId(keep.def), absorbedAbility: primaryAbilityId(sec.def) });
   return s;
 }
 
@@ -594,6 +594,9 @@ export function runToJSONL(log: readonly RunEvent[]): string {
  * No transition compares by identity (the shop stacks copies by *name*), so a
  * revived run continues byte-identically — pinned by test. */
 export function serializeRun(state: RunState): string {
+  // RunState predates versioned content envelopes and remains byte-compatible.
+  // Content files/candidates cross the explicit migrateContentEnvelope boundary;
+  // never stamp an arbitrary live runtime graph as canonical here.
   return JSON.stringify(state);
 }
 
@@ -695,4 +698,10 @@ function rollOffers(s: RunState): void {
   }
   s.offers = offers;
   emit(s, { type: "ShopRolled", offers: offers.map((u) => u.name) });
+}
+
+function primaryAbilityId(def: UnitDef): string {
+  const id = def.abilities?.[0] ?? def.ability;
+  if (!id) throw new Error(`unit "${def.name}" has no Ability`);
+  return id;
 }

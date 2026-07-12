@@ -1,3 +1,4 @@
+import { primaryAbilityIdOf, unitActionsOf } from "../src/types.js";
 // Ladder view — the champion chase made visible. The champion team sits at
 // the top, then every round's pool of ghosts, expandable down to a unit's
 // abilities: the same cards and the same derived-description inspector the
@@ -154,7 +155,7 @@ export function createLadderView(root: HTMLElement, deps: LadderViewDeps): Ladde
   /** A unit's family — its ability's family (PRD #081), the same axis the cards
    * colour by, with `nameFamily` as the pre-081 degrade so a chip always colours. */
   function unitFamily(u: UnitDef): Family {
-    return deps.abilities[u.ability]?.family ?? nameFamily(u.name);
+    return deps.abilities[primaryAbilityIdOf(u)!]?.family ?? nameFamily(u.name);
   }
 
   function abilityLine(u: UnitDef): {
@@ -164,8 +165,9 @@ export function createLadderView(root: HTMLElement, deps: LadderViewDeps): Ladde
     target?: string | undefined;
     action?: string | undefined;
   } {
-    const ab = deps.abilities[u.ability];
-    return ab === undefined ? {} : { abilityLabel: ab.name, ...abilityChips(ab) };
+    const action = deps.abilities[primaryAbilityIdOf(u)!];
+    const ab = unitActionsOf(u, deps.abilities)[0];
+    return action === undefined || ab === undefined ? {} : { abilityLabel: action.name, ...abilityChips(ab) };
   }
 
   /** The tower's rungs, top (champion) first: the champion, then every ghost in

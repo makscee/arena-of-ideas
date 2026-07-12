@@ -50,7 +50,9 @@ describe("determinism", () => {
       {
         name: "Summoner",
         base: Summoner.base,
-        ability: Summoner.ability!,
+        triggers: Summoner.triggers!,
+        selectors: Summoner.selectors!,
+        abilities: Summoner.abilities!,
       },
     ];
     const teamB: UnitDef[] = [

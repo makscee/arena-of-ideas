@@ -10,6 +10,7 @@
  * fails loudly here, never reaches a run.
  */
 
+import { migrateContentEnvelope } from "../content-grammar.js";
 import { assertValidContent } from "../validate.js";
 import type { AbilityRegistry, StatusRegistry, UnitDef } from "../types.js";
 import type { CandidateRecord, GateStats } from "./provenance.js";
@@ -29,18 +30,21 @@ export function parseCandidateRecord(data: unknown, registry: StatusRegistry, ab
   if (!Array.isArray(o["units"])) {
     throw new Error(`${label}: "units" must be an array`);
   }
-  // The candidate's own abilities (#081 — a created unit travels with its
-  // Ability), merged onto the shipped registry for the content gate. Stored on
-  // the record so re-sim/approve resolve the candidate's refs.
-  const fileAbilities =
+  const rawFileAbilities =
     typeof o["abilities"] === "object" && o["abilities"] !== null && !Array.isArray(o["abilities"])
       ? (o["abilities"] as AbilityRegistry)
       : {};
-  // Content gate: a hand-edited candidate with a typo'd part fails here.
-  assertValidContent(o["units"], registry, { ...abilities, ...fileAbilities }, `${label}.units`);
+  const legacy = o["grammarVersion"] === undefined || o["grammarVersion"] === 1;
+  const migrated = migrateContentEnvelope({
+    grammarVersion: o["grammarVersion"],
+    units: o["units"],
+    abilities: legacy ? { ...abilities, ...rawFileAbilities } : rawFileAbilities,
+  }, label);
+  const fileAbilities = Object.fromEntries(Object.keys(rawFileAbilities).map((key) => [key, migrated.abilities[key]!])) as AbilityRegistry;
+  assertValidContent(migrated.units, registry, { ...abilities, ...fileAbilities }, `${label}.units`);
   const prov = parseProvenance(o["provenance"], label);
   const gate = parseGate(o["gate"], label);
-  return { id: o["id"], units: o["units"] as UnitDef[], abilities: fileAbilities, provenance: prov, gate };
+  return { ...migrated.provenance, id: o["id"], units: migrated.units, abilities: fileAbilities, provenance: prov, gate };
 }
 
 function parseProvenance(data: unknown, label: string): CandidateRecord["provenance"] {

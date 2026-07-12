@@ -102,13 +102,13 @@ export const TOWER_HEIGHT = 4;
 export const BOOTSTRAP_TEAMS: readonly (readonly UnitDef[][])[] = [
   // floor 1 — three bodies, the scale of a first shop phase
   [
-    [Venomancer, Summoner, { name: "Brawler", base: { hp: 12, pwr: 2 }, ability: "Strike" }],
-    [Silencer, Necromancer, { name: "Bulwark", base: { hp: 10, pwr: 3 }, ability: "Strike" }],
+    [Venomancer, Summoner, { name: "Brawler", base: { hp: 12, pwr: 2 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"] }],
+    [Silencer, Necromancer, { name: "Bulwark", base: { hp: 10, pwr: 3 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"] }],
   ],
   // floor 2 — a fourth body, vanilla stats grown a notch
   [
-    [Venomancer, Summoner, Necromancer, { name: "Brawler", base: { hp: 14, pwr: 3 }, ability: "Strike" }],
-    [Silencer, Venomancer, { name: "Bulwark", base: { hp: 13, pwr: 4 }, ability: "Strike" }, { name: "Squire", base: { hp: 8, pwr: 2 }, ability: "Strike" }],
+    [Venomancer, Summoner, Necromancer, { name: "Brawler", base: { hp: 14, pwr: 3 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"] }],
+    [Silencer, Venomancer, { name: "Bulwark", base: { hp: 13, pwr: 4 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"] }, { name: "Squire", base: { hp: 8, pwr: 2 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"] }],
   ],
   // floor 3 — full lines; status openers stand in for a level-up's worth of growth
   [
@@ -116,15 +116,15 @@ export const BOOTSTRAP_TEAMS: readonly (readonly UnitDef[][])[] = [
       Venomancer,
       Summoner,
       Silencer,
-      { name: "Brawler", base: { hp: 16, pwr: 4 }, ability: "Strike", statuses: [{ status: "Strength", stacks: 2 }] },
-      { name: "Bulwark", base: { hp: 14, pwr: 4 }, ability: "Strike", statuses: [{ status: "Vitality", stacks: 3 }] },
+      { name: "Brawler", base: { hp: 16, pwr: 4 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"], statuses: [{ status: "Strength", stacks: 2 }] },
+      { name: "Bulwark", base: { hp: 14, pwr: 4 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"], statuses: [{ status: "Vitality", stacks: 3 }] },
     ],
     [
       Necromancer,
       Summoner,
       Venomancer,
-      { name: "Warden", base: { hp: 15, pwr: 5 }, ability: "Strike" },
-      { name: "Squire", base: { hp: 10, pwr: 3 }, ability: "Strike" },
+      { name: "Warden", base: { hp: 15, pwr: 5 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"] },
+      { name: "Squire", base: { hp: 10, pwr: 3 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"] },
     ],
   ],
   // floor 4 — the top climb pool, under the champion: another stack of growth,
@@ -134,15 +134,15 @@ export const BOOTSTRAP_TEAMS: readonly (readonly UnitDef[][])[] = [
       Venomancer,
       Summoner,
       Necromancer,
-      { name: "Brawler", base: { hp: 18, pwr: 5 }, ability: "Strike", statuses: [{ status: "Strength", stacks: 3 }] },
-      { name: "Bulwark", base: { hp: 16, pwr: 5 }, ability: "Strike", statuses: [{ status: "Vitality", stacks: 3 }] },
+      { name: "Brawler", base: { hp: 18, pwr: 5 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"], statuses: [{ status: "Strength", stacks: 3 }] },
+      { name: "Bulwark", base: { hp: 16, pwr: 5 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"], statuses: [{ status: "Vitality", stacks: 3 }] },
     ],
     [
       Silencer,
       Summoner,
       Venomancer,
-      { name: "Warden", base: { hp: 17, pwr: 6 }, ability: "Strike", statuses: [{ status: "Strength", stacks: 2 }] },
-      { name: "Squire", base: { hp: 12, pwr: 4 }, ability: "Strike" },
+      { name: "Warden", base: { hp: 17, pwr: 6 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"], statuses: [{ status: "Strength", stacks: 2 }] },
+      { name: "Squire", base: { hp: 12, pwr: 4 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"] },
     ],
   ],
 ];
@@ -178,24 +178,24 @@ export const BOSS_TEAMS: readonly (readonly UnitDef[])[] = [
     Venomancer,
     Summoner,
     Silencer,
-    { name: "Warden", base: { hp: 14, pwr: 4 }, ability: "Strike" },
-    { name: "Brawler", base: { hp: 12, pwr: 3 }, ability: "Strike" },
+    { name: "Warden", base: { hp: 14, pwr: 4 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"] },
+    { name: "Brawler", base: { hp: 12, pwr: 3 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"] },
   ],
   // floor 2 boss — a fifth body and a first status opener, past the floor-2 pool
   [
     Venomancer,
     Summoner,
     Necromancer,
-    { name: "Warden", base: { hp: 16, pwr: 4 }, ability: "Strike", statuses: [{ status: "Strength", stacks: 2 }] },
-    { name: "Bulwark", base: { hp: 14, pwr: 4 }, ability: "Strike", statuses: [{ status: "Vitality", stacks: 2 }] },
+    { name: "Warden", base: { hp: 16, pwr: 4 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"], statuses: [{ status: "Strength", stacks: 2 }] },
+    { name: "Bulwark", base: { hp: 14, pwr: 4 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"], statuses: [{ status: "Vitality", stacks: 2 }] },
   ],
   // floor 3 boss — full lines, two status openers, a notch over the floor-3 pool
   [
     Venomancer,
     Summoner,
     Silencer,
-    { name: "Warden", base: { hp: 17, pwr: 5 }, ability: "Strike", statuses: [{ status: "Strength", stacks: 2 }] },
-    { name: "Bulwark", base: { hp: 15, pwr: 4 }, ability: "Strike", statuses: [{ status: "Vitality", stacks: 3 }] },
+    { name: "Warden", base: { hp: 17, pwr: 5 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"], statuses: [{ status: "Strength", stacks: 2 }] },
+    { name: "Bulwark", base: { hp: 15, pwr: 4 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"], statuses: [{ status: "Vitality", stacks: 3 }] },
   ],
   // floor 4 boss — the champion (top floor): the strongest shipped team,
   // the old BOOTSTRAP_CHAMPION content, status stacks on two front bodies.
@@ -203,8 +203,8 @@ export const BOSS_TEAMS: readonly (readonly UnitDef[])[] = [
     Venomancer,
     Summoner,
     Necromancer,
-    { name: "Warlord", base: { hp: 18, pwr: 5 }, ability: "Strike", statuses: [{ status: "Strength", stacks: 3 }] },
-    { name: "Bulwark", base: { hp: 16, pwr: 5 }, ability: "Strike", statuses: [{ status: "Vitality", stacks: 4 }] },
+    { name: "Warlord", base: { hp: 18, pwr: 5 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"], statuses: [{ status: "Strength", stacks: 3 }] },
+    { name: "Bulwark", base: { hp: 16, pwr: 5 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"], statuses: [{ status: "Vitality", stacks: 4 }] },
   ],
 ];
 
@@ -217,9 +217,9 @@ export const DEFAULT_RUN_POOL: UnitDef[] = [
   Summoner,
   Silencer,
   Necromancer,
-  { name: "Brawler", base: { hp: 12, pwr: 2 }, ability: "Strike" },
-  { name: "Bulwark", base: { hp: 10, pwr: 3 }, ability: "Strike" },
-  { name: "Squire", base: { hp: 8, pwr: 2 }, ability: "Strike" },
+  { name: "Brawler", base: { hp: 12, pwr: 2 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"] },
+  { name: "Bulwark", base: { hp: 10, pwr: 3 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"] },
+  { name: "Squire", base: { hp: 8, pwr: 2 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"] },
 ];
 
 /** The creation sim-gate's default win-rate band and sweep depth — the

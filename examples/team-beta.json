@@ -1,16 +1,86 @@
 {
-  "_comment": "Team Beta — control/sustain lineup. Built from stress-set units (SPEC §7). #081: units reference one ability by id.",
+  "_comment": "Team Beta \u2014 control/sustain lineup. Built from stress-set units (SPEC \u00a77). #081: units reference one ability by id.",
   "units": [
-    { "name": "Silencer", "base": { "hp": 8, "pwr": 2 }, "ability": "Hush" },
-    { "name": "Necromancer", "base": { "hp": 7, "pwr": 1 }, "ability": "Reanimate" },
+    {
+      "name": "Silencer",
+      "base": {
+        "hp": 8,
+        "pwr": 2
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "BattleStart"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "frontEnemy"
+        }
+      ],
+      "abilities": [
+        "Hush"
+      ]
+    },
+    {
+      "name": "Necromancer",
+      "base": {
+        "hp": 7,
+        "pwr": 1
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "Death",
+            "unit": "ally"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "lastDeadAlly"
+        }
+      ],
+      "abilities": [
+        "Reanimate"
+      ]
+    },
     {
       "name": "FrozenBrute",
-      "base": { "hp": 10, "pwr": 3 },
-      "ability": "Strike",
+      "base": {
+        "hp": 10,
+        "pwr": 3
+      },
       "statuses": [
-        { "status": "Freeze", "stacks": 2 },
-        { "status": "Blessing", "stacks": 4 }
+        {
+          "status": "Freeze",
+          "stacks": 2
+        },
+        {
+          "status": "Blessing",
+          "stacks": 4
+        }
+      ],
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "BattleStart"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "holder"
+        }
+      ],
+      "abilities": [
+        "Strike"
       ]
     }
-  ]
+  ],
+  "grammarVersion": 2
 }

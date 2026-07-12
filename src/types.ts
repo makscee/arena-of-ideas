@@ -15,39 +15,87 @@ export interface UnitDef {
   name: string;
   base: Stats;
   level?: number;
-  /** The unit's single ability, by id into the AbilityRegistry — the ontology's
-   * spine (PRD #081): a Unit references exactly one named Ability, and that
-   * Ability's `family` is the unit's color. A plain attacker references the
-   * inert `Strike` ability; there are no ability-less units and no inline
-   * effects (the validator rejects both). */
-  ability: string;
+  /** Canonical v2 behavior recipe: Trigger is when. */
+  triggers?: When[];
+  condition?: Condition;
+  /** Canonical v2 behavior recipe: Selector is who/what receives the action. */
+  selectors?: Selector[];
+  /** Canonical v2 behavior recipe: ordered refs to what happens. Base Units
+   * carry exactly one; the array reserves the accepted two-Ability fused shape. */
+  abilities?: string[];
+  /** v1 compatibility only. Parsers migrate this field deterministically and
+   * reject it when mixed with any canonical recipe field. */
+  ability?: string;
   /** Initial statuses, applied (as events) right after BattleStart. Names resolve via the status registry. */
   statuses?: { status: string; stacks: number }[];
 }
 
+/** Ability is only the action — what happens. Trigger and Selector context
+ * lives on the Unit/Status recipe, never in this entity. */
 export interface Ability {
-  whens: When[]; // ≥1; each matching when fires independently
-  condition?: Condition; // checked at fire time
-  selectors: Selector[]; // ≥1; effect sequence applies once per selected target, per selector
   effects: Effect[]; // ≥1; run in sequence order
+  /** v1 compatibility only. Canonical AbilityDef validation rejects these. */
+  whens?: When[];
+  condition?: Condition;
+  selectors?: Selector[];
 }
 
-/** The color axis (PRD #081): every Ability declares one family, and a Unit's
- * color is its Ability's family — derived, never stored on the unit. The 7
- * families and their hexes are pinned by the mockup; the family→hex palette is
- * centralized in tunables.ts (FAMILY_HEX). */
+/** Runtime reaction assembled from a recipe's context plus one Ability action. */
+export interface Reaction extends Ability {
+  triggers: When[];
+  condition?: Condition;
+  selectors: Selector[];
+}
+
+/** Every Ability declares one family; a Unit's visual identity derives from its
+ * ordered Ability refs. The family→hex palette is centralized in tunables.ts. */
 export type Family = "Poison" | "Strike" | "Shield" | "Summon" | "Arcane" | "Control" | "Heal";
 
-/** A named, referenceable Ability — today's inline `Ability` shape plus a `name`
- * and a `family`. Mirrors `StatusDef`/`StatusRegistry`: the AbilityRegistry is
- * the unit-ability analogue of the status registry. A Unit references exactly
- * one of these by id (`UnitDef.ability`). */
+/** A named, referenceable action. Context is deliberately absent. */
 export interface AbilityDef extends Ability {
   name: string;
   family: Family;
+  /** v1 read compatibility only; canonical validators reject context on Ability. */
+  whens?: When[];
+  condition?: Condition;
+  selectors?: Selector[];
 }
 
 export type AbilityRegistry = Record<string, AbilityDef>;
+
+/** Canonical ordered Ability ids, with the v1 singleton read isolated here. */
+export function abilityIdsOf(unit: UnitDef): string[] {
+  return unit.abilities ?? (unit.ability !== undefined ? [unit.ability] : []);
+}
+
+export function primaryAbilityIdOf(unit: UnitDef): string | undefined {
+  return abilityIdsOf(unit)[0];
+}
+
+/** Bind a canonical Unit's when/who recipe to its referenced action(s) for
+ * execution/description. Legacy context is read only on the compatibility path. */
+export function unitActionsOf(unit: UnitDef, registry: AbilityRegistry): Ability[] {
+  return abilityIdsOf(unit).flatMap((id) => {
+    const action = registry[id];
+    if (!action) return [];
+    return [{
+      ...action,
+      whens: unit.triggers ?? action.whens ?? [],
+      selectors: unit.selectors ?? action.selectors ?? [],
+      ...(unit.condition ?? action.condition ? { condition: unit.condition ?? action.condition } : {}),
+    }];
+  });
+}
+
+/** Bind canonical Status context to each action for description tooling. */
+export function statusActionsOf(status: StatusDef): Ability[] {
+  return status.abilities.map((action) => ({
+    ...action,
+    whens: status.triggers ?? action.whens ?? [],
+    selectors: status.selectors ?? action.selectors ?? [],
+    ...(status.condition ?? action.condition ? { condition: status.condition ?? action.condition } : {}),
+  }));
+}
 
 export interface When {
   kind: "trigger" | "interceptor";
@@ -99,6 +147,10 @@ export interface StatusDef {
   name: string;
   /** Contribution per stack while attached. Effective stat = max(0, base + Σ contributions) — computed, never baked. */
   statMods?: Partial<Stats>;
+  /** Status recipe context. Empty for modifier-only statuses. */
+  triggers?: When[];
+  condition?: Condition;
+  selectors?: Selector[];
   abilities: Ability[];
 }
 
@@ -159,8 +211,6 @@ export interface BattleInput {
   teamB: UnitDef[];
   seed: number;
   statuses?: StatusRegistry;
-  /** The ability registry a unit's `ability` ref resolves through (PRD #081),
-   * the analogue of `statuses`. Optional during the migration: a unit still on
-   * the legacy inline `abilities[]` path needs no registry. */
+  /** Registry resolving the Unit recipe's ordered `abilities` action refs. */
   abilities?: AbilityRegistry;
 }

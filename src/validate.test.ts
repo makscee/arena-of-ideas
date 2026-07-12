@@ -49,7 +49,7 @@ describe("the one-ability invariant (#081)", () => {
       ],
     };
     const issues = validateTeam([unit], stressRegistry, stressAbilities, "teamA");
-    expect(issues.some((i) => i.path === "teamA[0].abilities" && /inline `abilities\[\]`.*retired/.test(i.message))).toBe(true);
+    expect(issues.some((i) => i.path === "teamA[0].abilities" && /inline `abilities\[\]` is grammar v1.*must be migrated/.test(i.message))).toBe(true);
   });
 
   test("must-fail-first: an ability-less unit is rejected (no stray effects)", () => {

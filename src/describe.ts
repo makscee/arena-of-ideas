@@ -291,7 +291,7 @@ export function describeAbilitySegments(ab: Ability, opts: DescribeOpts = {}): D
   // The selected targets as segments — each selector its own tappable term,
   // joined by plain " and " text. Reused for every effect in the sequence.
   const target: DescribeSegment[] = [];
-  ab.selectors.forEach((s, i) => {
+  (ab.selectors ?? []).forEach((s, i) => {
     if (i > 0) target.push(seg(" and "));
     target.push(...describeSelectorSegments(s, opts));
   });
@@ -299,7 +299,7 @@ export function describeAbilitySegments(ab: Ability, opts: DescribeOpts = {}): D
   // ref); every clause opens with plain lead text ("after"/"when"/"at"), so
   // capitalizing the first segment is capitalizing the sentence.
   const segs: DescribeSegment[] = [];
-  ab.whens.forEach((w, i) => {
+  (ab.whens ?? []).forEach((w, i) => {
     if (i > 0) segs.push(seg(", or "));
     segs.push(...describeWhenSegments(w, opts));
   });
@@ -411,9 +411,9 @@ function terseAction(e: Effect): string {
  * selector/effect, each as a short label (PRD #082). The verbose
  * describeAbility sentence stays the inspector's; this is the at-a-glance read. */
 export function abilityChips(ab: Ability): AbilityChips {
-  const w0 = ab.whens[0];
+  const w0 = ab.whens?.[0];
   const t = w0 !== undefined ? TRIGGER_CHIP[w0.on.on] : undefined;
-  const s0 = ab.selectors[0];
+  const s0 = ab.selectors?.[0];
   const e0 = ab.effects[0];
   return {
     trigger: t?.label,
@@ -467,8 +467,14 @@ export function describeStatusSegments(def: StatusDef): DescribeSegment[] {
     }
     if (mods.length > 0) segs.push(seg(`${capitalize(mods.join(", "))}.`));
   }
-  for (const ab of def.abilities) {
+  for (const action of def.abilities) {
     if (segs.length > 0) segs.push(seg(" "));
+    const ab: Ability = {
+      ...action,
+      whens: def.triggers ?? action.whens ?? [],
+      selectors: def.selectors ?? action.selectors ?? [],
+      ...(def.condition ?? action.condition ? { condition: def.condition ?? action.condition } : {}),
+    };
     segs.push(...describeAbilitySegments(ab, { holder: "the holder" }));
   }
   if (segs.length === 0) segs.push(seg("No effect."));

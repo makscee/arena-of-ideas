@@ -32,12 +32,15 @@ import { familyHex } from "./tunables.js";
 import { partAtoms } from "./parts.js";
 import type { Ability, AbilityRegistry, Family, StatusRegistry, UnitDef } from "./types.js";
 
-/** A unit's resolved ability bodies (PRD #081): its one `ability` ref looked up
- * in the registry, with the legacy inline `abilities[]` as a back-compat read.
- * One place so the codex follows summons and describes abilities identically. */
+/** Resolve actions and bind the Unit's when/who context for description. */
 function unitAbilityDefs(u: UnitDef, abilities: AbilityRegistry): Ability[] {
-  const ab = abilities[u.ability];
-  return ab ? [ab] : [];
+  const ids = u.abilities ?? (u.ability ? [u.ability] : []);
+  return ids.flatMap((id) => {
+    const ab = abilities[id];
+    if (!ab) return [];
+    const condition = u.condition ?? ab.condition;
+    return [{ ...ab, whens: u.triggers ?? ab.whens ?? [], selectors: u.selectors ?? ab.selectors ?? [], ...(condition ? { condition } : {}) }];
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -200,12 +203,14 @@ export function buildCodex(registry: StatusRegistry, units: UnitDef[], abilities
     // The unit's colour is its ability's family, derived here, never stored on
     // the unit (PRD #081). Resolves for shipped content; absent only if the
     // codex was built without the ability in its registry.
-    const family: Family | undefined = abilities[u.ability]?.family;
+    const abilityIds = u.abilities ?? (u.ability ? [u.ability] : []);
+    const primaryAbility = abilityIds[0] ?? "Unknown";
+    const family: Family | undefined = abilities[primaryAbility]?.family;
     unitEntries.push({
       name: u.name,
       hp: u.base.hp,
       pwr: u.base.pwr,
-      ability: u.ability,
+      ability: primaryAbility,
       ...(family !== undefined ? { family, hex: familyHex(family) } : {}),
       abilities: unitAbilityDefs(u, abilities).map((ab) => describeAbility(ab)),
       statuses: (u.statuses ?? []).map((s) => `${s.status} ×${s.stacks}`),

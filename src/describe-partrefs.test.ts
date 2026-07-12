@@ -1,3 +1,4 @@
+import { primaryAbilityIdOf, statusActionsOf } from "./types.js";
 // Behavior-sentence term links (#078 slice 3) — the acceptance witness.
 //
 // The codex is meant to be the complete, tappable vocabulary: a behavior
@@ -36,9 +37,9 @@ const key = (r: PartRef): string => `${r.family}:${r.kind}`;
  * must name one of these, and a fully-rendering ability links all of them. */
 function dslPartKeys(ab: Ability): string[] {
   const keys: string[] = [];
-  for (const w of ab.whens) keys.push(`${w.kind === "interceptor" ? "interceptor" : "trigger"}:${w.on.on}`);
+  for (const w of (ab.whens ?? [])) keys.push(`${w.kind === "interceptor" ? "interceptor" : "trigger"}:${w.on.on}`);
   if (ab.condition !== undefined) keys.push(`condition:${ab.condition.kind}`);
-  for (const s of ab.selectors) keys.push(`selector:${s.kind}`);
+  for (const s of (ab.selectors ?? [])) keys.push(`selector:${s.kind}`);
   for (const e of ab.effects) keys.push(`effect:${e.kind}`);
   return keys;
 }
@@ -53,11 +54,11 @@ const unlinkedText = (ab: Ability): string =>
 
 const allShippedAbilities = (): Ability[] => {
   const abilities: Ability[] = [...new Set([...DEFAULT_RUN_POOL, ...BOSS_TEAMS[TOWER_HEIGHT - 1]!]).values()].map(
-    (u) => stressAbilities[u.ability]!,
+    (u) => stressAbilities[primaryAbilityIdOf(u)!]!,
   );
   // Status abilities cover the interceptor family (Shield/Freeze/Blessing).
   abilities.push(...Object.values(stressRegistry).flatMap((d) => d.abilities));
-  abilities.push(...[Venomancer, Summoner, Silencer, Necromancer].map((u) => stressAbilities[u.ability]!));
+  abilities.push(...[Venomancer, Summoner, Silencer, Necromancer].map((u) => stressAbilities[primaryAbilityIdOf(u)!]!));
   return abilities;
 };
 
@@ -130,7 +131,7 @@ describe("behavior sentences link every Part term to a real codex card (#078 sli
   });
 
   it("covers the interceptor family (Shield is a 'would be hurt' interceptor)", () => {
-    const shield = stressRegistry.Shield!.abilities[0]!;
+    const shield = statusActionsOf(stressRegistry.Shield!)[0]!;
     const refs = abilityPartRefs(shield).map(key);
     expect(refs).toContain("interceptor:Hurt");
     expect(cardKeys.has("interceptor:Hurt")).toBe(true);
