@@ -25,9 +25,11 @@
  */
 
 import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { isDeepStrictEqual } from "node:util";
 import { basename, isAbsolute, join, resolve } from "node:path";
-import { stressRegistry } from "../content/stress.js";
+import { stressAbilities } from "../content/stress.js";
 import { validateTeamFile } from "../cli.js";
+import type { AbilityRegistry } from "../types.js";
 import { buildRecord, readConvergedAttempt, serializeRecord } from "./provenance.js";
 import type { RunManifest } from "./provenance.js";
 
@@ -105,14 +107,18 @@ function main(): void {
     process.exit(1);
   }
 
-  // 2) The candidate units — validated through the same team-file gate.
-  let units;
+  // 2) The candidate team — validated through the same team-file gate.
+  let team;
   try {
-    units = validateTeamFile(JSON.parse(readFileSync(candPath, "utf8")), candPath).units;
+    team = validateTeamFile(JSON.parse(readFileSync(candPath, "utf8")), candPath);
   } catch (err) {
     process.stderr.write(`mint-candidate: candidate at ${candPath} is invalid: ${(err as Error).message}\n`);
     process.exit(1);
   }
+  const candidateAbilities = Object.fromEntries(
+    Object.entries(team.abilities).filter(([id, definition]) =>
+      !isDeepStrictEqual(stressAbilities[id], definition)),
+  ) as AbilityRegistry;
 
   // 3) Idea text — flag wins, else the task's idea.txt.
   let ideaText = args.idea;
@@ -133,7 +139,7 @@ function main(): void {
     startedAt: runTime,
   };
 
-  const record = buildRecord(id, units, manifest, converged.result, converged.attempts);
+  const record = buildRecord(id, team.units, manifest, converged.result, converged.attempts, candidateAbilities);
 
   const candidatesDir = args.outDir
     ? (isAbsolute(args.outDir) ? args.outDir : resolve(repoRoot, args.outDir))

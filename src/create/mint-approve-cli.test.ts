@@ -1,15 +1,18 @@
 // CLI surface tests for mint-candidate + approve (PRD #013 slice 4): argument
-// parsing and the candidates loader. The end-to-end filesystem behaviour is
-// proven by the e2e walk and the manual transcript in the slice report; here we
-// pin the parse contract and the loader's tolerance of a malformed pool entry.
+// parsing, actual mint persistence, and the candidates loader.
 
 import { describe, expect, test } from "vitest";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { stressRegistry } from "../content/stress.js";
+import { spawnSync } from "node:child_process";
+import { battle } from "../battle.js";
+import { validateTeamFile } from "../cli.js";
+import { stressAbilities, stressRegistry } from "../content/stress.js";
+import { renderReplay } from "../replay.js";
 import { buildRecord, serializeRecord } from "./provenance.js";
 import type { RunManifest } from "./provenance.js";
+import { parseCandidateRecord } from "./candidates.js";
 import { parseArgs as parseMintArgs } from "./mint-candidate.js";
 import { loadCandidates } from "./approve-cli.js";
 
@@ -34,7 +37,57 @@ const PASSED = {
   },
 };
 
-describe("mint-candidate parseArgs", () => {
+describe("mint-candidate", () => {
+  test("actual mint preserves custom nested Summon abilities through write and reread", () => {
+    const root = mkdtempSync(join(tmpdir(), "aoi-mint-nested-"));
+    const task = join(root, "task");
+    const out = join(task, "out");
+    const candidates = join(root, "candidates");
+    mkdirSync(out, { recursive: true });
+    const legacyTeam = {
+      units: [{ name: "Spawner", base: { hp: 5, pwr: 0 }, ability: "Spawn" }],
+      abilities: {
+        Spawn: {
+          name: "Spawn", family: "Summon",
+          whens: [{ kind: "trigger", on: { on: "BattleStart" } }],
+          selectors: [{ kind: "holder" }],
+          effects: [{ kind: "summon", unit: { name: "Child", base: { hp: 2, pwr: 0 }, ability: "ChildAct" } }],
+        },
+        ChildAct: {
+          name: "ChildAct", family: "Strike",
+          whens: [{ kind: "trigger", on: { on: "TurnStart" } }],
+          selectors: [{ kind: "frontEnemy" }],
+          effects: [{ kind: "damage", amount: { kind: "const", value: 1 } }],
+        },
+        Strike: stressAbilities.Strike,
+      },
+    };
+    writeFileSync(join(out, "candidate.json"), JSON.stringify(legacyTeam));
+    writeFileSync(join(out, "run-log.jsonl"), JSON.stringify({ index: 1, outcome: "passed", gauntlet: PASSED }) + "\n");
+
+    const result = spawnSync(process.execPath, [
+      "--import", "tsx/esm", join(import.meta.dirname, "mint-candidate.ts"),
+      task, "--creator", "test", "--id", "nested", "--idea", "nested summon", "--out", candidates,
+    ], { cwd: join(import.meta.dirname, "..", ".."), encoding: "utf8" });
+    expect(result.status, result.stderr).toBe(0);
+
+    const written = JSON.parse(readFileSync(join(candidates, "nested.json"), "utf8"));
+    const record = parseCandidateRecord(written, stressRegistry, stressAbilities, "nested.json");
+    expect(Object.keys(record.abilities)).toEqual(["Spawn", "ChildAct"]);
+    expect(record.abilities.Spawn!.effects[0]).toMatchObject({
+      kind: "summon", unit: { abilities: ["ChildAct"] },
+    });
+
+    const before = validateTeamFile(legacyTeam, "legacy nested team");
+    const enemy = validateTeamFile({ units: [{ name: "Target", base: { hp: 10, pwr: 0 }, ability: "Strike" }] });
+    const replay = (units: typeof record.units, abilities: typeof record.abilities) => renderReplay(battle({
+      teamA: units, teamB: enemy.units, seed: 7, statuses: stressRegistry,
+      abilities: { ...stressAbilities, ...abilities },
+    }));
+    expect(replay(record.units, record.abilities)).toBe(replay(before.units, before.abilities));
+    expect(replay(record.units, record.abilities)).toContain("Child");
+  });
+
   test("requires a task dir and --creator; defaults harness/model", () => {
     const a = parseMintArgs(["tasks/x", "--creator", "maks"]);
     expect(a.taskDir).toBe("tasks/x");
