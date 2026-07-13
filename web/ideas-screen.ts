@@ -32,6 +32,8 @@ export interface IdeasLadderOpts {
   userId: string | null;
   /** Top (score rank, as the server returned) or New (newest seq first). */
   mode: IdeasSort;
+  /** False on the hub synopsis: it shows truth and routes to Ideas, but cannot vote. */
+  actionable?: boolean;
 }
 
 /** A short, stable author label off the author id — server ids are opaque, so a
@@ -44,16 +46,17 @@ function authorLabel(authorId: string): string {
  * net score, ▼ downvote — then the idea text over a meta line (@author + a
  * lifecycle status pill). The arrow matching the player's current direction reads
  * pressed; a `rejected` (bounced) idea dims its text and shows the bounce reason. */
-function ideaRowHtml(idea: Idea, userId: string | null): string {
+function ideaRowHtml(idea: Idea, userId: string | null, actionable: boolean): string {
   const myDir: VoteDir | null = userId !== null && userId in idea.votes ? idea.votes[userId]! : null;
   const pill = statusPill(idea.status);
+  const lifecycle = idea.status === "selected" ? "selected · building" : idea.status === "on-table" ? "voting" : idea.status;
   const rowCls = ["ideas-row", pill === "rejected" && "is-rejected"].filter(Boolean).join(" ");
   const arrow = (dir: VoteDir, glyph: string): string => {
     const active = myDir === dir;
-    return (
-      `<button type="button" class="ideas-vote-arrow ideas-vote-${dir}${active ? " ideas-voted" : ""}" ` +
-      `data-vote-dir="${dir}" aria-pressed="${active}">${glyph}</button>`
-    );
+    return actionable
+      ? (`<button type="button" class="ideas-vote-arrow ideas-vote-${dir}${active ? " ideas-voted" : ""}" ` +
+        `data-vote-dir="${dir}" aria-pressed="${active}">${glyph}</button>`)
+      : `<span class="ideas-vote-arrow ideas-vote-${dir}" aria-hidden="true">${glyph}</span>`;
   };
   const bounce =
     idea.status === "bounced" && idea.bounceReason !== undefined
@@ -64,8 +67,9 @@ function ideaRowHtml(idea: Idea, userId: string | null): string {
     `<div class="ideas-vote">${arrow("up", "▲")}<span class="ideas-vote-count">${voteScore(idea.votes)}</span>${arrow("down", "▼")}</div>` +
     `<div class="ideas-body">` +
     `<div class="ideas-text">${esc(idea.text)}</div>` +
-    `<div class="ideas-meta"><span class="ideas-author">@${esc(authorLabel(idea.authorId))}</span>` +
-    `<span class="ideas-pill ideas-pill-${pill}">${pill}</span></div>` +
+    `<div class="ideas-meta"><span class="ideas-author">@${esc(idea.authorDisplayName ?? authorLabel(idea.authorId))}</span>` +
+    `<span class="ideas-pill ideas-pill-${pill}">${esc(lifecycle)}</span>` +
+    `<span class="ideas-tally">${idea.tally ? `${idea.tally.up}/${idea.tally.total} yes · ${Math.round(idea.tally.ratio * 100)}%` : `${Object.keys(idea.votes).length} votes`}</span></div>` +
     bounce +
     `</div></div>`
   );
@@ -83,7 +87,7 @@ export function ideasLadderHtml(ideas: readonly Idea[], opts: IdeasLadderOpts): 
       opts.userId !== null ? "No ideas yet — be the first to write one." : "No ideas yet."
     }</p>`;
   }
-  return ordered.map((idea) => ideaRowHtml(idea, opts.userId)).join("");
+  return ordered.map((idea) => ideaRowHtml(idea, opts.userId, opts.actionable !== false)).join("");
 }
 
 export interface IdeasScreenEls {

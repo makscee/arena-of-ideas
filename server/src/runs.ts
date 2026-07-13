@@ -78,6 +78,8 @@ export interface SubmitDeps {
   db: DB;
   store: SqliteLadderStore;
   content: ArenaContent;
+  /** Authoritative active version for this request. */
+  contentVersion: number;
   /** Unix seconds. */
   clock: () => number;
 }
@@ -110,7 +112,17 @@ export type PoolServeOutcome =
 /** Open a run before playing it: records who owns the runId, and from when
  * the open TTL counts. One-shot per runId, like submission itself (and a
  * submitted runId can never be re-opened, even after its open row is swept). */
-export function openRun(deps: Pick<SubmitDeps, "db" | "store" | "clock">, userId: string, runId: string): OpenOutcome {
+export function openRun(
+  deps: Pick<SubmitDeps, "db" | "store" | "clock"> & { contentVersion?: number },
+  userId: string,
+  runId: string,
+  expectedVersion?: number,
+): OpenOutcome {
+  const activeVersion = deps.contentVersion ?? 1;
+  const requestedVersion = expectedVersion ?? activeVersion;
+  if (requestedVersion !== activeVersion) {
+    return { opened: false, reason: `season changed; start a fresh run (requested content v${requestedVersion}, active v${activeVersion})` };
+  }
   if (runId === BOOTSTRAP_RUN_ID) {
     return { opened: false, reason: `runId "${BOOTSTRAP_RUN_ID}" is reserved for the ladder's seed ghosts` };
   }
@@ -125,7 +137,7 @@ export function openRun(deps: Pick<SubmitDeps, "db" | "store" | "clock">, userId
   }
   deps.db
     .insert(runOpens)
-    .values({ runId, userId, ghostWatermark: deps.store.maxGhostId(), openedAt: deps.clock() })
+    .values({ runId, userId, contentVersion: activeVersion, ghostWatermark: deps.store.maxGhostId(), openedAt: deps.clock() })
     .run();
   return { opened: true, runId };
 }
@@ -137,7 +149,7 @@ export function openRun(deps: Pick<SubmitDeps, "db" | "store" | "clock">, userId
  * each distinct view adds a row (identical ones dedupe), and any of them
  * replays — a refresh never bricks a submission. */
 export function servePool(
-  deps: Pick<SubmitDeps, "db" | "store" | "clock">,
+  deps: Pick<SubmitDeps, "db" | "store" | "clock"> & { contentVersion?: number },
   userId: string,
   runId: string,
   round: number,
@@ -146,6 +158,10 @@ export function servePool(
   if (open === undefined || open.userId !== userId) {
     // One answer for "not open" and "not yours" — no probing other users' runs.
     return { served: false, reason: `run "${runId}" is not open for this user — open it first (POST /v1/runs/open)` };
+  }
+  const activeVersion = deps.contentVersion ?? 1;
+  if (open.contentVersion === null || open.contentVersion !== activeVersion) {
+    return { served: false, reason: `season changed; start a fresh run (opened on ${open.contentVersion === null ? "unknown legacy content" : `content v${open.contentVersion}`}, active v${activeVersion})` };
   }
   if (deps.clock() - open.openedAt > RUN_OPEN_TTL_SECONDS) {
     return { served: false, reason: openExpiredReason(runId) };
@@ -240,6 +256,9 @@ function replay(deps: SubmitDeps, userId: string, raw: string): Rederived {
   }
   if (open.userId !== userId) {
     throw new SubmissionRejected(`run "${claimed.runId}" was opened by a different user`);
+  }
+  if (open.contentVersion === null || open.contentVersion !== deps.contentVersion) {
+    throw new SubmissionRejected(`season changed; start a fresh run (opened on ${open.contentVersion === null ? "unknown legacy content" : `content v${open.contentVersion}`}, active v${deps.contentVersion})`);
   }
   if (deps.clock() - open.openedAt > RUN_OPEN_TTL_SECONDS) {
     throw new SubmissionRejected(openExpiredReason(claimed.runId));
@@ -541,6 +560,7 @@ function accept(deps: SubmitDeps, userId: string, rederived: Rederived): SubmitO
       .values({
         runId: state.runId,
         userId,
+        contentVersion: deps.contentVersion,
         seed: state.seed,
         endedBy: state.endedBy!,
         finalRound: state.round,

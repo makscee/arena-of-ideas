@@ -245,6 +245,9 @@ export interface UnitCardOpts {
   /** The caller's wiring, pre-escaped: `data-offer="0"`, `data-unit="A1:X"`… */
   attrs: string;
   title: string;
+  /** Immutable ship-time display-name snapshot. Present only on governed Units;
+   * seed Units omit it. Credit is part of the entity card on every surface. */
+  creator?: string;
   /** Controls under the chips (buy button, move arrows) — caller-built HTML. */
   footer?: string;
 
@@ -354,6 +357,7 @@ function variantCardHtml(o: UnitCardOpts): string {
   // the run rows' gapless 44px touch band + min-height reserve apply unchanged;
   // progression/level badges + footer (buy / move) ride a separate row below.
   const chips = `<span class="chips">${chipsHtml(o.statuses, o.registry)}${silenced}</span>`;
+  const credit = kind === "unit" && o.creator ? `<div class="ub-credit">made by ${esc(o.creator)}</div>` : "";
   const badges = levelBadge + progressionBadge;
   const foot = badges !== "" || (o.footer ?? "") !== "" ? `<div class="ub-foot">${badges}${o.footer ?? ""}</div>` : "";
 
@@ -368,5 +372,5 @@ function variantCardHtml(o: UnitCardOpts): string {
     : `<div class="ub-head"><div class="ub-id">${label}${cap}</div>${nums}</div>`;
   const art = compactHead ? "" : `<div class="ub-art">${portrait}</div>`;
 
-  return `<div class="${cls}" data-card-entity="${kind}" data-entity-name="${esc(o.artName)}" style="--fam:${hex}" ${o.attrs} title="${esc(o.title)}">${o.topTag ?? ""}${head}${art}${ability}${chips}${foot}${o.dying === true ? '<span class="dying-x" aria-hidden="true">✕</span>' : ""}${o.overlay ?? ""}${o.marker ?? ""}</div>`;
+  return `<div class="${cls}" data-card-entity="${kind}" data-entity-name="${esc(o.artName)}" style="--fam:${hex}" ${o.attrs} title="${esc(o.title)}">${o.topTag ?? ""}${head}${art}${ability}${credit}${chips}${foot}${o.dying === true ? '<span class="dying-x" aria-hidden="true">✕</span>' : ""}${o.overlay ?? ""}${o.marker ?? ""}</div>`;
 }

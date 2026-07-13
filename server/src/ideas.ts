@@ -28,14 +28,17 @@
 import { and, eq, gte, lt, max, sql } from "drizzle-orm";
 import {
   assertSubmittableText,
+  DEFAULT_SELECTION_TUNABLES,
+  isEligible,
   rankIdeas,
+  tallyOf,
   type Idea,
   type IdeaStatus,
   type VoteDir,
   type VoteMap,
 } from "../../src/index.js";
 import type { DB } from "./db.js";
-import { ideas as ideasTable, ideaVotes } from "./schema.js";
+import { ideas as ideasTable, ideaVotes, users } from "./schema.js";
 
 export interface IdeaDeps {
   db: DB;
@@ -160,7 +163,18 @@ export function votedIdeaCount(deps: IdeaDeps, userId: string): number {
 export function listIdeas(deps: IdeaDeps): Idea[] {
   const rows = deps.db.select().from(ideasTable).all();
   const votesByIdea = votesByIdeaId(deps.db);
-  const all: Idea[] = rows.map((r) => ideaShape(r, votesByIdea.get(r.id) ?? {}));
+  const names = new Map(deps.db.select({ id: users.id, displayName: users.displayName }).from(users).all().map((u) => [u.id, u.displayName]));
+  const all: Idea[] = rows.map((r) => {
+    const idea = ideaShape(r, votesByIdea.get(r.id) ?? {});
+    const tally = tallyOf(idea);
+    const eligible = isEligible(tally, DEFAULT_SELECTION_TUNABLES);
+    if (idea.status === "on-table" && eligible) idea.status = "eligible";
+    idea.tally = { up: tally.up, total: tally.total, ratio: tally.ratio };
+    idea.eligible = eligible;
+    const displayName = names.get(idea.authorId);
+    if (displayName) idea.authorDisplayName = displayName;
+    return idea;
+  });
   return rankIdeas(all);
 }
 

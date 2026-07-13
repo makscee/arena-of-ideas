@@ -109,6 +109,15 @@ describe("active run persistence", () => {
     expect(loadRun(storage)).toBeNull();
   });
 
+  test("authenticated run content-version metadata round-trips and clearRun removes it", () => {
+    const storage = fakeStorage();
+    const state = initRun({ seed: 9, runId: "remote-v2", pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities });
+    saveRun(storage, state, undefined, false, 2);
+    expect(loadRun(storage)).toEqual({ state, contentVersion: 2 });
+    clearRun(storage);
+    expect(loadRun(storage)).toBeNull();
+  });
+
   test("a stored battle's replay position round-trips (#015 slice 4: reload mid-battle resumes parked)", () => {
     const storage = fakeStorage();
     const state = buy(initRun({ seed: 7, runId: "web-1", pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities }), 0);

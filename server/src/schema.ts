@@ -80,6 +80,9 @@ export const ladderChampions = sqliteTable("ladder_champions", {
 export const runOpens = sqliteTable("run_opens", {
   runId: text("run_id").primaryKey(),
   userId: text("user_id").notNull(),
+  /** Null only on rows upgraded from the pre-AOI-62 schema. Such an open is
+   * deliberately stale: a run without version provenance must start fresh. */
+  contentVersion: integer("content_version"),
   /** Highest ladder_ghosts.id at open — provenance of the ladder state the
    * run began against. Replay checks the serve record (run_pool_serves),
    * which is strictly stronger; this stays as a recorded fact. */
@@ -119,6 +122,9 @@ export const runPoolServes = sqliteTable(
 export const runSubmissions = sqliteTable("run_submissions", {
   runId: text("run_id").primaryKey(),
   userId: text("user_id").notNull(),
+  /** Null only for preserved pre-AOI-62 submissions. History is retained, but
+   * old rows are never reinterpreted as having run on a guessed version. */
+  contentVersion: integer("content_version"),
   seed: integer("seed").notNull(),
   endedBy: text("ended_by").notNull(),
   finalRound: integer("final_round").notNull(),
@@ -171,6 +177,62 @@ export const ideaVotes = sqliteTable(
   (t) => [primaryKey({ columns: [t.ideaId, t.userId] })],
 );
 
+/** The one authoritative live season/content cursor. Exactly id=1 exists. */
+export const seasonState = sqliteTable("season_state", {
+  id: integer("id").primaryKey(),
+  season: integer("season").notNull(),
+  contentVersion: integer("content_version").notNull(),
+});
+
+/** Immutable content snapshots. A new row is inserted only by an atomic roll. */
+export const contentVersions = sqliteTable("content_versions", {
+  version: integer("version").primaryKey(),
+  approvedRegistry: text("approved_registry").notNull(),
+  pool: text("pool").notNull(),
+  statuses: text("statuses").notNull(),
+  abilities: text("abilities").notNull(),
+  createdAt: integer("created_at").notNull(),
+});
+
+/** One immutable ranked selection receipt per season, including an empty
+ * slate. Its presence, not selected build-row count, is the freeze boundary. */
+export const seasonFreezes = sqliteTable("season_freezes", {
+  season: integer("season").primaryKey(),
+  contentVersion: integer("content_version").notNull(),
+  selectionReceipt: text("selection_receipt_json").notNull(),
+  frozenAt: integer("frozen_at").notNull(),
+});
+
+/** One selected idea's mutable build staging record, then immutable receipt. */
+export const ideaBuilds = sqliteTable(
+  "idea_builds",
+  {
+    season: integer("season").notNull(),
+    ideaId: text("idea_id").notNull(),
+    rank: integer("rank").notNull(),
+    tally: text("tally_json").notNull(),
+    status: text("status").notNull(),
+    candidate: text("candidate_json"),
+    candidateProvenance: text("candidate_provenance_json"),
+    authorUserId: text("author_user_id"),
+    creatorDisplayName: text("creator_display_name"),
+    shippedUnits: text("shipped_units_json"),
+    bounceReason: text("bounce_reason"),
+    updatedAt: integer("updated_at").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.season, t.ideaId] })],
+);
+
+/** Append-once completed season receipts. No update/delete path is exposed. */
+export const seasonArchives = sqliteTable("season_archives", {
+  season: integer("season").primaryKey(),
+  contentVersion: integer("content_version").notNull(),
+  finalTower: text("final_tower_json").notNull(),
+  selectionReceipt: text("selection_receipt_json").notNull(),
+  outcomeReceipt: text("outcome_receipt_json").notNull(),
+  archivedAt: integer("archived_at").notNull(),
+});
+
 export type Idea = typeof ideas.$inferSelect;
 export type IdeaVote = typeof ideaVotes.$inferSelect;
 
@@ -182,3 +244,8 @@ export type RunOpen = typeof runOpens.$inferSelect;
 export type RunPoolServe = typeof runPoolServes.$inferSelect;
 export type LadderChampion = typeof ladderChampions.$inferSelect;
 export type RunSubmission = typeof runSubmissions.$inferSelect;
+export type SeasonState = typeof seasonState.$inferSelect;
+export type ContentVersionRow = typeof contentVersions.$inferSelect;
+export type SeasonFreeze = typeof seasonFreezes.$inferSelect;
+export type IdeaBuild = typeof ideaBuilds.$inferSelect;
+export type SeasonArchive = typeof seasonArchives.$inferSelect;

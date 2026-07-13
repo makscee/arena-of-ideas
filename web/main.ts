@@ -4,8 +4,8 @@
 // and inspector all read that one log.
 
 import { DEFAULT_RUN_POOL, KERNEL_VERSION, codexUnits, mergePool, openEmptyLadder, seedBootstrapTower, stressAbilities, stressRegistry } from "../src/index.js";
-import { approvedUnits, committedApproved } from "./approved.js";
-import { createArenaApi, type MeInfo } from "./api.js";
+import { approvedUnits } from "./approved.js";
+import { createArenaApi, type ContentInfo, type MeInfo } from "./api.js";
 import { dismissInspectOverlay } from "./inspect.js";
 import { createViewer } from "./viewer.js";
 import { createBattleEditor, type BattleEditor } from "./battle-editor.js";
@@ -29,7 +29,7 @@ import { createCodex, type CodexScreen } from "./codex.js";
 import { createLadderView, type LadderView, type LadderViewRun } from "./ladder-view.js";
 import { createTitleScreen } from "./title-screen.js";
 import { RemoteIdeas } from "./remote-ideas.js";
-import { createIdeasScreen, type IdeasScreen } from "./ideas-screen.js";
+import { createIdeasScreen, ideasLadderHtml, type IdeasScreen } from "./ideas-screen.js";
 import { createHistoryScreen, type HistoryScreen } from "./history-screen.js";
 
 // ---------------------------------------------------------------------------
@@ -71,16 +71,25 @@ if (sessionToken !== null) {
   }
 }
 let remote: RemoteLadder | null = null;
+let serverContent: ContentInfo | null = null;
 if (me !== null && sessionToken !== null) {
-  const candidate = new RemoteLadder(api, sessionToken);
-  const sync = await candidate.sync();
-  if (sync.ok) remote = candidate;
-  else bootNetWarn = `the shared ladder couldn't load (${sync.reason}) — playing locally this session`;
+  const contentResult = await api.content();
+  if (!contentResult.ok) {
+    bootNetWarn = `the active season content couldn't load — playing locally this session`;
+  } else {
+    serverContent = contentResult.value;
+    const candidate = new RemoteLadder(api, sessionToken, contentResult.value.contentVersion);
+    const sync = await candidate.sync();
+    if (sync.ok) remote = candidate;
+    else bootNetWarn = `the shared ladder couldn't load (${sync.reason}) — playing locally this session`;
+  }
 }
-// Remote runs are pinned to the arena's committed content: the server rejects
-// any other pool at submit, so the localStorage approved-override (a local
-// playground affordance) joins local runs only.
-const remoteRunPool = mergePool(DEFAULT_RUN_POOL, committedApproved());
+// Authenticated play consumes the server's canonical active payload. The
+// localStorage playground override remains local/offline only.
+const remoteRunPool = serverContent?.pool ?? runPool;
+const activeStatuses = remote !== null && serverContent !== null ? serverContent.statuses : stressRegistry;
+const activeAbilities = remote !== null && serverContent !== null ? serverContent.abilities : stressAbilities;
+const activeSeason = remote !== null && serverContent !== null ? { season: serverContent.season, contentVersion: serverContent.contentVersion } : null;
 // Logged-in runs live under namespaced keys: logging in never clobbers the
 // local run, and a remote run never revives into a logged-out session.
 const runStorage: KVStorage = remote !== null ? prefixedStorage(window.localStorage, "remote:") : window.localStorage;
@@ -140,19 +149,16 @@ let leaderboardView: LadderView | undefined;
 let battleEditor: BattleEditor | undefined;
 let ideasScreen: IdeasScreen | undefined;
 let historyScreen: HistoryScreen | undefined;
-// The title hub's own ladder/tower instances (B·Arena slice B): the same slice-C
-// renders the full screens use, dropped into the hub's left/right columns so the
-// landing shows live ideas + the live tower at once.
-let hubIdeas: IdeasScreen | undefined;
+// The title hub owns a read-only Ideas synopsis and the live tower render.
 let hubTower: LadderView | undefined;
 
 // Codex: initialised once, lives in #codex-container. codexUnits() covers
 // every unit a player can meet — shop pool, bootstrap ghosts/champion, summons.
 const codexScreen: CodexScreen = createCodex(
   el("codex-container"),
-  stressRegistry,
-  codexUnits(approved, stressAbilities),
-  stressAbilities,
+  activeStatuses,
+  codexUnits(remote !== null ? remoteRunPool : approved, activeAbilities),
+  activeAbilities,
 );
 codexScreen.setVisible(false);
 
@@ -249,23 +255,24 @@ function showView(which: keyof typeof views): void {
  * floor count is the Strategy number, the ideas count is the Creation number —
  * so they never drift from the live data (never a hardcoded figure). */
 function refreshHub(): void {
-  // The tower reads the local ladder store (the bootstrap tower logged out, the
-  // synced server ladder logged in) — no network either way, so it renders on
-  // every landing. Strategy # = the tower's floor count.
   hubTower?.refresh(activeRunMarker());
   const floors = el("hub-tower-body").querySelectorAll(".tower-floor").length;
-  el("hub-strategy").textContent = `#${floors}`;
-  // The ideas list is a server pull. Logged OUT the landing makes ZERO network
-  // (Maks's gate-call invariant — probe-arena pins it): the ideas column shows
-  // its read-only login-nudge state, and the full ideas screen (one header tap
-  // away) is where an anonymous reader pulls the public table on demand. Logged
-  // IN — already a networked session — pull the live list and count it.
-  if (me !== null) {
-    void hubIdeas?.refresh().then(() => {
-      const ideas = el("hub-ideas-list").querySelectorAll(".ideas-row").length;
-      el("hub-creation").textContent = `#${ideas}`;
-    });
+  el("hub-strategy").textContent = String(floors);
+  el("hub-season").textContent = activeSeason === null
+    ? "Local play · committed content"
+    : `Season ${activeSeason.season} · content v${activeSeason.contentVersion}`;
+  const list = el("hub-ideas-list");
+  if (me === null) {
+    list.innerHTML = '<p class="ideas-empty">Open Ideas to read the public governance table.</p>';
+    return;
   }
+  void api.listIdeas().then((result) => {
+    if (!result.ok) {
+      list.innerHTML = '<p class="ideas-empty">Ideas are unavailable right now.</p>';
+      return;
+    }
+    list.innerHTML = ideasLadderHtml(result.value.ideas.slice(0, 4), { userId: me?.userId ?? null, mode: "top", actionable: false });
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -304,6 +311,7 @@ el<HTMLButtonElement>("title-create-idea").addEventListener("click", () => {
 // live nav probe still reaches its view by id.
 el<HTMLButtonElement>("title-leaderboard").addEventListener("click", () => showView("leaderboard"));
 el<HTMLButtonElement>("title-ideas").addEventListener("click", () => showView("ideas"));
+el<HTMLButtonElement>("hub-open-ideas").addEventListener("click", () => showView("ideas"));
 el<HTMLButtonElement>("title-history").addEventListener("click", () => showView("history"));
 el<HTMLButtonElement>("title-codex").addEventListener("click", () => showView("codex"));
 // #016 slice 3: the login flow behind the title's Login entry. Reloads on
@@ -382,8 +390,8 @@ try {
       : seedBootstrapTower(openLocalLadder(window.localStorage), stressRegistry, stressAbilities));
   leaderboardView = createLadderView(el("leaderboard-body"), {
     store: ladderStore,
-    registry: stressRegistry,
-    abilities: stressAbilities,
+    registry: activeStatuses,
+    abilities: activeAbilities,
     variant: "tower", // the leaderboard wears the compact Arena Tower (slice C)
     ...(remote !== null ? { holderName: () => remote!.holder() } : {}),
   });
@@ -393,8 +401,8 @@ try {
   // floors and chip inspector are the live ones.
   hubTower = createLadderView(el("hub-tower-body"), {
     store: ladderStore,
-    registry: stressRegistry,
-    abilities: stressAbilities,
+    registry: activeStatuses,
+    abilities: activeAbilities,
     variant: "tower",
     ...(remote !== null ? { holderName: () => remote!.holder() } : {}),
   });
@@ -462,10 +470,11 @@ try {
       storage: runStorage,
       store: ladderStore,
       pool: remote !== null ? remoteRunPool : runPool,
-      devPool: () => codexUnits(approved, stressAbilities), // #066 slice 4 spawn-any-unit — same pool as the editor's palette
+      devPool: () => codexUnits(remote !== null ? remoteRunPool : approved, activeAbilities), // same active entities as the Codex
       devEnabled: () => loadDevMode(window.localStorage), // device-wide gate, not the run's prefixed storage
-      registry: stressRegistry,
-      abilities: stressAbilities,
+      registry: activeStatuses,
+      abilities: activeAbilities,
+      ...(activeSeason !== null ? { contentVersion: activeSeason.contentVersion } : {}),
       viewer,
       viewerHost: result,
       viewerHome: el("battle-view"),
@@ -537,9 +546,9 @@ battleEditor = createBattleEditor(
     mount: el<HTMLElement>("be-mount"),
   },
   {
-    pool: () => codexUnits(approved, stressAbilities),
-    registry: stressRegistry,
-    abilities: stressAbilities,
+    pool: () => codexUnits(remote !== null ? remoteRunPool : approved, activeAbilities),
+    registry: activeStatuses,
+    abilities: activeAbilities,
     viewer,
     viewerHost: result,
     viewerHome: el("battle-view"),
@@ -578,31 +587,6 @@ ideasScreen = createIdeasScreen(
   },
 );
 
-// The hub's left column (B·Arena slice B): the SAME ideas creation ladder over
-// the SAME backing, dropped into the title. Votes and submit route through the
-// SAME login funnel as the full screen — onNeedLogin opens the login panel,
-// which is already on the title. Its own hub-prefixed ids keep it distinct from
-// the full #ideas-view instance.
-hubIdeas = createIdeasScreen(
-  {
-    form: el<HTMLFormElement>("hub-ideas-form"),
-    text: el<HTMLInputElement>("hub-ideas-text"),
-    submit: el<HTMLButtonElement>("hub-ideas-submit"),
-    reveal: el<HTMLButtonElement>("hub-ideas-reveal"),
-    sortTop: el<HTMLButtonElement>("hub-ideas-sort-top"),
-    sortNew: el<HTMLButtonElement>("hub-ideas-sort-new"),
-    status: el("hub-ideas-status"),
-    list: el("hub-ideas-list"),
-    loginNote: el("hub-ideas-login-note"),
-    currency: el("hub-ideas-currency"),
-  },
-  {
-    ideas: ideasBacking,
-    userId: me?.userId ?? null,
-    onNeedLogin: () => el<HTMLButtonElement>("title-login").click(), // already on the title
-  },
-);
-
 // #077 slice 3: the season-history screen. It reads the device's local season
 // archive (openLocalArchive) — public, no auth, like the ladder. The archive is
 // written by the season transition (slice 2); until a season ends it is empty,
@@ -616,7 +600,15 @@ try {
       detail: el("history-detail"),
       back: el<HTMLButtonElement>("history-back"),
     },
-    { archive: openLocalArchive(window.localStorage) },
+    remote !== null && sessionToken !== null
+      ? {
+          load: async () => {
+            const result = await api.history(sessionToken);
+            if (!result.ok) throw new Error(result.kind === "network" ? result.reason : "season history request was refused");
+            return result.value.seasons;
+          },
+        }
+      : { archive: openLocalArchive(window.localStorage) },
   );
 } catch (err) {
   const list = el("history-list");
@@ -628,6 +620,9 @@ try {
   list.append(msg);
 }
 
+el("ideas-season").textContent = activeSeason === null
+  ? "Local play · committed content"
+  : `Season ${activeSeason.season} · content v${activeSeason.contentVersion}`;
 el<HTMLElement>("kernel-version").textContent = `kernel v${KERNEL_VERSION}`;
 
 // The app opens on the title screen (#015 slice 3) — Play/Continue read from

@@ -391,9 +391,11 @@ describe("serialized shape round-trips through a real request cycle", () => {
     mem.castVote(m1.id, bobId, "down");
     const memList = mem.list();
 
-    // Same ids, seqs, text, authors, and directional vote maps in the same
-    // ranked order — a JSON round-trip of one equals the other.
-    expect(JSON.parse(JSON.stringify(serverList))).toEqual(JSON.parse(JSON.stringify(memList)));
+    // Core store fields still round-trip identically. The server now adds the
+    // derived governance read model (tally/eligibility) without changing them.
+    const core = (idea: Idea) => ({ id: idea.id, authorId: idea.authorId, text: idea.text, seq: idea.seq, votes: idea.votes, status: idea.status });
+    expect(serverList.map(core)).toEqual(memList.map(core));
+    expect(serverList[0]!.tally).toEqual({ up: 1, total: 2, ratio: 0.5 });
   });
 });
 

@@ -1,7 +1,6 @@
 // Title hub (B·Arena slice B) — the title screen is the always-on 3-column HUB:
-// the ideas creation ladder (left), the wordmark + run actions (center), and
-// the Arena Tower (right). The live behaviour is wired in main.ts (two reused
-// slice-C renders dropped into the hub columns); this pins the static shell and
+// the read-only governance synopsis (left), the wordmark + run actions (center),
+// and the Arena Tower (right). The live behaviour is wired in main.ts; this pins the static shell and
 // the PRD #112 slice-1 hierarchy: one primary run action, one idea route, one
 // tower route, and secondary utilities in the strip. Read as text — the suite
 // runs in node with no DOM, the way the other render tests do.
@@ -51,13 +50,15 @@ describe("title hub shell (index.html)", () => {
   test("the center action row is reserved for run/continue plus the existing idea CTA", () => {
     expect(hubActions).toContain(`id="${TITLE_HUB_HIERARCHY.primaryRunAction.id}"`);
     expect(hubActions).toContain(`id="${TITLE_HUB_HIERARCHY.continueRunAction.id}"`);
-    expect(hubActions).toContain('id="title-create-idea"'); // duplicate CTA remains for slice 2 to remove
+    expect(hubActions).toContain('id="title-create-idea"'); // route to the sole actionable Ideas screen
     expect(hubActions).not.toContain('id="title-codex"');
   });
 
-  test("the left column mounts the ideas ladder with its submit CTA; the right mounts the tower", () => {
+  test("the left column is a read-only ideas synopsis; the right mounts the tower", () => {
     expect(titleView).toContain('id="hub-ideas-list"');
-    expect(titleView).toContain('id="hub-ideas-reveal"'); // the magenta "submit an idea" footer
+    expect(titleView).toContain('id="hub-open-ideas"');
+    expect(titleView).not.toContain('id="hub-ideas-reveal"');
+    expect(titleView).not.toContain('id="hub-ideas-form"');
     expect(titleView).toContain('id="hub-tower-body"');
   });
 

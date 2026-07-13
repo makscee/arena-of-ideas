@@ -50,6 +50,7 @@ export interface RemoteRun {
 export class RemoteLadder implements LadderStore, RemoteRun {
   private readonly api: ArenaApi;
   private readonly token: string;
+  private readonly contentVersion: number;
   // Display state, refreshed by sync(): the public pools and champion.
   private pools = new Map<number, TeamSnapshot[]>();
   private champ: TeamSnapshot | null = null;
@@ -63,9 +64,10 @@ export class RemoteLadder implements LadderStore, RemoteRun {
   // line for that round reads the served (own-ghost-excluded) truth.
   private fight: { round: number; pool: TeamSnapshot[]; champion: TeamSnapshot | null } | null = null;
 
-  constructor(api: ArenaApi, token: string) {
+  constructor(api: ArenaApi, token: string, contentVersion = 1) {
     this.api = api;
     this.token = token;
+    this.contentVersion = contentVersion;
   }
 
   // ---------- LadderStore (what the screens and ladderFight read) ----------
@@ -164,7 +166,7 @@ export class RemoteLadder implements LadderStore, RemoteRun {
   }
 
   async open(runId: string): Promise<RemoteResult> {
-    const res = await this.api.openRun(this.token, runId);
+    const res = await this.api.openRun(this.token, runId, this.contentVersion);
     if (!res.ok) return { ok: false, reason: failureReason(res) };
     this.clearLocal();
     return { ok: true };

@@ -210,6 +210,7 @@ export function renderUnitInspect(root: HTMLElement, args: UnitInspectArgs): voi
     ...(primaryChips?.action !== undefined ? { action: primaryChips.action } : {}),
     ...(silenced !== undefined ? { silenced } : {}),
     ...(progression !== undefined ? { progression: progression.state, progress: progression.progress } : {}),
+    ...(def?._creator ? { creator: def._creator } : {}),
     attrs: "data-inspector-card",
     title,
   }));

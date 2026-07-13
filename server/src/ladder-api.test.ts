@@ -130,7 +130,7 @@ async function openRun(ctx: Ctx, token: string, runId: string): Promise<{ status
   const res = await ctx.app.request("/v1/runs/open", {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
-    body: JSON.stringify({ runId }),
+    body: JSON.stringify({ runId, contentVersion: 1 }),
   });
   return { status: res.status, body: (await res.json()) as Record<string, unknown> };
 }

@@ -200,6 +200,13 @@ describe("unitCardHtml", () => {
     expect(c).toContain("&lt;t&gt;");
   });
 
+  test("governed Unit credit lives on the shared entity card and is escaped", () => {
+    const credited = unitCardHtml({ artName: "Frostbiter", label: "Frostbiter", hp: 11, pwr: 2, registry: stressRegistry, attrs: "", title: "Frostbiter", creator: "Maks <author>" });
+    expect(credited).toContain('class="ub-credit">made by Maks &lt;author&gt;</div>');
+    const seed = unitCardHtml({ artName: "Brawler", label: "Brawler", hp: 7, pwr: 3, registry: stressRegistry, attrs: "", title: "Brawler" });
+    expect(seed).not.toContain("ub-credit");
+  });
+
   test("shape art is deterministic per name and code-drawn — no image assets (pillar 3)", () => {
     expect(shapeSvg("Brawler", false)).toBe(shapeSvg("Brawler", false));
     expect(shapeSvg("Brawler", false)).not.toBe(shapeSvg("Squire", false));

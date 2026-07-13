@@ -178,6 +178,7 @@ export function createCodex(
       variant: "reference",
       ...abilityLine(abilities[def !== undefined ? primaryAbilityIdOf(def)! : u.ability]),
       ...(level > 1 ? { level } : {}),
+      ...(u.creator ? { creator: u.creator } : {}),
       classes: "codex-unit",
       attrs: `data-inspect-entity="unit:${esc(u.name)}"`,
       title: u.name,

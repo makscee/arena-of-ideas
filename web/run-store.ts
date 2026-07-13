@@ -32,6 +32,7 @@ const SUBMIT_KEY = "aoi.submit.v1";
 const SESSION_KEY = "aoi.session.v1";
 const DEV_KEY = "aoi.dev.v1";
 const LOCAL_ONLY_KEY = "aoi.run-local-only.v1";
+const CONTENT_VERSION_KEY = "aoi.run-content-version.v1";
 
 /** The storage surface this module needs — window.localStorage, or a test stub. */
 export type KVStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
@@ -133,14 +134,19 @@ export interface StoredRun {
    * submission for it (a cheated run can't re-derive — it would only generate a
    * doomed 422). Hygiene, not security: the server is immune regardless. */
   localOnly?: boolean;
+  /** Present on authenticated server runs. Missing metadata is stale after the
+   * versioned protocol lands; local/offline runs intentionally omit it. */
+  contentVersion?: number;
 }
 
-export function saveRun(storage: KVStorage, state: RunState, battle?: StoredBattle, localOnly?: boolean): void {
+export function saveRun(storage: KVStorage, state: RunState, battle?: StoredBattle, localOnly?: boolean, contentVersion?: number): void {
   storage.setItem(RUN_KEY, serializeRun(state));
   if (battle !== undefined) storage.setItem(BATTLE_KEY, JSON.stringify(battle));
   else storage.removeItem(BATTLE_KEY);
   if (localOnly) storage.setItem(LOCAL_ONLY_KEY, "1");
   else storage.removeItem(LOCAL_ONLY_KEY);
+  if (contentVersion !== undefined) storage.setItem(CONTENT_VERSION_KEY, String(contentVersion));
+  else storage.removeItem(CONTENT_VERSION_KEY);
 }
 
 /** The active run, or null when none is stored. Corrupt data throws loudly. */
@@ -151,13 +157,16 @@ export function loadRun(storage: KVStorage): StoredRun | null {
   // Only carried when set, so a non-cheated run round-trips to exactly { state }
   // / { state, battle } (the storage shape callers compare against).
   const localOnly = storage.getItem(LOCAL_ONLY_KEY) === "1" ? { localOnly: true } : {};
+  const rawVersion = storage.getItem(CONTENT_VERSION_KEY);
+  const parsedVersion = rawVersion === null ? NaN : Number(rawVersion);
+  const version: { contentVersion?: number } = Number.isInteger(parsedVersion) && parsedVersion >= 1 ? { contentVersion: parsedVersion } : {};
   const battleRaw = storage.getItem(BATTLE_KEY);
-  if (battleRaw === null) return { state, ...localOnly };
+  if (battleRaw === null) return { state, ...localOnly, ...version };
   const battle = JSON.parse(battleRaw) as StoredBattle;
   if (!Array.isArray(battle?.teamA) || !Array.isArray(battle?.teamB) || typeof battle?.seed !== "number") {
     throw new Error(`stored battle ("${BATTLE_KEY}") is not a StoredBattle — refusing to revive it`);
   }
-  return { state, battle, ...localOnly };
+  return { state, battle, ...localOnly, ...version };
 }
 
 export function clearRun(storage: KVStorage): void {
@@ -165,6 +174,7 @@ export function clearRun(storage: KVStorage): void {
   storage.removeItem(BATTLE_KEY);
   storage.removeItem(SUBMIT_KEY);
   storage.removeItem(LOCAL_ONLY_KEY);
+  storage.removeItem(CONTENT_VERSION_KEY);
 }
 
 // ---------------------------------------------------------------------------

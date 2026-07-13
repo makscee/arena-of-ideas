@@ -13,6 +13,9 @@ export interface Stats {
 
 export interface UnitDef {
   name: string;
+  /** Player-facing authorship snapshot for governed content. The battle kernel
+   * ignores it; it travels by value so cards can credit the entity itself. */
+  _creator?: string;
   base: Stats;
   level?: number;
   /** Canonical v2 behavior recipe: Trigger is when. */

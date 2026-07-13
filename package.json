@@ -19,6 +19,7 @@
     "create": "node --import tsx/esm src/create/cli.ts",
     "mint-candidate": "node --import tsx/esm src/create/mint-candidate.ts",
     "approve": "node --import tsx/esm src/create/approve-cli.ts",
+    "govern": "node --import tsx/esm server/src/govern-cli.ts",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"

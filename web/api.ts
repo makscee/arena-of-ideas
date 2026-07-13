@@ -7,7 +7,7 @@
 // fetch is injected so vitest drives this module with a stub (the run-store
 // storage pattern); the browser passes nothing and gets window.fetch.
 
-import type { Idea, TeamSnapshot, VoteDir } from "../src/index.js";
+import type { AbilityRegistry, Idea, SeasonRecord, StatusRegistry, TeamSnapshot, UnitDef, VoteDir } from "../src/index.js";
 
 /** What a call can come back as: the payload, a server refusal (4xx/422 with
  * its reason), or no server at all. `unauthorized` is split out because the
@@ -44,6 +44,20 @@ export interface ServedView {
   champion: TeamSnapshot | null;
 }
 
+export interface ContentInfo {
+  season: number;
+  contentVersion: number;
+  pool: UnitDef[];
+  statuses: StatusRegistry;
+  abilities: AbilityRegistry;
+}
+
+export interface HistoryInfo {
+  season: number;
+  contentVersion: number;
+  seasons: SeasonRecord[];
+}
+
 export interface SubmitInfo {
   runId: string;
   endedBy: string;
@@ -61,7 +75,9 @@ export interface ArenaApi {
   setDisplayName(token: string, displayName: string): Promise<ApiResult<{ displayName: string }>>;
   champion(): Promise<ApiResult<ChampionInfo>>;
   pool(round: number): Promise<ApiResult<{ round: number; pool: TeamSnapshot[] }>>;
-  openRun(token: string, runId: string): Promise<ApiResult<{ opened: true; runId: string }>>;
+  content(): Promise<ApiResult<ContentInfo>>;
+  history(token: string): Promise<ApiResult<HistoryInfo>>;
+  openRun(token: string, runId: string, contentVersion: number): Promise<ApiResult<{ opened: true; runId: string }>>;
   servePool(token: string, runId: string, round: number): Promise<ApiResult<ServedView>>;
   submitRun(token: string, run: string): Promise<ApiResult<SubmitInfo>>;
   listIdeas(): Promise<ApiResult<{ ideas: Idea[] }>>;
@@ -120,7 +136,9 @@ export function createArenaApi(fetchImpl?: FetchLike): ArenaApi {
       call("/v1/auth/display-name", { method: "POST", body: JSON.stringify({ displayName }), token }),
     champion: () => call("/v1/ladder/champion"),
     pool: (round) => call(`/v1/ladder/pool/${round}`),
-    openRun: (token, runId) => call("/v1/runs/open", { method: "POST", body: JSON.stringify({ runId }), token }),
+    content: () => call("/v1/content"),
+    history: (token) => call("/v1/seasons/history", { token }),
+    openRun: (token, runId, contentVersion) => call("/v1/runs/open", { method: "POST", body: JSON.stringify({ runId, contentVersion }), token }),
     servePool: (token, runId, round) =>
       call(`/v1/runs/${encodeURIComponent(runId)}/pool/${round}`, { token }),
     submitRun: (token, run) => call("/v1/runs", { method: "POST", body: JSON.stringify({ run }), token }),

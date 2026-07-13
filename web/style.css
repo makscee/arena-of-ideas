@@ -2724,6 +2724,14 @@ button.hub-col-head {
   display: none;
 }
 
+.ideas-season,
+.hub-season {
+  color: var(--you);
+  font-family: var(--font-num);
+  font-size: 0.72rem;
+}
+.hub-season { margin: 8px 16px; }
+
 #ideas-list {
   display: flex;
   flex-direction: column;
@@ -2841,7 +2849,8 @@ button.hub-col-head {
   flex-wrap: wrap;
 }
 
-.ideas-author {
+.ideas-author,
+.ideas-tally {
   font-size: 0.7rem;
   font-weight: 600;
   color: var(--dim);
@@ -4788,6 +4797,17 @@ button.danger {
   border-top: none;
   font-size: 11px;
   height: 28px;
+}
+.ub-credit {
+  margin: 3px 12px 0;
+  color: var(--you);
+  font-family: var(--font-title);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .unit-b .ub-trig {
   color: #cdd7e6;

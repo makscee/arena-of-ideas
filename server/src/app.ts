@@ -61,7 +61,7 @@ import { eq } from "drizzle-orm";
 import { openEmptyLadder } from "../../src/index.js";
 import { createAuthMiddleware, type AuthEnv } from "./auth.js";
 import { readBuildIdentity, type BuildIdentity } from "./build-info.js";
-import { defaultArenaContent, type ArenaContent } from "./content.js";
+import { type ArenaContent } from "./content.js";
 import type { DB } from "./db.js";
 import { createEmailCodes, OTP_TTL_SECONDS } from "./email-codes.js";
 import { SqliteLadderStore } from "./ladder-store.js";
@@ -72,6 +72,7 @@ import { castIdeaVote, listIdeas, submitIdea, votedIdeaCount } from "./ideas.js"
 import { openRun, servePool, submitRun } from "./runs.js";
 import { users } from "./schema.js";
 import { mint, revoke, verify } from "./sessions.js";
+import { listServerArchives, readActiveContent, readSeasonPointer } from "./season-store.js";
 
 const SESSION_LIFETIME_DAYS = 30;
 const SESSION_LABEL = "arena-web";
@@ -138,7 +139,11 @@ async function jsonBody(req: Request): Promise<Record<string, unknown> | null> {
 
 export function createApp(deps: AppDeps): Hono<AuthEnv> {
   const { db, clock, mailClient, rateLimiters } = deps;
-  const content = deps.content ?? defaultArenaContent();
+  const active = () => {
+    const pointer = readSeasonPointer(db);
+    const content = deps.content ?? readActiveContent(db);
+    return { pointer, content };
+  };
   const buildIdentity = deps.buildIdentity ?? readBuildIdentity();
   const emailCodes = createEmailCodes(db, clock);
   const auth = createAuthMiddleware({ db, clock });
@@ -278,14 +283,21 @@ export function createApp(deps: AppDeps): Hono<AuthEnv> {
     return c.json({ round, pool: store.poolVisibleTo(round, session.userId) });
   });
 
+  app.get("/v1/content", (c) => {
+    const { pointer, content } = active();
+    return c.json({ season: pointer.season, contentVersion: pointer.contentVersion, pool: content.pool, statuses: content.statuses, abilities: content.abilities });
+  });
+
   app.post("/v1/runs/open", auth, async (c) => {
     const body = await jsonBody(c.req.raw);
     const runId = body?.runId;
-    if (typeof runId !== "string") {
-      return c.json({ error: "invalid_body" }, 400);
+    const requestedVersion = body?.contentVersion;
+    if (typeof runId !== "string" || !Number.isInteger(requestedVersion)) {
+      return c.json({ error: "invalid_body", reason: "runId and contentVersion are required; refresh content and start a fresh run" }, 400);
     }
     const session = c.get("session");
-    const outcome = openRun({ db, store, clock }, session.userId, runId);
+    const { pointer } = active();
+    const outcome = openRun({ db, store, clock, contentVersion: pointer.contentVersion }, session.userId, runId, requestedVersion as number);
     return c.json(outcome, outcome.opened ? 200 : 422);
   });
 
@@ -309,7 +321,8 @@ export function createApp(deps: AppDeps): Hono<AuthEnv> {
         422,
       );
     }
-    const outcome = servePool({ db, store, clock }, session.userId, c.req.param("runId"), round);
+    const { pointer } = active();
+    const outcome = servePool({ db, store, clock, contentVersion: pointer.contentVersion }, session.userId, c.req.param("runId"), round);
     return c.json(outcome, outcome.served ? 200 : 422);
   });
 
@@ -320,7 +333,8 @@ export function createApp(deps: AppDeps): Hono<AuthEnv> {
       return c.json({ error: "invalid_body" }, 400);
     }
     const session = c.get("session");
-    const outcome = submitRun({ db, store, content, clock }, session.userId, run);
+    const { pointer, content } = active();
+    const outcome = submitRun({ db, store, content, contentVersion: pointer.contentVersion, clock }, session.userId, run);
     return c.json(outcome, outcome.accepted ? 200 : 422);
   });
 
@@ -357,6 +371,11 @@ export function createApp(deps: AppDeps): Hono<AuthEnv> {
   app.get("/v1/ideas/currency", auth, (c) => {
     const session = c.get("session");
     return c.json({ currency: votedIdeaCount({ db, clock }, session.userId) });
+  });
+
+  app.get("/v1/seasons/history", auth, (c) => {
+    const pointer = readSeasonPointer(db);
+    return c.json({ season: pointer.season, contentVersion: pointer.contentVersion, seasons: listServerArchives(db) });
   });
 
   app.get("/v1/auth/me", auth, (c) => {

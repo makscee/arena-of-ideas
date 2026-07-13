@@ -212,6 +212,7 @@ function runTask(task, timeoutMs = 180_000) {
       env: {
         ...process.env,
         AOI_BASE_URL: BASE,
+        AOI_E2E_DB_PATH: join(dbDir, "arena.db"),
         SHOTS_DIR: join(EVIDENCE, task.evidence),
       },
       detached: true,
@@ -349,15 +350,18 @@ try {
     // (generous substring). Tokens that match nothing is an error, not a vacuous
     // pass — list what's available and fail.
     let probes = allProbes();
+    const wantsAoi62Walk = tokens.some((t) => probeMatches("aoi62", t));
     if (tokens.length > 0) {
       probes = probes.filter((f) => tokens.some((t) => probeMatches(f, t)));
-      if (probes.length === 0) {
+      if (probes.length === 0 && !wantsAoi62Walk) {
         console.error(`no probe matches ${JSON.stringify(tokens)}. available:`);
         for (const p of allProbes()) console.error(`  ${p}`);
+        console.error("  aoi62 (named governance walk)");
         failed = true;
       }
     }
     const tasks = probes.map((file) => ({ name: file, file, evidence: "probes" }));
+    if (tokens.length > 0 && wantsAoi62Walk) tasks.push({ name: "walk-aoi62", file: "shots-aoi62.mjs", evidence: "aoi62-governance" });
     // The unfiltered gate includes every current still and motion walk. Keeping
     // them in this same stack gives them the same fresh DB and hard teardown.
     if (tokens.length === 0) {
@@ -368,6 +372,9 @@ try {
         { name: "walk-aoi60", file: "shots-aoi60.mjs", evidence: "aoi60-acceptance" },
         { name: "walk-aoi61", file: "shots-aoi61.mjs", evidence: "aoi61-awakening-fusion" },
         { name: "walk-motion", file: "motion-frames.mjs", evidence: "walk-motion" },
+        // Last: this named walk intentionally rolls the shared temp DB to an
+        // empty season-2 tower. Nothing after it may assume the season-1 bootstrap.
+        { name: "walk-aoi62", file: "shots-aoi62.mjs", evidence: "aoi62-governance" },
       );
     }
     for (const task of tasks) {

@@ -341,6 +341,8 @@ export interface RunScreenDeps {
    * the title screen is the landing now (#015 slice 3), so leaving a run
    * navigates there instead of squatting on the new-run form. */
   onExitToTitle?: () => void;
+  /** Active server content version. Required with `remote`; omitted locally. */
+  contentVersion?: number;
   /** The shared-ladder protocol (#016 slice 3) — present only when logged in.
    * With it, runs open before play, every ladder fight draws from a served
    * view, and a finished run is submitted for server-side re-derivation.
@@ -486,6 +488,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       family: familyOf(def),
       variant: "full",
       ...abilityLine(def),
+      ...(def._creator ? { creator: def._creator } : {}),
       sel,
       classes: "run-card",
       attrs: `data-offer="${i}"`,
@@ -528,6 +531,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       family: familyOf(u.def),
       variant: "compact",
       ...abilityLine(u.def),
+      ...(u.def._creator ? { creator: u.def._creator } : {}),
       progression: progression.state,
       progress: progression.progress,
       front: i === 0,
@@ -854,6 +858,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       family: familyOf(u),
       variant: "compact", // the boss team reads as a read-only roster — compact, like the line
       ...abilityLine(u),
+      ...(u._creator ? { creator: u._creator } : {}),
       ...((u.level ?? 1) > 1 ? { level: u.level } : {}),
       classes: "run-card boss-card",
       attrs: "", // read-only — no inspect/buy/move affordance on a boss card
@@ -1164,7 +1169,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
    * carry on in-memory — the game is never blocked by a quota failure. */
   function persist(s: RunState, b?: StoredBattle): void {
     try {
-      saveRun(deps.storage, s, b, localOnly);
+      saveRun(deps.storage, s, b, localOnly, deps.remote !== undefined ? (deps.contentVersion ?? 1) : undefined);
     } catch (err) {
       // QuotaExceededError (and any other write failure): warn once, keep playing.
       const reason = err instanceof Error ? err.message : String(err);
@@ -1700,6 +1705,11 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   try {
     const stored = loadRun(deps.storage);
     if (stored !== null) {
+      if (deps.remote !== undefined && stored.contentVersion !== (deps.contentVersion ?? 1)) {
+        clearRun(deps.storage);
+        els.warn.textContent = "Season changed; start a fresh run — the stored remote run used stale or missing content-version metadata.";
+        els.warn.hidden = false;
+      } else {
       state = stored.state;
       pending = stored.battle;
       localOnly = stored.localOnly ?? false; // a revived cheated run stays off the ladder
@@ -1718,6 +1728,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
         } else {
           submitRemote();
         }
+      }
       }
     }
   } catch (err) {

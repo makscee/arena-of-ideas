@@ -28,31 +28,43 @@ export interface HistoryScreenEls {
 }
 
 export interface HistoryScreenDeps {
-  /** The archive backing — the device's local archive (openLocalArchive). Read
-   * only here: the screen lists and reads, never archives. */
-  archive: SeasonArchiveStore;
+  /** Local/offline archive. */
+  archive?: SeasonArchiveStore;
+  /** Authenticated server archive loader. */
+  load?: () => Promise<SeasonRecord[]>;
 }
 
 export interface HistoryScreen {
   /** Re-read the archive and re-render the seasons list (back to the list view
    * if a season detail was open). Called every time the screen shows, so the
    * list reflects any season that ended since last time. */
-  refresh(): void;
+  refresh(): Promise<void>;
 }
 
 export function createHistoryScreen(els: HistoryScreenEls, deps: HistoryScreenDeps): HistoryScreen {
-  els.back.addEventListener("click", () => showList());
+  if (deps.archive === undefined && deps.load === undefined) throw new Error("history needs a local archive or server loader");
+  let records: SeasonRecord[] = [];
+  els.back.addEventListener("click", () => { void showList(); });
 
   /** Render the completed-seasons list — one row per archived season, newest
    * (highest number) first so the latest season reads at the top. Each row
    * carries the season number, the content version it ran on, and a one-line
    * champion summary; clicking it opens that season's final tower. */
-  function showList(): void {
+  async function showList(): Promise<void> {
     els.detail.hidden = true;
     els.list.hidden = false;
     els.list.textContent = "";
 
-    const records = deps.archive.list();
+    try {
+      records = deps.load !== undefined ? await deps.load() : deps.archive!.list();
+    } catch (err) {
+      const failed = document.createElement("p");
+      failed.className = "history-empty";
+      failed.setAttribute("role", "alert");
+      failed.textContent = `Season history could not load: ${(err as Error).message}`;
+      els.list.append(failed);
+      return;
+    }
     if (records.length === 0) {
       const empty = document.createElement("p");
       empty.className = "history-empty";
@@ -92,9 +104,9 @@ export function createHistoryScreen(els: HistoryScreenEls, deps: HistoryScreenDe
    * seasonAt; a number with no record (race against a cleared archive) drops
    * back to the list rather than showing a blank panel. */
   function showSeason(season: number): void {
-    const record = deps.archive.seasonAt(season);
+    const record = records.find((entry) => entry.season === season) ?? null;
     if (record === null) {
-      showList();
+      void showList();
       return;
     }
     els.list.hidden = true;

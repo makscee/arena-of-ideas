@@ -80,6 +80,13 @@ export interface Idea {
   /** Why a `bounced` idea was rejected — set only when status is `bounced`, so
    * the bounce is VISIBLE (the UI shows the reason) and never a silent vanish. */
   bounceReason?: string;
+  /** Server read-model enrichment. The immutable id remains the authority;
+   * this mutable presentation name is never used for provenance. */
+  authorDisplayName?: string;
+  /** Current directional tally and eligibility, derived from the vote rows by
+   * the server. Local stores may omit it and derive from `votes` directly. */
+  tally?: { up: number; total: number; ratio: number };
+  eligible?: boolean;
 }
 
 /** The storage boundary the ideas feature depends on — nothing else.
