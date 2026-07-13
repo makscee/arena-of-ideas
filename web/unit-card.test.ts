@@ -140,9 +140,31 @@ describe("unitCardHtml", () => {
     expect(card).toMatch(/class="run-lvl">L2 <span class="run-pips">●●○<\/span>/);
   });
 
-  test("framed stats: hp and pwr each in their own cell", () => {
-    expect(card).toContain('<span class="hp">7</span>');
-    expect(card).toContain('<span class="pwr">3</span>');
+  test.each(["compact", "full"] as const)("%s renders explicit run progression without a legacy level", (variant) => {
+    const progressed = unitCardHtml({
+      artName: "Brawler",
+      label: "Brawler",
+      hp: 7,
+      pwr: 3,
+      registry: stressRegistry,
+      attrs: "",
+      title: "Brawler",
+      variant,
+      progression: "Fusion · Trigger path",
+      progress: "3/3",
+    });
+    expect(progressed).toContain('class="run-progression"');
+    expect(progressed).toContain('class="run-progression-state">Fusion · Trigger path</span>');
+    expect(progressed).toContain('class="run-progress">3/3</span>');
+    expect(progressed).toContain('aria-label="Progression: Fusion · Trigger path 3/3"');
+    expect(progressed).not.toContain('class="run-lvl"');
+  });
+
+  test("framed stats use canonical PWR then HP order with explicit labels", () => {
+    expect(card).toContain('<span class="pwr">3</span><small>PWR</small>');
+    expect(card).toContain('<span class="hp">7</span><small>HP</small>');
+    expect(card.indexOf('class="pwr"')).toBeLessThan(card.indexOf('class="hp"'));
+    expect(card).toContain('aria-label="3 PWR, 7 HP"');
   });
 
   test("battle affordances: dead/hit classes, current/max hp, silenced chip", () => {

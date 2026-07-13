@@ -234,7 +234,7 @@ export function createLadderView(root: HTMLElement, deps: LadderViewDeps): Ladde
           hp: def.base.hp,
           pwr: def.base.pwr,
           state:
-            `${def.base.hp} hp · ${def.base.pwr} pwr` +
+            `${def.base.pwr} PWR · ${def.base.hp} HP` +
             ((def.level ?? 1) > 1 ? ` · L${def.level}` : "") +
             ` · ${which.rung === 0 ? "champion" : `floor ${snap.round}`}`,
           def,
@@ -366,7 +366,7 @@ export function createLadderView(root: HTMLElement, deps: LadderViewDeps): Ladde
             hp: def.base.hp,
             pwr: def.base.pwr,
             state:
-              `${def.base.hp} hp · ${def.base.pwr} pwr` +
+              `${def.base.pwr} PWR · ${def.base.hp} HP` +
               ((def.level ?? 1) > 1 ? ` · L${def.level}` : "") +
               ` · ${which.champ ? "champion" : `ghost of ${esc(ghostLabel(snap.runId))}, round ${snap.round}`}`,
             def,

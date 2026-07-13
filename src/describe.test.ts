@@ -59,7 +59,7 @@ describe("describeAbility", () => {
       `"After this unit strikes: apply 2 Poison to the front enemy."`,
     );
     expect(describeAbility(unitActionsOf(Summoner, stressAbilities)[0]!)).toMatchInlineSnapshot(
-      `"After this unit dies: summon Imp (2 hp, 1 pwr) at the back of this unit's side."`,
+      `"After this unit dies: summon Imp (1 PWR / 2 HP) at the back of this unit's side."`,
     );
     expect(describeAbility(unitActionsOf(Silencer, stressAbilities)[0]!)).toMatchInlineSnapshot(
       `"When the battle begins: silence the front enemy — strip its statuses and disable its abilities for the battle."`,

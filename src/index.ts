@@ -5,8 +5,8 @@ export { CONTENT_GRAMMAR_VERSION, LEGACY_CONTENT_GRAMMAR_VERSION, canonicalUnit,
 export type { ContentMigrationProvenance, MigratedContent } from "./content-grammar.js";
 
 export { battle, toJSONL, winnerOf, TEAM_SIZE, FATIGUE_START, FATIGUE_RAMP, TURN_CAP, fatigueAmount } from "./battle.js";
-export { initRun, buy, reroll, reorder, fuse, fight, ladderFight, challengeBoss, applyDecision, playRun, runToJSONL, serializeRun, deserializeRun, toBattleTeam, InvalidDecisionError } from "./run.js";
-export type { RunInput, RunState, RunStatus, RunEndReason, RunUnit, RunDecision, RunEvent, RunEventBody, RunEventType } from "./run.js";
+export { RUN_PERSISTENCE_VERSION, initRun, buy, reroll, reorder, fuse, awakenFusion, fight, ladderFight, challengeBoss, applyDecision, playRun, runToJSONL, serializeRun, deserializeRun, toBattleTeam, InvalidDecisionError } from "./run.js";
+export type { AwakeningPath, BaseProgression, FusionParent, FusionProgress, RunInput, RunState, RunStatus, RunEndReason, RunUnit, RunDecision, RunEvent, RunEventBody, RunEventType } from "./run.js";
 // The file backing (FileLadderStore) lives in ladder-file.ts, off this index:
 // it needs node:fs and the browser client imports this module. Its engine
 // (PersistedLadderStore + the LadderData shape) is medium-free and exported

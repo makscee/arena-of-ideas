@@ -272,10 +272,10 @@ export function createCodex(
     const status = registry[name];
     const summon = summonByName.get(name);
     const summary =
-      kind === "unit" && unit !== undefined ? `${unit.base.hp} HP · ${unit.base.pwr} PWR` :
+      kind === "unit" && unit !== undefined ? `${unit.base.pwr} PWR · ${unit.base.hp} HP` :
       kind === "ability" && ability !== undefined ? data.abilities.find((a) => a.name === name)?.description ?? name :
       kind === "status" && status !== undefined ? data.statuses.find((s) => s.name === name)?.description ?? name :
-      kind === "summon" && summon !== undefined ? `${summon.unit.base.hp} HP · ${summon.unit.base.pwr} PWR · created by ${summon.source}` : name;
+      kind === "summon" && summon !== undefined ? `${summon.unit.base.pwr} PWR · ${summon.unit.base.hp} HP · created by ${summon.source}` : name;
     const recipeUnit = kind === "summon" ? summon?.unit : unit;
     const boundUnitAbility = recipeUnit !== undefined ? unitActionsOf(recipeUnit, abilities)[0] : undefined;
     const unitChips = boundUnitAbility !== undefined ? abilityChips(boundUnitAbility) : undefined;
@@ -295,7 +295,7 @@ export function createCodex(
         } : {}),
         ...(kind === "status" && status !== undefined ? {
           family: undefined,
-          tag: `stacks${status.statMods?.hp ? ` · ${status.statMods.hp > 0 ? "+" : ""}${status.statMods.hp} hp/stack` : ""}${status.statMods?.pwr ? ` · ${status.statMods.pwr > 0 ? "+" : ""}${status.statMods.pwr} pwr/stack` : ""}`,
+          tag: `stacks${status.statMods?.pwr ? ` · ${status.statMods.pwr > 0 ? "+" : ""}${status.statMods.pwr} PWR/stack` : ""}${status.statMods?.hp ? ` · ${status.statMods.hp > 0 ? "+" : ""}${status.statMods.hp} HP/stack` : ""}`,
           trigger: statusChips?.trigger,
           target: statusChips?.target,
           action: statusChips?.action,

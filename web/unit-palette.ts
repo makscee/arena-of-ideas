@@ -67,7 +67,7 @@ export function createPalette(deps: PaletteDeps): Palette {
                 registry: deps.registry,
                 classes: "palette-card",
                 attrs: `data-pick="${i}"`,
-                title: `${def.name} — ${def.base.hp} hp, ${def.base.pwr} pwr · place`,
+                title: `${def.name} — ${def.base.pwr} PWR / ${def.base.hp} HP · place`,
               }),
             )
             .join("");

@@ -3521,7 +3521,7 @@ button.hub-col-head {
 }
 
 
-/* Level badge — a real pill on the card; fusion pips ride inside it. */
+/* Level badge — retained for legacy battle/content level display only. */
 .run-lvl {
   font-size: 0.55rem;
   color: var(--you);
@@ -3533,11 +3533,31 @@ button.hub-col-head {
   white-space: nowrap;
 }
 
-/* Fusion pips (IA-6): ● per copy held, ○ per copy missing — the level badge
-   carries progress at a glance, the card title carries the words. */
+/* Legacy pips remain available to level-bearing cards. Run progression uses
+   explicit words + a numeric fraction so it is readable without hover/touch. */
 .run-pips {
   color: var(--you);
   letter-spacing: 0.1em;
+}
+
+.run-progression {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 1.35rem;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--fam, var(--you)) 55%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fam, var(--you)) 16%, transparent);
+  color: color-mix(in srgb, var(--fam, var(--you)) 65%, white);
+  font: 600 0.65rem/1.15 var(--font-body);
+  white-space: nowrap;
+}
+
+.run-progress {
+  color: var(--text);
+  font-family: var(--font-num);
+  letter-spacing: 0.02em;
 }
 
 /* The fuse moment (GA-7): the fused card flashes once — an outline + glow
@@ -4679,6 +4699,13 @@ button.danger {
 .unit-b .unums .pwr::after {
   content: none;
 }
+.unit-b .unums small {
+  margin-left: 2px;
+  color: var(--dim);
+  font-family: var(--font-body);
+  font-size: 7px;
+  letter-spacing: .04em;
+}
 .unit-b .ub-sep {
   color: #2c3344;
 }
@@ -4795,7 +4822,7 @@ button.danger {
   padding: 6px 0 0;
   min-height: 1.3rem;
 }
-/* foot: level badge + footer controls (buy / move) on their own row below */
+/* foot: progression/level badges + controls (buy / move) below */
 .unit-b .ub-foot {
   display: flex;
   flex-wrap: wrap;
@@ -4815,6 +4842,15 @@ button.danger {
   border: 1px solid color-mix(in srgb, var(--fam) 40%, transparent);
   border-radius: 2px;
   padding: 1px 5px;
+}
+.unit-b .run-progression {
+  font-size: 10px;
+}
+.unit-b.is-compact .run-progression,
+.unit-b.is-reference .run-progression {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* sigil motion — CSS-driven so prefers-reduced-motion can drop it (#080).

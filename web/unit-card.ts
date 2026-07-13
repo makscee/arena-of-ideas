@@ -206,9 +206,12 @@ export interface UnitCardOpts {
   pwr: string | number;
   registry: StatusRegistry;
   statuses?: readonly { status: string; stacks: number }[] | undefined;
-  /** Renders the level badge when given; `pips` (●●○) ride inside it. */
+  /** Legacy battle/content level badge. Run progression never uses this. */
   level?: number;
   pips?: string;
+  /** Visible run progression, independent of the legacy level ladder. */
+  progression?: string;
+  progress?: string;
   front?: boolean;
   dead?: boolean;
   hit?: boolean;
@@ -319,7 +322,7 @@ function variantCardHtml(o: UnitCardOpts): string {
   const cap = `<span class="ub-cap"><span class="ub-kind">${esc(kind.toUpperCase())}</span>${abilityStar("ub-spark")}<span class="ub-cap-t">${esc(typeLabel.toUpperCase())}</span></span>`;
   const nums =
     kind === "unit" || kind === "summon"
-      ? `<span class="unums"><span class="hp">${o.hp}</span><span class="ub-sep">·</span><span class="pwr">${o.pwr}</span></span>`
+      ? `<span class="unums" aria-label="${o.pwr} PWR, ${o.hp} HP"><span class="pwr">${o.pwr}</span><small>PWR</small><span class="ub-sep">·</span><span class="hp">${o.hp}</span><small>HP</small></span>`
       : `<span class="unums"><span class="ptag">${esc(o.tag ?? family)}</span></span>`;
 
   // Ability line: <icon> trigger ▸ target ▸ <icon> action — any subset,
@@ -336,19 +339,23 @@ function variantCardHtml(o: UnitCardOpts): string {
     segs.push(`<span class="ub-seg ub-act">${actionIcon(family)} ${esc(o.action)}</span>`);
   const ability = segs.length > 0 ? `<div class="ub-ability">${segs.join('<span class="ub-arrow">▸</span>')}</div>` : "";
 
-  const badge =
+  const levelBadge =
     o.level !== undefined
-      ? `<span class="run-lvl">L${o.level}${o.pips !== undefined ? ` <span class="run-pips">${o.pips}</span>` : ""}</span>`
+      ? `<span class="run-lvl">L${o.level}${o.pips !== undefined ? ` <span class="run-pips">${esc(o.pips)}</span>` : ""}</span>`
       : "";
+  const progressionBadge = o.progression !== undefined
+    ? `<span class="run-progression" aria-label="Progression: ${esc(o.progression)}${o.progress !== undefined ? ` ${esc(o.progress)}` : ""}"><span class="run-progression-state">${esc(o.progression)}</span>${o.progress !== undefined ? ` <span class="run-progress">${esc(o.progress)}</span>` : ""}</span>`
+    : "";
   const silenced =
     o.silenced === true
       ? '<span class="chip mute" title="Silenced — its statuses are stripped and its own abilities are disabled for the battle">mut</span>'
       : "";
   // Keep the status badges in a DIRECT `.chips` strip (like the legacy card) so
   // the run rows' gapless 44px touch band + min-height reserve apply unchanged;
-  // the level badge + footer (buy / move) ride a separate `.ub-foot` row below.
+  // progression/level badges + footer (buy / move) ride a separate row below.
   const chips = `<span class="chips">${chipsHtml(o.statuses, o.registry)}${silenced}</span>`;
-  const foot = badge !== "" || (o.footer ?? "") !== "" ? `<div class="ub-foot">${badge}${o.footer ?? ""}</div>` : "";
+  const badges = levelBadge + progressionBadge;
+  const foot = badges !== "" || (o.footer ?? "") !== "" ? `<div class="ub-foot">${badges}${o.footer ?? ""}</div>` : "";
 
   // Unit and Summon identity is a stable name-hash portrait, not a generic
   // family logo. Generated names therefore remain distinctive everywhere.

@@ -22,7 +22,7 @@ import { TEAM_SIZE, type RunState, type RunUnit, type UnitDef } from "../src/ind
 function clone(s: RunState): RunState {
   return {
     ...s,
-    team: s.team.map((u) => ({ ...u, base: { ...u.base } })),
+    team: s.team.map((u) => structuredClone(u)),
     offers: [...s.offers],
     log: [...s.log],
   };
@@ -58,7 +58,7 @@ export function spawnUnit(state: RunState, unit: UnitDef, dest: SpawnDest): RunS
     return s;
   }
   if (s.team.length >= TEAM_SIZE) return s; // line full — no-op, never an invalid over-full line
-  const grown: RunUnit = { name: unit.name, base: { ...unit.base }, level: unit.level ?? 1, stacks: 1, def: unit };
+  const grown: RunUnit = { name: unit.name, base: { ...unit.base }, kind: "base", copies: 1, progression: "Base", def: unit };
   s.team = [...s.team, grown];
   return s;
 }

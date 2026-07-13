@@ -13,6 +13,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   DEFAULT_RUN_POOL,
+  STACK_THRESHOLD,
   TOWER_HEIGHT,
   initRun,
   serializeRun,
@@ -26,7 +27,7 @@ const outDir = process.env.SHOTS_DIR ?? join(here, ".shots-challenge");
 mkdirSync(outDir, { recursive: true });
 
 const byName = Object.fromEntries(DEFAULT_RUN_POOL.map((d) => [d.name, d]));
-const unitOf = (def, stacks = 1, level = 1) => ({ name: def.name, base: { ...def.base }, level, stacks, def });
+const unitOf = (def, copies = 1) => ({ name: def.name, base: { ...def.base }, kind: "base", copies, progression: copies >= STACK_THRESHOLD ? "Awakened" : "Base", def });
 
 /** A real initRun state, then hand-shaped for the scenario. */
 function shaped(mutate) {

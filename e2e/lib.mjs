@@ -113,11 +113,12 @@ export function finish(name) {
 const byName = Object.fromEntries(DEFAULT_RUN_POOL.map((d) => [d.name, d]));
 
 /** A line unit built from a pool def, the shape buy() itself appends. */
-const unitOf = (def, stacks = 1, level = 1) => ({
+const unitOf = (def, copies = 1) => ({
   name: def.name,
-  base: { ...def.base },
-  level,
-  stacks,
+  base: { pwr: def.base.pwr + Math.max(0, copies - 1), hp: def.base.hp + 2 * Math.max(0, copies - 1) },
+  kind: "base",
+  copies,
+  progression: copies >= STACK_THRESHOLD ? "Awakened" : "Base",
   def,
 });
 
@@ -141,6 +142,27 @@ export const fuseReadyRun = () =>
     s.team = [unitOf(byName.Necromancer, STACK_THRESHOLD - 1), unitOf(byName.Brawler), unitOf(byName.Squire)];
     s.offers = [byName.Necromancer, byName.Summoner, byName.Bulwark];
     s.gold = 10;
+  });
+
+/** AOI-61 deterministic UI fixture: one base sits at 2/3, the other is
+ * Awakened. The first offer completes base Awakening; the remaining four are
+ * ordered parents for fusion 0/3 → forced choice → one later literal stack. */
+export const aoi61ReadyRun = () =>
+  shaped((s) => {
+    const first = byName.Necromancer;
+    const second = byName.Silencer;
+    s.team = [unitOf(first, 2), unitOf(second, 3)];
+    s.offers = [first, first, second, first, second];
+    s.gold = 99;
+  });
+
+/** Two Awakened singleton bases with the same Strike Ability: the UI must not
+ * offer a first/commit control for a domain-invalid pair. */
+export const aoi61SameAbilityRun = () =>
+  shaped((s) => {
+    s.team = [unitOf(byName.Brawler, 3), unitOf(byName.Squire, 3)];
+    s.offers = [byName.Brawler, byName.Squire];
+    s.gold = 99;
   });
 
 /** Full line of five distinct units; offer 0 is a sixth distinct name, so

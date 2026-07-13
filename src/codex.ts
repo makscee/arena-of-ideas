@@ -15,8 +15,6 @@ import {
   DEFAULT_RUN_POOL,
   INCOME_CAP,
   INCOME_PER_ROUND,
-  LEVEL_HP_GROWTH,
-  LEVEL_PWR_GROWTH,
   REROLL_COST,
   SHOP_SIZE_BASE,
   SHOP_SIZE_MAX,
@@ -278,11 +276,13 @@ export function buildCodex(registry: StatusRegistry, units: UnitDef[], abilities
       key: "fusion",
       title: "Fusion",
       text:
-        `Collect ${STACK_THRESHOLD} copies of the same unit and they fuse: the unit gains a level, ` +
-        `+${LEVEL_HP_GROWTH} base hp and +${LEVEL_PWR_GROWTH} base pwr. ` +
-        `The copy count resets after each fuse, so ${STACK_THRESHOLD - 1} more copies reach the next level — ` +
-        `there is no level cap. ` +
-        `Each unit costs ${UNIT_COST}g; rerolling the shop costs ${REROLL_COST}g.`,
+        `A base Unit starts at 1/${STACK_THRESHOLD}. Every later copy immediately adds +1 PWR / +2 HP. ` +
+        `The third total copy becomes Awakened once; later copies keep the same literal growth. ` +
+        `Two Awakened base Units with different Abilities may fuse in explicit order: A+B sums current PWR/HP and statuses, ` +
+        `uses A's Triggers, B's Selectors, and executes A then B. B+A is the other outcome; composites cannot fuse again. ` +
+        `A fusion starts 0/${STACK_THRESHOLD}; copies of either parent add +1 PWR / +2 HP. The third forces a permanent ` +
+        `Trigger-vs-Selector path before any other action, then snapshot-doubles current PWR/HP once. Later copies stay +1/+2. ` +
+        `Each Unit costs ${UNIT_COST}g; rerolling costs ${REROLL_COST}g.`,
     },
     {
       key: "shop",

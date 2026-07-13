@@ -11,8 +11,8 @@ The canonical player-facing grammar `Trigger(s) → Selector(s) → Ability/Abil
 _Avoid_: part bag, axis permutation, component
 
 **Unit**:
-A named combatant with base stats, a level, a behavior recipe, and runtime statuses; identified within a battle by an instance id (e.g. `A1:Dummy`).
-_Avoid_: hero (shop-layer word), creature, minion
+A named combatant with PWR then HP, a behavior recipe, and runtime statuses; identified within battle by an instance id (e.g. `A1:Dummy`). In a run, a base Unit is either Base or Awakened—never an unbounded level. First copy is 1/3; every duplicate immediately adds +1 PWR/+2 HP; the third total copy Awakens once.
+_Avoid_: hero (shop-layer word), creature, minion, level ladder
 
 **Team**:
 An ordered list of 1–5 units. Index 0 is the front.
@@ -68,9 +68,9 @@ _Avoid_: owner, bearer
 
 ### Stats
 
-**hp / pwr**:
-The only two stats. `Strike` proposes a Hurt of the striker's effective pwr; a unit at 0 current hp dies.
-_Avoid_: health/attack, atk/def
+**PWR / HP**:
+The only two stats, always shown player-facing in this order. `+1/+2` always means +1 PWR and +2 HP. `Strike` proposes a Hurt of the striker's effective PWR; a Unit at 0 current HP dies. Internal objects retain `{ hp, pwr }` for compatibility; that storage order is never presentation.
+_Avoid_: HP/PWR tuples, health/attack, atk/def
 
 **Computed stats**:
 Effective stat = max(0, base + Σ statMod contributions per stack) — computed on read, never baked into state. Removing a status makes its contribution vanish; there is no "unapply" step and no layering bug class.
@@ -185,8 +185,16 @@ _Avoid_: revive, respawn
 ### Run & ladder
 
 **Run**:
-One playthrough of the shop/fight loop: `seed + decision sequence → RunState + run log`. Ends `crown` or `out-of-lives`; an over run rejects every further decision, loudly.
+One playthrough of the shop/fight loop: `seed + decision sequence → RunState + run log`. Run persistence is explicitly `runVersion: 2`; unversioned and legacy team `level/stacks/absorbed` payloads are actionably rejected, never reinterpreted. Ends `crown` or `out-of-lives`; an over run rejects every further decision, loudly.
 _Avoid_: game, session, playthrough
+
+**Ordered fusion**:
+Two Awakened, unfused bases with different Abilities form an explicit A+B or B+A composite. Current PWR/HP sum; same-name intrinsic status stacks add; provenance stays ordered. A supplies Triggers, B supplies Selectors, and Abilities execute A then B. The composite cannot fuse again.
+_Avoid_: absorbed Ability, primary/secondary identity, recursive fusion
+
+**Fusion Awakening**:
+A composite starts a fresh shared 0/3 meter. A later copy of either parent routes into it and adds +1 PWR/+2 HP. The third blocks every action until a permanent Trigger path (append B's Triggers) or Selector path (append A's Selectors) is chosen, existing entries first; current PWR/HP then snapshot-double once. Later copies remain literal +1/+2.
+_Avoid_: permanent stat multiplier, six-way chooser, authored Ability upgrade
 
 **Ghost**:
 A fielded team frozen into a round's pool by snapshot-before-fight, tagged with the run that fielded it. Ghosts persist after their run ends — every fight leaves an opponent behind.

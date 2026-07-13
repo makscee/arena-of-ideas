@@ -174,11 +174,26 @@ Ten abilities, shipped **as DSL data with behavior tests**. The kernel passes wh
 
 (Silence and Resurrect are the designated kernel-breakers; their verdicts get written into the project notes before any schema change.)
 
-## 8. Out of scope for v1 (pointers, not promises)
+## 8. Run Awakening and ordered fusion [PINNED]
 
-- **Fusion implementation:** deferred. The semantic contract is already fixed: first parent Trigger set, second parent Selector set, two inherited Abilities in parent/name order; no invented Ability or permutation chooser.
+Player-facing stat order is always **PWR / HP**. A base Unit's first shop copy is `1/3`. Every later same-name copy immediately adds `+1 PWR / +2 HP`; the third total copy changes Base → Awakened exactly once and unlocks fusion. Later copies have no further state/level transition and continue the literal increment without a cap.
+
+Fusion accepts only two Awakened, unfused base Units with different Abilities. The player selects an explicit order. `A+B` is an equal-identity composite whose current PWR and HP are the sums of the parents' current values. Intrinsic statuses merge in first-parent then second-parent order, adding stacks when names match. Ordered provenance is durable. A supplies the initial complete Trigger set, B supplies the initial complete Selector set, and the two inherited Abilities execute A then B. `B+A` is the distinct reverse result. A composite cannot fuse again.
+
+A composite starts a fresh shared `0/3` meter. A later shop copy of A or B routes to the composite, adds `+1 PWR / +2 HP`, and advances the meter. Earlier parent copies are already represented in summed stats and never count again. The third post-fusion copy applies its increment, then blocks buy, reroll, reorder, fusion, fight, ladder fight, boss challenge, resume/direct decision application, and every other run action until one permanent choice resolves:
+
+- **Trigger path:** append B's complete unused Trigger set after A's existing set.
+- **Selector path:** append A's complete unused Selector set after B's existing set.
+
+After the choice, snapshot-double the composite's current PWR and HP exactly once. Ability execution remains A then B on every activation. Later parent copies still add only literal `+1/+2`; doubling is not a multiplier.
+
+Run persistence carries `runVersion: 2`. Deserialization rejects missing versions, unsupported versions, malformed v2 units, and legacy team `level`, `stacks`, or `absorbed` fields with an actionable fresh-run/explicit-migration message. It never silently maps old levels or absorbed slots onto Awakening/fusion. Ordered provenance, status merge, meter, choice, doubled guard, stats, decisions, events, and server replay extraction all round-trip deterministically.
+
+Out of scope: recursive fusion, authored Ability upgrades, a third Unit axis, arbitrary permutations, broader economy retuning, and dedicated compact-phone redesign.
+
+## 8a. Other out-of-scope pointers
+
 - **Creation pipeline:** LLM-to-canonical-recipe interface; sim gate (candidate content vs live meta, win-rate band); vote gate (fun/flavor only).
-- **Client:** a replay renderer over the event log; chosen last.
 
 ## 9. Stress-test resolutions (2026-06-10)
 

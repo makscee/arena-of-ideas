@@ -75,7 +75,7 @@ const esc = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
 function statusTag(def: StatusDef): string {
-  const mods = (["hp", "pwr"] as const)
+  const mods = (["pwr", "hp"] as const)
     .flatMap((stat) => def.statMods?.[stat] ? [`${def.statMods[stat]! > 0 ? "+" : ""}${def.statMods[stat]} ${stat}/stack`] : []);
   return mods.length > 0 ? `stacks · ${mods.join(" · ")}` : "stacks";
 }
@@ -166,6 +166,8 @@ export interface UnitInspectArgs {
   pwr: string | number;
   /** Optional non-card state/explanation (dead, level, shop price…). */
   state?: string | undefined;
+  /** Run progression repeated on the full shared card for touch/resume reading. */
+  progression?: { state: string; progress: string } | undefined;
   def: UnitDef | undefined;
   /** Attached (battle) or initial (shop) statuses, in order. */
   statuses: { status: string; stacks: number }[];
@@ -182,7 +184,7 @@ export interface UnitInspectArgs {
 /** Render the inspector body: head, abilities, statuses — every description
  * derived from the DSL data by the kernel's describe helpers. */
 export function renderUnitInspect(root: HTMLElement, args: UnitInspectArgs): void {
-  const { title, hp, pwr, state, def, statuses, registry, abilities: abilityRegistry, highlight, silenced, noStatuses } = args;
+  const { title, hp, pwr, state, progression, def, statuses, registry, abilities: abilityRegistry, highlight, silenced, noStatuses } = args;
   const rows: string[] = [];
   const abilities = def !== undefined ? unitAbilities(def, abilityRegistry) : [];
   const primary = abilities[0];
@@ -207,6 +209,7 @@ export function renderUnitInspect(root: HTMLElement, args: UnitInspectArgs): voi
     ...(primaryChips?.target !== undefined ? { target: primaryChips.target } : {}),
     ...(primaryChips?.action !== undefined ? { action: primaryChips.action } : {}),
     ...(silenced !== undefined ? { silenced } : {}),
+    ...(progression !== undefined ? { progression: progression.state, progress: progression.progress } : {}),
     attrs: "data-inspector-card",
     title,
   }));

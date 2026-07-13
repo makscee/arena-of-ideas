@@ -309,7 +309,7 @@ describe("autoplay", () => {
     expect(report).toContain("Run auto-42 (seed 42):");
     expect(report).toContain("Run auto-43 (seed 43):");
     expect(report).toMatch(/(crowned|challenge lost|out of lives) at round \d+ — \d+W\/\d+L\/\d+D/);
-    expect(report).toMatch(/line: {2}\w+ L\d+/);
+    expect(report).toMatch(/line: {2}\w+ (Base|Awakened) \(\d+ PWR \/ \d+ HP\)/);
     expect(report).toMatch(/Ladder: champion \S+ \| pools r1:\d+/);
   });
 });

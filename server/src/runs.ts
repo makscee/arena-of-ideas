@@ -263,7 +263,7 @@ function replay(deps: SubmitDeps, userId: string, raw: string): Rederived {
     serves.set(row.round, list);
   }
 
-  const steps = extractSteps(claimed.log);
+  const steps = extractReplaySteps(claimed.log);
   const view = new ReplayLadderView(store, userId, serves);
   let state = initRun({ seed: claimed.seed, runId: claimed.runId, pool: content.pool, statuses: content.statuses, abilities: content.abilities });
   for (const step of steps) {
@@ -291,14 +291,16 @@ function replay(deps: SubmitDeps, userId: string, raw: string): Rederived {
  * admissible on the shared ladder: a same-floor climb (ladderFight) or a boss
  * challenge (challengeBoss). An explicit-opponent fight() leaves a FightFought
  * with no ladder event before it, and is rejected by name. */
-type ReplayStep =
+export type ReplayStep =
   | { kind: "buy"; offer: number }
   | { kind: "reroll" }
   | { kind: "reorder"; from: number; to: number }
+  | { kind: "fuse"; primary: number; secondary: number }
+  | { kind: "awakenFusion"; path: "trigger" | "selector" }
   | { kind: "ladder"; claimedSeq: number; championRunId: string | null }
   | { kind: "challengeBoss"; claimedSeq: number; championRunId: string | null };
 
-function extractSteps(log: readonly RunEvent[]): ReplayStep[] {
+export function extractReplaySteps(log: readonly RunEvent[]): ReplayStep[] {
   const steps: ReplayStep[] = [];
   log.forEach((e, i) => {
     switch (e.type) {
@@ -310,6 +312,16 @@ function extractSteps(log: readonly RunEvent[]): ReplayStep[] {
         break;
       case "Reordered":
         steps.push({ kind: "reorder", from: e.from, to: e.to });
+        break;
+      case "Fused": {
+        const primary = replayLineNames(log, i).indexOf(e.first);
+        const secondary = replayLineNames(log, i).indexOf(e.second);
+        if (primary < 0 || secondary < 0) throw new SubmissionRejected(`fusion parents ${e.first} + ${e.second} are not both on the replay line`);
+        steps.push({ kind: "fuse", primary, secondary });
+        break;
+      }
+      case "FusionAwakened":
+        steps.push({ kind: "awakenFusion", path: e.path });
         break;
       case "Snapshotted": {
         // The event after the snapshot says which ladder move the run claims:
@@ -352,6 +364,31 @@ function extractSteps(log: readonly RunEvent[]): ReplayStep[] {
     }
   });
   return steps;
+}
+
+/** Recover the ordered line immediately before event `end` using only prior
+ * decision events. This keeps server replay extraction independent of claimed
+ * final team indices while preserving explicit fusion order. */
+function replayLineNames(log: readonly RunEvent[], end: number): string[] {
+  const line: string[] = [];
+  for (let i = 0; i < end; i++) {
+    const e = log[i]!;
+    if (e.type === "Bought") {
+      if (!line.includes(e.unit)) line.push(e.unit);
+    } else if (e.type === "Reordered") {
+      const [u] = line.splice(e.from, 1);
+      if (u !== undefined) line.splice(e.to, 0, u);
+    } else if (e.type === "Fused") {
+      const a = line.indexOf(e.first);
+      const b = line.indexOf(e.second);
+      if (a >= 0 && b >= 0) {
+        const low = Math.min(a, b);
+        line.splice(Math.max(a, b), 1);
+        line.splice(low, 1, e.name);
+      }
+    }
+  }
+  return line;
 }
 
 /** The LadderStore the replay runs against: per fight, the historical view

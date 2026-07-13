@@ -24,6 +24,7 @@ import {
 } from "./lib.mjs";
 import {
   DEFAULT_RUN_POOL,
+  STACK_THRESHOLD,
   TOWER_HEIGHT,
   initRun,
   serializeRun,
@@ -35,7 +36,7 @@ const disarm = armGuard();
 const browser = await launch();
 
 const byName = Object.fromEntries(DEFAULT_RUN_POOL.map((d) => [d.name, d]));
-const unitOf = (def, stacks = 1, level = 1) => ({ name: def.name, base: { ...def.base }, level, stacks, def });
+const unitOf = (def, copies = 1) => ({ name: def.name, base: { ...def.base }, kind: "base", copies, progression: copies >= STACK_THRESHOLD ? "Awakened" : "Base", def });
 
 /** A real initRun state, hand-shaped to stand on `round` with a fielded line and
  * gold (so both the climb and the challenge controls render and are live). */

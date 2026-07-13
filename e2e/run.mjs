@@ -366,6 +366,7 @@ try {
         { name: "walk-challenge", file: "shots-challenge.mjs", evidence: "walk-challenge" },
         { name: "walk-codex", file: "shots-codex.mjs", evidence: "walk-codex" },
         { name: "walk-aoi60", file: "shots-aoi60.mjs", evidence: "aoi60-acceptance" },
+        { name: "walk-aoi61", file: "shots-aoi61.mjs", evidence: "aoi61-awakening-fusion" },
         { name: "walk-motion", file: "motion-frames.mjs", evidence: "walk-motion" },
       );
     }

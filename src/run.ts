@@ -15,10 +15,8 @@
 import { battle, TEAM_SIZE } from "./battle.js";
 import type { LadderStore, TeamSnapshot } from "./ladder.js";
 import { rngStep } from "./rng.js";
-import { assertValidContent, assertValidPool } from "./validate.js";
+import { assertValidContent, assertValidPool, ValidationError } from "./validate.js";
 import {
-  LEVEL_HP_GROWTH,
-  LEVEL_PWR_GROWTH,
   REROLL_COST,
   STACK_THRESHOLD,
   STARTING_GOLD,
@@ -49,21 +47,39 @@ export interface RunInput {
 }
 
 /** A unit on the run's line: the drafted def plus everything the shop grew on it. */
+export type AwakeningPath = "trigger" | "selector";
+export type BaseProgression = "Base" | "Awakened";
+
+export interface FusionParent {
+  name: string;
+  def: UnitDef;
+}
+
+export interface FusionProgress {
+  /** Ordered provenance. Parent 0 supplies the initial Trigger set and Ability 0. */
+  parents: [FusionParent, FusionParent];
+  /** Fresh copies bought after fusion; copies of either parent feed this meter. */
+  meter: number;
+  /** Permanent once chosen. Absence at meter 3 is the blocking choice state. */
+  awakening?: AwakeningPath;
+  /** Guards the snapshot double independently of presentation/state. */
+  doubled: boolean;
+}
+
+/** A drafted combatant. Run progression is deliberately separate from the
+ * battle DSL's optional content `level`: persisted run units never carry the
+ * removed level/stacks/absorbed ladder. */
 export interface RunUnit {
   name: string;
-  /** Grown base — level growth bakes in here; the content def stays untouched. */
+  /** Current PWR/HP after every literal duplicate increment and any one-time double. */
   base: Stats;
-  level: number;
-  /** Copies absorbed since the last level-up (1..STACK_THRESHOLD−1). */
-  stacks: number;
-  /** The drafted definition: canonical recipe context, action ref, and initial statuses. */
+  kind: "base" | "composite";
+  /** Total copies for a base Unit. A composite instead uses fusion.meter. */
+  copies: number;
+  progression: BaseProgression;
+  /** Canonical battle recipe. A composite holds its ordered merged recipe here. */
   def: UnitDef;
-  /** Ability ids fused IN from distinct-ability parents (PRD #081 fusion). The
-   * unit still presents the primary Ability/colour; these are
-   * the absorbed parents' abilities, recorded as the slots they will ride as —
-   * the slot-stacking mechanic and its budget are deferred (SPEC §8), so they do
-   * not affect battle in v1 (toBattleTeam emits only `def`). Empty unless fused. */
-  absorbed?: string[];
+  fusion?: FusionProgress;
 }
 
 /** A run accepts decisions while "active"; an "over" run rejects them all. */
@@ -89,7 +105,11 @@ export type RunStatus = "active" | "over";
  *    past the champion into a free seat. */
 export type RunEndReason = "out-of-lives" | "crown" | "seated" | "challenge-lost" | "overshoot";
 
+export const RUN_PERSISTENCE_VERSION = 2;
+
 export interface RunState {
+  /** Explicit boundary: v1 level/stacks/absorbed payloads are never reinterpreted. */
+  runVersion: typeof RUN_PERSISTENCE_VERSION;
   seed: number;
   runId: string;
   status: RunStatus;
@@ -117,25 +137,27 @@ export interface RunState {
 // ---------- decisions & the run log ----------
 
 export type RunDecision =
-  | { kind: "buy"; offer: number } // index into the current offers
+  | { kind: "buy"; offer: number }
   | { kind: "reroll" }
-  | { kind: "reorder"; from: number; to: number } // line positions
-  | { kind: "fuse"; primary: number; secondary: number } // fuse two distinct-ability units (PRD #081)
-  | { kind: "fight"; opponent: UnitDef[] } // an explicit opponent; ladderFight draws its own from the store
-  | { kind: "challengeBoss" }; // a store-taking, terminal move — like ladderFight, invoked directly, not through applyDecision
+  | { kind: "reorder"; from: number; to: number }
+  | { kind: "fuse"; primary: number; secondary: number }
+  | { kind: "awakenFusion"; path: AwakeningPath }
+  | { kind: "fight"; opponent: UnitDef[] }
+  | { kind: "challengeBoss" };
 
 export type RunEventBody =
   | { type: "RunStart"; seed: number; runId: string; gold: number; lives: number }
   | { type: "RoundStarted"; round: number; income: number; gold: number }
   | { type: "ShopRolled"; offers: string[] }
-  | { type: "Bought"; offer: number; unit: string; cost: number; gold: number; stacks: number }
-  | { type: "LeveledUp"; unit: string; level: number; hp: number; pwr: number }
+  | { type: "Bought"; offer: number; unit: string; cost: number; gold: number; copies: number; pwr: number; hp: number }
+  | { type: "DuplicateGrown"; unit: string; pwrDelta: 1; hpDelta: 2; pwr: number; hp: number }
+  | { type: "Awakened"; unit: string; copies: number }
   | { type: "Rerolled"; cost: number; gold: number }
   | { type: "Reordered"; from: number; to: number }
-  // Fusion (PRD #081): two units of DISTINCT abilities combine into one that
-  // presents a single Ability/colour (the primary's). `ability` is the event's
-  // (primary's) ability id; `absorbed` is the secondary's, recorded as a slot.
-  | { type: "Fused"; primary: string; absorbed: string; ability: string; absorbedAbility: string }
+  | { type: "Fused"; first: string; second: string; name: string; abilities: [string, string]; pwr: number; hp: number }
+  | { type: "FusionCopyAdded"; unit: string; parent: string; meter: number; pwrDelta: 1; hpDelta: 2; pwr: number; hp: number }
+  | { type: "FusionAwakeningRequired"; unit: string; meter: 3 }
+  | { type: "FusionAwakened"; unit: string; path: AwakeningPath; pwr: number; hp: number }
   | { type: "FightFought"; battleSeed: number; winner: Side | "draw"; turns: number; lives: number }
   // ladder events — the run's side of every store mutation and draw, so the
   // run log alone explains a ladder fight (the envelope's round = the pool).
@@ -207,6 +229,7 @@ export function initRun(input: RunInput): RunState {
   const abilities = input.abilities ?? {};
   assertValidPool(input.pool, statuses, abilities, "pool");
   const s: RunState = {
+    runVersion: RUN_PERSISTENCE_VERSION,
     seed: input.seed,
     runId: input.runId ?? `run-${input.seed}`,
     status: "active",
@@ -226,46 +249,60 @@ export function initRun(input: RunInput): RunState {
   return s;
 }
 
-/** Buy an offer: a new name joins the line; a copy of an owned unit stacks onto it,
- * and at STACK_THRESHOLD copies the stacks fuse into a level. */
+/** Buy an offer. First copy joins at 1/3. Every later copy immediately grants
+ * +1 PWR/+2 HP. Copies of either ordered parent route into its composite. */
 export function buy(state: RunState, offer: number): RunState {
-  assertActive(state, "buy");
+  assertActionable(state, "buy");
   const def = state.offers[offer];
-  if (def === undefined) {
-    throw new InvalidDecisionError("buy", `no offer at index ${offer} (shop has ${state.offers.length})`);
-  }
-  if (state.gold < UNIT_COST) {
-    throw new InvalidDecisionError("buy", `${def.name} costs ${UNIT_COST} gold, have ${state.gold}`);
-  }
-  const target = state.team.findIndex((u) => u.name === def.name);
+  if (def === undefined) throw new InvalidDecisionError("buy", `no offer at index ${offer} (shop has ${state.offers.length})`);
+  if (state.gold < UNIT_COST) throw new InvalidDecisionError("buy", `${def.name} costs ${UNIT_COST} gold, have ${state.gold}`);
+
+  const compositeTarget = state.team.findIndex((u) =>
+    u.kind === "composite" && u.fusion!.parents.some((p) => p.name === def.name),
+  );
+  const baseTarget = state.team.findIndex((u) => u.kind === "base" && u.name === def.name);
+  const target = compositeTarget >= 0 ? compositeTarget : baseTarget;
   if (target < 0 && state.team.length >= TEAM_SIZE) {
     throw new InvalidDecisionError("buy", `the line is full (${TEAM_SIZE}) and there is no ${def.name} to stack onto`);
   }
+
   const s = clone(state);
   s.offers.splice(offer, 1);
   s.gold -= UNIT_COST;
   if (target < 0) {
-    s.team.push({ name: def.name, base: { ...def.base }, level: def.level ?? 1, stacks: 1, def });
-    emit(s, { type: "Bought", offer, unit: def.name, cost: UNIT_COST, gold: s.gold, stacks: 1 });
-  } else {
-    const u = s.team[target]!;
-    u.stacks += 1;
-    emit(s, { type: "Bought", offer, unit: u.name, cost: UNIT_COST, gold: s.gold, stacks: u.stacks });
-    if (u.stacks >= STACK_THRESHOLD) {
-      // The copies fuse: one level, stat growth baked into the unit's grown base.
-      u.stacks = 1;
-      u.level += 1;
-      u.base.hp += LEVEL_HP_GROWTH;
-      u.base.pwr += LEVEL_PWR_GROWTH;
-      emit(s, { type: "LeveledUp", unit: u.name, level: u.level, hp: u.base.hp, pwr: u.base.pwr });
+    const u: RunUnit = { name: def.name, base: { ...def.base }, kind: "base", copies: 1, progression: "Base", def };
+    s.team.push(u);
+    emit(s, { type: "Bought", offer, unit: def.name, cost: UNIT_COST, gold: s.gold, copies: 1, pwr: u.base.pwr, hp: u.base.hp });
+    return s;
+  }
+
+  const u = s.team[target]!;
+  u.base.pwr += 1;
+  u.base.hp += 2;
+  if (u.kind === "composite") {
+    const fusion = u.fusion!;
+    if (fusion.meter < STACK_THRESHOLD) fusion.meter += 1;
+    emit(s, { type: "Bought", offer, unit: u.name, cost: UNIT_COST, gold: s.gold, copies: fusion.meter, pwr: u.base.pwr, hp: u.base.hp });
+    emit(s, { type: "FusionCopyAdded", unit: u.name, parent: def.name, meter: fusion.meter, pwrDelta: 1, hpDelta: 2, pwr: u.base.pwr, hp: u.base.hp });
+    if (fusion.meter === STACK_THRESHOLD && fusion.awakening === undefined) {
+      emit(s, { type: "FusionAwakeningRequired", unit: u.name, meter: 3 });
     }
+    return s;
+  }
+
+  u.copies += 1;
+  emit(s, { type: "Bought", offer, unit: u.name, cost: UNIT_COST, gold: s.gold, copies: u.copies, pwr: u.base.pwr, hp: u.base.hp });
+  emit(s, { type: "DuplicateGrown", unit: u.name, pwrDelta: 1, hpDelta: 2, pwr: u.base.pwr, hp: u.base.hp });
+  if (u.copies === STACK_THRESHOLD) {
+    u.progression = "Awakened";
+    emit(s, { type: "Awakened", unit: u.name, copies: u.copies });
   }
   return s;
 }
 
 /** Refresh the shop for REROLL_COST gold — a fresh seeded draw, same round size. */
 export function reroll(state: RunState): RunState {
-  assertActive(state, "reroll");
+  assertActionable(state, "reroll");
   if (state.gold < REROLL_COST) {
     throw new InvalidDecisionError("reroll", `a reroll costs ${REROLL_COST} gold, have ${state.gold}`);
   }
@@ -278,7 +315,7 @@ export function reroll(state: RunState): RunState {
 
 /** Move a unit to a new line position (index 0 is the front in battle). */
 export function reorder(state: RunState, from: number, to: number): RunState {
-  assertActive(state, "reorder");
+  assertActionable(state, "reorder");
   for (const [label, i] of [["from", from], ["to", to]] as const) {
     if (!Number.isInteger(i) || i < 0 || i >= state.team.length) {
       throw new InvalidDecisionError("reorder", `${label} ${i} is outside the line (0..${state.team.length - 1})`);
@@ -291,41 +328,95 @@ export function reorder(state: RunState, from: number, to: number): RunState {
   return s;
 }
 
-/** Fuse two units on the line (PRD #081). The gate: two units may fuse **iff
- * their ability ids differ** — fusion combines distinct colours/mechanics, so a
- * same-ability pair is rejected (that is what copy-stacking-into-levels is for,
- * and STACK_THRESHOLD is untouched). The result presents **exactly one ability
- * (one colour)**: it keeps the primary (the unit at `primary`, by convention the
- * front/kept one) — its ability, colour, stats, level, statuses — and the
- * secondary is consumed, its ability id recorded on the fused unit's `absorbed`
- * slots. The slot-stacking *mechanic* and its budget are deferred (SPEC §8): in
- * v1 the absorbed ability rides as data only and does not affect battle. */
+/** Fuse an explicit ordered pair. Only Awakened, unfused bases qualify. */
 export function fuse(state: RunState, primary: number, secondary: number): RunState {
-  assertActive(state, "fuse");
+  assertActionable(state, "fuse");
   for (const [label, i] of [["primary", primary], ["secondary", secondary]] as const) {
     if (!Number.isInteger(i) || i < 0 || i >= state.team.length) {
       throw new InvalidDecisionError("fuse", `${label} ${i} is outside the line (0..${state.team.length - 1})`);
     }
   }
-  if (primary === secondary) {
-    throw new InvalidDecisionError("fuse", "a unit cannot fuse with itself — pick two distinct line positions");
+  if (primary === secondary) throw new InvalidDecisionError("fuse", "a unit cannot fuse with itself — pick two distinct line positions");
+  const first = state.team[primary]!;
+  const second = state.team[secondary]!;
+  if (first.kind !== "base" || second.kind !== "base") {
+    throw new InvalidDecisionError("fuse", "a composite cannot fuse again — choose two unfused base Units");
   }
-  const p = state.team[primary]!;
-  const sec = state.team[secondary]!;
-  if (primaryAbilityId(p.def) === primaryAbilityId(sec.def)) {
+  if (first.progression !== "Awakened" || second.progression !== "Awakened") {
+    throw new InvalidDecisionError("fuse", "both base Units must be Awakened (3 total copies) before fusion");
+  }
+  const firstAbilities = draftAbilityIds(first.def);
+  const secondAbilities = draftAbilityIds(second.def);
+  if (firstAbilities.length !== 1 || secondAbilities.length !== 1) {
+    const invalid = firstAbilities.length !== 1 ? first : second;
+    const count = invalid === first ? firstAbilities.length : secondAbilities.length;
     throw new InvalidDecisionError(
       "fuse",
-      `${p.name} and ${sec.name} share the ability "${primaryAbilityId(p.def)}" — fusion needs distinct abilities (same-ability copies stack into a level instead)`,
+      `${invalid.name} carries ${count} Abilities; each fusion parent must carry exactly one Ability. Fusion was refused without changing or dropping either parent's data`,
     );
   }
+  const firstAbility = firstAbilities[0]!;
+  const secondAbility = secondAbilities[0]!;
+  if (firstAbility === secondAbility) {
+    throw new InvalidDecisionError("fuse", `${first.name} and ${second.name} share Ability "${firstAbility}" — fusion needs different Abilities`);
+  }
+
+  const name = `${first.name} + ${second.name}`;
+  const mergedStatuses = mergeIntrinsicStatuses(first.def.statuses, second.def.statuses);
+  const compositeDef: UnitDef = {
+    name,
+    base: { hp: first.base.hp + second.base.hp, pwr: first.base.pwr + second.base.pwr },
+    triggers: structuredClone(first.def.triggers ?? []),
+    selectors: structuredClone(second.def.selectors ?? []),
+    abilities: [firstAbility, secondAbility],
+    ...(first.def.condition !== undefined ? { condition: structuredClone(first.def.condition) } : {}),
+    ...(mergedStatuses.length > 0 ? { statuses: mergedStatuses } : {}),
+  };
+  const composite: RunUnit = {
+    name,
+    base: { ...compositeDef.base },
+    kind: "composite",
+    copies: 0,
+    progression: "Base",
+    def: compositeDef,
+    fusion: {
+      parents: [
+        { name: first.name, def: structuredClone(first.def) },
+        { name: second.name, def: structuredClone(second.def) },
+      ],
+      meter: 0,
+      doubled: false,
+    },
+  };
   const s = clone(state);
-  const keep = s.team[primary]!;
-  // Preserve the pre-AOI-58 fusion mechanic: the primary recipe stays intact;
-  // the secondary action id is only recorded as an absorbed slot. Ordered-pair
-  // execution is deliberately deferred to AOI-S20 (SPEC §8).
-  keep.absorbed = [...(keep.absorbed ?? []), primaryAbilityId(sec.def), ...(sec.absorbed ?? [])];
-  s.team.splice(secondary, 1);
-  emit(s, { type: "Fused", primary: keep.name, absorbed: sec.name, ability: primaryAbilityId(keep.def), absorbedAbility: primaryAbilityId(sec.def) });
+  const low = Math.min(primary, secondary);
+  const high = Math.max(primary, secondary);
+  s.team.splice(high, 1);
+  s.team.splice(low, 1, composite);
+  emit(s, { type: "Fused", first: first.name, second: second.name, name, abilities: [firstAbility, secondAbility], pwr: composite.base.pwr, hp: composite.base.hp });
+  return s;
+}
+
+/** Resolve the compulsory fusion Awakening. Existing axis entries stay first,
+ * then the complete unused parent set is appended; current stats snapshot-double. */
+export function awakenFusion(state: RunState, path: AwakeningPath): RunState {
+  assertActive(state, "awakenFusion");
+  const index = pendingFusionIndex(state);
+  if (index < 0) throw new InvalidDecisionError("awakenFusion", "no fusion Awakening choice is pending");
+  if (path !== "trigger" && path !== "selector") throw new InvalidDecisionError("awakenFusion", `unknown path "${String(path)}"`);
+  const s = clone(state);
+  const u = s.team[index]!;
+  const fusion = u.fusion!;
+  if (fusion.awakening !== undefined || fusion.doubled) throw new InvalidDecisionError("awakenFusion", `${u.name} already chose its permanent Awakening path`);
+  const [first, second] = fusion.parents;
+  if (path === "trigger") u.def.triggers = [...(u.def.triggers ?? []), ...structuredClone(second.def.triggers ?? [])];
+  else u.def.selectors = [...(u.def.selectors ?? []), ...structuredClone(first.def.selectors ?? [])];
+  fusion.awakening = path;
+  fusion.doubled = true;
+  u.progression = "Awakened";
+  u.base.pwr *= 2;
+  u.base.hp *= 2;
+  emit(s, { type: "FusionAwakened", unit: u.name, path, pwr: u.base.pwr, hp: u.base.hp });
   return s;
 }
 
@@ -335,7 +426,7 @@ export function fuse(state: RunState, primary: number, secondary: number): RunSt
  * enters the run log — the full battle log is reproducible from the logged
  * battleSeed and the teams. */
 export function fight(state: RunState, opponent: UnitDef[]): RunState {
-  assertActive(state, "fight");
+  assertActionable(state, "fight");
   if (state.team.length === 0) {
     throw new InvalidDecisionError("fight", "the line is empty — buy a unit first");
   }
@@ -369,7 +460,7 @@ export function fight(state: RunState, opponent: UnitDef[]): RunState {
  * the run layer's one mutable boundary: it gains the ghost even though the
  * returned RunState is a fresh value as always. */
 export function ladderFight(state: RunState, ladder: LadderStore): RunState {
-  assertActive(state, "fight");
+  assertActionable(state, "fight");
   if (state.team.length === 0) {
     throw new InvalidDecisionError("fight", "the line is empty — buy a unit first");
   }
@@ -456,7 +547,7 @@ export function ladderFight(state: RunState, ladder: LadderStore): RunState {
  * challenger's ghost and, on a win, the new seat (and, on an ascend, the new
  * champion's pool-ghost) — while the returned RunState is a fresh value. */
 export function challengeBoss(state: RunState, ladder: LadderStore): RunState {
-  assertActive(state, "challengeBoss");
+  assertActionable(state, "challengeBoss");
   if (state.team.length === 0) {
     throw new InvalidDecisionError("challengeBoss", "the line is empty — buy a unit first");
   }
@@ -563,6 +654,8 @@ export function applyDecision(state: RunState, d: RunDecision): RunState {
       return reorder(state, d.from, d.to);
     case "fuse":
       return fuse(state, d.primary, d.secondary);
+    case "awakenFusion":
+      return awakenFusion(state, d.path);
     case "fight":
       return fight(state, d.opponent);
     case "challengeBoss":
@@ -594,52 +687,119 @@ export function runToJSONL(log: readonly RunEvent[]): string {
  * No transition compares by identity (the shop stacks copies by *name*), so a
  * revived run continues byte-identically — pinned by test. */
 export function serializeRun(state: RunState): string {
-  // RunState predates versioned content envelopes and remains byte-compatible.
-  // Content files/candidates cross the explicit migrateContentEnvelope boundary;
-  // never stamp an arbitrary live runtime graph as canonical here.
+  if (state.runVersion !== RUN_PERSISTENCE_VERSION) {
+    throw new Error(`cannot serialize run version ${String(state.runVersion)}; expected ${RUN_PERSISTENCE_VERSION}`);
+  }
   return JSON.stringify(state);
 }
 
 /** Revive a serialized run. Structure is checked loudly (a corrupt store must
  * never become a silently wrong run) and the pool re-passes the content gate,
  * the initRun way — a revived run holds initRun's guarantees. */
+const REVIVE_GUIDANCE = "Start a fresh run or use an explicit migration tool.";
+
+function reviveError(reason: string): Error {
+  return new Error(`${reason} ${REVIVE_GUIDANCE}`);
+}
+
+/** Revive only an intact v2 run. A stored payload is hostile input: every
+ * progression object and embedded UnitDef is checked before it can reach a
+ * transition. Old level/stacks/absorbed state is never guessed into v2. */
 export function deserializeRun(raw: string): RunState {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch (err) {
-    throw new Error(`stored run is not valid JSON: ${(err as Error).message}`);
+    throw reviveError(`stored run is not valid JSON: ${(err as Error).message}.`);
   }
-  const s = parsed as Partial<RunState>;
+  if (typeof parsed !== "object" || parsed === null) {
+    throw reviveError("stored run is not a RunState — refusing to revive it.");
+  }
+  const s = parsed as Partial<RunState> & { team?: unknown[] };
+  const legacyFields: string[] = [];
+  if (Array.isArray(s.team)) {
+    s.team.forEach((unit, i) => {
+      if (typeof unit !== "object" || unit === null) return;
+      for (const field of ["level", "stacks", "absorbed"] as const) {
+        if (field in unit) legacyFields.push(`team[${i}].${field}`);
+      }
+    });
+  }
+  if (legacyFields.length > 0) {
+    throw reviveError(
+      `stored run contains legacy team progression field${legacyFields.length === 1 ? "" : "s"} ${legacyFields.join(", ")}. ` +
+      "Legacy level/stacks/absorbed state cannot be reinterpreted as Awakening.",
+    );
+  }
+  if (s.runVersion !== RUN_PERSISTENCE_VERSION) {
+    throw reviveError(
+      `stored run version is ${s.runVersion === undefined ? "missing/unversioned" : String(s.runVersion)}; expected ${RUN_PERSISTENCE_VERSION}.`,
+    );
+  }
   const intact =
-    typeof s === "object" &&
-    s !== null &&
     (s.status === "active" || s.status === "over") &&
-    [s.seed, s.round, s.gold, s.lives, s.rng].every((n) => typeof n === "number") &&
-    typeof s.runId === "string" &&
+    [s.seed, s.round, s.gold, s.lives, s.rng].every((n) => typeof n === "number" && Number.isFinite(n)) &&
+    typeof s.runId === "string" && s.runId.length > 0 &&
     [s.team, s.offers, s.log, s.pool].every(Array.isArray) &&
-    typeof s.statuses === "object" &&
-    s.statuses !== null &&
-    typeof s.abilities === "object" &&
-    s.abilities !== null;
-  if (!intact) throw new Error("stored run is not a RunState — refusing to revive it");
-  assertValidPool(s.pool!, s.statuses!, s.abilities!, "pool");
+    typeof s.statuses === "object" && s.statuses !== null && !Array.isArray(s.statuses) &&
+    typeof s.abilities === "object" && s.abilities !== null && !Array.isArray(s.abilities);
+  if (!intact) throw reviveError("stored run is not a structurally intact version-2 RunState — refusing to revive it.");
+
+  const statuses = s.statuses as StatusRegistry;
+  const abilities = s.abilities as AbilityRegistry;
+  try {
+    assertValidPool(s.pool, statuses, abilities, "pool");
+    for (const [i, offer] of (s.offers as unknown[]).entries()) {
+      assertValidContent([offer], statuses, abilities, `offers[${i}]`);
+      if (draftAbilityIds(offer as UnitDef).length !== 1) {
+        throw new Error(`offers[${i}] must be a singleton-Ability draft Unit`);
+      }
+    }
+    for (const [i, value] of (s.team as unknown[]).entries()) {
+      const problem = runUnitProblem(value);
+      if (problem !== undefined) throw new Error(`team[${i}] ${problem}`);
+      const unit = value as RunUnit;
+      assertValidContent([unit.def], statuses, abilities, `team[${i}].def`);
+      for (const [j, parent] of (unit.fusion?.parents ?? []).entries()) {
+        assertValidContent([parent.def], statuses, abilities, `team[${i}].fusion.parents[${j}].def`);
+      }
+    }
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      throw new ValidationError([
+        ...err.issues,
+        { path: "stored run", message: `refusing to revive invalid v2 content. ${REVIVE_GUIDANCE}` },
+      ]);
+    }
+    throw reviveError(`stored run v2 content/progression is invalid: ${(err as Error).message}.`);
+  }
   return s as RunState;
 }
 
 /** The line as battle() input: the drafted def with the grown base and level on it.
  * This projection is the run layer's whole interface to the battle kernel. */
 export function toBattleTeam(team: readonly RunUnit[]): UnitDef[] {
-  return team.map((u) => ({ ...u.def, name: u.name, base: { ...u.base }, level: u.level }));
+  return team.map((u) => ({ ...u.def, name: u.name, base: { ...u.base } }));
 }
 
 // ---------- internals ----------
 
 /** Every transition's first check: an over run accepts no further decisions. */
 function assertActive(state: RunState, kind: RunDecision["kind"]): void {
-  if (state.status === "over") {
-    throw new InvalidDecisionError(kind, `the run is over (${state.endedBy})`);
+  if (state.status === "over") throw new InvalidDecisionError(kind, `the run is over (${state.endedBy})`);
+}
+
+/** The third post-fusion copy blocks every other direct/store-taking action. */
+function assertActionable(state: RunState, kind: Exclude<RunDecision["kind"], "awakenFusion">): void {
+  assertActive(state, kind);
+  const pending = state.team[pendingFusionIndex(state)];
+  if (pending !== undefined) {
+    throw new InvalidDecisionError(kind, `${pending.name} must choose Trigger path or Selector path before any other action`);
   }
+}
+
+function pendingFusionIndex(state: RunState): number {
+  return state.team.findIndex((u) => u.kind === "composite" && u.fusion!.meter >= STACK_THRESHOLD && u.fusion!.awakening === undefined);
 }
 
 /** Run one battle against `opponent` and record it: the battle seed comes off
@@ -680,7 +840,7 @@ function endRun(s: RunState, reason: RunEndReason): void {
 
 /** Clone the layers a transition may touch, so it never mutates its input. */
 function clone(s: RunState): RunState {
-  return { ...s, team: s.team.map((u) => ({ ...u, base: { ...u.base } })), offers: [...s.offers], log: [...s.log] };
+  return { ...s, team: s.team.map((u) => structuredClone(u)), offers: [...s.offers], log: [...s.log] };
 }
 
 function emit(s: RunState, body: RunEventBody): void {
@@ -704,4 +864,101 @@ function primaryAbilityId(def: UnitDef): string {
   const id = def.abilities?.[0] ?? def.ability;
   if (!id) throw new Error(`unit "${def.name}" has no Ability`);
   return id;
+}
+
+/** The only legal draft/base shape: one canonical ref, or the accepted
+ * grammar-v1 singular ref. Mixed or malformed representations return none so
+ * fusion can refuse without choosing an Ability and silently dropping data. */
+function draftAbilityIds(def: UnitDef): string[] {
+  if (def.ability !== undefined) {
+    return def.abilities === undefined && typeof def.ability === "string" && def.ability.length > 0 ? [def.ability] : [];
+  }
+  return Array.isArray(def.abilities) && def.abilities.every((id) => typeof id === "string" && id.length > 0)
+    ? [...def.abilities]
+    : [];
+}
+
+function mergeIntrinsicStatuses(a: UnitDef["statuses"], b: UnitDef["statuses"]): NonNullable<UnitDef["statuses"]> {
+  const merged: NonNullable<UnitDef["statuses"]> = [];
+  const byName = new Map<string, number>();
+  for (const source of [a ?? [], b ?? []]) {
+    for (const item of source) {
+      const at = byName.get(item.status);
+      if (at === undefined) {
+        byName.set(item.status, merged.length);
+        merged.push({ ...item });
+      } else {
+        merged[at]!.stacks += item.stacks;
+      }
+    }
+  }
+  return merged;
+}
+
+function sameStrings(actual: readonly string[] | undefined, expected: readonly string[]): boolean {
+  return actual !== undefined && actual.length === expected.length && actual.every((value, i) => value === expected[i]);
+}
+
+/** Return the first structural/invariant failure without ever dereferencing an
+ * unchecked parent. Semantic UnitDef validation follows in deserializeRun. */
+function runUnitProblem(value: unknown): string | undefined {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return "must be an object";
+  const u = value as Partial<RunUnit> & Record<string, unknown>;
+  if (typeof u.name !== "string" || u.name.length === 0) return "needs a non-empty name";
+  if (typeof u.base !== "object" || u.base === null || Array.isArray(u.base)) return "needs current PWR/HP stats";
+  if (typeof u.def !== "object" || u.def === null || Array.isArray(u.def)) return "needs a UnitDef object";
+  const def = u.def as UnitDef;
+  if (def.name !== u.name) return "name must match def.name";
+  if (u.kind !== "base" && u.kind !== "composite") return "kind must be base or composite";
+  if (u.progression !== "Base" && u.progression !== "Awakened") return "progression must be Base or Awakened";
+  if (!Number.isInteger(u.copies) || (u.copies as number) < 0) return "copies must be a non-negative integer";
+  const base = u.base as Partial<Stats>;
+  if (![base.pwr, base.hp].every((n) => typeof n === "number" && Number.isInteger(n) && n >= 0)) {
+    return "current PWR/HP must be non-negative integers";
+  }
+
+  if (u.kind === "base") {
+    if (u.fusion !== undefined) return "a base Unit cannot carry FusionProgress";
+    if ((u.copies as number) < 1) return "a base Unit must have at least one copy";
+    const expected: BaseProgression = (u.copies as number) >= STACK_THRESHOLD ? "Awakened" : "Base";
+    if (u.progression !== expected) return `progression ${u.progression} is inconsistent with ${String(u.copies)} copies`;
+    if (draftAbilityIds(def).length !== 1) return "a base UnitDef must carry exactly one Ability";
+    return undefined;
+  }
+
+  if (u.copies !== 0) return "a composite must keep copies 0";
+  if (typeof u.fusion !== "object" || u.fusion === null || Array.isArray(u.fusion)) return "needs FusionProgress";
+  const f = u.fusion as Partial<FusionProgress> & Record<string, unknown>;
+  if (!Array.isArray(f.parents) || f.parents.length !== 2) return "fusion.parents must contain exactly two ordered parents";
+  const parentAbilities: string[] = [];
+  for (const [i, parentValue] of f.parents.entries()) {
+    if (typeof parentValue !== "object" || parentValue === null || Array.isArray(parentValue)) return `fusion.parents[${i}] must be an object`;
+    const parent = parentValue as Partial<FusionParent>;
+    if (typeof parent.name !== "string" || parent.name.length === 0) return `fusion.parents[${i}] needs a non-empty name`;
+    if (typeof parent.def !== "object" || parent.def === null || Array.isArray(parent.def)) return `fusion.parents[${i}] needs a UnitDef object`;
+    if ((parent.def as UnitDef).name !== parent.name) return `fusion.parents[${i}] name must match def.name`;
+    const ids = draftAbilityIds(parent.def as UnitDef);
+    if (ids.length !== 1) return `fusion.parents[${i}] UnitDef must carry exactly one Ability`;
+    parentAbilities.push(ids[0]!);
+  }
+  if (f.parents[0]!.name === f.parents[1]!.name) return "fusion parents must be two distinct ordered Units";
+  if (parentAbilities[0] === parentAbilities[1]) return "fusion parents must carry different Abilities";
+  if (!Number.isInteger(f.meter) || (f.meter as number) < 0 || (f.meter as number) > STACK_THRESHOLD) {
+    return `fusion meter must be an integer from 0 to ${STACK_THRESHOLD}`;
+  }
+  if (f.awakening !== undefined && f.awakening !== "trigger" && f.awakening !== "selector") {
+    return "fusion awakening path must be trigger or selector";
+  }
+  if (typeof f.doubled !== "boolean") return "fusion doubled guard must be boolean";
+  if (f.awakening === undefined && f.doubled) return "fusion cannot be doubled before a path is chosen";
+  if (f.awakening !== undefined && ((f.meter as number) !== STACK_THRESHOLD || !f.doubled)) {
+    return `a chosen fusion path requires meter ${STACK_THRESHOLD} and doubled true`;
+  }
+  const expectedProgression: BaseProgression = f.awakening === undefined ? "Base" : "Awakened";
+  if (u.progression !== expectedProgression) {
+    return `composite progression must be ${expectedProgression} for its meter/path state`;
+  }
+  if (def.name !== `${f.parents[0]!.name} + ${f.parents[1]!.name}`) return "composite identity must preserve ordered parent names";
+  if (!sameStrings(def.abilities, parentAbilities)) return "composite UnitDef must carry exactly both parent Abilities in order";
+  return undefined;
 }

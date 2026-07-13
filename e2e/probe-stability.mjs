@@ -40,12 +40,12 @@ async function scenarios(viewport, tag) {
     const h0 = await stripH(page, "#run-notice");
     const shopH0 = await stripH(page, "#run-shop-row");
     await page.click('[data-buy="0"]');
-    await page.waitForFunction(() => document.querySelector("#run-notice").textContent.startsWith("⬆"));
+    await page.waitForFunction(() => document.querySelector("#run-notice").textContent.includes("Awakened at 3/3"));
     const notice = await page.locator("#run-notice").textContent();
     const y1 = await fightY(page);
     const h1 = await stripH(page, "#run-notice");
     const shopH1 = await stripH(page, "#run-shop-row");
-    check(notice.includes("fused 3 copies into level 2"), `${tag} fuse notice is the real string`, JSON.stringify(notice));
+    check(notice.includes("Awakened at 3/3"), `${tag} Awakening notice is the real string`, JSON.stringify(notice));
     check(y1 === y0, `${tag} fight Y stable across fuse`, `${y0} → ${y1}`);
     check(h1 === h0, `${tag} notice strip height fixed across fuse`, `${h0} → ${h1}`);
     check(shopH1 === shopH0, `${tag} shop row height held by the rolled-count reserve`, `${shopH0} → ${shopH1}`);

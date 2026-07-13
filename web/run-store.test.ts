@@ -131,7 +131,7 @@ describe("active run persistence", () => {
   test("a corrupt stored run is refused loudly", () => {
     const storage = fakeStorage();
     storage.setItem("aoi.run.v1", '{"status":"weird"}');
-    expect(() => loadRun(storage)).toThrow(/not a RunState/);
+    expect(() => loadRun(storage)).toThrow(/missing\/unversioned/);
   });
 
   test("nextRunId counts up through the stored counter — distinct ids per run", () => {

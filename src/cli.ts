@@ -309,7 +309,7 @@ export function formatRunSummary(state: RunState): string {
             : "out of lives";
   const lines = [
     `Run ${state.runId} (seed ${state.seed}): ${head} at round ${state.round} — ${won}W/${lost}L/${drawn}D, ${state.lives} ${state.lives === 1 ? "life" : "lives"} left`,
-    `  line:  ${state.team.map((u) => `${u.name} L${u.level}`).join(", ")}`,
+    `  line:  ${state.team.map((u) => `${u.name} ${u.progression} (${u.base.pwr} PWR / ${u.base.hp} HP)`).join(", ")}`,
   ];
   // A crown ascends (seated one floor higher as the new champion); a cash-out
   // seats in place. Either way the seat names the boss it dethroned.

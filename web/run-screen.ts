@@ -20,9 +20,11 @@ import {
   TOWER_HEIGHT,
   UNIT_COST,
   abilityChips,
+  awakenFusion,
   battle,
   buy,
   challengeBoss,
+  fuse,
   incomeForRound,
   initRun,
   ladderFight,
@@ -73,6 +75,35 @@ const ofType = <T extends RunEvent["type"]>(log: readonly RunEvent[], t: T): Ext
 /** Fusion pips on a line card: ● per copy held, ○ per copy still missing. */
 export const fusionPips = (stacks: number): string =>
   "●".repeat(Math.min(stacks, STACK_THRESHOLD)) + "○".repeat(Math.max(0, STACK_THRESHOLD - stacks));
+
+/** Persistent card copy for the bounded run progression. This never reads the
+ * battle DSL's legacy `level`; resumed and touch users get the whole state. */
+export function runUnitProgression(u: RunUnit): { state: string; progress: string } {
+  if (u.kind === "base") {
+    return { state: u.progression, progress: `${Math.min(u.copies, STACK_THRESHOLD)}/${STACK_THRESHOLD}` };
+  }
+  const path = u.fusion!.awakening;
+  return {
+    state: path === undefined
+      ? (u.fusion!.meter === 0 ? "Fusion · Fresh" : u.fusion!.meter === STACK_THRESHOLD ? "Fusion · Pending" : "Fusion")
+      : `Fusion · ${path === "trigger" ? "Trigger" : "Selector"} path`,
+    progress: `${u.fusion!.meter}/${STACK_THRESHOLD}`,
+  };
+}
+
+function singletonAbilityId(u: RunUnit): string | undefined {
+  const ids = u.def.abilities ?? (u.def.ability !== undefined ? [u.def.ability] : []);
+  return ids.length === 1 ? ids[0] : undefined;
+}
+
+/** Ordered UI eligibility mirrors fuse(), including its singleton premise. */
+export function canOfferFusion(first: RunUnit, second: RunUnit): boolean {
+  if (first === second || first.kind !== "base" || second.kind !== "base") return false;
+  if (first.progression !== "Awakened" || second.progression !== "Awakened") return false;
+  const firstAbility = singletonAbilityId(first);
+  const secondAbility = singletonAbilityId(second);
+  return firstAbility !== undefined && secondAbility !== undefined && firstAbility !== secondAbility;
+}
 
 /** The shop header's income line — derived from the tunables' curve like the
  * codex is: a flat curve reads as one standing fact, a growing curve names
@@ -337,7 +368,8 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
   // regardless (server/src/ladder-api.test.ts); this just skips a doomed call.
   let localOnly = false;
   let selected: { where: "offer" | "line" | "end"; index: number; status?: string } | undefined;
-  let notice: string | undefined; // the last transition's level-up moment, if any
+  let fusionFirst: number | undefined;
+  let notice: string | undefined;
   let fused: string | undefined; // the just-fused unit's name — flashes once, consumed by the next shop render
   let revealed = false; // the pending battle's outcome has been shown (reset per fight)
   // The replay position the viewer held when it was last unmounted (#014): a
@@ -434,10 +466,11 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     target?: string | undefined;
     action?: string | undefined;
   } {
-    const action = deps.abilities[primaryAbilityIdOf(def)!];
+    const ids = def.abilities ?? (def.ability !== undefined ? [def.ability] : []);
+    const action = deps.abilities[ids[0]!];
     const ab = unitActionsOf(def, deps.abilities)[0];
     if (action === undefined || ab === undefined) return {};
-    return { abilityLabel: action.name, ...abilityChips(ab) };
+    return { abilityLabel: ids.map((id) => deps.abilities[id]?.name ?? id).join(" → "), ...abilityChips(ab) };
   }
 
   function offerCard(def: UnitDef, i: number, gold: number): string {
@@ -456,8 +489,8 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       sel,
       classes: "run-card",
       attrs: `data-offer="${i}"`,
-      title: `${def.name} — ${def.base.hp} hp, ${def.base.pwr} pwr · ${UNIT_COST}g · tap to inspect`,
-      footer: `<button type="button" class="run-buy" data-buy="${i}"${gold < UNIT_COST ? " disabled" : ""}>buy ${UNIT_COST}g</button>`,
+      title: `${def.name} — ${def.base.pwr} PWR / ${def.base.hp} HP · ${UNIT_COST}g · tap to inspect`,
+      footer: `<button type="button" class="run-buy" data-buy="${i}"${gold < UNIT_COST || state?.team.some((u) => u.kind === "composite" && u.fusion!.meter >= STACK_THRESHOLD && u.fusion!.awakening === undefined) ? " disabled" : ""}>buy ${UNIT_COST}g</button>`,
     });
   }
 
@@ -470,8 +503,20 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
           <button type="button" data-move="${i}:1" title="Move toward the back"${i === last ? " disabled" : ""}>▸</button>
         </span>`
       : "";
-    // Pips (IA-6): copies toward the next fuse, visible at a glance — the
-    // title carries the words. The just-fused card flashes once (GA-7).
+    const hasPartner = state!.team.some((candidate, j) => j !== i && canOfferFusion(u, candidate));
+    const isSelectedFirst = fusionFirst === i;
+    const isEligibleSecond = fusionFirst !== undefined && canOfferFusion(state!.team[fusionFirst]!, u);
+    const fusionControl = !buttons
+      ? ""
+      : fusionFirst === undefined
+        ? (hasPartner ? `<button type="button" data-fusion-first="${i}">choose first</button>` : "")
+        : isSelectedFirst
+          ? `<button type="button" data-fusion-cancel>cancel fusion</button>`
+          : isEligibleSecond
+            ? `<button type="button" data-fuse="${fusionFirst}:${i}">fuse ${esc(state!.team[fusionFirst]!.name)} + ${esc(u.name)}</button>`
+            : "";
+    const progression = runUnitProgression(u);
+    const stateLabel = `${progression.state} ${progression.progress}`;
     return unitCardHtml({
       surface: "compact",
       artName: u.name,
@@ -483,15 +528,15 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       family: familyOf(u.def),
       variant: "compact",
       ...abilityLine(u.def),
-      level: u.level,
-      pips: fusionPips(u.stacks),
+      progression: progression.state,
+      progress: progression.progress,
       front: i === 0,
       sel,
       fused: u.name === fused,
       classes: "run-card",
       attrs: `data-line="${i}"`,
-      title: `${u.name} — level ${u.level}, ${u.stacks}/${STACK_THRESHOLD} copies toward the next · tap to inspect`,
-      footer: move,
+      title: `${u.name} — ${stateLabel}, ${u.base.pwr} PWR / ${u.base.hp} HP · tap to inspect`,
+      footer: move + fusionControl,
     });
   }
 
@@ -554,15 +599,19 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       `<span class="run-sub"><span class="run-income">${esc(incomeLine(s.round))}</span><span class="run-id">${esc(s.runId)}</span></span>`;
     els.next.textContent = nextLine(s);
     prefetchServe(s);
-    // Notice strip stays in flow at all times — content cleared when empty
-    // so the reserved strip holds without showing stale text (LS-5). The
-    // title carries the full string: at phone width the strip is a fixed
-    // two-line clamp (slice-3 fix), so an over-long notice ellipsizes.
-    els.notice.textContent = notice ?? "";
-    els.notice.title = notice ?? "";
+    const pendingAwakening = s.team.find((u) => u.kind === "composite" && u.fusion!.meter >= STACK_THRESHOLD && u.fusion!.awakening === undefined);
+    if (pendingAwakening !== undefined) {
+      els.notice.innerHTML = `<strong>${esc(pendingAwakening.name)} must Awaken before any other action:</strong> ` +
+        `<button type="button" data-awaken-path="trigger">Trigger path</button> ` +
+        `<button type="button" data-awaken-path="selector">Selector path</button>`;
+      els.notice.title = "Choose Trigger path or Selector path. This permanent choice happens before every other action, then current PWR and HP double once.";
+    } else {
+      els.notice.textContent = notice ?? (fusionFirst === undefined ? "" : `Choose the second parent. Order is explicit: ${s.team[fusionFirst]?.name} + …`);
+      els.notice.title = els.notice.textContent ?? "";
+    }
     renderShopRow(s);
     els.rerollButton.textContent = `reroll ${REROLL_COST}g`;
-    els.rerollButton.disabled = s.gold < REROLL_COST;
+    els.rerollButton.disabled = s.gold < REROLL_COST || pendingAwakening !== undefined;
     renderLine(s);
     renderClimb(s);
     renderBoss(s);
@@ -650,7 +699,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     const last = s.team.length + fill - 1;
     const fillers = Array.from({ length: fill }, (_, k) => {
       const def = deps.pool[k % deps.pool.length]!;
-      return lineCard({ name: def.name, base: { ...def.base }, level: 1, stacks: 1, def }, s.team.length + k, last, true);
+      return lineCard({ name: def.name, base: { ...def.base }, kind: "base", copies: 1, progression: "Base", def }, s.team.length + k, last, true);
     }).join("");
     els.line.style.minHeight = "";
     els.line.innerHTML = cards + fillers;
@@ -684,7 +733,8 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     // — the seeded-tower UX where a cleared floor steers you to challenge the boss.
     // On an empty tower every floor is thin, so the climb always cold-starts.
     const noRival = !empty && !atTop && !towerEmpty && deps.store.poolAt(s.round).filter((g) => g.runId !== s.runId).length === 0;
-    els.fightButton.disabled = empty || atTop || noRival;
+    const blocked = s.team.some((u) => u.kind === "composite" && u.fusion!.meter >= STACK_THRESHOLD && u.fusion!.awakening === undefined);
+    els.fightButton.disabled = empty || atTop || noRival || blocked;
     els.stakes.textContent = empty
       ? stakesLine(s.lives)
       : atTop
@@ -748,7 +798,8 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
         ? "challenge the champion"
         : "challenge this floor's boss";
     els.challengeButton.textContent = challengeFireLabel;
-    els.challengeButton.disabled = s.team.length === 0;
+    const blocked = s.team.some((u) => u.kind === "composite" && u.fusion!.meter >= STACK_THRESHOLD && u.fusion!.awakening === undefined);
+    els.challengeButton.disabled = s.team.length === 0 || blocked;
   }
 
   /** Arm the challenge confirm: the button reads the warning, a cancel control
@@ -806,7 +857,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       ...((u.level ?? 1) > 1 ? { level: u.level } : {}),
       classes: "run-card boss-card",
       attrs: "", // read-only — no inspect/buy/move affordance on a boss card
-      title: `${u.name} — ${u.base.hp} hp, ${u.base.pwr} pwr`,
+      title: `${u.name} — ${u.base.pwr} PWR / ${u.base.hp} HP`,
     });
   }
 
@@ -844,8 +895,9 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
           hp: base.hp,
           pwr: base.pwr,
           state:
-            `${base.hp} hp · ${base.pwr} pwr` +
-            (unit !== undefined ? ` · L${unit.level}` : ` · ${UNIT_COST}g`),
+            `${base.pwr} PWR · ${base.hp} HP` +
+            (unit !== undefined ? ` · ${runUnitProgression(unit).state} ${runUnitProgression(unit).progress}` : ` · ${UNIT_COST}g`),
+          ...(unit !== undefined ? { progression: runUnitProgression(unit) } : {}),
           def,
           statuses: def.statuses ?? [],
           registry: s.statuses,
@@ -1136,15 +1188,22 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       }
       throw err;
     }
-    // The fuse moment, surfaced: a level-up only changes a small "L2" badge,
-    // so the shop says it happened — derived from the transition's own events.
-    const ups = ofType(state.log.slice(before), "LeveledUp");
-    const up = ups[ups.length - 1];
-    notice =
-      up === undefined
-        ? undefined
-        : `⬆ ${up.unit} fused ${STACK_THRESHOLD} copies into level ${up.level} — now ${up.hp} hp, ${up.pwr} pwr`;
-    fused = up?.unit; // the card itself flashes too (GA-7)
+    const fresh = state.log.slice(before);
+    const awakened = ofType(fresh, "Awakened").at(-1);
+    const fusedEvent = ofType(fresh, "Fused").at(-1);
+    const fusionAwakened = ofType(fresh, "FusionAwakened").at(-1);
+    const grown = ofType(fresh, "DuplicateGrown").at(-1) ?? ofType(fresh, "FusionCopyAdded").at(-1);
+    notice = fusionAwakened !== undefined
+      ? `✦ ${fusionAwakened.unit} chose ${fusionAwakened.path} — snapshot doubled to ${fusionAwakened.pwr} PWR / ${fusionAwakened.hp} HP`
+      : fusedEvent !== undefined
+        ? `✦ ${fusedEvent.name}: ${fusedEvent.first} + ${fusedEvent.second} — ${fusedEvent.pwr} PWR / ${fusedEvent.hp} HP, fresh 0/${STACK_THRESHOLD}`
+        : awakened !== undefined
+          ? `✦ ${awakened.unit} Awakened at ${awakened.copies}/${STACK_THRESHOLD} and can now fuse`
+          : grown !== undefined
+            ? `+1 PWR / +2 HP → ${grown.unit} is ${grown.pwr} PWR / ${grown.hp} HP`
+            : undefined;
+    fused = fusedEvent?.name ?? awakened?.unit;
+    fusionFirst = undefined;
     selected = undefined;
     persist(state, pending);
     render();
@@ -1403,6 +1462,24 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
 
   els.line.addEventListener("click", (ev) => {
     const target = ev.target as HTMLElement;
+    const fuseBtn = target.closest("[data-fuse]");
+    if (fuseBtn) {
+      const [first, second] = fuseBtn.getAttribute("data-fuse")!.split(":").map(Number) as [number, number];
+      transition((s) => fuse(s, first, second));
+      return;
+    }
+    const firstBtn = target.closest("[data-fusion-first]");
+    if (firstBtn) {
+      fusionFirst = Number(firstBtn.getAttribute("data-fusion-first"));
+      selected = undefined;
+      renderShop();
+      return;
+    }
+    if (target.closest("[data-fusion-cancel]")) {
+      fusionFirst = undefined;
+      renderShop();
+      return;
+    }
     const moveBtn = target.closest("[data-move]");
     if (moveBtn) {
       const [from, dir] = moveBtn.getAttribute("data-move")!.split(":").map(Number) as [number, number];
@@ -1430,6 +1507,12 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
     else if (selected?.where === "end" && selected.index === index && selected.status === undefined) selected = undefined;
     else selected = { where: "end", index };
     renderEnd();
+  });
+
+  els.notice.addEventListener("click", (ev) => {
+    const button = (ev.target as HTMLElement).closest("[data-awaken-path]");
+    if (!button) return;
+    transition((s) => awakenFusion(s, button.getAttribute("data-awaken-path") as "trigger" | "selector"));
   });
 
   els.rerollButton.addEventListener("click", () => transition(reroll));

@@ -287,7 +287,7 @@ export function createBattleEditor(els: BattleEditorEls, deps: BattleEditorDeps)
           hp: num(u.base?.hp),
           pwr: num(u.base?.pwr),
           state:
-            `${num(u.base?.hp)} hp · ${num(u.base?.pwr)} pwr` + (u.level !== undefined ? ` · L${num(u.level)}` : ""),
+            `${num(u.base?.pwr)} PWR · ${num(u.base?.hp)} HP` + (u.level !== undefined ? ` · L${num(u.level)}` : ""),
           def: u,
           statuses: (u.statuses ?? []).map((s) => ({ status: String(s.status), stacks: Number(s.stacks) })),
           registry: deps.registry,

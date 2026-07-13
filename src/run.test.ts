@@ -219,61 +219,8 @@ describe("shop offers", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 4. Duplicate stacking → level-up with stat growth
+// 4. Duplicate Awakening is covered exhaustively in awakening-fusion.test.ts
 // ---------------------------------------------------------------------------
-
-describe("duplicate stacking and level-up", () => {
-  // A single-unit pool makes every offer a copy — the stacking path is forced.
-  const soloInput: RunInput = { seed: 3, pool: [vanilla("Grunt", 5, 2)], statuses: stressRegistry, abilities: stressAbilities };
-
-  /** Buy `n` Grunt copies, banking income via pushover fights when gold is short
-   * (the v1 4g budget no longer buys 3 copies in round 1). */
-  function buyCopies(s: RunState, n: number): RunState {
-    let bought = 0;
-    let guard = 0;
-    while (bought < n && guard++ < 100) {
-      if (s.gold >= UNIT_COST) {
-        s = buy(s, 0);
-        bought++;
-      } else {
-        s = fight(s, PUSHOVER); // turn the round to bank income
-      }
-    }
-    return s;
-  }
-
-  test("a first copy joins the line; a second stacks instead of taking a slot", () => {
-    let s = buy(initRun(soloInput), 0);
-    expect(s.team.length).toBe(1);
-    expect(s.team[0]).toMatchObject({ name: "Grunt", level: 1, stacks: 1 });
-    s = buyCopies(s, 1); // a second copy (banks income first)
-    expect(s.team.length).toBe(1);
-    expect(s.team[0]).toMatchObject({ stacks: 2 });
-  });
-
-  test("at STACK_THRESHOLD copies the unit levels up and its base grows", () => {
-    let s = buyCopies(initRun(soloInput), STACK_THRESHOLD);
-    expect(s.team[0]).toMatchObject({ name: "Grunt", level: 2, stacks: 1 });
-    expect(s.team[0]!.base).toEqual({ hp: 5 + LEVEL_HP_GROWTH, pwr: 2 + LEVEL_PWR_GROWTH });
-    expect(ofType(s.log, "LeveledUp")[0]).toMatchObject({
-      unit: "Grunt",
-      level: 2,
-      hp: 5 + LEVEL_HP_GROWTH,
-      pwr: 2 + LEVEL_PWR_GROWTH,
-    });
-    // Growth lives on the run unit — the flat content def is untouched.
-    expect(soloInput.pool[0]!.base).toEqual({ hp: 5, pwr: 2 });
-  });
-
-  test("the grown unit fights with its grown base and level", () => {
-    const s = buyCopies(initRun(soloInput), STACK_THRESHOLD);
-    expect(toBattleTeam(s.team)[0]).toMatchObject({
-      name: "Grunt",
-      level: 2,
-      base: { hp: 5 + LEVEL_HP_GROWTH, pwr: 2 + LEVEL_PWR_GROWTH },
-    });
-  });
-});
 
 // ---------------------------------------------------------------------------
 // 5. level in DSL magnitude expressions (the way pwr references work)
@@ -367,7 +314,7 @@ describe("reorder", () => {
 describe("invalid decisions", () => {
   /** A hand-built line unit for edge states transitions can't cheaply reach. */
   function lineUnit(name: string): RunUnit {
-    return { name, base: { hp: 5, pwr: 1 }, level: 1, stacks: 1, def: vanilla(name, 5, 1) };
+    return { name, base: { hp: 5, pwr: 1 }, kind: "base", copies: 1, progression: "Base", def: vanilla(name, 5, 1) };
   }
 
   test("buying broke, and rerolling broke, both throw", () => {
@@ -394,7 +341,7 @@ describe("invalid decisions", () => {
     const withCopy: RunState = { ...full, team: [...full.team.slice(0, 4), lineUnit("Other")] };
     const after = buy(withCopy, 0);
     expect(after.team.length).toBe(5);
-    expect(after.team[4]).toMatchObject({ name: "Other", stacks: 2 });
+    expect(after.team[4]).toMatchObject({ name: "Other", copies: 2, base: { pwr: 2, hp: 7 } });
   });
 
   test("reordering outside the line throws", () => {
@@ -458,107 +405,9 @@ describe("serialization", () => {
 
   test("corrupt stored runs are refused loudly", () => {
     expect(() => deserializeRun("not json")).toThrow(/not valid JSON/);
-    expect(() => deserializeRun('{"status":"weird"}')).toThrow(/not a RunState/);
+    expect(() => deserializeRun('{"status":"weird"}')).toThrow(/missing\/unversioned/);
     expect(() => deserializeRun(JSON.stringify({ ...playRun(INPUT, before), pool: [] }))).toThrow(ValidationError);
   });
 });
 
-// ---------------------------------------------------------------------------
-// Fusion gate — different-ability-only, one presented colour (PRD #081 slice 5)
-// ---------------------------------------------------------------------------
-
-describe("fusion gate (#081)", () => {
-  // Build a line of two units with DISTINCT abilities by buying distinct-named
-  // offers (each shipped stress unit has its own ability id).
-  function twoDistinct(seed: number): RunState {
-    let s = initRun({ seed, pool: POOL, statuses: stressRegistry, abilities: stressAbilities });
-    let guard = 0;
-    while (s.team.length < 2 && guard++ < 200) {
-      const idx = s.offers.findIndex((o) => !s.team.some((t) => t.name === o.name));
-      if (idx >= 0 && s.gold >= UNIT_COST) s = buy(s, idx);
-      else if (s.team.length > 0) s = fight(s, PUSHOVER); // bank income (v1 4g budget)
-      else if (s.gold >= REROLL_COST) s = reroll(s);
-      else break;
-    }
-    return s;
-  }
-
-  test("two units with distinct abilities fuse into one presenting a single ability/colour", () => {
-    const s = twoDistinct(7);
-    expect(s.team.length).toBeGreaterThanOrEqual(2);
-    const a = s.team[0]!;
-    const b = s.team[1]!;
-    expect(primaryAbilityIdOf(a.def)).not.toBe(primaryAbilityIdOf(b.def)); // distinct → allowed
-    const fused = fuse(s, 0, 1);
-    // The line shrinks by one; the fused unit presents exactly ONE ability — the
-    // primary's — so it has exactly one colour (its def's family).
-    expect(fused.team.length).toBe(s.team.length - 1);
-    const kept = fused.team[0]!;
-    expect(kept.name).toBe(a.name);
-    expect(primaryAbilityIdOf(kept.def)).toBe(primaryAbilityIdOf(a.def));
-    // toBattleTeam projects exactly the one presented ability (the secondary's
-    // mechanic does NOT ride into battle in v1 — slot-stacking is deferred).
-    const battleUnit = toBattleTeam(fused.team)[0]!;
-    expect(primaryAbilityIdOf(battleUnit)).toBe(primaryAbilityIdOf(a.def));
-    // The absorbed parent's ability is recorded as a (deferred) slot.
-    expect(kept.absorbed).toContain(primaryAbilityIdOf(b.def));
-    // A Fused event records the presented + absorbed abilities.
-    const ev = ofType(fused.log, "Fused");
-    expect(ev).toHaveLength(1);
-    expect(ev[0]!.ability).toBe(primaryAbilityIdOf(a.def));
-    expect(ev[0]!.absorbedAbility).toBe(primaryAbilityIdOf(b.def));
-  });
-
-  test("two units with the SAME ability cannot fuse (that is what copy-stacking is for)", () => {
-    const pool: UnitDef[] = [
-      { name: "Alpha", base: { hp: 6, pwr: 1 }, ability: "Strike" },
-      { name: "Beta", base: { hp: 6, pwr: 1 }, ability: "Strike" },
-    ];
-    let s = initRun({ seed: 4, pool, statuses: stressRegistry, abilities: stressAbilities });
-    let guard = 0;
-    while (s.team.length < 2 && guard++ < 200) {
-      const idx = s.offers.findIndex((o) => !s.team.some((t) => t.name === o.name));
-      if (idx >= 0 && s.gold >= UNIT_COST) s = buy(s, idx);
-      else if (s.team.length > 0) s = fight(s, PUSHOVER); // bank income (v1 4g budget)
-      else if (s.gold >= REROLL_COST) s = reroll(s);
-      else break;
-    }
-    expect(s.team.length).toBe(2);
-    expect(s.team[0]!.def.ability).toBe(s.team[1]!.def.ability); // same ability
-    expect(() => fuse(s, 0, 1)).toThrow(InvalidDecisionError);
-    expect(() => fuse(s, 0, 1)).toThrow(/distinct abilities/);
-  });
-
-  test("fusing a unit with itself, or an out-of-range index, is rejected loudly", () => {
-    const s = twoDistinct(7);
-    expect(() => fuse(s, 0, 0)).toThrow(/cannot fuse with itself/);
-    expect(() => fuse(s, 0, 99)).toThrow(/outside the line/);
-  });
-
-  test("copy-stacking into levels is untouched by fusion (STACK_THRESHOLD intact)", () => {
-    const soloInput: RunInput = { seed: 3, pool: [vanilla("Grunt", 5, 2)], statuses: stressRegistry, abilities: stressAbilities };
-    let s = initRun(soloInput);
-    let bought = 0;
-    let guard = 0;
-    while (bought < STACK_THRESHOLD && guard++ < 100) {
-      const idx = s.offers.findIndex((o) => o.name === "Grunt");
-      if (idx >= 0 && s.gold >= UNIT_COST) { s = buy(s, idx); bought++; }
-      else s = fight(s, PUSHOVER); // bank income (v1 4g budget can't buy 3 in round 1)
-    }
-    // Same-name copies still fuse into a LEVEL — a separate mechanic from #081 fusion.
-    expect(s.team[0]!.level).toBe(2);
-    expect(ofType(s.log, "LeveledUp")).toHaveLength(1);
-  });
-
-  test("a fused run replays byte-identical through the decision sequence (determinism)", () => {
-    const s = twoDistinct(7);
-    // Reconstruct the same prefix of decisions is awkward; instead assert fuse is
-    // a pure function: same state + same indices → identical result + log.
-    const a = serializeRun(fuse(s, 0, 1));
-    const b = serializeRun(fuse(s, 0, 1));
-    expect(a).toBe(b);
-    // And applyDecision routes a fuse decision identically.
-    const viaDecision = serializeRun(applyDecision(s, { kind: "fuse", primary: 0, secondary: 1 }));
-    expect(viaDecision).toBe(a);
-  });
-});
+// Ordered fusion and its replay boundary are covered exhaustively in awakening-fusion.test.ts.

@@ -70,8 +70,8 @@ describe("spawnUnit into the team", () => {
     expect(out.team.length).toBe(s.team.length + 1);
     const u = out.team[out.team.length - 1]!;
     expect(u.name).toBe(UNIT.name);
-    expect(u.level).toBe(UNIT.level ?? 1);
-    expect(u.stacks).toBe(1);
+    expect(u.progression).toBe("Base");
+    expect(u.copies).toBe(1);
     expect(u.base).toEqual(UNIT.base);
   });
 

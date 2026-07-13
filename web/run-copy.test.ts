@@ -7,8 +7,8 @@ import { describe, expect, test } from "vitest";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { BOOTSTRAP_RUN_ID, INCOME_PER_ROUND, STACK_THRESHOLD, incomeForRound, type TeamSnapshot } from "../src/index.js";
-import { championPhrase, fusionPips, incomeLine, newRunChampionLine, nextFightLine, stakesLine } from "./run-screen.js";
+import { BOOTSTRAP_RUN_ID, INCOME_PER_ROUND, STACK_THRESHOLD, incomeForRound, type RunUnit, type TeamSnapshot, type UnitDef } from "../src/index.js";
+import { canOfferFusion, championPhrase, fusionPips, incomeLine, newRunChampionLine, nextFightLine, runUnitProgression, stakesLine } from "./run-screen.js";
 
 const html = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "index.html"), "utf8");
 
@@ -72,6 +72,52 @@ describe("run-screen tower vocabulary (PRD #110 slice 2)", () => {
     expect(line).toBe("no live ghosts at floor 4 — challenge reigning champion web-reign (crowned at round 4) to take the crown and grow the lineage");
     expect(line.toLowerCase()).not.toContain("fresh ladder");
     expect(line.toLowerCase()).not.toContain("pre-seeded");
+  });
+});
+
+const runUnit = (name: string, ability: string, copies = 3): RunUnit => {
+  const def: UnitDef = { name, base: { pwr: 1, hp: 2 }, ability };
+  return { name, base: { ...def.base }, kind: "base", copies, progression: copies >= 3 ? "Awakened" : "Base", def };
+};
+
+describe("ordered fusion controls", () => {
+  test("offers both valid parent orders and no same-Ability commit path", () => {
+    const alpha = runUnit("Alpha", "Strike");
+    const beta = runUnit("Beta", "Heal");
+    const same = runUnit("Same", "Strike");
+    expect(canOfferFusion(alpha, beta)).toBe(true);
+    expect(canOfferFusion(beta, alpha)).toBe(true);
+    expect(canOfferFusion(alpha, same)).toBe(false);
+    expect(canOfferFusion(same, alpha)).toBe(false);
+  });
+
+  test("rejects non-singleton and unawakened UI parents", () => {
+    const alpha = runUnit("Alpha", "Strike");
+    const multi = runUnit("Multi", "Heal");
+    multi.def = { name: multi.def.name, base: multi.def.base, abilities: ["Heal", "Strike"] };
+    expect(canOfferFusion(alpha, multi)).toBe(false);
+    expect(canOfferFusion(alpha, runUnit("Young", "Heal", 2))).toBe(false);
+  });
+});
+
+describe("visible run progression copy", () => {
+  test("names base, Awakened, fresh/ordinary/pending fusion, and permanent paths", () => {
+    expect(runUnitProgression(runUnit("Base", "Strike", 2))).toEqual({ state: "Base", progress: "2/3" });
+    expect(runUnitProgression(runUnit("Awake", "Strike", 4))).toEqual({ state: "Awakened", progress: "3/3" });
+    const composite = (meter: number, awakening?: "trigger" | "selector"): RunUnit => ({
+      name: "Alpha + Beta", base: { pwr: 2, hp: 4 }, kind: "composite", copies: 0, progression: "Base",
+      def: { name: "Alpha + Beta", base: { pwr: 2, hp: 4 }, abilities: ["Strike", "Heal"] },
+      fusion: {
+        parents: [{ name: "Alpha", def: runUnit("Alpha", "Strike").def }, { name: "Beta", def: runUnit("Beta", "Heal").def }],
+        meter, ...(awakening !== undefined ? { awakening } : {}), doubled: awakening !== undefined,
+      },
+    });
+    expect(runUnitProgression(composite(0))).toEqual({ state: "Fusion · Fresh", progress: "0/3" });
+    expect(runUnitProgression(composite(1))).toEqual({ state: "Fusion", progress: "1/3" });
+    expect(runUnitProgression(composite(2))).toEqual({ state: "Fusion", progress: "2/3" });
+    expect(runUnitProgression(composite(3))).toEqual({ state: "Fusion · Pending", progress: "3/3" });
+    expect(runUnitProgression(composite(3, "trigger"))).toEqual({ state: "Fusion · Trigger path", progress: "3/3" });
+    expect(runUnitProgression(composite(3, "selector"))).toEqual({ state: "Fusion · Selector path", progress: "3/3" });
   });
 });
 

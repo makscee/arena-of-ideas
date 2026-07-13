@@ -18,8 +18,6 @@ import {
   DEFAULT_RUN_POOL,
   INCOME_PER_ROUND,
   INCOME_CAP,
-  LEVEL_HP_GROWTH,
-  LEVEL_PWR_GROWTH,
   REROLL_COST,
   SHOP_SIZE_BASE,
   SHOP_SIZE_MAX,
@@ -222,13 +220,15 @@ describe("codex — lives / fusion / shop tunables", () => {
     expect(rule("lives").text).toContain(`${STARTING_LIVES} lives`);
   });
 
-  it("fusion rule cites STACK_THRESHOLD and the level growth", () => {
+  it("fusion rule cites the Awakening threshold, canonical growth, ordered axes, and one-time double", () => {
     const text = rule("fusion").text;
-    expect(text).toContain(`${STACK_THRESHOLD} copies`);
-    expect(text).toContain(`+${LEVEL_HP_GROWTH} base hp`);
-    expect(text).toContain(`+${LEVEL_PWR_GROWTH} base pwr`);
-    // Levels continue: the count resets, THRESHOLD−1 more copies fuse again.
-    expect(text).toContain(`${STACK_THRESHOLD - 1} more copies`);
+    expect(text).toContain(`1/${STACK_THRESHOLD}`);
+    expect(text).toContain("+1 PWR / +2 HP");
+    expect(text).toContain("A+B");
+    expect(text).toContain("A's Triggers");
+    expect(text).toContain("B's Selectors");
+    expect(text).toContain("snapshot-doubles");
+    expect(text).not.toMatch(/level cap|next level/);
   });
 
   it("fusion rule cites UNIT_COST and REROLL_COST", () => {

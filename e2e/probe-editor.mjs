@@ -176,7 +176,7 @@ async function scenario(viewport, tag) {
     );
     // It reflects the CURRENT edited stat (hp was overridden to 9 in 2c).
     check(
-      (await page.locator("#inspect-overlay .ins-stats").innerText()).includes("9 hp"),
+      (await page.locator("#inspect-overlay .ins-stats").innerText()).includes("9 HP"),
       `${tag} the inspector reflects the unit's current edited hp (9)`,
       await page.locator("#inspect-overlay .ins-stats").innerText(),
     );

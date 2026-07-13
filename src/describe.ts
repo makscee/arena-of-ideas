@@ -238,7 +238,7 @@ export function describeEffectSegments(
     }
     case "summon":
       return [
-        e0(`summon ${e.unit.name} (${e.unit.base.hp} hp, ${e.unit.base.pwr} pwr) at the back of `),
+        e0(`summon ${e.unit.name} (${e.unit.base.pwr} PWR / ${e.unit.base.hp} HP) at the back of `),
         ...tgt,
         e0("'s side"),
       ];

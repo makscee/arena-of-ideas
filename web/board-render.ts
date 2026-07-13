@@ -89,7 +89,7 @@ function unitCard(
   // The tooltip slot carries player-useful state, never the internal id (IA-7).
   const title = opts.dead
     ? `${displayName} — dead · tap to inspect`
-    : `${displayName} — ${u.hp}/${u.maxHp} hp, ${u.pwr} pwr · tap to inspect`;
+    : `${displayName} — ${u.pwr} PWR / ${u.hp}/${u.maxHp} HP · tap to inspect`;
   return unitCardHtml({
     surface: "dead", // legacy boardHtml/renderBoard is test-only; live viewer uses battleHtml below.
     artName: u.name,
@@ -284,7 +284,7 @@ function sideCardB(
   const stateCls = isActing ? "is-acting" : isTarget ? "is-target" : "";
   const title = dead
     ? `${ctx.name(u.id)} — dead · tap to inspect`
-    : `${ctx.name(u.id)} — ${u.hp}/${u.maxHp} hp, ${u.pwr} pwr · tap to inspect`;
+    : `${ctx.name(u.id)} — ${u.pwr} PWR / ${u.hp}/${u.maxHp} HP · tap to inspect`;
   return unitCardHtml({
     surface: "board",
     variant: "compact",
