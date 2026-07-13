@@ -126,16 +126,14 @@ describe("unitCardHtml", () => {
     title: "Brawler — tap to inspect",
   });
 
-  test("one structure for every context: front tag, art, name, badge, framed stats, chips — in order", () => {
-    const order = ['class="front-tag"', '<svg class="shape"', 'class="uname"', 'class="run-lvl"', 'class="unums"', 'class="chips"'];
-    let at = -1;
-    for (const piece of order) {
-      const i = card.indexOf(piece);
-      expect(i, `${piece} present, after the previous piece`).toBeGreaterThan(at);
-      at = i;
-    }
+  test("one production chassis carries entity identity, portrait, anatomy, chips and controls", () => {
+    expect(card).toContain('class="unit unit-b is-full entity-unit');
+    expect(card).toContain('data-card-entity="unit"');
+    expect(card).toContain('<svg class="shape"');
+    expect(card).toContain('class="uname"');
+    expect(card).toContain('class="unums"');
+    expect(card).toContain('class="chips"');
     expect(card).toContain('data-line="0"');
-    expect(card).toContain('class="unit run-card front"');
   });
 
   test("the level badge carries the fusion pips", () => {
@@ -160,7 +158,7 @@ describe("unitCardHtml", () => {
       attrs: 'data-unit="A1:X"',
       title: "X — dead",
     });
-    expect(c).toContain('class="unit dead hit"');
+    expect(c).toMatch(/class="[^"]*\bdead\b[^"]*\bhit\b/);
     expect(c).toContain('<span class="hp">3/9</span>');
     expect(c).toContain('class="chip mute"');
   });
@@ -204,13 +202,12 @@ describe("B·Arena card (#080): family + full variant", () => {
     title: "Venomancer",
   } as const;
 
-  test("opt-in: passing `family` switches to the B·Arena card; legacy stays default", () => {
-    const legacy = unitCardHtml({ ...base });
-    expect(legacy).not.toContain("unit-b");
-    expect(legacy).toContain('<svg class="shape"'); // legacy generative art
-    const b = unitCardHtml({ ...base, family: "Poison" });
-    expect(b).toContain("unit-b");
-    expect(b).toContain("is-full"); // variant defaults to full once opted in
+  test("the production chassis is mandatory with or without an explicit family", () => {
+    const fallback = unitCardHtml({ ...base });
+    const explicit = unitCardHtml({ ...base, family: "Poison" });
+    expect(fallback).toContain("unit-b");
+    expect(explicit).toContain("unit-b");
+    expect(explicit).toContain("is-full");
   });
 
   test("full card carries header (name + ABILITY cap), art area, ability line, badge", () => {
@@ -284,9 +281,8 @@ describe("B·Arena card (#080): family + full variant", () => {
       const hex = FAMILY_HEX[fam];
       expect(card, `${fam} sets --fam`).toContain(`style="--fam:${hex}"`);
       expect(card, `${fam} tags the family class`).toContain(`fam-${fam.toLowerCase()}`);
-      // the sigil draws in the family hex (border + glyph both derive from --fam
-      // in CSS; the glyph fill carries the literal hex in markup)
-      expect(card, `${fam} sigil uses its hex`).toContain(`fill="${hex}"`);
+      // Unit portrait identity is name-derived; the family colour remains the chassis axis.
+      expect(card, `${fam} carries stable portrait art`).toContain('<svg class="shape"');
     }
   });
 
@@ -336,7 +332,7 @@ describe("B·Arena card (#080): compact variant", () => {
     expect(compact).toContain("is-compact");
     expect(compact).not.toContain('class="ub-art"'); // no full art block
     expect(compact).toContain('class="ub-mini"'); // sigil moves into the header
-    expect(compact).toContain("ub-sigil-mini");
+    expect(compact).toContain('<svg class="shape"');
   });
 
   test("compact vs full diverge: full has the art area, compact has the header sigil", () => {
@@ -359,12 +355,39 @@ describe("B·Arena card (#080): compact variant", () => {
     expect(compact).toContain('<span class="hp">6</span>');
     expect(compact).toContain('<span class="pwr">1</span>');
     expect(compact).toContain('class="chips"');
-    expect(compact).toContain('fill="#a06bff"'); // sigil colour
+    expect(compact).toContain('data-entity-name="Venomancer"'); // stable portrait identity
   });
 
   test("compact keeps the level badge + fusion pips for the line card", () => {
     const compact = unitCardHtml({ ...base, variant: "compact", level: 2, pips: "●●○" });
     expect(compact).toMatch(/class="run-lvl">L2 <span class="run-pips">●●○<\/span>/);
+  });
+});
+
+describe("four-entity production ontology", () => {
+  const base = { artName: "Entity", label: "Entity", hp: 2, pwr: 1, registry: stressRegistry, attrs: "", title: "Entity" } as const;
+
+  test("exactly Unit, Ability, Status, and Summon can bear the shared chassis", () => {
+    for (const kind of ["unit", "ability", "status", "summon"] as const) {
+      const html = unitCardHtml({ ...base, kind, variant: "reference" });
+      expect(html).toContain(`data-card-entity="${kind}"`);
+      expect(html).toContain(`entity-${kind}`);
+    }
+    expect(() => unitCardHtml({ ...base, kind: "trigger" as never })).toThrow(/non-card entity/);
+  });
+
+  test("Unit portraits are stable, name-distinctive, and continuous across compact/full", () => {
+    const full = unitCardHtml({ ...base, artName: "Generated Quartz 41", label: "Generated Quartz 41", kind: "unit", variant: "full" });
+    const compact = unitCardHtml({ ...base, artName: "Generated Quartz 41", label: "Generated Quartz 41", kind: "unit", variant: "compact" });
+    const other = unitCardHtml({ ...base, artName: "Generated Quartz 42", label: "Generated Quartz 42", kind: "unit", variant: "compact" });
+    expect(full.match(/<svg class="shape"[\s\S]*?<\/svg>/)?.[0]).toBe(compact.match(/<svg class="shape"[\s\S]*?<\/svg>/)?.[0]);
+    expect(compact).not.toBe(other);
+  });
+
+  test("Codex grammar atoms are explicit non-card rows", () => {
+    const codex = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "codex.ts"), "utf8");
+    expect(codex).toContain('data-non-card="${esc(p.family)}"');
+    expect(codex).not.toMatch(/kind:\s*"part"/);
   });
 });
 
@@ -386,6 +409,9 @@ describe("every unit render site draws through the one component", () => {
       "codex.ts#1 codex/reference b-arena",
       "codex.ts#2 codex/reference b-arena",
       "codex.ts#3 codex/reference b-arena",
+      "codex.ts#4 codex/reference b-arena",
+      "inspect.ts#1 full b-arena",
+      "inspect.ts#2 full b-arena",
       "ladder-view.ts#1 codex/reference b-arena",
       "run-screen.ts#1 full b-arena",
       "run-screen.ts#2 compact b-arena",

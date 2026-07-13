@@ -26,18 +26,19 @@ const insText = await page.locator("#inspect-overlay").textContent();
 check(insText.includes("After Poison lands on an ally: heal this unit for 2"), "when-clause sentence intact", JSON.stringify(insText.slice(0, 200)));
 check(insText.includes("consume 2 stacks of Shield"), "consumeStacks sentence intact");
 
-// Tap the Poison ref: the definition row (hidden until tapped) reveals, and
-// it carries the verbatim describeStatus text.
-const defRow = page.locator('#inspect-overlay [data-status-def="Poison"]');
-check(await defRow.isHidden(), "definition row hidden before the tap");
+// Tap the Poison ref: references use the same app-wide inspector contract,
+// replacing the Unit body with Status anatomy rather than nesting a card.
 await page.locator('#inspect-overlay [data-status-ref="Poison"]').first().click();
-await page.waitForSelector('#inspect-overlay [data-status-def="Poison"]:not([hidden])');
-const defText = await defRow.textContent();
+await page.waitForSelector('#inspect-overlay .ins-entity-kind');
+check(await page.$eval('#inspect-overlay .ins-entity-kind', (el) => el.textContent.trim()) === "status", "status ref transitions the shared inspector to Status");
+const defText = await page.locator("#inspect-overlay").textContent();
 check(
   defText.includes("At the end of each turn: deal damage equal to its stacks to the holder, then consume 1 stack of this status."),
-  "revealed row carries the verbatim describeStatus definition",
+  "Status inspector carries the verbatim describeStatus definition",
   JSON.stringify(defText),
 );
+check(await page.$$eval('#inspect-overlay > .unit-b.is-full[data-card-entity="status"]', (els) => els.length) === 1, "Status ref replaces the overlay with exactly one FULL shared card");
+check(await page.$$eval("#inspect-overlay [data-card-entity] [data-card-entity]", (els) => els.length) === 0, "shared inspector contains no nested card");
 
 await ctx.close();
 await browser.close();

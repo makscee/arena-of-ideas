@@ -1,17 +1,17 @@
-// Acting-card battle (#082 slice D) — the real-layout checks vitest cannot see.
+// Battle-event battle (#082 slice D) — the real-layout checks vitest cannot see.
 // Drives an actual run battle in the browser and asserts the new "compact board
-// + acting full card" design:
+// + causal battle-event panel" design:
 //   • layout: the board is one column (header → 3-col grid → bottom trace strip),
 //     transport below; at 375px the grid stacks with NO horizontal page scroll;
-//   • the centre is the ACTING full card for a Strike beat (its RESULT rows
+//   • the centre is the causal event panel for a Strike beat (its RESULT rows
 //     stream in as the playhead advances) or a phase caption for a beat with no
 //     actor — exactly one shows, and it clears/changes between beats;
 //   • transport stays event-granular: next/prev/scrub move ONE event and the
-//     card reveals up to it (a half-revealed mid-beat);
+//     event panel reveals up to it (a half-revealed mid-beat);
 //   • the bottom trace strip carries one chip per beat, the current one lit, and
 //     clicking a chip scrubs the playhead to that beat;
 //   • the on-demand cause readout (carried from #065 slice 4): nothing selected
-//     → neutral prompt; clicking an acting-card RESULT row populates ITS cross-
+//     → neutral prompt; clicking an battle-event RESULT row populates ITS cross-
 //     beat ancestry without moving the playhead; a death's trace spans beats;
 //   • play inserts a longer read-pause at a beat boundary than between lines;
 //   • LS-1: board, transport and the run "continue" button hold their Y (and the
@@ -45,14 +45,14 @@ async function intoBattle(page) {
 
 const playhead = (page) => page.evaluate(() => Number(document.querySelector("#scrub").value));
 const maxStep = (page) => page.evaluate(() => Number(document.querySelector("#scrub").max));
-/** Count of revealed RESULT/CHAIN rows in the open acting card. */
-const cardRows = (page) => page.locator(".acting-card .ac-row").count();
-const hasCard = (page) => page.locator(".acting-card").count();
+/** Count of revealed RESULT/CHAIN rows in the open battle-event panel. */
+const eventRows = (page) => page.locator(".battle-event .be-row").count();
+const hasEvent = (page) => page.locator(".battle-event").count();
 const hasPhase = (page) => page.locator(".acting-phase").count();
-/** The beat the centre currently shows (card OR phase carry data-beat). */
+/** The beat the centre currently shows (event panel or phase carries data-beat). */
 const centreBeat = (page) =>
   page.evaluate(() =>
-    document.querySelector(".acting-card, .acting-phase")?.getAttribute("data-beat") ?? null,
+    document.querySelector(".battle-event, .acting-phase")?.getAttribute("data-beat") ?? null,
   );
 
 async function stepNext(page) {
@@ -100,7 +100,7 @@ async function layout(viewport, tag) {
 }
 
 // =====================================================================
-// 2. The centre: acting card (Strike beat) vs phase caption; RESULT streams;
+// 2. The centre: battle-event panel (Strike beat) vs phase caption; RESULT streams;
 //    clears between beats.
 // =====================================================================
 async function streaming(viewport, tag) {
@@ -108,49 +108,49 @@ async function streaming(viewport, tag) {
   await intoBattle(page);
 
   const total = await maxStep(page);
-  let sawCard = false;
+  let sawEvent = false;
   let sawPhase = false;
   let sawStream = false;
   let sawClear = false;
   let prevBeat = await centreBeat(page);
-  let prevRows = await cardRows(page);
-  let maxCardFrac = 0;
+  let prevRows = await eventRows(page);
+  let maxEventFrac = 0;
 
   for (let s = 0; s < total; s++) {
     await stepNext(page);
-    const card = await hasCard(page);
+    const event = await hasEvent(page);
     const phase = await hasPhase(page);
-    check(card + phase === 1, `${tag} step ${s + 1}: exactly one of acting-card / phase shows`, `card=${card} phase=${phase}`);
-    if (card) sawCard = true;
+    check(event + phase === 1, `${tag} step ${s + 1}: exactly one of battle-event / phase shows`, `event=${event} phase=${phase}`);
+    if (event) sawEvent = true;
     if (phase) sawPhase = true;
 
     const beat = await centreBeat(page);
-    const rows = await cardRows(page);
-    if (card && beat === prevBeat && rows > prevRows) sawStream = true;
+    const rows = await eventRows(page);
+    if (event && beat === prevBeat && rows > prevRows) sawStream = true;
     if (beat !== prevBeat && prevBeat !== null) sawClear = true;
     prevBeat = beat;
     prevRows = rows;
 
-    if (card && viewport.width >= 700) {
+    if (event && viewport.width >= 700) {
       const g = await page.evaluate(() => {
-        const c = document.querySelector(".acting-card");
+        const c = document.querySelector(".battle-event");
         const stage = document.querySelector(".stage-center");
         if (!c || !stage) return null;
         return { cw: c.getBoundingClientRect().width, sw: stage.getBoundingClientRect().width };
       });
-      if (g) maxCardFrac = Math.max(maxCardFrac, g.cw / g.sw);
+      if (g) maxEventFrac = Math.max(maxEventFrac, g.cw / g.sw);
     }
   }
 
-  check(sawCard, `${tag} a Strike beat opens the centre acting card`);
+  check(sawEvent, `${tag} a Strike beat opens the centre battle-event panel`);
   check(sawPhase, `${tag} a beat with no actor shows a phase caption (not a card)`);
-  check(sawStream, `${tag} the acting card's RESULT rows stream in as the playhead advances`);
+  check(sawStream, `${tag} the battle-event panel's RESULT rows stream in as the playhead advances`);
   check(sawClear, `${tag} the centre clears/changes when the next beat opens`);
   if (viewport.width >= 700) {
     check(
-      maxCardFrac > 0 && maxCardFrac <= 1.01,
-      `${tag} the acting card fits within its centre column (capped, not overflowing)`,
-      `widest card/stage = ${maxCardFrac.toFixed(3)}`,
+      maxEventFrac > 0 && maxEventFrac <= 1.01,
+      `${tag} the battle-event panel fits within its centre column (capped, not overflowing)`,
+      `widest event/stage = ${maxEventFrac.toFixed(3)}`,
     );
   }
 
@@ -177,15 +177,15 @@ async function transport(viewport, tag) {
   let foundPartial = false;
   for (let s = 0; s < total && !foundPartial; s++) {
     await stepNext(page);
-    if ((await cardRows(page)) >= 1 && (await hasCard(page))) {
+    if ((await eventRows(page)) >= 1 && (await hasEvent(page))) {
       const beatNow = await centreBeat(page);
-      const rowsNow = await cardRows(page);
+      const rowsNow = await eventRows(page);
       await stepNext(page);
       const beatNext = await centreBeat(page);
-      const rowsNext = await cardRows(page);
+      const rowsNext = await eventRows(page);
       if (beatNext === beatNow && rowsNext > rowsNow) {
         foundPartial = true;
-        check(true, `${tag} scrubbing mid-beat shows a half-revealed acting card`, `${rowsNow} → ${rowsNext} rows, same beat`);
+        check(true, `${tag} scrubbing mid-beat shows a half-revealed battle-event panel`, `${rowsNow} → ${rowsNext} rows, same beat`);
       }
     }
   }
@@ -221,18 +221,18 @@ async function causeReadout(viewport, tag) {
   let rowId = -1;
   for (let s = 0; s < total && rowId < 0; s++) {
     await stepNext(page);
-    if ((await cardRows(page)) >= 1) {
-      rowId = await page.evaluate(() => Number(document.querySelector(".acting-card .ac-row[data-id]").getAttribute("data-id")));
+    if ((await eventRows(page)) >= 1) {
+      rowId = await page.evaluate(() => Number(document.querySelector(".battle-event .be-row[data-id]").getAttribute("data-id")));
     }
   }
-  check(rowId >= 0, `${tag} found an acting-card row to click`, `event ${rowId}`);
+  check(rowId >= 0, `${tag} found a battle-event row to click`, `event ${rowId}`);
 
   const headBefore = await playhead(page);
-  await page.locator(`.acting-card .ac-row[data-id="${rowId}"]`).click();
+  await page.locator(`.battle-event .be-row[data-id="${rowId}"]`).click();
   const afterRow = await causeHtml(page);
   check(
     !afterRow.includes("cause-empty") && (afterRow.includes(">cause<") || afterRow.includes(">why<")),
-    `${tag} clicking an acting-card row populates the cause readout`,
+    `${tag} clicking a battle-event row populates the cause readout`,
     afterRow.slice(0, 160),
   );
   check(
@@ -274,7 +274,7 @@ async function readPause(viewport, tag) {
     scrub.value = "0";
     scrub.dispatchEvent(new Event("input", { bubbles: true }));
     if (play.textContent.trim() === "play") play.click();
-    const beatOf = () => document.querySelector(".acting-card, .acting-phase")?.getAttribute("data-beat") ?? "x";
+    const beatOf = () => document.querySelector(".battle-event, .acting-phase")?.getAttribute("data-beat") ?? "x";
     const seen = [];
     let last = Number(scrub.value);
     let lastBeat = beatOf();

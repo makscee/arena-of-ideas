@@ -1,4 +1,4 @@
-import { primaryAbilityIdOf, unitActionsOf } from "../src/types.js";
+import { primaryAbilityIdOf, statusActionsOf, unitActionsOf } from "../src/types.js";
 // Codex screen — fully generated from registry + tunables via buildCodex().
 // Renders statuses, units, and rule entries as responsive card grids (#015
 // slice 2): units AND statuses now wear the ONE shared card (unit-card.ts) at
@@ -12,6 +12,7 @@ import { buildCodex } from "../src/codex.js";
 import { abilityChips, describeAbilitySegments, describeStatusSegments } from "../src/describe.js";
 import type { DescribeSegment } from "../src/describe.js";
 import type { Ability, AbilityDef, AbilityRegistry, Family, StatusDef, StatusRegistry, UnitDef } from "../src/types.js";
+import { openInspectOverlay, renderEntityInspect, type InspectEntityKind } from "./inspect.js";
 import { unitCardHtml } from "./unit-card.js";
 
 // ---------------------------------------------------------------------------
@@ -27,14 +28,6 @@ export interface CodexScreen {
 
 const esc = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
-
-const PART_FAMILY: Record<string, Family> = {
-  trigger: "Control",
-  interceptor: "Shield",
-  condition: "Arcane",
-  selector: "Summon",
-  effect: "Strike",
-};
 
 function abilityLine(ab: AbilityDef | undefined): {
   abilityLabel?: string | undefined;
@@ -57,7 +50,7 @@ function segmentLinksHtml(segs: DescribeSegment[], registry: StatusRegistry): st
   return segs
     .map((s) => {
       if (s.statusRef !== undefined && registry[s.statusRef] !== undefined)
-        return `<a class="codex-termref" href="#codex/status/${esc(s.statusRef)}" data-status="${esc(s.statusRef)}">${esc(s.text)}</a>`;
+        return `<button type="button" class="entity-ref" data-entity-ref="status:${esc(s.statusRef)}">${esc(s.text)}</button>`;
       if (s.partRef !== undefined)
         return `<a class="codex-termref" href="#codex/part/${esc(s.partRef.family)}/${esc(s.partRef.kind)}" data-part="${esc(s.partRef.family)}:${esc(s.partRef.kind)}">${esc(s.text)}</a>`;
       return esc(s.text);
@@ -77,6 +70,12 @@ export function createCodex(
   // the level, which the derived entry doesn't carry.
   const defByName = new Map<string, UnitDef>();
   for (const u of units) if (!defByName.has(u.name)) defByName.set(u.name, u);
+  const summonByName = new Map<string, { unit: UnitDef; source: string }>();
+  for (const ability of Object.values(abilities)) {
+    for (const effect of ability.effects) {
+      if (effect.kind === "summon" && !summonByName.has(effect.unit.name)) summonByName.set(effect.unit.name, { unit: effect.unit, source: ability.name });
+    }
+  }
 
   // ---- shell ---------------------------------------------------------------
   container.innerHTML = "";
@@ -108,9 +107,11 @@ export function createCodex(
       pwr: s.pwr,
       registry,
       variant: "reference",
+      tag: "stacks",
       abilityLabel: "Status",
+      action: s.description,
       classes: "codex-unit",
-      attrs: "",
+      attrs: `data-inspect-entity="status:${esc(s.name)}"`,
       title: s.name,
     });
     // The description's behavior sentence links every term to its codex card
@@ -134,15 +135,26 @@ export function createCodex(
   // one palette) and its kernel-derived description. This is the source #080's
   // card and #082/#083's displays read colour + ability-line from.
   const abilityCards = data.abilities.map((a) => {
+    const card = unitCardHtml({
+      surface: "codex/reference",
+      kind: "ability",
+      artName: a.name,
+      label: a.name,
+      hp: "",
+      pwr: "",
+      registry,
+      family: a.family,
+      variant: "reference",
+      tag: a.family,
+      action: a.description,
+      classes: "codex-unit",
+      attrs: `data-inspect-entity="ability:${esc(a.name)}"`,
+      title: `${a.name} — Ability`,
+    });
     return (
       `<div class="codex-entry codex-ability-entry" id="codex-ability-${encodeId(a.name)}"` +
       ` data-search="${esc(`${a.name} ${a.family} ${a.description}`.toLowerCase())}">` +
-      anchorHtml(`codex/ability/${a.name}`) +
-      `<div class="codex-ability-head">` +
-      `<span class="codex-ability-swatch" style="background:${esc(a.hex)}" data-hex="${esc(a.hex)}"></span>` +
-      `<span class="codex-ability-name">${esc(a.name)}</span>` +
-      `<span class="codex-ability-family" data-family="${esc(a.family)}">${esc(a.family)}</span>` +
-      `</div>` +
+      anchorHtml(`codex/ability/${a.name}`) + card +
       `<div class="codex-entry-desc">${esc(a.description)}</div></div>`
     );
   });
@@ -150,7 +162,7 @@ export function createCodex(
 
   // Section: units — the shared card (art, framed stats, chips) over the
   // derived ability sentences; credit line for approved creation-loop units.
-  const unitCards = data.units.map((u) => {
+  const unitCards = data.units.filter((u) => !summonByName.has(u.name)).map((u) => {
     const def = defByName.get(u.name);
     const level = def?.level ?? 1;
     const search = [u.name, `${u.hp}hp`, `${u.pwr}pwr`, ...u.abilities, ...u.statuses].join(" ").toLowerCase();
@@ -167,7 +179,7 @@ export function createCodex(
       ...abilityLine(abilities[def !== undefined ? primaryAbilityIdOf(def)! : u.ability]),
       ...(level > 1 ? { level } : {}),
       classes: "codex-unit",
-      attrs: "",
+      attrs: `data-inspect-entity="unit:${esc(u.name)}"`,
       title: u.name,
     });
     // Render from the def's abilities as segments so every term is a tappable
@@ -198,47 +210,40 @@ export function createCodex(
   });
   container.append(sectionEl("units", "Units", grid(unitCards, "codex-grid-units")));
 
-  // Section: parts — every creator atom (#078) on the SAME shared card as a
-  // Unit and a Status, at the same fixed size: a Part frames its family
-  // ("Effect", "Selector", …) where a unit frames hp/pwr. The card is the whole
-  // tappable vocabulary; the describe-derived meaning rides below like a unit's
-  // ability sentence. Coverage is derived (buildCodex → src/parts.ts over the
-  // type space), so a new Part kind shows up here with no hand-edit.
-  const FAMILY_LABELS: Record<string, string> = {
-    trigger: "Trigger",
-    interceptor: "Interceptor",
-    condition: "Condition",
-    selector: "Selector",
-    effect: "Effect",
-  };
-  const partCards = data.parts.map((p) => {
+  // Summons are first-class entities, not a subtype hidden in the Unit grid.
+  const summonCards = [...summonByName.values()].map(({ unit, source }) => {
+    const ability = abilities[primaryAbilityIdOf(unit)!];
+    const card = unitCardHtml({
+      surface: "codex/reference",
+      kind: "summon",
+      artName: unit.name,
+      label: unit.name,
+      hp: unit.base.hp,
+      pwr: unit.base.pwr,
+      registry,
+      family: ability?.family ?? "Summon",
+      variant: "reference",
+      tag: `from ${source}`,
+      abilityLabel: source,
+      ...(ability !== undefined ? abilityLine(ability) : {}),
+      classes: "codex-unit",
+      attrs: `data-inspect-entity="summon:${esc(unit.name)}"`,
+      title: `${unit.name} — Summon from ${source}`,
+    });
+    return `<div class="codex-entry codex-summon-entry" id="codex-summon-${encodeId(unit.name)}" data-search="${esc(`${unit.name} summon ${source}`.toLowerCase())}">${anchorHtml(`codex/summon/${unit.name}`)}${card}<div class="codex-entry-desc">Created by ${esc(source)}.</div></div>`;
+  });
+  container.append(sectionEl("summons", "Summons", grid(summonCards, "codex-grid-summons")));
+
+  // Trigger, Selector, Condition, Interceptor and low-level Effect are glossary
+  // rows. They are intentionally not card-bearing entities.
+  const FAMILY_LABELS: Record<string, string> = { trigger: "Trigger", interceptor: "Interceptor", condition: "Condition", selector: "Selector", effect: "Effect" };
+  const partRows = data.parts.map((p) => {
     const id = `codex-part-${encodeId(p.family)}-${encodeId(p.kind)}`;
     const fragment = `codex/part/${p.family}/${p.kind}`;
     const search = `${p.name} ${p.family} ${p.meaning}`.toLowerCase();
-    const card = unitCardHtml({
-      surface: "codex/reference",
-      kind: "part",
-      artName: `${p.family}:${p.kind}`,
-      label: p.name,
-      tag: FAMILY_LABELS[p.family] ?? p.family,
-      hp: "",
-      pwr: "",
-      registry,
-      family: PART_FAMILY[p.family] ?? "Arcane",
-      variant: "reference",
-      abilityLabel: FAMILY_LABELS[p.family] ?? p.family,
-      classes: "codex-unit",
-      attrs: "",
-      title: `${p.name} — ${FAMILY_LABELS[p.family] ?? p.family}`,
-    });
-    return (
-      `<div class="codex-entry codex-part-entry" id="${id}" data-search="${esc(search)}">` +
-      anchorHtml(fragment) +
-      card +
-      `<div class="codex-entry-desc">${esc(p.meaning)}</div></div>`
-    );
+    return `<div class="codex-entry codex-part-row" id="${id}" data-non-card="${esc(p.family)}" data-search="${esc(search)}">${anchorHtml(fragment)}<span class="codex-part-kind">${esc(FAMILY_LABELS[p.family] ?? p.family)}</span><b>${esc(p.name)}</b><span>${esc(p.meaning)}</span></div>`;
   });
-  container.append(sectionEl("parts", "Parts", grid(partCards, "codex-grid-parts")));
+  container.append(sectionEl("parts", "Grammar · non-card", `<div class="codex-part-list">${partRows.join("")}</div>`));
 
   // Section: rules — prose cards.
   const ruleCards = data.rules.map(
@@ -250,6 +255,66 @@ export function createCodex(
       `<div class="codex-entry-desc">${esc(r.text)}</div></div>`,
   );
   container.append(sectionEl("rules", "Rules", grid(ruleCards, "codex-grid-rules")));
+
+  // Every card and entity-reference chip opens the one app-wide inspector.
+  container.addEventListener("click", (event) => {
+    const target = event.target as HTMLElement;
+    const hit = target.closest<HTMLElement>("[data-inspect-entity],[data-entity-ref]");
+    if (hit === null) return;
+    const raw = hit.dataset.inspectEntity ?? hit.dataset.entityRef;
+    if (raw === undefined) return;
+    event.preventDefault();
+    const split = raw.indexOf(":");
+    const kind = raw.slice(0, split) as InspectEntityKind;
+    const name = raw.slice(split + 1);
+    const unit = defByName.get(name);
+    const ability = abilities[name];
+    const status = registry[name];
+    const summon = summonByName.get(name);
+    const summary =
+      kind === "unit" && unit !== undefined ? `${unit.base.hp} HP · ${unit.base.pwr} PWR` :
+      kind === "ability" && ability !== undefined ? data.abilities.find((a) => a.name === name)?.description ?? name :
+      kind === "status" && status !== undefined ? data.statuses.find((s) => s.name === name)?.description ?? name :
+      kind === "summon" && summon !== undefined ? `${summon.unit.base.hp} HP · ${summon.unit.base.pwr} PWR · created by ${summon.source}` : name;
+    const recipeUnit = kind === "summon" ? summon?.unit : unit;
+    const boundUnitAbility = recipeUnit !== undefined ? unitActionsOf(recipeUnit, abilities)[0] : undefined;
+    const unitChips = boundUnitAbility !== undefined ? abilityChips(boundUnitAbility) : undefined;
+    const boundStatusAbility = status !== undefined ? statusActionsOf(status)[0] : undefined;
+    const statusChips = boundStatusAbility !== undefined ? abilityChips(boundStatusAbility) : undefined;
+    openInspectOverlay("entity", {
+      anchor: hit.closest<HTMLElement>("[data-card-entity]") ?? hit,
+      render: (body) => renderEntityInspect(body, {
+        kind,
+        name,
+        summary,
+        registry,
+        ...(kind === "ability" && ability !== undefined ? {
+          family: ability.family,
+          tag: ability.family,
+          action: data.abilities.find((a) => a.name === name)?.description ?? name,
+        } : {}),
+        ...(kind === "status" && status !== undefined ? {
+          family: undefined,
+          tag: `stacks${status.statMods?.hp ? ` · ${status.statMods.hp > 0 ? "+" : ""}${status.statMods.hp} hp/stack` : ""}${status.statMods?.pwr ? ` · ${status.statMods.pwr > 0 ? "+" : ""}${status.statMods.pwr} pwr/stack` : ""}`,
+          trigger: statusChips?.trigger,
+          target: statusChips?.target,
+          action: statusChips?.action,
+        } : {}),
+        ...((kind === "unit" || kind === "summon") && recipeUnit !== undefined ? {
+          hp: recipeUnit.base.hp,
+          pwr: recipeUnit.base.pwr,
+          statuses: recipeUnit.statuses,
+          family: abilities[primaryAbilityIdOf(recipeUnit)!]?.family,
+          trigger: unitChips?.trigger,
+          triggerGlyph: unitChips?.triggerGlyph,
+          target: unitChips?.target,
+          action: unitChips?.action ?? primaryAbilityIdOf(recipeUnit) ?? "Strike",
+          ...(kind === "summon" && summon !== undefined ? { tag: `from ${summon.source}` } : {}),
+        } : {}),
+      }),
+      onClose: () => {},
+    });
+  });
 
   // ---- search filter -------------------------------------------------------
   searchInput.addEventListener("input", () => {

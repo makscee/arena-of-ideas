@@ -1,4 +1,4 @@
-import { unitActionsOf } from "../src/types.js";
+import { statusActionsOf, unitActionsOf } from "../src/types.js";
 // Unit inspector — select a unit (or a status chip) on the board and see what
 // it does: its abilities and current statuses, each with a description derived
 // from the DSL data by the kernel's describe helpers. The replay position
@@ -6,6 +6,7 @@ import { unitActionsOf } from "../src/types.js";
 // Display only; the registry and unit defs are the same data battle() ran on.
 
 import {
+  abilityChips,
   describeAbilitySegments,
   describeStatus,
   describeStatusSegments,
@@ -15,11 +16,16 @@ import {
   type BoardState,
   type BoardUnit,
   type DescribeSegment,
+  type Family,
+  type StatusDef,
   type StatusRegistry,
   type UnitDef,
 } from "../src/index.js";
-import { statusChipStyle } from "./status-color.js";
 import { triggerIcon } from "./glyphs.js";
+import { chipsHtml } from "./status-chips.js";
+import { nameFamily, unitCardHtml } from "./unit-card.js";
+
+export { chipsHtml } from "./status-chips.js";
 
 /**
  * Unit instance id → its UnitDef. Roster units map by line order; a summoned
@@ -68,20 +74,42 @@ export function unitDefs(
 const esc = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
-/** Description segments → HTML. Every term links to where it's defined: a
- * status name the registry knows becomes a tappable ref revealed in-panel
- * (IA-1 — "what does Poison do?" answered where Poison is said); a Part term
- * (every trigger/interceptor/condition/selector/effect, #078 slice 3) becomes
- * an anchor to its codex Part card, so the codex is the complete tappable
- * vocabulary (the global #codex/ handler in main.ts opens the codex and
- * navigates). statusRef wins when a term is both (an applyStatus name is a
- * status AND an effect payload) — the in-panel reveal is the closer answer.
- * Everything else is the plain describe* text. */
+function statusTag(def: StatusDef): string {
+  const mods = (["hp", "pwr"] as const)
+    .flatMap((stat) => def.statMods?.[stat] ? [`${def.statMods[stat]! > 0 ? "+" : ""}${def.statMods[stat]} ${stat}/stack`] : []);
+  return mods.length > 0 ? `stacks · ${mods.join(" · ")}` : "stacks";
+}
+
+function statusInspectEntity(name: string, def: StatusDef): InspectEntity {
+  const action = statusActionsOf(def)[0];
+  const chips = action !== undefined ? abilityChips(action) : undefined;
+  return { kind: "status", name, summary: describeStatus(def), tag: statusTag(def), family: nameFamily(def.name), trigger: chips?.trigger, target: chips?.target, action: chips?.action };
+}
+
+function inspectRefAttrs(entity: InspectEntity): string {
+  return [
+    `data-inspect-kind="${entity.kind}"`,
+    `data-inspect-name="${esc(entity.name)}"`,
+    `data-inspect-summary="${esc(entity.summary ?? "")}"`,
+    entity.family !== undefined ? `data-inspect-family="${entity.family}"` : "",
+    entity.tag !== undefined ? `data-inspect-tag="${esc(entity.tag)}"` : "",
+    entity.hp !== undefined ? `data-inspect-hp="${esc(String(entity.hp))}"` : "",
+    entity.pwr !== undefined ? `data-inspect-pwr="${esc(String(entity.pwr))}"` : "",
+    entity.trigger !== undefined ? `data-inspect-trigger="${esc(entity.trigger)}"` : "",
+    entity.target !== undefined ? `data-inspect-target="${esc(entity.target)}"` : "",
+    entity.action !== undefined ? `data-inspect-action="${esc(entity.action)}"` : "",
+  ].filter(Boolean).join(" ");
+}
+
+/** Description segments link card-bearing references back into the same
+ * overlay. Grammar atoms remain Codex rows. */
 function segmentsHtml(segs: DescribeSegment[], registry: StatusRegistry): string {
   return segs
     .map((s) => {
-      if (s.statusRef !== undefined && registry[s.statusRef] !== undefined)
-        return `<button type="button" class="ins-ref" data-status-ref="${esc(s.statusRef)}">${esc(s.text)}</button>`;
+      if (s.statusRef !== undefined && registry[s.statusRef] !== undefined) {
+        const def = registry[s.statusRef]!;
+        return `<button type="button" class="ins-ref entity-ref" data-status-ref="${esc(s.statusRef)}" ${inspectRefAttrs(statusInspectEntity(s.statusRef, def))}>${esc(s.text)}</button>`;
+      }
       if (s.partRef !== undefined) {
         const frag = `codex/part/${s.partRef.family}/${s.partRef.kind}`;
         return `<a class="ins-ref ins-partref" href="#${esc(frag)}" data-part="${esc(s.partRef.family)}:${esc(s.partRef.kind)}">${esc(s.text)}</a>`;
@@ -104,26 +132,6 @@ function referencedStatuses(segs: DescribeSegment[], registry: StatusRegistry): 
     for (const s of describeStatusSegments(def)) if (s.statusRef !== undefined) queue.push(s.statusRef);
   }
   return seen;
-}
-
-/** Status chips, shared by every chip render site (board, shop, ladder): the
- * title carries the derived definition, not just name×count (IA-5). */
-export function chipsHtml(
-  statuses: readonly { status: string; stacks: number }[] | undefined,
-  registry: StatusRegistry,
-): string {
-  return (statuses ?? [])
-    .map((s) => {
-      const def = registry[s.status];
-      const title = `${s.status} ×${s.stacks}${def !== undefined ? ` — ${describeStatus(def)}` : ""}`;
-      // Per-status colour (#065 item 2): a hash-stable hue per status name, so a
-      // given status is the same colour on the chip as on its overlay badge and
-      // card line. The class/data-attr contract is untouched (probes, hit-targets
-      // and the inspector still key off `.chip`/`data-status`) — only an inline
-      // tint is layered on, kept bright enough to read on the dim chip bg.
-      return `<span class="chip" data-status="${esc(s.status)}" style="${statusChipStyle(s.status)}" title="${esc(title)}">${esc(s.status.slice(0, 3))}${s.stacks}</span>`;
-    })
-    .join("");
 }
 
 function findUnit(board: BoardState, id: string): { unit: BoardUnit; dead: boolean } | undefined {
@@ -153,8 +161,11 @@ export interface InspectArgs {
  * inspector shows. The head's state line arrives pre-formatted as HTML. */
 export interface UnitInspectArgs {
   title: string;
-  /** The head's state line, as HTML (hp/pwr numbers, the dead mark, level…). */
-  state: string;
+  /** Current values shown on the full shared Unit card. */
+  hp: string | number;
+  pwr: string | number;
+  /** Optional non-card state/explanation (dead, level, shop price…). */
+  state?: string | undefined;
   def: UnitDef | undefined;
   /** Attached (battle) or initial (shop) statuses, in order. */
   statuses: { status: string; stacks: number }[];
@@ -171,23 +182,49 @@ export interface UnitInspectArgs {
 /** Render the inspector body: head, abilities, statuses — every description
  * derived from the DSL data by the kernel's describe helpers. */
 export function renderUnitInspect(root: HTMLElement, args: UnitInspectArgs): void {
-  const { title, state, def, statuses, registry, abilities: abilityRegistry, highlight, silenced, noStatuses } = args;
+  const { title, hp, pwr, state, def, statuses, registry, abilities: abilityRegistry, highlight, silenced, noStatuses } = args;
   const rows: string[] = [];
-  rows.push(
-    `<div class="ins-head"><span class="ins-name">${esc(title)}</span><span class="ins-stats">${state}</span><button type="button" id="ins-close" title="Close">✕</button></div>`,
-  );
-  if (silenced) rows.push(`<div class="ins-warn">⊘ silenced — its own abilities are dead for the battle</div>`);
-
-  rows.push(`<div class="ins-k">abilities</div>`);
   const abilities = def !== undefined ? unitAbilities(def, abilityRegistry) : [];
-  const mentioned: DescribeSegment[] = []; // every segment shown — its refs get definition rows below
+  const primary = abilities[0];
+  const primaryId = def?.abilities?.[0] ?? def?.ability;
+  const primaryDef = primaryId !== undefined ? abilityRegistry[primaryId] : undefined;
+  const primaryChips = primary !== undefined ? abilityChips(primary) : undefined;
+  rows.push(`<div class="ins-head"><span class="ins-entity-kind">unit</span>${state !== undefined ? `<span class="ins-stats">${state}</span>` : ""}<button type="button" id="ins-close" title="Close">✕</button></div>`);
+  rows.push(unitCardHtml({
+    surface: "full",
+    kind: "unit",
+    artName: def?.name ?? title,
+    label: title,
+    hp,
+    pwr,
+    registry,
+    statuses,
+    family: primaryDef?.family ?? nameFamily(def?.name ?? title),
+    variant: "full",
+    ...(primaryDef !== undefined ? { abilityLabel: primaryDef.name } : {}),
+    ...(primaryChips?.trigger !== undefined ? { trigger: primaryChips.trigger } : {}),
+    ...(primaryChips?.triggerGlyph !== undefined ? { triggerGlyph: primaryChips.triggerGlyph } : {}),
+    ...(primaryChips?.target !== undefined ? { target: primaryChips.target } : {}),
+    ...(primaryChips?.action !== undefined ? { action: primaryChips.action } : {}),
+    ...(silenced !== undefined ? { silenced } : {}),
+    attrs: "data-inspector-card",
+    title,
+  }));
+  if (silenced) rows.push(`<div class="ins-warn" data-non-card="explanation">⊘ silenced — its own abilities are dead for the battle</div>`);
+
+  rows.push(`<div class="ins-k" data-non-card="explanation">abilities</div>`);
+  const mentioned: DescribeSegment[] = [];
   if (abilities.length === 0) {
-    rows.push(`<div class="ins-dim">none — it only strikes</div>`);
+    rows.push(`<div class="ins-dim" data-non-card="explanation">none — it only strikes</div>`);
   } else {
-    for (const ab of abilities) {
+    const abilityIds = def?.abilities ?? (def?.ability !== undefined ? [def.ability] : []);
+    for (const [abilityIndex, ab] of abilities.entries()) {
       const segs = describeAbilitySegments(ab);
+      const abilityName = abilityIds[abilityIndex] ?? `Ability ${abilityIndex + 1}`;
+      const chips = abilityChips(ab);
+      const abilityDef = abilityRegistry[abilityName];
       mentioned.push(...segs);
-      rows.push(`<div class="ins-row ins-ab"><span class="ins-ico">⚙</span><span>${segmentsHtml(segs, registry)}</span></div>`);
+      rows.push(`<div class="ins-row ins-ab" data-non-card="explanation"><button type="button" class="entity-ref ins-ability-ref" ${inspectRefAttrs({ kind: "ability", name: abilityName, summary: segs.map((s) => s.text).join(""), family: abilityDef?.family, tag: abilityDef?.family, action: chips.action })}>${esc(abilityName)}</button><span>${segmentsHtml(segs, registry)}</span></div>`);
     }
   }
 
@@ -200,8 +237,11 @@ export function renderUnitInspect(root: HTMLElement, args: UnitInspectArgs): voi
       const segs = sdef ? describeStatusSegments(sdef) : [{ text: "(unknown status)" }];
       mentioned.push(...segs);
       const sel = s.status === highlight ? " sel" : "";
+      const statusName = sdef !== undefined
+        ? `<button type="button" class="entity-ref ins-status-ref" ${inspectRefAttrs(statusInspectEntity(s.status, sdef))}>${esc(s.status)} ×${s.stacks}</button>`
+        : `<b>${esc(s.status)} ×${s.stacks}</b>`;
       rows.push(
-        `<div class="ins-row${sel}" data-status-row="${esc(s.status)}"><span class="ins-ico">◉</span><span><b>${esc(s.status)} ×${s.stacks}</b> — ${segmentsHtml(segs, registry)}</span></div>`,
+        `<div class="ins-row${sel}" data-status-row="${esc(s.status)}" data-non-card="explanation"><span class="ins-ico">◉</span><span>${statusName} — ${segmentsHtml(segs, registry)}</span></div>`,
       );
     }
   }
@@ -228,6 +268,52 @@ export function renderUnitInspect(root: HTMLElement, args: UnitInspectArgs): voi
 // their content in; the overlay owns closing (✕, Escape, outside tap) and
 // status-ref taps, so every call site gets them for free.
 // ---------------------------------------------------------------------------
+
+export type InspectEntityKind = "unit" | "ability" | "status" | "summon";
+
+export interface InspectEntity {
+  kind: InspectEntityKind;
+  name: string;
+  summary?: string | undefined;
+  family?: Family | undefined;
+  tag?: string | undefined;
+  hp?: string | number | undefined;
+  pwr?: string | number | undefined;
+  trigger?: string | undefined;
+  triggerGlyph?: string | undefined;
+  target?: string | undefined;
+  action?: string | undefined;
+  statuses?: readonly { status: string; stacks: number }[] | undefined;
+  registry?: StatusRegistry | undefined;
+}
+
+/** Every card-bearing reference replaces the overlay with exactly one full
+ * shared chassis. Any prose around it is explicitly non-card explanation. */
+export function renderEntityInspect(root: HTMLElement, entity: InspectEntity): void {
+  const registry = entity.registry ?? {};
+  root.innerHTML =
+    `<div class="ins-head"><span class="ins-entity-kind">${esc(entity.kind)}</span><button type="button" id="ins-close" title="Close">✕</button></div>` +
+    unitCardHtml({
+      surface: "full",
+      kind: entity.kind,
+      artName: entity.name,
+      label: entity.name,
+      hp: entity.hp ?? "—",
+      pwr: entity.pwr ?? "—",
+      registry,
+      ...(entity.statuses !== undefined ? { statuses: entity.statuses } : {}),
+      family: entity.family ?? nameFamily(entity.name),
+      variant: "full",
+      ...(entity.tag !== undefined ? { tag: entity.tag } : {}),
+      ...(entity.kind !== "ability" && entity.trigger !== undefined ? { trigger: entity.trigger } : {}),
+      ...(entity.triggerGlyph !== undefined ? { triggerGlyph: entity.triggerGlyph } : {}),
+      ...(entity.kind !== "ability" && entity.target !== undefined ? { target: entity.target } : {}),
+      ...(entity.action !== undefined || (entity.kind === "ability" && entity.summary !== undefined) ? { action: entity.action ?? entity.summary! } : {}),
+      attrs: "data-inspector-card",
+      title: entity.name,
+    }) +
+    (entity.summary ? `<div class="ins-row ins-summary" data-non-card="explanation">${esc(entity.summary)}</div>` : "");
+}
 
 export interface InspectOverlayArgs {
   /** The clicked card — the desktop popover pins to it. Owners re-resolve it
@@ -298,8 +384,24 @@ function ensureOverlay(): HTMLElement {
       dismissInspectOverlay();
       return;
     }
-    const ref = target.closest("[data-status-ref]");
-    if (ref !== null) revealStatusDef(el, ref.getAttribute("data-status-ref")!);
+    const ref = target.closest<HTMLElement>("[data-inspect-kind]");
+    if (ref !== null) {
+      ev.stopPropagation(); // rendering removes the clicked node before document's outside-tap handler runs
+      const kind = ref.dataset.inspectKind as InspectEntityKind;
+      renderEntityInspect(el, {
+        kind,
+        name: ref.dataset.inspectName ?? "Entity",
+        summary: ref.dataset.inspectSummary,
+        family: ref.dataset.inspectFamily as Family | undefined,
+        tag: ref.dataset.inspectTag,
+        hp: ref.dataset.inspectHp,
+        pwr: ref.dataset.inspectPwr,
+        trigger: ref.dataset.inspectTrigger,
+        target: ref.dataset.inspectTarget,
+        action: ref.dataset.inspectAction,
+      });
+      positionOverlay();
+    }
   });
   document.addEventListener("keydown", (ev) => {
     if (ev.key === "Escape" && current !== undefined) dismissInspectOverlay();
@@ -373,7 +475,9 @@ export function renderInspect(root: HTMLElement, args: InspectArgs): void {
   const { unit, dead } = found;
   renderUnitInspect(root, {
     title: name(unitId),
-    state: dead ? `<span class="ins-dead">${triggerIcon("death")} dead</span>` : `${unit.hp}/${unit.maxHp} hp · ${unit.pwr} pwr`,
+    hp: `${unit.hp}/${unit.maxHp}`,
+    pwr: unit.pwr,
+    ...(dead ? { state: `<span class="ins-dead">${triggerIcon("death")} dead</span>` } : {}),
     def,
     statuses: unit.statuses,
     registry,

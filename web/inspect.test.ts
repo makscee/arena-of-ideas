@@ -4,7 +4,7 @@
 
 import { describe, expect, test } from "vitest";
 import { Imp, Summoner, Venomancer, battle, stressAbilities, stressRegistry, type AbilityRegistry, type UnitDef } from "../src/index.js";
-import { chipsHtml, renderUnitInspect, unitDefs } from "./inspect.js";
+import { chipsHtml, renderEntityInspect, renderUnitInspect, unitDefs } from "./inspect.js";
 
 const dummy = (name: string, hp = 10, pwr = 3): UnitDef => ({ name, base: { hp, pwr }, ability: "Strike" });
 
@@ -32,11 +32,52 @@ describe("unitDefs", () => {
 // panel element — no DOM needed to assert what the inspector says.
 const fakeRoot = (): HTMLElement => ({ innerHTML: "" }) as HTMLElement;
 
+describe("shared card inspector", () => {
+  test("each entity inspector has exactly one full shared card and never nests cards", () => {
+    for (const kind of ["unit", "ability", "status", "summon"] as const) {
+      const root = fakeRoot();
+      renderEntityInspect(root, {
+        kind,
+        name: `${kind} example`,
+        summary: "explanation",
+        hp: 7,
+        pwr: 3,
+        registry: stressRegistry,
+        trigger: "turn end",
+        target: "holder",
+        action: "deal 2 damage",
+      });
+      expect(root.innerHTML.match(/class="[^"]*\bunit-b\b[^"]*\bis-full\b/g)).toHaveLength(1);
+      expect(root.innerHTML).toContain(`data-card-entity="${kind}"`);
+      expect(root.innerHTML).not.toMatch(/data-card-entity="[^"]+"[^>]*>[\s\S]*data-card-entity=/);
+    }
+  });
+
+  test("Unit inspection uses the full shared chassis and its entity refs carry replacement-card data", () => {
+    const root = fakeRoot();
+    renderUnitInspect(root, {
+      title: Venomancer.name,
+      hp: 10,
+      pwr: 2,
+      def: Venomancer,
+      statuses: [{ status: "Poison", stacks: 2 }],
+      registry: stressRegistry,
+      abilities: stressAbilities,
+    });
+    expect(root.innerHTML.match(/data-card-entity="unit"/g)).toHaveLength(1);
+    expect(root.innerHTML).toContain("unit-b is-full entity-unit");
+    expect(root.innerHTML).toContain('data-inspect-kind="ability"');
+    expect(root.innerHTML).toContain('data-inspect-kind="status"');
+  });
+});
+
 describe("renderUnitInspect status refs", () => {
   test("a status name in an ability sentence renders as a tappable ref with a hidden definition row", () => {
     const root = fakeRoot();
     renderUnitInspect(root, {
       title: Venomancer.name,
+      hp: 10,
+      pwr: 2,
       state: "10 hp · 2 pwr",
       def: Venomancer,
       statuses: [],
@@ -44,7 +85,7 @@ describe("renderUnitInspect status refs", () => {
       abilities: stressAbilities,
     });
     expect(root.innerHTML).toContain('data-status-ref="Poison"');
-    expect(root.innerHTML).toContain('class="ins-ref"');
+    expect(root.innerHTML).toContain('class="ins-ref entity-ref"');
     // The definition is in the same panel, hidden until the ref is tapped.
     expect(root.innerHTML).toContain('data-status-def="Poison" hidden');
     // The Poison definition's sentence is present — its Part terms are now
@@ -60,6 +101,8 @@ describe("renderUnitInspect status refs", () => {
     const root = fakeRoot();
     renderUnitInspect(root, {
       title: Venomancer.name,
+      hp: 10,
+      pwr: 2,
       state: "10 hp · 2 pwr",
       def: Venomancer,
       statuses: [{ status: "Poison", stacks: 2 }],
@@ -84,6 +127,8 @@ describe("renderUnitInspect status refs", () => {
     };
     renderUnitInspect(root, {
       title: "Mystery",
+      hp: 1,
+      pwr: 1,
       state: "1 hp · 1 pwr",
       def: {
         name: "Mystery",
@@ -107,6 +152,8 @@ describe("renderUnitInspect status refs", () => {
     const root = fakeRoot();
     renderUnitInspect(root, {
       title: Venomancer.name,
+      hp: 10,
+      pwr: 2,
       state: "10 hp · 2 pwr",
       def: Venomancer,
       statuses: [],

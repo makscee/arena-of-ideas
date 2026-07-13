@@ -264,14 +264,12 @@ export const refsRun = () => {
   const WardenRefs = {
     name: "WardenRefs",
     family: "Heal",
-    whens: [{ kind: "trigger", on: { on: "StatusApplied", unit: "ally", status: "Poison" } }],
-    selectors: [{ kind: "holder" }],
     effects: [
       { kind: "heal", amount: { kind: "const", value: 2 } },
       { kind: "consumeStacks", status: "Shield", stacks: { kind: "const", value: 2 } },
     ],
   };
-  const Warden = { name: "Warden", base: { hp: 8, pwr: 2 }, ability: "WardenRefs" };
+  const Warden = { name: "Warden", base: { hp: 8, pwr: 2 }, triggers: [{ kind: "trigger", on: { on: "StatusApplied", unit: "ally", status: "Poison" } }], selectors: [{ kind: "holder" }], abilities: ["WardenRefs"] };
   return shaped(
     (s) => {
       s.team = [unitOf(Warden), unitOf(byName.Brawler)];
@@ -302,11 +300,9 @@ export const duelistRun = () => {
   const DuelStrike = {
     name: "DuelStrike",
     family: "Strike",
-    whens: [{ kind: "trigger", on: { on: "Strike", striker: "holder" } }],
-    selectors: [{ kind: "frontEnemy" }],
     effects: [{ kind: "damage", amount: { kind: "const", value: 1 } }],
   };
-  const Duelist = { name: "Duelist", base: { hp: 8, pwr: 1 }, ability: "DuelStrike" };
+  const Duelist = { name: "Duelist", base: { hp: 8, pwr: 1 }, triggers: [{ kind: "trigger", on: { on: "Strike", striker: "holder" } }], selectors: [{ kind: "frontEnemy" }], abilities: ["DuelStrike"] };
   // The bodyguard is a plain body (the inert Strike ability) — it absorbs the
   // bootstrap Silencer's BattleStart silence so the Duelist reaches the front
   // with its ability intact.

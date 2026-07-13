@@ -39,15 +39,32 @@ for (const [vp, tag] of [
   await page.screenshot({ path: join(outDir, `${tag}-codex-status.png`), fullPage: false });
   console.log(`shot ${tag}-codex-status`);
 
-  // Tap a Part term in a unit sentence → lands on its Part card.
+  // Ability and Summon use the same chassis with their own anatomy.
+  await page.goto(`${BASE}#codex/ability/Conjure`, { waitUntil: "domcontentloaded" });
+  await page.waitForSelector('#codex-sec-abilities [data-card-entity="ability"]');
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: join(outDir, `${tag}-codex-ability.png`), fullPage: false });
+  console.log(`shot ${tag}-codex-ability`);
+
+  await page.goto(`${BASE}#codex/summon/Imp`, { waitUntil: "domcontentloaded" });
+  const summon = page.locator('#codex-sec-summons [data-card-entity="summon"]').first();
+  await summon.waitFor();
+  await summon.click();
+  await page.waitForSelector("#inspect-overlay:not([hidden])");
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: join(outDir, `${tag}-summon-inspector.png`), fullPage: false });
+  console.log(`shot ${tag}-summon-inspector`);
+  await page.keyboard.press("Escape");
+
+  // Tap a grammar term → lands on its explicitly non-card glossary row.
   await page.goto(`${BASE}#codex/unit/Necromancer`, { waitUntil: "domcontentloaded" });
   await page.waitForSelector("#codex-sec-units .codex-termref");
   const partLink = page.locator('#codex-sec-units .codex-termref[href^="#codex/part/"]').first();
   const href = await partLink.getAttribute("href");
   await partLink.click();
-  await page.waitForTimeout(700); // smooth scroll + highlight
-  await page.screenshot({ path: join(outDir, `${tag}-codex-part-landing.png`), fullPage: false });
-  console.log(`shot ${tag}-codex-part-landing (tapped ${href})`);
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: join(outDir, `${tag}-codex-grammar-row.png`), fullPage: false });
+  console.log(`shot ${tag}-codex-grammar-row (tapped ${href})`);
 
   await ctx.close();
 }

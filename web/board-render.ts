@@ -237,11 +237,11 @@ export function renderBoard(
 }
 
 // ============================================================================
-// #082 slice D — the "compact board + acting full card" battle. The board is a
+// #082 slice D — the "compact board + causal battle-event panel" battle. The board is a
 // flex column: a header bar (vs ghost · seed · Turn N), a 3-column grid of
-// COMPACT side cards (with ACTING/TARGET/USED state) flanking the centre acting
-// card, and a bottom trace strip. Pure presentation over the same boardAt
-// projection; the acting card / trace strip HTML is computed in acting.ts and
+// COMPACT side cards (with ACTING/TARGET/USED state) flanking the centre causal
+// event panel, and a bottom trace strip. Pure presentation over the same boardAt
+// projection; the battle-event panel / trace strip HTML is computed in acting.ts and
 // injected here so this file stays the single DOM writer.
 // ============================================================================
 
@@ -345,12 +345,12 @@ export interface RenderBattleArgs {
   anno: BattleAnnotations;
   registry: StatusRegistry;
   selected?: string | undefined;
-  centerHtml: string; // the acting card (acting.ts)
+  centerHtml: string; // the battle-event panel (acting.ts)
   traceHtml: string; // the bottom strip (acting.ts)
   header: BattleHeader;
 }
 
-/** The whole `#board` for the #082 acting-card battle. */
+/** The whole `#board` for the #082 battle-event battle. */
 export function battleHtml(a: RenderBattleArgs): string {
   const grid = `<div class="bv-grid">${sideColumnB(a.board, "A", a.ctx, a.anno, a.registry, a.selected)}<div class="stage-center">${a.centerHtml}</div>${sideColumnB(a.board, "B", a.ctx, a.anno, a.registry, a.selected)}</div>`;
   return `${headerHtml(a.header)}${grid}${a.traceHtml}`;

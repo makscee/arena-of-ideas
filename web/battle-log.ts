@@ -1,6 +1,6 @@
 // Side lookup off the causal log — unit id → its team side, read from the
 // BattleStart rosters and Summon events. The inline battle-log renderer this
-// file once carried was retired with the acting-card battle (#082 slice D): the
+// file once carried was retired with the battle-event battle (#082 slice D): the
 // running transcript is now the bottom trace strip (acting.ts). The side map it
 // relied on stays here — the viewer and the side-tint helpers still read it.
 

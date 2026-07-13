@@ -1,6 +1,6 @@
 import { primaryAbilityIdOf, statusActionsOf, unitActionsOf } from "../src/types.js";
-// The acting-card battle presentation (#082 slice D) — the mockup's "compact
-// board + acting full card". Pure projection over the kernel log: every fact
+// The battle-event battle presentation (#082 slice D) — the mockup's "compact
+// board + causal battle-event panel". Pure projection over the kernel log: every fact
 // (acting unit, target, the step's effects, the reactive chains, the trace
 // chips, the per-side ACTING/TARGET/USED state) is DERIVED from structured
 // events (Strike's striker/defender, each caused event's `source`/`causedBy`),
@@ -131,10 +131,10 @@ export interface ChainBox {
 }
 
 export interface ActingModel {
-  kind: "card" | "phase";
+  kind: "event" | "phase";
   beatIndex: number; // the beat the playhead sits in — stable across the beat's steps
   triggerIndex: number; // the playhead's 1-based index (#42, matches the scrubber)
-  // card:
+  // event:
   acting?: {
     id: string;
     name: string;
@@ -253,8 +253,8 @@ function effectRow(ctx: ActingCtx, e: BattleEvent, family: Family | undefined): 
   }
 }
 
-/** The centre acting-card model for the playhead at `step` — a card for the
- * acting unit (Strike beat) or a phase caption otherwise. RESULT holds the
+/** The centre battle-event model for the playhead at `step` — a causal panel
+ * for an acting unit (Strike beat) or a phase caption otherwise. RESULT holds the
  * beat's DIRECT effects revealed so far (source = kernel, or the acting unit's
  * own ability); CHAINS holds the REACTIVE effects (a DIFFERENT unit's ability
  * triggered by this step), grouped by the chaining unit. The kernel `source`
@@ -300,7 +300,7 @@ export function actingModelAt(log: BattleEvent[], beats: Beat[], step: number, c
   }
 
   return {
-    kind: "card",
+    kind: "event",
     beatIndex: beat.index,
     triggerIndex,
     acting: {
@@ -321,17 +321,16 @@ export function actingModelAt(log: BattleEvent[], beats: Beat[], step: number, c
   };
 }
 
-// ---------- render: the centre acting card ----------
+// ---------- render: the centre battle-event panel ----------
 
 function rowHtml(r: ResultRow): string {
-  return `<div class="ac-row" data-id="${r.id}"><span class="ac-g ${r.cls}">${r.glyph}</span><span class="ac-t">${r.html}</span></div>`;
+  return `<div class="be-row" data-id="${r.id}"><span class="be-g ${r.cls}">${r.glyph}</span><span class="be-t">${r.html}</span></div>`;
 }
 
-/** The centre slot HTML for `model` — the big acting card (family border +
- * glow, header sigil + named ability + #index, the ● NOW chip, RESULT rows and
- * any ↳ CHAINS callouts) or, for a beat with no actor, a centred phase caption.
- * `sigil` is the family sigil SVG the caller built (unit-card's familySigil). */
-export function actingCardHtml(model: ActingModel, sigil: string): string {
+/** The centre slot HTML for `model` — an explicitly non-card causal panel
+ * naming the actor and ability, the ● NOW target/action, RESULT rows, and any
+ * ↳ CHAINS callouts; a beat with no actor instead gets a phase caption. */
+export function battleEventHtml(model: ActingModel): string {
   if (model.kind === "phase") {
     return `<div class="acting-phase" data-beat="${model.beatIndex}"><span class="ap-cap">${esc(model.caption ?? "")}</span></div>`;
   }
@@ -340,37 +339,36 @@ export function actingCardHtml(model: ActingModel, sigil: string): string {
   const now = a.now;
   const nowSegs: string[] = [];
   if (now.targetName !== undefined)
-    nowSegs.push(`<span class="ac-now-tgt">${triggerIconForGlyph(now.trigGlyph)} ${esc(now.targetName)}</span>`);
+    nowSegs.push(`<span class="be-now-tgt">${triggerIconForGlyph(now.trigGlyph)} ${esc(now.targetName)}</span>`);
   if (now.action !== undefined)
-    nowSegs.push(`<span class="ac-now-act">${actionIcon(a.family)} ${esc(now.action)}</span>`);
+    nowSegs.push(`<span class="be-now-act">${actionIcon(a.family)} ${esc(now.action)}</span>`);
   const nowRow =
     nowSegs.length > 0
-      ? `<div class="ac-now"><span class="ac-now-k">● NOW</span>${nowSegs.join('<span class="ac-arrow">▸</span>')}</div>`
+      ? `<div class="be-now"><span class="be-now-k">● NOW</span>${nowSegs.join('<span class="be-arrow">▸</span>')}</div>`
       : "";
 
   const resultRows = model.result.map(rowHtml).join("");
   const chains = model.chains
     .map(
       (c) =>
-        `<div class="ac-chain"><div class="ac-chain-h">↳ CHAINS · ${esc(c.unit.toUpperCase())} · ${triggerIcon("damaged")} ${esc(c.trigger)}</div>${c.rows
+        `<div class="be-chain"><div class="be-chain-h">↳ CHAINS · ${esc(c.unit.toUpperCase())} · ${triggerIcon("damaged")} ${esc(c.trigger)}</div>${c.rows
           .map(rowHtml)
           .join("")}</div>`,
     )
     .join("");
   const result =
     resultRows !== "" || chains !== ""
-      ? `<div class="ac-result"><div class="ac-result-k">RESULT</div>${resultRows}${chains}</div>`
+      ? `<div class="be-result"><div class="be-result-k">RESULT</div>${resultRows}${chains}</div>`
       : "";
 
   return `
-    <div class="acting-card" style="--fam:${a.hex}" data-acting="${esc(a.id)}" data-beat="${model.beatIndex}">
-      <div class="ac-head">
-        <div class="ac-sigil">${sigil}</div>
-        <div class="ac-id">
-          <div class="ac-name ${sideCls}">${esc(a.name)}</div>
-          <div class="ac-ability">${abilityStar("ac-spark")}<span>${esc(a.abilityLabel.toUpperCase())}</span></div>
+    <div class="battle-event" data-non-card="battle-event" style="--fam:${a.hex}" data-acting="${esc(a.id)}" data-beat="${model.beatIndex}">
+      <div class="be-head">
+        <div class="be-id">
+          <div class="be-name ${sideCls}">${esc(a.name)}</div>
+          <div class="be-ability">${abilityStar("be-spark")}<span>${esc(a.abilityLabel.toUpperCase())}</span></div>
         </div>
-        <div class="ac-idx">#${model.triggerIndex}</div>
+        <div class="be-idx">event #${model.triggerIndex}</div>
       </div>
       ${nowRow}
       ${result}

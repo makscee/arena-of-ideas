@@ -1,9 +1,10 @@
-// #082 slice D — the acting-card model: the centre card derives the acting
+// #082 slice D — the battle-event model: the centre event panel derives the acting
 // unit, its RESULT effects, and the reactive CHAINS straight from the kernel
 // log's structured `source`/`causedBy`, never from narrated text. Side-card
 // state (ACTING/TARGET/USED) and the per-beat trace strip come off the same
 // projection. These tests pin the mapping a DOM probe can't see cheaply.
 
+import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import {
   battle,
@@ -17,7 +18,7 @@ import {
 } from "../src/index.js";
 import { Poison, Strength, stressRegistry } from "../src/content/stress.js";
 import {
-  actingCardHtml,
+  battleEventHtml,
   actingModelAt,
   actingUnitAt,
   traceChipsAt,
@@ -25,7 +26,6 @@ import {
   usedThisTurnAt,
   type ActingCtx,
 } from "./acting.js";
-import { familySigil } from "./unit-card.js";
 import { battleHtml, type BattleAnnotations } from "./board-render.js";
 import { boardAt } from "../src/index.js";
 
@@ -76,7 +76,7 @@ describe("actingModelAt", () => {
     const { log, beats, ctx } = run();
     const beat = venomBeat(beats, ctx);
     const m = actingModelAt(log, beats, beat.end, ctx);
-    expect(m.kind).toBe("card");
+    expect(m.kind).toBe("event");
     expect(m.acting?.name).toBe("Venomancer");
     expect(m.acting?.family).toBe("Poison");
     expect(m.acting?.abilityLabel).toBe("Toxic Strike");
@@ -178,22 +178,25 @@ describe("side-card state + trace strip", () => {
   });
 });
 
-describe("actingCardHtml", () => {
-  test("renders the NOW chip, RESULT rows, and a CHAINS callout for a chained step", () => {
+describe("battleEventHtml", () => {
+  test("renders an explicit non-card panel with NOW, RESULT, and CHAINS", () => {
     const { log, beats, ctx } = run();
     const beat = venomBeat(beats, ctx);
     const m = actingModelAt(log, beats, beat.end, ctx);
-    const html = actingCardHtml(m, familySigil(m.acting!.family, m.acting!.hex));
+    const html = battleEventHtml(m);
+    expect(html).toContain('data-non-card="battle-event"');
+    expect(html).not.toContain("data-card-entity");
+    expect(html).not.toMatch(/class="[^"]*\b[^\"]*card\b/);
     expect(html).toContain("● NOW");
     expect(html).toContain(">RESULT<");
     expect(html).toContain("↳ CHAINS");
     expect(html).toContain("Venomancer");
     // The trigger/action/effect marks render as inline `currentColor` SVG icons
     // (#086), NOT the unicode glyphs the vendored fonts drop to the wrong char.
-    expect(html).toMatch(/class="ac-now-act"><svg class="gly" data-glyph="[a-z-]+"/);
-    expect(html).toMatch(/class="ac-g [^"]*"><svg class="gly" data-glyph="[a-z-]+"/);
+    expect(html).toMatch(/class="be-now-act"><svg class="gly" data-glyph="[a-z-]+"/);
+    expect(html).toMatch(/class="be-g [^"]*"><svg class="gly" data-glyph="[a-z-]+"/);
     // the named-ability star is the inline SVG, not the ✦ font glyph
-    expect(html).toContain('class="ac-spark" data-glyph="ability-star"');
+    expect(html).toContain('class="be-spark" data-glyph="ability-star"');
     // the CHAINS header's reactive mark is the burst SVG, not the ✸ font glyph
     expect(html).toMatch(/CHAINS ·[\s\S]*?· <svg class="gly" data-glyph="damaged"/);
     // no raw fallback-prone unicode marks leak into the markup
@@ -203,9 +206,22 @@ describe("actingCardHtml", () => {
   test("a phase step renders a caption, not a card", () => {
     const { log, beats, ctx } = run();
     const m = actingModelAt(log, beats, 0, ctx);
-    const html = actingCardHtml(m, "");
+    const html = battleEventHtml(m);
     expect(html).toContain("acting-phase");
     expect(html).toContain("Battle begins");
-    expect(html).not.toContain("acting-card");
+    expect(html).not.toContain('data-non-card="battle-event"');
+  });
+
+  test("production battle sources reject a competing card constructor or class", () => {
+    const sources = ["acting.ts", "viewer.ts", "board-render.ts", "style.css", "index.html"].map((name) =>
+      readFileSync(new URL(name, import.meta.url), "utf8"),
+    );
+    for (const source of sources) {
+      expect(source).not.toMatch(/\bactingCardHtml\b|\.acting-card\b|class=["'`]acting-card\b/);
+    }
+    expect(sources[0]!).not.toMatch(/function\s+\w*CardHtml\s*\(/);
+    expect(sources[0]!).toContain('data-non-card="battle-event"');
+    const eventRule = sources[3]!.match(/\.battle-event\s*\{([^}]*)\}/)?.[1] ?? "";
+    expect(eventRule).not.toMatch(/\bborder\b|\bfilter\b|clip-path/);
   });
 });

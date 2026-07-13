@@ -231,6 +231,8 @@ export function createLadderView(root: HTMLElement, deps: LadderViewDeps): Ladde
       render: (body) =>
         renderUnitInspect(body, {
           title: def.name,
+          hp: def.base.hp,
+          pwr: def.base.pwr,
           state:
             `${def.base.hp} hp · ${def.base.pwr} pwr` +
             ((def.level ?? 1) > 1 ? ` · L${def.level}` : "") +
@@ -361,6 +363,8 @@ export function createLadderView(root: HTMLElement, deps: LadderViewDeps): Ladde
         render: (body) =>
           renderUnitInspect(body, {
             title: def.name,
+            hp: def.base.hp,
+            pwr: def.base.pwr,
             state:
               `${def.base.hp} hp · ${def.base.pwr} pwr` +
               ((def.level ?? 1) > 1 ? ` · L${def.level}` : "") +

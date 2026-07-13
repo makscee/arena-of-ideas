@@ -2,7 +2,8 @@
 // the LIVE app, that the shop offers (FULL) and the team "Your line" (COMPACT)
 // render the new family-coloured card at desktop + 375px:
 //  1. Both variants render: an offer is `.unit-b.is-full` with the art area; a
-//     line card is `.unit-b.is-compact` with the header sigil and no art area.
+//     line card is `.unit-b.is-compact` with the same stable geometric portrait
+//     and no art area.
 //  2. The card contract anchors survive (.uname / .unums .hp / .unums .pwr /
 //     .chips) so the inspector + probes still key off them.
 //  3. Family colour + chamfer: a polygon clip-path, a non-transparent family
@@ -63,7 +64,7 @@ for (const [viewport, tag] of [
   // ---- FULL offer card ----
   check(await has(page, `${OFFER}.unit-b.is-full`), `${tag} offer renders the FULL B·Arena card`);
   check(await has(page, `${OFFER} .ub-art`), `${tag} full card carries the 84px art area`);
-  check(await has(page, `${OFFER} .ub-art .ub-sigil`), `${tag} full card draws the family sigil`);
+  check(await has(page, `${OFFER} .ub-art svg.shape`), `${tag} full card draws the Unit portrait`);
   for (const anchor of [".uname", ".unums .hp", ".unums .pwr", ".chips"]) {
     check(await has(page, `${OFFER} ${anchor}`), `${tag} full card keeps the contract anchor ${anchor}`);
   }
@@ -71,7 +72,7 @@ for (const [viewport, tag] of [
   // ---- COMPACT line card ----
   check(await has(page, `${LINE}.unit-b.is-compact`), `${tag} line renders the COMPACT B·Arena card`);
   check(!(await has(page, `${LINE} .ub-art`)), `${tag} compact card has NO art area`);
-  check(await has(page, `${LINE} .ub-mini .ub-sigil`), `${tag} compact card rides the header sigil`);
+  check(await has(page, `${LINE} .ub-mini svg.shape`), `${tag} compact card carries the Unit portrait`);
   for (const anchor of [".uname", ".unums .hp", ".unums .pwr", ".chips"]) {
     check(await has(page, `${LINE} ${anchor}`), `${tag} compact card keeps the contract anchor ${anchor}`);
   }

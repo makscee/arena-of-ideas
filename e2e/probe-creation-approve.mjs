@@ -69,7 +69,9 @@ check(names.includes("Probeling"), "approved unit appears in a shop offer of a n
 const offerIndex = names.indexOf("Probeling");
 await page.click(`#run-shop-row [data-offer="${offerIndex}"] .uname`);
 await page.waitForSelector("#inspect-overlay:not([hidden])");
-const insName = await page.locator("#inspect-overlay .ins-name").textContent();
+const inspectorCard = page.locator('#inspect-overlay > .unit-b.is-full[data-card-entity="unit"]');
+check((await inspectorCard.count()) === 1, "inspector contains exactly one full Unit card");
+const insName = (await inspectorCard.locator(".uname").textContent())?.trim();
 check(insName === "Probeling", "inspector overlay opens on the approved unit", `name=${insName}`);
 const insBody = await page.locator("#inspect-overlay").textContent();
 check(/Poison/i.test(insBody), "inspector renders the unit's DSL (Poison status)", insBody.slice(0, 120));

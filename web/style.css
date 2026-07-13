@@ -179,7 +179,7 @@ button:disabled:hover {
    stage (the phone media block reorders it under the board). */
 
 /* The board is now a flex COLUMN (#082 slice D): a header bar, the 3-column
-   compact-board + acting-card grid, and a bottom trace strip. The dark radial
+   compact-board + battle-event grid, and a bottom trace strip. The dark radial
    stage gradient sits behind the whole frame. The viewer locks its min-height
    per battle (LS-1) so it never changes height mid-replay. */
 #board {
@@ -229,9 +229,9 @@ button:disabled:hover {
   color: var(--you);
 }
 
-/* ---------- #082 slice D: the 3-column compact board + acting card ----------
+/* ---------- #082 slice D: the 3-column compact board + battle-event panel ----------
    240px | 1fr | 240px — the side tracks are wide enough for a compact card, the
-   centre fills the rest and holds the acting card (capped, centred). The grid
+   centre fills the rest and holds the battle-event panel (capped, centred). The grid
    collapses to one column at phone width (override below). */
 .bv-grid {
   display: grid;
@@ -335,56 +335,42 @@ button:disabled:hover {
   padding: 1px 5px;
 }
 
-/* ---------- #082 slice D: the centre acting full card ----------
-   The current step's acting unit blown up: family border + glow, header (sigil +
-   hero name + named ability + #index), the ● NOW chip, then the RESULT rows and
-   any ↳ CHAINS callouts. Capped at 340px and centred in its track. */
-.acting-card {
+/* ---------- #082 slice D: the centre causal battle-event panel ----------
+   This is deliberately not a card: no chassis border, glow, chamfer, portrait,
+   or clipping. It is a compact causal readout naming actor/ability, NOW,
+   RESULT, and any ↳ CHAINS while side Units retain the shared card chassis. */
+.battle-event {
   --fam: var(--fam-strike);
   width: 100%;
   max-width: 340px;
-  background: linear-gradient(165deg, color-mix(in srgb, var(--fam) 13%, #0a0810), #0a0810);
-  border: 1px solid var(--fam);
-  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
-  filter: drop-shadow(0 0 26px color-mix(in srgb, var(--fam) 26%, transparent));
-  overflow: hidden;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--fam) 8%, transparent), rgba(10, 8, 16, 0.3) 62%, transparent);
   text-align: left;
 }
-.ac-head {
+.be-head {
   display: flex;
   align-items: center;
   gap: 0.7rem;
   padding: 0.85rem 1rem 0;
 }
-.ac-sigil {
-  width: 36px;
-  height: 36px;
-  flex: none;
-}
-.ac-sigil .ub-sigil {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-.ac-id {
+.be-id {
   flex: 1;
   min-width: 0;
 }
-.ac-name {
+.be-name {
   font-family: var(--font-title);
   font-weight: 700;
   font-size: 0.98rem;
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
-.ac-ability {
+.be-ability {
   display: flex;
   align-items: center;
   gap: 0.3rem;
   margin-top: 0.15rem;
   color: color-mix(in srgb, var(--fam) 55%, #eaf2ff);
 }
-.ac-spark {
+.be-spark {
   display: block;
   flex: none;
   width: 11px;
@@ -402,13 +388,13 @@ button:disabled:hover {
   height: 1.05em;
   vertical-align: -0.16em;
 }
-.ac-ability span {
+.be-ability span {
   font-family: var(--font-title);
   font-weight: 700;
   font-size: 0.56rem;
   letter-spacing: 0.1em;
 }
-.ac-idx {
+.be-idx {
   flex: none;
   font-family: var(--font-num);
   font-weight: 600;
@@ -416,7 +402,7 @@ button:disabled:hover {
   color: var(--muted);
   align-self: flex-start;
 }
-.ac-now {
+.be-now {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -430,7 +416,7 @@ button:disabled:hover {
   font-weight: 600;
   font-size: 0.72rem;
 }
-.ac-now-k {
+.be-now-k {
   flex: none;
   font-family: var(--font-title);
   font-weight: 700;
@@ -441,20 +427,20 @@ button:disabled:hover {
   border-radius: 2px;
   padding: 1px 6px;
 }
-.ac-now-tgt {
+.be-now-tgt {
   color: color-mix(in srgb, var(--side-b) 70%, #eaf2ff);
   text-transform: uppercase;
 }
-.ac-now-act {
+.be-now-act {
   color: color-mix(in srgb, var(--fam) 55%, #eaf2ff);
 }
-.ac-arrow {
+.be-arrow {
   color: #46506a;
 }
-.ac-result {
+.be-result {
   padding: 0.75rem 1rem 0.9rem;
 }
-.ac-result-k {
+.be-result-k {
   font-family: var(--font-title);
   font-weight: 700;
   font-size: 0.55rem;
@@ -462,7 +448,7 @@ button:disabled:hover {
   color: var(--muted);
   margin-bottom: 0.6rem;
 }
-.ac-row {
+.be-row {
   display: flex;
   gap: 0.5rem;
   align-items: baseline;
@@ -474,23 +460,23 @@ button:disabled:hover {
   border-radius: 3px;
   cursor: pointer; /* clicking a row traces its cause */
 }
-.ac-row:hover {
+.be-row:hover {
   background: rgba(255, 255, 255, 0.04);
 }
-.ac-row.bc-line-sel {
+.be-row.bc-line-sel {
   background: rgba(37, 230, 212, 0.1);
   outline: 1px solid color-mix(in srgb, var(--you) 50%, transparent);
 }
-.ac-g {
+.be-g {
   flex: none;
 }
-.ac-t {
+.be-t {
   color: #cdd7e6;
 }
-.ac-t .u.ua {
+.be-t .u.ua {
   color: var(--side-a);
 }
-.ac-t .u.ub {
+.be-t .u.ub {
   color: var(--side-b);
 }
 .r-hurt {
@@ -514,14 +500,14 @@ button:disabled:hover {
 .r-dim {
   color: var(--muted);
 }
-.ac-chain {
+.be-chain {
   margin-top: 0.4rem;
   padding: 0.55rem 0.7rem;
   border-left: 2px solid var(--fam-strike);
   background: rgba(255, 122, 77, 0.07);
   border-radius: 0 3px 3px 0;
 }
-.ac-chain-h {
+.be-chain-h {
   font-family: var(--font-title);
   font-weight: 700;
   font-size: 0.55rem;
@@ -4024,6 +4010,30 @@ button.danger {
 .codex-grid-parts {
   grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
 }
+.codex-part-list { display: grid; gap: 0.35rem; }
+.codex-part-row {
+  display: grid;
+  grid-template-columns: 7rem minmax(8rem, 0.5fr) 1fr;
+  gap: 0.65rem;
+  align-items: baseline;
+  border-left: 2px solid var(--border);
+  border-radius: 2px;
+}
+.codex-part-kind { color: var(--dim); font: 600 0.65rem var(--font-title); text-transform: uppercase; letter-spacing: 0.08em; }
+.entity-ref { color: inherit; background: none; border: 0; padding: 0; min-height: 0; text-decoration: underline dotted; text-underline-offset: 2px; cursor: pointer; }
+.entity-ref:hover { color: var(--you); }
+.ins-entity-kind { display: block; color: var(--you); font: 600 0.6rem var(--font-title); text-transform: uppercase; letter-spacing: 0.1em; }
+.ins-recipe { display: flex; align-items: stretch; gap: 0.35rem; }
+.ins-recipe-part { flex: 1; min-width: 0; padding: 0.4rem; border-left: 2px solid var(--border); overflow-wrap: anywhere; }
+.ins-recipe-part b { display: block; color: var(--dim); font-size: 0.65rem; text-transform: uppercase; }
+.ins-recipe-arrow { align-self: center; color: var(--dim); }
+.ins-ability-ref { flex: none; color: var(--you); font-weight: 600; }
+@media (max-width: 700px) {
+  .codex-part-row { grid-template-columns: 5rem 1fr; }
+  .codex-part-row > span:last-child { grid-column: 1 / -1; }
+  .ins-recipe { flex-direction: column; }
+  .ins-recipe-arrow { transform: rotate(90deg); }
+}
 
 .codex-grid-rules {
   grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
@@ -4209,7 +4219,7 @@ button.danger {
   }
 
   /* #082 slice D phone: the 3-column board stacks to one column — side A, the
-     acting card, side B, each full width — so nothing crushes at 375px. The
+     battle-event panel, side B, each full width — so nothing crushes at 375px. The
      trace strip keeps its horizontal scroll. */
   .bv-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -4230,7 +4240,7 @@ button.danger {
   .bv-side[data-side="B"] .bv-stack {
     align-items: flex-start;
   }
-  .acting-card {
+  .battle-event {
     max-width: 100%;
   }
   .bv-header {
@@ -4357,6 +4367,15 @@ button.danger {
   #run-end-line .chip::after {
     top: auto;
     height: 44px;
+  }
+
+  /* The fixed run-menu button intentionally paints above the inspector. Give
+     the phone sheet a scrollable tail as tall as that 44px control plus its
+     safe-area-aware bottom offset, so the final inspector row can clear it.
+     Desktop popovers keep their existing padding. */
+  #inspect-overlay.sheet {
+    padding-bottom: calc(44px + max(1.1rem, env(safe-area-inset-bottom) + 0.5rem));
+    scroll-padding-bottom: calc(44px + max(1.1rem, env(safe-area-inset-bottom) + 0.5rem));
   }
 
   /* The inspector's close button is a real ≥44px target — it has no adjacent
@@ -4601,6 +4620,15 @@ button.danger {
   width: 10px;
   height: 10px;
 }
+.unit-b .ub-kind {
+  flex: none;
+  border: 1px solid color-mix(in srgb, var(--fam) 45%, transparent);
+  border-radius: 2px;
+  padding: 1px 3px;
+  font: 600 7px/1 var(--font-title);
+  letter-spacing: 0.08em;
+  color: color-mix(in srgb, var(--fam) 70%, white);
+}
 .unit-b .ub-cap-t {
   font-family: var(--font-title);
   font-weight: 600;
@@ -4676,21 +4704,34 @@ button.danger {
   align-items: center;
   justify-content: center;
 }
-.unit-b .ub-art .ub-sigil {
+.unit-b .ub-art .ub-sigil,
+.unit-b .ub-art .shape {
   width: 66px;
   height: 66px;
   display: block;
+}
+.unit-b.entity-unit .ub-art .shape,
+.unit-b.entity-summon .ub-art .shape {
+  width: 78px;
+  height: 78px;
+  filter: drop-shadow(0 0 12px color-mix(in srgb, var(--fam) 45%, transparent));
 }
 .unit-b .ub-mini {
   width: 32px;
   height: 32px;
   flex: none;
 }
-.unit-b .ub-mini .ub-sigil {
+.unit-b .ub-mini .ub-sigil,
+.unit-b .ub-mini .shape {
   width: 100%;
   height: 100%;
   display: block;
 }
+.unit-b.entity-summon { border-style: double; }
+.unit-b.entity-ability .unums,
+.unit-b.entity-status .unums { max-width: 62px; overflow: hidden; }
+.unit-b.entity-ability .chips,
+.unit-b.entity-status .chips { display: none; min-height: 0; }
 
 /* ability line: ⚔ trigger ▸ target ▸ ◈ action */
 /* The ability line is a FIXED-height block (content-independent) so every card

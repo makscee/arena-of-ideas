@@ -1,4 +1,4 @@
-// Current acting-card motion walk (#082 slice D). The pass/fail motion truths
+// Current battle-event motion walk (#082 slice D). The pass/fail motion truths
 // live in probe-motion.mjs; this companion emits inspectable frame sequences at
 // desktop and phone widths while independently refusing vacuous captures.
 // Output is supplied by the orchestrator as SHOTS_DIR.
@@ -25,8 +25,8 @@ async function stepTo(page, n) {
 
 async function state(page) {
   return page.evaluate(() => ({
-    beat: document.querySelector(".acting-card, .acting-phase")?.getAttribute("data-beat") ?? null,
-    actor: document.querySelector(".acting-card")?.getAttribute("data-acting") ?? null,
+    beat: document.querySelector(".battle-event, .acting-phase")?.getAttribute("data-beat") ?? null,
+    actor: document.querySelector(".battle-event")?.getAttribute("data-acting") ?? null,
     acting: document.querySelector(".unit-b.is-acting")?.getAttribute("data-unit") ?? null,
     target: document.querySelector(".unit-b.is-target")?.getAttribute("data-unit") ?? null,
     chip: document.querySelector(".trace-strip .tr-chip.is-cur")?.getAttribute("data-id") ?? null,
@@ -34,9 +34,15 @@ async function state(page) {
 }
 
 async function frame(page, tag, index, label) {
-  await page.evaluate(() => document.querySelector("#board")?.scrollIntoView({ block: "start" }));
+  await page.evaluate((phone) => {
+    if (phone) window.scrollTo(0, document.documentElement.scrollHeight);
+    else document.querySelector("#board")?.scrollIntoView({ block: "start" });
+  }, tag === "phone");
   const name = `${tag}-${String(index).padStart(2, "0")}-${label}.png`;
-  await page.screenshot({ path: join(outDir, name), fullPage: false });
+  // Phone's one-column board puts the causal panel between two five-Unit lines;
+  // a viewport crop cannot show that geometry. Full-page phone frames keep the
+  // actor, target, event panel, and moving trace chip inspectable together.
+  await page.screenshot({ path: join(outDir, name), fullPage: tag === "phone", animations: "disabled" });
   console.log(`frame ${name}`);
 }
 

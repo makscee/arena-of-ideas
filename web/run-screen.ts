@@ -841,6 +841,8 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
       render: (body) =>
         renderUnitInspect(body, {
           title: def.name,
+          hp: base.hp,
+          pwr: base.pwr,
           state:
             `${base.hp} hp · ${base.pwr} pwr` +
             (unit !== undefined ? ` · L${unit.level}` : ` · ${UNIT_COST}g`),

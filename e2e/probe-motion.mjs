@@ -1,5 +1,5 @@
 // Motion probes (#082 slice D) — the across-frame truths a STILL screenshot is
-// blind to, made catchable. The acting-card battle shows WHO acts and WHO is
+// blind to, made catchable. The battle-event battle shows WHO acts and WHO is
 // hit by moving the ACTING / TARGET ribbons and the lit trace chip as the
 // playhead advances; a still shot of one frame can't see a ribbon that lands on
 // the wrong card during the transition, or two chips lit at once. These probes
@@ -7,7 +7,7 @@
 // reddens an assertion instead of slipping past a static capture.
 //
 //   • The ACTING ribbon marks exactly the acting unit — the side card with
-//     `is-acting` must equal the centre acting card's `data-acting`, and there
+//     `is-acting` must equal the centre battle-event panel's `data-acting`, and there
 //     is at most one of each at every step.
 //   • The TARGET ribbon marks the struck unit (a different card from ACTING),
 //     never the actor itself.
@@ -50,13 +50,13 @@ const frameState = (page) =>
   page.evaluate(() => {
     const acting = [...document.querySelectorAll(".unit-b.is-acting[data-unit]")].map((u) => u.getAttribute("data-unit"));
     const target = [...document.querySelectorAll(".unit-b.is-target[data-unit]")].map((u) => u.getAttribute("data-unit"));
-    const card = document.querySelector(".acting-card");
+    const panel = document.querySelector(".battle-event");
     const phase = document.querySelector(".acting-phase");
     const curChips = [...document.querySelectorAll(".trace-strip .tr-chip.is-cur")].map((c) => c.getAttribute("data-id"));
     return {
       acting,
       target,
-      cardActing: card ? card.getAttribute("data-acting") : null,
+      panelActor: panel ? panel.getAttribute("data-acting") : null,
       isPhase: phase !== null,
       curChips,
     };
@@ -74,7 +74,7 @@ async function ribbonTruth(run, label, page) {
   let sawActing = false;
   let sawTarget = false;
   let beatMoves = false;
-  let prevCardActing = null;
+  let prevPanelActor = null;
 
   for (let s = 0; s <= total; s++) {
     await stepTo(page, s);
@@ -88,10 +88,10 @@ async function ribbonTruth(run, label, page) {
       actingEqTarget ||= `@${s}: ${f.acting[0]} wears BOTH ACTING and TARGET`;
     }
 
-    if (f.cardActing !== null) {
+    if (f.panelActor !== null) {
       // A Strike beat: the centre names the actor; the side ribbon must agree.
-      if (f.acting.length !== 1 || f.acting[0] !== f.cardActing) {
-        actingMismatch ||= `@${s}: card acting=${f.cardActing}, side ribbon=${JSON.stringify(f.acting)}`;
+      if (f.acting.length !== 1 || f.acting[0] !== f.panelActor) {
+        actingMismatch ||= `@${s}: event actor=${f.panelActor}, side ribbon=${JSON.stringify(f.acting)}`;
       }
     }
     if (f.isPhase) {
@@ -100,17 +100,17 @@ async function ribbonTruth(run, label, page) {
         phaseLeak ||= `@${s}: phase step still shows ribbons acting=${JSON.stringify(f.acting)} target=${JSON.stringify(f.target)}`;
       }
     }
-    if (prevCardActing !== null && f.cardActing !== null && f.cardActing !== prevCardActing) beatMoves = true;
-    prevCardActing = f.cardActing;
+    if (prevPanelActor !== null && f.panelActor !== null && f.panelActor !== prevPanelActor) beatMoves = true;
+    prevPanelActor = f.panelActor;
   }
 
-  check(actingMismatch === "", `${label} the ACTING ribbon matches the centre card's actor at every step`, actingMismatch);
+  check(actingMismatch === "", `${label} the ACTING ribbon matches the centre panel's actor at every step`, actingMismatch);
   check(doubleMark === "", `${label} at most one ACTING and one TARGET ribbon at every step`, doubleMark);
   check(actingEqTarget === "", `${label} the actor never also wears the TARGET ribbon`, actingEqTarget);
   check(phaseLeak === "", `${label} a phase step (no actor) shows no ribbons`, phaseLeak);
   check(sawActing, `${label} an ACTING ribbon appears during the battle`);
   check(sawTarget, `${label} a TARGET ribbon appears during the battle`);
-  check(beatMoves, `${label} the acting card's actor MOVES across a beat boundary (across-frame)`);
+  check(beatMoves, `${label} the battle-event panel's actor MOVES across a beat boundary (across-frame)`);
 }
 
 // =====================================================================

@@ -74,7 +74,7 @@ for (const [viewport, tag] of [
     await page.$eval(ladderSel, (el) => el.classList.contains("unit-b") && el.classList.contains("is-reference")),
     `${tag} ladder card wears the B·Arena reference variant`,
   );
-  check(ladder.startsWith(REFERENCE_SKELETON), `${tag} ladder reference keeps name/hp/pwr/chips anchors`, ladder);
+  check(ladder.includes(REFERENCE_SKELETON), `${tag} ladder reference keeps name/hp/pwr/chips anchors`, ladder);
 
   if (viewport === PHONE) {
     check(await noHorizontalOverflow(page), `${tag} shop screen has no horizontal overflow`);

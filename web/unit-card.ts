@@ -12,7 +12,7 @@
 
 import { FAMILY_HEX } from "../src/index.js";
 import type { Family, StatusRegistry } from "../src/index.js";
-import { chipsHtml } from "./inspect.js";
+import { chipsHtml } from "./status-chips.js";
 import { abilityStar, actionIcon, triggerIconForGlyph } from "./glyphs.js";
 
 const esc = (s: string): string =>
@@ -175,6 +175,7 @@ export function familySigil(family: Family, hex: string = FAMILY_HEX[family], cl
 }
 
 export type UnitCardSurface = "full" | "compact" | "board" | "codex/reference" | "editor/dev" | "dead";
+export type CardEntityKind = "unit" | "ability" | "status" | "summon";
 
 export interface UnitCardOpts {
   /** Inventory/guard label for PRD #111: every product call site must name its surface. */
@@ -186,11 +187,11 @@ export interface UnitCardOpts {
    * A `status` frames its per-stack `statMods` in the stat cells where a unit
    * frames base hp/pwr. Defaults to "unit", so every existing caller is
    * unchanged. */
-  kind?: "unit" | "status" | "part";
-  /** For a `part` card (#078): the atom's family label ("Effect", "Selector",
-   * "Trigger", …), shown in the stat band where a unit frames hp/pwr — a Part
-   * is the SAME card at the SAME fixed size, framing its family where a unit
-   * frames stats and a status frames statMods. Ignored for unit/status. */
+  /** The card-bearing domain entity. No other value is accepted by the shared
+   * chassis: Trigger, Selector, Effect, idea, floor, and battle event stay rows. */
+  kind?: CardEntityKind;
+  /** Type-specific secondary label: Ability family, Status stack rule, or
+   * Summon provenance. Units use their HP/PWR stat anatomy instead. */
   tag?: string;
   /** Drives the generative art — the def name, stable across levels/instances. */
   artName: string;
@@ -278,59 +279,10 @@ export interface UnitCardOpts {
   used?: boolean | undefined;
 }
 
-/** The shared card markup. Class names and child order are the app's card
- * contract: probes, hit-target CSS, and the inspector's anchors all key off
- * `.unit`, `.uname`, `.unums`, `.chips` and the data-* attrs the caller adds. */
+/** The only production card constructor. Every card-bearing object is one of
+ * the four domain entities and always uses the B·Arena chassis. */
 export function unitCardHtml(o: UnitCardOpts): string {
-  // Opt-in (#080): a call that names a `variant`/`family`/`color` gets the new
-  // B·Arena chamfered card; every legacy caller is byte-unchanged below.
-  if (o.variant !== undefined || o.family !== undefined || o.color !== undefined) {
-    return variantCardHtml(o);
-  }
-  const cls = [
-    "unit",
-    o.kind === "status" && "is-status",
-    o.kind === "part" && "is-part",
-    o.classes,
-    o.front === true && "front",
-    o.dead === true && "dead",
-    o.dying === true && "dying",
-    o.dyingNew === true && "dying-new",
-    o.hit === true && "hit",
-    o.sel === true && "sel",
-    o.fused === true && "fused",
-  ]
-    .filter(Boolean)
-    .join(" ");
-  // Team tint on the name (#065 item 2): side A / side B get distinct hues so a
-  // name reads as its side. Reuses the battle log's .u/.ua/.ub side palette.
-  const unameCls = ["uname", o.side === "A" && "u ua", o.side === "B" && "u ub"].filter(Boolean).join(" ");
-  const badge =
-    o.level !== undefined
-      ? `<span class="run-lvl">L${o.level}${o.pips !== undefined ? ` <span class="run-pips">${o.pips}</span>` : ""}</span>`
-      : "";
-  // Like every other chip, the title explains the state, not just names it.
-  const silenced =
-    o.silenced === true
-      ? '<span class="chip mute" title="Silenced — its statuses are stripped and its own abilities are disabled for the battle">mut</span>'
-      : "";
-  return `
-    <div class="${cls}" ${o.attrs} title="${esc(o.title)}">
-      ${o.front === true ? '<span class="front-tag">front</span>' : ""}
-      ${shapeSvg(o.artName, o.dead === true)}
-      <span class="${unameCls}">${esc(o.label)}</span>
-      ${badge}
-      <span class="unums">${
-        o.kind === "part"
-          ? `<span class="ptag">${esc(o.tag ?? "")}</span>`
-          : `<span class="hp">${o.hp}</span><span class="pwr">${o.pwr}</span>`
-      }</span>
-      <span class="chips">${chipsHtml(o.statuses, o.registry)}${silenced}</span>
-      ${o.footer ?? ""}
-      ${o.dying === true ? '<span class="dying-x" aria-hidden="true">✕</span>' : ""}
-      ${o.overlay ?? ""}
-      ${o.marker ?? ""}
-    </div>`;
+  return variantCardHtml(o);
 }
 
 /** The B·Arena card (PRD #080) — full + compact, coloured by ability family.
@@ -339,31 +291,36 @@ export function unitCardHtml(o: UnitCardOpts): string {
  * sigil and family border are layered in CSS off the inline `--fam` colour. */
 function variantCardHtml(o: UnitCardOpts): string {
   const variant = o.variant ?? "full";
+  const kind: CardEntityKind = o.kind ?? "unit";
+  if (!(new Set<CardEntityKind>(["unit", "ability", "status", "summon"])).has(kind)) throw new Error(`non-card entity: ${String(kind)}`);
   const family: Family = o.family ?? nameFamily(o.artName);
   const hex = o.color ?? FAMILY_HEX[family];
   const cls = [
     "unit",
     "unit-b",
     `is-${variant}`,
-    o.kind === "status" && "is-status",
-    o.kind === "part" && "is-part",
+    `entity-${kind}`,
     FAMILY_CLASS[family],
     o.classes,
     o.front === true && "is-front",
     o.sel === true && "sel",
     o.fused === true && "fused",
     o.dead === true && "dead",
+    o.dying === true && "dying",
+    o.dyingNew === true && "dying-new",
+    o.hit === true && "hit",
     o.used === true && "is-used",
   ]
     .filter(Boolean)
     .join(" ");
 
   const label = `<span class="uname">${esc(o.label)}</span>`;
-  const cap = `<span class="ub-cap">${abilityStar("ub-spark")}<span class="ub-cap-t">${esc((o.abilityLabel ?? family).toUpperCase())}</span></span>`;
+  const typeLabel = kind === "unit" ? (o.abilityLabel ?? family) : `${kind}${o.tag ? ` · ${o.tag}` : ""}`;
+  const cap = `<span class="ub-cap"><span class="ub-kind">${esc(kind.toUpperCase())}</span>${abilityStar("ub-spark")}<span class="ub-cap-t">${esc(typeLabel.toUpperCase())}</span></span>`;
   const nums =
-    o.kind === "part"
-      ? `<span class="unums"><span class="ptag">${esc(o.tag ?? "")}</span></span>`
-      : `<span class="unums"><span class="hp">${o.hp}</span><span class="ub-sep">·</span><span class="pwr">${o.pwr}</span></span>`;
+    kind === "unit" || kind === "summon"
+      ? `<span class="unums"><span class="hp">${o.hp}</span><span class="ub-sep">·</span><span class="pwr">${o.pwr}</span></span>`
+      : `<span class="unums"><span class="ptag">${esc(o.tag ?? family)}</span></span>`;
 
   // Ability line: <icon> trigger ▸ target ▸ <icon> action — any subset,
   // separators only between present segments. The trigger mark is event-kind-
@@ -393,14 +350,16 @@ function variantCardHtml(o: UnitCardOpts): string {
   const chips = `<span class="chips">${chipsHtml(o.statuses, o.registry)}${silenced}</span>`;
   const foot = badge !== "" || (o.footer ?? "") !== "" ? `<div class="ub-foot">${badge}${o.footer ?? ""}</div>` : "";
 
-  const sigil = familySigil(family, hex);
-  const sigilMini = familySigil(family, hex, "ub-sigil ub-sigil-mini");
+  // Unit and Summon identity is a stable name-hash portrait, not a generic
+  // family logo. Generated names therefore remain distinctive everywhere.
+  const portrait = kind === "unit" || kind === "summon" ? shapeSvg(o.artName, o.dead === true) : familySigil(family, hex);
+  const portraitMini = kind === "unit" || kind === "summon" ? shapeSvg(o.artName, o.dead === true) : familySigil(family, hex, "ub-sigil ub-sigil-mini");
 
   const compactHead = variant === "compact" || variant === "reference";
   const head = compactHead
-    ? `<div class="ub-head"><div class="ub-mini">${sigilMini}</div><div class="ub-id">${label}${cap}</div>${nums}</div>`
+    ? `<div class="ub-head"><div class="ub-mini">${portraitMini}</div><div class="ub-id">${label}${cap}</div>${nums}</div>`
     : `<div class="ub-head"><div class="ub-id">${label}${cap}</div>${nums}</div>`;
-  const art = compactHead ? "" : `<div class="ub-art">${sigil}</div>`;
+  const art = compactHead ? "" : `<div class="ub-art">${portrait}</div>`;
 
-  return `<div class="${cls}" style="--fam:${hex}" ${o.attrs} title="${esc(o.title)}">${o.topTag ?? ""}${head}${art}${ability}${chips}${foot}</div>`;
+  return `<div class="${cls}" data-card-entity="${kind}" data-entity-name="${esc(o.artName)}" style="--fam:${hex}" ${o.attrs} title="${esc(o.title)}">${o.topTag ?? ""}${head}${art}${ability}${chips}${foot}${o.dying === true ? '<span class="dying-x" aria-hidden="true">✕</span>' : ""}${o.overlay ?? ""}${o.marker ?? ""}</div>`;
 }

@@ -82,7 +82,9 @@ async function screenScenario(viewport, tag) {
   const chipName = await firstChip.getAttribute("title");
   await firstChip.click();
   await page.waitForSelector("#inspect-overlay:not([hidden])");
-  const insName = await page.locator("#inspect-overlay .ins-name").textContent();
+  const inspectorCard = page.locator('#inspect-overlay > .unit-b.is-full[data-card-entity="unit"]');
+  check((await inspectorCard.count()) === 1, `${tag} inspector contains exactly one full Unit card`);
+  const insName = (await inspectorCard.locator(".uname").textContent())?.trim();
   check(insName === chipName, `${tag} a tower sigil opens the unit inspector`, `${chipName} → ${insName}`);
   await page.click("#ins-close");
 
@@ -143,7 +145,7 @@ function backingScenario() {
   const here = dirname(fileURLToPath(import.meta.url));
   const src = readFileSync(join(here, "..", "web", "ladder-view.ts"), "utf8");
   const imports = [...src.matchAll(/from "([^"]+)"/g)].map((m) => m[1]);
-  const allowed = new Set(["../src/index.js", "./inspect.js", "./unit-card.js"]);
+  const allowed = new Set(["../src/index.js", "../src/types.js", "./inspect.js", "./unit-card.js"]);
   const stray = imports.filter((i) => !allowed.has(i));
   check(stray.length === 0, `leaderboard module imports only kernel + presentation`, stray.join(", ") || "clean");
   check(!/localStorage|run-store|PersistedLadderStore/.test(src), `leaderboard module carries no backing specifics`);

@@ -167,8 +167,10 @@ async function scenario(viewport, tag) {
     await card.click();
     await page.waitForSelector("#inspect-overlay:not([hidden])");
     check(await page.locator("#inspect-overlay").isVisible(), `${tag} clicking a placed hero opens the inspector`);
+    const inspectorCard = page.locator('#inspect-overlay > .unit-b.is-full[data-card-entity="unit"]');
+    check((await inspectorCard.count()) === 1, `${tag} inspector contains exactly one full Unit card`);
     check(
-      (await page.locator("#inspect-overlay .ins-name").innerText()).trim() === cardName,
+      (await inspectorCard.locator(".uname").innerText()).trim() === cardName,
       `${tag} the inspector is for the clicked unit`,
       cardName,
     );

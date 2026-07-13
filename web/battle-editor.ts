@@ -284,6 +284,8 @@ export function createBattleEditor(els: BattleEditorEls, deps: BattleEditorDeps)
       render: (body) =>
         renderUnitInspect(body, {
           title: u.name ?? "?",
+          hp: num(u.base?.hp),
+          pwr: num(u.base?.pwr),
           state:
             `${num(u.base?.hp)} hp · ${num(u.base?.pwr)} pwr` + (u.level !== undefined ? ` · L${num(u.level)}` : ""),
           def: u,
