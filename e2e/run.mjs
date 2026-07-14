@@ -351,16 +351,19 @@ try {
     // pass — list what's available and fail.
     let probes = allProbes();
     const wantsAoi62Walk = tokens.some((t) => probeMatches("aoi62", t));
+    const wantsBoardFirstWalk = tokens.some((t) => probeMatches("board-first", t));
     if (tokens.length > 0) {
       probes = probes.filter((f) => tokens.some((t) => probeMatches(f, t)));
-      if (probes.length === 0 && !wantsAoi62Walk) {
+      if (probes.length === 0 && !wantsAoi62Walk && !wantsBoardFirstWalk) {
         console.error(`no probe matches ${JSON.stringify(tokens)}. available:`);
         for (const p of allProbes()) console.error(`  ${p}`);
         console.error("  aoi62 (named governance walk)");
+        console.error("  board-first (AOI-63 named scenarios + visual walk)");
         failed = true;
       }
     }
     const tasks = probes.map((file) => ({ name: file, file, evidence: "probes" }));
+    if (tokens.length > 0 && wantsBoardFirstWalk) tasks.push({ name: "walk-board-first", file: "shots-board-first.mjs", evidence: "aoi63-board-first" });
     if (tokens.length > 0 && wantsAoi62Walk) tasks.push({ name: "walk-aoi62", file: "shots-aoi62.mjs", evidence: "aoi62-governance" });
     // The unfiltered gate includes every current still and motion walk. Keeping
     // them in this same stack gives them the same fresh DB and hard teardown.
@@ -372,6 +375,7 @@ try {
         { name: "walk-aoi60", file: "shots-aoi60.mjs", evidence: "aoi60-acceptance" },
         { name: "walk-aoi61", file: "shots-aoi61.mjs", evidence: "aoi61-awakening-fusion" },
         { name: "walk-motion", file: "motion-frames.mjs", evidence: "walk-motion" },
+        { name: "walk-board-first", file: "shots-board-first.mjs", evidence: "aoi63-board-first" },
         // Last: this named walk intentionally rolls the shared temp DB to an
         // empty season-2 tower. Nothing after it may assume the season-1 bootstrap.
         { name: "walk-aoi62", file: "shots-aoi62.mjs", evidence: "aoi62-governance" },

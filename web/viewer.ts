@@ -24,13 +24,13 @@ import { renderBattle, type BattleAnnotations, type BattleHeader } from "./board
 import {
   battleEventHtml,
   actingModelAt,
-  actingUnitAt,
+  actingUnitsAt,
   traceChipsAt,
   traceStripHtml,
   usedThisTurnAt,
   type ActingCtx,
 } from "./acting.js";
-import { sideMap, type SideOf } from "./battle-log.js";
+import { sideMap, transcriptHtml, type SideOf } from "./battle-log.js";
 import { closeInspectOverlay, openInspectOverlay, renderInspect, unitDefs } from "./inspect.js";
 
 const escHtml = (s: string): string =>
@@ -113,6 +113,11 @@ export function createViewer(els: ViewerEls): Viewer {
   let selectedEvent: number | undefined;
   let onEnded: (() => void) | undefined;
   let endedNotified = false;
+  const transcript = document.createElement("aside");
+  transcript.className = "battle-transcript";
+  transcript.setAttribute("aria-label", "Full battle event transcript");
+  transcript.hidden = true;
+  document.body.append(transcript);
 
   const playing = () => timer !== undefined;
 
@@ -130,12 +135,14 @@ export function createViewer(els: ViewerEls): Viewer {
     const model = actingModelAt(log, beats, step, c);
     const center = battleEventHtml(model);
     // Side-card battle state: who acts, who is targeted, who already struck.
-    const { acting, target } = actingUnitAt(beats, step);
+    const { acting, targets } = actingUnitsAt(log, beats, step);
     const used = usedThisTurnAt(log, beats, step);
     const anno: BattleAnnotations = {
       ...(acting !== undefined ? { acting } : {}),
-      ...(target !== undefined ? { target } : {}),
+      targets,
       used,
+      ...(e.type === "Summon" ? { entering: e.unit } : {}),
+      ...(e.type === "Death" ? { dying: e.unit } : {}),
     };
     const header: BattleHeader = {
       opponent: meta?.opponent,
@@ -177,6 +184,10 @@ export function createViewer(els: ViewerEls): Viewer {
     els.prev.disabled = step === 0;
     els.next.disabled = step === log.length - 1;
     els.play.textContent = playing() ? "pause" : "play";
+    transcript.innerHTML = transcriptHtml(log, step, name);
+    transcript.querySelector<HTMLElement>(".bt-row.is-current")?.scrollIntoView({ block: "nearest" });
+    const logToggle = els.board.querySelector<HTMLButtonElement>(".bv-log-toggle");
+    if (logToggle !== null) logToggle.setAttribute("aria-expanded", String(!transcript.hidden));
     if (selected !== undefined) {
       // The board just re-rendered — pin the overlay to the fresh card node.
       const sel = selected;
@@ -232,11 +243,14 @@ export function createViewer(els: ViewerEls): Viewer {
     const renderAt = (i: number): void => {
       const board = boardAt(log, i);
       const model = actingModelAt(log, beats, i, c);
-      const { acting, target } = actingUnitAt(beats, i);
+      const event = log[i]!;
+      const { acting, targets } = actingUnitsAt(log, beats, i);
       const anno: BattleAnnotations = {
         ...(acting !== undefined ? { acting } : {}),
-        ...(target !== undefined ? { target } : {}),
+        targets,
         used: usedThisTurnAt(log, beats, i),
+        ...(event.type === "Summon" ? { entering: event.unit } : {}),
+        ...(event.type === "Death" ? { dying: event.unit } : {}),
       };
       const header: BattleHeader = {
         opponent: meta?.opponent,
@@ -370,10 +384,31 @@ export function createViewer(els: ViewerEls): Viewer {
     pause();
     goTo(Number(a.getAttribute("data-goto")));
   });
+  transcript.addEventListener("click", (ev) => {
+    const target = ev.target as HTMLElement;
+    if (target.closest(".bt-close") !== null) {
+      transcript.hidden = true;
+      render();
+      return;
+    }
+    const row = target.closest<HTMLElement>("[data-log-event]");
+    if (row === null) return;
+    const id = Number(row.dataset.logEvent);
+    pause();
+    selectEvent(id);
+    goTo(id);
+  });
+
   // Selecting on the board: a unit card opens the inspector (again = close);
   // a status chip opens it with that status highlighted.
   els.board.addEventListener("click", (ev) => {
     const target = ev.target as HTMLElement;
+    const logToggle = target.closest<HTMLElement>(".bv-log-toggle");
+    if (logToggle !== null) {
+      transcript.hidden = !transcript.hidden;
+      render();
+      return;
+    }
     // A bottom trace chip BOTH scrubs the playhead to that beat (its long-
     // standing log-row contract, re-presented as the strip) AND selects that
     // event for the cross-beat cause readout (#082 slice D / #065 slice 4).
@@ -435,6 +470,7 @@ export function createViewer(els: ViewerEls): Viewer {
       meta = content.meta;
       selected = undefined;
       selectedEvent = undefined;
+      transcript.hidden = true;
       onEnded = opts?.onEnded;
       endedNotified = false;
       els.scrub.min = "0";
@@ -456,6 +492,7 @@ export function createViewer(els: ViewerEls): Viewer {
     destroy(): void {
       pause();
       document.removeEventListener("keydown", onKeydown);
+      transcript.remove();
     },
   };
 }

@@ -58,10 +58,10 @@ export function shapeSvg(unitName: string, dead: boolean): string {
   const aura = dead ? "hsl(0 0% 30% / 0.15)" : `hsl(${hue.toFixed(0)} 60% 60% / 0.16)`;
   const accent = dead ? "hsl(0 0% 48%)" : `hsl(${((hue + 40) % 360).toFixed(0)} 55% 74%)`;
   return (
-    `<svg class="shape" viewBox="0 0 32 32" aria-hidden="true">` +
-    `<circle cx="16" cy="16" r="15" fill="${aura}"/>` +
-    `<g fill="${fill}" stroke="${stroke}" stroke-width="2">${shape}</g>` +
-    `<g transform="rotate(${spin} 16 16) translate(16 16) scale(0.42) translate(-16 -16)" fill="${accent}" opacity="0.9">${inner}</g>` +
+    `<svg class="shape" data-shape-id="${h % SHAPES.length}-${(h >>> 3) % SHAPES.length}-${spin}" viewBox="0 0 32 32" aria-hidden="true">` +
+    `<circle class="shape-aura" cx="16" cy="16" r="15" fill="${aura}"/>` +
+    `<g class="shape-body" fill="${fill}" stroke="${stroke}" stroke-width="2">${shape}</g>` +
+    `<g class="shape-accent" transform="rotate(${spin} 16 16) translate(16 16) scale(0.42) translate(-16 -16)" fill="${accent}" opacity="0.9">${inner}</g>` +
     `</svg>`
   );
 }

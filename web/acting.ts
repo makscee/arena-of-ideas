@@ -1,4 +1,8 @@
-import { primaryAbilityIdOf, statusActionsOf, unitActionsOf } from "../src/types.js";
+import {
+  primaryAbilityIdOf,
+  statusActionsOf,
+  unitActionsOf,
+} from "../src/types.js";
 // The battle-event battle presentation (#082 slice D) — the mockup's "compact
 // board + causal battle-event panel". Pure projection over the kernel log: every fact
 // (acting unit, target, the step's effects, the reactive chains, the trace
@@ -23,10 +27,18 @@ import {
   type UnitDef,
 } from "../src/index.js";
 import { nameFamily } from "./unit-card.js";
-import { abilityStar, actionIcon, triggerIcon, triggerIconForGlyph } from "./glyphs.js";
+import {
+  abilityStar,
+  actionIcon,
+  triggerIcon,
+  triggerIconForGlyph,
+} from "./glyphs.js";
 
 const esc = (s: string): string =>
-  s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+  s.replace(
+    /[&<>"]/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!,
+  );
 
 // Trigger label per event-pattern `on` — mirrors describe.ts's TRIGGER_CHIP
 // labels (the chain callout says "ON DAMAGED", "ON STRIKE", …). The mark is
@@ -54,29 +66,84 @@ export interface ActingCtx {
   sideOf: (id: string) => Side | undefined;
 }
 
-/** The acting unit + its target for the beat the playhead sits in. A Strike
- * beat names both from structured ids (striker acts, defender is hit); every
- * other root kind (BattleStart, TurnStart/End, Fatigue, PairFaced, BattleEnd)
- * has no single actor — the centre shows a phase caption instead. */
-export function actingUnitAt(beats: Beat[], step: number): { acting?: string; target?: string } {
+/** The actor and real target(s) at this exact event. Structured source truth
+ * wins, so a reactive chain moves ACTING to its holder. Kernel consequences
+ * inherit the nearest ability/Strike ancestor. Phase roots return no marks. */
+export function actingUnitsAt(
+  log: BattleEvent[],
+  beats: Beat[],
+  step: number,
+): { acting?: string; targets: Set<string> } {
+  const targets = new Set<string>();
   const at = beatAtStep(beats, step);
-  if (!at) return {};
-  const root = at.beat.root;
-  if (root.type === "Strike") return { acting: root.striker, target: root.defender };
-  return {};
+  const event = log[step];
+  if (!at || !event) return { targets };
+  let acting: string | undefined;
+  if (event.type === "Strike") {
+    acting = event.striker;
+    targets.add(event.defender);
+  } else if (event.type === "Intercepted") {
+    acting = event.by.unit;
+    if (event.unit !== undefined) targets.add(event.unit);
+  } else if (event.type === "ChainBlocked") {
+    acting = event.ability.unit;
+  } else if (event.source !== "kernel") acting = event.source.unit;
+  if ("unit" in event && typeof event.unit === "string")
+    targets.add(event.unit);
+  if (acting === undefined && event.causedBy !== null) {
+    let parentId: number | null = event.causedBy;
+    for (let hops = 0; parentId !== null && hops < log.length; hops++) {
+      const parent: BattleEvent | undefined = log[parentId];
+      if (!parent) break;
+      if (parent.source !== "kernel") {
+        acting = parent.source.unit;
+        break;
+      }
+      if (parent.type === "Strike") {
+        acting = parent.striker;
+        break;
+      }
+      parentId = parent.causedBy;
+    }
+  }
+  if (
+    acting === undefined &&
+    at.beat.root.type === "Strike" &&
+    step === at.beat.start
+  ) {
+    acting = at.beat.root.striker;
+    targets.add(at.beat.root.defender);
+  }
+  if (acting !== undefined) targets.delete(acting); // one in-place role per card; ACTING wins for self-effects
+  return { ...(acting !== undefined ? { acting } : {}), targets };
+}
+
+/** Compatibility helper for callers interested only in the beat's Strike pair. */
+export function actingUnitAt(
+  beats: Beat[],
+  step: number,
+): { acting?: string; target?: string } {
+  const at = beatAtStep(beats, step);
+  if (!at || at.beat.root.type !== "Strike") return {};
+  return { acting: at.beat.root.striker, target: at.beat.root.defender };
 }
 
 /** Units that already STRUCK earlier this turn (a Strike beat that opened before
  * the current beat, same turn) — dimmed + struck-through on their side card. The
  * unit acting now is never "used" (the caller excludes it). */
-export function usedThisTurnAt(log: BattleEvent[], beats: Beat[], step: number): Set<string> {
+export function usedThisTurnAt(
+  log: BattleEvent[],
+  beats: Beat[],
+  step: number,
+): Set<string> {
   const used = new Set<string>();
   const at = beatAtStep(beats, step);
   if (!at) return used;
   const turn = at.beat.root.turn;
   for (const b of beats) {
     if (b.start >= at.beat.start) break; // only beats strictly before the current one
-    if (b.root.type === "Strike" && b.root.turn === turn) used.add(b.root.striker);
+    if (b.root.type === "Strike" && b.root.turn === turn)
+      used.add(b.root.striker);
   }
   return used;
 }
@@ -86,7 +153,8 @@ export function usedThisTurnAt(log: BattleEvent[], beats: Beat[], step: number):
  * paints coloured). */
 export function familyOf(ctx: ActingCtx, unitId: string): Family {
   const def = ctx.defs.get(unitId);
-  const ab = def !== undefined ? ctx.abilities[primaryAbilityIdOf(def)!] : undefined;
+  const ab =
+    def !== undefined ? ctx.abilities[primaryAbilityIdOf(def)!] : undefined;
   return ab?.family ?? nameFamily(def?.name ?? unitId);
 }
 
@@ -105,8 +173,10 @@ export function abilityLineFor(
   action?: string | undefined;
 } {
   const def = ctx.defs.get(unitId);
-  const action = def !== undefined ? ctx.abilities[primaryAbilityIdOf(def)!] : undefined;
-  const ab = def !== undefined ? unitActionsOf(def, ctx.abilities)[0] : undefined;
+  const action =
+    def !== undefined ? ctx.abilities[primaryAbilityIdOf(def)!] : undefined;
+  const ab =
+    def !== undefined ? unitActionsOf(def, ctx.abilities)[0] : undefined;
   if (action === undefined || ab === undefined) return {};
   const chips = abilityChips(ab);
   return {
@@ -122,6 +192,7 @@ export interface ResultRow {
   glyph: string; // an inline SVG mark (#086), drawn in the row's `cls` colour
   cls: string; // family/colour class on the glyph
   html: string; // the row text, pre-escaped + tinted spans
+  depth?: number; // causedBy hops within this beat; visual nesting only
 }
 
 export interface ChainBox {
@@ -146,8 +217,10 @@ export interface ActingModel {
   };
   result: ResultRow[];
   chains: ChainBox[];
-  // phase:
+  // phase/root context:
   caption?: string;
+  currentActor?: string;
+  currentType?: BattleEvent["type"];
 }
 
 /** The phase caption for a beat with no acting unit. */
@@ -178,17 +251,25 @@ function triggerOf(ctx: ActingCtx, ref: AbilityRef): string | undefined {
   let ab: Ability | undefined;
   if (ref.status !== undefined) {
     const status = ctx.registry[ref.status];
-    ab = status !== undefined ? statusActionsOf(status)[ref.ability] : undefined;
+    ab =
+      status !== undefined ? statusActionsOf(status)[ref.ability] : undefined;
   } else {
     const def = ctx.defs.get(ref.unit);
-    ab = def !== undefined ? unitActionsOf(def, ctx.abilities)[ref.ability] : undefined;
+    ab =
+      def !== undefined
+        ? unitActionsOf(def, ctx.abilities)[ref.ability]
+        : undefined;
   }
   return ab?.whens?.[0]?.on.on;
 }
 
 /** A caused hero-effect event → a RESULT/CHAIN row (glyph + tinted text). The
  * `family` colours an ability-applied status glyph; kernel damage stays red. */
-function effectRow(ctx: ActingCtx, e: BattleEvent, family: Family | undefined): ResultRow | undefined {
+function effectRow(
+  ctx: ActingCtx,
+  e: BattleEvent,
+  family: Family | undefined,
+): ResultRow | undefined {
   const who = (id: string): string => {
     const side = ctx.sideOf(id);
     const cls = side === "A" ? "u ua" : side === "B" ? "u ub" : "u";
@@ -200,13 +281,28 @@ function effectRow(ctx: ActingCtx, e: BattleEvent, family: Family | undefined): 
   const famGlyph = family !== undefined ? actionIcon(family) : abilityStar();
   switch (e.type) {
     case "Hurt": {
-      const hp = e.hpAfter === undefined ? "" : ` → <b>${Math.max(0, e.hpAfter)}</b> HP`;
-      const abs = e.absorbed !== undefined ? ` <span class="r-dim">(${e.absorbed} absorbed)</span>` : "";
-      return { id: e.id, glyph: actionIcon("damage"), cls: "r-hurt", html: `${who(e.unit)} takes <b class="r-hurt">${e.amount}</b>${abs}${hp}` };
+      const hp =
+        e.hpAfter === undefined ? "" : ` → <b>${Math.max(0, e.hpAfter)}</b> HP`;
+      const abs =
+        e.absorbed !== undefined
+          ? ` <span class="r-dim">(${e.absorbed} absorbed)</span>`
+          : "";
+      return {
+        id: e.id,
+        glyph: actionIcon("damage"),
+        cls: "r-hurt",
+        html: `${who(e.unit)} takes <b class="r-hurt">${e.amount}</b>${abs}${hp}`,
+      };
     }
     case "Heal": {
-      const hp = e.hpAfter === undefined ? "" : ` → <b>${Math.max(0, e.hpAfter)}</b> HP`;
-      return { id: e.id, glyph: actionIcon("heal"), cls: "r-heal", html: `${who(e.unit)} heals <b class="r-heal">${e.amount}</b>${hp}` };
+      const hp =
+        e.hpAfter === undefined ? "" : ` → <b>${Math.max(0, e.hpAfter)}</b> HP`;
+      return {
+        id: e.id,
+        glyph: actionIcon("heal"),
+        cls: "r-heal",
+        html: `${who(e.unit)} heals <b class="r-heal">${e.amount}</b>${hp}`,
+      };
     }
     case "StatusApplied":
       return {
@@ -236,7 +332,12 @@ function effectRow(ctx: ActingCtx, e: BattleEvent, family: Family | undefined): 
       };
     }
     case "Death":
-      return { id: e.id, glyph: triggerIcon("death"), cls: "r-death", html: `${who(e.unit)} <b class="r-death">dies</b>` };
+      return {
+        id: e.id,
+        glyph: triggerIcon("death"),
+        cls: "r-death",
+        html: `${who(e.unit)} <b class="r-death">dies</b>`,
+      };
     case "Summon":
       return {
         id: e.id,
@@ -247,7 +348,26 @@ function effectRow(ctx: ActingCtx, e: BattleEvent, family: Family | undefined): 
           : `${who(e.unit)} is <b>summoned</b> (${e.hp} HP)`,
       };
     case "Silenced":
-      return { id: e.id, glyph: actionIcon("silence"), cls: "r-warn", html: `${who(e.unit)} is <b class="r-warn">silenced</b>` };
+      return {
+        id: e.id,
+        glyph: actionIcon("silence"),
+        cls: "r-warn",
+        html: `${who(e.unit)} is <b class="r-warn">silenced</b>`,
+      };
+    case "Intercepted":
+      return {
+        id: e.id,
+        glyph: actionIcon("shield"),
+        cls: "r-warn",
+        html: `${who(e.by.unit)} <b class="r-warn">intercepts</b> ${esc(e.original)}${e.unit !== undefined ? ` on ${who(e.unit)}` : ""}`,
+      };
+    case "ChainBlocked":
+      return {
+        id: e.id,
+        glyph: actionIcon("status-loss"),
+        cls: "r-warn",
+        html: `${who(e.ability.unit)}'s repeat trigger is <b class="r-warn">chain blocked</b>`,
+      };
     default:
       return undefined;
   }
@@ -259,54 +379,104 @@ function effectRow(ctx: ActingCtx, e: BattleEvent, family: Family | undefined): 
  * own ability); CHAINS holds the REACTIVE effects (a DIFFERENT unit's ability
  * triggered by this step), grouped by the chaining unit. The kernel `source`
  * field is the structured handle that splits the two — never a guess. */
-export function actingModelAt(log: BattleEvent[], beats: Beat[], step: number, ctx: ActingCtx): ActingModel {
+export function actingModelAt(
+  log: BattleEvent[],
+  beats: Beat[],
+  step: number,
+  ctx: ActingCtx,
+): ActingModel {
   const at = beatAtStep(beats, step);
   const triggerIndex = step + 1;
-  if (!at) return { kind: "phase", beatIndex: -1, triggerIndex, result: [], chains: [], caption: "—" };
+  if (!at)
+    return {
+      kind: "phase",
+      beatIndex: -1,
+      triggerIndex,
+      result: [],
+      chains: [],
+      caption: "—",
+    };
   const { beat } = at;
-  const { acting, target } = actingUnitAt(beats, step);
-
-  if (acting === undefined) {
-    return { kind: "phase", beatIndex: beat.index, triggerIndex, result: [], chains: [], caption: phaseCaption(beat.root) };
-  }
-
-  const actFamily = familyOf(ctx, acting);
-  const line = abilityLineFor(ctx, acting, target !== undefined ? ctx.name(target) : undefined);
-
-  // Caused hero events revealed so far, split by source into DIRECT vs REACTIVE.
+  const rootActing =
+    beat.root.type === "Strike" ? beat.root.striker : undefined;
+  const rootTarget =
+    beat.root.type === "Strike" ? beat.root.defender : undefined;
+  const current = actingUnitsAt(log, beats, step);
   const revealed = beat.caused.filter((e) => e.id <= step);
   const result: ResultRow[] = [];
   const chainGroups = new Map<string, ChainBox>();
-  for (const e of revealed) {
-    const reactive = e.source !== "kernel" && e.source.unit !== acting;
-    if (!reactive) {
-      // Direct: kernel consequence OR the acting unit's own ability.
-      const fam = e.source !== "kernel" ? familyOf(ctx, e.source.unit) : actFamily;
-      const row = effectRow(ctx, e, fam);
-      if (row) result.push(row);
-    } else {
-      const ref = e.source as AbilityRef;
-      const key = `${ref.unit}|${ref.status ?? ""}|${ref.ability}`;
-      let box = chainGroups.get(key);
-      if (box === undefined) {
-        const on = triggerOf(ctx, ref);
-        const trig = on !== undefined ? (TRIGGER_LABEL[on] ?? on).toUpperCase() : "TRIGGERED";
-        box = { unit: ctx.name(ref.unit), trigger: trig, rows: [] };
-        chainGroups.set(key, box);
-      }
-      const row = effectRow(ctx, e, familyOf(ctx, ref.unit));
-      if (row) box.rows.push(row);
+  const depth = (event: BattleEvent): number => {
+    let d = 0;
+    let parent = event.causedBy;
+    while (
+      parent !== null &&
+      parent >= beat.start &&
+      parent <= beat.end &&
+      d < beat.end - beat.start + 1
+    ) {
+      d++;
+      if (parent === beat.start) break;
+      parent = log[parent]?.causedBy ?? null;
     }
+    return d;
+  };
+  for (const e of revealed) {
+    const reactive =
+      e.source !== "kernel" &&
+      (rootActing === undefined || e.source.unit !== rootActing);
+    const row = effectRow(
+      ctx,
+      e,
+      e.source !== "kernel"
+        ? familyOf(ctx, e.source.unit)
+        : rootActing !== undefined
+          ? familyOf(ctx, rootActing)
+          : undefined,
+    );
+    if (!row) continue;
+    row.depth = depth(e);
+    if (!reactive) {
+      result.push(row);
+      continue;
+    }
+    const ref = e.source as AbilityRef;
+    const key = `${ref.unit}|${ref.status ?? ""}|${ref.ability}`;
+    let box = chainGroups.get(key);
+    if (box === undefined) {
+      const on = triggerOf(ctx, ref);
+      const trig =
+        on !== undefined
+          ? (TRIGGER_LABEL[on] ?? on).toUpperCase()
+          : "TRIGGERED";
+      box = { unit: ctx.name(ref.unit), trigger: trig, rows: [] };
+      chainGroups.set(key, box);
+    }
+    box.rows.push(row);
   }
-
-  return {
-    kind: "event",
-    beatIndex: beat.index,
-    triggerIndex,
-    acting: {
-      id: acting,
-      name: ctx.name(acting),
-      side: ctx.sideOf(acting),
+  if (rootActing === undefined && revealed.length === 0) {
+    return {
+      kind: "phase",
+      beatIndex: beat.index,
+      triggerIndex,
+      result,
+      chains: [],
+      caption: phaseCaption(beat.root),
+      ...(current.acting !== undefined ? { currentActor: current.acting } : {}),
+      currentType: log[step]!.type,
+    };
+  }
+  let acting: ActingModel["acting"];
+  if (rootActing !== undefined) {
+    const actFamily = familyOf(ctx, rootActing);
+    const line = abilityLineFor(
+      ctx,
+      rootActing,
+      rootTarget !== undefined ? ctx.name(rootTarget) : undefined,
+    );
+    acting = {
+      id: rootActing,
+      name: ctx.name(rootActing),
+      side: ctx.sideOf(rootActing),
       family: actFamily,
       hex: FAMILY_HEX[actFamily],
       abilityLabel: line.abilityLabel ?? actFamily.toUpperCase(),
@@ -315,64 +485,69 @@ export function actingModelAt(log: BattleEvent[], beats: Beat[], step: number, c
         ...(line.target !== undefined ? { targetName: line.target } : {}),
         ...(line.action !== undefined ? { action: line.action } : {}),
       },
-    },
+    };
+  }
+  return {
+    kind: "event",
+    beatIndex: beat.index,
+    triggerIndex,
+    ...(acting !== undefined ? { acting } : {}),
     result,
     chains: [...chainGroups.values()].filter((c) => c.rows.length > 0),
+    caption: phaseCaption(beat.root),
+    ...(current.acting !== undefined ? { currentActor: current.acting } : {}),
+    currentType: log[step]!.type,
   };
 }
 
 // ---------- render: the centre battle-event panel ----------
 
 function rowHtml(r: ResultRow): string {
-  return `<div class="be-row" data-id="${r.id}"><span class="be-g ${r.cls}">${r.glyph}</span><span class="be-t">${r.html}</span></div>`;
+  return `<div class="be-row" data-id="${r.id}" data-depth="${r.depth ?? 0}" style="--cause-depth:${Math.min(r.depth ?? 0, 4)}"><span class="be-g ${r.cls}">${r.glyph}</span><span class="be-t">${r.html}</span></div>`;
 }
 
 /** The centre slot HTML for `model` — an explicitly non-card causal panel
  * naming the actor and ability, the ● NOW target/action, RESULT rows, and any
  * ↳ CHAINS callouts; a beat with no actor instead gets a phase caption. */
 export function battleEventHtml(model: ActingModel): string {
-  if (model.kind === "phase") {
+  if (model.kind === "phase")
     return `<div class="acting-phase" data-beat="${model.beatIndex}"><span class="ap-cap">${esc(model.caption ?? "")}</span></div>`;
-  }
-  const a = model.acting!;
-  const sideCls = a.side === "A" ? "u ua" : a.side === "B" ? "u ub" : "u";
-  const now = a.now;
+  const a = model.acting;
+  const sideCls = a?.side === "A" ? "u ua" : a?.side === "B" ? "u ub" : "u";
   const nowSegs: string[] = [];
-  if (now.targetName !== undefined)
-    nowSegs.push(`<span class="be-now-tgt">${triggerIconForGlyph(now.trigGlyph)} ${esc(now.targetName)}</span>`);
-  if (now.action !== undefined)
-    nowSegs.push(`<span class="be-now-act">${actionIcon(a.family)} ${esc(now.action)}</span>`);
+  if (a?.now.targetName !== undefined)
+    nowSegs.push(
+      `<span class="be-now-tgt">${triggerIconForGlyph(a.now.trigGlyph)} ${esc(a.now.targetName)}</span>`,
+    );
+  if (a?.now.action !== undefined)
+    nowSegs.push(
+      `<span class="be-now-act">${actionIcon(a.family)} ${esc(a.now.action)}</span>`,
+    );
   const nowRow =
     nowSegs.length > 0
-      ? `<div class="be-now"><span class="be-now-k">● NOW</span>${nowSegs.join('<span class="be-arrow">▸</span>')}</div>`
+      ? `<div class="be-now"><span class="be-now-k">ROOT</span>${nowSegs.join('<span class="be-arrow">▸</span>')}</div>`
       : "";
-
   const resultRows = model.result.map(rowHtml).join("");
   const chains = model.chains
     .map(
       (c) =>
-        `<div class="be-chain"><div class="be-chain-h">↳ CHAINS · ${esc(c.unit.toUpperCase())} · ${triggerIcon("damaged")} ${esc(c.trigger)}</div>${c.rows
-          .map(rowHtml)
-          .join("")}</div>`,
+        `<div class="be-chain"><div class="be-chain-h">↳ CHAINS · ${esc(c.unit.toUpperCase())} · ${triggerIcon("damaged")} ${esc(c.trigger)}</div>${c.rows.map(rowHtml).join("")}</div>`,
     )
     .join("");
   const result =
     resultRows !== "" || chains !== ""
-      ? `<div class="be-result"><div class="be-result-k">RESULT</div>${resultRows}${chains}</div>`
+      ? `<div class="be-result"><div class="be-result-k">STREAMED EFFECTS</div>${resultRows}${chains}</div>`
+      : `<div class="be-await">waiting for this root's effects…</div>`;
+  const actorHead =
+    a !== undefined
+      ? `<div class="be-name ${sideCls}">${esc(a.name)}</div><div class="be-ability">${abilityStar("be-spark")}<span>${esc(a.abilityLabel.toUpperCase())}</span></div>`
+      : `<div class="be-name">${esc(model.caption ?? "")}</div><div class="be-ability"><span>${esc(model.currentType ?? "phase")}</span></div>`;
+  const fam = a?.hex ?? FAMILY_HEX.Arcane;
+  const actorAttr =
+    model.currentActor !== undefined
+      ? ` data-acting="${esc(model.currentActor)}"`
       : "";
-
-  return `
-    <div class="battle-event" data-non-card="battle-event" style="--fam:${a.hex}" data-acting="${esc(a.id)}" data-beat="${model.beatIndex}">
-      <div class="be-head">
-        <div class="be-id">
-          <div class="be-name ${sideCls}">${esc(a.name)}</div>
-          <div class="be-ability">${abilityStar("be-spark")}<span>${esc(a.abilityLabel.toUpperCase())}</span></div>
-        </div>
-        <div class="be-idx">event #${model.triggerIndex}</div>
-      </div>
-      ${nowRow}
-      ${result}
-    </div>`;
+  return `<div class="battle-event" data-non-card="battle-event" style="--fam:${fam}"${actorAttr} data-root="${esc(model.caption ?? "")}" data-beat="${model.beatIndex}"><div class="be-head"><div class="be-id">${actorHead}</div><div class="be-idx">event #${model.triggerIndex}</div></div>${nowRow}${result}</div>`;
 }
 
 // ---------- render: the bottom trace strip ----------
@@ -396,11 +571,14 @@ function beatSummary(ctx: ActingCtx, beat: Beat): string {
   // The most salient caused hero effect: a status applied, else damage, else
   // the phase's own word.
   for (const e of beat.caused) {
-    if (e.type === "StatusApplied") return `${actionIcon("poison")} ${esc(e.status)} ${e.stacks}`;
-    if (e.type === "Death") return `${triggerIcon("death")} ${esc(ctx.name(e.unit))} dies`;
+    if (e.type === "StatusApplied")
+      return `${actionIcon("poison")} ${esc(e.status)} ${e.stacks}`;
+    if (e.type === "Death")
+      return `${triggerIcon("death")} ${esc(ctx.name(e.unit))} dies`;
   }
   for (const e of beat.caused) {
-    if (e.type === "Hurt") return `${actionIcon("damage")} ${esc(ctx.name(e.unit))} −${e.amount}`;
+    if (e.type === "Hurt")
+      return `${actionIcon("damage")} ${esc(ctx.name(e.unit))} −${e.amount}`;
   }
   if (beat.kind === "TurnEnd") return "end ticks";
   if (beat.kind === "Fatigue") return "everyone worn";
@@ -409,14 +587,20 @@ function beatSummary(ctx: ActingCtx, beat: Beat): string {
 
 /** One trace chip per beat — the bottom strip. The chip the playhead sits in is
  * `current` (highlighted + "now"); clicking any chip scrubs to that beat. */
-export function traceChipsAt(log: BattleEvent[], beats: Beat[], step: number, ctx: ActingCtx): TraceChip[] {
+export function traceChipsAt(
+  log: BattleEvent[],
+  beats: Beat[],
+  step: number,
+  ctx: ActingCtx,
+): TraceChip[] {
   const cur = beatAtStep(beats, step)?.beat.index;
   return beats.map((beat) => {
     let primary: string;
     let family: Family | undefined;
     if (beat.root.type === "Strike") {
       const def = ctx.defs.get(beat.root.striker);
-      const ab = def !== undefined ? ctx.abilities[primaryAbilityIdOf(def)!] : undefined;
+      const ab =
+        def !== undefined ? ctx.abilities[primaryAbilityIdOf(def)!] : undefined;
       primary = `${abbrev(ab?.name ?? def?.name ?? "act")} · ${ctx.name(beat.root.striker).toUpperCase()}`;
       family = familyOf(ctx, beat.root.striker);
     } else {
@@ -440,7 +624,13 @@ export function traceStripHtml(chips: TraceChip[]): string {
     .map((c) => {
       const fam = c.family !== undefined ? FAMILY_HEX[c.family] : "";
       const style = fam !== "" ? ` style="--fam:${fam}"` : "";
-      const cls = ["tr-chip", c.current ? "is-cur" : "", c.family !== undefined ? "has-fam" : ""].filter(Boolean).join(" ");
+      const cls = [
+        "tr-chip",
+        c.current ? "is-cur" : "",
+        c.family !== undefined ? "has-fam" : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
       const now = c.current ? ' <span class="tr-now">◂ now</span>' : "";
       return `<button type="button" class="${cls}"${style} data-id="${c.id}" title="${esc(c.primary)}"><span class="tr-p">${esc(c.primary)}${now}</span><span class="tr-s">${c.secondary}</span></button>`;
     })

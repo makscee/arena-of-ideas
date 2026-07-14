@@ -8,6 +8,7 @@ import { approvedUnits } from "./approved.js";
 import { createArenaApi, type ContentInfo, type MeInfo } from "./api.js";
 import { dismissInspectOverlay } from "./inspect.js";
 import { createViewer } from "./viewer.js";
+import { boardFirstFixture } from "./battle-fixtures.js";
 import { createBattleEditor, type BattleEditor } from "./battle-editor.js";
 import { createLogin } from "./login.js";
 import { RemoteLadder } from "./remote-ladder.js";
@@ -631,5 +632,12 @@ el<HTMLElement>("kernel-version").textContent = `kernel v${KERNEL_VERSION}`;
 // through showView("title"), whose stale-hash sweep (slice 4) would eat the
 // link before applyHashNav could read it. After every view is wired so
 // showView can hide them all.
-if (window.location.hash.startsWith("#codex/")) applyHashNav();
+const boardFixtureName = new URLSearchParams(window.location.search).get("battleFixture");
+if ((import.meta as ImportMeta & { env?: { DEV?: boolean } }).env?.DEV === true && boardFixtureName !== null) {
+  const fixture = boardFirstFixture(boardFixtureName);
+  showView("battle");
+  result.hidden = false;
+  result.dataset.fixture = fixture.name;
+  viewer.load(fixture.log, fixture.content);
+} else if (window.location.hash.startsWith("#codex/")) applyHashNav();
 else showView("title");

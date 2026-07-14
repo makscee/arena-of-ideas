@@ -257,8 +257,10 @@ export interface BattleHeader {
 /** Per-unit battle state for the side cards (#082 slice D). */
 export interface BattleAnnotations {
   acting?: string | undefined;
-  target?: string | undefined;
+  targets: Set<string>;
   used: Set<string>;
+  entering?: string | undefined;
+  dying?: string | undefined;
 }
 
 /** A COMPACT side card with its battle state (ACTING/TARGET ribbon, USED dim). */
@@ -274,14 +276,20 @@ function sideCardB(
 ): string {
   const family = familyOf(ctx, u.id);
   const isActing = anno.acting === u.id;
-  const isTarget = anno.target === u.id && !isActing;
+  const isTarget = anno.targets.has(u.id);
+  const isEntering = anno.entering === u.id;
+  const isDying = anno.dying === u.id;
   const used = anno.used.has(u.id) && !isActing && !isTarget;
-  const topTag = isActing
-    ? '<div class="ub-state st-acting">ACTING</div>'
-    : isTarget
-      ? '<div class="ub-state st-target">TARGET</div>'
-      : "";
-  const stateCls = isActing ? "is-acting" : isTarget ? "is-target" : "";
+  const topTag = isDying
+    ? '<div class="ub-state st-death">FALLEN</div>'
+    : isEntering
+      ? '<div class="ub-state st-summon">SUMMONED</div>'
+      : isActing
+        ? '<div class="ub-state st-acting">ACTING</div>'
+        : isTarget
+          ? '<div class="ub-state st-target">TARGET</div>'
+          : "";
+  const stateCls = [isActing ? "is-acting" : "", isTarget ? "is-target" : "", isEntering ? "is-summoning" : "", isDying ? "is-dying-event" : ""].filter(Boolean).join(" ");
   const title = dead
     ? `${ctx.name(u.id)} — dead · tap to inspect`
     : `${ctx.name(u.id)} — ${u.pwr} PWR / ${u.hp}/${u.maxHp} HP · tap to inspect`;
@@ -304,7 +312,9 @@ function sideCardB(
     used,
     topTag,
     classes: stateCls,
-    attrs: `data-unit="${esc(u.id)}"`,
+    dying: isDying,
+    dyingNew: isDying,
+    attrs: `data-unit="${esc(u.id)}" data-rank="${dead ? "grave" : front ? "front" : "rear"}"`,
     title,
   });
 }
@@ -323,10 +333,9 @@ function sideColumnB(
     side === "A"
       ? '<div class="bv-side-head sh-a">◤ You</div>'
       : '<div class="bv-side-head sh-b">Ghost ◥</div>';
-  const cards =
-    lineUnits.map((u, i) => sideCardB(u, side, i === 0, false, ctx, anno, registry, selected)).join("") +
-    dead.map((u) => sideCardB(u, side, false, true, ctx, anno, registry, selected)).join("");
-  return `<div class="bv-side" data-side="${side}">${head}<div class="bv-stack">${cards || '<span class="bv-wiped">— no one standing —</span>'}</div></div>`;
+  const line = lineUnits.map((u, i) => sideCardB(u, side, i === 0, false, ctx, anno, registry, selected)).join("");
+  const graves = dead.map((u) => sideCardB(u, side, false, true, ctx, anno, registry, selected)).join("");
+  return `<div class="bv-side" data-side="${side}">${head}<div class="bv-stack bv-line" data-zone="line">${line || '<span class="bv-wiped">— no one standing —</span>'}</div><div class="bv-grave"><span class="bv-grave-label">grave</span><div class="bv-stack bv-grave-stack" data-zone="grave">${graves}</div></div></div>`;
 }
 
 /** The header bar: `vs ghost · <name>` · `seed N` · right-aligned `Turn N`. */
@@ -336,7 +345,7 @@ function headerHtml(h: BattleHeader): string {
   const turn = h.ended
     ? `<span class="bv-turn">${h.ended.winner === "draw" ? "Draw" : `Side ${h.ended.winner} wins`}</span>`
     : `<span class="bv-turn">Turn ${h.turn}</span>`;
-  return `<div class="bv-header"><span class="bv-vs">vs ghost${opp}</span>${seed}${turn}</div>`;
+  return `<div class="bv-header"><span class="bv-vs">vs ghost${opp}</span>${seed}<button type="button" class="bv-log-toggle" aria-expanded="false">full event log</button>${turn}</div>`;
 }
 
 export interface RenderBattleArgs {
@@ -356,6 +365,26 @@ export function battleHtml(a: RenderBattleArgs): string {
   return `${headerHtml(a.header)}${grid}${a.traceHtml}`;
 }
 
+/** Keyed board commit. The shell may be rebuilt, but every Unit's outer DOM
+ * node is retained by data-unit across steps (including line→grave and
+ * resurrection moves). This is the spatial-continuity contract the previous
+ * root.innerHTML replacement could not provide. */
 export function renderBattle(root: HTMLElement, a: RenderBattleArgs): void {
-  root.innerHTML = battleHtml(a);
+  const template = document.createElement("template");
+  template.innerHTML = battleHtml(a);
+  const oldCards = new Map<string, HTMLElement>();
+  for (const card of root.querySelectorAll<HTMLElement>(".unit-b[data-unit]")) {
+    const id = card.dataset.unit;
+    if (id !== undefined) oldCards.set(id, card);
+  }
+  for (const fresh of template.content.querySelectorAll<HTMLElement>(".unit-b[data-unit]")) {
+    const id = fresh.dataset.unit;
+    const old = id !== undefined ? oldCards.get(id) : undefined;
+    if (old === undefined) continue;
+    for (const attr of [...old.attributes]) if (!fresh.hasAttribute(attr.name)) old.removeAttribute(attr.name);
+    for (const attr of [...fresh.attributes]) old.setAttribute(attr.name, attr.value);
+    old.replaceChildren(...[...fresh.childNodes].map((n) => n.cloneNode(true)));
+    fresh.replaceWith(old);
+  }
+  root.replaceChildren(template.content);
 }

@@ -4972,3 +4972,64 @@ button.danger {
   border: 1px solid var(--border);
   border-radius: 2px;
 }
+
+
+/* AOI-63 board-first hierarchy and stable causal motion. */
+.bv-line { min-height: 0; }
+.bv-grave { margin-top: .65rem; padding-top: .45rem; border-top: 1px solid #171c28; }
+.bv-grave-label { display:block; margin-bottom:.35rem; color:var(--dim); font:600 .5rem var(--font-title); letter-spacing:.12em; text-transform:uppercase; }
+.bv-grave-stack:empty { min-height: .4rem; }
+.bv-stack .unit-b[data-rank="front"] { opacity:1; transform:none; min-height:132px; z-index:2; }
+.bv-stack .unit-b[data-rank="front"] .ub-mini { width:58px; height:58px; }
+.bv-stack .unit-b[data-rank="front"] .ub-head { min-height:76px; }
+.bv-stack .unit-b[data-rank="front"] .ub-ability { height:38px; }
+.bv-stack .unit-b[data-rank="rear"] { opacity:.72; transform:scale(.94); transform-origin:center top; filter:saturate(.72); }
+.bv-stack .unit-b[data-rank="rear"]:hover,
+.bv-stack .unit-b[data-rank="rear"].sel { opacity:1; filter:saturate(1); }
+.bv-stack .unit-b[data-rank="grave"] { opacity:.5; transform:scale(.9); transform-origin:center top; }
+.unit-b.is-acting .shape-body { animation:shape-act 900ms ease-in-out infinite alternate; transform-origin:center; transform-box:fill-box; }
+.unit-b.is-target .shape-aura { animation:shape-target 700ms ease-in-out infinite alternate; }
+.unit-b.is-summoning { outline:2px solid var(--you); outline-offset:2px; }
+.unit-b.is-summoning .shape { animation:shape-enter 480ms cubic-bezier(.2,.8,.2,1); }
+.unit-b.is-dying-event { outline:2px solid var(--pwr); outline-offset:2px; }
+.unit-b .ub-state.st-summon { background:var(--you); }
+.unit-b .ub-state.st-death { background:var(--pwr); color:#16040a; }
+@keyframes shape-act { from { transform:translateY(1px) rotate(-1deg); } to { transform:translateY(-2px) rotate(1deg); } }
+@keyframes shape-target { from { opacity:.28; } to { opacity:.8; } }
+@keyframes shape-enter { from { opacity:.2; transform:scale(.76) rotate(-8deg); } to { opacity:1; transform:scale(1) rotate(0); } }
+
+.bv-log-toggle { margin-left:auto; min-height:30px; padding:.25rem .55rem; color:var(--you); border:1px solid #244842; background:#081411; font:600 .55rem var(--font-title); letter-spacing:.07em; text-transform:uppercase; }
+.bv-turn { margin-left:0; }
+.be-await { padding:.8rem 1rem; color:var(--dim); font-size:.75rem; }
+.be-row { margin-left:calc(var(--cause-depth, 0) * .38rem); }
+
+.battle-transcript { position:fixed; z-index:120; top:8px; right:8px; bottom:8px; width:min(430px,calc(100vw - 16px)); display:flex; flex-direction:column; background:linear-gradient(165deg,#11141d,#080a10); border:1px solid #2a3446; box-shadow:0 16px 60px rgba(0,0,0,.72); color:var(--text); }
+.battle-transcript[hidden] { display:none; }
+.bt-head { display:flex; justify-content:space-between; align-items:center; padding:.8rem; border-bottom:1px solid var(--border); }
+.bt-head > div { display:flex; flex-direction:column; }
+.bt-k { color:var(--you); font:600 .55rem var(--font-title); letter-spacing:.1em; text-transform:uppercase; }
+.bt-close { min-width:44px; min-height:44px; }
+.bt-list { overflow:auto; overscroll-behavior:contain; }
+.bt-row { width:100%; display:grid; grid-template-columns:3rem 7rem minmax(0,1fr); gap:.35rem; padding:.55rem .7rem; text-align:left; border:0; border-bottom:1px solid #151a25; background:transparent; color:inherit; }
+.bt-row:hover { background:#121824; }
+.bt-row.is-current { background:rgba(37,230,212,.1); box-shadow:inset 3px 0 var(--you); }
+.bt-id,.bt-meta { font:500 .58rem var(--font-num); color:var(--dim); }
+.bt-type { font:600 .62rem var(--font-title); color:var(--you); }
+.bt-subject { min-width:0; overflow-wrap:anywhere; font-size:.72rem; }
+.bt-meta { grid-column:2 / -1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .unit-b.is-acting .shape-body,
+  .unit-b.is-target .shape-aura,
+  .unit-b.is-summoning .shape,
+  .unit-b.dying-new { animation:none !important; }
+}
+@media (max-width:700px) {
+  .bv-stack .unit-b[data-rank="front"] { min-height:118px; }
+  .bv-stack .unit-b[data-rank="front"] .ub-mini { width:48px; height:48px; }
+  .bv-stack .unit-b[data-rank="front"] .ub-head { min-height:64px; }
+  .bv-stack .unit-b[data-rank="rear"], .bv-stack .unit-b[data-rank="grave"] { transform:none; }
+  .battle-transcript { top:auto; left:0; right:0; bottom:0; width:100%; max-height:78svh; border-radius:8px 8px 0 0; }
+  .bt-row { grid-template-columns:2.6rem 6.2rem minmax(0,1fr); }
+  .bv-log-toggle { order:4; margin-left:0; }
+}

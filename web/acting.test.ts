@@ -132,7 +132,7 @@ describe("side-card state + trace strip", () => {
 
     // Render the board markup for this step and assert the ribbons land.
     const used = usedThisTurnAt(log, beats, beat.end);
-    const anno: BattleAnnotations = { acting, target, used };
+    const anno: BattleAnnotations = { ...(acting !== undefined ? { acting } : {}), targets: new Set(target !== undefined ? [target] : []), used };
     const html = battleHtml({
       board: boardAt(log, beat.end),
       ctx,
@@ -178,6 +178,32 @@ describe("side-card state + trace strip", () => {
   });
 });
 
+
+describe("non-Strike causal beat coverage", () => {
+  test("streams heal/status/stat/summon/resurrection/death/intercept/block rows from structured events", () => {
+    const log = [
+      { id: 0, turn: 0, causedBy: null, source: "kernel", type: "BattleStart", teams: { A: [{ id: "A1:Alpha", name: "Alpha", hp: 8, pwr: 2 }], B: [{ id: "B1:Beta", name: "Beta", hp: 8, pwr: 2 }] } },
+      { id: 1, turn: 0, causedBy: 0, source: "kernel", type: "Heal", unit: "A1:Alpha", amount: 2, hpAfter: 8 },
+      { id: 2, turn: 0, causedBy: 0, source: "kernel", type: "StatusApplied", unit: "A1:Alpha", status: "Shield", stacks: 2, total: 2 },
+      { id: 3, turn: 0, causedBy: 2, source: "kernel", type: "StatusRemoved", unit: "A1:Alpha", status: "Shield", stacks: 1, remaining: 1 },
+      { id: 4, turn: 0, causedBy: 3, source: "kernel", type: "StatChanged", unit: "A1:Alpha", stat: "pwr", delta: 1, now: 3 },
+      { id: 5, turn: 0, causedBy: 4, source: "kernel", type: "Summon", unit: "A+1:Imp", name: "Imp", side: "A", hp: 2, pwr: 1 },
+      { id: 6, turn: 0, causedBy: 5, source: "kernel", type: "Summon", unit: "A1:Alpha", name: "Alpha", side: "A", hp: 8, pwr: 2, resurrected: true, atHp: 1 },
+      { id: 7, turn: 0, causedBy: 4, source: "kernel", type: "Death", unit: "B1:Beta" },
+      { id: 8, turn: 0, causedBy: 7, source: "kernel", type: "Intercepted", by: { unit: "A1:Alpha", ability: 0 }, original: "Death", unit: "A1:Alpha" },
+      { id: 9, turn: 0, causedBy: 8, source: "kernel", type: "ChainBlocked", ability: { unit: "A1:Alpha", ability: 0 }, at: 8 },
+    ] as BattleEvent[];
+    const beats = beatsOf(log);
+    const ctx: ActingCtx = { defs: new Map(), abilities: {}, registry, name: displayNames(log), sideOf: (id) => id.startsWith("A") ? "A" : "B" };
+    const model = actingModelAt(log, beats, 9, ctx);
+    expect(model.kind).toBe("event");
+    expect(model.caption).toBe("Battle begins");
+    const html = battleEventHtml(model);
+    for (const phrase of ["heals", "gains", "loses", "Power", "summoned", "rises", "dies", "intercepts", "chain blocked"]) expect(html).toContain(phrase);
+    expect(html).toContain("STREAMED EFFECTS");
+  });
+});
+
 describe("battleEventHtml", () => {
   test("renders an explicit non-card panel with NOW, RESULT, and CHAINS", () => {
     const { log, beats, ctx } = run();
@@ -187,8 +213,8 @@ describe("battleEventHtml", () => {
     expect(html).toContain('data-non-card="battle-event"');
     expect(html).not.toContain("data-card-entity");
     expect(html).not.toMatch(/class="[^"]*\b[^\"]*card\b/);
-    expect(html).toContain("● NOW");
-    expect(html).toContain(">RESULT<");
+    expect(html).toContain(">ROOT<");
+    expect(html).toContain(">STREAMED EFFECTS<");
     expect(html).toContain("↳ CHAINS");
     expect(html).toContain("Venomancer");
     // The trigger/action/effect marks render as inline `currentColor` SVG icons
