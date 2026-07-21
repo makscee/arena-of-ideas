@@ -290,6 +290,103 @@ describe("empty launch — the server seeds nothing (#085)", () => {
     expect(body.champion).toBeNull(); // the tower is vacant — no champion to read yet
     expect(body.pool).toEqual([]); // no ghosts at genesis
   });
+
+  test("an honest run can climb then found and submit the empty production tower", async () => {
+    const mailer = createMockMailClient();
+    const { db } = openDb(":memory:");
+    const clock = () => 1_750_000_000;
+    const app = createApp({
+      db,
+      clock,
+      mailClient: mailer,
+      rateLimiters: {
+        ipStart: createRateLimiter({ limit: 100, windowMs: 60_000, clock: () => clock() * 1000 }),
+        emailStart: createRateLimiter({ limit: 100, windowMs: 60_000, clock: () => clock() * 1000 }),
+        poolServe: createRateLimiter({ limit: 10_000, windowMs: 60_000, clock: () => clock() * 1000 }),
+      },
+      content: { pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities },
+    });
+    const ctx: Ctx = { app, mailer, now: { sec: 1_750_000_000 } };
+    const token = await login(ctx, "found-submit@example.com");
+    expect((await openRun(ctx, token, "found-submit")).status).toBe(200);
+
+    const clientLadder = new InMemoryLadderStore();
+    let state = buy(initRun({ seed: 0, runId: "found-submit", pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities }), 0);
+    await fetchRunView(ctx, token, state.runId, state.round);
+    state = ladderFight(state, clientLadder);
+    expect(state.round).toBe(2);
+    await fetchRunView(ctx, token, state.runId, state.round);
+    state = challengeBoss(state, clientLadder);
+    expect(ofType(state.log, "Founded")).toHaveLength(1);
+    expect(clientLadder.bossAt(1)).toMatchObject({ runId: state.runId, round: 1, seq: 1 });
+
+    const outcome = await submit(ctx, token, serializeRun(state));
+    expect(outcome.status).toBe(200);
+    expect(outcome.body).toMatchObject({ accepted: true, runId: state.runId, endedBy: "crown", finalRound: 2, crowned: true });
+    expect((await fetchChampion(ctx)).champion).toMatchObject({ runId: state.runId, round: 1, seq: 1 });
+  });
+
+  test("a founding claim without a co-served empty view is rejected", async () => {
+    const mailer = createMockMailClient();
+    const { db } = openDb(":memory:");
+    const clock = () => 1_750_000_000;
+    const app = createApp({
+      db,
+      clock,
+      mailClient: mailer,
+      rateLimiters: {
+        ipStart: createRateLimiter({ limit: 100, windowMs: 60_000, clock: () => clock() * 1000 }),
+        emailStart: createRateLimiter({ limit: 100, windowMs: 60_000, clock: () => clock() * 1000 }),
+        poolServe: createRateLimiter({ limit: 10_000, windowMs: 60_000, clock: () => clock() * 1000 }),
+      },
+      content: { pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities },
+    });
+    const ctx: Ctx = { app, mailer, now: { sec: 1_750_000_000 } };
+    const token = await login(ctx, "unserved-founder@example.com");
+    expect((await openRun(ctx, token, "unserved-founder")).status).toBe(200);
+    const local = new InMemoryLadderStore();
+    const state = challengeBoss(
+      buy(initRun({ seed: 0, runId: "unserved-founder", pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities }), 0),
+      local,
+    );
+    const outcome = await submit(ctx, token, serializeRun(state));
+    expect(outcome.status).toBe(422);
+    expect(outcome.body["reason"]).toMatch(/never served.*empty champion view/);
+    expect((await fetchChampion(ctx)).champion).toBeNull();
+  });
+
+  test("two co-served empty founders replay honestly but only first submission takes the crown", async () => {
+    const mailer = createMockMailClient();
+    const { db } = openDb(":memory:");
+    const clock = () => 1_750_000_000;
+    const app = createApp({
+      db,
+      clock,
+      mailClient: mailer,
+      rateLimiters: {
+        ipStart: createRateLimiter({ limit: 100, windowMs: 60_000, clock: () => clock() * 1000 }),
+        emailStart: createRateLimiter({ limit: 100, windowMs: 60_000, clock: () => clock() * 1000 }),
+        poolServe: createRateLimiter({ limit: 10_000, windowMs: 60_000, clock: () => clock() * 1000 }),
+      },
+      content: { pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities },
+    });
+    const ctx: Ctx = { app, mailer, now: { sec: 1_750_000_000 } };
+    const a = await login(ctx, "founder-a@example.com");
+    const b = await login(ctx, "founder-b@example.com");
+    const make = async (token: string, runId: string) => {
+      expect((await openRun(ctx, token, runId)).status).toBe(200);
+      await fetchRunView(ctx, token, runId, 1);
+      return challengeBoss(
+        buy(initRun({ seed: 0, runId, pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities }), 0),
+        new InMemoryLadderStore(),
+      );
+    };
+    const runA = await make(a, "empty-founder-a");
+    const runB = await make(b, "empty-founder-b");
+    expect((await submit(ctx, a, serializeRun(runA))).body).toMatchObject({ accepted: true, crowned: true });
+    expect((await submit(ctx, b, serializeRun(runB))).body).toMatchObject({ accepted: true, crowned: false });
+    expect((await fetchChampion(ctx)).champion).toMatchObject({ runId: "empty-founder-a", round: 1 });
+  });
 });
 
 describe("leaderboard reads work logged-out", () => {

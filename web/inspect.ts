@@ -8,8 +8,10 @@ import { statusActionsOf, unitActionsOf } from "../src/types.js";
 import {
   abilityChips,
   describeAbilitySegments,
+  describeSelector,
   describeStatus,
   describeStatusSegments,
+  describeWhen,
   type Ability,
   type AbilityRegistry,
   type BattleEvent,
@@ -174,6 +176,9 @@ export interface UnitInspectArgs {
   registry: StatusRegistry;
   /** The ability registry a unit's `ability` ref resolves through (PRD #081). */
   abilities: AbilityRegistry;
+  /** Ordered parent receipt for a run composite. Display-only: the production
+   * run model remains the authority for the inherited axes and Abilities. */
+  fusion?: { parents: readonly [{ name: string; def: UnitDef }, { name: string; def: UnitDef }] };
   /** Highlight this status row (a chip was clicked). */
   highlight?: string;
   silenced?: boolean;
@@ -184,7 +189,7 @@ export interface UnitInspectArgs {
 /** Render the inspector body: head, abilities, statuses — every description
  * derived from the DSL data by the kernel's describe helpers. */
 export function renderUnitInspect(root: HTMLElement, args: UnitInspectArgs): void {
-  const { title, hp, pwr, state, progression, def, statuses, registry, abilities: abilityRegistry, highlight, silenced, noStatuses } = args;
+  const { title, hp, pwr, state, progression, def, statuses, registry, abilities: abilityRegistry, fusion, highlight, silenced, noStatuses } = args;
   const rows: string[] = [];
   const abilities = def !== undefined ? unitAbilities(def, abilityRegistry) : [];
   const primary = abilities[0];
@@ -215,6 +220,18 @@ export function renderUnitInspect(root: HTMLElement, args: UnitInspectArgs): voi
     title,
   }));
   if (silenced) rows.push(`<div class="ins-warn" data-non-card="explanation">⊘ silenced — its own abilities are dead for the battle</div>`);
+
+  if (fusion !== undefined) {
+    const [first, second] = fusion.parents;
+    const triggers = (def?.triggers ?? []).map((trigger) => describeWhen(trigger)).join("; ") || "none";
+    const selectors = (def?.selectors ?? []).map((selector) => describeSelector(selector)).join("; ") || "none";
+    const credit = (parent: { name: string; def: UnitDef }) =>
+      `${parent.name}${parent.def._creator ? ` · made by ${parent.def._creator}` : " · Arena core"}`;
+    rows.push(`<div class="ins-k" data-non-card="explanation">ordered fusion anatomy</div>`);
+    rows.push(`<div class="ins-row ins-fusion-axis" data-fusion-axis="trigger" data-non-card="explanation"><b>Trigger axis · ${esc(first.name)} first</b><span>${esc(triggers)}</span></div>`);
+    rows.push(`<div class="ins-row ins-fusion-axis" data-fusion-axis="selector" data-non-card="explanation"><b>Selector axis · ${esc(second.name)} second</b><span>${esc(selectors)}</span></div>`);
+    rows.push(`<div class="ins-row ins-fusion-credit" data-fusion-attribution data-non-card="explanation"><b>Attribution</b><span>${esc(credit(first))}<br>${esc(credit(second))}</span></div>`);
+  }
 
   rows.push(`<div class="ins-k" data-non-card="explanation">abilities</div>`);
   const mentioned: DescribeSegment[] = [];

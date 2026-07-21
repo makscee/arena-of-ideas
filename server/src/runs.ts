@@ -292,6 +292,9 @@ function replay(deps: SubmitDeps, userId: string, raw: string): Rederived {
     } else if (step.kind === "challengeBoss") {
       view.frame = step;
       state = challengeBoss(state, view);
+    } else if (step.kind === "foundTower") {
+      view.frame = view.foundingFrame(state.round);
+      state = challengeBoss(state, view);
     } else {
       state = applyDecision(state, step);
     }
@@ -317,7 +320,8 @@ export type ReplayStep =
   | { kind: "fuse"; primary: number; secondary: number }
   | { kind: "awakenFusion"; path: "trigger" | "selector" }
   | { kind: "ladder"; claimedSeq: number; championRunId: string | null }
-  | { kind: "challengeBoss"; claimedSeq: number; championRunId: string | null };
+  | { kind: "challengeBoss"; claimedSeq: number; championRunId: string | null }
+  | { kind: "foundTower" };
 
 export function extractReplaySteps(log: readonly RunEvent[]): ReplayStep[] {
   const steps: ReplayStep[] = [];
@@ -353,12 +357,11 @@ export function extractReplaySteps(log: readonly RunEvent[]): ReplayStep[] {
         // re-derives deterministically: the replay re-runs ladderFight against the
         // served view, which synthesizes the same team off the same RNG.
         //
-        // An OVERSHOOT (challengeBoss on a vacant floor, 075-3) emits NO
-        // Snapshotted — no fight, no ghost — so it never reaches this case; its
-        // bare BossChallenged falls through to default and recovers no terminal
-        // step, and the replay diverges from the claimed overshoot end. That is
-        // the intended rejection: a vacant-floor claim is never honest here (the
-        // ladder always seats a champion at the top), so it cannot be cashed in.
+        // An OVERSHOOT emits no Snapshotted/FightFought and no Founded receipt,
+        // so its bare BossChallenged recovers no terminal step and replay
+        // diverges. Honest empty-tower founding is distinct: the
+        // BossChallenged(null) → Founded pair is extracted below and bound to a
+        // co-served empty-champion view.
         const next = log[i + 1];
         if (next?.type === "BossChallenged") {
           steps.push({ kind: "challengeBoss", claimedSeq: e.seq, championRunId: next.boss });
@@ -367,6 +370,14 @@ export function extractReplaySteps(log: readonly RunEvent[]): ReplayStep[] {
         }
         break;
       }
+      case "BossChallenged":
+        // Founding an empty production tower has no opponent and therefore no
+        // Snapshotted/FightFought event. It is nevertheless an authenticated
+        // ladder move: the immediately following Founded receipt distinguishes
+        // it from an overshoot, and replay binds it to a server view that was
+        // co-served with no champion.
+        if (e.boss === null && log[i + 1]?.type === "Founded") steps.push({ kind: "foundTower" });
+        break;
       case "FightFought": {
         const prev = log[i - 1];
         // A ladder fight is preceded by the opponent's provenance: a live draw
@@ -418,8 +429,14 @@ function replayLineNames(log: readonly RunEvent[], end: number): string[] {
  * champion challenge must name the champion co-served with that view —
  * nothing replays that the server did not itself hand out. Writes are
  * staged, never stored: the store mutates only on acceptance. */
+interface ReplayFrame {
+  claimedSeq: number;
+  championRunId: string | null;
+  vacantChallenge?: boolean;
+}
+
 class ReplayLadderView implements LadderStore {
-  private _frame: { claimedSeq: number; championRunId: string | null } | null = null;
+  private _frame: ReplayFrame | null = null;
   readonly staged: TeamSnapshot[] = [];
   stagedCrown: { snap: TeamSnapshot; challengedRunId: string | null } | null = null;
   /** The round of the in-flight fight — set by poolAt, which the kernel
@@ -442,9 +459,24 @@ class ReplayLadderView implements LadderStore {
 
   /** Set the in-flight step. Resets the per-step served-floor latch so each
    * step's serve-check binds its own floor. */
-  set frame(f: { claimedSeq: number; championRunId: string | null } | null) {
+  set frame(f: ReplayFrame | null) {
     this._frame = f;
     this.servedFloor = null;
+  }
+
+  /** Build the only admissible no-opponent challenge frame: this run must have
+   * actually been served the queried floor with no champion. The claimed run
+   * carries no pool seq because founding has no fight/snapshot, so the served
+   * receipt supplies it. */
+  foundingFrame(round: number): ReplayFrame {
+    const served = (this.serves.get(round) ?? []).filter((entry) => entry.championRunId === "");
+    const receipt = served.at(-1);
+    if (receipt === undefined) {
+      throw new SubmissionRejected(
+        `run claims it founded from round ${round}, but this server never served that run an empty champion view`,
+      );
+    }
+    return { claimedSeq: receipt.len, championRunId: null, vacantChallenge: true };
   }
 
   poolAt(round: number): readonly TeamSnapshot[] {
@@ -455,7 +487,10 @@ class ReplayLadderView implements LadderStore {
     // champion's pool-ghost, not a play-time draw. Serve it the live pool
     // un-gated — accept re-sequences the staged ghost regardless.
     if (this.servedFloor !== null && round !== this.servedFloor) {
-      return this.store.poolVisibleTo(round, this.userId);
+      return [
+        ...this.store.poolVisibleTo(round, this.userId),
+        ...this.staged.filter((snapshot) => snapshot.round === round),
+      ];
     }
     const served = this.serves.get(round) ?? [];
     if (!served.some((s) => s.len === frame.claimedSeq)) {
@@ -477,6 +512,7 @@ class ReplayLadderView implements LadderStore {
 
   champion(): TeamSnapshot | null {
     const frame = this.mustFrame();
+    if (frame.vacantChallenge) return null;
     if (frame.championRunId === null) {
       // The run claims no challenge happened (or a vacant-spot crown). Serve
       // the seated champion; if the claim was wrong, the replay diverges.
@@ -504,6 +540,17 @@ class ReplayLadderView implements LadderStore {
     // here from the queried floor (= s.round): champion()'s co-served check
     // reads this.round, and a stale round would mis-key the serve lookup.
     this.round = floor;
+    const frame = this.mustFrame();
+    if (frame.vacantChallenge) {
+      const served = this.serves.get(floor) ?? [];
+      if (!served.some((entry) => entry.len === frame.claimedSeq && entry.championRunId === "")) {
+        throw new SubmissionRejected(
+          `run claims it founded from round ${floor}, but this server never served that empty tower view`,
+        );
+      }
+      this.servedFloor = floor;
+      return null;
+    }
     // Replay reads the summit through champion(); a per-floor read only ever
     // resolves the floor that is the seated champion's, vacant otherwise.
     const champ = this.champion();
@@ -517,7 +564,7 @@ class ReplayLadderView implements LadderStore {
     this.stagedCrown = { snap, challengedRunId: this.mustFrame().championRunId };
   }
 
-  private mustFrame(): { claimedSeq: number; championRunId: string | null } {
+  private mustFrame(): ReplayFrame {
     if (this._frame === null) throw new SubmissionRejected("ladder access outside a ladder fight — malformed run log");
     return this._frame;
   }

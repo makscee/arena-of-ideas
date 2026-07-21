@@ -69,6 +69,44 @@ describe("shared card inspector", () => {
     expect(root.innerHTML).toContain('data-inspect-kind="ability"');
     expect(root.innerHTML).toContain('data-inspect-kind="status"');
   });
+
+  test("ordered fusion inspection names parent axes, both Abilities, stats and attribution", () => {
+    const root = fakeRoot();
+    const first = { ...Venomancer, _creator: "Maks" };
+    const second: UnitDef = {
+      name: "Striker",
+      base: { hp: 7, pwr: 2 },
+      triggers: [{ kind: "trigger", on: { on: "BattleStart" } }],
+      selectors: [{ kind: "holder" }],
+      abilities: ["Strike"],
+    };
+    const composite: UnitDef = {
+      name: "Venomancer + Striker",
+      base: { hp: 17, pwr: 5 },
+      triggers: structuredClone(first.triggers ?? []),
+      selectors: structuredClone(second.selectors ?? []),
+      abilities: ["Venom", "Strike"],
+    };
+    renderUnitInspect(root, {
+      title: composite.name,
+      hp: 17,
+      pwr: 5,
+      state: "5 PWR · 17 HP · Fusion · Fresh 0/3",
+      def: composite,
+      fusion: { parents: [{ name: first.name, def: first }, { name: second.name, def: second }] },
+      statuses: [],
+      registry: stressRegistry,
+      abilities: stressAbilities,
+    });
+    expect(root.innerHTML).toContain('data-fusion-axis="trigger"');
+    expect(root.innerHTML).toContain("Trigger axis · Venomancer first");
+    expect(root.innerHTML).toContain('data-fusion-axis="selector"');
+    expect(root.innerHTML).toContain("Selector axis · Striker second");
+    expect(root.innerHTML).toContain("Venomancer · made by Maks");
+    expect(root.innerHTML).toContain("Striker · Arena core");
+    expect(root.innerHTML.match(/class="ins-row ins-ab"/g)).toHaveLength(2);
+    expect(root.innerHTML).toContain("5 PWR · 17 HP");
+  });
 });
 
 describe("renderUnitInspect status refs", () => {

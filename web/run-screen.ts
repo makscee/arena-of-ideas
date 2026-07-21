@@ -907,6 +907,7 @@ export function createRunScreen(els: RunScreenEls, deps: RunScreenDeps): RunScre
           statuses: def.statuses ?? [],
           registry: s.statuses,
           abilities: s.abilities,
+          ...(unit?.fusion !== undefined ? { fusion: { parents: unit.fusion.parents } } : {}),
           ...(sel.status !== undefined ? { highlight: sel.status } : {}),
           noStatuses: "none to start with",
         }),
