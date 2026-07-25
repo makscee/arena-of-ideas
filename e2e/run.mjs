@@ -268,9 +268,9 @@ function awaitReady(child, marker, timeoutMs = 30_000) {
 // the probe suite needs a populated tower (a champion to read, a ladder to
 // climb), so the harness opts into the #075 full-tower seed via
 // AOI_SEED_BOOTSTRAP — the solo-playtest seam, never set in production.
-// A run gets a fresh named server fixture and a freshly reset evidence tree.
-// Browser fixtures are fresh contexts inside each probe/capture task.
-rmSync(EVIDENCE, { recursive: true, force: true });
+// A run gets a fresh named server fixture. Browser fixtures are fresh contexts
+// inside each probe/capture task. Evidence cleanup is deferred until after the
+// --serve branch so browser checks and managed-seat restoration preserve proof.
 const dbDir = mkdtempSync(join(tmpdir(), "aoi-e2e-server-"));
 const arena = boot("arena-server", "npx", ["tsx", "server/src/main.ts"], {
   MOCK_MODE: "1",
@@ -335,6 +335,10 @@ if (flags.has("--serve")) {
   await new Promise(() => {}); // idle until a signal / --down reaps us
 }
 
+// Only an actual probe/scenario run owns evidence cleanup. Warm serving and
+// browser discovery are observational/operator modes and preserve prior proof.
+rmSync(EVIDENCE, { recursive: true, force: true });
+
 let failed = false;
 try {
   if (!arenaReady) {
@@ -353,14 +357,16 @@ try {
     const wantsAoi62Walk = tokens.some((t) => probeMatches("aoi62", t));
     const wantsBoardFirstWalk = tokens.some((t) => probeMatches("board-first", t));
     const wantsIntegratedSeason = tokens.some((t) => probeMatches("desktop-v1-integrated-season", t));
+    const wantsPlayerDrivenPlaytest = tokens.some((t) => probeMatches("player-driven-desktop-v1-playtest", t));
     if (tokens.length > 0) {
       probes = probes.filter((f) => tokens.some((t) => probeMatches(f, t)));
-      if (probes.length === 0 && !wantsAoi62Walk && !wantsBoardFirstWalk && !wantsIntegratedSeason) {
+      if (probes.length === 0 && !wantsAoi62Walk && !wantsBoardFirstWalk && !wantsIntegratedSeason && !wantsPlayerDrivenPlaytest) {
         console.error(`no probe matches ${JSON.stringify(tokens)}. available:`);
         for (const p of allProbes()) console.error(`  ${p}`);
         console.error("  aoi62 (named governance walk)");
         console.error("  board-first (AOI-63 named scenarios + visual walk)");
         console.error("  desktop-v1-integrated-season (AOI-64 complete desktop tracer)");
+        console.error("  player-driven-desktop-v1-playtest (AOI-71 player-driven desktop tracer)");
         failed = true;
       }
     }
@@ -368,6 +374,7 @@ try {
     if (tokens.length > 0 && wantsBoardFirstWalk) tasks.push({ name: "walk-board-first", file: "shots-board-first.mjs", evidence: "aoi63-board-first" });
     if (tokens.length > 0 && wantsAoi62Walk) tasks.push({ name: "walk-aoi62", file: "shots-aoi62.mjs", evidence: "aoi62-governance" });
     if (tokens.length > 0 && wantsIntegratedSeason) tasks.push({ name: "desktop-v1-integrated-season", file: "desktop-v1-integrated-season.mjs", evidence: "desktop-v1-integrated-season", timeoutMs: 300_000 });
+    if (tokens.length > 0 && wantsPlayerDrivenPlaytest) tasks.push({ name: "player-driven-desktop-v1-playtest", file: "player-driven-desktop-v1-playtest.mjs", evidence: "player-driven-desktop-v1-playtest", timeoutMs: 300_000 });
     // The unfiltered gate includes every current still and motion walk. Keeping
     // them in this same stack gives them the same fresh DB and hard teardown.
     if (tokens.length === 0) {
@@ -384,6 +391,7 @@ try {
         // boundary, plays the integrated season, and submits the founded tower.
         { name: "walk-aoi62", file: "shots-aoi62.mjs", evidence: "aoi62-governance" },
         { name: "desktop-v1-integrated-season", file: "desktop-v1-integrated-season.mjs", evidence: "desktop-v1-integrated-season", timeoutMs: 300_000 },
+        { name: "player-driven-desktop-v1-playtest", file: "player-driven-desktop-v1-playtest.mjs", evidence: "player-driven-desktop-v1-playtest", timeoutMs: 300_000 },
       );
     }
     for (const task of tasks) {
