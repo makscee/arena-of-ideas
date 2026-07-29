@@ -12,8 +12,8 @@
  * is append-only (current = latest row) so run re-derivation can replay a
  * challenge against the champion that was actually seated when the run fought.
  */
-import { asc, desc, eq, max } from "drizzle-orm";
-import { assertSeqInOrder } from "../../src/ladder.js";
+import { and, asc, desc, eq, max } from "drizzle-orm";
+import { assertBossSeat, assertSeqInOrder } from "../../src/ladder.js";
 import type { LadderStore, TeamSnapshot } from "../../src/index.js";
 import type { UnitDef } from "../../src/index.js";
 import type { DB } from "./db.js";
@@ -46,20 +46,16 @@ export class SqliteLadderStore implements LadderStore {
     return this.championRecord()?.snap ?? null;
   }
 
-  /** The boss seated on `floor`. The shared ladder stores its summit as the
-   * champion-history head (one seat, the floor it was crowned at); a per-floor
-   * boss table is a later slice. So a floor has a boss only when it IS the
-   * current champion's floor — every other floor reads vacant. */
+  /** The latest seat written on this floor. ladder_champions is append-only
+   * seat history: retaining prior rows preserves replay while the latest row
+   * per floor is the live boss. */
   bossAt(floor: number): TeamSnapshot | null {
-    const champ = this.champion();
-    return champ !== null && champ.round === floor ? champ : null;
+    return this.bossRecord(floor)?.snap ?? null;
   }
 
-  /** Seat a boss on `floor`. ladderFight always seats the run's own ghost as a
-   * new summit (snap.round === floor), so this maps to crowning that snap —
-   * behaviour-identical to the old setChampion until per-floor seats land. */
   setBoss(floor: number, snap: TeamSnapshot): void {
-    this.setChampionFor(snap, null);
+    assertBossSeat(floor, snap);
+    this.setBossFor(snap, null);
   }
 
   // ---- the server-side dimension: ghost ownership ----
@@ -113,14 +109,53 @@ export class SqliteLadderStore implements LadderStore {
     return this.db.select({ m: max(ladderGhosts.round) }).from(ladderGhosts).all()[0]?.m ?? 0;
   }
 
-  /** The current champion row, owner included; null only before bootstrap. */
-  championRecord(): ChampionRecord | null {
-    const row = this.db.select().from(ladderChampions).orderBy(desc(ladderChampions.id)).limit(1).all()[0];
+  /** Every live floor seat keyed by floor. Append order resolves overwrites. */
+  bossRecords(): Record<string, ChampionRecord> {
+    const records: Record<string, ChampionRecord> = {};
+    for (const row of this.db.select().from(ladderChampions).orderBy(asc(ladderChampions.id)).all()) {
+      records[String(row.round)] = rowToChampion(row);
+    }
+    return records;
+  }
+
+  /** The live boss on one floor, owner included: latest append wins there. */
+  bossRecord(floor: number): ChampionRecord | null {
+    const row = this.db
+      .select()
+      .from(ladderChampions)
+      .where(eq(ladderChampions.round, floor))
+      .orderBy(desc(ladderChampions.id))
+      .limit(1)
+      .all()[0];
     return row ? rowToChampion(row) : null;
   }
 
-  /** The latest champion seated under `runId`, from the append-only history —
-   * what a submitted run's champion challenge replays against. */
+  /** The champion is the boss of the highest occupied floor. Within that
+   * floor, the latest append is the current seat after any overwrite. */
+  championRecord(): ChampionRecord | null {
+    const row = this.db
+      .select()
+      .from(ladderChampions)
+      .orderBy(desc(ladderChampions.round), desc(ladderChampions.id))
+      .limit(1)
+      .all()[0];
+    return row ? rowToChampion(row) : null;
+  }
+
+  /** A historical boss identified by both run and floor. The floor matters
+   * for bootstrap, whose reserved run id seeds more than one seat. */
+  bossByRunId(runId: string, floor: number): ChampionRecord | null {
+    const row = this.db
+      .select()
+      .from(ladderChampions)
+      .where(and(eq(ladderChampions.runId, runId), eq(ladderChampions.round, floor)))
+      .orderBy(desc(ladderChampions.id))
+      .limit(1)
+      .all()[0];
+    return row ? rowToChampion(row) : null;
+  }
+
+  /** The latest summit history row under `runId`. */
   championByRunId(runId: string): ChampionRecord | null {
     const row = this.db
       .select()
@@ -132,12 +167,17 @@ export class SqliteLadderStore implements LadderStore {
     return row ? rowToChampion(row) : null;
   }
 
-  /** Crown a champion owned by `userId` — appends to the history. */
-  setChampionFor(snap: TeamSnapshot, userId: string | null): void {
+  /** Seat a floor boss owned by `userId` — appends to seat history. */
+  setBossFor(snap: TeamSnapshot, userId: string | null): void {
     this.db
       .insert(ladderChampions)
       .values({ runId: snap.runId, userId, round: snap.round, seq: snap.seq, team: JSON.stringify(snap.team) })
       .run();
+  }
+
+  /** Compatibility name for server call sites that apply a summit win. */
+  setChampionFor(snap: TeamSnapshot, userId: string | null): void {
+    this.setBossFor(snap, userId);
   }
 }
 

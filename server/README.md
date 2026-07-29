@@ -65,7 +65,7 @@ the single-container deployment; replicas would need a shared store.
   digit, then letters/digits/spaces/`_ . ' -`; anything else is 400. The
   leaderboard's champion `holder` reads it.
 - `GET /healthz` → `{ok:true, build:{source, version, commit, image, buildTime}}`; build fields are non-secret and default to `unknown` unless supplied by `ARENA_BUILD_*`/image env.
-- `GET /v1/ladder/champion` → `{champion, holder}` — **public**: the title
+- `GET /v1/ladder/champion` → `{champion, bosses, holder}` — **public**: the title
   screen shows the leaderboard to logged-out players, so reads need no login.
   `holder` is the owning user's display name (null for the bootstrap seat).
 - `GET /v1/ladder/pool/:round` → `{round, pool}` — **public** full pool; with
@@ -78,10 +78,10 @@ the single-container deployment; replicas would need a shared store.
   runId (1–128 chars, `bootstrap` reserved; a submitted runId never reopens),
   and opens **expire 14 days after opening** (`RUN_OPEN_TTL_DAYS`).
 - `GET /v1/runs/:runId/pool/:round` (bearer) → 200 `{served:true, round,
-  pool, champion}` or 422 `{served:false, reason}` — **the play read**: the
-  round's pool as this run's owner sees it (own ghosts excluded) plus the
-  champion seated right now. The server **records every view it serves**
-  (length + champion, per runId and round), and submission replay accepts
+  pool, boss, champion}` or 422 `{served:false, reason}` — **the play read**:
+  the round's pool as this run's owner sees it (own ghosts excluded), that
+  floor's boss, and the derived champion. The server **records every view it
+  serves** (length + floor boss + champion, per runId and round), and replay accepts
   only recorded views — so every fight of a run to be submitted must read
   through this endpoint. Re-reads are free and never brick a submission.
   Refused for runs not opened by the caller and for expired opens; bounded
@@ -97,8 +97,8 @@ the single-container deployment; replicas would need a shared store.
 1. `POST /v1/runs/open` with a fresh unique runId, right when the run starts.
 2. Per ladder fight at round R: `GET /v1/runs/:runId/pool/:round` and build
    the kernel's per-fight `LadderStore` view from **that one response** —
-   `poolAt(R)` returns `pool`, `champion()` returns `champion`. Do not mix a
-   pool from one read with a champion from another (the leaderboard reads
+   `poolAt(R)` returns `pool`, `bossAt(R)` returns `boss`, and `champion()`
+   returns `champion`. Do not mix fields from different reads (the leaderboard reads
    below are for display only): a challenge replays only against the champion
    co-served with the claimed pool view.
 3. Submit the finished run within the 14-day open TTL.
@@ -110,11 +110,10 @@ that runId, makes the submission unverifiable and it is rejected.
 
 One ladder per server instance, stored in SQLite behind the kernel's
 `LadderStore` interface (`ladder-store.ts`) with the same semantics the
-kernel's backings pin (append-only pools, the seq precondition, snapshot
-isolation). Opened from the kernel's bootstrap at boot — the bootstrap tower is
-seeded (a boss on every floor, the summit `BOSS_TEAMS` entry as champion),
-because a vacant champion spot is a free crown — and never reseeded once played
-on.
+kernel's backings pin: append-only pools, one overwriteable boss seat per floor,
+a champion derived from the highest occupied floor, the seq precondition, and
+snapshot isolation. The production server opens empty; solo-playtest bootstrap
+seats a boss on every seeded floor and derives the summit from the highest one.
 
 **Users own ghosts.** A user is identified by the session's user id, and a
 user's ghosts span all their runs: their own draws (`?exclude=me`, and the

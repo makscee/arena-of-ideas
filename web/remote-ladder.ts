@@ -11,7 +11,7 @@
 // accepts only recorded views, so the fight must draw from exactly what was
 // served: pool and champion from one response, never mixed across reads.
 // ladderFight's own writes during the fight (addSnapshot of the run's ghost,
-// setChampion on a crown) land in this client-side view only — the server
+// setBoss on a seat/crown) land in this client-side view only — the server
 // re-derives and writes the real ghosts/crowns at submit.
 //
 // DISPLAY reads are everything else: the leaderboard and the run screen's side
@@ -23,7 +23,7 @@
 import type { LadderStore, TeamSnapshot } from "../src/index.js";
 // The seq precondition and clone-on-write come from the kernel's ladder
 // module itself (not re-exported via index) — same semantics as any backing.
-import { assertSeqInOrder, jsonClone } from "../src/ladder.js";
+import { assertBossSeat, assertSeqInOrder, jsonClone } from "../src/ladder.js";
 import type { ArenaApi, SubmitInfo } from "./api.js";
 
 /** Matches the leaderboard's scan cap — pools are contiguous from round 1. */
@@ -51,18 +51,19 @@ export class RemoteLadder implements LadderStore, RemoteRun {
   private readonly api: ArenaApi;
   private readonly token: string;
   private readonly contentVersion: number;
-  // Display state, refreshed by sync(): the public pools and champion.
+  // Display state, refreshed by sync(): public pools and per-floor seats.
   private pools = new Map<number, TeamSnapshot[]>();
+  private bosses = new Map<number, TeamSnapshot>();
   private champ: TeamSnapshot | null = null;
   private champHolder: string | null = null;
-  // The active run's local writes: its own ghosts (server gets them only at
-  // submit) and a locally-won crown — display until the server copy lands.
+  // The active run's local writes: its own ghosts and floor seats (the server
+  // gets them only at submit) — display until the server copy lands.
   private localGhosts = new Map<number, TeamSnapshot[]>();
-  private localCrown: TeamSnapshot | null = null;
+  private localBosses = new Map<number, TeamSnapshot>();
   // The pinned fight view — the last serve() response, the only thing a
   // ladderFight may read. Kept after the fight so the shop's "rivals waiting"
   // line for that round reads the served (own-ghost-excluded) truth.
-  private fight: { round: number; pool: TeamSnapshot[]; champion: TeamSnapshot | null } | null = null;
+  private fight: { round: number; pool: TeamSnapshot[]; boss: TeamSnapshot | null; champion: TeamSnapshot | null } | null = null;
 
   constructor(api: ArenaApi, token: string, contentVersion = 1) {
     this.api = api;
@@ -97,22 +98,26 @@ export class RemoteLadder implements LadderStore, RemoteRun {
     // Fight view first: a champion challenge must name the champion co-served
     // with the claimed pool view, never a fresher display read.
     if (this.fight !== null) return this.fight.champion;
-    return this.localCrown ?? this.champ;
+    let champion = this.champ;
+    for (const boss of this.localBosses.values()) {
+      if (champion === null || boss.round >= champion.round) champion = boss;
+    }
+    return champion;
   }
 
   bossAt(floor: number): TeamSnapshot | null {
-    // The remote ladder tracks only its summit (the served/synced champion); a
-    // per-floor read resolves the floor that summit sits on, vacant elsewhere.
-    const champ = this.champion();
-    return champ !== null && champ.round === floor ? champ : null;
+    const local = this.localBosses.get(floor);
+    if (local !== undefined) return local;
+    if (this.fight !== null && this.fight.round === floor) return this.fight.boss;
+    return this.bosses.get(floor) ?? null;
   }
 
   setBoss(floor: number, snap: TeamSnapshot): void {
-    // Local display only — whether the crown really lands is the server's
-    // call at submit (the crown race; `crowned: false` when it lapsed).
-    // ladderFight seats the run's ghost as a new summit (snap.round === floor),
-    // so this is the old setChampion: the locally-won crown to display.
-    this.localCrown = jsonClone(snap);
+    assertBossSeat(floor, snap);
+    // Local overlay only — submission replay decides whether this exact seat
+    // write lands on the server. Keep every floor independently so lower-seat
+    // cash-outs do not erase the summit in the client-side LadderStore view.
+    this.localBosses.set(floor, jsonClone(snap));
   }
 
   /** The champion holder's display name (public read) — null for bootstrap
@@ -121,7 +126,7 @@ export class RemoteLadder implements LadderStore, RemoteRun {
    * applies when it is the same champion the last sync described, and is
    * unknown (null) when the seat changed in between. */
   holder(): string | null {
-    if (this.localCrown !== null) return null;
+    if (this.localBosses.size > 0) return null;
     if (this.fight !== null) {
       const fc = this.fight.champion;
       return fc !== null && this.champ !== null && fc.runId === this.champ.runId ? this.champHolder : null;
@@ -146,6 +151,7 @@ export class RemoteLadder implements LadderStore, RemoteRun {
     }
     this.champ = champ.value.champion;
     this.champHolder = champ.value.holder;
+    this.bosses = bossesFromPayload(champ.value.bosses, champ.value.champion);
     this.pools = pools;
     return { ok: true };
   }
@@ -156,7 +162,7 @@ export class RemoteLadder implements LadderStore, RemoteRun {
   clearLocal(): void {
     this.fight = null;
     this.localGhosts = new Map();
-    this.localCrown = null;
+    this.localBosses = new Map();
   }
 
   // ---------- RemoteRun (the open → serve → submit protocol) ----------
@@ -178,6 +184,7 @@ export class RemoteLadder implements LadderStore, RemoteRun {
     this.fight = {
       round: res.value.round,
       pool: [...res.value.pool],
+      boss: res.value.boss ?? bossFromLegacyChampion(res.value.round, res.value.champion),
       champion: res.value.champion,
     };
     return { ok: true };
@@ -192,6 +199,20 @@ export class RemoteLadder implements LadderStore, RemoteRun {
     if (res.kind === "rejected") return { ok: false, kind: "rejected", reason: res.reason };
     return { ok: false, kind: "network", reason: failureReason(res) };
   }
+}
+
+function bossesFromPayload(
+  payload: Record<string, TeamSnapshot> | undefined,
+  legacyChampion: TeamSnapshot | null,
+): Map<number, TeamSnapshot> {
+  if (payload !== undefined) {
+    return new Map(Object.entries(payload).map(([floor, boss]) => [Number(floor), boss]));
+  }
+  return legacyChampion === null ? new Map() : new Map([[legacyChampion.round, legacyChampion]]);
+}
+
+function bossFromLegacyChampion(round: number, champion: TeamSnapshot | null): TeamSnapshot | null {
+  return champion !== null && champion.round === round ? champion : null;
 }
 
 function failureReason(res: { ok: false; kind: string; reason?: string }): string {

@@ -257,13 +257,15 @@ export function createApp(deps: AppDeps): Hono<AuthEnv> {
   });
 
   app.get("/v1/ladder/champion", (c) => {
+    const records = store.bossRecords();
+    const bosses = Object.fromEntries(Object.entries(records).map(([floor, record]) => [floor, record.snap]));
     const rec = store.championRecord();
-    if (rec === null) return c.json({ champion: null, holder: null });
+    if (rec === null) return c.json({ champion: null, bosses, holder: null });
     const holder =
       rec.userId === null
         ? null
         : (db.select().from(users).where(eq(users.id, rec.userId)).limit(1).all()[0]?.displayName ?? null);
-    return c.json({ champion: rec.snap, holder });
+    return c.json({ champion: rec.snap, bosses, holder });
   });
 
   app.get("/v1/ladder/pool/:round", (c) => {

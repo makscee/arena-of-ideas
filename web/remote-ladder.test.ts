@@ -69,6 +69,28 @@ describe("the fight contract (serve-time pinning)", () => {
     expect(store.poolAt(1)[1]!.runId).toBe("web-x");
   });
 
+  test("a served lower-floor boss stays distinct from the co-served champion", async () => {
+    const lower = snap("lower", 1, 0, [WISP]);
+    const champion = snap("queen", 4, 0, [TITAN]);
+    const store = new RemoteLadder(
+      stubApi({
+        servePool: async () => ok({ round: 1, pool: [], boss: lower, champion }),
+      }),
+      "token",
+    );
+    expect((await store.serve("web-x", 1)).ok).toBe(true);
+
+    const state = challengeBoss(
+      buy(initRun({ seed: 7, runId: "web-x", pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities }), 0),
+      store,
+    );
+
+    expect(state.log.find((e) => e.type === "BossChallenged")).toMatchObject({ boss: "lower" });
+    expect(state.endedBy).toBe("seated");
+    expect(store.bossAt(1)).toMatchObject({ runId: "web-x", round: 1 });
+    expect(store.champion()).toEqual(champion);
+  });
+
   test("an empty served pool challenges the CO-SERVED champion, never a fresher read", async () => {
     // The boss of the floor being challenged (floor 1) carries that floor as its
     // round — challengeBoss reads ladder.bossAt(s.round), so the seat's round
@@ -100,6 +122,42 @@ describe("the fight contract (serve-time pinning)", () => {
 });
 
 describe("display reads (sync + overlay)", () => {
+  test("sync fills every public floor seat and derives the same summit", async () => {
+    const lower = snap("lower", 2, 0, [WISP]);
+    const champion = snap("queen", 5, 0, [TITAN]);
+    const store = new RemoteLadder(
+      stubApi({
+        champion: async () => ok({ champion, holder: "Ada", bosses: { "2": lower, "5": champion } }),
+        pool: async (round: number) => ok({ round, pool: [] as TeamSnapshot[] }),
+      }),
+      "token",
+    );
+
+    expect(await store.sync()).toEqual({ ok: true });
+    expect(store.bossAt(2)).toEqual(lower);
+    expect(store.bossAt(4)).toBeNull();
+    expect(store.bossAt(5)).toEqual(champion);
+    expect(store.champion()).toEqual(champion);
+  });
+
+  test("a local overwrite of the synced summit immediately becomes champion", async () => {
+    const old = snap("old-top", 5, 0, [WISP]);
+    const replacement = snap("new-top", 5, 1, [TITAN]);
+    const store = new RemoteLadder(
+      stubApi({
+        champion: async () => ok({ champion: old, holder: "Ada", bosses: { "5": old } }),
+        pool: async (round: number) => ok({ round, pool: [] as TeamSnapshot[] }),
+      }),
+      "token",
+    );
+    await store.sync();
+
+    store.setBoss(5, replacement);
+
+    expect(store.bossAt(5)).toEqual(replacement);
+    expect(store.champion()).toEqual(replacement);
+  });
+
   test("sync fills public pools and the holder; own unsubmitted ghosts overlay", async () => {
     const pub = snap("rival", 1, 0, [WISP]);
     const store = new RemoteLadder(

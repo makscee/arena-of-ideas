@@ -140,6 +140,7 @@ async function openRun(ctx: Ctx, token: string, runId: string): Promise<{ status
  * records exactly this — submission replays only against recorded views. */
 interface RunView {
   pool: TeamSnapshot[];
+  boss?: TeamSnapshot | null;
   champion: TeamSnapshot;
 }
 
@@ -149,8 +150,12 @@ async function fetchRunView(ctx: Ctx, token: string, runId: string, round: numbe
     headers: { authorization: `Bearer ${token}` },
   });
   expect(res.status).toBe(200);
-  const body = (await res.json()) as { pool: TeamSnapshot[]; champion: TeamSnapshot };
-  return { pool: body.pool, champion: body.champion };
+  const body = (await res.json()) as { pool: TeamSnapshot[]; boss?: TeamSnapshot | null; champion: TeamSnapshot };
+  return {
+    pool: body.pool,
+    boss: body.boss ?? (body.champion?.round === round ? body.champion : null),
+    champion: body.champion,
+  };
 }
 
 /** The kernel view over one served per-fight view, writes staying local. */
@@ -158,7 +163,7 @@ function viewOf(round: number, v: RunView): LadderStore {
   return {
     poolAt: (r) => (r === round ? v.pool : []),
     addSnapshot: () => {},
-    bossAt: (floor) => (v.champion !== null && v.champion.round === floor ? v.champion : null),
+    bossAt: (floor) => (floor === round ? (v.boss ?? (v.champion.round === floor ? v.champion : null)) : null),
     setBoss: () => {},
     champion: () => v.champion,
   };
@@ -211,7 +216,7 @@ async function playUnopenedRun(ctx: Ctx, token: string, seed: number, runId: str
     const pool = await fetchMyPool(ctx, token, s.round);
     const champ = (await fetchChampion(ctx)).champion!;
     const round = s.round;
-    s = ladderMove(s, viewOf(round, { pool, champion: champ }));
+    s = ladderMove(s, viewOf(round, { pool, boss: champ.round === round ? champ : null, champion: champ }));
   }
   return s;
 }
@@ -419,6 +424,61 @@ describe("leaderboard reads work logged-out", () => {
 // ---------------------------------------------------------------------------
 
 describe("authenticated submission happy path", () => {
+  test("a served lower-floor boss can be challenged, overwritten, and submitted without changing the summit", async () => {
+    const ctx = makeCtx();
+    const ada = await login(ctx, "lower-seat@example.com");
+    expect((await openRun(ctx, ada, "lower-seat")).status).toBe(200);
+
+    const view = await fetchRunView(ctx, ada, "lower-seat", 1);
+    expect(view.boss).toMatchObject({ runId: BOOTSTRAP_RUN_ID, round: 1 });
+    expect(view.champion).toMatchObject({ runId: BOOTSTRAP_RUN_ID, round: TOWER_HEIGHT });
+
+    const run = challengeBoss(
+      buy(initRun({ seed: 1, runId: "lower-seat", pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities }), 0),
+      viewOf(1, view),
+    );
+    expect(run).toMatchObject({ status: "over", endedBy: "seated" });
+
+    const submitted = await submit(ctx, ada, serializeRun(run));
+    expect(submitted.status).toBe(200);
+    expect(submitted.body).toMatchObject({ accepted: true, endedBy: "seated", crowned: false });
+
+    const response = await ctx.app.request("/v1/ladder/champion");
+    const body = (await response.json()) as { champion: TeamSnapshot; bosses?: Record<string, TeamSnapshot> };
+    expect(body.champion).toMatchObject({ runId: BOOTSTRAP_RUN_ID, round: TOWER_HEIGHT });
+    expect(body.bosses?.["1"]).toMatchObject({ runId: "lower-seat", round: 1 });
+  });
+
+  test("a same-length re-serve selects the champion co-served with the claimed lower-seat outcome", async () => {
+    const ctx = makeCtx();
+    const ada = await login(ctx, "same-user-reserve@example.com");
+    expect((await openRun(ctx, ada, "reserved-lower")).status).toBe(200);
+
+    let reserved = buy(initRun({ seed: 3, runId: "reserved-lower", pool: [TITAN], statuses: stressRegistry, abilities: stressAbilities }), 0);
+    while (reserved.round < TOWER_HEIGHT) {
+      const round = reserved.round;
+      reserved = ladderFight(reserved, viewOf(round, await fetchRunView(ctx, ada, reserved.runId, round)));
+    }
+
+    const beforeCrown = await fetchRunView(ctx, ada, reserved.runId, TOWER_HEIGHT);
+    expect(beforeCrown.boss?.runId).toBe(BOOTSTRAP_RUN_ID);
+    expect(beforeCrown.champion.runId).toBe(BOOTSTRAP_RUN_ID);
+
+    const growing = await playSharedRun(ctx, ada, 4, "same-user-crown");
+    expect((await submit(ctx, ada, serializeRun(growing))).body).toMatchObject({ accepted: true, crowned: true });
+
+    const afterCrown = await fetchRunView(ctx, ada, reserved.runId, TOWER_HEIGHT);
+    expect(afterCrown.pool).toHaveLength(beforeCrown.pool.length);
+    expect(afterCrown.boss?.runId).toBe(BOOTSTRAP_RUN_ID);
+    expect(afterCrown.champion).toMatchObject({ runId: "same-user-crown", round: TOWER_HEIGHT + 1 });
+
+    reserved = challengeBoss(reserved, viewOf(TOWER_HEIGHT, afterCrown));
+    expect(reserved.endedBy).toBe("seated");
+    const outcome = await submit(ctx, ada, serializeRun(reserved));
+    expect(outcome.status).toBe(200);
+    expect(outcome.body).toMatchObject({ accepted: true, endedBy: "seated", crowned: false });
+  });
+
   test("a legally-replayed run lands its ghosts and its crown", async () => {
     const ctx = makeCtx();
     const ada = await login(ctx, "ada@example.com");

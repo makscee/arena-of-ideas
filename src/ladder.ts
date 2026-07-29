@@ -78,6 +78,7 @@ export class InMemoryLadderStore implements LadderStore {
   }
 
   setBoss(floor: number, snap: TeamSnapshot): void {
+    assertBossSeat(floor, snap);
     this.bosses.set(floor, jsonClone(snap));
   }
 
@@ -153,6 +154,7 @@ export class PersistedLadderStore implements LadderStore {
   }
 
   setBoss(floor: number, snap: TeamSnapshot): void {
+    assertBossSeat(floor, snap);
     // Clone on write, like addSnapshot: holding the caller's object by
     // reference would let a later mutation corrupt the seated boss.
     this.data.bosses[String(floor)] = jsonClone(snap);
@@ -260,6 +262,13 @@ export function deriveChampion(bosses: Record<string, TeamSnapshot>): TeamSnapsh
     }
   }
   return champ;
+}
+
+/** A floor seat and its snapshot carry one canonical floor identity. */
+export function assertBossSeat(floor: number, snap: TeamSnapshot): void {
+  if (snap.round !== floor) {
+    throw new Error(`boss seat floor ${floor} does not match snapshot round ${snap.round}`);
+  }
 }
 
 /** The seq precondition, enforced (LadderStore.addSnapshot) — shared by both backings. */

@@ -59,9 +59,9 @@ export const ladderGhosts = sqliteTable("ladder_ghosts", {
   team: text("team").notNull(),
 });
 
-/** Champion history, append-only — the current champion is the latest row.
- * History stays queryable by runId so run re-derivation can replay a champion
- * challenge against the champion that was actually seated at the time. */
+/** Floor-seat history, append-only (legacy table name retained). The latest
+ * row on each floor is its live boss; the champion is the boss on the highest
+ * occupied floor. History stays queryable for served-view replay. */
 export const ladderChampions = sqliteTable("ladder_champions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   runId: text("run_id").notNull(),
@@ -110,9 +110,13 @@ export const runPoolServes = sqliteTable(
     servedLen: integer("served_len").notNull(),
     /** runId of the champion seated when this view was served. */
     championRunId: text("champion_run_id").notNull(),
+    /** runId of this round's boss when served, or "" for a vacant floor.
+     * Nullable only on a refused/corrupt hand-built fixture; the v2 migration
+     * backfills every released row and every runtime write supplies it. */
+    bossRunId: text("boss_run_id"),
     servedAt: integer("served_at").notNull(),
   },
-  (t) => [uniqueIndex("run_pool_serves_view_idx").on(t.runId, t.round, t.servedLen, t.championRunId)],
+  (t) => [uniqueIndex("run_pool_serves_view_idx").on(t.runId, t.round, t.servedLen, t.championRunId, t.bossRunId)],
 );
 
 /** Accepted run submissions — one row per re-derived run. The primary key

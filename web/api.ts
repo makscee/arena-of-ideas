@@ -32,6 +32,9 @@ export interface VerifyInfo {
 
 export interface ChampionInfo {
   champion: TeamSnapshot | null;
+  /** Every occupied floor keyed by floor number. Optional while rolling out
+   * against an older summit-only server payload. */
+  bosses?: Record<string, TeamSnapshot>;
   /** The owning user's display name; null for the bootstrap seat. */
   holder: string | null;
 }
@@ -39,6 +42,9 @@ export interface ChampionInfo {
 export interface ServedView {
   round: number;
   pool: TeamSnapshot[];
+  /** The boss on `round`, independently of the summit. Optional while rolling
+   * out against an older summit-only server payload. */
+  boss?: TeamSnapshot | null;
   /** Null on an EMPTY tower (PRD #085) — production launches with no champion
    * seated; the play read serves the empty tower so a run can found it. */
   champion: TeamSnapshot | null;

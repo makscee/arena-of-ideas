@@ -84,6 +84,8 @@ function snapshot(deps: ReturnType<typeof setup>) {
 describe("AOI-62 operator governance and atomic season boundary", () => {
   test("freezes current 5/0.6/3 slate, ships authoritative Frostbiter, bounces with carried votes, then rolls atomically", () => {
     const deps = setup();
+    const oldTeam = deps.db.select().from(ladderChampions).all()[0]!.team;
+    deps.db.insert(ladderChampions).values({ runId: "top-run", userId: "glass", round: 3, seq: 0, team: oldTeam }).run();
     const expected = { season: 1, contentVersion: 1 };
     const frozen = freezeSelection(deps, expected);
     expect(frozen.selection.selected.map((r) => r.idea.id)).toEqual(["idea-ship", "idea-bounce"]);
@@ -117,6 +119,7 @@ describe("AOI-62 operator governance and atomic season boundary", () => {
     const archive = deps.db.select().from(seasonArchives).all()[0]!;
     expect(archive.contentVersion).toBe(1);
     expect(JSON.parse(archive.finalTower).bosses["1"].runId).toBe("old-run");
+    expect(JSON.parse(archive.finalTower).bosses["3"].runId).toBe("top-run");
     expect(archive.selectionReceipt).toBe(frozenReceipt);
     expect(JSON.parse(archive.selectionReceipt).selected.map((r: any) => r.ideaId)).toEqual(["idea-ship", "idea-bounce"]);
     expect(JSON.parse(archive.outcomeReceipt)[0]).toMatchObject({ authorUserId: "maks", creatorDisplayName: "Maks" });

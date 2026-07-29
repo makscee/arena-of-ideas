@@ -31,7 +31,7 @@
  *   2. Every play read goes through the run-scoped serve (servePool, GET
  *      /v1/runs/:runId/pool/:round), which returns the user-filtered pool
  *      AND the seated champion, and RECORDS what it served (run_pool_serves:
- *      prefix length + champion, per runId and round).
+ *      prefix length + floor boss + champion, per runId and round).
  *   3. Replay accepts a claimed Snapshotted.seq only if it equals a length
  *      the server served for that (runId, round), and a champion challenge
  *      only against the champion CO-SERVED with that very view — a run
@@ -106,7 +106,7 @@ export const RUN_OPEN_TTL_DAYS = 14;
 export const RUN_OPEN_TTL_SECONDS = RUN_OPEN_TTL_DAYS * 24 * 60 * 60;
 
 export type PoolServeOutcome =
-  | { served: true; round: number; pool: readonly TeamSnapshot[]; champion: TeamSnapshot | null }
+  | { served: true; round: number; pool: readonly TeamSnapshot[]; boss: TeamSnapshot | null; champion: TeamSnapshot | null }
   | { served: false; reason: string };
 
 /** Open a run before playing it: records who owns the runId, and from when
@@ -175,6 +175,7 @@ export function servePool(
   // founding challenge needs no seated champion. So serve gracefully with a null
   // champion rather than throwing. (Before #085 this threw, so a real empty
   // production tower 500'd its first serve and could never be founded live.)
+  const boss = deps.store.bossRecord(round);
   const champion = deps.store.championRecord();
   const pool = deps.store.poolVisibleTo(round, userId);
   // Record the view served. The serve row binds submission replay's pool-prefix
@@ -183,10 +184,17 @@ export function servePool(
   // co-serve check only ever matches a NON-empty challenge frame).
   deps.db
     .insert(runPoolServes)
-    .values({ runId, round, servedLen: pool.length, championRunId: champion?.snap.runId ?? "", servedAt: deps.clock() })
+    .values({
+      runId,
+      round,
+      servedLen: pool.length,
+      championRunId: champion?.snap.runId ?? "",
+      bossRunId: boss?.snap.runId ?? "",
+      servedAt: deps.clock(),
+    })
     .onConflictDoNothing()
     .run();
-  return { served: true, round, pool, champion: champion?.snap ?? null };
+  return { served: true, round, pool, boss: boss?.snap ?? null, champion: champion?.snap ?? null };
 }
 
 function openExpiredReason(runId: string): string {
@@ -215,7 +223,7 @@ export function submitRun(deps: SubmitDeps, userId: string, raw: string): Submit
 interface Rederived {
   state: RunState;
   ghosts: TeamSnapshot[];
-  crown: { snap: TeamSnapshot; challengedRunId: string | null } | null;
+  seat: { snap: TeamSnapshot; challengedRunId: string | null; challengedFloor: number; crown: boolean } | null;
 }
 
 function replay(deps: SubmitDeps, userId: string, raw: string): Rederived {
@@ -275,10 +283,10 @@ function replay(deps: SubmitDeps, userId: string, raw: string): Rederived {
 
   // The serve record — every pool view the server handed out for this run.
   // The replay below accepts claimed views only from this set.
-  const serves = new Map<number, { len: number; championRunId: string }[]>();
+  const serves = new Map<number, { len: number; bossRunId: string; championRunId: string }[]>();
   for (const row of deps.db.select().from(runPoolServes).where(eq(runPoolServes.runId, claimed.runId)).all()) {
     const list = serves.get(row.round) ?? [];
-    list.push({ len: row.servedLen, championRunId: row.championRunId });
+    list.push({ len: row.servedLen, bossRunId: row.bossRunId ?? "", championRunId: row.championRunId });
     serves.set(row.round, list);
   }
 
@@ -287,10 +295,14 @@ function replay(deps: SubmitDeps, userId: string, raw: string): Rederived {
   let state = initRun({ seed: claimed.seed, runId: claimed.runId, pool: content.pool, statuses: content.statuses, abilities: content.abilities });
   for (const step of steps) {
     if (step.kind === "ladder") {
-      view.frame = step;
+      view.frame = { claimedSeq: step.claimedSeq, bossRunId: null };
       state = ladderFight(state, view);
     } else if (step.kind === "challengeBoss") {
-      view.frame = step;
+      view.frame = {
+        claimedSeq: step.claimedSeq,
+        bossRunId: step.bossRunId,
+        ...(step.outcome !== undefined ? { outcome: step.outcome } : {}),
+      };
       state = challengeBoss(state, view);
     } else if (step.kind === "foundTower") {
       view.frame = view.foundingFrame(state.round);
@@ -306,7 +318,7 @@ function replay(deps: SubmitDeps, userId: string, raw: string): Rederived {
   if (!isDeepStrictEqual(state, claimed)) {
     throw new SubmissionRejected("run does not replay to its claimed state — submission diverges from re-derivation");
   }
-  return { state, ghosts: view.staged, crown: view.stagedCrown };
+  return { state, ghosts: view.staged, seat: view.stagedSeat };
 }
 
 /** The decision sequence, recovered from the run log. Only ladder moves are
@@ -319,8 +331,8 @@ export type ReplayStep =
   | { kind: "reorder"; from: number; to: number }
   | { kind: "fuse"; primary: number; secondary: number }
   | { kind: "awakenFusion"; path: "trigger" | "selector" }
-  | { kind: "ladder"; claimedSeq: number; championRunId: string | null }
-  | { kind: "challengeBoss"; claimedSeq: number; championRunId: string | null }
+  | { kind: "ladder"; claimedSeq: number }
+  | { kind: "challengeBoss"; claimedSeq: number; bossRunId: string; outcome?: "crown" | "seated" }
   | { kind: "foundTower" };
 
 export function extractReplaySteps(log: readonly RunEvent[]): ReplayStep[] {
@@ -350,10 +362,9 @@ export function extractReplaySteps(log: readonly RunEvent[]): ReplayStep[] {
         // The event after the snapshot says which ladder move the run claims:
         // an OpponentDrawn (a live ghost) OR an OpponentSynthesized (a cold-start
         // synth opponent, #085) means a same-floor climb (ladderFight, no boss
-        // read, championRunId stays null); a BossChallenged means a boss challenge
-        // (challengeBoss) that fought a seated boss and names it. The boss name
-        // fills the same `championRunId` frame the view co-serves against — only
-        // the dispatch differs (ladderFight vs challengeBoss). A synth climb
+        // read); a BossChallenged means a boss challenge (challengeBoss) that
+        // fought a seated floor boss and names it. The dispatch differs while
+        // replay binds that boss and the summit to one served view. A synth climb
         // re-derives deterministically: the replay re-runs ladderFight against the
         // served view, which synthesizes the same team off the same RNG.
         //
@@ -364,9 +375,17 @@ export function extractReplaySteps(log: readonly RunEvent[]): ReplayStep[] {
         // co-served empty-champion view.
         const next = log[i + 1];
         if (next?.type === "BossChallenged") {
-          steps.push({ kind: "challengeBoss", claimedSeq: e.seq, championRunId: next.boss });
+          if (next.boss === null) throw new SubmissionRejected("a snapshotted boss challenge must name the boss it fought");
+          const receipt = log.slice(i + 1).find((later) => later.type === "Crowned" || later.type === "Seated" || later.type === "RunEnded");
+          const outcome = receipt?.type === "Crowned" ? "crown" : receipt?.type === "Seated" ? "seated" : undefined;
+          steps.push({
+            kind: "challengeBoss",
+            claimedSeq: e.seq,
+            bossRunId: next.boss,
+            ...(outcome !== undefined ? { outcome } : {}),
+          });
         } else {
-          steps.push({ kind: "ladder", claimedSeq: e.seq, championRunId: null });
+          steps.push({ kind: "ladder", claimedSeq: e.seq });
         }
         break;
       }
@@ -423,22 +442,23 @@ function replayLineNames(log: readonly RunEvent[], end: number): string[] {
 
 /** The LadderStore the replay runs against: per fight, the historical view
  * the submitted log pins — the user-filtered pool truncated to the claimed
- * prefix, and the claimed champion looked up in the append-only history. A
+ * prefix, and the claimed floor boss looked up in append-only seat history. A
  * claimed view is accepted only if the server SERVED it for this run: the
- * prefix length must equal a recorded serve for (runId, round), and a
- * champion challenge must name the champion co-served with that view —
+ * prefix length must equal a recorded serve for (runId, round), and a boss
+ * challenge must name the floor boss co-served with that view's champion —
  * nothing replays that the server did not itself hand out. Writes are
  * staged, never stored: the store mutates only on acceptance. */
 interface ReplayFrame {
   claimedSeq: number;
-  championRunId: string | null;
+  bossRunId: string | null;
+  outcome?: "crown" | "seated";
   vacantChallenge?: boolean;
 }
 
 class ReplayLadderView implements LadderStore {
   private _frame: ReplayFrame | null = null;
   readonly staged: TeamSnapshot[] = [];
-  stagedCrown: { snap: TeamSnapshot; challengedRunId: string | null } | null = null;
+  stagedSeat: { snap: TeamSnapshot; challengedRunId: string | null; challengedFloor: number; crown: boolean } | null = null;
   /** The round of the in-flight fight — set by poolAt, which the kernel
    * always calls before champion() inside a ladder fight. */
   private round = 0;
@@ -450,11 +470,12 @@ class ReplayLadderView implements LadderStore {
    * un-gated (its seq is re-assigned at accept anyway). null until the served
    * read happens, reset per step when `frame` is set. */
   private servedFloor: number | null = null;
+  private selectedServe: { len: number; bossRunId: string; championRunId: string } | null = null;
 
   constructor(
     private readonly store: SqliteLadderStore,
     private readonly userId: string,
-    private readonly serves: ReadonlyMap<number, { len: number; championRunId: string }[]>,
+    private readonly serves: ReadonlyMap<number, { len: number; bossRunId: string; championRunId: string }[]>,
   ) {}
 
   /** Set the in-flight step. Resets the per-step served-floor latch so each
@@ -462,6 +483,7 @@ class ReplayLadderView implements LadderStore {
   set frame(f: ReplayFrame | null) {
     this._frame = f;
     this.servedFloor = null;
+    this.selectedServe = null;
   }
 
   /** Build the only admissible no-opponent challenge frame: this run must have
@@ -469,14 +491,16 @@ class ReplayLadderView implements LadderStore {
    * carries no pool seq because founding has no fight/snapshot, so the served
    * receipt supplies it. */
   foundingFrame(round: number): ReplayFrame {
-    const served = (this.serves.get(round) ?? []).filter((entry) => entry.championRunId === "");
+    const served = (this.serves.get(round) ?? []).filter(
+      (entry) => entry.bossRunId === "" && entry.championRunId === "",
+    );
     const receipt = served.at(-1);
     if (receipt === undefined) {
       throw new SubmissionRejected(
         `run claims it founded from round ${round}, but this server never served that run an empty champion view`,
       );
     }
-    return { claimedSeq: receipt.len, championRunId: null, vacantChallenge: true };
+    return { claimedSeq: receipt.len, bossRunId: null, vacantChallenge: true };
   }
 
   poolAt(round: number): readonly TeamSnapshot[] {
@@ -513,55 +537,75 @@ class ReplayLadderView implements LadderStore {
   champion(): TeamSnapshot | null {
     const frame = this.mustFrame();
     if (frame.vacantChallenge) return null;
-    if (frame.championRunId === null) {
-      // The run claims no challenge happened (or a vacant-spot crown). Serve
-      // the seated champion; if the claim was wrong, the replay diverges.
-      return this.store.championRecord()?.snap ?? null;
+    const receipt = this.selectedServe;
+    if (receipt === null) {
+      // ladderFight does not consult champion(); reaching this branch means a
+      // malformed challenge skipped bossAt and cannot be tied to one serve.
+      throw new SubmissionRejected("champion read before a served floor boss was selected");
     }
-    const rec = this.store.championByRunId(frame.championRunId);
+    if (receipt.championRunId === "") return null;
+    const rec = this.store.championByRunId(receipt.championRunId);
     if (rec === null) {
-      throw new SubmissionRejected(`run claims a champion "${frame.championRunId}" this ladder never seated`);
-    }
-    // Temporal coherence: the challenge replays only against the champion
-    // CO-SERVED with the claimed pool view. A banked view from the past does
-    // not buy a challenge against whoever is seated today.
-    const served = this.serves.get(this.round) ?? [];
-    if (!served.some((s) => s.len === frame.claimedSeq && s.championRunId === frame.championRunId)) {
-      throw new SubmissionRejected(
-        `run challenges champion "${frame.championRunId}" from a round-${this.round} view this server never ` +
-          `served with that champion seated`,
-      );
+      throw new SubmissionRejected(`run claims a champion "${receipt.championRunId}" this ladder never seated`);
     }
     return rec.snap;
   }
 
   bossAt(floor: number): TeamSnapshot | null {
-    // challengeBoss reads the boss BEFORE poolAt, so set the in-flight round
-    // here from the queried floor (= s.round): champion()'s co-served check
-    // reads this.round, and a stale round would mis-key the serve lookup.
     this.round = floor;
     const frame = this.mustFrame();
+    const served = this.serves.get(floor) ?? [];
     if (frame.vacantChallenge) {
-      const served = this.serves.get(floor) ?? [];
-      if (!served.some((entry) => entry.len === frame.claimedSeq && entry.championRunId === "")) {
+      const receipt = served.find(
+        (entry) => entry.len === frame.claimedSeq && entry.bossRunId === "" && entry.championRunId === "",
+      );
+      if (receipt === undefined) {
         throw new SubmissionRejected(
           `run claims it founded from round ${floor}, but this server never served that empty tower view`,
         );
       }
+      this.selectedServe = receipt;
       this.servedFloor = floor;
       return null;
     }
-    // Replay reads the summit through champion(); a per-floor read only ever
-    // resolves the floor that is the seated champion's, vacant otherwise.
-    const champ = this.champion();
-    return champ !== null && champ.round === floor ? champ : null;
+    if (frame.bossRunId === null) return null;
+    if (this.store.championByRunId(frame.bossRunId) === null) {
+      throw new SubmissionRejected(`run claims a boss "${frame.bossRunId}" this ladder never seated`);
+    }
+    const receipt = served.find((entry) => {
+      if (entry.len !== frame.claimedSeq || entry.bossRunId !== frame.bossRunId) return false;
+      if (frame.outcome === undefined) return true;
+      const champion = entry.championRunId === "" ? null : this.store.championByRunId(entry.championRunId)?.snap ?? null;
+      const bossWasChampion = entry.championRunId === frame.bossRunId && champion?.round === floor;
+      return frame.outcome === "crown" ? bossWasChampion : !bossWasChampion;
+    });
+    if (receipt === undefined) {
+      throw new SubmissionRejected(
+        `run challenges boss "${frame.bossRunId}" from a round-${floor} view this server never ` +
+          `served with that champion seated or that floor boss`,
+      );
+    }
+    const boss = this.store.bossByRunId(frame.bossRunId, floor);
+    if (boss === null) {
+      throw new SubmissionRejected(`run claims a floor-${floor} boss "${frame.bossRunId}" this ladder never seated`);
+    }
+    this.selectedServe = receipt;
+    this.servedFloor = floor;
+    return boss.snap;
   }
 
-  setBoss(floor: number, snap: TeamSnapshot): void {
-    // challengeBoss seats the run's ghost as a new summit (snap.round === floor)
-    // on a won challenge: stage the crown — acceptance decides. A lost challenge
-    // never reaches here, so stagedCrown stays null and no crown is applied.
-    this.stagedCrown = { snap, challengedRunId: this.mustFrame().championRunId };
+  setBoss(_floor: number, snap: TeamSnapshot): void {
+    const frame = this.mustFrame();
+    const receipt = this.selectedServe;
+    const challengedFloor = this.servedFloor ?? this.round;
+    const challengedRunId = frame.bossRunId;
+    const servedChampion = receipt?.championRunId === undefined || receipt.championRunId === ""
+      ? null
+      : this.store.championByRunId(receipt.championRunId)?.snap ?? null;
+    const crown = challengedRunId === null || (
+      receipt?.championRunId === challengedRunId && servedChampion?.round === challengedFloor
+    );
+    this.stagedSeat = { snap, challengedRunId, challengedFloor, crown };
   }
 
   private mustFrame(): ReplayFrame {
@@ -576,7 +620,7 @@ class ReplayLadderView implements LadderStore {
 
 function accept(deps: SubmitDeps, userId: string, rederived: Rederived): SubmitOutcome {
   const { db, store } = deps;
-  const { state, ghosts, crown } = rederived;
+  const { state, ghosts, seat } = rederived;
 
   let crowned = false;
   db.transaction(() => {
@@ -589,19 +633,24 @@ function accept(deps: SubmitDeps, userId: string, rederived: Rederived): SubmitO
       store.addGhost({ ...ghost, seq }, userId);
       storedSeq.set(ghost, seq);
     }
-    if (crown !== null) {
-      const seated = store.championRecord();
-      const challengedStillSeated =
-        seated === null ? crown.challengedRunId === null : seated.snap.runId === crown.challengedRunId;
-      if (challengedStillSeated) {
-        // The crown ghost is one of the staged snapshots — seat it under its
-        // re-assigned seq so the champion row matches the stored ghost.
-        const seq = storedSeq.get(crown.snap) ?? crown.snap.seq;
-        store.setChampionFor({ ...crown.snap, seq }, userId);
-        crowned = true;
+    if (seat !== null) {
+      const challenged = seat.challengedRunId === null
+        ? store.championRecord()
+        : store.bossRecord(seat.challengedFloor);
+      const challengedStillSeated = seat.challengedRunId === null
+        ? challenged === null
+        : challenged?.snap.runId === seat.challengedRunId;
+      const targetAvailable = seat.snap.round === seat.challengedFloor || store.bossRecord(seat.snap.round) === null;
+      if (challengedStillSeated && targetAvailable) {
+        // The seated snapshot is one of the staged ghosts. Reuse its accepted
+        // server seq whether this was a lower-floor cash-out, founding, or an
+        // ascend crown one floor above the challenged boss.
+        const seq = storedSeq.get(seat.snap) ?? seat.snap.seq;
+        store.setBossFor({ ...seat.snap, seq }, userId);
+        crowned = seat.crown;
       }
-      // Otherwise: the run legally beat a champion that has since been
-      // dethroned — ghosts stand, the crown lapses (first submission wins).
+      // Otherwise another accepted run already changed this exact seat. Ghosts
+      // still land, but the stale seat write lapses without disturbing floors.
     }
     db.insert(runSubmissions)
       .values({

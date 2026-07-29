@@ -16,12 +16,12 @@ import type Database from "better-sqlite3";
 import type { DB } from "./db.js";
 import { listIdeas } from "./ideas.js";
 import { readActiveContent, readSeasonPointer } from "./season-store.js";
+import { SqliteLadderStore } from "./ladder-store.js";
 import {
   contentVersions,
   ideaBuilds,
   ideas,
   ideaVotes,
-  ladderChampions,
   ladderGhosts,
   runOpens,
   runPoolServes,
@@ -192,9 +192,9 @@ function towerSnapshot(db: DB): LadderData {
     pools[key] = list;
   }
   const bosses: LadderData["bosses"] = {};
-  const champions = db.select().from(ladderChampions).orderBy(asc(ladderChampions.id)).all();
-  const current = champions.at(-1);
-  if (current) bosses[String(current.round)] = { runId: current.runId, round: current.round, seq: current.seq, team: JSON.parse(current.team) as UnitDef[] };
+  for (const [floor, record] of Object.entries(new SqliteLadderStore(db).bossRecords())) {
+    bosses[floor] = record.snap;
+  }
   return { bosses, pools };
 }
 

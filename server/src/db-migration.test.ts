@@ -31,6 +31,29 @@ function legacyFixture(path: string): Record<string, unknown[]> {
   return snapshot;
 }
 
+function downgradeCurrentToV1(path: string): Database.Database {
+  const current = openDb(path);
+  current.sqlite.exec(`
+    DROP INDEX run_pool_serves_view_idx;
+    ALTER TABLE run_pool_serves RENAME TO run_pool_serves_v2;
+    CREATE TABLE run_pool_serves (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      run_id TEXT NOT NULL,
+      round INTEGER NOT NULL,
+      served_len INTEGER NOT NULL,
+      champion_run_id TEXT NOT NULL,
+      served_at INTEGER NOT NULL
+    );
+    INSERT INTO run_pool_serves (id, run_id, round, served_len, champion_run_id, served_at)
+      SELECT id, run_id, round, served_len, champion_run_id, served_at FROM run_pool_serves_v2;
+    DROP TABLE run_pool_serves_v2;
+    CREATE UNIQUE INDEX run_pool_serves_view_idx
+      ON run_pool_serves (run_id, round, served_len, champion_run_id);
+  `);
+  current.sqlite.pragma("user_version = 1");
+  return current.sqlite;
+}
+
 function tableNames(db: Database.Database) {
   return db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all();
 }
@@ -52,6 +75,9 @@ describe("explicit a68cf5b7 → AOI-62 SQLite migration", () => {
       if (table === "run_opens" || table === "run_submissions") {
         expect(after.map(({ content_version: _new, ...old }) => old)).toEqual(rows);
         expect(after[0]!.content_version).toBeNull();
+      } else if (table === "run_pool_serves") {
+        expect(after.map(({ boss_run_id: _new, ...old }) => old)).toEqual(rows);
+        expect(after[0]!.boss_run_id).toBe("run-old");
       } else expect(after).toEqual(rows);
     }
     expect(first.sqlite.prepare("SELECT * FROM season_state").all()).toEqual([{ id: 1, season: 1, content_version: 1 }]);
@@ -135,6 +161,19 @@ describe("explicit a68cf5b7 → AOI-62 SQLite migration", () => {
     `);
     changedCheck.close();
     expectRefusedWithoutMutation(checkPath, /DDL, index, uniqueness, or CHECK constraint shape/);
+  });
+
+  test("refuses corrupt v1 content before the ladder-semantics migration mutates the file", () => {
+    const path = pathOf("corrupt-v1.db");
+    const v1 = downgradeCurrentToV1(path);
+    v1.prepare("UPDATE content_versions SET pool='not json' WHERE version=1").run();
+    v1.close();
+    expectRefusedWithoutMutation(path, /corrupt content version 1.*pool is corrupt JSON/);
+    const unchanged = new Database(path);
+    expect(unchanged.pragma("user_version", { simple: true })).toBe(1);
+    expect((unchanged.prepare("PRAGMA table_info(run_pool_serves)").all() as Array<{ name: string }>).map((c) => c.name))
+      .not.toContain("boss_run_id");
+    unchanged.close();
   });
 
   test("rejects active valid-JSON wrong-shape pool and malformed inactive content without mutation", () => {

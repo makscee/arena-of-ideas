@@ -6,7 +6,7 @@ import * as schema from "./schema.js";
 import { defaultApprovedRegistry, defaultArenaContent, parseArenaContentSnapshot } from "./content.js";
 
 export type DB = BetterSQLite3Database<typeof schema>;
-export const ARENA_SCHEMA_VERSION = 1;
+export const ARENA_SCHEMA_VERSION = 2;
 
 /** The exact a68cf5b7 schema. Migration tests build fixtures from this text so
  * the upgrade starts at the released boundary, not at a hand-waved subset. */
@@ -143,6 +143,30 @@ CREATE TABLE season_archives (
 );
 `;
 
+/** v1 → v2: bind each served view to both its summit and the boss on the
+ * served floor. Existing rows came from summit-only payloads, so a boss was
+ * visible only when that champion snapshot itself sat on the served round.
+ * Backfill exactly that old behavior; all new serves record the true floor
+ * boss independently. */
+const LADDER_SEMANTICS_DDL = `
+DROP INDEX run_pool_serves_view_idx;
+ALTER TABLE run_pool_serves ADD COLUMN boss_run_id TEXT;
+UPDATE run_pool_serves AS served
+SET boss_run_id = CASE
+  WHEN served.champion_run_id <> '' AND EXISTS (
+    SELECT 1 FROM ladder_champions AS champion
+    WHERE champion.id = (
+      SELECT MAX(latest.id) FROM ladder_champions AS latest
+      WHERE latest.run_id = served.champion_run_id
+    )
+    AND champion.round = served.round
+  ) THEN served.champion_run_id
+  ELSE ''
+END;
+CREATE UNIQUE INDEX run_pool_serves_view_idx
+  ON run_pool_serves (run_id, round, served_len, champion_run_id, boss_run_id);
+`;
+
 type Column = { name: string; type: string; notnull: number; pk: number };
 type SchemaObject = { type: "table" | "index"; name: string; table: string; sql: string | null };
 
@@ -187,7 +211,8 @@ function expectedSchemaObjects(ddl: string): SchemaObject[] {
 }
 
 const LEGACY_SCHEMA_OBJECTS = expectedSchemaObjects(PRE_AOI62_DDL);
-const FINAL_SCHEMA_OBJECTS = expectedSchemaObjects(`${PRE_AOI62_DDL}\n${AOI62_DDL}`);
+const AOI62_SCHEMA_OBJECTS = expectedSchemaObjects(`${PRE_AOI62_DDL}\n${AOI62_DDL}`);
+const FINAL_SCHEMA_OBJECTS = expectedSchemaObjects(`${PRE_AOI62_DDL}\n${AOI62_DDL}\n${LADDER_SEMANTICS_DDL}`);
 
 function assertShape(
   sqlite: Database.Database,
@@ -213,7 +238,7 @@ function assertShape(
   }
 }
 
-function finalShape(): Record<string, Array<[string, string, number, number]>> {
+function aoi62Shape(): Record<string, Array<[string, string, number, number]>> {
   return {
     ...LEGACY_SHAPE,
     run_opens: [...LEGACY_SHAPE.run_opens!, ["content_version", "INTEGER", 0, 0]],
@@ -226,9 +251,14 @@ function finalShape(): Record<string, Array<[string, string, number, number]>> {
   };
 }
 
-function assertCurrentState(sqlite: Database.Database): void {
-  const label = `arena schema v${ARENA_SCHEMA_VERSION}`;
-  assertShape(sqlite, finalShape(), FINAL_SCHEMA_OBJECTS, label);
+function finalShape(): Record<string, Array<[string, string, number, number]>> {
+  return {
+    ...aoi62Shape(),
+    run_pool_serves: [...LEGACY_SHAPE.run_pool_serves!, ["boss_run_id", "TEXT", 0, 0]],
+  };
+}
+
+function assertDataState(sqlite: Database.Database, label: string): void {
   const integrity = sqlite.pragma("integrity_check", { simple: true });
   if (integrity !== "ok") throw new Error(`${label}: SQLite integrity_check failed: ${String(integrity)}`);
   const states = sqlite.prepare("SELECT season, content_version FROM season_state WHERE id=1").all() as { season: number; content_version: number }[];
@@ -257,6 +287,12 @@ function assertCurrentState(sqlite: Database.Database): void {
   }
 }
 
+function assertCurrentState(sqlite: Database.Database): void {
+  const label = `arena schema v${ARENA_SCHEMA_VERSION}`;
+  assertShape(sqlite, finalShape(), FINAL_SCHEMA_OBJECTS, label);
+  assertDataState(sqlite, label);
+}
+
 function migrate(sqlite: Database.Database): void {
   const version = sqlite.pragma("user_version", { simple: true }) as number;
   if (version > ARENA_SCHEMA_VERSION || version < 0) {
@@ -267,15 +303,24 @@ function migrate(sqlite: Database.Database): void {
     return;
   }
   const fresh = userTables(sqlite).length === 0;
-  if (!fresh) assertShape(sqlite, LEGACY_SHAPE, LEGACY_SCHEMA_OBJECTS, "pre-AOI-62 schema (a68cf5b7)");
+  if (version === 0 && !fresh) {
+    assertShape(sqlite, LEGACY_SHAPE, LEGACY_SCHEMA_OBJECTS, "pre-AOI-62 schema (a68cf5b7)");
+  } else if (version === 1) {
+    const label = "arena schema v1";
+    assertShape(sqlite, aoi62Shape(), AOI62_SCHEMA_OBJECTS, label);
+    assertDataState(sqlite, label);
+  }
   const tx = sqlite.transaction(() => {
-    if (fresh) sqlite.exec(PRE_AOI62_DDL);
-    sqlite.exec(AOI62_DDL);
-    const content = defaultArenaContent();
-    const approved = defaultApprovedRegistry();
-    sqlite.prepare("INSERT INTO content_versions (version, approved_registry, pool, statuses, abilities, created_at) VALUES (1, ?, ?, ?, ?, 0)")
-      .run(JSON.stringify(approved), JSON.stringify(content.pool), JSON.stringify(content.statuses), JSON.stringify(content.abilities));
-    sqlite.prepare("INSERT INTO season_state (id, season, content_version) VALUES (1, 1, 1)").run();
+    if (version === 0) {
+      if (fresh) sqlite.exec(PRE_AOI62_DDL);
+      sqlite.exec(AOI62_DDL);
+      const content = defaultArenaContent();
+      const approved = defaultApprovedRegistry();
+      sqlite.prepare("INSERT INTO content_versions (version, approved_registry, pool, statuses, abilities, created_at) VALUES (1, ?, ?, ?, ?, 0)")
+        .run(JSON.stringify(approved), JSON.stringify(content.pool), JSON.stringify(content.statuses), JSON.stringify(content.abilities));
+      sqlite.prepare("INSERT INTO season_state (id, season, content_version) VALUES (1, 1, 1)").run();
+    }
+    sqlite.exec(LADDER_SEMANTICS_DDL);
     sqlite.pragma(`user_version = ${ARENA_SCHEMA_VERSION}`);
   });
   tx.immediate();
