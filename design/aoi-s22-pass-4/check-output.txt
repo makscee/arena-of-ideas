@@ -1,0 +1,12 @@
+=== AOI-S22 PASS 4 STRUCTURE / TRUTH ===
+structure/truth: PASS exactly three named stances; accepted tokens; truthful Unit/Ability/Status/Summon and additive A+B seams; no external runtime
+lens/desktop: PASS alternatives + consequences visible; detail stance; no page/text clipping; >=40px targets; >=10px text; 3px focus; reduced motion
+lens/phone: PASS alternatives + consequences visible; detail stance; no page/text clipping; >=40px targets; >=10px text; 3px focus; reduced motion
+brief/desktop: PASS alternatives + consequences visible; detail stance; no page/text clipping; >=40px targets; >=10px text; 3px focus; reduced motion
+brief/phone: PASS alternatives + consequences visible; detail stance; no page/text clipping; >=40px targets; >=10px text; 3px focus; reduced motion
+atlas/desktop: PASS alternatives + consequences visible; detail stance; no page/text clipping; >=40px targets; >=10px text; 3px focus; reduced motion
+atlas/phone: PASS alternatives + consequences visible; detail stance; no page/text clipping; >=40px targets; >=10px text; 3px focus; reduced motion
+interaction: PASS keyboard selection updates detail/consequence; close-first order; forward/reverse sheet focus trap; Escape/close return; comparison mode; reference tabs
+production isolation: PASS working paths bounded to design/aoi-s22-pass-4/ (subagent runtime artifacts excluded and removed before commit)
+captures: PASS 9 deterministic PNGs (three desktop + three 390px sheet-top + three 390px reference-state)
+DESIGN QUALITY: UNJUDGED BY MACHINE — screenshot inspection, fresh independent verifier, then Maks taste gate required.
