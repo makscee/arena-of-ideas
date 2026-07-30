@@ -1,0 +1,12 @@
+=== AOI-S22 PASS 5 OBJECTIVE CHECK ===
+source/truth: PASS exactly three compositions; self-contained; tokens and Frostbiter/stress/tunable/fusion meter 0/buy routing/team/save seams match production
+promenade/desktop: PASS geometry, no page/text overflow, order, 3–6 offers, fixture, targets, text, focus, reduced motion
+promenade/phone: PASS geometry, no page/text overflow, order, 3–6 offers, fixture, targets, text, focus, reduced motion
+ledger/desktop: PASS geometry, no page/text overflow, order, 3–6 offers, fixture, targets, text, focus, reduced motion
+ledger/phone: PASS geometry, no page/text overflow, order, 3–6 offers, fixture, targets, text, focus, reduced motion
+orbit/desktop: PASS geometry, no page/text overflow, order, 3–6 offers, fixture, targets, text, focus, reduced motion
+orbit/phone: PASS geometry, no page/text overflow, order, 3–6 offers, fixture, targets, text, focus, reduced motion
+interaction: PASS full-team no-match Buy disabled with adjacent rejection reason; owned base/composite routes enabled with +1/+2 and meter consequences; phone Causal Atlas sheet focus behavior
+production isolation: PASS only design/aoi-s22-pass-5/ changed (runtime .pi-subagents ignored); no staged files
+captures: PASS 9 real Chromium PNGs (3 desktop + 3 phone + 3 phone inspector), SHA-256 manifest written
+DESIGN QUALITY: UNJUDGED BY MACHINE — manual capture inspection and independent review remain separate gates.
