@@ -79,6 +79,14 @@ These are accepted high-level allocation and semantics only. The card system is 
 
 **Sources:** [`AOI-77 final bounded human feedback`](file:///Users/admin/void-vault/workshop/tickets/AOI-77-prototype-extensible-unit-card-chassis.md#final-bounded-human-feedback-for-this-pass), [`Portrait Ledger v2 contract`](file:///Users/admin/void-vault/workshop/artifacts/aoi-77-portrait-ledger-v2/evidence.md#v2-system-contract), [`stat-mirror repair`](file:///Users/admin/void-vault/workshop/artifacts/aoi-77-portrait-ledger-v2/evidence.md#final-bounded-human-gate-and-stat-mirror-repair), [`screenshot critique`](file:///Users/admin/void-vault/workshop/artifacts/aoi-77-portrait-ledger-v2/screenshot-critique.md)
 
+### Pass 4 — Causal Atlas with Split Brief comparison header
+
+Carry forward **Causal Atlas hierarchy with Split Brief’s stable comparison header**. Selected detail uses the Causal Atlas composition: identity and state lead into a stable Trigger → Selector → Effect causal sequence, followed by references and deeper proof. The comparison header from Split Brief keeps the selected Unit and owned-team comparison stable while the deeper detail changes. On phone, the inspector becomes a bottom sheet while alternatives remain visible; close/focus return and comparison context remain part of the interaction contract.
+
+The inspector must cover Unit, Ability, Status, and Summon references; base, Awakened, and fused states; equal A+B provenance; and long, empty, disabled, and error states without obscuring alternatives or their consequences. This is an inspector/reference-language decision only, not authorization for a production component or for Pass 5 composition.
+
+**Sources:** [`AOI-79 result and human gate`](file:///root/void-vault/workshop/tickets/AOI-79-prototype-inspector-reference-language.md#human-gate), [`Pass 4 evidence`](file:///root/work/arena-of-ideas/design/aoi-s22-pass-4/evidence.md), [`Pass 4 gallery`](file:///root/work/arena-of-ideas/design/aoi-s22-pass-4/gallery.html), commit `7d70826bacbd5462810f4f074c2f333d5e3bacb4`
+
 ### Responsive behavior accepted so far
 
 - At 390px, the shell transforms rather than merely scaling. Run Spine becomes a compact preface, followed by the same shop → selected decision → team reading order.
@@ -112,6 +120,7 @@ Prototype checks proved legibility, focus, target, contrast-intent, clipping, an
 - Cyan PWR in AOI-75 and early AOI-76/AOI-77 evidence is superseded by AOI-77’s final amber/yellow PWR tweak. HP remains red/coral.
 - AOI-76’s A — Horizon rail and C — Journey brackets were not selected. B — Run spine is the contract.
 - AOI-77’s B — Stat Crest and C — Recipe Fold were not selected. Portrait Ledger v1 is refinement history, not the current chassis; v2 is the directional carry-forward.
+- AOI-79’s Field Lens remains a rejected browse-first alternative. Standalone Split Brief was not selected as the full composition; only its stable comparison header is carried into the accepted Causal Atlas hybrid.
 
 **Sources:** [`AOI-74`](file:///Users/admin/void-vault/workshop/tickets/AOI-74-shop-board-hierarchy-directions.md), [`AOI-75`](file:///Users/admin/void-vault/workshop/tickets/AOI-75-choose-visual-foundations.md), [`AOI-76`](file:///Users/admin/void-vault/workshop/tickets/AOI-76-settle-shell-run-state-actions.md), [`AOI-77`](file:///Users/admin/void-vault/workshop/tickets/AOI-77-prototype-extensible-unit-card-chassis.md), [`AOI-77 v2 evidence`](file:///Users/admin/void-vault/workshop/artifacts/aoi-77-portrait-ledger-v2/evidence.md)
 
@@ -121,14 +130,14 @@ Prototype checks proved legibility, focus, target, contrast-intent, clipping, an
 - Portrait Ledger motif quality, icon design, final density, detail polish, and final aesthetic acceptance remain open. The AOI-77 card-system program is not closed and production implementation is not authorized.
 - Prototype CSS values and specimen dimensions are evidence mechanics, not a production token or component specification.
 - Loading and empty-state visual language was not settled by AOI-74 through AOI-77. AOI-76 explicitly used static fixtures and no loading behavior.
+- Pass 4 does not settle the high-fidelity shop/team composition, production inspector implementation, production tokens, or later-surface reference layouts. Those remain gated by their own passes and the final Pass 12 acceptance.
 
 **Sources:** [`AOI-75 selection deferred section`](file:///Users/admin/void-vault/workshop/artifacts/aoi-75-visual-foundations/selection.md#deferred), [`AOI-77 ticket`](file:///Users/admin/void-vault/workshop/tickets/AOI-77-prototype-extensible-unit-card-chassis.md), [`AOI-77 screenshot critique`](file:///Users/admin/void-vault/workshop/artifacts/aoi-77-portrait-ledger-v2/screenshot-critique.md), [`AOI-76 state matrix`](file:///Users/admin/void-vault/workshop/artifacts/aoi-76-shell-actions/state-matrix.md)
 
-## Unresolved program: Passes 4–12
+## Unresolved program: Passes 5–12
 
 None of the following is settled by this document:
 
-- **Pass 4:** inspector and reference language;
 - **Pass 5:** high-fidelity shop/team composition;
 - **Pass 6:** fusion, Awakening, and run decisions;
 - **Pass 7:** battle board and causal replay;
@@ -150,7 +159,8 @@ Mentions of inspectors, battle/reference reuse, fusion, post-battle, or terminal
 | 1 | AOI-75 | dark Quiet Constellation directionally accepted; small corrections deferred | `workshop/artifacts/aoi-75-visual-foundations/selection.md` and `quiet-dark-gallery.html` |
 | 2 | AOI-76 | B — Run spine selected by Maks | `workshop/artifacts/aoi-76-shell-actions/gallery.html` and ticket decision |
 | 3 | AOI-77 | Portrait Ledger v2 high-level layout directionally accepted; footer/color correction accepted; detail deferred | `workshop/artifacts/aoi-77-portrait-ledger-v2/portrait-ledger-v2.html`, `evidence.md`, and focused stat captures/check |
+| 4 | AOI-79 | Maks selected Causal Atlas hierarchy hybridized with Split Brief’s stable comparison header | `design/aoi-s22-pass-4/gallery.html`, `evidence.md`, and commit `7d70826bacbd5462810f4f074c2f333d5e3bacb4` |
 
-All artifact paths in this table are under `/Users/admin/void-vault/`. This backfill does not elevate neutral galleries, machine checks, or reviewer verdicts into taste authority; they establish provenance and objective conformance only. Maks remains the human visual gate.
+Passes 0–3 artifact paths in this table are under `/Users/admin/void-vault/`; the Pass 4 artifact paths are repository-relative on the recorded prototype branch. This contract does not elevate neutral galleries, machine checks, or reviewer verdicts into taste authority; they establish provenance and objective conformance only. Maks remains the human visual gate.
 
 **Sources:** [`AOI-S22 authority`](file:///Users/admin/void-vault/workshop/specs/AOI-S22-complete-visual-mockup-system.md), [`AOI-74`](file:///Users/admin/void-vault/workshop/tickets/AOI-74-shop-board-hierarchy-directions.md), [`AOI-75 selection`](file:///Users/admin/void-vault/workshop/artifacts/aoi-75-visual-foundations/selection.md), [`AOI-76 decision`](file:///Users/admin/void-vault/workshop/tickets/AOI-76-settle-shell-run-state-actions.md#final-direction-decision), [`AOI-77 human gate`](file:///Users/admin/void-vault/workshop/tickets/AOI-77-prototype-extensible-unit-card-chassis.md#final-bounded-human-feedback-for-this-pass)
