@@ -266,6 +266,37 @@ describe("bad references and malformed bundles", () => {
   });
 });
 
+describe.each(["canonical", "compatibility"] as const)("%s status actions", (grammar) => {
+  const triggers = [{ kind: "trigger", on: { on: "TurnEnd" } }];
+  const selectors = [{ kind: "holder" }];
+  const effects = [{ kind: "heal", amount: { kind: "const", value: 1 } }];
+  const validAction = grammar === "canonical" ? { effects } : { whens: triggers, selectors, effects };
+  const registry = (actions: unknown[]) => ({
+    Bad: {
+      name: "Bad",
+      ...(grammar === "canonical" ? { triggers, selectors } : {}),
+      abilities: actions,
+    },
+  });
+
+  test.each([null, undefined, false, 0, "action", []].map((action) => ({ action })))("rejects malformed action $action at its index", ({ action }) => {
+    expect(validateRegistry(registry([action]) as never)).toEqual([
+      { path: "registry.Bad.abilities[0]", message: "ability must be an object" },
+    ]);
+  });
+
+  test("accepts a valid action", () => {
+    expect(validateRegistry(registry([validAction]) as never)).toEqual([]);
+  });
+
+  test("collects malformed action issues around a valid action with a custom label", () => {
+    expect(validateRegistry(registry([null, validAction, false]) as never, {}, "statuses")).toEqual([
+      { path: "statuses.Bad.abilities[0]", message: "ability must be an object" },
+      { path: "statuses.Bad.abilities[2]", message: "ability must be an object" },
+    ]);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // 5. The CLI fails loudly on a bad team file
 // ---------------------------------------------------------------------------
