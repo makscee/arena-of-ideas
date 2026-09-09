@@ -238,7 +238,7 @@ export function validateRegistry(registry: StatusRegistry, abilities: AbilityReg
         // Explicit v1 compatibility: old status actions carried their own context.
         def.abilities.forEach((ab, i) => validateAbility(ab, registry, abilities, "status", `${path}.abilities[${i}]`, issues));
       } else {
-        def.abilities.forEach((ab, i) => validateAbility({ whens: triggers, selectors, ...(def.condition ? { condition: def.condition } : {}), effects: ab.effects }, registry, abilities, "status", `${path}.abilities[${i}]`, issues));
+        def.abilities.forEach((ab, i) => validateAbility(isObject(ab) ? { whens: triggers, selectors, ...(def.condition ? { condition: def.condition } : {}), effects: ab.effects } : ab, registry, abilities, "status", `${path}.abilities[${i}]`, issues));
       }
       checkComplexity(def, path, issues);
     }
