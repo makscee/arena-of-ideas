@@ -4,7 +4,7 @@
 // and inspector all read that one log.
 
 import { DEFAULT_RUN_POOL, KERNEL_VERSION, codexUnits, mergePool, openEmptyLadder, seedBootstrapTower, stressAbilities, stressRegistry } from "../src/index.js";
-import { approvedUnits } from "./approved.js";
+import { approvedAbilities, approvedUnits } from "./approved.js";
 import { createArenaApi, type ContentInfo, type MeInfo } from "./api.js";
 import { dismissInspectOverlay } from "./inspect.js";
 import { createViewer } from "./viewer.js";
@@ -89,7 +89,7 @@ if (me !== null && sessionToken !== null) {
 // localStorage playground override remains local/offline only.
 const remoteRunPool = serverContent?.pool ?? runPool;
 const activeStatuses = remote !== null && serverContent !== null ? serverContent.statuses : stressRegistry;
-const activeAbilities = remote !== null && serverContent !== null ? serverContent.abilities : stressAbilities;
+const activeAbilities = remote !== null && serverContent !== null ? serverContent.abilities : approvedAbilities();
 const activeSeason = remote !== null && serverContent !== null ? { season: serverContent.season, contentVersion: serverContent.contentVersion } : null;
 // Logged-in runs live under namespaced keys: logging in never clobbers the
 // local run, and a remote run never revives into a logged-out session.
