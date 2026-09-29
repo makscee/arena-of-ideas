@@ -52,6 +52,13 @@ jobs:
             type=sha,prefix=sha-
             type=ref,event=branch
             type=raw,value=latest,enable={{is_default_branch}}
+      # /healthz reports these, so a deploy can prove which build is live.
+      # sha-<7> matches metadata-action's type=sha tag (both use github.sha).
+      - name: Compute build identity
+        id: build
+        run: |
+          echo "short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
@@ -59,3 +66,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            ARENA_BUILD_COMMIT=${{ github.sha }}
+            ARENA_BUILD_IMAGE=ghcr.io/makscee/arena-of-ideas:sha-${{ steps.build.outputs.short }}
+            ARENA_BUILD_TIME=${{ steps.build.outputs.time }}
