@@ -10,7 +10,7 @@
       "statuses": [
         {
           "status": "Shield",
-          "stacks": 3
+          "stacks": 1
         }
       ],
       "triggers": [
@@ -88,7 +88,7 @@
           "status": "Poison",
           "stacks": {
             "kind": "const",
-            "value": 3
+            "value": 1
           }
         },
         {
@@ -96,7 +96,7 @@
           "status": "Curse",
           "stacks": {
             "kind": "const",
-            "value": 1
+            "value": 2
           }
         }
       ]
@@ -112,7 +112,7 @@
   },
   "gate": {
     "verdict": "in-band",
-    "overallWinRate": 0.6466666666666666,
+    "overallWinRate": 0.62,
     "band": {
       "min": 0.35,
       "max": 0.65
@@ -121,10 +121,10 @@
     "matchups": [
       {
         "opponent": "AggroVenom",
-        "winRate": 1,
-        "wins": 50,
+        "winRate": 0.74,
+        "wins": 37,
         "losses": 0,
-        "draws": 0,
+        "draws": 13,
         "seeds": 50
       },
       {
@@ -137,10 +137,10 @@
       },
       {
         "opponent": "StatStack",
-        "winRate": 0.3,
-        "wins": 15,
-        "losses": 35,
-        "draws": 0,
+        "winRate": 0.48,
+        "wins": 24,
+        "losses": 22,
+        "draws": 4,
         "seeds": 50
       }
     ]
