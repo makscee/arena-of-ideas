@@ -1,5 +1,540 @@
 {
-  "_comment": "The playable approved-units registry (PRD #013 slice 4). Passing candidates from the creation loop are approved into this file by `npm run approve`; the web run screen merges these onto the shipped DEFAULT_RUN_POOL so a new run can draft them. Each unit is a team-file UnitDef, validated like all content; an optional `_creator` field carries authorship credit the codex displays. Ships empty \u2014 the game grows its pool one approval at a time.",
-  "units": [],
-  "grammarVersion": 2
+  "_comment": "The playable approved-units registry (PRD #013 slice 4). Passing candidates from the creation loop are approved into this file by `npm run approve`; the web run screen merges these onto the shipped DEFAULT_RUN_POOL so a new run can draft them. Each unit is a team-file UnitDef, validated like all content; an optional `_creator` field carries authorship credit the codex displays.",
+  "grammarVersion": 2,
+  "units": [
+    {
+      "name": "Berserker",
+      "base": {
+        "hp": 8,
+        "pwr": 3
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "Hurt",
+            "unit": "holder"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "holder"
+        }
+      ],
+      "abilities": [
+        "Rage"
+      ],
+      "_creator": "Maks"
+    },
+    {
+      "name": "War Drummer",
+      "base": {
+        "hp": 9,
+        "pwr": 2
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "BattleStart"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "allAllies"
+        }
+      ],
+      "abilities": [
+        "War Beat"
+      ],
+      "_creator": "Maks"
+    },
+    {
+      "name": "Duelist",
+      "base": {
+        "hp": 10,
+        "pwr": 2
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "Strike",
+            "striker": "holder"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "frontEnemy"
+        }
+      ],
+      "abilities": [
+        "Riposte"
+      ],
+      "_creator": "Maks"
+    },
+    {
+      "name": "Emberling",
+      "base": {
+        "hp": 6,
+        "pwr": 3
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "BattleStart"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "allEnemies"
+        }
+      ],
+      "abilities": [
+        "Ember Burst"
+      ],
+      "_creator": "Maks"
+    },
+    {
+      "name": "Icebinder",
+      "base": {
+        "hp": 5,
+        "pwr": 3
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "BattleStart"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "randomEnemy"
+        }
+      ],
+      "abilities": [
+        "Ice Prison"
+      ],
+      "_creator": "Maks"
+    },
+    {
+      "name": "Leech",
+      "base": {
+        "hp": 9,
+        "pwr": 3
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "Strike",
+            "striker": "holder"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "holder"
+        }
+      ],
+      "abilities": [
+        "Siphon"
+      ],
+      "_creator": "Maks"
+    },
+    {
+      "name": "Medic",
+      "base": {
+        "hp": 9,
+        "pwr": 3
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "TurnEnd"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "allAllies"
+        }
+      ],
+      "abilities": [
+        "Triage"
+      ],
+      "_creator": "Maks"
+    },
+    {
+      "name": "Miasma",
+      "base": {
+        "hp": 11,
+        "pwr": 3
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "BattleStart"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "allEnemies"
+        }
+      ],
+      "abilities": [
+        "Miasma Cloud"
+      ],
+      "_creator": "Maks"
+    },
+    {
+      "name": "Phoenix",
+      "base": {
+        "hp": 9,
+        "pwr": 3
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "BattleStart"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "holder"
+        }
+      ],
+      "abilities": [
+        "Rebirth"
+      ],
+      "_creator": "Maks"
+    },
+    {
+      "name": "Plague Rat",
+      "base": {
+        "hp": 9,
+        "pwr": 3
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "Death",
+            "unit": "holder"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "allEnemies"
+        }
+      ],
+      "abilities": [
+        "Plague Burst"
+      ],
+      "_creator": "Maks"
+    },
+    {
+      "name": "Sniper",
+      "base": {
+        "hp": 9,
+        "pwr": 3
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "TurnStart"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "randomEnemy"
+        }
+      ],
+      "abilities": [
+        "Potshot"
+      ],
+      "_creator": "Maks"
+    },
+    {
+      "name": "Stoneskin",
+      "base": {
+        "hp": 9,
+        "pwr": 3
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "TurnStart"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "holder"
+        }
+      ],
+      "abilities": [
+        "Harden"
+      ],
+      "_creator": "Maks"
+    },
+    {
+      "name": "Field Surgeon",
+      "base": {
+        "hp": 9,
+        "pwr": 3
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "Hurt",
+            "unit": "ally"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "eventUnit"
+        }
+      ],
+      "abilities": [
+        "Stitch"
+      ],
+      "_creator": "Maks"
+    },
+    {
+      "name": "Bog Witch",
+      "base": {
+        "hp": 10,
+        "pwr": 2
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "TurnStart"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "randomEnemy"
+        }
+      ],
+      "abilities": [
+        "Bog Curse"
+      ],
+      "_creator": "Maks"
+    }
+  ],
+  "abilities": {
+    "Rage": {
+      "name": "Rage",
+      "family": "Strike",
+      "effects": [
+        {
+          "kind": "applyStatus",
+          "status": "Strength",
+          "stacks": {
+            "kind": "const",
+            "value": 2
+          }
+        }
+      ]
+    },
+    "War Beat": {
+      "name": "War Beat",
+      "family": "Arcane",
+      "effects": [
+        {
+          "kind": "applyStatus",
+          "status": "Strength",
+          "stacks": {
+            "kind": "const",
+            "value": 1
+          }
+        }
+      ]
+    },
+    "Riposte": {
+      "name": "Riposte",
+      "family": "Strike",
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": {
+            "kind": "const",
+            "value": 3
+          }
+        }
+      ]
+    },
+    "Ember Burst": {
+      "name": "Ember Burst",
+      "family": "Arcane",
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": {
+            "kind": "const",
+            "value": 4
+          }
+        }
+      ]
+    },
+    "Ice Prison": {
+      "name": "Ice Prison",
+      "family": "Control",
+      "effects": [
+        {
+          "kind": "applyStatus",
+          "status": "Freeze",
+          "stacks": {
+            "kind": "const",
+            "value": 6
+          }
+        }
+      ]
+    },
+    "Siphon": {
+      "name": "Siphon",
+      "family": "Heal",
+      "effects": [
+        {
+          "kind": "heal",
+          "amount": {
+            "kind": "stat",
+            "stat": "pwr",
+            "of": "holder"
+          }
+        }
+      ]
+    },
+    "Triage": {
+      "name": "Triage",
+      "family": "Heal",
+      "effects": [
+        {
+          "kind": "heal",
+          "amount": {
+            "kind": "const",
+            "value": 3
+          }
+        }
+      ]
+    },
+    "Miasma Cloud": {
+      "name": "Miasma Cloud",
+      "family": "Poison",
+      "effects": [
+        {
+          "kind": "applyStatus",
+          "status": "Poison",
+          "stacks": {
+            "kind": "const",
+            "value": 2
+          }
+        }
+      ]
+    },
+    "Rebirth": {
+      "name": "Rebirth",
+      "family": "Heal",
+      "effects": [
+        {
+          "kind": "applyStatus",
+          "status": "Blessing",
+          "stacks": {
+            "kind": "const",
+            "value": 10
+          }
+        }
+      ]
+    },
+    "Plague Burst": {
+      "name": "Plague Burst",
+      "family": "Poison",
+      "effects": [
+        {
+          "kind": "applyStatus",
+          "status": "Poison",
+          "stacks": {
+            "kind": "const",
+            "value": 2
+          }
+        }
+      ]
+    },
+    "Potshot": {
+      "name": "Potshot",
+      "family": "Strike",
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": {
+            "kind": "const",
+            "value": 2
+          }
+        }
+      ]
+    },
+    "Harden": {
+      "name": "Harden",
+      "family": "Shield",
+      "effects": [
+        {
+          "kind": "applyStatus",
+          "status": "Shield",
+          "stacks": {
+            "kind": "const",
+            "value": 2
+          }
+        }
+      ]
+    },
+    "Stitch": {
+      "name": "Stitch",
+      "family": "Heal",
+      "effects": [
+        {
+          "kind": "heal",
+          "amount": {
+            "kind": "const",
+            "value": 2
+          }
+        }
+      ]
+    },
+    "Bog Curse": {
+      "name": "Bog Curse",
+      "family": "Poison",
+      "effects": [
+        {
+          "kind": "applyStatus",
+          "status": "Poison",
+          "stacks": {
+            "kind": "const",
+            "value": 2
+          }
+        }
+      ]
+    }
+  }
 }
