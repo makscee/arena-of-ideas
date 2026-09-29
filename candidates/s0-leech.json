@@ -1,18 +1,13 @@
 {
-  "id": "frostbite-striker",
+  "grammarVersion": 2,
+  "id": "s0-leech",
   "units": [
     {
-      "name": "Frostbiter",
+      "name": "Leech",
       "base": {
-        "hp": 11,
-        "pwr": 2
+        "hp": 9,
+        "pwr": 3
       },
-      "statuses": [
-        {
-          "status": "Shield",
-          "stacks": 1
-        }
-      ],
       "triggers": [
         {
           "kind": "trigger",
@@ -24,15 +19,15 @@
       ],
       "selectors": [
         {
-          "kind": "frontEnemy"
+          "kind": "holder"
         }
       ],
       "abilities": [
-        "Frostbite"
+        "Siphon"
       ]
     },
     {
-      "name": "Glacier",
+      "name": "Brawler",
       "base": {
         "hp": 12,
         "pwr": 2
@@ -79,40 +74,32 @@
     }
   ],
   "abilities": {
-    "Frostbite": {
-      "name": "Frostbite",
-      "family": "Poison",
+    "Siphon": {
+      "name": "Siphon",
+      "family": "Heal",
       "effects": [
         {
-          "kind": "applyStatus",
-          "status": "Poison",
-          "stacks": {
-            "kind": "const",
-            "value": 1
-          }
-        },
-        {
-          "kind": "applyStatus",
-          "status": "Curse",
-          "stacks": {
-            "kind": "const",
-            "value": 2
+          "kind": "heal",
+          "amount": {
+            "kind": "stat",
+            "stat": "pwr",
+            "of": "holder"
           }
         }
       ]
     }
   },
   "provenance": {
-    "ideaText": "A frost-themed front-line striker that chills the enemy it hits \u2014 its attacks\nshould slow or weaken the unit in front of it, so it trades up against an\naggressive opponent. A small, durable bruiser, not a glass cannon. It should\nhold its own against the existing meta without dominating it.",
-    "creator": "maks",
+    "ideaText": "Leech (Season 0 launch pool, Heal): Siphon. After this unit strikes: heal this unit for an amount equal to this unit's pwr.",
+    "creator": "Maks",
     "harness": "claude-code",
-    "model": "opus",
-    "timestamp": "2026-06-12T10:02:22.399Z",
-    "attempts": 6
+    "model": "claude-opus-5-5",
+    "timestamp": "2026-09-29T15:10:52.650Z",
+    "attempts": 1
   },
   "gate": {
     "verdict": "in-band",
-    "overallWinRate": 0.62,
+    "overallWinRate": 0.58,
     "band": {
       "min": 0.35,
       "max": 0.65
@@ -121,29 +108,28 @@
     "matchups": [
       {
         "opponent": "AggroVenom",
-        "winRate": 0.74,
-        "wins": 37,
+        "winRate": 1,
+        "wins": 50,
         "losses": 0,
-        "draws": 13,
-        "seeds": 50
-      },
-      {
-        "opponent": "SustainControl",
-        "winRate": 0.64,
-        "wins": 32,
-        "losses": 18,
         "draws": 0,
         "seeds": 50
       },
       {
+        "opponent": "SustainControl",
+        "winRate": 0.32,
+        "wins": 16,
+        "losses": 0,
+        "draws": 34,
+        "seeds": 50
+      },
+      {
         "opponent": "StatStack",
-        "winRate": 0.48,
-        "wins": 24,
+        "winRate": 0.42,
+        "wins": 21,
         "losses": 22,
-        "draws": 4,
+        "draws": 7,
         "seeds": 50
       }
     ]
-  },
-  "grammarVersion": 2
+  }
 }

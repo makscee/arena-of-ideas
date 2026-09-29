@@ -1,38 +1,32 @@
 {
-  "id": "frostbite-striker",
+  "grammarVersion": 2,
+  "id": "s0-icebinder",
   "units": [
     {
-      "name": "Frostbiter",
+      "name": "Icebinder",
       "base": {
-        "hp": 11,
-        "pwr": 2
+        "hp": 5,
+        "pwr": 3
       },
-      "statuses": [
-        {
-          "status": "Shield",
-          "stacks": 1
-        }
-      ],
       "triggers": [
         {
           "kind": "trigger",
           "on": {
-            "on": "Strike",
-            "striker": "holder"
+            "on": "BattleStart"
           }
         }
       ],
       "selectors": [
         {
-          "kind": "frontEnemy"
+          "kind": "randomEnemy"
         }
       ],
       "abilities": [
-        "Frostbite"
+        "Ice Prison"
       ]
     },
     {
-      "name": "Glacier",
+      "name": "Brawler",
       "base": {
         "hp": 12,
         "pwr": 2
@@ -79,40 +73,32 @@
     }
   ],
   "abilities": {
-    "Frostbite": {
-      "name": "Frostbite",
-      "family": "Poison",
+    "Ice Prison": {
+      "name": "Ice Prison",
+      "family": "Control",
       "effects": [
         {
           "kind": "applyStatus",
-          "status": "Poison",
+          "status": "Freeze",
           "stacks": {
             "kind": "const",
-            "value": 1
-          }
-        },
-        {
-          "kind": "applyStatus",
-          "status": "Curse",
-          "stacks": {
-            "kind": "const",
-            "value": 2
+            "value": 6
           }
         }
       ]
     }
   },
   "provenance": {
-    "ideaText": "A frost-themed front-line striker that chills the enemy it hits \u2014 its attacks\nshould slow or weaken the unit in front of it, so it trades up against an\naggressive opponent. A small, durable bruiser, not a glass cannon. It should\nhold its own against the existing meta without dominating it.",
-    "creator": "maks",
+    "ideaText": "Icebinder (Season 0 launch pool, Control): Ice Prison. When the battle begins: apply 6 Freeze to a random enemy.",
+    "creator": "Maks",
     "harness": "claude-code",
-    "model": "opus",
-    "timestamp": "2026-06-12T10:02:22.399Z",
-    "attempts": 6
+    "model": "claude-opus-5-5",
+    "timestamp": "2026-09-29T15:10:52.138Z",
+    "attempts": 1
   },
   "gate": {
     "verdict": "in-band",
-    "overallWinRate": 0.62,
+    "overallWinRate": 0.6133333333333333,
     "band": {
       "min": 0.35,
       "max": 0.65
@@ -121,29 +107,28 @@
     "matchups": [
       {
         "opponent": "AggroVenom",
-        "winRate": 0.74,
-        "wins": 37,
+        "winRate": 0.72,
+        "wins": 36,
         "losses": 0,
-        "draws": 13,
+        "draws": 14,
         "seeds": 50
       },
       {
         "opponent": "SustainControl",
-        "winRate": 0.64,
-        "wins": 32,
-        "losses": 18,
-        "draws": 0,
+        "winRate": 0.68,
+        "wins": 34,
+        "losses": 2,
+        "draws": 14,
         "seeds": 50
       },
       {
         "opponent": "StatStack",
-        "winRate": 0.48,
-        "wins": 24,
-        "losses": 22,
-        "draws": 4,
+        "winRate": 0.44,
+        "wins": 22,
+        "losses": 27,
+        "draws": 1,
         "seeds": 50
       }
     ]
-  },
-  "grammarVersion": 2
+  }
 }

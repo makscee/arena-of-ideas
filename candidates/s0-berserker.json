@@ -1,38 +1,33 @@
 {
-  "id": "frostbite-striker",
+  "grammarVersion": 2,
+  "id": "s0-berserker",
   "units": [
     {
-      "name": "Frostbiter",
+      "name": "Berserker",
       "base": {
-        "hp": 11,
-        "pwr": 2
+        "hp": 8,
+        "pwr": 3
       },
-      "statuses": [
-        {
-          "status": "Shield",
-          "stacks": 1
-        }
-      ],
       "triggers": [
         {
           "kind": "trigger",
           "on": {
-            "on": "Strike",
-            "striker": "holder"
+            "on": "Hurt",
+            "unit": "holder"
           }
         }
       ],
       "selectors": [
         {
-          "kind": "frontEnemy"
+          "kind": "holder"
         }
       ],
       "abilities": [
-        "Frostbite"
+        "Rage"
       ]
     },
     {
-      "name": "Glacier",
+      "name": "Brawler",
       "base": {
         "hp": 12,
         "pwr": 2
@@ -79,21 +74,13 @@
     }
   ],
   "abilities": {
-    "Frostbite": {
-      "name": "Frostbite",
-      "family": "Poison",
+    "Rage": {
+      "name": "Rage",
+      "family": "Strike",
       "effects": [
         {
           "kind": "applyStatus",
-          "status": "Poison",
-          "stacks": {
-            "kind": "const",
-            "value": 1
-          }
-        },
-        {
-          "kind": "applyStatus",
-          "status": "Curse",
+          "status": "Strength",
           "stacks": {
             "kind": "const",
             "value": 2
@@ -103,16 +90,16 @@
     }
   },
   "provenance": {
-    "ideaText": "A frost-themed front-line striker that chills the enemy it hits \u2014 its attacks\nshould slow or weaken the unit in front of it, so it trades up against an\naggressive opponent. A small, durable bruiser, not a glass cannon. It should\nhold its own against the existing meta without dominating it.",
-    "creator": "maks",
+    "ideaText": "Berserker (Season 0 launch pool, Strike): Rage. After this unit is hurt: apply 2 Strength to this unit.",
+    "creator": "Maks",
     "harness": "claude-code",
-    "model": "opus",
-    "timestamp": "2026-06-12T10:02:22.399Z",
-    "attempts": 6
+    "model": "claude-opus-5-5",
+    "timestamp": "2026-09-29T15:10:48.526Z",
+    "attempts": 1
   },
   "gate": {
     "verdict": "in-band",
-    "overallWinRate": 0.62,
+    "overallWinRate": 0.43333333333333335,
     "band": {
       "min": 0.35,
       "max": 0.65
@@ -121,29 +108,28 @@
     "matchups": [
       {
         "opponent": "AggroVenom",
-        "winRate": 0.74,
-        "wins": 37,
-        "losses": 0,
-        "draws": 13,
+        "winRate": 0.7,
+        "wins": 35,
+        "losses": 10,
+        "draws": 5,
         "seeds": 50
       },
       {
         "opponent": "SustainControl",
-        "winRate": 0.64,
-        "wins": 32,
-        "losses": 18,
-        "draws": 0,
+        "winRate": 0.26,
+        "wins": 13,
+        "losses": 0,
+        "draws": 37,
         "seeds": 50
       },
       {
         "opponent": "StatStack",
-        "winRate": 0.48,
-        "wins": 24,
-        "losses": 22,
-        "draws": 4,
+        "winRate": 0.34,
+        "wins": 17,
+        "losses": 31,
+        "draws": 2,
         "seeds": 50
       }
     ]
-  },
-  "grammarVersion": 2
+  }
 }

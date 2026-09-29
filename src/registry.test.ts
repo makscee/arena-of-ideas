@@ -21,6 +21,13 @@ describe("parseApprovedRegistry", () => {
     expect(parseApprovedRegistry({ units: [] }, stressRegistry, stressAbilities).units).toEqual([]);
   });
 
+  test("a registry is a pool, not a team: more than five units parse, duplicate names fail", () => {
+    const units = Array.from({ length: 12 }, (_, i) => ({ ...FROSTER, name: `Froster ${i}` }));
+    expect(parseApprovedRegistry({ units }, stressRegistry, stressAbilities).units).toHaveLength(12);
+    expect(() => parseApprovedRegistry({ units: [FROSTER, FROSTER] }, stressRegistry, stressAbilities))
+      .toThrow(/duplicate unit name "Froster"/);
+  });
+
   test("rejects unsupported versions and contextual Abilities at the public reader", () => {
     expect(() => parseApprovedRegistry({ grammarVersion: 999, units: [], abilities: {} }, stressRegistry, stressAbilities))
       .toThrow(/unsupported content grammar version/);
