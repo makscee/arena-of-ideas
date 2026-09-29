@@ -22,8 +22,10 @@ Maks's go after he accepts the mission.
 The June archive is kept in three places: the untouched `void_arena_data` volume,
 a tarball plus its sha256 in `/srv/backups/arena-june/` on mcow, and a restic
 snapshot tagged `arena-june-final` in the nether repo. restic-daily's
-`forget --keep-daily 7` groups by host and paths, and this snapshot is the only
-one with its path, so it is never pruned.
+`forget --keep-daily 7 --keep-weekly 4` has no `--group-by`, so it groups by host
+and paths (checked on mcow 2026-09-29), and this snapshot is the only one with
+its path, so it is never pruned. If that unit ever gains `--group-by host` or a
+tag filter, add `--keep-tag arena-june-final` to it.
 
 ## Rehearsal (a copy of prod)
 
@@ -42,13 +44,19 @@ $S cleanup                # remove the rehearsal container, volumes and files
 
 1. Pick the tag: the `sha-<7>` CI pushed for the merge commit on main.
 2. `MODE=prod $S backup` stops `arena` (the site is down from here), writes the
-   tarball and the restic snapshot. Then `MODE=prod $S verify`. Stop if anything
-   says MISMATCH or the integrity check isn't `ok`.
-3. In homelab, set `arena_image_tag: "sha-<7>"` and
+   tarball, a per-file sha256 of the volume and the restic snapshot. Then
+   `MODE=prod $S verify`. Stop if anything says MISMATCH or the integrity check
+   isn't `ok`.
+3. In homelab (with homelab #144 merged), set `arena_image_tag: "sha-<7>"` and
    `arena_data_volume: "arena_data_s1"` in
-   `ansible/inventory/group_vars/void_platform.yml`, and merge it.
-4. `HOMELAB=<homelab clone> MODE=prod $S deploy sha-<7>` runs the
-   void-platform-mcow playbook with those values, then waits for `/healthz`.
+   `ansible/inventory/group_vars/void_platform.yml`, and merge it. Don't run any
+   other playbook on mcow between steps 2 and 4.
+4. `HOMELAB=<homelab clone at that commit> MODE=prod $S deploy sha-<7>`. It
+   refuses unless group_vars says exactly that tag and volume (no `-e`
+   overrides, so the next routine playbook run keeps them), and unless `arena`
+   is still stopped and the June volume is unchanged since the backup. Then it
+   runs the void-platform-mcow playbook, waits for `/healthz` and proves `arena`
+   mounts `void_arena_data_s1`.
 5. `MODE=prod $S check sha-<7>`: expect `OK: /healthz proves sha-<7> is live`.
    Then log in on https://arena.makscee.ru and start a run.
 
@@ -56,8 +64,9 @@ $S cleanup                # remove the rehearsal container, volumes and files
 
 `HOMELAB=<homelab clone> MODE=prod $S rollback` runs the playbook with
 `arena_image_tag=sha-4a276d3 arena_data_volume=arena_data` and checks that the
-June image answers `{"ok":true}` and the June rows are there. Then set the two
-vars back in homelab, so the next playbook run doesn't redeploy Season 1. The
+June image answers `{"ok":true}`, `arena` mounts `void_arena_data` and the June
+rows are there. It uses `-e` so it works in an emergency; then set the two vars
+back in homelab, so the next playbook run doesn't redeploy Season 1. The
 Season 1 volume stays, so going forward again is the deploy step once more.
 
 If the June volume itself were lost: `docker volume create void_arena_data`,

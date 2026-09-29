@@ -75,6 +75,24 @@ counts() { # <volume>
     rm -rf \$d"
 }
 
+# prod: the homelab clone must already say what we deploy (no -e override), so
+# the next routine playbook run keeps the same image on the same volume.
+homelab_says() { # <tag> <volume key>
+  : "${HOMELAB:?set HOMELAB to a makscee/homelab clone}"
+  local gv="$HOMELAB/ansible/inventory/group_vars/void_platform.yml"
+  grep -q '{{ arena_data_volume }}:/data' "$HOMELAB/ansible/playbooks/templates/compose.yml.j2" \
+    || { echo "FAIL: $HOMELAB has no arena_data_volume in compose.yml.j2 (homelab #144 not in this clone)" >&2; exit 1; }
+  grep -q "^arena_image_tag: \"$1\"" "$gv" && grep -q "^arena_data_volume: \"$2\"" "$gv" \
+    || { echo "FAIL: $gv must say arena_image_tag: \"$1\" and arena_data_volume: \"$2\"" >&2; exit 1; }
+}
+
+# The arena container must run on exactly this volume.
+mounted_on() { # <volume>
+  local src
+  src=$(remote "docker inspect $CTR -f '{{range .Mounts}}{{if eq .Destination \"/data\"}}{{.Name}}{{end}}{{end}}'")
+  [ "$src" = "$1" ] && echo "OK: $CTR mounts $1 at /data" || { echo "FAIL: $CTR mounts '$src' at /data, expected $1" >&2; exit 1; }
+}
+
 step="${1:-}"; shift || true
 case "$step" in
   prepare)
@@ -96,6 +114,7 @@ case "$step" in
       ts=\$(date -u +%Y%m%dT%H%M%SZ); tgz=$ARCHIVE_DIR/arena-june-\$ts.tgz
       docker run --rm -v $OLD_VOL:/data:ro alpine tar czf - -C /data . > \$tgz
       (cd $ARCHIVE_DIR && sha256sum \$(basename \$tgz) > \$(basename \$tgz).sha256)
+      (cd \$(docker volume inspect $OLD_VOL -f '{{.Mountpoint}}') && find . -type f | sort | xargs sha256sum) > $ARCHIVE_DIR/arena-june-\$ts.files.sha256
       echo \$ts > $ARCHIVE_DIR/$STAMP_FILE; ls -la $ARCHIVE_DIR"
     say "restic snapshot of $OLD_VOL, tagged arena-june-final"
     remote "$RESTIC_ENV
@@ -114,7 +133,7 @@ case "$step" in
       t=\$(mktemp -d); r=\$(mktemp -d)
       tar xzf $ARCHIVE_DIR/\$tgz -C \$t
       restic restore -q latest --tag arena-june-final --target \$r
-      for f in \$(cd \$vol && ls); do
+      for f in \$(cd \$vol && find . -type f); do
         a=\$(sha256sum < \$vol/\$f); b=\$(sha256sum < \$t/\$f); c=\$(sha256sum < \$r\$vol/\$f)
         [ \"\$a\" = \"\$b\" ] && [ \"\$a\" = \"\$c\" ] && echo \"match  \$f\" || { echo \"MISMATCH \$f\"; exit 1; }
       done
@@ -124,18 +143,23 @@ case "$step" in
 
   deploy)
     need_tag "${1:-}"
+    [ "$MODE" = prod ] && homelab_says "$1" arena_data_s1
+    say "the June volume must be at rest and unchanged since the backup"
+    # A playbook run between backup and deploy could have restarted the June arena.
+    remote "[ \"\$(docker inspect $CTR -f '{{.State.Running}}' 2>/dev/null)\" != true ] || { echo 'FAIL: $CTR is running again; run backup again' >&2; exit 1; }
+      ts=\$(cat $ARCHIVE_DIR/$STAMP_FILE)
+      cd \$(docker volume inspect $OLD_VOL -f '{{.Mountpoint}}') && sha256sum --quiet -c $ARCHIVE_DIR/arena-june-\$ts.files.sha256 && echo 'unchanged since backup'"
     if [ "$MODE" = prod ]; then
-      : "${HOMELAB:?set HOMELAB to a makscee/homelab clone}"
       say "deploy $1 on the new volume through the homelab playbook"
-      (cd "$HOMELAB/ansible" && ansible-playbook -i inventory/homelab.yml playbooks/void-platform-mcow.yml \
-        -e arena_image_tag="$1" -e arena_data_volume=arena_data_s1)
+      (cd "$HOMELAB/ansible" && ansible-playbook -i inventory/homelab.yml playbooks/void-platform-mcow.yml)
     else
       say "start $1 on the new, empty $NEW_VOL"
       remote "docker volume inspect $NEW_VOL >/dev/null 2>&1 && { echo '$NEW_VOL exists: a fresh start needs a new volume' >&2; exit 1; }
         docker volume create $NEW_VOL >/dev/null; docker rm -f $CTR >/dev/null"
       run_arena "$1" "$NEW_VOL"
     fi
-    wait_healthy ;;
+    wait_healthy
+    mounted_on "$NEW_VOL" ;;
 
   check)
     need_tag "${1:-}"
@@ -160,7 +184,10 @@ case "$step" in
       run_arena "$JUNE_TAG" "$OLD_VOL"
     fi
     "$0" check "$JUNE_TAG"
-    say "June data after rollback"; counts "$OLD_VOL" ;;
+    mounted_on "$OLD_VOL"
+    say "June data after rollback"; counts "$OLD_VOL"
+    [ "$MODE" = prod ] && echo "NOW set arena_image_tag: \"$JUNE_TAG\" and arena_data_volume: \"arena_data\" back in homelab group_vars"
+    true ;;
 
   cleanup)
     rehearse_only cleanup
