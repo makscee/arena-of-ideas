@@ -226,6 +226,7 @@ describe("MVP run server fixes (#579 check of a3c9b113)", () => {
     const run = lastRound(rt, maks);
     decide(rt, run, { kind: "fight" });
     expect(rt.store.run(run.runId)!.crownSeq).toBe(old.seq);
+    rt.store.putDay({ ...rt.today(), seq: old.seq + 1 }); // the rollover: day 2 starts, crowning bot-Next
     const next = weakChampion(rt, { seq: old.seq + 1, player: { ...botP, id: "b9", name: "bot-Next" } });
     const won = decide(rt, rt.store.run(run.runId)!, { kind: "fight" });
     expect(won.fight).toMatchObject({ kind: "crown", outcome: "win", opponent: { ghostId: `champion-${next.seq}`, player: { id: "b9" } } });
@@ -238,6 +239,7 @@ describe("MVP run server fixes (#579 check of a3c9b113)", () => {
     const old = weakChampion(rt);
     const run = lastRound(rt, maks);
     decide(rt, run, { kind: "fight" });
+    rt.store.putDay({ ...rt.today(), seq: old.seq + 1 });
     weakChampion(rt, { seq: old.seq + 1, contentVersion: "old" });
     const won = decide(rt, rt.store.run(run.runId)!, { kind: "fight" });
     expect(won.fight!.opponent.ghostId).toBe(`champion-${old.seq}`);
