@@ -16,6 +16,9 @@ describe("MVP pool (slice 7)", () => {
   it("gives every unit its own emoji and a tier", () => {
     const emoji = pool.units.map((u) => u.emoji);
     expect(new Set(emoji).size).toBe(emoji.length);
+    // One codepoint (plus an emoji presentation selector): a ZWJ sequence
+    // splits into two pictures on older phones.
+    expect(pool.units.filter((u) => [...u.emoji.replace(/\uFE0F$/u, "")].length !== 1).map((u) => `${u.name} ${u.emoji}`)).toEqual([]);
     for (const t of [1, 2, 3, 4]) expect(pool.units.some((u) => u.tier === t)).toBe(true);
   });
 
