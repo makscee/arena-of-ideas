@@ -35,14 +35,16 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .hud { display: flex; justify-content: space-between; font-family: "IBM Plex Mono", monospace; font-size: 15px; }
 .hud .gold { color: var(--gold); }
 .hud .hearts { color: var(--ghost); }
-.slots { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-.card { position: relative; min-height: 92px; background: var(--panel); border: 1px solid var(--line); padding: 6px 4px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); cursor: pointer; }
+.slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.card { position: relative; min-height: 92px; background: var(--panel); border: 1px solid var(--line); padding: 6px 2px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); cursor: pointer; }
 .card.you { border-color: color-mix(in srgb, var(--you) 45%, transparent); }
 .card.ghost { border-color: color-mix(in srgb, var(--ghost) 45%, transparent); }
 .card.selected { outline: 2px solid var(--you); outline-offset: -2px; }
 .card.empty { cursor: default; opacity: 0.4; border-style: dashed; }
 .card .emoji { font-size: 26px; line-height: 1; }
-.card .name { font-size: 12px; font-weight: 600; line-height: 1.1; max-width: 100%; overflow-wrap: normal; word-break: normal; hyphens: auto; -webkit-hyphens: auto; }
+.card .name { font-size: 12px; font-weight: 600; line-height: 1.1; max-width: 100%; overflow-wrap: anywhere; hyphens: auto; -webkit-hyphens: auto; }
+.card .name.long { font-size: 11px; letter-spacing: -0.02em; }
+.card .name.xlong { font-size: 10px; letter-spacing: -0.03em; }
 .card .stats { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
 .card .stats .p { color: var(--gold); }
 .card .stats .h { color: var(--ghost); }

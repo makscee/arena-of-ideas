@@ -30,7 +30,7 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
     "div",
     { class: `card ${o.side}`, ...(o.testid ? { "data-testid": o.testid } : {}) },
     h("div", { class: "emoji" }, u.emoji),
-    h("div", { class: "name" }, u.name),
+    h("div", { class: `name${nameSize(u.name)}` }, u.name),
     h("div", { class: "stats" }, h("span", { class: "p" }, `${stats.pwr}`), " / ", h("span", { class: "h" }, `${stats.hp}`)),
     unitStatsLine(u.unitId, o.rates),
     ...(o.extra ?? []),
@@ -41,6 +41,12 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
   if (o.live?.acting) el.classList.add("acting");
   if (o.onOpen) el.addEventListener("click", o.onOpen);
   return el;
+}
+
+/** Long words get a smaller font so names never break mid-word on a 360 px phone. */
+function nameSize(name: string): string {
+  const longest = Math.max(...name.split(/\s+/).map((w) => w.length));
+  return longest >= 11 ? " xlong" : longest >= 9 ? " long" : "";
 }
 
 /** A form as one line of text: its authored text, else described from the
