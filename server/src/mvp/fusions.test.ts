@@ -23,6 +23,14 @@ describe("MVP fusion names: the fallback and the store", () => {
     expect(portmanteau("Medic", "Brawler")).not.toBe(portmanteau("Brawler", "Medic"));
   });
 
+  it("never falls back to a part's name or a base unit's name", () => {
+    const names = mvpContent().units.map((u) => u.name);
+    expect(portmanteau("Rose", "Rot")).not.toBe("Rot");
+    expect(portmanteau("Rat", "Gnat", names)).not.toBe("Rat");
+    const folded = new Set(names.map((x) => x.toLowerCase().replace(/[^a-z]/g, "")));
+    for (const x of names) for (const y of names) if (x !== y) expect(folded.has(portmanteau(x, y, names).toLowerCase()), `${x}+${y}`).toBe(false);
+  });
+
   it("credits a human, never a bot, and keeps a stored name and credit", () => {
     const store = new MemoryMvpStore();
     const name = storedOrPortmanteau(store);

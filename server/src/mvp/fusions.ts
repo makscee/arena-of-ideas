@@ -31,23 +31,37 @@ export type NameFusion = (first: UnitContent, second: UnitContent, by: PlayerRef
 export type ModelNamer = (first: UnitContent, second: UnitContent) => Promise<string | null>;
 
 /** The deterministic fallback name: the front of first's name and the back of
- * second's ("Brawler" + "Medic" → "Brawdic"). The only portmanteau. */
-export function portmanteau(first: string, second: string): string {
+ * second's ("Brawler" + "Medic" → "Brawdic"). The only portmanteau. It is
+ * never a part's name or one of `taken` (the base units' names): the split
+ * moves until it isn't ("Rose" + "Rot" → "Rorot", not "Rot"), and as a last
+ * resort both names are joined whole. */
+export function portmanteau(first: string, second: string, taken: readonly string[] = []): string {
   const a = first.replace(/\s+/g, "");
   const b = second.replace(/\s+/g, "").toLowerCase();
-  const head = a.slice(0, Math.ceil(a.length / 2));
-  const tail = b.slice(Math.floor(b.length / 2));
-  return head.slice(-1).toLowerCase() === tail[0] ? head + tail.slice(1) : head + tail;
+  const avoid = new Set([first, second, ...taken].map(fold));
+  const join = (head: string, tail: string) => (head.slice(-1).toLowerCase() === tail[0] ? head + tail.slice(1) : head + tail);
+  const h0 = Math.ceil(a.length / 2);
+  const t0 = Math.floor(b.length / 2);
+  for (let dh = 0; dh < a.length; dh++)
+    for (const h of [h0 + dh, h0 - dh]) {
+      if (h < 1 || h > a.length) continue;
+      for (const t of [t0, t0 - 1, t0 + 1]) {
+        if (t < 0 || t >= b.length) continue;
+        const name = join(a.slice(0, h), b.slice(t));
+        if (!avoid.has(fold(name))) return name;
+      }
+    }
+  return a + b;
 }
 
 /** The stored name, else the portmanteau, with the credit by FusionDiscovery's
  * rule (the stored discoverer, else `by` unless it is a bot). It only reads:
  * it never records a discovery or calls a model. */
-export function storedOrPortmanteau(store: MvpStore): NameFusion {
+export function storedOrPortmanteau(store: MvpStore, unitNames: readonly string[] = []): NameFusion {
   return (first, second, by) => {
     const known = store.fusion(first.id, second.id);
     return {
-      name: known?.name ?? portmanteau(first.name, second.name),
+      name: known?.name ?? portmanteau(first.name, second.name, unitNames),
       discoveredBy: known?.discoveredBy ?? (by.bot ? null : by),
     };
   };
@@ -386,6 +400,7 @@ export function fusionNaming(
     now: rt.now,
   };
   namers.set(store, n);
+  const unitNames = rt.content.units.map((u) => u.name);
   const enqueue = (first: UnitContent, second: UnitContent, human: boolean) => {
     const key = keyOf(first.id, second.id);
     if (!n.model || n.prepared.has(key) || (n.gaveUp.get(key) ?? 0) > Date.now() || store.fusion(first.id, second.id)) return;
@@ -407,7 +422,7 @@ export function fusionNaming(
   const peek: NameFusion = (first, second, by) => {
     const known = store.fusion(first.id, second.id);
     return {
-      name: known?.name ?? n.prepared.get(keyOf(first.id, second.id)) ?? portmanteau(first.name, second.name),
+      name: known?.name ?? n.prepared.get(keyOf(first.id, second.id)) ?? portmanteau(first.name, second.name, unitNames),
       discoveredBy: known?.discoveredBy ?? (by.bot ? null : by),
     };
   };
