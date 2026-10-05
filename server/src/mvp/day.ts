@@ -6,7 +6,7 @@
 // rules (times, the strongest-team pick, the round-robin) are in
 // src/mvp/day.ts.
 import type { Champion, DayState, DayView, PlayerRef, Rating } from "../../../src/mvp/contract.js";
-import { dayLabel, nextRollover, playoffEntrants, playRoundRobin } from "../../../src/mvp/day.js";
+import { dayLabel, nextRollover, playoffEntrants, playoffSlays, playRoundRobin } from "../../../src/mvp/day.js";
 import type { RunDeps } from "./runs.js";
 import type { MvpJob } from "./runtime.js";
 import type { MvpStore } from "./store.js";
@@ -57,15 +57,32 @@ export function today(rt: DayDeps): DayState {
   return currentDay(rt);
 }
 
-/** What Home and GET /day show. */
-export function dayView(rt: Pick<RunDeps, "store" | "today">): DayView {
+/** Day `seq`'s champion: the latest at or before it. A day end that failed
+ * after crowning day seq + 1 leaves that row stored early; it isn't anyone's
+ * champion until day seq + 1 starts. */
+export function championOf(store: MvpStore, seq: number): Champion | undefined {
+  const latest = store.currentChampion();
+  if (!latest || latest.seq <= seq) return latest;
+  return store.champions().filter((c) => c.seq <= seq).at(-1);
+}
+
+/** Today's champion (championOf today().seq): the one Home shows and the
+ * Crown fights. */
+export function todaysChampion(rt: Pick<RunDeps, "store" | "today">): Champion | undefined {
+  return championOf(rt.store, rt.today().seq);
+}
+
+/** What Home and GET /day show. `slayers` counts the players whose slays can
+ * enter tonight's playoff (playoffSlays), so it never promises more. */
+export function dayView(rt: Pick<RunDeps, "store" | "today" | "content">): DayView {
   const d = rt.today();
+  const champion = championOf(rt.store, d.seq);
   return {
     seq: d.seq,
     day: d.day,
     endsAt: d.endsAt,
-    champion: rt.store.currentChampion() ?? null,
-    slayers: new Set(rt.store.slays(d.seq).map((s) => s.player.id)).size,
+    champion: champion ?? null,
+    slayers: new Set(playoffSlays(rt.store.slays(d.seq), champion, rt.content).map((s) => s.player.id)).size,
     lastPlayoff: rt.store.playoff(d.seq - 1) ?? null,
   };
 }
@@ -82,7 +99,7 @@ export function endDay(rt: DayDeps): DayView {
   const at = now.toISOString();
   // Day d's champion: the latest at or before its seq, not one that an earlier
   // attempt at this day end crowned before it failed.
-  const champ = store.champions().filter((c) => c.seq <= d.seq).at(-1);
+  const champ = championOf(store, d.seq);
   const entrants = playoffEntrants(store.slays(d.seq), champ, content, rules);
   const { result, battles } = playRoundRobin(entrants, { seq: d.seq, day: d.day, at, content, rules, battleId: (i) => `playoff-${d.seq}-${i + 1}` });
   for (const b of battles) store.putBattle(b);
@@ -103,7 +120,7 @@ export function endDay(rt: DayDeps): DayView {
   store.putDay(next);
   if (winner) bump(rt, winner.player, "playoffWins");
   if (crowned && !crowned.player.bot) bump(rt, crowned.player, "daysAsChampion");
-  return dayView({ store, today: () => next });
+  return dayView({ store, content, today: () => next });
 }
 
 function bump(rt: DayDeps, player: PlayerRef, field: "playoffWins" | "daysAsChampion"): void {

@@ -6,6 +6,7 @@ import { randomUUID } from "node:crypto";
 import type { BattleRecord, DayState, Decision, DecisionResponse, FightResult, FuseContext, Ghost, LineUnit, MvpContent, MvpRules, PlayerRef, Rating } from "../../../src/mvp/contract.js";
 import { fuseCheck } from "../../../src/mvp/forms.js";
 import { applyMvpDecision, championGhost, endRun, initMvpRun, MvpDecisionError, ratingChange, runView, setOpponent, slewChampion, synthGhost, unitById, type DecisionContext, type MvpRunState, type MvpStep } from "../../../src/mvp/run.js";
+import { todaysChampion } from "./day.js";
 import type { NameFusion } from "./fusions.js";
 import type { MvpStore } from "./store.js";
 
@@ -107,12 +108,13 @@ export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionRe
   return { run: runView(step.state), ...(step.fight ? { fight: step.fight } : {}) };
 }
 
-/** After a fight: the next round's ghost, or the champion for the Crown; a
- * Crown with no live champion ends the run ("no-champion"). */
+/** After a fight: the next round's ghost, or today's champion for the Crown
+ * (never one a failed day end stored early); a Crown with no live champion
+ * ends the run ("no-champion"). */
 function nextOpponent(deps: RunDeps, run: MvpRunState): MvpRunState {
   if (run.phase === "shop") return setOpponent(run, pickGhost(deps, run));
   if (run.phase !== "crown") return run;
-  const champ = deps.store.currentChampion();
+  const champ = todaysChampion(deps);
   if (!champ || champ.contentVersion !== deps.content.version) return endRun(run, "no-champion");
   return setOpponent(run, championGhost(champ, run.rules), champ.seq);
 }
@@ -129,11 +131,12 @@ export function currentRun(deps: RunDeps, run: MvpRunState): MvpRunState {
   return cur;
 }
 
-/** The Crown's opponent as of now: when the stored champion's seq is not
- * the one picked when round 12 ended (a rollover in between) and it is on the
- * live content, the run fights it instead, and a slay counts for its seq. */
+/** The Crown's opponent as of now: when today's champion (todaysChampion)
+ * is not the one picked when round 12 ended (a rollover in between) and it is
+ * on the live content, the run fights it instead, and a slay counts for its
+ * seq. */
 function currentCrown(deps: RunDeps, run: MvpRunState): MvpRunState {
-  const champ = deps.store.currentChampion();
+  const champ = todaysChampion(deps);
   if (!champ || champ.seq === run.crownSeq || champ.contentVersion !== deps.content.version) return run;
   return setOpponent(run, championGhost(champ, run.rules), champ.seq);
 }

@@ -267,6 +267,53 @@ describe("MVP day", () => {
     expect(store.rating(ann.id)).toMatchObject({ slays: 1, playoffWins: 1, daysAsChampion: 1 });
   });
 
+  it("counts as slayers only the players the playoff takes: live content, humans, not the champion", async () => {
+    const { rt, call, human } = world();
+    const ann = human("ann");
+    const bob = human("bob");
+    const eve = human("eve");
+    const own = { ...weakChampion(rt), player: ann };
+    rt.store.putChampion(own);
+    const line = bigLine(rt.content);
+    const stray = { seq: own.seq, runId: "r", battleId: "b", line, at: "2026-10-05T10:00:00.000Z" };
+    rt.store.addSlay({ ...stray, player: ann, contentVersion: rt.content.version }); // the champion's own
+    rt.store.addSlay({ ...stray, player: eve, contentVersion: "mvp-old" }); // on content no longer live
+    rt.store.addSlay({ ...stray, player: { id: "b2", name: "bot-Elm", bot: true }, contentVersion: rt.content.version });
+    expect((await call<DayView>("GET", "/day")).json.slayers).toBe(0);
+    expect((await call<{ day: DayView }>("GET", "/home")).json.day.slayers).toBe(0);
+    slay(rt, bob, line);
+    expect((await call<DayView>("GET", "/day")).json.slayers).toBe(1);
+    const { json: day } = await call<DayView>("POST", "/dev/end-day");
+    expect(day.lastPlayoff?.entrants).toEqual([bob]);
+  });
+
+  it("a day end that failed after crowning shows and fights today's champion, not tomorrow's", async () => {
+    const store = new FlakyDayStore(2, 1);
+    const { rt, call, human } = world({ store });
+    const old = weakChampion(rt);
+    const ann = human("ann");
+    const maks = human("maks");
+    slay(rt, ann, bigLine(rt.content));
+    const run = startRun(rt, maks);
+    const at12: MvpRunState = { ...run, round: rt.rules.rounds, line: bigLine(rt.content, 1), nextUid: 2 };
+    rt.store.putRun(at12);
+    expect(() => endDay(rt)).toThrow("disk full");
+    expect(store.currentChampion()).toMatchObject({ seq: 2, player: ann }); // stored early
+    expect(rt.today().seq).toBe(1);
+
+    expect((await call<DayView>("GET", "/day")).json).toMatchObject({ seq: 1, slayers: 1, champion: { seq: old.seq, player: botP } });
+    expect((await call<{ day: DayView }>("GET", "/home")).json.day.champion).toMatchObject({ player: botP });
+    // round 12 ends: the Crown is today's champion, and stays it when shown and fought
+    expect(decide(rt, at12, { kind: "fight" }).run).toMatchObject({ phase: "crown", nextOpponent: { player: botP } });
+    expect(rt.store.run(run.runId)?.crownSeq).toBe(old.seq);
+    expect((await call<RunView>("GET", `/runs/${run.runId}`, maks)).json.nextOpponent).toMatchObject({ player: botP });
+    const fought = decide(rt, rt.store.run(run.runId)!, { kind: "fight" });
+    expect(fought.fight?.opponent).toMatchObject({ ghostId: `champion-${old.seq}`, player: botP });
+    // the retried day end crowns ann for day 2 as usual
+    endDay(rt);
+    expect((await call<DayView>("GET", "/day")).json).toMatchObject({ seq: 2, champion: { seq: 2, player: ann } });
+  });
+
   it("works on the SQLite store", () => {
     const store = new SqliteMvpStore(":memory:");
     const { rt, human } = world({ store });
