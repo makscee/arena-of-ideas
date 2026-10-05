@@ -1,0 +1,57 @@
+/* "B · Arena": dark, cyan for you, magenta for the ghost, chamfered cards. */
+:root {
+  --bg: #07080c;
+  --panel: #10131b;
+  --line: #1f2533;
+  --text: #e8ecf4;
+  --dim: #8a93a6;
+  --you: #25e6d4;
+  --ghost: #ff3d7f;
+  --gold: #ffcc4d;
+  --chamfer: 10px;
+  font-family: "Rajdhani", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); }
+body { min-height: 100dvh; font-size: 17px; -webkit-tap-highlight-color: transparent; }
+#app { max-width: 480px; margin: 0 auto; padding: 12px 12px calc(16px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; min-height: 100dvh; }
+h1, h2, .display { font-family: "Chakra Petch", sans-serif; letter-spacing: 0.04em; margin: 0; }
+h1 { font-size: 30px; color: var(--you); }
+h2 { font-size: 20px; }
+.mono, .num { font-family: "IBM Plex Mono", monospace; }
+.dim { color: var(--dim); }
+.panel { background: var(--panel); border: 1px solid var(--line); padding: 12px; clip-path: polygon(var(--chamfer) 0, 100% 0, 100% calc(100% - var(--chamfer)), calc(100% - var(--chamfer)) 100%, 0 100%, 0 var(--chamfer)); }
+button, input { font: inherit; min-height: 44px; }
+button { background: transparent; color: var(--you); border: 1px solid var(--you); padding: 0 16px; font-family: "Chakra Petch", sans-serif; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
+button.primary { background: var(--you); color: var(--bg); }
+button.danger { color: var(--ghost); border-color: var(--ghost); }
+button:disabled { opacity: 0.35; cursor: default; }
+input { width: 100%; background: var(--panel); color: var(--text); border: 1px solid var(--line); padding: 0 12px; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row.spread { justify-content: space-between; }
+.grow { flex: 1; }
+.stack { display: flex; flex-direction: column; gap: 8px; }
+.hud { display: flex; justify-content: space-between; font-family: "IBM Plex Mono", monospace; font-size: 15px; }
+.hud .gold { color: var(--gold); }
+.hud .hearts { color: var(--ghost); }
+.slots { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.card { position: relative; min-height: 92px; background: var(--panel); border: 1px solid var(--line); padding: 6px 4px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); cursor: pointer; }
+.card.you { border-color: color-mix(in srgb, var(--you) 45%, transparent); }
+.card.ghost { border-color: color-mix(in srgb, var(--ghost) 45%, transparent); }
+.card.selected { outline: 2px solid var(--you); outline-offset: -2px; }
+.card.empty { cursor: default; opacity: 0.4; border-style: dashed; }
+.card .emoji { font-size: 26px; line-height: 1; }
+.card .name { font-size: 12px; font-weight: 600; line-height: 1.1; word-break: break-word; }
+.card .stats { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+.card .stats .p { color: var(--gold); }
+.card .stats .h { color: var(--ghost); }
+.card .copies { position: absolute; top: 2px; right: 4px; font-family: "IBM Plex Mono", monospace; font-size: 10px; color: var(--you); }
+.card .cost { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--gold); }
+.label { font-size: 13px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
+.outcome { font-family: "Chakra Petch", sans-serif; font-size: 44px; text-align: center; }
+.outcome.win { color: var(--you); }
+.outcome.loss { color: var(--ghost); }
+.outcome.draw { color: var(--dim); }
+.error { color: var(--ghost); font-size: 15px; min-height: 20px; }
+.spacer { flex: 1; }
