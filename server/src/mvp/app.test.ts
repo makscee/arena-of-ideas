@@ -95,14 +95,14 @@ describe("MVP API thin path", () => {
 
     const buys = await Promise.all([decide({ kind: "buy", slot: 0 }), decide({ kind: "buy", slot: 0 })]);
     expect(buys.map((b) => b.status)).toEqual([200, 200]);
-    const { json: bought } = await call<RunView>("GET", `/runs/${r.runId}`);
+    const { json: bought } = await call<RunView>("GET", `/runs/${r.runId}`, undefined, p.id);
     expect(bought.gold).toBe(10 - 2 * 3);
     expect(bought.line.reduce((n, u) => n + u.copies, 0)).toBe(2);
 
     const fights = await Promise.all(Array.from({ length: 5 }, () => decide({ kind: "fight" })));
     expect(fights.map((f) => f.status)).toEqual([200, 200, 200, 200, 200]);
     expect(new Set(fights.map((f) => f.json.fight!.battleId)).size).toBe(5);
-    const { json: after } = await call<RunView>("GET", `/runs/${r.runId}`);
+    const { json: after } = await call<RunView>("GET", `/runs/${r.runId}`, undefined, p.id);
     expect(after.fights.map((f) => f.round)).toEqual([1, 2, 3, 4, 5]);
     expect(after.round).toBe(after.phase === "over" ? 5 : 6);
     expect(after.hearts).toBe(5 - after.losses);
@@ -128,7 +128,7 @@ describe("MVP API thin path", () => {
     const pv = await call<DecisionResponse>("POST", `/runs/${r.runId}/preview`, { kind: "buy", slot: 0 }, p.id);
     expect(pv.status).toBe(200);
     expect(pv.json.run).toMatchObject({ gold: 7, line: [{ unitId: r.offers[0]!.unitId }] });
-    expect((await call<RunView>("GET", `/runs/${r.runId}`)).json).toEqual(r);
+    expect((await call<RunView>("GET", `/runs/${r.runId}`, undefined, p.id)).json).toEqual(r);
     const real = await call<DecisionResponse>("POST", `/runs/${r.runId}/decisions`, { kind: "buy", slot: 0 }, p.id);
     expect(real.json.run).toEqual(pv.json.run);
     expect((await call("POST", `/runs/${r.runId}/preview`, { kind: "fight" }, p.id)).status).toBe(400);
@@ -185,8 +185,20 @@ describe("MVP API thin path", () => {
   it("serves dev tools only in dev; later slices' routes answer 501", async () => {
     expect((await client()("POST", "/dev/end-day")).status).toBe(404);
     const dev = client({ dev: true });
-    expect(await dev("POST", "/dev/end-day")).toEqual({ status: 501, json: { error: "the day arrives in slice 5" } });
+    const ended = await dev<DayView>("POST", "/dev/end-day");
+    expect(ended.status).toBe(200);
+    expect(ended.json).toMatchObject({ seq: 2, slayers: 0, lastPlayoff: { seq: 1, entrants: [], winner: null } });
     expect(await dev("GET", "/stats")).toEqual({ status: 501, json: { error: "stats arrive in slice 11" } });
+  });
+
+  it("shows a run only to its player", async () => {
+    const call = client();
+    const { json: p } = await call<PlayerRef>("POST", "/players", { name: "owner" });
+    const { json: q } = await call<PlayerRef>("POST", "/players", { name: "snoop" });
+    const { json: r } = await call<RunView>("POST", "/runs", undefined, p.id);
+    expect((await call("GET", `/runs/${r.runId}`, undefined, p.id)).status).toBe(200);
+    expect((await call("GET", `/runs/${r.runId}`, undefined, q.id)).status).toBe(401);
+    expect((await call("GET", `/runs/${r.runId}`)).status).toBe(401);
   });
 
   it("rejects bad input with 4xx", async () => {
