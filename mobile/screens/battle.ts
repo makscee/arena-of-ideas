@@ -39,6 +39,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   let playing = true;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let trace: Trace | null = null;
+  /** The changes the tapped chip held (one unit, one step), when it held more than one. */
+  let traceGroup: Change[] = [];
   let finished = false;
 
   const hud = h("div", { class: "hud" });
@@ -57,7 +59,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
 
   caption.addEventListener("click", () => {
     const c = steps[at]?.changes[0];
-    if (c) openTrace(c.eventId);
+    if (c) openTrace(c.eventId, steps[at]!.changes.filter((x) => x.unit === c.unit));
   });
 
   function schedule(): void {
@@ -87,9 +89,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     at = Math.max(-1, Math.min(steps.length - 1, i));
     render();
   }
-  function openTrace(eventId: number): void {
+  function openTrace(eventId: number, group: Change[] = []): void {
     pause();
     trace = traceOf(log, eventId, name, sides);
+    traceGroup = group.length > 1 ? group : [];
     render();
   }
   function skip(): void {
@@ -124,15 +127,20 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     el.addEventListener("click", () => openUnit(u.id, changes[0]));
     return el;
   }
-  /** One chip for a unit's changes this step: the first one's label; all of them in its title. */
+  /** One chip for a unit's changes this step. Two changes (a status and the
+   * stat it moves: "Vitality ×2" and "+2 HP") show as two lines, each in its
+   * own colour; a third and more add "+n" to the second line. The chip opens
+   * the first change's trace, which lists them all, each tappable. */
   function changeBadge(changes: Change[]): HTMLElement {
     const c = changes[0]!;
+    const more = changes.length - 2;
+    const lines = changes.slice(0, 2).map((x, i) => h("span", { class: `bv-l ${x.kind}` }, i === 1 && more > 0 ? `${x.label} +${more}` : x.label));
     const b = h(
       "button",
-      { class: `bv-change ${c.kind}`, "data-testid": "change", "data-event": String(c.eventId), title: changes.map((x) => x.label).join(", ") },
-      h("span", { class: "bv-pill" }, c.label),
+      { class: `bv-change ${c.kind}${changes.length > 1 ? " multi" : ""}`, "data-testid": "change", "data-event": String(c.eventId), "data-count": String(changes.length), "aria-label": changes.map((x) => x.label).join(", ") },
+      h("span", { class: `bv-pill${changes.length > 1 ? " two" : ""}` }, ...(changes.length > 1 ? lines : [c.label])),
     );
-    b.addEventListener("click", (ev) => { ev.stopPropagation(); openTrace(c.eventId); });
+    b.addEventListener("click", (ev) => { ev.stopPropagation(); openTrace(c.eventId, changes); });
     return b;
   }
   /** A card tap: the unit's sheet when it entered the battle; a summon has none, so its change's trace. */
@@ -186,7 +194,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         const b = h("button", { class: "bv-past" }, s.caption);
         b.addEventListener("click", () => {
           const c = s.changes[0];
-          if (c) openTrace(c.eventId);
+          if (c) openTrace(c.eventId, s.changes.filter((x) => x.unit === c.unit));
         });
         return b;
       }),
@@ -214,6 +222,18 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const target = t.change ? name(t.change.unit) : "";
     return [
       h("div", { class: "row spread" }, h("div", { class: "label" }, `Why: ${t.change?.label ?? ""} ${target}`), button("✕", () => { trace = null; render(); }, "bv-close", "trace-close")),
+      // The chip held more than one change: all of them, the traced one lit; tap another to trace it.
+      traceGroup.length > 1
+        ? h(
+            "div",
+            { class: "row bv-also", "data-testid": "trace-group" },
+            h("span", { class: "dim small" }, "This step:"),
+            ...traceGroup.map((x) => {
+              const b = button(x.label, () => openTrace(x.eventId, traceGroup), `bv-also-btn ${x.kind}${x.eventId === t.eventId ? " on" : ""}`, "trace-group-change");
+              return b;
+            }),
+          )
+        : null,
       h("div", { class: "bv-trace-text mono", "data-testid": "trace-text" }, t.text),
       ...t.links.map((l, i) =>
         h(

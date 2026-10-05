@@ -46,7 +46,8 @@ export function closable(...kids: Node[]): () => void {
 
 // ---------- names that fit ----------
 
-const FIT = ".card .name, .card .rates";
+// A battle chip's label (a status's name runs long: "Strength ×1") shrinks too.
+const FIT = ".card .name, .card .rates, .bv-pill:not(.two), .bv-pill.two .bv-l";
 const MIN_PX = 9;
 
 /** Shrinks each card name (and rates line) until its longest word fits the

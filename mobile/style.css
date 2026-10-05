@@ -121,14 +121,25 @@ button.pin-btn { display: flex; align-items: center; gap: 4px; min-height: 44px;
 .bv-status { font-size: 10px; color: var(--dim); line-height: 1.1; }
 /* A change sits over the emoji: the button is a transparent 44 px tap target
  * across the card's top, its pill covers only the emoji, so the name and
- * PWR / HP below stay readable. One pill per unit a step (a status's stat
- * follow-up shows in the numbers and the caption). */
+ * PWR / HP below stay readable. One pill per unit a step; a status and the
+ * stat it moves share it on two lines (.bv-pill.two). */
 .bv-changes { position: absolute; top: 0; left: 0; right: 0; height: 44px; display: flex; }
 button.bv-change { flex: 1; min-width: 0; min-height: 44px; height: 44px; padding: 3px 2px 0; border: none; background: transparent; clip-path: none; display: flex; align-items: flex-start; justify-content: center; letter-spacing: 0; text-transform: none; }
 .bv-pill { max-width: 100%; height: 28px; line-height: 26px; padding: 0 5px; border: 1px solid; border-radius: 4px; background: var(--bg); font-family: "IBM Plex Mono", monospace; font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bv-change.damage .bv-pill, .bv-change.death .bv-pill, .bv-change.debuff .bv-pill { color: var(--ghost); }
 .bv-change.heal .bv-pill, .bv-change.summon .bv-pill { color: var(--you); }
 .bv-change.buff .bv-pill, .bv-change.status .bv-pill, .bv-change.silence .bv-pill { color: var(--gold); font-family: "Rajdhani", sans-serif; font-size: 12px; padding: 0 3px; }
+/* Two changes on one unit in one step: two lines in the pill, each in its kind's colour. */
+.bv-pill.two { display: flex; flex-direction: column; height: auto; min-height: 28px; line-height: 13px; padding: 1px 2px; font-family: "Rajdhani", sans-serif; font-size: 11px; letter-spacing: -0.02em; border-color: var(--gold); }
+.bv-pill.two .bv-l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bv-l.damage, .bv-l.death, .bv-l.debuff { color: var(--ghost); }
+.bv-l.heal, .bv-l.summon { color: var(--you); }
+.bv-l.buff, .bv-l.status, .bv-l.silence { color: var(--gold); }
+.bv-also { flex-wrap: wrap; gap: 6px; }
+button.bv-also-btn { min-height: 44px; padding: 0 10px; text-transform: none; letter-spacing: 0; font-family: "IBM Plex Mono", monospace; font-size: 14px; color: var(--gold); border-color: var(--line); }
+button.bv-also-btn.on { border-color: var(--gold); }
+button.bv-also-btn.damage, button.bv-also-btn.debuff, button.bv-also-btn.death { color: var(--ghost); }
+button.bv-also-btn.heal, button.bv-also-btn.summon { color: var(--you); }
 button.bv-caption { min-height: 48px; width: 100%; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 17px; color: var(--text); border-color: var(--line); text-align: left; padding: 4px 12px; }
 button.bv-caption.tappable::after { content: " ⓘ"; color: var(--dim); }
 /* Whose unit acted: a tag before the caption, in its side's colour. */
