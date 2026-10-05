@@ -9,6 +9,7 @@ import type { Champion, DayState, DayView, PlayerRef, Rating } from "../../../sr
 import { dayLabel, nextRollover, playoffEntrants, playRoundRobin } from "../../../src/mvp/day.js";
 import type { RunDeps } from "./runs.js";
 import type { MvpJob } from "./runtime.js";
+import type { MvpStore } from "./store.js";
 
 type DayDeps = Pick<RunDeps, "store" | "now" | "rules" | "content">;
 
@@ -28,12 +29,31 @@ function currentDay(rt: DayDeps): DayState {
   return day;
 }
 
+/** How long today() keeps serving a day whose end failed before it tries
+ * endDay again. */
+export const END_DAY_RETRY_MS = 60_000;
+/** When ending each store's current day last failed (rt.now() ms). */
+const endDayFailedAt = new WeakMap<MvpStore, number>();
+
 /** The current day; the first call creates day 1, and a call past its endsAt
- * ends it first (endDay), so the day is never stale even between job ticks. */
+ * ends it first (endDay), so the day is never stale even between job ticks.
+ * When endDay throws, today() logs it and keeps serving the current day, and
+ * tries again at most once per END_DAY_RETRY_MS: a broken day end never
+ * fails every request. */
 export function today(rt: DayDeps): DayState {
   const cur = currentDay(rt);
-  if (rt.now().getTime() < Date.parse(cur.endsAt)) return cur;
-  endDay(rt);
+  const now = rt.now().getTime();
+  if (now < Date.parse(cur.endsAt)) return cur;
+  const failed = endDayFailedAt.get(rt.store);
+  if (failed !== undefined && now - failed < END_DAY_RETRY_MS) return cur;
+  try {
+    endDay(rt);
+  } catch (err) {
+    endDayFailedAt.set(rt.store, now);
+    console.error(`[day] ending day ${cur.seq} failed; serving it and retrying in ${END_DAY_RETRY_MS / 1000}s`, err);
+    return cur;
+  }
+  endDayFailedAt.delete(rt.store);
   return currentDay(rt);
 }
 
@@ -60,7 +80,9 @@ export function endDay(rt: DayDeps): DayView {
   const d = currentDay(rt);
   const now = rt.now();
   const at = now.toISOString();
-  const champ = store.currentChampion();
+  // Day d's champion: the latest at or before its seq, not one that an earlier
+  // attempt at this day end crowned before it failed.
+  const champ = store.champions().filter((c) => c.seq <= d.seq).at(-1);
   const entrants = playoffEntrants(store.slays(d.seq), champ, content, rules);
   const { result, battles } = playRoundRobin(entrants, { seq: d.seq, day: d.day, at, content, rules, battleId: (i) => `playoff-${d.seq}-${i + 1}` });
   for (const b of battles) store.putBattle(b);
@@ -71,15 +93,16 @@ export function endDay(rt: DayDeps): DayView {
   let crowned: Champion | undefined;
   if (winner) {
     crowned = { seq: next.seq, day: next.day, player: winner.player, line: structuredClone(winner.line), since: at, contentVersion: winner.slay.contentVersion };
-    bump(rt, winner.player, "playoffWins");
   } else if (champ) {
     crowned = { ...structuredClone(champ), seq: next.seq, day: next.day };
   }
-  if (crowned) {
-    store.putChampion(crowned);
-    if (!crowned.player.bot) bump(rt, crowned.player, "daysAsChampion");
-  }
+  if (crowned) store.putChampion(crowned);
+  // Every write above is keyed by seq, so a retry after a failure rewrites
+  // the same rows. The records only move once day seq + 1 is stored: an end
+  // that failed before this point and runs again never counts them twice.
   store.putDay(next);
+  if (winner) bump(rt, winner.player, "playoffWins");
+  if (crowned && !crowned.player.bot) bump(rt, crowned.player, "daysAsChampion");
   return dayView({ store, today: () => next });
 }
 

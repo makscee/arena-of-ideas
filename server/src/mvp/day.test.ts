@@ -1,16 +1,29 @@
 // Slice 5 (mission #574): the day on the server: slayers hidden until the day
 // ends, the day-end playoff crowning the next champion, a day with no slayers
 // keeping the champion, the 04:00 Moscow rollover and the dev "end day now".
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { BattleRecord, Champion, DayView, LineUnit, MvpContent, PlayerRef, Rating } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
 import { createMvpApp } from "./app.js";
 import { mvpContent } from "./content.js";
-import { dayRollover, endDay } from "./day.js";
+import { dayRollover, END_DAY_RETRY_MS, endDay } from "./day.js";
 import { decide, startRun } from "./runs.js";
 import { mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
 import { SqliteMvpStore } from "./sqlite-store.js";
+import { MemoryMvpStore } from "./store.js";
+
+/** A store whose next `fails` writes of day `seq` throw, as a full disk would. */
+class FlakyDayStore extends MemoryMvpStore {
+  tries = 0;
+  constructor(private seq: number, private fails: number) {
+    super();
+  }
+  override putDay(d: Parameters<MemoryMvpStore["putDay"]>[0]): void {
+    if (d.seq === this.seq && (this.tries++, this.fails-- > 0)) throw new Error("disk full");
+    super.putDay(d);
+  }
+}
 
 const botP: PlayerRef = { id: "b1", name: "bot-Ash", bot: true };
 
@@ -147,6 +160,61 @@ describe("MVP day", () => {
     const { rt } = world();
     rt.store.putDay({ seq: 1, day: "2026-10-05", startedAt: "2026-10-05T09:00:00.000Z", endsAt: "2026-10-05T09:00:00.000Z" });
     expect(rt.today()).toMatchObject({ seq: 1, endsAt: "2026-10-06T01:00:00.000Z" });
+  });
+
+  it("a day end that throws doesn't fail requests: the day is served, retried a minute later, and the records move once", async () => {
+    const store = new FlakyDayStore(2, 2);
+    const { rt, call, human, setClock } = world({ store });
+    weakChampion(rt);
+    const ann = human("ann");
+    slay(rt, ann, bigLine(rt.content));
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      setClock("2026-10-06T01:00:00.000Z"); // the 04:00 rollover
+      const day = await call<DayView>("GET", "/day");
+      expect(day.status).toBe(200);
+      expect(day.json).toMatchObject({ seq: 1, slayers: 1 });
+      expect(store.tries).toBe(1);
+      expect(log).toHaveBeenCalledTimes(1);
+      // within the minute: no new attempt, every request still served
+      setClock("2026-10-06T01:00:59.000Z");
+      expect((await call("GET", "/home")).status).toBe(200);
+      expect(rt.today().seq).toBe(1);
+      expect(store.tries).toBe(1);
+      // a minute later it tries again, fails again, and waits again
+      setClock("2026-10-06T01:01:00.000Z");
+      expect(rt.today().seq).toBe(1);
+      expect(store.tries).toBe(2);
+      setClock("2026-10-06T01:01:30.000Z");
+      expect(rt.today().seq).toBe(1);
+      expect(store.tries).toBe(2);
+      // the next try works: one playoff, one champion, the records once
+      setClock(new Date(Date.parse("2026-10-06T01:01:00.000Z") + END_DAY_RETRY_MS).toISOString());
+      expect(rt.today()).toMatchObject({ seq: 2, day: "2026-10-06" });
+      expect(store.tries).toBe(3);
+      expect(store.currentChampion()).toMatchObject({ seq: 2, player: ann });
+      expect(store.playoff(1)?.winner?.id).toBe(ann.id);
+      expect(store.rating(ann.id)).toMatchObject({ slays: 1, playoffWins: 1, daysAsChampion: 1 });
+      expect(log).toHaveBeenCalledTimes(2);
+    } finally {
+      log.mockRestore();
+    }
+  });
+
+  it("an end-day that failed after crowning, run again, plays the same playoff against the old champion", () => {
+    const store = new FlakyDayStore(2, 1);
+    const { rt, human } = world({ store });
+    const old = weakChampion(rt);
+    const ann = human("ann");
+    slay(rt, ann, bigLine(rt.content));
+    expect(() => endDay(rt)).toThrow("disk full");
+    // the failed attempt stored ann as day 2's champion, but day 1 is still on
+    expect(store.currentChampion()).toMatchObject({ seq: 2, player: ann });
+    expect(store.rating(ann.id)).toMatchObject({ playoffWins: 0, daysAsChampion: 0 });
+    endDay(rt);
+    expect(store.currentDay()?.seq).toBe(2);
+    expect(store.champions().map((c) => [c.seq, c.player.id])).toEqual([[old.seq, botP.id], [2, ann.id]]);
+    expect(store.rating(ann.id)).toMatchObject({ slays: 1, playoffWins: 1, daysAsChampion: 1 });
   });
 
   it("works on the SQLite store", () => {
