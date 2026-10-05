@@ -17,7 +17,7 @@ let child = null;
 if (!url) {
   execFileSync("npm", ["run", "-s", "mvp:build"], { stdio: "inherit" });
   const port = await new Promise((r) => { const s = createServer().listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => r(p)); }); });
-  child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port) }, stdio: ["ignore", "inherit", "inherit"] });
+  child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port), MVP_DEV: "1" }, stdio: ["ignore", "inherit", "inherit"] });
   url = `http://127.0.0.1:${port}/arena/`;
   for (let i = 0; i < 50; i++) {
     try { if ((await fetch(url + "api/v1/health")).ok) break; } catch {}
@@ -45,6 +45,11 @@ try {
   await page.getByTestId("name-submit").click();
   await page.getByTestId("play").waitFor();
   await shot("home"); await noHScroll("home");
+  await page.getByTestId("stats").click();
+  await page.getByTestId("stats-back").waitFor();
+  await shot("stats"); await noHScroll("stats");
+  await page.getByTestId("stats-back").click();
+  await page.getByTestId("play").waitFor();
   await page.getByTestId("play").click();
 
   let round = 0;
@@ -68,6 +73,9 @@ try {
       await page.getByTestId("fight").waitFor();
     }
     await page.getByTestId("fight").click();
+    // The battle screen (slice 9) comes first; its skip button leads to the result.
+    await page.locator('[data-testid="outcome"], [data-testid="battle-skip"]').first().waitFor({ timeout: 10_000 });
+    if (await page.getByTestId("battle-skip").isVisible()) await page.getByTestId("battle-skip").click();
     await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
     if (round === 1) { await shot("result"); await noHScroll("result"); }
     await page.getByTestId("continue").click();

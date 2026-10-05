@@ -1,17 +1,17 @@
 // Arena MVP run, thin path (mission #574, slice 1): start → buy → fight a
 // ghost → result. Pure: every transition returns a new state. Slice 4 grows
-// this into the full run (tiers, sell/reorder rules, Crown, rating); slice 2
-// adds awakening and fusion. The shapes come from ./contract.ts.
+// this into the full run (tiers, sell/reorder rules, Crown, rating). Copies,
+// awakening and fusion are slice 2's, in ./forms.ts, and a fight is
+// ./fight.ts's fightLines: this file only calls them. The shapes come from
+// ./contract.ts.
 
-import { battle, winnerOf } from "../battle.js";
 import { rngStep } from "../rng.js";
-import type { UnitDef } from "../types.js";
 import {
   MVP_RULES,
   type BattleRecord,
-  type BattleUnit,
   type Decision,
   type FightResult,
+  type FuseContext,
   type Ghost,
   type LineUnit,
   type MvpContent,
@@ -22,6 +22,9 @@ import {
   type RunView,
   type UnitContent,
 } from "./contract.js";
+import { MvpDecisionError } from "./errors.js";
+import { fightLines } from "./fight.js";
+import { addCopy, fuseCheck, fuseUnits, lineUnitOf, mergeTarget } from "./forms.js";
 
 export interface MvpRunState extends RunView {
   seed: number;
@@ -31,12 +34,9 @@ export interface MvpRunState extends RunView {
   rules: MvpRules;
 }
 
-export class MvpDecisionError extends Error {
-  constructor(readonly kind: Decision["kind"], reason: string) {
-    super(`invalid ${kind}: ${reason}`);
-    this.name = "MvpDecisionError";
-  }
-}
+export { MvpDecisionError };
+/** Moved to fight.ts; re-exported for scripts that import it from here (slice 7's meta report). */
+export { toBattleDef } from "./fight.js";
 
 function draw(s: MvpRunState, n: number): number {
   const { value, state } = rngStep(s.rng);
@@ -57,7 +57,9 @@ function rollOffers(s: MvpRunState, content: MvpContent): void {
   });
 }
 
-export function initMvpRun(args: { runId: string; player: PlayerRef; seed: number; content: MvpContent; rules?: MvpRules }): MvpRunState {
+/** A new run. The kernel has no clock: the caller passes the day (DayView.seq)
+ * and the start time. */
+export function initMvpRun(args: { runId: string; player: PlayerRef; seed: number; content: MvpContent; day: number; startedAt: string; rules?: MvpRules }): MvpRunState {
   const rules = args.rules ?? MVP_RULES;
   const s: MvpRunState = {
     runId: args.runId,
@@ -73,6 +75,8 @@ export function initMvpRun(args: { runId: string; player: PlayerRef; seed: numbe
     offers: [],
     nextOpponent: null,
     fights: [],
+    day: args.day,
+    startedAt: args.startedAt,
     seed: args.seed >>> 0,
     rng: args.seed >>> 0,
     nextUid: 1,
@@ -88,26 +92,6 @@ export function unitById(content: MvpContent, id: string): UnitContent {
   return u;
 }
 
-function lineUnitOf(u: UnitContent, uid: string): LineUnit {
-  return { uid, kind: "unit", unitId: u.id, name: u.name, emoji: u.emoji, copies: 1, form: "sleeping", stats: { ...u.base }, recipe: u.forms.sleeping };
-}
-
-/** A line unit as battle() input. */
-export function toBattleDef(u: LineUnit): UnitDef {
-  return {
-    name: u.name,
-    base: { ...u.stats },
-    triggers: u.recipe.when,
-    selectors: u.recipe.who,
-    abilities: u.recipe.does,
-    ...(u.recipe.condition ? { condition: u.recipe.condition } : {}),
-  };
-}
-
-function battleUnit(u: LineUnit): BattleUnit {
-  return { name: u.name, emoji: u.emoji, stats: { ...u.stats }, form: u.form, fused: u.kind === "fused" };
-}
-
 function clone(s: MvpRunState): MvpRunState {
   return structuredClone(s);
 }
@@ -116,6 +100,16 @@ export interface FightContext {
   ghost: Ghost;
   battleId: string;
   battleSeed: number;
+  /** ISO time of the fight (BattleRecord.at). */
+  at: string;
+}
+
+/** What the server supplies for decisions the pure run can't decide alone. */
+export interface DecisionContext {
+  /** Required for a fight: the opponent and the ids. */
+  fight?: FightContext;
+  /** Required for a fuse: the pair's name and credit (slice 10). */
+  fuse?: FuseContext;
 }
 
 export interface MvpStep {
@@ -124,9 +118,10 @@ export interface MvpStep {
   battle?: BattleRecord;
 }
 
-/** Apply one decision. A fight needs its opponent and ids from the caller
- * (the server picks the ghost; the kernel stays pure). */
-export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpContent, fightCtx?: FightContext): MvpStep {
+/** Apply one decision. A fight needs its opponent and ids, a fuse its name,
+ * from the caller (the server picks the ghost and names the pair; the kernel
+ * stays pure). */
+export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpContent, ctx?: DecisionContext): MvpStep {
   if (state.phase === "over") throw new MvpDecisionError(d.kind, `the run is over (${state.endedBy})`);
   const s = clone(state);
   switch (d.kind) {
@@ -135,12 +130,9 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       if (!offer) throw new MvpDecisionError("buy", `no offer in slot ${d.slot}`);
       if (s.gold < offer.cost) throw new MvpDecisionError("buy", `costs ${offer.cost}, have ${s.gold}`);
       const u = unitById(content, offer.unitId);
-      const same = s.line.find((x) => x.kind === "unit" && x.unitId === u.id);
-      if (same) {
-        same.copies += 1;
-        same.stats.pwr += s.rules.copyGrowth.pwr;
-        same.stats.hp += s.rules.copyGrowth.hp;
-      } else {
+      const at = mergeTarget(s.line, u.id);
+      if (at >= 0) s.line[at] = addCopy(s.line[at]!, content, s.rules);
+      else {
         if (s.line.length >= s.rules.lineSize) throw new MvpDecisionError("buy", "the line is full");
         s.line.push(lineUnitOf(u, `u${s.nextUid++}`));
       }
@@ -167,16 +159,28 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       s.line.splice(d.to, 0, u);
       return { state: s };
     }
-    case "fuse":
-      throw new MvpDecisionError("fuse", "fusion arrives in slice 2");
+    case "fuse": {
+      const first = s.line[d.first];
+      const second = s.line[d.second];
+      if (!first || !second || d.first === d.second) throw new MvpDecisionError("fuse", `no pair at ${d.first} and ${d.second}`);
+      const why = fuseCheck(first, second);
+      if (why) throw new MvpDecisionError("fuse", why);
+      if (!ctx?.fuse) throw new MvpDecisionError("fuse", "no fusion name");
+      // The fused unit takes first's slot (and uid); second leaves the line.
+      s.line[d.first] = fuseUnits(first, second, ctx.fuse, content);
+      s.line.splice(d.second, 1);
+      return { state: s };
+    }
     case "fight": {
       if (s.line.length === 0) throw new MvpDecisionError("fight", "the line is empty, buy a unit first");
-      if (!fightCtx) throw new MvpDecisionError("fight", "no opponent");
-      const { ghost, battleId, battleSeed } = fightCtx;
-      const teamA = s.line.map(toBattleDef);
-      const teamB = ghost.line.map(toBattleDef);
-      const log = battle({ teamA, teamB, seed: battleSeed, abilities: content.abilities, statuses: content.statuses });
-      const winner = winnerOf(log);
+      if (!ctx?.fight) throw new MvpDecisionError("fight", "no opponent");
+      const { ghost, battleId, battleSeed, at } = ctx.fight;
+      const record = fightLines(
+        { player: s.player, line: s.line },
+        { player: ghost.player, line: ghost.line },
+        { battleId, seed: battleSeed, kind: "round", round: s.round, runId: s.runId, at, content, rules: s.rules },
+      );
+      const winner = record.winner;
       const outcome: Outcome = winner === "A" ? "win" : winner === "B" ? "loss" : "draw";
       const heartsLost = outcome === "loss" ? 1 : 0;
       s.hearts -= heartsLost;
@@ -192,19 +196,6 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
         heartsAfter: s.hearts,
       };
       s.fights.push(fight);
-      const record: BattleRecord = {
-        battleId,
-        runId: s.runId,
-        seed: battleSeed,
-        contentVersion: s.contentVersion,
-        kind: "round",
-        round: s.round,
-        teamA: s.line.map(battleUnit),
-        teamB: ghost.line.map(battleUnit),
-        opponent: ghost.player,
-        winner,
-        log,
-      };
       if (s.hearts <= 0) {
         s.phase = "over";
         s.endedBy = "out-of-hearts";
@@ -231,22 +222,29 @@ export function runView(s: MvpRunState): RunView {
 }
 
 /** A bot ghost for a round with no saved teams: `size` seeded picks from the
- * units open at that round, copies merged. Slice 6's bots replace it. */
-export function synthGhost(args: { content: MvpContent; round: number; seed: number; ghostId: string; rules?: MvpRules }): Ghost {
+ * units open at that round, copies merged. Slice 6's bots replace it.
+ * `createdAt` comes from the caller (the kernel has no clock). */
+export function synthGhost(args: { content: MvpContent; round: number; seed: number; ghostId: string; createdAt: string; rules?: MvpRules }): Ghost {
   const rules = args.rules ?? MVP_RULES;
-  const s = initMvpRun({ runId: `bot-${args.ghostId}`, player: { id: "bot", name: "bot", bot: true }, seed: args.seed, content: args.content, rules });
+  const s = initMvpRun({ runId: `bot-${args.ghostId}`, player: { id: "bot", name: "bot", bot: true }, seed: args.seed, content: args.content, day: 0, startedAt: args.createdAt, rules });
   s.round = args.round;
   const size = Math.min(rules.lineSize, 1 + Math.floor(args.round / 2));
   const open = openUnits(args.content, rules, args.round);
   const copiesBudget = Math.floor(args.round / 3);
   for (let i = 0; i < size; i++) s.line.push(lineUnitOf(open[draw(s, open.length)]!, `g${i}`));
   for (let i = 0; i < copiesBudget; i++) {
-    const u = s.line[draw(s, s.line.length)]!;
-    u.copies += 1;
-    u.stats.pwr += rules.copyGrowth.pwr;
-    u.stats.hp += rules.copyGrowth.hp;
+    const k = draw(s, s.line.length);
+    s.line[k] = addCopy(s.line[k]!, args.content, rules);
   }
-  return { ghostId: args.ghostId, runId: s.runId, player: { id: "bot", name: botName(args.seed), bot: true }, round: args.round, line: s.line };
+  return {
+    ghostId: args.ghostId,
+    runId: s.runId,
+    player: { id: "bot", name: botName(args.seed), bot: true },
+    round: args.round,
+    line: s.line,
+    contentVersion: args.content.version,
+    createdAt: args.createdAt,
+  };
 }
 
 const BOT_NAMES = ["Ash", "Bram", "Cleo", "Dov", "Esk", "Fyn", "Gale", "Hux", "Ives", "Juno", "Kip", "Lux"];
