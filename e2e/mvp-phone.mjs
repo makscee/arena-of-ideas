@@ -53,6 +53,7 @@ try {
   await page.getByTestId("play").click();
 
   let round = 0;
+  let whyShot = false;
   for (let guard = 0; guard < 20; guard++) {
     await page.getByTestId("fight").waitFor({ timeout: 10_000 });
     // Buy while the gold allows and the line has room.
@@ -73,9 +74,22 @@ try {
       await page.getByTestId("fight").waitFor();
     }
     await page.getByTestId("fight").click();
-    // The battle screen (slice 9) comes first; its skip button leads to the result.
-    await page.locator('[data-testid="outcome"], [data-testid="battle-skip"]').first().waitFor({ timeout: 10_000 });
-    if (await page.getByTestId("battle-skip").isVisible()) await page.getByTestId("battle-skip").click();
+    // The battle viewer (slice 9) comes first. In round 1, watch it play, then
+    // tap a change and read its chain. Skip goes to the result, which shows
+    // "why I lost" after a loss (shot once).
+    await page.getByTestId("battle-skip").waitFor({ timeout: 10_000 });
+    if (round === 1) {
+      await page.getByTestId("change").first().waitFor({ timeout: 15_000 });
+      await shot("battle"); await noHScroll("battle");
+      await page.getByTestId("change").first().click();
+      await page.getByTestId("trace-text").waitFor();
+      const chain = await page.getByTestId("trace-text").textContent();
+      if (!/←/.test(chain)) errors.push(`trace: no chain in "${chain}"`);
+      await shot("battle-trace"); await noHScroll("battle-trace");
+    }
+    await page.getByTestId("battle-skip").click();
+    await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
+    if (!whyShot && (await page.getByTestId("why-lost").isVisible())) { whyShot = true; await shot("why-lost"); await noHScroll("why-lost"); }
     await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
     if (round === 1) { await shot("result"); await noHScroll("result"); }
     await page.getByTestId("continue").click();
