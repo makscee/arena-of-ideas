@@ -14,6 +14,7 @@ import { battleScreen, whyILost } from "./screens/battle";
 import { statsScreen } from "./screens/stats";
 import { card, unitSheet, type CardUnit } from "./ui/card";
 import { app, button, h, overlay, show } from "./ui/dom";
+import { loadUnitRates } from "./ui/unit-stats";
 
 function errorLine(): HTMLElement {
   return h("div", { class: "error", "data-testid": "error" });
@@ -109,6 +110,7 @@ function nameScreen(): void {
 
 async function homeScreen(): Promise<void> {
   const err = errorLine();
+  void loadUnitRates(); // the rates on unit cards (slice 11)
   const [home, content]: [HomeView, MvpContent] = await Promise.all([api.home(), getContent()]);
   rules = home.rules;
   day = home.day;
@@ -117,7 +119,7 @@ async function homeScreen(): Promise<void> {
   const play = home.activeRunId
     ? button("Continue", () => void guarded(err, async () => shopScreen(await api.run(home.activeRunId!), content)), "primary grow", "play")
     : button("Play", () => void guarded(err, async () => shopScreen(await api.startRun(), content)), "primary grow", "play");
-  const stats = button("Stats", () => statsScreen({ content, onBack: () => void homeScreen() }), "", "stats");
+  const stats = button("Stats", () => void statsScreen({ content, onBack: () => void homeScreen() }), "", "stats");
   const rulesBtn = button("Rules", () => overlay(rulesSheet()), "", "rules-open");
   const record = (label: string, value: string | number, testid = "") =>
     h("div", { class: "record" }, h("div", { class: "num", ...(testid ? { "data-testid": testid } : {}) }, `${value}`), h("div", { class: "label" }, label));
