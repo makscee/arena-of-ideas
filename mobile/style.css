@@ -45,6 +45,7 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .card .name { font-size: 12px; font-weight: 600; line-height: 1.1; max-width: 100%; overflow-wrap: anywhere; hyphens: auto; -webkit-hyphens: auto; }
 .card .name.long { font-size: 11px; letter-spacing: -0.02em; }
 .card .name.xlong { font-size: 10px; letter-spacing: -0.03em; }
+.discovered { font-size: 10px; color: var(--dim); font-family: "IBM Plex Mono", monospace; }
 .card .stats { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
 .card .stats .p { color: var(--gold); }
 .card .stats .h { color: var(--ghost); }

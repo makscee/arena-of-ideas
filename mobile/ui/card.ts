@@ -6,6 +6,7 @@ import { describeAbility } from "../../src/describe";
 import type { BattleUnit, LineUnit, MvpContent, UnitContent, UnitForm } from "../../src/mvp/contract";
 import type { Stats } from "../../src/types";
 import { h } from "./dom";
+import { discoveredLine } from "./fusion";
 import { unitStatsLine, type UnitRates } from "./unit-stats";
 
 /** What a card needs to draw; LineUnit, BattleUnit and offers all fit. */
@@ -31,6 +32,7 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
     { class: `card ${o.side}`, ...(o.testid ? { "data-testid": o.testid } : {}) },
     h("div", { class: "emoji" }, u.emoji),
     h("div", { class: `name${nameSize(u.name)}` }, u.name),
+    discoveredLine(u),
     h("div", { class: "stats" }, h("span", { class: "p" }, `${stats.pwr}`), " / ", h("span", { class: "h" }, `${stats.hp}`)),
     unitStatsLine(u.unitId, o.rates),
     ...(o.extra ?? []),
@@ -71,6 +73,7 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
     "div",
     { class: "stack", "data-testid": "unit-sheet" },
     h("h2", {}, `${u.emoji} ${u.name}`),
+    "forms" in u ? null : discoveredLine(u),
     "stats" in u ? h("div", { class: "num" }, `${u.stats.pwr} PWR / ${u.stats.hp} HP`) : h("div", { class: "num" }, `${u.base.pwr} PWR / ${u.base.hp} HP · tier ${u.tier}`),
     "stats" in u ? h("div", { class: "dim" }, sheetState(u)) : null,
     ...sheetForms(u, content).map(([label, form]) =>
@@ -80,12 +83,9 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
   );
 }
 
-/** Form, copies and, for a fused unit, its parts and who discovered it. */
+/** Form and copies; a fused unit says it is final (its credit is discoveredLine). */
 function sheetState(u: LineUnit | BattleUnit): string {
-  if (u.kind === "fused" && u.fusion) {
-    const by = u.fusion.discoveredBy ? `discovered by @${u.fusion.discoveredBy.name}` : "not yet claimed by a player";
-    return `Fused, final · ${u.copies} copies · ${by}`;
-  }
+  if (u.kind === "fused") return `Fused, final · ${u.copies} copies`;
   return `${u.form === "awoken" ? "Awoken" : "Sleeping"} · ${u.copies} ${u.copies === 1 ? "copy" : "copies"}`;
 }
 

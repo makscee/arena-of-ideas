@@ -172,7 +172,7 @@ try {
     await page.locator(".card.fused").click();
     await page.getByTestId("info").click();
     await page.getByTestId("unit-sheet").waitFor();
-    if (!/discovered by @Fuser|not yet claimed/.test(await page.getByTestId("unit-sheet").textContent())) errors.push("fused sheet: no discovery credit");
+    if (!/discovered by (you|@Fuser)/.test(await page.getByTestId("unit-sheet").textContent())) errors.push("fused sheet: no discovery credit");
     await shot("fused-sheet"); await noHScroll("fused-sheet");
   }
   console.log(`mvp phone: ${round} fights, ${shots} screenshots in ${out}`);

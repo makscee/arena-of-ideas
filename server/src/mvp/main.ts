@@ -8,6 +8,8 @@
  *               or without it, depending on how the proxy forwards them.
  *   MVP_DEV     1 serves the dev tools (/api/v1/dev/*, "end day now")
  *   MVP_DB      the SQLite file (default data/arena-mvp.db); ":memory:" keeps nothing
+ *   ARENA_NAMER_URL  the fusion namer (OpenAI-compatible chat endpoint, slice
+ *               10); without it every fusion gets the portmanteau
  * Run: npm run mvp:server
  */
 import { serve } from "@hono/node-server";
