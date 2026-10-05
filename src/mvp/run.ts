@@ -175,7 +175,7 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       const { ghost, battleId, battleSeed } = fightCtx;
       const teamA = s.line.map(toBattleDef);
       const teamB = ghost.line.map(toBattleDef);
-      const log = battle({ teamA, teamB, seed: battleSeed, abilities: content.abilities, statuses: content.statuses });
+      const log = battle({ teamA, teamB, seed: battleSeed, abilities: content.abilities, statuses: content.statuses, chainStepCap: s.rules.chainStepCap });
       const winner = winnerOf(log);
       const outcome: Outcome = winner === "A" ? "win" : winner === "B" ? "loss" : "draw";
       const heartsLost = outcome === "loss" ? 1 : 0;
