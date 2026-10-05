@@ -170,7 +170,14 @@ button.bv-why { display: flex; align-items: center; justify-content: space-betwe
 .rates .short { display: none; }
 .card .rates { font-size: 11px; letter-spacing: -0.04em; max-width: 100%; line-height: 1.2; }
 .card .rates.none { color: var(--dim); opacity: 0.6; }
-.card .rates.discovered { color: var(--dim); }
+/* A fused card's credit ("by @name") is never cut off: it may wrap between
+ * "by" and the name, fitText() shrinks the name to fit, and a name that still
+ * doesn't fit at the smallest size breaks across lines rather than end in "…". */
+.card .rates.discovered { color: var(--dim); white-space: normal; font-family: "Rajdhani", sans-serif; font-weight: 600; letter-spacing: 0; line-height: 1.1; }
+.card .rates.discovered.clip { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+/* Home's champion panel: the line uses the panel's padding too, so five cards
+ * at 360px are ~61px wide, not 57, and long names fit at a readable size. */
+.champion .slots { margin: 0 -6px; gap: 4px; }
 .card .rates .short { display: inline; }
 .card .rates .long { display: none; }
 .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
