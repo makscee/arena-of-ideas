@@ -65,6 +65,8 @@ function filterPhrase(f: UnitFilter | undefined, holder: string): string {
       return holder;
     case "ally":
       return "an ally";
+    case "otherAlly":
+      return "another ally";
     case "enemy":
       return "an enemy";
     default:
@@ -156,6 +158,13 @@ export function describeWhenSegments(w: When, opts: DescribeOpts = {}): Describe
       return intercept
         ? [whenSeg("when "), sref, whenSeg(` would leave ${who}`)]
         : [whenSeg("after "), sref, whenSeg(` leaves ${who}`)];
+    }
+    case "StatChanged": {
+      // Trigger-only (validate rejects an interceptor): "after an ally gains pwr".
+      const who = filterPhrase(p.unit, holder);
+      const verb = p.sign === "gain" ? "gains" : p.sign === "loss" ? "loses" : "changes";
+      const stat = p.stat ?? "a stat";
+      return [whenSeg(`after ${who} ${verb} ${stat}`)];
     }
   }
 }
@@ -351,6 +360,7 @@ const TRIGGER_CHIP: Record<EventPattern["on"], { label: string; glyph: string }>
   Summon: { label: "On summon", glyph: "✦" },
   StatusApplied: { label: "Status gained", glyph: "✦" },
   StatusRemoved: { label: "Status lost", glyph: "✦" },
+  StatChanged: { label: "Stat changed", glyph: "▲" },
 };
 
 /** Terse target label per selector (mockup target legend). "Front enemy", not
