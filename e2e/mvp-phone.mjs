@@ -45,6 +45,11 @@ try {
   await page.getByTestId("name-submit").click();
   await page.getByTestId("play").waitFor();
   await shot("home"); await noHScroll("home");
+  await page.getByTestId("rules-open").click();
+  await page.getByTestId("rules").waitFor();
+  await shot("rules"); await noHScroll("rules");
+  await page.getByTestId("overlay").click({ position: { x: 180, y: 10 } });
+  await page.getByTestId("rules").waitFor({ state: "detached" });
   await page.getByTestId("stats").click();
   await page.getByTestId("stats-back").waitFor();
   await shot("stats"); await noHScroll("stats");
@@ -62,7 +67,12 @@ try {
       if (gold < 3 || (await page.getByTestId("offers").locator(".card").count()) === 0) break;
       const filled = await page.getByTestId("line").locator(".card.you").count();
       if (filled >= 5) break;
+      // An offer opens its sheet (both forms, what buying does); Buy buys.
       await page.getByTestId("offer-0").click();
+      await page.getByTestId("buy").waitFor();
+      if (round === 0 && k === 0) { await shot("offer-sheet"); await noHScroll("offer-sheet"); }
+      if (await page.getByTestId("buy").isDisabled()) { await page.getByTestId("offer-close").click(); break; }
+      await page.getByTestId("buy").click();
       await page.waitForFunction((g) => !document.querySelector('[data-testid="gold"]') || document.querySelector('[data-testid="gold"]').textContent !== `${g}g`, gold);
     }
     round++;
@@ -70,6 +80,12 @@ try {
     if (round === 2 && (await page.getByTestId("line").locator(".card.you").count()) > 1) {
       await page.getByTestId("line-1").click();
       await shot("shop-selected");
+      await page.getByTestId("info").click();
+      await page.getByTestId("unit-sheet").waitFor();
+      await shot("unit-sheet"); await noHScroll("unit-sheet");
+      await page.getByTestId("overlay").click({ position: { x: 180, y: 10 } });
+      await page.getByTestId("champion-pin-open").click().catch(() => {});
+      if (await page.getByTestId("overlay").isVisible().catch(() => false)) { await shot("champion-pin"); await page.getByTestId("overlay").click({ position: { x: 180, y: 10 } }); }
       await page.getByTestId("move-left").click();
       await page.getByTestId("fight").waitFor();
     }
@@ -100,6 +116,65 @@ try {
   await page.getByTestId("home").click();
   await page.getByTestId("play").waitFor();
   await shot("home-after");
+
+  // Awakening and fusion (slice 8): a second player plays through the API
+  // until it has one Awoken unit, a second unit one copy short and that copy
+  // in the shop, then the phone buys it (the awaken preview) and fuses the two
+  // (the fusion preview and the fused card).
+  const call = async (method, path, body, pid) => {
+    const res = await fetch(new URL(`api/v1${path}`, url), { method, headers: { "content-type": "application/json", ...(pid ? { "X-Arena-Player": pid } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
+    const json = await res.json();
+    if (!res.ok) throw new Error(`${method} ${path}: ${json.error}`);
+    return json;
+  };
+  const fuser = await call("POST", "/players", { name: "Fuser" });
+  let run = await call("POST", "/runs", undefined, fuser.id);
+  const ready = (r) => {
+    const awake = r.line.filter((u) => u.kind === "unit" && u.form === "awoken");
+    const almost = r.line.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === 2 && r.offers.some((o) => o.unitId === u.unitId));
+    return r.phase === "shop" && awake.length >= 1 && almost && r.gold >= 3;
+  };
+  // Fill the line, then buy only copies of what it holds, reroll for them,
+  // fight when the gold is gone; a run that ends starts the next.
+  for (let steps = 0; steps < 3000 && !ready(run); steps++) {
+    if (run.phase === "over") { run = await call("POST", "/runs", undefined, fuser.id); continue; }
+    const dupe = run.offers.find((o) => run.line.some((u) => u.unitId === o.unitId && u.kind === "unit" && u.form === "sleeping"));
+    const want = dupe ?? (run.line.length < 5 ? run.offers[0] : undefined);
+    const d = run.phase === "crown" ? { kind: "fight" } : want && run.gold >= want.cost ? { kind: "buy", slot: want.slot } : run.gold >= 1 ? { kind: "reroll" } : { kind: "fight" };
+    run = (await call("POST", `/runs/${run.runId}/decisions`, d, fuser.id)).run;
+  }
+  if (!ready(run)) errors.push(`fusion setup: never reached two Awoken units (phase ${run.phase}, round ${run.round})`);
+  else {
+    await page.evaluate((p) => localStorage.setItem("arena.player", JSON.stringify(p)), fuser);
+    await page.reload();
+    await page.getByTestId("play").click();
+    await page.getByTestId("fight").waitFor();
+    const almost = run.line.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === 2 && run.offers.some((o) => o.unitId === u.unitId));
+    const slot = run.offers.find((o) => o.unitId === almost.unitId).slot;
+    await shot("shop-almost"); await noHScroll("shop-almost");
+    await page.getByTestId(`offer-${slot}`).click();
+    await page.getByTestId("buy-preview").waitFor();
+    if (!/Awakens/.test(await page.getByTestId("buy-preview").textContent())) errors.push("awaken preview: no 'Awakens!'");
+    await shot("awaken-preview"); await noHScroll("awaken-preview");
+    await page.getByTestId("buy").click();
+    await page.getByTestId("hint").filter({ hasText: "fuse" }).waitFor();
+    const first = run.line.findIndex((u) => u.form === "awoken");
+    const second = run.line.findIndex((u) => u.uid === almost.uid);
+    await page.getByTestId(`line-${first}`).click();
+    await page.getByTestId("fuse").click();
+    await shot("fuse-pick"); await noHScroll("fuse-pick");
+    await page.getByTestId(`line-${second}`).click();
+    await page.getByTestId("preview-confirm").waitFor();
+    await shot("fusion-preview"); await noHScroll("fusion-preview");
+    await page.getByTestId("preview-confirm").click();
+    await page.locator(".card.fused").waitFor();
+    await shot("fused"); await noHScroll("fused");
+    await page.locator(".card.fused").click();
+    await page.getByTestId("info").click();
+    await page.getByTestId("unit-sheet").waitFor();
+    if (!/discovered by (you|@Fuser)/.test(await page.getByTestId("unit-sheet").textContent())) errors.push("fused sheet: no discovery credit");
+    await shot("fused-sheet"); await noHScroll("fused-sheet");
+  }
   console.log(`mvp phone: ${round} fights, ${shots} screenshots in ${out}`);
 } finally {
   await browser.close();
