@@ -82,6 +82,29 @@ describe("MVP API thin path", () => {
     }
   });
 
+  it("applies parallel decisions on one run one after another", async () => {
+    const call = client();
+    const { json: p } = await call<PlayerRef>("POST", "/players", { name: "racer" });
+    const { json: r } = await call<RunView>("POST", "/runs", undefined, p.id);
+    const decide = (d: unknown) => call<DecisionResponse>("POST", `/runs/${r.runId}/decisions`, d, p.id);
+
+    const buys = await Promise.all([decide({ kind: "buy", slot: 0 }), decide({ kind: "buy", slot: 0 })]);
+    expect(buys.map((b) => b.status)).toEqual([200, 200]);
+    const { json: bought } = await call<RunView>("GET", `/runs/${r.runId}`);
+    expect(bought.gold).toBe(10 - 2 * 3);
+    expect(bought.line.reduce((n, u) => n + u.copies, 0)).toBe(2);
+
+    const fights = await Promise.all(Array.from({ length: 5 }, () => decide({ kind: "fight" })));
+    expect(fights.map((f) => f.status)).toEqual([200, 200, 200, 200, 200]);
+    expect(new Set(fights.map((f) => f.json.fight!.battleId)).size).toBe(5);
+    const { json: after } = await call<RunView>("GET", `/runs/${r.runId}`);
+    expect(after.fights.map((f) => f.round)).toEqual([1, 2, 3, 4, 5]);
+    expect(after.round).toBe(after.phase === "over" ? 5 : 6);
+    expect(after.hearts).toBe(5 - after.losses);
+    expect(after.gold).toBe(10);
+    expect(after.line).toEqual(bought.line);
+  });
+
   it("tells hooks about every fight and the run's end", async () => {
     const seen: string[] = [];
     const call = client({ hooks: [{ onFight: (run, fight, battle) => seen.push(`fight ${fight.round} ${battle.battleId === fight.battleId} ${run.fights.length}`), onRunEnd: (run) => seen.push(`end ${run.endedBy}`) }] });

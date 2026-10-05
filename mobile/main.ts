@@ -32,7 +32,14 @@ function errorLine(): HTMLElement {
   return h("div", { class: "error", "data-testid": "error" });
 }
 
+/** True while a guarded request is out: taps are ignored until it answers,
+ * so a double tap can't send the same decision twice. */
+let busy = false;
+
 async function guarded(err: HTMLElement, fn: () => Promise<void>): Promise<void> {
+  if (busy) return;
+  busy = true;
+  app.classList.add("busy");
   try {
     err.textContent = "";
     await fn();
@@ -42,6 +49,9 @@ async function guarded(err: HTMLElement, fn: () => Promise<void>): Promise<void>
       return nameScreen();
     }
     err.textContent = e instanceof Error ? e.message : String(e);
+  } finally {
+    busy = false;
+    app.classList.remove("busy");
   }
 }
 

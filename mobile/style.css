@@ -55,3 +55,5 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .outcome.draw { color: var(--dim); }
 .error { color: var(--ghost); font-size: 15px; min-height: 20px; }
 .spacer { flex: 1; }
+/* A request is out (main.ts guarded): no taps until it answers. */
+#app.busy button, #app.busy .card { pointer-events: none; }

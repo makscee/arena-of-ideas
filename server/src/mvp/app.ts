@@ -96,11 +96,13 @@ export function createMvpApp(deps: MvpDeps): Hono {
   });
 
   api.post("/runs/:runId/decisions", async (c) => {
+    // Await the body before reading the run: from here on the handler is
+    // synchronous, so parallel decisions on one run apply one after another.
+    const d = (await c.req.json().catch(() => null)) as Decision | null;
     const p = playerOf(c);
     const run = store.run(c.req.param("runId"));
     if (!run) return bad(c, 404, "no such run");
     if (!p || p.id !== run.player.id) return bad(c, 401, "not your run");
-    const d = (await c.req.json().catch(() => null)) as Decision | null;
     if (!d || typeof d !== "object" || typeof d.kind !== "string") return bad(c, 400, "body must be a Decision");
     try {
       return c.json(decide(runs, run, d));
