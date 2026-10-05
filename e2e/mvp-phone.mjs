@@ -132,15 +132,16 @@ try {
   const ready = (r) => {
     const awake = r.line.filter((u) => u.kind === "unit" && u.form === "awoken");
     const almost = r.line.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === 2 && r.offers.some((o) => o.unitId === u.unitId));
-    return awake.length === 1 && almost && r.gold >= 3;
+    return r.phase === "shop" && awake.length >= 1 && almost && r.gold >= 3;
   };
-  for (let steps = 0; steps < 400 && run.phase === "shop" && !ready(run); steps++) {
-    const ids = [...new Set(run.line.map((u) => u.unitId))];
-    const want = run.offers.find((o) => ids.includes(o.unitId) && run.line.find((u) => u.unitId === o.unitId)?.form === "sleeping")
-      ?? (ids.length < 2 ? run.offers[0] : undefined);
-    if (want && run.gold >= want.cost) run = (await call("POST", `/runs/${run.runId}/decisions`, { kind: "buy", slot: want.slot }, fuser.id)).run;
-    else if (run.gold >= 1) run = (await call("POST", `/runs/${run.runId}/decisions`, { kind: "reroll" }, fuser.id)).run;
-    else run = (await call("POST", `/runs/${run.runId}/decisions`, { kind: "fight" }, fuser.id)).run;
+  // Fill the line, then buy only copies of what it holds, reroll for them,
+  // fight when the gold is gone; a run that ends starts the next.
+  for (let steps = 0; steps < 3000 && !ready(run); steps++) {
+    if (run.phase === "over") { run = await call("POST", "/runs", undefined, fuser.id); continue; }
+    const dupe = run.offers.find((o) => run.line.some((u) => u.unitId === o.unitId && u.kind === "unit" && u.form === "sleeping"));
+    const want = dupe ?? (run.line.length < 5 ? run.offers[0] : undefined);
+    const d = run.phase === "crown" ? { kind: "fight" } : want && run.gold >= want.cost ? { kind: "buy", slot: want.slot } : run.gold >= 1 ? { kind: "reroll" } : { kind: "fight" };
+    run = (await call("POST", `/runs/${run.runId}/decisions`, d, fuser.id)).run;
   }
   if (!ready(run)) errors.push(`fusion setup: never reached two Awoken units (phase ${run.phase}, round ${run.round})`);
   else {
