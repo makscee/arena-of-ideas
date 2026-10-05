@@ -22,3 +22,15 @@ describe("MVP pool (slice 7)", () => {
     for (const e of ["StatusApplied", "Heal", "StatChanged", "Summon", "Death"]) expect(listened).toContain(e);
   });
 });
+
+describe("MVP pool chain discipline", () => {
+  const ONE_UNIT_EVENTS = new Set(["StatusApplied", "Heal", "StatChanged", "Summon"]);
+  it("listeners to one-unit events act on one unit (no n² fan-out)", () => {
+    for (const u of mvpPool().units) {
+      for (const f of [u.forms.sleeping, u.forms.awoken]) {
+        const on = f.when[0]!.on.on;
+        if (ONE_UNIT_EVENTS.has(on)) expect([u.id, f.who[0]!.kind]).not.toEqual([u.id, expect.stringMatching(/^all/)]);
+      }
+    }
+  });
+});
