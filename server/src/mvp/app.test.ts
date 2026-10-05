@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { BattleRecord, DecisionResponse, HomeView, PlayerRef, RunView } from "../../../src/mvp/contract.js";
-import { createMvpApp } from "./app.js";
+import { createMvpApp, type MvpDeps } from "./app.js";
 import { mvpContent } from "./content.js";
 
-function client() {
+function client(extra: Partial<MvpDeps> = {}) {
   let n = 7;
-  const app = createMvpApp({ content: mvpContent(), seed: () => (n = (n * 1103515245 + 12345) >>> 0) });
+  const app = createMvpApp({ content: mvpContent(), seed: () => (n = (n * 1103515245 + 12345) >>> 0), ...extra });
   const call = async <T>(method: string, path: string, body?: unknown, player?: string) => {
     const res = await app.request(`/api/v1${path}`, {
       method,
@@ -65,6 +65,16 @@ describe("MVP API thin path", () => {
     await call("POST", `/runs/${rb.runId}/decisions`, { kind: "buy", slot: 0 }, b.id);
     const fb = await call<DecisionResponse>("POST", `/runs/${rb.runId}/decisions`, { kind: "fight" }, b.id);
     expect(fb.json.fight?.opponent.player.name).toBe("a");
+  });
+
+  it("tells hooks about every fight and the run's end", async () => {
+    const seen: string[] = [];
+    const call = client({ hooks: [{ onFight: (run, fight, battle) => seen.push(`fight ${fight.round} ${battle.battleId === fight.battleId} ${run.fights.length}`), onRunEnd: (run) => seen.push(`end ${run.endedBy}`) }] });
+    const { json: p } = await call<PlayerRef>("POST", "/players", { name: "hooked" });
+    let { json: cur } = await call<RunView>("POST", "/runs", undefined, p.id);
+    await call("POST", `/runs/${cur.runId}/decisions`, { kind: "buy", slot: 0 }, p.id);
+    while (cur.phase !== "over") cur = (await call<DecisionResponse>("POST", `/runs/${cur.runId}/decisions`, { kind: "fight" }, p.id)).json.run;
+    expect(seen).toEqual([...cur.fights.map((f, i) => `fight ${f.round} true ${i + 1}`), `end ${cur.endedBy}`]);
   });
 
   it("rejects bad input with 4xx", async () => {

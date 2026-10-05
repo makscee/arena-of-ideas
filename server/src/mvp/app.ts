@@ -1,6 +1,6 @@
 // Arena MVP HTTP API (mission #574, slice 1). The routes and shapes are the
-// contract in src/mvp/contract.ts; this file only wires them to the pure run
-// (src/mvp/run.ts) and a store.
+// contract in src/mvp/contract.ts; this file only parses requests and wires
+// them to the run engine (./runs.ts) and a store.
 import { randomUUID } from "node:crypto";
 import { Hono, type Context } from "hono";
 import {
@@ -9,15 +9,13 @@ import {
   MVP_RULES,
   PLAYER_HEADER,
   type Decision,
-  type DecisionResponse,
-  type Ghost,
   type HomeView,
   type MvpContent,
   type PlayerRef,
 } from "../../../src/mvp/contract.js";
-import { fuseCheck } from "../../../src/mvp/forms.js";
-import { MvpDecisionError, applyMvpDecision, initMvpRun, runView, synthGhost, unitById, type DecisionContext, type MvpRunState } from "../../../src/mvp/run.js";
+import { MvpDecisionError, runView } from "../../../src/mvp/run.js";
 import { storedOrPortmanteau, type NameFusion } from "./fusions.js";
+import { decide, startRun, type RunDeps, type RunHooks } from "./runs.js";
 import { MemoryMvpStore, type MvpStore } from "./store.js";
 
 export interface MvpDeps {
@@ -30,28 +28,18 @@ export interface MvpDeps {
    * deterministic portmanteau (default: storedOrPortmanteau). Slice 10 fills
    * the model's name into the store in the background. */
   nameFusion?: NameFusion;
+  /** Observers of fights and run ends (slices 5 and 11). */
+  hooks?: RunHooks[];
 }
 
 const NAME_RE = /^[\p{L}\p{N}_\- ]{1,24}$/u;
-
-function ghostOf(r: MvpRunState, at: Date): Ghost {
-  return {
-    ghostId: `${r.runId}-r${r.round}`,
-    runId: r.runId,
-    player: r.player,
-    round: r.round,
-    line: structuredClone(r.line),
-    contentVersion: r.contentVersion,
-    createdAt: at.toISOString(),
-  };
-}
 
 export function createMvpApp(deps: MvpDeps): Hono {
   const { content } = deps;
   const store = deps.store ?? new MemoryMvpStore();
   const seed = deps.seed ?? (() => Math.floor(Math.random() * 2 ** 32));
   const now = deps.now ?? (() => new Date());
-  const nameFusion = deps.nameFusion ?? storedOrPortmanteau(store);
+  const runs: RunDeps = { store, content, seed, now, hooks: deps.hooks ?? [], nameFusion: deps.nameFusion ?? storedOrPortmanteau(store) };
   // Slice 5 owns the day counter (rollover, dev end-day); until then it is always day 1.
   const daySeq = (): number => 1;
   const api = new Hono();
@@ -99,9 +87,7 @@ export function createMvpApp(deps: MvpDeps): Hono {
   api.post("/runs", (c) => {
     const p = playerOf(c);
     if (!p) return bad(c, 401, `unknown player: send ${PLAYER_HEADER} from POST /players`);
-    const run = initMvpRun({ runId: randomUUID(), player: p, seed: seed(), content, day: daySeq(), startedAt: now().toISOString() });
-    store.putRun(run);
-    return c.json(runView(run));
+    return c.json(runView(startRun(runs, p, daySeq())));
   });
 
   api.get("/runs/:runId", (c) => {
@@ -117,30 +103,9 @@ export function createMvpApp(deps: MvpDeps): Hono {
     const d = (await c.req.json().catch(() => null)) as Decision | null;
     if (!d || typeof d !== "object" || typeof d.kind !== "string") return bad(c, 400, "body must be a Decision");
     try {
-      const ctx: DecisionContext = {};
-      const first = d.kind === "fuse" ? run.line[d.first] : undefined;
-      const second = d.kind === "fuse" ? run.line[d.second] : undefined;
-      if (first && second && fuseCheck(first, second) === null) {
-        ctx.fuse = nameFusion(unitById(content, first.unitId), unitById(content, second.unitId), run.player);
-      }
-      if (d.kind === "fight") {
-        // Snapshot before the fight, so even a losing line becomes someone's ghost.
-        const candidates = store.ghosts(run.round, run.runId);
-        const pick = seed();
-        const ghost =
-          candidates.length > 0
-            ? candidates[pick % candidates.length]!
-            : synthGhost({ content, round: run.round, seed: pick, ghostId: `bot-${randomUUID()}`, createdAt: now().toISOString() });
-        if (run.line.length > 0) store.addGhost(ghostOf(run, now()));
-        ctx.fight = { ghost, battleId: randomUUID(), battleSeed: seed() };
-      }
-      const step = applyMvpDecision(run, d, content, ctx);
-      if (step.state.phase === "over") step.state.endedAt = now().toISOString();
-      store.putRun(step.state);
-      if (step.battle) store.putBattle(step.battle);
-      const res: DecisionResponse = { run: runView(step.state), ...(step.fight ? { fight: step.fight } : {}) };
-      return c.json(res);
+      return c.json(decide(runs, run, d));
     } catch (err) {
+      // Every fuse answers 501 until slice 2 makes fusion work; then 409 like the rest.
       if (err instanceof MvpDecisionError) return bad(c, err.kind === "fuse" ? 501 : 409, err.message);
       throw err;
     }
