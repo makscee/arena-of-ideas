@@ -112,6 +112,13 @@ export interface FusionParts {
   discoveredBy: string | null;
 }
 
+/** What the server hands a fuse: the pair's name and who is credited.
+ * Slice 10 looks it up (MvpDeps.nameFusion); the pure run only copies it. */
+export interface FuseContext {
+  name: string;
+  discoveredBy: PlayerRef | null;
+}
+
 export interface LineUnit {
   /** Stable within a run; survives reorder, merge and fusion (the fused unit keeps first's uid). */
   uid: string;

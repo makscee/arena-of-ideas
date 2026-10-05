@@ -103,7 +103,7 @@ export function createMvpApp(deps: MvpDeps): Hono {
         if (run.line.length > 0) store.addGhost(ghostOf(run));
         fightCtx = { ghost, battleId: randomUUID(), battleSeed: seed() };
       }
-      const step = applyMvpDecision(run, d, content, fightCtx);
+      const step = applyMvpDecision(run, d, content, fightCtx ? { fight: fightCtx } : undefined);
       store.putRun(step.state);
       if (step.battle) store.putBattle(step.battle);
       const res: DecisionResponse = { run: runView(step.state), ...(step.fight ? { fight: step.fight } : {}) };

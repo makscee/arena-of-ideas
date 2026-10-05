@@ -1,7 +1,8 @@
 // Arena MVP run, thin path (mission #574, slice 1): start → buy → fight a
 // ghost → result. Pure: every transition returns a new state. Slice 4 grows
-// this into the full run (tiers, sell/reorder rules, Crown, rating); slice 2
-// adds awakening and fusion. The shapes come from ./contract.ts.
+// this into the full run (tiers, sell/reorder rules, Crown, rating). Copies,
+// awakening and fusion are slice 2's, in ./forms.ts: this file only calls
+// them. The shapes come from ./contract.ts.
 
 import { battle, winnerOf } from "../battle.js";
 import { rngStep } from "../rng.js";
@@ -12,6 +13,7 @@ import {
   type BattleUnit,
   type Decision,
   type FightResult,
+  type FuseContext,
   type Ghost,
   type LineUnit,
   type MvpContent,
@@ -22,6 +24,8 @@ import {
   type RunView,
   type UnitContent,
 } from "./contract.js";
+import { MvpDecisionError } from "./errors.js";
+import { addCopy, fuseCheck, fuseUnits, lineUnitOf, mergeTarget } from "./forms.js";
 
 export interface MvpRunState extends RunView {
   seed: number;
@@ -31,12 +35,7 @@ export interface MvpRunState extends RunView {
   rules: MvpRules;
 }
 
-export class MvpDecisionError extends Error {
-  constructor(readonly kind: Decision["kind"], reason: string) {
-    super(`invalid ${kind}: ${reason}`);
-    this.name = "MvpDecisionError";
-  }
-}
+export { MvpDecisionError };
 
 function draw(s: MvpRunState, n: number): number {
   const { value, state } = rngStep(s.rng);
@@ -88,10 +87,6 @@ export function unitById(content: MvpContent, id: string): UnitContent {
   return u;
 }
 
-function lineUnitOf(u: UnitContent, uid: string): LineUnit {
-  return { uid, kind: "unit", unitId: u.id, name: u.name, emoji: u.emoji, copies: 1, form: "sleeping", stats: { ...u.base }, recipe: u.forms.sleeping };
-}
-
 /** A line unit as battle() input. */
 export function toBattleDef(u: LineUnit): UnitDef {
   return {
@@ -118,15 +113,24 @@ export interface FightContext {
   battleSeed: number;
 }
 
+/** What the server supplies for decisions the pure run can't decide alone. */
+export interface DecisionContext {
+  /** Required for a fight: the opponent and the ids. */
+  fight?: FightContext;
+  /** Required for a fuse: the pair's name and credit (slice 10). */
+  fuse?: FuseContext;
+}
+
 export interface MvpStep {
   state: MvpRunState;
   fight?: FightResult;
   battle?: BattleRecord;
 }
 
-/** Apply one decision. A fight needs its opponent and ids from the caller
- * (the server picks the ghost; the kernel stays pure). */
-export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpContent, fightCtx?: FightContext): MvpStep {
+/** Apply one decision. A fight needs its opponent and ids, a fuse its name,
+ * from the caller (the server picks the ghost and names the pair; the kernel
+ * stays pure). */
+export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpContent, ctx?: DecisionContext): MvpStep {
   if (state.phase === "over") throw new MvpDecisionError(d.kind, `the run is over (${state.endedBy})`);
   const s = clone(state);
   switch (d.kind) {
@@ -135,12 +139,9 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       if (!offer) throw new MvpDecisionError("buy", `no offer in slot ${d.slot}`);
       if (s.gold < offer.cost) throw new MvpDecisionError("buy", `costs ${offer.cost}, have ${s.gold}`);
       const u = unitById(content, offer.unitId);
-      const same = s.line.find((x) => x.kind === "unit" && x.unitId === u.id);
-      if (same) {
-        same.copies += 1;
-        same.stats.pwr += s.rules.copyGrowth.pwr;
-        same.stats.hp += s.rules.copyGrowth.hp;
-      } else {
+      const at = mergeTarget(s.line, u.id);
+      if (at >= 0) s.line[at] = addCopy(s.line[at]!, content, s.rules);
+      else {
         if (s.line.length >= s.rules.lineSize) throw new MvpDecisionError("buy", "the line is full");
         s.line.push(lineUnitOf(u, `u${s.nextUid++}`));
       }
@@ -167,12 +168,22 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       s.line.splice(d.to, 0, u);
       return { state: s };
     }
-    case "fuse":
-      throw new MvpDecisionError("fuse", "fusion arrives in slice 2");
+    case "fuse": {
+      const first = s.line[d.first];
+      const second = s.line[d.second];
+      if (!first || !second || d.first === d.second) throw new MvpDecisionError("fuse", `no pair at ${d.first} and ${d.second}`);
+      const why = fuseCheck(first, second);
+      if (why) throw new MvpDecisionError("fuse", why);
+      if (!ctx?.fuse) throw new MvpDecisionError("fuse", "no fusion name");
+      // The fused unit takes first's slot (and uid); second leaves the line.
+      s.line[d.first] = fuseUnits(first, second, ctx.fuse, content);
+      s.line.splice(d.second, 1);
+      return { state: s };
+    }
     case "fight": {
       if (s.line.length === 0) throw new MvpDecisionError("fight", "the line is empty, buy a unit first");
-      if (!fightCtx) throw new MvpDecisionError("fight", "no opponent");
-      const { ghost, battleId, battleSeed } = fightCtx;
+      if (!ctx?.fight) throw new MvpDecisionError("fight", "no opponent");
+      const { ghost, battleId, battleSeed } = ctx.fight;
       const teamA = s.line.map(toBattleDef);
       const teamB = ghost.line.map(toBattleDef);
       const log = battle({ teamA, teamB, seed: battleSeed, abilities: content.abilities, statuses: content.statuses, chainStepCap: s.rules.chainStepCap });
@@ -241,10 +252,8 @@ export function synthGhost(args: { content: MvpContent; round: number; seed: num
   const copiesBudget = Math.floor(args.round / 3);
   for (let i = 0; i < size; i++) s.line.push(lineUnitOf(open[draw(s, open.length)]!, `g${i}`));
   for (let i = 0; i < copiesBudget; i++) {
-    const u = s.line[draw(s, s.line.length)]!;
-    u.copies += 1;
-    u.stats.pwr += rules.copyGrowth.pwr;
-    u.stats.hp += rules.copyGrowth.hp;
+    const k = draw(s, s.line.length);
+    s.line[k] = addCopy(s.line[k]!, args.content, rules);
   }
   return { ghostId: args.ghostId, runId: s.runId, player: { id: "bot", name: botName(args.seed), bot: true }, round: args.round, line: s.line };
 }
