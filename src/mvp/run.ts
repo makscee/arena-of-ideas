@@ -14,6 +14,7 @@ import {
   type BattleRecord,
   type Champion,
   type Decision,
+  type DecisionKind,
   type FightResult,
   type FuseContext,
   type Ghost,
@@ -28,7 +29,7 @@ import {
   type RunView,
   type UnitContent,
 } from "./contract.js";
-import { MvpDecisionError } from "./errors.js";
+import { MvpBadDecision, MvpDecisionError } from "./errors.js";
 import { fightLines } from "./fight.js";
 import { addCopy, fuseCheck, fuseUnits, lineUnitOf, mergeTarget } from "./forms.js";
 
@@ -46,7 +47,10 @@ export interface MvpRunState extends RunView {
   rules: MvpRules;
 }
 
-export { MvpDecisionError };
+export { MvpBadDecision, MvpDecisionError };
+
+/** Every Decision kind (the compiler checks the list against the contract). */
+const DECISION_KINDS: Record<DecisionKind, true> = { buy: true, sell: true, reroll: true, reorder: true, fuse: true, fight: true };
 /** Moved to fight.ts; re-exported for scripts that import it from here (slice 7's meta report). */
 export { toBattleDef } from "./fight.js";
 
@@ -134,8 +138,10 @@ export interface MvpStep {
 
 /** Apply one decision. A fight needs its opponent and ids, a fuse its name,
  * from the caller (the server picks the ghost and names the pair; the kernel
- * stays pure). */
+ * stays pure). Throws MvpBadDecision for a kind it doesn't know (the API
+ * answers 400) and MvpDecisionError when the rules refuse it (409). */
 export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpContent, ctx?: DecisionContext): MvpStep {
+  if (!Object.hasOwn(DECISION_KINDS, d.kind)) throw new MvpBadDecision(d.kind);
   if (state.phase === "over") throw new MvpDecisionError(d.kind, `the run is over (${state.endedBy})`);
   if (state.phase === "crown" && d.kind !== "fight") throw new MvpDecisionError(d.kind, "only the Crown fight is left");
   const s = clone(state);
@@ -231,6 +237,8 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       }
       return { state: s, fight, battle: record };
     }
+    default:
+      throw new MvpBadDecision((d as { kind: unknown }).kind);
   }
 }
 
