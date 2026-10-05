@@ -45,13 +45,15 @@ export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionRe
   const fuse = fuseContext(deps.nameFusion, content, run, d);
   if (fuse) ctx.fuse = fuse;
   if (d.kind === "fight") {
-    // Snapshot before the fight, so even a losing line becomes someone's ghost.
-    const candidates = store.ghosts(run.round, run.runId);
+    // Never your own team, only teams built with the content that fights now;
+    // a seeded bot team when the round has none (slice 6's bots fill it).
+    const candidates = store.ghosts(run.round, { excludePlayerId: run.player.id, contentVersion: content.version });
     const pick = seed();
     const ghost =
       candidates.length > 0
         ? candidates[pick % candidates.length]!
         : synthGhost({ content, round: run.round, seed: pick, ghostId: `bot-${randomUUID()}`, createdAt: now().toISOString() });
+    // Snapshot before the fight, so even a losing line becomes someone's ghost.
     if (run.line.length > 0) store.addGhost(ghostOf(run, now()));
     ctx.fight = { ghost, battleId: randomUUID(), battleSeed: seed() };
   }

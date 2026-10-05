@@ -10,8 +10,9 @@ export interface MvpStore {
   run(id: string): MvpRunState | undefined;
   activeRun(playerId: string): MvpRunState | undefined;
   addGhost(g: Ghost): void;
-  /** Saved teams at this round, from runs other than `excludeRunId`. */
-  ghosts(round: number, excludeRunId: string): Ghost[];
+  /** Saved teams at this round built with `contentVersion`, never one of
+   * `excludePlayerId`'s own. */
+  ghosts(round: number, opts: { excludePlayerId: string; contentVersion: string }): Ghost[];
   putBattle(b: BattleRecord): void;
   battle(id: string): BattleRecord | undefined;
   // Discovered fusions, one per ordered pair. Slice 10 owns them and is the
@@ -58,8 +59,8 @@ export class MemoryMvpStore implements MvpStore {
     list.push(g);
     this.ghostsByRound.set(g.round, list);
   }
-  ghosts(round: number, excludeRunId: string): Ghost[] {
-    return (this.ghostsByRound.get(round) ?? []).filter((g) => g.runId !== excludeRunId);
+  ghosts(round: number, opts: { excludePlayerId: string; contentVersion: string }): Ghost[] {
+    return (this.ghostsByRound.get(round) ?? []).filter((g) => g.player.id !== opts.excludePlayerId && g.contentVersion === opts.contentVersion);
   }
   putBattle(b: BattleRecord): void { this.battles.set(b.battleId, b); }
   battle(id: string): BattleRecord | undefined { return this.battles.get(id); }

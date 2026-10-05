@@ -67,6 +67,21 @@ describe("MVP API thin path", () => {
     expect(fb.json.fight?.opponent.player.name).toBe("a");
   });
 
+  it("never matches a player against their own earlier run", async () => {
+    const call = client();
+    const { json: p } = await call<PlayerRef>("POST", "/players", { name: "solo" });
+    for (let i = 0; i < 2; i++) {
+      const { json: r } = await call<RunView>("POST", "/runs", undefined, p.id);
+      await call("POST", `/runs/${r.runId}/decisions`, { kind: "buy", slot: 0 }, p.id);
+      let cur = r;
+      while (cur.phase !== "over") {
+        const f = await call<DecisionResponse>("POST", `/runs/${cur.runId}/decisions`, { kind: "fight" }, p.id);
+        expect(f.json.fight?.opponent.player.id).not.toBe(p.id);
+        cur = f.json.run;
+      }
+    }
+  });
+
   it("tells hooks about every fight and the run's end", async () => {
     const seen: string[] = [];
     const call = client({ hooks: [{ onFight: (run, fight, battle) => seen.push(`fight ${fight.round} ${battle.battleId === fight.battleId} ${run.fights.length}`), onRunEnd: (run) => seen.push(`end ${run.endedBy}`) }] });
