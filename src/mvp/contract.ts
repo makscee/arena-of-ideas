@@ -106,7 +106,7 @@ export interface MvpContent {
 export interface FusionParts {
   first: UnitId;
   second: UnitId;
-  /** Generated name for this ordered pair (slice 10); a portmanteau until then. */
+  /** The pair's name, fixed by its first fuse (see FusionDiscovery). */
   name: string;
   /** Who is credited with discovering the pair (see FusionDiscovery); null
    * while only bots have made it. */
@@ -114,7 +114,8 @@ export interface FusionParts {
 }
 
 /** What the server hands a fuse: the pair's name and who is credited.
- * Slice 10 looks it up (MvpDeps.nameFusion); the pure run only copies it. */
+ * Slice 10's namer looks it up (RunDeps.nameFusion, and peekFusionName for a
+ * preview); the pure run only copies it into the fused unit. */
 export interface FuseContext {
   name: string;
   discoveredBy: PlayerRef | null;
@@ -122,11 +123,18 @@ export interface FuseContext {
 
 /** A discovered ordered pair, stored once per (first, second); the same pair
  * always gets the same name. Slice 10 owns this storage (MvpStore.fusion,
- * putFusion, fusions), the naming and GET /fusions; slice 11's stats page and
- * StatsView.fusions only read it.
+ * putFusion, fusions), the naming and GET /fusions. It writes discoveries from
+ * its RunHooks.onFuse (server/src/mvp/fusions.ts), never from decide() or a
+ * preview. Slice 11's stats page and StatsView.fusions only read them.
  *
- * Credit rule: a bot's fusion stores the name with discoveredBy null; the
- * first human to fuse a pair whose discoveredBy is null claims it. */
+ * Name rule: the first fuse of a pair fixes its name. That name is copied into
+ * the fused LineUnit, and so into runs, ghosts, champions and battles. A model
+ * name may only be prepared for pairs nobody has fused yet (slice 10 prefetches
+ * them); it never replaces a discovery's name.
+ *
+ * Credit rule: a bot's fusion stores the pair with discoveredBy null; the
+ * first human to fuse a pair whose discoveredBy is null claims it (the name
+ * stays). */
 export interface FusionDiscovery {
   first: UnitId;
   second: UnitId;
@@ -297,11 +305,37 @@ export interface DecisionResponse {
 //
 // A day is numbered by `seq`: 1 is day 1, and every rollover adds 1, the dev
 // "end day now" included, so several days can share one calendar date.
-// Storage is keyed by seq; `day` (YYYY-MM-DD) is only a label.
+// Storage is keyed by seq; `day` (YYYY-MM-DD) is only a label. The current day
+// is a DayState row (MvpStore.currentDay); everyone reads it through
+// RunDeps.today(), which is server/src/mvp/day.ts today(), slice 5's.
 //
-// Who writes what (MvpStore): slice 6 seeds day 1 with putChampion when
-// champions() is empty; slice 5 owns every later putChampion and the rollover;
-// slice 4's Crown fight writes the Slay and the run-end rating (putRating).
+// Who writes what (MvpStore):
+// - Slice 5 owns putDay, putPlayoff and the rollover. Every rollover writes a
+//   Champion row for the new seq: the playoff winner, or, on a day with no
+//   slayers, the kept champion copied with the new seq.
+// - Slice 6 seeds at startup: when currentChampion() is missing or stale
+//   (below), it writes a strong bot team as the champion for today().seq.
+// - Slice 4's Crown fights currentChampion(). A win writes the Slay, with
+//   Slay.seq = that champion's seq; the run's end writes its Rating.
+// - Bots fight the Crown too, but slice 4 writes no Slay and no Rating for a
+//   player.bot: slayers, playoffs and ratings are humans only.
+//
+// Stale content: a Champion or Slay whose contentVersion isn't the live
+// content's may name abilities that no longer exist. Slice 6's seeder replaces
+// a stale champion for today().seq at startup, slice 4's Crown treats a stale
+// champion as none (endedBy "no-champion"), and slice 5's playoff skips slays
+// of another contentVersion.
+
+/** The current day as the server keeps it (MvpStore.currentDay). */
+export interface DayState {
+  seq: number;
+  /** That day's date (YYYY-MM-DD), a label. */
+  day: string;
+  /** ISO time the day began: its rollover, or the first call for day 1. */
+  startedAt: string;
+  /** ISO time of the next rollover (slice 5 computes it from rules.dayEndsAt). */
+  endsAt: string;
+}
 
 export interface Champion {
   /** The day this team holds the throne for. */
@@ -315,14 +349,18 @@ export interface Champion {
   contentVersion: string;
 }
 
-/** A Crown fight won: the slayer's team that day. Hidden until the day ends;
- * slice 5 picks each slayer's strongest one for the playoff. */
+/** A Crown fight won by a human (bots write none): the slayer's team that
+ * day. Hidden until the day ends; slice 5 picks each slayer's strongest one
+ * for the playoff, by simulation (fightLines). */
 export interface Slay {
+  /** The seq of the champion it beat. */
   seq: number;
   player: PlayerRef;
   runId: string;
   battleId: string;
   line: LineUnit[];
+  /** The content its line was built with; the playoff skips other versions. */
+  contentVersion: string;
   /** ISO time of the Crown fight. */
   at: string;
 }
@@ -335,7 +373,7 @@ export interface DayView {
   champion: Champion | null;
   /** Slayers' teams stay hidden until the day ends; only the count shows. */
   slayers: number;
-  /** Last day's playoff, once one ran (slice 5). */
+  /** The previous day's playoff, once one ran (MvpStore.playoff(seq - 1), slice 5). */
   lastPlayoff?: PlayoffResult | null;
 }
 
@@ -395,7 +433,7 @@ export interface HomeView {
 //   GET  /api/v1/battles/:battleId           → BattleRecord
 //   GET  /api/v1/fusions                     → FusionDiscovery[]  (slice 10)
 //   GET  /api/v1/day                         → DayView            (slice 5)
-//   POST /api/v1/dev/end-day                 → DayView            (slice 5; dev only)
+//   POST /api/v1/dev/end-day                 → DayView            (slice 5; 404 unless MVP_DEV=1)
 //   GET  /api/v1/stats                       → StatsView          (slice 11)
 
 export const PLAYER_HEADER = "X-Arena-Player";

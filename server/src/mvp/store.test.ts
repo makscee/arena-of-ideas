@@ -19,7 +19,7 @@ describe("MVP memory store: the day", () => {
 
   it("keeps slays per day and ratings per player", () => {
     const store = new MemoryMvpStore();
-    const slay: Slay = { seq: 1, player: maks, runId: "r", battleId: "b", line: [], at: "t" };
+    const slay: Slay = { seq: 1, player: maks, runId: "r", battleId: "b", line: [], contentVersion: "v", at: "t" };
     store.addSlay(slay);
     store.addSlay({ ...slay, runId: "r2" });
     expect(store.slays(1)).toHaveLength(2);
