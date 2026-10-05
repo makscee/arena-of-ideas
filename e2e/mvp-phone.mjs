@@ -37,6 +37,17 @@ try {
     const w = await page.evaluate(() => document.documentElement.scrollWidth);
     if (w > 360) errors.push(`${name}: horizontal scroll (${w}px)`);
   };
+  /** Every match of `locator` is at least 44 px in `dim` (a tap target). */
+  const tap44 = async (name, locator, dim = "height") => {
+    for (const box of await locator.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().toJSON()))) {
+      if (box[dim] < 44 - 0.5) errors.push(`${name}: ${dim} ${Math.round(box[dim])}px < 44`);
+    }
+  };
+  /** The element is on screen without scrolling (the bottom of a 640 px phone). */
+  const onScreen = async (name, locator) => {
+    const box = await locator.boundingBox();
+    if (!box || box.y + box.height > 640 + 0.5 || box.y < 0) errors.push(`${name}: off screen (${box ? Math.round(box.y + box.height) : "none"}px)`);
+  };
 
   await page.goto(url, { timeout: 20_000 });
   await page.getByTestId("name-input").waitFor({ timeout: 10_000 });
@@ -45,6 +56,7 @@ try {
   await page.getByTestId("name-submit").click();
   await page.getByTestId("play").waitFor();
   await shot("home"); await noHScroll("home");
+  await tap44("dev summary", page.locator("details.dev summary"));
   await page.getByTestId("rules-open").click();
   await page.getByTestId("rules").waitFor();
   await shot("rules"); await noHScroll("rules");
@@ -102,10 +114,37 @@ try {
       const chain = await page.getByTestId("trace-text").textContent();
       if (!/←/.test(chain)) errors.push(`trace: no chain in "${chain}"`);
       await shot("battle-trace"); await noHScroll("battle-trace");
+      await tap44("change chip", page.getByTestId("change"));
+      await tap44("trace close", page.getByTestId("trace-close"));
+      await tap44("trace close", page.getByTestId("trace-close"), "width");
+      await tap44("past step", page.locator("button.bv-past"));
+      if ((await page.getByTestId("caption-side").count()) === 0 && /→/.test(await page.getByTestId("caption").textContent())) errors.push("battle caption: no side tag on a unit's act");
+      // A battle card (below its chip) opens the unit's sheet, which closes with Close.
+      await page.getByTestId("trace-close").click();
+      const box = await page.getByTestId("battle-you").locator(".bv-card").first().boundingBox();
+      await page.mouse.click(box.x + box.width / 2, box.y + box.height - 8);
+      await page.getByTestId("unit-sheet").waitFor();
+      await shot("battle-unit-sheet"); await noHScroll("battle-unit-sheet");
+      await page.getByTestId("sheet-close").click();
+      await page.getByTestId("unit-sheet").waitFor({ state: "detached" });
     }
     await page.getByTestId("battle-skip").click();
     await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
-    if (!whyShot && (await page.getByTestId("why-lost").isVisible())) { whyShot = true; await shot("why-lost"); await noHScroll("why-lost"); }
+    if (!whyShot && (await page.getByTestId("why-lost").isVisible())) {
+      whyShot = true;
+      await shot("result-after-loss"); await noHScroll("result-after-loss");
+      // The main actions stay on screen however long "why I lost" runs.
+      await onScreen("result after loss: Next round", page.getByTestId("continue"));
+      await onScreen("result after loss: Replay", page.getByTestId("replay"));
+      const why = page.getByTestId("why-lost").locator("button.bv-why").first();
+      if (await why.count()) {
+        await why.click();
+        await page.getByTestId("why-sheet").waitFor();
+        await shot("why-sheet"); await noHScroll("why-sheet");
+        await page.getByTestId("sheet-close").click();
+        await page.getByTestId("why-sheet").waitFor({ state: "detached" });
+      }
+    }
     await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
     if (round === 1) { await shot("result"); await noHScroll("result"); }
     await page.getByTestId("continue").click();
@@ -113,6 +152,9 @@ try {
   }
   await page.getByTestId("run-over").waitFor({ timeout: 10_000 });
   await shot("run-over"); await noHScroll("run-over");
+  const over = await page.getByTestId("run-over").textContent();
+  if (/No champion/.test(over) && /Reached the Crown/.test(over)) errors.push(`run over: "${over}" contradicts itself`);
+  if (/\b1 (wins|draws|losses)\b|\b([02-9]|\d\d+) (win|draw|loss)\b/.test(over)) errors.push(`run over: plural wrong in "${over}"`);
   await page.getByTestId("home").click();
   await page.getByTestId("play").waitFor();
   await shot("home-after");
@@ -175,6 +217,8 @@ try {
     const first = run.line.findIndex((u) => u.form === "awoken");
     const second = run.line.findIndex((u) => u.uid === almost.uid);
     await page.getByTestId(`line-${first}`).click();
+    await shot("shop-fuse-actions"); await noHScroll("shop-fuse-actions");
+    await tap44("move buttons beside Fuse", page.locator('[data-testid="move-left"], [data-testid="move-right"]'), "width");
     await page.getByTestId("fuse").click();
     await shot("fuse-pick"); await noHScroll("fuse-pick");
     await page.getByTestId(`line-${second}`).click();
@@ -183,10 +227,15 @@ try {
     await page.getByTestId("preview-confirm").click();
     await page.locator(".card.fused").waitFor();
     await shot("fused"); await noHScroll("fused");
+    await page.locator(".card.fused").screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-fused-card.png` });
+    // The fused card's row lines up: every card in it is one height.
+    const heights = await page.getByTestId("line").locator(".card.you").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
+    if (new Set(heights).size > 1) errors.push(`fused row: uneven card heights ${heights.join(",")}`);
     await page.locator(".card.fused").click();
     await page.getByTestId("info").click();
     await page.getByTestId("unit-sheet").waitFor();
     if (!/discovered by (you|@Fuser)/.test(await page.getByTestId("unit-sheet").textContent())) errors.push("fused sheet: no discovery credit");
+    if (!(await page.getByTestId("sheet-close").isVisible())) errors.push("unit sheet from Info: no Close button");
     await shot("fused-sheet"); await noHScroll("fused-sheet");
   }
   console.log(`mvp phone: ${round} fights, ${shots} screenshots in ${out}`);
