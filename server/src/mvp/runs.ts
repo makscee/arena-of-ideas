@@ -1,35 +1,56 @@
 // Arena MVP run engine on the server (mission #574): the bookkeeping around
 // the pure run (src/mvp/run.ts). Routes only parse and call these. Slice 6's
-// bots play in-process through them, and slices 5 and 11 observe fights and
-// run ends through RunHooks instead of editing the routes.
+// bots play in-process through them, and slices 5, 10 and 11 observe runs
+// through RunHooks instead of editing decide().
 import { randomUUID } from "node:crypto";
-import type { BattleRecord, Decision, DecisionResponse, FightResult, FuseContext, Ghost, MvpContent, PlayerRef } from "../../../src/mvp/contract.js";
+import type { BattleRecord, DayState, Decision, DecisionResponse, FightResult, FuseContext, Ghost, LineUnit, MvpContent, MvpRules, PlayerRef } from "../../../src/mvp/contract.js";
 import { fuseCheck } from "../../../src/mvp/forms.js";
-import { applyMvpDecision, initMvpRun, runView, synthGhost, unitById, type DecisionContext, type MvpRunState } from "../../../src/mvp/run.js";
-import { storedOrPortmanteau, type NameFusion } from "./fusions.js";
+import { applyMvpDecision, initMvpRun, runView, synthGhost, unitById, type DecisionContext, type MvpRunState, type MvpStep } from "../../../src/mvp/run.js";
+import type { NameFusion } from "./fusions.js";
 import type { MvpStore } from "./store.js";
 
-/** Observers of the run engine. They run after the store writes, in order. */
+/** Observers of the run engine (slice 10's fusion names, slice 11's stats,
+ * whatever slice 5 needs). decide() calls them after its store writes,
+ * synchronously: every onDecision first, then onFuse, onFight and onRunEnd as
+ * they apply, each in registration order. A preview calls none. A hook must
+ * not throw: the decision is already saved. */
 export interface RunHooks {
+  /** Any decision went through: the run before it and after it. Slice 10
+   * prefetches fusion names here. */
+  onDecision?(before: MvpRunState, d: Decision, after: MvpRunState): void;
+  /** A fuse went through: `fused` is the new unit on `run`'s line, `ctx` the
+   * name and credit it got. Slice 10 records the FusionDiscovery here. */
+  onFuse?(run: MvpRunState, fused: LineUnit, ctx: FuseContext): void;
   /** A fight was fought; `run` is the state after it. */
   onFight?(run: MvpRunState, fight: FightResult, battle: BattleRecord): void;
   /** The decision ended the run. */
   onRunEnd?(run: MvpRunState): void;
 }
 
+/** What the run engine needs. MvpRuntime (./runtime.ts) is one, and
+ * mvpRuntime() is the only place that fills it. */
 export interface RunDeps {
   store: MvpStore;
   content: MvpContent;
+  rules: MvpRules;
   /** Seed source; tests pin it. */
   seed(): number;
   now(): Date;
+  /** The current day (./day.ts today(), slice 5's): a run starts on it and
+   * the Crown and the Slay read it. */
+  today(): DayState;
   hooks: RunHooks[];
+  /** decide()'s namer for a fuse; peekFusionName unless a test overrides it. */
   nameFusion: NameFusion;
+  /** The read-only namer (slice 10, ./fusions.ts): the stored name, else a
+   * prefetched model name, else the portmanteau. It never records or waits.
+   * preview() uses it, so a preview names a fusion as the fuse will. */
+  peekFusionName: NameFusion;
 }
 
-/** Starts a run for `player` on day `day` (DayView.seq) and stores it. */
-export function startRun(deps: RunDeps, player: PlayerRef, day: number): MvpRunState {
-  const run = initMvpRun({ runId: randomUUID(), player, seed: deps.seed(), content: deps.content, day, startedAt: deps.now().toISOString() });
+/** Starts a run for `player` on today's day and stores it. */
+export function startRun(deps: RunDeps, player: PlayerRef): MvpRunState {
+  const run = initMvpRun({ runId: randomUUID(), player, seed: deps.seed(), content: deps.content, day: deps.today().seq, startedAt: deps.now().toISOString(), rules: deps.rules });
   deps.store.putRun(run);
   return run;
 }
@@ -52,7 +73,7 @@ export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionRe
     const ghost =
       candidates.length > 0
         ? candidates[pick % candidates.length]!
-        : synthGhost({ content, round: run.round, seed: pick, ghostId: `bot-${randomUUID()}`, createdAt: now().toISOString() });
+        : synthGhost({ content, round: run.round, seed: pick, ghostId: `bot-${randomUUID()}`, createdAt: now().toISOString(), rules: deps.rules });
     // Snapshot before the fight, so even a losing line becomes someone's ghost.
     if (run.line.length > 0) store.addGhost(ghostOf(run, now()));
     ctx.fight = { ghost, battleId: randomUUID(), battleSeed: seed(), at: now().toISOString() };
@@ -61,22 +82,32 @@ export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionRe
   if (step.state.phase === "over") step.state.endedAt = now().toISOString();
   store.putRun(step.state);
   if (step.battle) store.putBattle(step.battle);
-  // Slice 10: a fuse that went through records its FusionDiscovery here.
-  if (step.fight && step.battle) for (const h of deps.hooks) h.onFight?.(step.state, step.fight, step.battle);
-  if (step.state.phase === "over") for (const h of deps.hooks) h.onRunEnd?.(step.state);
+  notify(deps.hooks, run, d, step, ctx);
   return { run: runView(step.state), ...(step.fight ? { fight: step.fight } : {}) };
 }
 
 /** What `d` would do to `run`: the same rules on a copy, with no store
  * writes and no hooks (slice 8 shows the awakening and the fusion result card
- * with it). A fuse gets the stored name or the portmanteau only: a preview
- * never records a discovery or calls a model. Not for fights: the route
- * answers 400. */
+ * with it). A fuse is named by peekFusionName: a preview never records a
+ * discovery or calls a model. Not for fights: the route answers 400. */
 export function preview(deps: RunDeps, run: MvpRunState, d: Decision): DecisionResponse {
   const ctx: DecisionContext = {};
-  const fuse = fuseContext(storedOrPortmanteau(deps.store), deps.content, run, d);
+  const fuse = fuseContext(deps.peekFusionName, deps.content, run, d);
   if (fuse) ctx.fuse = fuse;
   return { run: runView(applyMvpDecision(run, d, deps.content, ctx).state) };
+}
+
+function notify(hooks: RunHooks[], before: MvpRunState, d: Decision, step: MvpStep, ctx: DecisionContext): void {
+  const after = step.state;
+  for (const h of hooks) h.onDecision?.(before, d, after);
+  if (d.kind === "fuse" && ctx.fuse) {
+    // The fused unit keeps first's uid.
+    const uid = before.line[d.first]!.uid;
+    const fused = after.line.find((u) => u.uid === uid)!;
+    for (const h of hooks) h.onFuse?.(after, fused, ctx.fuse);
+  }
+  if (step.fight && step.battle) for (const h of hooks) h.onFight?.(after, step.fight, step.battle);
+  if (after.phase === "over") for (const h of hooks) h.onRunEnd?.(after);
 }
 
 /** The name and credit for a fuse the rules allow; undefined otherwise (the

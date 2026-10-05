@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FusionDiscovery, PlayerRef, UnitContent } from "../../../src/mvp/contract.js";
-import { portmanteau, storedOrPortmanteau } from "./fusions.js";
+import { fusionNaming, portmanteau, storedOrPortmanteau } from "./fusions.js";
 import { MemoryMvpStore } from "./store.js";
 
 const form = { when: [], who: [], does: ["a"] };
@@ -30,5 +30,13 @@ describe("MVP fusion names seam (slice 10 owns naming)", () => {
     expect(name(brawler, medic, { id: "p2", name: "Eva", bot: false })).toEqual({ name: "Ironcare", discoveredBy: maks });
     expect(store.fusion("medic", "brawler")).toBeUndefined();
     expect(store.fusions()).toHaveLength(1);
+  });
+
+  it("fusionNaming: decide's namer and the preview's agree; no hooks until slice 10", () => {
+    const store = new MemoryMvpStore();
+    const naming = fusionNaming({ store, content: { version: "t", units: [brawler, medic], abilities: {}, statuses: {} }, now: () => new Date(0) });
+    expect(naming.nameFusion(brawler, medic, maks)).toEqual(naming.peek(brawler, medic, maks));
+    expect(naming.peek(brawler, medic, maks)).toEqual({ name: "Brawdic", discoveredBy: maks });
+    expect(naming.hooks).toEqual({});
   });
 });

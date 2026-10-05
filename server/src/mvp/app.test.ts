@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
-import type { BattleRecord, DecisionResponse, HomeView, PlayerRef, RunView } from "../../../src/mvp/contract.js";
-import { createMvpApp, type MvpDeps } from "./app.js";
+import type { BattleRecord, DayView, DecisionResponse, HomeView, PlayerRef, RunView } from "../../../src/mvp/contract.js";
+import { lineUnitOf } from "../../../src/mvp/forms.js";
+import { createMvpApp } from "./app.js";
 import { mvpContent } from "./content.js";
+import { portmanteau } from "./fusions.js";
+import { mvpRuntime, type MvpDeps } from "./runtime.js";
 
-function client(extra: Partial<MvpDeps> = {}) {
+function world(extra: Partial<MvpDeps> = {}) {
   let n = 7;
-  const app = createMvpApp({ content: mvpContent(), seed: () => (n = (n * 1103515245 + 12345) >>> 0), ...extra });
+  const rt = mvpRuntime({ content: mvpContent(), seed: () => (n = (n * 1103515245 + 12345) >>> 0), ...extra });
+  const app = createMvpApp(rt);
   const call = async <T>(method: string, path: string, body?: unknown, player?: string) => {
     const res = await app.request(`/api/v1${path}`, {
       method,
@@ -14,8 +18,9 @@ function client(extra: Partial<MvpDeps> = {}) {
     });
     return { status: res.status, json: (await res.json()) as T };
   };
-  return call;
+  return { rt, call };
 }
+const client = (extra: Partial<MvpDeps> = {}) => world(extra).call;
 
 describe("MVP API thin path", () => {
   it("start run → buy → fight a ghost → result, until the run ends", async () => {
@@ -133,6 +138,55 @@ describe("MVP API thin path", () => {
     expect(seen).toEqual([]);
     const fusions = await call<unknown[]>("GET", "/fusions");
     expect(fusions).toEqual({ status: 200, json: [] });
+  });
+
+  it("fuses two Awoken units: hooks see the decision and the fuse, a preview names it the same and calls none", async () => {
+    const seen: string[] = [];
+    const { rt, call } = world({
+      hooks: [
+        {
+          onDecision: (before, d, after) => seen.push(`decision ${d.kind} ${before.line.length}→${after.line.length}`),
+          onFuse: (run, fused, ctx) => seen.push(`fuse ${fused.uid} ${fused.name} ${ctx.discoveredBy?.name} ${run.line.length}`),
+        },
+      ],
+    });
+    const { json: p } = await call<PlayerRef>("POST", "/players", { name: "fuser" });
+    const { json: r } = await call<RunView>("POST", "/runs", undefined, p.id);
+    const [a, b] = rt.content.units;
+    const run = rt.store.run(r.runId)!;
+    rt.store.putRun({ ...run, line: [lineUnitOf(a!, "u1", 3, rt.rules), lineUnitOf(b!, "u2", 3, rt.rules)], nextUid: 3 });
+
+    const fuse = { kind: "fuse", first: 1, second: 0 };
+    const pv = await call<DecisionResponse>("POST", `/runs/${r.runId}/preview`, fuse, p.id);
+    expect(pv.status).toBe(200);
+    expect(seen).toEqual([]);
+    const done = await call<DecisionResponse>("POST", `/runs/${r.runId}/decisions`, fuse, p.id);
+    expect(done.status).toBe(200);
+    expect(done.json.run).toEqual(pv.json.run);
+    const name = portmanteau(b!.name, a!.name);
+    expect(done.json.run.line).toMatchObject([{ uid: "u2", kind: "fused", name, fusion: { first: b!.id, second: a!.id, name, discoveredBy: p } }]);
+    expect(seen).toEqual(["decision fuse 2→1", `fuse u2 ${name} fuser 1`]);
+    // Recording the discovery is slice 10's hook; nothing records it yet.
+    expect((await call("GET", "/fusions")).json).toEqual([]);
+  });
+
+  it("keeps one day: runs start on it, /day and /home show it", async () => {
+    const { rt, call } = world();
+    const { json: p } = await call<PlayerRef>("POST", "/players", { name: "day" });
+    const day = await call<DayView>("GET", "/day");
+    expect(day.status).toBe(200);
+    expect(day.json).toMatchObject({ seq: 1, champion: null, slayers: 0, lastPlayoff: null });
+    expect((await call<HomeView>("GET", "/home", undefined, p.id)).json.day).toEqual(day.json);
+    expect((await call<RunView>("POST", "/runs", undefined, p.id)).json.day).toBe(1);
+    expect(rt.store.currentDay()?.seq).toBe(1);
+    expect(rt.today()).toEqual(rt.store.currentDay());
+  });
+
+  it("serves dev tools only in dev; later slices' routes answer 501", async () => {
+    expect((await client()("POST", "/dev/end-day")).status).toBe(404);
+    const dev = client({ dev: true });
+    expect(await dev("POST", "/dev/end-day")).toEqual({ status: 501, json: { error: "the day arrives in slice 5" } });
+    expect(await dev("GET", "/stats")).toEqual({ status: 501, json: { error: "stats arrive in slice 11" } });
   });
 
   it("rejects bad input with 4xx", async () => {

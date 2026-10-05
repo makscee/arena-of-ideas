@@ -1,50 +1,36 @@
 // Arena MVP HTTP API (mission #574, slice 1). The routes and shapes are the
-// contract in src/mvp/contract.ts; this file only parses requests and wires
-// them to the run engine (./runs.ts) and a store.
+// contract in src/mvp/contract.ts; this file only parses requests and calls
+// the runtime (./runtime.ts): the run engine (./runs.ts), the day (./day.ts),
+// the stats (./stats.ts) and the store. A slice fills in those modules, not
+// these routes.
 import { randomUUID } from "node:crypto";
 import { Hono, type Context } from "hono";
-import {
-  MVP_API_PREFIX,
-  MVP_API_VERSION,
-  MVP_RULES,
-  PLAYER_HEADER,
-  type Decision,
-  type HomeView,
-  type MvpContent,
-  type PlayerRef,
-} from "../../../src/mvp/contract.js";
+import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, type Decision, type HomeView, type PlayerRef } from "../../../src/mvp/contract.js";
 import { MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
-import { storedOrPortmanteau, type NameFusion } from "./fusions.js";
-import { decide, preview, startRun, type RunDeps, type RunHooks } from "./runs.js";
-import { MemoryMvpStore, type MvpStore } from "./store.js";
-
-export interface MvpDeps {
-  content: MvpContent;
-  store?: MvpStore;
-  /** Seed source; tests pin it. */
-  seed?: () => number;
-  now?: () => Date;
-  /** Names a pair at fuse time, synchronously: the stored name, else a
-   * deterministic portmanteau (default: storedOrPortmanteau). Slice 10 fills
-   * the model's name into the store in the background. */
-  nameFusion?: NameFusion;
-  /** Observers of fights and run ends (slices 5 and 11). */
-  hooks?: RunHooks[];
-}
+import { dayView, endDay } from "./day.js";
+import { MvpNotYet } from "./errors.js";
+import { decide, preview, startRun } from "./runs.js";
+import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
+import { statsView } from "./stats.js";
 
 const NAME_RE = /^[\p{L}\p{N}_\- ]{1,24}$/u;
 
-export function createMvpApp(deps: MvpDeps): Hono {
-  const { content } = deps;
-  const store = deps.store ?? new MemoryMvpStore();
-  const seed = deps.seed ?? (() => Math.floor(Math.random() * 2 ** 32));
-  const now = deps.now ?? (() => new Date());
-  const runs: RunDeps = { store, content, seed, now, hooks: deps.hooks ?? [], nameFusion: deps.nameFusion ?? storedOrPortmanteau(store) };
-  // Slice 5 owns the day counter (rollover, dev end-day); until then it is always day 1.
-  const daySeq = (): number => 1;
+/** The API on a runtime, or on a fresh one built from `deps`. */
+export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
+  const rt = isMvpRuntime(deps) ? deps : mvpRuntime(deps);
+  const { content, store } = rt;
   const api = new Hono();
 
   const bad = (c: Context, status: 400 | 401 | 404 | 409 | 501, error: string) => c.json({ error }, status);
+  /** A stub that a later slice fills in answers 501 until then. */
+  const notYet = (c: Context, fn: () => unknown) => {
+    try {
+      return c.json(fn());
+    } catch (err) {
+      if (err instanceof MvpNotYet) return bad(c, 501, err.message);
+      throw err;
+    }
+  };
   const playerOf = (c: Context): PlayerRef | undefined => {
     const id = c.req.header(PLAYER_HEADER);
     return id ? store.player(id) : undefined;
@@ -64,21 +50,10 @@ export function createMvpApp(deps: MvpDeps): Hono {
 
   api.get("/home", (c) => {
     const p = playerOf(c);
-    const t = now();
-    const seq = daySeq();
     const home: HomeView = {
-      rules: MVP_RULES,
-      // Slice 5 owns the day (date, rollover time, playoff); the champion is
-      // whoever the store holds (slice 6 seeds day 1), none until then.
-      day: {
-        seq,
-        day: t.toISOString().slice(0, 10),
-        endsAt: t.toISOString(),
-        champion: store.currentChampion() ?? null,
-        slayers: new Set(store.slays(seq).map((s) => s.player.id)).size,
-        lastPlayoff: null,
-      },
-      rating: p ? store.rating(p.id) ?? { player: p, rating: MVP_RULES.ratingStart, runs: 0, slays: 0, daysAsChampion: 0, playoffWins: 0 } : null,
+      rules: rt.rules,
+      day: dayView(rt),
+      rating: p ? store.rating(p.id) ?? { player: p, rating: rt.rules.ratingStart, runs: 0, slays: 0, daysAsChampion: 0, playoffWins: 0 } : null,
       activeRunId: p ? store.activeRun(p.id)?.runId ?? null : null,
     };
     return c.json(home);
@@ -87,7 +62,7 @@ export function createMvpApp(deps: MvpDeps): Hono {
   api.post("/runs", (c) => {
     const p = playerOf(c);
     if (!p) return bad(c, 401, `unknown player: send ${PLAYER_HEADER} from POST /players`);
-    return c.json(runView(startRun(runs, p, daySeq())));
+    return c.json(runView(startRun(rt, p)));
   });
 
   api.get("/runs/:runId", (c) => {
@@ -117,7 +92,7 @@ export function createMvpApp(deps: MvpDeps): Hono {
     const req = runAndDecision(c, await c.req.json().catch(() => null));
     if (req instanceof Response) return req;
     try {
-      return c.json(decide(runs, req.run, req.d));
+      return c.json(decide(rt, req.run, req.d));
     } catch (err) {
       return refused(c, err);
     }
@@ -129,7 +104,7 @@ export function createMvpApp(deps: MvpDeps): Hono {
     if (req instanceof Response) return req;
     if (req.d.kind === "fight") return bad(c, 400, "a fight can't be previewed");
     try {
-      return c.json(preview(runs, req.run, req.d));
+      return c.json(preview(rt, req.run, req.d));
     } catch (err) {
       return refused(c, err);
     }
@@ -143,9 +118,15 @@ export function createMvpApp(deps: MvpDeps): Hono {
   // Slice 10 owns this route and the store behind it; slice 11 only reads.
   api.get("/fusions", (c) => c.json(store.fusions()));
 
-  api.get("/day", (c) => bad(c, 501, "the day arrives in slice 5"));
-  api.post("/dev/end-day", (c) => bad(c, 501, "the day arrives in slice 5"));
-  api.get("/stats", (c) => bad(c, 501, "stats arrive in slice 11"));
+  api.get("/day", (c) => c.json(dayView(rt)));
+  api.get("/stats", (c) => notYet(c, () => statsView(rt)));
+
+  // Dev-only tools (MvpDeps.dev, MVP_DEV=1 in main.ts): 404 without it.
+  api.use("/dev/*", async (c, next) => {
+    if (!rt.dev) return bad(c, 404, "not found");
+    await next();
+  });
+  api.post("/dev/end-day", (c) => notYet(c, () => endDay(rt)));
 
   const app = new Hono();
   app.route(MVP_API_PREFIX, api);

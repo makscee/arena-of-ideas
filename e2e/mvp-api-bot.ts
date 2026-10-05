@@ -1,12 +1,14 @@
 // MVP API bot (mission #574 verification ladder): plays N full runs through
 // the HTTP API and fails on any error. Without --url it starts the MVP server
-// in-process on a free port.
+// in-process on a free port, with the background jobs, as main.ts does.
 //   npm run mvp:bot -- [--runs 50] [--url http://127.0.0.1:8791/arena]
 import { serve } from "@hono/node-server";
 import type { AddressInfo } from "node:net";
 import type { DecisionResponse, PlayerRef, RunView } from "../src/mvp/contract.js";
 import { createMvpApp } from "../server/src/mvp/app.js";
 import { mvpContent } from "../server/src/mvp/content.js";
+import { startMvpJobs } from "../server/src/mvp/jobs.js";
+import { mvpRuntime } from "../server/src/mvp/runtime.js";
 
 const args = process.argv.slice(2);
 const opt = (name: string) => {
@@ -18,10 +20,15 @@ const runs = Number(opt("runs") ?? 50);
 let base = opt("url");
 let close = () => {};
 if (!base) {
-  const server = serve({ fetch: createMvpApp({ content: mvpContent() }).fetch, port: 0, hostname: "127.0.0.1" });
+  const rt = mvpRuntime({ content: mvpContent() });
+  const server = serve({ fetch: createMvpApp(rt).fetch, port: 0, hostname: "127.0.0.1" });
+  const stopJobs = startMvpJobs(rt);
   await new Promise((r) => server.once("listening", r));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-  close = () => server.close();
+  close = () => {
+    stopJobs();
+    server.close();
+  };
 }
 base = base.replace(/\/$/, "") + "/api/v1";
 
