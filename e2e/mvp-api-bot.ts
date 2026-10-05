@@ -83,5 +83,10 @@ for (let i = 0; i < runs; i++) {
   }
 }
 close();
+// Slice 6 seeds a champion at start: a run that survives round 12 meets it.
+if (tally.ends["no-champion"]) {
+  tally.errors++;
+  console.error(`${tally.ends["no-champion"]} runs found no champion at the Crown`);
+}
 console.log(JSON.stringify({ ...tally, ms: Date.now() - t0 }));
 process.exit(tally.errors === 0 && tally.runs === runs ? 0 : 1);
