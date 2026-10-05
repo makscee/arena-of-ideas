@@ -6,11 +6,26 @@
 #
 #   npm run mvp:redeploy                 # the mission branch
 #   npm run mvp:redeploy -- <branch>     # any pushed branch
+#   npm run mvp:redeploy -- --fresh      # also wipe the world: the DB moves
+#                                        # aside to data/arena-mvp.db.bak-<time>
+#                                        # while the server is stopped
+#   npm run mvp:redeploy -- --dry-run    # print what would run on m1, run nothing
 #
 # Runs from anywhere with `ssh m1`; on m1 itself it runs locally. The server
 # is a launchd agent (ru.makscee.arena-mvp), so it restarts on crash and login.
+# The deployed commit goes into its env (MVP_BUILD): `build` on /api/v1/health.
 set -euo pipefail
-BRANCH="${1:-mission-574-mvp}"
+BRANCH=mission-574-mvp
+FRESH=0
+DRY=0
+for arg in "$@"; do
+  case "$arg" in
+    --fresh) FRESH=1 ;;
+    --dry-run) DRY=1 ;;
+    -*) echo "unknown option $arg (--fresh, --dry-run)" >&2; exit 2 ;;
+    *) BRANCH="$arg" ;;
+  esac
+done
 PORT="${ARENA_MVP_PORT:-8791}"
 # Slice 10's fusion namer: a small local model behind an OpenAI-compatible
 # endpoint (mlx_lm.server), its own launchd agent so a redeploy doesn't reload
@@ -29,6 +44,7 @@ LABEL=ru.makscee.arena-mvp
 cd "\$DIR"
 git fetch -q origin "$BRANCH"
 git checkout -q -B "$BRANCH" "origin/$BRANCH"
+BUILD=\$(git rev-parse --short HEAD)
 npm ci --no-audit --no-fund --loglevel=error
 npm run -s mvp:build
 mkdir -p "\$HOME/Library/LaunchAgents" "\$DIR/data"
@@ -73,6 +89,7 @@ cat > "\$PLIST" <<PL
     <key>HOST</key><string>127.0.0.1</string>
     <key>BASE_PATH</key><string>/arena</string>
     <key>MVP_DEV</key><string>1</string>
+    <key>MVP_BUILD</key><string>\$BUILD</string>
     <key>ARENA_NAMER_URL</key><string>http://127.0.0.1:$NAMER_PORT/v1/chat/completions</string>
   </dict>
   <key>RunAtLoad</key><true/>
@@ -84,6 +101,11 @@ PL
 # bootout returns before the job is gone; bootstrap too early fails with EIO.
 launchctl bootout "gui/\$(id -u)/\$LABEL" 2>/dev/null || true
 for i in \$(seq 1 20); do launchctl print "gui/\$(id -u)/\$LABEL" >/dev/null 2>&1 || break; sleep 0.5; done
+if [ "$FRESH" = 1 ]; then
+  # --fresh: the server is stopped; an empty DB on start, the bots reseed the champion.
+  launchctl print "gui/\$(id -u)/\$LABEL" >/dev/null 2>&1 && { echo "the server is still loaded: not moving its DB" >&2; exit 1; }
+  scripts/mvp-db-aside.sh "\$DIR/data/arena-mvp.db"
+fi
 launchctl bootstrap "gui/\$(id -u)" "\$PLIST"
 TS=/Applications/Tailscale.app/Contents/MacOS/Tailscale
 \$TS serve --bg --set-path /arena "http://127.0.0.1:$PORT" >/dev/null
@@ -96,6 +118,11 @@ echo "deployed \$(git rev-parse --short HEAD) ($BRANCH): \$(curl -fsS --max-time
 SCRIPT
 }
 
+if [ "$DRY" = 1 ]; then
+  echo "# dry run: would run on $HOST_ALIAS (branch $BRANCH, fresh $FRESH):"
+  remote
+  exit 0
+fi
 if [ "$(hostname -s 2>/dev/null)" = "m1" ] || [ "$(hostname 2>/dev/null)" = "m1.twin-pogona.ts.net" ]; then
   remote | bash
 else
