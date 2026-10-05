@@ -59,9 +59,12 @@ interface UnitState {
 }
 
 interface ReactorEntry {
-  ref: AbilityRef;
+  ref: AbilityRef; // the reactor's identity: a unit reacts as one (ability 0), a status ability on its own
   holder: string;
-  ability: Reaction;
+  ability: Reaction; // When, Who and condition of the reactor
+  /** The Does, in firing order, each with the ref its events are sourced to.
+   * A unit's recipe has one Who for all its Does (a fused unit has two). */
+  does: Array<{ ref: AbilityRef; effects: Effect[] }>;
 }
 
 interface Firing extends ReactorEntry {
@@ -330,10 +333,16 @@ class Engine {
     if (!holder) return;
     if (f.ref.status === undefined && holder.silenced) return;
     if (f.ability.condition && !this.checkCondition(f.ability.condition, holder)) return;
+    // One reaction per unit: each Who is picked once, then every Does applies
+    // to those targets, in order.
     for (const sel of f.ability.selectors) {
-      for (const target of this.evalSelector(sel, holder, f.event)) {
-        for (const effect of f.ability.effects) {
-          this.runEffect(effect, target, holder, f);
+      const targets = this.evalSelector(sel, holder, f.event);
+      for (const d of f.does) {
+        const firing = d.ref === f.ref ? f : { ...f, ref: d.ref };
+        for (const target of targets) {
+          for (const effect of d.effects) {
+            this.runEffect(effect, target, holder, firing);
+          }
         }
       }
     }
@@ -359,8 +368,10 @@ class Engine {
   private orderedReactors(): ReactorEntry[] {
     const out: ReactorEntry[] = [];
     const addUnit = (u: UnitState) => {
-      if (!u.silenced) {
-        u.abilities.forEach((ab, i) => out.push({ ref: { unit: u.id, ability: i }, holder: u.id, ability: ab }));
+      const first = u.abilities[0];
+      if (!u.silenced && first) {
+        const does = u.abilities.map((ab, i) => ({ ref: { unit: u.id, ability: i }, effects: ab.effects }));
+        out.push({ ref: does[0]!.ref, holder: u.id, ability: first, does });
       }
       for (const st of [...u.statuses].sort((p, q) => p.attachedAt - q.attachedAt)) {
         st.def.abilities.forEach((ab, i) => {
@@ -368,9 +379,11 @@ class Engine {
           const selectors = st.def.selectors ?? ab.selectors;
           if (!triggers?.length || !selectors?.length) return;
           const condition = st.def.condition ?? ab.condition;
+          const ref = { unit: u.id, status: st.def.name, ability: i };
           out.push({
-            ref: { unit: u.id, status: st.def.name, ability: i }, holder: u.id,
+            ref, holder: u.id,
             ability: { triggers, selectors, ...(condition ? { condition } : {}), effects: ab.effects },
+            does: [{ ref, effects: ab.effects }],
           });
         });
       }
@@ -576,7 +589,7 @@ class Engine {
       );
     };
 
-    for (const effect of r.ability.effects) {
+    for (const { ref, effects } of r.does) for (const effect of effects) {
       switch (effect.kind) {
         case "cancel": {
           if (effect.consumeSelf !== undefined) consumeOwn(effect.consumeSelf);
@@ -594,12 +607,12 @@ class Engine {
         case "preventDeathHeal": {
           if (draft.type !== "Death") break;
           const unitId = draft.unit;
-          const toHp = this.evalAmount(effect.toHp, { holder, ref: r.ref });
+          const toHp = this.evalAmount(effect.toHp, { holder, ref });
           followUps.push((parentId) => {
             const u = this.units.get(unitId);
             if (!u) return;
             const amount = toHp - this.curHp(u);
-            if (amount > 0) this.propose({ type: "Heal", unit: unitId, amount }, parentId, r.ref);
+            if (amount > 0) this.propose({ type: "Heal", unit: unitId, amount }, parentId, ref);
           });
           if (effect.removeSelf && own && r.ref.status !== undefined) consumeOwn(own.stacks);
           return "cancel";
@@ -809,10 +822,11 @@ function subjectOf(body: EventBody): string | undefined {
   }
 }
 
+/** Did this source come from the reactor `ref`? A unit reacts as one, so any of
+ * its own Does counts; a status ability is its own reactor. */
 function sourceIs(source: SourceRef, ref: AbilityRef): boolean {
-  return (
-    source !== "kernel" && source.unit === ref.unit && source.status === ref.status && source.ability === ref.ability
-  );
+  if (source === "kernel" || source.unit !== ref.unit || source.status !== ref.status) return false;
+  return ref.status === undefined || source.ability === ref.ability;
 }
 
 function refKey(r: AbilityRef): string {

@@ -1,55 +1,161 @@
-// Unit forms, copies, awakening and fusion (mission #574). Pure functions on
-// line units. Slice 2 owns the bodies; slice 4 (the run), slice 6 (bots) and
-// slice 7 (content tuning) only call them, so the run never inlines these rules.
-// Every function returns a new unit and leaves its inputs alone.
+// Arena MVP kernel: forms, copies, Awoken and fusion (mission #574, slice 2).
+// Pure functions over the contract's LineUnit; run.ts, the server, bots and
+// content simulation call these instead of growing units themselves.
+//
+// - A unit has two forms in its content, sleeping and awoken. The awoken form
+//   keeps the same When and upgrades the Who and/or the Does.
+// - Each copy merged in adds rules.copyGrowth (+1 PWR / +2 HP); the
+//   rules.copiesToAwaken-th copy swaps the recipe to the awoken form.
+// - Fusion takes two Awoken units in tap order: the When of the first, the Who
+//   of the second, the Does of both (first's, then second's), stats summed.
+//   A fused unit is final; further copies of either part merge into it for stats.
+//
+// Slice 2 owns these bodies. The run (slice 4), bots (slice 6) and content
+// tuning (slice 7) only call them. A fusion's name and credit come from the
+// server's namer (slice 10, server/src/mvp/fusions.ts), which also owns the
+// portmanteau fallback and the rule that bots are never credited.
 
-import { MVP_RULES, type FuseContext, type LineUnit, type MvpContent, type MvpRules, type UnitContent, type UnitId } from "./contract.js";
-import { MvpDecisionError } from "./errors.js";
+import { validateTeam } from "../validate.js";
+import type { Stats, UnitDef } from "../types.js";
+import {
+  MVP_RULES,
+  type FuseContext,
+  type LineUnit,
+  type MvpContent,
+  type MvpRules,
+  type UnitContent,
+  type UnitForm,
+  type UnitId,
+} from "./contract.js";
 
-/** Until slice 2 lands, every fusion is refused with this (the API answers 501). */
-const FUSION_NOT_YET = "fusion arrives in slice 2";
+function grown(base: Stats, extraCopies: number, rules: MvpRules): Stats {
+  return { pwr: base.pwr + extraCopies * rules.copyGrowth.pwr, hp: base.hp + extraCopies * rules.copyGrowth.hp };
+}
 
-/** A fresh line unit of `u` with `copies` copies merged in (1 = just bought).
- * Slice 2: at rules.copiesToAwaken copies it starts in the awoken form. */
+/** A fresh line unit from content with `copies` merged in: stats grown per
+ * copy, already awoken at rules.copiesToAwaken copies. */
 export function lineUnitOf(u: UnitContent, uid: string, copies = 1, rules: MvpRules = MVP_RULES): LineUnit {
-  let unit: LineUnit = { uid, kind: "unit", unitId: u.id, name: u.name, emoji: u.emoji, copies: 1, form: "sleeping", stats: { ...u.base }, recipe: u.forms.sleeping };
-  for (let n = 1; n < copies; n++) unit = mergeCopy(unit, u, rules);
-  return unit;
-}
-
-/** Where a bought copy of `unitId` merges: the index of that unit, or of a
- * fused unit with it as either part; -1 when it needs a new slot. */
-export function mergeTarget(line: LineUnit[], unitId: UnitId): number {
-  return line.findIndex((x) => (x.kind === "fused" ? x.fusion?.first === unitId || x.fusion?.second === unitId : x.unitId === unitId));
-}
-
-/** `u` with one more copy merged in: +rules.copyGrowth.
- * Slice 2 adds the awakening at rules.copiesToAwaken. */
-export function addCopy(u: LineUnit, content: MvpContent, rules: MvpRules): LineUnit {
-  return mergeCopy(u, u.kind === "unit" ? content.units.find((x) => x.id === u.unitId) : undefined, rules);
-}
-
-/** One copy into `unit`; `src` is its content (undefined for a fused unit,
- * which only grows). Slice 2: the copiesToAwaken-th copy swaps a sleeping
- * unit to src.forms.awoken. */
-function mergeCopy(unit: LineUnit, _src: UnitContent | undefined, rules: MvpRules): LineUnit {
+  if (!Number.isInteger(copies) || copies < 1) throw new Error(`copies must be a positive integer, got ${copies}`);
+  const form = copies >= rules.copiesToAwaken ? "awoken" : "sleeping";
   return {
-    ...unit,
-    copies: unit.copies + 1,
-    stats: { pwr: unit.stats.pwr + rules.copyGrowth.pwr, hp: unit.stats.hp + rules.copyGrowth.hp },
+    uid,
+    kind: "unit",
+    unitId: u.id,
+    name: u.name,
+    emoji: u.emoji,
+    copies,
+    form,
+    stats: grown(u.base, copies - 1, rules),
+    recipe: structuredClone(u.forms[form]),
   };
 }
 
-/** Why `a` and `b` (in tap order) may not fuse, or null when they may.
- * Slice 2: both awoken, neither fused. */
-export function fuseCheck(_a: LineUnit, _b: LineUnit): string | null {
-  return FUSION_NOT_YET;
+/** Where a new copy of `unitId` merges: the unit itself, or a fused unit with
+ * it as either part. -1 means it takes a new slot. */
+export function mergeTarget(line: LineUnit[], unitId: UnitId): number {
+  return line.findIndex((u) =>
+    u.kind === "fused" ? u.fusion?.first === unitId || u.fusion?.second === unitId : u.unitId === unitId,
+  );
 }
 
-/** The fused unit: When of `first`, Who of `second`, Does of both (first's,
- * then second's), stats summed; it keeps first's uid. `ctx` carries the name
- * and the credit, which the server looks up (slice 10). Call it only after
- * fuseCheck(first, second) returned null. Slice 2 fills it in. */
-export function fuseUnits(_first: LineUnit, _second: LineUnit, _ctx: FuseContext, _content: MvpContent): LineUnit {
-  throw new MvpDecisionError("fuse", FUSION_NOT_YET);
+/** Merge one more copy in: +copyGrowth, and the copiesToAwaken-th copy of a
+ * plain unit swaps it to its awoken form. Fused units only grow. */
+export function addCopy(u: LineUnit, content: MvpContent, rules: MvpRules = MVP_RULES): LineUnit {
+  const next: LineUnit = structuredClone(u);
+  next.copies += 1;
+  next.stats = grown(u.stats, 1, rules);
+  if (next.kind === "unit" && next.form === "sleeping" && next.copies >= rules.copiesToAwaken) {
+    const c = content.units.find((x) => x.id === u.unitId);
+    if (!c) throw new Error(`unknown unit ${u.unitId}`);
+    next.form = "awoken";
+    next.recipe = structuredClone(c.forms.awoken);
+  }
+  return next;
+}
+
+/** Why these two can't fuse, or null when both are Awoken and neither is fused. */
+export function fuseCheck(a: LineUnit, b: LineUnit): string | null {
+  if (a.uid === b.uid) return "a unit can't fuse with itself";
+  if (a.kind === "fused" || b.kind === "fused") return "a fused unit is final";
+  if (a.form !== "awoken" || b.form !== "awoken") return "both units must be Awoken";
+  return null;
+}
+
+/** Fuse two Awoken units in tap order: the When of `first`, the Who of
+ * `second`, the Does of both (first's, then second's), stats and copies
+ * summed. The result keeps first's uid and is final. `ctx` carries the name
+ * and the credit, which the server looks up (slice 10). */
+export function fuseUnits(first: LineUnit, second: LineUnit, ctx: FuseContext, _content: MvpContent): LineUnit {
+  const why = fuseCheck(first, second);
+  if (why) throw new Error(`can't fuse ${first.name} + ${second.name}: ${why}`);
+  const recipe: UnitForm = {
+    when: structuredClone(first.recipe.when),
+    ...(first.recipe.condition ? { condition: structuredClone(first.recipe.condition) } : {}),
+    who: structuredClone(second.recipe.who),
+    does: [...first.recipe.does, ...second.recipe.does],
+  };
+  return {
+    uid: first.uid,
+    kind: "fused",
+    unitId: first.unitId,
+    name: ctx.name,
+    emoji: `${first.emoji}${second.emoji}`,
+    copies: first.copies + second.copies,
+    form: "awoken",
+    stats: { pwr: first.stats.pwr + second.stats.pwr, hp: first.stats.hp + second.stats.hp },
+    recipe,
+    fusion: {
+      first: first.unitId,
+      second: second.unitId,
+      name: ctx.name,
+      // The namer already applied the credit rule (FusionDiscovery); copy it.
+      discoveredBy: ctx.discoveredBy,
+    },
+  };
+}
+
+function formDef(u: UnitContent, form: UnitForm, key: string): UnitDef {
+  return {
+    name: `${u.name} (${key})`,
+    base: { ...u.base },
+    triggers: form.when,
+    selectors: form.who,
+    abilities: form.does,
+    ...(form.condition ? { condition: form.condition } : {}),
+  };
+}
+
+const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
+/** Problems with a unit's two forms; empty when it can ship. */
+export function formProblems(u: UnitContent, content: Pick<MvpContent, "abilities" | "statuses">): string[] {
+  const out: string[] = [];
+  const { sleeping, awoken } = u.forms ?? ({} as UnitContent["forms"]);
+  if (!sleeping || !awoken) return [`${u.id}: needs both a sleeping and an awoken form`];
+  if (sleeping.does.length !== 1) out.push(`${u.id}: the sleeping form must Do exactly one thing, got ${sleeping.does.length}`);
+  if (awoken.does.length < 1) out.push(`${u.id}: the awoken form must Do something`);
+  if (!same(sleeping.when, awoken.when) || !same(sleeping.condition, awoken.condition)) {
+    out.push(`${u.id}: the awoken form must keep the sleeping form's When`);
+  }
+  if (same(sleeping.who, awoken.who) && same(sleeping.does, awoken.does)) {
+    out.push(`${u.id}: the awoken form must upgrade the Who and/or the Does`);
+  }
+  for (const [key, form] of [["sleeping", sleeping], ["awoken", awoken]] as const) {
+    for (const issue of validateTeam([formDef(u, form, key)], content.statuses, content.abilities, `${u.id}.${key}`)) {
+      out.push(`${issue.path}: ${issue.message}`);
+    }
+  }
+  return out;
+}
+
+/** Problems across a content pack's units (duplicate ids, bad forms). */
+export function contentFormProblems(content: MvpContent): string[] {
+  const out: string[] = [];
+  const ids = new Set<string>();
+  for (const u of content.units) {
+    if (ids.has(u.id)) out.push(`${u.id}: duplicate unit id`);
+    ids.add(u.id);
+    out.push(...formProblems(u, content));
+  }
+  return out;
 }

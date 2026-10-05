@@ -22,6 +22,7 @@ const abilities: AbilityRegistry = {
   Mend: ab("Mend", "Heal", [{ kind: "heal", amount: n(1) }]),
   Envenom: ab("Envenom", "Poison", [{ kind: "applyStatus", status: "Poison", stacks: n(1) }]),
   Ping: ab("Ping", "Strike", [{ kind: "damage", amount: n(1) }]),
+  Ping2: ab("Ping2", "Strike", [{ kind: "damage", amount: n(2) }]),
 };
 
 const trigger = (on: When["on"]): When => ({ kind: "trigger", on });
@@ -44,6 +45,12 @@ const Medic = unit("Medic", 5, 1, { on: "Hurt", unit: "otherAlly" }, [{ kind: "e
 const Zealot = unit("Zealot", 5, 1, { on: "Heal", unit: "otherAlly" }, [{ kind: "frontEnemy" }], ["Envenom"]);
 const Caller = unit("Caller", 5, 1, { on: "Death", unit: "otherAlly" }, [{ kind: "holder" }], ["Conjure"]);
 const Herald = unit("Herald", 5, 1, { on: "Summon", unit: "ally" }, [{ kind: "eventUnit" }], ["GiveShield"]);
+/** Fused shape: one When and one Who, the Does of both parts. It listens to an
+ * ally's Shield and gives a Shield itself, so it would re-trigger itself. */
+const Fused = unit("Fused", 9, 1, { on: "StatusApplied", unit: "ally", status: "Shield" }, [{ kind: "holder" }], ["GiveShield", "GiveStrength"]);
+/** Reacts to a Poison landing on anyone, not to any other status. */
+const Plaguewatcher = unit("Plaguewatcher", 5, 1, { on: "StatusApplied", unit: "any", status: "Poison" }, [{ kind: "eventUnit" }], ["Ping"]);
+const Poisoner = unit("Poisoner", 5, 1, { on: "BattleStart" }, [{ kind: "frontEnemy" }], ["Envenom"]);
 
 const run = (teamA: UnitDef[], teamB: UnitDef[], extra: Partial<BattleInput> = {}): BattleEvent[] =>
   battle({ teamA, teamB, seed: 7, statuses: stressRegistry, abilities, ...extra });
@@ -119,6 +126,8 @@ describe("3-unit cascades through chain-link events", () => {
       ["hurt-healed-status", run([dummy("Squire", 8, 1), Medic, Zealot], [dummy("Dummy", 30, 2)])],
       ["died-summoned-shield", run([dummy("Martyr", 1, 1), Caller, Herald], [dummy("Dummy", 30, 3)])],
       ["capped-at-2", run([Shieldbearer, Smith, Archer], [dummy("Dummy", 20, 1)], { chainStepCap: 2 })],
+      ["fused-reacts-once", run([Shieldbearer, Fused], [dummy("Dummy", 20, 1)])],
+      ["poison-listener", run([Shieldbearer, Poisoner, Plaguewatcher], [dummy("Dummy", 20, 1)])],
     ];
     const text = goldens.map(([name, log]) => `# ${name}\n${toJSONL(log)}`).join("");
     await expect(text).toMatchFileSnapshot("./__fixtures__/golden-chains.jsonl");
@@ -175,6 +184,51 @@ describe("a unit reacts at most once to the same event", () => {
       "Shield on A1:Fused by A1:Fused",
       "Strength on A1:Fused by A1:Fused",
     ]);
+  });
+
+  test("a fused unit reacts once: one Who for both Does, and it never re-triggers itself", () => {
+    const log = run([Shieldbearer, Fused], [dummy("Dummy", 20, 1)]);
+    const sbShield = log.find((e) => e.type === "StatusApplied" && e.source !== "kernel" && e.source.unit === "A1:Shieldbearer")!;
+    // One reaction to Shieldbearer's Shield: both Does, in order, sourced to the first and second Ability.
+    expect(log.filter((e) => e.causedBy === sbShield.id && e.source !== "kernel").map((e) => [show(e), (e.source as { ability: number }).ability]))
+      .toEqual([["Shield on A2:Fused by A2:Fused", 0], ["Strength on A2:Fused by A2:Fused", 1]]);
+    // Its own Shield wakes it again: the whole unit is blocked, neither Does fires a second time.
+    expect(log.filter((e) => e.type === "StatusApplied" && e.status === "Strength")).toHaveLength(1);
+    expect(log.filter((e) => e.type === "ChainBlocked").map((e) => e.type === "ChainBlocked" && e.ability)).toEqual([{ unit: "A2:Fused", ability: 0 }]);
+  });
+
+  test("a fused unit's reaction is one cap step: both Does land before the chain is capped", () => {
+    // Step 1: Shieldbearer. Step 2: Fused, both Does. Its self-wake is the dropped firing.
+    const log = run([Shieldbearer, Fused], [dummy("Dummy", 20, 1)], { chainStepCap: 2 });
+    const capped = log.findIndex((e) => e.type === "ChainCapped");
+    expect(capped).toBeGreaterThan(0);
+    expect(log.slice(0, capped).filter((e) => e.type === "StatusApplied").map(show)).toEqual([
+      "Shield on A1:Shieldbearer by A1:Shieldbearer",
+      "Shield on A2:Fused by A2:Fused",
+      "Strength on A2:Fused by A2:Fused",
+    ]);
+  });
+
+  test("a fused unit picks its Who once: a random target is shared by both Does", () => {
+    const Volley = unit("Volley", 9, 1, { on: "BattleStart" }, [{ kind: "randomEnemy" }], ["Ping", "Ping2"]);
+    const foes = [1, 2, 3, 4, 5].map((i) => dummy(`E${i}`, 20, 1));
+    for (const seed of [1, 2, 3, 7, 11, 42]) {
+      const log = battle({ teamA: [Volley], teamB: foes, seed, statuses: stressRegistry, abilities });
+      const hits = log.filter((e) => e.type === "Hurt" && e.causedBy === 0);
+      expect(hits.map((e) => e.type === "Hurt" && e.amount)).toEqual([1, 2]);
+      expect(new Set(hits.map((e) => e.type === "Hurt" && e.unit)).size).toBe(1);
+    }
+  });
+
+  test("status applied: a listener on Poison fires on Poison and ignores Shield", () => {
+    const log = run([Shieldbearer, Poisoner, Plaguewatcher], [dummy("Dummy", 20, 1)]);
+    const ping = log.find((e) => e.type === "Hurt" && e.source !== "kernel" && e.source.unit === "A3:Plaguewatcher")!;
+    expect(chainOf(log, ping.id)).toEqual([
+      "Hurt B1:Dummy -1 by A3:Plaguewatcher",
+      "Poison on B1:Dummy by A2:Poisoner",
+      "BattleStart",
+    ]);
+    expect(log.filter((e) => e.source !== "kernel" && e.source.unit === "A3:Plaguewatcher")).toHaveLength(1);
   });
 
   test("otherAlly: 'after an ally dies' doesn't fire on the holder's own death; 'ally' does", () => {
