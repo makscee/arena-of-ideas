@@ -5,7 +5,7 @@
 import { randomUUID } from "node:crypto";
 import type { BattleRecord, DayState, Decision, DecisionResponse, FightResult, FuseContext, Ghost, LineUnit, MvpContent, MvpRules, PlayerRef, Rating } from "../../../src/mvp/contract.js";
 import { fuseCheck } from "../../../src/mvp/forms.js";
-import { applyMvpDecision, championGhost, endRun, initMvpRun, ratingChange, runView, setOpponent, synthGhost, unitById, type DecisionContext, type MvpRunState, type MvpStep } from "../../../src/mvp/run.js";
+import { applyMvpDecision, championGhost, endRun, initMvpRun, MvpDecisionError, ratingChange, runView, setOpponent, synthGhost, unitById, type DecisionContext, type MvpRunState, type MvpStep } from "../../../src/mvp/run.js";
 import type { NameFusion } from "./fusions.js";
 import type { MvpStore } from "./store.js";
 
@@ -80,6 +80,8 @@ export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionRe
     for (const h of deps.hooks) h.onRunEnd?.(ended);
     return { run: runView(ended) };
   }
+  // A rollover since round 12 ended crowned a new champion: fight that one.
+  if (d.kind === "fight" && run.phase === "crown") run = currentCrown(deps, run);
   const ctx: DecisionContext = {};
   const fuse = fuseContext(deps.nameFusion, content, run, d);
   if (fuse) ctx.fuse = fuse;
@@ -90,8 +92,9 @@ export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionRe
   }
   const step = applyMvpDecision(run, d, content, ctx);
   // The line as it went into a round's fight becomes someone's ghost, win or
-  // lose; only after the rules accepted the fight, so a refused one adds nothing.
-  if (step.fight?.kind === "round") store.addGhost(ghostOf(run, now()));
+  // lose; only after the rules accepted the fight, so a refused one adds
+  // nothing. An empty line (a walkover) is nobody's opponent.
+  if (step.fight?.kind === "round" && run.line.length > 0) store.addGhost(ghostOf(run, now()));
   if (step.fight?.kind === "crown" && step.fight.outcome === "win" && !run.player.bot && run.crownSeq !== null) {
     store.addSlay({ seq: run.crownSeq, player: run.player, runId: run.runId, battleId: step.fight.battleId, line: structuredClone(run.line), contentVersion: run.contentVersion, at: ctx.fight!.at });
   }
@@ -113,12 +116,24 @@ function nextOpponent(deps: RunDeps, run: MvpRunState): MvpRunState {
   return setOpponent(run, championGhost(champ, run.rules), champ.seq);
 }
 
+/** The Crown's opponent as of now: when the stored champion's seq is not
+ * the one picked when round 12 ended (a rollover in between) and it is on the
+ * live content, the run fights it instead, and a slay counts for its seq. */
+function currentCrown(deps: RunDeps, run: MvpRunState): MvpRunState {
+  const champ = deps.store.currentChampion();
+  if (!champ || champ.seq === run.crownSeq || champ.contentVersion !== deps.content.version) return run;
+  return setOpponent(run, championGhost(champ, run.rules), champ.seq);
+}
+
+/** How many of a round's newest saved teams a ghost pick draws from. Tunable. */
+export const GHOST_PICK_POOL = 200;
+
 /** A saved team at the run's round, never the player's own, built with the
  * live content; a seeded bot team when the round has none (slice 6's bots
  * fill the pool). */
 function pickGhost(deps: RunDeps, run: MvpRunState): Ghost {
   const { store, content, now } = deps;
-  const candidates = store.ghosts(run.round, { excludePlayerId: run.player.id, contentVersion: content.version });
+  const candidates = store.ghosts(run.round, { excludePlayerId: run.player.id, contentVersion: content.version, limit: GHOST_PICK_POOL });
   const pick = deps.seed();
   return candidates.length > 0
     ? candidates[pick % candidates.length]!
@@ -146,6 +161,9 @@ function finish(deps: RunDeps, run: MvpRunState): MvpRunState {
  * with it). A fuse is named by peekFusionName: a preview never records a
  * discovery or calls a model. Not for fights: the route answers 400. */
 export function preview(deps: RunDeps, run: MvpRunState, d: Decision): DecisionResponse {
+  // decide() would end such a run instead of applying `d`; its line may name
+  // units the live content no longer has.
+  if (run.phase !== "over" && run.contentVersion !== deps.content.version) throw new MvpDecisionError(d.kind, "the run's content is no longer live: start a new run");
   const ctx: DecisionContext = {};
   const fuse = fuseContext(deps.peekFusionName, deps.content, run, d);
   if (fuse) ctx.fuse = fuse;
