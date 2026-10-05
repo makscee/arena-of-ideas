@@ -7,12 +7,13 @@
 // content version, so a day's new numbers start fresh), never by scanning
 // battles per request:
 // - win rate: of the fights a unit's team fought (rounds and the Crown), the
-//   share it won; a draw is a fight, not a win;
+//   share it won; a draw is a fight, not a win; a walkover (either line
+//   empty: no one to fight) is no fight;
 // - pick rate: of the finished runs, the share that ended with it on the line.
 // A fused unit counts for both its parts. Records (slays, days as champion,
 // playoff wins) are each player's Rating, which slices 4 and 5 write; the
 // client reads them from GET /home.
-import type { LineUnit, StatsView, UnitId } from "../../../src/mvp/contract.js";
+import type { BattleRecord, LineUnit, StatsView, UnitId } from "../../../src/mvp/contract.js";
 import type { RunDeps, RunHooks } from "./runs.js";
 import type { UnitTally } from "./store.js";
 
@@ -28,10 +29,17 @@ export function lineUnitIds(line: LineUnit[]): UnitId[] {
   return [...ids];
 }
 
+/** A fight where a side had no units: it won or lost without a strike, so it
+ * says nothing about the units (fight.ts's walkover). */
+export function isWalkover(b: Pick<BattleRecord, "teamA" | "teamB">): boolean {
+  return b.teamA.length === 0 || b.teamB.length === 0;
+}
+
 /** Slice 11's observers of the run engine: one tally write per fight and per finished run. */
 export function statsHooks(rt: Pick<RunDeps, "store" | "content" | "now">): RunHooks {
   return {
-    onFight(run, fight) {
+    onFight(run, fight, battle) {
+      if (isWalkover(battle)) return;
       const won = fight.outcome === "win" ? 1 : 0;
       rt.store.addUnitTallies(run.contentVersion, { runs: 0, units: lineUnitIds(run.line).map((unitId) => ({ unitId, fights: 1, wins: won, runs: 0 })) });
     },
