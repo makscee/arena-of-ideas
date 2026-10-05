@@ -5,7 +5,7 @@ import { describe, expect, test } from "vitest";
 import { battle } from "../battle.js";
 import { stressAbilities, stressRegistry } from "../content/stress.js";
 import type { AbilityDef, AbilityRegistry, BattleEvent, UnitDef, When } from "../types.js";
-import { captionOf, changeOf, stepsOf, traceOf, whyILost } from "./trace.js";
+import { captionOf, changeOf, endCaption, stepsOf, traceOf, whyILost } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -91,7 +91,16 @@ describe("playback steps", () => {
     const ids = steps.flatMap((s) => s.eventIds);
     expect(ids).toEqual([...ids].sort((a, b) => a - b));
     expect(new Set(ids).size).toBe(ids.length);
-    expect(steps.at(-1)!.caption).toMatch(/You win|They win|Draw/);
+    expect(steps.at(-1)!.caption).toMatch(/Side [AB] wins|Draw/);
+    expect(stepsOf(log, undefined, undefined, { you: "A" }).at(-1)!.caption).toMatch(/You win|They win|Draw/);
+  });
+
+  test("the end reads from the viewer's side, or names the winner when there is none", () => {
+    expect(endCaption("A", { you: "A" })).toBe("You win");
+    expect(endCaption("A", { you: "B" })).toBe("They win");
+    expect(endCaption("B", {})).toBe("Side B wins");
+    expect(endCaption("B", { sideName: (s) => (s === "A" ? "@ann" : "@bob") })).toBe("@bob wins");
+    expect(endCaption("draw", { you: "B" })).toBe("Draw");
   });
 
   test("a death is captioned with its cause and lights the killer", () => {
@@ -116,6 +125,17 @@ describe("why I lost", () => {
     // healing on their side counts for the healer's chain
     const heal = chains.find((c) => c.names[0] === "Medic");
     if (heal) expect(heal.heal).toBeGreaterThan(0);
+  });
+
+  test("two units with one name are two chains, each named by its slot", () => {
+    const Gunner = unit("Gunner", 5, 1, { on: "BattleStart" }, [{ kind: "frontEnemy" }], ["Shoot"]);
+    const log = run([dummy("Squire", 8, 1), dummy("Page", 6, 1)], [dummy("Dummy", 30, 2), Gunner, Gunner]);
+    const chains = whyILost(log, "A", 10);
+    expect(chains.filter((c) => c.names[0] === "Gunner").map((c) => [c.text, c.units[0]])).toEqual([
+      ["Gunner #2", "B2:Gunner"],
+      ["Gunner #3", "B3:Gunner"],
+    ]);
+    for (const c of chains) expect(c.hits + c.heals).toBe(c.times);
   });
 
   test("your own units' acts never show up as enemy chains", () => {
