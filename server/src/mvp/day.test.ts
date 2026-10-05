@@ -4,7 +4,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { BattleRecord, Champion, DayView, LineUnit, MvpContent, PlayerRef, Rating } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
-import type { MvpRunState } from "../../../src/mvp/run.js";
+import { ratingChange, type MvpRunState } from "../../../src/mvp/run.js";
 import { createMvpApp } from "./app.js";
 import { mvpContent } from "./content.js";
 import { dayRollover, END_DAY_RETRY_MS, endDay } from "./day.js";
@@ -160,6 +160,36 @@ describe("MVP day", () => {
     const { rt } = world();
     rt.store.putDay({ seq: 1, day: "2026-10-05", startedAt: "2026-10-05T09:00:00.000Z", endsAt: "2026-10-05T09:00:00.000Z" });
     expect(rt.today()).toMatchObject({ seq: 1, endsAt: "2026-10-06T01:00:00.000Z" });
+  });
+
+  it("the reigning champion beating their own team is no slay: no Slay row, no slay bonus, no playoff entry", async () => {
+    const { rt, call, human } = world();
+    const ann = human("ann");
+    const own = { ...weakChampion(rt), player: ann };
+    rt.store.putChampion(own);
+    const run = startRun(rt, ann);
+    const line = bigLine(rt.content);
+    // three lost rounds before, so the share (1 of 4) leaves room for a bonus
+    const lost = [1, 2, 3].map((round) => ({ battleId: `l${round}`, kind: "round" as const, round, opponent: { ghostId: `g${round}`, player: botP, round }, outcome: "loss" as const, heartsLost: 1, heartsAfter: 5 - round }));
+    const at12: MvpRunState = { ...run, round: rt.rules.rounds, line, nextUid: line.length + 1, fights: lost, hearts: 2, losses: 3 };
+    rt.store.putRun(at12);
+    decide(rt, at12, { kind: "fight" });
+    const won = decide(rt, rt.store.run(run.runId)!, { kind: "fight" });
+    expect(won.fight).toMatchObject({ kind: "crown", outcome: "win", opponent: { player: ann } });
+    expect(won.run.endedBy).toBe("crown-won");
+    expect(rt.store.slays(own.seq)).toEqual([]);
+    expect((await call<DayView>("GET", "/day")).json.slayers).toBe(0);
+    // rated on the rounds alone: the same run against someone else's team gets the bonus
+    expect(won.run.rating).toEqual(ratingChange(1000, { fights: won.run.fights, endedBy: "crown-won", player: ann }));
+    expect(won.run.rating!.actual).toBe(ratingChange(1000, { fights: won.run.fights, endedBy: "crown-lost" }).actual);
+    expect(ratingChange(1000, { fights: won.run.fights, endedBy: "crown-won" }).actual).toBeGreaterThan(won.run.rating!.actual);
+    expect(rt.store.rating(ann.id)).toMatchObject({ runs: 1, slays: 0 });
+    // a stray Slay row of the champion's own still doesn't enter the playoff
+    rt.store.addSlay({ seq: own.seq, player: ann, runId: run.runId, battleId: won.fight!.battleId, line, contentVersion: rt.content.version, at: "2026-10-05T10:00:00.000Z" });
+    const { json: day } = await call<DayView>("POST", "/dev/end-day");
+    expect(day.lastPlayoff).toMatchObject({ entrants: [], winner: null });
+    expect(day.champion).toMatchObject({ seq: 2, player: ann, line: own.line });
+    expect(rt.store.rating(ann.id)).toMatchObject({ slays: 0, playoffWins: 0, daysAsChampion: 1 });
   });
 
   it("a day end that throws doesn't fail requests: the day is served, retried a minute later, and the records move once", async () => {

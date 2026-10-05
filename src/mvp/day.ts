@@ -79,10 +79,11 @@ export interface PlayoffEntrant {
  * candidate (their latest STRONGEST_MAX_CANDIDATES slays on the live content)
  * fights the day's champion STRONGEST_SIM_SEEDS times as side A and as many as
  * side B; the most wins (then fewest losses, then the latest slay) enters.
- * Slays on other content and bots' slays are skipped. Entrants come in the
- * order of each slayer's first slay. */
+ * Slays on other content, bots' slays and the champion's own (beating your
+ * own team is no slay) are skipped. Entrants come in the order of each
+ * slayer's first slay. */
 export function playoffEntrants(slays: Slay[], champion: Champion | undefined, content: MvpContent, rules: MvpRules): PlayoffEntrant[] {
-  const live = slays.filter((s) => s.contentVersion === content.version && !s.player.bot);
+  const live = slays.filter((s) => s.contentVersion === content.version && !s.player.bot && s.player.id !== champion?.player.id);
   const byPlayer = new Map<string, Slay[]>();
   for (const s of live) byPlayer.set(s.player.id, [...(byPlayer.get(s.player.id) ?? []), s]);
   const out: PlayoffEntrant[] = [];

@@ -288,16 +288,26 @@ export const SLAY_BONUS = 0.25;
 /** What a drawn round fight counts as. Tunable. */
 export const DRAW_SCORE = 0.5;
 
+/** True when the run slew the champion: it won the Crown against someone
+ * else's team. The reigning champion beating their own champion team is no
+ * slay (no Slay row, no slay bonus, no playoff entry). Without `player`
+ * every Crown win counts. */
+export function slewChampion(run: Pick<RunView, "fights" | "endedBy"> & Partial<Pick<RunView, "player">>): boolean {
+  if (run.endedBy !== "crown-won") return false;
+  const crown = run.fights.filter((f) => f.kind === "crown").at(-1);
+  return !run.player || crown?.opponent.player.id !== run.player.id;
+}
+
 /** The run-end rating, Elo-style. The run's score is its share of round
  * fights won (draws count DRAW_SCORE; the Crown isn't a round fight), plus
- * SLAY_BONUS for a slay, clamped to 0..1; the expected score is a player
- * rated `before` against the field (rules.ratingStart). So winning half the
- * rounds holds a start rating, and a slay lifts it. */
-export function ratingChange(before: number, run: Pick<RunView, "fights" | "endedBy">, rules: MvpRules = MVP_RULES): RatingChange {
+ * SLAY_BONUS for a slay (slewChampion), clamped to 0..1; the expected score
+ * is a player rated `before` against the field (rules.ratingStart). So
+ * winning half the rounds holds a start rating, and a slay lifts it. */
+export function ratingChange(before: number, run: Pick<RunView, "fights" | "endedBy"> & Partial<Pick<RunView, "player">>, rules: MvpRules = MVP_RULES): RatingChange {
   const rounds = run.fights.filter((f) => f.kind === "round");
   const points = rounds.reduce((n, f) => n + (f.outcome === "win" ? 1 : f.outcome === "draw" ? DRAW_SCORE : 0), 0);
   const share = rounds.length > 0 ? points / rounds.length : 0;
-  const actual = Math.min(1, Math.max(0, share + (run.endedBy === "crown-won" ? SLAY_BONUS : 0)));
+  const actual = Math.min(1, Math.max(0, share + (slewChampion(run) ? SLAY_BONUS : 0)));
   const expected = 1 / (1 + 10 ** ((rules.ratingStart - before) / 400));
   return { before, after: Math.round(before + rules.ratingK * (actual - expected)), expected, actual };
 }

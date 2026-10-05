@@ -5,7 +5,7 @@
 import { randomUUID } from "node:crypto";
 import type { BattleRecord, DayState, Decision, DecisionResponse, FightResult, FuseContext, Ghost, LineUnit, MvpContent, MvpRules, PlayerRef, Rating } from "../../../src/mvp/contract.js";
 import { fuseCheck } from "../../../src/mvp/forms.js";
-import { applyMvpDecision, championGhost, endRun, initMvpRun, MvpDecisionError, ratingChange, runView, setOpponent, synthGhost, unitById, type DecisionContext, type MvpRunState, type MvpStep } from "../../../src/mvp/run.js";
+import { applyMvpDecision, championGhost, endRun, initMvpRun, MvpDecisionError, ratingChange, runView, setOpponent, slewChampion, synthGhost, unitById, type DecisionContext, type MvpRunState, type MvpStep } from "../../../src/mvp/run.js";
 import type { NameFusion } from "./fusions.js";
 import type { MvpStore } from "./store.js";
 
@@ -95,7 +95,8 @@ export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionRe
   // lose; only after the rules accepted the fight, so a refused one adds
   // nothing. An empty line (a walkover) is nobody's opponent.
   if (step.fight?.kind === "round" && run.line.length > 0) store.addGhost(ghostOf(run, now()));
-  if (step.fight?.kind === "crown" && step.fight.outcome === "win" && !run.player.bot && run.crownSeq !== null) {
+  // The reigning champion beating their own team is no slay (slewChampion).
+  if (step.fight?.kind === "crown" && step.fight.outcome === "win" && !run.player.bot && run.crownSeq !== null && step.fight.opponent.player.id !== run.player.id) {
     store.addSlay({ seq: run.crownSeq, player: run.player, runId: run.runId, battleId: step.fight.battleId, line: structuredClone(run.line), contentVersion: run.contentVersion, at: ctx.fight!.at });
   }
   if (step.fight) step.state = nextOpponent(deps, step.state);
@@ -150,7 +151,7 @@ function finish(deps: RunDeps, run: MvpRunState): MvpRunState {
   if (!r.player.bot && r.endedBy !== "content-changed") {
     const prev: Rating = store.rating(r.player.id) ?? { player: r.player, rating: rules.ratingStart, runs: 0, slays: 0, daysAsChampion: 0, playoffWins: 0 };
     r.rating = ratingChange(prev.rating, r, rules);
-    store.putRating({ ...prev, player: r.player, rating: r.rating.after, runs: prev.runs + 1, slays: prev.slays + (r.endedBy === "crown-won" ? 1 : 0) });
+    store.putRating({ ...prev, player: r.player, rating: r.rating.after, runs: prev.runs + 1, slays: prev.slays + (slewChampion(r) ? 1 : 0) });
   }
   store.putRun(r);
   return r;
