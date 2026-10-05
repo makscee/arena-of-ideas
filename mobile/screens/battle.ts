@@ -127,16 +127,18 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     return b;
   }
   function deadCard(id: string, step: Step): HTMLElement | null {
-    // A unit that falls this step still shows, crossed out, so its ✝ can be tapped.
+    // A unit that falls this step still shows, faded, so its ✝ can be tapped;
+    // so does a fallen unit that acts (a death-triggered ability), lit.
     const death = step.changes.find((c) => c.unit === id && c.kind === "death");
-    if (!death) return null;
+    if (!death && step.actor !== id) return null;
     const el = h(
       "div",
       { class: `card bv-card dead ${sides.get(id) === you ? "you" : "ghost"}` },
       h("div", { class: "emoji" }, emojiOf(id)),
       h("div", { class: "name" }, name(id)),
-      h("div", { class: "bv-changes" }, ...step.changes.filter((c) => c.unit === id).map(changeBadge)),
+      death ? h("div", { class: "bv-changes" }, ...step.changes.filter((c) => c.unit === id).map(changeBadge)) : null,
     );
+    if (step.actor === id) el.classList.add("acting");
     return el;
   }
 

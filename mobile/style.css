@@ -79,7 +79,7 @@ button.bv-caption { min-height: 48px; width: 100%; text-transform: none; letter-
 button.bv-caption.tappable::after { content: " ⓘ"; color: var(--dim); }
 .bv-recent { display: flex; flex-direction: column; gap: 2px; }
 button.bv-past { min-height: 32px; border: none; clip-path: none; text-align: left; padding: 0 12px; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-weight: 500; font-size: 14px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bv-sheet { display: flex; flex-direction: column; gap: 6px; border-color: var(--gold); }
+.bv-sheet { position: fixed; z-index: 10; left: 12px; right: 12px; bottom: calc(68px + env(safe-area-inset-bottom)); max-width: 456px; margin: 0 auto; max-height: 60dvh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; border-color: var(--gold); box-shadow: 0 -12px 32px #000c; }
 .bv-trace-text { font-size: 15px; color: var(--gold); word-break: break-word; }
 .bv-link { display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; align-items: center; font-size: 16px; }
 .bv-link.you span:nth-child(2) { color: var(--you); }
