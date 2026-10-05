@@ -2,6 +2,7 @@
 // ghost pool full, the pool staying bounded, and the job that does both.
 import { describe, expect, it, vi } from "vitest";
 import type { Champion } from "../../../src/mvp/contract.js";
+import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { BOT_TARGET, botDecision, botWorld, playBotRun, seedChampion, thinRounds, topUpGhosts } from "./bots.js";
 import { mvpContent } from "./content.js";
 import { mvpRuntime, type MvpDeps } from "./runtime.js";
@@ -25,6 +26,21 @@ describe("MVP bots and world (slice 6)", () => {
     expect(rt.store.battles()).toEqual([]);
     expect(seedChampion(rt)).toBeUndefined();
   });
+
+  it("stores the champion's fusions as bot discoveries, so a later fuse of the pair shows the same name", () => {
+    for (let seed = 1; seed <= 6; seed++) {
+      let s = seed;
+      const rt = world({ seed: () => (s = (s * 1103515245 + 12345) >>> 0) });
+      const champ = seedChampion(rt)!;
+      const fused = champ.line.filter((u) => u.fusion);
+      for (const u of fused) {
+        expect(rt.store.fusion(u.fusion!.first, u.fusion!.second)).toMatchObject({ name: u.name, discoveredBy: null });
+        expect(u.fusion).toMatchObject({ name: u.name, discoveredBy: null });
+      }
+      if (fused.length > 0) return;
+    }
+    throw new Error("no seeded champion held a fusion");
+  }, 30_000);
 
   it("replaces a champion built with other content, for today's seq", () => {
     const rt = world();
@@ -52,8 +68,8 @@ describe("MVP bots and world (slice 6)", () => {
       }
       // Bounded: a full pool plays no more runs.
       expect(topUpGhosts(rt, { target }).runs).toBe(0);
-      // Bots stop before the Crown: no Crown battles, no slays, no ratings.
-      expect(rt.store.battles({ kind: "crown" })).toEqual([]);
+      // Bots play whole runs: they fight the Crown, but write no slays and no ratings.
+      expect(rt.store.battles({ kind: "crown" }).length).toBeGreaterThan(0);
       expect(rt.store.slays(rt.today().seq)).toEqual([]);
       // Bots fuse, and never claim the credit.
       expect(rt.store.fusions().length).toBeGreaterThan(0);
@@ -71,10 +87,30 @@ describe("MVP bots and world (slice 6)", () => {
   it("the bot only makes decisions the rules accept, and fights when nothing else is worth doing", () => {
     const rt = world();
     // playBotRun goes through decide(), which throws on a refused decision.
-    for (let i = 0; i < 20; i++) expect(["shop", "crown", "over"]).toContain(playBotRun(rt).phase);
+    seedChampion(rt);
+    // Whole runs, the Crown included; no rating for a bot.
+    for (let i = 0; i < 20; i++) {
+      const run = playBotRun(rt);
+      expect(run.phase).toBe("over");
+      expect(run.rating).toBeNull();
+      expect(rt.store.rating(run.player.id)).toBeUndefined();
+    }
     const d = botDecision({ phase: "shop", line: [], offers: [], gold: 0 } as never, rt.content, rt.rules, 0);
     expect(d).toEqual({ kind: "fight" });
     expect(botDecision({ phase: "crown" } as never, rt.content, rt.rules, 0)).toEqual({ kind: "fight" });
+  });
+
+  it("the bot fuses only a pair whose name is ready", () => {
+    const rt = world();
+    const [a, b] = rt.content.units;
+    const line = [lineUnitOf(a!, "u1", 3, rt.rules), lineUnitOf(b!, "u2", 3, rt.rules)];
+    const run = { phase: "shop", line, offers: [], gold: 0 } as never;
+    expect(botDecision(run, rt.content, rt.rules, 0)).toMatchObject({ kind: "fuse" });
+    expect(botDecision(run, rt.content, rt.rules, 0, () => false)).not.toMatchObject({ kind: "fuse" });
+    const asked: string[] = [];
+    const d = botDecision(run, rt.content, rt.rules, 0, (x, y) => (asked.push(`${x.uid}+${y.uid}`), true));
+    expect(asked).toHaveLength(1);
+    expect(d).toEqual({ kind: "fuse", first: line.findIndex((u) => asked[0]!.startsWith(u.uid)), second: line.findIndex((u) => asked[0]!.endsWith(u.uid)) });
   });
 
   it("botWorld seeds the champion at start and tops up in the background until stopped", async () => {

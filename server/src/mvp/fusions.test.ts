@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { DecisionResponse, FusionDiscovery, PlayerRef, UnitContent } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { mvpContent } from "./content.js";
-import { cleanModelName, drainFusionNames, fusionNaming, httpModelNamer, portmanteau, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
+import { cleanModelName, drainFusionNames, fusionNameReady, fusionNaming, httpModelNamer, MODEL_FAILURES, portmanteau, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
 import { decide, preview, startRun } from "./runs.js";
 import { mvpRuntime } from "./runtime.js";
 import { MemoryMvpStore } from "./store.js";
@@ -69,6 +69,11 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
       expect(cleanModelName(raw), raw).toBeNull();
     // Short names are matched per word, so ordinary words that contain them pass.
     for (const raw of ["Thornback", "Invader", "Marionette", "Smuggler", "Scamper", "Supersonic", "Subterran Ox"]) expect(cleanModelName(raw), raw).not.toBeNull();
+  });
+
+  it("splits CamelCase before matching words, and stems don't over-block ordinary names", () => {
+    for (const raw of ["LordVader", "SuperMario", "BabyYoda", "IronMan", "Xmen", "Witchers"]) expect(cleanModelName(raw), raw).toBeNull();
+    for (const raw of ["Hexmender", "Badminton", "Iron Mantle", "Twitcher", "Exterminator", "Carambola", "Fluffy"]) expect(cleanModelName(raw), raw).not.toBeNull();
   });
 
   it("refuses names that only join the two parts", () => {
@@ -162,48 +167,64 @@ describe("MVP fusion names: through the runtime", () => {
     expect(pv.run.line[0]).toMatchObject({ name: "Grimward" });
   });
 
-  it("a pair only bots fused with the fallback is renamed once when the model answers, on the store and their units", async () => {
-    let answer: string | null = "Grimward";
-    const { rt, stored } = world(async () => answer, bot);
-    // Fused before the model answered: the fallback name.
-    decide(rt, stored(), { kind: "fuse", first: 0, second: 1 });
-    expect(rt.store.fusion(a!.id, b!.id)).toMatchObject({ name: portmanteau(a!.name, b!.name), nameSource: "fallback", discoveredBy: null });
-    await drainFusionNames(rt.store);
-    expect(rt.store.fusion(a!.id, b!.id)).toMatchObject({ name: "Grimward", nameSource: "model", discoveredBy: null });
-    expect(stored().line[0]).toMatchObject({ name: "Grimward", fusion: { name: "Grimward" } });
-    // Never again: a later answer changes nothing.
-    answer = "Otherwise";
-    decide(rt, stored(), { kind: "reorder", from: 0, to: 0 });
-    await drainFusionNames(rt.store);
-    expect(rt.store.fusion(a!.id, b!.id)?.name).toBe("Grimward");
-  });
-
-  it("a human claiming a bots' fallback pair fixes its name before the model answers", async () => {
+  it("the first fuse fixes a pair's name for good, a bot's too: a later model answer changes nothing", async () => {
     let release!: (name: string) => void;
-    const { rt, stored } = world(() => new Promise<string>((r) => (release = r)), bot);
+    const answered = new Promise<string>((r) => (release = r));
+    const { rt, stored } = world(() => answered, bot);
+    decide(rt, stored(), { kind: "reorder", from: 0, to: 0 }); // queues the bot's pairs
+    const draining = drainFusionNames(rt.store);
+    // Fused before the model answered: the fallback, for good.
     decide(rt, stored(), { kind: "fuse", first: 0, second: 1 });
     const fallback = portmanteau(a!.name, b!.name);
-    const draining = drainFusionNames(rt.store);
+    expect(rt.store.fusion(a!.id, b!.id)).toMatchObject({ name: fallback, nameSource: "fallback", discoveredBy: null });
+    release("Grimward");
+    await draining;
+    expect(rt.store.fusion(a!.id, b!.id)).toMatchObject({ name: fallback, nameSource: "fallback" });
+    expect(stored().line[0]).toMatchObject({ name: fallback, fusion: { name: fallback } });
+    // A human fusing it later gets the same name and claims the credit.
     const human = startRun(rt, maks);
     rt.store.putRun({ ...human, line: [lineUnitOf(a!, "h1", 3, rt.rules), lineUnitOf(b!, "h2", 3, rt.rules)], nextUid: 3 });
     const done = decide(rt, rt.store.run(human.runId)!, { kind: "fuse", first: 0, second: 1 });
     expect(done.run.line[0]).toMatchObject({ name: fallback, fusion: { discoveredBy: maks } });
-    release("Grimward");
-    await draining;
-    expect(rt.store.fusion(a!.id, b!.id)).toMatchObject({ name: fallback, discoveredBy: maks, nameSource: "fallback" });
-    expect(rt.store.run(human.runId)!.line[0]).toMatchObject({ name: fallback });
+    expect(rt.store.fusion(a!.id, b!.id)).toMatchObject({ name: fallback, discoveredBy: maks });
   });
 
-  it("after a restart, asks again for the bots' fallback pairs in the store", async () => {
-    const store = new MemoryMvpStore();
-    store.putFusion({ first: a!.id, second: b!.id, name: "Abfallback", discoveredBy: null, discoveredAt: "t", nameSource: "fallback" });
-    store.putFusion({ first: b!.id, second: a!.id, name: "Bafixed", discoveredBy: maks, discoveredAt: "t", nameSource: "fallback" });
+  it("asks for humans' pairs before bots', also pairs queued while it drains", async () => {
     const asked: string[] = [];
-    fusionNaming({ store, content, now: () => new Date() }, { model: async (x, y) => (asked.push(`${x.id}+${y.id}`), "Grimward") });
-    await drainFusionNames(store);
-    expect(asked).toEqual([`${a!.id}+${b!.id}`]);
-    expect(store.fusion(a!.id, b!.id)).toMatchObject({ name: "Grimward", nameSource: "model" });
-    expect(store.fusion(b!.id, a!.id)).toMatchObject({ name: "Bafixed" });
+    const botSide = world(async (x, y) => (asked.push(`${x.id}+${y.id}`), `Name${"xyz"[asked.length % 3]}wyn`), bot);
+    const { rt } = botSide;
+    decide(rt, botSide.stored(), { kind: "reorder", from: 0, to: 0 }); // 6 bots' pairs of a, b, c
+    const human = startRun(rt, maks);
+    rt.store.putRun({ ...human, line: [lineUnitOf(c!, "h1", 3, rt.rules), lineUnitOf(a!, "h2", 3, rt.rules)], nextUid: 3 });
+    decide(rt, rt.store.run(human.runId)!, { kind: "reorder", from: 0, to: 0 }); // c+a and a+c move up
+    await drainFusionNames(rt.store);
+    expect(asked).toHaveLength(6);
+    expect(asked.slice(0, 2).sort()).toEqual([`${a!.id}+${c!.id}`, `${c!.id}+${a!.id}`].sort());
+  });
+
+  it("a bot fuses a pair only once its name is ready, or once the model gave up on it", async () => {
+    let down = false;
+    const { rt, stored } = world(async () => {
+      if (down) throw new Error("503");
+      return "Grimward";
+    }, bot, () => 0);
+    expect(fusionNameReady(rt.store, a!.id, b!.id)).toBe(false);
+    decide(rt, stored(), { kind: "reorder", from: 0, to: 0 });
+    await drainFusionNames(rt.store);
+    expect(fusionNameReady(rt.store, a!.id, b!.id)).toBe(true);
+    // The model is down: a new pair is asked MODEL_FAILURES times, then given up on.
+    const d = content.units[3]!;
+    down = true;
+    rt.store.putRun({ ...stored(), line: [...stored().line, lineUnitOf(d, "u4", 3, rt.rules)], nextUid: 5 });
+    decide(rt, stored(), { kind: "reorder", from: 0, to: 0 });
+    for (let i = 1; i < MODEL_FAILURES; i++) {
+      await drainFusionNames(rt.store);
+      expect(fusionNameReady(rt.store, a!.id, d.id)).toBe(false);
+    }
+    await drainFusionNames(rt.store);
+    expect(fusionNameReady(rt.store, a!.id, d.id)).toBe(true);
+    // With no model at all, every pair is ready.
+    expect(fusionNameReady(new MemoryMvpStore(), a!.id, b!.id)).toBe(true);
   });
 
   it("a blocked answer keeps the portmanteau", async () => {
@@ -221,11 +242,11 @@ describe("MVP fusion names: through the runtime", () => {
     const botWorld = world(async (x, y) => (asked.push(`${x.id}+${y.id}`), "Duskmend"), bot);
     decide(botWorld.rt, botWorld.stored(), { kind: "reorder", from: 0, to: 0 });
     expect(botWorld.rt.store.fusions()).toEqual([]);
-    decide(botWorld.rt, botWorld.stored(), { kind: "fuse", first: 0, second: 1 });
+    // Bots' lines are asked ahead too.
     await drainFusionNames(botWorld.rt.store);
-    // Bots don't prefetch; only the fused pair is asked, to rename its fallback.
-    expect(asked).toEqual([`${a!.id}+${b!.id}`]);
-    expect(botWorld.rt.store.fusion(a!.id, b!.id)).toMatchObject({ name: "Duskmend", discoveredBy: null });
+    expect(asked).toHaveLength(6);
+    decide(botWorld.rt, botWorld.stored(), { kind: "fuse", first: 0, second: 1 });
+    expect(botWorld.rt.store.fusion(a!.id, b!.id)).toMatchObject({ name: "Duskmend", discoveredBy: null, nameSource: "model" });
 
     const { rt } = botWorld;
     const human = startRun(rt, maks);
@@ -256,5 +277,15 @@ describe("MVP fusion names: the HTTP model client", () => {
     const ask = httpModelNamer(`http://127.0.0.1:${port}/v1/chat/completions`);
     expect(await ask(brawler, medic)).toBe("Ironcare");
     expect(got?.messages.at(-1)?.content).toContain("Brawler (first) merges with x Medic (second)");
+  });
+
+  it("throws on a 5xx (mlx still loading), so the pair is asked again", async () => {
+    server = createServer((_req, res) => {
+      res.statusCode = 503;
+      res.end("loading");
+    });
+    await new Promise<void>((r) => server!.listen(0, "127.0.0.1", r));
+    const { port } = server.address() as AddressInfo;
+    await expect(httpModelNamer(`http://127.0.0.1:${port}/v1/chat/completions`)(brawler, medic)).rejects.toThrow("503");
   });
 });
