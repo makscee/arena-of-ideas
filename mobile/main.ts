@@ -6,7 +6,7 @@
 // Home also shows DayView.lastPlayoff (slice 5 fills it; a game opens in
 // battleScreen) and, under "Dev", an "End day now" button (api.endDay(): 404
 // without MVP_DEV=1, 501 until slice 5).
-import type { BattleRecord, DayView, FightResult, HomeView, LineUnit, MvpContent, MvpRules, Offer, PlayoffResult, RunView } from "../src/mvp/contract";
+import type { BattleRecord, DayView, FightResult, HomeView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView } from "../src/mvp/contract";
 import { MVP_RULES } from "../src/mvp/contract";
 import { ApiError, api } from "./api";
 import { getContent } from "./content";
@@ -148,7 +148,7 @@ async function homeScreen(): Promise<void> {
       h("div", { class: "dim small", "data-testid": "slayers" }, `${plural(home.day.slayers, "slayer")} today · new champion at ${rules.dayEndsAt} Moscow`),
     ),
     champ ? hint(r ? "Tap a card to read it. Beat this team in the Crown to become a slayer." : "This is the team to beat. Tap a card to read it, then Play.") : null,
-    playoffPanel(home.day.lastPlayoff ?? null, content, err),
+    playoffPanel(home.day.lastPlayoff ?? null, champ?.player ?? null, content, err),
     h(
       "div",
       { class: "panel records", "data-testid": "records" },
@@ -165,21 +165,36 @@ async function homeScreen(): Promise<void> {
   );
 }
 
-/** Yesterday's playoff: the winner, the table and each game (opens in the viewer). */
-function playoffPanel(p: PlayoffResult | null, content: MvpContent, err: HTMLElement): HTMLElement | null {
+/** How yesterday ended, in one sentence. With no playoff to show (no
+ * slayers, or one who won without a game) the sentence is all there is;
+ * `champion` is today's, the one who stayed or was crowned. */
+function playoffSummary(p: PlayoffResult, champion: PlayerRef | null): string {
+  if (p.entrants.length === 0) return champion ? `No slayers: @${champion.name} stays champion.` : "No slayers, and no champion yet.";
+  if (p.entrants.length === 1) {
+    const only = p.winner ?? p.entrants[0]!;
+    return `@${only.name} was the only slayer and is the new champion.`;
+  }
+  return p.winner ? `👑 @${p.winner.name} won the playoff and is the new champion.` : "The playoff had no winner.";
+}
+
+/** Yesterday's end: a sentence, and with a real playoff (two or more
+ * slayers) its table and each game (opens in the viewer). */
+function playoffPanel(p: PlayoffResult | null, champion: PlayerRef | null, content: MvpContent, err: HTMLElement): HTMLElement | null {
   if (!p) return null;
   const watch = (battleId: string, label: string) =>
     button(label, () => void guarded(err, async () => {
       const battle = await api.battle(battleId);
       battleScreen({ battle, content, onDone: () => void homeScreen() });
-    }), "small game");
+    }), "small game", "playoff-game");
+  const played = p.entrants.length >= 2;
   return h(
     "div",
     { class: "panel stack", "data-testid": "playoff" },
-    h("div", { class: "label" }, `Playoff · day ${p.seq}`),
-    h("div", {}, p.winner ? `👑 @${p.winner.name} took the throne.` : p.entrants.length ? "No winner." : "No slayers; the champion stays."),
-    ...p.standings.map((s) => h("div", { class: "num small" }, `@${s.player.name} · ${s.wins}W ${s.draws}D ${s.losses}L`)),
-    p.games.length ? h("div", { class: "games" }, ...p.games.map((g) => watch(g.battleId, `@${g.a.name} v @${g.b.name}`))) : null,
+    h("div", { class: "label" }, played ? `Playoff · day ${p.seq}` : `Day ${p.seq} ended`),
+    h("div", { "data-testid": "playoff-summary" }, playoffSummary(p, champion)),
+    ...(played ? p.standings.map((s) => h("div", { class: "num small", "data-testid": "playoff-standing" }, `@${s.player.name} · ${s.wins}W ${s.draws}D ${s.losses}L`)) : []),
+    played && p.games.length ? h("div", { class: "label" }, "Games · tap to watch") : null,
+    played && p.games.length ? h("div", { class: "games" }, ...p.games.map((g) => watch(g.battleId, `@${g.a.name} v @${g.b.name}`))) : null,
   );
 }
 
