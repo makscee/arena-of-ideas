@@ -55,7 +55,7 @@ export interface RunDeps {
 export function startRun(deps: RunDeps, player: PlayerRef): MvpRunState {
   const active = deps.store.activeRun(player.id);
   if (active) {
-    if (active.contentVersion === deps.content.version) return active;
+    if (active.contentVersion === deps.content.version) return currentRun(deps, active);
     const ended = finish(deps, endRun(active, "content-changed"));
     for (const h of deps.hooks) h.onRunEnd?.(ended);
   }
@@ -115,6 +115,18 @@ function nextOpponent(deps: RunDeps, run: MvpRunState): MvpRunState {
   const champ = deps.store.currentChampion();
   if (!champ || champ.contentVersion !== deps.content.version) return endRun(run, "no-champion");
   return setOpponent(run, championGhost(champ, run.rules), champ.seq);
+}
+
+/** A stored run as its player sees it now (GET /runs/:id, and an active run
+ * POST /runs hands back): a run waiting for the Crown shows the current
+ * champion after a rollover (currentCrown), and the switch is stored, so the
+ * fight is the one shown. Other runs come back as they are. */
+export function currentRun(deps: RunDeps, run: MvpRunState): MvpRunState {
+  if (run.phase !== "crown") return run;
+  deps.today(); // a day past its end rolls over first
+  const cur = currentCrown(deps, run);
+  if (cur !== run) deps.store.putRun(cur);
+  return cur;
 }
 
 /** The Crown's opponent as of now: when the stored champion's seq is not

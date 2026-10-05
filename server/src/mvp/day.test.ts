@@ -2,7 +2,7 @@
 // ends, the day-end playoff crowning the next champion, a day with no slayers
 // keeping the champion, the 04:00 Moscow rollover and the dev "end day now".
 import { describe, expect, it, vi } from "vitest";
-import type { BattleRecord, Champion, DayView, LineUnit, MvpContent, PlayerRef, Rating } from "../../../src/mvp/contract.js";
+import type { BattleRecord, Champion, DayView, LineUnit, MvpContent, PlayerRef, Rating, RunView } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { ratingChange, type MvpRunState } from "../../../src/mvp/run.js";
 import { createMvpApp } from "./app.js";
@@ -190,6 +190,26 @@ describe("MVP day", () => {
     expect(day.lastPlayoff).toMatchObject({ entrants: [], winner: null });
     expect(day.champion).toMatchObject({ seq: 2, player: ann, line: own.line });
     expect(rt.store.rating(ann.id)).toMatchObject({ slays: 0, playoffWins: 0, daysAsChampion: 1 });
+  });
+
+  it("a run waiting for the Crown across a rollover shows and fights the new champion", async () => {
+    const { rt, call, human, setClock } = world();
+    weakChampion(rt);
+    const ann = human("ann");
+    const maks = human("maks");
+    const run = startRun(rt, maks);
+    const line = bigLine(rt.content, 1);
+    const at12: MvpRunState = { ...run, round: rt.rules.rounds, line, nextUid: 2 };
+    rt.store.putRun(at12);
+    expect(decide(rt, at12, { kind: "fight" }).run).toMatchObject({ phase: "crown", nextOpponent: { player: botP } });
+    slay(rt, ann, bigLine(rt.content));
+    setClock("2026-10-06T01:00:00.000Z"); // the rollover crowns ann
+    const shown = await call<RunView>("GET", `/runs/${run.runId}`, maks);
+    expect(shown.json).toMatchObject({ phase: "crown", nextOpponent: { player: ann } });
+    expect(rt.store.run(run.runId)?.crownSeq).toBe(2);
+    expect((await call<RunView>("POST", "/runs", maks)).json.nextOpponent).toMatchObject({ player: ann });
+    const fought = decide(rt, rt.store.run(run.runId)!, { kind: "fight" });
+    expect(fought.fight?.opponent).toMatchObject({ ghostId: "champion-2", player: ann });
   });
 
   it("a day end that throws doesn't fail requests: the day is served, retried a minute later, and the records move once", async () => {

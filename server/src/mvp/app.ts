@@ -9,7 +9,7 @@ import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, type Decision, type Hom
 import { MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
 import { dayView, endDay, hiddenSlay } from "./day.js";
 import { MvpNotYet } from "./errors.js";
-import { decide, preview, startRun } from "./runs.js";
+import { currentRun, decide, preview, startRun } from "./runs.js";
 import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
 import { statsView } from "./stats.js";
 
@@ -71,7 +71,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     const run = store.run(c.req.param("runId"));
     if (!run) return bad(c, 404, "no such run");
     if (playerOf(c)?.id !== run.player.id) return bad(c, 401, "not your run");
-    return c.json(runView(run));
+    return c.json(runView(currentRun(rt, run)));
   });
 
   /** The caller's run and the Decision in `body`, or the error response.
