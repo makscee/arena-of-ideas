@@ -177,7 +177,22 @@ function isStatusFollowUp(log: BattleEvent[], e: BattleEvent): boolean {
   return p?.type === "StatusApplied" || p?.type === "StatusRemoved";
 }
 
-export function stepsOf(log: BattleEvent[], name: NameOf = displayNames(log), sides = sidesOf(log)): Step[] {
+/** Whose eyes the captions use: `you` reads the end as "You win" / "They
+ * win"; without it (a playoff game, a champion's battle) the end names the
+ * winning side, by `sideName` when given ("@alice wins"), else "Side A wins". */
+export interface Perspective {
+  you?: Side;
+  sideName?: (side: Side) => string;
+}
+
+/** How the battle's end reads from `p`. */
+export function endCaption(winner: Side | "draw", p: Perspective = {}): string {
+  if (winner === "draw") return "Draw";
+  if (p.you) return winner === p.you ? "You win" : "They win";
+  return `${p.sideName ? p.sideName(winner) : `Side ${winner}`} wins`;
+}
+
+export function stepsOf(log: BattleEvent[], name: NameOf = displayNames(log), sides = sidesOf(log), p: Perspective = {}): Step[] {
   const steps: Step[] = [];
   const byEvent = new Map<number, Step>();
   for (const e of log) {
@@ -188,7 +203,7 @@ export function stepsOf(log: BattleEvent[], name: NameOf = displayNames(log), si
         parent.eventIds.push(e.id);
         const c = changeOf(e);
         if (c) parent.changes.push(c);
-        parent.caption = captionOf(log, e.causedBy!, name, parent.eventIds);
+        parent.caption = captionOf(log, e.causedBy!, name, parent.eventIds, p);
         byEvent.set(e.id, parent);
         continue;
       }
@@ -201,7 +216,7 @@ export function stepsOf(log: BattleEvent[], name: NameOf = displayNames(log), si
       turn: e.turn,
       actor,
       actorSide: actor ? sides.get(actor) ?? null : null,
-      caption: captionOf(log, e.id, name, [e.id]),
+      caption: captionOf(log, e.id, name, [e.id], p),
       changes: c ? [c] : [],
     };
     steps.push(step);
@@ -218,7 +233,7 @@ function causeName(log: BattleEvent[], e: BattleEvent, name: NameOf): string {
 }
 
 /** One line, cause → effect, for the event `id` (plus merged follow-ups). */
-export function captionOf(log: BattleEvent[], id: number, name: NameOf = displayNames(log), merged: number[] = [id]): string {
+export function captionOf(log: BattleEvent[], id: number, name: NameOf = displayNames(log), merged: number[] = [id], p: Perspective = {}): string {
   const e = log[id];
   if (!e) return "";
   switch (e.type) {
@@ -255,7 +270,7 @@ export function captionOf(log: BattleEvent[], id: number, name: NameOf = display
     case "Intercepted":
       return `${name(e.by.unit)}${e.by.status ? ` (${e.by.status})` : ""} → stops a ${e.original}${e.unit ? ` on ${name(e.unit)}` : ""}`;
     case "BattleEnd":
-      return e.winner === "draw" ? "Draw" : e.winner === "A" ? "You win" : "They win";
+      return endCaption(e.winner, p);
     default:
       return e.type;
   }
@@ -266,16 +281,28 @@ export function captionOf(log: BattleEvent[], id: number, name: NameOf = display
 export interface LossChain {
   /** Unit names, nearest cause first: ["Archer", "Smith"]. */
   names: string[];
-  /** "Archer ← Smith" (with the status when one carried it). */
+  /** The unit instances behind it, nearest first: ["B3:Archer", "B2:Smith"].
+   * Chains group by instance, so two Medics are two chains. */
+  units: string[];
+  /** "Archer ← Smith" (with the status when one carried it). When two chains
+   * would read the same (two Medics), each first name gets its slot: "Medic #2". */
   text: string;
   /** Damage it dealt to your units (overkill not counted), plus healing it gave theirs. */
   impact: number;
   damage: number;
   heal: number;
   kills: number;
-  /** How many changes it made; the first one, to replay its trace. */
+  /** How many changes it made (hits on your units plus heals on theirs); the first one, to replay its trace. */
   times: number;
+  hits: number;
+  heals: number;
   sampleEventId: number;
+}
+
+/** "B2:Medic" → 2: the slot a unit started in; null for a summon or another id. */
+function slotOf(id: string): number | null {
+  const m = /^[AB](\d+):/.exec(id);
+  return m ? Number(m[1]) : null;
 }
 
 /** The enemy chains that did the most against `you` (default side A): every
@@ -289,13 +316,16 @@ export function whyILost(log: BattleEvent[], you: Side = "A", top = 3): LossChai
   const hp = new Map<string, number>();
   for (const e of log) if (e.type === "BattleStart") for (const s of ["A", "B"] as const) for (const r of e.teams[s]) hp.set(r.id, r.hp);
   const groups = new Map<string, LossChain>();
+  // By instance and how it reads: a unit's strikes and abilities are one row
+  // ("Medic"), its status ticks another ("Zealot (Poison)").
+  const keyOf = (t: Trace) => t.links.map((l) => `${l.unit}|${linkText(l)}`).join(" ← ");
   const add = (e: BattleEvent, dmg: number, heal: number, kill: boolean) => {
     const t = traceOf(log, e.id, name, sides);
     if (t.links[0]?.side !== them) return;
-    const key = t.links.map(linkText).join(" ← ");
+    const key = keyOf(t);
     let g = groups.get(key);
     if (!g) {
-      g = { names: t.links.map((l) => l.name), text: key, impact: 0, damage: 0, heal: 0, kills: 0, times: 0, sampleEventId: e.id };
+      g = { names: t.links.map((l) => l.name), units: t.links.map((l) => l.unit), text: t.links.map(linkText).join(" ← "), impact: 0, damage: 0, heal: 0, kills: 0, times: 0, hits: 0, heals: 0, sampleEventId: e.id };
       groups.set(key, g);
     }
     g.damage += dmg;
@@ -303,6 +333,8 @@ export function whyILost(log: BattleEvent[], you: Side = "A", top = 3): LossChai
     g.impact += dmg + heal;
     g.kills += kill ? 1 : 0;
     g.times++;
+    if (heal > 0) g.heals++;
+    else g.hits++;
   };
   for (const e of log) {
     if (e.type === "Hurt") {
@@ -323,10 +355,22 @@ export function whyILost(log: BattleEvent[], you: Side = "A", top = 3): LossChai
       const cause = e.causedBy !== null ? log[e.causedBy] : undefined;
       if (cause) {
         const t = traceOf(log, cause.id, name, sides);
-        const g = groups.get(t.links.map(linkText).join(" ← "));
+        const g = groups.get(keyOf(t));
         if (g && t.links[0]?.side === them) g.kills++;
       }
     }
   }
-  return [...groups.values()].sort((a, b) => b.impact - a.impact || b.kills - a.kills).slice(0, top);
+  const all = [...groups.values()];
+  // Two instances with one name (two Medics) read the same: name the first by its slot.
+  const seen = new Map<string, number>();
+  for (const g of all) seen.set(g.text, (seen.get(g.text) ?? 0) + 1);
+  const summons = new Map<string, number>();
+  for (const g of all) {
+    if (seen.get(g.text)! < 2) continue;
+    const slot = slotOf(g.units[0]!);
+    const k = summons.get(g.text) ?? 0;
+    if (slot === null) summons.set(g.text, k + 1);
+    g.text = g.text.replace(g.names[0]!, slot !== null ? `${g.names[0]} #${slot}` : `${g.names[0]} (summon ${k + 1})`);
+  }
+  return all.sort((a, b) => b.impact - a.impact || b.kills - a.kills).slice(0, top);
 }
