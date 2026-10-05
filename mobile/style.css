@@ -60,3 +60,37 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .sheet { width: 100%; max-width: 480px; max-height: 85dvh; overflow-y: auto; background: var(--panel); border-top: 1px solid var(--you); padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
 /* A request is out (main.ts guarded): no taps until it answers. */
 #app.busy button, #app.busy .card { pointer-events: none; }
+/* Battle viewer (slice 9, screens/battle.ts). */
+.bv-line { min-height: 104px; }
+.bv-card { transition: transform 0.15s, box-shadow 0.15s; }
+.bv-card.acting { transform: translateY(-3px); box-shadow: 0 0 0 2px var(--gold) inset; }
+.bv-card.you.acting { background: color-mix(in srgb, var(--you) 16%, var(--panel)); }
+.bv-card.ghost.acting { background: color-mix(in srgb, var(--ghost) 16%, var(--panel)); }
+.bv-card.silenced .emoji { filter: grayscale(1); }
+.bv-card.dead { opacity: 0.5; }
+.bv-card.dead .emoji { filter: grayscale(1); }
+.bv-status { font-size: 10px; color: var(--dim); line-height: 1.1; }
+.bv-changes { position: absolute; inset: 22px 0 auto 0; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+button.bv-change { min-height: 26px; padding: 0 6px; font-family: "IBM Plex Mono", monospace; font-size: 15px; font-weight: 700; letter-spacing: 0; text-transform: none; background: var(--bg); clip-path: none; border-radius: 4px; }
+.bv-change.damage, .bv-change.death, .bv-change.debuff { color: var(--ghost); border-color: var(--ghost); }
+.bv-change.heal, .bv-change.summon { color: var(--you); border-color: var(--you); }
+.bv-change.buff, .bv-change.status, .bv-change.silence { color: var(--gold); border-color: var(--gold); font-size: 11px; }
+button.bv-caption { min-height: 48px; width: 100%; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 17px; color: var(--text); border-color: var(--line); text-align: left; padding: 4px 12px; }
+button.bv-caption.tappable::after { content: " ⓘ"; color: var(--dim); }
+.bv-recent { display: flex; flex-direction: column; gap: 2px; }
+button.bv-past { min-height: 32px; border: none; clip-path: none; text-align: left; padding: 0 12px; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-weight: 500; font-size: 14px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bv-sheet { display: flex; flex-direction: column; gap: 6px; border-color: var(--gold); }
+.bv-trace-text { font-size: 15px; color: var(--gold); word-break: break-word; }
+.bv-link { display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; align-items: center; font-size: 16px; }
+.bv-link.you span:nth-child(2) { color: var(--you); }
+.bv-link.ghost span:nth-child(2) { color: var(--ghost); }
+button.bv-close { min-height: 36px; padding: 0 12px; }
+.bv-word { font-family: "Chakra Petch", sans-serif; font-size: 30px; line-height: 1; text-align: center; }
+.bv-word.win { color: var(--you); }
+.bv-word.loss { color: var(--ghost); }
+.bv-word.draw { color: var(--dim); }
+button.bv-why { display: flex; align-items: center; justify-content: space-between; gap: 8px; text-transform: none; letter-spacing: 0; color: var(--ghost); border-color: color-mix(in srgb, var(--ghost) 45%, transparent); font-family: "Rajdhani", sans-serif; font-size: 16px; text-align: left; }
+.bv-why-chain { overflow: hidden; text-overflow: ellipsis; }
+.bv-controls button { flex: 1; padding: 0 6px; font-size: 20px; }
+.bv-controls button[data-testid="battle-skip"], .bv-controls button[data-testid="battle-speed"] { font-size: 17px; }
+.bv-line.empty { min-height: 0; display: block; }
