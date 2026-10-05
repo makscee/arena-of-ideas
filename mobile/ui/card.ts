@@ -35,6 +35,8 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
     unitStatsLine(u.unitId, o.rates),
     ...(o.extra ?? []),
   );
+  if (u.kind === "fused") el.classList.add("fused");
+  else if (u.form === "awoken") el.classList.add("awoken");
   if (o.live?.dead) el.classList.add("dead");
   if (o.live?.acting) el.classList.add("acting");
   if (o.onOpen) el.addEventListener("click", o.onOpen);
@@ -63,10 +65,22 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
     "div",
     { class: "stack", "data-testid": "unit-sheet" },
     h("h2", {}, `${u.emoji} ${u.name}`),
-    "stats" in u ? h("div", { class: "num" }, `${u.stats.pwr} PWR / ${u.stats.hp} HP`) : h("div", { class: "num" }, `${u.base.pwr} PWR / ${u.base.hp} HP`),
-    ...sheetForms(u, content).map(([label, form]) => h("div", {}, h("div", { class: "label" }, label), formText(form, content))),
+    "stats" in u ? h("div", { class: "num" }, `${u.stats.pwr} PWR / ${u.stats.hp} HP`) : h("div", { class: "num" }, `${u.base.pwr} PWR / ${u.base.hp} HP · tier ${u.tier}`),
+    "stats" in u ? h("div", { class: "dim" }, sheetState(u)) : null,
+    ...sheetForms(u, content).map(([label, form]) =>
+      h("div", { class: `sheet-form${"form" in u && u.kind !== "fused" && label.toLowerCase() === u.form ? " now" : ""}` }, h("div", { class: "label" }, label), formText(form, content)),
+    ),
     unitStatsLine(unitId, opts.rates),
   );
+}
+
+/** Form, copies and, for a fused unit, its parts and who discovered it. */
+function sheetState(u: LineUnit | BattleUnit): string {
+  if (u.kind === "fused" && u.fusion) {
+    const by = u.fusion.discoveredBy ? `discovered by @${u.fusion.discoveredBy.name}` : "not yet claimed by a player";
+    return `Fused, final · ${u.copies} copies · ${by}`;
+  }
+  return `${u.form === "awoken" ? "Awoken" : "Sleeping"} · ${u.copies} ${u.copies === 1 ? "copy" : "copies"}`;
 }
 
 function sheetForms(u: LineUnit | BattleUnit | UnitContent, content: MvpContent): [string, UnitForm][] {

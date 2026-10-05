@@ -42,11 +42,12 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .card.selected { outline: 2px solid var(--you); outline-offset: -2px; }
 .card.empty { cursor: default; opacity: 0.4; border-style: dashed; }
 .card .emoji { font-size: 26px; line-height: 1; }
-.card .name { font-size: 12px; font-weight: 600; line-height: 1.1; word-break: break-word; }
+.card .name { font-size: 12px; font-weight: 600; line-height: 1.1; max-width: 100%; overflow-wrap: normal; word-break: normal; hyphens: auto; -webkit-hyphens: auto; }
 .card .stats { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
 .card .stats .p { color: var(--gold); }
 .card .stats .h { color: var(--ghost); }
-.card .copies { position: absolute; top: 2px; right: 4px; font-family: "IBM Plex Mono", monospace; font-size: 10px; color: var(--you); }
+.card .copies { font-family: "IBM Plex Mono", monospace; font-size: 10px; line-height: 1; color: var(--you); letter-spacing: 0.04em; }
+.card .copies.tag { font-size: 8px; color: var(--gold); }
 .card .cost { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--gold); }
 .label { font-size: 13px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
 .outcome { font-family: "Chakra Petch", sans-serif; font-size: 44px; text-align: center; }
@@ -55,6 +56,40 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .outcome.draw { color: var(--dim); }
 .error { color: var(--ghost); font-size: 15px; min-height: 20px; }
 .spacer { flex: 1; }
+/* Slice 8: home, shop, result. */
+.small { font-size: 14px; }
+button.small { min-height: 44px; font-size: 14px; padding: 0 12px; }
+.center { text-align: center; }
+.ghost-name { color: var(--ghost); font-weight: 600; }
+.hint { font-size: 15px; color: var(--you); border-left: 2px solid var(--you); padding: 2px 0 2px 8px; background: color-mix(in srgb, var(--you) 6%, transparent); }
+.records { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; text-align: center; }
+.records .num { font-size: 18px; }
+.records .label { font-size: 11px; letter-spacing: 0.04em; }
+.champion { border-color: color-mix(in srgb, var(--ghost) 40%, var(--line)); }
+.games { display: flex; flex-wrap: wrap; gap: 6px; }
+button.game { text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; }
+details.dev { color: var(--dim); font-size: 13px; }
+details.dev summary { min-height: 32px; cursor: pointer; }
+.opp { font-size: 15px; min-height: 44px; }
+.pin { display: flex; }
+button.pin-btn { display: flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 10px; color: var(--text); border-color: color-mix(in srgb, var(--ghost) 55%, transparent); text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-size: 15px; max-width: 200px; overflow: hidden; }
+.pin-emoji { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.actions { min-height: 44px; flex-wrap: wrap; }
+.actions:empty { display: none; }
+.actions button { padding: 0 12px; }
+.card.awoken { border-color: var(--gold); box-shadow: inset 0 0 12px color-mix(in srgb, var(--gold) 22%, transparent); }
+.card.fused { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 10%, var(--panel)); }
+.card.fusable { outline: 2px dashed var(--gold); outline-offset: -2px; }
+.card.muted { opacity: 0.35; }
+.card.poor { opacity: 0.45; }
+.card.owned .cost { color: var(--you); }
+.preview-card { width: 96px; margin: 0 auto; }
+.preview-card .card { min-height: 112px; }
+.after.awakens .label { color: var(--gold); font-weight: 700; }
+.sheet-form.now .label { color: var(--you); }
+.sheet-form.now .label::after { content: " · now"; }
+.sheet-actions { position: sticky; bottom: calc(-16px - env(safe-area-inset-bottom)); background: var(--panel); padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); margin-bottom: calc(-16px - env(safe-area-inset-bottom)); z-index: 1; }
+.rules p { margin: 0; line-height: 1.3; }
 /* ui/dom.ts overlay(): a sheet over the screen. */
 .overlay { position: fixed; inset: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 70%, transparent); display: flex; align-items: flex-end; justify-content: center; }
 .sheet { width: 100%; max-width: 480px; max-height: 85dvh; overflow-y: auto; background: var(--panel); border-top: 1px solid var(--you); padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
