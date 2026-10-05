@@ -47,7 +47,9 @@ cat > "\$PLIST" <<PL
   <key>StandardErrorPath</key><string>\$DIR/data/server.log</string>
 </dict></plist>
 PL
+# bootout returns before the job is gone; bootstrap too early fails with EIO.
 launchctl bootout "gui/\$(id -u)/\$LABEL" 2>/dev/null || true
+for i in \$(seq 1 20); do launchctl print "gui/\$(id -u)/\$LABEL" >/dev/null 2>&1 || break; sleep 0.5; done
 launchctl bootstrap "gui/\$(id -u)" "\$PLIST"
 TS=/Applications/Tailscale.app/Contents/MacOS/Tailscale
 \$TS serve --bg --set-path /arena "http://127.0.0.1:$PORT" >/dev/null
