@@ -61,6 +61,7 @@ const EVENT_PATTERN_TAGS = [
   "Summon",
   "StatusApplied",
   "StatusRemoved",
+  "StatChanged",
 ] as const satisfies readonly EventPattern["on"][];
 
 // Interceptor context: only proposable events (not the kernel lifecycle beats).

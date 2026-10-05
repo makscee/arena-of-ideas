@@ -30,6 +30,9 @@ export const TEAM_SIZE = 5;
 export const FATIGUE_START = 10;
 export const FATIGUE_RAMP = 1;
 export const TURN_CAP = 200;
+/** Most trigger firings one cascade (one settle) runs before it stops with a
+ * visible ChainCapped event; BattleInput.chainStepCap overrides it. */
+export const DEFAULT_CHAIN_STEP_CAP = 64;
 
 /** Fatigue damage dealt at the end of a turn (>= FATIGUE_START) — exported so
  * display layers (the codex) derive the ramp from the same formula the loop
@@ -99,12 +102,17 @@ class Engine {
   private attachCounter = 0;
   private summonCounter = 0;
   private input: BattleInput;
+  private chainStepCap: number;
 
   constructor(input: BattleInput) {
     this.input = input;
     this.rng = mulberry32(input.seed);
     this.registry = input.statuses ?? {};
     this.abilities = input.abilities ?? {};
+    this.chainStepCap = input.chainStepCap ?? DEFAULT_CHAIN_STEP_CAP;
+    if (!Number.isInteger(this.chainStepCap) || this.chainStepCap < 1) {
+      throw new Error(`chainStepCap must be a positive integer, got ${String(input.chainStepCap)}`);
+    }
   }
 
   run(): BattleEvent[] {
@@ -283,20 +291,32 @@ class Engine {
     const ev: BattleEvent = { id: this.log.length, turn: this.turn, causedBy, source, ...body };
     this.mutate(ev, pending);
     this.log.push(ev);
+    // Reactors come in line order (front to back); each reacts to an event at
+    // most once, however many of its Triggers match it.
     for (const r of reactors) {
-      for (const when of r.ability.triggers) {
-        if (when.kind === "trigger" && this.matches(when.on, ev, r.holder)) {
-          this.queue.push({ ...r, event: ev });
-        }
+      if (r.ability.triggers.some((when) => when.kind === "trigger" && this.matches(when.on, ev, r.holder))) {
+        this.queue.push({ ...r, event: ev });
       }
     }
     this.kernelConsequences(ev);
     return ev;
   }
 
+  /** Drain the trigger queue. A cascade that takes more than chainStepCap
+   * firings stops: the rest of the queue is dropped and a ChainCapped event,
+   * caused by the event the next firing reacted to, says so in the log. */
   private settle(): void {
+    let steps = 0;
+    let root: number | null = null;
     while (this.queue.length > 0) {
       const f = this.queue.shift()!;
+      root ??= f.event.id;
+      if (steps >= this.chainStepCap) {
+        this.queue = [];
+        this.applyEvent({ type: "ChainCapped", root, steps }, f.event.id, "kernel");
+        return;
+      }
+      steps++;
       this.processFiring(f);
     }
   }
@@ -374,6 +394,11 @@ class Engine {
     if ("status" in p && (body.type === "StatusApplied" || body.type === "StatusRemoved")) {
       if (p.status !== undefined && p.status !== body.status) return false;
     }
+    if (p.on === "StatChanged" && body.type === "StatChanged") {
+      if (p.stat !== undefined && p.stat !== body.stat) return false;
+      if (p.sign === "gain" && !(body.delta > 0)) return false;
+      if (p.sign === "loss" && !(body.delta < 0)) return false;
+    }
     if ("unit" in p) {
       const subj = subjectOf(body);
       if (subj === undefined) return false;
@@ -387,6 +412,7 @@ class Engine {
     if (f === "holder") return unitId === holder.id;
     const u = this.units.get(unitId);
     if (!u) return false;
+    if (f === "otherAlly") return u.side === holder.side && u.id !== holder.id;
     return f === "ally" ? u.side === holder.side : u.side !== holder.side;
   }
 
@@ -665,7 +691,7 @@ class Engine {
         return;
       }
       default:
-        return; // BattleStart/TurnStart/TurnEnd/Strike/Fatigue/ChainBlocked/Intercepted/BattleEnd mutate nothing
+        return; // BattleStart/TurnStart/TurnEnd/Strike/Fatigue/ChainBlocked/ChainCapped/Intercepted/BattleEnd mutate nothing
     }
   }
 

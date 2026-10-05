@@ -105,14 +105,18 @@ export interface When {
   on: EventPattern;
 }
 
-/** Unit filters are relative to the ability's holder. "ally" includes the holder's side (and the holder). */
-export type UnitFilter = "holder" | "ally" | "enemy" | "any";
+/** Unit filters are relative to the ability's holder. "ally" includes the holder's side (and the holder);
+ * "otherAlly" is the holder's side minus the holder ("after an ally dies" never fires on its own death). */
+export type UnitFilter = "holder" | "ally" | "otherAlly" | "enemy" | "any";
 
 export type EventPattern =
   | { on: "BattleStart" | "TurnStart" | "TurnEnd" }
   | { on: "Strike"; striker?: UnitFilter }
   | { on: "Hurt" | "Heal" | "Death" | "Summon"; unit?: UnitFilter }
-  | { on: "StatusApplied" | "StatusRemoved"; unit?: UnitFilter; status?: string };
+  | { on: "StatusApplied" | "StatusRemoved"; unit?: UnitFilter; status?: string }
+  // A stat moved (a statMod status landed or left). Trigger-only: the change
+  // follows from its status event, so there is nothing to intercept.
+  | { on: "StatChanged"; unit?: UnitFilter; stat?: StatName; sign?: "gain" | "loss" };
 
 export type Condition = { kind: "holderHpAtMost"; value: number };
 
@@ -195,6 +199,9 @@ export type EventBody =
   | { type: "Silenced"; unit: string }
   | { type: "Fatigue"; amount: number }
   | { type: "ChainBlocked"; ability: AbilityRef; at: number }
+  // A cascade hit the step cap: `root` is the event its first firing reacted
+  // to, `steps` the firings it ran; the firings still queued were dropped.
+  | { type: "ChainCapped"; root: number; steps: number }
   | { type: "Intercepted"; by: AbilityRef; original: string; unit?: string }
   | { type: "BattleEnd"; winner: Side | "draw"; turns: number };
 
@@ -216,4 +223,7 @@ export interface BattleInput {
   statuses?: StatusRegistry;
   /** Registry resolving the Unit recipe's ordered `abilities` action refs. */
   abilities?: AbilityRegistry;
+  /** Most trigger firings one cascade may run before it stops with a
+   * ChainCapped event. Omitted = DEFAULT_CHAIN_STEP_CAP (battle.ts). */
+  chainStepCap?: number;
 }

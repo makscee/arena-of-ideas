@@ -30,9 +30,12 @@ export class ValidationError extends Error {
 
 // ---------- the vocabulary the interpreter actually understands ----------
 
-const EVENT_NAMES = ["BattleStart", "TurnStart", "TurnEnd", "Strike", "Hurt", "Heal", "Death", "Summon", "StatusApplied", "StatusRemoved"] as const;
+const EVENT_NAMES = ["BattleStart", "TurnStart", "TurnEnd", "Strike", "Hurt", "Heal", "Death", "Summon", "StatusApplied", "StatusRemoved", "StatChanged"] as const;
+/** Events a trigger can follow but no interceptor can stop: the change already happened. */
+const TRIGGER_ONLY_EVENTS = ["StatChanged"] as const;
+const STAT_SIGNS = ["gain", "loss"] as const;
 const WHEN_KINDS = ["trigger", "interceptor"] as const;
-const UNIT_FILTERS = ["holder", "ally", "enemy", "any"] as const;
+const UNIT_FILTERS = ["holder", "ally", "otherAlly", "enemy", "any"] as const;
 const CONDITION_KINDS = ["holderHpAtMost"] as const;
 const SELECTOR_KINDS = ["holder", "eventUnit", "frontEnemy", "allEnemies", "allAllies", "randomEnemy", "lastDeadAlly"] as const;
 const AMOUNT_KINDS = ["const", "stat", "level", "stacks"] as const;
@@ -49,6 +52,7 @@ const PATTERN_FIELDS: Record<(typeof EVENT_NAMES)[number], string[]> = {
   Strike: ["striker"],
   Hurt: ["unit"], Heal: ["unit"], Death: ["unit"], Summon: ["unit"],
   StatusApplied: ["unit", "status"], StatusRemoved: ["unit", "status"],
+  StatChanged: ["unit", "stat", "sign"],
 };
 
 /** Where an ability lives: on a unit, or on a status (whose stacks "own"-references can read). */
@@ -361,6 +365,9 @@ function validateAbility(ab: unknown, registry: StatusRegistry, abilities: Abili
         contexts.add(w["kind"]);
       }
       validatePattern(w["on"], registry, `${p}.on`, issues);
+      if (w["kind"] === "interceptor" && isObject(w["on"]) && oneOf(w["on"]["on"], TRIGGER_ONLY_EVENTS)) {
+        issues.push({ path: `${p}.kind`, message: `"${w["on"]["on"]}" can only be a trigger — the change has already happened, so nothing can intercept it` });
+      }
     });
   }
 
@@ -412,7 +419,11 @@ function validatePattern(on: unknown, registry: StatusRegistry, path: string, is
       continue;
     }
     if (key === "status") checkStatusRef(on[key], registry, path, issues);
-    else if (!oneOf(on[key], UNIT_FILTERS)) {
+    else if (key === "stat") {
+      if (!oneOf(on[key], STAT_NAMES)) issues.push({ path: `${path}.stat`, message: `unknown stat ${JSON.stringify(on[key])} — stats are ${list(STAT_NAMES)}` });
+    } else if (key === "sign") {
+      if (!oneOf(on[key], STAT_SIGNS)) issues.push({ path: `${path}.sign`, message: `unknown sign ${JSON.stringify(on[key])} — signs are ${list(STAT_SIGNS)}` });
+    } else if (!oneOf(on[key], UNIT_FILTERS)) {
       issues.push({ path: `${path}.${key}`, message: `unknown unit filter ${JSON.stringify(on[key])} — filters are ${list(UNIT_FILTERS)}` });
     }
   }

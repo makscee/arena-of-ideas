@@ -47,9 +47,11 @@ AbilityDef {
 Trigger = { kind: "trigger" | "interceptor", on: EventPattern }
 AbilityRegistry = Record<string, AbilityDef>
 ```
-**[PINNED v2] Ability means what happens.** It contains no Trigger, Selector, or Condition context. `Family` is one of Poison, Strike, Shield, Summon, Arcane, Control, Heal and supplies visual identity. For a recipe, every matching Trigger fires independently; each ordered Ability executes once per selected recipient, and each Ability's effects run in sequence.
+**[PINNED v2] Ability means what happens.** It contains no Trigger, Selector, or Condition context. `Family` is one of Poison, Strike, Shield, Summon, Arcane, Control, Heal and supplies visual identity. A unit reacts to an event at most once (MVP #574): however many of a recipe's Triggers match it, the recipe fires once, and each ordered Ability executes once per selected recipient, and each Ability's effects run in sequence.
 
 - **Trigger** — fires *after* its event pattern has applied.
+- **Unit filters** in a pattern are relative to the holder: `holder`, `ally` (the holder's side, holder included), `otherAlly` (the holder's side minus the holder, so "after an ally dies" never fires on its own death), `enemy`, `any`.
+- **Chain links** (MVP #574): the events other units listen to — shield gained (`StatusApplied` with `status`), healed (`Heal`), power gained (`StatChanged` with `stat: "pwr", sign: "gain"`), status applied (`StatusApplied`), summoned (`Summon`), ally died (`Death` with `unit: "otherAlly"`). A `StatChanged` pattern takes `unit?`, `stat?` and `sign?: "gain" | "loss"`, and is trigger-only: the change follows from its status event, so there is nothing to intercept.
 - **Interceptor** — fires *instead of* a proposed event: it may cancel or transform the event before it applies (MTG triggered-vs-replacement split). Shield, Freeze, and death-prevention are inexpressible without interceptors.
 
 ### Status
@@ -83,12 +85,13 @@ Event {
 }
 ```
 
-EventTypes v1: `BattleStart, TurnStart, PairFaced, Strike, Hurt, Heal, Death, Summon, StatusApplied, StatusRemoved, StatChanged, Fatigue, ChainBlocked, TurnEnd, Silenced, Intercepted, BattleEnd`.
+EventTypes v1: `BattleStart, TurnStart, PairFaced, Strike, Hurt, Heal, Death, Summon, StatusApplied, StatusRemoved, StatChanged, Fatigue, ChainBlocked, ChainCapped, TurnEnd, Silenced, Intercepted, BattleEnd`.
 
 - `PairFaced {first}` — emitted when two units face each other for the first time; records the seeded first-striker roll **[PINNED]** (glass-cannon design space: a roll, observable in the log).
 - `Hurt {unit, amount, hpAfter, absorbed?}` / `Heal {unit, amount, hpAfter}` — hp deltas. `Strike` proposes a `Hurt` of the striker's effective pwr. `hpAfter` is the unit's current hp after the event applied, stamped by the kernel at apply time — consumers (replay, client) read it instead of re-deriving hp bookkeeping. `absorbed?` records how many hp a Shield interceptor consumed; a fully-absorbed Hurt still applies with `amount` 0.
 - `StatChanged {unit, stat, delta, now, hpAfter?}` — an effective-stat change from a statMod attaching or detaching; `now` is the new effective stat. An hp change moves current hp with the max (cur = effective − damage), so hp StatChanged events also carry `hpAfter`, stamped like Hurt/Heal; pwr changes carry none.
 - `ChainBlocked {ability, at}` — a would-be firing suppressed by the no-self-retrigger law (§5). The replay explains chain stops with this event.
+- `ChainCapped {root, steps}` — a cascade hit the step cap (§5) and stopped; `root` is the event its first firing reacted to, `steps` the firings it ran. It is caused by the event the next, dropped firing reacted to, so a trace shows where the chain was cut.
 - `Intercepted {by, original, unit?}` — emitted when an interceptor cancels a proposed event (e.g. Freeze cancelling a Strike, Blessing cancelling a Death); cancellations must be visible or the replay can't explain them. Interceptor side-effects (stack consumption, the replacement Heal) are caused by this event.
 - `Silenced {unit}` — the unit's own abilities are disabled for the battle (ability disabling is kernel state, not removable content).
 - The log is JSONL, one event per line. It is the *only* output of the battle; replays, attribution stats, and the sim gate all consume it.
@@ -143,6 +146,7 @@ Every state change flows through one pipeline: **propose → intercept → apply
 **[PINNED] Ordering rule (position priority):** whenever multiple abilities react to the same event, order is: side A front→back, then side B front→back; within a unit, ability list order; unit statuses after unit abilities, in attach order.
 
 **[PINNED] The no-self-retrigger law:** an ability instance X may not fire in response to event E if any event in E's `causedBy` ancestry has `source` = X. One sentence for players: *an ability never triggers itself, directly or through others.* A suppressed firing emits `ChainBlocked`.
+**[PINNED] Step cap (MVP #574):** one settle runs at most `chainStepCap` firings (`BattleInput.chainStepCap`, default 64). The next firing past the cap is not run: the queue is dropped and a visible `ChainCapped` event is logged. Depth is already bounded by the no-self law; the cap bounds breadth (many units reacting to many events).
 *Termination:* every causal path can contain each ability instance at most once as a source, so cascade depth is bounded by the number of ability instances on the board; the queue always drains. **Validated at stress test (2026-06-10):** ChainBlocked observed, queue always drained; the cascade-energy fallback was not needed and stays dormant **[DEFER]**.
 Enqueued trigger firings resolve even if their holder has since died (MTG rule: triggers on the stack survive their source) — this is what lets on-death abilities like Summon fire.
 

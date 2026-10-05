@@ -206,6 +206,12 @@ class Renderer {
         return;
       }
 
+      case "ChainCapped": {
+        const after = this.shortDesc(this.log[e.root]);
+        this.push(e, `(chain capped: the cascade after ${after} ran ${e.steps} reactions and stopped there)`);
+        return;
+      }
+
       case "Intercepted": {
         const by = this.refDesc(e.by);
         const who = e.unit !== undefined ? this.name(e.unit) : undefined;
