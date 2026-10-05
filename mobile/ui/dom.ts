@@ -35,3 +35,46 @@ export function overlay(...kids: Node[]): () => void {
   app.append(back);
   return close;
 }
+
+/** overlay() with a Close button pinned to the sheet's bottom, for a sheet
+ * with nothing else to tap (a unit sheet, the rules, a why-I-lost row). */
+export function closable(...kids: Node[]): () => void {
+  const closeBtn = button("Close", () => close(), "grow", "sheet-close");
+  const close = overlay(...kids, h("div", { class: "row sheet-actions" }, closeBtn));
+  return close;
+}
+
+// ---------- names that fit ----------
+
+const FIT = ".card .name, .card .rates";
+const MIN_PX = 9;
+
+/** Shrinks each card name (and rates line) until its longest word fits the
+ * card, measured, not guessed from letter counts; a word that still doesn't
+ * fit at the smallest size ends in an ellipsis. Names break only between words. */
+export function fitText(root: ParentNode = app): void {
+  for (const el of root.querySelectorAll<HTMLElement>(FIT)) {
+    if (!el.isConnected || el.clientWidth === 0) continue;
+    el.style.fontSize = "";
+    el.classList.remove("clip");
+    let px = parseFloat(getComputedStyle(el).fontSize);
+    while (el.scrollWidth > el.clientWidth + 0.5 && px > MIN_PX) {
+      px = Math.max(MIN_PX, px - 0.5);
+      el.style.fontSize = `${px}px`;
+    }
+    if (el.scrollWidth > el.clientWidth + 0.5) el.classList.add("clip");
+  }
+}
+
+let fitQueued = false;
+const queueFit = () => {
+  if (fitQueued) return;
+  fitQueued = true;
+  requestAnimationFrame(() => {
+    fitQueued = false;
+    fitText();
+  });
+};
+new MutationObserver(queueFit).observe(app, { childList: true, subtree: true });
+addEventListener("resize", queueFit);
+void document.fonts?.ready.then(queueFit);
