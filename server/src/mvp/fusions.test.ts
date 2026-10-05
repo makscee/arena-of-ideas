@@ -58,7 +58,7 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
   it("refuses franchise names, fake official titles, spam and non-names", () => {
     for (const raw of ["Pikachu", "Darth Medic", "Gandalf", "Super Mario", "Elsa", "Sonic Brawl", "Nefarian", "Captain Swindle", "Admin Approved", "FREE V-BUCKS", "Frozen", "Hollow Knight", "Kel'Thuzad"])
       expect(cleanModelName(raw), raw).toBeNull();
-    for (const raw of ["", "a", "This is a very long name for a unit", "Iron care mend heal", "Name42", "www scam example"]) expect(cleanModelName(raw), raw).toBeNull();
+    for (const raw of ["", "a", "This is a very long name for a unit", "Iron care mend heal", "Name42", "www scam example", "Ye Ye"]) expect(cleanModelName(raw), raw).toBeNull();
     expect(cleanModelName("Medic", brawler, medic)).toBeNull();
     // Ordinary words that are also franchise names pass inside a longer name.
     expect(cleanModelName("Cloud Warden")).toBe("Cloud Warden");

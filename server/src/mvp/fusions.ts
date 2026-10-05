@@ -106,7 +106,7 @@ export function cleanModelName(raw: string, first?: UnitContent, second?: UnitCo
     .replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, "");
   if (!/^[A-Za-z][A-Za-z' -]{2,19}$/.test(name)) return null;
   const words = name.split(/[ -]/).filter(Boolean);
-  if (words.length > 3) return null;
+  if (words.length > 3 || new Set(words.map(fold)).size < words.length) return null;
   if (BLOCKED.has(fold(name)) || BLOCKED_WHOLE.has(fold(name)) || words.some((w) => BLOCKED.has(fold(w)))) return null;
   if ([first, second].some((u) => u && fold(u.name) === fold(name))) return null;
   return words.map((w) => w[0]!.toUpperCase() + w.slice(1)).join(name.includes("-") && words.length > 1 ? "-" : " ");
