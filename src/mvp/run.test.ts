@@ -46,6 +46,12 @@ describe("MVP thin run", () => {
     expect(step.fight?.round).toBe(1);
     expect(step.battle?.log.at(-1)?.type).toBe("BattleEnd");
     expect(step.battle?.log.every((e) => "causedBy" in e)).toBe(true);
+    // Battle units carry the whole card and the kernel instance id from the log.
+    const start = step.battle!.log.find((e) => e.type === "BattleStart");
+    const roster = start?.type === "BattleStart" ? start.teams : { A: [], B: [] };
+    expect(step.battle!.teamA).toEqual(s.line.map((u, i) => ({ ...u, id: roster.A[i]!.id })));
+    expect(step.battle!.teamB.map((u) => u.id)).toEqual(roster.B.map((r) => r.id));
+    expect(step.battle!.player).toEqual(me);
     expect(step.state.round).toBe(2);
     expect(step.state.gold).toBe(10);
     expect(step.state.hearts).toBe(5 - step.fight!.heartsLost);

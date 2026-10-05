@@ -6,7 +6,7 @@
 
 import { battle, winnerOf } from "../battle.js";
 import { rngStep } from "../rng.js";
-import type { UnitDef } from "../types.js";
+import type { BattleEvent, Side, UnitDef } from "../types.js";
 import {
   MVP_RULES,
   type BattleRecord,
@@ -103,8 +103,12 @@ export function toBattleDef(u: LineUnit): UnitDef {
   };
 }
 
-function battleUnit(u: LineUnit): BattleUnit {
-  return { name: u.name, emoji: u.emoji, stats: { ...u.stats }, form: u.form, fused: u.kind === "fused" };
+/** A line as it entered the battle, each unit tagged with its kernel instance
+ * id from the log's BattleStart roster. */
+function battleTeam(line: LineUnit[], side: Side, log: BattleEvent[]): BattleUnit[] {
+  const start = log.find((e) => e.type === "BattleStart");
+  const roster = start?.type === "BattleStart" ? start.teams[side] : [];
+  return line.map((u, i) => ({ ...structuredClone(u), id: roster[i]?.id ?? `${side}${i + 1}:${u.name}` }));
 }
 
 function clone(s: MvpRunState): MvpRunState {
@@ -215,8 +219,8 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
         contentVersion: s.contentVersion,
         kind: "round",
         round: s.round,
-        teamA: s.line.map(battleUnit),
-        teamB: ghost.line.map(battleUnit),
+        teamA: battleTeam(s.line, "A", log),
+        teamB: battleTeam(ghost.line, "B", log),
         opponent: ghost.player,
         winner,
         log,

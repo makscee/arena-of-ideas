@@ -215,14 +215,11 @@ export interface FightResult {
   heartsAfter: number;
 }
 
-/** A unit as it entered a battle: enough for the viewer to draw cards. */
-export interface BattleUnit {
-  name: string;
-  emoji: string;
-  stats: Stats;
-  form: FormKey;
-  fused: boolean;
-}
+/** A unit as it entered a battle: the whole line unit (unitId, copies, form,
+ * recipe, fusion), so the viewer can name the ability that fired and open both
+ * forms, plus `id`, its kernel instance id in the log (BattleStart's roster,
+ * e.g. "A1:Brawler"). */
+export type BattleUnit = LineUnit & { id: string };
 
 /** Full battle record. Side A is the run's own line, owned by `player`; side
  * B is `opponent`'s. Every event carries `causedBy`, so tap-to-trace is a walk
