@@ -127,13 +127,15 @@ export interface FuseContext {
  * its RunHooks.onFuse (server/src/mvp/fusions.ts), never from decide() or a
  * preview. Slice 11's stats page and StatsView.fusions only read them.
  *
- * Name rule: the first fuse of a pair stores its name: the model's name when
- * slice 10 prepared one ahead (it prefetches every fusable pair on a human's
- * line), else the deterministic portmanteau. That name is copied into the
- * fused LineUnit, and so into runs, ghosts, champions and battles. The model's
- * name may replace the stored name only while no human has fused the pair
- * (discoveredBy null, bot fusions only), and only once. Once a human fuses a
- * pair, its name is fixed for good.
+ * Name rule: a pair's name is fixed the first time anyone, bot or human,
+ * fuses it, and never changes after that: the model's name when slice 10
+ * prepared one ahead (it asks for both orders of every fusable pair on any
+ * line, humans' lines first), else the deterministic portmanteau. That name is
+ * copied into the fused LineUnit, and so into runs, ghosts, champions and
+ * battles, which therefore always agree with the store. A human never waits:
+ * with no name ready, the fuse gets the portmanteau. A bot fuses a pair only
+ * once its name is ready, or once the model has failed on it. The day-1
+ * champion's fusions are stored as bot discoveries.
  *
  * Credit rule: a bot's fusion stores the pair with discoveredBy null; the
  * first human to fuse a pair whose discoveredBy is null claims it (the name
