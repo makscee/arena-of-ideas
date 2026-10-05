@@ -108,8 +108,9 @@ export interface FusionParts {
   second: UnitId;
   /** Generated name for this ordered pair (slice 10); a portmanteau until then. */
   name: string;
-  /** Player name credited with the first discovery, or null for bots/unknown. */
-  discoveredBy: string | null;
+  /** Who is credited with discovering the pair (see FusionDiscovery); null
+   * while only bots have made it. */
+  discoveredBy: PlayerRef | null;
 }
 
 /** What the server hands a fuse: the pair's name and who is credited.
@@ -117,6 +118,24 @@ export interface FusionParts {
 export interface FuseContext {
   name: string;
   discoveredBy: PlayerRef | null;
+}
+
+/** A discovered ordered pair, stored once per (first, second); the same pair
+ * always gets the same name. Slice 10 owns this storage (MvpStore.fusion,
+ * putFusion, fusions), the naming and GET /fusions; slice 11's stats page and
+ * StatsView.fusions only read it.
+ *
+ * Credit rule: a bot's fusion stores the name with discoveredBy null; the
+ * first human to fuse a pair whose discoveredBy is null claims it. */
+export interface FusionDiscovery {
+  first: UnitId;
+  second: UnitId;
+  name: string;
+  discoveredBy: PlayerRef | null;
+  /** ISO time the pair was first fused. */
+  discoveredAt: string;
+  /** The local model's name, or the deterministic portmanteau when it was down. */
+  nameSource: "model" | "fallback";
 }
 
 export interface LineUnit {
@@ -314,6 +333,7 @@ export interface HomeView {
 //   GET  /api/v1/runs/:runId                 → RunView
 //   POST /api/v1/runs/:runId/decisions  Decision → DecisionResponse
 //   GET  /api/v1/battles/:battleId           → BattleRecord
+//   GET  /api/v1/fusions                     → FusionDiscovery[]  (slice 10)
 //   GET  /api/v1/day                         → DayView            (slice 5)
 //   POST /api/v1/dev/end-day                 → DayView            (slice 5; dev only)
 //   GET  /api/v1/stats                       → StatsView          (slice 11)
@@ -323,7 +343,8 @@ export const PLAYER_HEADER = "X-Arena-Player";
 export interface StatsView {
   units: { unitId: UnitId; winRate: number; pickRate: number; runs: number }[];
   champions: Champion[];
-  fusions: FusionParts[];
+  /** Read from slice 10's store (MvpStore.fusions); slice 11 never writes it. */
+  fusions: FusionDiscovery[];
 }
 
 export interface ApiError {

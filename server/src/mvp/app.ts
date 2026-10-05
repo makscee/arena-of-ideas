@@ -15,7 +15,9 @@ import {
   type MvpContent,
   type PlayerRef,
 } from "../../../src/mvp/contract.js";
-import { MvpDecisionError, applyMvpDecision, initMvpRun, runView, synthGhost, type MvpRunState } from "../../../src/mvp/run.js";
+import { fuseCheck } from "../../../src/mvp/forms.js";
+import { MvpDecisionError, applyMvpDecision, initMvpRun, runView, synthGhost, unitById, type DecisionContext, type MvpRunState } from "../../../src/mvp/run.js";
+import { storedOrPortmanteau, type NameFusion } from "./fusions.js";
 import { MemoryMvpStore, type MvpStore } from "./store.js";
 
 export interface MvpDeps {
@@ -24,6 +26,10 @@ export interface MvpDeps {
   /** Seed source; tests pin it. */
   seed?: () => number;
   now?: () => Date;
+  /** Names a pair at fuse time, synchronously: the stored name, else a
+   * deterministic portmanteau (default: storedOrPortmanteau). Slice 10 fills
+   * the model's name into the store in the background. */
+  nameFusion?: NameFusion;
 }
 
 const NAME_RE = /^[\p{L}\p{N}_\- ]{1,24}$/u;
@@ -37,6 +43,7 @@ export function createMvpApp(deps: MvpDeps): Hono {
   const store = deps.store ?? new MemoryMvpStore();
   const seed = deps.seed ?? (() => Math.floor(Math.random() * 2 ** 32));
   const now = deps.now ?? (() => new Date());
+  const nameFusion = deps.nameFusion ?? storedOrPortmanteau(store);
   const api = new Hono();
 
   const bad = (c: Context, status: 400 | 401 | 404 | 409 | 501, error: string) => c.json({ error }, status);
@@ -91,7 +98,12 @@ export function createMvpApp(deps: MvpDeps): Hono {
     const d = (await c.req.json().catch(() => null)) as Decision | null;
     if (!d || typeof d !== "object" || typeof d.kind !== "string") return bad(c, 400, "body must be a Decision");
     try {
-      let fightCtx;
+      const ctx: DecisionContext = {};
+      const first = d.kind === "fuse" ? run.line[d.first] : undefined;
+      const second = d.kind === "fuse" ? run.line[d.second] : undefined;
+      if (first && second && fuseCheck(first, second) === null) {
+        ctx.fuse = nameFusion(unitById(content, first.unitId), unitById(content, second.unitId), run.player);
+      }
       if (d.kind === "fight") {
         // Snapshot before the fight, so even a losing line becomes someone's ghost.
         const candidates = store.ghosts(run.round, run.runId);
@@ -101,9 +113,9 @@ export function createMvpApp(deps: MvpDeps): Hono {
             ? candidates[pick % candidates.length]!
             : synthGhost({ content, round: run.round, seed: pick, ghostId: `bot-${randomUUID()}` });
         if (run.line.length > 0) store.addGhost(ghostOf(run));
-        fightCtx = { ghost, battleId: randomUUID(), battleSeed: seed() };
+        ctx.fight = { ghost, battleId: randomUUID(), battleSeed: seed() };
       }
-      const step = applyMvpDecision(run, d, content, fightCtx ? { fight: fightCtx } : undefined);
+      const step = applyMvpDecision(run, d, content, ctx);
       store.putRun(step.state);
       if (step.battle) store.putBattle(step.battle);
       const res: DecisionResponse = { run: runView(step.state), ...(step.fight ? { fight: step.fight } : {}) };
@@ -118,6 +130,9 @@ export function createMvpApp(deps: MvpDeps): Hono {
     const b = store.battle(c.req.param("battleId"));
     return b ? c.json(b) : bad(c, 404, "no such battle");
   });
+
+  // Slice 10 owns this route and the store behind it; slice 11 only reads.
+  api.get("/fusions", (c) => c.json(store.fusions()));
 
   api.get("/day", (c) => bad(c, 501, "the day arrives in slice 5"));
   api.post("/dev/end-day", (c) => bad(c, 501, "the day arrives in slice 5"));
