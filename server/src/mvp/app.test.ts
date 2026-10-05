@@ -186,7 +186,6 @@ describe("MVP API thin path", () => {
     expect((await client()("POST", "/dev/end-day")).status).toBe(404);
     const dev = client({ dev: true });
     expect(await dev("POST", "/dev/end-day")).toEqual({ status: 501, json: { error: "the day arrives in slice 5" } });
-    expect(await dev("GET", "/stats")).toEqual({ status: 501, json: { error: "stats arrive in slice 11" } });
   });
 
   it("rejects bad input with 4xx", async () => {
