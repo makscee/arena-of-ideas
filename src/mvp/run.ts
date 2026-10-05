@@ -187,7 +187,8 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       return { state: s };
     }
     case "fight": {
-      if (s.line.length === 0) throw new MvpDecisionError("fight", "the line is empty, buy a unit first");
+      // An empty line still fights, and loses (fightLines' walkover): the run
+      // always moves on, so a player who sold everything or went broke isn't stuck.
       if (!ctx?.fight) throw new MvpDecisionError("fight", "no opponent");
       const crown = s.phase === "crown";
       const kind = crown ? "crown" : "round";
@@ -274,15 +275,21 @@ export function championGhost(c: Champion, rules: MvpRules = MVP_RULES): Ghost {
   };
 }
 
-/** What slaying the champion is worth in the rating, in round wins. */
-export const SLAY_BONUS = 3;
+/** What slaying the champion adds to the run's score (0..1). Tunable. */
+export const SLAY_BONUS = 0.25;
+/** What a drawn round fight counts as. Tunable. */
+export const DRAW_SCORE = 0.5;
 
-/** The run-end rating, Elo-style: the result is the run's round wins plus
- * SLAY_BONUS for a slay, out of rules.rounds + SLAY_BONUS; the expected
- * result is a player rated `before` against the field (rules.ratingStart). */
-export function ratingChange(before: number, run: Pick<RunView, "wins" | "endedBy">, rules: MvpRules = MVP_RULES): RatingChange {
-  const slay = run.endedBy === "crown-won";
-  const actual = (run.wins + (slay ? SLAY_BONUS : 0)) / (rules.rounds + SLAY_BONUS);
+/** The run-end rating, Elo-style. The run's score is its share of round
+ * fights won (draws count DRAW_SCORE; the Crown isn't a round fight), plus
+ * SLAY_BONUS for a slay, clamped to 0..1; the expected score is a player
+ * rated `before` against the field (rules.ratingStart). So winning half the
+ * rounds holds a start rating, and a slay lifts it. */
+export function ratingChange(before: number, run: Pick<RunView, "fights" | "endedBy">, rules: MvpRules = MVP_RULES): RatingChange {
+  const rounds = run.fights.filter((f) => f.kind === "round");
+  const points = rounds.reduce((n, f) => n + (f.outcome === "win" ? 1 : f.outcome === "draw" ? DRAW_SCORE : 0), 0);
+  const share = rounds.length > 0 ? points / rounds.length : 0;
+  const actual = Math.min(1, Math.max(0, share + (run.endedBy === "crown-won" ? SLAY_BONUS : 0)));
   const expected = 1 / (1 + 10 ** ((rules.ratingStart - before) / 400));
   return { before, after: Math.round(before + rules.ratingK * (actual - expected)), expected, actual };
 }
