@@ -264,7 +264,7 @@ function whyPanel(battle: BattleRecord, you: Side, onTrace?: (eventId: number) =
               h("div", { class: "stack why-sheet", "data-testid": "why-sheet" },
                 h("h2", { class: "ghost-name" }, c.text),
                 h("div", {}, chainSummary(c)),
-                h("div", { class: "label" }, "Its first hit, traced"),
+                h("div", { class: "label" }, battle.log[c.sampleEventId]?.type === "Heal" ? "Its first heal, traced" : "Its first hit, traced"),
                 h("div", { class: "bv-trace-text mono", "data-testid": "trace-text" }, t.text),
               ),
             );
