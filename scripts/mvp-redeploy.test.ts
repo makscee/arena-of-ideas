@@ -1,4 +1,4 @@
-// scripts/mvp-redeploy.sh --fresh (mission #574): the m1 script it prints
+// scripts/mvp-redeploy.sh (mission #574): the m1 script it prints
 // with --dry-run, run here against a temp HOME with launchctl, git, npm, curl
 // and tailscale stubbed. Nothing touches m1 or this machine's services.
 import { spawnSync } from "node:child_process";
@@ -17,7 +17,7 @@ echo "$*" >> "$HOME/launchctl.log"
 label() { basename "$1" .plist; }
 case "$1" in
   print) [ -e "$HOME/loaded/$(basename "$2")" ] ;;
-  bootout) rm -f "$HOME/loaded/$(basename "$2")"; [ -n "\${BREAK_DATA:-}" ] && chmod a-w "$HOME/arena-mvp/data"; exit 0 ;;
+  bootout) [ -n "\${STUCK:-}" ] || rm -f "$HOME/loaded/$(basename "$2")"; [ -n "\${BREAK_DATA:-}" ] && chmod a-w "$HOME/arena-mvp/data"; exit 0 ;;
   bootstrap) touch "$HOME/loaded/$(label "$3")" ;;
 esac`,
   git: `#!/bin/bash
@@ -25,6 +25,8 @@ esac`,
   npm: "#!/bin/bash\nexit 0",
   curl: "#!/bin/bash\necho '{\"ok\":true}'",
   tailscale: "#!/bin/bash\nexit 0",
+  // the waits for launchd don't wait here
+  sleep: "#!/bin/bash\nexit 0",
 };
 
 /** A temp HOME with a checkout, a DB with a -wal, the server loaded, and stubs. */
@@ -45,8 +47,8 @@ function host(o: { asideScript?: boolean } = {}) {
 
 /** The script --dry-run prints for m1, run against `home` (PATH and the
  * Tailscale binary point at the stubs). */
-function deploy(home: string, env: Record<string, string> = {}) {
-  const dry = spawnSync(join(ROOT, "scripts/mvp-redeploy.sh"), ["--dry-run", "--fresh"], { encoding: "utf8" });
+function deploy(home: string, env: Record<string, string> = {}, args = ["--fresh"]) {
+  const dry = spawnSync(join(ROOT, "scripts/mvp-redeploy.sh"), ["--dry-run", ...args], { encoding: "utf8" });
   expect(dry.status).toBe(0);
   const script = dry.stdout
     .replace("export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH", `export PATH=${home}/bin:/usr/bin:/bin`)
@@ -54,7 +56,7 @@ function deploy(home: string, env: Record<string, string> = {}) {
   expect(script).toContain(`${home}/bin/tailscale`);
   const run = spawnSync("bash", [], { input: script, encoding: "utf8", env: { HOME: home, PATH: `${home}/bin:/usr/bin:/bin`, ...env } });
   const log = existsSync(join(home, "launchctl.log")) ? readFileSync(join(home, "launchctl.log"), "utf8") : "";
-  return { status: run.status, stderr: run.stderr, log };
+  return { status: run.status, stdout: run.stdout, stderr: run.stderr, log };
 }
 
 afterEach(() => {
@@ -64,7 +66,7 @@ afterEach(() => {
   }
 });
 
-describe("mvp-redeploy --fresh", () => {
+describe("mvp-redeploy (--fresh and plain)", () => {
   it("moves the DB and its -wal aside while the server is stopped, then starts it", () => {
     const { home, dir, db } = host();
     const r = deploy(home);
@@ -94,6 +96,27 @@ describe("mvp-redeploy --fresh", () => {
     expect(readFileSync(`${db}-wal`, "utf8")).toBe("old wal");
     expect(r.log).toMatch(/bootstrap gui\/\d+ .*ru\.makscee\.arena-mvp\.plist/);
     expect(existsSync(join(home, "loaded/ru.makscee.arena-mvp"))).toBe(true);
+  });
+
+  it("an old server that doesn't stop fails the redeploy loudly: exit 1, no \"deployed\" line, nothing bootstrapped", () => {
+    for (const args of [[], ["--fresh"]]) {
+      const { home, db } = host();
+      const r = deploy(home, { STUCK: "1" }, args); // launchd never lets the old job go
+      expect(r.status, args.join(" ")).toBe(1);
+      expect(r.stderr).toContain("didn't stop within 10s, so the old build still serves");
+      expect(r.stdout).not.toContain("deployed");
+      expect(r.log).not.toMatch(/bootstrap gui\/\d+ .*ru\.makscee\.arena-mvp\.plist/);
+      expect(readFileSync(db, "utf8")).toBe("old world");
+    }
+  });
+
+  it("a normal redeploy restarts the server on the same DB and reports the build", () => {
+    const { home, db } = host();
+    const r = deploy(home, {}, []);
+    expect([r.status, r.stderr]).toEqual([0, ""]);
+    expect(r.stdout).toContain("deployed abc1234 (mission-574-mvp)");
+    expect(r.log).toMatch(/bootout gui\/\d+\/ru\.makscee\.arena-mvp[\s\S]*bootstrap gui\/\d+ .*ru\.makscee\.arena-mvp\.plist/);
+    expect(readFileSync(db, "utf8")).toBe("old world");
   });
 
   it("mvp-db-aside.sh --check refuses a DB path whose directory is missing, and moves nothing", () => {

@@ -79,6 +79,22 @@ describe("the MVP's one origin", () => {
     expect(buy.status).toBe(200);
   });
 
+  it("keeps the 400 for an unknown kind under an app-wide error handler", async () => {
+    let n = 7;
+    const app = createMvpApp(mvpRuntime({ content: mvpContent(), seed: () => (n = (n * 1103515245 + 12345) >>> 0) }));
+    // A catch-all handler (say, logging and answering 500) must not swallow it.
+    app.onError((err, c) => c.json({ error: `internal: ${err.message}` }, 500));
+    const call = async (path: string, body?: unknown, player?: string) => {
+      const res = await app.request(`/api/v1${path}`, { method: "POST", headers: { "content-type": "application/json", ...(player ? { "X-Arena-Player": player } : {}) }, ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
+      return { status: res.status, json: (await res.json()) as unknown };
+    };
+    const p = (await call("/players", { name: "onerror" })).json as PlayerRef;
+    const run = (await call("/runs", undefined, p.id)).json as RunView;
+    for (const route of ["decisions", "preview"]) {
+      expect(await call(`/runs/${run.runId}/${route}`, { kind: "zap" }, p.id), route).toEqual({ status: 400, json: { error: 'unknown decision kind "zap"' } });
+    }
+  });
+
   it("takes the build from MVP_BUILD first", () => {
     expect(buildOf({ MVP_BUILD: "deadbee" })).toBe("deadbee");
   });

@@ -83,7 +83,7 @@ export interface PlayoffEntrant {
  * own team is no slay) are skipped. Entrants come in the order of each
  * slayer's first slay. */
 export function playoffEntrants(slays: Slay[], champion: Champion | undefined, content: MvpContent, rules: MvpRules): PlayoffEntrant[] {
-  const live = slays.filter((s) => s.contentVersion === content.version && !s.player.bot && s.player.id !== champion?.player.id);
+  const live = playoffSlays(slays, champion, content);
   const byPlayer = new Map<string, Slay[]>();
   for (const s of live) byPlayer.set(s.player.id, [...(byPlayer.get(s.player.id) ?? []), s]);
   const out: PlayoffEntrant[] = [];
@@ -101,6 +101,12 @@ export function playoffEntrants(slays: Slay[], champion: Champion | undefined, c
     out.push({ player: best.player, line: structuredClone(best.line), slay: best });
   }
   return out;
+}
+
+/** The slays that can enter the playoff: on the live content, by a human,
+ * and not the champion's own. Home's slayer count uses the same rule. */
+export function playoffSlays(slays: Slay[], champion: Champion | undefined, content: Pick<MvpContent, "version">): Slay[] {
+  return slays.filter((s) => s.contentVersion === content.version && !s.player.bot && s.player.id !== champion?.player.id);
 }
 
 /** Wins minus a thousandth per loss, over both sides, against the champion. */

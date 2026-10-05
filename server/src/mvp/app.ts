@@ -6,7 +6,7 @@
 import { randomUUID } from "node:crypto";
 import { Hono, type Context } from "hono";
 import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, type Decision, type HomeView, type PlayerRef } from "../../../src/mvp/contract.js";
-import { MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
+import { MvpBadDecision, MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
 import { dayView, endDay, hiddenSlay } from "./day.js";
 import { MvpNotYet } from "./errors.js";
 import { currentRun, decide, preview, startRun } from "./runs.js";
@@ -87,7 +87,10 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     if (!d || typeof d !== "object" || typeof d.kind !== "string") return bad(c, 400, "body must be a Decision");
     return { run, d };
   };
+  /** A decision the run engine turned down: 400 for one it can't read (an
+   * unknown kind), 409 for one the rules refuse; anything else is a bug. */
   const refused = (c: Context, err: unknown) => {
+    if (err instanceof MvpBadDecision) return bad(c, 400, err.message);
     if (err instanceof MvpDecisionError) return bad(c, 409, err.message);
     throw err;
   };

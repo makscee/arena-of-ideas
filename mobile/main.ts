@@ -147,7 +147,15 @@ async function homeScreen(): Promise<void> {
       champ ? team(champ.line, "ghost", content) : h("div", { class: "dim" }, "No champion yet. The day arrives soon."),
       h("div", { class: "dim small", "data-testid": "slayers" }, `${plural(home.day.slayers, "slayer")} today · new champion at ${rules.dayEndsAt} Moscow`),
     ),
-    champ ? hint(r ? "Tap a card to read it. Beat this team in the Crown to become a slayer." : "This is the team to beat. Tap a card to read it, then Play.") : null,
+    champ
+      ? hint(
+          champ.player.id === api.player?.id
+            ? "This is your team: today the others try to beat it in the Crown. Tap a card to read it."
+            : r
+              ? "Tap a card to read it. Beat this team in the Crown to become a slayer."
+              : "This is the team to beat. Tap a card to read it, then Play.",
+        )
+      : null,
     playoffPanel(home.day.lastPlayoff ?? null, champ?.player ?? null, content, err),
     h(
       "div",
@@ -206,6 +214,8 @@ type Pick = { mode: "none" } | { mode: "picked"; index: number } | { mode: "fuse
 function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
   if (run.phase === "over") return runOverScreen(run, content, notice);
   const crown = run.phase === "crown";
+  // The reigning champion's Crown is their own team: no slay to win.
+  const ownCrown = crown && run.nextOpponent?.player.id === run.player.id;
   const err = errorLine();
   err.textContent = notice;
   let pick: Pick = { mode: "none" };
@@ -269,7 +279,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
   /** The hint that matters most right now, or none. */
   const shopHint = (): HTMLElement | null => {
     if (pick.mode !== "none") return null;
-    if (crown) return hint("The Crown: your line against today's champion. Win it to become a slayer.");
+    if (crown) return hint(ownCrown ? "The Crown: today's champion is your own team. Beating it doesn't count as a slay." : "The Crown: your line against today's champion. Win it to become a slayer.");
     // Only a unit whose next copy is on offer right now.
     const almost = run.line.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === rules.copiesToAwaken - 1 && run.offers.some((o) => o.unitId === u.unitId));
     const canBuy = run.offers.some((o) => o.cost <= run.gold);
@@ -370,7 +380,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
     h(
       "div",
       { class: "row spread opp" },
-      h("span", { class: "dim", "data-testid": "next-opponent" }, opp ? `${crown ? "Crown vs" : "Next:"} @${opp.player.name}${opp.player.bot ? " 🤖" : ""}` : crown ? "Crown vs today's champion" : "Next: a team saved at this round"),
+      h("span", { class: "dim", "data-testid": "next-opponent" }, opp ? `${crown ? "Crown vs" : "Next:"} @${opp.player.name}${opp.player.bot ? " 🤖" : ""}${ownCrown ? " (your own team)" : ""}` : crown ? "Crown vs today's champion" : "Next: a team saved at this round"),
       pin,
     ),
     h("div", { class: "label" }, "Your line · front first"),
@@ -416,11 +426,16 @@ function resultScreen(run: RunView, fight: FightResult, battle: BattleRecord, co
   const turns = end && end.type === "BattleEnd" ? end.turns : 0;
   const word = fight.outcome === "win" ? "VICTORY" : fight.outcome === "loss" ? "DEFEAT" : "DRAW";
   const label = fight.kind === "crown" ? "CROWN" : roundLabel(fight.round);
+  const own = fight.kind === "crown" && fight.opponent.player.id === run.player.id;
   const sub =
     fight.kind === "crown"
-      ? fight.outcome === "win"
-        ? "You beat the champion. You are a slayer today."
-        : "The champion holds."
+      ? own
+        ? fight.outcome === "win"
+          ? "That was your own champion team: beating it doesn't count as a slay."
+          : "Your own champion team holds."
+        : fight.outcome === "win"
+          ? "You beat the champion. You are a slayer today."
+          : "The champion holds."
       : fight.heartsLost > 0
         ? `−${plural(fight.heartsLost, "heart")}`
         : fight.outcome === "draw"
@@ -456,15 +471,18 @@ function record(run: RunView): string {
  * Crown" for a run that had no champion to fight. */
 function runEnd(run: RunView): { why: string; reach: string } {
   const round = `Ended in round ${Math.min(run.round, rules.rounds)} of ${rules.rounds}.`;
+  const own = run.fights.some((f) => f.kind === "crown" && f.opponent.player.id === run.player.id);
   switch (run.endedBy) {
     case "out-of-hearts":
       return { why: "Out of hearts.", reach: round };
     case "no-champion":
       return { why: "No champion to face yet, so the run ends here.", reach: `Survived all ${rules.rounds} rounds.` };
     case "crown-won":
-      return { why: "👑 You beat the champion: you are a slayer today.", reach: "Won the Crown." };
+      return own
+        ? { why: "You beat your own champion team. It doesn't count as a slay: the others try to beat it today.", reach: "Won the Crown." }
+        : { why: "👑 You beat the champion: you are a slayer today.", reach: "Won the Crown." };
     case "crown-lost":
-      return { why: "The champion held the Crown.", reach: "Reached the Crown." };
+      return { why: own ? "Your own champion team held the Crown." : "The champion held the Crown.", reach: "Reached the Crown." };
     case "content-changed":
       return { why: "The game's units changed since this run began, so it ended here. Your rating stays as it was.", reach: round };
     default:

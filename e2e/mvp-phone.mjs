@@ -43,6 +43,18 @@ try {
       if (box[dim] < 44 - 0.5) errors.push(`${name}: ${dim} ${Math.round(box[dim])}px < 44`);
     }
   };
+  /** On every acting battle card, the rates line's text stays inside the
+   * gold ring (1px border + 2px ring) with 1px of air, measured on the glyphs. */
+  const ratesInRing = async (name) => {
+    const bad = await page.evaluate(() => [...document.querySelectorAll(".bv-card.acting .rates")].map((el) => {
+      const card = el.closest(".bv-card").getBoundingClientRect();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const t = range.getBoundingClientRect();
+      return t.left < card.left + 4 - 0.5 || t.right > card.right - 4 + 0.5 ? `${el.textContent} at ${Math.round(t.left - card.left)}..${Math.round(card.right - t.right)}px from the card's edges` : null;
+    }).filter(Boolean));
+    for (const b of bad) errors.push(`${name}: acting card's rates in the ring: ${b}`);
+  };
   /** The element is on screen without scrolling (the bottom of a 640 px phone). */
   const onScreen = async (name, locator) => {
     const box = await locator.boundingBox();
@@ -108,7 +120,7 @@ try {
     await page.getByTestId("battle-skip").waitFor({ timeout: 10_000 });
     if (round === 1) {
       await page.getByTestId("change").first().waitFor({ timeout: 15_000 });
-      await shot("battle"); await noHScroll("battle");
+      await shot("battle"); await noHScroll("battle"); await ratesInRing("battle");
       await page.getByTestId("change").first().click();
       await page.getByTestId("trace-text").waitFor();
       const chain = await page.getByTestId("trace-text").textContent();
@@ -136,7 +148,7 @@ try {
       if (await multi.count()) {
         const lines = await multi.locator(".bv-l").allTextContents();
         if (lines.length !== 2 || lines.some((l) => !l.trim())) errors.push(`two changes: chip shows ${JSON.stringify(lines)}`);
-        await shot("battle-two-changes"); await noHScroll("battle-two-changes");
+        await shot("battle-two-changes"); await noHScroll("battle-two-changes"); await ratesInRing("battle-two-changes");
         await multi.click();
         await page.getByTestId("trace-group").waitFor();
         if ((await page.getByTestId("trace-group-change").count()) !== 2) errors.push("two changes: the trace doesn't list both");
@@ -258,15 +270,50 @@ try {
   // Dev "End day now": Home says plainly how the day ended; a table only for a real playoff.
   await page.reload();
   await page.getByTestId("play").waitFor();
+  const endedSeq = (await call("GET", "/day")).seq;
   await page.locator("details.dev summary").click();
   await page.getByTestId("end-day").click();
-  await page.getByTestId("playoff").waitFor();
+  // Home re-renders with the day just ended ("Day N ended" / "Playoff · day
+  // N"), not the panel of the day before, which is already on screen.
+  await page.waitForFunction((n) => new RegExp(`\\b[Dd]ay ${n}\\b`).test(document.querySelector('[data-testid="playoff"] .label')?.textContent ?? ""), endedSeq, { timeout: 10_000 });
   const ended = await page.getByTestId("playoff-summary").textContent();
   const table = await page.getByTestId("playoff-standing").count();
   if (!/^No slayers|was the only slayer|won the playoff/.test(ended)) errors.push(`day end: "${ended}"`);
   if (/^No slayers|only slayer/.test(ended) && table > 0) errors.push(`day end: a table under "${ended}"`);
   if (/won the playoff/.test(ended) && table < 2) errors.push(`day end: playoff without its table`);
   await shot("home-day-ended"); await noHScroll("home-day-ended");
+
+  // The reigning champion's own Crown (#587): "Reigning" slays and is crowned
+  // through the API (e2e/mvp-own-crown.ts, local server only), then the phone
+  // plays their run at the Crown against their own team: no slay is promised.
+  if (child) {
+    const setup = execFileSync("node", ["--import", "tsx/esm", "e2e/mvp-own-crown.ts", "--url", url], { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] });
+    const { player: champ } = JSON.parse(setup.trim().split("\n").at(-1));
+    await page.evaluate((p) => localStorage.setItem("arena.player", JSON.stringify(p)), champ);
+    await page.reload();
+    await page.getByTestId("play").waitFor();
+    const homeText = await page.locator("#app").textContent();
+    if (!/This is your team: today the others try to beat it/.test(homeText) || /Beat this team in the Crown/.test(homeText)) errors.push("champion's home: no 'your team' hint");
+    await shot("home-champion"); await noHScroll("home-champion");
+    await page.getByTestId("play").click();
+    await page.getByTestId("fight").waitFor();
+    const opp = await page.getByTestId("next-opponent").textContent();
+    if (!/\(your own team\)/.test(opp)) errors.push(`own crown: next opponent "${opp}"`);
+    if (!/doesn't count as a slay/.test(await page.getByTestId("hint").textContent())) errors.push("own crown: the hint promises a slay");
+    await shot("crown-own"); await noHScroll("crown-own");
+    await page.getByTestId("fight").click();
+    await page.getByTestId("battle-skip").click();
+    await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
+    const result = await page.locator("#app").textContent();
+    if (/slayer today/.test(result) || !/own champion team/.test(result)) errors.push(`own crown result: "${result.slice(0, 200)}"`);
+    await shot("result-own-crown"); await noHScroll("result-own-crown");
+    console.log(`mvp phone: the champion's own Crown: ${await page.getByTestId("outcome").textContent()}`);
+    await page.getByTestId("continue").click();
+    await page.getByTestId("run-over").waitFor({ timeout: 10_000 });
+    const ownOver = await page.getByTestId("run-over").textContent();
+    if (/slayer today/.test(ownOver) || !/own champion team/.test(ownOver)) errors.push(`own crown run over: "${ownOver}"`);
+    await shot("run-over-own-crown"); await noHScroll("run-over-own-crown");
+  }
   console.log(`mvp phone: ${round} fights, ${shots} screenshots in ${out}`);
 } finally {
   await browser.close();
