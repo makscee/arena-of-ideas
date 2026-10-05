@@ -5,8 +5,8 @@ import { battle } from "../battle.js";
 import { stressAbilities, stressRegistry } from "../content/stress.js";
 import type { AbilityDef, AbilityRegistry, BattleEvent } from "../types.js";
 import { MVP_RULES, type LineUnit, type MvpContent, type PlayerRef, type UnitContent } from "./contract.js";
-import { addCopy, contentFormProblems, formProblems, fuseCheck, fuseUnits, lineUnitOf, mergeTarget, portmanteau } from "./forms.js";
-import { toBattleDef } from "./run.js";
+import { addCopy, contentFormProblems, formProblems, fuseCheck, fuseUnits, lineUnitOf, mergeTarget } from "./forms.js";
+import { toBattleDef } from "./fight.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -132,7 +132,7 @@ describe("fusion", () => {
         who: [{ kind: "allEnemies" }],
         does: ["GiveShield", "Volley"],
       },
-      fusion: { first: "warden", second: "archer", name: "Wardcher", discoveredBy: "maks" },
+      fusion: { first: "warden", second: "archer", name: "Wardcher", discoveredBy: maks },
     });
   });
 
@@ -157,9 +157,9 @@ describe("fusion", () => {
     expect(ba.recipe).not.toEqual(fuseUnits(warden, archer, { name: "Archden", discoveredBy: null }, content).recipe);
   });
 
-  it("bots are never credited with a discovery", () => {
-    const bot: PlayerRef = { id: "b", name: "bot-Ash", bot: true };
-    expect(fuseUnits(warden, archer, { name: "W", discoveredBy: bot }, content).fusion?.discoveredBy).toBeNull();
+  it("copies the credit it is given: the namer (slice 10) applies the bot rule", () => {
+    expect(fuseUnits(warden, archer, { name: "W", discoveredBy: maks }, content).fusion?.discoveredBy).toEqual(maks);
+    expect(fuseUnits(warden, archer, { name: "W", discoveredBy: null }, content).fusion?.discoveredBy).toBeNull();
   });
 
   it("copies of either part merge into the fused unit, for stats only", () => {
@@ -177,12 +177,6 @@ describe("fusion", () => {
   it("mergeTarget finds a plain unit by id", () => {
     expect(mergeTarget([lineUnitOf(Warden, "u1"), lineUnitOf(Archer, "u2")], "archer")).toBe(1);
     expect(mergeTarget([], "archer")).toBe(-1);
-  });
-
-  it("portmanteau names an ordered pair deterministically", () => {
-    expect(portmanteau("Warden", "Archer")).toBe("Warher");
-    expect(portmanteau("Archer", "Warden")).toBe("Arcden");
-    expect(portmanteau("Warden", "Archer")).toBe(portmanteau("Warden", "Archer"));
   });
 });
 

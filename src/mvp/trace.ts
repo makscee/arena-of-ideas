@@ -1,0 +1,332 @@
+// Battle viewer logic (mission #574, slice 9): playback steps with one-line
+// captions, tap-a-change-to-trace-its-chain, and "why I lost". Pure functions
+// over the causal log; the phone client (mobile/screens/battle.ts) only draws
+// what these return. "Why did this happen" is always a walk up `causedBy`.
+
+import { isRootKind } from "../beats.js";
+import { displayNames, type NameOf } from "../trace.js";
+import type { BattleEvent, Side } from "../types.js";
+
+// ---------- who acted ----------
+
+/** The unit that made an event happen, and how. Events with no actor of their
+ * own (a Death, a StatChanged that follows a status) return null and the
+ * trace walks on to their cause. A status's tick jumps to where the status
+ * was applied, so "Poison −2" traces back to whoever poisoned. */
+interface ActorInfo {
+  unit: string | null;
+  /** "strike", "ability", or a status name. */
+  via: string;
+  /** Continue the walk here instead of `causedBy` (status origin). */
+  jumpTo?: number;
+}
+
+function statusOriginId(log: BattleEvent[], unit: string, status: string, beforeId: number): number | undefined {
+  for (let i = beforeId - 1; i >= 0; i--) {
+    const e = log[i]!;
+    if (e.type === "StatusApplied" && e.unit === unit && e.status === status) return i;
+  }
+  return undefined;
+}
+
+function actorOf(log: BattleEvent[], e: BattleEvent): ActorInfo | null {
+  if (e.type === "Strike") return { unit: e.striker, via: "strike" };
+  if (e.source !== "kernel") {
+    if (e.source.status === undefined) return { unit: e.source.unit, via: "ability" };
+    const originId = statusOriginId(log, e.source.unit, e.source.status, e.id);
+    const origin = originId !== undefined ? log[originId] : undefined;
+    const originActor = origin ? actorOf(log, origin) : null;
+    return { unit: originActor?.unit ?? null, via: e.source.status, ...(originId !== undefined ? { jumpTo: originId } : {}) };
+  }
+  if (e.type === "Hurt" && e.causedBy !== null) {
+    const parent = log[e.causedBy];
+    if (parent?.type === "Strike") return { unit: parent.striker, via: "strike", jumpTo: parent.id };
+  }
+  return null;
+}
+
+/** Side of every unit instance in the log (rosters plus summons). */
+export function sidesOf(log: BattleEvent[]): Map<string, Side> {
+  const sides = new Map<string, Side>();
+  for (const e of log) {
+    if (e.type === "BattleStart") for (const s of ["A", "B"] as const) for (const r of e.teams[s]) sides.set(r.id, s);
+    else if (e.type === "Summon") sides.set(e.unit, e.side);
+  }
+  return sides;
+}
+
+// ---------- changes and their traces ----------
+
+export type ChangeKind = "damage" | "heal" | "buff" | "debuff" | "status" | "death" | "summon" | "silence";
+
+/** A change you can tap: a number (or mark) on a unit card. */
+export interface Change {
+  eventId: number;
+  unit: string;
+  kind: ChangeKind;
+  /** What the card shows: "−5", "+2", "+1 PWR", "Poison ×2", "✝". */
+  label: string;
+}
+
+const CHANGE_TYPES = new Set(["Hurt", "Heal", "StatChanged", "StatusApplied", "Death", "Summon", "Silenced"]);
+
+export function changeOf(e: BattleEvent): Change | null {
+  if (!CHANGE_TYPES.has(e.type)) return null;
+  switch (e.type) {
+    case "Hurt":
+      return { eventId: e.id, unit: e.unit, kind: "damage", label: `−${e.amount}` };
+    case "Heal":
+      return { eventId: e.id, unit: e.unit, kind: "heal", label: `+${e.amount}` };
+    case "StatChanged":
+      return { eventId: e.id, unit: e.unit, kind: e.delta >= 0 ? "buff" : "debuff", label: `${e.delta >= 0 ? "+" : "−"}${Math.abs(e.delta)} ${e.stat.toUpperCase()}` };
+    case "StatusApplied":
+      return { eventId: e.id, unit: e.unit, kind: "status", label: `${e.status} ×${e.stacks}` };
+    case "Death":
+      return { eventId: e.id, unit: e.unit, kind: "death", label: "✝" };
+    case "Summon":
+      return { eventId: e.id, unit: e.unit, kind: "summon", label: e.resurrected ? "returns" : "new" };
+    case "Silenced":
+      return { eventId: e.id, unit: e.unit, kind: "silence", label: "silenced" };
+    default:
+      return null;
+  }
+}
+
+export interface TraceLink {
+  /** The event this unit acted through. */
+  eventId: number;
+  unit: string;
+  name: string;
+  side: Side | null;
+  /** "strike", "ability", or the status it acted through ("Poison"). */
+  via: string;
+}
+
+export interface Trace {
+  eventId: number;
+  change: Change | null;
+  /** Nearest cause first. Consecutive acts by the same unit collapse to one link. */
+  links: TraceLink[];
+  /** "−5 ← Archer ← Smith ← Shieldbearer" */
+  text: string;
+}
+
+const MAX_HOPS = 64;
+
+/** Walk an event's causes up `causedBy` (and status origins) to the turn's
+ * beat, naming each unit that acted along the way. */
+export function traceOf(log: BattleEvent[], eventId: number, name: NameOf = displayNames(log), sides = sidesOf(log)): Trace {
+  const links: TraceLink[] = [];
+  let cur: BattleEvent | undefined = log[eventId];
+  for (let hops = 0; cur && hops < MAX_HOPS; hops++) {
+    if (cur.type !== "Strike" && isRootKind(cur.type)) break; // turn structure ends the story
+    const a = actorOf(log, cur);
+    if (a?.unit) {
+      const prev = links.at(-1);
+      if (!prev || prev.unit !== a.unit) {
+        links.push({ eventId: cur.id, unit: a.unit, name: name(a.unit), side: sides.get(a.unit) ?? null, via: a.via });
+      }
+    }
+    const next: number | null = a?.jumpTo ?? cur.causedBy;
+    cur = next !== null && next < cur.id ? log[next] : undefined;
+  }
+  const change = log[eventId] ? changeOf(log[eventId]!) : null;
+  const head = change?.label ?? log[eventId]?.type ?? "?";
+  const text = links.length ? [head, ...links.map(linkText)].join(" ← ") : `${head} ← ${rootText(log, eventId)}`;
+  return { eventId, change, links, text };
+}
+
+function linkText(l: TraceLink): string {
+  return l.via === "strike" || l.via === "ability" ? l.name : `${l.name} (${l.via})`;
+}
+
+/** What a trace with no acting unit came from: fatigue, or the battle's start. */
+function rootText(log: BattleEvent[], eventId: number): string {
+  let cur = log[eventId];
+  for (let hops = 0; cur && hops < MAX_HOPS; hops++) {
+    if (cur.type === "Fatigue") return "Fatigue";
+    if (cur.causedBy === null) break;
+    cur = log[cur.causedBy];
+  }
+  return cur?.type === "BattleStart" ? "battle start" : "the rules";
+}
+
+// ---------- playback steps and captions ----------
+
+export interface Step {
+  /** Events this step reveals; the board after it is boardAt(log, last id). */
+  eventIds: number[];
+  turn: number;
+  /** The unit that lights up while this step plays. */
+  actor: string | null;
+  actorSide: Side | null;
+  /** One line, cause → effect. */
+  caption: string;
+  changes: Change[];
+}
+
+/** Events that are pure bookkeeping for playback: turn structure, and the
+ * strike itself (its Hurt carries the caption "X strikes Y → −n"). */
+const SILENT = new Set(["BattleStart", "TurnStart", "TurnEnd", "PairFaced", "Strike", "ChainBlocked"]);
+
+/** A StatChanged the kernel logs as the follow-up of a status landing or
+ * leaving belongs to that status's step. */
+function isStatusFollowUp(log: BattleEvent[], e: BattleEvent): boolean {
+  if (e.type !== "StatChanged" || e.source !== "kernel" || e.causedBy === null) return false;
+  const p = log[e.causedBy];
+  return p?.type === "StatusApplied" || p?.type === "StatusRemoved";
+}
+
+export function stepsOf(log: BattleEvent[], name: NameOf = displayNames(log), sides = sidesOf(log)): Step[] {
+  const steps: Step[] = [];
+  const byEvent = new Map<number, Step>();
+  for (const e of log) {
+    if (SILENT.has(e.type)) continue;
+    if (isStatusFollowUp(log, e)) {
+      const parent = byEvent.get(e.causedBy!);
+      if (parent) {
+        parent.eventIds.push(e.id);
+        const c = changeOf(e);
+        if (c) parent.changes.push(c);
+        parent.caption = captionOf(log, e.causedBy!, name, parent.eventIds);
+        byEvent.set(e.id, parent);
+        continue;
+      }
+    }
+    const a = actorOf(log, e);
+    const actor = a?.unit ?? traceOf(log, e.id, name, sides).links[0]?.unit ?? null;
+    const c = changeOf(e);
+    const step: Step = {
+      eventIds: [e.id],
+      turn: e.turn,
+      actor,
+      actorSide: actor ? sides.get(actor) ?? null : null,
+      caption: captionOf(log, e.id, name, [e.id]),
+      changes: c ? [c] : [],
+    };
+    steps.push(step);
+    byEvent.set(e.id, step);
+  }
+  return steps;
+}
+
+function causeName(log: BattleEvent[], e: BattleEvent, name: NameOf): string {
+  const a = actorOf(log, e);
+  if (a?.unit) return a.via === "strike" || a.via === "ability" ? name(a.unit) : a.via;
+  const t = traceOf(log, e.id, name);
+  return t.links[0] ? linkText(t.links[0]) : rootText(log, e.id);
+}
+
+/** One line, cause → effect, for the event `id` (plus merged follow-ups). */
+export function captionOf(log: BattleEvent[], id: number, name: NameOf = displayNames(log), merged: number[] = [id]): string {
+  const e = log[id];
+  if (!e) return "";
+  switch (e.type) {
+    case "Hurt": {
+      const p = e.causedBy !== null ? log[e.causedBy] : undefined;
+      const absorbed = e.absorbed ? ` (${e.absorbed} absorbed)` : "";
+      if (e.source === "kernel" && p?.type === "Strike") return `${name(p.striker)} strikes ${name(e.unit)} → −${e.amount}${absorbed}`;
+      return `${causeName(log, e, name)} → ${name(e.unit)} −${e.amount}${absorbed}`;
+    }
+    case "Heal":
+      return `${causeName(log, e, name)} → ${name(e.unit)} +${e.amount}`;
+    case "StatusApplied": {
+      const stat = merged
+        .map((i) => log[i])
+        .flatMap((m) => (m && m.type === "StatChanged" ? [`${m.delta >= 0 ? "+" : "−"}${Math.abs(m.delta)} ${m.stat.toUpperCase()}`] : []));
+      return `${causeName(log, e, name)} → ${e.status} ×${e.stacks} on ${name(e.unit)}${stat.length ? ` (${stat.join(", ")})` : ""}`;
+    }
+    case "StatusRemoved":
+      return `${e.status} fades from ${name(e.unit)}${e.remaining > 0 ? ` (${e.remaining} left)` : ""}`;
+    case "StatChanged":
+      return `${causeName(log, e, name)} → ${name(e.unit)} ${e.delta >= 0 ? "+" : "−"}${Math.abs(e.delta)} ${e.stat.toUpperCase()}`;
+    case "Death":
+      return `${causeName(log, e, name)} → ${name(e.unit)} falls`;
+    case "Summon":
+      return e.resurrected
+        ? `${causeName(log, e, name)} → ${name(e.unit)} returns at ${e.atHp ?? e.hp} HP`
+        : `${causeName(log, e, name)} → ${e.name} appears (${e.pwr}/${e.hp})`;
+    case "Silenced":
+      return `${causeName(log, e, name)} → ${name(e.unit)} is silenced`;
+    case "Fatigue":
+      return `Fatigue → everyone takes ${e.amount}`;
+    case "ChainCapped":
+      return `Chain capped after ${e.steps} steps`;
+    case "Intercepted":
+      return `${name(e.by.unit)}${e.by.status ? ` (${e.by.status})` : ""} → stops a ${e.original}${e.unit ? ` on ${name(e.unit)}` : ""}`;
+    case "BattleEnd":
+      return e.winner === "draw" ? "Draw" : e.winner === "A" ? "You win" : "They win";
+    default:
+      return e.type;
+  }
+}
+
+// ---------- why I lost ----------
+
+export interface LossChain {
+  /** Unit names, nearest cause first: ["Archer", "Smith"]. */
+  names: string[];
+  /** "Archer ← Smith" (with the status when one carried it). */
+  text: string;
+  /** Damage it dealt to your units (overkill not counted), plus healing it gave theirs. */
+  impact: number;
+  damage: number;
+  heal: number;
+  kills: number;
+  /** How many changes it made; the first one, to replay its trace. */
+  times: number;
+  sampleEventId: number;
+}
+
+/** The enemy chains that did the most against `you` (default side A): every
+ * Hurt on your units and Heal on theirs is traced, grouped by the chain of
+ * units behind it, and ranked by impact. Fatigue and your own units' acts
+ * are not enemy chains. */
+export function whyILost(log: BattleEvent[], you: Side = "A", top = 3): LossChain[] {
+  const name = displayNames(log);
+  const sides = sidesOf(log);
+  const them: Side = you === "A" ? "B" : "A";
+  const hp = new Map<string, number>();
+  for (const e of log) if (e.type === "BattleStart") for (const s of ["A", "B"] as const) for (const r of e.teams[s]) hp.set(r.id, r.hp);
+  const groups = new Map<string, LossChain>();
+  const add = (e: BattleEvent, dmg: number, heal: number, kill: boolean) => {
+    const t = traceOf(log, e.id, name, sides);
+    if (t.links[0]?.side !== them) return;
+    const key = t.links.map(linkText).join(" ← ");
+    let g = groups.get(key);
+    if (!g) {
+      g = { names: t.links.map((l) => l.name), text: key, impact: 0, damage: 0, heal: 0, kills: 0, times: 0, sampleEventId: e.id };
+      groups.set(key, g);
+    }
+    g.damage += dmg;
+    g.heal += heal;
+    g.impact += dmg + heal;
+    g.kills += kill ? 1 : 0;
+    g.times++;
+  };
+  for (const e of log) {
+    if (e.type === "Hurt") {
+      const before = hp.get(e.unit) ?? e.amount;
+      const after = e.hpAfter ?? before - e.amount;
+      hp.set(e.unit, after);
+      if (sides.get(e.unit) === you) add(e, Math.max(0, Math.min(e.amount, before)), 0, false);
+    } else if (e.type === "Heal") {
+      const before = hp.get(e.unit) ?? 0;
+      hp.set(e.unit, e.hpAfter ?? before + e.amount);
+      if (sides.get(e.unit) === them) add(e, 0, e.amount, false);
+    } else if (e.type === "StatChanged" && e.hpAfter !== undefined) {
+      hp.set(e.unit, e.hpAfter);
+    } else if (e.type === "Summon") {
+      hp.set(e.unit, e.atHp ?? e.hp);
+    } else if (e.type === "Death" && sides.get(e.unit) === you) {
+      // the kill belongs to the chain of the change that dropped the unit
+      const cause = e.causedBy !== null ? log[e.causedBy] : undefined;
+      if (cause) {
+        const t = traceOf(log, cause.id, name, sides);
+        const g = groups.get(t.links.map(linkText).join(" ← "));
+        if (g && t.links[0]?.side === them) g.kills++;
+      }
+    }
+  }
+  return [...groups.values()].sort((a, b) => b.impact - a.impact || b.kills - a.kills).slice(0, top);
+}

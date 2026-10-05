@@ -9,26 +9,24 @@
 // - Fusion takes two Awoken units in tap order: the When of the first, the Who
 //   of the second, the Does of both (first's, then second's), stats summed.
 //   A fused unit is final; further copies of either part merge into it for stats.
+//
+// Slice 2 owns these bodies. The run (slice 4), bots (slice 6) and content
+// tuning (slice 7) only call them. A fusion's name and credit come from the
+// server's namer (slice 10, server/src/mvp/fusions.ts), which also owns the
+// portmanteau fallback and the rule that bots are never credited.
 
 import { validateTeam } from "../validate.js";
 import type { Stats, UnitDef } from "../types.js";
 import {
   MVP_RULES,
+  type FuseContext,
   type LineUnit,
   type MvpContent,
   type MvpRules,
-  type PlayerRef,
   type UnitContent,
   type UnitForm,
   type UnitId,
 } from "./contract.js";
-
-/** What the server supplies for a fusion: the ordered pair's generated name
- * (slice 10) and who discovered it. */
-export interface FuseContext {
-  name: string;
-  discoveredBy: PlayerRef | null;
-}
 
 function grown(base: Stats, extraCopies: number, rules: MvpRules): Stats {
   return { pwr: base.pwr + extraCopies * rules.copyGrowth.pwr, hp: base.hp + extraCopies * rules.copyGrowth.hp };
@@ -85,7 +83,8 @@ export function fuseCheck(a: LineUnit, b: LineUnit): string | null {
 
 /** Fuse two Awoken units in tap order: the When of `first`, the Who of
  * `second`, the Does of both (first's, then second's), stats and copies
- * summed. The result keeps first's uid and is final. */
+ * summed. The result keeps first's uid and is final. `ctx` carries the name
+ * and the credit, which the server looks up (slice 10). */
 export function fuseUnits(first: LineUnit, second: LineUnit, ctx: FuseContext, _content: MvpContent): LineUnit {
   const why = fuseCheck(first, second);
   if (why) throw new Error(`can't fuse ${first.name} + ${second.name}: ${why}`);
@@ -109,21 +108,10 @@ export function fuseUnits(first: LineUnit, second: LineUnit, ctx: FuseContext, _
       first: first.unitId,
       second: second.unitId,
       name: ctx.name,
-      // The contract credits a player name; bots discover nothing.
-      discoveredBy: ctx.discoveredBy && !ctx.discoveredBy.bot ? ctx.discoveredBy.name : null,
+      // The namer already applied the credit rule (FusionDiscovery); copy it.
+      discoveredBy: ctx.discoveredBy,
     },
   };
-}
-
-/** The deterministic name for an ordered pair when the name model is down:
- * the first half of the first name and the second half of the second. */
-export function portmanteau(firstName: string, secondName: string): string {
-  const a = firstName.trim();
-  const b = secondName.trim();
-  const head = a.slice(0, Math.max(1, Math.ceil(a.length / 2)));
-  const tail = b.slice(Math.floor(b.length / 2));
-  const word = `${head}${tail.toLowerCase()}`;
-  return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
 function formDef(u: UnitContent, form: UnitForm, key: string): UnitDef {

@@ -5,12 +5,15 @@ import {
   MVP_API_PREFIX,
   PLAYER_HEADER,
   type BattleRecord,
+  type DayView,
   type Decision,
   type DecisionResponse,
+  type FusionDiscovery,
   type HomeView,
   type MvpContent,
   type PlayerRef,
   type RunView,
+  type StatsView,
 } from "../src/mvp/contract";
 
 const BASE = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "") + MVP_API_PREFIX;
@@ -71,5 +74,15 @@ export const api = {
   startRun: () => call<RunView>("POST", "/runs"),
   run: (id: string) => call<RunView>("GET", `/runs/${id}`),
   decide: (id: string, d: Decision) => call<DecisionResponse>("POST", `/runs/${id}/decisions`, d),
+  /** What a shop decision would do, without doing it (the awakening and fusion result cards). */
+  preview: (id: string, d: Decision) => call<DecisionResponse>("POST", `/runs/${id}/preview`, d),
   battle: (id: string) => call<BattleRecord>("GET", `/battles/${id}`),
+  /** The day, its champion and the last playoff (slice 5). */
+  day: () => call<DayView>("GET", "/day"),
+  /** Dev "end day now": 404 unless the server runs with MVP_DEV=1, 501 until slice 5. */
+  endDay: () => call<DayView>("POST", "/dev/end-day"),
+  /** 501 until slice 11. */
+  stats: () => call<StatsView>("GET", "/stats"),
+  /** Discovered fusions (slice 10). */
+  fusions: () => call<FusionDiscovery[]>("GET", "/fusions"),
 };

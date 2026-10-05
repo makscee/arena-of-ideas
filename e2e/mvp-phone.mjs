@@ -17,7 +17,7 @@ let child = null;
 if (!url) {
   execFileSync("npm", ["run", "-s", "mvp:build"], { stdio: "inherit" });
   const port = await new Promise((r) => { const s = createServer().listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => r(p)); }); });
-  child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port) }, stdio: ["ignore", "inherit", "inherit"] });
+  child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port), MVP_DEV: "1" }, stdio: ["ignore", "inherit", "inherit"] });
   url = `http://127.0.0.1:${port}/arena/`;
   for (let i = 0; i < 50; i++) {
     try { if ((await fetch(url + "api/v1/health")).ok) break; } catch {}
@@ -45,9 +45,15 @@ try {
   await page.getByTestId("name-submit").click();
   await page.getByTestId("play").waitFor();
   await shot("home"); await noHScroll("home");
+  await page.getByTestId("stats").click();
+  await page.getByTestId("stats-back").waitFor();
+  await shot("stats"); await noHScroll("stats");
+  await page.getByTestId("stats-back").click();
+  await page.getByTestId("play").waitFor();
   await page.getByTestId("play").click();
 
   let round = 0;
+  let whyShot = false;
   for (let guard = 0; guard < 20; guard++) {
     await page.getByTestId("fight").waitFor({ timeout: 10_000 });
     // Buy while the gold allows and the line has room.
@@ -68,6 +74,22 @@ try {
       await page.getByTestId("fight").waitFor();
     }
     await page.getByTestId("fight").click();
+    // The battle viewer (slice 9) comes first. In round 1, watch it play, then
+    // tap a change and read its chain. Skip goes to the result, which shows
+    // "why I lost" after a loss (shot once).
+    await page.getByTestId("battle-skip").waitFor({ timeout: 10_000 });
+    if (round === 1) {
+      await page.getByTestId("change").first().waitFor({ timeout: 15_000 });
+      await shot("battle"); await noHScroll("battle");
+      await page.getByTestId("change").first().click();
+      await page.getByTestId("trace-text").waitFor();
+      const chain = await page.getByTestId("trace-text").textContent();
+      if (!/←/.test(chain)) errors.push(`trace: no chain in "${chain}"`);
+      await shot("battle-trace"); await noHScroll("battle-trace");
+    }
+    await page.getByTestId("battle-skip").click();
+    await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
+    if (!whyShot && (await page.getByTestId("why-lost").isVisible())) { whyShot = true; await shot("why-lost"); await noHScroll("why-lost"); }
     await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
     if (round === 1) { await shot("result"); await noHScroll("result"); }
     await page.getByTestId("continue").click();

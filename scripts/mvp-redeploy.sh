@@ -40,6 +40,7 @@ cat > "\$PLIST" <<PL
     <key>PORT</key><string>$PORT</string>
     <key>HOST</key><string>127.0.0.1</string>
     <key>BASE_PATH</key><string>/arena</string>
+    <key>MVP_DEV</key><string>1</string>
   </dict>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>

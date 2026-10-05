@@ -1,45 +1,36 @@
 // Arena MVP HTTP API (mission #574, slice 1). The routes and shapes are the
-// contract in src/mvp/contract.ts; this file only wires them to the pure run
-// (src/mvp/run.ts) and a store.
+// contract in src/mvp/contract.ts; this file only parses requests and calls
+// the runtime (./runtime.ts): the run engine (./runs.ts), the day (./day.ts),
+// the stats (./stats.ts) and the store. A slice fills in those modules, not
+// these routes.
 import { randomUUID } from "node:crypto";
 import { Hono, type Context } from "hono";
-import {
-  MVP_API_PREFIX,
-  MVP_API_VERSION,
-  MVP_RULES,
-  PLAYER_HEADER,
-  type Decision,
-  type DecisionResponse,
-  type Ghost,
-  type HomeView,
-  type MvpContent,
-  type PlayerRef,
-} from "../../../src/mvp/contract.js";
-import { MvpDecisionError, applyMvpDecision, initMvpRun, runView, synthGhost, type MvpRunState } from "../../../src/mvp/run.js";
-import { MemoryMvpStore, type MvpStore } from "./store.js";
-
-export interface MvpDeps {
-  content: MvpContent;
-  store?: MvpStore;
-  /** Seed source; tests pin it. */
-  seed?: () => number;
-  now?: () => Date;
-}
+import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, type Decision, type HomeView, type PlayerRef } from "../../../src/mvp/contract.js";
+import { MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
+import { dayView, endDay } from "./day.js";
+import { MvpNotYet } from "./errors.js";
+import { decide, preview, startRun } from "./runs.js";
+import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
+import { statsView } from "./stats.js";
 
 const NAME_RE = /^[\p{L}\p{N}_\- ]{1,24}$/u;
 
-function ghostOf(r: MvpRunState): Ghost {
-  return { ghostId: `${r.runId}-r${r.round}`, runId: r.runId, player: r.player, round: r.round, line: structuredClone(r.line) };
-}
-
-export function createMvpApp(deps: MvpDeps): Hono {
-  const { content } = deps;
-  const store = deps.store ?? new MemoryMvpStore();
-  const seed = deps.seed ?? (() => Math.floor(Math.random() * 2 ** 32));
-  const now = deps.now ?? (() => new Date());
+/** The API on a runtime, or on a fresh one built from `deps`. */
+export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
+  const rt = isMvpRuntime(deps) ? deps : mvpRuntime(deps);
+  const { content, store } = rt;
   const api = new Hono();
 
   const bad = (c: Context, status: 400 | 401 | 404 | 409 | 501, error: string) => c.json({ error }, status);
+  /** A stub that a later slice fills in answers 501 until then. */
+  const notYet = (c: Context, fn: () => unknown) => {
+    try {
+      return c.json(fn());
+    } catch (err) {
+      if (err instanceof MvpNotYet) return bad(c, 501, err.message);
+      throw err;
+    }
+  };
   const playerOf = (c: Context): PlayerRef | undefined => {
     const id = c.req.header(PLAYER_HEADER);
     return id ? store.player(id) : undefined;
@@ -59,12 +50,10 @@ export function createMvpApp(deps: MvpDeps): Hono {
 
   api.get("/home", (c) => {
     const p = playerOf(c);
-    const t = now();
     const home: HomeView = {
-      rules: MVP_RULES,
-      // Slice 5 owns the day; until then there is no champion and the day is today's date.
-      day: { day: t.toISOString().slice(0, 10), endsAt: t.toISOString(), champion: null, slayers: 0, lastPlayoff: null },
-      rating: p ? { player: p, rating: MVP_RULES.ratingStart, runs: 0, slays: 0, daysAsChampion: 0, playoffWins: 0 } : null,
+      rules: rt.rules,
+      day: dayView(rt),
+      rating: p ? store.rating(p.id) ?? { player: p, rating: rt.rules.ratingStart, runs: 0, slays: 0, daysAsChampion: 0, playoffWins: 0 } : null,
       activeRunId: p ? store.activeRun(p.id)?.runId ?? null : null,
     };
     return c.json(home);
@@ -73,9 +62,7 @@ export function createMvpApp(deps: MvpDeps): Hono {
   api.post("/runs", (c) => {
     const p = playerOf(c);
     if (!p) return bad(c, 401, `unknown player: send ${PLAYER_HEADER} from POST /players`);
-    const run = initMvpRun({ runId: randomUUID(), player: p, seed: seed(), content });
-    store.putRun(run);
-    return c.json(runView(run));
+    return c.json(runView(startRun(rt, p)));
   });
 
   api.get("/runs/:runId", (c) => {
@@ -83,34 +70,43 @@ export function createMvpApp(deps: MvpDeps): Hono {
     return run ? c.json(runView(run)) : bad(c, 404, "no such run");
   });
 
-  api.post("/runs/:runId/decisions", async (c) => {
+  /** The caller's run and the Decision in `body`, or the error response.
+   * Synchronous on purpose: await the body first, then call this and the run
+   * engine with no await in between, so parallel decisions on one run apply
+   * one after another instead of starting from the same state. */
+  const runAndDecision = (c: Context, body: unknown): { run: MvpRunState; d: Decision } | Response => {
+    const d = body as Decision | null;
     const p = playerOf(c);
-    const run = store.run(c.req.param("runId"));
+    const run = store.run(c.req.param("runId") ?? "");
     if (!run) return bad(c, 404, "no such run");
     if (!p || p.id !== run.player.id) return bad(c, 401, "not your run");
-    const d = (await c.req.json().catch(() => null)) as Decision | null;
     if (!d || typeof d !== "object" || typeof d.kind !== "string") return bad(c, 400, "body must be a Decision");
+    return { run, d };
+  };
+  const refused = (c: Context, err: unknown) => {
+    if (err instanceof MvpDecisionError) return bad(c, 409, err.message);
+    throw err;
+  };
+
+  api.post("/runs/:runId/decisions", async (c) => {
+    const req = runAndDecision(c, await c.req.json().catch(() => null));
+    if (req instanceof Response) return req;
     try {
-      let fightCtx;
-      if (d.kind === "fight") {
-        // Snapshot before the fight, so even a losing line becomes someone's ghost.
-        const candidates = store.ghosts(run.round, run.runId);
-        const pick = seed();
-        const ghost =
-          candidates.length > 0
-            ? candidates[pick % candidates.length]!
-            : synthGhost({ content, round: run.round, seed: pick, ghostId: `bot-${randomUUID()}` });
-        if (run.line.length > 0) store.addGhost(ghostOf(run));
-        fightCtx = { ghost, battleId: randomUUID(), battleSeed: seed() };
-      }
-      const step = applyMvpDecision(run, d, content, fightCtx);
-      store.putRun(step.state);
-      if (step.battle) store.putBattle(step.battle);
-      const res: DecisionResponse = { run: runView(step.state), ...(step.fight ? { fight: step.fight } : {}) };
-      return c.json(res);
+      return c.json(decide(rt, req.run, req.d));
     } catch (err) {
-      if (err instanceof MvpDecisionError) return bad(c, err.kind === "fuse" ? 501 : 409, err.message);
-      throw err;
+      return refused(c, err);
+    }
+  });
+
+  // A dry run of a shop decision for slice 8's result cards: no writes.
+  api.post("/runs/:runId/preview", async (c) => {
+    const req = runAndDecision(c, await c.req.json().catch(() => null));
+    if (req instanceof Response) return req;
+    if (req.d.kind === "fight") return bad(c, 400, "a fight can't be previewed");
+    try {
+      return c.json(preview(rt, req.run, req.d));
+    } catch (err) {
+      return refused(c, err);
     }
   });
 
@@ -119,9 +115,18 @@ export function createMvpApp(deps: MvpDeps): Hono {
     return b ? c.json(b) : bad(c, 404, "no such battle");
   });
 
-  api.get("/day", (c) => bad(c, 501, "the day arrives in slice 5"));
-  api.post("/dev/end-day", (c) => bad(c, 501, "the day arrives in slice 5"));
-  api.get("/stats", (c) => bad(c, 501, "stats arrive in slice 11"));
+  // Slice 10 owns this route and the store behind it; slice 11 only reads.
+  api.get("/fusions", (c) => c.json(store.fusions()));
+
+  api.get("/day", (c) => c.json(dayView(rt)));
+  api.get("/stats", (c) => notYet(c, () => statsView(rt)));
+
+  // Dev-only tools (MvpDeps.dev, MVP_DEV=1 in main.ts): 404 without it.
+  api.use("/dev/*", async (c, next) => {
+    if (!rt.dev) return bad(c, 404, "not found");
+    await next();
+  });
+  api.post("/dev/end-day", (c) => notYet(c, () => endDay(rt)));
 
   const app = new Hono();
   app.route(MVP_API_PREFIX, api);
