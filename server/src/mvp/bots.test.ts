@@ -40,16 +40,18 @@ describe("MVP bots and world (slice 6)", () => {
       const rt = world(store ? { store } : {});
       seedChampion(rt);
       expect(thinRounds(rt)).toHaveLength(rt.rules.rounds);
-      const first = topUpGhosts(rt);
+      // A smaller target keeps the test quick; the job uses BOT_TARGET.
+      const target = 8;
+      const first = topUpGhosts(rt, { target });
       expect(first.thin).toEqual([]);
-      expect(first.runs).toBeGreaterThan(BOT_TARGET);
+      expect(first.runs).toBeGreaterThan(target);
       for (let r = 1; r <= rt.rules.rounds; r++) {
         const ghosts = pool(rt, r);
-        expect(ghosts.length).toBeGreaterThanOrEqual(BOT_TARGET);
+        expect(ghosts.length).toBeGreaterThanOrEqual(target);
         expect(ghosts.every((g) => g.player.bot)).toBe(true);
       }
       // Bounded: a full pool plays no more runs.
-      expect(topUpGhosts(rt).runs).toBe(0);
+      expect(topUpGhosts(rt, { target }).runs).toBe(0);
       // Bots stop before the Crown: no Crown battles, no slays, no ratings.
       expect(rt.store.battles({ kind: "crown" })).toEqual([]);
       expect(rt.store.slays(rt.today().seq)).toEqual([]);
@@ -57,11 +59,11 @@ describe("MVP bots and world (slice 6)", () => {
       expect(rt.store.fusions().length).toBeGreaterThan(0);
       expect(rt.store.fusions().every((f) => f.discoveredBy === null)).toBe(true);
     }
-  });
+  }, 30_000);
 
   it("refills for new content: ghosts of other content don't count", () => {
     const rt = world();
-    topUpGhosts(rt);
+    topUpGhosts(rt, { target: 2 });
     const retuned = world({ store: rt.store, content: { ...rt.content, version: "retuned" } });
     expect(thinRounds(retuned)).toHaveLength(rt.rules.rounds);
   });
@@ -82,9 +84,10 @@ describe("MVP bots and world (slice 6)", () => {
     try {
       expect(rt.store.currentChampion()?.contentVersion).toBe(rt.content.version);
       await vi.waitFor(() => expect(thinRounds(rt)).toEqual([]), { timeout: 20_000, interval: 50 });
+      expect(pool(rt, rt.rules.rounds).length).toBeGreaterThanOrEqual(BOT_TARGET);
     } finally {
       stop();
       log.mockRestore();
     }
-  });
+  }, 30_000);
 });

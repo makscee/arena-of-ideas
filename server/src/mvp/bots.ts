@@ -108,7 +108,7 @@ export function playBotRun(deps: RunDeps, player: PlayerRef = botPlayer(deps.see
 export function thinRounds(rt: RunDeps, target = BOT_TARGET): number[] {
   const out: number[] = [];
   for (let r = 1; r <= rt.rules.rounds; r++) {
-    if (rt.store.ghosts(r, { excludePlayerId: "", contentVersion: rt.content.version }).length < target) out.push(r);
+    if (rt.store.ghosts(r, { excludePlayerId: "", contentVersion: rt.content.version, limit: target }).length < target) out.push(r);
   }
   return out;
 }
