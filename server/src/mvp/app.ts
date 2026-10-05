@@ -13,9 +13,9 @@ import {
   type MvpContent,
   type PlayerRef,
 } from "../../../src/mvp/contract.js";
-import { MvpDecisionError, runView } from "../../../src/mvp/run.js";
+import { MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
 import { storedOrPortmanteau, type NameFusion } from "./fusions.js";
-import { decide, startRun, type RunDeps, type RunHooks } from "./runs.js";
+import { decide, preview, startRun, type RunDeps, type RunHooks } from "./runs.js";
 import { MemoryMvpStore, type MvpStore } from "./store.js";
 
 export interface MvpDeps {
@@ -95,21 +95,44 @@ export function createMvpApp(deps: MvpDeps): Hono {
     return run ? c.json(runView(run)) : bad(c, 404, "no such run");
   });
 
-  api.post("/runs/:runId/decisions", async (c) => {
-    // Await the body before reading the run: from here on the handler is
-    // synchronous, so parallel decisions on one run apply one after another.
-    const d = (await c.req.json().catch(() => null)) as Decision | null;
+  /** The caller's run and the Decision in `body`, or the error response.
+   * Synchronous on purpose: await the body first, then call this and the run
+   * engine with no await in between, so parallel decisions on one run apply
+   * one after another instead of starting from the same state. */
+  const runAndDecision = (c: Context, body: unknown): { run: MvpRunState; d: Decision } | Response => {
+    const d = body as Decision | null;
     const p = playerOf(c);
-    const run = store.run(c.req.param("runId"));
+    const run = store.run(c.req.param("runId") ?? "");
     if (!run) return bad(c, 404, "no such run");
     if (!p || p.id !== run.player.id) return bad(c, 401, "not your run");
     if (!d || typeof d !== "object" || typeof d.kind !== "string") return bad(c, 400, "body must be a Decision");
+    return { run, d };
+  };
+  const refused = (c: Context, err: unknown) => {
+    // Every fuse answers 501 until slice 2 makes fusion work; then 409 like the rest.
+    if (err instanceof MvpDecisionError) return bad(c, err.kind === "fuse" ? 501 : 409, err.message);
+    throw err;
+  };
+
+  api.post("/runs/:runId/decisions", async (c) => {
+    const req = runAndDecision(c, await c.req.json().catch(() => null));
+    if (req instanceof Response) return req;
     try {
-      return c.json(decide(runs, run, d));
+      return c.json(decide(runs, req.run, req.d));
     } catch (err) {
-      // Every fuse answers 501 until slice 2 makes fusion work; then 409 like the rest.
-      if (err instanceof MvpDecisionError) return bad(c, err.kind === "fuse" ? 501 : 409, err.message);
-      throw err;
+      return refused(c, err);
+    }
+  });
+
+  // A dry run of a shop decision for slice 8's result cards: no writes.
+  api.post("/runs/:runId/preview", async (c) => {
+    const req = runAndDecision(c, await c.req.json().catch(() => null));
+    if (req instanceof Response) return req;
+    if (req.d.kind === "fight") return bad(c, 400, "a fight can't be previewed");
+    try {
+      return c.json(preview(runs, req.run, req.d));
+    } catch (err) {
+      return refused(c, err);
     }
   });
 

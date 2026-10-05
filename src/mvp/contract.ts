@@ -389,6 +389,7 @@ export interface HomeView {
 //   POST /api/v1/runs                        → RunView            (starts a run)
 //   GET  /api/v1/runs/:runId                 → RunView
 //   POST /api/v1/runs/:runId/decisions  Decision → DecisionResponse
+//   POST /api/v1/runs/:runId/preview    Decision → DecisionResponse  (dry run, no writes; 400 for a fight)
 //   GET  /api/v1/battles/:battleId           → BattleRecord
 //   GET  /api/v1/fusions                     → FusionDiscovery[]  (slice 10)
 //   GET  /api/v1/day                         → DayView            (slice 5)

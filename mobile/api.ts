@@ -71,5 +71,7 @@ export const api = {
   startRun: () => call<RunView>("POST", "/runs"),
   run: (id: string) => call<RunView>("GET", `/runs/${id}`),
   decide: (id: string, d: Decision) => call<DecisionResponse>("POST", `/runs/${id}/decisions`, d),
+  /** What a shop decision would do, without doing it (the awakening and fusion result cards). */
+  preview: (id: string, d: Decision) => call<DecisionResponse>("POST", `/runs/${id}/preview`, d),
   battle: (id: string) => call<BattleRecord>("GET", `/battles/${id}`),
 };

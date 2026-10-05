@@ -115,6 +115,26 @@ describe("MVP API thin path", () => {
     expect(seen).toEqual([...cur.fights.map((f, i) => `fight ${f.round} true ${i + 1}`), `end ${cur.endedBy}`]);
   });
 
+  it("previews a shop decision without writing anything", async () => {
+    const seen: string[] = [];
+    const call = client({ hooks: [{ onFight: () => seen.push("fight"), onRunEnd: () => seen.push("end") }] });
+    const { json: p } = await call<PlayerRef>("POST", "/players", { name: "peek" });
+    const { json: r } = await call<RunView>("POST", "/runs", undefined, p.id);
+    const pv = await call<DecisionResponse>("POST", `/runs/${r.runId}/preview`, { kind: "buy", slot: 0 }, p.id);
+    expect(pv.status).toBe(200);
+    expect(pv.json.run).toMatchObject({ gold: 7, line: [{ unitId: r.offers[0]!.unitId }] });
+    expect((await call<RunView>("GET", `/runs/${r.runId}`)).json).toEqual(r);
+    const real = await call<DecisionResponse>("POST", `/runs/${r.runId}/decisions`, { kind: "buy", slot: 0 }, p.id);
+    expect(real.json.run).toEqual(pv.json.run);
+    expect((await call("POST", `/runs/${r.runId}/preview`, { kind: "fight" }, p.id)).status).toBe(400);
+    expect((await call("POST", `/runs/${r.runId}/preview`, { kind: "fuse", first: 0, second: 1 }, p.id)).status).toBe(501);
+    expect((await call("POST", `/runs/${r.runId}/preview`, { kind: "buy", slot: 9 }, p.id)).status).toBe(409);
+    expect((await call("POST", `/runs/${r.runId}/preview`, { kind: "buy", slot: 0 })).status).toBe(401);
+    expect(seen).toEqual([]);
+    const fusions = await call<unknown[]>("GET", "/fusions");
+    expect(fusions).toEqual({ status: 200, json: [] });
+  });
+
   it("rejects bad input with 4xx", async () => {
     const call = client();
     expect((await call("POST", "/players", { name: "" })).status).toBe(400);

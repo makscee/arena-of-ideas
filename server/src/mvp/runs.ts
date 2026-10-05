@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
 import type { BattleRecord, Decision, DecisionResponse, FightResult, FuseContext, Ghost, MvpContent, PlayerRef } from "../../../src/mvp/contract.js";
 import { fuseCheck } from "../../../src/mvp/forms.js";
 import { applyMvpDecision, initMvpRun, runView, synthGhost, unitById, type DecisionContext, type MvpRunState } from "../../../src/mvp/run.js";
-import type { NameFusion } from "./fusions.js";
+import { storedOrPortmanteau, type NameFusion } from "./fusions.js";
 import type { MvpStore } from "./store.js";
 
 /** Observers of the run engine. They run after the store writes, in order. */
@@ -65,6 +65,18 @@ export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionRe
   if (step.fight && step.battle) for (const h of deps.hooks) h.onFight?.(step.state, step.fight, step.battle);
   if (step.state.phase === "over") for (const h of deps.hooks) h.onRunEnd?.(step.state);
   return { run: runView(step.state), ...(step.fight ? { fight: step.fight } : {}) };
+}
+
+/** What `d` would do to `run`: the same rules on a copy, with no store
+ * writes and no hooks (slice 8 shows the awakening and the fusion result card
+ * with it). A fuse gets the stored name or the portmanteau only: a preview
+ * never records a discovery or calls a model. Not for fights: the route
+ * answers 400. */
+export function preview(deps: RunDeps, run: MvpRunState, d: Decision): DecisionResponse {
+  const ctx: DecisionContext = {};
+  const fuse = fuseContext(storedOrPortmanteau(deps.store), deps.content, run, d);
+  if (fuse) ctx.fuse = fuse;
+  return { run: runView(applyMvpDecision(run, d, deps.content, ctx).state) };
 }
 
 /** The name and credit for a fuse the rules allow; undefined otherwise (the
