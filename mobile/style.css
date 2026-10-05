@@ -43,6 +43,7 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .card.empty { cursor: default; opacity: 0.4; border-style: dashed; }
 .card .emoji { font-size: 26px; line-height: 1; }
 .card .name { font-size: 12px; font-weight: 600; line-height: 1.1; word-break: break-word; }
+.discovered { font-size: 10px; color: var(--dim); font-family: "IBM Plex Mono", monospace; }
 .card .stats { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
 .card .stats .p { color: var(--gold); }
 .card .stats .h { color: var(--ghost); }

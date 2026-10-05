@@ -52,6 +52,7 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
     expect(cleanModelName('Name: "iron mender".\nIt combines…')).toBe("Iron Mender");
     expect(cleanModelName("<think>hmm</think>\nBloodmend")).toBe("Bloodmend");
     expect(cleanModelName("Ash-Warden")).toBe("Ash-Warden");
+    expect(cleanModelName("🥊🎯 Stormancer!")).toBe("Stormancer");
   });
 
   it("refuses franchise names, fake official titles, spam and non-names", () => {
@@ -131,9 +132,11 @@ describe("MVP fusion names: through the runtime", () => {
   });
 
   it("a blocked answer keeps the portmanteau", async () => {
-    const { rt, stored } = world(async () => "Pikachu");
+    let asked = 0;
+    const { rt, stored } = world(async () => (asked++, "Pikachu"));
     decide(rt, stored(), { kind: "reorder", from: 0, to: 0 });
     await drainFusionNames(rt.store);
+    expect(asked).toBe(6 * 3); // three tries for each of the 6 ordered pairs
     decide(rt, stored(), { kind: "fuse", first: 0, second: 1 });
     expect(rt.store.fusion(a!.id, b!.id)).toMatchObject({ name: portmanteau(a!.name, b!.name), nameSource: "fallback" });
   });
@@ -177,6 +180,6 @@ describe("MVP fusion names: the HTTP model client", () => {
     const { port } = server.address() as AddressInfo;
     const ask = httpModelNamer(`http://127.0.0.1:${port}/v1/chat/completions`);
     expect(await ask(brawler, medic)).toBe("Ironcare");
-    expect(got?.messages.at(-1)?.content).toContain("Brawler (first) with x Medic (second)");
+    expect(got?.messages.at(-1)?.content).toContain("Brawler (first) merges with x Medic (second)");
   });
 });

@@ -103,7 +103,7 @@ export function cleanModelName(raw: string, first?: UnitContent, second?: UnitCo
     .replace(/^(name|fusion|fused name)\s*:\s*/i, "")
     .replace(/["“”«»*_`.!]/g, "")
     .replace(/\s+/g, " ")
-    .trim();
+    .replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, "");
   if (!/^[A-Za-z][A-Za-z' -]{2,19}$/.test(name)) return null;
   const words = name.split(/[ -]/).filter(Boolean);
   if (words.length > 3) return null;
@@ -125,9 +125,9 @@ export function httpModelNamer(url: string, timeoutMs = 15_000): ModelNamer {
           {
             role: "system",
             content:
-              "You name fused creatures in a fantasy auto-battler. Answer with one new invented name only: one or two words, at most 18 letters, no quotes, no explanation. Never use a name from an existing game, film, book or comic.",
+              "You invent names for creatures in a fantasy auto-battler. Two fighters merge into one new creature. Answer with its name only: one or two words, at most 18 letters, no quotes, no explanation. Never use a name from an existing game, film, book or comic, and never the words fusion or fuse.",
           },
-          { role: "user", content: `Fuse ${first.emoji} ${first.name} (first) with ${second.emoji} ${second.name} (second). Name:` },
+          { role: "user", content: `${first.emoji} ${first.name} (first) merges with ${second.emoji} ${second.name} (second). Name:` },
         ],
         max_tokens: 12,
         temperature: 0.8,
@@ -183,6 +183,7 @@ interface Namer {
 }
 
 const MAX_QUEUE = 200;
+const MODEL_TRIES = 3;
 const namers = new WeakMap<MvpStore, Namer>();
 
 const keyOf = (first: UnitId, second: UnitId) => JSON.stringify([first, second]);
@@ -272,8 +273,11 @@ export async function drainFusionNames(store: MvpStore): Promise<void> {
     if (n.asked.has(pair.key)) continue;
     let name: string | null = null;
     try {
-      const raw = await n.model(pair.first, pair.second);
-      name = raw === null ? null : cleanModelName(raw, pair.first, pair.second);
+      // A small model often wraps a good name in emoji or markdown: ask again.
+      for (let tries = 0; tries < MODEL_TRIES && !name; tries++) {
+        const raw = await n.model(pair.first, pair.second);
+        name = raw === null ? null : cleanModelName(raw, pair.first, pair.second);
+      }
     } catch {
       continue; // down or slow: the pair keeps the portmanteau, and may be asked again
     }
