@@ -71,8 +71,14 @@ const SUMMONS: Record<string, UnitDef> = {
   "Call Treant": body("Treant", 1, 8),
 };
 
-/** Ability names read as what they do: "Hit 3", "Poison 2", "Shield 2", … */
+/** Ability names read as what they do: "Hit 3", "Poison 2", "Shield 2", …
+ * "A + B" is one Ability doing A then B on the same target (a sleeping form
+ * Does exactly one Ability); its family is A's. */
 function abilityOf(name: string): AbilityDef {
+  if (name.includes(" + ")) {
+    const parts = name.split(" + ").map(abilityOf);
+    return { name, family: parts[0]!.family, effects: parts.flatMap((p) => p.effects) };
+  }
   if (name === "Strike") return { name, family: "Strike", effects: [{ kind: "heal", amount: c(0) }] };
   if (name === "Smite") return { name, family: "Strike", effects: [{ kind: "damage", amount: { kind: "stat", stat: "pwr", of: "holder" } }] };
   if (name === "Mend") return { name, family: "Heal", effects: [{ kind: "heal", amount: { kind: "stat", stat: "pwr", of: "holder" } }] };
@@ -125,7 +131,9 @@ export const ROWS: Row[] = [
   r("Gnat",          "🦟", 1, 1, 4, "start",      "random",  "Hit 2",       { who: "enemies" }),
   r("Spore",         "🍄", 1, 1, 5, "die",        "enemies", "Poison 1",    { does: ["Poison 2"] }),
   r("Rat",           "🐀", 1, 2, 4, "die",        "front",   "Poison 2",    { who: "enemies" }),
-  r("Planter",       "🌱", 1, 1, 5, "start",      "me",      "Call Imp",    { does: ["Call Treant"] }),
+  // A summon into a full line is skipped, so Planter also grows: in a full
+  // line it is a sturdier body instead of a blank.
+  r("Planter",       "🌱", 1, 1, 5, "start",      "me",      "Call Imp + Vitality 2", { does: ["Call Treant", "Vitality 3"] }),
   r("Nurse",         "💉", 1, 1, 5, "allyHurt",   "it",      "Heal 1",      { does: ["Heal 2"] }),
   r("Prepper",       "🎒", 1, 1, 5, "start",      "allies",  "Shield 1",    { does: ["Shield 1", "Vitality 1"] }),
   r("Coach",         "📣", 1, 1, 5, "start",      "allies",  "Strength 1",  { does: ["Strength 1", "Shield 1"] }),
