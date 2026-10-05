@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { DecisionResponse, FusionDiscovery, PlayerRef, UnitContent } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { mvpContent } from "./content.js";
-import { cleanModelName, drainFusionNames, fusionNameReady, fusionNaming, httpModelNamer, MODEL_FAILURES, portmanteau, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
+import { awaitFusionName, cleanModelName, drainFusionNames, fusionNameReady, fusionNaming, httpModelNamer, MODEL_FAILURES, portmanteau, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
 import { decide, preview, startRun } from "./runs.js";
 import { mvpRuntime } from "./runtime.js";
 import { MemoryMvpStore } from "./store.js";
@@ -56,7 +56,7 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
   });
 
   it("refuses franchise names, fake official titles, spam and non-names", () => {
-    for (const raw of ["Pikachu", "Darth Medic", "Gandalf", "Super Mario", "Elsa", "Sonic Brawl", "Nefarian", "Captain Swindle", "Admin Approved", "FREE V-BUCKS", "Frozen", "Hollow Knight", "Kel'Thuzad"])
+    for (const raw of ["Pikachu", "Darth Medic", "Gandalf", "Super Mario", "Elsa", "Sonic", "Nefarian", "Swindle", "Admin Approved", "FREE V-BUCKS", "Frozen", "Hollow Knight", "Kel'Thuzad"])
       expect(cleanModelName(raw), raw).toBeNull();
     for (const raw of ["", "a", "This is a very long name for a unit", "Iron care mend heal", "Name42", "www scam example", "Ye Ye"]) expect(cleanModelName(raw), raw).toBeNull();
     expect(cleanModelName("Medic", brawler, medic)).toBeNull();
@@ -74,6 +74,13 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
   it("splits CamelCase before matching words, and stems don't over-block ordinary names", () => {
     for (const raw of ["LordVader", "SuperMario", "BabyYoda", "IronMan", "Xmen", "Witchers"]) expect(cleanModelName(raw), raw).toBeNull();
     for (const raw of ["Hexmender", "Badminton", "Iron Mantle", "Twitcher", "Exterminator", "Carambola", "Fluffy"]) expect(cleanModelName(raw), raw).not.toBeNull();
+  });
+
+  it("catches lowercase joins, and never matches a stem across a word's edge", () => {
+    for (const raw of ["Supermario", "Lordvader", "Babyyoda", "Thorhammer", "Hulkbuster", "Yodaling", "Fusion", "Fused Medic", "Spider Man Medic", "Lordbatman", "Darthawk"])
+      expect(cleanModelName(raw), raw).toBeNull();
+    for (const raw of ["Aqua Mantis", "Spider Mantis", "Bat Mantle", "Batmancer", "Dart Hawk", "Sonic Shrieker", "Grim Joker", "Shadow Swindle", "Confusion", "Hulking Brute", "Evader"])
+      expect(cleanModelName(raw), raw).not.toBeNull();
   });
 
   it("refuses names that only join the two parts", () => {
@@ -203,18 +210,16 @@ describe("MVP fusion names: through the runtime", () => {
   });
 
   it("a bot fuses a pair only once its name is ready, or once the model gave up on it", async () => {
-    let down = false;
-    const { rt, stored } = world(async () => {
-      if (down) throw new Error("503");
+    // The model fails on one pair only, so it never counts as down.
+    const d = content.units[3]!;
+    const { rt, stored } = world(async (x, y) => {
+      if (x.id === a!.id && y.id === d.id) throw new Error("503");
       return "Grimward";
     }, bot, () => 0);
     expect(fusionNameReady(rt.store, a!.id, b!.id)).toBe(false);
     decide(rt, stored(), { kind: "reorder", from: 0, to: 0 });
     await drainFusionNames(rt.store);
     expect(fusionNameReady(rt.store, a!.id, b!.id)).toBe(true);
-    // The model is down: a new pair is asked MODEL_FAILURES times, then given up on.
-    const d = content.units[3]!;
-    down = true;
     rt.store.putRun({ ...stored(), line: [...stored().line, lineUnitOf(d, "u4", 3, rt.rules)], nextUid: 5 });
     decide(rt, stored(), { kind: "reorder", from: 0, to: 0 });
     for (let i = 1; i < MODEL_FAILURES; i++) {
@@ -225,6 +230,56 @@ describe("MVP fusion names: through the runtime", () => {
     expect(fusionNameReady(rt.store, a!.id, d.id)).toBe(true);
     // With no model at all, every pair is ready.
     expect(fusionNameReady(new MemoryMvpStore(), a!.id, b!.id)).toBe(true);
+  });
+
+  it("after MODEL_FAILURES failed asks in a row the model is down: no bot waits, until it answers again", async () => {
+    let down = true;
+    const { rt, stored } = world(async () => {
+      if (down) throw new Error("connection refused");
+      return "Grimward";
+    }, bot, () => 0);
+    decide(rt, stored(), { kind: "reorder", from: 0, to: 0 }); // 6 pairs, each fails once
+    await drainFusionNames(rt.store);
+    expect(fusionNameReady(rt.store, a!.id, b!.id)).toBe(true);
+    // Back up: one answer and the rest wait for theirs again.
+    down = false;
+    const d = content.units[3]!;
+    rt.store.putRun({ ...stored(), line: [lineUnitOf(a!, "u1", 3, rt.rules), lineUnitOf(d, "u4", 3, rt.rules)], nextUid: 5 });
+    const waited = awaitFusionName(rt.store, a!.id, d.id);
+    expect(fusionNameReady(rt.store, a!.id, d.id)).toBe(true); // still down until an answer
+    await drainFusionNames(rt.store);
+    await waited;
+    expect(rt.peekFusionName(a!, d, bot).name).toBe("Grimward");
+  });
+
+  it("a bot waiting for a pair has it asked next and wakes when it is named, or when the model gives up", async () => {
+    const asked: string[] = [];
+    let failOn = "";
+    const { rt, stored } = world(async (x, y) => {
+      asked.push(`${x.id}+${y.id}`);
+      if (`${x.id}+${y.id}` === failOn) throw new Error("timeout");
+      return "Grimward";
+    }, bot, () => 0);
+    decide(rt, stored(), { kind: "reorder", from: 0, to: 0 }); // 6 pairs queued ahead
+    let woke = false;
+    const waited = awaitFusionName(rt.store, c!.id, b!.id).then(() => (woke = true));
+    await drainFusionNames(rt.store);
+    expect(asked[0]).toBe(`${c!.id}+${b!.id}`);
+    await waited;
+    expect(woke).toBe(true);
+    expect(fusionNameReady(rt.store, c!.id, b!.id)).toBe(true);
+    // A pair the model keeps failing on: the bot wakes after MODEL_FAILURES asks.
+    const d = content.units[3]!;
+    failOn = `${d.id}+${a!.id}`;
+    let gaveUp = false;
+    const late = awaitFusionName(rt.store, d.id, a!.id).then(() => (gaveUp = true));
+    for (let i = 1; i < MODEL_FAILURES; i++) {
+      await drainFusionNames(rt.store);
+      expect(gaveUp).toBe(false);
+    }
+    await drainFusionNames(rt.store);
+    await late;
+    expect(gaveUp).toBe(true);
   });
 
   it("a blocked answer keeps the portmanteau", async () => {

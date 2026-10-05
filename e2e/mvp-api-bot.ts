@@ -25,6 +25,8 @@ if (!base) {
   const server = serve({ fetch: createMvpApp(rt).fetch, port: 0, hostname: "127.0.0.1" });
   const stopJobs = startMvpJobs(rt);
   await new Promise((r) => server.once("listening", r));
+  // Slice 6 seeds the champion once the model named its fusions (or failed).
+  for (let waited = 0; !rt.store.currentChampion() && waited < 120_000; waited += 50) await new Promise((r) => setTimeout(r, 50));
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   close = () => {
     stopJobs();
