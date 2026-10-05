@@ -259,11 +259,17 @@ export interface BattleRecord {
 
 /** shop: buy, sell, reroll, reorder, fuse, then fight the round's ghost.
  * crown: after the last round with hearts left; offers [], gold 0, the only
- * decision is { kind: "fight" } and nextOpponent is today's champion. Slice 4
- * implements it; until then the run ends after the last round ("no-champion").
- * over: nothing more to do; endedBy says why. */
+ * decision is { kind: "fight" } and nextOpponent is today's champion. With no
+ * live champion (none, or a stale contentVersion) the run ends right after
+ * the last round instead ("no-champion").
+ * over: nothing more to do; endedBy says why.
+ *
+ * Content changes (slice 7 retunes it): a run started on other content than
+ * the live one can't fight, so the server ends it cleanly ("content-changed",
+ * rating null, no rating change) on its next decision, or when its player
+ * starts a run. Its line is not rebuilt. */
 export type RunPhase = "shop" | "crown" | "over";
-export type RunEndReason = "out-of-hearts" | "crown-won" | "crown-lost" | "no-champion";
+export type RunEndReason = "out-of-hearts" | "crown-won" | "crown-lost" | "no-champion" | "content-changed";
 
 export interface RunView {
   runId: string;
@@ -278,10 +284,9 @@ export interface RunView {
   losses: number;
   line: LineUnit[];
   offers: Offer[];
-  /** Who the next fight is against. Slice 4 picks the ghost at round start,
-   * keeps its ghostId in the run state, and the fight uses that ghost; in the
-   * crown phase it is the champion. Null until then (today the opponent is
-   * picked when the fight starts). */
+  /** Who the next fight is against: the server picks the round's ghost at
+   * round start and the fight uses that ghost; in the crown phase it is the
+   * champion. Null once the run is over. */
   nextOpponent: Pick<Ghost, "player" | "round"> | null;
   fights: FightResult[];
   /** The day (DayView.seq) the run started on. */
@@ -291,7 +296,8 @@ export interface RunView {
   /** ISO time the run ended; the server stamps it. */
   endedAt?: string;
   endedBy?: RunEndReason;
-  /** Present once the run is over (slice 4 computes it; slice 1 leaves it null). */
+  /** Present once the run is over: a human's rating change (once per run),
+   * null for a bot's run and a "content-changed" end. */
   rating?: RatingChange | null;
 }
 
@@ -400,7 +406,10 @@ export interface Rating {
   playoffWins: number;
 }
 
-/** Rating moves once per run: wins plus a slay bonus vs. the expected result. */
+/** Rating moves once per run: wins plus a slay bonus vs. the expected result
+ * (src/mvp/run.ts ratingChange). actual = (wins + SLAY_BONUS if slayed) /
+ * (rounds + SLAY_BONUS); expected = 1 / (1 + 10^((ratingStart - before)/400));
+ * after = before + ratingK * (actual - expected), rounded. */
 export interface RatingChange {
   before: number;
   after: number;
@@ -426,7 +435,7 @@ export interface HomeView {
 //   GET  /api/v1/content                     → MvpContent
 //   POST /api/v1/players       { name }      → PlayerRef
 //   GET  /api/v1/home                        → HomeView
-//   POST /api/v1/runs                        → RunView            (starts a run)
+//   POST /api/v1/runs                        → RunView            (starts a run; the player's active run if one is going)
 //   GET  /api/v1/runs/:runId                 → RunView
 //   POST /api/v1/runs/:runId/decisions  Decision → DecisionResponse
 //   POST /api/v1/runs/:runId/preview    Decision → DecisionResponse  (dry run, no writes; 400 for a fight)

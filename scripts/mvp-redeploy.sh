@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Redeploy the Arena MVP test instance on m1 (mission #574): tailnet only, at
 # https://m1.twin-pogona.ts.net/arena/ → 127.0.0.1:$PORT. It holds no real
-# players' data (in-memory store), so any agent may redeploy it.
+# players' data (a SQLite file, ~/arena-mvp/data/arena-mvp.db, kept across
+# redeploys), so any agent may redeploy it.
 #
 #   npm run mvp:redeploy                 # the mission branch
 #   npm run mvp:redeploy -- <branch>     # any pushed branch
