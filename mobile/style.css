@@ -81,7 +81,8 @@ button.pin-btn { display: flex; align-items: center; gap: 4px; min-height: 44px;
 .pin-emoji { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .actions { min-height: 44px; flex-wrap: wrap; }
 .actions:empty { display: none; }
-.actions button { padding: 0 10px; min-width: 44px; flex: none; }
+.actions { gap: 6px; }
+.actions button { padding: 0 8px; min-width: 44px; flex: none; letter-spacing: 0.02em; }
 .card.awoken { border-color: var(--gold); box-shadow: inset 0 0 12px color-mix(in srgb, var(--gold) 22%, transparent); }
 .card.fused { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 10%, var(--panel)); }
 .card.fusable { outline: 2px dashed var(--gold); outline-offset: -2px; }
