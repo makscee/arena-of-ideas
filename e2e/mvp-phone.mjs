@@ -127,6 +127,23 @@ try {
       await shot("battle-unit-sheet"); await noHScroll("battle-unit-sheet");
       await page.getByTestId("sheet-close").click();
       await page.getByTestId("unit-sheet").waitFor({ state: "detached" });
+      // A unit with two changes in one step (a status and the stat it moves)
+      // shows both in its chip, and its trace lists both; shot when this
+      // battle has one.
+      if (await page.getByTestId("battle-play").textContent() === "❚❚") await page.getByTestId("battle-play").click();
+      for (let k = 0; k < 80 && (await page.locator('[data-testid="change"][data-count="2"]').count()) === 0 && !(await page.getByTestId("battle-step").isDisabled()); k++) await page.getByTestId("battle-step").click();
+      const multi = page.locator('[data-testid="change"][data-count="2"]').first();
+      if (await multi.count()) {
+        const lines = await multi.locator(".bv-l").allTextContents();
+        if (lines.length !== 2 || lines.some((l) => !l.trim())) errors.push(`two changes: chip shows ${JSON.stringify(lines)}`);
+        await shot("battle-two-changes"); await noHScroll("battle-two-changes");
+        await multi.click();
+        await page.getByTestId("trace-group").waitFor();
+        if ((await page.getByTestId("trace-group-change").count()) !== 2) errors.push("two changes: the trace doesn't list both");
+        await tap44("trace group change", page.getByTestId("trace-group-change"));
+        await shot("battle-two-changes-trace");
+        await page.getByTestId("trace-close").click();
+      } else console.log("mvp phone: round 1 had no unit with two changes in one step (no shot)");
     }
     await page.getByTestId("battle-skip").click();
     await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
@@ -238,6 +255,18 @@ try {
     if (!(await page.getByTestId("sheet-close").isVisible())) errors.push("unit sheet from Info: no Close button");
     await shot("fused-sheet"); await noHScroll("fused-sheet");
   }
+  // Dev "End day now": Home says plainly how the day ended; a table only for a real playoff.
+  await page.reload();
+  await page.getByTestId("play").waitFor();
+  await page.locator("details.dev summary").click();
+  await page.getByTestId("end-day").click();
+  await page.getByTestId("playoff").waitFor();
+  const ended = await page.getByTestId("playoff-summary").textContent();
+  const table = await page.getByTestId("playoff-standing").count();
+  if (!/^No slayers|was the only slayer|won the playoff/.test(ended)) errors.push(`day end: "${ended}"`);
+  if (/^No slayers|only slayer/.test(ended) && table > 0) errors.push(`day end: a table under "${ended}"`);
+  if (/won the playoff/.test(ended) && table < 2) errors.push(`day end: playoff without its table`);
+  await shot("home-day-ended"); await noHScroll("home-day-ended");
   console.log(`mvp phone: ${round} fights, ${shots} screenshots in ${out}`);
 } finally {
   await browser.close();
