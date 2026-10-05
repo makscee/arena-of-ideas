@@ -12,6 +12,8 @@ e2e/.shots-challenge/
 
 # Local runtime SQLite state; production uses a named volume.
 data/arena.db*
+data/arena-mvp.db*
 
 # Warm-stack pidfile written by `npm run e2e:serve`, read by `npm run e2e:stop`.
 .e2e-serve.json
+docs/mvp/meta-health.quick.*

@@ -1,6 +1,9 @@
-// Arena MVP run, thin path (mission #574, slice 1): start → buy → fight a
-// ghost → result. Pure: every transition returns a new state. Slice 4 grows
-// this into the full run (tiers, sell/reorder rules, Crown, rating). Copies,
+// Arena MVP run (mission #574, slices 1 and 4): 12 shop rounds, then the
+// Crown fight against today's champion; 5 hearts, gold per round, shop tiers,
+// buy/reroll/sell/reorder/fuse, and the run-end rating. Pure: every
+// transition returns a new state, and the server (server/src/mvp/runs.ts)
+// supplies what needs the store: each round's opponent (setOpponent, picked at
+// round start), the champion for the Crown, the rating before the run. Copies,
 // awakening and fusion are slice 2's, in ./forms.ts, and a fight is
 // ./fight.ts's fightLines: this file only calls them. The shapes come from
 // ./contract.ts.
@@ -9,6 +12,7 @@ import { rngStep } from "../rng.js";
 import {
   MVP_RULES,
   type BattleRecord,
+  type Champion,
   type Decision,
   type FightResult,
   type FuseContext,
@@ -19,6 +23,8 @@ import {
   type Offer,
   type Outcome,
   type PlayerRef,
+  type RatingChange,
+  type RunEndReason,
   type RunView,
   type UnitContent,
 } from "./contract.js";
@@ -27,6 +33,12 @@ import { fightLines } from "./fight.js";
 import { addCopy, fuseCheck, fuseUnits, lineUnitOf, mergeTarget } from "./forms.js";
 
 export interface MvpRunState extends RunView {
+  /** The next fight's opponent, picked at round start (setOpponent): a saved
+   * ghost in the shop, the champion as a ghost in the crown phase. The fight
+   * uses this one. Null until the server picks it. */
+  opponent: Ghost | null;
+  /** The seq of the champion the Crown fights (Slay.seq); null before the crown phase. */
+  crownSeq: number | null;
   seed: number;
   /** rngStep state — the run's one seeded stream. */
   rng: number;
@@ -74,6 +86,8 @@ export function initMvpRun(args: { runId: string; player: PlayerRef; seed: numbe
     line: [],
     offers: [],
     nextOpponent: null,
+    opponent: null,
+    crownSeq: null,
     fights: [],
     day: args.day,
     startedAt: args.startedAt,
@@ -123,6 +137,7 @@ export interface MvpStep {
  * stays pure). */
 export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpContent, ctx?: DecisionContext): MvpStep {
   if (state.phase === "over") throw new MvpDecisionError(d.kind, `the run is over (${state.endedBy})`);
+  if (state.phase === "crown" && d.kind !== "fight") throw new MvpDecisionError(d.kind, "only the Crown fight is left");
   const s = clone(state);
   switch (d.kind) {
     case "buy": {
@@ -174,11 +189,13 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
     case "fight": {
       if (s.line.length === 0) throw new MvpDecisionError("fight", "the line is empty, buy a unit first");
       if (!ctx?.fight) throw new MvpDecisionError("fight", "no opponent");
+      const crown = s.phase === "crown";
+      const kind = crown ? "crown" : "round";
       const { ghost, battleId, battleSeed, at } = ctx.fight;
       const record = fightLines(
         { player: s.player, line: s.line },
         { player: ghost.player, line: ghost.line },
-        { battleId, seed: battleSeed, kind: "round", round: s.round, runId: s.runId, at, content, rules: s.rules },
+        { battleId, seed: battleSeed, kind, round: s.round, runId: s.runId, at, content, rules: s.rules },
       );
       const winner = record.winner;
       const outcome: Outcome = winner === "A" ? "win" : winner === "B" ? "loss" : "draw";
@@ -188,7 +205,7 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       if (outcome === "loss") s.losses += 1;
       const fight: FightResult = {
         battleId,
-        kind: "round",
+        kind,
         round: s.round,
         opponent: { ghostId: ghost.ghostId, player: ghost.player, round: ghost.round },
         outcome,
@@ -196,15 +213,16 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
         heartsAfter: s.hearts,
       };
       s.fights.push(fight);
-      if (s.hearts <= 0) {
-        s.phase = "over";
-        s.endedBy = "out-of-hearts";
-        s.rating = null;
-      } else if (s.round >= s.rules.rounds) {
-        // Slice 4/5: the Crown fight against today's champion goes here.
-        s.phase = "over";
-        s.endedBy = "no-champion";
-        s.rating = null;
+      s.opponent = null;
+      s.nextOpponent = null;
+      if (crown) endIn(s, outcome === "win" ? "crown-won" : "crown-lost");
+      else if (s.hearts <= 0) endIn(s, "out-of-hearts");
+      else if (s.round >= s.rules.rounds) {
+        // The Crown is next: no shop, the server sets the champion (setOpponent).
+        s.phase = "crown";
+        s.round = s.rules.rounds + 1;
+        s.gold = 0;
+        s.offers = [];
       } else {
         s.round += 1;
         s.gold = s.rules.goldPerRound;
@@ -215,9 +233,63 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
   }
 }
 
+function endIn(s: MvpRunState, why: RunEndReason): void {
+  s.phase = "over";
+  s.endedBy = why;
+  s.gold = 0;
+  s.offers = [];
+  s.opponent = null;
+  s.nextOpponent = null;
+}
+
+/** Sets the next fight's opponent: a round's ghost in the shop, or in the
+ * crown phase the champion as a ghost (championGhost) with its seq. */
+export function setOpponent(state: MvpRunState, ghost: Ghost, crownSeq?: number): MvpRunState {
+  if (state.phase === "over") throw new MvpDecisionError("fight", `the run is over (${state.endedBy})`);
+  const s = clone(state);
+  s.opponent = structuredClone(ghost);
+  s.nextOpponent = { player: ghost.player, round: ghost.round };
+  if (s.phase === "crown") s.crownSeq = crownSeq ?? null;
+  return s;
+}
+
+/** Ends a run that can't go on: "no-champion" (the Crown has no live
+ * champion) or "content-changed" (the live content isn't the run's). */
+export function endRun(state: MvpRunState, why: "no-champion" | "content-changed"): MvpRunState {
+  const s = clone(state);
+  endIn(s, why);
+  return s;
+}
+
+/** Today's champion as the Crown's opponent. */
+export function championGhost(c: Champion, rules: MvpRules = MVP_RULES): Ghost {
+  return {
+    ghostId: `champion-${c.seq}`,
+    runId: `champion-${c.seq}`,
+    player: c.player,
+    round: rules.rounds + 1,
+    line: structuredClone(c.line),
+    contentVersion: c.contentVersion,
+    createdAt: c.since,
+  };
+}
+
+/** What slaying the champion is worth in the rating, in round wins. */
+export const SLAY_BONUS = 3;
+
+/** The run-end rating, Elo-style: the result is the run's round wins plus
+ * SLAY_BONUS for a slay, out of rules.rounds + SLAY_BONUS; the expected
+ * result is a player rated `before` against the field (rules.ratingStart). */
+export function ratingChange(before: number, run: Pick<RunView, "wins" | "endedBy">, rules: MvpRules = MVP_RULES): RatingChange {
+  const slay = run.endedBy === "crown-won";
+  const actual = (run.wins + (slay ? SLAY_BONUS : 0)) / (rules.rounds + SLAY_BONUS);
+  const expected = 1 / (1 + 10 ** ((rules.ratingStart - before) / 400));
+  return { before, after: Math.round(before + rules.ratingK * (actual - expected)), expected, actual };
+}
+
 /** The public view of a run (drops the rng and bookkeeping). */
 export function runView(s: MvpRunState): RunView {
-  const { seed: _seed, rng: _rng, nextUid: _n, rules: _r, ...view } = s;
+  const { seed: _seed, rng: _rng, nextUid: _n, rules: _r, opponent: _o, crownSeq: _c, ...view } = s;
   return view;
 }
 

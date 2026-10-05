@@ -1,6 +1,6 @@
-// MVP storage seam (mission #574). Slice 1 keeps everything in memory behind
-// this interface; slice 4 adds a SQLite store and main.ts passes it to
-// mvpRuntime, so the routes and the run engine never change.
+// MVP storage seam (mission #574). Tests keep everything in memory behind
+// this interface; main.ts passes slice 4's SQLite store (./sqlite-store.ts)
+// to mvpRuntime, so the routes and the run engine never change.
 //
 // Rules for every slice that touches storage (several build in parallel):
 // - Slice 4 implements every method that exists when it merges, fusions
@@ -8,9 +8,10 @@
 // - A slice that adds a method implements it in every store class and adds
 //   its case to describeMvpStore (./store.contract.ts), which every class runs.
 // - SQL goes in server/src/mvp/sql/<slice>-<name>.sql, the slice two digits
-//   (04-runs.sql, 05-days.sql): CREATE TABLE / CREATE INDEX IF NOT EXISTS,
-//   applied in filename order at startup. There is no schema version counter;
-//   a slice adds its own file and never edits another slice's.
+//   (04-runs.sql, 05-days.sql), applied in filename order at startup, each
+//   once: the applied names are recorded in mvp_migrations. A slice adds its
+//   own new file (a new table, or ALTER TABLE for a column) and never edits
+//   another slice's or one that has shipped: a recorded file doesn't run again.
 // - Caches that aren't the game's record stay out of MvpStore (slice 10's name
 //   cache lives in ./fusions.ts).
 import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";

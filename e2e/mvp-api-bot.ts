@@ -45,7 +45,7 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
   return json as T;
 }
 
-const tally = { runs: 0, fights: 0, wins: 0, losses: 0, draws: 0, ends: {} as Record<string, number>, errors: 0 };
+const tally = { runs: 0, fights: 0, wins: 0, losses: 0, draws: 0, crowns: 0, ends: {} as Record<string, number>, ratingDelta: 0, errors: 0 };
 const t0 = Date.now();
 for (let i = 0; i < runs; i++) {
   try {
@@ -67,10 +67,14 @@ for (let i = 0; i < runs; i++) {
       const f = await call<DecisionResponse>("POST", `/runs/${run.runId}/decisions`, { kind: "fight" });
       await call("GET", `/battles/${f.fight!.battleId}`);
       tally.fights++;
+      if (f.fight!.kind === "crown") tally.crowns++;
       tally[f.fight!.outcome === "win" ? "wins" : f.fight!.outcome === "loss" ? "losses" : "draws"]++;
       run = f.run;
     }
     if (run.phase !== "over") throw new Error(`run ${run.runId} did not end`);
+    // A human's run moves the rating exactly once, at its end.
+    if (!run.rating) throw new Error(`run ${run.runId} ended (${run.endedBy}) without a rating change`);
+    tally.ratingDelta += run.rating.after - run.rating.before;
     tally.ends[run.endedBy!] = (tally.ends[run.endedBy!] ?? 0) + 1;
     tally.runs++;
   } catch (e) {

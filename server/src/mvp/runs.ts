@@ -3,9 +3,9 @@
 // bots play in-process through them, and slices 5, 10 and 11 observe runs
 // through RunHooks instead of editing decide().
 import { randomUUID } from "node:crypto";
-import type { BattleRecord, DayState, Decision, DecisionResponse, FightResult, FuseContext, Ghost, LineUnit, MvpContent, MvpRules, PlayerRef } from "../../../src/mvp/contract.js";
+import type { BattleRecord, DayState, Decision, DecisionResponse, FightResult, FuseContext, Ghost, LineUnit, MvpContent, MvpRules, PlayerRef, Rating } from "../../../src/mvp/contract.js";
 import { fuseCheck } from "../../../src/mvp/forms.js";
-import { applyMvpDecision, initMvpRun, runView, synthGhost, unitById, type DecisionContext, type MvpRunState, type MvpStep } from "../../../src/mvp/run.js";
+import { applyMvpDecision, championGhost, endRun, initMvpRun, ratingChange, runView, setOpponent, synthGhost, unitById, type DecisionContext, type MvpRunState, type MvpStep } from "../../../src/mvp/run.js";
 import type { NameFusion } from "./fusions.js";
 import type { MvpStore } from "./store.js";
 
@@ -48,43 +48,97 @@ export interface RunDeps {
   peekFusionName: NameFusion;
 }
 
-/** Starts a run for `player` on today's day and stores it. */
+/** Starts a run for `player` on today's day, with round 1's opponent picked,
+ * and stores it. One active run per player: if one is going, that one comes
+ * back instead (a run on content that is no longer live is ended first, and a
+ * new one starts). Synchronous, so parallel starts can't create two. */
 export function startRun(deps: RunDeps, player: PlayerRef): MvpRunState {
-  const run = initMvpRun({ runId: randomUUID(), player, seed: deps.seed(), content: deps.content, day: deps.today().seq, startedAt: deps.now().toISOString(), rules: deps.rules });
+  const active = deps.store.activeRun(player.id);
+  if (active) {
+    if (active.contentVersion === deps.content.version) return active;
+    const ended = finish(deps, endRun(active, "content-changed"));
+    for (const h of deps.hooks) h.onRunEnd?.(ended);
+  }
+  const fresh = initMvpRun({ runId: randomUUID(), player, seed: deps.seed(), content: deps.content, day: deps.today().seq, startedAt: deps.now().toISOString(), rules: deps.rules });
+  const run = setOpponent(fresh, pickGhost(deps, fresh));
   deps.store.putRun(run);
   return run;
 }
 
 /** Applies one decision to a stored run and records what it produced: the
- * snapshot ghost and the battle of a fight, the new run state, then the hooks.
- * Synchronous on purpose: read the run and call this with no await in between,
- * so two decisions on one run can't start from the same state. Throws
- * MvpDecisionError when the rules refuse the decision. */
+ * snapshot ghost and the battle of a fight, the next opponent (the round's
+ * ghost, or the champion for the Crown), the Slay, the rating at the run's
+ * end, the new run state, then the hooks. Synchronous on purpose: read the
+ * run and call this with no await in between, so two decisions on one run
+ * can't start from the same state. Throws MvpDecisionError when the rules
+ * refuse the decision. A run on content that is no longer live is ended
+ * ("content-changed") instead of applying `d`. */
 export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionResponse {
   const { store, content, seed, now } = deps;
+  if (run.phase !== "over" && run.contentVersion !== content.version) {
+    const ended = finish(deps, endRun(run, "content-changed"));
+    for (const h of deps.hooks) h.onRunEnd?.(ended);
+    return { run: runView(ended) };
+  }
   const ctx: DecisionContext = {};
   const fuse = fuseContext(deps.nameFusion, content, run, d);
   if (fuse) ctx.fuse = fuse;
   if (d.kind === "fight") {
-    // Never your own team, only teams built with the content that fights now;
-    // a seeded bot team when the round has none (slice 6's bots fill it).
-    const candidates = store.ghosts(run.round, { excludePlayerId: run.player.id, contentVersion: content.version });
-    const pick = seed();
-    const ghost =
-      candidates.length > 0
-        ? candidates[pick % candidates.length]!
-        : synthGhost({ content, round: run.round, seed: pick, ghostId: `bot-${randomUUID()}`, createdAt: now().toISOString(), rules: deps.rules });
+    // The opponent picked at round start; a run stored without one picks now.
+    const ghost = run.opponent ?? pickGhost(deps, run);
     ctx.fight = { ghost, battleId: randomUUID(), battleSeed: seed(), at: now().toISOString() };
   }
   const step = applyMvpDecision(run, d, content, ctx);
-  // The line as it went into the fight becomes someone's ghost, win or lose;
-  // only after the rules accepted the fight, so a refused one adds nothing.
-  if (d.kind === "fight" && run.line.length > 0) store.addGhost(ghostOf(run, now()));
-  if (step.state.phase === "over") step.state.endedAt = now().toISOString();
-  store.putRun(step.state);
+  // The line as it went into a round's fight becomes someone's ghost, win or
+  // lose; only after the rules accepted the fight, so a refused one adds nothing.
+  if (step.fight?.kind === "round") store.addGhost(ghostOf(run, now()));
+  if (step.fight?.kind === "crown" && step.fight.outcome === "win" && !run.player.bot && run.crownSeq !== null) {
+    store.addSlay({ seq: run.crownSeq, player: run.player, runId: run.runId, battleId: step.fight.battleId, line: structuredClone(run.line), contentVersion: run.contentVersion, at: ctx.fight!.at });
+  }
+  if (step.fight) step.state = nextOpponent(deps, step.state);
+  if (step.state.phase === "over") step.state = finish(deps, step.state);
+  else store.putRun(step.state);
   if (step.battle) store.putBattle(step.battle);
   notify(deps.hooks, run, d, step, ctx);
   return { run: runView(step.state), ...(step.fight ? { fight: step.fight } : {}) };
+}
+
+/** After a fight: the next round's ghost, or the champion for the Crown; a
+ * Crown with no live champion ends the run ("no-champion"). */
+function nextOpponent(deps: RunDeps, run: MvpRunState): MvpRunState {
+  if (run.phase === "shop") return setOpponent(run, pickGhost(deps, run));
+  if (run.phase !== "crown") return run;
+  const champ = deps.store.currentChampion();
+  if (!champ || champ.contentVersion !== deps.content.version) return endRun(run, "no-champion");
+  return setOpponent(run, championGhost(champ, run.rules), champ.seq);
+}
+
+/** A saved team at the run's round, never the player's own, built with the
+ * live content; a seeded bot team when the round has none (slice 6's bots
+ * fill the pool). */
+function pickGhost(deps: RunDeps, run: MvpRunState): Ghost {
+  const { store, content, now } = deps;
+  const candidates = store.ghosts(run.round, { excludePlayerId: run.player.id, contentVersion: content.version });
+  const pick = deps.seed();
+  return candidates.length > 0
+    ? candidates[pick % candidates.length]!
+    : synthGhost({ content, round: run.round, seed: pick, ghostId: `bot-${randomUUID()}`, createdAt: now().toISOString(), rules: deps.rules });
+}
+
+/** Stamps a run that just ended, writes a human's rating (once per run) and
+ * stores the run. Bots and a "content-changed" end move no rating. */
+function finish(deps: RunDeps, run: MvpRunState): MvpRunState {
+  const { store, rules } = deps;
+  const r = structuredClone(run);
+  r.endedAt = deps.now().toISOString();
+  r.rating = null;
+  if (!r.player.bot && r.endedBy !== "content-changed") {
+    const prev: Rating = store.rating(r.player.id) ?? { player: r.player, rating: rules.ratingStart, runs: 0, slays: 0, daysAsChampion: 0, playoffWins: 0 };
+    r.rating = ratingChange(prev.rating, r, rules);
+    store.putRating({ ...prev, player: r.player, rating: r.rating.after, runs: prev.runs + 1, slays: prev.slays + (r.endedBy === "crown-won" ? 1 : 0) });
+  }
+  store.putRun(r);
+  return r;
 }
 
 /** What `d` would do to `run`: the same rules on a copy, with no store
