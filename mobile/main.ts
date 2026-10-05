@@ -115,7 +115,7 @@ async function homeScreen(): Promise<void> {
   const champ = home.day.champion;
   const r = home.rating;
   const play = home.activeRunId
-    ? button("Continue run", () => void guarded(err, async () => shopScreen(await api.run(home.activeRunId!), content)), "primary grow", "play")
+    ? button("Continue", () => void guarded(err, async () => shopScreen(await api.run(home.activeRunId!), content)), "primary grow", "play")
     : button("Play", () => void guarded(err, async () => shopScreen(await api.startRun(), content)), "primary grow", "play");
   const stats = button("Stats", () => statsScreen({ content, onBack: () => void homeScreen() }), "", "stats");
   const rulesBtn = button("Rules", () => overlay(rulesSheet()), "", "rules-open");
@@ -146,7 +146,7 @@ async function homeScreen(): Promise<void> {
       h("div", { class: "dim small", "data-testid": "slayers" }, `${plural(home.day.slayers, "slayer")} today · new champion at ${rules.dayEndsAt} Moscow`),
     ),
     champ ? hint(r ? "Tap a card to read it. Beat this team in the Crown to become a slayer." : "This is the team to beat. Tap a card to read it, then Play.") : null,
-    playoffPanel(home.day.lastPlayoff ?? null, content),
+    playoffPanel(home.day.lastPlayoff ?? null, content, err),
     h(
       "div",
       { class: "panel records", "data-testid": "records" },
@@ -164,9 +164,8 @@ async function homeScreen(): Promise<void> {
 }
 
 /** Yesterday's playoff: the winner, the table and each game (opens in the viewer). */
-function playoffPanel(p: PlayoffResult | null, content: MvpContent): HTMLElement | null {
+function playoffPanel(p: PlayoffResult | null, content: MvpContent, err: HTMLElement): HTMLElement | null {
   if (!p) return null;
-  const err = errorLine();
   const watch = (battleId: string, label: string) =>
     button(label, () => void guarded(err, async () => {
       const battle = await api.battle(battleId);
@@ -179,7 +178,6 @@ function playoffPanel(p: PlayoffResult | null, content: MvpContent): HTMLElement
     h("div", {}, p.winner ? `👑 @${p.winner.name} took the throne.` : p.entrants.length ? "No winner." : "No slayers; the champion stays."),
     ...p.standings.map((s) => h("div", { class: "num small" }, `@${s.player.name} · ${s.wins}W ${s.draws}D ${s.losses}L`)),
     p.games.length ? h("div", { class: "games" }, ...p.games.map((g) => watch(g.battleId, `@${g.a.name} v @${g.b.name}`))) : null,
-    err,
   );
 }
 
