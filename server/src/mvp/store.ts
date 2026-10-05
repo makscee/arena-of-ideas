@@ -25,8 +25,9 @@ export interface MvpStore {
   activeRun(playerId: string): MvpRunState | undefined;
   addGhost(g: Ghost): void;
   /** Saved teams at this round built with `contentVersion`, never one of
-   * `excludePlayerId`'s own. */
-  ghosts(round: number, opts: { excludePlayerId: string; contentVersion: string }): Ghost[];
+   * `excludePlayerId`'s own, oldest first; with `limit`, only the newest
+   * `limit` of them. */
+  ghosts(round: number, opts: { excludePlayerId: string; contentVersion: string; limit?: number }): Ghost[];
   putBattle(b: BattleRecord): void;
   battle(id: string): BattleRecord | undefined;
   /** Stored battles, oldest first: of one kind, and/or fought at or after
@@ -103,8 +104,9 @@ export class MemoryMvpStore implements MvpStore {
     list.push(g);
     this.ghostsByRound.set(g.round, list);
   }
-  ghosts(round: number, opts: { excludePlayerId: string; contentVersion: string }): Ghost[] {
-    return (this.ghostsByRound.get(round) ?? []).filter((g) => g.player.id !== opts.excludePlayerId && g.contentVersion === opts.contentVersion);
+  ghosts(round: number, opts: { excludePlayerId: string; contentVersion: string; limit?: number }): Ghost[] {
+    const all = (this.ghostsByRound.get(round) ?? []).filter((g) => g.player.id !== opts.excludePlayerId && g.contentVersion === opts.contentVersion);
+    return opts.limit === undefined ? all : all.slice(Math.max(0, all.length - opts.limit));
   }
   putBattle(b: BattleRecord): void { this.battlesById.set(b.battleId, b); }
   battle(id: string): BattleRecord | undefined { return this.battlesById.get(id); }

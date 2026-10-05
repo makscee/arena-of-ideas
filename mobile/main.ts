@@ -324,7 +324,8 @@ function shopScreen(run: RunView, content: MvpContent): void {
   const reroll = button(`Reroll ${rules.rerollCost}g`, () => void decide({ kind: "reroll" }), "", "reroll");
   reroll.disabled = run.gold < rules.rerollCost;
   const fight = button(crown ? "Fight the champion" : "Fight", () => void decide({ kind: "fight" }), "primary grow", "fight");
-  fight.disabled = run.line.length === 0;
+  // An empty line can fight (and lose a heart) once nothing is affordable, so a broke run moves on.
+  fight.disabled = run.line.length === 0 && run.offers.some((o) => o.cost <= run.gold);
 
   const opp = run.nextOpponent;
   const pin = h("div", { class: "pin", "data-testid": "champion-pin" });

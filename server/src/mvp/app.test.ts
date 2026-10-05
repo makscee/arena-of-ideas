@@ -194,7 +194,7 @@ describe("MVP API thin path", () => {
     expect((await call("POST", "/runs")).status).toBe(401);
     const { json: p } = await call<PlayerRef>("POST", "/players", { name: "x" });
     const { json: r } = await call<RunView>("POST", "/runs", undefined, p.id);
-    expect((await call("POST", `/runs/${r.runId}/decisions`, { kind: "fight" }, p.id)).status).toBe(409);
+    expect((await call("POST", `/runs/${r.runId}/decisions`, { kind: "sell", index: 0 }, p.id)).status).toBe(409);
     expect((await call("POST", `/runs/${r.runId}/decisions`, { kind: "buy", slot: 9 }, p.id)).status).toBe(409);
     expect((await call("POST", `/runs/${r.runId}/decisions`, { kind: "fuse", first: 0, second: 1 }, p.id)).status).toBe(409);
   });
