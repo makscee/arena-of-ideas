@@ -45,6 +45,11 @@ try {
   await page.getByTestId("name-submit").click();
   await page.getByTestId("play").waitFor();
   await shot("home"); await noHScroll("home");
+  await page.getByTestId("stats").click();
+  await page.getByTestId("stats-back").waitFor();
+  await shot("stats"); await noHScroll("stats");
+  await page.getByTestId("stats-back").click();
+  await page.getByTestId("play").waitFor();
   await page.getByTestId("play").click();
 
   let round = 0;

@@ -5,10 +5,16 @@ Every slice codes against the contract in `src/mvp/contract.ts` (types and the
 HTTP API list); the thin run lives in `src/mvp/run.ts`, the server in
 `server/src/mvp/`.
 
-Files: `api.ts` is the typed API client; `main.ts` holds the name, home,
-shop and result screens (slice 8); `screens/battle.ts` is the battle viewer
-(slice 9; a stub that goes straight to the result until then); `ui/dom.ts`
-and `ui/card.ts` are the DOM helpers and the unit card both slices share.
+Files and owners:
+
+| File | Owner | What |
+| --- | --- | --- |
+| `main.ts` | slice 8 | name, home, shop and result screens; Home also shows the last playoff and, on a dev server, "End day now" |
+| `screens/battle.ts` | slice 9 | the battle viewer and "why I lost" (stubs: straight to the result, no card) |
+| `screens/stats.ts` | slice 11 | the stats page Home links to (a stub) |
+| `ui/card.ts` | slice 8 | the unit card and the unit sheet with both forms; 9 and 11 only pass options |
+| `ui/unit-stats.ts` | slice 11 | win and pick rate on every card and sheet (null until then) |
+| `ui/dom.ts`, `api.ts`, `content.ts` | shared | DOM helpers and `overlay()`, the typed API client, the content pack loaded once |
 
 | Command | What it does |
 | --- | --- |
@@ -23,4 +29,6 @@ and `ui/card.ts` are the DOM helpers and the unit card both slices share.
 Test instance: https://m1.twin-pogona.ts.net/arena/ (tailnet only). It is a
 launchd agent `ru.makscee.arena-mvp` in `~/arena-mvp` on m1, log in
 `~/arena-mvp/data/server.log`, fronted by `tailscale serve --set-path /arena`.
-State is in memory until slice 4: a redeploy starts an empty world.
+State is in memory until slice 4: a redeploy starts an empty world. It runs
+with `MVP_DEV=1`, so the dev tools (`POST /api/v1/dev/end-day`) answer there;
+without it they are 404.

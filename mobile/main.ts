@@ -1,14 +1,18 @@
 // Arena MVP phone client, slice 1: name → home → shop → fight → battle →
-// result. Plain DOM; each screen is a function that renders into #app. Slice
-// 8 replaces the home/shop/result screens and slice 9 the battle screen
-// (screens/battle.ts); the API layer (api.ts) and ui/ stay.
-import type { BattleRecord, FightResult, HomeView, LineUnit, MvpContent, Offer, RunView, UnitContent } from "../src/mvp/contract";
+// result. Plain DOM; each screen is a function that renders into #app.
+// Owners: slice 8 the name, home, shop and result screens here; slice 9 the
+// battle viewer (screens/battle.ts); slice 11 the stats page
+// (screens/stats.ts). Shared: api.ts, content.ts, ui/.
+// Home (slice 8) also shows DayView.lastPlayoff (slice 5 fills it; a game
+// opens in battleScreen) and, on a dev server, an "End day now" button
+// (api.endDay(): 404 without MVP_DEV=1, 501 until slice 5).
+import type { BattleRecord, FightResult, HomeView, LineUnit, MvpContent, Offer, RunView } from "../src/mvp/contract";
 import { ApiError, api } from "./api";
-import { battleScreen } from "./screens/battle";
+import { getContent } from "./content";
+import { battleScreen, whyILost } from "./screens/battle";
+import { statsScreen } from "./screens/stats";
 import { card } from "./ui/card";
 import { app, button, h, show } from "./ui/dom";
-
-let content: MvpContent | null = null;
 
 function errorLine(): HTMLElement {
   return h("div", { class: "error", "data-testid": "error" });
@@ -37,10 +41,6 @@ async function guarded(err: HTMLElement, fn: () => Promise<void>): Promise<void>
   }
 }
 
-function unitOf(id: string): UnitContent | undefined {
-  return content?.units.find((u) => u.id === id);
-}
-
 // ---------- name ----------
 
 function nameScreen(): void {
@@ -65,12 +65,12 @@ function nameScreen(): void {
 
 async function homeScreen(): Promise<void> {
   const err = errorLine();
-  const home: HomeView = await api.home();
-  content ??= await api.content();
+  const [home, content]: [HomeView, MvpContent] = await Promise.all([api.home(), getContent()]);
   const champ = home.day.champion;
   const play = home.activeRunId
-    ? button("Continue run", () => void guarded(err, async () => shopScreen(await api.run(home.activeRunId!))), "primary", "play")
-    : button("Play", () => void guarded(err, async () => shopScreen(await api.startRun())), "primary", "play");
+    ? button("Continue run", () => void guarded(err, async () => shopScreen(await api.run(home.activeRunId!), content)), "primary grow", "play")
+    : button("Play", () => void guarded(err, async () => shopScreen(await api.startRun(), content)), "primary grow", "play");
+  const stats = button("Stats", () => statsScreen({ content, onBack: () => void homeScreen() }), "", "stats");
   show(
     h("div", { class: "row spread" }, h("h1", {}, "ARENA"), h("span", { class: "dim" }, `@${api.player?.name ?? ""}`)),
     h(
@@ -78,7 +78,7 @@ async function homeScreen(): Promise<void> {
       { class: "panel stack", "data-testid": "champion" },
       h("div", { class: "label" }, `Champion of ${home.day.day}`),
       champ
-        ? h("div", { class: "slots" }, ...champ.line.map((u) => card(u, "ghost")))
+        ? h("div", { class: "slots" }, ...champ.line.map((u) => card(u, { side: "ghost" })))
         : h("div", { class: "dim" }, "No champion yet. The day arrives soon."),
     ),
     h(
@@ -96,22 +96,22 @@ async function homeScreen(): Promise<void> {
       h("div", {}, "Your line fights front first. A copy merges in for +1 PWR / +2 HP."),
     ),
     h("div", { class: "spacer" }),
-    play,
+    h("div", { class: "row" }, stats, play),
     err,
   );
 }
 
 // ---------- shop ----------
 
-function shopScreen(run: RunView): void {
+function shopScreen(run: RunView, content: MvpContent): void {
   if (run.phase === "over") return runOverScreen(run);
   const err = errorLine();
   let selected: number | null = null;
   const decide = (d: Parameters<typeof api.decide>[1]) =>
     guarded(err, async () => {
       const res = await api.decide(run.runId, d);
-      if (res.fight) return fightScreens(res.run, res.fight);
-      shopScreen(res.run);
+      if (res.fight) return fightScreens(res.run, res.fight, content);
+      shopScreen(res.run, content);
     });
 
   const line = h("div", { class: "slots", "data-testid": "line" });
@@ -121,7 +121,7 @@ function shopScreen(run: RunView): void {
       ...Array.from({ length: 5 }, (_, i) => {
         const u: LineUnit | undefined = run.line[i];
         if (!u) return h("div", { class: "card empty" }, h("div", { class: "dim" }, `${i + 1}`));
-        const c = card(u, "you", [u.copies > 1 ? h("div", { class: "copies" }, `×${u.copies}`) : null], `line-${i}`);
+        const c = card(u, { side: "you", extra: [u.copies > 1 ? h("div", { class: "copies" }, `×${u.copies}`) : null], testid: `line-${i}` });
         if (selected === i) c.classList.add("selected");
         c.addEventListener("click", () => {
           selected = selected === i ? null : i;
@@ -151,12 +151,10 @@ function shopScreen(run: RunView): void {
     "div",
     { class: "slots", "data-testid": "offers" },
     ...run.offers.map((o: Offer) => {
-      const u = unitOf(o.unitId);
+      const u = content.units.find((x) => x.id === o.unitId);
       const c = card(
-        { emoji: u?.emoji ?? "?", name: u?.name ?? o.unitId, stats: u?.base ?? { pwr: 0, hp: 0 } },
-        "you",
-        [h("div", { class: "cost" }, `${o.cost}g`)],
-        `offer-${o.slot}`,
+        { unitId: o.unitId, emoji: u?.emoji ?? "?", name: u?.name ?? o.unitId, stats: u?.base ?? { pwr: 0, hp: 0 } },
+        { side: "you", extra: [h("div", { class: "cost" }, `${o.cost}g`)], testid: `offer-${o.slot}` },
       );
       if (run.gold < o.cost) c.style.opacity = "0.45";
       c.addEventListener("click", () => void decide({ kind: "buy", slot: o.slot }));
@@ -190,12 +188,12 @@ function shopScreen(run: RunView): void {
 
 // ---------- battle, then result ----------
 
-async function fightScreens(run: RunView, fight: FightResult): Promise<void> {
+async function fightScreens(run: RunView, fight: FightResult, content: MvpContent): Promise<void> {
   const battle = await api.battle(fight.battleId);
-  battleScreen({ run, fight, battle, onDone: () => resultScreen(run, fight, battle) });
+  battleScreen({ battle, content, you: "A", fight, run, onDone: () => resultScreen(run, fight, battle, content) });
 }
 
-function resultScreen(run: RunView, fight: FightResult, battle: BattleRecord): void {
+function resultScreen(run: RunView, fight: FightResult, battle: BattleRecord, content: MvpContent): void {
   const end = battle.log.at(-1);
   const turns = end && end.type === "BattleEnd" ? end.turns : 0;
   const word = fight.outcome === "win" ? "VICTORY" : fight.outcome === "loss" ? "DEFEAT" : "DRAW";
@@ -204,12 +202,13 @@ function resultScreen(run: RunView, fight: FightResult, battle: BattleRecord): v
     h("div", { class: `outcome ${fight.outcome}`, "data-testid": "outcome" }, word),
     h("div", { class: "dim", style: "text-align:center" }, `vs @${fight.opponent.player.name} · ${turns} turns · ${battle.log.length} events`),
     h("div", { class: "label" }, "You"),
-    h("div", { class: "slots" }, ...battle.teamA.map((u) => card(u, "you"))),
+    h("div", { class: "slots" }, ...battle.teamA.map((u) => card(u, { side: "you" }))),
     h("div", { class: "label" }, "Them"),
-    h("div", { class: "slots" }, ...battle.teamB.map((u) => card(u, "ghost"))),
+    h("div", { class: "slots" }, ...battle.teamB.map((u) => card(u, { side: "ghost" }))),
     fight.heartsLost > 0 ? h("div", { class: "error" }, `−${fight.heartsLost} heart`) : h("div", {}),
+    fight.outcome === "loss" ? whyILost(battle, content, "A") : null,
     h("div", { class: "spacer" }),
-    button(run.phase === "over" ? "See the run" : "Next round", () => shopScreen(run), "primary", "continue"),
+    button(run.phase === "over" ? "See the run" : "Next round", () => shopScreen(run, content), "primary", "continue"),
   );
 }
 

@@ -18,8 +18,20 @@ export function button(label: string, onClick: () => void, cls = "", testid = ""
   return b;
 }
 
-/** Replaces the screen. */
-export function show(...kids: Node[]): void {
-  app.replaceChildren(...kids);
+/** Replaces the screen; null kids are skipped. */
+export function show(...kids: (Node | null)[]): void {
+  app.replaceChildren(...kids.filter((k): k is Node => k !== null));
   window.scrollTo(0, 0);
+}
+
+/** A modal sheet over the current screen: the unit sheet, the rules, the
+ * trace popup, why-I-lost. Tapping outside it closes it, and so does the next
+ * show(). Returns close. */
+export function overlay(...kids: Node[]): () => void {
+  const sheet = h("div", { class: "sheet stack", role: "dialog" }, ...kids);
+  const back = h("div", { class: "overlay", "data-testid": "overlay" }, sheet);
+  const close = () => back.remove();
+  back.addEventListener("click", (e) => e.target === back && close());
+  app.append(back);
+  return close;
 }
