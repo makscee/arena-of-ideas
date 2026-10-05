@@ -117,6 +117,20 @@ try {
   await page.getByTestId("play").waitFor();
   await shot("home-after");
 
+  // Stats (slice 11): the finished run counted its units' rates; every tab opens.
+  await page.getByTestId("stats").click();
+  await page.getByTestId("stats-units").waitFor();
+  if ((await page.getByTestId("stats-unit").count()) === 0) errors.push("stats: no unit rates after a finished run");
+  await shot("stats-units"); await noHScroll("stats-units");
+  await page.getByTestId("stats-tab-champions").click();
+  await page.getByTestId("stats-champions").waitFor();
+  await shot("stats-champions"); await noHScroll("stats-champions");
+  await page.getByTestId("stats-tab-fusions").click();
+  await page.getByTestId("stats-fusions").waitFor();
+  await shot("stats-fusions"); await noHScroll("stats-fusions");
+  await page.getByTestId("stats-back").click();
+  await page.getByTestId("play").waitFor();
+
   // Awakening and fusion (slice 8): a second player plays through the API
   // until it has one Awoken unit, a second unit one copy short and that copy
   // in the shop, then the phone buys it (the awaken preview) and fuses the two
