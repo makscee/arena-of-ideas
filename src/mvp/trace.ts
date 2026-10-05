@@ -292,10 +292,13 @@ export interface LossChain {
   damage: number;
   heal: number;
   kills: number;
-  /** How many changes it made (hits on your units plus heals on theirs); the first one, to replay its trace. */
+  /** How many changes it made (hits on your units plus heals on theirs). */
   times: number;
   hits: number;
   heals: number;
+  /** The first change that did something (damage dealt, or HP healed), to
+   * replay its trace; never a "−0" hit a Shield took whole. Only when every
+   * change came to nothing, the first one. */
   sampleEventId: number;
 }
 
@@ -316,6 +319,8 @@ export function whyILost(log: BattleEvent[], you: Side = "A", top = 3): LossChai
   const hp = new Map<string, number>();
   for (const e of log) if (e.type === "BattleStart") for (const s of ["A", "B"] as const) for (const r of e.teams[s]) hp.set(r.id, r.hp);
   const groups = new Map<string, LossChain>();
+  // Groups whose sample still is a change that came to nothing (a "−0" hit).
+  const idleSample = new Set<LossChain>();
   // By instance and how it reads: a unit's strikes and abilities are one row
   // ("Medic"), its status ticks another ("Zealot (Poison)").
   const keyOf = (t: Trace) => t.links.map((l) => `${l.unit}|${linkText(l)}`).join(" ← ");
@@ -327,7 +332,8 @@ export function whyILost(log: BattleEvent[], you: Side = "A", top = 3): LossChai
     if (!g) {
       g = { names: t.links.map((l) => l.name), units: t.links.map((l) => l.unit), text: t.links.map(linkText).join(" ← "), impact: 0, damage: 0, heal: 0, kills: 0, times: 0, hits: 0, heals: 0, sampleEventId: e.id };
       groups.set(key, g);
-    }
+      if (dmg + heal === 0) idleSample.add(g);
+    } else if (dmg + heal > 0 && idleSample.delete(g)) g.sampleEventId = e.id;
     g.damage += dmg;
     g.heal += heal;
     g.impact += dmg + heal;

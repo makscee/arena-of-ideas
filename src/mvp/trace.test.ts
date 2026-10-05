@@ -146,6 +146,28 @@ describe("why I lost", () => {
     expect(new Set(chains.map((c) => c.text)).size).toBe(chains.length);
   });
 
+  test("a row's traced first hit is one that did damage, never a −0 a Shield took whole", () => {
+    // Shieldbearer's Shield 2 takes Dummy's first strike (2) whole: a Hurt of 0.
+    const log = run([Shieldbearer], [dummy("Dummy", 30, 2)]);
+    const zero = log.find((e) => e.type === "Hurt" && e.unit === "A1:Shieldbearer" && e.amount === 0);
+    expect(zero).toBeDefined();
+    const row = whyILost(log, "A").find((c) => c.names[0] === "Dummy")!;
+    const sample = log[row.sampleEventId]!;
+    expect(sample).toMatchObject({ type: "Hurt", unit: "A1:Shieldbearer" });
+    expect(sample.type === "Hurt" && sample.amount).toBeGreaterThan(0);
+    expect(row.sampleEventId).toBeGreaterThan(zero!.id);
+    expect(traceOf(log, row.sampleEventId).text).not.toMatch(/^−0/);
+  });
+
+  test("a heal row's traced first change healed something", () => {
+    const log = run([dummy("Squire", 8, 1), dummy("Page", 6, 1)], [dummy("Dummy", 30, 2), Medic]);
+    for (const c of whyILost(log, "A", 10)) {
+      const e = log[c.sampleEventId]!;
+      expect(e.type === "Hurt" || e.type === "Heal").toBe(true);
+      if (e.type === "Hurt" || e.type === "Heal") expect(e.amount).toBeGreaterThan(0);
+    }
+  });
+
   test("your own units' acts never show up as enemy chains", () => {
     const log = run([Shieldbearer, Smith, Archer], [dummy("Dummy", 20, 1)]);
     for (const c of whyILost(log, "A")) expect(c.names[0]).not.toMatch(/Shieldbearer|Smith|Archer/);

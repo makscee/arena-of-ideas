@@ -46,8 +46,11 @@ export function closable(...kids: Node[]): () => void {
 
 // ---------- names that fit ----------
 
-const FIT = ".card .name, .card .rates";
-const MIN_PX = 9;
+// A battle chip's label (a status's name runs long: "Strength ×1") shrinks too.
+const FIT = ".card .name, .card .rates, .bv-pill:not(.two), .bv-pill.two .bv-l";
+/** The smallest a fitted line goes: 8px keeps a 12-letter name
+ * ("Pediatrician", "Bloodtrician") whole on a 57px card. */
+const MIN_PX = 8;
 
 /** Shrinks each card name (and rates line) until its longest word fits the
  * card, measured, not guessed from letter counts; a word that still doesn't
