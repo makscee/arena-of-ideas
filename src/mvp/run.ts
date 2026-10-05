@@ -242,8 +242,9 @@ export function runView(s: MvpRunState): RunView {
 }
 
 /** A bot ghost for a round with no saved teams: `size` seeded picks from the
- * units open at that round, copies merged. Slice 6's bots replace it. */
-export function synthGhost(args: { content: MvpContent; round: number; seed: number; ghostId: string; rules?: MvpRules }): Ghost {
+ * units open at that round, copies merged. Slice 6's bots replace it.
+ * `createdAt` comes from the caller (the kernel has no clock). */
+export function synthGhost(args: { content: MvpContent; round: number; seed: number; ghostId: string; createdAt: string; rules?: MvpRules }): Ghost {
   const rules = args.rules ?? MVP_RULES;
   const s = initMvpRun({ runId: `bot-${args.ghostId}`, player: { id: "bot", name: "bot", bot: true }, seed: args.seed, content: args.content, rules });
   s.round = args.round;
@@ -255,7 +256,15 @@ export function synthGhost(args: { content: MvpContent; round: number; seed: num
     const k = draw(s, s.line.length);
     s.line[k] = addCopy(s.line[k]!, args.content, rules);
   }
-  return { ghostId: args.ghostId, runId: s.runId, player: { id: "bot", name: botName(args.seed), bot: true }, round: args.round, line: s.line };
+  return {
+    ghostId: args.ghostId,
+    runId: s.runId,
+    player: { id: "bot", name: botName(args.seed), bot: true },
+    round: args.round,
+    line: s.line,
+    contentVersion: args.content.version,
+    createdAt: args.createdAt,
+  };
 }
 
 const BOT_NAMES = ["Ash", "Bram", "Cleo", "Dov", "Esk", "Fyn", "Gale", "Hux", "Ives", "Juno", "Kip", "Lux"];

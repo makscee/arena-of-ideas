@@ -193,6 +193,10 @@ export interface Ghost {
   player: PlayerRef;
   round: number;
   line: LineUnit[];
+  /** The content its line was built with; matchmaking serves only the current one. */
+  contentVersion: string;
+  /** ISO time it was saved. */
+  createdAt: string;
 }
 
 export type FightKind = "round" | "crown";
@@ -266,16 +270,41 @@ export interface DecisionResponse {
 }
 
 // ---------- day, champion, rating ----------
+//
+// A day is numbered by `seq`: 1 is day 1, and every rollover adds 1, the dev
+// "end day now" included, so several days can share one calendar date.
+// Storage is keyed by seq; `day` (YYYY-MM-DD) is only a label.
+//
+// Who writes what (MvpStore): slice 6 seeds day 1 with putChampion when
+// champions() is empty; slice 5 owns every later putChampion and the rollover;
+// slice 4's Crown fight writes the Slay and the run-end rating (putRating).
 
 export interface Champion {
-  /** The day this team holds the throne for (YYYY-MM-DD in the rules' zone). */
+  /** The day this team holds the throne for. */
+  seq: number;
+  /** That day's date (YYYY-MM-DD in the rules' zone), a label. */
   day: string;
   player: PlayerRef;
   line: LineUnit[];
   since: string;
+  /** The content its line was built with. */
+  contentVersion: string;
+}
+
+/** A Crown fight won: the slayer's team that day. Hidden until the day ends;
+ * slice 5 picks each slayer's strongest one for the playoff. */
+export interface Slay {
+  seq: number;
+  player: PlayerRef;
+  runId: string;
+  battleId: string;
+  line: LineUnit[];
+  /** ISO time of the Crown fight. */
+  at: string;
 }
 
 export interface DayView {
+  seq: number;
   day: string;
   /** ISO time of the next rollover. */
   endsAt: string;
@@ -287,6 +316,8 @@ export interface DayView {
 }
 
 export interface PlayoffResult {
+  /** The day whose slayers played it. */
+  seq: number;
   day: string;
   entrants: PlayerRef[];
   winner: PlayerRef | null;

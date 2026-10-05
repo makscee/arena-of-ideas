@@ -40,7 +40,7 @@ describe("MVP thin run", () => {
   it("fights a ghost, logs a causal battle and turns the round", () => {
     let s = initMvpRun({ runId: "r", player: me, seed: 9, content });
     s = applyMvpDecision(s, { kind: "buy", slot: 0 }, content).state;
-    const ghost = synthGhost({ content, round: 1, seed: 5, ghostId: "g" });
+    const ghost = synthGhost({ content, round: 1, seed: 5, ghostId: "g", createdAt: "2026-10-05T00:00:00.000Z" });
     const step = applyMvpDecision(s, { kind: "fight" }, content, { fight: { ghost, battleId: "b", battleSeed: 11 } });
     expect(step.fight?.round).toBe(1);
     expect(step.battle?.log.at(-1)?.type).toBe("BattleEnd");

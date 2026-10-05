@@ -34,8 +34,16 @@ export interface MvpDeps {
 
 const NAME_RE = /^[\p{L}\p{N}_\- ]{1,24}$/u;
 
-function ghostOf(r: MvpRunState): Ghost {
-  return { ghostId: `${r.runId}-r${r.round}`, runId: r.runId, player: r.player, round: r.round, line: structuredClone(r.line) };
+function ghostOf(r: MvpRunState, at: Date): Ghost {
+  return {
+    ghostId: `${r.runId}-r${r.round}`,
+    runId: r.runId,
+    player: r.player,
+    round: r.round,
+    line: structuredClone(r.line),
+    contentVersion: r.contentVersion,
+    createdAt: at.toISOString(),
+  };
 }
 
 export function createMvpApp(deps: MvpDeps): Hono {
@@ -44,6 +52,8 @@ export function createMvpApp(deps: MvpDeps): Hono {
   const seed = deps.seed ?? (() => Math.floor(Math.random() * 2 ** 32));
   const now = deps.now ?? (() => new Date());
   const nameFusion = deps.nameFusion ?? storedOrPortmanteau(store);
+  // Slice 5 owns the day counter (rollover, dev end-day); until then it is always day 1.
+  const daySeq = (): number => 1;
   const api = new Hono();
 
   const bad = (c: Context, status: 400 | 401 | 404 | 409 | 501, error: string) => c.json({ error }, status);
@@ -67,11 +77,20 @@ export function createMvpApp(deps: MvpDeps): Hono {
   api.get("/home", (c) => {
     const p = playerOf(c);
     const t = now();
+    const seq = daySeq();
     const home: HomeView = {
       rules: MVP_RULES,
-      // Slice 5 owns the day; until then there is no champion and the day is today's date.
-      day: { day: t.toISOString().slice(0, 10), endsAt: t.toISOString(), champion: null, slayers: 0, lastPlayoff: null },
-      rating: p ? { player: p, rating: MVP_RULES.ratingStart, runs: 0, slays: 0, daysAsChampion: 0, playoffWins: 0 } : null,
+      // Slice 5 owns the day (date, rollover time, playoff); the champion is
+      // whoever the store holds (slice 6 seeds day 1), none until then.
+      day: {
+        seq,
+        day: t.toISOString().slice(0, 10),
+        endsAt: t.toISOString(),
+        champion: store.currentChampion() ?? null,
+        slayers: new Set(store.slays(seq).map((s) => s.player.id)).size,
+        lastPlayoff: null,
+      },
+      rating: p ? store.rating(p.id) ?? { player: p, rating: MVP_RULES.ratingStart, runs: 0, slays: 0, daysAsChampion: 0, playoffWins: 0 } : null,
       activeRunId: p ? store.activeRun(p.id)?.runId ?? null : null,
     };
     return c.json(home);
@@ -111,8 +130,8 @@ export function createMvpApp(deps: MvpDeps): Hono {
         const ghost =
           candidates.length > 0
             ? candidates[pick % candidates.length]!
-            : synthGhost({ content, round: run.round, seed: pick, ghostId: `bot-${randomUUID()}` });
-        if (run.line.length > 0) store.addGhost(ghostOf(run));
+            : synthGhost({ content, round: run.round, seed: pick, ghostId: `bot-${randomUUID()}`, createdAt: now().toISOString() });
+        if (run.line.length > 0) store.addGhost(ghostOf(run, now()));
         ctx.fight = { ghost, battleId: randomUUID(), battleSeed: seed() };
       }
       const step = applyMvpDecision(run, d, content, ctx);
