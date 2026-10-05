@@ -13,7 +13,7 @@ import { getContent } from "./content";
 import { battleScreen, whyILost } from "./screens/battle";
 import { statsScreen } from "./screens/stats";
 import { card, unitSheet, type CardUnit } from "./ui/card";
-import { app, button, h, overlay, show } from "./ui/dom";
+import { app, button, closable, h, overlay, show } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
 
 function errorLine(): HTMLElement {
@@ -51,7 +51,7 @@ let day: DayView | null = null;
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const roundLabel = (round: number) => (round > rules.rounds ? "CROWN" : `R${round}/${rules.rounds}`);
 const hearts = (n: number) => h("span", { class: "hearts", "aria-label": plural(n, "heart") }, "♥".repeat(n) + "♡".repeat(Math.max(0, rules.hearts - n)));
-const openSheet = (u: Parameters<typeof unitSheet>[0], content: MvpContent) => () => overlay(unitSheet(u, content));
+const openSheet = (u: Parameters<typeof unitSheet>[0], content: MvpContent) => () => closable(unitSheet(u, content));
 
 /** A line of cards, each opening its unit sheet. */
 function team(line: LineUnit[], side: "you" | "ghost", content: MvpContent, testid = ""): HTMLElement {
@@ -120,7 +120,7 @@ async function homeScreen(): Promise<void> {
     ? button("Continue", () => void guarded(err, async () => shopScreen(await api.run(home.activeRunId!), content)), "primary grow", "play")
     : button("Play", () => void guarded(err, async () => shopScreen(await api.startRun(), content)), "primary grow", "play");
   const stats = button("Stats", () => void statsScreen({ content, onBack: () => void homeScreen() }), "", "stats");
-  const rulesBtn = button("Rules", () => overlay(rulesSheet()), "", "rules-open");
+  const rulesBtn = button("Rules", () => closable(rulesSheet()), "", "rules-open");
   const record = (label: string, value: string | number, testid = "") =>
     h("div", { class: "record" }, h("div", { class: "num", ...(testid ? { "data-testid": testid } : {}) }, `${value}`), h("div", { class: "label" }, label));
   const endDay = button(
@@ -188,10 +188,11 @@ function playoffPanel(p: PlayoffResult | null, content: MvpContent, err: HTMLEle
 /** What the shop is in the middle of: nothing, a unit picked, or a fuse waiting for its second unit. */
 type Pick = { mode: "none" } | { mode: "picked"; index: number } | { mode: "fuse"; first: number };
 
-function shopScreen(run: RunView, content: MvpContent): void {
-  if (run.phase === "over") return runOverScreen(run, content);
+function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
+  if (run.phase === "over") return runOverScreen(run, content, notice);
   const crown = run.phase === "crown";
   const err = errorLine();
+  err.textContent = notice;
   let pick: Pick = { mode: "none" };
   const unitOf = (id: string) => content.units.find((x) => x.id === id);
   const decide = (d: Parameters<typeof api.decide>[1]) =>
@@ -254,13 +255,16 @@ function shopScreen(run: RunView, content: MvpContent): void {
   const shopHint = (): HTMLElement | null => {
     if (pick.mode !== "none") return null;
     if (crown) return hint("The Crown: your line against today's champion. Win it to become a slayer.");
-    const almost = run.line.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === rules.copiesToAwaken - 1);
+    // Only a unit whose next copy is on offer right now.
+    const almost = run.line.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === rules.copiesToAwaken - 1 && run.offers.some((o) => o.unitId === u.unitId));
+    const canBuy = run.offers.some((o) => o.cost <= run.gold);
     if (awoken >= 2) return hint("Two Awoken units can fuse: tap one, then Fuse.");
-    if (almost && run.offers.some((o) => o.unitId === almost.unitId)) return hint(`One more ${almost.name} awakens it. It's in the shop.`);
+    if (almost && run.offers.some((o) => o.unitId === almost.unitId && o.cost <= run.gold)) return hint(`One more ${almost.name} awakens it. It's in the shop.`);
+    if (run.line.length === 0 && !canBuy) return hint("No gold for a unit. Fight to move on: an empty line loses, and costs a heart.");
     if (run.line.length === 0) return hint("Tap an offer to read it and buy it. Your line fights front first.");
     if (run.round === 1 && run.line.length > 0 && run.gold < rules.unitCost) return hint("Out of gold for units. Fight when ready.");
     if (run.line.length > 1 && run.round <= 2) return hint("Tap a unit in your line to move, sell or read it.");
-    if (almost) return hint(`A 3rd ${almost.name} awakens it.`);
+    if (almost) return hint(`One more ${almost.name} awakens it. It's in the shop for ${run.offers.find((o) => o.unitId === almost.unitId)!.cost}g.`);
     return null;
   };
 
@@ -333,7 +337,7 @@ function shopScreen(run: RunView, content: MvpContent): void {
     const ch = d?.champion;
     if (!ch) return pin.replaceChildren(h("span", { class: "dim" }, "👑 No champion yet"));
     const b = h("button", { class: "pin-btn", "data-testid": "champion-pin-open" }, h("span", {}, "👑"), h("span", { class: "ghost-name" }, `@${ch.player.name}`), h("span", { class: "pin-emoji" }, ch.line.map((u) => u.emoji).join("")));
-    b.addEventListener("click", () => overlay(h("div", { class: "label" }, `Champion of day ${d!.seq} · @${ch.player.name}`), team(ch.line, "ghost", content), hint("Tap a card to read it.")));
+    b.addEventListener("click", () => closable(h("div", { class: "label" }, `Champion of day ${d!.seq} · @${ch.player.name}`), team(ch.line, "ghost", content), hint("Tap a card to read it.")));
     pin.replaceChildren(b);
   };
   fillPin(day);
@@ -377,7 +381,18 @@ function copiesBadge(u: LineUnit): HTMLElement {
 // ---------- battle, then result ----------
 
 async function fightScreens(run: RunView, fight: FightResult, content: MvpContent): Promise<void> {
-  const battle = await api.battle(fight.battleId);
+  let battle: BattleRecord;
+  try {
+    battle = await api.battle(fight.battleId);
+  } catch (e) {
+    // The fight is already decided: never leave the player on the pre-fight
+    // shop. Show the run as it is now, with the outcome and what failed.
+    const now = await api.run(run.runId).catch(() => run);
+    const word = fight.outcome === "win" ? "Won" : fight.outcome === "loss" ? "Lost" : "Drew";
+    const lost = fight.heartsLost > 0 ? ` (−${plural(fight.heartsLost, "heart")})` : "";
+    const why = e instanceof Error ? e.message : String(e);
+    return shopScreen(now, content, `${word} vs @${fight.opponent.player.name}${lost}. The replay didn't load: ${why}`);
+  }
   battleScreen({ battle, content, you: "A", fight, run, onDone: () => resultScreen(run, fight, battle, content) });
 }
 
@@ -397,7 +412,7 @@ function resultScreen(run: RunView, fight: FightResult, battle: BattleRecord, co
           ? "A draw costs no heart."
           : "";
   show(
-    h("div", { class: "hud" }, h("span", { "data-testid": "result-round" }, label), hearts(run.hearts), h("span", { class: "dim" }, `${run.wins}W ${run.losses}L`)),
+    h("div", { class: "hud" }, h("span", { "data-testid": "result-round" }, label), hearts(run.hearts), h("span", { class: "dim" }, record(run))),
     h("div", { class: `outcome ${fight.outcome}`, "data-testid": "outcome" }, word),
     h("div", { class: "dim", style: "text-align:center" }, `vs @${fight.opponent.player.name} · ${plural(turns, "turn")}`),
     sub ? h("div", { class: fight.heartsLost > 0 ? "error center" : "center" }, sub) : null,
@@ -409,41 +424,59 @@ function resultScreen(run: RunView, fight: FightResult, battle: BattleRecord, co
     h("div", { class: "spacer" }),
     h(
       "div",
-      { class: "row" },
+      { class: "row footer", "data-testid": "result-actions" },
       button("Replay", () => battleScreen({ battle, content, you: "A", fight, run, onDone: () => resultScreen(run, fight, battle, content) }), "", "replay"),
       button(run.phase === "over" ? "See the run" : run.phase === "crown" ? "To the Crown" : "Next round", () => shopScreen(run, content), "primary grow", "continue"),
     ),
   );
 }
 
-function runOverScreen(run: RunView, content: MvpContent): void {
-  const why =
-    run.endedBy === "out-of-hearts"
-      ? "Out of hearts."
-      : run.endedBy === "no-champion"
-        ? `All ${rules.rounds} rounds survived. No champion to face yet.`
-        : run.endedBy === "crown-won"
-          ? "👑 You beat the champion: you are a slayer today."
-          : run.endedBy === "crown-lost"
-            ? "The champion held the Crown."
-            : run.endedBy ?? "";
+/** "3W 1D 2L": the run's record, draws only when there are any. */
+function record(run: RunView): string {
+  const draws = run.fights.filter((f) => f.outcome === "draw").length;
+  return `${run.wins}W ${draws ? `${draws}D ` : ""}${run.losses}L`;
+}
+
+/** Why a run ended, as a sentence, and how far it got; never "Reached the
+ * Crown" for a run that had no champion to fight. */
+function runEnd(run: RunView): { why: string; reach: string } {
+  const round = `Ended in round ${Math.min(run.round, rules.rounds)} of ${rules.rounds}.`;
+  switch (run.endedBy) {
+    case "out-of-hearts":
+      return { why: "Out of hearts.", reach: round };
+    case "no-champion":
+      return { why: "No champion to face yet, so the run ends here.", reach: `Survived all ${rules.rounds} rounds.` };
+    case "crown-won":
+      return { why: "👑 You beat the champion: you are a slayer today.", reach: "Won the Crown." };
+    case "crown-lost":
+      return { why: "The champion held the Crown.", reach: "Reached the Crown." };
+    case "content-changed":
+      return { why: "The game's units changed since this run began, so it ended here. Your rating stays as it was.", reach: round };
+    default:
+      return { why: "The run ended.", reach: round };
+  }
+}
+
+function runOverScreen(run: RunView, content: MvpContent, notice = ""): void {
+  const { why, reach } = runEnd(run);
   const draws = run.fights.filter((f) => f.outcome === "draw").length;
   const rc = run.rating;
   const delta = rc ? rc.after - rc.before : 0;
   show(
     h("h1", {}, "RUN OVER"),
+    notice ? h("div", { class: "error", "data-testid": "error" }, notice) : null,
     h(
       "div",
       { class: "panel stack", "data-testid": "run-over" },
-      h("div", {}, why),
-      h("div", { class: "num" }, `${plural(run.wins, "win")} · ${plural(run.losses, "loss", "losses")}${draws ? ` · ${plural(draws, "draw")}` : ""}`),
-      h("div", { class: "dim" }, run.round > rules.rounds ? "Reached the Crown" : `Ended in round ${Math.min(run.round, rules.rounds)} of ${rules.rounds}`),
+      h("div", { "data-testid": "run-why" }, why),
+      h("div", { class: "num", "data-testid": "run-record" }, `${plural(run.wins, "win")} · ${plural(draws, "draw")} · ${plural(run.losses, "loss", "losses")}`),
+      h("div", { class: "dim" }, reach),
       rc ? h("div", { class: "num", "data-testid": "rating-change" }, `Rating ${rc.before} → ${rc.after} (${delta >= 0 ? "+" : ""}${delta})`) : null,
     ),
     run.line.length ? h("div", { class: "label" }, "Your last line") : null,
     run.line.length ? team(run.line, "you", content) : null,
     h("div", { class: "spacer" }),
-    button("Home", () => void homeScreen(), "primary", "home"),
+    h("div", { class: "row footer" }, button("Home", () => void homeScreen(), "primary grow", "home")),
   );
 }
 

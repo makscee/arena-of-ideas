@@ -7,7 +7,7 @@ import { randomUUID } from "node:crypto";
 import { Hono, type Context } from "hono";
 import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, type Decision, type HomeView, type PlayerRef } from "../../../src/mvp/contract.js";
 import { MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
-import { dayView, endDay } from "./day.js";
+import { dayView, endDay, hiddenSlay } from "./day.js";
 import { MvpNotYet } from "./errors.js";
 import { decide, preview, startRun } from "./runs.js";
 import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
@@ -65,9 +65,13 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     return c.json(runView(startRun(rt, p)));
   });
 
+  // Only the run's player reads it: a round fight's ghostId names the
+  // opponent's run, and a slayer's run would show its hidden Crown team.
   api.get("/runs/:runId", (c) => {
     const run = store.run(c.req.param("runId"));
-    return run ? c.json(runView(run)) : bad(c, 404, "no such run");
+    if (!run) return bad(c, 404, "no such run");
+    if (playerOf(c)?.id !== run.player.id) return bad(c, 401, "not your run");
+    return c.json(runView(run));
   });
 
   /** The caller's run and the Decision in `body`, or the error response.
@@ -112,7 +116,10 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
 
   api.get("/battles/:battleId", (c) => {
     const b = store.battle(c.req.param("battleId"));
-    return b ? c.json(b) : bad(c, 404, "no such battle");
+    // A Crown fight that slew today's champion shows its slayer's team: only
+    // the slayer sees it before the day ends.
+    if (!b || hiddenSlay(rt, b.battleId, playerOf(c)?.id)) return bad(c, 404, "no such battle");
+    return c.json(b);
   });
 
   // Slice 10 owns this route and the store behind it; slice 11 only reads.

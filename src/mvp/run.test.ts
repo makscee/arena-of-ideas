@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_RUN_POOL, stressAbilities, stressRegistry } from "../index.js";
 import type { MvpContent, PlayerRef, UnitContent } from "./contract.js";
-import { applyMvpDecision, initMvpRun, runView, synthGhost } from "./run.js";
+import { applyMvpDecision, initMvpRun, MvpBadDecision, MvpDecisionError, runView, synthGhost } from "./run.js";
 
 const units: UnitContent[] = DEFAULT_RUN_POOL.map((d, i) => {
   const form = { when: d.triggers ?? [], who: d.selectors ?? [], does: d.abilities ?? [] };
@@ -56,5 +56,14 @@ describe("MVP thin run", () => {
     expect(step.state.round).toBe(2);
     expect(step.state.gold).toBe(10);
     expect(step.state.hearts).toBe(5 - step.fight!.heartsLost);
+  });
+
+  it("throws MvpBadDecision, not a refusal, for a kind it doesn't know", () => {
+    const s = initMvpRun({ runId: "r", player: me, seed: 1, content, ...day });
+    const zap = { kind: "zap" } as unknown as Parameters<typeof applyMvpDecision>[1];
+    expect(() => applyMvpDecision(s, zap, content)).toThrow(MvpBadDecision);
+    expect(() => applyMvpDecision(s, zap, content)).not.toThrow(MvpDecisionError);
+    expect(() => applyMvpDecision(s, { kind: "toString" } as unknown as typeof zap, content)).toThrow(MvpBadDecision);
+    expect(() => applyMvpDecision({ ...s, phase: "over" }, zap, content)).toThrow(MvpBadDecision);
   });
 });

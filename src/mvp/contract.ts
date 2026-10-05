@@ -437,9 +437,11 @@ export interface HomeView {
 //
 // Identity tonight is a name kept on the device: POST /players returns an id
 // the client stores and sends as the X-Arena-Player header on every call.
-// Invite tokens replace it in slice 13. Errors are { error: string } with 4xx.
+// Invite tokens replace it in slice 13. Errors are { error: string } with 4xx:
+// 400 a request the API can't read (a Decision of an unknown kind), 409 a
+// decision the rules refuse, 404 any path not listed here.
 //
-//   GET  /api/v1/health                      → { ok: true, api, contentVersion }
+//   GET  /api/v1/health                      → { ok: true, api, contentVersion, build }  (build: the deployed commit, or null)
 //   GET  /api/v1/content                     → MvpContent
 //   POST /api/v1/players       { name }      → PlayerRef
 //   GET  /api/v1/home                        → HomeView

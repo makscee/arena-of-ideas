@@ -31,10 +31,10 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
     "div",
     { class: `card ${o.side}`, ...(o.testid ? { "data-testid": o.testid } : {}) },
     h("div", { class: "emoji" }, u.emoji),
-    h("div", { class: `name${nameSize(u.name)}` }, u.name),
-    discoveredLine(u),
+    // ui/dom.ts fitText() shrinks a long name to the card's measured width.
+    h("div", { class: "name" }, u.name),
     h("div", { class: "stats" }, h("span", { class: "p" }, `${stats.pwr}`), " / ", h("span", { class: "h" }, `${stats.hp}`)),
-    unitStatsLine(u.unitId, o.rates),
+    cardRates(u, o.rates),
     ...(o.extra ?? []),
   );
   if (u.kind === "fused") el.classList.add("fused");
@@ -45,10 +45,13 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
   return el;
 }
 
-/** Long words get a smaller font so names never break mid-word on a 360 px phone. */
-function nameSize(name: string): string {
-  const longest = Math.max(...name.split(/\s+/).map((w) => w.length));
-  return longest >= 11 ? " xlong" : longest >= 9 ? " long" : "";
+/** The card's rates line, always one line so cards in a row line up: the
+ * unit's rates, or "—" without any. A fused unit has no rates of its own (its
+ * unitId is its first part's), so its line shows who discovered it instead
+ * ("by you"; the sheet says it in full, with both parts' rates). */
+function cardRates(u: CardUnit, rates?: UnitRates): Node {
+  if (u.kind === "fused") return discoveredLine(u, true) ?? h("div", { class: "rates none" }, "—");
+  return unitStatsLine(u.unitId, rates) ?? h("div", { class: "rates none" }, "—");
 }
 
 /** A form as one line of text: its authored text, else described from the
@@ -79,8 +82,18 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
     ...sheetForms(u, content).map(([label, form]) =>
       h("div", { class: `sheet-form${"form" in u && u.kind !== "fused" && label.toLowerCase() === u.form ? " now" : ""}` }, h("div", { class: "label" }, label), formText(form, content)),
     ),
-    unitStatsLine(unitId, opts.rates),
+    ...sheetRates(u, unitId, content, opts.rates),
   );
+}
+
+/** The sheet's rates: the unit's own; for a fused unit, each part's, named. */
+function sheetRates(u: LineUnit | BattleUnit | UnitContent, unitId: string, content: MvpContent, rates?: UnitRates): (Node | null)[] {
+  if ("forms" in u || u.kind !== "fused" || !u.fusion) return [unitStatsLine(unitId, rates)];
+  return [u.fusion.first, u.fusion.second].map((id) => {
+    const line = unitStatsLine(id);
+    const part = content.units.find((x) => x.id === id);
+    return line ? h("div", { class: "row part-rates" }, h("span", { class: "dim small" }, `${part?.name ?? id}:`), line) : null;
+  });
 }
 
 /** Form and copies; a fused unit says it is final (its credit is discoveredLine). */

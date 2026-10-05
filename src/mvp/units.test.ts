@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { contentFormProblems } from "./forms.js";
+import { MVP_RULES, type MvpContent } from "./contract.js";
+import { fightLines } from "./fight.js";
+import { contentFormProblems, lineUnitOf } from "./forms.js";
 import { ROWS, mvpPool } from "./units.js";
 
 describe("MVP pool (slice 7)", () => {
@@ -57,5 +59,30 @@ describe("MVP pool targeting", () => {
       }
     }
     expect(wrong).toEqual([]);
+  });
+});
+
+describe("Planter", () => {
+  const content: MvpContent = { version: "test", ...mvpPool() };
+  const unit = (id: string) => content.units.find((u) => u.id === id)!;
+  const fight = (ids: string[]) => {
+    const line = ids.map((id, i) => lineUnitOf(unit(id), `a${i}`));
+    const foe = [lineUnitOf(unit("fodder"), "b0")];
+    const p = { id: "p", name: "p", bot: false };
+    return fightLines({ player: p, line }, { player: p, line: foe }, { battleId: "b", seed: 1, kind: "round", round: 1, runId: null, at: "2026-10-06T00:00:00.000Z", content, rules: MVP_RULES }).log;
+  };
+  const grew = (log: ReturnType<typeof fight>) => log.some((e) => e.type === "StatusApplied" && e.status === "Vitality" && e.unit.includes("Planter"));
+  const summoned = (log: ReturnType<typeof fight>) => log.some((e) => e.type === "Summon" && e.name === "Imp");
+
+  it("calls an Imp when the line has room, and grows", () => {
+    const log = fight(["planter", "fighter"]);
+    expect(summoned(log)).toBe(true);
+    expect(grew(log)).toBe(true);
+  });
+
+  it("still does something in a full line: it grows", () => {
+    const log = fight(["planter", "fighter", "squire", "gnat", "rose"]);
+    expect(summoned(log)).toBe(false);
+    expect(grew(log)).toBe(true);
   });
 });

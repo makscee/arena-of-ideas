@@ -9,24 +9,27 @@
 // the end, the viewer shows the outcome, "why I lost", and battle-done.
 import { boardAt, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView } from "../../src/mvp/contract";
-import { stepsOf, traceOf, whyILost as lossChains, sidesOf, type Change, type Step, type Trace } from "../../src/mvp/trace";
+import { stepsOf, traceOf, whyILost as lossChains, sidesOf, type Change, type LossChain, type Step, type Trace } from "../../src/mvp/trace";
 import { displayNames } from "../../src/trace";
 import type { Side } from "../../src/types";
-import { card } from "../ui/card";
-import { button, h, overlay, show } from "../ui/dom";
+import { card, unitSheet } from "../ui/card";
+import { button, closable, h, show } from "../ui/dom";
 
 /** Milliseconds a step stays on screen at 1×. */
 const STEP_MS = 650;
 
 export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you?: Side; fight?: FightResult; run?: RunView; onDone: () => void }): void {
   const { battle } = a;
+  // Without a.you (a playoff game, a champion's battle) nobody here is "you":
+  // side A draws in the "you" colour, but nothing reads as your win or loss.
   const you: Side = a.you ?? "A";
   const them: Side = you === "A" ? "B" : "A";
   const outcome = battle.winner === "draw" ? "draw" : battle.winner === you ? "win" : "loss";
+  const owner = (s: Side) => `@${(s === "A" ? battle.player : battle.opponent).name}`;
   const log = battle.log;
   const name = displayNames(log);
   const sides = sidesOf(log);
-  const steps = stepsOf(log, name, sides);
+  const steps = stepsOf(log, name, sides, a.you ? { you: a.you } : { sideName: owner });
   const lost = a.you !== undefined && outcome === "loss";
   const units = new Map<string, BattleUnit>([...battle.teamA, ...battle.teamB].map((u) => [u.id, u]));
   const emojiOf = (id: string) => units.get(id)?.emoji ?? "✨";
@@ -111,20 +114,34 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       live: { stats: { pwr: u.pwr, hp: u.hp }, acting: step?.actor === u.id },
       extra: [
         statuses ? h("div", { class: "bv-status" }, statuses) : null,
-        changes.length ? h("div", { class: "bv-changes" }, ...changes.map(changeBadge)) : null,
+        changes.length ? h("div", { class: "bv-changes" }, changeBadge(changes)) : null,
       ],
     });
     el.classList.add("bv-card");
     el.dataset.unit = u.id;
     if (u.silenced) el.classList.add("silenced");
-    // The whole card is the tap target for its change (44 px and more).
-    if (changes[0]) el.addEventListener("click", () => openTrace(changes[0]!.eventId));
+    // The change's chip traces it; the rest of the card opens the unit.
+    el.addEventListener("click", () => openUnit(u.id, changes[0]));
     return el;
   }
-  function changeBadge(c: Change): HTMLElement {
-    const b = h("button", { class: `bv-change ${c.kind}`, "data-testid": "change", "data-event": String(c.eventId) }, c.label);
+  /** One chip for a unit's changes this step: the first one's label; all of them in its title. */
+  function changeBadge(changes: Change[]): HTMLElement {
+    const c = changes[0]!;
+    const b = h(
+      "button",
+      { class: `bv-change ${c.kind}`, "data-testid": "change", "data-event": String(c.eventId), title: changes.map((x) => x.label).join(", ") },
+      h("span", { class: "bv-pill" }, c.label),
+    );
     b.addEventListener("click", (ev) => { ev.stopPropagation(); openTrace(c.eventId); });
     return b;
+  }
+  /** A card tap: the unit's sheet when it entered the battle; a summon has none, so its change's trace. */
+  function openUnit(id: string, change: Change | undefined): void {
+    const u = units.get(id);
+    if (!u) return change ? openTrace(change.eventId) : undefined;
+    pause();
+    render();
+    closable(unitSheet(u, a.content));
   }
   function deadCard(id: string, step: Step): HTMLElement | null {
     // A unit that falls this step still shows, faded, so its ✝ can be tapped;
@@ -136,9 +153,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       { class: `card bv-card dead ${sides.get(id) === you ? "you" : "ghost"}` },
       h("div", { class: "emoji" }, emojiOf(id)),
       h("div", { class: "name" }, name(id)),
-      death ? h("div", { class: "bv-changes" }, ...step.changes.filter((c) => c.unit === id).map(changeBadge)) : null,
+      death ? h("div", { class: "bv-changes" }, changeBadge(step.changes.filter((c) => c.unit === id))) : null,
     );
     if (step.actor === id) el.classList.add("acting");
+    el.addEventListener("click", () => openUnit(id, death));
     return el;
   }
 
@@ -156,10 +174,12 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       const living = board.lines[side].map((u) => unitCard(u, side, step));
       const falling = step ? board.graves[side].flatMap((u) => deadCard(u.id, step) ?? []) : [];
       row.replaceChildren(...living, ...falling);
+      // A falling card beside a full line widens the row instead of wrapping it.
+      row.style.gridTemplateColumns = `repeat(${Math.max(5, living.length + falling.length)}, minmax(0, 1fr))`;
       row.classList.toggle("empty", !living.length && !falling.length);
       if (!living.length && !falling.length) row.append(h("div", { class: "dim" }, "No one standing."));
     }
-    caption.textContent = step ? step.caption : "The lines face off.";
+    caption.replaceChildren(...captionKids(step));
     caption.classList.toggle("tappable", !!step?.changes.length);
     recent.replaceChildren(
       ...steps.slice(Math.max(0, at - 3), Math.max(0, at)).reverse().map((s) => {
@@ -181,6 +201,15 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     controls.style.display = finished ? "none" : "";
   }
 
+  /** The caption, led by whose unit acted: YOU / THEM, or the owner without a side. */
+  function captionKids(step: Step | undefined): Node[] {
+    if (!step) return [document.createTextNode("The lines face off.")];
+    const side = step.actorSide;
+    if (!side) return [document.createTextNode(step.caption)];
+    const tag = a.you ? (side === you ? "You" : "Them") : owner(side);
+    return [h("span", { class: `bv-who ${side === you ? "you" : "ghost"}`, "data-testid": "caption-side" }, tag), document.createTextNode(step.caption)];
+  }
+
   function traceView(t: Trace): Node[] {
     const target = t.change ? name(t.change.unit) : "";
     return [
@@ -200,12 +229,14 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   }
 
   function endView(): Node[] {
-    const word = outcome === "win" ? "VICTORY" : outcome === "loss" ? "DEFEAT" : "DRAW";
+    // Only a viewer with a side wins or loses; otherwise the winner is named.
+    const word = !a.you ? (battle.winner === "draw" ? "DRAW" : `${owner(battle.winner)} wins`) : outcome === "win" ? "VICTORY" : outcome === "loss" ? "DEFEAT" : "DRAW";
+    const cls = !a.you && battle.winner !== "draw" ? "neutral" : outcome;
     const why = lost ? whyPanel(battle, you, (id) => openTrace(id)) : null;
-    return [h("div", { class: `bv-word ${outcome}` }, word), ...(why ? [why] : []), button("Continue", leave, "primary", "battle-done")];
+    return [h("div", { class: `bv-word ${cls}`, "data-testid": "battle-word" }, word), ...(why ? [why] : []), button("Continue", leave, "primary", "battle-done")];
   }
 
-  show(hud, h("div", { class: "label" }, a.you ? "Them" : `@${(you === "A" ? battle.opponent : battle.player).name}`), enemy, caption, mine, h("div", { class: "label" }, a.you ? "You · front first" : `@${(you === "A" ? battle.player : battle.opponent).name} · front first`), recent, sheet, end, h("div", { class: "spacer" }), controls);
+  show(hud, h("div", { class: "label" }, a.you ? "Them" : owner(them)), enemy, caption, mine, h("div", { class: "label" }, a.you ? "You · front first" : `${owner(you)} · front first`), recent, sheet, end, h("div", { class: "spacer" }), controls);
   render();
   schedule();
 }
@@ -229,7 +260,14 @@ function whyPanel(battle: BattleRecord, you: Side, onTrace?: (eventId: number) =
           row.addEventListener("click", () => {
             if (onTrace) return onTrace(c.sampleEventId);
             const t = traceOf(battle.log, c.sampleEventId);
-            overlay(h("div", { class: "bv-trace-text mono", "data-testid": "trace-text" }, t.text), h("div", { class: "dim" }, `${c.times} times this fight.`));
+            closable(
+              h("div", { class: "stack why-sheet", "data-testid": "why-sheet" },
+                h("h2", { class: "ghost-name" }, c.text),
+                h("div", {}, chainSummary(c)),
+                h("div", { class: "label" }, "Its first hit, traced"),
+                h("div", { class: "bv-trace-text mono", "data-testid": "trace-text" }, t.text),
+              ),
+            );
           });
           return row;
         })
@@ -242,6 +280,16 @@ function whyPanel(battle: BattleRecord, you: Side, onTrace?: (eventId: number) =
 export function whyILost(battle: BattleRecord, _content: MvpContent, you: Side): HTMLElement | null {
   if (battle.winner === "draw" || battle.winner === you) return null;
   return whyPanel(battle, you);
+}
+
+/** One sentence for a why-I-lost row's numbers, so the totals and the traced
+ * first hit can't read as a contradiction: "11 damage to your units over 4
+ * hits, 2 of them killed. +3 healing to theirs over 2 heals." */
+function chainSummary(c: LossChain): string {
+  const parts: string[] = [];
+  if (c.hits) parts.push(`${c.damage} damage to your units over ${c.hits} ${c.hits === 1 ? "hit" : "hits"}${c.kills ? `, ${c.kills} ${c.kills === 1 ? "kill" : "kills"}` : ""}.`);
+  if (c.heals) parts.push(`${c.heal} healing to theirs over ${c.heals} ${c.heals === 1 ? "heal" : "heals"}.`);
+  return parts.join(" ") || `${c.times} changes this fight.`;
 }
 
 function viaText(via: string): string {

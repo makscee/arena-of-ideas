@@ -10,17 +10,18 @@
  *   MVP_DB      the SQLite file (default data/arena-mvp.db); ":memory:" keeps nothing
  *   ARENA_NAMER_URL  the fusion namer (OpenAI-compatible chat endpoint, slice
  *               10); without it every fusion gets the portmanteau
+ *   MVP_BUILD   the deployed commit, `build` on /api/v1/health (default: the
+ *               checkout's HEAD); scripts/mvp-redeploy.sh sets it
  * Run: npm run mvp:server
  */
 import { serve } from "@hono/node-server";
-import { serveStatic } from "@hono/node-server/serve-static";
-import { Hono } from "hono";
 import { mkdirSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { createMvpApp } from "./app.js";
 import { mvpContent } from "./content.js";
 import { startMvpJobs } from "./jobs.js";
 import { mvpRuntime } from "./runtime.js";
+import { buildOf, mvpServerApp, underBasePath } from "./server.js";
 import { SqliteMvpStore } from "./sqlite-store.js";
 
 const port = Number(process.env.PORT ?? 8791);
@@ -34,23 +35,9 @@ if (dbPath !== ":memory:") mkdirSync(dirname(resolve(dbPath)), { recursive: true
 const store = new SqliteMvpStore(dbPath);
 const content = mvpContent();
 const rt = mvpRuntime({ content, store, dev: process.env.MVP_DEV === "1" });
-const api = createMvpApp(rt);
-const app = new Hono();
-app.route("/", api);
-app.use("/*", serveStatic({ root }));
-app.get("/*", serveStatic({ root, path: "index.html" }));
+const build = buildOf();
+const app = mvpServerApp(createMvpApp(rt), { staticRoot: root, build });
 
-serve({
-  port,
-  hostname: host,
-  fetch: (req) => {
-    const url = new URL(req.url);
-    if (basePath && (url.pathname === basePath || url.pathname.startsWith(basePath + "/"))) {
-      url.pathname = url.pathname.slice(basePath.length) || "/";
-      return app.fetch(new Request(url, req));
-    }
-    return app.fetch(req);
-  },
-});
+serve({ port, hostname: host, fetch: underBasePath(app, basePath) });
 startMvpJobs(rt);
-console.log(`arena mvp on http://${host}:${port} (base ${basePath}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""})`);
+console.log(`arena mvp on http://${host}:${port} (base ${basePath}, build ${build ?? "unknown"}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""})`);
