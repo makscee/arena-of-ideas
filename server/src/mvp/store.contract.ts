@@ -131,5 +131,19 @@ export function describeMvpStore(name: string, make: () => MvpStore): void {
       expect(store.rating("p1")).toEqual(r);
       expect(store.rating("p2")).toBeUndefined();
     });
+    it("adds unit tallies per content version", () => {
+      const store = make();
+      expect(store.unitTallies("v2")).toEqual({ runs: 0, units: [] });
+      store.addUnitTallies("v2", { runs: 0, units: [{ unitId: "brawler", fights: 1, wins: 1, runs: 0 }, { unitId: "archer", fights: 1, wins: 0, runs: 0 }] });
+      store.addUnitTallies("v2", { runs: 1, units: [{ unitId: "brawler", fights: 1, wins: 0, runs: 1 }] });
+      store.addUnitTallies("v3", { runs: 1, units: [{ unitId: "brawler", fights: 2, wins: 2, runs: 1 }] });
+      const v2 = store.unitTallies("v2");
+      expect(v2.runs).toBe(1);
+      expect([...v2.units].sort((a, b) => a.unitId.localeCompare(b.unitId))).toEqual([
+        { unitId: "archer", fights: 1, wins: 0, runs: 0 },
+        { unitId: "brawler", fights: 2, wins: 1, runs: 1 },
+      ]);
+      expect(store.unitTallies("v3")).toEqual({ runs: 1, units: [{ unitId: "brawler", fights: 2, wins: 2, runs: 1 }] });
+    });
   });
 }

@@ -11,7 +11,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
-import type { MvpStore } from "./store.js";
+import type { MvpStore, UnitTallies, UnitTally } from "./store.js";
 
 const SQL_DIR = fileURLToPath(new URL("./sql/", import.meta.url));
 
@@ -104,4 +104,27 @@ export class SqliteMvpStore implements MvpStore {
 
   rating(playerId: string): Rating | undefined { return this.one("SELECT json FROM mvp_ratings WHERE player_id = ?", playerId); }
   putRating(r: Rating): void { this.write("INSERT OR REPLACE INTO mvp_ratings (player_id, json) VALUES (?, ?)", r.player.id, JSON.stringify(r)); }
+
+  addUnitTallies(contentVersion: string, delta: UnitTallies): void {
+    this.db.transaction(() => {
+      if (delta.runs) {
+        this.write(
+          "INSERT INTO mvp_run_tallies (content_version, runs) VALUES (?, ?) ON CONFLICT(content_version) DO UPDATE SET runs = runs + excluded.runs",
+          contentVersion, delta.runs,
+        );
+      }
+      const up = this.db.prepare(
+        "INSERT INTO mvp_unit_tallies (content_version, unit_id, fights, wins, runs) VALUES (?, ?, ?, ?, ?) " +
+          "ON CONFLICT(content_version, unit_id) DO UPDATE SET fights = fights + excluded.fights, wins = wins + excluded.wins, runs = runs + excluded.runs",
+      );
+      for (const u of delta.units) up.run(contentVersion, u.unitId, u.fights, u.wins, u.runs);
+    })();
+  }
+  unitTallies(contentVersion: string): UnitTallies {
+    const runs = (this.db.prepare("SELECT runs FROM mvp_run_tallies WHERE content_version = ?").get(contentVersion) as { runs: number } | undefined)?.runs ?? 0;
+    const units = this.db
+      .prepare("SELECT unit_id AS unitId, fights, wins, runs FROM mvp_unit_tallies WHERE content_version = ? ORDER BY unit_id")
+      .all(contentVersion) as UnitTally[];
+    return { runs, units };
+  }
 }

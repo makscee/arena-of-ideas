@@ -56,6 +56,26 @@ export interface MvpStore {
   putPlayoff(p: PlayoffResult): void;
   rating(playerId: string): Rating | undefined;
   putRating(r: Rating): void;
+  // Slice 11's unit tallies, per content version; only ./stats.ts writes them.
+  /** Adds `delta` to `contentVersion`'s tallies (runs and each unit's counts). */
+  addUnitTallies(contentVersion: string, delta: UnitTallies): void;
+  /** The running totals for `contentVersion`; zero runs and no units before any. */
+  unitTallies(contentVersion: string): UnitTallies;
+}
+
+/** Counted as runs go (./stats.ts): `runs` is the finished runs, and per unit
+ * the fights its team fought and won and the finished runs it ended on the
+ * line in. A fused unit counts for both parts. */
+export interface UnitTallies {
+  runs: number;
+  units: UnitTally[];
+}
+
+export interface UnitTally {
+  unitId: UnitId;
+  fights: number;
+  wins: number;
+  runs: number;
 }
 
 export class MemoryMvpStore implements MvpStore {
@@ -69,6 +89,7 @@ export class MemoryMvpStore implements MvpStore {
   private ratings = new Map<string, Rating>();
   private daysBySeq = new Map<number, DayState>();
   private playoffsBySeq = new Map<number, PlayoffResult>();
+  private talliesByVersion = new Map<string, { runs: number; units: Map<UnitId, UnitTally> }>();
   addPlayer(p: PlayerRef): void { this.players.set(p.id, p); }
   player(id: string): PlayerRef | undefined { return this.players.get(id); }
   putRun(r: MvpRunState): void { this.runs.set(r.runId, r); }
@@ -115,6 +136,19 @@ export class MemoryMvpStore implements MvpStore {
   putDay(d: DayState): void { this.daysBySeq.set(d.seq, d); }
   rating(playerId: string): Rating | undefined { return this.ratings.get(playerId); }
   putRating(r: Rating): void { this.ratings.set(r.player.id, r); }
+  addUnitTallies(contentVersion: string, delta: UnitTallies): void {
+    const t = this.talliesByVersion.get(contentVersion) ?? { runs: 0, units: new Map<UnitId, UnitTally>() };
+    t.runs += delta.runs;
+    for (const d of delta.units) {
+      const u = t.units.get(d.unitId) ?? { unitId: d.unitId, fights: 0, wins: 0, runs: 0 };
+      t.units.set(d.unitId, { unitId: d.unitId, fights: u.fights + d.fights, wins: u.wins + d.wins, runs: u.runs + d.runs });
+    }
+    this.talliesByVersion.set(contentVersion, t);
+  }
+  unitTallies(contentVersion: string): UnitTallies {
+    const t = this.talliesByVersion.get(contentVersion);
+    return { runs: t?.runs ?? 0, units: t ? [...t.units.values()].map((u) => ({ ...u })) : [] };
+  }
 }
 
 /** Ordered: (a, b) and (b, a) are different fusions. */
