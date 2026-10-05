@@ -42,7 +42,7 @@ describe("MVP thin run", () => {
     let s = initMvpRun({ runId: "r", player: me, seed: 9, content, ...day });
     s = applyMvpDecision(s, { kind: "buy", slot: 0 }, content).state;
     const ghost = synthGhost({ content, round: 1, seed: 5, ghostId: "g", createdAt: "2026-10-05T00:00:00.000Z" });
-    const step = applyMvpDecision(s, { kind: "fight" }, content, { fight: { ghost, battleId: "b", battleSeed: 11 } });
+    const step = applyMvpDecision(s, { kind: "fight" }, content, { fight: { ghost, battleId: "b", battleSeed: 11, at: "2026-10-05T00:01:00.000Z" } });
     expect(step.fight?.round).toBe(1);
     expect(step.battle?.log.at(-1)?.type).toBe("BattleEnd");
     expect(step.battle?.log.every((e) => "causedBy" in e)).toBe(true);
@@ -52,6 +52,7 @@ describe("MVP thin run", () => {
     expect(step.battle!.teamA).toEqual(s.line.map((u, i) => ({ ...u, id: roster.A[i]!.id })));
     expect(step.battle!.teamB.map((u) => u.id)).toEqual(roster.B.map((r) => r.id));
     expect(step.battle!.player).toEqual(me);
+    expect(step.battle).toMatchObject({ runId: "r", kind: "round", round: 1, at: "2026-10-05T00:01:00.000Z", opponent: ghost.player });
     expect(step.state.round).toBe(2);
     expect(step.state.gold).toBe(10);
     expect(step.state.hearts).toBe(5 - step.fight!.heartsLost);

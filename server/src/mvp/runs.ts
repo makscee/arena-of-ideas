@@ -55,7 +55,7 @@ export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionRe
         : synthGhost({ content, round: run.round, seed: pick, ghostId: `bot-${randomUUID()}`, createdAt: now().toISOString() });
     // Snapshot before the fight, so even a losing line becomes someone's ghost.
     if (run.line.length > 0) store.addGhost(ghostOf(run, now()));
-    ctx.fight = { ghost, battleId: randomUUID(), battleSeed: seed() };
+    ctx.fight = { ghost, battleId: randomUUID(), battleSeed: seed(), at: now().toISOString() };
   }
   const step = applyMvpDecision(run, d, content, ctx);
   if (step.state.phase === "over") step.state.endedAt = now().toISOString();

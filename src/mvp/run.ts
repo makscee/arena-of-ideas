@@ -1,16 +1,14 @@
 // Arena MVP run, thin path (mission #574, slice 1): start → buy → fight a
 // ghost → result. Pure: every transition returns a new state. Slice 4 grows
 // this into the full run (tiers, sell/reorder rules, Crown, rating). Copies,
-// awakening and fusion are slice 2's, in ./forms.ts: this file only calls
-// them. The shapes come from ./contract.ts.
+// awakening and fusion are slice 2's, in ./forms.ts, and a fight is
+// ./fight.ts's fightLines: this file only calls them. The shapes come from
+// ./contract.ts.
 
-import { battle, winnerOf } from "../battle.js";
 import { rngStep } from "../rng.js";
-import type { BattleEvent, Side, UnitDef } from "../types.js";
 import {
   MVP_RULES,
   type BattleRecord,
-  type BattleUnit,
   type Decision,
   type FightResult,
   type FuseContext,
@@ -25,6 +23,7 @@ import {
   type UnitContent,
 } from "./contract.js";
 import { MvpDecisionError } from "./errors.js";
+import { fightLines } from "./fight.js";
 import { addCopy, fuseCheck, fuseUnits, lineUnitOf, mergeTarget } from "./forms.js";
 
 export interface MvpRunState extends RunView {
@@ -91,26 +90,6 @@ export function unitById(content: MvpContent, id: string): UnitContent {
   return u;
 }
 
-/** A line unit as battle() input. */
-export function toBattleDef(u: LineUnit): UnitDef {
-  return {
-    name: u.name,
-    base: { ...u.stats },
-    triggers: u.recipe.when,
-    selectors: u.recipe.who,
-    abilities: u.recipe.does,
-    ...(u.recipe.condition ? { condition: u.recipe.condition } : {}),
-  };
-}
-
-/** A line as it entered the battle, each unit tagged with its kernel instance
- * id from the log's BattleStart roster. */
-function battleTeam(line: LineUnit[], side: Side, log: BattleEvent[]): BattleUnit[] {
-  const start = log.find((e) => e.type === "BattleStart");
-  const roster = start?.type === "BattleStart" ? start.teams[side] : [];
-  return line.map((u, i) => ({ ...structuredClone(u), id: roster[i]?.id ?? `${side}${i + 1}:${u.name}` }));
-}
-
 function clone(s: MvpRunState): MvpRunState {
   return structuredClone(s);
 }
@@ -119,6 +98,8 @@ export interface FightContext {
   ghost: Ghost;
   battleId: string;
   battleSeed: number;
+  /** ISO time of the fight (BattleRecord.at). */
+  at: string;
 }
 
 /** What the server supplies for decisions the pure run can't decide alone. */
@@ -191,11 +172,13 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
     case "fight": {
       if (s.line.length === 0) throw new MvpDecisionError("fight", "the line is empty, buy a unit first");
       if (!ctx?.fight) throw new MvpDecisionError("fight", "no opponent");
-      const { ghost, battleId, battleSeed } = ctx.fight;
-      const teamA = s.line.map(toBattleDef);
-      const teamB = ghost.line.map(toBattleDef);
-      const log = battle({ teamA, teamB, seed: battleSeed, abilities: content.abilities, statuses: content.statuses, chainStepCap: s.rules.chainStepCap });
-      const winner = winnerOf(log);
+      const { ghost, battleId, battleSeed, at } = ctx.fight;
+      const record = fightLines(
+        { player: s.player, line: s.line },
+        { player: ghost.player, line: ghost.line },
+        { battleId, seed: battleSeed, kind: "round", round: s.round, runId: s.runId, at, content, rules: s.rules },
+      );
+      const winner = record.winner;
       const outcome: Outcome = winner === "A" ? "win" : winner === "B" ? "loss" : "draw";
       const heartsLost = outcome === "loss" ? 1 : 0;
       s.hearts -= heartsLost;
@@ -211,20 +194,6 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
         heartsAfter: s.hearts,
       };
       s.fights.push(fight);
-      const record: BattleRecord = {
-        battleId,
-        runId: s.runId,
-        player: s.player,
-        seed: battleSeed,
-        contentVersion: s.contentVersion,
-        kind: "round",
-        round: s.round,
-        teamA: battleTeam(s.line, "A", log),
-        teamB: battleTeam(ghost.line, "B", log),
-        opponent: ghost.player,
-        winner,
-        log,
-      };
       if (s.hearts <= 0) {
         s.phase = "over";
         s.endedBy = "out-of-hearts";

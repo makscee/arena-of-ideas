@@ -238,6 +238,8 @@ export interface BattleRecord {
   contentVersion: string;
   kind: FightKind;
   round: number;
+  /** ISO time it was fought. */
+  at: string;
   teamA: BattleUnit[];
   teamB: BattleUnit[];
   opponent: PlayerRef;

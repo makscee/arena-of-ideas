@@ -6,7 +6,7 @@ import { stressAbilities, stressRegistry } from "../content/stress.js";
 import type { AbilityDef, AbilityRegistry, BattleEvent } from "../types.js";
 import { MVP_RULES, type LineUnit, type MvpContent, type PlayerRef, type UnitContent } from "./contract.js";
 import { addCopy, contentFormProblems, formProblems, fuseCheck, fuseUnits, lineUnitOf, mergeTarget } from "./forms.js";
-import { toBattleDef } from "./run.js";
+import { toBattleDef } from "./fight.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
