@@ -71,8 +71,14 @@ const SUMMONS: Record<string, UnitDef> = {
   "Call Treant": body("Treant", 1, 8),
 };
 
-/** Ability names read as what they do: "Hit 3", "Poison 2", "Shield 2", … */
+/** Ability names read as what they do: "Hit 3", "Poison 2", "Shield 2", …
+ * "A + B" is one Ability doing A then B on the same target (a sleeping form
+ * Does exactly one Ability); its family is A's. */
 function abilityOf(name: string): AbilityDef {
+  if (name.includes(" + ")) {
+    const parts = name.split(" + ").map(abilityOf);
+    return { name, family: parts[0]!.family, effects: parts.flatMap((p) => p.effects) };
+  }
   if (name === "Strike") return { name, family: "Strike", effects: [{ kind: "heal", amount: c(0) }] };
   if (name === "Smite") return { name, family: "Strike", effects: [{ kind: "damage", amount: { kind: "stat", stat: "pwr", of: "holder" } }] };
   if (name === "Mend") return { name, family: "Heal", effects: [{ kind: "heal", amount: { kind: "stat", stat: "pwr", of: "holder" } }] };
@@ -125,7 +131,9 @@ export const ROWS: Row[] = [
   r("Gnat",          "🦟", 1, 1, 4, "start",      "random",  "Hit 2",       { who: "enemies" }),
   r("Spore",         "🍄", 1, 1, 5, "die",        "enemies", "Poison 1",    { does: ["Poison 2"] }),
   r("Rat",           "🐀", 1, 2, 4, "die",        "front",   "Poison 2",    { who: "enemies" }),
-  r("Planter",       "🌱", 1, 1, 5, "start",      "me",      "Call Imp",    { does: ["Call Treant"] }),
+  // A summon into a full line is skipped, so Planter also grows: in a full
+  // line it is a sturdier body instead of a blank.
+  r("Planter",       "🌱", 1, 1, 5, "start",      "me",      "Call Imp + Vitality 2", { does: ["Call Treant", "Vitality 3"] }),
   r("Nurse",         "💉", 1, 1, 5, "allyHurt",   "it",      "Heal 1",      { does: ["Heal 2"] }),
   r("Prepper",       "🎒", 1, 1, 5, "start",      "allies",  "Shield 1",    { does: ["Shield 1", "Vitality 1"] }),
   r("Coach",         "📣", 1, 1, 5, "start",      "allies",  "Strength 1",  { does: ["Strength 1", "Shield 1"] }),
@@ -196,7 +204,7 @@ export const ROWS: Row[] = [
   r("King",          "👑", 4, 3, 12, "start",     "allies",  "Vitality 2",  { does: ["Vitality 2", "Strength 1"] }),
   r("Priest",        "⛪", 4, 2, 10, "turnEnd",   "allies",  "Heal 2",      { does: ["Heal 2", "Shield 1"] }),
   r("Divinity",      "😇", 4, 2, 8, "allyDies",  "fallen",  "Revive 3",    { does: ["Revive 3", "Bless 2"] }),
-  r("Phoenix",       "🐦‍🔥", 4, 4, 9, "start",     "me",      "Bless 8",     { does: ["Bless 8", "Strength 2"] }),
+  r("Phoenix",       "🐦", 4, 4, 9, "start",     "me",      "Bless 8",     { does: ["Bless 8", "Strength 2"] }),
   r("Lilith",        "🧛", 4, 4, 8, "enemyDies",  "me",      "Strength 2",  { does: ["Strength 2", "Mend"] }),
   r("Famin",         "☠️", 4, 3, 9, "turnEnd",   "random",  "Poison 1",    { who: "enemies" }),
   r("Mentalist",     "🧠", 4, 3, 8, "allyDies",  "enemies", "Freeze 1",    { does: ["Freeze 1", "Curse 1"] }),
