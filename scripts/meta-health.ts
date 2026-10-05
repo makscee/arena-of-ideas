@@ -21,13 +21,13 @@ import { mvpContent } from "../server/src/mvp/content.js";
 
 const QUICK = process.argv.includes("--quick");
 const COPIES = 3;
-const GAUNTLET = QUICK ? 12 : 16;
+const GAUNTLET = QUICK ? 12 : 12;
 const SEARCH_SEEDS = QUICK ? 2 : 3;
-const SEARCH_STEPS = QUICK ? 15 : 30;
+const SEARCH_STEPS = QUICK ? 15 : 25;
 const MATRIX_SEEDS = QUICK ? 4 : 8;
 const RELIABLE = 0.6;
 const SHARE_FLOOR = 0.02;
-const COUNTER_ROUNDS = QUICK ? 2 : 4;
+const COUNTER_ROUNDS = QUICK ? 2 : 6;
 const COUNTER_RESTARTS = 3;
 
 const content: MvpContent = mvpContent();
