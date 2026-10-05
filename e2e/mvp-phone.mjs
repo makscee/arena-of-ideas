@@ -43,6 +43,18 @@ try {
       if (box[dim] < 44 - 0.5) errors.push(`${name}: ${dim} ${Math.round(box[dim])}px < 44`);
     }
   };
+  /** On every acting battle card, the rates line's text stays inside the
+   * gold ring (1px border + 2px ring) with 1px of air, measured on the glyphs. */
+  const ratesInRing = async (name) => {
+    const bad = await page.evaluate(() => [...document.querySelectorAll(".bv-card.acting .rates")].map((el) => {
+      const card = el.closest(".bv-card").getBoundingClientRect();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const t = range.getBoundingClientRect();
+      return t.left < card.left + 4 - 0.5 || t.right > card.right - 4 + 0.5 ? `${el.textContent} at ${Math.round(t.left - card.left)}..${Math.round(card.right - t.right)}px from the card's edges` : null;
+    }).filter(Boolean));
+    for (const b of bad) errors.push(`${name}: acting card's rates in the ring: ${b}`);
+  };
   /** The element is on screen without scrolling (the bottom of a 640 px phone). */
   const onScreen = async (name, locator) => {
     const box = await locator.boundingBox();
@@ -108,7 +120,7 @@ try {
     await page.getByTestId("battle-skip").waitFor({ timeout: 10_000 });
     if (round === 1) {
       await page.getByTestId("change").first().waitFor({ timeout: 15_000 });
-      await shot("battle"); await noHScroll("battle");
+      await shot("battle"); await noHScroll("battle"); await ratesInRing("battle");
       await page.getByTestId("change").first().click();
       await page.getByTestId("trace-text").waitFor();
       const chain = await page.getByTestId("trace-text").textContent();
@@ -136,7 +148,7 @@ try {
       if (await multi.count()) {
         const lines = await multi.locator(".bv-l").allTextContents();
         if (lines.length !== 2 || lines.some((l) => !l.trim())) errors.push(`two changes: chip shows ${JSON.stringify(lines)}`);
-        await shot("battle-two-changes"); await noHScroll("battle-two-changes");
+        await shot("battle-two-changes"); await noHScroll("battle-two-changes"); await ratesInRing("battle-two-changes");
         await multi.click();
         await page.getByTestId("trace-group").waitFor();
         if ((await page.getByTestId("trace-group-change").count()) !== 2) errors.push("two changes: the trace doesn't list both");
@@ -295,6 +307,7 @@ try {
     const result = await page.locator("#app").textContent();
     if (/slayer today/.test(result) || !/own champion team/.test(result)) errors.push(`own crown result: "${result.slice(0, 200)}"`);
     await shot("result-own-crown"); await noHScroll("result-own-crown");
+    console.log(`mvp phone: the champion's own Crown: ${await page.getByTestId("outcome").textContent()}`);
     await page.getByTestId("continue").click();
     await page.getByTestId("run-over").waitFor({ timeout: 10_000 });
     const ownOver = await page.getByTestId("run-over").textContent();
