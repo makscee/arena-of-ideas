@@ -28,6 +28,26 @@ jobs:
       - run: npm run typecheck
       - run: npm test
 
+  # Arena MVP (mission #574) verification ladder: 50 runs through the HTTP
+  # API, then a whole game in Chromium at 360×640 with a screenshot per screen.
+  mvp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: npm run mvp:bot -- --runs 50
+      - run: npm run mvp:phone
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mvp-phone-shots
+          path: e2e/.shots/mvp
+
   build-image:
     needs: test
     runs-on: ubuntu-latest
