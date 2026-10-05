@@ -56,7 +56,8 @@ export function startRun(deps: RunDeps, player: PlayerRef): MvpRunState {
   const active = deps.store.activeRun(player.id);
   if (active) {
     if (active.contentVersion === deps.content.version) return active;
-    finish(deps, endRun(active, "content-changed"));
+    const ended = finish(deps, endRun(active, "content-changed"));
+    for (const h of deps.hooks) h.onRunEnd?.(ended);
   }
   const fresh = initMvpRun({ runId: randomUUID(), player, seed: deps.seed(), content: deps.content, day: deps.today().seq, startedAt: deps.now().toISOString(), rules: deps.rules });
   const run = setOpponent(fresh, pickGhost(deps, fresh));

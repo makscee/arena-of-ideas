@@ -142,7 +142,8 @@ describe("MVP run server", () => {
     const a = startRun(old, maks);
     const b = startRun(old, { ...maks, id: "p2" });
     const content = { ...old.content, version: "retuned" };
-    const rt = world({ store, content });
+    const ends: string[] = [];
+    const rt = world({ store, content, hooks: [{ onRunEnd: (r) => ends.push(`${r.runId} ${r.endedBy}`) }] });
     const ended = decide(rt, store.run(a.runId)!, { kind: "buy", slot: 0 });
     expect(ended.run).toMatchObject({ phase: "over", endedBy: "content-changed", rating: null, line: [] });
     expect(store.rating(maks.id)).toBeUndefined();
@@ -150,6 +151,7 @@ describe("MVP run server", () => {
     expect(fresh.runId).not.toBe(b.runId);
     expect(fresh.contentVersion).toBe("retuned");
     expect(store.run(b.runId)).toMatchObject({ phase: "over", endedBy: "content-changed" });
+    expect(ends).toEqual([`${a.runId} content-changed`, `${b.runId} content-changed`]);
   });
 
   it("plays a whole run on the SQLite store and reopens it from the file", () => {
