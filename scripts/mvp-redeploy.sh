@@ -8,7 +8,10 @@
 #   npm run mvp:redeploy -- <branch>     # any pushed branch
 #   npm run mvp:redeploy -- --fresh      # also wipe the world: the DB moves
 #                                        # aside to data/arena-mvp.db.bak-<time>
-#                                        # while the server is stopped
+#                                        # while the server is stopped. Every
+#                                        # check runs before it stops; if the
+#                                        # move fails, the server starts on the
+#                                        # old DB and the redeploy exits 1
 #   npm run mvp:redeploy -- --dry-run    # print what would run on m1, run nothing
 #
 # Runs from anywhere with `ssh m1`; on m1 itself it runs locally. The server
@@ -45,9 +48,17 @@ cd "\$DIR"
 git fetch -q origin "$BRANCH"
 git checkout -q -B "$BRANCH" "origin/$BRANCH"
 BUILD=\$(git rev-parse --short HEAD)
+DB="\$DIR/data/arena-mvp.db"
+mkdir -p "\$DIR/data"
+if [ "$FRESH" = 1 ]; then
+  # --fresh: every check before anything stops, so a DB that can't move aside
+  # leaves the server running on it.
+  [ -x scripts/mvp-db-aside.sh ] || { echo "--fresh: scripts/mvp-db-aside.sh is missing on $BRANCH; nothing stopped" >&2; exit 1; }
+  scripts/mvp-db-aside.sh --check "\$DB" || { echo "--fresh: \$DB can't move aside; nothing stopped" >&2; exit 1; }
+fi
 npm ci --no-audit --no-fund --loglevel=error
 npm run -s mvp:build
-mkdir -p "\$HOME/Library/LaunchAgents" "\$DIR/data"
+mkdir -p "\$HOME/Library/LaunchAgents"
 NAMER=ru.makscee.arena-namer
 NPLIST="\$HOME/Library/LaunchAgents/\$NAMER.plist"
 cat > "\$NPLIST.new" <<PL
@@ -89,6 +100,7 @@ cat > "\$PLIST" <<PL
     <key>HOST</key><string>127.0.0.1</string>
     <key>BASE_PATH</key><string>/arena</string>
     <key>MVP_DEV</key><string>1</string>
+    <key>MVP_DB</key><string>\$DB</string>
     <key>MVP_BUILD</key><string>\$BUILD</string>
     <key>ARENA_NAMER_URL</key><string>http://127.0.0.1:$NAMER_PORT/v1/chat/completions</string>
   </dict>
@@ -101,12 +113,17 @@ PL
 # bootout returns before the job is gone; bootstrap too early fails with EIO.
 launchctl bootout "gui/\$(id -u)/\$LABEL" 2>/dev/null || true
 for i in \$(seq 1 20); do launchctl print "gui/\$(id -u)/\$LABEL" >/dev/null 2>&1 || break; sleep 0.5; done
+FAILED=
 if [ "$FRESH" = 1 ]; then
-  # --fresh: the server is stopped; an empty DB on start, the bots reseed the champion.
-  launchctl print "gui/\$(id -u)/\$LABEL" >/dev/null 2>&1 && { echo "the server is still loaded: not moving its DB" >&2; exit 1; }
-  scripts/mvp-db-aside.sh "\$DIR/data/arena-mvp.db"
+  # --fresh: the server is stopped; an empty DB on start, the bots reseed the
+  # champion. If the move fails, the server starts on the old DB.
+  if launchctl print "gui/\$(id -u)/\$LABEL" >/dev/null 2>&1; then
+    FAILED="the server didn't stop, so its DB stayed"
+  elif ! scripts/mvp-db-aside.sh "\$DB"; then
+    FAILED="moving \$DB aside failed; the server starts on the old DB"
+  fi
 fi
-launchctl bootstrap "gui/\$(id -u)" "\$PLIST"
+launchctl print "gui/\$(id -u)/\$LABEL" >/dev/null 2>&1 || launchctl bootstrap "gui/\$(id -u)" "\$PLIST"
 TS=/Applications/Tailscale.app/Contents/MacOS/Tailscale
 \$TS serve --bg --set-path /arena "http://127.0.0.1:$PORT" >/dev/null
 for i in \$(seq 1 30); do
@@ -115,6 +132,10 @@ for i in \$(seq 1 30); do
 done
 curl -fsS --max-time 5 "http://127.0.0.1:$NAMER_PORT/v1/models" >/dev/null 2>&1 && echo "namer up on :$NAMER_PORT" || echo "namer not up yet on :$NAMER_PORT (fusions use the portmanteau until it is)"
 echo "deployed \$(git rev-parse --short HEAD) ($BRANCH): \$(curl -fsS --max-time 5 http://127.0.0.1:$PORT/arena/api/v1/health)"
+if [ -n "\$FAILED" ]; then
+  echo "--fresh failed: \$FAILED" >&2
+  exit 1
+fi
 SCRIPT
 }
 
