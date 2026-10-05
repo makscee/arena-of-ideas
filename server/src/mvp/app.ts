@@ -109,8 +109,7 @@ export function createMvpApp(deps: MvpDeps): Hono {
     return { run, d };
   };
   const refused = (c: Context, err: unknown) => {
-    // Every fuse answers 501 until slice 2 makes fusion work; then 409 like the rest.
-    if (err instanceof MvpDecisionError) return bad(c, err.kind === "fuse" ? 501 : 409, err.message);
+    if (err instanceof MvpDecisionError) return bad(c, 409, err.message);
     throw err;
   };
 

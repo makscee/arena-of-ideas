@@ -127,7 +127,7 @@ describe("MVP API thin path", () => {
     const real = await call<DecisionResponse>("POST", `/runs/${r.runId}/decisions`, { kind: "buy", slot: 0 }, p.id);
     expect(real.json.run).toEqual(pv.json.run);
     expect((await call("POST", `/runs/${r.runId}/preview`, { kind: "fight" }, p.id)).status).toBe(400);
-    expect((await call("POST", `/runs/${r.runId}/preview`, { kind: "fuse", first: 0, second: 1 }, p.id)).status).toBe(501);
+    expect((await call("POST", `/runs/${r.runId}/preview`, { kind: "fuse", first: 0, second: 1 }, p.id)).status).toBe(409);
     expect((await call("POST", `/runs/${r.runId}/preview`, { kind: "buy", slot: 9 }, p.id)).status).toBe(409);
     expect((await call("POST", `/runs/${r.runId}/preview`, { kind: "buy", slot: 0 })).status).toBe(401);
     expect(seen).toEqual([]);
@@ -143,6 +143,6 @@ describe("MVP API thin path", () => {
     const { json: r } = await call<RunView>("POST", "/runs", undefined, p.id);
     expect((await call("POST", `/runs/${r.runId}/decisions`, { kind: "fight" }, p.id)).status).toBe(409);
     expect((await call("POST", `/runs/${r.runId}/decisions`, { kind: "buy", slot: 9 }, p.id)).status).toBe(409);
-    expect((await call("POST", `/runs/${r.runId}/decisions`, { kind: "fuse", first: 0, second: 1 }, p.id)).status).toBe(501);
+    expect((await call("POST", `/runs/${r.runId}/decisions`, { kind: "fuse", first: 0, second: 1 }, p.id)).status).toBe(409);
   });
 });
