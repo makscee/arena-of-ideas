@@ -1,6 +1,19 @@
 // MVP storage seam (mission #574). Slice 1 keeps everything in memory behind
-// this interface; slice 4 swaps in SQLite without touching the routes.
-import type { BattleRecord, Champion, FusionDiscovery, Ghost, PlayerRef, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
+// this interface; slice 4 adds a SQLite store and main.ts passes it to
+// mvpRuntime, so the routes and the run engine never change.
+//
+// Rules for every slice that touches storage (several build in parallel):
+// - Slice 4 implements every method that exists when it merges, fusions
+//   included: slice 10 owns what is written there, not the table.
+// - A slice that adds a method implements it in every store class and adds
+//   its case to describeMvpStore (./store.contract.ts), which every class runs.
+// - SQL goes in server/src/mvp/sql/<slice>-<name>.sql, the slice two digits
+//   (04-runs.sql, 05-days.sql): CREATE TABLE / CREATE INDEX IF NOT EXISTS,
+//   applied in filename order at startup. There is no schema version counter;
+//   a slice adds its own file and never edits another slice's.
+// - Caches that aren't the game's record stay out of MvpStore (slice 10's name
+//   cache lives in ./fusions.ts).
+import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
 
 export interface MvpStore {
@@ -15,16 +28,20 @@ export interface MvpStore {
   ghosts(round: number, opts: { excludePlayerId: string; contentVersion: string }): Ghost[];
   putBattle(b: BattleRecord): void;
   battle(id: string): BattleRecord | undefined;
+  /** Stored battles, oldest first: of one kind, and/or fought at or after
+   * `since` (ISO). Slice 11's win and pick rates, slice 5's day. */
+  battles(opts?: { kind?: FightKind; since?: string }): BattleRecord[];
   // Discovered fusions, one per ordered pair. Slice 10 owns them and is the
   // only writer (the credit rule is on FusionDiscovery); everyone else reads.
   fusion(first: UnitId, second: UnitId): FusionDiscovery | undefined;
   /** Stores or replaces the pair's discovery (replacing is how a human claims a bot's pair). */
   putFusion(f: FusionDiscovery): void;
   fusions(): FusionDiscovery[];
-  // The day (contract.ts, "day, champion, rating"): slice 6 seeds day 1 with
-  // putChampion when champions() is empty; slice 5 owns every later
-  // putChampion and the rollover; slice 4's Crown fight writes the Slay and
-  // the run-end rating.
+  // The day (contract.ts, "day, champion, rating", says who writes what).
+  /** The latest day (highest seq); read it through RunDeps.today(). */
+  currentDay(): DayState | undefined;
+  /** Stores or replaces the day with this seq (slice 5; day.ts creates day 1). */
+  putDay(d: DayState): void;
   champion(seq: number): Champion | undefined;
   /** The champion of the latest day (highest seq). */
   currentChampion(): Champion | undefined;
@@ -33,6 +50,9 @@ export interface MvpStore {
   champions(): Champion[];
   addSlay(s: Slay): void;
   slays(seq: number): Slay[];
+  /** The playoff played by day `seq`'s slayers (slice 5 writes it at rollover). */
+  playoff(seq: number): PlayoffResult | undefined;
+  putPlayoff(p: PlayoffResult): void;
   rating(playerId: string): Rating | undefined;
   putRating(r: Rating): void;
 }
@@ -41,11 +61,13 @@ export class MemoryMvpStore implements MvpStore {
   private players = new Map<string, PlayerRef>();
   private runs = new Map<string, MvpRunState>();
   private ghostsByRound = new Map<number, Ghost[]>();
-  private battles = new Map<string, BattleRecord>();
+  private battlesById = new Map<string, BattleRecord>();
   private fusionsByPair = new Map<string, FusionDiscovery>();
   private championsBySeq = new Map<number, Champion>();
   private slaysBySeq = new Map<number, Slay[]>();
   private ratings = new Map<string, Rating>();
+  private daysBySeq = new Map<number, DayState>();
+  private playoffsBySeq = new Map<number, PlayoffResult>();
   addPlayer(p: PlayerRef): void { this.players.set(p.id, p); }
   player(id: string): PlayerRef | undefined { return this.players.get(id); }
   putRun(r: MvpRunState): void { this.runs.set(r.runId, r); }
@@ -62,8 +84,13 @@ export class MemoryMvpStore implements MvpStore {
   ghosts(round: number, opts: { excludePlayerId: string; contentVersion: string }): Ghost[] {
     return (this.ghostsByRound.get(round) ?? []).filter((g) => g.player.id !== opts.excludePlayerId && g.contentVersion === opts.contentVersion);
   }
-  putBattle(b: BattleRecord): void { this.battles.set(b.battleId, b); }
-  battle(id: string): BattleRecord | undefined { return this.battles.get(id); }
+  putBattle(b: BattleRecord): void { this.battlesById.set(b.battleId, b); }
+  battle(id: string): BattleRecord | undefined { return this.battlesById.get(id); }
+  battles(opts: { kind?: FightKind; since?: string } = {}): BattleRecord[] {
+    return [...this.battlesById.values()]
+      .filter((b) => (opts.kind === undefined || b.kind === opts.kind) && (opts.since === undefined || b.at >= opts.since))
+      .sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
+  }
   fusion(first: UnitId, second: UnitId): FusionDiscovery | undefined { return this.fusionsByPair.get(pairKey(first, second)); }
   putFusion(f: FusionDiscovery): void { this.fusionsByPair.set(pairKey(f.first, f.second), f); }
   fusions(): FusionDiscovery[] { return [...this.fusionsByPair.values()]; }
@@ -77,6 +104,14 @@ export class MemoryMvpStore implements MvpStore {
     this.slaysBySeq.set(s.seq, list);
   }
   slays(seq: number): Slay[] { return [...(this.slaysBySeq.get(seq) ?? [])]; }
+  playoff(seq: number): PlayoffResult | undefined { return this.playoffsBySeq.get(seq); }
+  putPlayoff(p: PlayoffResult): void { this.playoffsBySeq.set(p.seq, p); }
+  currentDay(): DayState | undefined {
+    let last: DayState | undefined;
+    for (const d of this.daysBySeq.values()) if (!last || d.seq > last.seq) last = d;
+    return last;
+  }
+  putDay(d: DayState): void { this.daysBySeq.set(d.seq, d); }
   rating(playerId: string): Rating | undefined { return this.ratings.get(playerId); }
   putRating(r: Rating): void { this.ratings.set(r.player.id, r); }
 }
