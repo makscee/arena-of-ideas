@@ -68,6 +68,9 @@ try {
       await page.getByTestId("fight").waitFor();
     }
     await page.getByTestId("fight").click();
+    // The battle screen (slice 9) comes first; its skip button leads to the result.
+    await page.locator('[data-testid="outcome"], [data-testid="battle-skip"]').first().waitFor({ timeout: 10_000 });
+    if (await page.getByTestId("battle-skip").isVisible()) await page.getByTestId("battle-skip").click();
     await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
     if (round === 1) { await shot("result"); await noHScroll("result"); }
     await page.getByTestId("continue").click();

@@ -1,32 +1,14 @@
-// Arena MVP phone client, slice 1: name → home → shop → fight → result.
-// Plain DOM; each screen is a function that renders into #app. Slices 8 and 9
-// replace the shop/result/battle screens; the API layer (api.ts) stays.
+// Arena MVP phone client, slice 1: name → home → shop → fight → battle →
+// result. Plain DOM; each screen is a function that renders into #app. Slice
+// 8 replaces the home/shop/result screens and slice 9 the battle screen
+// (screens/battle.ts); the API layer (api.ts) and ui/ stay.
 import type { BattleRecord, FightResult, HomeView, LineUnit, MvpContent, Offer, RunView, UnitContent } from "../src/mvp/contract";
 import { ApiError, api } from "./api";
+import { battleScreen } from "./screens/battle";
+import { card } from "./ui/card";
+import { app, button, h, show } from "./ui/dom";
 
-const app = document.getElementById("app")!;
 let content: MvpContent | null = null;
-
-function h<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, ...kids: (Node | string | null)[]): HTMLElementTagNameMap[K] {
-  const el = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) {
-    if (k === "class") el.className = v;
-    else el.setAttribute(k, v);
-  }
-  for (const kid of kids) if (kid !== null) el.append(kid);
-  return el;
-}
-
-function button(label: string, onClick: () => void, cls = "", testid = ""): HTMLButtonElement {
-  const b = h("button", { class: cls, ...(testid ? { "data-testid": testid } : {}) }, label);
-  b.addEventListener("click", onClick);
-  return b;
-}
-
-function show(...kids: Node[]): void {
-  app.replaceChildren(...kids);
-  window.scrollTo(0, 0);
-}
 
 function errorLine(): HTMLElement {
   return h("div", { class: "error", "data-testid": "error" });
@@ -57,17 +39,6 @@ async function guarded(err: HTMLElement, fn: () => Promise<void>): Promise<void>
 
 function unitOf(id: string): UnitContent | undefined {
   return content?.units.find((u) => u.id === id);
-}
-
-function card(u: { emoji: string; name: string; stats: { pwr: number; hp: number } }, side: "you" | "ghost", extra: (Node | null)[] = [], testid = ""): HTMLElement {
-  return h(
-    "div",
-    { class: `card ${side}`, ...(testid ? { "data-testid": testid } : {}) },
-    h("div", { class: "emoji" }, u.emoji),
-    h("div", { class: "name" }, u.name),
-    h("div", { class: "stats" }, h("span", { class: "p" }, `${u.stats.pwr}`), " / ", h("span", { class: "h" }, `${u.stats.hp}`)),
-    ...extra,
-  );
 }
 
 // ---------- name ----------
@@ -139,7 +110,7 @@ function shopScreen(run: RunView): void {
   const decide = (d: Parameters<typeof api.decide>[1]) =>
     guarded(err, async () => {
       const res = await api.decide(run.runId, d);
-      if (res.fight) return resultScreen(res.run, res.fight);
+      if (res.fight) return fightScreens(res.run, res.fight);
       shopScreen(res.run);
     });
 
@@ -217,10 +188,14 @@ function shopScreen(run: RunView): void {
   );
 }
 
-// ---------- result ----------
+// ---------- battle, then result ----------
 
-async function resultScreen(run: RunView, fight: FightResult): Promise<void> {
-  const battle: BattleRecord = await api.battle(fight.battleId);
+async function fightScreens(run: RunView, fight: FightResult): Promise<void> {
+  const battle = await api.battle(fight.battleId);
+  battleScreen({ run, fight, battle, onDone: () => resultScreen(run, fight, battle) });
+}
+
+function resultScreen(run: RunView, fight: FightResult, battle: BattleRecord): void {
   const end = battle.log.at(-1);
   const turns = end && end.type === "BattleEnd" ? end.turns : 0;
   const word = fight.outcome === "win" ? "VICTORY" : fight.outcome === "loss" ? "DEFEAT" : "DRAW";

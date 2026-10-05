@@ -5,6 +5,11 @@ Every slice codes against the contract in `src/mvp/contract.ts` (types and the
 HTTP API list); the thin run lives in `src/mvp/run.ts`, the server in
 `server/src/mvp/`.
 
+Files: `api.ts` is the typed API client; `main.ts` holds the name, home,
+shop and result screens (slice 8); `screens/battle.ts` is the battle viewer
+(slice 9; a stub that goes straight to the result until then); `ui/dom.ts`
+and `ui/card.ts` are the DOM helpers and the unit card both slices share.
+
 | Command | What it does |
 | --- | --- |
 | `npm run mvp:server` | API + built client on 127.0.0.1:8791 at `/arena/` |
