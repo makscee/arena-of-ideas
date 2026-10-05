@@ -166,8 +166,8 @@ describe("MVP API thin path", () => {
     const name = portmanteau(b!.name, a!.name);
     expect(done.json.run.line).toMatchObject([{ uid: "u2", kind: "fused", name, fusion: { first: b!.id, second: a!.id, name, discoveredBy: p } }]);
     expect(seen).toEqual(["decision fuse 2→1", `fuse u2 ${name} fuser 1`]);
-    // Recording the discovery is slice 10's hook; nothing records it yet.
-    expect((await call("GET", "/fusions")).json).toEqual([]);
+    // Slice 10's hook records the discovery; GET /fusions lists it.
+    expect((await call("GET", "/fusions")).json).toEqual([{ first: b!.id, second: a!.id, name, discoveredBy: p, discoveredAt: expect.any(String), nameSource: "fallback" }]);
   });
 
   it("keeps one day: runs start on it, /day and /home show it", async () => {

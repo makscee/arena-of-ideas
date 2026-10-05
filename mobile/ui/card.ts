@@ -6,6 +6,7 @@ import { describeAbility } from "../../src/describe";
 import type { BattleUnit, LineUnit, MvpContent, UnitContent, UnitForm } from "../../src/mvp/contract";
 import type { Stats } from "../../src/types";
 import { h } from "./dom";
+import { discoveredLine } from "./fusion";
 import { unitStatsLine, type UnitRates } from "./unit-stats";
 
 /** What a card needs to draw; LineUnit, BattleUnit and offers all fit. */
@@ -31,6 +32,7 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
     { class: `card ${o.side}`, ...(o.testid ? { "data-testid": o.testid } : {}) },
     h("div", { class: "emoji" }, u.emoji),
     h("div", { class: "name" }, u.name),
+    discoveredLine(u),
     h("div", { class: "stats" }, h("span", { class: "p" }, `${stats.pwr}`), " / ", h("span", { class: "h" }, `${stats.hp}`)),
     unitStatsLine(u.unitId, o.rates),
     ...(o.extra ?? []),
@@ -63,6 +65,7 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
     "div",
     { class: "stack", "data-testid": "unit-sheet" },
     h("h2", {}, `${u.emoji} ${u.name}`),
+    "forms" in u ? null : discoveredLine(u),
     "stats" in u ? h("div", { class: "num" }, `${u.stats.pwr} PWR / ${u.stats.hp} HP`) : h("div", { class: "num" }, `${u.base.pwr} PWR / ${u.base.hp} HP`),
     ...sheetForms(u, content).map(([label, form]) => h("div", {}, h("div", { class: "label" }, label), formText(form, content))),
     unitStatsLine(unitId, opts.rates),
