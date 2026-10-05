@@ -113,17 +113,21 @@ PL
 # bootout returns before the job is gone; bootstrap too early fails with EIO.
 launchctl bootout "gui/\$(id -u)/\$LABEL" 2>/dev/null || true
 for i in \$(seq 1 20); do launchctl print "gui/\$(id -u)/\$LABEL" >/dev/null 2>&1 || break; sleep 0.5; done
+# Still loaded after the wait: the old code keeps serving. Say so and stop,
+# never report a deploy that didn't happen.
+if launchctl print "gui/\$(id -u)/\$LABEL" >/dev/null 2>&1; then
+  echo "redeploy failed: \$LABEL didn't stop within 10s, so the old build still serves (nothing deployed; the DB stayed). Run the redeploy again." >&2
+  exit 1
+fi
 FAILED=
 if [ "$FRESH" = 1 ]; then
   # --fresh: the server is stopped; an empty DB on start, the bots reseed the
   # champion. If the move fails, the server starts on the old DB.
-  if launchctl print "gui/\$(id -u)/\$LABEL" >/dev/null 2>&1; then
-    FAILED="the server didn't stop, so its DB stayed"
-  elif ! scripts/mvp-db-aside.sh "\$DB"; then
+  if ! scripts/mvp-db-aside.sh "\$DB"; then
     FAILED="moving \$DB aside failed; the server starts on the old DB"
   fi
 fi
-launchctl print "gui/\$(id -u)/\$LABEL" >/dev/null 2>&1 || launchctl bootstrap "gui/\$(id -u)" "\$PLIST"
+launchctl bootstrap "gui/\$(id -u)" "\$PLIST"
 TS=/Applications/Tailscale.app/Contents/MacOS/Tailscale
 \$TS serve --bg --set-path /arena "http://127.0.0.1:$PORT" >/dev/null
 for i in \$(seq 1 30); do
