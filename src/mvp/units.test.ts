@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { contentFormProblems } from "./forms.js";
-import { mvpPool } from "./units.js";
+import { ROWS, mvpPool } from "./units.js";
 
 describe("MVP pool (slice 7)", () => {
   const pool = mvpPool();
@@ -32,5 +32,30 @@ describe("MVP pool chain discipline", () => {
         if (ONE_UNIT_EVENTS.has(on)) expect([u.id, f.who[0]!.kind]).not.toEqual([u.id, expect.stringMatching(/^all/)]);
       }
     }
+  });
+});
+
+describe("MVP pool targeting", () => {
+  // Who a selector reaches, for a given When: friend or foe.
+  const ENEMY_EVENTS = new Set(["enemyPoisoned", "enemyCursed", "enemyDies"]);
+  const side = (who: string, when: string) =>
+    ["front", "enemies", "random"].includes(who) || (who === "it" && ENEMY_EVENTS.has(when)) ? "foe" : "friend";
+  const HOSTILE = /^(Hit|Smite|Poison|Curse|Freeze|Silence)/;
+
+  it("helps allies and hurts enemies, in both forms", () => {
+    const wrong: string[] = [];
+    for (const row of ROWS) {
+      const forms = [
+        { who: row.who, does: [row.does] },
+        { who: row.awoken.who ?? row.who, does: row.awoken.does ?? [row.does] },
+      ];
+      for (const f of forms) {
+        for (const d of f.does) {
+          const want = HOSTILE.test(d) ? "foe" : d.startsWith("Call") || d.startsWith("Revive") ? side(f.who, row.when) : "friend";
+          if (side(f.who, row.when) !== want) wrong.push(`${row.name}: ${d} → ${f.who}`);
+        }
+      }
+    }
+    expect(wrong).toEqual([]);
   });
 });

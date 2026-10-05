@@ -151,7 +151,7 @@ export const ROWS: Row[] = [
   r("Injector",      "🧪", 2, 2, 5, "strike",     "front",   "Poison 1",    { does: ["Poison 2"] }),
   r("Venomancer",    "🐍", 2, 2, 7, "strike",     "front",   "Poison 2",    { does: ["Poison 2", "Curse 1"] }),
   r("Plague Rat",    "🐁", 2, 1, 5, "die",        "enemies", "Poison 2",    { does: ["Poison 3"] }),
-  r("Duelist",       "🤺", 2, 3, 7, "strike",     "front",   "Hit 2",       { does: ["Hit 2", "Shield 1"], who: "front" }),
+  r("Duelist",       "🤺", 2, 3, 7, "strike",     "front",   "Hit 2",       { does: ["Hit 3"] }),
   r("Berserker",     "🪓", 2, 3, 6, "hurt",       "me",      "Strength 1",  { does: ["Strength 2"] }),
   r("Emberling",     "🔥", 2, 3, 6, "start",      "enemies", "Hit 1",       { does: ["Hit 2"] }),
   r("Icebinder",     "🧊", 2, 2, 5, "start",      "random",  "Freeze 2",    { who: "enemies" }),
