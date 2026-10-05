@@ -316,7 +316,9 @@ export function whyILost(log: BattleEvent[], you: Side = "A", top = 3): LossChai
   const hp = new Map<string, number>();
   for (const e of log) if (e.type === "BattleStart") for (const s of ["A", "B"] as const) for (const r of e.teams[s]) hp.set(r.id, r.hp);
   const groups = new Map<string, LossChain>();
-  const keyOf = (t: Trace) => t.links.map((l) => `${l.unit}|${l.via}`).join(" ← ");
+  // By instance and how it reads: a unit's strikes and abilities are one row
+  // ("Medic"), its status ticks another ("Zealot (Poison)").
+  const keyOf = (t: Trace) => t.links.map((l) => `${l.unit}|${linkText(l)}`).join(" ← ");
   const add = (e: BattleEvent, dmg: number, heal: number, kill: boolean) => {
     const t = traceOf(log, e.id, name, sides);
     if (t.links[0]?.side !== them) return;
@@ -362,9 +364,13 @@ export function whyILost(log: BattleEvent[], you: Side = "A", top = 3): LossChai
   // Two instances with one name (two Medics) read the same: name the first by its slot.
   const seen = new Map<string, number>();
   for (const g of all) seen.set(g.text, (seen.get(g.text) ?? 0) + 1);
+  const summons = new Map<string, number>();
   for (const g of all) {
+    if (seen.get(g.text)! < 2) continue;
     const slot = slotOf(g.units[0]!);
-    if (seen.get(g.text)! > 1 && slot !== null) g.text = g.text.replace(g.names[0]!, `${g.names[0]} #${slot}`);
+    const k = summons.get(g.text) ?? 0;
+    if (slot === null) summons.set(g.text, k + 1);
+    g.text = g.text.replace(g.names[0]!, slot !== null ? `${g.names[0]} #${slot}` : `${g.names[0]} (summon ${k + 1})`);
   }
   return all.sort((a, b) => b.impact - a.impact || b.kills - a.kills).slice(0, top);
 }

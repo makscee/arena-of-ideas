@@ -136,6 +136,14 @@ describe("why I lost", () => {
       ["Gunner #3", "B3:Gunner"],
     ]);
     for (const c of chains) expect(c.hits + c.heals).toBe(c.times);
+    // one row per instance and wording: no two rows read the same
+    expect(new Set(chains.map((c) => c.text)).size).toBe(chains.length);
+  });
+
+  test("a unit's strikes and its ability make one row, not two that read the same", () => {
+    const log = run([dummy("Squire", 8, 1), dummy("Page", 6, 1)], [dummy("Dummy", 30, 2), Medic]);
+    const chains = whyILost(log, "A", 10);
+    expect(new Set(chains.map((c) => c.text)).size).toBe(chains.length);
   });
 
   test("your own units' acts never show up as enemy chains", () => {
