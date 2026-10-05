@@ -99,7 +99,7 @@ export function createMvpApp(deps: MvpDeps): Hono {
   api.post("/runs", (c) => {
     const p = playerOf(c);
     if (!p) return bad(c, 401, `unknown player: send ${PLAYER_HEADER} from POST /players`);
-    const run = initMvpRun({ runId: randomUUID(), player: p, seed: seed(), content });
+    const run = initMvpRun({ runId: randomUUID(), player: p, seed: seed(), content, day: daySeq(), startedAt: now().toISOString() });
     store.putRun(run);
     return c.json(runView(run));
   });
@@ -135,6 +135,7 @@ export function createMvpApp(deps: MvpDeps): Hono {
         ctx.fight = { ghost, battleId: randomUUID(), battleSeed: seed() };
       }
       const step = applyMvpDecision(run, d, content, ctx);
+      if (step.state.phase === "over") step.state.endedAt = now().toISOString();
       store.putRun(step.state);
       if (step.battle) store.putBattle(step.battle);
       const res: DecisionResponse = { run: runView(step.state), ...(step.fight ? { fight: step.fight } : {}) };

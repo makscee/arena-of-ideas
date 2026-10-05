@@ -45,7 +45,7 @@ for (let i = 0; i < runs; i++) {
     player = (await call<PlayerRef>("POST", "/players", { name: `bot-${i % 5}` })).id;
     let run = await call<RunView>("POST", "/runs");
     let guard = 0;
-    while (run.phase === "shop" && guard++ < 500) {
+    while (run.phase !== "over" && guard++ < 500) {
       // Buy what the gold allows (prefer copies of what's on the line), reroll once if broke on offers, fight.
       for (;;) {
         const owned = new Set(run.line.map((u) => u.unitId));

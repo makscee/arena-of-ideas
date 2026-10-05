@@ -56,7 +56,9 @@ function rollOffers(s: MvpRunState, content: MvpContent): void {
   });
 }
 
-export function initMvpRun(args: { runId: string; player: PlayerRef; seed: number; content: MvpContent; rules?: MvpRules }): MvpRunState {
+/** A new run. The kernel has no clock: the caller passes the day (DayView.seq)
+ * and the start time. */
+export function initMvpRun(args: { runId: string; player: PlayerRef; seed: number; content: MvpContent; day: number; startedAt: string; rules?: MvpRules }): MvpRunState {
   const rules = args.rules ?? MVP_RULES;
   const s: MvpRunState = {
     runId: args.runId,
@@ -72,6 +74,8 @@ export function initMvpRun(args: { runId: string; player: PlayerRef; seed: numbe
     offers: [],
     nextOpponent: null,
     fights: [],
+    day: args.day,
+    startedAt: args.startedAt,
     seed: args.seed >>> 0,
     rng: args.seed >>> 0,
     nextUid: 1,
@@ -206,6 +210,7 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       const record: BattleRecord = {
         battleId,
         runId: s.runId,
+        player: s.player,
         seed: battleSeed,
         contentVersion: s.contentVersion,
         kind: "round",
@@ -246,7 +251,7 @@ export function runView(s: MvpRunState): RunView {
  * `createdAt` comes from the caller (the kernel has no clock). */
 export function synthGhost(args: { content: MvpContent; round: number; seed: number; ghostId: string; createdAt: string; rules?: MvpRules }): Ghost {
   const rules = args.rules ?? MVP_RULES;
-  const s = initMvpRun({ runId: `bot-${args.ghostId}`, player: { id: "bot", name: "bot", bot: true }, seed: args.seed, content: args.content, rules });
+  const s = initMvpRun({ runId: `bot-${args.ghostId}`, player: { id: "bot", name: "bot", bot: true }, seed: args.seed, content: args.content, day: 0, startedAt: args.createdAt, rules });
   s.round = args.round;
   const size = Math.min(rules.lineSize, 1 + Math.floor(args.round / 2));
   const open = openUnits(args.content, rules, args.round);

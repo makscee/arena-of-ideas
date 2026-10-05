@@ -199,7 +199,10 @@ export interface Ghost {
   createdAt: string;
 }
 
-export type FightKind = "round" | "crown";
+/** round: a shop round's ghost. crown: the run's last fight, against today's
+ * champion (slice 4). playoff: a day-end round-robin game between two
+ * slayers' teams, outside any run (slice 5). */
+export type FightKind = "round" | "crown" | "playoff";
 export type Outcome = "win" | "loss" | "draw";
 
 export interface FightResult {
@@ -221,11 +224,19 @@ export interface BattleUnit {
   fused: boolean;
 }
 
-/** Full battle record. Side A is always the run's own line. Every event
- * carries `causedBy`, so tap-to-trace is a walk up `log` (slice 9). */
+/** Full battle record. Side A is the run's own line, owned by `player`; side
+ * B is `opponent`'s. Every event carries `causedBy`, so tap-to-trace is a walk
+ * up `log` (slice 9).
+ *
+ * A playoff game (kind "playoff", slice 5) belongs to no run: `runId` is null,
+ * `round` is 0, side A is the pairing's first entrant (`player`) and side B
+ * the second (`opponent`). */
 export interface BattleRecord {
   battleId: string;
-  runId: string;
+  /** The run that fought it; null for a playoff game. */
+  runId: string | null;
+  /** Side A's owner. */
+  player: PlayerRef;
   seed: number;
   contentVersion: string;
   kind: FightKind;
@@ -239,7 +250,12 @@ export interface BattleRecord {
 
 // ---------- run ----------
 
-export type RunPhase = "shop" | "over";
+/** shop: buy, sell, reroll, reorder, fuse, then fight the round's ghost.
+ * crown: after the last round with hearts left; offers [], gold 0, the only
+ * decision is { kind: "fight" } and nextOpponent is today's champion. Slice 4
+ * implements it; until then the run ends after the last round ("no-champion").
+ * over: nothing more to do; endedBy says why. */
+export type RunPhase = "shop" | "crown" | "over";
 export type RunEndReason = "out-of-hearts" | "crown-won" | "crown-lost" | "no-champion";
 
 export interface RunView {
@@ -255,9 +271,18 @@ export interface RunView {
   losses: number;
   line: LineUnit[];
   offers: Offer[];
-  /** Who the next fight is against, when known before fighting (may be null). */
+  /** Who the next fight is against. Slice 4 picks the ghost at round start,
+   * keeps its ghostId in the run state, and the fight uses that ghost; in the
+   * crown phase it is the champion. Null until then (today the opponent is
+   * picked when the fight starts). */
   nextOpponent: Pick<Ghost, "player" | "round"> | null;
   fights: FightResult[];
+  /** The day (DayView.seq) the run started on. */
+  day: number;
+  /** ISO time the run started. */
+  startedAt: string;
+  /** ISO time the run ended; the server stamps it. */
+  endedAt?: string;
   endedBy?: RunEndReason;
   /** Present once the run is over (slice 4 computes it; slice 1 leaves it null). */
   rating?: RatingChange | null;
@@ -323,6 +348,10 @@ export interface PlayoffResult {
   winner: PlayerRef | null;
   /** Round-robin battle ids, for the viewer. */
   battleIds: string[];
+  /** The round-robin table, best first. */
+  standings: { player: PlayerRef; wins: number; draws: number; losses: number }[];
+  /** Every game, in play order; battleId opens it in the viewer. */
+  games: { a: PlayerRef; b: PlayerRef; battleId: string; winner: Side | "draw" }[];
 }
 
 export interface Rating {

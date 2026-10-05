@@ -23,12 +23,14 @@ describe("MVP API thin path", () => {
     const { json: p } = await call<PlayerRef>("POST", "/players", { name: "Maks" });
     expect(p.name).toBe("Maks");
     const { json: run } = await call<RunView>("POST", "/runs", undefined, p.id);
-    expect(run).toMatchObject({ round: 1, hearts: 5, gold: 10, phase: "shop" });
+    expect(run).toMatchObject({ round: 1, hearts: 5, gold: 10, phase: "shop", day: 1 });
+    expect(Date.parse(run.startedAt)).not.toBeNaN();
+    expect(run.endedAt).toBeUndefined();
     expect(run.offers).toHaveLength(5);
 
     let cur = run;
     let fights = 0;
-    while (cur.phase === "shop") {
+    while (cur.phase !== "over") {
       while (cur.gold >= 3 && cur.offers.length > 0) {
         const r = await call<DecisionResponse>("POST", `/runs/${cur.runId}/decisions`, { kind: "buy", slot: 0 }, p.id);
         if (r.status !== 200) break; // line full
@@ -39,12 +41,14 @@ describe("MVP API thin path", () => {
       expect(f.json.fight?.outcome).toMatch(/win|loss|draw/);
       const b = await call<BattleRecord>("GET", `/battles/${f.json.fight!.battleId}`);
       expect(b.json.log.at(-1)?.type).toBe("BattleEnd");
+      expect(b.json.player.id).toBe(p.id);
       cur = f.json.run;
       fights++;
     }
     expect(fights).toBeGreaterThan(0);
     expect(fights).toBeLessThanOrEqual(12);
     expect(cur.endedBy).toMatch(/out-of-hearts|no-champion/);
+    expect(Date.parse(cur.endedAt!)).not.toBeNaN();
     const home = await call<HomeView>("GET", "/home", undefined, p.id);
     expect(home.json.activeRunId).toBeNull();
   });

@@ -50,7 +50,7 @@ export class MemoryMvpStore implements MvpStore {
   putRun(r: MvpRunState): void { this.runs.set(r.runId, r); }
   run(id: string): MvpRunState | undefined { return this.runs.get(id); }
   activeRun(playerId: string): MvpRunState | undefined {
-    for (const r of this.runs.values()) if (r.player.id === playerId && r.phase === "shop") return r;
+    for (const r of this.runs.values()) if (r.player.id === playerId && r.phase !== "over") return r;
     return undefined;
   }
   addGhost(g: Ghost): void {
