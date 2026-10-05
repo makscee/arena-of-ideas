@@ -134,8 +134,9 @@ export interface FuseContext {
  * copied into the fused LineUnit, and so into runs, ghosts, champions and
  * battles, which therefore always agree with the store. A human never waits:
  * with no name ready, the fuse gets the portmanteau. A bot fuses a pair only
- * once its name is ready, or once the model has failed on it. The day-1
- * champion's fusions are stored as bot discoveries.
+ * once its name is ready, or once the model has finally failed on it: bots
+ * run in the background, so a bot waits for the name (asked at once). The
+ * day-1 champion's fusions are stored as bot discoveries, named the same way.
  *
  * Credit rule: a bot's fusion stores the pair with discoveredBy null; the
  * first human to fuse a pair whose discoveredBy is null claims it (the name

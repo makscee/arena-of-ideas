@@ -15,23 +15,23 @@ function world(deps: Partial<MvpDeps> = {}) {
 const pool = (rt: ReturnType<typeof world>, round: number) => rt.store.ghosts(round, { excludePlayerId: "", contentVersion: rt.content.version });
 
 describe("MVP bots and world (slice 6)", () => {
-  it("seeds a strong bot team as today's champion on a fresh store, once", () => {
+  it("seeds a strong bot team as today's champion on a fresh store, once", async () => {
     const rt = world();
-    const champ = seedChampion(rt)!;
+    const champ = (await seedChampion(rt))!;
     expect(champ).toMatchObject({ seq: rt.today().seq, day: rt.today().day, contentVersion: rt.content.version, player: { bot: true } });
     expect(champ.line.length).toBe(rt.rules.lineSize);
     expect(rt.store.currentChampion()).toEqual(champ);
     // The search left nothing behind: no ghosts, runs or battles on the real store.
     expect(pool(rt, 1)).toEqual([]);
     expect(rt.store.battles()).toEqual([]);
-    expect(seedChampion(rt)).toBeUndefined();
+    expect(await seedChampion(rt)).toBeUndefined();
   });
 
-  it("stores the champion's fusions as bot discoveries, so a later fuse of the pair shows the same name", () => {
+  it("stores the champion's fusions as bot discoveries, so a later fuse of the pair shows the same name", async () => {
     for (let seed = 1; seed <= 6; seed++) {
       let s = seed;
       const rt = world({ seed: () => (s = (s * 1103515245 + 12345) >>> 0) });
-      const champ = seedChampion(rt)!;
+      const champ = (await seedChampion(rt))!;
       const fused = champ.line.filter((u) => u.fusion);
       for (const u of fused) {
         expect(rt.store.fusion(u.fusion!.first, u.fusion!.second)).toMatchObject({ name: u.name, discoveredBy: null });
@@ -42,19 +42,19 @@ describe("MVP bots and world (slice 6)", () => {
     throw new Error("no seeded champion held a fusion");
   }, 30_000);
 
-  it("replaces a champion built with other content, for today's seq", () => {
+  it("replaces a champion built with other content, for today's seq", async () => {
     const rt = world();
     const stale: Champion = { seq: rt.today().seq, day: rt.today().day, player: { id: "b", name: "old", bot: true }, line: [], since: "t", contentVersion: "old" };
     rt.store.putChampion(stale);
-    const champ = seedChampion(rt)!;
+    const champ = (await seedChampion(rt))!;
     expect(champ.contentVersion).toBe(rt.content.version);
     expect(rt.store.champions()).toHaveLength(1);
   });
 
-  it("fills every round's ghost pool with bot runs, and stops there", () => {
+  it("fills every round's ghost pool with bot runs, and stops there", async () => {
     for (const store of [undefined, new SqliteMvpStore(":memory:")]) {
       const rt = world(store ? { store } : {});
-      seedChampion(rt);
+      await seedChampion(rt);
       expect(thinRounds(rt)).toHaveLength(rt.rules.rounds);
       // A smaller target keeps the test quick; the job uses BOT_TARGET.
       const target = 8;
@@ -84,10 +84,10 @@ describe("MVP bots and world (slice 6)", () => {
     expect(thinRounds(retuned)).toHaveLength(rt.rules.rounds);
   });
 
-  it("the bot only makes decisions the rules accept, and fights when nothing else is worth doing", () => {
+  it("the bot only makes decisions the rules accept, and fights when nothing else is worth doing", async () => {
     const rt = world();
     // playBotRun goes through decide(), which throws on a refused decision.
-    seedChampion(rt);
+    await seedChampion(rt);
     // Whole runs, the Crown included; no rating for a bot.
     for (let i = 0; i < 20; i++) {
       const run = playBotRun(rt);
@@ -118,7 +118,7 @@ describe("MVP bots and world (slice 6)", () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     const stop = botWorld(rt);
     try {
-      expect(rt.store.currentChampion()?.contentVersion).toBe(rt.content.version);
+      await vi.waitFor(() => expect(rt.store.currentChampion()?.contentVersion).toBe(rt.content.version), { timeout: 10_000, interval: 20 });
       await vi.waitFor(() => expect(thinRounds(rt)).toEqual([]), { timeout: 20_000, interval: 50 });
       expect(pool(rt, rt.rules.rounds).length).toBeGreaterThanOrEqual(BOT_TARGET);
     } finally {

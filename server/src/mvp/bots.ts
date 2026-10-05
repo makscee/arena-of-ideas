@@ -10,18 +10,21 @@
 //   included (slice 4 writes no Slay and no rating for a bot, so only players
 //   slay and change the champion), and never claim fusion credit (slice 10's
 //   namer gives a bot's pair discoveredBy null). A bot fuses a pair only once
-//   slice 10 has its name ready (fusionNameReady), so a bot never fixes the
-//   portmanteau while the model's name is coming.
+//   slice 10 has its name ready (fusionNameReady): the top-up's bots run in
+//   the background and wait for the name (awaitFusionName, bounded by the
+//   model's final failure), so a bot never fixes the portmanteau while the
+//   model's name is coming, and the pool still holds fusions.
 //   The pool is bounded: bots only fill a round below the target, so they add
 //   at most BOT_TARGET ghosts per round and content version.
 // - botWorld: the job (./jobs.ts) that seeds, tops up at start and every
-//   BOT_TOPUP_MS, a few runs per tick so requests keep flowing.
+//   BOT_TOPUP_MS, a few runs per tick so requests keep flowing. The seed waits
+//   for the model's names of the champion's fusions before it writes them.
 import { randomUUID } from "node:crypto";
 import type { Champion, Decision, LineUnit, MvpContent, MvpRules, PlayerRef, RunView } from "../../../src/mvp/contract.js";
 import { fightLines } from "../../../src/mvp/fight.js";
 import { fuseCheck, mergeTarget } from "../../../src/mvp/forms.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
-import { fusionNameReady, recordFusion } from "./fusions.js";
+import { awaitFusionName, fusionNameReady, recordFusion } from "./fusions.js";
 import { decide, startRun, type RunDeps } from "./runs.js";
 import type { MvpJob, MvpRuntime } from "./runtime.js";
 import { MemoryMvpStore } from "./store.js";
@@ -98,7 +101,9 @@ export function botDecision(
 }
 
 /** Plays one whole bot run through startRun and decide on `deps`, the Crown
- * included, until it is over. Returns the ended run. */
+ * included, until it is over, never waiting: a pair whose name isn't ready is
+ * not fused. For stores with no namer (the champion search's scratch store,
+ * tests); botWorld plays playBotRunWaiting. Returns the ended run. */
 export function playBotRun(deps: RunDeps, player: PlayerRef = botPlayer(deps.seed())): MvpRunState {
   deps.store.addPlayer(player);
   let run = startRun(deps, player);
@@ -111,6 +116,36 @@ export function playBotRun(deps: RunDeps, player: PlayerRef = botPlayer(deps.see
       rerolled = 0;
     }
     const d = botDecision(run, deps.content, deps.rules, rerolled, ready);
+    if (d.kind === "reroll") rerolled++;
+    decide(deps, run, d);
+    run = deps.store.run(run.runId)!;
+  }
+  return run;
+}
+
+/** playBotRun for the background: a bot that wants to fuse a pair whose name
+ * isn't ready waits for it (awaitFusionName), so it fuses as often as with no
+ * model. Between waits it runs synchronously. Stops early, leaving the run
+ * open, once `stopped()`. Returns the run as it ended. */
+export async function playBotRunWaiting(deps: RunDeps, stopped: () => boolean = () => false, player: PlayerRef = botPlayer(deps.seed())): Promise<MvpRunState> {
+  deps.store.addPlayer(player);
+  let run = startRun(deps, player);
+  let round = run.round;
+  let rerolled = 0;
+  for (let guard = 0; run.phase !== "over" && guard < 1000 && !stopped(); guard++) {
+    if (run.round !== round) {
+      round = run.round;
+      rerolled = 0;
+    }
+    const d = botDecision(run, deps.content, deps.rules, rerolled);
+    if (d.kind === "fuse") {
+      const [first, second] = [run.line[d.first]!, run.line[d.second]!];
+      if (!fusionNameReady(deps.store, first.unitId, second.unitId)) {
+        await awaitFusionName(deps.store, first.unitId, second.unitId);
+        run = deps.store.run(run.runId)!;
+        continue;
+      }
+    }
     if (d.kind === "reroll") rerolled++;
     decide(deps, run, d);
     run = deps.store.run(run.runId)!;
@@ -182,19 +217,28 @@ export function strongBotLine(rt: RunDeps): { player: PlayerRef; line: LineUnit[
 
 /** Writes a strong bot team as the champion for today().seq when there is no
  * champion or it was built with other content. Its fusions are stored as bot
- * discoveries (slice 10's recordFusion, discoveredBy null): a pair already
- * stored keeps its name, and the champion's unit takes it, so a human's later
- * fuse of the pair shows the same name and claims the credit. Returns the one
- * written, or undefined when the current one stays. */
-export function seedChampion(rt: RunDeps): Champion | undefined {
+ * discoveries (slice 10's recordFusion, discoveredBy null), each once its name
+ * is ready (awaitFusionName: the model's, or the portmanteau after the model's
+ * final failure); a pair already stored keeps its name, and the champion's
+ * unit takes it, so a human's later fuse of the pair shows the same name and
+ * claims the credit. Resolves to the one written, or undefined when the
+ * current one stays. */
+export async function seedChampion(rt: RunDeps): Promise<Champion | undefined> {
   const cur = rt.store.currentChampion();
   if (cur && cur.contentVersion === rt.content.version) return undefined;
-  const day = rt.today();
   const { player, line } = strongBotLine(rt);
+  await Promise.all(line.map((u) => (u.fusion ? awaitFusionName(rt.store, u.fusion.first, u.fusion.second) : undefined)));
+  // Checked again: a champion may have been written while the names came.
+  const now = rt.store.currentChampion();
+  if (now && now.contentVersion === rt.content.version) return undefined;
+  const day = rt.today();
   const at = rt.now().toISOString();
+  const unit = (id: string) => rt.content.units.find((c) => c.id === id)!;
   for (const u of line) {
     if (!u.fusion) continue;
-    const stored = recordFusion(rt.store, u.fusion, at);
+    // The search named it on a scratch store: the real store's name now.
+    const name = rt.peekFusionName(unit(u.fusion.first), unit(u.fusion.second), player).name;
+    const stored = recordFusion(rt.store, { ...u.fusion, name }, at);
     u.name = stored.name;
     u.fusion = { ...u.fusion, name: stored.name, discoveredBy: stored.discoveredBy };
   }
@@ -213,47 +257,39 @@ export function seedChampion(rt: RunDeps): Champion | undefined {
 
 // ---------- the job ----------
 
-/** Seeds the champion now, tops the pool up at once and every BOT_TOPUP_MS,
- * RUNS_PER_TURN bot runs per event-loop turn. Returns the stop function. */
+/** Seeds the champion first, then tops the pool up at once and every
+ * BOT_TOPUP_MS, one bot run after another, yielding to the event loop every
+ * RUNS_PER_TURN runs and whenever a bot waits for a fusion's name. Returns the
+ * stop function. */
 export const botWorld: MvpJob = (rt: MvpRuntime) => {
   let stopped = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
-  let busy = false;
   const log = (msg: string) => console.log(`[bots] ${msg}`);
-  try {
-    const champ = seedChampion(rt);
-    if (champ) log(`champion for day ${champ.seq}: ${champ.player.name} (${champ.line.map((u) => u.name).join(", ")})`);
-  } catch (e) {
-    console.error(`[bots] champion seed failed: ${(e as Error).message}`);
-  }
-  const tick = () => {
-    if (stopped || busy) return;
-    busy = true;
+  const isStopped = () => stopped;
+  const yieldTurn = () => new Promise<void>((resolve) => setImmediate(resolve));
+  const topUp = async () => {
     let runs = 0;
-    const turn = () => {
-      if (stopped) return;
-      try {
-        for (let i = 0; i < RUNS_PER_TURN; i++) {
-          if (runs >= MAX_RUNS_PER_TOPUP || thinRounds(rt).length === 0) {
-            if (runs > 0) log(`topped up: ${runs} bot runs`);
-            return done();
-          }
-          playBotRun(rt);
-          runs++;
-        }
-      } catch (e) {
-        console.error(`[bots] top-up failed: ${(e as Error).message}`);
-        return done();
+    try {
+      while (!stopped && runs < MAX_RUNS_PER_TOPUP && thinRounds(rt).length > 0) {
+        await playBotRunWaiting(rt, isStopped);
+        if (++runs % RUNS_PER_TURN === 0) await yieldTurn();
       }
-      timer = setTimeout(turn, 0);
-    };
-    const done = () => {
-      busy = false;
-      if (!stopped) timer = setTimeout(tick, BOT_TOPUP_MS);
-    };
-    turn();
+      if (runs > 0 && !stopped) log(`topped up: ${runs} bot runs`);
+    } catch (e) {
+      console.error(`[bots] top-up failed: ${(e as Error).message}`);
+    }
+    if (!stopped) timer = setTimeout(() => void topUp(), BOT_TOPUP_MS);
   };
-  timer = setTimeout(tick, 0);
+  const start = async () => {
+    try {
+      const champ = await seedChampion(rt);
+      if (champ) log(`champion for day ${champ.seq}: ${champ.player.name} (${champ.line.map((u) => u.name).join(", ")})`);
+    } catch (e) {
+      console.error(`[bots] champion seed failed: ${(e as Error).message}`);
+    }
+    if (!stopped) await topUp();
+  };
+  void start();
   return () => {
     stopped = true;
     if (timer) clearTimeout(timer);

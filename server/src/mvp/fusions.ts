@@ -12,8 +12,12 @@
 // - The first fuse stores the prepared model name, else the portmanteau
 //   ("fallback"), for good; onFuse records it (recordFusion).
 // - A bot fuses a pair only once fusionNameReady: its name stored or
-//   prepared, or the model gave up on it. A model that is down, slow or times
-//   out (a 5xx included) is asked again with a backoff, MODEL_FAILURES times.
+//   prepared, or the model gave up on it. Bots run in the background, so a
+//   bot that wants a pair whose name isn't ready waits for it
+//   (awaitFusionName), and the pair is asked next, ahead of every queue. A model that is down, slow
+//   or times out (a 5xx included) is asked again with a backoff,
+//   MODEL_FAILURES times; after MODEL_FAILURES failed asks in a row, on any
+//   pairs, the model counts as down and no bot waits until it answers again.
 import { fuseCheck } from "../../../src/mvp/forms.js";
 import type { FuseContext, FusionDiscovery, FusionParts, PlayerRef, UnitContent, UnitId } from "../../../src/mvp/contract.js";
 import type { RunDeps, RunHooks } from "./runs.js";
@@ -27,23 +31,37 @@ export type NameFusion = (first: UnitContent, second: UnitContent, by: PlayerRef
 export type ModelNamer = (first: UnitContent, second: UnitContent) => Promise<string | null>;
 
 /** The deterministic fallback name: the front of first's name and the back of
- * second's ("Brawler" + "Medic" → "Brawdic"). The only portmanteau. */
-export function portmanteau(first: string, second: string): string {
+ * second's ("Brawler" + "Medic" → "Brawdic"). The only portmanteau. It is
+ * never a part's name or one of `taken` (the base units' names): the split
+ * moves until it isn't ("Rose" + "Rot" → "Rorot", not "Rot"), and as a last
+ * resort both names are joined whole. */
+export function portmanteau(first: string, second: string, taken: readonly string[] = []): string {
   const a = first.replace(/\s+/g, "");
   const b = second.replace(/\s+/g, "").toLowerCase();
-  const head = a.slice(0, Math.ceil(a.length / 2));
-  const tail = b.slice(Math.floor(b.length / 2));
-  return head.slice(-1).toLowerCase() === tail[0] ? head + tail.slice(1) : head + tail;
+  const avoid = new Set([first, second, ...taken].map(fold));
+  const join = (head: string, tail: string) => (head.slice(-1).toLowerCase() === tail[0] ? head + tail.slice(1) : head + tail);
+  const h0 = Math.ceil(a.length / 2);
+  const t0 = Math.floor(b.length / 2);
+  for (let dh = 0; dh < a.length; dh++)
+    for (const h of [h0 + dh, h0 - dh]) {
+      if (h < 1 || h > a.length) continue;
+      for (const t of [t0, t0 - 1, t0 + 1]) {
+        if (t < 0 || t >= b.length) continue;
+        const name = join(a.slice(0, h), b.slice(t));
+        if (!avoid.has(fold(name))) return name;
+      }
+    }
+  return a + b;
 }
 
 /** The stored name, else the portmanteau, with the credit by FusionDiscovery's
  * rule (the stored discoverer, else `by` unless it is a bot). It only reads:
  * it never records a discovery or calls a model. */
-export function storedOrPortmanteau(store: MvpStore): NameFusion {
+export function storedOrPortmanteau(store: MvpStore, unitNames: readonly string[] = []): NameFusion {
   return (first, second, by) => {
     const known = store.fusion(first.id, second.id);
     return {
-      name: known?.name ?? portmanteau(first.name, second.name),
+      name: known?.name ?? portmanteau(first.name, second.name, unitNames),
       discoveredBy: known?.discoveredBy ?? (by.bot ? null : by),
     };
   };
@@ -54,8 +72,12 @@ export function storedOrPortmanteau(store: MvpStore): NameFusion {
 // names), plus words that pretend to be official. Every list is matched after
 // folding: accents stripped, lowercase, only letters and digits kept.
 //
-// Stems: distinctive enough to match anywhere inside the folded name, so glued
-// and inflected forms are caught too ("Darthvader", "Gandalfs", "Hogwart").
+// Stems: distinctive enough to match anywhere inside one word of the name, so
+// glued and inflected forms are caught too ("Darthvader", "Gandalfs",
+// "Hogwart", "Lordvader"), once the ORDINARY words that contain them are taken
+// out ("Invader", "Marionette"). A stem ending in "man" matches only at the end
+// of a word ("Lordbatman", not "Batmancer"). Across words a stem matches only
+// whole words joined ("Spider Man", not "Spider Mantis" or "Dart Hawk").
 const BLOCKED_STEMS = [
   // games
   "pikachu", "pokemon", "charizard", "mewtwo", "luigi", "bowser", "yoshi", "wario", "zelda", "ganondorf",
@@ -80,17 +102,23 @@ const BLOCKED_STEMS = [
   "spongebob", "squidward", "garfield", "snoopy", "scooby", "simpson", "smurf", "barbie", "pinkie",
   "atreides", "harkonnen", "khaleesi", "targaryen", "lannister", "westeros", "dothraki",
   // pretending to be official, or spam
+  "vader", "yoda", "jedi", "snape", "dobby", "pudge", "zerg", "goku", "optimus", "hulk",
+  "mario", "thorhammer", "thorshammer",
   "moderator", "http", "www",
 ];
+// Ordinary words that contain a stem: taken out of a word before stems match.
+const ORDINARY = ["invader", "evader", "pervader", "hulking", "hulky", "marionette", "mariology", "mariolat", "marion", "snaper"];
 // Words: short or ordinary enough that a stem would hit real words ("Thorn",
 // "Invader", "Marionette", "Smuggler", "Scamper"), so they match one word of
 // the name, also with a plural or possessive ending ("Marios", "Thor's").
 const BLOCKED_WORDS = [
-  "mario", "ganon", "sonic", "croft", "thrall", "uther", "gul", "swindle", "longshot", "elise", "reno", "brann", "kael", "gnoll",
-  "dota", "pudge", "invoker", "ahri", "garen", "zerg", "zergling", "terran", "fallout", "tifa", "papyrus",
-  "vader", "yoda", "jedi", "sith", "potter", "snape", "dobby", "muggle",
-  "elsa", "olaf", "nemo", "dory", "fiona", "minnie", "joker", "hulk", "thor", "loki", "avenger", "marvel",
-  "goku", "zoro", "optimus", "bart", "lego", "barney", "scam", "developer", "administrator",
+  "ganon", "croft", "thrall", "uther", "gul", "longshot", "elise", "reno", "brann", "kael", "gnoll",
+  "dota", "invoker", "ahri", "garen", "terran", "fallout", "tifa", "papyrus",
+  "sith", "potter", "muggle",
+  "elsa", "olaf", "nemo", "dory", "fiona", "minnie", "thor", "loki", "avenger", "marvel",
+  "zoro", "bart", "lego", "barney", "scam", "developer", "administrator",
+  // the prompt forbids them: the model's way of not naming
+  "fusion", "fuse", "fused",
   // stems that hit ordinary words: Carambola, Adminicle, Hexmender, Bambino,
   // Benzothiazole, Twitcher, Pigroot, Fluffy, Revegetate, Magnetodynamo,
   // Hagride, Rhodora, Malandrous, Simball, Sleeveen, Exterminator,
@@ -100,6 +128,7 @@ const BLOCKED_WORDS = [
 ];
 // Ordinary words that are also franchise names: blocked only as the whole name.
 const BLOCKED_WHOLE = [
+  "sonic", "joker", "swindle",
   "link", "tails", "knuckles", "donkey", "kong", "cloud", "kingdom", "solid", "snake", "resident", "nemesis", "hollow", "knight", "hornet", "sans",
   "souls", "league", "legends", "peach", "wonder", "flash", "spider", "rocket", "venom", "bond", "solo", "sailor", "homer", "ken", "steve", "stark",
   "harley", "donald", "goofy", "frozen", "halo", "doom", "dune", "lara", "elden", "rocky", "zed", "jinx", "tracer", "creeper", "harry", "tetris",
@@ -118,11 +147,22 @@ function stripAccents(s: string): string {
 
 /** True when a name (or one of its words) is on the blocklist. */
 export function isBlockedName(name: string): boolean {
-  const whole = fold(name);
-  if (BLOCKED_WHOLE.includes(whole) || BLOCKED_STEMS.some((stem) => whole.includes(stem))) return true;
+  if (BLOCKED_WHOLE.includes(fold(name))) return true;
   // CamelCase is split first, so glued words match too ("LordVader", "SuperMario").
   const words = name.replace(/([a-z])([A-Z])/g, "$1 $2").split(/[\s'’-]+/).map(fold).filter(Boolean);
-  return words.some((w) => BLOCKED_WORDS.some((b) => WORD_ENDINGS.some((end) => w === b + end)));
+  const named = (w: string, b: string) => WORD_ENDINGS.some((end) => w === b + end);
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i]!;
+    if (BLOCKED_WORDS.some((b) => named(w, b))) return true;
+    const inner = ORDINARY.reduce((rest, o) => rest.split(o).join("."), w);
+    if (BLOCKED_STEMS.some((stem) => (stem.endsWith("man") ? WORD_ENDINGS.some((end) => inner.endsWith(stem + end)) : inner.includes(stem)))) return true;
+    // Whole words joined: "Spider Man", "Kel'Thuzad", "Iron Man".
+    for (let j = i + 2; j <= words.length; j++) {
+      const run = words.slice(i, j).join("");
+      if (BLOCKED_STEMS.some((b) => named(run, b)) || BLOCKED_WORDS.some((b) => named(run, b))) return true;
+    }
+  }
+  return false;
 }
 
 /** True when a name is nothing but the parts' names joined ("SquireGnat",
@@ -231,6 +271,10 @@ interface Namer {
    * MODEL_FAILURES times in a row (asked again after GIVE_UP_MS), or answered
    * only refused names (never asked again). Bots fuse them with the portmanteau. */
   gaveUp: Map<string, number>;
+  /** Failed asks in a row, on any pairs; MODEL_FAILURES or more is down. */
+  failStreak: number;
+  /** Bots waiting for a pair's name (awaitFusionName), by key. */
+  waiters: Map<string, (() => void)[]>;
   backoffMs: (failures: number) => number;
   wake?: (() => void) | undefined;
   now: () => Date;
@@ -256,9 +300,56 @@ const keyOf = (first: UnitId, second: UnitId) => JSON.stringify([first, second])
  * never wait: they fuse whenever they like. */
 export function fusionNameReady(store: MvpStore, first: UnitId, second: UnitId): boolean {
   const n = namers.get(store);
-  if (!n?.model || store.fusion(first, second)) return true;
+  if (!n?.model || n.failStreak >= MODEL_FAILURES || store.fusion(first, second)) return true;
   const key = keyOf(first, second);
   return n.prepared.has(key) || n.gaveUp.has(key);
+}
+
+/** Resolves once fusionNameReady(first, second): for a bot that wants to fuse
+ * the pair. The pair is asked next, ahead of every queued pair: the top-up
+ * waits on one pair at a time and the champion seed on a few, so humans'
+ * pairs wait at most a few asks. Bounded by the model's final failure: MODEL_FAILURES failed asks on
+ * the pair, or the model counting as down. Needs the naming job running. */
+export function awaitFusionName(store: MvpStore, first: UnitId, second: UnitId): Promise<void> {
+  const n = namers.get(store);
+  const key = keyOf(first, second);
+  if (!n?.model || store.fusion(first, second) || n.prepared.has(key) || n.gaveUp.has(key)) return Promise.resolve();
+  const waiting = n.queued.get(key);
+  if (waiting) {
+    // Moved to the front; one being asked right now stays put.
+    const q = waiting.human ? n.human : n.bot;
+    const i = q.indexOf(waiting);
+    if (i >= 0) {
+      q.splice(i, 1);
+      waiting.human = true;
+      n.human.unshift(waiting);
+    }
+  } else {
+    const a = n.units.get(first);
+    const b = n.units.get(second);
+    if (!a || !b) return Promise.resolve();
+    const pair: Pair = { key, first: a, second: b, human: true, failures: 0, due: 0 };
+    n.queued.set(key, pair);
+    n.human.unshift(pair);
+  }
+  // Down: the pair is still asked, but nobody waits for it.
+  if (fusionNameReady(store, first, second)) {
+    n.wake?.();
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    n.waiters.set(key, [...(n.waiters.get(key) ?? []), resolve]);
+    n.wake?.();
+  });
+}
+
+/** Wakes the bots waiting for `key`, or every waiting bot (the model is down). */
+function settle(n: Namer, key?: string): void {
+  for (const [k, waiters] of [...n.waiters]) {
+    if (key !== undefined && k !== key) continue;
+    n.waiters.delete(k);
+    for (const resolve of waiters) resolve();
+  }
 }
 
 /** Records the first fuse of a pair: the FusionDiscovery with the unit's
@@ -277,6 +368,7 @@ export function recordFusion(store: MvpStore, parts: FusionParts, at: string): F
   const key = keyOf(parts.first, parts.second);
   const fromModel = n?.prepared.get(key) === parts.name;
   n?.prepared.delete(key);
+  if (n) settle(n, key);
   const found: FusionDiscovery = {
     first: parts.first,
     second: parts.second,
@@ -302,10 +394,13 @@ export function fusionNaming(
     bot: [],
     queued: new Map(),
     gaveUp: new Map(),
+    failStreak: 0,
+    waiters: new Map(),
     backoffMs: opts.backoffMs ?? defaultBackoffMs,
     now: rt.now,
   };
   namers.set(store, n);
+  const unitNames = rt.content.units.map((u) => u.name);
   const enqueue = (first: UnitContent, second: UnitContent, human: boolean) => {
     const key = keyOf(first.id, second.id);
     if (!n.model || n.prepared.has(key) || (n.gaveUp.get(key) ?? 0) > Date.now() || store.fusion(first.id, second.id)) return;
@@ -327,7 +422,7 @@ export function fusionNaming(
   const peek: NameFusion = (first, second, by) => {
     const known = store.fusion(first.id, second.id);
     return {
-      name: known?.name ?? n.prepared.get(keyOf(first.id, second.id)) ?? portmanteau(first.name, second.name),
+      name: known?.name ?? n.prepared.get(keyOf(first.id, second.id)) ?? portmanteau(first.name, second.name, unitNames),
       discoveredBy: known?.discoveredBy ?? (by.bot ? null : by),
     };
   };
@@ -373,6 +468,7 @@ export async function drainFusionNames(store: MvpStore): Promise<void> {
     tried.add(pair.key);
     if (store.fusion(pair.first.id, pair.second.id)) {
       n.queued.delete(pair.key);
+      settle(n, pair.key);
       continue;
     }
     let name: string | null = null;
@@ -385,10 +481,15 @@ export async function drainFusionNames(store: MvpStore): Promise<void> {
     } catch {
       // Down, slow or timed out: ask again later, while nobody has fused it.
       pair.failures++;
-      if (store.fusion(pair.first.id, pair.second.id)) n.queued.delete(pair.key);
-      else if (pair.failures >= MODEL_FAILURES) {
+      // Down: no bot waits for the model until it answers again.
+      if (++n.failStreak >= MODEL_FAILURES) settle(n);
+      if (store.fusion(pair.first.id, pair.second.id)) {
+        n.queued.delete(pair.key);
+        settle(n, pair.key);
+      } else if (pair.failures >= MODEL_FAILURES) {
         n.queued.delete(pair.key);
         n.gaveUp.set(pair.key, Date.now() + GIVE_UP_MS);
+        settle(n, pair.key);
       } else {
         pair.due = Date.now() + n.backoffMs(pair.failures);
         (pair.human ? n.human : n.bot).push(pair);
@@ -396,11 +497,14 @@ export async function drainFusionNames(store: MvpStore): Promise<void> {
       continue;
     }
     n.queued.delete(pair.key);
+    n.failStreak = 0;
     // Checked again: someone may have fused the pair while the model thought;
     // its name is then fixed.
-    if (store.fusion(pair.first.id, pair.second.id)) continue;
-    if (name) n.prepared.set(pair.key, name);
-    else n.gaveUp.set(pair.key, Infinity);
+    if (!store.fusion(pair.first.id, pair.second.id)) {
+      if (name) n.prepared.set(pair.key, name);
+      else n.gaveUp.set(pair.key, Infinity);
+    }
+    settle(n, pair.key);
   }
 }
 
