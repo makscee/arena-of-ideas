@@ -11,13 +11,19 @@ on:
       - 'task/**'
   pull_request:
 
+# Runs on our runner (tower CT 208, homelab role gh-runner-ci). Fork PRs go to
+# GitHub-hosted: this repo is public and our runner must never run strangers'
+# code (outsiders' PRs also wait for Maks's approval). If our runner is down:
+#   gh variable set CI_RUNS_ON -R makscee/arena-of-ideas -b '"ubuntu-latest"'
+# and `gh variable delete CI_RUNS_ON -R makscee/arena-of-ideas` to come back.
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(github.event.pull_request.head.repo.fork && '"ubuntu-latest"' || vars.CI_RUNS_ON || '["self-hosted","void-ci"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -31,7 +37,7 @@ jobs:
   # Arena MVP (mission #574) verification ladder: 50 runs through the HTTP
   # API, then a whole game in Chromium at 360×640 with a screenshot per screen.
   mvp:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(github.event.pull_request.head.repo.fork && '"ubuntu-latest"' || vars.CI_RUNS_ON || '["self-hosted","void-ci"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -39,7 +45,9 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - run: npx playwright install --with-deps chromium
+      # Our runner has no sudo; it has Chromium's libraries preinstalled
+      # (homelab gh_ci_playwright_version).
+      - run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
       - run: npm run mvp:bot -- --runs 50
       - run: npm run mvp:phone
       - uses: actions/upload-artifact@v4
@@ -50,7 +58,7 @@ jobs:
 
   build-image:
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(github.event.pull_request.head.repo.fork && '"ubuntu-latest"' || vars.CI_RUNS_ON || '["self-hosted","void-ci"]') }}
     permissions:
       packages: write
       contents: read
