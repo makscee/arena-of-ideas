@@ -196,7 +196,7 @@ export const ROWS: Row[] = [
   r("King",          "👑", 4, 3, 12, "start",     "allies",  "Vitality 2",  { does: ["Vitality 2", "Strength 1"] }),
   r("Priest",        "⛪", 4, 2, 10, "turnEnd",   "allies",  "Heal 2",      { does: ["Heal 2", "Shield 1"] }),
   r("Divinity",      "😇", 4, 2, 8, "allyDies",  "fallen",  "Revive 3",    { does: ["Revive 3", "Bless 2"] }),
-  r("Phoenix",       "🐦‍🔥", 4, 4, 9, "start",     "me",      "Bless 8",     { does: ["Bless 8", "Strength 2"] }),
+  r("Phoenix",       "🐦", 4, 4, 9, "start",     "me",      "Bless 8",     { does: ["Bless 8", "Strength 2"] }),
   r("Lilith",        "🧛", 4, 4, 8, "enemyDies",  "me",      "Strength 2",  { does: ["Strength 2", "Mend"] }),
   r("Famin",         "☠️", 4, 3, 9, "turnEnd",   "random",  "Poison 1",    { who: "enemies" }),
   r("Mentalist",     "🧠", 4, 3, 8, "allyDies",  "enemies", "Freeze 1",    { does: ["Freeze 1", "Curse 1"] }),
