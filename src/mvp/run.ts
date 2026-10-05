@@ -35,6 +35,8 @@ export interface MvpRunState extends RunView {
 }
 
 export { MvpDecisionError };
+/** Moved to fight.ts; re-exported for scripts that import it from here (slice 7's meta report). */
+export { toBattleDef } from "./fight.js";
 
 function draw(s: MvpRunState, n: number): number {
   const { value, state } = rngStep(s.rng);
