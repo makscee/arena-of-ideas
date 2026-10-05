@@ -127,10 +127,13 @@ export interface FuseContext {
  * its RunHooks.onFuse (server/src/mvp/fusions.ts), never from decide() or a
  * preview. Slice 11's stats page and StatsView.fusions only read them.
  *
- * Name rule: the first fuse of a pair fixes its name. That name is copied into
- * the fused LineUnit, and so into runs, ghosts, champions and battles. A model
- * name may only be prepared for pairs nobody has fused yet (slice 10 prefetches
- * them); it never replaces a discovery's name.
+ * Name rule: the first fuse of a pair stores its name: the model's name when
+ * slice 10 prepared one ahead (it prefetches every fusable pair on a human's
+ * line), else the deterministic portmanteau. That name is copied into the
+ * fused LineUnit, and so into runs, ghosts, champions and battles. The model's
+ * name may replace the stored name only while no human has fused the pair
+ * (discoveredBy null, bot fusions only), and only once. Once a human fuses a
+ * pair, its name is fixed for good.
  *
  * Credit rule: a bot's fusion stores the pair with discoveredBy null; the
  * first human to fuse a pair whose discoveredBy is null claims it (the name
@@ -321,8 +324,10 @@ export interface DecisionResponse {
 //   slayers, the kept champion copied with the new seq.
 // - Slice 6 seeds at startup: when currentChampion() is missing or stale
 //   (below), it writes a strong bot team as the champion for today().seq.
-// - Slice 4's Crown fights currentChampion(). A win writes the Slay, with
-//   Slay.seq = that champion's seq; the run's end writes its Rating.
+// - Slice 4's Crown fights currentChampion() as it is at the fight (a
+//   rollover between round 12 and the Crown switches to the new champion). A
+//   win writes the Slay, with Slay.seq = that champion's seq; the run's end
+//   writes its Rating.
 // - Bots fight the Crown too, but slice 4 writes no Slay and no Rating for a
 //   player.bot: slayers, playoffs and ratings are humans only.
 //
@@ -406,9 +411,10 @@ export interface Rating {
   playoffWins: number;
 }
 
-/** Rating moves once per run: wins plus a slay bonus vs. the expected result
- * (src/mvp/run.ts ratingChange). actual = (wins + SLAY_BONUS if slayed) /
- * (rounds + SLAY_BONUS); expected = 1 / (1 + 10^((ratingStart - before)/400));
+/** Rating moves once per run: round wins plus a slay bonus vs. the expected
+ * result (src/mvp/run.ts ratingChange). actual = clamp(round fights won /
+ * round fights fought, a draw counting DRAW_SCORE, + SLAY_BONUS if slayed,
+ * 0, 1); expected = 1 / (1 + 10^((ratingStart - before)/400));
  * after = before + ratingK * (actual - expected), rounded. */
 export interface RatingChange {
   before: number;

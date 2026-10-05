@@ -132,3 +132,20 @@ button.bv-why { display: flex; align-items: center; justify-content: space-betwe
 .bv-controls button { flex: 1; padding: 0 6px; font-size: 20px; }
 .bv-controls button[data-testid="battle-skip"], .bv-controls button[data-testid="battle-speed"] { font-size: 17px; }
 .bv-line.empty { min-height: 0; display: block; }
+/* Slice 11: unit rates (short on a card, long on a sheet) and the stats page. */
+.rates { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--dim); white-space: nowrap; }
+.rates .w { color: var(--you); }
+.rates .short { display: none; }
+.card .rates { font-size: 9px; letter-spacing: -0.02em; }
+.card .rates .short { display: inline; }
+.card .rates .long { display: none; }
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.tabs button { min-height: 44px; padding: 0 6px; font-size: 14px; }
+.tabs button.on { background: var(--you); color: var(--bg); }
+.stat-row { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+.stat-row .emoji { font-size: 22px; width: 28px; text-align: center; flex: none; }
+.stat-row .grow { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.stat-row .num { font-family: "IBM Plex Mono", monospace; font-size: 13px; text-align: right; flex: none; }
+.stat-head { display: flex; gap: 8px; font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.06em; }
+.stat-head .grow { flex: 1; padding-left: 36px; }
+.stat-head span:not(.grow), .stat-row .num { width: 48px; }

@@ -2,12 +2,13 @@
 // round start, the Crown against today's champion, the Slay, the run-end
 // rating, one active run per player and runs outliving their content.
 import { describe, expect, it } from "vitest";
-import type { Champion, DecisionResponse, MvpContent, PlayerRef, RunView } from "../../../src/mvp/contract.js";
+import type { Champion, DecisionResponse, FightResult, Ghost, MvpContent, Outcome, PlayerRef, RunView } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
-import { ratingChange, type MvpRunState } from "../../../src/mvp/run.js";
+import { DRAW_SCORE, ratingChange, SLAY_BONUS, type MvpRunState } from "../../../src/mvp/run.js";
 import { createMvpApp } from "./app.js";
 import { mvpContent } from "./content.js";
-import { decide, startRun } from "./runs.js";
+import { decide, GHOST_PICK_POOL, preview, startRun } from "./runs.js";
+import { MemoryMvpStore } from "./store.js";
 import { mvpRuntime, type MvpDeps } from "./runtime.js";
 import { SqliteMvpStore } from "./sqlite-store.js";
 
@@ -74,8 +75,7 @@ describe("MVP run server", () => {
     expect(rt.store.battle(won.fight!.battleId)?.kind).toBe("crown");
     crown = rt.store.run(run.runId)!;
     expect(rt.store.slays(champ.seq)).toEqual([{ seq: champ.seq, player: maks, runId: run.runId, battleId: won.fight!.battleId, line: crown.line, contentVersion: rt.content.version, at: expect.any(String) }]);
-    const wins = won.run.wins;
-    const change = ratingChange(1000, { wins, endedBy: "crown-won" });
+    const change = ratingChange(1000, won.run);
     expect(won.run.rating).toEqual(change);
     expect(rt.store.rating(maks.id)).toEqual({ player: maks, rating: change.after, runs: 1, slays: 1, daysAsChampion: 0, playoffWins: 0 });
     // No Crown ghost is saved: ghosts are shop rounds only.
@@ -100,7 +100,7 @@ describe("MVP run server", () => {
       const run = lastRound(rt, maks);
       const r = decide(rt, run, { kind: "fight" });
       expect(r.run).toMatchObject({ phase: "over", endedBy: "no-champion" });
-      expect(r.run.rating).toEqual(ratingChange(1000, { wins: r.run.wins, endedBy: "no-champion" }));
+      expect(r.run.rating).toEqual(ratingChange(1000, r.run));
       expect(rt.store.rating(maks.id)?.runs).toBe(1);
     }
   });
@@ -166,16 +166,111 @@ describe("MVP run server", () => {
     const again = new SqliteMvpStore(dir);
     expect(again.run(run.runId)).toMatchObject({ phase: "over", endedBy: end.run.endedBy, rating: end.run.rating });
     expect(again.rating(maks.id)?.runs).toBe(1);
-    expect(again.db.prepare("SELECT name FROM mvp_migrations").all()).toEqual([{ name: "04-runs.sql" }]);
+    expect(again.db.prepare("SELECT name FROM mvp_migrations").all()).toEqual([{ name: "04-runs.sql" }, { name: "11-stats.sql" }]);
     again.close();
   });
 });
 
 describe("MVP run-end rating", () => {
-  it("is Elo-style: wins plus the slay bonus against the expected result", () => {
-    expect(ratingChange(1000, { wins: 12, endedBy: "crown-won" })).toEqual({ before: 1000, after: 1016, expected: 0.5, actual: 1 });
-    expect(ratingChange(1000, { wins: 0, endedBy: "out-of-hearts" })).toMatchObject({ after: 984, actual: 0 });
+  const fights = (...outcomes: Outcome[]): FightResult[] =>
+    outcomes.map((outcome, i) => ({ battleId: `b${i}`, kind: "round", round: i + 1, opponent: { ghostId: `g${i}`, player: botP, round: i + 1 }, outcome, heartsLost: outcome === "loss" ? 1 : 0, heartsAfter: 5 }));
+  const crown = (outcome: Outcome): FightResult => ({ ...fights(outcome)[0]!, kind: "crown", round: 13 });
+  const half = [...fights(..."wl".repeat(6).split("").map((c) => (c === "w" ? "win" : "loss") as Outcome))];
+
+  it("pins the tunables", () => {
+    expect({ SLAY_BONUS, DRAW_SCORE }).toEqual({ SLAY_BONUS: 0.25, DRAW_SCORE: 0.5 });
+  });
+
+  it("scores the share of round fights won, draws half, plus the slay bonus, clamped to 0..1", () => {
+    // Half the rounds won holds a start rating, whether the Crown was lost or never reached.
+    expect(ratingChange(1000, { fights: [...half, crown("loss")], endedBy: "crown-lost" })).toEqual({ before: 1000, after: 1000, expected: 0.5, actual: 0.5 });
+    expect(ratingChange(1000, { fights: half, endedBy: "no-champion" })).toMatchObject({ after: 1000, actual: 0.5 });
+    // The Crown isn't a round fight: it counts only through the slay bonus.
+    expect(ratingChange(1000, { fights: [...half, crown("win")], endedBy: "crown-won" })).toMatchObject({ after: 1008, actual: 0.75 });
+    // 12-0 and a slay is 1, not more.
+    expect(ratingChange(1000, { fights: [...fights(...Array<Outcome>(12).fill("win")), crown("win")], endedBy: "crown-won" })).toEqual({ before: 1000, after: 1016, expected: 0.5, actual: 1 });
+    expect(ratingChange(1000, { fights: fights("loss", "loss", "loss", "loss", "loss"), endedBy: "out-of-hearts" })).toMatchObject({ after: 984, actual: 0 });
+    expect(ratingChange(1000, { fights: fights("draw", "draw", "win", "loss"), endedBy: "out-of-hearts" })).toMatchObject({ actual: 0.5, after: 1000 });
     // A higher rating expects more: the same run gains less.
-    expect(ratingChange(1200, { wins: 9, endedBy: "crown-lost" }).after - 1200).toBeLessThan(ratingChange(1000, { wins: 9, endedBy: "crown-lost" }).after - 1000);
+    expect(ratingChange(1200, { fights: half, endedBy: "crown-lost" }).after - 1200).toBeLessThan(0);
+  });
+});
+
+describe("MVP run server fixes (#579 check of a3c9b113)", () => {
+  it("an empty line still fights and loses a heart, so a broke player with no units is never stuck", () => {
+    const rt = world();
+    let run = startRun(rt, maks);
+    // Reroll until broke: 0 gold, no units.
+    for (let i = 0; i < rt.rules.goldPerRound; i++) decide(rt, rt.store.run(run.runId)!, { kind: "reroll" });
+    run = rt.store.run(run.runId)!;
+    expect(run).toMatchObject({ gold: 0, line: [] });
+    expect(() => decide(rt, run, { kind: "buy", slot: 0 })).toThrow();
+    const r = decide(rt, run, { kind: "fight" });
+    expect(r.fight).toMatchObject({ kind: "round", round: 1, outcome: "loss", heartsLost: 1 });
+    expect(r.run).toMatchObject({ round: 2, gold: rt.rules.goldPerRound, hearts: rt.rules.hearts - 1 });
+    // The walkover is a stored battle the viewer can open, and nobody's ghost.
+    const battle = rt.store.battle(r.fight!.battleId)!;
+    expect(battle.log.map((e) => e.type)).toEqual(["BattleStart", "BattleEnd"]);
+    expect(battle.winner).toBe("B");
+    expect(rt.store.ghosts(1, { excludePlayerId: "x", contentVersion: rt.content.version })).toEqual([]);
+    // Fighting empty to the end runs out of hearts and the next start is a new run.
+    let cur = r;
+    while (cur.run.phase !== "over") cur = decide(rt, rt.store.run(run.runId)!, { kind: "fight" });
+    expect(cur.run).toMatchObject({ endedBy: "out-of-hearts", hearts: 0 });
+    expect(startRun(rt, maks).runId).not.toBe(run.runId);
+  });
+
+  it("the Crown fights the champion of the moment: a rollover after round 12 switches it and the Slay's seq", () => {
+    const rt = world();
+    const old = weakChampion(rt);
+    const run = lastRound(rt, maks);
+    decide(rt, run, { kind: "fight" });
+    expect(rt.store.run(run.runId)!.crownSeq).toBe(old.seq);
+    const next = weakChampion(rt, { seq: old.seq + 1, player: { ...botP, id: "b9", name: "bot-Next" } });
+    const won = decide(rt, rt.store.run(run.runId)!, { kind: "fight" });
+    expect(won.fight).toMatchObject({ kind: "crown", outcome: "win", opponent: { ghostId: `champion-${next.seq}`, player: { id: "b9" } } });
+    expect(rt.store.slays(old.seq)).toEqual([]);
+    expect(rt.store.slays(next.seq)).toHaveLength(1);
+  });
+
+  it("a newer champion on stale content doesn't replace the Crown's opponent", () => {
+    const rt = world();
+    const old = weakChampion(rt);
+    const run = lastRound(rt, maks);
+    decide(rt, run, { kind: "fight" });
+    weakChampion(rt, { seq: old.seq + 1, contentVersion: "old" });
+    const won = decide(rt, rt.store.run(run.runId)!, { kind: "fight" });
+    expect(won.fight!.opponent.ghostId).toBe(`champion-${old.seq}`);
+    expect(rt.store.slays(old.seq)).toHaveLength(1);
+  });
+
+  it("a preview of a run on content that is no longer live is refused (409), not a crash", async () => {
+    const store = new SqliteMvpStore(":memory:");
+    const old = world({ store });
+    const a = startRun(old, maks);
+    const bought = decide(old, a, { kind: "buy", slot: 0 }).run;
+    expect(bought.line).toHaveLength(1);
+    // The retuned content drops the unit the run holds.
+    const content = { ...old.content, version: "retuned", units: old.content.units.filter((u) => u.id !== bought.line[0]!.unitId) };
+    const rt = world({ store, content });
+    expect(() => preview(rt, store.run(a.runId)!, { kind: "sell", index: 0 })).toThrow(/no longer live/);
+    store.addPlayer(maks);
+    const app = createMvpApp(rt);
+    const res = await app.request(`/api/v1/runs/${a.runId}/preview`, { method: "POST", headers: { "content-type": "application/json", "X-Arena-Player": maks.id }, body: JSON.stringify({ kind: "sell", index: 0 }) });
+    expect(res.status).toBe(409);
+  });
+
+  it("a ghost pick reads only the round's newest GHOST_PICK_POOL saved teams", () => {
+    for (const store of [new MemoryMvpStore(), new SqliteMvpStore(":memory:")]) {
+      const g = (i: number, player = botP, round = 1): Ghost => ({ ghostId: `g${i}`, runId: `r${i}`, player, round, line: [], contentVersion: "v", createdAt: "t" });
+      for (let i = 0; i < 10; i++) store.addGhost(g(i));
+      store.addGhost(g(10, maks));
+      store.addGhost(g(11, botP, 2));
+      const ids = (limit?: number) => store.ghosts(1, { excludePlayerId: maks.id, contentVersion: "v", ...(limit === undefined ? {} : { limit }) }).map((x) => x.ghostId);
+      expect(ids()).toEqual(["g0", "g1", "g2", "g3", "g4", "g5", "g6", "g7", "g8", "g9"]);
+      expect(ids(3)).toEqual(["g7", "g8", "g9"]);
+      expect(ids(30)).toHaveLength(10);
+    }
+    expect(GHOST_PICK_POOL).toBe(200);
   });
 });

@@ -29,6 +29,18 @@ function battleTeam(line: LineUnit[], side: Side, log: BattleEvent[]): BattleUni
   return line.map((u, i) => ({ ...structuredClone(u), id: roster[i]?.id ?? `${side}${i + 1}:${u.name}` }));
 }
 
+/** A fight where a side has no units (a player who sold or never bought
+ * any): the kernel needs 1..5 a side, so the empty side loses without a
+ * strike (both empty: a draw). Same roster ids as the kernel's. */
+function walkover(a: LineUnit[], b: LineUnit[]): BattleEvent[] {
+  const roster = (line: LineUnit[], side: Side) => line.map((u, i) => ({ id: `${side}${i + 1}:${u.name}`, name: u.name, hp: u.stats.hp, pwr: u.stats.pwr }));
+  const winner: Side | "draw" = a.length > 0 ? "A" : b.length > 0 ? "B" : "draw";
+  return [
+    { id: 0, turn: 0, causedBy: null, source: "kernel", type: "BattleStart", teams: { A: roster(a, "A"), B: roster(b, "B") } },
+    { id: 1, turn: 0, causedBy: null, source: "kernel", type: "BattleEnd", winner, turns: 0 },
+  ];
+}
+
 /** One side of a fight: whose line it is, front first. */
 export interface FightSide {
   player: PlayerRef;
@@ -52,7 +64,7 @@ export interface FightOptions {
 /** Fights `a` (side A) against `b` (side B) and returns the whole record:
  * the causal log, the winner and both teams as they entered. */
 export function fightLines(a: FightSide, b: FightSide, o: FightOptions): BattleRecord {
-  const log = battle({
+  const log = a.line.length === 0 || b.line.length === 0 ? walkover(a.line, b.line) : battle({
     teamA: a.line.map(toBattleDef),
     teamB: b.line.map(toBattleDef),
     seed: o.seed,
