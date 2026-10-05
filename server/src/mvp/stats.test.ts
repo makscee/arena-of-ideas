@@ -3,7 +3,8 @@ import type { DecisionResponse, LineUnit, PlayerRef, RunView, StatsView } from "
 import { createMvpApp } from "./app.js";
 import { mvpContent } from "./content.js";
 import { mvpRuntime } from "./runtime.js";
-import { lineUnitIds } from "./stats.js";
+import { decide, startRun } from "./runs.js";
+import { isWalkover, lineUnitIds } from "./stats.js";
 
 function world() {
   let n = 11;
@@ -55,6 +56,24 @@ describe("basic stats (slice 11)", () => {
     rt.store.addUnitTallies(rt.content.version, { runs: 4, units: [{ unitId: live, fights: 4, wins: 1, runs: 1 }, { unitId: "retired", fights: 9, wins: 9, runs: 4 }] });
     const res = await createMvpApp(rt).request("/api/v1/stats");
     expect(((await res.json()) as StatsView).units).toEqual([{ unitId: live, winRate: 0.25, pickRate: 0.25, runs: 1 }]);
+  });
+
+  it("leaves walkovers (an empty enemy line) out of the win rates", () => {
+    const { rt } = world();
+    const p: PlayerRef = { id: "p-walk", name: "walk", bot: false };
+    rt.store.addPlayer(p);
+    let run = startRun(rt, p);
+    run = rt.store.run(decide(rt, run, { kind: "buy", slot: 0 }).run.runId)!;
+    const unit = run.line[0]!.unitId;
+    const empty = { ...run, opponent: { ...run.opponent!, line: [] } };
+    rt.store.putRun(empty);
+    const walk = decide(rt, empty, { kind: "fight" });
+    expect(walk.fight?.outcome).toBe("win");
+    expect(rt.store.unitTallies(rt.content.version).units).toEqual([]);
+    // a real fight still counts
+    const real = decide(rt, rt.store.run(run.runId)!, { kind: "fight" });
+    expect(rt.store.unitTallies(rt.content.version).units).toEqual([{ unitId: unit, fights: 1, wins: real.fight!.outcome === "win" ? 1 : 0, runs: 0 }]);
+    expect(isWalkover({ teamA: [], teamB: [] })).toBe(true);
   });
 
   it("counts a fused unit for both parts, each unit once per line", () => {
