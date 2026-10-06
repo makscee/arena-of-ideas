@@ -19,8 +19,8 @@
 // so crossing 1024px needs no redraw. The phone keeps its stacked rows.
 import { boardAt, type BoardState, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView } from "../../src/mvp/contract";
-import { STATUS_TERMS, termDef, termIcon, type IconId, type TermId } from "../../src/glossary";
-import { beatPlayOf, chainOf, damageByUnit, firingOf, keyMomentsOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Change, type Firing, type KeyMoment, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
+import { STATUS_TERMS, termDef, termIcon, triggerLabel, type IconId, type TermId } from "../../src/glossary";
+import { beatPlayOf, causeOf, chainOf, damageByUnit, keyMomentsOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Cause, type Change, type KeyMoment, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side, UnitDef } from "../../src/types";
 import { card, formRich, unitSheet } from "../ui/card";
@@ -40,6 +40,8 @@ const DMG_ROWS = 3;
 const LINEUP_MS = 400;
 /** How long a landed wave's motion runs, in animation time (real time × speed): the longest animation (a killing blow's shake, then its 0.5 s pop, ends at 0.92 s; a float, 0.7 s, after up to 160 ms). A beat holds its last wave at least 0.7 s, so a beat change cuts motion off at most in its fade. */
 const MOTION_MS = 1000;
+/** How long a card's When icon flashes when it fires (R3-19). */
+const TRIG_FLASH_MS = 400;
 /** When a hit's shake ends, in animation ms after its wave lands (80 ms in, 340 ms long). */
 const SHAKE_END_MS = 420;
 
@@ -172,7 +174,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const floatsOf = new WeakMap<HTMLElement, HTMLElement[]>();
 
   /** Motion runs at the playback speed (CSS reads --bv-sp), so 2× never cuts it. */
-  const setSpeedVar = () => { for (const row of [enemy, mine]) row.style.setProperty("--bv-sp", String(speed)); };
+  const setSpeedVar = () => { for (const row of [enemy, mine, clash]) row.style.setProperty("--bv-sp", String(speed)); };
 
   const hud = h("div", { class: "hud" });
   // A run's fight keeps the run's ☰ (Codex, Rules, Title menu, Abandon), as the shop has it.
@@ -206,7 +208,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const logTab = button("Log", () => setTab("log"), "bv-tab", "tab-log");
   sheet.append(h("div", { class: "row bv-tabs", role: "tablist" }, whyTab, logTab), whyBody, logBody);
   const timeline = h("div", { class: "bv-tl", "data-testid": "timeline", role: "slider", "aria-label": "Turn timeline: click or drag to scrub", tabindex: "-1" });
-  const clash = h("div", { class: "bv-clash", "aria-hidden": "true" }, icon("crossed-swords", 28, "tone-gold"));
+  const clashMark = icon("crossed-swords", 28, "tone-gold");
+  // The clash mark (desktop) carries fatigue's badge (R3-19).
+  const clash = h("div", { class: "bv-clash" }, clashMark);
   const end = h("div", { class: "bv-end panel stack", "data-testid": "end-card" });
   const playBtn = button("❚❚", () => (playing ? pause() : play()), "", "battle-play");
   const backBtn = button("‹", () => back(), "", "battle-back");
@@ -561,6 +565,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     el.dataset.unit = u.id;
     if (u.silenced) el.classList.add("silenced");
     motion(el, u.id, side, v);
+    triggerFlash(el, u.id, v);
     // The change's chip traces it; the rest of the card opens the unit.
     el.addEventListener("click", () => openUnit(u.id));
     return el;
@@ -700,42 +705,77 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     for (const ab of Object.values(a.content.abilities)) for (const e of ab.effects) if (e.kind === "summon" && e.unit.name === unitName) return e.unit;
     return null;
   }
-  /** The trigger badge over a unit whose ability fired this beat: [When icon]
-   * → [Does icon]. It pops when its wave lands, stays for the beat, and opens
-   * that step's Why. */
-  function triggerBadge(id: string, v: View): HTMLElement | null {
-    let hit: { f: Firing; step: Step; age: number | null } | null = null;
-    for (const w of v.waves) {
-      const f = firingOf(log, w.step, whenOf);
-      if (f && f.unit === id) hit = { f, step: w.step, age: w.age };
-    }
+  /** The cause badge over a unit that did something this beat (R3-19): [why]
+   * → [what], for every wave, not only abilities: a strike shows crossed
+   * swords on the striker, a Poison tick the Poison drop on its holder. It
+   * pops when its wave lands and stays for the beat; the newest wave's badge
+   * is bright, earlier ones dim. A tap opens that step's Why. `at` is a unit,
+   * or "clash" for fatigue (the clash mark on desktop; the phone has it in
+   * the caption). */
+  function triggerBadge(at: string, v: View): HTMLElement | null {
+    let hit: { c: Cause; step: Step; age: number | null; newest: boolean } | null = null;
+    v.waves.forEach((w, i) => {
+      const c = causeOf(log, w.step, whenOf);
+      if (c && c.at === at) hit = { c, step: w.step, age: w.age, newest: i === v.waves.length - 1 };
+    });
     if (!hit) return null;
-    const { f, step, age } = hit;
-    const trig = f.trigger ? termIcon(f.trigger as TermId, f.triggerStatus) : undefined;
-    const eff = termIcon(f.effect as TermId);
-    const effTone = termDef(f.effect as TermId)?.tone ?? "plain";
-    const when = f.trigger ? (termDef(f.trigger as TermId)?.label ?? "") : "";
-    const does = f.effectStatus ?? termDef(f.effect as TermId)?.label ?? "";
+    const { c, step, age, newest } = hit as { c: Cause; step: Step; age: number | null; newest: boolean };
+    const trig = causeIcon(c);
+    const eff = termIcon(c.effect as TermId, c.effectStatus);
+    const effTone = (c.effectStatus ? termDef(`status:${c.effectStatus}`, a.content.statuses)?.tone : undefined) ?? termDef(c.effect as TermId, a.content.statuses)?.tone ?? "plain";
+    const does = c.effectStatus ?? termDef(c.effect as TermId)?.label ?? "";
     const b = h(
       "button",
-      { class: "bv-badge", "data-testid": "trigger-badge", "data-trigger": f.trigger ?? "", "data-effect": f.effect, "aria-label": `${when}${f.triggerStatus ? ` (${f.triggerStatus})` : ""} → ${does}` },
+      { class: `bv-badge${newest ? "" : " past"}`, "data-testid": "trigger-badge", "data-cause": c.cause, "data-kind": c.kind, "data-trigger": c.cause.startsWith("trigger:") ? c.cause : "", "data-effect": c.effect, "aria-label": `${causeLabel(c)} → ${does}` },
       // The button is 44 px tall to tap; the pill it draws hugs the card.
       h(
         "span",
         { class: "bv-badge-pill" },
-        trig ? icon(trig, 14, "tone-when") : h("span", { class: "tone-when" }, "⚡"),
+        trig ? icon(trig, 14, causeTone(c)) : h("span", { class: "tone-when" }, "⚡"),
         h("span", { class: "bv-badge-arrow" }, "→"),
-        eff ? icon(eff, 14, `tone-${effTone}`) : h("span", { class: `tone-${effTone}` }, does.slice(0, 3)),
+        eff ? icon(eff, 14, `tone-${effTone}`) : h("span", { class: `tone-${effTone}` }, c.effect === "effect:cancel" ? "⊘" : does.slice(0, 3)),
       ),
     );
     if (age !== null && age <= MOTION_MS) b.style.setProperty("--bv-bt", `${-Math.round(age * speed)}ms`);
     else b.classList.add("still");
     b.addEventListener("click", (ev) => {
       ev.stopPropagation();
-      const c = step.changes[0];
-      if (c) openTrace(c.eventId, step.changes.filter((x) => x.unit === c.unit));
+      const ch = step.changes[0];
+      if (ch) openTrace(ch.eventId, step.changes.filter((x) => x.unit === ch.unit));
+      else openTrace(step.eventIds[0]!, []);
     });
     return b;
+  }
+  /** The card's When icon (its icon line's first) flashes gold for 0.4 s
+   * when that When fires, tying the card's lasting icon to the moment
+   * (R3-19); after a manual step it stays lit for the wave. */
+  function triggerFlash(el: HTMLElement, id: string, v: View): void {
+    const w = v.waves.at(-1);
+    const c = w ? causeOf(log, w.step, whenOf) : null;
+    if (!w || c?.kind !== "ability" || c.at !== id) return;
+    const ic = el.querySelector<HTMLElement>(".icons .ci:first-of-type");
+    if (!ic) return;
+    if (w.age === null || reduced()) ic.classList.add("bv-fired", "still");
+    else if (w.age * speed <= TRIG_FLASH_MS) {
+      ic.classList.add("bv-fired");
+      ic.style.setProperty("--bv-ftt", `${-Math.round(w.age * speed)}ms`);
+    }
+  }
+  /** A cause's icon: the When's (a status trigger shows its status), the
+   * status's own, fatigue's hourglass. */
+  function causeIcon(c: Cause): IconId | undefined {
+    if (c.cause.startsWith("status:")) return termDef(c.cause as TermId, a.content.statuses)?.icon;
+    return termIcon(c.cause as TermId, c.causeStatus);
+  }
+  function causeTone(c: Cause): string {
+    if (c.kind === "status") return `tone-${termDef(c.cause as TermId, a.content.statuses)?.tone ?? "plain"}`;
+    if (c.kind === "battle") return `tone-${termDef(c.cause as TermId)?.tone ?? "plain"}`;
+    return "tone-when";
+  }
+  /** A cause in words, scoped like the card says it: "Ally gets Shield", "Strikes", "Poison". */
+  function causeLabel(c: Cause): string {
+    if (c.kind === "status") return c.cause.slice("status:".length);
+    return triggerLabel(c.cause as TermId, c.causeStatus, c.causeScope);
   }
   /** A card in its slot, with the trigger badge on its outer edge when one
    * fired, and its floating numbers (outside the card: its clip-path would cut them). */
@@ -926,6 +966,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       h("span", { class: "dim who", title: battle.opponent.name }, `vs @${battle.opponent.name}`),
       h("span", { "data-testid": "battle-turn" }, turnLabel(hudTurn ?? turn)),
     );
+    clash.replaceChildren(clashMark, ...[triggerBadge("clash", v)].filter((x): x is HTMLElement => x !== null));
     for (const [side, row] of [[them, enemy], [you, mine]] as const) {
       // The status row's width, from the cards on screen (read before they are replaced).
       const stsWidth = row.querySelector<HTMLElement>(".bv-card:not(.dead) .bv-sts")?.getBoundingClientRect().width ?? 0;
@@ -1000,8 +1041,12 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   function captionKids(step: Step | undefined): Node[] {
     if (!step) return [document.createTextNode("The lines face off.")];
     const side = step.subjectSide;
-    if (!side) return richCaption(step.caption);
-    return [sideTag(side, "caption-side"), ...richCaption(step.caption)];
+    // It starts with its cause's icon, the one on the badge (R3-19).
+    const c = causeOf(log, step, whenOf);
+    const ic = c ? causeIcon(c) : undefined;
+    const lead = c && ic ? [h("span", { class: "bv-cap-cause", "data-testid": "caption-cause", "data-cause": c.cause, title: causeLabel(c) }, icon(ic, 14, causeTone(c)))] : [];
+    if (!side) return [...lead, ...richCaption(step.caption)];
+    return [...lead, sideTag(side, "caption-side"), ...richCaption(step.caption)];
   }
 
   /** A caption with its terms highlighted (R2-13, like R2-8's unit text):
@@ -1396,7 +1441,8 @@ function chainView(c: Chain, o: { units: Map<string, BattleUnit>; content: MvpCo
     if (n.kind === "root") return [h("span", { class: "bv-step-text" }, n.text)];
     if (n.kind !== "firing") return [h("span", { class: "bv-step-text" }, ...tagOf(n), ...text(n.text))];
     const u = o.units.get(n.unit ?? "");
-    const label = n.trigger ? termDef(n.trigger as TermId)?.label : undefined;
+    // Scoped like the card says it: "Ally gets Shield", "Ally dies" (R3-19).
+    const label = n.trigger ? triggerLabel(n.trigger as TermId, n.triggerStatus, n.triggerScope) : undefined;
     if (n.status) {
       const tip = termDef(`status:${n.status}` as TermId, o.content.statuses)?.tip;
       return [h("span", { class: "bv-step-head" }, ...tagOf(n), h("b", { class: who }, ...text(n.text)), label ? h("span", { class: "dim" }, ` · ${label}`) : null), tip ? h("span", { class: "bv-step-text dim" }, tip) : null].filter((x): x is HTMLElement => x !== null);
