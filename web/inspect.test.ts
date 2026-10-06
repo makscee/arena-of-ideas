@@ -129,10 +129,10 @@ describe("renderUnitInspect status refs", () => {
     // The Poison definition's sentence is present — its Part terms are now
     // tappable codex links (#078 slice 3), so the phrase spans anchors: the
     // effect verb and the selector noun each carry their own Part link.
-    expect(root.innerHTML).toContain("deal damage equal to its stacks to ");
+    expect(root.innerHTML).toContain("damage equal to stacks to ");
     expect(root.innerHTML).toContain('href="#codex/part/effect/damage"');
     expect(root.innerHTML).toContain('href="#codex/part/selector/holder"');
-    expect(root.innerHTML).toContain(">the holder</a>");
+    expect(root.innerHTML).toContain(">holder</a>");
   });
 
   test("a carried status renders its row (no duplicate hidden definition), unknown names stay plain", () => {
@@ -212,7 +212,7 @@ describe("chipsHtml", () => {
   test("the chip title carries the derived definition, not just name×count", () => {
     const html = chipsHtml([{ status: "Poison", stacks: 2 }], stressRegistry);
     expect(html).toContain("Poi2");
-    expect(html).toContain("Poison ×2 — At the end of each turn:");
+    expect(html).toContain("Poison ×2 — Turn end:");
   });
 
   test("an unknown status falls back to name×count", () => {
