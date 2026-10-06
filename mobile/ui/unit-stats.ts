@@ -1,7 +1,7 @@
-// A unit's win and pick rate on its card and its sheet (mission #574). Slice
-// 11 owns this file: unitStatsLine shows the rates it is given, else the ones
-// kept from the last api.stats() (loadUnitRates; Home and the stats page
-// refresh it). card() and unitSheet() already call it, so no caller changes.
+// A unit's win and pick rate (mission #574, slice 11): since round 2 only a
+// hint, the last line of its sheet. unitStatsLine shows the rates it is given,
+// else the ones kept from the last api.stats() (loadUnitRates; Home and the
+// stats page refresh it).
 import type { StatsView, UnitId } from "../../src/mvp/contract";
 import { api } from "../api";
 import { h } from "./dom";
@@ -31,16 +31,19 @@ export async function loadUnitRates(): Promise<StatsView | null> {
 
 export const pct = (x: number): string => `${Math.round(x * 100)}%`;
 
-/** "W 54% P 12%" on a card, "Win 54% · Pick 12%" on a sheet; null while no run has counted the unit. */
+/** "wins 54% · picked 12%": the one dim line at the bottom of a unit's
+ * sheet (round 2: rates are a hint, never on a card); null while no run has
+ * counted the unit. The Stats table shows them as columns. */
 export function unitStatsLine(unitId?: UnitId, rates?: UnitRates): Node | null {
   const r = rates ?? (unitId !== undefined ? known.get(unitId) : undefined);
   if (!r) return null;
   return h(
     "div",
-    { class: "rates", "data-testid": "unit-rates", title: `Win rate ${pct(r.winRate)}, pick rate ${pct(r.pickRate)}` },
-    h("span", { class: "w" }, h("span", { class: "long" }, "Win "), h("span", { class: "short" }, "W"), pct(r.winRate)),
-    h("span", { class: "long" }, " · "),
-    h("span", { class: "short" }, " "),
-    h("span", { class: "p" }, h("span", { class: "long" }, "Pick "), h("span", { class: "short" }, "P"), pct(r.pickRate)),
+    {
+      class: "rates",
+      "data-testid": "unit-rates",
+      title: "Win: how often a team with it won its fight. Picked: how often it was on a finished run's line. From every run since the units last changed.",
+    },
+    `wins ${pct(r.winRate)} · picked ${pct(r.pickRate)}`,
   );
 }

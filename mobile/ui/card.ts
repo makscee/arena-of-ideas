@@ -2,25 +2,31 @@
 // result screens (slice 8), the battle viewer (slice 9) and the stats page
 // (slice 11). Slice 8 owns the look of both; slices 9 and 11 only pass
 // options (live numbers, rates, onOpen), so nobody reshapes these signatures.
+//
+// Round 2 (R2-7): the card is compact (64×84 on a phone): a trigger icon, the
+// emoji, a one-line name, PWR/HP and one footer slot. The sheet shows only the
+// form the unit has now; win and pick rates are its one dim last line.
+import { termDef, termIcon, type TermId } from "../../src/glossary";
 import { formText as sharedFormText } from "../../src/mvp/form-text";
-import type { BattleUnit, LineUnit, MvpContent, UnitContent, UnitForm } from "../../src/mvp/contract";
+import { MVP_RULES, type BattleUnit, type LineUnit, type MvpContent, type UnitContent, type UnitForm } from "../../src/mvp/contract";
 import type { Stats } from "../../src/types";
 import { h } from "./dom";
 import { discoveredLine } from "./fusion";
+import { icon } from "./icon";
 import { unitStatsLine, type UnitRates } from "./unit-stats";
 
 /** What a card needs to draw; LineUnit, BattleUnit and offers all fit. */
-export type CardUnit = { emoji: string; name: string; stats: Stats } & Partial<Pick<LineUnit, "unitId" | "kind" | "form" | "copies" | "fusion">>;
+export type CardUnit = { emoji: string; name: string; stats: Stats } & Partial<Pick<LineUnit, "unitId" | "kind" | "form" | "copies" | "fusion" | "recipe">>;
 
 export interface CardOptions {
   side: "you" | "ghost";
-  /** Extra rows under the stats (a cost, a copies badge). */
+  /** The footer slot: copies pips, AWOKEN, FUSED, a price, or battle statuses. */
   extra?: (Node | null)[];
   testid?: string;
   /** The battle viewer's live state (slice 9): current stats, dead, the acting unit lit. */
   live?: { stats: Stats; dead?: boolean; acting?: boolean };
-  /** Win and pick rate (slice 11); without them unitStatsLine looks them up by unitId. */
-  rates?: UnitRates;
+  /** An offer's tier, drawn as dots top-right. */
+  tier?: number;
   /** Tapping the card opens this, usually overlay(unitSheet(...)). */
   onOpen?: () => void;
 }
@@ -30,12 +36,13 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
   const el = h(
     "div",
     { class: `card ${o.side}`, ...(o.testid ? { "data-testid": o.testid } : {}) },
+    triggerMark(u.recipe),
+    o.tier ? h("span", { class: "tier", "aria-label": `tier ${o.tier}` }, "●".repeat(o.tier)) : null,
     h("div", { class: "emoji" }, u.emoji),
-    // ui/dom.ts fitText() shrinks a long name to the card's measured width.
-    h("div", { class: "name" }, u.name),
-    h("div", { class: "stats" }, h("span", { class: "p" }, `${stats.pwr}`), " / ", h("span", { class: "h" }, `${stats.hp}`)),
-    cardRates(u, o.rates),
-    ...(o.extra ?? []),
+    // One line; ui/dom.ts fitText() shrinks a long name a little, then cuts it.
+    h("div", { class: "name", title: u.name }, u.name),
+    h("div", { class: "stats" }, h("span", { class: "p" }, `${stats.pwr}`), "/", h("span", { class: "h" }, `${stats.hp}`)),
+    h("div", { class: "foot" }, ...(o.extra ?? [])),
   );
   if (u.kind === "fused") el.classList.add("fused");
   else if (u.form === "awoken") el.classList.add("awoken");
@@ -45,13 +52,21 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
   return el;
 }
 
-/** The card's rates line, always one line so cards in a row line up: the
- * unit's rates, or "—" without any. A fused unit has no rates of its own (its
- * unitId is its first part's), so its line shows who discovered it instead
- * ("by you"; the sheet says it in full, with both parts' rates). */
-function cardRates(u: CardUnit, rates?: UnitRates): Node {
-  if (u.kind === "fused") return discoveredLine(u, true) ?? h("div", { class: "rates none" }, "—");
-  return unitStatsLine(u.unitId, rates) ?? h("div", { class: "rates none" }, "—");
+/** The term for what wakes a form: its first When ("trigger:BattleStart"). */
+function triggerTerm(form: UnitForm | undefined): { id: TermId; status?: string } | null {
+  const on = form?.when[0]?.on;
+  if (!on) return null;
+  return { id: `trigger:${on.on}` as TermId, ...("status" in on && on.status ? { status: on.status } : {}) };
+}
+
+/** The card's top-left mark: the trigger's icon, in the When colour. */
+function triggerMark(form: UnitForm | undefined): Node | null {
+  const t = triggerTerm(form);
+  if (!t) return null;
+  const id = termIcon(t.id, t.status);
+  const label = termDef(t.id)?.label ?? t.id;
+  if (!id) return null;
+  return h("span", { class: "trig tone-when", title: label, "aria-label": label, "data-testid": "card-trigger" }, icon(id, 12));
 }
 
 /** A form as one line of text: its authored text, else described from the
@@ -60,58 +75,113 @@ export function formText(form: UnitForm, content: MvpContent): string {
   return sharedFormText(form, content.abilities);
 }
 
-/** Everything about one unit: exact numbers and both forms; for a fused unit,
- * both parts. Slice 8 fills it in and opens it from the shop and Home; slice 9
- * only opens it from the battle; slice 11 only passes rates. Open it with
- * overlay(unitSheet(...)) from ./dom. The stub lists the forms as text. */
+/** Everything about one unit: exact numbers and the form it has now. A
+ * sleeping unit's sheet swaps in its awoken text behind "See Awoken" (what
+ * changes underlined), a fused unit's parts open behind a tap, and the unit's
+ * win and pick rates are one dim line at the bottom. Open it with
+ * overlay(unitSheet(...)) from ./dom. */
 export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpContent, opts: { rates?: UnitRates; from?: Stats } = {}): HTMLElement {
   const unitId = "forms" in u ? u.id : u.unitId;
+  const unit = (id: string) => content.units.find((x) => x.id === id);
   // opts.from: your copy's stats now, when u is that copy after a buy (the shop's offer sheet).
   const statsLine = (s: Stats) =>
     opts.from
       ? h("div", { class: "num", "data-testid": "sheet-stats" }, `${opts.from.pwr} PWR / ${opts.from.hp} HP → ${s.pwr} PWR / ${s.hp} HP`)
       : h("div", { class: "num", "data-testid": "sheet-stats" }, `${s.pwr} PWR / ${s.hp} HP`);
+  const fused = !("forms" in u) && u.kind === "fused";
+  const c = fused ? undefined : unit(unitId);
+  const now: UnitForm | undefined = "forms" in u ? u.forms.sleeping : u.recipe;
+  const sleeping = !fused && ("forms" in u || u.form === "sleeping");
+  const copies = "forms" in u ? 0 : u.copies;
+
+  const box = h("div", { class: "sheet-form", "data-testid": "sheet-form" });
+  const children: (Node | null)[] = [];
+  if (fused && "fusion" in u && u.fusion) {
+    const [a, b] = [unit(u.fusion.first), unit(u.fusion.second)];
+    box.append(formText(u.recipe, content));
+    const parts = h(
+      "div",
+      { class: "stack parts", "data-testid": "sheet-parts" },
+      ...[
+        [a, "When"],
+        [b, "Who"],
+      ].map(([p, role]) => (p ? h("div", { class: "sheet-form part" }, h("div", { class: "label" }, `${(p as UnitContent).emoji} ${(p as UnitContent).name} · Awoken · gives ${role}`), formText((p as UnitContent).forms.awoken, content)) : null)),
+    );
+    parts.hidden = true;
+    const label = `Made from ${a?.name ?? u.fusion.first} + ${b?.name ?? u.fusion.second}`;
+    const toggle = h("button", { class: "small link", "data-testid": "sheet-parts-open" }, `${label} ▸`);
+    toggle.addEventListener("click", () => {
+      parts.hidden = !parts.hidden;
+      toggle.textContent = `${label} ${parts.hidden ? "▸" : "▾"}`;
+    });
+    children.push(toggle, parts);
+  } else if (now) {
+    box.append(formText(now, content));
+  }
+  if (sleeping && c && now) {
+    const left = Math.max(1, MVP_RULES.copiesToAwaken - copies);
+    const sleepText = formText(now, content);
+    const awokeText = formText(c.forms.awoken, content);
+    const see = `▸ See Awoken (${left} more ${left === 1 ? "copy" : "copies"})`;
+    const back = "◂ Back to Sleeping (now)";
+    const note = h("div", { class: "dim small" }, "What changes is underlined.");
+    note.hidden = true;
+    const btn = h("button", { class: "see-awoken", "data-testid": "see-awoken" }, see);
+    let showing = false;
+    btn.addEventListener("click", () => {
+      showing = !showing;
+      box.classList.toggle("other", showing);
+      box.replaceChildren(...(showing ? [h("div", { class: "label" }, `Awoken · after copy ${MVP_RULES.copiesToAwaken}`), ...markChanges(sleepText, awokeText)] : [sleepText]));
+      btn.textContent = showing ? back : see;
+      btn.dataset.testid = showing ? "see-sleeping" : "see-awoken";
+      note.hidden = !showing;
+    });
+    children.push(btn, note);
+  }
+
   return h(
     "div",
     { class: "stack", "data-testid": "unit-sheet" },
-    h("h2", {}, `${u.emoji} ${u.name}`),
+    h("div", { class: "row spread sheet-head" }, h("h2", {}, `${u.emoji} ${u.name}`), h("span", { class: "dim small", "data-testid": "sheet-state" }, "stats" in u ? sheetState(u) : `Sleeping · tier ${u.tier}`)),
     "forms" in u ? null : discoveredLine(u),
-    "stats" in u ? statsLine(u.stats) : h("div", { class: "num" }, `${u.base.pwr} PWR / ${u.base.hp} HP · tier ${u.tier}`),
-    "stats" in u ? h("div", { class: "dim" }, opts.from ? `Your copy now → after buying: ${sheetState(u)}` : sheetState(u)) : null,
-    ...sheetForms(u, content).map(([label, form]) =>
-      h("div", { class: `sheet-form${"form" in u && u.kind !== "fused" && label.toLowerCase() === u.form ? " now" : ""}` }, h("div", { class: "label" }, label), formText(form, content)),
-    ),
-    ...sheetRates(u, unitId, content, opts.rates),
+    "stats" in u ? statsLine(u.stats) : h("div", { class: "num" }, `${u.base.pwr} PWR / ${u.base.hp} HP`),
+    opts.from ? h("div", { class: "dim small" }, "Your copy now → after buying") : null,
+    box,
+    ...children,
+    fused ? null : unitStatsLine(unitId, opts.rates),
   );
-}
-
-/** The sheet's rates: the unit's own; for a fused unit, each part's, named. */
-function sheetRates(u: LineUnit | BattleUnit | UnitContent, unitId: string, content: MvpContent, rates?: UnitRates): (Node | null)[] {
-  if ("forms" in u || u.kind !== "fused" || !u.fusion) return [unitStatsLine(unitId, rates)];
-  return [u.fusion.first, u.fusion.second].map((id) => {
-    const line = unitStatsLine(id);
-    const part = content.units.find((x) => x.id === id);
-    return line ? h("div", { class: "row part-rates" }, h("span", { class: "dim small" }, `${part?.name ?? id}:`), line) : null;
-  });
 }
 
 /** Form and copies; a fused unit says it is final (its credit is discoveredLine). */
 function sheetState(u: LineUnit | BattleUnit): string {
-  if (u.kind === "fused") return `Fused, final · ${u.copies} copies`;
-  return `${u.form === "awoken" ? "Awoken" : "Sleeping"} · ${u.copies} ${u.copies === 1 ? "copy" : "copies"}`;
+  if (u.kind === "fused") return `Fused, final · ×${u.copies}`;
+  return `${u.form === "awoken" ? "Awoken" : "Sleeping"} · ×${u.copies}`;
 }
 
-function sheetForms(u: LineUnit | BattleUnit | UnitContent, content: MvpContent): [string, UnitForm][] {
-  const unit = (id: string) => content.units.find((x) => x.id === id);
-  const both = (c: UnitContent, prefix = ""): [string, UnitForm][] => [
-    [`${prefix}Sleeping`, c.forms.sleeping],
-    [`${prefix}Awoken`, c.forms.awoken],
-  ];
-  if ("forms" in u) return both(u);
-  if (u.kind === "fused" && u.fusion) {
-    const parts = [unit(u.fusion.first), unit(u.fusion.second)].filter((c): c is UnitContent => c !== undefined);
-    return [["Fused", u.recipe], ...parts.flatMap((c) => both(c, `${c.name} · `))];
+/** `next` as text nodes, the words not in `was` (by a word-level LCS) underlined.
+ * Punctuation is its own token, so "ally." and "ally, then …" share "ally". */
+export function markChanges(was: string, next: string): Node[] {
+  const tokens = (t: string) => t.split(/(\s+|[.,;:!?])/).filter((x) => x !== "");
+  const a = tokens(was);
+  const b = tokens(next);
+  const n = a.length;
+  const m = b.length;
+  const lcs = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) lcs[i]![j] = a[i] === b[j] ? lcs[i + 1]![j + 1]! + 1 : Math.max(lcs[i + 1]![j]!, lcs[i]![j + 1]!);
+  const out: Node[] = [];
+  let i = 0;
+  let j = 0;
+  while (j < m) {
+    const tok = b[j]!;
+    if (i < n && a[i] === tok) {
+      out.push(document.createTextNode(tok));
+      i++;
+      j++;
+    } else if (i < n && lcs[i + 1]![j]! >= lcs[i]![j + 1]!) i++;
+    else {
+      out.push(/^\s*$/.test(tok) ? document.createTextNode(tok) : h("u", { class: "changed" }, tok));
+      j++;
+    }
   }
-  const c = unit(u.unitId);
-  return c ? both(c) : [["Now", u.recipe]];
+  return out;
 }

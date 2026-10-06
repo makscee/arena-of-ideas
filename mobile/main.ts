@@ -13,6 +13,7 @@ import { getContent } from "./content";
 import { battleScreen, whyILost } from "./screens/battle";
 import { statsScreen } from "./screens/stats";
 import { card, unitSheet, type CardUnit } from "./ui/card";
+import { icon } from "./ui/icon";
 import { app, button, closable, h, overlay, show, who } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
 
@@ -90,6 +91,7 @@ function rulesSheet(): HTMLElement {
     h("div", { class: "label" }, "The day"),
     p(`Beat the champion in the Crown and you are a slayer. At ${r.dayEndsAt} Moscow the slayers' best teams play a round-robin, and the winner is the next champion.`),
     p("Your rating moves once per run: every fight, the Crown too, counts against its opponent's rating (Elo), added up when the run ends. Giving up counts each heart left as a lost fight."),
+    h("div", { class: "dim small", "data-testid": "icon-credits" }, "Icons: Lorc, Delapouite, Sbed, Skoll from game-icons.net, CC BY 3.0; heart-plus by Zeromancer, CC0."),
   );
 }
 
@@ -103,13 +105,13 @@ function legendSheet(): HTMLElement {
     "div",
     { class: "stack legend", "data-testid": "legend" },
     h("h2", {}, "READING A CARD"),
-    row(h("span", { class: "stats" }, span("p", "2"), " / ", span("h", "6")), "PWR / HP. PWR is what its strike deals; at 0 HP it falls."),
-    row(h("span", { class: "rates" }, span("w", "W59%"), " P9%"), "Rates from every run since the units last changed. W: how often a team with it won its fight. P: how often it was on a finished run's line. — means no runs yet."),
+    row(h("span", { class: "trig tone-when" }, icon("flying-flag", 16)), "Top left: what wakes it (here, the battle starting). Its sheet says what it does then."),
+    row(h("span", { class: "stats" }, span("p", "2"), "/", span("h", "6")), "PWR / HP. PWR is what its strike deals; at 0 HP it falls."),
     row(span("copies", "●●○"), `Copies toward Awoken: copy ${r.copiesToAwaken} awakens it. Each copy adds +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP.`),
     row(span("copies tag", "AWOKEN ×3"), "Awoken, its stronger form; ×3 copies merged in. Two Awoken units can fuse."),
-    row(span("copies tag", "FUSED ×2"), "Two Awoken units fused into one: final, copies of either part still merge in. \"by @name\" is who discovered it."),
-    row(span("cost", "3g ＋"), "An offer's price. ＋: you own it, so buying merges a copy in."),
-    h("div", { class: "dim small" }, "Tap any card for its full sheet: what it does, sleeping and Awoken."),
+    row(span("copies tag", "FUSED ×2"), "Two Awoken units fused into one: final, copies of either part still merge in."),
+    row(span("cost", "3g ＋"), "An offer's price. ＋: you own it, so buying merges a copy in. The dots top right are its tier."),
+    h("div", { class: "dim small" }, "Tap any card for its sheet: what it does now, and its Awoken form one tap away."),
   );
   const close = closable(sheet, h("div", { class: "row" }, rulesBtn));
   return sheet;
@@ -141,7 +143,7 @@ function nameScreen(): void {
  * how it ended at the top and brings the playoff panel into view. */
 async function homeScreen(ended: number | null = null): Promise<void> {
   const err = errorLine();
-  void loadUnitRates(); // the rates on unit cards (slice 11)
+  void loadUnitRates(); // the rates hint on unit sheets (slice 11)
   const [home, content]: [HomeView, MvpContent] = await Promise.all([api.home(), getContent()]);
   rules = home.rules;
   day = home.day;
@@ -405,9 +407,11 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
       buy.disabled = blocked !== "";
       // Without a preview (no gold), an owned unit still shows your copy as it is.
       const owned = mine ? null : run.line.find((x) => x.kind === "unit" && x.unitId === o.unitId) ?? null;
+      const sheet = mine ? unitSheet(mine.next, content, { from: mine.now.stats }) : owned ? unitSheet(owned, content) : u ? unitSheet(u, content) : h("h2", {}, o.unitId);
+      // What buying does goes inside the sheet, above its last line (the rates hint).
+      if (after) sheet.insertBefore(after, sheet.querySelector('[data-testid="unit-rates"]'));
       const close = overlay(
-        ...(mine ? [unitSheet(mine.next, content, { from: mine.now.stats })] : owned ? [unitSheet(owned, content)] : u ? [unitSheet(u, content)] : [h("h2", {}, o.unitId)]),
-        ...(after ? [after] : []),
+        sheet,
         h("div", { class: "row sheet-actions" }, button("Close", () => close(), "", "offer-close"), buy),
       );
     });
@@ -417,9 +421,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
     { class: "slots", "data-testid": "offers" },
     ...run.offers.map((o: Offer) => {
       const u = unitOf(o.unitId);
-      const cu: CardUnit = { unitId: o.unitId, emoji: u?.emoji ?? "?", name: u?.name ?? o.unitId, stats: u?.base ?? { pwr: 0, hp: 0 } };
+      const cu: CardUnit = { unitId: o.unitId, emoji: u?.emoji ?? "?", name: u?.name ?? o.unitId, stats: u?.base ?? { pwr: 0, hp: 0 }, ...(u ? { recipe: u.forms.sleeping } : {}) };
       const owned = run.line.find((x) => x.unitId === o.unitId || x.fusion?.second === o.unitId);
-      const c = card(cu, { side: "you", extra: [h("div", { class: "cost" }, owned ? `${o.cost}g ＋` : `${o.cost}g`)], testid: `offer-${o.slot}` });
+      const c = card(cu, { side: "you", tier: o.tier, extra: [h("div", { class: "cost" }, owned ? `${o.cost}g ＋` : `${o.cost}g`)], testid: `offer-${o.slot}` });
       if (run.gold < o.cost) c.classList.add("poor");
       if (owned) c.classList.add("owned");
       c.addEventListener("click", () => void offerSheet(o));
