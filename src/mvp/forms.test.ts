@@ -126,7 +126,8 @@ describe("fusion", () => {
       emoji: "🛡️🏹",
       copies: 6,
       form: "awoken",
-      stats: { pwr: 3 + 4, hp: 10 + 8 },
+      // The stronger part's stats plus one copy's growth, not the sum (round 3, note 5).
+      stats: { pwr: Math.max(3, 4) + 1, hp: Math.max(10, 8) + 2 },
       recipe: {
         when: [{ kind: "trigger", on: { on: "BattleStart" } }],
         who: [{ kind: "allEnemies" }],
@@ -146,7 +147,7 @@ describe("fusion", () => {
       emoji: "🏹🛡️",
       copies: 6,
       form: "awoken",
-      stats: { pwr: 7, hp: 18 },
+      stats: { pwr: 5, hp: 12 },
       recipe: {
         when: [{ kind: "trigger", on: { on: "Hurt", unit: "otherAlly" } }],
         who: [{ kind: "allAllies" }],
@@ -155,6 +156,12 @@ describe("fusion", () => {
       fusion: { first: "archer", second: "warden", name: "Archden", discoveredBy: null },
     });
     expect(ba.recipe).not.toEqual(fuseUnits(warden, archer, { name: "Archden", discoveredBy: null }, content).recipe);
+  });
+
+  it("fused stats follow rules.copyGrowth, never the sum", () => {
+    const rules = { ...MVP_RULES, copyGrowth: { pwr: 2, hp: 3 } };
+    const fused = fuseUnits(warden, archer, { name: "W", discoveredBy: null }, content, rules);
+    expect(fused.stats).toEqual({ pwr: 4 + 2, hp: 10 + 3 });
   });
 
   it("copies the credit it is given: the namer (slice 10) applies the bot rule", () => {
@@ -169,7 +176,7 @@ describe("fusion", () => {
     expect(mergeTarget([fused], "someone-else")).toBe(-1);
     expect(mergeTarget([lineUnitOf(Archer, "u9"), fused], "warden")).toBe(1);
     const grown = addCopy(addCopy(fused, content, MVP_RULES), content, MVP_RULES);
-    expect(grown).toMatchObject({ kind: "fused", form: "awoken", copies: 8, stats: { pwr: 9, hp: 22 } });
+    expect(grown).toMatchObject({ kind: "fused", form: "awoken", copies: 8, stats: { pwr: 7, hp: 16 } });
     expect(grown.recipe).toEqual(fused.recipe);
     expect(grown.fusion).toEqual(fused.fusion);
   });
@@ -204,7 +211,7 @@ describe("golden battles with fused units", () => {
   it("Warden + Archer: at battle start, shields then volleys every enemy, both Does in order", () => {
     const fused = fuseUnits(warden, archer, { name: "Wardcher", discoveredBy: maks }, content);
     const log = fight([fused], dummies);
-    expect(log[0]).toMatchObject({ type: "BattleStart", teams: { A: [{ id: "A1:Wardcher", hp: 18, pwr: 7 }] } });
+    expect(log[0]).toMatchObject({ type: "BattleStart", teams: { A: [{ id: "A1:Wardcher", hp: 12, pwr: 5 }] } });
     expect(own(log).map((e) => `${show(e)} ← ${e.causedBy}`)).toEqual([
       "Shield on B1:Warden by A1:Wardcher#0 ← 0",
       "Shield on B2:Warden by A1:Wardcher#0 ← 0",

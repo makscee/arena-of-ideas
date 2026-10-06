@@ -197,7 +197,7 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       // uid; the other slot leaves the line. Swapping the tap order changes
       // only the recipe, never where the result stands.
       const front = Math.min(d.first, d.second);
-      const fused = fuseUnits(first, second, ctx.fuse, content);
+      const fused = fuseUnits(first, second, ctx.fuse, content, s.rules);
       s.line.splice(Math.max(d.first, d.second), 1);
       s.line[front] = fused;
       return { state: s };
