@@ -37,7 +37,7 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
     "div",
     { class: `card ${o.side}`, ...(o.testid ? { "data-testid": o.testid } : {}) },
     triggerMark(u.recipe),
-    o.tier ? h("span", { class: "tier", "aria-label": `tier ${o.tier}` }, "•".repeat(o.tier)) : null,
+    o.tier ? h("span", { class: "tier", "aria-label": `tier ${o.tier}` }, "●".repeat(o.tier)) : null,
     h("div", { class: "emoji" }, u.emoji),
     // One line; ui/dom.ts fitText() shrinks a long name a little, then cuts it.
     h("div", { class: "name", title: u.name }, u.name),
@@ -158,10 +158,12 @@ function sheetState(u: LineUnit | BattleUnit): string {
   return `${u.form === "awoken" ? "Awoken" : "Sleeping"} · ×${u.copies}`;
 }
 
-/** `next` as text nodes, the words not in `was` (by a word-level LCS) underlined. */
+/** `next` as text nodes, the words not in `was` (by a word-level LCS) underlined.
+ * Punctuation is its own token, so "ally." and "ally, then …" share "ally". */
 export function markChanges(was: string, next: string): Node[] {
-  const a = was.split(/(\s+)/);
-  const b = next.split(/(\s+)/);
+  const tokens = (t: string) => t.split(/(\s+|[.,;:!?])/).filter((x) => x !== "");
+  const a = tokens(was);
+  const b = tokens(next);
   const n = a.length;
   const m = b.length;
   const lcs = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));

@@ -48,10 +48,10 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
  * .clip ends one that still doesn't fit in "…"; the sheet has it whole. */
 .card .name { font-size: 12px; font-weight: 600; line-height: 14px; width: 100%; white-space: nowrap; overflow: hidden; }
 .card .name.clip { text-overflow: ellipsis; }
-.card.fused .emoji { font-size: 17px; white-space: nowrap; letter-spacing: -0.08em; }
+.card.fused .emoji { font-size: 15px; padding-left: 12px; white-space: nowrap; letter-spacing: -0.08em; }
 /* Top left: the trigger icon (what wakes it); top right: an offer's tier. */
 .card .trig { position: absolute; top: 3px; left: 4px; line-height: 0; }
-.card .tier { position: absolute; top: 1px; right: 4px; font-size: 9px; line-height: 10px; letter-spacing: -0.1em; color: var(--dim); }
+.card .tier { position: absolute; top: 4px; right: 4px; font-size: 5px; line-height: 6px; letter-spacing: 1px; color: var(--dim); }
 .card .foot { min-height: 12px; display: flex; align-items: center; justify-content: center; max-width: 100%; }
 .discovered { font-size: 10px; color: var(--dim); font-family: "IBM Plex Mono", monospace; }
 .card .stats { font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600; line-height: 14px; }

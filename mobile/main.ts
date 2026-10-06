@@ -407,9 +407,11 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
       buy.disabled = blocked !== "";
       // Without a preview (no gold), an owned unit still shows your copy as it is.
       const owned = mine ? null : run.line.find((x) => x.kind === "unit" && x.unitId === o.unitId) ?? null;
+      const sheet = mine ? unitSheet(mine.next, content, { from: mine.now.stats }) : owned ? unitSheet(owned, content) : u ? unitSheet(u, content) : h("h2", {}, o.unitId);
+      // What buying does goes inside the sheet, above its last line (the rates hint).
+      if (after) sheet.insertBefore(after, sheet.querySelector('[data-testid="unit-rates"]'));
       const close = overlay(
-        ...(mine ? [unitSheet(mine.next, content, { from: mine.now.stats })] : owned ? [unitSheet(owned, content)] : u ? [unitSheet(u, content)] : [h("h2", {}, o.unitId)]),
-        ...(after ? [after] : []),
+        sheet,
         h("div", { class: "row sheet-actions" }, button("Close", () => close(), "", "offer-close"), buy),
       );
     });
