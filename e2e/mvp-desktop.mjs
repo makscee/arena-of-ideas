@@ -83,12 +83,21 @@ try {
   const lineCount = () => page.getByTestId("line").locator(".card.you").count();
   /** Waits until the shop is drawn again after a decision (the gold or the line changed). */
   const settle = async () => { await page.waitForTimeout(150); await page.waitForFunction(() => !document.getElementById("app").classList.contains("busy")); };
+  /** The last sound the client asked for (round 3, note 16: ui/sound.ts logs each to window.__sfx). */
+  const lastSfx = () => page.evaluate(() => window.__sfx?.at(-1) ?? "");
+  const wantSfx = async (what, re) => {
+    const got = await lastSfx();
+    if (!re.test(got)) errors.push(`sound: ${what} played "${got}"`);
+  };
 
   await page.goto(url, { timeout: 20_000 });
   await page.getByTestId("name-input").waitFor({ timeout: 10_000 });
   await page.keyboard.type(`DeskTester${TAG}`);
   await page.keyboard.press("Enter");
   await page.getByTestId("play").waitFor();
+  // The title menu's Sound row: on at 60% by default.
+  if ((await page.getByTestId("home-actions").getByTestId("sound-toggle").textContent())?.includes("on") !== true) errors.push("sound: the title menu's toggle isn't on by default");
+  if ((await page.getByTestId("home-actions").getByTestId("sound-volume").inputValue()) !== "60") errors.push("sound: the default volume isn't 60");
   await shot("home"); await noHScroll("home"); await wide("home", 1100); await onScreen("home: Play", page.getByTestId("play"));
   await cardSize("home champion", "champion");
   // Home's two columns: Play sits right of the champion panel.
@@ -181,6 +190,7 @@ try {
         await page.keyboard.press("s");
         await settle();
         if ((await lineCount()) !== 4) errors.push("S didn't sell the selected unit");
+        await wantSfx("S (sell)", /^sell$/);
         sold = true;
         continue;
       }
@@ -188,6 +198,7 @@ try {
       await page.keyboard.press("1");
       await settle();
       if ((await gold()) === g0) { errors.push(`round ${round}: key 1 didn't buy`); break; }
+      await wantSfx("key 1 (buy)", /^(coin|merge|level-up)$/);
     }
     if (round === 1 && !crown && (await gold()) >= 1) {
       // R rerolls.
@@ -195,6 +206,14 @@ try {
       await page.keyboard.press("r");
       await settle();
       if ((await gold()) !== g0 - 1) errors.push("R didn't reroll");
+      await wantSfx("R", /^reroll$/);
+      // M mutes: the next sound is logged muted; M again turns it back on.
+      await page.keyboard.press("m");
+      await page.keyboard.press("r");
+      await settle();
+      // (a reroll, or "wrong" when the gold ran out)
+      await wantSfx("R after M", /^(reroll|wrong) \(muted\)$/);
+      await page.keyboard.press("m");
     }
     if (!crown && !dragged && (await lineCount()) >= 2) {
       dragged = true;
@@ -213,6 +232,7 @@ try {
       await page.keyboard.press("ArrowLeft");
       await settle();
       if ((await page.getByTestId("line-0").locator(".name").textContent()) !== name0) errors.push("← didn't move the selected unit");
+      await wantSfx("← (move)", /^move-left$/);
       if (!(await page.getByTestId("line-0").evaluate((el) => el.classList.contains("selected")))) errors.push("the moved unit isn't selected anymore");
       // Esc deselects.
       await page.keyboard.press("Escape");
@@ -220,6 +240,7 @@ try {
       // With nothing left to step back from, Esc opens the ☰ run menu (R2-10); Esc again closes it.
       await page.keyboard.press("Escape");
       await page.getByTestId("run-menu").waitFor({ timeout: 2_000 }).catch(() => errors.push("Esc didn't open the run menu"));
+      if (!(await page.getByTestId("run-menu").getByTestId("sound-toggle").count())) errors.push("sound: no Sound row in the run menu");
       await shot("run-menu");
       // ☰ Codex, then the window narrows below 1024px: Back finds the shop in its phone layout.
       await page.getByTestId("menu-codex").click();
@@ -311,6 +332,7 @@ try {
     await page.mouse.move(5, H - 5);
     await page.keyboard.press(String(key));
     await page.getByTestId("hint").filter({ hasText: "fuse" }).waitFor();
+    await wantSfx("the awakening copy", /^level-up$/);
     const first = run.line.findIndex((u) => u.form === "awoken");
     const second = run.line.findIndex((u) => u.uid === almost.uid);
     await page.getByTestId(`line-${first}`).click();
@@ -326,8 +348,10 @@ try {
     if (await page.getByTestId("inspector").getByTestId("preview-swap").count()) await page.getByTestId("preview-swap").click();
     await page.getByTestId("preview-confirm").click();
     await page.getByTestId("line").locator(".card.fused").waitFor();
+    if (!/\bfuse\b/.test((await page.evaluate(() => window.__sfx ?? [])).slice(-2).join(" "))) errors.push("sound: the fuse made no sound");
     // A pair nobody had made reveals its name (R2-5); Esc closes it.
     if (await page.getByTestId("fusion-reveal").isVisible().catch(() => false)) {
+      await wantSfx("the discovery reveal", /^discover$/);
       await shot("fusion-reveal");
       await page.keyboard.press("Escape");
       await page.getByTestId("fusion-reveal").waitFor({ state: "detached" });
