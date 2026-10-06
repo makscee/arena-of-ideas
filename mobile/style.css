@@ -207,7 +207,7 @@ button.bv-why { display: flex; align-items: center; justify-content: space-betwe
 .stat-head span:not(.grow), .stat-row .num { width: 48px; }
 /* Home (#587): a day that just ended, said first; the playoff compact, its games behind a tap. */
 .notice { font-size: 16px; color: var(--gold); border: 1px solid color-mix(in srgb, var(--gold) 55%, transparent); background: color-mix(in srgb, var(--gold) 8%, transparent); padding: 8px 10px; }
-.who-mark { white-space: nowrap; min-width: 0; display: inline-flex; max-width: 100%; }
+.who-mark { white-space: nowrap; min-width: 0; max-width: 100%; }
 .who-mark > .who { min-width: 0; }
 .playoff { gap: 6px; }
 .standings { display: flex; flex-direction: column; gap: 2px; font-size: 15px; }
@@ -232,5 +232,6 @@ button.bv-why { display: flex; align-items: center; justify-content: space-betwe
 .legend-sample .copies { color: var(--you); }
 .legend-sample .copies.tag { color: var(--gold); font-size: 11px; }
 .legend-sample .cost { color: var(--gold); }
-.who-mark > .bot { margin-left: 4px; flex: none; }
+.who-mark > .bot { margin-left: 4px; vertical-align: bottom; }
 .playoff.fresh { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); }
+.standing .who-mark { display: flex; align-items: center; }
