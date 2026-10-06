@@ -145,6 +145,49 @@ try {
   await shot("stats"); await noHScroll("stats");
   await page.getByTestId("stats-back").click();
   await page.getByTestId("play").waitFor();
+
+  // The Codex (R2-11) from the title menu: tier 3 filtered by a trigger icon,
+  // a unit's sheet with See Awoken and its dim rates line; Keywords lists
+  // Shield's units; a term's "Open in Codex" lands on its row; Fusions counts
+  // the pairs found. Back returns to the title menu.
+  await page.getByTestId("codex").click();
+  await page.getByTestId("codex-units").waitFor();
+  if ((await page.getByTestId("codex-unit").count()) < 60) errors.push(`codex: only ${await page.getByTestId("codex-unit").count()} units`);
+  await shot("codex-units"); await noHScroll("codex-units");
+  await page.getByTestId("codex-tier-3").click();
+  const tier3 = await page.getByTestId("codex-unit").count();
+  const trig = page.locator('[data-testid^="codex-trigger-"]').first();
+  await tap44("codex trigger", trig); await tap44("codex trigger", trig, "width");
+  await trig.click();
+  const both = await page.getByTestId("codex-unit").count();
+  if (both === 0 || both > tier3) errors.push(`codex: tier 3 + a trigger shows ${both} of ${tier3}`);
+  for (const t of await page.getByTestId("codex-unit").locator(".tier").allTextContents()) if (t !== "●●●") errors.push(`codex: a tier-${t.length} unit under tier 3`);
+  await shot("codex-filtered"); await noHScroll("codex-filtered");
+  await page.getByTestId("codex-unit").first().click();
+  await page.getByTestId("see-awoken").click();
+  await page.getByTestId("see-sleeping").waitFor();
+  await shot("codex-sheet");
+  await page.getByTestId("sheet-close").click();
+  await page.getByTestId("codex-tab-keywords").click();
+  const shieldUsers = await page.locator('[data-term="status:Shield"] [data-testid="codex-term-unit"]').count();
+  if (shieldUsers === 0) errors.push("codex: Shield lists no units");
+  await page.locator('[data-term="status:Shield"]').scrollIntoViewIfNeeded();
+  await shot("codex-keywords"); await noHScroll("codex-keywords");
+  await page.locator('[data-term="status:Shield"] [data-testid="codex-term-unit"]').first().click();
+  await page.locator('[data-testid="unit-sheet"] [data-testid="term"]').first().click();
+  const termId = await page.locator('[data-testid="unit-sheet"] [data-testid="term"]').first().getAttribute("data-term");
+  await page.getByTestId("term-codex").click();
+  await page.locator(".kw-row.landed").waitFor();
+  if ((await page.locator(".kw-row.landed").getAttribute("data-term")) !== termId) errors.push(`codex: Open in Codex for ${termId} landed elsewhere`);
+  await onScreen("codex: the landed row", page.locator(".kw-row.landed"));
+  await shot("codex-landed");
+  await page.getByTestId("codex-tab-fusions").click();
+  await page.getByTestId("codex-fusions-found").waitFor();
+  if (!/^[\d,]+ of 6,480 found$/.test(await page.getByTestId("codex-fusions-found").textContent())) errors.push(`codex: "${await page.getByTestId("codex-fusions-found").textContent()}"`);
+  await shot("codex-fusions"); await noHScroll("codex-fusions");
+  if ((await page.getByTestId("icon-credits").textContent()).indexOf("CC BY 3.0") < 0) errors.push("codex: no icon credits");
+  await page.getByTestId("codex-back").click();
+  await page.getByTestId("play").waitFor();
   await page.getByTestId("play").click();
 
   let round = 0;
@@ -159,6 +202,14 @@ try {
       await page.getByTestId("menu-open").click();
       await page.getByTestId("run-menu").waitFor();
       await shot("run-menu"); await noHScroll("run-menu");
+      // ☰ Codex opens over the shop; Back returns to the same round.
+      await page.getByTestId("menu-codex").click();
+      await page.getByTestId("codex-units").waitFor();
+      await page.getByTestId("codex-back").click();
+      await page.getByTestId("fight").waitFor();
+      if ((await page.getByTestId("round").textContent()) !== at) errors.push(`codex from ☰: back in ${await page.getByTestId("round").textContent()}, not ${at}`);
+      await page.getByTestId("menu-open").click();
+      await page.getByTestId("run-menu").waitFor();
       await page.getByTestId("menu-title").click();
       await page.getByTestId("play").waitFor();
       const cont = await page.getByTestId("play").textContent();
@@ -294,17 +345,13 @@ try {
   await page.getByTestId("play").waitFor();
   await shot("home-after");
 
-  // Stats (slice 11): the finished run counted its units' rates; every tab opens.
+  // Stats (slice 11, R2-11): records and the champion history; units and
+  // fusions moved to the Codex.
   await page.getByTestId("stats").click();
-  await page.getByTestId("stats-units").waitFor();
-  if ((await page.getByTestId("stats-unit").count()) === 0) errors.push("stats: no unit rates after a finished run");
-  await shot("stats-units"); await noHScroll("stats-units");
-  await page.getByTestId("stats-tab-champions").click();
   await page.getByTestId("stats-champions").waitFor();
-  await shot("stats-champions"); await noHScroll("stats-champions");
-  await page.getByTestId("stats-tab-fusions").click();
-  await page.getByTestId("stats-fusions").waitFor();
-  await shot("stats-fusions"); await noHScroll("stats-fusions");
+  if ((await page.getByTestId("stats-records").count()) === 0) errors.push("stats: no records");
+  if ((await page.getByTestId("stats-tab-units").count()) > 0) errors.push("stats: still has a Units tab (the Codex has it)");
+  await shot("stats"); await noHScroll("stats");
   {
     // Back stays on the first screen however long the lists grow.
     const box = await page.getByTestId("stats-back").boundingBox();

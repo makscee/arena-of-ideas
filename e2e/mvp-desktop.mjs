@@ -90,6 +90,18 @@ try {
   await page.getByTestId("stats-back").waitFor();
   await shot("stats"); await noHScroll("stats"); await wide("stats", 900);
   await page.getByTestId("stats-back").click();
+  // The Codex uses the width: its unit grid runs many cards a row; Esc goes back.
+  await page.getByTestId("codex").click();
+  await page.getByTestId("codex-units").waitFor();
+  await shot("codex"); await noHScroll("codex"); await wide("codex", 1200);
+  {
+    const tops = await page.getByTestId("codex-unit").evaluateAll((els) => els.slice(0, 8).map((e) => Math.round(e.getBoundingClientRect().top)));
+    if (new Set(tops).size > 1) errors.push(`codex: the first 8 cards wrap (${tops.join(",")})`);
+  }
+  await page.getByTestId("codex-tab-keywords").click();
+  await page.getByTestId("codex-keywords").waitFor();
+  await shot("codex-keywords");
+  await page.keyboard.press("Escape");
   await page.getByTestId("play").click();
 
   let round = 0;

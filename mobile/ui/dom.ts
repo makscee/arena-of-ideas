@@ -35,6 +35,23 @@ export function show(...kids: (Node | null)[]): void {
   window.scrollTo(0, 0);
 }
 
+/** Keeps the current screen as it is (its nodes, name, keys and scroll, not
+ * its sheets) and returns a function that puts it back: the Codex opens over
+ * any screen, a run's shop or a battle included, and Back returns to it
+ * untouched. */
+export function keepScreen(): () => void {
+  const kids = [...app.childNodes].filter((n) => !(n instanceof HTMLElement && n.classList.contains("overlay")));
+  const name = app.dataset.screen;
+  const kept = keys;
+  const y = window.scrollY;
+  return () => {
+    show(...kids);
+    if (name) app.dataset.screen = name;
+    keys = kept;
+    window.scrollTo(0, y);
+  };
+}
+
 // ---------- desktop (round 2, R2-9) ----------
 
 /** 1024px and wider: the desktop layout (style.css, the same breakpoint).
@@ -45,7 +62,7 @@ export const isDesktop = (): boolean => desktopQuery.matches;
 /** Names the screen on #app (data-screen), which turns on its desktop layout
  * in style.css; a screen without a name (the battle until R2-16, the name
  * screen) stays a phone column at every width. */
-export function screen(name: "home" | "shop" | "result" | "over" | "stats"): void {
+export function screen(name: "home" | "shop" | "result" | "over" | "stats" | "codex"): void {
   app.dataset.screen = name;
 }
 

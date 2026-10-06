@@ -7,7 +7,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import { describeAbility, describeStatus, describeStatusSegments, type DescribeSegment } from "./describe.js";
-import { GLOSSARY, ICON_IDS, STATUS_TERMS, termDef, termIcon, type TermId } from "./glossary.js";
+import { GLOSSARY, ICON_IDS, STATUS_TERMS, scopedTip, termDef, termIcon, type TermId } from "./glossary.js";
 import type { UnitForm } from "./mvp/contract.js";
 import { formSegments, formText } from "./mvp/form-text.js";
 import { mvpPool } from "./mvp/units.js";
@@ -188,5 +188,17 @@ describe("glossary entries and icons", () => {
   test("a status-lands trigger shows the status's own icon", () => {
     expect(termIcon("trigger:StatusApplied", "Shield")).toBe("shield");
     expect(termIcon("trigger:Hurt")).toBe("broken-heart");
+  });
+
+  test("a trigger's rule follows its scope: an enemy's death is not the holder's", () => {
+    // The tip a trigger run shows comes from its scope, carried on the run.
+    const scopeOf = (name: string) => formSegments(pool.units.find((u) => u.name === name)!.forms.sleeping, pool.abilities).find((s) => s.term === "trigger:Death")?.scope;
+    const enemyDeath = pool.units.find((u) => u.forms.sleeping.when.some((w) => w.on.on === "Death" && "unit" in w.on && w.on.unit === "enemy"))!;
+    expect(scopeOf(enemyDeath.name)).toBe("enemy");
+    expect(scopedTip("trigger:Death", "enemy")).toBe("When an enemy dies.");
+    expect(scopedTip("trigger:Death", "otherAlly")).toBe("When another ally (not this unit) dies.");
+    expect(scopedTip("trigger:Death", "holder")).toBe(GLOSSARY["trigger:Death"].tip);
+    expect(scopedTip("trigger:Death")).toBe(GLOSSARY["trigger:Death"].tip);
+    expect(scopedTip("trigger:BattleStart", "any")).toBe(GLOSSARY["trigger:BattleStart"].tip);
   });
 });
