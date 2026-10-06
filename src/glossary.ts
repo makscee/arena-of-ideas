@@ -10,7 +10,7 @@
 // entry.
 
 import { describeStatus } from "./describe.js";
-import type { Condition, Effect, EventPattern, Selector, StatusRegistry } from "./types.js";
+import type { Condition, Effect, EventPattern, Selector, StatusRegistry, UnitFilter } from "./types.js";
 
 /** Every term id. `status:` takes a registry name ("Shield", "Poison", …). */
 export type TermId =
@@ -179,4 +179,34 @@ export function termIcon(id: TermId, status?: string): IconId | undefined {
   if ((id === "trigger:StatusApplied" || id === "trigger:StatusRemoved" || id === "effect:applyStatus") && status)
     return STATUS_TERMS[status]?.icon;
   return termDef(id)?.icon;
+}
+
+/** What a unit trigger watches for, said of someone else (its tip is said of
+ * the holder: "When it dies …"). */
+const SCOPED_EVENT: Partial<Record<EventPattern["on"], string>> = {
+  Strike: "makes its normal attack.",
+  Hurt: "is hit: a strike, an ability, Poison or Fatigue. It counts even if Shield blocks all of it.",
+  Heal: "gets HP back. A unit at full HP can't be healed, so this doesn't fire.",
+  Death: "dies.",
+  Summon: "joins the line: summoned, or revived.",
+  StatusApplied: "gets that status.",
+  StatusRemoved: "loses that status: used up or removed.",
+  StatChanged: "gains PWR, for example from Strength.",
+};
+
+const SCOPE_WHO: Record<Exclude<UnitFilter, "holder">, string> = {
+  ally: "When any ally, this unit included,",
+  otherAlly: "When another ally (not this unit)",
+  enemy: "When an enemy",
+  any: "When any unit, on either side,",
+};
+
+/** A trigger's rule as its sentence scopes it: "After an enemy dies" shows
+ * "When an enemy dies.", not the holder's own-death rule. The holder's scope
+ * (and a term that isn't a unit trigger) keeps the plain tip. */
+export function scopedTip(id: TermId, scope?: UnitFilter): string | undefined {
+  const def = termDef(id);
+  if (!def || !scope || scope === "holder" || !id.startsWith("trigger:")) return def?.tip;
+  const event = SCOPED_EVENT[id.slice("trigger:".length) as EventPattern["on"]];
+  return event ? `${SCOPE_WHO[scope]} ${event}` : def.tip;
 }

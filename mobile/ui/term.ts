@@ -7,7 +7,7 @@
 // sheet with the rule. Both offer "Open in Codex" once something registers a
 // Codex link (slice R2-11, setCodexLink).
 import type { DescribeSegment } from "../../src/describe";
-import { termDef, termIcon, type TermDef, type TermId } from "../../src/glossary";
+import { scopedTip, termDef, termIcon, type TermDef, type TermId } from "../../src/glossary";
 import { closable, h } from "./dom";
 import { changedTokens } from "./diff";
 import { icon } from "./icon";
@@ -30,7 +30,8 @@ export function termInfo(seg: DescribeSegment): (TermDef & { id: TermId }) | und
     const holder = termDef("target:holder")!;
     return /^this unit$/i.test(seg.text) ? { ...holder, id, label } : { ...def, id, label };
   }
-  return { ...def, id };
+  // A trigger clause's rule follows its scope ("after an enemy dies").
+  return seg.scope ? { ...def, id, tip: scopedTip(id, seg.scope) ?? def.tip } : { ...def, id };
 }
 
 /** The status a run is about: its own status term, or the status a "lands on"

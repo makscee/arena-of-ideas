@@ -67,6 +67,10 @@ export interface DescribeSegment {
   /** On every run of a trigger clause, so "After [Shield] lands on an ally"
    * draws as one pill. */
   clause?: "when";
+  /** On a trigger clause's runs: whose event it is ("an enemy" in "after an
+   * enemy dies"), so the rule shown matches the scope (glossary scopedTip).
+   * Unset for the turn and battle triggers, which have no unit. */
+  scope?: UnitFilter;
   /** On the number of a damage or heal ("deal [2] damage", "heal it for [2]"):
    * the client draws it bold with its effect's icon, so the amount carries
    * the icon and the verb is only coloured. */
@@ -152,9 +156,11 @@ export function describeWhenSegments(w: When, opts: DescribeOpts = {}): Describe
   const term: TermId = `trigger:${p.on}`;
   // A clause run: text + the Part ref + the trigger's term; " would " splits
   // out as its own run.
+  const filter = p.on === "Strike" ? p.striker : "unit" in p ? p.unit : undefined;
+  const scope: { scope?: UnitFilter } = p.on === "BattleStart" || p.on === "TurnStart" || p.on === "TurnEnd" ? {} : { scope: filter ?? "any" };
   const whenSeg = (text: string): DescribeSegment[] =>
     text.split(/(?<= )(would)(?= )/).filter((t) => t !== "").map((t) =>
-      t === "would" ? { text: t, partRef: ref, term: "term:would", clause: "when" } : { text: t, partRef: ref, term, clause: "when" },
+      t === "would" ? { text: t, partRef: ref, term: "term:would", clause: "when" } : { text: t, partRef: ref, term, clause: "when", ...scope },
     );
   const statusSeg = (status: string): DescribeSegment => ({ text: status, statusRef: status, term: `status:${status}`, clause: "when" });
   switch (p.on) {
