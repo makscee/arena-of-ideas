@@ -1,0 +1,5282 @@
+[
+ {
+  "first": "doctor",
+  "second": "bloodthinner",
+  "a": "Doctor",
+  "b": "Bloodthinner",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Doctor merges with Bloodthinner. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Doctor merges with Bloodthinner. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Doctor merges with Bloodthinner. Name:"
+   }
+  ]
+ },
+ {
+  "first": "keeper",
+  "second": "saboteur",
+  "a": "Keeper",
+  "b": "Saboteur",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Keeper merges with Saboteur. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Keeper merges with Saboteur. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Keeper merges with Saboteur. Name:"
+   }
+  ]
+ },
+ {
+  "first": "divinity",
+  "second": "bloodthinner",
+  "a": "Divinity",
+  "b": "Bloodthinner",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Divinity merges with Bloodthinner. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Divinity merges with Bloodthinner. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Divinity merges with Bloodthinner. Name:"
+   }
+  ]
+ },
+ {
+  "first": "bulwark",
+  "second": "battle-mage",
+  "a": "Bulwark",
+  "b": "Battle Mage",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Bulwark merges with Battle Mage. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Bulwark merges with Battle Mage. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Bulwark merges with Battle Mage. Name:"
+   }
+  ]
+ },
+ {
+  "first": "stoneskin",
+  "second": "distractor",
+  "a": "Stoneskin",
+  "b": "Distractor",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Stoneskin merges with Distractor. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Stoneskin merges with Distractor. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Stoneskin merges with Distractor. Name:"
+   }
+  ]
+ },
+ {
+  "first": "distractor",
+  "second": "medic",
+  "a": "Distractor",
+  "b": "Medic",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Distractor merges with Medic. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Distractor merges with Medic. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Distractor merges with Medic. Name:"
+   }
+  ]
+ },
+ {
+  "first": "rose",
+  "second": "injector",
+  "a": "Rose",
+  "b": "Injector",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Rose merges with Injector. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Rose merges with Injector. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Rose merges with Injector. Name:"
+   }
+  ]
+ },
+ {
+  "first": "wither",
+  "second": "priest",
+  "a": "Wither",
+  "b": "Priest",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Wither merges with Priest. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Wither merges with Priest. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Wither merges with Priest. Name:"
+   }
+  ]
+ },
+ {
+  "first": "priest",
+  "second": "emberling",
+  "a": "Priest",
+  "b": "Emberling",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Priest merges with Emberling. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Priest merges with Emberling. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Priest merges with Emberling. Name:"
+   }
+  ]
+ },
+ {
+  "first": "wane",
+  "second": "prepper",
+  "a": "Wane",
+  "b": "Prepper",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Wane merges with Prepper. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Wane merges with Prepper. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Wane merges with Prepper. Name:"
+   }
+  ]
+ },
+ {
+  "first": "taser",
+  "second": "plague-rat",
+  "a": "Taser",
+  "b": "Plague Rat",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Taser merges with Plague Rat. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Taser merges with Plague Rat. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Taser merges with Plague Rat. Name:"
+   }
+  ]
+ },
+ {
+  "first": "bulwark",
+  "second": "virus",
+  "a": "Bulwark",
+  "b": "Virus",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Bulwark merges with Virus. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Bulwark merges with Virus. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Bulwark merges with Virus. Name:"
+   }
+  ]
+ },
+ {
+  "first": "pediatrician",
+  "second": "plague-doctor",
+  "a": "Pediatrician",
+  "b": "Plague Doctor",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Pediatrician merges with Plague Doctor. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Pediatrician merges with Plague Doctor. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Pediatrician merges with Plague Doctor. Name:"
+   }
+  ]
+ },
+ {
+  "first": "divinity",
+  "second": "medic",
+  "a": "Divinity",
+  "b": "Medic",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Divinity merges with Medic. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Divinity merges with Medic. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Divinity merges with Medic. Name:"
+   }
+  ]
+ },
+ {
+  "first": "medic",
+  "second": "fighter",
+  "a": "Medic",
+  "b": "Fighter",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Medic merges with Fighter. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Medic merges with Fighter. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Medic merges with Fighter. Name:"
+   }
+  ]
+ },
+ {
+  "first": "king",
+  "second": "hag",
+  "a": "King",
+  "b": "Hag",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "King merges with Hag. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "King merges with Hag. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "King merges with Hag. Name:"
+   }
+  ]
+ },
+ {
+  "first": "almsgiver",
+  "second": "rot",
+  "a": "Almsgiver",
+  "b": "Rot",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Almsgiver merges with Rot. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Almsgiver merges with Rot. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Almsgiver merges with Rot. Name:"
+   }
+  ]
+ },
+ {
+  "first": "sniper",
+  "second": "spore",
+  "a": "Sniper",
+  "b": "Spore",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Sniper merges with Spore. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Sniper merges with Spore. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Sniper merges with Spore. Name:"
+   }
+  ]
+ },
+ {
+  "first": "sexton",
+  "second": "fighter",
+  "a": "Sexton",
+  "b": "Fighter",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Sexton merges with Fighter. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Sexton merges with Fighter. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Sexton merges with Fighter. Name:"
+   }
+  ]
+ },
+ {
+  "first": "bloodthinner",
+  "second": "emberling",
+  "a": "Bloodthinner",
+  "b": "Emberling",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Bloodthinner merges with Emberling. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Bloodthinner merges with Emberling. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Bloodthinner merges with Emberling. Name:"
+   }
+  ]
+ },
+ {
+  "first": "equalizer",
+  "second": "fighter",
+  "a": "Equalizer",
+  "b": "Fighter",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Equalizer merges with Fighter. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Equalizer merges with Fighter. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Equalizer merges with Fighter. Name:"
+   }
+  ]
+ },
+ {
+  "first": "director",
+  "second": "gnat",
+  "a": "Director",
+  "b": "Gnat",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Director merges with Gnat. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Director merges with Gnat. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Director merges with Gnat. Name:"
+   }
+  ]
+ },
+ {
+  "first": "fruiter",
+  "second": "henchman",
+  "a": "Fruiter",
+  "b": "Henchman",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Fruiter merges with Henchman. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Fruiter merges with Henchman. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Fruiter merges with Henchman. Name:"
+   }
+  ]
+ },
+ {
+  "first": "lilith",
+  "second": "rat",
+  "a": "Lilith",
+  "b": "Rat",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Lilith merges with Rat. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Lilith merges with Rat. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Lilith merges with Rat. Name:"
+   }
+  ]
+ },
+ {
+  "first": "plague-doctor",
+  "second": "wire",
+  "a": "Plague Doctor",
+  "b": "Wire",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Plague Doctor merges with Wire. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Plague Doctor merges with Wire. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Plague Doctor merges with Wire. Name:"
+   }
+  ]
+ },
+ {
+  "first": "equalizer",
+  "second": "berserker",
+  "a": "Equalizer",
+  "b": "Berserker",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Equalizer merges with Berserker. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Equalizer merges with Berserker. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Equalizer merges with Berserker. Name:"
+   }
+  ]
+ },
+ {
+  "first": "spore",
+  "second": "leech",
+  "a": "Spore",
+  "b": "Leech",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Spore merges with Leech. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Spore merges with Leech. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Spore merges with Leech. Name:"
+   }
+  ]
+ },
+ {
+  "first": "guardian",
+  "second": "hag",
+  "a": "Guardian",
+  "b": "Hag",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Guardian merges with Hag. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Guardian merges with Hag. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Guardian merges with Hag. Name:"
+   }
+  ]
+ },
+ {
+  "first": "battery",
+  "second": "lilith",
+  "a": "Battery",
+  "b": "Lilith",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Battery merges with Lilith. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Battery merges with Lilith. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Battery merges with Lilith. Name:"
+   }
+  ]
+ },
+ {
+  "first": "redirector",
+  "second": "rose",
+  "a": "Redirector",
+  "b": "Rose",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Redirector merges with Rose. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Redirector merges with Rose. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Redirector merges with Rose. Name:"
+   }
+  ]
+ },
+ {
+  "first": "king",
+  "second": "harvest",
+  "a": "King",
+  "b": "Harvest",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "King merges with Harvest. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "King merges with Harvest. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "King merges with Harvest. Name:"
+   }
+  ]
+ },
+ {
+  "first": "wither",
+  "second": "victim",
+  "a": "Wither",
+  "b": "Victim",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Wither merges with Victim. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Wither merges with Victim. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Wither merges with Victim. Name:"
+   }
+  ]
+ },
+ {
+  "first": "gardener",
+  "second": "keeper",
+  "a": "Gardener",
+  "b": "Keeper",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Gardener merges with Keeper. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Gardener merges with Keeper. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Gardener merges with Keeper. Name:"
+   }
+  ]
+ },
+ {
+  "first": "fighter",
+  "second": "silencer",
+  "a": "Fighter",
+  "b": "Silencer",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Fighter merges with Silencer. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Fighter merges with Silencer. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Fighter merges with Silencer. Name:"
+   }
+  ]
+ },
+ {
+  "first": "duelist",
+  "second": "injector",
+  "a": "Duelist",
+  "b": "Injector",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Duelist merges with Injector. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Duelist merges with Injector. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Duelist merges with Injector. Name:"
+   }
+  ]
+ },
+ {
+  "first": "battery",
+  "second": "doctor",
+  "a": "Battery",
+  "b": "Doctor",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Battery merges with Doctor. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Battery merges with Doctor. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Battery merges with Doctor. Name:"
+   }
+  ]
+ },
+ {
+  "first": "morbid",
+  "second": "harvest",
+  "a": "Morbid",
+  "b": "Harvest",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Morbid merges with Harvest. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Morbid merges with Harvest. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Morbid merges with Harvest. Name:"
+   }
+  ]
+ },
+ {
+  "first": "custodian",
+  "second": "redirector",
+  "a": "Custodian",
+  "b": "Redirector",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Custodian merges with Redirector. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Custodian merges with Redirector. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Custodian merges with Redirector. Name:"
+   }
+  ]
+ },
+ {
+  "first": "king",
+  "second": "emberling",
+  "a": "King",
+  "b": "Emberling",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "King merges with Emberling. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "King merges with Emberling. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "King merges with Emberling. Name:"
+   }
+  ]
+ },
+ {
+  "first": "emberling",
+  "second": "squire",
+  "a": "Emberling",
+  "b": "Squire",
+  "real": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fang Paladin"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Mender of Storms"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Alms Cutter"
+   },
+   {
+    "role": "user",
+    "content": "Emberling merges with Squire. Name:"
+   }
+  ],
+  "one": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: a single word, at most 14 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Emberling merges with Squire. Name:"
+   }
+  ],
+  "one2": [
+   {
+    "role": "system",
+    "content": "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic."
+   },
+   {
+    "role": "user",
+    "content": "Knight merges with Wolf. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Fangwarden"
+   },
+   {
+    "role": "user",
+    "content": "Spark merges with Healer. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Stormmender"
+   },
+   {
+    "role": "user",
+    "content": "Golem merges with Raven. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Gravewing"
+   },
+   {
+    "role": "user",
+    "content": "Thief merges with Monk. Name:"
+   },
+   {
+    "role": "assistant",
+    "content": "Almscutter"
+   },
+   {
+    "role": "user",
+    "content": "Emberling merges with Squire. Name:"
+   }
+  ]
+ }
+]

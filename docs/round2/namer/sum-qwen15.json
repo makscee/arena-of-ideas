@@ -1,0 +1,1 @@
+{"model": "mlx-community/Qwen2.5-1.5B-Instruct-4bit", "load_s": 1.4, "n": 160, "lat_med": 0.433, "lat_p90": 0.455, "lat_max": 2.708, "peak_gpu_gb": 1.12, "maxrss_gb": 0.83}
