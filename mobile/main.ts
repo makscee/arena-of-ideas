@@ -499,7 +499,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
           h(
             "div",
             { class: "row sheet-actions" },
-            button(desk ? "Cancel · Esc" : "Cancel", () => close(), "grow", "preview-cancel"),
+            button("Cancel", () => close(), "grow", "preview-cancel"),
             button("⇄ Swap", () => ((at = 1 - at), render()), "", "preview-swap"),
             button("Fuse", () => (close(), void fuse(o, views[at]!)), "primary grow", "preview-confirm"),
           ),
