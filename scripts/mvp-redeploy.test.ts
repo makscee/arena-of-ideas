@@ -23,7 +23,10 @@ esac`,
   git: `#!/bin/bash
 [ "$1" = rev-parse ] && echo abc1234; exit 0`,
   npm: "#!/bin/bash\nexit 0",
-  curl: "#!/bin/bash\necho '{\"ok\":true}'",
+  // NO_HEALTH: the new server never answers /health
+  curl: `#!/bin/bash
+case "$*" in *api/v1/health*) [ -n "\${NO_HEALTH:-}" ] && exit 7 ;; esac
+echo '{"ok":true}'`,
   tailscale: "#!/bin/bash\nexit 0",
   // the waits for launchd don't wait here
   sleep: "#!/bin/bash\nexit 0",
@@ -103,10 +106,26 @@ describe("mvp-redeploy (--fresh and plain)", () => {
       const { home, db } = host();
       const r = deploy(home, { STUCK: "1" }, args); // launchd never lets the old job go
       expect(r.status, args.join(" ")).toBe(1);
-      expect(r.stderr).toContain("didn't stop within 10s, so the old build still serves");
+      expect(r.stderr).toContain("didn't stop within 10s, so the old server still runs");
+      // the checkout and build already happened: the message says so and what to run
+      expect(r.stderr).toContain("is already at abc1234 (checkout, npm ci, build), so phones get the new client against the old server's API");
+      expect(r.stderr).toContain(`Run the redeploy again: npm run mvp:redeploy -- mission-574-mvp${args.length ? " --fresh" : ""}`);
       expect(r.stdout).not.toContain("deployed");
       expect(r.log).not.toMatch(/bootstrap gui\/\d+ .*ru\.makscee\.arena-mvp\.plist/);
       expect(readFileSync(db, "utf8")).toBe("old world");
+    }
+  });
+
+  it("a new server that never answers /health fails the redeploy: exit 1, no \"deployed\" line, the server log's end", () => {
+    for (const args of [[], ["--fresh"]]) {
+      const { home, dir } = host();
+      writeFileSync(join(dir, "data/server.log"), "SyntaxError: boom\n");
+      const r = deploy(home, { NO_HEALTH: "1" }, args);
+      expect(r.status, args.join(" ")).toBe(1);
+      expect(r.stdout).not.toContain("deployed");
+      expect(r.stderr).toContain("the new server (abc1234, mission-574-mvp) never answered http://127.0.0.1:8791/arena/api/v1/health within 30s");
+      expect(r.stderr).toContain("SyntaxError: boom");
+      expect(r.log).toMatch(/bootstrap gui\/\d+ .*ru\.makscee\.arena-mvp\.plist/);
     }
   });
 

@@ -17,6 +17,8 @@
 # Runs from anywhere with `ssh m1`; on m1 itself it runs locally. The server
 # is a launchd agent (ru.makscee.arena-mvp), so it restarts on crash and login.
 # The deployed commit goes into its env (MVP_BUILD): `build` on /api/v1/health.
+# It prints "deployed <sha>" only once the new server answers /health; an old
+# server that won't stop, or a new one that never answers, exits 1.
 set -euo pipefail
 BRANCH=mission-574-mvp
 FRESH=0
@@ -113,10 +115,12 @@ PL
 # bootout returns before the job is gone; bootstrap too early fails with EIO.
 launchctl bootout "gui/\$(id -u)/\$LABEL" 2>/dev/null || true
 for i in \$(seq 1 20); do launchctl print "gui/\$(id -u)/\$LABEL" >/dev/null 2>&1 || break; sleep 0.5; done
-# Still loaded after the wait: the old code keeps serving. Say so and stop,
-# never report a deploy that didn't happen.
+# Still loaded after the wait: the old server keeps running. Say so and stop,
+# never report a deploy that didn't happen. By now the checkout, npm ci and
+# the build have already rewritten \$DIR, and the old server serves mobile/dist
+# from disk, so phones get the new client against the old server's API.
 if launchctl print "gui/\$(id -u)/\$LABEL" >/dev/null 2>&1; then
-  echo "redeploy failed: \$LABEL didn't stop within 10s, so the old build still serves (nothing deployed; the DB stayed). Run the redeploy again." >&2
+  echo "redeploy failed: \$LABEL didn't stop within 10s, so the old server still runs. \$DIR is already at \$BUILD (checkout, npm ci, build), so phones get the new client against the old server's API until it restarts. The DB stayed. Run the redeploy again: npm run mvp:redeploy -- $BRANCH$( [ "$FRESH" = 1 ] && echo " --fresh")" >&2
   exit 1
 fi
 FAILED=
@@ -130,12 +134,23 @@ fi
 launchctl bootstrap "gui/\$(id -u)" "\$PLIST"
 TS=/Applications/Tailscale.app/Contents/MacOS/Tailscale
 \$TS serve --bg --set-path /arena "http://127.0.0.1:$PORT" >/dev/null
+HEALTH=
 for i in \$(seq 1 30); do
-  curl -fsS --max-time 2 "http://127.0.0.1:$PORT/arena/api/v1/health" >/dev/null 2>&1 && break
+  HEALTH=\$(curl -fsS --max-time 2 "http://127.0.0.1:$PORT/arena/api/v1/health" 2>/dev/null) && break
+  HEALTH=
   sleep 1
 done
 curl -fsS --max-time 5 "http://127.0.0.1:$NAMER_PORT/v1/models" >/dev/null 2>&1 && echo "namer up on :$NAMER_PORT" || echo "namer not up yet on :$NAMER_PORT (fusions use the portmanteau until it is)"
-echo "deployed \$(git rev-parse --short HEAD) ($BRANCH): \$(curl -fsS --max-time 5 http://127.0.0.1:$PORT/arena/api/v1/health)"
+# No answer in 30s: the new server is down (launchd keeps restarting it).
+# Never report it deployed.
+if [ -z "\$HEALTH" ]; then
+  echo "redeploy failed: the new server (\$BUILD, $BRANCH) never answered http://127.0.0.1:$PORT/arena/api/v1/health within 30s, so the Arena isn't serving. The end of \$DIR/data/server.log:" >&2
+  tail -n 20 "\$DIR/data/server.log" >&2 2>/dev/null || true
+  [ -z "\$FAILED" ] || echo "--fresh failed too: \$FAILED" >&2
+  echo "Fix it and redeploy (npm run mvp:redeploy -- <branch>), or go back to a branch that worked." >&2
+  exit 1
+fi
+echo "deployed \$BUILD ($BRANCH): \$HEALTH"
 if [ -n "\$FAILED" ]; then
   echo "--fresh failed: \$FAILED" >&2
   exit 1

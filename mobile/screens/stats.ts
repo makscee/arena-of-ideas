@@ -6,7 +6,7 @@
 import type { Champion, FusionDiscovery, HomeView, MvpContent, StatsView, UnitContent } from "../../src/mvp/contract";
 import { api } from "../api";
 import { card, unitSheet } from "../ui/card";
-import { button, h, overlay, show } from "../ui/dom";
+import { button, h, overlay, show, who } from "../ui/dom";
 import { keepUnitRates, pct } from "../ui/unit-stats";
 
 type Tab = "units" | "champions" | "fusions";
@@ -89,7 +89,7 @@ function championsPanel(champions: Champion[], content: MvpContent): HTMLElement
       "div",
       { class: "stat-row", "data-testid": "stats-champion" },
       h("span", { class: "emoji" }, "👑"),
-      h("span", { class: "grow" }, h("div", {}, `Day ${c.seq} · @${c.player.name}`), h("div", { class: "dim small" }, `${c.day} · ${c.line.map((u) => u.emoji).join(" ")}`)),
+      h("span", { class: "grow" }, h("div", {}, `Day ${c.seq} · `, who(c.player.name)), h("div", { class: "dim small" }, `${c.day} · ${c.line.map((u) => u.emoji).join(" ")}`)),
     );
     row.addEventListener("click", () => overlay(championSheet(c, content)));
     return row;
@@ -101,7 +101,7 @@ function championSheet(c: Champion, content: MvpContent): HTMLElement {
   return h(
     "div",
     { class: "stack", "data-testid": "champion-sheet" },
-    h("h2", {}, `👑 Day ${c.seq} · @${c.player.name}`),
+    h("h2", {}, `👑 Day ${c.seq} · `, who(c.player.name)),
     h("div", { class: "dim" }, `${c.day}, front first. Tap a unit to read it.`),
     h(
       "div",
@@ -124,7 +124,7 @@ function fusionsPanel(fusions: FusionDiscovery[], content: MvpContent): HTMLElem
     .map((f) => {
       const a = part(f.first);
       const b = part(f.second);
-      const by = f.discoveredBy ? (f.discoveredBy.id === me ? "you" : `@${f.discoveredBy.name}`) : null;
+      const by = f.discoveredBy ? (f.discoveredBy.id === me ? "you" : who(f.discoveredBy.name)) : null;
       return h(
         "div",
         { class: "stat-row", "data-testid": "stats-fusion" },
@@ -134,7 +134,7 @@ function fusionsPanel(fusions: FusionDiscovery[], content: MvpContent): HTMLElem
           { class: "grow" },
           h("div", {}, f.name),
           h("div", { class: "dim small" }, `${a?.name ?? f.first} → ${b?.name ?? f.second}`),
-          h("div", { class: "discovered" }, by ? `discovered by ${by}` : "made by bots, unclaimed"),
+          h("div", { class: "discovered" }, ...(by ? ["discovered by ", by] : ["made by bots, unclaimed"])),
         ),
         h("span", { class: "emoji" }, `${b?.emoji ?? "?"}`),
       );

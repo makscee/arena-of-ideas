@@ -22,13 +22,15 @@ Files and owners:
 | `npm run mvp:dev` | Vite dev server, API proxied to :8791 |
 | `npm run mvp:build` | builds `mobile/dist` |
 | `npm run mvp:bot -- --runs 50 [--url …/arena]` | 50 full runs through the HTTP API, fails on any error |
-| `npm run mvp:phone [-- --url …/arena/]` | a whole game in Chromium at 360×640, screenshots in `e2e/.shots/mvp` |
+| `npm run mvp:phone [-- --url …/arena/]` | a whole game in Chromium at 360×640, screenshots in `e2e/.shots/mvp`; without `--url` (its own local server) it also plays the champion's own Crown (`e2e/mvp-own-crown.ts`), a `--url` run skips that |
 | `npm run mvp:check` | typecheck, tests, the bot and the phone run |
-| `npm run mvp:redeploy [-- <branch>]` | redeploys the m1 test instance (default `mission-574-mvp`) |
+| `npm run mvp:redeploy [-- <branch>] [--fresh]` | redeploys the m1 test instance (default `mission-574-mvp`); `--fresh` also starts an empty world |
 
 Test instance: https://m1.twin-pogona.ts.net/arena/ (tailnet only). It is a
 launchd agent `ru.makscee.arena-mvp` in `~/arena-mvp` on m1, log in
 `~/arena-mvp/data/server.log`, fronted by `tailscale serve --set-path /arena`.
-State is in memory until slice 4: a redeploy starts an empty world. It runs
+State is a SQLite file, `~/arena-mvp/data/arena-mvp.db`: a plain redeploy
+keeps it, and `npm run mvp:redeploy -- --fresh` moves it aside (to
+`arena-mvp.db.bak-<time>`) so the server starts an empty world. It runs
 with `MVP_DEV=1`, so the dev tools (`POST /api/v1/dev/end-day`) answer there;
 without it they are 404.
