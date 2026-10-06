@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MVP_RULES, type MvpContent } from "./contract.js";
 import { fightLines } from "./fight.js";
 import { contentFormProblems, lineUnitOf } from "./forms.js";
-import { ROWS, mvpPool } from "./units.js";
+import { EMITS, LISTENS, ROOT_WHENS, ROWS, WHEN, effectKinds, linkEdges, mvpPool, sig, type WhenKey } from "./units.js";
 
 describe("MVP pool (slice 7)", () => {
   const pool = mvpPool();
@@ -87,5 +87,99 @@ describe("Planter", () => {
     const log = fight(["planter", "fighter", "squire", "gnat", "rose"]);
     expect(summoned(log)).toBe(false);
     expect(grew(log)).toBe(true);
+  });
+});
+
+describe("one hero per shape (round 3, docs/round3/units.md 1b)", () => {
+  type Form = "sleeping" | "awoken";
+  const collisions = (units: ReturnType<typeof mvpPool>["units"], form: Form) => {
+    const by = new Map<string, string[]>();
+    for (const u of units) by.set(sig(u.forms[form]), [...(by.get(sig(u.forms[form])) ?? []), u.name]);
+    return [...by].filter(([, names]) => names.length > 1).map(([s, names]) => `${s}: ${names.join(", ")}`);
+  };
+
+  it("sig is When · Who kind · the set of effect kinds, numbers ignored", () => {
+    const u = (id: string) => mvpPool().units.find((x) => x.id === id)!;
+    expect(sig(u("necromancer").forms.sleeping)).toBe("allyDies · lastDeadAlly · Revive");
+    expect(sig(u("divinity").forms.sleeping)).toBe("allyDies · allAllies · Bless");
+    expect(sig(u("divinity").forms.awoken)).toBe("allyDies · allAllies · Bless+Shield");
+    expect(effectKinds(["Freeze 2 + Curse 1", "Call Imp", "Smite"])).toEqual(["Call", "Curse", "Freeze", "Smite"]);
+  });
+
+  it("R1: no two units share a sleeping signature", () => {
+    expect(collisions(mvpPool().units, "sleeping")).toEqual([]);
+  });
+
+  it("R2: no two units share an Awoken signature", () => {
+    expect(collisions(mvpPool().units, "awoken")).toEqual([]);
+  });
+
+  it("catches a copied hero: Divinity given Necromancer's ability is a collision", () => {
+    const necro = ROWS.find((r) => r.name === "Necromancer")!;
+    const rows = ROWS.map((r) => (r.name === "Divinity" ? { ...r, who: necro.who, does: necro.does, awoken: necro.awoken } : r));
+    expect(collisions(mvpPool(rows).units, "sleeping")).toEqual(["allyDies · lastDeadAlly · Revive: Necromancer, Divinity"]);
+    expect(collisions(mvpPool(rows).units, "awoken")).toEqual(["allyDies · lastDeadAlly · Revive: Necromancer, Divinity"]);
+  });
+
+  it("warns (only) when one unit's Awoken shape is another's sleeping shape", () => {
+    const sleeping = new Map(mvpPool().units.map((u) => [sig(u.forms.sleeping), u.name]));
+    const cross = mvpPool()
+      .units.filter((u) => sleeping.has(sig(u.forms.awoken)) && sleeping.get(sig(u.forms.awoken)) !== u.name)
+      .map((u) => `${u.name} Awoken = ${sleeping.get(sig(u.forms.awoken))} sleeping (${sig(u.forms.awoken)})`);
+    if (cross.length) console.warn(`cross-form shapes:\n  ${cross.join("\n  ")}`);
+  });
+
+  // The listen → emit graph over link events; returns each loop found, as
+  // "Power →Equalizer (sleeping)→ Curse →Robber (sleeping)→ Power".
+  const loopsOf = (units: ReturnType<typeof mvpPool>["units"]) => {
+    const edges = new Map<string, Map<string, string>>();
+    for (const u of units) {
+      for (const form of ["sleeping", "awoken"] as Form[]) {
+        for (const [from, to] of linkEdges(u.forms[form])) {
+          const out = edges.get(from) ?? new Map<string, string>();
+          if (!out.has(to)) out.set(to, `${u.name} (${form})`);
+          edges.set(from, out);
+        }
+      }
+    }
+    const loops = new Set<string>();
+    const walk = (node: string, path: { node: string; via: string }[]) => {
+      const at = path.findIndex((p) => p.node === node);
+      if (at >= 0) {
+        const loop = path.slice(at);
+        loops.add([...loop.map((p) => `${p.node} →${p.via}→ `), node].join(""));
+        return;
+      }
+      for (const [to, via] of edges.get(node) ?? []) walk(to, [...path, { node, via }]);
+    };
+    for (const n of edges.keys()) walk(n, []);
+    return [...loops];
+  };
+
+  it("R4: the listen → emit graph has no loop", () => {
+    expect(loopsOf(mvpPool().units)).toEqual([]);
+  });
+
+  it("R4 catches the old Equalizer ↔ Robber loop", () => {
+    const rows = ROWS.map((r) => (r.name === "Robber" ? { ...r, does: "Strength 1" } : r));
+    expect(loopsOf(mvpPool(rows).units)).toContain("Curse →Robber (sleeping)→ Power →Equalizer (sleeping)→ Curse");
+  });
+
+  it("R4's map covers every When and effect kind, so a new one can't hide a loop", () => {
+    for (const k of Object.keys(WHEN) as WhenKey[]) expect([k, k in LISTENS || ROOT_WHENS.includes(k)]).toEqual([k, true]);
+    const kinds = new Set(mvpPool().units.flatMap((u) => [...effectKinds(u.forms.sleeping.does), ...effectKinds(u.forms.awoken.does)]));
+    for (const k of kinds) expect([k, k in EMITS]).toEqual([k, true]);
+  });
+
+  it("\"Ally\" in a trigger always means another ally (otherAlly, never the self-counting ally)", () => {
+    const selfCounting: string[] = [];
+    for (const u of mvpPool().units) {
+      for (const form of ["sleeping", "awoken"] as Form[]) {
+        for (const w of u.forms[form].when) {
+          if (Object.values(w.on).includes("ally")) selfCounting.push(`${u.name} (${form}): ${JSON.stringify(w.on)}`);
+        }
+      }
+    }
+    expect(selfCounting).toEqual([]);
   });
 });
