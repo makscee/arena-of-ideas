@@ -1,4 +1,5 @@
 // Plain-DOM helpers shared by every screen of the phone client (mission #574).
+import { toggleSound } from "./sound";
 
 export const app = document.getElementById("app")!;
 
@@ -102,10 +103,12 @@ export function onKeys(fn: (e: KeyboardEvent) => boolean): void {
   keys = fn;
 }
 addEventListener("keydown", (e) => {
-  if (!keys || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+  if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
   const t = e.target as HTMLElement | null;
   if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-  if (keys(e)) e.preventDefault();
+  // M: sound on/off, on every screen (round 3, note 16).
+  if (e.key === "m" || e.key === "M") return void (toggleSound(), e.preventDefault());
+  if (keys && keys(e)) e.preventDefault();
 });
 
 /** A modal sheet over the current screen: the unit sheet, the rules, the
