@@ -90,7 +90,12 @@ export interface RunOutro {
   status: () => Node[];
   /** The last button's label; it calls onDone. */
   doneLabel: string;
-  menu: () => void;
+  /** Opens the run menu; its Resume (or Esc, or a tap outside it) calls
+   * resume when the battle was playing as it opened (R2-17 batch F). */
+  menu: (resume?: () => void) => void;
+  /** Where the menu's errors land (Codex or Title menu failing): the battle
+   * shows it over everything, under the HUD (R2-17 batch F). */
+  error?: HTMLElement;
 }
 
 /** A phone on its side: compact cards with one status row (style.css, R2-17 batch E). */
@@ -173,10 +178,15 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     menuBtn.title = "Menu (Esc)";
   }
   function openMenu(): void {
+    const was = playing && !finished;
     pause();
     render();
-    a.outro?.menu();
+    a.outro?.menu(was ? () => { if (!playing && !finished) play(); } : undefined);
   }
+  // The menu's errors, over the board and the end card, under the HUD; ✕ clears it.
+  const errBox = a.outro?.error
+    ? h("div", { class: "bv-error panel row", role: "alert", "data-testid": "battle-error" }, a.outro.error, button("✕", () => { a.outro!.error!.textContent = ""; }, "bv-close", "battle-error-close"))
+    : null;
   const enemy = h("div", { class: "slots bv-line theirs", "data-testid": "battle-them" });
   const mine = h("div", { class: "slots bv-line mine", "data-testid": "battle-you" });
   const caption = h("button", { class: "bv-caption", "data-testid": "caption" });
@@ -915,9 +925,15 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     // A trace opened from the end card (Why I lost) sits in its place until closed.
     end.style.display = finished && !trace ? "" : "none";
     if (finished) {
+      // A control in the card that redraws it (All n, Top 3) keeps the focus,
+      // so the next Enter acts on it again instead of leaving (R2-17 batch F).
+      const f = document.activeElement;
+      const kept = f instanceof HTMLElement && end.contains(f) && f.dataset.testid ? { id: f.dataset.testid, i: [...end.querySelectorAll(`[data-testid="${f.dataset.testid}"]`)].indexOf(f) } : null;
       end.replaceChildren(...endView());
+      if (kept) end.querySelectorAll<HTMLElement>(`[data-testid="${kept.id}"]`)[kept.i]?.focus();
       placeEnd();
     }
+    if (errBox) errBox.style.top = `${Math.round(hud.getBoundingClientRect().bottom + 4)}px`;
     backBtn.disabled = at < 0;
     fwdBtn.disabled = finished;
     endBtn.disabled = finished;
@@ -1237,6 +1253,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     ),
     sheet,
     end,
+    errBox,
   );
   screen("battle");
   addEventListener("resize", placeEnd, { signal: freed.signal });
@@ -1247,9 +1264,16 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   // Desktop keys: Space plays or pauses, ←/→ step a beat, R replays.
   onKeys((e) => {
     const over = app.querySelector(".overlay");
-    if (over) return e.key === "Escape" ? (over.remove(), true) : false;
-    // The end card is the result: Enter (or Space) goes on, as the result screen's did.
-    if (finished && !trace && (e.key === "Enter" || e.key === " ")) return leave(), true;
+    // Esc closes a sheet as a tap outside it does (the run menu then resumes play).
+    if (over) return e.key === "Escape" ? ((over as HTMLElement).click(), over.remove(), true) : false;
+    // The end card is the result: Enter (or Space) goes on, as the result
+    // screen's did, from its main button or with nothing in the card focused.
+    // A focused Replay, Why, key moment or Damage row acts instead (R2-17 batch F).
+    if (finished && !trace && (e.key === "Enter" || e.key === " ")) {
+      const f = document.activeElement;
+      if (f instanceof HTMLElement && f !== document.body && end.contains(f) && f.dataset.testid !== "battle-done") return false;
+      return leave(), true;
+    }
     if (e.key === " ") return playing ? pause() : play(), true;
     if (e.key === "ArrowLeft") return back(), true;
     if (e.key === "ArrowRight") return forward(), true;

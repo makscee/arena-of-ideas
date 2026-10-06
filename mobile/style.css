@@ -341,8 +341,11 @@ button.bv-why.won { color: var(--you); border-color: color-mix(in srgb, var(--yo
 /* A run's fight: the round fought, hearts and record after it, what it cost or won (R2-17 batch E). */
 .bv-end-run { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-size: 13px; line-height: 17px; }
 .bv-end-run .hearts { color: var(--ghost); letter-spacing: 1px; }
-.bv-end-run .error { font-size: inherit; min-height: 0; }
-.bv-end-run .error:empty { display: none; }
+/* The run menu's errors over a battle (Codex or Title menu failing): under
+ * the HUD, over the board and the end card, until ✕ or the next try (R2-17 batch F). */
+.bv-error { position: fixed; z-index: 12; left: 12px; right: 12px; max-width: 456px; margin: 0 auto; align-items: center; gap: 8px; padding: 0 0 0 12px; border-color: var(--ghost); box-shadow: 0 8px 24px #000c; }
+.bv-error .error { flex: 1; min-width: 0; min-height: 0; }
+.bv-error:has(> .error:empty) { display: none; }
 .bv-trace-end { gap: 6px; }
 .bv-end-body { display: flex; flex-direction: column; gap: 12px; }
 .bv-end-moments { gap: 4px; }
@@ -717,6 +720,7 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
    * moments right, compact buttons with Continue on the right; the card is
    * as tall as what it holds (placeEnd caps it above the timeline). */
   #app[data-screen="battle"] .bv-end { left: 24px; right: calc(var(--insp) + 24px); bottom: auto; max-width: 1000px; max-height: none; margin: 0 auto; padding: 24px 28px; gap: 20px; }
+  #app[data-screen="battle"] .bv-error { left: 24px; right: calc(var(--insp) + 24px); max-width: 1000px; }
   #app[data-screen="battle"] .bv-end .bv-word { font-size: 56px; }
   #app[data-screen="battle"] .bv-end-head { gap: 8px; }
   #app[data-screen="battle"] .bv-end .bv-word.neutral { font-size: 40px; }
