@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MVP_RULES, type MvpContent } from "./contract.js";
 import { fightLines } from "./fight.js";
 import { contentFormProblems, lineUnitOf } from "./forms.js";
-import { EMITS, LISTENS, ROOT_WHENS, ROWS, WHEN, effectKinds, linkEdges, mvpPool, sig, type WhenKey } from "./units.js";
+import { EMITS, LISTENS, ROOT_WHENS, ROWS, WHEN, effectKinds, linkEdges, mvpPool, shapeKinds, sig, type WhenKey } from "./units.js";
 
 describe("MVP pool (slice 7)", () => {
   const pool = mvpPool();
@@ -119,6 +119,15 @@ describe("one hero per shape (round 3, docs/round3/units.md 1b)", () => {
     expect(effectKinds(["Freeze 2 + Curse 1", "Call Imp", "Smite"])).toEqual(["Call", "Curse", "Freeze", "Smite"]);
   });
 
+  it("sig ignores Strength and Vitality riders and counts the heal family (Heal, Mend) as one kind", () => {
+    expect(shapeKinds(["Call Golem + Strength 1"])).toEqual(["Call"]);
+    expect(shapeKinds(["Shield 1", "Vitality 1", "Strength 2"])).toEqual(["Shield"]);
+    expect(shapeKinds(["Mend"])).toEqual(shapeKinds(["Heal 1"]));
+    expect(shapeKinds(["Mend", "Heal 2"])).toEqual(["Heal"]);
+    // A form that only grows stats keeps them: that is its job.
+    expect(shapeKinds(["Strength 2", "Vitality 1"])).toEqual(["Strength", "Vitality"]);
+  });
+
   it("R1: no two units share a sleeping signature", () => {
     expect(collisions(mvpPool().units, "sleeping")).toEqual([]);
   });
@@ -132,6 +141,19 @@ describe("one hero per shape (round 3, docs/round3/units.md 1b)", () => {
     const rows = ROWS.map((r) => (r.name === "Divinity" ? { ...r, who: necro.who, does: necro.does, awoken: necro.awoken } : r));
     expect(collisions(mvpPool(rows).units, "sleeping")).toEqual(["allyDies · lastDeadAlly · Revive: Necromancer, Divinity"]);
     expect(collisions(mvpPool(rows).units, "awoken")).toEqual(["allyDies · lastDeadAlly · Revive: Necromancer, Divinity"]);
+  });
+
+  it("catches a hero that differs only by a rider or a heal word: Sexton + Strength, Medic with Mend", () => {
+    const sexton = ROWS.find((r) => r.name === "Sexton")!;
+    const medic = ROWS.find((r) => r.name === "Medic")!;
+    const rows = ROWS.map((r) =>
+      r.name === "Morbid" ? { ...r, when: sexton.when, who: sexton.who, does: "Call Golem + Strength 1" }
+      : r.name === "Priest" ? { ...r, when: medic.when, who: medic.who, does: "Mend" }
+      : r);
+    expect(collisions(mvpPool(rows).units, "sleeping")).toEqual([
+      "turnEnd · allAllies · Heal: Medic, Priest",
+      "allyDies · holder · Call: Sexton, Morbid",
+    ]);
   });
 
   it("warns (only) when one unit's Awoken shape is another's sleeping shape", () => {

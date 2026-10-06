@@ -10,6 +10,7 @@ import { spawn, execFileSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { createServer } from "node:net";
 import { launchChromium } from "./browser.mjs";
+import { escPass } from "./esc-keys.mjs";
 import { nowSheetChecks } from "./now-sheet.mjs";
 
 const W = 1440;
@@ -153,6 +154,10 @@ try {
   await page.getByTestId("codex-tab-keywords").click();
   await page.getByTestId("codex-keywords").waitFor();
   await shot("codex-keywords");
+  // Esc clears the inspected unit first (R3-6), then goes back.
+  await page.keyboard.press("Escape");
+  if (await page.locator('[data-testid="inspector"] [data-testid="unit-sheet"]').count()) errors.push("codex: Esc doesn't clear the inspector");
+  if (!(await page.getByTestId("codex-keywords").count())) errors.push("codex: Esc with a unit inspected left the Codex");
   await page.keyboard.press("Escape");
   await page.getByTestId("play").click();
 
@@ -576,6 +581,9 @@ try {
   }
 
   console.log(`mvp desktop: ${round} fights, ${shots} screenshots in ${out}, ${iconCards} card icon lines fit`);
+  // Esc everywhere (R3-6): a fresh player, keys only.
+  await escPass(browser, url, { label: `desktop-${W}`, viewport: { width: W, height: H }, errors });
+  await escPass(browser, url, { label: "narrow-390", viewport: { width: 390, height: 844 }, errors });
 } finally {
   await browser.close();
   child?.kill();

@@ -11,7 +11,7 @@
 import type { DescribeSegment } from "../../src/describe";
 import { scopedLabel, scopedTip, termDef, termIcon, type TermDef, type TermId } from "../../src/glossary";
 import type { UnitFilter } from "../../src/types";
-import { closable, h, isDesktop } from "./dom";
+import { closable, h, isDesktop, onPopoverEsc } from "./dom";
 import { changedTokens } from "./diff";
 import { icon } from "./icon";
 import { withPip } from "./card";
@@ -275,17 +275,8 @@ function place(el: HTMLElement, anchor: HTMLElement): void {
   el.style.top = `${(below ? r.bottom + 6 : Math.max(8, r.top - 6 - el.offsetHeight)) + scrollY}px`;
 }
 
-addEventListener(
-  "keydown",
-  (e) => {
-    if (!pop || e.key !== "Escape") return;
-    // Esc closes the popover only: the screen under it (the shop's menu) never sees it.
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    closePopover();
-  },
-  { capture: true },
-);
+// Esc closes the popover only: the sheet or the screen under it (the shop's menu) never sees it.
+onPopoverEsc(() => (hideTip(), pop ? closePopover : null));
 addEventListener("pointerdown", (e) => pop && !pop.contains(e.target as Node) && e.target !== popAnchor && !popAnchor?.contains(e.target as Node) && closePopover(), { capture: true });
 addEventListener("scroll", (e) => pop && !pop.contains(e.target as Node) && closePopover(), { capture: true, passive: true });
 

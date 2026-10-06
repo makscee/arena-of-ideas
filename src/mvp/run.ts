@@ -11,6 +11,7 @@
 import { rngStep } from "../rng.js";
 import {
   MVP_RULES,
+  lockedFull,
   offersAt,
   sellValue,
   type BattleRecord,
@@ -53,10 +54,24 @@ export interface MvpRunState extends RunView {
   ratingAtStart?: number;
 }
 
-export { MvpBadDecision, MvpDecisionError, offersAt };
+export { lockedFull, MvpBadDecision, MvpDecisionError, offersAt };
 
 /** Every Decision kind (the compiler checks the list against the contract). */
 const DECISION_KINDS: Record<DecisionKind, true> = { buy: true, sell: true, reroll: true, lock: true, reorder: true, fuse: true, fight: true };
+/** The index fields of each kind: whole numbers ≥ 0, or the decision is unreadable. */
+const DECISION_INDEXES: Record<DecisionKind, readonly string[]> = { buy: ["slot"], sell: ["index"], reroll: [], lock: ["slot"], reorder: ["from", "to"], fuse: ["first", "second"], fight: [] };
+
+/** Throws MvpBadDecision (the API's 400) for an unknown kind or an index that
+ * isn't a whole number ≥ 0. Without it `slot: "__proto__"` reads
+ * Array.prototype as an offer, and `"length"` reads a number. Range against
+ * the run stays with each rule (409). */
+export function checkDecision(d: Decision): void {
+  if (!Object.hasOwn(DECISION_KINDS, d.kind)) throw new MvpBadDecision(d.kind);
+  for (const f of DECISION_INDEXES[d.kind]) {
+    const v = (d as unknown as Record<string, unknown>)[f];
+    if (!Number.isInteger(v) || (v as number) < 0) throw new MvpBadDecision(d.kind, `${f} must be a whole number ≥ 0, got ${JSON.stringify(v) ?? String(v)}`);
+  }
+}
 /** Moved to fight.ts; re-exported for scripts that import it from here (slice 7's meta report). */
 export { toBattleDef } from "./fight.js";
 
@@ -152,7 +167,7 @@ export interface MvpStep {
  * stays pure). Throws MvpBadDecision for a kind it doesn't know (the API
  * answers 400) and MvpDecisionError when the rules refuse it (409). */
 export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpContent, ctx?: DecisionContext): MvpStep {
-  if (!Object.hasOwn(DECISION_KINDS, d.kind)) throw new MvpBadDecision(d.kind);
+  checkDecision(d);
   if (state.phase === "over") throw new MvpDecisionError(d.kind, `the run is over (${state.endedBy})`);
   if (state.phase === "crown" && d.kind !== "fight") throw new MvpDecisionError(d.kind, "only the Crown fight is left");
   const s = clone(state);
@@ -173,7 +188,7 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       return { state: s };
     }
     case "reroll": {
-      if (s.offers.length > 0 && s.offers.every((o) => o.locked)) throw new MvpDecisionError("reroll", "every offer is locked");
+      if (lockedFull(s)) throw new MvpDecisionError("reroll", "every offer is locked");
       if (s.gold < s.rules.rerollCost) throw new MvpDecisionError("reroll", `costs ${s.rules.rerollCost}, have ${s.gold}`);
       s.gold -= s.rules.rerollCost;
       rollOffers(s, content);

@@ -79,7 +79,13 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
   const tabs = h("div", { class: "tabs", role: "tablist" });
   const body = h("div", { class: "stack codex-body" });
   const inspector = desk ? h("aside", { class: "codex-insp stack", "data-testid": "inspector" }) : null;
-  const idle = () => inspector?.replaceChildren(h("div", { class: "dim" }, "Pick a unit or a fusion to read it here."));
+  /** A unit or a fusion is in the inspector: Esc clears it before Back. */
+  let inspected = false;
+  const idle = () => {
+    inspected = false;
+    for (const el of app.querySelectorAll(".codex-body .inspected")) el.classList.remove("inspected");
+    inspector?.replaceChildren(h("div", { class: "dim" }, "Pick a unit or a fusion to read it here."));
+  };
   idle();
   /** A unit's (or a fused unit's) sheet: the inspector on desktop, an overlay on a phone. */
   const open = (node: HTMLElement, from?: HTMLElement): void => {
@@ -88,6 +94,7 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
     from?.classList.add("inspected");
     inspector.replaceChildren(node);
     inspector.scrollTop = 0;
+    inspected = true;
   };
 
   let drawing = 0;
@@ -155,9 +162,11 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
   );
   show(main, inspector);
   screen("codex");
+  // Esc (after a sheet, closed in ui/dom.ts): clears the inspector, then Back.
   onKeys((e) => {
-    if (e.key !== "Escape" || document.querySelector(".overlay")) return false;
-    a.onBack();
+    if (e.key !== "Escape") return false;
+    if (inspected) idle();
+    else a.onBack();
     return true;
   });
   await draw();

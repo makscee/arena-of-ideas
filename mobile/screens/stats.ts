@@ -6,16 +6,19 @@
 import type { Champion, HomeView, MvpContent, StatsView } from "../../src/mvp/contract";
 import { api } from "../api";
 import { card, unitSheet } from "../ui/card";
-import { button, h, overlay, screen, show, who } from "../ui/dom";
+import { button, h, onKeys, overlay, screen, show, who } from "../ui/dom";
 import { keepUnitRates } from "../ui/unit-stats";
 
 export async function statsScreen(a: { content: MvpContent; onBack: () => void; onCodex?: () => void }): Promise<void> {
   const back = button("Back", a.onBack, "primary grow", "stats-back");
+  // Esc goes back, once any sheet over the page is closed (ui/dom.ts).
+  const escBack = (e: KeyboardEvent) => (e.key === "Escape" ? (a.onBack(), true) : false);
   let data: [StatsView, HomeView];
   try {
     data = await Promise.all([api.stats(), api.home()]);
   } catch (e) {
     show(h("h1", {}, "STATS"), h("div", { class: "error", "data-testid": "error" }, e instanceof Error ? e.message : String(e)), h("div", { class: "spacer" }), h("div", { class: "row footer" }, back));
+    onKeys(escBack);
     return;
   }
   const [stats, home] = data;
@@ -32,6 +35,7 @@ export async function statsScreen(a: { content: MvpContent; onBack: () => void; 
     h("div", { class: "row footer" }, back),
   );
   screen("stats");
+  onKeys(escBack);
 }
 
 const codexLink = (open: () => void): HTMLElement => {

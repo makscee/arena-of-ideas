@@ -150,8 +150,8 @@ export const ROWS: Row[] = [
   r("Planter",       "🌱", 1, 1, 5, "start",      "me",      "Call Imp + Vitality 2", { does: ["Call Treant", "Vitality 3"] }),
   r("Nurse",         "💉", 1, 1, 5, "allyHurt",   "it",      "Heal 1",      { does: ["Heal 2"] }),
   r("Prepper",       "🎒", 1, 1, 5, "start",      "allies",  "Shield 1",    { does: ["Shield 1", "Vitality 1"] }),
-  r("Coach",         "📣", 1, 1, 5, "start",      "allies",  "Strength 1",  { does: ["Strength 1", "Shield 1"] }),
-  r("Bat",           "🦇", 1, 2, 4, "strike",     "me",      "Heal 1",      { does: ["Heal 2", "Strength 1"] }),
+  r("Coach",         "📣", 1, 1, 5, "start",      "allies",  "Strength 1",  { does: ["Strength 2"] }),
+  r("Bat",           "🦇", 1, 2, 4, "strike",     "random",  "Hit 1",       { does: ["Hit 2"] }),
   r("Taser",         "⚡", 1, 2, 4, "start",      "front",   "Freeze 1",    { does: ["Freeze 1", "Hit 2"] }),
   r("Wire",          "🔌", 1, 1, 5, "allyPower",  "front",   "Hit 1",       { does: ["Hit 2"] }),
   r("Rose",          "🌹", 1, 2, 6, "hurt",       "front",   "Hit 2",       { does: ["Hit 3"] }),
@@ -190,12 +190,12 @@ export const ROWS: Row[] = [
   r("Syren",         "🧜", 2, 2, 5, "turnStart",  "random",  "Curse 1",     { who: "enemies" }),
   r("Rot",           "🦠", 2, 1, 6, "turnEnd",    "front",   "Poison 1",    { who: "enemies" }),
   r("Bulwark",       "🧱", 2, 2, 11, "start",     "me",      "Shield 3",    { does: ["Shield 3", "Strength 1"] }),
-  r("Stoneskin",     "🪨", 2, 2, 7, "hurt",       "me",      "Shield 1",    { does: ["Shield 2"] }),
+  r("Stoneskin",     "🪨", 2, 2, 7, "hurt",       "me",      "Shield 1",    { who: "allies" }),
 
   // ---- tier 3: engines ----
   r("Commander",     "🎖️", 3, 2, 8, "strike",     "allies",  "Strength 1",  { does: ["Strength 1", "Shield 2"] }),
   r("War Drummer",   "🥁", 3, 2, 8, "turnStart",  "allies",  "Strength 1",  { does: ["Strength 1", "Heal 1"] }),
-  r("Physician",     "🩺", 3, 1, 8, "allyHurt",   "it",      "Mend",        { does: ["Mend", "Shield 1"] }),
+  r("Physician",     "🩺", 3, 2, 8, "allyHurt",   "it",      "Vitality 1",  { does: ["Vitality 2"] }),
   r("Pediatrician",  "🍼", 2, 2, 8, "allySummoned", "it",   "Strength 1",  { does: ["Strength 2"] }),
   r("Crusader",      "⚔️", 3, 3, 9, "turnStart",  "front",   "Hit 2",       { does: ["Hit 3"] }),
   r("Lightning",     "🌩️", 3, 3, 7, "allyPower",  "random",  "Hit 2",       { does: ["Hit 3"] }),
@@ -216,7 +216,7 @@ export const ROWS: Row[] = [
 
   // ---- tier 4: payoffs ----
   r("King",          "👑", 4, 3, 12, "start",     "allies",  "Vitality 2",  { does: ["Vitality 2", "Strength 1"] }),
-  r("Priest",        "⛪", 4, 1, 11, "turnEnd",   "allies",  "Mend",        { does: ["Mend", "Shield 1"] }),
+  r("Priest",        "⛪", 4, 2, 10, "allyHealed", "it",     "Bless 1",     { does: ["Bless 2"] }),
   r("Divinity",      "😇", 4, 2, 8, "allyDies",  "allies",  "Bless 1",     { does: ["Bless 1", "Shield 2"] }),
   r("Phoenix",       "🐦", 4, 4, 9, "start",     "me",      "Bless 8",     { does: ["Bless 8", "Strength 2"] }),
   r("Lilith",        "🧛", 4, 4, 8, "enemyDies",  "me",      "Strength 2",  { does: ["Strength 2", "Mend"] }),
@@ -224,10 +224,10 @@ export const ROWS: Row[] = [
   r("Mentalist",     "🧠", 4, 3, 8, "allyDies",  "enemies", "Freeze 1",    { does: ["Freeze 1", "Curse 1"] }),
   r("Equalizer",     "⚖️", 4, 3, 9, "allyPower", "front",   "Curse 1",     { does: ["Curse 1", "Hit 1"] }),
   r("Director",      "🎬", 4, 3, 9, "allyDies",  "allies",  "Strength 1",  { does: ["Strength 1", "Shield 1"] }),
-  r("Doctor",        "🥼", 4, 2, 10, "hurt",     "allies",  "Heal 1",      { does: ["Heal 2"] }),
+  r("Doctor",        "🥼", 4, 2, 10, "hurt",     "allies",  "Heal 1",      { does: ["Heal 1", "Shield 1"] }),
   r("Ruin",          "🌋", 4, 4, 8, "start",     "enemies", "Hit 2",       { does: ["Hit 3"] }),
   r("Fertilizer",    "🌻", 4, 2, 10, "allySummoned", "it",  "Strength 2 + Shield 2", { does: ["Strength 3", "Shield 3"] }),
-  r("Morbid",        "🦴", 4, 3, 9, "allyDies",  "me",      "Call Golem + Strength 1", { does: ["Call Golem", "Strength 2"] }),
+  r("Morbid",        "🦴", 4, 3, 9, "allyDies",  "enemies", "Curse 1",     { does: ["Curse 1", "Poison 1"] }),
 ];
 /* eslint-enable prettier/prettier */
 
@@ -269,8 +269,20 @@ export function whenKeyOf(form: UnitForm): string {
 /** A form's shape: When · Who kind · its set of effect kinds. Two units with
  * the same shape in the same form are the same hero, whatever the numbers. */
 export function sig(form: UnitForm): string {
-  return [whenKeyOf(form), form.who.map((w) => w.kind).join("+"), effectKinds(form.does).join("+")].join(" · ");
+  return [whenKeyOf(form), form.who.map((w) => w.kind).join("+"), shapeKinds(form.does).join("+")].join(" · ");
 }
+
+/** The effect kinds that make a hero's job: the heal family (Heal, Mend) is
+ * one kind, and Strength and Vitality riders don't count next to another
+ * kind ("Call Golem + Strength 1" is a summoner). A form that only grows
+ * stats keeps them, since that is its job. */
+export function shapeKinds(does: string[]): string[] {
+  const kinds = [...new Set(effectKinds(does).map((k) => HEAL_FAMILY[k] ?? k))].sort();
+  const job = kinds.filter((k) => !RIDERS.includes(k));
+  return job.length ? job : kinds;
+}
+const HEAL_FAMILY: Record<string, string> = { Mend: "Heal" };
+const RIDERS = ["Strength", "Vitality"];
 
 /** The link event each listening When reacts to. The other Whens are roots
  * (battle start, turns, strike, hurt, death): damage only takes HP away, so a

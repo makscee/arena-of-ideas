@@ -6,6 +6,7 @@ import { spawn, execFileSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { createServer } from "node:net";
 import { launchChromium } from "./browser.mjs";
+import { escPass } from "./esc-keys.mjs";
 import { nowSheetChecks } from "./now-sheet.mjs";
 
 const args = process.argv.slice(2);
@@ -909,6 +910,8 @@ try {
     await shot("run-over-own-crown"); await noHScroll("run-over-own-crown");
   }
   console.log(`mvp phone: ${round} fights, ${shots} screenshots in ${out}, ${iconCards} card icon lines fit`);
+  // Esc everywhere (R3-6): a fresh player, keys only.
+  await escPass(browser, url, { label: "phone-390", viewport: { width: 390, height: 844 }, touch: true, errors });
 } finally {
   await browser.close();
   child?.kill();
