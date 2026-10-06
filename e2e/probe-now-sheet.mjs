@@ -127,7 +127,9 @@ try {
   else await openAndShoot(summon, "summon", (t, n) => {
     if (!/No ability: it fights with its PWR \/ HP\.|:/.test(t)) errors.push(`${n}: no ability line for the summon`);
     if (!/Entered as \d+ PWR \/ \d+ HP · summoned/.test(t)) errors.push(`${n}: no "Entered as … · summoned" line`);
-    if (/Full card/.test(t)) errors.push(`${n}: a summon offers a full card it doesn't have`);
+    // R3-5: a summon has its own card, with its emoji.
+    if (!/Full card/.test(t)) errors.push(`${n}: a summon offers no full card`);
+    if (t.includes("✨")) errors.push(`${n}: a summon drawn without its emoji`);
   });
 } catch (e) {
   errors.push(String(e?.stack ?? e));

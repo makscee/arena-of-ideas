@@ -62,8 +62,12 @@ export interface DescribeSegment {
   /** Set on every highlighted run: its glossary term (src/glossary.ts). Glue
    * text ("to", ", then", ":") has none. */
   term?: TermId;
-  /** On target runs: which side the target is on. */
+  /** On target runs: which side the target is on. On a unit-ref run, the
+   * side the summoned unit joins. */
   side?: Side;
+  /** A summoned unit's name and numbers ("Imp (1/2)", R3-5): its summon id
+   * (MvpContent.summons), which the client opens as that unit's card. */
+  unitRef?: string;
   /** On every run of a trigger clause, so "After [Shield] lands on an ally"
    * draws as one pill. */
   clause?: "when";
@@ -295,6 +299,9 @@ export function describeSelector(s: Selector, opts: DescribeOpts = {}): string {
   }
 }
 
+/** A summoned body's id (MvpContent.summons): its name, lower-cased ("Imp" → "imp"). */
+export const summonId = (name: string): string => name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
 /** An effect as segments: the same verb phrase describeEffect yields. The
  * highlighted runs carry their term (the amount with its effect, a status
  * name, a stat word); the glue runs carry the Effect's Part ref only. `target`
@@ -340,23 +347,31 @@ export function describeEffectSegments(
     case "summon": {
       // "summon Imp (1/2)": the numbers are its PWR / HP, which the term's
       // tip says. The kernel summons at the front of the target's line.
-      const unit = `${e.unit.name} (${e.unit.base.pwr}/${e.unit.base.hp})`;
+      // "Imp (1/2)" is its own run, a ref to the summoned unit's card (R3-5).
+      const unitRun = (side: Side): DescribeSegment => ({
+        text: `${e.unit.name} (${e.unit.base.pwr}/${e.unit.base.hp})`,
+        partRef: ref,
+        unitRef: summonId(e.unit.name),
+        side,
+      });
+      const summon = (side: Side): DescribeSegment[] => [eT("summon "), unitRun(side)];
       // All allies / all enemies: the kernel summons once per target, at the
       // front of that target's line, skipping it once the line is full.
       const kinds = tgt.flatMap((t) => (t.partRef?.family === "selector" ? [t.partRef.kind] : []));
+      const side: Side = tgt.find((t) => t.side)?.side ?? "ally";
       if (kinds.length === 1 && (kinds[0] === "allAllies" || kinds[0] === "allEnemies")) {
         const ally = kinds[0] === "allAllies";
         // "for each ally": the selector's run, worded per target.
         const each = tgt.map((t) => (t.partRef?.family === "selector" ? { ...t, text: ally ? "each ally" : "each enemy" } : t));
         return [
-          eT(`summon ${unit}`),
+          ...summon(ally ? "ally" : "enemy"),
           e0(" for "),
           ...each,
           e0(`${ally && !opts.holderGone ? `, ${opts.holder ?? HOLDER_DEFAULT} included` : ""}, if there's room`),
         ];
       }
-      if (kinds.length === 1 && kinds[0] === "holder") return [eT(`summon ${unit}`)];
-      return [eT(`summon ${unit}`), e0(" for "), ...tgt];
+      if (kinds.length === 1 && kinds[0] === "holder") return summon("ally");
+      return [...summon(side), e0(" for "), ...tgt];
     }
     case "silence":
       return [eT("silence"), e0(" "), ...tgt];
