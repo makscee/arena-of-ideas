@@ -116,10 +116,13 @@ export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionRe
  * heart left (the Crown, at the Crown) rated a lost fight against the opponent
  * already picked (abandonRun), with the rating written and the onRunEnd hooks
  * called like any end. A run waiting for the Crown forfeits against the
- * current champion (currentRun). Throws MvpDecisionError on a run that is
- * already over. Synchronous, like decide(). */
+ * current champion (currentRun). A run on content that is no longer live ends
+ * "content-changed" instead, rating untouched, as decide() would end it.
+ * Throws MvpDecisionError on a run that is already over. Synchronous, like
+ * decide(). */
 export function abandon(deps: RunDeps, run: MvpRunState): RunView {
-  const ended = finish(deps, abandonRun(currentRun(deps, run)));
+  const stale = run.phase !== "over" && run.contentVersion !== deps.content.version;
+  const ended = finish(deps, stale ? endRun(run, "content-changed") : abandonRun(currentRun(deps, run)));
   for (const h of deps.hooks) h.onRunEnd?.(ended);
   return runView(ended);
 }

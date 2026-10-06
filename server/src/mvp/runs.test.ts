@@ -249,6 +249,19 @@ describe("MVP giving up and stamped ratings (round 2)", () => {
     expect(res.json.rating).toEqual(ratingChange(1000, 0, { fights: [...crown.fights, { ...crown.fights[0]!, kind: "crown", outcome: "loss", opponent: { ...crown.fights[0]!.opponent, rating: 1250 } }] }));
   });
 
+  it("giving up a run whose content is no longer live ends it content-changed, rating untouched", async () => {
+    const rt = world();
+    rt.store.addPlayer(maks);
+    const run = startRun(rt, maks);
+    rt.store.putRun({ ...run, contentVersion: "old-content" });
+    const res = await api(rt)(`/runs/${run.runId}/abandon`, maks);
+    expect(res.status).toBe(200);
+    expect(res.json).toMatchObject({ phase: "over", endedBy: "content-changed", rating: null });
+    expect(res.json).not.toHaveProperty("forfeit");
+    expect(rt.store.rating(maks.id)).toBeUndefined();
+    expect(rt.store.run(run.runId)).toMatchObject({ phase: "over", endedBy: "content-changed" });
+  });
+
   it("ghosts and slays carry their owner's rating from the run's start; bots carry botRating", () => {
     const rt = world();
     rt.store.putRating({ player: maks, rating: 1137, runs: 20, slays: 0, daysAsChampion: 0, playoffWins: 0 });
