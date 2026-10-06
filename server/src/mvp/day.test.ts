@@ -92,6 +92,7 @@ describe("MVP day", () => {
     weakChampion(rt);
     const ann = human("ann");
     const bob = human("bob");
+    rt.store.putRating({ player: bob, rating: 1111, runs: 3, slays: 0, daysAsChampion: 0, playoffWins: 0 });
     slay(rt, ann, bigLine(rt.content, 1));
     slay(rt, bob, bigLine(rt.content, 5));
     slay(rt, ann, bigLine(rt.content, 2)); // ann's stronger team
@@ -102,7 +103,8 @@ describe("MVP day", () => {
     expect(p.entrants.map((e) => e.id)).toEqual([ann.id, bob.id]);
     expect(p.games).toHaveLength(2);
     expect(p.winner?.id).toBe(bob.id);
-    expect(day.champion).toMatchObject({ seq: 2, player: bob });
+    // the Crown against bob's team is rated at bob's rating when he slew
+    expect(day.champion).toMatchObject({ seq: 2, player: bob, rating: 1111 });
     const g = await call<BattleRecord>("GET", `/battles/${p.games[0]!.battleId}`);
     expect(g.json).toMatchObject({ kind: "playoff", runId: null, round: 0, player: ann, opponent: bob });
     expect(g.json.teamA).toHaveLength(2); // ann's strongest, not her first
