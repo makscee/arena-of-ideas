@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { Champion, DecisionResponse, FusionDiscovery, PlayerRef, UnitContent } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { mvpContent } from "./content.js";
-import { awaitFusionName, cleanModelName, drainFusionNames, hasUnitName, isBlockedName, fusionNameReady, fusionNaming, httpModelNamer, MODEL_DOWN_MS, NAMER_EXAMPLES, MODEL_FAILURES, MODEL_PROBE_MS, portmanteau, recordFusion, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
+import { awaitFusionName, cleanModelName, drainFusionNames, hasUnitName, NAMER_LETTERS, isBlockedName, fusionNameReady, fusionNaming, httpModelNamer, MODEL_DOWN_MS, NAMER_EXAMPLES, MODEL_FAILURES, MODEL_PROBE_MS, portmanteau, recordFusion, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
 import { decide, preview, startRun } from "./runs.js";
 import { seedChampion } from "./bots.js";
 import { mvpRuntime } from "./runtime.js";
@@ -126,6 +126,7 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
     expect(cleanModelName("<think>hmm</think>\nBloodmend")).toBe("Bloodmend");
     expect(cleanModelName("Ash-Warden")).toBe("Ash-Warden");
     expect(cleanModelName("BalanceWarrior")).toBe("Balance Warrior");
+    expect(cleanModelName("KIngard")).toBe("Kingard");
     expect(cleanModelName("The Ashen")).toBe("The Ashen");
     expect(cleanModelName("🥊🎯 Stormancer!")).toBe("Stormancer");
   });
@@ -554,14 +555,15 @@ describe("MVP fusion names: the HTTP model client", () => {
     });
     await new Promise<void>((r) => server!.listen(0, "127.0.0.1", r));
     const { port } = server.address() as AddressInfo;
-    const ask = httpModelNamer(`http://127.0.0.1:${port}/v1/chat/completions`);
+    const ask = httpModelNamer(`http://127.0.0.1:${port}/v1/chat/completions`, 15_000, () => 0.99);
     expect(await ask(brawler, medic)).toBe("Ironcare");
     const emojiUnit = { ...brawler, emoji: "🌹", name: "Rose" };
     expect(await ask(emojiUnit, { ...medic, emoji: "🐀", name: "Rat" })).toBe("Ironcare");
     expect(got?.messages.map((m) => m.role)).toEqual(["system", "user", "assistant", "user", "assistant", "user", "assistant", "user", "assistant", "user"]);
-    expect(got?.messages[1]).toEqual({ role: "user", content: "Knight merges with Wolf. Name:" });
+    // A starting letter is hinted (against Qwen3-4B's habit of S), each example's its own.
+    expect(got?.messages[1]).toEqual({ role: "user", content: "Knight merges with Wolf. Start with the letter F. Name:" });
     expect(got?.messages[2]).toEqual({ role: "assistant", content: "Fangwarden" });
-    expect(got?.messages.at(-1)).toEqual({ role: "user", content: "Rose merges with Rat. Name:" });
+    expect(got?.messages.at(-1)).toEqual({ role: "user", content: `Rose merges with Rat. Start with the letter ${NAMER_LETTERS.at(-1)}. Name:` });
     expect(got?.messages.some((m) => /\p{Extended_Pictographic}/u.test(m.content))).toBe(false);
     expect(got).toMatchObject({ max_tokens: 12, temperature: 0.8 });
   });

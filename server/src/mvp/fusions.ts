@@ -285,7 +285,7 @@ export function cleanModelName(raw: string, first?: UnitContent, second?: UnitCo
   const words = name.split(/[ -]/).filter(Boolean);
   if (words.length > 2 || new Set(words.map(fold)).size < words.length) return null;
   if (isBlockedName(name) || isGlued(name, first, second)) return null;
-  return words.map((w) => w[0]!.toUpperCase() + w.slice(1)).join(name.includes("-") && words.length > 1 ? "-" : " ");
+  return words.map((w) => w[0]!.toUpperCase() + w.slice(1).toLowerCase()).join(name.includes("-") && words.length > 1 ? "-" : " ");
 }
 
 /** True for a one-word name: what the namer asks for, two words being only
@@ -320,9 +320,11 @@ export const NAMER_EXAMPLES: readonly { first: string; second: string; name: str
   { first: "Thief", second: "Monk", name: "Almscutter" },
 ];
 
-/** Starting letters the hint draws from: Qwen3-4B starts about half its names
- * with S unhinted. Letters few English words start with are left out. */
-export const NAMER_LETTERS = "ABCDEFGHKLMNOPRSTVW";
+/** Starting letters the hint draws from. Unhinted, Qwen3-4B starts about half
+ * its names with S, at temperature 1.0 too; with a random letter, 1 in 10
+ * (docs/round2/namer.md, "The S habit"). Letters few English compounds start with
+ * are left out (K gave "Kriptide"). */
+export const NAMER_LETTERS = "ABCDEFGHLMNOPRSTVW";
 
 const namerAsk = (first: string, second: string, letter?: string) =>
   `${first} merges with ${second}.${letter ? ` Start with the letter ${letter}.` : ""} Name:`;
@@ -342,14 +344,16 @@ export function namerMessages(first: UnitContent, second: UnitContent, letter?: 
 }
 
 /** The m1 model through an OpenAI-compatible chat endpoint (mlx_lm.server,
- * llama.cpp): ARENA_NAMER_URL, e.g. http://127.0.0.1:8792/v1/chat/completions. */
-export function httpModelNamer(url: string, timeoutMs = 15_000): ModelNamer {
+ * llama.cpp): ARENA_NAMER_URL, e.g. http://127.0.0.1:8792/v1/chat/completions.
+ * Each ask hints a random starting letter (NAMER_LETTERS). */
+export function httpModelNamer(url: string, timeoutMs = 15_000, random: () => number = Math.random): ModelNamer {
   return async (first, second) => {
+    const letter = NAMER_LETTERS[Math.floor(random() * NAMER_LETTERS.length)];
     const res = await fetch(url, {
       method: "POST",
       headers: { "content-type": "application/json" },
       signal: AbortSignal.timeout(timeoutMs),
-      body: JSON.stringify({ messages: namerMessages(first, second), max_tokens: 12, temperature: 0.8 }),
+      body: JSON.stringify({ messages: namerMessages(first, second, letter), max_tokens: 12, temperature: 0.8 }),
     });
     // A 5xx (mlx still loading) or any other refusal is the model being down,
     // not an answer: thrown, so the pair is asked again after a backoff.
