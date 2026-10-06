@@ -16,7 +16,7 @@ type Tally = { runs: number; fights: number; wins: number; crowns: number; slays
 const tally = (): Tally => ({ runs: 0, fights: 0, wins: 0, crowns: 0, slays: 0 });
 
 async function sim(rules: MvpRules) {
-  let n = 7;
+  let n = Number(process.env.SEED ?? 7);
   const picks = new Map<string, number>();
   let gifts = 0, picked = 0, skipped = 0;
   const rt = mvpRuntime({
