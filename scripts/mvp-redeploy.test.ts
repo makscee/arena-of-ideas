@@ -24,11 +24,17 @@ esac`,
 [ "$1" = rev-parse ] && echo abc1234; exit 0`,
   npm: "#!/bin/bash\nexit 0",
   // NO_HEALTH: the new server never answers /health; STUB_HEALTH: what it
-  // says; PUBLIC_HEALTH: what https://arena.makscee.ru/arena/ says (nothing: down)
+  // says. PUBLIC_CODE / PUBLIC_HEALTH: what https://arena.makscee.ru/arena/
+  // answers (default: the June page; 000 is no answer); OWN_CODE: what this
+  // host's tailnet /arena answers (default 502: the server is down, the serve on)
   curl: `#!/bin/bash
 case "$*" in
-  *arena.makscee.ru*) [ -n "\${PUBLIC_HEALTH:-}" ] || exit 22; echo "$PUBLIC_HEALTH"; exit 0 ;;
-  *api/v1/health*) [ -n "\${NO_HEALTH:-}" ] && exit 7; D='{"ok":true,"build":"abc1234","invites":true}'; echo "\${STUB_HEALTH:-$D}"; exit 0 ;;
+  *arena.makscee.ru*)
+    C="\${PUBLIC_CODE:-200}"; B="\${PUBLIC_HEALTH:-<!doctype html><html lang=\"en\">June}"
+    [ "$C" = 000 ] && { printf '000'; exit 28; }
+    printf '%s\\n%s' "$B" "$C"; exit 0 ;;
+  *twin-pogona*) printf '%s' "\${OWN_CODE:-502}"; exit 0 ;;
+  *api/v1/health*) [ -n "\${NO_HEALTH:-}" ] && exit 7; [ -e "$HOME/loaded/ru.makscee.arena-mvp" ] || exit 7; D='{"ok":true,"build":"abc1234","invites":true}'; echo "\${STUB_HEALTH:-$D}"; exit 0 ;;
 esac
 echo '{"ok":true}'`,
   tailscale: `#!/bin/bash
@@ -140,7 +146,19 @@ describe("mvp-redeploy (--fresh and plain)", () => {
       expect(r.stderr).toContain("the new server (abc1234, mission-574-mvp) never answered http://127.0.0.1:8791/arena/api/v1/health within 30s");
       expect(r.stderr).toContain("SyntaxError: boom");
       expect(r.log).toMatch(/bootstrap gui\/\d+ .*ru\.makscee\.arena-mvp\.plist/);
+      // invite-only: its invites were never checked, so it doesn't stay loaded
+      // to come up later unchecked
+      expect(r.stderr).toContain("invites were never checked, so it is stopped and the /arena serve is off");
+      expect(r.stderr).not.toContain("STILL LOADED");
+      expect(existsSync(join(home, "loaded/ru.makscee.arena-mvp"))).toBe(false);
+      expect(r.ts.trim().split("\n").at(-1)).toBe("serve --set-path /arena off");
     }
+    // an open deploy (ARENA_MVP_INVITES=0) has nothing to check: launchd keeps retrying it
+    const { home } = host();
+    const r = deploy(home, { NO_HEALTH: "1", ARENA_MVP_INVITES: "0" }, []);
+    expect(r.status).toBe(1);
+    expect(r.stderr).not.toContain("invites were never checked");
+    expect(existsSync(join(home, "loaded/ru.makscee.arena-mvp"))).toBe(true);
   });
 
   it("a normal redeploy restarts the server on the same DB and reports the build", () => {
@@ -183,6 +201,57 @@ describe("mvp-redeploy (--fresh and plain)", () => {
     expect(f.log).not.toContain("bootout");
     const forced = host();
     expect(deploy(forced.home, { ...open, PUBLIC_HEALTH: open.STUB_HEALTH, ARENA_MVP_OPEN_PUBLIC: "1" }, []).status).toBe(0);
+  });
+
+  it("ARENA_MVP_INVITES=0 with this host's server down: allowed only when the domain clearly isn't this host, and always says why it refused", { timeout: 15_000 }, () => {
+    const open = { ARENA_MVP_INVITES: "0", STUB_HEALTH: '{"ok":true,"build":"abc1234","invites":false}' };
+    // the server is down before the deploy (a failed check booted it out, a crash loop)
+    const down = () => {
+      const h = host();
+      rmSync(join(h.home, "loaded/ru.makscee.arena-mvp"));
+      return h;
+    };
+    const allowed: [string, Record<string, string>][] = [
+      ["the June page", {}],
+      ["a 404 while this host's /arena answers 502", { PUBLIC_CODE: "404", PUBLIC_HEALTH: "" }],
+    ];
+    for (const [what, env] of allowed) {
+      const { home } = down();
+      const r = deploy(home, { ...open, ...env }, []);
+      expect([r.status, r.stdout.includes("deployed abc1234")], what).toEqual([0, true]);
+      expect(r.stderr, what).not.toContain("refused");
+    }
+    const refused: [string, Record<string, string>, string][] = [
+      ["a 502", { PUBLIC_CODE: "502", PUBLIC_HEALTH: "bad gateway" }, "answers 502: that is what this host down behind mcow's proxy looks like"],
+      ["a 504", { PUBLIC_CODE: "504", PUBLIC_HEALTH: "" }, "answers 504"],
+      ["no answer", { PUBLIC_CODE: "000" }, "didn't answer within 10s"],
+      ["Arena JSON", { PUBLIC_HEALTH: '{"ok":true,"build":"4a276d3"}' }, "answers with an Arena server's /health, and this host's server doesn't answer"],
+      ["a 404 while this host's /arena is a 404 too", { PUBLIC_CODE: "404", PUBLIC_HEALTH: "", OWN_CODE: "404" }, "(its /arena serve is off)"],
+    ];
+    for (const [what, env, why] of refused) {
+      const { home } = down();
+      const r = deploy(home, { ...open, ...env }, []);
+      expect(r.status, what).toBe(1);
+      expect(r.stderr, what).toContain("ARENA_MVP_INVITES=0 refused: https://arena.makscee.ru/arena/");
+      expect(r.stderr, what).toContain(why);
+      expect(r.stderr, what).toContain("Switch the domain off first");
+      expect(r.log, what).toBe("");
+      expect(r.stdout, what).not.toContain("deployed");
+    }
+    // with this host's server up, a 5xx refuses too
+    const up = host();
+    expect(deploy(up.home, { ...open, PUBLIC_CODE: "502", PUBLIC_HEALTH: "" }, []).status).toBe(1);
+    // ARENA_MVP_OPEN_PUBLIC=1 overrides, and says what it overrode
+    const forced = down();
+    const f = deploy(forced.home, { ...open, PUBLIC_CODE: "502", PUBLIC_HEALTH: "", ARENA_MVP_OPEN_PUBLIC: "1" }, []);
+    expect(f.status).toBe(0);
+    expect(f.stderr).toContain("ARENA_MVP_OPEN_PUBLIC=1: deploying open although https://arena.makscee.ru/arena/ answers 502");
+  });
+
+  it("the failed invites check's message says to switch the domain off before an open rollback", () => {
+    const { home } = host();
+    const r = deploy(home, { STUB_HEALTH: '{"ok":true}' }, []);
+    expect(r.stderr).toContain("roll back: switch the domain off first (homelab Caddyfile.j2, arena.makscee.ru stops proxying /arena* to m1), then ARENA_MVP_INVITES=0 npm run mvp:redeploy -- <ref>");
   });
 
   it("takes ARENA_MVP_INVITES 0 or 1 only", () => {

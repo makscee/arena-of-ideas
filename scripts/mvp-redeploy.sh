@@ -30,14 +30,19 @@
 # The redeploy fails (exit 1, no "deployed" line) unless the new server's
 # /health says invites: true, so a pre-slice-13 ref or a broken setting is
 # never served by accident: it then stops the new server and turns the /arena
-# serve off before exiting. ARENA_MVP_INVITES takes 0 or 1 only. 0 deploys an
-# OPEN server (names, no links: anyone who reaches it plays as anyone); it
-# warns, and refuses while https://arena.makscee.ru/arena/ serves this host
-# (its /health shows this host's build), unless ARENA_MVP_OPEN_PUBLIC=1 says
-# so on purpose.
+# serve off before exiting. A new server that never answers /health is
+# stopped the same way, since its invites were never checked.
+# ARENA_MVP_INVITES takes 0 or 1 only. 0 deploys an OPEN server (names, no
+# links: anyone who reaches it plays as anyone); it warns, and refuses unless
+# https://arena.makscee.ru/arena/ clearly isn't this host: its /health shows
+# another build, the June page, or a 404 while this host's own /arena isn't a
+# 404. This host's build, a 5xx, no answer, or Arena JSON while this host's
+# server is down all refuse, with the reason; ARENA_MVP_OPEN_PUBLIC=1
+# overrides on purpose.
 #
-# Rollback to a pre-slice-13 build: SWITCH THE DOMAIN OFF FIRST (homelab
-# Caddyfile.j2, arena.makscee.ru stops proxying /arena* to m1), then
+# Rollback to a pre-slice-13 build, or back up after a failed check: SWITCH
+# THE DOMAIN OFF FIRST (homelab Caddyfile.j2, arena.makscee.ru stops proxying
+# /arena* to m1), then
 #   ARENA_MVP_INVITES=0 npm run mvp:redeploy -- <old ref>
 #
 # Run it from a checkout at the commit being deployed: the script builds the
@@ -72,6 +77,7 @@ INVITES="${ARENA_MVP_INVITES:-1}"
 case "$INVITES" in 0|1) ;; *) echo "ARENA_MVP_INVITES is 0 or 1, not '$INVITES'" >&2; exit 2 ;; esac
 OPEN_PUBLIC="${ARENA_MVP_OPEN_PUBLIC:-0}"
 PUBLIC_URL=https://arena.makscee.ru/arena/
+TAILNET_URL=https://m1.twin-pogona.ts.net/arena/api/v1/health
 
 remote() {
   cat <<SCRIPT
@@ -81,14 +87,52 @@ DIR="\$HOME/arena-mvp"
 LABEL=ru.makscee.arena-mvp
 TS=/Applications/Tailscale.app/Contents/MacOS/Tailscale
 if [ "$INVITES" != 1 ]; then
-  # An open server: never while the public domain serves this host. Checked
-  # before anything stops: the public /health showing the build this host
-  # serves now means arena.makscee.ru proxies here.
-  MINE=\$(curl -fsS --max-time 5 "http://127.0.0.1:$PORT/arena/api/v1/health" 2>/dev/null | sed -n 's/.*"build":"\([^"]*\)".*/\1/p')
-  PUBLIC=\$(curl -fsS --max-time 10 "${PUBLIC_URL}api/v1/health" 2>/dev/null || true)
-  if [ -n "\$MINE" ] && printf '%s' "\$PUBLIC" | grep -q "\"build\":\"\$MINE\"" && [ "$OPEN_PUBLIC" != 1 ]; then
-    echo "ARENA_MVP_INVITES=0 refused: $PUBLIC_URL serves this host (build \$MINE), so an open server would let anyone on the internet play as anyone. Switch the domain off first (homelab Caddyfile.j2), or ARENA_MVP_OPEN_PUBLIC=1 on purpose. Nothing stopped." >&2
-    exit 1
+  # An open server: only while the public domain clearly isn't this host.
+  # Checked before anything stops, and fail-closed: anything the check can't
+  # read refuses, with the reason (ARENA_MVP_OPEN_PUBLIC=1 overrides).
+  #   allowed: the public /health is JSON with another build than this host
+  #     serves; the June HTML; a 404 while this host's own /arena answers
+  #     something else (a proxied request would get that, not a 404)
+  #   refused: this host's build; Arena JSON while this host's build is
+  #     unknown (its server is down); a 5xx or no answer (this host down
+  #     behind mcow's proxy looks exactly like that); a 404 while this host's
+  #     /arena is a 404 too (its serve is off); anything else
+  MINE=
+  if LOCAL=\$(curl -fsS --max-time 5 "http://127.0.0.1:$PORT/arena/api/v1/health" 2>/dev/null); then
+    MINE=\$(printf '%s' "\$LOCAL" | sed -n 's/.*"build":"\([^"]*\)".*/\1/p')
+  fi
+  PUB=\$(curl -sS --max-time 10 -w '\n%{http_code}' "${PUBLIC_URL}api/v1/health" 2>/dev/null) || true
+  CODE=\$(printf '%s\n' "\$PUB" | tail -n 1)
+  BODY=\$(printf '%s\n' "\$PUB" | sed '\$d')
+  WHY=
+  case "\$CODE" in
+    200)
+      if printf '%s' "\$BODY" | grep -qi '<html'; then
+        :
+      elif printf '%s' "\$BODY" | grep -q '"build":"'; then
+        if [ -z "\$MINE" ]; then
+          WHY="$PUBLIC_URL answers with an Arena server's /health, and this host's server doesn't answer http://127.0.0.1:$PORT/arena/api/v1/health, so it can't tell whether the domain serves this host"
+        elif printf '%s' "\$BODY" | grep -q "\"build\":\"\$MINE\""; then
+          WHY="$PUBLIC_URL serves this host (build \$MINE)"
+        fi
+      else
+        WHY="$PUBLIC_URL answers 200 with neither the June page nor an Arena /health, so it can't tell whether the domain serves this host"
+      fi ;;
+    404)
+      OWN=\$(curl -sS --max-time 10 -o /dev/null -w '%{http_code}' "$TAILNET_URL" 2>/dev/null) || true
+      if [ "\$OWN" = 404 ]; then
+        WHY="$PUBLIC_URL answers 404, and so does this host's own $TAILNET_URL (its /arena serve is off), so a 404 can't tell whether the domain serves this host"
+      fi ;;
+    5??) WHY="$PUBLIC_URL answers \$CODE: that is what this host down behind mcow's proxy looks like" ;;
+    ''|000) WHY="$PUBLIC_URL didn't answer within 10s: that can be this host down behind mcow's proxy" ;;
+    *) WHY="$PUBLIC_URL answers \$CODE, so it can't tell whether the domain serves this host" ;;
+  esac
+  if [ -n "\$WHY" ]; then
+    if [ "$OPEN_PUBLIC" != 1 ]; then
+      echo "ARENA_MVP_INVITES=0 refused: \$WHY. An open server there would let anyone on the internet play as anyone. Switch the domain off first (homelab Caddyfile.j2, arena.makscee.ru stops proxying /arena* to m1), or ARENA_MVP_OPEN_PUBLIC=1 on purpose. Nothing stopped." >&2
+      exit 1
+    fi
+    echo "ARENA_MVP_OPEN_PUBLIC=1: deploying open although \$WHY." >&2
   fi
   echo "WARNING: ARENA_MVP_INVITES=0 deploys an OPEN server (names, no links: anyone who reaches it plays as anyone). Keep $PUBLIC_URL off this host while it runs." >&2
 fi
@@ -179,6 +223,19 @@ if [ "$FRESH" = 1 ]; then
     FAILED="moving \$DB aside failed; the server starts on the old DB"
   fi
 fi
+# Stop the job (KeepAlive would restart it) and turn the /arena serve off,
+# so nothing serves unchecked.
+stop_unchecked() {
+  launchctl bootout "gui/\$(id -u)/\$LABEL" 2>/dev/null || true
+  for i in \$(seq 1 20); do launchctl print "gui/\$(id -u)/\$LABEL" >/dev/null 2>&1 || break; sleep 0.5; done
+  \$TS serve --set-path /arena off >/dev/null 2>&1 || true
+}
+still_loaded() {
+  if launchctl print "gui/\$(id -u)/\$LABEL" >/dev/null 2>&1; then
+    echo "\$LABEL is STILL LOADED: stop it by hand (launchctl bootout gui/\$(id -u)/\$LABEL)." >&2
+  fi
+}
+ROLLBACK="Redeploy an invite-only build, or roll back: switch the domain off first (homelab Caddyfile.j2, arena.makscee.ru stops proxying /arena* to m1), then ARENA_MVP_INVITES=0 npm run mvp:redeploy -- <ref>."
 launchctl bootstrap "gui/\$(id -u)" "\$PLIST"
 \$TS serve --bg --set-path /arena "http://127.0.0.1:$PORT" >/dev/null
 HEALTH=
@@ -194,21 +251,23 @@ if [ -z "\$HEALTH" ]; then
   echo "redeploy failed: the new server (\$BUILD, $BRANCH) never answered http://127.0.0.1:$PORT/arena/api/v1/health within 30s, so the Arena isn't serving. The end of \$DIR/data/server.log:" >&2
   tail -n 20 "\$DIR/data/server.log" >&2 2>/dev/null || true
   [ -z "\$FAILED" ] || echo "--fresh failed too: \$FAILED" >&2
-  echo "Fix it and redeploy (npm run mvp:redeploy -- <branch>), or go back to a branch that worked." >&2
+  if [ "$INVITES" = 1 ]; then
+    # Invites were never checked: if it came up later it would serve
+    # unchecked, so stop it.
+    stop_unchecked
+    echo "Its invites were never checked, so it is stopped and the /arena serve is off: the Arena is down. \$ROLLBACK" >&2
+    still_loaded
+  else
+    echo "Fix it and redeploy (npm run mvp:redeploy -- <branch>), or go back to a branch that worked." >&2
+  fi
   exit 1
 fi
 # Invite-only unless ARENA_MVP_INVITES=0 said otherwise: a server that
 # doesn't say invites: true (a pre-slice-13 ref, a broken setting) is open.
 if [ "$INVITES" = 1 ] && ! printf '%s' "\$HEALTH" | grep -q '"invites":true'; then
-  # Never leave it serving: stop the job (KeepAlive would restart it) and
-  # turn the /arena serve off.
-  launchctl bootout "gui/\$(id -u)/\$LABEL" 2>/dev/null || true
-  for i in \$(seq 1 20); do launchctl print "gui/\$(id -u)/\$LABEL" >/dev/null 2>&1 || break; sleep 0.5; done
-  \$TS serve --set-path /arena off >/dev/null 2>&1 || true
-  echo "redeploy failed: the new server (\$BUILD, $BRANCH) is OPEN, not invite-only: its /health says \$HEALTH. Anyone who reaches it would play as anyone, so it is stopped and the /arena serve is off: the Arena is down. Redeploy an invite-only build, or ARENA_MVP_INVITES=0 on purpose." >&2
-  if launchctl print "gui/\$(id -u)/\$LABEL" >/dev/null 2>&1; then
-    echo "\$LABEL is STILL LOADED: stop it by hand (launchctl bootout gui/\$(id -u)/\$LABEL)." >&2
-  fi
+  stop_unchecked
+  echo "redeploy failed: the new server (\$BUILD, $BRANCH) is OPEN, not invite-only: its /health says \$HEALTH. Anyone who reaches it would play as anyone, so it is stopped and the /arena serve is off: the Arena is down. \$ROLLBACK" >&2
+  still_loaded
   exit 1
 fi
 echo "deployed \$BUILD ($BRANCH): \$HEALTH"
