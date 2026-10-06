@@ -232,3 +232,5 @@ button.bv-why { display: flex; align-items: center; justify-content: space-betwe
 .legend-sample .copies { color: var(--you); }
 .legend-sample .copies.tag { color: var(--gold); font-size: 11px; }
 .legend-sample .cost { color: var(--gold); }
+.who-mark > .bot { margin-left: 4px; flex: none; }
+.playoff.fresh { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); }

@@ -167,9 +167,10 @@ async function homeScreen(ended: number | null = null): Promise<void> {
   const playoff = playoffPanel(last, champ?.player ?? null, content, err);
   show(
     h("div", { class: "row spread" }, h("h1", {}, "ARENA"), who(api.player?.name ?? "", "dim")),
-    // The dev "End day now" just ran: say how that day ended, first thing.
-    justEnded ? h("div", { class: "notice", "data-testid": "day-ended" }, `Day ${justEnded.seq} ended: `, ...playoffSummary(justEnded, champ?.player ?? null)) : null,
-    ended !== null && !justEnded ? h("div", { class: "notice", "data-testid": "day-ended" }, `Day ${ended} ended. Today is day ${home.day.seq}.`) : null,
+    // The dev "End day now" just ran: say so first, with how the day ended
+    // (the playoff panel) right under it, before today's champion.
+    ended !== null ? h("div", { class: "notice", "data-testid": "day-ended" }, `Day ${ended} ended just now. Today is day ${home.day.seq}.`) : null,
+    justEnded ? playoff : null,
     h(
       "div",
       { class: "panel stack champion", "data-testid": "champion" },
@@ -186,7 +187,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
               : "This is the team to beat. Tap a card to read it, then Play.",
         )
       : null,
-    playoff,
+    justEnded ? null : playoff,
     h(
       "div",
       { class: "panel records", "data-testid": "records" },
@@ -202,7 +203,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
     // Play stays on the first screen however long Home runs (a playoff's table).
     h("div", { class: "row footer", "data-testid": "home-actions" }, rulesBtn, stats, play),
   );
-  if (justEnded && playoff) playoff.scrollIntoView({ block: "center" });
+  if (justEnded) playoff?.classList.add("fresh");
 }
 
 /** The champion card's last line: what today's slayers mean at the day's end. */
@@ -216,7 +217,7 @@ function slayersLine(n: number): string {
 /** "@name", with 🤖 after a bot's. */
 function whoMark(p: PlayerRef, cls = ""): HTMLElement {
   const el = who(p.name, cls);
-  return p.bot ? h("span", { class: "who-mark" }, el, " 🤖") : el;
+  return p.bot ? h("span", { class: "who-mark" }, el, h("span", { class: "bot", "aria-label": "bot" }, "🤖")) : el;
 }
 
 /** How a day ended, in one sentence. With no playoff to show (no slayers,
