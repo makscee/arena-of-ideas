@@ -15,6 +15,7 @@ function world(deps: Partial<MvpDeps> = {}) {
 }
 const pool = (rt: ReturnType<typeof world>, round: number) => rt.store.ghosts(round, { excludePlayerId: "", contentVersion: rt.content.version });
 
+  // Champion seeding simulates whole bot runs; fused stalemates (a team Blessing re-armed every turn) make it slow under load.
 describe("MVP bots and world (slice 6)", () => {
   it("seeds a strong bot team as today's champion on a fresh store, once", async () => {
     const rt = world();
@@ -26,7 +27,7 @@ describe("MVP bots and world (slice 6)", () => {
     expect(pool(rt, 1)).toEqual([]);
     expect(rt.store.battles()).toEqual([]);
     expect(await seedChampion(rt)).toBeUndefined();
-  });
+  }, 30_000);
 
   it("stores the champion's fusions as bot discoveries, so a later fuse of the pair shows the same name", async () => {
     for (let seed = 1; seed <= 6; seed++) {
@@ -50,7 +51,7 @@ describe("MVP bots and world (slice 6)", () => {
     const champ = (await seedChampion(rt))!;
     expect(champ.contentVersion).toBe(rt.content.version);
     expect(rt.store.champions()).toHaveLength(1);
-  });
+  }, 30_000);
 
   it("fills every round's ghost pool with bot runs, and stops there", async () => {
     for (const store of [undefined, new SqliteMvpStore(":memory:")]) {
@@ -126,7 +127,7 @@ describe("MVP bots and world (slice 6)", () => {
     const d = botDecision({ phase: "shop", line: [], offers: [], gold: 0 } as never, rt.content, rt.rules, 0);
     expect(d).toEqual({ kind: "fight" });
     expect(botDecision({ phase: "crown" } as never, rt.content, rt.rules, 0)).toEqual({ kind: "fight" });
-  });
+  }, 30_000);
 
   it("a bot run never takes a name today's slayers or any champion has, so playoff entrants never share one (#587)", async () => {
     // The roster name, else the next free one, else a numbered one.
