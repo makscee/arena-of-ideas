@@ -11,7 +11,7 @@ import { MVP_RULES, offersAt } from "../src/mvp/contract";
 import { ApiError, api, savedPlayer } from "./api";
 import { getContent } from "./content";
 import { battleScreen, whyILost } from "./screens/battle";
-import { codexScreen, type CodexState } from "./screens/codex";
+import { codexScreen, newCodexCache, type CodexState } from "./screens/codex";
 import { setCodexLink } from "./ui/term";
 import { statsScreen } from "./screens/stats";
 import { card, unitSheet, type CardUnit } from "./ui/card";
@@ -276,14 +276,29 @@ let codexBack: (() => void) | null = null;
 /** Opens the Codex over the current screen (the title menu, a run's shop, a
  * battle); from inside the Codex (a term link in a unit sheet) it changes tab
  * and keeps the same Back. */
+let codexCache = newCodexCache();
+/** Redraws the open Codex (its inspector comes and goes at 1024px). */
+let codexRedraw: (() => void) | null = null;
 async function openCodex(state?: Partial<CodexState>): Promise<void> {
-  if (app.dataset.screen !== "codex" || !codexBack) codexBack = keepScreen();
+  if (app.dataset.screen !== "codex" || !codexBack) {
+    // A battle under it pauses (keepScreen), and its fetches start fresh.
+    const keep = keepScreen();
+    const desk = isDesktop();
+    codexCache = newCodexCache();
+    // The shop's desktop layout is more than CSS: crossed 1024px meanwhile, Back redraws it.
+    codexBack = () => {
+      keep();
+      if (isDesktop() !== desk && app.dataset.screen === "shop") rerender?.();
+    };
+  }
   const back = codexBack;
   const content = await getContent();
-  await codexScreen({ content, state, onBack: () => ((codexBack = null), back()) });
+  const onBack = () => ((codexBack = null), (codexRedraw = null), back());
+  codexRedraw = () => void codexScreen({ content, state: { ...codexCache.state, term: undefined, scope: undefined }, onBack, cache: codexCache });
+  await codexScreen({ content, state, onBack, cache: codexCache });
 }
-// Every highlighted term's "Open in Codex" lands on its Keywords row.
-setCodexLink((term) => void openCodex({ tab: "keywords", term }));
+// Every highlighted term's "Open in Codex" lands on its Keywords row (a scoped trigger's line in it).
+setCodexLink((term, scope) => void openCodex({ tab: "keywords", term, scope }));
 
 /** The in-run menu (☰ in the HUD, Esc on desktop): Resume, Codex, Rules,
  * Title menu (the run waits on the server; Continue brings it back) and
@@ -821,7 +836,7 @@ const kbd = (k: string) => h("kbd", {}, k);
 /** Redraws the shop when the width crosses 1024px: its desktop layout is
  * more than CSS (the inspector, the keys). Other screens only restyle. */
 let rerender: (() => void) | null = null;
-desktopQuery.addEventListener("change", () => app.dataset.screen === "shop" && rerender?.());
+desktopQuery.addEventListener("change", () => (app.dataset.screen === "shop" ? rerender?.() : app.dataset.screen === "codex" ? codexRedraw?.() : undefined));
 
 /** Per-device "seen it once" flags (localStorage may throw or be empty: then everything is new). */
 function seen(key: string): boolean {

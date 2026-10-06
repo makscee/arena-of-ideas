@@ -15,7 +15,7 @@ import { beatPlayOf, firingOf, stepsOf, timingOf, traceOf, whyILost as lossChain
 import { displayNames } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { card, unitSheet } from "../ui/card";
-import { button, closable, h, show } from "../ui/dom";
+import { button, closable, h, onLeave, show } from "../ui/dom";
 import { icon } from "../ui/icon";
 
 /** How long the line-up shows before the first beat, at 1×. */
@@ -539,6 +539,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
 
   show(hud, h("div", { class: "label" }, a.you ? "Them" : owner(them)), enemy, caption, mine, h("div", { class: "label" }, a.you ? "You · front first" : `${owner(you)} · front first`), still, recent, sheet, end, h("div", { class: "spacer" }), controls);
   setSpeedVar();
+  // The Codex opened over the battle (a term's "Open in Codex") pauses it.
+  onLeave(() => {
+    pause();
+    render();
+  });
   render();
   schedule();
 }

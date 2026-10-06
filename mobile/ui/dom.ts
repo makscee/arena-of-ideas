@@ -31,6 +31,7 @@ export function button(label: string, onClick: () => void, cls = "", testid = ""
 export function show(...kids: (Node | null)[]): void {
   delete app.dataset.screen;
   keys = null;
+  leaving = null;
   app.replaceChildren(...kids.filter((k): k is Node => k !== null));
   window.scrollTo(0, 0);
 }
@@ -40,6 +41,9 @@ export function show(...kids: (Node | null)[]): void {
  * any screen, a run's shop or a battle included, and Back returns to it
  * untouched. */
 export function keepScreen(): () => void {
+  // A battle stops playing out of sight; Back brings it back paused.
+  leaving?.();
+  const pauseAgain = leaving;
   const kids = [...app.childNodes].filter((n) => !(n instanceof HTMLElement && n.classList.contains("overlay")));
   const name = app.dataset.screen;
   const kept = keys;
@@ -48,8 +52,16 @@ export function keepScreen(): () => void {
     show(...kids);
     if (name) app.dataset.screen = name;
     keys = kept;
+    leaving = pauseAgain;
     window.scrollTo(0, y);
   };
+}
+
+/** What the current screen does when keepScreen() sets it aside (the
+ * battle: pause). show() clears it. */
+let leaving: (() => void) | null = null;
+export function onLeave(fn: () => void): void {
+  leaving = fn;
 }
 
 // ---------- desktop (round 2, R2-9) ----------

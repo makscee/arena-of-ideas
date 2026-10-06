@@ -431,8 +431,13 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
   /* Stats: a wider column; the tables read better at 960px than stretched. */
   #app[data-screen="stats"] { max-width: 960px; padding: 32px; }
 
-  /* Codex: the width for cards; keywords in two columns of rows. */
-  #app[data-screen="codex"] { max-width: 1280px; padding: 32px; }
+  /* Codex: the cards and lists on the left, the inspector (a unit's or a fusion's sheet) on the right; keywords in two columns of rows. */
+  #app[data-screen="codex"] { max-width: none; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr) var(--insp); gap: 0; align-items: start; }
+  #app[data-screen="codex"] .codex-main { padding: 32px; min-width: 0; min-height: 100dvh; }
+  #app[data-screen="codex"] .codex-insp { position: sticky; top: 0; height: 100dvh; overflow-y: auto; padding: 24px 20px; border-left: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 40%, var(--bg)); }
+  #app[data-screen="codex"] .codex-insp .sheet-actions { position: static; margin: 0; padding: 0; background: none; }
+  #app[data-screen="codex"] .card.inspected { border-color: var(--you); background: color-mix(in srgb, var(--you) 8%, var(--panel)); }
+  #app[data-screen="codex"] .inspected:not(.card) { outline: 1px solid var(--you); outline-offset: 1px; }
   #app[data-screen="codex"] .codex-filter, #app[data-screen="codex"] input[type="search"], #app[data-screen="codex"] select { max-width: 640px; }
   #app[data-screen="codex"] .kw-list { display: grid; grid-template-columns: 1fr 1fr; column-gap: 24px; }
   #app[data-screen="codex"] .codex-body > .panel { max-width: 960px; }
@@ -482,3 +487,11 @@ select { font: inherit; min-height: 44px; width: 100%; background: var(--panel);
 .chips { display: flex; flex-wrap: wrap; gap: 4px; }
 button.chip.unit-chip { min-height: 44px; padding: 0 8px; font-size: 13px; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; }
 .credits a { color: var(--dim); }
+.codex-insp { display: none; }
+@media (min-width: 1024px) { .codex-insp { display: flex; } }
+/* The rate a rate sort shows, quiet on the card's foot. */
+.codex-rate { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--dim); opacity: 0.8; }
+button.chip.quiet { min-height: 44px; font-size: 13px; color: var(--dim); }
+button.chip.quiet.on { background: none; color: var(--text); border-color: var(--text); }
+.kw-scope { border-left: 2px solid color-mix(in srgb, #ffbf47 45%, transparent); padding-left: 10px; margin-top: 4px; gap: 4px; }
+.kw-scope.landed { border-left-color: #ffbf47; }

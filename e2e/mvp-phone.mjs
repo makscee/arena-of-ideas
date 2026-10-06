@@ -163,6 +163,28 @@ try {
   if (both === 0 || both > tier3) errors.push(`codex: tier 3 + a trigger shows ${both} of ${tier3}`);
   for (const t of await page.getByTestId("codex-unit").locator(".tier").allTextContents()) if (t !== "●●●") errors.push(`codex: a tier-${t.length} unit under tier 3`);
   await shot("codex-filtered"); await noHScroll("codex-filtered");
+  // A filter tap redraws in place: the window keeps its scroll.
+  await page.evaluate(() => window.scrollTo(0, 120));
+  const y0 = await page.evaluate(() => window.scrollY);
+  await page.getByTestId("codex-tier-3").click();
+  await page.waitForTimeout(100);
+  const y1 = await page.evaluate(() => window.scrollY);
+  if (y0 > 0 && Math.abs(y1 - y0) > 2) errors.push(`codex: a filter tap scrolled ${y0} → ${y1}`);
+  // Sort by win rate: the rates show on the cards only then, highest first.
+  await tap44("codex sort", page.getByTestId("codex-sort-win"));
+  await page.getByTestId("codex-sort-win").click();
+  await page.getByTestId("codex-rate").first().waitFor();
+  {
+    const rates = await page.getByTestId("codex-rate").allTextContents();
+    if (rates.length !== (await page.getByTestId("codex-unit").count())) errors.push(`codex: ${rates.length} rates on ${await page.getByTestId("codex-unit").count()} cards`);
+    const nums = rates.filter((r) => r !== "–").map((r) => Number(r.replace("%", "")));
+    if (nums.some((x, i) => i > 0 && x > nums[i - 1])) errors.push(`codex: win-rate sort not highest first (${rates.join(",")})`);
+    if (rates.slice(0, nums.length).includes("–")) errors.push("codex: an uncounted unit sorted before counted ones");
+  }
+  await shot("codex-sort-win"); await noHScroll("codex-sort-win");
+  await page.getByTestId("codex-sort-tier").click();
+  await page.waitForTimeout(100);
+  if (await page.getByTestId("codex-rate").count()) errors.push("codex: rates stay on the cards after Sort: Tier");
   await page.getByTestId("codex-unit").first().click();
   await page.getByTestId("see-awoken").click();
   await page.getByTestId("see-sleeping").waitFor();
@@ -173,6 +195,24 @@ try {
   if (shieldUsers === 0) errors.push("codex: Shield lists no units");
   await page.locator('[data-term="status:Shield"]').scrollIntoViewIfNeeded();
   await shot("codex-keywords"); await noHScroll("codex-keywords");
+  // Dies said of an enemy has its own line, its own rule and its own units.
+  {
+    if (await page.locator('.kw-row:not([data-term^="trigger:"]) .kw-scope').count()) errors.push("codex: a term that isn't a trigger has scope lines");
+    const enemyDies = page.locator('[data-term="trigger:Death"] .kw-scope[data-scope="enemy"]');
+    if (!(await enemyDies.count())) errors.push("codex: Dies has no \"an enemy dies\" line");
+    else {
+      if (!/When an enemy dies/.test(await enemyDies.locator(".kw-tip").textContent())) errors.push(`codex: the enemy-death line reads "${await enemyDies.locator(".kw-tip").textContent()}"`);
+      if (!(await enemyDies.getByTestId("codex-term-unit").count())) errors.push("codex: the enemy-death line lists no units");
+      await enemyDies.scrollIntoViewIfNeeded();
+      await shot("codex-dies-scoped");
+      // An enemy-death unit's "Open in Codex" lands on that line, not on the self-death rule.
+      await enemyDies.getByTestId("codex-term-unit").first().click();
+      await page.locator('[data-testid="unit-sheet"] [data-term="trigger:Death"]').first().click();
+      await page.getByTestId("term-codex").click();
+      await page.locator(".kw-scope.landed").waitFor({ timeout: 2_000 }).catch(() => {});
+      if ((await page.locator(".kw-scope.landed").getAttribute("data-scope").catch(() => null)) !== "enemy") errors.push("codex: an enemy-death term's Open in Codex didn't land on its line");
+    }
+  }
   await page.locator('[data-term="status:Shield"] [data-testid="codex-term-unit"]').first().click();
   await page.locator('[data-testid="unit-sheet"] [data-testid="term"]').first().click();
   const termId = await page.locator('[data-testid="unit-sheet"] [data-testid="term"]').first().getAttribute("data-term");
@@ -183,6 +223,18 @@ try {
   await shot("codex-landed");
   await page.getByTestId("codex-tab-fusions").click();
   await page.getByTestId("codex-fusions-found").waitFor();
+  // Tabs switch without refetching: /fusions once while the Codex is open.
+  {
+    let fetches = 0;
+    const count = (r) => /\/fusions(\?|$)/.test(new URL(r.url()).pathname + new URL(r.url()).search) && fetches++;
+    page.on("request", count);
+    await page.getByTestId("codex-tab-units").click();
+    await page.getByTestId("codex-units").waitFor();
+    await page.getByTestId("codex-tab-fusions").click();
+    await page.getByTestId("codex-fusions-found").waitFor();
+    page.off("request", count);
+    if (fetches) errors.push(`codex: switching tabs fetched /fusions ${fetches} more time(s)`);
+  }
   if (!/^[\d,]+ of 6,480 found$/.test(await page.getByTestId("codex-fusions-found").textContent())) errors.push(`codex: "${await page.getByTestId("codex-fusions-found").textContent()}"`);
   await shot("codex-fusions"); await noHScroll("codex-fusions");
   if ((await page.getByTestId("icon-credits").textContent()).indexOf("CC BY 3.0") < 0) errors.push("codex: no icon credits");
@@ -302,7 +354,18 @@ try {
       await page.getByTestId("unit-sheet").waitFor();
       await shot("battle-unit-sheet"); await noHScroll("battle-unit-sheet");
       await sheetChecks("battle unit sheet");
-      await page.getByTestId("sheet-close").click();
+      // The Codex opened over a playing battle pauses it; Back finds it paused where it was.
+      await page.evaluate(() => document.querySelector('[data-testid="battle-play"]').click());
+      if ((await page.getByTestId("battle-play").textContent()) !== "❚❚") errors.push("battle: Play didn't resume");
+      await page.locator('[data-testid="unit-sheet"] [data-testid="term"]').first().click();
+      await page.getByTestId("term-codex").click();
+      await page.getByTestId("codex-keywords").waitFor();
+      await page.waitForTimeout(1500);
+      await page.getByTestId("codex-back").click();
+      await page.getByTestId("battle-skip").waitFor();
+      if ((await page.getByTestId("battle-play").textContent()) !== "▶") errors.push("battle: still playing behind the Codex");
+      if (await page.getByTestId("battle-done").count()) errors.push("battle: it played out behind the Codex");
+      if (await page.getByTestId("unit-sheet").count()) await page.getByTestId("sheet-close").click();
       await page.getByTestId("unit-sheet").waitFor({ state: "detached" });
       // A unit with two changes in one step (a status and the stat it moves)
       // shows both in its chip, and its trace lists both; shot when this

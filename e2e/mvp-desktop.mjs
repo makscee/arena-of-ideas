@@ -95,9 +95,24 @@ try {
   await page.getByTestId("codex-units").waitFor();
   await shot("codex"); await noHScroll("codex"); await wide("codex", 1200);
   {
-    const tops = await page.getByTestId("codex-unit").evaluateAll((els) => els.slice(0, 8).map((e) => Math.round(e.getBoundingClientRect().top)));
-    if (new Set(tops).size > 1) errors.push(`codex: the first 8 cards wrap (${tops.join(",")})`);
+    // 7 a row beside the 380px inspector.
+    const tops = await page.getByTestId("codex-unit").evaluateAll((els) => els.slice(0, 7).map((e) => Math.round(e.getBoundingClientRect().top)));
+    if (new Set(tops).size > 1) errors.push(`codex: the first 7 cards wrap (${tops.join(",")})`);
   }
+  // A unit opens in the inspector on the right (no overlay on desktop), which ends at the window's edge.
+  await page.getByTestId("codex-unit").nth(2).click();
+  await page.locator('[data-testid="inspector"] [data-testid="unit-sheet"]').waitFor({ timeout: 2_000 }).catch(() => errors.push("codex: a unit doesn't open in the inspector"));
+  if (await page.getByTestId("overlay").count()) errors.push("codex: a unit opened in an overlay");
+  {
+    const box = await page.getByTestId("inspector").boundingBox();
+    if (!box || box.x + box.width < W - 2) errors.push(`codex: the inspector ends at ${box ? Math.round(box.x + box.width) : "?"}px, not the window's edge`);
+  }
+  await page.locator('[data-testid="inspector"] [data-testid="see-awoken"]').click().catch(() => {});
+  await shot("codex-inspector");
+  await page.getByTestId("codex-sort-pick").click();
+  await page.getByTestId("codex-rate").first().waitFor();
+  await shot("codex-sort-pick");
+  await page.getByTestId("codex-sort-tier").click();
   await page.getByTestId("codex-tab-keywords").click();
   await page.getByTestId("codex-keywords").waitFor();
   await shot("codex-keywords");
@@ -188,6 +203,20 @@ try {
       await page.keyboard.press("Escape");
       await page.getByTestId("run-menu").waitFor({ timeout: 2_000 }).catch(() => errors.push("Esc didn't open the run menu"));
       await shot("run-menu");
+      // ☰ Codex, then the window narrows below 1024px: Back finds the shop in its phone layout.
+      await page.getByTestId("menu-codex").click();
+      await page.getByTestId("codex-units").waitFor();
+      await page.setViewportSize({ width: 900, height: H });
+      await page.waitForTimeout(200);
+      if (await page.getByTestId("inspector").count()) errors.push("codex at 900px: the inspector stays");
+      await page.getByTestId("codex-back").click();
+      await page.getByTestId("fight").waitFor();
+      if (await page.getByTestId("inspector").count()) errors.push("codex → 900px → Back: the shop kept its desktop layout");
+      await page.setViewportSize({ width: W, height: H });
+      await page.waitForTimeout(200);
+      if (!(await page.getByTestId("inspector").count())) errors.push("back at 1440px: the shop has no inspector");
+      await page.keyboard.press("Escape");
+      await page.getByTestId("run-menu").waitFor({ timeout: 2_000 }).catch(() => {});
       await page.keyboard.press("Escape");
       if (await page.getByTestId("run-menu").count()) errors.push("Esc didn't close the run menu");
     }
