@@ -14,10 +14,10 @@
 import { boardAt, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView } from "../../src/mvp/contract";
 import { STATUS_TERMS, termDef, termIcon, type TermId } from "../../src/glossary";
-import { beatPlayOf, damageByUnit, firingOf, keyMomentsOf, stepsOf, timingOf, traceOf, whyILost as lossChains, sidesOf, type Change, type Firing, type LossChain, type Step, type Trace } from "../../src/mvp/trace";
+import { beatPlayOf, chainOf, damageByUnit, firingOf, keyMomentsOf, stepsOf, timingOf, traceOf, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Change, type Firing, type LossChain, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames } from "../../src/trace";
 import type { Side } from "../../src/types";
-import { card, unitSheet } from "../ui/card";
+import { card, formRich, unitSheet } from "../ui/card";
 import { app, button, closable, h, onKeys, onLeave, show } from "../ui/dom";
 import { icon } from "../ui/icon";
 
@@ -77,6 +77,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const lost = a.you !== undefined && outcome === "loss";
   const units = new Map<string, BattleUnit>([...battle.teamA, ...battle.teamB].map((u) => [u.id, u]));
   const emojiOf = (id: string) => units.get(id)?.emoji ?? "✨";
+  const whenOf = whenLookup(units, a.content);
   // The end card's numbers (R2-14).
   const damage = damageByUnit(log, name, sides);
   const moments = keyMomentsOf(log, beats, name, sides);
@@ -103,6 +104,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   let playing = true;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let trace: Trace | null = null;
+  /** Why's chain for the traced change (R2-15), and the step whose moment is on the board. */
+  let chain: Chain | null = null;
+  let chainAt: number | null = null;
   /** The changes the tapped chip held (one unit, one step), when it held more than one. */
   let traceGroup: Change[] = [];
   /** The end card is up (played out, End, or ▶ on the last beat). */
@@ -206,7 +210,31 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   function openTrace(eventId: number, group: Change[] = []): void {
     pause();
     trace = traceOf(log, eventId, name, sides);
+    chain = chainOf(log, eventId, { name, sides, whenOf });
+    chainAt = null;
     traceGroup = group.length > 1 ? group : [];
+    render();
+  }
+  /** Moves the playhead to event `id`'s moment, Why left open: the wave that
+   * shows it (every wave before it landed), else, for a turn or a strike
+   * that no wave shows, the start of the beat that holds it. */
+  function seekEvent(id: number): void {
+    pause();
+    finished = false;
+    let b = beats.findIndex((pb) => pb.waves.some((w) => w.eventIds.includes(id)));
+    let w = b >= 0 ? beats[b]!.waves.findIndex((x) => x.eventIds.includes(id)) : 0;
+    if (b < 0) {
+      // A root (Turn 6, the battle's start) shows as the board before its first beat.
+      const next = beats.findIndex((pb) => pb.end >= id);
+      if (next < 0) b = beats.length - 1;
+      else if (id >= beats[next]!.start && log[id]?.type === "Strike") b = next;
+      else b = next - 1;
+      w = lastWave(b);
+    }
+    at = b;
+    wave = Math.max(0, w);
+    landed = [];
+    chainAt = id;
     render();
   }
   function back(): void {
@@ -316,7 +344,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   function triggerBadge(id: string, v: View): HTMLElement | null {
     let hit: { f: Firing; step: Step; age: number | null } | null = null;
     for (const w of v.waves) {
-      const f = firingOf(log, w.step);
+      const f = firingOf(log, w.step, whenOf);
       if (f && f.unit === id) hit = { f, step: w.step, age: w.age };
     }
     if (!hit) return null;
@@ -588,17 +616,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
           )
         : null,
       h("div", { class: "bv-trace-text mono", "data-testid": "trace-text" }, t.text),
-      ...t.links.map((l, i) =>
-        h(
-          "div",
-          { class: `bv-link ${l.side === you ? "you" : "ghost"}`, "data-testid": "trace-link" },
-          h("span", { class: "emoji" }, emojiOf(l.unit)),
-          // Whose unit, then its name: "THEM Taser".
-          h("span", { class: "bv-link-name" }, ...(l.side ? [sideTag(l.side)] : []), l.name),
-          h("span", { class: "dim" }, i === 0 ? viaText(l.via) : `${viaText(l.via)}, set off the one above`),
-        ),
-      ),
-      t.links.length ? null : h("div", { class: "dim" }, "No unit acted: the rules did this."),
+      // R2-15: the whole chain, change first, back to the turn; a step's click shows its moment.
+      chain ? chainView(chain, { units, content: a.content, you, name, active: chainAt, onStep: seekEvent }) : null,
     ].filter((n): n is HTMLDivElement => n !== null);
   }
 
@@ -608,7 +627,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const cls = !a.you && battle.winner !== "draw" ? "neutral" : outcome;
     const whyBtn = lost
       ? button("Why I lost", () => {
-          const close = closable(whyPanel(battle, you, (id) => { close(); openTrace(id); }));
+          const close = closable(whyPanel(battle, a.content, you, (id) => { close(); openTrace(id); }));
         }, "", "end-why")
       : null;
     const hide = button("✕", () => { finished = false; render(); }, "bv-close", "end-close");
@@ -692,7 +711,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
 
 /** The "why I lost" card for side `you`: the 2–3 enemy chains that did the
  * most. Each row opens that chain's trace (onTrace, or a sheet of its own). */
-function whyPanel(battle: BattleRecord, you: Side, onTrace?: (eventId: number) => void): HTMLElement {
+function whyPanel(battle: BattleRecord, content: MvpContent, you: Side, onTrace?: (eventId: number) => void): HTMLElement {
   const chains = lossChains(battle.log, you);
   return h(
     "div",
@@ -709,12 +728,15 @@ function whyPanel(battle: BattleRecord, you: Side, onTrace?: (eventId: number) =
           row.addEventListener("click", () => {
             if (onTrace) return onTrace(c.sampleEventId);
             const t = traceOf(battle.log, c.sampleEventId);
+            const units = new Map<string, BattleUnit>([...battle.teamA, ...battle.teamB].map((u) => [u.id, u]));
+            const ch = chainOf(battle.log, c.sampleEventId, { whenOf: whenLookup(units, content) });
             closable(
               h("div", { class: "stack why-sheet", "data-testid": "why-sheet" },
                 h("h2", { class: "ghost-name" }, c.text),
                 h("div", {}, chainSummary(c)),
                 h("div", { class: "label" }, SAMPLE_LABEL[c.sampleKind]),
                 h("div", { class: "bv-trace-text mono", "data-testid": "trace-text" }, t.text),
+                chainView(ch, { units, content, you, name: displayNames(battle.log) }),
               ),
             );
           });
@@ -726,9 +748,9 @@ function whyPanel(battle: BattleRecord, you: Side, onTrace?: (eventId: number) =
 
 /** The "why I lost" card for the result screen, after a loss (a skipped
  * battle included). Null when `you` didn't lose. */
-export function whyILost(battle: BattleRecord, _content: MvpContent, you: Side): HTMLElement | null {
+export function whyILost(battle: BattleRecord, content: MvpContent, you: Side): HTMLElement | null {
   if (battle.winner === "draw" || battle.winner === you) return null;
-  return whyPanel(battle, you);
+  return whyPanel(battle, content, you);
 }
 
 /** The why sheet's label over the traced change (LossChain.sampleKind). */
@@ -751,4 +773,55 @@ function chainSummary(c: LossChain): string {
 
 function viaText(via: string): string {
   return via === "strike" ? "strike" : via === "ability" ? "ability" : via;
+}
+
+/** The When a stamped firing answered (AbilityRef.when): a unit's from the
+ * recipe it fought with, a status's from its def. */
+function whenLookup(units: Map<string, BattleUnit>, content: MvpContent): WhenOf {
+  return (ref) => {
+    if (ref.when === undefined) return undefined;
+    if (ref.status === undefined) return units.get(ref.unit)?.recipe.when[ref.when];
+    const def = content.statuses[ref.status];
+    return def?.triggers?.[ref.when] ?? def?.abilities[ref.ability]?.whens?.[ref.when];
+  };
+}
+
+/** Why's chain (R2-15): the change, then each cause, back to the turn. A
+ * firing reads as its unit and the When → Does that fired; every step shows
+ * its trigger's icon. With onStep each step is a button that shows its
+ * moment on the board (`active` is the one on screen). */
+function chainView(c: Chain, o: { units: Map<string, BattleUnit>; content: MvpContent; you: Side; name: (id: string) => string; active?: number | null; onStep?: (eventId: number) => void }): HTMLElement {
+  const stepIcon = (n: ChainNode) => {
+    const id = n.trigger ? termIcon(n.trigger as TermId, n.triggerStatus) : undefined;
+    const tone = n.kind === "firing" ? "tone-when" : n.kind === "root" ? "tone-gold" : "dim";
+    return id ? icon(id, 18, tone) : h("span", { class: tone }, n.kind === "firing" ? "⚡" : "•");
+  };
+  const body = (n: ChainNode): Node[] => {
+    const who = n.side ? (n.side === o.you ? "tone-ally" : "tone-enemy") : "";
+    if (n.kind !== "firing") return [h("span", { class: "bv-step-text" }, n.text)];
+    const u = o.units.get(n.unit ?? "");
+    const label = n.trigger ? termDef(n.trigger as TermId)?.label : undefined;
+    if (n.status) {
+      const tip = termDef(`status:${n.status}` as TermId, o.content.statuses)?.tip;
+      return [h("span", { class: "bv-step-head" }, h("b", { class: who }, n.text), label ? h("span", { class: "dim" }, ` · ${label}`) : null), tip ? h("span", { class: "bv-step-text dim" }, tip) : null].filter((x): x is HTMLElement => x !== null);
+    }
+    const w = u && n.ref?.when !== undefined ? u.recipe.when[n.ref.when] : undefined;
+    const fired = u && w ? formRich({ ...u.recipe, when: [w] }, o.content) : [];
+    return [
+      h("span", { class: "bv-step-head" }, h("span", { class: "emoji" }, u?.emoji ?? "✨"), " ", h("b", { class: who }, o.name(n.unit ?? "")), h("span", { class: "dim" }, `'s ability${label ? ` · ${label}` : ""}`)),
+      fired.length ? h("span", { class: "bv-step-text" }, ...fired) : null,
+    ].filter((x): x is HTMLElement => x !== null);
+  };
+  return h(
+    "div",
+    { class: "bv-chain", "data-testid": "why-chain" },
+    ...c.nodes.map((n, i) => {
+      const kids = [h("span", { class: "bv-step-ic" }, stepIcon(n)), h("span", { class: "bv-step-body" }, ...(i ? [h("span", { class: "bv-step-by dim" }, "caused by")] : []), ...body(n))];
+      const attrs = { class: `bv-step ${n.kind}${o.active === n.eventId ? " on" : ""}`, "data-testid": "why-step", "data-kind": n.kind, "data-event": String(n.eventId) };
+      if (!o.onStep) return h("div", attrs, ...kids);
+      const b = h("button", attrs, ...kids);
+      b.addEventListener("click", () => o.onStep!(n.eventId));
+      return b;
+    }),
+  );
 }
