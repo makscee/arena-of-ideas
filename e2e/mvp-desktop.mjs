@@ -226,6 +226,7 @@ try {
     await page.getByTestId("battle-end").waitFor({ timeout: 10_000 });
     if (round === 1) await shot("battle");
     if (round === 1) await whyOnDesktop();
+    if (round === 1) await desktopBattle();
     await page.getByTestId("battle-end").click();
     await page.getByTestId("battle-done").click();
     await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
@@ -327,6 +328,74 @@ try {
   await page.waitForTimeout(200);
   if (await page.getByTestId("inspector").count()) errors.push("1023px: the inspector shows on the phone layout");
   await shot("shop-1023");
+  /** R2-16: the desktop battle. The lines face each other on one row, fronts
+   * in the middle; the whole fight fits the window (1440×900 and 1024×768)
+   * with the control bar on screen; dragging the timeline to a turn shows
+   * that turn; a Log row's click opens its Why. */
+  async function desktopBattle() {
+    if ((await page.getByTestId("battle-play").textContent()) === "❚❚") await page.getByTestId("battle-play").click();
+    if (await page.getByTestId("end-card").isVisible()) await page.getByTestId("end-close").click();
+    const facing = async (name, w, h) => {
+      const [mine, theirs, panel] = [await page.getByTestId("battle-you").boundingBox(), await page.getByTestId("battle-them").boundingBox(), await page.getByTestId("trace").boundingBox()];
+      if (!mine || !theirs || Math.abs(mine.y - theirs.y) > 2 || mine.x + mine.width > theirs.x + 0.5) errors.push(`${name}: the lines don't face each other on one row (${JSON.stringify({ mine, theirs })})`);
+      if (!panel || theirs.x + theirs.width > panel.x + 0.5) errors.push(`${name}: the side panel covers their line`);
+      // Fronts in the middle: your line runs right to left, theirs left to right.
+      const xs = async (testid) => page.getByTestId(testid).locator(".bv-slot").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().x));
+      const [m, t] = [await xs("battle-you"), await xs("battle-them")];
+      if (m.length > 1 && !(m[0] > m.at(-1))) errors.push(`${name}: your front isn't in the middle`);
+      if (t.length > 1 && !(t[0] < t.at(-1))) errors.push(`${name}: their front isn't in the middle`);
+      const doc = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.scrollHeight]);
+      if (doc[0] > w || doc[1] > h) errors.push(`${name}: the fight scrolls (${doc.join("×")})`);
+      for (const id of ["battle-back", "battle-play", "battle-step", "battle-speed", "battle-end", "battle-replay", "timeline"]) {
+        const b = await page.getByTestId(id).boundingBox();
+        if (!b || b.y < 0 || b.y + b.height > h + 0.5 || b.x + b.width > w + 0.5) errors.push(`${name}: ${id} off screen`);
+      }
+    };
+    await facing("battle 1440×900", W, H);
+    // Drag the timeline to the turn your front fell (or the last turn).
+    const turns = page.getByTestId("timeline-turn");
+    const n = await turns.count();
+    if (!n) errors.push("timeline: no turns");
+    else {
+      let target = n - 1;
+      for (let i = 0; i < n; i++) if (await turns.nth(i).locator('[data-kind="death"][data-side="you"]').count()) { target = i; break; }
+      const turn = await turns.nth(target).getAttribute("data-turn");
+      const [from, to] = [await turns.nth(0).boundingBox(), await turns.nth(target).boundingBox()];
+      await page.mouse.move(from.x + 2, from.y + 10);
+      await page.mouse.down();
+      await page.mouse.move(to.x + to.width / 2, to.y + 10, { steps: 6 });
+      await page.mouse.up();
+      const hud = (await page.locator(".hud span").nth(2).textContent()) ?? "";
+      if (target > 0 && hud !== `T${turn}`) errors.push(`timeline: dragged to turn ${turn}, the board shows ${hud}`);
+      if (!(await turns.nth(target).evaluate((e) => e.classList.contains("on")))) errors.push("timeline: the dragged-to turn isn't lit");
+      if (await page.getByTestId("battle-play").textContent() !== "▶") errors.push("timeline: scrubbing didn't pause");
+      console.log(`timeline: ${n} turns, dragged to T${turn} (${target === n - 1 ? "the last turn" : "your first loss"}), board at ${hud}`);
+      await shot("battle-timeline");
+    }
+    // Log: a row's click opens its Why.
+    await page.getByTestId("tab-log").click();
+    const rows = page.locator('[data-testid="log-row"]:visible');
+    const k = await rows.count();
+    if (!k) errors.push("log: no rows for the turns played");
+    let opened = false;
+    for (let i = k - 1; i >= 0 && !opened; i--) {
+      await page.getByTestId("tab-log").click();
+      await rows.nth(i).click();
+      opened = await page.getByTestId("trace-text").isVisible();
+    }
+    if (k && !opened) errors.push("log: no row opened its Why");
+    if (opened && !(await page.getByTestId("tab-why").evaluate((e) => e.classList.contains("on")))) errors.push("log: a row's Why opened without the Why tab");
+    await shot("battle-log-why");
+    // 1024×768: still whole, still facing.
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.waitForTimeout(200);
+    await facing("battle 1024×768", 1024, 768);
+    await shot("battle-1024");
+    await page.setViewportSize({ width: W, height: H });
+    await page.waitForTimeout(200);
+    await page.getByTestId("trace-close").click().catch(() => {});
+  }
+
   /** R2-15: Why opens as a panel right of the battle column, and its chain
    * runs back to a turn. Steps through the battle for a change that a firing
    * made in a turn (event ← firing ← … ← Turn N), and clicks its steps. */

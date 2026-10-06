@@ -11,14 +11,20 @@
 // to the end (or ▶ on the last beat), the end card shows the outcome, damage
 // by unit, 2–3 key moments that replay from there, and Replay / Why I lost /
 // Continue (battle-done, which calls onDone).
+//
+// R2-16, at 1024px and wider (style.css, data-screen="battle"): the two lines
+// face each other, fronts in the middle; a turn timeline under the board
+// scrubs the fight (click or drag; boardAt is pure); a side panel holds Why
+// and Log. Every piece is in the DOM at any width and CSS picks the layout,
+// so crossing 1024px needs no redraw. The phone keeps its stacked rows.
 import { boardAt, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView } from "../../src/mvp/contract";
 import { STATUS_TERMS, termDef, termIcon, type TermId } from "../../src/glossary";
-import { beatPlayOf, chainOf, damageByUnit, firingOf, keyMomentsOf, stepsOf, timingOf, traceOf, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Change, type Firing, type LossChain, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
+import { beatPlayOf, chainOf, damageByUnit, firingOf, keyMomentsOf, stepsOf, timelineOf, timingOf, traceOf, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Change, type Firing, type LossChain, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { card, formRich, unitSheet } from "../ui/card";
-import { app, button, closable, h, onKeys, onLeave, show } from "../ui/dom";
+import { app, button, closable, h, isDesktop, onKeys, onLeave, screen, show } from "../ui/dom";
 import { icon } from "../ui/icon";
 
 /** How long the line-up shows before the first beat, at 1×. */
@@ -118,6 +124,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   let traceGroup: Change[] = [];
   /** The end card is up (played out, End, or ▶ on the last beat). */
   let finished = false;
+  /** The desktop side panel's tab (R2-16); a trace opening switches to Why. */
+  let tab: "why" | "log" = "why";
   /** Each card's floating numbers, set by motion() and hung in its slot. */
   const floatsOf = new WeakMap<HTMLElement, HTMLElement[]>();
 
@@ -133,6 +141,14 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const still = h("div", { class: "bv-stillbox" });
   const recent = h("div", { class: "bv-recent", "data-testid": "recent" });
   const sheet = h("div", { class: "bv-sheet panel", "data-testid": "trace" });
+  // The desktop side panel: Why and Log tabs over the same sheet (the phone shows only Why, as a sheet).
+  const whyBody = h("div", { class: "bv-tab-body stack bv-why-body" });
+  const logBody = h("div", { class: "bv-tab-body bv-log", "data-testid": "battle-log" });
+  const whyTab = button("Why", () => setTab("why"), "bv-tab", "tab-why");
+  const logTab = button("Log", () => setTab("log"), "bv-tab", "tab-log");
+  sheet.append(h("div", { class: "row bv-tabs", role: "tablist" }, whyTab, logTab), whyBody, logBody);
+  const timeline = h("div", { class: "bv-tl", "data-testid": "timeline", role: "slider", "aria-label": "Turn timeline: click or drag to scrub", tabindex: "-1" });
+  const clash = h("div", { class: "bv-clash", "aria-hidden": "true" }, icon("crossed-swords", 28, "tone-gold"));
   const end = h("div", { class: "bv-end panel stack", "data-testid": "end-card" });
   const playBtn = button("❚❚", () => (playing ? pause() : play()), "", "battle-play");
   const backBtn = button("‹", () => back(), "", "battle-back");
@@ -222,6 +238,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     chain = chainOf(log, eventId, { name, sides, whenOf });
     chainAt = null;
     traceGroup = group.length > 1 ? group : [];
+    tab = "why";
     render();
   }
   /** Moves the playhead to event `id`'s moment, Why left open: the wave that
@@ -280,6 +297,126 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     schedule();
   }
   const replay = () => playFrom(-1);
+
+  // ---------- the desktop side panel and timeline (R2-16) ----------
+
+  function setTab(t: "why" | "log"): void {
+    tab = t;
+    render();
+    if (t === "log") logRows[curRow()]?.scrollIntoView({ block: "nearest" });
+  }
+  /** Why with nothing traced (desktop): how to fill it. */
+  function whyHint(): Node[] {
+    return [h("div", { class: "dim bv-why-hint", "data-testid": "why-hint" }, "Click any number, trigger badge, the caption or a Log row to see why it happened.")];
+  }
+
+  /** The Log: one row per wave, every beat of the fight, built once; render()
+   * shows the rows played so far and lights the one on screen. A row's click
+   * moves the board there and opens its Why. */
+  const logRows: HTMLElement[] = [];
+  const rowAt: { beat: number; wave: number }[] = [];
+  function buildLog(): void {
+    beats.forEach((pb, bi) => {
+      pb.waves.forEach((st, wi) => {
+        const row = h(
+          "button",
+          { class: `bv-log-row${wi === 0 ? " first" : ""}`, "data-testid": "log-row", "data-beat": String(bi) },
+          h("span", { class: "bv-log-t dim mono" }, wi === 0 ? `T${pb.turn}` : ""),
+          h("span", { class: "bv-log-c" }, ...(st.subjectSide ? [sideTag(st.subjectSide)] : []), ...richCaption(st.caption)),
+        );
+        row.addEventListener("click", () => {
+          pause();
+          finished = false;
+          at = bi;
+          wave = wi;
+          landed = [];
+          const c = st.changes[0];
+          if (c) openTrace(c.eventId, st.changes.filter((x) => x.unit === c.unit));
+          else render();
+        });
+        logRows.push(row);
+        rowAt.push({ beat: bi, wave: wi });
+      });
+    });
+    logBody.replaceChildren(...(logRows.length ? logRows : [h("div", { class: "dim" }, "Nothing happened.")]));
+  }
+  /** The log row of the wave on screen (-1 before the first beat). */
+  function curRow(): number {
+    if (at < 0) return -1;
+    return rowAt.findIndex((r) => r.beat === at && r.wave === wave);
+  }
+  function drawLog(): void {
+    const cur = finished ? logRows.length - 1 : curRow();
+    logRows.forEach((r, i) => {
+      r.hidden = i > cur;
+      r.classList.toggle("on", i === cur && !finished);
+    });
+    if (tab === "log" && playing && cur >= 0) logRows[cur]?.scrollIntoView({ block: "nearest" });
+  }
+
+  /** The timeline: a block per turn with its marks; a playhead on the beat on
+   * screen. Click or drag scrubs (pauses, the end card put away). */
+  const turns = timelineOf(log, beats, sides);
+  const turnEls: HTMLElement[] = [];
+  const head = h("div", { class: "bv-tl-head", "aria-hidden": "true" });
+  const track = h("div", { class: "bv-tl-track" });
+  function buildTimeline(): void {
+    const every = turns.length > 30 ? 5 : turns.length > 18 ? 2 : 1;
+    turns.forEach((t, i) => {
+      const marks = t.marks.map((m) => {
+        const tone = m.kind === "fatigue" ? "tone-gold" : m.side === you ? "tone-ally" : "tone-enemy";
+        const id = m.kind === "death" ? "death-skull" : m.kind === "big" ? "spiky-explosion" : "hourglass";
+        const what = m.kind === "death" ? `${name(m.unit ?? "")} falls` : m.kind === "big" ? `big hit on ${name(m.unit ?? "")}` : "fatigue sets in";
+        const mk = h("span", { class: `bv-tl-mark ${m.kind}`, "data-testid": "timeline-mark", "data-kind": m.kind, "data-beat": String(m.beat), ...(m.side ? { "data-side": m.side === you ? "you" : "them" } : {}), title: what });
+        mk.append(icon(id, 14, tone));
+        return mk;
+      });
+      const block = h(
+        "div",
+        { class: "bv-tl-turn", "data-testid": "timeline-turn", "data-turn": String(t.turn), title: `Turn ${t.turn}` },
+        h("div", { class: "bv-tl-box" }, ...marks.slice(0, 4)),
+        h("div", { class: "bv-tl-n mono dim" }, i % every === 0 || i === turns.length - 1 ? String(t.turn) : ""),
+      );
+      turnEls.push(block);
+    });
+    track.replaceChildren(...turnEls, head);
+    timeline.replaceChildren(track);
+    let down = false;
+    const scrub = (x: number) => {
+      const box = track.getBoundingClientRect();
+      if (!box.width || !turns.length) return;
+      const f = Math.max(0, Math.min(0.9999, (x - box.left) / box.width)) * turns.length;
+      const t = turns[Math.floor(f)]!;
+      const b = t.beats[Math.min(t.beats.length - 1, Math.floor((f % 1) * t.beats.length))]!;
+      if (b === at && !finished) return;
+      pause();
+      finished = false;
+      go(b);
+    };
+    track.addEventListener("pointerdown", (e) => {
+      down = true;
+      track.setPointerCapture?.(e.pointerId);
+      scrub(e.clientX);
+    });
+    track.addEventListener("pointermove", (e) => { if (down) scrub(e.clientX); });
+    const up = () => { down = false; };
+    track.addEventListener("pointerup", up);
+    track.addEventListener("pointercancel", up);
+  }
+  function drawTimeline(): void {
+    if (!turns.length) return;
+    const ti = at < 0 ? -1 : turns.findIndex((t) => t.beats.includes(at));
+    turnEls.forEach((el, i) => {
+      el.classList.toggle("on", i === ti);
+      el.classList.toggle("past", i < ti);
+    });
+    const t = turns[ti];
+    const pos = !t ? 0 : (ti + (t.beats.indexOf(at) + 1) / t.beats.length) / turns.length;
+    head.style.left = `${(pos * 100).toFixed(2)}%`;
+    timeline.setAttribute("aria-valuemin", "0");
+    timeline.setAttribute("aria-valuemax", String(turns.at(-1)!.turn));
+    timeline.setAttribute("aria-valuenow", String(t?.turn ?? 0));
+  }
   function leave(): void {
     if (timer) clearTimeout(timer);
     a.onDone();
@@ -571,8 +708,14 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       }),
     );
     recent.style.display = finished ? "none" : "";
-    sheet.style.display = trace ? "" : "none";
-    if (trace) sheet.replaceChildren(...traceView(trace));
+    // The phone shows the sheet only with a trace; the desktop panel is always there (style.css).
+    sheet.classList.toggle("open", !!trace);
+    sheet.dataset.tab = tab;
+    whyTab.classList.toggle("on", tab === "why");
+    logTab.classList.toggle("on", tab === "log");
+    whyBody.replaceChildren(...(trace ? traceView(trace) : whyHint()));
+    drawLog();
+    drawTimeline();
     // A trace opened from the end card (Why I lost) sits in its place until closed.
     end.style.display = finished && !trace ? "" : "none";
     if (finished) end.replaceChildren(...endView());
@@ -722,17 +865,28 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       "div",
       { class: "bv-screen" },
       hud,
-      h("div", { class: "label" }, a.you ? "Them" : owner(them)),
-      enemy,
-      caption,
-      mine,
-      h("div", { class: "label" }, a.you ? "You · front first" : `${owner(you)} · front first`),
+      // On the phone .bv-board is display: contents (the stacked rows as before);
+      // on desktop it lays your line left of the clash and theirs right, fronts in the middle.
+      h(
+        "div",
+        { class: "bv-board" },
+        h("div", { class: "label bv-lab-them" }, a.you ? "Them" : owner(them), h("span", { class: "bv-front-r" }, " · front first")),
+        enemy,
+        caption,
+        clash,
+        mine,
+        h("div", { class: "label bv-lab-you" }, a.you ? "You" : owner(you), " · front first"),
+      ),
+      timeline,
       h("div", { class: "bv-below" }, still, recent),
       controls,
     ),
     sheet,
     end,
   );
+  screen("battle");
+  buildTimeline();
+  buildLog();
   setSpeedVar();
   // Desktop keys: Space plays or pauses, ←/→ step a beat, R replays.
   onKeys((e) => {
@@ -761,7 +915,7 @@ function whyPanel(battle: BattleRecord, content: MvpContent, you: Side, onTrace?
   return h(
     "div",
     { class: "panel stack", "data-testid": "why-lost" },
-    h("div", { class: "row spread" }, h("div", { class: "label" }, "Why I lost"), h("div", { class: "dim small" }, "tap a row for its chain")),
+    h("div", { class: "row spread" }, h("div", { class: "label" }, "Why I lost"), h("div", { class: "dim small" }, isDesktop() ? "click a row for its chain" : "tap a row for its chain")),
     ...(chains.length
       ? chains.map((c) => {
           const row = h(
