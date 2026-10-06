@@ -44,6 +44,12 @@ test("a lock freezes, an unlock unfreezes", () => {
   expect(shopSound({ kind: "lock", slot: 0 }, offers(true), offers(false))?.key).toBe("unfreeze");
 });
 
+test("a gift pick chimes, a skip clicks (R3-16)", () => {
+  const r = runOf(unit("a", 1));
+  expect(shopSound({ kind: "gift", pick: 0 }, r, runOf(unit("a", 1), unit("b", 1)))?.key).toBe("discover");
+  expect(shopSound({ kind: "gift", pick: null }, r, r)?.key).toBe("click");
+});
+
 test("sell, reroll, reorder left and right, fuse", () => {
   const r = runOf(unit("a", 1), unit("b", 1));
   expect(shopSound({ kind: "sell", index: 0 }, r, runOf(unit("b", 1)))?.key).toBe("sell");

@@ -127,6 +127,7 @@ function rulesSheet(): HTMLElement {
     ...(benchSizeOf(r) > 0 ? [p(`${r.benchSize} bench slots hold units that don't fight; copies still merge into them. ${isDesktop() ? "Drag a unit between the line and the bench, or select it and press B" : "Tap a unit, then To bench or To line"}.`)] : []),
     h("div", { class: "label" }, "Copies, Awoken, fusion"),
     p(`Buying a unit you own merges it in: +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP a copy. Copy ${r.copiesToAwaken} awakens it: the same When, a stronger Who or Does.`),
+    ...(r.giftChoices ? [p(`The copy that awakens a unit brings a gift: a free pick of 1 of ${r.giftChoices} units from the highest tier open. It joins your line, else your bench; one you own merges in, and if that awakens it, another gift comes. With line and bench full, sell a unit to make room, or skip it. Until you pick or skip, you can only sell and reorder.`)] : []),
     p(`Two Awoken units fuse: the When of the first you ${isDesktop() ? "pick" : "tap"}, the Who of the second, the Does of both, and the stronger PWR and HP of the two, +1 PWR / +2 HP. A fused unit is final; copies of either part still merge into it. The first player to make a pair names it.`),
     h("div", { class: "label" }, "Chains"),
     p(`Units react to events. When one happens, the units it triggers fire in line order, front to back, each at most once per event. In a fight, ${isDesktop() ? "click" : "tap"} any number to see the chain that caused it.`),
@@ -154,6 +155,7 @@ function legendSheet(): HTMLElement {
     row(h("span", { class: "stats" }, span("p", "2"), "/", span("h", "6")), "PWR / HP. PWR is what its strike deals; at 0 HP it falls."),
     row(span("copies", "●●○"), `Copies toward Awoken: copy ${r.copiesToAwaken} awakens it. Each copy adds +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP.`),
     row(span("copies tag", "AWOKEN ×3"), "Awoken, its stronger form; ×3 copies merged in. Two Awoken units can fuse."),
+    ...(r.giftChoices ? [row(span("copies tag", "🎁 GIFT"), `Awakening a unit brings a gift: pick 1 of ${r.giftChoices} cards for free, or skip it. Set aside, it waits behind "Open gift".`)] : []),
     row(span("copies tag", "FUSED ×2"), "Two Awoken units fused into one: final, copies of either part still merge in."),
     row(span("cost", "3g ＋"), "An offer's price. ＋: you own it, so buying merges a copy in. The numeral top right (I–IV) is its tier."),
     row(span("cost", "🔒 3g"), "A locked offer: it stays through rerolls and rounds until you buy or unlock it."),
@@ -487,7 +489,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const lockLabel = (o: Offer) => (o.locked ? "Unlock" : "Lock");
   // The last shop round has no Lock: the Crown clears the offers. Unlock stays.
   const lastShop = run.round >= rules.rounds;
-  const canLock = (o: Offer) => o.locked === true || !lastShop;
+  const canLock = (o: Offer) => !run.gift && (o.locked === true || !lastShop);
 
   const line = h("div", { class: "slots", "data-testid": "line" });
   const bench = h("div", { class: "slots bench-row", "data-testid": "bench" });
@@ -560,7 +562,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     for (const o of offers.children) o.classList.toggle("selected", chosen !== null && (o as HTMLElement).dataset.testid === `offer-${chosen}`);
     if (desk) renderInspector(true);
     else actions.replaceChildren(...actionButtons());
-    hintSlot.replaceChildren(...[shopHint()].filter((x): x is HTMLElement => x !== null));
+    hintSlot.replaceChildren(...[giftBanner() ?? shopHint()].filter((x): x is HTMLElement => x !== null));
   };
 
   /** Desktop: hovering a card reads it in the inspector; a line card drags onto another to reorder. */
@@ -604,7 +606,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const out: HTMLElement[] = desk ? [left, right] : [left, right, info];
     const other = otherZone(i);
     if (other !== null) out.push(button(i < L ? (desk ? "To bench · B" : "To bench") : desk ? "To line · B" : "To line", () => moveTo(i, other), "", i < L ? "to-bench" : "to-line"));
-    if (u.kind === "unit" && u.form === "awoken" && awoken >= 2) out.push(button(desk ? "Fuse · F" : "Fuse", () => ((pick = { mode: "fuse", first: i }), renderLine()), "", "fuse"));
+    if (u.kind === "unit" && u.form === "awoken" && awoken >= 2 && !run.gift) out.push(button(desk ? "Fuse · F" : "Fuse", () => ((pick = { mode: "fuse", first: i }), renderLine()), "", "fuse"));
     const value = sellValue(rules, u);
     out.push(button(desk ? `Sell +${value}g · S` : `Sell +${value}`, () => void decide({ kind: "sell", index: i }), "danger", "sell"));
     return out;
@@ -672,7 +674,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     // Only a unit whose next copy is on offer right now.
     const almost = board.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === rules.copiesToAwaken - 1 && run.offers.some((o) => o.unitId === u.unitId));
     const canBuy = run.offers.some((o) => o.cost <= run.gold);
-    if (awoken >= 2) return hint(desk ? "Two Awoken units can fuse: select one, then F." : "Two Awoken units can fuse: tap one, then Fuse.");
+    if (awoken >= 2 && !run.gift) return hint(desk ? "Two Awoken units can fuse: select one, then F." : "Two Awoken units can fuse: tap one, then Fuse.");
     if (almost && run.offers.some((o) => o.unitId === almost.unitId && o.cost <= run.gold)) return hint(`One more ${almost.name} awakens it. It's in the shop.`);
     if (run.line.length === 0 && run.bench.length > 0) return hint("Move a unit to your line: only the line fights.");
     if (run.line.length === 0 && !canBuy) return hint("No gold for a unit. Fight to move on: an empty line loses, and costs a heart.");
@@ -763,6 +765,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   /** Why an offer can't be bought now, decided here so no request goes out
    * (a full line used to cost a 409 on every preview); "" when it can. */
   const buyBlock = (o: Offer): string => {
+    if (run.gift) return "Pick your gift first";
     if (run.gold < o.cost) return `Needs ${o.cost}g`;
     if (run.line.length >= L && run.bench.length >= B && !owns(o.unitId)) return B > 0 ? "Line and bench full: sell or fuse first" : "Line full: sell or fuse first";
     return "";
@@ -858,11 +861,11 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   // A reroll with locked offers filling the whole shop would redraw nothing
   // (run.ts refuses it); empty slots still refill.
   const allLocked = lockedFull({ offers: run.offers, rules, round: run.round });
-  reroll.disabled = run.gold < rules.rerollCost || allLocked;
+  reroll.disabled = run.gold < rules.rerollCost || allLocked || !!run.gift;
   if (allLocked) reroll.title = "Every offer is locked";
   const fight = button(crown ? "Fight the champion" : "Fight", () => void decide({ kind: "fight" }), "primary grow", "fight");
   // An empty line can fight (and lose a heart) once nothing is affordable, so a broke run moves on.
-  fight.disabled = run.line.length === 0 && run.offers.some((o) => o.cost <= run.gold);
+  fight.disabled = (run.line.length === 0 && run.offers.some((o) => o.cost <= run.gold)) || !!run.gift;
   if (desk) {
     reroll.append(" ", kbd("R"));
     fight.append(" ", kbd("Space"));
@@ -900,6 +903,66 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   } else {
     fillPin(day);
     if (!day) void api.day().then((d) => ((day = d), fillPin(d))).catch(() => {});
+  }
+
+
+  // ---------- the awakening gift (R3-16) ----------
+  // The copy that awakens a unit brings a free pick of 1 of 3 units (R3-15,
+  // run.gift). The chooser opens over the shop; Esc, a tap outside and "Make
+  // room" set it aside behind a banner (Open gift), and while it waits only
+  // selling and reordering go through. A gift set aside because line and
+  // bench were full opens again once a sale makes room.
+  const full = run.line.length >= L && run.bench.length >= B;
+  const giftKey = run.gift ? `${run.runId}:${run.round}:${run.gift.join(",")}` : "";
+  const giftPickable = (id: string) => !full || owns(id);
+  function giftBanner(): HTMLElement | null {
+    if (!run.gift || crown) return null;
+    const stuck = !run.gift.some(giftPickable);
+    return h(
+      "div",
+      { class: "gift-banner row", "data-testid": "gift-banner" },
+      h("span", { class: "grow" }, stuck ? "🎁 Gift waiting: sell a unit to make room, then pick." : "🎁 Your awakening gift is waiting."),
+      button("Open gift", () => openGift(), "primary small", "gift-open"),
+    );
+  }
+  function openGift(): void {
+    const gift = run.gift;
+    if (!gift) return;
+    giftAside = null;
+    const stuck = !gift.some(giftPickable);
+    const tier = unitOf(gift[0]!)?.tier;
+    const choices = gift.map((id, i) => {
+      const u = unitOf(id);
+      const mine = board.find((x) => x.kind === "unit" && x.unitId === id) ?? null;
+      const cu: CardUnit = { unitId: id, emoji: u?.emoji ?? "?", name: u?.name ?? id, stats: u?.base ?? { pwr: 0, hp: 0 }, ...(u ? { recipe: u.forms.sleeping } : {}) };
+      const c = card(cu, { side: "you", ...(u ? { tier: u.tier } : {}), extra: mine ? [h("div", { class: "cost" }, "＋")] : [], testid: `gift-card-${i}` });
+      if (mine) c.classList.add("owned");
+      c.addEventListener("click", () => (play("click"), void closable(mine ? unitSheet(mine, content) : u ? unitSheet(u, content) : h("h2", {}, id))));
+      const ok = giftPickable(id);
+      const pickBtn = button(ok ? (mine ? "Pick ＋" : "Pick") : "Full", () => (close(), void decide({ kind: "gift", pick: i })), "primary", `gift-pick-${i}`);
+      pickBtn.disabled = !ok;
+      return h("div", { class: "gift-choice" }, c, pickBtn);
+    });
+    const aside = () => {
+      giftAside = { key: giftKey, full: stuck };
+      close();
+      renderLine();
+    };
+    const close = dismissable(
+      aside,
+      h("div", { class: "label" }, "Awakening gift"),
+      h("h2", { class: "reveal", "data-testid": "gift-title" }, "🎁 Awakened! Pick a gift"),
+      h("div", { class: "dim small" }, `Free: one of these${tier ? ` tier ${roman(tier)}` : ""} units. It joins your line, else your bench; one you own merges in.`),
+      ...(stuck ? [h("div", { class: "hint", "data-testid": "gift-full" }, "Line and bench full: make room (sell a unit), then pick.")] : []),
+      h("div", { class: "gift-choices", "data-testid": "gift-choices" }, ...choices),
+      h("div", { class: "dim small" }, `${tapOrClick()} a card to read it.${isDesktop() ? " Esc sets the gift aside." : ""}`),
+      h(
+        "div",
+        { class: "row sheet-actions" },
+        stuck ? button("Make room", aside, "grow", "gift-make-room") : null,
+        button("Skip", () => (close(), void decide({ kind: "gift", pick: null })), stuck ? "" : "grow", "gift-skip"),
+      ),
+    );
   }
 
   // "?" explains a card's numbers; until a player has opened it once, it says so.
@@ -960,6 +1023,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     err,
   );
   screen("shop");
+  // The gift opens by itself, unless it was set aside (and, if set aside for
+  // a full board, there is still no room).
+  if (run.gift && !crown && (giftAside?.key !== giftKey || (giftAside.full && run.gift.some(giftPickable)))) openGift();
   rerender = () => shopScreen(run, content, err.textContent ?? "", pick.mode === "picked" ? pick.index : -1);
   // Keys: Esc steps back (the fusion, the selection), then opens the ☰ run
   // menu, at every width (a sheet over the shop closes first: ui/dom.ts).
@@ -1022,7 +1088,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     if (k === "f") {
       const u = unitAt(sel);
       if (pick.mode === "fuse") pick = { mode: "none" };
-      else if (u && u.kind === "unit" && u.form === "awoken" && awoken >= 2) pick = { mode: "fuse", first: sel };
+      else if (u && u.kind === "unit" && u.form === "awoken" && awoken >= 2 && !run.gift) pick = { mode: "fuse", first: sel };
       else return false;
       renderLine();
       return true;
@@ -1041,6 +1107,11 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   }
 
 }
+
+/** The awakening gift the player set aside (Esc, a tap outside, Make room),
+ * and whether the board was full then: the shop doesn't reopen it by itself
+ * until a sale makes room (or a new gift comes). */
+let giftAside: { key: string; full: boolean } | null = null;
 
 /** ← / → presses the desktop shop took while a move was still out. */
 let moveQueue = 0;

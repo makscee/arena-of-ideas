@@ -8,6 +8,9 @@ export function plainRefusal(message: string): string {
   const m = message.replace(/^invalid [a-z]+: /, "");
   const gold = /^costs (\d+), have (\d+)/.exec(m);
   if (gold) return `Not enough gold: it costs ${gold[1]}g, you have ${gold[2]}g`;
+  // The awakening gift (R3-15/16): picking needs room, and nothing else goes while it waits.
+  if (/full: sell a unit to make room, or skip the gift/.test(m)) return "Line and bench full: sell a unit to make room, or skip the gift";
+  if (/pick your awakening gift first/.test(m)) return "Pick your gift first, or skip it";
   if (/line and bench are full/i.test(m)) return "Line and bench full: sell or fuse first";
   if (/line is full/i.test(m)) return "Line full: sell or fuse first";
   if (/only the Crown fight is left/.test(m)) return "The Crown: your line is final, only the fight is left";
@@ -21,5 +24,6 @@ export function plainRefusal(message: string): string {
  * phone sheet's Buy beside Close, the 1024px inspector): "Line full: sell or
  * fuse first" reads "Full: sell or fuse". The error line keeps the long one. */
 export function buttonRefusal(text: string): string {
+  if (/make room/.test(text)) return "Full: make room";
   return /^Line (and bench )?full/.test(text) ? "Full: sell or fuse" : text;
 }
