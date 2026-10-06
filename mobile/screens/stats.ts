@@ -12,7 +12,7 @@ import { keepUnitRates, pct } from "../ui/unit-stats";
 type Tab = "units" | "champions" | "fusions";
 
 export async function statsScreen(a: { content: MvpContent; onBack: () => void; tab?: Tab }): Promise<void> {
-  const back = button("Back", a.onBack, "primary", "stats-back");
+  const back = button("Back", a.onBack, "primary grow", "stats-back");
   let data: [StatsView, FusionDiscovery[], HomeView];
   try {
     data = await Promise.all([api.stats(), api.fusions(), api.home()]);
@@ -31,8 +31,8 @@ export async function statsScreen(a: { content: MvpContent; onBack: () => void; 
     recordsPanel(home),
     h("div", { class: "tabs" }, tabBtn("units", "Units"), tabBtn("champions", "Champions"), tabBtn("fusions", "Fusions")),
     body,
-    h("div", { class: "spacer" }),
-    back,
+    // Stuck to the bottom: the lists grow long, and Back is the only way home.
+    h("div", { class: "row footer" }, back),
   );
 }
 
@@ -115,12 +115,16 @@ function championSheet(c: Champion, content: MvpContent): HTMLElement {
   );
 }
 
+/** The newest fusions shown; the rest are counted. */
+const FUSIONS_SHOWN = 60;
+
 function fusionsPanel(fusions: FusionDiscovery[], content: MvpContent): HTMLElement {
   const byId = new Map<string, UnitContent>(content.units.map((u) => [u.id, u]));
   const part = (id: string) => byId.get(id);
   const me = api.player?.id;
   const rows = [...fusions]
     .sort((x, y) => (x.discoveredAt < y.discoveredAt ? 1 : x.discoveredAt > y.discoveredAt ? -1 : 0))
+    .slice(0, FUSIONS_SHOWN)
     .map((f) => {
       const a = part(f.first);
       const b = part(f.second);
@@ -143,6 +147,7 @@ function fusionsPanel(fusions: FusionDiscovery[], content: MvpContent): HTMLElem
     "div",
     { class: "panel stack", "data-testid": "stats-fusions" },
     ...(rows.length ? rows : [h("div", { class: "dim" }, "No fusions yet. Fuse two Awoken units to discover one.")]),
+    fusions.length > rows.length ? h("div", { class: "dim small" }, `The newest ${rows.length} of ${fusions.length} fusions.`) : null,
     rows.length ? h("div", { class: "dim small" }, "Order matters: the first part gives the When, the second the Who.") : null,
   );
 }
