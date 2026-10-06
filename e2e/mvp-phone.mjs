@@ -245,6 +245,8 @@ try {
   await page.getByTestId("play").click();
 
   let round = 0;
+  /** Result screens whose ☰ named a round (R2-17). */
+  let menuRounds = 0;
   let whyShot = false;
   for (let guard = 0; guard < 20; guard++) {
     await page.getByTestId("fight").waitFor({ timeout: 10_000 });
@@ -463,13 +465,18 @@ try {
       await tap44("end card buttons", page.locator('[data-testid="end-card"] button'));
       await shot("battle-end-card"); await noHScroll("battle-end-card");
       if (await page.getByTestId("end-why").count()) {
+        // Why I lost, or Why I won (R2-17).
+        const label = await page.getByTestId("end-why").textContent();
         await page.getByTestId("end-why").click();
-        await page.getByTestId("why-lost").waitFor();
+        const panel = page.getByTestId(label === "Why I won" ? "why-won" : "why-lost");
+        await panel.waitFor();
         await shot("battle-end-why");
-        await page.getByTestId("why-lost").locator("button.bv-why").first().click();
-        await page.getByTestId("trace-text").waitFor();
-        await page.getByTestId("trace-close").click();
-        if (!(await page.getByTestId("end-card").isVisible())) errors.push("end card: not back after Why I lost's trace");
+        if (await panel.locator("button.bv-why").count()) {
+          await panel.locator("button.bv-why").first().click();
+          await page.getByTestId("trace-text").waitFor();
+          await page.getByTestId("trace-close").click();
+          if (!(await page.getByTestId("end-card").isVisible())) errors.push(`end card: not back after ${label}'s trace`);
+        } else await page.getByTestId("sheet-close").click();
       }
       // A key moment replays from its beat.
       if (moments) {
@@ -516,9 +523,25 @@ try {
     }
     await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
     if (round === 1) { await shot("result"); await noHScroll("result"); await noRates("result"); }
+    // R2-17: the result screen's ☰ names the round just fought, not the next
+    // one the run has moved on to (or the Crown, or a run that is over).
+    {
+      const shown = (await page.getByTestId("result-round").textContent()) ?? "";
+      await page.getByTestId("menu-open").click();
+      await page.getByTestId("run-menu").waitFor();
+      const menu = (await page.getByTestId("run-menu").locator(".label").first().textContent()) ?? "";
+      await page.getByTestId("menu-resume").click();
+      await page.getByTestId("run-menu").waitFor({ state: "detached" });
+      const n = /round (\d+) of/.exec(menu)?.[1];
+      if (n !== undefined) {
+        menuRounds++;
+        if (Number(n) !== round || /^R(\d+)\//.exec(shown)?.[1] !== n) errors.push(`result ☰: "${menu}" after round ${round} ("${shown}")`);
+      } else if (!/^Run · (over|the Crown)$/.test(menu)) errors.push(`result ☰: "${menu}" after round ${round}`);
+    }
     await page.getByTestId("continue").click();
     if (await page.getByTestId("run-over").isVisible().catch(() => false)) break;
   }
+  if (!menuRounds) errors.push("result ☰: no result screen's menu named a round");
   await page.getByTestId("run-over").waitFor({ timeout: 10_000 });
   await shot("run-over"); await noHScroll("run-over"); await noRates("run-over");
   const over = await page.getByTestId("run-over").textContent();

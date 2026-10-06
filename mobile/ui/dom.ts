@@ -29,6 +29,10 @@ export function button(label: string, onClick: () => void, cls = "", testid = ""
  * name (screen()) and keys (onKeys()): a screen that has a desktop layout
  * says so again after show(). */
 export function show(...kids: (Node | null)[]): void {
+  // The screen it replaces is gone for good: it frees what it holds.
+  const free = gone;
+  gone = null;
+  free?.();
   delete app.dataset.screen;
   keys = null;
   leaving = null;
@@ -44,6 +48,9 @@ export function keepScreen(): () => void {
   // A battle stops playing out of sight; Back brings it back paused.
   leaving?.();
   const pauseAgain = leaving;
+  // Set aside, not gone: the next show() (the Codex) mustn't free it.
+  const freeLater = gone;
+  gone = null;
   const kids = [...app.childNodes].filter((n) => !(n instanceof HTMLElement && n.classList.contains("overlay")));
   const name = app.dataset.screen;
   const kept = keys;
@@ -53,6 +60,7 @@ export function keepScreen(): () => void {
     if (name) app.dataset.screen = name;
     keys = kept;
     leaving = pauseAgain;
+    gone = freeLater;
     window.scrollTo(0, y);
   };
 }
@@ -62,6 +70,14 @@ export function keepScreen(): () => void {
 let leaving: (() => void) | null = null;
 export function onLeave(fn: () => void): void {
   leaving = fn;
+}
+
+/** What the current screen frees when show() replaces it for good (the
+ * battle: its timer, its resize listener, its timeline's observer). A
+ * screen keepScreen() set aside keeps it until it is shown and replaced. */
+let gone: (() => void) | null = null;
+export function onGone(fn: () => void): void {
+  gone = fn;
 }
 
 // ---------- desktop (round 2, R2-9) ----------

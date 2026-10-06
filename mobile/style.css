@@ -225,7 +225,7 @@ button.bv-badge.still .bv-badge-pill { animation: none; }
 .bv-card.bv-hit.bv-dying { animation: bv-shake calc(0.34s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-t, 0s)) / var(--bv-sp, 1)), bv-die calc(0.5s / var(--bv-sp, 1)) ease-out calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) forwards; }
 /* Floats hang in the card's slot. On desktop they rise above the card, into
  * the line's room for them; on the phone (below) over the card's emoji. ±PWR sits over PWR's side, ±HP over HP's. */
-.bv-float { --k: 0; position: absolute; left: 0; right: 0; top: auto; bottom: calc(100% + 2px + var(--k) * 14px); z-index: 4; text-align: center; line-height: 20px; pointer-events: none; font-family: "IBM Plex Mono", monospace; font-size: 18px; font-weight: 700; text-shadow: 0 0 4px var(--bg), 0 0 2px var(--bg); white-space: nowrap; overflow: hidden; animation: bv-rise calc(0.7s / var(--bv-sp, 1)) ease-out both; }
+.bv-float { --k: 0; position: absolute; left: 50%; right: auto; width: max-content; max-width: calc(100% - 4px); translate: -50% 0; top: auto; bottom: calc(100% + 2px + var(--k) * 14px); z-index: 4; text-align: center; line-height: 20px; pointer-events: none; font-family: "IBM Plex Mono", monospace; font-size: 18px; font-weight: 700; text-shadow: 0 0 4px var(--bg), 0 0 2px var(--bg); white-space: nowrap; overflow: hidden; animation: bv-rise calc(0.7s / var(--bv-sp, 1)) ease-out both; }
 .bv-float.damage, .bv-float.debuff { color: var(--ghost); }
 .bv-float.heal, .bv-float.summon { color: var(--you); }
 .bv-float.buff, .bv-float.debuff { font-family: "Rajdhani", sans-serif; font-size: 12px; font-weight: 700; line-height: 12px; animation-name: bv-rise-small; }
@@ -241,6 +241,8 @@ button.bv-badge.still .bv-badge-pill { animation: none; }
 @keyframes bv-flash { from { opacity: 0.45; } to { opacity: 0; } }
 @keyframes bv-die { 0% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0.5; transform: none; } }
 @keyframes bv-rise { 0% { opacity: 0; transform: translateY(8px); } 12% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
+/* A shorter rise (R2-17), so a float stays in its room: above the card on desktop (clear of the side's label), over the emoji on the phone. */
+@keyframes bv-rise-short { 0% { opacity: 0; transform: translateY(var(--rise, 6px)); } 12% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(calc(-1 * var(--rise, 6px))); } }
 @keyframes bv-rise-small { 0% { opacity: 0; transform: translateY(4px); } 12% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
 /* Reduced motion: nothing moves. The hit card gets a ring, a healed or
  * buffed one a soft one; the chips hold the numbers in place, and the
@@ -313,6 +315,8 @@ button.bv-close { min-height: 44px; min-width: 44px; padding: 0 12px; }
 .bv-word.draw { color: var(--dim); }
 button.bv-why { display: flex; align-items: center; justify-content: space-between; gap: 8px; text-transform: none; letter-spacing: 0; color: var(--ghost); border-color: color-mix(in srgb, var(--ghost) 45%, transparent); font-family: "Rajdhani", sans-serif; font-size: 16px; text-align: left; }
 .bv-why-chain { overflow: hidden; text-overflow: ellipsis; }
+button.bv-why.won { color: var(--you); border-color: color-mix(in srgb, var(--you) 45%, transparent); }
+.you-name { color: var(--you); font-weight: 600; }
 /* R2-14: the battle fills the screen and never scrolls. Your line and the
  * caption keep their place; the beat list below takes what room is left, and
  * the control bar stays pinned at the foot in both motion modes. */
@@ -323,25 +327,33 @@ button.bv-why { display: flex; align-items: center; justify-content: space-betwe
 .bv-controls button { flex: 1; min-width: 44px; padding: 0 4px; font-size: 20px; }
 .bv-controls button[data-testid="battle-end"], .bv-controls button[data-testid="battle-speed"] { font-size: 16px; }
 /* The end card: over the board, above the control bar, scrolling inside itself when it runs long. */
-.bv-end { position: fixed; z-index: 10; left: 12px; right: 12px; bottom: calc(68px + env(safe-area-inset-bottom)); max-width: 456px; margin: 0 auto; max-height: calc(100dvh - 80px - env(safe-area-inset-bottom)); overflow-y: auto; gap: 8px; border-color: var(--line); box-shadow: 0 -12px 32px #000c; }
-.bv-end-top { align-items: center; }
-.bv-end-top .bv-word { flex: 1; text-align: left; }
-.bv-dmg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.bv-dmg-col { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.bv-dmg { display: grid; grid-template-columns: 20px 1fr 24px; gap: 4px; align-items: center; font-size: 13px; line-height: 18px; }
+.bv-end { position: fixed; z-index: 10; left: 12px; right: 12px; bottom: calc(68px + env(safe-area-inset-bottom)); max-width: 456px; margin: 0 auto; max-height: calc(100dvh - 80px - env(safe-area-inset-bottom)); overflow-y: auto; gap: 6px; border-color: var(--line); box-shadow: 0 -12px 32px #000c; }
+/* R2-17: the word and a line under it (turns, who stands, your best); key
+ * moments (the fun part) first, then damage dealt; Replay / Why / Continue
+ * pinned at the card's foot. The phone's card is short: three moments fit
+ * above the buttons, and "Damage ↓" says what is below. */
+.bv-end-top { align-items: flex-start; }
+.bv-end-head { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.bv-end-top .bv-word { text-align: left; font-size: 28px; }
+.bv-end-sub { font-size: 14px; line-height: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bv-end-body { display: flex; flex-direction: column; gap: 12px; }
+.bv-end-moments { gap: 4px; }
+.bv-end-more { text-transform: none; letter-spacing: 0; color: var(--dim); }
+.bv-dmg-list { gap: 2px; }
+.bv-dmg { display: grid; grid-template-columns: 20px minmax(0, 6.5em) 1fr 28px; gap: 6px; align-items: center; font-size: 14px; line-height: 20px; }
 .bv-dmg .emoji { font-size: 15px; text-align: center; }
-.bv-dmg .mono { text-align: right; }
-.bv-dmg-bar { height: 6px; background: var(--line); overflow: hidden; }
-.bv-dmg-bar i { display: block; height: 100%; }
-.bv-dmg-col.you .bv-dmg-bar i { background: var(--you); }
-.bv-dmg-col.ghost .bv-dmg-bar i { background: var(--ghost); }
-button.bv-moment { display: grid; grid-template-columns: 40px 1fr auto; gap: 8px; align-items: center; text-align: left; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 15px; color: var(--text); border-color: var(--line); padding: 0 10px; }
-.bv-moment-l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bv-moment.kill .bv-moment-l { color: var(--ghost); }
-.bv-moment.combo .bv-moment-l { color: var(--gold); }
-.bv-moment.hit .bv-moment-l { color: var(--text); }
-.bv-end-actions { gap: 6px; position: sticky; bottom: -12px; margin: 0 -12px -12px; padding: 8px 12px 12px; background: var(--panel); }
-.bv-end-actions button { padding: 0 8px; font-size: 15px; white-space: nowrap; }
+.bv-dmg .bv-cn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bv-dmg .mono { text-align: right; font-weight: 700; }
+.bv-dmg-bar { height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--line) 50%, transparent); overflow: hidden; }
+.bv-dmg-bar i { display: block; height: 100%; border-radius: 4px; }
+.bv-dmg.you .bv-dmg-bar i { background: var(--you); }
+.bv-dmg.ghost .bv-dmg-bar i { background: var(--ghost); }
+button.bv-moment { display: grid; grid-template-columns: 38px 18px minmax(0, 1fr) auto; gap: 6px; align-items: center; min-height: 44px; text-align: left; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 15px; color: var(--text); border-color: var(--line); padding: 2px 10px; }
+.bv-moment-t { font-size: 12px; }
+.bv-moment-ic { display: flex; }
+.bv-moment-l { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 17px; }
+.bv-end-actions { gap: 6px; position: sticky; bottom: -12px; margin: 0 -12px -12px; padding: 6px 12px 8px; background: var(--panel); }
+.bv-end-actions button { flex: 1 1 auto; padding: 0 8px; font-size: 15px; white-space: nowrap; }
 .bv-line.empty { min-height: 0; display: block; }
 .bv-word.neutral { color: var(--text); font-size: 24px; }
 /* Slice 11: a unit's rates, only a hint since round 2: the sheet's dim last line. */
@@ -626,6 +638,9 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-line.empty { align-items: center; justify-content: center; }
   #app[data-screen="battle"] .bv-slot { flex: 0 1 var(--cw); min-width: 0; }
   #app[data-screen="battle"] .bv-line button.bv-badge { bottom: auto; top: calc(100% + 4px); align-items: flex-start; }
+  /* Floats rise in the line's 48 px above the card: three slots 13 px apart
+   * and a short rise keep the top one clear of "YOU · FRONT →" (R2-17). */
+  #app[data-screen="battle"] .bv-float { --rise: 6px; bottom: calc(100% + 2px + var(--k) * 13px); animation-name: bv-rise-short; }
   /* The change chip sits in the card's top 31px; the emoji starts below it. */
   #app[data-screen="battle"] .bv-card { height: 184px; padding-top: 10px; }
   #app[data-screen="battle"] .bv-card .emoji { margin-top: 24px; }
@@ -670,8 +685,23 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   .bv-log-c .bv-who { font-size: 10px; margin-right: 4px; }
 
   /* The end card over the battle column, clear of the panel. */
-  /* (battle.ts placeEnd sets its top and bottom: under the HUD, above the timeline.) */
-  #app[data-screen="battle"] .bv-end { left: 24px; right: calc(var(--insp) + 24px); bottom: 76px; max-width: none; max-height: none; margin: 0; }
+  /* (battle.ts placeEnd sets its top under the HUD and its max-height above the timeline.) */
+  /* As the mockup: a big word and its line, damage dealt left and key
+   * moments right, compact buttons with Continue on the right; the card is
+   * as tall as what it holds (placeEnd caps it above the timeline). */
+  #app[data-screen="battle"] .bv-end { left: 24px; right: calc(var(--insp) + 24px); bottom: auto; max-width: 1000px; max-height: none; margin: 0 auto; padding: 24px 28px; gap: 20px; }
+  #app[data-screen="battle"] .bv-end .bv-word { font-size: 56px; }
+  #app[data-screen="battle"] .bv-end-head { gap: 8px; }
+  #app[data-screen="battle"] .bv-end .bv-word.neutral { font-size: 40px; }
+  #app[data-screen="battle"] .bv-end-sub { font-size: 18px; line-height: 24px; white-space: normal; }
+  #app[data-screen="battle"] .bv-end-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+  #app[data-screen="battle"] .bv-dmg-list { order: -1; gap: 4px; }
+  #app[data-screen="battle"] .bv-dmg { font-size: 16px; line-height: 24px; grid-template-columns: 24px minmax(0, 7em) 1fr 32px; gap: 10px; }
+  #app[data-screen="battle"] .bv-end-moments { gap: 8px; }
+  #app[data-screen="battle"] button.bv-moment { font-size: 16px; }
+  #app[data-screen="battle"] .bv-end-actions { bottom: -24px; margin: 0 -28px -24px; padding: 8px 28px 24px; }
+  #app[data-screen="battle"] .bv-end-actions button { flex: 0 0 auto; min-width: 128px; padding: 0 20px; }
+  #app[data-screen="battle"] .bv-end-actions button[data-testid="battle-done"] { margin-left: auto; min-width: 220px; }
 }
 @media (min-width: 1280px) {
   #app[data-screen="battle"] { --insp: 380px; }
@@ -697,10 +727,10 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-pill { height: 22px; line-height: 20px; font-size: 14px; padding: 0 4px; }
   #app[data-screen="battle"] .bv-pill.two { height: 24px; min-height: 0; line-height: 11px; font-size: 11px; padding: 0 2px; }
   #app[data-screen="battle"] .bv-pill.two .bv-pst .ic { width: 10px; height: 10px; }
-  #app[data-screen="battle"] .bv-float { bottom: auto; top: calc(24px + var(--k) * 16px); }
-  /* The end card under the caption is short: key moments (the fun part) before damage. */
-  .bv-end > * { order: 1; }
-  .bv-end > .bv-end-top { order: 0; }
-  .bv-end > .bv-dmg-grid { order: 2; }
-  .bv-end > .bv-end-actions { order: 3; }
+  /* Each float's box hugs its text. They stack up from just above the name
+   * (slot 0) in a 4 px rise, so none reaches the name, PWR or HP; the third
+   * slot, level with the trigger icon, keeps to the card's right (R2-17). */
+  #app[data-screen="battle"] .bv-float { --rise: 4px; bottom: auto; top: calc(34px - var(--k) * 15px); animation-name: bv-rise-short; }
+  #app[data-screen="battle"] .bv-float:not(.buff, .debuff) { font-size: 16px; line-height: 16px; }
+  #app[data-screen="battle"] .bv-float.k2 { left: auto; right: 2px; translate: none; }
 }
