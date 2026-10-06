@@ -227,6 +227,7 @@ try {
     await page.keyboard.press("Space");
     await page.getByTestId("battle-end").waitFor({ timeout: 10_000 });
     if (round === 1) await shot("battle");
+    if (round === 1) await logFirst("battle opens");
     if (round === 1) await whyOnDesktop();
     if (round === 1) await desktopBattle();
     await page.getByTestId("battle-end").click();
@@ -418,14 +419,29 @@ try {
     const k = await rows.count();
     if (!k) errors.push("log: no rows for the turns played");
     let opened = false;
+    let hit = -1;
     for (let i = k - 1; i >= 0 && !opened; i--) {
       await page.getByTestId("tab-log").click();
       await rows.nth(i).click();
       opened = await page.getByTestId("trace-text").isVisible();
+      if (opened) hit = i;
     }
     if (k && !opened) errors.push("log: no row opened its Why");
     if (opened && !(await page.getByTestId("tab-why").evaluate((e) => e.classList.contains("on")))) errors.push("log: a row's Why opened without the Why tab");
+    if (opened && (await page.getByTestId("tab-why").isDisabled())) errors.push("log: a row's Why opened with the Why tab disabled");
     await shot("battle-log-why");
+    // R3-17: ✕, Esc and ▶ each close Why back to Log, Why disabled again.
+    if (opened) {
+      await page.getByTestId("trace-close").click();
+      await logFirst("Why ✕");
+      await rows.nth(hit).click();
+      await page.keyboard.press("Escape");
+      await logFirst("Why Esc");
+      await rows.nth(hit).click();
+      await page.getByTestId("battle-play").click();
+      await logFirst("Why ▶");
+      if ((await page.getByTestId("battle-play").textContent()) === "❚❚") await page.getByTestId("battle-play").click();
+    }
     // 1024×768: still whole, still facing.
     await page.setViewportSize({ width: 1024, height: 768 });
     await page.waitForTimeout(200);
@@ -437,6 +453,13 @@ try {
     await page.setViewportSize({ width: W, height: H });
     await page.waitForTimeout(200);
     await page.getByTestId("trace-close").click().catch(() => {});
+  }
+
+  /** R3-17: with nothing traced, the side panel shows Log and Why is disabled. */
+  async function logFirst(when) {
+    if (!(await page.getByTestId("tab-log").evaluate((e) => e.classList.contains("on")))) errors.push(`${when}: the Log tab isn't on`);
+    if (!(await page.getByTestId("tab-why").isDisabled())) errors.push(`${when}: Why is enabled with nothing traced`);
+    if (!(await page.getByTestId("battle-log").isVisible())) errors.push(`${when}: the Log isn't showing`);
   }
 
   /** R2-15: Why opens as a panel right of the battle column, and its chain

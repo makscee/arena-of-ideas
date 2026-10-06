@@ -638,7 +638,6 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
 .bv-clash, .bv-tl, .bv-tabs, .bv-log, .bv-dk, .bv-keys { display: none; }
 .bv-why-keys { font-size: 13px; }
 .bv-sheet:not(.open) { display: none; }
-.bv-why-hint { font-size: 15px; line-height: 1.4; padding: 12px 0; }
 @media (min-width: 1024px) {
   #app[data-screen="battle"] { --insp: 300px; display: grid; grid-template-columns: minmax(0, 1fr) var(--insp); gap: 0; padding: 0; height: 100dvh; min-height: 0; overflow: hidden; }
   #app[data-screen="battle"] .bv-screen { grid-column: 1; grid-row: 1; min-width: 0; height: 100dvh; padding: 0 24px 16px; gap: 12px; }
