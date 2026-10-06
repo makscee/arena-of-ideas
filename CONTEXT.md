@@ -91,7 +91,7 @@ The single number seeding the battle's one RNG stream (mulberry32). Only the ker
 _Avoid_: random state
 
 **Line**:
-A team's ordered positions; index 0 is the front. On Death the unit leaves immediately and the line compacts forward; summons and resurrections enter at the back.
+A team's ordered positions; index 0 is the front. On Death the unit leaves immediately and the line compacts forward; summons enter at the front (newest first), resurrections at the back.
 _Avoid_: row, formation, board
 
 **Turn**:

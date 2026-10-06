@@ -339,10 +339,10 @@ export function describeEffectSegments(
     }
     case "summon": {
       // "summon Imp (1/2)": the numbers are its PWR / HP, which the term's
-      // tip says. The kernel summons at the back of the target's line.
+      // tip says. The kernel summons at the front of the target's line.
       const unit = `${e.unit.name} (${e.unit.base.pwr}/${e.unit.base.hp})`;
       // All allies / all enemies: the kernel summons once per target, at the
-      // back of that target's line, skipping it once the line is full.
+      // front of that target's line, skipping it once the line is full.
       const kinds = tgt.flatMap((t) => (t.partRef?.family === "selector" ? [t.partRef.kind] : []));
       if (kinds.length === 1 && (kinds[0] === "allAllies" || kinds[0] === "allEnemies")) {
         const ally = kinds[0] === "allAllies";

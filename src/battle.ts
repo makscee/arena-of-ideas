@@ -515,7 +515,7 @@ class Engine {
         const id = `${side}+${++this.summonCounter}:${e.unit.name}`;
         const u = this.makeUnit(e.unit, side, id);
         this.propose(
-          { type: "Summon", unit: id, name: u.name, side, hp: u.base.hp, pwr: u.base.pwr },
+          { type: "Summon", unit: id, name: u.name, side, hp: u.base.hp, pwr: u.base.pwr, front: true },
           f.event.id,
           f.ref,
           { summon: u },
@@ -665,7 +665,8 @@ class Engine {
           this.lines[u.side].push(u.id);
         } else if (pending?.summon) {
           this.units.set(pending.summon.id, pending.summon);
-          this.lines[pending.summon.side].push(pending.summon.id);
+          // a summon enters at the front so it acts at once; the newest summon is the front
+          this.lines[pending.summon.side].unshift(pending.summon.id);
         }
         return;
       }

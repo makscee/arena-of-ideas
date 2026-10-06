@@ -129,7 +129,7 @@ export const GLOSSARY: Record<FixedTermId, TermDef> = {
   "effect:consumeStacks": { label: "Consume stacks", tone: "plain", tip: "Removes stacks of a status from the unit that has it." },
   "effect:summon": {
     label: "Summon", icon: "magic-portal", tone: "summon",
-    tip: "Adds a new unit at the back of the line, if the line has room (5 max). The numbers are its PWR / HP.",
+    tip: "Adds a new unit at the front of the line, if the line has room (5 max). The numbers are its PWR / HP.",
   },
   "effect:resurrect": { label: "Revive", icon: "raise-zombie", tone: "bless", tip: "Brings a fallen ally back at the back of the line with that much HP, if there's room." },
   "effect:silence": { label: "Silence", icon: "silence", tone: "silence", tip: "Removes all its statuses and turns off its abilities for the rest of the battle." },

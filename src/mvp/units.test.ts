@@ -83,6 +83,19 @@ describe("Planter", () => {
     expect(grew(log)).toBe(true);
   });
 
+  it("an awoken Planter's Treant enters at the front and strikes in the first clash (R3)", () => {
+    const line = [lineUnitOf(unit("planter"), "a0", 3), lineUnitOf(unit("fighter"), "a1")];
+    const foe = [lineUnitOf(unit("fodder"), "b0")];
+    const p = { id: "p", name: "p", bot: false };
+    const log = fightLines({ player: p, line }, { player: p, line: foe }, { battleId: "b", seed: 1, kind: "round", round: 1, runId: null, at: "2026-10-06T00:00:00.000Z", content, rules: MVP_RULES }).log;
+    const s = log.find((e) => e.type === "Summon" && e.name === "Treant");
+    if (s?.type !== "Summon") throw new Error("no Treant summoned");
+    expect(s.front).toBe(true);
+    const pair = log.find((e) => e.type === "PairFaced");
+    expect(pair?.type === "PairFaced" && pair.a).toBe(s.unit);
+    expect(log.some((e) => e.type === "Strike" && e.striker === s.unit && e.turn === pair!.turn)).toBe(true);
+  });
+
   it("still does something in a full line: it grows", () => {
     const log = fight(["planter", "fighter", "squire", "gnat", "rose"]);
     expect(summoned(log)).toBe(false);

@@ -61,7 +61,7 @@ describe("MVP bots and world (slice 6)", () => {
       const target = 8;
       const first = topUpGhosts(rt, { target, dailyCrowns: 0 });
       expect(first.thin).toEqual([]);
-      expect(first.runs).toBeGreaterThan(target);
+      expect(first.runs).toBeGreaterThanOrEqual(target); // more when some runs end early
       for (let r = 1; r <= rt.rules.rounds; r++) {
         const ghosts = pool(rt, r);
         expect(ghosts.length).toBeGreaterThanOrEqual(target);
