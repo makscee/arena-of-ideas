@@ -25,6 +25,8 @@ if (!url) {
   }
 }
 
+// Names are one per player (R2-17): a tag keeps a second pass at one server apart.
+const TAG = Date.now().toString(36).slice(-4);
 const browser = await launchChromium();
 const errors = [];
 let shots = 0;
@@ -129,7 +131,7 @@ try {
   await page.goto(url, { timeout: 20_000 });
   await page.getByTestId("name-input").waitFor({ timeout: 10_000 });
   await shot("name"); await noHScroll("name");
-  await page.getByTestId("name-input").fill("PhoneTester");
+  await page.getByTestId("name-input").fill(`PhoneTester${TAG}`);
   await page.getByTestId("name-submit").click();
   await page.getByTestId("play").waitFor();
   await shot("home"); await noHScroll("home"); await noRates("home"); await onScreen("home: Play", page.getByTestId("play"));
@@ -579,7 +581,7 @@ try {
     if (!res.ok) throw new Error(`${method} ${path}: ${json.error}`);
     return json;
   };
-  const fuser = await call("POST", "/players", { name: "Fuser" });
+  const fuser = await call("POST", "/players", { name: `Fuser${TAG}` });
   let run = await call("POST", "/runs", undefined, fuser.id);
   const ready = (r) => {
     const awake = r.line.filter((u) => u.kind === "unit" && u.form === "awoken");
@@ -644,7 +646,7 @@ try {
     // The reveal comes with the fused line (main.ts fuse): for a new pair, and
     // also for one only bots had made (its name was shown, the credit is now
     // yours). Either way it is closed before the line is used (R2-17).
-    await page.locator(".card.fused").waitFor();
+    await page.getByTestId("line").locator(".card.fused").waitFor();
     const revealed = (await page.getByTestId("fusion-reveal").count()) > 0;
     if (isNew && !revealed) errors.push("fusion reveal: a new pair shows no reveal");
     if (revealed) {
@@ -678,7 +680,7 @@ try {
   // Compact cards (R2-7): at 360×640 in round 8, with 5 units in the line and
   // the grown shop, nothing scrolls. A third player gets there through the API.
   {
-    const compact = await call("POST", "/players", { name: "Compact" });
+    const compact = await call("POST", "/players", { name: `Compact${TAG}` });
     let r = await call("POST", "/runs", undefined, compact.id);
     for (let steps = 0; steps < 2000 && !(r.phase === "shop" && r.round >= 8 && r.line.length === 5); steps++) {
       if (r.phase === "over") { r = await call("POST", "/runs", undefined, compact.id); continue; }
