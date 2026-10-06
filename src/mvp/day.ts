@@ -79,9 +79,10 @@ export interface PlayoffEntrant {
  * candidate (their latest STRONGEST_MAX_CANDIDATES slays on the live content)
  * fights the day's champion STRONGEST_SIM_SEEDS times as side A and as many as
  * side B; the most wins (then fewest losses, then the latest slay) enters.
- * Slays on other content, bots' slays and the champion's own (beating your
- * own team is no slay) are skipped. Entrants come in the order of each
- * slayer's first slay. */
+ * Bots' slays enter like humans' (#587: a player alone still sees a real
+ * playoff); slays on other content and the champion's own (beating your own
+ * team is no slay) are skipped. Entrants come in the order of each slayer's
+ * first slay. */
 export function playoffEntrants(slays: Slay[], champion: Champion | undefined, content: MvpContent, rules: MvpRules): PlayoffEntrant[] {
   const live = playoffSlays(slays, champion, content);
   const byPlayer = new Map<string, Slay[]>();
@@ -103,10 +104,11 @@ export function playoffEntrants(slays: Slay[], champion: Champion | undefined, c
   return out;
 }
 
-/** The slays that can enter the playoff: on the live content, by a human,
- * and not the champion's own. Home's slayer count uses the same rule. */
+/** The slays that can enter the playoff: on the live content and not the
+ * champion's own, by a human or a bot alike. Home's slayer count uses the
+ * same rule. */
 export function playoffSlays(slays: Slay[], champion: Champion | undefined, content: Pick<MvpContent, "version">): Slay[] {
-  return slays.filter((s) => s.contentVersion === content.version && !s.player.bot && s.player.id !== champion?.player.id);
+  return slays.filter((s) => s.contentVersion === content.version && s.player.id !== champion?.player.id);
 }
 
 /** Wins minus a thousandth per loss, over both sides, against the champion. */

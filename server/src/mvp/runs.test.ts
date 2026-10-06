@@ -82,15 +82,26 @@ describe("MVP run server", () => {
     expect(rt.store.ghosts(13, { excludePlayerId: "x", contentVersion: rt.content.version })).toEqual([]);
   });
 
-  it("a bot's Crown win writes no Slay and no rating", () => {
+  it("a bot's Crown win writes a Slay like a human's and counts it in its records; its rating never moves (#587)", () => {
     const rt = world();
     const champ = weakChampion(rt);
-    const run = lastRound(rt, { ...botP, id: "b2" });
-    decide(rt, run, { kind: "fight" });
-    const won = decide(rt, rt.store.run(run.runId)!, { kind: "fight" });
-    expect(won.run).toMatchObject({ endedBy: "crown-won", rating: null });
-    expect(rt.store.slays(champ.seq)).toEqual([]);
-    expect(rt.store.rating("b2")).toBeUndefined();
+    const bot2 = { ...botP, id: "b2" };
+    for (let i = 0; i < 2; i++) {
+      const run = lastRound(rt, bot2);
+      decide(rt, run, { kind: "fight" });
+      const won = decide(rt, rt.store.run(run.runId)!, { kind: "fight" });
+      expect(won.run).toMatchObject({ endedBy: "crown-won", rating: null });
+      expect(rt.store.slays(champ.seq).at(-1)).toMatchObject({ seq: champ.seq, player: bot2, runId: run.runId, battleId: won.fight!.battleId });
+    }
+    expect(rt.store.slays(champ.seq)).toHaveLength(2);
+    expect(rt.store.rating("b2")).toEqual({ player: bot2, rating: rt.rules.ratingStart, runs: 0, slays: 2, daysAsChampion: 0, playoffWins: 0 });
+    // A bot's lost Crown writes nothing.
+    const lost = lastRound(rt, { ...botP, id: "b3" });
+    decide(rt, lost, { kind: "fight" });
+    rt.store.putRun({ ...rt.store.run(lost.runId)!, line: [] });
+    expect(decide(rt, rt.store.run(lost.runId)!, { kind: "fight" }).run.endedBy).toBe("crown-lost");
+    expect(rt.store.slays(champ.seq)).toHaveLength(2);
+    expect(rt.store.rating("b3")).toBeUndefined();
   });
 
   it("with no champion, or a stale one, the run ends after round 12 (no-champion), still rated", () => {
@@ -305,14 +316,22 @@ describe("MVP run server fixes (#579 check of a3c9b113)", () => {
     expect(opponentAt12()).toBe(slayerGhost);
   });
 
-  it("a bot's Crown win doesn't hide its round-12 team", () => {
+  it("a bot's Crown win hides its round-12 team like a human's, until the day ends (#587)", () => {
     const rt = world();
     weakChampion(rt);
     const run = lastRound(rt, { ...botP, id: "b2" });
     decide(rt, run, { kind: "fight" });
-    decide(rt, rt.store.run(run.runId)!, { kind: "fight" });
-    const r = { ...lastRound(rt, maks), opponent: null };
-    expect(decide(rt, r, { kind: "fight" }).fight!.opponent.ghostId).toBe(`${run.runId}-r${rt.rules.rounds}`);
+    expect(decide(rt, rt.store.run(run.runId)!, { kind: "fight" }).run.endedBy).toBe("crown-won");
+    const slayerGhost = `${run.runId}-r${rt.rules.rounds}`;
+    const opponentAt12 = () => {
+      const r = { ...lastRound(rt, maks), opponent: null };
+      const fought = decide(rt, r, { kind: "fight" });
+      rt.store.putRun({ ...rt.store.run(r.runId)!, phase: "over" });
+      return fought.fight!.opponent.ghostId;
+    };
+    for (let i = 0; i < 5; i++) expect(opponentAt12()).not.toBe(slayerGhost);
+    rt.store.putDay({ ...rt.today(), seq: rt.today().seq + 1 }); // the day ends
+    expect(opponentAt12()).toBe(slayerGhost);
   });
 
   it("a ghost pick reads only the round's newest GHOST_PICK_POOL saved teams", () => {

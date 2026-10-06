@@ -1,7 +1,7 @@
 // Slice 5 (mission #574): the day's pure rules.
 import { describe, expect, it } from "vitest";
 import { MVP_RULES, type Champion, type LineUnit, type MvpContent, type PlayerRef, type Slay } from "./contract.js";
-import { dayLabel, nextRollover, playoffEntrants, playRoundRobin } from "./day.js";
+import { dayLabel, nextRollover, playoffEntrants, playoffSlays, playRoundRobin } from "./day.js";
 import { lineUnitOf } from "./forms.js";
 import { mvpPool } from "./units.js";
 
@@ -45,9 +45,20 @@ describe("the playoff", () => {
     expect(playoffEntrants([slay(ann, tiny(), "1"), slay(ann, big(5), "2")], champion, content, MVP_RULES)[0]!.slay.at).toBe("2");
   });
 
-  it("skips bots' slays and slays on other content", () => {
-    const entrants = playoffEntrants([slay(p("b", true), big(5), "1"), slay(p("old"), big(5), "2", { contentVersion: "old" }), slay(p("ann"), big(2), "3")], champion, content, MVP_RULES);
-    expect(entrants.map((e) => e.player.id)).toEqual(["ann"]);
+  it("enters bots' slays like humans' (#587); skips slays on other content and the champion's own", () => {
+    const slays = [slay(p("b", true), big(5), "1"), slay(p("old"), big(5), "2", { contentVersion: "old" }), slay(p("ann"), big(2), "3"), slay(champion.player, big(5), "4")];
+    expect(playoffSlays(slays, champion, content).map((s) => s.player.id)).toEqual(["b", "ann"]);
+    const entrants = playoffEntrants(slays, champion, content, MVP_RULES);
+    expect(entrants.map((e) => e.player.id)).toEqual(["b", "ann"]);
+    expect(entrants[0]!.player.bot).toBe(true);
+  });
+
+  it("bot slayers and one human slayer play a round-robin, which a bot can win (#587)", () => {
+    const slays = [slay(p("bot-a", true), big(5), "1"), slay(p("maks"), tiny(), "2"), slay(p("bot-b", true), big(2), "3")];
+    const { result, battles } = playRoundRobin(playoffEntrants(slays, champion, content, MVP_RULES), { seq: 1, day: "d", at: "t", content, rules: MVP_RULES, battleId: (i) => `g${i}` });
+    expect(result.entrants.map((e) => e.id)).toEqual(["bot-a", "maks", "bot-b"]);
+    expect(battles).toHaveLength(6);
+    expect(result.winner).toMatchObject({ id: "bot-a", bot: true });
   });
 
   it("plays a double round-robin; the strongest team tops the table", () => {

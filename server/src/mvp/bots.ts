@@ -7,9 +7,10 @@
 //   through startRun and decide (./runs.ts) on `rt`, so they share the store,
 //   the day and the hooks with HTTP runs, until every round's pool holds
 //   BOT_TARGET ghosts on the live content. Bots play whole runs, the Crown
-//   included (slice 4 writes no Slay and no rating for a bot, so only players
-//   slay and change the champion), and never claim fusion credit (slice 10's
-//   namer gives a bot's pair discoveredBy null). A bot fuses a pair only once
+//   included: a bot's Crown win is a Slay like a player's, so its team can
+//   enter the playoff and be crowned, and Maks alone still sees a real
+//   playoff (#587); a bot's rating never moves. Bots never claim fusion
+//   credit (slice 10's namer gives a bot's pair discoveredBy null). A bot fuses a pair only once
 //   slice 10 has its name ready (fusionNameReady): the top-up's bots run in
 //   the background and wait for the name (awaitFusionName, bounded by the
 //   model's final failure), so a bot never fixes the portmanteau while the
