@@ -33,6 +33,7 @@ import {
   type RunEndReason,
   type RunView,
   type UnitContent,
+  type UnitId,
 } from "./contract.js";
 import { MvpBadDecision, MvpDecisionError } from "./errors.js";
 import { fightLines } from "./fight.js";
@@ -59,9 +60,13 @@ export interface MvpRunState extends RunView {
 export { lockedFull, MvpBadDecision, MvpDecisionError, offersAt };
 
 /** Every Decision kind (the compiler checks the list against the contract). */
-const DECISION_KINDS: Record<DecisionKind, true> = { buy: true, sell: true, reroll: true, lock: true, reorder: true, fuse: true, fight: true };
+const DECISION_KINDS: Record<DecisionKind, true> = { buy: true, sell: true, reroll: true, lock: true, reorder: true, fuse: true, fight: true, gift: true };
 /** The index fields of each kind: whole numbers ≥ 0, or the decision is unreadable. */
-const DECISION_INDEXES: Record<DecisionKind, readonly string[]> = { buy: ["slot"], sell: ["index"], reroll: [], lock: ["slot"], reorder: ["from", "to"], fuse: ["first", "second"], fight: [] };
+const DECISION_INDEXES: Record<DecisionKind, readonly string[]> = { buy: ["slot"], sell: ["index"], reroll: [], lock: ["slot"], reorder: ["from", "to"], fuse: ["first", "second"], fight: [], gift: ["pick"] };
+/** Index fields that may also be null: the gift's pick (null skips it). */
+const NULLABLE_INDEXES: Partial<Record<DecisionKind, readonly string[]>> = { gift: ["pick"] };
+/** What may happen while an awakening gift waits: the pick, and making room for it. */
+const WHILE_GIFT: ReadonlySet<DecisionKind> = new Set<DecisionKind>(["gift", "sell", "reorder"]);
 
 /** Throws MvpBadDecision (the API's 400) for an unknown kind or an index that
  * isn't a whole number ≥ 0. Without it `slot: "__proto__"` reads
@@ -71,6 +76,7 @@ export function checkDecision(d: Decision): void {
   if (!Object.hasOwn(DECISION_KINDS, d.kind)) throw new MvpBadDecision(d.kind);
   for (const f of DECISION_INDEXES[d.kind]) {
     const v = (d as unknown as Record<string, unknown>)[f];
+    if (v === null && NULLABLE_INDEXES[d.kind]?.includes(f)) continue;
     if (!Number.isInteger(v) || (v as number) < 0) throw new MvpBadDecision(d.kind, `${f} must be a whole number ≥ 0, got ${JSON.stringify(v) ?? String(v)}`);
   }
 }
@@ -98,6 +104,39 @@ function rollOffers(s: MvpRunState, content: MvpContent): void {
     return { slot: 0, unitId: u.id, tier: u.tier, cost: s.rules.unitCost };
   });
   s.offers = [...kept, ...fresh].map((o, slot) => ({ ...o, slot }));
+}
+
+/** Rolls the awakening gift: rules.giftChoices different units drawn from the
+ * highest tier open this round (tierOpensAt; the highest that has units). No-op
+ * for a run whose rules have no gift. */
+function rollGift(s: MvpRunState, content: MvpContent): void {
+  const n = s.rules.giftChoices ?? 0;
+  if (n <= 0) return;
+  const open = openUnits(content, s.rules, s.round);
+  const tier = Math.max(...open.map((u) => u.tier));
+  const left = open.filter((u) => u.tier === tier).map((u) => u.id);
+  const gift: UnitId[] = [];
+  while (gift.length < n && left.length > 0) gift.push(left.splice(draw(s, left.length), 1)[0]!);
+  s.gift = gift;
+}
+
+/** Adds one unit the way a buy does: a copy merges into its unit wherever it
+ * stands (line, then bench) and can awaken on the bench; a new unit takes the
+ * line, else the bench. Throws `full` when it has nowhere to go. A copy that
+ * awakens a unit rolls the awakening gift. */
+function addUnit(s: MvpRunState, u: UnitContent, content: MvpContent, kind: DecisionKind, full: (bench: boolean) => string): void {
+  const at = mergeTarget(s.line, u.id);
+  const onBench = at < 0 ? mergeTarget(s.bench, u.id) : -1;
+  const zone = at >= 0 ? s.line : onBench >= 0 ? s.bench : null;
+  if (zone) {
+    const i = at >= 0 ? at : onBench;
+    const before = zone[i]!;
+    const after = addCopy(before, content, s.rules);
+    zone[i] = after;
+    if (after.kind === "unit" && before.form === "sleeping" && after.form === "awoken") rollGift(s, content);
+  } else if (s.line.length < s.rules.lineSize) s.line.push(lineUnitOf(u, `u${s.nextUid++}`));
+  else if (s.bench.length < benchSizeOf(s.rules)) s.bench.push(lineUnitOf(u, `u${s.nextUid++}`));
+  else throw new MvpDecisionError(kind, full(benchSizeOf(s.rules) > 0));
 }
 
 /** A new run. The kernel has no clock: the caller passes the day (DayView.seq)
@@ -184,22 +223,14 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
   checkDecision(d);
   if (state.phase === "over") throw new MvpDecisionError(d.kind, `the run is over (${state.endedBy})`);
   if (state.phase === "crown" && d.kind !== "fight") throw new MvpDecisionError(d.kind, "only the Crown fight is left");
+  if (state.gift && !WHILE_GIFT.has(d.kind)) throw new MvpDecisionError(d.kind, "pick your awakening gift first, or skip it");
   const s = clone(state);
   switch (d.kind) {
     case "buy": {
       const offer = s.offers[d.slot];
       if (!offer) throw new MvpDecisionError("buy", `no offer in slot ${d.slot}`);
       if (s.gold < offer.cost) throw new MvpDecisionError("buy", `costs ${offer.cost}, have ${s.gold}`);
-      const u = unitById(content, offer.unitId);
-      // A copy merges into its unit wherever it stands (line, then bench) and
-      // can awaken on the bench; a new unit takes the line, else the bench.
-      const at = mergeTarget(s.line, u.id);
-      const onBench = at < 0 ? mergeTarget(s.bench, u.id) : -1;
-      if (at >= 0) s.line[at] = addCopy(s.line[at]!, content, s.rules);
-      else if (onBench >= 0) s.bench[onBench] = addCopy(s.bench[onBench]!, content, s.rules);
-      else if (s.line.length < s.rules.lineSize) s.line.push(lineUnitOf(u, `u${s.nextUid++}`));
-      else if (s.bench.length < benchSizeOf(s.rules)) s.bench.push(lineUnitOf(u, `u${s.nextUid++}`));
-      else throw new MvpDecisionError("buy", benchSizeOf(s.rules) > 0 ? "your line and bench are full" : "the line is full");
+      addUnit(s, unitById(content, offer.unitId), content, "buy", (bench) => (bench ? "your line and bench are full" : "the line is full"));
       s.gold -= offer.cost;
       s.offers = s.offers.filter((o) => o.slot !== d.slot).map((o, i) => ({ ...o, slot: i }));
       return { state: s };
@@ -215,6 +246,7 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       const offer = s.offers[d.slot];
       if (!offer) throw new MvpDecisionError("lock", `no offer in slot ${d.slot}`);
       if (offer.locked) delete offer.locked;
+      else if (s.round >= s.rules.rounds) throw new MvpDecisionError("lock", "the last shop round: the Crown clears the offers, so a lock keeps nothing");
       else offer.locked = true;
       return { state: s };
     }
@@ -265,6 +297,20 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       const [keep, drop] = d.first < d.second ? [a, b] : [b, a];
       drop.units.splice(drop.index, 1);
       keep.units[keep.index] = fused;
+      return { state: s };
+    }
+    case "gift": {
+      const gift = s.gift;
+      if (!gift) throw new MvpDecisionError("gift", "no awakening gift is waiting");
+      if (d.pick === null) {
+        delete s.gift;
+        return { state: s };
+      }
+      const id = gift[d.pick];
+      if (id === undefined) throw new MvpDecisionError("gift", `no gift choice ${d.pick} (there are ${gift.length})`);
+      // Cleared first: a pick that awakens a unit rolls the next gift.
+      delete s.gift;
+      addUnit(s, unitById(content, id), content, "gift", (bench) => `your line${bench ? " and bench are" : " is"} full: sell a unit to make room, or skip the gift`);
       return { state: s };
     }
     case "fight": {
@@ -321,6 +367,7 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
 function endIn(s: MvpRunState, why: RunEndReason): void {
   s.phase = "over";
   s.endedBy = why;
+  delete s.gift;
   s.gold = 0;
   s.offers = [];
   s.opponent = null;

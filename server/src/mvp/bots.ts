@@ -30,7 +30,7 @@
 import { randomUUID } from "node:crypto";
 import { benchSizeOf, boardUnit, lockedFull, type Champion, type Decision, type LineUnit, type MvpContent, type MvpRules, type PlayerRef, type RunView } from "../../../src/mvp/contract.js";
 import { fightLines } from "../../../src/mvp/fight.js";
-import { fuseCheck, mergeTarget } from "../../../src/mvp/forms.js";
+import { fuseCheck, lineUnitOf, mergeTarget } from "../../../src/mvp/forms.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
 import { todaysChampion } from "./day.js";
 import { awaitFusionName, fusionNameReady, recordFusion } from "./fusions.js";
@@ -119,6 +119,7 @@ export function botDecision(
   const line = run.line;
   const bench = run.bench ?? [];
   const benchRoom = bench.length < benchSizeOf(rules);
+  if (run.gift) return giftDecision(run.gift, line, bench, content, rules);
   // Every unit with its board slot: the line, then the bench.
   const board = [...line.map((u, i) => ({ u, i })), ...bench.map((u, i) => ({ u, i: rules.lineSize + i }))];
   // Fuse: the strongest fusable pair whose name is ready, the stronger first.
@@ -164,6 +165,24 @@ export function botDecision(
     if (front !== 0) return { kind: "reorder", from: front, to: 0 };
   }
   return { kind: "fight" };
+}
+
+/** The bot's awakening-gift pick: a copy of a unit it has first (it merges,
+ * so it needs no room), else with room on the line or bench the choice whose
+ * fresh unit scores best; else it skips. */
+export function giftDecision(gift: readonly string[], line: LineUnit[], bench: LineUnit[], content: MvpContent, rules: MvpRules): Decision {
+  const copy = gift.findIndex((id) => mergeTarget(line, id) >= 0 || mergeTarget(bench, id) >= 0);
+  if (copy >= 0) return { kind: "gift", pick: copy };
+  if (line.length >= rules.lineSize && bench.length >= benchSizeOf(rules)) return { kind: "gift", pick: null };
+  let pick: number | null = null;
+  let best = -Infinity;
+  gift.forEach((id, i) => {
+    const u = content.units.find((x) => x.id === id);
+    if (!u) return;
+    const s = score(lineUnitOf(u, "gift", 1, rules));
+    if (s > best) [pick, best] = [i, s];
+  });
+  return { kind: "gift", pick };
 }
 
 /** Plays one whole bot run through startRun and decide on `deps`, the Crown
