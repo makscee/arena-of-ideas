@@ -96,8 +96,10 @@ export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionRe
   // lose; only after the rules accepted the fight, so a refused one adds
   // nothing. An empty line (a walkover) is nobody's opponent.
   if (step.fight?.kind === "round" && run.line.length > 0) store.addGhost(ghostOf(run, now()));
-  // The reigning champion beating their own team is no slay (slewChampion).
-  if (step.fight?.kind === "crown" && step.fight.outcome === "win" && !run.player.bot && run.crownSeq !== null && step.fight.opponent.player.id !== run.player.id) {
+  // A bot's Crown win is a slay like a human's (contract: "day, champion,
+  // rating"). The reigning champion beating their own team is no slay
+  // (slewChampion).
+  if (step.fight?.kind === "crown" && step.fight.outcome === "win" && run.crownSeq !== null && step.fight.opponent.player.id !== run.player.id) {
     store.addSlay({ seq: run.crownSeq, player: run.player, runId: run.runId, battleId: step.fight.battleId, line: structuredClone(run.line), contentVersion: run.contentVersion, at: ctx.fight!.at });
   }
   if (step.fight) step.state = nextOpponent(deps, step.state);
@@ -161,16 +163,21 @@ function pickGhost(deps: RunDeps, run: MvpRunState): Ghost {
 }
 
 /** Stamps a run that just ended, writes a human's rating (once per run) and
- * stores the run. Bots and a "content-changed" end move no rating. */
+ * stores the run. Bots and a "content-changed" end move no rating; a bot's
+ * slay still counts in its records (slays), its rating and runs untouched. */
 function finish(deps: RunDeps, run: MvpRunState): MvpRunState {
   const { store, rules } = deps;
   const r = structuredClone(run);
   r.endedAt = deps.now().toISOString();
   r.rating = null;
+  const prev = (): Rating => store.rating(r.player.id) ?? { player: r.player, rating: rules.ratingStart, runs: 0, slays: 0, daysAsChampion: 0, playoffWins: 0 };
   if (!r.player.bot && r.endedBy !== "content-changed") {
-    const prev: Rating = store.rating(r.player.id) ?? { player: r.player, rating: rules.ratingStart, runs: 0, slays: 0, daysAsChampion: 0, playoffWins: 0 };
-    r.rating = ratingChange(prev.rating, r, rules);
-    store.putRating({ ...prev, player: r.player, rating: r.rating.after, runs: prev.runs + 1, slays: prev.slays + (slewChampion(r) ? 1 : 0) });
+    const before = prev();
+    r.rating = ratingChange(before.rating, r, rules);
+    store.putRating({ ...before, player: r.player, rating: r.rating.after, runs: before.runs + 1, slays: before.slays + (slewChampion(r) ? 1 : 0) });
+  } else if (r.player.bot && slewChampion(r)) {
+    const before = prev();
+    store.putRating({ ...before, slays: before.slays + 1 });
   }
   store.putRun(r);
   return r;

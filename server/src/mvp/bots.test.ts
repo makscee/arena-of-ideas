@@ -3,7 +3,8 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Champion } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
-import { BOT_TARGET, botDecision, botWorld, playBotRun, seedChampion, thinRounds, topUpGhosts } from "./bots.js";
+import { BOT_DAILY_CROWNS, BOT_TARGET, botDecision, botPlayer, botWorld, crownsOwed, playBotRun, seedChampion, takenBotNames, thinRounds, topUpGhosts } from "./bots.js";
+import { endDay } from "./day.js";
 import { mvpContent } from "./content.js";
 import { mvpRuntime, type MvpDeps } from "./runtime.js";
 import { SqliteMvpStore } from "./sqlite-store.js";
@@ -58,7 +59,7 @@ describe("MVP bots and world (slice 6)", () => {
       expect(thinRounds(rt)).toHaveLength(rt.rules.rounds);
       // A smaller target keeps the test quick; the job uses BOT_TARGET.
       const target = 8;
-      const first = topUpGhosts(rt, { target });
+      const first = topUpGhosts(rt, { target, dailyCrowns: 0 });
       expect(first.thin).toEqual([]);
       expect(first.runs).toBeGreaterThan(target);
       for (let r = 1; r <= rt.rules.rounds; r++) {
@@ -67,13 +68,33 @@ describe("MVP bots and world (slice 6)", () => {
         expect(ghosts.every((g) => g.player.bot)).toBe(true);
       }
       // Bounded: a full pool plays no more runs.
-      expect(topUpGhosts(rt, { target }).runs).toBe(0);
-      // Bots play whole runs: they fight the Crown, but write no slays and no ratings.
-      expect(rt.store.battles({ kind: "crown" }).length).toBeGreaterThan(0);
-      expect(rt.store.slays(rt.today().seq)).toEqual([]);
+      expect(topUpGhosts(rt, { target, dailyCrowns: 0 }).runs).toBe(0);
+      // Bots play whole runs: they fight the Crown, and a win is a slay (#587).
+      const crowns = rt.store.battles({ kind: "crown" });
+      expect(crowns.length).toBeGreaterThan(0);
+      expect(rt.store.slays(rt.today().seq).map((x) => x.battleId)).toEqual(crowns.filter((b) => b.winner === "A").map((b) => b.battleId));
       // Bots fuse, and never claim the credit.
       expect(rt.store.fusions().length).toBeGreaterThan(0);
       expect(rt.store.fusions().every((f) => f.discoveredBy === null)).toBe(true);
+    }
+  }, 30_000);
+
+  it("bots fight the day's Crown quota every day, not only on a fresh world's first (#587)", async () => {
+    const rt = world();
+    // No live champion: nothing owed, so no endless "no-champion" runs.
+    expect(crownsOwed(rt)).toBe(0);
+    await seedChampion(rt);
+    expect(crownsOwed(rt)).toBe(BOT_DAILY_CROWNS);
+    const quota = 6;
+    const botCrowns = () => rt.store.battles({ kind: "crown", since: rt.today().startedAt }).filter((b) => b.player.bot).length;
+    for (let day = 1; day <= 3; day++) {
+      // The pool is full after day 1: only the quota makes bots play.
+      const t = topUpGhosts(rt, { target: 4, dailyCrowns: quota });
+      expect(t).toMatchObject({ thin: [], crownsOwed: 0 });
+      expect(botCrowns()).toBeGreaterThanOrEqual(quota);
+      // Met: the next tick plays nothing.
+      expect(topUpGhosts(rt, { target: 4, dailyCrowns: quota }).runs).toBe(0);
+      endDay(rt);
     }
   }, 30_000);
 
@@ -88,17 +109,43 @@ describe("MVP bots and world (slice 6)", () => {
     const rt = world();
     // playBotRun goes through decide(), which throws on a refused decision.
     await seedChampion(rt);
-    // Whole runs, the Crown included; no rating for a bot.
+    // Whole runs, the Crown included; no rating for a bot (a slayer's row
+    // only counts its slay).
     for (let i = 0; i < 20; i++) {
       const run = playBotRun(rt);
       expect(run.phase).toBe("over");
       expect(run.rating).toBeNull();
-      expect(rt.store.rating(run.player.id)).toBeUndefined();
+      const row = rt.store.rating(run.player.id);
+      if (run.endedBy === "crown-won") expect(row).toMatchObject({ rating: rt.rules.ratingStart, runs: 0, slays: 1 });
+      else expect(row).toBeUndefined();
     }
     const d = botDecision({ phase: "shop", line: [], offers: [], gold: 0 } as never, rt.content, rt.rules, 0);
     expect(d).toEqual({ kind: "fight" });
     expect(botDecision({ phase: "crown" } as never, rt.content, rt.rules, 0)).toEqual({ kind: "fight" });
   });
+
+  it("a bot run never takes a name today's slayers or any champion has, so playoff entrants never share one (#587)", async () => {
+    // The roster name, else the next free one, else a numbered one.
+    expect(botPlayer(4).name).toBe("bot-Esk");
+    expect(botPlayer(4, new Set(["bot-Esk"])).name).toBe("bot-Fyn");
+    const roster = new Set(Array.from({ length: 16 }, (_, i) => botPlayer(i).name));
+    expect(roster.size).toBe(16);
+    expect(botPlayer(4, roster).name).toBe("bot-Esk-2");
+    // In a world: many bot runs against today's champion, every slayer's name is
+    // unique and no champion's.
+    const rt = world();
+    await seedChampion(rt);
+    for (let i = 0; i < 80; i++) playBotRun(rt);
+    const slayers = new Map<string, string>();
+    for (const s of rt.store.slays(rt.today().seq)) {
+      expect(slayers.get(s.player.name) ?? s.player.id).toBe(s.player.id);
+      slayers.set(s.player.name, s.player.id);
+    }
+    expect(slayers.size).toBeGreaterThan(0);
+    const champ = rt.store.currentChampion()!;
+    expect(slayers.has(champ.player.name)).toBe(false);
+    expect(takenBotNames(rt)).toEqual(new Set([...slayers.keys(), champ.player.name]));
+  }, 30_000);
 
   it("the bot fuses only a pair whose name is ready", () => {
     const rt = world();

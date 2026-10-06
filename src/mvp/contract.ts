@@ -332,8 +332,11 @@ export interface DecisionResponse {
 //   row a failed day end stored early for tomorrow; a rollover between round
 //   12 and the Crown switches to the new champion). A win writes the Slay,
 //   with Slay.seq = that champion's seq; the run's end writes its Rating.
-// - Bots fight the Crown too, but slice 4 writes no Slay and no Rating for a
-//   player.bot: slayers, playoffs and ratings are humans only.
+// - Bots fight the Crown too, and a bot's win is a Slay like a human's
+//   (hidden until the day ends, counted on /day, its strongest team enters
+//   the playoff, so a bot can be crowned): a player alone still sees a real
+//   playoff (#587). Ratings are humans only: a bot's Rating row may carry its
+//   records (slays, playoffWins, daysAsChampion), never a rating change.
 //
 // Stale content: a Champion or Slay whose contentVersion isn't the live
 // content's may name abilities that no longer exist. Slice 6's seeder replaces
@@ -364,9 +367,9 @@ export interface Champion {
   contentVersion: string;
 }
 
-/** A Crown fight won by a human (bots write none): the slayer's team that
- * day. Hidden until the day ends; slice 5 picks each slayer's strongest one
- * for the playoff, by simulation (fightLines). */
+/** A Crown fight won by a human or a bot: the slayer's team that day.
+ * Hidden until the day ends; slice 5 picks each slayer's strongest one for
+ * the playoff, by simulation (fightLines). */
 export interface Slay {
   /** The seq of the champion it beat. */
   seq: number;

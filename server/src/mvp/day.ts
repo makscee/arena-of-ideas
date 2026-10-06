@@ -88,10 +88,11 @@ export function dayView(rt: Pick<RunDeps, "store" | "today" | "content">): DayVi
 }
 
 /** Ends the day now (POST /dev/end-day, and the rollover): each slayer's
- * strongest slaying team enters a round-robin playoff, its winner is the next
- * day's champion (a day with no slayers keeps the champion), and day seq + 1
- * starts, ending at the next rules.dayEndsAt. Writes the playoff, its battles,
- * the new Champion row and the records (playoffWins, daysAsChampion). */
+ * (human or bot) strongest slaying team enters a round-robin playoff, its
+ * winner is the next day's champion (a day with no slayers keeps the
+ * champion), and day seq + 1 starts, ending at the next rules.dayEndsAt.
+ * Writes the playoff, its battles, the new Champion row and the records
+ * (playoffWins, daysAsChampion; a bot's too, never its rating). */
 export function endDay(rt: DayDeps): DayView {
   const { store, content, rules } = rt;
   const d = currentDay(rt);
@@ -118,8 +119,9 @@ export function endDay(rt: DayDeps): DayView {
   // the same rows. The records only move once day seq + 1 is stored: an end
   // that failed before this point and runs again never counts them twice.
   store.putDay(next);
+  // Records count for bots too (bump never touches a rating).
   if (winner) bump(rt, winner.player, "playoffWins");
-  if (crowned && !crowned.player.bot) bump(rt, crowned.player, "daysAsChampion");
+  if (crowned) bump(rt, crowned.player, "daysAsChampion");
   return dayView({ store, content, today: () => next });
 }
 
