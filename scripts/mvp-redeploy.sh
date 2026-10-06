@@ -22,7 +22,15 @@
 # Invite-only since slice 13 (MVP_INVITES=1): players come from invite links,
 # made on m1 with `cd ~/arena-mvp && npm run mvp:invite -- add <name>` (see
 # server/src/mvp/invite-cli.ts), and "End day now" shows only to admin
-# invites. ARENA_MVP_INVITES=0 redeploys it open (names, no links).
+# invites. The redeploy fails (exit 1, no "deployed" line) unless the new
+# server's /health says invites: true, so a pre-slice-13 ref or a broken
+# setting is never served by accident. The only way past is
+# ARENA_MVP_INVITES=0, an OPEN server (names, no links: anyone who reaches it
+# plays as anyone); it warns, and refuses while Tailscale Funnel is on.
+#
+# Rollback with Funnel on: TURN FUNNEL OFF FIRST
+#   /Applications/Tailscale.app/Contents/MacOS/Tailscale funnel --https=8443 off
+# then ARENA_MVP_INVITES=0 npm run mvp:redeploy -- <old ref>.
 #
 # Runs from anywhere with `ssh m1`; on m1 itself it runs locally. The server
 # is a launchd agent (ru.makscee.arena-mvp), so it restarts on crash and login.
@@ -57,6 +65,16 @@ set -euo pipefail
 export PATH=/opt/homebrew/bin:/usr/local/bin:\$PATH
 DIR="\$HOME/arena-mvp"
 LABEL=ru.makscee.arena-mvp
+TS=/Applications/Tailscale.app/Contents/MacOS/Tailscale
+if [ "$INVITES" != 1 ]; then
+  # An open server: never while the internet can reach it. Checked before
+  # anything stops.
+  if \$TS funnel status 2>/dev/null | grep -qi "funnel on"; then
+    echo "ARENA_MVP_INVITES=0 refused: Tailscale Funnel is on, so an open server would let anyone on the internet play as anyone. Turn it off first: \$TS funnel --https=8443 off. Nothing stopped." >&2
+    exit 1
+  fi
+  echo "WARNING: ARENA_MVP_INVITES=0 deploys an OPEN server (names, no links: anyone who reaches it plays as anyone). Keep Tailscale Funnel off while it runs." >&2
+fi
 [ -d "\$DIR/.git" ] || git clone -q https://github.com/makscee/arena-of-ideas.git "\$DIR"
 cd "\$DIR"
 git fetch -q origin "$BRANCH"
@@ -145,7 +163,6 @@ if [ "$FRESH" = 1 ]; then
   fi
 fi
 launchctl bootstrap "gui/\$(id -u)" "\$PLIST"
-TS=/Applications/Tailscale.app/Contents/MacOS/Tailscale
 \$TS serve --bg --set-path /arena "http://127.0.0.1:$PORT" >/dev/null
 HEALTH=
 for i in \$(seq 1 30); do
@@ -161,6 +178,12 @@ if [ -z "\$HEALTH" ]; then
   tail -n 20 "\$DIR/data/server.log" >&2 2>/dev/null || true
   [ -z "\$FAILED" ] || echo "--fresh failed too: \$FAILED" >&2
   echo "Fix it and redeploy (npm run mvp:redeploy -- <branch>), or go back to a branch that worked." >&2
+  exit 1
+fi
+# Invite-only unless ARENA_MVP_INVITES=0 said otherwise: a server that
+# doesn't say invites: true (a pre-slice-13 ref, a broken setting) is open.
+if [ "$INVITES" = 1 ] && ! printf '%s' "\$HEALTH" | grep -q '"invites":true'; then
+  echo "redeploy failed: the new server (\$BUILD, $BRANCH) is OPEN, not invite-only: its /health says \$HEALTH. Anyone who reaches it plays as anyone. Turn Tailscale Funnel off now if it is on (\$TS funnel --https=8443 off), then redeploy an invite-only build, or ARENA_MVP_INVITES=0 on purpose." >&2
   exit 1
 fi
 echo "deployed \$BUILD ($BRANCH): \$HEALTH"

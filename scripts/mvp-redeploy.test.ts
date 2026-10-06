@@ -23,11 +23,13 @@ esac`,
   git: `#!/bin/bash
 [ "$1" = rev-parse ] && echo abc1234; exit 0`,
   npm: "#!/bin/bash\nexit 0",
-  // NO_HEALTH: the new server never answers /health
+  // NO_HEALTH: the new server never answers /health; STUB_HEALTH: what it says
   curl: `#!/bin/bash
-case "$*" in *api/v1/health*) [ -n "\${NO_HEALTH:-}" ] && exit 7 ;; esac
+case "$*" in *api/v1/health*) [ -n "\${NO_HEALTH:-}" ] && exit 7; D='{"ok":true,"invites":true}'; echo "\${STUB_HEALTH:-$D}"; exit 0 ;; esac
 echo '{"ok":true}'`,
-  tailscale: "#!/bin/bash\nexit 0",
+  // FUNNEL: Funnel is on
+  tailscale: `#!/bin/bash
+[ "$1" = funnel ] && [ -n "\${FUNNEL:-}" ] && echo "https://m1.twin-pogona.ts.net:8443 (Funnel on)"; exit 0`,
   // the waits for launchd don't wait here
   sleep: "#!/bin/bash\nexit 0",
 };
@@ -51,7 +53,7 @@ function host(o: { asideScript?: boolean } = {}) {
 /** The script --dry-run prints for m1, run against `home` (PATH and the
  * Tailscale binary point at the stubs). */
 function deploy(home: string, env: Record<string, string> = {}, args = ["--fresh"]) {
-  const dry = spawnSync(join(ROOT, "scripts/mvp-redeploy.sh"), ["--dry-run", ...args], { encoding: "utf8", env: { ...process.env, ARENA_MVP_WIPE: "1" } });
+  const dry = spawnSync(join(ROOT, "scripts/mvp-redeploy.sh"), ["--dry-run", ...args], { encoding: "utf8", env: { ...process.env, ARENA_MVP_WIPE: "1", ...env } });
   expect(dry.status).toBe(0);
   const script = dry.stdout
     .replace("export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH", `export PATH=${home}/bin:/usr/bin:/bin`)
@@ -109,7 +111,7 @@ describe("mvp-redeploy (--fresh and plain)", () => {
     expect(existsSync(join(home, "loaded/ru.makscee.arena-mvp"))).toBe(true);
   });
 
-  it("an old server that doesn't stop fails the redeploy loudly: exit 1, no \"deployed\" line, nothing bootstrapped", () => {
+  it("an old server that doesn't stop fails the redeploy loudly: exit 1, no \"deployed\" line, nothing bootstrapped", { timeout: 15_000 }, () => {
     for (const args of [[], ["--fresh"]]) {
       const { home, db } = host();
       const r = deploy(home, { STUCK: "1" }, args); // launchd never lets the old job go
@@ -124,7 +126,7 @@ describe("mvp-redeploy (--fresh and plain)", () => {
     }
   });
 
-  it("a new server that never answers /health fails the redeploy: exit 1, no \"deployed\" line, the server log's end", () => {
+  it("a new server that never answers /health fails the redeploy: exit 1, no \"deployed\" line, the server log's end", { timeout: 15_000 }, () => {
     for (const args of [[], ["--fresh"]]) {
       const { home, dir } = host();
       writeFileSync(join(dir, "data/server.log"), "SyntaxError: boom\n");
@@ -144,6 +146,30 @@ describe("mvp-redeploy (--fresh and plain)", () => {
     expect(r.stdout).toContain("deployed abc1234 (mission-574-mvp)");
     expect(r.log).toMatch(/bootout gui\/\d+\/ru\.makscee\.arena-mvp[\s\S]*bootstrap gui\/\d+ .*ru\.makscee\.arena-mvp\.plist/);
     expect(readFileSync(db, "utf8")).toBe("old world");
+  });
+
+  it("refuses to report an open server as deployed: a /health without invites: true exits 1 (a pre-slice-13 ref)", () => {
+    for (const health of ['{"ok":true}', '{"ok":true,"invites":false}']) {
+      const { home } = host();
+      const r = deploy(home, { STUB_HEALTH: health }, []);
+      expect(r.status, health).toBe(1);
+      expect(r.stdout).not.toContain("deployed");
+      expect(r.stderr).toContain("is OPEN, not invite-only");
+      expect(r.stderr).toContain("funnel --https=8443 off");
+    }
+  });
+
+  it("ARENA_MVP_INVITES=0 deploys an open server with a warning, and refuses while Funnel is on", () => {
+    const open = host();
+    const r = deploy(open.home, { ARENA_MVP_INVITES: "0", STUB_HEALTH: '{"ok":true,"invites":false}' }, []);
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain("deployed abc1234");
+    expect(r.stderr).toContain("WARNING: ARENA_MVP_INVITES=0 deploys an OPEN server");
+    const funnel = host();
+    const f = deploy(funnel.home, { ARENA_MVP_INVITES: "0", FUNNEL: "1" }, []);
+    expect(f.status).toBe(1);
+    expect(f.stderr).toContain("Tailscale Funnel is on");
+    expect(f.log).not.toContain("bootout");
   });
 
   it("mvp-db-aside.sh --check refuses a DB path whose directory is missing, and moves nothing", () => {
