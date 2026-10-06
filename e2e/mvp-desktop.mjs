@@ -144,6 +144,10 @@ try {
   await page.getByTestId("codex-tab-keywords").click();
   await page.getByTestId("codex-keywords").waitFor();
   await shot("codex-keywords");
+  // Esc clears the inspected unit first (R3-6), then goes back.
+  await page.keyboard.press("Escape");
+  if (await page.locator('[data-testid="inspector"] [data-testid="unit-sheet"]').count()) errors.push("codex: Esc doesn't clear the inspector");
+  if (!(await page.getByTestId("codex-keywords").count())) errors.push("codex: Esc with a unit inspected left the Codex");
   await page.keyboard.press("Escape");
   await page.getByTestId("play").click();
 

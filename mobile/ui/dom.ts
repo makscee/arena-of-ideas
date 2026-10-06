@@ -122,37 +122,35 @@ function textField(t: EventTarget | null): HTMLElement | null {
   return t.tagName === "TEXTAREA" || t.isContentEditable ? t : null;
 }
 
-// One listener for the whole client, in capture: Esc closes the top-most
-// thing before any screen sees the key.
+// Esc first, in capture: it closes the top-most thing before anything else
+// sees the key. Left to the screen ("screen"), it goes on like any key.
 addEventListener(
   "keydown",
   (e) => {
-    if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+    if (e.key !== "Escape" || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
     const field = textField(e.target);
-    if (e.key === "Escape") {
-      const closePop = popover?.() ?? null;
-      const top = topLayer();
-      const clearable = field instanceof HTMLInputElement && field.type === "search" && field.value !== "";
-      const step = escStep({ popover: closePop !== null, overlays: top ? 1 : 0, field: field ? (clearable ? "clearable" : "plain") : "none" });
-      if (step === "native") return;
-      if (step !== "screen") {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        if (step === "popover") closePop!();
-        else if (step === "overlay") top!.dismiss();
-        else field!.blur();
-        return;
-      }
-    }
-    if (field) return;
-    // M: sound on/off, on every screen (round 3, note 16).
-    if (e.key === "m" || e.key === "M") return void (toggleSound(), e.preventDefault());
-    // A sheet is open: the screen under it takes no keys.
-    if (topLayer()) return;
-    if (keys && keys(e)) e.preventDefault();
+    const closePop = popover?.() ?? null;
+    const top = topLayer();
+    const clearable = field instanceof HTMLInputElement && field.type === "search" && field.value !== "";
+    const step = escStep({ popover: closePop !== null, overlays: top ? 1 : 0, field: field ? (clearable ? "clearable" : "plain") : "none" });
+    if (step === "screen" || step === "native") return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (step === "popover") closePop!();
+    else if (step === "overlay") top!.dismiss();
+    else field!.blur();
   },
   { capture: true },
 );
+addEventListener("keydown", (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+  if (textField(e.target)) return;
+  // M: sound on/off, on every screen (round 3, note 16).
+  if (e.key === "m" || e.key === "M") return void (toggleSound(), e.preventDefault());
+  // A sheet is open: the screen under it takes no keys.
+  if (topLayer()) return;
+  if (keys && keys(e)) e.preventDefault();
+});
 
 // ---------- overlays ----------
 
