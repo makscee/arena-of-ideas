@@ -14,6 +14,8 @@ import type { UnitFilter } from "../../src/types";
 import { closable, h, isDesktop } from "./dom";
 import { changedTokens } from "./diff";
 import { icon } from "./icon";
+import { withPip } from "./card";
+import { scopePip } from "../../src/mvp/card-icons";
 
 /** Opens a term's Codex entry; set by the Codex (R2-11). Unset: no link. */
 let codexLink: ((id: TermId, scope?: UnitFilter) => void) | null = null;
@@ -22,7 +24,7 @@ export function setCodexLink(open: ((id: TermId, scope?: UnitFilter) => void) | 
 }
 
 /** What a run's tooltip and sheet say. An eventUnit target follows the words on
- * screen ("this unit", "that ally"), not the selector's generic label. */
+ * screen ("self", "it"), not the selector's generic label. */
 export function termInfo(seg: DescribeSegment): (TermDef & { id: TermId; scope?: UnitFilter }) | undefined {
   const id = seg.term;
   if (!id) return undefined;
@@ -31,13 +33,13 @@ export function termInfo(seg: DescribeSegment): (TermDef & { id: TermId; scope?:
   if (id === "target:eventUnit") {
     const label = seg.text.charAt(0).toUpperCase() + seg.text.slice(1);
     const holder = termDef("target:holder")!;
-    return /^this unit$/i.test(seg.text) ? { ...holder, id, label } : { ...def, id, label };
+    return /^self$/i.test(seg.text) ? { ...holder, id, label } : { ...def, id, label };
   }
   // A trigger clause's rule follows its scope ("after an enemy dies"), and so does its Codex line.
   return seg.scope ? { ...def, id, scope: seg.scope, tip: scopedTip(id, seg.scope) ?? def.tip } : { ...def, id };
 }
 
-/** The status a run is about: its own status term, or the status a "lands on"
+/** The status a run is about: its own status term, or the status a "gets"
  * clause names (so the clause's pill shows that status's icon). */
 const statusOf = (seg: DescribeSegment): string | undefined => (seg.term?.startsWith("status:") ? seg.term.slice("status:".length) : undefined);
 
@@ -76,7 +78,8 @@ export function richText(segs: DescribeSegment[], o: RichOptions = {}): Node[] {
       const status = clause.map(statusOf).find(Boolean);
       const ic = trig ? termIcon(trig, status) : undefined;
       pill = h("span", { class: "tpill tone-when", "data-testid": "term-when" });
-      if (ic) pill.append(icon(ic, size, "tpill-ic"));
+      // The pip says whose event it is, as on the card's icon line (R3-4).
+      if (ic) pill.append(withPip(icon(ic, size, "tpill-ic"), scopePip(clause.find((s) => s.scope)?.scope)));
       out.push(pill);
     }
     const info = clauseInfo(seg, segs, i);
@@ -87,7 +90,7 @@ export function richText(segs: DescribeSegment[], o: RichOptions = {}): Node[] {
   return glueStops(out);
 }
 
-/** A term is a button, and a line may break after a button: "this unit" then
+/** A term is a button, and a line may break after a button: "self" then
  * a lone "." on the next line. The punctuation that follows a term goes into
  * one unbreakable box with it. */
 function glueStops(nodes: Node[]): Node[] {
@@ -117,7 +120,7 @@ function edgeSpaced(kids: (Node | string)[], wrap: (inner: (Node | string)[]) =>
   return [...(lead ? [document.createTextNode(lead)] : []), wrap(body), ...(trail ? [document.createTextNode(trail)] : [])];
 }
 
-/** termInfo, plus: a "lands on" trigger names its status ("Shield lands"). */
+/** termInfo, plus: a "gets" trigger names its status ("Gets Shield"). */
 function clauseInfo(seg: DescribeSegment, segs: DescribeSegment[], i: number): ReturnType<typeof termInfo> {
   const info = termInfo(seg);
   if (!info || (info.id !== "trigger:StatusApplied" && info.id !== "trigger:StatusRemoved")) return info;
@@ -125,7 +128,7 @@ function clauseInfo(seg: DescribeSegment, segs: DescribeSegment[], i: number): R
   while (j > 0 && segs[j - 1]!.clause === "when") j--;
   let status: string | undefined;
   for (; j < segs.length && segs[j]!.clause === "when" && !status; j++) status = statusOf(segs[j]!);
-  return status ? { ...info, label: `${status} ${info.id === "trigger:StatusApplied" ? "lands" : "leaves"}` } : info;
+  return status ? { ...info, label: `${info.id === "trigger:StatusApplied" ? "Gets" : "Loses"} ${status}` } : info;
 }
 
 function termButton(seg: DescribeSegment, info: TermDef & { id: TermId }, kids: (Node | string)[], withAmount: Set<TermId>, size: number, inPill: boolean): HTMLElement {

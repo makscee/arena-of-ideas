@@ -1,0 +1,10 @@
+Arena of Ideas sound effects
+
+All 26 sounds come from Maks's own past games:
+- Arena of Ideas 2022 (makscee/arena-of-ideas static/sounds): click, coin, sell,
+  merge, level-up, start, hit, zap, block, shield, buff, debuff, spawn, win, lose.
+- Duamo (makscee/duamo): fuse, discover, wrong, move-left, move-right, reroll,
+  freeze, unfreeze, status, status-off, draw.
+
+Converted to mono MP3 (trimmed, peak-normalised) from the originals; the source
+of each file is in docs/round3/sounds/web-map.txt and docs/round3/sounds/README.md.

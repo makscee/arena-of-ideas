@@ -3,7 +3,8 @@
 // every term's "Open in Codex"; Back returns to the screen it opened over.
 // Three tabs:
 // - Units: all the content's units as compact cards, filtered by tier, by the
-//   trigger icon a card shows and by a search over names and both forms'
+//   When a card's icon line leads with (its pip tells "Dies" from "Ally
+//   dies") and by a search over names and both forms'
 //   text. A card opens its sheet (active form, See Awoken, the dim rates line).
 //   A quiet Sort (tier, win rate, pick rate) compares the rates: only while a
 //   rate sort is on does each card show its number, dim.
@@ -16,13 +17,15 @@
 // On desktop a sheet opens in the inspector on the right, not an overlay.
 // The icon credits (CC BY 3.0) sit at its foot. Reads /content, /stats and
 // /fusions, each once while it stays open (CodexCache).
-import { GLOSSARY, STATUS_TERMS, scopedTip, termDef, termGroup, termIcon, type FixedTermId, type IconId, type TermGroup, type TermId } from "../../src/glossary";
+import { GLOSSARY, STATUS_TERMS, scopedTip, termDef, termGroup, type FixedTermId, type IconId, type TermGroup, type TermId } from "../../src/glossary";
 import type { FusionDiscovery, LineUnit, MvpContent, StatsView, UnitContent, UnitId } from "../../src/mvp/contract";
 import type { UnitFilter } from "../../src/types";
 import { formSegments, formText } from "../../src/mvp/form-text";
 import { fuseUnits, lineUnitOf } from "../../src/mvp/forms";
+import { cardIcons, type Pip } from "../../src/mvp/card-icons";
+import type { AbilityRegistry } from "../../src/types";
 import { api } from "../api";
-import { card, formRich, roman, unitSheet } from "../ui/card";
+import { card, formRich, roman, unitSheet, withPip } from "../ui/card";
 import { app, button, closable, h, isDesktop, onKeys, screen, show, who } from "../ui/dom";
 import { icon } from "../ui/icon";
 import { loadUnitRates, pct } from "../ui/unit-stats";
@@ -34,8 +37,9 @@ export interface CodexState {
   tab: CodexTab;
   /** Units: one tier, or every tier. */
   tier: number | null;
-  /** Units: the trigger icon a card shows top-left, or any. */
-  trigger: IconId | null;
+  /** Units: the When a card's icon line leads with (its icon, plus its pip:
+   * "death-skull.ally"), or any. */
+  trigger: string | null;
   query: string;
   /** Units: by tier, or by win or pick rate (the rates show on the cards only then). */
   sort: CodexSort;
@@ -161,16 +165,12 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
 
 // ---------- units ----------
 
-/** The icon a unit's card shows top-left (card.ts triggerMark) and its label. */
-function triggerOf(u: UnitContent): { icon: IconId; label: string } | null {
-  const on = u.forms.sleeping.when[0]?.on;
-  if (!on) return null;
-  const id = `trigger:${on.on}` as TermId;
-  const status = "status" in on ? on.status : undefined;
-  const ic = termIcon(id, status);
-  if (!ic) return null;
-  const label = termDef(id)?.label ?? on.on;
-  return { icon: ic, label: status && (on.on === "StatusApplied" || on.on === "StatusRemoved") ? `${status} ${on.on === "StatusApplied" ? "lands" : "leaves"}` : label };
+/** The When icon a unit's card leads with (card.ts iconLine), its pip and
+ * its label. The key tells "Dies" from "Ally dies" ("death-skull.ally"). */
+function triggerOf(u: UnitContent, abilities: AbilityRegistry): { key: string; icon: IconId; pip?: Pip; label: string } | null {
+  const w = cardIcons(u.forms.sleeping, abilities)[0];
+  if (!w || w.role !== "when") return null;
+  return { key: w.pip ? `${w.icon}.${w.pip}` : w.icon, icon: w.icon, ...(w.pip ? { pip: w.pip } : {}), label: w.label };
 }
 
 const byTierName = (x: UnitContent, y: UnitContent) => x.tier - y.tier || x.name.localeCompare(y.name);
@@ -199,10 +199,11 @@ function unitsTab(
   if (st.sort !== "tier") units.sort((x, y) => (rateOf(y) ?? -1) - (rateOf(x) ?? -1));
   const tiers = [...new Set(units.map((u) => u.tier))].sort();
   // The trigger icons the picked tier has (the picked one always stays).
-  const triggers = new Map<IconId, string>();
-  for (const u of [...units].sort(byTierName).filter((x) => st.tier === null || x.tier === st.tier || triggerOf(x)?.icon === st.trigger)) {
-    const t = triggerOf(u);
-    if (t && !triggers.has(t.icon)) triggers.set(t.icon, t.label);
+  const trig = new Map(units.map((u) => [u.id, triggerOf(u, content.abilities)]));
+  const triggers = new Map<string, NonNullable<ReturnType<typeof triggerOf>>>();
+  for (const u of [...units].sort(byTierName).filter((x) => st.tier === null || x.tier === st.tier || trig.get(x.id)?.key === st.trigger)) {
+    const t = trig.get(u.id);
+    if (t && !triggers.has(t.key)) triggers.set(t.key, t);
   }
   const text = new Map(units.map((u) => [u.id, `${u.name} ${formText(u.forms.sleeping, content.abilities)} ${formText(u.forms.awoken, content.abilities)}`.toLowerCase()]));
 
@@ -211,7 +212,7 @@ function unitsTab(
   const order = st.sort === "tier" ? "by tier" : `by ${st.sort === "win" ? "win" : "pick"} rate, highest first`;
   const draw = () => {
     const q = st.query.trim().toLowerCase();
-    const shown = units.filter((u) => (st.tier === null || u.tier === st.tier) && (st.trigger === null || triggerOf(u)?.icon === st.trigger) && (!q || text.get(u.id)!.includes(q)));
+    const shown = units.filter((u) => (st.tier === null || u.tier === st.tier) && (st.trigger === null || trig.get(u.id)?.key === st.trigger) && (!q || text.get(u.id)!.includes(q)));
     grid.replaceChildren(
       ...shown.map((u) => {
         const r = st.sort === "tier" ? undefined : rateOf(u);
@@ -234,12 +235,12 @@ function unitsTab(
   const trigRow = h(
     "div",
     { class: "row codex-filter codex-triggers", "data-testid": "codex-triggers" },
-    ...[...triggers].map(([ic, label]) => {
-      const b = button("", () => set({ trigger: st.trigger === ic ? null : ic }), st.trigger === ic ? "chip icon on tone-when" : "chip icon tone-when", `codex-trigger-${ic}`);
-      b.title = label;
-      b.setAttribute("aria-label", label);
-      b.setAttribute("aria-pressed", String(st.trigger === ic));
-      b.append(icon(ic, 22));
+    ...[...triggers].map(([key, t]) => {
+      const b = button("", () => set({ trigger: st.trigger === key ? null : key }), st.trigger === key ? "chip icon on tone-when" : "chip icon tone-when", `codex-trigger-${key.replace(".", "-")}`);
+      b.title = t.label;
+      b.setAttribute("aria-label", t.label);
+      b.setAttribute("aria-pressed", String(st.trigger === key));
+      b.append(withPip(icon(t.icon, 22), t.pip));
       return b;
     }),
   );
@@ -264,7 +265,7 @@ function unitsTab(
         ? h("div", { class: "dim small" }, "Win: how often its team won the fight. Picked: how often it was on a finished line. Since the units last changed.")
         : h("div", { class: "row dim small", "data-testid": "codex-rates-error" }, "Rates aren't available right now.", button("Try again", retry, "small", "codex-rates-retry"))
       : null;
-  return [search, tierRow, trigRow, sortRow, picked ? h("div", { class: "dim small" }, `When: ${picked}`) : null, count, note, grid].filter((n): n is NonNullable<typeof n> => n !== null);
+  return [search, tierRow, trigRow, sortRow, picked ? h("div", { class: "dim small" }, `When: ${picked.label}`) : null, count, note, grid].filter((n): n is NonNullable<typeof n> => n !== null);
 }
 
 // ---------- fusions ----------

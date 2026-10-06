@@ -40,7 +40,23 @@ try {
   const page = await browser.newPage({ viewport: { width: W, height: H } });
   page.on("pageerror", (e) => errors.push(`pageerror: ${e.message}`));
   page.on("console", (m) => m.type() === "error" && errors.push(`console: ${m.text()}`));
-  const shot = (name) => page.screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-${name}.png` });
+  /** Every card's When · Who · Does icon line fits its card (R3-4): no row
+   * overflows, and a line with more icons than it shows ends in "+". A
+   * battle card shows only its When, in the corner, so it is left out. */
+  let iconCards = 0;
+  const iconsFit = async (name) => {
+    const r = await page.evaluate(() => [...document.querySelectorAll('.card:not(.bv-card) [data-testid="card-icons"]')].filter((el) => el.getClientRects().length).map((el) => {
+      const shown = [...el.querySelectorAll(".ci")].filter((c) => getComputedStyle(c).display !== "none").length;
+      const more = [...el.querySelectorAll(".more")].some((m) => getComputedStyle(m).display !== "none");
+      return { name: el.closest(".card")?.querySelector(".name")?.textContent ?? "?", over: el.scrollWidth > el.clientWidth, short: el.querySelectorAll(".ci").length > shown && !more };
+    }));
+    iconCards += r.length;
+    for (const c of r) {
+      if (c.over) errors.push(`${name}: ${c.name}'s icon line overflows its card`);
+      if (c.short) errors.push(`${name}: ${c.name} hides icons without a "+"`);
+    }
+  };
+  const shot = async (name) => { await page.screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-${name}.png` }); await iconsFit(name); };
   const noHScroll = async (name) => {
     const w = await page.evaluate(() => document.documentElement.scrollWidth);
     if (w > W) errors.push(`${name}: horizontal scroll (${w}px)`);
@@ -67,12 +83,21 @@ try {
   const lineCount = () => page.getByTestId("line").locator(".card.you").count();
   /** Waits until the shop is drawn again after a decision (the gold or the line changed). */
   const settle = async () => { await page.waitForTimeout(150); await page.waitForFunction(() => !document.getElementById("app").classList.contains("busy")); };
+  /** The last sound the client asked for (round 3, note 16: ui/sound.ts logs each to window.__sfx). */
+  const lastSfx = () => page.evaluate(() => window.__sfx?.at(-1) ?? "");
+  const wantSfx = async (what, re) => {
+    const got = await lastSfx();
+    if (!re.test(got)) errors.push(`sound: ${what} played "${got}"`);
+  };
 
   await page.goto(url, { timeout: 20_000 });
   await page.getByTestId("name-input").waitFor({ timeout: 10_000 });
   await page.keyboard.type(`DeskTester${TAG}`);
   await page.keyboard.press("Enter");
   await page.getByTestId("play").waitFor();
+  // The title menu's Sound row: on at 60% by default.
+  if ((await page.getByTestId("home-actions").getByTestId("sound-toggle").textContent())?.includes("on") !== true) errors.push("sound: the title menu's toggle isn't on by default");
+  if ((await page.getByTestId("home-actions").getByTestId("sound-volume").inputValue()) !== "60") errors.push("sound: the default volume isn't 60");
   await shot("home"); await noHScroll("home"); await wide("home", 1100); await onScreen("home: Play", page.getByTestId("play"));
   await cardSize("home champion", "champion");
   // Home's two columns: Play sits right of the champion panel.
@@ -165,6 +190,7 @@ try {
         await page.keyboard.press("s");
         await settle();
         if ((await lineCount()) !== 4) errors.push("S didn't sell the selected unit");
+        await wantSfx("S (sell)", /^sell$/);
         sold = true;
         continue;
       }
@@ -172,6 +198,7 @@ try {
       await page.keyboard.press("1");
       await settle();
       if ((await gold()) === g0) { errors.push(`round ${round}: key 1 didn't buy`); break; }
+      await wantSfx("key 1 (buy)", /^(coin|merge|level-up)$/);
     }
     if (round === 1 && !crown && (await gold()) >= 1) {
       // R rerolls.
@@ -179,6 +206,14 @@ try {
       await page.keyboard.press("r");
       await settle();
       if ((await gold()) !== g0 - 1) errors.push("R didn't reroll");
+      await wantSfx("R", /^reroll$/);
+      // M mutes: the next sound is logged muted; M again turns it back on.
+      await page.keyboard.press("m");
+      await page.keyboard.press("r");
+      await settle();
+      // (a reroll, or "wrong" when the gold ran out)
+      await wantSfx("R after M", /^(reroll|wrong) \(muted\)$/);
+      await page.keyboard.press("m");
     }
     if (!crown && !dragged && (await lineCount()) >= 2) {
       dragged = true;
@@ -197,6 +232,7 @@ try {
       await page.keyboard.press("ArrowLeft");
       await settle();
       if ((await page.getByTestId("line-0").locator(".name").textContent()) !== name0) errors.push("← didn't move the selected unit");
+      await wantSfx("← (move)", /^move-left$/);
       if (!(await page.getByTestId("line-0").evaluate((el) => el.classList.contains("selected")))) errors.push("the moved unit isn't selected anymore");
       // Esc deselects.
       await page.keyboard.press("Escape");
@@ -204,6 +240,7 @@ try {
       // With nothing left to step back from, Esc opens the ☰ run menu (R2-10); Esc again closes it.
       await page.keyboard.press("Escape");
       await page.getByTestId("run-menu").waitFor({ timeout: 2_000 }).catch(() => errors.push("Esc didn't open the run menu"));
+      if (!(await page.getByTestId("run-menu").getByTestId("sound-toggle").count())) errors.push("sound: no Sound row in the run menu");
       await shot("run-menu");
       // ☰ Codex, then the window narrows below 1024px: Back finds the shop in its phone layout.
       await page.getByTestId("menu-codex").click();
@@ -227,6 +264,7 @@ try {
     await page.keyboard.press("Space");
     await page.getByTestId("battle-end").waitFor({ timeout: 10_000 });
     if (round === 1) await shot("battle");
+    if (round === 1) await logFirst("battle opens");
     if (round === 1) await whyOnDesktop();
     if (round === 1) await desktopBattle();
     await page.getByTestId("battle-end").click();
@@ -294,6 +332,7 @@ try {
     await page.mouse.move(5, H - 5);
     await page.keyboard.press(String(key));
     await page.getByTestId("hint").filter({ hasText: "fuse" }).waitFor();
+    await wantSfx("the awakening copy", /^level-up$/);
     const first = run.line.findIndex((u) => u.form === "awoken");
     const second = run.line.findIndex((u) => u.uid === almost.uid);
     await page.getByTestId(`line-${first}`).click();
@@ -309,8 +348,10 @@ try {
     if (await page.getByTestId("inspector").getByTestId("preview-swap").count()) await page.getByTestId("preview-swap").click();
     await page.getByTestId("preview-confirm").click();
     await page.getByTestId("line").locator(".card.fused").waitFor();
+    if (!/\bfuse\b/.test((await page.evaluate(() => window.__sfx ?? [])).slice(-2).join(" "))) errors.push("sound: the fuse made no sound");
     // A pair nobody had made reveals its name (R2-5); Esc closes it.
     if (await page.getByTestId("fusion-reveal").isVisible().catch(() => false)) {
+      await wantSfx("the discovery reveal", /^discover$/);
       await shot("fusion-reveal");
       await page.keyboard.press("Escape");
       await page.getByTestId("fusion-reveal").waitFor({ state: "detached" });
@@ -418,14 +459,29 @@ try {
     const k = await rows.count();
     if (!k) errors.push("log: no rows for the turns played");
     let opened = false;
+    let hit = -1;
     for (let i = k - 1; i >= 0 && !opened; i--) {
       await page.getByTestId("tab-log").click();
       await rows.nth(i).click();
       opened = await page.getByTestId("trace-text").isVisible();
+      if (opened) hit = i;
     }
     if (k && !opened) errors.push("log: no row opened its Why");
     if (opened && !(await page.getByTestId("tab-why").evaluate((e) => e.classList.contains("on")))) errors.push("log: a row's Why opened without the Why tab");
+    if (opened && (await page.getByTestId("tab-why").isDisabled())) errors.push("log: a row's Why opened with the Why tab disabled");
     await shot("battle-log-why");
+    // R3-17: ✕, Esc and ▶ each close Why back to Log, Why disabled again.
+    if (opened) {
+      await page.getByTestId("trace-close").click();
+      await logFirst("Why ✕");
+      await rows.nth(hit).click();
+      await page.keyboard.press("Escape");
+      await logFirst("Why Esc");
+      await rows.nth(hit).click();
+      await page.getByTestId("battle-play").click();
+      await logFirst("Why ▶");
+      if ((await page.getByTestId("battle-play").textContent()) === "❚❚") await page.getByTestId("battle-play").click();
+    }
     // 1024×768: still whole, still facing.
     await page.setViewportSize({ width: 1024, height: 768 });
     await page.waitForTimeout(200);
@@ -437,6 +493,13 @@ try {
     await page.setViewportSize({ width: W, height: H });
     await page.waitForTimeout(200);
     await page.getByTestId("trace-close").click().catch(() => {});
+  }
+
+  /** R3-17: with nothing traced, the side panel shows Log and Why is disabled. */
+  async function logFirst(when) {
+    if (!(await page.getByTestId("tab-log").evaluate((e) => e.classList.contains("on")))) errors.push(`${when}: the Log tab isn't on`);
+    if (!(await page.getByTestId("tab-why").isDisabled())) errors.push(`${when}: Why is enabled with nothing traced`);
+    if (!(await page.getByTestId("battle-log").isVisible())) errors.push(`${when}: the Log isn't showing`);
   }
 
   /** R2-15: Why opens as a panel right of the battle column, and its chain
@@ -474,7 +537,7 @@ try {
     console.log("why: no change in round 1 came from a firing in a turn; panel not checked");
   }
 
-  console.log(`mvp desktop: ${round} fights, ${shots} screenshots in ${out}`);
+  console.log(`mvp desktop: ${round} fights, ${shots} screenshots in ${out}, ${iconCards} card icon lines fit`);
 } finally {
   await browser.close();
   child?.kill();

@@ -139,7 +139,8 @@ describe("MVP bots and world (slice 6)", () => {
     // unique and no champion's.
     const rt = world();
     await seedChampion(rt);
-    for (let i = 0; i < 80; i++) playBotRun(rt);
+    // Slays are rare (the Crown is hard), so play until a few land, capped.
+    for (let i = 0; i < 400 && (i < 80 || rt.store.slays(rt.today().seq).length < 2); i++) playBotRun(rt);
     const slayers = new Map<string, string>();
     for (const s of rt.store.slays(rt.today().seq)) {
       expect(slayers.get(s.player.name) ?? s.player.id).toBe(s.player.id);
