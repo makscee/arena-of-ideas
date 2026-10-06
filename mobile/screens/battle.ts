@@ -18,8 +18,8 @@ import { button, closable, h, show } from "../ui/dom";
 
 /** How long the line-up shows before the first beat, at 1×. */
 const LINEUP_MS = 400;
-/** How long a landed wave's motion runs: the longest animation (a float, 0.9 s, after up to 240 ms). */
-const MOTION_MS = 1200;
+/** How long a landed wave's motion runs: the longest animation (a float, 0.7 s, after up to 160 ms). A beat holds its last wave at least 0.7 s, so a beat change cuts a float off at most in its fade. */
+const MOTION_MS = 900;
 
 /** Reduced motion: nothing moves, and beats hold a little longer. */
 const reduced = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -265,7 +265,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       }
       mine.slice(0, 3).forEach((c, i) => {
         const f = h("span", { class: `bv-float ${c.kind}`, "aria-hidden": "true" }, c.label);
-        f.style.animationDelay = `${i * 120 - Math.round(age)}ms`;
+        f.style.animationDelay = `${i * 80 - Math.round(age)}ms`;
         f.style.setProperty("--k", String(k++ % 3));
         el.append(f);
       });

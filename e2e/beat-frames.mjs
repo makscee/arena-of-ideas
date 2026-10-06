@@ -3,7 +3,7 @@
 // frames of the first beats (one every 100 ms), with motion and with
 // prefers-reduced-motion. It also samples every frame of the 1× battles and
 // reports how long each damage float stays visible (one cut short by the next
-// wave's render would last under 0.5 s). Needs a running MVP server:
+// wave's render would last under 0.4 s). Needs a running MVP server:
 //   node e2e/beat-frames.mjs --url http://127.0.0.1:8911/arena/ [--out e2e/.shots/beats] [--rounds 3]
 import { mkdirSync } from "node:fs";
 import { launchChromium } from "./browser.mjs";
@@ -76,7 +76,7 @@ for (const motion of ["no-preference", "reduce"]) {
 }
 await browser.close();
 const sorted = [...floatMs].sort((p, q) => p - q);
-console.log(`damage floats: ${sorted.length} seen, median ${Math.round(sorted[Math.floor(sorted.length / 2)] ?? 0)} ms visible, ${sorted.filter((ms) => ms < 500).length} under 0.5 s`);
+console.log(`damage floats: ${sorted.length} seen, median ${Math.round(sorted[Math.floor(sorted.length / 2)] ?? 0)} ms visible, ${sorted.filter((ms) => ms < 400).length} under 0.4 s`);
 const med = [...times].sort((p, q) => p - q)[Math.floor((times.length - 1) / 2)] ?? 0;
 console.log(`planned vs on screen: ${plans.map((p, i) => `${p.toFixed(1)}→${times[i].toFixed(1)} s`).join(", ")}`);
 console.log(`1× median ${med.toFixed(1)} s`);

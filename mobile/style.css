@@ -165,7 +165,7 @@ button.link { align-self: flex-start; border: none; background: none; color: var
 .bv-card.bv-flash-hit::after { background: var(--ghost); }
 .bv-card.bv-glow::after { background: var(--you); }
 .bv-card.bv-dying { animation: bv-die 0.5s ease-out var(--bv-t, 0s); }
-.bv-float { --k: 0; position: absolute; left: 0; right: 0; top: calc(40px + var(--k) * 15px); z-index: 2; pointer-events: none; font-family: "IBM Plex Mono", monospace; font-size: 18px; font-weight: 700; text-shadow: 0 0 4px var(--bg), 0 0 2px var(--bg); white-space: nowrap; overflow: hidden; animation: bv-rise 0.9s ease-out both; }
+.bv-float { --k: 0; position: absolute; left: 0; right: 0; top: calc(40px + var(--k) * 15px); z-index: 2; pointer-events: none; font-family: "IBM Plex Mono", monospace; font-size: 18px; font-weight: 700; text-shadow: 0 0 4px var(--bg), 0 0 2px var(--bg); white-space: nowrap; overflow: hidden; animation: bv-rise 0.7s ease-out both; }
 .bv-float.damage, .bv-float.death, .bv-float.debuff { color: var(--ghost); }
 .bv-float.heal, .bv-float.summon { color: var(--you); }
 .bv-float.buff, .bv-float.status, .bv-float.silence { top: calc(20px + var(--k) * 6px); color: var(--gold); font-family: "Rajdhani", sans-serif; font-size: 11px; font-weight: 700; line-height: 12px; animation-name: bv-rise-small; }
@@ -175,8 +175,8 @@ button.link { align-self: flex-start; border: none; background: none; color: var
 @keyframes bv-shake { 20% { transform: translateX(-4px); } 40% { transform: translateX(4px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
 @keyframes bv-flash { from { opacity: 0.45; } to { opacity: 0; } }
 @keyframes bv-die { 0% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0.5; transform: none; } }
-@keyframes bv-rise { 0% { opacity: 0; transform: translateY(8px); } 20% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-22px); } }
-@keyframes bv-rise-small { 0% { opacity: 0; transform: translateY(4px); } 20% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
+@keyframes bv-rise { 0% { opacity: 0; transform: translateY(8px); } 12% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-22px); } }
+@keyframes bv-rise-small { 0% { opacity: 0; transform: translateY(4px); } 12% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
 /* Reduced motion: nothing moves. The hit card gets a ring, a healed or
  * buffed one a soft one; the chips hold the numbers in place, and the
  * caption lists every change of the beat (.bv-still). */
