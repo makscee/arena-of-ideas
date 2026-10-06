@@ -10,7 +10,7 @@ import { MVP_RULES, type MvpContent, type PlayerRef } from "./contract.js";
 import { fightLines } from "./fight.js";
 import { lineUnitOf } from "./forms.js";
 import { mvpPool } from "./units.js";
-import { BEAT_MAX_MS, BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost } from "./trace.js";
+import { BEAT_MAX_MS, BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, causeOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -493,6 +493,68 @@ describe("Why: the chain from a change back to the turn (R2-15)", () => {
     expect(firingOf(log, step, whenOf({ Victim }))?.trigger).toBe("trigger:Hurt");
     // A Victim whose stamped When is Heal would read as Heal: the stamp wins over the event.
     expect(firingOf(log, step, () => ({ kind: "trigger", on: { on: "Heal" } }))?.trigger).toBe("trigger:Heal");
+  });
+});
+
+describe("a cause on every wave (R3-19)", () => {
+  test("across 300 real fights every wave but the end has a cause, on a unit or the clash", () => {
+    const pool = mvpPool();
+    const content: MvpContent = { version: "t", units: pool.units, abilities: pool.abilities, statuses: pool.statuses };
+    const p = (id: string): PlayerRef => ({ id, name: id, bot: false });
+    let r = 777;
+    const rand = (n: number) => ((r = (r * 1103515245 + 12345) % 2147483648), r % n);
+    const seen = { strike: 0, poison: 0, fatigue: 0, ability: 0, death: 0 };
+    for (let seed = 0; seed < 300; seed++) {
+      const line = (s: string) => Array.from({ length: 5 }, (_, k) => lineUnitOf(pool.units[rand(pool.units.length)]!, `${s}${k}`, 1 + rand(4)));
+      const { log } = fightLines({ player: p("a"), line: line("a") }, { player: p("b"), line: line("b") }, { battleId: "x", seed, kind: "round", round: 5, runId: null, at: "2026-10-05T00:00:00Z", content, rules: MVP_RULES });
+      const sides = new Map(log.flatMap((e) => (e.type === "BattleStart" ? [...e.teams.A, ...e.teams.B].map((u) => [u.id, true] as const) : e.type === "Summon" ? [[e.unit, true] as const] : [])));
+      for (const b of beatPlayOf(log, stepsOf(log))) {
+        for (const w of b.waves) {
+          const e = log[w.eventIds[0]!]!;
+          const c = causeOf(log, w);
+          if (e.type === "BattleEnd") {
+            expect(c).toBeNull();
+            continue;
+          }
+          expect(c, `seed ${seed}: ${e.type} #${e.id}`).not.toBeNull();
+          expect(c!.at === "clash" || sides.has(c!.at), `seed ${seed}: at ${c!.at}`).toBe(true);
+          expect(c!.effect).toMatch(/^(effect|status|stat|battle):/);
+          if (e.type === "Hurt" && e.source === "kernel" && log[e.causedBy!]?.type === "Strike") {
+            const s = log[e.causedBy!] as Extract<BattleEvent, { type: "Strike" }>;
+            expect(c).toMatchObject({ at: s.striker, kind: "strike", cause: "trigger:Strike", effect: "effect:damage" });
+            seen.strike++;
+          }
+          if (e.source !== "kernel" && e.source.status === "Poison" && e.type === "Hurt") {
+            expect(c).toMatchObject({ at: e.source.unit, kind: "status", cause: "status:Poison", effect: "effect:damage" });
+            seen.poison++;
+          }
+          if (e.type === "Hurt" && e.source === "kernel" && log[e.causedBy!]?.type === "Fatigue") {
+            expect(c).toMatchObject({ at: "clash", cause: "battle:fatigue" });
+            seen.fatigue++;
+          }
+          if (e.source !== "kernel" && !e.source.status) {
+            expect(c).toMatchObject({ at: e.source.unit, kind: "ability" });
+            expect(c!.cause).toMatch(/^trigger:/);
+            seen.ability++;
+          }
+          if (e.type === "Death") {
+            // A death keeps the badge of the wave that killed.
+            const killer = causeOf(log, { eventIds: [e.causedBy!], changes: [] });
+            expect(c, `seed ${seed}: death #${e.id}`).toMatchObject({ at: killer!.at, cause: killer!.cause });
+            seen.death++;
+          }
+        }
+      }
+    }
+    for (const [k, v] of Object.entries(seen)) expect(v, k).toBeGreaterThan(0);
+  });
+
+  test("an ability's cause carries its When's scope and status: Smith answers an ally getting Shield", () => {
+    const log = run([Shieldbearer, Smith, Archer], [dummy("Dummy", 30, 1)]);
+    const name = displayNames(log);
+    const whenOf = (defs: Record<string, UnitDef>) => (ref: { unit: string; when?: number }) => defs[ref.unit.split(":")[1]!]?.triggers?.[ref.when ?? -1];
+    const smith = stepsOf(log).map((s) => causeOf(log, s, whenOf({ Smith }))).find((c) => c && name(c.at) === "Smith")!;
+    expect(smith).toMatchObject({ kind: "ability", cause: "trigger:StatusApplied", causeStatus: "Shield", causeScope: "otherAlly", effect: "status:Strength" });
   });
 });
 
