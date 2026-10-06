@@ -11,6 +11,8 @@
 import { rngStep } from "../rng.js";
 import {
   MVP_RULES,
+  benchSizeOf,
+  boardSlot,
   lockedFull,
   offersAt,
   sellValue,
@@ -113,6 +115,7 @@ export function initMvpRun(args: { runId: string; player: PlayerRef; seed: numbe
     wins: 0,
     losses: 0,
     line: [],
+    bench: [],
     offers: [],
     nextOpponent: null,
     opponent: null,
@@ -137,7 +140,18 @@ export function unitById(content: MvpContent, id: string): UnitContent {
 }
 
 function clone(s: MvpRunState): MvpRunState {
-  return structuredClone(s);
+  const c = structuredClone(s);
+  c.bench ??= [];
+  return c;
+}
+
+/** The zone array a board slot points into, and the index there; null past the board. */
+function zoneAt(s: MvpRunState, slot: number): { units: LineUnit[]; size: number; index: number; zone: "line" | "bench" } | null {
+  const at = boardSlot(s.rules, slot);
+  if (!at) return null;
+  return at.zone === "line"
+    ? { units: s.line, size: s.rules.lineSize, index: at.index, zone: "line" }
+    : { units: s.bench, size: benchSizeOf(s.rules), index: at.index, zone: "bench" };
 }
 
 export interface FightContext {
@@ -177,12 +191,15 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       if (!offer) throw new MvpDecisionError("buy", `no offer in slot ${d.slot}`);
       if (s.gold < offer.cost) throw new MvpDecisionError("buy", `costs ${offer.cost}, have ${s.gold}`);
       const u = unitById(content, offer.unitId);
+      // A copy merges into its unit wherever it stands (line, then bench) and
+      // can awaken on the bench; a new unit takes the line, else the bench.
       const at = mergeTarget(s.line, u.id);
+      const onBench = at < 0 ? mergeTarget(s.bench, u.id) : -1;
       if (at >= 0) s.line[at] = addCopy(s.line[at]!, content, s.rules);
-      else {
-        if (s.line.length >= s.rules.lineSize) throw new MvpDecisionError("buy", "the line is full");
-        s.line.push(lineUnitOf(u, `u${s.nextUid++}`));
-      }
+      else if (onBench >= 0) s.bench[onBench] = addCopy(s.bench[onBench]!, content, s.rules);
+      else if (s.line.length < s.rules.lineSize) s.line.push(lineUnitOf(u, `u${s.nextUid++}`));
+      else if (s.bench.length < benchSizeOf(s.rules)) s.bench.push(lineUnitOf(u, `u${s.nextUid++}`));
+      else throw new MvpDecisionError("buy", benchSizeOf(s.rules) > 0 ? "your line and bench are full" : "the line is full");
       s.gold -= offer.cost;
       s.offers = s.offers.filter((o) => o.slot !== d.slot).map((o, i) => ({ ...o, slot: i }));
       return { state: s };
@@ -202,33 +219,52 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       return { state: s };
     }
     case "sell": {
-      const sold = s.line[d.index];
-      if (!sold) throw new MvpDecisionError("sell", `no unit at ${d.index}`);
-      s.line.splice(d.index, 1);
+      const at = zoneAt(s, d.index);
+      const sold = at?.units[at.index];
+      if (!at || !sold) throw new MvpDecisionError("sell", `no unit at ${d.index}`);
+      at.units.splice(at.index, 1);
       s.gold += sellValue(s.rules, sold);
       return { state: s };
     }
     case "reorder": {
-      const u = s.line[d.from];
-      if (!u || d.to < 0 || d.to >= s.line.length) throw new MvpDecisionError("reorder", `bad move ${d.from}→${d.to}`);
-      s.line.splice(d.from, 1);
-      s.line.splice(d.to, 0, u);
+      const from = zoneAt(s, d.from);
+      const to = zoneAt(s, d.to);
+      const u = from?.units[from.index];
+      if (!from || !to || !u) throw new MvpDecisionError("reorder", `bad move ${d.from}→${d.to}`);
+      if (from.zone === to.zone) {
+        // Within one zone: move and shift, onto a unit's slot only.
+        if (to.index >= to.units.length) throw new MvpDecisionError("reorder", `bad move ${d.from}→${d.to}`);
+        from.units.splice(from.index, 1);
+        from.units.splice(to.index, 0, u);
+      } else if (to.index < to.units.length) {
+        // Across line and bench onto a unit: the two swap.
+        from.units[from.index] = to.units[to.index]!;
+        to.units[to.index] = u;
+      } else {
+        // Across, into an empty slot: the unit moves to the end of that zone (packed).
+        if (to.units.length >= to.size) throw new MvpDecisionError("reorder", `the ${to.zone} is full`);
+        from.units.splice(from.index, 1);
+        to.units.push(u);
+      }
       return { state: s };
     }
     case "fuse": {
-      const first = s.line[d.first];
-      const second = s.line[d.second];
-      if (!first || !second || d.first === d.second) throw new MvpDecisionError("fuse", `no pair at ${d.first} and ${d.second}`);
+      const a = zoneAt(s, d.first);
+      const b = zoneAt(s, d.second);
+      const first = a?.units[a.index];
+      const second = b?.units[b.index];
+      if (!a || !b || !first || !second || d.first === d.second) throw new MvpDecisionError("fuse", `no pair at ${d.first} and ${d.second}`);
       const why = fuseCheck(first, second);
       if (why) throw new MvpDecisionError("fuse", why);
       if (!ctx?.fuse) throw new MvpDecisionError("fuse", "no fusion name");
-      // The fused unit takes the front-most of the two slots and keeps first's
-      // uid; the other slot leaves the line. Swapping the tap order changes
-      // only the recipe, never where the result stands.
-      const front = Math.min(d.first, d.second);
+      // The fused unit keeps first's uid and takes the front-most of the two
+      // slots: a line slot when either part is on the line (board slots put
+      // the line first), else the lower bench slot. The other part leaves.
+      // Swapping the tap order changes only the recipe, never where it stands.
       const fused = fuseUnits(first, second, ctx.fuse, content, s.rules);
-      s.line.splice(Math.max(d.first, d.second), 1);
-      s.line[front] = fused;
+      const [keep, drop] = d.first < d.second ? [a, b] : [b, a];
+      drop.units.splice(drop.index, 1);
+      keep.units[keep.index] = fused;
       return { state: s };
     }
     case "fight": {
@@ -238,6 +274,7 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       const crown = s.phase === "crown";
       const kind = crown ? "crown" : "round";
       const { ghost, battleId, battleSeed, at } = ctx.fight;
+      // Only the line fights; the bench stays as it is for the next round.
       const record = fightLines(
         { player: s.player, line: s.line },
         { player: ghost.player, line: ghost.line },
@@ -378,7 +415,7 @@ export function ratingChange(before: number, runs: number, run: Pick<RunView, "f
 /** The public view of a run (drops the rng and bookkeeping). */
 export function runView(s: MvpRunState): RunView {
   const { seed: _seed, rng: _rng, nextUid: _n, rules: _r, opponent: _o, crownSeq: _c, ratingAtStart: _ra, ...view } = s;
-  return view;
+  return { ...view, bench: view.bench ?? [] };
 }
 
 /** A bot ghost for a round with no saved teams: `size` seeded picks from the

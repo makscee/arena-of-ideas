@@ -6,8 +6,8 @@
 // anyone, bot or human, fuses it, and bots are never credited.
 //
 // How a pair gets its name, a human never waiting on the model:
-// - onDecision queues both orders of every fusable pair on any line that has
-//   no stored name yet, humans' pairs ahead of bots'; the naming job asks the
+// - onDecision queues both orders of every fusable pair on any line or bench
+//   that has no stored name yet, humans' pairs ahead of bots'; the naming job asks the
 //   model and keeps the answer here ("prepared"), so peek and the fuse use it.
 // - The first fuse stores the prepared model name, else the portmanteau
 //   ("fallback"), for good; onFuse records it (recordFusion).
@@ -575,7 +575,8 @@ export function fusionNaming(
   const hooks: RunHooks = {
     onDecision(_before, _d, after) {
       if (after.phase === "over" || !n.model) return;
-      const line = after.line;
+      // Line and bench: a fuse can take a bench unit (round 3).
+      const line = [...after.line, ...(after.bench ?? [])];
       for (let i = 0; i < line.length; i++)
         for (let j = 0; j < line.length; j++) {
           if (i === j || fuseCheck(line[i]!, line[j]!) !== null) continue;

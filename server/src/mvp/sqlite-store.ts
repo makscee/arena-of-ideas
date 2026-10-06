@@ -35,6 +35,12 @@ export function migrateMvp(db: Database.Database, dir = SQL_DIR): string[] {
 
 type Row = { json: string };
 const parse = <T>(row: unknown): T | undefined => (row ? (JSON.parse((row as Row).json) as T) : undefined);
+/** Runs stored before the bench (round 3) have no `bench`: an empty one
+ * (their rules have no benchSize, so it stays empty). */
+const withBench = (r: MvpRunState | undefined): MvpRunState | undefined => {
+  if (r) r.bench ??= [];
+  return r;
+};
 const parseAll = <T>(rows: unknown[]): T[] => rows.map((r) => JSON.parse((r as Row).json) as T);
 
 export class SqliteMvpStore implements MvpStore {
@@ -63,8 +69,8 @@ export class SqliteMvpStore implements MvpStore {
       r.runId, r.player.id, r.phase === "over" ? 1 : 0, JSON.stringify(r),
     );
   }
-  run(id: string): MvpRunState | undefined { return this.one("SELECT json FROM mvp_runs WHERE id = ?", id); }
-  activeRun(playerId: string): MvpRunState | undefined { return this.one("SELECT json FROM mvp_runs WHERE player_id = ? AND over = 0 ORDER BY rowid LIMIT 1", playerId); }
+  run(id: string): MvpRunState | undefined { return withBench(this.one("SELECT json FROM mvp_runs WHERE id = ?", id)); }
+  activeRun(playerId: string): MvpRunState | undefined { return withBench(this.one("SELECT json FROM mvp_runs WHERE player_id = ? AND over = 0 ORDER BY rowid LIMIT 1", playerId)); }
 
   addGhost(g: Ghost): void {
     this.write("INSERT INTO mvp_ghosts (ghost_id, round, player_id, content_version, json) VALUES (?, ?, ?, ?, ?)", g.ghostId, g.round, g.player.id, g.contentVersion, JSON.stringify(g));

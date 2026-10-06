@@ -3,7 +3,7 @@
 // bots play in-process through them, and slices 5, 10 and 11 observe runs
 // through RunHooks instead of editing decide().
 import { randomUUID } from "node:crypto";
-import type { BattleRecord, DayState, Decision, DecisionResponse, FightResult, FuseContext, Ghost, LineUnit, MvpContent, MvpRules, PlayerRef, Rating, RunView } from "../../../src/mvp/contract.js";
+import { boardUnit, type BattleRecord, type DayState, type Decision, type DecisionResponse, type FightResult, type FuseContext, type Ghost, type LineUnit, type MvpContent, type MvpRules, type PlayerRef, type Rating, type RunView } from "../../../src/mvp/contract.js";
 import { fuseCheck } from "../../../src/mvp/forms.js";
 import { abandonRun, applyMvpDecision, championGhost, endRun, initMvpRun, MvpDecisionError, ratingChange, runView, setOpponent, slewChampion, synthGhost, unitById, type DecisionContext, type MvpRunState, type MvpStep } from "../../../src/mvp/run.js";
 import { todaysChampion } from "./day.js";
@@ -222,7 +222,7 @@ export function preview(deps: RunDeps, run: MvpRunState, d: Decision): DecisionR
     // A pair nobody has fused gets its name only from the fuse itself, so the
     // name isn't in this response at all. A stored pair shows its stored
     // credit: null while only bots have made it (the fuse then claims it).
-    const known = deps.store.fusion(run.line[d.first]!.unitId, run.line[d.second]!.unitId);
+    const known = deps.store.fusion(boardUnit(run, run.rules, d.first)!.unitId, boardUnit(run, run.rules, d.second)!.unitId);
     ctx.fuse = known ? { name: known.name, discoveredBy: known.discoveredBy } : { name: "", discoveredBy: fuse.discoveredBy };
   }
   return { run: runView(applyMvpDecision(run, d, deps.content, ctx).state) };
@@ -233,8 +233,8 @@ function notify(hooks: RunHooks[], before: MvpRunState, d: Decision, step: MvpSt
   for (const h of hooks) h.onDecision?.(before, d, after);
   if (d.kind === "fuse" && ctx.fuse) {
     // The fused unit keeps first's uid.
-    const uid = before.line[d.first]!.uid;
-    const fused = after.line.find((u) => u.uid === uid)!;
+    const uid = boardUnit(before, before.rules, d.first)!.uid;
+    const fused = [...after.line, ...after.bench].find((u) => u.uid === uid)!;
     for (const h of hooks) h.onFuse?.(after, fused, ctx.fuse);
   }
   if (step.fight && step.battle) for (const h of hooks) h.onFight?.(after, step.fight, step.battle);
@@ -245,8 +245,8 @@ function notify(hooks: RunHooks[], before: MvpRunState, d: Decision, step: MvpSt
  * run then refuses the fuse with the reason). */
 function fuseContext(nameFusion: NameFusion, content: MvpContent, run: MvpRunState, d: Decision): FuseContext | undefined {
   if (d.kind !== "fuse" || d.first === d.second) return undefined;
-  const first = run.line[d.first];
-  const second = run.line[d.second];
+  const first = boardUnit(run, run.rules, d.first);
+  const second = boardUnit(run, run.rules, d.second);
   if (!first || !second || fuseCheck(first, second) !== null) return undefined;
   return nameFusion(unitById(content, first.unitId), unitById(content, second.unitId), run.player);
 }
