@@ -269,7 +269,8 @@ try {
     await page.locator(".card.fused").click();
     await page.getByTestId("info").click();
     await page.getByTestId("unit-sheet").waitFor();
-    if (!/discovered by (you|@Fuser)/.test(await page.getByTestId("unit-sheet").textContent())) errors.push("fused sheet: no discovery credit");
+    // The pair may be someone else's discovery already (live, or a reused DB).
+    if (!/discovered by (you|@\S+)/.test(await page.getByTestId("unit-sheet").textContent())) errors.push("fused sheet: no discovery credit");
     if (!(await page.getByTestId("sheet-close").isVisible())) errors.push("unit sheet from Info: no Close button");
     await shot("fused-sheet"); await noHScroll("fused-sheet");
   }
