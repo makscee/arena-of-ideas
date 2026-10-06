@@ -120,16 +120,27 @@ export const CRUDE_BEFORE_594: readonly string[] = [
 export const MASK_LEAKS: readonly string[] = [
   "Ashthead", "Bigtitude", "Mongeroid", "Boneshter", "Embershtide", "Moontity", "Kingfarther", "Tithead", "Titlord", "Twinklord",
   "Aurashthorn", "Lunarshtide", "Auramongrat", "Auracoonrat", "Lunarklandrake", "Lunarnogreaper",
+  // pass 2: a stem glued behind a head the mask's own letters let through
+  "Ashthole", "Fishthead", "Marshthead", "Kingnogre", "Darknogre", "Blacknogre", "Gravenogre", "Raventity", "Krakentity", "Sirentity",
+  "Wardentity", "Raventitle", "Imptitude", "Deeptitude", "Mystictitude", "Rattitude", "Coraltitude", "Lancertitude", "Bigtitle",
+  "Kingtition", "Kingtwinkle", "Frostarserat", "Shadowarserat", "Crystalcumlord", "Mosstardlord", "Bonenigmaw", "Pyrosemendrake",
+  "Fangrapevine", "Frostrapeze", "Stormanality", "Analogre", "Bonegyptail", "Kingspicy", "Crystalbum",
 ];
 
 // Innocent names the tightened masks must still pass (R2-17): the collateral
 // of the first tightening, and the words the anchored masks are for.
 export const MASK_INNOCENT: readonly string[] = [
   "Ashtooth", "Fishtail", "Darkland", "Thornogre", "Sanctity", "Tithe", "Title", "Farther", "Racoon", "Warmongering", "Among Stars",
+  // pass 2: one-word compounds of two whole roots, and the words the anchored masks are for
+  "Flashtail", "Splashtail", "Thrashtail", "Lashtail", "Bashtail", "Clashthorn", "Flashthorn", "Crashtide", "Ashtide", "Ashtail",
+  "Ashtimber", "Ashtiger", "Clashtalon", "Crashtalon", "Washtail", "Ravenogre", "Dragonogre", "Ironogre", "Nonentity", "Aptitude",
+  "Ineptitude", "Rectitude", "Attitude", "Latitude", "Platitude", "Certitude", "Entitle", "Subtitle", "Competition", "Partition",
+  "Superstition", "Bustard", "Analogy", "Talcum", "Twinkling",
 ];
 
 // Toilet words and the short stems broad masks hid (R2-17), glued to heads
-// that end in a, e, r or u as well (fusions.test.ts): every one must be refused.
+// that end in a vowel, r, n, p, c, g, k or w as well (fusions.test.ts): every
+// one must be refused.
 export const GLUED_STEMS: readonly string[] = [
   "fart", "poop", "crap", "piss", "turd", "bum", "pimp", "perv", "gimp", "knob", "erect", "hymen", "tit", "tits", "twink", "sht",
   "shit", "shite", "mong", "mongoloid", "coon", "klan", "nog",

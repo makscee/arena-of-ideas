@@ -232,32 +232,39 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
     }
   });
 
-  // Common heads, and heads ending in a, e, r or u: a mask built on a head's
-  // last letters ("rshti", "ashta", "among") would hide a stem glued behind it.
-  const glueHeads = ["", "King", "Dark", "Moon", "Bone", "Ember", "Aura", "Lunar", "Terra", "Ura"];
-  const glueTails = ["rat", "drake", "head", "horn", "demon", "fang", "lord", "reaper"];
+  // Common heads, and heads that end in a, e, r, u, n, p, c, g, k, o, w, st, al
+  // or at: a mask built on a head's last letters ("rshti", "ashta", "among",
+  // "entity", "ptitud", "talcum") would hide a stem glued behind it.
+  const glueHeads = ["", "King", "Dark", "Black", "Moon", "Bone", "Ember", "Aura", "Lunar", "Terra", "Ura", "Raven", "Kraken", "Grave", "Imp",
+    "Deep", "Mystic", "Fang", "Frost", "Shadow", "Crystal", "Rat", "Lancer", "Pyro"];
+  const glueTails = ["rat", "drake", "head", "horn", "demon", "fang", "lord", "reaper", "ogre", "maw", "vine"];
+  // Endings that turn a stem into an ordinary word's middle ("Title", "Entity",
+  // "Aptitude", "Moonogre"), glued only behind a head (Bigtitle, Raventity).
+  const seamTails = ["re", "le", "ude", "ity", "y", "ion"];
   const glued = (head: string, word: string, tail: string) => (head ? `${head}${word}${tail}` : word[0]!.toUpperCase() + word.slice(1) + tail);
+  const gluings = (word: string) => [
+    ...glueHeads.flatMap((head) => glueTails.map((tail) => glued(head, word, tail))),
+    ...glueHeads.filter(Boolean).flatMap((head) => seamTails.map((tail) => glued(head, word, tail))),
+  ];
 
   it("no mask lets a pre-#594 entry through when glued to common heads and tails (R2-17: 'kland' let Klandrake pass)", () => {
     const edge = new Set(["ass", "asses", "butt", "dong", "jap", "cuck", "thot", "fap", "horny", "abo"]);
     const passed: string[] = [];
     for (const word of CRUDE_BEFORE_594) {
       if (edge.has(word)) continue;
-      for (const head of glueHeads) for (const tail of glueTails) if (!isBlockedName(glued(head, word, tail))) passed.push(glued(head, word, tail));
+      for (const name of gluings(word)) if (!isBlockedName(name)) passed.push(name);
     }
     expect(passed).toEqual([]);
   });
 
-  it("no mask lets a toilet word or a short stem through glued to a head ending in a vowel or r, and the masks' innocent words pass (R2-17)", () => {
+  it("no mask lets a toilet word or a short stem through glued to any of the heads and tails, and the masks' innocent words pass (R2-17)", () => {
     // bum and knob are refused only at a word's edge, so only as a head or a tail.
     const edge = new Set(["bum", "knob"]);
     const passed: string[] = [];
-    for (const word of GLUED_STEMS)
-      for (const head of glueHeads)
-        for (const tail of glueTails) {
-          const names = edge.has(word) ? [glued(head, word, ""), glued("", word, tail)] : [glued(head, word, tail)];
-          for (const name of names) if (name && !isBlockedName(name)) passed.push(name);
-        }
+    for (const word of GLUED_STEMS) {
+      const names = edge.has(word) ? [...glueHeads.map((head) => glued(head, word, "")), ...glueTails.map((tail) => glued("", word, tail))] : gluings(word);
+      for (const name of names) if (!isBlockedName(name)) passed.push(name);
+    }
     expect(passed).toEqual([]);
     expect(MASK_LEAKS.filter((name) => !isBlockedName(name))).toEqual([]);
     expect(MASK_INNOCENT.filter((name) => isBlockedName(name))).toEqual([]);

@@ -53,26 +53,32 @@ const TAIL = new Set(["abo"]);
 // fantasy head or tail stays seen ("rshti" hid Embershtide). "^" anchors a mask
 // at a word's start and "$" at its end (a plural ending off): "^ashthorn"
 // passes Ashthorn, not Aurashthorn; "monger$" passes Warmonger, not Mongeroid.
+// A mask is safe when the letters it holds before the stem are a whole root no
+// head ends in ("fortitud", "identity"), or are anchored at a word's start when
+// a head could end in them ("^attitud": Rattitude; "^entity": Raventity). A
+// mask that starts at its stem lets any head before it, so it must be a whole
+// root the namer glues as a tail ("titan", "jewel"), never "title" or "titio"
+// (Bigtitle, Kingtition).
 const MASKS = [
   "night", "knight", // nig: Nightshade, Knightfall
-  "enigma", // nig: Enigma
+  "^enigma", // nig: Enigma (not Bonenigmaw)
   "benign", "nigni", // nig: Benign, Moonignite
   "jewel", // jew: Jewelwing
   "cockatrice", "cockatoo", // cock: beasts and birds
   "cocoon", "raccoon", "^racoon", "tycoon", // coon (the misspelt Racoon only at a word's start: never Auracoonrat)
-  "cumul", "cucumber", "circum", "succumb", "talcum", "docum", "cumberso", // cum: Cumulus, Document, Cumbersome
+  "cumul", "cucumber", "circum", "succumb", "^talcum", "docum", "cumberso", // cum: Cumulus, Document, Cumbersome (not Crystalcumlord)
   "scumul", // scum: Mosscumulus
-  "spice", "spicy", "auspic", "conspic", // spic: Spicefang, Spicy
-  "osemend", // semen: Rosemender
-  "manali", "manale", "analog", "analy", // anal: Manalith, Manaleech, Analyst
+  "spice", "^spicy", "auspic", "conspic", // spic: Spicefang, Spicy (not Kingspicy)
+  "^rosemend", // semen: Rosemender (not Pyrosemendrake)
+  "^manali", "^manale", "^analog$", "^analogi", "^analogo", "^analogu", "^analogy", "^analy", // anal: Manalith, Manaleech, Analog, Analyst (not Stormanality, Analogre)
   "bonereap", // boner: Bonereaper
-  "mustard", "custard", "dastard", "stard", "tardigrad", // tard: Mustardseed, Stardust, Stardrake, Tardigrade
+  "mustard", "custard", "dastard", "bustard", "^stard", "tardigrad", // tard: Mustardseed, Bustard, Stardust, Stardrake, Tardigrade (not Mosstardlord)
   "cuirass", "rrass", "glass", "brass", "grass", "class", "mass", "bass", "pass", "lass", "crass", "sass", "compass", "morass",
   "cutlass", "carcass", "assassin", "assail", "assault", "assay", "assemb", "assent", "assert", "assess", "asset", "assign", "assist",
   "associat", "assort", "assuag", "assum", "assur", // ass: Cuirass, Embarrass, Glass, Assassin
   "glassface", "glasshead", "grasshead", "brasshead", // assface, asshead: Glassface, Glasshead, Grasshead, Brasshead
   "butter", "button", "buttress", // butt: Butterfly
-  "titan", "^tithe$", "title", "stitch", "titmouse", // tit: Titanfang, Stitchpunch, Titmouse, Tithe, Title (not Tithead, Titlord)
+  "titan", "^tithe$", "^title", "^entitle", "subtitle", "stitch", "titmouse", // tit: Titanfang, Stitchpunch, Titmouse, Tithe, Title (not Tithead, Titlord, Bigtitle, Raventitle)
   "cuckoo", // cuck: Cuckoo-clock
   "sauerkraut", // kraut
   "pakistan", // paki
@@ -82,32 +88,56 @@ const MASKS = [
   "mongoose", "mongrel", "^among", // mong: beasts, Among (not Auramongrat)
   "basement", // semen
   "specialis", // cialis: Specialist
-  "therapeu", "grapevine", "trapez", // rape: Therapeutic, Grapevine, Trapeze
-  "starsee", "starser", "starsen", "warser", "warsen", "briarsee", // arse: Starseeker, Starserpent, Starsentinel, Warserpent, Warsentinel, Starseer, Briarseer
-  "twinkle", "twinkling", "twinkly", // twink: Twinkle (not Twinklord)
+  "therapeu", "^grapevine", "^trapez", // rape: Therapeutic, Grapevine, Trapeze (not Fangrapevine, Frostrapeze)
+  // arse: Starseeker, Starserpent, Starsentinel, Warserpent, Warsentinel, Starseer, Briarseer (not Frostarserat, Shadowarserat)
+  "^starsee", "^starser", "^starsen", "^warser", "^warsen", "briarsee",
+  "^twinkle", "^twinkling", "^twinkly", // twink: Twinkle (not Twinklord, Kingtwinkle)
   "boobytrap", // boob: Boobytrap
   "gypsum", // gyp: Gypsum
-  "bumbl", "album", // bum: Bumblebee, Album
+  "bumbl", "^album", // bum: Bumblebee, Album (not Crystalbum)
   "knobbl", // knob: Knobble
   "sexton", "sextant", // sex
   "scrap", // crap: Scrapper
   // Fantasy roots the R2-4b check found refused (51ad08c6), measured on namer-corpus.ts:
   "monger$", "mongering$", // mong: Warmonger, Ironmonger, Fearmonger (not Mongeroid)
   "rklance", "sklance", "ackland", "darkland", // klan: Darklance, Dusklance, Blackland, Darkland (never Klan+d… or Lunarklandrake)
-  // sht: Ashthorn, Ashtalon, "Ash Titan", Ashtooth, Marshtide, Fleshtearer, Brushtail, Wishtide, Fishtail: the whole
-  // root before it, Ash only at a word's start (never Ashthead, Aurashthorn, Boneshter, Embershtide or Kingshtrat)
-  "^ashthorn", "^ashtalon", "^ashtitan", "^ashtooth", "marsht", "flesht", "brusht", "wisht", "fisht",
-  // tit: Fortitude, Altitude, Gratitude, Entity, Identity, Sanctity, Petition and the -tition, -titious words (not Bigtitude, Moontity)
-  "fortitud", "certitud", "altitud", "multitud", "gratitud", "latitud", "beatitud", "attitud", "ptitud", "ctitud", "entity", "quantity",
-  "sanctity", "antithes", "antithet", "titio",
-  "nogre$", // nog: Moonogre, "Dragon Ogre", Thornogre: ogre as the tail (not Nogreaper, Lunarnogreaper)
-  "egypt", // gyp: Egyptian
+  // sht and nog: SEAM_MASKS below
+  // tit: Fortitude, Altitude, Gratitude, Entity, Identity, Sanctity, Petition and the -tition, -titious words (not Bigtitude,
+  // Moontity, Imptitude, Deeptitude, Mystictitude, Rattitude, Coraltitude, Lancertitude, Raventity, Kingtition)
+  "fortitud", "^certitud", "^altitud", "multitud", "gratitud", "^latitud", "platitud", "beatitud", "^attitud", "^aptitud",
+  "ineptitud", "rectitud", "^entity", "identity", "nonentity", "quantity", "sanctity", "antithes", "antithet", "petitio", "partitio",
+  "superstitio", "practitio",
+  "^egypt", // gyp: Egyptian (not Bonegyptail)
   "pervious", // perv: Impervious
   "pimpernel", // pimp: Pimpernel
   "farthing", "^farther", "^farthest", // fart: Farthing, Farther (not Farthead, Kingfarther)
   "bump", // bum: Bump, Bumper
   "harass", "kvass", // ass: Harass, Kvass
 ];
+
+// Stems a glue seam makes: two whole roots, the first at a word's start, so no
+// head sits before the stem and no non-word follows it. sht: a word that ends
+// in sh glued to one that starts with t ("Flashtail", "Ashthorn", "Marshtide";
+// never Aurashthorn, Embershtide, Ashthead, Ashthole, Fishthead). nog: a word
+// that ends in n glued to "ogre" as the tail ("Moonogre", "Dragon Ogre",
+// "Thornogre"; never Kingnogre, Gravenogre, Lunarnogreaper).
+const SH_WORDS = [
+  "ash", "flash", "splash", "crash", "clash", "thrash", "lash", "bash", "slash", "smash", "gnash", "rash", "brash", "trash", "stash",
+  "dash", "gash", "hash", "mash", "wash", "marsh", "flesh", "fresh", "mesh", "brush", "crush", "blush", "flush", "plush", "rush", "hush",
+  "gush", "lush", "bush", "wish", "fish", "swish",
+];
+const T_WORDS = [
+  "tail", "talon", "tooth", "teeth", "tusk", "thorn", "tide", "titan", "timber", "tiger", "tower", "troll", "terror", "tempest",
+  "thunder", "tongue", "totem", "tomb", "torch", "trap", "tread", "tear", "throne", "tree", "twister", "tangle", "tendril", "tentacle",
+  "toad", "turtle", "trail", "tremor", "tracker", "trickster", "thief", "thrall", "tyrant", "tamer", "tender", "trench", "trident",
+  "tinder", "tundra", "typhoon", "tunnel", "thistle", "thicket", "tome", "temple", "twig",
+];
+const N_WORDS = [
+  "moon", "sun", "dawn", "thorn", "horn", "iron", "raven", "kraken", "siren", "dragon", "demon", "titan", "warden", "golden", "ashen",
+  "frozen", "molten", "fallen", "ocean", "lion", "wyvern", "cavern", "crimson", "obsidian", "chain", "rain", "fen", "fern", "coven",
+  "omen", "goblin", "ruin", "toxin", "griffin", "heaven",
+];
+const SEAM_MASKS = [...SH_WORDS.flatMap((sh) => T_WORDS.map((t) => `^${sh}${t}`)), ...N_WORDS.map((n) => `^${n}ogre$`)];
 
 // Whole real words that may be a name on their own though they hold a stem
 // ("Grape", "Therapist"); only the whole word, never a compound ("Vinegrape").
@@ -132,7 +162,19 @@ export const CRUDE_STEMS: { anywhere: readonly string[]; edge: readonly string[]
   return { anywhere, edge: all.filter((s) => EDGE.has(s)), tail: all.filter((s) => TAIL.has(s)) };
 })();
 
-const MASK_RULES = MASKS.map((mask) => ({ text: mask.replace(/^\^|\$$/g, ""), start: mask.startsWith("^"), end: mask.endsWith("$") }));
+interface MaskRule {
+  text: string;
+  start: boolean;
+  end: boolean;
+}
+const MASK_RULES: readonly MaskRule[] = [...MASKS, ...SEAM_MASKS].map((mask) => ({ text: mask.replace(/^\^|\$$/g, ""), start: mask.startsWith("^"), end: mask.endsWith("$") }));
+// Only a mask that holds a stem can cover a hit of it.
+const STEM_RULES = new Map<string, readonly MaskRule[]>();
+function rulesFor(stem: string): readonly MaskRule[] {
+  let rules = STEM_RULES.get(stem);
+  if (!rules) STEM_RULES.set(stem, (rules = MASK_RULES.filter((rule) => rule.text.includes(stem))));
+  return rules;
+}
 
 /** Where the words start and end in their join; an end also sits before a plural ending. */
 interface Bounds {
@@ -152,15 +194,16 @@ function bounds(words: readonly string[]): Bounds {
   return { starts, ends };
 }
 
-function covered(text: string, at: number, length: number, edges: Bounds): boolean {
-  for (const mask of MASK_RULES)
+function covered(text: string, at: number, stem: string, edges: Bounds): boolean {
+  const length = stem.length;
+  for (const mask of rulesFor(stem))
     for (let m = text.indexOf(mask.text, Math.max(0, at + length - mask.text.length)); m >= 0 && m <= at; m = text.indexOf(mask.text, m + 1))
       if (m + mask.text.length >= at + length && (!mask.start || edges.starts.has(m)) && (!mask.end || edges.ends.has(m + mask.text.length))) return true;
   return false;
 }
 
 function hits(text: string, edges: Bounds, stem: string, at: (i: number) => boolean): boolean {
-  for (let i = text.indexOf(stem); i >= 0; i = text.indexOf(stem, i + 1)) if (at(i) && !covered(text, i, stem.length, edges)) return true;
+  for (let i = text.indexOf(stem); i >= 0; i = text.indexOf(stem, i + 1)) if (at(i) && !covered(text, i, stem, edges)) return true;
   return false;
 }
 
