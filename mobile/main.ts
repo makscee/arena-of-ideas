@@ -753,13 +753,13 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
    * and the fight uses); the day gives its line only when its champion is
    * that player, so a day that turned over since never shows another team
    * (R2-17 batch F). */
-  const fillFoe = (d: DayView | null) => {
+  const fillFoe = (d: DayView | null, settled = d !== null) => {
     if (!foe || !opp) return;
     const ch = d?.champion;
     const line = ch && ch.player.id === opp.player.id ? ch.line : null;
     foe.replaceChildren(
       h("div", { class: "label" }, ownCrown ? "You face · your champion team · " : "You face · today's champion · ", who(opp.player.name, "ghost-name")),
-      line ? team(line, "ghost", content, "crown-foe-line") : h("div", { class: "dim small" }, d ? "Their line shows in the fight." : "…"),
+      line ? team(line, "ghost", content, "crown-foe-line") : h("div", { class: "dim small" }, settled ? "Their line shows in the fight." : "…"),
     );
   };
   const fillPin = (d: DayView | null) => {
@@ -770,9 +770,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     pin.replaceChildren(b);
   };
   if (crown) {
-    // The Crown names its champion once ("Crown vs @X" and the foe's line): no pin.
+    // "Crown vs @X" and the foe's line already name the champion: no pin.
     fillFoe(day);
-    void api.day().then((d) => ((day = d), fillFoe(d))).catch(() => fillFoe(day));
+    void api.day().then((d) => ((day = d), fillFoe(d))).catch(() => fillFoe(day, true));
   } else {
     fillPin(day);
     if (!day) void api.day().then((d) => ((day = d), fillPin(d))).catch(() => {});
@@ -978,7 +978,7 @@ function outroOf(run: RunView, fight: FightResult, content: MvpContent): RunOutr
       : fight.heartsLost > 0
         ? `−${plural(fight.heartsLost, "heart")}`
         : fight.outcome === "draw"
-          ? "A draw costs no heart."
+          ? "No heart lost." // short: it shares the run line on a 360px phone (R2-17)
           : "";
   const err = errorLine();
   return {
