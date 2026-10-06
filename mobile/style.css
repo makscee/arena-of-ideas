@@ -45,6 +45,34 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .card.ghost { border-color: color-mix(in srgb, var(--ghost) 45%, transparent); }
 .card.selected { outline: 2px solid var(--you); outline-offset: -2px; }
 .card.empty { cursor: default; opacity: 0.4; border-style: dashed; }
+/* The bench (R3-14): a row just under the line, its label in the first
+ * column. On the phone its cards are short and wide (emoji, then name over
+ * stats and copies), so round 8 with a full bench still fits 640 px. */
+.bench-label { display: flex; flex-direction: column; justify-content: center; gap: 2px; font-size: 10px; line-height: 12px; }
+@media (max-width: 1023.98px) {
+  .slots.bench-row { grid-template-columns: 40px repeat(3, minmax(0, 1fr)); margin-top: -8px; }
+  .bench-row .card { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; grid-template-rows: 13px 13px; column-gap: 4px; align-items: center; height: 32px; padding: 2px 6px; text-align: left; }
+  .bench-row .card .emoji { grid-row: 1 / span 2; grid-column: 1; font-size: 16px; line-height: 18px; height: 18px; margin: 0; }
+  .bench-row .card .name { grid-row: 1; grid-column: 2 / span 2; font-size: 12px; line-height: 13px; text-overflow: ellipsis; }
+  .bench-row .card .stats { grid-row: 2; grid-column: 2; font-size: 11px; line-height: 13px; }
+  .bench-row .card .foot { grid-row: 2; grid-column: 3; min-height: 0; }
+  .bench-row .card .icons, .bench-row .card .tier { display: none; }
+  .bench-row .card.empty { display: block; }
+  .bench-row .card .copies.tag { font-size: 10px; }
+  .bench-row .card .tag-word { display: none; }
+  /* Round 8 with a full bench and a hint still fits 640 px: the labels sit
+   * 6 px from what they name, and the collapsed spacer costs no gap. */
+  #app[data-screen="shop"] .line-head { margin-bottom: -6px; }
+  #app[data-screen="shop"] [data-testid="offers"] { margin-top: -6px; }
+  #app[data-screen="shop"] .spacer { margin-top: -12px; }
+  #app[data-screen="shop"] .hint { margin: -4px 0; }
+}
+.bench-label span:last-child { color: var(--dim); }
+/* A locked offer's mark, in the corner, so the price row stays one line. */
+.card .lock-mark { position: absolute; bottom: 5px; left: 3px; font-size: 9px; line-height: 10px; }
+/* Close · Unlock · Needs 3g stay one line each at 360 px (R3-12 bug). */
+.sheet-actions button { white-space: nowrap; padding: 0 12px; }
+.sheet-actions button.grow { white-space: normal; line-height: 1.1; }
 .card .emoji { font-size: 22px; line-height: 24px; height: 24px; margin-top: 2px; }
 /* One line: ui/dom.ts fitText() shrinks a long name a little (measured), and
  * .clip ends one that still doesn't fit in "…"; the sheet has it whole. */
@@ -517,6 +545,10 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
   #app[data-screen] .card .tier { top: 8px; right: 8px; font-size: 11px; line-height: 12px; }
   #app[data-screen] .card.fused .emoji { font-size: 30px; padding-left: 0; }
   #app[data-screen] .card:not(.empty):hover { border-color: var(--you); }
+  #app[data-screen] .bench-row .card { height: 140px; padding: 8px 6px 8px; }
+  #app[data-screen] .bench-row .card .emoji { font-size: 28px; line-height: 32px; height: 32px; margin-top: 2px; }
+  #app[data-screen] .bench-label { font-size: 13px; line-height: 16px; }
+  #app[data-screen] .card .lock-mark { bottom: 10px; left: 10px; font-size: 13px; line-height: 14px; }
   #app[data-screen] .preview-card { width: var(--cw); margin: 0; }
   #app[data-screen] .champion .slots { margin: 0; }
 

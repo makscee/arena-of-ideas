@@ -7,7 +7,7 @@
 // opens in battleScreen) and, on dev servers only (HomeView.dev), "End day
 // now" under "Dev". The shop's ☰ (Esc on desktop) is the in-run menu.
 import type { BattleRecord, DayView, FightResult, HomeView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView } from "../src/mvp/contract";
-import { lockedFull, MVP_RULES, offersAt, sellValue } from "../src/mvp/contract";
+import { benchSizeOf, lockedFull, MVP_RULES, offersAt, sellValue } from "../src/mvp/contract";
 import { mergeTarget } from "../src/mvp/forms";
 import { buttonRefusal, plainRefusal } from "./ui/refusal";
 import { ApiError, api, savedPlayer } from "./api";
@@ -124,6 +124,7 @@ function rulesSheet(): HTMLElement {
     p(`Lock an offer to keep it: it stays until you buy it, through rerolls and rounds. Locking is free; ${isDesktop() ? "right-click an offer or press L" : "tap an offer, then Lock"}.`),
     h("div", { class: "label" }, "The line"),
     p(`${r.lineSize} units in a line, front first. Change the order in the shop: ${isDesktop() ? "drag a unit, or click it, then ← →" : "tap a unit, then ◀ ▶"}. Each round you fight a team another player saved at the same round.`),
+    ...(benchSizeOf(r) > 0 ? [p(`${r.benchSize} bench slots hold units that don't fight; copies still merge into them. ${isDesktop() ? "Drag a unit between the line and the bench, or select it and press B" : "Tap a unit, then To bench or To line"}.`)] : []),
     h("div", { class: "label" }, "Copies, Awoken, fusion"),
     p(`Buying a unit you own merges it in: +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP a copy. Copy ${r.copiesToAwaken} awakens it: the same When, a stronger Who or Does.`),
     p(`Two Awoken units fuse: the When of the first you ${isDesktop() ? "pick" : "tap"}, the Who of the second, the Does of both, and the stronger PWR and HP of the two, +1 PWR / +2 HP. A fused unit is final; copies of either part still merge into it. The first player to make a pair names it.`),
@@ -463,7 +464,16 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const ownCrown = crown && run.nextOpponent?.player.id === run.player.id;
   const err = errorLine();
   err.textContent = notice;
-  let pick: Pick = desk && run.line[selected] ? { mode: "picked", index: selected } : { mode: "none" };
+  // Board slots (R3-13): 0..L−1 the line, L..L+B−1 the bench; pick and
+  // every decision use them.
+  const L = rules.lineSize;
+  const B = benchSizeOf(rules);
+  const unitAt = (slot: number): LineUnit | undefined => (slot < L ? run.line[slot] : run.bench[slot - L]);
+  const zoneStart = (slot: number) => (slot < L ? 0 : L);
+  const zoneLen = (slot: number) => (slot < L ? run.line.length : run.bench.length);
+  const board = [...run.line, ...run.bench];
+  const owns = (unitId: string) => mergeTarget(board, unitId) >= 0;
+  let pick: Pick = desk && unitAt(selected) ? { mode: "picked", index: selected } : { mode: "none" };
   const unitOf = (id: string) => content.units.find((x) => x.id === id);
   const decide = (d: Parameters<typeof api.decide>[1], select = -1, offer = -1) =>
     guarded(err, async () => {
@@ -480,9 +490,10 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const canLock = (o: Offer) => o.locked === true || !lastShop;
 
   const line = h("div", { class: "slots", "data-testid": "line" });
+  const bench = h("div", { class: "slots bench-row", "data-testid": "bench" });
   const actions = h("div", { class: "row actions", "data-testid": "actions" });
   const hintSlot = h("div", {});
-  const awoken = run.line.filter((u) => u.kind === "unit" && u.form === "awoken").length;
+  const awoken = board.filter((u) => u.kind === "unit" && u.form === "awoken").length;
   // Desktop: the inspector, the card under the mouse, an offer clicked, a fusion waiting for its Fuse.
   const inspector = h("aside", { class: "inspector stack", "data-testid": "inspector" });
   type At = { kind: "line"; index: number } | { kind: "offer"; slot: number };
@@ -490,31 +501,61 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   let chosen: number | null = desk && run.offers[offer] ? offer : null;
   let fuseView: HTMLElement | null = null;
 
+  /** Move the unit at board slot `from` to `to` (a reorder), keeping it selected where it lands. */
+  const moveTo = (from: number, to: number) => {
+    if (from === to) return;
+    const across = (from < L) !== (to < L);
+    // Within a zone, a drop past its last unit moves to the end; across
+    // zones, an empty slot takes the unit at that zone's end (packed).
+    const dest = across ? (unitAt(to) ? to : zoneStart(to) + zoneLen(to)) : Math.min(to, zoneStart(to) + zoneLen(to) - 1);
+    if (dest === from) return;
+    void decide({ kind: "reorder", from, to: dest }, dest);
+  };
+  /** B, "To bench", "To line": into the other zone's first empty slot, else a
+   * swap with its last unit. */
+  const otherZone = (slot: number): number | null => {
+    if (B === 0) return null;
+    if (slot < L) return run.bench.length < B ? L + run.bench.length : L + B - 1;
+    return run.line.length < L ? run.line.length : L - 1;
+  };
+  const slotCard = (slot: number): HTMLElement => {
+    const u = unitAt(slot);
+    const onBench = slot >= L;
+    const id = onBench ? `bench-${slot - L}` : `line-${slot}`;
+    if (!u) {
+      const e = h("div", { class: "card empty", "data-testid": `${id}-empty` }, h("div", { class: "dim" }, onBench ? "" : `${slot + 1}`));
+      if (desk && !crown) dropOn(e, slot);
+      return e;
+    }
+    const c = card(u, { side: "you", extra: [copiesBadge(u)], testid: id });
+    if (pick.mode === "picked" && pick.index === slot) c.classList.add("selected");
+    if (pick.mode === "fuse") {
+      if (pick.first === slot) c.classList.add("selected");
+      else if (u.kind === "unit" && u.form === "awoken") c.classList.add("fusable");
+      else c.classList.add("muted");
+    }
+    c.addEventListener("click", () => {
+      play("click");
+      if (pick.mode === "fuse") {
+        if (pick.first === slot) pick = { mode: "none" };
+        else if (u.kind === "unit" && u.form === "awoken") return void fusePreview(pick.first, slot);
+        else return;
+      } else if (!desk && !crown && pick.mode === "picked" && pick.index >= L && !onBench && run.line.length >= L) {
+        // Phone: a bench unit selected and the line full, a tap on a line unit swaps the two.
+        return moveTo(pick.index, slot);
+      } else pick = pick.mode === "picked" && pick.index === slot ? { mode: "none" } : { mode: "picked", index: slot };
+      chosen = null;
+      renderLine();
+    });
+    if (desk) desktopCard(c, { kind: "line", index: slot });
+    return c;
+  };
+
   const renderLine = () => {
-    line.replaceChildren(
-      ...Array.from({ length: rules.lineSize }, (_, i) => {
-        const u: LineUnit | undefined = run.line[i];
-        if (!u) return h("div", { class: "card empty" }, h("div", { class: "dim" }, `${i + 1}`));
-        const c = card(u, { side: "you", extra: [copiesBadge(u)], testid: `line-${i}` });
-        if (pick.mode === "picked" && pick.index === i) c.classList.add("selected");
-        if (pick.mode === "fuse") {
-          if (pick.first === i) c.classList.add("selected");
-          else if (u.kind === "unit" && u.form === "awoken") c.classList.add("fusable");
-          else c.classList.add("muted");
-        }
-        c.addEventListener("click", () => {
-          play("click");
-          if (pick.mode === "fuse") {
-            if (pick.first === i) pick = { mode: "none" };
-            else if (u.kind === "unit" && u.form === "awoken") return void fusePreview(pick.first, i);
-            else return;
-          } else pick = pick.mode === "picked" && pick.index === i ? { mode: "none" } : { mode: "picked", index: i };
-          chosen = null;
-          renderLine();
-        });
-        if (desk) desktopCard(c, { kind: "line", index: i });
-        return c;
-      }),
+    line.replaceChildren(...Array.from({ length: L }, (_, i) => slotCard(i)));
+    bench.replaceChildren(
+      h("div", { class: "bench-label label" }, h("span", {}, "Bench"), h("span", {}, `${run.bench.length}/${B}`)),
+      ...Array.from({ length: B }, (_, i) => slotCard(L + i)),
     );
     for (const o of offers.children) o.classList.toggle("selected", chosen !== null && (o as HTMLElement).dataset.testid === `offer-${chosen}`);
     if (desk) renderInspector(true);
@@ -530,17 +571,21 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const i = at.index;
     c.draggable = true;
     c.addEventListener("dragstart", (e) => {
-      e.dataTransfer?.setData("text/plain", `line:${i}`);
+      e.dataTransfer?.setData("text/plain", `board:${i}`);
       c.classList.add("dragging");
     });
     c.addEventListener("dragend", () => c.classList.remove("dragging"));
+    dropOn(c, i);
+  };
+  /** Desktop: a card or an empty slot of the line or the bench takes a dragged unit. */
+  const dropOn = (c: HTMLElement, slot: number) => {
     c.addEventListener("dragover", (e) => (e.preventDefault(), c.classList.add("drop")));
     c.addEventListener("dragleave", () => c.classList.remove("drop"));
     c.addEventListener("drop", (e) => {
       e.preventDefault();
       c.classList.remove("drop");
-      const from = Number(/^line:(\d+)$/.exec(e.dataTransfer?.getData("text/plain") ?? "")?.[1] ?? NaN);
-      if (Number.isInteger(from) && from !== i) void decide({ kind: "reorder", from, to: i }, i);
+      const from = Number(/^board:(\d+)$/.exec(e.dataTransfer?.getData("text/plain") ?? "")?.[1] ?? NaN);
+      if (Number.isInteger(from) && from !== slot) moveTo(from, slot);
     });
   };
 
@@ -548,15 +593,17 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     if (pick.mode === "fuse") return [h("span", { class: "dim grow" }, desk ? "Click the second Awoken unit." : "Tap the second Awoken unit."), button(desk ? "Cancel · Esc" : "Cancel", () => ((pick = { mode: "none" }), renderLine()), "", "fuse-cancel")];
     if (pick.mode !== "picked") return [];
     const i = pick.index;
-    const u = run.line[i]!;
+    const u = unitAt(i)!;
     const info = button("Info", openSheet(u, content), "", "info");
     if (crown) return desk ? [] : [info];
     const left = button(desk ? "◀ ←" : "◀", () => void decide({ kind: "reorder", from: i, to: i - 1 }, i - 1), "", "move-left");
     const right = button(desk ? "→ ▶" : "▶", () => void decide({ kind: "reorder", from: i, to: i + 1 }, i + 1), "", "move-right");
-    left.disabled = i === 0;
-    right.disabled = i >= run.line.length - 1;
+    left.disabled = i === zoneStart(i);
+    right.disabled = i >= zoneStart(i) + zoneLen(i) - 1;
     // On desktop the inspector already is the sheet: no Info.
     const out: HTMLElement[] = desk ? [left, right] : [left, right, info];
+    const other = otherZone(i);
+    if (other !== null) out.push(button(i < L ? (desk ? "To bench · B" : "To bench") : desk ? "To line · B" : "To line", () => moveTo(i, other), "", i < L ? "to-bench" : "to-line"));
     if (u.kind === "unit" && u.form === "awoken" && awoken >= 2) out.push(button(desk ? "Fuse · F" : "Fuse", () => ((pick = { mode: "fuse", first: i }), renderLine()), "", "fuse"));
     const value = sellValue(rules, u);
     out.push(button(desk ? `Sell +${value}g · S` : `Sell +${value}`, () => void decide({ kind: "sell", index: i }), "danger", "sell"));
@@ -580,12 +627,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     if (key === inspected && !force) return;
     inspected = key;
     const sel = pick.mode === "picked" ? pick.index : -1;
-    if (at?.kind === "line" && run.line[at.index]) {
+    if (at?.kind === "line" && unitAt(at.index)) {
       const mine = at.index === sel;
       inspector.replaceChildren(
-        h("div", { class: "label" }, `${mine ? "Selected · " : ""}In your line, slot ${at.index + 1}`),
-        unitSheet(run.line[at.index]!, content),
-        mine || pick.mode === "fuse" ? h("div", { class: "row actions", "data-testid": "actions" }, ...actionButtons()) : h("div", { class: "dim small" }, crown ? "Your line is final for the Crown." : "Click to select it: move, fuse or sell."),
+        h("div", { class: "label" }, `${mine ? "Selected · " : ""}${at.index < L ? `In your line, slot ${at.index + 1}` : `On your bench, slot ${at.index - L + 1} · doesn't fight`}`),
+        unitSheet(unitAt(at.index)!, content),
+        mine || pick.mode === "fuse" ? h("div", { class: "row actions", "data-testid": "actions" }, ...actionButtons()) : h("div", { class: "dim small" }, crown ? "Your line is final for the Crown." : "Click to select it: move, bench, fuse or sell."),
       );
       return ratesToFoot();
     }
@@ -618,14 +665,16 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
 
   /** The hint that matters most right now, or none. */
   const shopHint = (): HTMLElement | null => {
+    if (!desk && !crown && pick.mode === "picked" && pick.index >= L && run.line.length >= L) return hint("Line full: tap a line unit to swap this one in.");
     if (pick.mode !== "none") return null;
     // run.ts refuses every decision but the fight in the crown phase: the line is final.
     if (crown) return hint(ownCrown ? "The Crown: today's champion is your own team. Beat it to be a slayer again; a loss costs a heart. Your line is final." : "The Crown: your line, as it is, against today's champion. Win it to become a slayer; a loss costs a heart.");
     // Only a unit whose next copy is on offer right now.
-    const almost = run.line.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === rules.copiesToAwaken - 1 && run.offers.some((o) => o.unitId === u.unitId));
+    const almost = board.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === rules.copiesToAwaken - 1 && run.offers.some((o) => o.unitId === u.unitId));
     const canBuy = run.offers.some((o) => o.cost <= run.gold);
     if (awoken >= 2) return hint(desk ? "Two Awoken units can fuse: select one, then F." : "Two Awoken units can fuse: tap one, then Fuse.");
     if (almost && run.offers.some((o) => o.unitId === almost.unitId && o.cost <= run.gold)) return hint(`One more ${almost.name} awakens it. It's in the shop.`);
+    if (run.line.length === 0 && run.bench.length > 0) return hint("Move a unit to your line: only the line fights.");
     if (run.line.length === 0 && !canBuy) return hint("No gold for a unit. Fight to move on: an empty line loses, and costs a heart.");
     if (run.line.length === 0) return hint(desk ? "Double-click an offer, or press its number, to buy it. Your line fights front first." : "Tap an offer to read it and buy it. Your line fights front first.");
     if (run.round === 1 && run.line.length > 0 && run.gold < rules.unitCost) return hint("Out of gold for units. Fight when ready.");
@@ -635,7 +684,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const keep = !o.locked && !lastShop && o.cost > run.gold ? " Not enough gold: lock it to keep it for next round." : "";
       return hint(`One more ${almost.name} awakens it. It's in the shop for ${o.cost}g.${keep}`);
     }
-    if (!lastShop && run.offers.some((o) => !o.locked && o.cost > run.gold && mergeTarget(run.line, o.unitId) >= 0)) return hint("Not enough gold: lock it to keep it for next round.");
+    if (!lastShop && run.offers.some((o) => !o.locked && o.cost > run.gold && owns(o.unitId))) return hint("Not enough gold: lock it to keep it for next round.");
     return null;
   };
 
@@ -652,7 +701,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       ] as const;
       const [ab, ba] = await Promise.all(orders.map((o) => api.preview(run.runId, { kind: "fuse", ...o })));
       // The fused unit keeps the first part's uid, in the front-most slot.
-      const fusedOf = (res: { run: RunView }, o: { first: number }) => res.run.line.find((u) => u.uid === run.line[o.first]!.uid) ?? res.run.line[Math.min(first, second)]!;
+      const fusedOf = (res: { run: RunView }, o: { first: number }) => [...res.run.line, ...res.run.bench].find((u) => u.uid === unitAt(o.first)!.uid)!;
       const views = [fusedOf(ab!, orders[0]), fusedOf(ba!, orders[1])];
       let at = 0;
       const body = h("div", { class: "stack" });
@@ -663,8 +712,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         const recipe = h(
           "div",
           { class: "recipe-line", "data-testid": "fusion-recipe" },
-          h("span", { class: "k" }, "When"), ` · ${run.line[o.first]!.name} → `,
-          h("span", { class: "k" }, "Who"), ` · ${run.line[o.second]!.name} → `,
+          h("span", { class: "k" }, "When"), ` · ${unitAt(o.first)!.name} → `,
+          h("span", { class: "k" }, "Who"), ` · ${unitAt(o.second)!.name} → `,
           h("span", { class: "k" }, "Does"), " · both",
         );
         body.replaceChildren(
@@ -698,7 +747,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const res = await api.decide(run.runId, { kind: "fuse", ...o });
       play(shopSound({ kind: "fuse", ...o }, run, res.run));
       shopScreen(res.run, content);
-      const fused = res.run.line.find((u) => u.uid === run.line[o.first]!.uid);
+      const fused = [...res.run.line, ...res.run.bench].find((u) => u.uid === unitAt(o.first)!.uid);
       const me = savedPlayer()?.id;
       const discovered = previewed.fusion?.name === "" || previewed.fusion?.discoveredBy === null;
       if (!fused || !discovered || fused.fusion?.discoveredBy?.id !== me) return;
@@ -715,7 +764,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
    * (a full line used to cost a 409 on every preview); "" when it can. */
   const buyBlock = (o: Offer): string => {
     if (run.gold < o.cost) return `Needs ${o.cost}g`;
-    if (run.line.length >= rules.lineSize && mergeTarget(run.line, o.unitId) < 0) return "Line full: sell or fuse first";
+    if (run.line.length >= L && run.bench.length >= B && !owns(o.unitId)) return B > 0 ? "Line and bench full: sell or fuse first" : "Line full: sell or fuse first";
     return "";
   };
   /** Desktop's double-click and number keys: a blocked offer says why instead of asking the server. */
@@ -748,17 +797,17 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     let mine: { now: LineUnit; next: LineUnit } | null = null;
     if (res instanceof ApiError) blocked = plainRefusal(res.message);
     else if (res) {
-      const before = new Map(run.line.map((x) => [x.uid, x]));
-      const changed = res.run.line.find((x) => !before.has(x.uid) || before.get(x.uid)!.copies !== x.copies);
+      const before = new Map(board.map((x) => [x.uid, x]));
+      const changed = [...res.run.line, ...res.run.bench].find((x) => !before.has(x.uid) || before.get(x.uid)!.copies !== x.copies);
       if (changed) {
         const was = before.get(changed.uid);
-        const label = !was ? "Joins your line" : was.form !== changed.form ? "Awakens!" : `Merges in: ×${changed.copies}`;
+        const label = !was ? (res.run.bench.some((x) => x.uid === changed.uid) ? "Goes to your bench" : "Joins your line") : was.form !== changed.form ? "Awakens!" : `Merges in: ×${changed.copies}`;
         if (was) mine = { now: was, next: changed };
         after = h("div", { class: `stack after${was && was.form !== changed.form ? " awakens" : ""}`, "data-testid": "buy-preview" }, h("div", { class: "label" }, label), h("div", { class: "preview-card" }, card(changed, { side: "you", extra: [copiesBadge(changed)] })));
       }
     }
     // Without a preview (no gold, a full line), an owned unit still shows your copy as it is.
-    const owned = mine ? null : run.line.find((x) => x.kind === "unit" && x.unitId === o.unitId) ?? null;
+    const owned = mine ? null : board.find((x) => x.kind === "unit" && x.unitId === o.unitId) ?? null;
     const sheet = mine ? unitSheet(mine.next, content, { from: mine.now.stats }) : owned ? unitSheet(owned, content) : u ? unitSheet(u, content) : h("h2", {}, o.unitId);
     // What buying does goes inside the sheet, above its last line (the rates hint).
     if (after) sheet.insertBefore(after, sheet.querySelector('[data-testid="unit-rates"]'));
@@ -770,7 +819,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const { sheet, blocked } = await offerBody(o);
       const buy = button(buttonRefusal(blocked) || `Buy ${o.cost}g`, () => (close(), void decide({ kind: "buy", slot: o.slot })), "primary grow", "buy");
       buy.disabled = blocked !== "";
-      const lockBtn = canLock(o) ? [button(o.locked ? "🔓 Unlock" : "🔒 Lock", () => (close(), lock(o)), "", "lock")] : [];
+      const lockBtn = canLock(o) ? [button(lockLabel(o), () => (close(), lock(o)), "", "lock")] : [];
       const close = overlay(sheet, h("div", { class: "row sheet-actions" }, button("Close", () => close(), "", "offer-close"), ...lockBtn, buy));
     });
 
@@ -780,9 +829,11 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     ...run.offers.map((o: Offer) => {
       const u = unitOf(o.unitId);
       const cu: CardUnit = { unitId: o.unitId, emoji: u?.emoji ?? "?", name: u?.name ?? o.unitId, stats: u?.base ?? { pwr: 0, hp: 0 }, ...(u ? { recipe: u.forms.sleeping } : {}) };
-      const owned = mergeTarget(run.line, o.unitId) >= 0;
-      const price = `${o.locked ? "🔒 " : ""}${o.cost}g${owned ? " ＋" : ""}`;
+      const owned = owns(o.unitId);
+      // The lock is a corner mark, so "3g ＋" keeps one line at 360 px.
+      const price = `${o.cost}g${owned ? " ＋" : ""}`;
       const c = card(cu, { side: "you", tier: o.tier, extra: [h("div", { class: "cost" }, price)], testid: `offer-${o.slot}` });
+      if (o.locked) c.append(h("span", { class: "lock-mark", "aria-label": "locked" }, "🔒"));
       if (run.gold < o.cost) c.classList.add("poor");
       if (o.locked) c.classList.add("locked");
       if (owned) c.classList.add("owned");
@@ -864,7 +915,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const numberKeys = n === 0 ? [] : n === 1 ? [kbd("1"), " buys the offer · "] : [kbd("1"), "–", kbd(String(n)), " buy the offer with that number · "];
   const keysLine =
     desk && !crown
-      ? h("div", { class: "dim small keys", "data-testid": "keys" }, "Hover a card to read it → · click selects · drag reorders · double-click buys · ", ...numberKeys, kbd("R"), " reroll · ", kbd("L"), " lock · ", kbd("Space"), " fight · ", kbd("←"), kbd("→"), " move · ", kbd("F"), " fuse · ", kbd("S"), " sell · ", kbd("M"), " sound · ", kbd("Esc"), " menu")
+      ? h("div", { class: "dim small keys", "data-testid": "keys" }, "Hover a card to read it → · click selects · drag reorders · double-click buys · ", ...numberKeys, kbd("R"), " reroll · ", kbd("L"), " lock · ", kbd("Space"), " fight · ", kbd("←"), kbd("→"), " move · ", kbd("F"), " fuse · ", kbd("S"), " sell · ", ...(B > 0 ? [kbd("B"), " bench · "] : []), kbd("M"), " sound · ", kbd("Esc"), " menu")
       : null;
   show(
     h(
@@ -892,10 +943,11 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       h(
         "div",
         { class: "row spread line-head" },
-        h("div", { class: "label" }, crown ? "Your line · front first · final" : desk ? "Your line · front first · drag to reorder" : "Your line · front first"),
+        h("div", { class: "label" }, crown ? "Your line · front first · final" : desk ? "Your line · front first · drag to reorder or bench" : "Your line · front first"),
         h("div", { class: "row" }, legendBtn, button("Rules", () => closable(rulesSheet()), "small", "shop-rules")),
       ),
       line,
+      B > 0 ? bench : null,
       desk ? null : actions,
       hintSlot,
       crown ? null : h("div", { class: "label" }, desk ? `Shop · ${plural(run.offers.length, "offer")}` : "Shop · tap to read and buy"),
@@ -954,7 +1006,13 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       // the shop that answers applies it.
       if (busy) return (moveQueue += step), true;
       const to = sel + step;
-      if (to >= 0 && to < run.line.length) void decide({ kind: "reorder", from: sel, to }, to);
+      if (to >= zoneStart(sel) && to < zoneStart(sel) + zoneLen(sel)) void decide({ kind: "reorder", from: sel, to }, to);
+      return true;
+    }
+    if (k === "b" && sel >= 0) {
+      const other = otherZone(sel);
+      if (other === null) return false;
+      moveTo(sel, other);
       return true;
     }
     if (k === "s" && sel >= 0) {
@@ -962,7 +1020,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       return true;
     }
     if (k === "f") {
-      const u = run.line[sel];
+      const u = unitAt(sel);
       if (pick.mode === "fuse") pick = { mode: "none" };
       else if (u && u.kind === "unit" && u.form === "awoken" && awoken >= 2) pick = { mode: "fuse", first: sel };
       else return false;
@@ -977,7 +1035,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   moveQueue = 0;
   if (queued && pick.mode === "picked" && !crown) {
     const from = pick.index;
-    const to = Math.max(0, Math.min(run.line.length - 1, from + queued));
+    const to = Math.max(zoneStart(from), Math.min(zoneStart(from) + zoneLen(from) - 1, from + queued));
     // After the answering request lets go (guarded ignores a decision while one is out).
     if (to !== from) setTimeout(() => void decide({ kind: "reorder", from, to }, to), 0);
   }
@@ -1013,8 +1071,9 @@ function markSeen(key: string): void {
 
 /** ●●○ toward awakening for a sleeping unit; AWOKEN or FUSED otherwise. */
 function copiesBadge(u: LineUnit): HTMLElement {
-  if (u.kind === "fused") return h("div", { class: "copies tag" }, `FUSED ×${u.copies}`);
-  if (u.form === "awoken") return h("div", { class: "copies tag" }, `AWOKEN ×${u.copies}`);
+  // The word is its own span: the bench's short cards show only "×n" (R3-14).
+  if (u.kind === "fused") return h("div", { class: "copies tag" }, h("span", { class: "tag-word" }, "FUSED "), `×${u.copies}`);
+  if (u.form === "awoken") return h("div", { class: "copies tag" }, h("span", { class: "tag-word" }, "AWOKEN "), `×${u.copies}`);
   const n = rules.copiesToAwaken;
   return h("div", { class: "copies pips", "aria-label": `${u.copies} of ${n} copies` }, "●".repeat(Math.min(u.copies, n)) + "○".repeat(Math.max(0, n - u.copies)));
 }
