@@ -15,16 +15,23 @@
 //   the background and wait for the name (awaitFusionName, bounded by the
 //   model's final failure), so a bot never fixes the portmanteau while the
 //   model's name is coming, and the pool still holds fusions.
-//   The pool is bounded: bots only fill a round below the target, so they add
-//   at most BOT_TARGET ghosts per round and content version.
+//   Bots also play every day (#587): runs until BOT_DAILY_CROWNS of the day's
+//   Crown fights are bots', so each day's champion meets challengers and a
+//   player alone still sees slayers and a playoff on day 2 and later, not only
+//   on a fresh world's first day. The pool stays bounded per day: a round
+//   below BOT_TARGET is filled, and a day adds the ghosts of the runs that
+//   reach its Crown quota (pickGhost draws from a round's newest
+//   GHOST_PICK_POOL anyway). No live champion, no daily runs.
 // - botWorld: the job (./jobs.ts) that seeds, tops up at start and every
-//   BOT_TOPUP_MS, a few runs per tick so requests keep flowing. The seed waits
+//   BOT_TOPUP_MS (the thin rounds, then the day's Crown quota), a few runs per
+//   tick so requests keep flowing. The seed waits
 //   for the model's names of the champion's fusions before it writes them.
 import { randomUUID } from "node:crypto";
 import type { Champion, Decision, LineUnit, MvpContent, MvpRules, PlayerRef, RunView } from "../../../src/mvp/contract.js";
 import { fightLines } from "../../../src/mvp/fight.js";
 import { fuseCheck, mergeTarget } from "../../../src/mvp/forms.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
+import { todaysChampion } from "./day.js";
 import { awaitFusionName, fusionNameReady, recordFusion } from "./fusions.js";
 import { decide, startRun, type RunDeps } from "./runs.js";
 import type { MvpJob, MvpRuntime } from "./runtime.js";
@@ -32,6 +39,12 @@ import { MemoryMvpStore } from "./store.js";
 
 /** Ghosts per round (live content) the bots keep. Tunable. */
 export const BOT_TARGET = 24;
+/** Bot Crown fights each day: bots play runs until this many of the day's
+ * Crown fights are bots'. Measured on the MVP content: about 1 in 3 bot runs
+ * reaches the Crown, and about 1 in 8 Crown fights is won against the seeded
+ * day-1 champion, 1 in 4 against a playoff winner, so a day sees a few bot
+ * slayers, and now and then none. Tunable. */
+export const BOT_DAILY_CROWNS = 16;
 /** How often the top-up looks at the pool. */
 export const BOT_TOPUP_MS = 60_000;
 /** Bot runs per event-loop turn while topping up. */
@@ -185,19 +198,33 @@ export function thinRounds(rt: RunDeps, target = BOT_TARGET): number[] {
   return out;
 }
 
-/** Plays bot runs until every round holds `target` ghosts or `maxRuns` ran.
+/** How many more Crown fights bots owe today: `quota` minus today's bot
+ * Crown fights, or 0 with no live champion today (a run would end
+ * "no-champion", never fighting one). */
+export function crownsOwed(rt: RunDeps, quota = BOT_DAILY_CROWNS): number {
+  const champ = todaysChampion(rt);
+  if (!champ || champ.contentVersion !== rt.content.version || quota <= 0) return 0;
+  const fought = rt.store.battles({ kind: "crown", since: rt.today().startedAt }).filter((b) => b.player.bot).length;
+  return Math.max(0, quota - fought);
+}
+
+const foughtCrown = (run: MvpRunState) => run.endedBy === "crown-won" || run.endedBy === "crown-lost";
+
+/** Plays bot runs until every round holds `target` ghosts and bots fought
+ * today's `dailyCrowns` Crown fights (crownsOwed), or `maxRuns` ran.
  * Synchronous; botWorld spreads the same work over event-loop turns. */
-export function topUpGhosts(rt: RunDeps, opts: { target?: number; maxRuns?: number } = {}): { runs: number; thin: number[] } {
+export function topUpGhosts(rt: RunDeps, opts: { target?: number; maxRuns?: number; dailyCrowns?: number } = {}): { runs: number; thin: number[]; crownsOwed: number } {
   const target = opts.target ?? BOT_TARGET;
   const maxRuns = opts.maxRuns ?? MAX_RUNS_PER_TOPUP;
   let runs = 0;
+  let owed = crownsOwed(rt, opts.dailyCrowns);
   let thin = thinRounds(rt, target);
-  while (thin.length > 0 && runs < maxRuns) {
-    playBotRun(rt);
+  while ((thin.length > 0 || owed > 0) && runs < maxRuns) {
+    if (foughtCrown(playBotRun(rt))) owed--;
     runs++;
     thin = thinRounds(rt, target);
   }
-  return { runs, thin };
+  return { runs, thin, crownsOwed: Math.max(0, owed) };
 }
 
 // ---------- the day-1 champion ----------
@@ -279,7 +306,9 @@ export async function seedChampion(rt: RunDeps): Promise<Champion | undefined> {
 // ---------- the job ----------
 
 /** Seeds the champion first, then tops the pool up at once and every
- * BOT_TOPUP_MS, one bot run after another, yielding to the event loop every
+ * BOT_TOPUP_MS (thin rounds, then the day's BOT_DAILY_CROWNS: a day ended
+ * by the rollover or dev end-day gets its bot challengers within a tick),
+ * one bot run after another, yielding to the event loop every
  * RUNS_PER_TURN runs and whenever a bot waits for a fusion's name. Returns the
  * stop function. */
 export const botWorld: MvpJob = (rt: MvpRuntime) => {
@@ -290,12 +319,17 @@ export const botWorld: MvpJob = (rt: MvpRuntime) => {
   const yieldTurn = () => new Promise<void>((resolve) => setImmediate(resolve));
   const topUp = async () => {
     let runs = 0;
+    let crowns = 0;
     try {
-      while (!stopped && runs < MAX_RUNS_PER_TOPUP && thinRounds(rt).length > 0) {
-        await playBotRunWaiting(rt, isStopped);
+      let owed = crownsOwed(rt);
+      while (!stopped && runs < MAX_RUNS_PER_TOPUP && (owed > 0 || thinRounds(rt).length > 0)) {
+        if (foughtCrown(await playBotRunWaiting(rt, isStopped))) {
+          owed--;
+          crowns++;
+        }
         if (++runs % RUNS_PER_TURN === 0) await yieldTurn();
       }
-      if (runs > 0 && !stopped) log(`topped up: ${runs} bot runs`);
+      if (runs > 0 && !stopped) log(`topped up: ${runs} bot runs, ${crowns} Crown fights, ${rt.store.slays(rt.today().seq).filter((s) => s.player.bot).length} bot slays today`);
     } catch (e) {
       console.error(`[bots] top-up failed: ${(e as Error).message}`);
     }
