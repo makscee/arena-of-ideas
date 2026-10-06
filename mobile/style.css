@@ -85,7 +85,7 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .card .icons { align-self: stretch; flex: none; display: flex; align-items: center; gap: 1px; height: 11px; padding: 0 1px; overflow: hidden; line-height: 0; }
 .card .icons.tiered { padding-right: 12px; }
 .card .icons .ci { flex: none; display: inline-flex; }
-.card .icons .ci:nth-of-type(n+4), .card .icons .desk-more { display: none; }
+.card .icons .ci:nth-of-type(n+4), .card .icons .desk-more, .card .icons .mid-more { display: none; }
 .card .icons .more { flex: none; font-family: "IBM Plex Mono", monospace; font-size: 9px; line-height: 11px; font-weight: 600; color: var(--dim); }
 .card:not(.bv-card) .emoji { margin-top: 0; }
 /* A battle card shows its whole When · Who · Does line in the top-left corner
@@ -688,6 +688,9 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
   /* Six offers fit one row from 1024px (R2-17): a narrower inspector, and
    * cards up to 120px wide, so the 6th offer never sits under Reroll / Fight. */
   #app[data-screen="shop"] { --insp: 300px; --cw: min(120px, calc((100vw - var(--insp) - 48px - 5 * var(--gap)) / 6)); }
+  /* Those cards are ~106px: 5 icons and the tier overflow, so they show 3 and "+n" (R3-9). */
+  #app[data-screen="shop"] .card .icons .ci:nth-of-type(n+4), #app[data-screen="shop"] .card .icons .desk-more { display: none; }
+  #app[data-screen="shop"] .card .icons .mid-more { display: inline; font-size: 12px; line-height: 16px; }
 }
 @media (min-width: 1280px) {
   #app[data-screen] { --cw: 132px; --gap: 12px; --insp: 380px; }

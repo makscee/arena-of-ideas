@@ -191,7 +191,7 @@ export const ROWS: Row[] = [
   r("Leech",         "🩸", 2, 2, 6, "strike",     "me",      "Mend",        { does: ["Mend", "Shield 1"] }),
   r("Bloodthinner",  "💧", 2, 2, 5, "enemyPoisoned", "it",   "Hit 1",       { who: "front", does: ["Hit 2"] }),
   r("Hag",           "🧙", 2, 1, 6, "enemyPoisoned", "it",   "Curse 1",     { does: ["Curse 1", "Hit 1"] }),
-  r("Trickster",     "🃏", 2, 2, 5, "enemyCursed", "random", "Hit 2",       { who: "it", does: ["Smite"] }),
+  r("Trickster",     "🃏", 2, 2, 5, "enemyCursed", "random", "Hit 2",       { who: "it", does: ["Hit 2"] }),
   r("Custodian",     "🗝️", 2, 2, 9, "allyDies",   "allies",  "Shield 2",    { does: ["Shield 2", "Heal 1"] }),
   r("Silencer",      "🤫", 2, 2, 6, "start",      "front",   "Silence",     { who: "random", does: ["Silence", "Hit 2"] }),
   r("Scavenger",     "🦅", 2, 2, 6, "allyDies",   "me",      "Heal 3",      { does: ["Heal 3", "Bless 1"] }),
@@ -212,7 +212,7 @@ export const ROWS: Row[] = [
   r("Battle Mage",   "🪄", 3, 3, 7, "allyShield", "random", "Hit 2",       { does: ["Hit 2", "Poison 1"] }),
   r("Pathologist",   "🔬", 3, 2, 7, "enemyPoisoned", "me",   "Strength 1",  { does: ["Strength 1", "Heal 1"] }),
   r("Plague Doctor", "🦤", 3, 2, 7, "start",      "enemies", "Poison 2",    { does: ["Poison 2", "Curse 1"] }),
-  r("Virus",         "🧫", 3, 2, 6, "enemyDies",  "enemies", "Poison 2",    { does: ["Poison 2", "Freeze 1"] }),
+  r("Virus",         "🧫", 3, 2, 6, "enemyDies",  "enemies", "Poison 2",    { does: ["Poison 2", "Curse 1"] }),
   // Awoken, the dead return as undead glass cannons: 1 HP, +3 PWR (1a).
   r("Necromancer",   "💀", 3, 2, 7, "allyDies",   "fallen",  "Revive 2",    { does: ["Revive 1 + Strength 3"] }),
   r("Sexton",        "⚰️", 3, 3, 9, "allyDies",   "me",      "Call Wraith", { does: ["Call Ghoul"] }),
