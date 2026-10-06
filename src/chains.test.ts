@@ -194,7 +194,7 @@ describe("a unit reacts at most once to the same event", () => {
       .toEqual([["Shield on A2:Fused by A2:Fused", 0], ["Strength on A2:Fused by A2:Fused", 1]]);
     // Its own Shield wakes it again: the whole unit is blocked, neither Does fires a second time.
     expect(log.filter((e) => e.type === "StatusApplied" && e.status === "Strength")).toHaveLength(1);
-    expect(log.filter((e) => e.type === "ChainBlocked").map((e) => e.type === "ChainBlocked" && e.ability)).toEqual([{ unit: "A2:Fused", ability: 0 }]);
+    expect(log.filter((e) => e.type === "ChainBlocked").map((e) => e.type === "ChainBlocked" && e.ability)).toEqual([{ unit: "A2:Fused", ability: 0, when: 0 }]);
   });
 
   test("a fused unit's reaction is one cap step: both Does land before the chain is capped", () => {
