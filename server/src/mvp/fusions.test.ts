@@ -232,6 +232,22 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
     }
   });
 
+  it("no mask lets a pre-#594 entry through when glued to common heads and tails (R2-17: 'kland' let Klandrake pass)", () => {
+    const edge = new Set(["ass", "asses", "butt", "dong", "jap", "cuck", "thot", "fap", "horny", "abo"]);
+    const heads = ["", "King", "Dark", "Moon"];
+    const tails = ["rat", "drake", "head", "horn", "demon", "fang", "lord", "reaper"];
+    const passed: string[] = [];
+    for (const word of CRUDE_BEFORE_594) {
+      if (edge.has(word)) continue;
+      for (const head of heads)
+        for (const tail of tails) {
+          const name = head ? `${head}${word}${tail}` : word[0]!.toUpperCase() + word.slice(1) + tail;
+          if (!isBlockedName(name)) passed.push(name);
+        }
+    }
+    expect(passed).toEqual([]);
+  });
+
   it("refuses the regressions, the stems that left EDGE, LDNOOBW's words back from SKIP, and toilet words (#609)", () => {
     for (const raw of [
       "Piss", "Pissrat", "Kingpiss", "Pisser", "Chinaman", "Coolie", "Abo", "Kingabo", "Abos",
