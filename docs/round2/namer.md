@@ -102,3 +102,19 @@ The filter is not the problem: even the 1.5B passes 96-99%. The bigger model buy
 - `score.mts`: the real filter plus the odd-name check.
 - `out-*.jsonl`: every raw answer.
 - `sum-*.json`, `watch-*.log`: latency, memory and load.
+
+## The S habit (R2-4, #594)
+
+Measured on m1 with the shipped one2 prompt and the same 40 pairs, 2 asks each, through the server's filter (`cleanModelName`, then a unit's name of 5+ letters inside refused). Script: `namer/asks.mts` → `namer/bench-asks.py` → `namer/score-asks.mts`; output in `namer/sum-qwen3-4b-s-habit.txt`.
+
+| Variant | Asks | Valid | One word | Starts with S | Odd |
+|---|---|---|---|---|---|
+| temperature 0.8 (before) | 80 | 95% | 100% | 47% | 14 |
+| temperature 1.0 | 59 | 100% | 100% | 54% | 16 |
+| **0.8 + "Start with the letter X."** (shipped) | 80 | 94% | 99% | 12% | 13 |
+
+- Temperature 1.0 doesn't help: still about half start with S (Sanguiscope ×2, Sickwardent ×2, Shieldspire). The run stopped at 59 of 80 asks: the memory guard fired with m1 under other load.
+- The letter hint works: the model followed the letter every time. S falls to 1 in 8, and no name repeated across 80 asks (13 repeats at 0.8 without it). The few-shot asks carry their own names' letters too. The letter is drawn from `NAMER_LETTERS` (no I, J, K, Q, U, X, Y, Z).
+- Odd names with the hint: Lhemlock, Hamagun, Ashnibb, Vermireg, Syringus, Skelethar, Nighbattler, Hearthingeather (15 letters), Vanguard (a plain word), and one two-word answer, "Ravenousk ing" (asked again unless it is the last try).
+- Refused by the new unit-name rule: Wardspike, Spikeinfest, Tearspike, Tackspike (Spike), Vaporsquire (Squire).
+- The hint costs about 0.3 s an ask (1.98 s median cold, against 1.66 s).
