@@ -178,6 +178,11 @@ const ORDINARY = ["invader", "evader", "pervader", "hulking", "hulky", "marionet
   "torpedo", "pedomet", "pedolog", "sexton", "sextant", "sextet", "sextup", "essex", "sussex", "wessex", "sexagen", "scum", "cumul",
   "cucum", "cumber", "circum", "docum", "cumin", "incumb", "succumb", "talcum", "modicum", "capsicum", "jewel", "clitheroe", "clitter",
   "petits", "tomtits", "farse", "hearse", "starse", "fagin", "fagot", "fagus"];
+// Ordinary words that read crude behind another word, glued or not
+// ("Noctscum", "Noctscumling", "Noct Scum"), though alone or leading they pass
+// ("Scum", "Scumlord"). Every other ORDINARY word is fine there too
+// ("Jolttherapist", "Vinegrape", "Firepeacock").
+const GLUED_CRUDE = ["scum"];
 // Words: short or ordinary enough that a stem would hit real words ("Thorn",
 // "Invader", "Marionette", "Smuggler", "Scamper"), so they match one word of
 // the name, also with a plural or possessive ending ("Marios", "Thor's").
@@ -186,7 +191,7 @@ const BLOCKED_WORDS = [
   "dota", "invoker", "ahri", "garen", "terran", "fallout", "tifa", "papyrus",
   "sith", "potter", "muggle",
   "elsa", "olaf", "nemo", "dory", "fiona", "minnie", "thor", "loki", "avenger", "marvel",
-  "zoro", "bart", "lego", "barney", "scam", "developer", "administrator",
+  "zoro", "bart", "lego", "spaceinvader", "barney", "scam", "developer", "administrator",
   // crude words that hit ordinary words as roots: whole words only
   "nig", "nog", "anus", "wop", "dago", "mofo", "choad", "fap", "gay", "gays",
   "abo", "arse", "arsehole", "ass", "asses", "asshat", "asshole", "asswipe", "auschwitz", "badass", "ballsack", "bastard", "bastards",
@@ -238,15 +243,13 @@ function stripAccents(s: string): string {
 /** True when a name (or one of its words) is on the blocklist. */
 export function isBlockedName(name: string): boolean {
   if (BLOCKED_WHOLE.includes(fold(name))) return true;
+  if (GLUED_CRUDE.some((c) => fold(name).indexOf(c) > 0)) return true;
   // CamelCase is split first, so glued words match too ("LordVader", "SuperMario").
   const words = name.replace(/([a-z])([A-Z])/g, "$1 $2").split(/[\s'’-]+/).map(fold).filter(Boolean);
   const named = (w: string, b: string) => WORD_ENDINGS.some((end) => w === b + end);
   for (let i = 0; i < words.length; i++) {
     const w = words[i]!;
     if (BLOCKED_WORDS.some((b) => named(w, b))) return true;
-    // An ordinary word hides its stem only standing alone or leading: glued on
-    // behind another word, a stem at the end reads as itself ("Noctscum").
-    if (ORDINARY.some((o) => w !== o && w.endsWith(o) && BLOCKED_STEMS.some((stem) => o.endsWith(stem)))) return true;
     const inner = ORDINARY.reduce((rest, o) => rest.split(o).join("."), w);
     if (BLOCKED_STEMS.some((stem) => (stem.endsWith("man") ? WORD_ENDINGS.some((end) => inner.endsWith(stem + end)) : inner.includes(stem)))) return true;
     // Whole words joined: "Spider Man", "Kel'Thuzad", "Iron Man".
@@ -282,6 +285,9 @@ export function cleanModelName(raw: string, first?: UnitContent, second?: UnitCo
     .replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, "")
     .replace(/([a-z])([A-Z])/g, "$1 $2");
   if (!/^[A-Za-z][A-Za-z' -]{2,19}$/.test(name)) return null;
+  // An apostrophe only as a possessive before a second word ("Widow's Bloom",
+  // not "Widow'sbloom").
+  if (/'/.test(name) && !/^[A-Za-z]+'s [A-Za-z]+$/.test(name)) return null;
   const words = name.split(/[ -]/).filter(Boolean);
   if (words.length > 2 || new Set(words.map(fold)).size < words.length) return null;
   if (isBlockedName(name) || isGlued(name, first, second)) return null;
