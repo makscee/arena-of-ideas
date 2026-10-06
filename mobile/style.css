@@ -147,9 +147,29 @@ button.link { align-self: flex-start; border: none; background: none; color: var
 /* A request is out (main.ts guarded): no taps until it answers. */
 #app.busy button, #app.busy .card { pointer-events: none; }
 /* Battle viewer (slice 9, screens/battle.ts). */
-.bv-line { min-height: 84px; }
-/* A battle card grows for its status line (icons replace it in R2-13). */
-.bv-card { height: auto; min-height: 84px; transition: transform 0.15s, box-shadow 0.15s; }
+.bv-line { min-height: 112px; }
+/* R2-13: a battle card has a fixed height (emoji, name, HP bar, big PWR / HP,
+ * a status row that keeps its height when empty), so nothing on the board
+ * moves while a beat plays. Each card sits in a slot that also holds its
+ * trigger badge, outside the card's chamfer clip. */
+.bv-slot { position: relative; min-width: 0; }
+.bv-card { height: 112px; min-height: 0; justify-content: flex-start; gap: 2px; transition: transform 0.15s, box-shadow 0.15s; }
+.bv-card .hpbar { width: calc(100% - 6px); height: 4px; flex: none; margin: 2px 0 1px; border-radius: 2px; background: color-mix(in srgb, var(--line) 80%, var(--bg)); overflow: hidden; }
+.bv-card .hpbar i { display: block; height: 100%; background: var(--vital, #3fdc8f); transition: width 0.2s; }
+.bv-card .hpbar.low i { background: #ff6b4d; }
+.bv-card .stats.big { width: 100%; display: flex; justify-content: space-between; padding: 0 3px; font-size: 16px; line-height: 18px; font-weight: 700; }
+.bv-card .stats.big .h { color: #3fdc8f; }
+.bv-card .stats.big .h.hurt { color: #ff6b4d; }
+.bv-card .stat-ic { display: none; margin-right: 1px; vertical-align: -1px; }
+.bv-card .foot { width: 100%; min-height: 16px; margin-top: auto; }
+.bv-sts { display: flex; flex-wrap: wrap; justify-content: center; gap: 1px 3px; min-height: 16px; max-height: 16px; overflow: hidden; }
+.bv-st { display: inline-flex; align-items: center; gap: 1px; font-family: "IBM Plex Mono", monospace; font-size: 11px; line-height: 16px; }
+.bv-st b { font-weight: 700; }
+/* The trigger badge: [When icon] → [Does icon], over the card's top edge. */
+button.bv-badge { position: absolute; z-index: 3; top: -11px; left: 50%; transform: translateX(-50%); min-height: 0; height: 22px; padding: 0 5px; display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; border: 1px solid #ffbf47; border-radius: 11px; clip-path: none; background: color-mix(in srgb, #ffbf47 18%, var(--bg)); box-shadow: 0 0 8px color-mix(in srgb, #ffbf47 45%, transparent); text-transform: none; letter-spacing: 0; animation: bv-badge calc(0.3s / var(--bv-sp, 1)) ease-out calc(var(--bv-bt, 0s) / var(--bv-sp, 1)) both; }
+button.bv-badge.still { animation: none; }
+.bv-badge-arrow { font-size: 11px; color: var(--dim); }
+@keyframes bv-badge { 0% { opacity: 0; transform: translateX(-50%) translateY(6px) scale(0.6); } 60% { opacity: 1; transform: translateX(-50%) scale(1.15); } 100% { opacity: 1; transform: translateX(-50%); } }
 /* The gold ring is drawn inside the border, over the padding: the acting card
  * gets 2px more padding on each side, so its name (fitted to the
  * content box, ui/dom.ts fitText) stay clear of the ring. */
@@ -159,7 +179,6 @@ button.link { align-self: flex-start; border: none; background: none; color: var
 .bv-card.silenced .emoji { filter: grayscale(1); }
 .bv-card.dead { opacity: 0.5; }
 .bv-card.dead .emoji { filter: grayscale(1); }
-.bv-status { font-size: 10px; color: var(--dim); line-height: 1.1; }
 /* Motion (R2-12): each wave that landed in the open beat moves. The striker
  * lunges at the other line, a hit card flashes and shakes, a caster pulses,
  * a dying card pops before it greys, and the wave's numbers rise and fade.
@@ -168,18 +187,27 @@ button.link { align-self: flex-start; border: none; background: none; color: var
  * --k (0–2) slots: −n / +n over the name, ±PWR smaller above it, clear of
  * the name and PWR / HP; a status doesn't float (its chip shows it). Change
  * the offsets here. */
-.bv-card.bv-lunge-up { animation: bv-lunge-up 0.32s ease-out var(--bv-t, 0s); }
-.bv-card.bv-lunge-down { animation: bv-lunge-down 0.32s ease-out var(--bv-t, 0s); }
-.bv-card.bv-pulse { animation: bv-pulse 0.36s ease-out var(--bv-t, 0s); }
-.bv-card.bv-hit { animation: bv-shake 0.34s ease-out calc(0.08s + var(--bv-t, 0s)); }
-.bv-card.bv-flash-hit::after, .bv-card.bv-glow::after { content: ""; position: absolute; inset: 0; pointer-events: none; animation: bv-flash 0.4s ease-out calc(0.08s + var(--bv-ft, 0s)) both; }
+/* --bv-sp is the playback speed: at 2× every motion runs twice as fast, so a
+ * beat change never cuts it. The delays are already speed-scaled (battle.ts). */
+.bv-card.bv-lunge-up { animation: bv-lunge-up calc(0.32s / var(--bv-sp, 1)) ease-out calc(var(--bv-t, 0s) / var(--bv-sp, 1)); }
+.bv-card.bv-lunge-down { animation: bv-lunge-down calc(0.32s / var(--bv-sp, 1)) ease-out calc(var(--bv-t, 0s) / var(--bv-sp, 1)); }
+.bv-card.bv-pulse { animation: bv-pulse calc(0.36s / var(--bv-sp, 1)) ease-out calc(var(--bv-t, 0s) / var(--bv-sp, 1)); }
+.bv-card.bv-hit { animation: bv-shake calc(0.34s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-t, 0s)) / var(--bv-sp, 1)); }
+.bv-card.bv-flash-hit::after, .bv-card.bv-glow::after { content: ""; position: absolute; inset: 0; pointer-events: none; animation: bv-flash calc(0.4s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
 .bv-card.bv-flash-hit::after { background: var(--ghost); }
 .bv-card.bv-glow::after { background: var(--you); }
-.bv-card.bv-dying { animation: bv-die 0.5s ease-out var(--bv-t, 0s); }
-.bv-float { --k: 0; position: absolute; left: 0; right: 0; top: calc(40px + var(--k) * 15px); z-index: 2; pointer-events: none; font-family: "IBM Plex Mono", monospace; font-size: 18px; font-weight: 700; text-shadow: 0 0 4px var(--bg), 0 0 2px var(--bg); white-space: nowrap; overflow: hidden; animation: bv-rise 0.7s ease-out both; }
+/* A killing blow: the shake plays out, then the card pops (--bv-dt starts
+ * the pop after the shake; its fill holds back until then). */
+.bv-card.bv-dying { animation: bv-die calc(0.5s / var(--bv-sp, 1)) ease-out calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) forwards; }
+.bv-card.bv-hit.bv-dying { animation: bv-shake calc(0.34s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-t, 0s)) / var(--bv-sp, 1)), bv-die calc(0.5s / var(--bv-sp, 1)) ease-out calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) forwards; }
+/* Floats rise from the HP bar (a hit, a heal, a summon); ±PWR and ±HP rise
+ * from the number they change, clear of the change chip and the name. */
+.bv-float { --k: 0; position: absolute; left: 0; right: 0; top: calc(50px + var(--k) * 12px); z-index: 2; pointer-events: none; font-family: "IBM Plex Mono", monospace; font-size: 18px; font-weight: 700; text-shadow: 0 0 4px var(--bg), 0 0 2px var(--bg); white-space: nowrap; overflow: hidden; animation: bv-rise calc(0.7s / var(--bv-sp, 1)) ease-out both; }
 .bv-float.damage, .bv-float.debuff { color: var(--ghost); }
 .bv-float.heal, .bv-float.summon { color: var(--you); }
-.bv-float.buff, .bv-float.debuff { top: calc(20px + var(--k) * 6px); font-family: "Rajdhani", sans-serif; font-size: 11px; font-weight: 700; line-height: 12px; animation-name: bv-rise-small; }
+.bv-float.buff, .bv-float.debuff { top: auto; bottom: calc(20px + var(--k) * 4px); font-family: "Rajdhani", sans-serif; font-size: 12px; font-weight: 700; line-height: 12px; animation-name: bv-rise-small; }
+.bv-float.on-pwr { text-align: left; padding-left: 3px; }
+.bv-float.on-hp { text-align: right; padding-right: 3px; }
 .bv-float.buff { color: var(--gold); }
 @keyframes bv-lunge-up { 40% { transform: translateY(-14px) scale(1.06); } }
 @keyframes bv-lunge-down { 40% { transform: translateY(14px) scale(1.06); } }
@@ -192,12 +220,14 @@ button.link { align-self: flex-start; border: none; background: none; color: var
 /* Reduced motion: nothing moves. The hit card gets a ring, a healed or
  * buffed one a soft one; the chips hold the numbers in place, and the
  * caption lists every change of the beat (.bv-still). */
+.bv-stillbox { height: 52px; overflow-y: auto; }
 .bv-still { display: flex; flex-wrap: wrap; gap: 0 8px; font-size: 13px; font-family: "IBM Plex Mono", monospace; }
 @media (prefers-reduced-motion: reduce) {
   .bv-card, .bv-card.bv-lunge-up, .bv-card.bv-lunge-down, .bv-card.bv-pulse, .bv-card.bv-hit, .bv-card.bv-dying { animation: none; transition: none; }
   .bv-card.bv-flash-hit::after, .bv-card.bv-glow::after { animation: none; background: none; opacity: 1; box-shadow: 0 0 0 2px var(--ghost) inset; }
   .bv-card.bv-glow::after { box-shadow: 0 0 0 2px var(--you) inset; }
   .bv-float { display: none; }
+  button.bv-badge { animation: none; }
   .bv-card.acting { transform: none; }
 }
 /* A change sits over the emoji: the button is a transparent 44 px tap target
@@ -221,8 +251,14 @@ button.bv-also-btn { min-height: 44px; padding: 0 10px; text-transform: none; le
 button.bv-also-btn.on { border-color: var(--gold); }
 button.bv-also-btn.damage, button.bv-also-btn.debuff, button.bv-also-btn.death { color: var(--ghost); }
 button.bv-also-btn.heal, button.bv-also-btn.summon { color: var(--you); }
-button.bv-caption { min-height: 48px; width: 100%; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 17px; color: var(--text); border-color: var(--line); text-align: left; padding: 4px 12px; }
-button.bv-caption.tappable::after { content: " ⓘ"; color: var(--dim); }
+button.bv-caption { height: 52px; min-height: 0; overflow: hidden; width: 100%; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 17px; color: var(--text); border-color: var(--line); text-align: left; padding: 4px 12px; }
+button.bv-caption { display: flex; align-items: center; }
+button.bv-caption.tappable::after { content: "ⓘ"; flex: none; margin-left: 4px; color: var(--dim); }
+/* Two lines at most: a caption's length never moves your line. */
+.bv-cap { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 20px; }
+.bv-cn { font-weight: 700; }
+.bv-ct .ic { vertical-align: -2px; }
+.bv-pill.blocked { display: inline-flex; align-items: center; gap: 1px; border-color: #5aa7ff; }
 /* Whose unit acted: a tag before the caption, in its side's colour. */
 .bv-who { display: inline-block; max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; margin-right: 6px; padding: 0 5px; border: 1px solid; border-radius: 3px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .bv-who.you { color: var(--you); }
