@@ -28,6 +28,7 @@
     "mvp:server": "node --import tsx/esm server/src/mvp/main.ts",
     "mvp:bot": "node --import tsx/esm e2e/mvp-api-bot.ts",
     "mvp:phone": "node e2e/mvp-phone.mjs",
+    "mvp:beats": "node e2e/beat-frames.mjs",
     "mvp:fusion-names": "node --import tsx/esm e2e/mvp-fusion-names.ts",
     "mvp:redeploy": "scripts/mvp-redeploy.sh",
     "mvp:meta": "node --import tsx/esm scripts/meta-health.ts",

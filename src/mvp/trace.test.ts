@@ -5,7 +5,7 @@ import { describe, expect, test } from "vitest";
 import { battle } from "../battle.js";
 import { stressAbilities, stressRegistry } from "../content/stress.js";
 import type { AbilityDef, AbilityRegistry, BattleEvent, UnitDef, When } from "../types.js";
-import { captionOf, captionSubject, changeOf, endCaption, stepsOf, traceOf, whyILost } from "./trace.js";
+import { BEAT_MAX_MS, BEAT_MS, beatPlayOf, beatTiming, captionOf, captionSubject, changeOf, endCaption, stepsOf, traceOf, whyILost } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -206,5 +206,48 @@ describe("why I lost", () => {
   test("your own units' acts never show up as enemy chains", () => {
     const log = run([Shieldbearer, Smith, Archer], [dummy("Dummy", 20, 1)]);
     for (const c of whyILost(log, "A")) expect(c.names[0]).not.toMatch(/Shieldbearer|Smith|Archer/);
+  });
+});
+
+describe("one beat at a time (R2-12)", () => {
+  const Coach = unit("Coach", 6, 1, { on: "BattleStart" }, [{ kind: "allAllies" }], ["GiveStrength"]);
+  const Bulwark = unit("Bulwark", 6, 1, { on: "BattleStart" }, [{ kind: "holder" }], ["GiveShield"]);
+
+  test("waves land 150 ms apart; a beat lasts 1.2 s, at most 1.5 s", () => {
+    expect(beatTiming(1)).toEqual({ at: [0], ms: BEAT_MS });
+    expect(beatTiming(3)).toEqual({ at: [0, 150, 300], ms: BEAT_MS });
+    const long = beatTiming(30);
+    expect(long.ms).toBe(BEAT_MAX_MS);
+    expect(long.at.at(-1)!).toBeLessThanOrEqual(700);
+  });
+
+  test("every step's events play exactly once, inside their own beat", () => {
+    const log = run([Shieldbearer, Smith, Archer, Medic, Zealot], [dummy("Dummy", 30, 3), Medic, Zealot]);
+    const steps = stepsOf(log);
+    const beats = beatPlayOf(log, stepsOf(log));
+    expect(beats.length).toBeLessThan(steps.length);
+    const played = beats.flatMap((b) => b.waves.flatMap((w) => w.eventIds));
+    expect(played.sort((p, q) => p - q)).toEqual(steps.flatMap((s) => s.eventIds).sort((p, q) => p - q));
+    for (const b of beats) {
+      expect(b.waves.length).toBeGreaterThan(0);
+      for (const id of b.waves.flatMap((w) => w.eventIds)) expect(id >= b.start && id <= b.end).toBe(true);
+    }
+  });
+
+  test("a buff on all allies plays as one wave", () => {
+    const log = run([Coach, dummy("Squire", 8, 1), dummy("Page", 8, 1)], [dummy("Dummy", 30, 1)]);
+    const first = beatPlayOf(log, stepsOf(log))[0]!;
+    const buff = first.waves.find((w) => w.changes.some((c) => c.label === "Strength ×1"))!;
+    expect(new Set(buff.changes.filter((c) => c.kind === "status").map((c) => c.unit))).toEqual(new Set(["A1:Coach", "A2:Squire", "A3:Page"]));
+    expect(buff.caption).toBe("Coach → Strength ×1 on Coach, Squire, Page");
+  });
+
+  test("Shield that absorbs a hit fades in the hit's wave, not its own", () => {
+    const log = run([Bulwark], [dummy("Dummy", 30, 1)]);
+    const fade = log.find((e) => e.type === "StatusRemoved" && e.status === "Shield" && e.causedBy !== null && log[e.causedBy]?.type === "Hurt")!;
+    expect(fade).toBeDefined();
+    const wave = beatPlayOf(log, stepsOf(log)).flatMap((b) => b.waves).find((w) => w.eventIds.includes(fade.id))!;
+    expect(wave.eventIds[0]).toBe(fade.causedBy);
+    expect(wave.caption).toMatch(/absorbed\), Shield −1$/);
   });
 });

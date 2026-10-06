@@ -134,6 +134,37 @@ button.pin-btn { display: flex; align-items: center; gap: 4px; min-height: 44px;
 .bv-card.dead { opacity: 0.5; }
 .bv-card.dead .emoji { filter: grayscale(1); }
 .bv-status { font-size: 10px; color: var(--dim); line-height: 1.1; }
+/* Motion (R2-12): only the wave that just landed moves. The striker lunges at
+ * the other line, a hit card flashes and shakes, a caster pulses, a dying
+ * card pops before it greys, and the wave's numbers rise and fade. */
+.bv-card.bv-lunge-up { animation: bv-lunge-up 0.32s ease-out; }
+.bv-card.bv-lunge-down { animation: bv-lunge-down 0.32s ease-out; }
+.bv-card.bv-pulse { animation: bv-pulse 0.36s ease-out; }
+.bv-card.bv-hit { animation: bv-shake 0.34s ease-out 0.08s; }
+.bv-card.bv-hit::after, .bv-card.bv-glow::after { content: ""; position: absolute; inset: 0; pointer-events: none; animation: bv-flash 0.4s ease-out 0.08s both; }
+.bv-card.bv-hit::after { background: var(--ghost); }
+.bv-card.bv-glow::after { background: var(--you); }
+.bv-card.bv-dying { animation: bv-die 0.5s ease-out; }
+.bv-float { position: absolute; left: 0; right: 0; z-index: 2; pointer-events: none; font-family: "IBM Plex Mono", monospace; font-size: 18px; font-weight: 700; text-shadow: 0 0 4px var(--bg), 0 0 2px var(--bg); white-space: nowrap; overflow: hidden; animation: bv-rise 0.9s ease-out both; }
+.bv-float.damage, .bv-float.death, .bv-float.debuff { color: var(--ghost); }
+.bv-float.heal, .bv-float.summon { color: var(--you); }
+.bv-float.buff, .bv-float.status, .bv-float.silence { color: var(--gold); font-family: "Rajdhani", sans-serif; font-size: 14px; }
+@keyframes bv-lunge-up { 40% { transform: translateY(-14px) scale(1.06); } }
+@keyframes bv-lunge-down { 40% { transform: translateY(14px) scale(1.06); } }
+@keyframes bv-pulse { 40% { transform: scale(1.08); } }
+@keyframes bv-shake { 20% { transform: translateX(-4px); } 40% { transform: translateX(4px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+@keyframes bv-flash { from { opacity: 0.45; } to { opacity: 0; } }
+@keyframes bv-die { 0% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0.5; transform: none; } }
+@keyframes bv-rise { 0% { opacity: 0; transform: translateY(8px); } 20% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-22px); } }
+/* Reduced motion: nothing moves. The hit card gets a ring, a healed or
+ * buffed one a soft one; the chips already hold the numbers, in place. */
+@media (prefers-reduced-motion: reduce) {
+  .bv-card, .bv-card.bv-lunge-up, .bv-card.bv-lunge-down, .bv-card.bv-pulse, .bv-card.bv-hit, .bv-card.bv-dying { animation: none; transition: none; }
+  .bv-card.bv-hit::after, .bv-card.bv-glow::after { animation: none; background: none; opacity: 1; box-shadow: 0 0 0 2px var(--ghost) inset; }
+  .bv-card.bv-glow::after { box-shadow: 0 0 0 2px var(--you) inset; }
+  .bv-float { display: none; }
+  .bv-card.acting { transform: none; }
+}
 /* A change sits over the emoji: the button is a transparent 44 px tap target
  * across the card's top, its pill covers only the emoji, so the name and
  * PWR / HP below stay readable. One pill per unit a step; a status and the

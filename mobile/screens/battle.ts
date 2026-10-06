@@ -1,7 +1,8 @@
 // The battle viewer (mission #574, slice 9): playback with one-line captions
 // (cause → effect) and the acting unit lit, tap any change to trace its chain,
-// "why I lost" after a loss, speed 1×/2× and skip. The logic is pure and
-// tested in src/mvp/trace.ts; this file only draws it.
+// "why I lost" after a loss, speed 1×/2× and skip. Round 2 (R2-12) plays it
+// beat by beat (a strike or turn end plus its cascade, in waves) with motion.
+// The logic is pure and tested in src/mvp/trace.ts; this file only draws it.
 //
 // It opens any battle (a fight, a playoff game, the champion history); onDone
 // goes on. Skip (data-testid="battle-skip", tapped by the phone e2e) calls
@@ -9,14 +10,14 @@
 // the end, the viewer shows the outcome, "why I lost", and battle-done.
 import { boardAt, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView } from "../../src/mvp/contract";
-import { stepsOf, traceOf, whyILost as lossChains, sidesOf, type Change, type LossChain, type Step, type Trace } from "../../src/mvp/trace";
+import { beatPlayOf, beatTiming, stepsOf, traceOf, whyILost as lossChains, sidesOf, type Change, type LossChain, type Step, type Trace } from "../../src/mvp/trace";
 import { displayNames } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { card, unitSheet } from "../ui/card";
 import { button, closable, h, show } from "../ui/dom";
 
-/** Milliseconds a step stays on screen at 1×. */
-const STEP_MS = 650;
+/** Reduced motion: nothing moves, and beats hold a little longer. */
+const reduced = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you?: Side; fight?: FightResult; run?: RunView; onDone: () => void }): void {
   const { battle } = a;
@@ -29,12 +30,17 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const log = battle.log;
   const name = displayNames(log);
   const sides = sidesOf(log);
-  const steps = stepsOf(log, name, sides, a.you ? { you: a.you } : { sideName: owner });
+  // Playback goes beat by beat (round 2, R2-12): a strike or a turn end plus
+  // everything it sets off, its effects landing in quick waves.
+  const beats = beatPlayOf(log, stepsOf(log, name, sides, a.you ? { you: a.you } : { sideName: owner }), name);
   const lost = a.you !== undefined && outcome === "loss";
   const units = new Map<string, BattleUnit>([...battle.teamA, ...battle.teamB].map((u) => [u.id, u]));
   const emojiOf = (id: string) => units.get(id)?.emoji ?? "✨";
 
-  let at = -1; // index of the step on screen; -1 = the line-up before the first step
+  let at = -1; // index of the beat on screen; -1 = the line-up before the first beat
+  let wave = 0; // waves of that beat landed so far, minus one
+  /** Motion plays only right after the playhead moved forward by itself. */
+  let animate = false;
   let speed = 1;
   let playing = true;
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -58,21 +64,43 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const controls = h("div", { class: "row bv-controls" }, backBtn, playBtn, fwdBtn, speedBtn, skipBtn);
 
   caption.addEventListener("click", () => {
-    const c = steps[at]?.changes[0];
-    if (c) openTrace(c.eventId, steps[at]!.changes.filter((x) => x.unit === c.unit));
+    const st = stepOn();
+    const c = st?.changes[0];
+    if (c) openTrace(c.eventId, st!.changes.filter((x) => x.unit === c.unit));
   });
 
+  const lastWave = (i: number) => (beats[i]?.waves.length ?? 1) - 1;
+  /** The wave on screen: the step whose caption shows. */
+  const stepOn = () => beats[at]?.waves[wave];
+
+  /** Plays the next wave of the open beat, or the next beat's first wave. */
   function schedule(): void {
     if (timer) clearTimeout(timer);
+    const slow = reduced() ? 1.25 : 1;
+    let ms: number;
+    if (at < 0) ms = 600;
+    else {
+      const t = beatTiming(beats[at]!.waves.length);
+      ms = wave < lastWave(at) ? t.at[wave + 1]! - t.at[wave]! : t.ms - t.at[wave]!;
+    }
     timer = setTimeout(() => {
-      if (at >= steps.length - 1) return finish();
-      go(at + 1);
+      if (at >= 0 && wave < lastWave(at)) {
+        wave++;
+        animate = true;
+        render();
+        return schedule();
+      }
+      if (at >= beats.length - 1) return finish();
+      at++;
+      wave = 0;
+      animate = true;
+      render();
       schedule();
-    }, STEP_MS / speed);
+    }, (ms * slow) / speed);
   }
   function play(): void {
     if (finished) return;
-    if (at >= steps.length - 1) at = -1;
+    if (at >= beats.length - 1 && wave >= lastWave(at)) at = -1;
     playing = true;
     trace = null;
     playBtn.textContent = "❚❚";
@@ -85,8 +113,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     if (timer) clearTimeout(timer);
     timer = null;
   }
+  /** Jumps to beat i, every wave landed. */
   function go(i: number): void {
-    at = Math.max(-1, Math.min(steps.length - 1, i));
+    at = Math.max(-1, Math.min(beats.length - 1, i));
+    wave = lastWave(at);
     render();
   }
   function openTrace(eventId: number, group: Change[] = []): void {
@@ -109,8 +139,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     a.onDone();
   }
 
-  function unitCard(u: BoardUnit, side: Side, step: Step | undefined): HTMLElement {
-    const changes = step?.changes.filter((c) => c.unit === u.id) ?? [];
+  function unitCard(u: BoardUnit, side: Side, v: View): HTMLElement {
+    const step = v.now;
+    const changes = v.changes.filter((c) => c.unit === u.id);
     const statuses = u.statuses.map((s) => `${s.status} ${s.stacks}`).join(" · ");
     const el = card(units.get(u.id) ?? { emoji: emojiOf(u.id), name: u.name, stats: { pwr: u.pwr, hp: u.hp } }, {
       side: side === you ? "you" : "ghost",
@@ -123,6 +154,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     el.classList.add("bv-card");
     el.dataset.unit = u.id;
     if (u.silenced) el.classList.add("silenced");
+    motion(el, u.id, side, v);
     // The change's chip traces it; the rest of the card opens the unit.
     el.addEventListener("click", () => openUnit(u.id, changes[0]));
     return el;
@@ -151,27 +183,79 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     render();
     closable(unitSheet(u, a.content));
   }
-  function deadCard(id: string, step: Step): HTMLElement | null {
-    // A unit that falls this step still shows, faded, so its ✝ can be tapped;
-    // so does a fallen unit that acts (a death-triggered ability), lit.
-    const death = step.changes.find((c) => c.unit === id && c.kind === "death");
-    if (!death && step.actor !== id) return null;
+  function deadCard(id: string, v: View): HTMLElement | null {
+    // A unit that falls this beat stays in its slot, greyed, until the beat
+    // ends, so its ✝ can be tapped; so does a fallen unit that acts (a
+    // death-triggered ability), lit.
+    const step = v.now;
+    const death = v.changes.find((c) => c.unit === id && c.kind === "death");
+    if (!death && step?.actor !== id) return null;
     const el = h(
       "div",
       { class: `card bv-card dead ${sides.get(id) === you ? "you" : "ghost"}` },
       h("div", { class: "emoji" }, emojiOf(id)),
       h("div", { class: "name" }, name(id)),
-      death ? h("div", { class: "bv-changes" }, changeBadge(step.changes.filter((c) => c.unit === id))) : null,
+      death ? h("div", { class: "bv-changes" }, changeBadge(v.changes.filter((c) => c.unit === id))) : null,
     );
-    if (step.actor === id) el.classList.add("acting");
+    if (step?.actor === id) el.classList.add("acting");
+    motion(el, id, sides.get(id) ?? you, v);
     el.addEventListener("click", () => openUnit(id, death));
     return el;
   }
 
+  /** What the board shows: the open beat's changes so far (the chips), the
+   * wave that just landed (the caption and the motion), and its board. */
+  interface View {
+    now: Step | undefined;
+    changes: Change[];
+    /** Motion for `now`: only when the playhead moved forward by itself. */
+    moving: boolean;
+  }
+
+  /** Motion for the wave that just landed: the striker lunges, a hit target
+   * flashes and shakes, a caster pulses, a dying card pops, and floating
+   * numbers rise. Under prefers-reduced-motion the CSS keeps it still: the
+   * target gets a ring and the numbers sit in place. */
+  function motion(el: HTMLElement, id: string, side: Side, v: View): void {
+    const step = v.now;
+    if (!step || !v.moving) return;
+    const mine = step.changes.filter((c) => c.unit === id);
+    if (step.actor === id) {
+      const first = log[step.eventIds[0]!];
+      const struck = first?.type === "Hurt" && first.source === "kernel" && first.causedBy !== null && log[first.causedBy]?.type === "Strike";
+      el.classList.add(struck ? (side === you ? "bv-lunge-up" : "bv-lunge-down") : "bv-pulse");
+    }
+    if (mine.some((c) => c.kind === "damage")) el.classList.add("bv-hit");
+    if (mine.some((c) => c.kind === "heal" || c.kind === "buff")) el.classList.add("bv-glow");
+    if (mine.some((c) => c.kind === "death")) el.classList.add("bv-dying");
+    mine.slice(0, 3).forEach((c, k) => {
+      const f = h("span", { class: `bv-float ${c.kind}`, "aria-hidden": "true" }, c.label);
+      f.style.animationDelay = `${k * 120}ms`;
+      f.style.top = `${40 + k * 15}px`;
+      el.append(f);
+    });
+  }
+
+  /** A line in the beat: the living units, and each unit that fell in this
+   * beat back in the slot it held when the beat began. */
+  function lineOf(side: Side, board: ReturnType<typeof boardAt>, before: ReturnType<typeof boardAt>, v: View): HTMLElement[] {
+    const living: HTMLElement[] = board.lines[side].map((u) => unitCard(u, side, v));
+    const fallen = board.graves[side]
+      .map((u) => ({ card: deadCard(u.id, v), slot: before.lines[side].findIndex((b) => b.id === u.id) }))
+      .filter((x): x is { card: HTMLElement; slot: number } => x.card !== null)
+      .sort((p, q) => (p.slot < 0 ? 99 : p.slot) - (q.slot < 0 ? 99 : q.slot));
+    for (const f of fallen) living.splice(f.slot < 0 ? living.length : Math.min(f.slot, living.length), 0, f.card);
+    return living;
+  }
+
   function render(): void {
-    const step = steps[at];
-    const upto = step ? step.eventIds.at(-1)! : 0;
+    const beat = beats[at];
+    const step = beat?.waves[wave];
+    const upto = step ? step.eventIds.reduce((m, id) => Math.max(m, id), 0) : 0;
+    const v: View = { now: step, changes: beat ? beat.waves.slice(0, wave + 1).flatMap((w) => w.changes) : [], moving: animate };
+    animate = false;
     const board = boardAt(log, upto);
+    const before = beat ? boardAt(log, Math.max(0, beat.start - 1)) : board;
     const turn = step?.turn ?? 0;
     hud.replaceChildren(
       h("span", {}, battle.kind === "crown" ? "Crown fight" : battle.kind === "playoff" ? "Playoff" : `Round ${battle.round}`),
@@ -179,19 +263,20 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       h("span", {}, turn ? `T${turn}` : "—"),
     );
     for (const [side, row] of [[them, enemy], [you, mine]] as const) {
-      const living = board.lines[side].map((u) => unitCard(u, side, step));
-      const falling = step ? board.graves[side].flatMap((u) => deadCard(u.id, step) ?? []) : [];
-      row.replaceChildren(...living, ...falling);
+      const cards = lineOf(side, board, before, v);
+      row.replaceChildren(...cards);
       // A falling card beside a full line widens the row instead of wrapping it.
-      row.style.gridTemplateColumns = `repeat(${Math.max(5, living.length + falling.length)}, minmax(0, 1fr))`;
-      row.classList.toggle("empty", !living.length && !falling.length);
-      if (!living.length && !falling.length) row.append(h("div", { class: "dim" }, "No one standing."));
+      row.style.gridTemplateColumns = `repeat(${Math.max(5, cards.length)}, minmax(0, 1fr))`;
+      row.classList.toggle("empty", !cards.length);
+      if (!cards.length) row.append(h("div", { class: "dim" }, "No one standing."));
     }
     caption.replaceChildren(...captionKids(step));
     caption.classList.toggle("tappable", !!step?.changes.length);
     recent.replaceChildren(
-      ...steps.slice(Math.max(0, at - 3), Math.max(0, at)).reverse().map((s) => {
-        const b = h("button", { class: "bv-past" }, ...(s.subjectSide ? [sideTag(s.subjectSide)] : []), s.caption);
+      ...beats.slice(Math.max(0, at - 3), Math.max(0, at)).reverse().map((pb) => {
+        // A past beat reads as its first wave, the strike or tick that opened it.
+        const s = pb.waves[0]!;
+        const b = h("button", { class: "bv-past" }, ...(s.subjectSide ? [sideTag(s.subjectSide)] : []), s.caption, pb.waves.length > 1 ? h("span", { class: "dim" }, ` +${pb.waves.length - 1}`) : null);
         b.addEventListener("click", () => {
           const c = s.changes[0];
           if (c) openTrace(c.eventId, s.changes.filter((x) => x.unit === c.unit));
@@ -205,7 +290,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     end.style.display = finished ? "" : "none";
     if (finished) end.replaceChildren(...endView());
     backBtn.disabled = at < 0;
-    fwdBtn.disabled = at >= steps.length - 1;
+    fwdBtn.disabled = at >= beats.length - 1 && wave >= lastWave(at);
     controls.style.display = finished ? "none" : "";
   }
 
