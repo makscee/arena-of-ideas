@@ -19,7 +19,7 @@ import { statsScreen } from "./screens/stats";
 import { card, roman, unitSheet, type CardUnit } from "./ui/card";
 import { previewName } from "./ui/fusion";
 import { icon } from "./ui/icon";
-import { app, button, closable, desktopQuery, h, isDesktop, keepScreen, onKeys, overlay, screen, show, who } from "./ui/dom";
+import { app, button, closable, desktopQuery, dismissable, h, isDesktop, keepScreen, onKeys, overlay, screen, show, who } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
 import { initSound, onSoundChange, play, setSound, soundSettings } from "./ui/sound";
 import { shopSound } from "./ui/sound-map";
@@ -367,10 +367,8 @@ function runMenu(run: RunView, content: MvpContent, err: HTMLElement, fought?: F
     run.phase === "over" ? null : h("div", { class: "dim small" }, "The run waits; Continue brings you back."),
     run.phase === "over" ? null : button("Abandon run…", () => (close(), abandonSheet(run, "menu", () => void guarded(err, async () => runOverScreen(await api.abandon(run.runId), content)))), "danger", "menu-abandon"),
   );
-  const close = overlay(menu);
-  // A tap outside the menu (or the battle's Esc) is a Resume too.
-  const back = menu.closest(".overlay");
-  if (resume && back) back.addEventListener("click", (e) => e.target === back && resume());
+  // A tap outside the menu, or Esc, is a Resume too.
+  const close = dismissable((close) => (close(), resume?.()), menu);
 }
 
 /** The champion card's last line: what today's slayers mean at the day's end. */
@@ -893,23 +891,11 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   );
   screen("shop");
   rerender = () => shopScreen(run, content, err.textContent ?? "", pick.mode === "picked" ? pick.index : -1);
-  if (!desk) return;
-  // ← / → pressed while the last move was out: the unit goes on by as many slots.
-  const queued = moveQueue;
-  moveQueue = 0;
-  if (queued && pick.mode === "picked" && !crown) {
-    const from = pick.index;
-    const to = Math.max(0, Math.min(run.line.length - 1, from + queued));
-    // After the answering request lets go (guarded ignores a decision while one is out).
-    if (to !== from) setTimeout(() => void decide({ kind: "reorder", from, to }, to), 0);
-  }
-
-  // Keys: 1–7 buy, R reroll, L lock the chosen or hovered offer, Space fight, ← → move the selected unit, F fuse,
-  // S sell; Esc steps back (a sheet, the fusion, the selection), then opens
-  // the ☰ run menu.
+  // Keys: Esc steps back (the fusion, the selection), then opens the ☰ run
+  // menu, at every width (a sheet over the shop closes first: ui/dom.ts).
+  // Desktop: 1–7 buy, R reroll, L lock the chosen or hovered offer, Space
+  // fight, ← → move the selected unit, F fuse, S sell.
   onKeys((e) => {
-    const open = app.querySelector(".overlay");
-    if (open) return e.key === "Escape" ? (open.remove(), true) : false;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     const sel = pick.mode === "picked" ? pick.index : -1;
     if (k === "Escape") {
@@ -920,6 +906,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       renderLine();
       return true;
     }
+    if (!desk) return false;
     if (k === " ") {
       if (!fight.disabled) void decide({ kind: "fight" });
       return true;
@@ -966,6 +953,17 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     }
     return false;
   });
+  if (!desk) return;
+  // ← / → pressed while the last move was out: the unit goes on by as many slots.
+  const queued = moveQueue;
+  moveQueue = 0;
+  if (queued && pick.mode === "picked" && !crown) {
+    const from = pick.index;
+    const to = Math.max(0, Math.min(run.line.length - 1, from + queued));
+    // After the answering request lets go (guarded ignores a decision while one is out).
+    if (to !== from) setTimeout(() => void decide({ kind: "reorder", from, to }, to), 0);
+  }
+
 }
 
 /** ← / → presses the desktop shop took while a move was still out. */
@@ -1126,7 +1124,7 @@ function runOverScreen(run: RunView, content: MvpContent, notice = "", newRun = 
     h("div", { class: "row footer" }, ...(newRun ? [button("Home", home, "grow", "home"), button("New run", next, "primary grow", "new-run-start")] : [button("Home", home, "primary grow", "home")])),
   );
   screen("over");
-  onKeys((e) => (e.key === "Enter" ? ((newRun ? next : home)(), true) : false));
+  onKeys((e) => (e.key === "Enter" ? ((newRun ? next : home)(), true) : e.key === "Escape" ? (home(), true) : false));
 }
 
 // ---------- boot ----------

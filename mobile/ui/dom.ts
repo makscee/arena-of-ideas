@@ -1,4 +1,5 @@
 // Plain-DOM helpers shared by every screen of the phone client (mission #574).
+import { escStep } from "./esc";
 import { toggleSound } from "./sound";
 
 export const app = document.getElementById("app")!;
@@ -95,30 +96,98 @@ export function screen(name: "home" | "shop" | "result" | "over" | "stats" | "co
   app.dataset.screen = name;
 }
 
-/** The current screen's keyboard (desktop): show() clears it. A key typed in
- * a field, or with Ctrl/Cmd/Alt, never reaches it. Returning true means
- * handled (its default, like Space clicking a focused button, is stopped). */
+/** The current screen's keyboard, at every width: show() clears it. A key
+ * typed in a field, or with Ctrl/Cmd/Alt, never reaches it; nor does an Esc
+ * that closed something (escStep). Returning true means handled (its
+ * default, like Space clicking a focused button, is stopped). */
 let keys: ((e: KeyboardEvent) => boolean) | null = null;
 export function onKeys(fn: (e: KeyboardEvent) => boolean): void {
   keys = fn;
 }
-addEventListener("keydown", (e) => {
-  if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
-  const t = e.target as HTMLElement | null;
-  if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-  // M: sound on/off, on every screen (round 3, note 16).
-  if (e.key === "m" || e.key === "M") return void (toggleSound(), e.preventDefault());
-  if (keys && keys(e)) e.preventDefault();
-});
+
+// ---------- Esc (round 3, note 9) ----------
+
+/** The term popover (./term.ts) says how to close it, if one is open: Esc
+ * closes it before anything under it. */
+let popover: (() => (() => void) | null) | null = null;
+export function onPopoverEsc(fn: () => (() => void) | null): void {
+  popover = fn;
+}
+
+const TEXT_INPUTS = new Set(["text", "search", "email", "url", "tel", "password", "number", ""]);
+/** A field keys type into (a range or a checkbox is not one). */
+function textField(t: EventTarget | null): HTMLElement | null {
+  if (!(t instanceof HTMLElement)) return null;
+  if (t instanceof HTMLInputElement) return TEXT_INPUTS.has(t.type) ? t : null;
+  return t.tagName === "TEXTAREA" || t.isContentEditable ? t : null;
+}
+
+// One listener for the whole client, in capture: Esc closes the top-most
+// thing before any screen sees the key.
+addEventListener(
+  "keydown",
+  (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+    const field = textField(e.target);
+    if (e.key === "Escape") {
+      const closePop = popover?.() ?? null;
+      const top = topLayer();
+      const clearable = field instanceof HTMLInputElement && field.type === "search" && field.value !== "";
+      const step = escStep({ popover: closePop !== null, overlays: top ? 1 : 0, field: field ? (clearable ? "clearable" : "plain") : "none" });
+      if (step === "native") return;
+      if (step !== "screen") {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (step === "popover") closePop!();
+        else if (step === "overlay") top!.dismiss();
+        else field!.blur();
+        return;
+      }
+    }
+    if (field) return;
+    // M: sound on/off, on every screen (round 3, note 16).
+    if (e.key === "m" || e.key === "M") return void (toggleSound(), e.preventDefault());
+    // A sheet is open: the screen under it takes no keys.
+    if (topLayer()) return;
+    if (keys && keys(e)) e.preventDefault();
+  },
+  { capture: true },
+);
+
+// ---------- overlays ----------
+
+/** The open overlays, bottom first. Each one's `dismiss` is what a tap
+ * outside it and Esc do: close it, or for the run menu, Resume. */
+type Layer = { el: HTMLElement; dismiss: () => void };
+const layers: Layer[] = [];
+/** The top-most overlay still on the screen (show() and keepScreen() drop
+ * overlays without closing them: those are forgotten here). */
+function topLayer(): Layer | null {
+  for (let i = layers.length - 1; i >= 0; i--) if (!layers[i]!.el.isConnected) layers.splice(i, 1);
+  return layers[layers.length - 1] ?? null;
+}
 
 /** A modal sheet over the current screen: the unit sheet, the rules, the
- * trace popup, why-I-lost. Tapping outside it closes it, and so does the next
- * show(). Returns close. */
+ * trace popup, why-I-lost. Tapping outside it closes it, and so do Esc and
+ * the next show(). Returns close. */
 export function overlay(...kids: Node[]): () => void {
+  return dismissable(null, ...kids);
+}
+
+/** overlay() whose tap outside and Esc do `dismiss(close)` instead of a plain
+ * close: the run menu resumes the battle under it. */
+export function dismissable(dismiss: ((close: () => void) => void) | null, ...kids: Node[]): () => void {
   const sheet = h("div", { class: "sheet stack", role: "dialog" }, ...kids);
   const back = h("div", { class: "overlay", "data-testid": "overlay" }, sheet);
-  const close = () => back.remove();
-  back.addEventListener("click", (e) => e.target === back && close());
+  const layer: Layer = { el: back, dismiss: () => (dismiss ? dismiss(close) : close()) };
+  function close(): void {
+    back.remove();
+    const i = layers.indexOf(layer);
+    if (i >= 0) layers.splice(i, 1);
+  }
+  back.addEventListener("click", (e) => e.target === back && layer.dismiss());
+  topLayer();
+  layers.push(layer);
   app.append(back);
   return close;
 }
