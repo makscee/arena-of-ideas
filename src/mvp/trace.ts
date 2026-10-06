@@ -675,27 +675,20 @@ export interface KeyMoment {
 /** Combos shorter than this aren't a key moment. */
 const COMBO_MIN = 3;
 
-/** The 2–3 moments worth replaying, in battle order: the biggest killing blow,
+/** The 2–3 moments worth replaying, in battle order: the biggest killing blow
+ * (by the hit, as its chip showed it, overkill included),
  * the longest combo (the beat with the most waves, at least 3), and when
  * fatigue set in. A battle with fewer adds its last kill, so there is
  * something to click whenever anyone fell. */
 export function keyMomentsOf(log: BattleEvent[], beats: PlayBeat[], name: NameOf = displayNames(log), sides = sidesOf(log)): KeyMoment[] {
   const beatOfEvent = (id: number) => beats.find((b) => b.waves.some((w) => w.eventIds.includes(id)))?.index ?? beats.find((b) => b.end >= id)?.index ?? beats.length - 1;
-  const hp = new Map<string, number>();
-  for (const e of log) if (e.type === "BattleStart") for (const s of ["A", "B"] as const) for (const r of e.teams[s]) hp.set(r.id, r.hp);
   const kills: { id: number; killer: string | null; victim: string; dmg: number }[] = [];
   const lastHit = new Map<string, { id: number; dmg: number }>();
   for (const e of log) {
-    if (e.type === "Hurt") {
-      const before = hp.get(e.unit) ?? e.amount;
-      hp.set(e.unit, e.hpAfter ?? before - e.amount);
-      lastHit.set(e.unit, { id: e.id, dmg: Math.max(0, Math.min(e.amount, before)) });
-    } else if (e.type === "Heal") hp.set(e.unit, e.hpAfter ?? (hp.get(e.unit) ?? 0) + e.amount);
-    else if (e.type === "StatChanged" && e.hpAfter !== undefined) hp.set(e.unit, e.hpAfter);
-    else if (e.type === "Summon") hp.set(e.unit, e.atHp ?? e.hp);
+    if (e.type === "Hurt") lastHit.set(e.unit, { id: e.id, dmg: e.amount });
     else if (e.type === "Death") {
       const cause = e.causedBy !== null ? log[e.causedBy] : undefined;
-      const hit = cause?.type === "Hurt" ? { id: cause.id, dmg: lastHit.get(e.unit)?.dmg ?? cause.amount } : lastHit.get(e.unit);
+      const hit = cause?.type === "Hurt" ? { id: cause.id, dmg: cause.amount } : lastHit.get(e.unit);
       const killer = hit ? (traceOf(log, hit.id, name, sides).links[0]?.unit ?? null) : null;
       kills.push({ id: e.id, killer, victim: e.unit, dmg: hit?.dmg ?? 0 });
     }

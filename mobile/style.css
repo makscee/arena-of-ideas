@@ -226,7 +226,7 @@ button.bv-badge.still { animation: none; }
 /* Reduced motion: nothing moves. The hit card gets a ring, a healed or
  * buffed one a soft one; the chips hold the numbers in place, and the
  * caption lists every change of the beat (.bv-still). */
-.bv-stillbox { flex: 0 1 auto; min-height: 0; overflow: hidden; }
+.bv-stillbox { flex: 0 1 auto; min-height: 0; overflow-y: auto; }
 .bv-still { display: flex; flex-wrap: wrap; gap: 0 8px; font-size: 13px; font-family: "IBM Plex Mono", monospace; }
 @media (prefers-reduced-motion: reduce) {
   .bv-card, .bv-card.bv-lunge-up, .bv-card.bv-lunge-down, .bv-card.bv-pulse, .bv-card.bv-hit, .bv-card.bv-dying { animation: none; transition: none; }
@@ -310,7 +310,7 @@ button.bv-moment { display: grid; grid-template-columns: 32px 1fr auto; gap: 8px
 .bv-moment.kill .bv-moment-l { color: var(--ghost); }
 .bv-moment.combo .bv-moment-l { color: var(--gold); }
 .bv-end-actions { gap: 6px; }
-.bv-end-actions button { padding: 0 10px; }
+.bv-end-actions button { padding: 0 8px; font-size: 15px; white-space: nowrap; }
 .bv-line.empty { min-height: 0; display: block; }
 .bv-word.neutral { color: var(--text); font-size: 24px; }
 /* Slice 11: a unit's rates, only a hint since round 2: the sheet's dim last line. */
