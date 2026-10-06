@@ -6,7 +6,7 @@
 import { randomUUID } from "node:crypto";
 import { Hono, type Context } from "hono";
 import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, type Decision, type HomeView, type PlayerRef } from "../../../src/mvp/contract.js";
-import { MvpBadDecision, MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
+import { checkDecision, MvpBadDecision, MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
 import { dayView, endDay, hiddenSlay } from "./day.js";
 import { MvpNotYet } from "./errors.js";
 import { abandon, currentRun, decide, preview, startRun } from "./runs.js";
@@ -86,6 +86,14 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     if (!run) return bad(c, 404, "no such run");
     if (!p || p.id !== run.player.id) return bad(c, 401, "not your run");
     if (!d || typeof d !== "object" || typeof d.kind !== "string") return bad(c, 400, "body must be a Decision");
+    // Kind and indexes before anything reads the run with them (runs.ts's
+    // fuse naming indexes the line first).
+    try {
+      checkDecision(d);
+    } catch (err) {
+      if (err instanceof MvpBadDecision) return bad(c, 400, err.message);
+      throw err;
+    }
     return { run, d };
   };
   /** A decision the run engine turned down: 400 for one it can't read (an

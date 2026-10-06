@@ -85,6 +85,12 @@ export function offersAt(rules: MvpRules, round: number): number {
   return rules.offers + (rules.offersGrowAt ?? []).filter((r) => r <= round).length;
 }
 
+/** True when a reroll would redraw nothing: locked offers fill the whole shop.
+ * Empty slots (offers bought this round) still refill, so a reroll is fine then. */
+export function lockedFull(s: { offers: readonly Pick<Offer, "locked">[]; rules: MvpRules; round: number }): boolean {
+  return s.offers.length >= offersAt(s.rules, s.round) && s.offers.every((o) => o.locked);
+}
+
 /** Gold back for selling `unit`: Awoken and fused units (form "awoken") get
  * `sellRefundAwoken`, sleeping ones `sellRefund`. */
 export function sellValue(rules: MvpRules, unit: Pick<LineUnit, "form">): number {
