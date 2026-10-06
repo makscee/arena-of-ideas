@@ -93,6 +93,9 @@ export interface RunOutro {
   menu: () => void;
 }
 
+/** A phone on its side: compact cards with one status row (style.css, R2-17 batch E). */
+const shortScreen = matchMedia("(max-width: 1023.98px) and (max-height: 520px)");
+
 /** Reduced motion: nothing moves, and beats hold a little longer. */
 const reduced = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -589,7 +592,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   function statusChips(u: BoardUnit, width: number): HTMLElement {
     const statuses = u.statuses;
     // The desktop's chips are drawn 1.2× larger (12 px, R2-17 batch E): the row holds fewer.
-    const shown = statusesShown(statuses.map((st) => st.stacks), (width > 0 ? width : STATUS_ROW_FALLBACK) / (isDesktop() ? 1.25 : 1));
+    // A short phone screen (on its side) has one status row (style.css).
+    const shown = statusesShown(statuses.map((st) => st.stacks), (width > 0 ? width : STATUS_ROW_FALLBACK) / (isDesktop() ? 1.25 : 1), shortScreen.matches ? 1 : 2);
     const over = statuses.length - shown;
     let more: HTMLElement | null = null;
     if (over) {
