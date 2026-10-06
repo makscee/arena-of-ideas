@@ -70,10 +70,13 @@ const SUMMONS: Record<string, UnitDef> = {
   "Call Golem": body("Golem", 2, 6),
   "Call Wraith": body("Wraith", 3, 3),
   "Call Treant": body("Treant", 1, 8),
+  // Awoken Summoner's body (R3-8): it has a job of its own, so the Awoken
+  // form does something new and not just a bigger body.
+  "Call Warg": { name: "Warg", base: { pwr: 2, hp: 4 }, triggers: WHEN.strike, selectors: [WHO.front], abilities: ["Poison 1"] },
 };
 
 /** Each summoned body's emoji, by its name (R3-5). */
-const SUMMON_EMOJI: Record<string, string> = { Imp: "👺", Wolf: "🐺", Golem: "🗿", Wraith: "👻", Treant: "🌳" };
+const SUMMON_EMOJI: Record<string, string> = { Imp: "👺", Wolf: "🐺", Golem: "🗿", Wraith: "👻", Treant: "🌳", Warg: "🐕" };
 
 
 /** A summoned body as content: its emoji, and its form unless it only strikes. */
@@ -139,58 +142,58 @@ const r = (name: string, emoji: string, tier: Tier, pwr: number, hp: number, whe
 /* eslint-disable prettier/prettier */
 export const ROWS: Row[] = [
   // ---- tier 1: openers and first links ----
-  r("Fighter",       "🥊", 1, 2, 5, "strike",     "front",   "Hit 1",       { does: ["Hit 3"] }),
-  r("Fodder",        "🥔", 1, 1, 6, "die",        "allies",  "Shield 1",    { does: ["Shield 2"] }),
-  r("Squire",        "🗡️", 1, 2, 4, "start",      "me",      "Strength 2",  { does: ["Strength 2", "Vitality 1"] }),
+  r("Fighter",       "🥊", 1, 2, 5, "strike",     "front",   "Hit 1",       { who: "enemies" }),
+  r("Fodder",        "🥔", 1, 1, 6, "die",        "allies",  "Shield 1",    { does: ["Shield 1", "Heal 2"] }),
+  r("Squire",        "🗡️", 1, 2, 4, "start",      "me",      "Strength 2",  { does: ["Strength 2", "Shield 2"] }),
   r("Gnat",          "🦟", 1, 1, 4, "turnEnd",    "random",  "Hit 1",       { who: "enemies" }),
   r("Spore",         "🍄", 1, 1, 5, "die",        "enemies", "Curse 1",     { does: ["Curse 1", "Poison 1"] }),
   r("Rat",           "🐀", 1, 2, 4, "die",        "front",   "Poison 2",    { who: "enemies" }),
   // A summon into a full line is skipped, so Planter also grows: in a full
   // line it is a sturdier body instead of a blank.
-  r("Planter",       "🌱", 1, 1, 5, "start",      "me",      "Call Imp + Vitality 2", { does: ["Call Treant", "Vitality 3"] }),
-  r("Nurse",         "💉", 1, 1, 5, "allyHurt",   "it",      "Heal 1",      { does: ["Heal 2"] }),
-  r("Prepper",       "🎒", 1, 1, 5, "start",      "allies",  "Shield 1",    { does: ["Shield 1", "Vitality 1"] }),
-  r("Coach",         "📣", 1, 1, 5, "start",      "allies",  "Strength 1",  { does: ["Strength 2"] }),
-  r("Bat",           "🦇", 1, 2, 4, "strike",     "random",  "Hit 1",       { does: ["Hit 2"] }),
+  r("Planter",       "🌱", 1, 1, 5, "start",      "me",      "Call Imp + Vitality 2", { does: ["Call Treant + Vitality 2", "Shield 2"] }),
+  r("Nurse",         "💉", 1, 1, 5, "allyHurt",   "it",      "Heal 1",      { does: ["Heal 1", "Shield 1"] }),
+  r("Prepper",       "🎒", 1, 1, 5, "start",      "allies",  "Shield 1",    { does: ["Shield 1", "Bless 1"] }),
+  r("Coach",         "📣", 1, 1, 5, "start",      "allies",  "Strength 1",  { does: ["Strength 1", "Shield 1"] }),
+  r("Bat",           "🦇", 1, 2, 4, "strike",     "random",  "Hit 1",       { does: ["Hit 1", "Curse 1"] }),
   r("Taser",         "⚡", 1, 2, 4, "start",      "front",   "Freeze 1",    { does: ["Freeze 1", "Hit 2"] }),
-  r("Wire",          "🔌", 1, 1, 5, "allyPower",  "front",   "Hit 1",       { does: ["Hit 2"] }),
-  r("Rose",          "🌹", 1, 2, 6, "hurt",       "front",   "Hit 2",       { does: ["Hit 3"] }),
+  r("Wire",          "🔌", 1, 1, 5, "allyPower",  "front",   "Hit 1",       { does: ["Hit 1", "Silence"] }),
+  r("Rose",          "🌹", 1, 2, 6, "hurt",       "front",   "Hit 2",       { does: ["Hit 2", "Curse 1"] }),
   r("Victim",        "😵", 1, 1, 7, "hurt",       "allies",  "Strength 1",  { does: ["Strength 1", "Heal 1"] }),
   r("Saboteur",      "🧨", 1, 2, 4, "start",      "front",   "Curse 1",     { who: "enemies" }),
-  r("Spike",         "🌵", 1, 1, 6, "allyShield", "front",   "Hit 1",       { does: ["Hit 2"] }),
-  r("Wither",        "🥀", 1, 2, 4, "enemyDies",  "allies",  "Strength 1",  { does: ["Strength 1", "Vitality 1"] }),
+  r("Spike",         "🌵", 1, 1, 6, "allyShield", "front",   "Hit 1",       { does: ["Hit 1", "Poison 1"] }),
+  r("Wither",        "🥀", 1, 2, 4, "enemyDies",  "allies",  "Strength 1",  { does: ["Strength 1", "Shield 1"] }),
   r("Distractor",    "🤡", 1, 1, 9, "hurt",       "me",      "Vitality 1",  { does: ["Vitality 1", "Shield 2"] }),
-  r("Henchman",      "🦹", 1, 2, 5, "allyDies",   "me",      "Strength 2",  { does: ["Strength 2", "Vitality 2"] }),
-  r("Sniper",        "🎯", 1, 2, 4, "start",      "random",  "Hit 4",       { does: ["Hit 4", "Hit 3"] }),
-  r("Medic",         "⛑️", 1, 1, 6, "turnEnd",    "allies",  "Heal 1",      { does: ["Heal 2"] }),
+  r("Henchman",      "🦹", 1, 2, 5, "allyDies",   "me",      "Strength 2",  { does: ["Strength 2", "Shield 2"] }),
+  r("Sniper",        "🎯", 1, 2, 4, "start",      "random",  "Hit 4",       { does: ["Hit 4", "Poison 2"] }),
+  r("Medic",         "⛑️", 1, 1, 6, "turnEnd",    "allies",  "Heal 1",      { does: ["Heal 1", "Shield 1"] }),
 
   // ---- tier 2: links that react to links ----
-  r("Guardian",      "🛡️", 2, 2, 6, "allyHurt",   "it",      "Shield 1",    { does: ["Shield 2"] }),
-  r("Almsgiver",     "🪙", 2, 2, 7, "allyShield", "it",      "Heal 1",      { does: ["Heal 1", "Strength 1"] }),
-  r("Sanctifier",    "✨", 2, 2, 6, "allyHealed", "it",      "Strength 1",  { does: ["Strength 1", "Vitality 1"] }),
-  r("Enhancer",      "🔋", 2, 1, 6, "allyShield", "it",      "Strength 1",  { does: ["Strength 2"] }),
-  r("Battery",       "🪫", 2, 2, 5, "allyHealed", "me",      "Strength 1",  { does: ["Strength 2"] }),
-  r("Injector",      "🧪", 2, 2, 5, "hurt",       "front",   "Poison 1",    { does: ["Poison 2"] }),
+  r("Guardian",      "🛡️", 2, 2, 6, "allyHurt",   "it",      "Shield 1",    { who: "me", does: ["Shield 2"] }),
+  r("Almsgiver",     "🪙", 2, 2, 7, "allyShield", "it",      "Heal 1",      { who: "me", does: ["Heal 2", "Strength 1"] }),
+  r("Sanctifier",    "✨", 2, 2, 6, "allyHealed", "it",      "Strength 1",  { who: "front", does: ["Smite"] }),
+  r("Enhancer",      "🔋", 2, 1, 6, "allyShield", "it",      "Strength 1",  { does: ["Strength 1", "Heal 1"] }),
+  r("Battery",       "🪫", 2, 2, 5, "allyHealed", "me",      "Strength 1",  { who: "random", does: ["Hit 2"] }),
+  r("Injector",      "🧪", 2, 2, 5, "hurt",       "front",   "Poison 1",    { who: "enemies" }),
   r("Venomancer",    "🐍", 2, 2, 7, "strike",     "front",   "Poison 2",    { does: ["Poison 2", "Curse 1"] }),
   r("Plague Rat",    "🐁", 2, 1, 5, "die",        "enemies", "Poison 2",    { does: ["Poison 2", "Freeze 1"] }),
   // Duelist opens with a lunge; Fighter is the one that hits on every strike.
   r("Duelist",       "🤺", 2, 3, 7, "start",      "front",   "Smite",       { does: ["Smite", "Curse 1"] }),
-  r("Berserker",     "🪓", 2, 3, 6, "hurt",       "me",      "Strength 1",  { does: ["Strength 2"] }),
-  r("Emberling",     "🔥", 2, 3, 6, "die",        "enemies", "Hit 2",       { does: ["Hit 3"] }),
+  r("Berserker",     "🪓", 2, 3, 6, "hurt",       "me",      "Strength 1",  { does: ["Strength 1", "Heal 1"] }),
+  r("Emberling",     "🔥", 2, 3, 6, "die",        "enemies", "Hit 2",       { does: ["Hit 2", "Freeze 1"] }),
   r("Icebinder",     "🧊", 2, 2, 5, "start",      "random",  "Freeze 2",    { who: "enemies" }),
-  r("Summoner",      "🔮", 2, 1, 6, "die",        "me",      "Call Wolf",   { does: ["Call Wraith"] }),
-  r("Gardener",      "🪴", 2, 1, 7, "allySummoned", "it",  "Vitality 2",  { does: ["Vitality 2", "Strength 1"] }),
-  r("Fruiter",       "🍎", 2, 2, 6, "die",        "allies",  "Heal 3",      { does: ["Heal 3", "Strength 1"] }),
-  r("Leech",         "🩸", 2, 2, 6, "strike",     "me",      "Mend",        { does: ["Mend", "Strength 1"] }),
-  r("Bloodthinner",  "💧", 2, 2, 5, "enemyPoisoned", "it",   "Hit 1",       { does: ["Hit 2"] }),
+  r("Summoner",      "🔮", 2, 1, 6, "die",        "me",      "Call Wolf",   { does: ["Call Warg"] }),
+  r("Gardener",      "🪴", 2, 1, 7, "allySummoned", "it",  "Vitality 2",  { who: "me", does: ["Vitality 2", "Shield 2"] }),
+  r("Fruiter",       "🍎", 2, 2, 6, "die",        "allies",  "Heal 3",      { does: ["Heal 2", "Bless 1"] }),
+  r("Leech",         "🩸", 2, 2, 6, "strike",     "me",      "Mend",        { does: ["Mend", "Shield 1"] }),
+  r("Bloodthinner",  "💧", 2, 2, 5, "enemyPoisoned", "it",   "Hit 1",       { who: "front", does: ["Hit 2"] }),
   r("Hag",           "🧙", 2, 1, 6, "enemyPoisoned", "it",   "Curse 1",     { does: ["Curse 1", "Hit 1"] }),
-  r("Trickster",     "🃏", 2, 2, 5, "enemyCursed", "random", "Hit 2",       { does: ["Hit 3"] }),
+  r("Trickster",     "🃏", 2, 2, 5, "enemyCursed", "random", "Hit 2",       { who: "it", does: ["Smite"] }),
   r("Custodian",     "🗝️", 2, 2, 9, "allyDies",   "allies",  "Shield 2",    { does: ["Shield 2", "Heal 1"] }),
   r("Silencer",      "🤫", 2, 2, 6, "start",      "front",   "Silence",     { who: "random", does: ["Silence", "Hit 2"] }),
-  r("Scavenger",     "🦅", 2, 2, 6, "allyDies",   "me",      "Heal 3",      { does: ["Heal 3", "Strength 2"] }),
+  r("Scavenger",     "🦅", 2, 2, 6, "allyDies",   "me",      "Heal 3",      { does: ["Heal 3", "Bless 1"] }),
   r("Syren",         "🧜", 2, 2, 5, "turnStart",  "random",  "Curse 1",     { who: "enemies" }),
   r("Rot",           "🦠", 2, 1, 6, "turnEnd",    "front",   "Poison 1",    { who: "enemies" }),
-  r("Bulwark",       "🧱", 2, 2, 11, "start",     "me",      "Shield 3",    { does: ["Shield 3", "Strength 1"] }),
+  r("Bulwark",       "🧱", 2, 2, 11, "start",     "me",      "Shield 3",    { does: ["Shield 3", "Bless 1"] }),
   r("Stoneskin",     "🪨", 2, 2, 7, "hurt",       "me",      "Shield 1",    { who: "allies" }),
 
   // ---- tier 3: engines ----
@@ -199,7 +202,7 @@ export const ROWS: Row[] = [
   // Physician treats the cause, not the wound: it saps whoever is hitting
   // (Nurse and Guardian tend the hit ally).
   r("Physician",     "🩺", 3, 2, 8, "allyHurt",   "front",   "Curse 1",     { does: ["Curse 1", "Poison 1"] }),
-  r("Pediatrician",  "🍼", 2, 2, 8, "allySummoned", "it",   "Strength 1",  { does: ["Strength 2"] }),
+  r("Pediatrician",  "🍼", 2, 2, 8, "allySummoned", "it",   "Strength 1",  { does: ["Strength 1", "Bless 1"] }),
   r("Crusader",      "⚔️", 3, 3, 9, "turnStart",  "front",   "Hit 2",       { does: ["Hit 3"] }),
   r("Lightning",     "🌩️", 3, 3, 7, "allyPower",  "random",  "Hit 2",       { does: ["Hit 3"] }),
   r("Battle Mage",   "🪄", 3, 3, 7, "allyShield", "random", "Hit 2",       { does: ["Hit 3"] }),
@@ -287,7 +290,27 @@ export function shapeKinds(does: string[]): string[] {
   return job.length ? job : kinds;
 }
 const FAMILY: Record<string, string> = { Mend: "Heal", Smite: "Hit" };
+
+/** The effect kinds the bodies a Does list summons act with ("Call Warg" →
+ * Poison); a body that only strikes adds none. */
+function calledJobs(does: string[]): string[] {
+  const parts = does.flatMap((d) => d.split(" + "));
+  return effectKinds(parts.flatMap((p) => (SUMMONS[p]?.abilities ?? []).filter((a) => a !== "Strike")));
+}
 const RIDERS = ["Strength", "Vitality"];
+
+/** What an Awoken form does that its sleeping form doesn't (round 3, R3):
+ * a new Who kind, or an effect kind the sleeping form lacks. Families count
+ * as one kind (Hit = Smite, Heal = Mend), and a Strength or Vitality rider
+ * never counts as the new part. Null when Awoken only has bigger numbers. */
+export function awokenNewPart(sleeping: UnitForm, awoken: UnitForm): string | null {
+  const who = (f: UnitForm) => f.who.map((w) => w.kind).join("+");
+  if (who(awoken) !== who(sleeping)) return `Who ${who(sleeping)} → ${who(awoken)}`;
+  const kinds = (f: UnitForm) => new Set([...effectKinds(f.does), ...calledJobs(f.does)].map((k) => FAMILY[k] ?? k));
+  const had = kinds(sleeping);
+  const added = [...kinds(awoken)].filter((k) => !had.has(k) && !RIDERS.includes(k));
+  return added.length ? `adds ${added.join(", ")}` : null;
+}
 
 /** The link event each listening When reacts to. The other Whens are roots
  * (battle start, turns, strike, hurt, death): damage only takes HP away, so a
@@ -330,6 +353,8 @@ export function mvpPool(rows: Row[] = ROWS): MvpPool {
   const units = rows.map(unitOf);
   const names = new Set<string>(["Strike"]);
   for (const u of units) for (const f of [u.forms.sleeping, u.forms.awoken]) for (const d of f.does) names.add(d);
+  // …and what the summoned bodies act with.
+  for (const n of [...names]) for (const part of n.split(" + ")) for (const a of SUMMONS[part]?.abilities ?? []) names.add(a);
   const abilities: AbilityRegistry = {};
   for (const n of [...names].sort()) abilities[n] = abilityOf(n);
   // Every body a summon effect in the pool makes, once each. Names are unique

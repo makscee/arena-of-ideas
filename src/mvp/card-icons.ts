@@ -39,16 +39,18 @@ export function scopedLabel(label: string, pip: Pip | undefined): string {
 
 /** The form's icons, When first, then Who, then each Does (each part in its
  * text's order; the text says "deal 2 damage to the front enemy", the line
- * reads When · Who · Does). One per idea: a repeated icon is dropped. An
- * authored text line is ignored: the icons come from the form's parts. */
+ * reads When · Who · Does). One per idea within a role: a repeated icon is
+ * dropped, but a Does that shares its icon with the When stays ("Ally healed:
+ * heal it" shows the heal twice). An authored text line is ignored: the icons
+ * come from the form's parts. */
 export function cardIcons(form: UnitForm, abilities: AbilityRegistry): CardIcon[] {
   const { text: _authored, ...parts } = form;
   const segs = formSegments(parts, abilities);
   const out: CardIcon[] = [];
-  const seen = new Set<IconId>();
+  const seen = new Set<string>();
   const add = (c: CardIcon | null) => {
-    if (!c || seen.has(c.icon)) return;
-    seen.add(c.icon);
+    if (!c || seen.has(`${c.role}:${c.icon}`)) return;
+    seen.add(`${c.role}:${c.icon}`);
     out.push(c);
   };
   for (let i = 0; i < segs.length; i++) {
