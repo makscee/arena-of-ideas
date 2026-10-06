@@ -3,9 +3,10 @@
 
 import { describe, expect, test } from "vitest";
 import { battle } from "../battle.js";
+import { displayNames } from "../trace.js";
 import { stressAbilities, stressRegistry } from "../content/stress.js";
 import type { AbilityDef, AbilityRegistry, BattleEvent, UnitDef, When } from "../types.js";
-import { BEAT_MAX_MS, BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, captionOf, captionSubject, changeOf, endCaption, stepsOf, timingOf, traceOf, whyILost } from "./trace.js";
+import { BEAT_MAX_MS, BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, captionOf, captionSubject, changeOf, endCaption, firingOf, stepsOf, timingOf, traceOf, whyILost } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -258,5 +259,25 @@ describe("one beat at a time (R2-12)", () => {
     const wave = beatPlayOf(log, stepsOf(log)).flatMap((b) => b.waves).find((w) => w.eventIds.includes(fade.id))!;
     expect(wave.eventIds[0]).toBe(fade.causedBy);
     expect(wave.caption).toMatch(/absorbed\), Shield −1$/);
+  });
+});
+
+describe("trigger badges (R2-13)", () => {
+  test("a reaction names the trigger it answered and what it did", () => {
+    const log = run([Shieldbearer, Smith, Archer], [dummy("Dummy", 30, 1)]);
+    const firings = stepsOf(log).map((s) => firingOf(log, s)).filter((f) => f !== null);
+    const name = displayNames(log);
+    const smith = firings.find((f) => name(f.unit) === "Smith")!;
+    expect(smith).toMatchObject({ trigger: "trigger:StatusApplied", triggerStatus: "Shield", effect: "status:Strength", effectStatus: "Strength" });
+    const archer = firings.find((f) => name(f.unit) === "Archer")!;
+    expect(archer).toMatchObject({ trigger: "trigger:StatChanged", effect: "effect:damage" });
+    expect(firings.find((f) => name(f.unit) === "Shieldbearer")).toMatchObject({ trigger: "trigger:BattleStart", effect: "status:Shield" });
+  });
+
+  test("a strike and a status's own tick have no badge", () => {
+    const log = run([dummy("Squire", 20, 1)], [dummy("Dummy", 3, 1)]);
+    const strikes = stepsOf(log).filter((s) => s.changes.some((c) => c.kind === "damage"));
+    expect(strikes.length).toBeGreaterThan(0);
+    for (const s of strikes) expect(firingOf(log, s)).toBeNull();
   });
 });

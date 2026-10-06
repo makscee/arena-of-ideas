@@ -24,8 +24,10 @@ export interface CardOptions {
   /** The footer slot: copies pips, AWOKEN, FUSED, a price, or battle statuses. */
   extra?: (Node | null)[];
   testid?: string;
-  /** The battle viewer's live state (slice 9): current stats, dead, the acting unit lit. */
-  live?: { stats: Stats; dead?: boolean; acting?: boolean };
+  /** The battle viewer's live state (slice 9): current stats, dead, the acting
+   * unit lit. With maxHp (R2-13) the card adds an HP bar and draws PWR and HP
+   * big, each with its icon, HP red once the unit is hurt. */
+  live?: { stats: Stats; maxHp?: number; dead?: boolean; acting?: boolean };
   /** An offer's tier, drawn as dots top-right. */
   tier?: number;
   /** Tapping the card opens this, usually overlay(unitSheet(...)). */
@@ -42,7 +44,7 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
     h("div", { class: "emoji" }, u.emoji),
     // One line; ui/dom.ts fitText() shrinks a long name a little, then cuts it.
     h("div", { class: "name", title: u.name }, u.name),
-    h("div", { class: "stats" }, h("span", { class: "p" }, `${stats.pwr}`), "/", h("span", { class: "h" }, `${stats.hp}`)),
+    ...(o.live?.maxHp !== undefined ? liveStats(stats, o.live.maxHp) : [h("div", { class: "stats" }, h("span", { class: "p" }, `${stats.pwr}`), "/", h("span", { class: "h" }, `${stats.hp}`))]),
     h("div", { class: "foot" }, ...(o.extra ?? [])),
   );
   if (u.kind === "fused") el.classList.add("fused");
@@ -51,6 +53,24 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
   if (o.live?.acting) el.classList.add("acting");
   if (o.onOpen) el.addEventListener("click", o.onOpen);
   return el;
+}
+
+/** A battle card's numbers (R2-13): an HP bar, then PWR and HP, big. */
+function liveStats(stats: Stats, maxHp: number): Node[] {
+  const max = Math.max(1, maxHp, stats.hp);
+  const pct = Math.round((Math.max(0, stats.hp) / max) * 100);
+  const bar = h("div", { class: "hpbar", "data-testid": "hp-bar", role: "meter", "aria-valuemin": "0", "aria-valuemax": String(max), "aria-valuenow": String(stats.hp), "aria-label": `${stats.hp} of ${max} HP` }, h("i", {}));
+  (bar.firstChild as HTMLElement).style.width = `${pct}%`;
+  if (pct <= 34) bar.classList.add("low");
+  return [
+    bar,
+    h(
+      "div",
+      { class: "stats big" },
+      h("span", { class: "p", title: "PWR" }, icon("broadsword", 11, "stat-ic"), `${stats.pwr}`),
+      h("span", { class: `h${stats.hp < max ? " hurt" : ""}`, title: "HP" }, icon("hearts", 11, "stat-ic"), `${stats.hp}`),
+    ),
+  ];
 }
 
 /** The term for what wakes a form: its first When ("trigger:BattleStart"). */
