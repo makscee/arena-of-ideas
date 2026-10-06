@@ -17,6 +17,9 @@ import { card, unitSheet } from "../ui/card";
 import { button, closable, h, show } from "../ui/dom";
 
 /** Reduced motion: nothing moves, and beats hold a little longer. */
+/** How long a landed wave's motion runs: the longest animation (a float, 0.9 s, after up to 240 ms). */
+const MOTION_MS = 1200;
+
 const reduced = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you?: Side; fight?: FightResult; run?: RunView; onDone: () => void }): void {
@@ -39,8 +42,12 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
 
   let at = -1; // index of the beat on screen; -1 = the line-up before the first beat
   let wave = 0; // waves of that beat landed so far, minus one
-  /** Motion plays only right after the playhead moved forward by itself. */
-  let animate = false;
+  /** When each wave of the open beat landed (performance.now()), set only
+   * when the playhead moved forward by itself. Every render re-applies the
+   * motion of each landed wave, offset by its age, so a later wave's render
+   * doesn't cut an earlier wave's lunge, shake or float short; empty after a
+   * manual step, so nothing moves then. */
+  let landed: number[] = [];
   let speed = 1;
   let playing = true;
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -73,36 +80,40 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** The wave on screen: the step whose caption shows. */
   const stepOn = () => beats[at]?.waves[wave];
 
-  /** Plays the next wave of the open beat, or the next beat's first wave. */
+  /** Plays the next wave of the open beat, or the next beat's first wave.
+   * The wait counts from when the wave on screen landed, not from when its
+   * render ended, so drawing time doesn't add up over a battle. */
   function schedule(): void {
     if (timer) clearTimeout(timer);
     const slow = reduced() ? 1.25 : 1;
     let ms: number;
-    if (at < 0) ms = 600;
+    if (at < 0) ms = 400;
     else {
       const t = beatTiming(beats[at]!.waves.length);
       ms = wave < lastWave(at) ? t.at[wave + 1]! - t.at[wave]! : t.ms - t.at[wave]!;
     }
+    const since = landed[wave] !== undefined ? performance.now() - landed[wave]! : 0;
     timer = setTimeout(() => {
       if (at >= 0 && wave < lastWave(at)) {
         wave++;
-        animate = true;
+        landed[wave] = performance.now();
         render();
         return schedule();
       }
       if (at >= beats.length - 1) return finish();
       at++;
       wave = 0;
-      animate = true;
+      landed = [performance.now()];
       render();
       schedule();
-    }, (ms * slow) / speed);
+    }, Math.max(0, (ms * slow) / speed - since));
   }
   function play(): void {
     if (finished) return;
     if (at >= beats.length - 1 && wave >= lastWave(at)) at = -1;
     playing = true;
     trace = null;
+    landed = [];
     playBtn.textContent = "❚❚";
     render();
     schedule();
@@ -117,6 +128,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   function go(i: number): void {
     at = Math.max(-1, Math.min(beats.length - 1, i));
     wave = lastWave(at);
+    landed = [];
     render();
   }
   function openTrace(eventId: number, group: Change[] = []): void {
@@ -208,32 +220,51 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   interface View {
     now: Step | undefined;
     changes: Change[];
-    /** Motion for `now`: only when the playhead moved forward by itself. */
-    moving: boolean;
+    /** The beat's waves landed so far, each with its age in ms when it landed
+     * by playback (null after a manual step: no motion). */
+    waves: { step: Step; age: number | null }[];
   }
 
-  /** Motion for the wave that just landed: the striker lunges, a hit target
+  /** Motion for each wave landed so far: the striker lunges, a hit target
    * flashes and shakes, a caster pulses, a dying card pops, and floating
-   * numbers rise. Under prefers-reduced-motion the CSS keeps it still: the
-   * target gets a ring and the numbers sit in place. */
+   * numbers rise. A wave that landed `age` ms ago starts its animations
+   * `age` ms in (a negative delay), so re-rendering the board for the next
+   * wave keeps them going. Under prefers-reduced-motion the CSS keeps it
+   * still: the target gets a ring, the numbers sit in the chips and the
+   * caption lists them. */
   function motion(el: HTMLElement, id: string, side: Side, v: View): void {
-    const step = v.now;
-    if (!step || !v.moving) return;
-    const mine = step.changes.filter((c) => c.unit === id);
-    if (step.actor === id) {
-      const first = log[step.eventIds[0]!];
-      const struck = first?.type === "Hurt" && first.source === "kernel" && first.causedBy !== null && log[first.causedBy]?.type === "Strike";
-      el.classList.add(struck ? (side === you ? "bv-lunge-up" : "bv-lunge-down") : "bv-pulse");
+    let k = 0;
+    for (const { step, age } of v.waves) {
+      if (age === null || age > MOTION_MS) continue;
+      const t = `${-Math.round(age)}ms`;
+      const mine = step.changes.filter((c) => c.unit === id);
+      let move: string | null = null;
+      if (step.actor === id) {
+        const first = log[step.eventIds[0]!];
+        const struck = first?.type === "Hurt" && first.source === "kernel" && first.causedBy !== null && log[first.causedBy]?.type === "Strike";
+        move = struck ? (side === you ? "bv-lunge-up" : "bv-lunge-down") : "bv-pulse";
+      }
+      if (mine.some((c) => c.kind === "damage")) move = "bv-hit";
+      if (mine.some((c) => c.kind === "death")) move = "bv-dying";
+      // The latest wave's movement wins; its delay drives the card's animation.
+      if (move) {
+        el.classList.remove("bv-lunge-up", "bv-lunge-down", "bv-pulse", "bv-hit", "bv-dying");
+        el.classList.add(move);
+        el.style.setProperty("--bv-t", t);
+      }
+      const flash = mine.some((c) => c.kind === "damage" || c.kind === "death") ? "bv-flash-hit" : mine.some((c) => c.kind === "heal" || c.kind === "buff") ? "bv-glow" : null;
+      if (flash) {
+        el.classList.remove("bv-flash-hit", "bv-glow");
+        el.classList.add(flash);
+        el.style.setProperty("--bv-ft", t);
+      }
+      mine.slice(0, 3).forEach((c, i) => {
+        const f = h("span", { class: `bv-float ${c.kind}`, "aria-hidden": "true" }, c.label);
+        f.style.animationDelay = `${i * 120 - Math.round(age)}ms`;
+        f.style.setProperty("--k", String(k++ % 3));
+        el.append(f);
+      });
     }
-    if (mine.some((c) => c.kind === "damage")) el.classList.add("bv-hit");
-    if (mine.some((c) => c.kind === "heal" || c.kind === "buff")) el.classList.add("bv-glow");
-    if (mine.some((c) => c.kind === "death")) el.classList.add("bv-dying");
-    mine.slice(0, 3).forEach((c, k) => {
-      const f = h("span", { class: `bv-float ${c.kind}`, "aria-hidden": "true" }, c.label);
-      f.style.animationDelay = `${k * 120}ms`;
-      f.style.top = `${40 + k * 15}px`;
-      el.append(f);
-    });
   }
 
   /** A line in the beat: the living units, and each unit that fell in this
@@ -251,9 +282,16 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   function render(): void {
     const beat = beats[at];
     const step = beat?.waves[wave];
-    const upto = step ? step.eventIds.reduce((m, id) => Math.max(m, id), 0) : 0;
-    const v: View = { now: step, changes: beat ? beat.waves.slice(0, wave + 1).flatMap((w) => w.changes) : [], moving: animate };
-    animate = false;
+    // The board shows every event of the waves landed so far; a later wave can
+    // hold an earlier id (a status leaving folds into the hit that caused it).
+    const shown = beat ? beat.waves.slice(0, wave + 1) : [];
+    const upto = shown.reduce((m, w) => w.eventIds.reduce((n, id) => Math.max(n, id), m), 0);
+    const now = performance.now();
+    const v: View = {
+      now: step,
+      changes: shown.flatMap((w) => w.changes),
+      waves: shown.map((w, i) => ({ step: w, age: landed[i] !== undefined ? now - landed[i]! : null })),
+    };
     const board = boardAt(log, upto);
     const before = beat ? boardAt(log, Math.max(0, beat.start - 1)) : board;
     const turn = step?.turn ?? 0;
@@ -270,7 +308,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       row.classList.toggle("empty", !cards.length);
       if (!cards.length) row.append(h("div", { class: "dim" }, "No one standing."));
     }
-    caption.replaceChildren(...captionKids(step));
+    caption.replaceChildren(...captionKids(step), ...(reduced() ? stillList(v.changes) : []));
     caption.classList.toggle("tappable", !!step?.changes.length);
     recent.replaceChildren(
       ...beats.slice(Math.max(0, at - 3), Math.max(0, at)).reverse().map((pb) => {
@@ -305,6 +343,13 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const side = step.subjectSide;
     if (!side) return [document.createTextNode(step.caption)];
     return [sideTag(side, "caption-side"), document.createTextNode(step.caption)];
+  }
+
+  /** Reduced motion: no floats, so the caption lists every change of the
+   * beat so far, as the floats would have shown them. */
+  function stillList(changes: Change[]): Node[] {
+    if (!changes.length) return [];
+    return [h("span", { class: "bv-still", "data-testid": "caption-changes" }, ...changes.map((c) => h("span", { class: `bv-l ${c.kind}` }, `${name(c.unit)} ${c.label}`)))];
   }
 
   function traceView(t: Trace): Node[] {

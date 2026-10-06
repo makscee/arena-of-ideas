@@ -253,14 +253,15 @@ export interface PlayBeat {
 
 /** Milliseconds between waves at 1×, the shortest a beat lasts, and the cap. */
 export const WAVE_MS = 150;
-export const BEAT_MS = 1200;
-export const BEAT_MAX_MS = 1500;
+export const BEAT_MS = 1000;
+export const BEAT_MAX_MS = 1400;
 /** How long the last wave stays before the next beat. */
-const BEAT_HOLD_MS = 800;
+const BEAT_HOLD_MS = 700;
 
 /** When each wave lands (ms from the beat's start, at 1×) and how long the
  * beat lasts: waves 150 ms apart, squeezed so the last lands by 700 ms; the
- * beat lasts 1.2 s, up to 1.5 s for a long cascade. */
+ * beat lasts 1 s, up to 1.4 s for a long cascade (tightened from 1.2/1.5 s
+ * so a median battle plays in about 25 s). */
 export function beatTiming(waves: number): { at: number[]; ms: number } {
   const span = BEAT_MAX_MS - BEAT_HOLD_MS;
   const gap = waves > 1 ? Math.min(WAVE_MS, span / (waves - 1)) : 0;

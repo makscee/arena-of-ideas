@@ -213,7 +213,7 @@ describe("one beat at a time (R2-12)", () => {
   const Coach = unit("Coach", 6, 1, { on: "BattleStart" }, [{ kind: "allAllies" }], ["GiveStrength"]);
   const Bulwark = unit("Bulwark", 6, 1, { on: "BattleStart" }, [{ kind: "holder" }], ["GiveShield"]);
 
-  test("waves land 150 ms apart; a beat lasts 1.2 s, at most 1.5 s", () => {
+  test("waves land 150 ms apart; a beat lasts 1 s, at most 1.4 s", () => {
     expect(beatTiming(1)).toEqual({ at: [0], ms: BEAT_MS });
     expect(beatTiming(3)).toEqual({ at: [0, 150, 300], ms: BEAT_MS });
     const long = beatTiming(30);
