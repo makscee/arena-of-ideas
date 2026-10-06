@@ -191,7 +191,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     caption.classList.toggle("tappable", !!step?.changes.length);
     recent.replaceChildren(
       ...steps.slice(Math.max(0, at - 3), Math.max(0, at)).reverse().map((s) => {
-        const b = h("button", { class: "bv-past" }, s.caption);
+        const b = h("button", { class: "bv-past" }, ...(s.subjectSide ? [sideTag(s.subjectSide)] : []), s.caption);
         b.addEventListener("click", () => {
           const c = s.changes[0];
           if (c) openTrace(c.eventId, s.changes.filter((x) => x.unit === c.unit));
@@ -209,13 +209,17 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     controls.style.display = finished ? "none" : "";
   }
 
-  /** The caption, led by whose unit acted: YOU / THEM, or the owner without a side. */
+  /** Whose a unit is, as a tag: YOU / THEM, or its owner without a side. */
+  function sideTag(side: Side, testid = ""): HTMLElement {
+    const tag = a.you ? (side === you ? "You" : "Them") : owner(side);
+    return h("span", { class: `bv-who ${side === you ? "you" : "ghost"}`, ...(testid ? { "data-testid": testid } : {}) }, tag);
+  }
+  /** The caption, led by whose unit it is about (the first one it names). */
   function captionKids(step: Step | undefined): Node[] {
     if (!step) return [document.createTextNode("The lines face off.")];
-    const side = step.actorSide;
+    const side = step.subjectSide;
     if (!side) return [document.createTextNode(step.caption)];
-    const tag = a.you ? (side === you ? "You" : "Them") : owner(side);
-    return [h("span", { class: `bv-who ${side === you ? "you" : "ghost"}`, "data-testid": "caption-side" }, tag), document.createTextNode(step.caption)];
+    return [sideTag(side, "caption-side"), document.createTextNode(step.caption)];
   }
 
   function traceView(t: Trace): Node[] {
@@ -238,9 +242,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       ...t.links.map((l, i) =>
         h(
           "div",
-          { class: `bv-link ${l.side === you ? "you" : "ghost"}` },
+          { class: `bv-link ${l.side === you ? "you" : "ghost"}`, "data-testid": "trace-link" },
           h("span", { class: "emoji" }, emojiOf(l.unit)),
-          h("span", {}, l.name),
+          // Whose unit, then its name: "THEM Taser".
+          h("span", { class: "bv-link-name" }, ...(l.side ? [sideTag(l.side)] : []), l.name),
           h("span", { class: "dim" }, i === 0 ? viaText(l.via) : `${viaText(l.via)}, set off the one above`),
         ),
       ),
@@ -268,14 +273,14 @@ function whyPanel(battle: BattleRecord, you: Side, onTrace?: (eventId: number) =
   return h(
     "div",
     { class: "panel stack", "data-testid": "why-lost" },
-    h("div", { class: "label" }, "Why I lost"),
+    h("div", { class: "row spread" }, h("div", { class: "label" }, "Why I lost"), h("div", { class: "dim small" }, "tap a row for its chain")),
     ...(chains.length
       ? chains.map((c) => {
           const row = h(
             "button",
             { class: "bv-why" },
             h("span", { class: "bv-why-chain" }, c.text),
-            h("span", { class: "mono dim" }, [c.damage ? `${c.damage} dmg` : "", c.heal ? `+${c.heal} heal` : "", c.kills ? `${c.kills} ✝` : ""].filter(Boolean).join(" · ")),
+            h("span", { class: "mono dim bv-why-num" }, [c.damage ? `${c.damage} dmg` : "", c.heal ? `+${c.heal} heal` : "", c.kills ? `${c.kills} ${c.kills === 1 ? "kill" : "kills"}` : ""].filter(Boolean).join(" · ")),
           );
           row.addEventListener("click", () => {
             if (onTrace) return onTrace(c.sampleEventId);
@@ -284,7 +289,7 @@ function whyPanel(battle: BattleRecord, you: Side, onTrace?: (eventId: number) =
               h("div", { class: "stack why-sheet", "data-testid": "why-sheet" },
                 h("h2", { class: "ghost-name" }, c.text),
                 h("div", {}, chainSummary(c)),
-                h("div", { class: "label" }, battle.log[c.sampleEventId]?.type === "Heal" ? "Its first heal, traced" : "Its first hit, traced"),
+                h("div", { class: "label" }, SAMPLE_LABEL[c.sampleKind]),
                 h("div", { class: "bv-trace-text mono", "data-testid": "trace-text" }, t.text),
               ),
             );
@@ -302,9 +307,17 @@ export function whyILost(battle: BattleRecord, _content: MvpContent, you: Side):
   return whyPanel(battle, you);
 }
 
+/** The why sheet's label over the traced change (LossChain.sampleKind). */
+const SAMPLE_LABEL: Record<LossChain["sampleKind"], string> = {
+  kill: "Its biggest killing blow, traced",
+  hit: "Its biggest hit, traced",
+  heal: "Its biggest heal, traced",
+  none: "Its first change, traced",
+};
+
 /** One sentence for a why-I-lost row's numbers, so the totals and the traced
- * first hit can't read as a contradiction: "11 damage to your units over 4
- * hits, 2 of them killed. +3 healing to theirs over 2 heals." */
+ * hit can't read as a contradiction: "11 damage to your units over 4 hits,
+ * 2 kills. +3 healing to theirs over 2 heals." */
 function chainSummary(c: LossChain): string {
   const parts: string[] = [];
   if (c.hits) parts.push(`${c.damage} damage to your units over ${c.hits} ${c.hits === 1 ? "hit" : "hits"}${c.kills ? `, ${c.kills} ${c.kills === 1 ? "kill" : "kills"}` : ""}.`);

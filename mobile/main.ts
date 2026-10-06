@@ -86,6 +86,28 @@ function rulesSheet(): HTMLElement {
   );
 }
 
+/** How to read a card (the shop's "?"): each number and mark, with a sample. */
+function legendSheet(): HTMLElement {
+  const r = rules;
+  const row = (sample: Node, text: string) => h("div", { class: "legend-row" }, h("div", { class: "legend-sample" }, sample), h("div", {}, text));
+  const span = (cls: string, t: string) => h("span", { class: cls }, t);
+  const rulesBtn = button("Rules", () => (close(), closable(rulesSheet())), "grow", "legend-rules");
+  const sheet = h(
+    "div",
+    { class: "stack legend", "data-testid": "legend" },
+    h("h2", {}, "READING A CARD"),
+    row(h("span", { class: "stats" }, span("p", "2"), " / ", span("h", "6")), "PWR / HP. PWR is what its strike deals; at 0 HP it falls."),
+    row(h("span", { class: "rates" }, span("w", "W59%"), " P9%"), "Today's rates. W: how often a team with it won its fight. P: how often it was on a finished run's line. — means no runs yet."),
+    row(span("copies", "●●○"), `Copies toward Awoken: copy ${r.copiesToAwaken} awakens it. Each copy adds +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP.`),
+    row(span("copies tag", "AWOKEN ×3"), "Awoken, its stronger form; ×3 copies merged in. Two Awoken units can fuse."),
+    row(span("copies tag", "FUSED ×2"), "Two Awoken units fused into one: final, copies of either part still merge in. \"by @name\" is who discovered it."),
+    row(span("cost", "3g ＋"), "An offer's price. ＋: you own it, so buying merges a copy in."),
+    h("div", { class: "dim small" }, "Tap any card for its full sheet: what it does, sleeping and Awoken."),
+  );
+  const close = closable(sheet, h("div", { class: "row" }, rulesBtn));
+  return sheet;
+}
+
 // ---------- name ----------
 
 function nameScreen(): void {
@@ -108,7 +130,9 @@ function nameScreen(): void {
 
 // ---------- home ----------
 
-async function homeScreen(): Promise<void> {
+/** Home. `ended`: the day the dev "End day now" just closed, so Home says
+ * how it ended at the top and brings the playoff panel into view. */
+async function homeScreen(ended: number | null = null): Promise<void> {
   const err = errorLine();
   void loadUnitRates(); // the rates on unit cards (slice 11)
   const [home, content]: [HomeView, MvpContent] = await Promise.all([api.home(), getContent()]);
@@ -133,19 +157,26 @@ async function homeScreen(): Promise<void> {
           if (e instanceof ApiError && (e.status === 404 || e.status === 501)) throw new Error(e.status === 404 ? "End day is a dev tool (MVP_DEV=1)." : "The day arrives in slice 5.");
           throw e;
         }
-        await homeScreen();
+        await homeScreen(home.day.seq);
       }),
     "small",
     "end-day",
   );
+  const last = home.day.lastPlayoff ?? null;
+  const justEnded = ended !== null && last?.seq === ended ? last : null;
+  const playoff = playoffPanel(last, champ?.player ?? null, content, err);
   show(
     h("div", { class: "row spread" }, h("h1", {}, "ARENA"), who(api.player?.name ?? "", "dim")),
+    // The dev "End day now" just ran: say so first, with how the day ended
+    // (the playoff panel) right under it, before today's champion.
+    ended !== null ? h("div", { class: "notice", "data-testid": "day-ended" }, `Day ${ended} ended just now. Today is day ${home.day.seq}.`) : null,
+    justEnded ? playoff : null,
     h(
       "div",
       { class: "panel stack champion", "data-testid": "champion" },
-      h("div", { class: "row spread" }, h("div", { class: "label keep" }, `👑 Champion · day ${home.day.seq}`), champ ? who(champ.player.name, "ghost-name") : null),
+      h("div", { class: "row spread" }, h("div", { class: "label keep" }, `👑 Champion · day ${home.day.seq}`), champ ? whoMark(champ.player, "ghost-name") : null),
       champ ? team(champ.line, "ghost", content) : h("div", { class: "dim" }, "No champion yet. The day arrives soon."),
-      h("div", { class: "dim small", "data-testid": "slayers" }, `${plural(home.day.slayers, "slayer")} today · new champion at ${rules.dayEndsAt} Moscow`),
+      h("div", { class: "dim small", "data-testid": "slayers" }, champ ? slayersLine(home.day.slayers) : `New champion at ${rules.dayEndsAt} Moscow.`),
     ),
     champ
       ? hint(
@@ -156,7 +187,7 @@ async function homeScreen(): Promise<void> {
               : "This is the team to beat. Tap a card to read it, then Play.",
         )
       : null,
-    playoffPanel(home.day.lastPlayoff ?? null, champ?.player ?? null, content, err),
+    justEnded ? null : playoff,
     h(
       "div",
       { class: "panel records", "data-testid": "records" },
@@ -166,27 +197,45 @@ async function homeScreen(): Promise<void> {
       record("Days 👑", r?.daysAsChampion ?? 0),
       record("Playoff W", r?.playoffWins ?? 0),
     ),
-    h("div", { class: "spacer" }),
-    h("div", { class: "row" }, rulesBtn, stats, play),
     h("details", { class: "dev" }, h("summary", {}, "Dev"), endDay),
     err,
+    h("div", { class: "spacer" }),
+    // Play stays on the first screen however long Home runs (a playoff's table).
+    h("div", { class: "row footer", "data-testid": "home-actions" }, rulesBtn, stats, play),
   );
+  if (justEnded) playoff?.classList.add("fresh");
 }
 
-/** How yesterday ended, in one sentence. With no playoff to show (no
- * slayers, or one who won without a game) the sentence is all there is;
- * `champion` is today's, the one who stayed or was crowned. */
+/** The champion card's last line: what today's slayers mean at the day's end. */
+function slayersLine(n: number): string {
+  const at = `${rules.dayEndsAt} Moscow`;
+  if (n === 0) return `No slayers yet. If nobody slays it by ${at}, this team stays champion.`;
+  if (n === 1) return `1 slayer today. At ${at} the slayer's team takes the crown, unless others slay it too.`;
+  return `${n} slayers today. At ${at} their teams play a round-robin for the crown.`;
+}
+
+/** "@name", with 🤖 after a bot's. */
+function whoMark(p: PlayerRef, cls = ""): HTMLElement {
+  const el = who(p.name, cls);
+  return p.bot ? h("span", { class: "who-mark" }, el, h("span", { class: "bot", "aria-label": "bot" }, "🤖")) : el;
+}
+
+/** How a day ended, in one sentence. With no playoff to show (no slayers,
+ * or one who won without a game) the sentence is all there is; `champion` is
+ * today's, the one who stayed or was crowned. Slayers may be bots (🤖). */
 function playoffSummary(p: PlayoffResult, champion: PlayerRef | null): (Node | string)[] {
-  if (p.entrants.length === 0) return champion ? ["No slayers: ", who(champion.name), " stays champion."] : ["No slayers, and no champion yet."];
+  if (p.entrants.length === 0) return champion ? ["No slayers, so ", whoMark(champion), " stays champion."] : ["No slayers, and no champion yet."];
   if (p.entrants.length === 1) {
     const only = p.winner ?? p.entrants[0]!;
-    return [who(only.name), " was the only slayer and is the new champion."];
+    return [whoMark(only), " was the only slayer, so ", only.bot ? "its" : "their", " team is the new champion."];
   }
-  return p.winner ? ["👑 ", who(p.winner.name), " won the playoff and is the new champion."] : ["The playoff had no winner."];
+  const bots = p.entrants.filter((x) => x.bot).length;
+  const field = `${p.entrants.length} slayers${bots === p.entrants.length ? ", all bots" : bots ? `, ${bots} of them ${bots === 1 ? "a bot" : "bots"}` : ""}`;
+  return p.winner ? ["👑 ", whoMark(p.winner), ` won the playoff (${field}) and is the new champion.`] : [`The playoff (${field}) had no winner.`];
 }
 
-/** Yesterday's end: a sentence, and with a real playoff (two or more
- * slayers) its table and each game (opens in the viewer). */
+/** A day's end: a sentence, and with a real playoff (two or more slayers)
+ * its table, compact, and its games behind a tap (each opens in the viewer). */
 function playoffPanel(p: PlayoffResult | null, champion: PlayerRef | null, content: MvpContent, err: HTMLElement): HTMLElement | null {
   if (!p) return null;
   const watch = (battleId: string, a: PlayerRef, b: PlayerRef) => {
@@ -194,18 +243,30 @@ function playoffPanel(p: PlayoffResult | null, champion: PlayerRef | null, conte
       const battle = await api.battle(battleId);
       battleScreen({ battle, content, onDone: () => void homeScreen() });
     }), "small game", "playoff-game");
-    btn.replaceChildren(who(a.name), " v ", who(b.name));
+    btn.replaceChildren(whoMark(a), " v ", whoMark(b));
     return btn;
   };
   const played = p.entrants.length >= 2;
+  const games = h("div", { class: "games", "data-testid": "playoff-games" }, ...p.games.map((g) => watch(g.battleId, g.a, g.b)));
+  games.hidden = true;
+  const toggle = button(`Watch the games (${p.games.length})`, () => {
+    games.hidden = !games.hidden;
+    toggle.textContent = games.hidden ? `Watch the games (${p.games.length})` : "Hide the games";
+  }, "small", "playoff-games-open");
   return h(
     "div",
-    { class: "panel stack", "data-testid": "playoff" },
+    { class: "panel stack playoff", "data-testid": "playoff" },
     h("div", { class: "label" }, played ? `Playoff · day ${p.seq}` : `Day ${p.seq} ended`),
     h("div", { "data-testid": "playoff-summary" }, ...playoffSummary(p, champion)),
-    ...(played ? p.standings.map((s) => h("div", { class: "num small", "data-testid": "playoff-standing" }, who(s.player.name), ` · ${s.wins}W ${s.draws}D ${s.losses}L`)) : []),
-    played && p.games.length ? h("div", { class: "label" }, "Games · tap to watch") : null,
-    played && p.games.length ? h("div", { class: "games" }, ...p.games.map((g) => watch(g.battleId, g.a, g.b))) : null,
+    played
+      ? h(
+          "div",
+          { class: "standings" },
+          ...p.standings.map((s, i) => h("div", { class: "standing", "data-testid": "playoff-standing" }, h("span", { class: "dim" }, `${i + 1}`), whoMark(s.player), h("span", { class: "num" }, `${s.wins}W ${s.draws}D ${s.losses}L`))),
+        )
+      : null,
+    played && p.games.length ? toggle : null,
+    played && p.games.length ? games : null,
   );
 }
 
@@ -282,7 +343,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
   /** The hint that matters most right now, or none. */
   const shopHint = (): HTMLElement | null => {
     if (pick.mode !== "none") return null;
-    if (crown) return hint(ownCrown ? "The Crown: today's champion is your own team. Beating it doesn't count as a slay." : "The Crown: your line against today's champion. Win it to become a slayer.");
+    // run.ts refuses every decision but the fight in the crown phase: the line is final.
+    if (crown) return hint(ownCrown ? "The Crown: today's champion is your own team. Beating it doesn't count as a slay. Your line is final." : "The Crown: your line, as it is, against today's champion. Win it to become a slayer; a loss costs a heart.");
     // Only a unit whose next copy is on offer right now.
     const almost = run.line.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === rules.copiesToAwaken - 1 && run.offers.some((o) => o.unitId === u.unitId));
     const canBuy = run.offers.some((o) => o.cost <= run.gold);
@@ -318,6 +380,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
       const affordable = run.gold >= o.cost;
       const res = affordable ? await api.preview(run.runId, { kind: "buy", slot: o.slot }).catch((e: unknown) => (e instanceof ApiError && e.status === 409 ? e : Promise.reject(e))) : null;
       let after: HTMLElement | null = null;
+      // A unit you own: the sheet shows your copy, from now to after buying.
+      let mine: { now: LineUnit; next: LineUnit } | null = null;
       let blocked = affordable ? "" : `Needs ${o.cost}g`;
       if (res instanceof ApiError) blocked = res.message;
       else if (res) {
@@ -326,13 +390,16 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
         if (changed) {
           const was = before.get(changed.uid);
           const label = !was ? "Joins your line" : was.form !== changed.form ? "Awakens!" : `Merges in: ×${changed.copies}`;
+          if (was) mine = { now: was, next: changed };
           after = h("div", { class: `stack after${was && was.form !== changed.form ? " awakens" : ""}`, "data-testid": "buy-preview" }, h("div", { class: "label" }, label), h("div", { class: "preview-card" }, card(changed, { side: "you", extra: [copiesBadge(changed)] })));
         }
       }
       const buy = button(blocked || `Buy ${o.cost}g`, () => (close(), void decide({ kind: "buy", slot: o.slot })), "primary grow", "buy");
       buy.disabled = blocked !== "";
+      // Without a preview (no gold), an owned unit still shows your copy as it is.
+      const owned = mine ? null : run.line.find((x) => x.kind === "unit" && x.unitId === o.unitId) ?? null;
       const close = overlay(
-        ...(u ? [unitSheet(u, content)] : [h("h2", {}, o.unitId)]),
+        ...(mine ? [unitSheet(mine.next, content, { from: mine.now.stats })] : owned ? [unitSheet(owned, content)] : u ? [unitSheet(u, content)] : [h("h2", {}, o.unitId)]),
         ...(after ? [after] : []),
         h("div", { class: "row sheet-actions" }, button("Close", () => close(), "", "offer-close"), buy),
       );
@@ -371,6 +438,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
   fillPin(day);
   if (!day) void api.day().then((d) => ((day = d), fillPin(d))).catch(() => {});
 
+  // "?" explains a card's numbers; until a player has opened it once, it says so.
+  const legendBtn = button(seen("legend") ? "?" : "? Cards", () => (markSeen("legend"), (legendBtn.textContent = "?"), legendBtn.classList.remove("new"), legendSheet()), seen("legend") ? "small" : "small new", "legend-open");
   renderLine();
   show(
     h(
@@ -378,7 +447,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
       { class: "hud", "data-testid": "hud" },
       h("span", { "data-testid": "round" }, roundLabel(run.round)),
       hearts(run.hearts),
-      h("span", { class: "gold", "data-testid": "gold" }, `${run.gold}g`),
+      // The Crown has no shop: no gold to show.
+      crown ? h("span", {}) : h("span", { class: "gold", "data-testid": "gold" }, `${run.gold}g`),
     ),
     h(
       "div",
@@ -386,7 +456,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
       h("span", { class: "dim", "data-testid": "next-opponent" }, ...(opp ? [`${crown ? "Crown vs" : "Next:"} `, who(opp.player.name), `${opp.player.bot ? " 🤖" : ""}${ownCrown ? " (your own team)" : ""}`] : [crown ? "Crown vs today's champion" : "Next: a team saved at this round"])),
       pin,
     ),
-    h("div", { class: "label" }, "Your line · front first"),
+    h(
+      "div",
+      { class: "row spread line-head" },
+      h("div", { class: "label" }, crown ? "Your line · front first · final" : "Your line · front first"),
+      h("div", { class: "row" }, legendBtn, button("Rules", () => closable(rulesSheet()), "small", "shop-rules")),
+    ),
     line,
     actions,
     hintSlot,
@@ -396,6 +471,22 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
     h("div", { class: "row" }, crown ? null : reroll, fight),
     err,
   );
+}
+
+/** Per-device "seen it once" flags (localStorage may throw or be empty: then everything is new). */
+function seen(key: string): boolean {
+  try {
+    return localStorage.getItem(`arena.seen.${key}`) === "1";
+  } catch {
+    return false;
+  }
+}
+function markSeen(key: string): void {
+  try {
+    localStorage.setItem(`arena.seen.${key}`, "1");
+  } catch {
+    /* private mode: it just stays new */
+  }
 }
 
 /** ●●○ toward awakening for a sleeping unit; AWOKEN or FUSED otherwise. */
@@ -430,30 +521,34 @@ function resultScreen(run: RunView, fight: FightResult, battle: BattleRecord, co
   const word = fight.outcome === "win" ? "VICTORY" : fight.outcome === "loss" ? "DEFEAT" : "DRAW";
   const label = fight.kind === "crown" ? "CROWN" : roundLabel(fight.round);
   const own = fight.kind === "crown" && fight.opponent.player.id === run.player.id;
+  const lostHearts = fight.heartsLost > 0 ? ` −${plural(fight.heartsLost, "heart")}.` : "";
   const sub =
     fight.kind === "crown"
       ? own
         ? fight.outcome === "win"
           ? "That was your own champion team: beating it doesn't count as a slay."
-          : "Your own champion team holds."
+          : `Your own champion team holds.${lostHearts}`
         : fight.outcome === "win"
           ? "You beat the champion. You are a slayer today."
-          : "The champion holds."
+          : `The champion holds.${lostHearts}`
       : fight.heartsLost > 0
         ? `−${plural(fight.heartsLost, "heart")}`
         : fight.outcome === "draw"
           ? "A draw costs no heart."
           : "";
+  // After a loss, "why I lost" comes first, under a compact header, so its
+  // rows show above the sticky buttons; the two lines follow.
+  const why = fight.outcome === "loss" ? whyILost(battle, content, "A") : null;
   show(
     h("div", { class: "hud" }, h("span", { "data-testid": "result-round" }, label), hearts(run.hearts), h("span", { class: "dim" }, record(run))),
-    h("div", { class: `outcome ${fight.outcome}`, "data-testid": "outcome" }, word),
+    h("div", { class: `outcome ${fight.outcome}${why ? " compact" : ""}`, "data-testid": "outcome" }, word),
     h("div", { class: "dim", style: "text-align:center" }, "vs ", who(fight.opponent.player.name), ` · ${plural(turns, "turn")}`),
-    sub ? h("div", { class: fight.heartsLost > 0 ? "error center" : "center" }, sub) : null,
+    sub ? h("div", { class: fight.heartsLost > 0 ? "error center" : "center", "data-testid": "result-sub" }, sub) : null,
+    why,
     h("div", { class: "label" }, "You"),
     team(battle.teamA, "you", content),
     h("div", { class: "label" }, who(battle.opponent.name)),
     team(battle.teamB, "ghost", content),
-    fight.outcome === "loss" ? whyILost(battle, content, "A") : null,
     h("div", { class: "spacer" }),
     h(
       "div",

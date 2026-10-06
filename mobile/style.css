@@ -205,3 +205,33 @@ button.bv-why { display: flex; align-items: center; justify-content: space-betwe
 .stat-head { display: flex; gap: 8px; font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.06em; }
 .stat-head .grow { flex: 1; padding-left: 36px; }
 .stat-head span:not(.grow), .stat-row .num { width: 48px; }
+/* Home (#587): a day that just ended, said first; the playoff compact, its games behind a tap. */
+.notice { font-size: 16px; color: var(--gold); border: 1px solid color-mix(in srgb, var(--gold) 55%, transparent); background: color-mix(in srgb, var(--gold) 8%, transparent); padding: 8px 10px; }
+.who-mark { white-space: nowrap; min-width: 0; max-width: 100%; }
+.who-mark > .who { min-width: 0; }
+.playoff { gap: 6px; }
+.standings { display: flex; flex-direction: column; gap: 2px; font-size: 15px; }
+.standing { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.standing .num { font-size: 14px; }
+.games[hidden] { display: none; }
+.playoff > button.small { align-self: flex-start; }
+.row > .who-mark { flex: 0 1 auto; }
+/* The result after a loss (#587): a smaller word, so "why I lost" shows three rows above the buttons. */
+.outcome.compact { font-size: 34px; line-height: 1.1; }
+.bv-why-num { flex: none; font-size: 14px; }
+[data-testid="why-lost"] { gap: 6px; }
+/* The shop's "?" (#587): how to read a card. */
+.line-head { min-height: 44px; }
+.line-head button.small { min-height: 44px; min-width: 44px; padding: 0 10px; font-size: 14px; }
+.line-head button.new { background: var(--you); color: var(--bg); }
+.legend-row { display: grid; grid-template-columns: 92px 1fr; gap: 10px; align-items: baseline; font-size: 15px; line-height: 1.25; }
+.legend-sample { font-family: "IBM Plex Mono", monospace; font-size: 14px; text-align: center; padding: 4px 0; border: 1px solid var(--line); }
+.legend-sample .p { color: var(--gold); }
+.legend-sample .h { color: var(--ghost); }
+.legend-sample .rates { font-size: 12px; }
+.legend-sample .copies { color: var(--you); }
+.legend-sample .copies.tag { color: var(--gold); font-size: 11px; }
+.legend-sample .cost { color: var(--gold); }
+.who-mark > .bot { margin-left: 4px; vertical-align: bottom; }
+.playoff.fresh { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); }
+.standing .who-mark { display: flex; align-items: center; }

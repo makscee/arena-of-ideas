@@ -73,7 +73,7 @@ try {
   await page.getByTestId("name-input").fill("PhoneTester");
   await page.getByTestId("name-submit").click();
   await page.getByTestId("play").waitFor();
-  await shot("home"); await noHScroll("home");
+  await shot("home"); await noHScroll("home"); await onScreen("home: Play", page.getByTestId("play"));
   await tap44("dev summary", page.locator("details.dev summary"));
   await page.getByTestId("rules-open").click();
   await page.getByTestId("rules").waitFor();
@@ -93,6 +93,7 @@ try {
     await page.getByTestId("fight").waitFor({ timeout: 10_000 });
     // Buy while the gold allows and the line has room.
     for (let k = 0; k < 4; k++) {
+      if ((await page.getByTestId("gold").count()) === 0) break; // the Crown: no shop, no gold
       const gold = Number((await page.getByTestId("gold").textContent()).replace("g", ""));
       if (gold < 3 || (await page.getByTestId("offers").locator(".card").count()) === 0) break;
       const filled = await page.getByTestId("line").locator(".card.you").count();
@@ -107,6 +108,18 @@ try {
     }
     round++;
     if (round === 1) { await shot("shop"); await noHScroll("shop"); }
+    if (round === 1) {
+      // The shop's "?" explains a card's numbers, and Rules open during a run (#587).
+      await page.getByTestId("legend-open").click();
+      await page.getByTestId("legend").waitFor();
+      await shot("legend"); await noHScroll("legend");
+      await page.getByTestId("legend-rules").click();
+      await page.getByTestId("rules").waitFor();
+      await page.getByTestId("sheet-close").click();
+      await page.getByTestId("rules").waitFor({ state: "detached" });
+      await tap44("shop ? and Rules", page.locator('[data-testid="legend-open"], [data-testid="shop-rules"]'));
+      await tap44("shop ? and Rules", page.locator('[data-testid="legend-open"], [data-testid="shop-rules"]'), "width");
+    }
     if (round === 2 && (await page.getByTestId("line").locator(".card.you").count()) > 1) {
       await page.getByTestId("line-1").click();
       await shot("shop-selected");
@@ -171,6 +184,13 @@ try {
       // The main actions stay on screen however long "why I lost" runs.
       await onScreen("result after loss: Next round", page.getByTestId("continue"));
       await onScreen("result after loss: Replay", page.getByTestId("replay"));
+      // At least three why rows (or all of them) show above the sticky buttons (#587).
+      const { shown, rows } = await page.evaluate(() => {
+        const top = document.querySelector('[data-testid="result-actions"]').getBoundingClientRect().top;
+        const rows = [...document.querySelectorAll('[data-testid="why-lost"] button.bv-why')];
+        return { rows: rows.length, shown: rows.filter((r) => r.getBoundingClientRect().bottom <= top + 0.5).length };
+      });
+      if (shown < Math.min(3, rows)) errors.push(`result after loss: ${shown} of ${rows} why rows above the buttons`);
       const why = page.getByTestId("why-lost").locator("button.bv-why").first();
       if (await why.count()) {
         await why.click();
@@ -288,7 +308,9 @@ try {
   if (!/^No slayers|was the only slayer|won the playoff/.test(ended)) errors.push(`day end: "${ended}"`);
   if (/^No slayers|only slayer/.test(ended) && table > 0) errors.push(`day end: a table under "${ended}"`);
   if (/won the playoff/.test(ended) && table < 2) errors.push(`day end: playoff without its table`);
+  if (!/^Day \d+ ended/.test((await page.getByTestId("day-ended").textContent().catch(() => "")) ?? "")) errors.push("day end: no 'Day N ended' notice");
   await shot("home-day-ended"); await noHScroll("home-day-ended");
+  await onScreen("home after day end: Play", page.getByTestId("play"));
 
   // The reigning champion's own Crown (#587): "Reigning" slays and is crowned
   // through the API (e2e/mvp-own-crown.ts, local server only), then the phone

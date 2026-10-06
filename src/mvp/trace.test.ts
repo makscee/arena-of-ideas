@@ -5,7 +5,7 @@ import { describe, expect, test } from "vitest";
 import { battle } from "../battle.js";
 import { stressAbilities, stressRegistry } from "../content/stress.js";
 import type { AbilityDef, AbilityRegistry, BattleEvent, UnitDef, When } from "../types.js";
-import { captionOf, changeOf, endCaption, stepsOf, traceOf, whyILost } from "./trace.js";
+import { captionOf, captionSubject, changeOf, endCaption, stepsOf, traceOf, whyILost } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -17,6 +17,7 @@ const abilities: AbilityRegistry = {
   Shoot: ab("Shoot", "Strike", [{ kind: "damage", amount: n(2) }]),
   Mend: ab("Mend", "Heal", [{ kind: "heal", amount: n(1) }]),
   Envenom: ab("Envenom", "Poison", [{ kind: "applyStatus", status: "Poison", stacks: n(1) }]),
+  Chill: ab("Chill", "Strike", [{ kind: "applyStatus", status: "Freeze", stacks: n(1) }]),
 };
 
 const unit = (name: string, hp: number, pwr: number, on: When["on"], who: UnitDef["selectors"], does: string[]): UnitDef => ({
@@ -74,6 +75,29 @@ describe("tap a change to trace its chain", () => {
       expect(t.text.length).toBeGreaterThan(0);
       expect(t.text).not.toContain("undefined");
     }
+  });
+});
+
+describe("whose unit a caption is about (#587)", () => {
+  test("an enemy's Freeze stopping your strike is about your unit: 'Freeze on Rose → stops its strike'", () => {
+    const Froster = unit("Froster", 6, 1, { on: "BattleStart" }, [{ kind: "frontEnemy" }], ["Chill"]);
+    const log = run([dummy("Rose", 6, 2)], [Froster]);
+    const stop = log.find((e) => e.type === "Intercepted");
+    expect(stop).toBeDefined();
+    expect(captionOf(log, stop!.id)).toBe("Freeze on Rose → stops its strike");
+    expect(captionSubject(log, stop!.id)).toBe("A1:Rose");
+    const step = stepsOf(log).find((s) => s.eventIds.includes(stop!.id))!;
+    expect(step.subjectSide).toBe("A");
+    expect(step.actorSide).toBe("B"); // the Freeze came from Froster
+  });
+
+  test("a strike is about the striker; a status tick about the unit it hurts", () => {
+    const log = run([dummy("Squire", 8, 1), Medic, Zealot], [dummy("Dummy", 30, 2)]);
+    const hit = log.find((e) => e.type === "Hurt" && e.source === "kernel")!;
+    const striker = (log[hit.causedBy!] as Extract<BattleEvent, { type: "Strike" }>).striker;
+    expect(captionSubject(log, hit.id)).toBe(striker);
+    const tick = log.find((e) => e.type === "Hurt" && e.source !== "kernel" && e.source.status === "Poison")!;
+    expect(captionSubject(log, tick.id)).toBe("B1:Dummy");
   });
 });
 
@@ -146,7 +170,7 @@ describe("why I lost", () => {
     expect(new Set(chains.map((c) => c.text)).size).toBe(chains.length);
   });
 
-  test("a row's traced first hit is one that did damage, never a −0 a Shield took whole", () => {
+  test("a row's traced hit is one that did damage, never a −0 a Shield took whole", () => {
     // Shieldbearer's Shield 2 takes Dummy's first strike (2) whole: a Hurt of 0.
     const log = run([Shieldbearer], [dummy("Dummy", 30, 2)]);
     const zero = log.find((e) => e.type === "Hurt" && e.unit === "A1:Shieldbearer" && e.amount === 0);
@@ -157,6 +181,17 @@ describe("why I lost", () => {
     expect(sample.type === "Hurt" && sample.amount).toBeGreaterThan(0);
     expect(row.sampleEventId).toBeGreaterThan(zero!.id);
     expect(traceOf(log, row.sampleEventId).text).not.toMatch(/^−0/);
+  });
+
+  test("a row traces the chain's killing blow, not its first, smallest hit (#587)", () => {
+    const log = run([dummy("Squire", 8, 1)], [dummy("Dummy", 30, 3)]);
+    const row = whyILost(log, "A").find((c) => c.names[0] === "Dummy")!;
+    expect(row.kills).toBe(1);
+    expect(row.sampleKind).toBe("kill");
+    const death = log.find((e) => e.type === "Death" && e.unit === "A1:Squire")!;
+    expect(row.sampleEventId).toBe(death.causedBy);
+    const firstHit = log.find((e) => e.type === "Hurt" && e.unit === "A1:Squire")!;
+    expect(row.sampleEventId).toBeGreaterThan(firstHit.id);
   });
 
   test("a heal row's traced first change healed something", () => {

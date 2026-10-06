@@ -160,6 +160,11 @@ export interface Step {
   /** The unit that lights up while this step plays. */
   actor: string | null;
   actorSide: Side | null;
+  /** The unit the caption is about: the first one it names ("Rose" in
+   * "Freeze on Rose → stops its strike"), which may not be the actor (the
+   * Freeze came from an enemy). Null when it names none (fatigue, the end). */
+  subject: string | null;
+  subjectSide: Side | null;
   /** One line, cause → effect. */
   caption: string;
   changes: Change[];
@@ -211,11 +216,14 @@ export function stepsOf(log: BattleEvent[], name: NameOf = displayNames(log), si
     const a = actorOf(log, e);
     const actor = a?.unit ?? traceOf(log, e.id, name, sides).links[0]?.unit ?? null;
     const c = changeOf(e);
+    const subject = captionSubject(log, e.id, name);
     const step: Step = {
       eventIds: [e.id],
       turn: e.turn,
       actor,
       actorSide: actor ? sides.get(actor) ?? null : null,
+      subject,
+      subjectSide: subject ? sides.get(subject) ?? null : null,
       caption: captionOf(log, e.id, name, [e.id], p),
       changes: c ? [c] : [],
     };
@@ -230,6 +238,61 @@ function causeName(log: BattleEvent[], e: BattleEvent, name: NameOf): string {
   if (a?.unit) return a.via === "strike" || a.via === "ability" ? name(a.unit) : a.via;
   const t = traceOf(log, e.id, name);
   return t.links[0] ? linkText(t.links[0]) : rootText(log, e.id);
+}
+
+/** The unit causeName() names, or null when it names a status or the rules. */
+function causeUnit(log: BattleEvent[], e: BattleEvent, name: NameOf): string | null {
+  const a = actorOf(log, e);
+  if (a?.unit) return a.via === "strike" || a.via === "ability" ? a.unit : null;
+  if (a) return null;
+  return traceOf(log, e.id, name).links[0]?.unit ?? null;
+}
+
+/** The first unit captionOf(id) names: the caption's side tag is that unit's side. */
+export function captionSubject(log: BattleEvent[], id: number, name: NameOf = displayNames(log)): string | null {
+  const e = log[id];
+  if (!e) return null;
+  switch (e.type) {
+    case "Hurt": {
+      const p = e.causedBy !== null ? log[e.causedBy] : undefined;
+      if (e.source === "kernel" && p?.type === "Strike") return p.striker;
+      return causeUnit(log, e, name) ?? e.unit;
+    }
+    case "Heal":
+    case "StatusApplied":
+    case "StatChanged":
+    case "Death":
+    case "Silenced":
+      return causeUnit(log, e, name) ?? e.unit;
+    case "Summon":
+      return causeUnit(log, e, name) ?? e.unit;
+    case "StatusRemoved":
+      return e.unit;
+    case "Intercepted":
+      return e.by.status && e.unit === e.by.unit ? e.unit : e.by.unit;
+    default:
+      return null;
+  }
+}
+
+/** What an interceptor stopped, as words: "its strike", "Rose's strike", "a hit on Rose". */
+function stoppedText(original: string, unit: string | undefined, own: boolean, name: NameOf): string {
+  const n = unit ? name(unit) : "";
+  const whose = own ? "its" : `${n}'s`;
+  switch (original) {
+    case "Strike":
+      return unit ? `${whose} strike` : "a strike";
+    case "Death":
+      return unit ? `${whose} death` : "a death";
+    case "Hurt":
+      return unit ? (own ? "the hit" : `a hit on ${n}`) : "a hit";
+    case "Heal":
+      return unit ? (own ? "the heal" : `a heal on ${n}`) : "a heal";
+    case "StatusApplied":
+      return unit ? (own ? "the status" : `a status on ${n}`) : "a status";
+    default:
+      return `a ${original}${unit && !own ? ` on ${n}` : ""}`;
+  }
 }
 
 /** One line, cause → effect, for the event `id` (plus merged follow-ups). */
@@ -268,7 +331,10 @@ export function captionOf(log: BattleEvent[], id: number, name: NameOf = display
     case "ChainCapped":
       return `Chain capped after ${e.steps} steps`;
     case "Intercepted":
-      return `${name(e.by.unit)}${e.by.status ? ` (${e.by.status})` : ""} → stops a ${e.original}${e.unit ? ` on ${name(e.unit)}` : ""}`;
+      // A status on the unit stopping its own act reads from the unit:
+      // "Freeze on Rose → stops its strike", not "Rose (Freeze) → … on Rose".
+      if (e.by.status && e.unit === e.by.unit) return `${e.by.status} on ${name(e.unit)} → stops ${stoppedText(e.original, e.unit, true, name)}`;
+      return `${name(e.by.unit)}${e.by.status ? ` (${e.by.status})` : ""} → stops ${stoppedText(e.original, e.unit, false, name)}`;
     case "BattleEnd":
       return endCaption(e.winner, p);
     default:
@@ -296,10 +362,12 @@ export interface LossChain {
   times: number;
   hits: number;
   heals: number;
-  /** The first change that did something (damage dealt, or HP healed), to
-   * replay its trace; never a "−0" hit a Shield took whole. Only when every
-   * change came to nothing, the first one. */
+  /** The change that mattered most, to replay its trace: its biggest killing
+   * blow, else its biggest hit, else its biggest heal; never a "−0" hit a
+   * Shield took whole. Only when every change came to nothing, the first one. */
   sampleEventId: number;
+  /** What sampleEventId is: "kill", "hit", "heal", or "none" (all came to nothing). */
+  sampleKind: "kill" | "hit" | "heal" | "none";
 }
 
 /** "B2:Medic" → 2: the slot a unit started in; null for a summon or another id. */
@@ -319,8 +387,18 @@ export function whyILost(log: BattleEvent[], you: Side = "A", top = 3): LossChai
   const hp = new Map<string, number>();
   for (const e of log) if (e.type === "BattleStart") for (const s of ["A", "B"] as const) for (const r of e.teams[s]) hp.set(r.id, r.hp);
   const groups = new Map<string, LossChain>();
-  // Groups whose sample still is a change that came to nothing (a "−0" hit).
-  const idleSample = new Set<LossChain>();
+  // Each group's best sample so far: a kill beats a hit beats a heal, then the bigger one.
+  const best = new Map<LossChain, { rank: number; amount: number }>();
+  const RANK = { none: 0, heal: 1, hit: 2, kill: 3 } as const;
+  const offer = (g: LossChain, id: number, kind: LossChain["sampleKind"], amount: number) => {
+    const b = best.get(g);
+    if (b && (RANK[kind] < b.rank || (RANK[kind] === b.rank && amount <= b.amount))) return;
+    best.set(g, { rank: RANK[kind], amount });
+    g.sampleEventId = id;
+    g.sampleKind = kind;
+  };
+  // The damage each traced hit dealt, so a killing blow is ranked by its size.
+  const dealt = new Map<number, number>();
   // By instance and how it reads: a unit's strikes and abilities are one row
   // ("Medic"), its status ticks another ("Zealot (Poison)").
   const keyOf = (t: Trace) => t.links.map((l) => `${l.unit}|${linkText(l)}`).join(" ← ");
@@ -330,10 +408,13 @@ export function whyILost(log: BattleEvent[], you: Side = "A", top = 3): LossChai
     const key = keyOf(t);
     let g = groups.get(key);
     if (!g) {
-      g = { names: t.links.map((l) => l.name), units: t.links.map((l) => l.unit), text: t.links.map(linkText).join(" ← "), impact: 0, damage: 0, heal: 0, kills: 0, times: 0, hits: 0, heals: 0, sampleEventId: e.id };
+      g = { names: t.links.map((l) => l.name), units: t.links.map((l) => l.unit), text: t.links.map(linkText).join(" ← "), impact: 0, damage: 0, heal: 0, kills: 0, times: 0, hits: 0, heals: 0, sampleEventId: e.id, sampleKind: "none" };
       groups.set(key, g);
-      if (dmg + heal === 0) idleSample.add(g);
-    } else if (dmg + heal > 0 && idleSample.delete(g)) g.sampleEventId = e.id;
+    }
+    if (dmg > 0) offer(g, e.id, "hit", dmg);
+    else if (heal > 0) offer(g, e.id, "heal", heal);
+    else offer(g, e.id, "none", 0);
+    dealt.set(e.id, dmg);
     g.damage += dmg;
     g.heal += heal;
     g.impact += dmg + heal;
@@ -362,7 +443,10 @@ export function whyILost(log: BattleEvent[], you: Side = "A", top = 3): LossChai
       if (cause) {
         const t = traceOf(log, cause.id, name, sides);
         const g = groups.get(keyOf(t));
-        if (g && t.links[0]?.side === them) g.kills++;
+        if (g && t.links[0]?.side === them) {
+          g.kills++;
+          offer(g, cause.id, "kill", dealt.get(cause.id) ?? 0);
+        }
       }
     }
   }

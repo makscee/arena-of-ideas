@@ -54,6 +54,18 @@ describe("describeAbility", () => {
     }
   });
 
+  test("a summon for every ally reads as one per ally, not 'every ally's side' (#587)", () => {
+    const ab = { ...unitActionsOf(Summoner, stressAbilities)[0]!, selectors: [{ kind: "allAllies" as const }] };
+    expect(describeAbility(ab)).toBe(
+      "After this unit dies: summon an Imp (1 PWR / 2 HP) at the back of the line for every ally, while the line has room.",
+    );
+    // Fired at battle start, the holder is still in the line and gets one too.
+    const atStart = { ...ab, whens: [{ kind: "trigger" as const, on: { on: "BattleStart" as const } }] };
+    expect(describeAbility(atStart)).toBe(
+      "When the battle begins: summon an Imp (1 PWR / 2 HP) at the back of the line for every ally, this unit included, while the line has room.",
+    );
+  });
+
   test("known wordings (the shipped stress units)", () => {
     expect(describeAbility(unitActionsOf(Venomancer, stressAbilities)[0]!)).toMatchInlineSnapshot(
       `"After this unit strikes: apply 2 Poison to the front enemy."`,
