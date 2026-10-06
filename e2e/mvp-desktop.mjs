@@ -137,6 +137,15 @@ try {
   }
   await page.locator('[data-testid="inspector"] [data-testid="see-awoken"]').click().catch(() => {});
   await shot("codex-inspector");
+  // R3-5: the Summoned chip; a summon opens in the inspector with "Summoned by".
+  await page.getByTestId("codex-tier-summoned").click();
+  if ((await page.getByTestId("codex-summon").count()) !== 5) errors.push(`codex: Summoned shows ${await page.getByTestId("codex-summon").count()} cards, not 5`);
+  await page.locator('[data-testid="codex-summon"][data-summon="wolf"]').click();
+  await page.locator('[data-testid="inspector"] [data-testid="summon-sheet"]').waitFor({ timeout: 2_000 }).catch(() => errors.push("codex: the Wolf doesn't open in the inspector"));
+  const wolfBy = (await page.getByTestId("summoned-by").textContent().catch(() => "")) ?? "";
+  if (!wolfBy.includes("Summoner")) errors.push(`codex: the Wolf's "Summoned by" lacks Summoner ("${wolfBy}")`);
+  await shot("codex-summoned");
+  await page.getByTestId("codex-tier-all").click();
   await page.getByTestId("codex-sort-pick").click();
   await page.getByTestId("codex-rate").first().waitFor();
   await shot("codex-sort-pick");

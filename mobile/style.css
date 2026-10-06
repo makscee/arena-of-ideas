@@ -612,7 +612,8 @@ button.t-unit { cursor: pointer; font-weight: 600; text-decoration: underline so
 button.t-unit .t-emoji { margin-right: 2px; text-decoration: none; display: inline-block; }
 .summons { border-top: 1px solid var(--line); padding-top: 8px; }
 .summon-row { display: flex; gap: 10px; align-items: center; }
-.summon-row .card { flex: none; }
+.summon-row .card { flex: none; width: 64px; }
+@media (min-width: 1024px) { .summon-row .card { width: min(var(--cw, 96px), 96px); } }
 .tpill { display: inline; border: 1px solid color-mix(in srgb, #ffbf47 55%, transparent); background: color-mix(in srgb, #ffbf47 12%, transparent); border-radius: 999px; padding: 0 7px 0 5px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 .tpill .tpill-ic { margin-right: 3px; }
 .term-head { display: flex; align-items: center; gap: 6px; font-size: 18px; }

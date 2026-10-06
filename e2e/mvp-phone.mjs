@@ -209,6 +209,33 @@ try {
   await page.getByTestId("see-sleeping").waitFor();
   await shot("codex-sheet");
   await page.getByTestId("sheet-close").click();
+  // R3-5: Planter's sheet shows the Imp it summons; "Imp (1/2)" opens the Imp's card.
+  // Summoned clears the When filter left on above; then every tier.
+  await page.getByTestId("codex-tier-summoned").click();
+  await page.getByTestId("codex-tier-all").click();
+  await page.getByTestId("codex-search").fill("Planter");
+  await page.getByTestId("codex-unit").first().click();
+  const planterSummons = (await page.getByTestId("sheet-summons").textContent().catch(() => "")) ?? "";
+  if (!planterSummons.includes("Imp")) errors.push(`codex: Planter's sheet has no Summons block with the Imp ("${planterSummons}")`);
+  await page.locator('[data-testid="sheet-form"] [data-testid="unit-ref"]').first().click();
+  await page.getByTestId("summon-sheet").waitFor({ timeout: 2_000 }).catch(() => errors.push("codex: Planter's \"Imp (1/2)\" didn't open the Imp's card"));
+  const impHead = (await page.locator('[data-testid="summon-sheet"] h2').textContent().catch(() => "")) ?? "";
+  if (impHead !== "👺 Imp") errors.push(`codex: the Imp's sheet is titled "${impHead}"`);
+  await shot("codex-summon-sheet");
+  while (await page.getByTestId("sheet-close").count()) await page.getByTestId("sheet-close").last().click();
+  await page.getByTestId("codex-search").fill("");
+  // The Summoned chip: the 5 bodies, tagged S; the Wolf names who summons it.
+  await page.getByTestId("codex-tier-summoned").click();
+  const summonCards = await page.getByTestId("codex-summon").count();
+  if (summonCards !== 5) errors.push(`codex: Summoned shows ${summonCards} cards, not 5`);
+  if (await page.getByTestId("codex-unit").count()) errors.push("codex: Summoned shows tiered units");
+  await shot("codex-summoned"); await noHScroll("codex-summoned");
+  await page.locator('[data-testid="codex-summon"][data-summon="wolf"]').click();
+  const wolfBy = (await page.getByTestId("summoned-by").textContent().catch(() => "")) ?? "";
+  for (const n of ["Summoner", "Fungoid"]) if (!wolfBy.includes(n)) errors.push(`codex: the Wolf's "Summoned by" lacks ${n} ("${wolfBy}")`);
+  await shot("codex-summon-wolf");
+  await page.getByTestId("sheet-close").click();
+  await page.getByTestId("codex-tier-all").click();
   await page.getByTestId("codex-tab-keywords").click();
   const shieldUsers = await page.locator('[data-term="status:Shield"] [data-testid="codex-term-unit"]').count();
   if (shieldUsers === 0) errors.push("codex: Shield lists no units");
