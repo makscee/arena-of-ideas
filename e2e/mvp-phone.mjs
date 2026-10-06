@@ -348,7 +348,7 @@ try {
     // it moves to the left, still locked; unlock it again. A locked offer from
     // the last shop is still there, locked, at the left.
     const offerName = (slot) => page.getByTestId(`offer-${slot}`).locator(".name").textContent();
-    const isLocked = async (slot) => (await page.getByTestId(`offer-${slot}`).getAttribute("class")).includes("locked") && (await page.getByTestId(`offer-${slot}`).locator(".cost").textContent()).startsWith("🔒");
+    const isLocked = async (slot) => (await page.getByTestId(`offer-${slot}`).getAttribute("class")).includes("locked") && (await page.getByTestId(`offer-${slot}`).locator(".lock-mark").count()) === 1;
     const lockFromSheet = async (slot, want) => {
       await page.getByTestId(`offer-${slot}`).click();
       await page.getByTestId("lock").waitFor();
@@ -828,18 +828,77 @@ try {
     if ((await page.getByTestId("sheet-parts").locator(".sheet-form").count()) !== 2) errors.push("fused sheet: the parts don't open");
     await shot("fused-sheet-parts");
   }
-  // Compact cards (R2-7): at 360×640 in round 8, with 5 units in the line and
-  // the grown shop, nothing scrolls. A third player gets there through the API.
+  // The bench (R3-14): with the line full, a new unit goes to the bench (the
+  // buy preview says so); a bench unit selected and a tap on a line unit swap
+  // the two; To bench and To line move a unit across.
+  {
+    const bencher = await call("POST", "/players", { name: `Bench${TAG}` });
+    let r = await call("POST", "/runs", undefined, bencher.id);
+    const owned = (r, id) => [...r.line, ...r.bench].some((u) => u.unitId === id || u.fusion?.first === id || u.fusion?.second === id);
+    const fresh = (r) => r.offers.find((o) => !owned(r, o.unitId) && o.cost <= r.gold);
+    const benchReady = (r) => r.phase === "shop" && r.line.length === 5 && r.bench.length === 0 && fresh(r);
+    for (let steps = 0; steps < 2000 && !benchReady(r); steps++) {
+      if (r.phase === "over") { r = await call("POST", "/runs", undefined, bencher.id); continue; }
+      const o = r.offers[0];
+      const d = r.phase === "shop" && r.line.length < 5 && o && r.gold >= o.cost ? { kind: "buy", slot: o.slot } : { kind: "fight" };
+      r = (await call("POST", `/runs/${r.runId}/decisions`, d, bencher.id)).run;
+    }
+    if (!benchReady(r)) errors.push(`bench: never reached a full line with a new unit on offer (phase ${r.phase}, round ${r.round})`);
+    else {
+      await page.evaluate((p) => localStorage.setItem("arena.player", JSON.stringify(p)), bencher);
+      await page.reload();
+      await page.getByTestId("play").click();
+      await page.getByTestId("fight").waitFor();
+      if ((await page.getByTestId("bench").locator(".card.empty").count()) !== 3) errors.push("bench: the empty bench doesn't show 3 dashed slots");
+      const o = fresh(r);
+      await page.getByTestId(`offer-${o.slot}`).click();
+      await page.getByTestId("buy-preview").waitFor();
+      if (!/Goes to your bench/.test(await page.getByTestId("buy-preview").textContent())) errors.push(`bench: the buy preview says "${await page.getByTestId("buy-preview").locator(".label").textContent()}", not "Goes to your bench"`);
+      await shot("bench-buy-preview"); await noHScroll("bench-buy-preview");
+      await page.getByTestId("buy").click();
+      await page.getByTestId("bench-0").waitFor();
+      const name = (id) => page.getByTestId(id).locator(".name").textContent();
+      const benched = await name("bench-0");
+      await shot("shop-bench"); await noHScroll("shop-bench"); await noVScroll("shop-bench");
+      // A bench unit selected, the line full: a tap on a line unit swaps the two.
+      const last = await name("line-4");
+      await page.getByTestId("bench-0").click();
+      await page.getByTestId("to-line").waitFor();
+      if ((await page.getByTestId("hint").filter({ hasText: "swap" }).count()) === 0) errors.push("bench: no swap hint with a bench unit selected and the line full");
+      await shot("bench-selected"); await noHScroll("bench-selected"); await noVScroll("bench-selected");
+      await tap44("bench actions", page.getByTestId("actions").locator("button"));
+      await page.getByTestId("line-4").click();
+      await page.waitForFunction((n) => document.querySelector('[data-testid="line-4"] .name')?.textContent === n, benched, { timeout: 5_000 }).catch(() => {});
+      if ((await name("line-4")) !== benched || (await name("bench-0")) !== last) errors.push(`bench: the tap-to-swap left line-4 "${await name("line-4")}" and bench-0 "${await name("bench-0")}"`);
+      // To bench: line-0 goes to the bench's next slot; To line brings it back to the line's end.
+      const front = await name("line-0");
+      await page.getByTestId("line-0").click();
+      await page.getByTestId("to-bench").click();
+      await page.getByTestId("bench-1").waitFor();
+      if ((await name("bench-1")) !== front) errors.push(`bench: To bench put "${await name("bench-1")}" on bench-1, not "${front}"`);
+      if ((await page.getByTestId("line-4-empty").count()) !== 1) errors.push("bench: the line has no empty slot after To bench");
+      await page.getByTestId("bench-1").click();
+      await page.getByTestId("to-line").click();
+      await page.getByTestId("line-4").waitFor();
+      if ((await name("line-4")) !== front) errors.push(`bench: To line put "${await name("line-4")}" in line-4, not "${front}"`);
+      await shot("bench-moved"); await noHScroll("bench-moved");
+    }
+  }
+  // Compact cards (R2-7): at 360×640 in round 8, with 5 units in the line, a
+  // full bench (R3-14) and the grown shop, nothing scrolls. A third player
+  // gets there through the API.
   {
     const compact = await call("POST", "/players", { name: `Compact${TAG}` });
     let r = await call("POST", "/runs", undefined, compact.id);
-    for (let steps = 0; steps < 2000 && !(r.phase === "shop" && r.round >= 8 && r.line.length === 5); steps++) {
+    const full = (r) => r.phase === "shop" && r.round >= 8 && r.line.length === 5 && r.bench.length === 3;
+    for (let steps = 0; steps < 4000 && !full(r); steps++) {
       if (r.phase === "over") { r = await call("POST", "/runs", undefined, compact.id); continue; }
       const o = r.offers[0];
-      const d = r.phase === "shop" && r.line.length < 5 && o && r.gold >= o.cost ? { kind: "buy", slot: o.slot } : { kind: "fight" };
+      const room = r.line.length < 5 || r.bench.length < 3;
+      const d = r.phase === "shop" && room && o && r.gold >= o.cost ? { kind: "buy", slot: o.slot } : { kind: "fight" };
       r = (await call("POST", `/runs/${r.runId}/decisions`, d, compact.id)).run;
     }
-    if (!(r.phase === "shop" && r.round >= 8 && r.line.length === 5)) errors.push(`compact: never reached round 8 with a full line (phase ${r.phase}, round ${r.round})`);
+    if (!full(r)) errors.push(`compact: never reached round 8 with a full line and bench (phase ${r.phase}, round ${r.round})`);
     else {
       await page.evaluate((p) => localStorage.setItem("arena.player", JSON.stringify(p)), compact);
       await page.reload();

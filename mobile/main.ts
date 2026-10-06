@@ -809,7 +809,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const { sheet, blocked } = await offerBody(o);
       const buy = button(buttonRefusal(blocked) || `Buy ${o.cost}g`, () => (close(), void decide({ kind: "buy", slot: o.slot })), "primary grow", "buy");
       buy.disabled = blocked !== "";
-      const lockBtn = canLock(o) ? [button(o.locked ? "🔓 Unlock" : "🔒 Lock", () => (close(), lock(o)), "", "lock")] : [];
+      const lockBtn = canLock(o) ? [button(lockLabel(o), () => (close(), lock(o)), "", "lock")] : [];
       const close = overlay(sheet, h("div", { class: "row sheet-actions" }, button("Close", () => close(), "", "offer-close"), ...lockBtn, buy));
     });
 

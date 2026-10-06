@@ -377,9 +377,17 @@ try {
     await page.keyboard.press(String(key));
     await page.getByTestId("hint").filter({ hasText: "fuse" }).waitFor();
     await wantSfx("the awakening copy", /^level-up$/);
-    const first = run.line.findIndex((u) => u.form === "awoken");
-    const second = run.line.findIndex((u) => u.uid === almost.uid);
-    await page.getByTestId(`line-${first}`).click();
+    const awake = run.line.findIndex((u) => u.form === "awoken");
+    const named = run.line[awake].name;
+    // R3-14: B sends the first Awoken unit to the bench, and it fuses from there with a line unit.
+    await page.getByTestId(`line-${awake}`).click();
+    await page.keyboard.press("b");
+    await page.getByTestId("bench-0").waitFor();
+    await page.mouse.move(5, H - 5); // the inspector shows the hovered card first
+    if ((await page.getByTestId("bench-0").locator(".name").textContent()) !== named) errors.push(`bench: B put "${await page.getByTestId("bench-0").locator(".name").textContent()}" on the bench, not "${named}"`);
+    if (!/On your bench/.test(await page.getByTestId("inspector").textContent())) errors.push("bench: the inspector doesn't say the selected unit is on the bench");
+    await shot("bench-b-key");
+    const second = run.line.findIndex((u) => u.uid === almost.uid) - (run.line.findIndex((u) => u.uid === almost.uid) > awake ? 1 : 0);
     await page.getByTestId("inspector").getByTestId("fuse").waitFor();
     await page.keyboard.press("f");
     await page.locator(".card.fusable").first().waitFor();
@@ -403,7 +411,18 @@ try {
     await page.getByTestId("line").locator(".card.fused").hover();
     await page.getByTestId("inspector").getByTestId("unit-sheet").waitFor();
     if (!/discovered by (you|@\S+)/.test(await page.getByTestId("inspector").textContent())) errors.push("fused: no discovery credit in the inspector");
+    if ((await page.getByTestId("bench").locator(".card.you").count()) !== 0) errors.push("bench: the fused bench unit is still on the bench");
     await shot("fused");
+    // Drag between line and bench (R3-14): line-0 onto the bench's empty slot, then back onto the line's.
+    const front = await page.getByTestId("line-0").locator(".name").textContent();
+    await page.getByTestId("line-0").dragTo(page.getByTestId("bench-0-empty"));
+    await page.getByTestId("bench-0").waitFor();
+    if ((await page.getByTestId("bench-0").locator(".name").textContent()) !== front) errors.push(`bench: dragging line-0 to the bench put "${await page.getByTestId("bench-0").locator(".name").textContent()}" there, not "${front}"`);
+    await shot("bench-dragged");
+    await page.getByTestId("bench-0").dragTo(page.getByTestId("line").locator(".card.empty").first());
+    await page.getByTestId("bench-0-empty").waitFor();
+    const back = await page.getByTestId("line").locator(".card.you").last().locator(".name").textContent();
+    if (back !== front) errors.push(`bench: dragging back put "${back}" at the line's end, not "${front}"`);
   }
 
   // 1024px is still desktop (120px cards, 340px inspector, nothing cut off); 1023px is the phone.
