@@ -8,11 +8,12 @@
 // without MVP_DEV=1, 501 until slice 5).
 import type { BattleRecord, DayView, FightResult, HomeView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView } from "../src/mvp/contract";
 import { MVP_RULES, offersAt } from "../src/mvp/contract";
-import { ApiError, api } from "./api";
+import { ApiError, api, savedPlayer } from "./api";
 import { getContent } from "./content";
 import { battleScreen, whyILost } from "./screens/battle";
 import { statsScreen } from "./screens/stats";
 import { card, unitSheet, type CardUnit } from "./ui/card";
+import { previewName } from "./ui/fusion";
 import { icon } from "./ui/icon";
 import { app, button, closable, h, overlay, show, who } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
@@ -367,19 +368,67 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
     return null;
   };
 
-  /** Fuse preview: the result card from a dry run, then confirm. */
+  /** Fuse preview: the result card from a dry run, Swap to try the other
+   * order, then confirm. Both orders are fetched up front (a preview writes
+   * nothing), so Swap is instant. A pair nobody has fused comes without a
+   * name; the fuse reveals it. */
   const fusePreview = (first: number, second: number) =>
     guarded(err, async () => {
-      const res = await api.preview(run.runId, { kind: "fuse", first, second });
-      const fused = res.run.line.find((u) => u.uid === run.line[first]!.uid) ?? res.run.line[first]!;
-      const close = overlay(
-        h("div", { class: "label" }, "Fusion preview"),
-        h("div", { class: "preview-card" }, card(fused, { side: "you", extra: [copiesBadge(fused)] })),
-        h("div", { class: "row sheet-actions" }, button("Cancel", () => close(), "grow", "preview-cancel"), button("Fuse", () => (close(), void decide({ kind: "fuse", first, second })), "primary grow", "preview-confirm")),
-        unitSheet(fused, content),
-      );
+      const orders = [
+        { first, second },
+        { first: second, second: first },
+      ] as const;
+      const [ab, ba] = await Promise.all(orders.map((o) => api.preview(run.runId, { kind: "fuse", ...o })));
+      // The fused unit keeps the first part's uid, in the front-most slot.
+      const fusedOf = (res: { run: RunView }, o: { first: number }) => res.run.line.find((u) => u.uid === run.line[o.first]!.uid) ?? res.run.line[Math.min(first, second)]!;
+      const views = [fusedOf(ab!, orders[0]), fusedOf(ba!, orders[1])];
+      let at = 0;
+      const body = h("div", { class: "stack" });
+      const render = () => {
+        const o = orders[at]!;
+        const fused = previewName(views[at]!);
+        const recipe = h(
+          "div",
+          { class: "recipe-line", "data-testid": "fusion-recipe" },
+          h("span", { class: "k" }, "When"), ` · ${run.line[o.first]!.name} → `,
+          h("span", { class: "k" }, "Who"), ` · ${run.line[o.second]!.name} → `,
+          h("span", { class: "k" }, "Does"), " · both",
+        );
+        body.replaceChildren(
+          h("div", { class: "preview-card" }, card(fused, { side: "you", extra: [copiesBadge(fused)] })),
+          recipe,
+          h(
+            "div",
+            { class: "row sheet-actions" },
+            button("Cancel", () => close(), "grow", "preview-cancel"),
+            button("⇄ Swap", () => ((at = 1 - at), render()), "", "preview-swap"),
+            button("Fuse", () => (close(), void fuse(o, views[at]!)), "primary grow", "preview-confirm"),
+          ),
+          unitSheet(fused, content, { preview: true }),
+        );
+      };
+      render();
+      const close = overlay(h("div", { class: "label" }, "Fusion preview"), body);
       pick = { mode: "none" };
       renderLine();
+    });
+
+  /** Confirm a fuse; a pair nobody had fused (or only bots had) then shows
+   * its name with "You discovered". */
+  const fuse = (o: { first: number; second: number }, previewed: LineUnit) =>
+    guarded(err, async () => {
+      const res = await api.decide(run.runId, { kind: "fuse", ...o });
+      shopScreen(res.run, content);
+      const fused = res.run.line.find((u) => u.uid === run.line[o.first]!.uid);
+      const me = savedPlayer()?.id;
+      const discovered = previewed.fusion?.name === "" || previewed.fusion?.discoveredBy === null;
+      if (!fused || !discovered || fused.fusion?.discoveredBy?.id !== me) return;
+      closable(
+        h("div", { class: "label" }, "New fusion"),
+        h("h2", { class: "reveal", "data-testid": "fusion-reveal" }, `✨ You discovered ${fused.name}`),
+        h("div", { class: "preview-card" }, card(fused, { side: "you", extra: [copiesBadge(fused)] })),
+        unitSheet(fused, content),
+      );
     });
 
   /** An offer's sheet: both forms, and what buying it does to your line. */

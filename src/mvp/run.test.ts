@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_RUN_POOL, stressAbilities, stressRegistry } from "../index.js";
 import { MVP_RULES, type MvpContent, type PlayerRef, type UnitContent } from "./contract.js";
+import { lineUnitOf } from "./forms.js";
 import { applyMvpDecision, initMvpRun, MvpBadDecision, MvpDecisionError, offersAt, runView, synthGhost } from "./run.js";
 
 const units: UnitContent[] = DEFAULT_RUN_POOL.map((d, i) => {
@@ -43,6 +44,21 @@ describe("MVP thin run", () => {
     expect(s.line).toHaveLength(1);
     expect(s.line[0]!.copies).toBe(2);
     expect(s.line[0]!.stats).toEqual({ pwr: units[0]!.base.pwr + 1, hp: units[0]!.base.hp + 2 });
+  });
+
+  it("puts a fused unit in the front-most of its two slots, in either order: a swap changes only the recipe", () => {
+    const s0 = initMvpRun({ runId: "r", player: me, seed: 3, content, ...day });
+    const [a, b, c, d] = ["u0", "u1", "u2", "u3"].map((id, i) => lineUnitOf(units.find((u) => u.id === id)!, `x${i}`, 3));
+    const s = { ...s0, line: [a!, b!, c!, d!] };
+    const fuse = { name: "Test", discoveredBy: me };
+    const db = applyMvpDecision(s, { kind: "fuse", first: 3, second: 1 }, content, { fuse }).state;
+    const bd = applyMvpDecision(s, { kind: "fuse", first: 1, second: 3 }, content, { fuse }).state;
+    for (const [st, uid] of [[db, "x3"], [bd, "x1"]] as const) {
+      expect(st.line.map((u) => u.uid)).toEqual(["x0", uid, "x2"]);
+      expect(st.line[1]).toMatchObject({ kind: "fused" });
+    }
+    expect(db.line[1]!.fusion).toMatchObject({ first: "u3", second: "u1" });
+    expect(bd.line[1]!.fusion).toMatchObject({ first: "u1", second: "u3" });
   });
 
   it("fights a ghost, logs a causal battle and turns the round", () => {

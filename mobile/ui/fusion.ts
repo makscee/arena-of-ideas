@@ -5,10 +5,21 @@ import type { LineUnit } from "../../src/mvp/contract";
 import { savedPlayer } from "../api";
 import { h } from "./dom";
 
-/** "discovered by you" / "discovered by @name" for a fused unit's sheet; null otherwise. */
-export function discoveredLine(u: Partial<Pick<LineUnit, "kind" | "fusion">>): HTMLElement | null {
-  const by = u.kind === "fused" ? u.fusion?.discoveredBy : undefined;
-  if (!by) return null;
+/** "discovered by you" / "discovered by @name" for a fused unit's sheet; null
+ * otherwise. In a fusion preview (`preview`), a pair nobody has fused says it
+ * is named when you fuse, and a pair only bots have made says so. */
+export function discoveredLine(u: Partial<Pick<LineUnit, "kind" | "fusion">>, o: { preview?: boolean } = {}): HTMLElement | null {
+  if (u.kind !== "fused" || !u.fusion) return null;
+  const line = (text: string) => h("div", { class: "discovered", "data-testid": "discovered-by" }, text);
+  if (o.preview && u.fusion.name === "") return line("New fusion · named when you fuse");
+  const by = u.fusion.discoveredBy;
+  if (!by) return o.preview ? line("made by bots · fuse it to claim the discovery") : null;
   const who = by.id === savedPlayer()?.id ? "you" : `@${by.name}`;
-  return h("div", { class: "discovered", "data-testid": "discovered-by" }, `discovered by ${who}`);
+  return line(`discovered by ${who}`);
+}
+
+/** The name a preview shows: "??? New fusion" for a pair nobody has fused
+ * (the server sends no name until the fuse). */
+export function previewName(u: LineUnit): LineUnit {
+  return u.kind === "fused" && u.name === "" ? { ...u, name: "??? New fusion" } : u;
 }

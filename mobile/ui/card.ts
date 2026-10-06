@@ -78,9 +78,9 @@ export function formText(form: UnitForm, content: MvpContent): string {
 /** Everything about one unit: exact numbers and the form it has now. A
  * sleeping unit's sheet swaps in its awoken text behind "See Awoken" (what
  * changes underlined), a fused unit's parts open behind a tap, and the unit's
- * win and pick rates are one dim line at the bottom. Open it with
- * overlay(unitSheet(...)) from ./dom. */
-export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpContent, opts: { rates?: UnitRates; from?: Stats } = {}): HTMLElement {
+ * win and pick rates are one dim line at the bottom. opts.preview: a fusion
+ * preview's credit line (./fusion.ts). Open it with overlay(unitSheet(...)) from ./dom. */
+export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpContent, opts: { rates?: UnitRates; from?: Stats; preview?: boolean } = {}): HTMLElement {
   const unitId = "forms" in u ? u.id : u.unitId;
   const unit = (id: string) => content.units.find((x) => x.id === id);
   // opts.from: your copy's stats now, when u is that copy after a buy (the shop's offer sheet).
@@ -143,7 +143,7 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
     "div",
     { class: "stack", "data-testid": "unit-sheet" },
     h("div", { class: "row spread sheet-head" }, h("h2", {}, `${u.emoji} ${u.name}`), h("span", { class: "dim small", "data-testid": "sheet-state" }, "stats" in u ? sheetState(u) : `Sleeping · tier ${u.tier}`)),
-    "forms" in u ? null : discoveredLine(u),
+    "forms" in u ? null : discoveredLine(u, { preview: opts.preview ?? false }),
     "stats" in u ? statsLine(u.stats) : h("div", { class: "num" }, `${u.base.pwr} PWR / ${u.base.hp} HP`),
     opts.from ? h("div", { class: "dim small" }, "Your copy now → after buying") : null,
     box,

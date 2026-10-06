@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MVP_RULES, offersAt, type BattleRecord, type DayView, type DecisionResponse, type HomeView, type PlayerRef, type RunView } from "../../../src/mvp/contract.js";
+import { MVP_RULES, offersAt, type BattleRecord, type DayView, type DecisionResponse, type HomeView, type LineUnit, type PlayerRef, type RunView } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { createMvpApp } from "./app.js";
 import { mvpContent } from "./content.js";
@@ -141,7 +141,7 @@ describe("MVP API thin path", () => {
     expect(fusions).toEqual({ status: 200, json: [] });
   });
 
-  it("fuses two Awoken units: hooks see the decision and the fuse, a preview names it the same and calls none", async () => {
+  it("fuses two Awoken units: hooks see the decision and the fuse, a preview hides the new pair's name and calls none", async () => {
     const seen: string[] = [];
     const { rt, call } = world({
       hooks: [
@@ -161,14 +161,23 @@ describe("MVP API thin path", () => {
     const pv = await call<DecisionResponse>("POST", `/runs/${r.runId}/preview`, fuse, p.id);
     expect(pv.status).toBe(200);
     expect(seen).toEqual([]);
+    const name = portmanteau(b!.name, a!.name);
+    // Nobody has fused this pair: the preview's response doesn't carry its name.
+    expect(pv.json.run.line).toMatchObject([{ uid: "u2", kind: "fused", name: "", fusion: { first: b!.id, second: a!.id, name: "", discoveredBy: p } }]);
+    expect(JSON.stringify(pv.json)).not.toContain(name);
     const done = await call<DecisionResponse>("POST", `/runs/${r.runId}/decisions`, fuse, p.id);
     expect(done.status).toBe(200);
-    expect(done.json.run).toEqual(pv.json.run);
-    const name = portmanteau(b!.name, a!.name);
+    // The same as the preview, except the name the fuse gave it.
+    const named = (u: LineUnit) => ({ ...u, name, fusion: { ...u.fusion!, name } });
+    expect(done.json.run).toEqual({ ...pv.json.run, line: pv.json.run.line.map(named) });
     expect(done.json.run.line).toMatchObject([{ uid: "u2", kind: "fused", name, fusion: { first: b!.id, second: a!.id, name, discoveredBy: p } }]);
     expect(seen).toEqual(["decision fuse 2→1", `fuse u2 ${name} fuser 1`]);
     // Slice 10's hook records the discovery; GET /fusions lists it.
     expect((await call("GET", "/fusions")).json).toEqual([{ first: b!.id, second: a!.id, name, discoveredBy: p, discoveredAt: expect.any(String), nameSource: "fallback" }]);
+    // Once fused, the pair previews with its name and credit.
+    rt.store.putRun({ ...rt.store.run(r.runId)!, line: [lineUnitOf(b!, "u4", 3, rt.rules), lineUnitOf(a!, "u5", 3, rt.rules)], nextUid: 6 });
+    const again = await call<DecisionResponse>("POST", `/runs/${r.runId}/preview`, { kind: "fuse", first: 0, second: 1 }, p.id);
+    expect(again.json.run.line).toMatchObject([{ uid: "u4", name, fusion: { name, discoveredBy: p } }]);
   });
 
   it("keeps one day: runs start on it, /day and /home show it", async () => {

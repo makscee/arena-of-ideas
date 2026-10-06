@@ -109,6 +109,9 @@ button.pin-btn { display: flex; align-items: center; gap: 4px; min-height: 44px;
 .card.poor { opacity: 0.45; }
 .card.owned .cost { color: var(--you); }
 .preview-card { width: 64px; margin: 0 auto; }
+.recipe-line { text-align: center; font-size: 12px; }
+.recipe-line .k { color: var(--dim); font-family: "IBM Plex Mono", monospace; font-size: 10px; text-transform: uppercase; }
+.reveal { text-align: center; }
 .after.awakens .label { color: var(--gold); font-weight: 700; }
 /* The sheet: the active form's text in a box; "See Awoken" swaps in the other
  * form, gold-bordered, with what changes underlined. */
