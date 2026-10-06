@@ -785,8 +785,13 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-line { flex: 0 1 auto; min-height: 0; }
   #app[data-screen="battle"] .bv-card { height: 104px; padding-top: 4px; }
   #app[data-screen="battle"] .bv-card .name { flex: none; }
-  /* No room outside the card: a trigger badge sits on the card's foot, never over the controls or the HUD. */
-  #app[data-screen="battle"] .bv-line button.bv-badge, #app[data-screen="battle"] .bv-line.mine button.bv-badge { top: auto; bottom: 2px; height: 24px; align-items: flex-end; }
+  /* No room outside the card: a trigger badge sits on the card's foot, never
+   * over the controls or the HUD; a slimmer pill on the status row only, so
+   * PWR and HP stay readable (R2-17 batch F). */
+  #app[data-screen="battle"] .bv-line button.bv-badge, #app[data-screen="battle"] .bv-line.mine button.bv-badge { top: auto; bottom: 0; height: 24px; align-items: flex-end; }
+  #app[data-screen="battle"] .bv-badge-pill { height: 14px; padding: 0 4px; gap: 1px; box-shadow: 0 0 4px color-mix(in srgb, #ffbf47 45%, transparent); }
+  #app[data-screen="battle"] .bv-badge-pill .ic { width: 11px; height: 11px; }
+  #app[data-screen="battle"] .bv-badge-arrow { font-size: 9px; line-height: 12px; }
   #app[data-screen="battle"] .bv-sts { min-height: 13px; max-height: 13px; }
   #app[data-screen="battle"] .bv-card .foot { min-height: 13px; }
   #app[data-screen="battle"] .bv-card .emoji { margin-top: 22px; font-size: 18px; line-height: 20px; height: 20px; }
