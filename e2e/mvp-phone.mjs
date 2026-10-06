@@ -6,6 +6,7 @@ import { spawn, execFileSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { createServer } from "node:net";
 import { launchChromium } from "./browser.mjs";
+import { nowSheetChecks } from "./now-sheet.mjs";
 
 const args = process.argv.slice(2);
 const opt = (n) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : undefined; };
@@ -476,11 +477,16 @@ try {
       await tap44("past step", page.locator("button.bv-past"));
       await tap44("trigger badge", page.getByTestId("trigger-badge"));
       if ((await page.getByTestId("caption-side").count()) === 0 && /→/.test(await page.getByTestId("caption").textContent())) errors.push("battle caption: no side tag on a unit's act");
-      // A battle card (below its chip) opens the unit's sheet, which closes with Close.
+      // A battle card (below its chip) opens its Now sheet (R3-18), whose
+      // Full card opens the unit's sheet, which closes with Close.
       await page.getByTestId("trace-close").click();
       const box = await page.getByTestId("battle-you").locator(".bv-card").first().boundingBox();
       await page.mouse.click(box.x + box.width / 2, box.y + box.height - 8);
+      await page.getByTestId("now-sheet").waitFor();
+      await tap44("now sheet: full card", page.getByTestId("now-full-card"));
+      await page.getByTestId("now-full-card").click();
       await page.getByTestId("unit-sheet").waitFor();
+      if (await page.getByTestId("now-sheet").count()) errors.push("now sheet: still up under the full card");
       await shot("battle-unit-sheet"); await noHScroll("battle-unit-sheet");
       await sheetChecks("battle unit sheet");
       // The Codex opened over a playing battle pauses it; Back finds it paused where it was.
@@ -513,6 +519,7 @@ try {
         await shot("battle-two-changes-trace");
         await page.getByTestId("trace-close").click();
       } else console.log("mvp phone: round 1 had no unit with two changes in one step (no shot)");
+      await nowSheetChecks(page, errors, { shot, phone: true });
       // R2-14: controls, the end card, key moments and Replay.
       await tap44("battle controls", page.locator(".bv-controls button"));
       await tap44("battle controls", page.locator(".bv-controls button"), "width");
