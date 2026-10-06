@@ -23,7 +23,7 @@ function world(extra: Partial<MvpDeps> = {}) {
 const client = (extra: Partial<MvpDeps> = {}) => world(extra).call;
 
 describe("MVP API thin path", () => {
-  it("lets a second device take a name already used: no sign-in yet (slice 13)", async () => {
+  it("lets a second device take a name already used on an open server (invites: invites.test.ts)", async () => {
     const call = client();
     const first = await call<PlayerRef>("POST", "/players", { name: "Maks" });
     const again = await call<PlayerRef>("POST", "/players", { name: "Maks" });

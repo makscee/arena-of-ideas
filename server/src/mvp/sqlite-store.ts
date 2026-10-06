@@ -11,7 +11,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
-import type { MvpStore, UnitTallies, UnitTally } from "./store.js";
+import { MAX_SESSIONS, nameKey, type Invite, type MvpStore, type UnitTallies, type UnitTally } from "./store.js";
 
 const SQL_DIR = fileURLToPath(new URL("./sql/", import.meta.url));
 
@@ -137,5 +137,47 @@ export class SqliteMvpStore implements MvpStore {
       .prepare("SELECT unit_id AS unitId, fights, wins, runs FROM mvp_unit_tallies WHERE content_version = ? ORDER BY unit_id")
       .all(contentVersion) as UnitTally[];
     return { runs, units };
+  }
+
+  playersNamed(name: string, opts: { bots?: boolean } = {}): PlayerRef[] {
+    // Compared in JS (nameKey): SQLite's lower() folds ASCII only.
+    const key = nameKey(name);
+    return this.all<PlayerRef>(`SELECT json FROM mvp_players${opts.bots ? "" : " WHERE json_extract(json, '$.bot') = 0"} ORDER BY rowid`).filter((p) => nameKey(p.name) === key);
+  }
+  putInvite(i: Invite): void {
+    this.write(
+      "INSERT INTO mvp_invites (code, name_key, player_id, json) VALUES (?, ?, ?, ?) ON CONFLICT(code) DO UPDATE SET name_key = excluded.name_key, player_id = excluded.player_id, json = excluded.json",
+      i.code, nameKey(i.name), i.playerId, JSON.stringify(i),
+    );
+  }
+  invite(code: string): Invite | undefined { return this.one("SELECT json FROM mvp_invites WHERE code = ?", code); }
+  invites(): Invite[] { return this.all("SELECT json FROM mvp_invites ORDER BY rowid"); }
+  redeemInvite(code: string, tokenHash: string, at: string): string | undefined {
+    // IMMEDIATE takes the write lock first, and the session row is written
+    // only from the invite row as it is then: a revoke on another connection
+    // either ran before (no row, no session) or runs after (and ends it).
+    return this.db.transaction(() => {
+      const added = this.db
+        .prepare("INSERT INTO mvp_sessions (token_hash, player_id, created_at) SELECT ?, player_id, ? FROM mvp_invites WHERE code = ?")
+        .run(tokenHash, at, code).changes;
+      if (!added) return undefined;
+      const { player_id: playerId } = this.db.prepare("SELECT player_id FROM mvp_invites WHERE code = ?").get(code) as { player_id: string };
+      this.write("UPDATE mvp_invites SET json = json_set(json, '$.redeemedAt', ?) WHERE code = ? AND json_extract(json, '$.redeemedAt') IS NULL", at, code);
+      this.write(
+        "DELETE FROM mvp_sessions WHERE player_id = ? AND rowid NOT IN (SELECT rowid FROM mvp_sessions WHERE player_id = ? ORDER BY rowid DESC LIMIT ?)",
+        playerId, playerId, MAX_SESSIONS,
+      );
+      return playerId;
+    }).immediate();
+  }
+  sessionPlayer(tokenHash: string): string | undefined {
+    return (this.db.prepare("SELECT player_id FROM mvp_sessions WHERE token_hash = ?").get(tokenHash) as { player_id: string } | undefined)?.player_id;
+  }
+  rotateInvite(oldCode: string, next: Invite): number {
+    return this.db.transaction(() => {
+      this.write("DELETE FROM mvp_invites WHERE code = ?", oldCode);
+      this.putInvite(next);
+      return this.db.prepare("DELETE FROM mvp_sessions WHERE player_id = ?").run(next.playerId).changes;
+    }).immediate();
   }
 }

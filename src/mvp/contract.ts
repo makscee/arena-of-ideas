@@ -553,22 +553,35 @@ export interface HomeView {
   /** Null before the player's first run. */
   rating: Rating | null;
   activeRunId: string | null;
-  /** True on a dev server (MVP_DEV=1): the title menu shows the dev tools
-   * ("End day now"); every other player never sees them. */
+  /** True on a dev server (MVP_DEV=1) for a player who may use the dev tools
+   * (anyone on an open server, only admin invites on an invite-only one):
+   * the title menu shows them ("End day now"); every other player never does. */
   dev: boolean;
 }
 
 // ---------- HTTP API ----------
 //
-// Identity tonight is a name kept on the device: POST /players returns an id
-// the client stores and sends as the X-Arena-Player header on every call.
-// Invite tokens replace it in slice 13. Errors are { error: string } with 4xx:
-// 400 a request the API can't read (a Decision of an unknown kind), 409 a
-// decision the rules refuse, 404 any path not listed here.
+// Identity on an open server (dev, tests): a name kept on the device: POST
+// /players returns an id the client stores and sends as the X-Arena-Player
+// header on every call. On an invite-only server (slice 13, main.ts
+// MVP_INVITES=1) a player is whoever holds a session token: POST
+// /invites/redeem opens a person's invite link and returns a PlayerSession, and
+// the client sends its token as X-Arena-Token; X-Arena-Player is ignored there
+// and POST /players answers 403. Errors are { error: string } with 4xx: 400 a
+// request the API can't read (a Decision of an unknown kind), 401 no player
+// ("unknown player: …", the client forgets its device identity) or not the
+// run's player, 403 invite only, 413 a body over 16 KB, 409 a decision the rules refuse, 404 any
+// path not listed here (and /dev/* off a dev server, or for a non-admin on an
+// invite-only one), 501 a route a slice hasn't filled in.
 //
-//   GET  /api/v1/health                      → { ok: true, api, contentVersion, build }  (build: the deployed commit, or null)
+//   GET  /api/v1/health                      → { ok: true, api, contentVersion, build, invites }  (build: the deployed commit, or null; invites: invite-only)
 //   GET  /api/v1/content                     → MvpContent
-//   POST /api/v1/players       { name }      → PlayerRef
+//   POST /api/v1/players       { name }      → PlayerRef          (403 on an invite-only server)
+//   POST /api/v1/invites/lookup { code }     → { player: PlayerRef } (slice 13; whose link it is, opening nothing; 404 unknown code)
+//   POST /api/v1/invites/redeem { code }     → PlayerSession      (slice 13; 404 unknown code; the same link again: the same player,
+//                                                                  a new token; a player keeps their newest 10 devices' tokens)
+//   Invite codes travel in the link's fragment (…/arena/#invite=<code>) and in
+//   these bodies, never in a URL path or query, so no access log holds one.
 //   GET  /api/v1/home                        → HomeView
 //   POST /api/v1/runs                        → RunView            (starts a run; the player's active run if one is going)
 //   GET  /api/v1/runs/:runId                 → RunView
@@ -582,6 +595,14 @@ export interface HomeView {
 //   GET  /api/v1/stats                       → StatsView          (slice 11)
 
 export const PLAYER_HEADER = "X-Arena-Player";
+/** Slice 13: the session token from POST /invites/redeem. */
+export const TOKEN_HEADER = "X-Arena-Token";
+
+/** An opened invite link: the player it names and this device's token. */
+export interface PlayerSession {
+  player: PlayerRef;
+  token: string;
+}
 
 export interface StatsView {
   units: { unitId: UnitId; winRate: number; pickRate: number; runs: number }[];

@@ -166,6 +166,16 @@ function legendSheet(): HTMLElement {
 // ---------- name ----------
 
 function nameScreen(): void {
+  // An invite-only server (slice 13) takes no new names: a player comes from
+  // their invite link. Nothing but the title shows until /health says which.
+  show(h("h1", {}, "ARENA OF IDEAS"));
+  void api.health().then(
+    (hl) => (hl.invites ? show(h("h1", {}, "ARENA OF IDEAS"), h("p", { class: "dim", "data-testid": "invite-only" }, "Arena is invite-only for now. Open your invite link on this device to play.")) : nameForm()),
+    () => nameForm(),
+  );
+}
+
+function nameForm(): void {
   const input = h("input", { placeholder: "Your name", maxlength: "24", autocomplete: "nickname", "data-testid": "name-input" });
   const err = errorLine();
   const go = () => guarded(err, async () => {
@@ -1195,11 +1205,79 @@ function runOverScreen(run: RunView, content: MvpContent, notice = "", newRun = 
 
 // ---------- boot ----------
 
-initSound();
-
-if (api.player) {
+/** `#invite=<code>` in the address (slice 13): open the link, then drop the
+ * code from the address bar and go Home as its player. The code rides in the
+ * fragment, which the browser never sends, so no access log holds it. A
+ * device that is already another player asks first. A dead link offers Home
+ * on a device with its own session, and otherwise asks for a new link. */
+const inviteCode = new URLSearchParams(location.hash.slice(1)).get("invite");
+const dropInvite = () => {
+  const url = new URL(location.href);
+  url.hash = "";
+  history.replaceState(null, "", url.href.replace(/#$/, ""));
+};
+function openInvite(code: string): void {
   const err = errorLine();
-  void guarded(err, homeScreen).then(() => {
+  void guarded(err, async () => {
+    const mine = api.player;
+    if (mine) {
+      const theirs = await api.invitePlayer(code);
+      if (theirs.id !== mine.id) return switchScreen(code, mine, theirs);
+    }
+    await api.redeem(code);
+    dropInvite();
+    await homeScreen();
+  }).then(() => {
+    if (!err.textContent) return;
+    const own = api.player && api.hasToken;
+    const dead = err.textContent.startsWith("no such invite");
+    show(
+      h("h1", {}, "ARENA"),
+      h("p", { class: "dim", "data-testid": "invite-bad" }, dead ? (own ? "This invite link doesn't work any more." : "This invite link doesn't work. Ask for a new link.") : err.textContent),
+      own
+        ? button("Home", () => (dropInvite(), void guarded(errorLine(), () => homeScreen())), "primary", "invite-home")
+        : dead
+          ? h("span", {})
+          : button("Retry", () => location.reload(), "primary"),
+    );
+  });
+}
+function switchScreen(code: string, mine: PlayerRef, theirs: PlayerRef): void {
+  const stay = () => (dropInvite(), void guarded(errorLine(), () => homeScreen()));
+  const go = () => void guarded(errorLine(), async () => {
+    await api.redeem(code);
+    dropInvite();
+    await homeScreen();
+  });
+  show(
+    h("h1", {}, "ARENA"),
+    h("p", { "data-testid": "invite-switch" }, `This link is for ${theirs.name}. Switch from ${mine.name}?`),
+    h("p", { class: "dim" }, `This device then plays as ${theirs.name}. ${mine.name} needs their own link to come back.`),
+    h("div", { class: "row footer" }, button("Stay", stay, "grow", "invite-stay"), button("Switch", go, "primary grow", "invite-switch-go")),
+  );
+  onKeys((e) => (e.key === "Escape" ? (stay(), true) : false));
+}
+
+initSound();
+// A link pasted into a tab that already shows the game only changes the
+// fragment, which reloads nothing: start over so the link opens.
+addEventListener("hashchange", () => {
+  if (new URLSearchParams(location.hash.slice(1)).has("invite")) location.reload();
+});
+
+if (inviteCode) {
+  openInvite(inviteCode);
+} else if (api.player) {
+  const err = errorLine();
+  void guarded(err, async () => {
+    // A name from before invites (no token) is no login on an invite-only
+    // server: forget it and ask for the link.
+    if (!api.hasToken && (await api.health()).invites) {
+      api.forget();
+      return nameScreen();
+    }
+    await homeScreen();
+  }).then(() => {
     if (err.textContent) show(h("h1", {}, "ARENA"), err, button("Retry", () => location.reload(), "primary"));
   });
 } else nameScreen();
