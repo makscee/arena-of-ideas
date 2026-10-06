@@ -285,6 +285,26 @@ describe("MVP run server fixes (#579 check of a3c9b113)", () => {
     expect(opponentAt12()).toBe(slayerGhost);
   });
 
+  it("a run waiting in the Crown hides its round-12 team until the Crown is fought", () => {
+    const rt = world();
+    weakChampion(rt);
+    const run = lastRound(rt, maks);
+    decide(rt, run, { kind: "fight" });
+    expect(rt.store.run(run.runId)!.phase).toBe("crown");
+    const slayerGhost = `${run.runId}-r${rt.rules.rounds}`;
+    const ann: PlayerRef = { id: "p2", name: "Ann", bot: false };
+    const opponentAt12 = () => {
+      const r = { ...lastRound(rt, ann), opponent: null };
+      const fought = decide(rt, r, { kind: "fight" });
+      rt.store.putRun({ ...rt.store.run(r.runId)!, phase: "over" });
+      return fought.fight!.opponent.ghostId;
+    };
+    for (let i = 0; i < 5; i++) expect(opponentAt12()).not.toBe(slayerGhost);
+    // The Crown went the champion's way: no slay, so the team is an opponent again.
+    rt.store.putRun({ ...rt.store.run(run.runId)!, phase: "over", endedBy: "crown-lost" });
+    expect(opponentAt12()).toBe(slayerGhost);
+  });
+
   it("a bot's Crown win doesn't hide its round-12 team", () => {
     const rt = world();
     weakChampion(rt);
