@@ -2,8 +2,7 @@
 // (cause → effect) and the acting unit lit, tap any change to trace its chain,
 // "why I lost" after a loss, speed 1×/2× and skip. Round 2 (R2-12) plays it
 // beat by beat (a strike or turn end plus its cascade, in waves) with motion.
-// The logic is pure and
-// tested in src/mvp/trace.ts; this file only draws it.
+// The logic is pure and tested in src/mvp/trace.ts; this file only draws it.
 //
 // It opens any battle (a fight, a playoff game, the champion history); onDone
 // goes on. Skip (data-testid="battle-skip", tapped by the phone e2e) calls
