@@ -294,6 +294,9 @@ async function openCodex(state?: Partial<CodexState>): Promise<void> {
       if (isDesktop() !== desk && app.dataset.screen === "shop") rerender?.();
     };
   }
+  // A deep link (a term's "Open in Codex") is a fresh Codex: no tab keeps the
+  // scroll it had, whatever was open before (R2-17); fetched data stays.
+  if (state) codexCache.scroll = {};
   const back = codexBack;
   const content = await getContent();
   const onBack = () => ((codexBack = null), (codexRedraw = null), back());
