@@ -1,10 +1,11 @@
 // Own-team Crown setup for the phone e2e (mission #574, #587): through the
 // HTTP API of a local dev server (MVP_DEV=1), one player plays as slice 6's
 // bots do until a run slays the champion, the dev "end day now" crowns them,
-// then they play on until a run waits at the Crown against their own team.
+// then they play on: a run that beats their own champion team must count as a
+// slay (#591), and another run waits at the Crown against their own team.
 // Prints that player and run as JSON on the last line.
 //   node --import tsx/esm e2e/mvp-own-crown.ts --url http://127.0.0.1:8791/arena
-import { MVP_RULES, type DayView, type DecisionResponse, type MvpContent, type PlayerRef, type RunView } from "../src/mvp/contract.js";
+import { MVP_RULES, type DayView, type DecisionResponse, type HomeView, type MvpContent, type PlayerRef, type RunView } from "../src/mvp/contract.js";
 import { botDecision } from "../server/src/mvp/bots.js";
 
 const args = process.argv.slice(2);
@@ -57,6 +58,24 @@ for (let days = 0; days < 12 && !crowned; days++) {
   last = day.champion?.player.name ?? "nobody";
 }
 if (!crowned) throw new Error(`after 12 day ends the champion is @${last}, not @${me.name}`);
+
+// Beating your own champion team is a slay (#591): a Slay row, so /day counts
+// this player and their records gain one.
+const slaysOf = async () => (await call<HomeView>("GET", "/home")).rating?.slays ?? 0;
+let ownSlay = false;
+for (let n = 0; n < 400 && !ownSlay; n++) {
+  const before = await slaysOf();
+  const run = await play(await call<RunView>("POST", "/runs"), content, false);
+  const crown = run.fights.find((f) => f.kind === "crown");
+  if (!crown) continue;
+  if (crown.opponent.player.id !== me.id) throw new Error(`the Crown was @${crown.opponent.player.name}, not the champion's own team`);
+  if (run.endedBy !== "crown-won") continue;
+  const after = await slaysOf();
+  if (after !== before + 1) throw new Error(`beating the own champion team: slays ${before} → ${after}, not a slay`);
+  if ((await call<DayView>("GET", "/day")).slayers < 1) throw new Error("beating the own champion team: /day counts no slayer");
+  ownSlay = true;
+}
+if (!ownSlay) throw new Error("no win against the own champion team in 400 runs");
 
 for (let n = 0; n < 100; n++) {
   const run = await play(await call<RunView>("POST", "/runs"), content, true);

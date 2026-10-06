@@ -203,7 +203,7 @@ describe("MVP day", () => {
     expect(rt.today()).toMatchObject({ seq: 1, endsAt: "2026-10-06T01:00:00.000Z" });
   });
 
-  it("the reigning champion beating their own team is no slay: no Slay row, no playoff entry, rated against their own stamped rating", async () => {
+  it("the reigning champion beating their own team is a slay: a Slay row, a playoff entry, crowned again with the new team; rated against their own stamped rating", async () => {
     const { rt, call, human } = world();
     const ann = human("ann");
     const own = { ...weakChampion(rt), player: ann };
@@ -218,21 +218,21 @@ describe("MVP day", () => {
     const won = decide(rt, rt.store.run(run.runId)!, { kind: "fight" });
     expect(won.fight).toMatchObject({ kind: "crown", outcome: "win", opponent: { player: ann } });
     expect(won.run.endedBy).toBe("crown-won");
-    expect(rt.store.slays(own.seq)).toEqual([]);
-    expect((await call<DayView>("GET", "/day")).json.slayers).toBe(0);
+    expect(rt.store.slays(own.seq)).toMatchObject([{ player: ann, runId: run.runId, line }]);
+    expect((await call<DayView>("GET", "/day")).json.slayers).toBe(1);
     // the Crown is one more fight, against the champion's stamped rating (a row
     // without one: the start rating), so beating your own 1000 team is +K/2
     expect(won.fight!.opponent.rating).toBe(1000);
     expect(won.run.rating).toEqual(ratingChange(1000, 0, won.run));
     const rounds = won.run.fights.filter((f) => f.kind === "round");
     expect(won.run.rating!.after - ratingChange(1000, 0, { fights: rounds }).after).toBe(16);
-    expect(rt.store.rating(ann.id)).toMatchObject({ runs: 1, slays: 0 });
-    // a stray Slay row of the champion's own still doesn't enter the playoff
-    rt.store.addSlay({ seq: own.seq, player: ann, runId: run.runId, battleId: won.fight!.battleId, line, contentVersion: rt.content.version, at: "2026-10-05T10:00:00.000Z" });
+    expect(rt.store.rating(ann.id)).toMatchObject({ runs: 1, slays: 1 });
+    // the only slayer: the new team takes the crown without a game
     const { json: day } = await call<DayView>("POST", "/dev/end-day");
-    expect(day.lastPlayoff).toMatchObject({ entrants: [], winner: null });
-    expect(day.champion).toMatchObject({ seq: 2, player: ann, line: own.line });
-    expect(rt.store.rating(ann.id)).toMatchObject({ slays: 0, playoffWins: 0, daysAsChampion: 1 });
+    expect(day.lastPlayoff).toMatchObject({ entrants: [ann], winner: ann });
+    expect(day.champion).toMatchObject({ seq: 2, player: ann, line });
+    expect(day.champion!.line).not.toEqual(own.line);
+    expect(rt.store.rating(ann.id)).toMatchObject({ slays: 1, playoffWins: 1, daysAsChampion: 1 });
   });
 
   it("a run waiting for the Crown across a rollover shows and fights the new champion", async () => {
@@ -310,7 +310,7 @@ describe("MVP day", () => {
     expect(store.rating(ann.id)).toMatchObject({ slays: 1, playoffWins: 1, daysAsChampion: 1 });
   });
 
-  it("counts as slayers only the players the playoff takes: live content, not the champion, bots like humans", async () => {
+  it("counts as slayers only the players the playoff takes: live content, the champion too, bots like humans", async () => {
     const { rt, call, human } = world();
     const ann = human("ann");
     const bob = human("bob");
@@ -321,15 +321,15 @@ describe("MVP day", () => {
     const stray = { seq: own.seq, runId: "r", battleId: "b", line, at: "2026-10-05T10:00:00.000Z" };
     rt.store.addSlay({ ...stray, player: ann, contentVersion: rt.content.version }); // the champion's own
     rt.store.addSlay({ ...stray, player: eve, contentVersion: "mvp-old" }); // on content no longer live
-    expect((await call<DayView>("GET", "/day")).json.slayers).toBe(0);
-    expect((await call<{ day: DayView }>("GET", "/home")).json.day.slayers).toBe(0);
+    expect((await call<DayView>("GET", "/day")).json.slayers).toBe(1);
+    expect((await call<{ day: DayView }>("GET", "/home")).json.day.slayers).toBe(1);
     const elm = { id: "b2", name: "bot-Elm", bot: true };
     rt.store.addSlay({ ...stray, player: elm, contentVersion: rt.content.version });
-    expect((await call<DayView>("GET", "/day")).json.slayers).toBe(1);
-    slay(rt, bob, line);
     expect((await call<DayView>("GET", "/day")).json.slayers).toBe(2);
+    slay(rt, bob, line);
+    expect((await call<DayView>("GET", "/day")).json.slayers).toBe(3);
     const { json: day } = await call<DayView>("POST", "/dev/end-day");
-    expect(day.lastPlayoff?.entrants).toEqual([elm, bob]);
+    expect(day.lastPlayoff?.entrants).toEqual([ann, elm, bob]);
   });
 
   it("a day end that failed after crowning shows and fights today's champion, not tomorrow's", async () => {

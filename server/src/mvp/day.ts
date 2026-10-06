@@ -82,7 +82,7 @@ export function dayView(rt: Pick<RunDeps, "store" | "today" | "content">): DayVi
     day: d.day,
     endsAt: d.endsAt,
     champion: champion ?? null,
-    slayers: new Set(playoffSlays(rt.store.slays(d.seq), champion, rt.content).map((s) => s.player.id)).size,
+    slayers: new Set(playoffSlays(rt.store.slays(d.seq), rt.content).map((s) => s.player.id)).size,
     lastPlayoff: rt.store.playoff(d.seq - 1) ?? null,
   };
 }
