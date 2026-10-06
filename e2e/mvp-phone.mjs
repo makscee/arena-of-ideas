@@ -151,6 +151,24 @@ try {
   let whyShot = false;
   for (let guard = 0; guard < 20; guard++) {
     await page.getByTestId("fight").waitFor({ timeout: 10_000 });
+    if (round === 4) {
+      // The ☰ run menu (R2-10): Title menu leaves the run waiting; Continue
+      // on the title menu brings back the same round.
+      const at = await page.getByTestId("round").textContent();
+      await tap44("☰", page.getByTestId("menu-open")); await tap44("☰", page.getByTestId("menu-open"), "width");
+      await page.getByTestId("menu-open").click();
+      await page.getByTestId("run-menu").waitFor();
+      await shot("run-menu"); await noHScroll("run-menu");
+      await page.getByTestId("menu-title").click();
+      await page.getByTestId("play").waitFor();
+      const cont = await page.getByTestId("play").textContent();
+      if (!cont.includes(`Continue run · ${at.split("/")[0]}`)) errors.push(`title menu: "${cont}" doesn't continue ${at}`);
+      if ((await page.getByTestId("new-run").count()) === 0) errors.push("title menu: no New run while a run waits");
+      await shot("home-continue"); await noHScroll("home-continue"); await onScreen("home: Continue", page.getByTestId("play"));
+      await page.getByTestId("play").click();
+      await page.getByTestId("fight").waitFor();
+      if ((await page.getByTestId("round").textContent()) !== at) errors.push(`continue: back in ${await page.getByTestId("round").textContent()}, not ${at}`);
+    }
     // Buy while the gold allows and the line has room.
     for (let k = 0; k < 4; k++) {
       if ((await page.getByTestId("gold").count()) === 0) break; // the Crown: no shop, no gold
@@ -294,6 +312,33 @@ try {
   }
   await page.getByTestId("stats-back").click();
   await page.getByTestId("play").waitFor();
+
+  // Giving up (R2-10 on R2-2's abandon): New run on the title menu asks to
+  // abandon the waiting run first; ☰ Abandon run confirms once and ends on
+  // the run-over screen with the rating change.
+  await page.getByTestId("play").click();
+  await page.getByTestId("fight").waitFor();
+  await page.getByTestId("menu-open").click();
+  await page.getByTestId("menu-title").click();
+  await page.getByTestId("new-run").click();
+  await page.getByTestId("abandon-text").waitFor();
+  await shot("new-run-confirm"); await noHScroll("new-run-confirm");
+  if (!/Every heart left counts as a lost fight/.test(await page.getByTestId("abandon-text").textContent())) errors.push("new run: the confirm doesn't say what abandoning costs");
+  await page.getByTestId("abandon-cancel").click();
+  await page.getByTestId("play").click();
+  await page.getByTestId("fight").waitFor();
+  await page.getByTestId("menu-open").click();
+  await page.getByTestId("menu-abandon").click();
+  await page.getByTestId("abandon-confirm").waitFor();
+  await shot("abandon-confirm"); await noHScroll("abandon-confirm");
+  await page.getByTestId("abandon-confirm").click();
+  await page.getByTestId("run-over").waitFor({ timeout: 10_000 });
+  await shot("run-over-abandoned"); await noHScroll("run-over-abandoned");
+  if (!/You gave up/.test(await page.getByTestId("run-why").textContent())) errors.push("abandon: run-over doesn't say the run was given up");
+  if ((await page.getByTestId("rating-change").count()) === 0) errors.push("abandon: no rating change on the run-over screen");
+  await page.getByTestId("home").click();
+  await page.getByTestId("play").waitFor();
+  if ((await page.getByTestId("play").textContent()) !== "Play") errors.push("abandon: the title menu still offers Continue");
 
   // Awakening and fusion (slice 8): a second player plays through the API
   // until it has one Awoken unit, a second unit one copy short and that copy

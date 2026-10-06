@@ -479,6 +479,9 @@ export interface HomeView {
   /** Null before the player's first run. */
   rating: Rating | null;
   activeRunId: string | null;
+  /** True on a dev server (MVP_DEV=1): the title menu shows the dev tools
+   * ("End day now"); every other player never sees them. */
+  dev: boolean;
 }
 
 // ---------- HTTP API ----------
@@ -497,6 +500,7 @@ export interface HomeView {
 //   GET  /api/v1/runs/:runId                 → RunView
 //   POST /api/v1/runs/:runId/decisions  Decision → DecisionResponse
 //   POST /api/v1/runs/:runId/preview    Decision → DecisionResponse  (dry run, no writes; 400 for a fight)
+//   POST /api/v1/runs/:runId/abandon             → RunView            (gives the run up: endedBy "abandoned"; 409 when over)
 //   GET  /api/v1/battles/:battleId           → BattleRecord
 //   GET  /api/v1/fusions                     → FusionDiscovery[]  (slice 10)
 //   GET  /api/v1/day                         → DayView            (slice 5)

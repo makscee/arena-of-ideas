@@ -192,9 +192,11 @@ describe("MVP API thin path", () => {
     expect(rt.today()).toEqual(rt.store.currentDay());
   });
 
-  it("serves dev tools only in dev", async () => {
+  it("serves dev tools only in dev, and Home says which", async () => {
     expect((await client()("POST", "/dev/end-day")).status).toBe(404);
+    expect((await client()<HomeView>("GET", "/home")).json.dev).toBe(false);
     const dev = client({ dev: true });
+    expect((await dev<HomeView>("GET", "/home")).json.dev).toBe(true);
     const ended = await dev<DayView>("POST", "/dev/end-day");
     expect(ended.status).toBe(200);
     expect(ended.json).toMatchObject({ seq: 2, slayers: 0, lastPlayoff: { seq: 1, entrants: [], winner: null } });

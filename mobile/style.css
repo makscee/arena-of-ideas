@@ -87,6 +87,16 @@ button.small { min-height: 44px; font-size: 14px; padding: 0 12px; }
 .champion { border-color: color-mix(in srgb, var(--ghost) 40%, var(--line)); }
 .games { display: flex; flex-wrap: wrap; gap: 6px; }
 button.game { text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; }
+/* The title menu (R2-10): one big Continue/Play, the rest a tap away. */
+.title-menu [data-testid="play"] { min-height: 56px; font-size: 18px; }
+.title-menu .hearts { letter-spacing: 0.04em; }
+.me { gap: 6px; min-width: 0; }
+.me .num { color: var(--you); }
+/* The in-run menu: ☰ in the HUD, a dialog of full-width buttons. */
+button.menu-btn { min-width: 44px; padding: 0 10px; font-size: 18px; line-height: 1; }
+.hud { align-items: center; }
+.run-menu button { min-height: 48px; }
+.run-menu .dim.small { margin-top: -4px; text-align: center; }
 details.dev { color: var(--dim); font-size: 13px; }
 details.dev summary { min-height: 44px; line-height: 44px; cursor: pointer; }
 .opp { font-size: 15px; min-height: 44px; }
@@ -337,15 +347,16 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
   #app[data-screen="shop"] .card.drop { outline: 2px dashed var(--you); outline-offset: -2px; }
   #app[data-screen="shop"] .card[draggable="true"] { cursor: grab; }
 
-  /* Home: the champion and the day on the left; you, your records and Play on the right. */
-  #app[data-screen="home"] { max-width: 1200px; display: grid; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto 1fr; column-gap: 32px; row-gap: 16px; padding: 32px; align-items: start; }
+  /* Home, the title menu: the champion and the day on the left; the menu on the right. */
+  /* The menu column is narrow enough that the champion's 5 cards stay on one line at 1024px. */
+  #app[data-screen="home"] { max-width: 1200px; display: grid; grid-template-columns: minmax(0, 1fr) 280px; grid-template-rows: auto 1fr; column-gap: 24px; row-gap: 16px; padding: 24px; align-items: start; }
   #app[data-screen="home"] > :first-child { grid-column: 1 / -1; }
   #app[data-screen="home"] .home-main, #app[data-screen="home"] .home-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
   #app[data-screen="home"] .home-side { position: sticky; top: 32px; }
   #app[data-screen="home"] .home-side .spacer { display: none; }
-  #app[data-screen="home"] .home-side .footer { position: static; margin: 0; padding: 0; box-shadow: none; flex-wrap: wrap; }
-  #app[data-screen="home"] .home-side .footer [data-testid="play"] { order: -1; flex: 1 0 100%; min-height: 56px; font-size: 20px; }
-  #app[data-screen="home"] .home-side .footer button:not([data-testid="play"]) { flex: 1; }
+  #app[data-screen="home"] .home-side .footer { position: static; margin: 0; padding: 0; box-shadow: none; }
+  #app[data-screen="home"] .home-side .footer [data-testid="play"] { order: -1; font-size: 20px; }
+  .run-menu { min-width: 360px; }
 
   /* The result: the outcome and why on the left, both lines on the right, the buttons under the left. */
   #app[data-screen="result"] { max-width: 1320px; display: grid; grid-template-columns: minmax(320px, 1fr) auto; grid-template-areas: "hud hud" "main teams" "foot teams" "rest rest"; column-gap: 40px; row-gap: 16px; padding: 32px; align-content: start; }

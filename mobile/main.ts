@@ -3,9 +3,9 @@
 // Owners: slice 8 the name, home, shop and result screens here; slice 9 the
 // battle viewer (screens/battle.ts); slice 11 the stats page
 // (screens/stats.ts). Shared: api.ts, content.ts, ui/.
-// Home also shows DayView.lastPlayoff (slice 5 fills it; a game opens in
-// battleScreen) and, under "Dev", an "End day now" button (api.endDay(): 404
-// without MVP_DEV=1, 501 until slice 5).
+// Home is the title menu (R2-10); it also shows DayView.lastPlayoff (a game
+// opens in battleScreen) and, on dev servers only (HomeView.dev), "End day
+// now" under "Dev". The shop's ☰ (Esc on desktop) is the in-run menu.
 import type { BattleRecord, DayView, FightResult, HomeView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView } from "../src/mvp/contract";
 import { MVP_RULES, offersAt } from "../src/mvp/contract";
 import { ApiError, api, savedPlayer } from "./api";
@@ -143,23 +143,39 @@ function nameScreen(): void {
 
 // ---------- home ----------
 
-/** Home. `ended`: the day the dev "End day now" just closed, so Home says
- * how it ended at the top and brings the playoff panel into view. */
+/** Home is the title menu (R2-10, docs/round2/ui.md (e)): the champion,
+ * your name and rating, one big Continue run (or Play), then New run (only
+ * while a run waits: it asks to abandon that run first), Codex, Stats and
+ * Rules. Records live in Stats; "End day now" shows on dev servers only.
+ * `ended`: the day the dev "End day now" just closed, so Home says how it
+ * ended at the top and brings the playoff panel into view. */
 async function homeScreen(ended: number | null = null): Promise<void> {
   const err = errorLine();
   void loadUnitRates(); // the rates hint on unit sheets (slice 11)
   const [home, content]: [HomeView, MvpContent] = await Promise.all([api.home(), getContent()]);
   rules = home.rules;
   day = home.day;
+  // The run that waits, for Continue's round and hearts (null if it ended meanwhile).
+  const waiting = home.activeRunId ? await api.run(home.activeRunId).catch(() => null) : null;
+  const active = waiting && waiting.phase !== "over" ? waiting : null;
   const champ = home.day.champion;
   const r = home.rating;
-  const play = home.activeRunId
-    ? button("Continue", () => void guarded(err, async () => shopScreen(await api.run(home.activeRunId!), content)), "primary grow", "play")
-    : button("Play", () => void guarded(err, async () => shopScreen(await api.startRun(), content)), "primary grow", "play");
-  const stats = button("Stats", () => void statsScreen({ content, onBack: () => void homeScreen() }), "", "stats");
-  const rulesBtn = button("Rules", () => closable(rulesSheet()), "", "rules-open");
-  const record = (label: string, value: string | number, testid = "") =>
-    h("div", { class: "record" }, h("div", { class: "num", ...(testid ? { "data-testid": testid } : {}) }, `${value}`), h("div", { class: "label" }, label));
+  const play = active
+    ? button("", () => void guarded(err, async () => shopScreen(await api.run(active.runId), content)), "primary", "play")
+    : button("Play", () => void guarded(err, async () => shopScreen(await api.startRun(), content)), "primary", "play");
+  if (active) play.replaceChildren(`Continue run · ${active.round > rules.rounds ? "Crown" : `R${active.round}`} `, hearts(active.hearts));
+  const newRun = active
+    ? button("New run", () => abandonSheet(active, "new", () => void guarded(err, async () => {
+        await api.abandon(active.runId);
+        shopScreen(await api.startRun(), content);
+      })), "", "new-run")
+    : null;
+  // Slice R2-11 fills the Codex; until then it is a disabled placeholder.
+  const codex = button("Codex", () => {}, "", "codex");
+  codex.disabled = true;
+  codex.title = "The Codex arrives in slice R2-11.";
+  const stats = button("Stats", () => void statsScreen({ content, onBack: () => void homeScreen() }), "grow", "stats");
+  const rulesBtn = button("Rules", () => closable(rulesSheet()), "grow", "rules-open");
   const endDay = button(
     "End day now",
     () =>
@@ -179,55 +195,104 @@ async function homeScreen(ended: number | null = null): Promise<void> {
   const justEnded = ended !== null && last?.seq === ended ? last : null;
   const playoff = playoffPanel(last, champ?.player ?? null, content, err);
   show(
-    h("div", { class: "row spread" }, h("h1", {}, "ARENA"), who(api.player?.name ?? "", "dim")),
+    h(
+      "div",
+      { class: "row spread" },
+      h("h1", {}, "ARENA"),
+      h("div", { class: "row me" }, who(api.player?.name ?? "", "dim"), h("span", { class: "dim keep" }, "·"), h("span", { class: "num keep", "data-testid": "rating" }, `${r?.rating ?? rules.ratingStart}`)),
+    ),
     // The dev "End day now" just ran: say so first, with how the day ended
     // (the playoff panel) right under it, before today's champion.
-    // Desktop: the champion and the day on the left, you and Play on the
-    // right (.home-main, .home-side; on the phone they are one column).
+    // Desktop: the champion and the day on the left, the menu on the right
+    // (.home-main, .home-side; on the phone they are one column).
     h(
       "div",
       { class: "home-main" },
       ended !== null ? h("div", { class: "notice", "data-testid": "day-ended" }, `Day ${ended} ended just now. Today is day ${home.day.seq}.`) : null,
       justEnded ? playoff : null,
       h(
-      "div",
-      { class: "panel stack champion", "data-testid": "champion" },
-      h("div", { class: "row spread" }, h("div", { class: "label keep" }, `👑 Champion · day ${home.day.seq}`), champ ? whoMark(champ.player, "ghost-name") : null),
-      champ ? team(champ.line, "ghost", content) : h("div", { class: "dim" }, "No champion yet. The day arrives soon."),
-      h("div", { class: "dim small", "data-testid": "slayers" }, champ ? slayersLine(home.day.slayers) : `New champion at ${rules.dayEndsAt} Moscow.`),
-    ),
-    champ
-      ? hint(
-          champ.player.id === api.player?.id
-            ? `This is your team. Others try to beat it today, and so can you, with another team. ${tapOrClick()} a card to read it.`
-            : r
-              ? `${tapOrClick()} a card to read it. Beat this team in the Crown to become a slayer.`
-              : `This is the team to beat. ${tapOrClick()} a card to read it, then Play.`,
-        )
-      : null,
+        "div",
+        { class: "panel stack champion", "data-testid": "champion" },
+        h("div", { class: "row spread" }, h("div", { class: "label keep" }, `👑 Champion · day ${home.day.seq}`), champ ? whoMark(champ.player, "ghost-name") : null),
+        champ ? team(champ.line, "ghost", content) : h("div", { class: "dim" }, "No champion yet. The day arrives soon."),
+        h("div", { class: "dim small", "data-testid": "slayers" }, champ ? slayersLine(home.day.slayers) : `New champion at ${rules.dayEndsAt} Moscow.`),
+      ),
+      champ
+        ? hint(
+            champ.player.id === api.player?.id
+              ? `This is your team. Others try to beat it today, and so can you, with another team. ${tapOrClick()} a card to read it.`
+              : r
+                ? `${tapOrClick()} a card to read it. Beat this team in the Crown to become a slayer.`
+                : `This is the team to beat. ${tapOrClick()} a card to read it, then Play.`,
+          )
+        : null,
       justEnded ? null : playoff,
     ),
     h(
       "div",
       { class: "home-side" },
+      err,
+      h("div", { class: "spacer" }),
+      // The menu stays on the first screen however long Home runs (a playoff's table).
       h(
-      "div",
-      { class: "panel records", "data-testid": "records" },
-      record("Rating", r?.rating ?? rules.ratingStart, "rating"),
-      record("Runs", r?.runs ?? 0),
-      record("Slays", r?.slays ?? 0),
-      record("Days 👑", r?.daysAsChampion ?? 0),
-      record("Playoff W", r?.playoffWins ?? 0),
-    ),
-    h("details", { class: "dev" }, h("summary", {}, "Dev"), endDay),
-    err,
-    h("div", { class: "spacer" }),
-    // Play stays on the first screen however long Home runs (a playoff's table).
-      h("div", { class: "row footer", "data-testid": "home-actions" }, rulesBtn, stats, play),
+        "div",
+        { class: "stack footer title-menu", "data-testid": "home-actions" },
+        play,
+        newRun,
+        codex,
+        h("div", { class: "row" }, stats, rulesBtn),
+        home.dev ? h("details", { class: "dev" }, h("summary", {}, "Dev"), endDay) : null,
+      ),
     ),
   );
   screen("home");
   if (justEnded) playoff?.classList.add("fresh");
+}
+
+/** One confirm before a run is given up (R2-2's abandon): it says what the
+ * rating takes. `why` "menu" is ☰ Abandon run; "new" is New run on the title
+ * menu, which ends the waiting run first. */
+function abandonSheet(run: RunView, why: "menu" | "new", onConfirm: () => void): void {
+  const crown = run.round > rules.rounds;
+  const cost = crown
+    ? "It counts as a lost Crown, and your rating moves for it."
+    : run.hearts === 1
+      ? "The 1 heart left counts as a lost fight, and your rating moves for it."
+      : `Every heart left counts as a lost fight: ${run.hearts} losses, and your rating moves for them.`;
+  const close = overlay(
+    h("div", { class: "label" }, why === "new" ? `A run waits · ${crown ? "the Crown" : `round ${run.round} of ${rules.rounds}`}` : "Abandon run"),
+    h("p", { "data-testid": "abandon-text" }, `${why === "new" ? "Abandon it and start a new run? " : "End this run now? "}${cost}`),
+    h(
+      "div",
+      { class: "row sheet-actions" },
+      button("Cancel", () => close(), "grow", "abandon-cancel"),
+      button("Abandon", () => (close(), onConfirm()), "danger grow", "abandon-confirm"),
+    ),
+  );
+}
+
+/** The in-run menu (☰ in the HUD, Esc on desktop): Resume, Codex, Rules,
+ * Title menu (the run waits on the server; Continue brings it back) and
+ * Abandon run with one confirm, which ends on the run-over screen. */
+function runMenu(run: RunView, content: MvpContent, err: HTMLElement): void {
+  if (app.querySelector('[data-testid="run-menu"]')) return;
+  const crown = run.round > rules.rounds;
+  const codex = button("Codex", () => {}, "", "menu-codex");
+  codex.disabled = true;
+  codex.title = "The Codex arrives in slice R2-11.";
+  const close = overlay(
+    h(
+      "div",
+      { class: "stack run-menu", "data-testid": "run-menu" },
+      h("div", { class: "label" }, crown ? "Run · the Crown" : `Run · round ${run.round} of ${rules.rounds}`),
+      button("Resume", () => close(), "primary", "menu-resume"),
+      codex,
+      button("Rules", () => (close(), closable(rulesSheet())), "", "menu-rules"),
+      button("Title menu", () => (close(), void guarded(err, () => homeScreen())), "", "menu-title"),
+      h("div", { class: "dim small" }, "The run waits; Continue brings you back."),
+      button("Abandon run…", () => (close(), abandonSheet(run, "menu", () => void guarded(err, async () => runOverScreen(await api.abandon(run.runId), content)))), "danger", "menu-abandon"),
+    ),
+  );
 }
 
 /** The champion card's last line: what today's slayers mean at the day's end. */
@@ -634,9 +699,13 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const legendBtn = button(seen("legend") ? "?" : "? Cards", () => (markSeen("legend"), (legendBtn.textContent = "?"), legendBtn.classList.remove("new"), legendSheet()), seen("legend") ? "small" : "small new", "legend-open");
   renderLine();
 
+  const menuBtn = button("☰", () => runMenu(run, content, err), "menu-btn", "menu-open");
+  menuBtn.setAttribute("aria-label", "Menu");
+  if (desk) menuBtn.title = "Menu (Esc)";
+
   const keysLine =
     desk && !crown
-      ? h("div", { class: "dim small keys", "data-testid": "keys" }, "Hover a card to read it → · click selects · drag reorders · double-click buys · ", kbd("1"), "–", kbd(String(Math.min(7, Math.max(1, run.offers.length)))), " buy · ", kbd("R"), " reroll · ", kbd("Space"), " fight · ", kbd("←"), kbd("→"), " move · ", kbd("F"), " fuse · ", kbd("S"), " sell · ", kbd("Esc"), " back")
+      ? h("div", { class: "dim small keys", "data-testid": "keys" }, "Hover a card to read it → · click selects · drag reorders · double-click buys · ", kbd("1"), "–", kbd(String(Math.min(7, Math.max(1, run.offers.length)))), " buy · ", kbd("R"), " reroll · ", kbd("Space"), " fight · ", kbd("←"), kbd("→"), " move · ", kbd("F"), " fuse · ", kbd("S"), " sell · ", kbd("Esc"), " menu")
       : null;
   show(
     h(
@@ -645,6 +714,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       h(
         "div",
         { class: "hud", "data-testid": "hud" },
+        menuBtn,
         h("span", { "data-testid": "round" }, roundLabel(run.round)),
         hearts(run.hearts),
         // The Crown has no shop: no gold to show.
@@ -684,7 +754,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
 
   // Keys: 1–7 buy, R reroll, Space fight, ← → move the selected unit, F fuse,
   // S sell; Esc steps back (a sheet, the fusion, the selection), then opens
-  // the rules until the ☰ menu (R2-10) takes it over.
+  // the ☰ run menu.
   onKeys((e) => {
     const open = app.querySelector(".overlay");
     if (open) return e.key === "Escape" ? (open.remove(), true) : false;
@@ -694,7 +764,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       if (fuseView) fuseView = null;
       else if (pick.mode !== "none") pick = { mode: "none" };
       else if (chosen !== null) chosen = null;
-      else return closable(rulesSheet()), true;
+      else return runMenu(run, content, err), true;
       renderLine();
       return true;
     }
