@@ -59,7 +59,8 @@ export function richText(segs: DescribeSegment[], o: RichOptions = {}): Node[] {
   const out: Node[] = [];
   let pill: HTMLElement | null = null;
   segs.forEach((seg, i) => {
-    const kids = o.content?.[i] ?? [seg.text];
+    // "1 damage" never wraps between the number and its word.
+    const kids = segs[i - 1]?.amount && seg.text === " " ? ["\u00a0"] : (o.content?.[i] ?? [seg.text]);
     if (seg.clause !== "when") pill = null;
     else if (!pill) {
       // One pill per trigger clause; its icon is the status the clause names,
@@ -74,12 +75,36 @@ export function richText(segs: DescribeSegment[], o: RichOptions = {}): Node[] {
       if (ic) pill.append(icon(ic, size, "tpill-ic"));
       out.push(pill);
     }
-    const info = termInfo(seg);
-    const nodes: Node[] = info ? [termButton(seg, info, kids, withAmount, size, !!pill)] : kids.map((k) => (typeof k === "string" ? document.createTextNode(k) : k));
+    const info = clauseInfo(seg, segs, i);
+    const nodes: Node[] = info ? edgeSpaced(kids, (inner) => termButton(seg, info, inner, withAmount, size, !!pill)) : kids.map((k) => (typeof k === "string" ? document.createTextNode(k) : k));
     if (pill) pill.append(...nodes);
     else out.push(...nodes);
   });
   return out;
+}
+
+/** A button drops the spaces at its edges ("After " + "Shield" read
+ * "AfterShield"), so they go outside it as text. */
+function edgeSpaced(kids: (Node | string)[], wrap: (inner: (Node | string)[]) => Node): Node[] {
+  const inner = [...kids];
+  const lead = typeof inner[0] === "string" ? /^\s*/.exec(inner[0])![0] : "";
+  if (lead) inner[0] = (inner[0] as string).slice(lead.length);
+  const last = inner.length - 1;
+  const trail = typeof inner[last] === "string" ? /\s*$/.exec(inner[last] as string)![0] : "";
+  if (trail) inner[last] = (inner[last] as string).slice(0, -trail.length);
+  const body = inner.filter((k) => k !== "");
+  return [...(lead ? [document.createTextNode(lead)] : []), wrap(body), ...(trail ? [document.createTextNode(trail)] : [])];
+}
+
+/** termInfo, plus: a "lands on" trigger names its status ("Shield lands"). */
+function clauseInfo(seg: DescribeSegment, segs: DescribeSegment[], i: number): ReturnType<typeof termInfo> {
+  const info = termInfo(seg);
+  if (!info || (info.id !== "trigger:StatusApplied" && info.id !== "trigger:StatusRemoved")) return info;
+  let j = i;
+  while (j > 0 && segs[j - 1]!.clause === "when") j--;
+  let status: string | undefined;
+  for (; j < segs.length && segs[j]!.clause === "when" && !status; j++) status = statusOf(segs[j]!);
+  return status ? { ...info, label: `${status} ${info.id === "trigger:StatusApplied" ? "lands" : "leaves"}` } : info;
 }
 
 function termButton(seg: DescribeSegment, info: TermDef & { id: TermId }, kids: (Node | string)[], withAmount: Set<TermId>, size: number, inPill: boolean): HTMLElement {

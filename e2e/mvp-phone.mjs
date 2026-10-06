@@ -82,15 +82,37 @@ try {
     await noRates(name);
     const last = await sheet.evaluate((el) => el.lastElementChild?.dataset.testid ?? "");
     if ((await sheet.getByTestId("unit-rates").count()) && last !== "unit-rates") errors.push(`${name}: rates aren't the last line`);
+    await termChecks(name, sheet.getByTestId("sheet-form"));
     if (await sheet.getByTestId("see-awoken").count()) {
       const before = await sheet.getByTestId("sheet-form").textContent();
       await sheet.getByTestId("see-awoken").click();
       await sheet.locator(".sheet-form.other").waitFor();
       const after = await sheet.getByTestId("sheet-form").textContent();
       if (!/^Awoken/i.test(after) || after.includes(before)) errors.push(`${name}: See Awoken shows "${after}"`);
+      if (!(await sheet.locator(".sheet-form.other u.changed").count())) errors.push(`${name}: See Awoken underlines nothing`);
       await shot(`${name.replace(/ /g, "-")}-awoken`); await noHScroll(name);
       await sheet.getByTestId("see-sleeping").click();
       if ((await sheet.getByTestId("sheet-form").textContent()) !== before) errors.push(`${name}: Back doesn't restore the sleeping text`);
+    }
+  };
+  /** Unit text is highlighted (R2-8): its terms are buttons, and tapping one
+   * (Shield when the text has it) opens a sheet with its rule. */
+  let tappedShield = false;
+  const termChecks = async (name, form) => {
+    const terms = form.getByTestId("term");
+    if (!(await terms.count())) { errors.push(`${name}: no highlighted terms in the unit text`); return; }
+    const shield = form.locator('[data-term="status:Shield"]');
+    const pick = (await shield.count()) ? shield.first() : terms.first();
+    const term = await pick.getAttribute("data-term");
+    await pick.click();
+    const tsheet = page.getByTestId("term-sheet");
+    await tsheet.waitFor({ timeout: 3000 }).catch(() => errors.push(`${name}: tapping ${term} opens no rule sheet`));
+    if (await tsheet.count()) {
+      const tip = (await tsheet.getByTestId("term-tip").textContent()) ?? "";
+      if (tip.length < 10) errors.push(`${name}: ${term}'s rule sheet has no rule ("${tip}")`);
+      if (term === "status:Shield" && !tappedShield) { tappedShield = true; await shot("term-shield"); }
+      await page.locator('.sheet:has([data-testid="term-sheet"]) [data-testid="sheet-close"]').click();
+      if (await tsheet.count()) errors.push(`${name}: the rule sheet doesn't close`);
     }
   };
   /** The page doesn't scroll at 640 px. */
