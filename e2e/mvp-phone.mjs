@@ -25,7 +25,7 @@ if (!url) {
   }
 }
 
-// Names are one per player (R2-17): a tag keeps a second pass at one server apart.
+// A tag per pass keeps a second pass at one server apart (names may repeat).
 const TAG = Date.now().toString(36).slice(-4);
 const browser = await launchChromium();
 const errors = [];
@@ -523,7 +523,8 @@ try {
   await shot("run-over"); await noHScroll("run-over"); await noRates("run-over");
   const over = await page.getByTestId("run-over").textContent();
   if (/No champion/.test(over) && /Reached the Crown/.test(over)) errors.push(`run over: "${over}" contradicts itself`);
-  if (/\b1 (wins|draws|losses)\b|\b([02-9]|\d\d+) (win|draw|loss)\b/.test(over)) errors.push(`run over: plural wrong in "${over}"`);
+  // A standalone count only: the rating line's "expected 3.1 wins" is no "1 wins".
+  if (/(?<![\w.])1 (wins|draws|losses)\b|(?<![\w.])([02-9]|\d\d+) (win|draw|loss)\b/.test(over)) errors.push(`run over: plural wrong in "${over}"`);
   await page.getByTestId("home").click();
   await page.getByTestId("play").waitFor();
   await shot("home-after");

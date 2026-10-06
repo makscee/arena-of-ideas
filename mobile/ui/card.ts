@@ -148,8 +148,9 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
     const left = Math.max(1, MVP_RULES.copiesToAwaken - copies);
     const sleepPieces = formSegments(now, content.abilities);
     const awokePieces = formSegments(c.forms.awoken, content.abilities);
-    const see = `▸ See Awoken (${left} more ${left === 1 ? "copy" : "copies"})`;
-    const back = "◂ Back to Sleeping (now)";
+    // Short enough for one line in the 1024px inspector (R2-17).
+    const see = `▸ Awoken in ${left} ${left === 1 ? "copy" : "copies"}`;
+    const back = "◂ Back to Sleeping";
     const note = h("div", { class: "dim small" }, "What changes is underlined.");
     note.hidden = true;
     const btn = h("button", { class: "see-awoken", "data-testid": "see-awoken" }, see);

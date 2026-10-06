@@ -40,7 +40,7 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .hud .hearts { color: var(--ghost); }
 /* Compact cards (round 2, R2-7): 64×84 at 360px, five a row with 4px gaps. */
 .slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
-.card { position: relative; height: 84px; min-width: 0; background: var(--panel); border: 1px solid var(--line); padding: 5px 3px 4px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); cursor: pointer; }
+.card { position: relative; height: 84px; min-width: 0; background: var(--panel); border: 1px solid var(--line); padding: 5px 3px 4px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); cursor: pointer; -webkit-user-select: none; user-select: none; }
 .card.you { border-color: color-mix(in srgb, var(--you) 45%, transparent); }
 .card.ghost { border-color: color-mix(in srgb, var(--ghost) 45%, transparent); }
 .card.selected { outline: 2px solid var(--you); outline-offset: -2px; }
