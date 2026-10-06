@@ -45,10 +45,30 @@ const CHAMPION_SEEDS = 2;
 
 const BOT_NAMES = ["Ash", "Bram", "Cleo", "Dov", "Esk", "Fyn", "Gale", "Hux", "Ives", "Juno", "Kip", "Lux", "Mira", "Nox", "Orla", "Pike"];
 
-/** A fresh bot identity for one run: a roster name, a unique id (so a bot's
- * run left before the Crown never blocks its next run). */
-export function botPlayer(seed: number): PlayerRef {
-  return { id: `bot-${randomUUID()}`, name: `bot-${BOT_NAMES[(seed >>> 0) % BOT_NAMES.length]}`, bot: true };
+/** A fresh bot identity for one run: a unique id (so a bot's run left before
+ * the Crown never blocks its next run) and a roster name none of `taken` has:
+ * the seed's roster name, else the roster's next free one, else a numbered
+ * one (bot-Esk-2). */
+export function botPlayer(seed: number, taken: ReadonlySet<string> = new Set()): PlayerRef {
+  const start = (seed >>> 0) % BOT_NAMES.length;
+  for (let n = 1; ; n++) {
+    for (let i = 0; i < BOT_NAMES.length; i++) {
+      const name = `bot-${BOT_NAMES[(start + i) % BOT_NAMES.length]}${n > 1 ? `-${n}` : ""}`;
+      if (!taken.has(name)) return { id: `bot-${randomUUID()}`, name, bot: true };
+    }
+  }
+}
+
+/** The names a new bot run must not take (#587): today's slayers' and every
+ * champion's. Bots slay and enter the playoff, and each bot run is a new
+ * player, so without this two of the day's playoff entrants, or two days'
+ * champions, could share a name and read as one bot playing itself. Bots
+ * play one run at a time, so a name free at the run's start is still free
+ * at its Crown. */
+export function takenBotNames(rt: Pick<RunDeps, "store" | "today">): Set<string> {
+  const names = new Set(rt.store.slays(rt.today().seq).map((s) => s.player.name));
+  for (const c of rt.store.champions()) names.add(c.player.name);
+  return names;
 }
 
 // ---------- the bot's play ----------
@@ -105,7 +125,7 @@ export function botDecision(
  * included, until it is over, never waiting: a pair whose name isn't ready is
  * not fused. For stores with no namer (the champion search's scratch store,
  * tests); botWorld plays playBotRunWaiting. Returns the ended run. */
-export function playBotRun(deps: RunDeps, player: PlayerRef = botPlayer(deps.seed())): MvpRunState {
+export function playBotRun(deps: RunDeps, player: PlayerRef = botPlayer(deps.seed(), takenBotNames(deps))): MvpRunState {
   deps.store.addPlayer(player);
   let run = startRun(deps, player);
   let round = run.round;
@@ -128,7 +148,7 @@ export function playBotRun(deps: RunDeps, player: PlayerRef = botPlayer(deps.see
  * isn't ready waits for it (awaitFusionName), so it fuses as often as with no
  * model. Between waits it runs synchronously. Stops early, leaving the run
  * open, once `stopped()`. Returns the run as it ended. */
-export async function playBotRunWaiting(deps: RunDeps, stopped: () => boolean = () => false, player: PlayerRef = botPlayer(deps.seed())): Promise<MvpRunState> {
+export async function playBotRunWaiting(deps: RunDeps, stopped: () => boolean = () => false, player: PlayerRef = botPlayer(deps.seed(), takenBotNames(deps))): Promise<MvpRunState> {
   deps.store.addPlayer(player);
   let run = startRun(deps, player);
   let round = run.round;

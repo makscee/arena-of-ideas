@@ -3,7 +3,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Champion } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
-import { BOT_TARGET, botDecision, botWorld, playBotRun, seedChampion, thinRounds, topUpGhosts } from "./bots.js";
+import { BOT_TARGET, botDecision, botPlayer, botWorld, playBotRun, seedChampion, takenBotNames, thinRounds, topUpGhosts } from "./bots.js";
 import { mvpContent } from "./content.js";
 import { mvpRuntime, type MvpDeps } from "./runtime.js";
 import { SqliteMvpStore } from "./sqlite-store.js";
@@ -99,6 +99,29 @@ describe("MVP bots and world (slice 6)", () => {
     expect(d).toEqual({ kind: "fight" });
     expect(botDecision({ phase: "crown" } as never, rt.content, rt.rules, 0)).toEqual({ kind: "fight" });
   });
+
+  it("a bot run never takes a name today's slayers or any champion has, so playoff entrants never share one (#587)", async () => {
+    // The roster name, else the next free one, else a numbered one.
+    expect(botPlayer(4).name).toBe("bot-Esk");
+    expect(botPlayer(4, new Set(["bot-Esk"])).name).toBe("bot-Fyn");
+    const roster = new Set(Array.from({ length: 16 }, (_, i) => botPlayer(i).name));
+    expect(roster.size).toBe(16);
+    expect(botPlayer(4, roster).name).toBe("bot-Esk-2");
+    // In a world: many bot runs against today's champion, every slayer's name is
+    // unique and no champion's.
+    const rt = world();
+    await seedChampion(rt);
+    for (let i = 0; i < 80; i++) playBotRun(rt);
+    const slayers = new Map<string, string>();
+    for (const s of rt.store.slays(rt.today().seq)) {
+      expect(slayers.get(s.player.name) ?? s.player.id).toBe(s.player.id);
+      slayers.set(s.player.name, s.player.id);
+    }
+    expect(slayers.size).toBeGreaterThan(0);
+    const champ = rt.store.currentChampion()!;
+    expect(slayers.has(champ.player.name)).toBe(false);
+    expect(takenBotNames(rt)).toEqual(new Set([...slayers.keys(), champ.player.name]));
+  }, 30_000);
 
   it("the bot fuses only a pair whose name is ready", () => {
     const rt = world();
