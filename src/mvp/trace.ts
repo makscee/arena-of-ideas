@@ -816,7 +816,8 @@ export function damageByUnit(log: BattleEvent[], name: NameOf = displayNames(log
 }
 
 export interface KeyMoment {
-  kind: "kill" | "combo" | "fatigue" | "hit";
+  /** "summon": a turning point that is a unit joining ("Imp joins"), no kill (R2-17 batch F). */
+  kind: "kill" | "summon" | "combo" | "fatigue" | "hit";
   /** The playback beat it happens in (PlayBeat.index). */
   beat: number;
   /** One short line about this fight (R2-17): "Turning point: Rat kills Bat",
@@ -903,7 +904,8 @@ export function keyMomentsOf(log: BattleEvent[], beats: PlayBeat[], name: NameOf
     if (at && lead > 0) {
       const k = at.type === "Death" ? kills.find((x) => x.id === at!.id) : undefined;
       const what = (n: NameOf) => (k ? killText(k, n) : at!.type === "Summon" ? `${n(at!.unit)} joins` : `${n((at as { unit: string }).unit)} falls`);
-      turning = { kind: "kill", beat: beatOfEvent(at.id), label: fit((n) => `Turning point: ${what(n)}`, (n) => `Decisive: ${what(n)}`, what), ...(k?.killer ? { unit: k.killer } : {}) };
+      const kind = at.type === "Summon" ? "summon" : "kill";
+      turning = { kind, beat: beatOfEvent(at.id), label: fit((n) => `Turning point: ${what(n)}`, (n) => `Decisive: ${what(n)}`, what), ...(k?.killer ? { unit: k.killer } : at.type === "Summon" ? { unit: at.unit } : {}) };
     }
   }
 
@@ -927,18 +929,43 @@ export function keyMomentsOf(log: BattleEvent[], beats: PlayBeat[], name: NameOf
     const top = [...did].sort((p, q) => score(q[1]) - score(p[1]))[0];
     const steps = b.waves.length;
     if (!top || score(top[1]) === 0) {
-      // No damage or healing: its first actor and the status it spread most ("Coach: Strength on 4 units").
+      // No unit dealt damage or healing. In fatigue's beat, fatigue did it:
+      // its own moment says so, not a unit that only reacted (R2-17 batch F).
+      if ([...ids].some((id) => log[id]?.type === "Fatigue")) return null;
+      // Else its first actor and what the beat did: the status it spread most
+      // ("Coach: Strength on 4 units"), else its PWR / HP changes, summons,
+      // or what Shield blocked; never just "8 steps".
       const actor = b.waves.find((w) => w.actor)?.actor;
+      // Nobody acted: nothing to name, no moment.
+      if (!actor) return null;
       const on = new Map<string, Set<string>>();
+      const stat = { pwr: 0, hp: 0, units: new Set<string>() };
+      const summoned: { unit: string; back: boolean }[] = [];
+      let blocked = 0;
       for (const id of ids) {
         const e = log[id];
         if (e?.type === "StatusApplied") on.set(e.status, (on.get(e.status) ?? new Set()).add(e.unit));
+        else if (e?.type === "StatChanged") { stat[e.stat === "pwr" ? "pwr" : "hp"] += e.delta; stat.units.add(e.unit); }
+        else if (e?.type === "Summon") summoned.push({ unit: e.unit, back: !!e.resurrected });
+        else if (e?.type === "Hurt" && e.amount === 0) blocked += e.absorbed ?? 0;
       }
       const st = [...on].sort((p, q) => q[1].size - p[1].size)[0];
-      const what = st ? `${st[0]} on ${st[1].size === 1 ? "1 unit" : `${st[1].size} units`}` : `${steps} steps`;
-      // Nobody acted (fatigue hitting both lines): nothing to name, no moment.
-      if (!actor) return null;
-      return { kind: "combo", beat: b.index, label: fit((n) => `${n(actor)}: ${what}${st ? ` in ${steps} steps` : ""}`, (n) => `${n(actor)}: ${what}`), unit: actor };
+      const signed = (v: number, what: string) => `${v > 0 ? "+" : "−"}${Math.abs(v)} ${what}`;
+      const stats = [stat.pwr ? signed(stat.pwr, "PWR") : "", stat.hp ? signed(stat.hp, "HP") : ""].filter(Boolean).join(", ");
+      const mine = [...stat.units].every((u) => sides.get(u) === sides.get(actor));
+      const to = (n: NameOf) => (stat.units.size === 1 ? ` ${mine ? "to" : "on"} ${n([...stat.units][0]!)}` : mine ? " to the line" : ` on ${stat.units.size} units`);
+      const what = (n: NameOf): string | null =>
+        st
+          ? `${st[0]} on ${st[1].size === 1 ? "1 unit" : `${st[1].size} units`}`
+          : stats
+            ? `${stats}${to(n)}`
+            : summoned.length
+              ? `${summoned[0]!.back ? "brings back" : "summons"} ${n(summoned[0]!.unit)}${summoned.length > 1 ? ` +${summoned.length - 1}` : ""}`
+              : blocked
+                ? `${blocked} blocked by Shield`
+                : null;
+      if (what(plain) === null) return { kind: "combo", beat: b.index, label: fit((n) => `${n(actor)}: ${steps} steps`), unit: actor };
+      return { kind: "combo", beat: b.index, label: fit((n) => `${n(actor)}: ${what(n)} in ${steps} steps`, (n) => `${n(actor)}: ${what(n)}`), unit: actor };
     }
     const [u, d] = top;
     const victims = (n: NameOf) => `kills ${n(d.kills[0]!)}${d.kills.length > 1 ? ` +${d.kills.length - 1}` : ""}`;

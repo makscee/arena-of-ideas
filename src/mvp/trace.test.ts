@@ -546,6 +546,7 @@ describe("R2-17: key moments, battle start, fatigue rows, Why's icons", () => {
     const p = (id: string): PlayerRef => ({ id, name: id, bot: false });
     let r = 777;
     const rand = (n: number) => ((r = (r * 1103515245 + 12345) % 2147483648), r % n);
+    let joins = 0;
     for (let seed = 0; seed < 60; seed++) {
       const line = (s: string) => Array.from({ length: 5 }, (_, k) => lineUnitOf(pool.units[rand(pool.units.length)]!, `${s}${k}`, 1 + rand(4)));
       const { log } = fightLines({ player: p("a"), line: line("a") }, { player: p("b"), line: line("b") }, { battleId: "x", seed, kind: "round", round: 5, runId: null, at: "2026-10-05T00:00:00Z", content, rules: MVP_RULES });
@@ -555,8 +556,42 @@ describe("R2-17: key moments, battle start, fatigue rows, Why's icons", () => {
         expect(m.label.length, `seed ${seed}: ${m.label}`).toBeLessThanOrEqual(46);
         // The old generic forms are gone.
         expect(m.label).not.toMatch(/^Combo: \d+ steps|^Fatigue sets in \(T/);
+        // R2-17 batch F: a combo says what it did, never only "Witot: 8 steps";
+        // a unit joining is a summon, not a kill (no skull).
+        expect(m.label, `seed ${seed}`).not.toMatch(/^[^:]+: \d+ steps$/);
+        if (/ joins$/.test(m.label)) {
+          expect(m.kind, `seed ${seed}: ${m.label}`).toBe("summon");
+          joins++;
+        }
       }
     }
+    expect(joins).toBeGreaterThan(0);
+  });
+
+  test("a combo with no damage, healing or status says what it did (R2-17 batch F)", () => {
+    // Fatigue's beat: fatigue did it; the unit that only reacted isn't its moment.
+    const pool = mvpPool();
+    const content: MvpContent = { version: "t", units: pool.units, abilities: pool.abilities, statuses: pool.statuses };
+    const p = (id: string): PlayerRef => ({ id, name: id, bot: false });
+    let r = 777;
+    const rand = (n: number) => ((r = (r * 1103515245 + 12345) % 2147483648), r % n);
+    let blocked = 0;
+    for (let seed = 0; seed < 300; seed++) {
+      const line = (s: string) => Array.from({ length: 5 }, (_, k) => lineUnitOf(pool.units[rand(pool.units.length)]!, `${s}${k}`, 1 + rand(4)));
+      const { log } = fightLines({ player: p("a"), line: line("a") }, { player: p("b"), line: line("b") }, { battleId: "x", seed, kind: "round", round: 5, runId: null, at: "2026-10-05T00:00:00Z", content, rules: MVP_RULES });
+      const beats = beatPlayOf(log, stepsOf(log));
+      for (const m of keyMomentsOf(log, beats)) {
+        if (m.kind !== "combo") continue;
+        const ids = beats[m.beat]!.waves.flatMap((w) => w.eventIds);
+        if (/blocked by Shield/.test(m.label)) {
+          blocked++;
+          expect(ids.some((id) => log[id]?.type === "Hurt" && (log[id] as { absorbed?: number }).absorbed)).toBe(true);
+        }
+        // A fatigue beat with no unit dealing anything is fatigue's moment.
+        if (ids.some((id) => log[id]?.type === "Fatigue")) expect(m.label, `seed ${seed}`).toMatch(/\d+ dmg|HP|kills/);
+      }
+    }
+    expect(blocked).toBeGreaterThan(0);
   });
 
   test("battle start is its own timeline block (turn 0), labelled Start", () => {

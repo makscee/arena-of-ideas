@@ -24,7 +24,7 @@ import { beatPlayOf, chainOf, damageByUnit, firingOf, keyMomentsOf, stepsOf, tim
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { card, formRich, unitSheet } from "../ui/card";
-import { app, button, closable, h, isDesktop, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
+import { app, button, closable, fitText, h, isDesktop, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
 import { icon } from "../ui/icon";
 import { statusesShown, STATUS_ROW_FALLBACK } from "../ui/status-row";
 
@@ -90,7 +90,12 @@ export interface RunOutro {
   status: () => Node[];
   /** The last button's label; it calls onDone. */
   doneLabel: string;
-  menu: () => void;
+  /** Opens the run menu; its Resume (or Esc, or a tap outside it) calls
+   * resume when the battle was playing as it opened (R2-17 batch F). */
+  menu: (resume?: () => void) => void;
+  /** Where the menu's errors land (Codex or Title menu failing): the battle
+   * shows it over everything, under the HUD (R2-17 batch F). */
+  error?: HTMLElement;
 }
 
 /** A phone on its side: compact cards with one status row (style.css, R2-17 batch E). */
@@ -173,10 +178,15 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     menuBtn.title = "Menu (Esc)";
   }
   function openMenu(): void {
+    const was = playing && !finished;
     pause();
     render();
-    a.outro?.menu();
+    a.outro?.menu(was ? () => { if (!playing && !finished) play(); } : undefined);
   }
+  // The menu's errors, over the board and the end card, under the HUD; ✕ clears it.
+  const errBox = a.outro?.error
+    ? h("div", { class: "bv-error panel row", role: "alert", "data-testid": "battle-error" }, a.outro.error, button("✕", () => { a.outro!.error!.textContent = ""; }, "bv-close", "battle-error-close"))
+    : null;
   const enemy = h("div", { class: "slots bv-line theirs", "data-testid": "battle-them" });
   const mine = h("div", { class: "slots bv-line mine", "data-testid": "battle-you" });
   const caption = h("button", { class: "bv-caption", "data-testid": "caption" });
@@ -420,6 +430,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** Each block's marks, laid out by layoutMarks() to what its box holds. */
   const markEls: HTMLElement[][] = [];
   const boxEls: HTMLElement[] = [];
+  /** Each "+n" count and the marks it stands for. */
+  const moreMarks = new WeakMap<HTMLElement, HTMLElement[]>();
   let marksObserver: ResizeObserver | null = null;
   function buildTimeline(): void {
     const every = turns.length > 30 ? 5 : turns.length > 18 ? 2 : 1;
@@ -452,7 +464,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         const room = Math.max(1, Math.floor((box.clientWidth - 4) / 15));
         const fit = marks.length <= room ? marks.length : Math.max(0, room - 1);
         const rest = marks.slice(fit);
-        const count = rest.length ? h("span", { class: "bv-tl-more mono", "data-testid": "timeline-more", "data-beat": rest[0]!.dataset.beat ?? "", title: rest.map((m) => m.title).join(", ") }, `+${rest.length}`) : null;
+        // drawTimeline() sets its number and title: only the marks reached so far (R2-17 batch F).
+        const count = rest.length ? h("span", { class: "bv-tl-more mono", "data-testid": "timeline-more", "data-beat": rest[0]!.dataset.beat ?? "" }) : null;
+        if (count) moreMarks.set(count, rest);
         box.replaceChildren(...marks.slice(0, fit), ...(count ? [count] : []));
       });
       drawTimeline();
@@ -501,7 +515,16 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       el.classList.toggle("past", i < ti);
     });
     // A mark ahead of the playhead waits until it is reached (or the end was seen).
-    for (const mk of track.querySelectorAll<HTMLElement>(".bv-tl-mark, .bv-tl-more")) mk.classList.toggle("ahead", !seenEnd && Number(mk.dataset.beat) > at);
+    const reached = (mk: HTMLElement) => seenEnd || Number(mk.dataset.beat) <= at;
+    for (const mk of track.querySelectorAll<HTMLElement>(".bv-tl-mark")) mk.classList.toggle("ahead", !reached(mk));
+    // A count counts only the marks reached: a later death in its turn never shows early (R2-17 batch F).
+    for (const more of track.querySelectorAll<HTMLElement>(".bv-tl-more")) {
+      const rest = (moreMarks.get(more) ?? []).filter(reached);
+      more.classList.toggle("ahead", !rest.length);
+      more.textContent = `+${rest.length}`;
+      more.title = rest.map((m) => m.title).join(", ");
+      more.dataset.count = String(rest.length);
+    }
     const t = turns[ti];
     const pos = !t ? 0 : starting >= 0 ? ti / turns.length : (ti + (t.beats.indexOf(at) + 1) / t.beats.length) / turns.length;
     head.style.left = `${(pos * 100).toFixed(2)}%`;
@@ -868,12 +891,17 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       row.style.gridTemplateColumns = `repeat(${Math.max(5, cards.length)}, minmax(0, 1fr))`;
       row.classList.toggle("empty", !cards.length);
       if (!cards.length) row.append(h("div", { class: "dim" }, "No one standing."));
+      // Fit names and chips now, not a frame later: a chip drawn at full
+      // size showed "−…" for a frame on a narrow card (R2-17 batch F).
+      if (row.isConnected) fitText(row);
     }
     caption.replaceChildren(h("span", { class: "bv-cap" }, ...captionKids(step)));
     still.replaceChildren(...(reduced() ? stillList(v.changes) : []));
     still.style.display = reduced() && !finished ? "" : "none";
     fitStill();
     caption.classList.toggle("tappable", !!step?.changes.length);
+    // Under the end card the phone's caption keeps only its line (style.css).
+    caption.classList.toggle("ended", finished && !trace);
     recent.replaceChildren(
       ...beats.slice(Math.max(0, at - 3), Math.max(0, at)).reverse().map((pb) => {
         // A past beat reads as its first wave, the strike or tick that opened it.
@@ -899,9 +927,15 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     // A trace opened from the end card (Why I lost) sits in its place until closed.
     end.style.display = finished && !trace ? "" : "none";
     if (finished) {
+      // A control in the card that redraws it (All n, Top 3) keeps the focus,
+      // so the next Enter acts on it again instead of leaving (R2-17 batch F).
+      const f = document.activeElement;
+      const kept = f instanceof HTMLElement && end.contains(f) && f.dataset.testid ? { id: f.dataset.testid, i: [...end.querySelectorAll(`[data-testid="${f.dataset.testid}"]`)].indexOf(f) } : null;
       end.replaceChildren(...endView());
+      if (kept) end.querySelectorAll<HTMLElement>(`[data-testid="${kept.id}"]`)[kept.i]?.focus();
       placeEnd();
     }
+    if (errBox) errBox.style.top = `${Math.round(hud.getBoundingClientRect().bottom + 4)}px`;
     backBtn.disabled = at < 0;
     fwdBtn.disabled = finished;
     endBtn.disabled = finished;
@@ -1032,7 +1066,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       // Its text, when a short screen squeezes the caption's box.
       const text = caption.firstElementChild?.getBoundingClientRect().bottom ?? cap.bottom;
       // The first that leaves the card room, each cutting nothing in half:
-      // under the caption, over it, under the HUD, the screen's top.
+      // under the caption, over it, under the HUD, the screen's top. At
+      // 360×640 the caption shrinks to its line once the card is up, and the
+      // card's spacing is tight, so three whole moments fit under it (R2-17 batch F).
       const tops = [Math.max(cap.bottom, text) + gap / 2, cap.top, hud.getBoundingClientRect().bottom + gap / 2].filter((t) => t >= gap);
       const top = tops.find((t) => bottom - t >= END_MIN_PX) ?? gap;
       end.style.top = "";
@@ -1133,10 +1169,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       h("div", { class: "row bv-end-actions" }, replayEnd, whyBtn, button(a.outro?.doneLabel ?? "Continue", leave, "primary", "battle-done")),
     ];
   }
-  /** A key moment's icon: a skull for a kill, linked rings for a combo, a burst for a big hit (fatigue's is in its label). */
+  /** A key moment's icon: a skull for a kill, a portal for a unit joining, linked rings for a combo, a burst for a big hit (fatigue's is in its label). */
   function momentIcon(kind: KeyMoment["kind"]): HTMLElement {
     if (kind === "fatigue") return h("span", { class: "bv-moment-ic" });
-    const [id, tone]: [IconId, string] = kind === "kill" ? ["death-skull", "tone-enemy"] : kind === "combo" ? ["linked-rings", "tone-when"] : ["spiky-explosion", "tone-enemy"];
+    const [id, tone]: [IconId, string] = kind === "kill" ? ["death-skull", "tone-enemy"] : kind === "summon" ? ["magic-portal", "tone-summon"] : kind === "combo" ? ["linked-rings", "tone-when"] : ["spiky-explosion", "tone-enemy"];
     return h("span", { class: "bv-moment-ic" }, icon(id, 16, tone));
   }
 
@@ -1158,12 +1194,22 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
           const row = h(
             "div",
             { class: `bv-dmg ${side === you ? "you" : "ghost"}${u ? " open" : ""}`, "data-testid": "damage-row", title: `${d.name}: ${d.damage} damage`, ...(u ? { role: "button", tabindex: "0" } : {}) },
-            h("span", { class: `emoji${[...emojiOf(d.unit)].length > 2 ? " two" : ""}` }, emojiOf(d.unit)),
+            // A fused unit's two emojis, smaller, in a column that holds both (R2-17 batch F: "🥁⚡" counts as two code points, so the old test missed it).
+            h("span", { class: `emoji${u?.kind === "fused" ? " two" : ""}` }, emojiOf(d.unit)),
             unitName(d.unit),
             h("span", { class: "bv-dmg-bar" }, h("i", { style: `width:${Math.round((d.damage / top) * 100)}%` })),
             h("span", { class: "mono" }, String(d.damage)),
           );
-          if (u) row.addEventListener("click", () => closable(unitSheet(u, a.content)));
+          if (u) {
+            row.addEventListener("click", () => closable(unitSheet(u, a.content)));
+            // A button's keys: Enter or Space opens the sheet (R2-17 batch F).
+            row.addEventListener("keydown", (e) => {
+              if ((e.key !== "Enter" && e.key !== " ") || e.repeat) return;
+              e.preventDefault();
+              e.stopPropagation();
+              row.click();
+            });
+          }
           return row;
         });
     const shown = Math.min(cap, bySide(you).length) + Math.min(cap, bySide(them).length);
@@ -1198,6 +1244,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     ),
     sheet,
     end,
+    errBox,
   );
   screen("battle");
   addEventListener("resize", placeEnd, { signal: freed.signal });
@@ -1208,9 +1255,16 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   // Desktop keys: Space plays or pauses, ←/→ step a beat, R replays.
   onKeys((e) => {
     const over = app.querySelector(".overlay");
-    if (over) return e.key === "Escape" ? (over.remove(), true) : false;
-    // The end card is the result: Enter (or Space) goes on, as the result screen's did.
-    if (finished && !trace && (e.key === "Enter" || e.key === " ")) return leave(), true;
+    // Esc closes a sheet as a tap outside it does (the run menu then resumes play).
+    if (over) return e.key === "Escape" ? ((over as HTMLElement).click(), over.remove(), true) : false;
+    // The end card is the result: Enter (or Space) goes on, as the result
+    // screen's did, from its main button or with nothing in the card focused.
+    // A focused Replay, Why, key moment or Damage row acts instead (R2-17 batch F).
+    if (finished && !trace && (e.key === "Enter" || e.key === " ")) {
+      const f = document.activeElement;
+      if (f instanceof HTMLElement && f !== document.body && end.contains(f) && f.dataset.testid !== "battle-done") return false;
+      return leave(), true;
+    }
     if (e.key === " ") return playing ? pause() : play(), true;
     if (e.key === "ArrowLeft") return back(), true;
     if (e.key === "ArrowRight") return forward(), true;

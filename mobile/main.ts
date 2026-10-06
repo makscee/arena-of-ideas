@@ -311,24 +311,27 @@ setCodexLink((term, scope) => void openCodex({ tab: "keywords", term, scope }));
  * Abandon run with one confirm, which ends on the run-over screen. `fought`:
  * on the result screen, the fight just shown, whose round the label names
  * (the run itself has moved on to the next one). */
-function runMenu(run: RunView, content: MvpContent, err: HTMLElement, fought?: FightResult): void {
+function runMenu(run: RunView, content: MvpContent, err: HTMLElement, fought?: FightResult, resume?: () => void): void {
   if (app.querySelector('[data-testid="run-menu"]')) return;
   const round = fought ? fought.round : run.round;
   const crown = fought ? fought.kind === "crown" : round > rules.rounds;
   const codex = button("Codex", () => (close(), void guarded(err, () => openCodex())), "", "menu-codex");
-  const close = overlay(
-    h(
-      "div",
-      { class: "stack run-menu", "data-testid": "run-menu" },
-      h("div", { class: "label" }, run.phase === "over" ? "Run · over" : crown ? "Run · the Crown" : `Run · round ${round} of ${rules.rounds}`),
-      button("Resume", () => close(), "primary", "menu-resume"),
-      codex,
-      button("Rules", () => (close(), closable(rulesSheet())), "", "menu-rules"),
-      button("Title menu", () => (close(), void guarded(err, () => homeScreen())), "", "menu-title"),
-      run.phase === "over" ? null : h("div", { class: "dim small" }, "The run waits; Continue brings you back."),
-      run.phase === "over" ? null : button("Abandon run…", () => (close(), abandonSheet(run, "menu", () => void guarded(err, async () => runOverScreen(await api.abandon(run.runId), content)))), "danger", "menu-abandon"),
-    ),
+  const menu = h(
+    "div",
+    { class: "stack run-menu", "data-testid": "run-menu" },
+    h("div", { class: "label" }, run.phase === "over" ? "Run · over" : crown ? "Run · the Crown" : `Run · round ${round} of ${rules.rounds}`),
+    // Over a battle that was playing, Resume plays on (R2-17 batch F).
+    button("Resume", () => (close(), resume?.()), "primary", "menu-resume"),
+    codex,
+    button("Rules", () => (close(), closable(rulesSheet())), "", "menu-rules"),
+    button("Title menu", () => (close(), void guarded(err, () => homeScreen())), "", "menu-title"),
+    run.phase === "over" ? null : h("div", { class: "dim small" }, "The run waits; Continue brings you back."),
+    run.phase === "over" ? null : button("Abandon run…", () => (close(), abandonSheet(run, "menu", () => void guarded(err, async () => runOverScreen(await api.abandon(run.runId), content)))), "danger", "menu-abandon"),
   );
+  const close = overlay(menu);
+  // A tap outside the menu (or the battle's Esc) is a Resume too.
+  const back = menu.closest(".overlay");
+  if (resume && back) back.addEventListener("click", (e) => e.target === back && resume());
 }
 
 /** The champion card's last line: what today's slayers mean at the day's end. */
@@ -746,21 +749,34 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   // The Crown has no shop: where the offers were, the team you are about to
   // face, as plainly as your own line (R2-17 batch E: it was only the pin).
   const foe = crown ? h("div", { class: "stack crown-foe", "data-testid": "crown-foe" }) : null;
+  /** The Crown's foe, named by the run's own opponent (what "Crown vs" says
+   * and the fight uses); the day gives its line only when its champion is
+   * that player, so a day that turned over since never shows another team
+   * (R2-17 batch F). */
   const fillFoe = (d: DayView | null) => {
+    if (!foe || !opp) return;
     const ch = d?.champion;
-    if (!foe || !ch) return;
-    foe.replaceChildren(h("div", { class: "label" }, ownCrown ? "You face · your champion team · " : "You face · today's champion · ", who(ch.player.name, "ghost-name")), team(ch.line, "ghost", content, "crown-foe-line"));
+    const line = ch && ch.player.id === opp.player.id ? ch.line : null;
+    foe.replaceChildren(
+      h("div", { class: "label" }, ownCrown ? "You face · your champion team · " : "You face · today's champion · ", who(opp.player.name, "ghost-name")),
+      line ? team(line, "ghost", content, "crown-foe-line") : h("div", { class: "dim small" }, d ? "Their line shows in the fight." : "…"),
+    );
   };
   const fillPin = (d: DayView | null) => {
-    fillFoe(d);
     const ch = d?.champion;
     if (!ch) return pin.replaceChildren(h("span", { class: "dim" }, "👑 No champion yet"));
     const b = h("button", { class: "pin-btn", "data-testid": "champion-pin-open" }, h("span", {}, "👑"), who(ch.player.name, "ghost-name"), h("span", { class: "pin-emoji" }, ch.line.map((u) => u.emoji).join("")));
     b.addEventListener("click", () => closable(h("div", { class: "label" }, `Champion of day ${d!.seq} · `, who(ch.player.name)), team(ch.line, "ghost", content), hint(`${tapOrClick()} a card to read it.`)));
     pin.replaceChildren(b);
   };
-  fillPin(day);
-  if (!day) void api.day().then((d) => ((day = d), fillPin(d))).catch(() => {});
+  if (crown) {
+    // The Crown names its champion once ("Crown vs @X" and the foe's line): no pin.
+    fillFoe(day);
+    void api.day().then((d) => ((day = d), fillFoe(d))).catch(() => fillFoe(day));
+  } else {
+    fillPin(day);
+    if (!day) void api.day().then((d) => ((day = d), fillPin(d))).catch(() => {});
+  }
 
   // "?" explains a card's numbers; until a player has opened it once, it says so.
   const legendBtn = button(seen("legend") ? "?" : "? Cards", () => (markSeen("legend"), (legendBtn.textContent = "?"), legendBtn.classList.remove("new"), legendSheet()), seen("legend") ? "small" : "small new", "legend-open");
@@ -794,7 +810,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         "div",
         { class: "row spread opp" },
         h("span", { class: "dim", "data-testid": "next-opponent" }, ...(opp ? [`${crown ? "Crown vs" : "Next:"} `, who(opp.player.name), `${opp.player.bot ? " 🤖" : ""}${ownCrown ? " (your champion team)" : ""}`] : [crown ? "Crown vs today's champion" : "Next: a team saved at this round"])),
-        pin,
+        crown ? null : pin,
       ),
     ),
     h(
@@ -971,10 +987,11 @@ function outroOf(run: RunView, fight: FightResult, content: MvpContent): RunOutr
       hearts(run.hearts),
       h("span", { class: "mono dim" }, record(run)),
       sub ? h("span", { class: fight.heartsLost > 0 ? "error" : "", "data-testid": "result-sub" }, sub) : null,
-      err,
     ].filter((x): x is HTMLElement => x !== null),
     doneLabel: run.phase === "over" ? "See the run" : run.phase === "crown" ? "To the Crown" : "Next round",
-    menu: () => runMenu(run, content, err, fight),
+    menu: (resume) => runMenu(run, content, err, fight, resume),
+    // The menu's errors show over the battle, not only inside the end card (R2-17 batch F).
+    error: err,
   };
 }
 
