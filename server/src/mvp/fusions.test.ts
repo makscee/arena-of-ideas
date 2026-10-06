@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { Champion, DecisionResponse, FusionDiscovery, PlayerRef, UnitContent } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { mvpContent } from "./content.js";
-import { awaitFusionName, cleanModelName, drainFusionNames, isBlockedName, fusionNameReady, fusionNaming, httpModelNamer, MODEL_DOWN_MS, NAMER_EXAMPLES, MODEL_FAILURES, MODEL_PROBE_MS, portmanteau, recordFusion, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
+import { awaitFusionName, cleanModelName, drainFusionNames, hasUnitName, NAMER_LETTERS, isBlockedName, fusionNameReady, fusionNaming, httpModelNamer, MODEL_DOWN_MS, NAMER_EXAMPLES, MODEL_FAILURES, MODEL_PROBE_MS, portmanteau, recordFusion, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
 import { decide, preview, startRun } from "./runs.js";
 import { seedChampion } from "./bots.js";
 import { mvpRuntime } from "./runtime.js";
@@ -22,6 +22,8 @@ const NAMES = ["Duskmend", "Gloomfang", "Ashwarden", "Briarhusk", "Cindermaw", "
 describe("MVP fusion names: the fallback and the store", () => {
   it("falls back to a deterministic portmanteau", () => {
     expect(portmanteau("Brawler", "Medic")).toBe("Brawdic");
+    // One word, title-cased: no inner capital from a two-word name.
+    expect(portmanteau("War Drummer", "Medic")).toBe("Wardrdic");
     expect(portmanteau("Brawler", "Medic")).toBe(portmanteau("Brawler", "Medic"));
     expect(portmanteau("Medic", "Brawler")).not.toBe(portmanteau("Brawler", "Medic"));
   });
@@ -123,7 +125,8 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
     expect(cleanModelName('Name: "iron mender".\nIt combines…')).toBe("Iron Mender");
     expect(cleanModelName("<think>hmm</think>\nBloodmend")).toBe("Bloodmend");
     expect(cleanModelName("Ash-Warden")).toBe("Ash-Warden");
-    expect(cleanModelName("monarch Of senses")).toBe("Monarch of Senses");
+    expect(cleanModelName("BalanceWarrior")).toBe("Balance Warrior");
+    expect(cleanModelName("KIngard")).toBe("Kingard");
     expect(cleanModelName("The Ashen")).toBe("The Ashen");
     expect(cleanModelName("🥊🎯 Stormancer!")).toBe("Stormancer");
   });
@@ -131,7 +134,7 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
   it("refuses franchise names, fake official titles, spam and non-names", () => {
     for (const raw of ["Pikachu", "Darth Medic", "Gandalf", "Super Mario", "Elsa", "Sonic", "Nefarian", "Swindle", "Admin Approved", "FREE V-BUCKS", "Frozen", "Hollow Knight", "Kel'Thuzad"])
       expect(cleanModelName(raw), raw).toBeNull();
-    for (const raw of ["", "a", "This is a very long name for a unit", "Iron care mend heal", "Name42", "www scam example", "Ye Ye"]) expect(cleanModelName(raw), raw).toBeNull();
+    for (const raw of ["", "a", "This is a very long name for a unit", "Iron care mend heal", "monarch Of senses", "Iron Care Mend", "Name42", "www scam example", "Ye Ye"]) expect(cleanModelName(raw), raw).toBeNull();
     expect(cleanModelName("Medic", brawler, medic)).toBeNull();
     // Ordinary words that are also franchise names pass inside a longer name.
     expect(cleanModelName("Cloud Warden")).toBe("Cloud Warden");
@@ -177,6 +180,19 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
       expect(cleanModelName(raw), raw).toBeNull();
     for (const raw of ["Aqua Mantis", "Spider Mantis", "Bat Mantle", "Batmancer", "Dart Hawk", "Sonic Shrieker", "Grim Joker", "Shadow Swindle", "Confusion", "Hulking Brute", "Evader"])
       expect(cleanModelName(raw), raw).not.toBeNull();
+  });
+
+  it("refuses a crude root glued on behind another word, though its ordinary word alone passes", () => {
+    for (const raw of ["Noctscum", "Ashgrape", "Stormcanal", "Spaceinvader"]) expect(cleanModelName(raw), raw).toBeNull();
+    for (const raw of ["Scum", "Scumlord", "Grapeshot", "Canal Warden", "Encumber", "Invader"]) expect(cleanModelName(raw), raw).not.toBeNull();
+  });
+
+  it("finds a unit's whole name of 5+ letters inside a name", () => {
+    const harvest = unit("harvest", "Harvest");
+    const rat = unit("plague", "Plague Rat");
+    const king = unit("king", "King");
+    for (const name of ["Harvestguard", "Blood Harvest", "Plagueratling"]) expect(hasUnitName(name, [harvest, rat, king]), name).toBe(true);
+    for (const name of ["Kingsbane", "Plaguebite", "Harvguard"]) expect(hasUnitName(name, [harvest, rat, king]), name).toBe(false);
   });
 
   it("refuses names that only join the two parts", () => {
@@ -470,6 +486,28 @@ describe("MVP fusion names: through the runtime", () => {
     expect(fusionNameReady(store, units[k]!.id, units[1]!.id)).toBe(true);
   }, 60_000);
 
+  it("asks for one word: two words pass only on the last try, three never, and a unit's name inside is asked again", async () => {
+    const asked: string[] = [];
+    const answers: Record<string, string[]> = {
+      [`${a!.id}+${b!.id}`]: ["Ash Warden", "Ember-Fang", "Cinderhowl"],
+      [`${b!.id}+${a!.id}`]: ["Ash Warden", "Ember-Fang", "Grim Bloom"],
+      [`${a!.id}+${c!.id}`]: ["Ash Warden", "Duskmaw Iron Fang", "Iron Fang Hollow"],
+      [`${c!.id}+${a!.id}`]: [`${a!.name.replace(/\s+/g, "")}wyrm`, "Gloomtusk"],
+    };
+    const { rt, stored } = world(async (x, y) => {
+      const key = `${x.id}+${y.id}`;
+      asked.push(key);
+      return answers[key]?.[asked.filter((k) => k === key).length - 1] ?? NAMES[asked.length % NAMES.length]!;
+    });
+    decide(rt, stored(), { kind: "reorder", from: 0, to: 0 });
+    await drainFusionNames(rt.store);
+    expect(rt.store.fusion(a!.id, b!.id)).toBeUndefined();
+    expect(rt.peekFusionName(a!, b!, maks).name).toBe("Cinderhowl");
+    expect(rt.peekFusionName(b!, a!, maks).name).toBe("Grim Bloom");
+    expect(rt.peekFusionName(a!, c!, maks).name).toBe(portmanteau(a!.name, c!.name, content.units.map((x) => x.name)));
+    expect(rt.peekFusionName(c!, a!, maks).name).toBe("Gloomtusk");
+  });
+
   it("a blocked answer keeps the portmanteau", async () => {
     let asked = 0;
     const { rt, stored } = world(async () => (asked++, "Pikachu"));
@@ -517,14 +555,15 @@ describe("MVP fusion names: the HTTP model client", () => {
     });
     await new Promise<void>((r) => server!.listen(0, "127.0.0.1", r));
     const { port } = server.address() as AddressInfo;
-    const ask = httpModelNamer(`http://127.0.0.1:${port}/v1/chat/completions`);
+    const ask = httpModelNamer(`http://127.0.0.1:${port}/v1/chat/completions`, 15_000, () => 0.99);
     expect(await ask(brawler, medic)).toBe("Ironcare");
     const emojiUnit = { ...brawler, emoji: "🌹", name: "Rose" };
     expect(await ask(emojiUnit, { ...medic, emoji: "🐀", name: "Rat" })).toBe("Ironcare");
     expect(got?.messages.map((m) => m.role)).toEqual(["system", "user", "assistant", "user", "assistant", "user", "assistant", "user", "assistant", "user"]);
-    expect(got?.messages[1]).toEqual({ role: "user", content: "Knight merges with Wolf. Name:" });
-    expect(got?.messages[2]).toEqual({ role: "assistant", content: "Fang Paladin" });
-    expect(got?.messages.at(-1)).toEqual({ role: "user", content: "Rose merges with Rat. Name:" });
+    // A starting letter is hinted (against Qwen3-4B's habit of S), each example's its own.
+    expect(got?.messages[1]).toEqual({ role: "user", content: "Knight merges with Wolf. Start with the letter F. Name:" });
+    expect(got?.messages[2]).toEqual({ role: "assistant", content: "Fangwarden" });
+    expect(got?.messages.at(-1)).toEqual({ role: "user", content: `Rose merges with Rat. Start with the letter ${NAMER_LETTERS.at(-1)}. Name:` });
     expect(got?.messages.some((m) => /\p{Extended_Pictographic}/u.test(m.content))).toBe(false);
     expect(got).toMatchObject({ max_tokens: 12, temperature: 0.8 });
   });

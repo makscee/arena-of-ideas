@@ -51,7 +51,7 @@ function host(o: { asideScript?: boolean } = {}) {
 /** The script --dry-run prints for m1, run against `home` (PATH and the
  * Tailscale binary point at the stubs). */
 function deploy(home: string, env: Record<string, string> = {}, args = ["--fresh"]) {
-  const dry = spawnSync(join(ROOT, "scripts/mvp-redeploy.sh"), ["--dry-run", ...args], { encoding: "utf8" });
+  const dry = spawnSync(join(ROOT, "scripts/mvp-redeploy.sh"), ["--dry-run", ...args], { encoding: "utf8", env: { ...process.env, ARENA_MVP_WIPE: "1" } });
   expect(dry.status).toBe(0);
   const script = dry.stdout
     .replace("export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH", `export PATH=${home}/bin:/usr/bin:/bin`)
@@ -70,6 +70,14 @@ afterEach(() => {
 });
 
 describe("mvp-redeploy (--fresh and plain)", () => {
+  it("refuses --fresh without ARENA_MVP_WIPE=1: the world holds real players", () => {
+    const env = { ...process.env };
+    delete env.ARENA_MVP_WIPE;
+    const r = spawnSync(join(ROOT, "scripts/mvp-redeploy.sh"), ["--dry-run", "--fresh"], { encoding: "utf8", env });
+    expect(r.status).toBe(2);
+    expect(r.stderr).toContain("ARENA_MVP_WIPE=1");
+  });
+
   it("moves the DB and its -wal aside while the server is stopped, then starts it", () => {
     const { home, dir, db } = host();
     const r = deploy(home);

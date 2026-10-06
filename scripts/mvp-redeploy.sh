@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 # Redeploy the Arena MVP test instance on m1 (mission #574): tailnet only, at
-# https://m1.twin-pogona.ts.net/arena/ → 127.0.0.1:$PORT. It holds no real
-# players' data (a SQLite file, ~/arena-mvp/data/arena-mvp.db, kept across
-# redeploys), so any agent may redeploy it.
+# https://m1.twin-pogona.ts.net/arena/ → 127.0.0.1:$PORT. Since 2026-10-06 it
+# holds REAL players' data (Maks plays it; a SQLite file,
+# ~/arena-mvp/data/arena-mvp.db, kept across redeploys). Only checked builds go
+# live: the orchestrator fast-forwards the branch mvp-live to a checked commit
+# and redeploys that. Never run mvp:bot, mvp:phone or any e2e against it: they
+# register players in the real world.
 #
-#   npm run mvp:redeploy                 # the mission branch
+#   npm run mvp:redeploy -- mvp-live     # the last checked build (the usual one)
+#   npm run mvp:redeploy                 # the mission branch head
 #   npm run mvp:redeploy -- <branch>     # any pushed branch
-#   npm run mvp:redeploy -- --fresh      # also wipe the world: the DB moves
+#   ARENA_MVP_WIPE=1 npm run mvp:redeploy -- --fresh
+#                                        # only on Maks's word: wipe the world, the DB moves
 #                                        # aside to data/arena-mvp.db.bak-<time>
 #                                        # while the server is stopped. Every
 #                                        # check runs before it stops; if the
@@ -25,18 +30,19 @@ FRESH=0
 DRY=0
 for arg in "$@"; do
   case "$arg" in
-    --fresh) FRESH=1 ;;
+    --fresh) FRESH=1
+      [ "${ARENA_MVP_WIPE:-}" = 1 ] || { echo "--fresh wipes real players' world; only on Maks's word, with ARENA_MVP_WIPE=1" >&2; exit 2; } ;;
     --dry-run) DRY=1 ;;
     -*) echo "unknown option $arg (--fresh, --dry-run)" >&2; exit 2 ;;
     *) BRANCH="$arg" ;;
   esac
 done
 PORT="${ARENA_MVP_PORT:-8791}"
-# Slice 10's fusion namer: a small local model behind an OpenAI-compatible
+# Slice 10's fusion namer (Qwen3-4B since round 2, R2-4): a local model behind an OpenAI-compatible
 # endpoint (mlx_lm.server), its own launchd agent so a redeploy doesn't reload
 # it. The server falls back to a portmanteau whenever it is down.
 NAMER_PORT="${ARENA_NAMER_PORT:-8792}"
-NAMER_MODEL="${ARENA_NAMER_MODEL:-mlx-community/Qwen2.5-1.5B-Instruct-4bit}"
+NAMER_MODEL="${ARENA_NAMER_MODEL:-mlx-community/Qwen3-4B-Instruct-2507-4bit}"
 HOST_ALIAS="${ARENA_MVP_HOST:-m1}"
 
 remote() {

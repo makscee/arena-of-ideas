@@ -38,7 +38,7 @@ export type NameFusion = (first: UnitContent, second: UnitContent, by: PlayerRef
 export type ModelNamer = (first: UnitContent, second: UnitContent) => Promise<string | null>;
 
 /** The deterministic fallback name: the front of first's name and the back of
- * second's ("Brawler" + "Medic" → "Brawdic"). The only portmanteau. It is
+ * second's ("Brawler" + "Medic" → "Brawdic"), title-cased as one word. The only portmanteau. It is
  * never a part's name or one of `taken` (the base units' names and the stored
  * fusions' names, compared folded): the split moves until it isn't ("Rose" +
  * "Rot" → "Rorot", not "Rot"; a second "Sileat" → "Silenat"), then any split,
@@ -51,7 +51,9 @@ export function portmanteau(first: string, second: string, taken: Iterable<strin
 /** portmanteau(), `isTaken` answering for folded names (peek passes its set
  * of taken names, so no copy of it is made per fuse). */
 function portmanteauAvoiding(first: string, second: string, isTaken: (folded: string) => boolean): string {
-  const a = first.replace(/\s+/g, "");
+  // Title case: no inner capital from a two-word name ("Wardrhter", not "WarDrhter").
+  const whole = first.replace(/\s+/g, "");
+  const a = whole.slice(0, 1).toUpperCase() + whole.slice(1).toLowerCase();
   const b = second.replace(/\s+/g, "").toLowerCase();
   const parts = new Set([first, second].map(fold));
   const free = (name: string) => !parts.has(fold(name)) && !isTaken(fold(name)) && !isBlockedName(name) && !STANDIN_CRUDE.some((c) => fold(name).includes(c));
@@ -242,6 +244,9 @@ export function isBlockedName(name: string): boolean {
   for (let i = 0; i < words.length; i++) {
     const w = words[i]!;
     if (BLOCKED_WORDS.some((b) => named(w, b))) return true;
+    // An ordinary word hides its stem only standing alone or leading: glued on
+    // behind another word, a stem at the end reads as itself ("Noctscum").
+    if (ORDINARY.some((o) => w !== o && w.endsWith(o) && BLOCKED_STEMS.some((stem) => o.endsWith(stem)))) return true;
     const inner = ORDINARY.reduce((rest, o) => rest.split(o).join("."), w);
     if (BLOCKED_STEMS.some((stem) => (stem.endsWith("man") ? WORD_ENDINGS.some((end) => inner.endsWith(stem + end)) : inner.includes(stem)))) return true;
     // Whole words joined: "Spider Man", "Kel'Thuzad", "Iron Man".
@@ -264,66 +269,91 @@ function isGlued(name: string, first?: UnitContent, second?: UnitContent): boole
   return rest.length < 3;
 }
 
-const SMALL_WORDS = ["of", "the", "and"];
-
 /** A model reply made into a name, or null when it isn't one we'd show:
- * 1–3 words of letters, 3–20 characters, nothing on the blocklist, and not
- * just the parts' names. */
+ * 1–2 words of letters, 3–20 characters, nothing on the blocklist, and not
+ * just the parts' names. CamelCase counts as two words ("BalanceWarrior" →
+ * "Balance Warrior"), so it can't pass as one (isOneWord). */
 export function cleanModelName(raw: string, first?: UnitContent, second?: UnitContent): string | null {
   const line = stripAccents(raw.replace(/<think>[\s\S]*?<\/think>/g, "")).trim().split("\n")[0] ?? "";
   const name = line
     .replace(/^(name|fusion|fused name)\s*:\s*/i, "")
     .replace(/["“”«»*_`.!]/g, "")
     .replace(/\s+/g, " ")
-    .replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, "");
+    .replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, "")
+    .replace(/([a-z])([A-Z])/g, "$1 $2");
   if (!/^[A-Za-z][A-Za-z' -]{2,19}$/.test(name)) return null;
   const words = name.split(/[ -]/).filter(Boolean);
-  if (words.length > 3 || new Set(words.map(fold)).size < words.length) return null;
+  if (words.length > 2 || new Set(words.map(fold)).size < words.length) return null;
   if (isBlockedName(name) || isGlued(name, first, second)) return null;
-  // Title case, but a joining word inside stays small: "Mender of Storms".
-  const small = (w: string, i: number) => i > 0 && i < words.length - 1 && SMALL_WORDS.includes(w.toLowerCase());
-  return words.map((w, i) => (small(w, i) ? w.toLowerCase() : w[0]!.toUpperCase() + w.slice(1))).join(name.includes("-") && words.length > 1 ? "-" : " ");
+  return words.map((w) => w[0]!.toUpperCase() + w.slice(1).toLowerCase()).join(name.includes("-") && words.length > 1 ? "-" : " ");
 }
 
-/** The namer's system prompt. Measured on m1's Qwen2.5-1.5B (#587): the
- * earlier prompt, with the parts' emoji in the ask, got mostly emoji or the
- * parts glued ("🌹 Rat", "RatRose"), which cleanModelName refuses. */
-export const NAMER_SYSTEM =
-  "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic.";
+/** True for a one-word name: what the namer asks for, two words being only
+ * the last try's (drainFusionNames). */
+export function isOneWord(name: string): boolean {
+  return !/[ -]/.test(name);
+}
 
-/** Few-shot turns before the real ask. The fighters here are no unit's name
- * in the content (the model echoes example words; a test checks it). */
+/** True when a name holds a unit's whole name of 5+ letters ("Harvestguard",
+ * "Blood Guardian"): it reads as that unit in game. */
+export function hasUnitName(name: string, units: Iterable<UnitContent>): boolean {
+  const folded = fold(name);
+  for (const u of units) {
+    const unit = fold(u.name);
+    if (unit.length >= 5 && folded.includes(unit)) return true;
+  }
+  return false;
+}
+
+/** The namer's system prompt: "one2" in docs/round2/namer.md, measured on
+ * m1's Qwen3-4B-Instruct-2507 (99% one word, names tied to both fighters). */
+export const NAMER_SYSTEM =
+  "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative name for it: one word, made of one or two plain English words joined, easy to read aloud, at most 14 letters. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic.";
+
+/** Few-shot turns before the real ask, all one word. The fighters and names
+ * here are no unit's name in the content (the model echoes example words; a
+ * test checks it). */
 export const NAMER_EXAMPLES: readonly { first: string; second: string; name: string }[] = [
-  { first: "Knight", second: "Wolf", name: "Fang Paladin" },
-  { first: "Spark", second: "Healer", name: "Mender of Storms" },
+  { first: "Knight", second: "Wolf", name: "Fangwarden" },
+  { first: "Spark", second: "Healer", name: "Stormmender" },
   { first: "Golem", second: "Raven", name: "Gravewing" },
-  { first: "Thief", second: "Monk", name: "Alms Cutter" },
+  { first: "Thief", second: "Monk", name: "Almscutter" },
 ];
 
-const namerAsk = (first: string, second: string) => `${first} merges with ${second}. Name:`;
+/** Starting letters the hint draws from. Unhinted, Qwen3-4B starts about half
+ * its names with S, at temperature 1.0 too; with a random letter, 1 in 10
+ * (docs/round2/namer.md, "The S habit"). Letters few English compounds start with
+ * are left out (K gave "Kriptide"). */
+export const NAMER_LETTERS = "ABCDEFGHLMNOPRSTVW";
+
+const namerAsk = (first: string, second: string, letter?: string) =>
+  `${first} merges with ${second}.${letter ? ` Start with the letter ${letter}.` : ""} Name:`;
 
 /** The chat messages for one ask: system, the few-shot turns, then the pair
- * by name only (no emoji: the model copies it into the answer). */
-export function namerMessages(first: UnitContent, second: UnitContent): { role: "system" | "user" | "assistant"; content: string }[] {
+ * by name only (no emoji: the model copies it into the answer). With a
+ * starting letter, every example's ask carries its own name's letter too. */
+export function namerMessages(first: UnitContent, second: UnitContent, letter?: string): { role: "system" | "user" | "assistant"; content: string }[] {
   return [
     { role: "system", content: NAMER_SYSTEM },
     ...NAMER_EXAMPLES.flatMap((e) => [
-      { role: "user" as const, content: namerAsk(e.first, e.second) },
+      { role: "user" as const, content: namerAsk(e.first, e.second, letter ? e.name[0] : undefined) },
       { role: "assistant" as const, content: e.name },
     ]),
-    { role: "user", content: namerAsk(first.name, second.name) },
+    { role: "user", content: namerAsk(first.name, second.name, letter) },
   ];
 }
 
 /** The m1 model through an OpenAI-compatible chat endpoint (mlx_lm.server,
- * llama.cpp): ARENA_NAMER_URL, e.g. http://127.0.0.1:8792/v1/chat/completions. */
-export function httpModelNamer(url: string, timeoutMs = 15_000): ModelNamer {
+ * llama.cpp): ARENA_NAMER_URL, e.g. http://127.0.0.1:8792/v1/chat/completions.
+ * Each ask hints a random starting letter (NAMER_LETTERS). */
+export function httpModelNamer(url: string, timeoutMs = 15_000, random: () => number = Math.random): ModelNamer {
   return async (first, second) => {
+    const letter = NAMER_LETTERS[Math.floor(random() * NAMER_LETTERS.length)];
     const res = await fetch(url, {
       method: "POST",
       headers: { "content-type": "application/json" },
       signal: AbortSignal.timeout(timeoutMs),
-      body: JSON.stringify({ messages: namerMessages(first, second), max_tokens: 12, temperature: 0.8 }),
+      body: JSON.stringify({ messages: namerMessages(first, second, letter), max_tokens: 12, temperature: 0.8 }),
     });
     // A 5xx (mlx still loading) or any other refusal is the model being down,
     // not an answer: thrown, so the pair is asked again after a backoff.
@@ -657,8 +687,11 @@ export async function drainFusionNames(store: MvpStore): Promise<void> {
       for (let tries = 0; tries < MODEL_TRIES && !name; tries++) {
         const raw = await n.model(pair.first, pair.second);
         name = raw === null ? null : cleanModelName(raw, pair.first, pair.second);
-        // Another pair's name (or a base unit's) is refused too: ask again.
-        if (name && clashes(n, store, pair.key, name)) name = null;
+        // Another pair's name (or a base unit's), or a unit's name inside it,
+        // is refused too: ask again.
+        if (name && (clashes(n, store, pair.key, name) || hasUnitName(name, n.units.values()))) name = null;
+        // One word is asked for: two words pass only on the last try.
+        if (name && !isOneWord(name) && tries < MODEL_TRIES - 1) name = null;
       }
     } catch {
       // Down, slow or timed out: ask again later, while nobody has fused it.

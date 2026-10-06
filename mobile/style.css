@@ -266,3 +266,14 @@ button.bv-why { display: flex; align-items: center; justify-content: space-betwe
 .who-mark > .bot { margin-left: 4px; vertical-align: bottom; }
 .playoff.fresh { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); }
 .standing .who-mark { display: flex; align-items: center; }
+
+/* Glossary terms (src/glossary.ts): a term's tone colours its words and its
+ * icon (mobile/ui/icon.ts, filled with currentColor). Dark values from
+ * docs/round2/mockups/icons.html. */
+.ic { display: inline-block; vertical-align: -0.15em; flex: none; fill: currentColor; }
+.tone-pwr { color: #ff8a5c; } .tone-hp { color: #ff5c7a; } .tone-shield { color: #5aa7ff; }
+.tone-vital { color: #3fdc8f; } .tone-str { color: #ffa53d; } .tone-curse { color: #ff6fb5; }
+.tone-poison { color: #b48cff; } .tone-freeze { color: #62d6ff; } .tone-bless { color: #ffd25c; }
+.tone-silence { color: #a3acbf; } .tone-dmg { color: #ff6b4d; } .tone-heal { color: #3fdc8f; }
+.tone-summon { color: #2ee6d4; } .tone-when { color: #ffbf47; } .tone-ally { color: #2ee6d4; }
+.tone-enemy { color: #ff4d88; } .tone-gold { color: #ffd25c; } .tone-plain { color: #c9d1e0; }

@@ -32,6 +32,7 @@
     "mvp:fusion-names": "node --import tsx/esm e2e/mvp-fusion-names.ts",
     "mvp:redeploy": "scripts/mvp-redeploy.sh",
     "mvp:meta": "node --import tsx/esm scripts/meta-health.ts",
+    "mvp:texts": "node --import tsx/esm scripts/unit-texts.ts",
     "mvp:check": "npm run -s typecheck && npm test && npm run -s mvp:bot -- --runs 50 && npm run -s mvp:phone"
   },
   "devDependencies": {
