@@ -19,9 +19,12 @@
 //   prepared, or the model gave up on it. Bots run in the background, so a
 //   bot that wants a pair whose name isn't ready waits for it
 //   (awaitFusionName), and the pair is asked next, ahead of every queue. A model that is down, slow
-//   or times out (a 5xx included) is asked again with a backoff,
-//   MODEL_FAILURES times; after MODEL_FAILURES failed asks in a row, on any
-//   pairs, the model counts as down and no bot waits until it answers again.
+//   or times out (a 5xx included) is asked again with a backoff. A final
+//   failure is MODEL_FAILURES failed asks in a row over at least MODEL_DOWN_MS:
+//   on one pair, the model gives up on it for a while; on any pairs, the
+//   model counts as down. So a model still loading (503s for a few seconds) is
+//   waited for. While it is down no bot waits, new pairs aren't asked, and one
+//   pair is asked every MODEL_PROBE_MS; the first answer brings it back.
 import { fuseCheck } from "../../../src/mvp/forms.js";
 import type { FuseContext, FusionDiscovery, FusionParts, PlayerRef, UnitContent, UnitId } from "../../../src/mvp/contract.js";
 import type { RunDeps, RunHooks } from "./runs.js";
@@ -41,10 +44,17 @@ export type ModelNamer = (first: UnitContent, second: UnitContent) => Promise<st
  * "Rot" → "Rorot", not "Rot"; a second "Sileat" → "Silenat"), then any split,
  * then both names joined whole, and as a last resort a numeral ("Sileat II"). */
 export function portmanteau(first: string, second: string, taken: Iterable<string> = []): string {
+  const avoid = new Set([...taken].map(fold));
+  return portmanteauAvoiding(first, second, (folded) => avoid.has(folded));
+}
+
+/** portmanteau(), `isTaken` answering for folded names (peek passes its set
+ * of taken names, so no copy of it is made per fuse). */
+function portmanteauAvoiding(first: string, second: string, isTaken: (folded: string) => boolean): string {
   const a = first.replace(/\s+/g, "");
   const b = second.replace(/\s+/g, "").toLowerCase();
-  const avoid = new Set([first, second, ...taken].map(fold));
-  const free = (name: string) => !avoid.has(fold(name));
+  const parts = new Set([first, second].map(fold));
+  const free = (name: string) => !parts.has(fold(name)) && !isTaken(fold(name));
   const join = (head: string, tail: string) => (head.slice(-1).toLowerCase() === tail[0] ? head + tail.slice(1) : head + tail);
   const h0 = Math.ceil(a.length / 2);
   const t0 = Math.floor(b.length / 2);
@@ -269,7 +279,9 @@ interface Pair {
   human: boolean;
   /** Times in a row the model was down, slow or timed out on this pair. */
   failures: number;
-  /** Not asked again before this time (ms since epoch). */
+  /** When the first of those failures was (clock ms); null with none. */
+  failingSince: number | null;
+  /** Not asked again before this time (clock ms). */
   due: number;
 }
 
@@ -289,12 +301,20 @@ interface Namer {
   bot: Pair[];
   /** Every pair in either queue or being asked, by key. */
   queued: Map<string, Pair>;
-  /** Pairs the model can't name, until the time stored: it failed
-   * MODEL_FAILURES times in a row (asked again after GIVE_UP_MS), or answered
-   * only refused names (never asked again). Bots fuse them with the portmanteau. */
+  /** Pairs the model can't name, until the time stored: its final failure on
+   * the pair (asked again after GIVE_UP_MS, or once the model is back from
+   * down), or only refused names (never asked again). Bots fuse them with the
+   * portmanteau. */
   gaveUp: Map<string, number>;
-  /** Failed asks in a row, on any pairs; MODEL_FAILURES or more is down. */
+  /** Failed asks in a row, on any pairs, and when the first was (clock ms). */
   failStreak: number;
+  failingSince: number | null;
+  /** When the model went down (its final failure); null while it is up. */
+  downSince: number | null;
+  /** While down: the next ask (a probe) is not before this (clock ms). */
+  nextProbe: number;
+  /** Milliseconds now; Date.now unless a test drives the clock. */
+  clock: () => number;
   /** Bots waiting for a pair's name (awaitFusionName), by key. */
   waiters: Map<string, (() => void)[]>;
   backoffMs: (failures: number) => number;
@@ -303,9 +323,14 @@ interface Namer {
 }
 
 const MODEL_TRIES = 3;
-/** Failures in a row (down, slow, timed out) before the model gives up on a
- * pair: with the default backoff about 35 s, plus the timeouts. */
+/** Failed asks in a row (down, slow, timed out) before a final failure, on
+ * one pair or on the model... */
 export const MODEL_FAILURES = 4;
+/** ...over at least this long: with the default backoff a pair's 5th ask, at
+ * about 75 s plus the timeouts. A model still loading is waited for. */
+export const MODEL_DOWN_MS = 60_000;
+/** While the model is down, one pair is asked this often. */
+export const MODEL_PROBE_MS = 60_000;
 const GIVE_UP_MS = 600_000;
 const namers = new WeakMap<MvpStore, Namer>();
 
@@ -338,20 +363,26 @@ function clashes(n: Namer, store: MvpStore, key: string, name: string): boolean 
  * never wait: they fuse whenever they like. */
 export function fusionNameReady(store: MvpStore, first: UnitId, second: UnitId): boolean {
   const n = namers.get(store);
-  if (!n?.model || n.failStreak >= MODEL_FAILURES || store.fusion(first, second)) return true;
+  if (!n?.model || n.downSince !== null || store.fusion(first, second)) return true;
   const key = keyOf(first, second);
-  return n.prepared.has(key) || n.gaveUp.has(key);
+  return n.prepared.has(key) || gaveUpOn(n, key);
+}
+
+/** True while the model has given up on the pair (Namer.gaveUp). */
+function gaveUpOn(n: Namer, key: string): boolean {
+  return (n.gaveUp.get(key) ?? 0) > n.clock();
 }
 
 /** Resolves once fusionNameReady(first, second): for a bot that wants to fuse
  * the pair. The pair is asked next, ahead of every queued pair: the top-up
  * waits on one pair at a time and the champion seed on a few, so humans'
- * pairs wait at most a few asks. Bounded by the model's final failure: MODEL_FAILURES failed asks on
- * the pair, or the model counting as down. Needs the naming job running. */
+ * pairs wait at most a few asks. Bounded by the model's final failure on the
+ * pair, or the model counting as down (MODEL_FAILURES failed asks over
+ * MODEL_DOWN_MS). Needs the naming job running. */
 export function awaitFusionName(store: MvpStore, first: UnitId, second: UnitId): Promise<void> {
   const n = namers.get(store);
   const key = keyOf(first, second);
-  if (!n?.model || store.fusion(first, second) || n.prepared.has(key) || n.gaveUp.has(key)) return Promise.resolve();
+  if (!n?.model || store.fusion(first, second) || n.prepared.has(key) || gaveUpOn(n, key)) return Promise.resolve();
   const waiting = n.queued.get(key);
   if (waiting) {
     // Moved to the front; one being asked right now stays put.
@@ -366,7 +397,7 @@ export function awaitFusionName(store: MvpStore, first: UnitId, second: UnitId):
     const a = n.units.get(first);
     const b = n.units.get(second);
     if (!a || !b) return Promise.resolve();
-    const pair: Pair = { key, first: a, second: b, human: true, failures: 0, due: 0 };
+    const pair: Pair = { key, first: a, second: b, human: true, failures: 0, failingSince: null, due: 0 };
     n.queued.set(key, pair);
     n.human.unshift(pair);
   }
@@ -422,7 +453,7 @@ export function recordFusion(store: MvpStore, parts: FusionParts, at: string): F
 
 export function fusionNaming(
   rt: Pick<RunDeps, "store" | "content" | "now">,
-  opts: { model?: ModelNamer | null; backoffMs?: (failures: number) => number } = {},
+  opts: { model?: ModelNamer | null; backoffMs?: (failures: number) => number; clock?: () => number } = {},
 ): FusionNaming {
   const { store } = rt;
   const n: Namer = {
@@ -435,6 +466,10 @@ export function fusionNaming(
     queued: new Map(),
     gaveUp: new Map(),
     failStreak: 0,
+    failingSince: null,
+    downSince: null,
+    nextProbe: 0,
+    clock: opts.clock ?? Date.now,
     waiters: new Map(),
     backoffMs: opts.backoffMs ?? defaultBackoffMs,
     now: rt.now,
@@ -442,7 +477,7 @@ export function fusionNaming(
   namers.set(store, n);
   const enqueue = (first: UnitContent, second: UnitContent, human: boolean) => {
     const key = keyOf(first.id, second.id);
-    if (!n.model || n.prepared.has(key) || (n.gaveUp.get(key) ?? 0) > Date.now() || store.fusion(first.id, second.id)) return;
+    if (!n.model || n.prepared.has(key) || gaveUpOn(n, key) || store.fusion(first.id, second.id)) return;
     const waiting = n.queued.get(key);
     if (waiting) {
       // A bots' pair now on a human's line moves to the humans' queue.
@@ -453,7 +488,7 @@ export function fusionNaming(
       }
       return;
     }
-    const pair: Pair = { key, first, second, human, failures: 0, due: 0 };
+    const pair: Pair = { key, first, second, human, failures: 0, failingSince: null, due: 0 };
     n.queued.set(key, pair);
     (human ? n.human : n.bot).push(pair);
     n.wake?.();
@@ -466,7 +501,7 @@ export function fusionNaming(
     const taken = takenNames(n, store);
     const prepared = n.prepared.get(keyOf(first.id, second.id));
     return {
-      name: prepared !== undefined && !taken.has(fold(prepared)) ? prepared : portmanteau(first.name, second.name, taken),
+      name: prepared !== undefined && !taken.has(fold(prepared)) ? prepared : portmanteauAvoiding(first.name, second.name, (f) => taken.has(f)),
       discoveredBy: by.bot ? null : by,
     };
   };
@@ -489,26 +524,45 @@ export function fusionNaming(
   return { nameFusion: peek, peek, hooks };
 }
 
-/** The next pair due, humans' first; null when none is. Skips `tried`. */
-function takeDue(n: Namer, tried: Set<string>): Pair | null {
-  const now = Date.now();
+/** The next pair to ask, humans' first, skipping `tried`; null when none is
+ * due. While the model is down only a probe is: the first queued pair, once
+ * per MODEL_PROBE_MS. */
+function takeNext(n: Namer, tried: Set<string>): Pair | null {
+  const now = n.clock();
+  if (n.downSince !== null && now < n.nextProbe) return null;
   for (const q of [n.human, n.bot]) {
-    const i = q.findIndex((p) => p.due <= now && !tried.has(p.key));
+    const i = q.findIndex((p) => (n.downSince !== null || p.due <= now) && !tried.has(p.key));
     if (i >= 0) return q.splice(i, 1)[0]!;
   }
   return null;
 }
 
+/** The model answered after being down: every queued pair is asked again
+ * now, with its failures forgotten, and pairs it gave up on while failing are
+ * asked again (bots wait for them again). */
+function backUp(n: Namer): void {
+  n.downSince = null;
+  for (const p of n.queued.values()) {
+    p.failures = 0;
+    p.failingSince = null;
+    p.due = 0;
+  }
+  for (const [key, until] of n.gaveUp) if (until !== Infinity) n.gaveUp.delete(key);
+}
+
 /** Asks the model, one pair at a time, humans' pairs first (also pairs queued
  * while it runs), until no pair is due; each pair at most once per drain. A
  * pair nobody has fused gets a prepared name. A pair the model fails on goes
- * back in its queue with a backoff, and after MODEL_FAILURES in a row it gives
- * up on it for a while (bots then fuse it with the portmanteau). */
+ * back in its queue with a backoff; its final failure (MODEL_FAILURES over
+ * MODEL_DOWN_MS) gives up on it for a while (bots then fuse it with the
+ * portmanteau). Failures in a row on any pairs, as many over as long, put
+ * the model down: then only one probe per MODEL_PROBE_MS is asked, and its
+ * answer brings the model back. */
 export async function drainFusionNames(store: MvpStore): Promise<void> {
   const n = namers.get(store);
   if (!n?.model) return;
   const tried = new Set<string>();
-  for (let pair = takeDue(n, tried); pair; pair = takeDue(n, tried)) {
+  for (let pair = takeNext(n, tried); pair; pair = takeNext(n, tried)) {
     tried.add(pair.key);
     if (store.fusion(pair.first.id, pair.second.id)) {
       n.queued.delete(pair.key);
@@ -526,24 +580,35 @@ export async function drainFusionNames(store: MvpStore): Promise<void> {
       }
     } catch {
       // Down, slow or timed out: ask again later, while nobody has fused it.
+      const now = n.clock();
       pair.failures++;
-      // Down: no bot waits for the model until it answers again.
-      if (++n.failStreak >= MODEL_FAILURES) settle(n);
+      pair.failingSince ??= now;
+      n.failStreak++;
+      n.failingSince ??= now;
+      if (n.downSince !== null) n.nextProbe = now + MODEL_PROBE_MS;
+      else if (n.failStreak >= MODEL_FAILURES && now - n.failingSince >= MODEL_DOWN_MS) {
+        // Down: no bot waits for the model, and only probes ask it.
+        n.downSince = now;
+        n.nextProbe = now + MODEL_PROBE_MS;
+        settle(n);
+      }
       if (store.fusion(pair.first.id, pair.second.id)) {
         n.queued.delete(pair.key);
         settle(n, pair.key);
-      } else if (pair.failures >= MODEL_FAILURES) {
+      } else if (pair.failures >= MODEL_FAILURES && now - pair.failingSince >= MODEL_DOWN_MS) {
         n.queued.delete(pair.key);
-        n.gaveUp.set(pair.key, Date.now() + GIVE_UP_MS);
+        n.gaveUp.set(pair.key, now + GIVE_UP_MS);
         settle(n, pair.key);
       } else {
-        pair.due = Date.now() + n.backoffMs(pair.failures);
+        pair.due = now + n.backoffMs(pair.failures);
         (pair.human ? n.human : n.bot).push(pair);
       }
       continue;
     }
     n.queued.delete(pair.key);
     n.failStreak = 0;
+    n.failingSince = null;
+    if (n.downSince !== null) backUp(n);
     // Checked again: someone may have fused the pair while the model thought;
     // its name is then fixed.
     if (!store.fusion(pair.first.id, pair.second.id)) {
@@ -570,8 +635,9 @@ export const fusionNamingJob: MvpJob = (rt) => {
       running = false;
       const waiting = [...n.human, ...n.bot];
       if (waiting.length === 0 || stopped) return;
-      const next = Math.min(...waiting.map((p) => p.due));
-      timer = setTimeout(wake, Math.max(1000, next - Date.now()));
+      // Down: the next probe; up: the earliest pair's backoff.
+      const next = n.downSince !== null ? n.nextProbe : Math.min(...waiting.map((p) => p.due));
+      timer = setTimeout(wake, Math.max(1000, next - n.clock()));
     });
   };
   n.wake = wake;

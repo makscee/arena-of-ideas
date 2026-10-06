@@ -1,13 +1,14 @@
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterEach, describe, expect, it } from "vitest";
-import type { DecisionResponse, FusionDiscovery, PlayerRef, UnitContent } from "../../../src/mvp/contract.js";
+import type { Champion, DecisionResponse, FusionDiscovery, PlayerRef, UnitContent } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { mvpContent } from "./content.js";
-import { awaitFusionName, cleanModelName, drainFusionNames, fusionNameReady, fusionNaming, httpModelNamer, MODEL_FAILURES, portmanteau, recordFusion, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
+import { awaitFusionName, cleanModelName, drainFusionNames, fusionNameReady, fusionNaming, httpModelNamer, MODEL_DOWN_MS, MODEL_FAILURES, MODEL_PROBE_MS, portmanteau, recordFusion, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
 import { decide, preview, startRun } from "./runs.js";
+import { seedChampion } from "./bots.js";
 import { mvpRuntime } from "./runtime.js";
-import { MemoryMvpStore } from "./store.js";
+import { MemoryMvpStore, type MvpStore } from "./store.js";
 
 const form = { when: [], who: [], does: ["a"] };
 const unit = (id: string, name: string): UnitContent => ({ id, name, emoji: "x", tier: 1, base: { pwr: 1, hp: 1 }, forms: { sleeping: form, awoken: form } });
@@ -169,10 +170,10 @@ describe("MVP fusion names: through the runtime", () => {
   const [a, b, c] = content.units;
 
   /** A runtime whose namer asks `model`, with a human run holding a, b and c Awoken. */
-  function world(model: ModelNamer | null, player: PlayerRef = maks, backoffMs?: (failures: number) => number) {
+  function world(model: ModelNamer | null, player: PlayerRef = maks, backoffMs?: (failures: number) => number, clock?: () => number) {
     const rt = mvpRuntime({ content, seed: () => 7 });
     // Swap in a namer with this model (the runtime's own reads ARENA_NAMER_URL).
-    const naming = fusionNaming(rt, { model, ...(backoffMs ? { backoffMs } : {}) });
+    const naming = fusionNaming(rt, { model, ...(backoffMs ? { backoffMs } : {}), ...(clock ? { clock } : {}) });
     rt.hooks[0] = naming.hooks;
     rt.nameFusion = naming.nameFusion;
     rt.peekFusionName = naming.peek;
@@ -282,19 +283,23 @@ describe("MVP fusion names: through the runtime", () => {
   it("a bot fuses a pair only once its name is ready, or once the model gave up on it", async () => {
     // The model fails on one pair only, so it never counts as down.
     const d = content.units[3]!;
+    let now = 0;
+    let named = 0;
     const { rt, stored } = world(async (x, y) => {
       if (x.id === a!.id && y.id === d.id) throw new Error("503");
-      return "Grimward";
-    }, bot, () => 0);
+      return NAMES[named++]!;
+    }, bot, () => 0, () => now);
     expect(fusionNameReady(rt.store, a!.id, b!.id)).toBe(false);
     decide(rt, stored(), { kind: "reorder", from: 0, to: 0 });
     await drainFusionNames(rt.store);
     expect(fusionNameReady(rt.store, a!.id, b!.id)).toBe(true);
     rt.store.putRun({ ...stored(), line: [...stored().line, lineUnitOf(d, "u4", 3, rt.rules)], nextUid: 5 });
     decide(rt, stored(), { kind: "reorder", from: 0, to: 0 });
+    // The final failure: MODEL_FAILURES asks over MODEL_DOWN_MS.
     for (let i = 1; i < MODEL_FAILURES; i++) {
       await drainFusionNames(rt.store);
       expect(fusionNameReady(rt.store, a!.id, d.id)).toBe(false);
+      now += MODEL_DOWN_MS / (MODEL_FAILURES - 1);
     }
     await drainFusionNames(rt.store);
     expect(fusionNameReady(rt.store, a!.id, d.id)).toBe(true);
@@ -302,13 +307,18 @@ describe("MVP fusion names: through the runtime", () => {
     expect(fusionNameReady(new MemoryMvpStore(), a!.id, b!.id)).toBe(true);
   });
 
-  it("after MODEL_FAILURES failed asks in a row the model is down: no bot waits, until it answers again", async () => {
+  it("failed asks in a row over MODEL_DOWN_MS put the model down: no bot waits, until it answers again", async () => {
     let down = true;
+    let now = 0;
     const { rt, stored } = world(async () => {
       if (down) throw new Error("connection refused");
       return "Grimward";
-    }, bot, () => 0);
+    }, bot, () => 0, () => now);
     decide(rt, stored(), { kind: "reorder", from: 0, to: 0 }); // 6 pairs, each fails once
+    await drainFusionNames(rt.store);
+    // Six failures in no time: a model still loading, not down. Bots wait.
+    expect(fusionNameReady(rt.store, a!.id, b!.id)).toBe(false);
+    now += MODEL_DOWN_MS;
     await drainFusionNames(rt.store);
     expect(fusionNameReady(rt.store, a!.id, b!.id)).toBe(true);
     // Back up: one answer and the rest wait for theirs again.
@@ -317,19 +327,25 @@ describe("MVP fusion names: through the runtime", () => {
     rt.store.putRun({ ...stored(), line: [lineUnitOf(a!, "u1", 3, rt.rules), lineUnitOf(d, "u4", 3, rt.rules)], nextUid: 5 });
     const waited = awaitFusionName(rt.store, a!.id, d.id);
     expect(fusionNameReady(rt.store, a!.id, d.id)).toBe(true); // still down until an answer
+    await drainFusionNames(rt.store); // no probe due yet
+    expect(rt.peekFusionName(a!, d, bot).name).not.toBe("Grimward");
+    now += MODEL_PROBE_MS;
     await drainFusionNames(rt.store);
     await waited;
     expect(rt.peekFusionName(a!, d, bot).name).toBe("Grimward");
+    // Up again: a new pair is waited for.
+    expect(fusionNameReady(rt.store, b!.id, d.id)).toBe(false);
   });
 
   it("a bot waiting for a pair has it asked next and wakes when it is named, or when the model gives up", async () => {
     const asked: string[] = [];
     let failOn = "";
+    let now = 0;
     const { rt, stored } = world(async (x, y) => {
       asked.push(`${x.id}+${y.id}`);
       if (`${x.id}+${y.id}` === failOn) throw new Error("timeout");
-      return "Grimward";
-    }, bot, () => 0);
+      return NAMES[asked.length - 1]!;
+    }, bot, () => 0, () => now);
     decide(rt, stored(), { kind: "reorder", from: 0, to: 0 }); // 6 pairs queued ahead
     let woke = false;
     const waited = awaitFusionName(rt.store, c!.id, b!.id).then(() => (woke = true));
@@ -338,7 +354,7 @@ describe("MVP fusion names: through the runtime", () => {
     await waited;
     expect(woke).toBe(true);
     expect(fusionNameReady(rt.store, c!.id, b!.id)).toBe(true);
-    // A pair the model keeps failing on: the bot wakes after MODEL_FAILURES asks.
+    // A pair the model keeps failing on: the bot wakes after MODEL_FAILURES asks over MODEL_DOWN_MS.
     const d = content.units[3]!;
     failOn = `${d.id}+${a!.id}`;
     let gaveUp = false;
@@ -346,11 +362,88 @@ describe("MVP fusion names: through the runtime", () => {
     for (let i = 1; i < MODEL_FAILURES; i++) {
       await drainFusionNames(rt.store);
       expect(gaveUp).toBe(false);
+      now += MODEL_DOWN_MS / (MODEL_FAILURES - 1);
     }
     await drainFusionNames(rt.store);
     await late;
     expect(gaveUp).toBe(true);
   });
+
+  /** Drives `now` a second at a time, draining the queue each step, until `done()` or `until` ms. */
+  async function tick(clock: { now: number }, done: () => boolean, until: number, each?: () => void) {
+    for (; !done() && clock.now <= until; clock.now += 1000) {
+      each?.();
+      await drainFusionNames(store!);
+      await new Promise((r) => setImmediate(r));
+    }
+  }
+  let store: MvpStore | undefined;
+
+  it("a model still loading (503s for its first 20 s) is waited for: the champion's fused names are the model's", async () => {
+    for (let seed = 1; seed <= 6; seed++) {
+      let s = seed;
+      const clock = { now: 0 };
+      const calls: number[] = [];
+      let named = 0;
+      const rt = mvpRuntime({ content, seed: () => (s = (s * 1103515245 + 12345) >>> 0) });
+      const naming = fusionNaming(rt, {
+        model: async () => {
+          calls.push(clock.now);
+          if (clock.now < 20_000) throw new Error("namer answered 503");
+          return NAMES[named++] ?? null;
+        },
+        clock: () => clock.now,
+      });
+      rt.hooks[0] = naming.hooks;
+      rt.nameFusion = naming.nameFusion;
+      rt.peekFusionName = naming.peek;
+      store = rt.store;
+      let champ: Champion | undefined | null = null;
+      const seeding = seedChampion(rt).then((c) => (champ = c));
+      await tick(clock, () => champ !== null, 10 * 60_000);
+      await seeding;
+      const fused = champ!.line.filter((u) => u.fusion);
+      if (fused.length === 0) continue;
+      expect(calls.filter((t) => t < 20_000).length).toBeGreaterThanOrEqual(fused.length);
+      expect(clock.now).toBeLessThan(MODEL_DOWN_MS);
+      for (const u of fused) {
+        expect(NAMES).toContain(u.name);
+        expect(rt.store.fusion(u.fusion!.first, u.fusion!.second)).toMatchObject({ name: u.name, nameSource: "model", discoveredBy: null });
+      }
+      return;
+    }
+    throw new Error("no seeded champion held a fusion");
+  }, 60_000);
+
+  it("a model that is really down: bots stop waiting after about a minute, then it is asked about once a minute", async () => {
+    const clock = { now: 0 };
+    const calls: number[] = [];
+    const w = world(async () => {
+      calls.push(clock.now);
+      throw new Error("connection refused");
+    }, bot, undefined, () => clock.now);
+    store = w.rt.store;
+    decide(w.rt, w.stored(), { kind: "reorder", from: 0, to: 0 }); // 6 pairs
+    let woke = -1;
+    void awaitFusionName(store, a!.id, b!.id).then(() => (woke = clock.now));
+    // A bot wants a new pair every 10 s.
+    const units = content.units;
+    let k = 3;
+    const end = 15 * 60_000;
+    await tick(clock, () => false, end, () => {
+      if (clock.now % 10_000 === 0 && k + 1 < units.length) void awaitFusionName(store!, units[k]!.id, units[++k]!.id);
+    });
+    // Bounded: the model counts as down after MODEL_FAILURES failures over MODEL_DOWN_MS.
+    expect(woke).toBeGreaterThanOrEqual(MODEL_DOWN_MS);
+    expect(woke).toBeLessThanOrEqual(MODEL_DOWN_MS + 30_000);
+    // Then one probe a minute, however many new pairs bots want.
+    const probes = calls.filter((t) => t > woke).length;
+    const minutes = (end - woke) / MODEL_PROBE_MS;
+    expect(probes).toBeGreaterThanOrEqual(Math.floor(minutes) - 1);
+    expect(probes).toBeLessThanOrEqual(Math.ceil(minutes) + 1);
+    // While down a new pair is ready at once: bots fuse it with the portmanteau.
+    expect(fusionNameReady(store, units[k]!.id, units[1]!.id)).toBe(true);
+  }, 60_000);
 
   it("a blocked answer keeps the portmanteau", async () => {
     let asked = 0;
