@@ -108,7 +108,9 @@ function nameScreen(): void {
 
 // ---------- home ----------
 
-async function homeScreen(): Promise<void> {
+/** Home. `ended`: the day the dev "End day now" just closed, so Home says
+ * how it ended at the top and brings the playoff panel into view. */
+async function homeScreen(ended: number | null = null): Promise<void> {
   const err = errorLine();
   void loadUnitRates(); // the rates on unit cards (slice 11)
   const [home, content]: [HomeView, MvpContent] = await Promise.all([api.home(), getContent()]);
@@ -133,19 +135,25 @@ async function homeScreen(): Promise<void> {
           if (e instanceof ApiError && (e.status === 404 || e.status === 501)) throw new Error(e.status === 404 ? "End day is a dev tool (MVP_DEV=1)." : "The day arrives in slice 5.");
           throw e;
         }
-        await homeScreen();
+        await homeScreen(home.day.seq);
       }),
     "small",
     "end-day",
   );
+  const last = home.day.lastPlayoff ?? null;
+  const justEnded = ended !== null && last?.seq === ended ? last : null;
+  const playoff = playoffPanel(last, champ?.player ?? null, content, err);
   show(
     h("div", { class: "row spread" }, h("h1", {}, "ARENA"), who(api.player?.name ?? "", "dim")),
+    // The dev "End day now" just ran: say how that day ended, first thing.
+    justEnded ? h("div", { class: "notice", "data-testid": "day-ended" }, `Day ${justEnded.seq} ended: `, ...playoffSummary(justEnded, champ?.player ?? null)) : null,
+    ended !== null && !justEnded ? h("div", { class: "notice", "data-testid": "day-ended" }, `Day ${ended} ended. Today is day ${home.day.seq}.`) : null,
     h(
       "div",
       { class: "panel stack champion", "data-testid": "champion" },
-      h("div", { class: "row spread" }, h("div", { class: "label keep" }, `👑 Champion · day ${home.day.seq}`), champ ? who(champ.player.name, "ghost-name") : null),
+      h("div", { class: "row spread" }, h("div", { class: "label keep" }, `👑 Champion · day ${home.day.seq}`), champ ? whoMark(champ.player, "ghost-name") : null),
       champ ? team(champ.line, "ghost", content) : h("div", { class: "dim" }, "No champion yet. The day arrives soon."),
-      h("div", { class: "dim small", "data-testid": "slayers" }, `${plural(home.day.slayers, "slayer")} today · new champion at ${rules.dayEndsAt} Moscow`),
+      h("div", { class: "dim small", "data-testid": "slayers" }, champ ? slayersLine(home.day.slayers) : `New champion at ${rules.dayEndsAt} Moscow.`),
     ),
     champ
       ? hint(
@@ -156,7 +164,7 @@ async function homeScreen(): Promise<void> {
               : "This is the team to beat. Tap a card to read it, then Play.",
         )
       : null,
-    playoffPanel(home.day.lastPlayoff ?? null, champ?.player ?? null, content, err),
+    playoff,
     h(
       "div",
       { class: "panel records", "data-testid": "records" },
@@ -166,27 +174,45 @@ async function homeScreen(): Promise<void> {
       record("Days 👑", r?.daysAsChampion ?? 0),
       record("Playoff W", r?.playoffWins ?? 0),
     ),
-    h("div", { class: "spacer" }),
-    h("div", { class: "row" }, rulesBtn, stats, play),
     h("details", { class: "dev" }, h("summary", {}, "Dev"), endDay),
     err,
+    h("div", { class: "spacer" }),
+    // Play stays on the first screen however long Home runs (a playoff's table).
+    h("div", { class: "row footer", "data-testid": "home-actions" }, rulesBtn, stats, play),
   );
+  if (justEnded && playoff) playoff.scrollIntoView({ block: "center" });
 }
 
-/** How yesterday ended, in one sentence. With no playoff to show (no
- * slayers, or one who won without a game) the sentence is all there is;
- * `champion` is today's, the one who stayed or was crowned. */
+/** The champion card's last line: what today's slayers mean at the day's end. */
+function slayersLine(n: number): string {
+  const at = `${rules.dayEndsAt} Moscow`;
+  if (n === 0) return `No slayers yet. If nobody slays it by ${at}, this team stays champion.`;
+  if (n === 1) return `1 slayer today. At ${at} the slayer's team takes the crown, unless others slay it too.`;
+  return `${n} slayers today. At ${at} their teams play a round-robin for the crown.`;
+}
+
+/** "@name", with 🤖 after a bot's. */
+function whoMark(p: PlayerRef, cls = ""): HTMLElement {
+  const el = who(p.name, cls);
+  return p.bot ? h("span", { class: "who-mark" }, el, " 🤖") : el;
+}
+
+/** How a day ended, in one sentence. With no playoff to show (no slayers,
+ * or one who won without a game) the sentence is all there is; `champion` is
+ * today's, the one who stayed or was crowned. Slayers may be bots (🤖). */
 function playoffSummary(p: PlayoffResult, champion: PlayerRef | null): (Node | string)[] {
-  if (p.entrants.length === 0) return champion ? ["No slayers: ", who(champion.name), " stays champion."] : ["No slayers, and no champion yet."];
+  if (p.entrants.length === 0) return champion ? ["No slayers, so ", whoMark(champion), " stays champion."] : ["No slayers, and no champion yet."];
   if (p.entrants.length === 1) {
     const only = p.winner ?? p.entrants[0]!;
-    return [who(only.name), " was the only slayer and is the new champion."];
+    return [whoMark(only), " was the only slayer, so ", only.bot ? "its" : "their", " team is the new champion."];
   }
-  return p.winner ? ["👑 ", who(p.winner.name), " won the playoff and is the new champion."] : ["The playoff had no winner."];
+  const bots = p.entrants.filter((x) => x.bot).length;
+  const field = `${p.entrants.length} slayers${bots === p.entrants.length ? ", all bots" : bots ? `, ${bots} of them ${bots === 1 ? "a bot" : "bots"}` : ""}`;
+  return p.winner ? ["👑 ", whoMark(p.winner), ` won the playoff (${field}) and is the new champion.`] : [`The playoff (${field}) had no winner.`];
 }
 
-/** Yesterday's end: a sentence, and with a real playoff (two or more
- * slayers) its table and each game (opens in the viewer). */
+/** A day's end: a sentence, and with a real playoff (two or more slayers)
+ * its table, compact, and its games behind a tap (each opens in the viewer). */
 function playoffPanel(p: PlayoffResult | null, champion: PlayerRef | null, content: MvpContent, err: HTMLElement): HTMLElement | null {
   if (!p) return null;
   const watch = (battleId: string, a: PlayerRef, b: PlayerRef) => {
@@ -194,18 +220,30 @@ function playoffPanel(p: PlayoffResult | null, champion: PlayerRef | null, conte
       const battle = await api.battle(battleId);
       battleScreen({ battle, content, onDone: () => void homeScreen() });
     }), "small game", "playoff-game");
-    btn.replaceChildren(who(a.name), " v ", who(b.name));
+    btn.replaceChildren(whoMark(a), " v ", whoMark(b));
     return btn;
   };
   const played = p.entrants.length >= 2;
+  const games = h("div", { class: "games", "data-testid": "playoff-games" }, ...p.games.map((g) => watch(g.battleId, g.a, g.b)));
+  games.hidden = true;
+  const toggle = button(`Watch the games (${p.games.length})`, () => {
+    games.hidden = !games.hidden;
+    toggle.textContent = games.hidden ? `Watch the games (${p.games.length})` : "Hide the games";
+  }, "small", "playoff-games-open");
   return h(
     "div",
-    { class: "panel stack", "data-testid": "playoff" },
+    { class: "panel stack playoff", "data-testid": "playoff" },
     h("div", { class: "label" }, played ? `Playoff · day ${p.seq}` : `Day ${p.seq} ended`),
     h("div", { "data-testid": "playoff-summary" }, ...playoffSummary(p, champion)),
-    ...(played ? p.standings.map((s) => h("div", { class: "num small", "data-testid": "playoff-standing" }, who(s.player.name), ` · ${s.wins}W ${s.draws}D ${s.losses}L`)) : []),
-    played && p.games.length ? h("div", { class: "label" }, "Games · tap to watch") : null,
-    played && p.games.length ? h("div", { class: "games" }, ...p.games.map((g) => watch(g.battleId, g.a, g.b))) : null,
+    played
+      ? h(
+          "div",
+          { class: "standings" },
+          ...p.standings.map((s, i) => h("div", { class: "standing", "data-testid": "playoff-standing" }, h("span", { class: "dim" }, `${i + 1}`), whoMark(s.player), h("span", { class: "num" }, `${s.wins}W ${s.draws}D ${s.losses}L`))),
+        )
+      : null,
+    played && p.games.length ? toggle : null,
+    played && p.games.length ? games : null,
   );
 }
 

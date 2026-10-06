@@ -205,3 +205,14 @@ button.bv-why { display: flex; align-items: center; justify-content: space-betwe
 .stat-head { display: flex; gap: 8px; font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.06em; }
 .stat-head .grow { flex: 1; padding-left: 36px; }
 .stat-head span:not(.grow), .stat-row .num { width: 48px; }
+/* Home (#587): a day that just ended, said first; the playoff compact, its games behind a tap. */
+.notice { font-size: 16px; color: var(--gold); border: 1px solid color-mix(in srgb, var(--gold) 55%, transparent); background: color-mix(in srgb, var(--gold) 8%, transparent); padding: 8px 10px; }
+.who-mark { white-space: nowrap; min-width: 0; display: inline-flex; max-width: 100%; }
+.who-mark > .who { min-width: 0; }
+.playoff { gap: 6px; }
+.standings { display: flex; flex-direction: column; gap: 2px; font-size: 15px; }
+.standing { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.standing .num { font-size: 14px; }
+.games[hidden] { display: none; }
+.playoff > button.small { align-self: flex-start; }
+.row > .who-mark { flex: 0 1 auto; }

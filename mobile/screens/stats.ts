@@ -89,7 +89,7 @@ function championsPanel(champions: Champion[], content: MvpContent): HTMLElement
       "div",
       { class: "stat-row", "data-testid": "stats-champion" },
       h("span", { class: "emoji" }, "👑"),
-      h("span", { class: "grow" }, h("div", {}, `Day ${c.seq} · `, who(c.player.name)), h("div", { class: "dim small" }, `${c.day} · ${c.line.map((u) => u.emoji).join(" ")}`)),
+      h("span", { class: "grow" }, h("div", {}, `Day ${c.seq} · `, who(c.player.name), c.player.bot ? " 🤖" : ""), h("div", { class: "dim small" }, `${c.day} · ${c.line.map((u) => u.emoji).join(" ")}`)),
     );
     row.addEventListener("click", () => overlay(championSheet(c, content)));
     return row;
@@ -101,7 +101,7 @@ function championSheet(c: Champion, content: MvpContent): HTMLElement {
   return h(
     "div",
     { class: "stack", "data-testid": "champion-sheet" },
-    h("h2", {}, `👑 Day ${c.seq} · `, who(c.player.name)),
+    h("h2", {}, `👑 Day ${c.seq} · `, who(c.player.name), c.player.bot ? " 🤖" : ""),
     h("div", { class: "dim" }, `${c.day}, front first. Tap a unit to read it.`),
     h(
       "div",
