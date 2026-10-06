@@ -109,6 +109,9 @@ button.pin-btn { display: flex; align-items: center; gap: 4px; min-height: 44px;
 .card.poor { opacity: 0.45; }
 .card.owned .cost { color: var(--you); }
 .preview-card { width: 64px; margin: 0 auto; }
+.recipe-line { text-align: center; font-size: 12px; }
+.recipe-line .k { color: var(--dim); font-family: "IBM Plex Mono", monospace; font-size: 10px; text-transform: uppercase; }
+.reveal { text-align: center; }
 .after.awakens .label { color: var(--gold); font-weight: 700; }
 /* The sheet: the active form's text in a box; "See Awoken" swaps in the other
  * form, gold-bordered, with what changes underlined. */
@@ -368,4 +371,22 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
 }
 @media (min-width: 1280px) {
   #app[data-screen] { --cw: 132px; --gap: 12px; --insp: 380px; }
+}
+/* Highlighted unit text (R2-8, mobile/ui/term.ts): every term is a button that
+ * reads as words; a trigger clause is one amber pill. */
+button.t { display: inline; min-height: 0; padding: 0; border: 0; background: none; clip-path: none; font: inherit; letter-spacing: inherit; text-transform: none; line-height: inherit; cursor: help; }
+button.t .ic { margin-right: 2px; }
+button.t:focus-visible { outline: 1px solid currentColor; outline-offset: 1px; }
+.t-status, .t-target, .t-stat, .t-term, .t-condition { text-decoration: underline dotted color-mix(in srgb, currentColor 60%, transparent); text-underline-offset: 3px; }
+.t-effect { font-weight: 600; }
+.t-amount { font-weight: 700; font-family: "IBM Plex Mono", monospace; }
+.tpill { display: inline; border: 1px solid color-mix(in srgb, #ffbf47 55%, transparent); background: color-mix(in srgb, #ffbf47 12%, transparent); border-radius: 999px; padding: 0 7px 0 5px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.tpill .tpill-ic { margin-right: 3px; }
+.term-head { display: flex; align-items: center; gap: 6px; font-size: 18px; }
+.term-tip { line-height: 1.35; }
+.term-tooltip { position: absolute; z-index: 50; max-width: 280px; padding: 8px 10px; background: var(--panel); border: 1px solid var(--line); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5); pointer-events: none; font-size: 15px; }
+.term-tooltip .term-head { font-size: 16px; }
+@media (min-width: 1024px) {
+  /* The fusion preview in the inspector: its buttons are a plain row, not a sheet's sticky footer. */
+  #app[data-screen="shop"] .inspector .sheet-actions { position: static; margin: 0; padding: 0; background: none; }
 }
