@@ -42,9 +42,6 @@ export function describeMvpStore(name: string, make: () => MvpStore): void {
       store.addPlayer(maks);
       expect(store.player("p1")).toEqual(maks);
       expect(store.player("nobody")).toBeUndefined();
-      // R2-17: a name is found whatever its case.
-      expect(store.playerByName("MAKS")).toEqual(maks);
-      expect(store.playerByName("maks2")).toBeUndefined();
       const r = run("r1", maks);
       store.putRun(r);
       expect(store.run("r1")).toEqual(r);

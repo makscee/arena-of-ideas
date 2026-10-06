@@ -11,7 +11,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
-import { nameKey, type MvpStore, type UnitTallies, type UnitTally } from "./store.js";
+import type { MvpStore, UnitTallies, UnitTally } from "./store.js";
 
 const SQL_DIR = fileURLToPath(new URL("./sql/", import.meta.url));
 
@@ -56,11 +56,6 @@ export class SqliteMvpStore implements MvpStore {
 
   addPlayer(p: PlayerRef): void { this.write("INSERT OR REPLACE INTO mvp_players (id, json) VALUES (?, ?)", p.id, JSON.stringify(p)); }
   player(id: string): PlayerRef | undefined { return this.one("SELECT json FROM mvp_players WHERE id = ?", id); }
-  /** Compared in JS: SQLite's lower() folds ASCII only, and names may be any letters. */
-  playerByName(name: string): PlayerRef | undefined {
-    const key = nameKey(name);
-    return this.all<PlayerRef>("SELECT json FROM mvp_players ORDER BY rowid").find((p) => nameKey(p.name) === key);
-  }
 
   putRun(r: MvpRunState): void {
     this.write(
