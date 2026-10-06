@@ -19,14 +19,19 @@
 // so crossing 1024px needs no redraw. The phone keeps its stacked rows.
 import { boardAt, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView } from "../../src/mvp/contract";
-import { STATUS_TERMS, termDef, termIcon, type TermId } from "../../src/glossary";
-import { beatPlayOf, chainOf, damageByUnit, firingOf, keyMomentsOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Change, type Firing, type LossChain, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
+import { STATUS_TERMS, termDef, termIcon, type IconId, type TermId } from "../../src/glossary";
+import { beatPlayOf, chainOf, damageByUnit, firingOf, keyMomentsOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Change, type Firing, type KeyMoment, type LossChain, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { card, formRich, unitSheet } from "../ui/card";
-import { app, button, closable, h, isDesktop, onKeys, onLeave, screen, show } from "../ui/dom";
+import { app, button, closable, h, isDesktop, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
 import { icon } from "../ui/icon";
 import { statusesShown, STATUS_ROW_FALLBACK } from "../ui/status-row";
+
+/** The least room the phone's end card takes under the caption (its word,
+ * its line, two key moments and its buttons); with less (a phone on its side)
+ * it covers the caption, then the board (placeEnd). */
+const END_MIN_PX = 240;
 
 /** How long the line-up shows before the first beat, at 1×. */
 const LINEUP_MS = 400;
@@ -95,7 +100,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const whenOf = whenLookup(units, a.content);
   // The end card's numbers (R2-14).
   const damage = damageByUnit(log, name, sides);
-  const moments = keyMomentsOf(log, beats, name, sides);
+  // Tagged names: the card colours each unit by its side, like the captions.
+  const moments = keyMomentsOf(log, beats, TAGGED, sides);
 
   // What richCaption highlights besides units (tagged by id): this battle's
   // statuses and the fixed words. Longest first, so "Rat King" beats "Rat".
@@ -378,6 +384,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** Each block's marks, laid out by layoutMarks() to what its box holds. */
   const markEls: HTMLElement[][] = [];
   const boxEls: HTMLElement[] = [];
+  let marksObserver: ResizeObserver | null = null;
   function buildTimeline(): void {
     const every = turns.length > 30 ? 5 : turns.length > 18 ? 2 : 1;
     turns.forEach((t, i) => {
@@ -413,7 +420,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         box.replaceChildren(...marks.slice(0, fit), ...(count ? [count] : []));
       });
     };
-    if (typeof ResizeObserver === "function") new ResizeObserver(layoutMarks).observe(track);
+    if (typeof ResizeObserver === "function") (marksObserver = new ResizeObserver(layoutMarks)).observe(track);
     else layoutMarks();
     let down = false;
     const scrub = (x: number) => {
@@ -448,22 +455,35 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   }
   function drawTimeline(): void {
     if (!turns.length) return;
-    const ti = at < 0 ? -1 : turns.findIndex((t) => t.beats.includes(at));
+    // Why's "Turn N" shows the board as turn N begins: the timeline lights
+    // turn N, its playhead at the block's start, as the HUD reads it (R2-17).
+    const starting = hudTurn === null ? -1 : turns.findIndex((t) => t.turn === hudTurn);
+    const ti = starting >= 0 ? starting : at < 0 ? -1 : turns.findIndex((t) => t.beats.includes(at));
     turnEls.forEach((el, i) => {
       el.classList.toggle("on", i === ti);
       el.classList.toggle("past", i < ti);
     });
     const t = turns[ti];
-    const pos = !t ? 0 : (ti + (t.beats.indexOf(at) + 1) / t.beats.length) / turns.length;
+    const pos = !t ? 0 : starting >= 0 ? ti / turns.length : (ti + (t.beats.indexOf(at) + 1) / t.beats.length) / turns.length;
     head.style.left = `${(pos * 100).toFixed(2)}%`;
     timeline.setAttribute("aria-valuemin", "0");
     timeline.setAttribute("aria-valuemax", String(turns.at(-1)!.turn));
     timeline.setAttribute("aria-valuenow", String(t?.turn ?? 0));
     timeline.setAttribute("aria-valuetext", turnLabel(t?.turn ?? 0));
   }
-  function leave(): void {
+  /** Frees what the battle holds outside its nodes: the playback timer, the
+   * end card's resize listener and the timeline's observer. Continue runs
+   * it, and so does any screen that replaces the battle (onGone). */
+  const freed = new AbortController();
+  function free(): void {
     if (timer) clearTimeout(timer);
-    removeEventListener("resize", placeEnd);
+    timer = null;
+    freed.abort();
+    marksObserver?.disconnect();
+    marksObserver = null;
+  }
+  function leave(): void {
+    free();
     a.onDone();
   }
 
@@ -907,24 +927,33 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     }
   }
   /** The end card sits under the caption on the phone (its last line, "They
-   * win", stays readable) and between the HUD and the timeline on desktop
-   * (the timeline and the controls stay clear), scrolling inside itself
-   * when it runs long (R2-17). */
+   * win", stays readable) and under the HUD on desktop, as tall as what it
+   * holds and clear of the timeline; it scrolls inside itself when it runs
+   * long (R2-17). On a short phone screen (a phone on its side) the room
+   * under the caption is too small for the card, so it covers the board from
+   * the HUD down, the caption included: its own word says who won. */
   function placeEnd(): void {
     if (end.style.display === "none" || !end.isConnected) return;
     const gap = 8;
     if (isDesktop()) {
-      const top = hud.getBoundingClientRect().bottom + gap;
-      const bottom = timeline.getBoundingClientRect().top - gap;
+      const top = hud.getBoundingClientRect().bottom + 2 * gap;
+      const bottom = timeline.getBoundingClientRect().top - 2 * gap;
       end.style.top = `${Math.round(top)}px`;
-      end.style.bottom = `${Math.round(innerHeight - bottom)}px`;
-      end.style.maxHeight = "";
+      end.style.bottom = "auto";
+      end.style.maxHeight = `${Math.max(0, Math.round(bottom - top))}px`;
     } else {
-      const top = caption.getBoundingClientRect().bottom + gap;
-      const bottom = controls.getBoundingClientRect().top - gap;
+      // A narrow gap on the phone: every pixel goes to the three key moments.
+      const bottom = controls.getBoundingClientRect().top - gap / 2;
+      const cap = caption.getBoundingClientRect();
+      // Its text, when a short screen squeezes the caption's box.
+      const text = caption.firstElementChild?.getBoundingClientRect().bottom ?? cap.bottom;
+      // The first that leaves the card room, each cutting nothing in half:
+      // under the caption, over it, under the HUD, the screen's top.
+      const tops = [Math.max(cap.bottom, text) + gap / 2, cap.top, hud.getBoundingClientRect().bottom + gap / 2].filter((t) => t >= gap);
+      const top = tops.find((t) => bottom - t >= END_MIN_PX) ?? gap;
       end.style.top = "";
       end.style.bottom = `${Math.round(innerHeight - bottom)}px`;
-      end.style.maxHeight = `${Math.max(120, Math.round(bottom - top))}px`;
+      end.style.maxHeight = `${Math.max(0, Math.round(bottom - top))}px`;
     }
   }
 
@@ -951,53 +980,92 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     ].filter((n): n is HTMLDivElement => n !== null);
   }
 
+  /** The end card's second line (R2-17, the mockup's): how long it took, who
+   * still stands and your best unit; without a side, both sides' standing. */
+  function endSubtitle(): Node[] {
+    const final = boardAt(log, log.length - 1);
+    const team = (sd: Side) => (sd === "A" ? battle.teamA : battle.teamB);
+    const standing = (sd: Side) => {
+      const ids = new Set(team(sd).map((u) => u.id));
+      return final.lines[sd].filter((u) => ids.has(u.id)).length;
+    };
+    const turnsText = `${final.turn} ${final.turn === 1 ? "turn" : "turns"}`;
+    if (!a.you) return [document.createTextNode(`${turnsText} · ${owner("A")}: ${standing("A")} of ${team("A").length} standing · ${owner("B")}: ${standing("B")} of ${team("B").length}`)];
+    const best = damage.find((d) => d.side === you && d.damage > 0);
+    // The phone's card says it in one line: "9 turns · 1 of 3 standing · best: Bat".
+    return [
+      document.createTextNode(`${turnsText} · ${standing(you)} of `),
+      h("span", { class: "bv-dk" }, "your "),
+      document.createTextNode(`${team(you).length} `),
+      h("span", { class: "bv-dk" }, "still "),
+      document.createTextNode("standing"),
+      ...(best ? [document.createTextNode(" · "), h("span", { class: "bv-dk" }, "your "), document.createTextNode("best: "), unitName(best.unit)] : []),
+    ];
+  }
+
   function endView(): Node[] {
     // Only a viewer with a side wins or loses; otherwise the winner is named.
     const word = !a.you ? (battle.winner === "draw" ? "DRAW" : `${owner(battle.winner)} wins`) : outcome === "win" ? "VICTORY" : outcome === "loss" ? "DEFEAT" : "DRAW";
     const cls = !a.you && battle.winner !== "draw" ? "neutral" : outcome;
-    const whyBtn = lost
-      ? button("Why I lost", () => {
-          const close = closable(whyPanel(battle, a.content, you, (id) => { close(); openTrace(id); }));
+    // Why I lost, or Why I won (R2-17): the chains that did the most, theirs or yours.
+    const whyBtn = a.you && outcome !== "draw"
+      ? button(outcome === "win" ? "Why I won" : "Why I lost", () => {
+          const close = closable(whyPanel(battle, a.content, you, (id) => { close(); openTrace(id); }, outcome === "win"));
         }, "", "end-why")
       : null;
     const hide = button("✕", () => { finished = false; render(); }, "bv-close", "end-close");
     hide.setAttribute("aria-label", "See the board");
+    const replayEnd = button("", replay, "bv-end-replay", "end-replay");
+    replayEnd.append("↻ Replay", h("span", { class: "bv-dk" }, " from start"));
+    const tap = isDesktop() ? "click" : "tap";
     return [
-      h("div", { class: "row spread bv-end-top" }, h("div", { class: `bv-word ${cls}`, "data-testid": "battle-word" }, word), hide),
-      damageView(),
-      moments.length ? h("div", { class: "label" }, "Key moments") : null,
-      ...moments.map((m) => {
-        const b = button("", () => playFrom(m.beat), `bv-moment ${m.kind}`, "key-moment");
-        b.append(h("span", { class: "bv-moment-t dim" }, turnLabel(beats[m.beat]?.turn ?? 0)), h("span", { class: "bv-moment-l" }, m.label), h("span", { class: "dim" }, "▶"));
-        b.dataset.beat = String(m.beat);
-        return b;
-      }),
-      h("div", { class: "row bv-end-actions" }, button("Replay", replay, "", "end-replay"), whyBtn, button("Continue", leave, "primary grow", "battle-done")),
-    ].filter((n): n is HTMLElement => n !== null);
-  }
-
-  /** Damage by unit, both sides: a bar per unit, scaled to the battle's biggest. */
-  function damageView(): HTMLElement {
-    const top = Math.max(1, ...damage.map((d) => d.damage));
-    const col = (side: Side) =>
+      h("div", { class: "row spread bv-end-top" }, h("div", { class: "bv-end-head" }, h("div", { class: `bv-word ${cls}`, "data-testid": "battle-word" }, word), h("div", { class: "bv-end-sub dim", "data-testid": "end-sub" }, ...endSubtitle())), hide),
       h(
         "div",
-        { class: `bv-dmg-col ${side === you ? "you" : "ghost"}` },
-        h("div", { class: "label" }, a.you ? (side === you ? "You" : "Them") : owner(side)),
-        ...damage
-          .filter((d) => d.side === side)
-          .slice(0, 6)
-          .map((d) =>
-            h(
-              "div",
-              { class: "bv-dmg", "data-testid": "damage-row", title: `${d.name}: ${d.damage} damage` },
-              h("span", { class: "emoji" }, emojiOf(d.unit)),
-              h("span", { class: "bv-dmg-bar" }, h("i", { style: `width:${Math.round((d.damage / top) * 100)}%` })),
-              h("span", { class: "mono" }, String(d.damage)),
-            ),
+        { class: "bv-end-body" },
+        h(
+          "div",
+          { class: "bv-end-moments stack" },
+          moments.length ? h("div", { class: "label row spread" }, h("span", {}, `Key moments · ${tap} to watch`), h("span", { class: "bv-end-more bv-ph" }, "Damage ↓")) : null,
+          ...moments.map((m) => {
+            const b = button("", () => playFrom(m.beat), `bv-moment ${m.kind}`, "key-moment");
+            // Fatigue's label brings its own hourglass, and its turn is in the T column.
+            b.append(h("span", { class: "bv-moment-t dim mono" }, turnLabel(beats[m.beat]?.turn ?? 0)), momentIcon(m.kind), h("span", { class: "bv-moment-l" }, ...richCaption(m.kind === "fatigue" ? m.label.replace(/\s*\(T\d+\)$/, "") : m.label)), h("span", { class: "dim bv-moment-go" }, "▶"));
+            b.dataset.beat = String(m.beat);
+            return b;
+          }),
+        ),
+        damageView(),
+      ),
+      h("div", { class: "row bv-end-actions" }, replayEnd, whyBtn, button("Continue", leave, "primary", "battle-done")),
+    ];
+  }
+  /** A key moment's icon: a skull for a kill, linked rings for a combo, a burst for a big hit (fatigue's is in its label). */
+  function momentIcon(kind: KeyMoment["kind"]): HTMLElement {
+    if (kind === "fatigue") return h("span", { class: "bv-moment-ic" });
+    const [id, tone]: [IconId, string] = kind === "kill" ? ["death-skull", "tone-enemy"] : kind === "combo" ? ["linked-rings", "tone-when"] : ["spiky-explosion", "tone-enemy"];
+    return h("span", { class: "bv-moment-ic" }, icon(id, 16, tone));
+  }
+
+  /** Damage dealt, both sides in one list (yours first): each unit's emoji and
+   * name in its side's colour, a bar scaled to the battle's biggest, the number. */
+  function damageView(): HTMLElement {
+    const top = Math.max(1, ...damage.map((d) => d.damage));
+    const rows = (side: Side) =>
+      damage
+        .filter((d) => d.side === side)
+        .slice(0, 6)
+        .map((d) =>
+          h(
+            "div",
+            { class: `bv-dmg ${side === you ? "you" : "ghost"}`, "data-testid": "damage-row", title: `${d.name}: ${d.damage} damage` },
+            h("span", { class: "emoji" }, emojiOf(d.unit)),
+            unitName(d.unit),
+            h("span", { class: "bv-dmg-bar" }, h("i", { style: `width:${Math.round((d.damage / top) * 100)}%` })),
+            h("span", { class: "mono" }, String(d.damage)),
           ),
-      );
-    return h("div", { class: "bv-dmg-grid", "data-testid": "damage-by-unit" }, col(you), col(them));
+        );
+    return h("div", { class: "bv-dmg-list stack", "data-testid": "damage-by-unit" }, h("div", { class: "label" }, "Damage dealt"), ...rows(you), ...rows(them));
   }
 
   // The battle fills the screen and never scrolls: the beat list below your
@@ -1029,7 +1097,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     end,
   );
   screen("battle");
-  addEventListener("resize", placeEnd);
+  addEventListener("resize", placeEnd, { signal: freed.signal });
+  onGone(free);
   buildTimeline();
   buildLog();
   setSpeedVar();
@@ -1054,18 +1123,19 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
 }
 
 /** The "why I lost" card for side `you`: the 2–3 enemy chains that did the
- * most. Each row opens that chain's trace (onTrace, or a sheet of its own). */
-function whyPanel(battle: BattleRecord, content: MvpContent, you: Side, onTrace?: (eventId: number) => void): HTMLElement {
-  const chains = lossChains(battle.log, you);
+ * most; with `won`, "why I won": your chains that did the most to them
+ * (R2-17). Each row opens that chain's trace (onTrace, or a sheet of its own). */
+function whyPanel(battle: BattleRecord, content: MvpContent, you: Side, onTrace?: (eventId: number) => void, won = false): HTMLElement {
+  const chains = lossChains(battle.log, won ? (you === "A" ? "B" : "A") : you);
   return h(
     "div",
-    { class: "panel stack", "data-testid": "why-lost" },
-    h("div", { class: "row spread" }, h("div", { class: "label" }, "Why I lost"), h("div", { class: "dim small" }, isDesktop() ? "click a row for its chain" : "tap a row for its chain")),
+    { class: `panel stack${won ? " why-won" : ""}`, "data-testid": won ? "why-won" : "why-lost" },
+    h("div", { class: "row spread" }, h("div", { class: "label" }, won ? "Why I won" : "Why I lost"), h("div", { class: "dim small" }, isDesktop() ? "click a row for its chain" : "tap a row for its chain")),
     ...(chains.length
       ? chains.map((c) => {
           const row = h(
             "button",
-            { class: "bv-why" },
+            { class: `bv-why${won ? " won" : ""}` },
             h("span", { class: "bv-why-chain" }, c.text),
             h("span", { class: "mono dim bv-why-num" }, [c.damage ? `${c.damage} dmg` : "", c.heal ? `+${c.heal} heal` : "", c.kills ? `${c.kills} ${c.kills === 1 ? "kill" : "kills"}` : ""].filter(Boolean).join(" · ")),
           );
@@ -1076,8 +1146,8 @@ function whyPanel(battle: BattleRecord, content: MvpContent, you: Side, onTrace?
             const ch = chainOf(battle.log, c.sampleEventId, { whenOf: whenLookup(units, content) });
             closable(
               h("div", { class: "stack why-sheet", "data-testid": "why-sheet" },
-                h("h2", { class: "ghost-name" }, c.text),
-                h("div", {}, chainSummary(c)),
+                h("h2", { class: won ? "you-name" : "ghost-name" }, c.text),
+                h("div", {}, chainSummary(c, won)),
                 h("div", { class: "label" }, SAMPLE_LABEL[c.sampleKind]),
                 h("div", { class: "bv-trace-text mono", "data-testid": "trace-text" }, t.text),
                 chainView(ch, { units, content, you, name: displayNames(battle.log) }),
@@ -1086,7 +1156,7 @@ function whyPanel(battle: BattleRecord, content: MvpContent, you: Side, onTrace?
           });
           return row;
         })
-      : [h("div", { class: "dim" }, "No enemy chain hurt you: fatigue ended it.")]),
+      : [h("div", { class: "dim" }, won ? "None of your chains hurt them: fatigue ended it." : "No enemy chain hurt you: fatigue ended it.")]),
   );
 }
 
@@ -1107,11 +1177,13 @@ const SAMPLE_LABEL: Record<LossChain["sampleKind"], string> = {
 
 /** One sentence for a why-I-lost row's numbers, so the totals and the traced
  * hit can't read as a contradiction: "11 damage to your units over 4 hits,
- * 2 kills. +3 healing to theirs over 2 heals." */
-function chainSummary(c: LossChain): string {
+ * 2 kills. +3 healing to theirs over 2 heals." A why-I-won row (`won`)
+ * reads the other way round: damage to theirs, healing to yours. */
+function chainSummary(c: LossChain, won = false): string {
+  const [hurt, healed] = won ? ["their", "yours"] : ["your", "theirs"];
   const parts: string[] = [];
-  if (c.hits) parts.push(`${c.damage} damage to your units over ${c.hits} ${c.hits === 1 ? "hit" : "hits"}${c.kills ? `, ${c.kills} ${c.kills === 1 ? "kill" : "kills"}` : ""}.`);
-  if (c.heals) parts.push(`${c.heal} healing to theirs over ${c.heals} ${c.heals === 1 ? "heal" : "heals"}.`);
+  if (c.hits) parts.push(`${c.damage} damage to ${hurt} units over ${c.hits} ${c.hits === 1 ? "hit" : "hits"}${c.kills ? `, ${c.kills} ${c.kills === 1 ? "kill" : "kills"}` : ""}.`);
+  if (c.heals) parts.push(`${c.heal} healing to ${healed} over ${c.heals} ${c.heals === 1 ? "heal" : "heals"}.`);
   return parts.join(" ") || `${c.times} changes this fight.`;
 }
 
