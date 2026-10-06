@@ -12,6 +12,13 @@ export function h<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<s
   return el;
 }
 
+/** A player's "@name", kept on one line: it never splits at a hyphen or a
+ * space, and where its place is too narrow it ends in "…" (style.css .who).
+ * The full name is its title. */
+export function who(name: string, cls = ""): HTMLSpanElement {
+  return h("span", { class: cls ? `who ${cls}` : "who", title: name }, `@${name}`);
+}
+
 export function button(label: string, onClick: () => void, cls = "", testid = ""): HTMLButtonElement {
   const b = h("button", { class: cls, ...(testid ? { "data-testid": testid } : {}) }, label);
   b.addEventListener("click", onClick);

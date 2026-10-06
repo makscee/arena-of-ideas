@@ -32,7 +32,13 @@ try {
   const page = await browser.newPage({ viewport: { width: 360, height: 640 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
   page.on("pageerror", (e) => errors.push(`pageerror: ${e.message}`));
   page.on("console", (m) => m.type() === "error" && errors.push(`console: ${m.text()}`));
-  const shot = async (name) => { await page.screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-${name}.png` }); };
+  /** Every player name on screen (ui/dom.ts who()) sits on one line: never
+   * "@bot-" / "3" across two (#587). */
+  const namesOneLine = async (name) => {
+    const split = await page.evaluate(() => [...document.querySelectorAll(".who")].filter((el) => el.getClientRects().length > 1 || el.getBoundingClientRect().height > parseFloat(getComputedStyle(el).fontSize) * 2).map((el) => el.textContent));
+    for (const n of split) errors.push(`${name}: the name "${n}" splits across lines`);
+  };
+  const shot = async (name) => { await page.screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-${name}.png` }); await namesOneLine(name); };
   const noHScroll = async (name) => {
     const w = await page.evaluate(() => document.documentElement.scrollWidth);
     if (w > 360) errors.push(`${name}: horizontal scroll (${w}px)`);

@@ -13,7 +13,7 @@ import { getContent } from "./content";
 import { battleScreen, whyILost } from "./screens/battle";
 import { statsScreen } from "./screens/stats";
 import { card, unitSheet, type CardUnit } from "./ui/card";
-import { app, button, closable, h, overlay, show } from "./ui/dom";
+import { app, button, closable, h, overlay, show, who } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
 
 function errorLine(): HTMLElement {
@@ -139,11 +139,11 @@ async function homeScreen(): Promise<void> {
     "end-day",
   );
   show(
-    h("div", { class: "row spread" }, h("h1", {}, "ARENA"), h("span", { class: "dim" }, `@${api.player?.name ?? ""}`)),
+    h("div", { class: "row spread" }, h("h1", {}, "ARENA"), who(api.player?.name ?? "", "dim")),
     h(
       "div",
       { class: "panel stack champion", "data-testid": "champion" },
-      h("div", { class: "row spread" }, h("div", { class: "label" }, `👑 Champion · day ${home.day.seq}`), champ ? h("span", { class: "ghost-name" }, `@${champ.player.name}`) : null),
+      h("div", { class: "row spread" }, h("div", { class: "label keep" }, `👑 Champion · day ${home.day.seq}`), champ ? who(champ.player.name, "ghost-name") : null),
       champ ? team(champ.line, "ghost", content) : h("div", { class: "dim" }, "No champion yet. The day arrives soon."),
       h("div", { class: "dim small", "data-testid": "slayers" }, `${plural(home.day.slayers, "slayer")} today · new champion at ${rules.dayEndsAt} Moscow`),
     ),
@@ -176,33 +176,36 @@ async function homeScreen(): Promise<void> {
 /** How yesterday ended, in one sentence. With no playoff to show (no
  * slayers, or one who won without a game) the sentence is all there is;
  * `champion` is today's, the one who stayed or was crowned. */
-function playoffSummary(p: PlayoffResult, champion: PlayerRef | null): string {
-  if (p.entrants.length === 0) return champion ? `No slayers: @${champion.name} stays champion.` : "No slayers, and no champion yet.";
+function playoffSummary(p: PlayoffResult, champion: PlayerRef | null): (Node | string)[] {
+  if (p.entrants.length === 0) return champion ? ["No slayers: ", who(champion.name), " stays champion."] : ["No slayers, and no champion yet."];
   if (p.entrants.length === 1) {
     const only = p.winner ?? p.entrants[0]!;
-    return `@${only.name} was the only slayer and is the new champion.`;
+    return [who(only.name), " was the only slayer and is the new champion."];
   }
-  return p.winner ? `👑 @${p.winner.name} won the playoff and is the new champion.` : "The playoff had no winner.";
+  return p.winner ? ["👑 ", who(p.winner.name), " won the playoff and is the new champion."] : ["The playoff had no winner."];
 }
 
 /** Yesterday's end: a sentence, and with a real playoff (two or more
  * slayers) its table and each game (opens in the viewer). */
 function playoffPanel(p: PlayoffResult | null, champion: PlayerRef | null, content: MvpContent, err: HTMLElement): HTMLElement | null {
   if (!p) return null;
-  const watch = (battleId: string, label: string) =>
-    button(label, () => void guarded(err, async () => {
+  const watch = (battleId: string, a: PlayerRef, b: PlayerRef) => {
+    const btn = button("", () => void guarded(err, async () => {
       const battle = await api.battle(battleId);
       battleScreen({ battle, content, onDone: () => void homeScreen() });
     }), "small game", "playoff-game");
+    btn.replaceChildren(who(a.name), " v ", who(b.name));
+    return btn;
+  };
   const played = p.entrants.length >= 2;
   return h(
     "div",
     { class: "panel stack", "data-testid": "playoff" },
     h("div", { class: "label" }, played ? `Playoff · day ${p.seq}` : `Day ${p.seq} ended`),
-    h("div", { "data-testid": "playoff-summary" }, playoffSummary(p, champion)),
-    ...(played ? p.standings.map((s) => h("div", { class: "num small", "data-testid": "playoff-standing" }, `@${s.player.name} · ${s.wins}W ${s.draws}D ${s.losses}L`)) : []),
+    h("div", { "data-testid": "playoff-summary" }, ...playoffSummary(p, champion)),
+    ...(played ? p.standings.map((s) => h("div", { class: "num small", "data-testid": "playoff-standing" }, who(s.player.name), ` · ${s.wins}W ${s.draws}D ${s.losses}L`)) : []),
     played && p.games.length ? h("div", { class: "label" }, "Games · tap to watch") : null,
-    played && p.games.length ? h("div", { class: "games" }, ...p.games.map((g) => watch(g.battleId, `@${g.a.name} v @${g.b.name}`))) : null,
+    played && p.games.length ? h("div", { class: "games" }, ...p.games.map((g) => watch(g.battleId, g.a, g.b))) : null,
   );
 }
 
@@ -361,8 +364,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
   const fillPin = (d: DayView | null) => {
     const ch = d?.champion;
     if (!ch) return pin.replaceChildren(h("span", { class: "dim" }, "👑 No champion yet"));
-    const b = h("button", { class: "pin-btn", "data-testid": "champion-pin-open" }, h("span", {}, "👑"), h("span", { class: "ghost-name" }, `@${ch.player.name}`), h("span", { class: "pin-emoji" }, ch.line.map((u) => u.emoji).join("")));
-    b.addEventListener("click", () => closable(h("div", { class: "label" }, `Champion of day ${d!.seq} · @${ch.player.name}`), team(ch.line, "ghost", content), hint("Tap a card to read it.")));
+    const b = h("button", { class: "pin-btn", "data-testid": "champion-pin-open" }, h("span", {}, "👑"), who(ch.player.name, "ghost-name"), h("span", { class: "pin-emoji" }, ch.line.map((u) => u.emoji).join("")));
+    b.addEventListener("click", () => closable(h("div", { class: "label" }, `Champion of day ${d!.seq} · `, who(ch.player.name)), team(ch.line, "ghost", content), hint("Tap a card to read it.")));
     pin.replaceChildren(b);
   };
   fillPin(day);
@@ -380,7 +383,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
     h(
       "div",
       { class: "row spread opp" },
-      h("span", { class: "dim", "data-testid": "next-opponent" }, opp ? `${crown ? "Crown vs" : "Next:"} @${opp.player.name}${opp.player.bot ? " 🤖" : ""}${ownCrown ? " (your own team)" : ""}` : crown ? "Crown vs today's champion" : "Next: a team saved at this round"),
+      h("span", { class: "dim", "data-testid": "next-opponent" }, ...(opp ? [`${crown ? "Crown vs" : "Next:"} `, who(opp.player.name), `${opp.player.bot ? " 🤖" : ""}${ownCrown ? " (your own team)" : ""}`] : [crown ? "Crown vs today's champion" : "Next: a team saved at this round"])),
       pin,
     ),
     h("div", { class: "label" }, "Your line · front first"),
@@ -444,11 +447,11 @@ function resultScreen(run: RunView, fight: FightResult, battle: BattleRecord, co
   show(
     h("div", { class: "hud" }, h("span", { "data-testid": "result-round" }, label), hearts(run.hearts), h("span", { class: "dim" }, record(run))),
     h("div", { class: `outcome ${fight.outcome}`, "data-testid": "outcome" }, word),
-    h("div", { class: "dim", style: "text-align:center" }, `vs @${fight.opponent.player.name} · ${plural(turns, "turn")}`),
+    h("div", { class: "dim", style: "text-align:center" }, "vs ", who(fight.opponent.player.name), ` · ${plural(turns, "turn")}`),
     sub ? h("div", { class: fight.heartsLost > 0 ? "error center" : "center" }, sub) : null,
     h("div", { class: "label" }, "You"),
     team(battle.teamA, "you", content),
-    h("div", { class: "label" }, `@${battle.opponent.name}`),
+    h("div", { class: "label" }, who(battle.opponent.name)),
     team(battle.teamB, "ghost", content),
     fight.outcome === "loss" ? whyILost(battle, content, "A") : null,
     h("div", { class: "spacer" }),

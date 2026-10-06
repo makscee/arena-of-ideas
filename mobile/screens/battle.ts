@@ -175,7 +175,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const turn = step?.turn ?? 0;
     hud.replaceChildren(
       h("span", {}, battle.kind === "crown" ? "Crown fight" : battle.kind === "playoff" ? "Playoff" : `Round ${battle.round}`),
-      h("span", { class: "dim" }, `vs @${battle.opponent.name}`),
+      h("span", { class: "dim who", title: battle.opponent.name }, `vs @${battle.opponent.name}`),
       h("span", {}, turn ? `T${turn}` : "—"),
     );
     for (const [side, row] of [[them, enemy], [you, mine]] as const) {

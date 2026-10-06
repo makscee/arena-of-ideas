@@ -32,7 +32,8 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .row.spread { justify-content: space-between; }
 .grow { flex: 1; }
 .stack { display: flex; flex-direction: column; gap: 8px; }
-.hud { display: flex; justify-content: space-between; font-family: "IBM Plex Mono", monospace; font-size: 15px; }
+.hud { display: flex; justify-content: space-between; gap: 8px; font-family: "IBM Plex Mono", monospace; font-size: 15px; }
+.hud > * { flex: none; }
 .hud .gold { color: var(--gold); }
 .hud .hearts { color: var(--ghost); }
 .slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
@@ -66,6 +67,12 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 button.small { min-height: 44px; font-size: 14px; padding: 0 12px; }
 .center { text-align: center; }
 .ghost-name { color: var(--ghost); font-weight: 600; }
+/* A player's name (ui/dom.ts who()) stays on one line, never split at a
+ * hyphen or a space; too long for its place, it ends in "…". In a row it
+ * gives way first, and what sits beside it keeps its width (.keep). */
+.who { display: inline-block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+.row > .who, .hud > .who { flex: 0 1 auto; min-width: 0; }
+.keep { flex: none; }
 .hint { font-size: 15px; color: var(--you); border-left: 2px solid var(--you); padding: 2px 0 2px 8px; background: color-mix(in srgb, var(--you) 6%, transparent); }
 .records { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; text-align: center; }
 .records .num { font-size: 18px; }
@@ -76,9 +83,14 @@ button.game { text-transform: none; letter-spacing: 0; font-family: "Rajdhani", 
 details.dev { color: var(--dim); font-size: 13px; }
 details.dev summary { min-height: 44px; line-height: 44px; cursor: pointer; }
 .opp { font-size: 15px; min-height: 44px; }
-.pin { display: flex; }
-button.pin-btn { display: flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 10px; color: var(--text); border-color: color-mix(in srgb, var(--ghost) 55%, transparent); text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-size: 15px; max-width: 200px; overflow: hidden; }
-.pin-emoji { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.opp > :first-child { flex: 1 1 0; min-width: 0; }
+.pin { display: flex; min-width: 0; }
+button.pin-btn { display: flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 10px; color: var(--text); border-color: color-mix(in srgb, var(--ghost) 55%, transparent); text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-size: 15px; max-width: 200px; min-width: 0; overflow: hidden; }
+/* The pill's name keeps its room (a long one ends in "…" at 120px); the
+ * team's emoji give way. */
+.pin-btn > :first-child, .pin-btn .who { flex: none; }
+.pin-btn .who { max-width: 120px; }
+.pin-emoji { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .actions { min-height: 44px; flex-wrap: wrap; }
 .actions:empty { display: none; }
 .actions { gap: 6px; }
