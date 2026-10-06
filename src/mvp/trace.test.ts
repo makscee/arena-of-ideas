@@ -6,7 +6,7 @@ import { battle } from "../battle.js";
 import { displayNames } from "../trace.js";
 import { stressAbilities, stressRegistry } from "../content/stress.js";
 import type { AbilityDef, AbilityRegistry, BattleEvent, UnitDef, When } from "../types.js";
-import { BEAT_MAX_MS, BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, captionOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, stepsOf, timingOf, traceOf, whyILost } from "./trace.js";
+import { BEAT_MAX_MS, BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, stepsOf, timingOf, traceOf, whyILost } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -319,5 +319,80 @@ describe("the end card (R2-14)", () => {
     const combo = keyMomentsOf(log, beats).find((m) => m.kind === "combo");
     if (most >= 3) expect(combo).toMatchObject({ beat: beats.find((b) => b.waves.length === most)!.index, label: expect.stringMatching(new RegExp(`^Combo: ${most} steps`)) });
     else expect(combo).toBeUndefined();
+  });
+});
+
+describe("Why: the chain from a change back to the turn (R2-15)", () => {
+  // The issue's example: Medic strikes Victim −1; Victim's "after this unit
+  // is hit → Strength" fires; Strength brings +1 PWR.
+  const Victim: UnitDef = { name: "Victim", base: { hp: 30, pwr: 1 }, triggers: [{ kind: "trigger", on: { on: "Heal", unit: "holder" } }, { kind: "trigger", on: { on: "Hurt", unit: "holder" } }], selectors: [{ kind: "holder" }], abilities: ["GiveStrength"] };
+  const whenOf = (defs: Record<string, UnitDef>) => (ref: { unit: string; when?: number }) => defs[ref.unit.split(":")[1]!]?.triggers?.[ref.when ?? -1];
+
+  test("+1 PWR ← Victim's ability (its Hurt When) ← Medic strikes Victim −1 ← Turn N", () => {
+    const log = run([Victim], [dummy("Medic", 30, 1)]);
+    const pwr = log.find((e) => e.type === "StatChanged" && e.stat === "pwr" && e.unit === "A1:Victim")!;
+    const c = chainOf(log, pwr.id, { whenOf: whenOf({ Victim }) });
+    expect(c.change?.label).toBe("+1 PWR");
+    expect(c.nodes.map((s) => s.kind)).toEqual(["change", "firing", "event", "root"]);
+    const [change, firing, event, root] = c.nodes;
+    expect(change!.text).toBe("Victim → Strength ×1 on Victim (+1 PWR)");
+    // The kernel stamped the second When (Hurt), not the first (Heal).
+    expect(firing!.ref).toMatchObject({ unit: "A1:Victim", ability: 0, when: 1 });
+    expect(firing!.trigger).toBe("trigger:Hurt");
+    expect(firing!.side).toBe("A");
+    expect(event!.text).toBe("Medic strikes Victim → −1");
+    expect(event!.trigger).toBe("trigger:Hurt");
+    expect(log[root!.eventId]!.type).toBe("TurnStart");
+    expect(root!.text).toBe(`Turn ${log[root!.eventId]!.turn}`);
+    // Every step points at an earlier (or the same) moment, so the playhead can jump there.
+    for (let i = 1; i < c.nodes.length; i++) expect(c.nodes[i]!.eventId).toBeLessThanOrEqual(c.nodes[i - 1]!.eventId);
+  });
+
+  test("a cascade alternates firings and the events that set them off, back to the battle's start", () => {
+    const log = run([Shieldbearer, Smith, Archer], [dummy("Dummy", 20, 1)]);
+    const shot = log.find((e) => e.type === "Hurt" && e.source !== "kernel")!;
+    const c = chainOf(log, shot.id);
+    expect(c.nodes.map((s) => `${s.kind}:${s.kind === "firing" ? s.unit : s.text}`)).toEqual([
+      "change:Archer → Dummy −2",
+      "firing:A3:Archer",
+      "event:Smith → Strength ×1 on Shieldbearer (+1 PWR)",
+      "firing:A2:Smith",
+      "event:Shieldbearer → Shield ×2 on Shieldbearer",
+      "firing:A1:Shieldbearer",
+      "root:Battle start",
+    ]);
+    expect(c.nodes.filter((s) => s.kind === "firing").map((s) => s.trigger)).toEqual(["trigger:StatChanged", "trigger:StatusApplied", "trigger:BattleStart"]);
+  });
+
+  test("a status tick shows the status, then goes on from where it was put on", () => {
+    const log = run([dummy("Squire", 8, 1), Medic, Zealot], [dummy("Dummy", 30, 2)]);
+    const tick = log.find((e) => e.type === "Hurt" && e.source !== "kernel" && e.source.status === "Poison")!;
+    const c = chainOf(log, tick.id);
+    const firing = c.nodes[1]!;
+    expect(firing).toMatchObject({ kind: "firing", status: "Poison", text: "Poison on Dummy" });
+    expect(log[firing.origin!]!.type).toBe("StatusApplied");
+    expect(c.nodes[2]!.eventId).toBe(firing.origin);
+    expect(c.nodes.filter((s) => s.kind === "firing" && !s.status).map((s) => s.unit)).toEqual(["A3:Zealot", "A2:Medic"]);
+    expect(c.nodes.at(-1)!.kind).toBe("root");
+  });
+
+  test("every change in a battle has a chain that starts at it and never says undefined", () => {
+    const log = run([Shieldbearer, Smith, Archer, Medic, Zealot], [dummy("Dummy", 30, 3), Medic, Zealot]);
+    for (const e of log) {
+      if (!changeOf(e)) continue;
+      const c = chainOf(log, e.id);
+      expect(c.nodes[0]!.kind).toBe("change");
+      expect(c.nodes[0]!.eventId).toBe(e.id);
+      for (const s of c.nodes) expect(s.text).not.toContain("undefined");
+    }
+  });
+
+  test("firingOf reads the stamped When when it can look it up", () => {
+    const log = run([Victim], [dummy("Medic", 30, 1)]);
+    const st = log.find((e) => e.type === "StatusApplied" && e.source !== "kernel" && e.source.unit === "A1:Victim")!;
+    const step = { eventIds: [st.id], changes: [changeOf(st)!] };
+    expect(firingOf(log, step, whenOf({ Victim }))?.trigger).toBe("trigger:Hurt");
+    // A Victim whose stamped When is Heal would read as Heal: the stamp wins over the event.
+    expect(firingOf(log, step, () => ({ kind: "trigger", on: { on: "Heal" } }))?.trigger).toBe("trigger:Heal");
   });
 });
