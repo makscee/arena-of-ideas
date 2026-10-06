@@ -226,7 +226,7 @@ button.bv-badge.still { animation: none; }
 /* Reduced motion: nothing moves. The hit card gets a ring, a healed or
  * buffed one a soft one; the chips hold the numbers in place, and the
  * caption lists every change of the beat (.bv-still). */
-.bv-stillbox { height: 52px; overflow-y: auto; }
+.bv-stillbox { flex: 0 1 auto; min-height: 0; overflow-y: auto; }
 .bv-still { display: flex; flex-wrap: wrap; gap: 0 8px; font-size: 13px; font-family: "IBM Plex Mono", monospace; }
 @media (prefers-reduced-motion: reduce) {
   .bv-card, .bv-card.bv-lunge-up, .bv-card.bv-lunge-down, .bv-card.bv-pulse, .bv-card.bv-hit, .bv-card.bv-dying { animation: none; transition: none; }
@@ -269,7 +269,7 @@ button.bv-caption.tappable::after { content: "ⓘ"; flex: none; margin-left: 4px
 .bv-who { display: inline-block; max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; margin-right: 6px; padding: 0 5px; border: 1px solid; border-radius: 3px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .bv-who.you { color: var(--you); }
 .bv-who.ghost { color: var(--ghost); }
-.bv-recent { display: flex; flex-direction: column; gap: 2px; }
+.bv-recent { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 2px; }
 button.bv-past { min-height: 44px; border: none; clip-path: none; text-align: left; padding: 0 12px; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-weight: 500; font-size: 14px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bv-sheet { position: fixed; z-index: 10; left: 12px; right: 12px; bottom: calc(68px + env(safe-area-inset-bottom)); max-width: 456px; margin: 0 auto; max-height: 60dvh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; border-color: var(--gold); box-shadow: 0 -12px 32px #000c; }
 .bv-trace-text { font-size: 15px; color: var(--gold); word-break: break-word; }
@@ -283,8 +283,34 @@ button.bv-close { min-height: 44px; min-width: 44px; padding: 0 12px; }
 .bv-word.draw { color: var(--dim); }
 button.bv-why { display: flex; align-items: center; justify-content: space-between; gap: 8px; text-transform: none; letter-spacing: 0; color: var(--ghost); border-color: color-mix(in srgb, var(--ghost) 45%, transparent); font-family: "Rajdhani", sans-serif; font-size: 16px; text-align: left; }
 .bv-why-chain { overflow: hidden; text-overflow: ellipsis; }
-.bv-controls button { flex: 1; padding: 0 6px; font-size: 20px; }
-.bv-controls button[data-testid="battle-skip"], .bv-controls button[data-testid="battle-speed"] { font-size: 17px; }
+/* R2-14: the battle fills the screen and never scrolls. Your line and the
+ * caption keep their place; the beat list below takes what room is left, and
+ * the control bar stays pinned at the foot in both motion modes. */
+.bv-screen { display: flex; flex-direction: column; gap: 12px; height: calc(100dvh - 28px - env(safe-area-inset-bottom)); overflow: hidden; }
+.bv-screen > * { flex: none; }
+.bv-screen > .bv-below { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 4px; }
+.bv-controls { gap: 6px; }
+.bv-controls button { flex: 1; min-width: 44px; padding: 0 4px; font-size: 20px; }
+.bv-controls button[data-testid="battle-end"], .bv-controls button[data-testid="battle-speed"] { font-size: 16px; }
+/* The end card: over the board, above the control bar, scrolling inside itself when it runs long. */
+.bv-end { position: fixed; z-index: 10; left: 12px; right: 12px; bottom: calc(68px + env(safe-area-inset-bottom)); max-width: 456px; margin: 0 auto; max-height: calc(100dvh - 80px - env(safe-area-inset-bottom)); overflow-y: auto; gap: 8px; border-color: var(--line); box-shadow: 0 -12px 32px #000c; }
+.bv-end-top { align-items: center; }
+.bv-end-top .bv-word { flex: 1; text-align: left; }
+.bv-dmg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.bv-dmg-col { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.bv-dmg { display: grid; grid-template-columns: 20px 1fr 24px; gap: 4px; align-items: center; font-size: 13px; line-height: 18px; }
+.bv-dmg .emoji { font-size: 15px; text-align: center; }
+.bv-dmg .mono { text-align: right; }
+.bv-dmg-bar { height: 6px; background: var(--line); overflow: hidden; }
+.bv-dmg-bar i { display: block; height: 100%; }
+.bv-dmg-col.you .bv-dmg-bar i { background: var(--you); }
+.bv-dmg-col.ghost .bv-dmg-bar i { background: var(--ghost); }
+button.bv-moment { display: grid; grid-template-columns: 32px 1fr auto; gap: 8px; align-items: center; text-align: left; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 15px; color: var(--text); border-color: var(--line); padding: 0 10px; }
+.bv-moment-l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bv-moment.kill .bv-moment-l { color: var(--ghost); }
+.bv-moment.combo .bv-moment-l { color: var(--gold); }
+.bv-end-actions { gap: 6px; }
+.bv-end-actions button { padding: 0 8px; font-size: 15px; white-space: nowrap; }
 .bv-line.empty { min-height: 0; display: block; }
 .bv-word.neutral { color: var(--text); font-size: 24px; }
 /* Slice 11: a unit's rates, only a hint since round 2: the sheet's dim last line. */

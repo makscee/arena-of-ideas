@@ -223,9 +223,10 @@ try {
     if (crown) { await shot("crown-shop"); await noHScroll("crown-shop"); }
     // Space fights.
     await page.keyboard.press("Space");
-    await page.getByTestId("battle-skip").waitFor({ timeout: 10_000 });
+    await page.getByTestId("battle-end").waitFor({ timeout: 10_000 });
     if (round === 1) await shot("battle");
-    await page.getByTestId("battle-skip").click();
+    await page.getByTestId("battle-end").click();
+    await page.getByTestId("battle-done").click();
     await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
     if (!resultShot) {
       resultShot = true;

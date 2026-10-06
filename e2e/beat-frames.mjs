@@ -57,7 +57,7 @@ for (const motion of ["no-preference", "reduce"]) {
       await page.waitForFunction((g) => document.querySelector('[data-testid="gold"]')?.textContent !== `${g}g`, gold);
     }
     await page.getByTestId("fight").click();
-    await page.getByTestId("battle-skip").waitFor({ timeout: 10_000 });
+    await page.getByTestId("battle-end").waitFor({ timeout: 10_000 });
     const t0 = Date.now();
     if (motion !== "reduce") await page.evaluate(sampleFloats);
     if (round === rounds) for (let f = 0; f < 30; f++) { await page.screenshot({ path: `${out}/${motion === "reduce" ? "still" : "move"}-r${round}-f${String(f).padStart(2, "0")}.png` }); await page.waitForTimeout(100); }
