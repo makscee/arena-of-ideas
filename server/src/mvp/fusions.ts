@@ -73,11 +73,15 @@ function portmanteauAvoiding(first: string, second: string, isTaken: (folded: st
       if (free(name)) return name;
     }
   if (free(a + b)) return a + b;
-  const base = join(a.slice(0, h0), b.slice(Math.min(t0, b.length - 1)));
-  for (let k = 2; ; k++) {
+  // Last resort: a numeral after the middle split, or after the first part's
+  // name when that split is itself blocked (a numeral can't unblock it).
+  const mid = join(a.slice(0, h0), b.slice(Math.min(t0, b.length - 1)));
+  const base = isBlockedName(mid) ? first : mid;
+  for (let k = 2; k < 1000; k++) {
     const name = `${base} ${ROMAN[k] ?? k}`;
     if (free(name)) return name;
   }
+  return `${first} ${second}`;
 }
 
 const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
@@ -135,14 +139,24 @@ const BLOCKED_STEMS = [
   "vader", "yoda", "jedi", "snape", "dobby", "pudge", "zerg", "goku", "optimus", "hulk",
   "mario", "thorhammer", "thorshammer",
   "moderator", "http", "www",
-  // crude
-  "smut", "porn", "nazi", "slut", "fuck", "shit", "cunt", "nigg", "faggot", "bitch", "whore", "rape", "cock", "dick", "anal", "penis",
-  "wank", "twat",
+  // crude: profanity, slurs and hate words (CRUDE_ORDINARY keeps the
+  // ordinary words that contain them)
+  "fuck", "fvck", "phuck", "shit", "cunt", "nigg", "negro", "fag", "bitch", "biatch", "whore", "slut", "smut", "porn",
+  "rape", "rapist", "pedophil", "paedophil", "dildo", "blowjob", "handjob", "cumshot", "cumslut", "cumdump", "cumlord", "jizz", "jism",
+  "clit", "vagina", "penis", "pussy", "asshole", "arsehole", "arse", "bastard", "dick", "cock", "anal", "tits", "titties", "boob",
+  "prick", "wank", "twat", "piss", "nazi", "hitler", "swastika", "kkk", "klansman", "kike", "retard", "chink", "gook", "wetback",
+  "raghead", "towelhead", "tranny", "shemale", "dyke", "coon", "paki", "bollock", "douche", "butthole", "scrotum", "gangbang", "molest",
+  "skank", "yotch",
 ];
 // Ordinary words that contain a stem: taken out of a word before stems match.
 const ORDINARY = ["invader", "evader", "pervader", "hulking", "hulky", "marionette", "mariology", "mariolat", "marion", "snaper",
-  "grape", "drape", "scrape", "trapez", "cockatrice", "peacock", "cockpit", "cockerel", "woodcock", "cockroach", "shuttlecock", "cocktail",
-  "hancock", "dickens", "analy", "banal", "canal", "analog", "analg", "penistone", "scunthorpe"];
+  // crude stems inside ordinary words
+  "grape", "drape", "scrape", "crape", "trapez", "parapet", "therapist", "cockatoo", "cockatiel", "cockle", "cockscomb", "gamecock",
+  "weathercock", "hitchcock", "cockatrice", "peacock", "cockpit", "cockerel", "woodcock", "cockroach", "shuttlecock", "cocktail",
+  "hancock", "cockade", "cocky", "babcock", "dickens", "dickcissel", "analy", "analog", "analg", "analem", "banal", "canal",
+  "bacchanal", "manal", "tanal", "hanal", "penistone", "scunthorpe", "swank", "niggl", "snigg", "niggard", "ashkenazi", "nazirite",
+  "parse", "sparse", "coarse", "hoarse", "arsen", "booby", "prickl", "retardant", "chinkapin", "raccoon", "racoon", "cocoon", "tycoon",
+  "puccoon", "pakistan", "negroni", "montenegro", "pussywillow", "fagot", "fagus", "titsch", "pissarro", "coonhound", "twattle", "shitake"];
 // Words: short or ordinary enough that a stem would hit real words ("Thorn",
 // "Invader", "Marionette", "Smuggler", "Scamper"), so they match one word of
 // the name, also with a plural or possessive ending ("Marios", "Thor's").
@@ -152,7 +166,8 @@ const BLOCKED_WORDS = [
   "sith", "potter", "muggle",
   "elsa", "olaf", "nemo", "dory", "fiona", "minnie", "thor", "loki", "avenger", "marvel",
   "zoro", "bart", "lego", "barney", "scam", "developer", "administrator",
-  "cum", "fag", "piss",
+  "cum", "spic", "heil", "klan", "homo", "ass", "boner", "semen", "anus", "pedo", "thot", "sex", "sexy", "horny", "nig", "nog", "wop",
+  "dago", "kraut", "jap", "spaz", "mong", "cripple", "midget",
   // the model's way of not naming
   "fusion", "fuse", "fused",
   // stems that hit ordinary words: Carambola, Adminicle, Hexmender, Bambino,

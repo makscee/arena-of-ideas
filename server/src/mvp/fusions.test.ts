@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { Champion, DecisionResponse, FusionDiscovery, PlayerRef, UnitContent } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { mvpContent } from "./content.js";
-import { awaitFusionName, cleanModelName, drainFusionNames, fusionNameReady, fusionNaming, httpModelNamer, MODEL_DOWN_MS, NAMER_EXAMPLES, MODEL_FAILURES, MODEL_PROBE_MS, portmanteau, recordFusion, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
+import { awaitFusionName, cleanModelName, drainFusionNames, isBlockedName, fusionNameReady, fusionNaming, httpModelNamer, MODEL_DOWN_MS, NAMER_EXAMPLES, MODEL_FAILURES, MODEL_PROBE_MS, portmanteau, recordFusion, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
 import { decide, preview, startRun } from "./runs.js";
 import { seedChampion } from "./bots.js";
 import { mvpRuntime } from "./runtime.js";
@@ -143,6 +143,27 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
     // Short names are matched per word, so ordinary words that contain them pass.
     for (const raw of ["Thornback", "Invader", "Marionette", "Smuggler", "Scamper", "Supersonic", "Subterran Ox"]) expect(cleanModelName(raw), raw).not.toBeNull();
   });
+
+  it("blocks profanity, slurs and hate words, and keeps the ordinary words that contain them (#587)", () => {
+    for (const raw of ["Shitlord", "Fuckwit", "Kike", "Retard", "Hitler", "Rapeblade", "Cumlord", "Asshole", "Ass", "Sex", "Pedophile", "Wetback", "Nig Nog"])
+      expect(cleanModelName(raw), raw).toBeNull();
+    for (const raw of ["Cockatoo", "Therapist", "Parapet", "Raccoon", "Cocoon", "Analyst", "Manaleech", "Assassin", "Glass Golem", "Mongoose", "Sexton Shade", "Scunthorpe", "Coarse"])
+      expect(cleanModelName(raw), raw).not.toBeNull();
+  });
+
+  it("a stand-in name is never a blocked word: King then Spike isn't a slur, and no pair of the content gives one (#587)", () => {
+    const units = mvpContent().units;
+    const names = units.map((u) => u.name);
+    expect(isBlockedName(portmanteau("King", "Spike", names))).toBe(false);
+    const taken: string[] = [];
+    for (const a of units)
+      for (const b of units) {
+        if (a.id === b.id) continue;
+        const name = portmanteau(a.name, b.name, [...names, ...taken]);
+        taken.push(name);
+        expect(isBlockedName(name), `${a.name}+${b.name}=${name}`).toBe(false);
+      }
+  }, 30_000);
 
   it("splits CamelCase before matching words, and stems don't over-block ordinary names", () => {
     for (const raw of ["LordVader", "SuperMario", "BabyYoda", "IronMan", "Xmen", "Witchers"]) expect(cleanModelName(raw), raw).toBeNull();
