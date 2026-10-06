@@ -194,3 +194,18 @@ describe("display clamping", () => {
     expect(findUnit(boardAt(log, hurt.id), "B1:Frail")!.hp).toBe(0); // display clamps
   });
 });
+
+describe("boardAt skip (R2-13: draw by the landed waves)", () => {
+  test("a skipped event doesn't apply; the ones around it do", () => {
+    const log = battle({ teamA: [dummy("A1", 10, 3)], teamB: [dummy("B1", 10, 2)], seed: 1, statuses: stressRegistry, abilities: stressAbilities });
+    const hurts = log.filter((e) => e.type === "Hurt");
+    const [h1, h2] = [hurts[0]!, hurts[1]!];
+    const full = boardAt(log, h2.id);
+    const without = boardAt(log, h2.id, new Set([h1.id]));
+    const unit = h1.type === "Hurt" ? h1.unit : "";
+    const side = full.lines.A.some((u) => u.id === unit) ? "A" : "B";
+    const hpFull = full.lines[side].find((u) => u.id === unit)!.hp;
+    const hpWithout = without.lines[side].find((u) => u.id === unit)!.hp;
+    expect(hpWithout).toBeGreaterThan(hpFull);
+  });
+});

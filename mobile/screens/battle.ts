@@ -10,16 +10,18 @@
 // the end, the viewer shows the outcome, "why I lost", and battle-done.
 import { boardAt, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView } from "../../src/mvp/contract";
-import { beatPlayOf, stepsOf, timingOf, traceOf, whyILost as lossChains, sidesOf, type Change, type LossChain, type Step, type Trace } from "../../src/mvp/trace";
+import { STATUS_TERMS, termDef, termIcon, type TermId } from "../../src/glossary";
+import { beatPlayOf, firingOf, stepsOf, timingOf, traceOf, whyILost as lossChains, sidesOf, type Change, type Firing, type LossChain, type Step, type Trace } from "../../src/mvp/trace";
 import { displayNames } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { card, unitSheet } from "../ui/card";
 import { button, closable, h, onLeave, show } from "../ui/dom";
+import { icon } from "../ui/icon";
 
 /** How long the line-up shows before the first beat, at 1×. */
 const LINEUP_MS = 400;
-/** How long a landed wave's motion runs: the longest animation (a float, 0.7 s, after up to 160 ms). A beat holds its last wave at least 0.7 s, so a beat change cuts a float off at most in its fade. */
-const MOTION_MS = 900;
+/** How long a landed wave's motion runs, in animation time (real time × speed): the longest animation (a killing blow's shake, then its 0.5 s pop, ends at 0.92 s; a float, 0.7 s, after up to 160 ms). A beat holds its last wave at least 0.7 s, so a beat change cuts motion off at most in its fade. */
+const MOTION_MS = 1000;
 
 /** The changes that float up from a card. */
 const FLOATS = new Set<Change["kind"]>(["damage", "heal", "buff", "debuff", "summon"]);
@@ -45,6 +47,15 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const units = new Map<string, BattleUnit>([...battle.teamA, ...battle.teamB].map((u) => [u.id, u]));
   const emojiOf = (id: string) => units.get(id)?.emoji ?? "✨";
 
+  // What richCaption highlights: this battle's unit names (by side), its
+  // statuses, and the fixed words. Longest first, so "Rat King" beats "Rat".
+  const unitSide = new Map<string, Side>();
+  for (const [id, s] of sides) unitSide.set(name(id), s);
+  const logStatuses = new Set(log.flatMap((e) => (e.type === "StatusApplied" ? [e.status] : [])));
+  const esc = (w: string) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const words = [...new Set([...unitSide.keys(), ...Object.keys(STATUS_TERMS), ...logStatuses, "Fatigue"])].filter(Boolean).sort((p, q) => q.length - p.length);
+  const captionTerms = new RegExp(`\\(\\d+ absorbed\\)|(?<![\\p{L}\\d])(?:${words.map(esc).join("|")})(?![\\p{L}\\d])|\\b(?:PWR|HP)\\b|[−+]\\d+`, "gu");
+
   let at = -1; // index of the beat on screen; -1 = the line-up before the first beat
   let wave = 0; // waves of that beat landed so far, minus one
   /** When each wave of the open beat landed (performance.now()), set only
@@ -61,17 +72,23 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   let traceGroup: Change[] = [];
   let finished = false;
 
+  /** Motion runs at the playback speed (CSS reads --bv-sp), so 2× never cuts it. */
+  const setSpeedVar = () => { for (const row of [enemy, mine]) row.style.setProperty("--bv-sp", String(speed)); };
+
   const hud = h("div", { class: "hud" });
-  const enemy = h("div", { class: "slots bv-line", "data-testid": "battle-them" });
-  const mine = h("div", { class: "slots bv-line", "data-testid": "battle-you" });
+  const enemy = h("div", { class: "slots bv-line theirs", "data-testid": "battle-them" });
+  const mine = h("div", { class: "slots bv-line mine", "data-testid": "battle-you" });
   const caption = h("button", { class: "bv-caption", "data-testid": "caption" });
+  /** Reduced motion's list of the beat's changes: below your line, its height
+   * fixed, so nothing on the board moves while it fills. */
+  const still = h("div", { class: "bv-stillbox" });
   const recent = h("div", { class: "bv-recent", "data-testid": "recent" });
   const sheet = h("div", { class: "bv-sheet panel", "data-testid": "trace" });
   const end = h("div", { class: "bv-end stack" });
   const playBtn = button("❚❚", () => (playing ? pause() : play()), "", "battle-play");
   const backBtn = button("‹", () => { pause(); go(at - 1); }, "", "battle-back");
   const fwdBtn = button("›", () => { pause(); go(at + 1); }, "", "battle-step");
-  const speedBtn = button("1×", () => { speed = speed === 1 ? 2 : 1; speedBtn.textContent = `${speed}×`; if (playing) schedule(); }, "", "battle-speed");
+  const speedBtn = button("1×", () => { speed = speed === 1 ? 2 : 1; speedBtn.textContent = `${speed}×`; setSpeedVar(); if (playing) schedule(); }, "", "battle-speed");
   const skipBtn = button("Skip", () => skip(), "", "battle-skip");
   const controls = h("div", { class: "row bv-controls" }, backBtn, playBtn, fwdBtn, speedBtn, skipBtn);
   // How long playback should take at 1× (the line-up plus every beat), for
@@ -162,14 +179,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   function unitCard(u: BoardUnit, side: Side, v: View): HTMLElement {
     const step = v.now;
     const changes = v.changes.filter((c) => c.unit === u.id);
-    const statuses = u.statuses.map((s) => `${s.status} ${s.stacks}`).join(" · ");
     const el = card(units.get(u.id) ?? { emoji: emojiOf(u.id), name: u.name, stats: { pwr: u.pwr, hp: u.hp } }, {
       side: side === you ? "you" : "ghost",
-      live: { stats: { pwr: u.pwr, hp: u.hp }, acting: step?.actor === u.id },
-      extra: [
-        statuses ? h("div", { class: "bv-status" }, statuses) : null,
-        changes.length ? h("div", { class: "bv-changes" }, changeBadge(changes)) : null,
-      ],
+      live: { stats: { pwr: u.pwr, hp: u.hp }, maxHp: u.maxHp, acting: step?.actor === u.id },
+      extra: [statusChips(u.statuses), changes.length ? h("div", { class: "bv-changes" }, changeBadge(changes)) : null],
     });
     el.classList.add("bv-card");
     el.dataset.unit = u.id;
@@ -186,14 +199,80 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   function changeBadge(changes: Change[]): HTMLElement {
     const c = changes[0]!;
     const more = changes.length - 2;
-    const lines = changes.slice(0, 2).map((x, i) => h("span", { class: `bv-l ${x.kind}` }, i === 1 && more > 0 ? `${x.label} +${more}` : x.label));
+    const lines = changes.slice(0, 2).map((x, i) => h("span", { class: `bv-l ${x.kind}` }, ...changeLabel(x), i === 1 && more > 0 ? ` +${more}` : ""));
     const b = h(
       "button",
       { class: `bv-change ${c.kind}${changes.length > 1 ? " multi" : ""}`, "data-testid": "change", "data-event": String(c.eventId), "data-count": String(changes.length), "aria-label": changes.map((x) => x.label).join(", ") },
-      h("span", { class: `bv-pill${changes.length > 1 ? " two" : ""}` }, ...(changes.length > 1 ? lines : [c.label])),
+      h("span", { class: `bv-pill${changes.length > 1 ? " two" : ""}${blockedBy(c) ? " blocked" : ""}` }, ...(changes.length > 1 ? lines : changeLabel(c))),
     );
     b.addEventListener("click", (ev) => { ev.stopPropagation(); openTrace(c.eventId, changes); });
     return b;
+  }
+  /** How much Shield blocked of a hit that did no damage (0: not a blocked hit). */
+  function blockedBy(c: Change): number {
+    const e = log[c.eventId];
+    return e?.type === "Hurt" && e.amount === 0 && e.absorbed ? e.absorbed : 0;
+  }
+  /** A change as the card shows it; a hit Shield fully blocked is the Shield
+   * icon and what it blocked, never "−0". */
+  function changeLabel(c: Change): (Node | string)[] {
+    const blocked = blockedBy(c);
+    if (blocked) return [icon("shield", 14, "tone-shield"), h("span", { class: "tone-shield" }, `${blocked}`)];
+    return [c.label];
+  }
+  /** A card's statuses (R2-13): each one's icon and stacks, in its colour. The
+   * row keeps its height when empty, so a status landing moves nothing. */
+  function statusChips(statuses: { status: string; stacks: number }[]): HTMLElement {
+    return h(
+      "div",
+      { class: "bv-sts", "data-testid": "card-statuses" },
+      ...statuses.map((st) => {
+        const def = STATUS_TERMS[st.status] ?? termDef(`status:${st.status}`);
+        const ic = def?.icon;
+        return h(
+          "span",
+          { class: `bv-st tone-${def?.tone ?? "plain"}`, title: `${st.status} ${st.stacks}`, "aria-label": `${st.status} ${st.stacks}`, "data-testid": "card-status", "data-status": st.status },
+          ...(ic ? [icon(ic, 12)] : [st.status.slice(0, 2)]),
+          h("b", {}, `${st.stacks}`),
+        );
+      }),
+    );
+  }
+  /** The trigger badge over a unit whose ability fired this beat: [When icon]
+   * → [Does icon]. It pops when its wave lands, stays for the beat, and opens
+   * that step's Why. */
+  function triggerBadge(id: string, v: View): HTMLElement | null {
+    let hit: { f: Firing; step: Step; age: number | null } | null = null;
+    for (const w of v.waves) {
+      const f = firingOf(log, w.step);
+      if (f && f.unit === id) hit = { f, step: w.step, age: w.age };
+    }
+    if (!hit) return null;
+    const { f, step, age } = hit;
+    const trig = f.trigger ? termIcon(f.trigger as TermId, f.triggerStatus) : undefined;
+    const eff = termIcon(f.effect as TermId);
+    const effTone = termDef(f.effect as TermId)?.tone ?? "plain";
+    const when = f.trigger ? (termDef(f.trigger as TermId)?.label ?? "") : "";
+    const does = f.effectStatus ?? termDef(f.effect as TermId)?.label ?? "";
+    const b = h(
+      "button",
+      { class: "bv-badge", "data-testid": "trigger-badge", "data-trigger": f.trigger ?? "", "data-effect": f.effect, "aria-label": `${when}${f.triggerStatus ? ` (${f.triggerStatus})` : ""} → ${does}` },
+      trig ? icon(trig, 14, "tone-when") : h("span", { class: "tone-when" }, "⚡"),
+      h("span", { class: "bv-badge-arrow" }, "→"),
+      eff ? icon(eff, 14, `tone-${effTone}`) : h("span", { class: `tone-${effTone}` }, does.slice(0, 3)),
+    );
+    if (age !== null && age <= MOTION_MS) b.style.setProperty("--bv-bt", `${-Math.round(age * speed)}ms`);
+    else b.classList.add("still");
+    b.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      const c = step.changes[0];
+      if (c) openTrace(c.eventId, step.changes.filter((x) => x.unit === c.unit));
+    });
+    return b;
+  }
+  /** A card in its slot, with the trigger badge above it when one fired. */
+  function slot(el: HTMLElement, id: string, v: View): HTMLElement {
+    return h("div", { class: "bv-slot" }, el, triggerBadge(id, v));
   }
   /** A card tap: the unit's sheet when it entered the battle; a summon has none, so its change's trace. */
   function openUnit(id: string, change: Change | undefined): void {
@@ -215,6 +294,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       { class: `card bv-card dead ${sides.get(id) === you ? "you" : "ghost"}` },
       h("div", { class: "emoji" }, emojiOf(id)),
       h("div", { class: "name" }, name(id)),
+      h("div", { class: "hpbar" }, h("i", { style: "width:0" })),
+      h("div", { class: "stats big" }, h("span", { class: "p" }, "✝")),
+      h("div", { class: "foot" }, h("div", { class: "bv-sts" })),
       death ? h("div", { class: "bv-changes" }, changeBadge(v.changes.filter((c) => c.unit === id))) : null,
     );
     el.dataset.unit = id;
@@ -243,9 +325,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
    * caption lists them. */
   function motion(el: HTMLElement, id: string, side: Side, v: View): void {
     let k = 0;
+    // Ages are real ms; animations run `speed` times faster, so their offset is age × speed.
+    let hitAge: number | null = null;
     for (const { step, age } of v.waves) {
-      if (age === null || age > MOTION_MS) continue;
-      const t = `${-Math.round(age)}ms`;
+      if (age === null || age * speed > MOTION_MS) continue;
+      const t = `${-Math.round(age * speed)}ms`;
       const mine = step.changes.filter((c) => c.unit === id);
       let move: string | null = null;
       if (step.actor === id) {
@@ -253,11 +337,20 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         const struck = first?.type === "Hurt" && first.source === "kernel" && first.causedBy !== null && log[first.causedBy]?.type === "Strike";
         move = struck ? (side === you ? "bv-lunge-up" : "bv-lunge-down") : "bv-pulse";
       }
-      if (mine.some((c) => c.kind === "damage")) move = "bv-hit";
-      if (mine.some((c) => c.kind === "death")) move = "bv-dying";
+      if (mine.some((c) => c.kind === "damage")) { move = "bv-hit"; hitAge = age * speed; }
+      if (mine.some((c) => c.kind === "death")) {
+        // The killing blow's shake plays out, then the card pops (R2-13):
+        // the die starts once the shake (80 ms in, 340 ms long) is over.
+        const own = age * speed;
+        const start = hitAge !== null ? Math.max(-own, 420 - hitAge) : -own;
+        el.classList.add("bv-dying");
+        el.style.setProperty("--bv-dt", `${Math.round(start)}ms`);
+        if (hitAge === null) el.classList.remove("bv-lunge-up", "bv-lunge-down", "bv-pulse");
+        move = null;
+      }
       // The latest wave's movement wins; its delay drives the card's animation.
       if (move) {
-        el.classList.remove("bv-lunge-up", "bv-lunge-down", "bv-pulse", "bv-hit", "bv-dying");
+        el.classList.remove("bv-lunge-up", "bv-lunge-down", "bv-pulse", "bv-hit");
         el.classList.add(move);
         el.style.setProperty("--bv-t", t);
       }
@@ -271,7 +364,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       // sits in the card's chip, so floating it too only covers the card.
       mine.filter((c) => FLOATS.has(c.kind)).slice(0, 3).forEach((c, i) => {
         const f = h("span", { class: `bv-float ${c.kind}`, "aria-hidden": "true" }, c.label);
-        f.style.animationDelay = `${i * 80 - Math.round(age)}ms`;
+        f.style.animationDelay = `${Math.round((i * 80) / speed - age)}ms`;
+        const e = log[c.eventId];
+        // ±PWR sits over PWR (left), ±HP over HP (right); a blocked hit shows the Shield.
+        if (e?.type === "StatChanged") f.classList.add(e.stat === "pwr" ? "on-pwr" : "on-hp");
+        if (blockedBy(c)) f.replaceChildren(...changeLabel(c));
         f.style.setProperty("--k", String(k++ % 3));
         el.append(f);
       });
@@ -281,9 +378,12 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** A line in the beat: the living units, and each unit that fell in this
    * beat back in the slot it held when the beat began. */
   function lineOf(side: Side, board: ReturnType<typeof boardAt>, before: ReturnType<typeof boardAt>, v: View): HTMLElement[] {
-    const living: HTMLElement[] = board.lines[side].map((u) => unitCard(u, side, v));
+    const living: HTMLElement[] = board.lines[side].map((u) => slot(unitCard(u, side, v), u.id, v));
     const fallen = board.graves[side]
-      .map((u) => ({ card: deadCard(u.id, v), slot: before.lines[side].findIndex((b) => b.id === u.id) }))
+      .map((u) => {
+        const dead = deadCard(u.id, v);
+        return { card: dead && slot(dead, u.id, v), slot: before.lines[side].findIndex((b) => b.id === u.id) };
+      })
       .filter((x): x is { card: HTMLElement; slot: number } => x.card !== null)
       .sort((p, q) => (p.slot < 0 ? 99 : p.slot) - (q.slot < 0 ? 99 : q.slot));
     for (const f of fallen) living.splice(f.slot < 0 ? living.length : Math.min(f.slot, living.length), 0, f.card);
@@ -297,13 +397,16 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     // hold an earlier id (a status leaving folds into the hit that caused it).
     const shown = beat ? beat.waves.slice(0, wave + 1) : [];
     const upto = shown.reduce((m, w) => w.eventIds.reduce((n, id) => Math.max(n, id), m), 0);
+    // Draw by the set of landed ids, not the max: a wave still to come can
+    // hold a lower id than one already landed.
+    const pending = new Set(beat ? beat.waves.slice(wave + 1).flatMap((w) => w.eventIds) : []);
     const now = performance.now();
     const v: View = {
       now: step,
       changes: shown.flatMap((w) => w.changes),
       waves: shown.map((w, i) => ({ step: w, age: landed[i] !== undefined ? now - landed[i]! : null })),
     };
-    const board = boardAt(log, upto);
+    const board = boardAt(log, upto, pending);
     const before = beat ? boardAt(log, Math.max(0, beat.start - 1)) : board;
     const turn = step?.turn ?? 0;
     hud.replaceChildren(
@@ -319,7 +422,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       row.classList.toggle("empty", !cards.length);
       if (!cards.length) row.append(h("div", { class: "dim" }, "No one standing."));
     }
-    caption.replaceChildren(...captionKids(step), ...(reduced() ? stillList(v.changes) : []));
+    caption.replaceChildren(h("span", { class: "bv-cap" }, ...captionKids(step)));
+    still.replaceChildren(...(reduced() ? stillList(v.changes) : []));
+    still.style.display = reduced() && !finished ? "" : "none";
     caption.classList.toggle("tappable", !!step?.changes.length);
     recent.replaceChildren(
       ...beats.slice(Math.max(0, at - 3), Math.max(0, at)).reverse().map((pb) => {
@@ -352,8 +457,38 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   function captionKids(step: Step | undefined): Node[] {
     if (!step) return [document.createTextNode("The lines face off.")];
     const side = step.subjectSide;
-    if (!side) return [document.createTextNode(step.caption)];
-    return [sideTag(side, "caption-side"), document.createTextNode(step.caption)];
+    if (!side) return richCaption(step.caption);
+    return [sideTag(side, "caption-side"), ...richCaption(step.caption)];
+  }
+
+  /** A caption with its terms highlighted (R2-13, like R2-8's unit text):
+   * unit names in their side's colour, statuses with their icon and colour,
+   * PWR / HP, damage and healing numbers, and a Shield block as the Shield
+   * icon. Plain spans: the caption itself is the button that opens Why. */
+  function richCaption(text: string): Node[] {
+    const out: Node[] = [];
+    let i = 0;
+    for (const m of text.matchAll(captionTerms)) {
+      if (m.index! > i) out.push(document.createTextNode(text.slice(i, m.index)));
+      out.push(captionTerm(m[0]));
+      i = m.index! + m[0].length;
+    }
+    if (i < text.length) out.push(document.createTextNode(text.slice(i)));
+    return out;
+  }
+  function captionTerm(t: string): Node {
+    const side = unitSide.get(t);
+    if (side) return h("span", { class: `bv-cn ${side === you ? "tone-ally" : "tone-enemy"}` }, t);
+    const absorbed = /^\((\d+) absorbed\)$/.exec(t);
+    if (absorbed) return h("span", { class: "bv-ct tone-shield", "data-testid": "caption-term" }, icon("shield", 14), ` ${absorbed[1]} blocked`);
+    const status = STATUS_TERMS[t] ?? (logStatuses.has(t) ? termDef(`status:${t}`) : undefined);
+    if (status) return h("span", { class: `bv-ct tone-${status.tone}`, "data-testid": "caption-term" }, ...(status.icon ? [icon(status.icon, 14), " "] : []), t);
+    if (t === "Fatigue") return h("span", { class: "bv-ct tone-dmg", "data-testid": "caption-term" }, icon("hourglass", 14), " ", t);
+    if (t === "PWR") return h("span", { class: "tone-pwr" }, t);
+    if (t === "HP") return h("span", { class: "tone-hp" }, t);
+    if (t.startsWith("−")) return h("b", { class: "tone-dmg" }, t);
+    if (t.startsWith("+")) return h("b", { class: "tone-heal" }, t);
+    return document.createTextNode(t);
   }
 
   /** Reduced motion: no floats, so the caption lists every change of the
@@ -402,7 +537,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     return [h("div", { class: `bv-word ${cls}`, "data-testid": "battle-word" }, word), ...(why ? [why] : []), button("Continue", leave, "primary", "battle-done")];
   }
 
-  show(hud, h("div", { class: "label" }, a.you ? "Them" : owner(them)), enemy, caption, mine, h("div", { class: "label" }, a.you ? "You · front first" : `${owner(you)} · front first`), recent, sheet, end, h("div", { class: "spacer" }), controls);
+  show(hud, h("div", { class: "label" }, a.you ? "Them" : owner(them)), enemy, caption, mine, h("div", { class: "label" }, a.you ? "You · front first" : `${owner(you)} · front first`), still, recent, sheet, end, h("div", { class: "spacer" }), controls);
+  setSpeedVar();
   // The Codex opened over the battle (a term's "Open in Codex") pauses it.
   onLeave(() => {
     pause();

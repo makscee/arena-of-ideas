@@ -280,6 +280,52 @@ export function timingOf(beat: PlayBeat): { at: number[]; ms: number } {
   return beatTiming(beat.waves.length, quiet);
 }
 
+/** What a trigger badge shows (R2-13): the trigger a unit's ability answered
+ * and what the ability did, as glossary terms for their icons. */
+export interface Firing {
+  unit: string;
+  /** "trigger:Hurt", or null when the cause isn't a trigger event (a status's own tick). */
+  trigger: `trigger:${string}` | null;
+  /** The status a StatusApplied / StatusRemoved trigger was about. */
+  triggerStatus?: string;
+  /** "effect:damage", "status:Strength", "stat:pwr", … */
+  effect: string;
+  /** The status the effect put on, for its icon and colour. */
+  effectStatus?: string;
+}
+
+/** The kernel events a unit trigger can answer (glossary trigger:<type>). */
+const TRIGGER_EVENTS = new Set(["BattleStart", "TurnStart", "TurnEnd", "Strike", "Hurt", "Heal", "Death", "Summon", "StatusApplied", "StatusRemoved", "StatChanged"]);
+
+/** The unit ability that made this step, if one did: its holder, the event
+ * that set it off and the step's first change. A status's own ability
+ * (Shield blocking, Poison ticking) and the kernel's strikes have none.
+ * Until the kernel stamps the matched When (R2-15), the trigger is read off
+ * the cause's event type, which is what a unit's When matched. */
+export function firingOf(log: BattleEvent[], step: Pick<Step, "eventIds" | "changes">): Firing | null {
+  const first = log[step.eventIds[0]!];
+  if (!first || first.source === "kernel" || first.source.status) return null;
+  const c = step.changes[0];
+  if (!c) return null;
+  const cause = first.causedBy !== null ? log[first.causedBy] : undefined;
+  const trigger = cause && TRIGGER_EVENTS.has(cause.type) ? (`trigger:${cause.type}` as const) : null;
+  const triggerStatus = cause && (cause.type === "StatusApplied" || cause.type === "StatusRemoved") ? cause.status : undefined;
+  const e = log[c.eventId];
+  let effect: string;
+  let effectStatus: string | undefined;
+  switch (e?.type) {
+    case "Hurt": effect = "effect:damage"; break;
+    case "Heal": effect = "effect:heal"; break;
+    case "StatusApplied": effect = `status:${e.status}`; effectStatus = e.status; break;
+    case "StatChanged": effect = `stat:${e.stat}`; break;
+    case "Summon": effect = e.resurrected ? "effect:resurrect" : "effect:summon"; break;
+    case "Silenced": effect = "effect:silence"; break;
+    case "Death": effect = "effect:damage"; break;
+    default: return null;
+  }
+  return { unit: first.source.unit, trigger, ...(triggerStatus ? { triggerStatus } : {}), effect, ...(effectStatus ? { effectStatus } : {}) };
+}
+
 /** Which firing made a step: its first event's parent and source. Steps of
  * one firing and one kind land in the same wave. */
 function waveKey(log: BattleEvent[], s: Step): string {
