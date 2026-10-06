@@ -5,8 +5,10 @@
 // <name> in the copied world, or a new "Maks"), then checks: a tester opens
 // the link at 360×640, gets the name, buys and fights; the same link on a
 // second device is the same player; the admin sees "End day now" at 1440×900
-// and the tester doesn't; an old device without a token and a bad link both
-// land on a clear screen. A screenshot of each.
+// and the tester doesn't; another player's link asks before it switches; an
+// old device without a token and a bad link both land on a clear screen (a
+// bad link on a device with its own session offers Home); a revoked link ends
+// every device's session and its new link works. A screenshot of each.
 import { spawn, execFileSync } from "node:child_process";
 import { copyFileSync, mkdirSync, mkdtempSync } from "node:fs";
 import { createServer } from "node:net";
@@ -92,6 +94,41 @@ try {
   if (!(await m.getByTestId("end-day").count())) errors.push("admin: no End day now");
   await shot(m, "admin-home-desktop");
 
+  // Another player's link on a device that already has a player asks first.
+  await m.goto(`${url}?invite=${guest}`);
+  await m.getByTestId("invite-switch").waitFor({ timeout: 10_000 });
+  if (!(await m.getByTestId("invite-switch").textContent()).includes(`This link is for ${tester}. Switch from ${claim ?? "Maks"}?`)) errors.push("switch: the question doesn't name both players");
+  await shot(m, "switch-ask-desktop");
+  await m.getByTestId("invite-stay").click();
+  await m.getByTestId("play").waitFor({ timeout: 10_000 });
+  if (!(await m.getByTestId("end-day").count())) errors.push("switch: Stay didn't keep the admin");
+  if (m.url().includes("invite=")) errors.push("switch: Stay keeps the code in the address");
+  await a.goto(`${url}?invite=${admin}`);
+  await a.getByTestId("invite-switch").waitFor({ timeout: 10_000 });
+  await shot(a, "switch-ask-phone");
+  await a.getByTestId("invite-stay").click();
+  await a.getByTestId("play").waitFor({ timeout: 10_000 });
+  if (!(await text(a)).includes(tester)) errors.push("switch: Stay didn't keep the tester");
+
+  // A bad link on a device with its own session: Home, not a Retry loop.
+  await a.goto(`${url}?invite=nope`);
+  await a.getByTestId("invite-home").waitFor({ timeout: 10_000 });
+  await shot(a, "bad-link-own-session-phone");
+  await a.getByTestId("invite-home").click();
+  await a.getByTestId("play").waitFor({ timeout: 10_000 });
+
+  // Revoke: both of the tester's devices land on the invite screen, the old
+  // link is dead, and the new one gives the same player back.
+  const next = codeOf(cli("revoke", tester));
+  await b.reload();
+  await b.getByTestId("invite-only").waitFor({ timeout: 10_000 });
+  await shot(b, "revoked-device-phone");
+  await b.goto(`${url}?invite=${guest}`);
+  await b.getByTestId("invite-bad").waitFor({ timeout: 10_000 });
+  await b.goto(`${url}?invite=${next}`);
+  await b.getByTestId("play").waitFor({ timeout: 15_000 });
+  if (!/Continue/i.test(await b.getByTestId("play").textContent())) errors.push("revoke: the new link isn't the same player (no Continue)");
+
   // An old device (a name from before invites, no token) and a bad link.
   const old = await device(DESKTOP);
   await old.addInitScript(() => localStorage.setItem("arena.player", JSON.stringify({ id: "x", name: "old", bot: false })));
@@ -117,4 +154,4 @@ if (errors.length) {
   for (const e of errors) console.error(`✗ ${e}`);
   process.exit(1);
 }
-console.log("✓ invite links work: tester, second device, admin dev tools, old device, bad link");
+console.log("✓ invite links work: tester, second device, admin dev tools, switch ask, old device, bad link, revoke");

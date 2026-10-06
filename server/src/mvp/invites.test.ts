@@ -111,10 +111,11 @@ describe("invite links (slice 13)", () => {
       expect(r.invite.code).not.toBe(inv.code);
       expect(r.invite.playerId).toBe(inv.playerId);
       expect(r.invite.redeemedAt).toBeNull();
-      for (const s of [a, b]) {
-        expect((await call<HomeView>("GET", "/home", tok(s.json))).json.rating).toBeNull();
-        expect((await call("POST", "/runs", tok(s.json))).status).toBe(401);
-      }
+      for (const s of [a, b])
+        for (const [m, path] of [["GET", "/home"], ["POST", "/runs"], ["GET", "/day"]] as const) {
+          const res = await call(m, path, tok(s.json));
+          expect([res.status, res.json.error], `${m} ${path}`).toEqual([401, "unknown player: open your invite link"]);
+        }
       expect((await call("POST", `/invites/${inv.code}`)).status).toBe(404);
       const c = await call<PlayerSession>("POST", `/invites/${r.invite.code}`);
       expect(c.json.player.id).toBe(inv.playerId);

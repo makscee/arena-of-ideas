@@ -89,6 +89,8 @@ export const api = {
     savePlayer(player);
     return player;
   },
+  /** Whose invite link this is, without opening it (slice 13). */
+  invitePlayer: (code: string) => call<{ player: PlayerRef }>("GET", `/invites/${encodeURIComponent(code)}`).then((r) => r.player),
   /** Opens an invite link (slice 13): this device becomes its player. */
   async redeem(code: string): Promise<PlayerRef> {
     const s = await call<PlayerSession>("POST", `/invites/${encodeURIComponent(code)}`);

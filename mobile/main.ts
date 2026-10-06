@@ -164,10 +164,15 @@ function legendSheet(): HTMLElement {
 
 function nameScreen(): void {
   // An invite-only server (slice 13) takes no new names: a player comes from
-  // their invite link.
-  void api.health().then((hl) => {
-    if (hl.invites) show(h("h1", {}, "ARENA OF IDEAS"), h("p", { class: "dim", "data-testid": "invite-only" }, "Arena is invite-only for now. Open your invite link on this device to play."));
-  }, () => {});
+  // their invite link. Nothing but the title shows until /health says which.
+  show(h("h1", {}, "ARENA OF IDEAS"));
+  void api.health().then(
+    (hl) => (hl.invites ? show(h("h1", {}, "ARENA OF IDEAS"), h("p", { class: "dim", "data-testid": "invite-only" }, "Arena is invite-only for now. Open your invite link on this device to play.")) : nameForm()),
+    () => nameForm(),
+  );
+}
+
+function nameForm(): void {
   const input = h("input", { placeholder: "Your name", maxlength: "24", autocomplete: "nickname", "data-testid": "name-input" });
   const err = errorLine();
   const go = () => guarded(err, async () => {
@@ -1114,28 +1119,59 @@ function runOverScreen(run: RunView, content: MvpContent, notice = "", newRun = 
 
 // ---------- boot ----------
 
-initSound();
-
 /** `?invite=<code>` in the address (slice 13): open the link, then drop the
- * code from the address bar and go Home as its player. A link that fails
- * keeps its code, so Retry tries it again. */
+ * code from the address bar and go Home as its player. A device that is
+ * already another player asks first. A link that fails keeps its code, so
+ * Retry tries it again; a device with its own session gets Home instead. */
 const inviteCode = new URLSearchParams(location.search).get("invite");
-if (inviteCode) {
+const dropInvite = () => {
+  const url = new URL(location.href);
+  url.searchParams.delete("invite");
+  history.replaceState(null, "", url);
+};
+function openInvite(code: string): void {
   const err = errorLine();
   void guarded(err, async () => {
-    await api.redeem(inviteCode);
-    const url = new URL(location.href);
-    url.searchParams.delete("invite");
-    history.replaceState(null, "", url);
+    const mine = api.player;
+    if (mine) {
+      const theirs = await api.invitePlayer(code);
+      if (theirs.id !== mine.id) return switchScreen(code, mine, theirs);
+    }
+    await api.redeem(code);
+    dropInvite();
     await homeScreen();
   }).then(() => {
-    if (err.textContent)
-      show(
-        h("h1", {}, "ARENA"),
-        h("p", { class: "dim", "data-testid": "invite-bad" }, err.textContent.startsWith("no such invite") ? "This invite link doesn't work. Ask Maks for a new one." : err.textContent),
-        button("Retry", () => location.reload(), "primary"),
-      );
+    if (!err.textContent) return;
+    const own = api.player && api.hasToken;
+    show(
+      h("h1", {}, "ARENA"),
+      h("p", { class: "dim", "data-testid": "invite-bad" }, err.textContent.startsWith("no such invite") ? "This invite link doesn't work. Ask Maks for a new one." : err.textContent),
+      own
+        ? button("Home", () => (dropInvite(), void guarded(errorLine(), () => homeScreen())), "primary", "invite-home")
+        : button("Retry", () => location.reload(), "primary"),
+    );
   });
+}
+function switchScreen(code: string, mine: PlayerRef, theirs: PlayerRef): void {
+  const stay = () => (dropInvite(), void guarded(errorLine(), () => homeScreen()));
+  const go = () => void guarded(errorLine(), async () => {
+    await api.redeem(code);
+    dropInvite();
+    await homeScreen();
+  });
+  show(
+    h("h1", {}, "ARENA"),
+    h("p", { "data-testid": "invite-switch" }, `This link is for ${theirs.name}. Switch from ${mine.name}?`),
+    h("p", { class: "dim" }, `This device then plays as ${theirs.name}. ${mine.name} needs their own link to come back.`),
+    h("div", { class: "row footer" }, button("Stay", stay, "grow", "invite-stay"), button("Switch", go, "primary grow", "invite-switch-go")),
+  );
+  onKeys((e) => (e.key === "Escape" ? (stay(), true) : false));
+}
+
+initSound();
+
+if (inviteCode) {
+  openInvite(inviteCode);
 } else if (api.player) {
   const err = errorLine();
   void guarded(err, async () => {

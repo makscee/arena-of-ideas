@@ -45,6 +45,14 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
 
   // Every body here is a name or a Decision: a few hundred bytes.
   api.use("*", bodyLimit({ maxSize: 16 * 1024, onError: (c) => bad(c, 413, "body too large") }));
+  // A token that names no session (a revoked link) is no player anywhere but
+  // the invite routes: 401 "unknown player", so the device forgets it and
+  // shows the invite screen.
+  api.use("*", async (c, next) => {
+    const token = c.req.header(TOKEN_HEADER);
+    if (token && !c.req.path.includes("/invites/") && !sessionPlayer(store, token)) return unknownPlayer(c);
+    await next();
+  });
   // A decision's body is read only from a known player.
   for (const path of ["/runs/:runId/decisions", "/runs/:runId/preview"])
     api.post(path, async (c, next) => {
