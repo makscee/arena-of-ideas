@@ -379,6 +379,12 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
 
   /* Stats: a wider column; the tables read better at 960px than stretched. */
   #app[data-screen="stats"] { max-width: 960px; padding: 32px; }
+
+  /* Codex: the width for cards; keywords in two columns of rows. */
+  #app[data-screen="codex"] { max-width: 1280px; padding: 32px; }
+  #app[data-screen="codex"] .codex-filter, #app[data-screen="codex"] input[type="search"], #app[data-screen="codex"] select { max-width: 640px; }
+  #app[data-screen="codex"] .kw-list { display: grid; grid-template-columns: 1fr 1fr; column-gap: 24px; }
+  #app[data-screen="codex"] .codex-body > .panel { max-width: 960px; }
 }
 @media (min-width: 1280px) {
   #app[data-screen] { --cw: 132px; --gap: 12px; --insp: 380px; }
@@ -401,3 +407,27 @@ button.t:focus-visible { outline: 1px solid currentColor; outline-offset: 1px; }
   /* The fusion preview in the inspector: its buttons are a plain row, not a sheet's sticky footer. */
   #app[data-screen="shop"] .inspector .sheet-actions { position: static; margin: 0; padding: 0; background: none; }
 }
+
+/* The Codex (R2-11, mobile/screens/codex.ts). */
+.codex-filter { flex-wrap: wrap; gap: 6px; }
+button.chip { min-height: 44px; min-width: 44px; padding: 0 10px; font-size: 14px; border-color: var(--line); color: var(--text); }
+button.chip.on { border-color: var(--you); color: var(--bg); background: var(--you); }
+button.chip.icon { padding: 0; display: inline-flex; align-items: center; justify-content: center; color: #ffbf47; }
+button.chip.icon.on { background: #ffbf47; border-color: #ffbf47; color: var(--bg); }
+.codex-grid { align-content: start; }
+.codex-none { grid-column: 1 / -1; }
+select { font: inherit; min-height: 44px; width: 100%; background: var(--panel); color: var(--text); border: 1px solid var(--line); padding: 0 8px; }
+.contents { display: contents; }
+.fusion-row .emoji.pair { width: auto; min-width: 44px; font-size: 18px; letter-spacing: -0.08em; }
+.fusion-row.unknown .fusion-name { color: var(--dim); }
+.fusion-name { font-weight: 700; }
+.fusion-recipe { line-height: 1.35; }
+.kw-group { margin-top: 6px; }
+.kw-row { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); scroll-margin: 80px; }
+.kw-row.landed { background: color-mix(in srgb, var(--you) 10%, transparent); outline: 1px solid var(--you); outline-offset: 2px; }
+.kw-icon { flex: none; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; }
+.kw-noicon { font-family: "Chakra Petch", sans-serif; font-size: 28px; font-weight: 700; opacity: 0.6; }
+.kw-text { gap: 4px; min-width: 0; flex: 1; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+button.chip.unit-chip { min-height: 44px; padding: 0 8px; font-size: 13px; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; }
+.credits a { color: var(--dim); }

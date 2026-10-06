@@ -11,11 +11,13 @@ import { MVP_RULES, offersAt } from "../src/mvp/contract";
 import { ApiError, api, savedPlayer } from "./api";
 import { getContent } from "./content";
 import { battleScreen, whyILost } from "./screens/battle";
+import { codexScreen, type CodexState } from "./screens/codex";
+import { setCodexLink } from "./ui/term";
 import { statsScreen } from "./screens/stats";
 import { card, unitSheet, type CardUnit } from "./ui/card";
 import { previewName } from "./ui/fusion";
 import { icon } from "./ui/icon";
-import { app, button, closable, desktopQuery, h, isDesktop, onKeys, overlay, screen, show, who } from "./ui/dom";
+import { app, button, closable, desktopQuery, h, isDesktop, keepScreen, onKeys, overlay, screen, show, who } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
 
 function errorLine(): HTMLElement {
@@ -170,11 +172,8 @@ async function homeScreen(ended: number | null = null): Promise<void> {
         shopScreen(await api.startRun(), content);
       })), "", "new-run")
     : null;
-  // Slice R2-11 fills the Codex; until then it is a disabled placeholder.
-  const codex = button("Codex", () => {}, "", "codex");
-  codex.disabled = true;
-  codex.title = "The Codex arrives in slice R2-11.";
-  const stats = button("Stats", () => void statsScreen({ content, onBack: () => void homeScreen() }), "grow", "stats");
+  const codex = button("Codex", () => void guarded(err, () => openCodex()), "", "codex");
+  const stats = button("Stats", () => void statsScreen({ content, onBack: () => void homeScreen(), onCodex: () => void openCodex() }), "grow", "stats");
   const rulesBtn = button("Rules", () => closable(rulesSheet()), "grow", "rules-open");
   const endDay = button(
     "End day now",
@@ -271,15 +270,28 @@ function abandonSheet(run: RunView, why: "menu" | "new", onConfirm: () => void):
   );
 }
 
+/** Where the Codex's Back goes: the screen it opened over, kept as it was. */
+let codexBack: (() => void) | null = null;
+
+/** Opens the Codex over the current screen (the title menu, a run's shop, a
+ * battle); from inside the Codex (a term link in a unit sheet) it changes tab
+ * and keeps the same Back. */
+async function openCodex(state?: Partial<CodexState>): Promise<void> {
+  if (app.dataset.screen !== "codex" || !codexBack) codexBack = keepScreen();
+  const back = codexBack;
+  const content = await getContent();
+  await codexScreen({ content, state, onBack: () => ((codexBack = null), back()) });
+}
+// Every highlighted term's "Open in Codex" lands on its Keywords row.
+setCodexLink((term) => void openCodex({ tab: "keywords", term }));
+
 /** The in-run menu (☰ in the HUD, Esc on desktop): Resume, Codex, Rules,
  * Title menu (the run waits on the server; Continue brings it back) and
  * Abandon run with one confirm, which ends on the run-over screen. */
 function runMenu(run: RunView, content: MvpContent, err: HTMLElement): void {
   if (app.querySelector('[data-testid="run-menu"]')) return;
   const crown = run.round > rules.rounds;
-  const codex = button("Codex", () => {}, "", "menu-codex");
-  codex.disabled = true;
-  codex.title = "The Codex arrives in slice R2-11.";
+  const codex = button("Codex", () => (close(), void guarded(err, () => openCodex())), "", "menu-codex");
   const close = overlay(
     h(
       "div",
