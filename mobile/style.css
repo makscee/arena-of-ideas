@@ -381,10 +381,14 @@ button.bv-also-btn.damage, button.bv-also-btn.debuff, button.bv-also-btn.death {
 button.bv-also-btn.heal, button.bv-also-btn.summon { color: var(--you); }
 button.bv-caption { height: 52px; min-height: 0; overflow: hidden; width: 100%; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 17px; color: var(--text); border-color: var(--line); text-align: left; padding: 4px 12px; }
 button.bv-caption { display: flex; align-items: center; }
-/* Target beams (R3-21): one fixed layer over the cards, under the caption
-   (opaque, so a beam crossing the phone's caption band never hides its text),
-   the badges, the floats, the sheets and the end card. */
-button.bv-caption { position: relative; z-index: 2; background: var(--bg); }
+/* Target beams (R3-21): one fixed layer over the cards, under the caption,
+   the badges, the floats, the sheets and the end card. The caption band is
+   clear, so a beam crossing it reads end to end; its text and icons carry a
+   halo in the background's colour, so the beam passes behind the words
+   without hiding them. */
+button.bv-caption { position: relative; z-index: 2; }
+.bv-cap { text-shadow: 0 0 1px var(--bg), 0 0 2px var(--bg); }
+.bv-cap svg { filter: drop-shadow(0 0 1px var(--bg)); }
 .bv-fx { position: fixed; inset: 0; width: 100vw; height: 100dvh; z-index: 1; pointer-events: none; overflow: visible; }
 .bv-beam { --bv-bc: #ff6b4d; color: var(--bv-bc); }
 .bv-beam .bv-bl { fill: none; stroke: var(--bv-bc); stroke-width: 3; stroke-linecap: round; filter: drop-shadow(0 0 3px var(--bv-bc)); }

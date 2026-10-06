@@ -1121,7 +1121,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
    * earlier waves of the beat thin, dashed and dim. A beam runs between card
    * edges and bows away from the cards, so it never crosses a card's numbers:
    * on the phone (rows stacked) from the facing edges across the caption band
-   * (the caption sits above the layer), a same-line beam over the enemy row
+   * (the band is clear and above the layer: only its haloed text cuts the
+   * beam), a same-line beam over the enemy row
    * or under yours; on desktop (rows side by side) over the top of the line.
    * A self-target is a ring on the card; fatigue starts at the clash. */
   function drawBeams(waves: View["waves"]): void {
@@ -1133,8 +1134,13 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const boxOf = (id: string) => {
       const el = [enemy, mine].map((r) => r.querySelector<HTMLElement>(`.bv-card[data-unit="${CSS.escape(id)}"]`)).find((x) => x);
       // The slot, not the card: a lunging or shaking card's box moves with it.
-      const r = (el?.parentElement ?? el)?.getBoundingClientRect();
-      return el && r && r.width > 0 ? { r, row: enemy.contains(el) ? "them" : "you" } : null;
+      const slot = el?.parentElement ?? el;
+      const box = slot?.getBoundingClientRect();
+      if (!el || !slot || !box || box.width <= 0) return null;
+      // A summon still sliding in (.bv-enter's translate): its final box.
+      const [tx = 0, ty = 0] = (getComputedStyle(slot).translate.match(/-?[\d.]+/g) ?? []).map(Number);
+      const r = tx || ty ? new DOMRect(box.left - tx, box.top - ty, box.width, box.height) : box;
+      return { r, row: enemy.contains(el) ? "them" : "you" };
     };
     const clashAt = (): { x: number; y: number } => {
       const c = clash.getBoundingClientRect();
@@ -1143,12 +1149,16 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       return { x: (Math.max(er.left, mr.left) + Math.min(er.right, mr.right)) / 2, y: stacked ? (er.bottom + mr.top) / 2 : er.top };
     };
     const reduce = reduced();
-    waves.forEach(({ step, age }, i) => {
-      const newest = i === waves.length - 1;
+    const beamsBy = waves.map(({ step }) => beamsOf(log, step, whenOf));
+    // The bright wave is the newest one that has beams: a death wave draws
+    // none, so the killing blow's beam stays bright through it.
+    const bright = beamsBy.map((bs) => bs.length > 0).lastIndexOf(true);
+    waves.forEach(({ age }, i) => {
+      const newest = i === bright;
       const moving = newest && age !== null && !reduce && age * speed < MOTION_MS;
       const cls = `bv-beam ${newest ? "now" : "old"}${moving ? " draw" : ""}`;
       const delay = moving ? `${-Math.round(age! * speed)}ms` : "";
-      for (const b of beamsOf(log, step, whenOf)) {
+      for (const b of beamsBy[i]!) {
         const to = boxOf(b.to);
         if (!to) continue;
         const colour = beamColour(b);

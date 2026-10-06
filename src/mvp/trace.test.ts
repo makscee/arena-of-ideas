@@ -10,7 +10,7 @@ import { MVP_RULES, type MvpContent, type PlayerRef } from "./contract.js";
 import { fightLines } from "./fight.js";
 import { lineUnitOf } from "./forms.js";
 import { mvpPool } from "./units.js";
-import { BEAT_MAX_MS, BEAT_MS, EMPHASIS_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, weightsOf, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, causeOf, beamsOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost } from "./trace.js";
+import { BEAT_MAX_MS, BEAT_MS, EMPHASIS_MS, END_BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, weightsOf, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, causeOf, beamsOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -270,6 +270,10 @@ describe("one beat at a time (R2-12)", () => {
     expect(beats.at(-1)!.waves.every((w) => !w.changes.length)).toBe(true);
     expect(weights[decisive]!.last).toBe(true);
     expect(weights.filter((w) => w.last)).toHaveLength(1);
+    // The empty BattleEnd beat after it is short, so the end card follows the blow's hold.
+    expect(weights.at(-1)!.end).toBe(true);
+    expect(weights.filter((w) => w.end)).toHaveLength(1);
+    expect(timingOf(beats.at(-1)!, weights.at(-1)).ms).toBe(END_BEAT_MS);
     const big = beats.filter((b) => b.waves.some((w) => w.eventIds.some((id) => { const e = log[id]!; return e.type === "Hurt" && e.amount >= 4; })));
     expect(big.length).toBeGreaterThan(0);
     for (const b of big) expect(weights[b.index]!.big).toBe(true);

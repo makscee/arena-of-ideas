@@ -551,6 +551,10 @@ try {
         await page.getByTestId("trace-close").click();
       } else console.log("mvp phone: round 1 had no unit with two changes in one step (no shot)");
       await beamChecks(page, errors, { shot, phone: true });
+      // The beams again on a taller phone (390×844), where the caption band sits elsewhere.
+      await page.setViewportSize({ width: 390, height: 844 });
+      await beamChecks(page, errors, { shot: (n) => shot(`${n}-390`), phone: true, label: "phone 390" });
+      await page.setViewportSize({ width: 360, height: 640 });
       await nowSheetChecks(page, errors, { shot, phone: true });
       // R2-14: controls, the end card, key moments and Replay.
       await tap44("battle controls", page.locator(".bv-controls button"));
