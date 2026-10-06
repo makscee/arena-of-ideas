@@ -6,7 +6,7 @@ import { battle } from "../battle.js";
 import { displayNames } from "../trace.js";
 import { stressAbilities, stressRegistry } from "../content/stress.js";
 import type { AbilityDef, AbilityRegistry, BattleEvent, UnitDef, When } from "../types.js";
-import { BEAT_MAX_MS, BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost } from "./trace.js";
+import { BEAT_MAX_MS, BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, statusesShown, whyILost } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -438,6 +438,17 @@ describe("R2-17: key moments, battle start, fatigue rows, Why's icons", () => {
     expect(ms.length).toBe(3);
     expect(new Set(ms.map((m) => m.beat)).size).toBe(3);
     expect(ms.map((m) => m.beat)).toEqual([...ms.map((m) => m.beat)].sort((p, q) => p - q));
+  });
+
+  test("a card's status rows show what fits, two-digit stacks included, else leave room for +n", () => {
+    const w = 58; // a 360 px phone's card
+    expect(statusesShown([1, 2, 3], w)).toBe(3);
+    expect(statusesShown([1, 2, 3, 1, 2, 3], w)).toBe(6); // 3 + 3 one-digit chips
+    expect(statusesShown([1, 2, 3, 1, 2, 3, 1], w)).toBe(5); // the 6th place is "+2"
+    expect(statusesShown([12, 10, 11, 13], w)).toBe(4); // 2 + 2 two-digit chips
+    expect(statusesShown([12, 10, 11, 13, 14], w)).toBe(3); // the 4th place is "+2"
+    expect(statusesShown([12, 10, 11, 13, 14, 15], w)).toBe(3);
+    expect(statusesShown([], w)).toBe(0);
   });
 
   test("battle start is its own timeline block (turn 0), labelled Start", () => {

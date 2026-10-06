@@ -20,7 +20,7 @@
 import { boardAt, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView } from "../../src/mvp/contract";
 import { STATUS_TERMS, termDef, termIcon, type TermId } from "../../src/glossary";
-import { beatPlayOf, chainOf, damageByUnit, firingOf, keyMomentsOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Change, type Firing, type LossChain, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
+import { beatPlayOf, chainOf, damageByUnit, firingOf, keyMomentsOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, statusesShown, STATUS_ROW_FALLBACK, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Change, type Firing, type LossChain, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { card, formRich, unitSheet } from "../ui/card";
@@ -42,13 +42,7 @@ const FLOATS = new Set<Change["kind"]>(["damage", "heal", "buff", "debuff", "sum
  * summon sharing a name never takes the other side's colour). */
 const TAGGED: NameOf = (id) => `\uE000${id}\uE001`;
 const TAG = /\uE000([^\uE001]*)\uE001/g;
-/** Status chips a card shows in two rows (R2-17): as many as fit, measured
- * by the row's width (a two-digit stack is a wider chip); beyond that, the
- * last chip reads "+n" and opens the unit's live statuses. */
-const STATUS_ROWS = 2;
-/** A status chip's width: an 11 px icon plus 5.6 px a digit (10 px IBM Plex Mono, −0.04em); 2 px between chips. */
-const chipWidth = (stacks: number) => 11 + 5.6 * String(stacks).length;
-const CHIP_GAP = 2;
+
 /** The playback speeds, and where the viewer's choice is kept (per device). */
 const SPEEDS = [1, 2, 4] as const;
 const SPEED_KEY = "arena.battleSpeed";
@@ -536,28 +530,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
    * which opens the unit's live statuses (R2-17). */
   function statusChips(u: BoardUnit, width: number): HTMLElement {
     const statuses = u.statuses;
-    const w = width > 0 ? width : 3 * chipWidth(1) + 2 * CHIP_GAP;
-    // How many chips fit `rows` rows (flex-wrap fills them in order, like this).
-    const fits = (widths: number[], rows: number) => {
-      let row = 1;
-      let x = 0;
-      let n = 0;
-      for (const cw of widths) {
-        const need = x ? x + CHIP_GAP + cw : cw;
-        if (need <= w + 0.5) x = need;
-        else if (++row <= rows) x = cw;
-        else break;
-        n++;
-      }
-      return n;
-    };
-    const widths = statuses.map((st) => chipWidth(st.stacks));
-    let shown = statuses.length;
-    if (fits(widths, STATUS_ROWS) < statuses.length) {
-      // Room for "+n" (its digits as wide as a chip's) at the end of the second row.
-      shown = Math.max(0, statuses.length - 1);
-      while (shown > 0 && fits([...widths.slice(0, shown), 5.6 * (1 + String(statuses.length - shown).length) + 4], STATUS_ROWS) < shown + 1) shown--;
-    }
+    const shown = statusesShown(statuses.map((st) => st.stacks), width > 0 ? width : STATUS_ROW_FALLBACK);
     const over = statuses.length - shown;
     let more: HTMLElement | null = null;
     if (over) {
@@ -921,15 +894,14 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const list = still.querySelector(".bv-still");
     if (!list || still.style.display === "none") return;
     let dropped = 0;
-    while (still.scrollHeight > still.clientHeight + 1 && list.children.length > 1) {
-      const first = list.firstElementChild!;
-      if (first.classList.contains("bv-still-more")) {
-        first.remove();
-        if (list.children.length <= 1) break;
-      }
-      list.firstElementChild!.remove();
+    let more: HTMLElement | null = null;
+    while (still.scrollHeight > still.clientHeight + 1) {
+      const entries = [...list.children].filter((c) => c !== more);
+      if (entries.length <= 1) break;
+      entries[0]!.remove();
       dropped++;
-      list.prepend(h("span", { class: "bv-l dim bv-still-more" }, `+${dropped} earlier`));
+      if (!more) list.prepend((more = h("span", { class: "bv-l dim bv-still-more" })));
+      more.textContent = `+${dropped} earlier`;
     }
   }
   /** The end card sits under the caption on the phone (its last line, "They
