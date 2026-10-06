@@ -228,7 +228,7 @@ try {
   // The Summoned chip: the 5 bodies, tagged S; the Wolf names who summons it.
   await page.getByTestId("codex-tier-summoned").click();
   const summonCards = await page.getByTestId("codex-summon").count();
-  if (summonCards !== 6) errors.push(`codex: Summoned shows ${summonCards} cards, not 6`);
+  if (summonCards !== 8) errors.push(`codex: Summoned shows ${summonCards} cards, not 8`);
   if (await page.getByTestId("codex-unit").count()) errors.push("codex: Summoned shows tiered units");
   await shot("codex-summoned"); await noHScroll("codex-summoned");
   await page.locator('[data-testid="codex-summon"][data-summon="wolf"]').click();

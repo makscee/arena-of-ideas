@@ -127,7 +127,7 @@ export function botDecision(
   for (let a = 0; a < awoken.length; a++)
     for (let b = a + 1; b < awoken.length; b++) {
       const [x, y] = [awoken[a]!, awoken[b]!];
-      if (fuseCheck(x.u, y.u) === null && ready(x.u, y.u)) return { kind: "fuse", first: x.i, second: y.i };
+      if (fuseCheck(x.u, y.u) === null && ready(x.u, y.u) && !fansOut(x.u, y.u)) return { kind: "fuse", first: x.i, second: y.i };
     }
 
   const tierOf = (id: string) => content.units.find((u) => u.id === id)?.tier ?? 1;
@@ -206,6 +206,16 @@ export function playBotRun(deps: RunDeps, player: PlayerRef = botPlayer(deps.see
     run = deps.store.run(run.runId)!;
   }
   return run;
+}
+
+/** A fused unit whose When listens to a one-unit event (an ally shielded,
+ * healed, powered, summoned) and whose Who is a group breaks the pool's chain
+ * discipline (src/mvp/units.ts): it fans out n² and, with hostile Does on its
+ * own allies, can stall a battle to the turn cap. Bots don't make one. */
+function fansOut(first: LineUnit, second: LineUnit): boolean {
+  if (first.kind !== "unit" || second.kind !== "unit") return false;
+  const oneUnit = first.recipe.when.some((w) => w.kind === "trigger" && ["StatusApplied", "Heal", "StatChanged", "Summon"].includes(w.on.on));
+  return oneUnit && second.recipe.who.some((w) => w.kind.startsWith("all"));
 }
 
 /** playBotRun for the background: a bot that wants to fuse a pair whose name
