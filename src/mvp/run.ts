@@ -3,7 +3,7 @@
 // buy/reroll/sell/reorder/fuse, and the run-end rating. Pure: every
 // transition returns a new state, and the server (server/src/mvp/runs.ts)
 // supplies what needs the store: each round's opponent (setOpponent, picked at
-// round start), the champion for the Crown, the rating before the run. Copies,
+// round start), the champion for the Crown, the rating at the run's start. Copies,
 // awakening and fusion are slice 2's, in ./forms.ts, and a fight is
 // ./fight.ts's fightLines: this file only calls them. The shapes come from
 // ./contract.ts.
@@ -11,6 +11,7 @@
 import { rngStep } from "../rng.js";
 import {
   MVP_RULES,
+  offersAt,
   type BattleRecord,
   type Champion,
   type Decision,
@@ -45,9 +46,13 @@ export interface MvpRunState extends RunView {
   rng: number;
   nextUid: number;
   rules: MvpRules;
+  /** The player's rating when the run started (a bot's: rules.botRating),
+   * stamped on every ghost the run leaves and on its Slay. Absent on runs
+   * from before round 2: rules.ratingStart. */
+  ratingAtStart?: number;
 }
 
-export { MvpBadDecision, MvpDecisionError };
+export { MvpBadDecision, MvpDecisionError, offersAt };
 
 /** Every Decision kind (the compiler checks the list against the contract). */
 const DECISION_KINDS: Record<DecisionKind, true> = { buy: true, sell: true, reroll: true, reorder: true, fuse: true, fight: true };
@@ -67,7 +72,7 @@ function openUnits(content: MvpContent, rules: MvpRules, round: number): UnitCon
 
 function rollOffers(s: MvpRunState, content: MvpContent): void {
   const open = openUnits(content, s.rules, s.round);
-  s.offers = Array.from({ length: s.rules.offers }, (_, slot): Offer => {
+  s.offers = Array.from({ length: offersAt(s.rules, s.round) }, (_, slot): Offer => {
     const u = open[draw(s, open.length)]!;
     return { slot, unitId: u.id, tier: u.tier, cost: s.rules.unitCost };
   });
@@ -75,7 +80,7 @@ function rollOffers(s: MvpRunState, content: MvpContent): void {
 
 /** A new run. The kernel has no clock: the caller passes the day (DayView.seq)
  * and the start time. */
-export function initMvpRun(args: { runId: string; player: PlayerRef; seed: number; content: MvpContent; day: number; startedAt: string; rules?: MvpRules }): MvpRunState {
+export function initMvpRun(args: { runId: string; player: PlayerRef; seed: number; content: MvpContent; day: number; startedAt: string; rules?: MvpRules; rating?: number }): MvpRunState {
   const rules = args.rules ?? MVP_RULES;
   const s: MvpRunState = {
     runId: args.runId,
@@ -99,6 +104,7 @@ export function initMvpRun(args: { runId: string; player: PlayerRef; seed: numbe
     rng: args.seed >>> 0,
     nextUid: 1,
     rules,
+    ratingAtStart: args.rating ?? (args.player.bot ? rules.botRating : rules.ratingStart),
   };
   rollOffers(s, args.content);
   return s;
@@ -214,7 +220,7 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
         battleId,
         kind,
         round: s.round,
-        opponent: { ghostId: ghost.ghostId, player: ghost.player, round: ghost.round },
+        opponent: { ghostId: ghost.ghostId, player: ghost.player, round: ghost.round, rating: ghost.rating ?? s.rules.ratingStart },
         outcome,
         heartsLost,
         heartsAfter: s.hearts,
@@ -270,9 +276,26 @@ export function endRun(state: MvpRunState, why: "no-champion" | "content-changed
   return s;
 }
 
-/** Today's champion as the Crown's opponent. */
+/** Gives a run up (endedBy "abandoned"): every heart left in the shop, or
+ * the Crown at the Crown, becomes a forfeited fight against the opponent
+ * already picked (RunView.forfeit), which ratingChange counts as a loss. So
+ * giving up scores like the worst way of playing on, never better. Hearts
+ * drop to 0. Throws MvpDecisionError on a run that is already over. */
+export function abandonRun(state: MvpRunState): MvpRunState {
+  if (state.phase === "over") throw new MvpDecisionError("abandon", `the run is over (${state.endedBy})`);
+  const s = clone(state);
+  const fights = s.phase === "crown" ? 1 : s.hearts;
+  s.forfeit = { fights, opponentRating: s.opponent?.rating ?? s.rules.ratingStart };
+  s.losses += fights;
+  s.hearts = 0;
+  endIn(s, "abandoned");
+  return s;
+}
+
+/** Today's champion as the Crown's opponent, rated at Champion.rating. */
 export function championGhost(c: Champion, rules: MvpRules = MVP_RULES): Ghost {
   return {
+    rating: c.rating ?? rules.ratingStart,
     ghostId: `champion-${c.seq}`,
     runId: `champion-${c.seq}`,
     player: c.player,
@@ -283,14 +306,12 @@ export function championGhost(c: Champion, rules: MvpRules = MVP_RULES): Ghost {
   };
 }
 
-/** What slaying the champion adds to the run's score (0..1). Tunable. */
-export const SLAY_BONUS = 0.25;
-/** What a drawn round fight counts as. Tunable. */
+/** What a drawn fight scores. Tunable. */
 export const DRAW_SCORE = 0.5;
 
 /** True when the run slew the champion: it won the Crown against someone
  * else's team. The reigning champion beating their own champion team is no
- * slay (no Slay row, no slay bonus, no playoff entry). Without `player`
+ * slay (no Slay row, no playoff entry). Without `player`
  * every Crown win counts. */
 export function slewChampion(run: Pick<RunView, "fights" | "endedBy"> & Partial<Pick<RunView, "player">>): boolean {
   if (run.endedBy !== "crown-won") return false;
@@ -298,23 +319,35 @@ export function slewChampion(run: Pick<RunView, "fights" | "endedBy"> & Partial<
   return !run.player || crown?.opponent.player.id !== run.player.id;
 }
 
-/** The run-end rating, Elo-style. The run's score is its share of round
- * fights won (draws count DRAW_SCORE; the Crown isn't a round fight), plus
- * SLAY_BONUS for a slay (slewChampion), clamped to 0..1; the expected score
- * is a player rated `before` against the field (rules.ratingStart). So
- * winning half the rounds holds a start rating, and a slay lifts it. */
-export function ratingChange(before: number, run: Pick<RunView, "fights" | "endedBy"> & Partial<Pick<RunView, "player">>, rules: MvpRules = MVP_RULES): RatingChange {
-  const rounds = run.fights.filter((f) => f.kind === "round");
-  const points = rounds.reduce((n, f) => n + (f.outcome === "win" ? 1 : f.outcome === "draw" ? DRAW_SCORE : 0), 0);
-  const share = rounds.length > 0 ? points / rounds.length : 0;
-  const actual = Math.min(1, Math.max(0, share + (slewChampion(run) ? SLAY_BONUS : 0)));
-  const expected = 1 / (1 + 10 ** ((rules.ratingStart - before) / 400));
-  return { before, after: Math.round(before + rules.ratingK * (actual - expected)), expected, actual };
+/** K for a player who has finished `runs` runs before this one. */
+export function ratingK(runs: number, rules: MvpRules = MVP_RULES): number {
+  return (rules.ratingKSteps ?? []).find((step) => runs < step.runsBelow)?.k ?? rules.ratingK;
+}
+
+/** The run-end rating: per-fight Elo, applied once (docs/round2/rating.md §3).
+ * Every rated fight (each round fight and the Crown) scores S − E against the
+ * rating stamped on that opponent (a fight from before round 2 has none:
+ * rules.ratingStart); an abandoned run adds its forfeits as losses. The sum,
+ * times K for `runs` runs played before (ratingK), is the change. No slay
+ * bonus: the Crown is one more fight. `before` is the rating at the run's
+ * start (it doesn't move during a run). */
+export function ratingChange(before: number, runs: number, run: Pick<RunView, "fights"> & Partial<Pick<RunView, "forfeit">>, rules: MvpRules = MVP_RULES): RatingChange {
+  const expect = (opp: number) => 1 / (1 + 10 ** ((opp - before) / 400));
+  let expected = 0;
+  let actual = 0;
+  for (const f of run.fights) {
+    if (f.kind === "playoff") continue;
+    expected += expect(f.opponent.rating ?? rules.ratingStart);
+    actual += f.outcome === "win" ? 1 : f.outcome === "draw" ? DRAW_SCORE : 0;
+  }
+  if (run.forfeit) expected += run.forfeit.fights * expect(run.forfeit.opponentRating);
+  const k = ratingK(runs, rules);
+  return { before, after: Math.round(before + k * (actual - expected)), expected, actual, k };
 }
 
 /** The public view of a run (drops the rng and bookkeeping). */
 export function runView(s: MvpRunState): RunView {
-  const { seed: _seed, rng: _rng, nextUid: _n, rules: _r, opponent: _o, crownSeq: _c, ...view } = s;
+  const { seed: _seed, rng: _rng, nextUid: _n, rules: _r, opponent: _o, crownSeq: _c, ratingAtStart: _ra, ...view } = s;
   return view;
 }
 
@@ -341,6 +374,7 @@ export function synthGhost(args: { content: MvpContent; round: number; seed: num
     line: s.line,
     contentVersion: args.content.version,
     createdAt: args.createdAt,
+    rating: rules.botRating ?? rules.ratingStart,
   };
 }
 

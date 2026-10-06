@@ -26,7 +26,11 @@ export interface MvpRules {
   rerollCost: number;
   /** Gold back for selling a unit. */
   sellRefund: number;
+  /** Offers in a round-1 shop. */
   offers: number;
+  /** +1 offer from each listed round on (3 → 6 with [2, 4, 7]). Runs stored
+   * before the curve have no field and keep a fixed `offers`. */
+  offersGrowAt?: number[];
   lineSize: number;
   /** The Nth copy of a unit swaps it to its awoken form (slice 2). */
   copiesToAwaken: number;
@@ -36,9 +40,15 @@ export interface MvpRules {
   tierOpensAt: number[];
   /** Cascade step cap; hitting it logs a visible "chain capped" event (slice 3). */
   chainStepCap: number;
-  /** Elo K and the start rating (slice 4). */
+  /** Per-fight Elo (docs/round2/rating.md): K falls with runs played. A
+   * player with fewer than `runsBelow` runs (the first step that fits) uses
+   * its `k`; past every step, `ratingK`. Steps rather than an Infinity bound,
+   * so the rules survive JSON. */
+  ratingKSteps: { runsBelow: number; k: number }[];
   ratingK: number;
   ratingStart: number;
+  /** The rating stamped on bots' ghosts and runs: anchors the scale. */
+  botRating: number;
   /** Day rollover, "HH:MM" in dayTimeZone (slice 5). */
   dayEndsAt: string;
   dayTimeZone: string;
@@ -51,17 +61,25 @@ export const MVP_RULES: MvpRules = {
   unitCost: 3,
   rerollCost: 1,
   sellRefund: 1,
-  offers: 5,
+  offers: 3,
+  offersGrowAt: [2, 4, 7],
   lineSize: 5,
   copiesToAwaken: 3,
   copyGrowth: { pwr: 1, hp: 2 },
   tierOpensAt: [1, 3, 6, 9],
   chainStepCap: 64,
-  ratingK: 32,
+  ratingKSteps: [{ runsBelow: 5, k: 32 }, { runsBelow: 15, k: 16 }],
+  ratingK: 10,
   ratingStart: 1000,
+  botRating: 1000,
   dayEndsAt: "04:00",
   dayTimeZone: "Europe/Moscow",
 };
+
+/** Offers in the shop at `round`: `offers`, +1 for each `offersGrowAt` round reached. */
+export function offersAt(rules: MvpRules, round: number): number {
+  return rules.offers + (rules.offersGrowAt ?? []).filter((r) => r <= round).length;
+}
 
 // ---------- content: units with two forms ----------
 
@@ -211,6 +229,10 @@ export interface Ghost {
   contentVersion: string;
   /** ISO time it was saved. */
   createdAt: string;
+  /** Its owner's rating at the start of that run (a bot's: rules.botRating;
+   * the champion's: Champion.rating). A row saved before round 2 has none
+   * and reads as rules.ratingStart. */
+  rating: number;
 }
 
 /** round: a shop round's ghost. crown: the run's last fight, against today's
@@ -223,7 +245,8 @@ export interface FightResult {
   battleId: string;
   kind: FightKind;
   round: number;
-  opponent: Pick<Ghost, "ghostId" | "player" | "round">;
+  /** `rating` is what the fight is rated against (Ghost.rating). */
+  opponent: Pick<Ghost, "ghostId" | "player" | "round" | "rating">;
   outcome: Outcome;
   heartsLost: number;
   heartsAfter: number;
@@ -275,7 +298,7 @@ export interface BattleRecord {
  * rating null, no rating change) on its next decision, or when its player
  * starts a run. Its line is not rebuilt. */
 export type RunPhase = "shop" | "crown" | "over";
-export type RunEndReason = "out-of-hearts" | "crown-won" | "crown-lost" | "no-champion" | "content-changed";
+export type RunEndReason = "out-of-hearts" | "crown-won" | "crown-lost" | "no-champion" | "content-changed" | "abandoned";
 
 export interface RunView {
   runId: string;
@@ -302,6 +325,11 @@ export interface RunView {
   /** ISO time the run ended; the server stamps it. */
   endedAt?: string;
   endedBy?: RunEndReason;
+  /** A run its player gave up (POST /runs/:id/abandon, endedBy "abandoned"):
+   * the fights it forfeited, each rated a loss against `opponentRating`, the
+   * round's already-picked opponent. Every heart left in the shop (playing on
+   * could lose them all); one at the Crown, the only fight left. */
+  forfeit?: { fights: number; opponentRating: number };
   /** Present once the run is over: a human's rating change (once per run),
    * null for a bot's run and a "content-changed" end. */
   rating?: RatingChange | null;
@@ -365,6 +393,10 @@ export interface Champion {
   since: string;
   /** The content its line was built with. */
   contentVersion: string;
+  /** What the Crown is rated against: the slayer's run-start rating
+   * (Slay.rating), a bot's rules.botRating. Absent on rows from before round 2:
+   * rules.ratingStart. */
+  rating?: number;
 }
 
 /** A Crown fight won by a human or a bot: the slayer's team that day.
@@ -381,6 +413,9 @@ export interface Slay {
   contentVersion: string;
   /** ISO time of the Crown fight. */
   at: string;
+  /** The slayer's rating at the start of that run; a crowned slay's champion
+   * carries it (Champion.rating). */
+  rating?: number;
 }
 
 export interface DayView {
@@ -418,16 +453,20 @@ export interface Rating {
   playoffWins: number;
 }
 
-/** Rating moves once per run: round wins plus a slay bonus vs. the expected
- * result (src/mvp/run.ts ratingChange). actual = clamp(round fights won /
- * round fights fought, a draw counting DRAW_SCORE, + SLAY_BONUS if slayed,
- * 0, 1); expected = 1 / (1 + 10^((ratingStart - before)/400));
- * after = before + ratingK * (actual - expected), rounded. */
+/** Rating moves once per run, summed over its rated fights (every round
+ * fight, the Crown, and an abandoned run's forfeits), Elo-style against each
+ * opponent's stamped rating (src/mvp/run.ts ratingChange; docs/round2/rating.md):
+ * E_i = 1 / (1 + 10^((opponent_i - before)/400)); S_i = 1 win, DRAW_SCORE
+ * draw, 0 loss; after = round(before + k * Σ(S_i - E_i)). No slay bonus. */
 export interface RatingChange {
   before: number;
   after: number;
+  /** Σ E_i: the wins expected at `before`. */
   expected: number;
+  /** Σ S_i: the wins got (a draw counts DRAW_SCORE). */
   actual: number;
+  /** The K used: rules.ratingKSteps by the runs played before this one. */
+  k: number;
 }
 
 export interface HomeView {
