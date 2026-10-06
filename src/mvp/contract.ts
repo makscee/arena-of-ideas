@@ -119,12 +119,27 @@ export interface UnitContent {
   forms: Record<FormKey, UnitForm>;
 }
 
+/** A summoned body (round 3, R3-5): what a Summon effect puts on the line.
+ * `id` is its name, lower-cased; names are unique among summons (mvpPool
+ * checks), so a battle's Summon event (which carries only the name) and a
+ * summon effect both resolve to one body. `form` is null when the body only
+ * strikes ("No ability: it fights with its PWR / HP"). */
+export interface SummonContent {
+  id: string;
+  name: string;
+  emoji: string;
+  base: Stats;
+  form: UnitForm | null;
+}
+
 /** Everything a run plays with, carried with a version so logs stay replayable. */
 export interface MvpContent {
   version: string;
   units: UnitContent[];
   abilities: AbilityRegistry;
   statuses: StatusRegistry;
+  /** The summoned bodies (R3-5); absent in content built before round 3. */
+  summons?: SummonContent[];
 }
 
 // ---------- the line: owned units, fused units ----------

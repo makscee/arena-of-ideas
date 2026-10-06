@@ -25,7 +25,7 @@ import { fuseUnits, lineUnitOf } from "../../src/mvp/forms";
 import { cardIcons, type Pip } from "../../src/mvp/card-icons";
 import type { AbilityRegistry } from "../../src/types";
 import { api } from "../api";
-import { card, formRich, roman, unitSheet, withPip } from "../ui/card";
+import { card, formRich, roman, summonCard, summonSheet, unitSheet, withPip } from "../ui/card";
 import { app, button, closable, h, isDesktop, onKeys, screen, show, who } from "../ui/dom";
 import { icon } from "../ui/icon";
 import { loadUnitRates, pct } from "../ui/unit-stats";
@@ -35,8 +35,8 @@ export type CodexSort = "tier" | "win" | "pick";
 
 export interface CodexState {
   tab: CodexTab;
-  /** Units: one tier, or every tier. */
-  tier: number | null;
+  /** Units: one tier, the summoned units (R3-5), or every tier. */
+  tier: number | "summoned" | null;
   /** Units: the When a card's icon line leads with (its icon, plus its pip:
    * "death-skull.ally"), or any. */
   trigger: string | null;
@@ -207,12 +207,14 @@ function unitsTab(
   }
   const text = new Map(units.map((u) => [u.id, `${u.name} ${formText(u.forms.sleeping, content.abilities)} ${formText(u.forms.awoken, content.abilities)}`.toLowerCase()]));
 
+  const summons = content.summons ?? [];
+  const summonText = new Map(summons.map((x) => [x.id, `${x.name} ${x.form ? formText(x.form, content.abilities) : ""}`.toLowerCase()]));
   const grid = h("div", { class: "slots codex-grid", "data-testid": "codex-units" });
   const count = h("div", { class: "dim small", "data-testid": "codex-count" });
   const order = st.sort === "tier" ? "by tier" : `by ${st.sort === "win" ? "win" : "pick"} rate, highest first`;
   const draw = () => {
     const q = st.query.trim().toLowerCase();
-    const shown = units.filter((u) => (st.tier === null || u.tier === st.tier) && (st.trigger === null || trig.get(u.id)?.key === st.trigger) && (!q || text.get(u.id)!.includes(q)));
+    const shown = units.filter((u) => st.tier !== "summoned" && (st.tier === null || u.tier === st.tier) && (st.trigger === null || trig.get(u.id)?.key === st.trigger) && (!q || text.get(u.id)!.includes(q)));
     grid.replaceChildren(
       ...shown.map((u) => {
         const r = st.sort === "tier" ? undefined : rateOf(u);
@@ -222,8 +224,25 @@ function unitsTab(
         return el;
       }),
     );
-    count.textContent = shown.length === units.length ? `All ${units.length} units, ${order}. Tap one to read it.` : `${shown.length} of ${units.length} units, ${order}`;
-    if (!shown.length) grid.append(h("div", { class: "dim codex-none" }, "No unit matches."));
+    // The summoned units, a group after tier IV, tagged "S" (R3-5). A When
+    // filter hides them: they have none of their own.
+    const sums = st.tier === null || st.tier === "summoned" ? summons.filter((x) => st.trigger === null && (!q || summonText.get(x.id)!.includes(q))) : [];
+    if (sums.length)
+      grid.append(
+        h("div", { class: "label codex-group", "data-testid": "codex-summoned" }, "Summoned"),
+        ...sums.map((x) => {
+          const el = summonCard(x, { side: "you", tier: "S", testid: "codex-summon", onOpen: () => open(summonSheet(x, content), el) });
+          el.dataset.summon = x.id;
+          return el;
+        }),
+      );
+    count.textContent =
+      st.tier === "summoned"
+        ? `${sums.length} summoned units: other units bring them into battle. Tap one to read it.`
+        : shown.length === units.length
+          ? `All ${units.length} units, ${order}, then ${summons.length} summoned. Tap one to read it.`
+          : `${shown.length} of ${units.length} units, ${order}`;
+    if (!shown.length && !sums.length) grid.append(h("div", { class: "dim codex-none" }, "No unit matches."));
   };
 
   const tierRow = h(
@@ -231,6 +250,7 @@ function unitsTab(
     { class: "row codex-filter", "data-testid": "codex-tiers" },
     h("span", { class: "label" }, "Tier"),
     ...[null, ...tiers].map((t) => button(t === null ? "All" : roman(t), () => set({ tier: t }), st.tier === t ? "chip on" : "chip", `codex-tier-${t ?? "all"}`)),
+    summons.length ? button("Summoned", () => set({ tier: "summoned", trigger: null }), st.tier === "summoned" ? "chip on" : "chip", "codex-tier-summoned") : null,
   );
   const trigRow = h(
     "div",
