@@ -183,6 +183,50 @@ describe("MVP run server", () => {
   });
 });
 
+describe("MVP bench on the server (R3-13)", () => {
+  it("ghosts and the Slay hold the line only; the bench stays in the run", () => {
+    const rt = world();
+    const champ = weakChampion(rt);
+    const run = lastRound(rt, maks);
+    const benched: MvpRunState = { ...run, bench: [lineUnitOf(rt.content.units[0]!, "b1", 1, rt.rules)] };
+    rt.store.putRun(benched);
+    decide(rt, benched, { kind: "fight" });
+    const ghost = rt.store.ghosts(rt.rules.rounds, { excludePlayerId: "x", contentVersion: rt.content.version }).find((g) => g.runId === run.runId)!;
+    expect(ghost.line.map((u) => u.uid)).toEqual(run.line.map((u) => u.uid));
+    const crown = rt.store.run(run.runId)!;
+    expect(crown.bench.map((u) => u.uid)).toEqual(["b1"]);
+    decide(rt, crown, { kind: "fight" });
+    expect(rt.store.slays(champ.seq)[0]!.line.map((u) => u.uid)).toEqual(run.line.map((u) => u.uid));
+  });
+
+  it("fuses a line unit with a bench unit through decide and preview; the fused unit stands on the line", () => {
+    const rt = world();
+    const run = startRun(rt, maks);
+    const [a, b, c] = rt.content.units;
+    const s: MvpRunState = { ...run, line: [lineUnitOf(a!, "l1", 3, rt.rules)], bench: [lineUnitOf(b!, "b1", 1, rt.rules), lineUnitOf(c!, "b2", 3, rt.rules)] };
+    rt.store.putRun(s);
+    const d = { kind: "fuse", first: 6, second: 0 } as const;
+    expect(preview(rt, s, d).run.line[0]).toMatchObject({ kind: "fused", uid: "b2" });
+    const r = decide(rt, s, d).run;
+    expect(r.line).toHaveLength(1);
+    expect(r.line[0]).toMatchObject({ kind: "fused", uid: "b2", fusion: { first: c!.id, second: a!.id } });
+    expect(r.bench.map((u) => u.uid)).toEqual(["b1"]);
+    expect(rt.store.fusion(c!.id, a!.id)).toMatchObject({ discoveredBy: maks });
+  });
+
+  it("a run stored before the bench reopens from SQLite with an empty bench and no bench slots", () => {
+    const store = new SqliteMvpStore(":memory:");
+    const rt = world({ store });
+    const run = startRun(rt, maks);
+    const { bench: _b, ...old } = { ...run, rules: (({ benchSize: _s, ...r }) => r)(run.rules) };
+    store.putRun(old as MvpRunState);
+    const back = store.run(run.runId)!;
+    expect(back.bench).toEqual([]);
+    expect(back.rules.benchSize).toBeUndefined();
+    expect(() => decide(rt, back, { kind: "reorder", from: 0, to: 5 })).toThrow(/bad move/);
+  });
+});
+
 describe("MVP giving up and stamped ratings (round 2)", () => {
   /** Plays `player`'s run from round 1 with `losses` lost and `wins` won fights:
    * a strong line wins, an empty one loses. */

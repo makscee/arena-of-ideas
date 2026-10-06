@@ -28,7 +28,7 @@
 //   tick so requests keep flowing. The seed waits
 //   for the model's names of the champion's fusions before it writes them.
 import { randomUUID } from "node:crypto";
-import { lockedFull, type Champion, type Decision, type LineUnit, type MvpContent, type MvpRules, type PlayerRef, type RunView } from "../../../src/mvp/contract.js";
+import { benchSizeOf, boardUnit, lockedFull, type Champion, type Decision, type LineUnit, type MvpContent, type MvpRules, type PlayerRef, type RunView } from "../../../src/mvp/contract.js";
 import { fightLines } from "../../../src/mvp/fight.js";
 import { fuseCheck, mergeTarget } from "../../../src/mvp/forms.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
@@ -99,12 +99,15 @@ function score(u: LineUnit): number {
 }
 
 /** The bot's next decision in the shop: fuse two Awoken units whose name is
- * ready (`ready`, by default always), buy copies
- * first (they awaken), fill the line with the highest tier, swap the weakest
- * single copy for a better tier, lock a copy it can't afford yet, reroll once
- * a round while gold allows (unless locked offers fill the shop), put
- * the toughest unit in front, then fight. `rerolled` counts this round's
- * rerolls (the caller resets it). Pure. */
+ * ready (`ready`, by default always) from anywhere on the board, buy copies
+ * first (they awaken, on the bench too), fill the line with the highest tier;
+ * with the line full, keep a better tier than the weakest single copy on the
+ * bench while it has room, else swap that single for it; lock a copy it can't
+ * afford yet, reroll once a round while gold allows (unless locked offers
+ * fill the shop), field the best 5 (bench units into empty line slots, and in
+ * for the weakest line unit when they score higher), put the toughest unit in
+ * front, then fight. Board slots: the line, then the bench (boardSlot).
+ * `rerolled` counts this round's rerolls (the caller resets it). Pure. */
 export function botDecision(
   run: RunView,
   content: MvpContent,
@@ -114,8 +117,12 @@ export function botDecision(
 ): Decision {
   if (run.phase !== "shop") return { kind: "fight" };
   const line = run.line;
+  const bench = run.bench ?? [];
+  const benchRoom = bench.length < benchSizeOf(rules);
+  // Every unit with its board slot: the line, then the bench.
+  const board = [...line.map((u, i) => ({ u, i })), ...bench.map((u, i) => ({ u, i: rules.lineSize + i }))];
   // Fuse: the strongest fusable pair whose name is ready, the stronger first.
-  const awoken = line.map((u, i) => ({ u, i })).filter(({ u }) => u.kind === "unit" && u.form === "awoken").sort((a, b) => score(b.u) - score(a.u));
+  const awoken = board.filter(({ u }) => u.kind === "unit" && u.form === "awoken").sort((a, b) => score(b.u) - score(a.u));
   for (let a = 0; a < awoken.length; a++)
     for (let b = a + 1; b < awoken.length; b++) {
       const [x, y] = [awoken[a]!, awoken[b]!];
@@ -124,21 +131,32 @@ export function botDecision(
 
   const tierOf = (id: string) => content.units.find((u) => u.id === id)?.tier ?? 1;
   const affordable = run.offers.filter((o) => o.cost <= run.gold);
-  const copy = affordable.find((o) => mergeTarget(line, o.unitId) >= 0);
+  const owned = (unitId: string) => mergeTarget(line, unitId) >= 0 || mergeTarget(bench, unitId) >= 0;
+  const copy = affordable.find((o) => owned(o.unitId));
   if (copy) return { kind: "buy", slot: copy.slot };
   const best = [...affordable].sort((a, b) => b.tier - a.tier)[0];
   if (best && line.length < rules.lineSize) return { kind: "buy", slot: best.slot };
   if (best && line.length >= rules.lineSize) {
-    // Swap: sell the weakest single, sleeping copy for a higher tier.
-    const weak = line.map((u, i) => ({ u, i })).filter(({ u }) => u.kind === "unit" && u.copies === 1).sort((a, b) => tierOf(a.u.unitId) - tierOf(b.u.unitId) || score(a.u) - score(b.u))[0];
-    if (weak && tierOf(weak.u.unitId) < best.tier) return { kind: "sell", index: weak.i };
+    // A better tier than the weakest single, sleeping copy: onto the bench
+    // while it has room, else sell that single for it.
+    const weak = board.filter(({ u }) => u.kind === "unit" && u.copies === 1).sort((a, b) => tierOf(a.u.unitId) - tierOf(b.u.unitId) || score(a.u) - score(b.u))[0];
+    if (weak && tierOf(weak.u.unitId) < best.tier) return benchRoom ? { kind: "buy", slot: best.slot } : { kind: "sell", index: weak.i };
   }
   // Lock a copy it can't afford yet: it waits for next round's gold. Not in
   // the last shop round: the Crown clears the offers.
-  const later = run.round < rules.rounds && run.offers.find((o) => !o.locked && o.cost > run.gold && mergeTarget(line, o.unitId) >= 0);
+  const later = run.round < rules.rounds && run.offers.find((o) => !o.locked && o.cost > run.gold && owned(o.unitId));
   if (later) return { kind: "lock", slot: later.slot };
   const rerollable = !lockedFull({ offers: run.offers, rules, round: run.round });
   if (rerolled < 2 && rerollable && run.gold >= rules.rerollCost + rules.unitCost) return { kind: "reroll" };
+  // Field the best 5: the best bench unit fills an empty line slot, or comes
+  // in for the weakest line unit when it scores higher (each swap raises the
+  // line's score, so this ends).
+  const bestBench = bench.map((u, i) => ({ u, i: rules.lineSize + i })).sort((a, b) => score(b.u) - score(a.u))[0];
+  if (bestBench && line.length < rules.lineSize) return { kind: "reorder", from: bestBench.i, to: line.length };
+  if (bestBench) {
+    const weakest = line.map((u, i) => ({ u, i })).sort((a, b) => score(a.u) - score(b.u))[0];
+    if (weakest && score(bestBench.u) > score(weakest.u)) return { kind: "reorder", from: bestBench.i, to: weakest.i };
+  }
   // The toughest unit goes in front.
   if (line.length > 1) {
     let front = 0;
@@ -187,7 +205,7 @@ export async function playBotRunWaiting(deps: RunDeps, stopped: () => boolean = 
     }
     const d = botDecision(run, deps.content, deps.rules, rerolled);
     if (d.kind === "fuse") {
-      const [first, second] = [run.line[d.first]!, run.line[d.second]!];
+      const [first, second] = [boardUnit(run, run.rules, d.first)!, boardUnit(run, run.rules, d.second)!];
       if (!fusionNameReady(deps.store, first.unitId, second.unitId)) {
         await awaitFusionName(deps.store, first.unitId, second.unitId);
         run = deps.store.run(run.runId)!;
