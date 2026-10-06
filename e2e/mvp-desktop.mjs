@@ -241,14 +241,14 @@ try {
     // Swap tries the other order in place (R2-5).
     if (await page.getByTestId("inspector").getByTestId("preview-swap").count()) await page.getByTestId("preview-swap").click();
     await page.getByTestId("preview-confirm").click();
-    await page.locator(".card.fused").waitFor();
+    await page.getByTestId("line").locator(".card.fused").waitFor();
     // A pair nobody had made reveals its name (R2-5); Esc closes it.
     if (await page.getByTestId("fusion-reveal").isVisible().catch(() => false)) {
       await shot("fusion-reveal");
       await page.keyboard.press("Escape");
       await page.getByTestId("fusion-reveal").waitFor({ state: "detached" });
     }
-    await page.locator(".card.fused").hover();
+    await page.getByTestId("line").locator(".card.fused").hover();
     await page.getByTestId("inspector").getByTestId("unit-sheet").waitFor();
     if (!/discovered by (you|@\S+)/.test(await page.getByTestId("inspector").textContent())) errors.push("fused: no discovery credit in the inspector");
     await shot("fused");
