@@ -7,7 +7,7 @@
 // opens in battleScreen) and, on dev servers only (HomeView.dev), "End day
 // now" under "Dev". The shop's ☰ (Esc on desktop) is the in-run menu.
 import type { BattleRecord, DayView, FightResult, HomeView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView } from "../src/mvp/contract";
-import { MVP_RULES, offersAt } from "../src/mvp/contract";
+import { MVP_RULES, offersAt, sellValue } from "../src/mvp/contract";
 import { mergeTarget } from "../src/mvp/forms";
 import { buttonRefusal, plainRefusal } from "./ui/refusal";
 import { ApiError, api, savedPlayer } from "./api";
@@ -95,7 +95,7 @@ function rulesSheet(): HTMLElement {
     h("h2", {}, "RULES"),
     h("div", { class: "label" }, "A run"),
     p(`${r.rounds} shop rounds, then the Crown: a fight against today's champion. You start with ${plural(r.hearts, "heart")}; a lost fight costs one, and at 0 the run ends before the Crown.`),
-    p(`${r.goldPerRound} gold every round, no carry-over. A unit costs ${r.unitCost}, a reroll ${r.rerollCost}, selling gives back ${r.sellRefund}. ${offersText(r)}; ${tiersText(r)}.`),
+    p(`${r.goldPerRound} gold every round, no carry-over. A unit costs ${r.unitCost}, a reroll ${r.rerollCost}, selling gives back ${r.sellRefund}${r.sellRefundAwoken && r.sellRefundAwoken !== r.sellRefund ? `, ${r.sellRefundAwoken} for an Awoken or fused unit` : ""}. ${offersText(r)}; ${tiersText(r)}.`),
     h("div", { class: "label" }, "The line"),
     p(`${r.lineSize} units in a line, front first. Change the order in the shop: ${isDesktop() ? "drag a unit, or click it, then ← →" : "tap a unit, then ◀ ▶"}. Each round you fight a team another player saved at the same round.`),
     h("div", { class: "label" }, "Copies, Awoken, fusion"),
@@ -510,7 +510,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     // On desktop the inspector already is the sheet: no Info.
     const out: HTMLElement[] = desk ? [left, right] : [left, right, info];
     if (u.kind === "unit" && u.form === "awoken" && awoken >= 2) out.push(button(desk ? "Fuse · F" : "Fuse", () => ((pick = { mode: "fuse", first: i }), renderLine()), "", "fuse"));
-    out.push(button(desk ? `Sell +${rules.sellRefund}g · S` : `Sell +${rules.sellRefund}`, () => void decide({ kind: "sell", index: i }), "danger", "sell"));
+    const value = sellValue(rules, u);
+    out.push(button(desk ? `Sell +${value}g · S` : `Sell +${value}`, () => void decide({ kind: "sell", index: i }), "danger", "sell"));
     return out;
   };
 
