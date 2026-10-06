@@ -282,6 +282,96 @@ button.bv-why { display: flex; align-items: center; justify-content: space-betwe
 .tone-summon { color: #2ee6d4; } .tone-when { color: #ffbf47; } .tone-ally { color: #2ee6d4; }
 .tone-enemy { color: #ff4d88; } .tone-gold { color: #ffd25c; } .tone-plain { color: #c9d1e0; }
 
+/* Desktop (round 2, R2-9): 1024px and wider. A screen that names itself
+ * (ui/dom.ts screen(): home, shop, result, over, stats) uses the width; the
+ * others (the name screen, the battle until R2-16) stay a phone column. The
+ * wrappers the desktop grids place (.topbar, .board, .home-main, …) are
+ * display: contents on the phone, so its layout is as it was. */
+.topbar, .board, .home-main, .home-side, .result-main, .result-teams, .over-line { display: contents; }
+kbd { display: inline-block; min-width: 1.6em; padding: 0 4px; margin: 0 1px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 3px; font-family: "IBM Plex Mono", monospace; font-size: 0.8em; line-height: 1.4; text-align: center; color: var(--text); background: var(--panel); }
+button kbd { color: inherit; background: transparent; border-color: currentColor; opacity: 0.7; text-transform: none; letter-spacing: 0; margin-left: 6px; }
+@media (min-width: 1024px) {
+  #app[data-screen] { --cw: 120px; --gap: 8px; --insp: 340px; max-width: none; }
+  /* Desktop cards: 120×172, 132×172 from 1280px (docs/round2/ui.md (b)). */
+  #app[data-screen] .slots { grid-template-columns: repeat(auto-fill, var(--cw)); gap: var(--gap); }
+  #app[data-screen] .card { height: 172px; padding: 12px 6px 10px; }
+  #app[data-screen] .card .emoji { font-size: 44px; line-height: 52px; height: 52px; margin-top: 8px; }
+  #app[data-screen] .card .name { font-size: 17px; line-height: 20px; }
+  #app[data-screen] .card .stats { font-size: 18px; line-height: 22px; }
+  #app[data-screen] .card .copies { font-size: 14px; }
+  #app[data-screen] .card .copies.tag { font-size: 11px; }
+  #app[data-screen] .card .cost { font-size: 15px; }
+  #app[data-screen] .card .foot { min-height: 18px; }
+  #app[data-screen] .card .trig { top: 7px; left: 8px; }
+  #app[data-screen] .card .trig svg { width: 18px; height: 18px; }
+  #app[data-screen] .card .tier { top: 8px; right: 8px; font-size: 8px; line-height: 9px; }
+  #app[data-screen] .card.fused .emoji { font-size: 30px; padding-left: 0; }
+  #app[data-screen] .card:not(.empty):hover { border-color: var(--you); }
+  #app[data-screen] .preview-card { width: var(--cw); margin: 0; }
+  #app[data-screen] .champion .slots { margin: 0; }
+
+  /* Sheets (rules, the champion's team, why-I-lost) are a centred dialog, wide enough for a line of desktop cards. */
+  .overlay { align-items: center; }
+  .sheet { max-width: 760px; border: 1px solid var(--you); }
+
+  /* The shop: a top bar, the board, the inspector on the right, the buttons along the bottom. */
+  #app[data-screen="shop"] { display: grid; grid-template-columns: minmax(0, 1fr) var(--insp); grid-template-rows: auto 1fr auto auto; grid-template-areas: "top top" "board insp" "foot insp" "err insp"; gap: 0; padding: 0; height: 100dvh; min-height: 0; }
+  #app[data-screen="shop"] .topbar { grid-area: top; display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 60px; padding: 0 24px; border-bottom: 1px solid var(--line); }
+  #app[data-screen="shop"] .topbar .hud { gap: 24px; font-size: 22px; align-items: center; }
+  #app[data-screen="shop"] .topbar .hud .gold { font-weight: 700; }
+  #app[data-screen="shop"] .topbar .opp { flex: 0 1 auto; min-width: 0; gap: 16px; font-size: 17px; }
+  #app[data-screen="shop"] button.pin-btn { max-width: 360px; }
+  #app[data-screen="shop"] .pin-btn .who { max-width: 180px; }
+  #app[data-screen="shop"] .pin-emoji { font-size: 16px; }
+  #app[data-screen="shop"] .board { grid-area: board; display: flex; flex-direction: column; gap: 12px; padding: 16px 24px; overflow-y: auto; min-height: 0; }
+  #app[data-screen="shop"] .inspector { grid-area: insp; border-left: 1px solid var(--line); padding: 16px 20px; overflow-y: auto; min-height: 0; background: color-mix(in srgb, var(--panel) 40%, var(--bg)); }
+  #app[data-screen="shop"] .inspector .actions { flex-wrap: wrap; }
+  #app[data-screen="shop"] .spacer { display: none; }
+  #app[data-screen="shop"] .shop-foot { grid-area: foot; justify-content: space-between; padding: 12px 24px; border-top: 1px solid var(--line); }
+  #app[data-screen="shop"] .shop-foot button { min-height: 48px; }
+  #app[data-screen="shop"] .shop-foot button.grow { flex: 0 1 280px; margin-left: auto; }
+  #app[data-screen="shop"] > .error { grid-area: err; padding: 0 24px 8px; min-height: 0; }
+  #app[data-screen="shop"] .keys { line-height: 1.8; }
+  #app[data-screen="shop"] .card.selected { outline-width: 3px; }
+  #app[data-screen="shop"] .card.dragging { opacity: 0.4; }
+  #app[data-screen="shop"] .card.drop { outline: 2px dashed var(--you); outline-offset: -2px; }
+  #app[data-screen="shop"] .card[draggable="true"] { cursor: grab; }
+
+  /* Home: the champion and the day on the left; you, your records and Play on the right. */
+  #app[data-screen="home"] { max-width: 1200px; display: grid; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto 1fr; column-gap: 32px; row-gap: 16px; padding: 32px; align-items: start; }
+  #app[data-screen="home"] > :first-child { grid-column: 1 / -1; }
+  #app[data-screen="home"] .home-main, #app[data-screen="home"] .home-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  #app[data-screen="home"] .home-side { position: sticky; top: 32px; }
+  #app[data-screen="home"] .home-side .spacer { display: none; }
+  #app[data-screen="home"] .home-side .footer { position: static; margin: 0; padding: 0; box-shadow: none; flex-wrap: wrap; }
+  #app[data-screen="home"] .home-side .footer [data-testid="play"] { order: -1; flex: 1 0 100%; min-height: 56px; font-size: 20px; }
+  #app[data-screen="home"] .home-side .footer button:not([data-testid="play"]) { flex: 1; }
+
+  /* The result: the outcome and why on the left, both lines on the right, the buttons under the left. */
+  #app[data-screen="result"] { max-width: 1320px; display: grid; grid-template-columns: minmax(320px, 1fr) auto; grid-template-areas: "hud hud" "main teams" "foot teams" "rest rest"; column-gap: 40px; row-gap: 16px; padding: 32px; align-content: start; }
+  #app[data-screen="result"] > .hud { grid-area: hud; font-size: 20px; }
+  #app[data-screen="result"] .result-main { grid-area: main; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  #app[data-screen="result"] .result-teams { grid-area: teams; display: flex; flex-direction: column; gap: 10px; }
+  #app[data-screen="result"] .result-teams .slots { grid-template-columns: repeat(5, var(--cw)); }
+  #app[data-screen="result"] .spacer { display: none; }
+  #app[data-screen="result"] .footer { grid-area: foot; position: static; margin: 0; padding: 0; box-shadow: none; align-self: start; }
+
+  /* Run over: the record on the left, the last line on the right. */
+  #app[data-screen="over"] { max-width: 1320px; display: grid; grid-template-columns: minmax(320px, 1fr) auto; grid-template-areas: "title title" "note note" "panel line" "foot line"; column-gap: 40px; row-gap: 16px; padding: 32px; align-content: start; }
+  #app[data-screen="over"] > h1 { grid-area: title; }
+  #app[data-screen="over"] > .error { grid-area: note; }
+  #app[data-screen="over"] > .panel { grid-area: panel; }
+  #app[data-screen="over"] .over-line { grid-area: line; display: flex; flex-direction: column; gap: 10px; }
+  #app[data-screen="over"] .over-line .slots { grid-template-columns: repeat(5, var(--cw)); }
+  #app[data-screen="over"] .spacer { display: none; }
+  #app[data-screen="over"] .footer { grid-area: foot; position: static; margin: 0; padding: 0; box-shadow: none; align-self: start; }
+
+  /* Stats: a wider column; the tables read better at 960px than stretched. */
+  #app[data-screen="stats"] { max-width: 960px; padding: 32px; }
+}
+@media (min-width: 1280px) {
+  #app[data-screen] { --cw: 132px; --gap: 12px; --insp: 380px; }
+}
 /* Highlighted unit text (R2-8, mobile/ui/term.ts): every term is a button that
  * reads as words; a trigger clause is one amber pill. */
 button.t { display: inline; min-height: 0; padding: 0; border: 0; background: none; clip-path: none; font: inherit; letter-spacing: inherit; text-transform: none; line-height: inherit; cursor: help; }
@@ -296,3 +386,7 @@ button.t:focus-visible { outline: 1px solid currentColor; outline-offset: 1px; }
 .term-tip { line-height: 1.35; }
 .term-tooltip { position: absolute; z-index: 50; max-width: 280px; padding: 8px 10px; background: var(--panel); border: 1px solid var(--line); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5); pointer-events: none; font-size: 15px; }
 .term-tooltip .term-head { font-size: 16px; }
+@media (min-width: 1024px) {
+  /* The fusion preview in the inspector: its buttons are a plain row, not a sheet's sticky footer. */
+  #app[data-screen="shop"] .inspector .sheet-actions { position: static; margin: 0; padding: 0; background: none; }
+}

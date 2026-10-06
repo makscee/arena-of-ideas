@@ -15,7 +15,7 @@ import { statsScreen } from "./screens/stats";
 import { card, unitSheet, type CardUnit } from "./ui/card";
 import { previewName } from "./ui/fusion";
 import { icon } from "./ui/icon";
-import { app, button, closable, h, overlay, show, who } from "./ui/dom";
+import { app, button, closable, desktopQuery, h, isDesktop, onKeys, overlay, screen, show, who } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
 
 function errorLine(): HTMLElement {
@@ -65,6 +65,9 @@ const openSheet = (u: Parameters<typeof unitSheet>[0], content: MvpContent) => (
 function team(line: LineUnit[], side: "you" | "ghost", content: MvpContent, testid = ""): HTMLElement {
   return h("div", { class: "slots", ...(testid ? { "data-testid": testid } : {}) }, ...line.map((u) => card(u, { side, onOpen: openSheet(u, content) })));
 }
+
+/** A hint's verb: "Tap" on the phone, "Click" on a desktop. */
+const tapOrClick = () => (isDesktop() ? "Click" : "Tap");
 
 /** One contextual hint: a line of text, shown where it applies. */
 function hint(text: string): HTMLElement {
@@ -179,9 +182,14 @@ async function homeScreen(ended: number | null = null): Promise<void> {
     h("div", { class: "row spread" }, h("h1", {}, "ARENA"), who(api.player?.name ?? "", "dim")),
     // The dev "End day now" just ran: say so first, with how the day ended
     // (the playoff panel) right under it, before today's champion.
-    ended !== null ? h("div", { class: "notice", "data-testid": "day-ended" }, `Day ${ended} ended just now. Today is day ${home.day.seq}.`) : null,
-    justEnded ? playoff : null,
+    // Desktop: the champion and the day on the left, you and Play on the
+    // right (.home-main, .home-side; on the phone they are one column).
     h(
+      "div",
+      { class: "home-main" },
+      ended !== null ? h("div", { class: "notice", "data-testid": "day-ended" }, `Day ${ended} ended just now. Today is day ${home.day.seq}.`) : null,
+      justEnded ? playoff : null,
+      h(
       "div",
       { class: "panel stack champion", "data-testid": "champion" },
       h("div", { class: "row spread" }, h("div", { class: "label keep" }, `👑 Champion · day ${home.day.seq}`), champ ? whoMark(champ.player, "ghost-name") : null),
@@ -191,14 +199,18 @@ async function homeScreen(ended: number | null = null): Promise<void> {
     champ
       ? hint(
           champ.player.id === api.player?.id
-            ? "This is your team. Others try to beat it today, and so can you, with another team. Tap a card to read it."
+            ? `This is your team. Others try to beat it today, and so can you, with another team. ${tapOrClick()} a card to read it.`
             : r
-              ? "Tap a card to read it. Beat this team in the Crown to become a slayer."
-              : "This is the team to beat. Tap a card to read it, then Play.",
+              ? `${tapOrClick()} a card to read it. Beat this team in the Crown to become a slayer.`
+              : `This is the team to beat. ${tapOrClick()} a card to read it, then Play.`,
         )
       : null,
-    justEnded ? null : playoff,
+      justEnded ? null : playoff,
+    ),
     h(
+      "div",
+      { class: "home-side" },
+      h(
       "div",
       { class: "panel records", "data-testid": "records" },
       record("Rating", r?.rating ?? rules.ratingStart, "rating"),
@@ -211,8 +223,10 @@ async function homeScreen(ended: number | null = null): Promise<void> {
     err,
     h("div", { class: "spacer" }),
     // Play stays on the first screen however long Home runs (a playoff's table).
-    h("div", { class: "row footer", "data-testid": "home-actions" }, rulesBtn, stats, play),
+      h("div", { class: "row footer", "data-testid": "home-actions" }, rulesBtn, stats, play),
+    ),
   );
+  screen("home");
   if (justEnded) playoff?.classList.add("fresh");
 }
 
@@ -285,26 +299,38 @@ function playoffPanel(p: PlayoffResult | null, champion: PlayerRef | null, conte
 /** What the shop is in the middle of: nothing, a unit picked, or a fuse waiting for its second unit. */
 type Pick = { mode: "none" } | { mode: "picked"; index: number } | { mode: "fuse"; first: number };
 
-function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
+/** The shop. `selected`: the line slot to keep selected on desktop (a unit
+ * just moved by key or drag stays in hand). At 1024px and wider (ui/dom.ts
+ * isDesktop) the same shop is a top bar, a wide board and a right inspector
+ * that reads the hovered or selected card instead of pop-up sheets, with
+ * mouse and keys; below it the phone layout is as it was. */
+function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -1): void {
   if (run.phase === "over") return runOverScreen(run, content, notice);
+  const desk = isDesktop();
   const crown = run.phase === "crown";
   // The reigning champion's Crown is their own team; a win is still a slay.
   const ownCrown = crown && run.nextOpponent?.player.id === run.player.id;
   const err = errorLine();
   err.textContent = notice;
-  let pick: Pick = { mode: "none" };
+  let pick: Pick = desk && run.line[selected] ? { mode: "picked", index: selected } : { mode: "none" };
   const unitOf = (id: string) => content.units.find((x) => x.id === id);
-  const decide = (d: Parameters<typeof api.decide>[1]) =>
+  const decide = (d: Parameters<typeof api.decide>[1], select = -1) =>
     guarded(err, async () => {
       const res = await api.decide(run.runId, d);
       if (res.fight) return fightScreens(res.run, res.fight, content);
-      shopScreen(res.run, content);
+      shopScreen(res.run, content, "", select);
     });
 
   const line = h("div", { class: "slots", "data-testid": "line" });
   const actions = h("div", { class: "row actions", "data-testid": "actions" });
   const hintSlot = h("div", {});
   const awoken = run.line.filter((u) => u.kind === "unit" && u.form === "awoken").length;
+  // Desktop: the inspector, the card under the mouse, an offer clicked, a fusion waiting for its Fuse.
+  const inspector = h("aside", { class: "inspector stack", "data-testid": "inspector" });
+  type At = { kind: "line"; index: number } | { kind: "offer"; slot: number };
+  let hover: At | null = null;
+  let chosen: number | null = null;
+  let fuseView: HTMLElement | null = null;
 
   const renderLine = () => {
     line.replaceChildren(
@@ -324,30 +350,101 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
             else if (u.kind === "unit" && u.form === "awoken") return void fusePreview(pick.first, i);
             else return;
           } else pick = pick.mode === "picked" && pick.index === i ? { mode: "none" } : { mode: "picked", index: i };
+          chosen = null;
           renderLine();
         });
+        if (desk) desktopCard(c, { kind: "line", index: i });
         return c;
       }),
     );
-    actions.replaceChildren(...actionButtons());
+    for (const o of offers.children) o.classList.toggle("selected", chosen !== null && (o as HTMLElement).dataset.testid === `offer-${chosen}`);
+    if (desk) renderInspector(true);
+    else actions.replaceChildren(...actionButtons());
     hintSlot.replaceChildren(...[shopHint()].filter((x): x is HTMLElement => x !== null));
   };
 
+  /** Desktop: hovering a card reads it in the inspector; a line card drags onto another to reorder. */
+  const desktopCard = (c: HTMLElement, at: At) => {
+    c.addEventListener("mouseenter", () => ((hover = at), renderInspector()));
+    c.addEventListener("mouseleave", () => ((hover = null), renderInspector()));
+    if (at.kind !== "line" || crown) return;
+    const i = at.index;
+    c.draggable = true;
+    c.addEventListener("dragstart", (e) => {
+      e.dataTransfer?.setData("text/plain", `line:${i}`);
+      c.classList.add("dragging");
+    });
+    c.addEventListener("dragend", () => c.classList.remove("dragging"));
+    c.addEventListener("dragover", (e) => (e.preventDefault(), c.classList.add("drop")));
+    c.addEventListener("dragleave", () => c.classList.remove("drop"));
+    c.addEventListener("drop", (e) => {
+      e.preventDefault();
+      c.classList.remove("drop");
+      const from = Number(/^line:(\d+)$/.exec(e.dataTransfer?.getData("text/plain") ?? "")?.[1] ?? NaN);
+      if (Number.isInteger(from) && from !== i) void decide({ kind: "reorder", from, to: i }, i);
+    });
+  };
+
   const actionButtons = (): HTMLElement[] => {
-    if (pick.mode === "fuse") return [h("span", { class: "dim grow" }, "Tap the second Awoken unit."), button("Cancel", () => ((pick = { mode: "none" }), renderLine()), "", "fuse-cancel")];
+    if (pick.mode === "fuse") return [h("span", { class: "dim grow" }, desk ? "Click the second Awoken unit." : "Tap the second Awoken unit."), button(desk ? "Cancel · Esc" : "Cancel", () => ((pick = { mode: "none" }), renderLine()), "", "fuse-cancel")];
     if (pick.mode !== "picked") return [];
     const i = pick.index;
     const u = run.line[i]!;
     const info = button("Info", openSheet(u, content), "", "info");
-    if (crown) return [info];
-    const left = button("◀", () => void decide({ kind: "reorder", from: i, to: i - 1 }), "", "move-left");
-    const right = button("▶", () => void decide({ kind: "reorder", from: i, to: i + 1 }), "", "move-right");
+    if (crown) return desk ? [] : [info];
+    const left = button(desk ? "◀ ←" : "◀", () => void decide({ kind: "reorder", from: i, to: i - 1 }, i - 1), "", "move-left");
+    const right = button(desk ? "→ ▶" : "▶", () => void decide({ kind: "reorder", from: i, to: i + 1 }, i + 1), "", "move-right");
     left.disabled = i === 0;
     right.disabled = i >= run.line.length - 1;
-    const out: HTMLElement[] = [left, right, info];
-    if (u.kind === "unit" && u.form === "awoken" && awoken >= 2) out.push(button("Fuse", () => ((pick = { mode: "fuse", first: i }), renderLine()), "", "fuse"));
-    out.push(button(`Sell +${rules.sellRefund}`, () => void decide({ kind: "sell", index: i }), "danger", "sell"));
+    // On desktop the inspector already is the sheet: no Info.
+    const out: HTMLElement[] = desk ? [left, right] : [left, right, info];
+    if (u.kind === "unit" && u.form === "awoken" && awoken >= 2) out.push(button(desk ? "Fuse · F" : "Fuse", () => ((pick = { mode: "fuse", first: i }), renderLine()), "", "fuse"));
+    out.push(button(desk ? `Sell +${rules.sellRefund}g · S` : `Sell +${rules.sellRefund}`, () => void decide({ kind: "sell", index: i }), "danger", "sell"));
     return out;
+  };
+
+  /** Desktop: the hovered card, else the selected one (or a fusion waiting
+   * for its Fuse), else how to use the board. `force` redraws even when the
+   * same card is shown (the selection changed). */
+  let inspected = "";
+  const renderInspector = (force = false) => {
+    if (fuseView) return inspector.replaceChildren(fuseView);
+    const at: At | null = hover ?? (pick.mode === "picked" ? { kind: "line", index: pick.index } : chosen !== null ? { kind: "offer", slot: chosen } : null);
+    const key = at ? `${at.kind}:${at.kind === "line" ? at.index : at.slot}` : "none";
+    if (key === inspected && !force) return;
+    inspected = key;
+    const sel = pick.mode === "picked" ? pick.index : -1;
+    if (at?.kind === "line" && run.line[at.index]) {
+      const mine = at.index === sel;
+      return inspector.replaceChildren(
+        h("div", { class: "label" }, `${mine ? "Selected · " : ""}In your line, slot ${at.index + 1}`),
+        unitSheet(run.line[at.index]!, content),
+        mine || pick.mode === "fuse" ? h("div", { class: "row actions", "data-testid": "actions" }, ...actionButtons()) : h("div", { class: "dim small" }, crown ? "Your line is final for the Crown." : "Click to select it: move, fuse or sell."),
+      );
+    }
+    if (at?.kind === "offer") {
+      const n = run.offers.findIndex((o) => o.slot === at.slot);
+      const o = run.offers[n];
+      if (!o) return;
+      const head = h("div", { class: "label" }, `Shop · offer ${n + 1} · key ${n + 1}`);
+      inspector.replaceChildren(head, h("div", { class: "dim small" }, "…"));
+      void offerBody(o).then(
+        ({ sheet, blocked }) => {
+          if (inspected !== key) return;
+          const buy = button(blocked || `Buy ${o.cost}g · ${n + 1}`, () => void decide({ kind: "buy", slot: o.slot }), "primary grow", "buy");
+          buy.disabled = blocked !== "";
+          inspector.replaceChildren(head, sheet, h("div", { class: "row" }, buy));
+        },
+        (e: unknown) => {
+          if (inspected === key) inspector.replaceChildren(head, h("div", { class: "error" }, e instanceof Error ? e.message : String(e)));
+        },
+      );
+      return;
+    }
+    inspector.replaceChildren(
+      ...(pick.mode === "fuse" ? [h("div", { class: "row actions", "data-testid": "actions" }, ...actionButtons())] : []),
+      h("div", { class: "dim" }, crown ? "Hover a card to read it here." : "Hover a card to read it here. Click a unit in your line to select it; double-click an offer to buy it."),
+    );
   };
 
   /** The hint that matters most right now, or none. */
@@ -358,12 +455,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
     // Only a unit whose next copy is on offer right now.
     const almost = run.line.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === rules.copiesToAwaken - 1 && run.offers.some((o) => o.unitId === u.unitId));
     const canBuy = run.offers.some((o) => o.cost <= run.gold);
-    if (awoken >= 2) return hint("Two Awoken units can fuse: tap one, then Fuse.");
+    if (awoken >= 2) return hint(desk ? "Two Awoken units can fuse: select one, then F." : "Two Awoken units can fuse: tap one, then Fuse.");
     if (almost && run.offers.some((o) => o.unitId === almost.unitId && o.cost <= run.gold)) return hint(`One more ${almost.name} awakens it. It's in the shop.`);
     if (run.line.length === 0 && !canBuy) return hint("No gold for a unit. Fight to move on: an empty line loses, and costs a heart.");
-    if (run.line.length === 0) return hint("Tap an offer to read it and buy it. Your line fights front first.");
+    if (run.line.length === 0) return hint(desk ? "Double-click an offer, or press its number, to buy it. Your line fights front first." : "Tap an offer to read it and buy it. Your line fights front first.");
     if (run.round === 1 && run.line.length > 0 && run.gold < rules.unitCost) return hint("Out of gold for units. Fight when ready.");
-    if (run.line.length > 1 && run.round <= 2) return hint("Tap a unit in your line to move, sell or read it.");
+    if (run.line.length > 1 && run.round <= 2) return hint(desk ? "Drag a unit to move it, or click it: ← → move it, S sells it." : "Tap a unit in your line to move, sell or read it.");
     if (almost) return hint(`One more ${almost.name} awakens it. It's in the shop for ${run.offers.find((o) => o.unitId === almost.unitId)!.cost}g.`);
     return null;
   };
@@ -371,7 +468,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
   /** Fuse preview: the result card from a dry run, Swap to try the other
    * order, then confirm. Both orders are fetched up front (a preview writes
    * nothing), so Swap is instant. A pair nobody has fused comes without a
-   * name; the fuse reveals it. */
+   * name; the fuse reveals it. On desktop it fills the inspector (Esc
+   * cancels) instead of a pop-up sheet. */
   const fusePreview = (first: number, second: number) =>
     guarded(err, async () => {
       const orders = [
@@ -409,8 +507,13 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
         );
       };
       render();
-      const close = overlay(h("div", { class: "label" }, "Fusion preview"), body);
+      const head = h("div", { class: "label" }, "Fusion preview");
       pick = { mode: "none" };
+      let close: () => void;
+      if (desk) {
+        fuseView = h("div", { class: "stack", "data-testid": "fuse-preview" }, head, body);
+        close = () => ((fuseView = null), renderLine());
+      } else close = overlay(head, body);
       renderLine();
     });
 
@@ -432,38 +535,52 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
       );
     });
 
-  /** An offer's sheet: both forms, and what buying it does to your line. */
+  /** An offer's sheet: its form, and what buying it does to your line;
+   * `blocked` says why it can't be bought now ("" when it can). The buy's dry
+   * run is asked once per offer a shop (hovering on desktop asks again and
+   * again); the sheet is built fresh each time. */
+  type OfferBody = { sheet: HTMLElement; blocked: string };
+  const previews = new Map<number, ReturnType<typeof buyPreview>>();
+  const buyPreview = (o: Offer) => api.preview(run.runId, { kind: "buy", slot: o.slot }).catch((e: unknown) => (e instanceof ApiError && e.status === 409 ? e : Promise.reject(e)));
+  const offerBody = async (o: Offer): Promise<OfferBody> => {
+    const u = unitOf(o.unitId);
+    const affordable = run.gold >= o.cost;
+    let ask = previews.get(o.slot);
+    if (affordable && !ask) {
+      ask = buyPreview(o);
+      previews.set(o.slot, ask);
+      ask.catch(() => previews.delete(o.slot)); // a failed dry run is asked again next time
+    }
+    const res = affordable ? await ask! : null;
+    let after: HTMLElement | null = null;
+    // A unit you own: the sheet shows your copy, from now to after buying.
+    let mine: { now: LineUnit; next: LineUnit } | null = null;
+    let blocked = affordable ? "" : `Needs ${o.cost}g`;
+    if (res instanceof ApiError) blocked = /line is full/i.test(res.message) ? "Line full: sell or fuse first" : "Can't buy this now";
+    else if (res) {
+      const before = new Map(run.line.map((x) => [x.uid, x]));
+      const changed = res.run.line.find((x) => !before.has(x.uid) || before.get(x.uid)!.copies !== x.copies);
+      if (changed) {
+        const was = before.get(changed.uid);
+        const label = !was ? "Joins your line" : was.form !== changed.form ? "Awakens!" : `Merges in: ×${changed.copies}`;
+        if (was) mine = { now: was, next: changed };
+        after = h("div", { class: `stack after${was && was.form !== changed.form ? " awakens" : ""}`, "data-testid": "buy-preview" }, h("div", { class: "label" }, label), h("div", { class: "preview-card" }, card(changed, { side: "you", extra: [copiesBadge(changed)] })));
+      }
+    }
+    // Without a preview (no gold), an owned unit still shows your copy as it is.
+    const owned = mine ? null : run.line.find((x) => x.kind === "unit" && x.unitId === o.unitId) ?? null;
+    const sheet = mine ? unitSheet(mine.next, content, { from: mine.now.stats }) : owned ? unitSheet(owned, content) : u ? unitSheet(u, content) : h("h2", {}, o.unitId);
+    // What buying does goes inside the sheet, above its last line (the rates hint).
+    if (after) sheet.insertBefore(after, sheet.querySelector('[data-testid="unit-rates"]'));
+    return { sheet, blocked };
+  };
+  /** The phone's offer sheet: the body in an overlay, with Close and Buy. */
   const offerSheet = (o: Offer) =>
     guarded(err, async () => {
-      const u = unitOf(o.unitId);
-      const affordable = run.gold >= o.cost;
-      const res = affordable ? await api.preview(run.runId, { kind: "buy", slot: o.slot }).catch((e: unknown) => (e instanceof ApiError && e.status === 409 ? e : Promise.reject(e))) : null;
-      let after: HTMLElement | null = null;
-      // A unit you own: the sheet shows your copy, from now to after buying.
-      let mine: { now: LineUnit; next: LineUnit } | null = null;
-      let blocked = affordable ? "" : `Needs ${o.cost}g`;
-      if (res instanceof ApiError) blocked = /line is full/i.test(res.message) ? "Line full: sell or fuse first" : "Can't buy this now";
-      else if (res) {
-        const before = new Map(run.line.map((x) => [x.uid, x]));
-        const changed = res.run.line.find((x) => !before.has(x.uid) || before.get(x.uid)!.copies !== x.copies);
-        if (changed) {
-          const was = before.get(changed.uid);
-          const label = !was ? "Joins your line" : was.form !== changed.form ? "Awakens!" : `Merges in: ×${changed.copies}`;
-          if (was) mine = { now: was, next: changed };
-          after = h("div", { class: `stack after${was && was.form !== changed.form ? " awakens" : ""}`, "data-testid": "buy-preview" }, h("div", { class: "label" }, label), h("div", { class: "preview-card" }, card(changed, { side: "you", extra: [copiesBadge(changed)] })));
-        }
-      }
+      const { sheet, blocked } = await offerBody(o);
       const buy = button(blocked || `Buy ${o.cost}g`, () => (close(), void decide({ kind: "buy", slot: o.slot })), "primary grow", "buy");
       buy.disabled = blocked !== "";
-      // Without a preview (no gold), an owned unit still shows your copy as it is.
-      const owned = mine ? null : run.line.find((x) => x.kind === "unit" && x.unitId === o.unitId) ?? null;
-      const sheet = mine ? unitSheet(mine.next, content, { from: mine.now.stats }) : owned ? unitSheet(owned, content) : u ? unitSheet(u, content) : h("h2", {}, o.unitId);
-      // What buying does goes inside the sheet, above its last line (the rates hint).
-      if (after) sheet.insertBefore(after, sheet.querySelector('[data-testid="unit-rates"]'));
-      const close = overlay(
-        sheet,
-        h("div", { class: "row sheet-actions" }, button("Close", () => close(), "", "offer-close"), buy),
-      );
+      const close = overlay(sheet, h("div", { class: "row sheet-actions" }, button("Close", () => close(), "", "offer-close"), buy));
     });
 
   const offers = h(
@@ -476,7 +593,17 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
       const c = card(cu, { side: "you", tier: o.tier, extra: [h("div", { class: "cost" }, owned ? `${o.cost}g ＋` : `${o.cost}g`)], testid: `offer-${o.slot}` });
       if (run.gold < o.cost) c.classList.add("poor");
       if (owned) c.classList.add("owned");
-      c.addEventListener("click", () => void offerSheet(o));
+      if (!desk) c.addEventListener("click", () => void offerSheet(o));
+      else {
+        // Click selects it (the inspector holds it), double-click buys it.
+        c.addEventListener("click", () => {
+          chosen = chosen === o.slot ? null : o.slot;
+          if (pick.mode === "picked") pick = { mode: "none" };
+          renderLine();
+        });
+        c.addEventListener("dblclick", () => void decide({ kind: "buy", slot: o.slot }));
+        desktopCard(c, { kind: "offer", slot: o.slot });
+      }
       return c;
     }),
   );
@@ -486,6 +613,10 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
   const fight = button(crown ? "Fight the champion" : "Fight", () => void decide({ kind: "fight" }), "primary grow", "fight");
   // An empty line can fight (and lose a heart) once nothing is affordable, so a broke run moves on.
   fight.disabled = run.line.length === 0 && run.offers.some((o) => o.cost <= run.gold);
+  if (desk) {
+    reroll.append(" ", kbd("R"));
+    fight.append(" ", kbd("Space"));
+  }
 
   const opp = run.nextOpponent;
   const pin = h("div", { class: "pin", "data-testid": "champion-pin" });
@@ -493,7 +624,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
     const ch = d?.champion;
     if (!ch) return pin.replaceChildren(h("span", { class: "dim" }, "👑 No champion yet"));
     const b = h("button", { class: "pin-btn", "data-testid": "champion-pin-open" }, h("span", {}, "👑"), who(ch.player.name, "ghost-name"), h("span", { class: "pin-emoji" }, ch.line.map((u) => u.emoji).join("")));
-    b.addEventListener("click", () => closable(h("div", { class: "label" }, `Champion of day ${d!.seq} · `, who(ch.player.name)), team(ch.line, "ghost", content), hint("Tap a card to read it.")));
+    b.addEventListener("click", () => closable(h("div", { class: "label" }, `Champion of day ${d!.seq} · `, who(ch.player.name)), team(ch.line, "ghost", content), hint(`${tapOrClick()} a card to read it.`)));
     pin.replaceChildren(b);
   };
   fillPin(day);
@@ -502,37 +633,113 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
   // "?" explains a card's numbers; until a player has opened it once, it says so.
   const legendBtn = button(seen("legend") ? "?" : "? Cards", () => (markSeen("legend"), (legendBtn.textContent = "?"), legendBtn.classList.remove("new"), legendSheet()), seen("legend") ? "small" : "small new", "legend-open");
   renderLine();
+
+  const keysLine =
+    desk && !crown
+      ? h("div", { class: "dim small keys", "data-testid": "keys" }, "Hover a card to read it → · click selects · drag reorders · double-click buys · ", kbd("1"), "–", kbd(String(Math.min(7, Math.max(1, run.offers.length)))), " buy · ", kbd("R"), " reroll · ", kbd("Space"), " fight · ", kbd("←"), kbd("→"), " move · ", kbd("F"), " fuse · ", kbd("S"), " sell · ", kbd("Esc"), " back")
+      : null;
   show(
     h(
       "div",
-      { class: "hud", "data-testid": "hud" },
-      h("span", { "data-testid": "round" }, roundLabel(run.round)),
-      hearts(run.hearts),
-      // The Crown has no shop: no gold to show.
-      crown ? h("span", {}) : h("span", { class: "gold", "data-testid": "gold" }, `${run.gold}g`),
+      { class: "topbar", "data-testid": "topbar" },
+      h(
+        "div",
+        { class: "hud", "data-testid": "hud" },
+        h("span", { "data-testid": "round" }, roundLabel(run.round)),
+        hearts(run.hearts),
+        // The Crown has no shop: no gold to show.
+        crown ? h("span", {}) : h("span", { class: "gold", "data-testid": "gold" }, `${run.gold}g`),
+      ),
+      h(
+        "div",
+        { class: "row spread opp" },
+        h("span", { class: "dim", "data-testid": "next-opponent" }, ...(opp ? [`${crown ? "Crown vs" : "Next:"} `, who(opp.player.name), `${opp.player.bot ? " 🤖" : ""}${ownCrown ? " (your champion team)" : ""}`] : [crown ? "Crown vs today's champion" : "Next: a team saved at this round"])),
+        pin,
+      ),
     ),
     h(
       "div",
-      { class: "row spread opp" },
-      h("span", { class: "dim", "data-testid": "next-opponent" }, ...(opp ? [`${crown ? "Crown vs" : "Next:"} `, who(opp.player.name), `${opp.player.bot ? " 🤖" : ""}${ownCrown ? " (your champion team)" : ""}`] : [crown ? "Crown vs today's champion" : "Next: a team saved at this round"])),
-      pin,
+      { class: "board" },
+      h(
+        "div",
+        { class: "row spread line-head" },
+        h("div", { class: "label" }, crown ? "Your line · front first · final" : desk ? "Your line · front first · drag to reorder" : "Your line · front first"),
+        h("div", { class: "row" }, legendBtn, button("Rules", () => closable(rulesSheet()), "small", "shop-rules")),
+      ),
+      line,
+      desk ? null : actions,
+      hintSlot,
+      crown ? null : h("div", { class: "label" }, desk ? `Shop · ${plural(run.offers.length, "offer")}` : "Shop · tap to read and buy"),
+      crown ? null : offers,
+      keysLine,
     ),
-    h(
-      "div",
-      { class: "row spread line-head" },
-      h("div", { class: "label" }, crown ? "Your line · front first · final" : "Your line · front first"),
-      h("div", { class: "row" }, legendBtn, button("Rules", () => closable(rulesSheet()), "small", "shop-rules")),
-    ),
-    line,
-    actions,
-    hintSlot,
-    crown ? null : h("div", { class: "label" }, "Shop · tap to read and buy"),
-    crown ? null : offers,
+    desk ? inspector : null,
     h("div", { class: "spacer" }),
-    h("div", { class: "row" }, crown ? null : reroll, fight),
+    h("div", { class: "row shop-foot" }, crown ? null : reroll, fight),
     err,
   );
+  screen("shop");
+  rerender = () => shopScreen(run, content, err.textContent ?? "", pick.mode === "picked" ? pick.index : -1);
+  if (!desk) return;
+
+  // Keys: 1–7 buy, R reroll, Space fight, ← → move the selected unit, F fuse,
+  // S sell; Esc steps back (a sheet, the fusion, the selection), then opens
+  // the rules until the ☰ menu (R2-10) takes it over.
+  onKeys((e) => {
+    const open = app.querySelector(".overlay");
+    if (open) return e.key === "Escape" ? (open.remove(), true) : false;
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    const sel = pick.mode === "picked" ? pick.index : -1;
+    if (k === "Escape") {
+      if (fuseView) fuseView = null;
+      else if (pick.mode !== "none") pick = { mode: "none" };
+      else if (chosen !== null) chosen = null;
+      else return closable(rulesSheet()), true;
+      renderLine();
+      return true;
+    }
+    if (k === " ") {
+      if (!fight.disabled) void decide({ kind: "fight" });
+      return true;
+    }
+    if (crown) return false;
+    if (/^[1-7]$/.test(k)) {
+      const o = run.offers[Number(k) - 1];
+      if (o) void decide({ kind: "buy", slot: o.slot });
+      return true;
+    }
+    if (k === "r") {
+      if (!reroll.disabled) void decide({ kind: "reroll" });
+      return true;
+    }
+    if ((k === "ArrowLeft" || k === "ArrowRight") && sel >= 0) {
+      const to = sel + (k === "ArrowLeft" ? -1 : 1);
+      if (to >= 0 && to < run.line.length) void decide({ kind: "reorder", from: sel, to }, to);
+      return true;
+    }
+    if (k === "s" && sel >= 0) {
+      void decide({ kind: "sell", index: sel });
+      return true;
+    }
+    if (k === "f") {
+      const u = run.line[sel];
+      if (pick.mode === "fuse") pick = { mode: "none" };
+      else if (u && u.kind === "unit" && u.form === "awoken" && awoken >= 2) pick = { mode: "fuse", first: sel };
+      else return false;
+      renderLine();
+      return true;
+    }
+    return false;
+  });
 }
+
+/** A key, drawn as a keycap (the desktop shop). */
+const kbd = (k: string) => h("kbd", {}, k);
+
+/** Redraws the shop when the width crosses 1024px: its desktop layout is
+ * more than CSS (the inspector, the keys). Other screens only restyle. */
+let rerender: (() => void) | null = null;
+desktopQuery.addEventListener("change", () => app.dataset.screen === "shop" && rerender?.());
 
 /** Per-device "seen it once" flags (localStorage may throw or be empty: then everything is new). */
 function seen(key: string): boolean {
@@ -602,14 +809,23 @@ function resultScreen(run: RunView, fight: FightResult, battle: BattleRecord, co
   const why = fight.outcome === "loss" ? whyILost(battle, content, "A") : null;
   show(
     h("div", { class: "hud" }, h("span", { "data-testid": "result-round" }, label), hearts(run.hearts), h("span", { class: "dim" }, record(run))),
-    h("div", { class: `outcome ${fight.outcome}${why ? " compact" : ""}`, "data-testid": "outcome" }, word),
-    h("div", { class: "dim", style: "text-align:center" }, "vs ", who(fight.opponent.player.name), ` · ${plural(turns, "turn")}`),
-    sub ? h("div", { class: fight.heartsLost > 0 ? "error center" : "center", "data-testid": "result-sub" }, sub) : null,
-    why,
-    h("div", { class: "label" }, "You"),
-    team(battle.teamA, "you", content),
-    h("div", { class: "label" }, who(battle.opponent.name)),
-    team(battle.teamB, "ghost", content),
+    // Desktop: the outcome and why on the left, both lines on the right.
+    h(
+      "div",
+      { class: "result-main" },
+      h("div", { class: `outcome ${fight.outcome}${why ? " compact" : ""}`, "data-testid": "outcome" }, word),
+      h("div", { class: "dim", style: "text-align:center" }, "vs ", who(fight.opponent.player.name), ` · ${plural(turns, "turn")}`),
+      sub ? h("div", { class: fight.heartsLost > 0 ? "error center" : "center", "data-testid": "result-sub" }, sub) : null,
+      why,
+    ),
+    h(
+      "div",
+      { class: "result-teams" },
+      h("div", { class: "label" }, "You"),
+      team(battle.teamA, "you", content),
+      h("div", { class: "label" }, who(battle.opponent.name)),
+      team(battle.teamB, "ghost", content),
+    ),
     h("div", { class: "spacer" }),
     h(
       "div",
@@ -618,6 +834,14 @@ function resultScreen(run: RunView, fight: FightResult, battle: BattleRecord, co
       button(run.phase === "over" ? "See the run" : run.phase === "crown" ? "To the Crown" : "Next round", () => shopScreen(run, content), "primary grow", "continue"),
     ),
   );
+  screen("result");
+  // Desktop: Enter or Space moves on, R replays.
+  onKeys((e) => {
+    if (app.querySelector(".overlay")) return e.key === "Escape" ? (app.querySelector(".overlay")!.remove(), true) : false;
+    if (e.key === "Enter" || e.key === " ") return shopScreen(run, content), true;
+    if (e.key.toLowerCase() === "r") return battleScreen({ battle, content, you: "A", fight, run, onDone: () => resultScreen(run, fight, battle, content) }), true;
+    return false;
+  });
 }
 
 /** "3W 1D 2L": the run's record, draws only when there are any. */
@@ -674,11 +898,12 @@ function runOverScreen(run: RunView, content: MvpContent, notice = ""): void {
       // change is K × (wins got − wins expected at your rating).
       rc ? h("div", { class: "dim small num", "data-testid": "rating-why" }, `expected ${rc.expected.toFixed(1)} wins, got ${+rc.actual.toFixed(1)}`) : null,
     ),
-    run.line.length ? h("div", { class: "label" }, "Your last line") : null,
-    run.line.length ? team(run.line, "you", content) : null,
+    run.line.length ? h("div", { class: "over-line" }, h("div", { class: "label" }, "Your last line"), team(run.line, "you", content)) : null,
     h("div", { class: "spacer" }),
     h("div", { class: "row footer" }, button("Home", () => void homeScreen(), "primary grow", "home")),
   );
+  screen("over");
+  onKeys((e) => (e.key === "Enter" ? (void homeScreen(), true) : false));
 }
 
 // ---------- boot ----------
