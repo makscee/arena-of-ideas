@@ -6,6 +6,10 @@ import { battle } from "../battle.js";
 import { displayNames } from "../trace.js";
 import { stressAbilities, stressRegistry } from "../content/stress.js";
 import type { AbilityDef, AbilityRegistry, BattleEvent, UnitDef, When } from "../types.js";
+import { MVP_RULES, type MvpContent, type PlayerRef } from "./contract.js";
+import { fightLines } from "./fight.js";
+import { lineUnitOf } from "./forms.js";
+import { mvpPool } from "./units.js";
 import { BEAT_MAX_MS, BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
@@ -291,6 +295,69 @@ describe("trigger badges (R2-13)", () => {
     const strikes = stepsOf(log).filter((s) => s.changes.some((c) => c.kind === "damage"));
     expect(strikes.length).toBeGreaterThan(0);
     for (const s of strikes) expect(firingOf(log, s)).toBeNull();
+  });
+});
+
+describe("why I lost: a loop of units reads once (R2-17)", () => {
+  // Hand-made, as a playtest saw it: Virus poisons Squire whenever Guardian's
+  // Shield breaks, and Guardian shields again whenever Squire takes a Poison
+  // tick, turn after turn. The walk up the causes runs Virus (Poison) ←
+  // Guardian (Shield) ← Virus (Poison) ← … ← Silehman, who struck first.
+  const ev = (id: number, turn: number, causedBy: number | null, source: BattleEvent["source"], body: object) => ({ id, turn, causedBy, source, ...body }) as BattleEvent;
+  const K = "kernel" as const;
+  const virus = { unit: "B2:Virus", ability: 0 };
+  const guardian = { unit: "B3:Guardian", ability: 0 };
+  const tick = { unit: "A1:Squire", status: "Poison", ability: 0 };
+  const shieldOn = { unit: "B3:Guardian", status: "Shield", ability: 0 };
+  const log: BattleEvent[] = [
+    ev(0, 0, null, K, { type: "BattleStart", teams: { A: [{ id: "A1:Squire", name: "Squire", hp: 20, pwr: 1 }], B: [{ id: "B1:Silehman", name: "Silehman", hp: 9, pwr: 2 }, { id: "B2:Virus", name: "Virus", hp: 9, pwr: 1 }, { id: "B3:Guardian", name: "Guardian", hp: 9, pwr: 1 }] } }),
+    ev(1, 1, null, K, { type: "TurnStart" }),
+    ev(2, 1, 1, K, { type: "Strike", striker: "B1:Silehman", defender: "A1:Squire" }),
+    ev(3, 1, 2, K, { type: "Hurt", unit: "A1:Squire", amount: 2, hpAfter: 18 }),
+    ev(4, 1, 3, virus, { type: "StatusApplied", unit: "A1:Squire", status: "Poison", stacks: 1, total: 1 }),
+    ev(5, 1, null, K, { type: "TurnEnd" }),
+    ev(6, 1, 5, tick, { type: "Hurt", unit: "A1:Squire", amount: 1, hpAfter: 17 }),
+    ev(7, 1, 6, guardian, { type: "StatusApplied", unit: "B3:Guardian", status: "Shield", stacks: 1, total: 1 }),
+    ev(8, 2, null, K, { type: "TurnStart" }),
+    ev(9, 2, 8, shieldOn, { type: "StatusRemoved", unit: "B3:Guardian", status: "Shield", stacks: 1, remaining: 0 }),
+    ev(10, 2, 9, virus, { type: "StatusApplied", unit: "A1:Squire", status: "Poison", stacks: 1, total: 1 }),
+    ev(11, 2, null, K, { type: "TurnEnd" }),
+    ev(12, 2, 11, tick, { type: "Hurt", unit: "A1:Squire", amount: 1, hpAfter: 16 }),
+    ev(13, 2, 12, guardian, { type: "StatusApplied", unit: "B3:Guardian", status: "Shield", stacks: 1, total: 1 }),
+    ev(14, 3, null, K, { type: "TurnStart" }),
+    ev(15, 3, 14, shieldOn, { type: "StatusRemoved", unit: "B3:Guardian", status: "Shield", stacks: 1, remaining: 0 }),
+    ev(16, 3, 15, virus, { type: "StatusApplied", unit: "A1:Squire", status: "Poison", stacks: 1, total: 1 }),
+    ev(17, 3, null, K, { type: "TurnEnd" }),
+    ev(18, 3, 17, tick, { type: "Hurt", unit: "A1:Squire", amount: 1, hpAfter: 15 }),
+    ev(19, 3, null, K, { type: "BattleEnd", winner: "B", turns: 3 }),
+  ];
+
+  test("each unit shows once in a trace: the loop collapses, its starter stays", () => {
+    // Before the guard: "−1 ← Virus (Poison) ← Guardian (Shield) ← Virus (Poison) ← Guardian (Shield) ← Virus (Poison) ← Silehman".
+    expect(traceOf(log, 18).text).toBe("−1 ← Virus (Poison) ← Guardian (Shield) ← Silehman");
+    expect(traceOf(log, 18).links.map((l) => l.unit)).toEqual(["B2:Virus", "B3:Guardian", "B1:Silehman"]);
+  });
+
+  test("the why-I-lost row reads the loop once and holds every tick of it", () => {
+    const rows = whyILost(log, "A", 10);
+    for (const r of rows) expect(new Set(r.units).size).toBe(r.units.length);
+    const loop = rows.find((r) => r.names[0] === "Virus")!;
+    expect(loop.text).toBe("Virus (Poison) ← Guardian (Shield) ← Silehman");
+    // The second and third ticks are one row now (they read the same once deduplicated).
+    expect(loop.damage).toBe(2);
+  });
+
+  test("real units never repeat a unit in a why-I-lost row", () => {
+    const pool = mvpPool();
+    const content: MvpContent = { version: "t", units: pool.units, abilities: pool.abilities, statuses: pool.statuses };
+    const p = (id: string): PlayerRef => ({ id, name: id, bot: false });
+    let r = 12345;
+    const rand = (n: number) => ((r = (r * 1103515245 + 12345) % 2147483648), r % n);
+    for (let seed = 0; seed < 120; seed++) {
+      const line = (s: string) => Array.from({ length: 5 }, (_, k) => lineUnitOf(pool.units[rand(pool.units.length)]!, `${s}${k}`, 1 + rand(4)));
+      const rec = fightLines({ player: p("a"), line: line("a") }, { player: p("b"), line: line("b") }, { battleId: "x", seed, kind: "round", round: 5, runId: null, at: "2026-10-05T00:00:00Z", content, rules: MVP_RULES });
+      for (const side of ["A", "B"] as const) for (const row of whyILost(rec.log, side, 10)) expect(new Set(row.units).size, `seed ${seed}: ${row.text}`).toBe(row.units.length);
+    }
   });
 });
 

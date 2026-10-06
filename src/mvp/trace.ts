@@ -112,7 +112,10 @@ export interface TraceLink {
 export interface Trace {
   eventId: number;
   change: Change | null;
-  /** Nearest cause first. Consecutive acts by the same unit collapse to one link. */
+  /** Nearest cause first. Each unit appears once: consecutive acts by one
+   * unit collapse to one link, and a loop (Virus's Poison sets off
+   * Guardian's Shield, which sets off Virus again, turn after turn) reads
+   * once, the walk going on past it to whoever started it (R2-17). */
   links: TraceLink[];
   /** "−5 ← Archer ← Smith ← Shieldbearer" */
   text: string;
@@ -129,8 +132,7 @@ export function traceOf(log: BattleEvent[], eventId: number, name: NameOf = disp
     if (cur.type !== "Strike" && isRootKind(cur.type)) break; // turn structure ends the story
     const a = actorOf(log, cur);
     if (a?.unit) {
-      const prev = links.at(-1);
-      if (!prev || prev.unit !== a.unit) {
+      if (!links.some((l) => l.unit === a.unit)) {
         links.push({ eventId: cur.id, unit: a.unit, name: name(a.unit), side: sides.get(a.unit) ?? null, via: a.via });
       }
     }
