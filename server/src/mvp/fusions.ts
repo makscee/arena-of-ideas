@@ -54,7 +54,7 @@ function portmanteauAvoiding(first: string, second: string, isTaken: (folded: st
   const a = first.replace(/\s+/g, "");
   const b = second.replace(/\s+/g, "").toLowerCase();
   const parts = new Set([first, second].map(fold));
-  const free = (name: string) => !parts.has(fold(name)) && !isTaken(fold(name));
+  const free = (name: string) => !parts.has(fold(name)) && !isTaken(fold(name)) && !isBlockedName(name);
   const join = (head: string, tail: string) => (head.slice(-1).toLowerCase() === tail[0] ? head + tail.slice(1) : head + tail);
   const h0 = Math.ceil(a.length / 2);
   const t0 = Math.floor(b.length / 2);
@@ -136,10 +136,13 @@ const BLOCKED_STEMS = [
   "mario", "thorhammer", "thorshammer",
   "moderator", "http", "www",
   // crude
-  "smut", "porn", "nazi", "slut",
+  "smut", "porn", "nazi", "slut", "fuck", "shit", "cunt", "nigg", "faggot", "bitch", "whore", "rape", "cock", "dick", "anal", "penis",
+  "wank", "twat",
 ];
 // Ordinary words that contain a stem: taken out of a word before stems match.
-const ORDINARY = ["invader", "evader", "pervader", "hulking", "hulky", "marionette", "mariology", "mariolat", "marion", "snaper"];
+const ORDINARY = ["invader", "evader", "pervader", "hulking", "hulky", "marionette", "mariology", "mariolat", "marion", "snaper",
+  "grape", "drape", "scrape", "trapez", "cockatrice", "peacock", "cockpit", "cockerel", "woodcock", "cockroach", "shuttlecock", "cocktail",
+  "hancock", "dickens", "analy", "banal", "canal", "analog", "analg", "penistone", "scunthorpe"];
 // Words: short or ordinary enough that a stem would hit real words ("Thorn",
 // "Invader", "Marionette", "Smuggler", "Scamper"), so they match one word of
 // the name, also with a plural or possessive ending ("Marios", "Thor's").
@@ -149,7 +152,7 @@ const BLOCKED_WORDS = [
   "sith", "potter", "muggle",
   "elsa", "olaf", "nemo", "dory", "fiona", "minnie", "thor", "loki", "avenger", "marvel",
   "zoro", "bart", "lego", "barney", "scam", "developer", "administrator",
-  "cum",
+  "cum", "fag", "piss",
   // the model's way of not naming
   "fusion", "fuse", "fused",
   // stems that hit ordinary words: Carambola, Adminicle, Hexmender, Bambino,

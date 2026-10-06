@@ -43,12 +43,20 @@ const content = await call<MvpContent>("GET", "/content");
 const me = await call<PlayerRef>("POST", "/players", { name: "Reigning" });
 player = me.id;
 
-let slew = false;
-for (let n = 0; n < 400 && !slew; n++) slew = (await play(await call<RunView>("POST", "/runs"), content, false)).endedBy === "crown-won";
-if (!slew) throw new Error("no slay in 400 runs");
-await call("POST", "/dev/end-day");
-const day = await call<DayView>("GET", "/day");
-if (day.champion?.player.id !== me.id) throw new Error(`after the day end the champion is @${day.champion?.player.name}, not @${me.name}`);
+// Bots slay too, so a bot may win the playoff: slay and end the day again
+// until this player is crowned.
+let crowned = false;
+let last = "";
+for (let days = 0; days < 12 && !crowned; days++) {
+  let slew = false;
+  for (let n = 0; n < 400 && !slew; n++) slew = (await play(await call<RunView>("POST", "/runs"), content, false)).endedBy === "crown-won";
+  if (!slew) throw new Error("no slay in 400 runs");
+  await call("POST", "/dev/end-day");
+  const day = await call<DayView>("GET", "/day");
+  crowned = day.champion?.player.id === me.id;
+  last = day.champion?.player.name ?? "nobody";
+}
+if (!crowned) throw new Error(`after 12 day ends the champion is @${last}, not @${me.name}`);
 
 for (let n = 0; n < 100; n++) {
   const run = await play(await call<RunView>("POST", "/runs"), content, true);

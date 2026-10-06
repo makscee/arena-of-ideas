@@ -17,7 +17,7 @@ export async function statsScreen(a: { content: MvpContent; onBack: () => void; 
   try {
     data = await Promise.all([api.stats(), api.fusions(), api.home()]);
   } catch (e) {
-    show(h("h1", {}, "STATS"), h("div", { class: "error", "data-testid": "error" }, e instanceof Error ? e.message : String(e)), h("div", { class: "spacer" }), back);
+    show(h("h1", {}, "STATS"), h("div", { class: "error", "data-testid": "error" }, e instanceof Error ? e.message : String(e)), h("div", { class: "spacer" }), h("div", { class: "row footer" }, back));
     return;
   }
   const [stats, fusions, home] = data;
@@ -31,6 +31,7 @@ export async function statsScreen(a: { content: MvpContent; onBack: () => void; 
     recordsPanel(home),
     h("div", { class: "tabs" }, tabBtn("units", "Units"), tabBtn("champions", "Champions"), tabBtn("fusions", "Fusions")),
     body,
+    h("div", { class: "spacer" }),
     // Stuck to the bottom: the lists grow long, and Back is the only way home.
     h("div", { class: "row footer" }, back),
   );
