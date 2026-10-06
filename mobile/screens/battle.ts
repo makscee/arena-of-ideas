@@ -420,6 +420,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** Each block's marks, laid out by layoutMarks() to what its box holds. */
   const markEls: HTMLElement[][] = [];
   const boxEls: HTMLElement[] = [];
+  /** Each "+n" count and the marks it stands for. */
+  const moreMarks = new WeakMap<HTMLElement, HTMLElement[]>();
   let marksObserver: ResizeObserver | null = null;
   function buildTimeline(): void {
     const every = turns.length > 30 ? 5 : turns.length > 18 ? 2 : 1;
@@ -452,7 +454,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         const room = Math.max(1, Math.floor((box.clientWidth - 4) / 15));
         const fit = marks.length <= room ? marks.length : Math.max(0, room - 1);
         const rest = marks.slice(fit);
-        const count = rest.length ? h("span", { class: "bv-tl-more mono", "data-testid": "timeline-more", "data-beat": rest[0]!.dataset.beat ?? "", title: rest.map((m) => m.title).join(", ") }, `+${rest.length}`) : null;
+        // drawTimeline() sets its number and title: only the marks reached so far (R2-17 batch F).
+        const count = rest.length ? h("span", { class: "bv-tl-more mono", "data-testid": "timeline-more", "data-beat": rest[0]!.dataset.beat ?? "" }) : null;
+        if (count) moreMarks.set(count, rest);
         box.replaceChildren(...marks.slice(0, fit), ...(count ? [count] : []));
       });
       drawTimeline();
@@ -501,7 +505,16 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       el.classList.toggle("past", i < ti);
     });
     // A mark ahead of the playhead waits until it is reached (or the end was seen).
-    for (const mk of track.querySelectorAll<HTMLElement>(".bv-tl-mark, .bv-tl-more")) mk.classList.toggle("ahead", !seenEnd && Number(mk.dataset.beat) > at);
+    const reached = (mk: HTMLElement) => seenEnd || Number(mk.dataset.beat) <= at;
+    for (const mk of track.querySelectorAll<HTMLElement>(".bv-tl-mark")) mk.classList.toggle("ahead", !reached(mk));
+    // A count counts only the marks reached: a later death in its turn never shows early (R2-17 batch F).
+    for (const more of track.querySelectorAll<HTMLElement>(".bv-tl-more")) {
+      const rest = (moreMarks.get(more) ?? []).filter(reached);
+      more.classList.toggle("ahead", !rest.length);
+      more.textContent = `+${rest.length}`;
+      more.title = rest.map((m) => m.title).join(", ");
+      more.dataset.count = String(rest.length);
+    }
     const t = turns[ti];
     const pos = !t ? 0 : starting >= 0 ? ti / turns.length : (ti + (t.beats.indexOf(at) + 1) / t.beats.length) / turns.length;
     head.style.left = `${(pos * 100).toFixed(2)}%`;
