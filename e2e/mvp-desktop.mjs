@@ -336,6 +336,19 @@ try {
    * that turn; a Log row's click opens its Why. */
   async function desktopBattle() {
     if ((await page.getByTestId("battle-play").textContent()) === "❚❚") await page.getByTestId("battle-play").click();
+    // R2-17: the end card keeps the timeline and the controls clear (as the mockup does), at both sizes.
+    const endClear = async (name) => {
+      if (!(await page.getByTestId("end-card").isVisible())) await page.getByTestId("battle-end").click();
+      const endBox = await page.getByTestId("end-card").boundingBox();
+      for (const id of ["timeline", "battle-back", "battle-play", "battle-replay"]) {
+        const b = await page.getByTestId(id).boundingBox();
+        if (endBox && b && endBox.y + endBox.height > b.y + 0.5 && endBox.y < b.y + b.height && endBox.x < b.x + b.width && endBox.x + endBox.width > b.x) errors.push(`${name}: the end card covers ${id}`);
+      }
+      const keys = await page.getByTestId("battle-keys").boundingBox();
+      if (!keys) errors.push(`${name}: no key hints (Space / ←→ / R) by the controls`);
+    };
+    await endClear("end card 1440×900");
+    await shot("battle-end-card");
     if (await page.getByTestId("end-card").isVisible()) await page.getByTestId("end-close").click();
     const facing = async (name, w, h) => {
       const [mine, theirs, panel] = [await page.getByTestId("battle-you").boundingBox(), await page.getByTestId("battle-them").boundingBox(), await page.getByTestId("trace").boundingBox()];
@@ -368,11 +381,30 @@ try {
       await page.mouse.move(to.x + to.width / 2, to.y + 10, { steps: 6 });
       await page.mouse.up();
       const hud = (await page.locator(".hud span").nth(2).textContent()) ?? "";
-      if (target > 0 && hud !== `T${turn}`) errors.push(`timeline: dragged to turn ${turn}, the board shows ${hud}`);
+      const label = (t) => (Number(t) >= 1 ? `T${t}` : "Start");
+      if (hud !== label(turn)) errors.push(`timeline: dragged to turn ${turn}, the board shows ${hud}`);
       if (!(await turns.nth(target).evaluate((e) => e.classList.contains("on")))) errors.push("timeline: the dragged-to turn isn't lit");
       if (await page.getByTestId("battle-play").textContent() !== "▶") errors.push("timeline: scrubbing didn't pause");
       console.log(`timeline: ${n} turns, dragged to T${turn} (${target === n - 1 ? "the last turn" : "your first loss"}), board at ${hud}`);
       await shot("battle-timeline");
+      // The first turn's block, clicked at its start, is turn 1 (battle start has its own block, R2-17).
+      for (const t of ["0", "1"]) {
+        const block = page.locator(`[data-testid="timeline-turn"][data-turn="${t}"]`);
+        if (!(await block.count())) continue;
+        const bb = await block.boundingBox();
+        await page.mouse.click(bb.x + 1, bb.y + bb.height - 4);
+        const at = (await page.locator(".hud span").nth(2).textContent()) ?? "";
+        if (at !== label(t)) errors.push(`timeline: clicked the start of ${label(t)}'s block, the HUD reads ${at}`);
+      }
+      // A mark's click jumps to its own beat.
+      const mark = page.getByTestId("timeline-mark").first();
+      if (await mark.count()) {
+        await mark.click();
+        const beat = Number(await mark.getAttribute("data-beat"));
+        const lit = await page.getByTestId("timeline-turn").evaluateAll((els) => els.findIndex((e) => e.classList.contains("on")));
+        const want = await page.getByTestId("timeline-turn").evaluateAll((els, b) => els.findIndex((e) => [...e.querySelectorAll("[data-beat]")].some((m) => Number(m.getAttribute("data-beat")) === b)), beat);
+        if (lit !== want) errors.push(`timeline: a mark's click lit block ${lit}, not its own (${want})`);
+      }
     }
     // Log: a row's click opens its Why.
     await page.getByTestId("tab-log").click();
@@ -392,6 +424,9 @@ try {
     await page.setViewportSize({ width: 1024, height: 768 });
     await page.waitForTimeout(200);
     await facing("battle 1024×768", 1024, 768);
+    await endClear("end card 1024×768");
+    await shot("battle-end-card-1024");
+    if (await page.getByTestId("end-card").isVisible()) await page.getByTestId("end-close").click();
     await shot("battle-1024");
     await page.setViewportSize({ width: W, height: H });
     await page.waitForTimeout(200);
