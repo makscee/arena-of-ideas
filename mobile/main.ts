@@ -392,7 +392,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
       // A unit you own: the sheet shows your copy, from now to after buying.
       let mine: { now: LineUnit; next: LineUnit } | null = null;
       let blocked = affordable ? "" : `Needs ${o.cost}g`;
-      if (res instanceof ApiError) blocked = res.message;
+      if (res instanceof ApiError) blocked = /line is full/i.test(res.message) ? "Line full: sell or fuse first" : "Can't buy this now";
       else if (res) {
         const before = new Map(run.line.map((x) => [x.uid, x]));
         const changed = res.run.line.find((x) => !before.has(x.uid) || before.get(x.uid)!.copies !== x.copies);
