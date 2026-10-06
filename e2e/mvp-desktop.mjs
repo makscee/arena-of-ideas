@@ -40,7 +40,23 @@ try {
   const page = await browser.newPage({ viewport: { width: W, height: H } });
   page.on("pageerror", (e) => errors.push(`pageerror: ${e.message}`));
   page.on("console", (m) => m.type() === "error" && errors.push(`console: ${m.text()}`));
-  const shot = (name) => page.screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-${name}.png` });
+  /** Every card's When · Who · Does icon line fits its card (R3-4): no row
+   * overflows, and a line with more icons than it shows ends in "+". A
+   * battle card shows only its When, in the corner, so it is left out. */
+  let iconCards = 0;
+  const iconsFit = async (name) => {
+    const r = await page.evaluate(() => [...document.querySelectorAll('.card:not(.bv-card) [data-testid="card-icons"]')].filter((el) => el.getClientRects().length).map((el) => {
+      const shown = [...el.querySelectorAll(".ci")].filter((c) => getComputedStyle(c).display !== "none").length;
+      const more = [...el.querySelectorAll(".more")].some((m) => getComputedStyle(m).display !== "none");
+      return { name: el.closest(".card")?.querySelector(".name")?.textContent ?? "?", over: el.scrollWidth > el.clientWidth, short: el.querySelectorAll(".ci").length > shown && !more };
+    }));
+    iconCards += r.length;
+    for (const c of r) {
+      if (c.over) errors.push(`${name}: ${c.name}'s icon line overflows its card`);
+      if (c.short) errors.push(`${name}: ${c.name} hides icons without a "+"`);
+    }
+  };
+  const shot = async (name) => { await page.screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-${name}.png` }); await iconsFit(name); };
   const noHScroll = async (name) => {
     const w = await page.evaluate(() => document.documentElement.scrollWidth);
     if (w > W) errors.push(`${name}: horizontal scroll (${w}px)`);
@@ -474,7 +490,7 @@ try {
     console.log("why: no change in round 1 came from a firing in a turn; panel not checked");
   }
 
-  console.log(`mvp desktop: ${round} fights, ${shots} screenshots in ${out}`);
+  console.log(`mvp desktop: ${round} fights, ${shots} screenshots in ${out}, ${iconCards} card icon lines fit`);
 } finally {
   await browser.close();
   child?.kill();

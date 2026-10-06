@@ -54,10 +54,11 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 /* The top row (R3-4): the form's When · Who · Does icons, left to right, in
  * their tones; the phone shows 3 then "+", the desktop 5 then "+n". Top
  * right: an offer's tier, I-IV, which the row leaves room for. */
-.card .icons { align-self: stretch; flex: none; display: flex; align-items: center; gap: 1px; height: 11px; padding: 0 14px 0 1px; overflow: hidden; line-height: 0; }
+.card .icons { align-self: stretch; flex: none; display: flex; align-items: center; gap: 1px; height: 11px; padding: 0 1px; overflow: hidden; line-height: 0; }
+.card .icons.tiered { padding-right: 12px; }
 .card .icons .ci { flex: none; display: inline-flex; }
 .card .icons .ci:nth-of-type(n+4), .card .icons .desk-more { display: none; }
-.card .icons .more { flex: none; font-family: "IBM Plex Mono", monospace; font-size: 10px; line-height: 11px; font-weight: 600; color: var(--dim); }
+.card .icons .more { flex: none; font-family: "IBM Plex Mono", monospace; font-size: 9px; line-height: 11px; font-weight: 600; color: var(--dim); }
 .card:not(.bv-card) .emoji { margin-top: 0; }
 /* A battle card keeps only its When, in the corner: its change chips sit right of it. */
 .bv-card .icons { position: absolute; top: 3px; left: 4px; height: auto; padding: 0; overflow: visible; }
@@ -481,7 +482,8 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
   #app[data-screen] .card .copies.tag { font-size: 11px; }
   #app[data-screen] .card .cost { font-size: 15px; }
   #app[data-screen] .card .foot { min-height: 18px; }
-  #app[data-screen] .card .icons { height: 16px; gap: 2px; padding-right: 20px; }
+  #app[data-screen] .card .icons { height: 16px; gap: 2px; }
+  #app[data-screen] .card .icons.tiered { padding-right: 20px; }
   #app[data-screen] .card .icons .ic { width: 16px; height: 16px; }
   #app[data-screen] .card .icons .ci:nth-of-type(n+4) { display: inline-flex; }
   #app[data-screen] .card .icons .ci:nth-of-type(n+6), #app[data-screen] .card .icons .phone-more { display: none; }

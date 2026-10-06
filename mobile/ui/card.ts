@@ -43,7 +43,7 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
   const el = h(
     "div",
     { class: `card ${o.side}`, ...(o.testid ? { "data-testid": o.testid } : {}) },
-    iconLine(u.recipe),
+    iconLine(u.recipe, !!o.tier),
     o.tier ? h("span", { class: "tier", "aria-label": `tier ${o.tier}` }, roman(o.tier)) : null,
     h("div", { class: "emoji" }, u.emoji),
     // One line; ui/dom.ts fitText() shrinks a long name a little, then cuts it.
@@ -99,16 +99,16 @@ export function withPip(ic: Element, pip: Pip | undefined): Element {
 
 /** The card's top row: When, Who, then each Does, one icon per idea, each in
  * its tone. Hovering names them all ("Battle start · Front enemy · Freeze"). */
-function iconLine(form: UnitForm | undefined): Node | null {
+function iconLine(form: UnitForm | undefined, tiered: boolean): Node | null {
   const icons = form ? cardIcons(form, abilities) : [];
   if (!icons.length) return null;
   const names = icons.map((c) => c.label).join(" · ");
   return h(
     "span",
-    { class: "icons", title: names, "aria-label": names, "data-testid": "card-icons" },
+    { class: tiered ? "icons tiered" : "icons", title: names, "aria-label": names, "data-testid": "card-icons" },
     ...icons.map((c) => h("span", { class: `ci tone-${c.tone}`, title: c.label, "data-icon": c.icon, ...(c.pip ? { "data-pip": c.pip } : {}) }, withPip(icon(c.icon, 11), c.pip))),
-    icons.length > PHONE_ICONS ? h("span", { class: "more phone-more", "aria-hidden": "true" }, "+") : null,
-    icons.length > DESKTOP_ICONS ? h("span", { class: "more desk-more", "aria-hidden": "true" }, `+${icons.length - DESKTOP_ICONS}`) : null,
+    icons.length > PHONE_ICONS ? h("small", { class: "more phone-more", "aria-hidden": "true" }, "+") : null,
+    icons.length > DESKTOP_ICONS ? h("small", { class: "more desk-more", "aria-hidden": "true" }, `+${icons.length - DESKTOP_ICONS}`) : null,
   );
 }
 
