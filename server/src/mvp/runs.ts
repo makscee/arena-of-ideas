@@ -146,10 +146,12 @@ export const GHOST_PICK_POOL = 200;
 
 /** A saved team at the run's round, never the player's own, built with the
  * live content; a seeded bot team when the round has none (slice 6's bots
- * fill the pool). */
+ * fill the pool). Never a team of a run that slew today's champion: its
+ * round-12 line is its Crown line, hidden until the day ends (hiddenSlay). */
 function pickGhost(deps: RunDeps, run: MvpRunState): Ghost {
   const { store, content, now } = deps;
-  const candidates = store.ghosts(run.round, { excludePlayerId: run.player.id, contentVersion: content.version, limit: GHOST_PICK_POOL });
+  const slayers = new Set(store.slays(deps.today().seq).map((s) => s.runId));
+  const candidates = store.ghosts(run.round, { excludePlayerId: run.player.id, contentVersion: content.version, limit: GHOST_PICK_POOL }).filter((g) => !slayers.has(g.runId));
   const pick = deps.seed();
   return candidates.length > 0
     ? candidates[pick % candidates.length]!
