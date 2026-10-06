@@ -22,7 +22,7 @@ import type { UnitFilter } from "../../src/types";
 import { formSegments, formText } from "../../src/mvp/form-text";
 import { fuseUnits, lineUnitOf } from "../../src/mvp/forms";
 import { api } from "../api";
-import { card, formRich, unitSheet } from "../ui/card";
+import { card, formRich, roman, unitSheet } from "../ui/card";
 import { app, button, closable, h, isDesktop, onKeys, screen, show, who } from "../ui/dom";
 import { icon } from "../ui/icon";
 import { loadUnitRates, pct } from "../ui/unit-stats";
@@ -229,7 +229,7 @@ function unitsTab(
     "div",
     { class: "row codex-filter", "data-testid": "codex-tiers" },
     h("span", { class: "label" }, "Tier"),
-    ...[null, ...tiers].map((t) => button(t === null ? "All" : `${t}`, () => set({ tier: t }), st.tier === t ? "chip on" : "chip", `codex-tier-${t ?? "all"}`)),
+    ...[null, ...tiers].map((t) => button(t === null ? "All" : roman(t), () => set({ tier: t }), st.tier === t ? "chip on" : "chip", `codex-tier-${t ?? "all"}`)),
   );
   const trigRow = h(
     "div",

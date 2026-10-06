@@ -16,7 +16,7 @@ import { battleScreen, type RunOutro } from "./screens/battle";
 import { codexScreen, newCodexCache, type CodexState } from "./screens/codex";
 import { setCodexLink } from "./ui/term";
 import { statsScreen } from "./screens/stats";
-import { card, unitSheet, type CardUnit } from "./ui/card";
+import { card, roman, unitSheet, type CardUnit } from "./ui/card";
 import { previewName } from "./ui/fusion";
 import { icon } from "./ui/icon";
 import { app, button, closable, desktopQuery, h, isDesktop, keepScreen, onKeys, overlay, screen, show, who } from "./ui/dom";
@@ -61,6 +61,13 @@ const offersText = (r: MvpRules) => {
   const last = Math.max(...grow);
   return `${plural(r.offers, "offer")} in round 1, growing to ${offersAt(r, last)} by round ${last}`;
 };
+// "tier II opens in round 3, III in 6, IV in 9", from the rules.
+const tiersText = (r: MvpRules) =>
+  r.tierOpensAt
+    .map((round, i) => ({ tier: i + 1, round }))
+    .filter((t) => t.round > 1)
+    .map((t, i) => (i === 0 ? `tier ${roman(t.tier)} opens in round ${t.round}` : `${roman(t.tier)} in ${t.round}`))
+    .join(", ") || "every tier is open from round 1";
 const roundLabel = (round: number) => (round > rules.rounds ? "CROWN" : `R${round}/${rules.rounds}`);
 const hearts = (n: number) => h("span", { class: "hearts", "aria-label": plural(n, "heart") }, "♥".repeat(n) + "♡".repeat(Math.max(0, rules.hearts - n)));
 const openSheet = (u: Parameters<typeof unitSheet>[0], content: MvpContent) => () => closable(unitSheet(u, content));
@@ -88,7 +95,7 @@ function rulesSheet(): HTMLElement {
     h("h2", {}, "RULES"),
     h("div", { class: "label" }, "A run"),
     p(`${r.rounds} shop rounds, then the Crown: a fight against today's champion. You start with ${plural(r.hearts, "heart")}; a lost fight costs one, and at 0 the run ends before the Crown.`),
-    p(`${r.goldPerRound} gold every round, no carry-over. A unit costs ${r.unitCost}, a reroll ${r.rerollCost}, selling gives back ${r.sellRefund}. ${offersText(r)}; stronger tiers open as rounds pass.`),
+    p(`${r.goldPerRound} gold every round, no carry-over. A unit costs ${r.unitCost}, a reroll ${r.rerollCost}, selling gives back ${r.sellRefund}. ${offersText(r)}; ${tiersText(r)}.`),
     h("div", { class: "label" }, "The line"),
     p(`${r.lineSize} units in a line, front first. Change the order in the shop: ${isDesktop() ? "drag a unit, or click it, then ← →" : "tap a unit, then ◀ ▶"}. Each round you fight a team another player saved at the same round.`),
     h("div", { class: "label" }, "Copies, Awoken, fusion"),
@@ -118,7 +125,7 @@ function legendSheet(): HTMLElement {
     row(span("copies", "●●○"), `Copies toward Awoken: copy ${r.copiesToAwaken} awakens it. Each copy adds +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP.`),
     row(span("copies tag", "AWOKEN ×3"), "Awoken, its stronger form; ×3 copies merged in. Two Awoken units can fuse."),
     row(span("copies tag", "FUSED ×2"), "Two Awoken units fused into one: final, copies of either part still merge in."),
-    row(span("cost", "3g ＋"), "An offer's price. ＋: you own it, so buying merges a copy in. The dots top right are its tier."),
+    row(span("cost", "3g ＋"), "An offer's price. ＋: you own it, so buying merges a copy in. The numeral top right (I–IV) is its tier."),
     h("div", { class: "dim small" }, "Tap any card for its sheet: what it does now, and its Awoken form one tap away."),
   );
   const close = closable(sheet, h("div", { class: "row" }, rulesBtn));
