@@ -1095,50 +1095,54 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const c = causeOf(log, step, whenOf);
     const ic = c ? causeIcon(c) : undefined;
     const lead = c && ic ? [h("span", { class: "bv-cap-cause", "data-testid": "caption-cause", "data-cause": c.cause, title: causeLabel(c) }, icon(ic, 14, causeTone(c)))] : [];
-    if (!side) return [...lead, ...richCaption(step.caption)];
-    return [...lead, sideTag(side, "caption-side"), ...richCaption(step.caption)];
+    // A lead icon is the term's own for a capped chain: the term doesn't repeat it.
+    const led = lead.length > 0;
+    if (!side) return [...lead, ...richCaption(step.caption, led)];
+    return [...lead, sideTag(side, "caption-side"), ...richCaption(step.caption, led)];
   }
 
   /** A caption with its terms highlighted (R2-13, like R2-8's unit text):
    * unit names in their side's colour, statuses with their icon and colour,
    * PWR / HP, damage and healing numbers, and a Shield block as the Shield
-   * icon. Plain spans: the caption itself is the button that opens Why. */
-  function richCaption(text: string): Node[] {
+   * icon. Plain spans: the caption itself is the button that opens Why.
+   * `led`: the caption leads with its cause icon. */
+  function richCaption(text: string, led = false): Node[] {
     const out: Node[] = [];
     let i = 0;
     for (const m of text.matchAll(TAG)) {
-      if (m.index! > i) out.push(...termsIn(text.slice(i, m.index)));
+      if (m.index! > i) out.push(...termsIn(text.slice(i, m.index), led));
       out.push(unitName(m[1]!));
       i = m.index! + m[0].length;
     }
-    if (i < text.length) out.push(...termsIn(text.slice(i)));
+    if (i < text.length) out.push(...termsIn(text.slice(i), led));
     return out;
   }
   /** A unit's name in its own side's colour. */
   function unitName(id: string): Node {
     return h("span", { class: `bv-cn ${sides.get(id) === you ? "tone-ally" : "tone-enemy"}`, "data-unit": id }, name(id));
   }
-  function termsIn(text: string): Node[] {
+  function termsIn(text: string, led = false): Node[] {
     const out: Node[] = [];
     let i = 0;
     for (const m of text.matchAll(captionTerms)) {
       if (m.index! > i) out.push(document.createTextNode(text.slice(i, m.index)));
-      out.push(captionTerm(m[0]));
+      out.push(captionTerm(m[0], led));
       i = m.index! + m[0].length;
     }
     if (i < text.length) out.push(document.createTextNode(text.slice(i)));
     return out;
   }
-  function captionTerm(t: string): Node {
+  function captionTerm(t: string, led = false): Node {
     const absorbed = /^\((\d+) absorbed\)$/.exec(t);
     if (absorbed) return h("span", { class: "bv-ct tone-shield", "data-testid": "caption-term" }, icon("shield", 14), ` ${absorbed[1]} blocked`);
     const status = STATUS_TERMS[t] ?? (logStatuses.has(t) ? termDef(`status:${t}`) : undefined);
     if (status) return h("span", { class: `bv-ct tone-${status.tone}`, "data-testid": "caption-term" }, ...(status.icon ? [icon(status.icon, 14), " "] : []), t);
     if (t === "Fatigue") return h("span", { class: "bv-ct tone-dmg", "data-testid": "caption-term" }, icon("hourglass", 14), " ", t);
-    // A capped cascade: its rule with this battle's own cap. The breaking
-    // chain icon is the caption's lead (its cause icon, R3-19), so not twice.
+    // A capped cascade: the breaking chain, its rule with this battle's own
+    // cap. The caption already leads with that icon (its cause, R3-19): there
+    // the term keeps only its words.
     const capped = /^Chain stopped after (\d+) steps$/.exec(t);
-    if (capped) return h("span", { class: "bv-ct tone-plain", "data-testid": "caption-term", title: chainCappedTip(Number(capped[1])) }, t);
+    if (capped) return h("span", { class: "bv-ct tone-plain", "data-testid": "caption-term", title: chainCappedTip(Number(capped[1])) }, ...(led ? [] : [icon("breaking-chain", 14), " "]), t);
     if (t === "PWR") return h("span", { class: "tone-pwr" }, t);
     if (t === "HP") return h("span", { class: "tone-hp" }, t);
     if (t.startsWith("−")) return h("b", { class: "tone-dmg" }, t);

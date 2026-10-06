@@ -52,6 +52,11 @@ try {
   process.exitCode = ok ? 0 : 1;
   await row.click().catch(() => {});
   await page.waitForTimeout(800);
+  // The caption on that step shows the breaking chain once: its cause icon leads, the term keeps its words (R3-20).
+  const chains = await page.evaluate(() => [...document.querySelectorAll('[data-testid="caption"] use')].filter((u) => u.getAttribute("href") === "#i-breaking-chain").length);
+  const onCaption = await page.evaluate(() => document.querySelector('[data-testid="caption"]')?.textContent ?? "");
+  if (/Chain stopped after/.test(onCaption) && chains !== 1) { console.log(`chain cap probe: FAILED, the caption shows the breaking chain ${chains} times`); process.exitCode = 1; }
+  else console.log(`caption: ${chains} breaking chain icon (${onCaption.trim().slice(0, 60)})`);
   await page.screenshot({ path: out });
   await browser.close();
 } finally { child.kill(); }
