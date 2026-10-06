@@ -165,7 +165,16 @@ export function openTermSheet(info: TermDef & { id: TermId }): () => void {
 // ---------- the desktop tooltip ----------
 
 let tip: HTMLElement | null = null;
+let tipAnchor: HTMLElement | null = null;
 let timer: ReturnType<typeof setTimeout> | undefined;
+
+/** A screen re-render (a key, a battle beat) can drop the anchor without a
+ * pointerleave: the tooltip goes with it, checked each frame while it shows. */
+function watchAnchor(): void {
+  if (!tip) return;
+  if (!tipAnchor?.isConnected) return hideTip();
+  requestAnimationFrame(watchAnchor);
+}
 
 function queueTip(anchor: HTMLElement, info: TermDef & { id: TermId }, delay = 250): void {
   clearTimeout(timer);
@@ -178,6 +187,8 @@ function showTip(anchor: HTMLElement, info: TermDef & { id: TermId }): void {
   const codex = codexLink ? h("div", { class: "dim small" }, "Click for more · Open in Codex") : null;
   tip = h("div", { class: "term-tooltip", role: "tooltip", "data-testid": "term-tooltip" }, ruleBlock(info, 20), codex);
   document.body.append(tip);
+  tipAnchor = anchor;
+  requestAnimationFrame(watchAnchor);
   const r = anchor.getBoundingClientRect();
   const w = tip.offsetWidth;
   const left = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, innerWidth - w - 8));
@@ -190,8 +201,10 @@ function hideTip(): void {
   clearTimeout(timer);
   tip?.remove();
   tip = null;
+  tipAnchor = null;
 }
 addEventListener("scroll", hideTip, { passive: true });
+addEventListener("keydown", hideTip, { capture: true });
 
 // ---------- what changes, over the pieces ----------
 
