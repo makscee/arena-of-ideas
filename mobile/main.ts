@@ -86,6 +86,28 @@ function rulesSheet(): HTMLElement {
   );
 }
 
+/** How to read a card (the shop's "?"): each number and mark, with a sample. */
+function legendSheet(): HTMLElement {
+  const r = rules;
+  const row = (sample: Node, text: string) => h("div", { class: "legend-row" }, h("div", { class: "legend-sample" }, sample), h("div", {}, text));
+  const span = (cls: string, t: string) => h("span", { class: cls }, t);
+  const rulesBtn = button("Rules", () => (close(), closable(rulesSheet())), "grow", "legend-rules");
+  const sheet = h(
+    "div",
+    { class: "stack legend", "data-testid": "legend" },
+    h("h2", {}, "READING A CARD"),
+    row(h("span", { class: "stats" }, span("p", "2"), " / ", span("h", "6")), "PWR / HP. PWR is what its strike deals; at 0 HP it falls."),
+    row(h("span", { class: "rates" }, span("w", "W59%"), " P9%"), "Today's rates. W: how often a team with it won its fight. P: how often it was on a finished run's line. — means no runs yet."),
+    row(span("copies", "●●○"), `Copies toward Awoken: copy ${r.copiesToAwaken} awakens it. Each copy adds +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP.`),
+    row(span("copies tag", "AWOKEN ×3"), "Awoken, its stronger form; ×3 copies merged in. Two Awoken units can fuse."),
+    row(span("copies tag", "FUSED ×2"), "Two Awoken units fused into one: final, copies of either part still merge in. \"by @name\" is who discovered it."),
+    row(span("cost", "3g ＋"), "An offer's price. ＋: you own it, so buying merges a copy in."),
+    h("div", { class: "dim small" }, "Tap any card for its full sheet: what it does, sleeping and Awoken."),
+  );
+  const close = closable(sheet, h("div", { class: "row" }, rulesBtn));
+  return sheet;
+}
+
 // ---------- name ----------
 
 function nameScreen(): void {
@@ -415,6 +437,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
   fillPin(day);
   if (!day) void api.day().then((d) => ((day = d), fillPin(d))).catch(() => {});
 
+  // "?" explains a card's numbers; until a player has opened it once, it says so.
+  const legendBtn = button(seen("legend") ? "?" : "? Cards", () => (markSeen("legend"), (legendBtn.textContent = "?"), legendBtn.classList.remove("new"), legendSheet()), seen("legend") ? "small" : "small new", "legend-open");
   renderLine();
   show(
     h(
@@ -431,7 +455,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
       h("span", { class: "dim", "data-testid": "next-opponent" }, ...(opp ? [`${crown ? "Crown vs" : "Next:"} `, who(opp.player.name), `${opp.player.bot ? " 🤖" : ""}${ownCrown ? " (your own team)" : ""}`] : [crown ? "Crown vs today's champion" : "Next: a team saved at this round"])),
       pin,
     ),
-    h("div", { class: "label" }, crown ? "Your line · front first · final" : "Your line · front first"),
+    h(
+      "div",
+      { class: "row spread line-head" },
+      h("div", { class: "label" }, crown ? "Your line · front first · final" : "Your line · front first"),
+      h("div", { class: "row" }, legendBtn, button("Rules", () => closable(rulesSheet()), "small", "shop-rules")),
+    ),
     line,
     actions,
     hintSlot,
@@ -441,6 +470,22 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
     h("div", { class: "row" }, crown ? null : reroll, fight),
     err,
   );
+}
+
+/** Per-device "seen it once" flags (localStorage may throw or be empty: then everything is new). */
+function seen(key: string): boolean {
+  try {
+    return localStorage.getItem(`arena.seen.${key}`) === "1";
+  } catch {
+    return false;
+  }
+}
+function markSeen(key: string): void {
+  try {
+    localStorage.setItem(`arena.seen.${key}`, "1");
+  } catch {
+    /* private mode: it just stays new */
+  }
 }
 
 /** ●●○ toward awakening for a sleeping unit; AWOKEN or FUSED otherwise. */

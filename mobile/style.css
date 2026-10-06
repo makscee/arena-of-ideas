@@ -220,3 +220,15 @@ button.bv-why { display: flex; align-items: center; justify-content: space-betwe
 .outcome.compact { font-size: 34px; line-height: 1.1; }
 .bv-why-num { flex: none; font-size: 14px; }
 [data-testid="why-lost"] { gap: 6px; }
+/* The shop's "?" (#587): how to read a card. */
+.line-head { min-height: 44px; }
+.line-head button.small { min-height: 44px; min-width: 44px; padding: 0 10px; font-size: 14px; }
+.line-head button.new { background: var(--you); color: var(--bg); }
+.legend-row { display: grid; grid-template-columns: 92px 1fr; gap: 10px; align-items: baseline; font-size: 15px; line-height: 1.25; }
+.legend-sample { font-family: "IBM Plex Mono", monospace; font-size: 14px; text-align: center; padding: 4px 0; border: 1px solid var(--line); }
+.legend-sample .p { color: var(--gold); }
+.legend-sample .h { color: var(--ghost); }
+.legend-sample .rates { font-size: 12px; }
+.legend-sample .copies { color: var(--you); }
+.legend-sample .copies.tag { color: var(--gold); font-size: 11px; }
+.legend-sample .cost { color: var(--gold); }
