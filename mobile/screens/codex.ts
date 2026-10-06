@@ -5,23 +5,30 @@
 // - Units: all the content's units as compact cards, filtered by tier, by the
 //   trigger icon a card shows and by a search over names and both forms'
 //   text. A card opens its sheet (active form, See Awoken, the dim rates line).
+//   A quiet Sort (tier, win rate, pick rate) compares the rates: only while a
+//   rate sort is on does each card show its number, dim.
 // - Fusions: every discovered pair with its recipe and its credit, "N of 6,480
 //   found"; picking a unit lists all its pairs as the first part, the ones
 //   nobody has made as "?".
 // - Keywords: every glossary term with its 48px icon, its rule and the units
-//   whose text uses it; a term's deep link lands on its row.
-// The icon credits (CC BY 3.0) sit at its foot. Reads /content and /fusions.
-import { GLOSSARY, STATUS_TERMS, termDef, termGroup, termIcon, type FixedTermId, type IconId, type TermGroup, type TermId } from "../../src/glossary";
-import type { FusionDiscovery, LineUnit, MvpContent, UnitContent, UnitId } from "../../src/mvp/contract";
+//   whose text uses it; a term's deep link lands on its row. A trigger said of
+//   someone else ("After an enemy dies") has its own line there.
+// On desktop a sheet opens in the inspector on the right, not an overlay.
+// The icon credits (CC BY 3.0) sit at its foot. Reads /content, /stats and
+// /fusions, each once while it stays open (CodexCache).
+import { GLOSSARY, STATUS_TERMS, scopedTip, termDef, termGroup, termIcon, type FixedTermId, type IconId, type TermGroup, type TermId } from "../../src/glossary";
+import type { FusionDiscovery, LineUnit, MvpContent, StatsView, UnitContent, UnitId } from "../../src/mvp/contract";
+import type { UnitFilter } from "../../src/types";
 import { formSegments, formText } from "../../src/mvp/form-text";
 import { fuseUnits, lineUnitOf } from "../../src/mvp/forms";
 import { api } from "../api";
 import { card, formRich, unitSheet } from "../ui/card";
-import { button, closable, h, onKeys, screen, show, who } from "../ui/dom";
+import { app, button, closable, h, isDesktop, onKeys, screen, show, who } from "../ui/dom";
 import { icon } from "../ui/icon";
-import { loadUnitRates } from "../ui/unit-stats";
+import { loadUnitRates, pct } from "../ui/unit-stats";
 
 export type CodexTab = "units" | "fusions" | "keywords";
+export type CodexSort = "tier" | "win" | "pick";
 
 export interface CodexState {
   tab: CodexTab;
@@ -30,52 +37,115 @@ export interface CodexState {
   /** Units: the trigger icon a card shows top-left, or any. */
   trigger: IconId | null;
   query: string;
+  /** Units: by tier, or by win or pick rate (the rates show on the cards only then). */
+  sort: CodexSort;
   /** Fusions: one unit's pairs (as the first part), or every discovery. */
   fusionsOf: UnitId | null;
   mine: boolean;
-  /** Keywords: the row to land on. */
+  /** Keywords: the row to land on, and a trigger's scope line in it. */
   term?: TermId | undefined;
+  scope?: UnitFilter | undefined;
 }
 
-const DEFAULTS: CodexState = { tab: "units", tier: null, trigger: null, query: "", fusionsOf: null, mine: false };
+const DEFAULTS: CodexState = { tab: "units", tier: null, trigger: null, query: "", sort: "tier", fusionsOf: null, mine: false };
 
-export async function codexScreen(a: { content: MvpContent; onBack: () => void; state?: Partial<CodexState> | undefined }): Promise<void> {
-  void loadUnitRates(); // the dim rates line on unit sheets
+/** What the Codex fetched, kept while it stays open (main.ts makes a new one
+ * each time it opens over another screen): a filter tap or a tab switch
+ * never refetches. */
+export interface CodexCache {
+  stats?: Promise<StatsView | null>;
+  fusions?: Promise<FusionDiscovery[]>;
+  /** Each tab's window scroll, put back on a switch. */
+  scroll: Partial<Record<CodexTab, number>>;
+  /** Where the open Codex is (its tab and filters), for a redraw at 1024px. */
+  state?: CodexState;
+}
+export const newCodexCache = (): CodexCache => ({ scroll: {} });
+
+/** Draws the Codex once; a tab or filter change redraws only its body and
+ * keeps the scroll. On desktop (R2-9) a unit or a fusion opens in the
+ * inspector on the right, never in an overlay (ui.md (e)). */
+export async function codexScreen(a: { content: MvpContent; onBack: () => void; state?: Partial<CodexState> | undefined; cache?: CodexCache }): Promise<void> {
+  const cache = a.cache ?? newCodexCache();
+  cache.stats ??= loadUnitRates(); // the dim rates line on unit sheets, and the rate sorts
   const st: CodexState = { ...DEFAULTS, ...a.state };
-  const go = (next: Partial<CodexState>) => void codexScreen({ ...a, state: { ...st, term: undefined, ...next } });
+  cache.state = st;
+  const desk = isDesktop();
   const back = button("Back", a.onBack, "primary grow", "codex-back");
-  const tabBtn = (t: CodexTab, label: string) => button(label, () => go({ tab: t }), t === st.tab ? "on" : "", `codex-tab-${t}`);
+  const tabs = h("div", { class: "tabs", role: "tablist" });
   const body = h("div", { class: "stack codex-body" });
-  show(
+  const inspector = desk ? h("aside", { class: "codex-insp stack", "data-testid": "inspector" }) : null;
+  const idle = () => inspector?.replaceChildren(h("div", { class: "dim" }, "Pick a unit or a fusion to read it here."));
+  idle();
+  /** A unit's (or a fused unit's) sheet: the inspector on desktop, an overlay on a phone. */
+  const open = (node: HTMLElement, from?: HTMLElement): void => {
+    if (!inspector) return void closable(node);
+    for (const el of app.querySelectorAll(".codex-body .inspected")) el.classList.remove("inspected");
+    from?.classList.add("inspected");
+    inspector.replaceChildren(node);
+    inspector.scrollTop = 0;
+  };
+
+  let drawing = 0;
+  const draw = async (): Promise<void> => {
+    const n = ++drawing;
+    tabs.replaceChildren(tabBtn("units", "Units"), tabBtn("fusions", "Fusions"), tabBtn("keywords", "Keywords"));
+    // The body's height stays while it redraws, so the window keeps its scroll.
+    body.style.minHeight = `${body.offsetHeight}px`;
+    const y = window.scrollY;
+    let kids: Node[];
+    try {
+      if (st.tab === "units") kids = unitsTab(a.content, st, set, open, st.sort === "tier" ? null : await cache.stats!);
+      else if (st.tab === "keywords") kids = [keywordsTab(a.content, open)];
+      else kids = fusionsTab(a.content, await (cache.fusions ??= api.fusions()), st, set, open);
+    } catch (e) {
+      delete cache.fusions; // a failed fetch is tried again on the next draw
+      kids = [h("div", { class: "error", "data-testid": "error" }, e instanceof Error ? e.message : String(e))];
+    }
+    if (n !== drawing || !body.isConnected) return; // redrawn or left meanwhile
+    body.replaceChildren(...kids);
+    window.scrollTo(0, y);
+    body.style.minHeight = "";
+    if (st.tab === "keywords" && st.term) landOn(body, st.term, st.scope);
+  };
+  /** A filter, sort or fusions change: the same tab, redrawn where it is. */
+  const set = (next: Partial<CodexState>): void => {
+    Object.assign(st, { term: undefined, scope: undefined }, next);
+    void draw();
+  };
+  const tabBtn = (t: CodexTab, label: string) =>
+    button(
+      label,
+      () => {
+        if (t === st.tab) return;
+        cache.scroll[st.tab] = window.scrollY;
+        Object.assign(st, { tab: t, term: undefined, scope: undefined });
+        body.style.minHeight = "";
+        body.replaceChildren();
+        void draw().then(() => window.scrollTo(0, cache.scroll[t] ?? 0));
+      },
+      t === st.tab ? "on" : "",
+      `codex-tab-${t}`,
+    );
+
+  const main = h(
+    "div",
+    { class: "stack codex-main" },
     h("div", { class: "row spread" }, h("h1", {}, "CODEX"), h("span", { class: "dim small" }, `${a.content.units.length} units`)),
-    h("div", { class: "tabs", role: "tablist" }, tabBtn("units", "Units"), tabBtn("fusions", "Fusions"), tabBtn("keywords", "Keywords")),
+    tabs,
     body,
     credits(),
     h("div", { class: "spacer" }),
     h("div", { class: "row footer" }, back),
   );
+  show(main, inspector);
   screen("codex");
   onKeys((e) => {
     if (e.key !== "Escape" || document.querySelector(".overlay")) return false;
     a.onBack();
     return true;
   });
-  if (st.tab === "units") body.append(...unitsTab(a.content, st, go));
-  else if (st.tab === "keywords") {
-    body.append(keywordsTab(a.content));
-    if (st.term) landOn(body, st.term);
-  } else {
-    body.append(h("div", { class: "dim" }, "Loading fusions…"));
-    let fusions: FusionDiscovery[];
-    try {
-      fusions = await api.fusions();
-    } catch (e) {
-      body.replaceChildren(h("div", { class: "error", "data-testid": "error" }, e instanceof Error ? e.message : String(e)));
-      return;
-    }
-    if (!body.isConnected) return; // left meanwhile
-    body.replaceChildren(...fusionsTab(a.content, fusions, st, go));
-  }
+  await draw();
 }
 
 // ---------- units ----------
@@ -94,12 +164,31 @@ function triggerOf(u: UnitContent): { icon: IconId; label: string } | null {
 
 const byTierName = (x: UnitContent, y: UnitContent) => x.tier - y.tier || x.name.localeCompare(y.name);
 
-function unitsTab(content: MvpContent, st: CodexState, go: (next: Partial<CodexState>) => void): Node[] {
+const SORTS: [CodexSort, string][] = [
+  ["tier", "Tier"],
+  ["win", "Win rate"],
+  ["pick", "Pick rate"],
+];
+
+function unitsTab(
+  content: MvpContent,
+  st: CodexState,
+  set: (next: Partial<CodexState>) => void,
+  open: (node: HTMLElement, from?: HTMLElement) => void,
+  stats: StatsView | null,
+): Node[] {
+  // A rate sort: highest first, units no run has counted yet last (by tier).
+  const rates = new Map((stats?.units ?? []).filter((r) => r.runs > 0).map((r) => [r.unitId, r]));
+  const rateOf = (u: UnitContent): number | undefined => {
+    const r = rates.get(u.id);
+    return r && (st.sort === "win" ? r.winRate : r.pickRate);
+  };
   const units = [...content.units].sort(byTierName);
+  if (st.sort !== "tier") units.sort((x, y) => (rateOf(y) ?? -1) - (rateOf(x) ?? -1));
   const tiers = [...new Set(units.map((u) => u.tier))].sort();
   // The trigger icons the picked tier has (the picked one always stays).
   const triggers = new Map<IconId, string>();
-  for (const u of units.filter((x) => st.tier === null || x.tier === st.tier || triggerOf(x)?.icon === st.trigger)) {
+  for (const u of [...units].sort(byTierName).filter((x) => st.tier === null || x.tier === st.tier || triggerOf(x)?.icon === st.trigger)) {
     const t = triggerOf(u);
     if (t && !triggers.has(t.icon)) triggers.set(t.icon, t.label);
   }
@@ -107,15 +196,20 @@ function unitsTab(content: MvpContent, st: CodexState, go: (next: Partial<CodexS
 
   const grid = h("div", { class: "slots codex-grid", "data-testid": "codex-units" });
   const count = h("div", { class: "dim small", "data-testid": "codex-count" });
+  const order = st.sort === "tier" ? "by tier" : `by ${st.sort === "win" ? "win" : "pick"} rate, highest first`;
   const draw = () => {
     const q = st.query.trim().toLowerCase();
     const shown = units.filter((u) => (st.tier === null || u.tier === st.tier) && (st.trigger === null || triggerOf(u)?.icon === st.trigger) && (!q || text.get(u.id)!.includes(q)));
     grid.replaceChildren(
-      ...shown.map((u) =>
-        card({ emoji: u.emoji, name: u.name, stats: u.base, recipe: u.forms.sleeping, unitId: u.id }, { side: "you", tier: u.tier, testid: "codex-unit", onOpen: () => closable(unitSheet(u, content)) }),
-      ),
+      ...shown.map((u) => {
+        const r = st.sort === "tier" ? undefined : rateOf(u);
+        // The rate shows on a card only while a rate sort is on: a quiet number under it.
+        const extra = st.sort === "tier" ? [] : [h("span", { class: "codex-rate", "data-testid": "codex-rate" }, r === undefined ? "–" : pct(r))];
+        const el = card({ emoji: u.emoji, name: u.name, stats: u.base, recipe: u.forms.sleeping, unitId: u.id }, { side: "you", tier: u.tier, testid: "codex-unit", extra, onOpen: () => open(unitSheet(u, content), el) });
+        return el;
+      }),
     );
-    count.textContent = shown.length === units.length ? `All ${units.length} units, by tier. Tap one to read it.` : `${shown.length} of ${units.length} units`;
+    count.textContent = shown.length === units.length ? `All ${units.length} units, ${order}. Tap one to read it.` : `${shown.length} of ${units.length} units, ${order}`;
     if (!shown.length) grid.append(h("div", { class: "dim codex-none" }, "No unit matches."));
   };
 
@@ -123,19 +217,26 @@ function unitsTab(content: MvpContent, st: CodexState, go: (next: Partial<CodexS
     "div",
     { class: "row codex-filter", "data-testid": "codex-tiers" },
     h("span", { class: "label" }, "Tier"),
-    ...[null, ...tiers].map((t) => button(t === null ? "All" : `${t}`, () => go({ tier: t }), st.tier === t ? "chip on" : "chip", `codex-tier-${t ?? "all"}`)),
+    ...[null, ...tiers].map((t) => button(t === null ? "All" : `${t}`, () => set({ tier: t }), st.tier === t ? "chip on" : "chip", `codex-tier-${t ?? "all"}`)),
   );
   const trigRow = h(
     "div",
     { class: "row codex-filter codex-triggers", "data-testid": "codex-triggers" },
     ...[...triggers].map(([ic, label]) => {
-      const b = button("", () => go({ trigger: st.trigger === ic ? null : ic }), st.trigger === ic ? "chip icon on tone-when" : "chip icon tone-when", `codex-trigger-${ic}`);
+      const b = button("", () => set({ trigger: st.trigger === ic ? null : ic }), st.trigger === ic ? "chip icon on tone-when" : "chip icon tone-when", `codex-trigger-${ic}`);
       b.title = label;
       b.setAttribute("aria-label", label);
       b.setAttribute("aria-pressed", String(st.trigger === ic));
       b.append(icon(ic, 22));
       return b;
     }),
+  );
+  // Sort: quiet, at the end; rates are a hint (docs/round2/README.md).
+  const sortRow = h(
+    "div",
+    { class: "row codex-filter codex-sort", "data-testid": "codex-sort" },
+    h("span", { class: "label" }, "Sort"),
+    ...SORTS.map(([s, label]) => button(label, () => set({ sort: s }), st.sort === s ? "chip quiet on" : "chip quiet", `codex-sort-${s}`)),
   );
   const search = h("input", { type: "search", placeholder: "Search names and text", "data-testid": "codex-search", "aria-label": "Search units" });
   search.value = st.query;
@@ -145,7 +246,11 @@ function unitsTab(content: MvpContent, st: CodexState, go: (next: Partial<CodexS
   });
   draw();
   const picked = st.trigger ? triggers.get(st.trigger) : null;
-  return [search, tierRow, trigRow, picked ? h("div", { class: "dim small" }, `When: ${picked}`) : null, count, grid].filter((n): n is NonNullable<typeof n> => n !== null);
+  const note =
+    st.sort !== "tier"
+      ? h("div", { class: "dim small" }, stats ? "Win: how often its team won the fight. Picked: how often it was on a finished line. Since the units last changed." : "Rates aren't available right now.")
+      : null;
+  return [search, tierRow, trigRow, sortRow, picked ? h("div", { class: "dim small" }, `When: ${picked}`) : null, count, note, grid].filter((n): n is NonNullable<typeof n> => n !== null);
 }
 
 // ---------- fusions ----------
@@ -158,7 +263,13 @@ function fusedOf(first: UnitContent, second: UnitContent, f: FusionDiscovery | u
 /** Rows drawn at once; "Show more" draws the next batch. */
 const BATCH = 40;
 
-function fusionsTab(content: MvpContent, fusions: FusionDiscovery[], st: CodexState, go: (next: Partial<CodexState>) => void): Node[] {
+function fusionsTab(
+  content: MvpContent,
+  fusions: FusionDiscovery[],
+  st: CodexState,
+  go: (next: Partial<CodexState>) => void,
+  open: (node: HTMLElement, from?: HTMLElement) => void,
+): Node[] {
   const byId = new Map(content.units.map((u) => [u.id, u]));
   const me = api.player?.id;
   const n = content.units.length;
@@ -209,7 +320,7 @@ function fusionsTab(content: MvpContent, fusions: FusionDiscovery[], st: CodexSt
     );
     el.addEventListener("click", (e) => {
       if ((e.target as HTMLElement).closest("button.t")) return; // a term opens its own rule
-      closable(unitSheet(fused, content));
+      open(unitSheet(fused, content), el);
     });
     return el;
   };
@@ -257,13 +368,19 @@ const GROUPS: [TermGroup, string][] = [
   ["term", "Words"],
 ];
 
-/** Every unit whose text (either form) uses each term. */
-function usersByTerm(content: MvpContent): Map<TermId, UnitContent[]> {
-  const out = new Map<TermId, UnitContent[]>();
+/** A trigger's scopes other than its holder's, in the order its row lists them. */
+const SCOPES: Exclude<UnitFilter, "holder">[] = ["ally", "otherAlly", "enemy", "any"];
+/** A term, or a trigger term said of someone else ("After an enemy dies"). */
+const useKey = (id: TermId, scope?: UnitFilter) => (scope && scope !== "holder" && id.startsWith("trigger:") ? `${id}|${scope}` : id);
+
+/** Every unit whose text (either form) uses each term, a scoped trigger
+ * under its own key (useKey). */
+function usersByTerm(content: MvpContent): Map<string, UnitContent[]> {
+  const out = new Map<string, UnitContent[]>();
   for (const u of [...content.units].sort(byTierName)) {
-    const ids = new Set<TermId>();
-    for (const form of [u.forms.sleeping, u.forms.awoken]) for (const s of formSegments(form, content.abilities)) if (s.term) ids.add(s.term);
-    for (const id of ids) out.set(id, [...(out.get(id) ?? []), u]);
+    const keys = new Set<string>();
+    for (const form of [u.forms.sleeping, u.forms.awoken]) for (const s of formSegments(form, content.abilities)) if (s.term) keys.add(useKey(s.term, s.scope));
+    for (const k of keys) out.set(k, [...(out.get(k) ?? []), u]);
   }
   return out;
 }
@@ -271,16 +388,13 @@ function usersByTerm(content: MvpContent): Map<TermId, UnitContent[]> {
 /** The chips shown before "+N more". */
 const CHIPS = 12;
 
-function keywordsTab(content: MvpContent): HTMLElement {
+function keywordsTab(content: MvpContent, open: (node: HTMLElement, from?: HTMLElement) => void): HTMLElement {
   const users = usersByTerm(content);
   const statusIds = [...new Set([...Object.keys(STATUS_TERMS), ...Object.keys(content.statuses)])].map((s) => `status:${s}` as TermId);
   const ids: TermId[] = [...statusIds, ...(Object.keys(GLOSSARY) as FixedTermId[])];
-  const row = (id: TermId): HTMLElement | null => {
-    const def = termDef(id, content.statuses);
-    if (!def) return null;
-    const used = users.get(id) ?? [];
+  const chipsOf = (used: UnitContent[]): HTMLElement => {
     const chip = (u: UnitContent) => {
-      const b = button(`${u.emoji} ${u.name}`, () => closable(unitSheet(u, content)), "chip unit-chip", "codex-term-unit");
+      const b = button(`${u.emoji} ${u.name}`, () => open(unitSheet(u, content), b), "chip unit-chip", "codex-term-unit");
       return b;
     };
     const chips = h("div", { class: "chips" }, ...used.slice(0, CHIPS).map(chip));
@@ -288,6 +402,20 @@ function keywordsTab(content: MvpContent): HTMLElement {
       const rest = button(`+${used.length - CHIPS} more`, () => rest.replaceWith(...used.slice(CHIPS).map(chip)), "chip", "codex-term-more");
       chips.append(rest);
     }
+    return chips;
+  };
+  const usedBy = (n: number) => h("div", { class: "dim small" }, `Used by ${n} ${n === 1 ? "unit" : "units"}`);
+  const row = (id: TermId): HTMLElement | null => {
+    const def = termDef(id, content.statuses);
+    if (!def) return null;
+    const used = users.get(id) ?? [];
+    // A trigger said of someone else gets its own line, with its own rule
+    // and units: "When an enemy dies." lists Wither, not "When it dies."
+    const scoped = SCOPES.flatMap((sc) => {
+      const them = users.get(useKey(id, sc));
+      const tip = them && scopedTip(id, sc);
+      return them && tip ? [h("div", { class: "stack kw-scope", "data-scope": sc, "data-testid": "codex-term-scope" }, h("div", { class: "kw-tip" }, tip), usedBy(them.length), chipsOf(them))] : [];
+    });
     return h(
       "div",
       { class: "kw-row", "data-term": id, "data-testid": "codex-term", id: `codex-${id.replace(/[^a-zA-Z0-9]+/g, "-")}` },
@@ -298,8 +426,9 @@ function keywordsTab(content: MvpContent): HTMLElement {
         h("b", { class: `tone-${def.tone}` }, def.label),
         h("div", { class: "kw-tip" }, def.tip),
         def.more ? h("div", { class: "dim small" }, def.more) : null,
-        used.length ? h("div", { class: "dim small" }, `Used by ${used.length} ${used.length === 1 ? "unit" : "units"}`) : null,
-        used.length ? chips : null,
+        used.length ? usedBy(used.length) : null,
+        used.length ? chipsOf(used) : null,
+        ...scoped,
       ),
     );
   };
@@ -313,13 +442,17 @@ function keywordsTab(content: MvpContent): HTMLElement {
   );
 }
 
-/** Scrolls a term's row into view and marks it, once it is laid out. */
-function landOn(body: HTMLElement, id: TermId): void {
-  const el = [...body.querySelectorAll<HTMLElement>(".kw-row")].find((r) => r.dataset.term === id);
-  if (!el) return;
+/** Scrolls a term's row (a scoped trigger's line in it) into view and marks
+ * it, once it is laid out. */
+function landOn(body: HTMLElement, id: TermId, scope?: UnitFilter): void {
+  const row = [...body.querySelectorAll<HTMLElement>(".kw-row")].find((r) => r.dataset.term === id);
+  if (!row) return;
+  const line = scope && scope !== "holder" ? row.querySelector<HTMLElement>(`.kw-scope[data-scope="${scope}"]`) : null;
+  const el = line ?? row;
   // Now (the row is laid out), and once more after the next frame's fitText.
   el.scrollIntoView({ block: "center" });
-  el.classList.add("landed");
+  row.classList.add("landed");
+  line?.classList.add("landed");
   requestAnimationFrame(() => el.isConnected && el.scrollIntoView({ block: "center" }));
 }
 

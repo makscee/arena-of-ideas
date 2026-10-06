@@ -8,19 +8,20 @@
 // Codex link (slice R2-11, setCodexLink).
 import type { DescribeSegment } from "../../src/describe";
 import { scopedTip, termDef, termIcon, type TermDef, type TermId } from "../../src/glossary";
+import type { UnitFilter } from "../../src/types";
 import { closable, h } from "./dom";
 import { changedTokens } from "./diff";
 import { icon } from "./icon";
 
 /** Opens a term's Codex entry; set by the Codex (R2-11). Unset: no link. */
-let codexLink: ((id: TermId) => void) | null = null;
-export function setCodexLink(open: ((id: TermId) => void) | null): void {
+let codexLink: ((id: TermId, scope?: UnitFilter) => void) | null = null;
+export function setCodexLink(open: ((id: TermId, scope?: UnitFilter) => void) | null): void {
   codexLink = open;
 }
 
 /** What a run's tooltip and sheet say. An eventUnit target follows the words on
  * screen ("this unit", "that ally"), not the selector's generic label. */
-export function termInfo(seg: DescribeSegment): (TermDef & { id: TermId }) | undefined {
+export function termInfo(seg: DescribeSegment): (TermDef & { id: TermId; scope?: UnitFilter }) | undefined {
   const id = seg.term;
   if (!id) return undefined;
   const def = termDef(id);
@@ -30,8 +31,8 @@ export function termInfo(seg: DescribeSegment): (TermDef & { id: TermId }) | und
     const holder = termDef("target:holder")!;
     return /^this unit$/i.test(seg.text) ? { ...holder, id, label } : { ...def, id, label };
   }
-  // A trigger clause's rule follows its scope ("after an enemy dies").
-  return seg.scope ? { ...def, id, tip: scopedTip(id, seg.scope) ?? def.tip } : { ...def, id };
+  // A trigger clause's rule follows its scope ("after an enemy dies"), and so does its Codex line.
+  return seg.scope ? { ...def, id, scope: seg.scope, tip: scopedTip(id, seg.scope) ?? def.tip } : { ...def, id };
 }
 
 /** The status a run is about: its own status term, or the status a "lands on"
@@ -145,19 +146,19 @@ function ruleBlock(info: TermDef & { id: TermId }, size: number): HTMLElement {
   );
 }
 
-const codexButton = (id: TermId): HTMLElement | null => {
+const codexButton = (id: TermId, scope?: UnitFilter): HTMLElement | null => {
   if (!codexLink) return null;
   const open = codexLink;
   const b = h("button", { type: "button", class: "small link", "data-testid": "term-codex" }, "Open in Codex ▸");
-  b.addEventListener("click", () => open(id));
+  b.addEventListener("click", () => open(id, scope));
   return b;
 };
 
 /** A phone's tap (and a desktop's click): the rule in a small sheet. */
-export function openTermSheet(info: TermDef & { id: TermId }): () => void {
+export function openTermSheet(info: TermDef & { id: TermId; scope?: UnitFilter }): () => void {
   const kids: Node[] = [ruleBlock(info, 28)];
   if (info.more) kids.push(h("div", { class: "dim small" }, info.more));
-  const codex = codexButton(info.id);
+  const codex = codexButton(info.id, info.scope);
   if (codex) kids.push(codex);
   const close = closable(h("div", { class: "stack term-sheet", "data-testid": "term-sheet" }, ...kids));
   return close;
