@@ -38,11 +38,11 @@ for arg in "$@"; do
   esac
 done
 PORT="${ARENA_MVP_PORT:-8791}"
-# Slice 10's fusion namer: a small local model behind an OpenAI-compatible
+# Slice 10's fusion namer (Qwen3-4B since round 2, R2-4): a local model behind an OpenAI-compatible
 # endpoint (mlx_lm.server), its own launchd agent so a redeploy doesn't reload
 # it. The server falls back to a portmanteau whenever it is down.
 NAMER_PORT="${ARENA_NAMER_PORT:-8792}"
-NAMER_MODEL="${ARENA_NAMER_MODEL:-mlx-community/Qwen2.5-1.5B-Instruct-4bit}"
+NAMER_MODEL="${ARENA_NAMER_MODEL:-mlx-community/Qwen3-4B-Instruct-2507-4bit}"
 HOST_ALIAS="${ARENA_MVP_HOST:-m1}"
 
 remote() {
