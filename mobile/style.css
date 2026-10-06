@@ -937,3 +937,8 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-card .stats.big { font-size: 14px; line-height: 16px; }
   #app[data-screen="battle"] .bv-float { top: 26px; }
 }
+/* The awakening gift (R3-16): three cards, each with its Pick under it; the banner when it is set aside. */
+.gift-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; justify-items: center; }
+.gift-choice { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: var(--cw, 96px); }
+.gift-choice button { padding: 0 6px; }
+.gift-banner { align-items: center; gap: 8px; font-size: 15px; color: var(--you); border-left: 2px solid var(--you); padding: 2px 0 2px 8px; background: color-mix(in srgb, var(--you) 6%, transparent); }
