@@ -1,6 +1,8 @@
 // The battle viewer (mission #574, slice 9): playback with one-line captions
 // (cause → effect) and the acting unit lit, tap any change to trace its chain,
-// "why I lost" after a loss, speed 1×/2× and skip. The logic is pure and
+// "why I lost" after a loss, speed 1×/2× and skip. Round 2 (R2-12) plays it
+// beat by beat (a strike or turn end plus its cascade, in waves) with motion.
+// The logic is pure and
 // tested in src/mvp/trace.ts; this file only draws it.
 //
 // It opens any battle (a fight, a playoff game, the champion history); onDone
@@ -230,7 +232,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     mine.slice(0, 3).forEach((c, k) => {
       const f = h("span", { class: `bv-float ${c.kind}`, "aria-hidden": "true" }, c.label);
       f.style.animationDelay = `${k * 120}ms`;
-      f.style.top = `${20 + k * 16}px`;
+      f.style.top = `${40 + k * 15}px`;
       el.append(f);
     });
   }

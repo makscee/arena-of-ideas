@@ -157,12 +157,12 @@ button.pin-btn { display: flex; align-items: center; gap: 4px; min-height: 44px;
 @keyframes bv-die { 0% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0.5; transform: none; } }
 @keyframes bv-rise { 0% { opacity: 0; transform: translateY(8px); } 20% { opacity: 1; } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-22px); } }
 /* Reduced motion: nothing moves. The hit card gets a ring, a healed or
- * buffed one a soft one, and the numbers sit still in place. */
+ * buffed one a soft one; the chips already hold the numbers, in place. */
 @media (prefers-reduced-motion: reduce) {
   .bv-card, .bv-card.bv-lunge-up, .bv-card.bv-lunge-down, .bv-card.bv-pulse, .bv-card.bv-hit, .bv-card.bv-dying { animation: none; transition: none; }
   .bv-card.bv-hit::after, .bv-card.bv-glow::after { animation: none; background: none; opacity: 1; box-shadow: 0 0 0 2px var(--ghost) inset; }
   .bv-card.bv-glow::after { box-shadow: 0 0 0 2px var(--you) inset; }
-  .bv-float { animation: none; opacity: 1; transform: none; }
+  .bv-float { display: none; }
   .bv-card.acting { transform: none; }
 }
 /* A change sits over the emoji: the button is a transparent 44 px tap target

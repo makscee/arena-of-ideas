@@ -1,11 +1,11 @@
 // Pacing of the battle viewer (R2-12): steps vs beats over random MVP lines.
-// Run: npx tsx sim/beat-pacing.mts [battles]
-import { battle } from "../src/battle.js";
-import { MVP_RULES } from "../src/mvp/contract.js";
-import { toBattleDef } from "../src/mvp/fight.js";
-import { lineUnitOf } from "../src/mvp/forms.js";
-import { beatPlayOf, beatTiming, stepsOf } from "../src/mvp/trace.js";
-import { mvpPool } from "../src/mvp/units.js";
+// Run: npx tsx docs/round2/sim/beat-pacing.mts [battles]
+import { battle } from "../../../src/battle.js";
+import { MVP_RULES } from "../../../src/mvp/contract.js";
+import { toBattleDef } from "../../../src/mvp/fight.js";
+import { lineUnitOf } from "../../../src/mvp/forms.js";
+import { beatPlayOf, beatTiming, stepsOf } from "../../../src/mvp/trace.js";
+import { mvpPool } from "../../../src/mvp/units.js";
 
 const pool = mvpPool();
 const n = Number(process.argv[2] ?? 300);
