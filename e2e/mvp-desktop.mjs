@@ -361,16 +361,34 @@ try {
     const d = run.gift ? { kind: "gift", pick: null } : run.phase === "crown" ? { kind: "fight" } : want && run.gold >= want.cost ? { kind: "buy", slot: want.slot } : run.gold >= 1 ? { kind: "reroll" } : { kind: "fight" };
     run = (await call("POST", `/runs/${run.runId}/decisions`, d, fuser.id)).run;
   }
-  // The awakening copy the page buys brings a gift (R3-15). Until the chooser
-  // (R3-16) the API skips it and the page reloads into the same shop.
+  // The awakening copy the page buys brings a gift (R3-15): the chooser
+  // (R3-16) opens as a dialog. Esc sets it aside (a banner; the keys that
+  // buy, reroll or fight do nothing meanwhile), Open gift brings it back, and
+  // Skip lets it go with a click (the line stays as the fusion below needs it).
   const skipGift = async () => {
     const r = await call("GET", `/runs/${run.runId}`, undefined, fuser.id);
-    if (!r.gift) { errors.push("awakening: no gift offered"); return; }
-    if (r.gift.length !== 3) errors.push(`awakening: ${r.gift.length} gift choices, want 3`);
-    await call("POST", `/runs/${run.runId}/decisions`, { kind: "gift", pick: null }, fuser.id);
-    await page.reload();
-    await page.getByTestId("play").click();
-    await page.getByTestId("fight").waitFor();
+    if (!r.gift) return void errors.push("awakening: no gift offered");
+    const shown = await page.getByTestId("gift-title").waitFor({ timeout: 5_000 }).then(() => true, () => false);
+    if (!shown) return void errors.push("gift: the chooser doesn't open after the awakening copy");
+    const cards = await page.getByTestId("gift-choices").locator(".card").count();
+    if (cards !== 3) errors.push(`gift: ${cards} cards, want 3`);
+    const width = await page.getByTestId("gift-card-0").evaluate((e) => Math.round(e.getBoundingClientRect().width));
+    if (width < 100) errors.push(`gift: desktop cards are ${width}px wide`);
+    await shot("gift-chooser");
+    await page.keyboard.press("Escape");
+    await page.getByTestId("gift-banner").waitFor({ timeout: 3_000 }).catch(() => errors.push("gift: Esc leaves no banner"));
+    if (await page.getByTestId("gift-title").isVisible()) errors.push("gift: Esc doesn't set the chooser aside");
+    const g = await gold();
+    await page.keyboard.press("r");
+    await page.keyboard.press(" ");
+    await settle();
+    if ((await gold()) !== g || !(await page.getByTestId("gift-banner").isVisible())) errors.push("gift: R or Space went through while the gift waits");
+    await shot("gift-aside");
+    await page.getByTestId("gift-open").click();
+    await page.getByTestId("gift-skip").click();
+    await page.getByTestId("gift-banner").waitFor({ state: "hidden", timeout: 5_000 }).catch(() => errors.push("gift: the banner stays after Skip"));
+    await wantSfx("a skipped gift", /^click$/);
+    if ((await call("GET", `/runs/${run.runId}`, undefined, fuser.id)).gift) errors.push("gift: still waiting after Skip");
   };
   if (!ready(run)) errors.push(`fusion setup: never reached two Awoken units (phase ${run.phase}, round ${run.round})`);
   else {
@@ -387,9 +405,10 @@ try {
     await shot("awaken-preview");
     await page.mouse.move(5, H - 5);
     await page.keyboard.press(String(key));
-    await page.getByTestId("hint").filter({ hasText: "fuse" }).waitFor();
+    await page.getByTestId("gift-title").waitFor();
     await wantSfx("the awakening copy", /^level-up$/);
     await skipGift();
+    await page.getByTestId("hint").filter({ hasText: "fuse" }).waitFor();
     const awake = run.line.findIndex((u) => u.form === "awoken");
     const named = run.line[awake].name;
     // R3-14: B sends the first Awoken unit to the bench, and it fuses from there with a line unit.
