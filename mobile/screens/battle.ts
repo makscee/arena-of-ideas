@@ -1133,10 +1133,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       h("div", { class: "row bv-end-actions" }, replayEnd, whyBtn, button(a.outro?.doneLabel ?? "Continue", leave, "primary", "battle-done")),
     ];
   }
-  /** A key moment's icon: a skull for a kill, linked rings for a combo, a burst for a big hit (fatigue's is in its label). */
+  /** A key moment's icon: a skull for a kill, a portal for a unit joining, linked rings for a combo, a burst for a big hit (fatigue's is in its label). */
   function momentIcon(kind: KeyMoment["kind"]): HTMLElement {
     if (kind === "fatigue") return h("span", { class: "bv-moment-ic" });
-    const [id, tone]: [IconId, string] = kind === "kill" ? ["death-skull", "tone-enemy"] : kind === "combo" ? ["linked-rings", "tone-when"] : ["spiky-explosion", "tone-enemy"];
+    const [id, tone]: [IconId, string] = kind === "kill" ? ["death-skull", "tone-enemy"] : kind === "summon" ? ["magic-portal", "tone-summon"] : kind === "combo" ? ["linked-rings", "tone-when"] : ["spiky-explosion", "tone-enemy"];
     return h("span", { class: "bv-moment-ic" }, icon(id, 16, tone));
   }
 
