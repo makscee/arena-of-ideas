@@ -5,7 +5,7 @@ import type { Champion, DecisionResponse, FusionDiscovery, PlayerRef, UnitConten
 import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { mvpContent } from "./content.js";
 import { hasCrudeStem } from "./crude.js";
-import { BENCH_NAMES, CRUDE_BEFORE_594, INNOCENT_NAMES, LIVE_NAMES } from "./namer-corpus.js";
+import { BENCH_NAMES, CRUDE_BEFORE_594, GLUED_STEMS, INNOCENT_NAMES, LIVE_NAMES, MASK_INNOCENT, MASK_LEAKS } from "./namer-corpus.js";
 import { awaitFusionName, cleanModelName, drainFusionNames, hasUnitName, NAMER_LETTERS, isBlockedName, fusionNameReady, fusionNaming, httpModelNamer, MODEL_DOWN_MS, NAMER_EXAMPLES, MODEL_FAILURES, MODEL_PROBE_MS, portmanteau, recordFusion, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
 import { decide, preview, startRun } from "./runs.js";
 import { seedChampion } from "./bots.js";
@@ -232,20 +232,35 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
     }
   });
 
+  // Common heads, and heads ending in a, e, r or u: a mask built on a head's
+  // last letters ("rshti", "ashta", "among") would hide a stem glued behind it.
+  const glueHeads = ["", "King", "Dark", "Moon", "Bone", "Ember", "Aura", "Lunar", "Terra", "Ura"];
+  const glueTails = ["rat", "drake", "head", "horn", "demon", "fang", "lord", "reaper"];
+  const glued = (head: string, word: string, tail: string) => (head ? `${head}${word}${tail}` : word[0]!.toUpperCase() + word.slice(1) + tail);
+
   it("no mask lets a pre-#594 entry through when glued to common heads and tails (R2-17: 'kland' let Klandrake pass)", () => {
     const edge = new Set(["ass", "asses", "butt", "dong", "jap", "cuck", "thot", "fap", "horny", "abo"]);
-    const heads = ["", "King", "Dark", "Moon"];
-    const tails = ["rat", "drake", "head", "horn", "demon", "fang", "lord", "reaper"];
     const passed: string[] = [];
     for (const word of CRUDE_BEFORE_594) {
       if (edge.has(word)) continue;
-      for (const head of heads)
-        for (const tail of tails) {
-          const name = head ? `${head}${word}${tail}` : word[0]!.toUpperCase() + word.slice(1) + tail;
-          if (!isBlockedName(name)) passed.push(name);
-        }
+      for (const head of glueHeads) for (const tail of glueTails) if (!isBlockedName(glued(head, word, tail))) passed.push(glued(head, word, tail));
     }
     expect(passed).toEqual([]);
+  });
+
+  it("no mask lets a toilet word or a short stem through glued to a head ending in a vowel or r, and the masks' innocent words pass (R2-17)", () => {
+    // bum and knob are refused only at a word's edge, so only as a head or a tail.
+    const edge = new Set(["bum", "knob"]);
+    const passed: string[] = [];
+    for (const word of GLUED_STEMS)
+      for (const head of glueHeads)
+        for (const tail of glueTails) {
+          const names = edge.has(word) ? [glued(head, word, ""), glued("", word, tail)] : [glued(head, word, tail)];
+          for (const name of names) if (name && !isBlockedName(name)) passed.push(name);
+        }
+    expect(passed).toEqual([]);
+    expect(MASK_LEAKS.filter((name) => !isBlockedName(name))).toEqual([]);
+    expect(MASK_INNOCENT.filter((name) => isBlockedName(name))).toEqual([]);
   });
 
   it("refuses the regressions, the stems that left EDGE, LDNOOBW's words back from SKIP, and toilet words (#609)", () => {
