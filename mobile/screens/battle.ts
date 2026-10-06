@@ -20,7 +20,7 @@
 import { boardAt, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView } from "../../src/mvp/contract";
 import { STATUS_TERMS, termDef, termIcon, type TermId } from "../../src/glossary";
-import { beatPlayOf, chainOf, damageByUnit, firingOf, keyMomentsOf, stepsOf, timelineOf, timingOf, traceOf, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Change, type Firing, type LossChain, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
+import { beatPlayOf, chainOf, damageByUnit, firingOf, keyMomentsOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, statusesShown, STATUS_ROW_FALLBACK, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Change, type Firing, type LossChain, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { card, formRich, unitSheet } from "../ui/card";
@@ -42,8 +42,7 @@ const FLOATS = new Set<Change["kind"]>(["damage", "heal", "buff", "debuff", "sum
  * summon sharing a name never takes the other side's colour). */
 const TAGGED: NameOf = (id) => `\uE000${id}\uE001`;
 const TAG = /\uE000([^\uE001]*)\uE001/g;
-/** Most statuses a card shows (two rows); beyond that, the last chip reads "+n". */
-const MAX_STATUSES = 6;
+
 /** The playback speeds, and where the viewer's choice is kept (per device). */
 const SPEEDS = [1, 2, 4] as const;
 const SPEED_KEY = "arena.battleSpeed";
@@ -126,6 +125,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   let finished = false;
   /** The desktop side panel's tab (R2-16); a trace opening switches to Why. */
   let tab: "why" | "log" = "why";
+  /** Why's "Turn N" step shows the board as turn N starts (the end of turn
+   * N−1): the HUD then reads turn N (R2-17). Any other move clears it. */
+  let hudTurn: number | null = null;
   /** Each card's floating numbers, set by motion() and hung in its slot. */
   const floatsOf = new WeakMap<HTMLElement, HTMLElement[]>();
 
@@ -157,7 +159,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const endBtn = button("End", () => finish(), "", "battle-end");
   const replayBtn = button("↻", () => replay(), "", "battle-replay");
   replayBtn.setAttribute("aria-label", "Replay from the start");
-  const controls = h("div", { class: "row bv-controls" }, backBtn, playBtn, fwdBtn, speedBtn, endBtn, replayBtn);
+  // Desktop's keys, as the mockup lists them (the phone hides the line).
+  const kbd = (k: string) => h("kbd", {}, k);
+  const keys = h("div", { class: "bv-keys dim", "data-testid": "battle-keys", "aria-hidden": "true" }, kbd("Space"), " pause · ", kbd("←"), kbd("→"), " beat · ", kbd("R"), " replay");
+  const controls = h("div", { class: "row bv-controls" }, backBtn, playBtn, fwdBtn, speedBtn, endBtn, replayBtn, keys);
   // How long playback should take at 1× (the line-up plus every beat), for
   // the e2e to compare with what the screen takes.
   controls.dataset.planMs = String(LINEUP_MS + beats.reduce((t, b) => t + timingOf(b).ms, 0));
@@ -193,6 +198,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         return schedule();
       }
       if (at >= beats.length - 1) return finish();
+      hudTurn = null;
       at++;
       wave = 0;
       landed = [performance.now()];
@@ -227,6 +233,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   }
   /** Jumps to beat i, every wave landed. */
   function go(i: number): void {
+    hudTurn = null;
     at = Math.max(-1, Math.min(beats.length - 1, i));
     wave = lastWave(at);
     landed = [];
@@ -235,7 +242,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   function openTrace(eventId: number, group: Change[] = []): void {
     pause();
     trace = traceOf(log, eventId, name, sides);
-    chain = chainOf(log, eventId, { name, sides, whenOf });
+    // Tagged names: Why's steps colour each unit by its own side (R2-17).
+    chain = chainOf(log, eventId, { name: TAGGED, sides, whenOf });
     chainAt = null;
     traceGroup = group.length > 1 ? group : [];
     tab = "why";
@@ -261,6 +269,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     wave = Math.max(0, w);
     landed = [];
     chainAt = id;
+    // "Turn N" (its start, or its first pair facing) is the board as turn N
+    // begins: the HUD says turn N, not the turn that just ended.
+    const root = log[id];
+    hudTurn = root && (root.type === "TurnStart" || root.type === "PairFaced") ? root.turn : null;
     render();
   }
   function back(): void {
@@ -276,6 +288,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** Jumps to the result: the last beat's board under the end card. */
   function finish(): void {
     pause();
+    hudTurn = null;
     finished = true;
     trace = null;
     at = beats.length - 1;
@@ -286,6 +299,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** Plays from beat i (-1: the line-up), the end card put away. */
   function playFrom(i: number): void {
     pause();
+    hudTurn = null;
     finished = false;
     trace = null;
     at = Math.max(-1, Math.min(beats.length - 1, i));
@@ -321,7 +335,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         const row = h(
           "button",
           { class: `bv-log-row${wi === 0 ? " first" : ""}`, "data-testid": "log-row", "data-beat": String(bi) },
-          h("span", { class: "bv-log-t dim mono" }, wi === 0 ? `T${pb.turn}` : ""),
+          h("span", { class: "bv-log-t dim mono" }, wi === 0 ? turnLabel(pb.turn) : ""),
           h("span", { class: "bv-log-c" }, ...(st.subjectSide ? [sideTag(st.subjectSide)] : []), ...richCaption(st.caption)),
         );
         row.addEventListener("click", () => {
@@ -360,6 +374,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const turnEls: HTMLElement[] = [];
   const head = h("div", { class: "bv-tl-head", "aria-hidden": "true" });
   const track = h("div", { class: "bv-tl-track" });
+  /** Each block's marks, laid out by layoutMarks() to what its box holds. */
+  const markEls: HTMLElement[][] = [];
+  const boxEls: HTMLElement[] = [];
   function buildTimeline(): void {
     const every = turns.length > 30 ? 5 : turns.length > 18 ? 2 : 1;
     turns.forEach((t, i) => {
@@ -371,16 +388,32 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         mk.append(icon(id, 14, tone));
         return mk;
       });
-      const block = h(
-        "div",
-        { class: "bv-tl-turn", "data-testid": "timeline-turn", "data-turn": String(t.turn), title: `Turn ${t.turn}` },
-        h("div", { class: "bv-tl-box" }, ...marks.slice(0, 4)),
-        h("div", { class: "bv-tl-n mono dim" }, i % every === 0 || i === turns.length - 1 ? String(t.turn) : ""),
-      );
+      markEls.push(marks);
+      // Battle start (turn 0) has a block of its own, "Start" (R2-17).
+      const start = t.turn < 1;
+      const box = h("div", { class: "bv-tl-box" }, ...(start && !marks.length ? [icon("flying-flag", 14, "dim")] : []), ...marks);
+      boxEls.push(box);
+      const label = start ? (turns.length <= 18 ? "Start" : "S") : i % every === 0 || i === turns.length - 1 ? String(t.turn) : "";
+      const block = h("div", { class: `bv-tl-turn${start ? " start" : ""}`, "data-testid": "timeline-turn", "data-turn": String(t.turn), title: start ? "Battle start" : `Turn ${t.turn}` }, box, h("div", { class: "bv-tl-n mono dim" }, label));
       turnEls.push(block);
     });
     track.replaceChildren(...turnEls, head);
     timeline.replaceChildren(track);
+    // A box shows the marks it has room for; with more, the last one it
+    // shows is a count ("+2"), whose title lists the rest (R2-17).
+    const layoutMarks = () => {
+      boxEls.forEach((box, i) => {
+        const marks = markEls[i]!;
+        if (!marks.length) return;
+        const room = Math.max(1, Math.floor((box.clientWidth - 4) / 15));
+        const fit = marks.length <= room ? marks.length : Math.max(0, room - 1);
+        const rest = marks.slice(fit);
+        const count = rest.length ? h("span", { class: "bv-tl-more mono", "data-testid": "timeline-more", "data-beat": rest[0]!.dataset.beat ?? "", title: rest.map((m) => m.title).join(", ") }, `+${rest.length}`) : null;
+        box.replaceChildren(...marks.slice(0, fit), ...(count ? [count] : []));
+      });
+    };
+    if (typeof ResizeObserver === "function") new ResizeObserver(layoutMarks).observe(track);
+    else layoutMarks();
     let down = false;
     const scrub = (x: number) => {
       const box = track.getBoundingClientRect();
@@ -394,6 +427,15 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       go(b);
     };
     track.addEventListener("pointerdown", (e) => {
+      // A mark (or a count of marks) jumps to its own beat (R2-17); the
+      // rest of the track scrubs by where the pointer is.
+      const mark = (e.target as Element | null)?.closest?.<HTMLElement>(".bv-tl-mark, .bv-tl-more");
+      if (mark?.dataset.beat) {
+        pause();
+        finished = false;
+        go(Number(mark.dataset.beat));
+        return;
+      }
       down = true;
       track.setPointerCapture?.(e.pointerId);
       scrub(e.clientX);
@@ -416,19 +458,21 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     timeline.setAttribute("aria-valuemin", "0");
     timeline.setAttribute("aria-valuemax", String(turns.at(-1)!.turn));
     timeline.setAttribute("aria-valuenow", String(t?.turn ?? 0));
+    timeline.setAttribute("aria-valuetext", turnLabel(t?.turn ?? 0));
   }
   function leave(): void {
     if (timer) clearTimeout(timer);
+    removeEventListener("resize", placeEnd);
     a.onDone();
   }
 
-  function unitCard(u: BoardUnit, side: Side, v: View): HTMLElement {
+  function unitCard(u: BoardUnit, side: Side, v: View, stsWidth: number): HTMLElement {
     const step = v.now;
     const changes = v.changes.filter((c) => c.unit === u.id);
     const el = card(units.get(u.id) ?? { emoji: emojiOf(u.id), name: u.name, stats: { pwr: u.pwr, hp: u.hp } }, {
       side: side === you ? "you" : "ghost",
       live: { stats: { pwr: u.pwr, hp: u.hp }, maxHp: u.maxHp, acting: step?.actor === u.id },
-      extra: [statusChips(u.statuses), changes.length ? h("div", { class: "bv-changes" }, changeBadge(changes)) : null],
+      extra: [statusChips(u, stsWidth), changes.length ? h("div", { class: "bv-changes" }, changeBadge(changes)) : null],
     });
     el.classList.add("bv-card");
     el.dataset.unit = u.id;
@@ -470,18 +514,39 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const blocked = blockedBy(c);
     if (blocked) return [icon("shield", 14, "tone-shield"), h("span", { class: "tone-shield" }, `${blocked}`)];
     if (noDamage(c)) return [h("span", { class: "bv-nodmg" }, "no dmg")];
+    // A status landing reads as its icon and stacks ("🛡×4", not "Shield ×4"),
+    // like the card's own status chips: the word was too wide for the chip
+    // row and covered the trigger icon (R2-17). Its name is in the aria-label.
+    const e = log[c.eventId];
+    if (e?.type === "StatusApplied") {
+      const def = STATUS_TERMS[e.status] ?? termDef(`status:${e.status}`);
+      if (def?.icon) return [h("span", { class: `bv-pst tone-${def.tone}` }, icon(def.icon, 13), `×${e.stacks}`)];
+    }
     return [c.label];
   }
   /** A card's statuses (R2-13): each one's icon and stacks, in its colour. The
-   * row keeps its height when empty, so a status landing moves nothing. */
-  function statusChips(statuses: { status: string; stacks: number }[]): HTMLElement {
-    // Two rows hold six; with more, the sixth chip is "+n" (the card's sheet lists them all).
-    const over = statuses.length > MAX_STATUSES ? statuses.length - (MAX_STATUSES - 1) : 0;
-    const shown = over ? statuses.slice(0, MAX_STATUSES - 1) : statuses;
+   * row keeps its height when empty, so a status landing moves nothing. Two
+   * rows show as many as fit the row's width (`width`, measured last render;
+   * a two-digit stack is a wider chip); with more, the last chip is "+n",
+   * which opens the unit's live statuses (R2-17). */
+  function statusChips(u: BoardUnit, width: number): HTMLElement {
+    const statuses = u.statuses;
+    const shown = statusesShown(statuses.map((st) => st.stacks), width > 0 ? width : STATUS_ROW_FALLBACK);
+    const over = statuses.length - shown;
+    let more: HTMLElement | null = null;
+    if (over) {
+      more = h("button", { class: "bv-st more", "data-testid": "card-status-more", "aria-label": `${over} more: all ${statuses.length} statuses` }, `+${over}`);
+      more.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        pause();
+        render();
+        closable(liveStatuses(u));
+      });
+    }
     return h(
       "div",
       { class: "bv-sts", "data-testid": "card-statuses", "data-count": String(statuses.length) },
-      ...shown.map((st) => {
+      ...statuses.slice(0, shown).map((st) => {
         const def = STATUS_TERMS[st.status] ?? termDef(`status:${st.status}`);
         const ic = def?.icon;
         return h(
@@ -491,7 +556,25 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
           h("b", {}, `${st.stacks}`),
         );
       }),
-      over ? h("span", { class: "bv-st more", "data-testid": "card-status-more", title: statuses.slice(MAX_STATUSES - 1).map((st) => `${st.status} ${st.stacks}`).join(", ") }, `+${over}`) : null,
+      more,
+    );
+  }
+  /** A unit's statuses right now, each with its icon, stacks and what it does. */
+  function liveStatuses(u: BoardUnit): HTMLElement {
+    return h(
+      "div",
+      { class: "stack", "data-testid": "live-statuses" },
+      h("h2", {}, `${emojiOf(u.id)} `, unitName(u.id)),
+      h("div", { class: "label" }, `Statuses now · ${turnLabel(hudTurn ?? beats[at]?.turn ?? 0)}`),
+      ...u.statuses.map((st) => {
+        const def = STATUS_TERMS[st.status] ?? termDef(`status:${st.status}`);
+        return h(
+          "div",
+          { class: "bv-live-st", "data-testid": "live-status" },
+          h("span", { class: `bv-live-st-head tone-${def?.tone ?? "plain"}` }, ...(def?.icon ? [icon(def.icon, 18)] : []), h("b", {}, ` ${st.status} ×${st.stacks}`)),
+          def?.tip ? h("span", { class: "dim" }, def.tip) : null,
+        );
+      }),
     );
   }
   /** The trigger badge over a unit whose ability fired this beat: [When icon]
@@ -646,8 +729,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
 
   /** A line in the beat: the living units, and each unit that fell in this
    * beat back in the slot it held when the beat began. */
-  function lineOf(side: Side, board: ReturnType<typeof boardAt>, before: ReturnType<typeof boardAt>, v: View): HTMLElement[] {
-    const living: HTMLElement[] = board.lines[side].map((u) => slot(unitCard(u, side, v), u.id, v));
+  function lineOf(side: Side, board: ReturnType<typeof boardAt>, before: ReturnType<typeof boardAt>, v: View, stsWidth: number): HTMLElement[] {
+    const living: HTMLElement[] = board.lines[side].map((u) => slot(unitCard(u, side, v, stsWidth), u.id, v));
     const fallen = board.graves[side]
       .map((u) => {
         const dead = deadCard(u.id, v);
@@ -681,10 +764,12 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     hud.replaceChildren(
       h("span", {}, battle.kind === "crown" ? "Crown fight" : battle.kind === "playoff" ? "Playoff" : `Round ${battle.round}`),
       h("span", { class: "dim who", title: battle.opponent.name }, `vs @${battle.opponent.name}`),
-      h("span", {}, turn ? `T${turn}` : "—"),
+      h("span", { "data-testid": "battle-turn" }, turnLabel(hudTurn ?? turn)),
     );
     for (const [side, row] of [[them, enemy], [you, mine]] as const) {
-      const cards = lineOf(side, board, before, v);
+      // The status row's width, from the cards on screen (read before they are replaced).
+      const stsWidth = row.querySelector<HTMLElement>(".bv-card:not(.dead) .bv-sts")?.getBoundingClientRect().width ?? 0;
+      const cards = lineOf(side, board, before, v, stsWidth);
       row.replaceChildren(...cards);
       // A falling card beside a full line widens the row instead of wrapping it.
       row.style.gridTemplateColumns = `repeat(${Math.max(5, cards.length)}, minmax(0, 1fr))`;
@@ -694,6 +779,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     caption.replaceChildren(h("span", { class: "bv-cap" }, ...captionKids(step)));
     still.replaceChildren(...(reduced() ? stillList(v.changes) : []));
     still.style.display = reduced() && !finished ? "" : "none";
+    fitStill();
     caption.classList.toggle("tappable", !!step?.changes.length);
     recent.replaceChildren(
       ...beats.slice(Math.max(0, at - 3), Math.max(0, at)).reverse().map((pb) => {
@@ -718,7 +804,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     drawTimeline();
     // A trace opened from the end card (Why I lost) sits in its place until closed.
     end.style.display = finished && !trace ? "" : "none";
-    if (finished) end.replaceChildren(...endView());
+    if (finished) {
+      end.replaceChildren(...endView());
+      placeEnd();
+    }
     backBtn.disabled = at < 0;
     fwdBtn.disabled = finished;
     endBtn.disabled = finished;
@@ -784,7 +873,58 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
    * beat so far, as the floats would have shown them. */
   function stillList(changes: Change[]): Node[] {
     if (!changes.length) return [];
-    return [h("span", { class: "bv-still", "data-testid": "caption-changes" }, ...changes.map((c) => h("span", { class: `bv-l ${c.kind}` }, unitName(c.unit), ` ${c.label}`)))];
+    // One entry a change label, its units listed ("+1 PWR: Rose, Ace"), so a
+    // buff on the whole line takes one entry, not five (R2-17).
+    const groups: { c: Change; units: string[] }[] = [];
+    for (const c of changes) {
+      const g = groups.find((x) => x.c.kind === c.kind && x.c.label === c.label);
+      if (g) { if (!g.units.includes(c.unit)) g.units.push(c.unit); }
+      else groups.push({ c, units: [c.unit] });
+    }
+    return [
+      h(
+        "span",
+        { class: "bv-still", "data-testid": "caption-changes" },
+        ...groups.map((g) => h("span", { class: `bv-l ${g.c.kind}` }, ...g.units.flatMap((u, i) => (i ? [", ", unitName(u)] : [unitName(u)])), ` ${g.c.label}`)),
+      ),
+    ];
+  }
+  /** The reduced-motion list never runs past its box: the oldest entries
+   * give way to a count ("+3 earlier") until the rest fits (R2-17). */
+  function fitStill(): void {
+    const list = still.querySelector(".bv-still");
+    if (!list || still.style.display === "none") return;
+    let dropped = 0;
+    let more: HTMLElement | null = null;
+    while (still.scrollHeight > still.clientHeight + 1) {
+      const entries = [...list.children].filter((c) => c !== more);
+      if (entries.length <= 1) break;
+      entries[0]!.remove();
+      dropped++;
+      if (!more) list.prepend((more = h("span", { class: "bv-l dim bv-still-more" })));
+      more.textContent = `+${dropped} earlier`;
+    }
+  }
+  /** The end card sits under the caption on the phone (its last line, "They
+   * win", stays readable) and between the HUD and the timeline on desktop
+   * (the timeline and the controls stay clear), scrolling inside itself
+   * when it runs long (R2-17). */
+  function placeEnd(): void {
+    if (end.style.display === "none" || !end.isConnected) return;
+    const gap = 8;
+    if (isDesktop()) {
+      const top = hud.getBoundingClientRect().bottom + gap;
+      const bottom = timeline.getBoundingClientRect().top - gap;
+      end.style.top = `${Math.round(top)}px`;
+      end.style.bottom = `${Math.round(innerHeight - bottom)}px`;
+      end.style.maxHeight = "";
+    } else {
+      const top = caption.getBoundingClientRect().bottom + gap;
+      const bottom = controls.getBoundingClientRect().top - gap;
+      end.style.top = "";
+      end.style.bottom = `${Math.round(innerHeight - bottom)}px`;
+      end.style.maxHeight = `${Math.max(120, Math.round(bottom - top))}px`;
+    }
   }
 
   function traceView(t: Trace): Node[] {
@@ -805,7 +945,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         : null,
       h("div", { class: "bv-trace-text mono", "data-testid": "trace-text" }, t.text),
       // R2-15: the whole chain, change first, back to the turn; a step's click shows its moment.
-      chain ? chainView(chain, { units, content: a.content, you, name, active: chainAt, onStep: seekEvent }) : null,
+      chain ? chainView(chain, { units, content: a.content, you, name, active: chainAt, onStep: seekEvent, rich: richCaption, tag: (sd) => sideTag(sd) }) : null,
+      chain ? h("div", { class: "dim bv-why-keys" }, isDesktop() ? "Click a step to see its moment; hover a highlighted word for its meaning." : "Tap a step to see its moment; hold a highlighted word for its meaning.") : null,
     ].filter((n): n is HTMLDivElement => n !== null);
   }
 
@@ -826,7 +967,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       moments.length ? h("div", { class: "label" }, "Key moments") : null,
       ...moments.map((m) => {
         const b = button("", () => playFrom(m.beat), `bv-moment ${m.kind}`, "key-moment");
-        b.append(h("span", { class: "bv-moment-t dim" }, `T${beats[m.beat]?.turn ?? ""}`), h("span", { class: "bv-moment-l" }, m.label), h("span", { class: "dim" }, "▶"));
+        b.append(h("span", { class: "bv-moment-t dim" }, turnLabel(beats[m.beat]?.turn ?? 0)), h("span", { class: "bv-moment-l" }, m.label), h("span", { class: "dim" }, "▶"));
         b.dataset.beat = String(m.beat);
         return b;
       }),
@@ -870,12 +1011,14 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       h(
         "div",
         { class: "bv-board" },
-        h("div", { class: "label bv-lab-them" }, a.you ? "Them" : owner(them), h("span", { class: "bv-front-r" }, " · front first")),
+        // Where each front is (R2-17): on the phone both run front first from
+        // the left; on desktop the fronts meet in the middle.
+        h("div", { class: "label bv-lab-them" }, h("span", { class: "bv-dk" }, "← front · "), a.you ? "Them" : owner(them), h("span", { class: "bv-ph" }, " · front first")),
         enemy,
         caption,
         clash,
         mine,
-        h("div", { class: "label bv-lab-you" }, a.you ? "You" : owner(you), " · front first"),
+        h("div", { class: "label bv-lab-you" }, a.you ? "You" : owner(you), h("span", { class: "bv-ph" }, " · front first"), h("span", { class: "bv-dk" }, " · front →")),
       ),
       timeline,
       h("div", { class: "bv-below" }, still, recent),
@@ -885,6 +1028,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     end,
   );
   screen("battle");
+  addEventListener("resize", placeEnd);
   buildTimeline();
   buildLog();
   setSpeedVar();
@@ -987,27 +1131,36 @@ function whenLookup(units: Map<string, BattleUnit>, content: MvpContent): WhenOf
 
 /** Why's chain (R2-15): the change, then each cause, back to the turn. A
  * firing reads as its unit and the When → Does that fired; every step shows
- * its trigger's icon. With onStep each step is a button that shows its
- * moment on the board (`active` is the one on screen). */
-function chainView(c: Chain, o: { units: Map<string, BattleUnit>; content: MvpContent; you: Side; name: (id: string) => string; active?: number | null; onStep?: (eventId: number) => void }): HTMLElement {
+ * its trigger's icon (fatigue its hourglass, an interception its status's).
+ * With onStep each step is a button that shows its moment on the board
+ * (`active` is the one on screen): a tap anywhere on it seeks, its words
+ * included; a word's meaning is a long press (or a hover) away (R2-17).
+ * With `rich` (names tagged by id) and `tag`, change and event steps read
+ * like the captions: side tags, side-coloured names, highlighted terms. */
+function chainView(c: Chain, o: { units: Map<string, BattleUnit>; content: MvpContent; you: Side; name: (id: string) => string; active?: number | null; onStep?: (eventId: number) => void; rich?: (text: string) => Node[]; tag?: (side: Side) => HTMLElement }): HTMLElement {
   const stepIcon = (n: ChainNode) => {
-    const id = n.trigger ? termIcon(n.trigger as TermId, n.triggerStatus) : undefined;
     const tone = n.kind === "firing" ? "tone-when" : n.kind === "root" ? "tone-gold" : "dim";
+    let id = n.trigger ? termIcon(n.trigger as TermId, n.triggerStatus) : undefined;
+    if (!id && n.event === "Fatigue") id = "hourglass";
+    if (!id && n.event === "Intercepted") id = (n.triggerStatus ? (STATUS_TERMS[n.triggerStatus] ?? termDef(`status:${n.triggerStatus}` as TermId, o.content.statuses))?.icon : undefined) ?? "breaking-chain";
     return id ? icon(id, 18, tone) : h("span", { class: tone }, n.kind === "firing" ? "⚡" : "•");
   };
+  const text = (t: string): Node[] => (o.rich ? o.rich(t) : [document.createTextNode(t)]);
+  const tagOf = (n: ChainNode): HTMLElement[] => (o.tag && n.side ? [o.tag(n.side)] : []);
   const body = (n: ChainNode): Node[] => {
     const who = n.side ? (n.side === o.you ? "tone-ally" : "tone-enemy") : "";
-    if (n.kind !== "firing") return [h("span", { class: "bv-step-text" }, n.text)];
+    if (n.kind === "root") return [h("span", { class: "bv-step-text" }, n.text)];
+    if (n.kind !== "firing") return [h("span", { class: "bv-step-text" }, ...tagOf(n), ...text(n.text))];
     const u = o.units.get(n.unit ?? "");
     const label = n.trigger ? termDef(n.trigger as TermId)?.label : undefined;
     if (n.status) {
       const tip = termDef(`status:${n.status}` as TermId, o.content.statuses)?.tip;
-      return [h("span", { class: "bv-step-head" }, h("b", { class: who }, n.text), label ? h("span", { class: "dim" }, ` · ${label}`) : null), tip ? h("span", { class: "bv-step-text dim" }, tip) : null].filter((x): x is HTMLElement => x !== null);
+      return [h("span", { class: "bv-step-head" }, ...tagOf(n), h("b", { class: who }, ...text(n.text)), label ? h("span", { class: "dim" }, ` · ${label}`) : null), tip ? h("span", { class: "bv-step-text dim" }, tip) : null].filter((x): x is HTMLElement => x !== null);
     }
     const w = u && n.ref?.when !== undefined ? u.recipe.when[n.ref.when] : undefined;
     const fired = u && w ? formRich({ ...u.recipe, when: [w] }, o.content) : [];
     return [
-      h("span", { class: "bv-step-head" }, h("span", { class: "emoji" }, u?.emoji ?? "✨"), " ", h("b", { class: who }, o.name(n.unit ?? "")), h("span", { class: "dim" }, `'s ability${label ? ` · ${label}` : ""}`)),
+      h("span", { class: "bv-step-head" }, ...tagOf(n), h("span", { class: "emoji" }, u?.emoji ?? "✨"), " ", h("b", { class: who }, o.name(n.unit ?? "")), h("span", { class: "dim" }, `'s ability${label ? ` · ${label}` : ""}`)),
       fired.length ? h("span", { class: "bv-step-text" }, ...fired) : null,
     ].filter((x): x is HTMLElement => x !== null);
   };
@@ -1019,8 +1172,57 @@ function chainView(c: Chain, o: { units: Map<string, BattleUnit>; content: MvpCo
       const attrs = { class: `bv-step ${n.kind}${o.active === n.eventId ? " on" : ""}`, "data-testid": "why-step", "data-kind": n.kind, "data-event": String(n.eventId) };
       if (!o.onStep) return h("div", attrs, ...kids);
       const b = h("button", attrs, ...kids);
-      b.addEventListener("click", () => o.onStep!(n.eventId));
+      seekOnTap(b, () => o.onStep!(n.eventId));
       return b;
     }),
   );
+}
+
+/** How long a press on a word in a Why step must last to open its meaning. */
+const LONG_PRESS_MS = 450;
+
+/** A Why step's tap seeks, wherever it lands, its highlighted words
+ * included: they are most of the step (R2-17). A long press on a word (or a
+ * right-click) opens that word's meaning instead; a mouse hover still shows
+ * its tip (ui/term.ts). */
+function seekOnTap(step: HTMLElement, seek: () => void): void {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let opening = false;
+  let pressed = false;
+  const cancel = () => { if (timer) clearTimeout(timer); timer = null; };
+  const openTerm = (t: HTMLElement) => {
+    opening = true;
+    t.click();
+    opening = false;
+  };
+  step.addEventListener(
+    "click",
+    (e) => {
+      if (opening) return; // the word's own handler, called by a long press
+      e.stopPropagation();
+      e.preventDefault();
+      if (pressed) { pressed = false; return; } // the click a long press ends with
+      seek();
+    },
+    { capture: true },
+  );
+  step.addEventListener("pointerdown", (e) => {
+    pressed = false;
+    const t = (e.target as Element | null)?.closest?.<HTMLElement>(".t");
+    if (!t || !step.contains(t)) return;
+    cancel();
+    timer = setTimeout(() => {
+      timer = null;
+      pressed = true;
+      openTerm(t);
+    }, LONG_PRESS_MS);
+  });
+  for (const ev of ["pointerup", "pointercancel", "pointerleave"]) step.addEventListener(ev, cancel);
+  step.addEventListener("contextmenu", (e) => {
+    const t = (e.target as Element | null)?.closest?.<HTMLElement>(".t");
+    e.preventDefault();
+    cancel();
+    if (t && step.contains(t) && !pressed) openTerm(t);
+    pressed = true;
+  });
 }

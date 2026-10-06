@@ -380,6 +380,17 @@ try {
       if (!(await page.getByTestId("why-step").last().evaluate((e) => e.classList.contains("on")))) errors.push("why: the clicked step isn't lit");
       if ((await page.getByTestId("battle-play").textContent()) !== "▶") errors.push("why: a step's click didn't leave the battle paused");
       const turnAfter = await page.locator(".hud span").nth(2).textContent();
+      // R2-17: "Turn N" lands on turn N's start, and the HUD says so.
+      const root = (await page.getByTestId("why-step").last().textContent()) ?? "";
+      const rootTurn = /Turn (\d+)/.exec(root)?.[1];
+      if (rootTurn && turnAfter !== `T${rootTurn}`) errors.push(`why: "Turn ${rootTurn}" put the board at ${turnAfter}`);
+      // R2-17: a tap on a step's words (a term, the trigger pill) seeks too; it opens no glossary.
+      const worded = page.locator('[data-testid="why-step"]:has(.t)');
+      if (await worded.count()) {
+        await worded.first().locator(".t").first().click();
+        if (await page.getByTestId("term-sheet").count().catch(() => 0)) errors.push("why: a tap on a step's word opened the glossary instead of seeking");
+        if (!(await worded.first().evaluate((e) => e.classList.contains("on")))) errors.push("why: a tap on a step's word didn't light the step");
+      }
       const bar = await page.getByTestId("battle-play").boundingBox();
       if (!bar || bar.y + bar.height > 640) errors.push(`why: the control bar is off screen with Why open (${JSON.stringify(bar)})`);
       await shot("battle-why-step"); await noHScroll("battle-why-step");
@@ -446,6 +457,9 @@ try {
       const moments = await page.getByTestId("key-moment").count();
       if (moments < 1 || moments > 3) errors.push(`end card: ${moments} key moments`);
       await onScreen("end card: Continue", page.getByTestId("battle-done"));
+      // R2-17: the end card never hides the caption's result line ("They win").
+      const [endBox, capBox] = [await page.getByTestId("end-card").boundingBox(), await page.locator(".bv-cap").boundingBox()];
+      if (endBox && capBox && endBox.y < capBox.y + capBox.height - 0.5) errors.push(`end card: it covers the caption's result line (${Math.round(endBox.y)} < ${Math.round(capBox.y + capBox.height)})`);
       await tap44("end card buttons", page.locator('[data-testid="end-card"] button'));
       await shot("battle-end-card"); await noHScroll("battle-end-card");
       if (await page.getByTestId("end-why").count()) {

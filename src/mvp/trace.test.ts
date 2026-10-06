@@ -6,7 +6,7 @@ import { battle } from "../battle.js";
 import { displayNames } from "../trace.js";
 import { stressAbilities, stressRegistry } from "../content/stress.js";
 import type { AbilityDef, AbilityRegistry, BattleEvent, UnitDef, When } from "../types.js";
-import { BEAT_MAX_MS, BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, stepsOf, timelineOf, timingOf, traceOf, whyILost } from "./trace.js";
+import { BEAT_MAX_MS, BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, statusesShown, whyILost } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -425,6 +425,60 @@ describe("Why: the chain from a change back to the turn (R2-15)", () => {
     expect(firingOf(log, step, whenOf({ Victim }))?.trigger).toBe("trigger:Hurt");
     // A Victim whose stamped When is Heal would read as Heal: the stamp wins over the event.
     expect(firingOf(log, step, () => ({ kind: "trigger", on: { on: "Heal" } }))?.trigger).toBe("trigger:Heal");
+  });
+});
+
+describe("R2-17: key moments, battle start, fatigue rows, Why's icons", () => {
+  test("a fight with more in it fills its key moments up to 3, never two on one beat", () => {
+    const log = run([dummy("Squire", 8, 1), dummy("Page", 6, 1), dummy("Knave", 5, 1)], [dummy("Dummy", 30, 2), Medic]);
+    const beats = beatPlayOf(log, stepsOf(log));
+    const ms = keyMomentsOf(log, beats);
+    const deaths = log.filter((e) => e.type === "Death").length;
+    expect(deaths).toBeGreaterThanOrEqual(3);
+    expect(ms.length).toBe(3);
+    expect(new Set(ms.map((m) => m.beat)).size).toBe(3);
+    expect(ms.map((m) => m.beat)).toEqual([...ms.map((m) => m.beat)].sort((p, q) => p - q));
+  });
+
+  test("a card's status rows show what fits, two-digit stacks included, else leave room for +n", () => {
+    const w = 58; // a 360 px phone's card
+    expect(statusesShown([1, 2, 3], w)).toBe(3);
+    expect(statusesShown([1, 2, 3, 1, 2, 3], w)).toBe(6); // 3 + 3 one-digit chips
+    expect(statusesShown([1, 2, 3, 1, 2, 3, 1], w)).toBe(5); // the 6th place is "+2"
+    expect(statusesShown([12, 10, 11, 13], w)).toBe(4); // 2 + 2 two-digit chips
+    expect(statusesShown([12, 10, 11, 13, 14], w)).toBe(3); // the 4th place is "+2"
+    expect(statusesShown([12, 10, 11, 13, 14, 15], w)).toBe(3);
+    expect(statusesShown([], w)).toBe(0);
+  });
+
+  test("battle start is its own timeline block (turn 0), labelled Start", () => {
+    const log = run([Shieldbearer, Smith, Archer], [dummy("Dummy", 30, 2)]);
+    const beats = beatPlayOf(log, stepsOf(log));
+    const tl = timelineOf(log, beats);
+    const early = beats.filter((b) => b.turn < 1).map((b) => b.index);
+    expect(early.length).toBeGreaterThan(0);
+    expect(tl[0]).toMatchObject({ turn: 0, beats: early });
+    expect(tl[1]!.turn).toBe(1);
+    expect(turnLabel(0)).toBe("Start");
+    expect(turnLabel(3)).toBe("T3");
+  });
+
+  test("a wave that hits both sides (fatigue) carries no side tag", () => {
+    const log = run([dummy("Wall", 60, 0), dummy("Wall2", 60, 0)], [dummy("Wall", 60, 0), dummy("Wall2", 60, 0)]);
+    const beats = beatPlayOf(log, stepsOf(log));
+    const sides = new Map(log.flatMap((e) => (e.type === "BattleStart" ? [...e.teams.A.map((r) => [r.id, "A"] as const), ...e.teams.B.map((r) => [r.id, "B"] as const)] : [])));
+    const mixed = beats.flatMap((b) => b.waves).filter((w) => new Set(w.changes.map((c) => sides.get(c.unit))).size > 1);
+    expect(mixed.length).toBeGreaterThan(0);
+    for (const w of mixed) expect(w.subjectSide).toBeNull();
+  });
+
+  test("every Why step names its event's type (a fatigue root's icon is its hourglass)", () => {
+    const log = run([dummy("Wall", 60, 0)], [dummy("Wall", 60, 0)]);
+    const hit = log.find((e) => e.type === "Hurt" && e.causedBy !== null && log[e.causedBy]?.type === "Fatigue");
+    if (!hit) return;
+    const c = chainOf(log, hit.id);
+    expect(c.nodes.at(-1)).toMatchObject({ kind: "root", event: "Fatigue" });
+    expect(c.nodes[0]).toMatchObject({ kind: "change", event: "Hurt" });
   });
 });
 

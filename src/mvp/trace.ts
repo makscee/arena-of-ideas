@@ -175,6 +175,8 @@ export type WhenOf = (ref: AbilityRef) => When | undefined;
  * Every step has an eventId, so a click can move the playhead there. */
 export interface ChainNode {
   kind: "change" | "firing" | "event" | "root";
+  /** The log event's type, for an icon when no trigger answers it (Fatigue, Intercepted). */
+  event: BattleEvent["type"];
   eventId: number;
   /** One line: a caption for a change or an event, the reactor for a firing, the turn for a root. */
   text: string;
@@ -184,7 +186,8 @@ export interface ChainNode {
   /** The trigger icon the step shows: a firing's When ("trigger:Hurt"), the
    * kind of an event or root ("trigger:Strike", "trigger:TurnStart"). */
   trigger: `trigger:${string}` | null;
-  /** The status a StatusApplied / StatusRemoved trigger is about. */
+  /** The status a StatusApplied / StatusRemoved trigger is about; an
+   * Intercepted step's, the status that stopped it (Freeze). */
   triggerStatus?: string;
   /** firing only: the reactor, its `when` the index of the When that fired. */
   ref?: AbilityRef;
@@ -248,7 +251,7 @@ export function chainOf(log: BattleEvent[], eventId: number, o: { name?: NameOf;
   for (let hops = 0; cur && hops < MAX_HOPS && !seen.has(cur.id); hops++) {
     seen.add(cur.id);
     if (cur.type !== "Strike" && isRootKind(cur.type)) {
-      nodes.push({ kind: "root", eventId: cur.id, text: rootNodeText(cur), unit: null, side: null, ...eventTrigger(cur) });
+      nodes.push({ event: cur.type, kind: "root", eventId: cur.id, text: rootNodeText(cur), unit: null, side: null, ...eventTrigger(cur) });
       break;
     }
     const kind = nodes.length ? "event" : "change";
@@ -259,28 +262,28 @@ export function chainOf(log: BattleEvent[], eventId: number, o: { name?: NameOf;
       const prev = nodes.at(-1);
       const hit = prev && prev.kind !== "firing" ? log[prev.eventId] : undefined;
       if (!(hit && hit.causedBy === cur.id && hit.type === "Hurt" && hit.source === "kernel")) {
-        nodes.push({ kind, eventId: cur.id, text: `${name(cur.striker)} strikes ${name(cur.defender)}`, unit: cur.striker, side: side(cur.striker), ...eventTrigger(cur) });
+        nodes.push({ event: cur.type, kind, eventId: cur.id, text: `${name(cur.striker)} strikes ${name(cur.defender)}`, unit: cur.striker, side: side(cur.striker), ...eventTrigger(cur) });
       }
     } else if (isStatusFollowUp(log, cur)) {
       // "+1 PWR" is the stat side of a status landing: one step, the status's caption.
       const parent = log[cur.causedBy!]!;
       const subject = captionSubject(log, parent.id, name);
-      nodes.push({ kind, eventId: cur.id, text: captionOf(log, parent.id, name, [parent.id, cur.id]), unit: subject, side: side(subject), ...eventTrigger(cur) });
+      nodes.push({ event: cur.type, kind, eventId: cur.id, text: captionOf(log, parent.id, name, [parent.id, cur.id]), unit: subject, side: side(subject), ...eventTrigger(cur) });
       seen.add(parent.id);
       cur = parent;
     } else {
       const subject = captionSubject(log, cur.id, name);
-      nodes.push({ kind, eventId: cur.id, text: captionOf(log, cur.id, name), unit: subject, side: side(subject), ...eventTrigger(cur) });
+      nodes.push({ event: cur.type, kind, eventId: cur.id, text: captionOf(log, cur.id, name), unit: subject, side: side(subject), ...eventTrigger(cur), ...(cur.type === "Intercepted" && cur.by.status ? { triggerStatus: cur.by.status } : {}) });
     }
     let next: number | null = cur.causedBy;
     if (cur.source !== "kernel") {
       const src: AbilityRef = cur.source;
       const fired = firedTrigger(log, cur, o.whenOf);
       if (src.status === undefined) {
-        nodes.push({ kind: "firing", eventId: cur.id, text: `${name(src.unit)}'s ability`, unit: src.unit, side: side(src.unit), ...fired, ref: src });
+        nodes.push({ event: cur.type, kind: "firing", eventId: cur.id, text: `${name(src.unit)}'s ability`, unit: src.unit, side: side(src.unit), ...fired, ref: src });
       } else {
         const origin = statusOriginId(log, src.unit, src.status, cur.id);
-        nodes.push({ kind: "firing", eventId: cur.id, text: `${src.status} on ${name(src.unit)}`, unit: src.unit, side: side(src.unit), ...fired, ref: src, status: src.status, ...(origin !== undefined ? { origin } : {}) });
+        nodes.push({ event: cur.type, kind: "firing", eventId: cur.id, text: `${src.status} on ${name(src.unit)}`, unit: src.unit, side: side(src.unit), ...fired, ref: src, status: src.status, ...(origin !== undefined ? { origin } : {}) });
         if (origin !== undefined) next = origin;
       }
     }
@@ -522,6 +525,13 @@ export function beatPlayOf(log: BattleEvent[], steps: Step[], name: NameOf = dis
       prev.changes.push(...s.changes);
       cur.names[last]!.push(name(s.changes[0]!.unit));
       prev.caption = groupCaption(prev, cur.names[last]!, s.changes[0]!.label);
+      // A wave whose captions are about units of both sides (fatigue hitting
+      // every front) has no one side: its tag would mislabel half the names,
+      // which carry their own side's colour anyway (R2-17).
+      if (s.subjectSide !== prev.subjectSide) {
+        prev.subject = null;
+        prev.subjectSide = null;
+      }
       continue;
     }
     cur.waves.push(s);
@@ -804,10 +814,10 @@ export function damageByUnit(log: BattleEvent[], name: NameOf = displayNames(log
 }
 
 export interface KeyMoment {
-  kind: "kill" | "combo" | "fatigue";
+  kind: "kill" | "combo" | "fatigue" | "hit";
   /** The playback beat it happens in (PlayBeat.index). */
   beat: number;
-  /** "Archer kills Knight (−7)", "Combo: 5 steps", "Fatigue sets in (T9)". */
+  /** "Archer kills Knight (−7)", "Combo: 5 steps", "Fatigue sets in (T9)", "Archer hits Knight (−4)". */
   label: string;
   /** The unit it is about (the killer, the combo's first actor), when there is one. */
   unit?: string;
@@ -815,15 +825,18 @@ export interface KeyMoment {
 
 /** Combos shorter than this aren't a key moment. */
 const COMBO_MIN = 3;
+/** How many key moments the end card lists, at most. */
+const MOMENTS = 3;
 
 /** The 2–3 moments worth replaying, in battle order: the biggest killing blow
- * (by the hit, as its chip showed it, overkill included),
- * the longest combo (the beat with the most waves, at least 3), and when
- * fatigue set in. A battle with fewer adds its last kill, so there is
- * something to click whenever anyone fell. */
+ * (by the hit, as its chip showed it, overkill included), the longest combo
+ * (the beat with the most waves, at least 3), and when fatigue set in. A
+ * battle with fewer fills up to 3 (R2-17: one moment undersold a fight with
+ * more in it): its other kills, biggest first, then its biggest hits that
+ * killed nobody, then its shorter combos (2 waves). Never two on one beat. */
 export function keyMomentsOf(log: BattleEvent[], beats: PlayBeat[], name: NameOf = displayNames(log), sides = sidesOf(log)): KeyMoment[] {
   const beatOfEvent = (id: number) => beats.find((b) => b.waves.some((w) => w.eventIds.includes(id)))?.index ?? beats.find((b) => b.end >= id)?.index ?? beats.length - 1;
-  const kills: { id: number; killer: string | null; victim: string; dmg: number }[] = [];
+  const kills: { id: number; killer: string | null; victim: string; dmg: number; hit?: number }[] = [];
   const lastHit = new Map<string, { id: number; dmg: number }>();
   for (const e of log) {
     if (e.type === "Hurt") lastHit.set(e.unit, { id: e.id, dmg: e.amount });
@@ -831,24 +844,38 @@ export function keyMomentsOf(log: BattleEvent[], beats: PlayBeat[], name: NameOf
       const cause = e.causedBy !== null ? log[e.causedBy] : undefined;
       const hit = cause?.type === "Hurt" ? { id: cause.id, dmg: cause.amount } : lastHit.get(e.unit);
       const killer = hit ? (traceOf(log, hit.id, name, sides).links[0]?.unit ?? null) : null;
-      kills.push({ id: e.id, killer, victim: e.unit, dmg: hit?.dmg ?? 0 });
+      kills.push({ id: e.id, killer, victim: e.unit, dmg: hit?.dmg ?? 0, ...(hit ? { hit: hit.id } : {}) });
     }
   }
   const killLabel = (k: (typeof kills)[number]) => `${k.killer ? name(k.killer) : "Fatigue"} kills ${name(k.victim)}${k.dmg ? ` (−${k.dmg})` : ""}`;
+  const killMoment = (k: (typeof kills)[number]): KeyMoment => ({ kind: "kill", beat: beatOfEvent(k.id), label: killLabel(k), ...(k.killer ? { unit: k.killer } : {}) });
+  const comboMoment = (b: PlayBeat): KeyMoment => {
+    const actor = b.waves.find((w) => w.actor)?.actor;
+    return { kind: "combo", beat: b.index, label: `Combo: ${b.waves.length} steps${actor ? `, ${name(actor)} first` : ""}`, ...(actor ? { unit: actor } : {}) };
+  };
   const out: KeyMoment[] = [];
-  const add = (m: KeyMoment) => { if (!out.some((o) => o.beat === m.beat)) out.push(m); };
-  const big = [...kills].sort((p, q) => q.dmg - p.dmg || p.id - q.id)[0];
-  if (big) add({ kind: "kill", beat: beatOfEvent(big.id), label: killLabel(big), ...(big.killer ? { unit: big.killer } : {}) });
-  const combo = [...beats].sort((p, q) => q.waves.length - p.waves.length || p.index - q.index)[0];
-  if (combo && combo.waves.length >= COMBO_MIN) {
-    const actor = combo.waves.find((w) => w.actor)?.actor;
-    add({ kind: "combo", beat: combo.index, label: `Combo: ${combo.waves.length} steps${actor ? `, ${name(actor)} first` : ""}`, ...(actor ? { unit: actor } : {}) });
-  }
+  const add = (m: KeyMoment) => { if (out.length < MOMENTS && !out.some((o) => o.beat === m.beat)) out.push(m); };
+  const byDamage = [...kills].sort((p, q) => q.dmg - p.dmg || p.id - q.id);
+  if (byDamage[0]) add(killMoment(byDamage[0]));
+  const combos = [...beats].sort((p, q) => q.waves.length - p.waves.length || p.index - q.index);
+  if (combos[0] && combos[0].waves.length >= COMBO_MIN) add(comboMoment(combos[0]));
   const fatigue = log.find((e) => e.type === "Fatigue");
-  if (fatigue) add({ kind: "fatigue", beat: beatOfEvent(fatigue.id), label: `Fatigue sets in (T${fatigue.turn})` });
-  const last = kills.at(-1);
-  if (out.length < 2 && last) add({ kind: "kill", beat: beatOfEvent(last.id), label: killLabel(last), ...(last.killer ? { unit: last.killer } : {}) });
-  return out.sort((p, q) => p.beat - q.beat).slice(0, 3);
+  if (fatigue) add({ kind: "fatigue", beat: beatOfEvent(fatigue.id), label: `Fatigue sets in (${turnLabel(fatigue.turn)})` });
+  for (const k of byDamage.slice(1)) add(killMoment(k));
+  const killing = new Set(kills.flatMap((k) => (k.hit !== undefined ? [k.hit] : [])));
+  const hits = log.flatMap((e) => (e.type === "Hurt" && e.amount >= 2 && !killing.has(e.id) ? [{ id: e.id, unit: e.unit, amount: e.amount }] : [])).sort((p, q) => q.amount - p.amount || p.id - q.id);
+  for (const e of hits) {
+    const by = traceOf(log, e.id, name, sides).links[0]?.unit;
+    if (!by) continue;
+    add({ kind: "hit", beat: beatOfEvent(e.id), label: `${name(by)} hits ${name(e.unit)} (−${e.amount})`, unit: by });
+  }
+  for (const b of combos) if (b.waves.length >= 2) add(comboMoment(b));
+  return out.sort((p, q) => p.beat - q.beat);
+}
+
+/** A turn as the viewer labels it: "T3", and the battle's start (turn 0) "Start". */
+export function turnLabel(turn: number): string {
+  return turn >= 1 ? `T${turn}` : "Start";
 }
 
 // ---------- the timeline under the desktop battle (R2-16) ----------
@@ -875,8 +902,8 @@ const BIG_HIT_MIN = 4;
 
 /** The turn timeline: one block per turn, each with its beats and its marks
  * (deaths, big hits, fatigue setting in). Pure, like boardAt: scrubbing to a
- * block's beat is go(beat). Beats before the first turn (battle start) join
- * the first block. */
+ * block's beat is go(beat). Beats before the first turn (battle start) get a
+ * block of their own, turn 0, which the viewer labels "Start" (R2-17). */
 export function timelineOf(log: BattleEvent[], beats: PlayBeat[], sides = sidesOf(log)): TimelineTurn[] {
   const hits = log.flatMap((e) => (e.type === "Hurt" ? [e.amount] : []));
   const big = Math.max(BIG_HIT_MIN, Math.ceil(Math.max(0, ...hits) * 0.6));
@@ -884,7 +911,7 @@ export function timelineOf(log: BattleEvent[], beats: PlayBeat[], sides = sidesO
   const turns: TimelineTurn[] = [];
   for (const b of beats) {
     const last = turns.at(-1);
-    const t = last && b.turn <= last.turn ? last : { turn: Math.max(1, b.turn), beats: [], marks: [] };
+    const t = last && Math.max(0, b.turn) <= last.turn ? last : { turn: Math.max(0, b.turn), beats: [], marks: [] };
     if (t !== last) turns.push(t);
     t.beats.push(b.index);
     const ids = new Set(b.waves.flatMap((w) => w.eventIds));
@@ -901,3 +928,39 @@ export function timelineOf(log: BattleEvent[], beats: PlayBeat[], sides = sidesO
   }
   return turns;
 }
+
+// ---------- a battle card's status chips (R2-17) ----------
+
+/** A status chip's width on a battle card: an 11 px icon plus 5.6 px a digit
+ * (10 px IBM Plex Mono, −0.04em), 2 px between chips; "+n" is its digits plus 6 px (padding and border). */
+const chipWidth = (stacks: number) => 11 + 5.6 * String(stacks).length;
+const CHIP_GAP = 2;
+const moreWidth = (n: number) => 5.6 * (1 + String(n).length) + 6;
+
+/** How many of a card's statuses (their stacks, in order) its status rows
+ * show, `rows` rows of `width` px filled in order as flex-wrap fills them;
+ * when not all fit, the shown ones leave room for a last "+n" chip. A
+ * two-digit stack is a wider chip, so a row may hold 2 where it held 3. */
+export function statusesShown(stacks: number[], width: number, rows = 2): number {
+  const fits = (widths: number[]) => {
+    let row = 1;
+    let x = 0;
+    let n = 0;
+    for (const cw of widths) {
+      const need = x ? x + CHIP_GAP + cw : cw;
+      if (need <= width + 0.5) x = need;
+      else if (++row <= rows && cw <= width + 0.5) x = cw;
+      else break;
+      n++;
+    }
+    return n;
+  };
+  const widths = stacks.map(chipWidth);
+  if (fits(widths) >= stacks.length) return stacks.length;
+  let shown = stacks.length - 1;
+  while (shown > 0 && fits([...widths.slice(0, shown), moreWidth(stacks.length - shown)]) < shown + 1) shown--;
+  return shown;
+}
+
+/** A status row's width when none was measured yet: three one-digit chips. */
+export const STATUS_ROW_FALLBACK = 3 * chipWidth(1) + 2 * CHIP_GAP;

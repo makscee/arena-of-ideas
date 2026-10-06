@@ -169,21 +169,31 @@ button.link { align-self: flex-start; border: none; background: none; color: var
 .bv-st .ic { width: 11px; height: 11px; }
 .bv-st b { font-weight: 700; }
 .bv-st.more { color: var(--dim); font-weight: 700; }
+/* "+n" opens the unit's live statuses; its tap box reaches past the chip. */
+button.bv-st.more { position: relative; min-height: 0; height: 13px; padding: 0 2px; border: 1px solid var(--line); border-radius: 3px; clip-path: none; background: var(--bg); color: var(--text); font-family: "IBM Plex Mono", monospace; font-size: 10px; line-height: 11px; letter-spacing: -0.04em; text-transform: none; }
+button.bv-st.more::before { content: ""; position: absolute; inset: -14px -8px -6px; }
+.bv-live-st { display: flex; flex-direction: column; gap: 2px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.bv-live-st-head .ic { vertical-align: -3px; }
+/* A status landing on a card's chip: its icon and stacks. */
+.bv-pst { display: inline-flex; align-items: center; gap: 1px; font-family: "IBM Plex Mono", monospace; font-weight: 700; }
+.bv-pst .ic { width: 13px; height: 13px; }
 .bv-nodmg { font-family: "Rajdhani", sans-serif; font-size: 12px; color: var(--dim); }
 /* The trigger badge: [When icon] → [Does icon], a pill just outside the
  * card's outer edge (it covers nothing on the card), inside a 44 px tall
  * transparent button so it's big enough to tap. The pill sits in the line's
  * 12 px margin plus the screen's 12 px gap, so the board is no taller; the
  * rest of the button lies over the side's label. */
-button.bv-badge { position: absolute; z-index: 3; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); min-height: 0; height: 44px; padding: 0; display: flex; align-items: flex-end; border: none; background: transparent; clip-path: none; text-transform: none; letter-spacing: 0; animation: bv-badge calc(0.3s / var(--bv-sp, 1)) ease-out calc(var(--bv-bt, 0s) / var(--bv-sp, 1)) both; }
+button.bv-badge { position: absolute; z-index: 3; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); min-height: 0; height: 44px; padding: 0; display: flex; align-items: flex-end; border: none; background: transparent; clip-path: none; text-transform: none; letter-spacing: 0; }
+/* The pill pops in (0.6 → 1.15 → 1), not the button: its 44 px tap box keeps its size throughout (R2-17). */
+button.bv-badge .bv-badge-pill { animation: bv-badge calc(0.3s / var(--bv-sp, 1)) ease-out calc(var(--bv-bt, 0s) / var(--bv-sp, 1)) both; }
 .bv-badge-pill { height: 20px; padding: 0 5px; display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; border: 1px solid #ffbf47; border-radius: 11px; background: color-mix(in srgb, #ffbf47 18%, var(--bg)); box-shadow: 0 0 8px color-mix(in srgb, #ffbf47 45%, transparent); }
-button.bv-badge.still { animation: none; }
+button.bv-badge.still .bv-badge-pill { animation: none; }
 /* Your line's badges hang below the cards (the chip is on top), toward your label. */
 .bv-line.mine button.bv-badge { bottom: auto; top: calc(100% + 4px); align-items: flex-start; }
 .bv-line.theirs { margin-top: 12px; }
 .bv-line.mine { margin-bottom: 12px; }
 .bv-badge-arrow { font-size: 11px; color: var(--dim); }
-@keyframes bv-badge { 0% { opacity: 0; transform: translateX(-50%) translateY(6px) scale(0.6); } 60% { opacity: 1; transform: translateX(-50%) scale(1.15); } 100% { opacity: 1; transform: translateX(-50%); } }
+@keyframes bv-badge { 0% { opacity: 0; transform: translateY(6px) scale(0.6); } 60% { opacity: 1; transform: scale(1.15); } 100% { opacity: 1; transform: none; } }
 /* The gold ring is drawn inside the border, over the padding: the acting card
  * gets 2px more padding on each side, so its name (fitted to the
  * content box, ui/dom.ts fitText) stay clear of the ring. */
@@ -213,9 +223,8 @@ button.bv-badge.still { animation: none; }
  * the pop after the shake; its fill holds back until then). */
 .bv-card.bv-dying { animation: bv-die calc(0.5s / var(--bv-sp, 1)) ease-out calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) forwards; }
 .bv-card.bv-hit.bv-dying { animation: bv-shake calc(0.34s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-t, 0s)) / var(--bv-sp, 1)), bv-die calc(0.5s / var(--bv-sp, 1)) ease-out calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) forwards; }
-/* Floats hang in the card's slot and rise above the card (as in the mockup),
- * so the card's name and numbers stay readable while they change; they pass
- * over a trigger badge for their 0.7 s. ±PWR sits over PWR's side, ±HP over HP's. */
+/* Floats hang in the card's slot. On desktop they rise above the card, into
+ * the line's room for them; on the phone (below) over the card's emoji. ±PWR sits over PWR's side, ±HP over HP's. */
 .bv-float { --k: 0; position: absolute; left: 0; right: 0; top: auto; bottom: calc(100% + 2px + var(--k) * 14px); z-index: 4; text-align: center; line-height: 20px; pointer-events: none; font-family: "IBM Plex Mono", monospace; font-size: 18px; font-weight: 700; text-shadow: 0 0 4px var(--bg), 0 0 2px var(--bg); white-space: nowrap; overflow: hidden; animation: bv-rise calc(0.7s / var(--bv-sp, 1)) ease-out both; }
 .bv-float.damage, .bv-float.debuff { color: var(--ghost); }
 .bv-float.heal, .bv-float.summon { color: var(--you); }
@@ -243,12 +252,12 @@ button.bv-badge.still { animation: none; }
   .bv-card.bv-flash-hit::after, .bv-card.bv-glow::after { animation: none; background: none; opacity: 1; box-shadow: 0 0 0 2px var(--ghost) inset; }
   .bv-card.bv-glow::after { box-shadow: 0 0 0 2px var(--you) inset; }
   .bv-float { display: none; }
-  button.bv-badge { animation: none; }
+  button.bv-badge .bv-badge-pill { animation: none; }
   .bv-card.acting { transform: none; }
 }
-/* A change sits over the emoji: the button is a transparent 44 px tap target
- * across the card's top, its pill covers only the emoji, so the name and
- * PWR / HP below stay readable. One pill per unit a step; a status and the
+/* A change sits in the card's top row (the phone and desktop both start the
+ * emoji below it, R2-17): the button is a transparent 44 px tap target
+ * across the card's top, its pill clear of the emoji and the trigger icon. One pill per unit a step; a status and the
  * stat it moves share it on two lines (.bv-pill.two). */
 .bv-changes { position: absolute; top: 0; left: 0; right: 0; height: 44px; display: flex; }
 button.bv-change { flex: 1; min-width: 0; min-height: 44px; height: 44px; padding: 3px 2px 0; border: none; background: transparent; clip-path: none; display: flex; align-items: flex-start; justify-content: center; letter-spacing: 0; text-transform: none; }
@@ -326,11 +335,12 @@ button.bv-why { display: flex; align-items: center; justify-content: space-betwe
 .bv-dmg-bar i { display: block; height: 100%; }
 .bv-dmg-col.you .bv-dmg-bar i { background: var(--you); }
 .bv-dmg-col.ghost .bv-dmg-bar i { background: var(--ghost); }
-button.bv-moment { display: grid; grid-template-columns: 32px 1fr auto; gap: 8px; align-items: center; text-align: left; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 15px; color: var(--text); border-color: var(--line); padding: 0 10px; }
+button.bv-moment { display: grid; grid-template-columns: 40px 1fr auto; gap: 8px; align-items: center; text-align: left; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 15px; color: var(--text); border-color: var(--line); padding: 0 10px; }
 .bv-moment-l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bv-moment.kill .bv-moment-l { color: var(--ghost); }
 .bv-moment.combo .bv-moment-l { color: var(--gold); }
-.bv-end-actions { gap: 6px; }
+.bv-moment.hit .bv-moment-l { color: var(--text); }
+.bv-end-actions { gap: 6px; position: sticky; bottom: -12px; margin: 0 -12px -12px; padding: 8px 12px 12px; background: var(--panel); }
 .bv-end-actions button { padding: 0 8px; font-size: 15px; white-space: nowrap; }
 .bv-line.empty { min-height: 0; display: block; }
 .bv-word.neutral { color: var(--text); font-size: 24px; }
@@ -590,7 +600,8 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
  * phone hides the desktop ones and keeps its stacked rows (.bv-board is
  * display: contents), and the sheet shows only with a trace. */
 .bv-board { display: contents; }
-.bv-clash, .bv-tl, .bv-tabs, .bv-log, .bv-front-r { display: none; }
+.bv-clash, .bv-tl, .bv-tabs, .bv-log, .bv-dk, .bv-keys { display: none; }
+.bv-why-keys { font-size: 13px; }
 .bv-sheet:not(.open) { display: none; }
 .bv-why-hint { font-size: 15px; line-height: 1.4; padding: 12px 0; }
 @media (min-width: 1024px) {
@@ -602,7 +613,11 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-board { flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 48px minmax(0, 1fr); grid-template-areas: "lyou . lthem" "mine clash enemy" "cap cap cap"; row-gap: 8px; align-content: center; }
   #app[data-screen="battle"] .bv-lab-you { grid-area: lyou; text-align: right; }
   #app[data-screen="battle"] .bv-lab-them { grid-area: lthem; }
-  #app[data-screen="battle"] .bv-front-r { display: inline; }
+  #app[data-screen="battle"] .bv-dk { display: inline; }
+  #app[data-screen="battle"] .bv-ph { display: none; }
+  /* The mockup's key hints, right of the controls. */
+  #app[data-screen="battle"] .bv-keys { display: flex; align-items: center; gap: 3px; margin-left: auto; font-size: 13px; white-space: nowrap; }
+  .bv-keys kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 3px; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--text); }
   #app[data-screen="battle"] .bv-clash { grid-area: clash; display: flex; align-items: center; justify-content: center; opacity: 0.8; }
   /* Room above a card for its floats, below it for its trigger badge (both lines: they share a row now). */
   #app[data-screen="battle"] .bv-line { display: flex; gap: 6px; margin: 0; padding: 48px 0 50px; min-height: 0; }
@@ -614,6 +629,8 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   /* The change chip sits in the card's top 31px; the emoji starts below it. */
   #app[data-screen="battle"] .bv-card { height: 184px; padding-top: 10px; }
   #app[data-screen="battle"] .bv-card .emoji { margin-top: 24px; }
+  /* …and starts right of the trigger icon (top-left, 18 px), which it never covers (R2-17). */
+  #app[data-screen="battle"] .bv-changes { left: 28px; right: 2px; }
   #app[data-screen="battle"] button.bv-caption { grid-area: cap; justify-self: center; width: 100%; max-width: 820px; font-size: 19px; }
   #app[data-screen="battle"] .bv-screen > .bv-below { flex: none; }
   #app[data-screen="battle"] .bv-recent { display: none; }
@@ -629,6 +646,8 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   .bv-tl-turn.on .bv-tl-box { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 14%, var(--bg)); }
   .bv-tl-turn:hover .bv-tl-box { border-color: var(--you); }
   .bv-tl-mark { display: inline-flex; flex: none; }
+  .bv-tl-more { flex: none; font-size: 11px; line-height: 14px; color: var(--text); }
+  .bv-tl-n { overflow: hidden; white-space: nowrap; }
   .bv-tl-n { height: 14px; font-size: 11px; line-height: 14px; text-align: center; }
   .bv-tl-turn.on .bv-tl-n { color: var(--gold); }
   .bv-tl-head { position: absolute; top: -3px; width: 2px; height: 38px; margin-left: -1px; background: var(--gold); box-shadow: 0 0 6px var(--gold); pointer-events: none; }
@@ -642,7 +661,7 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-sheet[data-tab="log"] .bv-why-body { display: none; }
   #app[data-screen="battle"] .bv-sheet[data-tab="why"] .bv-log { display: none; }
   #app[data-screen="battle"] .bv-sheet[data-tab="log"] .bv-log { display: flex; flex-direction: column; }
-  button.bv-log-row { display: grid; grid-template-columns: 30px 1fr; gap: 4px; align-items: baseline; flex: none; height: auto; min-height: 30px; padding: 4px 6px; border: 0; clip-path: none; background: none; text-align: left; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-weight: 500; font-size: 15px; line-height: 1.3; color: var(--text); }
+  button.bv-log-row { display: grid; grid-template-columns: 38px 1fr; gap: 4px; align-items: baseline; flex: none; height: auto; min-height: 30px; padding: 4px 6px; border: 0; clip-path: none; background: none; text-align: left; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-weight: 500; font-size: 15px; line-height: 1.3; color: var(--text); }
   button.bv-log-row[hidden] { display: none; }
   button.bv-log-row.first { border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
   button.bv-log-row:hover { background: color-mix(in srgb, var(--you) 8%, transparent); }
@@ -651,7 +670,8 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   .bv-log-c .bv-who { font-size: 10px; margin-right: 4px; }
 
   /* The end card over the battle column, clear of the panel. */
-  #app[data-screen="battle"] .bv-end { left: 24px; right: calc(var(--insp) + 24px); bottom: 76px; }
+  /* (battle.ts placeEnd sets its top and bottom: under the HUD, above the timeline.) */
+  #app[data-screen="battle"] .bv-end { left: 24px; right: calc(var(--insp) + 24px); bottom: 76px; max-width: none; max-height: none; margin: 0; }
 }
 @media (min-width: 1280px) {
   #app[data-screen="battle"] { --insp: 380px; }
@@ -661,4 +681,26 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-card .stats.big { font-size: 15px; padding: 0 1px; }
   #app[data-screen="battle"] .bv-card .emoji { font-size: 36px; }
   #app[data-screen="battle"] .bv-line { gap: 4px; }
+}
+
+/* R2-17, the phone's battle card: the change chip has its own row at the
+ * card's top, right of the trigger icon, and the emoji starts below it, so
+ * a chip covers neither. Floats rise over the card's emoji and name, inside
+ * the slot: above the card they ran into the caption (your line), over the
+ * trigger badge and the side's label (theirs). */
+@media (max-width: 1023.98px) {
+  #app[data-screen="battle"] .bv-line { min-height: 132px; }
+  #app[data-screen="battle"] .bv-card { height: 132px; }
+  #app[data-screen="battle"] .bv-card .emoji { margin-top: 22px; }
+  #app[data-screen="battle"] .bv-changes { left: 16px; right: 0; }
+  #app[data-screen="battle"] button.bv-change { padding: 2px 1px 0; }
+  #app[data-screen="battle"] .bv-pill { height: 22px; line-height: 20px; font-size: 14px; padding: 0 4px; }
+  #app[data-screen="battle"] .bv-pill.two { height: 24px; min-height: 0; line-height: 11px; font-size: 11px; padding: 0 2px; }
+  #app[data-screen="battle"] .bv-pill.two .bv-pst .ic { width: 10px; height: 10px; }
+  #app[data-screen="battle"] .bv-float { bottom: auto; top: calc(24px + var(--k) * 16px); }
+  /* The end card under the caption is short: key moments (the fun part) before damage. */
+  .bv-end > * { order: 1; }
+  .bv-end > .bv-end-top { order: 0; }
+  .bv-end > .bv-dmg-grid { order: 2; }
+  .bv-end > .bv-end-actions { order: 3; }
 }
