@@ -339,6 +339,7 @@ try {
     if (!(await page.getByTestId("sheet-close").isVisible())) errors.push("unit sheet from Info: no Close button");
     await shot("fused-sheet"); await noHScroll("fused-sheet");
     await sheetChecks("fused sheet");
+    if (await page.getByTestId("sheet-parts").isVisible()) errors.push("fused sheet: the parts show before the tap");
     await page.getByTestId("sheet-parts-open").click();
     if ((await page.getByTestId("sheet-parts").locator(".sheet-form").count()) !== 2) errors.push("fused sheet: the parts don't open");
     await shot("fused-sheet-parts");

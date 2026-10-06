@@ -32,6 +32,8 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .row.spread { justify-content: space-between; }
 .grow { flex: 1; }
 .stack { display: flex; flex-direction: column; gap: 8px; }
+/* `hidden` wins over any display rule (a .stack with hidden showed anyway, R2-7). */
+[hidden] { display: none !important; }
 .hud { display: flex; justify-content: space-between; gap: 8px; font-family: "IBM Plex Mono", monospace; font-size: 15px; }
 .hud > * { flex: none; }
 .hud .gold { color: var(--gold); }
