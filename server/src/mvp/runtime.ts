@@ -31,10 +31,14 @@ export interface MvpDeps {
   hooks?: RunHooks[];
   /** Serves /dev/* (main.ts: MVP_DEV=1); without it they answer 404. */
   dev?: boolean;
+  /** Invite-only (slice 13, main.ts: MVP_INVITES=1): players come from
+   * invite links and session tokens, and only admin invites see /dev/*. */
+  invites?: boolean;
 }
 
 export interface MvpRuntime extends RunDeps {
   dev: boolean;
+  invites: boolean;
 }
 
 /** A background job: starts on the runtime, returns its stop function. */
@@ -54,6 +58,7 @@ export function mvpRuntime(deps: MvpDeps): MvpRuntime {
     nameFusion: deps.nameFusion ?? naming.nameFusion,
     peekFusionName: naming.peek,
     dev: deps.dev ?? false,
+    invites: deps.invites ?? false,
   };
   return rt;
 }

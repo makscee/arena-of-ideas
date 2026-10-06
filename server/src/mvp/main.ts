@@ -7,6 +7,8 @@
  *   BASE_PATH   public mount path (default /arena); requests may arrive with
  *               or without it, depending on how the proxy forwards them.
  *   MVP_DEV     1 serves the dev tools (/api/v1/dev/*, "end day now")
+ *   MVP_INVITES 1 makes it invite-only (slice 13): players come from invite
+ *               links (npm run mvp:invite), the dev tools only for admin invites
  *   MVP_DB      the SQLite file (default data/arena-mvp.db); ":memory:" keeps nothing
  *   ARENA_NAMER_URL  the fusion namer (OpenAI-compatible chat endpoint, slice
  *               10); without it every fusion gets the portmanteau
@@ -34,10 +36,10 @@ const dbPath = process.env.MVP_DB ?? "data/arena-mvp.db";
 if (dbPath !== ":memory:") mkdirSync(dirname(resolve(dbPath)), { recursive: true });
 const store = new SqliteMvpStore(dbPath);
 const content = mvpContent();
-const rt = mvpRuntime({ content, store, dev: process.env.MVP_DEV === "1" });
+const rt = mvpRuntime({ content, store, dev: process.env.MVP_DEV === "1", invites: process.env.MVP_INVITES === "1" });
 const build = buildOf();
 const app = mvpServerApp(createMvpApp(rt), { staticRoot: root, build });
 
 serve({ port, hostname: host, fetch: underBasePath(app, basePath) });
 startMvpJobs(rt);
-console.log(`arena mvp on http://${host}:${port} (base ${basePath}, build ${build ?? "unknown"}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""})`);
+console.log(`arena mvp on http://${host}:${port} (base ${basePath}, build ${build ?? "unknown"}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""}${rt.invites ? ", invite-only" : ""})`);

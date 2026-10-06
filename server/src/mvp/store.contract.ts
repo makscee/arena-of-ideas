@@ -145,5 +145,31 @@ export function describeMvpStore(name: string, make: () => MvpStore): void {
       ]);
       expect(store.unitTallies("v3")).toEqual({ runs: 1, units: [{ unitId: "brawler", fights: 2, wins: 2, runs: 1 }] });
     });
+
+    it("keeps invites with unique names, sessions by token hash, and finds human players by name", () => {
+      const s = make();
+      s.addPlayer(maks);
+      s.addPlayer(bot);
+      s.addPlayer({ id: "p3", name: "maks", bot: false });
+      expect(s.playersNamed("MAKS").map((p) => p.id)).toEqual(["p1", "p3"]);
+      expect(s.playersNamed("bot-Ash")).toEqual([]);
+      const inv = { code: "c1", name: "Maks", playerId: "p1", admin: true, createdAt: "t", redeemedAt: null };
+      s.putInvite(inv);
+      s.putInvite({ ...inv, redeemedAt: "t2" });
+      expect(s.invite("c1")).toEqual({ ...inv, redeemedAt: "t2" });
+      expect(() => s.putInvite({ ...inv, code: "c2", name: "MAKS" })).toThrow();
+      expect(s.invites().map((i) => i.code)).toEqual(["c1"]);
+      expect(s.invite("nope")).toBeUndefined();
+      expect(s.redeemInvite("nope", "h0", "t3")).toBeUndefined();
+      expect(s.redeemInvite("c1", "h1", "t3")).toBe("p1");
+      expect(s.invite("c1")?.redeemedAt).toBe("t2");
+      expect(s.sessionPlayer("h1")).toBe("p1");
+      expect(s.sessionPlayer("h0")).toBeUndefined();
+      expect(s.rotateInvite("c1", { ...inv, code: "c3", redeemedAt: null })).toBe(1);
+      expect(s.sessionPlayer("h1")).toBeUndefined();
+      expect(s.redeemInvite("c1", "h2", "t4")).toBeUndefined();
+      expect(s.redeemInvite("c3", "h2", "t4")).toBe("p1");
+      expect(s.invite("c3")?.redeemedAt).toBe("t4");
+    });
   });
 }

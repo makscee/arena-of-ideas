@@ -5,15 +5,15 @@
 // these routes.
 import { randomUUID } from "node:crypto";
 import { Hono, type Context } from "hono";
-import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, type Decision, type HomeView, type PlayerRef } from "../../../src/mvp/contract.js";
+import { bodyLimit } from "hono/body-limit";
+import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, TOKEN_HEADER, type Decision, type HomeView, type PlayerRef } from "../../../src/mvp/contract.js";
 import { checkDecision, MvpBadDecision, MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
 import { dayView, endDay, hiddenSlay } from "./day.js";
 import { MvpNotYet } from "./errors.js";
+import { isAdmin, NAME_RE, redeemInvite, sessionPlayer } from "./invites.js";
 import { abandon, currentRun, decide, preview, startRun } from "./runs.js";
 import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
 import { statsView } from "./stats.js";
-
-const NAME_RE = /^[\p{L}\p{N}_\- ]{1,24}$/u;
 
 /** The API on a runtime, or on a fresh one built from `deps`. */
 export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
@@ -21,7 +21,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   const { content, store } = rt;
   const api = new Hono();
 
-  const bad = (c: Context, status: 400 | 401 | 404 | 409 | 501, error: string) => c.json({ error }, status);
+  const bad = (c: Context, status: 400 | 401 | 403 | 404 | 409 | 413 | 501, error: string) => c.json({ error }, status);
   /** A stub that a later slice fills in answers 501 until then. */
   const notYet = (c: Context, fn: () => unknown) => {
     try {
@@ -31,21 +31,65 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
       throw err;
     }
   };
+  // A session token (slice 13) names the player anywhere; the bare player id
+  // only on an open server, since ids are public (the day, fusions, battles).
   const playerOf = (c: Context): PlayerRef | undefined => {
-    const id = c.req.header(PLAYER_HEADER);
+    const token = c.req.header(TOKEN_HEADER);
+    if (token) return sessionPlayer(store, token);
+    const id = rt.invites ? undefined : c.req.header(PLAYER_HEADER);
     return id ? store.player(id) : undefined;
   };
+  const unknownPlayer = (c: Context) => bad(c, 401, rt.invites ? "unknown player: open your invite link" : `unknown player: send ${PLAYER_HEADER} from POST /players`);
+  /** The dev tools: anyone on an open dev server, admin invites on an invite-only one. */
+  const devFor = (c: Context) => rt.dev && (!rt.invites || isAdmin(store, playerOf(c)?.id));
 
-  api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: content.version }));
+  // Every body here is a name or a Decision: a few hundred bytes.
+  api.use("*", bodyLimit({ maxSize: 16 * 1024, onError: (c) => bad(c, 413, "body too large") }));
+  // A token that names no session (a revoked link) is no player anywhere but
+  // the invite routes: 401 "unknown player", so the device forgets it and
+  // shows the invite screen.
+  api.use("*", async (c, next) => {
+    const token = c.req.header(TOKEN_HEADER);
+    if (token && !c.req.path.includes("/invites/") && !sessionPlayer(store, token)) return unknownPlayer(c);
+    await next();
+  });
+  // A decision's body is read only from a known player.
+  for (const path of ["/runs/:runId/decisions", "/runs/:runId/preview"])
+    api.post(path, async (c, next) => {
+      if (!playerOf(c)) return unknownPlayer(c);
+      await next();
+    });
+
+  api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: content.version, invites: rt.invites }));
   api.get("/content", (c) => c.json(content));
 
   api.post("/players", async (c) => {
+    if (rt.invites) return bad(c, 403, "invite only: open your invite link");
     const body = (await c.req.json().catch(() => null)) as { name?: unknown } | null;
     const name = typeof body?.name === "string" ? body.name.trim() : "";
     if (!NAME_RE.test(name)) return bad(c, 400, "name: 1–24 letters, digits, spaces, _ or -");
     const p: PlayerRef = { id: randomUUID(), name, bot: false };
     store.addPlayer(p);
     return c.json(p);
+  });
+
+  // Invite codes come in the body, never the path: the proxies in front
+  // (tailscale serve, mcow's Caddy) log every URI.
+  const codeOf = async (c: Context) => {
+    const body = (await c.req.json().catch(() => null)) as { code?: unknown } | null;
+    return typeof body?.code === "string" ? body.code : "";
+  };
+  // Whose link this is, without opening it (the client asks before a device
+  // switches from another player).
+  api.post("/invites/lookup", async (c) => {
+    const invite = store.invite(await codeOf(c));
+    const player = invite && store.player(invite.playerId);
+    return player ? c.json({ player }) : bad(c, 404, "no such invite");
+  });
+  // Opens an invite link: its player and a new token for this device.
+  api.post("/invites/redeem", async (c) => {
+    const session = redeemInvite(store, await codeOf(c), rt.now());
+    return session ? c.json(session) : bad(c, 404, "no such invite");
   });
 
   api.get("/home", (c) => {
@@ -55,14 +99,14 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
       day: dayView(rt),
       rating: p ? store.rating(p.id) ?? { player: p, rating: rt.rules.ratingStart, runs: 0, slays: 0, daysAsChampion: 0, playoffWins: 0 } : null,
       activeRunId: p ? store.activeRun(p.id)?.runId ?? null : null,
-      dev: rt.dev,
+      dev: devFor(c),
     };
     return c.json(home);
   });
 
   api.post("/runs", (c) => {
     const p = playerOf(c);
-    if (!p) return bad(c, 401, `unknown player: send ${PLAYER_HEADER} from POST /players`);
+    if (!p) return unknownPlayer(c);
     return c.json(runView(startRun(rt, p)));
   });
 
@@ -153,9 +197,10 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   api.get("/day", (c) => c.json(dayView(rt)));
   api.get("/stats", (c) => notYet(c, () => statsView(rt)));
 
-  // Dev-only tools (MvpDeps.dev, MVP_DEV=1 in main.ts): 404 without it.
+  // Dev-only tools (MvpDeps.dev, MVP_DEV=1 in main.ts): 404 without it, and
+  // on an invite-only server for anyone but an admin invite's player.
   api.use("/dev/*", async (c, next) => {
-    if (!rt.dev) return bad(c, 404, "not found");
+    if (!devFor(c)) return bad(c, 404, "not found");
     await next();
   });
   api.post("/dev/end-day", (c) => notYet(c, () => endDay(rt)));
