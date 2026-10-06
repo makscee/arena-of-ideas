@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MVP_RULES, type MvpContent } from "./contract.js";
 import { fightLines } from "./fight.js";
 import { contentFormProblems, lineUnitOf } from "./forms.js";
-import { EMITS, LISTENS, ROOT_WHENS, ROWS, WHEN, effectKinds, linkEdges, mvpPool, shapeKinds, sig, type WhenKey } from "./units.js";
+import { EMITS, LISTENS, ROOT_WHENS, ROWS, WHEN, awokenNewPart, effectKinds, linkEdges, mvpPool, shapeKinds, sig, type WhenKey } from "./units.js";
 
 describe("MVP pool (slice 7)", () => {
   const pool = mvpPool();
@@ -192,6 +192,26 @@ describe("one hero per shape (round 3, docs/round3/units.md 1b)", () => {
     return [...loops];
   };
 
+  // Round 3 (R3-8): tiers I–II now; R3-9 widens it to every tier.
+  const R3_TIERS = [1, 2];
+  it("R3: every tier I–II Awoken form does something new, not just bigger numbers", () => {
+    const same = mvpPool()
+      .units.filter((u) => R3_TIERS.includes(u.tier) && awokenNewPart(u.forms.sleeping, u.forms.awoken) === null)
+      .map((u) => `${u.name}: ${sig(u.forms.sleeping)} → ${u.forms.awoken.does.join(", ")}`);
+    expect(same).toEqual([]);
+  });
+
+  it("R3 counts a new Who or a new effect kind, never a number, a family word or a stat rider", () => {
+    const form = (who: string, does: string[]) => ({ when: WHEN.start, who: [{ kind: who }], does }) as Parameters<typeof awokenNewPart>[0];
+    expect(awokenNewPart(form("frontEnemy", ["Hit 1"]), form("frontEnemy", ["Hit 3"]))).toBeNull();
+    expect(awokenNewPart(form("frontEnemy", ["Hit 1"]), form("frontEnemy", ["Smite"]))).toBeNull();
+    expect(awokenNewPart(form("holder", ["Shield 2"]), form("holder", ["Shield 2", "Strength 1"]))).toBeNull();
+    expect(awokenNewPart(form("allAllies", ["Strength 1"]), form("allAllies", ["Strength 2", "Vitality 1"]))).toBeNull();
+    expect(awokenNewPart(form("holder", ["Call Imp"]), form("holder", ["Call Wolf"]))).toBeNull();
+    expect(awokenNewPart(form("frontEnemy", ["Hit 1"]), form("allEnemies", ["Hit 1"]))).toBe("Who frontEnemy → allEnemies");
+    expect(awokenNewPart(form("holder", ["Strength 2"]), form("holder", ["Strength 2", "Shield 2"]))).toBe("adds Shield");
+  });
+
   it("R4: the listen → emit graph has no loop", () => {
     expect(loopsOf(mvpPool().units)).toEqual([]);
   });
@@ -248,5 +268,26 @@ describe("Priest's Blessing can't re-arm itself (R3-7 check of 7ee5eec1)", () =>
   it("the old Priest (ally healed: bless it) saved one ally again and again", () => {
     const old = contentWith(ROWS.map((r) => (r.name === "Priest" ? { ...r, when: "allyHealed" as WhenKey, who: "it" as const } : r)));
     expect(Math.max(...seeds.map((s) => saves(old, s)))).toBeGreaterThan(1);
+  });
+});
+
+describe("Summoner's Awoken form (R3-8)", () => {
+  const content: MvpContent = { version: "test", ...mvpPool() };
+  const unit = (id: string) => content.units.find((u) => u.id === id)!;
+
+  it("calls a Warg, a body with a job of its own: its strikes poison the front enemy", () => {
+    const line = [lineUnitOf(unit("summoner"), "a0", 3), lineUnitOf(unit("bulwark"), "a1")];
+    const foe = ["duelist", "crusader"].map((id, i) => lineUnitOf(unit(id), `b${i}`, 3));
+    const p = { id: "p", name: "p", bot: false };
+    const log = fightLines({ player: p, line }, { player: p, line: foe }, { battleId: "b", seed: 1, kind: "round", round: 1, runId: null, at: "2026-10-06T00:00:00.000Z", content, rules: MVP_RULES }).log;
+    const warg = log.find((e) => e.type === "Summon" && e.name === "Warg");
+    if (warg?.type !== "Summon") throw new Error("no Warg summoned");
+    expect(log.some((e) => e.type === "StatusApplied" && e.status === "Poison" && typeof e.source === "object" && e.source.unit === warg.unit)).toBe(true);
+    expect(content.summons?.find((s) => s.name === "Warg")?.form?.does).toEqual(["Poison 1"]);
+  });
+
+  it("R3 counts the summoned body's job: Call Imp → Call Warg adds Poison", () => {
+    const f = (does: string[]) => ({ ...unit("summoner").forms.sleeping, does });
+    expect(awokenNewPart(f(["Call Imp"]), f(["Call Warg"]))).toBe("adds Poison");
   });
 });

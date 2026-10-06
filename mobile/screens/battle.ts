@@ -18,7 +18,7 @@
 // and Log. Every piece is in the DOM at any width and CSS picks the layout,
 // so crossing 1024px needs no redraw. The phone keeps its stacked rows.
 import { boardAt, type BoardState, type BoardUnit } from "../../src/board";
-import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView } from "../../src/mvp/contract";
+import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView, SummonContent } from "../../src/mvp/contract";
 import { chainCappedTip, STATUS_TERMS, termDef, termIcon, triggerLabel, type IconId, type TermId } from "../../src/glossary";
 import { beatPlayOf, causeOf, chainOf, damageByUnit, keyMomentsOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Cause, type Change, type KeyMoment, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
@@ -126,7 +126,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   // are unique (mvpPool), so the name finds one body. A revived unit keeps its own id.
   const summoned = new Map(log.flatMap((e) => (e.type === "Summon" && !e.resurrected && !units.has(e.unit) ? [[e.unit, summonById(a.content, summonId(e.name))] as const] : [])));
   const emojiOf = (id: string) => units.get(id)?.emoji ?? summoned.get(id)?.emoji ?? "✨";
-  const whenOf = whenLookup(units, a.content);
+  const whenOf = whenLookup(units, a.content, summoned);
   // The end card's numbers (R2-14).
   const damage = damageByUnit(log, name, sides);
   // Tagged names: the card colours each unit by its side, like the captions.
@@ -1204,7 +1204,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         : null,
       h("div", { class: "bv-trace-text mono", "data-testid": "trace-text" }, t.text),
       // R2-15: the whole chain, change first, back to the turn; a step's click shows its moment.
-      chain ? chainView(chain, { units, content: a.content, you, name, active: chainAt, onStep: seekEvent, rich: richCaption, tag: (sd) => sideTag(sd) }) : null,
+      chain ? chainView(chain, { units, summoned, content: a.content, you, name, active: chainAt, onStep: seekEvent, rich: richCaption, tag: (sd) => sideTag(sd) }) : null,
       chain ? h("div", { class: "dim bv-why-keys" }, isDesktop() ? "Click a step to see its moment; hover a highlighted word for its meaning." : "Tap a step to see its moment; hold a highlighted word for its meaning.") : null,
     ].filter((n): n is HTMLDivElement => n !== null);
   }
@@ -1413,10 +1413,11 @@ function viaText(via: string): string {
 
 /** The When a stamped firing answered (AbilityRef.when): a unit's from the
  * recipe it fought with, a status's from its def. */
-function whenLookup(units: Map<string, BattleUnit>, content: MvpContent): WhenOf {
+function whenLookup(units: Map<string, BattleUnit>, content: MvpContent, summoned: Map<string, SummonContent | undefined>): WhenOf {
   return (ref) => {
     if (ref.when === undefined) return undefined;
-    if (ref.status === undefined) return units.get(ref.unit)?.recipe.when[ref.when];
+    // A summoned body with an ability (Awoken Summoner's Warg) fires from its own form.
+    if (ref.status === undefined) return (units.get(ref.unit)?.recipe ?? summoned.get(ref.unit)?.form ?? undefined)?.when[ref.when];
     const def = content.statuses[ref.status];
     return def?.triggers?.[ref.when] ?? def?.abilities[ref.ability]?.whens?.[ref.when];
   };
@@ -1430,7 +1431,7 @@ function whenLookup(units: Map<string, BattleUnit>, content: MvpContent): WhenOf
  * included; a word's meaning is a long press (or a hover) away (R2-17).
  * With `rich` (names tagged by id) and `tag`, change and event steps read
  * like the captions: side tags, side-coloured names, highlighted terms. */
-function chainView(c: Chain, o: { units: Map<string, BattleUnit>; content: MvpContent; you: Side; name: (id: string) => string; active?: number | null; onStep?: (eventId: number) => void; rich?: (text: string) => Node[]; tag?: (side: Side) => HTMLElement }): HTMLElement {
+function chainView(c: Chain, o: { units: Map<string, BattleUnit>; summoned: Map<string, SummonContent | undefined>; content: MvpContent; you: Side; name: (id: string) => string; active?: number | null; onStep?: (eventId: number) => void; rich?: (text: string) => Node[]; tag?: (side: Side) => HTMLElement }): HTMLElement {
   const stepIcon = (n: ChainNode) => {
     const tone = n.kind === "firing" ? "tone-when" : n.kind === "root" ? "tone-gold" : "dim";
     let id = n.trigger ? termIcon(n.trigger as TermId, n.triggerStatus) : undefined;
@@ -1444,7 +1445,9 @@ function chainView(c: Chain, o: { units: Map<string, BattleUnit>; content: MvpCo
     const who = n.side ? (n.side === o.you ? "tone-ally" : "tone-enemy") : "";
     if (n.kind === "root") return [h("span", { class: "bv-step-text" }, n.text)];
     if (n.kind !== "firing") return [h("span", { class: "bv-step-text" }, ...tagOf(n), ...text(n.text))];
-    const u = o.units.get(n.unit ?? "");
+    const id = n.unit ?? "";
+    const s = o.summoned.get(id);
+    const u = o.units.get(id) ?? (s?.form ? { emoji: s.emoji, recipe: s.form } : undefined);
     // Scoped like the card says it: "Ally gets Shield", "Ally dies" (R3-19).
     const label = n.trigger ? triggerLabel(n.trigger as TermId, n.triggerStatus, n.triggerScope) : undefined;
     if (n.status) {

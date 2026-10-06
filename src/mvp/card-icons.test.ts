@@ -13,12 +13,19 @@ describe("card icon line (R3-4)", () => {
     expect(cardIcons(unit("Taser").forms.awoken, pool.abilities).map((c) => c.role)).toEqual(["when", "who", "does", "does"]);
   });
 
-  it("drops a repeated icon", () => {
+  it("drops a repeated icon within a role", () => {
     for (const u of pool.units)
       for (const f of ["sleeping", "awoken"] as const) {
-        const got = cardIcons(u.forms[f], pool.abilities).map((c) => c.icon);
+        const got = cardIcons(u.forms[f], pool.abilities).map((c) => `${c.role}:${c.icon}`);
         expect(new Set(got).size, `${u.name} ${f}`).toBe(got.length);
       }
+  });
+
+  it("keeps a Does that shares its icon with the When (R3-8: the Awoken's new part must show)", () => {
+    // {when: "Ally healed", who: it, does: ["Heal 1"]}
+    const got = cardIcons({ when: unit("Sanctifier").forms.sleeping.when, who: unit("Nurse").forms.sleeping.who, does: ["Heal 1"] }, pool.abilities);
+    expect(got.map((c) => c.role)).toEqual(["when", "who", "does"]);
+    expect(got[0]!.icon).toBe(got[2]!.icon);
   });
 
   it("marks whose event a trigger is with a pip, so Dies and Ally dies differ", () => {

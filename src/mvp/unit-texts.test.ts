@@ -60,18 +60,18 @@ describe("unit texts", () => {
     const awoken = (name: string) => pool.units.find((u) => u.name === name)!.forms.awoken;
     const [a, b] = [awoken("Fighter"), awoken("Taser")];
     // The When of the first, the Who of the second, the Does of both.
-    expect(formText({ when: a.when, who: b.who, does: [...a.does, ...b.does] }, pool.abilities)).toBe("Strikes: 3 damage, 1 Freeze and 2 damage to front enemy.");
+    expect(formText({ when: a.when, who: b.who, does: [...a.does, ...b.does] }, pool.abilities)).toBe("Strikes: 1 damage, 1 Freeze and 2 damage to front enemy.");
   });
 
   it("read as Maks's examples", () => {
     const text = (name: string, form: "sleeping" | "awoken") => formText(pool.units.find((u) => u.name === name)!.forms[form], pool.abilities);
     expect(text("Medic", "sleeping")).toBe("Turn end: heal all allies for 1.");
     expect(text("Taser", "awoken")).toBe("Battle start: 1 Freeze and 2 damage to front enemy.");
-    expect(text("Gardener", "awoken")).toBe("Ally summoned: 2 Vitality and 1 Strength to it.");
+    expect(text("Gardener", "awoken")).toBe("Ally summoned: 2 Vitality and 2 Shield to self.");
     expect(text("Spike", "sleeping")).toBe("Ally gets Shield: 1 damage to front enemy.");
     expect(text("Necromancer", "sleeping")).toBe("Ally dies: revive fallen ally at 2 HP.");
-    expect(text("Leech", "awoken")).toBe("Strikes: heal self for PWR, then 1 Strength to self.");
+    expect(text("Leech", "awoken")).toBe("Strikes: heal self for PWR, then 1 Shield to self.");
     expect(text("Rose", "sleeping")).toBe("Hit: 2 damage to front enemy.");
-    expect(text("Planter", "awoken")).toBe("Battle start: summon Treant (1/8), then 3 Vitality to self.");
+    expect(text("Planter", "awoken")).toBe("Battle start: summon Treant (1/8), then 2 Vitality and 2 Shield to self.");
   });
 });
