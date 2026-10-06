@@ -70,11 +70,18 @@ export interface Change {
 
 const CHANGE_TYPES = new Set(["Hurt", "Heal", "StatChanged", "StatusApplied", "Death", "Summon", "Silenced"]);
 
+/** A hit as a change reads: "−n", or for a hit that did nothing, what
+ * stopped it ("3 blocked" by Shield, or "no damage"), never "−0". */
+export function hurtLabel(amount: number, absorbed?: number): string {
+  if (amount > 0) return `−${amount}`;
+  return absorbed ? `${absorbed} blocked` : "no damage";
+}
+
 export function changeOf(e: BattleEvent): Change | null {
   if (!CHANGE_TYPES.has(e.type)) return null;
   switch (e.type) {
     case "Hurt":
-      return { eventId: e.id, unit: e.unit, kind: "damage", label: `−${e.amount}` };
+      return { eventId: e.id, unit: e.unit, kind: "damage", label: hurtLabel(e.amount, e.absorbed) };
     case "Heal":
       return { eventId: e.id, unit: e.unit, kind: "heal", label: `+${e.amount}` };
     case "StatChanged":
@@ -477,7 +484,9 @@ export function beatPlayOf(log: BattleEvent[], steps: Step[], name: NameOf = dis
     if (parent && first.type === "StatusRemoved") {
       parent.eventIds.push(...s.eventIds);
       parent.changes.push(...s.changes);
-      parent.caption += `, ${first.status} −${first.stacks}`;
+      // A Shield spent on a hit is already in its caption ("Shield blocks n", "(n absorbed)").
+      const spent = log[first.causedBy!];
+      if (!(first.status === "Shield" && spent?.type === "Hurt" && spent.absorbed)) parent.caption += `, ${first.status} −${first.stacks}`;
       for (const id of s.eventIds) byEvent.set(id, parent);
       continue;
     }
@@ -589,9 +598,11 @@ export function captionOf(log: BattleEvent[], id: number, name: NameOf = display
   switch (e.type) {
     case "Hurt": {
       const p = e.causedBy !== null ? log[e.causedBy] : undefined;
+      // A hit Shield took whole reads "Shield blocks n"; one that did nothing else, "no damage"; never "−0".
       const absorbed = e.absorbed ? ` (${e.absorbed} absorbed)` : "";
-      if (e.source === "kernel" && p?.type === "Strike") return `${name(p.striker)} strikes ${name(e.unit)} → −${e.amount}${absorbed}`;
-      return `${causeName(log, e, name)} → ${name(e.unit)} −${e.amount}${absorbed}`;
+      const effect = e.amount > 0 ? `−${e.amount}${absorbed}` : e.absorbed ? `Shield blocks ${e.absorbed}` : "no damage";
+      if (e.source === "kernel" && p?.type === "Strike") return `${name(p.striker)} strikes ${name(e.unit)} → ${effect}`;
+      return `${causeName(log, e, name)} → ${name(e.unit)} ${effect}`;
     }
     case "Heal":
       return `${causeName(log, e, name)} → ${name(e.unit)} +${e.amount}`;

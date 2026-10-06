@@ -161,17 +161,27 @@ button.link { align-self: flex-start; border: none; background: none; color: var
 .bv-card .stats.big .h { color: #3fdc8f; }
 .bv-card .stats.big .h.hurt { color: #ff6b4d; }
 .bv-card .stat-ic { display: none; margin-right: 1px; vertical-align: -1px; }
-.bv-card .foot { width: 100%; min-height: 16px; margin-top: auto; }
-.bv-sts { display: flex; flex-wrap: wrap; justify-content: center; gap: 1px 3px; min-height: 16px; max-height: 16px; overflow: hidden; }
-.bv-st { display: inline-flex; align-items: center; gap: 1px; font-family: "IBM Plex Mono", monospace; font-size: 11px; line-height: 16px; }
+.bv-card .foot { width: 100%; min-height: 27px; margin-top: auto; align-items: flex-end; }
+/* Statuses take up to two rows (six chips; battle.ts turns a seventh into "+n"),
+ * and the row keeps its height when empty. */
+.bv-sts { display: flex; flex-wrap: wrap; justify-content: center; align-content: flex-end; gap: 1px 2px; min-height: 27px; max-height: 27px; overflow: hidden; }
+.bv-st { display: inline-flex; align-items: center; gap: 0; font-family: "IBM Plex Mono", monospace; font-size: 10px; line-height: 13px; letter-spacing: -0.04em; }
+.bv-st .ic { width: 11px; height: 11px; }
 .bv-st b { font-weight: 700; }
-/* The trigger badge: [When icon] → [Does icon], over the card's top edge. */
-button.bv-badge { position: absolute; z-index: 3; top: -17px; left: 50%; transform: translateX(-50%); min-height: 0; height: 22px; padding: 0 5px; display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; border: 1px solid #ffbf47; border-radius: 11px; clip-path: none; background: color-mix(in srgb, #ffbf47 18%, var(--bg)); box-shadow: 0 0 8px color-mix(in srgb, #ffbf47 45%, transparent); text-transform: none; letter-spacing: 0; animation: bv-badge calc(0.3s / var(--bv-sp, 1)) ease-out calc(var(--bv-bt, 0s) / var(--bv-sp, 1)) both; }
+.bv-st.more { color: var(--dim); font-weight: 700; }
+.bv-nodmg { font-family: "Rajdhani", sans-serif; font-size: 12px; color: var(--dim); }
+/* The trigger badge: [When icon] → [Does icon], a pill just outside the
+ * card's outer edge (it covers nothing on the card), inside a 44 px tall
+ * transparent button so it's big enough to tap. The pill sits in the line's
+ * 12 px margin plus the screen's 12 px gap, so the board is no taller; the
+ * rest of the button lies over the side's label. */
+button.bv-badge { position: absolute; z-index: 3; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); min-height: 0; height: 44px; padding: 0; display: flex; align-items: flex-end; border: none; background: transparent; clip-path: none; text-transform: none; letter-spacing: 0; animation: bv-badge calc(0.3s / var(--bv-sp, 1)) ease-out calc(var(--bv-bt, 0s) / var(--bv-sp, 1)) both; }
+.bv-badge-pill { height: 20px; padding: 0 5px; display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; border: 1px solid #ffbf47; border-radius: 11px; background: color-mix(in srgb, #ffbf47 18%, var(--bg)); box-shadow: 0 0 8px color-mix(in srgb, #ffbf47 45%, transparent); }
 button.bv-badge.still { animation: none; }
 /* Your line's badges hang below the cards (the chip is on top), toward your label. */
-.bv-line.mine button.bv-badge { top: auto; bottom: -17px; }
-.bv-line.theirs { margin-top: 10px; }
-.bv-line.mine { margin-bottom: 10px; }
+.bv-line.mine button.bv-badge { bottom: auto; top: calc(100% + 4px); align-items: flex-start; }
+.bv-line.theirs { margin-top: 12px; }
+.bv-line.mine { margin-bottom: 12px; }
 .bv-badge-arrow { font-size: 11px; color: var(--dim); }
 @keyframes bv-badge { 0% { opacity: 0; transform: translateX(-50%) translateY(6px) scale(0.6); } 60% { opacity: 1; transform: translateX(-50%) scale(1.15); } 100% { opacity: 1; transform: translateX(-50%); } }
 /* The gold ring is drawn inside the border, over the padding: the acting card
@@ -187,10 +197,9 @@ button.bv-badge.still { animation: none; }
  * lunges at the other line, a hit card flashes and shakes, a caster pulses,
  * a dying card pops before it greys, and the wave's numbers rise and fade.
  * battle.ts sets --bv-t (movement) and --bv-ft (flash) to minus the wave's
- * age, so a re-render picks each animation up where it was. Floats sit at
- * --k (0–2) slots: −n / +n over the name, ±PWR smaller above it, clear of
- * the name and PWR / HP; a status doesn't float (its chip shows it). Change
- * the offsets here. */
+ * age, so a re-render picks each animation up where it was. Floats stack
+ * in --k (0–2) slots above the card; a status doesn't float (its chip shows
+ * it). Change the offsets here. */
 /* --bv-sp is the playback speed: at 2× every motion runs twice as fast, so a
  * beat change never cuts it. The delays are already speed-scaled (battle.ts). */
 .bv-card.bv-lunge-up { animation: bv-lunge-up calc(0.32s / var(--bv-sp, 1)) ease-out calc(var(--bv-t, 0s) / var(--bv-sp, 1)); }
@@ -204,13 +213,14 @@ button.bv-badge.still { animation: none; }
  * the pop after the shake; its fill holds back until then). */
 .bv-card.bv-dying { animation: bv-die calc(0.5s / var(--bv-sp, 1)) ease-out calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) forwards; }
 .bv-card.bv-hit.bv-dying { animation: bv-shake calc(0.34s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-t, 0s)) / var(--bv-sp, 1)), bv-die calc(0.5s / var(--bv-sp, 1)) ease-out calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) forwards; }
-/* Floats rise from the HP bar (a hit, a heal, a summon); ±PWR and ±HP rise
- * from the number they change, clear of the change chip and the name. */
-.bv-float { --k: 0; position: absolute; left: 0; right: 0; top: calc(50px + var(--k) * 12px); z-index: 2; pointer-events: none; font-family: "IBM Plex Mono", monospace; font-size: 18px; font-weight: 700; text-shadow: 0 0 4px var(--bg), 0 0 2px var(--bg); white-space: nowrap; overflow: hidden; animation: bv-rise calc(0.7s / var(--bv-sp, 1)) ease-out both; }
+/* Floats hang in the card's slot and rise above the card (as in the mockup),
+ * so the card's name and numbers stay readable while they change; they pass
+ * over a trigger badge for their 0.7 s. ±PWR sits over PWR's side, ±HP over HP's. */
+.bv-float { --k: 0; position: absolute; left: 0; right: 0; top: auto; bottom: calc(100% + 2px + var(--k) * 14px); z-index: 4; text-align: center; line-height: 20px; pointer-events: none; font-family: "IBM Plex Mono", monospace; font-size: 18px; font-weight: 700; text-shadow: 0 0 4px var(--bg), 0 0 2px var(--bg); white-space: nowrap; overflow: hidden; animation: bv-rise calc(0.7s / var(--bv-sp, 1)) ease-out both; }
 .bv-float.damage, .bv-float.debuff { color: var(--ghost); }
 .bv-float.heal, .bv-float.summon { color: var(--you); }
-.bv-float.buff, .bv-float.debuff { top: auto; bottom: calc(20px + var(--k) * 4px); font-family: "Rajdhani", sans-serif; font-size: 12px; font-weight: 700; line-height: 12px; animation-name: bv-rise-small; }
-/* A ±stat float is a small pill over the number it changes, readable on top of it. */
+.bv-float.buff, .bv-float.debuff { font-family: "Rajdhani", sans-serif; font-size: 12px; font-weight: 700; line-height: 12px; animation-name: bv-rise-small; }
+/* A ±stat float is a small pill. */
 .bv-float.buff, .bv-float.debuff { width: max-content; max-width: calc(100% - 4px); left: 50%; right: auto; translate: -50% 0; padding: 1px 3px; border-radius: 3px; background: var(--bg); }
 .bv-float.on-pwr { left: 2px; translate: none; }
 .bv-float.on-hp { left: auto; right: 2px; translate: none; }
@@ -221,7 +231,7 @@ button.bv-badge.still { animation: none; }
 @keyframes bv-shake { 20% { transform: translateX(-4px); } 40% { transform: translateX(4px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
 @keyframes bv-flash { from { opacity: 0.45; } to { opacity: 0; } }
 @keyframes bv-die { 0% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0.5; transform: none; } }
-@keyframes bv-rise { 0% { opacity: 0; transform: translateY(8px); } 12% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-22px); } }
+@keyframes bv-rise { 0% { opacity: 0; transform: translateY(8px); } 12% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
 @keyframes bv-rise-small { 0% { opacity: 0; transform: translateY(4px); } 12% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
 /* Reduced motion: nothing moves. The hit card gets a ring, a healed or
  * buffed one a soft one; the chips hold the numbers in place, and the

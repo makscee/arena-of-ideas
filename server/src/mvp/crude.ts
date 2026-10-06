@@ -89,14 +89,14 @@ const MASKS = [
   "scrap", // crap: Scrapper
   // Fantasy roots the R2-4b check found refused (51ad08c6), measured on namer-corpus.ts:
   "monger", // mong: Warmonger, Ironmonger, Fearmonger
-  "klance", "kland", // klan: Darklance, Dusklance, Blackland
-  "shta", "shte", "shth", "shti", "shto", "shtu", // sht: Ashthorn, Ashtalon, Marshtide, Fleshtearer, Brushtail, "Ash Titan" (not "shtr": Kingshtrat)
-  "titud", "tity", "titio", // tit: Fortitude, Altitude, Entity, Identity, Petition
-  "nogre", // nog: Moonogre, "Dragon Ogre"
+  "rklance", "sklance", "ackland", // klan: Darklance, Dusklance, Blackland (a letter before: never Klan+d…)
+  "ashth", "ashta", "ashti", "rshti", "eshte", "ushta", "ishti", // sht: Ashthorn, Ashtalon, "Ash Titan", Marshtide, Fleshtearer, Brushtail, Wishtide (only after these letters: never Sht… or Kingshtrat)
+  "titud", "ntity", "titio", // tit: Fortitude, Altitude, Entity, Identity, Petition
+  "onogre", // nog: Moonogre, "Dragon Ogre" (not Nogreaper)
   "egypt", // gyp: Egyptian
   "pervious", // perv: Impervious
   "pimpernel", // pimp: Pimpernel
-  "farth", // fart: Farthing
+  "farthing", "farther", "farthest", // fart: Farthing (not Farthead)
   "bump", // bum: Bump, Bumper
   "harass", "kvass", // ass: Harass, Kvass
 ];

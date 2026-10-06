@@ -339,7 +339,9 @@ try {
       await page.getByTestId("change").first().waitFor({ timeout: 15_000 });
       await shot("battle"); await noHScroll("battle"); await nameInRing("battle"); await noRates("battle");
       // R2-13: every living battle card has an HP bar and a status row of icons
-      // (no status words), and no chip reads "−0" (a blocked hit shows the Shield).
+      // (no status words) that fits its two rows, nothing reads "−0" (a blocked
+      // hit shows the Shield), and a caption colours each unit by its own line
+      // (a mirror match shares names).
       const anatomy = await page.evaluate(() => {
         const cards = [...document.querySelectorAll(".bv-card:not(.dead)")];
         return {
@@ -347,12 +349,19 @@ try {
           noBar: cards.filter((c) => !c.querySelector('[data-testid="hp-bar"]')).length,
           noRow: cards.filter((c) => !c.querySelector('[data-testid="card-statuses"]')).length,
           wordy: [...document.querySelectorAll('[data-testid="card-status"]')].filter((s) => !s.querySelector("svg")).length,
-          zero: [...document.querySelectorAll('[data-testid="change"]')].filter((c) => /−0\b/.test(c.textContent)).length,
+          zero: [...document.querySelectorAll('[data-testid="change"], [data-testid="caption"], .bv-past, .bv-still, .bv-float')].filter((c) => /[−-]0(?!\d)/.test(c.textContent)).length,
+          hiddenStatus: [...document.querySelectorAll('[data-testid="card-statuses"]')].flatMap((row) => [...row.children].filter((c) => c.getBoundingClientRect().bottom > row.getBoundingClientRect().bottom + 0.5)).length,
+          wrongSide: [...document.querySelectorAll(".bv-cn[data-unit]")].filter((n) => {
+            const line = document.querySelector(`.bv-line [data-unit="${CSS.escape(n.dataset.unit)}"]`)?.closest(".bv-line");
+            return line && line.classList.contains("mine") !== n.classList.contains("tone-ally");
+          }).length,
         };
       });
       if (!anatomy.cards || anatomy.noBar || anatomy.noRow) errors.push(`battle cards: ${JSON.stringify(anatomy)} (each needs an HP bar and a status row)`);
       if (anatomy.wordy) errors.push(`battle cards: ${anatomy.wordy} statuses without an icon`);
-      if (anatomy.zero) errors.push(`battle cards: ${anatomy.zero} chips read "−0"`);
+      if (anatomy.zero) errors.push(`battle: ${anatomy.zero} chips, captions or floats read "−0"`);
+      if (anatomy.hiddenStatus) errors.push(`battle cards: ${anatomy.hiddenStatus} statuses hidden below the status rows`);
+      if (anatomy.wrongSide) errors.push(`battle caption: ${anatomy.wrongSide} unit names in the other side's colour`);
       await page.getByTestId("change").first().click();
       await page.getByTestId("trace-text").waitFor();
       const chain = await page.getByTestId("trace-text").textContent();
@@ -377,6 +386,7 @@ try {
       await tap44("trace close", page.getByTestId("trace-close"));
       await tap44("trace close", page.getByTestId("trace-close"), "width");
       await tap44("past step", page.locator("button.bv-past"));
+      await tap44("trigger badge", page.getByTestId("trigger-badge"));
       if ((await page.getByTestId("caption-side").count()) === 0 && /→/.test(await page.getByTestId("caption").textContent())) errors.push("battle caption: no side tag on a unit's act");
       // A battle card (below its chip) opens the unit's sheet, which closes with Close.
       await page.getByTestId("trace-close").click();
