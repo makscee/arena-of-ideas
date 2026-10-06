@@ -182,9 +182,15 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
       expect(cleanModelName(raw), raw).not.toBeNull();
   });
 
-  it("refuses a crude root glued on behind another word, though its ordinary word alone passes", () => {
-    for (const raw of ["Noctscum", "Ashgrape", "Stormcanal", "Spaceinvader"]) expect(cleanModelName(raw), raw).toBeNull();
-    for (const raw of ["Scum", "Scumlord", "Grapeshot", "Canal Warden", "Encumber", "Invader"]) expect(cleanModelName(raw), raw).not.toBeNull();
+  it("refuses a crude word behind another word, glued or not, and keeps ordinary compounds", () => {
+    for (const raw of ["Noctscum", "Noctscumling", "Noct Scum", "Spaceinvader", "Space Invaders"]) expect(cleanModelName(raw), raw).toBeNull();
+    for (const raw of ["Scum", "Scumlord", "Grapeshot", "Canal Warden", "Encumber", "Invader", "Jolttherapist", "Soultherapist", "Bonescrape", "Mistdrape", "Vinegrape", "Ashgrape", "Firepeacock", "Stormcanal"])
+      expect(cleanModelName(raw), raw).not.toBeNull();
+  });
+
+  it("takes an apostrophe only as a possessive before a second word", () => {
+    for (const raw of ["Widow'sbloom", "Kel'thas", "O'Bloom", "Widow's"]) expect(cleanModelName(raw), raw).toBeNull();
+    expect(cleanModelName("Widow's Bloom")).toBe("Widow's Bloom");
   });
 
   it("finds a unit's whole name of 5+ letters inside a name", () => {
