@@ -92,7 +92,7 @@ Legend: **Always** = on screen without a tap. **Key** = the one thing that matte
 
 ### (c) Active form only. Mockup: `mockups/b-phone-compact.png` (middle and right)
 - The sheet shows **only the form the unit has now** (Sleeping, Awoken or Fused). There's no label when it's the only one.
-- A sleeping unit gets **"▸ See Awoken (1 more copy)"**. It swaps the text box to the Awoken form with a gold border and "AWOKEN · after copy 3", underlines what differs, and offers "◂ Back to Sleeping (now)". An awoken unit has no button: it's final until fused.
+- A sleeping unit gets **"▸ Awoken in 1 copy"** (R2-17: was "See Awoken (1 more copy)", two lines in the 1024px inspector). It swaps the text box to the Awoken form with a gold border and "AWOKEN · after copy 3", underlines what differs, and offers "◂ Back to Sleeping". An awoken unit has no button: it's final until fused.
 - The card itself already shows only the active state (pips vs AWOKEN). Keep that.
 - Offer sheet: same rule. When the buy would awaken, show "Awakens!" with the Awoken text as the main block (the preview *is* the active form after buying).
 - Fused unit: the fused text only, with "Made from Wire + Coach ▸" opening the parts.

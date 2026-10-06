@@ -55,8 +55,8 @@ const tag = t0.toString(36).slice(-5);
 const known = new Map<string, string>();
 for (let i = 0; i < runs; i++) {
   try {
-    // Five players take turns; a name is registered once (R2-17 refuses a
-    // taken one), tagged per invocation so a second pass at one server works.
+    // Five players take turns; each name is registered once, tagged per
+    // invocation so a second pass at one server plays as new players.
     const name = `bot-${i % 5}-${tag}`;
     player = known.get(name) ?? (await call<PlayerRef>("POST", "/players", { name })).id;
     known.set(name, player);

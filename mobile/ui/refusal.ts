@@ -15,3 +15,10 @@ export function plainRefusal(message: string): string {
   if (/no offer in slot/.test(m)) return "That offer is gone: the shop changed";
   return m.charAt(0).toUpperCase() + m.slice(1);
 }
+
+/** A refusal on a disabled Buy button, short enough for one line there (the
+ * phone sheet's Buy beside Close, the 1024px inspector): "Line full: sell or
+ * fuse first" reads "Full: sell or fuse". The error line keeps the long one. */
+export function buttonRefusal(text: string): string {
+  return /^Line full/.test(text) ? "Full: sell or fuse" : text;
+}

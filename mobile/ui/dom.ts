@@ -117,9 +117,12 @@ export function closable(...kids: Node[]): () => void {
 // A battle chip's label (a status's name runs long: "Strength ×1") shrinks too.
 const FIT = ".card .name, .bv-pill:not(.two), .bv-pill.two .bv-l";
 /** The smallest a fitted line goes. A card name (one line on a compact card)
- * stops at 10px and ends in an ellipsis; the sheet has the full name. */
+ * stops at 10px on a battle card, 9px on a line or shop card ("War Drummer",
+ * "Plague Doctor" on a 64px phone card, R2-17: two lines don't fit its
+ * height), and ends in an ellipsis; the sheet has the full name. */
 const MIN_PX = 8;
 const NAME_MIN_PX = 10;
+const CARD_NAME_MIN_PX = 9;
 
 /** Shrinks each card name (and battle chip) until it fits the card, measured,
  * not guessed from letter counts; one that still doesn't fit at the smallest
@@ -130,7 +133,7 @@ export function fitText(root: ParentNode = app): void {
     el.style.fontSize = "";
     el.classList.remove("clip");
     let px = parseFloat(getComputedStyle(el).fontSize);
-    const min = el.classList.contains("name") ? NAME_MIN_PX : MIN_PX;
+    const min = !el.classList.contains("name") ? MIN_PX : el.closest(".bv-card") ? NAME_MIN_PX : CARD_NAME_MIN_PX;
     while (el.scrollWidth > el.clientWidth + 0.5 && px > min) {
       px = Math.max(min, px - 0.5);
       el.style.fontSize = `${px}px`;
@@ -151,3 +154,5 @@ const queueFit = () => {
 new MutationObserver(queueFit).observe(app, { childList: true, subtree: true });
 addEventListener("resize", queueFit);
 void document.fonts?.ready.then(queueFit);
+// A name measured in a fallback font is cut wrongly: measure again once a font arrives.
+document.fonts?.addEventListener?.("loadingdone", queueFit);

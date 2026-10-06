@@ -9,7 +9,7 @@
 import type { BattleRecord, DayView, FightResult, HomeView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView } from "../src/mvp/contract";
 import { MVP_RULES, offersAt } from "../src/mvp/contract";
 import { mergeTarget } from "../src/mvp/forms";
-import { plainRefusal } from "./ui/refusal";
+import { buttonRefusal, plainRefusal } from "./ui/refusal";
 import { ApiError, api, savedPlayer } from "./api";
 import { getContent } from "./content";
 import { battleScreen, whyILost } from "./screens/battle";
@@ -263,7 +263,7 @@ function abandonSheet(run: RunView, why: "menu" | "new", onConfirm: () => void):
       : `Every heart left counts as a lost fight: ${run.hearts} losses, and your rating moves for them.`;
   const close = overlay(
     h("div", { class: "label" }, why === "new" ? `A run waits · ${crown ? "the Crown" : `round ${run.round} of ${rules.rounds}`}` : "Abandon run"),
-    h("p", { "data-testid": "abandon-text" }, `${why === "new" ? "Abandon it and start a new run? " : "End this run now? "}${cost}`),
+    h("p", { "data-testid": "abandon-text" }, `${why === "new" ? "Abandon this run? You'll see how it went, then start a new one. " : "End this run now? "}${cost}`),
     h(
       "div",
       { class: "row sheet-actions" },
@@ -308,16 +308,19 @@ setCodexLink((term, scope) => void openCodex({ tab: "keywords", term, scope }));
 
 /** The in-run menu (☰ in the HUD, Esc on desktop): Resume, Codex, Rules,
  * Title menu (the run waits on the server; Continue brings it back) and
- * Abandon run with one confirm, which ends on the run-over screen. */
-function runMenu(run: RunView, content: MvpContent, err: HTMLElement): void {
+ * Abandon run with one confirm, which ends on the run-over screen. `fought`:
+ * on the result screen, the fight just shown, whose round the label names
+ * (the run itself has moved on to the next one). */
+function runMenu(run: RunView, content: MvpContent, err: HTMLElement, fought?: FightResult): void {
   if (app.querySelector('[data-testid="run-menu"]')) return;
-  const crown = run.round > rules.rounds;
+  const round = fought ? fought.round : run.round;
+  const crown = fought ? fought.kind === "crown" : round > rules.rounds;
   const codex = button("Codex", () => (close(), void guarded(err, () => openCodex())), "", "menu-codex");
   const close = overlay(
     h(
       "div",
       { class: "stack run-menu", "data-testid": "run-menu" },
-      h("div", { class: "label" }, run.phase === "over" ? "Run · over" : crown ? "Run · the Crown" : `Run · round ${run.round} of ${rules.rounds}`),
+      h("div", { class: "label" }, run.phase === "over" ? "Run · over" : crown ? "Run · the Crown" : `Run · round ${round} of ${rules.rounds}`),
       button("Resume", () => close(), "primary", "menu-resume"),
       codex,
       button("Rules", () => (close(), closable(rulesSheet())), "", "menu-rules"),
@@ -536,7 +539,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       void offerBody(o).then(
         ({ sheet, blocked }) => {
           if (inspected !== key) return;
-          const buy = button(blocked || `Buy ${o.cost}g · ${n + 1}`, () => void decide({ kind: "buy", slot: o.slot }), "primary grow", "buy");
+          const buy = button(buttonRefusal(blocked) || `Buy ${o.cost}g · ${n + 1}`, () => void decide({ kind: "buy", slot: o.slot }), "primary grow", "buy");
           buy.disabled = blocked !== "";
           inspector.replaceChildren(head, sheet, h("div", { class: "row" }, buy));
           ratesToFoot();
@@ -698,7 +701,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const offerSheet = (o: Offer) =>
     guarded(err, async () => {
       const { sheet, blocked } = await offerBody(o);
-      const buy = button(blocked || `Buy ${o.cost}g`, () => (close(), void decide({ kind: "buy", slot: o.slot })), "primary grow", "buy");
+      const buy = button(buttonRefusal(blocked) || `Buy ${o.cost}g`, () => (close(), void decide({ kind: "buy", slot: o.slot })), "primary grow", "buy");
       buy.disabled = blocked !== "";
       const close = overlay(sheet, h("div", { class: "row sheet-actions" }, button("Close", () => close(), "", "offer-close"), buy));
     });
@@ -937,7 +940,7 @@ function resultScreen(run: RunView, fight: FightResult, battle: BattleRecord, co
   const why = fight.outcome === "loss" ? whyILost(battle, content, "A") : null;
   const err = errorLine();
   // ☰ as in the shop (Esc on desktop): Codex, Rules, Title menu, Abandon.
-  const menuBtn = button("☰", () => runMenu(run, content, err), "menu-btn", "menu-open");
+  const menuBtn = button("☰", () => runMenu(run, content, err, fight), "menu-btn", "menu-open");
   menuBtn.setAttribute("aria-label", "Menu");
   if (isDesktop()) menuBtn.title = "Menu (Esc)";
   show(
@@ -972,7 +975,7 @@ function resultScreen(run: RunView, fight: FightResult, battle: BattleRecord, co
   // Desktop: Enter or Space moves on, R replays, Esc opens the menu.
   onKeys((e) => {
     if (app.querySelector(".overlay")) return e.key === "Escape" ? (app.querySelector(".overlay")!.remove(), true) : false;
-    if (e.key === "Escape") return runMenu(run, content, err), true;
+    if (e.key === "Escape") return runMenu(run, content, err, fight), true;
     if (e.key === "Enter" || e.key === " ") return shopScreen(run, content), true;
     if (e.key.toLowerCase() === "r") return battleScreen({ battle, content, you: "A", fight, run, onDone: () => resultScreen(run, fight, battle, content) }), true;
     return false;
