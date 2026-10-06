@@ -119,6 +119,7 @@ const BLOCKED_STEMS = [
   "diablo", "starcraft", "kerrigan", "protoss", "skyrim", "dovahkiin", "tamriel", "sephiroth", "chocobo",
   "moogle", "aerith", "metalgear", "cuphead", "undertale",
   "terraria", "amogus", "roblox", "genshin", "paimon", "malenia", "dragonborn",
+  "mindflayer", "illithid", "drizzt", "wrathion",
   // film, tv, books, comics
   "gandalf", "frodo", "bilbo", "sauron", "gollum", "smeagol", "aragorn", "legolas", "gimli", "saruman", "mordor", "hobbit", "balrog",
   "darth", "skywalker", "chewbacca", "chewie", "kenobi", "obiwan", "palpatine", "stormtrooper", "grogu", "mandalorian",
@@ -128,7 +129,7 @@ const BLOCKED_STEMS = [
   "thanos", "wolverine", "deadpool",
   "godzilla", "kingkong", "xenomorph", "dracula", "frankenstein", "007",
   "naruto", "sasuke", "totoro", "gundam", "ultraman", "megatron",
-  "spongebob", "squidward", "garfield", "snoopy", "scooby", "simpson", "smurf", "barbie", "pinkie",
+  "spongebob", "squidward", "garfield", "snoopy", "scooby", "simpson", "smurf", "barbie", "pinkie", "ratbert", "dilbert",
   "atreides", "harkonnen", "khaleesi", "targaryen", "lannister", "westeros", "dothraki",
   // pretending to be official, or spam
   "vader", "yoda", "jedi", "snape", "dobby", "pudge", "zerg", "goku", "optimus", "hulk",
