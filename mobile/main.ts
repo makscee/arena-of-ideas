@@ -8,6 +8,8 @@
 // now" under "Dev". The shop's ☰ (Esc on desktop) is the in-run menu.
 import type { BattleRecord, DayView, FightResult, HomeView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView } from "../src/mvp/contract";
 import { MVP_RULES, offersAt } from "../src/mvp/contract";
+import { mergeTarget } from "../src/mvp/forms";
+import { plainRefusal } from "./ui/refusal";
 import { ApiError, api, savedPlayer } from "./api";
 import { getContent } from "./content";
 import { battleScreen, whyILost } from "./screens/battle";
@@ -40,7 +42,7 @@ async function guarded(err: HTMLElement, fn: () => Promise<void>): Promise<void>
       api.forget();
       return nameScreen();
     }
-    err.textContent = e instanceof Error ? e.message : String(e);
+    err.textContent = e instanceof ApiError && e.status === 409 ? plainRefusal(e.message) : e instanceof Error ? e.message : String(e);
   } finally {
     busy = false;
     app.classList.remove("busy");
@@ -65,7 +67,7 @@ const openSheet = (u: Parameters<typeof unitSheet>[0], content: MvpContent) => (
 
 /** A line of cards, each opening its unit sheet. */
 function team(line: LineUnit[], side: "you" | "ghost", content: MvpContent, testid = ""): HTMLElement {
-  return h("div", { class: "slots", ...(testid ? { "data-testid": testid } : {}) }, ...line.map((u) => card(u, { side, onOpen: openSheet(u, content) })));
+  return h("div", { class: "slots", ...(testid ? { "data-testid": testid } : {}) }, ...line.map((u) => card(u, { side, extra: [copiesBadge(u)], onOpen: openSheet(u, content) })));
 }
 
 /** A hint's verb: "Tap" on the phone, "Click" on a desktop. */
@@ -627,6 +629,20 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       );
     });
 
+  /** Why an offer can't be bought now, decided here so no request goes out
+   * (a full line used to cost a 409 on every preview); "" when it can. */
+  const buyBlock = (o: Offer): string => {
+    if (run.gold < o.cost) return `Needs ${o.cost}g`;
+    if (run.line.length >= rules.lineSize && mergeTarget(run.line, o.unitId) < 0) return "Line full: sell or fuse first";
+    return "";
+  };
+  /** Desktop's double-click and number keys: a blocked offer says why instead of asking the server. */
+  const buy = (o: Offer) => {
+    const why = buyBlock(o);
+    if (why) return void (err.textContent = why);
+    void decide({ kind: "buy", slot: o.slot });
+  };
+
   /** An offer's sheet: its form, and what buying it does to your line;
    * `blocked` says why it can't be bought now ("" when it can). The buy's dry
    * run is asked once per offer a shop (hovering on desktop asks again and
@@ -636,7 +652,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const buyPreview = (o: Offer) => api.preview(run.runId, { kind: "buy", slot: o.slot }).catch((e: unknown) => (e instanceof ApiError && e.status === 409 ? e : Promise.reject(e)));
   const offerBody = async (o: Offer): Promise<OfferBody> => {
     const u = unitOf(o.unitId);
-    const affordable = run.gold >= o.cost;
+    let blocked = buyBlock(o);
+    const affordable = blocked === "";
     let ask = previews.get(o.slot);
     if (affordable && !ask) {
       ask = buyPreview(o);
@@ -647,8 +664,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     let after: HTMLElement | null = null;
     // A unit you own: the sheet shows your copy, from now to after buying.
     let mine: { now: LineUnit; next: LineUnit } | null = null;
-    let blocked = affordable ? "" : `Needs ${o.cost}g`;
-    if (res instanceof ApiError) blocked = /line is full/i.test(res.message) ? "Line full: sell or fuse first" : "Can't buy this now";
+    if (res instanceof ApiError) blocked = plainRefusal(res.message);
     else if (res) {
       const before = new Map(run.line.map((x) => [x.uid, x]));
       const changed = res.run.line.find((x) => !before.has(x.uid) || before.get(x.uid)!.copies !== x.copies);
@@ -659,7 +675,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         after = h("div", { class: `stack after${was && was.form !== changed.form ? " awakens" : ""}`, "data-testid": "buy-preview" }, h("div", { class: "label" }, label), h("div", { class: "preview-card" }, card(changed, { side: "you", extra: [copiesBadge(changed)] })));
       }
     }
-    // Without a preview (no gold), an owned unit still shows your copy as it is.
+    // Without a preview (no gold, a full line), an owned unit still shows your copy as it is.
     const owned = mine ? null : run.line.find((x) => x.kind === "unit" && x.unitId === o.unitId) ?? null;
     const sheet = mine ? unitSheet(mine.next, content, { from: mine.now.stats }) : owned ? unitSheet(owned, content) : u ? unitSheet(u, content) : h("h2", {}, o.unitId);
     // What buying does goes inside the sheet, above its last line (the rates hint).
@@ -681,7 +697,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     ...run.offers.map((o: Offer) => {
       const u = unitOf(o.unitId);
       const cu: CardUnit = { unitId: o.unitId, emoji: u?.emoji ?? "?", name: u?.name ?? o.unitId, stats: u?.base ?? { pwr: 0, hp: 0 }, ...(u ? { recipe: u.forms.sleeping } : {}) };
-      const owned = run.line.find((x) => x.unitId === o.unitId || x.fusion?.second === o.unitId);
+      const owned = mergeTarget(run.line, o.unitId) >= 0;
       const c = card(cu, { side: "you", tier: o.tier, extra: [h("div", { class: "cost" }, owned ? `${o.cost}g ＋` : `${o.cost}g`)], testid: `offer-${o.slot}` });
       if (run.gold < o.cost) c.classList.add("poor");
       if (owned) c.classList.add("owned");
@@ -693,7 +709,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
           if (pick.mode === "picked") pick = { mode: "none" };
           renderLine();
         });
-        c.addEventListener("dblclick", () => void decide({ kind: "buy", slot: o.slot }));
+        c.addEventListener("dblclick", () => buy(o));
         desktopCard(c, { kind: "offer", slot: o.slot });
       }
       return c;
@@ -730,9 +746,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   menuBtn.setAttribute("aria-label", "Menu");
   if (desk) menuBtn.title = "Menu (Esc)";
 
+  // The number keys in plain words: "1–6 buy the offer with that number".
+  const n = Math.min(7, run.offers.length);
+  const numberKeys = n === 0 ? [] : n === 1 ? [kbd("1"), " buys the offer · "] : [kbd("1"), "–", kbd(String(n)), " buy the offer with that number · "];
   const keysLine =
     desk && !crown
-      ? h("div", { class: "dim small keys", "data-testid": "keys" }, "Hover a card to read it → · click selects · drag reorders · double-click buys · ", kbd("1"), "–", kbd(String(Math.min(7, Math.max(1, run.offers.length)))), " buy · ", kbd("R"), " reroll · ", kbd("Space"), " fight · ", kbd("←"), kbd("→"), " move · ", kbd("F"), " fuse · ", kbd("S"), " sell · ", kbd("Esc"), " menu")
+      ? h("div", { class: "dim small keys", "data-testid": "keys" }, "Hover a card to read it → · click selects · drag reorders · double-click buys · ", ...numberKeys, kbd("R"), " reroll · ", kbd("Space"), " fight · ", kbd("←"), kbd("→"), " move · ", kbd("F"), " fuse · ", kbd("S"), " sell · ", kbd("Esc"), " menu")
       : null;
   show(
     h(
@@ -802,7 +821,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     if (crown) return false;
     if (/^[1-7]$/.test(k)) {
       const o = run.offers[Number(k) - 1];
-      if (o) void decide({ kind: "buy", slot: o.slot });
+      if (o) buy(o);
       return true;
     }
     if (k === "r") {
