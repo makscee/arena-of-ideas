@@ -317,8 +317,10 @@ function keywordsTab(content: MvpContent): HTMLElement {
 function landOn(body: HTMLElement, id: TermId): void {
   const el = [...body.querySelectorAll<HTMLElement>(".kw-row")].find((r) => r.dataset.term === id);
   if (!el) return;
+  // Now (the row is laid out), and once more after the next frame's fitText.
+  el.scrollIntoView({ block: "center" });
   el.classList.add("landed");
-  requestAnimationFrame(() => el.scrollIntoView({ block: "center" }));
+  requestAnimationFrame(() => el.isConnected && el.scrollIntoView({ block: "center" }));
 }
 
 // ---------- credits ----------
