@@ -87,6 +87,18 @@ const MASKS = [
   "knobbl", // knob: Knobble
   "sexton", "sextant", // sex
   "scrap", // crap: Scrapper
+  // Fantasy roots the R2-4b check found refused (51ad08c6), measured on namer-corpus.ts:
+  "monger", // mong: Warmonger, Ironmonger, Fearmonger
+  "klance", "kland", // klan: Darklance, Dusklance, Blackland
+  "shta", "shte", "shth", "shti", "shto", "shtu", // sht: Ashthorn, Ashtalon, Marshtide, Fleshtearer, Brushtail, "Ash Titan" (not "shtr": Kingshtrat)
+  "titud", "tity", "titio", // tit: Fortitude, Altitude, Entity, Identity, Petition
+  "nogre", // nog: Moonogre, "Dragon Ogre"
+  "egypt", // gyp: Egyptian
+  "pervious", // perv: Impervious
+  "pimpernel", // pimp: Pimpernel
+  "farth", // fart: Farthing
+  "bump", // bum: Bump, Bumper
+  "harass", "kvass", // ass: Harass, Kvass
 ];
 
 // Whole real words that may be a name on their own though they hold a stem
