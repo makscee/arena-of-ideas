@@ -163,7 +163,7 @@ try {
   await trig.click();
   const both = await page.getByTestId("codex-unit").count();
   if (both === 0 || both > tier3) errors.push(`codex: tier 3 + a trigger shows ${both} of ${tier3}`);
-  for (const t of await page.getByTestId("codex-unit").locator(".tier").allTextContents()) if (t !== "●●●") errors.push(`codex: a tier-${t.length} unit under tier 3`);
+  for (const t of await page.getByTestId("codex-unit").locator(".tier").allTextContents()) if (t !== "III") errors.push(`codex: a tier-${t} unit under tier III`);
   await shot("codex-filtered"); await noHScroll("codex-filtered");
   // A filter tap redraws in place: the window keeps its scroll.
   await page.evaluate(() => window.scrollTo(0, 120));

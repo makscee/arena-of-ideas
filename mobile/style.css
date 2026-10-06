@@ -51,9 +51,9 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .card .name { font-size: 12px; font-weight: 600; line-height: 14px; width: 100%; white-space: nowrap; overflow: hidden; }
 .card .name.clip { text-overflow: ellipsis; }
 .card.fused .emoji { font-size: 15px; padding-left: 12px; white-space: nowrap; letter-spacing: -0.08em; }
-/* Top left: the trigger icon (what wakes it); top right: an offer's tier. */
+/* Top left: the trigger icon (what wakes it); top right: an offer's tier, I-IV. */
 .card .trig { position: absolute; top: 3px; left: 4px; line-height: 0; }
-.card .tier { position: absolute; top: 4px; right: 4px; font-size: 5px; line-height: 6px; letter-spacing: 1px; color: var(--dim); }
+.card .tier { position: absolute; top: 4px; right: 4px; font-family: "Chakra Petch", sans-serif; font-size: 8px; line-height: 9px; font-weight: 600; letter-spacing: 1px; color: var(--dim); }
 .card .foot { min-height: 12px; display: flex; align-items: center; justify-content: center; max-width: 100%; }
 .discovered { font-size: 10px; color: var(--dim); font-family: "IBM Plex Mono", monospace; }
 .card .stats { font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600; line-height: 14px; }
@@ -465,7 +465,7 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
   #app[data-screen] .card .foot { min-height: 18px; }
   #app[data-screen] .card .trig { top: 7px; left: 8px; }
   #app[data-screen] .card .trig svg { width: 18px; height: 18px; }
-  #app[data-screen] .card .tier { top: 8px; right: 8px; font-size: 8px; line-height: 9px; }
+  #app[data-screen] .card .tier { top: 8px; right: 8px; font-size: 11px; line-height: 12px; }
   #app[data-screen] .card.fused .emoji { font-size: 30px; padding-left: 0; }
   #app[data-screen] .card:not(.empty):hover { border-color: var(--you); }
   #app[data-screen] .preview-card { width: var(--cw); margin: 0; }

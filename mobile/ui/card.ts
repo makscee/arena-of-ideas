@@ -28,10 +28,17 @@ export interface CardOptions {
    * unit lit. With maxHp (R2-13) the card adds an HP bar and draws PWR and HP
    * big, each with its icon, HP red once the unit is hurt. */
   live?: { stats: Stats; maxHp?: number; dead?: boolean; acting?: boolean };
-  /** An offer's tier, drawn as dots top-right. */
+  /** An offer's tier, drawn as a Roman numeral top-right. */
   tier?: number;
   /** Tapping the card opens this, usually overlay(unitSheet(...)). */
   onOpen?: () => void;
+}
+
+const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+
+/** A tier as players see it everywhere (R3-3): 1-10 as I-X; anything else as digits. */
+export function roman(n: number): string {
+  return ROMAN[n - 1] ?? `${n}`;
 }
 
 export function card(u: CardUnit, o: CardOptions): HTMLElement {
@@ -40,7 +47,7 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
     "div",
     { class: `card ${o.side}`, ...(o.testid ? { "data-testid": o.testid } : {}) },
     triggerMark(u.recipe),
-    o.tier ? h("span", { class: "tier", "aria-label": `tier ${o.tier}` }, "●".repeat(o.tier)) : null,
+    o.tier ? h("span", { class: "tier", "aria-label": `tier ${o.tier}` }, roman(o.tier)) : null,
     h("div", { class: "emoji" }, u.emoji),
     // One line; ui/dom.ts fitText() shrinks a long name a little, then cuts it.
     h("div", { class: "name", title: u.name }, u.name),
@@ -169,7 +176,7 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
   return h(
     "div",
     { class: "stack", "data-testid": "unit-sheet" },
-    h("div", { class: "row spread sheet-head" }, h("h2", {}, `${u.emoji} ${u.name}`), h("span", { class: "dim small", "data-testid": "sheet-state" }, "stats" in u ? sheetState(u) : `Sleeping · tier ${u.tier}`)),
+    h("div", { class: "row spread sheet-head" }, h("h2", {}, `${u.emoji} ${u.name}`), h("span", { class: "dim small", "data-testid": "sheet-state" }, "stats" in u ? sheetState(u) : `Sleeping · Tier ${roman(u.tier)}`)),
     "forms" in u ? null : discoveredLine(u, { preview: opts.preview ?? false }),
     "stats" in u ? statsLine(u.stats) : h("div", { class: "num" }, `${u.base.pwr} PWR / ${u.base.hp} HP`),
     opts.from ? h("div", { class: "dim small" }, "Your copy now → after buying") : null,
