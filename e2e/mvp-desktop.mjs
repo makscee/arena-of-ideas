@@ -191,9 +191,65 @@ try {
   if (!dragged) errors.push("never had two units to drag");
   if (round < 2) errors.push(`only ${round} fights`);
 
+  // Awaken and fuse with keys and mouse: a second player plays through the
+  // API (as in mvp-phone) until it has one Awoken unit and the copy that
+  // awakens a second in the shop; the page buys it with its number key,
+  // selects the first, F, clicks the second, and fuses in the inspector.
+  const call = async (method, path, body, pid) => {
+    const res = await fetch(new URL(`api/v1${path}`, url), { method, headers: { "content-type": "application/json", ...(pid ? { "X-Arena-Player": pid } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
+    const json = await res.json();
+    if (!res.ok) throw new Error(`${method} ${path}: ${json.error}`);
+    return json;
+  };
+  const fuser = await call("POST", "/players", { name: "DeskFuser" });
+  let run = await call("POST", "/runs", undefined, fuser.id);
+  const ready = (r) => r.phase === "shop" && r.gold >= 3 && r.line.some((u) => u.kind === "unit" && u.form === "awoken") && r.line.some((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === 2 && r.offers.some((o) => o.unitId === u.unitId));
+  for (let steps = 0; steps < 3000 && !ready(run); steps++) {
+    if (run.phase === "over") { run = await call("POST", "/runs", undefined, fuser.id); continue; }
+    const dupe = run.offers.find((o) => run.line.some((u) => u.unitId === o.unitId && u.kind === "unit" && u.form === "sleeping"));
+    const want = dupe ?? (run.line.length < 5 ? run.offers[0] : undefined);
+    const d = run.phase === "crown" ? { kind: "fight" } : want && run.gold >= want.cost ? { kind: "buy", slot: want.slot } : run.gold >= 1 ? { kind: "reroll" } : { kind: "fight" };
+    run = (await call("POST", `/runs/${run.runId}/decisions`, d, fuser.id)).run;
+  }
+  if (!ready(run)) errors.push(`fusion setup: never reached two Awoken units (phase ${run.phase}, round ${run.round})`);
+  else {
+    await page.evaluate((p) => localStorage.setItem("arena.player", JSON.stringify(p)), fuser);
+    await page.reload();
+    await page.getByTestId("play").click();
+    await page.getByTestId("fight").waitFor();
+    const almost = run.line.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === 2 && run.offers.some((o) => o.unitId === u.unitId));
+    const key = run.offers.findIndex((o) => o.unitId === almost.unitId) + 1;
+    // Hovering the offer shows "Awakens!" in the inspector.
+    await page.getByTestId(`offer-${run.offers[key - 1].slot}`).hover();
+    await page.getByTestId("inspector").getByTestId("buy-preview").waitFor();
+    if (!/Awakens/.test(await page.getByTestId("inspector").getByTestId("buy-preview").textContent())) errors.push("awaken preview: no 'Awakens!' in the inspector");
+    await shot("awaken-preview");
+    await page.mouse.move(5, H - 5);
+    await page.keyboard.press(String(key));
+    await page.getByTestId("hint").filter({ hasText: "fuse" }).waitFor();
+    const first = run.line.findIndex((u) => u.form === "awoken");
+    const second = run.line.findIndex((u) => u.uid === almost.uid);
+    await page.getByTestId(`line-${first}`).click();
+    await page.getByTestId("inspector").getByTestId("fuse").waitFor();
+    await page.keyboard.press("f");
+    await page.locator(".card.fusable").first().waitFor();
+    await shot("fuse-pick");
+    await page.getByTestId(`line-${second}`).click();
+    await page.getByTestId("inspector").getByTestId("fuse-preview").waitFor();
+    await noOverlay("fusion preview");
+    await shot("fusion-preview");
+    await page.getByTestId("preview-confirm").click();
+    await page.locator(".card.fused").waitFor();
+    await page.locator(".card.fused").hover();
+    await page.getByTestId("inspector").getByTestId("unit-sheet").waitFor();
+    if (!/discovered by (you|@\S+)/.test(await page.getByTestId("inspector").textContent())) errors.push("fused: no discovery credit in the inspector");
+    await shot("fused");
+  }
+
   // 1024px is still desktop (120px cards, 340px inspector, nothing cut off); 1023px is the phone.
+  // (The shop is on screen: the fusion run's, or a new run's when that setup failed.)
   await page.setViewportSize({ width: 1024, height: 768 });
-  await page.getByTestId("play").click();
+  if (await page.getByTestId("play").count()) await page.getByTestId("play").click();
   await page.getByTestId("fight").waitFor();
   await shot("shop-1024");
   if (!(await page.getByTestId("inspector").count())) errors.push("1024px: no inspector");

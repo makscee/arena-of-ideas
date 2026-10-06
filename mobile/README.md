@@ -23,8 +23,15 @@ Files and owners:
 | `npm run mvp:build` | builds `mobile/dist` |
 | `npm run mvp:bot -- --runs 50 [--url …/arena]` | 50 full runs through the HTTP API, fails on any error |
 | `npm run mvp:phone [-- --url …/arena/]` | a whole game in Chromium at 360×640, screenshots in `e2e/.shots/mvp`; without `--url` (its own local server) it also plays the champion's own Crown (`e2e/mvp-own-crown.ts`), a `--url` run skips that |
-| `npm run mvp:check` | typecheck, tests, the bot and the phone run |
+| `npm run mvp:desktop [-- --url …/arena/]` | a whole run at 1440×900 with mouse and keys only (hover, double-click, drag, 1–7, R, Space, ← →, F, S, Esc, Enter), awaken and fuse in the inspector, then the 1024px and 1023px edges; screenshots in `e2e/.shots/mvp-desktop` |
+| `npm run mvp:check` | typecheck, tests, the bot, the phone run and the desktop run |
 | `npm run mvp:redeploy [-- <branch>] [--fresh]` | redeploys the m1 test instance (default `mission-574-mvp`; usually `mvp-live`, the last checked build). It holds real players' data now: `--fresh` (an empty world) needs `ARENA_MVP_WIPE=1` and Maks's word |
+
+Desktop (round 2, R2-9): at 1024px and wider a screen that calls
+`screen(name)` (ui/dom.ts) gets its desktop layout from style.css; the shop
+also swaps its pop-up sheets for an inspector on the right and takes keys
+(`onKeys`). Below 1024px, and on screens without a name (the name screen, the
+battle until R2-16), it is the phone column.
 
 Test instance: https://m1.twin-pogona.ts.net/arena/ (tailnet only). It is a
 launchd agent `ru.makscee.arena-mvp` in `~/arena-mvp` on m1, log in
