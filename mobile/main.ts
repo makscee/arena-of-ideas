@@ -86,20 +86,32 @@ function team(line: LineUnit[], side: "you" | "ghost", content: MvpContent, test
 function soundRow(): HTMLElement {
   const toggle = button("", () => setSound({ on: !soundSettings().on }), "sound-toggle", "sound-toggle");
   const volume = h("input", { type: "range", min: "0", max: "100", step: "5", "aria-label": "Volume", "data-testid": "sound-volume" });
-  const sync = (s = soundSettings()) => {
-    toggle.textContent = s.on ? "🔊 Sound on" : "🔇 Sound off";
-    toggle.setAttribute("aria-pressed", String(s.on));
-    volume.value = String(Math.round(s.volume * 100));
-    volume.disabled = !s.on;
-  };
   volume.addEventListener("input", () => setSound({ volume: Number(volume.value) / 100 }));
   volume.addEventListener("change", () => play("click"));
   const row = h("div", { class: "row sound-row", "data-testid": "sound-row" }, toggle, volume);
-  sync();
-  // A row set aside (the Codex over Home) still follows M; one thrown away stops listening.
+  syncSoundRow(row);
+  // A row set aside (the Codex over Home) still follows M; one thrown away
+  // stops listening. The listener holds the row only by its WeakRef (no
+  // toggle or slider, whose parentNode would keep it alive), so a thrown-away
+  // row is freed and its listener goes at the next change.
   const ref = new WeakRef(row);
-  const off = onSoundChange((s) => (ref.deref() ? sync(s) : off()));
+  const off = onSoundChange((s) => {
+    const r = ref.deref();
+    if (r) syncSoundRow(r, s);
+    else off();
+  });
   return row;
+}
+
+/** Draws a Sound row's toggle and slider from the settings. */
+function syncSoundRow(row: HTMLElement, s = soundSettings()): void {
+  const toggle = row.querySelector<HTMLButtonElement>('[data-testid="sound-toggle"]');
+  const volume = row.querySelector<HTMLInputElement>('[data-testid="sound-volume"]');
+  if (!toggle || !volume) return;
+  toggle.textContent = s.on ? "🔊 Sound on" : "🔇 Sound off";
+  toggle.setAttribute("aria-pressed", String(s.on));
+  volume.value = String(Math.round(s.volume * 100));
+  volume.disabled = !s.on;
 }
 
 /** A hint's verb: "Tap" on the phone, "Click" on a desktop. */
