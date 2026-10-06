@@ -259,7 +259,7 @@ describe("one beat at a time (R2-12)", () => {
     const wave = beatPlayOf(log, stepsOf(log)).flatMap((b) => b.waves).find((w) => w.eventIds.includes(fade.id))!;
     expect(wave.eventIds[0]).toBe(fade.causedBy);
     // Shield took the whole hit: the caption shows the block, never "−0".
-    expect(wave.caption).toBe("Dummy strikes Bulwark → Shield blocks 1, Shield −1");
+    expect(wave.caption).toBe("Dummy strikes Bulwark → Shield blocks 1");
     expect(wave.changes.find((c) => c.kind === "damage")?.label).toBe("1 blocked");
   });
 

@@ -357,7 +357,9 @@ export function beatPlayOf(log: BattleEvent[], steps: Step[], name: NameOf = dis
     if (parent && first.type === "StatusRemoved") {
       parent.eventIds.push(...s.eventIds);
       parent.changes.push(...s.changes);
-      parent.caption += `, ${first.status} −${first.stacks}`;
+      // A Shield spent on a hit is already in its caption ("Shield blocks n", "(n absorbed)").
+      const spent = log[first.causedBy!];
+      if (!(first.status === "Shield" && spent?.type === "Hurt" && spent.absorbed)) parent.caption += `, ${first.status} −${first.stacks}`;
       for (const id of s.eventIds) byEvent.set(id, parent);
       continue;
     }
