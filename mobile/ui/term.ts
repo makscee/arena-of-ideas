@@ -150,7 +150,21 @@ function termButton(seg: DescribeSegment, info: TermDef & { id: TermId }, kids: 
     if (isDesktop()) openTermPopover(b, info);
     else openTermSheet(info);
   });
-  b.addEventListener("pointerenter", (e) => e.pointerType === "mouse" && queueTip(b, info));
+  // A term that a click just drew under a still cursor (Awoken's text
+  // swapped in) waits for the mouse to move before its tip covers anything
+  // (R2-17 batch E: it hid "Back to sleeping").
+  let waiting = false;
+  b.addEventListener("pointerenter", (e) => {
+    if (e.pointerType !== "mouse") return;
+    if (stillSincePress(e)) waiting = true;
+    else queueTip(b, info);
+  });
+  b.addEventListener("pointermove", (e) => {
+    if (!waiting || e.pointerType !== "mouse" || stillSincePress(e)) return;
+    waiting = false;
+    queueTip(b, info);
+  });
+  b.addEventListener("pointerleave", () => (waiting = false));
   b.addEventListener("pointerleave", hideTip);
   b.addEventListener("focus", () => matchMedia("(hover: hover)").matches && queueTip(b, info, 0));
   b.addEventListener("blur", hideTip);
@@ -286,6 +300,13 @@ function hideTip(): void {
 }
 addEventListener("scroll", hideTip, { passive: true });
 addEventListener("keydown", hideTip, { capture: true });
+
+/** Where the mouse last pressed, until it moves away: a term that turns up
+ * under it then is the click's doing, not a hover. */
+let pressAt: { x: number; y: number } | null = null;
+addEventListener("pointerdown", (e) => { if (e.pointerType === "mouse") pressAt = { x: e.clientX, y: e.clientY }; }, { capture: true, passive: true });
+const stillSincePress = (e: PointerEvent) => pressAt !== null && Math.abs(e.clientX - pressAt.x) <= 3 && Math.abs(e.clientY - pressAt.y) <= 3;
+addEventListener("pointermove", (e) => { if (pressAt && !stillSincePress(e)) pressAt = null; }, { capture: true, passive: true });
 
 // ---------- what changes, over the pieces ----------
 

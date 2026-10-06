@@ -12,7 +12,7 @@ import { mergeTarget } from "../src/mvp/forms";
 import { buttonRefusal, plainRefusal } from "./ui/refusal";
 import { ApiError, api, savedPlayer } from "./api";
 import { getContent } from "./content";
-import { battleScreen, whyILost } from "./screens/battle";
+import { battleScreen, type RunOutro } from "./screens/battle";
 import { codexScreen, newCodexCache, type CodexState } from "./screens/codex";
 import { setCodexLink } from "./ui/term";
 import { statsScreen } from "./screens/stats";
@@ -90,12 +90,12 @@ function rulesSheet(): HTMLElement {
     p(`${r.rounds} shop rounds, then the Crown: a fight against today's champion. You start with ${plural(r.hearts, "heart")}; a lost fight costs one, and at 0 the run ends before the Crown.`),
     p(`${r.goldPerRound} gold every round, no carry-over. A unit costs ${r.unitCost}, a reroll ${r.rerollCost}, selling gives back ${r.sellRefund}. ${offersText(r)}; stronger tiers open as rounds pass.`),
     h("div", { class: "label" }, "The line"),
-    p(`${r.lineSize} units in a line, front first. Change the order in the shop: tap a unit, then ◀ ▶. Each round you fight a team another player saved at the same round.`),
+    p(`${r.lineSize} units in a line, front first. Change the order in the shop: ${isDesktop() ? "drag a unit, or click it, then ← →" : "tap a unit, then ◀ ▶"}. Each round you fight a team another player saved at the same round.`),
     h("div", { class: "label" }, "Copies, Awoken, fusion"),
     p(`Buying a unit you own merges it in: +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP a copy. Copy ${r.copiesToAwaken} awakens it: the same When, a stronger Who or Does.`),
-    p("Two Awoken units fuse: the When of the first you tap, the Who of the second, the Does of both, stats summed. A fused unit is final; copies of either part still merge into it. The first player to make a pair names it."),
+    p(`Two Awoken units fuse: the When of the first you ${isDesktop() ? "pick" : "tap"}, the Who of the second, the Does of both, stats summed. A fused unit is final; copies of either part still merge into it. The first player to make a pair names it.`),
     h("div", { class: "label" }, "Chains"),
-    p("Units react to events. When one happens, the units it triggers fire in line order, front to back, each at most once per event. In a fight, tap any number to see the chain that caused it."),
+    p(`Units react to events. When one happens, the units it triggers fire in line order, front to back, each at most once per event. In a fight, ${isDesktop() ? "click" : "tap"} any number to see the chain that caused it.`),
     h("div", { class: "label" }, "The day"),
     p(`Beat the champion in the Crown and you are a slayer. At ${r.dayEndsAt} Moscow the slayers' best teams play a round-robin, and the winner is the next champion.`),
     p("Your rating moves once per run: every fight, the Crown too, counts against its opponent's rating (Elo), added up when the run ends. Giving up counts each heart left as a lost fight."),
@@ -743,7 +743,16 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
 
   const opp = run.nextOpponent;
   const pin = h("div", { class: "pin", "data-testid": "champion-pin" });
+  // The Crown has no shop: where the offers were, the team you are about to
+  // face, as plainly as your own line (R2-17 batch E: it was only the pin).
+  const foe = crown ? h("div", { class: "stack crown-foe", "data-testid": "crown-foe" }) : null;
+  const fillFoe = (d: DayView | null) => {
+    const ch = d?.champion;
+    if (!foe || !ch) return;
+    foe.replaceChildren(h("div", { class: "label" }, ownCrown ? "You face · your champion team · " : "You face · today's champion · ", who(ch.player.name, "ghost-name")), team(ch.line, "ghost", content, "crown-foe-line"));
+  };
   const fillPin = (d: DayView | null) => {
+    fillFoe(d);
     const ch = d?.champion;
     if (!ch) return pin.replaceChildren(h("span", { class: "dim" }, "👑 No champion yet"));
     const b = h("button", { class: "pin-btn", "data-testid": "champion-pin-open" }, h("span", {}, "👑"), who(ch.player.name, "ghost-name"), h("span", { class: "pin-emoji" }, ch.line.map((u) => u.emoji).join("")));
@@ -801,7 +810,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       desk ? null : actions,
       hintSlot,
       crown ? null : h("div", { class: "label" }, desk ? `Shop · ${plural(run.offers.length, "offer")}` : "Shop · tap to read and buy"),
-      crown ? null : offers,
+      crown ? foe : offers,
       keysLine,
     ),
     desk ? inspector : null,
@@ -812,6 +821,15 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   screen("shop");
   rerender = () => shopScreen(run, content, err.textContent ?? "", pick.mode === "picked" ? pick.index : -1);
   if (!desk) return;
+  // ← / → pressed while the last move was out: the unit goes on by as many slots.
+  const queued = moveQueue;
+  moveQueue = 0;
+  if (queued && pick.mode === "picked" && !crown) {
+    const from = pick.index;
+    const to = Math.max(0, Math.min(run.line.length - 1, from + queued));
+    // After the answering request lets go (guarded ignores a decision while one is out).
+    if (to !== from) setTimeout(() => void decide({ kind: "reorder", from, to }, to), 0);
+  }
 
   // Keys: 1–7 buy, R reroll, Space fight, ← → move the selected unit, F fuse,
   // S sell; Esc steps back (a sheet, the fusion, the selection), then opens
@@ -844,7 +862,11 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       return true;
     }
     if ((k === "ArrowLeft" || k === "ArrowRight") && sel >= 0) {
-      const to = sel + (k === "ArrowLeft" ? -1 : 1);
+      const step = k === "ArrowLeft" ? -1 : 1;
+      // A press while the last move is still out counts too (R2-17 batch E):
+      // the shop that answers applies it.
+      if (busy) return (moveQueue += step), true;
+      const to = sel + step;
       if (to >= 0 && to < run.line.length) void decide({ kind: "reorder", from: sel, to }, to);
       return true;
     }
@@ -863,6 +885,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     return false;
   });
 }
+
+/** ← / → presses the desktop shop took while a move was still out. */
+let moveQueue = 0;
 
 /** A key, drawn as a keycap (the desktop shop). */
 const kbd = (k: string) => h("kbd", {}, k);
@@ -911,13 +936,17 @@ async function fightScreens(run: RunView, fight: FightResult, content: MvpConten
     const why = e instanceof Error ? e.message : String(e);
     return shopScreen(now, content, `${word} vs @${fight.opponent.player.name}${lost}. The replay didn't load: ${why}`);
   }
-  battleScreen({ battle, content, you: "A", fight, run, onDone: () => resultScreen(run, fight, battle, content) });
+  battleScreen({ battle, content, you: "A", fight, run, outro: outroOf(run, fight, content), onDone: () => shopScreen(run, content) });
 }
 
-function resultScreen(run: RunView, fight: FightResult, battle: BattleRecord, content: MvpContent): void {
-  const end = battle.log.at(-1);
-  const turns = end && end.type === "BattleEnd" ? end.turns : 0;
-  const word = fight.outcome === "win" ? "VICTORY" : fight.outcome === "loss" ? "DEFEAT" : "DRAW";
+/** What the battle's end card adds for a run's fight (R2-17 batch E): it is
+ * the fight's one result, so it carries what the result screen showed. The
+ * round fought (R3/12, or CROWN), the hearts and record after it, and what
+ * the result costs or wins; the run's ☰; its last button goes straight on: to
+ * the next round's shop, the Crown, or the run's end (the screens that add
+ * something). Both lines are on the board and in the card's Damage list,
+ * each unit's sheet a tap away; "vs @name" is in the battle's HUD. */
+function outroOf(run: RunView, fight: FightResult, content: MvpContent): RunOutro {
   const label = fight.kind === "crown" ? "CROWN" : roundLabel(fight.round);
   const own = fight.kind === "crown" && fight.opponent.player.id === run.player.id;
   const lostHearts = fight.heartsLost > 0 ? ` −${plural(fight.heartsLost, "heart")}.` : "";
@@ -935,51 +964,18 @@ function resultScreen(run: RunView, fight: FightResult, battle: BattleRecord, co
         : fight.outcome === "draw"
           ? "A draw costs no heart."
           : "";
-  // After a loss, "why I lost" comes first, under a compact header, so its
-  // rows show above the sticky buttons; the two lines follow.
-  const why = fight.outcome === "loss" ? whyILost(battle, content, "A") : null;
   const err = errorLine();
-  // ☰ as in the shop (Esc on desktop): Codex, Rules, Title menu, Abandon.
-  const menuBtn = button("☰", () => runMenu(run, content, err, fight), "menu-btn", "menu-open");
-  menuBtn.setAttribute("aria-label", "Menu");
-  if (isDesktop()) menuBtn.title = "Menu (Esc)";
-  show(
-    h("div", { class: "hud" }, menuBtn, h("span", { "data-testid": "result-round" }, label), hearts(run.hearts), h("span", { class: "dim" }, record(run))),
-    // Desktop: the outcome and why on the left, both lines on the right.
-    h(
-      "div",
-      { class: "result-main" },
-      h("div", { class: `outcome ${fight.outcome}${why ? " compact" : ""}`, "data-testid": "outcome" }, word),
-      h("div", { class: "dim", style: "text-align:center" }, "vs ", who(fight.opponent.player.name), ` · ${plural(turns, "turn")}`),
-      sub ? h("div", { class: fight.heartsLost > 0 ? "error center" : "center", "data-testid": "result-sub" }, sub) : null,
-      why,
-    ),
-    h(
-      "div",
-      { class: "result-teams" },
-      h("div", { class: "label" }, "You"),
-      team(battle.teamA, "you", content),
-      h("div", { class: "label" }, who(battle.opponent.name)),
-      team(battle.teamB, "ghost", content),
-    ),
-    h("div", { class: "spacer" }),
-    h(
-      "div",
-      { class: "row footer", "data-testid": "result-actions" },
-      button("Replay", () => battleScreen({ battle, content, you: "A", fight, run, onDone: () => resultScreen(run, fight, battle, content) }), "", "replay"),
-      button(run.phase === "over" ? "See the run" : run.phase === "crown" ? "To the Crown" : "Next round", () => shopScreen(run, content), "primary grow", "continue"),
-    ),
-    err,
-  );
-  screen("result");
-  // Desktop: Enter or Space moves on, R replays, Esc opens the menu.
-  onKeys((e) => {
-    if (app.querySelector(".overlay")) return e.key === "Escape" ? (app.querySelector(".overlay")!.remove(), true) : false;
-    if (e.key === "Escape") return runMenu(run, content, err, fight), true;
-    if (e.key === "Enter" || e.key === " ") return shopScreen(run, content), true;
-    if (e.key.toLowerCase() === "r") return battleScreen({ battle, content, you: "A", fight, run, onDone: () => resultScreen(run, fight, battle, content) }), true;
-    return false;
-  });
+  return {
+    status: () => [
+      h("span", { class: "mono", "data-testid": "result-round" }, label),
+      hearts(run.hearts),
+      h("span", { class: "mono dim" }, record(run)),
+      sub ? h("span", { class: fight.heartsLost > 0 ? "error" : "", "data-testid": "result-sub" }, sub) : null,
+      err,
+    ].filter((x): x is HTMLElement => x !== null),
+    doneLabel: run.phase === "over" ? "See the run" : run.phase === "crown" ? "To the Crown" : "Next round",
+    menu: () => runMenu(run, content, err, fight),
+  };
 }
 
 /** "3W 1D 2L": the run's record, draws only when there are any. */

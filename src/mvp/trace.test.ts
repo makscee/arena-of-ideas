@@ -6,6 +6,10 @@ import { battle } from "../battle.js";
 import { displayNames } from "../trace.js";
 import { stressAbilities, stressRegistry } from "../content/stress.js";
 import type { AbilityDef, AbilityRegistry, BattleEvent, UnitDef, When } from "../types.js";
+import { MVP_RULES, type MvpContent, type PlayerRef } from "./contract.js";
+import { fightLines } from "./fight.js";
+import { lineUnitOf } from "./forms.js";
+import { mvpPool } from "./units.js";
 import { BEAT_MAX_MS, BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
@@ -294,6 +298,69 @@ describe("trigger badges (R2-13)", () => {
   });
 });
 
+describe("why I lost: a loop of units reads once (R2-17)", () => {
+  // Hand-made, as a playtest saw it: Virus poisons Squire whenever Guardian's
+  // Shield breaks, and Guardian shields again whenever Squire takes a Poison
+  // tick, turn after turn. The walk up the causes runs Virus (Poison) ←
+  // Guardian (Shield) ← Virus (Poison) ← … ← Silehman, who struck first.
+  const ev = (id: number, turn: number, causedBy: number | null, source: BattleEvent["source"], body: object) => ({ id, turn, causedBy, source, ...body }) as BattleEvent;
+  const K = "kernel" as const;
+  const virus = { unit: "B2:Virus", ability: 0 };
+  const guardian = { unit: "B3:Guardian", ability: 0 };
+  const tick = { unit: "A1:Squire", status: "Poison", ability: 0 };
+  const shieldOn = { unit: "B3:Guardian", status: "Shield", ability: 0 };
+  const log: BattleEvent[] = [
+    ev(0, 0, null, K, { type: "BattleStart", teams: { A: [{ id: "A1:Squire", name: "Squire", hp: 20, pwr: 1 }], B: [{ id: "B1:Silehman", name: "Silehman", hp: 9, pwr: 2 }, { id: "B2:Virus", name: "Virus", hp: 9, pwr: 1 }, { id: "B3:Guardian", name: "Guardian", hp: 9, pwr: 1 }] } }),
+    ev(1, 1, null, K, { type: "TurnStart" }),
+    ev(2, 1, 1, K, { type: "Strike", striker: "B1:Silehman", defender: "A1:Squire" }),
+    ev(3, 1, 2, K, { type: "Hurt", unit: "A1:Squire", amount: 2, hpAfter: 18 }),
+    ev(4, 1, 3, virus, { type: "StatusApplied", unit: "A1:Squire", status: "Poison", stacks: 1, total: 1 }),
+    ev(5, 1, null, K, { type: "TurnEnd" }),
+    ev(6, 1, 5, tick, { type: "Hurt", unit: "A1:Squire", amount: 1, hpAfter: 17 }),
+    ev(7, 1, 6, guardian, { type: "StatusApplied", unit: "B3:Guardian", status: "Shield", stacks: 1, total: 1 }),
+    ev(8, 2, null, K, { type: "TurnStart" }),
+    ev(9, 2, 8, shieldOn, { type: "StatusRemoved", unit: "B3:Guardian", status: "Shield", stacks: 1, remaining: 0 }),
+    ev(10, 2, 9, virus, { type: "StatusApplied", unit: "A1:Squire", status: "Poison", stacks: 1, total: 1 }),
+    ev(11, 2, null, K, { type: "TurnEnd" }),
+    ev(12, 2, 11, tick, { type: "Hurt", unit: "A1:Squire", amount: 1, hpAfter: 16 }),
+    ev(13, 2, 12, guardian, { type: "StatusApplied", unit: "B3:Guardian", status: "Shield", stacks: 1, total: 1 }),
+    ev(14, 3, null, K, { type: "TurnStart" }),
+    ev(15, 3, 14, shieldOn, { type: "StatusRemoved", unit: "B3:Guardian", status: "Shield", stacks: 1, remaining: 0 }),
+    ev(16, 3, 15, virus, { type: "StatusApplied", unit: "A1:Squire", status: "Poison", stacks: 1, total: 1 }),
+    ev(17, 3, null, K, { type: "TurnEnd" }),
+    ev(18, 3, 17, tick, { type: "Hurt", unit: "A1:Squire", amount: 1, hpAfter: 15 }),
+    ev(19, 3, null, K, { type: "BattleEnd", winner: "B", turns: 3 }),
+  ];
+
+  test("each unit shows once in a trace: the loop collapses, its starter stays", () => {
+    // Before the guard: "−1 ← Virus (Poison) ← Guardian (Shield) ← Virus (Poison) ← Guardian (Shield) ← Virus (Poison) ← Silehman".
+    expect(traceOf(log, 18).text).toBe("−1 ← Virus (Poison) ← Guardian (Shield) ← Silehman");
+    expect(traceOf(log, 18).links.map((l) => l.unit)).toEqual(["B2:Virus", "B3:Guardian", "B1:Silehman"]);
+  });
+
+  test("the why-I-lost row reads the loop once and holds every tick of it", () => {
+    const rows = whyILost(log, "A", 10);
+    for (const r of rows) expect(new Set(r.units).size).toBe(r.units.length);
+    const loop = rows.find((r) => r.names[0] === "Virus")!;
+    expect(loop.text).toBe("Virus (Poison) ← Guardian (Shield) ← Silehman");
+    // The second and third ticks are one row now (they read the same once deduplicated).
+    expect(loop.damage).toBe(2);
+  });
+
+  test("real units never repeat a unit in a why-I-lost row", () => {
+    const pool = mvpPool();
+    const content: MvpContent = { version: "t", units: pool.units, abilities: pool.abilities, statuses: pool.statuses };
+    const p = (id: string): PlayerRef => ({ id, name: id, bot: false });
+    let r = 12345;
+    const rand = (n: number) => ((r = (r * 1103515245 + 12345) % 2147483648), r % n);
+    for (let seed = 0; seed < 120; seed++) {
+      const line = (s: string) => Array.from({ length: 5 }, (_, k) => lineUnitOf(pool.units[rand(pool.units.length)]!, `${s}${k}`, 1 + rand(4)));
+      const rec = fightLines({ player: p("a"), line: line("a") }, { player: p("b"), line: line("b") }, { battleId: "x", seed, kind: "round", round: 5, runId: null, at: "2026-10-05T00:00:00Z", content, rules: MVP_RULES });
+      for (const side of ["A", "B"] as const) for (const row of whyILost(rec.log, side, 10)) expect(new Set(row.units).size, `seed ${seed}: ${row.text}`).toBe(row.units.length);
+    }
+  });
+});
+
 describe("the end card (R2-14)", () => {
   test("damage by unit: each side's damage to the other, overkill not counted, biggest first", () => {
     const log = run([dummy("Squire", 8, 1), dummy("Page", 6, 1)], [dummy("Dummy", 30, 2), Medic]);
@@ -320,7 +387,7 @@ describe("the end card (R2-14)", () => {
     expect(ms.map((m) => m.beat)).toEqual([...ms.map((m) => m.beat)].sort((p, q) => p - q));
     expect(new Set(ms.map((m) => m.beat)).size).toBe(ms.length);
     const kill = ms.find((m) => m.kind === "kill")!;
-    expect(kill.label).toMatch(/^Dummy kills (Squire|Page) \(−\d+\)$/);
+    expect(kill.label).toMatch(/^(Turning point: )?Dummy kills (Squire|Page)( \(−\d+\))?$/);
     expect(beats[kill.beat]!.waves.some((w) => w.changes.some((c) => c.kind === "death"))).toBe(true);
   });
 
@@ -329,7 +396,8 @@ describe("the end card (R2-14)", () => {
     const beats = beatPlayOf(log, stepsOf(log));
     const most = Math.max(...beats.map((b) => b.waves.length));
     const combo = keyMomentsOf(log, beats).find((m) => m.kind === "combo");
-    if (most >= 3) expect(combo).toMatchObject({ beat: beats.find((b) => b.waves.length === most)!.index, label: expect.stringMatching(new RegExp(`^Combo: ${most} steps`)) });
+    // R2-17: it names who did the most in it and what, not "Combo: 8 steps".
+    if (most >= 3) expect(combo).toMatchObject({ beat: beats.find((b) => b.waves.length === most)!.index, label: `Zealot: 2 dmg in ${most} steps`, unit: "B3:Zealot" });
     else expect(combo).toBeUndefined();
   });
 });
@@ -438,6 +506,57 @@ describe("R2-17: key moments, battle start, fatigue rows, Why's icons", () => {
     expect(ms.length).toBe(3);
     expect(new Set(ms.map((m) => m.beat)).size).toBe(3);
     expect(ms.map((m) => m.beat)).toEqual([...ms.map((m) => m.beat)].sort((p, q) => p - q));
+  });
+
+  test("the turning point: the death after which the winner led for good", () => {
+    // 3 v 2: Squire's death evens it, Page's puts Dummy's side ahead for good.
+    const log = run([dummy("Squire", 8, 1), dummy("Page", 6, 1), dummy("Knave", 5, 1)], [dummy("Dummy", 30, 2), Medic]);
+    const beats = beatPlayOf(log, stepsOf(log));
+    const ms = keyMomentsOf(log, beats);
+    const turning = ms.find((m) => m.label.startsWith("Turning point"))!;
+    expect(turning).toMatchObject({ kind: "kill", label: "Turning point: Dummy kills Page", unit: "B1:Dummy" });
+    const page = log.find((e) => e.type === "Death" && e.unit === "A2:Page")!;
+    expect(beats[turning.beat]!.waves.some((w) => w.eventIds.includes(page.id))).toBe(true);
+    // The other kills keep their blow's size.
+    expect(ms.map((m) => m.label)).toEqual(["Dummy kills Squire (−2)", "Turning point: Dummy kills Page", "Dummy kills Knave (−2)"]);
+  });
+
+  test("a side that led from the start and never lost the lead has no turning point", () => {
+    const log = run([dummy("Squire", 8, 1), dummy("Page", 6, 1)], [dummy("Dummy", 30, 2)]);
+    expect(log.at(-1)).toMatchObject({ type: "BattleEnd", winner: "B" });
+    const ms = keyMomentsOf(log, beatPlayOf(log, stepsOf(log)));
+    // B (one unit) trails 1 v 2 until Squire falls (even), then leads once Page falls: the last kill.
+    expect(ms.filter((m) => m.label.startsWith("Turning point")).map((m) => m.label)).toEqual(["Turning point: Dummy kills Page"]);
+    const draw = run([dummy("Wall", 60, 0), dummy("Wall2", 60, 0)], [dummy("Wall", 60, 0), dummy("Wall2", 60, 0)]);
+    expect(keyMomentsOf(draw, beatPlayOf(draw, stepsOf(draw))).some((m) => m.label.startsWith("Turning point"))).toBe(false);
+  });
+
+  test("fatigue says what it did: who it killed, once, not a row per kill", () => {
+    const log = run([dummy("Wall", 60, 0), dummy("Wall2", 60, 0)], [dummy("Wall", 60, 0), dummy("Wall2", 60, 0)]);
+    const ms = keyMomentsOf(log, beatPlayOf(log, stepsOf(log)));
+    const f = ms.find((m) => m.kind === "fatigue")!;
+    expect(f.label).toMatch(/^Fatigue kills Wall2? \+3$/);
+    expect(ms.filter((m) => m.kind === "fatigue")).toHaveLength(1);
+    expect(f.label).not.toMatch(/sets in \(T\d+\)/);
+  });
+
+  test("every key moment of real fights is one short line about that fight", () => {
+    const pool = mvpPool();
+    const content: MvpContent = { version: "t", units: pool.units, abilities: pool.abilities, statuses: pool.statuses };
+    const p = (id: string): PlayerRef => ({ id, name: id, bot: false });
+    let r = 777;
+    const rand = (n: number) => ((r = (r * 1103515245 + 12345) % 2147483648), r % n);
+    for (let seed = 0; seed < 60; seed++) {
+      const line = (s: string) => Array.from({ length: 5 }, (_, k) => lineUnitOf(pool.units[rand(pool.units.length)]!, `${s}${k}`, 1 + rand(4)));
+      const { log } = fightLines({ player: p("a"), line: line("a") }, { player: p("b"), line: line("b") }, { battleId: "x", seed, kind: "round", round: 5, runId: null, at: "2026-10-05T00:00:00Z", content, rules: MVP_RULES });
+      const ms = keyMomentsOf(log, beatPlayOf(log, stepsOf(log)));
+      expect(ms.length, `seed ${seed}`).toBeGreaterThan(0);
+      for (const m of ms) {
+        expect(m.label.length, `seed ${seed}: ${m.label}`).toBeLessThanOrEqual(46);
+        // The old generic forms are gone.
+        expect(m.label).not.toMatch(/^Combo: \d+ steps|^Fatigue sets in \(T/);
+      }
+    }
   });
 
   test("battle start is its own timeline block (turn 0), labelled Start", () => {
