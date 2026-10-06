@@ -1,13 +1,14 @@
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterEach, describe, expect, it } from "vitest";
-import type { DecisionResponse, FusionDiscovery, PlayerRef, UnitContent } from "../../../src/mvp/contract.js";
+import type { Champion, DecisionResponse, FusionDiscovery, PlayerRef, UnitContent } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { mvpContent } from "./content.js";
-import { awaitFusionName, cleanModelName, drainFusionNames, fusionNameReady, fusionNaming, httpModelNamer, MODEL_FAILURES, portmanteau, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
+import { awaitFusionName, cleanModelName, drainFusionNames, fusionNameReady, fusionNaming, httpModelNamer, MODEL_DOWN_MS, MODEL_FAILURES, MODEL_PROBE_MS, portmanteau, recordFusion, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
 import { decide, preview, startRun } from "./runs.js";
+import { seedChampion } from "./bots.js";
 import { mvpRuntime } from "./runtime.js";
-import { MemoryMvpStore } from "./store.js";
+import { MemoryMvpStore, type MvpStore } from "./store.js";
 
 const form = { when: [], who: [], does: ["a"] };
 const unit = (id: string, name: string): UnitContent => ({ id, name, emoji: "x", tier: 1, base: { pwr: 1, hp: 1 }, forms: { sleeping: form, awoken: form } });
@@ -15,6 +16,8 @@ const brawler = unit("brawler", "Brawler");
 const medic = unit("medic", "Medic");
 const maks: PlayerRef = { id: "p1", name: "Maks", bot: false };
 const bot: PlayerRef = { id: "bot", name: "bot-Ash", bot: true };
+/** Distinct model names: pairs never share one, so a stub answers each ask with the next. */
+const NAMES = ["Duskmend", "Gloomfang", "Ashwarden", "Briarhusk", "Cindermaw", "Dreadbloom", "Emberlash", "Frostgrin", "Galeborn", "Hollowtusk", "Ironquill", "Jadecoil"];
 
 describe("MVP fusion names: the fallback and the store", () => {
   it("falls back to a deterministic portmanteau", () => {
@@ -51,6 +54,66 @@ describe("MVP fusion names: the fallback and the store", () => {
     const naming = fusionNaming({ store, content: { version: "t", units: [brawler, medic], abilities: {}, statuses: {} }, now: () => new Date(0) }, { model: null });
     expect(naming.nameFusion(brawler, medic, maks)).toEqual(naming.peek(brawler, medic, maks));
     expect(naming.peek(brawler, medic, maks)).toEqual({ name: "Brawdic", discoveredBy: maks });
+  });
+});
+
+describe("MVP fusion names: every pair's name is its own", () => {
+  const content = mvpContent();
+  const u = (id: string) => content.units.find((x) => x.id === id)!;
+  const fold = (x: string) => x.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  it("the portmanteau moves the split off a taken name, then any split, then a numeral", () => {
+    expect(portmanteau("Silencer", "Bat")).toBe("Sileat");
+    expect(portmanteau("Silencer", "Gnat", ["Sileat"])).not.toBe("Sileat");
+    expect(portmanteau("Spike", "Squire", ["SPIRE"])).not.toBe("Spire");
+    // Nothing left but a numeral: every split and the whole join are taken.
+    const all = ["Ab", "Abd", "Ad", "Acd", "Abcd", "Ad", "A", "Acd"];
+    expect(portmanteau("Ab", "Cd", all)).toBe("Ad II");
+    expect(portmanteau("Ab", "Cd", [...all, "ad ii"])).toBe("Ad III");
+  });
+
+  it("with no model, pairs that share a portmanteau get different names, and stored names never change", () => {
+    const store = new MemoryMvpStore();
+    // Two pairs stored with one name before this rule keep it.
+    store.putFusion({ first: "spike", second: "wire", name: "Spire", discoveredBy: null, discoveredAt: "t", nameSource: "fallback" });
+    store.putFusion({ first: "spike", second: "squire", name: "Spire", discoveredBy: null, discoveredAt: "t", nameSource: "fallback" });
+    const naming = fusionNaming({ store, content, now: () => new Date(0) }, { model: null });
+    const fuse = (a: string, b: string) => recordFusion(store, { first: a, second: b, ...naming.nameFusion(u(a), u(b), maks) }, "t").name;
+    expect(naming.peek(u("spike"), u("wire"), maks).name).toBe("Spire");
+    expect(naming.peek(u("spike"), u("squire"), maks).name).toBe("Spire");
+    const names = [fuse("silencer", "bat"), fuse("silencer", "gnat"), fuse("silencer", "rat"), fuse("spike", "gardener")];
+    expect(names[0]).toBe("Sileat");
+    expect(new Set(names.map(fold)).size).toBe(names.length);
+    const units = new Set(content.units.map((x) => fold(x.name)));
+    for (const name of names) expect(units.has(fold(name)), name).toBe(false);
+    expect(names).not.toContain("Spire");
+  });
+
+  it("a model answer another pair has (any case) or a base unit's name is refused: asked again, then the unique portmanteau", async () => {
+    const store = new MemoryMvpStore();
+    store.putFusion({ first: "rose", second: "victim", name: "Bloom", discoveredBy: null, discoveredAt: "t", nameSource: "model" });
+    const answers = ["bloom", "GNAT", "Thornveil"];
+    let asked = 0;
+    const naming = fusionNaming({ store, content, now: () => new Date(0) }, { model: async () => answers[asked++] ?? "Bloom" });
+    naming.hooks.onDecision!(undefined as never, undefined as never, { phase: "shop", player: maks, line: [lineUnitOf(u("rose"), "u1", 3), lineUnitOf(u("spike"), "u2", 3)] } as never);
+    await drainFusionNames(store);
+    expect(naming.peek(u("rose"), u("spike"), maks).name).toBe("Thornveil");
+    // spike+rose: "Bloom" three times, then the portmanteau.
+    expect(asked).toBe(6);
+    expect(naming.peek(u("spike"), u("rose"), maks).name).toBe(portmanteau("Spike", "Rose", [...content.units.map((x) => x.name), "Bloom"]));
+    // Two pairs prepared one name can't both store it: the second fuse falls back.
+    expect(naming.peek(u("rose"), u("victim"), maks).name).toBe("Bloom");
+  });
+
+  it("a prepared name stored by another pair since falls back to the portmanteau", async () => {
+    const store = new MemoryMvpStore();
+    const naming = fusionNaming({ store, content, now: () => new Date(0) }, { model: async () => "Grimward" });
+    naming.hooks.onDecision!(undefined as never, undefined as never, { phase: "shop", player: maks, line: [lineUnitOf(u("rose"), "u1", 3), lineUnitOf(u("spike"), "u2", 3)] } as never);
+    await drainFusionNames(store);
+    expect(naming.peek(u("rose"), u("spike"), maks).name).toBe("Grimward");
+    store.putFusion({ first: "bat", second: "rat", name: "GRIMWARD", discoveredBy: null, discoveredAt: "t", nameSource: "fallback" });
+    const late = fusionNaming({ store, content, now: () => new Date(0) }, { model: null });
+    expect(late.peek(u("rose"), u("spike"), maks).name).toBe(portmanteau("Rose", "Spike"));
   });
 });
 
@@ -107,10 +170,10 @@ describe("MVP fusion names: through the runtime", () => {
   const [a, b, c] = content.units;
 
   /** A runtime whose namer asks `model`, with a human run holding a, b and c Awoken. */
-  function world(model: ModelNamer | null, player: PlayerRef = maks, backoffMs?: (failures: number) => number) {
+  function world(model: ModelNamer | null, player: PlayerRef = maks, backoffMs?: (failures: number) => number, clock?: () => number) {
     const rt = mvpRuntime({ content, seed: () => 7 });
     // Swap in a namer with this model (the runtime's own reads ARENA_NAMER_URL).
-    const naming = fusionNaming(rt, { model, ...(backoffMs ? { backoffMs } : {}) });
+    const naming = fusionNaming(rt, { model, ...(backoffMs ? { backoffMs } : {}), ...(clock ? { clock } : {}) });
     rt.hooks[0] = naming.hooks;
     rt.nameFusion = naming.nameFusion;
     rt.peekFusionName = naming.peek;
@@ -206,7 +269,7 @@ describe("MVP fusion names: through the runtime", () => {
 
   it("asks for humans' pairs before bots', also pairs queued while it drains", async () => {
     const asked: string[] = [];
-    const botSide = world(async (x, y) => (asked.push(`${x.id}+${y.id}`), `Name${"xyz"[asked.length % 3]}wyn`), bot);
+    const botSide = world(async (x, y) => (asked.push(`${x.id}+${y.id}`), NAMES[asked.length]!), bot);
     const { rt } = botSide;
     decide(rt, botSide.stored(), { kind: "reorder", from: 0, to: 0 }); // 6 bots' pairs of a, b, c
     const human = startRun(rt, maks);
@@ -220,19 +283,23 @@ describe("MVP fusion names: through the runtime", () => {
   it("a bot fuses a pair only once its name is ready, or once the model gave up on it", async () => {
     // The model fails on one pair only, so it never counts as down.
     const d = content.units[3]!;
+    let now = 0;
+    let named = 0;
     const { rt, stored } = world(async (x, y) => {
       if (x.id === a!.id && y.id === d.id) throw new Error("503");
-      return "Grimward";
-    }, bot, () => 0);
+      return NAMES[named++]!;
+    }, bot, () => 0, () => now);
     expect(fusionNameReady(rt.store, a!.id, b!.id)).toBe(false);
     decide(rt, stored(), { kind: "reorder", from: 0, to: 0 });
     await drainFusionNames(rt.store);
     expect(fusionNameReady(rt.store, a!.id, b!.id)).toBe(true);
     rt.store.putRun({ ...stored(), line: [...stored().line, lineUnitOf(d, "u4", 3, rt.rules)], nextUid: 5 });
     decide(rt, stored(), { kind: "reorder", from: 0, to: 0 });
+    // The final failure: MODEL_FAILURES asks over MODEL_DOWN_MS.
     for (let i = 1; i < MODEL_FAILURES; i++) {
       await drainFusionNames(rt.store);
       expect(fusionNameReady(rt.store, a!.id, d.id)).toBe(false);
+      now += MODEL_DOWN_MS / (MODEL_FAILURES - 1);
     }
     await drainFusionNames(rt.store);
     expect(fusionNameReady(rt.store, a!.id, d.id)).toBe(true);
@@ -240,13 +307,18 @@ describe("MVP fusion names: through the runtime", () => {
     expect(fusionNameReady(new MemoryMvpStore(), a!.id, b!.id)).toBe(true);
   });
 
-  it("after MODEL_FAILURES failed asks in a row the model is down: no bot waits, until it answers again", async () => {
+  it("failed asks in a row over MODEL_DOWN_MS put the model down: no bot waits, until it answers again", async () => {
     let down = true;
+    let now = 0;
     const { rt, stored } = world(async () => {
       if (down) throw new Error("connection refused");
       return "Grimward";
-    }, bot, () => 0);
+    }, bot, () => 0, () => now);
     decide(rt, stored(), { kind: "reorder", from: 0, to: 0 }); // 6 pairs, each fails once
+    await drainFusionNames(rt.store);
+    // Six failures in no time: a model still loading, not down. Bots wait.
+    expect(fusionNameReady(rt.store, a!.id, b!.id)).toBe(false);
+    now += MODEL_DOWN_MS;
     await drainFusionNames(rt.store);
     expect(fusionNameReady(rt.store, a!.id, b!.id)).toBe(true);
     // Back up: one answer and the rest wait for theirs again.
@@ -255,19 +327,25 @@ describe("MVP fusion names: through the runtime", () => {
     rt.store.putRun({ ...stored(), line: [lineUnitOf(a!, "u1", 3, rt.rules), lineUnitOf(d, "u4", 3, rt.rules)], nextUid: 5 });
     const waited = awaitFusionName(rt.store, a!.id, d.id);
     expect(fusionNameReady(rt.store, a!.id, d.id)).toBe(true); // still down until an answer
+    await drainFusionNames(rt.store); // no probe due yet
+    expect(rt.peekFusionName(a!, d, bot).name).not.toBe("Grimward");
+    now += MODEL_PROBE_MS;
     await drainFusionNames(rt.store);
     await waited;
     expect(rt.peekFusionName(a!, d, bot).name).toBe("Grimward");
+    // Up again: a new pair is waited for.
+    expect(fusionNameReady(rt.store, b!.id, d.id)).toBe(false);
   });
 
   it("a bot waiting for a pair has it asked next and wakes when it is named, or when the model gives up", async () => {
     const asked: string[] = [];
     let failOn = "";
+    let now = 0;
     const { rt, stored } = world(async (x, y) => {
       asked.push(`${x.id}+${y.id}`);
       if (`${x.id}+${y.id}` === failOn) throw new Error("timeout");
-      return "Grimward";
-    }, bot, () => 0);
+      return NAMES[asked.length - 1]!;
+    }, bot, () => 0, () => now);
     decide(rt, stored(), { kind: "reorder", from: 0, to: 0 }); // 6 pairs queued ahead
     let woke = false;
     const waited = awaitFusionName(rt.store, c!.id, b!.id).then(() => (woke = true));
@@ -276,7 +354,7 @@ describe("MVP fusion names: through the runtime", () => {
     await waited;
     expect(woke).toBe(true);
     expect(fusionNameReady(rt.store, c!.id, b!.id)).toBe(true);
-    // A pair the model keeps failing on: the bot wakes after MODEL_FAILURES asks.
+    // A pair the model keeps failing on: the bot wakes after MODEL_FAILURES asks over MODEL_DOWN_MS.
     const d = content.units[3]!;
     failOn = `${d.id}+${a!.id}`;
     let gaveUp = false;
@@ -284,11 +362,88 @@ describe("MVP fusion names: through the runtime", () => {
     for (let i = 1; i < MODEL_FAILURES; i++) {
       await drainFusionNames(rt.store);
       expect(gaveUp).toBe(false);
+      now += MODEL_DOWN_MS / (MODEL_FAILURES - 1);
     }
     await drainFusionNames(rt.store);
     await late;
     expect(gaveUp).toBe(true);
   });
+
+  /** Drives `now` a second at a time, draining the queue each step, until `done()` or `until` ms. */
+  async function tick(clock: { now: number }, done: () => boolean, until: number, each?: () => void) {
+    for (; !done() && clock.now <= until; clock.now += 1000) {
+      each?.();
+      await drainFusionNames(store!);
+      await new Promise((r) => setImmediate(r));
+    }
+  }
+  let store: MvpStore | undefined;
+
+  it("a model still loading (503s for its first 20 s) is waited for: the champion's fused names are the model's", async () => {
+    for (let seed = 1; seed <= 6; seed++) {
+      let s = seed;
+      const clock = { now: 0 };
+      const calls: number[] = [];
+      let named = 0;
+      const rt = mvpRuntime({ content, seed: () => (s = (s * 1103515245 + 12345) >>> 0) });
+      const naming = fusionNaming(rt, {
+        model: async () => {
+          calls.push(clock.now);
+          if (clock.now < 20_000) throw new Error("namer answered 503");
+          return NAMES[named++] ?? null;
+        },
+        clock: () => clock.now,
+      });
+      rt.hooks[0] = naming.hooks;
+      rt.nameFusion = naming.nameFusion;
+      rt.peekFusionName = naming.peek;
+      store = rt.store;
+      let champ: Champion | undefined | null = null;
+      const seeding = seedChampion(rt).then((c) => (champ = c));
+      await tick(clock, () => champ !== null, 10 * 60_000);
+      await seeding;
+      const fused = champ!.line.filter((u) => u.fusion);
+      if (fused.length === 0) continue;
+      expect(calls.filter((t) => t < 20_000).length).toBeGreaterThanOrEqual(fused.length);
+      expect(clock.now).toBeLessThan(MODEL_DOWN_MS);
+      for (const u of fused) {
+        expect(NAMES).toContain(u.name);
+        expect(rt.store.fusion(u.fusion!.first, u.fusion!.second)).toMatchObject({ name: u.name, nameSource: "model", discoveredBy: null });
+      }
+      return;
+    }
+    throw new Error("no seeded champion held a fusion");
+  }, 60_000);
+
+  it("a model that is really down: bots stop waiting after about a minute, then it is asked about once a minute", async () => {
+    const clock = { now: 0 };
+    const calls: number[] = [];
+    const w = world(async () => {
+      calls.push(clock.now);
+      throw new Error("connection refused");
+    }, bot, undefined, () => clock.now);
+    store = w.rt.store;
+    decide(w.rt, w.stored(), { kind: "reorder", from: 0, to: 0 }); // 6 pairs
+    let woke = -1;
+    void awaitFusionName(store, a!.id, b!.id).then(() => (woke = clock.now));
+    // A bot wants a new pair every 10 s.
+    const units = content.units;
+    let k = 3;
+    const end = 15 * 60_000;
+    await tick(clock, () => false, end, () => {
+      if (clock.now % 10_000 === 0 && k + 1 < units.length) void awaitFusionName(store!, units[k]!.id, units[++k]!.id);
+    });
+    // Bounded: the model counts as down after MODEL_FAILURES failures over MODEL_DOWN_MS.
+    expect(woke).toBeGreaterThanOrEqual(MODEL_DOWN_MS);
+    expect(woke).toBeLessThanOrEqual(MODEL_DOWN_MS + 30_000);
+    // Then one probe a minute, however many new pairs bots want.
+    const probes = calls.filter((t) => t > woke).length;
+    const minutes = (end - woke) / MODEL_PROBE_MS;
+    expect(probes).toBeGreaterThanOrEqual(Math.floor(minutes) - 1);
+    expect(probes).toBeLessThanOrEqual(Math.ceil(minutes) + 1);
+    // While down a new pair is ready at once: bots fuse it with the portmanteau.
+    expect(fusionNameReady(store, units[k]!.id, units[1]!.id)).toBe(true);
+  }, 60_000);
 
   it("a blocked answer keeps the portmanteau", async () => {
     let asked = 0;
@@ -302,7 +457,7 @@ describe("MVP fusion names: through the runtime", () => {
 
   it("a bot's fusion is stored uncredited; the first human to fuse the pair claims it, the name stays", async () => {
     const asked: string[] = [];
-    const botWorld = world(async (x, y) => (asked.push(`${x.id}+${y.id}`), "Duskmend"), bot);
+    const botWorld = world(async (x, y) => (asked.push(`${x.id}+${y.id}`), NAMES[asked.length - 1]!), bot);
     decide(botWorld.rt, botWorld.stored(), { kind: "reorder", from: 0, to: 0 });
     expect(botWorld.rt.store.fusions()).toEqual([]);
     // Bots' lines are asked ahead too.
