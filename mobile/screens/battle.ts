@@ -5,17 +5,20 @@
 // The logic is pure and tested in src/mvp/trace.ts; this file only draws it.
 //
 // It opens any battle (a fight, a playoff game, the champion history); onDone
-// goes on. Skip (data-testid="battle-skip", tapped by the phone e2e) calls
-// onDone at once; the result screen shows whyILost() after a loss. Played to
-// the end, the viewer shows the outcome, "why I lost", and battle-done.
+// goes on. R2-14 adds the control bar, pinned at the screen's foot: ‹ ▶/❚❚ ›,
+// 1×/2×/4× (remembered per viewer, 2× from round 4), End (battle-end: the end
+// card at once) and Replay from the start; on desktop Space, ←/→ and R. Played
+// to the end (or ▶ on the last beat), the end card shows the outcome, damage
+// by unit, 2–3 key moments that replay from there, and Replay / Why I lost /
+// Continue (battle-done, which calls onDone).
 import { boardAt, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView } from "../../src/mvp/contract";
 import { STATUS_TERMS, termDef, termIcon, type TermId } from "../../src/glossary";
-import { beatPlayOf, firingOf, stepsOf, timingOf, traceOf, whyILost as lossChains, sidesOf, type Change, type Firing, type LossChain, type Step, type Trace } from "../../src/mvp/trace";
+import { beatPlayOf, damageByUnit, firingOf, keyMomentsOf, stepsOf, timingOf, traceOf, whyILost as lossChains, sidesOf, type Change, type Firing, type LossChain, type Step, type Trace } from "../../src/mvp/trace";
 import { displayNames } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { card, unitSheet } from "../ui/card";
-import { button, closable, h, onLeave, show } from "../ui/dom";
+import { app, button, closable, h, onKeys, onLeave, show } from "../ui/dom";
 import { icon } from "../ui/icon";
 
 /** How long the line-up shows before the first beat, at 1×. */
@@ -25,6 +28,34 @@ const MOTION_MS = 1000;
 
 /** The changes that float up from a card. */
 const FLOATS = new Set<Change["kind"]>(["damage", "heal", "buff", "debuff", "summon"]);
+
+/** The playback speeds, and where the viewer's choice is kept (per device). */
+const SPEEDS = [1, 2, 4] as const;
+const SPEED_KEY = "arena.battleSpeed";
+/** Without a remembered choice, battles from this round on play at 2×. */
+const FAST_FROM_ROUND = 4;
+
+/** The viewer's speed: the one they chose last, else 1×, or 2× from round 4.
+ * localStorage may throw or be empty: then the default. */
+export function speedFor(round: number, stored: string | null): number {
+  const s = Number(stored);
+  if ((SPEEDS as readonly number[]).includes(s)) return s;
+  return round >= FAST_FROM_ROUND ? 2 : 1;
+}
+function storedSpeed(): string | null {
+  try {
+    return localStorage.getItem(SPEED_KEY);
+  } catch {
+    return null;
+  }
+}
+function storeSpeed(s: number): void {
+  try {
+    localStorage.setItem(SPEED_KEY, String(s));
+  } catch {
+    // a private window: the choice lasts this battle
+  }
+}
 
 /** Reduced motion: nothing moves, and beats hold a little longer. */
 const reduced = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -46,6 +77,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const lost = a.you !== undefined && outcome === "loss";
   const units = new Map<string, BattleUnit>([...battle.teamA, ...battle.teamB].map((u) => [u.id, u]));
   const emojiOf = (id: string) => units.get(id)?.emoji ?? "✨";
+  // The end card's numbers (R2-14).
+  const damage = damageByUnit(log, name, sides);
+  const moments = keyMomentsOf(log, beats, name, sides);
 
   // What richCaption highlights: this battle's unit names (by side), its
   // statuses, and the fixed words. Longest first, so "Rat King" beats "Rat".
@@ -64,12 +98,14 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
    * doesn't cut an earlier wave's lunge, shake or float short; empty after a
    * manual step, so nothing moves then. */
   let landed: number[] = [];
-  let speed = 1;
+  // Set before setSpeedVar() runs, so motion and beat timing start in step.
+  let speed = speedFor(battle.round, storedSpeed());
   let playing = true;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let trace: Trace | null = null;
   /** The changes the tapped chip held (one unit, one step), when it held more than one. */
   let traceGroup: Change[] = [];
+  /** The end card is up (played out, End, or ▶ on the last beat). */
   let finished = false;
 
   /** Motion runs at the playback speed (CSS reads --bv-sp), so 2× never cuts it. */
@@ -84,13 +120,15 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const still = h("div", { class: "bv-stillbox" });
   const recent = h("div", { class: "bv-recent", "data-testid": "recent" });
   const sheet = h("div", { class: "bv-sheet panel", "data-testid": "trace" });
-  const end = h("div", { class: "bv-end stack" });
+  const end = h("div", { class: "bv-end panel stack", "data-testid": "end-card" });
   const playBtn = button("❚❚", () => (playing ? pause() : play()), "", "battle-play");
-  const backBtn = button("‹", () => { pause(); go(at - 1); }, "", "battle-back");
-  const fwdBtn = button("›", () => { pause(); go(at + 1); }, "", "battle-step");
-  const speedBtn = button("1×", () => { speed = speed === 1 ? 2 : 1; speedBtn.textContent = `${speed}×`; setSpeedVar(); if (playing) schedule(); }, "", "battle-speed");
-  const skipBtn = button("Skip", () => skip(), "", "battle-skip");
-  const controls = h("div", { class: "row bv-controls" }, backBtn, playBtn, fwdBtn, speedBtn, skipBtn);
+  const backBtn = button("‹", () => back(), "", "battle-back");
+  const fwdBtn = button("›", () => forward(), "", "battle-step");
+  const speedBtn = button(`${speed}×`, () => setSpeed(SPEEDS[(SPEEDS.indexOf(speed as 1) + 1) % SPEEDS.length]!), "", "battle-speed");
+  const endBtn = button("End", () => finish(), "", "battle-end");
+  const replayBtn = button("↻", () => replay(), "", "battle-replay");
+  replayBtn.setAttribute("aria-label", "Replay from the start");
+  const controls = h("div", { class: "row bv-controls" }, backBtn, playBtn, fwdBtn, speedBtn, endBtn, replayBtn);
   // How long playback should take at 1× (the line-up plus every beat), for
   // the e2e to compare with what the screen takes.
   controls.dataset.planMs = String(LINEUP_MS + beats.reduce((t, b) => t + timingOf(b).ms, 0));
@@ -133,9 +171,18 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       schedule();
     }, Math.max(0, (ms * slow) / speed - since));
   }
+  /** Sets the speed (and the motion's --bv-sp with it), remembered for the next battle. */
+  function setSpeed(s: number): void {
+    speed = s;
+    speedBtn.textContent = `${speed}×`;
+    setSpeedVar();
+    storeSpeed(speed);
+    if (playing) schedule();
+  }
+  const atEnd = () => at >= beats.length - 1 && wave >= lastWave(at);
   function play(): void {
-    if (finished) return;
-    if (at >= beats.length - 1 && wave >= lastWave(at)) at = -1;
+    // ▶ on the last beat shows the end card; Replay starts over.
+    if (finished || atEnd()) return finish();
     playing = true;
     trace = null;
     landed = [];
@@ -162,15 +209,40 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     traceGroup = group.length > 1 ? group : [];
     render();
   }
-  function skip(): void {
+  function back(): void {
     pause();
-    leave();
+    finished = false;
+    go(at - 1);
   }
+  function forward(): void {
+    pause();
+    if (atEnd()) return finish();
+    go(at + 1);
+  }
+  /** Jumps to the result: the last beat's board under the end card. */
   function finish(): void {
     pause();
     finished = true;
+    trace = null;
+    at = beats.length - 1;
+    wave = lastWave(at);
+    landed = [];
     render();
   }
+  /** Plays from beat i (-1: the line-up), the end card put away. */
+  function playFrom(i: number): void {
+    pause();
+    finished = false;
+    trace = null;
+    at = Math.max(-1, Math.min(beats.length - 1, i));
+    wave = 0;
+    landed = at >= 0 ? [performance.now()] : [];
+    playing = true;
+    playBtn.textContent = "❚❚";
+    render();
+    schedule();
+  }
+  const replay = () => playFrom(-1);
   function leave(): void {
     if (timer) clearTimeout(timer);
     a.onDone();
@@ -441,11 +513,12 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     recent.style.display = finished ? "none" : "";
     sheet.style.display = trace ? "" : "none";
     if (trace) sheet.replaceChildren(...traceView(trace));
-    end.style.display = finished ? "" : "none";
+    // A trace opened from the end card (Why I lost) sits in its place until closed.
+    end.style.display = finished && !trace ? "" : "none";
     if (finished) end.replaceChildren(...endView());
     backBtn.disabled = at < 0;
-    fwdBtn.disabled = at >= beats.length - 1 && wave >= lastWave(at);
-    controls.style.display = finished ? "none" : "";
+    fwdBtn.disabled = finished;
+    endBtn.disabled = finished;
   }
 
   /** Whose a unit is, as a tag: YOU / THEM, or its owner without a side. */
@@ -533,12 +606,81 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     // Only a viewer with a side wins or loses; otherwise the winner is named.
     const word = !a.you ? (battle.winner === "draw" ? "DRAW" : `${owner(battle.winner)} wins`) : outcome === "win" ? "VICTORY" : outcome === "loss" ? "DEFEAT" : "DRAW";
     const cls = !a.you && battle.winner !== "draw" ? "neutral" : outcome;
-    const why = lost ? whyPanel(battle, you, (id) => openTrace(id)) : null;
-    return [h("div", { class: `bv-word ${cls}`, "data-testid": "battle-word" }, word), ...(why ? [why] : []), button("Continue", leave, "primary", "battle-done")];
+    const whyBtn = lost
+      ? button("Why I lost", () => {
+          const close = closable(whyPanel(battle, you, (id) => { close(); openTrace(id); }));
+        }, "", "end-why")
+      : null;
+    const hide = button("✕", () => { finished = false; render(); }, "bv-close", "end-close");
+    hide.setAttribute("aria-label", "See the board");
+    return [
+      h("div", { class: "row spread bv-end-top" }, h("div", { class: `bv-word ${cls}`, "data-testid": "battle-word" }, word), hide),
+      damageView(),
+      moments.length ? h("div", { class: "label" }, "Key moments") : null,
+      ...moments.map((m) => {
+        const b = button("", () => playFrom(m.beat), `bv-moment ${m.kind}`, "key-moment");
+        b.append(h("span", { class: "bv-moment-t dim" }, `T${beats[m.beat]?.turn ?? ""}`), h("span", { class: "bv-moment-l" }, m.label), h("span", { class: "dim" }, "▶"));
+        b.dataset.beat = String(m.beat);
+        return b;
+      }),
+      h("div", { class: "row bv-end-actions" }, button("Replay", replay, "", "end-replay"), whyBtn, button("Continue", leave, "primary grow", "battle-done")),
+    ].filter((n): n is HTMLElement => n !== null);
   }
 
-  show(hud, h("div", { class: "label" }, a.you ? "Them" : owner(them)), enemy, caption, mine, h("div", { class: "label" }, a.you ? "You · front first" : `${owner(you)} · front first`), still, recent, sheet, end, h("div", { class: "spacer" }), controls);
+  /** Damage by unit, both sides: a bar per unit, scaled to the battle's biggest. */
+  function damageView(): HTMLElement {
+    const top = Math.max(1, ...damage.map((d) => d.damage));
+    const col = (side: Side) =>
+      h(
+        "div",
+        { class: `bv-dmg-col ${side === you ? "you" : "ghost"}` },
+        h("div", { class: "label" }, a.you ? (side === you ? "You" : "Them") : owner(side)),
+        ...damage
+          .filter((d) => d.side === side)
+          .slice(0, 6)
+          .map((d) =>
+            h(
+              "div",
+              { class: "bv-dmg", "data-testid": "damage-row", title: `${d.name}: ${d.damage} damage` },
+              h("span", { class: "emoji" }, emojiOf(d.unit)),
+              h("span", { class: "bv-dmg-bar" }, h("i", { style: `width:${Math.round((d.damage / top) * 100)}%` })),
+              h("span", { class: "mono" }, String(d.damage)),
+            ),
+          ),
+      );
+    return h("div", { class: "bv-dmg-grid", "data-testid": "damage-by-unit" }, col(you), col(them));
+  }
+
+  // The battle fills the screen and never scrolls: the beat list below your
+  // line takes what room is left, and the control bar stays pinned at the foot.
+  show(
+    h(
+      "div",
+      { class: "bv-screen" },
+      hud,
+      h("div", { class: "label" }, a.you ? "Them" : owner(them)),
+      enemy,
+      caption,
+      mine,
+      h("div", { class: "label" }, a.you ? "You · front first" : `${owner(you)} · front first`),
+      h("div", { class: "bv-below" }, still, recent),
+      controls,
+    ),
+    sheet,
+    end,
+  );
   setSpeedVar();
+  // Desktop keys: Space plays or pauses, ←/→ step a beat, R replays.
+  onKeys((e) => {
+    const over = app.querySelector(".overlay");
+    if (over) return e.key === "Escape" ? (over.remove(), true) : false;
+    if (e.key === " ") return playing ? pause() : play(), true;
+    if (e.key === "ArrowLeft") return back(), true;
+    if (e.key === "ArrowRight") return forward(), true;
+    if (e.key.toLowerCase() === "r") return replay(), true;
+    if (e.key === "Escape" && trace) return (trace = null), render(), true;
+    return false;
+  });
   // The Codex opened over the battle (a term's "Open in Codex") pauses it.
   onLeave(() => {
     pause();
