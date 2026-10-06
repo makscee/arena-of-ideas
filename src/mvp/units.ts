@@ -73,10 +73,14 @@ const SUMMONS: Record<string, UnitDef> = {
   // Awoken Summoner's body (R3-8): it has a job of its own, so the Awoken
   // form does something new and not just a bigger body.
   "Call Warg": { name: "Warg", base: { pwr: 2, hp: 4 }, triggers: WHEN.strike, selectors: [WHO.front], abilities: ["Poison 1"] },
+  // Awoken Phoenix hatches a Chick; Awoken Sexton's and Fungoid's bodies (R3-9), with jobs of their own.
+  "Call Chick": body("Chick", 1, 3),
+  "Call Ghoul": { name: "Ghoul", base: { pwr: 3, hp: 3 }, triggers: WHEN.strike, selectors: [WHO.front], abilities: ["Curse 1"] },
+  "Call Puffball": { name: "Puffball", base: { pwr: 1, hp: 3 }, triggers: WHEN.die, selectors: [WHO.enemies], abilities: ["Poison 1"] },
 };
 
 /** Each summoned body's emoji, by its name (R3-5). */
-const SUMMON_EMOJI: Record<string, string> = { Imp: "👺", Wolf: "🐺", Golem: "🗿", Wraith: "👻", Treant: "🌳", Warg: "🐕" };
+const SUMMON_EMOJI: Record<string, string> = { Imp: "👺", Wolf: "🐺", Golem: "🗿", Wraith: "👻", Treant: "🌳", Warg: "🐕", Ghoul: "🧟", Puffball: "💨", Chick: "🐣" };
 
 
 /** A summoned body as content: its emoji, and its form unless it only strikes. */
@@ -197,44 +201,46 @@ export const ROWS: Row[] = [
   r("Stoneskin",     "🪨", 2, 2, 7, "hurt",       "me",      "Shield 1",    { who: "allies" }),
 
   // ---- tier 3: engines ----
-  r("Commander",     "🎖️", 3, 2, 8, "strike",     "allies",  "Strength 1",  { does: ["Strength 1", "Shield 2"] }),
+  r("Commander",     "🎖️", 3, 2, 8, "strike",     "allies",  "Strength 1",  { who: "enemies", does: ["Curse 1"] }),
   r("War Drummer",   "🥁", 3, 1, 7, "turnStart",  "allies",  "Strength 1",  { does: ["Strength 1", "Heal 1"] }),
-  // Physician treats the cause, not the wound: it saps whoever is hitting
-  // (Nurse and Guardian tend the hit ally).
-  r("Physician",     "🩺", 3, 2, 8, "allyHurt",   "front",   "Curse 1",     { does: ["Curse 1", "Poison 1"] }),
+  // Physician treats the cause, not the wound: once a turn it saps the front
+  // enemy. On "ally hit" it cursed ~18 times a battle (R3-9).
+  r("Physician",     "🩺", 3, 2, 8, "turnEnd",    "front",   "Curse 1",     { does: ["Curse 1", "Poison 1"] }),
   r("Pediatrician",  "🍼", 2, 2, 8, "allySummoned", "it",   "Strength 1",  { does: ["Strength 1", "Bless 1"] }),
-  r("Crusader",      "⚔️", 3, 3, 9, "turnStart",  "front",   "Hit 2",       { does: ["Hit 3"] }),
-  r("Lightning",     "🌩️", 3, 3, 7, "allyPower",  "random",  "Hit 2",       { does: ["Hit 3"] }),
-  r("Battle Mage",   "🪄", 3, 3, 7, "allyShield", "random", "Hit 2",       { does: ["Hit 3"] }),
-  r("Pathologist",   "🔬", 3, 2, 7, "enemyPoisoned", "me",   "Strength 1",  { does: ["Strength 2"] }),
+  r("Crusader",      "⚔️", 3, 3, 9, "turnStart",  "front",   "Hit 2",       { does: ["Hit 2", "Silence"] }),
+  r("Lightning",     "🌩️", 3, 3, 7, "allyPower",  "random",  "Hit 2",       { does: ["Hit 1", "Curse 1"] }),
+  r("Battle Mage",   "🪄", 3, 3, 7, "allyShield", "random", "Hit 2",       { does: ["Hit 2", "Poison 1"] }),
+  r("Pathologist",   "🔬", 3, 2, 7, "enemyPoisoned", "me",   "Strength 1",  { does: ["Strength 1", "Heal 1"] }),
   r("Plague Doctor", "🦤", 3, 2, 7, "start",      "enemies", "Poison 2",    { does: ["Poison 2", "Curse 1"] }),
-  r("Virus",         "🧫", 3, 2, 6, "enemyDies",  "enemies", "Poison 2",    { does: ["Poison 3"] }),
-  r("Necromancer",   "💀", 3, 2, 7, "allyDies",   "fallen",  "Revive 2",    { does: ["Revive 3"] }),
-  r("Sexton",        "⚰️", 3, 3, 9, "allyDies",   "me",      "Call Wraith", { does: ["Call Golem"] }),
-  r("Fungoid",       "🪸", 3, 2, 9, "turnEnd",    "me",      "Call Imp",    { does: ["Call Wolf"] }),
-  r("Mesmerist",     "🌀", 3, 2, 7, "start",      "front",   "Freeze 1 + Curse 1", { does: ["Freeze 2", "Curse 1"] }),
-  r("Redirector",    "🪞", 3, 2, 8, "hurt",       "random",  "Hit 2",       { does: ["Hit 3"] }),
-  r("Keeper",        "🏰", 3, 1, 6, "turnStart",  "allies",  "Shield 1",    { does: ["Shield 2"] }),
+  r("Virus",         "🧫", 3, 2, 6, "enemyDies",  "enemies", "Poison 2",    { does: ["Poison 2", "Freeze 1"] }),
+  // Awoken, the dead return as undead glass cannons: 1 HP, +3 PWR (1a).
+  r("Necromancer",   "💀", 3, 2, 7, "allyDies",   "fallen",  "Revive 2",    { does: ["Revive 1 + Strength 3"] }),
+  r("Sexton",        "⚰️", 3, 3, 9, "allyDies",   "me",      "Call Wraith", { does: ["Call Ghoul"] }),
+  r("Fungoid",       "🪸", 3, 2, 9, "turnEnd",    "me",      "Call Imp",    { does: ["Call Puffball"] }),
+  r("Mesmerist",     "🌀", 3, 2, 7, "start",      "front",   "Freeze 1 + Curse 1", { who: "enemies", does: ["Freeze 1 + Curse 1"] }),
+  r("Redirector",    "🪞", 3, 2, 8, "hurt",       "random",  "Hit 2",       { does: ["Hit 2", "Freeze 1"] }),
+  r("Keeper",        "🏰", 3, 1, 6, "turnStart",  "allies",  "Shield 1",    { does: ["Shield 1", "Heal 1"] }),
   r("Wane",          "🌘", 3, 2, 7, "allyHealed", "front",   "Curse 1",     { does: ["Curse 1", "Hit 1"] }),
-  r("Harvest",       "🌾", 3, 2, 8, "enemyDies",  "allies",  "Heal 2",      { does: ["Heal 2", "Vitality 1"] }),
-  r("Robber",        "💰", 3, 3, 6, "enemyCursed", "me",     "Vitality 1",  { does: ["Vitality 2"] }),
-  r("Ritualist",     "🕯️", 3, 2, 7, "allyDies",   "enemies", "Hit 2",       { does: ["Hit 3"] }),
+  r("Harvest",       "🌾", 3, 2, 8, "enemyDies",  "allies",  "Heal 2",      { does: ["Heal 2", "Shield 1"] }),
+  r("Robber",        "💰", 3, 3, 6, "enemyCursed", "me",     "Vitality 1",  { who: "front", does: ["Hit 1"] }),
+  r("Ritualist",     "🕯️", 3, 2, 7, "allyDies",   "enemies", "Hit 2",       { does: ["Hit 2", "Poison 1"] }),
 
   // ---- tier 4: payoffs ----
-  r("King",          "👑", 4, 3, 12, "start",     "allies",  "Vitality 2",  { does: ["Vitality 2", "Strength 1"] }),
-  // Priest blesses once, before the fight. On "ally healed" it re-armed
-  // itself: a Blessing's save is a Heal, so a blessed ally could never die.
-  r("Priest",        "⛪", 4, 2, 10, "start",     "allies",  "Bless 1",     { does: ["Bless 2"] }),
+  r("King",          "👑", 4, 3, 12, "start",     "allies",  "Vitality 2",  { does: ["Vitality 2", "Bless 1"] }),
+  // Priest exorcises: Silence strips an enemy's statuses (Shield, Blessing)
+  // and its ability. Its old team blessing was Divinity's job (R3-9); King's
+  // Awoken form keeps a one-off team blessing at battle start.
+  r("Priest",        "⛪", 4, 2, 10, "turnEnd",   "random",  "Silence",     { does: ["Silence", "Curse 1"] }),
   r("Divinity",      "😇", 4, 2, 8, "allyDies",  "allies",  "Bless 1",     { does: ["Bless 1", "Shield 2"] }),
-  r("Phoenix",       "🐦", 4, 4, 9, "start",     "me",      "Bless 8",     { does: ["Bless 8", "Strength 2"] }),
+  r("Phoenix",       "🐦", 4, 4, 9, "start",     "me",      "Bless 8",     { does: ["Bless 8", "Call Chick"] }),
   r("Lilith",        "🧛", 4, 4, 8, "enemyDies",  "me",      "Strength 2",  { does: ["Strength 2", "Mend"] }),
   r("Famin",         "☠️", 4, 3, 9, "turnEnd",   "random",  "Poison 1",    { does: ["Poison 1 + Curse 1"] }),
   r("Mentalist",     "🧠", 4, 3, 8, "allyDies",  "enemies", "Freeze 1",    { does: ["Freeze 1", "Curse 1"] }),
   r("Equalizer",     "⚖️", 4, 3, 9, "allyPower", "front",   "Curse 1",     { does: ["Curse 1", "Hit 1"] }),
-  r("Director",      "🎬", 4, 3, 9, "allyDies",  "allies",  "Strength 1",  { does: ["Strength 1", "Shield 1"] }),
+  r("Director",      "🎬", 4, 3, 9, "allyDies",  "allies",  "Strength 1",  { does: ["Strength 1", "Heal 2"] }),
   r("Doctor",        "🥼", 4, 2, 10, "hurt",     "allies",  "Heal 1",      { does: ["Heal 1", "Shield 1"] }),
-  r("Ruin",          "🌋", 4, 4, 8, "start",     "enemies", "Hit 2",       { does: ["Hit 3"] }),
-  r("Fertilizer",    "🌻", 4, 2, 10, "allySummoned", "it",  "Strength 2 + Shield 2", { does: ["Strength 3", "Shield 3"] }),
+  r("Ruin",          "🌋", 4, 4, 8, "start",     "enemies", "Hit 2",       { does: ["Hit 2", "Curse 1"] }),
+  r("Fertilizer",    "🌻", 4, 2, 10, "allySummoned", "it",  "Strength 2 + Shield 2", { does: ["Strength 2 + Shield 2", "Bless 1"] }),
   r("Morbid",        "🦴", 4, 3, 9, "allyDies",  "enemies", "Curse 1",     { does: ["Curse 1", "Poison 1"] }),
 ];
 /* eslint-enable prettier/prettier */
