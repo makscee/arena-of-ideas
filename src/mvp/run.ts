@@ -288,14 +288,11 @@ export const SLAY_BONUS = 0.25;
 /** What a drawn round fight counts as. Tunable. */
 export const DRAW_SCORE = 0.5;
 
-/** True when the run slew the champion: it won the Crown against someone
- * else's team. The reigning champion beating their own champion team is no
- * slay (no Slay row, no slay bonus, no playoff entry). Without `player`
- * every Crown win counts. */
-export function slewChampion(run: Pick<RunView, "fights" | "endedBy"> & Partial<Pick<RunView, "player">>): boolean {
-  if (run.endedBy !== "crown-won") return false;
-  const crown = run.fights.filter((f) => f.kind === "crown").at(-1);
-  return !run.player || crown?.opponent.player.id !== run.player.id;
+/** True when the run slew the champion: it won the Crown. Beating your own
+ * champion team counts too (Maks, round 2): the reigning champion can slay
+ * and be crowned again with another team. */
+export function slewChampion(run: Pick<RunView, "endedBy">): boolean {
+  return run.endedBy === "crown-won";
 }
 
 /** The run-end rating, Elo-style. The run's score is its share of round
@@ -303,7 +300,7 @@ export function slewChampion(run: Pick<RunView, "fights" | "endedBy"> & Partial<
  * SLAY_BONUS for a slay (slewChampion), clamped to 0..1; the expected score
  * is a player rated `before` against the field (rules.ratingStart). So
  * winning half the rounds holds a start rating, and a slay lifts it. */
-export function ratingChange(before: number, run: Pick<RunView, "fights" | "endedBy"> & Partial<Pick<RunView, "player">>, rules: MvpRules = MVP_RULES): RatingChange {
+export function ratingChange(before: number, run: Pick<RunView, "fights" | "endedBy">, rules: MvpRules = MVP_RULES): RatingChange {
   const rounds = run.fights.filter((f) => f.kind === "round");
   const points = rounds.reduce((n, f) => n + (f.outcome === "win" ? 1 : f.outcome === "draw" ? DRAW_SCORE : 0), 0);
   const share = rounds.length > 0 ? points / rounds.length : 0;
