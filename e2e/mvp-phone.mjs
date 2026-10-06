@@ -316,10 +316,26 @@ try {
     }
     await page.getByTestId("fight").click();
     // The battle viewer (slice 9) comes first. In round 1, watch it play, then
-    // tap a change and read its chain. Skip goes to the result, which shows
-    // "why I lost" after a loss (shot once).
-    await page.getByTestId("battle-skip").waitFor({ timeout: 10_000 });
+    // tap a change and read its chain. End shows the end card, Continue goes
+    // to the result, which shows "why I lost" after a loss (shot once).
+    await page.getByTestId("battle-end").waitFor({ timeout: 10_000 });
+    // R2-14: the speed chosen in round 1 (4×) holds in the next battle.
+    if (round === 2 && (await page.getByTestId("battle-speed").textContent()) !== "4×") errors.push(`speed: round 2 plays at ${await page.getByTestId("battle-speed").textContent()}, not the 4× chosen in round 1`);
     if (round === 1) {
+      // R2-14: the control bar stays on screen and the battle never scrolls, every frame.
+      await page.evaluate(() => {
+        const S = { frames: 0, off: 0, scroll: 0 };
+        window.__ctl = S;
+        const tick = () => {
+          if (!document.querySelector(".bv-controls")) return;
+          S.frames++;
+          const r = document.querySelector(".bv-controls").getBoundingClientRect();
+          if (r.bottom > innerHeight + 0.5) S.off++;
+          S.scroll = Math.max(S.scroll, document.documentElement.scrollHeight - innerHeight);
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      });
       await page.getByTestId("change").first().waitFor({ timeout: 15_000 });
       await shot("battle"); await noHScroll("battle"); await nameInRing("battle"); await noRates("battle");
       // R2-13: every living battle card has an HP bar and a status row of icons
@@ -372,7 +388,7 @@ try {
       await page.getByTestId("codex-keywords").waitFor();
       await page.waitForTimeout(1500);
       await page.getByTestId("codex-back").click();
-      await page.getByTestId("battle-skip").waitFor();
+      await page.getByTestId("battle-end").waitFor();
       if ((await page.getByTestId("battle-play").textContent()) !== "▶") errors.push("battle: still playing behind the Codex");
       if (await page.getByTestId("battle-done").count()) errors.push("battle: it played out behind the Codex");
       if (await page.getByTestId("unit-sheet").count()) await page.getByTestId("sheet-close").click();
@@ -394,8 +410,56 @@ try {
         await shot("battle-two-changes-trace");
         await page.getByTestId("trace-close").click();
       } else console.log("mvp phone: round 1 had no unit with two changes in one step (no shot)");
+      // R2-14: controls, the end card, key moments and Replay.
+      await tap44("battle controls", page.locator(".bv-controls button"));
+      await tap44("battle controls", page.locator(".bv-controls button"), "width");
+      await onScreen("battle controls", page.locator(".bv-controls"));
+      for (let k = 0; k < 3 && (await page.getByTestId("battle-speed").textContent()) !== "4×"; k++) await page.getByTestId("battle-speed").click();
+      if ((await page.getByTestId("battle-speed").textContent()) !== "4×") errors.push("speed: no 4×");
+      // ▶ on the last beat shows the end card instead of starting over.
+      if (await page.getByTestId("battle-play").textContent() === "❚❚") await page.getByTestId("battle-play").click();
+      for (let k = 0; k < 400 && !(await page.getByTestId("end-card").isVisible()); k++) await page.getByTestId("battle-step").click();
+      if (!(await page.getByTestId("end-card").isVisible())) errors.push("end card: › to the last beat never showed it");
+      await page.getByTestId("end-close").click();
+      await page.getByTestId("battle-play").click();
+      if (!(await page.getByTestId("end-card").isVisible())) errors.push("end card: ▶ on the last beat didn't show it");
+      const word = await page.getByTestId("battle-word").textContent();
+      if (!/^(VICTORY|DEFEAT|DRAW)$/.test(word)) errors.push(`end card: word "${word}"`);
+      if ((await page.getByTestId("damage-row").count()) < 2) errors.push("end card: no damage by unit");
+      const moments = await page.getByTestId("key-moment").count();
+      if (moments < 1 || moments > 3) errors.push(`end card: ${moments} key moments`);
+      await onScreen("end card: Continue", page.getByTestId("battle-done"));
+      await tap44("end card buttons", page.locator('[data-testid="end-card"] button'));
+      await shot("battle-end-card"); await noHScroll("battle-end-card");
+      if (await page.getByTestId("end-why").count()) {
+        await page.getByTestId("end-why").click();
+        await page.getByTestId("why-lost").waitFor();
+        await shot("battle-end-why");
+        await page.getByTestId("why-lost").locator("button.bv-why").first().click();
+        await page.getByTestId("trace-text").waitFor();
+        await page.getByTestId("trace-close").click();
+        if (!(await page.getByTestId("end-card").isVisible())) errors.push("end card: not back after Why I lost's trace");
+      }
+      // A key moment replays from its beat.
+      if (moments) {
+        const beat = Number(await page.getByTestId("key-moment").first().getAttribute("data-beat"));
+        await page.getByTestId("key-moment").first().click();
+        if (await page.getByTestId("end-card").isVisible()) errors.push("key moment: the end card stayed up");
+        if ((await page.getByTestId("battle-play").textContent()) !== "❚❚") errors.push("key moment: not playing");
+        await page.getByTestId("battle-play").click();
+        const turn = await page.locator(".hud span").nth(2).textContent();
+        console.log(`mvp phone: key moment at beat ${beat} plays from ${turn}`);
+        await page.getByTestId("battle-end").click();
+      }
+      // Replay plays from the start: the line-up first.
+      await page.getByTestId("end-replay").click();
+      if (await page.getByTestId("end-card").isVisible()) errors.push("replay: the end card stayed up");
+      if (!/The lines face off/.test(await page.getByTestId("caption").textContent())) errors.push(`replay: didn't start from the line-up ("${await page.getByTestId("caption").textContent()}")`);
+      const ctl = await page.evaluate(() => window.__ctl);
+      if (ctl.off || ctl.scroll > 0) errors.push(`battle: controls off screen in ${ctl.off}/${ctl.frames} frames, page scrolls ${ctl.scroll}px`);
     }
-    await page.getByTestId("battle-skip").click();
+    await page.getByTestId("battle-end").click();
+    await page.getByTestId("battle-done").click();
     await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
     if (!whyShot && (await page.getByTestId("why-lost").isVisible())) {
       whyShot = true;
@@ -644,7 +708,8 @@ try {
     if (!/Beat it to be a slayer again/.test(await page.getByTestId("hint").textContent())) errors.push("own crown: the hint promises no slay");
     await shot("crown-own"); await noHScroll("crown-own");
     await page.getByTestId("fight").click();
-    await page.getByTestId("battle-skip").click();
+    await page.getByTestId("battle-end").click();
+    await page.getByTestId("battle-done").click();
     await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
     const result = await page.locator("#app").textContent();
     const ownWon = (await page.getByTestId("outcome").textContent()).includes("VICTORY");

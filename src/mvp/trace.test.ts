@@ -6,7 +6,7 @@ import { battle } from "../battle.js";
 import { displayNames } from "../trace.js";
 import { stressAbilities, stressRegistry } from "../content/stress.js";
 import type { AbilityDef, AbilityRegistry, BattleEvent, UnitDef, When } from "../types.js";
-import { BEAT_MAX_MS, BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, captionOf, captionSubject, changeOf, endCaption, firingOf, stepsOf, timingOf, traceOf, whyILost } from "./trace.js";
+import { BEAT_MAX_MS, BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, captionOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, stepsOf, timingOf, traceOf, whyILost } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -291,5 +291,45 @@ describe("trigger badges (R2-13)", () => {
     const strikes = stepsOf(log).filter((s) => s.changes.some((c) => c.kind === "damage"));
     expect(strikes.length).toBeGreaterThan(0);
     for (const s of strikes) expect(firingOf(log, s)).toBeNull();
+  });
+});
+
+describe("the end card (R2-14)", () => {
+  test("damage by unit: each side's damage to the other, overkill not counted, biggest first", () => {
+    const log = run([dummy("Squire", 8, 1), dummy("Page", 6, 1)], [dummy("Dummy", 30, 2), Medic]);
+    const dmg = damageByUnit(log);
+    const b = dmg.filter((d) => d.side === "B");
+    expect(b[0]).toMatchObject({ name: "Dummy", damage: 14 }); // Squire 8 + Page 6
+    expect(dmg.map((d) => d.side)).toEqual([...dmg.map((d) => d.side)].sort());
+    for (const side of ["A", "B"] as const) {
+      const s = dmg.filter((d) => d.side === side).map((d) => d.damage);
+      expect(s).toEqual([...s].sort((p, q) => q - p));
+    }
+    // what A dealt equals what B's units lost (B didn't die, so no overkill)
+    const aDealt = dmg.filter((d) => d.side === "A").reduce((t, d) => t + d.damage, 0);
+    const bHurt = log.filter((e) => e.type === "Hurt" && e.unit.startsWith("B")).reduce((t, e) => t + (e.type === "Hurt" ? e.amount : 0), 0);
+    expect(aDealt).toBe(bHurt);
+  });
+
+  test("key moments: 2–3, in battle order, each on a beat that holds it", () => {
+    const log = run([dummy("Squire", 8, 1), dummy("Page", 6, 1)], [dummy("Dummy", 30, 2), Medic]);
+    const beats = beatPlayOf(log, stepsOf(log));
+    const ms = keyMomentsOf(log, beats);
+    expect(ms.length).toBeGreaterThanOrEqual(2);
+    expect(ms.length).toBeLessThanOrEqual(3);
+    expect(ms.map((m) => m.beat)).toEqual([...ms.map((m) => m.beat)].sort((p, q) => p - q));
+    expect(new Set(ms.map((m) => m.beat)).size).toBe(ms.length);
+    const kill = ms.find((m) => m.kind === "kill")!;
+    expect(kill.label).toMatch(/^Dummy kills (Squire|Page) \(−\d+\)$/);
+    expect(beats[kill.beat]!.waves.some((w) => w.changes.some((c) => c.kind === "death"))).toBe(true);
+  });
+
+  test("a long cascade is the combo moment", () => {
+    const log = run([Shieldbearer, Smith, Archer, Medic, Zealot], [dummy("Dummy", 30, 3), Medic, Zealot]);
+    const beats = beatPlayOf(log, stepsOf(log));
+    const most = Math.max(...beats.map((b) => b.waves.length));
+    const combo = keyMomentsOf(log, beats).find((m) => m.kind === "combo");
+    if (most >= 3) expect(combo).toMatchObject({ beat: beats.find((b) => b.waves.length === most)!.index, label: expect.stringMatching(new RegExp(`^Combo: ${most} steps`)) });
+    else expect(combo).toBeUndefined();
   });
 });

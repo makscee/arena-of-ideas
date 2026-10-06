@@ -40,6 +40,9 @@ export const INNOCENT_NAMES: readonly string[] = [
   "Homogenous", "Scrapper", "Analog",
   // the #609 merge check's collateral, and words that start or end like a new stem
   "Starseeker", "Starserpent", "Starsentinel", "Warserpent", "Warsentinel", "Enigma", "Twinkle", "Spicy", "Starseer", "Briarseer",
+  "Warmonger", "Ironmonger", "Fearmonger", "Darklance", "Dusklance", "Blackland", "Ashthorn", "Ashtalon", "Marshtide", "Fleshtearer",
+  "Brushtail", "Wishtide", "Ash Titan", "Fortitude", "Altitude", "Gratitude", "Entity", "Identity", "Petition", "Moonogre",
+  "Dragon Ogre", "Egyptian", "Impervious", "Pimpernel", "Farthing", "Bump", "Bumper", "Harass", "Kvass",
   "Titmouse", "Grapevine", "Boobytrap", "Trapeze", "Gypsum", "Tardigrade", "Cumbersome", "About", "Above", "Abomination", "Bonebuster",
   "Bumblebee", "Album", "Knobble", "Stitchling", "Stormscrap", "Glassface", "Glasshead", "Grasshead", "Brasshead",
 ];
