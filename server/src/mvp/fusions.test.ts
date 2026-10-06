@@ -145,9 +145,9 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
   });
 
   it("blocks profanity, slurs and hate words, and keeps the ordinary words that contain them (#587)", () => {
-    for (const raw of ["Shitlord", "Fuckwit", "Kike", "Retard", "Hitler", "Rapeblade", "Cumlord", "Asshole", "Ass", "Sex", "Pedophile", "Wetback", "Nig Nog"])
+    for (const raw of ["Shitlord", "Fuckwit", "Kike", "Retard", "Hitler", "Rapeblade", "Cumlord", "Asshole", "Ass", "Sex", "Pedophile", "Wetback", "Nig Nog", "Redskin", "Beaner", "Dumbass", "Kyke", "Whitepower", "Jewkiller", "Pussies", "Mongoloid"])
       expect(cleanModelName(raw), raw).toBeNull();
-    for (const raw of ["Cockatoo", "Therapist", "Parapet", "Raccoon", "Cocoon", "Analyst", "Manaleech", "Assassin", "Glass Golem", "Mongoose", "Sexton Shade", "Scunthorpe", "Coarse"])
+    for (const raw of ["Cockatoo", "Therapist", "Parapet", "Raccoon", "Cocoon", "Analyst", "Manaleech", "Assassin", "Glass Golem", "Mongoose", "Sexton Shade", "Scunthorpe", "Coarse", "Farseer", "Hearse", "Starseed", "Spices", "Pussycat", "Cockney", "Marseille"])
       expect(cleanModelName(raw), raw).not.toBeNull();
   });
 
@@ -162,6 +162,8 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
         const name = portmanteau(a.name, b.name, [...names, ...taken]);
         taken.push(name);
         expect(isBlockedName(name), `${a.name}+${b.name}=${name}`).toBe(false);
+        // Held stricter than a model's answer: no crude fragment anywhere.
+        expect(name.toLowerCase(), `${a.name}+${b.name}`).not.toMatch(/sex|cum|nig|boner|anal|arse|rape|kike/);
       }
   }, 30_000);
 
