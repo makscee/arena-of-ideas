@@ -120,7 +120,7 @@
   awoken:   Enemy gets Poison: 1 Curse and 1 damage to it.
 🃏 Trickster
   sleeping: Enemy gets Curse: 2 damage to random enemy.
-  awoken:   Enemy gets Curse: PWR damage to it.
+  awoken:   Enemy gets Curse: 2 damage to it.
 🗝️ Custodian
   sleeping: Ally dies: 2 Shield to all allies.
   awoken:   Ally dies: 2 Shield to all allies, then heal all allies for 1.
@@ -171,7 +171,7 @@
   awoken:   Battle start: 2 Poison and 1 Curse to all enemies.
 🧫 Virus
   sleeping: Enemy dies: 2 Poison to all enemies.
-  awoken:   Enemy dies: 2 Poison and 1 Freeze to all enemies.
+  awoken:   Enemy dies: 2 Poison and 1 Curse to all enemies.
 💀 Necromancer
   sleeping: Ally dies: revive fallen ally at 2 HP.
   awoken:   Ally dies: revive fallen ally at 1 HP, then 3 Strength to fallen ally.
