@@ -151,7 +151,7 @@ export const ROWS: Row[] = [
   // A summon into a full line is skipped, so Planter also grows: in a full
   // line it is a sturdier body instead of a blank.
   r("Planter",       "🌱", 1, 1, 5, "start",      "me",      "Call Imp + Vitality 2", { does: ["Call Treant + Vitality 2", "Shield 2"] }),
-  r("Nurse",         "💉", 1, 1, 5, "allyHurt",   "it",      "Heal 1",      { who: "allies" }),
+  r("Nurse",         "💉", 1, 1, 5, "allyHurt",   "it",      "Heal 1",      { does: ["Heal 1", "Shield 1"] }),
   r("Prepper",       "🎒", 1, 1, 5, "start",      "allies",  "Shield 1",    { does: ["Shield 1", "Bless 1"] }),
   r("Coach",         "📣", 1, 1, 5, "start",      "allies",  "Strength 1",  { does: ["Strength 1", "Shield 1"] }),
   r("Bat",           "🦇", 1, 2, 4, "strike",     "random",  "Hit 1",       { does: ["Hit 1", "Curse 1"] }),
@@ -168,7 +168,7 @@ export const ROWS: Row[] = [
   r("Medic",         "⛑️", 1, 1, 6, "turnEnd",    "allies",  "Heal 1",      { does: ["Heal 1", "Shield 1"] }),
 
   // ---- tier 2: links that react to links ----
-  r("Guardian",      "🛡️", 2, 2, 6, "allyHurt",   "it",      "Shield 1",    { does: ["Shield 1", "Heal 1"] }),
+  r("Guardian",      "🛡️", 2, 2, 6, "allyHurt",   "it",      "Shield 1",    { who: "me", does: ["Shield 2"] }),
   r("Almsgiver",     "🪙", 2, 2, 7, "allyShield", "it",      "Heal 1",      { who: "me", does: ["Heal 2", "Strength 1"] }),
   r("Sanctifier",    "✨", 2, 2, 6, "allyHealed", "it",      "Strength 1",  { who: "front", does: ["Smite"] }),
   r("Enhancer",      "🔋", 2, 1, 6, "allyShield", "it",      "Strength 1",  { does: ["Strength 1", "Heal 1"] }),
