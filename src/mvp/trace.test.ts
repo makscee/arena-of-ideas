@@ -258,7 +258,19 @@ describe("one beat at a time (R2-12)", () => {
     expect(fade).toBeDefined();
     const wave = beatPlayOf(log, stepsOf(log)).flatMap((b) => b.waves).find((w) => w.eventIds.includes(fade.id))!;
     expect(wave.eventIds[0]).toBe(fade.causedBy);
-    expect(wave.caption).toMatch(/absorbed\), Shield −1$/);
+    // Shield took the whole hit: the caption shows the block, never "−0".
+    expect(wave.caption).toBe("Dummy strikes Bulwark → Shield blocks 1, Shield −1");
+    expect(wave.changes.find((c) => c.kind === "damage")?.label).toBe("1 blocked");
+  });
+
+  test("a hit that does nothing reads as \"no damage\", never −0", () => {
+    const log = run([dummy("Rose", 6, 1)], [dummy("Pebble", 30, 0)]);
+    const hit = log.find((e) => e.type === "Hurt" && e.unit === "A1:Rose" && e.amount === 0)!;
+    expect(hit).toBeDefined();
+    expect(changeOf(hit)?.label).toBe("no damage");
+    expect(captionOf(log, hit.id)).toBe("Pebble strikes Rose → no damage");
+    const captions = beatPlayOf(log, stepsOf(log)).flatMap((b) => b.waves.map((w) => w.caption));
+    expect(captions.filter((c) => /−0\b/.test(c))).toEqual([]);
   });
 });
 
