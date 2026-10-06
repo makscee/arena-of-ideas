@@ -7,9 +7,11 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import { describeAbility, describeStatus, describeStatusSegments, type DescribeSegment } from "./describe.js";
-import { GLOSSARY, ICON_IDS, STATUS_TERMS, scopedTip, termDef, termIcon, type TermId } from "./glossary.js";
+import { GLOSSARY, ICON_IDS, STATUS_TERMS, scopedLabel, scopedTip, termDef, termGroup, termIcon, type FixedTermId, type TermId } from "./glossary.js";
+import { MVP_RULES } from "./mvp/contract.js";
 import type { UnitForm } from "./mvp/contract.js";
 import { formSegments, formText } from "./mvp/form-text.js";
+import type { UnitFilter } from "./types.js";
 import { mvpPool } from "./mvp/units.js";
 
 const pool = mvpPool();
@@ -199,9 +201,81 @@ describe("glossary entries and icons", () => {
     const enemyDeath = pool.units.find((u) => u.forms.sleeping.when.some((w) => w.on.on === "Death" && "unit" in w.on && w.on.unit === "enemy"))!;
     expect(scopeOf(enemyDeath.name)).toBe("enemy");
     expect(scopedTip("trigger:Death", "enemy")).toBe("When an enemy dies.");
-    expect(scopedTip("trigger:Death", "otherAlly")).toBe("When another ally (not this unit) dies.");
+    expect(scopedTip("trigger:Death", "otherAlly")).toBe("When another ally (not self) dies.");
     expect(scopedTip("trigger:Death", "holder")).toBe(GLOSSARY["trigger:Death"].tip);
     expect(scopedTip("trigger:Death")).toBe(GLOSSARY["trigger:Death"].tip);
     expect(scopedTip("trigger:BattleStart", "any")).toBe(GLOSSARY["trigger:BattleStart"].tip);
   });
 });
+
+describe("keywords stand alone (R3-2, words.md (4))", () => {
+  // A rule may name only core words (PWR, HP, stack, damage, heal, strike,
+  // turn, ally, enemy, line, battle), never another keyword: if that keyword
+  // is removed, the rule would lie. The names come from the tables, so a new
+  // status, effect, state or battle rule is covered automatically. Triggers
+  // and targets read as plain English ("dies", "self") and say nothing a
+  // removal could break; core words and "would" (Blessing: "would die") stay.
+  const CORE = new Set(["pwr", "hp", "damage", "heal", "stacks", "would"]);
+  const named: [TermId, string][] = [
+    ...Object.keys(STATUS_TERMS).map((k) => [`status:${k}` as TermId, k] as [TermId, string]),
+    ...(Object.entries(GLOSSARY) as [FixedTermId, { label: string }][])
+      .filter(([id]) => ["effect", "state", "battle", "condition", "term"].includes(termGroup(id)))
+      .map(([id, d]) => [id, d.label] as [TermId, string]),
+  ].filter(([, label]) => !CORE.has(label.toLowerCase()));
+  const SCOPES: (UnitFilter | undefined)[] = [undefined, "ally", "otherAlly", "enemy", "any"];
+  const rules: [TermId, string][] = [
+    ...(Object.keys(GLOSSARY) as TermId[]).flatMap((id) => {
+      const d = termDef(id)!;
+      return [d.tip, d.more ?? "", ...SCOPES.map((sc) => scopedTip(id, sc) ?? "")].map((t) => [id, t] as [TermId, string]);
+    }),
+    ...Object.entries(STATUS_TERMS).flatMap(([k, d]) => [[`status:${k}`, d.tip], [`status:${k}`, d.more ?? ""]] as [TermId, string][]),
+  ];
+  // Fused is defined over Awoken: the core progression, not a keyword that may go.
+  const allowed = (id: TermId, other: TermId) => id === other || (id === "state:fused" && other === "state:awoken");
+
+  test("the list of names covers every status and the named rules", () => {
+    const labels = named.map(([, l]) => l);
+    for (const l of [...Object.keys(STATUS_TERMS), "Fatigue", "Summon", "Revive", "Silence", "Awoken", "Fused", "Chain stopped"]) expect(labels).toContain(l);
+  });
+
+  const unique = [...new Map(rules.filter(([, t]) => t !== "").map(([id, t]) => [`${id}|${t}`, [id, t] as [TermId, string]])).values()];
+  test.each(unique)("%s: \"%s\" names no other keyword", (id, text) => {
+    for (const [other, label] of named) {
+      if (allowed(id, other)) continue;
+      expect(text, `${id} names ${label}`).not.toMatch(new RegExp(`\\b${label}`, "i"));
+    }
+  });
+
+  test("Damage says nothing about Shield; Shield says what it blocks", () => {
+    expect(GLOSSARY["effect:damage"].tip).toBe("Takes away that much HP.");
+    expect(STATUS_TERMS.Shield!.tip).toMatch(/Blocks damage of any kind/);
+    expect(GLOSSARY["trigger:Hurt"].tip).toMatch(/counts even if all of it is blocked/);
+  });
+
+  test("Chain stopped reads the cap from the rules", () => {
+    expect(GLOSSARY["battle:chainCapped"].tip).toContain(`${MVP_RULES.chainStepCap} steps`);
+  });
+
+  test("labels are the card's words", () => {
+    expect(GLOSSARY["trigger:Hurt"].label).toBe("Hit");
+    expect(GLOSSARY["target:holder"].label).toBe("Self");
+    expect(GLOSSARY["target:eventUnit"].label).toBe("It");
+    expect(GLOSSARY["target:allAllies"].label).toBe("All allies");
+    expect(GLOSSARY["target:allEnemies"].label).toBe("All enemies");
+    expect(GLOSSARY["target:allAllies"].tip).toMatch(/self included/);
+    expect(scopedLabel("trigger:Death", "otherAlly")).toBe("Ally dies");
+    expect(scopedLabel("trigger:Hurt", "enemy")).toBe("Enemy hit");
+    expect(scopedLabel("trigger:StatChanged", "ally")).toBe("Ally gains PWR");
+    expect(scopedLabel("trigger:Death", "holder")).toBe("Dies");
+    expect(scopedLabel("trigger:BattleStart", "any")).toBe("Battle start");
+    // Every label a card's text opens with is a glossary label, scoped or not.
+    const all = [...forms, ...fusions].flatMap(([, f]) => formSegments(f, pool.abilities));
+    const labels = new Set(Object.keys(GLOSSARY).flatMap((id) => SCOPES.map((sc) => scopedLabel(id as TermId, sc)!.toLowerCase())));
+    for (const s of all.filter((x) => x.clause === "when" && x.term?.startsWith("trigger:"))) {
+      const words = s.text.trim().toLowerCase();
+      if (/(gets|loses)$/.test(words)) continue; // "Ally gets " + the status: "Ally gets status"
+      expect(labels, `"${s.text}"`).toContain(words);
+    }
+  });
+});
+

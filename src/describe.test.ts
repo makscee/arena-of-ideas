@@ -116,16 +116,16 @@ describe("describeAbility", () => {
 
 describe("abilityChips — the card's terse 3-chip line (#082)", () => {
   test("the shipped stress units read as short trigger/target/action + glyph", () => {
-    // Venom: ⚔ On strike ▸ Front enemy ▸ ☣ Poison 2 (the mockup's canonical row;
+    // Venom: ⚔ Strikes ▸ Front enemy ▸ ☣ Poison 2 (the mockup's canonical row;
     // the action glyph ☣ is the family glyph the card derives, not in the chips).
     expect(abilityChips(unitActionsOf(Venomancer, stressAbilities)[0]!)).toEqual({
-      trigger: "On strike",
+      trigger: "Strikes",
       triggerGlyph: "⚔",
       target: "Front enemy",
       action: "Poison 2",
     });
     expect(abilityChips(unitActionsOf(Summoner, stressAbilities)[0]!)).toEqual({
-      trigger: "On death",
+      trigger: "Dies",
       triggerGlyph: "☠",
       target: "Self",
       action: "Summon Imp",
@@ -137,9 +137,9 @@ describe("abilityChips — the card's terse 3-chip line (#082)", () => {
       action: "Silence",
     });
     expect(abilityChips(unitActionsOf(Necromancer, stressAbilities)[0]!)).toEqual({
-      trigger: "On death",
+      trigger: "Dies",
       triggerGlyph: "☠",
-      target: "Last dead ally",
+      target: "Fallen ally",
       action: "Revive",
     });
   });

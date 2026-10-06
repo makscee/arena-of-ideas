@@ -213,6 +213,15 @@ try {
   if (shieldUsers === 0) errors.push("codex: Shield lists no units");
   await page.locator('[data-term="status:Shield"]').scrollIntoViewIfNeeded();
   await shot("codex-keywords"); await noHScroll("codex-keywords");
+  // R3-2: keywords stand alone, the groups read When / Who / Does, jargon no unit uses is hidden.
+  {
+    const damage = (await page.locator('[data-term="effect:damage"] .kw-tip').textContent()) ?? "";
+    if (/Shield/.test(damage) || !damage) errors.push(`codex: Damage reads "${damage}"`);
+    const groups = await page.locator(".kw-group").allTextContents();
+    for (const g of ["When", "Who", "Does"]) if (!groups.includes(g)) errors.push(`codex: no "${g}" group (${groups.join(", ")})`);
+    for (const t of ["effect:absorbHurt", "effect:preventDeathHeal", "effect:cancel", "effect:consumeStacks", "term:would"])
+      if (await page.locator(`.kw-row[data-term="${t}"]`).count()) errors.push(`codex: the unused row ${t} shows`);
+  }
   // Dies said of an enemy has its own line, its own rule and its own units.
   {
     if (await page.locator('.kw-row:not([data-term^="trigger:"]) .kw-scope').count()) errors.push("codex: a term that isn't a trigger has scope lines");
@@ -220,6 +229,8 @@ try {
     if (!(await enemyDies.count())) errors.push("codex: Dies has no \"an enemy dies\" line");
     else {
       if (!/When an enemy dies/.test(await enemyDies.locator(".kw-tip").textContent())) errors.push(`codex: the enemy-death line reads "${await enemyDies.locator(".kw-tip").textContent()}"`);
+      // R3-2: the scoped line has its own label in the card's words.
+      if ((await enemyDies.getByTestId("codex-term-scope-label").textContent()) !== "Enemy dies") errors.push(`codex: the enemy-death line's label reads "${await enemyDies.getByTestId("codex-term-scope-label").textContent()}"`);
       if (!(await enemyDies.getByTestId("codex-term-unit").count())) errors.push("codex: the enemy-death line lists no units");
       await enemyDies.scrollIntoViewIfNeeded();
       await shot("codex-dies-scoped");

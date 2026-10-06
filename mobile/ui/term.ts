@@ -9,7 +9,7 @@
 // Both offer "Open in Codex" once something registers a Codex link (slice
 // R2-11, setCodexLink).
 import type { DescribeSegment } from "../../src/describe";
-import { scopedTip, termDef, termIcon, type TermDef, type TermId } from "../../src/glossary";
+import { scopedLabel, scopedTip, termDef, termIcon, type TermDef, type TermId } from "../../src/glossary";
 import type { UnitFilter } from "../../src/types";
 import { closable, h, isDesktop } from "./dom";
 import { changedTokens } from "./diff";
@@ -36,7 +36,7 @@ export function termInfo(seg: DescribeSegment): (TermDef & { id: TermId; scope?:
     return /^self$/i.test(seg.text) ? { ...holder, id, label } : { ...def, id, label };
   }
   // A trigger clause's rule follows its scope ("after an enemy dies"), and so does its Codex line.
-  return seg.scope ? { ...def, id, scope: seg.scope, tip: scopedTip(id, seg.scope) ?? def.tip } : { ...def, id };
+  return seg.scope ? { ...def, id, scope: seg.scope, label: scopedLabel(id, seg.scope) ?? def.label, tip: scopedTip(id, seg.scope) ?? def.tip } : { ...def, id };
 }
 
 /** The status a run is about: its own status term, or the status a "gets"
@@ -120,7 +120,7 @@ function edgeSpaced(kids: (Node | string)[], wrap: (inner: (Node | string)[]) =>
   return [...(lead ? [document.createTextNode(lead)] : []), wrap(body), ...(trail ? [document.createTextNode(trail)] : [])];
 }
 
-/** termInfo, plus: a "gets" trigger names its status ("Gets Shield"). */
+/** termInfo, plus: a "gets" trigger names its status ("Gets Shield", "Ally gets Shield"). */
 function clauseInfo(seg: DescribeSegment, segs: DescribeSegment[], i: number): ReturnType<typeof termInfo> {
   const info = termInfo(seg);
   if (!info || (info.id !== "trigger:StatusApplied" && info.id !== "trigger:StatusRemoved")) return info;
@@ -128,7 +128,8 @@ function clauseInfo(seg: DescribeSegment, segs: DescribeSegment[], i: number): R
   while (j > 0 && segs[j - 1]!.clause === "when") j--;
   let status: string | undefined;
   for (; j < segs.length && segs[j]!.clause === "when" && !status; j++) status = statusOf(segs[j]!);
-  return status ? { ...info, label: `${info.id === "trigger:StatusApplied" ? "Gets" : "Loses"} ${status}` } : info;
+  // "Gets status" → "Gets Shield"; scoped: "Ally gets Shield".
+  return status ? { ...info, label: info.label.replace(/status$/, status) } : info;
 }
 
 function termButton(seg: DescribeSegment, info: TermDef & { id: TermId }, kids: (Node | string)[], withAmount: Set<TermId>, size: number, inPill: boolean): HTMLElement {

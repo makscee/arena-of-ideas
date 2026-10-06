@@ -17,7 +17,7 @@
 // On desktop a sheet opens in the inspector on the right, not an overlay.
 // The icon credits (CC BY 3.0) sit at its foot. Reads /content, /stats and
 // /fusions, each once while it stays open (CodexCache).
-import { GLOSSARY, STATUS_TERMS, scopedTip, termDef, termGroup, type FixedTermId, type IconId, type TermGroup, type TermId } from "../../src/glossary";
+import { GLOSSARY, STATUS_TERMS, scopedLabel, scopedTip, termDef, termGroup, type FixedTermId, type IconId, type TermGroup, type TermId } from "../../src/glossary";
 import type { FusionDiscovery, LineUnit, MvpContent, StatsView, UnitContent, UnitId } from "../../src/mvp/contract";
 import type { UnitFilter } from "../../src/types";
 import { formSegments, formText } from "../../src/mvp/form-text";
@@ -373,15 +373,22 @@ function fusionsTab(
 
 const GROUPS: [TermGroup, string][] = [
   ["status", "Statuses"],
-  ["trigger", "Triggers (When)"],
+  ["trigger", "When"],
   ["condition", "Conditions"],
-  ["target", "Targets (Who)"],
-  ["effect", "Effects (Does)"],
+  ["target", "Who"],
+  ["effect", "Does"],
   ["stat", "Stats"],
   ["state", "Unit states"],
   ["battle", "Battle"],
   ["term", "Words"],
 ];
+
+/** Rows that show only when a unit's text uses them: the rest (statuses,
+ * stats, unit states, battle rules, Stacks, which their rules say) always
+ * show. Kernel jargon no unit says (Absorb, Cheat death, Cancel, Spend,
+ * would) stays hidden until content starts using it. */
+const SHOWN_IF_USED: ReadonlySet<TermGroup> = new Set(["trigger", "condition", "target", "effect"]);
+const shownIfUsed = (id: TermId): boolean => SHOWN_IF_USED.has(termGroup(id)) || id === "term:would";
 
 /** A trigger's scopes other than its holder's, in the order its row lists them. */
 const SCOPES: Exclude<UnitFilter, "holder">[] = ["ally", "otherAlly", "enemy", "any"];
@@ -424,13 +431,26 @@ function keywordsTab(content: MvpContent, open: (node: HTMLElement, from?: HTMLE
     const def = termDef(id, content.statuses);
     if (!def) return null;
     const used = users.get(id) ?? [];
-    // A trigger said of someone else gets its own line, with its own rule
-    // and units: "When an enemy dies." lists Wither, not "When it dies."
+    // A trigger said of someone else gets its own line, with its own label,
+    // rule and units: "Enemy dies / When an enemy dies." lists Wither, not
+    // "When it dies."
     const scoped = (id.startsWith("trigger:") ? SCOPES : []).flatMap((sc) => {
       const them = users.get(useKey(id, sc));
       const tip = them && scopedTip(id, sc);
-      return them && tip ? [h("div", { class: "stack kw-scope", "data-scope": sc, "data-testid": "codex-term-scope" }, h("div", { class: "kw-tip" }, tip), usedBy(them.length), chipsOf(them))] : [];
+      return them && tip
+        ? [
+            h(
+              "div",
+              { class: "stack kw-scope", "data-scope": sc, "data-testid": "codex-term-scope" },
+              h("b", { class: `tone-${def.tone}`, "data-testid": "codex-term-scope-label" }, scopedLabel(id, sc) ?? def.label),
+              h("div", { class: "kw-tip" }, tip),
+              usedBy(them.length),
+              chipsOf(them),
+            ),
+          ]
+        : [];
     });
+    if (shownIfUsed(id) && used.length === 0 && scoped.length === 0) return null;
     return h(
       "div",
       { class: "kw-row", "data-term": id, "data-testid": "codex-term", id: `codex-${id.replace(/[^a-zA-Z0-9]+/g, "-")}` },

@@ -39,8 +39,11 @@ describe("unit texts", () => {
         else steps.at(-1)!.push(s);
       }
       for (const step of steps) {
-        const ands = step.filter((s, i) => s.term === undefined && s.partRef === undefined && s.text === " and " && /^(effect|status):/.test(step[i - 1]?.term ?? ""));
+        // Three or more: commas, then a final "and" ("1 Strength, 1 Vitality and 4 damage to …").
+        const ands = step.filter((s, i) => s.term === undefined && s.partRef === undefined && (s.text === " and " || s.text === ", ") && /^(effect|status):/.test(step[i - 1]?.term ?? ""));
         if (ands.length === 0) continue;
+        expect(ands.at(-1)!.text, `${name}: the last join is "and"`).toBe(" and ");
+        expect(ands.slice(0, -1).every((s) => s.text === ", "), `${name}: the others are commas`).toBe(true);
         merged++;
         const text = step.map((s) => s.text).join("");
         // One target, named once, after the last merged effect.
@@ -51,6 +54,13 @@ describe("unit texts", () => {
       }
     }
     expect(merged).toBeGreaterThan(10);
+  });
+
+  it("join three or more merged effects with commas and a final 'and' (a fusion shows it)", () => {
+    const awoken = (name: string) => pool.units.find((u) => u.name === name)!.forms.awoken;
+    const [a, b] = [awoken("Fighter"), awoken("Taser")];
+    // The When of the first, the Who of the second, the Does of both.
+    expect(formText({ when: a.when, who: b.who, does: [...a.does, ...b.does] }, pool.abilities)).toBe("Strikes: 3 damage, 1 Freeze and 2 damage to front enemy.");
   });
 
   it("read as Maks's examples", () => {
