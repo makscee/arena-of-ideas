@@ -223,9 +223,8 @@ button.bv-badge.still .bv-badge-pill { animation: none; }
  * the pop after the shake; its fill holds back until then). */
 .bv-card.bv-dying { animation: bv-die calc(0.5s / var(--bv-sp, 1)) ease-out calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) forwards; }
 .bv-card.bv-hit.bv-dying { animation: bv-shake calc(0.34s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-t, 0s)) / var(--bv-sp, 1)), bv-die calc(0.5s / var(--bv-sp, 1)) ease-out calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) forwards; }
-/* Floats hang in the card's slot and rise above the card (as in the mockup),
- * so the card's name and numbers stay readable while they change; they pass
- * over a trigger badge for their 0.7 s. ±PWR sits over PWR's side, ±HP over HP's. */
+/* Floats hang in the card's slot. On desktop they rise above the card, into
+ * the line's room for them; on the phone (below) over the card's emoji. ±PWR sits over PWR's side, ±HP over HP's. */
 .bv-float { --k: 0; position: absolute; left: 0; right: 0; top: auto; bottom: calc(100% + 2px + var(--k) * 14px); z-index: 4; text-align: center; line-height: 20px; pointer-events: none; font-family: "IBM Plex Mono", monospace; font-size: 18px; font-weight: 700; text-shadow: 0 0 4px var(--bg), 0 0 2px var(--bg); white-space: nowrap; overflow: hidden; animation: bv-rise calc(0.7s / var(--bv-sp, 1)) ease-out both; }
 .bv-float.damage, .bv-float.debuff { color: var(--ghost); }
 .bv-float.heal, .bv-float.summon { color: var(--you); }
@@ -256,9 +255,9 @@ button.bv-badge.still .bv-badge-pill { animation: none; }
   button.bv-badge .bv-badge-pill { animation: none; }
   .bv-card.acting { transform: none; }
 }
-/* A change sits over the emoji: the button is a transparent 44 px tap target
- * across the card's top, its pill covers only the emoji, so the name and
- * PWR / HP below stay readable. One pill per unit a step; a status and the
+/* A change sits in the card's top row (the phone and desktop both start the
+ * emoji below it, R2-17): the button is a transparent 44 px tap target
+ * across the card's top, its pill clear of the emoji and the trigger icon. One pill per unit a step; a status and the
  * stat it moves share it on two lines (.bv-pill.two). */
 .bv-changes { position: absolute; top: 0; left: 0; right: 0; height: 44px; display: flex; }
 button.bv-change { flex: 1; min-width: 0; min-height: 44px; height: 44px; padding: 3px 2px 0; border: none; background: transparent; clip-path: none; display: flex; align-items: flex-start; justify-content: center; letter-spacing: 0; text-transform: none; }

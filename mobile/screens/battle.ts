@@ -462,6 +462,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   }
   function leave(): void {
     if (timer) clearTimeout(timer);
+    removeEventListener("resize", placeEnd);
     a.onDone();
   }
 
