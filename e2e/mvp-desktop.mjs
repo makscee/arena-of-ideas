@@ -304,16 +304,19 @@ try {
       if (await page.getByTestId("run-menu").count()) errors.push("Esc didn't close the run menu");
     }
     if (crown) { await shot("crown-shop"); await noHScroll("crown-shop"); }
-    // Space fights.
+    // Space fights. Round 2 listens to it (round 3, note 16): the start
+    // sting, wave sounds while it plays, nothing on a step, one end sound.
+    if (round === 2) await page.evaluate(() => { window.__sfx = []; });
     await page.keyboard.press("Space");
     await page.getByTestId("battle-end").waitFor({ timeout: 10_000 });
+    if (round === 2) await battleSounds();
     if (round === 1) await shot("battle");
     if (round === 1) await logFirst("battle opens");
     if (round === 1) await whyOnDesktop();
     if (round === 1) await desktopBattle();
     if (round === 1) await beamChecks(page, errors, { shot, phone: false });
     if (round === 1) await nowSheetChecks(page, errors, { shot, phone: false });
-    await page.getByTestId("battle-end").click();
+    if (!(await page.getByTestId("end-card").isVisible().catch(() => false))) await page.getByTestId("battle-end").click();
     // R2-17 batch E: the end card is the fight's one result: the round
     // fought, hearts and record, and its button goes straight on.
     await page.getByTestId("end-card").waitFor({ timeout: 10_000 });
@@ -455,6 +458,40 @@ try {
   await page.waitForTimeout(200);
   if (await page.getByTestId("inspector").count()) errors.push("1023px: the inspector shows on the phone layout");
   await shot("shop-1023");
+  /** Round 3, note 16: a battle's sounds, read off window.__sfx. It opens
+   * with "start", plays a hit, zap or block as waves land, makes none on ←
+   * (a step) or a timeline jump, and plays its end sound once: not again
+   * after a Replay played out to the end card. */
+  async function battleSounds() {
+    const sfx = () => page.evaluate(() => window.__sfx ?? []);
+    if ((await sfx())[0] !== "start") errors.push(`battle sound: it opened with "${(await sfx())[0] ?? "nothing"}", not start`);
+    await page.waitForFunction(() => (window.__sfx ?? []).some((k) => /^(hit|zap|block)$/.test(k)), null, { timeout: 15_000 })
+      .catch(async () => errors.push(`battle sound: no hit, zap or block while it played (${(await sfx()).join(", ")})`));
+    await page.keyboard.press("ArrowLeft");
+    const before = (await sfx()).length;
+    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("ArrowRight");
+    await page.waitForTimeout(1_500);
+    const after = await sfx();
+    if (after.length !== before) errors.push(`battle sound: ← / → (a step) played ${after.slice(before).join(", ")}`);
+    const ends = (list) => list.filter((k) => /^(win|lose|draw)$/.test(k)).length;
+    await page.getByTestId("battle-end").click();
+    await page.getByTestId("end-card").waitFor({ timeout: 10_000 });
+    await page.waitForTimeout(700); // a slay's discovery chime comes 0.5 s later
+    const first = await sfx();
+    if (ends(first) !== 1) errors.push(`battle sound: the end card played ${ends(first)} end sounds (${first.slice(-3).join(", ")})`);
+    // Replay, then End again: the end sound doesn't play twice.
+    await page.getByTestId("end-replay").click();
+    await page.waitForTimeout(600);
+    await page.getByTestId("battle-end").click();
+    await page.getByTestId("end-card").waitFor({ timeout: 10_000 });
+    await page.waitForTimeout(300);
+    const again = await sfx();
+    if (ends(again) !== 1) errors.push(`battle sound: the end sound played again after a Replay (${again.slice(-4).join(", ")})`);
+    if (again.includes("start", 1)) errors.push("battle sound: Replay played the start sting again");
+    console.log(`battle sound: ${first.length} sounds, ${[...new Set(first)].join(" ")}`);
+  }
+
   /** R2-16: the desktop battle. The lines face each other on one row, fronts
    * in the middle; the whole fight fits the window (1440×900 and 1024×768)
    * with the control bar on screen; dragging the timeline to a turn shows

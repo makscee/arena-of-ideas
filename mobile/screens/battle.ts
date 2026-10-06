@@ -28,6 +28,8 @@ import { card, formRich, summonById, summonSheet, summonText, unitSheet } from "
 import { app, button, closable, fitText, h, isDesktop, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
 import { icon } from "../ui/icon";
 import { statusesShown, STATUS_ROW_FALLBACK } from "../ui/status-row";
+import { beatCues, endSound } from "../ui/sound-map";
+import { play as playSfx } from "../ui/sound";
 
 /** The least room the phone's end card takes under the caption (its word,
  * its line, two key moments and its buttons); with less (a phone on its side)
@@ -125,6 +127,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const beats = beatPlayOf(log, stepsOf(log, TAGGED, sides, a.you ? { you: a.you } : { sideName: owner }), TAGGED);
   // Each beat's big moments (a kill, a big hit, a summon, the first fatigue, the last beat) add time (round 3, note 14).
   const weights = weightsOf(log, beats);
+  // Each beat's sounds, one per wave (round 3, note 16): at most 5 a beat,
+  // deaths and summons always, rising in pitch along a chain.
+  const cues = beats.map((b) => beatCues(b, log));
   const lineupMs = battle.kind === "crown" ? CROWN_LINEUP_MS : LINEUP_MS;
   /** Units a Summon put at the front of their line (R3-22); revives go to the back. */
   const frontSummons = new Set(log.flatMap((e) => (e.type === "Summon" && e.front ? [e.unit] : [])));
@@ -288,6 +293,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         wave++;
         landed[wave] = performance.now();
         render();
+        playSfx(cues[at]![wave]);
         return schedule();
       }
       if (at >= beats.length - 1) return finish();
@@ -296,6 +302,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       wave = 0;
       landed = [performance.now()];
       render();
+      playSfx(cues[at]![0]);
       schedule();
     }, Math.max(0, (ms * slow) / speed - since));
   }
@@ -383,6 +390,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     pause();
     hudTurn = null;
     finished = true;
+    // The end sound plays once, the first time the card shows (played out,
+    // End or ⏭); a replay or a reopened card makes none. A Crown slay adds
+    // the discovery chime.
+    if (!seenEnd) for (const c of endSound(outcome, battle.kind, a.you !== undefined)) playSfx(c);
     seenEnd = true;
     trace = null;
     at = beats.length - 1;
@@ -1549,6 +1560,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     render();
   });
   render();
+  // The line-up: the battle starts (once; a Replay starts over silently).
+  playSfx("start");
   schedule();
 }
 
