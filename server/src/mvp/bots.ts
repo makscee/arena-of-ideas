@@ -28,7 +28,7 @@
 //   tick so requests keep flowing. The seed waits
 //   for the model's names of the champion's fusions before it writes them.
 import { randomUUID } from "node:crypto";
-import type { Champion, Decision, LineUnit, MvpContent, MvpRules, PlayerRef, RunView } from "../../../src/mvp/contract.js";
+import { lockedFull, type Champion, type Decision, type LineUnit, type MvpContent, type MvpRules, type PlayerRef, type RunView } from "../../../src/mvp/contract.js";
 import { fightLines } from "../../../src/mvp/fight.js";
 import { fuseCheck, mergeTarget } from "../../../src/mvp/forms.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
@@ -102,7 +102,7 @@ function score(u: LineUnit): number {
  * ready (`ready`, by default always), buy copies
  * first (they awaken), fill the line with the highest tier, swap the weakest
  * single copy for a better tier, lock a copy it can't afford yet, reroll once
- * a round while gold allows (and some offer is unlocked), put
+ * a round while gold allows (unless locked offers fill the shop), put
  * the toughest unit in front, then fight. `rerolled` counts this round's
  * rerolls (the caller resets it). Pure. */
 export function botDecision(
@@ -133,10 +133,11 @@ export function botDecision(
     const weak = line.map((u, i) => ({ u, i })).filter(({ u }) => u.kind === "unit" && u.copies === 1).sort((a, b) => tierOf(a.u.unitId) - tierOf(b.u.unitId) || score(a.u) - score(b.u))[0];
     if (weak && tierOf(weak.u.unitId) < best.tier) return { kind: "sell", index: weak.i };
   }
-  // Lock a copy it can't afford yet: it waits for next round's gold.
-  const later = run.offers.find((o) => !o.locked && o.cost > run.gold && mergeTarget(line, o.unitId) >= 0);
+  // Lock a copy it can't afford yet: it waits for next round's gold. Not in
+  // the last shop round: the Crown clears the offers.
+  const later = run.round < rules.rounds && run.offers.find((o) => !o.locked && o.cost > run.gold && mergeTarget(line, o.unitId) >= 0);
   if (later) return { kind: "lock", slot: later.slot };
-  const rerollable = run.offers.some((o) => !o.locked);
+  const rerollable = !lockedFull({ offers: run.offers, rules, round: run.round });
   if (rerolled < 2 && rerollable && run.gold >= rules.rerollCost + rules.unitCost) return { kind: "reroll" };
   // The toughest unit goes in front.
   if (line.length > 1) {
