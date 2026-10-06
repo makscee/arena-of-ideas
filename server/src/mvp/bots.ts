@@ -101,7 +101,8 @@ function score(u: LineUnit): number {
 /** The bot's next decision in the shop: fuse two Awoken units whose name is
  * ready (`ready`, by default always), buy copies
  * first (they awaken), fill the line with the highest tier, swap the weakest
- * single copy for a better tier, reroll once a round while gold allows, put
+ * single copy for a better tier, lock a copy it can't afford yet, reroll once
+ * a round while gold allows (and some offer is unlocked), put
  * the toughest unit in front, then fight. `rerolled` counts this round's
  * rerolls (the caller resets it). Pure. */
 export function botDecision(
@@ -132,7 +133,11 @@ export function botDecision(
     const weak = line.map((u, i) => ({ u, i })).filter(({ u }) => u.kind === "unit" && u.copies === 1).sort((a, b) => tierOf(a.u.unitId) - tierOf(b.u.unitId) || score(a.u) - score(b.u))[0];
     if (weak && tierOf(weak.u.unitId) < best.tier) return { kind: "sell", index: weak.i };
   }
-  if (rerolled < 2 && run.gold >= rules.rerollCost + rules.unitCost) return { kind: "reroll" };
+  // Lock a copy it can't afford yet: it waits for next round's gold.
+  const later = run.offers.find((o) => !o.locked && o.cost > run.gold && mergeTarget(line, o.unitId) >= 0);
+  if (later) return { kind: "lock", slot: later.slot };
+  const rerollable = run.offers.some((o) => !o.locked);
+  if (rerolled < 2 && rerollable && run.gold >= rules.rerollCost + rules.unitCost) return { kind: "reroll" };
   // The toughest unit goes in front.
   if (line.length > 1) {
     let front = 0;
