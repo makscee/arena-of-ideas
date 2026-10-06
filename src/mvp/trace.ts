@@ -565,7 +565,7 @@ function causeOfEvent(log: BattleEvent[], e: BattleEvent, whenOf?: WhenOf, hops 
   // because of that hit: its cause is the hit's, not the holder's own status,
   // so a unit killed through its Shield reads as the striker's (R3-21).
   const hit = e.type === "StatusRemoved" && e.causedBy !== null && e.causedBy < e.id ? log[e.causedBy] : undefined;
-  if (hit && (hit.type === "Hurt" || hit.type === "Heal") && hit.unit === e.unit && hops < MAX_HOPS) {
+  if (e.type === "StatusRemoved" && hit && (hit.type === "Hurt" || hit.type === "Heal") && hit.unit === e.unit && hops < MAX_HOPS) {
     const up = causeOfEvent(log, hit, whenOf, hops + 1);
     if (up) return withEffect(up, eff);
   }

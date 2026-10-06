@@ -7,6 +7,7 @@ import { mkdirSync } from "node:fs";
 import { createServer } from "node:net";
 import { launchChromium } from "./browser.mjs";
 import { escPass } from "./esc-keys.mjs";
+import { beamChecks } from "./beams.mjs";
 import { nowSheetChecks } from "./now-sheet.mjs";
 
 const args = process.argv.slice(2);
@@ -549,6 +550,7 @@ try {
         await shot("battle-two-changes-trace");
         await page.getByTestId("trace-close").click();
       } else console.log("mvp phone: round 1 had no unit with two changes in one step (no shot)");
+      await beamChecks(page, errors, { shot, phone: true });
       await nowSheetChecks(page, errors, { shot, phone: true });
       // R2-14: controls, the end card, key moments and Replay.
       await tap44("battle controls", page.locator(".bv-controls button"));
