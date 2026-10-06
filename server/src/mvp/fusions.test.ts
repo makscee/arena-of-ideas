@@ -150,7 +150,7 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
   it("blocks profanity, slurs and hate words, and keeps the ordinary words that contain them (#587)", () => {
     for (const raw of ["Shitlord", "Fuckwit", "Kike", "Retard", "Hitler", "Rapeblade", "Cumlord", "Asshole", "Ass", "Sex", "Pedophile", "Wetback", "Nig Nog", "Redskin", "Beaner", "Dumbass", "Kyke", "Whitepower", "Jewkiller", "Pussies", "Mongoloid", "Pedomancer", "Kill All Jews", "Jew Slayer", "Ching Chong", "Sexwraith", "Fagmancer", "Clitoris"])
       expect(cleanModelName(raw), raw).toBeNull();
-    for (const raw of ["Cockatoo", "Therapist", "Parapet", "Raccoon", "Cocoon", "Analyst", "Manaleech", "Assassin", "Glass Golem", "Mongoose", "Sexton Shade", "Scunthorpe", "Coarse", "Farseer", "Hearse", "Starseed", "Spices", "Pussycat", "Cockney", "Marseille", "Torpedo", "Pedometer", "Sextant", "Scumlord", "Encumber", "Jewel Golem", "Pediatric Ward"])
+    for (const raw of ["Cockatoo", "Therapist", "Parapet", "Raccoon", "Cocoon", "Assassin", "Glass Golem", "Mongoose", "Scunthorpe", "Coarse", "Hearse", "Cockney", "Torpedo", "Sextant", "Jewel Golem", "Pediatric Ward"])
       expect(cleanModelName(raw), raw).not.toBeNull();
   });
 
@@ -172,7 +172,7 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
 
   it("splits CamelCase before matching words, and stems don't over-block ordinary names", () => {
     for (const raw of ["LordVader", "SuperMario", "BabyYoda", "IronMan", "Xmen", "Witchers"]) expect(cleanModelName(raw), raw).toBeNull();
-    for (const raw of ["Hexmender", "Badminton", "Iron Mantle", "Twitcher", "Exterminator", "Carambola", "Fluffy", "Cockatrice", "Dickens", "Analyst", "Grapeshot", "Scunthorpe", "Cumulus"]) expect(cleanModelName(raw), raw).not.toBeNull();
+    for (const raw of ["Hexmender", "Badminton", "Iron Mantle", "Twitcher", "Exterminator", "Carambola", "Fluffy", "Cockatrice", "Dickens", "Scunthorpe", "Cumulus"]) expect(cleanModelName(raw), raw).not.toBeNull();
   });
 
   it("catches lowercase joins, and never matches a stem across a word's edge", () => {
@@ -182,20 +182,32 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
       expect(cleanModelName(raw), raw).not.toBeNull();
   });
 
-  it("refuses a crude word behind another word, glued or not, and keeps ordinary compounds", () => {
-    for (const raw of ["Noctscum", "Noctscumling", "Noct Scum", "Scumscum", "Spaceinvader", "Space Invaders"]) expect(cleanModelName(raw), raw).toBeNull();
-    for (const raw of ["Scum", "Scumlord", "Viscum", "Mosscumulus", "Glasscumber", "Grapeshot", "Canal Warden", "Encumber", "Invader", "Jolttherapist", "Soultherapist", "Bonescrape", "Mistdrape", "Vinegrape", "Ashgrape", "Firepeacock", "Stormcanal", "King Grape"])
-      expect(cleanModelName(raw), raw).not.toBeNull();
-  });
-
-  it("refuses a crude stem an ordinary word hides when a word stands right before it", () => {
-    for (const raw of ["Kingrape", "Hagrape", "Mindrape", "Gangrape", "Bloodrape", "Deadrape", "Godrape", "Horserape", "Stingrape", "Fangrape", "Buttcanal", "Butt Canal", "Ballswank", "Ball Swank"])
+  it("refuses a crude fragment anywhere, also hidden in an ordinary word: only a whole ordinary word passes", () => {
+    // A crude name stays in the world for good; a needless refusal costs one more ask.
+    for (const raw of [
+      // glued behind a word, or hidden in an ordinary word behind one
+      "Noctscum", "Noctscumling", "Noct Scum", "Scumscum", "Scum", "Scumlord", "Widow'sbloom",
+      "Kingrape", "Hagrape", "Mindrape", "Gangrape", "Bloodrape", "Deadrape", "Godrape", "Horserape", "Stingrape", "Fangrape",
+      "Buttcanal", "Butt Canal", "Ballswank", "Ball Swank", "Wingrape", "Bugrape", "Drugrape", "Voidrape", "Dreadrape", "Lordrape",
+      "Swordrape", "Toxicrape", "Roserape", "Kingswank", "Medicrape", "Scytherapist", "Cuminjector",
+      // whole-word lists missed these
+      "Kingdong", "Kingboner", "Assrat", "Semenrat", "Spermrat", "Buttinjector", "Testiclerat", "Bigcocky", "Gaykiller", "Homokiller",
+      "Gypsykiller", "Incestborn", "Orgyking", "King Dong", "Kingbutt", "Asses",
+      // ordinary compounds no longer rescued
+      "Jolttherapist", "Soultherapist", "Vinegrape", "Bonescrape", "Mistdrape", "Ashgrape", "Firepeacock", "Stormcanal", "King Grape",
+      "Grapeshot", "Canal Warden", "Viscum", "Glasscumber", "Encumber", "Analyst", "Manaleech", "Sexton Shade", "Farseer", "Starseed",
+      "Spices", "Pussycat", "Marseille", "Pedometer",
+    ])
       expect(cleanModelName(raw), raw).toBeNull();
-    // A part's name counts as a word too: "Rose" + "rape" from Rose, but not "Roseg" + "rape".
+    // Innocent words taken out first, a whole ordinary word, and the ordinary
+    // words that start or end with ass, butt or dong.
+    for (const raw of ["Assassin", "Assault", "Butterfly", "Button", "Buttress", "Nightshade", "Knightfall", "Jewelwing", "Cockatrice", "Mosscumulus",
+      "Raccoon", "Grape", "Therapist", "Canal", "Sexton", "Glass", "Brass", "Cutlass", "Hourglass", "Compass", "Glass Golem", "Invader"])
+      expect(cleanModelName(raw), raw).not.toBeNull();
+    // A part's name changes nothing: "Rosegrape" from Rose and Rot is refused too.
     const units = new Map(mvpContent().units.map((u) => [u.name, u]));
     const [rose, rot] = [units.get("Rose")!, units.get("Rot")!];
-    expect(cleanModelName("Roserape", rose, rot)).toBeNull();
-    expect(cleanModelName("Rosegrape", rose, rot)).toBe("Rosegrape");
+    for (const raw of ["Roserape", "Rosegrape"]) expect(cleanModelName(raw, rose, rot), raw).toBeNull();
   });
 
   it("takes an apostrophe only as a possessive before a second word", () => {

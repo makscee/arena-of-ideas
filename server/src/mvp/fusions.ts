@@ -56,7 +56,7 @@ function portmanteauAvoiding(first: string, second: string, isTaken: (folded: st
   const a = whole.slice(0, 1).toUpperCase() + whole.slice(1).toLowerCase();
   const b = second.replace(/\s+/g, "").toLowerCase();
   const parts = new Set([first, second].map(fold));
-  const free = (name: string) => !parts.has(fold(name)) && !isTaken(fold(name)) && !isBlockedName(name) && !STANDIN_CRUDE.some((c) => fold(name).includes(c));
+  const free = (name: string) => !parts.has(fold(name)) && !isTaken(fold(name)) && !isBlockedName(name) && !standinCrude(name);
   const join = (head: string, tail: string) => (head.slice(-1).toLowerCase() === tail[0] ? head + tail.slice(1) : head + tail);
   const h0 = Math.ceil(a.length / 2);
   const t0 = Math.floor(b.length / 2);
@@ -87,11 +87,12 @@ function portmanteauAvoiding(first: string, second: string, isTaken: (folded: st
 }
 
 /** A stand-in is made by machine and can take another split, so it is held
- * stricter than a model's answer: no crude fragment anywhere ("Sexmancer",
- * "Hencummer" from Sexton and War Drummer). */
-const STANDIN_CRUDE = ["sex", "cum", "anal", "anus", "arse", "boner", "nig", "fag", "spic", "kike", "kyke", "rape", "porn", "piss", "dick",
-  "cock", "cunt", "fuck", "shit", "slut", "smut", "jizz", "homo", "dyke", "coon", "jew", "nazi", "turd", "twat", "wank", "pube", "tard", "poof",
-  "pedo", "clit", "semen", "gay"];
+ * stricter than a model's answer: no CRUDE fragment anywhere, INNOCENT words
+ * included ("Sexmancer", "Hencummer" from Sexton and War Drummer). */
+function standinCrude(name: string): boolean {
+  const folded = fold(name);
+  return CRUDE.some((c) => folded.includes(c));
+}
 
 const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
 
@@ -170,29 +171,38 @@ const ORDINARY = ["invader", "evader", "pervader", "hulking", "hulky", "marionet
   // crude stems inside ordinary words
   "grape", "drape", "scrape", "crape", "trapez", "parapet", "therapist", "cockatoo", "cockatiel", "cockle", "cockscomb", "gamecock",
   "weathercock", "hitchcock", "cockatrice", "peacock", "cockpit", "cockerel", "woodcock", "cockroach", "shuttlecock", "cocktail",
-  "hancock", "cockade", "cocky", "babcock", "dickens", "dickcissel", "analy", "analog", "analg", "analem", "banal", "canal",
-  "bacchanal", "manal", "tanal", "hanal", "penistone", "scunthorpe", "swank", "niggl", "snigg", "niggard", "ashkenazi", "nazirite",
-  "parse", "sparse", "coarse", "hoarse", "arsen", "booby", "prickl", "retardant", "chinkapin", "raccoon", "racoon", "cocoon", "tycoon",
-  "puccoon", "pakistan", "negroni", "montenegro", "pussywillow", "fagot", "fagus", "titsch", "pissarro", "coonhound", "twattle", "shitake",
-  "cocker", "cockney", "dicky", "dickory", "dickon", "pussycat", "rapeseed", "serape", "chinking", "shittim", "shitzu", "marseill", "ranald",
-  "torpedo", "pedomet", "pedolog", "sexton", "sextant", "sextet", "sextup", "essex", "sussex", "wessex", "sexagen", "scum", "cumul",
+  "hancock", "cockade", "babcock", "dickens", "dickcissel", "analy", "analog", "analg", "analem", "banal", "canal",
+  "bacchanal", "manal", "tanal", "hanal", "penistone", "scunthorpe", "swank", "ashkenazi", "nazirite",
+  "parse", "sparse", "coarse", "hoarse", "arsen", "prickl", "retardant", "chinkapin", "raccoon", "racoon", "cocoon", "tycoon",
+  "puccoon", "pakistan", "negroni", "montenegro", "pissarro",
+  "cocker", "cockney", "dickory", "dickon", "serape", "chinking", "marseill", "ranald",
+  "torpedo", "pedomet", "pedolog", "sexton", "sextant", "sextet", "sextup", "essex", "sussex", "wessex", "sexagen", "cumul",
   "cucum", "cumber", "circum", "docum", "cumin", "incumb", "succumb", "talcum", "modicum", "capsicum", "jewel", "clitheroe", "clitter",
-  "petits", "tomtits", "farse", "hearse", "starse", "fagin", "fagot", "fagus"];
-// Ordinary words that read crude behind another word, glued or not
-// ("Noctscum", "Noctscumling", "Noct Scum", "Scumscum"), though alone, leading
-// or behind a fragment they pass ("Scum", "Scumlord", "Viscum"), and so does
-// the start of another ordinary word ("Mosscumulus", "Glasscumber").
-const GLUED_CRUDE = ["scum"];
-// Crude stems an ORDINARY word hides ("grape", "drape", "serape", "swank",
-// "canal"): behind a word they read crude again ("Kingrape", "Mindrape",
-// "Horserape", "Ballswank"), behind a fragment they don't ("Vinegrape",
-// "Bonescrape", "Jolttherapist", "Firepeacock"). A word is one of HEADS or a
-// word of the parts' names (cleanModelName), ending the letters before the stem.
-const HIDDEN_CRUDE = ["rape", "rapist", "wank", "anal", "cock", "dick", "arse", "sex"];
-const HEADS = ["king", "queen", "hag", "mind", "gang", "blood", "dead", "god", "horse", "sting", "fang", "soul", "bone", "balls",
-  "nuts", "boy", "girl", "baby", "child", "kid", "wife", "body", "brain", "group", "date", "mass", "war", "gut", "corpse", "beast"];
-// Body words that make an ORDINARY word right behind them crude ("Buttcanal").
-const BODY_HEADS = ["butt", "ass", "arse", "bum", "balls", "nuts", "crotch", "groin", "boob", "boobs", "tit", "tits"];
+  "petits", "tomtits", "farse", "hearse", "starse"];
+// Crude fragments, refused anywhere in a name, its words joined ("Kingrape",
+// "Scytherapist", "Cuminjector", "Noct Scum"). The costs are lopsided: a name
+// wrongly refused costs one more ask, a crude name stays in the world for good.
+// So ORDINARY doesn't rescue a compound ("Vinegrape" is refused too); only a
+// name that is exactly one ORDINARY word passes ("Grape", "Therapist").
+const CRUDE = ["sex", "cum", "anal", "anus", "arse", "boner", "nig", "fag", "spic", "kike", "kyke", "rape", "rapist", "porn", "piss", "dick",
+  "cock", "cunt", "fuck", "shit", "slut", "smut", "jizz", "homo", "dyke", "coon", "jew", "nazi", "turd", "twat", "wank", "pube", "tard", "poof",
+  "pedo", "clit", "semen", "gay", "sperm", "schlong", "testic", "incest", "orgy", "gypsy"];
+// Innocent fantasy words taken out of a model's name before CRUDE matches,
+// kept short: each is a word this game's names reach for.
+const INNOCENT = [
+  "night", // "nig": Nightshade, Knightfall, Nightingale
+  "jewel", // "jew": Jewelwing, Jewel Golem
+  "cockatrice", // "cock": the classic fantasy beast
+  "cocoon", "raccoon", "racoon", // "coon": insect and beast units
+  "cumulus", // "cum": storm clouds (Stormcumulus)
+];
+// Short stems that would refuse too much anywhere inside a word ("Glass",
+// "Butterfly"): refused at a word's start ("Assrat", "Buttinjector") or as the
+// glued tail of a longer word ("Kingdong", "Kingbutt"), except in EDGE_ORDINARY.
+const EDGE_CRUDE = ["ass", "butt", "dong"];
+const EDGE_ORDINARY = ["assassin", "assail", "assault", "assay", "assemb", "assent", "assert", "assess", "asset", "assign", "assist",
+  "associat", "assort", "assuag", "assum", "assur", "butter", "button", "buttress", "glass", "brass", "grass", "class", "mass", "bass",
+  "pass", "lass", "crass", "sass", "compass", "morass", "harass", "cutlass", "carcass", "kvass", "wrass"];
 // Words: short or ordinary enough that a stem would hit real words ("Thorn",
 // "Invader", "Marionette", "Smuggler", "Scamper"), so they match one word of
 // the name, also with a plural or possessive ending ("Marios", "Thor's").
@@ -250,17 +260,15 @@ function stripAccents(s: string): string {
   return s.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
 }
 
-/** True when a name (or one of its words) is on the blocklist. */
-export function isBlockedName(name: string, heads: readonly string[] = []): boolean {
+/** True when a name (or one of its words) is on the blocklist, or crude. */
+export function isBlockedName(name: string): boolean {
   if (BLOCKED_WHOLE.includes(fold(name))) return true;
-  if (hasGluedCrude(fold(name))) return true;
   // CamelCase is split first, so glued words match too ("LordVader", "SuperMario").
   const words = name.replace(/([a-z])([A-Z])/g, "$1 $2").split(/[\s'’-]+/).map(fold).filter(Boolean);
-  if (words.length > 1 && hidesCrude(words.join(""), heads)) return true;
+  if (isCrude(words)) return true;
   const named = (w: string, b: string) => WORD_ENDINGS.some((end) => w === b + end);
   for (let i = 0; i < words.length; i++) {
     const w = words[i]!;
-    if (hidesCrude(w, heads)) return true;
     if (BLOCKED_WORDS.some((b) => named(w, b))) return true;
     const inner = ORDINARY.reduce((rest, o) => rest.split(o).join("."), w);
     if (BLOCKED_STEMS.some((stem) => (stem.endsWith("man") ? WORD_ENDINGS.some((end) => inner.endsWith(stem + end)) : inner.includes(stem)))) return true;
@@ -273,38 +281,25 @@ export function isBlockedName(name: string, heads: readonly string[] = []): bool
   return false;
 }
 
-/** Every match of a GLUED_CRUDE word with a word of 3+ letters before it,
- * unless its tail starts another ORDINARY word ("Mosscumulus"). */
-function hasGluedCrude(folded: string): boolean {
-  for (const c of GLUED_CRUDE)
-    for (let k = folded.indexOf(c); k >= 0; k = folded.indexOf(c, k + 1)) {
-      if (k < 3) continue;
-      const inOther = ORDINARY.some((o) => {
-        if (o === c) return false;
-        for (let j = folded.indexOf(o); j >= 0; j = folded.indexOf(o, j + 1)) if (j > k && j < k + c.length) return true;
-        return false;
-      });
-      if (!inOther) return true;
-    }
-  return false;
-}
-
-/** True when an ORDINARY word inside a folded word hides a HIDDEN_CRUDE stem
- * right behind a head word ("Kingrape": "king" + "rape" in "grape"), or sits
- * right behind a BODY_HEADS word ("Buttcanal"). */
-function hidesCrude(w: string, heads: readonly string[]): boolean {
-  const before = [...HEADS, ...heads].filter((h) => h.length >= 3);
-  for (const o of ORDINARY) {
-    const stems = HIDDEN_CRUDE.filter((s) => o.includes(s));
-    if (stems.length === 0) continue;
-    for (let i = w.indexOf(o); i >= 0; i = w.indexOf(o, i + 1)) {
-      if (BODY_HEADS.includes(w.slice(0, i))) return true;
-      for (const s of stems) {
-        const lead = w.slice(0, i + o.indexOf(s));
-        if (before.some((h) => lead.endsWith(h))) return true;
+/** True when a CRUDE fragment is in the folded words joined, once INNOCENT
+ * words are taken out, unless the name is exactly one ORDINARY word; or when a
+ * word starts or ends with an EDGE_CRUDE stem outside EDGE_ORDINARY. */
+function isCrude(words: readonly string[]): boolean {
+  const joined = words.join("");
+  const ordinary = words.length === 1 && ORDINARY.some((o) => WORD_ENDINGS.some((end) => joined === o + end));
+  if (!ordinary) {
+    const masked = INNOCENT.reduce((rest, o) => rest.split(o).join("."), joined);
+    if (CRUDE.some((c) => masked.includes(c))) return true;
+  }
+  for (const word of words)
+    for (const stem of EDGE_CRUDE) {
+      if (word.startsWith(stem) && !EDGE_ORDINARY.some((o) => word.startsWith(o))) return true;
+      // The tail with a plural ending off ("Kingdongs").
+      for (const end of WORD_ENDINGS) {
+        const w = word.endsWith(end) ? word.slice(0, word.length - end.length) : "";
+        if (w.length > stem.length && w.endsWith(stem) && !EDGE_ORDINARY.some((o) => w.endsWith(o))) return true;
       }
     }
-  }
   return false;
 }
 
@@ -337,8 +332,7 @@ export function cleanModelName(raw: string, first?: UnitContent, second?: UnitCo
   if (/'/.test(name) && !/^[A-Za-z]+'s [A-Za-z]+$/.test(name)) return null;
   const words = name.split(/[ -]/).filter(Boolean);
   if (words.length > 2 || new Set(words.map(fold)).size < words.length) return null;
-  const heads = [first, second].flatMap((u) => (u ? u.name.split(/\s+/).map(fold) : []));
-  if (isBlockedName(name, heads) || isGlued(name, first, second)) return null;
+  if (isBlockedName(name) || isGlued(name, first, second)) return null;
   return words.map((w) => w[0]!.toUpperCase() + w.slice(1).toLowerCase()).join(name.includes("-") && words.length > 1 ? "-" : " ");
 }
 
