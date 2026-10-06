@@ -819,9 +819,11 @@ export interface KeyMoment {
   kind: "kill" | "combo" | "fatigue" | "hit";
   /** The playback beat it happens in (PlayBeat.index). */
   beat: number;
-  /** "Archer kills Knight (−7)", "Combo: 5 steps", "Fatigue sets in (T9)", "Archer hits Knight (−4)". */
+  /** One short line about this fight (R2-17): "Turning point: Rat kills Bat",
+   * "Virus's Poison kills Knight (−3)", "Redirector: 14 dmg, kills Bat",
+   * "Fatigue kills Wall +3", "Archer hits Knight (−4)". */
   label: string;
-  /** The unit it is about (the killer, the combo's first actor), when there is one. */
+  /** The unit it is about (the killer, the combo's top dealer), when there is one. */
   unit?: string;
 }
 
@@ -829,49 +831,154 @@ export interface KeyMoment {
 const COMBO_MIN = 3;
 /** How many key moments the end card lists, at most. */
 const MOMENTS = 3;
+/** A label longer than this (in plain names) drops its extras: the phone's row holds about this much on one line. */
+const MOMENT_CHARS = 40;
 
-/** The 2–3 moments worth replaying, in battle order: the biggest killing blow
- * (by the hit, as its chip showed it, overkill included), the longest combo
- * (the beat with the most waves, at least 3), and when fatigue set in. A
- * battle with fewer fills up to 3 (R2-17: one moment undersold a fight with
- * more in it): its other kills, biggest first, then its biggest hits that
- * killed nobody, then its shorter combos (2 waves). Never two on one beat. */
+/** The 2–3 moments worth replaying, in battle order, each saying who did
+ * what in this fight (R2-17: "Combo: 14 steps, King first" and "Fatigue
+ * sets in" said little). First the turning point: the death (or summon)
+ * after which the winner led in units standing for good, when the lead
+ * changed hands at all; then the biggest killing blow (by the hit, as its
+ * chip showed it, overkill included), the longest combo (the beat with the
+ * most waves, at least 3) by its top dealer, and fatigue by what it did. A
+ * battle with fewer fills up to 3: its other kills, biggest first, then its
+ * biggest hits that killed nobody, then its shorter combos (2 waves). Never
+ * two on one beat. */
 export function keyMomentsOf(log: BattleEvent[], beats: PlayBeat[], name: NameOf = displayNames(log), sides = sidesOf(log)): KeyMoment[] {
+  const plain = displayNames(log);
   const beatOfEvent = (id: number) => beats.find((b) => b.waves.some((w) => w.eventIds.includes(id)))?.index ?? beats.find((b) => b.end >= id)?.index ?? beats.length - 1;
-  const kills: { id: number; killer: string | null; victim: string; dmg: number; hit?: number }[] = [];
+  // Who dealt a hurt, and through what: the nearest unit in its chain (a status tick's, whoever put the status on).
+  const dealer = (id: number) => traceOf(log, id, plain, sides).links[0] ?? null;
+  type Kill = { id: number; killer: string | null; via: string; victim: string; dmg: number; hit?: number; fatigue: boolean };
+  const kills: Kill[] = [];
   const lastHit = new Map<string, { id: number; dmg: number }>();
+  /** The hurts each Fatigue dealt, so a death they caused is fatigue's. */
+  const fatigueOf = new Map<number, number>();
   for (const e of log) {
-    if (e.type === "Hurt") lastHit.set(e.unit, { id: e.id, dmg: e.amount });
-    else if (e.type === "Death") {
+    if (e.type === "Hurt") {
+      lastHit.set(e.unit, { id: e.id, dmg: e.amount });
+      if (e.causedBy !== null && log[e.causedBy]?.type === "Fatigue") fatigueOf.set(e.id, e.causedBy);
+    } else if (e.type === "Death") {
       const cause = e.causedBy !== null ? log[e.causedBy] : undefined;
       const hit = cause?.type === "Hurt" ? { id: cause.id, dmg: cause.amount } : lastHit.get(e.unit);
-      const killer = hit ? (traceOf(log, hit.id, name, sides).links[0]?.unit ?? null) : null;
-      kills.push({ id: e.id, killer, victim: e.unit, dmg: hit?.dmg ?? 0, ...(hit ? { hit: hit.id } : {}) });
+      const by = hit ? dealer(hit.id) : null;
+      kills.push({ id: e.id, killer: by?.unit ?? null, via: by?.via ?? "", victim: e.unit, dmg: hit?.dmg ?? 0, ...(hit ? { hit: hit.id } : {}), fatigue: hit ? fatigueOf.has(hit.id) : false });
     }
   }
-  const killLabel = (k: (typeof kills)[number]) => `${k.killer ? name(k.killer) : "Fatigue"} kills ${name(k.victim)}${k.dmg ? ` (−${k.dmg})` : ""}`;
-  const killMoment = (k: (typeof kills)[number]): KeyMoment => ({ kind: "kill", beat: beatOfEvent(k.id), label: killLabel(k), ...(k.killer ? { unit: k.killer } : {}) });
-  const comboMoment = (b: PlayBeat): KeyMoment => {
-    const actor = b.waves.find((w) => w.actor)?.actor;
-    return { kind: "combo", beat: b.index, label: `Combo: ${b.waves.length} steps${actor ? `, ${name(actor)} first` : ""}`, ...(actor ? { unit: actor } : {}) };
+  /** The first label that fits MOMENT_CHARS in plain names, else the last (the shortest). */
+  const fit = (...ways: ((n: NameOf) => string)[]) => ways.find((w) => w(plain).length <= MOMENT_CHARS)?.(name) ?? ways.at(-1)!(name);
+  const killText = (k: Kill, n: NameOf) => {
+    if (!k.killer) return k.fatigue ? `Fatigue kills ${n(k.victim)}` : `${n(k.victim)} falls`;
+    // A status's tick says whose status it was: "Virus's Poison kills Knight".
+    const who = k.via === "strike" || k.via === "ability" ? n(k.killer) : `${n(k.killer)}'s ${k.via}`;
+    return `${who} kills ${n(k.victim)}`;
   };
+  const killMoment = (k: Kill): KeyMoment => ({
+    kind: "kill",
+    beat: beatOfEvent(k.id),
+    label: fit((n) => `${killText(k, n)}${k.dmg ? ` (−${k.dmg})` : ""}`, (n) => killText(k, n)),
+    ...(k.killer ? { unit: k.killer } : {}),
+  });
+
+  // The turning point: units standing per side after each event; the last
+  // time the winner's lead went from none to some, if it held to the end.
+  const end = log.at(-1);
+  const winner = end?.type === "BattleEnd" && end.winner !== "draw" ? end.winner : null;
+  let turning: KeyMoment | null = null;
+  if (winner) {
+    const standing = { A: 0, B: 0 };
+    for (const e of log) if (e.type === "BattleStart") { standing.A = e.teams.A.length; standing.B = e.teams.B.length; }
+    const loser: Side = winner === "A" ? "B" : "A";
+    let lead = standing[winner] - standing[loser];
+    let at: BattleEvent | null = null;
+    for (const e of log) {
+      if (e.type !== "Death" && e.type !== "Summon") continue;
+      const side = e.type === "Summon" ? e.side : sides.get(e.unit);
+      if (!side) continue;
+      standing[side] += e.type === "Death" ? -1 : 1;
+      const now = standing[winner] - standing[loser];
+      if (lead <= 0 && now > 0) at = e;
+      lead = now;
+    }
+    if (at && lead > 0) {
+      const k = at.type === "Death" ? kills.find((x) => x.id === at!.id) : undefined;
+      const what = (n: NameOf) => (k ? killText(k, n) : at!.type === "Summon" ? `${n(at!.unit)} joins` : `${n((at as { unit: string }).unit)} falls`);
+      turning = { kind: "kill", beat: beatOfEvent(at.id), label: fit((n) => `Turning point: ${what(n)}`, (n) => `Decisive: ${what(n)}`, what), ...(k?.killer ? { unit: k.killer } : {}) };
+    }
+  }
+
+  // A combo by what it did: the unit that did the most in the beat, its damage, kills and healing.
+  const comboMoment = (b: PlayBeat): KeyMoment | null => {
+    const ids = new Set(b.waves.flatMap((w) => w.eventIds));
+    const did = new Map<string, { dmg: number; heal: number; kills: string[] }>();
+    const of = (u: string) => did.get(u) ?? (did.set(u, { dmg: 0, heal: 0, kills: [] }), did.get(u)!);
+    for (const id of ids) {
+      const e = log[id];
+      if (e?.type === "Hurt" && e.amount > 0) {
+        const by = dealer(id)?.unit;
+        if (by && sides.get(by) !== sides.get(e.unit)) of(by).dmg += e.amount;
+      } else if (e?.type === "Heal" && e.amount > 0) {
+        const by = dealer(id)?.unit;
+        if (by) of(by).heal += e.amount;
+      }
+    }
+    for (const k of kills) if (ids.has(k.id) && k.killer && sides.get(k.killer) !== sides.get(k.victim)) of(k.killer).kills.push(k.victim);
+    const score = (d: { dmg: number; heal: number; kills: string[] }) => d.dmg + d.heal + 5 * d.kills.length;
+    const top = [...did].sort((p, q) => score(q[1]) - score(p[1]))[0];
+    const steps = b.waves.length;
+    if (!top || score(top[1]) === 0) {
+      // No damage or healing: its first actor and the status it spread most ("Coach: Strength on 4 units").
+      const actor = b.waves.find((w) => w.actor)?.actor;
+      const on = new Map<string, Set<string>>();
+      for (const id of ids) {
+        const e = log[id];
+        if (e?.type === "StatusApplied") on.set(e.status, (on.get(e.status) ?? new Set()).add(e.unit));
+      }
+      const st = [...on].sort((p, q) => q[1].size - p[1].size)[0];
+      const what = st ? `${st[0]} on ${st[1].size === 1 ? "1 unit" : `${st[1].size} units`}` : `${steps} steps`;
+      // Nobody acted (fatigue hitting both lines): nothing to name, no moment.
+      if (!actor) return null;
+      return { kind: "combo", beat: b.index, label: fit((n) => `${n(actor)}: ${what}${st ? ` in ${steps} steps` : ""}`, (n) => `${n(actor)}: ${what}`), unit: actor };
+    }
+    const [u, d] = top;
+    const victims = (n: NameOf) => `kills ${n(d.kills[0]!)}${d.kills.length > 1 ? ` +${d.kills.length - 1}` : ""}`;
+    const label = d.kills.length
+      ? fit((n) => `${n(u)}: ${d.dmg} dmg, ${victims(n)}`, (n) => `${n(u)} ${victims(n)}`)
+      : d.dmg
+        ? fit((n) => `${n(u)}: ${d.dmg} dmg in ${steps} steps`, (n) => `${n(u)}: ${d.dmg} dmg`)
+        : fit((n) => `${n(u)}: +${d.heal} HP in ${steps} steps`, (n) => `${n(u)}: +${d.heal} HP`);
+    return { kind: "combo", beat: b.index, label, unit: u };
+  };
+
+  // Fatigue by what it did over the fight: who it killed, else how much it took.
+  const fatigueMoment = (f: BattleEvent): KeyMoment => {
+    const fk = kills.filter((k) => k.fatigue);
+    const total = [...fatigueOf.keys()].reduce((t, id) => t + ((log[id] as { amount: number }).amount ?? 0), 0);
+    const label = fk.length ? fit((n) => `Fatigue kills ${n(fk[0]!.victim)}${fk.length > 1 ? ` +${fk.length - 1}` : ""}`) : `Fatigue sets in: ${total} dmg, no kills`;
+    return { kind: "fatigue", beat: beatOfEvent(f.id), label };
+  };
+
   const out: KeyMoment[] = [];
-  const add = (m: KeyMoment) => { if (out.length < MOMENTS && !out.some((o) => o.beat === m.beat)) out.push(m); };
-  const byDamage = [...kills].sort((p, q) => q.dmg - p.dmg || p.id - q.id);
+  const add = (m: KeyMoment | null) => { if (m && out.length < MOMENTS && !out.some((o) => o.beat === m.beat)) out.push(m); };
+  if (turning) add(turning);
+  const fatigue = log.find((e) => e.type === "Fatigue");
+  // Fatigue's kills are its own moment's ("Fatigue kills Wall +3"), not a row each.
+  const byDamage = kills.filter((k) => !(fatigue && k.fatigue)).sort((p, q) => q.dmg - p.dmg || p.id - q.id);
   if (byDamage[0]) add(killMoment(byDamage[0]));
   const combos = [...beats].sort((p, q) => q.waves.length - p.waves.length || p.index - q.index);
   if (combos[0] && combos[0].waves.length >= COMBO_MIN) add(comboMoment(combos[0]));
-  const fatigue = log.find((e) => e.type === "Fatigue");
-  if (fatigue) add({ kind: "fatigue", beat: beatOfEvent(fatigue.id), label: `Fatigue sets in (${turnLabel(fatigue.turn)})` });
+  if (fatigue) add(fatigueMoment(fatigue));
   for (const k of byDamage.slice(1)) add(killMoment(k));
   const killing = new Set(kills.flatMap((k) => (k.hit !== undefined ? [k.hit] : [])));
   const hits = log.flatMap((e) => (e.type === "Hurt" && e.amount >= 2 && !killing.has(e.id) ? [{ id: e.id, unit: e.unit, amount: e.amount }] : [])).sort((p, q) => q.amount - p.amount || p.id - q.id);
   for (const e of hits) {
-    const by = traceOf(log, e.id, name, sides).links[0]?.unit;
+    const by = dealer(e.id)?.unit;
     if (!by) continue;
     add({ kind: "hit", beat: beatOfEvent(e.id), label: `${name(by)} hits ${name(e.unit)} (−${e.amount})`, unit: by });
   }
   for (const b of combos) if (b.waves.length >= 2) add(comboMoment(b));
+  // Last, a fight fatigue ended: its other kills ("Fatigue kills Wall2 (−11)").
+  for (const k of kills.filter((x) => fatigue && x.fatigue).sort((p, q) => q.dmg - p.dmg || p.id - q.id)) add(killMoment(k));
   return out.sort((p, q) => p.beat - q.beat);
 }
 
