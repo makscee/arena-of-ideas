@@ -410,6 +410,9 @@ export const QUIET_BEAT_MS = 900;
 const BEAT_HOLD_MS = 800;
 /** How long the line-up shows before the first beat, at 1×. */
 export const LINEUP_MS = 900;
+/** The empty beat after the deciding blow (the battle's end, no change on
+ * the board): short, so the end card follows the blow's own hold. */
+export const END_BEAT_MS = 150;
 /** The time a beat's big moments add at 1× (note 14): a kill, a hit of
  * BIG_HIT_MIN or more, a summon or revive, the first fatigue beat, and the
  * battle's last beat (the deciding blow, before the end card). */
@@ -420,7 +423,7 @@ export const KILL_FREEZE_MS = 120;
 export const BIG_HIT_MIN = 4;
 
 /** What a beat holds that earns it more time. */
-export type BeatWeight = Partial<Record<keyof typeof EMPHASIS_MS, boolean>>;
+export type BeatWeight = Partial<Record<keyof typeof EMPHASIS_MS | "end", boolean>>;
 
 /** When each wave lands (ms from the beat's start, at 1×) and how long the
  * beat lasts: waves 220 ms apart, squeezed so the last lands by 1.4 s; the
@@ -436,7 +439,7 @@ export function beatTiming(waves: number, quiet = false): { at: number[]; ms: nu
 /** Each beat's weight: a kill, a big hit, a summon or revive, the first
  * fatigue beat (the one holding the battle's first Fatigue event, else the
  * first beat of its turn after it), and the last beat that changes the
- * board (the deciding blow). */
+ * board (the deciding blow); `end` marks an empty beat after it. */
 export function weightsOf(log: BattleEvent[], beats: PlayBeat[]): BeatWeight[] {
   const fatigue = log.find((e) => e.type === "Fatigue");
   const firstFatigue = fatigue ? beats.findIndex((b) => b.waves.some((w) => w.eventIds.includes(fatigue.id)) || (b.turn === fatigue.turn && b.end >= fatigue.id)) : -1;
@@ -451,6 +454,7 @@ export function weightsOf(log: BattleEvent[], beats: PlayBeat[]): BeatWeight[] {
     if (events.some((e) => e?.type === "Summon")) w.summon = true;
     if (i === firstFatigue) w.fatigue = true;
     if (i === (decisive >= 0 ? decisive : beats.length - 1)) w.last = true;
+    if (decisive >= 0 && i > decisive && b.waves.every((x) => !x.changes.length)) w.end = true;
     return w;
   });
 }
@@ -458,8 +462,10 @@ export function weightsOf(log: BattleEvent[], beats: PlayBeat[]): BeatWeight[] {
 /** A beat's timing at 1×, by its weight: one wave of plain hits, status
  * changes or nothing at all is quiet; anything more plays full length. Each
  * big moment then adds its EMPHASIS_MS after the last wave (past the cap: a
- * long cascade that kills still gets its beat of stillness). */
+ * long cascade that kills still gets its beat of stillness). An empty beat
+ * after the deciding blow lasts END_BEAT_MS. */
 export function timingOf(beat: PlayBeat, weight: BeatWeight = {}): { at: number[]; ms: number } {
+  if (weight.end) return { at: beat.waves.map(() => 0), ms: END_BEAT_MS };
   const quiet = beat.waves.length === 1 && beat.waves[0]!.changes.every((c) => c.kind === "damage" || c.kind === "status");
   const t = beatTiming(beat.waves.length, quiet);
   const extra = (Object.keys(EMPHASIS_MS) as (keyof typeof EMPHASIS_MS)[]).reduce((n, k) => n + (weight[k] ? EMPHASIS_MS[k] : 0), 0);
