@@ -789,7 +789,7 @@ try {
     await page.getByTestId("end-card").waitFor({ timeout: 10_000 });
     const result = await page.getByTestId("end-card").textContent();
     const ownWon = (await page.getByTestId("battle-word").textContent()).includes("VICTORY");
-    if (ownWon ? !/You beat your own champion team\. You are a slayer today/.test(result) : !/Your champion team holds/.test(result)) errors.push(`own crown result: "${result.slice(0, 200)}"`);
+    if (ownWon ? !/Slayer today/.test(result) : !/Your team holds/.test(result)) errors.push(`own crown result: "${result.slice(0, 200)}"`);
     await shot("result-own-crown"); await noHScroll("result-own-crown");
     console.log(`mvp phone: the champion's own Crown: ${await page.getByTestId("battle-word").textContent()}`);
     await page.getByTestId("battle-done").click();
