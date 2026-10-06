@@ -53,7 +53,7 @@ export function describeMvpStore(name: string, make: () => MvpStore): void {
 
     it("serves ghosts at the round, never the player's own, only of the current content", () => {
       const store = make();
-      const ghost = (ghostId: string, player: PlayerRef, round: number, contentVersion: string): Ghost => ({ ghostId, runId: `run-${ghostId}`, player, round, line: [], contentVersion, createdAt: "t" });
+      const ghost = (ghostId: string, player: PlayerRef, round: number, contentVersion: string): Ghost => ({ ghostId, runId: `run-${ghostId}`, player, round, line: [], contentVersion, createdAt: "t", rating: 1000 });
       store.addGhost(ghost("mine", maks, 1, "v2"));
       store.addGhost(ghost("old", bot, 1, "v1"));
       store.addGhost(ghost("theirs", bot, 1, "v2"));

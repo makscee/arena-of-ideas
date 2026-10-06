@@ -3,7 +3,7 @@
 import type { Decision } from "./contract.js";
 
 export class MvpDecisionError extends Error {
-  constructor(readonly kind: Decision["kind"], reason: string) {
+  constructor(readonly kind: Decision["kind"] | "abandon", reason: string) {
     super(`invalid ${kind}: ${reason}`);
     this.name = "MvpDecisionError";
   }

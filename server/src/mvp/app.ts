@@ -9,7 +9,7 @@ import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, type Decision, type Hom
 import { MvpBadDecision, MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
 import { dayView, endDay, hiddenSlay } from "./day.js";
 import { MvpNotYet } from "./errors.js";
-import { currentRun, decide, preview, startRun } from "./runs.js";
+import { abandon, currentRun, decide, preview, startRun } from "./runs.js";
 import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
 import { statsView } from "./stats.js";
 
@@ -100,6 +100,19 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     if (req instanceof Response) return req;
     try {
       return c.json(decide(rt, req.run, req.d));
+    } catch (err) {
+      return refused(c, err);
+    }
+  });
+
+  // Giving up: the run ends "abandoned", every heart left rated a lost fight
+  // (runs.ts abandon). The owner only; 409 on a run that is already over.
+  api.post("/runs/:runId/abandon", (c) => {
+    const run = store.run(c.req.param("runId"));
+    if (!run) return bad(c, 404, "no such run");
+    if (playerOf(c)?.id !== run.player.id) return bad(c, 401, "not your run");
+    try {
+      return c.json(abandon(rt, run));
     } catch (err) {
       return refused(c, err);
     }

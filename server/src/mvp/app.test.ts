@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { BattleRecord, DayView, DecisionResponse, HomeView, PlayerRef, RunView } from "../../../src/mvp/contract.js";
+import { MVP_RULES, offersAt, type BattleRecord, type DayView, type DecisionResponse, type HomeView, type PlayerRef, type RunView } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { createMvpApp } from "./app.js";
 import { mvpContent } from "./content.js";
@@ -31,7 +31,7 @@ describe("MVP API thin path", () => {
     expect(run).toMatchObject({ round: 1, hearts: 5, gold: 10, phase: "shop", day: 1 });
     expect(Date.parse(run.startedAt)).not.toBeNaN();
     expect(run.endedAt).toBeUndefined();
-    expect(run.offers).toHaveLength(5);
+    expect(run.offers).toHaveLength(3);
 
     let cur = run;
     let fights = 0;
@@ -49,6 +49,7 @@ describe("MVP API thin path", () => {
       expect(b.json.player.id).toBe(p.id);
       cur = f.json.run;
       fights++;
+      if (cur.phase === "shop") expect(cur.offers).toHaveLength(offersAt(MVP_RULES, cur.round));
     }
     expect(fights).toBeGreaterThan(0);
     expect(fights).toBeLessThanOrEqual(12);
