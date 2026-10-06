@@ -11,6 +11,10 @@
 //   model and keeps the answer here ("prepared"), so peek and the fuse use it.
 // - The first fuse stores the prepared model name, else the portmanteau
 //   ("fallback"), for good; onFuse records it (recordFusion).
+// - Pairs never share a name: a new pair's name is never a stored fusion's or
+//   a base unit's (compared folded). A model answer that clashes is refused
+//   like a blocked one, and the portmanteau moves its split (portmanteau).
+//   Names stored before this rule stay as they are.
 // - A bot fuses a pair only once fusionNameReady: its name stored or
 //   prepared, or the model gave up on it. Bots run in the background, so a
 //   bot that wants a pair whose name isn't ready waits for it
@@ -32,36 +36,51 @@ export type ModelNamer = (first: UnitContent, second: UnitContent) => Promise<st
 
 /** The deterministic fallback name: the front of first's name and the back of
  * second's ("Brawler" + "Medic" → "Brawdic"). The only portmanteau. It is
- * never a part's name or one of `taken` (the base units' names): the split
- * moves until it isn't ("Rose" + "Rot" → "Rorot", not "Rot"), and as a last
- * resort both names are joined whole. */
-export function portmanteau(first: string, second: string, taken: readonly string[] = []): string {
+ * never a part's name or one of `taken` (the base units' names and the stored
+ * fusions' names, compared folded): the split moves until it isn't ("Rose" +
+ * "Rot" → "Rorot", not "Rot"; a second "Sileat" → "Silenat"), then any split,
+ * then both names joined whole, and as a last resort a numeral ("Sileat II"). */
+export function portmanteau(first: string, second: string, taken: Iterable<string> = []): string {
   const a = first.replace(/\s+/g, "");
   const b = second.replace(/\s+/g, "").toLowerCase();
   const avoid = new Set([first, second, ...taken].map(fold));
+  const free = (name: string) => !avoid.has(fold(name));
   const join = (head: string, tail: string) => (head.slice(-1).toLowerCase() === tail[0] ? head + tail.slice(1) : head + tail);
   const h0 = Math.ceil(a.length / 2);
   const t0 = Math.floor(b.length / 2);
-  for (let dh = 0; dh < a.length; dh++)
-    for (const h of [h0 + dh, h0 - dh]) {
-      if (h < 1 || h > a.length) continue;
-      for (const t of [t0, t0 - 1, t0 + 1]) {
-        if (t < 0 || t >= b.length) continue;
-        const name = join(a.slice(0, h), b.slice(t));
-        if (!avoid.has(fold(name))) return name;
-      }
+  const heads: number[] = [];
+  for (let dh = 0; dh < a.length; dh++) for (const h of dh === 0 ? [h0] : [h0 + dh, h0 - dh]) if (h >= 1 && h <= a.length) heads.push(h);
+  for (const h of heads)
+    for (const t of [t0, t0 - 1, t0 + 1]) {
+      if (t < 0 || t >= b.length) continue;
+      const name = join(a.slice(0, h), b.slice(t));
+      if (free(name)) return name;
     }
-  return a + b;
+  // Every split: the tail moves further from the middle too.
+  for (const h of heads)
+    for (let t = 0; t < b.length; t++) {
+      const name = join(a.slice(0, h), b.slice(t));
+      if (free(name)) return name;
+    }
+  if (free(a + b)) return a + b;
+  const base = join(a.slice(0, h0), b.slice(Math.min(t0, b.length - 1)));
+  for (let k = 2; ; k++) {
+    const name = `${base} ${ROMAN[k] ?? k}`;
+    if (free(name)) return name;
+  }
 }
 
+const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+
 /** The stored name, else the portmanteau, with the credit by FusionDiscovery's
- * rule (the stored discoverer, else `by` unless it is a bot). It only reads:
- * it never records a discovery or calls a model. */
+ * rule (the stored discoverer, else `by` unless it is a bot). A new pair's
+ * portmanteau avoids the base units' names and every stored name. It only
+ * reads: it never records a discovery or calls a model. */
 export function storedOrPortmanteau(store: MvpStore, unitNames: readonly string[] = []): NameFusion {
   return (first, second, by) => {
     const known = store.fusion(first.id, second.id);
     return {
-      name: known?.name ?? portmanteau(first.name, second.name, unitNames),
+      name: known?.name ?? portmanteau(first.name, second.name, [...unitNames, ...store.fusions().map((f) => f.name)]),
       discoveredBy: known?.discoveredBy ?? (by.bot ? null : by),
     };
   };
@@ -260,6 +279,9 @@ interface Pair {
 interface Namer {
   model: ModelNamer | null;
   units: Map<UnitId, UnitContent>;
+  /** Folded names a new pair can't take: the base units' and every stored
+   * fusion's (built from the store on first use; recordFusion adds to it). */
+  taken: Set<string> | null;
   /** Model names for pairs nobody has fused yet. */
   prepared: Map<string, string>;
   /** Pairs waiting for the model: humans' first, then bots'. */
@@ -292,6 +314,22 @@ const namers = new WeakMap<MvpStore, Namer>();
 export const defaultBackoffMs = (failures: number) => Math.min(5_000 * 2 ** (failures - 1), 600_000);
 
 const keyOf = (first: UnitId, second: UnitId) => JSON.stringify([first, second]);
+
+/** The folded names a new pair's name must not be: every base unit's and
+ * every stored fusion's. Pairs never share a name. */
+function takenNames(n: Namer, store: MvpStore): Set<string> {
+  n.taken ??= new Set([...[...n.units.values()].map((u) => u.name), ...store.fusions().map((f) => f.name)].map(fold));
+  return n.taken;
+}
+
+/** True when a model's name for `key` would clash: it is taken (takenNames) or
+ * another pair's prepared name. Such an answer counts as refused. */
+function clashes(n: Namer, store: MvpStore, key: string, name: string): boolean {
+  const folded = fold(name);
+  if (takenNames(n, store).has(folded)) return true;
+  for (const [k, other] of n.prepared) if (k !== key && fold(other) === folded) return true;
+  return false;
+}
 
 /** Whether a bot may fuse `first` then `second` now: the pair's name is
  * stored, a model name is prepared, or the model gave up on it (or there is
@@ -378,6 +416,7 @@ export function recordFusion(store: MvpStore, parts: FusionParts, at: string): F
     nameSource: fromModel ? "model" : "fallback",
   };
   store.putFusion(found);
+  n?.taken?.add(fold(found.name));
   return found;
 }
 
@@ -389,6 +428,7 @@ export function fusionNaming(
   const n: Namer = {
     model: opts.model === undefined ? envModelNamer() : opts.model,
     units: new Map(rt.content.units.map((u) => [u.id, u])),
+    taken: null,
     prepared: new Map(),
     human: [],
     bot: [],
@@ -400,7 +440,6 @@ export function fusionNaming(
     now: rt.now,
   };
   namers.set(store, n);
-  const unitNames = rt.content.units.map((u) => u.name);
   const enqueue = (first: UnitContent, second: UnitContent, human: boolean) => {
     const key = keyOf(first.id, second.id);
     if (!n.model || n.prepared.has(key) || (n.gaveUp.get(key) ?? 0) > Date.now() || store.fusion(first.id, second.id)) return;
@@ -421,9 +460,14 @@ export function fusionNaming(
   };
   const peek: NameFusion = (first, second, by) => {
     const known = store.fusion(first.id, second.id);
+    if (known) return { name: known.name, discoveredBy: known.discoveredBy ?? (by.bot ? null : by) };
+    // A new pair's name is unique: a prepared name stored for another pair
+    // since is dropped for the portmanteau, which avoids every taken name.
+    const taken = takenNames(n, store);
+    const prepared = n.prepared.get(keyOf(first.id, second.id));
     return {
-      name: known?.name ?? n.prepared.get(keyOf(first.id, second.id)) ?? portmanteau(first.name, second.name, unitNames),
-      discoveredBy: known?.discoveredBy ?? (by.bot ? null : by),
+      name: prepared !== undefined && !taken.has(fold(prepared)) ? prepared : portmanteau(first.name, second.name, taken),
+      discoveredBy: by.bot ? null : by,
     };
   };
   const hooks: RunHooks = {
@@ -477,6 +521,8 @@ export async function drainFusionNames(store: MvpStore): Promise<void> {
       for (let tries = 0; tries < MODEL_TRIES && !name; tries++) {
         const raw = await n.model(pair.first, pair.second);
         name = raw === null ? null : cleanModelName(raw, pair.first, pair.second);
+        // Another pair's name (or a base unit's) is refused too: ask again.
+        if (name && clashes(n, store, pair.key, name)) name = null;
       }
     } catch {
       // Down, slow or timed out: ask again later, while nobody has fused it.

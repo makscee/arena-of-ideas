@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { DecisionResponse, FusionDiscovery, PlayerRef, UnitContent } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { mvpContent } from "./content.js";
-import { awaitFusionName, cleanModelName, drainFusionNames, fusionNameReady, fusionNaming, httpModelNamer, MODEL_FAILURES, portmanteau, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
+import { awaitFusionName, cleanModelName, drainFusionNames, fusionNameReady, fusionNaming, httpModelNamer, MODEL_FAILURES, portmanteau, recordFusion, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
 import { decide, preview, startRun } from "./runs.js";
 import { mvpRuntime } from "./runtime.js";
 import { MemoryMvpStore } from "./store.js";
@@ -15,6 +15,8 @@ const brawler = unit("brawler", "Brawler");
 const medic = unit("medic", "Medic");
 const maks: PlayerRef = { id: "p1", name: "Maks", bot: false };
 const bot: PlayerRef = { id: "bot", name: "bot-Ash", bot: true };
+/** Distinct model names: pairs never share one, so a stub answers each ask with the next. */
+const NAMES = ["Duskmend", "Gloomfang", "Ashwarden", "Briarhusk", "Cindermaw", "Dreadbloom", "Emberlash", "Frostgrin", "Galeborn", "Hollowtusk", "Ironquill", "Jadecoil"];
 
 describe("MVP fusion names: the fallback and the store", () => {
   it("falls back to a deterministic portmanteau", () => {
@@ -51,6 +53,66 @@ describe("MVP fusion names: the fallback and the store", () => {
     const naming = fusionNaming({ store, content: { version: "t", units: [brawler, medic], abilities: {}, statuses: {} }, now: () => new Date(0) }, { model: null });
     expect(naming.nameFusion(brawler, medic, maks)).toEqual(naming.peek(brawler, medic, maks));
     expect(naming.peek(brawler, medic, maks)).toEqual({ name: "Brawdic", discoveredBy: maks });
+  });
+});
+
+describe("MVP fusion names: every pair's name is its own", () => {
+  const content = mvpContent();
+  const u = (id: string) => content.units.find((x) => x.id === id)!;
+  const fold = (x: string) => x.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  it("the portmanteau moves the split off a taken name, then any split, then a numeral", () => {
+    expect(portmanteau("Silencer", "Bat")).toBe("Sileat");
+    expect(portmanteau("Silencer", "Gnat", ["Sileat"])).not.toBe("Sileat");
+    expect(portmanteau("Spike", "Squire", ["SPIRE"])).not.toBe("Spire");
+    // Nothing left but a numeral: every split and the whole join are taken.
+    const all = ["Ab", "Abd", "Ad", "Acd", "Abcd", "Ad", "A", "Acd"];
+    expect(portmanteau("Ab", "Cd", all)).toBe("Ad II");
+    expect(portmanteau("Ab", "Cd", [...all, "ad ii"])).toBe("Ad III");
+  });
+
+  it("with no model, pairs that share a portmanteau get different names, and stored names never change", () => {
+    const store = new MemoryMvpStore();
+    // Two pairs stored with one name before this rule keep it.
+    store.putFusion({ first: "spike", second: "wire", name: "Spire", discoveredBy: null, discoveredAt: "t", nameSource: "fallback" });
+    store.putFusion({ first: "spike", second: "squire", name: "Spire", discoveredBy: null, discoveredAt: "t", nameSource: "fallback" });
+    const naming = fusionNaming({ store, content, now: () => new Date(0) }, { model: null });
+    const fuse = (a: string, b: string) => recordFusion(store, { first: a, second: b, ...naming.nameFusion(u(a), u(b), maks) }, "t").name;
+    expect(naming.peek(u("spike"), u("wire"), maks).name).toBe("Spire");
+    expect(naming.peek(u("spike"), u("squire"), maks).name).toBe("Spire");
+    const names = [fuse("silencer", "bat"), fuse("silencer", "gnat"), fuse("silencer", "rat"), fuse("spike", "gardener")];
+    expect(names[0]).toBe("Sileat");
+    expect(new Set(names.map(fold)).size).toBe(names.length);
+    const units = new Set(content.units.map((x) => fold(x.name)));
+    for (const name of names) expect(units.has(fold(name)), name).toBe(false);
+    expect(names).not.toContain("Spire");
+  });
+
+  it("a model answer another pair has (any case) or a base unit's name is refused: asked again, then the unique portmanteau", async () => {
+    const store = new MemoryMvpStore();
+    store.putFusion({ first: "rose", second: "victim", name: "Bloom", discoveredBy: null, discoveredAt: "t", nameSource: "model" });
+    const answers = ["bloom", "GNAT", "Thornveil"];
+    let asked = 0;
+    const naming = fusionNaming({ store, content, now: () => new Date(0) }, { model: async () => answers[asked++] ?? "Bloom" });
+    naming.hooks.onDecision!(undefined as never, undefined as never, { phase: "shop", player: maks, line: [lineUnitOf(u("rose"), "u1", 3), lineUnitOf(u("spike"), "u2", 3)] } as never);
+    await drainFusionNames(store);
+    expect(naming.peek(u("rose"), u("spike"), maks).name).toBe("Thornveil");
+    // spike+rose: "Bloom" three times, then the portmanteau.
+    expect(asked).toBe(6);
+    expect(naming.peek(u("spike"), u("rose"), maks).name).toBe(portmanteau("Spike", "Rose", [...content.units.map((x) => x.name), "Bloom"]));
+    // Two pairs prepared one name can't both store it: the second fuse falls back.
+    expect(naming.peek(u("rose"), u("victim"), maks).name).toBe("Bloom");
+  });
+
+  it("a prepared name stored by another pair since falls back to the portmanteau", async () => {
+    const store = new MemoryMvpStore();
+    const naming = fusionNaming({ store, content, now: () => new Date(0) }, { model: async () => "Grimward" });
+    naming.hooks.onDecision!(undefined as never, undefined as never, { phase: "shop", player: maks, line: [lineUnitOf(u("rose"), "u1", 3), lineUnitOf(u("spike"), "u2", 3)] } as never);
+    await drainFusionNames(store);
+    expect(naming.peek(u("rose"), u("spike"), maks).name).toBe("Grimward");
+    store.putFusion({ first: "bat", second: "rat", name: "GRIMWARD", discoveredBy: null, discoveredAt: "t", nameSource: "fallback" });
+    const late = fusionNaming({ store, content, now: () => new Date(0) }, { model: null });
+    expect(late.peek(u("rose"), u("spike"), maks).name).toBe(portmanteau("Rose", "Spike"));
   });
 });
 
@@ -206,7 +268,7 @@ describe("MVP fusion names: through the runtime", () => {
 
   it("asks for humans' pairs before bots', also pairs queued while it drains", async () => {
     const asked: string[] = [];
-    const botSide = world(async (x, y) => (asked.push(`${x.id}+${y.id}`), `Name${"xyz"[asked.length % 3]}wyn`), bot);
+    const botSide = world(async (x, y) => (asked.push(`${x.id}+${y.id}`), NAMES[asked.length]!), bot);
     const { rt } = botSide;
     decide(rt, botSide.stored(), { kind: "reorder", from: 0, to: 0 }); // 6 bots' pairs of a, b, c
     const human = startRun(rt, maks);
@@ -302,7 +364,7 @@ describe("MVP fusion names: through the runtime", () => {
 
   it("a bot's fusion is stored uncredited; the first human to fuse the pair claims it, the name stays", async () => {
     const asked: string[] = [];
-    const botWorld = world(async (x, y) => (asked.push(`${x.id}+${y.id}`), "Duskmend"), bot);
+    const botWorld = world(async (x, y) => (asked.push(`${x.id}+${y.id}`), NAMES[asked.length - 1]!), bot);
     decide(botWorld.rt, botWorld.stored(), { kind: "reorder", from: 0, to: 0 });
     expect(botWorld.rt.store.fusions()).toEqual([]);
     // Bots' lines are asked ahead too.
