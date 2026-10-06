@@ -17,14 +17,14 @@
 // scrubs the fight (click or drag; boardAt is pure); a side panel holds Why
 // and Log. Every piece is in the DOM at any width and CSS picks the layout,
 // so crossing 1024px needs no redraw. The phone keeps its stacked rows.
-import { boardAt, type BoardUnit } from "../../src/board";
+import { boardAt, type BoardState, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView } from "../../src/mvp/contract";
 import { STATUS_TERMS, termDef, termIcon, type IconId, type TermId } from "../../src/glossary";
 import { beatPlayOf, chainOf, damageByUnit, firingOf, keyMomentsOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Change, type Firing, type KeyMoment, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
-import type { Side } from "../../src/types";
+import type { Side, UnitDef } from "../../src/types";
 import { card, formRich, unitSheet } from "../ui/card";
-import { button, closable, fitText, h, isDesktop, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
+import { app, button, closable, fitText, h, isDesktop, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
 import { icon } from "../ui/icon";
 import { statusesShown, STATUS_ROW_FALLBACK } from "../ui/status-row";
 
@@ -165,6 +165,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   let hudTurn: number | null = null;
   /** The end card's Damage list shows every unit (All n), not the top three a side. */
   let dmgAll = false;
+  /** The board on screen and its turn, as render() last drew them: a card tap's Now sheet reads them (R3-18). */
+  let shownBoard: BoardState | null = null;
+  let shownTurn = 0;
   /** Each card's floating numbers, set by motion() and hung in its slot. */
   const floatsOf = new WeakMap<HTMLElement, HTMLElement[]>();
 
@@ -559,7 +562,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     if (u.silenced) el.classList.add("silenced");
     motion(el, u.id, side, v);
     // The change's chip traces it; the rest of the card opens the unit.
-    el.addEventListener("click", () => openUnit(u.id, changes[0]));
+    el.addEventListener("click", () => openUnit(u.id));
     return el;
   }
   /** One chip for a unit's changes this step. Two changes (a status and the
@@ -620,9 +623,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       more = h("button", { class: "bv-st more", "data-testid": "card-status-more", "aria-label": `${over} more: all ${statuses.length} statuses` }, `+${over}`);
       more.addEventListener("click", (ev) => {
         ev.stopPropagation();
-        pause();
-        render();
-        closable(liveStatuses(u));
+        openUnit(u.id);
       });
     }
     return h(
@@ -641,23 +642,63 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       more,
     );
   }
-  /** A unit's statuses right now, each with its icon, stacks and what it does. */
-  function liveStatuses(u: BoardUnit): HTMLElement {
+  /** A unit as it is at the beat on screen (R3-18): live PWR and HP against
+   * its base, every status with its icon, stacks and tip, Silenced, and its
+   * ability text; a dim last line says how it entered. A fallen unit reads
+   * as it fell. "Full card" opens its card sheet (both forms). */
+  function nowSheet(u: BoardUnit, side: Side, fallen: boolean): HTMLElement {
+    const entered = units.get(u.id);
+    const summon = entered ? undefined : log.find((e) => e.type === "Summon" && e.unit === u.id);
+    const base = entered ? entered.stats : summon?.type === "Summon" ? { pwr: summon.pwr, hp: summon.hp } : null;
+    const body = entered ? null : summonBody(u.name);
+    const ability: Node[] = entered
+      ? formRich(entered.recipe, a.content)
+      : body && !(body.abilities ?? []).every((x) => x === "Strike")
+        ? formRich({ when: body.triggers ?? [], who: body.selectors ?? [], does: body.abilities ?? [], ...(body.condition ? { condition: body.condition } : {}) }, a.content)
+        : [h("b", {}, "No ability: it fights with its PWR / HP.")];
+    const pwr = h("span", { "data-testid": "now-pwr" }, `PWR ${u.pwr}`, base && base.pwr !== u.pwr ? h("span", { class: "dim" }, ` (base ${base.pwr})`) : "");
+    // The max as the card's HP bar reads it: a heal past the max raises it.
+    const max = Math.max(1, u.maxHp, u.hp);
+    const hp = h("span", { "data-testid": "now-hp" }, fallen ? `HP 0 / ${max} · fallen` : `HP ${u.hp} / ${max}`);
+    // It takes the Now sheet's place: one sheet at a time.
+    const full = entered
+      ? button("Full card ▸", () => {
+          app.querySelector('[data-testid="now-sheet"]')?.closest(".overlay")?.remove();
+          closable(unitSheet(entered, a.content));
+        }, "small link", "now-full-card")
+      : null;
     return h(
       "div",
-      { class: "stack", "data-testid": "live-statuses" },
-      h("h2", {}, `${emojiOf(u.id)} `, unitName(u.id)),
-      h("div", { class: "label" }, `Statuses now · ${turnLabel(hudTurn ?? beats[at]?.turn ?? 0)}`),
-      ...u.statuses.map((st) => {
-        const def = STATUS_TERMS[st.status] ?? termDef(`status:${st.status}`);
-        return h(
-          "div",
-          { class: "bv-live-st", "data-testid": "live-status" },
-          h("span", { class: `bv-live-st-head tone-${def?.tone ?? "plain"}` }, ...(def?.icon ? [icon(def.icon, 18)] : []), h("b", {}, ` ${st.status} ×${st.stacks}`)),
-          def?.tip ? h("span", { class: "dim" }, def.tip) : null,
-        );
-      }),
+      { class: "stack bv-now", "data-testid": "now-sheet", "data-unit": u.id },
+      h("h2", {}, `${emojiOf(u.id)} `, unitName(u.id), " ", sideTag(side, "now-side")),
+      h("div", { class: "label", "data-testid": "now-turn" }, `${turnLabel(shownTurn)} · this beat`),
+      h("div", { class: "num", "data-testid": "now-stats" }, pwr, " · ", hp),
+      h("div", { class: "label" }, "Statuses"),
+      h(
+        "div",
+        { class: "stack", "data-testid": "live-statuses", "data-count": String(u.statuses.length) },
+        u.silenced ? h("div", { class: "bv-live-st", "data-testid": "now-silenced" }, h("b", {}, "Silenced: "), h("span", { class: "dim" }, "its ability is off.")) : null,
+        ...u.statuses.map((st) => {
+          const def = STATUS_TERMS[st.status] ?? termDef(`status:${st.status}`);
+          return h(
+            "div",
+            { class: "bv-live-st", "data-testid": "live-status", "data-status": st.status, "data-stacks": String(st.stacks) },
+            h("span", { class: `bv-live-st-head tone-${def?.tone ?? "plain"}` }, ...(def?.icon ? [icon(def.icon, 18)] : []), h("b", {}, ` ${st.status} ×${st.stacks}`)),
+            def?.tip ? h("span", { class: "dim" }, def.tip) : null,
+          );
+        }),
+        !u.statuses.length && !u.silenced ? h("div", { class: "dim", "data-testid": "now-no-statuses" }, "No statuses.") : null,
+      ),
+      h("div", { class: "label" }, "Ability"),
+      h("div", { class: "sheet-form", "data-testid": "now-ability" }, ...ability),
+      base ? h("div", { class: "dim", "data-testid": "now-base" }, `Entered as ${base.pwr} PWR / ${base.hp} HP${summon ? " · summoned" : ""}`) : null,
+      full,
     );
+  }
+  /** A summoned unit's body, by its name: the unit a summon effect in the content makes. */
+  function summonBody(unitName: string): UnitDef | null {
+    for (const ab of Object.values(a.content.abilities)) for (const e of ab.effects) if (e.kind === "summon" && e.unit.name === unitName) return e.unit;
+    return null;
   }
   /** The trigger badge over a unit whose ability fired this beat: [When icon]
    * → [Does icon]. It pops when its wave lands, stays for the beat, and opens
@@ -701,13 +742,17 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   function slot(el: HTMLElement, id: string, v: View): HTMLElement {
     return h("div", { class: "bv-slot" }, el, triggerBadge(id, v), ...(floatsOf.get(el) ?? []));
   }
-  /** A card tap: the unit's sheet when it entered the battle; a summon has none, so its change's trace. */
-  function openUnit(id: string, change: Change | undefined): void {
-    const u = units.get(id);
-    if (!u) return change ? openTrace(change.eventId) : undefined;
+  /** A card tap (or one of its status chips): the unit's Now sheet, paused on this beat (R3-18). */
+  function openUnit(id: string): void {
     pause();
     render();
-    closable(unitSheet(u, a.content));
+    if (!shownBoard) return;
+    for (const side of ["A", "B"] as const) {
+      const live = shownBoard.lines[side].find((x) => x.id === id);
+      const fell = live ? undefined : shownBoard.graves[side].find((x) => x.id === id);
+      const u = live ?? fell;
+      if (u) return void closable(nowSheet(u, side, !live));
+    }
   }
   function deadCard(id: string, v: View): HTMLElement | null {
     // A unit that falls this beat stays in its slot, greyed, until the beat
@@ -729,7 +774,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     el.dataset.unit = id;
     if (step?.actor === id) el.classList.add("acting");
     motion(el, id, sides.get(id) ?? you, v);
-    el.addEventListener("click", () => openUnit(id, death));
+    el.addEventListener("click", () => openUnit(id));
     return el;
   }
 
@@ -871,8 +916,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       waves: shown.map((w, i) => ({ step: w, age: landed[i] !== undefined ? now - landed[i]! : null })),
     };
     const board = boardAt(log, upto, pending);
+    shownBoard = board;
     const before = beat ? boardAt(log, Math.max(0, beat.start - 1)) : board;
     const turn = step?.turn ?? 0;
+    shownTurn = hudTurn ?? turn;
     hud.replaceChildren(
       ...(menuBtn ? [menuBtn] : []),
       h("span", {}, battle.kind === "crown" ? "Crown fight" : battle.kind === "playoff" ? "Playoff" : `Round ${battle.round}`),

@@ -11,6 +11,7 @@ import { mkdirSync } from "node:fs";
 import { createServer } from "node:net";
 import { launchChromium } from "./browser.mjs";
 import { escPass } from "./esc-keys.mjs";
+import { nowSheetChecks } from "./now-sheet.mjs";
 
 const W = 1440;
 const H = 900;
@@ -299,6 +300,7 @@ try {
     if (round === 1) await logFirst("battle opens");
     if (round === 1) await whyOnDesktop();
     if (round === 1) await desktopBattle();
+    if (round === 1) await nowSheetChecks(page, errors, { shot, phone: false });
     await page.getByTestId("battle-end").click();
     // R2-17 batch E: the end card is the fight's one result: the round
     // fought, hearts and record, and its button goes straight on.
