@@ -135,6 +135,8 @@ const BLOCKED_STEMS = [
   "vader", "yoda", "jedi", "snape", "dobby", "pudge", "zerg", "goku", "optimus", "hulk",
   "mario", "thorhammer", "thorshammer",
   "moderator", "http", "www",
+  // crude
+  "smut", "porn", "nazi", "slut",
 ];
 // Ordinary words that contain a stem: taken out of a word before stems match.
 const ORDINARY = ["invader", "evader", "pervader", "hulking", "hulky", "marionette", "mariology", "mariolat", "marion", "snaper"];
@@ -147,6 +149,7 @@ const BLOCKED_WORDS = [
   "sith", "potter", "muggle",
   "elsa", "olaf", "nemo", "dory", "fiona", "minnie", "thor", "loki", "avenger", "marvel",
   "zoro", "bart", "lego", "barney", "scam", "developer", "administrator",
+  "cum",
   // the model's way of not naming
   "fusion", "fuse", "fused",
   // stems that hit ordinary words: Carambola, Adminicle, Hexmender, Bambino,

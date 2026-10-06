@@ -225,6 +225,11 @@ try {
   await page.getByTestId("stats-tab-fusions").click();
   await page.getByTestId("stats-fusions").waitFor();
   await shot("stats-fusions"); await noHScroll("stats-fusions");
+  {
+    // Back stays on the first screen however long the lists grow.
+    const box = await page.getByTestId("stats-back").boundingBox();
+    if (!box || box.y + box.height > 640) throw new Error(`stats: Back is off screen (${box && Math.round(box.y)})`);
+  }
   await page.getByTestId("stats-back").click();
   await page.getByTestId("play").waitFor();
 
