@@ -248,4 +248,47 @@ describe("MVP API thin path", () => {
     for (const o of rolled.json.run.offers.slice(1)) expect((await decide({ kind: "lock", slot: o.slot })).status).toBe(200);
     expect((await decide({ kind: "reroll" })).status).toBe(409);
   });
+
+  it("rerolls a shop whose remaining offers are all locked when a buy left a slot empty", async () => {
+    const call = client();
+    const { json: p } = await call<PlayerRef>("POST", "/players", { name: "locker2" });
+    const { json: r } = await call<RunView>("POST", "/runs", undefined, p.id);
+    const decide = (d: unknown) => call<DecisionResponse>("POST", `/runs/${r.runId}/decisions`, d, p.id);
+    expect((await decide({ kind: "lock", slot: 0 })).status).toBe(200);
+    expect((await decide({ kind: "buy", slot: 2 })).status).toBe(200);
+    const bought = await decide({ kind: "buy", slot: 1 });
+    expect(bought.json.run.offers.map((o) => !!o.locked)).toEqual([true]);
+    const rolled = await decide({ kind: "reroll" });
+    expect(rolled.status).toBe(200);
+    expect(rolled.json.run.offers).toHaveLength(r.offers.length);
+    expect(rolled.json.run.offers[0]).toEqual({ ...r.offers[0], slot: 0, locked: true });
+  });
+
+  it("answers 400 to a decision index that isn't a whole number ≥ 0, on decide and preview", async () => {
+    const call = client();
+    const { json: p } = await call<PlayerRef>("POST", "/players", { name: "fuzz" });
+    const { json: r } = await call<RunView>("POST", "/runs", undefined, p.id);
+    const bad = ["__proto__", "length", "constructor", -1, 0.5, null, "1"];
+    const ds = (v: unknown) => [
+      { kind: "buy", slot: v },
+      { kind: "lock", slot: v },
+      { kind: "sell", index: v },
+      { kind: "reorder", from: v, to: 0 },
+      { kind: "reorder", from: 0, to: v },
+      { kind: "fuse", first: v, second: 1 },
+      { kind: "fuse", first: 0, second: v },
+    ];
+    for (const v of bad)
+      for (const d of ds(v)) {
+        for (const path of ["decisions", "preview"]) {
+          const res = await call("POST", `/runs/${r.runId}/${path}`, d, p.id);
+          expect(res.status, `${path} ${JSON.stringify(d)}`).toBe(400);
+        }
+      }
+    expect(Object.hasOwn(Array.prototype, "locked")).toBe(false);
+    // The run is untouched: same offers and gold.
+    const { json: after } = await call<RunView>("GET", `/runs/${r.runId}`, undefined, p.id);
+    expect(after.offers).toEqual(r.offers);
+    expect(after.gold).toBe(r.gold);
+  });
 });
