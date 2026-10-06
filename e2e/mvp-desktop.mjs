@@ -31,7 +31,7 @@ if (!url) {
   }
 }
 
-// Names are one per player (R2-17): a tag keeps a second pass at one server apart.
+// A tag per pass keeps a second pass at one server apart (names may repeat).
 const TAG = Date.now().toString(36).slice(-4);
 const browser = await launchChromium();
 const errors = [];
