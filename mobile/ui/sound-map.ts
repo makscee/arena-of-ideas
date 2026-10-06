@@ -59,6 +59,9 @@ export function shopSound(d: Decision, before: RunView, after: RunView): Cue | n
       return cue("fuse");
     case "lock":
       return cue(after.offers[d.slot]?.locked ? "freeze" : "unfreeze");
+    // The awakening gift (R3-16): a pick chimes, a skip clicks.
+    case "gift":
+      return cue(d.pick === null ? "click" : "discover");
     default:
       return null;
   }
