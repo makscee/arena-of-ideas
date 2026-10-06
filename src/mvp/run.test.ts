@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_RUN_POOL, stressAbilities, stressRegistry } from "../index.js";
-import type { MvpContent, PlayerRef, UnitContent } from "./contract.js";
-import { applyMvpDecision, initMvpRun, MvpBadDecision, MvpDecisionError, runView, synthGhost } from "./run.js";
+import { MVP_RULES, type MvpContent, type PlayerRef, type UnitContent } from "./contract.js";
+import { applyMvpDecision, initMvpRun, MvpBadDecision, MvpDecisionError, offersAt, runView, synthGhost } from "./run.js";
 
 const units: UnitContent[] = DEFAULT_RUN_POOL.map((d, i) => {
   const form = { when: d.triggers ?? [], who: d.selectors ?? [], does: d.abilities ?? [] };
@@ -15,7 +15,14 @@ describe("MVP thin run", () => {
   it("starts with the MVP rules", () => {
     const s = initMvpRun({ runId: "r", player: me, seed: 1, content, ...day });
     expect(runView(s)).toMatchObject({ round: 1, hearts: 5, gold: 10, phase: "shop", line: [] });
-    expect(s.offers).toHaveLength(5);
+    expect(s.offers).toHaveLength(3);
+  });
+
+  it("grows the shop 3 → 6 by round 7", () => {
+    expect([1, 2, 3, 4, 5, 6, 7, 12].map((r) => offersAt(MVP_RULES, r))).toEqual([3, 4, 4, 5, 5, 5, 6, 6]);
+    const { offersGrowAt: _, ...old } = { ...MVP_RULES, offers: 5 };
+    expect(offersAt(old, 1)).toBe(5);
+    expect(offersAt(old, 12)).toBe(5);
   });
 
   it("is deterministic and pure", () => {
