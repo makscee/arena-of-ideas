@@ -6,7 +6,7 @@
 import type { Champion, FusionDiscovery, HomeView, MvpContent, StatsView, UnitContent } from "../../src/mvp/contract";
 import { api } from "../api";
 import { card, unitSheet } from "../ui/card";
-import { button, h, overlay, show, who } from "../ui/dom";
+import { button, h, overlay, screen, show, who } from "../ui/dom";
 import { keepUnitRates, pct } from "../ui/unit-stats";
 
 type Tab = "units" | "champions" | "fusions";
@@ -35,6 +35,7 @@ export async function statsScreen(a: { content: MvpContent; onBack: () => void; 
     // Stuck to the bottom: the lists grow long, and Back is the only way home.
     h("div", { class: "row footer" }, back),
   );
+  screen("stats");
 }
 
 function recordsPanel(home: HomeView): HTMLElement {

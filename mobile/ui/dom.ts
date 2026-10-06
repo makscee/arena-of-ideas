@@ -25,11 +25,43 @@ export function button(label: string, onClick: () => void, cls = "", testid = ""
   return b;
 }
 
-/** Replaces the screen; null kids are skipped. */
+/** Replaces the screen; null kids are skipped. It forgets the last screen's
+ * name (screen()) and keys (onKeys()): a screen that has a desktop layout
+ * says so again after show(). */
 export function show(...kids: (Node | null)[]): void {
+  delete app.dataset.screen;
+  keys = null;
   app.replaceChildren(...kids.filter((k): k is Node => k !== null));
   window.scrollTo(0, 0);
 }
+
+// ---------- desktop (round 2, R2-9) ----------
+
+/** 1024px and wider: the desktop layout (style.css, the same breakpoint).
+ * Below it the phone layout stays as it is. */
+export const desktopQuery = matchMedia("(min-width: 1024px)");
+export const isDesktop = (): boolean => desktopQuery.matches;
+
+/** Names the screen on #app (data-screen), which turns on its desktop layout
+ * in style.css; a screen without a name (the battle until R2-16, the name
+ * screen) stays a phone column at every width. */
+export function screen(name: "home" | "shop" | "result" | "over" | "stats"): void {
+  app.dataset.screen = name;
+}
+
+/** The current screen's keyboard (desktop): show() clears it. A key typed in
+ * a field, or with Ctrl/Cmd/Alt, never reaches it. Returning true means
+ * handled (its default, like Space clicking a focused button, is stopped). */
+let keys: ((e: KeyboardEvent) => boolean) | null = null;
+export function onKeys(fn: (e: KeyboardEvent) => boolean): void {
+  keys = fn;
+}
+addEventListener("keydown", (e) => {
+  if (!keys || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+  const t = e.target as HTMLElement | null;
+  if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+  if (keys(e)) e.preventDefault();
+});
 
 /** A modal sheet over the current screen: the unit sheet, the rules, the
  * trace popup, why-I-lost. Tapping outside it closes it, and so does the next

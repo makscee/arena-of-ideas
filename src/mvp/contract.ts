@@ -133,7 +133,9 @@ export interface FusionParts {
 
 /** What the server hands a fuse: the pair's name and who is credited.
  * Slice 10's namer looks it up (RunDeps.nameFusion, and peekFusionName for a
- * preview); the pure run only copies it into the fused unit. */
+ * preview); the pure run only copies it into the fused unit. In a preview, a
+ * pair nobody has fused has name "" (named when fused), and a stored pair
+ * shows its stored credit (null while only bots have made it). */
 export interface FuseContext {
   name: string;
   discoveredBy: PlayerRef | null;
@@ -203,7 +205,9 @@ export type Decision =
   | { kind: "sell"; index: number }
   | { kind: "reroll" }
   | { kind: "reorder"; from: number; to: number }
-  /** Two Awoken units, in tap order (slice 2). */
+  /** Two Awoken units, in tap order (slice 2). The fused unit takes the
+   * front-most of the two slots and keeps first's uid, so swapping the order
+   * changes only the recipe. */
   | { kind: "fuse"; first: number; second: number }
   /** Ends the shop phase: fight this round's opponent (or the Crown after the last round). */
   | { kind: "fight" };

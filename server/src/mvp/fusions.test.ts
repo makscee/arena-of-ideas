@@ -183,9 +183,19 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
   });
 
   it("refuses a crude word behind another word, glued or not, and keeps ordinary compounds", () => {
-    for (const raw of ["Noctscum", "Noctscumling", "Noct Scum", "Spaceinvader", "Space Invaders"]) expect(cleanModelName(raw), raw).toBeNull();
-    for (const raw of ["Scum", "Scumlord", "Grapeshot", "Canal Warden", "Encumber", "Invader", "Jolttherapist", "Soultherapist", "Bonescrape", "Mistdrape", "Vinegrape", "Ashgrape", "Firepeacock", "Stormcanal"])
+    for (const raw of ["Noctscum", "Noctscumling", "Noct Scum", "Scumscum", "Spaceinvader", "Space Invaders"]) expect(cleanModelName(raw), raw).toBeNull();
+    for (const raw of ["Scum", "Scumlord", "Viscum", "Mosscumulus", "Glasscumber", "Grapeshot", "Canal Warden", "Encumber", "Invader", "Jolttherapist", "Soultherapist", "Bonescrape", "Mistdrape", "Vinegrape", "Ashgrape", "Firepeacock", "Stormcanal", "King Grape"])
       expect(cleanModelName(raw), raw).not.toBeNull();
+  });
+
+  it("refuses a crude stem an ordinary word hides when a word stands right before it", () => {
+    for (const raw of ["Kingrape", "Hagrape", "Mindrape", "Gangrape", "Bloodrape", "Deadrape", "Godrape", "Horserape", "Stingrape", "Fangrape", "Buttcanal", "Butt Canal", "Ballswank", "Ball Swank"])
+      expect(cleanModelName(raw), raw).toBeNull();
+    // A part's name counts as a word too: "Rose" + "rape" from Rose, but not "Roseg" + "rape".
+    const units = new Map(mvpContent().units.map((u) => [u.name, u]));
+    const [rose, rot] = [units.get("Rose")!, units.get("Rot")!];
+    expect(cleanModelName("Roserape", rose, rot)).toBeNull();
+    expect(cleanModelName("Rosegrape", rose, rot)).toBe("Rosegrape");
   });
 
   it("takes an apostrophe only as a possessive before a second word", () => {
@@ -237,9 +247,10 @@ describe("MVP fusion names: through the runtime", () => {
     await drainFusionNames(rt.store);
     expect(asked).toHaveLength(6);
 
+    // The prepared name stays hidden until the fuse.
     const pv = preview(rt, stored(), { kind: "fuse", first: 1, second: 0 });
     const want = cleanModelName(`${b!.name.slice(0, 3)}${a!.name.slice(-3)}wyn`)!;
-    expect(pv.run.line[0]).toMatchObject({ kind: "fused", name: want });
+    expect(pv.run.line[0]).toMatchObject({ kind: "fused", name: "", fusion: { name: "", discoveredBy: maks } });
     const done: DecisionResponse = decide(rt, stored(), { kind: "fuse", first: 1, second: 0 });
     expect(done.run.line[0]).toMatchObject({ name: want, fusion: { name: want, discoveredBy: maks } });
     expect(rt.store.fusions()).toEqual([{ first: b!.id, second: a!.id, name: want, discoveredBy: maks, discoveredAt: expect.any(String), nameSource: "model" }]);
@@ -248,6 +259,18 @@ describe("MVP fusion names: through the runtime", () => {
     const other = world(null, { id: "p2", name: "Eva", bot: false });
     const eva = fusionNaming({ ...other.rt, store: rt.store }, { model: null });
     expect(eva.peek(b!, a!, { id: "p2", name: "Eva", bot: false })).toEqual({ name: want, discoveredBy: maks });
+  });
+
+  it("a preview shows a pair bots made with its name and no credit; the human's fuse claims it", () => {
+    const { rt, stored } = world(null);
+    const name = portmanteau(a!.name, b!.name);
+    rt.store.putFusion({ first: a!.id, second: b!.id, name, discoveredBy: null, discoveredAt: "2026-10-06T00:00:00.000Z", nameSource: "fallback" });
+    const pv = preview(rt, stored(), { kind: "fuse", first: 0, second: 1 });
+    expect(pv.run.line[0]).toMatchObject({ name, fusion: { name, discoveredBy: null } });
+    // The other order is a pair nobody has fused.
+    expect(preview(rt, stored(), { kind: "fuse", first: 1, second: 0 }).run.line[0]).toMatchObject({ name: "", fusion: { name: "" } });
+    const done = decide(rt, stored(), { kind: "fuse", first: 0, second: 1 });
+    expect(done.run.line[0]).toMatchObject({ name, fusion: { name, discoveredBy: maks } });
   });
 
   it("with the model down, fuses at once with the portmanteau, and a human's fuse fixes it for good", async () => {
@@ -288,8 +311,8 @@ describe("MVP fusion names: through the runtime", () => {
     await drainFusionNames(rt.store); // both pairs fail once
     await drainFusionNames(rt.store); // and are asked again: both answer
     expect(waits).toEqual([1, 1]);
-    const pv = preview(rt, stored(), { kind: "fuse", first: 0, second: 1 });
-    expect(pv.run.line[0]).toMatchObject({ name: "Grimward" });
+    const done = decide(rt, stored(), { kind: "fuse", first: 0, second: 1 });
+    expect(done.run.line[0]).toMatchObject({ name: "Grimward" });
   });
 
   it("the first fuse fixes a pair's name for good, a bot's too: a later model answer changes nothing", async () => {

@@ -82,15 +82,37 @@ try {
     await noRates(name);
     const last = await sheet.evaluate((el) => el.lastElementChild?.dataset.testid ?? "");
     if ((await sheet.getByTestId("unit-rates").count()) && last !== "unit-rates") errors.push(`${name}: rates aren't the last line`);
+    await termChecks(name, sheet.getByTestId("sheet-form"));
     if (await sheet.getByTestId("see-awoken").count()) {
       const before = await sheet.getByTestId("sheet-form").textContent();
       await sheet.getByTestId("see-awoken").click();
       await sheet.locator(".sheet-form.other").waitFor();
       const after = await sheet.getByTestId("sheet-form").textContent();
       if (!/^Awoken/i.test(after) || after.includes(before)) errors.push(`${name}: See Awoken shows "${after}"`);
+      if (!(await sheet.locator(".sheet-form.other u.changed").count())) errors.push(`${name}: See Awoken underlines nothing`);
       await shot(`${name.replace(/ /g, "-")}-awoken`); await noHScroll(name);
       await sheet.getByTestId("see-sleeping").click();
       if ((await sheet.getByTestId("sheet-form").textContent()) !== before) errors.push(`${name}: Back doesn't restore the sleeping text`);
+    }
+  };
+  /** Unit text is highlighted (R2-8): its terms are buttons, and tapping one
+   * (Shield when the text has it) opens a sheet with its rule. */
+  let tappedShield = false;
+  const termChecks = async (name, form) => {
+    const terms = form.getByTestId("term");
+    if (!(await terms.count())) { errors.push(`${name}: no highlighted terms in the unit text`); return; }
+    const shield = form.locator('[data-term="status:Shield"]');
+    const pick = (await shield.count()) ? shield.first() : terms.first();
+    const term = await pick.getAttribute("data-term");
+    await pick.click();
+    const tsheet = page.getByTestId("term-sheet");
+    await tsheet.waitFor({ timeout: 3000 }).catch(() => errors.push(`${name}: tapping ${term} opens no rule sheet`));
+    if (await tsheet.count()) {
+      const tip = (await tsheet.getByTestId("term-tip").textContent()) ?? "";
+      if (tip.length < 10) errors.push(`${name}: ${term}'s rule sheet has no rule ("${tip}")`);
+      if (term === "status:Shield" && !tappedShield) { tappedShield = true; await shot("term-shield"); }
+      await page.locator('.sheet:has([data-testid="term-sheet"]) [data-testid="sheet-close"]').click();
+      if (await tsheet.count()) errors.push(`${name}: the rule sheet doesn't close`);
     }
   };
   /** The page doesn't scroll at 640 px. */
@@ -321,10 +343,40 @@ try {
     await tap44("move buttons beside Fuse", page.locator('[data-testid="move-left"], [data-testid="move-right"]'), "width");
     await page.getByTestId("fuse").click();
     await shot("fuse-pick"); await noHScroll("fuse-pick");
+    // R2-5: both orders are previewed up front; a pair nobody has fused comes
+    // with no name in the response and shows "??? New fusion".
+    const previews = [];
+    const onPreview = async (res) => { if (/\/preview$/.test(res.url())) previews.push({ req: res.request().postDataJSON(), body: await res.text() }); };
+    page.on("response", onPreview);
     await page.getByTestId(`line-${second}`).click();
     await page.getByTestId("preview-confirm").waitFor();
+    page.off("response", onPreview);
+    const tapped = previews.find((p) => p.req.first === first && p.req.second === second);
+    const fusedIn = (p) => JSON.parse(p.body).run.line.find((u) => u.kind === "fused");
+    const isNew = tapped && fusedIn(tapped).name === "";
+    if (previews.length !== 2 || !tapped) errors.push(`fusion preview: expected both orders previewed, got ${previews.length}`);
+    const sheetText = await page.getByTestId("overlay").textContent();
+    if (isNew && !/\?\?\? New fusion/.test(sheetText)) errors.push("fusion preview: a new pair doesn't say '??? New fusion'");
+    if (tapped && !isNew && !sheetText.includes(fusedIn(tapped).name)) errors.push("fusion preview: a known pair doesn't show its name");
     await shot("fusion-preview"); await noHScroll("fusion-preview");
+    const recipe = await page.getByTestId("fusion-recipe").textContent();
+    await page.getByTestId("preview-swap").click();
+    const swapped = await page.getByTestId("fusion-recipe").textContent();
+    const names = [run.line[first].name, run.line[second].name];
+    if (!(recipe.indexOf(names[0]) < recipe.indexOf(names[1]) && swapped.indexOf(names[1]) < swapped.indexOf(names[0]))) errors.push(`fusion preview: Swap doesn't flip the recipe (${recipe} / ${swapped})`);
+    await shot("fusion-preview-swapped"); await noHScroll("fusion-preview-swapped");
+    await page.getByTestId("preview-swap").click();
     await page.getByTestId("preview-confirm").click();
+    if (isNew) {
+      await page.getByTestId("fusion-reveal").waitFor();
+      const reveal = await page.getByTestId("fusion-reveal").textContent();
+      const named = reveal.replace(/^.*You discovered /, "");
+      if (!/You discovered \S/.test(reveal)) errors.push(`fusion reveal: '${reveal}'`);
+      if (!/discovered by you/.test(await page.getByTestId("overlay").textContent())) errors.push("fusion reveal: no 'discovered by you'");
+      if (previews.some((p) => p.body.includes(named))) errors.push(`fusion preview: the response carried the name '${named}' before the fuse`);
+      await shot("fusion-reveal"); await noHScroll("fusion-reveal");
+      await page.getByTestId("sheet-close").click();
+    }
     await page.locator(".card.fused").waitFor();
     await shot("fused"); await noHScroll("fused");
     await page.locator(".card.fused").screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-fused-card.png` });

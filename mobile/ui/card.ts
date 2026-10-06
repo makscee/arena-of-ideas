@@ -7,12 +7,13 @@
 // emoji, a one-line name, PWR/HP and one footer slot. The sheet shows only the
 // form the unit has now; win and pick rates are its one dim last line.
 import { termDef, termIcon, type TermId } from "../../src/glossary";
-import { formText as sharedFormText } from "../../src/mvp/form-text";
+import { formSegments, formText as sharedFormText } from "../../src/mvp/form-text";
 import { MVP_RULES, type BattleUnit, type LineUnit, type MvpContent, type UnitContent, type UnitForm } from "../../src/mvp/contract";
 import type { Stats } from "../../src/types";
 import { h } from "./dom";
 import { discoveredLine } from "./fusion";
 import { icon } from "./icon";
+import { markChangedPieces, richText } from "./term";
 import { unitStatsLine, type UnitRates } from "./unit-stats";
 
 /** What a card needs to draw; LineUnit, BattleUnit and offers all fit. */
@@ -75,12 +76,17 @@ export function formText(form: UnitForm, content: MvpContent): string {
   return sharedFormText(form, content.abilities);
 }
 
+/** A form as highlighted text (R2-8): its terms tinted, iconed and tappable. */
+export function formRich(form: UnitForm, content: MvpContent): Node[] {
+  return richText(formSegments(form, content.abilities));
+}
+
 /** Everything about one unit: exact numbers and the form it has now. A
  * sleeping unit's sheet swaps in its awoken text behind "See Awoken" (what
  * changes underlined), a fused unit's parts open behind a tap, and the unit's
- * win and pick rates are one dim line at the bottom. Open it with
- * overlay(unitSheet(...)) from ./dom. */
-export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpContent, opts: { rates?: UnitRates; from?: Stats } = {}): HTMLElement {
+ * win and pick rates are one dim line at the bottom. opts.preview: a fusion
+ * preview's credit line (./fusion.ts). Open it with overlay(unitSheet(...)) from ./dom. */
+export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpContent, opts: { rates?: UnitRates; from?: Stats; preview?: boolean } = {}): HTMLElement {
   const unitId = "forms" in u ? u.id : u.unitId;
   const unit = (id: string) => content.units.find((x) => x.id === id);
   // opts.from: your copy's stats now, when u is that copy after a buy (the shop's offer sheet).
@@ -98,14 +104,14 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
   const children: (Node | null)[] = [];
   if (fused && "fusion" in u && u.fusion) {
     const [a, b] = [unit(u.fusion.first), unit(u.fusion.second)];
-    box.append(formText(u.recipe, content));
+    box.append(...formRich(u.recipe, content));
     const parts = h(
       "div",
       { class: "stack parts", "data-testid": "sheet-parts" },
       ...[
         [a, "When"],
         [b, "Who"],
-      ].map(([p, role]) => (p ? h("div", { class: "sheet-form part" }, h("div", { class: "label" }, `${(p as UnitContent).emoji} ${(p as UnitContent).name} · Awoken · gives ${role}`), formText((p as UnitContent).forms.awoken, content)) : null)),
+      ].map(([p, role]) => (p ? h("div", { class: "sheet-form part" }, h("div", { class: "label" }, `${(p as UnitContent).emoji} ${(p as UnitContent).name} · Awoken · gives ${role}`), ...formRich((p as UnitContent).forms.awoken, content)) : null)),
     );
     parts.hidden = true;
     const label = `Made from ${a?.name ?? u.fusion.first} + ${b?.name ?? u.fusion.second}`;
@@ -116,12 +122,12 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
     });
     children.push(toggle, parts);
   } else if (now) {
-    box.append(formText(now, content));
+    box.append(...formRich(now, content));
   }
   if (sleeping && c && now) {
     const left = Math.max(1, MVP_RULES.copiesToAwaken - copies);
-    const sleepText = formText(now, content);
-    const awokeText = formText(c.forms.awoken, content);
+    const sleepPieces = formSegments(now, content.abilities);
+    const awokePieces = formSegments(c.forms.awoken, content.abilities);
     const see = `▸ See Awoken (${left} more ${left === 1 ? "copy" : "copies"})`;
     const back = "◂ Back to Sleeping (now)";
     const note = h("div", { class: "dim small" }, "What changes is underlined.");
@@ -131,7 +137,7 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
     btn.addEventListener("click", () => {
       showing = !showing;
       box.classList.toggle("other", showing);
-      box.replaceChildren(...(showing ? [h("div", { class: "label" }, `Awoken · after copy ${MVP_RULES.copiesToAwaken}`), ...markChanges(sleepText, awokeText)] : [sleepText]));
+      box.replaceChildren(...(showing ? [h("div", { class: "label" }, `Awoken · after copy ${MVP_RULES.copiesToAwaken}`), ...richText(awokePieces, { content: markChangedPieces(sleepPieces, awokePieces) })] : richText(sleepPieces)));
       btn.textContent = showing ? back : see;
       btn.dataset.testid = showing ? "see-sleeping" : "see-awoken";
       note.hidden = !showing;
@@ -143,7 +149,7 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
     "div",
     { class: "stack", "data-testid": "unit-sheet" },
     h("div", { class: "row spread sheet-head" }, h("h2", {}, `${u.emoji} ${u.name}`), h("span", { class: "dim small", "data-testid": "sheet-state" }, "stats" in u ? sheetState(u) : `Sleeping · tier ${u.tier}`)),
-    "forms" in u ? null : discoveredLine(u),
+    "forms" in u ? null : discoveredLine(u, { preview: opts.preview ?? false }),
     "stats" in u ? statsLine(u.stats) : h("div", { class: "num" }, `${u.base.pwr} PWR / ${u.base.hp} HP`),
     opts.from ? h("div", { class: "dim small" }, "Your copy now → after buying") : null,
     box,
@@ -156,32 +162,4 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
 function sheetState(u: LineUnit | BattleUnit): string {
   if (u.kind === "fused") return `Fused, final · ×${u.copies}`;
   return `${u.form === "awoken" ? "Awoken" : "Sleeping"} · ×${u.copies}`;
-}
-
-/** `next` as text nodes, the words not in `was` (by a word-level LCS) underlined.
- * Punctuation is its own token, so "ally." and "ally, then …" share "ally". */
-export function markChanges(was: string, next: string): Node[] {
-  const tokens = (t: string) => t.split(/(\s+|[.,;:!?])/).filter((x) => x !== "");
-  const a = tokens(was);
-  const b = tokens(next);
-  const n = a.length;
-  const m = b.length;
-  const lcs = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));
-  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) lcs[i]![j] = a[i] === b[j] ? lcs[i + 1]![j + 1]! + 1 : Math.max(lcs[i + 1]![j]!, lcs[i]![j + 1]!);
-  const out: Node[] = [];
-  let i = 0;
-  let j = 0;
-  while (j < m) {
-    const tok = b[j]!;
-    if (i < n && a[i] === tok) {
-      out.push(document.createTextNode(tok));
-      i++;
-      j++;
-    } else if (i < n && lcs[i + 1]![j]! >= lcs[i]![j + 1]!) i++;
-    else {
-      out.push(/^\s*$/.test(tok) ? document.createTextNode(tok) : h("u", { class: "changed" }, tok));
-      j++;
-    }
-  }
-  return out;
 }
