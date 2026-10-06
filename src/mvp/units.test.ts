@@ -119,11 +119,12 @@ describe("one hero per shape (round 3, docs/round3/units.md 1b)", () => {
     expect(effectKinds(["Freeze 2 + Curse 1", "Call Imp", "Smite"])).toEqual(["Call", "Curse", "Freeze", "Smite"]);
   });
 
-  it("sig ignores Strength and Vitality riders and counts the heal family (Heal, Mend) as one kind", () => {
+  it("sig ignores Strength and Vitality riders and counts each family (Heal, Mend; Hit, Smite) as one kind", () => {
     expect(shapeKinds(["Call Golem + Strength 1"])).toEqual(["Call"]);
     expect(shapeKinds(["Shield 1", "Vitality 1", "Strength 2"])).toEqual(["Shield"]);
     expect(shapeKinds(["Mend"])).toEqual(shapeKinds(["Heal 1"]));
     expect(shapeKinds(["Mend", "Heal 2"])).toEqual(["Heal"]);
+    expect(shapeKinds(["Smite"])).toEqual(shapeKinds(["Hit 2"]));
     // A form that only grows stats keeps them: that is its job.
     expect(shapeKinds(["Strength 2", "Vitality 1"])).toEqual(["Strength", "Vitality"]);
   });
@@ -200,6 +201,11 @@ describe("one hero per shape (round 3, docs/round3/units.md 1b)", () => {
     expect(loopsOf(mvpPool(rows).units)).toContain("Curse →Robber (sleeping)→ Power →Equalizer (sleeping)→ Curse");
   });
 
+  it("R4 catches the old Priest loop: a Blessing's save is a Heal, and Priest blessed healed allies", () => {
+    const rows = ROWS.map((r) => (r.name === "Priest" ? { ...r, when: "allyHealed" as WhenKey, who: "it" as const } : r));
+    expect(loopsOf(mvpPool(rows).units)).toContain("Heal →Priest (sleeping)→ Heal");
+  });
+
   it("R4's map covers every When and effect kind, so a new one can't hide a loop", () => {
     for (const k of Object.keys(WHEN) as WhenKey[]) expect([k, k in LISTENS || ROOT_WHENS.includes(k)]).toEqual([k, true]);
     const kinds = new Set(mvpPool().units.flatMap((u) => [...effectKinds(u.forms.sleeping.does), ...effectKinds(u.forms.awoken.does)]));
@@ -216,5 +222,31 @@ describe("one hero per shape (round 3, docs/round3/units.md 1b)", () => {
       }
     }
     expect(selfCounting).toEqual([]);
+  });
+});
+
+describe("Priest's Blessing can't re-arm itself (R3-7 check of 7ee5eec1)", () => {
+  const content: MvpContent = { version: "test", ...mvpPool() };
+  const contentWith = (rows: typeof ROWS): MvpContent => ({ version: "test", ...mvpPool(rows) });
+  // The probe line from the check: Bulwark + Medic + Priest, against hitters.
+  const saves = (c: MvpContent, seed: number) => {
+    const unit = (id: string) => c.units.find((u) => u.id === id)!;
+    const line = ["bulwark", "medic", "priest"].map((id, i) => lineUnitOf(unit(id), `a${i}`));
+    const foe = ["ruin", "crusader", "duelist", "sniper", "emberling"].map((id, i) => lineUnitOf(unit(id), `b${i}`));
+    const p = { id: "p", name: "p", bot: false };
+    const log = fightLines({ player: p, line }, { player: p, line: foe }, { battleId: "b", seed, kind: "round", round: 1, runId: null, at: "2026-10-06T00:00:00.000Z", content: c, rules: MVP_RULES }).log;
+    const by = new Map<string, number>();
+    for (const e of log) if (e.type === "Intercepted" && e.original === "Death" && e.unit) by.set(e.unit, (by.get(e.unit) ?? 0) + 1);
+    return Math.max(0, ...by.values());
+  };
+  const seeds = Array.from({ length: 20 }, (_, i) => i + 1);
+
+  it("each ally is saved at most once: Priest blesses only at battle start", () => {
+    expect(Math.max(...seeds.map((s) => saves(content, s)))).toBeLessThanOrEqual(1);
+  });
+
+  it("the old Priest (ally healed: bless it) saved one ally again and again", () => {
+    const old = contentWith(ROWS.map((r) => (r.name === "Priest" ? { ...r, when: "allyHealed" as WhenKey, who: "it" as const } : r)));
+    expect(Math.max(...seeds.map((s) => saves(old, s)))).toBeGreaterThan(1);
   });
 });

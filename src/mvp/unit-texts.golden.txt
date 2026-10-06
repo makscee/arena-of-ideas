@@ -89,8 +89,8 @@
   sleeping: Dies: 2 Poison to all enemies.
   awoken:   Dies: 2 Poison and 1 Freeze to all enemies.
 🤺 Duelist
-  sleeping: Strikes: PWR damage to front enemy.
-  awoken:   Strikes: PWR damage to front enemy, then 1 Curse to front enemy.
+  sleeping: Battle start: PWR damage to front enemy.
+  awoken:   Battle start: PWR damage to front enemy, then 1 Curse to front enemy.
 🪓 Berserker
   sleeping: Hit: 1 Strength to self.
   awoken:   Hit: 2 Strength to self.
@@ -149,8 +149,8 @@
   sleeping: Turn start: 1 Strength to all allies.
   awoken:   Turn start: 1 Strength to all allies, then heal all allies for 1.
 🩺 Physician
-  sleeping: Ally hit: 1 Vitality to it.
-  awoken:   Ally hit: 2 Vitality to it.
+  sleeping: Ally hit: 1 Curse to front enemy.
+  awoken:   Ally hit: 1 Curse and 1 Poison to front enemy.
 🍼 Pediatrician
   sleeping: Ally summoned: 1 Strength to it.
   awoken:   Ally summoned: 2 Strength to it.
@@ -206,8 +206,8 @@
   sleeping: Battle start: 2 Vitality to all allies.
   awoken:   Battle start: 2 Vitality and 1 Strength to all allies.
 ⛪ Priest
-  sleeping: Ally healed: 1 Blessing to it.
-  awoken:   Ally healed: 2 Blessing to it.
+  sleeping: Battle start: 1 Blessing to all allies.
+  awoken:   Battle start: 2 Blessing to all allies.
 😇 Divinity
   sleeping: Ally dies: 1 Blessing to all allies.
   awoken:   Ally dies: 1 Blessing and 2 Shield to all allies.
