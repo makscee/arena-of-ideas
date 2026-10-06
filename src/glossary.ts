@@ -10,6 +10,7 @@
 // entry.
 
 import { describeStatus } from "./describe.js";
+import { MVP_RULES } from "./mvp/contract.js";
 import type { Condition, Effect, EventPattern, Selector, StatusRegistry, UnitFilter } from "./types.js";
 
 /** Every term id. `status:` takes a registry name ("Shield", "Poison", …). */
@@ -67,23 +68,22 @@ export interface TermDef {
 export const STATUS_TERMS: Record<string, TermDef> = {
   Shield: {
     label: "Shield", icon: "shield", tone: "shield",
-    tip: "Blocks damage: each point blocked uses up 1 Shield.",
-    more: "It also blocks Poison and Fatigue damage. A fully blocked hit still counts as being hit.",
+    tip: "Blocks damage of any kind: each point blocked uses up 1 stack.",
   },
-  Vitality: { label: "Vitality", icon: "heart-plus", tone: "vital", tip: "+1 HP for each Vitality, for the rest of the battle." },
-  Strength: { label: "Strength", icon: "biceps", tone: "str", tip: "+1 PWR for each Strength, for the rest of the battle." },
-  Curse: { label: "Curse", icon: "cursed-star", tone: "curse", tip: "-1 PWR for each Curse, for the rest of the battle (PWR stops at 0)." },
-  Poison: { label: "Poison", icon: "drop", tone: "poison", tip: "At the end of each turn: takes damage equal to its Poison, then Poison drops by 1." },
-  Freeze: { label: "Freeze", icon: "snowflake-2", tone: "freeze", tip: "Skips its next strike; each skipped strike uses up 1 Freeze." },
+  Vitality: { label: "Vitality", icon: "heart-plus", tone: "vital", tip: "+1 HP per stack, for the rest of the battle." },
+  Strength: { label: "Strength", icon: "biceps", tone: "str", tip: "+1 PWR per stack, for the rest of the battle." },
+  Curse: { label: "Curse", icon: "cursed-star", tone: "curse", tip: "-1 PWR per stack, for the rest of the battle (PWR stops at 0)." },
+  Poison: { label: "Poison", icon: "drop", tone: "poison", tip: "At the end of every turn, takes damage equal to its stacks, then loses 1 stack." },
+  Freeze: { label: "Freeze", icon: "snowflake-2", tone: "freeze", tip: "Skips its next strike; each skipped strike uses up 1 stack." },
   Blessing: {
     label: "Blessing", icon: "angel-wings", tone: "bless",
-    tip: "The next time it would die, it lives on with HP equal to its Blessing instead. Then the Blessing is gone.",
+    tip: "The next time it would die, it lives on with HP equal to its stacks instead, and loses them all.",
   },
 };
 
 export const GLOSSARY: Record<FixedTermId, TermDef> = {
   // Stats
-  "stat:pwr": { label: "PWR", icon: "broadsword", tone: "pwr", tip: "Power: the damage this unit deals with each strike." },
+  "stat:pwr": { label: "PWR", icon: "broadsword", tone: "pwr", tip: "Power: the damage it deals with each strike." },
   "stat:hp": { label: "HP", icon: "hearts", tone: "hp", tip: "Health. When it reaches 0 the unit dies." },
 
   // Triggers (When). A trigger shares its event's icon on purpose: in a
@@ -93,43 +93,40 @@ export const GLOSSARY: Record<FixedTermId, TermDef> = {
   "trigger:TurnEnd": { label: "Turn end", icon: "moon", tone: "when", tip: "At the end of every turn, after the front units have struck." },
   "trigger:Strike": { label: "Strikes", icon: "crossed-swords", tone: "when", tip: "When it makes its normal attack. Each turn the two front units strike each other." },
   "trigger:Hurt": {
-    label: "Is hit", icon: "broken-heart", tone: "when",
-    tip: "When damage comes at it: a strike, an ability, Poison or Fatigue. It counts even if Shield blocks all of it.",
+    label: "Hit", icon: "broken-heart", tone: "when",
+    tip: "When any damage comes at it, from anything. It counts even if all of it is blocked.",
   },
-  "trigger:Heal": { label: "Is healed", icon: "health-normal", tone: "when", tip: "When it gets HP back. A unit at full HP can't be healed, so this doesn't fire." },
+  "trigger:Heal": { label: "Healed", icon: "health-normal", tone: "when", tip: "When it gets HP back. A unit at full HP can't be healed, so this doesn't fire." },
   "trigger:Death": { label: "Dies", icon: "death-skull", tone: "when", tip: "When it dies. Its own death ability still fires as it leaves the line." },
-  "trigger:Summon": { label: "Is summoned", icon: "magic-portal", tone: "when", tip: "When a new unit joins the line: summoned, or revived." },
-  "trigger:StatusApplied": { label: "Status lands", tone: "when", tip: "When that status is put on it." },
-  "trigger:StatusRemoved": { label: "Status leaves", tone: "when", tip: "When that status is used up or removed." },
-  "trigger:StatChanged": { label: "Gains PWR", icon: "upgrade", tone: "when", tip: "When its PWR goes up, for example from Strength." },
+  "trigger:Summon": { label: "Summoned", icon: "magic-portal", tone: "when", tip: "When it joins the line mid-battle, new or brought back." },
+  "trigger:StatusApplied": { label: "Gets status", tone: "when", tip: "When that status is put on it." },
+  "trigger:StatusRemoved": { label: "Loses status", tone: "when", tip: "When that status is used up or removed." },
+  "trigger:StatChanged": { label: "Gains PWR", icon: "upgrade", tone: "when", tip: "When its PWR goes up, from anything." },
   "term:would": {
     label: "would", tone: "when",
-    tip: "\"When X would …\" happens just before X, and can change or stop it (how Shield, Freeze and Blessing work).",
+    tip: "\"Would …\" happens just before the thing, and can change or stop it.",
   },
 
   // Conditions
-  "condition:holderHpAtMost": { label: "Low HP", icon: "hearts", tone: "hp", tip: "Fires only while this unit's HP is at or below the number." },
+  "condition:holderHpAtMost": { label: "Low HP", icon: "hearts", tone: "hp", tip: "Fires only while its own HP is at or below the number." },
 
   // Targets (Who)
-  "target:holder": { label: "This unit", icon: "person", tone: "ally", tip: "The unit that has this ability." },
-  "target:eventUnit": {
-    label: "That unit", icon: "pointing", tone: "plain",
-    tip: "The unit the trigger was about: the ally who got hit, the enemy who got poisoned.",
-  },
+  "target:holder": { label: "Self", icon: "person", tone: "ally", tip: "The unit that has this ability." },
+  "target:eventUnit": { label: "It", icon: "pointing", tone: "plain", tip: "The unit the trigger was about." },
   "target:frontEnemy": { label: "Front enemy", icon: "targeted", tone: "enemy", tip: "The first enemy in line, the one fighting right now." },
   "target:randomEnemy": { label: "Random enemy", icon: "perspective-dice-six-faces-random", tone: "enemy", tip: "One living enemy, picked at random." },
-  "target:allEnemies": { label: "Every enemy", icon: "minions", tone: "enemy", tip: "All living enemies." },
-  "target:allAllies": { label: "Every ally", icon: "three-friends", tone: "ally", tip: "All living allies, this unit included." },
+  "target:allEnemies": { label: "All enemies", icon: "minions", tone: "enemy", tip: "Every living enemy." },
+  "target:allAllies": { label: "All allies", icon: "three-friends", tone: "ally", tip: "Every living ally, self included: the unit with this ability counts too." },
   "target:lastDeadAlly": { label: "Fallen ally", icon: "tombstone", tone: "ally", tip: "The ally who died most recently and is still dead." },
 
   // Effects (Does)
-  "effect:damage": { label: "Damage", icon: "spiky-explosion", tone: "dmg", tip: "Takes away HP. Shield blocks it first." },
+  "effect:damage": { label: "Damage", icon: "spiky-explosion", tone: "dmg", tip: "Takes away that much HP." },
   "effect:heal": { label: "Heal", icon: "health-normal", tone: "heal", tip: "Gives back lost HP, never above the unit's max." },
   "effect:applyStatus": { label: "Apply status", tone: "plain", tip: "Puts stacks of a status on the target." },
-  "effect:consumeStacks": { label: "Consume stacks", tone: "plain", tip: "Removes stacks of a status from the unit that has it." },
+  "effect:consumeStacks": { label: "Spend", tone: "plain", tip: "Removes stacks of a status from the unit that has it." },
   "effect:summon": {
     label: "Summon", icon: "magic-portal", tone: "summon",
-    tip: "Adds a new unit at the back of the line, if the line has room (5 max). The numbers are its PWR / HP.",
+    tip: "Adds a new unit at the front of the line, if the line has room (5 max). The numbers are its PWR / HP.",
   },
   "effect:resurrect": { label: "Revive", icon: "raise-zombie", tone: "bless", tip: "Brings a fallen ally back at the back of the line with that much HP, if there's room." },
   "effect:silence": { label: "Silence", icon: "silence", tone: "silence", tip: "Removes all its statuses and turns off its abilities for the rest of the battle." },
@@ -149,7 +146,7 @@ export const GLOSSARY: Record<FixedTermId, TermDef> = {
   },
   "battle:chainCapped": {
     label: "Chain stopped", icon: "breaking-chain", tone: "plain",
-    tip: "A chain of reactions ran 64 steps and was cut off, so a battle can't loop forever.",
+    tip: `A chain of reactions ran ${MVP_RULES.chainStepCap} steps and was cut off, so a battle can't loop forever.`,
   },
 
   // Words
@@ -185,18 +182,18 @@ export function termIcon(id: TermId, status?: string): IconId | undefined {
  * the holder: "When it dies …"). */
 const SCOPED_EVENT: Partial<Record<EventPattern["on"], string>> = {
   Strike: "makes its normal attack.",
-  Hurt: "is hit: a strike, an ability, Poison or Fatigue. It counts even if Shield blocks all of it.",
+  Hurt: "is hit by any damage, from anything. It counts even if all of it is blocked.",
   Heal: "gets HP back. A unit at full HP can't be healed, so this doesn't fire.",
   Death: "dies.",
-  Summon: "joins the line: summoned, or revived.",
+  Summon: "joins the line mid-battle, new or brought back.",
   StatusApplied: "gets that status.",
   StatusRemoved: "loses that status: used up or removed.",
-  StatChanged: "gains PWR, for example from Strength.",
+  StatChanged: "gains PWR, from anything.",
 };
 
 const SCOPE_WHO: Record<Exclude<UnitFilter, "holder">, string> = {
-  ally: "When any ally, this unit included,",
-  otherAlly: "When another ally (not this unit)",
+  ally: "When any ally, self included,",
+  otherAlly: "When another ally (not self)",
   enemy: "When an enemy",
   any: "When any unit, on either side,",
 };
@@ -209,4 +206,21 @@ export function scopedTip(id: TermId, scope?: UnitFilter): string | undefined {
   if (!def || !scope || scope === "holder" || !id.startsWith("trigger:")) return def?.tip;
   const event = SCOPED_EVENT[id.slice("trigger:".length) as EventPattern["on"]];
   return event ? `${SCOPE_WHO[scope]} ${event}` : def.tip;
+}
+
+/** Who a scoped trigger is about, as the card's text opens it ("Ally dies"). */
+const SCOPE_SUBJECT: Record<Exclude<UnitFilter, "holder">, string> = {
+  ally: "Ally",
+  otherAlly: "Ally",
+  enemy: "Enemy",
+  any: "Any unit",
+};
+
+/** A trigger's label as its sentence scopes it, in the card's words: "Ally
+ * dies", "Enemy hit", "Ally gains PWR". The holder's scope (and a term that
+ * isn't a unit trigger) keeps the plain label. */
+export function scopedLabel(id: TermId, scope?: UnitFilter): string | undefined {
+  const def = termDef(id);
+  if (!def || !scope || scope === "holder" || !id.startsWith("trigger:") || !SCOPED_EVENT[id.slice("trigger:".length) as EventPattern["on"]]) return def?.label;
+  return `${SCOPE_SUBJECT[scope]} ${def.label.charAt(0).toLowerCase()}${def.label.slice(1)}`;
 }

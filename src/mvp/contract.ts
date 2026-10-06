@@ -207,6 +207,9 @@ export interface Offer {
   unitId: UnitId;
   tier: Tier;
   cost: number;
+  /** Kept through rerolls and new rounds until bought or unlocked (R3-12).
+   * Missing on offers stored before it reads as not locked. */
+  locked?: boolean;
 }
 
 // ---------- decisions ----------
@@ -215,6 +218,8 @@ export type Decision =
   | { kind: "buy"; slot: number }
   | { kind: "sell"; index: number }
   | { kind: "reroll" }
+  /** Toggles the offer's lock. Free; locked offers survive rerolls and rounds. */
+  | { kind: "lock"; slot: number }
   | { kind: "reorder"; from: number; to: number }
   /** Two Awoken units, in tap order (slice 2). The fused unit takes the
    * front-most of the two slots and keeps first's uid, so swapping the order

@@ -142,6 +142,10 @@ button.pin-btn { display: flex; align-items: center; gap: 4px; min-height: 44px;
 .card.muted { opacity: 0.35; }
 .card.poor { opacity: 0.45; }
 .card.owned .cost { color: var(--you); }
+/* A locked offer (R3-12): a cool outline, kept through rerolls and rounds. */
+.card.locked { outline: 2px dotted #8fd3ff; outline-offset: -2px; }
+.card.locked .cost { color: #8fd3ff; }
+.card.locked.poor { opacity: 0.7; }
 .preview-card { width: 64px; margin: 0 auto; }
 .recipe-line { text-align: center; font-size: 12px; }
 .recipe-line .k { color: var(--dim); font-family: "IBM Plex Mono", monospace; font-size: 10px; text-transform: uppercase; }

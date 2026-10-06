@@ -61,7 +61,7 @@ describe("MVP bots and world (slice 6)", () => {
       const target = 8;
       const first = topUpGhosts(rt, { target, dailyCrowns: 0 });
       expect(first.thin).toEqual([]);
-      expect(first.runs).toBeGreaterThan(target);
+      expect(first.runs).toBeGreaterThanOrEqual(target); // more when some runs end early
       for (let r = 1; r <= rt.rules.rounds; r++) {
         const ghosts = pool(rt, r);
         expect(ghosts.length).toBeGreaterThanOrEqual(target);
@@ -163,6 +163,22 @@ describe("MVP bots and world (slice 6)", () => {
     const d = botDecision(run, rt.content, rt.rules, 0, (x, y) => (asked.push(`${x.uid}+${y.uid}`), true));
     expect(asked).toHaveLength(1);
     expect(d).toEqual({ kind: "fuse", first: line.findIndex((u) => asked[0]!.startsWith(u.uid)), second: line.findIndex((u) => asked[0]!.endsWith(u.uid)) });
+  });
+
+  it("the bot locks a copy it can't afford, once, and never rerolls an all-locked shop", () => {
+    const rt = world();
+    const [a, b] = rt.content.units;
+    const line = [lineUnitOf(a!, "u1", 1, rt.rules)];
+    const offers = [{ slot: 0, unitId: b!.id, tier: b!.tier, cost: 3 }, { slot: 1, unitId: a!.id, tier: a!.tier, cost: 3 }];
+    const run = (o: typeof offers, gold: number) => ({ phase: "shop", line, offers: o, gold }) as never;
+    expect(botDecision(run(offers, 2), rt.content, rt.rules, 0)).toEqual({ kind: "lock", slot: 1 });
+    const lockedCopy = [offers[0]!, { ...offers[1]!, locked: true }];
+    expect(botDecision(run(lockedCopy, 2), rt.content, rt.rules, 0)).not.toMatchObject({ kind: "lock" });
+    // Gold for a reroll but not the (pricier) offers: rerolls only while one is unlocked.
+    const pricey = lockedCopy.map((o) => ({ ...o, cost: 10 }));
+    expect(botDecision(run(pricey, 9), rt.content, rt.rules, 0)).toEqual({ kind: "reroll" });
+    const allLocked = pricey.map((o) => ({ ...o, locked: true }));
+    expect(botDecision(run(allLocked, 9), rt.content, rt.rules, 0)).toEqual({ kind: "fight" });
   });
 
   it("botWorld seeds the champion at start and tops up in the background until stopped", async () => {

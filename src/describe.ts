@@ -339,10 +339,10 @@ export function describeEffectSegments(
     }
     case "summon": {
       // "summon Imp (1/2)": the numbers are its PWR / HP, which the term's
-      // tip says. The kernel summons at the back of the target's line.
+      // tip says. The kernel summons at the front of the target's line.
       const unit = `${e.unit.name} (${e.unit.base.pwr}/${e.unit.base.hp})`;
       // All allies / all enemies: the kernel summons once per target, at the
-      // back of that target's line, skipping it once the line is full.
+      // front of that target's line, skipping it once the line is full.
       const kinds = tgt.flatMap((t) => (t.partRef?.family === "selector" ? [t.partRef.kind] : []));
       if (kinds.length === 1 && (kinds[0] === "allAllies" || kinds[0] === "allEnemies")) {
         const ally = kinds[0] === "allAllies";
@@ -447,13 +447,14 @@ export function describeAbilitySegments(ab: Ability, opts0: DescribeOpts = {}): 
   segs.push(seg(": "));
   const gone = (ab.whens ?? []).some((w) => w.kind !== "interceptor" && w.on.on === "Death" && w.on.unit === "holder");
   // Every effect shares the ability's targets, so a run of "amount, word, to T"
-  // effects names T once: "1 Freeze and 2 damage to front enemy". Any other
-  // pair keeps ", then"; the order stays left to right.
+  // effects names T once: "1 Freeze and 2 damage to front enemy", and with
+  // three or more, commas then a final "and" ("1 Strength, 1 Vitality and 4
+  // damage to …"). Any other pair keeps ", then"; the order stays left to right.
   ab.effects.forEach((e, i) => {
     const head = shortEffectHead(e);
     const nextHead = i + 1 < ab.effects.length && head !== undefined && shortEffectHead(ab.effects[i + 1]!) !== undefined;
     const prevHead = i > 0 && head !== undefined && shortEffectHead(ab.effects[i - 1]!) !== undefined;
-    if (i > 0) segs.push(seg(prevHead ? " and " : ", then "));
+    if (i > 0) segs.push(seg(prevHead ? (nextHead ? ", " : " and ") : ", then "));
     if (nextHead) segs.push(...head!);
     else segs.push(...describeEffectSegments(e, target, gone ? { ...opts, holderGone: true } : opts));
   });
@@ -480,33 +481,34 @@ export interface AbilityChips {
   action?: string | undefined;
 }
 
-/** Trigger label + glyph per event kind (mockup trigger legend). Terse: "On
- * strike", not "after this unit strikes". An interceptor reuses its event's
- * label — the chip line names the moment, not the trigger/interceptor split. */
+/** Trigger label + glyph per event kind (mockup trigger legend), in the card's
+ * words (the glossary's labels): "Strikes", not "after this unit strikes". An
+ * interceptor reuses its event's label — the chip line names the moment, not
+ * the trigger/interceptor split. */
 const TRIGGER_CHIP: Record<EventPattern["on"], { label: string; glyph: string }> = {
   BattleStart: { label: "Battle start", glyph: "⚑" },
   TurnStart: { label: "Turn start", glyph: "⟳" },
   TurnEnd: { label: "Turn end", glyph: "⟲" },
-  Strike: { label: "On strike", glyph: "⚔" },
-  Hurt: { label: "On hit", glyph: "✸" },
-  Heal: { label: "On heal", glyph: "✚" },
-  Death: { label: "On death", glyph: "☠" },
-  Summon: { label: "On summon", glyph: "✦" },
-  StatusApplied: { label: "Status gained", glyph: "✦" },
-  StatusRemoved: { label: "Status lost", glyph: "✦" },
-  StatChanged: { label: "Stat changed", glyph: "▲" },
+  Strike: { label: "Strikes", glyph: "⚔" },
+  Hurt: { label: "Hit", glyph: "✸" },
+  Heal: { label: "Healed", glyph: "✚" },
+  Death: { label: "Dies", glyph: "☠" },
+  Summon: { label: "Summoned", glyph: "✦" },
+  StatusApplied: { label: "Gets status", glyph: "✦" },
+  StatusRemoved: { label: "Loses status", glyph: "✦" },
+  StatChanged: { label: "Stat changes", glyph: "▲" },
 };
 
-/** Terse target label per selector (mockup target legend). "Front enemy", not
- * "the front enemy". */
+/** Terse target label per selector, in the card's words (the glossary's
+ * labels). "Front enemy", not "the front enemy". */
 const SELECTOR_CHIP: Record<Selector["kind"], string> = {
   holder: "Self",
-  eventUnit: "Trigger unit",
+  eventUnit: "It",
   frontEnemy: "Front enemy",
   allEnemies: "All enemies",
   allAllies: "All allies",
   randomEnemy: "Random enemy",
-  lastDeadAlly: "Last dead ally",
+  lastDeadAlly: "Fallen ally",
 };
 
 /** A magnitude as a terse chip token: a const reads as its number, anything

@@ -10,7 +10,7 @@
       "statuses": [
         {
           "status": "Shield",
-          "stacks": 1
+          "stacks": 2
         }
       ],
       "triggers": [
@@ -34,7 +34,7 @@
     {
       "name": "Glacier",
       "base": {
-        "hp": 12,
+        "hp": 11,
         "pwr": 2
       },
       "triggers": [
@@ -112,7 +112,7 @@
   },
   "gate": {
     "verdict": "in-band",
-    "overallWinRate": 0.62,
+    "overallWinRate": 0.6066666666666667,
     "band": {
       "min": 0.35,
       "max": 0.65
@@ -121,26 +121,26 @@
     "matchups": [
       {
         "opponent": "AggroVenom",
-        "winRate": 0.74,
-        "wins": 37,
+        "winRate": 1,
+        "wins": 50,
         "losses": 0,
-        "draws": 13,
+        "draws": 0,
         "seeds": 50
       },
       {
         "opponent": "SustainControl",
-        "winRate": 0.64,
-        "wins": 32,
-        "losses": 18,
+        "winRate": 0.48,
+        "wins": 24,
+        "losses": 26,
         "draws": 0,
         "seeds": 50
       },
       {
         "opponent": "StatStack",
-        "winRate": 0.48,
-        "wins": 24,
-        "losses": 22,
-        "draws": 4,
+        "winRate": 0.34,
+        "wins": 17,
+        "losses": 26,
+        "draws": 7,
         "seeds": 50
       }
     ]

@@ -113,12 +113,13 @@ describe("boardAt vs the raw log, event by event", () => {
     }
   });
 
-  test("a summon enters at the back; a resurrected unit leaves the grave at atHp", () => {
+  test("a summon enters at the front; a resurrected unit leaves the grave at the back, at atHp", () => {
     for (const e of log) {
       if (e.type !== "Summon") continue;
       const board = boardAt(log, e.id);
       const line = board.lines[e.side];
-      expect(line[line.length - 1]!.id).toBe(e.unit);
+      expect(e.front).toBe(e.resurrected ? undefined : true);
+      expect(e.front ? line[0]!.id : line[line.length - 1]!.id).toBe(e.unit);
       if (e.resurrected) {
         const u = line[line.length - 1]!;
         expect(board.graves[e.side].some((g) => g.id === e.unit)).toBe(false);

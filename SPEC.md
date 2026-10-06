@@ -172,7 +172,7 @@ Ten abilities, shipped **as DSL data with behavior tests**. The kernel passes wh
 | Shield | status; interceptor: Hurt on holder → absorb up to stacks, consume = absorbed | interceptors, event transformation |
 | Freeze | status; interceptor: holder's Strike → cancel; consume 1 | interceptors, action denial |
 | Blessing | status; interceptor: holder's Death → Heal to `stacks` hp instead; remove status | death interception |
-| Summon | effect: spawn a defined unit at the back of caster's team | mid-cascade board mutation, fresh pairings |
+| Summon | effect: spawn a defined unit at the front of caster's team (newest in front; skipped when the line is full) | mid-cascade board mutation, fresh pairings |
 | Silence | effect: remove all statuses from target; disable its abilities for the battle | layering (statMods must vanish), ability disabling |
 | Resurrect | effect: return most recently dead ally at N hp (floored at 1) | **likely kernel-breaker**: needs the graveyard zone |
 

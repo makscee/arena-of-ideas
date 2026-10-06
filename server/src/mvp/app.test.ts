@@ -232,4 +232,20 @@ describe("MVP API thin path", () => {
     expect((await call("POST", `/runs/${r.runId}/decisions`, { kind: "buy", slot: 9 }, p.id)).status).toBe(409);
     expect((await call("POST", `/runs/${r.runId}/decisions`, { kind: "fuse", first: 0, second: 1 }, p.id)).status).toBe(409);
   });
+
+  it("locks an offer through a reroll, and refuses a bad slot and a reroll with every offer locked", async () => {
+    const call = client();
+    const { json: p } = await call<PlayerRef>("POST", "/players", { name: "locker" });
+    const { json: r } = await call<RunView>("POST", "/runs", undefined, p.id);
+    const decide = (d: unknown) => call<DecisionResponse>("POST", `/runs/${r.runId}/decisions`, d, p.id);
+    const locked = await decide({ kind: "lock", slot: 1 });
+    expect(locked.status).toBe(200);
+    expect(locked.json.run.offers[1]!.locked).toBe(true);
+    expect(locked.json.run.gold).toBe(r.gold);
+    const rolled = await decide({ kind: "reroll" });
+    expect(rolled.json.run.offers[0]).toEqual({ ...r.offers[1], slot: 0, locked: true });
+    expect((await decide({ kind: "lock", slot: 9 })).status).toBe(409);
+    for (const o of rolled.json.run.offers.slice(1)) expect((await decide({ kind: "lock", slot: o.slot })).status).toBe(200);
+    expect((await decide({ kind: "reroll" })).status).toBe(409);
+  });
 });
