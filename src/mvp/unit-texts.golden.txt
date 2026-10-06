@@ -239,8 +239,8 @@
   sleeping: Ally summoned: 2 Strength and 2 Shield to it.
   awoken:   Ally summoned: 3 Strength and 3 Shield to it.
 🦴 Morbid
-  sleeping: Enemy dies: summon Golem (2/6).
-  awoken:   Enemy dies: summon Golem (2/6), then 2 Strength to self.
+  sleeping: Ally dies: summon Golem (2/6), then 1 Strength to self.
+  awoken:   Ally dies: summon Golem (2/6), then 2 Strength to self.
 
 Statuses
   Strength: +1 PWR per stack.

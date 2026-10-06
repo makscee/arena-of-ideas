@@ -181,7 +181,7 @@ export const ROWS: Row[] = [
   // ---- tier 3: engines ----
   r("Commander",     "🎖️", 3, 2, 8, "strike",     "allies",  "Strength 1",  { does: ["Strength 1", "Shield 2"] }),
   r("War Drummer",   "🥁", 3, 2, 8, "turnStart",  "allies",  "Strength 1",  { does: ["Strength 1", "Heal 1"] }),
-  r("Physician",     "🩺", 3, 2, 7, "allyHurt",   "it",      "Mend",        { does: ["Mend", "Shield 1"] }),
+  r("Physician",     "🩺", 3, 1, 8, "allyHurt",   "it",      "Mend",        { does: ["Mend", "Shield 1"] }),
   r("Pediatrician",  "🍼", 2, 2, 8, "allySummoned", "it",   "Strength 1",  { does: ["Strength 2"] }),
   r("Crusader",      "⚔️", 3, 3, 9, "turnStart",  "front",   "Hit 2",       { does: ["Hit 3"] }),
   r("Lightning",     "🌩️", 3, 3, 7, "allyPower",  "random",  "Hit 2",       { does: ["Hit 3"] }),
@@ -202,7 +202,7 @@ export const ROWS: Row[] = [
 
   // ---- tier 4: payoffs ----
   r("King",          "👑", 4, 3, 12, "start",     "allies",  "Vitality 2",  { does: ["Vitality 2", "Strength 1"] }),
-  r("Priest",        "⛪", 4, 2, 10, "turnEnd",   "allies",  "Mend",        { does: ["Mend", "Shield 1"] }),
+  r("Priest",        "⛪", 4, 1, 11, "turnEnd",   "allies",  "Mend",        { does: ["Mend", "Shield 1"] }),
   r("Divinity",      "😇", 4, 2, 8, "allyDies",  "allies",  "Bless 1",     { does: ["Bless 1", "Shield 2"] }),
   r("Phoenix",       "🐦", 4, 4, 9, "start",     "me",      "Bless 8",     { does: ["Bless 8", "Strength 2"] }),
   r("Lilith",        "🧛", 4, 4, 8, "enemyDies",  "me",      "Strength 2",  { does: ["Strength 2", "Mend"] }),
@@ -213,7 +213,7 @@ export const ROWS: Row[] = [
   r("Doctor",        "🥼", 4, 2, 10, "hurt",     "allies",  "Heal 1",      { does: ["Heal 2"] }),
   r("Ruin",          "🌋", 4, 4, 8, "start",     "enemies", "Hit 2",       { does: ["Hit 3"] }),
   r("Fertilizer",    "🌻", 4, 2, 10, "allySummoned", "it",  "Strength 2 + Shield 2", { does: ["Strength 3", "Shield 3"] }),
-  r("Morbid",        "🦴", 4, 3, 9, "enemyDies", "me",      "Call Golem",  { does: ["Call Golem", "Strength 2"] }),
+  r("Morbid",        "🦴", 4, 3, 9, "allyDies",  "me",      "Call Golem + Strength 1", { does: ["Call Golem", "Strength 2"] }),
 ];
 /* eslint-enable prettier/prettier */
 
