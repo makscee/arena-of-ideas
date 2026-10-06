@@ -24,8 +24,11 @@ export interface MvpRules {
   goldPerRound: number;
   unitCost: number;
   rerollCost: number;
-  /** Gold back for selling a unit. */
+  /** Gold back for selling a sleeping unit. */
   sellRefund: number;
+  /** Gold back for selling an Awoken or fused unit. Runs stored before it
+   * have no field and sell everything for `sellRefund`. */
+  sellRefundAwoken?: number;
   /** Offers in a round-1 shop. */
   offers: number;
   /** +1 offer from each listed round on (3 → 6 with [2, 4, 7]). Runs stored
@@ -61,6 +64,7 @@ export const MVP_RULES: MvpRules = {
   unitCost: 3,
   rerollCost: 1,
   sellRefund: 1,
+  sellRefundAwoken: 2,
   offers: 3,
   offersGrowAt: [2, 4, 7],
   lineSize: 5,
@@ -79,6 +83,12 @@ export const MVP_RULES: MvpRules = {
 /** Offers in the shop at `round`: `offers`, +1 for each `offersGrowAt` round reached. */
 export function offersAt(rules: MvpRules, round: number): number {
   return rules.offers + (rules.offersGrowAt ?? []).filter((r) => r <= round).length;
+}
+
+/** Gold back for selling `unit`: Awoken and fused units (form "awoken") get
+ * `sellRefundAwoken`, sleeping ones `sellRefund`. */
+export function sellValue(rules: MvpRules, unit: Pick<LineUnit, "form">): number {
+  return unit.form === "awoken" ? (rules.sellRefundAwoken ?? rules.sellRefund) : rules.sellRefund;
 }
 
 // ---------- content: units with two forms ----------

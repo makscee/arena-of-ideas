@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_RUN_POOL, stressAbilities, stressRegistry } from "../index.js";
-import { MVP_RULES, type MvpContent, type PlayerRef, type UnitContent } from "./contract.js";
+import { MVP_RULES, sellValue, type MvpContent, type PlayerRef, type UnitContent } from "./contract.js";
 import { lineUnitOf } from "./forms.js";
 import { applyMvpDecision, initMvpRun, MvpBadDecision, MvpDecisionError, offersAt, runView, synthGhost } from "./run.js";
 
@@ -24,6 +24,20 @@ describe("MVP thin run", () => {
     const { offersGrowAt: _, ...old } = { ...MVP_RULES, offers: 5 };
     expect(offersAt(old, 1)).toBe(5);
     expect(offersAt(old, 12)).toBe(5);
+  });
+
+  it("sells sleeping for 1, Awoken and fused for 2, and an old run's Awoken for 1", () => {
+    const s0 = initMvpRun({ runId: "r", player: me, seed: 3, content, ...day });
+    const [sleeping, a, b, c] = ["u0", "u1", "u2", "u3"].map((id, i) => lineUnitOf(units.find((u) => u.id === id)!, `x${i}`, i === 0 ? 2 : 3));
+    const fused = applyMvpDecision({ ...s0, line: [a!, b!] }, { kind: "fuse", first: 0, second: 1 }, content, { fuse: { name: "Test", discoveredBy: me } }).state.line[0]!;
+    expect([sleeping!.form, c!.form, fused.kind, fused.form]).toEqual(["sleeping", "awoken", "fused", "awoken"]);
+    const s = { ...s0, gold: 0, line: [sleeping!, c!, fused] };
+    const sold = (st: typeof s, index: number) => applyMvpDecision(st, { kind: "sell", index }, content).state.gold;
+    expect([0, 1, 2].map((i) => sold(s, i))).toEqual([1, 2, 2]);
+    expect([sleeping!, c!, fused].map((u) => sellValue(MVP_RULES, u))).toEqual([1, 2, 2]);
+    const { sellRefundAwoken: _, ...oldRules } = MVP_RULES;
+    const old = { ...s, rules: oldRules };
+    expect([0, 1, 2].map((i) => sold(old, i))).toEqual([1, 1, 1]);
   });
 
   it("is deterministic and pure", () => {

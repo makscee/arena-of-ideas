@@ -12,6 +12,7 @@ import { rngStep } from "../rng.js";
 import {
   MVP_RULES,
   offersAt,
+  sellValue,
   type BattleRecord,
   type Champion,
   type Decision,
@@ -174,9 +175,10 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       return { state: s };
     }
     case "sell": {
-      if (!s.line[d.index]) throw new MvpDecisionError("sell", `no unit at ${d.index}`);
+      const sold = s.line[d.index];
+      if (!sold) throw new MvpDecisionError("sell", `no unit at ${d.index}`);
       s.line.splice(d.index, 1);
-      s.gold += s.rules.sellRefund;
+      s.gold += sellValue(s.rules, sold);
       return { state: s };
     }
     case "reorder": {
