@@ -576,7 +576,9 @@ describe("R2-17: key moments, battle start, fatigue rows, Why's icons", () => {
     let r = 777;
     const rand = (n: number) => ((r = (r * 1103515245 + 12345) % 2147483648), r % n);
     let blocked = 0;
-    for (let seed = 0; seed < 300; seed++) {
+    // A Shield-only combo is rare and depends on the pool: past 300 fights,
+    // keep looking until one shows up.
+    for (let seed = 0; seed < 300 || (blocked === 0 && seed < 2000); seed++) {
       const line = (s: string) => Array.from({ length: 5 }, (_, k) => lineUnitOf(pool.units[rand(pool.units.length)]!, `${s}${k}`, 1 + rand(4)));
       const { log } = fightLines({ player: p("a"), line: line("a") }, { player: p("b"), line: line("b") }, { battleId: "x", seed, kind: "round", round: 5, runId: null, at: "2026-10-05T00:00:00Z", content, rules: MVP_RULES });
       const beats = beatPlayOf(log, stepsOf(log));
