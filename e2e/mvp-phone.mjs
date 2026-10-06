@@ -93,6 +93,7 @@ try {
     await page.getByTestId("fight").waitFor({ timeout: 10_000 });
     // Buy while the gold allows and the line has room.
     for (let k = 0; k < 4; k++) {
+      if ((await page.getByTestId("gold").count()) === 0) break; // the Crown: no shop, no gold
       const gold = Number((await page.getByTestId("gold").textContent()).replace("g", ""));
       if (gold < 3 || (await page.getByTestId("offers").locator(".card").count()) === 0) break;
       const filled = await page.getByTestId("line").locator(".card.you").count();

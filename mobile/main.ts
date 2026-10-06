@@ -320,7 +320,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
   /** The hint that matters most right now, or none. */
   const shopHint = (): HTMLElement | null => {
     if (pick.mode !== "none") return null;
-    if (crown) return hint(ownCrown ? "The Crown: today's champion is your own team. Beating it doesn't count as a slay." : "The Crown: your line against today's champion. Win it to become a slayer.");
+    // run.ts refuses every decision but the fight in the crown phase: the line is final.
+    if (crown) return hint(ownCrown ? "The Crown: today's champion is your own team. Beating it doesn't count as a slay. Your line is final." : "The Crown: your line, as it is, against today's champion. Win it to become a slayer; a loss costs a heart.");
     // Only a unit whose next copy is on offer right now.
     const almost = run.line.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === rules.copiesToAwaken - 1 && run.offers.some((o) => o.unitId === u.unitId));
     const canBuy = run.offers.some((o) => o.cost <= run.gold);
@@ -416,7 +417,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
       { class: "hud", "data-testid": "hud" },
       h("span", { "data-testid": "round" }, roundLabel(run.round)),
       hearts(run.hearts),
-      h("span", { class: "gold", "data-testid": "gold" }, `${run.gold}g`),
+      // The Crown has no shop: no gold to show.
+      crown ? h("span", {}) : h("span", { class: "gold", "data-testid": "gold" }, `${run.gold}g`),
     ),
     h(
       "div",
@@ -424,7 +426,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
       h("span", { class: "dim", "data-testid": "next-opponent" }, ...(opp ? [`${crown ? "Crown vs" : "Next:"} `, who(opp.player.name), `${opp.player.bot ? " 🤖" : ""}${ownCrown ? " (your own team)" : ""}`] : [crown ? "Crown vs today's champion" : "Next: a team saved at this round"])),
       pin,
     ),
-    h("div", { class: "label" }, "Your line · front first"),
+    h("div", { class: "label" }, crown ? "Your line · front first · final" : "Your line · front first"),
     line,
     actions,
     hintSlot,
@@ -468,15 +470,16 @@ function resultScreen(run: RunView, fight: FightResult, battle: BattleRecord, co
   const word = fight.outcome === "win" ? "VICTORY" : fight.outcome === "loss" ? "DEFEAT" : "DRAW";
   const label = fight.kind === "crown" ? "CROWN" : roundLabel(fight.round);
   const own = fight.kind === "crown" && fight.opponent.player.id === run.player.id;
+  const lostHearts = fight.heartsLost > 0 ? ` −${plural(fight.heartsLost, "heart")}.` : "";
   const sub =
     fight.kind === "crown"
       ? own
         ? fight.outcome === "win"
           ? "That was your own champion team: beating it doesn't count as a slay."
-          : "Your own champion team holds."
+          : `Your own champion team holds.${lostHearts}`
         : fight.outcome === "win"
           ? "You beat the champion. You are a slayer today."
-          : "The champion holds."
+          : `The champion holds.${lostHearts}`
       : fight.heartsLost > 0
         ? `−${plural(fight.heartsLost, "heart")}`
         : fight.outcome === "draw"
