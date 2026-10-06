@@ -175,7 +175,7 @@ The effect removes all statuses from the target and disables its own abilities f
 _Avoid_: mute, disable
 
 **Summon**:
-The event for a unit entering the line mid-battle, at the back; skipped if the line is full (5). Resurrect reuses it with a `resurrected` flag and `atHp`.
+The event for a unit entering the line mid-battle, at the front (newest first); skipped if the line is full (5). Resurrect reuses it with a `resurrected` flag and `atHp`, and returns the unit at the back.
 _Avoid_: spawn
 
 **Resurrect**:

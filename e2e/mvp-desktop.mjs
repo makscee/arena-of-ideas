@@ -44,7 +44,8 @@ try {
   page.on("console", (m) => m.type() === "error" && errors.push(`console: ${m.text()}`));
   /** Every card's When · Who · Does icon line fits its card (R3-4): no row
    * overflows, and a line with more icons than it shows ends in "+". A
-   * battle card shows only its When, in the corner, so it is left out. */
+   * battle card's line lies in its corner, over the card (R3-19): it is left
+   * out here, and e2e/probe-cause.mjs checks it clears the card's parts. */
   let iconCards = 0;
   const iconsFit = async (name) => {
     const r = await page.evaluate(() => [...document.querySelectorAll('.card:not(.bv-card) [data-testid="card-icons"]')].filter((el) => el.getClientRects().length).map((el) => {
@@ -138,6 +139,15 @@ try {
   }
   await page.locator('[data-testid="inspector"] [data-testid="see-awoken"]').click().catch(() => {});
   await shot("codex-inspector");
+  // R3-5: the Summoned chip; a summon opens in the inspector with "Summoned by".
+  await page.getByTestId("codex-tier-summoned").click();
+  if ((await page.getByTestId("codex-summon").count()) !== 5) errors.push(`codex: Summoned shows ${await page.getByTestId("codex-summon").count()} cards, not 5`);
+  await page.locator('[data-testid="codex-summon"][data-summon="wolf"]').click();
+  await page.locator('[data-testid="inspector"] [data-testid="summon-sheet"]').waitFor({ timeout: 2_000 }).catch(() => errors.push("codex: the Wolf doesn't open in the inspector"));
+  const wolfBy = (await page.getByTestId("summoned-by").textContent().catch(() => "")) ?? "";
+  if (!wolfBy.includes("Summoner")) errors.push(`codex: the Wolf's "Summoned by" lacks Summoner ("${wolfBy}")`);
+  await shot("codex-summoned");
+  await page.getByTestId("codex-tier-all").click();
   await page.getByTestId("codex-sort-pick").click();
   await page.getByTestId("codex-rate").first().waitFor();
   await shot("codex-sort-pick");

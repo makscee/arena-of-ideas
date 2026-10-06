@@ -41,7 +41,8 @@ export interface MvpRules {
   copyGrowth: Stats;
   /** tierOpensAt[t-1] = the round tier t enters the shop. */
   tierOpensAt: number[];
-  /** Cascade step cap; hitting it logs a visible "chain capped" event (slice 3). */
+  /** Cascade step cap; hitting it logs a visible "chain capped" event (slice 3).
+   * 32 since round 3 (note 19); a run keeps the cap it started with. */
   chainStepCap: number;
   /** Per-fight Elo (docs/round2/rating.md): K falls with runs played. A
    * player with fewer than `runsBelow` runs (the first step that fits) uses
@@ -71,7 +72,7 @@ export const MVP_RULES: MvpRules = {
   copiesToAwaken: 3,
   copyGrowth: { pwr: 1, hp: 2 },
   tierOpensAt: [1, 3, 6, 9],
-  chainStepCap: 64,
+  chainStepCap: 32,
   ratingKSteps: [{ runsBelow: 5, k: 32 }, { runsBelow: 15, k: 16 }],
   ratingK: 10,
   ratingStart: 1000,
@@ -125,12 +126,27 @@ export interface UnitContent {
   forms: Record<FormKey, UnitForm>;
 }
 
+/** A summoned body (round 3, R3-5): what a Summon effect puts on the line.
+ * `id` is its name, lower-cased; names are unique among summons (mvpPool
+ * checks), so a battle's Summon event (which carries only the name) and a
+ * summon effect both resolve to one body. `form` is null when the body only
+ * strikes ("No ability: it fights with its PWR / HP"). */
+export interface SummonContent {
+  id: string;
+  name: string;
+  emoji: string;
+  base: Stats;
+  form: UnitForm | null;
+}
+
 /** Everything a run plays with, carried with a version so logs stay replayable. */
 export interface MvpContent {
   version: string;
   units: UnitContent[];
   abilities: AbilityRegistry;
   statuses: StatusRegistry;
+  /** The summoned bodies (R3-5); absent in content built before round 3. */
+  summons?: SummonContent[];
 }
 
 // ---------- the line: owned units, fused units ----------

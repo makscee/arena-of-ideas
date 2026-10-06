@@ -32,7 +32,7 @@ export const FATIGUE_RAMP = 1;
 export const TURN_CAP = 200;
 /** Most trigger firings one cascade (one settle) runs before it stops with a
  * visible ChainCapped event; BattleInput.chainStepCap overrides it. */
-export const DEFAULT_CHAIN_STEP_CAP = 64;
+export const DEFAULT_CHAIN_STEP_CAP = 32;
 
 /** Fatigue damage dealt at the end of a turn (>= FATIGUE_START) — exported so
  * display layers (the codex) derive the ramp from the same formula the loop

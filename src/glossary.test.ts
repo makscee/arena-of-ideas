@@ -7,7 +7,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import { describeAbility, describeStatus, describeStatusSegments, type DescribeSegment } from "./describe.js";
-import { GLOSSARY, ICON_IDS, STATUS_TERMS, scopedLabel, scopedTip, termDef, termGroup, termIcon, type FixedTermId, type TermId } from "./glossary.js";
+import { chainCappedTip, GLOSSARY, ICON_IDS, STATUS_TERMS, scopedLabel, scopedTip, triggerLabel, termDef, termGroup, termIcon, type FixedTermId, type TermId } from "./glossary.js";
 import { MVP_RULES } from "./mvp/contract.js";
 import type { UnitForm } from "./mvp/contract.js";
 import { formSegments, formText } from "./mvp/form-text.js";
@@ -254,6 +254,9 @@ describe("keywords stand alone (R3-2, words.md (4))", () => {
 
   test("Chain stopped reads the cap from the rules", () => {
     expect(GLOSSARY["battle:chainCapped"].tip).toContain(`${MVP_RULES.chainStepCap} steps`);
+    // A run started under an older cap reads its own number (its ChainCapped event's steps).
+    expect(chainCappedTip(64)).toContain("ran 64 steps");
+    expect(GLOSSARY["battle:chainCapped"].tip).toBe(chainCappedTip(MVP_RULES.chainStepCap));
   });
 
   test("labels are the card's words", () => {
@@ -268,6 +271,11 @@ describe("keywords stand alone (R3-2, words.md (4))", () => {
     expect(scopedLabel("trigger:StatChanged", "ally")).toBe("Ally gains PWR");
     expect(scopedLabel("trigger:Death", "holder")).toBe("Dies");
     expect(scopedLabel("trigger:BattleStart", "any")).toBe("Battle start");
+    // A fired When in the battle (badge, Why) reads like the card (R3-19).
+    expect(triggerLabel("trigger:StatusApplied", "Shield", "otherAlly")).toBe("Ally gets Shield");
+    expect(triggerLabel("trigger:StatusRemoved", "Poison")).toBe("Loses Poison");
+    expect(triggerLabel("trigger:Death", undefined, "ally")).toBe("Ally dies");
+    expect(triggerLabel("trigger:Strike")).toBe("Strikes");
     // Every label a card's text opens with is a glossary label, scoped or not.
     const all = [...forms, ...fusions].flatMap(([, f]) => formSegments(f, pool.abilities));
     const labels = new Set(Object.keys(GLOSSARY).flatMap((id) => SCOPES.map((sc) => scopedLabel(id as TermId, sc)!.toLowerCase())));

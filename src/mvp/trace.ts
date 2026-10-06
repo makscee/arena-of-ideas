@@ -5,7 +5,7 @@
 
 import { beatsOf, isRootKind } from "../beats.js";
 import { displayNames, type NameOf } from "../trace.js";
-import type { AbilityRef, BattleEvent, Side, When } from "../types.js";
+import type { AbilityRef, BattleEvent, Side, UnitFilter, When } from "../types.js";
 
 // ---------- who acted ----------
 
@@ -191,6 +191,8 @@ export interface ChainNode {
   /** The status a StatusApplied / StatusRemoved trigger is about; an
    * Intercepted step's, the status that stopped it (Freeze). */
   triggerStatus?: string;
+  /** firing only: whose event the When watched ("otherAlly" reads "Ally dies"). */
+  triggerScope?: UnitFilter;
   /** firing only: the reactor, its `when` the index of the When that fired. */
   ref?: AbilityRef;
   /** firing of a status (a Poison tick): the status, and where it was put on. */
@@ -213,14 +215,15 @@ function eventTrigger(e: BattleEvent): Pick<ChainNode, "trigger" | "triggerStatu
 
 /** The trigger a firing answered: its stamped When when there is one to look
  * up, else the event that set it off (a log from before the stamp). */
-function firedTrigger(log: BattleEvent[], e: BattleEvent, whenOf?: WhenOf): Pick<ChainNode, "trigger" | "triggerStatus"> {
+function firedTrigger(log: BattleEvent[], e: BattleEvent, whenOf?: WhenOf): Pick<ChainNode, "trigger" | "triggerStatus" | "triggerScope"> {
   if (e.source !== "kernel" && e.source.when !== undefined) {
     const w = whenOf?.(e.source);
     if (w) {
       const status = "status" in w.on ? w.on.status : undefined;
+      const scope = "unit" in w.on ? w.on.unit : "striker" in w.on ? w.on.striker : undefined;
       const cause = e.causedBy !== null ? log[e.causedBy] : undefined;
       const seen = cause && (cause.type === "StatusApplied" || cause.type === "StatusRemoved") ? cause.status : undefined;
-      return { trigger: `trigger:${w.on.on}`, ...((status ?? seen) ? { triggerStatus: (status ?? seen)! } : {}) };
+      return { trigger: `trigger:${w.on.on}`, ...((status ?? seen) ? { triggerStatus: (status ?? seen)! } : {}), ...(scope ? { triggerScope: scope } : {}) };
     }
   }
   const cause = e.causedBy !== null ? log[e.causedBy] : undefined;
@@ -432,6 +435,8 @@ export interface Firing {
   trigger: `trigger:${string}` | null;
   /** The status a StatusApplied / StatusRemoved trigger was about. */
   triggerStatus?: string;
+  /** Whose event the When watched, for its scoped label ("Ally dies"). */
+  triggerScope?: UnitFilter;
   /** "effect:damage", "status:Strength", "stat:pwr", … */
   effect: string;
   /** The status the effect put on, for its icon and colour. */
@@ -451,21 +456,106 @@ export function firingOf(log: BattleEvent[], step: Pick<Step, "eventIds" | "chan
   if (!first || first.source === "kernel" || first.source.status) return null;
   const c = step.changes[0];
   if (!c) return null;
-  const { trigger, triggerStatus } = firedTrigger(log, first, whenOf);
-  const e = log[c.eventId];
-  let effect: string;
-  let effectStatus: string | undefined;
+  const fired = firedTrigger(log, first, whenOf);
+  const eff = effectOf(log[c.eventId]);
+  if (!eff) return null;
+  return { unit: first.source.unit, ...fired, ...eff };
+}
+
+/** What a change event did, as a glossary term for its icon. */
+function effectOf(e: BattleEvent | undefined): Pick<Firing, "effect" | "effectStatus"> | null {
   switch (e?.type) {
-    case "Hurt": effect = "effect:damage"; break;
-    case "Heal": effect = "effect:heal"; break;
-    case "StatusApplied": effect = `status:${e.status}`; effectStatus = e.status; break;
-    case "StatChanged": effect = `stat:${e.stat}`; break;
-    case "Summon": effect = e.resurrected ? "effect:resurrect" : "effect:summon"; break;
-    case "Silenced": effect = "effect:silence"; break;
-    case "Death": effect = "effect:damage"; break;
+    case "Hurt": return { effect: "effect:damage" };
+    case "Heal": return { effect: "effect:heal" };
+    case "StatusApplied": return { effect: `status:${e.status}`, effectStatus: e.status };
+    case "StatusRemoved": return { effect: `status:${e.status}`, effectStatus: e.status };
+    case "StatChanged": return { effect: `stat:${e.stat}` };
+    case "Summon": return { effect: e.resurrected ? "effect:resurrect" : "effect:summon" };
+    case "Silenced": return { effect: "effect:silence" };
+    case "Death": return { effect: "effect:damage" };
+    case "Fatigue": return { effect: "effect:damage" };
+    case "Intercepted": return { effect: "effect:cancel" };
+    case "ChainCapped": return { effect: "battle:chainCapped" };
     default: return null;
   }
-  return { unit: first.source.unit, trigger, ...(triggerStatus ? { triggerStatus } : {}), effect, ...(effectStatus ? { effectStatus } : {}) };
+}
+
+/** Why a wave happens, for its badge (round 3, R3-19, battle.md (10)):
+ * where the badge sits and the cause → effect it shows.
+ * - a unit's ability: on the unit, the When it answered (as firingOf);
+ * - a strike's hit: on the striker, crossed swords (trigger:Strike);
+ * - a status acting (a Poison tick, Freeze stopping a strike, Blessing
+ *   saving a unit): on its holder, the status's own icon (status:Poison);
+ * - fatigue, a capped chain: at the clash, its battle term;
+ * - a death, or any other follow-up the rules log: the cause of what led to
+ *   it, so the killing wave's badge stays.
+ * Only the battle's end has none. */
+export interface Cause {
+  /** The unit the badge sits on, or "clash" (fatigue, a capped chain). */
+  at: string;
+  kind: "ability" | "strike" | "status" | "battle";
+  /** "trigger:Hurt", "trigger:Strike", "status:Poison", "battle:fatigue". */
+  cause: `trigger:${string}` | `status:${string}` | `battle:${string}`;
+  /** The status a StatusApplied / StatusRemoved trigger was about. */
+  causeStatus?: string;
+  /** Whose event the When watched (an ability's), for its scoped label. */
+  causeScope?: UnitFilter;
+  /** What the wave did: "effect:damage", "status:Strength", "effect:cancel", … */
+  effect: string;
+  effectStatus?: string;
+}
+
+export function causeOf(log: BattleEvent[], step: Pick<Step, "eventIds" | "changes">, whenOf?: WhenOf): Cause | null {
+  const first = log[step.eventIds[0]!];
+  if (!first) return null;
+  const c = step.changes[0];
+  const why = causeOfEvent(log, first, whenOf);
+  if (!why) return null;
+  // A death reads as the wave that killed (its own change is only the ✝).
+  const eff = first.type === "Death" ? null : effectOf(c ? log[c.eventId] : first);
+  return eff ? withEffect(why, eff) : why;
+}
+
+/** A cause with another effect: the wave's own, not the one up its chain. */
+function withEffect(c: Cause, eff: Pick<Firing, "effect" | "effectStatus">): Cause {
+  const { effect: _e, effectStatus: _s, ...rest } = c;
+  return { ...rest, effect: eff.effect, ...(eff.effectStatus ? { effectStatus: eff.effectStatus } : {}) };
+}
+
+function causeOfEvent(log: BattleEvent[], e: BattleEvent, whenOf?: WhenOf, hops = 0): Cause | null {
+  if (e.type === "BattleEnd") return null;
+  const eff = effectOf(e) ?? { effect: "effect:damage" };
+  const base = { effect: eff.effect, ...(eff.effectStatus ? { effectStatus: eff.effectStatus } : {}) };
+  if (e.source !== "kernel") {
+    if (e.source.status !== undefined) return { at: e.source.unit, kind: "status", cause: `status:${e.source.status}`, ...base };
+    const f = firedTrigger(log, e, whenOf);
+    return {
+      at: e.source.unit,
+      kind: "ability",
+      cause: f.trigger ?? "trigger:Strike",
+      ...(f.triggerStatus ? { causeStatus: f.triggerStatus } : {}),
+      ...(f.triggerScope ? { causeScope: f.triggerScope } : {}),
+      ...base,
+    };
+  }
+  if (e.type === "Strike") return { at: e.striker, kind: "strike", cause: "trigger:Strike", effect: "effect:damage" };
+  if (e.type === "Fatigue") return { at: "clash", kind: "battle", cause: "battle:fatigue", ...base };
+  if (e.type === "ChainCapped") return { at: "clash", kind: "battle", cause: "battle:chainCapped", ...base };
+  const parent = e.causedBy !== null && e.causedBy < e.id ? log[e.causedBy] : undefined;
+  if (parent && hops < MAX_HOPS) {
+    if (parent.type === "Strike") return { at: parent.striker, kind: "strike", cause: "trigger:Strike", ...base };
+    if (parent.type === "Fatigue") return { at: "clash", kind: "battle", cause: "battle:fatigue", ...base };
+    if (!isRootKind(parent.type)) {
+      const up = causeOfEvent(log, parent, whenOf, hops + 1);
+      if (up) return e.type === "Death" ? up : withEffect(up, eff);
+    }
+    // The rules acting on a unit at a turn's start or end (a status wearing off).
+    if (TRIGGER_EVENTS.has(parent.type)) {
+      const unit = "unit" in e && typeof e.unit === "string" ? e.unit : "clash";
+      return { at: unit, kind: "battle", cause: `trigger:${parent.type}`, ...base };
+    }
+  }
+  return { at: "unit" in e && typeof e.unit === "string" ? e.unit : "clash", kind: "battle", cause: "trigger:TurnEnd", ...base };
 }
 
 /** Which firing made a step: its first event's parent and source. Steps of
@@ -642,7 +732,7 @@ export function captionOf(log: BattleEvent[], id: number, name: NameOf = display
     case "Fatigue":
       return `Fatigue → everyone takes ${e.amount}`;
     case "ChainCapped":
-      return `Chain capped after ${e.steps} steps`;
+      return `Chain stopped after ${e.steps} steps`;
     case "Intercepted":
       // A status on the unit stopping its own act reads from the unit:
       // "Freeze on Rose → stops its strike", not "Rose (Freeze) → … on Rose".

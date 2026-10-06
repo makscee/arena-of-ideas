@@ -60,9 +60,10 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .card .icons .ci:nth-of-type(n+4), .card .icons .desk-more { display: none; }
 .card .icons .more { flex: none; font-family: "IBM Plex Mono", monospace; font-size: 9px; line-height: 11px; font-weight: 600; color: var(--dim); }
 .card:not(.bv-card) .emoji { margin-top: 0; }
-/* A battle card keeps only its When, in the corner: its change chips sit right of it. */
+/* A battle card shows its whole When · Who · Does line in the top-left corner
+ * (R3-19, note 8): 3 then "+" on the phone, 5 then "+n" on the desktop. A
+ * change chip starts right of the When and lies over the rest while it shows. */
 .bv-card .icons { position: absolute; top: 3px; left: 4px; height: auto; padding: 0; overflow: visible; }
-.bv-card .icons .ci:not(:first-of-type), .bv-card .icons .more { display: none; }
 .bv-card .icons .ic { width: 12px; height: 12px; }
 .bv-card.fused .emoji { padding-left: 12px; }
 /* Whose event a When is: a 4px pip on its icon's corner, teal an ally's, pink
@@ -224,6 +225,19 @@ button.bv-badge.still .bv-badge-pill { animation: none; }
 .bv-line.mine { margin-bottom: 12px; }
 .bv-badge-arrow { font-size: 11px; color: var(--dim); }
 @keyframes bv-badge { 0% { opacity: 0; transform: translateY(6px) scale(0.6); } 60% { opacity: 1; transform: scale(1.15); } 100% { opacity: 1; transform: none; } }
+/* R3-19: every wave has a badge; the newest is bright, the beat's earlier ones dim. */
+button.bv-badge.past .bv-badge-pill { opacity: 0.55; box-shadow: none; }
+button.bv-badge.past { z-index: 2; }
+/* Fatigue's badge sits on the clash mark (desktop). */
+.bv-clash { position: relative; }
+.bv-clash button.bv-badge { bottom: calc(100% + 2px); }
+/* The caption opens with its cause's icon, the badge's first. */
+.bv-cap-cause { display: inline-flex; vertical-align: -2px; margin-right: 5px; }
+/* A card's When icon flashes gold for 0.4 s when it fires. */
+.bv-card .icons .ci.bv-fired { animation: bv-fired calc(0.4s / var(--bv-sp, 1)) ease-out calc(var(--bv-ftt, 0s) / var(--bv-sp, 1)) both; border-radius: 3px; }
+.bv-card .icons .ci.bv-fired.still { animation: none; color: #ffbf47; background: color-mix(in srgb, #ffbf47 30%, transparent); box-shadow: 0 0 0 1px #ffbf47; }
+.bv-card .icons .ci.bv-fired .ic { color: inherit; }
+@keyframes bv-fired { 0% { color: #ffbf47; background: color-mix(in srgb, #ffbf47 55%, transparent); box-shadow: 0 0 6px #ffbf47; transform: scale(1.35); } 100% { background: transparent; box-shadow: none; transform: none; } }
 /* The gold ring is drawn inside the border, over the padding: the acting card
  * gets 2px more padding on each side, so its name (fitted to the
  * content box, ui/dom.ts fitText) stay clear of the ring. */
@@ -285,6 +299,7 @@ button.bv-badge.still .bv-badge-pill { animation: none; }
   .bv-card.bv-glow::after { box-shadow: 0 0 0 2px var(--you) inset; }
   .bv-float { display: none; }
   button.bv-badge .bv-badge-pill { animation: none; }
+  .bv-card .icons .ci.bv-fired { animation: none; }
   .bv-card.acting { transform: none; }
 }
 /* A change sits in the card's top row (the phone and desktop both start the
@@ -499,7 +514,6 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
   #app[data-screen] .card .icons .desk-more { display: inline; font-size: 12px; line-height: 16px; }
   #app[data-screen] .bv-card .icons { top: 7px; left: 8px; height: auto; padding: 0; }
   #app[data-screen] .bv-card .icons .ic { width: 18px; height: 18px; }
-  #app[data-screen] .bv-card .icons .ci:not(:first-of-type), #app[data-screen] .bv-card .icons .more { display: none; }
   #app[data-screen] .card .tier { top: 8px; right: 8px; font-size: 11px; line-height: 12px; }
   #app[data-screen] .card.fused .emoji { font-size: 30px; padding-left: 0; }
   #app[data-screen] .card:not(.empty):hover { border-color: var(--you); }
@@ -607,6 +621,13 @@ button.t:focus-visible { outline: 1px solid currentColor; outline-offset: 1px; }
 .t-status, .t-target, .t-stat, .t-term, .t-condition { text-decoration: underline dotted color-mix(in srgb, currentColor 60%, transparent); text-underline-offset: 3px; }
 .t-effect { font-weight: 600; }
 .t-amount { font-weight: 700; font-family: "IBM Plex Mono", monospace; }
+/* A summoned unit named in the text (R3-5): its emoji and name open its card. */
+button.t-unit { cursor: pointer; font-weight: 600; text-decoration: underline solid color-mix(in srgb, currentColor 50%, transparent); text-underline-offset: 3px; }
+button.t-unit .t-emoji { margin-right: 2px; text-decoration: none; display: inline-block; }
+.summons { border-top: 1px solid var(--line); padding-top: 8px; }
+.summon-row { display: flex; gap: 10px; align-items: center; }
+.summon-row .card { flex: none; width: 64px; }
+@media (min-width: 1024px) { .summon-row .card { width: min(var(--cw, 96px), 96px); } }
 .tpill { display: inline; border: 1px solid color-mix(in srgb, #ffbf47 55%, transparent); background: color-mix(in srgb, #ffbf47 12%, transparent); border-radius: 999px; padding: 0 7px 0 5px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 .tpill .tpill-ic { margin-right: 3px; }
 .term-head { display: flex; align-items: center; gap: 6px; font-size: 18px; }
@@ -637,6 +658,7 @@ button.chip.on { border-color: var(--you); color: var(--bg); background: var(--y
 button.chip.icon { padding: 0; display: inline-flex; align-items: center; justify-content: center; color: #ffbf47; }
 button.chip.icon.on { background: #ffbf47; border-color: #ffbf47; color: var(--bg); }
 .codex-grid { align-content: start; }
+.codex-grid .codex-group { grid-column: 1 / -1; margin-top: 8px; }
 .codex-none { grid-column: 1 / -1; }
 select { font: inherit; min-height: 44px; width: 100%; background: var(--panel); color: var(--text); border: 1px solid var(--line); padding: 0 8px; }
 .contents { display: contents; }
