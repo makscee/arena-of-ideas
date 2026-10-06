@@ -112,7 +112,7 @@
   },
   "gate": {
     "verdict": "in-band",
-    "overallWinRate": 0.6067,
+    "overallWinRate": 0.6066666666666667,
     "band": {
       "min": 0.35,
       "max": 0.65
