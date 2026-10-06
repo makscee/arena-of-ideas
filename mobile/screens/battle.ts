@@ -9,8 +9,8 @@
 // 1×/2×/4× (remembered per viewer, 2× from round 4), End (battle-end: the end
 // card at once) and Replay from the start; on desktop Space, ←/→ and R. Played
 // to the end (or ▶ on the last beat), the end card shows the outcome, damage
-// by unit, 2–3 key moments that replay from there, and Replay / Why I lost /
-// Continue (battle-done, which calls onDone).
+// by unit, 2–3 key moments that replay from there, and Replay / Why I lost
+// (or won) / Continue (battle-done, which calls onDone).
 //
 // R2-16, at 1024px and wider (style.css, data-screen="battle"): the two lines
 // face each other, fronts in the middle; a turn timeline under the board
@@ -94,7 +94,6 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   // Playback goes beat by beat (round 2, R2-12): a strike or a turn end plus
   // everything it sets off, its effects landing in quick waves.
   const beats = beatPlayOf(log, stepsOf(log, TAGGED, sides, a.you ? { you: a.you } : { sideName: owner }), TAGGED);
-  const lost = a.you !== undefined && outcome === "loss";
   const units = new Map<string, BattleUnit>([...battle.teamA, ...battle.teamB].map((u) => [u.id, u]));
   const emojiOf = (id: string) => units.get(id)?.emoji ?? "✨";
   const whenOf = whenLookup(units, a.content);
@@ -942,8 +941,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
    * win", stays readable) and under the HUD on desktop, as tall as what it
    * holds and clear of the timeline; it scrolls inside itself when it runs
    * long (R2-17). On a short phone screen (a phone on its side) the room
-   * under the caption is too small for the card, so it covers the board from
-   * the HUD down, the caption included: its own word says who won. */
+   * under the caption is too small for the card, so it covers the caption
+   * (its own word says who won), else the board too. */
   function placeEnd(): void {
     if (end.style.display === "none" || !end.isConnected) return;
     const gap = 8;
@@ -1029,7 +1028,6 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     hide.setAttribute("aria-label", "See the board");
     const replayEnd = button("", replay, "bv-end-replay", "end-replay");
     replayEnd.append("↻ Replay", h("span", { class: "bv-dk" }, " from start"));
-    const tap = isDesktop() ? "click" : "tap";
     return [
       h("div", { class: "row spread bv-end-top" }, h("div", { class: "bv-end-head" }, h("div", { class: `bv-word ${cls}`, "data-testid": "battle-word" }, word), h("div", { class: "bv-end-sub dim", "data-testid": "end-sub" }, ...endSubtitle())), hide),
       h(
@@ -1038,7 +1036,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         h(
           "div",
           { class: "bv-end-moments stack" },
-          moments.length ? h("div", { class: "label row spread" }, h("span", {}, `Key moments · ${tap} to watch`), h("span", { class: "bv-end-more bv-ph" }, "Damage ↓")) : null,
+          moments.length ? h("div", { class: "label row spread" }, h("span", {}, "Key moments · ", h("span", { class: "bv-dk" }, "click"), h("span", { class: "bv-ph" }, "tap"), " to watch"), h("span", { class: "bv-end-more bv-ph" }, "Damage ↓")) : null,
           ...moments.map((m) => {
             const b = button("", () => playFrom(m.beat), `bv-moment ${m.kind}`, "key-moment");
             // Fatigue's label brings its own hourglass, and its turn is in the T column.

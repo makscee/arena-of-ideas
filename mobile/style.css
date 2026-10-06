@@ -685,7 +685,7 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   .bv-log-c .bv-who { font-size: 10px; margin-right: 4px; }
 
   /* The end card over the battle column, clear of the panel. */
-  /* (battle.ts placeEnd sets its top and bottom: under the HUD, above the timeline.) */
+  /* (battle.ts placeEnd sets its top under the HUD and its max-height above the timeline.) */
   /* As the mockup: a big word and its line, damage dealt left and key
    * moments right, compact buttons with Continue on the right; the card is
    * as tall as what it holds (placeEnd caps it above the timeline). */
@@ -730,6 +730,7 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   /* Each float's box hugs its text. They stack up from just above the name
    * (slot 0) in a 4 px rise, so none reaches the name, PWR or HP; the third
    * slot, level with the trigger icon, keeps to the card's right (R2-17). */
-  #app[data-screen="battle"] .bv-float { --rise: 4px; bottom: auto; top: calc(36px - var(--k) * 15px); line-height: 18px; animation-name: bv-rise-short; }
+  #app[data-screen="battle"] .bv-float { --rise: 4px; bottom: auto; top: calc(34px - var(--k) * 15px); animation-name: bv-rise-short; }
+  #app[data-screen="battle"] .bv-float:not(.buff, .debuff) { font-size: 16px; line-height: 16px; }
   #app[data-screen="battle"] .bv-float.k2 { left: auto; right: 2px; translate: none; }
 }
