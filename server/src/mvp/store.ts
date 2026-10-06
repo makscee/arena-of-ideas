@@ -62,6 +62,30 @@ export interface MvpStore {
   addUnitTallies(contentVersion: string, delta: UnitTallies): void;
   /** The running totals for `contentVersion`; zero runs and no units before any. */
   unitTallies(contentVersion: string): UnitTallies;
+  // Slice 13's invite links and sessions; only ./invites.ts writes them.
+  /** Human players (not bots) with this name, compared case-insensitively. */
+  playersNamed(name: string): PlayerRef[];
+  /** Stores or replaces the invite with this code. */
+  putInvite(i: Invite): void;
+  invite(code: string): Invite | undefined;
+  invites(): Invite[];
+  /** `tokenHash`: the hex SHA-256 of a session token; the token itself is never stored. */
+  addSession(tokenHash: string, playerId: string, at: string): void;
+  /** The player id of the session with this token hash. */
+  sessionPlayer(tokenHash: string): string | undefined;
+}
+
+/** One person's invite link (slice 13). Its code is the secret in the URL;
+ * opening it on any device gives the same player. Names are unique among
+ * invites (case-insensitive). `admin` may use the dev tools. */
+export interface Invite {
+  code: string;
+  name: string;
+  playerId: string;
+  admin: boolean;
+  createdAt: string;
+  /** When it was first opened. */
+  redeemedAt: string | null;
 }
 
 /** Counted as runs go (./stats.ts): `runs` is the finished runs, and per unit
@@ -91,6 +115,8 @@ export class MemoryMvpStore implements MvpStore {
   private daysBySeq = new Map<number, DayState>();
   private playoffsBySeq = new Map<number, PlayoffResult>();
   private talliesByVersion = new Map<string, { runs: number; units: Map<UnitId, UnitTally> }>();
+  private invitesByCode = new Map<string, Invite>();
+  private sessions = new Map<string, string>();
   addPlayer(p: PlayerRef): void { this.players.set(p.id, p); }
   player(id: string): PlayerRef | undefined { return this.players.get(id); }
   putRun(r: MvpRunState): void { this.runs.set(r.runId, r); }
@@ -151,6 +177,19 @@ export class MemoryMvpStore implements MvpStore {
     const t = this.talliesByVersion.get(contentVersion);
     return { runs: t?.runs ?? 0, units: t ? [...t.units.values()].map((u) => ({ ...u })) : [] };
   }
+  playersNamed(name: string): PlayerRef[] {
+    const key = name.toLowerCase();
+    return [...this.players.values()].filter((p) => !p.bot && p.name.toLowerCase() === key);
+  }
+  putInvite(i: Invite): void {
+    for (const other of this.invitesByCode.values())
+      if (other.code !== i.code && other.name.toLowerCase() === i.name.toLowerCase()) throw new Error(`an invite named ${i.name} exists`);
+    this.invitesByCode.set(i.code, { ...i });
+  }
+  invite(code: string): Invite | undefined { const i = this.invitesByCode.get(code); return i && { ...i }; }
+  invites(): Invite[] { return [...this.invitesByCode.values()].map((i) => ({ ...i })); }
+  addSession(tokenHash: string, playerId: string): void { this.sessions.set(tokenHash, playerId); }
+  sessionPlayer(tokenHash: string): string | undefined { return this.sessions.get(tokenHash); }
 }
 
 /** Ordered: (a, b) and (b, a) are different fusions. */

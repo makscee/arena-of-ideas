@@ -1,0 +1,54 @@
+/**
+ * Invite links for the Arena MVP (mission #574, slice 13), made on the host
+ * against the server's SQLite file (safe while the server runs).
+ *
+ *   npm run mvp:invite -- list
+ *   npm run mvp:invite -- add <name> [--player <id>] [--admin]
+ *
+ * `add` prints the person's link. A new name makes a new player. A name an
+ * existing human player has is refused unless --player claims that player (the
+ * ids are listed), so they keep their runs, rating and fusions. --admin lets
+ * that player use the dev tools ("End day now"). A player who already has a
+ * link gets the same link back. Env: MVP_DB (default data/arena-mvp.db),
+ * MVP_PUBLIC_URL (default https://m1.twin-pogona.ts.net/arena/).
+ */
+import { SqliteMvpStore } from "./sqlite-store.js";
+import { createInvite, InviteError } from "./invites.js";
+
+const [cmd, ...rest] = process.argv.slice(2);
+const store = new SqliteMvpStore(process.env.MVP_DB ?? "data/arena-mvp.db");
+const base = process.env.MVP_PUBLIC_URL ?? "https://m1.twin-pogona.ts.net/arena/";
+const link = (code: string) => `${base}?invite=${code}`;
+
+function flag(name: string): string | undefined {
+  const i = rest.indexOf(name);
+  if (i < 0) return undefined;
+  const v = rest[i + 1];
+  rest.splice(i, 2);
+  return v;
+}
+
+try {
+  if (cmd === "list") {
+    for (const i of store.invites()) console.log(`${i.name}\t${i.playerId}\t${i.admin ? "admin" : "-"}\t${i.redeemedAt ? `opened ${i.redeemedAt}` : "not opened"}\t${link(i.code)}`);
+  } else if (cmd === "add") {
+    const admin = rest.includes("--admin");
+    if (admin) rest.splice(rest.indexOf("--admin"), 1);
+    const playerId = flag("--player");
+    const name = rest.join(" ");
+    try {
+      const i = createInvite(store, { name, playerId, admin, now: new Date() });
+      console.log(`${i.name}${i.admin ? " (admin)" : ""}: ${link(i.code)}`);
+    } catch (e) {
+      if (!(e instanceof InviteError)) throw e;
+      console.error(e.message);
+      for (const p of store.playersNamed(name)) console.error(`  ${p.id}  ${p.name}  rating ${store.rating(p.id)?.rating ?? "-"}  runs ${store.rating(p.id)?.runs ?? 0}`);
+      process.exitCode = 1;
+    }
+  } else {
+    console.error("usage: mvp:invite -- list | add <name> [--player <id>] [--admin]");
+    process.exitCode = 2;
+  }
+} finally {
+  store.close();
+}

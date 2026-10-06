@@ -11,7 +11,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
-import type { MvpStore, UnitTallies, UnitTally } from "./store.js";
+import type { Invite, MvpStore, UnitTallies, UnitTally } from "./store.js";
 
 const SQL_DIR = fileURLToPath(new URL("./sql/", import.meta.url));
 
@@ -131,5 +131,23 @@ export class SqliteMvpStore implements MvpStore {
       .prepare("SELECT unit_id AS unitId, fights, wins, runs FROM mvp_unit_tallies WHERE content_version = ? ORDER BY unit_id")
       .all(contentVersion) as UnitTally[];
     return { runs, units };
+  }
+
+  playersNamed(name: string): PlayerRef[] {
+    return this.all<PlayerRef>("SELECT json FROM mvp_players WHERE lower(json_extract(json, '$.name')) = lower(?) AND json_extract(json, '$.bot') = 0 ORDER BY rowid", name);
+  }
+  putInvite(i: Invite): void {
+    this.write(
+      "INSERT INTO mvp_invites (code, name_key, player_id, json) VALUES (?, ?, ?, ?) ON CONFLICT(code) DO UPDATE SET name_key = excluded.name_key, player_id = excluded.player_id, json = excluded.json",
+      i.code, i.name.toLowerCase(), i.playerId, JSON.stringify(i),
+    );
+  }
+  invite(code: string): Invite | undefined { return this.one("SELECT json FROM mvp_invites WHERE code = ?", code); }
+  invites(): Invite[] { return this.all("SELECT json FROM mvp_invites ORDER BY rowid"); }
+  addSession(tokenHash: string, playerId: string, at: string): void {
+    this.write("INSERT INTO mvp_sessions (token_hash, player_id, created_at) VALUES (?, ?, ?)", tokenHash, playerId, at);
+  }
+  sessionPlayer(tokenHash: string): string | undefined {
+    return (this.db.prepare("SELECT player_id FROM mvp_sessions WHERE token_hash = ?").get(tokenHash) as { player_id: string } | undefined)?.player_id;
   }
 }
