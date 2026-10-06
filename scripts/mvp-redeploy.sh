@@ -22,15 +22,26 @@
 # Invite-only since slice 13 (MVP_INVITES=1): players come from invite links,
 # made on m1 with `cd ~/arena-mvp && npm run mvp:invite -- add <name>` (see
 # server/src/mvp/invite-cli.ts), and "End day now" shows only to admin
-# invites. The redeploy fails (exit 1, no "deployed" line) unless the new
-# server's /health says invites: true, so a pre-slice-13 ref or a broken
-# setting is never served by accident. The only way past is
-# ARENA_MVP_INVITES=0, an OPEN server (names, no links: anyone who reaches it
-# plays as anyone); it warns, and refuses while Tailscale Funnel is on.
+# invites. Testers play at https://arena.makscee.ru/arena/: mcow's Caddy
+# proxies /arena* there to this host's tailscale serve, so whatever this
+# script serves is public once that switch is made. m1 itself stays
+# tailnet-only.
 #
-# Rollback with Funnel on: TURN FUNNEL OFF FIRST
-#   /Applications/Tailscale.app/Contents/MacOS/Tailscale funnel --https=8443 off
-# then ARENA_MVP_INVITES=0 npm run mvp:redeploy -- <old ref>.
+# The redeploy fails (exit 1, no "deployed" line) unless the new server's
+# /health says invites: true, so a pre-slice-13 ref or a broken setting is
+# never served by accident: it then stops the new server and turns the /arena
+# serve off before exiting. ARENA_MVP_INVITES takes 0 or 1 only. 0 deploys an
+# OPEN server (names, no links: anyone who reaches it plays as anyone); it
+# warns, and refuses while https://arena.makscee.ru/arena/ serves this host
+# (its /health shows this host's build), unless ARENA_MVP_OPEN_PUBLIC=1 says
+# so on purpose.
+#
+# Rollback to a pre-slice-13 build: SWITCH THE DOMAIN OFF FIRST (homelab
+# Caddyfile.j2, arena.makscee.ru stops proxying /arena* to m1), then
+#   ARENA_MVP_INVITES=0 npm run mvp:redeploy -- <old ref>
+#
+# Run it from a checkout at the commit being deployed: the script builds the
+# remote commands here, so a stale clone deploys new code with old checks.
 #
 # Runs from anywhere with `ssh m1`; on m1 itself it runs locally. The server
 # is a launchd agent (ru.makscee.arena-mvp), so it restarts on crash and login.
@@ -58,6 +69,9 @@ NAMER_PORT="${ARENA_NAMER_PORT:-8792}"
 NAMER_MODEL="${ARENA_NAMER_MODEL:-mlx-community/Qwen3-4B-Instruct-2507-4bit}"
 HOST_ALIAS="${ARENA_MVP_HOST:-m1}"
 INVITES="${ARENA_MVP_INVITES:-1}"
+case "$INVITES" in 0|1) ;; *) echo "ARENA_MVP_INVITES is 0 or 1, not '$INVITES'" >&2; exit 2 ;; esac
+OPEN_PUBLIC="${ARENA_MVP_OPEN_PUBLIC:-0}"
+PUBLIC_URL=https://arena.makscee.ru/arena/
 
 remote() {
   cat <<SCRIPT
@@ -67,13 +81,16 @@ DIR="\$HOME/arena-mvp"
 LABEL=ru.makscee.arena-mvp
 TS=/Applications/Tailscale.app/Contents/MacOS/Tailscale
 if [ "$INVITES" != 1 ]; then
-  # An open server: never while the internet can reach it. Checked before
-  # anything stops.
-  if \$TS funnel status 2>/dev/null | grep -qi "funnel on"; then
-    echo "ARENA_MVP_INVITES=0 refused: Tailscale Funnel is on, so an open server would let anyone on the internet play as anyone. Turn it off first: \$TS funnel --https=8443 off. Nothing stopped." >&2
+  # An open server: never while the public domain serves this host. Checked
+  # before anything stops: the public /health showing the build this host
+  # serves now means arena.makscee.ru proxies here.
+  MINE=\$(curl -fsS --max-time 5 "http://127.0.0.1:$PORT/arena/api/v1/health" 2>/dev/null | sed -n 's/.*"build":"\([^"]*\)".*/\1/p')
+  PUBLIC=\$(curl -fsS --max-time 10 "${PUBLIC_URL}api/v1/health" 2>/dev/null || true)
+  if [ -n "\$MINE" ] && printf '%s' "\$PUBLIC" | grep -q "\"build\":\"\$MINE\"" && [ "$OPEN_PUBLIC" != 1 ]; then
+    echo "ARENA_MVP_INVITES=0 refused: $PUBLIC_URL serves this host (build \$MINE), so an open server would let anyone on the internet play as anyone. Switch the domain off first (homelab Caddyfile.j2), or ARENA_MVP_OPEN_PUBLIC=1 on purpose. Nothing stopped." >&2
     exit 1
   fi
-  echo "WARNING: ARENA_MVP_INVITES=0 deploys an OPEN server (names, no links: anyone who reaches it plays as anyone). Keep Tailscale Funnel off while it runs." >&2
+  echo "WARNING: ARENA_MVP_INVITES=0 deploys an OPEN server (names, no links: anyone who reaches it plays as anyone). Keep $PUBLIC_URL off this host while it runs." >&2
 fi
 [ -d "\$DIR/.git" ] || git clone -q https://github.com/makscee/arena-of-ideas.git "\$DIR"
 cd "\$DIR"
@@ -183,7 +200,15 @@ fi
 # Invite-only unless ARENA_MVP_INVITES=0 said otherwise: a server that
 # doesn't say invites: true (a pre-slice-13 ref, a broken setting) is open.
 if [ "$INVITES" = 1 ] && ! printf '%s' "\$HEALTH" | grep -q '"invites":true'; then
-  echo "redeploy failed: the new server (\$BUILD, $BRANCH) is OPEN, not invite-only: its /health says \$HEALTH. Anyone who reaches it plays as anyone. Turn Tailscale Funnel off now if it is on (\$TS funnel --https=8443 off), then redeploy an invite-only build, or ARENA_MVP_INVITES=0 on purpose." >&2
+  # Never leave it serving: stop the job (KeepAlive would restart it) and
+  # turn the /arena serve off.
+  launchctl bootout "gui/\$(id -u)/\$LABEL" 2>/dev/null || true
+  for i in \$(seq 1 20); do launchctl print "gui/\$(id -u)/\$LABEL" >/dev/null 2>&1 || break; sleep 0.5; done
+  \$TS serve --set-path /arena off >/dev/null 2>&1 || true
+  echo "redeploy failed: the new server (\$BUILD, $BRANCH) is OPEN, not invite-only: its /health says \$HEALTH. Anyone who reaches it would play as anyone, so it is stopped and the /arena serve is off: the Arena is down. Redeploy an invite-only build, or ARENA_MVP_INVITES=0 on purpose." >&2
+  if launchctl print "gui/\$(id -u)/\$LABEL" >/dev/null 2>&1; then
+    echo "\$LABEL is STILL LOADED: stop it by hand (launchctl bootout gui/\$(id -u)/\$LABEL)." >&2
+  fi
   exit 1
 fi
 echo "deployed \$BUILD ($BRANCH): \$HEALTH"
@@ -204,4 +229,4 @@ if [ "$(hostname -s 2>/dev/null)" = "m1" ] || [ "$(hostname 2>/dev/null)" = "m1.
 else
   remote | ssh -o ConnectTimeout=10 "$HOST_ALIAS" bash
 fi
-echo "open https://m1.twin-pogona.ts.net/arena/"
+echo "open https://m1.twin-pogona.ts.net/arena/ (testers: $PUBLIC_URL once the domain points here)"

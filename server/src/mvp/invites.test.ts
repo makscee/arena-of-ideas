@@ -1,15 +1,16 @@
 // Slice 13: invite links, session tokens, and the dev tools on an invite-only server.
-import { mkdtempSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import type { HomeView, PlayerRef, PlayerSession, RunView } from "../../../src/mvp/contract.js";
+import type { BattleRecord, HomeView, PlayerRef, PlayerSession, RunView } from "../../../src/mvp/contract.js";
 import { createMvpApp } from "./app.js";
 import { mvpContent } from "./content.js";
-import { createInvite, hashToken, InviteError, revokeInvite } from "./invites.js";
+import { createInvite, hashToken, InviteError, redeemInvite, revokeInvite } from "./invites.js";
 import { mvpRuntime, type MvpDeps } from "./runtime.js";
 import { SqliteMvpStore } from "./sqlite-store.js";
-import { MemoryMvpStore } from "./store.js";
+import { MAX_SESSIONS, MemoryMvpStore } from "./store.js";
 
 function world(extra: Partial<MvpDeps> = {}) {
   const store = extra.store ?? new MemoryMvpStore();
@@ -22,13 +23,15 @@ function world(extra: Partial<MvpDeps> = {}) {
   return { rt, store, call, now: new Date("2026-10-06T18:00:00Z") };
 }
 const tok = (s: PlayerSession) => ({ "X-Arena-Token": s.token });
+/** Opens an invite link: the code goes in the body, never the URL. */
+const open = (call: ReturnType<typeof world>["call"], code: string) => call<PlayerSession>("POST", "/invites/redeem", {}, { code });
 
 describe("invite links (slice 13)", () => {
   it("an invite link gives its player on every device, each with its own token", async () => {
     const { store, call, now } = world();
     const inv = createInvite(store, { name: "Eva", now });
-    const a = await call<PlayerSession>("POST", `/invites/${inv.code}`);
-    const b = await call<PlayerSession>("POST", `/invites/${inv.code}`);
+    const a = await open(call, inv.code);
+    const b = await open(call, inv.code);
     expect(a.status).toBe(200);
     expect(a.json.player).toEqual({ id: inv.playerId, name: "Eva", bot: false });
     expect(b.json.player.id).toBe(a.json.player.id);
@@ -47,7 +50,7 @@ describe("invite links (slice 13)", () => {
   it("refuses an unknown code, a bare player id, a made-up token and a new name", async () => {
     const { store, call, now } = world();
     const inv = createInvite(store, { name: "Eva", now });
-    expect((await call("POST", "/invites/nope")).status).toBe(404);
+    expect((await open(call, "nope")).status).toBe(404);
     // Player ids are public (the day, fusions, battles): alone they are no login.
     expect((await call("POST", "/runs", { "X-Arena-Player": inv.playerId })).status).toBe(401);
     const bad = await call("POST", "/runs", { "X-Arena-Token": "made-up" });
@@ -61,8 +64,8 @@ describe("invite links (slice 13)", () => {
 
   it("shows the dev tools only to an admin invite", async () => {
     const { store, call, now } = world();
-    const maks = await call<PlayerSession>("POST", `/invites/${createInvite(store, { name: "Maks", admin: true, now }).code}`);
-    const eva = await call<PlayerSession>("POST", `/invites/${createInvite(store, { name: "Eva", now }).code}`);
+    const maks = await open(call, createInvite(store, { name: "Maks", admin: true, now }).code);
+    const eva = await open(call, createInvite(store, { name: "Eva", now }).code);
     expect((await call<HomeView>("GET", "/home", tok(maks.json))).json.dev).toBe(true);
     expect((await call<HomeView>("GET", "/home", tok(eva.json))).json.dev).toBe(false);
     expect((await call<HomeView>("GET", "/home")).json.dev).toBe(false);
@@ -103,8 +106,8 @@ describe("invite links (slice 13)", () => {
     for (const store of [new MemoryMvpStore(), new SqliteMvpStore(":memory:")]) {
       const { call, now } = world({ store });
       const inv = createInvite(store, { name: "Eva", now });
-      const a = await call<PlayerSession>("POST", `/invites/${inv.code}`);
-      const b = await call<PlayerSession>("POST", `/invites/${inv.code}`);
+      const a = await open(call, inv.code);
+      const b = await open(call, inv.code);
       expect((await call<HomeView>("GET", "/home", tok(a.json))).json.rating).not.toBeNull();
       const r = revokeInvite(store, "eva", now)!;
       expect(r.sessions).toBe(2);
@@ -116,8 +119,8 @@ describe("invite links (slice 13)", () => {
           const res = await call(m, path, tok(s.json));
           expect([res.status, res.json.error], `${m} ${path}`).toEqual([401, "unknown player: open your invite link"]);
         }
-      expect((await call("POST", `/invites/${inv.code}`)).status).toBe(404);
-      const c = await call<PlayerSession>("POST", `/invites/${r.invite.code}`);
+      expect((await open(call, inv.code)).status).toBe(404);
+      const c = await open(call, r.invite.code);
       expect(c.json.player.id).toBe(inv.playerId);
       expect(store.invites().map((i) => i.code)).toEqual([r.invite.code]);
       expect(revokeInvite(store, "nobody", now)).toBeUndefined();
@@ -127,7 +130,7 @@ describe("invite links (slice 13)", () => {
   it("promotes and demotes an existing invite's admin, keeping its link", async () => {
     const { store, call, now } = world();
     const inv = createInvite(store, { name: "Eva", now });
-    const s = await call<PlayerSession>("POST", `/invites/${inv.code}`);
+    const s = await open(call, inv.code);
     const up = createInvite(store, { name: "Eva", playerId: inv.playerId, admin: true, now });
     expect(up).toEqual({ ...inv, admin: true, redeemedAt: up.redeemedAt });
     expect((await call<HomeView>("GET", "/home", tok(s.json))).json.dev).toBe(true);
@@ -142,10 +145,10 @@ describe("invite links (slice 13)", () => {
   it("tells whose a link is without opening it, caps bodies at 16 KB, and asks testers for their link on 401", async () => {
     const { store, call, now } = world();
     const inv = createInvite(store, { name: "Eva", now });
-    expect((await call<{ player: PlayerRef }>("GET", `/invites/${inv.code}`)).json.player.name).toBe("Eva");
+    expect((await call<{ player: PlayerRef }>("POST", "/invites/lookup", {}, { code: inv.code })).json.player.name).toBe("Eva");
     expect(store.invite(inv.code)?.redeemedAt).toBeNull();
-    expect((await call("GET", "/invites/nope")).status).toBe(404);
-    const s = await call<PlayerSession>("POST", `/invites/${inv.code}`);
+    expect((await call("POST", "/invites/lookup", {}, { code: "nope" })).status).toBe(404);
+    const s = await open(call, inv.code);
     const run = await call<RunView>("POST", "/runs", tok(s.json));
     expect((await call("POST", `/runs/${run.json.runId}/decisions`, tok(s.json), { kind: "reroll", pad: "x".repeat(20_000) })).status).toBe(413);
     const anon = await call("POST", `/runs/${run.json.runId}/decisions`, {}, { kind: "reroll" });
@@ -179,10 +182,91 @@ describe("invite links (slice 13)", () => {
     const store = new SqliteMvpStore(path);
     const { call, now } = world({ store });
     const inv = createInvite(store, { name: "makscee", playerId: "old-maks", admin: true, now });
-    const s = await call<PlayerSession>("POST", `/invites/${inv.code}`);
+    const s = await open(call, inv.code);
     const home = await call<HomeView>("GET", "/home", tok(s.json));
     expect(home.json.rating?.rating).toBe(1234);
     expect(home.json.dev).toBe(true);
     store.close();
   });
+  it("gives a bare X-Arena-Player nothing on any route of an invite-only server", async () => {
+    const { rt, store, call, now } = world();
+    const eva = await open(call, createInvite(store, { name: "Eva", admin: true, now }).code);
+    const run = await call<RunView>("POST", "/runs", tok(eva.json));
+    const id = run.json.runId;
+    store.putBattle({ battleId: "b-slay", runId: id, player: eva.json.player } as unknown as BattleRecord);
+    store.addSlay({ seq: rt.today().seq, player: eva.json.player, runId: id, battleId: "b-slay", line: [], contentVersion: rt.content.version, at: now.toISOString() });
+    const as = { "X-Arena-Player": eva.json.player.id };
+    const home = await call<HomeView>("GET", "/home", as);
+    expect([home.json.rating, home.json.activeRunId, home.json.dev]).toEqual([null, null, false]);
+    const routes: [string, string, unknown?][] = [
+      ["POST", "/runs"],
+      ["GET", `/runs/${id}`],
+      ["POST", `/runs/${id}/decisions`, { kind: "reroll" }],
+      ["POST", `/runs/${id}/preview`, { kind: "reroll" }],
+      ["POST", `/runs/${id}/abandon`],
+      ["GET", "/battles/b-slay"],
+      ["POST", "/dev/end-day"],
+    ];
+    for (const [m, path, body] of routes) expect((await call(m, path, as, body)).status, `${m} ${path}`).toBeOneOf([401, 404]);
+    // The same routes with the token: the player's own (the run isn't over).
+    expect((await call("GET", `/runs/${id}`, tok(eva.json))).status).toBe(200);
+    expect((await call("GET", "/battles/b-slay", tok(eva.json))).status).toBe(200);
+  });
+
+  it(`keeps a player's newest ${MAX_SESSIONS} devices: an older token ends when one more opens the link`, async () => {
+    for (const store of [new MemoryMvpStore(), new SqliteMvpStore(":memory:")]) {
+      const { call, now } = world({ store });
+      const inv = createInvite(store, { name: "Eva", now });
+      const other = await open(call, createInvite(store, { name: "Ann", now }).code);
+      const tokens: string[] = [];
+      for (let i = 0; i < MAX_SESSIONS + 2; i++) tokens.push((await open(call, inv.code)).json.token);
+      const alive = tokens.map((t) => store.sessionPlayer(hashToken(t)) === inv.playerId);
+      expect(alive).toEqual([false, false, ...Array(MAX_SESSIONS).fill(true)]);
+      expect(store.sessionPlayer(hashToken(other.json.token))).toBeDefined();
+    }
+  });
+
+  it("can't be raced by a redeem on another connection: the revoke ends every session the old link gave", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "arena-588-race-"));
+    try {
+      const path = join(dir, "w.db");
+      const a = new SqliteMvpStore(path);
+      const b = new SqliteMvpStore(path);
+      const now = new Date();
+      // In turn: a revoke between a stale read and the redeem leaves nothing.
+      const inv = createInvite(a, { name: "Eva", now });
+      expect(a.invite(inv.code)).toBeDefined();
+      const r = revokeInvite(b, "Eva", now)!;
+      expect(redeemInvite(a, inv.code, now)).toBeUndefined();
+      expect(a.db.prepare("SELECT count(*) AS n FROM mvp_sessions").get()).toEqual({ n: 0 });
+      // At once: another process opens the old link in a loop while this one revokes it.
+      const code = r.invite.code;
+      const child = spawn(process.execPath, ["--import", "tsx/esm", "--input-type=module", "-e", `
+        import { SqliteMvpStore } from ${JSON.stringify(join(import.meta.dirname, "sqlite-store.ts"))};
+        import { redeemInvite } from ${JSON.stringify(join(import.meta.dirname, "invites.ts"))};
+        const s = new SqliteMvpStore(${JSON.stringify(path)});
+        const tokens = [];
+        let misses = 0;
+        console.log("ready");
+        while (misses < 50) { const r = redeemInvite(s, ${JSON.stringify(code)}, new Date()); r ? tokens.push(r.token) : misses++; }
+        console.log(JSON.stringify(tokens));
+        s.close();`], { stdio: ["ignore", "pipe", "inherit"] });
+      let out = "";
+      const done = new Promise<number | null>((res) => child.on("exit", res));
+      await new Promise<void>((res) => child.stdout.on("data", (d: Buffer) => { out += d; if (out.includes("ready")) res(); }));
+      // Let it get a few sessions in, then revoke mid-loop.
+      while (Number((b.db.prepare("SELECT count(*) AS n FROM mvp_sessions").get() as { n: number }).n) < 3) await new Promise((res) => setTimeout(res, 5));
+      revokeInvite(b, "Eva", new Date());
+      expect(await done).toBe(0);
+      child.stdout.removeAllListeners();
+      const tokens = JSON.parse(out.trim().split("\n").at(-1)!) as string[];
+      expect(tokens.length).toBeGreaterThanOrEqual(3);
+      for (const t of tokens) expect(b.sessionPlayer(hashToken(t))).toBeUndefined();
+      expect(b.db.prepare("SELECT count(*) AS n FROM mvp_sessions").get()).toEqual({ n: 0 });
+      a.close();
+      b.close();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 30_000);
 });

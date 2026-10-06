@@ -73,16 +73,22 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     return c.json(p);
   });
 
-  // Opens an invite link: its player and a new token for this device.
+  // Invite codes come in the body, never the path: the proxies in front
+  // (tailscale serve, mcow's Caddy) log every URI.
+  const codeOf = async (c: Context) => {
+    const body = (await c.req.json().catch(() => null)) as { code?: unknown } | null;
+    return typeof body?.code === "string" ? body.code : "";
+  };
   // Whose link this is, without opening it (the client asks before a device
   // switches from another player).
-  api.get("/invites/:code", (c) => {
-    const invite = store.invite(c.req.param("code"));
+  api.post("/invites/lookup", async (c) => {
+    const invite = store.invite(await codeOf(c));
     const player = invite && store.player(invite.playerId);
     return player ? c.json({ player }) : bad(c, 404, "no such invite");
   });
-  api.post("/invites/:code", (c) => {
-    const session = redeemInvite(store, c.req.param("code"), rt.now());
+  // Opens an invite link: its player and a new token for this device.
+  api.post("/invites/redeem", async (c) => {
+    const session = redeemInvite(store, await codeOf(c), rt.now());
     return session ? c.json(session) : bad(c, 404, "no such invite");
   });
 

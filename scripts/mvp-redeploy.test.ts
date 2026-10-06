@@ -23,13 +23,16 @@ esac`,
   git: `#!/bin/bash
 [ "$1" = rev-parse ] && echo abc1234; exit 0`,
   npm: "#!/bin/bash\nexit 0",
-  // NO_HEALTH: the new server never answers /health; STUB_HEALTH: what it says
+  // NO_HEALTH: the new server never answers /health; STUB_HEALTH: what it
+  // says; PUBLIC_HEALTH: what https://arena.makscee.ru/arena/ says (nothing: down)
   curl: `#!/bin/bash
-case "$*" in *api/v1/health*) [ -n "\${NO_HEALTH:-}" ] && exit 7; D='{"ok":true,"invites":true}'; echo "\${STUB_HEALTH:-$D}"; exit 0 ;; esac
+case "$*" in
+  *arena.makscee.ru*) [ -n "\${PUBLIC_HEALTH:-}" ] || exit 22; echo "$PUBLIC_HEALTH"; exit 0 ;;
+  *api/v1/health*) [ -n "\${NO_HEALTH:-}" ] && exit 7; D='{"ok":true,"build":"abc1234","invites":true}'; echo "\${STUB_HEALTH:-$D}"; exit 0 ;;
+esac
 echo '{"ok":true}'`,
-  // FUNNEL: Funnel is on
   tailscale: `#!/bin/bash
-[ "$1" = funnel ] && [ -n "\${FUNNEL:-}" ] && echo "https://m1.twin-pogona.ts.net:8443 (Funnel on)"; exit 0`,
+echo "$*" >> "$HOME/tailscale.log"; exit 0`,
   // the waits for launchd don't wait here
   sleep: "#!/bin/bash\nexit 0",
 };
@@ -61,7 +64,8 @@ function deploy(home: string, env: Record<string, string> = {}, args = ["--fresh
   expect(script).toContain(`${home}/bin/tailscale`);
   const run = spawnSync("bash", [], { input: script, encoding: "utf8", env: { HOME: home, PATH: `${home}/bin:/usr/bin:/bin`, ...env } });
   const log = existsSync(join(home, "launchctl.log")) ? readFileSync(join(home, "launchctl.log"), "utf8") : "";
-  return { status: run.status, stdout: run.stdout, stderr: run.stderr, log };
+  const ts = existsSync(join(home, "tailscale.log")) ? readFileSync(join(home, "tailscale.log"), "utf8") : "";
+  return { status: run.status, stdout: run.stdout, stderr: run.stderr, log, ts };
 }
 
 afterEach(() => {
@@ -148,28 +152,44 @@ describe("mvp-redeploy (--fresh and plain)", () => {
     expect(readFileSync(db, "utf8")).toBe("old world");
   });
 
-  it("refuses to report an open server as deployed: a /health without invites: true exits 1 (a pre-slice-13 ref)", () => {
+  it("never leaves an open server running: a /health without invites: true stops it, turns /arena off, exits 1", { timeout: 15_000 }, () => {
     for (const health of ['{"ok":true}', '{"ok":true,"invites":false}']) {
       const { home } = host();
       const r = deploy(home, { STUB_HEALTH: health }, []);
       expect(r.status, health).toBe(1);
       expect(r.stdout).not.toContain("deployed");
       expect(r.stderr).toContain("is OPEN, not invite-only");
-      expect(r.stderr).toContain("funnel --https=8443 off");
+      expect(r.stderr).toContain("the /arena serve is off");
+      expect(r.stderr).not.toContain("STILL LOADED");
+      expect(existsSync(join(home, "loaded/ru.makscee.arena-mvp"))).toBe(false);
+      expect(r.ts.trim().split("\n").at(-1)).toBe("serve --set-path /arena off");
     }
   });
 
-  it("ARENA_MVP_INVITES=0 deploys an open server with a warning, and refuses while Funnel is on", () => {
-    const open = host();
-    const r = deploy(open.home, { ARENA_MVP_INVITES: "0", STUB_HEALTH: '{"ok":true,"invites":false}' }, []);
+  it("ARENA_MVP_INVITES=0 deploys an open server with a warning, and refuses while arena.makscee.ru serves this host", { timeout: 15_000 }, () => {
+    const open = { ARENA_MVP_INVITES: "0", STUB_HEALTH: '{"ok":true,"build":"abc1234","invites":false}' };
+    const off = host();
+    const r = deploy(off.home, open, []);
     expect(r.status).toBe(0);
     expect(r.stdout).toContain("deployed abc1234");
     expect(r.stderr).toContain("WARNING: ARENA_MVP_INVITES=0 deploys an OPEN server");
-    const funnel = host();
-    const f = deploy(funnel.home, { ARENA_MVP_INVITES: "0", FUNNEL: "1" }, []);
+    // The domain still points at another server (the June build): fine.
+    const elsewhere = host();
+    expect(deploy(elsewhere.home, { ...open, PUBLIC_HEALTH: '{"ok":true,"build":"4a276d3"}' }, []).status).toBe(0);
+    const pub = host();
+    const f = deploy(pub.home, { ...open, PUBLIC_HEALTH: open.STUB_HEALTH }, []);
     expect(f.status).toBe(1);
-    expect(f.stderr).toContain("Tailscale Funnel is on");
+    expect(f.stderr).toContain("https://arena.makscee.ru/arena/ serves this host (build abc1234)");
     expect(f.log).not.toContain("bootout");
+    const forced = host();
+    expect(deploy(forced.home, { ...open, PUBLIC_HEALTH: open.STUB_HEALTH, ARENA_MVP_OPEN_PUBLIC: "1" }, []).status).toBe(0);
+  });
+
+  it("takes ARENA_MVP_INVITES 0 or 1 only", () => {
+    for (const v of ["yes", "true", ""]) {
+      const r = spawnSync(join(ROOT, "scripts/mvp-redeploy.sh"), ["--dry-run"], { encoding: "utf8", env: { ...process.env, ARENA_MVP_INVITES: v } });
+      expect(v === "" ? r.status : [r.status, r.stderr.trim()], v).toEqual(v === "" ? 0 : [2, `ARENA_MVP_INVITES is 0 or 1, not '${v}'`]);
+    }
   });
 
   it("mvp-db-aside.sh --check refuses a DB path whose directory is missing, and moves nothing", () => {

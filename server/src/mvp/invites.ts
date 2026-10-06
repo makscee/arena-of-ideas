@@ -70,19 +70,15 @@ export function revokeInvite(store: MvpStore, name: string, now: Date): { invite
   const old = store.invites().find((i) => nameKey(i.name) === key);
   if (!old) return undefined;
   const invite: Invite = { ...old, code: newCode(), createdAt: now.toISOString(), redeemedAt: null };
-  store.replaceInvite(old.code, invite);
-  return { invite, sessions: store.deleteSessions(old.playerId) };
+  return { invite, sessions: store.rotateInvite(old.code, invite) };
 }
 
 /** Opens an invite link: a new session for its player, or undefined for an unknown code. */
 export function redeemInvite(store: MvpStore, code: string, now: Date): PlayerSession | undefined {
-  const invite = store.invite(code);
-  const player = invite && store.player(invite.playerId);
-  if (!invite || !player) return undefined;
   const token = randomBytes(24).toString("base64url");
-  store.addSession(hashToken(token), player.id, now.toISOString());
-  if (!invite.redeemedAt) store.putInvite({ ...invite, redeemedAt: now.toISOString() });
-  return { player, token };
+  const id = store.redeemInvite(code, hashToken(token), now.toISOString());
+  const player = id && store.player(id);
+  return player ? { player, token } : undefined;
 }
 
 /** The player holding this session token. */

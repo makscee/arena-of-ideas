@@ -14,15 +14,17 @@
  * link gets the same link back; --admin / --no-admin on it promotes or demotes
  * them. Links last until revoked: `revoke` ends every device's session and
  * prints the person's new link (the old one stops working). Env: MVP_DB (default data/arena-mvp.db),
- * MVP_PUBLIC_URL (default https://m1.twin-pogona.ts.net/arena/).
+ * MVP_PUBLIC_URL (default https://arena.makscee.ru/arena/, where testers play).
+ * The code rides in the link's fragment (#invite=…), which browsers never
+ * send, so no proxy's access log holds it.
  */
 import { SqliteMvpStore } from "./sqlite-store.js";
 import { createInvite, InviteError, revokeInvite } from "./invites.js";
 
 const [cmd, ...rest] = process.argv.slice(2);
 const store = new SqliteMvpStore(process.env.MVP_DB ?? "data/arena-mvp.db");
-const base = process.env.MVP_PUBLIC_URL ?? "https://m1.twin-pogona.ts.net/arena/";
-const link = (code: string) => `${base}?invite=${code}`;
+const base = process.env.MVP_PUBLIC_URL ?? "https://arena.makscee.ru/arena/";
+const link = (code: string) => `${base}#invite=${code}`;
 
 function flag(name: string): string | undefined {
   const i = rest.indexOf(name);

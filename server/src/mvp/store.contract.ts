@@ -160,9 +160,16 @@ export function describeMvpStore(name: string, make: () => MvpStore): void {
       expect(() => s.putInvite({ ...inv, code: "c2", name: "MAKS" })).toThrow();
       expect(s.invites().map((i) => i.code)).toEqual(["c1"]);
       expect(s.invite("nope")).toBeUndefined();
-      s.addSession("h1", "p1", "t");
+      expect(s.redeemInvite("nope", "h0", "t3")).toBeUndefined();
+      expect(s.redeemInvite("c1", "h1", "t3")).toBe("p1");
+      expect(s.invite("c1")?.redeemedAt).toBe("t2");
       expect(s.sessionPlayer("h1")).toBe("p1");
-      expect(s.sessionPlayer("h2")).toBeUndefined();
+      expect(s.sessionPlayer("h0")).toBeUndefined();
+      expect(s.rotateInvite("c1", { ...inv, code: "c3", redeemedAt: null })).toBe(1);
+      expect(s.sessionPlayer("h1")).toBeUndefined();
+      expect(s.redeemInvite("c1", "h2", "t4")).toBeUndefined();
+      expect(s.redeemInvite("c3", "h2", "t4")).toBe("p1");
+      expect(s.invite("c3")?.redeemedAt).toBe("t4");
     });
   });
 }

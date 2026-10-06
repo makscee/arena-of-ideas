@@ -69,15 +69,21 @@ export interface MvpStore {
   putInvite(i: Invite): void;
   invite(code: string): Invite | undefined;
   invites(): Invite[];
-  /** `tokenHash`: the hex SHA-256 of a session token; the token itself is never stored. */
-  addSession(tokenHash: string, playerId: string, at: string): void;
+  /** Opens the invite `code` in one step: a session (`tokenHash`, the hex
+   * SHA-256 of its token; the token itself is never stored) for its player,
+   * only if the code still exists when the session is written, so a revoke
+   * can't race it. Marks the invite opened, keeps the player's newest
+   * `MAX_SESSIONS` sessions, and returns the player id (undefined: no such code). */
+  redeemInvite(code: string, tokenHash: string, at: string): string | undefined;
   /** The player id of the session with this token hash. */
   sessionPlayer(tokenHash: string): string | undefined;
-  /** Ends every session of this player (a revoked link); returns how many. */
-  deleteSessions(playerId: string): number;
-  /** Swaps the invite `oldCode` for `next` (a rotated code) in one step. */
-  replaceInvite(oldCode: string, next: Invite): void;
+  /** Swaps the invite `oldCode` for `next` (a rotated code) and ends every
+   * session of its player, in one step; returns how many sessions ended. */
+  rotateInvite(oldCode: string, next: Invite): number;
 }
+
+/** Devices per player: opening a link past this ends the oldest session. */
+export const MAX_SESSIONS = 10;
 
 /** How names compare: Unicode-folded (NFKC) and lower-cased in JS, so
  * Cyrillic and full-width letters match too (SQLite's lower() is ASCII only). */
@@ -124,6 +130,7 @@ export class MemoryMvpStore implements MvpStore {
   private playoffsBySeq = new Map<number, PlayoffResult>();
   private talliesByVersion = new Map<string, { runs: number; units: Map<UnitId, UnitTally> }>();
   private invitesByCode = new Map<string, Invite>();
+  /** token hash → player id, oldest first (Map keeps insertion order). */
   private sessions = new Map<string, string>();
   addPlayer(p: PlayerRef): void { this.players.set(p.id, p); }
   player(id: string): PlayerRef | undefined { return this.players.get(id); }
@@ -194,7 +201,7 @@ export class MemoryMvpStore implements MvpStore {
       if (other.code !== i.code && nameKey(other.name) === nameKey(i.name)) throw new Error(`an invite named ${i.name} exists`);
     this.invitesByCode.set(i.code, { ...i });
   }
-  replaceInvite(oldCode: string, next: Invite): void {
+  rotateInvite(oldCode: string, next: Invite): number {
     const old = this.invitesByCode.get(oldCode);
     this.invitesByCode.delete(oldCode);
     try {
@@ -203,16 +210,22 @@ export class MemoryMvpStore implements MvpStore {
       if (old) this.invitesByCode.set(oldCode, old);
       throw e;
     }
+    let n = 0;
+    for (const [h, id] of this.sessions) if (id === next.playerId && this.sessions.delete(h)) n++;
+    return n;
   }
   invite(code: string): Invite | undefined { const i = this.invitesByCode.get(code); return i && { ...i }; }
   invites(): Invite[] { return [...this.invitesByCode.values()].map((i) => ({ ...i })); }
-  addSession(tokenHash: string, playerId: string): void { this.sessions.set(tokenHash, playerId); }
-  sessionPlayer(tokenHash: string): string | undefined { return this.sessions.get(tokenHash); }
-  deleteSessions(playerId: string): number {
-    let n = 0;
-    for (const [h, id] of this.sessions) if (id === playerId && this.sessions.delete(h)) n++;
-    return n;
+  redeemInvite(code: string, tokenHash: string, at: string): string | undefined {
+    const i = this.invitesByCode.get(code);
+    if (!i) return undefined;
+    this.sessions.set(tokenHash, i.playerId);
+    i.redeemedAt ??= at;
+    const mine = [...this.sessions].filter(([, id]) => id === i.playerId);
+    for (const [h] of mine.slice(0, Math.max(0, mine.length - MAX_SESSIONS))) this.sessions.delete(h);
+    return i.playerId;
   }
+  sessionPlayer(tokenHash: string): string | undefined { return this.sessions.get(tokenHash); }
 }
 
 /** Ordered: (a, b) and (b, a) are different fusions. */

@@ -10,7 +10,7 @@
 // bad link on a device with its own session offers Home); a revoked link ends
 // every device's session and its new link works. A screenshot of each.
 import { spawn, execFileSync } from "node:child_process";
-import { copyFileSync, mkdirSync, mkdtempSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -20,13 +20,17 @@ const args = process.argv.slice(2);
 const opt = (n) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : undefined; };
 const out = opt("out") ?? "e2e/.shots/invite";
 mkdirSync(out, { recursive: true });
-const db = join(mkdtempSync(join(tmpdir(), "arena-invite-")), "world.db");
+// A temp world, removed on every exit: with --db it is a copy of a real one.
+const tmp = mkdtempSync(join(tmpdir(), "arena-invite-"));
+const db = join(tmp, "world.db");
+process.on("exit", () => rmSync(tmp, { recursive: true, force: true }));
+for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => process.exit(130));
 if (opt("db")) copyFileSync(opt("db"), db);
 const claim = opt("claim");
 
 const env = { ...process.env, MVP_DB: db, MVP_DEV: "1", MVP_INVITES: "1" };
 const cli = (...a) => execFileSync("node", ["--import", "tsx/esm", "server/src/mvp/invite-cli.ts", ...a], { env: { ...env, MVP_PUBLIC_URL: "BASE/" }, encoding: "utf8" }).trim();
-const codeOf = (line) => line.slice(line.indexOf("?invite=") + 8);
+const codeOf = (line) => line.slice(line.indexOf("#invite=") + 8);
 const TAG = Date.now().toString(36).slice(-4);
 const tester = `Tester${TAG}`;
 const admin = codeOf(claim ? cli("add", claim, "--claim", "--admin") : cli("add", "Maks", "--admin"));
@@ -57,7 +61,7 @@ const text = (page) => page.evaluate(() => document.body.innerText);
 try {
   // A tester's phone: the link gives the name; buy, fight, see the result.
   const a = await device(PHONE);
-  await a.goto(`${url}?invite=${guest}`);
+  await a.goto(`${url}#invite=${guest}`);
   await a.getByTestId("play").waitFor({ timeout: 15_000 });
   await shot(a, "tester-home-phone");
   if (!(await text(a)).includes(tester)) errors.push("tester: home doesn't show the invited name");
@@ -81,21 +85,21 @@ try {
 
   // The same link on a second device: the same player, the same run.
   const b = await device(PHONE);
-  await b.goto(`${url}?invite=${guest}`);
+  await b.goto(`${url}#invite=${guest}`);
   await b.getByTestId("play").waitFor({ timeout: 15_000 });
   if (!/Continue/i.test(await b.getByTestId("play").textContent())) errors.push("second device: not the same player (no Continue)");
   await shot(b, "tester-second-device");
 
   // The admin link on a desktop: the claimed player and the dev tools.
   const m = await device(DESKTOP);
-  await m.goto(`${url}?invite=${admin}`);
+  await m.goto(`${url}#invite=${admin}`);
   await m.getByTestId("play").waitFor({ timeout: 15_000 });
   if (!(await text(m)).includes(claim ?? "Maks")) errors.push("admin: home doesn't show the name");
   if (!(await m.getByTestId("end-day").count())) errors.push("admin: no End day now");
   await shot(m, "admin-home-desktop");
 
   // Another player's link on a device that already has a player asks first.
-  await m.goto(`${url}?invite=${guest}`);
+  await m.goto(`${url}#invite=${guest}`);
   await m.getByTestId("invite-switch").waitFor({ timeout: 10_000 });
   if (!(await m.getByTestId("invite-switch").textContent()).includes(`This link is for ${tester}. Switch from ${claim ?? "Maks"}?`)) errors.push("switch: the question doesn't name both players");
   await shot(m, "switch-ask-desktop");
@@ -103,7 +107,7 @@ try {
   await m.getByTestId("play").waitFor({ timeout: 10_000 });
   if (!(await m.getByTestId("end-day").count())) errors.push("switch: Stay didn't keep the admin");
   if (m.url().includes("invite=")) errors.push("switch: Stay keeps the code in the address");
-  await a.goto(`${url}?invite=${admin}`);
+  await a.goto(`${url}#invite=${admin}`);
   await a.getByTestId("invite-switch").waitFor({ timeout: 10_000 });
   await shot(a, "switch-ask-phone");
   await a.getByTestId("invite-stay").click();
@@ -111,7 +115,7 @@ try {
   if (!(await text(a)).includes(tester)) errors.push("switch: Stay didn't keep the tester");
 
   // A bad link on a device with its own session: Home, not a Retry loop.
-  await a.goto(`${url}?invite=nope`);
+  await a.goto(`${url}#invite=nope`);
   await a.getByTestId("invite-home").waitFor({ timeout: 10_000 });
   await shot(a, "bad-link-own-session-phone");
   await a.getByTestId("invite-home").click();
@@ -123,9 +127,9 @@ try {
   await b.reload();
   await b.getByTestId("invite-only").waitFor({ timeout: 10_000 });
   await shot(b, "revoked-device-phone");
-  await b.goto(`${url}?invite=${guest}`);
+  await b.goto(`${url}#invite=${guest}`);
   await b.getByTestId("invite-bad").waitFor({ timeout: 10_000 });
-  await b.goto(`${url}?invite=${next}`);
+  await b.goto(`${url}#invite=${next}`);
   await b.getByTestId("play").waitFor({ timeout: 15_000 });
   if (!/Continue/i.test(await b.getByTestId("play").textContent())) errors.push("revoke: the new link isn't the same player (no Continue)");
 
@@ -136,8 +140,10 @@ try {
   await old.getByTestId("invite-only").waitFor({ timeout: 10_000 });
   await shot(old, "old-device-desktop");
   const bad = await device(PHONE);
-  await bad.goto(`${url}?invite=nope`);
+  await bad.goto(`${url}#invite=nope`);
   await bad.getByTestId("invite-bad").waitFor({ timeout: 10_000 });
+  if (!(await text(bad)).includes("Ask for a new link")) errors.push("bad link: no session, but it doesn't ask for a new link");
+  if (await bad.getByRole("button", { name: "Retry" }).count()) errors.push("bad link: a Retry that reloads the same dead code");
   await shot(bad, "bad-link-phone");
   const fresh = await device(PHONE);
   await fresh.goto(url);

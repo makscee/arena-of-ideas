@@ -1141,15 +1141,16 @@ function runOverScreen(run: RunView, content: MvpContent, notice = "", newRun = 
 
 // ---------- boot ----------
 
-/** `?invite=<code>` in the address (slice 13): open the link, then drop the
- * code from the address bar and go Home as its player. A device that is
- * already another player asks first. A link that fails keeps its code, so
- * Retry tries it again; a device with its own session gets Home instead. */
-const inviteCode = new URLSearchParams(location.search).get("invite");
+/** `#invite=<code>` in the address (slice 13): open the link, then drop the
+ * code from the address bar and go Home as its player. The code rides in the
+ * fragment, which the browser never sends, so no access log holds it. A
+ * device that is already another player asks first. A dead link offers Home
+ * on a device with its own session, and otherwise asks for a new link. */
+const inviteCode = new URLSearchParams(location.hash.slice(1)).get("invite");
 const dropInvite = () => {
   const url = new URL(location.href);
-  url.searchParams.delete("invite");
-  history.replaceState(null, "", url);
+  url.hash = "";
+  history.replaceState(null, "", url.href.replace(/#$/, ""));
 };
 function openInvite(code: string): void {
   const err = errorLine();
@@ -1165,12 +1166,15 @@ function openInvite(code: string): void {
   }).then(() => {
     if (!err.textContent) return;
     const own = api.player && api.hasToken;
+    const dead = err.textContent.startsWith("no such invite");
     show(
       h("h1", {}, "ARENA"),
-      h("p", { class: "dim", "data-testid": "invite-bad" }, err.textContent.startsWith("no such invite") ? "This invite link doesn't work. Ask Maks for a new one." : err.textContent),
+      h("p", { class: "dim", "data-testid": "invite-bad" }, dead ? (own ? "This invite link doesn't work any more." : "This invite link doesn't work. Ask for a new link.") : err.textContent),
       own
         ? button("Home", () => (dropInvite(), void guarded(errorLine(), () => homeScreen())), "primary", "invite-home")
-        : button("Retry", () => location.reload(), "primary"),
+        : dead
+          ? h("span", {})
+          : button("Retry", () => location.reload(), "primary"),
     );
   });
 }
@@ -1191,6 +1195,11 @@ function switchScreen(code: string, mine: PlayerRef, theirs: PlayerRef): void {
 }
 
 initSound();
+// A link pasted into a tab that already shows the game only changes the
+// fragment, which reloads nothing: start over so the link opens.
+addEventListener("hashchange", () => {
+  if (new URLSearchParams(location.hash.slice(1)).has("invite")) location.reload();
+});
 
 if (inviteCode) {
   openInvite(inviteCode);

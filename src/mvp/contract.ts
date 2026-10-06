@@ -507,7 +507,7 @@ export interface HomeView {
 // /players returns an id the client stores and sends as the X-Arena-Player
 // header on every call. On an invite-only server (slice 13, main.ts
 // MVP_INVITES=1) a player is whoever holds a session token: POST
-// /invites/:code opens a person's invite link and returns a PlayerSession, and
+// /invites/redeem opens a person's invite link and returns a PlayerSession, and
 // the client sends its token as X-Arena-Token; X-Arena-Player is ignored there
 // and POST /players answers 403. Errors are { error: string } with 4xx: 400 a
 // request the API can't read (a Decision of an unknown kind), 401 no player
@@ -519,8 +519,11 @@ export interface HomeView {
 //   GET  /api/v1/health                      → { ok: true, api, contentVersion, build, invites }  (build: the deployed commit, or null; invites: invite-only)
 //   GET  /api/v1/content                     → MvpContent
 //   POST /api/v1/players       { name }      → PlayerRef          (403 on an invite-only server)
-//   GET  /api/v1/invites/:code               → { player: PlayerRef } (slice 13; whose link it is, opening nothing; 404 unknown code)
-//   POST /api/v1/invites/:code               → PlayerSession      (slice 13; 404 unknown code; the same link again: the same player, a new token)
+//   POST /api/v1/invites/lookup { code }     → { player: PlayerRef } (slice 13; whose link it is, opening nothing; 404 unknown code)
+//   POST /api/v1/invites/redeem { code }     → PlayerSession      (slice 13; 404 unknown code; the same link again: the same player,
+//                                                                  a new token; a player keeps their newest 10 devices' tokens)
+//   Invite codes travel in the link's fragment (…/arena/#invite=<code>) and in
+//   these bodies, never in a URL path or query, so no access log holds one.
 //   GET  /api/v1/home                        → HomeView
 //   POST /api/v1/runs                        → RunView            (starts a run; the player's active run if one is going)
 //   GET  /api/v1/runs/:runId                 → RunView
@@ -534,7 +537,7 @@ export interface HomeView {
 //   GET  /api/v1/stats                       → StatsView          (slice 11)
 
 export const PLAYER_HEADER = "X-Arena-Player";
-/** Slice 13: the session token from POST /invites/:code. */
+/** Slice 13: the session token from POST /invites/redeem. */
 export const TOKEN_HEADER = "X-Arena-Token";
 
 /** An opened invite link: the player it names and this device's token. */
