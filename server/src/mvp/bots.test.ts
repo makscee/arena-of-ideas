@@ -136,8 +136,10 @@ describe("MVP bots and world (slice 6)", () => {
     expect(roster.size).toBe(16);
     expect(botPlayer(4, roster).name).toBe("bot-Esk-2");
     // In a world: many bot runs against today's champion, every slayer's name is
-    // unique and no champion's.
-    const rt = world();
+    // unique and no champion's. Seed 3: a world whose champion bots do slay
+    // (seed 7's, since the awakening gift, R3-15, wasn't slain in 400 runs).
+    let n = 3;
+    const rt = world({ seed: () => (n = (n * 1103515245 + 12345) >>> 0) });
     await seedChampion(rt);
     // Slays are rare (the Crown is hard), so play until a few land, capped.
     for (let i = 0; i < 400 && (i < 80 || rt.store.slays(rt.today().seq).length < 2); i++) playBotRun(rt);
