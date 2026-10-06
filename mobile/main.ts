@@ -746,21 +746,34 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   // The Crown has no shop: where the offers were, the team you are about to
   // face, as plainly as your own line (R2-17 batch E: it was only the pin).
   const foe = crown ? h("div", { class: "stack crown-foe", "data-testid": "crown-foe" }) : null;
+  /** The Crown's foe, named by the run's own opponent (what "Crown vs" says
+   * and the fight uses); the day gives its line only when its champion is
+   * that player, so a day that turned over since never shows another team
+   * (R2-17 batch F). */
   const fillFoe = (d: DayView | null) => {
+    if (!foe || !opp) return;
     const ch = d?.champion;
-    if (!foe || !ch) return;
-    foe.replaceChildren(h("div", { class: "label" }, ownCrown ? "You face · your champion team · " : "You face · today's champion · ", who(ch.player.name, "ghost-name")), team(ch.line, "ghost", content, "crown-foe-line"));
+    const line = ch && ch.player.id === opp.player.id ? ch.line : null;
+    foe.replaceChildren(
+      h("div", { class: "label" }, ownCrown ? "You face · your champion team · " : "You face · today's champion · ", who(opp.player.name, "ghost-name")),
+      line ? team(line, "ghost", content, "crown-foe-line") : h("div", { class: "dim small" }, d ? "Their line shows in the fight." : "…"),
+    );
   };
   const fillPin = (d: DayView | null) => {
-    fillFoe(d);
     const ch = d?.champion;
     if (!ch) return pin.replaceChildren(h("span", { class: "dim" }, "👑 No champion yet"));
     const b = h("button", { class: "pin-btn", "data-testid": "champion-pin-open" }, h("span", {}, "👑"), who(ch.player.name, "ghost-name"), h("span", { class: "pin-emoji" }, ch.line.map((u) => u.emoji).join("")));
     b.addEventListener("click", () => closable(h("div", { class: "label" }, `Champion of day ${d!.seq} · `, who(ch.player.name)), team(ch.line, "ghost", content), hint(`${tapOrClick()} a card to read it.`)));
     pin.replaceChildren(b);
   };
-  fillPin(day);
-  if (!day) void api.day().then((d) => ((day = d), fillPin(d))).catch(() => {});
+  if (crown) {
+    // The Crown names its champion once ("Crown vs @X" and the foe's line): no pin.
+    fillFoe(day);
+    void api.day().then((d) => ((day = d), fillFoe(d))).catch(() => fillFoe(day));
+  } else {
+    fillPin(day);
+    if (!day) void api.day().then((d) => ((day = d), fillPin(d))).catch(() => {});
+  }
 
   // "?" explains a card's numbers; until a player has opened it once, it says so.
   const legendBtn = button(seen("legend") ? "?" : "? Cards", () => (markSeen("legend"), (legendBtn.textContent = "?"), legendBtn.classList.remove("new"), legendSheet()), seen("legend") ? "small" : "small new", "legend-open");
@@ -794,7 +807,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         "div",
         { class: "row spread opp" },
         h("span", { class: "dim", "data-testid": "next-opponent" }, ...(opp ? [`${crown ? "Crown vs" : "Next:"} `, who(opp.player.name), `${opp.player.bot ? " 🤖" : ""}${ownCrown ? " (your champion team)" : ""}`] : [crown ? "Crown vs today's champion" : "Next: a team saved at this round"])),
-        pin,
+        crown ? null : pin,
       ),
     ),
     h(
