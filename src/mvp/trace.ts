@@ -5,7 +5,7 @@
 
 import { beatsOf, isRootKind } from "../beats.js";
 import { displayNames, type NameOf } from "../trace.js";
-import type { BattleEvent, Side } from "../types.js";
+import type { AbilityRef, BattleEvent, Side, When } from "../types.js";
 
 // ---------- who acted ----------
 
@@ -158,6 +158,135 @@ function rootText(log: BattleEvent[], eventId: number): string {
   return cur?.type === "BattleStart" ? "battle start" : "the rules";
 }
 
+// ---------- Why: the chain from a change back to the turn (round 2, R2-15) ----------
+
+/** The When a firing answered, looked up by its stamped ref (AbilityRef.when)
+ * in the holder's recipe or the status's def. The client builds it from the
+ * battle's units and content; without it the trigger is read off the event
+ * that set the firing off, which is what the When matched. */
+export type WhenOf = (ref: AbilityRef) => When | undefined;
+
+/** One step of a Why chain.
+ * - change: the clicked change ("Victim → Strength ×1 on Victim (+1 PWR)");
+ * - firing: the ability that made the step below it (its holder, the When it
+ *   answered, which ability); the client draws its When → Does from the unit;
+ * - event: the event that set the firing below it off ("Medic strikes Victim → −1");
+ * - root: where it all started ("Turn 6", "Battle start", "Fatigue").
+ * Every step has an eventId, so a click can move the playhead there. */
+export interface ChainNode {
+  kind: "change" | "firing" | "event" | "root";
+  eventId: number;
+  /** One line: a caption for a change or an event, the reactor for a firing, the turn for a root. */
+  text: string;
+  /** The unit it is about: the firing's holder, else the caption's subject. */
+  unit: string | null;
+  side: Side | null;
+  /** The trigger icon the step shows: a firing's When ("trigger:Hurt"), the
+   * kind of an event or root ("trigger:Strike", "trigger:TurnStart"). */
+  trigger: `trigger:${string}` | null;
+  /** The status a StatusApplied / StatusRemoved trigger is about. */
+  triggerStatus?: string;
+  /** firing only: the reactor, its `when` the index of the When that fired. */
+  ref?: AbilityRef;
+  /** firing of a status (a Poison tick): the status, and where it was put on. */
+  status?: string;
+  origin?: number;
+}
+
+export interface Chain {
+  eventId: number;
+  change: Change | null;
+  /** The change first, then back to the root (or as far as the log goes). */
+  nodes: ChainNode[];
+}
+
+/** The trigger an event is, for its icon; null for one no When can answer. */
+function eventTrigger(e: BattleEvent): Pick<ChainNode, "trigger" | "triggerStatus"> {
+  if (!TRIGGER_EVENTS.has(e.type)) return { trigger: null };
+  return { trigger: `trigger:${e.type}`, ...(e.type === "StatusApplied" || e.type === "StatusRemoved" ? { triggerStatus: e.status } : {}) };
+}
+
+/** The trigger a firing answered: its stamped When when there is one to look
+ * up, else the event that set it off (a log from before the stamp). */
+function firedTrigger(log: BattleEvent[], e: BattleEvent, whenOf?: WhenOf): Pick<ChainNode, "trigger" | "triggerStatus"> {
+  if (e.source !== "kernel" && e.source.when !== undefined) {
+    const w = whenOf?.(e.source);
+    if (w) {
+      const status = "status" in w.on ? w.on.status : undefined;
+      const cause = e.causedBy !== null ? log[e.causedBy] : undefined;
+      const seen = cause && (cause.type === "StatusApplied" || cause.type === "StatusRemoved") ? cause.status : undefined;
+      return { trigger: `trigger:${w.on.on}`, ...((status ?? seen) ? { triggerStatus: (status ?? seen)! } : {}) };
+    }
+  }
+  const cause = e.causedBy !== null ? log[e.causedBy] : undefined;
+  return cause ? eventTrigger(cause) : { trigger: null };
+}
+
+function rootNodeText(e: BattleEvent): string {
+  switch (e.type) {
+    case "TurnStart": return `Turn ${e.turn}`;
+    case "TurnEnd": return `Turn ${e.turn} ends`;
+    case "BattleStart": return "Battle start";
+    case "Fatigue": return `Fatigue (turn ${e.turn})`;
+    case "PairFaced": return `Turn ${e.turn}`;
+    default: return e.type;
+  }
+}
+
+/** Why `eventId` happened, as steps from the change back to the turn: the
+ * change ← the ability that fired (holder, When) ← the event that set it off
+ * ← … ← the turn or the battle's start. A stat change a status brought folds
+ * into that status's step; a strike's hit reads as one step with its strike;
+ * a status's tick (Poison) continues where the status was put on. */
+export function chainOf(log: BattleEvent[], eventId: number, o: { name?: NameOf; sides?: Map<string, Side>; whenOf?: WhenOf } = {}): Chain {
+  const name = o.name ?? displayNames(log);
+  const sides = o.sides ?? sidesOf(log);
+  const side = (u: string | null) => (u ? sides.get(u) ?? null : null);
+  const nodes: ChainNode[] = [];
+  const seen = new Set<number>();
+  let cur: BattleEvent | undefined = log[eventId];
+  for (let hops = 0; cur && hops < MAX_HOPS && !seen.has(cur.id); hops++) {
+    seen.add(cur.id);
+    if (cur.type !== "Strike" && isRootKind(cur.type)) {
+      nodes.push({ kind: "root", eventId: cur.id, text: rootNodeText(cur), unit: null, side: null, ...eventTrigger(cur) });
+      break;
+    }
+    const kind = nodes.length ? "event" : "change";
+    if (cur.type === "Strike") {
+      // A strike's hit already reads "X strikes Y → −n"; a strike that set a firing off reads on its own.
+      const prev = nodes.at(-1);
+      if (!(prev && log[prev.eventId]?.causedBy === cur.id && log[prev.eventId]?.type === "Hurt")) {
+        nodes.push({ kind, eventId: cur.id, text: `${name(cur.striker)} strikes ${name(cur.defender)}`, unit: cur.striker, side: side(cur.striker), ...eventTrigger(cur) });
+      }
+    } else if (isStatusFollowUp(log, cur)) {
+      // "+1 PWR" is the stat side of a status landing: one step, the status's caption.
+      const parent = log[cur.causedBy!]!;
+      const subject = captionSubject(log, parent.id, name);
+      nodes.push({ kind, eventId: cur.id, text: captionOf(log, parent.id, name, [parent.id, cur.id]), unit: subject, side: side(subject), ...eventTrigger(cur) });
+      seen.add(parent.id);
+      cur = parent;
+    } else {
+      const subject = captionSubject(log, cur.id, name);
+      nodes.push({ kind, eventId: cur.id, text: captionOf(log, cur.id, name), unit: subject, side: side(subject), ...eventTrigger(cur) });
+    }
+    let next: number | null = cur.causedBy;
+    if (cur.source !== "kernel") {
+      const src: AbilityRef = cur.source;
+      const fired = firedTrigger(log, cur, o.whenOf);
+      if (src.status === undefined) {
+        nodes.push({ kind: "firing", eventId: cur.id, text: `${name(src.unit)}'s ability`, unit: src.unit, side: side(src.unit), ...fired, ref: src });
+      } else {
+        const origin = statusOriginId(log, src.unit, src.status, cur.id);
+        nodes.push({ kind: "firing", eventId: cur.id, text: `${src.status} on ${name(src.unit)}`, unit: src.unit, side: side(src.unit), ...fired, ref: src, status: src.status, ...(origin !== undefined ? { origin } : {}) });
+        if (origin !== undefined) next = origin;
+      }
+    }
+    cur = next !== null && next < cur.id ? log[next] : undefined;
+  }
+  const change = log[eventId] ? changeOf(log[eventId]!) : null;
+  return { eventId, change, nodes };
+}
+
 // ---------- playback steps and captions ----------
 
 export interface Step {
@@ -307,16 +436,14 @@ const TRIGGER_EVENTS = new Set(["BattleStart", "TurnStart", "TurnEnd", "Strike",
 /** The unit ability that made this step, if one did: its holder, the event
  * that set it off and the step's first change. A status's own ability
  * (Shield blocking, Poison ticking) and the kernel's strikes have none.
- * Until the kernel stamps the matched When (R2-15), the trigger is read off
- * the cause's event type, which is what a unit's When matched. */
-export function firingOf(log: BattleEvent[], step: Pick<Step, "eventIds" | "changes">): Firing | null {
+ * The trigger is the When the kernel stamped (AbilityRef.when, R2-15), looked
+ * up with `whenOf`; without one, the cause's event type, which it matched. */
+export function firingOf(log: BattleEvent[], step: Pick<Step, "eventIds" | "changes">, whenOf?: WhenOf): Firing | null {
   const first = log[step.eventIds[0]!];
   if (!first || first.source === "kernel" || first.source.status) return null;
   const c = step.changes[0];
   if (!c) return null;
-  const cause = first.causedBy !== null ? log[first.causedBy] : undefined;
-  const trigger = cause && TRIGGER_EVENTS.has(cause.type) ? (`trigger:${cause.type}` as const) : null;
-  const triggerStatus = cause && (cause.type === "StatusApplied" || cause.type === "StatusRemoved") ? cause.status : undefined;
+  const { trigger, triggerStatus } = firedTrigger(log, first, whenOf);
   const e = log[c.eventId];
   let effect: string;
   let effectStatus: string | undefined;

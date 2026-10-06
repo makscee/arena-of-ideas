@@ -225,6 +225,7 @@ try {
     await page.keyboard.press("Space");
     await page.getByTestId("battle-end").waitFor({ timeout: 10_000 });
     if (round === 1) await shot("battle");
+    if (round === 1) await whyOnDesktop();
     await page.getByTestId("battle-end").click();
     await page.getByTestId("battle-done").click();
     await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
@@ -326,6 +327,41 @@ try {
   await page.waitForTimeout(200);
   if (await page.getByTestId("inspector").count()) errors.push("1023px: the inspector shows on the phone layout");
   await shot("shop-1023");
+  /** R2-15: Why opens as a panel right of the battle column, and its chain
+   * runs back to a turn. Steps through the battle for a change that a firing
+   * made in a turn (event ← firing ← … ← Turn N), and clicks its steps. */
+  async function whyOnDesktop() {
+    await page.getByTestId("battle-play").click(); // pause
+    for (let i = 0; i < 80; i++) {
+      for (const chip of await page.getByTestId("change").all()) {
+        await chip.click();
+        const steps = page.getByTestId("why-step");
+        const kinds = await steps.evaluateAll((els) => els.map((e) => e.dataset.kind));
+        const root = (await steps.last().textContent()) ?? "";
+        if (kinds.includes("firing") && kinds.includes("event") && /Turn \d/.test(root)) {
+          const panel = await page.getByTestId("trace").boundingBox();
+          const column = await page.locator(".bv-screen").boundingBox();
+          if (!panel || !column || panel.x < column.x + column.width) errors.push(`why: the panel ${JSON.stringify(panel)} covers the battle column ${JSON.stringify(column)}`);
+          await shot("battle-why"); await noHScroll("battle-why");
+          const hud = () => page.locator(".hud span").nth(2).textContent();
+          const before = await hud();
+          await steps.nth(kinds.indexOf("event")).click();
+          const after = await hud();
+          if (!(await steps.nth(kinds.indexOf("event")).evaluate((e) => e.classList.contains("on")))) errors.push("why: the clicked step isn't lit");
+          await shot("battle-why-step");
+          console.log(`why: ${kinds.join(" ← ")} (${root.replace(/caused by/i, "").trim()}); its event step moved the board ${before} → ${after}`);
+          await page.getByTestId("trace-close").click();
+          return;
+        }
+        await page.getByTestId("trace-close").click();
+      }
+      if (await page.getByTestId("battle-step").isDisabled()) break;
+      await page.getByTestId("battle-step").click();
+      if (await page.getByTestId("end-card").isVisible()) break;
+    }
+    console.log("why: no change in round 1 came from a firing in a turn; panel not checked");
+  }
+
   console.log(`mvp desktop: ${round} fights, ${shots} screenshots in ${out}`);
 } finally {
   await browser.close();

@@ -367,6 +367,21 @@ try {
       const chain = await page.getByTestId("trace-text").textContent();
       if (!/←/.test(chain)) errors.push(`trace: no chain in "${chain}"`);
       await shot("battle-trace"); await noHScroll("battle-trace");
+      // R2-15: Why lists the chain from the change back to the turn, each
+      // step a 44 px button that moves the playhead to its moment, the
+      // control bar still on screen.
+      const kinds = await page.getByTestId("why-step").evaluateAll((els) => els.map((e) => e.dataset.kind));
+      if (kinds[0] !== "change" || kinds.at(-1) !== "root") errors.push(`why: the chain runs ${kinds.join(" ← ")}, not change … root`);
+      await tap44("why step", page.getByTestId("why-step"));
+      const turnBefore = await page.locator(".hud span").nth(2).textContent();
+      await page.getByTestId("why-step").last().click();
+      if (!(await page.getByTestId("why-step").last().evaluate((e) => e.classList.contains("on")))) errors.push("why: the clicked step isn't lit");
+      if ((await page.getByTestId("battle-play").textContent()) !== "▶") errors.push("why: a step's click didn't leave the battle paused");
+      const turnAfter = await page.locator(".hud span").nth(2).textContent();
+      const bar = await page.getByTestId("battle-play").boundingBox();
+      if (!bar || bar.y + bar.height > 640) errors.push(`why: the control bar is off screen with Why open (${JSON.stringify(bar)})`);
+      await shot("battle-why-step"); await noHScroll("battle-why-step");
+      console.log(`why: ${kinds.join(" ← ")}; the root's click moved the board ${turnBefore} → ${turnAfter}`);
       await tap44("change chip", page.getByTestId("change"));
       await tap44("trace close", page.getByTestId("trace-close"));
       await tap44("trace close", page.getByTestId("trace-close"), "width");

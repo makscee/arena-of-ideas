@@ -283,9 +283,20 @@ button.bv-caption.tappable::after { content: "ⓘ"; flex: none; margin-left: 4px
 button.bv-past { min-height: 44px; border: none; clip-path: none; text-align: left; padding: 0 12px; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-weight: 500; font-size: 14px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bv-sheet { position: fixed; z-index: 10; left: 12px; right: 12px; bottom: calc(68px + env(safe-area-inset-bottom)); max-width: 456px; margin: 0 auto; max-height: 60dvh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; border-color: var(--gold); box-shadow: 0 -12px 32px #000c; }
 .bv-trace-text { font-size: 15px; color: var(--gold); word-break: break-word; }
-.bv-link { display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; align-items: center; font-size: 16px; }
-.bv-link.you span:nth-child(2) { color: var(--you); }
-.bv-link.ghost span:nth-child(2) { color: var(--ghost); }
+/* R2-15: Why's chain, the change first, each cause below it, back to the turn.
+ * A step's icon is its trigger; a line joins the icons; the step whose
+ * moment is on the board is lit. */
+.bv-chain { display: flex; flex-direction: column; }
+.bv-step { display: grid; grid-template-columns: 28px 1fr; gap: 8px; align-items: start; position: relative; padding: 6px 4px; min-height: 44px; font-size: 15px; line-height: 1.3; text-align: left; }
+button.bv-step { color: var(--text); border: 0; clip-path: none; font-family: "Rajdhani", sans-serif; font-weight: 500; letter-spacing: 0; text-transform: none; }
+button.bv-step:hover { background: color-mix(in srgb, var(--you) 8%, transparent); }
+.bv-step.on { background: color-mix(in srgb, var(--gold) 14%, transparent); box-shadow: inset 2px 0 0 var(--gold); }
+.bv-step + .bv-step::before { content: ""; position: absolute; left: 17px; top: -6px; height: 12px; border-left: 1px dashed var(--line); }
+.bv-step-ic { display: flex; justify-content: center; padding-top: 2px; }
+.bv-step-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; word-break: break-word; }
+.bv-step-by { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+.bv-step.firing .bv-step-head b { font-weight: 700; }
+.bv-step.root .bv-step-text { color: var(--gold); font-family: "Chakra Petch", sans-serif; }
 button.bv-close { min-height: 44px; min-width: 44px; padding: 0 12px; }
 .bv-word { font-family: "Chakra Petch", sans-serif; font-size: 30px; line-height: 1; text-align: center; }
 .bv-word.win { color: var(--you); }
@@ -531,3 +542,8 @@ button.chip.quiet { min-height: 44px; font-size: 13px; color: var(--dim); }
 button.chip.quiet.on { background: none; color: var(--text); border-color: var(--text); }
 .kw-scope { border-left: 2px solid color-mix(in srgb, #ffbf47 45%, transparent); padding-left: 10px; margin-top: 4px; gap: 4px; }
 .kw-scope.landed { border-left-color: #ffbf47; }
+
+/* R2-15: on desktop Why is a panel on the right, beside the battle column, not a sheet over it. */
+@media (min-width: 1024px) {
+  .bv-sheet { left: auto; right: 24px; top: 24px; bottom: 24px; width: clamp(280px, calc(50vw - 256px), 440px); max-width: none; max-height: none; margin: 0; box-shadow: -12px 0 32px #000c; }
+}

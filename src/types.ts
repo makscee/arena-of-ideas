@@ -169,6 +169,10 @@ export interface AbilityRef {
   unit: string; // holding unit instance id
   status?: string; // present when the ability lives on a status
   ability: number; // index within the ability list
+  /** Which of the reactor's Whens (index in its triggers) set this firing off
+   * (or would have, on a ChainBlocked). Stamped by the kernel; absent on logs
+   * from before round 2 (R2-15). */
+  when?: number;
 }
 
 export type SourceRef = "kernel" | AbilityRef;

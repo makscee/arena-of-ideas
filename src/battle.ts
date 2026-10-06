@@ -253,17 +253,18 @@ class Engine {
         if (when.kind !== "interceptor" || !this.matches(when.on, draft, r.holder)) continue;
         const k = refKey(r.ref);
         if (handled.has(k)) continue;
+        const stamped = withWhen(r, r.ability.triggers.indexOf(when));
         if (this.violatesNoSelf(r.ref, source, causedBy)) {
-          this.applyEvent({ type: "ChainBlocked", ability: r.ref, at: causedBy ?? -1 }, causedBy, "kernel");
+          this.applyEvent({ type: "ChainBlocked", ability: stamped.ref, at: causedBy ?? -1 }, causedBy, "kernel");
           continue;
         }
         const holder = this.units.get(r.holder);
         if (!holder || (r.ref.status === undefined && holder.silenced)) continue;
         if (r.ability.condition && !this.checkCondition(r.ability.condition, holder)) continue;
         handled.add(k);
-        const res = this.runInterceptor(r, draft, followUps);
+        const res = this.runInterceptor(stamped, draft, followUps);
         if (res === "cancel") {
-          cancelledBy = r.ref;
+          cancelledBy = stamped.ref;
           break;
         }
       }
@@ -297,9 +298,8 @@ class Engine {
     // Reactors come in line order (front to back); each reacts to an event at
     // most once, however many of its Triggers match it.
     for (const r of reactors) {
-      if (r.ability.triggers.some((when) => when.kind === "trigger" && this.matches(when.on, ev, r.holder))) {
-        this.queue.push({ ...r, event: ev });
-      }
+      const when = r.ability.triggers.findIndex((w) => w.kind === "trigger" && this.matches(w.on, ev, r.holder));
+      if (when >= 0) this.queue.push({ ...withWhen(r, when), event: ev });
     }
     this.kernelConsequences(ev);
     return ev;
@@ -827,6 +827,12 @@ function subjectOf(body: EventBody): string | undefined {
 function sourceIs(source: SourceRef, ref: AbilityRef): boolean {
   if (source === "kernel" || source.unit !== ref.unit || source.status !== ref.status) return false;
   return ref.status === undefined || source.ability === ref.ability;
+}
+
+/** The reactor as it fires off its When #`when`: every ref its events carry
+ * says which When matched (AbilityRef.when), so a Why chain needn't re-match. */
+function withWhen(r: ReactorEntry, when: number): ReactorEntry {
+  return { ...r, ref: { ...r.ref, when }, does: r.does.map((d) => ({ ...d, ref: { ...d.ref, when } })) };
 }
 
 function refKey(r: AbilityRef): string {
