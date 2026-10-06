@@ -216,3 +216,7 @@ button.bv-why { display: flex; align-items: center; justify-content: space-betwe
 .games[hidden] { display: none; }
 .playoff > button.small { align-self: flex-start; }
 .row > .who-mark { flex: 0 1 auto; }
+/* The result after a loss (#587): a smaller word, so "why I lost" shows three rows above the buttons. */
+.outcome.compact { font-size: 34px; line-height: 1.1; }
+.bv-why-num { flex: none; font-size: 14px; }
+[data-testid="why-lost"] { gap: 6px; }

@@ -482,16 +482,19 @@ function resultScreen(run: RunView, fight: FightResult, battle: BattleRecord, co
         : fight.outcome === "draw"
           ? "A draw costs no heart."
           : "";
+  // After a loss, "why I lost" comes first, under a compact header, so its
+  // rows show above the sticky buttons; the two lines follow.
+  const why = fight.outcome === "loss" ? whyILost(battle, content, "A") : null;
   show(
     h("div", { class: "hud" }, h("span", { "data-testid": "result-round" }, label), hearts(run.hearts), h("span", { class: "dim" }, record(run))),
-    h("div", { class: `outcome ${fight.outcome}`, "data-testid": "outcome" }, word),
+    h("div", { class: `outcome ${fight.outcome}${why ? " compact" : ""}`, "data-testid": "outcome" }, word),
     h("div", { class: "dim", style: "text-align:center" }, "vs ", who(fight.opponent.player.name), ` · ${plural(turns, "turn")}`),
-    sub ? h("div", { class: fight.heartsLost > 0 ? "error center" : "center" }, sub) : null,
+    sub ? h("div", { class: fight.heartsLost > 0 ? "error center" : "center", "data-testid": "result-sub" }, sub) : null,
+    why,
     h("div", { class: "label" }, "You"),
     team(battle.teamA, "you", content),
     h("div", { class: "label" }, who(battle.opponent.name)),
     team(battle.teamB, "ghost", content),
-    fight.outcome === "loss" ? whyILost(battle, content, "A") : null,
     h("div", { class: "spacer" }),
     h(
       "div",

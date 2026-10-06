@@ -170,7 +170,7 @@ describe("why I lost", () => {
     expect(new Set(chains.map((c) => c.text)).size).toBe(chains.length);
   });
 
-  test("a row's traced first hit is one that did damage, never a −0 a Shield took whole", () => {
+  test("a row's traced hit is one that did damage, never a −0 a Shield took whole", () => {
     // Shieldbearer's Shield 2 takes Dummy's first strike (2) whole: a Hurt of 0.
     const log = run([Shieldbearer], [dummy("Dummy", 30, 2)]);
     const zero = log.find((e) => e.type === "Hurt" && e.unit === "A1:Shieldbearer" && e.amount === 0);
@@ -181,6 +181,17 @@ describe("why I lost", () => {
     expect(sample.type === "Hurt" && sample.amount).toBeGreaterThan(0);
     expect(row.sampleEventId).toBeGreaterThan(zero!.id);
     expect(traceOf(log, row.sampleEventId).text).not.toMatch(/^−0/);
+  });
+
+  test("a row traces the chain's killing blow, not its first, smallest hit (#587)", () => {
+    const log = run([dummy("Squire", 8, 1)], [dummy("Dummy", 30, 3)]);
+    const row = whyILost(log, "A").find((c) => c.names[0] === "Dummy")!;
+    expect(row.kills).toBe(1);
+    expect(row.sampleKind).toBe("kill");
+    const death = log.find((e) => e.type === "Death" && e.unit === "A1:Squire")!;
+    expect(row.sampleEventId).toBe(death.causedBy);
+    const firstHit = log.find((e) => e.type === "Hurt" && e.unit === "A1:Squire")!;
+    expect(row.sampleEventId).toBeGreaterThan(firstHit.id);
   });
 
   test("a heal row's traced first change healed something", () => {

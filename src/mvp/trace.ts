@@ -362,10 +362,12 @@ export interface LossChain {
   times: number;
   hits: number;
   heals: number;
-  /** The first change that did something (damage dealt, or HP healed), to
-   * replay its trace; never a "−0" hit a Shield took whole. Only when every
-   * change came to nothing, the first one. */
+  /** The change that mattered most, to replay its trace: its biggest killing
+   * blow, else its biggest hit, else its biggest heal; never a "−0" hit a
+   * Shield took whole. Only when every change came to nothing, the first one. */
   sampleEventId: number;
+  /** What sampleEventId is: "kill", "hit", "heal", or "none" (all came to nothing). */
+  sampleKind: "kill" | "hit" | "heal" | "none";
 }
 
 /** "B2:Medic" → 2: the slot a unit started in; null for a summon or another id. */
@@ -385,8 +387,18 @@ export function whyILost(log: BattleEvent[], you: Side = "A", top = 3): LossChai
   const hp = new Map<string, number>();
   for (const e of log) if (e.type === "BattleStart") for (const s of ["A", "B"] as const) for (const r of e.teams[s]) hp.set(r.id, r.hp);
   const groups = new Map<string, LossChain>();
-  // Groups whose sample still is a change that came to nothing (a "−0" hit).
-  const idleSample = new Set<LossChain>();
+  // Each group's best sample so far: a kill beats a hit beats a heal, then the bigger one.
+  const best = new Map<LossChain, { rank: number; amount: number }>();
+  const RANK = { none: 0, heal: 1, hit: 2, kill: 3 } as const;
+  const offer = (g: LossChain, id: number, kind: LossChain["sampleKind"], amount: number) => {
+    const b = best.get(g);
+    if (b && (RANK[kind] < b.rank || (RANK[kind] === b.rank && amount <= b.amount))) return;
+    best.set(g, { rank: RANK[kind], amount });
+    g.sampleEventId = id;
+    g.sampleKind = kind;
+  };
+  // The damage each traced hit dealt, so a killing blow is ranked by its size.
+  const dealt = new Map<number, number>();
   // By instance and how it reads: a unit's strikes and abilities are one row
   // ("Medic"), its status ticks another ("Zealot (Poison)").
   const keyOf = (t: Trace) => t.links.map((l) => `${l.unit}|${linkText(l)}`).join(" ← ");
@@ -396,10 +408,13 @@ export function whyILost(log: BattleEvent[], you: Side = "A", top = 3): LossChai
     const key = keyOf(t);
     let g = groups.get(key);
     if (!g) {
-      g = { names: t.links.map((l) => l.name), units: t.links.map((l) => l.unit), text: t.links.map(linkText).join(" ← "), impact: 0, damage: 0, heal: 0, kills: 0, times: 0, hits: 0, heals: 0, sampleEventId: e.id };
+      g = { names: t.links.map((l) => l.name), units: t.links.map((l) => l.unit), text: t.links.map(linkText).join(" ← "), impact: 0, damage: 0, heal: 0, kills: 0, times: 0, hits: 0, heals: 0, sampleEventId: e.id, sampleKind: "none" };
       groups.set(key, g);
-      if (dmg + heal === 0) idleSample.add(g);
-    } else if (dmg + heal > 0 && idleSample.delete(g)) g.sampleEventId = e.id;
+    }
+    if (dmg > 0) offer(g, e.id, "hit", dmg);
+    else if (heal > 0) offer(g, e.id, "heal", heal);
+    else offer(g, e.id, "none", 0);
+    dealt.set(e.id, dmg);
     g.damage += dmg;
     g.heal += heal;
     g.impact += dmg + heal;
@@ -428,7 +443,10 @@ export function whyILost(log: BattleEvent[], you: Side = "A", top = 3): LossChai
       if (cause) {
         const t = traceOf(log, cause.id, name, sides);
         const g = groups.get(keyOf(t));
-        if (g && t.links[0]?.side === them) g.kills++;
+        if (g && t.links[0]?.side === them) {
+          g.kills++;
+          offer(g, cause.id, "kill", dealt.get(cause.id) ?? 0);
+        }
       }
     }
   }
