@@ -83,7 +83,7 @@ export const STATUS_TERMS: Record<string, TermDef> = {
 
 export const GLOSSARY: Record<FixedTermId, TermDef> = {
   // Stats
-  "stat:pwr": { label: "PWR", icon: "broadsword", tone: "pwr", tip: "Power: the damage this unit deals with each strike." },
+  "stat:pwr": { label: "PWR", icon: "broadsword", tone: "pwr", tip: "Power: the damage it deals with each strike." },
   "stat:hp": { label: "HP", icon: "hearts", tone: "hp", tip: "Health. When it reaches 0 the unit dies." },
 
   // Triggers (When). A trigger shares its event's icon on purpose: in a

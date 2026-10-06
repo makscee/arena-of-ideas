@@ -383,11 +383,12 @@ const GROUPS: [TermGroup, string][] = [
   ["term", "Words"],
 ];
 
-/** Groups whose rows show only when a unit's text uses them: the rest
- * (statuses, stats, unit states, battle rules) always show. Kernel jargon no
- * unit says (Absorb, Cheat death, Cancel, Spend, would) stays hidden until
- * content starts using it. */
-const SHOWN_IF_USED: ReadonlySet<TermGroup> = new Set(["trigger", "condition", "target", "effect", "term"]);
+/** Rows that show only when a unit's text uses them: the rest (statuses,
+ * stats, unit states, battle rules, Stacks, which their rules say) always
+ * show. Kernel jargon no unit says (Absorb, Cheat death, Cancel, Spend,
+ * would) stays hidden until content starts using it. */
+const SHOWN_IF_USED: ReadonlySet<TermGroup> = new Set(["trigger", "condition", "target", "effect"]);
+const shownIfUsed = (id: TermId): boolean => SHOWN_IF_USED.has(termGroup(id)) || id === "term:would";
 
 /** A trigger's scopes other than its holder's, in the order its row lists them. */
 const SCOPES: Exclude<UnitFilter, "holder">[] = ["ally", "otherAlly", "enemy", "any"];
@@ -449,7 +450,7 @@ function keywordsTab(content: MvpContent, open: (node: HTMLElement, from?: HTMLE
           ]
         : [];
     });
-    if (SHOWN_IF_USED.has(termGroup(id)) && used.length === 0 && scoped.length === 0) return null;
+    if (shownIfUsed(id) && used.length === 0 && scoped.length === 0) return null;
     return h(
       "div",
       { class: "kw-row", "data-term": id, "data-testid": "codex-term", id: `codex-${id.replace(/[^a-zA-Z0-9]+/g, "-")}` },
