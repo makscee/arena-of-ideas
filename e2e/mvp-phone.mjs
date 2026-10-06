@@ -258,6 +258,15 @@ try {
       await page.getByTestId("menu-open").click();
       await page.getByTestId("run-menu").waitFor();
       await shot("run-menu"); await noHScroll("run-menu");
+      // The Sound row (round 3, note 16): the toggle turns it off and on, with 44px taps.
+      const toggle = page.getByTestId("run-menu").getByTestId("sound-toggle");
+      await tap44("sound toggle", toggle);
+      await toggle.click();
+      if (!(await toggle.textContent()).includes("off")) errors.push("sound: the menu toggle didn't turn sound off");
+      await toggle.click();
+      if (!(await toggle.textContent()).includes("on")) errors.push("sound: the menu toggle didn't turn sound back on");
+      const vbox = await page.getByTestId("run-menu").getByTestId("sound-volume").boundingBox();
+      if (!vbox || vbox.width < 100) errors.push(`sound: the volume slider is ${vbox ? Math.round(vbox.width) : 0}px wide`);
       // ☰ Codex opens over the shop; Back returns to the same round.
       await page.getByTestId("menu-codex").click();
       await page.getByTestId("codex-units").waitFor();

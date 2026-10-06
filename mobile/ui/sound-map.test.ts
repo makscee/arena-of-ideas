@@ -5,6 +5,11 @@ import type { LineUnit, RunView } from "../../src/mvp/contract";
 import type { PlayBeat, Step } from "../../src/mvp/trace";
 import { BEAT_CAP, GAIN, SOUND_KEYS, beatCues, endSound, shopSound, waveSound } from "./sound-map";
 import { readdirSync } from "node:fs";
+import { MVP_RULES, type MvpContent, type PlayerRef } from "../../src/mvp/contract";
+import { fightLines } from "../../src/mvp/fight";
+import { lineUnitOf } from "../../src/mvp/forms";
+import { beatPlayOf, stepsOf } from "../../src/mvp/trace";
+import { mvpPool } from "../../src/mvp/units";
 
 const unit = (uid: string, copies: number, form: "sleeping" | "awoken" = "sleeping"): LineUnit =>
   ({ uid, kind: "unit", unitId: uid, name: uid, emoji: "?", copies, form, stats: { pwr: 1, hp: 1 } }) as unknown as LineUnit;
@@ -103,4 +108,28 @@ test("the end: win, lose, draw; a slay adds the chime half a second later", () =
   expect(endSound("draw", "crown").map((c) => c.key)).toEqual(["draw"]);
   expect(endSound("win", "crown")).toMatchObject([{ key: "win" }, { key: "discover", delay: 500 }]);
   expect(endSound("loss", "playoff", false).map((c) => c.key)).toEqual(["win"]);
+});
+
+test("real battles: every landed hit sounds, no beat goes past the cap", () => {
+  const pool = mvpPool();
+  const content: MvpContent = { version: "t", units: pool.units, abilities: pool.abilities, statuses: pool.statuses };
+  const p = (id: string): PlayerRef => ({ id, name: id, bot: false });
+  let r = 777;
+  const rand = (n: number) => ((r = (r * 1103515245 + 12345) % 2147483648), r % n);
+  const heard = new Set<string>();
+  for (let seed = 0; seed < 40; seed++) {
+    const line = (s: string) => Array.from({ length: 5 }, (_, k) => lineUnitOf(pool.units[rand(pool.units.length)]!, `${s}${k}`, 1 + rand(4)));
+    const { log } = fightLines({ player: p("a"), line: line("a") }, { player: p("b"), line: line("b") }, { battleId: "x", seed, kind: "round", round: 5, runId: null, at: "2026-10-05T00:00:00Z", content, rules: MVP_RULES });
+    for (const beat of beatPlayOf(log, stepsOf(log))) {
+      const cues = beatCues(beat, log);
+      beat.waves.forEach((w, i) => {
+        const c = waveSound(w, log, i);
+        if (c) heard.add(c.key);
+        if (w.eventIds.some((id) => log[id]?.type === "Hurt" && (log[id] as { amount: number }).amount > 0)) expect(c).not.toBeNull();
+      });
+      const capped = cues.filter((c) => c && c.key !== "spawn" && !(c.key === "debuff" && c.rate === 0.7));
+      expect(capped.length).toBeLessThanOrEqual(BEAT_CAP);
+    }
+  }
+  for (const k of ["hit", "zap", "debuff"]) expect(heard).toContain(k);
 });
