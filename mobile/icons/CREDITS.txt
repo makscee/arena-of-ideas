@@ -1,0 +1,37 @@
+Icons made by Delapouite, Lorc, Sbed, Skoll from game-icons.net, licensed CC BY 3.0
+(https://creativecommons.org/licenses/by/3.0/). Heart-plus by Zeromancer is CC0.
+Icons were recoloured and their black background removed.
+
+biceps                                   Delapouite  CC BY 3.0 https://game-icons.net/1x1/delapouite/biceps.html
+person                                   Delapouite  CC BY 3.0 https://game-icons.net/1x1/delapouite/person.html
+perspective-dice-six-faces-random        Delapouite  CC BY 3.0 https://game-icons.net/1x1/delapouite/perspective-dice-six-faces-random.html
+three-friends                            Delapouite  CC BY 3.0 https://game-icons.net/1x1/delapouite/three-friends.html
+upgrade                                  Delapouite  CC BY 3.0 https://game-icons.net/1x1/delapouite/upgrade.html
+angel-wings                              Lorc        CC BY 3.0 https://game-icons.net/1x1/lorc/angel-wings.html
+broadsword                               Lorc        CC BY 3.0 https://game-icons.net/1x1/lorc/broadsword.html
+broken-heart                             Lorc        CC BY 3.0 https://game-icons.net/1x1/lorc/broken-heart.html
+crossed-swords                           Lorc        CC BY 3.0 https://game-icons.net/1x1/lorc/crossed-swords.html
+cursed-star                              Lorc        CC BY 3.0 https://game-icons.net/1x1/lorc/cursed-star.html
+drop                                     Lorc        CC BY 3.0 https://game-icons.net/1x1/lorc/drop.html
+flying-flag                              Lorc        CC BY 3.0 https://game-icons.net/1x1/lorc/flying-flag.html
+hourglass                                Lorc        CC BY 3.0 https://game-icons.net/1x1/lorc/hourglass.html
+linked-rings                             Lorc        CC BY 3.0 https://game-icons.net/1x1/lorc/linked-rings.html
+magic-portal                             Lorc        CC BY 3.0 https://game-icons.net/1x1/lorc/magic-portal.html
+minions                                  Lorc        CC BY 3.0 https://game-icons.net/1x1/lorc/minions.html
+moon                                     Lorc        CC BY 3.0 https://game-icons.net/1x1/lorc/moon.html
+pointing                                 Lorc        CC BY 3.0 https://game-icons.net/1x1/lorc/pointing.html
+silence                                  Lorc        CC BY 3.0 https://game-icons.net/1x1/lorc/silence.html
+sleepy                                   Lorc        CC BY 3.0 https://game-icons.net/1x1/lorc/sleepy.html
+snowflake-2                              Lorc        CC BY 3.0 https://game-icons.net/1x1/lorc/snowflake-2.html
+spiky-explosion                          Lorc        CC BY 3.0 https://game-icons.net/1x1/lorc/spiky-explosion.html
+sunrise                                  Lorc        CC BY 3.0 https://game-icons.net/1x1/lorc/sunrise.html
+third-eye                                Lorc        CC BY 3.0 https://game-icons.net/1x1/lorc/third-eye.html
+death-skull                              Sbed        CC BY 3.0 https://game-icons.net/1x1/sbed/death-skull.html
+health-normal                            Sbed        CC BY 3.0 https://game-icons.net/1x1/sbed/health-normal.html
+shield                                   Sbed        CC BY 3.0 https://game-icons.net/1x1/sbed/shield.html
+targeted                                 Sbed        CC BY 3.0 https://game-icons.net/1x1/sbed/targeted.html
+tombstone                                Sbed        CC BY 3.0 https://game-icons.net/1x1/sbed/tombstone.html
+breaking-chain                           Skoll       CC BY 3.0 https://game-icons.net/1x1/skoll/breaking-chain.html
+hearts                                   Skoll       CC BY 3.0 https://game-icons.net/1x1/skoll/hearts.html
+raise-zombie                             Skoll       CC BY 3.0 https://game-icons.net/1x1/skoll/raise-zombie.html
+heart-plus                               Zeromancer  CC0       https://game-icons.net/1x1/zeromancer/heart-plus.html

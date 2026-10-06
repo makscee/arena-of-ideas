@@ -362,7 +362,7 @@ export function describeEffectSegments(
     case "absorbHurt":
       return [eT("absorb the damage"), e0(" up to its "), { text: "stacks", term: "term:stacks" }, e0(", consuming what it absorbs")];
     case "preventDeathHeal":
-      return [eT("cancel the death"), e0(" and heal "), ...tgt, e0(" to "), ...hpSegs(e.toHp, opts), e0(e.removeSelf ? ", spending this status" : "")];
+      return [eT("cancel the death"), e0(" and "), eT("heal"), e0(" "), ...tgt, e0(" to "), ...hpSegs(e.toHp, opts), e0(e.removeSelf ? ", spending this status" : "")];
   }
 }
 
