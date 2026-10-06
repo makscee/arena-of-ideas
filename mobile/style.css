@@ -166,8 +166,12 @@ button.link { align-self: flex-start; border: none; background: none; color: var
 .bv-st { display: inline-flex; align-items: center; gap: 1px; font-family: "IBM Plex Mono", monospace; font-size: 11px; line-height: 16px; }
 .bv-st b { font-weight: 700; }
 /* The trigger badge: [When icon] → [Does icon], over the card's top edge. */
-button.bv-badge { position: absolute; z-index: 3; top: -11px; left: 50%; transform: translateX(-50%); min-height: 0; height: 22px; padding: 0 5px; display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; border: 1px solid #ffbf47; border-radius: 11px; clip-path: none; background: color-mix(in srgb, #ffbf47 18%, var(--bg)); box-shadow: 0 0 8px color-mix(in srgb, #ffbf47 45%, transparent); text-transform: none; letter-spacing: 0; animation: bv-badge calc(0.3s / var(--bv-sp, 1)) ease-out calc(var(--bv-bt, 0s) / var(--bv-sp, 1)) both; }
+button.bv-badge { position: absolute; z-index: 3; top: -17px; left: 50%; transform: translateX(-50%); min-height: 0; height: 22px; padding: 0 5px; display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; border: 1px solid #ffbf47; border-radius: 11px; clip-path: none; background: color-mix(in srgb, #ffbf47 18%, var(--bg)); box-shadow: 0 0 8px color-mix(in srgb, #ffbf47 45%, transparent); text-transform: none; letter-spacing: 0; animation: bv-badge calc(0.3s / var(--bv-sp, 1)) ease-out calc(var(--bv-bt, 0s) / var(--bv-sp, 1)) both; }
 button.bv-badge.still { animation: none; }
+/* Your line's badges hang below the cards (the chip is on top), toward your label. */
+.bv-line.mine button.bv-badge { top: auto; bottom: -17px; }
+.bv-line.theirs { margin-top: 10px; }
+.bv-line.mine { margin-bottom: 10px; }
 .bv-badge-arrow { font-size: 11px; color: var(--dim); }
 @keyframes bv-badge { 0% { opacity: 0; transform: translateX(-50%) translateY(6px) scale(0.6); } 60% { opacity: 1; transform: translateX(-50%) scale(1.15); } 100% { opacity: 1; transform: translateX(-50%); } }
 /* The gold ring is drawn inside the border, over the padding: the acting card
@@ -206,8 +210,10 @@ button.bv-badge.still { animation: none; }
 .bv-float.damage, .bv-float.debuff { color: var(--ghost); }
 .bv-float.heal, .bv-float.summon { color: var(--you); }
 .bv-float.buff, .bv-float.debuff { top: auto; bottom: calc(20px + var(--k) * 4px); font-family: "Rajdhani", sans-serif; font-size: 12px; font-weight: 700; line-height: 12px; animation-name: bv-rise-small; }
-.bv-float.on-pwr { text-align: left; padding-left: 3px; }
-.bv-float.on-hp { text-align: right; padding-right: 3px; }
+/* A ±stat float is a small pill over the number it changes, readable on top of it. */
+.bv-float.buff, .bv-float.debuff { width: max-content; max-width: calc(100% - 4px); left: 50%; right: auto; translate: -50% 0; padding: 1px 3px; border-radius: 3px; background: var(--bg); }
+.bv-float.on-pwr { left: 2px; translate: none; }
+.bv-float.on-hp { left: auto; right: 2px; translate: none; }
 .bv-float.buff { color: var(--gold); }
 @keyframes bv-lunge-up { 40% { transform: translateY(-14px) scale(1.06); } }
 @keyframes bv-lunge-down { 40% { transform: translateY(14px) scale(1.06); } }

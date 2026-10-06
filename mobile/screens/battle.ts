@@ -76,8 +76,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const setSpeedVar = () => { for (const row of [enemy, mine]) row.style.setProperty("--bv-sp", String(speed)); };
 
   const hud = h("div", { class: "hud" });
-  const enemy = h("div", { class: "slots bv-line", "data-testid": "battle-them" });
-  const mine = h("div", { class: "slots bv-line", "data-testid": "battle-you" });
+  const enemy = h("div", { class: "slots bv-line theirs", "data-testid": "battle-them" });
+  const mine = h("div", { class: "slots bv-line mine", "data-testid": "battle-you" });
   const caption = h("button", { class: "bv-caption", "data-testid": "caption" });
   /** Reduced motion's list of the beat's changes: below your line, its height
    * fixed, so nothing on the board moves while it fills. */
