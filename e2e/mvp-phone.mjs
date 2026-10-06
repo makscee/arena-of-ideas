@@ -7,6 +7,7 @@ import { mkdirSync } from "node:fs";
 import { createServer } from "node:net";
 import { launchChromium } from "./browser.mjs";
 import { escPass } from "./esc-keys.mjs";
+import { beamChecks } from "./beams.mjs";
 import { nowSheetChecks } from "./now-sheet.mjs";
 
 const args = process.argv.slice(2);
@@ -549,6 +550,7 @@ try {
         await shot("battle-two-changes-trace");
         await page.getByTestId("trace-close").click();
       } else console.log("mvp phone: round 1 had no unit with two changes in one step (no shot)");
+      await beamChecks(page, errors, { shot, phone: true });
       await nowSheetChecks(page, errors, { shot, phone: true });
       // R2-14: controls, the end card, key moments and Replay.
       await tap44("battle controls", page.locator(".bv-controls button"));
@@ -749,16 +751,61 @@ try {
     const d = run.gift ? { kind: "gift", pick: null } : run.phase === "crown" ? { kind: "fight" } : want && run.gold >= want.cost ? { kind: "buy", slot: want.slot } : run.gold >= 1 ? { kind: "reroll" } : { kind: "fight" };
     run = (await call("POST", `/runs/${run.runId}/decisions`, d, fuser.id)).run;
   }
-  // The awakening copy the page buys brings a gift (R3-15). Until the chooser
-  // (R3-16) the API skips it and the page reloads into the same shop.
-  const skipGift = async () => {
-    const r = await call("GET", `/runs/${run.runId}`, undefined, fuser.id);
-    if (!r.gift) { errors.push("awakening: no gift offered"); return; }
-    if (r.gift.length !== 3) errors.push(`awakening: ${r.gift.length} gift choices, want 3`);
-    await call("POST", `/runs/${run.runId}/decisions`, { kind: "gift", pick: null }, fuser.id);
-    await page.reload();
-    await page.getByTestId("play").click();
-    await page.getByTestId("fight").waitFor();
+  // The awakening copy the page buys brings a gift (R3-15): the chooser
+  // (R3-16) shows 3 cards; a card opens its sheet; Esc sets the gift aside
+  // behind a banner (nothing but sell and reorder goes meanwhile); Open gift
+  // brings it back, and a pick joins the board (or merges in).
+  const chooseGift = async () => {
+    const before = await call("GET", `/runs/${run.runId}`, undefined, fuser.id);
+    if (!before.gift) return void errors.push("awakening: no gift offered");
+    const shown = await page.getByTestId("gift-title").waitFor({ timeout: 5_000 }).then(() => true, () => false);
+    if (!shown) return void errors.push("gift: the chooser doesn't open after the awakening copy");
+    if (!/Awakened! Pick a gift/.test(await page.getByTestId("gift-title").textContent())) errors.push("gift: no 'Awakened! Pick a gift'");
+    const cards = await page.getByTestId("gift-choices").locator(".card").count();
+    if (cards !== 3) errors.push(`gift: ${cards} cards, want 3`);
+    await shot("gift-chooser"); await noHScroll("gift-chooser"); await noVScroll("gift-chooser");
+    await tap44("gift Pick and Skip", page.locator('[data-testid^="gift-pick-"], [data-testid="gift-skip"]'));
+    await onScreen("gift: Skip", page.getByTestId("gift-skip"));
+    // A card's sheet is one tap away, and closes back to the chooser.
+    await page.getByTestId("gift-card-0").click();
+    await page.locator('.overlay [data-testid="unit-sheet"]').waitFor();
+    await shot("gift-card-sheet");
+    await page.getByTestId("sheet-close").click();
+    if (!(await page.getByTestId("gift-title").isVisible())) errors.push("gift: closing a card's sheet closed the chooser too");
+    // Esc sets it aside: a banner, the shop's Fight and Reroll off until it's picked or skipped.
+    await page.keyboard.press("Escape");
+    await page.getByTestId("gift-banner").waitFor({ timeout: 3_000 }).catch(() => errors.push("gift: Esc leaves no banner"));
+    if (await page.getByTestId("gift-title").isVisible()) errors.push("gift: Esc doesn't set the chooser aside");
+    if (!(await page.getByTestId("fight").isDisabled())) errors.push("gift: Fight is on while the gift waits");
+    if (!(await page.getByTestId("reroll").isDisabled())) errors.push("gift: Reroll is on while the gift waits");
+    await shot("gift-aside"); await noHScroll("gift-aside");
+    await tap44("gift banner: Open gift", page.getByTestId("gift-open"));
+    await page.getByTestId("gift-open").click();
+    await page.getByTestId("gift-title").waitFor();
+    // A tap outside the sheet sets it aside too, and Open gift brings it back.
+    await page.mouse.click(180, 20);
+    await page.getByTestId("gift-banner").waitFor();
+    if (await page.getByTestId("gift-title").isVisible()) errors.push("gift: a tap outside doesn't set the chooser aside");
+    await page.getByTestId("gift-open").click();
+    await page.getByTestId("gift-title").waitFor();
+    // Pick a unit the line doesn't hold (it goes to the line's end, else the
+    // bench), so the line's indices stay as they were; a copy would do too.
+    const owned = (id) => [...before.line, ...(before.bench ?? [])].some((u) => u.unitId === id || u.fusion?.first === id || u.fusion?.second === id);
+    const i = Math.max(0, before.gift.findIndex((id) => !owned(id)));
+    await page.getByTestId(`gift-pick-${i}`).click();
+    await page.getByTestId("gift-title").waitFor({ state: "hidden" }).catch(() => {});
+    await page.getByTestId("gift-banner").waitFor({ state: "hidden", timeout: 5_000 }).catch(() => {});
+    let after = await call("GET", `/runs/${run.runId}`, undefined, fuser.id);
+    // A pick that awakens a unit brings another gift: skip that one.
+    if (after.gift) {
+      await page.getByTestId("gift-skip").click();
+      await page.getByTestId("gift-banner").waitFor({ state: "hidden", timeout: 5_000 }).catch(() => {});
+      after = await call("GET", `/runs/${run.runId}`, undefined, fuser.id);
+    }
+    if (after.gift) errors.push("gift: still waiting after the pick");
+    const has = [...after.line, ...after.bench].some((u) => u.unitId === before.gift[i] || u.fusion?.first === before.gift[i] || u.fusion?.second === before.gift[i]);
+    if (!has) errors.push(`gift: the picked ${before.gift[i]} isn't in the line or on the bench`);
+    await shot("gift-picked"); await noHScroll("gift-picked");
   };
   if (!ready(run)) errors.push(`fusion setup: never reached two Awoken units (phase ${run.phase}, round ${run.round})`);
   else {
@@ -774,8 +821,8 @@ try {
     if (!/Awakens/.test(await page.getByTestId("buy-preview").textContent())) errors.push("awaken preview: no 'Awakens!'");
     await shot("awaken-preview"); await noHScroll("awaken-preview");
     await page.getByTestId("buy").click();
+    await chooseGift();
     await page.getByTestId("hint").filter({ hasText: "fuse" }).waitFor();
-    await skipGift();
     const first = run.line.findIndex((u) => u.form === "awoken");
     const second = run.line.findIndex((u) => u.uid === almost.uid);
     await page.getByTestId(`line-${first}`).click();
@@ -895,6 +942,65 @@ try {
       await page.getByTestId("line-4").waitFor();
       if ((await name("line-4")) !== front) errors.push(`bench: To line put "${await name("line-4")}" in line-4, not "${front}"`);
       await shot("bench-moved"); await noHScroll("bench-moved");
+    }
+  }
+  // The gift's "make room" (R3-16): a gift none of whose units can merge in,
+  // with line and bench full. Its picks are off, Make room sets it aside, a
+  // sale reopens it, and the pick joins the line. A player gets there through the API.
+  {
+    const roomer = await call("POST", "/players", { name: `Room${TAG}` });
+    let r = await call("POST", "/runs", undefined, roomer.id);
+    const board = (r) => [...r.line, ...r.bench];
+    const owned = (r, id) => board(r).some((u) => u.unitId === id || u.fusion?.first === id || u.fusion?.second === id);
+    const isFull = (r) => r.line.length === 5 && r.bench.length === 3;
+    const stuck = (r) => r.phase === "shop" && r.gift && isFull(r) && r.gift.every((id) => !owned(r, id));
+    for (let steps = 0; steps < 6000 && !stuck(r); steps++) {
+      if (r.phase === "over") { r = await call("POST", "/runs", undefined, roomer.id); continue; }
+      let d;
+      if (r.gift) {
+        // Fill the board with gifts; a full board takes a copy, else skips.
+        const fresh = r.gift.findIndex((id) => !owned(r, id));
+        const copy = r.gift.findIndex((id) => owned(r, id));
+        d = { kind: "gift", pick: !isFull(r) && fresh >= 0 ? fresh : copy >= 0 ? copy : null };
+      } else if (r.phase === "crown") d = { kind: "fight" };
+      else {
+        // Copies of what the board holds first (they awaken, which brings gifts), then new units while there is room.
+        const dupe = r.offers.find((o) => o.cost <= r.gold && board(r).some((u) => u.kind === "unit" && u.unitId === o.unitId));
+        const fresh = !isFull(r) ? r.offers.find((o) => o.cost <= r.gold) : undefined;
+        const o = dupe ?? fresh;
+        d = o ? { kind: "buy", slot: o.slot } : r.gold >= 1 && isFull(r) ? { kind: "reroll" } : { kind: "fight" };
+      }
+      r = (await call("POST", `/runs/${r.runId}/decisions`, d, roomer.id)).run;
+    }
+    if (!stuck(r)) errors.push(`make room: never reached a gift with line and bench full (phase ${r.phase}, round ${r.round})`);
+    else {
+      await page.evaluate((p) => localStorage.setItem("arena.player", JSON.stringify(p)), roomer);
+      await page.reload();
+      await page.getByTestId("play").click();
+      await page.getByTestId("gift-title").waitFor();
+      if (!(await page.getByTestId("gift-full").isVisible())) errors.push("make room: no 'make room' line with line and bench full");
+      for (let i = 0; i < 3; i++) if (!(await page.getByTestId(`gift-pick-${i}`).isDisabled())) errors.push(`make room: Pick ${i} is on with no room`);
+      await shot("gift-make-room"); await noHScroll("gift-make-room"); await noVScroll("gift-make-room");
+      await tap44("make room buttons", page.locator('[data-testid="gift-make-room"], [data-testid="gift-skip"]'));
+      await page.getByTestId("gift-make-room").click();
+      await page.getByTestId("gift-banner").waitFor();
+      if (!/make room/.test(await page.getByTestId("gift-banner").textContent())) errors.push(`make room: the banner says "${await page.getByTestId("gift-banner").textContent()}"`);
+      await shot("gift-make-room-aside"); await noHScroll("gift-make-room-aside"); await noVScroll("gift-make-room-aside");
+      // Selling stays possible behind it: sell the front unit, and the chooser comes back.
+      await page.getByTestId("line-0").click();
+      await page.getByTestId("sell").click();
+      const back = await page.getByTestId("gift-title").waitFor({ timeout: 5_000 }).then(() => true, () => false);
+      if (!back) errors.push("make room: the chooser doesn't come back after a sale makes room");
+      else {
+        if (await page.getByTestId("gift-full").count()) errors.push("make room: still says 'make room' after the sale");
+        await shot("gift-room-made");
+        await page.getByTestId("gift-pick-1").click();
+        await page.getByTestId("gift-banner").waitFor({ state: "hidden", timeout: 5_000 }).catch(() => {});
+        const after = await call("GET", `/runs/${r.runId}`, undefined, roomer.id);
+        if (after.gift) errors.push("make room: the gift still waits after the pick");
+        if (after.line.length !== 5 || after.line.at(-1).unitId !== r.gift[1]) errors.push(`make room: the pick didn't join the line's end (${after.line.map((u) => u.unitId).join(",")})`);
+        await shot("gift-room-picked"); await noHScroll("gift-room-picked");
+      }
     }
   }
   // Compact cards (R2-7): at 360×640 in round 8, with 5 units in the line, a

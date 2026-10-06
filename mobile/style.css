@@ -381,6 +381,25 @@ button.bv-also-btn.damage, button.bv-also-btn.debuff, button.bv-also-btn.death {
 button.bv-also-btn.heal, button.bv-also-btn.summon { color: var(--you); }
 button.bv-caption { height: 52px; min-height: 0; overflow: hidden; width: 100%; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 17px; color: var(--text); border-color: var(--line); text-align: left; padding: 4px 12px; }
 button.bv-caption { display: flex; align-items: center; }
+/* Target beams (R3-21): one fixed layer over the cards, under the caption
+   (opaque, so a beam crossing the phone's caption band never hides its text),
+   the badges, the floats, the sheets and the end card. */
+button.bv-caption { position: relative; z-index: 2; background: var(--bg); }
+.bv-fx { position: fixed; inset: 0; width: 100vw; height: 100dvh; z-index: 1; pointer-events: none; overflow: visible; }
+.bv-beam { --bv-bc: #ff6b4d; color: var(--bv-bc); }
+.bv-beam .bv-bl { fill: none; stroke: var(--bv-bc); stroke-width: 3; stroke-linecap: round; filter: drop-shadow(0 0 3px var(--bv-bc)); }
+.bv-beam .bv-bs, .bv-beam .bv-bh { fill: var(--bv-bc); }
+.bv-beam.ring rect { fill: none; stroke: var(--bv-bc); stroke-width: 2.5; filter: drop-shadow(0 0 4px var(--bv-bc)); }
+.bv-beam.old { opacity: 0.32; }
+.bv-beam.old .bv-bl { stroke-width: 2; stroke-dasharray: 0.02 0.02; filter: none; }
+.bv-beam.old .bv-bh, .bv-beam.old .bv-bs { display: none; }
+.bv-beam.draw .bv-bl { stroke-dasharray: 1; animation: bv-beam calc(0.22s / var(--bv-sp, 1)) ease-out calc(var(--bv-bt, 0s) / var(--bv-sp, 1)) both; }
+.bv-beam.draw .bv-bh { animation: bv-beam-head calc(0.22s / var(--bv-sp, 1)) step-end calc(var(--bv-bt, 0s) / var(--bv-sp, 1)) both; }
+.bv-beam.draw.ring rect { transform-box: fill-box; transform-origin: center; animation: bv-ring calc(0.4s / var(--bv-sp, 1)) ease-out calc(var(--bv-bt, 0s) / var(--bv-sp, 1)) both; }
+@keyframes bv-beam { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes bv-beam-head { from { opacity: 0; } to { opacity: 1; } }
+@keyframes bv-ring { from { opacity: 0; transform: scale(1.12); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .bv-fx * { animation: none !important; } }
 button.bv-caption.tappable::after { content: "ⓘ"; flex: none; margin-left: 4px; color: var(--dim); }
 /* Two lines at most: a caption's length never moves your line. */
 .bv-cap { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 20px; }
@@ -937,3 +956,8 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-card .stats.big { font-size: 14px; line-height: 16px; }
   #app[data-screen="battle"] .bv-float { top: 26px; }
 }
+/* The awakening gift (R3-16): three cards, each with its Pick under it; the banner when it is set aside. */
+.gift-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; justify-items: center; }
+.gift-choice { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: var(--cw, 96px); }
+.gift-choice button { padding: 0 6px; }
+.gift-banner { align-items: center; gap: 8px; font-size: 15px; color: var(--you); border-left: 2px solid var(--you); padding: 2px 0 2px 8px; background: color-mix(in srgb, var(--you) 6%, transparent); }
