@@ -70,15 +70,20 @@ export function formText(form: UnitForm, content: MvpContent): string {
  * both parts. Slice 8 fills it in and opens it from the shop and Home; slice 9
  * only opens it from the battle; slice 11 only passes rates. Open it with
  * overlay(unitSheet(...)) from ./dom. The stub lists the forms as text. */
-export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpContent, opts: { rates?: UnitRates } = {}): HTMLElement {
+export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpContent, opts: { rates?: UnitRates; from?: Stats } = {}): HTMLElement {
   const unitId = "forms" in u ? u.id : u.unitId;
+  // opts.from: your copy's stats now, when u is that copy after a buy (the shop's offer sheet).
+  const statsLine = (s: Stats) =>
+    opts.from
+      ? h("div", { class: "num", "data-testid": "sheet-stats" }, `${opts.from.pwr} PWR / ${opts.from.hp} HP → ${s.pwr} PWR / ${s.hp} HP`)
+      : h("div", { class: "num", "data-testid": "sheet-stats" }, `${s.pwr} PWR / ${s.hp} HP`);
   return h(
     "div",
     { class: "stack", "data-testid": "unit-sheet" },
     h("h2", {}, `${u.emoji} ${u.name}`),
     "forms" in u ? null : discoveredLine(u),
-    "stats" in u ? h("div", { class: "num" }, `${u.stats.pwr} PWR / ${u.stats.hp} HP`) : h("div", { class: "num" }, `${u.base.pwr} PWR / ${u.base.hp} HP · tier ${u.tier}`),
-    "stats" in u ? h("div", { class: "dim" }, sheetState(u)) : null,
+    "stats" in u ? statsLine(u.stats) : h("div", { class: "num" }, `${u.base.pwr} PWR / ${u.base.hp} HP · tier ${u.tier}`),
+    "stats" in u ? h("div", { class: "dim" }, opts.from ? `Your copy now → after buying: ${sheetState(u)}` : sheetState(u)) : null,
     ...sheetForms(u, content).map(([label, form]) =>
       h("div", { class: `sheet-form${"form" in u && u.kind !== "fused" && label.toLowerCase() === u.form ? " now" : ""}` }, h("div", { class: "label" }, label), formText(form, content)),
     ),

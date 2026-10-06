@@ -357,6 +357,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
       const affordable = run.gold >= o.cost;
       const res = affordable ? await api.preview(run.runId, { kind: "buy", slot: o.slot }).catch((e: unknown) => (e instanceof ApiError && e.status === 409 ? e : Promise.reject(e))) : null;
       let after: HTMLElement | null = null;
+      // A unit you own: the sheet shows your copy, from now to after buying.
+      let mine: { now: LineUnit; next: LineUnit } | null = null;
       let blocked = affordable ? "" : `Needs ${o.cost}g`;
       if (res instanceof ApiError) blocked = res.message;
       else if (res) {
@@ -365,13 +367,16 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
         if (changed) {
           const was = before.get(changed.uid);
           const label = !was ? "Joins your line" : was.form !== changed.form ? "Awakens!" : `Merges in: ×${changed.copies}`;
+          if (was) mine = { now: was, next: changed };
           after = h("div", { class: `stack after${was && was.form !== changed.form ? " awakens" : ""}`, "data-testid": "buy-preview" }, h("div", { class: "label" }, label), h("div", { class: "preview-card" }, card(changed, { side: "you", extra: [copiesBadge(changed)] })));
         }
       }
       const buy = button(blocked || `Buy ${o.cost}g`, () => (close(), void decide({ kind: "buy", slot: o.slot })), "primary grow", "buy");
       buy.disabled = blocked !== "";
+      // Without a preview (no gold), an owned unit still shows your copy as it is.
+      const owned = mine ? null : run.line.find((x) => x.kind === "unit" && x.unitId === o.unitId) ?? null;
       const close = overlay(
-        ...(u ? [unitSheet(u, content)] : [h("h2", {}, o.unitId)]),
+        ...(mine ? [unitSheet(mine.next, content, { from: mine.now.stats })] : owned ? [unitSheet(owned, content)] : u ? [unitSheet(u, content)] : [h("h2", {}, o.unitId)]),
         ...(after ? [after] : []),
         h("div", { class: "row sheet-actions" }, button("Close", () => close(), "", "offer-close"), buy),
       );
