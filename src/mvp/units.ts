@@ -195,7 +195,7 @@ export const ROWS: Row[] = [
 
   // ---- tier 3: engines ----
   r("Commander",     "🎖️", 3, 2, 8, "strike",     "allies",  "Strength 1",  { does: ["Strength 1", "Shield 2"] }),
-  r("War Drummer",   "🥁", 3, 2, 8, "turnStart",  "allies",  "Strength 1",  { does: ["Strength 1", "Heal 1"] }),
+  r("War Drummer",   "🥁", 3, 1, 7, "turnStart",  "allies",  "Strength 1",  { does: ["Strength 1", "Heal 1"] }),
   // Physician treats the cause, not the wound: it saps whoever is hitting
   // (Nurse and Guardian tend the hit ally).
   r("Physician",     "🩺", 3, 2, 8, "allyHurt",   "front",   "Curse 1",     { does: ["Curse 1", "Poison 1"] }),
@@ -211,7 +211,7 @@ export const ROWS: Row[] = [
   r("Fungoid",       "🪸", 3, 2, 9, "turnEnd",    "me",      "Call Imp",    { does: ["Call Wolf"] }),
   r("Mesmerist",     "🌀", 3, 2, 7, "start",      "front",   "Freeze 1 + Curse 1", { does: ["Freeze 2", "Curse 1"] }),
   r("Redirector",    "🪞", 3, 2, 8, "hurt",       "random",  "Hit 2",       { does: ["Hit 3"] }),
-  r("Keeper",        "🏰", 3, 2, 7, "turnStart",  "allies",  "Shield 1",    { does: ["Shield 2"] }),
+  r("Keeper",        "🏰", 3, 1, 6, "turnStart",  "allies",  "Shield 1",    { does: ["Shield 2"] }),
   r("Wane",          "🌘", 3, 2, 7, "allyHealed", "front",   "Curse 1",     { does: ["Curse 1", "Hit 1"] }),
   r("Harvest",       "🌾", 3, 2, 8, "enemyDies",  "allies",  "Heal 2",      { does: ["Heal 2", "Vitality 1"] }),
   r("Robber",        "💰", 3, 3, 6, "enemyCursed", "me",     "Vitality 1",  { does: ["Vitality 2"] }),
