@@ -27,10 +27,10 @@
   awoken:   Battle start: 1 Shield and 1 Vitality to all allies.
 📣 Coach
   sleeping: Battle start: 1 Strength to all allies.
-  awoken:   Battle start: 1 Strength and 1 Shield to all allies.
+  awoken:   Battle start: 2 Strength to all allies.
 🦇 Bat
-  sleeping: Strikes: heal self for 1.
-  awoken:   Strikes: heal self for 2, then 1 Strength to self.
+  sleeping: Strikes: 1 damage to random enemy.
+  awoken:   Strikes: 2 damage to random enemy.
 ⚡ Taser
   sleeping: Battle start: 1 Freeze to front enemy.
   awoken:   Battle start: 1 Freeze and 2 damage to front enemy.
@@ -141,7 +141,7 @@
   awoken:   Battle start: 3 Shield and 1 Strength to self.
 🪨 Stoneskin
   sleeping: Hit: 1 Shield to self.
-  awoken:   Hit: 2 Shield to self.
+  awoken:   Hit: 1 Shield to all allies.
 🎖️ Commander
   sleeping: Strikes: 1 Strength to all allies.
   awoken:   Strikes: 1 Strength and 2 Shield to all allies.
@@ -149,8 +149,8 @@
   sleeping: Turn start: 1 Strength to all allies.
   awoken:   Turn start: 1 Strength to all allies, then heal all allies for 1.
 🩺 Physician
-  sleeping: Ally hit: heal it for PWR.
-  awoken:   Ally hit: heal it for PWR, then 1 Shield to it.
+  sleeping: Ally hit: 1 Vitality to it.
+  awoken:   Ally hit: 2 Vitality to it.
 🍼 Pediatrician
   sleeping: Ally summoned: 1 Strength to it.
   awoken:   Ally summoned: 2 Strength to it.
@@ -206,8 +206,8 @@
   sleeping: Battle start: 2 Vitality to all allies.
   awoken:   Battle start: 2 Vitality and 1 Strength to all allies.
 ⛪ Priest
-  sleeping: Turn end: heal all allies for PWR.
-  awoken:   Turn end: heal all allies for PWR, then 1 Shield to all allies.
+  sleeping: Ally healed: 1 Blessing to it.
+  awoken:   Ally healed: 2 Blessing to it.
 😇 Divinity
   sleeping: Ally dies: 1 Blessing to all allies.
   awoken:   Ally dies: 1 Blessing and 2 Shield to all allies.
@@ -231,7 +231,7 @@
   awoken:   Ally dies: 1 Strength and 1 Shield to all allies.
 🥼 Doctor
   sleeping: Hit: heal all allies for 1.
-  awoken:   Hit: heal all allies for 2.
+  awoken:   Hit: heal all allies for 1, then 1 Shield to all allies.
 🌋 Ruin
   sleeping: Battle start: 2 damage to all enemies.
   awoken:   Battle start: 3 damage to all enemies.
@@ -239,8 +239,8 @@
   sleeping: Ally summoned: 2 Strength and 2 Shield to it.
   awoken:   Ally summoned: 3 Strength and 3 Shield to it.
 🦴 Morbid
-  sleeping: Ally dies: summon Golem (2/6), then 1 Strength to self.
-  awoken:   Ally dies: summon Golem (2/6), then 2 Strength to self.
+  sleeping: Ally dies: 1 Curse to all enemies.
+  awoken:   Ally dies: 1 Curse and 1 Poison to all enemies.
 
 Statuses
   Strength: +1 PWR per stack.
