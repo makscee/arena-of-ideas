@@ -1148,7 +1148,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const replayEnd = button("", replay, "bv-end-replay", "end-replay");
     replayEnd.append("↻ Replay", h("span", { class: "bv-dk" }, " from start"));
     return [
-      h("div", { class: "row spread bv-end-top" }, h("div", { class: "bv-end-head" }, h("div", { class: `bv-word ${cls}`, "data-testid": "battle-word" }, word), h("div", { class: "bv-end-sub dim", "data-testid": "end-sub" }, ...endSubtitle()), a.outro ? h("div", { class: "bv-end-run", "data-testid": "end-run" }, ...a.outro.status()) : null), hide),
+      h("div", { class: "row spread bv-end-top" }, h("div", { class: "bv-end-head" }, h("div", { class: `bv-word ${cls}`, "data-testid": "battle-word" }, word), h("div", { class: "bv-end-sub dim", "data-testid": "end-sub" }, ...endSubtitle())), hide),
+      // The run line spans the card, not the head beside ✕: on a 360px phone the head is too narrow and the line wrapped (R2-17).
+      ...(a.outro ? [h("div", { class: "bv-end-run", "data-testid": "end-run" }, ...a.outro.status())] : []),
       h(
         "div",
         { class: "bv-end-body" },

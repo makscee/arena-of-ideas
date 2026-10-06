@@ -965,20 +965,20 @@ async function fightScreens(run: RunView, fight: FightResult, content: MvpConten
 function outroOf(run: RunView, fight: FightResult, content: MvpContent): RunOutro {
   const label = fight.kind === "crown" ? "CROWN" : roundLabel(fight.round);
   const own = fight.kind === "crown" && fight.opponent.player.id === run.player.id;
-  const lostHearts = fight.heartsLost > 0 ? ` −${plural(fight.heartsLost, "heart")}.` : "";
+  // Short notes: they share the run line with the round, hearts and record,
+  // which is 310px wide on a 360px phone (R2-17). The hearts show a Crown
+  // loss's cost; the run-over screen says the rest in full.
   const sub =
     fight.kind === "crown"
-      ? own
-        ? fight.outcome === "win"
-          ? "You beat your own champion team. You are a slayer today."
-          : `Your champion team holds.${lostHearts}`
-        : fight.outcome === "win"
-          ? "You beat the champion. You are a slayer today."
-          : `The champion holds.${lostHearts}`
+      ? fight.outcome === "win"
+        ? "Slayer today!"
+        : own
+          ? "Your team holds."
+          : "The champion holds."
       : fight.heartsLost > 0
         ? `−${plural(fight.heartsLost, "heart")}`
         : fight.outcome === "draw"
-          ? "No heart lost." // short: it shares the run line on a 360px phone (R2-17)
+          ? "No heart lost."
           : "";
   const err = errorLine();
   return {

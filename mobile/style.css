@@ -339,7 +339,7 @@ button.bv-why.won { color: var(--you); border-color: color-mix(in srgb, var(--yo
 .bv-end-top .bv-word { text-align: left; font-size: 28px; }
 .bv-end-sub { font-size: 14px; line-height: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* A run's fight: the round fought, hearts and record after it, what it cost or won (R2-17 batch E). */
-.bv-end-run { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-size: 13px; line-height: 17px; }
+.bv-end-run { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-size: 13px; line-height: 17px; margin-top: -4px; }
 .bv-end-run .hearts { color: var(--ghost); letter-spacing: 1px; }
 .bv-end-run .error { font-size: inherit; min-height: 0; }
 /* The run menu's errors over a battle (Codex or Title menu failing): under
@@ -730,7 +730,7 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-end-head { gap: 8px; }
   #app[data-screen="battle"] .bv-end .bv-word.neutral { font-size: 40px; }
   #app[data-screen="battle"] .bv-end-sub { font-size: 18px; line-height: 24px; white-space: normal; }
-  #app[data-screen="battle"] .bv-end-run { font-size: 18px; line-height: 24px; gap: 4px 16px; }
+  #app[data-screen="battle"] .bv-end-run { font-size: 18px; line-height: 24px; gap: 4px 16px; margin-top: -12px; }
   #app[data-screen="battle"] .bv-end-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; align-items: start; }
   #app[data-screen="battle"] .bv-dmg-list { order: -1; gap: 4px; }
   #app[data-screen="battle"] button.bv-dmg-more { min-height: 32px; }
