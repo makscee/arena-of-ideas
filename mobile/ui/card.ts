@@ -13,8 +13,11 @@ import type { Stats } from "../../src/types";
 import { h } from "./dom";
 import { discoveredLine } from "./fusion";
 import { icon } from "./icon";
+import { roman } from "./roman";
 import { markChangedPieces, richText } from "./term";
 import { unitStatsLine, type UnitRates } from "./unit-stats";
+
+export { roman };
 
 /** What a card needs to draw; LineUnit, BattleUnit and offers all fit. */
 export type CardUnit = { emoji: string; name: string; stats: Stats } & Partial<Pick<LineUnit, "unitId" | "kind" | "form" | "copies" | "fusion" | "recipe">>;
@@ -32,13 +35,6 @@ export interface CardOptions {
   tier?: number;
   /** Tapping the card opens this, usually overlay(unitSheet(...)). */
   onOpen?: () => void;
-}
-
-const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
-
-/** A tier as players see it everywhere (R3-3): 1-10 as I-X; anything else as digits. */
-export function roman(n: number): string {
-  return ROMAN[n - 1] ?? `${n}`;
 }
 
 export function card(u: CardUnit, o: CardOptions): HTMLElement {

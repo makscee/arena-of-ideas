@@ -1,6 +1,6 @@
 // Tiers read as Roman numerals everywhere (R3-3).
 import { expect, test } from "vitest";
-import { roman } from "./card";
+import { roman } from "./roman";
 
 test("roman: 1-10 as I-X, anything else as digits", () => {
   expect([1, 2, 3, 4].map(roman)).toEqual(["I", "II", "III", "IV"]);
