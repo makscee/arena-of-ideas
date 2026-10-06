@@ -217,6 +217,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       h("div", { class: "name" }, name(id)),
       death ? h("div", { class: "bv-changes" }, changeBadge(v.changes.filter((c) => c.unit === id))) : null,
     );
+    el.dataset.unit = id;
     if (step?.actor === id) el.classList.add("acting");
     motion(el, id, sides.get(id) ?? you, v);
     el.addEventListener("click", () => openUnit(id, death));
