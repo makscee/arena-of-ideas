@@ -507,13 +507,14 @@ export interface HomeView {
 // and POST /players answers 403. Errors are { error: string } with 4xx: 400 a
 // request the API can't read (a Decision of an unknown kind), 401 no player
 // ("unknown player: …", the client forgets its device identity) or not the
-// run's player, 403 invite only, 409 a decision the rules refuse, 404 any
+// run's player, 403 invite only, 413 a body over 16 KB, 409 a decision the rules refuse, 404 any
 // path not listed here (and /dev/* off a dev server, or for a non-admin on an
 // invite-only one), 501 a route a slice hasn't filled in.
 //
 //   GET  /api/v1/health                      → { ok: true, api, contentVersion, build, invites }  (build: the deployed commit, or null; invites: invite-only)
 //   GET  /api/v1/content                     → MvpContent
 //   POST /api/v1/players       { name }      → PlayerRef          (403 on an invite-only server)
+//   GET  /api/v1/invites/:code               → { player: PlayerRef } (slice 13; whose link it is, opening nothing; 404 unknown code)
 //   POST /api/v1/invites/:code               → PlayerSession      (slice 13; 404 unknown code; the same link again: the same player, a new token)
 //   GET  /api/v1/home                        → HomeView
 //   POST /api/v1/runs                        → RunView            (starts a run; the player's active run if one is going)

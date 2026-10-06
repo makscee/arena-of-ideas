@@ -5,6 +5,7 @@
 // these routes.
 import { randomUUID } from "node:crypto";
 import { Hono, type Context } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, TOKEN_HEADER, type Decision, type HomeView, type PlayerRef } from "../../../src/mvp/contract.js";
 import { MvpBadDecision, MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
 import { dayView, endDay, hiddenSlay } from "./day.js";
@@ -20,7 +21,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   const { content, store } = rt;
   const api = new Hono();
 
-  const bad = (c: Context, status: 400 | 401 | 403 | 404 | 409 | 501, error: string) => c.json({ error }, status);
+  const bad = (c: Context, status: 400 | 401 | 403 | 404 | 409 | 413 | 501, error: string) => c.json({ error }, status);
   /** A stub that a later slice fills in answers 501 until then. */
   const notYet = (c: Context, fn: () => unknown) => {
     try {
@@ -38,8 +39,18 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     const id = rt.invites ? undefined : c.req.header(PLAYER_HEADER);
     return id ? store.player(id) : undefined;
   };
+  const unknownPlayer = (c: Context) => bad(c, 401, rt.invites ? "unknown player: open your invite link" : `unknown player: send ${PLAYER_HEADER} from POST /players`);
   /** The dev tools: anyone on an open dev server, admin invites on an invite-only one. */
   const devFor = (c: Context) => rt.dev && (!rt.invites || isAdmin(store, playerOf(c)?.id));
+
+  // Every body here is a name or a Decision: a few hundred bytes.
+  api.use("*", bodyLimit({ maxSize: 16 * 1024, onError: (c) => bad(c, 413, "body too large") }));
+  // A decision's body is read only from a known player.
+  for (const path of ["/runs/:runId/decisions", "/runs/:runId/preview"])
+    api.post(path, async (c, next) => {
+      if (!playerOf(c)) return unknownPlayer(c);
+      await next();
+    });
 
   api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: content.version, invites: rt.invites }));
   api.get("/content", (c) => c.json(content));
@@ -55,6 +66,13 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   });
 
   // Opens an invite link: its player and a new token for this device.
+  // Whose link this is, without opening it (the client asks before a device
+  // switches from another player).
+  api.get("/invites/:code", (c) => {
+    const invite = store.invite(c.req.param("code"));
+    const player = invite && store.player(invite.playerId);
+    return player ? c.json({ player }) : bad(c, 404, "no such invite");
+  });
   api.post("/invites/:code", (c) => {
     const session = redeemInvite(store, c.req.param("code"), rt.now());
     return session ? c.json(session) : bad(c, 404, "no such invite");
@@ -74,7 +92,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
 
   api.post("/runs", (c) => {
     const p = playerOf(c);
-    if (!p) return bad(c, 401, `unknown player: send ${PLAYER_HEADER} from POST /players`);
+    if (!p) return unknownPlayer(c);
     return c.json(runView(startRun(rt, p)));
   });
 

@@ -138,6 +138,20 @@ describe("invite links (slice 13)", () => {
     expect((await call("POST", "/dev/end-day", tok(s.json))).status).toBe(404);
   });
 
+  it("tells whose a link is without opening it, caps bodies at 16 KB, and asks testers for their link on 401", async () => {
+    const { store, call, now } = world();
+    const inv = createInvite(store, { name: "Eva", now });
+    expect((await call<{ player: PlayerRef }>("GET", `/invites/${inv.code}`)).json.player.name).toBe("Eva");
+    expect(store.invite(inv.code)?.redeemedAt).toBeNull();
+    expect((await call("GET", "/invites/nope")).status).toBe(404);
+    const s = await call<PlayerSession>("POST", `/invites/${inv.code}`);
+    const run = await call<RunView>("POST", "/runs", tok(s.json));
+    expect((await call("POST", `/runs/${run.json.runId}/decisions`, tok(s.json), { kind: "reroll", pad: "x".repeat(20_000) })).status).toBe(413);
+    const anon = await call("POST", `/runs/${run.json.runId}/decisions`, {}, { kind: "reroll" });
+    expect([anon.status, anon.json.error]).toEqual([401, "unknown player: open your invite link"]);
+    expect((await call("POST", "/runs")).json.error).toBe("unknown player: open your invite link");
+  });
+
   it("never gives an invite a bot's name, and folds names with Unicode case (Cyrillic too)", () => {
     const store = new SqliteMvpStore(":memory:");
     const now = new Date();
