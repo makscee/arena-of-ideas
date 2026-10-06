@@ -120,7 +120,10 @@ function legendSheet(): HTMLElement {
     "div",
     { class: "stack legend", "data-testid": "legend" },
     h("h2", {}, "READING A CARD"),
-    row(h("span", { class: "trig tone-when" }, icon("flying-flag", 16)), "Top left: what wakes it (here, the battle starting). Its sheet says what it does then."),
+    row(
+      h("span", { class: "legend-icons" }, h("span", { class: "tone-when" }, icon("flying-flag", 16)), h("span", { class: "tone-enemy" }, icon("targeted", 16)), h("span", { class: "tone-dmg" }, icon("spiky-explosion", 16))),
+      "Top: what it does in icons: when, who, what (here: at battle start, the front enemy, damage). A dot on the first says whose event: teal an ally's, pink an enemy's. Its sheet says it in words.",
+    ),
     row(h("span", { class: "stats" }, span("p", "2"), "/", span("h", "6")), "PWR / HP. PWR is what its strike deals; at 0 HP it falls."),
     row(span("copies", "●●○"), `Copies toward Awoken: copy ${r.copiesToAwaken} awakens it. Each copy adds +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP.`),
     row(span("copies tag", "AWOKEN ×3"), "Awoken, its stronger form; ×3 copies merged in. Two Awoken units can fuse."),

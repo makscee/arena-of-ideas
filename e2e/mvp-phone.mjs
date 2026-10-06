@@ -40,7 +40,23 @@ try {
     const split = await page.evaluate(() => [...document.querySelectorAll(".who")].filter((el) => el.getClientRects().length > 1 || el.getBoundingClientRect().height > parseFloat(getComputedStyle(el).fontSize) * 2).map((el) => el.textContent));
     for (const n of split) errors.push(`${name}: the name "${n}" splits across lines`);
   };
-  const shot = async (name) => { await page.screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-${name}.png` }); await namesOneLine(name); };
+  /** Every card's When · Who · Does icon line fits its card (R3-4): no row
+   * overflows, and a line with more icons than it shows ends in "+". A
+   * battle card shows only its When, in the corner, so it is left out. */
+  let iconCards = 0;
+  const iconsFit = async (name) => {
+    const r = await page.evaluate(() => [...document.querySelectorAll('.card:not(.bv-card) [data-testid="card-icons"]')].filter((el) => el.getClientRects().length).map((el) => {
+      const shown = [...el.querySelectorAll(".ci")].filter((c) => getComputedStyle(c).display !== "none").length;
+      const more = [...el.querySelectorAll(".more")].some((m) => getComputedStyle(m).display !== "none");
+      return { name: el.closest(".card")?.querySelector(".name")?.textContent ?? "?", over: el.scrollWidth > el.clientWidth, short: el.querySelectorAll(".ci").length > shown && !more };
+    }));
+    iconCards += r.length;
+    for (const c of r) {
+      if (c.over) errors.push(`${name}: ${c.name}'s icon line overflows its card`);
+      if (c.short) errors.push(`${name}: ${c.name} hides icons without a "+"`);
+    }
+  };
+  const shot = async (name) => { await page.screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-${name}.png` }); await namesOneLine(name); await iconsFit(name); };
   const noHScroll = async (name) => {
     const w = await page.evaluate(() => document.documentElement.scrollWidth);
     if (w > 360) errors.push(`${name}: horizontal scroll (${w}px)`);
@@ -798,7 +814,7 @@ try {
     if (ownWon ? !/You beat your own champion team: you are a slayer today/.test(ownOver) : !/Your champion team held the Crown/.test(ownOver)) errors.push(`own crown run over: "${ownOver}"`);
     await shot("run-over-own-crown"); await noHScroll("run-over-own-crown");
   }
-  console.log(`mvp phone: ${round} fights, ${shots} screenshots in ${out}`);
+  console.log(`mvp phone: ${round} fights, ${shots} screenshots in ${out}, ${iconCards} card icon lines fit`);
 } finally {
   await browser.close();
   child?.kill();

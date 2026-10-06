@@ -3,13 +3,14 @@
 // (slice 11). Slice 8 owns the look of both; slices 9 and 11 only pass
 // options (live numbers, rates, onOpen), so nobody reshapes these signatures.
 //
-// Round 2 (R2-7): the card is compact (64×84 on a phone): a trigger icon, the
-// emoji, a one-line name, PWR/HP and one footer slot. The sheet shows only the
+// Round 2 (R2-7): the card is compact (64×84 on a phone): a top row, the
+// emoji, a one-line name, PWR/HP and one footer slot. Round 3 (R3-4): the top
+// row is the form's When · Who · Does icon line, the tier numeral top right. The sheet shows only the
 // form the unit has now; win and pick rates are its one dim last line.
-import { termDef, termIcon, type TermId } from "../../src/glossary";
+import { cardIcons, type Pip } from "../../src/mvp/card-icons";
 import { formSegments, formText as sharedFormText } from "../../src/mvp/form-text";
 import { MVP_RULES, type BattleUnit, type LineUnit, type MvpContent, type UnitContent, type UnitForm } from "../../src/mvp/contract";
-import type { Stats } from "../../src/types";
+import type { AbilityRegistry, Stats } from "../../src/types";
 import { h } from "./dom";
 import { discoveredLine } from "./fusion";
 import { icon } from "./icon";
@@ -42,7 +43,7 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
   const el = h(
     "div",
     { class: `card ${o.side}`, ...(o.testid ? { "data-testid": o.testid } : {}) },
-    triggerMark(u.recipe),
+    iconLine(u.recipe, !!o.tier),
     o.tier ? h("span", { class: "tier", "aria-label": `tier ${o.tier}` }, roman(o.tier)) : null,
     h("div", { class: "emoji" }, u.emoji),
     // One line; ui/dom.ts fitText() shrinks a long name a little, then cuts it.
@@ -76,21 +77,39 @@ function liveStats(stats: Stats, maxHp: number): Node[] {
   ];
 }
 
-/** The term for what wakes a form: its first When ("trigger:BattleStart"). */
-function triggerTerm(form: UnitForm | undefined): { id: TermId; status?: string } | null {
-  const on = form?.when[0]?.on;
-  if (!on) return null;
-  return { id: `trigger:${on.on}` as TermId, ...("status" in on && on.status ? { status: on.status } : {}) };
+/** The content's abilities, so a card can read its form's Does (set once the
+ * content loads: ../content.ts). */
+let abilities: AbilityRegistry = {};
+export function setCardAbilities(a: AbilityRegistry): void {
+  abilities = a;
 }
 
-/** The card's top-left mark: the trigger's icon, in the When colour. */
-function triggerMark(form: UnitForm | undefined): Node | null {
-  const t = triggerTerm(form);
-  if (!t) return null;
-  const id = termIcon(t.id, t.status);
-  const label = termDef(t.id)?.label ?? t.id;
-  if (!id) return null;
-  return h("span", { class: "trig tone-when", title: label, "aria-label": label, "data-testid": "card-trigger" }, icon(id, 12));
+/** Icons past these counts fold into "+" (phone) or "+n" (desktop); style.css
+ * hides the rest by width (docs/round3/words.md (8)). */
+const PHONE_ICONS = 3;
+const DESKTOP_ICONS = 5;
+
+/** A 4px pip on a When icon's corner: whose event it is (teal an ally's, pink
+ * an enemy's, dim either side's; none its own). Shared with sentence pills
+ * and the Codex trigger filter. */
+export function withPip(ic: Element, pip: Pip | undefined): Element {
+  if (!pip) return ic;
+  return h("span", { class: "pipped" }, ic, h("i", { class: `pip pip-${pip}`, "aria-hidden": "true" }));
+}
+
+/** The card's top row: When, Who, then each Does, one icon per idea, each in
+ * its tone. Hovering names them all ("Battle start · Front enemy · Freeze"). */
+function iconLine(form: UnitForm | undefined, tiered: boolean): Node | null {
+  const icons = form ? cardIcons(form, abilities) : [];
+  if (!icons.length) return null;
+  const names = icons.map((c) => c.label).join(" · ");
+  return h(
+    "span",
+    { class: tiered ? "icons tiered" : "icons", title: names, "aria-label": names, "data-testid": "card-icons" },
+    ...icons.map((c) => h("span", { class: `ci tone-${c.tone}`, title: c.label, "data-icon": c.icon, ...(c.pip ? { "data-pip": c.pip } : {}) }, withPip(icon(c.icon, 11), c.pip))),
+    icons.length > PHONE_ICONS ? h("small", { class: "more phone-more", "aria-hidden": "true" }, "+") : null,
+    icons.length > DESKTOP_ICONS ? h("small", { class: "more desk-more", "aria-hidden": "true" }, `+${icons.length - DESKTOP_ICONS}`) : null,
+  );
 }
 
 /** A form as one line of text: its authored text, else described from the
