@@ -1,0 +1,52 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Card anatomy</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+:root{--bg:#07080c;--panel:#10131b;--line:#1f2533;--text:#e8ecf4;--dim:#8a93a6;--you:#25e6d4;--ghost:#ff3d7f;--gold:#ffcc4d;--shield:#4d9bff;--vital:#3ddc84}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.ic{display:inline-block;width:1em;height:1em;vertical-align:-0.15em}.ic svg{width:100%;height:100%;display:block}
+.kw{display:inline-flex;align-items:center;gap:2px;padding:0 3px;border-radius:3px;font-weight:700;white-space:nowrap;cursor:help}
+.kw.shield{color:var(--shield);background:#4d9bff1a}.kw.vital{color:var(--vital);background:#3ddc841a}.kw.str{color:#ff7a4d;background:#ff7a4d1a}
+.kw.trig{color:var(--gold);background:#ffcc4d14}
+.mono{font-family:ui-monospace,Menlo,monospace}.dim{color:var(--dim)}.small{font-size:12px}
+.lbl{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+button{font:inherit;background:transparent;color:var(--you);border:1px solid var(--you);font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;border-radius:4px}
+button.primary{background:var(--you);color:var(--bg)}button.danger{color:var(--ghost);border-color:var(--ghost)}
+kbd{font-family:ui-monospace,Menlo,monospace;font-size:10px;border:1px solid #39425a;border-bottom-width:2px;border-radius:3px;padding:0 4px;color:var(--dim);margin-left:6px;font-weight:400;text-transform:none}
+/* compact card */
+.cc{position:relative;background:var(--panel);border:1px solid #25e6d455;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;overflow:hidden}
+.cc.ghost{border-color:#ff3d7f66}.cc.awoken{border-color:var(--gold);box-shadow:inset 0 0 10px #ffcc4d33}.cc.fused{border-color:var(--gold);background:#1b1a14}
+.cc.sel{outline:2px solid var(--you);outline-offset:-2px}.cc.poor{opacity:.45}.cc.empty{border-style:dashed;opacity:.35}
+.cc .trig{position:absolute;top:3px;left:3px;width:14px;height:14px}.cc .trig svg{width:100%;height:100%}
+.cc .tier{position:absolute;top:2px;right:4px;font-size:9px;color:var(--dim)}
+.cc .em{line-height:1}.cc .nm{font-weight:600;line-height:1.05;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc .st{font-family:ui-monospace,Menlo,monospace;font-weight:700}.cc .st .p{color:var(--gold)}.cc .st .h{color:var(--ghost)}
+.cc .foot{display:flex;gap:3px;align-items:center;justify-content:center;font-family:ui-monospace,Menlo,monospace;color:var(--you)}
+.cc .cost{color:var(--gold)}.cc .own{color:var(--you)}
+.cc .stat{display:inline-flex;align-items:center;gap:1px;font-family:ui-monospace,Menlo,monospace;font-weight:700}
+.cc .stat.shield{color:var(--shield)}.cc .stat.vital{color:var(--vital)}
+/* phone size: 64x84 */
+.cc.ph{width:64px;height:84px;padding:4px 2px 3px}.cc.ph .em{font-size:24px;margin-top:4px}.cc.ph .nm{font-size:11px}.cc.ph .st{font-size:12px}.cc.ph .foot{font-size:10px;height:12px}
+/* desktop size: 132x172 */
+.cc.dk{width:132px;height:172px;padding:8px 6px 6px}.cc.dk .em{font-size:44px;margin-top:6px}.cc.dk .nm{font-size:15px}.cc.dk .st{font-size:16px}.cc.dk .foot{font-size:12px;height:16px}
+.cc.dk .trig{width:20px;height:20px;top:5px;left:5px}.cc.dk .tier{font-size:11px;top:4px;right:6px}
+.cc .tag{font-size:9px;color:var(--gold);letter-spacing:.06em;font-weight:700}
+.cc.dk .tag{font-size:11px}
+.cc:hover{transform:translateY(-2px)}
+.note{position:absolute;background:#ffcc4d;color:#111;font:600 12px/1.25 system-ui;padding:4px 7px;border-radius:4px;max-width:220px;box-shadow:0 2px 8px #0008}
+.note::before{content:"✎ ";}
+
+body{width:1000px;height:640px;position:relative;overflow:hidden}
+.wrap{padding:24px;display:flex;flex-direction:column;gap:22px}
+.r{display:flex;gap:28px;align-items:flex-start}
+.cell{display:flex;flex-direction:column;gap:8px;align-items:center}
+.cap{font-size:12px;color:var(--dim);max-width:150px;text-align:center}
+.legend{font-size:14px;line-height:1.6;max-width:560px}
+table{border-collapse:collapse;font-size:13px}td,th{border-bottom:1px solid var(--line);padding:5px 10px;text-align:left}th{color:var(--dim);font-weight:600}
+</style></head><body><div class="wrap"><div class="lbl">Compact card · phone 64×84 (5 per row at 360px with 4px gaps)</div>
+<div class="r"><div class="cell"><div class="cc ph you "><span class="trig" title="trigger"><svg viewBox="0 0 24 24"><path d="M5 3h2v18H5zM8 4h11l-3 4 3 4H8z" fill="#ffcc4d"/></svg></span><div class="em">📯</div><div class="nm">Coach</div><div class="st"><span class="p">2</span>/<span class="h">7</span></div><div class="foot">●●○</div></div><div class="cap">sleeping, 2 of 3 copies</div></div><div class="cell"><div class="cc ph you  awoken"><span class="trig" title="trigger"><svg viewBox="0 0 24 24"><path d="M12 3 5 11h4v9h6v-9h4z" fill="#ffcc4d"/></svg></span><div class="em">🔌</div><div class="nm">Wire</div><div class="st"><span class="p">3</span>/<span class="h">9</span></div><div class="foot"><span class="tag">AWOKEN</span></div></div><div class="cap">awoken</div></div><div class="cell"><div class="cc ph you "><span class="trig" title="trigger"><svg viewBox="0 0 24 24"><path d="M5 3h2v18H5zM8 4h11l-3 4 3 4H8z" fill="#ffcc4d"/></svg></span><span class="tier">···</span><div class="em">🌋</div><div class="nm">Ruin</div><div class="st"><span class="p">4</span>/<span class="h">8</span></div><div class="foot"><span class="cost">3g</span></div></div><div class="cap">offer: tier dots, price</div></div><div class="cell"><div class="cc ph you "><span class="trig" title="trigger"><svg viewBox="0 0 24 24"><path d="M5 3h2v18H5zM8 4h11l-3 4 3 4H8z" fill="#ffcc4d"/></svg></span><span class="tier">·</span><div class="em">📯</div><div class="nm">Coach</div><div class="st"><span class="p">2</span>/<span class="h">7</span></div><div class="foot"><span class="cost">3g</span><span class="own">＋</span></div></div><div class="cap">offer you own: ＋ = merges</div></div><div class="cell"><div class="cc ph ghost "><span class="trig" title="trigger"><svg viewBox="0 0 24 24"><path d="M5 3h2v18H5zM8 4h11l-3 4 3 4H8z" fill="#ffcc4d"/></svg></span><div class="em">🛡️</div><div class="nm">Guardian</div><div class="st"><span class="p">2</span>/<span class="h">8</span></div><div class="foot"><span class="stat shield"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z" fill="#4d9bff"/></svg></span>4</span><span class="stat vital"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z" fill="#3ddc84"/><path d="M11 8h2v3h3v2h-3v3h-2v-3H8v-2h3z" fill="#07080c"/></svg></span>2</span></div></div><div class="cap">in battle: live stats + status icons</div></div></div>
+<div class="lbl">Desktop 132×172 (7 per row in a 1060px board)</div>
+<div class="r"><div class="cell"><div class="cc dk you "><span class="trig" title="trigger"><svg viewBox="0 0 24 24"><path d="M5 3h2v18H5zM8 4h11l-3 4 3 4H8z" fill="#ffcc4d"/></svg></span><div class="em">📯</div><div class="nm">Coach</div><div class="st"><span class="p">2</span>/<span class="h">7</span></div><div class="foot">●●○</div></div><div class="cap">desktop 132×172</div></div><div class="cell"><div class="cc dk you  awoken"><span class="trig" title="trigger"><svg viewBox="0 0 24 24"><path d="M12 3 5 11h4v9h6v-9h4z" fill="#ffcc4d"/></svg></span><div class="em">🔌</div><div class="nm">Wire</div><div class="st"><span class="p">3</span>/<span class="h">9</span></div><div class="foot"><span class="tag">AWOKEN</span></div></div><div class="cap">awoken</div></div><div class="cell"><div class="cc dk you "><span class="trig" title="trigger"><svg viewBox="0 0 24 24"><path d="M5 3h2v18H5zM8 4h11l-3 4 3 4H8z" fill="#ffcc4d"/></svg></span><span class="tier">···</span><div class="em">🌋</div><div class="nm">Ruin</div><div class="st"><span class="p">4</span>/<span class="h">8</span></div><div class="foot"><span class="cost">3g</span></div></div><div class="cap">offer</div></div><div class="cell"><div class="cc dk ghost "><span class="trig" title="trigger"><svg viewBox="0 0 24 24"><path d="M5 3h2v18H5zM8 4h11l-3 4 3 4H8z" fill="#ffcc4d"/></svg></span><div class="em">🛡️</div><div class="nm">Guardian</div><div class="st"><span class="p">2</span>/<span class="h">8</span></div><div class="foot"><span class="stat shield"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z" fill="#4d9bff"/></svg></span>4</span><span class="stat vital"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z" fill="#3ddc84"/><path d="M11 8h2v3h3v2h-3v3h-2v-3H8v-2h3z" fill="#07080c"/></svg></span>2</span></div></div><div class="cap">battle</div></div></div>
+<div class="r"><table><tr><th>On the card (always)</th><th>In the sheet / inspector (on click or hover)</th></tr>
+<tr><td><span class="ic"><svg viewBox="0 0 24 24"><path d="M5 3h2v18H5zM8 4h11l-3 4 3 4H8z" fill="#ffcc4d"/></svg></span> trigger icon, top-left</td><td>full text: <span class="kw trig"><span class="ic"><svg viewBox="0 0 24 24"><path d="M5 3h2v18H5zM8 4h11l-3 4 3 4H8z" fill="#ffcc4d"/></svg></span> Battle start</span>: …, keywords lit</td></tr>
+<tr><td>emoji, name, PWR/HP</td><td>exact numbers, copies, what a buy changes</td></tr>
+<tr><td>one footer: pips ●●○ / AWOKEN / FUSED / price / status icons</td><td>the other form (behind "See Awoken")</td></tr>
+<tr><td>tier dots on offers</td><td>fusion parts, "discovered by"</td></tr>
+<tr><td>—</td><td>win / pick rate: one dim line at the bottom</td></tr></table></div></div></body></html>

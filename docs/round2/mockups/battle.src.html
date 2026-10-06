@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Battle View Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Mono:wght@500;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #07090c; --panel: #0e131a; --panel2: #121922; --line: #263140; --text: #e9eef5; --dim: #8a96a6;
+  --you: #2ee6d6; --ghost: #ff3d7f; --gold: #ffc93c; --heal: #4ade80; --dmg: #ff4d4d;
+  --trig: #b78cff; --kw: #ffc93c;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --bg: #07090c; } }
+:root[data-theme="dark"] { --bg: #07090c; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font-family: "Rajdhani", sans-serif; font-weight: 600; }
+button { font: inherit; color: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; cursor: pointer; }
+.ico { width: 1em; height: 1em; vertical-align: -0.14em; flex: none; }
+.mono { font-family: "IBM Plex Mono", monospace; }
+.dim { color: var(--dim); }
+
+/* ---------- page frame ---------- */
+.page { display: grid; grid-template-columns: 1fr 340px; grid-template-rows: auto 1fr auto; height: 100vh; }
+.top { grid-column: 1 / -1; display: flex; align-items: center; gap: 18px; padding: 14px 28px; border-bottom: 1px solid var(--line); font-size: 18px; }
+.top .round { font-family: "Chakra Petch"; letter-spacing: .06em; }
+.top .vs { color: var(--dim); }
+.top .vs b { color: var(--ghost); font-weight: 700; }
+.top .turn { margin-left: auto; font-family: "IBM Plex Mono"; color: var(--gold); }
+.top .menu { width: 40px; height: 36px; }
+
+.arena { position: relative; display: flex; flex-direction: column; justify-content: center; gap: 26px; padding: 18px 28px; overflow: hidden; }
+.lines { display: grid; grid-template-columns: 1fr 56px 1fr; align-items: center; margin-top: 30px; }
+.line { display: flex; gap: 8px; }
+.line.you { flex-direction: row-reverse; justify-content: flex-start; } /* front nearest the middle */
+.line.them { justify-content: flex-start; }
+.side-label { font-size: 13px; letter-spacing: .14em; color: var(--dim); text-transform: uppercase; margin-bottom: 8px; }
+.side-label.you { text-align: right; color: var(--you); }
+.side-label.them { color: var(--ghost); }
+.clash { display: grid; place-items: center; color: var(--dim); font-family: "Chakra Petch"; font-size: 14px; height: 100%; position: relative; }
+.clash svg { width: 34px; height: 34px; color: var(--gold); filter: drop-shadow(0 0 8px #ffc93c88); }
+
+/* ---------- unit card ---------- */
+.u { position: relative; width: 92px; padding: 10px 8px 8px; border-radius: 10px; background: var(--panel); border: 1.5px solid var(--line); text-align: center; transition: transform .2s, opacity .2s; }
+.u.you { border-color: color-mix(in srgb, var(--you) 45%, transparent); }
+.u.them { border-color: color-mix(in srgb, var(--ghost) 45%, transparent); }
+.u .em { font-size: 38px; line-height: 1; height: 44px; }
+.u .nm { font-size: 16px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.u .hpbar { height: 6px; border-radius: 3px; background: #222b36; margin: 7px 2px 6px; overflow: hidden; position: relative; }
+.u .hpbar i { position: absolute; inset: 0 auto 0 0; background: var(--heal); border-radius: 3px; }
+.u .hpbar i.lost { background: var(--dmg); opacity: .8; }
+.u .st { display: flex; justify-content: space-between; padding: 0 4px; font-family: "IBM Plex Mono"; font-size: 17px; font-weight: 700; }
+.u .st .p { color: var(--gold); } .u .st .h { color: var(--heal); }
+.u .st .h.hurt { color: var(--dmg); }
+.u .stat-ico { width: 14px; height: 14px; vertical-align: -1px; margin-right: 2px; opacity: .9; }
+.u .sts { display: flex; gap: 4px; justify-content: center; margin-top: 6px; min-height: 22px; }
+.chip { display: inline-flex; align-items: center; gap: 2px; padding: 1px 5px; border-radius: 4px; background: #1a2230; font-family: "IBM Plex Mono"; font-size: 12px; color: var(--kw); border: 1px solid #3a3320; }
+.chip .ico { width: 14px; height: 14px; }
+.chip.freeze { color: #8fd3ff; border-color: #24435a; }
+.chip.poison { color: #9be15d; border-color: #2f4a1d; }
+.u.dim2 { opacity: .55; }
+.u.dead { opacity: .25; filter: grayscale(1); }
+
+/* the actor and the target */
+.u.acting { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold), 0 0 24px #ffc93c55; }
+.u.them.acting { animation: lunge-left .45s ease-out both; }
+@keyframes lunge-left { 0% { transform: none } 40% { transform: translateX(-34px) scale(1.04) } 100% { transform: translateX(-10px) } }
+.u.target { animation: hit .4s ease-out both; box-shadow: 0 0 0 2px var(--dmg), 0 0 26px #ff4d4d66; }
+@keyframes hit { 0% { transform: none; background: #5a1520 } 30% { transform: translateX(-6px) } 60% { transform: translateX(4px) } 100% { transform: none; background: var(--panel) } }
+.float { position: absolute; left: 50%; top: -40px; transform: translateX(-50%); font-family: "IBM Plex Mono"; font-weight: 700; font-size: 28px; text-shadow: 0 2px 0 #000, 0 0 12px #000; pointer-events: none; animation: rise 1.2s ease-out both; white-space: nowrap; }
+.float.dmg { color: var(--dmg); }
+.float.buff { color: var(--gold); font-size: 18px; top: -62px; animation-delay: .35s; }
+@keyframes rise { 0% { opacity: 0; transform: translate(-50%, 10px) scale(.6) } 20% { opacity: 1; transform: translate(-50%, -10px) scale(1.15) } 100% { opacity: 1; transform: translate(-50%, -22px) scale(1) } }
+/* a trigger firing: a badge pops above the unit that owns it; it is clickable */
+.trig { position: absolute; left: 50%; bottom: -38px; transform: translateX(-50%); display: inline-flex; gap: 5px; align-items: center; padding: 4px 9px; border-radius: 999px; background: #1d1430; border: 1.5px solid var(--trig); color: #e3d4ff; font-size: 14px; white-space: nowrap; box-shadow: 0 0 18px #b78cff66; animation: pop .35s .3s cubic-bezier(.3,1.6,.6,1) both; cursor: pointer; z-index: 3; }
+.trig .ico { width: 16px; height: 16px; color: var(--trig); }
+.trig .arrow { color: var(--dim); }
+.trig .kw { color: var(--kw); }
+@keyframes pop { 0% { opacity: 0; transform: translateX(-50%) scale(.3) } 100% { opacity: 1; transform: translateX(-50%) scale(1) } }
+.strike-streak { position: absolute; height: 4px; border-radius: 2px; background: linear-gradient(90deg, #ff4d4d00, #ff4d4d, #fff); box-shadow: 0 0 12px #ff4d4d; animation: streak .45s ease-out both; }
+@keyframes streak { 0% { opacity: 0; transform: scaleX(.1); transform-origin: right } 50% { opacity: 1 } 100% { opacity: .0; transform: scaleX(1) } }
+
+/* ---------- caption ---------- */
+.caption { margin: 0 auto; max-width: 820px; width: 100%; padding: 12px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); font-size: 21px; line-height: 1.35; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; cursor: pointer; }
+.caption .t { color: var(--dim); font-family: "IBM Plex Mono"; font-size: 14px; }
+.who { display: inline-block; padding: 0 5px; border: 1px solid; border-radius: 3px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; vertical-align: 3px; }
+.who.you { color: var(--you); } .who.them { color: var(--ghost); }
+.n-you { color: var(--you); } .n-them { color: var(--ghost); }
+.kwt { color: var(--kw); white-space: nowrap; border-bottom: 1px dotted #ffc93c88; }
+.trt { color: var(--trig); white-space: nowrap; border-bottom: 1px dotted #b78cff88; }
+.num-dmg { color: var(--dmg); font-family: "IBM Plex Mono"; font-weight: 700; }
+.num-buff { color: var(--gold); font-family: "IBM Plex Mono"; font-weight: 700; }
+.caption .more { margin-left: auto; color: var(--dim); font-size: 14px; }
+
+/* ---------- timeline + controls ---------- */
+.bottom { grid-column: 1 / 2; padding: 12px 28px 18px; border-top: 1px solid var(--line); }
+.tl { position: relative; height: 34px; display: flex; gap: 3px; align-items: stretch; }
+.tl .turn { flex: 1; position: relative; background: #141b25; border-radius: 3px; }
+.tl .turn.done { background: #1f2a38; }
+.tl .turn.now { background: #2b3647; outline: 1px solid var(--gold); }
+.tl .turn span { position: absolute; bottom: -16px; left: 0; right: 0; text-align: center; font-size: 11px; color: var(--dim); font-family: "IBM Plex Mono"; }
+.tl .mk { position: absolute; top: 4px; width: 14px; height: 14px; color: var(--text); }
+.tl .mk.you { color: var(--you); } .tl .mk.them { color: var(--ghost); }
+.tl .mk.fat { color: var(--dim); }
+.tl .head { position: absolute; top: -4px; bottom: -4px; width: 3px; background: var(--gold); border-radius: 2px; box-shadow: 0 0 8px var(--gold); }
+.ctl { display: flex; gap: 10px; align-items: center; margin-top: 24px; }
+.ctl button { height: 42px; min-width: 46px; padding: 0 14px; font-size: 17px; display: inline-flex; align-items: center; gap: 6px; justify-content: center; }
+.ctl .play { min-width: 64px; border-color: var(--you); color: var(--you); font-size: 20px; }
+.ctl .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.ctl .seg button { border: none; border-radius: 0; min-width: 44px; padding: 0 10px; background: transparent; color: var(--dim); }
+.ctl .seg button.on { background: #1f2a38; color: var(--text); }
+.ctl .sp { flex: 1; }
+.ctl .hint { color: var(--dim); font-size: 13px; }
+kbd { font-family: "IBM Plex Mono"; font-size: 11px; padding: 1px 4px; border: 1px solid var(--line); border-radius: 3px; color: var(--dim); }
+
+/* ---------- side panel: cause chain + log ---------- */
+.side { grid-row: 2 / 4; grid-column: 2; border-left: 1px solid var(--line); background: #0a0e13; display: flex; flex-direction: column; min-height: 0; }
+.tabs { display: flex; border-bottom: 1px solid var(--line); }
+.tabs button { flex: 1; border: none; border-radius: 0; background: transparent; padding: 12px; color: var(--dim); letter-spacing: .1em; text-transform: uppercase; font-size: 13px; }
+.tabs button.on { color: var(--text); box-shadow: inset 0 -2px 0 var(--gold); }
+.chain { padding: 16px 18px; overflow: auto; }
+.chain h3 { margin: 0 0 4px; font-size: 13px; letter-spacing: .12em; color: var(--dim); text-transform: uppercase; font-weight: 600; }
+.chain .q { font-size: 20px; margin-bottom: 14px; }
+.node { position: relative; padding: 10px 12px 10px 44px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); margin-bottom: 26px; cursor: pointer; }
+.nodes .node:not(:last-child)::after { content: "caused by"; position: absolute; left: 44px; bottom: -22px; font-size: 12px; color: var(--dim); letter-spacing: .06em; }
+.nodes .node:not(:last-child)::before { content: ""; position: absolute; left: 21px; top: 100%; height: 26px; border-left: 2px dashed #3a4656; }
+.node .ni { position: absolute; left: 10px; top: 10px; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 6px; }
+.node .ni .ico { width: 18px; height: 18px; }
+.node.ev .ni { background: #2b2410; color: var(--gold); }
+.node.fire .ni { background: #22173a; color: var(--trig); }
+.node.hit .ni { background: #3a1418; color: var(--dmg); }
+.node.root .ni { background: #1a2230; color: var(--dim); }
+.node.sel { border-color: var(--gold); }
+.node .l1 { font-size: 16px; }
+.node .l2 { font-size: 14px; color: var(--dim); margin-top: 3px; line-height: 1.3; }
+.node .jump { position: absolute; right: 10px; top: 10px; font-size: 12px; color: var(--dim); font-family: "IBM Plex Mono"; }
+.legend { margin-top: 6px; padding: 10px 12px; border-radius: 8px; background: #10161e; border: 1px dashed var(--line); font-size: 14px; line-height: 1.4; }
+.legend b { color: var(--kw); }
+
+/* end-of-battle summary (?state=end) */
+.endcard { display: none; position: absolute; inset: 40px 80px; background: #0b1016f2; border: 1px solid var(--you); border-radius: 14px; padding: 26px 32px; z-index: 5; box-shadow: 0 20px 60px #000; }
+.endcard .word { font-family: "Chakra Petch"; font-size: 54px; color: var(--you); line-height: 1; }
+.endcard .sub { color: var(--dim); font-size: 18px; margin-top: 6px; }
+.endcard .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 20px; }
+.endcard h4 { margin: 0 0 8px; font-size: 13px; letter-spacing: .12em; color: var(--dim); text-transform: uppercase; }
+.bar { display: grid; grid-template-columns: 30px 110px 1fr 52px; gap: 8px; align-items: center; font-size: 16px; margin-bottom: 7px; }
+.bar .b { height: 10px; border-radius: 5px; background: var(--you); }
+.bar.them .b { background: var(--ghost); }
+.moment { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; font-size: 16px; cursor: pointer; }
+.moment .t { font-family: "IBM Plex Mono"; color: var(--dim); font-size: 13px; }
+.moment .ico { color: var(--gold); width: 18px; height: 18px; }
+.endcard .acts { display: flex; gap: 12px; margin-top: 22px; }
+.endcard .acts button { height: 46px; padding: 0 22px; font-size: 18px; }
+.endcard .acts .primary { background: var(--you); color: #04120f; border-color: var(--you); margin-left: auto; min-width: 220px; }
+.state-end .endcard { display: block; }
+.state-end .arena > *:not(.endcard) { filter: blur(2px) brightness(.5); }
+
+.note { position: fixed; right: 8px; bottom: 4px; font-size: 10px; color: #4b5563; font-family: "IBM Plex Mono"; }
+
+/* ---------- phone ---------- */
+@media (max-width: 700px) {
+  .page { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; height: 100dvh; }
+  .top { padding: 10px 14px; font-size: 15px; gap: 10px; }
+  .top .menu { width: 36px; height: 32px; }
+  .arena { padding: 10px 10px 6px; gap: 10px; justify-content: flex-start; }
+  .lines { display: flex; flex-direction: column-reverse; gap: 6px; }
+  .lines .clash { height: 22px; }
+  .lines .clash svg { width: 20px; height: 20px; position: absolute; left: 22px; }
+  .line, .line.you { flex-direction: row; gap: 5px; }
+  .side-label { font-size: 11px; margin-bottom: 4px; } .side-label.you { text-align: left; }
+  .u { width: calc((100vw - 20px - 20px) / 5); padding: 6px 3px 5px; border-radius: 8px; }
+  .u .em { font-size: 26px; height: 30px; }
+  .u .nm { font-size: 12px; }
+  .u .hpbar { height: 4px; margin: 4px 1px 4px; }
+  .u .st { font-size: 13px; padding: 0 1px; }
+  .u .stat-ico { display: none; }
+  .u .sts { gap: 2px; min-height: 16px; margin-top: 3px; flex-wrap: wrap; }
+  .chip { font-size: 10px; padding: 0 2px; gap: 1px; }
+  .chip .ico { width: 11px; height: 11px; }
+  .float { font-size: 24px; top: 4px; } .float.buff { font-size: 14px; top: 30px; }
+  .trig { left: 0; transform: none; bottom: -30px; font-size: 12px; padding: 2px 7px; animation-name: popl; }
+  @keyframes popl { 0% { opacity: 0; transform: scale(.3) } 100% { opacity: 1; transform: none } }
+  .side-label { display: none; }
+  .note { display: none; }
+  .arena { overflow: visible; }
+  .trig .ico { width: 13px; height: 13px; }
+  .u.them.acting { animation: lunge-down .45s ease-out both; }
+  @keyframes lunge-down { 0% { transform: none } 40% { transform: translateY(14px) scale(1.04) } 100% { transform: translateY(4px) } }
+  .caption { font-size: 15px; padding: 8px 10px; gap: 6px; margin-top: 30px; }
+  .caption .t { font-size: 11px; }
+  .caption .more { font-size: 12px; }
+  .bottom { padding: 6px 10px 10px; }
+  .tl { height: 18px; gap: 2px; } .tl .turn span { display: none; } .tl .mk { width: 10px; height: 10px; top: 4px; }
+  .ctl { margin-top: 8px; gap: 6px; }
+  .ctl button { height: 44px; min-width: 44px; padding: 0 8px; font-size: 15px; }
+  .ctl .hint, .ctl .desk { display: none; }
+  .ctl .seg { display: none; } .ctl .cyc { display: inline-flex !important; }
+  .side { display: none; position: fixed; left: 0; right: 0; bottom: 0; max-height: 64dvh; border-left: none; border-top: 1.5px solid var(--gold); border-radius: 14px 14px 0 0; z-index: 10; box-shadow: 0 -16px 40px #000d; }
+  .state-chain .side { display: flex; }
+  .tabs button { padding: 9px; }
+  .chain { padding: 10px 12px; }
+  .chain .q { font-size: 16px; margin-bottom: 10px; }
+  .node { padding: 8px 10px 8px 40px; margin-bottom: 20px; }
+  .nodes .node:not(:last-child)::after { bottom: -18px; left: 40px; font-size: 11px; }
+  .nodes .node:not(:last-child)::before { height: 20px; }
+  .node .l1 { font-size: 14px; } .node .l2 { font-size: 12px; }
+  .legend { font-size: 12px; }
+  .endcard { inset: 8px; padding: 16px; }
+  .endcard .word { font-size: 36px; }
+  .endcard .cols { grid-template-columns: 1fr; gap: 12px; }
+  .bar { grid-template-columns: 22px 80px 1fr 40px; font-size: 13px; }
+  .endcard .acts { flex-wrap: wrap; }
+  .endcard .acts .primary { min-width: 0; flex: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .u.target { outline: 3px solid var(--dmg); }
+}
+</style>
+</head>
+<body>
+<!--SPRITE-->
+<div class="page" id="page">
+  <header class="top">
+    <span class="round">ROUND 1</span>
+    <span class="vs">vs <b>@bot-Orla</b></span>
+    <span class="turn">Turn 6</span>
+    <button class="menu" title="Menu: abandon, settings">☰</button>
+  </header>
+
+  <main class="arena">
+    <div class="lines">
+      <div>
+        <div class="side-label you">You · front →</div>
+        <div class="line you">
+          <!-- front first: Victim is nearest the middle -->
+          <div class="u you target" id="victim">
+            <div class="em">😵</div><div class="nm">Victim</div>
+            <div class="hpbar"><i class="lost" style="width:62%"></i><i style="width:56%"></i></div>
+            <div class="st"><span class="p"><svg class="stat-ico"><use href="#i-crossed-swords"/></svg>3</span><span class="h hurt"><svg class="stat-ico"><use href="#i-heart-beats"/></svg>7</span></div>
+            <div class="sts"><span class="chip"><svg class="ico"><use href="#i-biceps"/></svg>2</span></div>
+            <div class="float dmg">−1</div>
+            <div class="float buff">+1 PWR</div>
+            <div class="trig" title="Victim's trigger fired: after this unit is hurt"><svg class="ico"><use href="#i-broken-heart"/></svg>Hurt<span class="arrow">→</span><svg class="ico" style="color:var(--kw)"><use href="#i-biceps"/></svg><span class="kw">Strength</span></div>
+          </div>
+          <div class="u you dim2"><div class="em">🌵</div><div class="nm">Spike</div>
+            <div class="hpbar"><i style="width:100%"></i></div>
+            <div class="st"><span class="p"><svg class="stat-ico"><use href="#i-crossed-swords"/></svg>1</span><span class="h"><svg class="stat-ico"><use href="#i-heart-beats"/></svg>6</span></div>
+            <div class="sts"><span class="chip"><svg class="ico"><use href="#i-shield"/></svg>2</span></div></div>
+          <div class="u you dim2"><div class="em">🌱</div><div class="nm">Planter</div>
+            <div class="hpbar"><i style="width:100%"></i></div>
+            <div class="st"><span class="p"><svg class="stat-ico"><use href="#i-crossed-swords"/></svg>1</span><span class="h"><svg class="stat-ico"><use href="#i-heart-beats"/></svg>9</span></div>
+            <div class="sts"><span class="chip"><svg class="ico"><use href="#i-heart-plus"/></svg>2</span></div></div>
+          <div class="u you dim2"><div class="em">⚡</div><div class="nm">Taser</div>
+            <div class="hpbar"><i style="width:100%"></i></div>
+            <div class="st"><span class="p"><svg class="stat-ico"><use href="#i-crossed-swords"/></svg>2</span><span class="h"><svg class="stat-ico"><use href="#i-heart-beats"/></svg>4</span></div>
+            <div class="sts"></div></div>
+          <div class="u you dim2"><div class="em">🥀</div><div class="nm">Wither</div>
+            <div class="hpbar"><i style="width:100%"></i></div>
+            <div class="st"><span class="p"><svg class="stat-ico"><use href="#i-crossed-swords"/></svg>2</span><span class="h"><svg class="stat-ico"><use href="#i-heart-beats"/></svg>4</span></div>
+            <div class="sts"></div></div>
+        </div>
+      </div>
+      <div class="clash"><svg><use href="#i-crossed-swords"/></svg></div>
+      <div>
+        <div class="side-label them">← front · @bot-Orla</div>
+        <div class="line them">
+          <div class="u them acting" id="medic"><div class="em">⛑️</div><div class="nm">Medic</div>
+            <div class="hpbar"><i class="lost" style="width:67%"></i><i style="width:67%"></i></div>
+            <div class="st"><span class="p"><svg class="stat-ico"><use href="#i-crossed-swords"/></svg>1</span><span class="h hurt"><svg class="stat-ico"><use href="#i-heart-beats"/></svg>2</span></div>
+            <div class="sts"></div></div>
+          <div class="u them dim2"><div class="em">🐀</div><div class="nm">Rat</div>
+            <div class="hpbar"><i style="width:100%"></i></div>
+            <div class="st"><span class="p"><svg class="stat-ico"><use href="#i-crossed-swords"/></svg>2</span><span class="h"><svg class="stat-ico"><use href="#i-heart-beats"/></svg>4</span></div>
+            <div class="sts"><span class="chip poison"><svg class="ico"><use href="#i-poison-bottle"/></svg>1</span></div></div>
+          <div class="u them dim2"><div class="em">🧪</div><div class="nm">Injector</div>
+            <div class="hpbar"><i style="width:100%"></i></div>
+            <div class="st"><span class="p"><svg class="stat-ico"><use href="#i-crossed-swords"/></svg>2</span><span class="h"><svg class="stat-ico"><use href="#i-heart-beats"/></svg>5</span></div>
+            <div class="sts"><span class="chip freeze"><svg class="ico"><use href="#i-snowflake-1"/></svg>1</span></div></div>
+          <div class="u them dead"><div class="em">🌵</div><div class="nm">Spike</div>
+            <div class="hpbar"><i style="width:0%"></i></div>
+            <div class="st"><span class="p">1</span><span class="h">0</span></div>
+            <div class="sts"><svg class="ico" style="color:var(--dim)"><use href="#i-death-skull"/></svg></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="caption" title="Click for the full cause chain">
+      <span class="t">T6</span>
+      <span><span class="n-them">Medic</span> strikes <span class="n-you">Victim</span> <span class="num-dmg">−1</span>
+      → <span class="n-you">Victim</span>'s <span class="trt"><svg class="ico"><use href="#i-broken-heart"/></svg> Hurt</span> trigger:
+      <span class="kwt"><svg class="ico"><use href="#i-biceps"/></svg> Strength</span> ×1 <span class="num-buff">+1 PWR</span></span>
+      <span class="more">why? ›</span>
+    </div>
+
+    <div class="endcard">
+      <div class="word">VICTORY</div>
+      <div class="sub">12 turns · 3 of your 5 still standing · your best: <span class="n-you">Victim</span></div>
+      <div class="cols">
+        <div>
+          <h4>Damage dealt</h4>
+          <div class="bar"><span>😵</span><span class="n-you">Victim</span><span class="b" style="width:100%"></span><span class="mono">14</span></div>
+          <div class="bar"><span>⚡</span><span class="n-you">Taser</span><span class="b" style="width:57%"></span><span class="mono">8</span></div>
+          <div class="bar"><span>🥀</span><span class="n-you">Wither</span><span class="b" style="width:36%"></span><span class="mono">5</span></div>
+          <div class="bar them"><span>🐀</span><span class="n-them">Rat</span><span class="b" style="width:64%"></span><span class="mono">9</span></div>
+          <div class="bar them"><span>⛑️</span><span class="n-them">Medic</span><span class="b" style="width:21%"></span><span class="mono">3</span></div>
+        </div>
+        <div>
+          <h4>Key moments · click to watch</h4>
+          <div class="moment"><span class="t">T3</span><svg class="ico"><use href="#i-death-skull"/></svg><span><span class="n-you">Taser</span> <span class="trt">Strike</span> → <span class="kwt">Freeze</span> stops <span class="n-them">Rat</span>, Spike falls</span></div>
+          <div class="moment"><span class="t">T6</span><svg class="ico"><use href="#i-biceps"/></svg><span><span class="n-you">Victim</span> grows to 5 PWR from 4 hits</span></div>
+          <div class="moment"><span class="t">T10</span><svg class="ico"><use href="#i-sands-of-time"/></svg><span>Fatigue starts: everyone −1 each turn</span></div>
+        </div>
+      </div>
+      <div class="acts">
+        <button><svg class="ico"><use href="#i-anticlockwise"/></svg> Replay from start</button>
+        <button>Why I won</button>
+        <button class="primary">Continue</button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bottom">
+    <div class="tl" title="Timeline: one block per turn; marks are deaths">
+      <div class="turn done"><span>1</span></div>
+      <div class="turn done"><span>2</span></div>
+      <div class="turn done"><span>3</span><svg class="mk them" style="left:60%"><use href="#i-death-skull"/></svg></div>
+      <div class="turn done"><span>4</span></div>
+      <div class="turn done"><span>5</span></div>
+      <div class="turn now"><span>6</span><div class="head" style="left:45%"></div></div>
+      <div class="turn"><span>7</span><svg class="mk them" style="left:30%"><use href="#i-death-skull"/></svg></div>
+      <div class="turn"><span>8</span><svg class="mk you" style="left:70%"><use href="#i-death-skull"/></svg></div>
+      <div class="turn"><span>9</span></div>
+      <div class="turn"><span>10</span><svg class="mk fat" style="left:40%"><use href="#i-sands-of-time"/></svg></div>
+      <div class="turn"><span>11</span><svg class="mk them" style="left:20%"><use href="#i-death-skull"/></svg><svg class="mk them" style="left:65%"><use href="#i-death-skull"/></svg></div>
+      <div class="turn"><span>12</span></div>
+    </div>
+    <div class="ctl">
+      <button title="Replay from start"><svg class="ico"><use href="#i-anticlockwise"/></svg></button>
+      <button title="Previous beat">‹</button>
+      <button class="play" title="Pause">❚❚</button>
+      <button title="Next beat">›</button>
+      <span class="seg"><button>1×</button><button class="on">2×</button><button>4×</button></span>
+      <span class="sp"></span>
+      <span class="hint desk"><kbd>Space</kbd> pause · <kbd>←</kbd><kbd>→</kbd> beat · <kbd>R</kbd> replay</span>
+      <button class="cyc" style="display:none" title="Speed">2×</button>
+      <button title="Jump to the result">End ⏭</button>
+    </div>
+  </footer>
+
+  <aside class="side">
+    <div class="tabs"><button class="on">Why</button><button>Log</button></div>
+    <div class="chain">
+      <h3>Why did this happen</h3>
+      <div class="q"><span class="kwt"><svg class="ico"><use href="#i-biceps"/></svg> Strength</span> ×1 on <span class="n-you">Victim</span> <span class="num-buff">+1 PWR</span></div>
+
+      <div class="nodes">
+      <div class="node ev sel"><span class="ni"><svg class="ico"><use href="#i-biceps"/></svg></span>
+        <div class="l1"><span class="who you">You</span> <span class="n-you">Victim</span> gains <span class="kwt">Strength</span> ×1</div>
+        <div class="l2">now Strength 2 → 3 PWR</div><span class="jump">T6</span></div>
+
+      <div class="node fire"><span class="ni"><svg class="ico"><use href="#i-broken-heart"/></svg></span>
+        <div class="l1"><span class="who you">You</span> <span class="n-you">Victim</span>'s ability fired</div>
+        <div class="l2"><span class="trt">After this unit is hurt</span> → give itself <span class="kwt">Strength</span> ×1</div><span class="jump">T6</span></div>
+
+      <div class="node hit"><span class="ni"><svg class="ico"><use href="#i-crossed-swords"/></svg></span>
+        <div class="l1"><span class="who them">Them</span> <span class="n-them">Medic</span> strikes <span class="n-you">Victim</span> <span class="num-dmg">−1</span></div>
+        <div class="l2">front units trade blows each turn</div><span class="jump">T6</span></div>
+
+      <div class="node root"><span class="ni"><svg class="ico"><use href="#i-sands-of-time"/></svg></span>
+        <div class="l1">Turn 6 began</div>
+        <div class="l2">the start of the chain</div></div>
+
+      </div>
+      <div class="legend"><b><svg class="ico"><use href="#i-biceps"/></svg> Strength</b>: +1 PWR per stack while it stays. Click any highlighted word for its meaning.</div>
+    </div>
+  </aside>
+</div>
+<div class="note">mockup · illustrative units · icons: game-icons.net (CC BY 3.0: Lorc, Delapouite, sbed, Zeromancer)</div>
+<script>
+  const s = new URLSearchParams(location.search).get("state");
+  if (s) document.getElementById("page").classList.add("state-" + s);
+  if (s === "end") { document.querySelector(".turn").textContent = "Turn 12"; }
+</script>
+</body>
+</html>
