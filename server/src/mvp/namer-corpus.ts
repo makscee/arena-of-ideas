@@ -38,6 +38,10 @@ export const INNOCENT_NAMES: readonly string[] = [
   "Butterfly", "Assassin", "Titanfang", "Glassblade", "Hourglass", "Thornyfang", "Bloodsucker", "Soulsnatcher", "Honeysuckle",
   "Scatterclaw", "Mosscumulus", "Farseer", "Starseed", "Cutlass", "Compass", "Buttress", "Peacock", "Raccoon", "Cocoon", "Spoonbill",
   "Homogenous", "Scrapper", "Analog",
+  // the #609 merge check's collateral, and words that start or end like a new stem
+  "Starseeker", "Starserpent", "Starsentinel", "Warserpent", "Warsentinel", "Enigma", "Twinkle", "Spicy", "Starseer", "Briarseer",
+  "Titmouse", "Grapevine", "Boobytrap", "Trapeze", "Gypsum", "Tardigrade", "Cumbersome", "About", "Above", "Abomination", "Bonebuster",
+  "Bumblebee", "Album", "Knobble", "Stitchling", "Stormscrap", "Glassface", "Glasshead", "Grasshead", "Brasshead",
 ];
 
 // Every fusion name in m1's MVP world on 2026-10-06 (mvp_fusions, read-only copy).
@@ -78,4 +82,32 @@ export const BENCH_NAMES: readonly string[] = [
   "Thornsore", "Throneveil", "Thronewhisper", "Thronewitch", "Tidebreaker", "Tincturebite", "Trenchspit", "Vanguard", "Vaporsquire",
   "Vermireg", "Vexroot", "Vineguard", "Vinehandler", "Wardrop", "Wardspike", "Wardwane", "Wastekeeper", "Wipeguard", "Wispstancher",
   "Woundweaver", "Zappest", "Zapshadow",
+];
+
+// Every crude entry of the hand lists before #594's LDNOOBW round (fusions.ts at
+// 2146a195: crude BLOCKED_STEMS and BLOCKED_WORDS, CRUDE, EDGE_CRUDE, "spic"):
+// each must still be refused as a name on its own (fusions.test.ts).
+export const CRUDE_BEFORE_594: readonly string[] = [
+  "abo", "anal", "anus", "arse", "arsehole", "ass", "assclown", "asses", "assface", "asshat", "asshead", "asshole", "asskick", "asslick",
+  "asswipe", "auschwitz", "badass", "ballsack", "bastard", "bastards", "beaner", "beaners", "bellend", "bestiality", "beyotch", "biatch",
+  "bitch", "bitches", "blowjob", "bollock", "bollocks", "boner", "boob", "boobies", "boobs", "boong", "bukkake", "bullshit", "butt",
+  "butthole", "buttplug", "cameljockey", "chinaman", "chingchong", "chink", "choad", "clit", "cock", "cocks", "cocksucker", "coolie",
+  "coon", "cripple", "cuck", "cum", "cumbucket", "cumdump", "cumlord", "cumming", "cumrag", "cumshot", "cumslut", "cunt", "cunts", "dago",
+  "darkie", "darky", "dick", "dickhead", "dickwad", "dildo", "dong", "dothead", "douche", "dumbass", "dyke", "erection", "fag", "faggot",
+  "fags", "fap", "fatass", "fck", "felch", "fuck", "fucker", "fuckface", "fucking", "fuhrer", "fuk", "fuq", "fvck", "gangbang",
+  "gaschamber", "gay", "gays", "gestapo", "golliwog", "gook", "greaser", "gringo", "gyp", "gypo", "gyppo", "gypsy", "halfbreed", "handjob",
+  "heeb", "heil", "heilhitler", "hencummer", "hentai", "hitler", "holocaust", "homo", "honkey", "honky", "horny", "hymie", "incest",
+  "injun", "jackass", "jap", "jerkoff", "jew", "jewkill", "jewkiller", "jigaboo", "jihadi", "jism", "jizz", "junglebunny", "kaffir",
+  "kafir", "kickass", "kike", "killgays", "killjew", "kkk", "klan", "klansman", "knobhead", "kraut", "kyke", "ladyboy", "lesbo", "libtard",
+  "lolicon", "lynch", "lyncher", "lynching", "masturbat", "masturbate", "masturbator", "midget", "milf", "minge", "mofo", "molest",
+  "molester", "mong", "mongoloid", "motherfucker", "nazi", "nazis", "necrophil", "necrophile", "negro", "nig", "niga", "nigg", "nigga",
+  "niggas", "nigger", "nigguh", "nog", "nonce", "nutsack", "orgasm", "orgy", "paedo", "paedophil", "paki", "pedo", "pedophil", "pedophile",
+  "penis", "phuck", "phuk", "pikey", "piss", "pissed", "pisser", "poof", "poofter", "poontang", "porchmonkey", "porn", "porno", "pouf",
+  "prick", "pricks", "pube", "pussies", "pussy", "queef", "raghead", "rape", "raper", "rapist", "redskin", "retard", "retarded", "rimjob",
+  "saboner", "sambo", "sandmonkey", "sandnigger", "schlong", "scrotum", "semen", "sex", "sexmancer", "sexslave", "sextim", "sexy",
+  "shemale", "shit", "shite", "shithead", "shitskin", "sht", "siegheil", "skank", "slanteye", "slut", "sluts", "smartass", "smegma",
+  "smut", "sodom", "sodomite", "sodomy", "spastic", "spaz", "sperm", "spic", "spick", "spics", "spunk", "squaw", "swastika", "tard",
+  "testic", "testicle", "thot", "tits", "titties", "tosser", "towelhead", "trannie", "trannies", "tranny", "turd", "twat", "twats",
+  "vagina", "wank", "wanker", "wetback", "whitepower", "whitepride", "whitey", "whore", "whores", "wigger", "wog", "wogs", "wop", "yid",
+  "yids", "yotch", "zipperhead",
 ];

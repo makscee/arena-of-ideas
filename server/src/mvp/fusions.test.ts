@@ -4,7 +4,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { Champion, DecisionResponse, FusionDiscovery, PlayerRef, UnitContent } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { mvpContent } from "./content.js";
-import { BENCH_NAMES, INNOCENT_NAMES, LIVE_NAMES } from "./namer-corpus.js";
+import { hasCrudeStem } from "./crude.js";
+import { BENCH_NAMES, CRUDE_BEFORE_594, INNOCENT_NAMES, LIVE_NAMES } from "./namer-corpus.js";
 import { awaitFusionName, cleanModelName, drainFusionNames, hasUnitName, NAMER_LETTERS, isBlockedName, fusionNameReady, fusionNaming, httpModelNamer, MODEL_DOWN_MS, NAMER_EXAMPLES, MODEL_FAILURES, MODEL_PROBE_MS, portmanteau, recordFusion, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
 import { decide, preview, startRun } from "./runs.js";
 import { seedChampion } from "./bots.js";
@@ -166,9 +167,11 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
         const name = portmanteau(a.name, b.name, [...names, ...taken]);
         taken.push(name);
         expect(isBlockedName(name), `${a.name}+${b.name}=${name}`).toBe(false);
-        // Held stricter than a model's answer: no crude fragment anywhere.
-        expect(name.toLowerCase(), `${a.name}+${b.name}`).not.toMatch(/sex|cum|nig|boner|anal|arse|rape|kike|pedo/);
+        // Held stricter than a model's answer: no crude stem anywhere, masks ignored.
+        expect(hasCrudeStem(name), `${a.name}+${b.name}=${name}`).toBe(false);
       }
+    // #609: "jew" is a stem anywhere again, so no "Injewark".
+    expect(portmanteau("Injector", "Bulwark", names)).toBe("Injelwark");
   }, 30_000);
 
   it("splits CamelCase before matching words, and stems don't over-block ordinary names", () => {
@@ -218,6 +221,31 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
       "Sexagen", "Sextup", "Clitter", "Starse", "Farse", "Arsen", "Pedolog", "Kingtit", "Semendrake", "Niggard", "Rapeseed",
     ])
       expect(cleanModelName(raw), raw).toBeNull();
+  });
+
+  it("refuses every crude entry of the lists before #594, alone and glued mid-word (#609)", () => {
+    // The short ambiguous stems are refused only at a word's edge; abo only at its end.
+    const edge = new Set(["ass", "asses", "butt", "dong", "jap", "cuck", "thot", "fap", "horny", "abo"]);
+    for (const word of CRUDE_BEFORE_594) {
+      expect(isBlockedName(word[0]!.toUpperCase() + word.slice(1)), word).toBe(true);
+      if (!edge.has(word)) expect(isBlockedName(`King${word}rat`), `King${word}rat`).toBe(true);
+    }
+  });
+
+  it("refuses the regressions, the stems that left EDGE, LDNOOBW's words back from SKIP, and toilet words (#609)", () => {
+    for (const raw of [
+      "Piss", "Pissrat", "Kingpiss", "Pisser", "Chinaman", "Coolie", "Abo", "Kingabo", "Abos",
+      "Kingklansman", "Killjewrat", "Kingassface", "Libtardrat", "Kinglynch", "Kinggookrat", "Kingcoonrat", "Kinghomorat", "Kingpoofrat",
+      "Kinganusrat", "Kingqueerrat",
+      "Nudewing", "Eroticfang", "Kinkyrat", "Toplessrat", "Bustyfang", "Nympholord", "Bondagelord", "Gropefang", "Swingerrat", "Escortrat",
+      "Lolitawing", "Intercourse", "Undressing",
+      "Fartking", "Kingfart", "Poopling", "Crapfang", "Bumrat", "Kingbum", "Pimpking", "Pervlord", "Gimpfang", "Knobrat", "Kingknob",
+      "Erectwing", "Hymenrat",
+    ])
+      expect(cleanModelName(raw), raw).toBeNull();
+    // Abo and the short ambiguous stems pass inside a word, and masks excuse the rest.
+    for (const raw of ["About", "Above", "Abomination", "Album", "Bumblebee", "Knobble", "Scrapper", "Bonebuster"])
+      expect(cleanModelName(raw), raw).not.toBeNull();
   });
 
   it("passes every innocent fantasy name of the corpus and the live world, and refuses at most 3% of the bench (#594)", () => {

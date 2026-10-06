@@ -7,45 +7,43 @@
 // names that must all pass (fusions.test.ts), and MASKS grow only from it.
 import { LDNOOBW_EN } from "./ldnoobw-en.js";
 
-// Slurs, hate words and crude words LDNOOBW lacks: the earlier hand lists of
-// fusions.ts and every name the #594 merge checks found. Not "abo": it starts
-// About, Above and Abomination.
+// Slurs, hate words and crude words LDNOOBW lacks: every crude entry of the
+// hand lists before #594 (namer-corpus.ts CRUDE_BEFORE_594 holds them all),
+// every name the #594 merge checks found, and toilet words (#609).
 const EXTRA = [
   "fuk", "fuq", "fvck", "phuck", "phuk", "fck", "sht", "shite", "scum", "biatch", "beyotch", "yotch", "slut", "skank", "jism", "dildo",
-  "pussies", "asshat", "asswipe", "dumbass", "jackass", "fatass", "smartass", "kickass", "arse", "prick", "bollock", "douche",
+  "pussies", "asshat", "asswipe", "assface", "asshead", "assclown", "asskick", "asslick", "badass", "dumbass", "jackass", "fatass",
+  "smartass", "kickass", "arse", "prick", "bollock", "douche",
   "buttplug", "scrotum", "molest", "ballsack", "nutsack", "smegma", "sodom", "knobhead", "bellend", "sexslave", "orgasm", "masturbat",
   "necrophil", "lolicon", "pedo", "paedo", "pedophil", "paedophil", "pube", "turd", "twat", "dyke", "homo", "sperm", "testic", "incest",
   "boner", "erection", "felch", "queef", "minge", "choad", "mofo", "tosser", "wanker", "spunk", "semen", "milf", "hentai", "hooker",
-  "lesbo", "queer", "gay", "fag", "fap", "thot", "cuck", "dong", "butt", "ass",
+  "lesbo", "queer", "gay", "fag", "fap", "thot", "cuck", "dong", "butt", "ass", "piss", "smut", "wank",
+  // toilet and crude words
+  "fart", "poop", "crap", "bum", "pimp", "perv", "gimp", "knob", "erect", "hymen",
   // slurs and hate
   "nig", "nigg", "nog", "negro", "kike", "kyke", "jew", "yid", "heeb", "hymie", "gook", "chink", "chingchong", "slanteye", "zipperhead",
   "jap", "paki", "raghead", "towelhead", "sandmonkey", "cameljockey", "jihadi", "kafir", "kaffir", "wetback", "beaner", "spic", "spick",
   "greaser", "gringo", "wop", "dago", "kraut", "honky", "honkey", "whitey", "wigger", "coon", "darkie", "darky", "jigaboo", "golliwog",
   "sambo", "porchmonkey", "junglebunny", "redskin", "injun", "squaw", "boong", "wog", "gyp", "gypo", "gyppo", "gypsy", "pikey",
+  "chinaman", "coolie", "abo",
   "tranny", "trannie", "shemale", "ladyboy", "poof", "pouf", "poofter", "retard", "tard", "spastic", "spaz", "mongoloid", "mong",
   "cripple", "midget", "halfbreed", "dothead", "nazi", "hitler", "swastika", "kkk", "klan", "lynch", "heil", "siegheil", "fuhrer",
   "gestapo", "holocaust", "auschwitz", "gaschamber", "whitepower", "whitepride", "killgays", "nonce", "rapist", "rape", "orgy", "schlong",
 ];
 
-// LDNOOBW entries that read innocent in a fantasy name, left out: "suck(s)"
-// (Bloodsucker, Honeysuckle), "escort", "domination", "bondage", "eunuch",
-// "lolita", "nude", "grope", "snatch" (Soulsnatcher), "swinger", "voyeur",
-// "rectum" ... and phrases no one-or-two-word name holds.
-const SKIP = new Set([
-  "suck", "sucks", "escort", "domination", "bondage", "eunuch", "lolita", "nude", "nudity", "grope", "snatch", "swinger", "rectum",
-  "howtokill", "howtomurder", "tiedup", "intercourse", "throating", "undressing", "shrimping", "snowballing", "scissoring", "sadism",
-  "kinky", "topless", "bareback", "busty", "lovemaking", "taintedlove", "playboy", "nympho", "sexual", "sexually", "sexuality", "erotic",
-  "erotism", "xx", "xxx", "goddamn", "scat", "poon", "quim",
-]);
+// LDNOOBW entries left out, each only because a name of namer-corpus.ts needs
+// it: "suck" (Bloodsucker, Honeysuckle), "snatch" (Soulsnatcher, Snatchwisp),
+// "scat" (Scatterclaw), "poon" (Spoonbill).
+const SKIP = new Set(["suck", "sucks", "snatch", "scat", "poon"]);
 
-// Short or ambiguous stems refused only at a word's start ("Japslayer",
-// "Cuckfang", "Assrat") or as its glued tail ("Kingdong", "Kingtit"): anywhere
-// they would refuse too much (Glass, Butterfly, Stardust, Thornyfang, Titan).
-const EDGE = new Set([
-  "ass", "butt", "dong", "jap", "cuck", "thot", "fap", "horny", "tard", "tit", "tits", "titty", "wop", "wog", "gyp", "gypo",
-  "nog", "mong", "heil", "klan", "yid", "heeb", "gook", "paki", "dago", "mofo", "milf", "homo", "poof", "pouf", "spaz", "nonce", "fuk",
-  "fuq", "sht", "coon", "anus", "lynch", "queer", "kraut", "jew", "minge", "choad", "tushy", "juggs", "skeet", "guro",
-]);
+// The truly ambiguous short stems, refused only at a word's start
+// ("Japslayer", "Cuckfang", "Assrat") or as its glued tail ("Kingdong",
+// "Kingbutt"): anywhere they would refuse too much (Glass, Butterfly, Album).
+// Every other stem matches anywhere, and MASKS excuse the innocent words.
+const EDGE = new Set(["ass", "butt", "dong", "jap", "cuck", "thot", "fap", "horny", "bum", "knob"]);
+// Refused only as a whole word or a glued tail ("Abo", "Kingabo"): at a
+// word's start it is About, Above, Abomination.
+const TAIL = new Set(["abo"]);
 
 // Innocent words that hold a stem. A hit is excused only when one of these
 // covers all of it ("Spicefang" keeps "spic" inside "spice"), so a mask never
@@ -53,21 +51,24 @@ const EDGE = new Set([
 // of namer-corpus.ts that need it.
 const MASKS = [
   "night", "knight", // nig: Nightshade, Knightfall
+  "enigma", // nig: Enigma
   "benign", "nigni", // nig: Benign, Moonignite
   "jewel", // jew: Jewelwing
   "cockatrice", "cockatoo", // cock: beasts and birds
   "cocoon", "raccoon", "racoon", "tycoon", // coon
-  "cumul", "cucumber", "circum", "succumb", "talcum", "docum", // cum: Cumulus, Document
-  "spice", "auspic", "conspic", // spic: Spicefang
+  "cumul", "cucumber", "circum", "succumb", "talcum", "docum", "cumberso", // cum: Cumulus, Document, Cumbersome
+  "scumul", // scum: Mosscumulus
+  "spice", "spicy", "auspic", "conspic", // spic: Spicefang, Spicy
   "osemend", // semen: Rosemender
   "manali", "manale", "analog", "analy", // anal: Manalith, Manaleech, Analyst
   "bonereap", // boner: Bonereaper
-  "mustard", "custard", "dastard", // tard: Mustardseed
+  "mustard", "custard", "dastard", "stard", "tardigrad", // tard: Mustardseed, Stardust, Stardrake, Tardigrade
   "cuirass", "rrass", "glass", "brass", "grass", "class", "mass", "bass", "pass", "lass", "crass", "sass", "compass", "morass",
   "cutlass", "carcass", "assassin", "assail", "assault", "assay", "assemb", "assent", "assert", "assess", "asset", "assign", "assist",
   "associat", "assort", "assuag", "assum", "assur", // ass: Cuirass, Embarrass, Glass, Assassin
+  "glassface", "glasshead", "grasshead", "brasshead", // assface, asshead: Glassface, Glasshead, Grasshead, Brasshead
   "butter", "button", "buttress", // butt: Butterfly
-  "titan", "tithe", "titl", // tit: Titanfang
+  "titan", "tithe", "titl", "stitch", "titmouse", // tit: Titanfang, Stitchpunch, Titmouse
   "cuckoo", // cuck: Cuckoo-clock
   "sauerkraut", // kraut
   "pakistan", // paki
@@ -77,8 +78,15 @@ const MASKS = [
   "mongoose", "mongrel", "among", // mong: beasts, Among
   "basement", // semen
   "specialis", // cialis: Specialist
-  "therapeu", // rape: Therapeutic
+  "therapeu", "grapevine", "trapez", // rape: Therapeutic, Grapevine, Trapeze
+  "starsee", "starser", "starsen", "warser", "warsen", "briarsee", // arse: Starseeker, Starserpent, Starsentinel, Warserpent, Warsentinel, Starseer, Briarseer
+  "twinkl", // twink: Twinkle
+  "boobytrap", // boob: Boobytrap
+  "gypsum", // gyp: Gypsum
+  "bumbl", "album", // bum: Bumblebee, Album
+  "knobbl", // knob: Knobble
   "sexton", "sextant", // sex
+  "scrap", // crap: Scrapper
 ];
 
 // Whole real words that may be a name on their own though they hold a stem
@@ -95,14 +103,13 @@ function fold(s: string): string {
   return s.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z]/g, "");
 }
 
-/** Stems from LDNOOBW and EXTRA, folded, SKIP left out, and a stem that holds
- * another anywhere-stem dropped (it adds nothing). */
-export const CRUDE_STEMS: { anywhere: readonly string[]; edge: readonly string[] } = (() => {
+/** Stems from LDNOOBW and EXTRA, folded, SKIP left out. A stem that holds
+ * another is kept: a mask that excuses the short one ("stard" for "tard")
+ * must not excuse the long one ("bastard"). */
+export const CRUDE_STEMS: { anywhere: readonly string[]; edge: readonly string[]; tail: readonly string[] } = (() => {
   const all = [...new Set([...LDNOOBW_EN, ...EXTRA].map(fold))].filter((s) => s.length >= 3 && !SKIP.has(s));
-  const anywhere = all.filter((s) => !EDGE.has(s));
-  const edge = all.filter((s) => EDGE.has(s));
-  const minimal = anywhere.filter((s) => !anywhere.some((t) => t !== s && s.includes(t)));
-  return { anywhere: minimal, edge };
+  const anywhere = all.filter((s) => !EDGE.has(s) && !TAIL.has(s));
+  return { anywhere, edge: all.filter((s) => EDGE.has(s)), tail: all.filter((s) => TAIL.has(s)) };
 })();
 
 function covered(text: string, at: number, length: number): boolean {
@@ -118,19 +125,19 @@ function hits(text: string, stem: string, at: (i: number) => boolean): boolean {
 }
 
 /** True when the name reads crude: an anywhere-stem in its words joined, or an
- * edge stem at a word's start or end (a plural ending off), unless MASKS cover
- * the hit; a name that is one REAL_WORDS word passes whole. */
+ * edge stem at a word's start or end, or a tail stem at its end (a plural
+ * ending off), unless MASKS cover the hit; a name that is one REAL_WORDS word passes whole. */
 export function isCrudeName(name: string): boolean {
   const words = name.replace(/([a-z])([A-Z])/g, "$1 $2").split(/[\s'’-]+/).map(fold).filter(Boolean);
   if (words.length === 0) return false;
   if (words.length === 1 && ENDINGS.some((end) => words[0]!.endsWith(end) && REAL_WORDS.has(words[0]!.slice(0, words[0]!.length - end.length)))) return false;
   const joined = words.join("");
   if (CRUDE_STEMS.anywhere.some((stem) => hits(joined, stem, () => true))) return true;
-  for (const word of words)
-    for (const stem of CRUDE_STEMS.edge) {
-      const tails = ENDINGS.filter((end) => word.endsWith(end)).map((end) => word.length - end.length - stem.length);
-      if (hits(word, stem, (i) => i === 0 || tails.includes(i))) return true;
-    }
+  for (const word of words) {
+    const tails = (stem: string) => ENDINGS.filter((end) => word.endsWith(end)).map((end) => word.length - end.length - stem.length);
+    if (CRUDE_STEMS.edge.some((stem) => hits(word, stem, (i) => i === 0 || tails(stem).includes(i)))) return true;
+    if (CRUDE_STEMS.tail.some((stem) => hits(word, stem, (i) => tails(stem).includes(i)))) return true;
+  }
   return false;
 }
 
