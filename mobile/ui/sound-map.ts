@@ -34,13 +34,15 @@ export const cue = (key: SoundKey, rate = 1, extra = 1, delay?: number): Cue => 
 
 /** The sound of a shop decision, read off the run before and after it (the
  * reply carries no events): a buy that adds a unit clinks, one that merges a
- * copy in merges, and the copy that awakens it levels up. Fuse, the
- * discovery reveal, refusals and selection have their own calls. */
+ * copy in merges (line or bench), and the copy that awakens it levels up. A
+ * lock freezes and an unlock unfreezes. Fuse, the discovery reveal, refusals
+ * and selection have their own calls. */
 export function shopSound(d: Decision, before: RunView, after: RunView): Cue | null {
   switch (d.kind) {
     case "buy": {
-      const was = new Map(before.line.map((u) => [u.uid, u]));
-      for (const u of after.line) {
+      // The bench too: a copy merges, and can awaken, there (R3-14).
+      const was = new Map([...before.line, ...(before.bench ?? [])].map((u) => [u.uid, u]));
+      for (const u of [...after.line, ...(after.bench ?? [])]) {
         const old = was.get(u.uid);
         if (!old) continue;
         if (u.copies > old.copies) return cue(old.form !== "awoken" && u.form === "awoken" ? "level-up" : "merge");
@@ -55,6 +57,8 @@ export function shopSound(d: Decision, before: RunView, after: RunView): Cue | n
       return d.to === d.from ? null : cue(d.to < d.from ? "move-left" : "move-right");
     case "fuse":
       return cue("fuse");
+    case "lock":
+      return cue(after.offers[d.slot]?.locked ? "freeze" : "unfreeze");
     default:
       return null;
   }
