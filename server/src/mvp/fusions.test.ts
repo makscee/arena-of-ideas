@@ -146,11 +146,11 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
 
   it("splits CamelCase before matching words, and stems don't over-block ordinary names", () => {
     for (const raw of ["LordVader", "SuperMario", "BabyYoda", "IronMan", "Xmen", "Witchers"]) expect(cleanModelName(raw), raw).toBeNull();
-    for (const raw of ["Hexmender", "Badminton", "Iron Mantle", "Twitcher", "Exterminator", "Carambola", "Fluffy"]) expect(cleanModelName(raw), raw).not.toBeNull();
+    for (const raw of ["Hexmender", "Badminton", "Iron Mantle", "Twitcher", "Exterminator", "Carambola", "Fluffy", "Cockatrice", "Dickens", "Analyst", "Grapeshot", "Scunthorpe", "Cumulus"]) expect(cleanModelName(raw), raw).not.toBeNull();
   });
 
   it("catches lowercase joins, and never matches a stem across a word's edge", () => {
-    for (const raw of ["Supermario", "Lordvader", "Babyyoda", "Thorhammer", "Hulkbuster", "Yodaling", "Fusion", "Fused Medic", "Spider Man Medic", "Lordbatman", "Darthawk", "Mind Flayer", "Wrathion", "Ratbert", "Smutnarid"])
+    for (const raw of ["Supermario", "Lordvader", "Babyyoda", "Thorhammer", "Hulkbuster", "Yodaling", "Fusion", "Fused Medic", "Spider Man Medic", "Lordbatman", "Darthawk", "Mind Flayer", "Wrathion", "Ratbert", "Smutnarid", "Shitlord", "Rapeblade", "Cockwraith", "Analbeast", "Penis Golem"])
       expect(cleanModelName(raw), raw).toBeNull();
     for (const raw of ["Aqua Mantis", "Spider Mantis", "Bat Mantle", "Batmancer", "Dart Hawk", "Sonic Shrieker", "Grim Joker", "Shadow Swindle", "Confusion", "Hulking Brute", "Evader"])
       expect(cleanModelName(raw), raw).not.toBeNull();
