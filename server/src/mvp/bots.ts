@@ -309,6 +309,7 @@ export async function seedChampion(rt: RunDeps): Promise<Champion | undefined> {
     line,
     since: at,
     contentVersion: rt.content.version,
+    rating: rt.rules.botRating,
   };
   rt.store.addPlayer(champ.player);
   rt.store.putChampion(champ);

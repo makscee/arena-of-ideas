@@ -201,15 +201,15 @@ describe("MVP day", () => {
     expect(rt.today()).toMatchObject({ seq: 1, endsAt: "2026-10-06T01:00:00.000Z" });
   });
 
-  it("the reigning champion beating their own team is no slay: no Slay row, no slay bonus, no playoff entry", async () => {
+  it("the reigning champion beating their own team is no slay: no Slay row, no playoff entry, rated against their own stamped rating", async () => {
     const { rt, call, human } = world();
     const ann = human("ann");
     const own = { ...weakChampion(rt), player: ann };
     rt.store.putChampion(own);
     const run = startRun(rt, ann);
     const line = bigLine(rt.content);
-    // three lost rounds before, so the share (1 of 4) leaves room for a bonus
-    const lost = [1, 2, 3].map((round) => ({ battleId: `l${round}`, kind: "round" as const, round, opponent: { ghostId: `g${round}`, player: botP, round }, outcome: "loss" as const, heartsLost: 1, heartsAfter: 5 - round }));
+    // three lost rounds before
+    const lost = [1, 2, 3].map((round) => ({ battleId: `l${round}`, kind: "round" as const, round, opponent: { ghostId: `g${round}`, player: botP, round, rating: 1000 }, outcome: "loss" as const, heartsLost: 1, heartsAfter: 5 - round }));
     const at12: MvpRunState = { ...run, round: rt.rules.rounds, line, nextUid: line.length + 1, fights: lost, hearts: 2, losses: 3 };
     rt.store.putRun(at12);
     decide(rt, at12, { kind: "fight" });
@@ -218,10 +218,12 @@ describe("MVP day", () => {
     expect(won.run.endedBy).toBe("crown-won");
     expect(rt.store.slays(own.seq)).toEqual([]);
     expect((await call<DayView>("GET", "/day")).json.slayers).toBe(0);
-    // rated on the rounds alone: the same run against someone else's team gets the bonus
-    expect(won.run.rating).toEqual(ratingChange(1000, { fights: won.run.fights, endedBy: "crown-won", player: ann }));
-    expect(won.run.rating!.actual).toBe(ratingChange(1000, { fights: won.run.fights, endedBy: "crown-lost" }).actual);
-    expect(ratingChange(1000, { fights: won.run.fights, endedBy: "crown-won" }).actual).toBeGreaterThan(won.run.rating!.actual);
+    // the Crown is one more fight, against the champion's stamped rating (a row
+    // without one: the start rating), so beating your own 1000 team is +K/2
+    expect(won.fight!.opponent.rating).toBe(1000);
+    expect(won.run.rating).toEqual(ratingChange(1000, 0, won.run));
+    const rounds = won.run.fights.filter((f) => f.kind === "round");
+    expect(won.run.rating!.after - ratingChange(1000, 0, { fights: rounds }).after).toBe(16);
     expect(rt.store.rating(ann.id)).toMatchObject({ runs: 1, slays: 0 });
     // a stray Slay row of the champion's own still doesn't enter the playoff
     rt.store.addSlay({ seq: own.seq, player: ann, runId: run.runId, battleId: won.fight!.battleId, line, contentVersion: rt.content.version, at: "2026-10-05T10:00:00.000Z" });

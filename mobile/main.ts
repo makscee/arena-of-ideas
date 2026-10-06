@@ -82,7 +82,8 @@ function rulesSheet(): HTMLElement {
     h("div", { class: "label" }, "Chains"),
     p("Units react to events. When one happens, the units it triggers fire in line order, front to back, each at most once per event. In a fight, tap any number to see the chain that caused it."),
     h("div", { class: "label" }, "The day"),
-    p(`Beat the champion in the Crown and you are a slayer. At ${r.dayEndsAt} Moscow the slayers' best teams play a round-robin, and the winner is the next champion. Your rating moves once per run.`),
+    p(`Beat the champion in the Crown and you are a slayer. At ${r.dayEndsAt} Moscow the slayers' best teams play a round-robin, and the winner is the next champion.`),
+    p("Your rating moves once per run: every fight, the Crown too, counts against its opponent's rating (Elo), added up when the run ends. Giving up counts each heart left as a lost fight."),
   );
 }
 
@@ -581,6 +582,12 @@ function runEnd(run: RunView): { why: string; reach: string } {
         : { why: "👑 You beat the champion: you are a slayer today.", reach: "Won the Crown." };
     case "crown-lost":
       return { why: own ? "Your own champion team held the Crown." : "The champion held the Crown.", reach: "Reached the Crown." };
+    case "abandoned": {
+      const n = run.forfeit?.fights ?? 0;
+      return run.round > rules.rounds
+        ? { why: "You gave up at the Crown: it counts as a lost Crown.", reach: "Reached the Crown." }
+        : { why: n === 1 ? "You gave up: the 1 heart left counts as a lost fight." : `You gave up: the ${n} hearts left count as lost fights.`, reach: round };
+    }
     case "content-changed":
       return { why: "The game's units changed since this run began, so it ended here. Your rating stays as it was.", reach: round };
     default:
@@ -603,6 +610,9 @@ function runOverScreen(run: RunView, content: MvpContent, notice = ""): void {
       h("div", { class: "num", "data-testid": "run-record" }, `${plural(run.wins, "win")} · ${plural(draws, "draw")} · ${plural(run.losses, "loss", "losses")}`),
       h("div", { class: "dim" }, reach),
       rc ? h("div", { class: "num", "data-testid": "rating-change" }, `Rating ${rc.before} → ${rc.after} (${delta >= 0 ? "+" : ""}${delta})`) : null,
+      // A subtle why: each fight is rated against its opponent (Elo), so the
+      // change is K × (wins got − wins expected at your rating).
+      rc ? h("div", { class: "dim small num", "data-testid": "rating-why" }, `expected ${rc.expected.toFixed(1)} wins, got ${+rc.actual.toFixed(1)}`) : null,
     ),
     run.line.length ? h("div", { class: "label" }, "Your last line") : null,
     run.line.length ? team(run.line, "you", content) : null,
