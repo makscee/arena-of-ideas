@@ -97,6 +97,11 @@ button.menu-btn { min-width: 44px; padding: 0 10px; font-size: 18px; line-height
 .hud { align-items: center; }
 .run-menu button { min-height: 48px; }
 .run-menu .dim.small { margin-top: -4px; text-align: center; }
+/* Sound (round 3, note 16): a toggle and a volume slider in both menus. */
+.sound-row { align-items: center; gap: 10px; }
+.sound-row button.sound-toggle { flex: none; min-width: 132px; text-transform: none; letter-spacing: 0; }
+.sound-row input[type="range"] { flex: 1; min-width: 0; height: 44px; padding: 0; border: 0; background: transparent; accent-color: var(--you); }
+.sound-row input[type="range"]:disabled { opacity: 0.4; }
 details.dev { color: var(--dim); font-size: 13px; }
 details.dev summary { min-height: 44px; line-height: 44px; cursor: pointer; }
 .opp { font-size: 15px; min-height: 44px; }

@@ -21,6 +21,8 @@ import { previewName } from "./ui/fusion";
 import { icon } from "./ui/icon";
 import { app, button, closable, desktopQuery, h, isDesktop, keepScreen, onKeys, overlay, screen, show, who } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
+import { initSound, onSoundChange, play, setSound, soundSettings } from "./ui/sound";
+import { shopSound } from "./ui/sound-map";
 
 function errorLine(): HTMLElement {
   return h("div", { class: "error", "data-testid": "error" });
@@ -42,6 +44,7 @@ async function guarded(err: HTMLElement, fn: () => Promise<void>): Promise<void>
       api.forget();
       return nameScreen();
     }
+    if (e instanceof ApiError && e.status === 409) play("wrong");
     err.textContent = e instanceof ApiError && e.status === 409 ? plainRefusal(e.message) : e instanceof Error ? e.message : String(e);
   } finally {
     busy = false;
@@ -75,6 +78,28 @@ const openSheet = (u: Parameters<typeof unitSheet>[0], content: MvpContent) => (
 /** A line of cards, each opening its unit sheet. */
 function team(line: LineUnit[], side: "you" | "ghost", content: MvpContent, testid = ""): HTMLElement {
   return h("div", { class: "slots", ...(testid ? { "data-testid": testid } : {}) }, ...line.map((u) => card(u, { side, extra: [copiesBadge(u)], onOpen: openSheet(u, content) })));
+}
+
+/** The Sound row of the title menu and the run menu (round 3, note 16): a
+ * toggle and a volume slider; M flips the same setting on desktop. Moving
+ * the slider plays a click at the new level. */
+function soundRow(): HTMLElement {
+  const toggle = button("", () => setSound({ on: !soundSettings().on }), "sound-toggle", "sound-toggle");
+  const volume = h("input", { type: "range", min: "0", max: "100", step: "5", "aria-label": "Volume", "data-testid": "sound-volume" });
+  const sync = (s = soundSettings()) => {
+    toggle.textContent = s.on ? "🔊 Sound on" : "🔇 Sound off";
+    toggle.setAttribute("aria-pressed", String(s.on));
+    volume.value = String(Math.round(s.volume * 100));
+    volume.disabled = !s.on;
+  };
+  volume.addEventListener("input", () => setSound({ volume: Number(volume.value) / 100 }));
+  volume.addEventListener("change", () => play("click"));
+  const row = h("div", { class: "row sound-row", "data-testid": "sound-row" }, toggle, volume);
+  sync();
+  // A row set aside (the Codex over Home) still follows M; one thrown away stops listening.
+  const ref = new WeakRef(row);
+  const off = onSoundChange((s) => (ref.deref() ? sync(s) : off()));
+  return row;
 }
 
 /** A hint's verb: "Tap" on the phone, "Click" on a desktop. */
@@ -250,6 +275,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
         newRun,
         codex,
         h("div", { class: "row" }, stats, rulesBtn),
+        soundRow(),
         home.dev ? h("details", { class: "dev" }, h("summary", {}, "Dev"), endDay) : null,
       ),
     ),
@@ -331,6 +357,7 @@ function runMenu(run: RunView, content: MvpContent, err: HTMLElement, fought?: F
     button("Resume", () => (close(), resume?.()), "primary", "menu-resume"),
     codex,
     button("Rules", () => (close(), closable(rulesSheet())), "", "menu-rules"),
+    soundRow(),
     button("Title menu", () => (close(), void guarded(err, () => homeScreen())), "", "menu-title"),
     run.phase === "over" ? null : h("div", { class: "dim small" }, "The run waits; Continue brings you back."),
     run.phase === "over" ? null : button("Abandon run…", () => (close(), abandonSheet(run, "menu", () => void guarded(err, async () => runOverScreen(await api.abandon(run.runId), content)))), "danger", "menu-abandon"),
@@ -429,6 +456,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     guarded(err, async () => {
       const res = await api.decide(run.runId, d);
       if (res.fight) return fightScreens(res.run, res.fight, content);
+      play(shopSound(d, run, res.run));
       shopScreen(res.run, content, "", select);
     });
 
@@ -456,6 +484,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
           else c.classList.add("muted");
         }
         c.addEventListener("click", () => {
+          play("click");
           if (pick.mode === "fuse") {
             if (pick.first === i) pick = { mode: "none" };
             else if (u.kind === "unit" && u.form === "awoken") return void fusePreview(pick.first, i);
@@ -642,11 +671,13 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const fuse = (o: { first: number; second: number }, previewed: LineUnit) =>
     guarded(err, async () => {
       const res = await api.decide(run.runId, { kind: "fuse", ...o });
+      play(shopSound({ kind: "fuse", ...o }, run, res.run));
       shopScreen(res.run, content);
       const fused = res.run.line.find((u) => u.uid === run.line[o.first]!.uid);
       const me = savedPlayer()?.id;
       const discovered = previewed.fusion?.name === "" || previewed.fusion?.discoveredBy === null;
       if (!fused || !discovered || fused.fusion?.discoveredBy?.id !== me) return;
+      play("discover");
       closable(
         h("div", { class: "label" }, "New fusion"),
         h("h2", { class: "reveal", "data-testid": "fusion-reveal" }, `✨ You discovered ${fused.name}`),
@@ -665,7 +696,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   /** Desktop's double-click and number keys: a blocked offer says why instead of asking the server. */
   const buy = (o: Offer) => {
     const why = buyBlock(o);
-    if (why) return void (err.textContent = why);
+    if (why) return void ((err.textContent = why), play("wrong"));
     void decide({ kind: "buy", slot: o.slot });
   };
 
@@ -727,10 +758,11 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const c = card(cu, { side: "you", tier: o.tier, extra: [h("div", { class: "cost" }, owned ? `${o.cost}g ＋` : `${o.cost}g`)], testid: `offer-${o.slot}` });
       if (run.gold < o.cost) c.classList.add("poor");
       if (owned) c.classList.add("owned");
-      if (!desk) c.addEventListener("click", () => void offerSheet(o));
+      if (!desk) c.addEventListener("click", () => (play("click"), void offerSheet(o)));
       else {
         // Click selects it (the inspector holds it), double-click buys it.
         c.addEventListener("click", () => {
+          play("click");
           chosen = chosen === o.slot ? null : o.slot;
           if (pick.mode === "picked") pick = { mode: "none" };
           renderLine();
@@ -799,7 +831,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const numberKeys = n === 0 ? [] : n === 1 ? [kbd("1"), " buys the offer · "] : [kbd("1"), "–", kbd(String(n)), " buy the offer with that number · "];
   const keysLine =
     desk && !crown
-      ? h("div", { class: "dim small keys", "data-testid": "keys" }, "Hover a card to read it → · click selects · drag reorders · double-click buys · ", ...numberKeys, kbd("R"), " reroll · ", kbd("Space"), " fight · ", kbd("←"), kbd("→"), " move · ", kbd("F"), " fuse · ", kbd("S"), " sell · ", kbd("Esc"), " menu")
+      ? h("div", { class: "dim small keys", "data-testid": "keys" }, "Hover a card to read it → · click selects · drag reorders · double-click buys · ", ...numberKeys, kbd("R"), " reroll · ", kbd("Space"), " fight · ", kbd("←"), kbd("→"), " move · ", kbd("F"), " fuse · ", kbd("S"), " sell · ", kbd("M"), " sound · ", kbd("Esc"), " menu")
       : null;
   show(
     h(
@@ -883,6 +915,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     }
     if (k === "r") {
       if (!reroll.disabled) void decide({ kind: "reroll" });
+      else play("wrong");
       return true;
     }
     if ((k === "ArrowLeft" || k === "ArrowRight") && sel >= 0) {
@@ -1072,6 +1105,8 @@ function runOverScreen(run: RunView, content: MvpContent, notice = "", newRun = 
 }
 
 // ---------- boot ----------
+
+initSound();
 
 if (api.player) {
   const err = errorLine();
