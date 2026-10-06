@@ -435,10 +435,14 @@ export function beatTiming(waves: number, quiet = false): { at: number[]; ms: nu
 
 /** Each beat's weight: a kill, a big hit, a summon or revive, the first
  * fatigue beat (the one holding the battle's first Fatigue event, else the
- * first beat of its turn after it), and the last beat. */
+ * first beat of its turn after it), and the last beat that changes the
+ * board (the deciding blow). */
 export function weightsOf(log: BattleEvent[], beats: PlayBeat[]): BeatWeight[] {
   const fatigue = log.find((e) => e.type === "Fatigue");
   const firstFatigue = fatigue ? beats.findIndex((b) => b.waves.some((w) => w.eventIds.includes(fatigue.id)) || (b.turn === fatigue.turn && b.end >= fatigue.id)) : -1;
+  // The deciding blow's beat, not the empty BattleEnd beat after it: its
+  // hold lands while the killed card is still on the board.
+  const decisive = beats.map((b) => b.waves.some((w) => w.changes.length)).lastIndexOf(true);
   return beats.map((b, i) => {
     const events = b.waves.flatMap((w) => w.eventIds.map((id) => log[id]));
     const w: BeatWeight = {};
@@ -446,7 +450,7 @@ export function weightsOf(log: BattleEvent[], beats: PlayBeat[]): BeatWeight[] {
     if (events.some((e) => e?.type === "Hurt" && e.amount >= BIG_HIT_MIN)) w.big = true;
     if (events.some((e) => e?.type === "Summon")) w.summon = true;
     if (i === firstFatigue) w.fatigue = true;
-    if (i === beats.length - 1) w.last = true;
+    if (i === (decisive >= 0 ? decisive : beats.length - 1)) w.last = true;
     return w;
   });
 }

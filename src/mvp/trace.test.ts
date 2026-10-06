@@ -265,7 +265,10 @@ describe("one beat at a time (R2-12)", () => {
     const log = run([dummy("Wall", 200, 1)], [dummy("Wall", 200, 5)]);
     const beats = beatPlayOf(log, stepsOf(log));
     const weights = weightsOf(log, beats);
-    expect(weights.at(-1)!.last).toBe(true);
+    // The deciding blow's beat holds, not the empty BattleEnd beat after it.
+    const decisive = beats.map((b) => b.waves.some((w) => w.changes.length)).lastIndexOf(true);
+    expect(beats.at(-1)!.waves.every((w) => !w.changes.length)).toBe(true);
+    expect(weights[decisive]!.last).toBe(true);
     expect(weights.filter((w) => w.last)).toHaveLength(1);
     const big = beats.filter((b) => b.waves.some((w) => w.eventIds.some((id) => { const e = log[id]!; return e.type === "Hurt" && e.amount >= 4; })));
     expect(big.length).toBeGreaterThan(0);

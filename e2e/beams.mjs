@@ -44,7 +44,8 @@ const covered = (page) =>
     const fx = document.querySelector(".bv-fx");
     if (!fx) return [];
     const style = document.createElement("style");
-    style.textContent = ".bv-fx, .bv-fx * { pointer-events: visiblePainted !important; }";
+    // Only the beams themselves: the layer's own box covers the whole screen.
+    style.textContent = ".bv-fx * { pointer-events: visiblePainted !important; }";
     document.head.append(style);
     const bad = [];
     try {
@@ -52,7 +53,7 @@ const covered = (page) =>
         const r = n.getBoundingClientRect();
         if (!r.width) continue;
         const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-        if (hit && fx.contains(hit)) bad.push(`a beam covers ${n.closest(".bv-card").dataset.unit}'s number ${n.textContent}`);
+        if (hit && hit !== fx && fx.contains(hit)) bad.push(`a beam covers ${n.closest(".bv-card").dataset.unit}'s number ${n.textContent}`);
       }
       const cap = document.querySelector('[data-testid="caption"]').getBoundingClientRect();
       for (const p of fx.querySelectorAll("path")) {
@@ -61,7 +62,7 @@ const covered = (page) =>
           const pt = p.getPointAtLength((len * i) / 40);
           if (pt.x <= cap.left + 1 || pt.x >= cap.right - 1 || pt.y <= cap.top + 1 || pt.y >= cap.bottom - 1) continue;
           const hit = document.elementFromPoint(pt.x, pt.y);
-          if (hit && fx.contains(hit)) { bad.push(`a beam covers the caption at ${Math.round(pt.x)},${Math.round(pt.y)}`); break; }
+          if (hit && hit !== fx && fx.contains(hit)) { bad.push(`a beam covers the caption at ${Math.round(pt.x)},${Math.round(pt.y)}`); break; }
         }
       }
     } finally {
