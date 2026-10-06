@@ -40,11 +40,14 @@ import { MemoryMvpStore } from "./store.js";
 /** Ghosts per round (live content) the bots keep. Tunable. */
 export const BOT_TARGET = 24;
 /** Bot Crown fights each day: bots play runs until this many of the day's
- * Crown fights are bots'. Measured on the MVP content: about 1 in 3 bot runs
- * reaches the Crown, and about 1 in 8 Crown fights is won against the seeded
- * day-1 champion, 1 in 4 against a playoff winner, so a day sees a few bot
- * slayers, and now and then none. Tunable. */
-export const BOT_DAILY_CROWNS = 16;
+ * Crown fights are bots'. Measured on the MVP content (#587, 5 fresh worlds,
+ * 3 days each, at 16): a bot run reaches the Crown about 1 time in 4 once
+ * the pool is full; about 1 Crown fight in 10 beats the seeded day-1
+ * champion and 1 in 6 a later one (it varies a lot by champion). So a day
+ * sees 2 to 4 bot slayers on average, sometimes none, and about 100 bot runs
+ * (about 25 MB of battles in SQLite). More bot slayers also mean a human
+ * slayer meets more bots in the playoff. Tunable. */
+export const BOT_DAILY_CROWNS = 24;
 /** How often the top-up looks at the pool. */
 export const BOT_TOPUP_MS = 60_000;
 /** Bot runs per event-loop turn while topping up. */
