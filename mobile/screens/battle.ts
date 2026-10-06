@@ -1187,12 +1187,22 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
           const row = h(
             "div",
             { class: `bv-dmg ${side === you ? "you" : "ghost"}${u ? " open" : ""}`, "data-testid": "damage-row", title: `${d.name}: ${d.damage} damage`, ...(u ? { role: "button", tabindex: "0" } : {}) },
-            h("span", { class: `emoji${[...emojiOf(d.unit)].length > 2 ? " two" : ""}` }, emojiOf(d.unit)),
+            // A fused unit's two emojis, smaller, in a column that holds both (R2-17 batch F: "🥁⚡" counts as two code points, so the old test missed it).
+            h("span", { class: `emoji${u?.kind === "fused" ? " two" : ""}` }, emojiOf(d.unit)),
             unitName(d.unit),
             h("span", { class: "bv-dmg-bar" }, h("i", { style: `width:${Math.round((d.damage / top) * 100)}%` })),
             h("span", { class: "mono" }, String(d.damage)),
           );
-          if (u) row.addEventListener("click", () => closable(unitSheet(u, a.content)));
+          if (u) {
+            row.addEventListener("click", () => closable(unitSheet(u, a.content)));
+            // A button's keys: Enter or Space opens the sheet (R2-17 batch F).
+            row.addEventListener("keydown", (e) => {
+              if ((e.key !== "Enter" && e.key !== " ") || e.repeat) return;
+              e.preventDefault();
+              e.stopPropagation();
+              row.click();
+            });
+          }
           return row;
         });
     const shown = Math.min(cap, bySide(you).length) + Math.min(cap, bySide(them).length);

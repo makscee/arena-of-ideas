@@ -348,7 +348,8 @@ button.bv-why.won { color: var(--you); border-color: color-mix(in srgb, var(--yo
 .bv-end-moments { gap: 4px; }
 .bv-end-more { text-transform: none; letter-spacing: 0; color: var(--dim); }
 .bv-dmg-list { gap: 2px; }
-.bv-dmg { display: grid; grid-template-columns: 20px minmax(0, 6.5em) 1fr 28px; gap: 6px; align-items: center; font-size: 14px; line-height: 20px; }
+/* The emoji column holds a fused unit's two emojis (.two) whole, clear of its name (R2-17 batch F). */
+.bv-dmg { display: grid; grid-template-columns: 24px minmax(0, 6.5em) 1fr 28px; gap: 6px; align-items: center; font-size: 14px; line-height: 20px; }
 .bv-dmg .emoji { font-size: 15px; text-align: center; white-space: nowrap; }
 /* A fused unit's two emojis share the column on one line, so every row's name and bar line up (R2-17 batch E). */
 .bv-dmg .emoji.two { font-size: 10px; letter-spacing: -1px; }
@@ -725,7 +726,7 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-dmg-list { order: -1; gap: 4px; }
   #app[data-screen="battle"] button.bv-dmg-more { min-height: 32px; }
   #app[data-screen="battle"] .bv-dmg .emoji.two { font-size: 12px; }
-  #app[data-screen="battle"] .bv-dmg { font-size: 16px; line-height: 24px; grid-template-columns: 24px minmax(0, 7em) 1fr 32px; gap: 10px; }
+  #app[data-screen="battle"] .bv-dmg { font-size: 16px; line-height: 24px; grid-template-columns: 28px minmax(0, 7em) 1fr 32px; gap: 10px; }
   #app[data-screen="battle"] .bv-end-moments { gap: 8px; }
   #app[data-screen="battle"] button.bv-moment { font-size: 16px; }
   #app[data-screen="battle"] .bv-end-actions { bottom: -24px; margin: 0 -28px -24px; padding: 8px 28px 24px; }
