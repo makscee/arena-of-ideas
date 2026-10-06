@@ -114,3 +114,23 @@ export const CRUDE_BEFORE_594: readonly string[] = [
   "vagina", "wank", "wanker", "wetback", "whitepower", "whitepride", "whitey", "whore", "whores", "wigger", "wog", "wogs", "wop", "yid",
   "yids", "yotch", "zipperhead",
 ];
+
+// Names a mask let through when it reached past its innocent words (R2-17):
+// each must be refused (fusions.test.ts).
+export const MASK_LEAKS: readonly string[] = [
+  "Ashthead", "Bigtitude", "Mongeroid", "Boneshter", "Embershtide", "Moontity", "Kingfarther", "Tithead", "Titlord", "Twinklord",
+  "Aurashthorn", "Lunarshtide", "Auramongrat", "Auracoonrat", "Lunarklandrake", "Lunarnogreaper",
+];
+
+// Innocent names the tightened masks must still pass (R2-17): the collateral
+// of the first tightening, and the words the anchored masks are for.
+export const MASK_INNOCENT: readonly string[] = [
+  "Ashtooth", "Fishtail", "Darkland", "Thornogre", "Sanctity", "Tithe", "Title", "Farther", "Racoon", "Warmongering", "Among Stars",
+];
+
+// Toilet words and the short stems broad masks hid (R2-17), glued to heads
+// that end in a, e, r or u as well (fusions.test.ts): every one must be refused.
+export const GLUED_STEMS: readonly string[] = [
+  "fart", "poop", "crap", "piss", "turd", "bum", "pimp", "perv", "gimp", "knob", "erect", "hymen", "tit", "tits", "twink", "sht",
+  "shit", "shite", "mong", "mongoloid", "coon", "klan", "nog",
+];

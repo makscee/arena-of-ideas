@@ -48,14 +48,18 @@ const TAIL = new Set(["abo"]);
 // Innocent words that hold a stem. A hit is excused only when one of these
 // covers all of it ("Spicefang" keeps "spic" inside "spice"), so a mask never
 // hides a stem beside it. Each entry names the stem it covers and the names
-// of namer-corpus.ts that need it.
+// of namer-corpus.ts that need it. A mask holds the innocent word's own
+// letters around the stem, never a bare head's ending, so a stem glued to a
+// fantasy head or tail stays seen ("rshti" hid Embershtide). "^" anchors a mask
+// at a word's start and "$" at its end (a plural ending off): "^ashthorn"
+// passes Ashthorn, not Aurashthorn; "monger$" passes Warmonger, not Mongeroid.
 const MASKS = [
   "night", "knight", // nig: Nightshade, Knightfall
   "enigma", // nig: Enigma
   "benign", "nigni", // nig: Benign, Moonignite
   "jewel", // jew: Jewelwing
   "cockatrice", "cockatoo", // cock: beasts and birds
-  "cocoon", "raccoon", "racoon", "tycoon", // coon
+  "cocoon", "raccoon", "^racoon", "tycoon", // coon (the misspelt Racoon only at a word's start: never Auracoonrat)
   "cumul", "cucumber", "circum", "succumb", "talcum", "docum", "cumberso", // cum: Cumulus, Document, Cumbersome
   "scumul", // scum: Mosscumulus
   "spice", "spicy", "auspic", "conspic", // spic: Spicefang, Spicy
@@ -68,19 +72,19 @@ const MASKS = [
   "associat", "assort", "assuag", "assum", "assur", // ass: Cuirass, Embarrass, Glass, Assassin
   "glassface", "glasshead", "grasshead", "brasshead", // assface, asshead: Glassface, Glasshead, Grasshead, Brasshead
   "butter", "button", "buttress", // butt: Butterfly
-  "titan", "tithe", "titl", "stitch", "titmouse", // tit: Titanfang, Stitchpunch, Titmouse
+  "titan", "^tithe$", "title", "stitch", "titmouse", // tit: Titanfang, Stitchpunch, Titmouse, Tithe, Title (not Tithead, Titlord)
   "cuckoo", // cuck: Cuckoo-clock
   "sauerkraut", // kraut
   "pakistan", // paki
   "yiddish", // yid
   "japan", // jap
   "homogen", // homo
-  "mongoose", "mongrel", "among", // mong: beasts, Among
+  "mongoose", "mongrel", "^among", // mong: beasts, Among (not Auramongrat)
   "basement", // semen
   "specialis", // cialis: Specialist
   "therapeu", "grapevine", "trapez", // rape: Therapeutic, Grapevine, Trapeze
   "starsee", "starser", "starsen", "warser", "warsen", "briarsee", // arse: Starseeker, Starserpent, Starsentinel, Warserpent, Warsentinel, Starseer, Briarseer
-  "twinkl", // twink: Twinkle
+  "twinkle", "twinkling", "twinkly", // twink: Twinkle (not Twinklord)
   "boobytrap", // boob: Boobytrap
   "gypsum", // gyp: Gypsum
   "bumbl", "album", // bum: Bumblebee, Album
@@ -88,15 +92,19 @@ const MASKS = [
   "sexton", "sextant", // sex
   "scrap", // crap: Scrapper
   // Fantasy roots the R2-4b check found refused (51ad08c6), measured on namer-corpus.ts:
-  "monger", // mong: Warmonger, Ironmonger, Fearmonger
-  "rklance", "sklance", "ackland", // klan: Darklance, Dusklance, Blackland (a letter before: never Klan+d…)
-  "ashth", "ashta", "ashti", "rshti", "eshte", "ushta", "ishti", // sht: Ashthorn, Ashtalon, "Ash Titan", Marshtide, Fleshtearer, Brushtail, Wishtide (only after these letters: never Sht… or Kingshtrat)
-  "titud", "ntity", "titio", // tit: Fortitude, Altitude, Entity, Identity, Petition
-  "onogre", // nog: Moonogre, "Dragon Ogre" (not Nogreaper)
+  "monger$", "mongering$", // mong: Warmonger, Ironmonger, Fearmonger (not Mongeroid)
+  "rklance", "sklance", "ackland", "darkland", // klan: Darklance, Dusklance, Blackland, Darkland (never Klan+d… or Lunarklandrake)
+  // sht: Ashthorn, Ashtalon, "Ash Titan", Ashtooth, Marshtide, Fleshtearer, Brushtail, Wishtide, Fishtail: the whole
+  // root before it, Ash only at a word's start (never Ashthead, Aurashthorn, Boneshter, Embershtide or Kingshtrat)
+  "^ashthorn", "^ashtalon", "^ashtitan", "^ashtooth", "marsht", "flesht", "brusht", "wisht", "fisht",
+  // tit: Fortitude, Altitude, Gratitude, Entity, Identity, Sanctity, Petition and the -tition, -titious words (not Bigtitude, Moontity)
+  "fortitud", "certitud", "altitud", "multitud", "gratitud", "latitud", "beatitud", "attitud", "ptitud", "ctitud", "entity", "quantity",
+  "sanctity", "antithes", "antithet", "titio",
+  "nogre$", // nog: Moonogre, "Dragon Ogre", Thornogre: ogre as the tail (not Nogreaper, Lunarnogreaper)
   "egypt", // gyp: Egyptian
   "pervious", // perv: Impervious
   "pimpernel", // pimp: Pimpernel
-  "farthing", "farther", "farthest", // fart: Farthing (not Farthead)
+  "farthing", "^farther", "^farthest", // fart: Farthing, Farther (not Farthead, Kingfarther)
   "bump", // bum: Bump, Bumper
   "harass", "kvass", // ass: Harass, Kvass
 ];
@@ -124,31 +132,54 @@ export const CRUDE_STEMS: { anywhere: readonly string[]; edge: readonly string[]
   return { anywhere, edge: all.filter((s) => EDGE.has(s)), tail: all.filter((s) => TAIL.has(s)) };
 })();
 
-function covered(text: string, at: number, length: number): boolean {
-  for (const mask of MASKS)
-    for (let m = text.indexOf(mask, Math.max(0, at + length - mask.length)); m >= 0 && m <= at; m = text.indexOf(mask, m + 1))
-      if (m + mask.length >= at + length) return true;
+const MASK_RULES = MASKS.map((mask) => ({ text: mask.replace(/^\^|\$$/g, ""), start: mask.startsWith("^"), end: mask.endsWith("$") }));
+
+/** Where the words start and end in their join; an end also sits before a plural ending. */
+interface Bounds {
+  starts: ReadonlySet<number>;
+  ends: ReadonlySet<number>;
+}
+
+function bounds(words: readonly string[]): Bounds {
+  const starts = new Set<number>();
+  const ends = new Set<number>();
+  let at = 0;
+  for (const word of words) {
+    starts.add(at);
+    at += word.length;
+    for (const end of ENDINGS) if (word.endsWith(end)) ends.add(at - end.length);
+  }
+  return { starts, ends };
+}
+
+function covered(text: string, at: number, length: number, edges: Bounds): boolean {
+  for (const mask of MASK_RULES)
+    for (let m = text.indexOf(mask.text, Math.max(0, at + length - mask.text.length)); m >= 0 && m <= at; m = text.indexOf(mask.text, m + 1))
+      if (m + mask.text.length >= at + length && (!mask.start || edges.starts.has(m)) && (!mask.end || edges.ends.has(m + mask.text.length))) return true;
   return false;
 }
 
-function hits(text: string, stem: string, at: (i: number) => boolean): boolean {
-  for (let i = text.indexOf(stem); i >= 0; i = text.indexOf(stem, i + 1)) if (at(i) && !covered(text, i, stem.length)) return true;
+function hits(text: string, edges: Bounds, stem: string, at: (i: number) => boolean): boolean {
+  for (let i = text.indexOf(stem); i >= 0; i = text.indexOf(stem, i + 1)) if (at(i) && !covered(text, i, stem.length, edges)) return true;
   return false;
 }
 
 /** True when the name reads crude: an anywhere-stem in its words joined, or an
  * edge stem at a word's start or end, or a tail stem at its end (a plural
- * ending off), unless MASKS cover the hit; a name that is one REAL_WORDS word passes whole. */
+ * ending off), unless MASKS cover the hit (at a word's edge where anchored);
+ * a name that is one REAL_WORDS word passes whole. */
 export function isCrudeName(name: string): boolean {
   const words = name.replace(/([a-z])([A-Z])/g, "$1 $2").split(/[\s'’-]+/).map(fold).filter(Boolean);
   if (words.length === 0) return false;
   if (words.length === 1 && ENDINGS.some((end) => words[0]!.endsWith(end) && REAL_WORDS.has(words[0]!.slice(0, words[0]!.length - end.length)))) return false;
   const joined = words.join("");
-  if (CRUDE_STEMS.anywhere.some((stem) => hits(joined, stem, () => true))) return true;
+  const edges = bounds(words);
+  if (CRUDE_STEMS.anywhere.some((stem) => hits(joined, edges, stem, () => true))) return true;
   for (const word of words) {
+    const own = bounds([word]);
     const tails = (stem: string) => ENDINGS.filter((end) => word.endsWith(end)).map((end) => word.length - end.length - stem.length);
-    if (CRUDE_STEMS.edge.some((stem) => hits(word, stem, (i) => i === 0 || tails(stem).includes(i)))) return true;
-    if (CRUDE_STEMS.tail.some((stem) => hits(word, stem, (i) => tails(stem).includes(i)))) return true;
+    if (CRUDE_STEMS.edge.some((stem) => hits(word, own, stem, (i) => i === 0 || tails(stem).includes(i)))) return true;
+    if (CRUDE_STEMS.tail.some((stem) => hits(word, own, stem, (i) => tails(stem).includes(i)))) return true;
   }
   return false;
 }
