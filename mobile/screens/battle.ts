@@ -20,12 +20,13 @@
 import { boardAt, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView } from "../../src/mvp/contract";
 import { STATUS_TERMS, termDef, termIcon, type TermId } from "../../src/glossary";
-import { beatPlayOf, chainOf, damageByUnit, firingOf, keyMomentsOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, statusesShown, STATUS_ROW_FALLBACK, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Change, type Firing, type LossChain, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
+import { beatPlayOf, chainOf, damageByUnit, firingOf, keyMomentsOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Change, type Firing, type LossChain, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { card, formRich, unitSheet } from "../ui/card";
 import { app, button, closable, h, isDesktop, onKeys, onLeave, screen, show } from "../ui/dom";
 import { icon } from "../ui/icon";
+import { statusesShown, STATUS_ROW_FALLBACK } from "../ui/status-row";
 
 /** How long the line-up shows before the first beat, at 1×. */
 const LINEUP_MS = 400;
