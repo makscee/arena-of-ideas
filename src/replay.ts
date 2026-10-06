@@ -158,7 +158,7 @@ class Renderer {
           this.push(e, `${this.name(e.unit)} rises from the grave${at}, back of side ${e.side} — ${by}'s doing.`);
         } else {
           this.units.set(e.unit, { baseHp: e.hp, maxHp: e.hp });
-          this.push(e, `${by} summons ${this.name(e.unit)} (${e.pwr} PWR / ${e.hp} HP) to the back of side ${e.side}.`);
+          this.push(e, `${by} summons ${this.name(e.unit)} (${e.pwr} PWR / ${e.hp} HP) to the ${e.front ? "front" : "back"} of side ${e.side}.`);
         }
         return;
       }

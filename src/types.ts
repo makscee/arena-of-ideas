@@ -142,7 +142,7 @@ export type Effect =
   | { kind: "heal"; amount: Amount }
   | { kind: "applyStatus"; status: string; stacks: Amount }
   | { kind: "consumeStacks"; status?: string; stacks: Amount } // status omitted = the owning status
-  | { kind: "summon"; unit: UnitDef } // at the back of the target's team; skipped if line is full
+  | { kind: "summon"; unit: UnitDef } // at the front of the target's team; skipped if line is full
   | { kind: "silence" } // remove all statuses, disable the unit's own abilities for the battle
   | { kind: "resurrect"; hp: Amount } // revive the (dead) target at N hp, back of line
   // interceptor-context atoms — transform/cancel the proposed event
@@ -195,7 +195,18 @@ export type EventBody =
   | { type: "Hurt"; unit: string; amount: number; hpAfter?: number; absorbed?: number }
   | { type: "Heal"; unit: string; amount: number; hpAfter?: number }
   | { type: "Death"; unit: string }
-  | { type: "Summon"; unit: string; name: string; side: Side; hp: number; pwr: number; resurrected?: boolean; atHp?: number }
+  | {
+      type: "Summon";
+      unit: string;
+      name: string;
+      side: Side;
+      hp: number;
+      pwr: number;
+      resurrected?: boolean;
+      atHp?: number;
+      // the unit entered at the front of its line; absent = at the back (revives, and summons in logs before R3)
+      front?: boolean;
+    }
   | { type: "StatusApplied"; unit: string; status: string; stacks: number; total: number }
   | { type: "StatusRemoved"; unit: string; status: string; stacks: number; remaining: number }
   // hpAfter is present on hp StatChanged events only (a pwr change moves no hp).

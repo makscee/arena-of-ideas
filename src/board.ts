@@ -98,7 +98,10 @@ export function boardAt(log: BattleEvent[], upto: number, skip?: ReadonlySet<num
           u.hp = Math.min(e.atHp ?? 1, u.maxHp); // kernel caps revival hp at effective max
           state.lines[u.side].push(u);
         } else {
-          state.lines[e.side].push(add(e.unit, e.name, e.side, e.hp, e.pwr));
+          const u = add(e.unit, e.name, e.side, e.hp, e.pwr);
+          // old logs have no `front`: their summons went to the back
+          if (e.front) state.lines[e.side].unshift(u);
+          else state.lines[e.side].push(u);
         }
         break;
       }
