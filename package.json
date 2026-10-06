@@ -33,6 +33,7 @@
     "mvp:desktop": "node e2e/mvp-desktop.mjs",
     "mvp:terms": "node e2e/probe-terms-desktop.mjs",
     "mvp:beats": "node e2e/beat-frames.mjs",
+    "mvp:now-sheet": "node e2e/probe-now-sheet.mjs",
     "mvp:fusion-names": "node --import tsx/esm e2e/mvp-fusion-names.ts",
     "mvp:redeploy": "scripts/mvp-redeploy.sh",
     "mvp:meta": "node --import tsx/esm scripts/meta-health.ts",
