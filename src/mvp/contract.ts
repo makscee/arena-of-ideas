@@ -42,6 +42,10 @@ export interface MvpRules {
   benchSize?: number;
   /** The Nth copy of a unit swaps it to its awoken form (slice 2). */
   copiesToAwaken: number;
+  /** The awakening gift (round 3): the copy that awakens a unit offers a free
+   * pick of 1 of this many units from the highest tier open that round
+   * (RunView.gift). Runs stored before it have no field: no gift. */
+  giftChoices?: number;
   /** Stats each extra copy adds. */
   copyGrowth: Stats;
   /** tierOpensAt[t-1] = the round tier t enters the shop. */
@@ -76,6 +80,7 @@ export const MVP_RULES: MvpRules = {
   lineSize: 5,
   benchSize: 3,
   copiesToAwaken: 3,
+  giftChoices: 3,
   copyGrowth: { pwr: 1, hp: 2 },
   tierOpensAt: [1, 3, 6, 9],
   chainStepCap: 32,
@@ -280,7 +285,11 @@ export type Decision =
    * recipe. */
   | { kind: "fuse"; first: number; second: number }
   /** Ends the shop phase: fight this round's opponent (or the Crown after the last round). */
-  | { kind: "fight" };
+  | { kind: "fight" }
+  /** Takes the waiting awakening gift: `pick` indexes RunView.gift, null
+   * skips it. The pick joins like a free buy (merges into its unit, else the
+   * line, else the bench). */
+  | { kind: "gift"; pick: number | null };
 
 export type DecisionKind = Decision["kind"];
 
@@ -391,6 +400,11 @@ export interface RunView {
    * from before the bench. */
   bench: LineUnit[];
   offers: Offer[];
+  /** The awakening gift waiting to be picked (rules.giftChoices units from
+   * the highest tier open that round), absent when none waits. While it
+   * waits only sell, reorder and the `gift` decision are allowed. In the game
+   * it is a "gift", never "Discover" (fusions are "discovered"). */
+  gift?: UnitId[];
   /** Who the next fight is against: the server picks the round's ghost at
    * round start and the fight uses that ghost; in the crown phase it is the
    * champion. Null once the run is over. */
