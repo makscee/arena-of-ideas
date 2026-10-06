@@ -309,14 +309,11 @@ export function championGhost(c: Champion, rules: MvpRules = MVP_RULES): Ghost {
 /** What a drawn fight scores. Tunable. */
 export const DRAW_SCORE = 0.5;
 
-/** True when the run slew the champion: it won the Crown against someone
- * else's team. The reigning champion beating their own champion team is no
- * slay (no Slay row, no playoff entry). Without `player`
- * every Crown win counts. */
-export function slewChampion(run: Pick<RunView, "fights" | "endedBy"> & Partial<Pick<RunView, "player">>): boolean {
-  if (run.endedBy !== "crown-won") return false;
-  const crown = run.fights.filter((f) => f.kind === "crown").at(-1);
-  return !run.player || crown?.opponent.player.id !== run.player.id;
+/** True when the run slew the champion: it won the Crown. Beating your own
+ * champion team counts too (Maks, round 2): the reigning champion can slay
+ * and be crowned again with another team. */
+export function slewChampion(run: Pick<RunView, "endedBy">): boolean {
+  return run.endedBy === "crown-won";
 }
 
 /** K for a player who has finished `runs` runs before this one. */

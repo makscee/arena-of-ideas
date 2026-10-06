@@ -100,9 +100,8 @@ export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionRe
   // nothing. An empty line (a walkover) is nobody's opponent.
   if (step.fight?.kind === "round" && run.line.length > 0) store.addGhost(ghostOf(deps, run, now()));
   // A bot's Crown win is a slay like a human's (contract: "day, champion,
-  // rating"). The reigning champion beating their own team is no slay
-  // (slewChampion).
-  if (step.fight?.kind === "crown" && step.fight.outcome === "win" && run.crownSeq !== null && step.fight.opponent.player.id !== run.player.id) {
+  // rating"), and so is the reigning champion beating their own team.
+  if (step.fight?.kind === "crown" && step.fight.outcome === "win" && run.crownSeq !== null) {
     store.addSlay({ seq: run.crownSeq, player: run.player, runId: run.runId, battleId: step.fight.battleId, line: structuredClone(run.line), contentVersion: run.contentVersion, at: ctx.fight!.at, rating: runRating(deps, run) });
   }
   if (step.fight) step.state = nextOpponent(deps, step.state);

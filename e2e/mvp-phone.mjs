@@ -319,7 +319,7 @@ try {
 
   // The reigning champion's own Crown (#587): "Reigning" slays and is crowned
   // through the API (e2e/mvp-own-crown.ts, local server only), then the phone
-  // plays their run at the Crown against their own team: no slay is promised.
+  // plays their run at the Crown against their own team: a win is a slay (#591).
   if (child) {
     const setup = execFileSync("node", ["--import", "tsx/esm", "e2e/mvp-own-crown.ts", "--url", url], { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] });
     const { player: champ } = JSON.parse(setup.trim().split("\n").at(-1));
@@ -327,25 +327,26 @@ try {
     await page.reload();
     await page.getByTestId("play").waitFor();
     const homeText = await page.locator("#app").textContent();
-    if (!/This is your team: today the others try to beat it/.test(homeText) || /Beat this team in the Crown/.test(homeText)) errors.push("champion's home: no 'your team' hint");
+    if (!/This is your team\. Others try to beat it today, and so can you/.test(homeText) || /Beat this team in the Crown/.test(homeText)) errors.push("champion's home: no 'your team' hint");
     await shot("home-champion"); await noHScroll("home-champion");
     await page.getByTestId("play").click();
     await page.getByTestId("fight").waitFor();
     const opp = await page.getByTestId("next-opponent").textContent();
-    if (!/\(your own team\)/.test(opp)) errors.push(`own crown: next opponent "${opp}"`);
-    if (!/doesn't count as a slay/.test(await page.getByTestId("hint").textContent())) errors.push("own crown: the hint promises a slay");
+    if (!/\(your champion team\)/.test(opp)) errors.push(`own crown: next opponent "${opp}"`);
+    if (!/Beat it to be a slayer again/.test(await page.getByTestId("hint").textContent())) errors.push("own crown: the hint promises no slay");
     await shot("crown-own"); await noHScroll("crown-own");
     await page.getByTestId("fight").click();
     await page.getByTestId("battle-skip").click();
     await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
     const result = await page.locator("#app").textContent();
-    if (/slayer today/.test(result) || !/own champion team/.test(result)) errors.push(`own crown result: "${result.slice(0, 200)}"`);
+    const ownWon = (await page.getByTestId("outcome").textContent()).includes("VICTORY");
+    if (ownWon ? !/You beat your own champion team\. You are a slayer today/.test(result) : !/Your champion team holds/.test(result)) errors.push(`own crown result: "${result.slice(0, 200)}"`);
     await shot("result-own-crown"); await noHScroll("result-own-crown");
     console.log(`mvp phone: the champion's own Crown: ${await page.getByTestId("outcome").textContent()}`);
     await page.getByTestId("continue").click();
     await page.getByTestId("run-over").waitFor({ timeout: 10_000 });
     const ownOver = await page.getByTestId("run-over").textContent();
-    if (/slayer today/.test(ownOver) || !/own champion team/.test(ownOver)) errors.push(`own crown run over: "${ownOver}"`);
+    if (ownWon ? !/You beat your own champion team: you are a slayer today/.test(ownOver) : !/Your champion team held the Crown/.test(ownOver)) errors.push(`own crown run over: "${ownOver}"`);
     await shot("run-over-own-crown"); await noHScroll("run-over-own-crown");
   }
   console.log(`mvp phone: ${round} fights, ${shots} screenshots in ${out}`);
