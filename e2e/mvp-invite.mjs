@@ -1,0 +1,120 @@
+// Slice 13 e2e (mission #574): invite links in Chromium, on a local
+// invite-only server (MVP_INVITES=1). Never against the live instance.
+//   npm run mvp:invite-e2e -- [--db <a COPY of a world>] [--claim <name>] [--out e2e/.shots/invite]
+// It makes a tester's link and an admin link (claiming the human player
+// <name> in the copied world, or a new "Maks"), then checks: a tester opens
+// the link at 360×640, gets the name, buys and fights; the same link on a
+// second device is the same player; the admin sees "End day now" at 1440×900
+// and the tester doesn't; an old device without a token and a bad link both
+// land on a clear screen. A screenshot of each.
+import { spawn, execFileSync } from "node:child_process";
+import { copyFileSync, mkdirSync, mkdtempSync } from "node:fs";
+import { createServer } from "node:net";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { launchChromium } from "./browser.mjs";
+
+const args = process.argv.slice(2);
+const opt = (n) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : undefined; };
+const out = opt("out") ?? "e2e/.shots/invite";
+mkdirSync(out, { recursive: true });
+const db = join(mkdtempSync(join(tmpdir(), "arena-invite-")), "world.db");
+if (opt("db")) copyFileSync(opt("db"), db);
+const claim = opt("claim");
+
+const env = { ...process.env, MVP_DB: db, MVP_DEV: "1", MVP_INVITES: "1" };
+const cli = (...a) => execFileSync("node", ["--import", "tsx/esm", "server/src/mvp/invite-cli.ts", ...a], { env: { ...env, MVP_PUBLIC_URL: "BASE/" }, encoding: "utf8" }).trim();
+const codeOf = (line) => line.slice(line.indexOf("?invite=") + 8);
+const TAG = Date.now().toString(36).slice(-4);
+const tester = `Tester${TAG}`;
+const admin = codeOf(claim ? cli("add", claim, "--claim", "--admin") : cli("add", "Maks", "--admin"));
+const guest = codeOf(cli("add", tester));
+
+execFileSync("npm", ["run", "-s", "mvp:build"], { stdio: "inherit" });
+const port = await new Promise((r) => { const s = createServer().listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => r(p)); }); });
+const child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...env, PORT: String(port) }, stdio: ["ignore", "inherit", "inherit"] });
+const url = `http://127.0.0.1:${port}/arena/`;
+for (let i = 0; i < 50; i++) {
+  try { if ((await fetch(url + "api/v1/health")).ok) break; } catch {}
+  await new Promise((r) => setTimeout(r, 200));
+}
+
+const browser = await launchChromium();
+const errors = [];
+let shots = 0;
+const PHONE = { viewport: { width: 360, height: 640 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
+const DESKTOP = { viewport: { width: 1440, height: 900 } };
+async function device(opts) {
+  const ctx = await browser.newContext(opts);
+  const page = await ctx.newPage();
+  page.on("pageerror", (e) => errors.push(`pageerror: ${e.message}`));
+  return page;
+}
+const shot = (page, name) => page.screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-${name}.png` });
+const text = (page) => page.evaluate(() => document.body.innerText);
+try {
+  // A tester's phone: the link gives the name; buy, fight, see the result.
+  const a = await device(PHONE);
+  await a.goto(`${url}?invite=${guest}`);
+  await a.getByTestId("play").waitFor({ timeout: 15_000 });
+  await shot(a, "tester-home-phone");
+  if (!(await text(a)).includes(tester)) errors.push("tester: home doesn't show the invited name");
+  if (a.url().includes("invite=")) errors.push(`tester: the code stays in the address (${a.url()})`);
+  if (await a.getByTestId("end-day").count()) errors.push("tester: sees End day now");
+  await a.getByTestId("play").click();
+  await a.getByTestId("fight").waitFor({ timeout: 10_000 });
+  await a.getByTestId("offer-0").click();
+  await a.getByTestId("buy").click();
+  await a.getByTestId("line").locator(".card.you").first().waitFor();
+  await shot(a, "tester-shop-phone");
+  await a.getByTestId("fight").click();
+  await a.getByTestId("battle-end").waitFor({ timeout: 10_000 });
+  await a.getByTestId("battle-end").click();
+  await a.getByTestId("end-card").waitFor({ timeout: 10_000 });
+  await shot(a, "tester-result-phone");
+  // A reload keeps the player (the token is on the device).
+  await a.goto(url);
+  await a.getByTestId("play").waitFor();
+  if (!/Continue/i.test(await a.getByTestId("play").textContent())) errors.push("tester: after a reload Home doesn't offer Continue");
+
+  // The same link on a second device: the same player, the same run.
+  const b = await device(PHONE);
+  await b.goto(`${url}?invite=${guest}`);
+  await b.getByTestId("play").waitFor({ timeout: 15_000 });
+  if (!/Continue/i.test(await b.getByTestId("play").textContent())) errors.push("second device: not the same player (no Continue)");
+  await shot(b, "tester-second-device");
+
+  // The admin link on a desktop: the claimed player and the dev tools.
+  const m = await device(DESKTOP);
+  await m.goto(`${url}?invite=${admin}`);
+  await m.getByTestId("play").waitFor({ timeout: 15_000 });
+  if (!(await text(m)).includes(claim ?? "Maks")) errors.push("admin: home doesn't show the name");
+  if (!(await m.getByTestId("end-day").count())) errors.push("admin: no End day now");
+  await shot(m, "admin-home-desktop");
+
+  // An old device (a name from before invites, no token) and a bad link.
+  const old = await device(DESKTOP);
+  await old.addInitScript(() => localStorage.setItem("arena.player", JSON.stringify({ id: "x", name: "old", bot: false })));
+  await old.goto(url);
+  await old.getByTestId("invite-only").waitFor({ timeout: 10_000 });
+  await shot(old, "old-device-desktop");
+  const bad = await device(PHONE);
+  await bad.goto(`${url}?invite=nope`);
+  await bad.getByTestId("invite-bad").waitFor({ timeout: 10_000 });
+  await shot(bad, "bad-link-phone");
+  const fresh = await device(PHONE);
+  await fresh.goto(url);
+  await fresh.getByTestId("invite-only").waitFor({ timeout: 10_000 });
+  await shot(fresh, "no-link-phone");
+} catch (e) {
+  errors.push(`flow: ${e.message.split("\n")[0]}`);
+} finally {
+  await browser.close();
+  child.kill();
+}
+console.log(`invite e2e: ${shots} screenshots in ${out}`);
+if (errors.length) {
+  for (const e of errors) console.error(`✗ ${e}`);
+  process.exit(1);
+}
+console.log("✓ invite links work: tester, second device, admin dev tools, old device, bad link");

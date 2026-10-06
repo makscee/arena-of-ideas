@@ -4,6 +4,7 @@
 import {
   MVP_API_PREFIX,
   PLAYER_HEADER,
+  TOKEN_HEADER,
   type BattleRecord,
   type DayView,
   type Decision,
@@ -12,12 +13,15 @@ import {
   type HomeView,
   type MvpContent,
   type PlayerRef,
+  type PlayerSession,
   type RunView,
   type StatsView,
 } from "../src/mvp/contract";
 
 const BASE = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "") + MVP_API_PREFIX;
 const PLAYER_KEY = "arena.player";
+/** Slice 13: the session token from an invite link, kept on the device. */
+const TOKEN_KEY = "arena.token";
 
 export function savedPlayer(): PlayerRef | null {
   try {
@@ -38,6 +42,22 @@ function savePlayer(p: PlayerRef | null): void {
 }
 
 let player: PlayerRef | null = savedPlayer();
+let token: string | null = (() => {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+})();
+
+function saveToken(t: string | null): void {
+  try {
+    if (t) localStorage.setItem(TOKEN_KEY, t);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* private mode: the session lasts this tab only */
+  }
+}
 
 export class ApiError extends Error {
   constructor(readonly status: number, message: string) {
@@ -48,7 +68,7 @@ export class ApiError extends Error {
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(BASE + path, {
     method,
-    headers: { "content-type": "application/json", ...(player ? { [PLAYER_HEADER]: player.id } : {}) },
+    headers: { "content-type": "application/json", ...(token ? { [TOKEN_HEADER]: token } : player ? { [PLAYER_HEADER]: player.id } : {}) },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
   const json = (await res.json().catch(() => ({ error: res.statusText }))) as T & { error?: string };
@@ -60,15 +80,32 @@ export const api = {
   get player() {
     return player;
   },
+  /** True once an invite link gave this device a session token (slice 13). */
+  get hasToken() {
+    return token !== null;
+  },
   async register(name: string): Promise<PlayerRef> {
     player = await call<PlayerRef>("POST", "/players", { name });
     savePlayer(player);
     return player;
   },
+  /** Opens an invite link (slice 13): this device becomes its player. */
+  async redeem(code: string): Promise<PlayerRef> {
+    const s = await call<PlayerSession>("POST", `/invites/${encodeURIComponent(code)}`);
+    player = s.player;
+    token = s.token;
+    savePlayer(player);
+    saveToken(token);
+    return player;
+  },
   forget(): void {
     player = null;
+    token = null;
     savePlayer(null);
+    saveToken(null);
   },
+  /** `invites`: the server is invite-only, so the name screen asks for a link. */
+  health: () => call<{ invites?: boolean }>("GET", "/health"),
   content: () => call<MvpContent>("GET", "/content"),
   home: () => call<HomeView>("GET", "/home"),
   startRun: () => call<RunView>("POST", "/runs"),

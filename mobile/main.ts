@@ -135,6 +135,11 @@ function legendSheet(): HTMLElement {
 // ---------- name ----------
 
 function nameScreen(): void {
+  // An invite-only server (slice 13) takes no new names: a player comes from
+  // their invite link.
+  void api.health().then((hl) => {
+    if (hl.invites) show(h("h1", {}, "ARENA OF IDEAS"), h("p", { class: "dim", "data-testid": "invite-only" }, "Arena is invite-only for now. Open your invite link on this device to play."));
+  }, () => {});
   const input = h("input", { placeholder: "Your name", maxlength: "24", autocomplete: "nickname", "data-testid": "name-input" });
   const err = errorLine();
   const go = () => guarded(err, async () => {
@@ -1072,9 +1077,37 @@ function runOverScreen(run: RunView, content: MvpContent, notice = "", newRun = 
 
 // ---------- boot ----------
 
-if (api.player) {
+/** `?invite=<code>` in the address (slice 13): open the link, then drop the
+ * code from the address bar and go Home as its player. A link that fails
+ * keeps its code, so Retry tries it again. */
+const inviteCode = new URLSearchParams(location.search).get("invite");
+if (inviteCode) {
   const err = errorLine();
-  void guarded(err, homeScreen).then(() => {
+  void guarded(err, async () => {
+    await api.redeem(inviteCode);
+    const url = new URL(location.href);
+    url.searchParams.delete("invite");
+    history.replaceState(null, "", url);
+    await homeScreen();
+  }).then(() => {
+    if (err.textContent)
+      show(
+        h("h1", {}, "ARENA"),
+        h("p", { class: "dim", "data-testid": "invite-bad" }, err.textContent.startsWith("no such invite") ? "This invite link doesn't work. Ask Maks for a new one." : err.textContent),
+        button("Retry", () => location.reload(), "primary"),
+      );
+  });
+} else if (api.player) {
+  const err = errorLine();
+  void guarded(err, async () => {
+    // A name from before invites (no token) is no login on an invite-only
+    // server: forget it and ask for the link.
+    if (!api.hasToken && (await api.health()).invites) {
+      api.forget();
+      return nameScreen();
+    }
+    await homeScreen();
+  }).then(() => {
     if (err.textContent) show(h("h1", {}, "ARENA"), err, button("Retry", () => location.reload(), "primary"));
   });
 } else nameScreen();

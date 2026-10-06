@@ -19,6 +19,11 @@
 #                                        # old DB and the redeploy exits 1
 #   npm run mvp:redeploy -- --dry-run    # print what would run on m1, run nothing
 #
+# Invite-only since slice 13 (MVP_INVITES=1): players come from invite links,
+# made on m1 with `cd ~/arena-mvp && npm run mvp:invite -- add <name>` (see
+# server/src/mvp/invite-cli.ts), and "End day now" shows only to admin
+# invites. ARENA_MVP_INVITES=0 redeploys it open (names, no links).
+#
 # Runs from anywhere with `ssh m1`; on m1 itself it runs locally. The server
 # is a launchd agent (ru.makscee.arena-mvp), so it restarts on crash and login.
 # The deployed commit goes into its env (MVP_BUILD): `build` on /api/v1/health.
@@ -44,6 +49,7 @@ PORT="${ARENA_MVP_PORT:-8791}"
 NAMER_PORT="${ARENA_NAMER_PORT:-8792}"
 NAMER_MODEL="${ARENA_NAMER_MODEL:-mlx-community/Qwen3-4B-Instruct-2507-4bit}"
 HOST_ALIAS="${ARENA_MVP_HOST:-m1}"
+INVITES="${ARENA_MVP_INVITES:-1}"
 
 remote() {
   cat <<SCRIPT
@@ -108,6 +114,7 @@ cat > "\$PLIST" <<PL
     <key>HOST</key><string>127.0.0.1</string>
     <key>BASE_PATH</key><string>/arena</string>
     <key>MVP_DEV</key><string>1</string>
+    <key>MVP_INVITES</key><string>$INVITES</string>
     <key>MVP_DB</key><string>\$DB</string>
     <key>MVP_BUILD</key><string>\$BUILD</string>
     <key>ARENA_NAMER_URL</key><string>http://127.0.0.1:$NAMER_PORT/v1/chat/completions</string>
