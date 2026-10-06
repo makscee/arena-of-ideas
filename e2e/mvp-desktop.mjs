@@ -10,6 +10,7 @@ import { spawn, execFileSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { createServer } from "node:net";
 import { launchChromium } from "./browser.mjs";
+import { escPass } from "./esc-keys.mjs";
 
 const W = 1440;
 const H = 900;
@@ -565,6 +566,9 @@ try {
   }
 
   console.log(`mvp desktop: ${round} fights, ${shots} screenshots in ${out}, ${iconCards} card icon lines fit`);
+  // Esc everywhere (R3-6): a fresh player, keys only.
+  await escPass(browser, url, { label: `desktop-${W}`, viewport: { width: W, height: H }, errors });
+  await escPass(browser, url, { label: "narrow-390", viewport: { width: 390, height: 844 }, errors });
 } finally {
   await browser.close();
   child?.kill();

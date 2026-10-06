@@ -24,7 +24,7 @@ import { beatPlayOf, chainOf, damageByUnit, firingOf, keyMomentsOf, stepsOf, tim
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { card, formRich, unitSheet } from "../ui/card";
-import { app, button, closable, fitText, h, isDesktop, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
+import { button, closable, fitText, h, isDesktop, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
 import { icon } from "../ui/icon";
 import { statusesShown, STATUS_ROW_FALLBACK } from "../ui/status-row";
 
