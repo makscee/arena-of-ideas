@@ -3,7 +3,7 @@
 // over the causal log; the phone client (mobile/screens/battle.ts) only draws
 // what these return. "Why did this happen" is always a walk up `causedBy`.
 
-import { isRootKind } from "../beats.js";
+import { beatsOf, isRootKind } from "../beats.js";
 import { displayNames, type NameOf } from "../trace.js";
 import type { BattleEvent, Side } from "../types.js";
 
@@ -231,6 +231,108 @@ export function stepsOf(log: BattleEvent[], name: NameOf = displayNames(log), si
     byEvent.set(e.id, step);
   }
   return steps;
+}
+
+// ---------- beats: one strike (or turn end) and everything it sets off ----------
+
+/** A beat as the viewer plays it (round 2, R2-12): one root event (a strike,
+ * a turn end, fatigue, …) plus its whole cascade, in quick waves. A wave is a
+ * Step: one firing's same-kind effects landing together, so a buff on all
+ * allies is one wave, and a status that leaves because of a hit ("Shield
+ * absorbs 1") folds into that hit. Beats with nothing to show are dropped. */
+export interface PlayBeat {
+  index: number;
+  turn: number;
+  /** The waves, in log order; never empty. */
+  waves: Step[];
+  /** Every event id the beat reveals; the board after it is boardAt(log, end). */
+  end: number;
+  /** The board before the beat: boardAt(log, start - 1). */
+  start: number;
+}
+
+/** Milliseconds between waves at 1×, the shortest a beat lasts, and the cap. */
+export const WAVE_MS = 150;
+export const BEAT_MS = 1200;
+export const BEAT_MAX_MS = 1500;
+/** How long the last wave stays before the next beat. */
+const BEAT_HOLD_MS = 800;
+
+/** When each wave lands (ms from the beat's start, at 1×) and how long the
+ * beat lasts: waves 150 ms apart, squeezed so the last lands by 700 ms; the
+ * beat lasts 1.2 s, up to 1.5 s for a long cascade. */
+export function beatTiming(waves: number): { at: number[]; ms: number } {
+  const span = BEAT_MAX_MS - BEAT_HOLD_MS;
+  const gap = waves > 1 ? Math.min(WAVE_MS, span / (waves - 1)) : 0;
+  const at = Array.from({ length: waves }, (_, i) => Math.round(i * gap));
+  return { at, ms: Math.min(BEAT_MAX_MS, Math.max(BEAT_MS, (at.at(-1) ?? 0) + BEAT_HOLD_MS)) };
+}
+
+/** Which firing made a step: its first event's parent and source. Steps of
+ * one firing and one kind land in the same wave. */
+function waveKey(log: BattleEvent[], s: Step): string {
+  const e = log[s.eventIds[0]!]!;
+  const src = e.source === "kernel" ? "kernel" : `${e.source.unit}/${e.source.status ?? ""}/${e.source.ability}`;
+  return `${e.causedBy}|${src}|${e.type}|${s.changes[0]?.label ?? ""}`;
+}
+
+/** One caption for several targets of one firing: "Coach → Strength ×1 on Rose, Ace". */
+function groupCaption(first: Step, names: string[], label: string): string {
+  const cause = first.caption.split(" → ")[0];
+  return `${cause} → ${label} on ${names.join(", ")}`;
+}
+
+export function beatPlayOf(log: BattleEvent[], steps: Step[], name: NameOf = displayNames(log)): PlayBeat[] {
+  // 1. A status leaving because of a hit or a heal folds into that step.
+  const byEvent = new Map<number, Step>();
+  const kept: Step[] = [];
+  for (const s of steps) {
+    const first = log[s.eventIds[0]!]!;
+    const parent = first.type === "StatusRemoved" && first.causedBy !== null ? byEvent.get(first.causedBy) : undefined;
+    if (parent && first.type === "StatusRemoved") {
+      parent.eventIds.push(...s.eventIds);
+      parent.changes.push(...s.changes);
+      parent.caption += `, ${first.status} −${first.stacks}`;
+      for (const id of s.eventIds) byEvent.set(id, parent);
+      continue;
+    }
+    const copy: Step = { ...s, eventIds: [...s.eventIds], changes: [...s.changes] };
+    kept.push(copy);
+    for (const id of copy.eventIds) byEvent.set(id, copy);
+  }
+  // 2. Steps fall into the log's beats; one firing's same-kind effects form one wave.
+  const beats = beatsOf(log);
+  const beatOf = new Map<number, number>();
+  for (const b of beats) for (let id = b.start; id <= b.end; id++) beatOf.set(id, b.index);
+  const out: PlayBeat[] = [];
+  let cur: { b: number; waves: Step[]; keys: string[]; names: string[][] } | null = null;
+  const flush = () => {
+    if (!cur) return;
+    const b = beats[cur.b]!;
+    out.push({ index: out.length, turn: cur.waves[0]!.turn, waves: cur.waves, start: b.start, end: b.end });
+  };
+  for (const s of kept) {
+    const b = beatOf.get(s.eventIds[0]!) ?? -1;
+    if (!cur || cur.b !== b) {
+      flush();
+      cur = { b, waves: [], keys: [], names: [] };
+    }
+    const key = waveKey(log, s);
+    const last = cur.waves.length - 1;
+    const prev = cur.waves[last];
+    if (prev && cur.keys[last] === key && s.changes.length && prev.changes[0]?.unit !== s.changes[0]?.unit) {
+      prev.eventIds.push(...s.eventIds);
+      prev.changes.push(...s.changes);
+      cur.names[last]!.push(name(s.changes[0]!.unit));
+      prev.caption = groupCaption(prev, cur.names[last]!, s.changes[0]!.label);
+      continue;
+    }
+    cur.waves.push(s);
+    cur.keys.push(key);
+    cur.names.push(s.changes[0] ? [name(s.changes[0].unit)] : []);
+  }
+  flush();
+  return out;
 }
 
 function causeName(log: BattleEvent[], e: BattleEvent, name: NameOf): string {
