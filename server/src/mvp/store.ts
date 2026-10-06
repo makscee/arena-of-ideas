@@ -62,6 +62,44 @@ export interface MvpStore {
   addUnitTallies(contentVersion: string, delta: UnitTallies): void;
   /** The running totals for `contentVersion`; zero runs and no units before any. */
   unitTallies(contentVersion: string): UnitTallies;
+  // Slice 13's invite links and sessions; only ./invites.ts writes them.
+  /** Players with this name (by `nameKey`): humans only, or bots too with `bots`. */
+  playersNamed(name: string, opts?: { bots?: boolean }): PlayerRef[];
+  /** Stores or replaces the invite with this code. */
+  putInvite(i: Invite): void;
+  invite(code: string): Invite | undefined;
+  invites(): Invite[];
+  /** Opens the invite `code` in one step: a session (`tokenHash`, the hex
+   * SHA-256 of its token; the token itself is never stored) for its player,
+   * only if the code still exists when the session is written, so a revoke
+   * can't race it. Marks the invite opened, keeps the player's newest
+   * `MAX_SESSIONS` sessions, and returns the player id (undefined: no such code). */
+  redeemInvite(code: string, tokenHash: string, at: string): string | undefined;
+  /** The player id of the session with this token hash. */
+  sessionPlayer(tokenHash: string): string | undefined;
+  /** Swaps the invite `oldCode` for `next` (a rotated code) and ends every
+   * session of its player, in one step; returns how many sessions ended. */
+  rotateInvite(oldCode: string, next: Invite): number;
+}
+
+/** Devices per player: opening a link past this ends the oldest session. */
+export const MAX_SESSIONS = 10;
+
+/** How names compare: Unicode-folded (NFKC) and lower-cased in JS, so
+ * Cyrillic and full-width letters match too (SQLite's lower() is ASCII only). */
+export const nameKey = (name: string) => name.normalize("NFKC").toLowerCase();
+
+/** One person's invite link (slice 13). Its code is the secret in the URL;
+ * opening it on any device gives the same player. Names are unique among
+ * invites (case-insensitive). `admin` may use the dev tools. */
+export interface Invite {
+  code: string;
+  name: string;
+  playerId: string;
+  admin: boolean;
+  createdAt: string;
+  /** When it was first opened. */
+  redeemedAt: string | null;
 }
 
 /** Counted as runs go (./stats.ts): `runs` is the finished runs, and per unit
@@ -91,6 +129,9 @@ export class MemoryMvpStore implements MvpStore {
   private daysBySeq = new Map<number, DayState>();
   private playoffsBySeq = new Map<number, PlayoffResult>();
   private talliesByVersion = new Map<string, { runs: number; units: Map<UnitId, UnitTally> }>();
+  private invitesByCode = new Map<string, Invite>();
+  /** token hash → player id, oldest first (Map keeps insertion order). */
+  private sessions = new Map<string, string>();
   addPlayer(p: PlayerRef): void { this.players.set(p.id, p); }
   player(id: string): PlayerRef | undefined { return this.players.get(id); }
   putRun(r: MvpRunState): void { this.runs.set(r.runId, r); }
@@ -151,6 +192,40 @@ export class MemoryMvpStore implements MvpStore {
     const t = this.talliesByVersion.get(contentVersion);
     return { runs: t?.runs ?? 0, units: t ? [...t.units.values()].map((u) => ({ ...u })) : [] };
   }
+  playersNamed(name: string, opts: { bots?: boolean } = {}): PlayerRef[] {
+    const key = nameKey(name);
+    return [...this.players.values()].filter((p) => (opts.bots || !p.bot) && nameKey(p.name) === key);
+  }
+  putInvite(i: Invite): void {
+    for (const other of this.invitesByCode.values())
+      if (other.code !== i.code && nameKey(other.name) === nameKey(i.name)) throw new Error(`an invite named ${i.name} exists`);
+    this.invitesByCode.set(i.code, { ...i });
+  }
+  rotateInvite(oldCode: string, next: Invite): number {
+    const old = this.invitesByCode.get(oldCode);
+    this.invitesByCode.delete(oldCode);
+    try {
+      this.putInvite(next);
+    } catch (e) {
+      if (old) this.invitesByCode.set(oldCode, old);
+      throw e;
+    }
+    let n = 0;
+    for (const [h, id] of this.sessions) if (id === next.playerId && this.sessions.delete(h)) n++;
+    return n;
+  }
+  invite(code: string): Invite | undefined { const i = this.invitesByCode.get(code); return i && { ...i }; }
+  invites(): Invite[] { return [...this.invitesByCode.values()].map((i) => ({ ...i })); }
+  redeemInvite(code: string, tokenHash: string, at: string): string | undefined {
+    const i = this.invitesByCode.get(code);
+    if (!i) return undefined;
+    this.sessions.set(tokenHash, i.playerId);
+    i.redeemedAt ??= at;
+    const mine = [...this.sessions].filter(([, id]) => id === i.playerId);
+    for (const [h] of mine.slice(0, Math.max(0, mine.length - MAX_SESSIONS))) this.sessions.delete(h);
+    return i.playerId;
+  }
+  sessionPlayer(tokenHash: string): string | undefined { return this.sessions.get(tokenHash); }
 }
 
 /** Ordered: (a, b) and (b, a) are different fusions. */

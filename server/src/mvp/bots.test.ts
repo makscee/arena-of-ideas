@@ -187,6 +187,42 @@ describe("MVP bots and world (slice 6)", () => {
     expect(botDecision(run(full, 9), rt.content, rt.rules, 0)).toEqual({ kind: "fight" });
   });
 
+  it("the bot uses the bench (R3-13): keeps a better tier there, fields the best 5, fuses from it", () => {
+    const rt = world();
+    const t1 = rt.content.units.filter((u) => u.tier === 1);
+    const t3 = rt.content.units.find((u) => u.tier === 3)!;
+    const unit = (u: (typeof t1)[number], uid: string, copies = 1) => lineUnitOf(u, uid, copies, rt.rules);
+    const line = t1.slice(0, 5).map((u, i) => unit(u, `l${i}`));
+    const offers = [{ slot: 0, unitId: t3.id, tier: 3, cost: 3 }];
+    const run = (bench: ReturnType<typeof unit>[], l = line, o = offers, gold = 3) => ({ phase: "shop", round: 9, line: l, bench, offers: o, gold }) as never;
+    // Line full, a higher tier on offer, the bench has room: buy it (onto the bench).
+    expect(botDecision(run([]), rt.content, rt.rules, 0)).toEqual({ kind: "buy", slot: 0 });
+    // Bench full of singles: sell the weakest single instead.
+    const bench = t1.slice(5, 8).map((u, i) => unit(u, `b${i}`));
+    expect(botDecision(run(bench), rt.content, rt.rules, 0)).toMatchObject({ kind: "sell" });
+    // A copy of a bench unit is a copy: buy it.
+    expect(botDecision(run(bench, line, [{ slot: 0, unitId: bench[1]!.unitId, tier: 1, cost: 3 }]), rt.content, rt.rules, 0)).toEqual({ kind: "buy", slot: 0 });
+    // Nothing to buy: a stronger bench unit comes in for the weakest line unit.
+    const strong = unit(t1[5]!, "b0", 2);
+    const d = botDecision(run([strong], line, [], 0), rt.content, rt.rules, 0);
+    expect(d).toMatchObject({ kind: "reorder", from: rt.rules.lineSize });
+    // A line with room takes the bench unit into its empty slot.
+    expect(botDecision(run([strong], line.slice(0, 4), [], 0), rt.content, rt.rules, 0)).toEqual({ kind: "reorder", from: 5, to: 4 });
+    // Two Awoken units on the bench fuse, by board slot.
+    expect(botDecision(run([unit(t1[5]!, "b0", 3), unit(t1[6]!, "b1", 3)], line, [], 0), rt.content, rt.rules, 0)).toMatchObject({ kind: "fuse", first: expect.any(Number), second: expect.any(Number) });
+  });
+
+  it("bot runs use the bench", async () => {
+    const rt = world();
+    await seedChampion(rt);
+    let benched = 0;
+    for (let i = 0; i < 20; i++) {
+      const run = playBotRun(rt);
+      if (run.bench.length > 0) benched++;
+    }
+    expect(benched).toBeGreaterThan(0);
+  }, 30_000);
+
   it("botWorld seeds the champion at start and tops up in the background until stopped", async () => {
     const rt = world();
     const log = vi.spyOn(console, "log").mockImplementation(() => {});

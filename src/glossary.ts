@@ -229,6 +229,21 @@ const SCOPE_SUBJECT: Record<Exclude<UnitFilter, "holder">, string> = {
  * isn't a unit trigger) keeps the plain label. */
 export function scopedLabel(id: TermId, scope?: UnitFilter): string | undefined {
   const def = termDef(id);
-  if (!def || !scope || scope === "holder" || !id.startsWith("trigger:") || !SCOPED_EVENT[id.slice("trigger:".length) as EventPattern["on"]]) return def?.label;
-  return `${SCOPE_SUBJECT[scope]} ${def.label.charAt(0).toLowerCase()}${def.label.slice(1)}`;
+  if (!def || !id.startsWith("trigger:") || !SCOPED_EVENT[id.slice("trigger:".length) as EventPattern["on"]]) return def?.label;
+  return scopeLabel(def.label, scope);
+}
+
+/** Any label said of a scope: "Dies" → "Ally dies". The one place the words
+ * live, so card tooltips, the Codex and the battle can't drift apart. */
+export function scopeLabel(label: string, scope?: UnitFilter): string {
+  if (!scope || scope === "holder") return label;
+  return `${SCOPE_SUBJECT[scope]} ${label.charAt(0).toLowerCase()}${label.slice(1)}`;
+}
+
+/** A fired trigger's label, scoped, a status trigger read as its status:
+ * "Ally gets Shield", "Loses Poison", "Enemy hit", "Turn end". */
+export function triggerLabel(id: TermId, status?: string, scope?: UnitFilter): string {
+  if (status && (id === "trigger:StatusApplied" || id === "trigger:StatusRemoved"))
+    return scopeLabel(`${id === "trigger:StatusRemoved" ? "Loses" : "Gets"} ${status}`, scope);
+  return scopedLabel(id, scope) ?? id;
 }
