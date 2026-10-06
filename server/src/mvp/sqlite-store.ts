@@ -11,7 +11,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
-import type { Invite, MvpStore, UnitTallies, UnitTally } from "./store.js";
+import { nameKey, type Invite, type MvpStore, type UnitTallies, type UnitTally } from "./store.js";
 
 const SQL_DIR = fileURLToPath(new URL("./sql/", import.meta.url));
 
@@ -133,13 +133,15 @@ export class SqliteMvpStore implements MvpStore {
     return { runs, units };
   }
 
-  playersNamed(name: string): PlayerRef[] {
-    return this.all<PlayerRef>("SELECT json FROM mvp_players WHERE lower(json_extract(json, '$.name')) = lower(?) AND json_extract(json, '$.bot') = 0 ORDER BY rowid", name);
+  playersNamed(name: string, opts: { bots?: boolean } = {}): PlayerRef[] {
+    // Compared in JS (nameKey): SQLite's lower() folds ASCII only.
+    const key = nameKey(name);
+    return this.all<PlayerRef>(`SELECT json FROM mvp_players${opts.bots ? "" : " WHERE json_extract(json, '$.bot') = 0"} ORDER BY rowid`).filter((p) => nameKey(p.name) === key);
   }
   putInvite(i: Invite): void {
     this.write(
       "INSERT INTO mvp_invites (code, name_key, player_id, json) VALUES (?, ?, ?, ?) ON CONFLICT(code) DO UPDATE SET name_key = excluded.name_key, player_id = excluded.player_id, json = excluded.json",
-      i.code, i.name.toLowerCase(), i.playerId, JSON.stringify(i),
+      i.code, nameKey(i.name), i.playerId, JSON.stringify(i),
     );
   }
   invite(code: string): Invite | undefined { return this.one("SELECT json FROM mvp_invites WHERE code = ?", code); }
@@ -149,5 +151,14 @@ export class SqliteMvpStore implements MvpStore {
   }
   sessionPlayer(tokenHash: string): string | undefined {
     return (this.db.prepare("SELECT player_id FROM mvp_sessions WHERE token_hash = ?").get(tokenHash) as { player_id: string } | undefined)?.player_id;
+  }
+  deleteSessions(playerId: string): number {
+    return this.db.prepare("DELETE FROM mvp_sessions WHERE player_id = ?").run(playerId).changes;
+  }
+  replaceInvite(oldCode: string, next: Invite): void {
+    this.db.transaction(() => {
+      this.write("DELETE FROM mvp_invites WHERE code = ?", oldCode);
+      this.putInvite(next);
+    })();
   }
 }

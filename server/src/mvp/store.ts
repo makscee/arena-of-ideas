@@ -63,8 +63,8 @@ export interface MvpStore {
   /** The running totals for `contentVersion`; zero runs and no units before any. */
   unitTallies(contentVersion: string): UnitTallies;
   // Slice 13's invite links and sessions; only ./invites.ts writes them.
-  /** Human players (not bots) with this name, compared case-insensitively. */
-  playersNamed(name: string): PlayerRef[];
+  /** Players with this name (by `nameKey`): humans only, or bots too with `bots`. */
+  playersNamed(name: string, opts?: { bots?: boolean }): PlayerRef[];
   /** Stores or replaces the invite with this code. */
   putInvite(i: Invite): void;
   invite(code: string): Invite | undefined;
@@ -73,7 +73,15 @@ export interface MvpStore {
   addSession(tokenHash: string, playerId: string, at: string): void;
   /** The player id of the session with this token hash. */
   sessionPlayer(tokenHash: string): string | undefined;
+  /** Ends every session of this player (a revoked link); returns how many. */
+  deleteSessions(playerId: string): number;
+  /** Swaps the invite `oldCode` for `next` (a rotated code) in one step. */
+  replaceInvite(oldCode: string, next: Invite): void;
 }
+
+/** How names compare: Unicode-folded (NFKC) and lower-cased in JS, so
+ * Cyrillic and full-width letters match too (SQLite's lower() is ASCII only). */
+export const nameKey = (name: string) => name.normalize("NFKC").toLowerCase();
 
 /** One person's invite link (slice 13). Its code is the secret in the URL;
  * opening it on any device gives the same player. Names are unique among
@@ -177,19 +185,34 @@ export class MemoryMvpStore implements MvpStore {
     const t = this.talliesByVersion.get(contentVersion);
     return { runs: t?.runs ?? 0, units: t ? [...t.units.values()].map((u) => ({ ...u })) : [] };
   }
-  playersNamed(name: string): PlayerRef[] {
-    const key = name.toLowerCase();
-    return [...this.players.values()].filter((p) => !p.bot && p.name.toLowerCase() === key);
+  playersNamed(name: string, opts: { bots?: boolean } = {}): PlayerRef[] {
+    const key = nameKey(name);
+    return [...this.players.values()].filter((p) => (opts.bots || !p.bot) && nameKey(p.name) === key);
   }
   putInvite(i: Invite): void {
     for (const other of this.invitesByCode.values())
-      if (other.code !== i.code && other.name.toLowerCase() === i.name.toLowerCase()) throw new Error(`an invite named ${i.name} exists`);
+      if (other.code !== i.code && nameKey(other.name) === nameKey(i.name)) throw new Error(`an invite named ${i.name} exists`);
     this.invitesByCode.set(i.code, { ...i });
+  }
+  replaceInvite(oldCode: string, next: Invite): void {
+    const old = this.invitesByCode.get(oldCode);
+    this.invitesByCode.delete(oldCode);
+    try {
+      this.putInvite(next);
+    } catch (e) {
+      if (old) this.invitesByCode.set(oldCode, old);
+      throw e;
+    }
   }
   invite(code: string): Invite | undefined { const i = this.invitesByCode.get(code); return i && { ...i }; }
   invites(): Invite[] { return [...this.invitesByCode.values()].map((i) => ({ ...i })); }
   addSession(tokenHash: string, playerId: string): void { this.sessions.set(tokenHash, playerId); }
   sessionPlayer(tokenHash: string): string | undefined { return this.sessions.get(tokenHash); }
+  deleteSessions(playerId: string): number {
+    let n = 0;
+    for (const [h, id] of this.sessions) if (id === playerId && this.sessions.delete(h)) n++;
+    return n;
+  }
 }
 
 /** Ordered: (a, b) and (b, a) are different fusions. */

@@ -3,18 +3,21 @@
  * against the server's SQLite file (safe while the server runs).
  *
  *   npm run mvp:invite -- list
- *   npm run mvp:invite -- add <name> [--claim | --player <id>] [--admin]
+ *   npm run mvp:invite -- add <name> [--claim | --player <id>] [--admin | --no-admin]
+ *   npm run mvp:invite -- revoke <name>
  *
  * `add` prints the person's link. A new name makes a new player. A name an
  * existing human player has is refused unless --claim (the only human player
  * with that name) or --player <id> claims that player (the ids are listed), so
  * they keep their runs, rating and fusions. --admin lets
  * that player use the dev tools ("End day now"). A player who already has a
- * link gets the same link back. Env: MVP_DB (default data/arena-mvp.db),
+ * link gets the same link back; --admin / --no-admin on it promotes or demotes
+ * them. Links last until revoked: `revoke` ends every device's session and
+ * prints the person's new link (the old one stops working). Env: MVP_DB (default data/arena-mvp.db),
  * MVP_PUBLIC_URL (default https://m1.twin-pogona.ts.net/arena/).
  */
 import { SqliteMvpStore } from "./sqlite-store.js";
-import { createInvite, InviteError } from "./invites.js";
+import { createInvite, InviteError, revokeInvite } from "./invites.js";
 
 const [cmd, ...rest] = process.argv.slice(2);
 const store = new SqliteMvpStore(process.env.MVP_DB ?? "data/arena-mvp.db");
@@ -33,8 +36,12 @@ try {
   if (cmd === "list") {
     for (const i of store.invites()) console.log(`${i.name}\t${i.playerId}\t${i.admin ? "admin" : "-"}\t${i.redeemedAt ? `opened ${i.redeemedAt}` : "not opened"}\t${link(i.code)}`);
   } else if (cmd === "add") {
-    const admin = rest.includes("--admin");
-    if (admin) rest.splice(rest.indexOf("--admin"), 1);
+    const promote = rest.includes("--admin");
+    if (promote) rest.splice(rest.indexOf("--admin"), 1);
+    const demote = rest.includes("--no-admin");
+    if (demote) rest.splice(rest.indexOf("--no-admin"), 1);
+    if (promote && demote) throw new InviteError("--admin or --no-admin, not both");
+    const admin = promote ? true : demote ? false : undefined;
     const claim = rest.includes("--claim");
     if (claim) rest.splice(rest.indexOf("--claim"), 1);
     let playerId = flag("--player");
@@ -48,8 +55,13 @@ try {
       const i = createInvite(store, { name, playerId, admin, now: new Date() });
       console.log(`${i.name}${i.admin ? " (admin)" : ""}: ${link(i.code)}`);
     }
+  } else if (cmd === "revoke") {
+    const name = rest.join(" ");
+    const r = revokeInvite(store, name, new Date());
+    if (!r) throw new InviteError(`no invite named ${name}`);
+    console.log(`${r.invite.name}: the old link is dead, ${r.sessions} device session(s) ended. New link: ${link(r.invite.code)}`);
   } else {
-    console.error("usage: mvp:invite -- list | add <name> [--claim | --player <id>] [--admin]");
+    console.error("usage: mvp:invite -- list | add <name> [--claim | --player <id>] [--admin | --no-admin] | revoke <name>");
     process.exitCode = 2;
   }
 } catch (e) {

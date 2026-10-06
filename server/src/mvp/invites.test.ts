@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import type { HomeView, PlayerRef, PlayerSession, RunView } from "../../../src/mvp/contract.js";
 import { createMvpApp } from "./app.js";
 import { mvpContent } from "./content.js";
-import { createInvite, hashToken, InviteError } from "./invites.js";
+import { createInvite, hashToken, InviteError, revokeInvite } from "./invites.js";
 import { mvpRuntime, type MvpDeps } from "./runtime.js";
 import { SqliteMvpStore } from "./sqlite-store.js";
 import { MemoryMvpStore } from "./store.js";
@@ -97,6 +97,60 @@ describe("invite links (slice 13)", () => {
     expect(() => createInvite(store, { name: "eva", now })).toThrow(/taken/);
     expect(eva.code).toMatch(/^[\w-]{16}$/);
     expect(() => createInvite(store, { name: "bad/name", now })).toThrow(/name/);
+  });
+
+  it("revoke ends every device's session and rotates the code; the player and rating stay", async () => {
+    for (const store of [new MemoryMvpStore(), new SqliteMvpStore(":memory:")]) {
+      const { call, now } = world({ store });
+      const inv = createInvite(store, { name: "Eva", now });
+      const a = await call<PlayerSession>("POST", `/invites/${inv.code}`);
+      const b = await call<PlayerSession>("POST", `/invites/${inv.code}`);
+      expect((await call<HomeView>("GET", "/home", tok(a.json))).json.rating).not.toBeNull();
+      const r = revokeInvite(store, "eva", now)!;
+      expect(r.sessions).toBe(2);
+      expect(r.invite.code).not.toBe(inv.code);
+      expect(r.invite.playerId).toBe(inv.playerId);
+      expect(r.invite.redeemedAt).toBeNull();
+      for (const s of [a, b]) {
+        expect((await call<HomeView>("GET", "/home", tok(s.json))).json.rating).toBeNull();
+        expect((await call("POST", "/runs", tok(s.json))).status).toBe(401);
+      }
+      expect((await call("POST", `/invites/${inv.code}`)).status).toBe(404);
+      const c = await call<PlayerSession>("POST", `/invites/${r.invite.code}`);
+      expect(c.json.player.id).toBe(inv.playerId);
+      expect(store.invites().map((i) => i.code)).toEqual([r.invite.code]);
+      expect(revokeInvite(store, "nobody", now)).toBeUndefined();
+    }
+  });
+
+  it("promotes and demotes an existing invite's admin, keeping its link", async () => {
+    const { store, call, now } = world();
+    const inv = createInvite(store, { name: "Eva", now });
+    const s = await call<PlayerSession>("POST", `/invites/${inv.code}`);
+    const up = createInvite(store, { name: "Eva", playerId: inv.playerId, admin: true, now });
+    expect(up).toEqual({ ...inv, admin: true, redeemedAt: up.redeemedAt });
+    expect((await call<HomeView>("GET", "/home", tok(s.json))).json.dev).toBe(true);
+    expect(createInvite(store, { name: "Eva", playerId: inv.playerId, now }).admin).toBe(true);
+    const down = createInvite(store, { name: "Eva", playerId: inv.playerId, admin: false, now });
+    expect(down.code).toBe(inv.code);
+    expect(down.admin).toBe(false);
+    expect((await call<HomeView>("GET", "/home", tok(s.json))).json.dev).toBe(false);
+    expect((await call("POST", "/dev/end-day", tok(s.json))).status).toBe(404);
+  });
+
+  it("never gives an invite a bot's name, and folds names with Unicode case (Cyrillic too)", () => {
+    const store = new SqliteMvpStore(":memory:");
+    const now = new Date();
+    store.addPlayer({ id: "b1", name: "bot-Esk", bot: true });
+    expect(() => createInvite(store, { name: "BOT-esk", now })).toThrow(/bot's name/);
+    expect(createInvite(store, { name: "Esk", now }).name).toBe("Esk");
+    expect(() => createInvite(store, { name: "bot-Someone", now })).toThrow(/bot's name/);
+    store.addPlayer({ id: "p1", name: "Макс", bot: false });
+    expect(store.playersNamed("МАКС").map((p) => p.id)).toEqual(["p1"]);
+    expect(() => createInvite(store, { name: "МАКС", now })).toThrow(/taken by p1/);
+    createInvite(store, { name: "Ёжик", now });
+    expect(() => createInvite(store, { name: "ёЖИК", now })).toThrow(/taken/);
+    store.close();
   });
 
   it("keeps players, runs and ratings when the migration runs on an existing SQLite world", async () => {
