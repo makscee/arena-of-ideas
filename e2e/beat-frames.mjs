@@ -30,8 +30,9 @@ const times = [];
  * screen took, and the speed. */
 const plans = [];
 const speeds = [];
-/** Damage floats' visible runs, each as a fraction of its battle's 1× float (ms × speed). */
+/** Damage floats' visible runs, each as a fraction of its battle's 1× float (ms × speed); runs that grew into the next wave's float, apart. */
 const floatMs = [];
+const mergedMs = [];
 /** In the page: every animation frame, which damage floats show (opacity > 0.3),
  * keyed by card and label; a key's visible run ends when it stops showing. */
 const sampleFloats = () => {
@@ -46,8 +47,10 @@ const sampleFloats = () => {
       seen.add(key);
       if (!open.has(key)) open.set(key, now);
     }
-    for (const [key, t] of open) if (!seen.has(key)) { runs.push(now - t); open.delete(key); }
-    if (document.querySelector('[data-testid="battle-done"]')) { window.__floatRuns = runs; return; }
+    for (const [key, t] of open) if (!seen.has(key)) { runs.push({ card: key.split("|")[0], ms: now - t, end: now }); open.delete(key); }
+    // A float that grows ("−2" → "−5" as the next wave hits the same card) ends one key and
+    // starts the next on that card: that is a merge, not a float cut short.
+    if (document.querySelector('[data-testid="battle-done"]')) { window.__floatRuns = runs.map((r) => ({ ms: r.ms, merged: runs.some((x) => x !== r && x.card === r.card && x.end - x.ms >= r.end - 120 && x.end - x.ms <= r.end + 40) })); return; }
     requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
@@ -83,7 +86,7 @@ for (const motion of ["no-preference", "reduce"]) {
       plans.push(Number(await page.locator(".bv-controls").getAttribute("data-plan-ms")) / 1000 / speed);
       speeds.push(speed);
     }
-    if (motion !== "reduce") floatMs.push(...(await page.waitForFunction(() => window.__floatRuns).then((h) => h.jsonValue())).map((ms) => ms * speed));
+    if (motion !== "reduce") for (const r of await page.waitForFunction(() => window.__floatRuns).then((h) => h.jsonValue())) (r.merged ? mergedMs : floatMs).push(r.ms * speed);
     await page.screenshot({ path: `${out}/${motion === "reduce" ? "still" : "move"}-r${round}-end.png` });
     await page.getByTestId("battle-done").click();
     // Done goes straight on to the next shop, or to the run's end.
@@ -98,7 +101,7 @@ const sorted = [...floatMs].sort((p, q) => p - q);
 const FLOAT_MIN_MS = 500;
 // Float times are scaled to 1× (ms × speed), so the bar holds at any speed.
 const cut = sorted.filter((ms) => ms < FLOAT_MIN_MS).length;
-console.log(`damage floats: ${sorted.length} seen, median ${Math.round(sorted[Math.floor(sorted.length / 2)] ?? 0)} ms visible at 1×, ${cut} under ${FLOAT_MIN_MS / 1000} s at 1×`);
+console.log(`damage floats: ${sorted.length} seen, median ${Math.round(sorted[Math.floor(sorted.length / 2)] ?? 0)} ms visible at 1×, ${cut} under ${FLOAT_MIN_MS / 1000} s at 1× (${sorted.filter((ms) => ms < FLOAT_MIN_MS).map((ms) => Math.round(ms)).join(", ")}); ${mergedMs.length} grew into the next wave's float`);
 const med = [...times].sort((p, q) => p - q)[Math.floor((times.length - 1) / 2)] ?? 0;
 console.log(`planned vs on screen: ${plans.map((p, i) => `${p.toFixed(1)}→${times[i].toFixed(1)} s at ${speeds[i]}×`).join(", ")}`);
 console.log(`median ${med.toFixed(1)} s`);
