@@ -327,10 +327,11 @@ export interface DecisionResponse {
 //   slayers, the kept champion copied with the new seq.
 // - Slice 6 seeds at startup: when currentChampion() is missing or stale
 //   (below), it writes a strong bot team as the champion for today().seq.
-// - Slice 4's Crown fights currentChampion() as it is at the fight (a
-//   rollover between round 12 and the Crown switches to the new champion). A
-//   win writes the Slay, with Slay.seq = that champion's seq; the run's end
-//   writes its Rating.
+// - Slice 4's Crown fights today's champion as it is at the fight
+//   (server/src/mvp/day.ts todaysChampion(), championOf(today().seq): never a
+//   row a failed day end stored early for tomorrow; a rollover between round
+//   12 and the Crown switches to the new champion). A win writes the Slay,
+//   with Slay.seq = that champion's seq; the run's end writes its Rating.
 // - Bots fight the Crown too, but slice 4 writes no Slay and no Rating for a
 //   player.bot: slayers, playoffs and ratings are humans only.
 //
