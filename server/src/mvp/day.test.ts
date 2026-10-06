@@ -92,6 +92,7 @@ describe("MVP day", () => {
     weakChampion(rt);
     const ann = human("ann");
     const bob = human("bob");
+    rt.store.putRating({ player: bob, rating: 1111, runs: 3, slays: 0, daysAsChampion: 0, playoffWins: 0 });
     slay(rt, ann, bigLine(rt.content, 1));
     slay(rt, bob, bigLine(rt.content, 5));
     slay(rt, ann, bigLine(rt.content, 2)); // ann's stronger team
@@ -102,7 +103,8 @@ describe("MVP day", () => {
     expect(p.entrants.map((e) => e.id)).toEqual([ann.id, bob.id]);
     expect(p.games).toHaveLength(2);
     expect(p.winner?.id).toBe(bob.id);
-    expect(day.champion).toMatchObject({ seq: 2, player: bob });
+    // the Crown against bob's team is rated at bob's rating when he slew
+    expect(day.champion).toMatchObject({ seq: 2, player: bob, rating: 1111 });
     const g = await call<BattleRecord>("GET", `/battles/${p.games[0]!.battleId}`);
     expect(g.json).toMatchObject({ kind: "playoff", runId: null, round: 0, player: ann, opponent: bob });
     expect(g.json.teamA).toHaveLength(2); // ann's strongest, not her first
@@ -201,15 +203,15 @@ describe("MVP day", () => {
     expect(rt.today()).toMatchObject({ seq: 1, endsAt: "2026-10-06T01:00:00.000Z" });
   });
 
-  it("the reigning champion beating their own team is a slay: a Slay row, the slay bonus, a playoff entry, crowned again with the new team", async () => {
+  it("the reigning champion beating their own team is a slay: a Slay row, a playoff entry, crowned again with the new team; rated against their own stamped rating", async () => {
     const { rt, call, human } = world();
     const ann = human("ann");
     const own = { ...weakChampion(rt), player: ann };
     rt.store.putChampion(own);
     const run = startRun(rt, ann);
     const line = bigLine(rt.content);
-    // three lost rounds before, so the share (1 of 4) leaves room for a bonus
-    const lost = [1, 2, 3].map((round) => ({ battleId: `l${round}`, kind: "round" as const, round, opponent: { ghostId: `g${round}`, player: botP, round }, outcome: "loss" as const, heartsLost: 1, heartsAfter: 5 - round }));
+    // three lost rounds before
+    const lost = [1, 2, 3].map((round) => ({ battleId: `l${round}`, kind: "round" as const, round, opponent: { ghostId: `g${round}`, player: botP, round, rating: 1000 }, outcome: "loss" as const, heartsLost: 1, heartsAfter: 5 - round }));
     const at12: MvpRunState = { ...run, round: rt.rules.rounds, line, nextUid: line.length + 1, fights: lost, hearts: 2, losses: 3 };
     rt.store.putRun(at12);
     decide(rt, at12, { kind: "fight" });
@@ -218,9 +220,12 @@ describe("MVP day", () => {
     expect(won.run.endedBy).toBe("crown-won");
     expect(rt.store.slays(own.seq)).toMatchObject([{ player: ann, runId: run.runId, line }]);
     expect((await call<DayView>("GET", "/day")).json.slayers).toBe(1);
-    // rated with the slay bonus, like a Crown won against someone else's team
-    expect(won.run.rating).toEqual(ratingChange(1000, { fights: won.run.fights, endedBy: "crown-won" }));
-    expect(won.run.rating!.actual).toBeGreaterThan(ratingChange(1000, { fights: won.run.fights, endedBy: "crown-lost" }).actual);
+    // the Crown is one more fight, against the champion's stamped rating (a row
+    // without one: the start rating), so beating your own 1000 team is +K/2
+    expect(won.fight!.opponent.rating).toBe(1000);
+    expect(won.run.rating).toEqual(ratingChange(1000, 0, won.run));
+    const rounds = won.run.fights.filter((f) => f.kind === "round");
+    expect(won.run.rating!.after - ratingChange(1000, 0, { fights: rounds }).after).toBe(16);
     expect(rt.store.rating(ann.id)).toMatchObject({ runs: 1, slays: 1 });
     // the only slayer: the new team takes the crown without a game
     const { json: day } = await call<DayView>("POST", "/dev/end-day");

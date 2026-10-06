@@ -110,7 +110,7 @@ export function endDay(rt: DayDeps): DayView {
   const winner = result.winner ? entrants.find((e) => e.player.id === result.winner!.id)! : undefined;
   let crowned: Champion | undefined;
   if (winner) {
-    crowned = { seq: next.seq, day: next.day, player: winner.player, line: structuredClone(winner.line), since: at, contentVersion: winner.slay.contentVersion };
+    crowned = { seq: next.seq, day: next.day, player: winner.player, line: structuredClone(winner.line), since: at, contentVersion: winner.slay.contentVersion, rating: winner.slay.rating ?? rules.ratingStart };
   } else if (champ) {
     crowned = { ...structuredClone(champ), seq: next.seq, day: next.day };
   }

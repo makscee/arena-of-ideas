@@ -3,9 +3,9 @@
 // bots play in-process through them, and slices 5, 10 and 11 observe runs
 // through RunHooks instead of editing decide().
 import { randomUUID } from "node:crypto";
-import type { BattleRecord, DayState, Decision, DecisionResponse, FightResult, FuseContext, Ghost, LineUnit, MvpContent, MvpRules, PlayerRef, Rating } from "../../../src/mvp/contract.js";
+import type { BattleRecord, DayState, Decision, DecisionResponse, FightResult, FuseContext, Ghost, LineUnit, MvpContent, MvpRules, PlayerRef, Rating, RunView } from "../../../src/mvp/contract.js";
 import { fuseCheck } from "../../../src/mvp/forms.js";
-import { applyMvpDecision, championGhost, endRun, initMvpRun, MvpDecisionError, ratingChange, runView, setOpponent, slewChampion, synthGhost, unitById, type DecisionContext, type MvpRunState, type MvpStep } from "../../../src/mvp/run.js";
+import { abandonRun, applyMvpDecision, championGhost, endRun, initMvpRun, MvpDecisionError, ratingChange, runView, setOpponent, slewChampion, synthGhost, unitById, type DecisionContext, type MvpRunState, type MvpStep } from "../../../src/mvp/run.js";
 import { todaysChampion } from "./day.js";
 import type { NameFusion } from "./fusions.js";
 import type { MvpStore } from "./store.js";
@@ -60,7 +60,10 @@ export function startRun(deps: RunDeps, player: PlayerRef): MvpRunState {
     const ended = finish(deps, endRun(active, "content-changed"));
     for (const h of deps.hooks) h.onRunEnd?.(ended);
   }
-  const fresh = initMvpRun({ runId: randomUUID(), player, seed: deps.seed(), content: deps.content, day: deps.today().seq, startedAt: deps.now().toISOString(), rules: deps.rules });
+  // The rating every ghost and Slay of this run carries: a human's as it is
+  // now (it only moves when a run ends, and only one runs at a time).
+  const rating = player.bot ? deps.rules.botRating : (deps.store.rating(player.id)?.rating ?? deps.rules.ratingStart);
+  const fresh = initMvpRun({ runId: randomUUID(), player, seed: deps.seed(), content: deps.content, day: deps.today().seq, startedAt: deps.now().toISOString(), rules: deps.rules, rating });
   const run = setOpponent(fresh, pickGhost(deps, fresh));
   deps.store.putRun(run);
   return run;
@@ -95,11 +98,11 @@ export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionRe
   // The line as it went into a round's fight becomes someone's ghost, win or
   // lose; only after the rules accepted the fight, so a refused one adds
   // nothing. An empty line (a walkover) is nobody's opponent.
-  if (step.fight?.kind === "round" && run.line.length > 0) store.addGhost(ghostOf(run, now()));
+  if (step.fight?.kind === "round" && run.line.length > 0) store.addGhost(ghostOf(deps, run, now()));
   // A bot's Crown win is a slay like a human's (contract: "day, champion,
   // rating"), and so is the reigning champion beating their own team.
   if (step.fight?.kind === "crown" && step.fight.outcome === "win" && run.crownSeq !== null) {
-    store.addSlay({ seq: run.crownSeq, player: run.player, runId: run.runId, battleId: step.fight.battleId, line: structuredClone(run.line), contentVersion: run.contentVersion, at: ctx.fight!.at });
+    store.addSlay({ seq: run.crownSeq, player: run.player, runId: run.runId, battleId: step.fight.battleId, line: structuredClone(run.line), contentVersion: run.contentVersion, at: ctx.fight!.at, rating: runRating(deps, run) });
   }
   if (step.fight) step.state = nextOpponent(deps, step.state);
   if (step.state.phase === "over") step.state = finish(deps, step.state);
@@ -107,6 +110,18 @@ export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionRe
   if (step.battle) store.putBattle(step.battle);
   notify(deps.hooks, run, d, step, ctx);
   return { run: runView(step.state), ...(step.fight ? { fight: step.fight } : {}) };
+}
+
+/** Gives a stored run up (POST /runs/:id/abandon): it ends "abandoned", each
+ * heart left (the Crown, at the Crown) rated a lost fight against the opponent
+ * already picked (abandonRun), with the rating written and the onRunEnd hooks
+ * called like any end. A run waiting for the Crown forfeits against the
+ * current champion (currentRun). Throws MvpDecisionError on a run that is
+ * already over. Synchronous, like decide(). */
+export function abandon(deps: RunDeps, run: MvpRunState): RunView {
+  const ended = finish(deps, abandonRun(currentRun(deps, run)));
+  for (const h of deps.hooks) h.onRunEnd?.(ended);
+  return runView(ended);
 }
 
 /** After a fight: the next round's ghost, or today's champion for the Crown
@@ -161,6 +176,13 @@ function pickGhost(deps: RunDeps, run: MvpRunState): Ghost {
     : synthGhost({ content, round: run.round, seed: pick, ghostId: `bot-${randomUUID()}`, createdAt: now().toISOString(), rules: deps.rules });
 }
 
+/** The rating a run's ghosts and Slay carry: stamped at its start; a run
+ * from before round 2 has none and counts as a start rating (a bot's run as
+ * botRating). */
+function runRating(deps: RunDeps, r: MvpRunState): number {
+  return r.ratingAtStart ?? (r.player.bot ? deps.rules.botRating : deps.rules.ratingStart);
+}
+
 /** Stamps a run that just ended, writes a human's rating (once per run) and
  * stores the run. Bots and a "content-changed" end move no rating; a bot's
  * slay still counts in its records (slays), its rating and runs untouched. */
@@ -172,7 +194,7 @@ function finish(deps: RunDeps, run: MvpRunState): MvpRunState {
   const prev = (): Rating => store.rating(r.player.id) ?? { player: r.player, rating: rules.ratingStart, runs: 0, slays: 0, daysAsChampion: 0, playoffWins: 0 };
   if (!r.player.bot && r.endedBy !== "content-changed") {
     const before = prev();
-    r.rating = ratingChange(before.rating, r, rules);
+    r.rating = ratingChange(before.rating, before.runs, r, rules);
     store.putRating({ ...before, player: r.player, rating: r.rating.after, runs: before.runs + 1, slays: before.slays + (slewChampion(r) ? 1 : 0) });
   } else if (r.player.bot && slewChampion(r)) {
     const before = prev();
@@ -219,8 +241,9 @@ function fuseContext(nameFusion: NameFusion, content: MvpContent, run: MvpRunSta
   return nameFusion(unitById(content, first.unitId), unitById(content, second.unitId), run.player);
 }
 
-function ghostOf(r: MvpRunState, at: Date): Ghost {
+function ghostOf(deps: RunDeps, r: MvpRunState, at: Date): Ghost {
   return {
+    rating: runRating(deps, r),
     ghostId: `${r.runId}-r${r.round}`,
     runId: r.runId,
     player: r.player,
