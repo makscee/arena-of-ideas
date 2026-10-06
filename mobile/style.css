@@ -36,20 +36,25 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .hud > * { flex: none; }
 .hud .gold { color: var(--gold); }
 .hud .hearts { color: var(--ghost); }
-.slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
-.card { position: relative; min-height: 92px; background: var(--panel); border: 1px solid var(--line); padding: 6px 2px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); cursor: pointer; }
+/* Compact cards (round 2, R2-7): 64×84 at 360px, five a row with 4px gaps. */
+.slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.card { position: relative; height: 84px; min-width: 0; background: var(--panel); border: 1px solid var(--line); padding: 5px 3px 4px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); cursor: pointer; }
 .card.you { border-color: color-mix(in srgb, var(--you) 45%, transparent); }
 .card.ghost { border-color: color-mix(in srgb, var(--ghost) 45%, transparent); }
 .card.selected { outline: 2px solid var(--you); outline-offset: -2px; }
 .card.empty { cursor: default; opacity: 0.4; border-style: dashed; }
-.card .emoji { font-size: 26px; line-height: 1; }
-/* A name breaks only between words; ui/dom.ts fitText() shrinks a word that
- * doesn't fit (measured), and .clip ends one that still doesn't in "…". */
-.card .name { font-size: 12px; font-weight: 600; line-height: 1.1; max-width: 100%; overflow-wrap: normal; word-break: normal; hyphens: manual; }
-.card .name.clip, .card .rates.clip { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.card.fused .emoji { font-size: 20px; height: 26px; line-height: 26px; white-space: nowrap; letter-spacing: -0.06em; }
+.card .emoji { font-size: 22px; line-height: 24px; height: 24px; margin-top: 2px; }
+/* One line: ui/dom.ts fitText() shrinks a long name a little (measured), and
+ * .clip ends one that still doesn't fit in "…"; the sheet has it whole. */
+.card .name { font-size: 12px; font-weight: 600; line-height: 14px; width: 100%; white-space: nowrap; overflow: hidden; }
+.card .name.clip { text-overflow: ellipsis; }
+.card.fused .emoji { font-size: 17px; white-space: nowrap; letter-spacing: -0.08em; }
+/* Top left: the trigger icon (what wakes it); top right: an offer's tier. */
+.card .trig { position: absolute; top: 3px; left: 4px; line-height: 0; }
+.card .tier { position: absolute; top: 1px; right: 4px; font-size: 9px; line-height: 10px; letter-spacing: -0.1em; color: var(--dim); }
+.card .foot { min-height: 12px; display: flex; align-items: center; justify-content: center; max-width: 100%; }
 .discovered { font-size: 10px; color: var(--dim); font-family: "IBM Plex Mono", monospace; }
-.card .stats { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+.card .stats { font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600; line-height: 14px; }
 .card .stats .p { color: var(--gold); }
 .card .stats .h { color: var(--ghost); }
 .card .copies { font-family: "IBM Plex Mono", monospace; font-size: 10px; line-height: 1; color: var(--you); letter-spacing: 0.04em; }
@@ -101,11 +106,17 @@ button.pin-btn { display: flex; align-items: center; gap: 4px; min-height: 44px;
 .card.muted { opacity: 0.35; }
 .card.poor { opacity: 0.45; }
 .card.owned .cost { color: var(--you); }
-.preview-card { width: 96px; margin: 0 auto; }
-.preview-card .card { min-height: 112px; }
+.preview-card { width: 64px; margin: 0 auto; }
 .after.awakens .label { color: var(--gold); font-weight: 700; }
-.sheet-form.now .label { color: var(--you); }
-.sheet-form.now .label::after { content: " · now"; }
+/* The sheet: the active form's text in a box; "See Awoken" swaps in the other
+ * form, gold-bordered, with what changes underlined. */
+.sheet-head h2 { margin: 0; }
+.sheet-form { border: 1px solid var(--line); padding: 8px 10px; line-height: 1.35; }
+.sheet-form.other { border-color: var(--gold); }
+.sheet-form.other .label { color: var(--gold); }
+.sheet-form u.changed { text-decoration-color: var(--gold); text-underline-offset: 2px; }
+button.see-awoken { border-color: var(--gold); color: var(--gold); }
+button.link { align-self: flex-start; border: none; background: none; color: var(--dim); padding: 0; min-height: 44px; text-transform: none; letter-spacing: 0; }
 .sheet-actions { position: sticky; bottom: calc(-16px - env(safe-area-inset-bottom)); background: var(--panel); padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); margin-bottom: calc(-16px - env(safe-area-inset-bottom)); z-index: 1; }
 .rules p { margin: 0; line-height: 1.3; }
 /* The screen's main actions stay on screen however long it runs (the result
@@ -115,17 +126,17 @@ button.pin-btn { display: flex; align-items: center; gap: 4px; min-height: 44px;
  * padding, so the gap is the same at the end of the page. */
 .footer { position: sticky; bottom: 0; z-index: 2; background: var(--bg); padding: 8px 0 calc(12px + env(safe-area-inset-bottom)); margin-bottom: calc(-16px - env(safe-area-inset-bottom)); box-shadow: 0 -12px 16px -4px var(--bg); }
 .why-sheet .bv-trace-text { margin-top: 2px; }
-.part-rates { gap: 6px; }
 /* ui/dom.ts overlay(): a sheet over the screen. */
 .overlay { position: fixed; inset: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 70%, transparent); display: flex; align-items: flex-end; justify-content: center; }
 .sheet { width: 100%; max-width: 480px; max-height: 85dvh; overflow-y: auto; background: var(--panel); border-top: 1px solid var(--you); padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
 /* A request is out (main.ts guarded): no taps until it answers. */
 #app.busy button, #app.busy .card { pointer-events: none; }
 /* Battle viewer (slice 9, screens/battle.ts). */
-.bv-line { min-height: 104px; }
-.bv-card { transition: transform 0.15s, box-shadow 0.15s; }
+.bv-line { min-height: 84px; }
+/* A battle card grows for its status line (icons replace it in R2-13). */
+.bv-card { height: auto; min-height: 84px; transition: transform 0.15s, box-shadow 0.15s; }
 /* The gold ring is drawn inside the border, over the padding: the acting card
- * gets 2px more padding on each side, so its rates and name (fitted to the
+ * gets 2px more padding on each side, so its name (fitted to the
  * content box, ui/dom.ts fitText) stay clear of the ring. */
 .bv-card.acting { transform: translateY(-3px); box-shadow: 0 0 0 2px var(--gold) inset; padding-left: 4px; padding-right: 4px; }
 .bv-card.you.acting { background: color-mix(in srgb, var(--you) 16%, var(--panel)); }
@@ -179,22 +190,11 @@ button.bv-why { display: flex; align-items: center; justify-content: space-betwe
 .bv-controls button[data-testid="battle-skip"], .bv-controls button[data-testid="battle-speed"] { font-size: 17px; }
 .bv-line.empty { min-height: 0; display: block; }
 .bv-word.neutral { color: var(--text); font-size: 24px; }
-/* Slice 11: unit rates (short on a card, long on a sheet) and the stats page. */
-.rates { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--dim); white-space: nowrap; }
-.rates .w { color: var(--you); }
-.rates .short { display: none; }
-.card .rates { font-size: 11px; letter-spacing: -0.04em; max-width: 100%; line-height: 1.2; }
-.card .rates.none { color: var(--dim); opacity: 0.6; }
-/* A fused card's credit ("by @name") is never cut off: it may wrap between
- * "by" and the name, fitText() shrinks the name to fit, and a name that still
- * doesn't fit at the smallest size breaks across lines rather than end in "…". */
-.card .rates.discovered { color: var(--dim); white-space: normal; font-family: "Rajdhani", sans-serif; font-weight: 600; letter-spacing: 0; line-height: 1.1; }
-.card .rates.discovered.clip { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
-/* Home's champion panel: the line uses the panel's padding too, so five cards
- * at 360px are ~61px wide, not 57, and long names fit at a readable size. */
-.champion .slots { margin: 0 -6px; gap: 4px; }
-.card .rates .short { display: inline; }
-.card .rates .long { display: none; }
+/* Slice 11: a unit's rates, only a hint since round 2: the sheet's dim last line. */
+.rates { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--dim); opacity: 0.75; }
+/* Home's champion panel: the line uses the panel's padding too, so its five
+ * cards are as wide as the shop's. */
+.champion .slots { margin: 0 -6px; }
 .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .tabs button { min-height: 44px; padding: 0 6px; font-size: 14px; }
 .tabs button.on { background: var(--you); color: var(--bg); }
@@ -228,7 +228,6 @@ button.bv-why { display: flex; align-items: center; justify-content: space-betwe
 .legend-sample { font-family: "IBM Plex Mono", monospace; font-size: 14px; text-align: center; padding: 4px 0; border: 1px solid var(--line); }
 .legend-sample .p { color: var(--gold); }
 .legend-sample .h { color: var(--ghost); }
-.legend-sample .rates { font-size: 12px; }
 .legend-sample .copies { color: var(--you); }
 .legend-sample .copies.tag { color: var(--gold); font-size: 11px; }
 .legend-sample .cost { color: var(--gold); }

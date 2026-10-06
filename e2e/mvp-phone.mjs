@@ -49,17 +49,54 @@ try {
       if (box[dim] < 44 - 0.5) errors.push(`${name}: ${dim} ${Math.round(box[dim])}px < 44`);
     }
   };
-  /** On every acting battle card, the rates line's text stays inside the
-   * gold ring (1px border + 2px ring) with 1px of air, measured on the glyphs. */
-  const ratesInRing = async (name) => {
-    const bad = await page.evaluate(() => [...document.querySelectorAll(".bv-card.acting .rates")].map((el) => {
+  /** On every acting battle card, the name stays inside the gold ring (1px
+   * border + 2px ring) with 1px of air. */
+  const nameInRing = async (name) => {
+    const bad = await page.evaluate(() => [...document.querySelectorAll(".bv-card.acting .name")].map((el) => {
       const card = el.closest(".bv-card").getBoundingClientRect();
-      const range = document.createRange();
-      range.selectNodeContents(el);
-      const t = range.getBoundingClientRect();
+      const t = el.getBoundingClientRect();
       return t.left < card.left + 4 - 0.5 || t.right > card.right - 4 + 0.5 ? `${el.textContent} at ${Math.round(t.left - card.left)}..${Math.round(card.right - t.right)}px from the card's edges` : null;
     }).filter(Boolean));
-    for (const b of bad) errors.push(`${name}: acting card's rates in the ring: ${b}`);
+    for (const b of bad) errors.push(`${name}: acting card's name in the ring: ${b}`);
+  };
+  /** Rates are a hint (round 2, R2-7): no percentage on screen except a unit
+   * sheet's last line (data-testid unit-rates). The Stats page isn't checked. */
+  const noRates = async (name) => {
+    const found = await page.evaluate(() => {
+      const out = [];
+      const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+        const el = n.parentElement;
+        if (!/\d\s*%/.test(n.textContent) || !el || el.closest('[data-testid="unit-rates"]') || !el.getClientRects().length) continue;
+        out.push(n.textContent.trim());
+      }
+      return out;
+    });
+    for (const t of found) errors.push(`${name}: a rate outside the sheet's last line: "${t}"`);
+  };
+  /** A unit sheet shows one form; a sleeping unit's "See Awoken" swaps in the
+   * awoken text and Back returns; rates, if any, are its last line. */
+  const sheetChecks = async (name) => {
+    const sheet = page.getByTestId("unit-sheet");
+    if ((await sheet.getByTestId("sheet-form").count()) !== 1) errors.push(`${name}: not exactly one form block`);
+    await noRates(name);
+    const last = await sheet.evaluate((el) => el.lastElementChild?.dataset.testid ?? "");
+    if ((await sheet.getByTestId("unit-rates").count()) && last !== "unit-rates") errors.push(`${name}: rates aren't the last line`);
+    if (await sheet.getByTestId("see-awoken").count()) {
+      const before = await sheet.getByTestId("sheet-form").textContent();
+      await sheet.getByTestId("see-awoken").click();
+      await sheet.locator(".sheet-form.other").waitFor();
+      const after = await sheet.getByTestId("sheet-form").textContent();
+      if (!/^Awoken/i.test(after) || after.includes(before)) errors.push(`${name}: See Awoken shows "${after}"`);
+      await shot(`${name.replace(/ /g, "-")}-awoken`); await noHScroll(name);
+      await sheet.getByTestId("see-sleeping").click();
+      if ((await sheet.getByTestId("sheet-form").textContent()) !== before) errors.push(`${name}: Back doesn't restore the sleeping text`);
+    }
+  };
+  /** The page doesn't scroll at 640 px. */
+  const noVScroll = async (name) => {
+    const hgt = await page.evaluate(() => document.documentElement.scrollHeight);
+    if (hgt > 640 + 0.5) errors.push(`${name}: scrolls (${hgt}px tall)`);
   };
   /** The element is on screen without scrolling (the bottom of a 640 px phone). */
   const onScreen = async (name, locator) => {
@@ -73,11 +110,12 @@ try {
   await page.getByTestId("name-input").fill("PhoneTester");
   await page.getByTestId("name-submit").click();
   await page.getByTestId("play").waitFor();
-  await shot("home"); await noHScroll("home"); await onScreen("home: Play", page.getByTestId("play"));
+  await shot("home"); await noHScroll("home"); await noRates("home"); await onScreen("home: Play", page.getByTestId("play"));
   await tap44("dev summary", page.locator("details.dev summary"));
   await page.getByTestId("rules-open").click();
   await page.getByTestId("rules").waitFor();
   await shot("rules"); await noHScroll("rules");
+  if (!/game-icons\.net, CC BY 3\.0/.test(await page.getByTestId("icon-credits").textContent().catch(() => ""))) errors.push("rules: no icon credits");
   await page.getByTestId("overlay").click({ position: { x: 180, y: 10 } });
   await page.getByTestId("rules").waitFor({ state: "detached" });
   await page.getByTestId("stats").click();
@@ -107,12 +145,12 @@ try {
       await page.waitForFunction((g) => !document.querySelector('[data-testid="gold"]') || document.querySelector('[data-testid="gold"]').textContent !== `${g}g`, gold);
     }
     round++;
-    if (round === 1) { await shot("shop"); await noHScroll("shop"); }
+    if (round === 1) { await shot("shop"); await noHScroll("shop"); await noRates("shop"); }
     if (round === 1) {
       // The shop's "?" explains a card's numbers, and Rules open during a run (#587).
       await page.getByTestId("legend-open").click();
       await page.getByTestId("legend").waitFor();
-      await shot("legend"); await noHScroll("legend");
+      await shot("legend"); await noHScroll("legend"); await noRates("legend");
       await page.getByTestId("legend-rules").click();
       await page.getByTestId("rules").waitFor();
       await page.getByTestId("sheet-close").click();
@@ -126,6 +164,7 @@ try {
       await page.getByTestId("info").click();
       await page.getByTestId("unit-sheet").waitFor();
       await shot("unit-sheet"); await noHScroll("unit-sheet");
+      await sheetChecks("unit sheet");
       await page.getByTestId("overlay").click({ position: { x: 180, y: 10 } });
       await page.getByTestId("champion-pin-open").click().catch(() => {});
       if (await page.getByTestId("overlay").isVisible().catch(() => false)) { await shot("champion-pin"); await page.getByTestId("overlay").click({ position: { x: 180, y: 10 } }); }
@@ -139,7 +178,7 @@ try {
     await page.getByTestId("battle-skip").waitFor({ timeout: 10_000 });
     if (round === 1) {
       await page.getByTestId("change").first().waitFor({ timeout: 15_000 });
-      await shot("battle"); await noHScroll("battle"); await ratesInRing("battle");
+      await shot("battle"); await noHScroll("battle"); await nameInRing("battle"); await noRates("battle");
       await page.getByTestId("change").first().click();
       await page.getByTestId("trace-text").waitFor();
       const chain = await page.getByTestId("trace-text").textContent();
@@ -156,6 +195,7 @@ try {
       await page.mouse.click(box.x + box.width / 2, box.y + box.height - 8);
       await page.getByTestId("unit-sheet").waitFor();
       await shot("battle-unit-sheet"); await noHScroll("battle-unit-sheet");
+      await sheetChecks("battle unit sheet");
       await page.getByTestId("sheet-close").click();
       await page.getByTestId("unit-sheet").waitFor({ state: "detached" });
       // A unit with two changes in one step (a status and the stat it moves)
@@ -167,7 +207,7 @@ try {
       if (await multi.count()) {
         const lines = await multi.locator(".bv-l").allTextContents();
         if (lines.length !== 2 || lines.some((l) => !l.trim())) errors.push(`two changes: chip shows ${JSON.stringify(lines)}`);
-        await shot("battle-two-changes"); await noHScroll("battle-two-changes"); await ratesInRing("battle-two-changes");
+        await shot("battle-two-changes"); await noHScroll("battle-two-changes"); await nameInRing("battle-two-changes");
         await multi.click();
         await page.getByTestId("trace-group").waitFor();
         if ((await page.getByTestId("trace-group-change").count()) !== 2) errors.push("two changes: the trace doesn't list both");
@@ -201,12 +241,12 @@ try {
       }
     }
     await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
-    if (round === 1) { await shot("result"); await noHScroll("result"); }
+    if (round === 1) { await shot("result"); await noHScroll("result"); await noRates("result"); }
     await page.getByTestId("continue").click();
     if (await page.getByTestId("run-over").isVisible().catch(() => false)) break;
   }
   await page.getByTestId("run-over").waitFor({ timeout: 10_000 });
-  await shot("run-over"); await noHScroll("run-over");
+  await shot("run-over"); await noHScroll("run-over"); await noRates("run-over");
   const over = await page.getByTestId("run-over").textContent();
   if (/No champion/.test(over) && /Reached the Crown/.test(over)) errors.push(`run over: "${over}" contradicts itself`);
   if (/\b1 (wins|draws|losses)\b|\b([02-9]|\d\d+) (win|draw|loss)\b/.test(over)) errors.push(`run over: plural wrong in "${over}"`);
@@ -298,6 +338,41 @@ try {
     if (!/discovered by (you|@\S+)/.test(await page.getByTestId("unit-sheet").textContent())) errors.push("fused sheet: no discovery credit");
     if (!(await page.getByTestId("sheet-close").isVisible())) errors.push("unit sheet from Info: no Close button");
     await shot("fused-sheet"); await noHScroll("fused-sheet");
+    await sheetChecks("fused sheet");
+    await page.getByTestId("sheet-parts-open").click();
+    if ((await page.getByTestId("sheet-parts").locator(".sheet-form").count()) !== 2) errors.push("fused sheet: the parts don't open");
+    await shot("fused-sheet-parts");
+  }
+  // Compact cards (R2-7): at 360×640 in round 8, with 5 units in the line and
+  // the grown shop, nothing scrolls. A third player gets there through the API.
+  {
+    const compact = await call("POST", "/players", { name: "Compact" });
+    let r = await call("POST", "/runs", undefined, compact.id);
+    for (let steps = 0; steps < 2000 && !(r.phase === "shop" && r.round >= 8 && r.line.length === 5); steps++) {
+      if (r.phase === "over") { r = await call("POST", "/runs", undefined, compact.id); continue; }
+      const o = r.offers[0];
+      const d = r.phase === "shop" && r.line.length < 5 && o && r.gold >= o.cost ? { kind: "buy", slot: o.slot } : { kind: "fight" };
+      r = (await call("POST", `/runs/${r.runId}/decisions`, d, compact.id)).run;
+    }
+    if (!(r.phase === "shop" && r.round >= 8 && r.line.length === 5)) errors.push(`compact: never reached round 8 with a full line (phase ${r.phase}, round ${r.round})`);
+    else {
+      await page.evaluate((p) => localStorage.setItem("arena.player", JSON.stringify(p)), compact);
+      await page.reload();
+      await page.getByTestId("play").click();
+      await page.getByTestId("fight").waitFor();
+      const offers = await page.getByTestId("offers").locator(".card").count();
+      if (offers < 6) errors.push(`compact: round ${r.round} shows ${offers} offers, not 6`);
+      await shot("shop-round-8"); await noHScroll("shop-round-8"); await noVScroll("shop-round-8"); await noRates("shop-round-8");
+      await onScreen("round 8: Fight", page.getByTestId("fight"));
+      const sizes = await page.locator('[data-testid="line"] .card, [data-testid="offers"] .card').evaluateAll((els) => els.map((e) => `${Math.round(e.getBoundingClientRect().width)}x${Math.round(e.getBoundingClientRect().height)}`));
+      if (sizes.some((x) => x !== "64x84")) errors.push(`compact: card sizes ${[...new Set(sizes)].join(", ")}, not 64x84`);
+      await page.getByTestId("line-0").click();
+      await page.getByTestId("info").click();
+      await page.getByTestId("unit-sheet").waitFor();
+      await shot("unit-sheet-round-8");
+      await sheetChecks("round 8 sheet");
+      await page.getByTestId("sheet-close").click();
+    }
   }
   // Dev "End day now": Home says plainly how the day ended; a table only for a real playoff.
   await page.reload();

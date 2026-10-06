@@ -54,22 +54,24 @@ export function closable(...kids: Node[]): () => void {
 // ---------- names that fit ----------
 
 // A battle chip's label (a status's name runs long: "Strength ×1") shrinks too.
-const FIT = ".card .name, .card .rates, .bv-pill:not(.two), .bv-pill.two .bv-l";
-/** The smallest a fitted line goes: 8px keeps a 12-letter name
- * ("Pediatrician", "Bloodtrician") whole on a 57px card. */
+const FIT = ".card .name, .bv-pill:not(.two), .bv-pill.two .bv-l";
+/** The smallest a fitted line goes. A card name (one line on a compact card)
+ * stops at 10px and ends in an ellipsis; the sheet has the full name. */
 const MIN_PX = 8;
+const NAME_MIN_PX = 10;
 
-/** Shrinks each card name (and rates line) until its longest word fits the
- * card, measured, not guessed from letter counts; a word that still doesn't
- * fit at the smallest size ends in an ellipsis. Names break only between words. */
+/** Shrinks each card name (and battle chip) until it fits the card, measured,
+ * not guessed from letter counts; one that still doesn't fit at the smallest
+ * size ends in an ellipsis. */
 export function fitText(root: ParentNode = app): void {
   for (const el of root.querySelectorAll<HTMLElement>(FIT)) {
     if (!el.isConnected || el.clientWidth === 0) continue;
     el.style.fontSize = "";
     el.classList.remove("clip");
     let px = parseFloat(getComputedStyle(el).fontSize);
-    while (el.scrollWidth > el.clientWidth + 0.5 && px > MIN_PX) {
-      px = Math.max(MIN_PX, px - 0.5);
+    const min = el.classList.contains("name") ? NAME_MIN_PX : MIN_PX;
+    while (el.scrollWidth > el.clientWidth + 0.5 && px > min) {
+      px = Math.max(min, px - 0.5);
       el.style.fontSize = `${px}px`;
     }
     if (el.scrollWidth > el.clientWidth + 0.5) el.classList.add("clip");

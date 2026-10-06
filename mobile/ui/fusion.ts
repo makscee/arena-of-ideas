@@ -5,13 +5,10 @@ import type { LineUnit } from "../../src/mvp/contract";
 import { savedPlayer } from "../api";
 import { h } from "./dom";
 
-/** "discovered by you" / "discovered by @name" for a fused unit; null
- * otherwise. `short` is the card's form, "by you", in the rates slot: it
- * wraps between "by" and the name and is never cut off (style.css). */
-export function discoveredLine(u: Partial<Pick<LineUnit, "kind" | "fusion">>, short = false): HTMLElement | null {
+/** "discovered by you" / "discovered by @name" for a fused unit's sheet; null otherwise. */
+export function discoveredLine(u: Partial<Pick<LineUnit, "kind" | "fusion">>): HTMLElement | null {
   const by = u.kind === "fused" ? u.fusion?.discoveredBy : undefined;
   if (!by) return null;
   const who = by.id === savedPlayer()?.id ? "you" : `@${by.name}`;
-  if (short) return h("div", { class: "rates discovered", "data-testid": "discovered-by", title: `discovered by ${who}` }, `by ${who}`);
   return h("div", { class: "discovered", "data-testid": "discovered-by" }, `discovered by ${who}`);
 }
