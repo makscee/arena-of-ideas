@@ -225,7 +225,7 @@ button.bv-badge.still .bv-badge-pill { animation: none; }
 .bv-card.bv-hit.bv-dying { animation: bv-shake calc(0.34s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-t, 0s)) / var(--bv-sp, 1)), bv-die calc(0.5s / var(--bv-sp, 1)) ease-out calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) forwards; }
 /* Floats hang in the card's slot. On desktop they rise above the card, into
  * the line's room for them; on the phone (below) over the card's emoji. ±PWR sits over PWR's side, ±HP over HP's. */
-.bv-float { --k: 0; position: absolute; left: 0; right: 0; top: auto; bottom: calc(100% + 2px + var(--k) * 14px); z-index: 4; text-align: center; line-height: 20px; pointer-events: none; font-family: "IBM Plex Mono", monospace; font-size: 18px; font-weight: 700; text-shadow: 0 0 4px var(--bg), 0 0 2px var(--bg); white-space: nowrap; overflow: hidden; animation: bv-rise calc(0.7s / var(--bv-sp, 1)) ease-out both; }
+.bv-float { --k: 0; position: absolute; left: 50%; right: auto; width: max-content; max-width: calc(100% - 4px); translate: -50% 0; top: auto; bottom: calc(100% + 2px + var(--k) * 14px); z-index: 4; text-align: center; line-height: 20px; pointer-events: none; font-family: "IBM Plex Mono", monospace; font-size: 18px; font-weight: 700; text-shadow: 0 0 4px var(--bg), 0 0 2px var(--bg); white-space: nowrap; overflow: hidden; animation: bv-rise calc(0.7s / var(--bv-sp, 1)) ease-out both; }
 .bv-float.damage, .bv-float.debuff { color: var(--ghost); }
 .bv-float.heal, .bv-float.summon { color: var(--you); }
 .bv-float.buff, .bv-float.debuff { font-family: "Rajdhani", sans-serif; font-size: 12px; font-weight: 700; line-height: 12px; animation-name: bv-rise-small; }
@@ -241,6 +241,8 @@ button.bv-badge.still .bv-badge-pill { animation: none; }
 @keyframes bv-flash { from { opacity: 0.45; } to { opacity: 0; } }
 @keyframes bv-die { 0% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0.5; transform: none; } }
 @keyframes bv-rise { 0% { opacity: 0; transform: translateY(8px); } 12% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
+/* A shorter rise (R2-17), so a float stays in its room: above the card on desktop (clear of the side's label), over the emoji on the phone. */
+@keyframes bv-rise-short { 0% { opacity: 0; transform: translateY(var(--rise, 6px)); } 12% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(calc(-1 * var(--rise, 6px))); } }
 @keyframes bv-rise-small { 0% { opacity: 0; transform: translateY(4px); } 12% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
 /* Reduced motion: nothing moves. The hit card gets a ring, a healed or
  * buffed one a soft one; the chips hold the numbers in place, and the
@@ -636,6 +638,9 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-line.empty { align-items: center; justify-content: center; }
   #app[data-screen="battle"] .bv-slot { flex: 0 1 var(--cw); min-width: 0; }
   #app[data-screen="battle"] .bv-line button.bv-badge { bottom: auto; top: calc(100% + 4px); align-items: flex-start; }
+  /* Floats rise in the line's 48 px above the card: three slots 13 px apart
+   * and a short rise keep the top one clear of "YOU · FRONT →" (R2-17). */
+  #app[data-screen="battle"] .bv-float { --rise: 6px; bottom: calc(100% + 2px + var(--k) * 13px); animation-name: bv-rise-short; }
   /* The change chip sits in the card's top 31px; the emoji starts below it. */
   #app[data-screen="battle"] .bv-card { height: 184px; padding-top: 10px; }
   #app[data-screen="battle"] .bv-card .emoji { margin-top: 24px; }
@@ -722,5 +727,9 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-pill { height: 22px; line-height: 20px; font-size: 14px; padding: 0 4px; }
   #app[data-screen="battle"] .bv-pill.two { height: 24px; min-height: 0; line-height: 11px; font-size: 11px; padding: 0 2px; }
   #app[data-screen="battle"] .bv-pill.two .bv-pst .ic { width: 10px; height: 10px; }
-  #app[data-screen="battle"] .bv-float { bottom: auto; top: calc(24px + var(--k) * 16px); }
+  /* Each float's box hugs its text. They stack up from just above the name
+   * (slot 0) in a 4 px rise, so none reaches the name, PWR or HP; the third
+   * slot, level with the trigger icon, keeps to the card's right (R2-17). */
+  #app[data-screen="battle"] .bv-float { --rise: 4px; bottom: auto; top: calc(36px - var(--k) * 15px); line-height: 18px; animation-name: bv-rise-short; }
+  #app[data-screen="battle"] .bv-float.k2 { left: auto; right: 2px; translate: none; }
 }

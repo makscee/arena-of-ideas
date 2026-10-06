@@ -742,6 +742,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         // ±PWR sits over PWR (left), ±HP over HP (right); a blocked hit shows the Shield.
         if (e?.type === "StatChanged") f.classList.add(e.stat === "pwr" ? "on-pwr" : "on-hp");
         if (blockedBy(c)) f.replaceChildren(...changeLabel(c));
+        f.classList.add(`k${k % 3}`);
         f.style.setProperty("--k", String(k++ % 3));
         floats.push(f);
       });
@@ -815,6 +816,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       }),
     );
     recent.style.display = finished ? "none" : "";
+    fitRecent();
     // The phone shows the sheet only with a trace; the desktop panel is always there (style.css).
     sheet.classList.toggle("open", !!trace);
     sheet.dataset.tab = tab;
@@ -925,6 +927,16 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       if (!more) list.prepend((more = h("span", { class: "bv-l dim bv-still-more" })));
       more.textContent = `+${dropped} earlier`;
     }
+  }
+  /** The recent beats show only rows that fit whole: when the reduced-motion
+   * list above them grows a line, the oldest row goes instead of being cut
+   * by the control bar (R2-17). */
+  function fitRecent(): void {
+    if (recent.style.display === "none") return;
+    const rows = [...recent.children] as HTMLElement[];
+    for (const r of rows) r.hidden = false;
+    const bottom = recent.getBoundingClientRect().bottom;
+    for (const r of rows) if (r.getBoundingClientRect().bottom > bottom + 0.5) r.hidden = true;
   }
   /** The end card sits under the caption on the phone (its last line, "They
    * win", stays readable) and under the HUD on desktop, as tall as what it
