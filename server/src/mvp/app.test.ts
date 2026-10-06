@@ -23,6 +23,17 @@ function world(extra: Partial<MvpDeps> = {}) {
 const client = (extra: Partial<MvpDeps> = {}) => world(extra).call;
 
 describe("MVP API thin path", () => {
+  it("refuses a name already taken, case ignored (R2-17)", async () => {
+    const call = client();
+    expect((await call<PlayerRef>("POST", "/players", { name: "Maks" })).status).toBe(200);
+    const again = await call<{ error: string }>("POST", "/players", { name: " mAKS " });
+    expect(again.status).toBe(409);
+    expect(again.json.error).toMatch(/taken/);
+    expect((await call<PlayerRef>("POST", "/players", { name: "Маша" })).status).toBe(200);
+    expect((await call<PlayerRef>("POST", "/players", { name: "МАША" })).status).toBe(409);
+    expect((await call<PlayerRef>("POST", "/players", { name: "Maks 2" })).status).toBe(200);
+  });
+
   it("start run → buy → fight a ghost → result, until the run ends", async () => {
     const call = client();
     const { json: p } = await call<PlayerRef>("POST", "/players", { name: "Maks" });

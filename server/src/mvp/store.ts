@@ -17,9 +17,15 @@
 import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
 
+/** A name as registration compares it: case and Unicode form ignored. */
+export const nameKey = (name: string): string => name.normalize("NFC").toLowerCase();
+
 export interface MvpStore {
   addPlayer(p: PlayerRef): void;
   player(id: string): PlayerRef | undefined;
+  /** A player whose name is `name`, ignoring case ("maks" finds "Maks"); the
+   * first one when older data holds several (R2-17). */
+  playerByName(name: string): PlayerRef | undefined;
   putRun(r: MvpRunState): void;
   run(id: string): MvpRunState | undefined;
   activeRun(playerId: string): MvpRunState | undefined;
@@ -93,6 +99,11 @@ export class MemoryMvpStore implements MvpStore {
   private talliesByVersion = new Map<string, { runs: number; units: Map<UnitId, UnitTally> }>();
   addPlayer(p: PlayerRef): void { this.players.set(p.id, p); }
   player(id: string): PlayerRef | undefined { return this.players.get(id); }
+  playerByName(name: string): PlayerRef | undefined {
+    const key = nameKey(name);
+    for (const p of this.players.values()) if (nameKey(p.name) === key) return p;
+    return undefined;
+  }
   putRun(r: MvpRunState): void { this.runs.set(r.runId, r); }
   run(id: string): MvpRunState | undefined { return this.runs.get(id); }
   activeRun(playerId: string): MvpRunState | undefined {

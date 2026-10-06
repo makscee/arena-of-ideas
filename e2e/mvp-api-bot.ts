@@ -51,9 +51,15 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
 const content = await call<MvpContent>("GET", "/content");
 const tally = { decisions: {} as Record<string, number>, runs: 0, fights: 0, wins: 0, losses: 0, draws: 0, crowns: 0, ends: {} as Record<string, number>, ratingDelta: 0, errors: 0 };
 const t0 = Date.now();
+const tag = t0.toString(36).slice(-5);
+const known = new Map<string, string>();
 for (let i = 0; i < runs; i++) {
   try {
-    player = (await call<PlayerRef>("POST", "/players", { name: `bot-${i % 5}` })).id;
+    // Five players take turns; a name is registered once (R2-17 refuses a
+    // taken one), tagged per invocation so a second pass at one server works.
+    const name = `bot-${i % 5}-${tag}`;
+    player = known.get(name) ?? (await call<PlayerRef>("POST", "/players", { name })).id;
+    known.set(name, player);
     let run = await call<RunView>("POST", "/runs");
     // Plays as slice 6's bots do (botDecision), so the API sees every kind of
     // decision; fights until the run is over, the Crown included.
