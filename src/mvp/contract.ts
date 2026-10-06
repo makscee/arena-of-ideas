@@ -26,7 +26,11 @@ export interface MvpRules {
   rerollCost: number;
   /** Gold back for selling a unit. */
   sellRefund: number;
+  /** Offers in a round-1 shop. */
   offers: number;
+  /** +1 offer from each listed round on (3 → 6 with [2, 4, 7]). Runs stored
+   * before the curve have no field and keep a fixed `offers`. */
+  offersGrowAt?: number[];
   lineSize: number;
   /** The Nth copy of a unit swaps it to its awoken form (slice 2). */
   copiesToAwaken: number;
@@ -51,7 +55,8 @@ export const MVP_RULES: MvpRules = {
   unitCost: 3,
   rerollCost: 1,
   sellRefund: 1,
-  offers: 5,
+  offers: 3,
+  offersGrowAt: [2, 4, 7],
   lineSize: 5,
   copiesToAwaken: 3,
   copyGrowth: { pwr: 1, hp: 2 },
@@ -62,6 +67,11 @@ export const MVP_RULES: MvpRules = {
   dayEndsAt: "04:00",
   dayTimeZone: "Europe/Moscow",
 };
+
+/** Offers in the shop at `round`: `offers`, +1 for each `offersGrowAt` round reached. */
+export function offersAt(rules: MvpRules, round: number): number {
+  return rules.offers + (rules.offersGrowAt ?? []).filter((r) => r <= round).length;
+}
 
 // ---------- content: units with two forms ----------
 
