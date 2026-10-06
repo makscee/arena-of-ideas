@@ -1,6 +1,7 @@
 // Fusion stats: measure today's fused bodies, then compare formulas in fights.
-//   node --import tsx/esm fusion.mts [runs=120]
-const R = "/Users/admin/Work/arena-574/scout-r3";
+//   node --import tsx/esm docs/round3/sim/fusion.mts [runs=120]   (from the repo root)
+// Runs against this checkout; ARENA_ROOT points it at another one.
+const R = process.env.ARENA_ROOT ?? new URL("../../..", import.meta.url).pathname.replace(/\/$/, "");
 const { mvpRuntime } = await import(`${R}/server/src/mvp/runtime.ts`);
 const { mvpContent } = await import(`${R}/server/src/mvp/content.ts`);
 const { MemoryMvpStore } = await import(`${R}/server/src/mvp/store.ts`);
@@ -52,8 +53,8 @@ console.log(`round-12 awoken units n=${awokenAt12.length}: avg ${avg(awokenAt12,
 // 3. formulas: rebuild fused stats from parts (assume 3+3 copies at the fuse, the rest merged after)
 type F = (a: { pwr: number; hp: number }, b: { pwr: number; hp: number }) => { pwr: number; hp: number };
 const FORMULAS: Record<string, { f: F; grow: { pwr: number; hp: number } }> = {
-  "sum (today)": { f: (a, b) => ({ pwr: a.pwr + b.pwr, hp: a.hp + b.hp }), grow: { pwr: 1, hp: 2 } },
-  "max+1/+2": { f: (a, b) => ({ pwr: Math.max(a.pwr, b.pwr) + 1, hp: Math.max(a.hp, b.hp) + 2 }), grow: { pwr: 1, hp: 2 } },
+  "sum (before R3-10)": { f: (a, b) => ({ pwr: a.pwr + b.pwr, hp: a.hp + b.hp }), grow: { pwr: 1, hp: 2 } },
+  "max+1/+2 (R3-10)": { f: (a, b) => ({ pwr: Math.max(a.pwr, b.pwr) + 1, hp: Math.max(a.hp, b.hp) + 2 }), grow: { pwr: 1, hp: 2 } },
   "max + half min": { f: (a, b) => ({ pwr: Math.max(a.pwr, b.pwr) + Math.floor(Math.min(a.pwr, b.pwr) / 2), hp: Math.max(a.hp, b.hp) + Math.floor(Math.min(a.hp, b.hp) / 2) }), grow: { pwr: 1, hp: 2 } },
   "sum pwr, max+2 hp": { f: (a, b) => ({ pwr: a.pwr + b.pwr, hp: Math.max(a.hp, b.hp) + 2 }), grow: { pwr: 1, hp: 2 } },
 };

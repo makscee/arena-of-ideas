@@ -31,16 +31,16 @@ describe("describeStatus", () => {
     expect(describeStatus(stressRegistry.Vitality!)).toMatchInlineSnapshot(`"+1 HP per stack."`);
     expect(describeStatus(stressRegistry.Curse!)).toMatchInlineSnapshot(`"-1 PWR per stack."`);
     expect(describeStatus(stressRegistry.Poison!)).toMatchInlineSnapshot(
-      `"At the end of each turn: deal damage equal to its stacks to the holder, then consume 1 stack of this status."`,
+      `"Turn end: damage equal to stacks to holder, then spend 1 stack."`,
     );
     expect(describeStatus(stressRegistry.Shield!)).toMatchInlineSnapshot(
-      `"When the holder would be hit: absorb the damage up to its stacks, consuming what it absorbs."`,
+      `"Would be hit: block damage up to stacks, spending them."`,
     );
     expect(describeStatus(stressRegistry.Freeze!)).toMatchInlineSnapshot(
-      `"When the holder would strike: cancel it, consuming 1 stack."`,
+      `"Would strike: cancel it, spend 1 stack."`,
     );
     expect(describeStatus(stressRegistry.Blessing!)).toMatchInlineSnapshot(
-      `"When the holder would die: cancel the death and heal the holder to HP equal to its stacks, spending this status."`,
+      `"Would die: cancel death, set holder to HP equal to stacks, spend this status."`,
     );
   });
 });
@@ -57,27 +57,27 @@ describe("describeAbility", () => {
   test("a summon for every ally reads as one per ally, not 'every ally's side' (#587)", () => {
     const ab = { ...unitActionsOf(Summoner, stressAbilities)[0]!, selectors: [{ kind: "allAllies" as const }] };
     expect(describeAbility(ab)).toBe(
-      "After this unit dies: summon an Imp (1/2) for every ally, while the line has room.",
+      "Dies: summon Imp (1/2) for each ally, if there's room.",
     );
     // Fired at battle start, the holder is still in the line and gets one too.
     const atStart = { ...ab, whens: [{ kind: "trigger" as const, on: { on: "BattleStart" as const } }] };
     expect(describeAbility(atStart)).toBe(
-      "When the battle begins: summon an Imp (1/2) for every ally, this unit included, while the line has room.",
+      "Battle start: summon Imp (1/2) for each ally, self included, if there's room.",
     );
   });
 
   test("known wordings (the shipped stress units)", () => {
     expect(describeAbility(unitActionsOf(Venomancer, stressAbilities)[0]!)).toMatchInlineSnapshot(
-      `"After this unit strikes: apply 2 Poison to the front enemy."`,
+      `"Strikes: 2 Poison to front enemy."`,
     );
     expect(describeAbility(unitActionsOf(Summoner, stressAbilities)[0]!)).toMatchInlineSnapshot(
-      `"After this unit dies: summon an Imp (1/2)."`,
+      `"Dies: summon Imp (1/2)."`,
     );
     expect(describeAbility(unitActionsOf(Silencer, stressAbilities)[0]!)).toMatchInlineSnapshot(
-      `"When the battle begins: silence the front enemy."`,
+      `"Battle start: silence front enemy."`,
     );
     expect(describeAbility(unitActionsOf(Necromancer, stressAbilities)[0]!)).toMatchInlineSnapshot(
-      `"After an ally dies: revive the last fallen ally at 1 HP."`,
+      `"Ally dies: revive fallen ally at 1 HP."`,
     );
   });
 
@@ -88,14 +88,14 @@ describe("describeAbility", () => {
       effects: [{ kind: "resurrect", hp: { kind: "level", of: "holder" } }],
     });
     expect(text).toMatchInlineSnapshot(
-      `"After an ally dies: revive the last fallen ally at HP equal to this unit's level."`,
+      `"Ally dies: revive fallen ally at HP equal to level."`,
     );
   });
 
   test("a status-held ability speaks of the holder", () => {
-    const text = describeAbility(statusActionsOf(stressRegistry.Poison!)[0]!, { holder: "the holder" });
-    expect(text).toContain("the holder");
-    expect(text).not.toContain("this unit");
+    const text = describeAbility(statusActionsOf(stressRegistry.Poison!)[0]!, { holder: "holder" });
+    expect(text).toContain("to holder");
+    expect(text).not.toContain("self");
   });
 
   test("multiple whens, a condition, and multiple selectors all surface", () => {
@@ -109,7 +109,7 @@ describe("describeAbility", () => {
       effects: [{ kind: "heal", amount: { kind: "stat", stat: "pwr", of: "holder" } }],
     });
     expect(text).toMatchInlineSnapshot(
-      `"After this unit is hit, or at the end of each turn, while this unit is at 5 HP or less: heal every ally and a random enemy for this unit's PWR."`,
+      `"Hit, or turn end, at 5 HP or less: heal all allies and random enemy for PWR."`,
     );
   });
 });
@@ -242,7 +242,7 @@ describe("when-clause status refs (constructed content — shipped whens carry n
 
   test("a status-pattern when reads the same and marks the status as a ref", () => {
     expect(describeAbility(onAllyPoisoned)).toMatchInlineSnapshot(
-      `"After Poison lands on an ally: heal this unit for 2."`,
+      `"Ally gets Poison: heal self for 2."`,
     );
     const refs = describeAbilitySegments(onAllyPoisoned).filter((s) => s.statusRef !== undefined);
     expect(refs).toEqual([{ text: "Poison", statusRef: "Poison", term: "status:Poison", clause: "when" }]);
@@ -273,7 +273,7 @@ describe("when-clause status refs (constructed content — shipped whens carry n
   test("a statusless when pattern yields no ref", () => {
     const w: When = { kind: "interceptor", on: { on: "StatusApplied", unit: "holder" } };
     expect(describeWhenSegments(w).every((s) => s.statusRef === undefined)).toBe(true);
-    expect(describeWhen(w)).toBe("when a status would land on this unit");
+    expect(describeWhen(w)).toBe("would get a status");
   });
 });
 
@@ -292,7 +292,7 @@ describe("explicit-status consumeStacks refs (constructed — shipped content ha
 
   test("the named status is a ref and the sentence still joins exactly", () => {
     expect(describeAbility(shieldBreaker)).toMatchInlineSnapshot(
-      `"After this unit strikes: consume 2 stacks of Shield, then deal 3 damage to the front enemy."`,
+      `"Strikes: spend 2 Shield, then 3 damage to front enemy."`,
     );
     const segs = describeAbilitySegments(shieldBreaker);
     expect(segs.filter((s) => s.statusRef !== undefined)).toEqual([{ text: "Shield", statusRef: "Shield", term: "status:Shield" }]);

@@ -1,0 +1,13 @@
+# node --import tsx/esm docs/round3/sim/fusion.mts 200   (R3-10, branch vb-632-fusion-stats, 2026-10-06)
+# Bot runs use the new rule; the formula table rebuilds fused stats from the parts (3+3 copies at the fuse).
+# Before R3-10 (units.md 5): round-12 fused HP p50 24, fused-line win 80%.
+awoken@3 avg by tier: T1 3.5/9.1  T2 3.9/10.3  T3 4.3/11.4  T4 4.9/13.2
+bot runs 200: fused in 78%; 8.1s
+round-12 fused units n=101: avg 7.2/17.2 copies 8.2  hp p50 17 p90 21 max 27
+round-12 awoken units n=33: avg 4.5/12.1 copies 3.5
+lines r9+: 357, with a fused unit 333, full lines without 370
+sum (before R3-10) fused-line win 79%  fused hp p50 24 p90 28  avg turns 9.1  (fused in front 98%)
+max+1/+2 (R3-10)   fused-line win 63%  fused hp p50 16 p90 21  avg turns 9.8  (fused in front 98%)
+max + half min     fused-line win 67%  fused hp p50 19 p90 23  avg turns 9.7  (fused in front 98%)
+sum pwr, max+2 hp  fused-line win 71%  fused hp p50 16 p90 21  avg turns 9.1  (fused in front 98%)
+total 11.9s

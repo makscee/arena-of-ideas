@@ -157,8 +157,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
    * the timeline shows every mark, for finding your way; before, a mark shows
    * once the playhead reaches it, so it never tells who falls when (R2-17 batch E). */
   let seenEnd = false;
-  /** The desktop side panel's tab (R2-16); a trace opening switches to Why. */
-  let tab: "why" | "log" = "why";
+  /** The desktop side panel's tab (R2-16). It opens on Log; a trace opening
+   * switches to Why, and Why turns off again once nothing is traced (R3-17). */
+  let tab: "why" | "log" = "log";
   /** Why's "Turn N" step shows the board as turn N starts (the end of turn
    * N−1): the HUD then reads turn N (R2-17). Any other move clears it. */
   let hudTurn: number | null = null;
@@ -371,10 +372,6 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     tab = t;
     render();
     if (t === "log") logRows[curRow()]?.scrollIntoView({ block: "nearest" });
-  }
-  /** Why with nothing traced (desktop): how to fill it. */
-  function whyHint(): Node[] {
-    return [h("div", { class: "dim bv-why-hint", "data-testid": "why-hint" }, "Click any number, trigger badge, the caption or a Log row to see why it happened.")];
   }
 
   /** The Log: one row per wave, every beat of the fight, built once; render()
@@ -918,11 +915,17 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     fitRecent();
     // The phone shows the sheet only with a trace; the desktop panel is always there (style.css).
     sheet.classList.toggle("open", !!trace);
+    // Nothing traced (✕, Esc, ▶, the end card): Why is off and the panel is back on Log (R3-17).
+    const backToLog = !trace && tab === "why";
+    if (!trace) tab = "log";
     sheet.dataset.tab = tab;
+    whyTab.disabled = !trace;
+    whyTab.title = trace ? "" : "Click a number, badge or log row to see why";
     whyTab.classList.toggle("on", tab === "why");
     logTab.classList.toggle("on", tab === "log");
-    whyBody.replaceChildren(...(trace ? traceView(trace) : whyHint()));
+    whyBody.replaceChildren(...(trace ? traceView(trace) : []));
     drawLog();
+    if (backToLog) logRows[curRow()]?.scrollIntoView({ block: "nearest" });
     drawTimeline();
     // A trace opened from the end card (Why I lost) sits in its place until closed.
     end.style.display = finished && !trace ? "" : "none";

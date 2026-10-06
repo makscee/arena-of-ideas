@@ -12,6 +12,7 @@ import { rngStep } from "../rng.js";
 import {
   MVP_RULES,
   offersAt,
+  sellValue,
   type BattleRecord,
   type Champion,
   type Decision,
@@ -174,9 +175,10 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       return { state: s };
     }
     case "sell": {
-      if (!s.line[d.index]) throw new MvpDecisionError("sell", `no unit at ${d.index}`);
+      const sold = s.line[d.index];
+      if (!sold) throw new MvpDecisionError("sell", `no unit at ${d.index}`);
       s.line.splice(d.index, 1);
-      s.gold += s.rules.sellRefund;
+      s.gold += sellValue(s.rules, sold);
       return { state: s };
     }
     case "reorder": {
@@ -197,7 +199,7 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       // uid; the other slot leaves the line. Swapping the tap order changes
       // only the recipe, never where the result stands.
       const front = Math.min(d.first, d.second);
-      const fused = fuseUnits(first, second, ctx.fuse, content);
+      const fused = fuseUnits(first, second, ctx.fuse, content, s.rules);
       s.line.splice(Math.max(d.first, d.second), 1);
       s.line[front] = fused;
       return { state: s };

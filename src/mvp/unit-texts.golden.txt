@@ -1,0 +1,252 @@
+🥊 Fighter
+  sleeping: Strikes: 1 damage to front enemy.
+  awoken:   Strikes: 3 damage to front enemy.
+🥔 Fodder
+  sleeping: Dies: 1 Shield to all allies.
+  awoken:   Dies: 2 Shield to all allies.
+🗡️ Squire
+  sleeping: Battle start: 2 Shield to self.
+  awoken:   Battle start: 2 Shield and 1 Strength to self.
+🦟 Gnat
+  sleeping: Battle start: 2 damage to random enemy.
+  awoken:   Battle start: 2 damage to all enemies.
+🍄 Spore
+  sleeping: Dies: 1 Poison to all enemies.
+  awoken:   Dies: 2 Poison to all enemies.
+🐀 Rat
+  sleeping: Dies: 2 Poison to front enemy.
+  awoken:   Dies: 2 Poison to all enemies.
+🌱 Planter
+  sleeping: Battle start: summon Imp (1/2), then 2 Vitality to self.
+  awoken:   Battle start: summon Treant (1/8), then 3 Vitality to self.
+💉 Nurse
+  sleeping: Ally hit: heal it for 1.
+  awoken:   Ally hit: heal it for 2.
+🎒 Prepper
+  sleeping: Battle start: 1 Shield to all allies.
+  awoken:   Battle start: 1 Shield and 1 Vitality to all allies.
+📣 Coach
+  sleeping: Battle start: 1 Strength to all allies.
+  awoken:   Battle start: 1 Strength and 1 Shield to all allies.
+🦇 Bat
+  sleeping: Strikes: heal self for 1.
+  awoken:   Strikes: heal self for 2, then 1 Strength to self.
+⚡ Taser
+  sleeping: Battle start: 1 Freeze to front enemy.
+  awoken:   Battle start: 1 Freeze and 2 damage to front enemy.
+🔌 Wire
+  sleeping: Ally gains PWR: 1 damage to front enemy.
+  awoken:   Ally gains PWR: 2 damage to front enemy.
+🌹 Rose
+  sleeping: Hit: 2 damage to front enemy.
+  awoken:   Hit: 3 damage to front enemy.
+😵 Victim
+  sleeping: Hit: 1 Strength to all allies.
+  awoken:   Hit: 1 Strength to all allies, then heal all allies for 1.
+🧨 Saboteur
+  sleeping: Battle start: 1 Curse to front enemy.
+  awoken:   Battle start: 1 Curse to all enemies.
+🌵 Spike
+  sleeping: Ally gets Shield: 1 damage to front enemy.
+  awoken:   Ally gets Shield: 2 damage to front enemy.
+🥀 Wither
+  sleeping: Enemy dies: 1 Strength to all allies.
+  awoken:   Enemy dies: 1 Strength and 1 Vitality to all allies.
+🤡 Distractor
+  sleeping: Battle start: 4 Shield to self.
+  awoken:   Battle start: 4 Shield and 2 Vitality to self.
+🦹 Henchman
+  sleeping: Ally dies: 2 Strength to self.
+  awoken:   Ally dies: 2 Strength and 2 Vitality to self.
+🎯 Sniper
+  sleeping: Battle start: 4 damage to random enemy.
+  awoken:   Battle start: 4 damage and 3 damage to random enemy.
+⛑️ Medic
+  sleeping: Turn end: heal all allies for 1.
+  awoken:   Turn end: heal all allies for 2.
+🛡️ Guardian
+  sleeping: Ally hit: 1 Shield to it.
+  awoken:   Ally hit: 2 Shield to it.
+🪙 Almsgiver
+  sleeping: Ally gets Shield: heal it for 1.
+  awoken:   Ally gets Shield: heal it for 1, then 1 Strength to it.
+✨ Sanctifier
+  sleeping: Ally healed: 1 Strength to it.
+  awoken:   Ally healed: 1 Strength and 1 Vitality to it.
+🔋 Enhancer
+  sleeping: Ally gets Shield: 1 Strength to it.
+  awoken:   Ally gets Shield: 2 Strength to it.
+🪫 Battery
+  sleeping: Ally healed: 1 Strength to self.
+  awoken:   Ally healed: 2 Strength to self.
+🧪 Injector
+  sleeping: Strikes: 1 Poison to front enemy.
+  awoken:   Strikes: 2 Poison to front enemy.
+🐍 Venomancer
+  sleeping: Strikes: 2 Poison to front enemy.
+  awoken:   Strikes: 2 Poison and 1 Curse to front enemy.
+🐁 Plague Rat
+  sleeping: Dies: 2 Poison to all enemies.
+  awoken:   Dies: 3 Poison to all enemies.
+🤺 Duelist
+  sleeping: Strikes: 2 damage to front enemy.
+  awoken:   Strikes: 3 damage to front enemy.
+🪓 Berserker
+  sleeping: Hit: 1 Strength to self.
+  awoken:   Hit: 2 Strength to self.
+🔥 Emberling
+  sleeping: Battle start: 1 damage to all enemies.
+  awoken:   Battle start: 2 damage to all enemies.
+🧊 Icebinder
+  sleeping: Battle start: 2 Freeze to random enemy.
+  awoken:   Battle start: 2 Freeze to all enemies.
+🔮 Summoner
+  sleeping: Dies: summon Wolf (2/3).
+  awoken:   Dies: summon Wraith (3/3).
+🪴 Gardener
+  sleeping: Ally summoned: 2 Vitality to it.
+  awoken:   Ally summoned: 2 Vitality and 1 Strength to it.
+🍎 Fruiter
+  sleeping: Dies: heal all allies for 3.
+  awoken:   Dies: heal all allies for 3, then 1 Strength to all allies.
+🩸 Leech
+  sleeping: Strikes: heal self for PWR.
+  awoken:   Strikes: heal self for PWR, then 1 Strength to self.
+💧 Bloodthinner
+  sleeping: Enemy gets Poison: 1 damage to it.
+  awoken:   Enemy gets Poison: 2 damage to it.
+🧙 Hag
+  sleeping: Enemy gets Poison: 1 Curse to it.
+  awoken:   Enemy gets Poison: 1 Curse and 1 damage to it.
+🃏 Trickster
+  sleeping: Enemy gets Curse: 2 damage to random enemy.
+  awoken:   Enemy gets Curse: 3 damage to random enemy.
+🗝️ Custodian
+  sleeping: Ally dies: 2 Shield to all allies.
+  awoken:   Ally dies: 2 Shield to all allies, then heal all allies for 1.
+🤫 Silencer
+  sleeping: Battle start: silence front enemy.
+  awoken:   Battle start: silence random enemy, then 2 damage to random enemy.
+🦅 Scavenger
+  sleeping: Ally dies: heal self for 3.
+  awoken:   Ally dies: heal self for 3, then 2 Strength to self.
+🧜 Syren
+  sleeping: Turn start: 1 Curse to random enemy.
+  awoken:   Turn start: 1 Curse to all enemies.
+🦠 Rot
+  sleeping: Turn end: 1 Poison to front enemy.
+  awoken:   Turn end: 1 Poison to all enemies.
+🧱 Bulwark
+  sleeping: Battle start: 3 Shield to self.
+  awoken:   Battle start: 3 Shield and 1 Strength to self.
+🪨 Stoneskin
+  sleeping: Hit: 1 Shield to self.
+  awoken:   Hit: 2 Shield to self.
+🎖️ Commander
+  sleeping: Battle start: 1 Strength to all allies.
+  awoken:   Battle start: 1 Strength and 2 Shield to all allies.
+🥁 War Drummer
+  sleeping: Turn start: 1 Strength to all allies.
+  awoken:   Turn start: 1 Strength to all allies, then heal all allies for 1.
+🩺 Physician
+  sleeping: Ally hit: heal it for 2.
+  awoken:   Ally hit: heal it for 2, then 1 Shield to it.
+🍼 Pediatrician
+  sleeping: Ally summoned: 1 Strength to it.
+  awoken:   Ally summoned: 2 Strength to it.
+⚔️ Crusader
+  sleeping: Ally gains PWR: 1 damage to front enemy.
+  awoken:   Ally gains PWR: 2 damage to front enemy.
+🌩️ Lightning
+  sleeping: Ally gains PWR: 2 damage to random enemy.
+  awoken:   Ally gains PWR: 3 damage to random enemy.
+🪄 Battle Mage
+  sleeping: Ally gets Shield: 2 damage to random enemy.
+  awoken:   Ally gets Shield: 3 damage to random enemy.
+🔬 Pathologist
+  sleeping: Enemy gets Poison: 1 Strength to self.
+  awoken:   Enemy gets Poison: 2 Strength to self.
+🦤 Plague Doctor
+  sleeping: Battle start: 2 Poison to all enemies.
+  awoken:   Battle start: 2 Poison and 1 Curse to all enemies.
+🧫 Virus
+  sleeping: Enemy dies: 2 Poison to all enemies.
+  awoken:   Enemy dies: 3 Poison to all enemies.
+💀 Necromancer
+  sleeping: Ally dies: revive fallen ally at 2 HP.
+  awoken:   Ally dies: revive fallen ally at 3 HP.
+⚰️ Sexton
+  sleeping: Ally dies: summon Wraith (3/3).
+  awoken:   Ally dies: summon Golem (2/6).
+🪸 Fungoid
+  sleeping: Turn end: summon Imp (1/2).
+  awoken:   Turn end: summon Wolf (2/3).
+🌀 Mesmerist
+  sleeping: Battle start: 2 Freeze to front enemy.
+  awoken:   Battle start: 2 Freeze and 1 Curse to front enemy.
+🪞 Redirector
+  sleeping: Hit: 2 damage to random enemy.
+  awoken:   Hit: 3 damage to random enemy.
+🏰 Keeper
+  sleeping: Turn start: 1 Shield to all allies.
+  awoken:   Turn start: 2 Shield to all allies.
+🌘 Wane
+  sleeping: Ally healed: 1 Curse to front enemy.
+  awoken:   Ally healed: 1 Curse and 1 damage to front enemy.
+🌾 Harvest
+  sleeping: Enemy dies: heal all allies for 2.
+  awoken:   Enemy dies: heal all allies for 2, then 1 Vitality to all allies.
+💰 Robber
+  sleeping: Enemy gets Curse: 1 Strength to self.
+  awoken:   Enemy gets Curse: 2 Strength to self.
+🕯️ Ritualist
+  sleeping: Ally dies: 2 damage to all enemies.
+  awoken:   Ally dies: 3 damage to all enemies.
+👑 King
+  sleeping: Battle start: 2 Vitality to all allies.
+  awoken:   Battle start: 2 Vitality and 1 Strength to all allies.
+⛪ Priest
+  sleeping: Turn end: heal all allies for 2.
+  awoken:   Turn end: heal all allies for 2, then 1 Shield to all allies.
+😇 Divinity
+  sleeping: Ally dies: revive fallen ally at 3 HP.
+  awoken:   Ally dies: revive fallen ally at 3 HP, then 2 Blessing to fallen ally.
+🐦 Phoenix
+  sleeping: Battle start: 8 Blessing to self.
+  awoken:   Battle start: 8 Blessing and 2 Strength to self.
+🧛 Lilith
+  sleeping: Enemy dies: 2 Strength to self.
+  awoken:   Enemy dies: 2 Strength to self, then heal self for PWR.
+☠️ Famin
+  sleeping: Turn end: 1 Poison to random enemy.
+  awoken:   Turn end: 1 Poison to all enemies.
+🧠 Mentalist
+  sleeping: Ally dies: 1 Freeze to all enemies.
+  awoken:   Ally dies: 1 Freeze and 1 Curse to all enemies.
+⚖️ Equalizer
+  sleeping: Ally gains PWR: 1 Curse to front enemy.
+  awoken:   Ally gains PWR: 1 Curse and 1 damage to front enemy.
+🎬 Director
+  sleeping: Ally dies: 1 Strength to all allies.
+  awoken:   Ally dies: 1 Strength and 1 Shield to all allies.
+🥼 Doctor
+  sleeping: Hit: heal all allies for 1.
+  awoken:   Hit: heal all allies for 2.
+🌋 Ruin
+  sleeping: Battle start: 2 damage to all enemies.
+  awoken:   Battle start: 3 damage to all enemies.
+🌻 Fertilizer
+  sleeping: Ally summoned: 2 Strength to it.
+  awoken:   Ally summoned: 2 Strength and 2 Shield to it.
+🦴 Morbid
+  sleeping: Ally dies: summon Golem (2/6).
+  awoken:   Ally dies: summon Golem (2/6), then 2 Strength to self.
+
+Statuses
+  Strength: +1 PWR per stack.
+  Vitality: +1 HP per stack.
+  Curse: -1 PWR per stack.
+  Poison: Turn end: damage equal to stacks to holder, then spend 1 stack.
+  Shield: Would be hit: block damage up to stacks, spending them.
+  Freeze: Would strike: cancel it, spend 1 stack.
+  Blessing: Would die: cancel death, set holder to HP equal to stacks, spend this status.
