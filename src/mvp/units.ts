@@ -127,9 +127,9 @@ export const ROWS: Row[] = [
   // ---- tier 1: openers and first links ----
   r("Fighter",       "🥊", 1, 2, 5, "strike",     "front",   "Hit 1",       { does: ["Hit 3"] }),
   r("Fodder",        "🥔", 1, 1, 6, "die",        "allies",  "Shield 1",    { does: ["Shield 2"] }),
-  r("Squire",        "🗡️", 1, 2, 4, "start",      "me",      "Shield 2",    { does: ["Shield 2", "Strength 1"] }),
-  r("Gnat",          "🦟", 1, 1, 4, "start",      "random",  "Hit 2",       { who: "enemies" }),
-  r("Spore",         "🍄", 1, 1, 5, "die",        "enemies", "Poison 1",    { does: ["Poison 2"] }),
+  r("Squire",        "🗡️", 1, 2, 4, "start",      "me",      "Strength 2",  { does: ["Strength 2", "Vitality 1"] }),
+  r("Gnat",          "🦟", 1, 1, 4, "turnEnd",    "random",  "Hit 1",       { who: "enemies" }),
+  r("Spore",         "🍄", 1, 1, 5, "die",        "enemies", "Curse 1",     { does: ["Curse 1", "Poison 1"] }),
   r("Rat",           "🐀", 1, 2, 4, "die",        "front",   "Poison 2",    { who: "enemies" }),
   // A summon into a full line is skipped, so Planter also grows: in a full
   // line it is a sturdier body instead of a blank.
@@ -145,7 +145,7 @@ export const ROWS: Row[] = [
   r("Saboteur",      "🧨", 1, 2, 4, "start",      "front",   "Curse 1",     { who: "enemies" }),
   r("Spike",         "🌵", 1, 1, 6, "allyShield", "front",   "Hit 1",       { does: ["Hit 2"] }),
   r("Wither",        "🥀", 1, 2, 4, "enemyDies",  "allies",  "Strength 1",  { does: ["Strength 1", "Vitality 1"] }),
-  r("Distractor",    "🤡", 1, 1, 9, "start",      "me",      "Shield 4",    { does: ["Shield 4", "Vitality 2"] }),
+  r("Distractor",    "🤡", 1, 1, 9, "hurt",       "me",      "Vitality 1",  { does: ["Vitality 1", "Shield 2"] }),
   r("Henchman",      "🦹", 1, 2, 5, "allyDies",   "me",      "Strength 2",  { does: ["Strength 2", "Vitality 2"] }),
   r("Sniper",        "🎯", 1, 2, 4, "start",      "random",  "Hit 4",       { does: ["Hit 4", "Hit 3"] }),
   r("Medic",         "⛑️", 1, 1, 6, "turnEnd",    "allies",  "Heal 1",      { does: ["Heal 2"] }),
@@ -156,12 +156,12 @@ export const ROWS: Row[] = [
   r("Sanctifier",    "✨", 2, 2, 6, "allyHealed", "it",      "Strength 1",  { does: ["Strength 1", "Vitality 1"] }),
   r("Enhancer",      "🔋", 2, 1, 6, "allyShield", "it",      "Strength 1",  { does: ["Strength 2"] }),
   r("Battery",       "🪫", 2, 2, 5, "allyHealed", "me",      "Strength 1",  { does: ["Strength 2"] }),
-  r("Injector",      "🧪", 2, 2, 5, "strike",     "front",   "Poison 1",    { does: ["Poison 2"] }),
+  r("Injector",      "🧪", 2, 2, 5, "hurt",       "front",   "Poison 1",    { does: ["Poison 2"] }),
   r("Venomancer",    "🐍", 2, 2, 7, "strike",     "front",   "Poison 2",    { does: ["Poison 2", "Curse 1"] }),
-  r("Plague Rat",    "🐁", 2, 1, 5, "die",        "enemies", "Poison 2",    { does: ["Poison 3"] }),
-  r("Duelist",       "🤺", 2, 3, 7, "strike",     "front",   "Hit 2",       { does: ["Hit 3"] }),
+  r("Plague Rat",    "🐁", 2, 1, 5, "die",        "enemies", "Poison 2",    { does: ["Poison 2", "Freeze 1"] }),
+  r("Duelist",       "🤺", 2, 3, 7, "strike",     "front",   "Smite",       { does: ["Smite", "Curse 1"] }),
   r("Berserker",     "🪓", 2, 3, 6, "hurt",       "me",      "Strength 1",  { does: ["Strength 2"] }),
-  r("Emberling",     "🔥", 2, 3, 6, "start",      "enemies", "Hit 1",       { does: ["Hit 2"] }),
+  r("Emberling",     "🔥", 2, 3, 6, "die",        "enemies", "Hit 2",       { does: ["Hit 3"] }),
   r("Icebinder",     "🧊", 2, 2, 5, "start",      "random",  "Freeze 2",    { who: "enemies" }),
   r("Summoner",      "🔮", 2, 1, 6, "die",        "me",      "Call Wolf",   { does: ["Call Wraith"] }),
   r("Gardener",      "🪴", 2, 1, 7, "allySummoned", "it",  "Vitality 2",  { does: ["Vitality 2", "Strength 1"] }),
@@ -179,11 +179,11 @@ export const ROWS: Row[] = [
   r("Stoneskin",     "🪨", 2, 2, 7, "hurt",       "me",      "Shield 1",    { does: ["Shield 2"] }),
 
   // ---- tier 3: engines ----
-  r("Commander",     "🎖️", 3, 2, 8, "start",      "allies",  "Strength 1",  { does: ["Strength 1", "Shield 2"] }),
+  r("Commander",     "🎖️", 3, 2, 8, "strike",     "allies",  "Strength 1",  { does: ["Strength 1", "Shield 2"] }),
   r("War Drummer",   "🥁", 3, 2, 8, "turnStart",  "allies",  "Strength 1",  { does: ["Strength 1", "Heal 1"] }),
-  r("Physician",     "🩺", 3, 2, 7, "allyHurt",   "it",      "Heal 2",      { does: ["Heal 2", "Shield 1"] }),
+  r("Physician",     "🩺", 3, 1, 8, "allyHurt",   "it",      "Mend",        { does: ["Mend", "Shield 1"] }),
   r("Pediatrician",  "🍼", 2, 2, 8, "allySummoned", "it",   "Strength 1",  { does: ["Strength 2"] }),
-  r("Crusader",      "⚔️", 3, 3, 9, "allyPower",  "front",   "Hit 1",       { does: ["Hit 2"] }),
+  r("Crusader",      "⚔️", 3, 3, 9, "turnStart",  "front",   "Hit 2",       { does: ["Hit 3"] }),
   r("Lightning",     "🌩️", 3, 3, 7, "allyPower",  "random",  "Hit 2",       { does: ["Hit 3"] }),
   r("Battle Mage",   "🪄", 3, 3, 7, "allyShield", "random", "Hit 2",       { does: ["Hit 3"] }),
   r("Pathologist",   "🔬", 3, 2, 7, "enemyPoisoned", "me",   "Strength 1",  { does: ["Strength 2"] }),
@@ -192,28 +192,28 @@ export const ROWS: Row[] = [
   r("Necromancer",   "💀", 3, 2, 7, "allyDies",   "fallen",  "Revive 2",    { does: ["Revive 3"] }),
   r("Sexton",        "⚰️", 3, 3, 9, "allyDies",   "me",      "Call Wraith", { does: ["Call Golem"] }),
   r("Fungoid",       "🪸", 3, 2, 9, "turnEnd",    "me",      "Call Imp",    { does: ["Call Wolf"] }),
-  r("Mesmerist",     "🌀", 3, 2, 7, "start",     "front",   "Freeze 2",    { does: ["Freeze 2", "Curse 1"] }),
+  r("Mesmerist",     "🌀", 3, 2, 7, "start",      "front",   "Freeze 1 + Curse 1", { does: ["Freeze 2", "Curse 1"] }),
   r("Redirector",    "🪞", 3, 2, 8, "hurt",       "random",  "Hit 2",       { does: ["Hit 3"] }),
   r("Keeper",        "🏰", 3, 2, 7, "turnStart",  "allies",  "Shield 1",    { does: ["Shield 2"] }),
   r("Wane",          "🌘", 3, 2, 7, "allyHealed", "front",   "Curse 1",     { does: ["Curse 1", "Hit 1"] }),
   r("Harvest",       "🌾", 3, 2, 8, "enemyDies",  "allies",  "Heal 2",      { does: ["Heal 2", "Vitality 1"] }),
-  r("Robber",        "💰", 3, 3, 6, "enemyCursed", "me",     "Strength 1",  { does: ["Strength 2"] }),
+  r("Robber",        "💰", 3, 3, 6, "enemyCursed", "me",     "Vitality 1",  { does: ["Vitality 2"] }),
   r("Ritualist",     "🕯️", 3, 2, 7, "allyDies",   "enemies", "Hit 2",       { does: ["Hit 3"] }),
 
   // ---- tier 4: payoffs ----
   r("King",          "👑", 4, 3, 12, "start",     "allies",  "Vitality 2",  { does: ["Vitality 2", "Strength 1"] }),
-  r("Priest",        "⛪", 4, 2, 10, "turnEnd",   "allies",  "Heal 2",      { does: ["Heal 2", "Shield 1"] }),
-  r("Divinity",      "😇", 4, 2, 8, "allyDies",  "fallen",  "Revive 3",    { does: ["Revive 3", "Bless 2"] }),
+  r("Priest",        "⛪", 4, 1, 11, "turnEnd",   "allies",  "Mend",        { does: ["Mend", "Shield 1"] }),
+  r("Divinity",      "😇", 4, 2, 8, "allyDies",  "allies",  "Bless 1",     { does: ["Bless 1", "Shield 2"] }),
   r("Phoenix",       "🐦", 4, 4, 9, "start",     "me",      "Bless 8",     { does: ["Bless 8", "Strength 2"] }),
   r("Lilith",        "🧛", 4, 4, 8, "enemyDies",  "me",      "Strength 2",  { does: ["Strength 2", "Mend"] }),
-  r("Famin",         "☠️", 4, 3, 9, "turnEnd",   "random",  "Poison 1",    { who: "enemies" }),
+  r("Famin",         "☠️", 4, 3, 9, "turnEnd",   "random",  "Poison 1",    { does: ["Poison 1 + Curse 1"] }),
   r("Mentalist",     "🧠", 4, 3, 8, "allyDies",  "enemies", "Freeze 1",    { does: ["Freeze 1", "Curse 1"] }),
   r("Equalizer",     "⚖️", 4, 3, 9, "allyPower", "front",   "Curse 1",     { does: ["Curse 1", "Hit 1"] }),
   r("Director",      "🎬", 4, 3, 9, "allyDies",  "allies",  "Strength 1",  { does: ["Strength 1", "Shield 1"] }),
   r("Doctor",        "🥼", 4, 2, 10, "hurt",     "allies",  "Heal 1",      { does: ["Heal 2"] }),
   r("Ruin",          "🌋", 4, 4, 8, "start",     "enemies", "Hit 2",       { does: ["Hit 3"] }),
-  r("Fertilizer",    "🌻", 4, 2, 10, "allySummoned", "it",  "Strength 2",  { does: ["Strength 2", "Shield 2"] }),
-  r("Morbid",        "🦴", 4, 3, 9, "allyDies",  "me",      "Call Golem",  { does: ["Call Golem", "Strength 2"] }),
+  r("Fertilizer",    "🌻", 4, 2, 10, "allySummoned", "it",  "Strength 2 + Shield 2", { does: ["Strength 3", "Shield 3"] }),
+  r("Morbid",        "🦴", 4, 3, 9, "allyDies",  "me",      "Call Golem + Strength 1", { does: ["Call Golem", "Strength 2"] }),
 ];
 /* eslint-enable prettier/prettier */
 
@@ -236,6 +236,53 @@ function unitOf(row: Row): UnitContent {
     base: { pwr: row.pwr, hp: row.hp },
     forms: { sleeping, awoken },
   };
+}
+
+// ---------- shape: one hero per signature (round 3, docs/round3/units.md 1b) ----------
+
+/** The kinds of effect a Does list has, numbers ignored: "Hit 3" → Hit,
+ * "Call Imp" → Call, "Freeze 1 + Curse 1" → Curse, Freeze. */
+export function effectKinds(does: string[]): string[] {
+  return [...new Set(does.flatMap((d) => d.split(" + ")).map((part) => part.split(" ")[0]!))].sort();
+}
+
+/** The WHEN key a form listens to ("allyDies", …). */
+export function whenKeyOf(form: UnitForm): string {
+  const json = JSON.stringify(form.when);
+  return (Object.keys(WHEN) as WhenKey[]).find((k) => JSON.stringify(WHEN[k]) === json) ?? json;
+}
+
+/** A form's shape: When · Who kind · its set of effect kinds. Two units with
+ * the same shape in the same form are the same hero, whatever the numbers. */
+export function sig(form: UnitForm): string {
+  return [whenKeyOf(form), form.who.map((w) => w.kind).join("+"), effectKinds(form.does).join("+")].join(" · ");
+}
+
+/** The link event each listening When reacts to. The other Whens are roots
+ * (battle start, turns, strike, hurt, death): damage only takes HP away, so a
+ * cascade through hurt or death ends on its own. */
+export const LISTENS: Partial<Record<WhenKey, string>> = {
+  allyShield: "Shield",
+  allyHealed: "Heal",
+  allyPower: "Power",
+  enemyPoisoned: "Poison",
+  enemyCursed: "Curse",
+  allySummoned: "Summon",
+};
+export const ROOT_WHENS: WhenKey[] = ["start", "turnStart", "turnEnd", "strike", "hurt", "allyHurt", "die", "allyDies", "enemyDies"];
+
+/** The link event each effect kind emits; the kinds no When listens to emit none. */
+export const EMITS: Record<string, string | null> = {
+  Shield: "Shield", Heal: "Heal", Mend: "Heal", Strength: "Power", Poison: "Poison", Curse: "Curse", Call: "Summon", Revive: "Summon",
+  Hit: null, Smite: null, Vitality: null, Freeze: null, Bless: null, Silence: null,
+};
+
+/** A form's edges in the listen → emit graph: the link it reacts to, to each
+ * link it emits. A cycle in this graph is a loop only the chain cap stops. */
+export function linkEdges(form: UnitForm): [string, string][] {
+  const from = LISTENS[whenKeyOf(form) as WhenKey];
+  if (!from) return [];
+  return effectKinds(form.does).flatMap((k) => (EMITS[k] ? [[from, EMITS[k]!] as [string, string]] : []));
 }
 
 export interface MvpPool {
