@@ -661,7 +661,10 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
    * it is cut, and the status chips are larger. */
   #app[data-screen="battle"] .bv-card { height: 214px; padding-top: 10px; }
   #app[data-screen="battle"] .bv-card .emoji { margin-top: 32px; }
-  #app[data-screen="battle"] .bv-card .name { font-size: 13px; line-height: 14px; height: 28px; white-space: normal; hyphens: auto; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+  /* A name breaks only between words; a word too long for the card shrinks
+   * (ui/dom.ts fitText), then ends in "…", as the phone's do (R2-17 batch F:
+   * "Redirecto / r" at 1024 with ten units). */
+  #app[data-screen="battle"] .bv-card .name { font-size: 13px; line-height: 14px; height: 28px; white-space: normal; hyphens: manual; overflow-wrap: normal; word-break: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
   #app[data-screen="battle"] .bv-sts { min-height: 33px; max-height: 33px; gap: 1px 3px; }
   #app[data-screen="battle"] .bv-st { font-size: 12px; line-height: 16px; }
   #app[data-screen="battle"] .bv-st .ic { width: 13px; height: 13px; }
@@ -737,7 +740,13 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-card .stats.big { font-size: 15px; padding: 0 1px; }
   #app[data-screen="battle"] .bv-card .emoji { font-size: 36px; }
   #app[data-screen="battle"] .bv-card .name { font-size: 12px; line-height: 13px; height: 26px; letter-spacing: -0.02em; }
-  #app[data-screen="battle"] .bv-pill { padding: 0 3px; }
+  /* The change chip takes every pixel right of the trigger icon, and its
+   * icons scale with its text as fitText shrinks it, so a one-digit chip
+   * never ends in "…", even beside a falling card (R2-17 batch F). */
+  #app[data-screen="battle"] .bv-changes { right: 1px; }
+  #app[data-screen="battle"] button.bv-change { padding: 3px 0 0; }
+  #app[data-screen="battle"] .bv-pill { padding: 0 1px; }
+  #app[data-screen="battle"] .bv-pill .ic { width: 0.9em; height: 0.9em; }
   #app[data-screen="battle"] .bv-line { gap: 4px; }
 }
 

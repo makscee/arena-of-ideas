@@ -24,7 +24,7 @@ import { beatPlayOf, chainOf, damageByUnit, firingOf, keyMomentsOf, stepsOf, tim
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { card, formRich, unitSheet } from "../ui/card";
-import { app, button, closable, h, isDesktop, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
+import { app, button, closable, fitText, h, isDesktop, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
 import { icon } from "../ui/icon";
 import { statusesShown, STATUS_ROW_FALLBACK } from "../ui/status-row";
 
@@ -881,6 +881,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       row.style.gridTemplateColumns = `repeat(${Math.max(5, cards.length)}, minmax(0, 1fr))`;
       row.classList.toggle("empty", !cards.length);
       if (!cards.length) row.append(h("div", { class: "dim" }, "No one standing."));
+      // Fit names and chips now, not a frame later: a chip drawn at full
+      // size showed "−…" for a frame on a narrow card (R2-17 batch F).
+      if (row.isConnected) fitText(row);
     }
     caption.replaceChildren(h("span", { class: "bv-cap" }, ...captionKids(step)));
     still.replaceChildren(...(reduced() ? stillList(v.changes) : []));
