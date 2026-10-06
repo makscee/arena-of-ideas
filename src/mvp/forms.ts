@@ -7,8 +7,10 @@
 // - Each copy merged in adds rules.copyGrowth (+1 PWR / +2 HP); the
 //   rules.copiesToAwaken-th copy swaps the recipe to the awoken form.
 // - Fusion takes two Awoken units in tap order: the When of the first, the Who
-//   of the second, the Does of both (first's, then second's), stats summed.
-//   A fused unit is final; further copies of either part merge into it for stats.
+//   of the second, the Does of both (first's, then second's). Its PWR and HP
+//   are the stronger part's plus one copy's growth (rules.copyGrowth), not the
+//   sum (round 3, note 5). A fused unit is final; further copies of either part
+//   merge into it for stats.
 //
 // Slice 2 owns these bodies. The run (slice 4), bots (slice 6) and content
 // tuning (slice 7) only call them. A fusion's name and credit come from the
@@ -82,10 +84,17 @@ export function fuseCheck(a: LineUnit, b: LineUnit): string | null {
 }
 
 /** Fuse two Awoken units in tap order: the When of `first`, the Who of
- * `second`, the Does of both (first's, then second's), stats and copies
- * summed. The result keeps first's uid and is final. `ctx` carries the name
- * and the credit, which the server looks up (slice 10). */
-export function fuseUnits(first: LineUnit, second: LineUnit, ctx: FuseContext, _content: MvpContent): LineUnit {
+ * `second`, the Does of both (first's, then second's). PWR and HP are each
+ * the higher of the two plus one copy's growth; copies are summed. The result
+ * keeps first's uid and is final. `ctx` carries the name and the credit,
+ * which the server looks up (slice 10). */
+export function fuseUnits(
+  first: LineUnit,
+  second: LineUnit,
+  ctx: FuseContext,
+  _content: MvpContent,
+  rules: MvpRules = MVP_RULES,
+): LineUnit {
   const why = fuseCheck(first, second);
   if (why) throw new Error(`can't fuse ${first.name} + ${second.name}: ${why}`);
   const recipe: UnitForm = {
@@ -102,7 +111,10 @@ export function fuseUnits(first: LineUnit, second: LineUnit, ctx: FuseContext, _
     emoji: `${first.emoji}${second.emoji}`,
     copies: first.copies + second.copies,
     form: "awoken",
-    stats: { pwr: first.stats.pwr + second.stats.pwr, hp: first.stats.hp + second.stats.hp },
+    stats: {
+      pwr: Math.max(first.stats.pwr, second.stats.pwr) + rules.copyGrowth.pwr,
+      hp: Math.max(first.stats.hp, second.stats.hp) + rules.copyGrowth.hp,
+    },
     recipe,
     fusion: {
       first: first.unitId,

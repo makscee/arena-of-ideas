@@ -120,7 +120,8 @@ export interface MvpContent {
 // ---------- the line: owned units, fused units ----------
 
 /** Ordered fusion: the When of `first`, the Who of `second`, the Does of both
- * (first's, then second's), stats summed. Fused units are final. */
+ * (first's, then second's); PWR and HP are the stronger part's plus one copy's
+ * growth. Fused units are final. */
 export interface FusionParts {
   first: UnitId;
   second: UnitId;

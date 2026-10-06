@@ -100,7 +100,7 @@ function rulesSheet(): HTMLElement {
     p(`${r.lineSize} units in a line, front first. Change the order in the shop: ${isDesktop() ? "drag a unit, or click it, then ← →" : "tap a unit, then ◀ ▶"}. Each round you fight a team another player saved at the same round.`),
     h("div", { class: "label" }, "Copies, Awoken, fusion"),
     p(`Buying a unit you own merges it in: +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP a copy. Copy ${r.copiesToAwaken} awakens it: the same When, a stronger Who or Does.`),
-    p(`Two Awoken units fuse: the When of the first you ${isDesktop() ? "pick" : "tap"}, the Who of the second, the Does of both, stats summed. A fused unit is final; copies of either part still merge into it. The first player to make a pair names it.`),
+    p(`Two Awoken units fuse: the When of the first you ${isDesktop() ? "pick" : "tap"}, the Who of the second, the Does of both, and the stronger PWR and HP of the two, +1 PWR / +2 HP. A fused unit is final; copies of either part still merge into it. The first player to make a pair names it.`),
     h("div", { class: "label" }, "Chains"),
     p(`Units react to events. When one happens, the units it triggers fire in line order, front to back, each at most once per event. In a fight, ${isDesktop() ? "click" : "tap"} any number to see the chain that caused it.`),
     h("div", { class: "label" }, "The day"),
