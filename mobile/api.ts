@@ -76,6 +76,9 @@ export const api = {
   decide: (id: string, d: Decision) => call<DecisionResponse>("POST", `/runs/${id}/decisions`, d),
   /** What a shop decision would do, without doing it (the awakening and fusion result cards). */
   preview: (id: string, d: Decision) => call<DecisionResponse>("POST", `/runs/${id}/preview`, d),
+  /** Gives the run up (slice R2-2): it ends "abandoned", every heart left
+   * rated a lost fight. A bare RunView, not a DecisionResponse. */
+  abandon: (id: string) => call<RunView>("POST", `/runs/${id}/abandon`),
   battle: (id: string) => call<BattleRecord>("GET", `/battles/${id}`),
   /** The day, its champion and the last playoff (slice 5). */
   day: () => call<DayView>("GET", "/day"),

@@ -55,6 +55,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
       day: dayView(rt),
       rating: p ? store.rating(p.id) ?? { player: p, rating: rt.rules.ratingStart, runs: 0, slays: 0, daysAsChampion: 0, playoffWins: 0 } : null,
       activeRunId: p ? store.activeRun(p.id)?.runId ?? null : null,
+      dev: rt.dev,
     };
     return c.json(home);
   });

@@ -76,6 +76,15 @@ try {
   // Home's two columns: Play sits right of the champion panel.
   const [champBox, playBox] = [await page.getByTestId("champion").boundingBox(), await page.getByTestId("play").boundingBox()];
   if (!(playBox.x > champBox.x + champBox.width)) errors.push("home: Play isn't in the right column");
+  {
+    // At 1024px the champion's 5 cards stay on one line (R2-10).
+    const size = page.viewportSize();
+    await page.setViewportSize({ width: 1024, height: size.height });
+    const tops = await page.getByTestId("champion").locator(".card").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+    if (new Set(tops).size > 1) errors.push(`home at 1024px: the champion's cards wrap (${tops.join(",")})`);
+    await shot("home-1024");
+    await page.setViewportSize(size);
+  }
 
   await page.getByTestId("stats").click();
   await page.getByTestId("stats-back").waitFor();
@@ -163,6 +172,12 @@ try {
       // Esc deselects.
       await page.keyboard.press("Escape");
       if (await page.locator('[data-testid="line"] .card.selected').count()) errors.push("Esc didn't deselect");
+      // With nothing left to step back from, Esc opens the ☰ run menu (R2-10); Esc again closes it.
+      await page.keyboard.press("Escape");
+      await page.getByTestId("run-menu").waitFor({ timeout: 2_000 }).catch(() => errors.push("Esc didn't open the run menu"));
+      await shot("run-menu");
+      await page.keyboard.press("Escape");
+      if (await page.getByTestId("run-menu").count()) errors.push("Esc didn't close the run menu");
     }
     if (crown) { await shot("crown-shop"); await noHScroll("crown-shop"); }
     // Space fights.
