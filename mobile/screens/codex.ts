@@ -411,7 +411,7 @@ function keywordsTab(content: MvpContent, open: (node: HTMLElement, from?: HTMLE
     const used = users.get(id) ?? [];
     // A trigger said of someone else gets its own line, with its own rule
     // and units: "When an enemy dies." lists Wither, not "When it dies."
-    const scoped = SCOPES.flatMap((sc) => {
+    const scoped = (id.startsWith("trigger:") ? SCOPES : []).flatMap((sc) => {
       const them = users.get(useKey(id, sc));
       const tip = them && scopedTip(id, sc);
       return them && tip ? [h("div", { class: "stack kw-scope", "data-scope": sc, "data-testid": "codex-term-scope" }, h("div", { class: "kw-tip" }, tip), usedBy(them.length), chipsOf(them))] : [];

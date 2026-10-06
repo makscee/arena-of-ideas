@@ -197,6 +197,7 @@ try {
   await shot("codex-keywords"); await noHScroll("codex-keywords");
   // Dies said of an enemy has its own line, its own rule and its own units.
   {
+    if (await page.locator('.kw-row:not([data-term^="trigger:"]) .kw-scope').count()) errors.push("codex: a term that isn't a trigger has scope lines");
     const enemyDies = page.locator('[data-term="trigger:Death"] .kw-scope[data-scope="enemy"]');
     if (!(await enemyDies.count())) errors.push("codex: Dies has no \"an enemy dies\" line");
     else {
