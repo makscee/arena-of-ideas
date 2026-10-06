@@ -2,7 +2,7 @@
 // result screens (slice 8), the battle viewer (slice 9) and the stats page
 // (slice 11). Slice 8 owns the look of both; slices 9 and 11 only pass
 // options (live numbers, rates, onOpen), so nobody reshapes these signatures.
-import { describeAbility } from "../../src/describe";
+import { formText as sharedFormText } from "../../src/mvp/form-text";
 import type { BattleUnit, LineUnit, MvpContent, UnitContent, UnitForm } from "../../src/mvp/contract";
 import type { Stats } from "../../src/types";
 import { h } from "./dom";
@@ -57,20 +57,7 @@ function cardRates(u: CardUnit, rates?: UnitRates): Node {
 /** A form as one line of text: its authored text, else described from the
  * content's abilities (When → Who → Does, each Does in order). */
 export function formText(form: UnitForm, content: MvpContent): string {
-  if (form.text) return form.text;
-  // Every Does shares the form's When and Who: one sentence, the Does joined
-  // by "then" ("When the battle begins: summon …, then apply 3 Vitality to
-  // every ally."), unless a Does carries a condition of its own.
-  const abs = form.does.map((id) => content.abilities[id]);
-  if (abs.length > 1 && abs.every((ab) => ab !== undefined && ab.condition === undefined)) {
-    return describeAbility({ ...abs[0]!, whens: form.when, selectors: form.who, effects: abs.flatMap((ab) => ab!.effects), ...(form.condition ? { condition: form.condition } : {}) });
-  }
-  return form.does
-    .map((id) => {
-      const ab = content.abilities[id];
-      return ab ? describeAbility({ ...ab, whens: form.when, selectors: form.who, ...(form.condition ? { condition: form.condition } : {}) }) : id;
-    })
-    .join(" ");
+  return sharedFormText(form, content.abilities);
 }
 
 /** Everything about one unit: exact numbers and both forms; for a fused unit,
