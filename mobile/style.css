@@ -341,6 +341,7 @@ button.bv-why.won { color: var(--you); border-color: color-mix(in srgb, var(--yo
 /* A run's fight: the round fought, hearts and record after it, what it cost or won (R2-17 batch E). */
 .bv-end-run { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-size: 13px; line-height: 17px; }
 .bv-end-run .hearts { color: var(--ghost); letter-spacing: 1px; }
+.bv-end-run .error { font-size: inherit; min-height: 0; }
 /* The run menu's errors over a battle (Codex or Title menu failing): under
  * the HUD, over the board and the end card, until ✕ or the next try (R2-17 batch F). */
 .bv-error { position: fixed; z-index: 12; left: 12px; right: 12px; max-width: 456px; margin: 0 auto; align-items: center; gap: 8px; padding: 0 0 0 12px; border-color: var(--ghost); box-shadow: 0 8px 24px #000c; }
@@ -348,7 +349,11 @@ button.bv-why.won { color: var(--you); border-color: color-mix(in srgb, var(--yo
 .bv-error:has(> .error:empty) { display: none; }
 .bv-trace-end { gap: 6px; }
 .bv-end-body { display: flex; flex-direction: column; gap: 12px; }
-.bv-end-moments { gap: 4px; }
+/* The phone's card is tight (R2-17 batch F): with the run line and the ☰
+ * HUD, three whole moments still fit under the caption at 360×640. */
+.bv-end { padding-top: 8px; gap: 4px; }
+.bv-end-moments { gap: 3px; }
+.bv-end-moments > .label { line-height: 14px; }
 .bv-end-more { text-transform: none; letter-spacing: 0; color: var(--dim); }
 .bv-dmg-list { gap: 2px; }
 /* The emoji column holds a fused unit's two emojis (.two) whole, clear of its name (R2-17 batch F). */
@@ -370,7 +375,7 @@ button.bv-moment { display: grid; grid-template-columns: 38px 18px minmax(0, 1fr
 .bv-moment-t { font-size: 12px; }
 .bv-moment-ic { display: flex; }
 .bv-moment-l { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 17px; }
-.bv-end-actions { gap: 6px; position: sticky; bottom: -12px; margin: 0 -12px -12px; padding: 6px 12px 8px; background: var(--panel); }
+.bv-end-actions { gap: 6px; position: sticky; bottom: -12px; margin: 0 -12px -12px; padding: 4px 12px 6px; background: var(--panel); }
 .bv-end-actions button { flex: 1 1 auto; padding: 0 6px; font-size: 15px; letter-spacing: 0.02em; white-space: nowrap; }
 .bv-line.empty { min-height: 0; display: block; }
 .bv-word.neutral { color: var(--text); font-size: 24px; }
@@ -774,6 +779,9 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
    * the change chip above it. */
   #app[data-screen="battle"] .bv-float { --rise: 4px; bottom: auto; top: 34px; animation-name: bv-rise-short; }
   #app[data-screen="battle"] .bv-float:not(.buff, .debuff) { font-size: 16px; line-height: 16px; }
+  /* The end card is up: the caption keeps just its line ("They win"), and
+   * the card starts under it (R2-17 batch F). */
+  #app[data-screen="battle"] button.bv-caption.ended { height: auto; }
 }
 
 /* R2-17 batch E: a short phone screen (a phone on its side, 640×360). The
@@ -786,7 +794,7 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-screen { gap: 4px; height: calc(100dvh - 12px - env(safe-area-inset-bottom)); }
   #app[data-screen="battle"] .bv-lab-them, #app[data-screen="battle"] .bv-lab-you { display: none; }
   #app[data-screen="battle"] .bv-screen > .hud .menu-btn { min-height: 36px; min-width: 44px; }
-  #app[data-screen="battle"] button.bv-caption { height: 34px; font-size: 15px; padding: 2px 10px; }
+  #app[data-screen="battle"] button.bv-caption, #app[data-screen="battle"] button.bv-caption.ended { height: 34px; font-size: 15px; padding: 2px 10px; }
   #app[data-screen="battle"] .bv-line { flex: 0 1 auto; min-height: 0; }
   #app[data-screen="battle"] .bv-card { height: 104px; padding-top: 4px; }
   #app[data-screen="battle"] .bv-card .name { flex: none; }

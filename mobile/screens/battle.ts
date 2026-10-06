@@ -900,6 +900,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     still.style.display = reduced() && !finished ? "" : "none";
     fitStill();
     caption.classList.toggle("tappable", !!step?.changes.length);
+    // Under the end card the phone's caption keeps only its line (style.css).
+    caption.classList.toggle("ended", finished && !trace);
     recent.replaceChildren(
       ...beats.slice(Math.max(0, at - 3), Math.max(0, at)).reverse().map((pb) => {
         // A past beat reads as its first wave, the strike or tick that opened it.
@@ -1063,27 +1065,16 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       const cap = caption.getBoundingClientRect();
       // Its text, when a short screen squeezes the caption's box.
       const text = caption.firstElementChild?.getBoundingClientRect().bottom ?? cap.bottom;
-      // The first that leaves the card room for all it holds above Damage
-      // (its word, lines, key moments and buttons: three whole moments at
-      // 360×640, R2-17 batch F), each cutting nothing in half: under the
-      // caption, over it, under the HUD; else the highest of those that
-      // leaves END_MIN_PX, the card scrolling inside; else the screen's top.
+      // The first that leaves the card room, each cutting nothing in half:
+      // under the caption, over it, under the HUD, the screen's top. At
+      // 360×640 the caption shrinks to its line once the card is up, and the
+      // card's spacing is tight, so three whole moments fit under it (R2-17 batch F).
       const tops = [Math.max(cap.bottom, text) + gap / 2, cap.top, hud.getBoundingClientRect().bottom + gap / 2].filter((t) => t >= gap);
-      const want = Math.max(END_MIN_PX, endNeeds());
-      const top = tops.find((t) => bottom - t >= want) ?? tops.filter((t) => bottom - t >= END_MIN_PX).at(-1) ?? gap;
+      const top = tops.find((t) => bottom - t >= END_MIN_PX) ?? gap;
       end.style.top = "";
       end.style.bottom = `${Math.round(innerHeight - bottom)}px`;
       end.style.maxHeight = `${Math.max(0, Math.round(bottom - top))}px`;
     }
-  }
-
-  /** The phone's end card height without its Damage list (which it scrolls to). */
-  function endNeeds(): number {
-    const dmg = end.querySelector<HTMLElement>(".bv-dmg-list");
-    end.style.maxHeight = "none";
-    const all = end.scrollHeight;
-    const gap = parseFloat(getComputedStyle(end.querySelector(".bv-end-body") ?? end).rowGap) || 0;
-    return Math.ceil(all - (dmg ? dmg.getBoundingClientRect().height + gap : 0));
   }
 
   function traceView(t: Trace): Node[] {
