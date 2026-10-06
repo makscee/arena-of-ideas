@@ -146,7 +146,7 @@ const BLOCKED_WORDS = [
   "sith", "potter", "muggle",
   "elsa", "olaf", "nemo", "dory", "fiona", "minnie", "thor", "loki", "avenger", "marvel",
   "zoro", "bart", "lego", "barney", "scam", "developer", "administrator",
-  // the prompt forbids them: the model's way of not naming
+  // the model's way of not naming
   "fusion", "fuse", "fused",
   // stems that hit ordinary words: Carambola, Adminicle, Hexmender, Bambino,
   // Benzothiazole, Twitcher, Pigroot, Fluffy, Revegetate, Magnetodynamo,
@@ -205,6 +205,8 @@ function isGlued(name: string, first?: UnitContent, second?: UnitContent): boole
   return rest.length < 3;
 }
 
+const SMALL_WORDS = ["of", "the", "and"];
+
 /** A model reply made into a name, or null when it isn't one we'd show:
  * 1–3 words of letters, 3–20 characters, nothing on the blocklist, and not
  * just the parts' names. */
@@ -219,7 +221,39 @@ export function cleanModelName(raw: string, first?: UnitContent, second?: UnitCo
   const words = name.split(/[ -]/).filter(Boolean);
   if (words.length > 3 || new Set(words.map(fold)).size < words.length) return null;
   if (isBlockedName(name) || isGlued(name, first, second)) return null;
-  return words.map((w) => w[0]!.toUpperCase() + w.slice(1)).join(name.includes("-") && words.length > 1 ? "-" : " ");
+  // Title case, but a joining word inside stays small: "Mender of Storms".
+  const small = (w: string, i: number) => i > 0 && i < words.length - 1 && SMALL_WORDS.includes(w.toLowerCase());
+  return words.map((w, i) => (small(w, i) ? w.toLowerCase() : w[0]!.toUpperCase() + w.slice(1))).join(name.includes("-") && words.length > 1 ? "-" : " ");
+}
+
+/** The namer's system prompt. Measured on m1's Qwen2.5-1.5B (#587): the
+ * earlier prompt, with the parts' emoji in the ask, got mostly emoji or the
+ * parts glued ("🌹 Rat", "RatRose"), which cleanModelName refuses. */
+export const NAMER_SYSTEM =
+  "You name creatures in a fantasy auto-battler. Two fighters merge into one new creature. Invent a fresh, evocative English name for it: one or two words, at most 18 letters, letters only. Do not just join or repeat the two fighters' names, use no emoji, no quotes, no explanation, and never a name from an existing game, film, book or comic.";
+
+/** Few-shot turns before the real ask. The fighters here are no unit's name
+ * in the content (the model echoes example words; a test checks it). */
+export const NAMER_EXAMPLES: readonly { first: string; second: string; name: string }[] = [
+  { first: "Knight", second: "Wolf", name: "Fang Paladin" },
+  { first: "Spark", second: "Healer", name: "Mender of Storms" },
+  { first: "Golem", second: "Raven", name: "Gravewing" },
+  { first: "Thief", second: "Monk", name: "Alms Cutter" },
+];
+
+const namerAsk = (first: string, second: string) => `${first} merges with ${second}. Name:`;
+
+/** The chat messages for one ask: system, the few-shot turns, then the pair
+ * by name only (no emoji: the model copies it into the answer). */
+export function namerMessages(first: UnitContent, second: UnitContent): { role: "system" | "user" | "assistant"; content: string }[] {
+  return [
+    { role: "system", content: NAMER_SYSTEM },
+    ...NAMER_EXAMPLES.flatMap((e) => [
+      { role: "user" as const, content: namerAsk(e.first, e.second) },
+      { role: "assistant" as const, content: e.name },
+    ]),
+    { role: "user", content: namerAsk(first.name, second.name) },
+  ];
 }
 
 /** The m1 model through an OpenAI-compatible chat endpoint (mlx_lm.server,
@@ -230,18 +264,7 @@ export function httpModelNamer(url: string, timeoutMs = 15_000): ModelNamer {
       method: "POST",
       headers: { "content-type": "application/json" },
       signal: AbortSignal.timeout(timeoutMs),
-      body: JSON.stringify({
-        messages: [
-          {
-            role: "system",
-            content:
-              "You invent names for creatures in a fantasy auto-battler. Two fighters merge into one new creature. Answer with its name only: one or two words, at most 18 letters, no quotes, no explanation. Never use a name from an existing game, film, book or comic, and never the words fusion or fuse.",
-          },
-          { role: "user", content: `${first.emoji} ${first.name} (first) merges with ${second.emoji} ${second.name} (second). Name:` },
-        ],
-        max_tokens: 12,
-        temperature: 0.8,
-      }),
+      body: JSON.stringify({ messages: namerMessages(first, second), max_tokens: 12, temperature: 0.8 }),
     });
     // A 5xx (mlx still loading) or any other refusal is the model being down,
     // not an answer: thrown, so the pair is asked again after a backoff.

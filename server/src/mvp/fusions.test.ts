@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { Champion, DecisionResponse, FusionDiscovery, PlayerRef, UnitContent } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { mvpContent } from "./content.js";
-import { awaitFusionName, cleanModelName, drainFusionNames, fusionNameReady, fusionNaming, httpModelNamer, MODEL_DOWN_MS, MODEL_FAILURES, MODEL_PROBE_MS, portmanteau, recordFusion, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
+import { awaitFusionName, cleanModelName, drainFusionNames, fusionNameReady, fusionNaming, httpModelNamer, MODEL_DOWN_MS, NAMER_EXAMPLES, MODEL_FAILURES, MODEL_PROBE_MS, portmanteau, recordFusion, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
 import { decide, preview, startRun } from "./runs.js";
 import { seedChampion } from "./bots.js";
 import { mvpRuntime } from "./runtime.js";
@@ -123,6 +123,8 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
     expect(cleanModelName('Name: "iron mender".\nIt combines…')).toBe("Iron Mender");
     expect(cleanModelName("<think>hmm</think>\nBloodmend")).toBe("Bloodmend");
     expect(cleanModelName("Ash-Warden")).toBe("Ash-Warden");
+    expect(cleanModelName("monarch Of senses")).toBe("Monarch of Senses");
+    expect(cleanModelName("The Ashen")).toBe("The Ashen");
     expect(cleanModelName("🥊🎯 Stormancer!")).toBe("Stormancer");
   });
 
@@ -479,8 +481,8 @@ describe("MVP fusion names: the HTTP model client", () => {
   let server: Server | undefined;
   afterEach(() => server?.close());
 
-  it("asks an OpenAI-compatible chat endpoint and returns its reply", async () => {
-    let got: { messages: { content: string }[] } | undefined;
+  it("asks an OpenAI-compatible chat endpoint with the few-shot turns, no emoji, and returns its reply", async () => {
+    let got: { messages: { role: string; content: string }[]; max_tokens: number; temperature: number } | undefined;
     server = createServer((req, res) => {
       let body = "";
       req.on("data", (c) => (body += c));
@@ -494,7 +496,20 @@ describe("MVP fusion names: the HTTP model client", () => {
     const { port } = server.address() as AddressInfo;
     const ask = httpModelNamer(`http://127.0.0.1:${port}/v1/chat/completions`);
     expect(await ask(brawler, medic)).toBe("Ironcare");
-    expect(got?.messages.at(-1)?.content).toContain("Brawler (first) merges with x Medic (second)");
+    const emojiUnit = { ...brawler, emoji: "🌹", name: "Rose" };
+    expect(await ask(emojiUnit, { ...medic, emoji: "🐀", name: "Rat" })).toBe("Ironcare");
+    expect(got?.messages.map((m) => m.role)).toEqual(["system", "user", "assistant", "user", "assistant", "user", "assistant", "user", "assistant", "user"]);
+    expect(got?.messages[1]).toEqual({ role: "user", content: "Knight merges with Wolf. Name:" });
+    expect(got?.messages[2]).toEqual({ role: "assistant", content: "Fang Paladin" });
+    expect(got?.messages.at(-1)).toEqual({ role: "user", content: "Rose merges with Rat. Name:" });
+    expect(got?.messages.some((m) => /\p{Extended_Pictographic}/u.test(m.content))).toBe(false);
+    expect(got).toMatchObject({ max_tokens: 12, temperature: 0.8 });
+  });
+
+  it("uses no content unit's name in its examples (the model echoes example words)", () => {
+    const names = new Set(mvpContent().units.flatMap((u) => u.name.toLowerCase().split(/\s+/)));
+    const words = NAMER_EXAMPLES.flatMap((e) => [e.first, e.second, ...e.name.split(/\s+/)]).map((w) => w.toLowerCase());
+    expect(words.filter((w) => names.has(w))).toEqual([]);
   });
 
   it("throws on a 5xx (mlx still loading), so the pair is asked again", async () => {
