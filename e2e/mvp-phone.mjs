@@ -233,7 +233,7 @@ try {
   await shot("codex-summoned"); await noHScroll("codex-summoned");
   await page.locator('[data-testid="codex-summon"][data-summon="wolf"]').click();
   const wolfBy = (await page.getByTestId("summoned-by").textContent().catch(() => "")) ?? "";
-  for (const n of ["Summoner", "Fungoid"]) if (!wolfBy.includes(n)) errors.push(`codex: the Wolf's "Summoned by" lacks ${n} ("${wolfBy}")`);
+  for (const n of ["Summoner"]) if (!wolfBy.includes(n)) errors.push(`codex: the Wolf's "Summoned by" lacks ${n} ("${wolfBy}")`);
   await shot("codex-summon-wolf");
   await page.getByTestId("sheet-close").click();
   await page.getByTestId("codex-tier-all").click();

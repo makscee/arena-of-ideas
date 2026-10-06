@@ -156,7 +156,7 @@
   awoken:   Ally summoned: 1 Strength and 1 Blessing to it.
 ⚔️ Crusader
   sleeping: Turn start: 2 damage to front enemy.
-  awoken:   Turn start: 2 damage to front enemy, then silence front enemy.
+  awoken:   Turn start: 2 damage and 1 Curse to front enemy.
 🌩️ Lightning
   sleeping: Ally gains PWR: 2 damage to random enemy.
   awoken:   Ally gains PWR: 1 damage and 1 Curse to random enemy.
@@ -206,8 +206,8 @@
   sleeping: Battle start: 2 Vitality to all allies.
   awoken:   Battle start: 2 Vitality and 1 Blessing to all allies.
 ⛪ Priest
-  sleeping: Turn end: silence random enemy.
-  awoken:   Turn end: silence random enemy, then 1 Curse to random enemy.
+  sleeping: Ally dies: silence random enemy.
+  awoken:   Ally dies: silence random enemy, then 1 Curse to random enemy.
 😇 Divinity
   sleeping: Ally dies: 1 Blessing to all allies.
   awoken:   Ally dies: 1 Blessing and 2 Shield to all allies.

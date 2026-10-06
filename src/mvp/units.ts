@@ -207,7 +207,7 @@ export const ROWS: Row[] = [
   // enemy. On "ally hit" it cursed ~18 times a battle (R3-9).
   r("Physician",     "🩺", 3, 2, 8, "turnEnd",    "front",   "Curse 1",     { does: ["Curse 1", "Poison 1"] }),
   r("Pediatrician",  "🍼", 2, 2, 8, "allySummoned", "it",   "Strength 1",  { does: ["Strength 1", "Bless 1"] }),
-  r("Crusader",      "⚔️", 3, 3, 9, "turnStart",  "front",   "Hit 2",       { does: ["Hit 2", "Silence"] }),
+  r("Crusader",      "⚔️", 3, 3, 9, "turnStart",  "front",   "Hit 2",       { does: ["Hit 2", "Curse 1"] }),
   r("Lightning",     "🌩️", 3, 3, 7, "allyPower",  "random",  "Hit 2",       { does: ["Hit 1", "Curse 1"] }),
   r("Battle Mage",   "🪄", 3, 3, 7, "allyShield", "random", "Hit 2",       { does: ["Hit 2", "Poison 1"] }),
   r("Pathologist",   "🔬", 3, 2, 7, "enemyPoisoned", "me",   "Strength 1",  { does: ["Strength 1", "Heal 1"] }),
@@ -227,10 +227,10 @@ export const ROWS: Row[] = [
 
   // ---- tier 4: payoffs ----
   r("King",          "👑", 4, 3, 12, "start",     "allies",  "Vitality 2",  { does: ["Vitality 2", "Bless 1"] }),
-  // Priest exorcises: Silence strips an enemy's statuses (Shield, Blessing)
+  // Priest avenges the fallen: Silence strips an enemy's statuses (Shield, Blessing)
   // and its ability. Its old team blessing was Divinity's job (R3-9); King's
   // Awoken form keeps a one-off team blessing at battle start.
-  r("Priest",        "⛪", 4, 2, 10, "turnEnd",   "random",  "Silence",     { does: ["Silence", "Curse 1"] }),
+  r("Priest",        "⛪", 4, 2, 10, "allyDies",  "random",  "Silence",     { does: ["Silence", "Curse 1"] }),
   r("Divinity",      "😇", 4, 2, 8, "allyDies",  "allies",  "Bless 1",     { does: ["Bless 1", "Shield 2"] }),
   r("Phoenix",       "🐦", 4, 4, 9, "start",     "me",      "Bless 8",     { does: ["Bless 8", "Call Chick"] }),
   r("Lilith",        "🧛", 4, 4, 8, "enemyDies",  "me",      "Strength 2",  { does: ["Strength 2", "Mend"] }),
