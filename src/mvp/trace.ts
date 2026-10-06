@@ -624,3 +624,95 @@ export function whyILost(log: BattleEvent[], you: Side = "A", top = 3): LossChai
   }
   return all.sort((a, b) => b.impact - a.impact || b.kills - a.kills).slice(0, top);
 }
+
+// ---------- the end card (round 2, R2-14) ----------
+
+export interface UnitDamage {
+  unit: string;
+  name: string;
+  side: Side;
+  /** HP it took from the other side's units, overkill not counted. */
+  damage: number;
+}
+
+/** The damage each unit dealt to the other side over the battle, credited to
+ * the nearest unit in the hit's chain (a status tick to the unit that put the
+ * status on). Fatigue and self-harm count for nobody. Every unit that entered
+ * the battle is listed, a summon once it dealt damage; biggest first per side. */
+export function damageByUnit(log: BattleEvent[], name: NameOf = displayNames(log), sides = sidesOf(log)): UnitDamage[] {
+  const hp = new Map<string, number>();
+  const dealt = new Map<string, number>();
+  for (const e of log) if (e.type === "BattleStart") for (const s of ["A", "B"] as const) for (const r of e.teams[s]) { hp.set(r.id, r.hp); dealt.set(r.id, 0); }
+  for (const e of log) {
+    if (e.type === "Hurt") {
+      const before = hp.get(e.unit) ?? e.amount;
+      hp.set(e.unit, e.hpAfter ?? before - e.amount);
+      const by = traceOf(log, e.id, name, sides).links[0];
+      const side = sides.get(e.unit);
+      if (by?.side && side && by.side !== side) dealt.set(by.unit, (dealt.get(by.unit) ?? 0) + Math.max(0, Math.min(e.amount, before)));
+    } else if (e.type === "Heal") hp.set(e.unit, e.hpAfter ?? (hp.get(e.unit) ?? 0) + e.amount);
+    else if (e.type === "StatChanged" && e.hpAfter !== undefined) hp.set(e.unit, e.hpAfter);
+    else if (e.type === "Summon") hp.set(e.unit, e.atHp ?? e.hp);
+  }
+  const out: UnitDamage[] = [];
+  for (const [unit, damage] of dealt) {
+    const side = sides.get(unit);
+    if (side) out.push({ unit, name: name(unit), side, damage });
+  }
+  return out.sort((p, q) => (p.side === q.side ? q.damage - p.damage : p.side < q.side ? -1 : 1));
+}
+
+export interface KeyMoment {
+  kind: "kill" | "combo" | "fatigue";
+  /** The playback beat it happens in (PlayBeat.index). */
+  beat: number;
+  /** "Archer kills Knight (−7)", "Combo: 5 steps", "Fatigue sets in (T9)". */
+  label: string;
+  /** The unit it is about (the killer, the combo's first actor), when there is one. */
+  unit?: string;
+}
+
+/** Combos shorter than this aren't a key moment. */
+const COMBO_MIN = 3;
+
+/** The 2–3 moments worth replaying, in battle order: the biggest killing blow,
+ * the longest combo (the beat with the most waves, at least 3), and when
+ * fatigue set in. A battle with fewer adds its last kill, so there is
+ * something to click whenever anyone fell. */
+export function keyMomentsOf(log: BattleEvent[], beats: PlayBeat[], name: NameOf = displayNames(log), sides = sidesOf(log)): KeyMoment[] {
+  const beatOfEvent = (id: number) => beats.find((b) => b.waves.some((w) => w.eventIds.includes(id)))?.index ?? beats.find((b) => b.end >= id)?.index ?? beats.length - 1;
+  const hp = new Map<string, number>();
+  for (const e of log) if (e.type === "BattleStart") for (const s of ["A", "B"] as const) for (const r of e.teams[s]) hp.set(r.id, r.hp);
+  const kills: { id: number; killer: string | null; victim: string; dmg: number }[] = [];
+  const lastHit = new Map<string, { id: number; dmg: number }>();
+  for (const e of log) {
+    if (e.type === "Hurt") {
+      const before = hp.get(e.unit) ?? e.amount;
+      hp.set(e.unit, e.hpAfter ?? before - e.amount);
+      lastHit.set(e.unit, { id: e.id, dmg: Math.max(0, Math.min(e.amount, before)) });
+    } else if (e.type === "Heal") hp.set(e.unit, e.hpAfter ?? (hp.get(e.unit) ?? 0) + e.amount);
+    else if (e.type === "StatChanged" && e.hpAfter !== undefined) hp.set(e.unit, e.hpAfter);
+    else if (e.type === "Summon") hp.set(e.unit, e.atHp ?? e.hp);
+    else if (e.type === "Death") {
+      const cause = e.causedBy !== null ? log[e.causedBy] : undefined;
+      const hit = cause?.type === "Hurt" ? { id: cause.id, dmg: lastHit.get(e.unit)?.dmg ?? cause.amount } : lastHit.get(e.unit);
+      const killer = hit ? (traceOf(log, hit.id, name, sides).links[0]?.unit ?? null) : null;
+      kills.push({ id: e.id, killer, victim: e.unit, dmg: hit?.dmg ?? 0 });
+    }
+  }
+  const killLabel = (k: (typeof kills)[number]) => `${k.killer ? name(k.killer) : "Fatigue"} kills ${name(k.victim)}${k.dmg ? ` (−${k.dmg})` : ""}`;
+  const out: KeyMoment[] = [];
+  const add = (m: KeyMoment) => { if (!out.some((o) => o.beat === m.beat)) out.push(m); };
+  const big = [...kills].sort((p, q) => q.dmg - p.dmg || p.id - q.id)[0];
+  if (big) add({ kind: "kill", beat: beatOfEvent(big.id), label: killLabel(big), ...(big.killer ? { unit: big.killer } : {}) });
+  const combo = [...beats].sort((p, q) => q.waves.length - p.waves.length || p.index - q.index)[0];
+  if (combo && combo.waves.length >= COMBO_MIN) {
+    const actor = combo.waves.find((w) => w.actor)?.actor;
+    add({ kind: "combo", beat: combo.index, label: `Combo: ${combo.waves.length} steps${actor ? `, ${name(actor)} first` : ""}`, ...(actor ? { unit: actor } : {}) });
+  }
+  const fatigue = log.find((e) => e.type === "Fatigue");
+  if (fatigue) add({ kind: "fatigue", beat: beatOfEvent(fatigue.id), label: `Fatigue sets in (T${fatigue.turn})` });
+  const last = kills.at(-1);
+  if (out.length < 2 && last) add({ kind: "kill", beat: beatOfEvent(last.id), label: killLabel(last), ...(last.killer ? { unit: last.killer } : {}) });
+  return out.sort((p, q) => p.beat - q.beat).slice(0, 3);
+}
