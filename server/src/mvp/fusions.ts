@@ -26,6 +26,7 @@
 //   waited for. While it is down no bot waits, new pairs aren't asked, and one
 //   pair is asked every MODEL_PROBE_MS; the first answer brings it back.
 import { fuseCheck } from "../../../src/mvp/forms.js";
+import { hasCrudeStem, isCrudeName } from "./crude.js";
 import type { FuseContext, FusionDiscovery, FusionParts, PlayerRef, UnitContent, UnitId } from "../../../src/mvp/contract.js";
 import type { RunDeps, RunHooks } from "./runs.js";
 import type { MvpJob } from "./runtime.js";
@@ -87,11 +88,10 @@ function portmanteauAvoiding(first: string, second: string, isTaken: (folded: st
 }
 
 /** A stand-in is made by machine and can take another split, so it is held
- * stricter than a model's answer: no CRUDE fragment anywhere, INNOCENT words
- * included ("Sexmancer", "Hencummer" from Sexton and War Drummer). */
+ * stricter than a model's answer: no crude stem anywhere, masks ignored
+ * ("Sexmancer", "Hencummer" from Sexton and War Drummer). */
 function standinCrude(name: string): boolean {
-  const folded = fold(name);
-  return CRUDE.some((c) => folded.includes(c));
+  return hasCrudeStem(name) || isCrudeName(name);
 }
 
 const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
@@ -149,60 +149,9 @@ const BLOCKED_STEMS = [
   "vader", "yoda", "jedi", "snape", "dobby", "pudge", "zerg", "goku", "optimus", "hulk",
   "mario", "thorhammer", "thorshammer",
   "moderator", "http", "www",
-  // crude: profanity, slurs and hate words, as roots that also catch joined
-  // forms ("Shitlord"); ORDINARY keeps the ordinary words that contain them.
-  // Shorter ones that hit ordinary words match only as whole words (CRUDE_WORDS).
-  "fuck", "fvck", "phuck", "shit", "cunt", "nigg", "negro", "faggot", "bitch", "biatch", "whore", "slut", "smut", "porn",
-  "rape", "rapist", "pedophil", "paedophil", "dildo", "blowjob", "handjob", "cumshot", "cumslut", "cumdump", "cumlord", "cumbucket",
-  "cumrag", "jizz", "jism", "vagina", "penis", "pussy", "pussies", "asshole", "arsehole", "asshat", "asswipe", "dumbass", "jackass",
-  "fatass", "smartass", "badass", "kickass", "bastard", "dick", "cock", "anal", "boob", "prick", "wank", "twat", "piss", "nazi",
-  "hitler", "swastika", "kkk", "klansman", "kike", "kyke", "retard", "chink", "wetback", "raghead", "towelhead", "tranny", "trannie",
-  "shemale", "ladyboy", "bollock", "douche", "butthole", "buttplug", "scrotum", "gangbang", "molest", "skank", "yotch", "ballsack",
-  "nutsack", "bukkake", "jewkill", "killjew", "whitepower", "siegheil", "heilhitler", "gaschamber", "holocaust", "auschwitz",
-  "gestapo", "fuhrer", "redskin", "beaner", "golliwog", "jigaboo", "porchmonkey", "zipperhead", "slanteye", "mongoloid", "spastic",
-  "lolicon", "necrophil", "bestiality", "masturbat", "orgasm", "knobhead", "bellend", "sexslave", "rimjob", "smegma", "sodom",
-  // roots a fusion of this content makes likely (Pediatrician, Sexton) and
-  // hate phrases: also caught joined ("Pedomancer", "Sexwraith", "Jew Slayer")
-  "pedo", "sex", "cum", "jew", "clit", "tits", "arse", "fag", "assface", "asslick", "asskick", "assclown", "asshead",
-  "whitepride", "chingchong", "junglebunny", "sandmonkey", "cameljockey", "killgays",
 ];
 // Ordinary words that contain a stem: taken out of a word before stems match.
-const ORDINARY = ["invader", "evader", "pervader", "hulking", "hulky", "marionette", "mariology", "mariolat", "marion", "snaper",
-  // crude stems inside ordinary words
-  "grape", "drape", "scrape", "crape", "trapez", "parapet", "therapist", "cockatoo", "cockatiel", "cockle", "cockscomb", "gamecock",
-  "weathercock", "hitchcock", "cockatrice", "peacock", "cockpit", "cockerel", "woodcock", "cockroach", "shuttlecock", "cocktail",
-  "hancock", "cockade", "babcock", "dickens", "dickcissel", "analy", "analog", "analg", "analem", "banal", "canal",
-  "bacchanal", "manal", "tanal", "hanal", "penistone", "scunthorpe", "swank", "ashkenazi", "nazirite",
-  "parse", "sparse", "coarse", "hoarse", "arsen", "prickl", "retardant", "chinkapin", "raccoon", "racoon", "cocoon", "tycoon",
-  "puccoon", "pakistan", "negroni", "montenegro", "pissarro",
-  "cocker", "cockney", "dickory", "dickon", "serape", "chinking", "marseill", "ranald",
-  "torpedo", "pedomet", "pedolog", "sexton", "sextant", "sextet", "sextup", "essex", "sussex", "wessex", "sexagen", "cumul",
-  "cucum", "cumber", "circum", "docum", "cumin", "incumb", "succumb", "talcum", "modicum", "capsicum", "jewel", "clitheroe", "clitter",
-  "petits", "tomtits", "farse", "hearse", "starse"];
-// Crude fragments, refused anywhere in a name, its words joined ("Kingrape",
-// "Scytherapist", "Cuminjector", "Noct Scum"). The costs are lopsided: a name
-// wrongly refused costs one more ask, a crude name stays in the world for good.
-// So ORDINARY doesn't rescue a compound ("Vinegrape" is refused too); only a
-// name that is exactly one ORDINARY word passes ("Grape", "Therapist").
-const CRUDE = ["sex", "cum", "anal", "anus", "arse", "boner", "nig", "fag", "spic", "kike", "kyke", "rape", "rapist", "porn", "piss", "dick",
-  "cock", "cunt", "fuck", "shit", "slut", "smut", "jizz", "homo", "dyke", "coon", "jew", "nazi", "turd", "twat", "wank", "pube", "tard", "poof",
-  "pedo", "clit", "semen", "gay", "sperm", "schlong", "testic", "incest", "orgy", "gypsy"];
-// Innocent fantasy words taken out of a model's name before CRUDE matches,
-// kept short: each is a word this game's names reach for.
-const INNOCENT = [
-  "night", // "nig": Nightshade, Knightfall, Nightingale
-  "jewel", // "jew": Jewelwing, Jewel Golem
-  "cockatrice", // "cock": the classic fantasy beast
-  "cocoon", "raccoon", "racoon", // "coon": insect and beast units
-  "cumulus", // "cum": storm clouds (Stormcumulus)
-];
-// Short stems that would refuse too much anywhere inside a word ("Glass",
-// "Butterfly"): refused at a word's start ("Assrat", "Buttinjector") or as the
-// glued tail of a longer word ("Kingdong", "Kingbutt"), except in EDGE_ORDINARY.
-const EDGE_CRUDE = ["ass", "butt", "dong"];
-const EDGE_ORDINARY = ["assassin", "assail", "assault", "assay", "assemb", "assent", "assert", "assess", "asset", "assign", "assist",
-  "associat", "assort", "assuag", "assum", "assur", "butter", "button", "buttress", "glass", "brass", "grass", "class", "mass", "bass",
-  "pass", "lass", "crass", "sass", "compass", "morass", "harass", "cutlass", "carcass", "kvass", "wrass"];
+const ORDINARY = ["invader", "evader", "pervader", "hulking", "hulky", "marionette", "mariology", "mariolat", "marion", "snaper"];
 // Words: short or ordinary enough that a stem would hit real words ("Thorn",
 // "Invader", "Marionette", "Smuggler", "Scamper"), so they match one word of
 // the name, also with a plural or possessive ending ("Marios", "Thor's").
@@ -212,26 +161,6 @@ const BLOCKED_WORDS = [
   "sith", "potter", "muggle",
   "elsa", "olaf", "nemo", "dory", "fiona", "minnie", "thor", "loki", "avenger", "marvel",
   "zoro", "bart", "lego", "spaceinvader", "barney", "scam", "developer", "administrator",
-  // crude words that hit ordinary words as roots: whole words only
-  "nig", "nog", "anus", "wop", "dago", "mofo", "choad", "fap", "gay", "gays",
-  "abo", "arse", "arsehole", "ass", "asses", "asshat", "asshole", "asswipe", "auschwitz", "badass", "ballsack", "bastard", "bastards",
-  "beaner", "beaners", "bellend", "bestiality", "beyotch", "biatch", "bitch", "bitches", "bollock", "bollocks", "boner", "boobies",
-  "boobs", "boong", "bukkake", "bullshit", "buttplug", "chinaman", "chink", "cock", "cocks", "cocksucker", "coolie", "coon", "cripple",
-  "cuck", "cum", "cumbucket", "cumming", "cumrag", "cumshot", "cumslut", "cunt", "cunts", "darkie", "darky", "dick", "dickhead", "dickwad",
-  "dildo", "dothead", "dumbass", "dyke", "erection", "fag", "faggot", "fags", "fatass", "fck", "felch", "fuck", "fucker", "fuckface",
-  "fucking", "fuhrer", "fuk", "fuq", "gestapo", "golliwog", "gook", "greaser", "gringo", "gyp", "gypo", "gyppo", "gypsy", "halfbreed",
-  "heeb", "heil", "hencummer", "hentai", "hitler", "holocaust", "homo", "honkey", "honky", "horny", "hymie", "incest", "injun", "jackass",
-  "jap", "jerkoff", "jewkiller", "jigaboo", "jihadi", "jizz", "kaffir", "kafir", "kickass", "kike", "kkk", "klan", "klansman", "knobhead",
-  "kraut", "kyke", "ladyboy", "lesbo", "libtard", "lolicon", "lynch", "lyncher", "lynching", "masturbate", "masturbator", "midget", "milf",
-  "minge", "molester", "mong", "mongoloid", "motherfucker", "nazi", "nazis", "necrophile", "negro", "niga", "nigga", "niggas", "nigger",
-  "nigguh", "nonce", "nutsack", "orgasm", "orgy", "paedo", "paki", "pedo", "pedophile", "penis", "phuk", "pikey", "piss", "pissed",
-  "pisser", "poof", "poofter", "poontang", "porchmonkey", "porn", "porno", "pouf", "prick", "pricks", "pussies", "pussy", "queef",
-  "raghead", "rape", "raper", "rapist", "redskin", "retard", "retarded", "rimjob", "saboner", "sambo", "sandnigger", "schlong", "scrotum",
-  "semen", "sex", "sexmancer", "sexslave", "sextim", "sexy", "shemale", "shit", "shite", "shithead", "shitskin", "sht", "siegheil",
-  "skank", "slanteye", "slut", "sluts", "smartass", "smegma", "sodomite", "sodomy", "spastic", "spaz", "spick", "spics", "spunk", "squaw",
-  "swastika", "tard", "testicle", "thot", "tits", "titties", "tosser", "towelhead", "trannie", "trannies", "tranny", "turd", "twat",
-  "twats", "vagina", "wank", "wanker", "wetback", "whitepower", "whitey", "whore", "whores", "wigger", "wog", "wogs", "yid", "yids",
-  "zipperhead",
   // the model's way of not naming
   "fusion", "fuse", "fused",
   // stems that hit ordinary words: Carambola, Adminicle, Hexmender, Bambino,
@@ -248,7 +177,7 @@ const BLOCKED_WHOLE = [
   "souls", "league", "legends", "peach", "wonder", "flash", "spider", "rocket", "venom", "bond", "solo", "sailor", "homer", "ken", "steve", "stark",
   "harley", "donald", "goofy", "frozen", "halo", "doom", "dune", "lara", "elden", "rocky", "zed", "jinx", "tracer", "creeper", "harry", "tetris",
   "predator", "transformer", "sherlock", "mod", "dev", "free", "com", "system", "staff", "official", "approved", "hollow knight", "solid snake",
-  "spic", "donkey kong", "wonder woman", "iron man", "spider man", "black widow", "captain america", "dark souls", "free vbucks",
+  "donkey kong", "wonder woman", "iron man", "spider man", "black widow", "captain america", "dark souls", "free vbucks",
 ].map(fold);
 const WORD_ENDINGS = ["", "s", "es", "z"];
 
@@ -260,12 +189,12 @@ function stripAccents(s: string): string {
   return s.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
 }
 
-/** True when a name (or one of its words) is on the blocklist, or crude. */
+/** True when a name (or one of its words) is on the blocklist, or crude (crude.ts). */
 export function isBlockedName(name: string): boolean {
   if (BLOCKED_WHOLE.includes(fold(name))) return true;
   // CamelCase is split first, so glued words match too ("LordVader", "SuperMario").
   const words = name.replace(/([a-z])([A-Z])/g, "$1 $2").split(/[\s'’-]+/).map(fold).filter(Boolean);
-  if (isCrude(words)) return true;
+  if (isCrudeName(name)) return true;
   const named = (w: string, b: string) => WORD_ENDINGS.some((end) => w === b + end);
   for (let i = 0; i < words.length; i++) {
     const w = words[i]!;
@@ -278,28 +207,6 @@ export function isBlockedName(name: string): boolean {
       if (BLOCKED_STEMS.some((b) => named(run, b)) || BLOCKED_WORDS.some((b) => named(run, b))) return true;
     }
   }
-  return false;
-}
-
-/** True when a CRUDE fragment is in the folded words joined, once INNOCENT
- * words are taken out, unless the name is exactly one ORDINARY word; or when a
- * word starts or ends with an EDGE_CRUDE stem outside EDGE_ORDINARY. */
-function isCrude(words: readonly string[]): boolean {
-  const joined = words.join("");
-  const ordinary = words.length === 1 && ORDINARY.some((o) => WORD_ENDINGS.some((end) => joined === o + end));
-  if (!ordinary) {
-    const masked = INNOCENT.reduce((rest, o) => rest.split(o).join("."), joined);
-    if (CRUDE.some((c) => masked.includes(c))) return true;
-  }
-  for (const word of words)
-    for (const stem of EDGE_CRUDE) {
-      if (word.startsWith(stem) && !EDGE_ORDINARY.some((o) => word.startsWith(o))) return true;
-      // The tail with a plural ending off ("Kingdongs").
-      for (const end of WORD_ENDINGS) {
-        const w = word.endsWith(end) ? word.slice(0, word.length - end.length) : "";
-        if (w.length > stem.length && w.endsWith(stem) && !EDGE_ORDINARY.some((o) => w.endsWith(o))) return true;
-      }
-    }
   return false;
 }
 

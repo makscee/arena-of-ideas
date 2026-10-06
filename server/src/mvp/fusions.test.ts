@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { Champion, DecisionResponse, FusionDiscovery, PlayerRef, UnitContent } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { mvpContent } from "./content.js";
+import { BENCH_NAMES, INNOCENT_NAMES, LIVE_NAMES } from "./namer-corpus.js";
 import { awaitFusionName, cleanModelName, drainFusionNames, hasUnitName, NAMER_LETTERS, isBlockedName, fusionNameReady, fusionNaming, httpModelNamer, MODEL_DOWN_MS, NAMER_EXAMPLES, MODEL_FAILURES, MODEL_PROBE_MS, portmanteau, recordFusion, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
 import { decide, preview, startRun } from "./runs.js";
 import { seedChampion } from "./bots.js";
@@ -195,19 +196,39 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
       "Gypsykiller", "Incestborn", "Orgyking", "King Dong", "Kingbutt", "Asses",
       // ordinary compounds no longer rescued
       "Jolttherapist", "Soultherapist", "Vinegrape", "Bonescrape", "Mistdrape", "Ashgrape", "Firepeacock", "Stormcanal", "King Grape",
-      "Grapeshot", "Canal Warden", "Viscum", "Glasscumber", "Encumber", "Analyst", "Manaleech", "Sexton Shade", "Farseer", "Starseed",
-      "Spices", "Pussycat", "Marseille", "Pedometer",
+      "Viscum", "Glasscumber", "Pussycat",
     ])
       expect(cleanModelName(raw), raw).toBeNull();
-    // Innocent words taken out first, a whole ordinary word, and the ordinary
+    // Innocent words cover a stem, a whole real word passes, and the ordinary
     // words that start or end with ass, butt or dong.
     for (const raw of ["Assassin", "Assault", "Butterfly", "Button", "Buttress", "Nightshade", "Knightfall", "Jewelwing", "Cockatrice", "Mosscumulus",
-      "Raccoon", "Grape", "Therapist", "Canal", "Sexton", "Glass", "Brass", "Cutlass", "Hourglass", "Compass", "Glass Golem", "Invader"])
+      "Raccoon", "Grape", "Therapist", "Canal", "Sexton", "Glass", "Brass", "Cutlass", "Hourglass", "Compass", "Glass Golem", "Invader",
+      "Grapeshot", "Encumber", "Analyst", "Manaleech", "Farseer", "Starseed", "Spices", "Pedometer", "Peacock", "Cumin"])
       expect(cleanModelName(raw), raw).not.toBeNull();
     // A part's name changes nothing: "Rosegrape" from Rose and Rot is refused too.
     const units = new Map(mvpContent().units.map((u) => [u.name, u]));
     const [rose, rot] = [units.get("Rose")!, units.get("Rot")!];
     for (const raw of ["Roserape", "Rosegrape"]) expect(cleanModelName(raw, rose, rot), raw).toBeNull();
+  });
+
+  it("refuses LDNOOBW's words and slurs glued to a unit's name, and fragments that only look like one word (#594, last round)", () => {
+    for (const raw of [
+      "Paedoking", "Milfnurse", "Gookrat", "Pakirat", "Yidrat", "Klanlord", "Lynchking", "Queerkiller", "Fukking", "Hookerhag", "Hornyfang",
+      "Japslayer", "Krautkiller", "Wiggerfang", "Lesbofang", "Hentaiwing", "Spunkrat", "Cuckfang",
+      "Sexagen", "Sextup", "Clitter", "Starse", "Farse", "Arsen", "Pedolog", "Kingtit", "Semendrake", "Niggard", "Rapeseed",
+    ])
+      expect(cleanModelName(raw), raw).toBeNull();
+  });
+
+  it("passes every innocent fantasy name of the corpus and the live world, and refuses at most 3% of the bench (#594)", () => {
+    // Collateral is measured: a corpus name refused needs a mask in crude.ts.
+    for (const name of [...INNOCENT_NAMES, ...LIVE_NAMES]) expect(isBlockedName(name), name).toBe(false);
+    for (const raw of ["Stardust", "Stardrake", "Bonereaper", "Manalith", "Spicefang", "Cuirass", "Embarrass", "Benign", "Moonignite", "Mustardseed",
+      "Sauerkraut", "Pakistan", "Yiddish", "Japan", "Cuckoo-clock", "Thornyfang", "Titanfang", "Mongoose"])
+      expect(cleanModelName(raw), raw).not.toBeNull();
+    const refused = BENCH_NAMES.filter((n) => isBlockedName(n));
+    expect(refused).toEqual(["Jolttherapist", "Nighbattler", "Nighflare", "Shadowskeet"]);
+    expect(refused.length / BENCH_NAMES.length).toBeLessThanOrEqual(0.03);
   });
 
   it("takes an apostrophe only as a possessive before a second word", () => {
