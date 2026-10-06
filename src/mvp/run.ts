@@ -56,7 +56,7 @@ export interface MvpRunState extends RunView {
 export { MvpBadDecision, MvpDecisionError, offersAt };
 
 /** Every Decision kind (the compiler checks the list against the contract). */
-const DECISION_KINDS: Record<DecisionKind, true> = { buy: true, sell: true, reroll: true, reorder: true, fuse: true, fight: true };
+const DECISION_KINDS: Record<DecisionKind, true> = { buy: true, sell: true, reroll: true, lock: true, reorder: true, fuse: true, fight: true };
 /** Moved to fight.ts; re-exported for scripts that import it from here (slice 7's meta report). */
 export { toBattleDef } from "./fight.js";
 
@@ -71,12 +71,16 @@ function openUnits(content: MvpContent, rules: MvpRules, round: number): UnitCon
   return open.length > 0 ? open : content.units;
 }
 
+/** Locked offers stay, moved to the left in their order; fresh draws fill the
+ * rest up to offersAt (which never shrinks, so the locked ones always fit). */
 function rollOffers(s: MvpRunState, content: MvpContent): void {
   const open = openUnits(content, s.rules, s.round);
-  s.offers = Array.from({ length: offersAt(s.rules, s.round) }, (_, slot): Offer => {
+  const kept = s.offers.filter((o) => o.locked);
+  const fresh = Array.from({ length: Math.max(0, offersAt(s.rules, s.round) - kept.length) }, (): Offer => {
     const u = open[draw(s, open.length)]!;
-    return { slot, unitId: u.id, tier: u.tier, cost: s.rules.unitCost };
+    return { slot: 0, unitId: u.id, tier: u.tier, cost: s.rules.unitCost };
   });
+  s.offers = [...kept, ...fresh].map((o, slot) => ({ ...o, slot }));
 }
 
 /** A new run. The kernel has no clock: the caller passes the day (DayView.seq)
@@ -169,9 +173,17 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       return { state: s };
     }
     case "reroll": {
+      if (s.offers.length > 0 && s.offers.every((o) => o.locked)) throw new MvpDecisionError("reroll", "every offer is locked");
       if (s.gold < s.rules.rerollCost) throw new MvpDecisionError("reroll", `costs ${s.rules.rerollCost}, have ${s.gold}`);
       s.gold -= s.rules.rerollCost;
       rollOffers(s, content);
+      return { state: s };
+    }
+    case "lock": {
+      const offer = s.offers[d.slot];
+      if (!offer) throw new MvpDecisionError("lock", `no offer in slot ${d.slot}`);
+      if (offer.locked) delete offer.locked;
+      else offer.locked = true;
       return { state: s };
     }
     case "sell": {

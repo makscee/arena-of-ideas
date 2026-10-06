@@ -104,3 +104,74 @@ describe("MVP thin run", () => {
     expect(() => applyMvpDecision({ ...s, phase: "over" }, zap, content)).toThrow(MvpBadDecision);
   });
 });
+
+describe("MVP lock (R3-12)", () => {
+  const fight = (s: ReturnType<typeof initMvpRun>) => {
+    const ghost = synthGhost({ content, round: s.round, seed: 5, ghostId: "g", createdAt: "2026-10-05T00:00:00.000Z" });
+    return applyMvpDecision(s, { kind: "fight" }, content, { fight: { ghost, battleId: "b", battleSeed: 11, at: "2026-10-05T00:01:00.000Z" } }).state;
+  };
+  const lock = (s: ReturnType<typeof initMvpRun>, slot: number) => applyMvpDecision(s, { kind: "lock", slot }, content).state;
+
+  it("toggles for free, and refuses a slot with no offer", () => {
+    const s = initMvpRun({ runId: "r", player: me, seed: 1, content, ...day });
+    const on = lock(s, 1);
+    expect(on.offers.map((o) => !!o.locked)).toEqual([false, true, false]);
+    expect(on.gold).toBe(s.gold);
+    const off = lock(on, 1);
+    expect(off.offers).toEqual(s.offers);
+    expect(() => lock(s, 7)).toThrow(MvpDecisionError);
+  });
+
+  it("a reroll keeps a locked offer, moved to the left, and redraws only the others", () => {
+    const s = lock(initMvpRun({ runId: "r", player: me, seed: 2, content, ...day }), 2);
+    const kept = s.offers[2]!;
+    const r = applyMvpDecision(s, { kind: "reroll" }, content).state;
+    expect(r.offers).toHaveLength(3);
+    expect(r.offers[0]).toEqual({ ...kept, slot: 0 });
+    expect(r.offers.slice(1).every((o) => !o.locked)).toBe(true);
+    expect(r.offers.map((o) => o.slot)).toEqual([0, 1, 2]);
+    expect(r.gold).toBe(s.gold - 1);
+  });
+
+  it("refuses a reroll with every offer locked, gold unchanged", () => {
+    let s = initMvpRun({ runId: "r", player: me, seed: 3, content, ...day });
+    for (const o of s.offers) s = lock(s, o.slot);
+    expect(() => applyMvpDecision(s, { kind: "reroll" }, content)).toThrow(/every offer is locked/);
+    expect(s.gold).toBe(10);
+  });
+
+  it("survives the fight into the next round, still locked, beside fresh offers up to offersAt", () => {
+    const s = lock(initMvpRun({ runId: "r", player: me, seed: 4, content, ...day }), 1);
+    const kept = s.offers[1]!;
+    const next = fight(s);
+    expect(next.round).toBe(2);
+    expect(next.offers).toHaveLength(offersAt(MVP_RULES, 2));
+    expect(next.offers[0]).toEqual({ ...kept, slot: 0 });
+    expect(next.offers.filter((o) => o.locked)).toHaveLength(1);
+  });
+
+  it("buying a locked offer removes it; the rest keep their locks", () => {
+    let s = initMvpRun({ runId: "r", player: me, seed: 5, content, ...day });
+    s = lock(lock(s, 0), 2);
+    const b = applyMvpDecision(s, { kind: "buy", slot: 0 }, content).state;
+    expect(b.offers).toHaveLength(2);
+    expect(b.offers.map((o) => !!o.locked)).toEqual([false, true]);
+    expect(b.offers.map((o) => o.slot)).toEqual([0, 1]);
+  });
+
+  it("an old run whose offers have no locked field still rerolls", () => {
+    const s = initMvpRun({ runId: "r", player: me, seed: 6, content, ...day });
+    expect(s.offers.every((o) => !("locked" in o))).toBe(true);
+    expect(applyMvpDecision(s, { kind: "reroll" }, content).state.offers).toHaveLength(3);
+  });
+
+  it("is refused at the Crown, and the Crown clears locked offers", () => {
+    let s = initMvpRun({ runId: "r", player: me, seed: 7, content, ...day });
+    s = lock({ ...s, round: MVP_RULES.rounds }, 0);
+    const crown = fight(s);
+    if (crown.phase === "crown") {
+      expect(crown.offers).toEqual([]);
+      expect(() => lock(crown, 0)).toThrow(MvpDecisionError);
+    } else expect(crown.phase).toBe("over");
+  });
+});

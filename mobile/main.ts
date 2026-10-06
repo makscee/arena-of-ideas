@@ -121,6 +121,7 @@ function rulesSheet(): HTMLElement {
     h("div", { class: "label" }, "A run"),
     p(`${r.rounds} shop rounds, then the Crown: a fight against today's champion. You start with ${plural(r.hearts, "heart")}; a lost fight costs one, and at 0 the run ends before the Crown.`),
     p(`${r.goldPerRound} gold every round, no carry-over. A unit costs ${r.unitCost}, a reroll ${r.rerollCost}, selling gives back ${r.sellRefund}${r.sellRefundAwoken && r.sellRefundAwoken !== r.sellRefund ? `, ${r.sellRefundAwoken} for an Awoken or fused unit` : ""}. ${offersText(r)}; ${tiersText(r)}.`),
+    p(`Lock an offer to keep it: it stays until you buy it, through rerolls and rounds. Locking is free; ${isDesktop() ? "right-click an offer or press L" : "tap an offer, then Lock"}.`),
     h("div", { class: "label" }, "The line"),
     p(`${r.lineSize} units in a line, front first. Change the order in the shop: ${isDesktop() ? "drag a unit, or click it, then ← →" : "tap a unit, then ◀ ▶"}. Each round you fight a team another player saved at the same round.`),
     h("div", { class: "label" }, "Copies, Awoken, fusion"),
@@ -154,6 +155,7 @@ function legendSheet(): HTMLElement {
     row(span("copies tag", "AWOKEN ×3"), "Awoken, its stronger form; ×3 copies merged in. Two Awoken units can fuse."),
     row(span("copies tag", "FUSED ×2"), "Two Awoken units fused into one: final, copies of either part still merge in."),
     row(span("cost", "3g ＋"), "An offer's price. ＋: you own it, so buying merges a copy in. The numeral top right (I–IV) is its tier."),
+    row(span("cost", "🔒 3g"), "A locked offer: it stays through rerolls and rounds until you buy or unlock it."),
     h("div", { class: "dim small" }, "Tap any card for its sheet: what it does now, and its Awoken form one tap away."),
   );
   const close = closable(sheet, h("div", { class: "row" }, rulesBtn));
@@ -445,7 +447,7 @@ type Pick = { mode: "none" } | { mode: "picked"; index: number } | { mode: "fuse
  * isDesktop) the same shop is a top bar, a wide board and a right inspector
  * that reads the hovered or selected card instead of pop-up sheets, with
  * mouse and keys; below it the phone layout is as it was. */
-function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -1): void {
+function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -1, offer = -1): void {
   if (run.phase === "over") return runOverScreen(run, content, notice);
   const desk = isDesktop();
   const crown = run.phase === "crown";
@@ -455,13 +457,16 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   err.textContent = notice;
   let pick: Pick = desk && run.line[selected] ? { mode: "picked", index: selected } : { mode: "none" };
   const unitOf = (id: string) => content.units.find((x) => x.id === id);
-  const decide = (d: Parameters<typeof api.decide>[1], select = -1) =>
+  const decide = (d: Parameters<typeof api.decide>[1], select = -1, offer = -1) =>
     guarded(err, async () => {
       const res = await api.decide(run.runId, d);
       if (res.fight) return fightScreens(res.run, res.fight, content);
       play(shopSound(d, run, res.run));
-      shopScreen(res.run, content, "", select);
+      shopScreen(res.run, content, "", select, offer);
     });
+  /** Lock or unlock an offer (free); on desktop it stays chosen in the inspector. */
+  const lock = (o: Offer) => void decide({ kind: "lock", slot: o.slot }, -1, desk ? o.slot : -1);
+  const lockLabel = (o: Offer) => (o.locked ? "Unlock" : "Lock");
 
   const line = h("div", { class: "slots", "data-testid": "line" });
   const actions = h("div", { class: "row actions", "data-testid": "actions" });
@@ -471,7 +476,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const inspector = h("aside", { class: "inspector stack", "data-testid": "inspector" });
   type At = { kind: "line"; index: number } | { kind: "offer"; slot: number };
   let hover: At | null = null;
-  let chosen: number | null = null;
+  let chosen: number | null = desk && run.offers[offer] ? offer : null;
   let fuseView: HTMLElement | null = null;
 
   const renderLine = () => {
@@ -584,7 +589,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
           if (inspected !== key) return;
           const buy = button(buttonRefusal(blocked) || `Buy ${o.cost}g · ${n + 1}`, () => void decide({ kind: "buy", slot: o.slot }), "primary grow", "buy");
           buy.disabled = blocked !== "";
-          inspector.replaceChildren(head, sheet, h("div", { class: "row" }, buy));
+          const lockBtn = button(`${lockLabel(o)} · L`, () => lock(o), "", "lock");
+          inspector.replaceChildren(head, sheet, h("div", { class: "row" }, lockBtn, buy));
           ratesToFoot();
         },
         (e: unknown) => {
@@ -614,6 +620,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     if (run.round === 1 && run.line.length > 0 && run.gold < rules.unitCost) return hint("Out of gold for units. Fight when ready.");
     if (run.line.length > 1 && run.round <= 2) return hint(desk ? "Drag a unit to move it, or click it: ← → move it, S sells it." : "Tap a unit in your line to move, sell or read it.");
     if (almost) return hint(`One more ${almost.name} awakens it. It's in the shop for ${run.offers.find((o) => o.unitId === almost.unitId)!.cost}g.`);
+    if (run.offers.some((o) => !o.locked && o.cost > run.gold && mergeTarget(run.line, o.unitId) >= 0)) return hint("Not enough gold: lock it to keep it for next round.");
     return null;
   };
 
@@ -748,7 +755,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const { sheet, blocked } = await offerBody(o);
       const buy = button(buttonRefusal(blocked) || `Buy ${o.cost}g`, () => (close(), void decide({ kind: "buy", slot: o.slot })), "primary grow", "buy");
       buy.disabled = blocked !== "";
-      const close = overlay(sheet, h("div", { class: "row sheet-actions" }, button("Close", () => close(), "", "offer-close"), buy));
+      const lockBtn = button(o.locked ? "🔓 Unlock" : "🔒 Lock", () => (close(), lock(o)), "", "lock");
+      const close = overlay(sheet, h("div", { class: "row sheet-actions" }, button("Close", () => close(), "", "offer-close"), lockBtn, buy));
     });
 
   const offers = h(
@@ -758,8 +766,10 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const u = unitOf(o.unitId);
       const cu: CardUnit = { unitId: o.unitId, emoji: u?.emoji ?? "?", name: u?.name ?? o.unitId, stats: u?.base ?? { pwr: 0, hp: 0 }, ...(u ? { recipe: u.forms.sleeping } : {}) };
       const owned = mergeTarget(run.line, o.unitId) >= 0;
-      const c = card(cu, { side: "you", tier: o.tier, extra: [h("div", { class: "cost" }, owned ? `${o.cost}g ＋` : `${o.cost}g`)], testid: `offer-${o.slot}` });
+      const price = `${o.locked ? "🔒 " : ""}${o.cost}g${owned ? " ＋" : ""}`;
+      const c = card(cu, { side: "you", tier: o.tier, extra: [h("div", { class: "cost" }, price)], testid: `offer-${o.slot}` });
       if (run.gold < o.cost) c.classList.add("poor");
+      if (o.locked) c.classList.add("locked");
       if (owned) c.classList.add("owned");
       if (!desk) c.addEventListener("click", () => (play("click"), void offerSheet(o)));
       else {
@@ -771,6 +781,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
           renderLine();
         });
         c.addEventListener("dblclick", () => buy(o));
+        c.addEventListener("contextmenu", (e) => (e.preventDefault(), lock(o)));
         desktopCard(c, { kind: "offer", slot: o.slot });
       }
       return c;
@@ -778,7 +789,10 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   );
 
   const reroll = button(`Reroll ${rules.rerollCost}g`, () => void decide({ kind: "reroll" }), "", "reroll");
-  reroll.disabled = run.gold < rules.rerollCost;
+  // A reroll with every offer locked would redraw nothing (run.ts refuses it).
+  const allLocked = run.offers.length > 0 && run.offers.every((o) => o.locked);
+  reroll.disabled = run.gold < rules.rerollCost || allLocked;
+  if (allLocked) reroll.title = "Every offer is locked";
   const fight = button(crown ? "Fight the champion" : "Fight", () => void decide({ kind: "fight" }), "primary grow", "fight");
   // An empty line can fight (and lose a heart) once nothing is affordable, so a broke run moves on.
   fight.disabled = run.line.length === 0 && run.offers.some((o) => o.cost <= run.gold);
@@ -834,7 +848,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const numberKeys = n === 0 ? [] : n === 1 ? [kbd("1"), " buys the offer · "] : [kbd("1"), "–", kbd(String(n)), " buy the offer with that number · "];
   const keysLine =
     desk && !crown
-      ? h("div", { class: "dim small keys", "data-testid": "keys" }, "Hover a card to read it → · click selects · drag reorders · double-click buys · ", ...numberKeys, kbd("R"), " reroll · ", kbd("Space"), " fight · ", kbd("←"), kbd("→"), " move · ", kbd("F"), " fuse · ", kbd("S"), " sell · ", kbd("M"), " sound · ", kbd("Esc"), " menu")
+      ? h("div", { class: "dim small keys", "data-testid": "keys" }, "Hover a card to read it → · click selects · drag reorders · double-click buys · ", ...numberKeys, kbd("R"), " reroll · ", kbd("L"), " lock · ", kbd("Space"), " fight · ", kbd("←"), kbd("→"), " move · ", kbd("F"), " fuse · ", kbd("S"), " sell · ", kbd("M"), " sound · ", kbd("Esc"), " menu")
       : null;
   show(
     h(
@@ -890,7 +904,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     if (to !== from) setTimeout(() => void decide({ kind: "reorder", from, to }, to), 0);
   }
 
-  // Keys: 1–7 buy, R reroll, Space fight, ← → move the selected unit, F fuse,
+  // Keys: 1–7 buy, R reroll, L lock the chosen or hovered offer, Space fight, ← → move the selected unit, F fuse,
   // S sell; Esc steps back (a sheet, the fusion, the selection), then opens
   // the ☰ run menu.
   onKeys((e) => {
@@ -919,6 +933,14 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     if (k === "r") {
       if (!reroll.disabled) void decide({ kind: "reroll" });
       else play("wrong");
+      return true;
+    }
+    if (k === "l") {
+      // The chosen offer, else the one under the mouse.
+      const slot = chosen ?? (hover?.kind === "offer" ? hover.slot : null);
+      const o = slot === null ? undefined : run.offers[slot];
+      if (!o) return false;
+      lock(o);
       return true;
     }
     if ((k === "ArrowLeft" || k === "ArrowRight") && sel >= 0) {

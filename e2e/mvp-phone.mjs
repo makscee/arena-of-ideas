@@ -261,6 +261,9 @@ try {
   await page.getByTestId("play").click();
 
   let round = 0;
+  /** R3-12: the offer locked before a fight, checked in the next shop. */
+  let lockedFromLast = null;
+  let lockSurvived = false;
   /** Result screens whose ☰ named a round (R2-17). */
   let menuRounds = 0;
   let whyShot = false;
@@ -301,6 +304,36 @@ try {
       await page.getByTestId("fight").waitFor();
       if ((await page.getByTestId("round").textContent()) !== at) errors.push(`continue: back in ${await page.getByTestId("round").textContent()}, not ${at}`);
     }
+    // Lock (R3-12): in the first shop, lock offer 1 from its sheet and reroll:
+    // it moves to the left, still locked; unlock it again. A locked offer from
+    // the last shop is still there, locked, at the left.
+    const offerName = (slot) => page.getByTestId(`offer-${slot}`).locator(".name").textContent();
+    const isLocked = async (slot) => (await page.getByTestId(`offer-${slot}`).getAttribute("class")).includes("locked") && (await page.getByTestId(`offer-${slot}`).locator(".cost").textContent()).startsWith("🔒");
+    const lockFromSheet = async (slot, want) => {
+      await page.getByTestId(`offer-${slot}`).click();
+      await page.getByTestId("lock").waitFor();
+      if (!(await page.getByTestId("lock").textContent()).includes(want)) errors.push(`lock: offer ${slot}'s sheet says "${await page.getByTestId("lock").textContent()}", not ${want}`);
+      if (want === "Lock" && round === 0) { await shot("offer-sheet-lock"); await tap44("Lock", page.getByTestId("lock")); }
+      await page.getByTestId("lock").click();
+      await page.waitForFunction(([s, on]) => document.querySelector(`[data-testid="offer-${s}"]`)?.classList.contains("locked") === on, [slot, want === "Lock"]);
+    };
+    if (lockedFromLast !== null) {
+      if ((await offerName(0)) !== lockedFromLast || !(await isLocked(0))) errors.push(`lock: "${lockedFromLast}" locked last round isn't locked at offer 0 (${await offerName(0)})`);
+      else lockSurvived = true;
+      lockedFromLast = null;
+    }
+    if (round === 0 && (await page.getByTestId("offers").locator(".card").count()) >= 2) {
+      const name = await offerName(1);
+      await lockFromSheet(1, "Lock");
+      if (!(await isLocked(1))) errors.push("lock: offer 1 has no padlock after Lock");
+      await shot("shop-locked"); await noHScroll("shop-locked");
+      const gold = await page.getByTestId("gold").textContent();
+      await page.getByTestId("reroll").click();
+      await page.waitForFunction((g) => document.querySelector('[data-testid="gold"]')?.textContent !== g, gold);
+      if ((await offerName(0)) !== name || !(await isLocked(0))) errors.push(`lock: after a reroll offer 0 is "${await offerName(0)}", not the locked "${name}"`);
+      await lockFromSheet(0, "Unlock");
+      if (await isLocked(0)) errors.push("lock: offer 0 still locked after Unlock");
+    }
     // Buy while the gold allows and the line has room.
     for (let k = 0; k < 4; k++) {
       if ((await page.getByTestId("gold").count()) === 0) break; // the Crown: no shop, no gold
@@ -315,6 +348,10 @@ try {
       if (await page.getByTestId("buy").isDisabled()) { await page.getByTestId("offer-close").click(); break; }
       await page.getByTestId("buy").click();
       await page.waitForFunction((g) => !document.querySelector('[data-testid="gold"]') || document.querySelector('[data-testid="gold"]').textContent !== `${g}g`, gold);
+    }
+    if (round === 1 && (await page.getByTestId("offers").locator(".card").count()) > 0) {
+      lockedFromLast = await offerName(0);
+      await lockFromSheet(0, "Lock");
     }
     round++;
     if (round === 1) { await shot("shop"); await noHScroll("shop"); await noRates("shop"); }
@@ -569,6 +606,7 @@ try {
     if (await page.getByTestId("run-over").isVisible().catch(() => false)) break;
   }
   if (!menuRounds) errors.push("end card ☰: no fight's menu named a round");
+  if (!lockSurvived) errors.push("lock: no locked offer was seen to survive a fight");
   await page.getByTestId("run-over").waitFor({ timeout: 10_000 });
   await shot("run-over"); await noHScroll("run-over"); await noRates("run-over");
   const over = await page.getByTestId("run-over").textContent();
