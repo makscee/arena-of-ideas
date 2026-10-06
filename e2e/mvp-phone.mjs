@@ -745,9 +745,21 @@ try {
     if (run.phase === "over") { run = await call("POST", "/runs", undefined, fuser.id); continue; }
     const dupe = run.offers.find((o) => run.line.some((u) => u.unitId === o.unitId && u.kind === "unit" && u.form === "sleeping"));
     const want = dupe ?? (run.line.length < 5 ? run.offers[0] : undefined);
-    const d = run.phase === "crown" ? { kind: "fight" } : want && run.gold >= want.cost ? { kind: "buy", slot: want.slot } : run.gold >= 1 ? { kind: "reroll" } : { kind: "fight" };
+    // An awakening's gift is skipped here (R3-15); the phone's chooser is R3-16's.
+    const d = run.gift ? { kind: "gift", pick: null } : run.phase === "crown" ? { kind: "fight" } : want && run.gold >= want.cost ? { kind: "buy", slot: want.slot } : run.gold >= 1 ? { kind: "reroll" } : { kind: "fight" };
     run = (await call("POST", `/runs/${run.runId}/decisions`, d, fuser.id)).run;
   }
+  // The awakening copy the page buys brings a gift (R3-15). Until the chooser
+  // (R3-16) the API skips it and the page reloads into the same shop.
+  const skipGift = async () => {
+    const r = await call("GET", `/runs/${run.runId}`, undefined, fuser.id);
+    if (!r.gift) { errors.push("awakening: no gift offered"); return; }
+    if (r.gift.length !== 3) errors.push(`awakening: ${r.gift.length} gift choices, want 3`);
+    await call("POST", `/runs/${run.runId}/decisions`, { kind: "gift", pick: null }, fuser.id);
+    await page.reload();
+    await page.getByTestId("play").click();
+    await page.getByTestId("fight").waitFor();
+  };
   if (!ready(run)) errors.push(`fusion setup: never reached two Awoken units (phase ${run.phase}, round ${run.round})`);
   else {
     await page.evaluate((p) => localStorage.setItem("arena.player", JSON.stringify(p)), fuser);
@@ -763,6 +775,7 @@ try {
     await shot("awaken-preview"); await noHScroll("awaken-preview");
     await page.getByTestId("buy").click();
     await page.getByTestId("hint").filter({ hasText: "fuse" }).waitFor();
+    await skipGift();
     const first = run.line.findIndex((u) => u.form === "awoken");
     const second = run.line.findIndex((u) => u.uid === almost.uid);
     await page.getByTestId(`line-${first}`).click();
@@ -836,11 +849,11 @@ try {
     let r = await call("POST", "/runs", undefined, bencher.id);
     const owned = (r, id) => [...r.line, ...r.bench].some((u) => u.unitId === id || u.fusion?.first === id || u.fusion?.second === id);
     const fresh = (r) => r.offers.find((o) => !owned(r, o.unitId) && o.cost <= r.gold);
-    const benchReady = (r) => r.phase === "shop" && r.line.length === 5 && r.bench.length === 0 && fresh(r);
+    const benchReady = (r) => r.phase === "shop" && !r.gift && r.line.length === 5 && r.bench.length === 0 && fresh(r);
     for (let steps = 0; steps < 2000 && !benchReady(r); steps++) {
       if (r.phase === "over") { r = await call("POST", "/runs", undefined, bencher.id); continue; }
       const o = r.offers[0];
-      const d = r.phase === "shop" && r.line.length < 5 && o && r.gold >= o.cost ? { kind: "buy", slot: o.slot } : { kind: "fight" };
+      const d = r.gift ? { kind: "gift", pick: null } : r.phase === "shop" && r.line.length < 5 && o && r.gold >= o.cost ? { kind: "buy", slot: o.slot } : { kind: "fight" };
       r = (await call("POST", `/runs/${r.runId}/decisions`, d, bencher.id)).run;
     }
     if (!benchReady(r)) errors.push(`bench: never reached a full line with a new unit on offer (phase ${r.phase}, round ${r.round})`);
@@ -895,7 +908,7 @@ try {
       if (r.phase === "over") { r = await call("POST", "/runs", undefined, compact.id); continue; }
       const o = r.offers[0];
       const room = r.line.length < 5 || r.bench.length < 3;
-      const d = r.phase === "shop" && room && o && r.gold >= o.cost ? { kind: "buy", slot: o.slot } : { kind: "fight" };
+      const d = r.gift ? { kind: "gift", pick: null } : r.phase === "shop" && room && o && r.gold >= o.cost ? { kind: "buy", slot: o.slot } : { kind: "fight" };
       r = (await call("POST", `/runs/${r.runId}/decisions`, d, compact.id)).run;
     }
     if (!full(r)) errors.push(`compact: never reached round 8 with a full line and bench (phase ${r.phase}, round ${r.round})`);

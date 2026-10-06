@@ -3,7 +3,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { offersAt, type Champion } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
-import { BOT_DAILY_CROWNS, BOT_DAILY_SLAYERS, BOT_MAX_DAILY_CROWNS, BOT_TARGET, botDecision, botPlayer, botWorld, crownsOwed, playBotRun, seedChampion, takenBotNames, thinRounds, topUpGhosts } from "./bots.js";
+import { BOT_DAILY_CROWNS, BOT_DAILY_SLAYERS, BOT_MAX_DAILY_CROWNS, BOT_TARGET, botDecision, botPlayer, giftDecision, botWorld, crownsOwed, playBotRun, seedChampion, takenBotNames, thinRounds, topUpGhosts } from "./bots.js";
 import { endDay } from "./day.js";
 import { mvpContent } from "./content.js";
 import { mvpRuntime, type MvpDeps } from "./runtime.js";
@@ -221,6 +221,40 @@ describe("MVP bots and world (slice 6)", () => {
       if (run.bench.length > 0) benched++;
     }
     expect(benched).toBeGreaterThan(0);
+  }, 30_000);
+
+  it("the bot takes a waiting gift first (R3-15): a copy it has, else the best fresh unit with room, else it skips", () => {
+    const rt = world();
+    const t1 = rt.content.units.filter((u) => u.tier === 1);
+    const unit = (u: (typeof t1)[number], uid: string, copies = 1) => lineUnitOf(u, uid, copies, rt.rules);
+    const run = (gift: string[], line: ReturnType<typeof unit>[], bench: ReturnType<typeof unit>[] = []) => ({ phase: "shop", round: 1, line, bench, gift, offers: [], gold: 10 }) as never;
+    const line = t1.slice(0, 5).map((u, i) => unit(u, `l${i}`, 3));
+    const bench = t1.slice(5, 8).map((u, i) => unit(u, `b${i}`));
+    const fresh = t1.slice(8, 11).map((u) => u.id);
+    // Even with two Awoken units to fuse and gold to spend, the gift comes first.
+    expect(botDecision(run(fresh, line.slice(0, 2)), rt.content, rt.rules, 0)).toMatchObject({ kind: "gift" });
+    // A copy of a bench unit merges, so it is taken with line and bench full.
+    expect(botDecision(run([fresh[0]!, t1[6]!.id, fresh[1]!], line, bench), rt.content, rt.rules, 0)).toEqual({ kind: "gift", pick: 1 });
+    // No copy, no room: skip.
+    expect(botDecision(run(fresh, line, bench), rt.content, rt.rules, 0)).toEqual({ kind: "gift", pick: null });
+    // No copy, room: the best by the bot's score.
+    const score = (id: string) => {
+      const u = unit(rt.content.units.find((x) => x.id === id)!, "s");
+      return u.stats.pwr * 2 + u.stats.hp;
+    };
+    const best = fresh.map(score).indexOf(Math.max(...fresh.map(score)));
+    expect(giftDecision(fresh, line, [], rt.content, rt.rules)).toEqual({ kind: "gift", pick: best });
+  });
+
+  it("bot runs pick gifts, and every gift decision is one the rules accept", async () => {
+    const rt = world();
+    await seedChampion(rt);
+    let gifts = 0;
+    let picked = 0;
+    rt.hooks.push({ onDecision: (before, d) => void (d.kind === "gift" && (gifts++, d.pick !== null && picked++, expect(before.gift).toBeDefined())) });
+    for (let i = 0; i < 20; i++) expect(playBotRun(rt).gift).toBeUndefined();
+    expect(gifts).toBeGreaterThan(0);
+    expect(picked).toBeGreaterThan(0);
   }, 30_000);
 
   it("botWorld seeds the champion at start and tops up in the background until stopped", async () => {
