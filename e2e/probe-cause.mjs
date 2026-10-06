@@ -20,6 +20,7 @@ mkdirSync(out, { recursive: true });
 const browser = await launchChromium();
 const errors = [];
 const kinds = {};
+let strikesOnStriker = 0;
 
 /** In the page: the step on screen, as the probe checks it. */
 const readStep = () => {
@@ -44,7 +45,9 @@ const readStep = () => {
   return {
     text: cap?.textContent ?? "",
     cause: cause?.getAttribute("data-cause") ?? null,
-    badges: badges.map((b) => ({ cause: b.getAttribute("data-cause"), kind: b.getAttribute("data-kind"), past: b.classList.contains("past"), clash: !!b.closest(".bv-clash"), visible: r(b).width > 0 })),
+    badges: badges.map((b) => ({ cause: b.getAttribute("data-cause"), kind: b.getAttribute("data-kind"), past: b.classList.contains("past"), clash: !!b.closest(".bv-clash"), visible: r(b).width > 0, on: b.closest(".bv-slot")?.querySelector(".bv-card")?.getAttribute("data-unit") ?? null })),
+    /** The first unit the caption names: a strike's striker. */
+    named: cap?.querySelector("[data-unit]")?.getAttribute("data-unit") ?? null,
     bright: bright.length,
     fired: document.querySelectorAll(".bv-card .icons .ci.bv-fired").length,
     iconsShown: Math.max(0, ...[...document.querySelectorAll(".bv-card:not(.dead)")].map((c) => [...c.querySelectorAll(".icons .ci")].filter((x) => getComputedStyle(x).display !== "none").length)),
@@ -90,6 +93,10 @@ for (const [label, viewport, mobile] of [["phone", { width: 360, height: 640 }, 
       if (st.bright !== 1 && !(fatigue && label === "phone")) errors.push(`${where}: ${st.bright} bright badges (want 1)`);
       if (fatigue && label === "desktop" && !clashBadge) errors.push(`${where}: fatigue without its badge on the clash mark`);
       for (const c of st.clashes) errors.push(`${where}: ${c}`);
+      // A strike's badge sits on the striker, the unit its caption names first.
+      const lit = st.badges.find((b) => !b.past);
+      if (st.cause === "trigger:Strike" && /strikes/.test(st.text) && lit?.on !== st.named) errors.push(`${where}: the strike's badge is on ${lit?.on}, not the striker ${st.named}`);
+      if (st.cause === "trigger:Strike" && /strikes/.test(st.text)) strikesOnStriker++;
       const k = st.cause ?? "none";
       kinds[k] = (kinds[k] ?? 0) + 1;
       if (shots < 14) await page.screenshot({ path: `${out}/${label}-r${round}-s${String(s).padStart(2, "0")}.png` }), shots++;
@@ -105,8 +112,8 @@ for (const [label, viewport, mobile] of [["phone", { width: 360, height: 640 }, 
 }
 await browser.close();
 console.log("causes seen:", JSON.stringify(kinds));
+if (!strikesOnStriker) errors.push("no strike step was seen");
 if (errors.length) {
   console.log(`${errors.length} problems:\n${[...new Set(errors)].slice(0, 40).join("\n")}`);
-  process.exit(1);
-}
-console.log("every step showed its cause");
+  process.exitCode = 1;
+} else console.log("every step showed its cause");

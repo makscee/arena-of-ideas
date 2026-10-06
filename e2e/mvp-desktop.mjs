@@ -44,7 +44,8 @@ try {
   page.on("console", (m) => m.type() === "error" && errors.push(`console: ${m.text()}`));
   /** Every card's When · Who · Does icon line fits its card (R3-4): no row
    * overflows, and a line with more icons than it shows ends in "+". A
-   * battle card shows only its When, in the corner, so it is left out. */
+   * battle card's line lies in its corner, over the card (R3-19): it is left
+   * out here, and e2e/probe-cause.mjs checks it clears the card's parts. */
   let iconCards = 0;
   const iconsFit = async (name) => {
     const r = await page.evaluate(() => [...document.querySelectorAll('.card:not(.bv-card) [data-testid="card-icons"]')].filter((el) => el.getClientRects().length).map((el) => {
