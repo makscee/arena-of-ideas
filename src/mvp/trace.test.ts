@@ -5,7 +5,7 @@ import { describe, expect, test } from "vitest";
 import { battle } from "../battle.js";
 import { stressAbilities, stressRegistry } from "../content/stress.js";
 import type { AbilityDef, AbilityRegistry, BattleEvent, UnitDef, When } from "../types.js";
-import { BEAT_MAX_MS, BEAT_MS, beatPlayOf, beatTiming, captionOf, captionSubject, changeOf, endCaption, stepsOf, traceOf, whyILost } from "./trace.js";
+import { BEAT_MAX_MS, BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, captionOf, captionSubject, changeOf, endCaption, stepsOf, timingOf, traceOf, whyILost } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -219,6 +219,15 @@ describe("one beat at a time (R2-12)", () => {
     const long = beatTiming(30);
     expect(long.ms).toBe(BEAT_MAX_MS);
     expect(long.at.at(-1)!).toBeLessThanOrEqual(700);
+  });
+
+  test("a quiet beat (one wave of plain hits) is shorter than a kill", () => {
+    const log = run([dummy("Squire", 20, 1)], [dummy("Dummy", 3, 1)]);
+    const beats = beatPlayOf(log, stepsOf(log));
+    const plain = beats.find((b) => b.waves.length === 1 && b.waves[0]!.changes.every((c) => c.kind === "damage"))!;
+    const kill = beats.find((b) => b.waves.some((w) => w.changes.some((c) => c.kind === "death")))!;
+    expect(timingOf(plain).ms).toBe(QUIET_BEAT_MS);
+    expect(timingOf(kill).ms).toBeGreaterThanOrEqual(BEAT_MS);
   });
 
   test("every step's events play exactly once, inside their own beat", () => {

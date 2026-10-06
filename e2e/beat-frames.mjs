@@ -16,6 +16,8 @@ if (!url) throw new Error("--url is required");
 mkdirSync(out, { recursive: true });
 const browser = await launchChromium();
 const times = [];
+/** Per 1× battle: the playback the viewer planned (s) and what the screen took. */
+const plans = [];
 const floatMs = [];
 /** In the page: every animation frame, which damage floats show (opacity > 0.3),
  * keyed by card and label; a key's visible run ends when it stops showing. */
@@ -60,7 +62,10 @@ for (const motion of ["no-preference", "reduce"]) {
     if (motion !== "reduce") await page.evaluate(sampleFloats);
     if (round === rounds) for (let f = 0; f < 30; f++) { await page.screenshot({ path: `${out}/${motion === "reduce" ? "still" : "move"}-r${round}-f${String(f).padStart(2, "0")}.png` }); await page.waitForTimeout(100); }
     await page.getByTestId("battle-done").waitFor({ timeout: 300_000 });
-    if (motion !== "reduce") times.push((Date.now() - t0) / 1000);
+    if (motion !== "reduce") {
+      times.push((Date.now() - t0) / 1000);
+      plans.push(Number(await page.locator(".bv-controls").getAttribute("data-plan-ms")) / 1000);
+    }
     if (motion !== "reduce") floatMs.push(...(await page.waitForFunction(() => window.__floatRuns).then((h) => h.jsonValue())));
     await page.screenshot({ path: `${out}/${motion === "reduce" ? "still" : "move"}-r${round}-end.png` });
     await page.getByTestId("battle-done").click();
@@ -73,5 +78,6 @@ await browser.close();
 const sorted = [...floatMs].sort((p, q) => p - q);
 console.log(`damage floats: ${sorted.length} seen, median ${Math.round(sorted[Math.floor(sorted.length / 2)] ?? 0)} ms visible, ${sorted.filter((ms) => ms < 500).length} under 0.5 s`);
 const med = [...times].sort((p, q) => p - q)[Math.floor((times.length - 1) / 2)] ?? 0;
+console.log(`planned vs on screen: ${plans.map((p, i) => `${p.toFixed(1)}→${times[i].toFixed(1)} s`).join(", ")}`);
 console.log(`1× median ${med.toFixed(1)} s`);
 console.log(`beat frames: ${times.length} battles at 1×, ${times.map((t) => `${t.toFixed(1)} s`).join(", ")}; frames in ${out}`);

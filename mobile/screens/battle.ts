@@ -10,16 +10,18 @@
 // the end, the viewer shows the outcome, "why I lost", and battle-done.
 import { boardAt, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView } from "../../src/mvp/contract";
-import { beatPlayOf, beatTiming, stepsOf, traceOf, whyILost as lossChains, sidesOf, type Change, type LossChain, type Step, type Trace } from "../../src/mvp/trace";
+import { beatPlayOf, stepsOf, timingOf, traceOf, whyILost as lossChains, sidesOf, type Change, type LossChain, type Step, type Trace } from "../../src/mvp/trace";
 import { displayNames } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { card, unitSheet } from "../ui/card";
 import { button, closable, h, show } from "../ui/dom";
 
-/** Reduced motion: nothing moves, and beats hold a little longer. */
+/** How long the line-up shows before the first beat, at 1×. */
+const LINEUP_MS = 400;
 /** How long a landed wave's motion runs: the longest animation (a float, 0.9 s, after up to 240 ms). */
 const MOTION_MS = 1200;
 
+/** Reduced motion: nothing moves, and beats hold a little longer. */
 const reduced = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you?: Side; fight?: FightResult; run?: RunView; onDone: () => void }): void {
@@ -69,6 +71,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const speedBtn = button("1×", () => { speed = speed === 1 ? 2 : 1; speedBtn.textContent = `${speed}×`; if (playing) schedule(); }, "", "battle-speed");
   const skipBtn = button("Skip", () => skip(), "", "battle-skip");
   const controls = h("div", { class: "row bv-controls" }, backBtn, playBtn, fwdBtn, speedBtn, skipBtn);
+  // How long playback should take at 1× (the line-up plus every beat), for
+  // the e2e to compare with what the screen takes.
+  controls.dataset.planMs = String(LINEUP_MS + beats.reduce((t, b) => t + timingOf(b).ms, 0));
 
   caption.addEventListener("click", () => {
     const st = stepOn();
@@ -87,9 +92,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     if (timer) clearTimeout(timer);
     const slow = reduced() ? 1.25 : 1;
     let ms: number;
-    if (at < 0) ms = 400;
+    if (at < 0) ms = LINEUP_MS;
     else {
-      const t = beatTiming(beats[at]!.waves.length);
+      const t = timingOf(beats[at]!);
       ms = wave < lastWave(at) ? t.at[wave + 1]! - t.at[wave]! : t.ms - t.at[wave]!;
     }
     const since = landed[wave] !== undefined ? performance.now() - landed[wave]! : 0;
