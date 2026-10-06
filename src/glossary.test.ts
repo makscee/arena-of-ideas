@@ -90,6 +90,28 @@ describe("glossary covers every unit's text", () => {
   });
 });
 
+describe("amounts (R2-8)", () => {
+  test("a constant damage or heal number is its own run, marked as the amount", () => {
+    for (const [name, form] of forms) {
+      const segs = formSegments(form, pool.abilities);
+      for (const s of segs.filter((x) => x.amount)) {
+        expect(s.text, name).toMatch(/^\d+$/);
+        expect(["effect:damage", "effect:heal"], name).toContain(s.term);
+      }
+      // No number hides inside a damage or heal verb run.
+      for (const s of segs.filter((x) => (x.term === "effect:damage" || x.term === "effect:heal") && !x.amount)) expect(s.text, name).not.toMatch(/\d/);
+    }
+  });
+
+  test("Damage reads deal [2] damage", () => {
+    const fighter = pool.units.find((u) => formText(u.forms.sleeping, pool.abilities).includes(" damage to "))!;
+    const segs = formSegments(fighter.forms.sleeping, pool.abilities);
+    const i = segs.findIndex((s) => s.amount);
+    expect(segs[i]!.term).toBe("effect:damage");
+    expect(segs[i + 2]).toMatchObject({ text: "damage", term: "effect:damage" });
+  });
+});
+
 describe("wording", () => {
   const all = [...forms, ...fusions].map(([, f]) => formText(f, pool.abilities)).join("\n");
 
@@ -119,7 +141,7 @@ describe("wording", () => {
       [" lands on an ally", "trigger:StatusApplied"],
     ]);
     expect(segs.find((s) => s.term === "target:frontEnemy")?.side).toBe("enemy");
-    expect(segs.find((s) => s.term === "effect:damage")?.text).toBe("1 damage");
+    expect(segs.filter((s) => s.term === "effect:damage").map((s) => [s.text, s.amount ?? false])).toEqual([["1", true], ["damage", false]]);
     const nurse = pool.units.find((u) => u.name === "Nurse")!;
     expect(formSegments(nurse.forms.sleeping, pool.abilities).find((s) => s.term === "target:eventUnit")).toMatchObject({
       text: "that ally",
