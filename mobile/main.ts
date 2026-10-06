@@ -1071,8 +1071,9 @@ function markSeen(key: string): void {
 
 /** ●●○ toward awakening for a sleeping unit; AWOKEN or FUSED otherwise. */
 function copiesBadge(u: LineUnit): HTMLElement {
-  if (u.kind === "fused") return h("div", { class: "copies tag" }, `FUSED ×${u.copies}`);
-  if (u.form === "awoken") return h("div", { class: "copies tag" }, `AWOKEN ×${u.copies}`);
+  // The word is its own span: the bench's short cards show only "×n" (R3-14).
+  if (u.kind === "fused") return h("div", { class: "copies tag" }, h("span", { class: "tag-word" }, "FUSED "), `×${u.copies}`);
+  if (u.form === "awoken") return h("div", { class: "copies tag" }, h("span", { class: "tag-word" }, "AWOKEN "), `×${u.copies}`);
   const n = rules.copiesToAwaken;
   return h("div", { class: "copies pips", "aria-label": `${u.copies} of ${n} copies` }, "●".repeat(Math.min(u.copies, n)) + "○".repeat(Math.max(0, n - u.copies)));
 }
