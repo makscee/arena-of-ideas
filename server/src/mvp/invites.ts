@@ -1,5 +1,5 @@
 // Slice 13 (mission #574): invite links. An invite names one player; its code
-// is the secret in the link (…/arena/?invite=<code>). Opening it on a device
+// is the secret in the link (…/arena/#invite=<code>). Opening it on a device
 // starts a session for that player: a fresh token the device keeps and sends
 // as X-Arena-Token. The same link on a second device gives the same player.
 // Invites are made on the host (./invite-cli.ts); the API only opens them.

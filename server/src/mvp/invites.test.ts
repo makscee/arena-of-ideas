@@ -3,13 +3,19 @@ import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import type { BattleRecord, HomeView, PlayerRef, PlayerSession, RunView } from "../../../src/mvp/contract.js";
 import { createMvpApp } from "./app.js";
 import { mvpContent } from "./content.js";
 import { createInvite, hashToken, InviteError, redeemInvite, revokeInvite } from "./invites.js";
 import { mvpRuntime, type MvpDeps } from "./runtime.js";
 import { SqliteMvpStore } from "./sqlite-store.js";
+
+// Temp worlds this file makes, removed when it ends.
+const tempDirs: string[] = [];
+afterAll(() => {
+  for (const d of tempDirs.splice(0)) rmSync(d, { recursive: true, force: true });
+});
 import { MAX_SESSIONS, MemoryMvpStore } from "./store.js";
 
 function world(extra: Partial<MvpDeps> = {}) {
@@ -172,7 +178,9 @@ describe("invite links (slice 13)", () => {
   });
 
   it("keeps players, runs and ratings when the migration runs on an existing SQLite world", async () => {
-    const path = join(mkdtempSync(join(tmpdir(), "arena-588-")), "w.db");
+    const dir = mkdtempSync(join(tmpdir(), "arena-588-"));
+    tempDirs.push(dir);
+    const path = join(dir, "w.db");
     const before = new SqliteMvpStore(path);
     before.addPlayer({ id: "old-maks", name: "makscee", bot: false });
     before.putRating({ player: { id: "old-maks", name: "makscee", bot: false }, rating: 1234, runs: 7, slays: 1, daysAsChampion: 0, playoffWins: 0 });
