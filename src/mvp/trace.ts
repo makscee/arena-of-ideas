@@ -253,19 +253,31 @@ export interface PlayBeat {
 
 /** Milliseconds between waves at 1×, the shortest a beat lasts, and the cap. */
 export const WAVE_MS = 150;
-export const BEAT_MS = 1200;
-export const BEAT_MAX_MS = 1500;
+export const BEAT_MS = 1000;
+export const BEAT_MAX_MS = 1400;
+/** A quiet beat (one wave, a plain hit or a status tick, nothing dies) is
+ * shorter: a −1 trade shouldn't take as long as a kill (pacing by weight). */
+export const QUIET_BEAT_MS = 700;
 /** How long the last wave stays before the next beat. */
-const BEAT_HOLD_MS = 800;
+const BEAT_HOLD_MS = 700;
 
 /** When each wave lands (ms from the beat's start, at 1×) and how long the
  * beat lasts: waves 150 ms apart, squeezed so the last lands by 700 ms; the
- * beat lasts 1.2 s, up to 1.5 s for a long cascade. */
-export function beatTiming(waves: number): { at: number[]; ms: number } {
+ * beat lasts 1 s, up to 1.4 s for a long cascade, and 0.7 s when quiet
+ * (tightened from 1.2/1.5 s so a median battle plays in about 25 s). */
+export function beatTiming(waves: number, quiet = false): { at: number[]; ms: number } {
+  if (quiet && waves <= 1) return { at: [0], ms: QUIET_BEAT_MS };
   const span = BEAT_MAX_MS - BEAT_HOLD_MS;
   const gap = waves > 1 ? Math.min(WAVE_MS, span / (waves - 1)) : 0;
   const at = Array.from({ length: waves }, (_, i) => Math.round(i * gap));
   return { at, ms: Math.min(BEAT_MAX_MS, Math.max(BEAT_MS, (at.at(-1) ?? 0) + BEAT_HOLD_MS)) };
+}
+
+/** A beat's timing at 1×, by its weight: one wave of plain hits, status
+ * changes or nothing at all is quiet; anything more plays full length. */
+export function timingOf(beat: PlayBeat): { at: number[]; ms: number } {
+  const quiet = beat.waves.length === 1 && beat.waves[0]!.changes.every((c) => c.kind === "damage" || c.kind === "status");
+  return beatTiming(beat.waves.length, quiet);
 }
 
 /** Which firing made a step: its first event's parent and source. Steps of

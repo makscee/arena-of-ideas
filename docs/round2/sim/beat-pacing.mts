@@ -4,7 +4,7 @@ import { battle } from "../../../src/battle.js";
 import { MVP_RULES } from "../../../src/mvp/contract.js";
 import { toBattleDef } from "../../../src/mvp/fight.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
-import { beatPlayOf, beatTiming, stepsOf } from "../../../src/mvp/trace.js";
+import { beatPlayOf, stepsOf, timingOf } from "../../../src/mvp/trace.js";
 import { mvpPool } from "../../../src/mvp/units.js";
 
 const pool = mvpPool();
@@ -22,7 +22,7 @@ for (let k = 0; k < n; k++) {
   const log = battle({ teamA: line("a").map(toBattleDef), teamB: line("b").map(toBattleDef), seed: k, abilities: pool.abilities, statuses: pool.statuses, chainStepCap: MVP_RULES.chainStepCap });
   const steps = stepsOf(log);
   const beats = beatPlayOf(log, stepsOf(log));
-  const ms = beats.map((b) => beatTiming(b.waves.length).ms);
+  const ms = beats.map((b) => timingOf(b).ms);
   stepsN.push(steps.length); beatsN.push(beats.length); secs.push(ms.reduce((a, b) => a + b, 0) / 1000); maxMs.push(Math.max(...ms));
 }
 const q = (xs: number[], p: number) => [...xs].sort((a, b) => a - b)[Math.floor((xs.length - 1) * p)]!;
