@@ -230,16 +230,22 @@ try {
     if (round === 1) await whyOnDesktop();
     if (round === 1) await desktopBattle();
     await page.getByTestId("battle-end").click();
-    await page.getByTestId("battle-done").click();
-    await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
+    // R2-17 batch E: the end card is the fight's one result: the round
+    // fought, hearts and record, and its button goes straight on.
+    await page.getByTestId("end-card").waitFor({ timeout: 10_000 });
+    const runLine = (await page.getByTestId("end-run").textContent().catch(() => "")) ?? "";
+    if (!(crown ? /CROWN/ : new RegExp(`R${round}/12`)).test(runLine) || !/[♥♡]/.test(runLine) || !/\d+W/.test(runLine)) errors.push(`end card: run line "${runLine}" after round ${round}`);
+    const done = (await page.getByTestId("battle-done").textContent()) ?? "";
+    if (!/^(Next round|To the Crown|See the run)$/i.test(done.trim())) errors.push(`end card: last button "${done}"`);
+    if (await page.getByTestId("outcome").count()) errors.push("a result screen still follows the end card");
     if (!resultShot) {
       resultShot = true;
-      await shot("result"); await noHScroll("result"); await wide("result", 1100);
-      await onScreen("result: Next round", page.getByTestId("continue"));
-    } else if (await page.getByTestId("why-lost").isVisible().catch(() => false)) {
+      await shot("result"); await noHScroll("result");
+      await onScreen("end card: Next round", page.getByTestId("battle-done"));
+    } else if ((await page.getByTestId("battle-word").textContent()) === "DEFEAT") {
       await shot(`result-loss-r${round}`);
     }
-    // Enter moves on.
+    // Enter moves on, from the end card.
     await page.keyboard.press("Enter");
     await page.waitForFunction(() => document.querySelector('[data-testid="fight"]') || document.querySelector('[data-testid="run-over"]'));
     if (await page.getByTestId("run-over").isVisible().catch(() => false)) break;

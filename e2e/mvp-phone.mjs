@@ -474,6 +474,8 @@ try {
         if (await panel.locator("button.bv-why").count()) {
           await panel.locator("button.bv-why").first().click();
           await page.getByTestId("trace-text").waitFor();
+          // R2-17 batch E: over the finished battle, the way on stays in sight.
+          await onScreen(`${label}'s trace: the way on`, page.getByTestId("trace-done"));
           await page.getByTestId("trace-close").click();
           if (!(await page.getByTestId("end-card").isVisible())) errors.push(`end card: not back after ${label}'s trace`);
         } else await page.getByTestId("sheet-close").click();
@@ -497,36 +499,33 @@ try {
       if (ctl.off || ctl.scroll > 0) errors.push(`battle: controls off screen in ${ctl.off}/${ctl.frames} frames, page scrolls ${ctl.scroll}px`);
     }
     await page.getByTestId("battle-end").click();
-    await page.getByTestId("battle-done").click();
-    await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
-    if (!whyShot && (await page.getByTestId("why-lost").isVisible())) {
+    // R2-17 batch E: the end card is the fight's one result. No result
+    // screen follows; the card carries its round, hearts, record and cost.
+    await page.getByTestId("end-card").waitFor({ timeout: 10_000 });
+    if (await page.getByTestId("outcome").count()) errors.push("a result screen still follows the end card");
+    await onScreen("end card: the way on", page.getByTestId("battle-done"));
+    if (!whyShot && (await page.getByTestId("end-why").textContent().catch(() => "")) === "Why I lost") {
       whyShot = true;
       await shot("result-after-loss"); await noHScroll("result-after-loss");
-      // The main actions stay on screen however long "why I lost" runs.
-      await onScreen("result after loss: Next round", page.getByTestId("continue"));
-      await onScreen("result after loss: Replay", page.getByTestId("replay"));
-      // At least three why rows (or all of them) show above the sticky buttons (#587).
-      const { shown, rows } = await page.evaluate(() => {
-        const top = document.querySelector('[data-testid="result-actions"]').getBoundingClientRect().top;
-        const rows = [...document.querySelectorAll('[data-testid="why-lost"] button.bv-why')];
-        return { rows: rows.length, shown: rows.filter((r) => r.getBoundingClientRect().bottom <= top + 0.5).length };
-      });
-      if (shown < Math.min(3, rows)) errors.push(`result after loss: ${shown} of ${rows} why rows above the buttons`);
+      await page.getByTestId("end-why").click();
+      await page.getByTestId("why-lost").waitFor();
       const why = page.getByTestId("why-lost").locator("button.bv-why").first();
       if (await why.count()) {
         await why.click();
-        await page.getByTestId("why-sheet").waitFor();
-        await shot("why-sheet"); await noHScroll("why-sheet");
-        await page.getByTestId("sheet-close").click();
-        await page.getByTestId("why-sheet").waitFor({ state: "detached" });
-      }
+        await page.getByTestId("trace-text").waitFor();
+        await shot("why-trace"); await noHScroll("why-trace");
+        // The trace sits where the end card was; Result brings the card back.
+        await onScreen("why I lost's trace: the way on", page.getByTestId("trace-done"));
+        await page.getByTestId("trace-result").click();
+        if (!(await page.getByTestId("end-card").isVisible())) errors.push("why I lost: Result didn't bring the end card back");
+      } else await page.getByTestId("sheet-close").click();
     }
-    await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
     if (round === 1) { await shot("result"); await noHScroll("result"); await noRates("result"); }
-    // R2-17: the result screen's ☰ names the round just fought, not the next
-    // one the run has moved on to (or the Crown, or a run that is over).
+    // The end card's run line and the battle's ☰ name the round just fought,
+    // not the next one the run has moved on to (or the Crown, or a run that is over).
     {
       const shown = (await page.getByTestId("result-round").textContent()) ?? "";
+      if (!/[♥♡]/.test((await page.getByTestId("end-run").textContent()) ?? "")) errors.push("end card: no hearts");
       await page.getByTestId("menu-open").click();
       await page.getByTestId("run-menu").waitFor();
       const menu = (await page.getByTestId("run-menu").locator(".label").first().textContent()) ?? "";
@@ -535,13 +534,16 @@ try {
       const n = /round (\d+) of/.exec(menu)?.[1];
       if (n !== undefined) {
         menuRounds++;
-        if (Number(n) !== round || /^R(\d+)\//.exec(shown)?.[1] !== n) errors.push(`result ☰: "${menu}" after round ${round} ("${shown}")`);
-      } else if (!/^Run · (over|the Crown)$/.test(menu)) errors.push(`result ☰: "${menu}" after round ${round}`);
+        if (Number(n) !== round || /^R(\d+)\//.exec(shown)?.[1] !== n) errors.push(`end card ☰: "${menu}" after round ${round} ("${shown}")`);
+      } else if (!/^Run · (over|the Crown)$/.test(menu)) errors.push(`end card ☰: "${menu}" after round ${round}`);
     }
-    await page.getByTestId("continue").click();
+    const done = ((await page.getByTestId("battle-done").textContent()) ?? "").trim();
+    if (!/^(Next round|To the Crown|See the run)$/i.test(done)) errors.push(`end card: last button "${done}"`);
+    await page.getByTestId("battle-done").click();
+    await page.waitForFunction(() => document.querySelector('[data-testid="fight"]') || document.querySelector('[data-testid="run-over"]'));
     if (await page.getByTestId("run-over").isVisible().catch(() => false)) break;
   }
-  if (!menuRounds) errors.push("result ☰: no result screen's menu named a round");
+  if (!menuRounds) errors.push("end card ☰: no fight's menu named a round");
   await page.getByTestId("run-over").waitFor({ timeout: 10_000 });
   await shot("run-over"); await noHScroll("run-over"); await noRates("run-over");
   const over = await page.getByTestId("run-over").textContent();
@@ -784,14 +786,13 @@ try {
     await shot("crown-own"); await noHScroll("crown-own");
     await page.getByTestId("fight").click();
     await page.getByTestId("battle-end").click();
-    await page.getByTestId("battle-done").click();
-    await page.getByTestId("outcome").waitFor({ timeout: 10_000 });
-    const result = await page.locator("#app").textContent();
-    const ownWon = (await page.getByTestId("outcome").textContent()).includes("VICTORY");
+    await page.getByTestId("end-card").waitFor({ timeout: 10_000 });
+    const result = await page.getByTestId("end-card").textContent();
+    const ownWon = (await page.getByTestId("battle-word").textContent()).includes("VICTORY");
     if (ownWon ? !/You beat your own champion team\. You are a slayer today/.test(result) : !/Your champion team holds/.test(result)) errors.push(`own crown result: "${result.slice(0, 200)}"`);
     await shot("result-own-crown"); await noHScroll("result-own-crown");
-    console.log(`mvp phone: the champion's own Crown: ${await page.getByTestId("outcome").textContent()}`);
-    await page.getByTestId("continue").click();
+    console.log(`mvp phone: the champion's own Crown: ${await page.getByTestId("battle-word").textContent()}`);
+    await page.getByTestId("battle-done").click();
     await page.getByTestId("run-over").waitFor({ timeout: 10_000 });
     const ownOver = await page.getByTestId("run-over").textContent();
     if (ownWon ? !/You beat your own champion team: you are a slayer today/.test(ownOver) : !/Your champion team held the Crown/.test(ownOver)) errors.push(`own crown run over: "${ownOver}"`);
