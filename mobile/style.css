@@ -50,9 +50,27 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
  * .clip ends one that still doesn't fit in "…"; the sheet has it whole. */
 .card .name { font-size: 12px; font-weight: 600; line-height: 14px; width: 100%; white-space: nowrap; overflow: hidden; }
 .card .name.clip { text-overflow: ellipsis; }
-.card.fused .emoji { font-size: 15px; padding-left: 12px; white-space: nowrap; letter-spacing: -0.08em; }
-/* Top left: the trigger icon (what wakes it); top right: an offer's tier, I-IV. */
-.card .trig { position: absolute; top: 3px; left: 4px; line-height: 0; }
+.card.fused .emoji { font-size: 15px; white-space: nowrap; letter-spacing: -0.08em; }
+/* The top row (R3-4): the form's When · Who · Does icons, left to right, in
+ * their tones; the phone shows 3 then "+", the desktop 5 then "+n". Top
+ * right: an offer's tier, I-IV, which the row leaves room for. */
+.card .icons { align-self: stretch; flex: none; display: flex; align-items: center; gap: 1px; height: 11px; padding: 0 14px 0 1px; overflow: hidden; line-height: 0; }
+.card .icons .ci { flex: none; display: inline-flex; }
+.card .icons .ci:nth-of-type(n+4), .card .icons .desk-more { display: none; }
+.card .icons .more { flex: none; font-family: "IBM Plex Mono", monospace; font-size: 10px; line-height: 11px; font-weight: 600; color: var(--dim); }
+.card:not(.bv-card) .emoji { margin-top: 0; }
+/* A battle card keeps only its When, in the corner: its change chips sit right of it. */
+.bv-card .icons { position: absolute; top: 3px; left: 4px; height: auto; padding: 0; overflow: visible; }
+.bv-card .icons .ci:not(:first-of-type), .bv-card .icons .more { display: none; }
+.bv-card .icons .ic { width: 12px; height: 12px; }
+.bv-card.fused .emoji { padding-left: 12px; }
+/* Whose event a When is: a 4px pip on its icon's corner, teal an ally's, pink
+ * an enemy's, dim either side's (cards, sentence pills, the Codex filter). */
+.pipped { position: relative; display: inline-flex; line-height: 0; }
+.pip { position: absolute; top: -1px; right: -2px; width: 4px; height: 4px; border-radius: 50%; box-shadow: 0 0 0 1px var(--panel); }
+.pip-ally { background: var(--you); }
+.pip-enemy { background: var(--ghost); }
+.pip-any { background: var(--dim); }
 .card .tier { position: absolute; top: 4px; right: 4px; font-family: "Chakra Petch", sans-serif; font-size: 8px; line-height: 9px; font-weight: 600; letter-spacing: 1px; color: var(--dim); }
 .card .foot { min-height: 12px; display: flex; align-items: center; justify-content: center; max-width: 100%; }
 .discovered { font-size: 10px; color: var(--dim); font-family: "IBM Plex Mono", monospace; }
@@ -463,8 +481,14 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
   #app[data-screen] .card .copies.tag { font-size: 11px; }
   #app[data-screen] .card .cost { font-size: 15px; }
   #app[data-screen] .card .foot { min-height: 18px; }
-  #app[data-screen] .card .trig { top: 7px; left: 8px; }
-  #app[data-screen] .card .trig svg { width: 18px; height: 18px; }
+  #app[data-screen] .card .icons { height: 16px; gap: 2px; padding-right: 20px; }
+  #app[data-screen] .card .icons .ic { width: 16px; height: 16px; }
+  #app[data-screen] .card .icons .ci:nth-of-type(n+4) { display: inline-flex; }
+  #app[data-screen] .card .icons .ci:nth-of-type(n+6), #app[data-screen] .card .icons .phone-more { display: none; }
+  #app[data-screen] .card .icons .desk-more { display: inline; font-size: 12px; line-height: 16px; }
+  #app[data-screen] .bv-card .icons { top: 7px; left: 8px; height: auto; padding: 0; }
+  #app[data-screen] .bv-card .icons .ic { width: 18px; height: 18px; }
+  #app[data-screen] .bv-card .icons .ci:not(:first-of-type), #app[data-screen] .bv-card .icons .more { display: none; }
   #app[data-screen] .card .tier { top: 8px; right: 8px; font-size: 11px; line-height: 12px; }
   #app[data-screen] .card.fused .emoji { font-size: 30px; padding-left: 0; }
   #app[data-screen] .card:not(.empty):hover { border-color: var(--you); }
@@ -584,8 +608,9 @@ button.t:focus-visible { outline: 1px solid currentColor; outline-offset: 1px; }
 .term-pop button.link { min-height: 36px; }
 /* A term and the punctuation after it never part across lines. */
 .t-glue { white-space: nowrap; }
-/* Phone cards: the trigger icon at 14px (it was 12), still in the corner. */
-.card:not(.bv-card) .trig .ic { width: 14px; height: 14px; }
+/* A sentence pill's icon carries its pip; the gap after it stays. */
+.tpill .pipped { margin-right: 3px; vertical-align: -2px; }
+.tpill .pipped .tpill-ic { margin-right: 0; }
 /* The result's "Why I lost" rows show a long (fused) name in full. */
 #app[data-screen="result"] [data-testid="why-lost"] .bv-why { min-height: 44px; height: auto; padding-top: 6px; padding-bottom: 6px; }
 #app[data-screen="result"] [data-testid="why-lost"] .bv-why-chain { overflow: visible; white-space: normal; overflow-wrap: anywhere; min-width: 0; }

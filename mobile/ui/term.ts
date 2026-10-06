@@ -14,6 +14,8 @@ import type { UnitFilter } from "../../src/types";
 import { closable, h, isDesktop } from "./dom";
 import { changedTokens } from "./diff";
 import { icon } from "./icon";
+import { withPip } from "./card";
+import { scopePip } from "../../src/mvp/card-icons";
 
 /** Opens a term's Codex entry; set by the Codex (R2-11). Unset: no link. */
 let codexLink: ((id: TermId, scope?: UnitFilter) => void) | null = null;
@@ -76,7 +78,8 @@ export function richText(segs: DescribeSegment[], o: RichOptions = {}): Node[] {
       const status = clause.map(statusOf).find(Boolean);
       const ic = trig ? termIcon(trig, status) : undefined;
       pill = h("span", { class: "tpill tone-when", "data-testid": "term-when" });
-      if (ic) pill.append(icon(ic, size, "tpill-ic"));
+      // The pip says whose event it is, as on the card's icon line (R3-4).
+      if (ic) pill.append(withPip(icon(ic, size, "tpill-ic"), scopePip(clause.find((s) => s.scope)?.scope)));
       out.push(pill);
     }
     const info = clauseInfo(seg, segs, i);
