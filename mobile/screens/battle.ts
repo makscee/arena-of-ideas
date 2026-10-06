@@ -191,7 +191,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     caption.classList.toggle("tappable", !!step?.changes.length);
     recent.replaceChildren(
       ...steps.slice(Math.max(0, at - 3), Math.max(0, at)).reverse().map((s) => {
-        const b = h("button", { class: "bv-past" }, s.caption);
+        const b = h("button", { class: "bv-past" }, ...(s.subjectSide ? [sideTag(s.subjectSide)] : []), s.caption);
         b.addEventListener("click", () => {
           const c = s.changes[0];
           if (c) openTrace(c.eventId, s.changes.filter((x) => x.unit === c.unit));
@@ -209,13 +209,17 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     controls.style.display = finished ? "none" : "";
   }
 
-  /** The caption, led by whose unit acted: YOU / THEM, or the owner without a side. */
+  /** Whose a unit is, as a tag: YOU / THEM, or its owner without a side. */
+  function sideTag(side: Side, testid = ""): HTMLElement {
+    const tag = a.you ? (side === you ? "You" : "Them") : owner(side);
+    return h("span", { class: `bv-who ${side === you ? "you" : "ghost"}`, ...(testid ? { "data-testid": testid } : {}) }, tag);
+  }
+  /** The caption, led by whose unit it is about (the first one it names). */
   function captionKids(step: Step | undefined): Node[] {
     if (!step) return [document.createTextNode("The lines face off.")];
-    const side = step.actorSide;
+    const side = step.subjectSide;
     if (!side) return [document.createTextNode(step.caption)];
-    const tag = a.you ? (side === you ? "You" : "Them") : owner(side);
-    return [h("span", { class: `bv-who ${side === you ? "you" : "ghost"}`, "data-testid": "caption-side" }, tag), document.createTextNode(step.caption)];
+    return [sideTag(side, "caption-side"), document.createTextNode(step.caption)];
   }
 
   function traceView(t: Trace): Node[] {
@@ -238,9 +242,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       ...t.links.map((l, i) =>
         h(
           "div",
-          { class: `bv-link ${l.side === you ? "you" : "ghost"}` },
+          { class: `bv-link ${l.side === you ? "you" : "ghost"}`, "data-testid": "trace-link" },
           h("span", { class: "emoji" }, emojiOf(l.unit)),
-          h("span", {}, l.name),
+          // Whose unit, then its name: "THEM Taser".
+          h("span", { class: "bv-link-name" }, ...(l.side ? [sideTag(l.side)] : []), l.name),
           h("span", { class: "dim" }, i === 0 ? viaText(l.via) : `${viaText(l.via)}, set off the one above`),
         ),
       ),
