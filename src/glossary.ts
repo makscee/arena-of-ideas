@@ -146,12 +146,20 @@ export const GLOSSARY: Record<FixedTermId, TermDef> = {
   },
   "battle:chainCapped": {
     label: "Chain stopped", icon: "breaking-chain", tone: "plain",
-    tip: `A chain of reactions ran ${MVP_RULES.chainStepCap} steps and was cut off, so a battle can't loop forever.`,
+    // New runs' cap (the Codex). A battle's own cap is its ChainCapped event's
+    // steps: a run keeps the rules it started with (chainCappedTip).
+    tip: chainCappedTip(MVP_RULES.chainStepCap),
   },
 
   // Words
   "term:stacks": { label: "Stacks", tone: "plain", tip: "The number next to a status. More stacks, stronger effect; some statuses use stacks up." },
 };
+
+/** Chain stopped's rule for a given cap: a battle passes its ChainCapped
+ * event's steps, so a run started under an older cap reads its own number. */
+export function chainCappedTip(cap: number): string {
+  return `A chain of reactions ran ${cap} steps and was cut off, so a battle can't loop forever.`;
+}
 
 /** The group a term belongs to: the part before the colon. */
 export const termGroup = (id: TermId): TermGroup => id.slice(0, id.indexOf(":")) as TermGroup;

@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_CHAIN_STEP_CAP } from "../battle.js";
 import { DEFAULT_RUN_POOL, stressAbilities, stressRegistry } from "../index.js";
 import { MVP_RULES, type MvpContent, type PlayerRef, type UnitContent } from "./contract.js";
 import { fightLines } from "./fight.js";
 import { lineUnitOf } from "./forms.js";
 import { applyMvpDecision, initMvpRun, synthGhost } from "./run.js";
+import { captionOf } from "./trace.js";
 
 const units: UnitContent[] = DEFAULT_RUN_POOL.map((d, i) => {
   const form = { when: d.triggers ?? [], who: d.selectors ?? [], does: d.abilities ?? [] };
@@ -39,5 +41,23 @@ describe("fightLines: one line against another", () => {
     expect(fightLines({ player: me, line: a }, { player: them, line: b }, o)).toEqual(rec);
     // The rules' cap reaches the kernel (which refuses a cap below 1).
     expect(() => fightLines({ player: me, line: a }, { player: them, line: b }, { ...o, rules: { ...MVP_RULES, chainStepCap: 0 } })).toThrow(/chainStepCap/);
+  });
+
+  it("caps a cascade at 32 steps; a run started under 64 keeps 64 (note 19)", () => {
+    expect(MVP_RULES.chainStepCap).toBe(32);
+    expect(DEFAULT_CHAIN_STEP_CAP).toBe(32);
+    // Every Echo pings all enemies after any unit is hit: each hit fans out ×5.
+    const form = { when: [{ kind: "trigger" as const, on: { on: "Hurt" as const } }], who: [{ kind: "allEnemies" as const }], does: ["Ping"] };
+    const echo: UnitContent = { id: "echo", name: "Echo", emoji: "x", tier: 1, base: { pwr: 1, hp: 30 }, forms: { sleeping: form, awoken: form } };
+    const c: MvpContent = { ...content, units: [echo], abilities: { ...stressAbilities, Ping: { name: "Ping", family: "Strike", effects: [{ kind: "damage", amount: { kind: "const", value: 1 } }] } } };
+    const line = (p: string) => Array.from({ length: 5 }, (_, i) => lineUnitOf(echo, `${p}${i}`));
+    const caps = (rules: typeof MVP_RULES) => {
+      const s = { ...initMvpRun({ runId: "r", player: me, seed: 9, content: c, day: 1, startedAt: at, rules }), line: line("a") };
+      const ghost = { ...synthGhost({ content: c, round: 1, seed: 5, ghostId: "g", createdAt: at }), line: line("b") };
+      const log = applyMvpDecision(s, { kind: "fight" }, c, { fight: { ghost, battleId: "b", battleSeed: 11, at } }).battle!.log;
+      return [...new Set(log.flatMap((e) => (e.type === "ChainCapped" ? [captionOf(log, e.id)] : [])))];
+    };
+    expect(caps(MVP_RULES)).toEqual(["Chain stopped after 32 steps"]);
+    expect(caps({ ...MVP_RULES, chainStepCap: 64 })).toEqual(["Chain stopped after 64 steps"]);
   });
 });

@@ -19,7 +19,7 @@
 // so crossing 1024px needs no redraw. The phone keeps its stacked rows.
 import { boardAt, type BoardState, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView } from "../../src/mvp/contract";
-import { STATUS_TERMS, termDef, termIcon, type IconId, type TermId } from "../../src/glossary";
+import { chainCappedTip, STATUS_TERMS, termDef, termIcon, type IconId, type TermId } from "../../src/glossary";
 import { beatPlayOf, chainOf, damageByUnit, firingOf, keyMomentsOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Change, type Firing, type KeyMoment, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side, UnitDef } from "../../src/types";
@@ -131,7 +131,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const logStatuses = new Set(log.flatMap((e) => (e.type === "StatusApplied" ? [e.status] : [])));
   const esc = (w: string) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const words = [...new Set([...Object.keys(STATUS_TERMS), ...logStatuses, "Fatigue"])].filter(Boolean).sort((p, q) => q.length - p.length);
-  const captionTerms = new RegExp(`\\(\\d+ absorbed\\)|(?<![\\p{L}\\d])(?:${words.map(esc).join("|")})(?![\\p{L}\\d])|\\b(?:PWR|HP)\\b|[−+]\\d+`, "gu");
+  const captionTerms = new RegExp(`\\(\\d+ absorbed\\)|Chain stopped after \\d+ steps|(?<![\\p{L}\\d])(?:${words.map(esc).join("|")})(?![\\p{L}\\d])|\\b(?:PWR|HP)\\b|[−+]\\d+`, "gu");
 
   let at = -1; // index of the beat on screen; -1 = the line-up before the first beat
   let wave = 0; // waves of that beat landed so far, minus one
@@ -1040,6 +1040,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const status = STATUS_TERMS[t] ?? (logStatuses.has(t) ? termDef(`status:${t}`) : undefined);
     if (status) return h("span", { class: `bv-ct tone-${status.tone}`, "data-testid": "caption-term" }, ...(status.icon ? [icon(status.icon, 14), " "] : []), t);
     if (t === "Fatigue") return h("span", { class: "bv-ct tone-dmg", "data-testid": "caption-term" }, icon("hourglass", 14), " ", t);
+    // A capped cascade: the breaking chain, its rule with this battle's own cap.
+    const capped = /^Chain stopped after (\d+) steps$/.exec(t);
+    if (capped) return h("span", { class: "bv-ct tone-plain", "data-testid": "caption-term", title: chainCappedTip(Number(capped[1])) }, icon("breaking-chain", 14), " ", t);
     if (t === "PWR") return h("span", { class: "tone-pwr" }, t);
     if (t === "HP") return h("span", { class: "tone-hp" }, t);
     if (t.startsWith("−")) return h("b", { class: "tone-dmg" }, t);
