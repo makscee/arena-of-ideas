@@ -5,7 +5,10 @@
 // frames of the first beats (one every 100 ms), with motion and with
 // prefers-reduced-motion. It also samples every frame of the 1× battles and
 // reports how long each damage float stays visible (one cut short by the next
-// wave's render would last under 0.4 s at 1×, under 0.4 s / speed faster).
+// wave's render would last under 0.5 s at 1×, under 0.5 s / speed faster:
+// round 3's float runs 0.9 s, visible for about 0.75 s). It prints the
+// median battle's length on screen at each speed it played (round 3, note 14:
+// about 38 s at 1×, 19 s at 2×).
 // Each run registers its own names (names are unique per server). Needs a
 // running MVP server:
 //   node e2e/beat-frames.mjs --url http://127.0.0.1:8911/arena/ [--out e2e/.shots/beats] [--rounds 3] [--speed 2]
@@ -27,8 +30,11 @@ const times = [];
  * screen took, and the speed. */
 const plans = [];
 const speeds = [];
-/** Damage floats' visible runs, each as a fraction of its battle's 1× float (ms × speed). */
+/** Damage floats' visible runs, each as a fraction of its battle's 1× float (ms × speed); runs that grew into the next wave's float, apart. */
 const floatMs = [];
+const mergedMs = [];
+/** A damage float visible for less than this (at 1×) was cut short, unless the next float on its card replaced it. */
+const FLOAT_MIN_MS = 500;
 /** In the page: every animation frame, which damage floats show (opacity > 0.3),
  * keyed by card and label; a key's visible run ends when it stops showing. */
 const sampleFloats = () => {
@@ -43,8 +49,10 @@ const sampleFloats = () => {
       seen.add(key);
       if (!open.has(key)) open.set(key, now);
     }
-    for (const [key, t] of open) if (!seen.has(key)) { runs.push(now - t); open.delete(key); }
-    if (document.querySelector('[data-testid="battle-done"]')) { window.__floatRuns = runs; return; }
+    for (const [key, t] of open) if (!seen.has(key)) { runs.push({ card: key.split("|")[0], ms: now - t, end: now }); open.delete(key); }
+    // A float that grows ("−2" → "−5" as the next wave hits the same card) ends one key and
+    // starts the next on that card: that is a merge, not a float cut short.
+    if (document.querySelector('[data-testid="battle-done"]')) { window.__floatRuns = runs.map((r) => ({ ms: r.ms, merged: runs.some((x) => x !== r && x.card === r.card && x.end - x.ms >= r.end - 120 && x.end - x.ms <= r.end + 200) })); return; }
     requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
@@ -80,19 +88,29 @@ for (const motion of ["no-preference", "reduce"]) {
       plans.push(Number(await page.locator(".bv-controls").getAttribute("data-plan-ms")) / 1000 / speed);
       speeds.push(speed);
     }
-    if (motion !== "reduce") floatMs.push(...(await page.waitForFunction(() => window.__floatRuns).then((h) => h.jsonValue())).map((ms) => ms * speed));
+    if (motion !== "reduce") for (const r of await page.waitForFunction(() => window.__floatRuns).then((h) => h.jsonValue())) (r.merged && r.ms * speed < FLOAT_MIN_MS ? mergedMs : floatMs).push(r.ms * speed);
     await page.screenshot({ path: `${out}/${motion === "reduce" ? "still" : "move"}-r${round}-end.png` });
     await page.getByTestId("battle-done").click();
-    await page.getByTestId("continue").click();
-    if (await page.getByTestId("play").count()) break; // the run ended
+    // Done goes straight on to the next shop, or to the run's end.
+    await page.waitForFunction(() => document.querySelector('[data-testid="fight"]') || document.querySelector('[data-testid="run-over"]'));
+    if (await page.getByTestId("run-over").isVisible().catch(() => false)) break; // the run ended
   }
   await page.close();
 }
 await browser.close();
 const sorted = [...floatMs].sort((p, q) => p - q);
-// Float times are scaled to 1× (ms × speed), so the 0.4 s bar holds at any speed.
-console.log(`damage floats: ${sorted.length} seen, median ${Math.round(sorted[Math.floor(sorted.length / 2)] ?? 0)} ms visible at 1×, ${sorted.filter((ms) => ms < 400).length} under 0.4 s at 1×`);
+// Float times are scaled to 1× (ms × speed), so the bar holds at any speed.
+const cut = sorted.filter((ms) => ms < FLOAT_MIN_MS).length;
+console.log(`damage floats: ${sorted.length} seen, median ${Math.round(sorted[Math.floor(sorted.length / 2)] ?? 0)} ms visible at 1×, ${cut} under ${FLOAT_MIN_MS / 1000} s at 1× (${sorted.filter((ms) => ms < FLOAT_MIN_MS).map((ms) => Math.round(ms)).join(", ")}); ${mergedMs.length} grew into the next wave's float`);
 const med = [...times].sort((p, q) => p - q)[Math.floor((times.length - 1) / 2)] ?? 0;
 console.log(`planned vs on screen: ${plans.map((p, i) => `${p.toFixed(1)}→${times[i].toFixed(1)} s at ${speeds[i]}×`).join(", ")}`);
 console.log(`median ${med.toFixed(1)} s`);
+for (const sp of [...new Set(speeds)].sort()) {
+  const at = times.filter((_, i) => speeds[i] === sp).sort((p, q) => p - q);
+  console.log(`at ${sp}×: ${at.length} battles, median ${(at[Math.floor((at.length - 1) / 2)] ?? 0).toFixed(1)} s on screen`);
+}
+// Every planned playback should run as planned (within 15% and 1.5 s): motion never slows the timer.
+const late = plans.filter((p, i) => times[i] > p * 1.15 + 1.5);
+if (late.length) { console.log(`${late.length} battles ran long against their plan`); process.exitCode = 1; }
+if (cut) process.exitCode = 1;
 console.log(`beat frames: ${times.length} battles (${speeds.map((sp) => `${sp}×`).join(", ")}), ${times.map((t) => `${t.toFixed(1)} s`).join(", ")}; frames in ${out}`);

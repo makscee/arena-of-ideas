@@ -30,6 +30,20 @@ test("a buy clinks, a copy merges, the third copy levels up", () => {
   expect(shopSound(buy, runOf(unit("a", 3, "awoken")), runOf(unit("a", 4, "awoken")))?.key).toBe("merge");
 });
 
+test("a copy that merges or awakens on the bench sounds the same (R3-14)", () => {
+  const buy = { kind: "buy", slot: 0 } as const;
+  const onBench = (bench: LineUnit[]): RunView => ({ line: [unit("x", 1)], bench }) as unknown as RunView;
+  expect(shopSound(buy, onBench([]), onBench([unit("a", 1)]))?.key).toBe("coin");
+  expect(shopSound(buy, onBench([unit("a", 1)]), onBench([unit("a", 2)]))?.key).toBe("merge");
+  expect(shopSound(buy, onBench([unit("a", 2)]), onBench([unit("a", 3, "awoken")]))?.key).toBe("level-up");
+});
+
+test("a lock freezes, an unlock unfreezes", () => {
+  const offers = (locked: boolean): RunView => ({ line: [], offers: [{ slot: 0, unitId: "a", tier: 1, cost: 3, ...(locked ? { locked } : {}) }] }) as unknown as RunView;
+  expect(shopSound({ kind: "lock", slot: 0 }, offers(false), offers(true))?.key).toBe("freeze");
+  expect(shopSound({ kind: "lock", slot: 0 }, offers(true), offers(false))?.key).toBe("unfreeze");
+});
+
 test("sell, reroll, reorder left and right, fuse", () => {
   const r = runOf(unit("a", 1), unit("b", 1));
   expect(shopSound({ kind: "sell", index: 0 }, r, runOf(unit("b", 1)))?.key).toBe("sell");

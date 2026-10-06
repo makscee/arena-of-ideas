@@ -20,7 +20,7 @@
 import { boardAt, type BoardState, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView, SummonContent } from "../../src/mvp/contract";
 import { chainCappedTip, STATUS_TERMS, termDef, termIcon, triggerLabel, type IconId, type TermId } from "../../src/glossary";
-import { beatPlayOf, causeOf, chainOf, damageByUnit, keyMomentsOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Cause, type Change, type KeyMoment, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
+import { BEAT_MS, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, causeOf, chainOf, damageByUnit, keyMomentsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, turnLabel, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Cause, type Change, type KeyMoment, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { summonId } from "../../src/describe";
@@ -37,14 +37,14 @@ const END_MIN_PX = 240;
 /** The end card's Damage rows a side, until "All n" (R2-17 batch E). */
 const DMG_ROWS = 3;
 
-/** How long the line-up shows before the first beat, at 1×. */
-const LINEUP_MS = 400;
-/** How long a landed wave's motion runs, in animation time (real time × speed): the longest animation (a killing blow's shake, then its 0.5 s pop, ends at 0.92 s; a float, 0.7 s, after up to 160 ms). A beat holds its last wave at least 0.7 s, so a beat change cuts motion off at most in its fade. */
-const MOTION_MS = 1000;
+/** How long a Crown fight's line-up shows, under its "Crown fight" title, at 1× (round 3, note 14). */
+const CROWN_LINEUP_MS = 1200;
+/** How long a landed wave's motion runs, in animation time (real time × speed): the longest animation (a killing blow's shake, its 120 ms freeze, then its 0.5 s pop, ends at 1.1 s; a float, 0.9 s, after up to 220 ms). A beat holds its last wave at least 0.8 s (1.15 s after a kill), so a beat change cuts motion off at most in its fade. */
+const MOTION_MS = 1300;
 /** How long a card's When icon flashes when it fires (R3-19). */
 const TRIG_FLASH_MS = 400;
-/** When a hit's shake ends, in animation ms after its wave lands (80 ms in, 340 ms long). */
-const SHAKE_END_MS = 420;
+/** When a hit's shake ends, in animation ms after its wave lands (80 ms in, 400 ms long). */
+const SHAKE_END_MS = 480;
 
 /** The changes that float up from a card. */
 const FLOATS = new Set<Change["kind"]>(["damage", "heal", "buff", "debuff", "summon"]);
@@ -121,6 +121,13 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   // Playback goes beat by beat (round 2, R2-12): a strike or a turn end plus
   // everything it sets off, its effects landing in quick waves.
   const beats = beatPlayOf(log, stepsOf(log, TAGGED, sides, a.you ? { you: a.you } : { sideName: owner }), TAGGED);
+  // Each beat's big moments (a kill, a big hit, a summon, the first fatigue, the last beat) add time (round 3, note 14).
+  const weights = weightsOf(log, beats);
+  const lineupMs = battle.kind === "crown" ? CROWN_LINEUP_MS : LINEUP_MS;
+  /** Units a Summon put at the front of their line (R3-22); revives go to the back. */
+  const frontSummons = new Set(log.flatMap((e) => (e.type === "Summon" && e.front ? [e.unit] : [])));
+  /** The first beat with fatigue, for its banner. */
+  const fatigueBeat = weights.findIndex((w) => w.fatigue);
   const units = new Map<string, BattleUnit>([...battle.teamA, ...battle.teamB].map((u) => [u.id, u]));
   // A summoned unit's body (R3-5), by its Summon event's name: summon names
   // are unique (mvpPool), so the name finds one body. A revived unit keeps its own id.
@@ -176,6 +183,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   let shownTurn = 0;
   /** Each card's floating numbers, set by motion() and hung in its slot. */
   const floatsOf = new WeakMap<HTMLElement, HTMLElement[]>();
+  /** A dying card's skull burst, and a summoned card's slide-in delay, set by motion() for its slot. */
+  const skullsOf = new WeakMap<HTMLElement, HTMLElement>();
+  const enterOf = new WeakMap<HTMLElement, string>();
 
   /** Motion runs at the playback speed (CSS reads --bv-sp), so 2× never cuts it. */
   const setSpeedVar = () => { for (const row of [enemy, mine, clash]) row.style.setProperty("--bv-sp", String(speed)); };
@@ -216,6 +226,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   // The clash mark (desktop) carries fatigue's badge (R3-19).
   const clash = h("div", { class: "bv-clash" }, clashMark);
   const end = h("div", { class: "bv-end panel stack", "data-testid": "end-card" });
+  /** A title over the board for a big moment (note 14): "Crown fight" over
+   * the line-up, "Fatigue" as it first sets in. Redrawn only when it changes,
+   * so a wave's render doesn't restart its animation. */
+  const banner = h("div", { class: "bv-banner", "data-testid": "battle-banner", "aria-hidden": "true" });
+  let bannerOn = "";
   const playBtn = button("❚❚", () => (playing ? pause() : play()), "", "battle-play");
   const backBtn = button("‹", () => back(), "", "battle-back");
   const fwdBtn = button("›", () => forward(), "", "battle-step");
@@ -229,7 +244,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const controls = h("div", { class: "row bv-controls" }, backBtn, playBtn, fwdBtn, speedBtn, endBtn, replayBtn, keys);
   // How long playback should take at 1× (the line-up plus every beat), for
   // the e2e to compare with what the screen takes.
-  controls.dataset.planMs = String(LINEUP_MS + beats.reduce((t, b) => t + timingOf(b).ms, 0));
+  controls.dataset.planMs = String(lineupMs + beats.reduce((t, b, i) => t + timingOf(b, weights[i]).ms, 0));
 
   caption.addEventListener("click", () => {
     const st = stepOn();
@@ -248,9 +263,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     if (timer) clearTimeout(timer);
     const slow = reduced() ? 1.25 : 1;
     let ms: number;
-    if (at < 0) ms = LINEUP_MS;
+    if (at < 0) ms = lineupMs;
     else {
-      const t = timingOf(beats[at]!);
+      const t = timingOf(beats[at]!, weights[at]);
       ms = wave < lastWave(at) ? t.at[wave + 1]! - t.at[wave]! : t.ms - t.at[wave]!;
     }
     const since = landed[wave] !== undefined ? performance.now() - landed[wave]! : 0;
@@ -749,18 +764,23 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   }
   /** The card's When icon (its icon line's first) flashes gold for 0.4 s
    * when that When fires, tying the card's lasting icon to the moment
-   * (R3-19); after a manual step it stays lit for the wave. */
+   * (R3-19); after a manual step it stays lit for the wave. Every landed
+   * wave counts, not only the newest, as motion() does: a wave landing
+   * within the 0.4 s rebuilds the card, and the flash must run on. */
   function triggerFlash(el: HTMLElement, id: string, v: View): void {
-    const w = v.waves.at(-1);
-    const c = w ? causeOf(log, w.step, whenOf) : null;
-    if (!w || c?.kind !== "ability" || c.at !== id) return;
     const ic = el.querySelector<HTMLElement>(".icons .ci:first-of-type");
     if (!ic) return;
-    if (w.age === null || reduced()) ic.classList.add("bv-fired", "still");
-    else if (w.age * speed <= TRIG_FLASH_MS) {
-      ic.classList.add("bv-fired");
-      ic.style.setProperty("--bv-ftt", `${-Math.round(w.age * speed)}ms`);
-    }
+    v.waves.forEach((w, i) => {
+      const c = causeOf(log, w.step, whenOf);
+      if (c?.kind !== "ability" || c.at !== id) return;
+      if (w.age === null || reduced()) {
+        // A manual step lights the icon only for the wave on screen.
+        if (i === v.waves.length - 1) ic.classList.add("bv-fired", "still");
+      } else if (w.age * speed <= TRIG_FLASH_MS) {
+        ic.classList.add("bv-fired");
+        ic.style.setProperty("--bv-ftt", `${-Math.round(w.age * speed)}ms`);
+      }
+    });
   }
   /** A cause's icon: the When's (a status trigger shows its status), the
    * status's own, fatigue's hourglass. */
@@ -781,7 +801,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** A card in its slot, with the trigger badge on its outer edge when one
    * fired, and its floating numbers (outside the card: its clip-path would cut them). */
   function slot(el: HTMLElement, id: string, v: View): HTMLElement {
-    return h("div", { class: "bv-slot" }, el, triggerBadge(id, v), ...(floatsOf.get(el) ?? []));
+    const enter = enterOf.get(el);
+    return h("div", { class: `bv-slot${enter ? " bv-enter" : ""}`, ...(enter ? { style: `--bv-t:${enter}` } : {}) }, el, triggerBadge(id, v), ...(floatsOf.get(el) ?? []), skullsOf.get(el) ?? null);
   }
   /** A card tap (or one of its status chips): the unit's Now sheet, paused on this beat (R3-18). */
   function openUnit(id: string): void {
@@ -849,17 +870,25 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         const struck = first?.type === "Hurt" && first.source === "kernel" && first.causedBy !== null && log[first.causedBy]?.type === "Strike";
         move = struck ? (side === you ? "bv-lunge-up" : "bv-lunge-down") : "bv-pulse";
       }
-      if (mine.some((c) => c.kind === "damage")) { move = "bv-hit"; hitAge = age * speed; }
+      if (mine.some((c) => c.kind === "damage")) {
+        move = "bv-hit";
+        hitAge = age * speed;
+        // A big hit shakes harder (6 px, not 4) and its float is larger (note 14).
+        el.classList.toggle("bv-big", mine.some((c) => { const e = log[c.eventId]; return e?.type === "Hurt" && e.amount >= BIG_HIT_MIN; }));
+      }
       // A dying card (its death trigger firing) or one still shaking from a
       // hit keeps that motion: a pulse or lunge would cut the shake short.
       if (move !== "bv-hit" && (el.classList.contains("bv-dying") || (hitAge !== null && hitAge - age * speed < SHAKE_END_MS))) move = null;
       if (mine.some((c) => c.kind === "death")) {
-        // The killing blow's shake plays out, then the card pops (R2-13):
-        // the die starts once the shake (80 ms in, 340 ms long) is over.
+        // The killing blow's shake plays out, the card stands still for
+        // KILL_FREEZE_MS, then it pops, larger, and a skull bursts (R2-13,
+        // round 3 note 14): the die starts once the shake (80 ms in, 400 ms
+        // long) and the freeze are over.
         const own = age * speed;
-        const start = hitAge !== null ? Math.max(-own, SHAKE_END_MS - hitAge) : -own;
+        const start = hitAge !== null ? Math.max(-own, SHAKE_END_MS + KILL_FREEZE_MS - hitAge) : -own;
         el.classList.add("bv-dying");
         el.style.setProperty("--bv-dt", `${Math.round(start)}ms`);
+        skullsOf.set(el, h("span", { class: "bv-skull", "aria-hidden": "true", style: `--bv-dt:${Math.round(start)}ms` }, icon("death-skull", 22, "tone-enemy")));
         if (hitAge === null) el.classList.remove("bv-lunge-up", "bv-lunge-down", "bv-pulse");
         move = null;
       }
@@ -869,6 +898,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         el.classList.add(move);
         el.style.setProperty("--bv-t", t);
       }
+      // A summoned unit slides in from the clash side (note 14).
+      if (mine.some((c) => c.kind === "summon")) enterOf.set(el, t);
       const flash = mine.some((c) => c.kind === "damage" || c.kind === "death") ? "bv-flash-hit" : mine.some((c) => c.kind === "heal" || c.kind === "buff") ? "bv-glow" : null;
       if (flash) {
         el.classList.remove("bv-flash-hit", "bv-glow");
@@ -891,6 +922,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const f = mergedFloat(v.waves.slice(0, latest + 1).flatMap((w) => w.step.changes.filter((c) => c.unit === id && floats(c))));
     if (!f) return;
     f.style.animationDelay = `${-Math.round(age)}ms`;
+    if (el.classList.contains("bv-big") && f.classList.contains("damage")) f.classList.add("big");
     floatsOf.set(el, [f]);
   }
   /** A change that floats up from its card. */
@@ -929,10 +961,15 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
    * beat back in the slot it held when the beat began. */
   function lineOf(side: Side, board: ReturnType<typeof boardAt>, before: ReturnType<typeof boardAt>, v: View, stsWidth: number): HTMLElement[] {
     const living: HTMLElement[] = board.lines[side].map((u) => slot(unitCard(u, side, v, stsWidth), u.id, v));
+    // Units summoned to the front in this beat stand ahead of every slot the
+    // line had when the beat began: a fallen card's slot moves back past them.
+    const was = new Set(before.lines[side].map((u) => u.id));
+    const front = board.lines[side].filter((u) => !was.has(u.id) && frontSummons.has(u.id)).length;
     const fallen = board.graves[side]
       .map((u) => {
         const dead = deadCard(u.id, v);
-        return { card: dead && slot(dead, u.id, v), slot: before.lines[side].findIndex((b) => b.id === u.id) };
+        const at = before.lines[side].findIndex((b) => b.id === u.id);
+        return { card: dead && slot(dead, u.id, v), slot: at < 0 ? at : at + front };
       })
       .filter((x): x is { card: HTMLElement; slot: number } => x.card !== null)
       .sort((p, q) => (p.slot < 0 ? 99 : p.slot) - (q.slot < 0 ? 99 : q.slot));
@@ -968,6 +1005,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       h("span", { "data-testid": "battle-turn" }, turnLabel(hudTurn ?? turn)),
     );
     clash.replaceChildren(clashMark, ...[triggerBadge("clash", v)].filter((x): x is HTMLElement => x !== null));
+    drawBanner(v);
     for (const [side, row] of [[them, enemy], [you, mine]] as const) {
       // The status row's width, from the cards on screen (read before they are replaced).
       const stsWidth = row.querySelector<HTMLElement>(".bv-card:not(.dead) .bv-sts")?.getBoundingClientRect().width ?? 0;
@@ -1033,6 +1071,17 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     endBtn.disabled = finished;
   }
 
+  function drawBanner(v: View): void {
+    // Shown while playing (not on a manual step or a scrub), once a wave of the beat has landed.
+    const fatigue = at === fatigueBeat && !finished && v.waves.some((w) => w.age !== null);
+    const crown = at < 0 && battle.kind === "crown" && playing && !finished;
+    const on = crown ? "crown" : fatigue ? "fatigue" : "";
+    if (on === bannerOn) return;
+    bannerOn = on;
+    banner.className = `bv-banner${on ? ` on ${on}` : ""}`;
+    banner.style.setProperty("--bv-bn", `${(crown ? CROWN_LINEUP_MS : EMPHASIS_MS.fatigue + BEAT_MS) / 1000}s`);
+    banner.replaceChildren(...(crown ? [h("span", {}, "👑"), h("span", {}, "Crown fight")] : fatigue ? [icon("hourglass", 26, "tone-dmg"), h("span", {}, "Fatigue")] : []));
+  }
   /** Whose a unit is, as a tag: YOU / THEM, or its owner without a side. */
   function sideTag(side: Side, testid = ""): HTMLElement {
     const tag = a.you ? (side === you ? "You" : "Them") : owner(side);
@@ -1046,49 +1095,54 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const c = causeOf(log, step, whenOf);
     const ic = c ? causeIcon(c) : undefined;
     const lead = c && ic ? [h("span", { class: "bv-cap-cause", "data-testid": "caption-cause", "data-cause": c.cause, title: causeLabel(c) }, icon(ic, 14, causeTone(c)))] : [];
-    if (!side) return [...lead, ...richCaption(step.caption)];
-    return [...lead, sideTag(side, "caption-side"), ...richCaption(step.caption)];
+    // Fatigue's and a capped chain's lead icon is their term's own: the term doesn't repeat it.
+    const led = lead.length ? c!.cause : null;
+    if (!side) return [...lead, ...richCaption(step.caption, led)];
+    return [...lead, sideTag(side, "caption-side"), ...richCaption(step.caption, led)];
   }
 
   /** A caption with its terms highlighted (R2-13, like R2-8's unit text):
    * unit names in their side's colour, statuses with their icon and colour,
    * PWR / HP, damage and healing numbers, and a Shield block as the Shield
-   * icon. Plain spans: the caption itself is the button that opens Why. */
-  function richCaption(text: string): Node[] {
+   * icon. Plain spans: the caption itself is the button that opens Why.
+   * `led`: the cause whose icon the caption leads with, which its term then doesn't repeat. */
+  function richCaption(text: string, led: string | null = null): Node[] {
     const out: Node[] = [];
     let i = 0;
     for (const m of text.matchAll(TAG)) {
-      if (m.index! > i) out.push(...termsIn(text.slice(i, m.index)));
+      if (m.index! > i) out.push(...termsIn(text.slice(i, m.index), led));
       out.push(unitName(m[1]!));
       i = m.index! + m[0].length;
     }
-    if (i < text.length) out.push(...termsIn(text.slice(i)));
+    if (i < text.length) out.push(...termsIn(text.slice(i), led));
     return out;
   }
   /** A unit's name in its own side's colour. */
   function unitName(id: string): Node {
     return h("span", { class: `bv-cn ${sides.get(id) === you ? "tone-ally" : "tone-enemy"}`, "data-unit": id }, name(id));
   }
-  function termsIn(text: string): Node[] {
+  function termsIn(text: string, led: string | null = null): Node[] {
     const out: Node[] = [];
     let i = 0;
     for (const m of text.matchAll(captionTerms)) {
       if (m.index! > i) out.push(document.createTextNode(text.slice(i, m.index)));
-      out.push(captionTerm(m[0]));
+      out.push(captionTerm(m[0], led));
       i = m.index! + m[0].length;
     }
     if (i < text.length) out.push(document.createTextNode(text.slice(i)));
     return out;
   }
-  function captionTerm(t: string): Node {
+  function captionTerm(t: string, led: string | null = null): Node {
     const absorbed = /^\((\d+) absorbed\)$/.exec(t);
     if (absorbed) return h("span", { class: "bv-ct tone-shield", "data-testid": "caption-term" }, icon("shield", 14), ` ${absorbed[1]} blocked`);
     const status = STATUS_TERMS[t] ?? (logStatuses.has(t) ? termDef(`status:${t}`) : undefined);
     if (status) return h("span", { class: `bv-ct tone-${status.tone}`, "data-testid": "caption-term" }, ...(status.icon ? [icon(status.icon, 14), " "] : []), t);
-    if (t === "Fatigue") return h("span", { class: "bv-ct tone-dmg", "data-testid": "caption-term" }, icon("hourglass", 14), " ", t);
-    // A capped cascade: the breaking chain, its rule with this battle's own cap.
+    if (t === "Fatigue") return h("span", { class: "bv-ct tone-dmg", "data-testid": "caption-term" }, ...(led === "battle:fatigue" ? [] : [icon("hourglass", 14), " "]), t);
+    // A capped cascade: the breaking chain, its rule with this battle's own
+    // cap. A caption that leads with that icon (its cause, R3-19) keeps only
+    // the words here, as Fatigue's does.
     const capped = /^Chain stopped after (\d+) steps$/.exec(t);
-    if (capped) return h("span", { class: "bv-ct tone-plain", "data-testid": "caption-term", title: chainCappedTip(Number(capped[1])) }, icon("breaking-chain", 14), " ", t);
+    if (capped) return h("span", { class: "bv-ct tone-plain", "data-testid": "caption-term", title: chainCappedTip(Number(capped[1])) }, ...(led === "battle:chainCapped" ? [] : [icon("breaking-chain", 14), " "]), t);
     if (t === "PWR") return h("span", { class: "tone-pwr" }, t);
     if (t === "HP") return h("span", { class: "tone-hp" }, t);
     if (t.startsWith("−")) return h("b", { class: "tone-dmg" }, t);
@@ -1335,6 +1389,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         h("div", { class: "label bv-lab-them" }, h("span", { class: "bv-dk" }, "← front · "), a.you ? "Them" : owner(them), h("span", { class: "bv-ph" }, " · front first")),
         enemy,
         caption,
+        banner,
         clash,
         mine,
         h("div", { class: "label bv-lab-you" }, a.you ? "You" : owner(you), h("span", { class: "bv-ph" }, " · front first"), h("span", { class: "bv-dk" }, " · front →")),
