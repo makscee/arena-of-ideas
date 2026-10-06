@@ -2,7 +2,7 @@
 // ends, the day-end playoff crowning the next champion, a day with no slayers
 // keeping the champion, the 04:00 Moscow rollover and the dev "end day now".
 import { describe, expect, it, vi } from "vitest";
-import type { BattleRecord, Champion, DayView, LineUnit, MvpContent, PlayerRef, Rating, RunView } from "../../../src/mvp/contract.js";
+import type { BattleRecord, Champion, DayView, LineUnit, MvpContent, PlayerRef, Rating, RunView, StatsView } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { ratingChange, type MvpRunState } from "../../../src/mvp/run.js";
 import { createMvpApp } from "./app.js";
@@ -312,6 +312,22 @@ describe("MVP day", () => {
     // the retried day end crowns ann for day 2 as usual
     endDay(rt);
     expect((await call<DayView>("GET", "/day")).json).toMatchObject({ seq: 2, champion: { seq: 2, player: ann } });
+  });
+
+  it("GET /stats lists champions up to today, never one a failed day end stored early", async () => {
+    const store = new FlakyDayStore(2, 1);
+    const { rt, call, human } = world({ store });
+    const old = weakChampion(rt);
+    const ann = human("ann");
+    slay(rt, ann, bigLine(rt.content));
+    expect(() => endDay(rt)).toThrow("disk full");
+    expect(store.champions().map((c) => c.seq)).toEqual([old.seq, 2]); // ann's team, stored early
+    const before = (await call<StatsView>("GET", "/stats")).json.champions;
+    expect(before).toEqual([old]);
+    // the retried day end starts day 2: ann is listed
+    endDay(rt);
+    const after = (await call<StatsView>("GET", "/stats")).json.champions;
+    expect(after.map((c) => [c.seq, c.player.id])).toEqual([[old.seq, botP.id], [2, ann.id]]);
   });
 
   it("works on the SQLite store", () => {

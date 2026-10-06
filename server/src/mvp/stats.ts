@@ -50,7 +50,10 @@ export function statsHooks(rt: Pick<RunDeps, "store" | "content" | "now">): RunH
 }
 
 /** GET /stats: the live content's unit rates (most picked first), every
- * day's champion (oldest first) and the discovered fusions. */
+ * day's champion up to today (oldest first) and the discovered fusions. A day
+ * end that failed after crowning leaves tomorrow's champion stored early (a
+ * slayer's team, hidden until the day ends); like /day and the Crown, it
+ * isn't listed until its day starts. */
 export function statsView(rt: RunDeps): StatsView {
   const t = rt.store.unitTallies(rt.content.version);
   const live = new Set(rt.content.units.map((u) => u.id));
@@ -58,5 +61,6 @@ export function statsView(rt: RunDeps): StatsView {
     .filter((u: UnitTally) => live.has(u.unitId))
     .map((u) => ({ unitId: u.unitId, winRate: u.fights ? u.wins / u.fights : 0, pickRate: t.runs ? u.runs / t.runs : 0, runs: u.runs }))
     .sort((a, b) => b.pickRate - a.pickRate || b.winRate - a.winRate || a.unitId.localeCompare(b.unitId));
-  return { units, champions: rt.store.champions(), fusions: rt.store.fusions() };
+  const seq = rt.today().seq;
+  return { units, champions: rt.store.champions().filter((c) => c.seq <= seq), fusions: rt.store.fusions() };
 }
