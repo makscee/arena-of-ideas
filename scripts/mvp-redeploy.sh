@@ -35,9 +35,11 @@
 # ARENA_MVP_INVITES takes 0 or 1 only. 0 deploys an OPEN server (names, no
 # links: anyone who reaches it plays as anyone); it warns, and refuses unless
 # https://arena.makscee.ru/arena/ clearly isn't this host: its /health shows
-# another build, the June page, or a 404 while this host's own /arena isn't a
-# 404. This host's build, a 5xx, no answer, or Arena JSON while this host's
-# server is down all refuse, with the reason; ARENA_MVP_OPEN_PUBLIC=1
+# another build, the June page (its title screen, not any HTML), or a 404
+# while this host's own /arena answers a definite non-404 code. This host's
+# build, a 5xx, no answer or a cut-off one, Arena JSON while this host's
+# server is down, and a 404 while this host can't read its own /arena or gets
+# a 404 there too all refuse, with the reason; ARENA_MVP_OPEN_PUBLIC=1
 # overrides on purpose.
 #
 # Rollback to a pre-slice-13 build, or back up after a failed check: SWITCH
@@ -91,23 +93,28 @@ if [ "$INVITES" != 1 ]; then
   # Checked before anything stops, and fail-closed: anything the check can't
   # read refuses, with the reason (ARENA_MVP_OPEN_PUBLIC=1 overrides).
   #   allowed: the public /health is JSON with another build than this host
-  #     serves; the June HTML; a 404 while this host's own /arena answers
-  #     something else (a proxied request would get that, not a 404)
+  #     serves; the June page (its title screen markers, not any HTML); a 404
+  #     while this host's own /arena answers a definite non-404 HTTP code (a
+  #     proxied request would get that, not a 404)
   #   refused: this host's build; Arena JSON while this host's build is
-  #     unknown (its server is down); a 5xx or no answer (this host down
-  #     behind mcow's proxy looks exactly like that); a 404 while this host's
-  #     /arena is a 404 too (its serve is off); anything else
+  #     unknown (its server is down); a 5xx, no answer or a cut-off answer
+  #     (curl failed: this host down behind mcow's proxy looks like that); a
+  #     404 while this host's /arena is a 404 too (its serve is off) or can't
+  #     be read (000); anything else
   MINE=
   if LOCAL=\$(curl -fsS --max-time 5 "http://127.0.0.1:$PORT/arena/api/v1/health" 2>/dev/null); then
     MINE=\$(printf '%s' "\$LOCAL" | sed -n 's/.*"build":"\([^"]*\)".*/\1/p')
   fi
-  PUB=\$(curl -sS --max-time 10 -w '\n%{http_code}' "${PUBLIC_URL}api/v1/health" 2>/dev/null) || true
+  # A failed curl (no answer, a body cut off mid-transfer) is no answer: 000.
+  PUB=\$(curl -sS --max-time 10 -w '\n%{http_code}' "${PUBLIC_URL}api/v1/health" 2>/dev/null) || PUB=000
   CODE=\$(printf '%s\n' "\$PUB" | tail -n 1)
   BODY=\$(printf '%s\n' "\$PUB" | sed '\$d')
   WHY=
   case "\$CODE" in
     200)
-      if printf '%s' "\$BODY" | grep -qi '<html'; then
+      # The June page: the old web client's title screen (web/index.html),
+      # which the mobile client this host serves doesn't have.
+      if printf '%s' "\$BODY" | grep -q '<section id="title-view">' && printf '%s' "\$BODY" | grep -q '<h1 class="title-name">Arena of Ideas</h1>'; then
         :
       elif printf '%s' "\$BODY" | grep -q '"build":"'; then
         if [ -z "\$MINE" ]; then
@@ -119,12 +126,15 @@ if [ "$INVITES" != 1 ]; then
         WHY="$PUBLIC_URL answers 200 with neither the June page nor an Arena /health, so it can't tell whether the domain serves this host"
       fi ;;
     404)
-      OWN=\$(curl -sS --max-time 10 -o /dev/null -w '%{http_code}' "$TAILNET_URL" 2>/dev/null) || true
-      if [ "\$OWN" = 404 ]; then
-        WHY="$PUBLIC_URL answers 404, and so does this host's own $TAILNET_URL (its /arena serve is off), so a 404 can't tell whether the domain serves this host"
-      fi ;;
+      # Only a definite non-404 HTTP code here tells a proxied request apart.
+      OWN=\$(curl -sS --max-time 10 -o /dev/null -w '%{http_code}' "$TAILNET_URL" 2>/dev/null) || OWN=000
+      case "\$OWN" in
+        404) WHY="$PUBLIC_URL answers 404, and so does this host's own $TAILNET_URL (its /arena serve is off), so a 404 can't tell whether the domain serves this host" ;;
+        [1-5][0-9][0-9]) : ;;
+        *) WHY="$PUBLIC_URL answers 404, and this host can't read its own $TAILNET_URL within 10s, so a 404 can't tell whether the domain serves this host" ;;
+      esac ;;
     5??) WHY="$PUBLIC_URL answers \$CODE: that is what this host down behind mcow's proxy looks like" ;;
-    ''|000) WHY="$PUBLIC_URL didn't answer within 10s: that can be this host down behind mcow's proxy" ;;
+    ''|000) WHY="$PUBLIC_URL didn't answer within 10s, or its answer was cut off: that can be this host down behind mcow's proxy" ;;
     *) WHY="$PUBLIC_URL answers \$CODE, so it can't tell whether the domain serves this host" ;;
   esac
   if [ -n "\$WHY" ]; then
@@ -237,7 +247,14 @@ still_loaded() {
 }
 ROLLBACK="Redeploy an invite-only build, or roll back: switch the domain off first (homelab Caddyfile.j2, arena.makscee.ru stops proxying /arena* to m1), then ARENA_MVP_INVITES=0 npm run mvp:redeploy -- <ref>."
 launchctl bootstrap "gui/\$(id -u)" "\$PLIST"
-\$TS serve --bg --set-path /arena "http://127.0.0.1:$PORT" >/dev/null
+if ! TSOUT=\$(\$TS serve --bg --set-path /arena "http://127.0.0.1:$PORT" 2>&1); then
+  # The old /arena serve may still point at this port: stop the new job
+  # rather than leave it serving unchecked.
+  stop_unchecked
+  echo "redeploy failed: tailscale serve --set-path /arena didn't take (\$TSOUT), so the new server (\$BUILD, $BRANCH) is stopped and the /arena serve is off: the Arena is down. Fix tailscale serve on this host and redeploy. \$ROLLBACK" >&2
+  still_loaded
+  exit 1
+fi
 HEALTH=
 for i in \$(seq 1 30); do
   HEALTH=\$(curl -fsS --max-time 2 "http://127.0.0.1:$PORT/arena/api/v1/health" 2>/dev/null) && break

@@ -8,6 +8,14 @@ import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 const ROOT = resolve(import.meta.dirname, "..");
+/** What https://arena.makscee.ru/arena/api/v1/health answers today: the June
+ * web client's title screen (its SPA fallback), cut to the markers. */
+const JUNE = `<!doctype html>
+<html lang="en">
+  <head><title>Arena of Ideas</title></head>
+  <body><main>
+      <section id="title-view">
+        <h1 class="title-name">Arena of Ideas</h1>`;
 const homes: string[] = [];
 
 const STUBS: Record<string, string> = {
@@ -25,20 +33,25 @@ esac`,
   npm: "#!/bin/bash\nexit 0",
   // NO_HEALTH: the new server never answers /health; STUB_HEALTH: what it
   // says. PUBLIC_CODE / PUBLIC_HEALTH: what https://arena.makscee.ru/arena/
-  // answers (default: the June page; 000 is no answer); OWN_CODE: what this
-  // host's tailnet /arena answers (default 502: the server is down, the serve on)
+  // answers (default: the June page; 000 is no answer), PUBLIC_EXIT: curl's
+  // exit after printing it (18: cut off mid-transfer); OWN_CODE: what this
+  // host's tailnet /arena answers (default 502: the server is down, the serve
+  // on), OWN_EXIT: curl failing there (7 refused, 6 DNS, 28 timeout: prints 000)
   curl: `#!/bin/bash
 case "$*" in
   *arena.makscee.ru*)
-    C="\${PUBLIC_CODE:-200}"; B="\${PUBLIC_HEALTH:-<!doctype html><html lang=\"en\">June}"
+    C="\${PUBLIC_CODE:-200}"; B="\${PUBLIC_HEALTH:-$JUNE}"
     [ "$C" = 000 ] && { printf '000'; exit 28; }
-    printf '%s\\n%s' "$B" "$C"; exit 0 ;;
-  *twin-pogona*) printf '%s' "\${OWN_CODE:-502}"; exit 0 ;;
+    printf '%s\\n%s' "$B" "$C"; exit "\${PUBLIC_EXIT:-0}" ;;
+  *twin-pogona*) [ -n "\${OWN_EXIT:-}" ] && { printf '000'; exit "$OWN_EXIT"; }; printf '%s' "\${OWN_CODE:-502}"; exit 0 ;;
   *api/v1/health*) [ -n "\${NO_HEALTH:-}" ] && exit 7; [ -e "$HOME/loaded/ru.makscee.arena-mvp" ] || exit 7; D='{"ok":true,"build":"abc1234","invites":true}'; echo "\${STUB_HEALTH:-$D}"; exit 0 ;;
 esac
 echo '{"ok":true}'`,
+  // SERVE_FAIL: \`serve --bg\` fails
   tailscale: `#!/bin/bash
-echo "$*" >> "$HOME/tailscale.log"; exit 0`,
+echo "$*" >> "$HOME/tailscale.log"
+[ -n "\${SERVE_FAIL:-}" ] && [ "$2" = --bg ] && { echo "serve config denied" >&2; exit 1; }
+exit 0`,
   // the waits for launchd don't wait here
   sleep: "#!/bin/bash\nexit 0",
 };
@@ -68,7 +81,7 @@ function deploy(home: string, env: Record<string, string> = {}, args = ["--fresh
     .replace("export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH", `export PATH=${home}/bin:/usr/bin:/bin`)
     .replace("TS=/Applications/Tailscale.app/Contents/MacOS/Tailscale", `TS=${home}/bin/tailscale`);
   expect(script).toContain(`${home}/bin/tailscale`);
-  const run = spawnSync("bash", [], { input: script, encoding: "utf8", env: { HOME: home, PATH: `${home}/bin:/usr/bin:/bin`, ...env } });
+  const run = spawnSync("bash", [], { input: script, encoding: "utf8", env: { HOME: home, PATH: `${home}/bin:/usr/bin:/bin`, JUNE, ...env } });
   const log = existsSync(join(home, "launchctl.log")) ? readFileSync(join(home, "launchctl.log"), "utf8") : "";
   const ts = existsSync(join(home, "tailscale.log")) ? readFileSync(join(home, "tailscale.log"), "utf8") : "";
   return { status: run.status, stdout: run.stdout, stderr: run.stderr, log, ts };
@@ -203,7 +216,7 @@ describe("mvp-redeploy (--fresh and plain)", () => {
     expect(deploy(forced.home, { ...open, PUBLIC_HEALTH: open.STUB_HEALTH, ARENA_MVP_OPEN_PUBLIC: "1" }, []).status).toBe(0);
   });
 
-  it("ARENA_MVP_INVITES=0 with this host's server down: allowed only when the domain clearly isn't this host, and always says why it refused", { timeout: 15_000 }, () => {
+  it("ARENA_MVP_INVITES=0 with this host's server down: allowed only when the domain clearly isn't this host, and always says why it refused", { timeout: 30_000 }, () => {
     const open = { ARENA_MVP_INVITES: "0", STUB_HEALTH: '{"ok":true,"build":"abc1234","invites":false}' };
     // the server is down before the deploy (a failed check booted it out, a crash loop)
     const down = () => {
@@ -227,6 +240,10 @@ describe("mvp-redeploy (--fresh and plain)", () => {
       ["no answer", { PUBLIC_CODE: "000" }, "didn't answer within 10s"],
       ["Arena JSON", { PUBLIC_HEALTH: '{"ok":true,"build":"4a276d3"}' }, "answers with an Arena server's /health, and this host's server doesn't answer"],
       ["a 404 while this host's /arena is a 404 too", { PUBLIC_CODE: "404", PUBLIC_HEALTH: "", OWN_CODE: "404" }, "(its /arena serve is off)"],
+      // this host can't read its own ts.net URL: curl prints 000 and fails
+      ...(["7", "6", "28"] as const).map((e): [string, Record<string, string>, string] => [`a 404 while this host's own /arena fails (curl ${e})`, { PUBLIC_CODE: "404", PUBLIC_HEALTH: "", OWN_EXIT: e }, "this host can't read its own https://m1.twin-pogona.ts.net/arena/api/v1/health within 10s"]),
+      ["the June page cut off mid-transfer", { PUBLIC_EXIT: "18" }, "or its answer was cut off"],
+      ["HTML that isn't the June page", { PUBLIC_HEALTH: "<!doctype html><html><body>Bad gateway</body></html>" }, "answers 200 with neither the June page nor an Arena /health"],
     ];
     for (const [what, env, why] of refused) {
       const { home } = down();
@@ -246,6 +263,20 @@ describe("mvp-redeploy (--fresh and plain)", () => {
     const f = deploy(forced.home, { ...open, PUBLIC_CODE: "502", PUBLIC_HEALTH: "", ARENA_MVP_OPEN_PUBLIC: "1" }, []);
     expect(f.status).toBe(0);
     expect(f.stderr).toContain("ARENA_MVP_OPEN_PUBLIC=1: deploying open although https://arena.makscee.ru/arena/ answers 502");
+  });
+
+  it("a `tailscale serve` that fails stops the new server and turns /arena off: exit 1, with why", { timeout: 15_000 }, () => {
+    for (const env of [{}, { ARENA_MVP_INVITES: "0", STUB_HEALTH: '{"ok":true,"build":"abc1234","invites":false}' }]) {
+      const { home } = host();
+      const r = deploy(home, { SERVE_FAIL: "1", ...env }, []);
+      expect(r.status, JSON.stringify(env)).toBe(1);
+      expect(r.stdout).not.toContain("deployed");
+      expect(r.stderr).toContain("tailscale serve --set-path /arena didn't take (serve config denied)");
+      expect(r.stderr).toContain("the /arena serve is off");
+      expect(r.stderr).not.toContain("STILL LOADED");
+      expect(existsSync(join(home, "loaded/ru.makscee.arena-mvp"))).toBe(false);
+      expect(r.ts.trim().split("\n").at(-1)).toBe("serve --set-path /arena off");
+    }
   });
 
   it("the failed invites check's message says to switch the domain off before an open rollback", () => {

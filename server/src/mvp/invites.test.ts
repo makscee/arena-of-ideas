@@ -10,13 +10,13 @@ import { mvpContent } from "./content.js";
 import { createInvite, hashToken, InviteError, redeemInvite, revokeInvite } from "./invites.js";
 import { mvpRuntime, type MvpDeps } from "./runtime.js";
 import { SqliteMvpStore } from "./sqlite-store.js";
+import { MAX_SESSIONS, MemoryMvpStore } from "./store.js";
 
 // Temp worlds this file makes, removed when it ends.
 const tempDirs: string[] = [];
 afterAll(() => {
   for (const d of tempDirs.splice(0)) rmSync(d, { recursive: true, force: true });
 });
-import { MAX_SESSIONS, MemoryMvpStore } from "./store.js";
 
 function world(extra: Partial<MvpDeps> = {}) {
   const store = extra.store ?? new MemoryMvpStore();
