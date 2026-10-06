@@ -3,7 +3,7 @@
 // Does. Display-only, built from formSegments' glossary terms, so fusions and
 // summons get it free. Pure data; the client draws it (mobile/ui/card.ts).
 
-import { termDef, termIcon, type IconId, type TermId } from "../glossary.js";
+import { scopeLabel, termDef, termIcon, triggerLabel, type IconId, type TermId } from "../glossary.js";
 import type { AbilityRegistry, UnitFilter } from "../types.js";
 import type { UnitForm } from "./contract.js";
 import { formSegments } from "./form-text.js";
@@ -31,11 +31,10 @@ export function scopePip(scope: UnitFilter | undefined): Pip | undefined {
   return undefined;
 }
 
-const SCOPE_WORD: Record<Pip, string> = { ally: "Ally", enemy: "Enemy", any: "Any unit" };
-
-/** A trigger's label said of its scope: "Dies", "Ally dies", "Enemy is hit". */
+/** A trigger's label said of its scope: "Dies", "Ally dies", "Enemy is hit"
+ * (the glossary's words: a pip is a scope). */
 export function scopedLabel(label: string, pip: Pip | undefined): string {
-  return pip ? `${SCOPE_WORD[pip]} ${label.charAt(0).toLowerCase()}${label.slice(1)}` : label;
+  return scopeLabel(label, pip);
 }
 
 /** The form's icons, When first, then Who, then each Does (each part in its
@@ -64,7 +63,7 @@ export function cardIcons(form: UnitForm, abilities: AbilityRegistry): CardIcon[
       const ic = termIcon(trig.term, status);
       const pip = scopePip(trig.scope);
       // A status trigger reads as the status: "Gets Shield", "Ally loses Poison".
-      const base = status ? `${trig.term === "trigger:StatusRemoved" ? "Loses" : "Gets"} ${status}` : (termDef(trig.term)?.label ?? trig.term);
+      const base = status ? triggerLabel(trig.term, status) : (termDef(trig.term)?.label ?? trig.term);
       if (ic) add({ icon: ic, role: "when", tone: "when", label: scopedLabel(base, pip), ...(pip ? { pip } : {}) });
       continue;
     }
