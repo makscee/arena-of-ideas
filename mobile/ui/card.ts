@@ -58,6 +58,13 @@ function cardRates(u: CardUnit, rates?: UnitRates): Node {
  * content's abilities (When → Who → Does, each Does in order). */
 export function formText(form: UnitForm, content: MvpContent): string {
   if (form.text) return form.text;
+  // Every Does shares the form's When and Who: one sentence, the Does joined
+  // by "then" ("When the battle begins: summon …, then apply 3 Vitality to
+  // every ally."), unless a Does carries a condition of its own.
+  const abs = form.does.map((id) => content.abilities[id]);
+  if (abs.length > 1 && abs.every((ab) => ab !== undefined && ab.condition === undefined)) {
+    return describeAbility({ ...abs[0]!, whens: form.when, selectors: form.who, effects: abs.flatMap((ab) => ab!.effects), ...(form.condition ? { condition: form.condition } : {}) });
+  }
   return form.does
     .map((id) => {
       const ab = content.abilities[id];

@@ -245,12 +245,21 @@ export function describeEffectSegments(
         ? [e0(`consume ${plural(e.stacks.value, "stack")} of `), which]
         : [e0("consume stacks of "), which, e0(` equal to ${describeAmount(e.stacks, opts)}`)];
     }
-    case "summon":
-      return [
-        e0(`summon ${e.unit.name} (${e.unit.base.pwr} PWR / ${e.unit.base.hp} HP) at the back of `),
-        ...tgt,
-        e0("'s side"),
-      ];
+    case "summon": {
+      const unit = `${e.unit.name} (${e.unit.base.pwr} PWR / ${e.unit.base.hp} HP)`;
+      // Every ally / every enemy: the kernel summons once per target, at the
+      // back of that target's line, skipping it once the line is full.
+      const kinds = tgt.flatMap((t) => (t.partRef?.family === "selector" ? [t.partRef.kind] : []));
+      if (kinds.length === 1 && (kinds[0] === "allAllies" || kinds[0] === "allEnemies")) {
+        const ally = kinds[0] === "allAllies";
+        return [
+          e0(`summon ${/^[aeiou]/i.test(e.unit.name) ? "an" : "a"} ${unit} at the back of ${ally ? "the line" : "the enemy line"} for `),
+          ...tgt,
+          e0(`${ally ? `, ${opts.holder ?? HOLDER_DEFAULT} included` : ""}, while the line has room`),
+        ];
+      }
+      return [e0(`summon ${unit} at the back of `), ...tgt, e0("'s side")];
+    }
     case "silence":
       return [e0("silence "), ...tgt, e0(" — strip its statuses and disable its abilities for the battle")];
     case "resurrect": {
