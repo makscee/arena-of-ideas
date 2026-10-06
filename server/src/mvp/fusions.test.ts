@@ -183,9 +183,19 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
   });
 
   it("refuses a crude word behind another word, glued or not, and keeps ordinary compounds", () => {
-    for (const raw of ["Noctscum", "Noctscumling", "Noct Scum", "Spaceinvader", "Space Invaders"]) expect(cleanModelName(raw), raw).toBeNull();
-    for (const raw of ["Scum", "Scumlord", "Grapeshot", "Canal Warden", "Encumber", "Invader", "Jolttherapist", "Soultherapist", "Bonescrape", "Mistdrape", "Vinegrape", "Ashgrape", "Firepeacock", "Stormcanal"])
+    for (const raw of ["Noctscum", "Noctscumling", "Noct Scum", "Scumscum", "Spaceinvader", "Space Invaders"]) expect(cleanModelName(raw), raw).toBeNull();
+    for (const raw of ["Scum", "Scumlord", "Viscum", "Mosscumulus", "Glasscumber", "Grapeshot", "Canal Warden", "Encumber", "Invader", "Jolttherapist", "Soultherapist", "Bonescrape", "Mistdrape", "Vinegrape", "Ashgrape", "Firepeacock", "Stormcanal", "King Grape"])
       expect(cleanModelName(raw), raw).not.toBeNull();
+  });
+
+  it("refuses a crude stem an ordinary word hides when a word stands right before it", () => {
+    for (const raw of ["Kingrape", "Hagrape", "Mindrape", "Gangrape", "Bloodrape", "Deadrape", "Godrape", "Horserape", "Stingrape", "Fangrape", "Buttcanal", "Butt Canal", "Ballswank", "Ball Swank"])
+      expect(cleanModelName(raw), raw).toBeNull();
+    // A part's name counts as a word too: "Rose" + "rape" from Rose, but not "Roseg" + "rape".
+    const units = new Map(mvpContent().units.map((u) => [u.name, u]));
+    const [rose, rot] = [units.get("Rose")!, units.get("Rot")!];
+    expect(cleanModelName("Roserape", rose, rot)).toBeNull();
+    expect(cleanModelName("Rosegrape", rose, rot)).toBe("Rosegrape");
   });
 
   it("takes an apostrophe only as a possessive before a second word", () => {

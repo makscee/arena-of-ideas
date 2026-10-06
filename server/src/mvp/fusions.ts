@@ -179,10 +179,20 @@ const ORDINARY = ["invader", "evader", "pervader", "hulking", "hulky", "marionet
   "cucum", "cumber", "circum", "docum", "cumin", "incumb", "succumb", "talcum", "modicum", "capsicum", "jewel", "clitheroe", "clitter",
   "petits", "tomtits", "farse", "hearse", "starse", "fagin", "fagot", "fagus"];
 // Ordinary words that read crude behind another word, glued or not
-// ("Noctscum", "Noctscumling", "Noct Scum"), though alone or leading they pass
-// ("Scum", "Scumlord"). Every other ORDINARY word is fine there too
-// ("Jolttherapist", "Vinegrape", "Firepeacock").
+// ("Noctscum", "Noctscumling", "Noct Scum", "Scumscum"), though alone, leading
+// or behind a fragment they pass ("Scum", "Scumlord", "Viscum"), and so does
+// the start of another ordinary word ("Mosscumulus", "Glasscumber").
 const GLUED_CRUDE = ["scum"];
+// Crude stems an ORDINARY word hides ("grape", "drape", "serape", "swank",
+// "canal"): behind a word they read crude again ("Kingrape", "Mindrape",
+// "Horserape", "Ballswank"), behind a fragment they don't ("Vinegrape",
+// "Bonescrape", "Jolttherapist", "Firepeacock"). A word is one of HEADS or a
+// word of the parts' names (cleanModelName), ending the letters before the stem.
+const HIDDEN_CRUDE = ["rape", "rapist", "wank", "anal", "cock", "dick", "arse", "sex"];
+const HEADS = ["king", "queen", "hag", "mind", "gang", "blood", "dead", "god", "horse", "sting", "fang", "soul", "bone", "balls",
+  "nuts", "boy", "girl", "baby", "child", "kid", "wife", "body", "brain", "group", "date", "mass", "war", "gut", "corpse", "beast"];
+// Body words that make an ORDINARY word right behind them crude ("Buttcanal").
+const BODY_HEADS = ["butt", "ass", "arse", "bum", "balls", "nuts", "crotch", "groin", "boob", "boobs", "tit", "tits"];
 // Words: short or ordinary enough that a stem would hit real words ("Thorn",
 // "Invader", "Marionette", "Smuggler", "Scamper"), so they match one word of
 // the name, also with a plural or possessive ending ("Marios", "Thor's").
@@ -241,14 +251,16 @@ function stripAccents(s: string): string {
 }
 
 /** True when a name (or one of its words) is on the blocklist. */
-export function isBlockedName(name: string): boolean {
+export function isBlockedName(name: string, heads: readonly string[] = []): boolean {
   if (BLOCKED_WHOLE.includes(fold(name))) return true;
-  if (GLUED_CRUDE.some((c) => fold(name).indexOf(c) > 0)) return true;
+  if (hasGluedCrude(fold(name))) return true;
   // CamelCase is split first, so glued words match too ("LordVader", "SuperMario").
   const words = name.replace(/([a-z])([A-Z])/g, "$1 $2").split(/[\s'’-]+/).map(fold).filter(Boolean);
+  if (words.length > 1 && hidesCrude(words.join(""), heads)) return true;
   const named = (w: string, b: string) => WORD_ENDINGS.some((end) => w === b + end);
   for (let i = 0; i < words.length; i++) {
     const w = words[i]!;
+    if (hidesCrude(w, heads)) return true;
     if (BLOCKED_WORDS.some((b) => named(w, b))) return true;
     const inner = ORDINARY.reduce((rest, o) => rest.split(o).join("."), w);
     if (BLOCKED_STEMS.some((stem) => (stem.endsWith("man") ? WORD_ENDINGS.some((end) => inner.endsWith(stem + end)) : inner.includes(stem)))) return true;
@@ -256,6 +268,41 @@ export function isBlockedName(name: string): boolean {
     for (let j = i + 2; j <= words.length; j++) {
       const run = words.slice(i, j).join("");
       if (BLOCKED_STEMS.some((b) => named(run, b)) || BLOCKED_WORDS.some((b) => named(run, b))) return true;
+    }
+  }
+  return false;
+}
+
+/** Every match of a GLUED_CRUDE word with a word of 3+ letters before it,
+ * unless its tail starts another ORDINARY word ("Mosscumulus"). */
+function hasGluedCrude(folded: string): boolean {
+  for (const c of GLUED_CRUDE)
+    for (let k = folded.indexOf(c); k >= 0; k = folded.indexOf(c, k + 1)) {
+      if (k < 3) continue;
+      const inOther = ORDINARY.some((o) => {
+        if (o === c) return false;
+        for (let j = folded.indexOf(o); j >= 0; j = folded.indexOf(o, j + 1)) if (j > k && j < k + c.length) return true;
+        return false;
+      });
+      if (!inOther) return true;
+    }
+  return false;
+}
+
+/** True when an ORDINARY word inside a folded word hides a HIDDEN_CRUDE stem
+ * right behind a head word ("Kingrape": "king" + "rape" in "grape"), or sits
+ * right behind a BODY_HEADS word ("Buttcanal"). */
+function hidesCrude(w: string, heads: readonly string[]): boolean {
+  const before = [...HEADS, ...heads].filter((h) => h.length >= 3);
+  for (const o of ORDINARY) {
+    const stems = HIDDEN_CRUDE.filter((s) => o.includes(s));
+    if (stems.length === 0) continue;
+    for (let i = w.indexOf(o); i >= 0; i = w.indexOf(o, i + 1)) {
+      if (BODY_HEADS.includes(w.slice(0, i))) return true;
+      for (const s of stems) {
+        const lead = w.slice(0, i + o.indexOf(s));
+        if (before.some((h) => lead.endsWith(h))) return true;
+      }
     }
   }
   return false;
@@ -290,7 +337,8 @@ export function cleanModelName(raw: string, first?: UnitContent, second?: UnitCo
   if (/'/.test(name) && !/^[A-Za-z]+'s [A-Za-z]+$/.test(name)) return null;
   const words = name.split(/[ -]/).filter(Boolean);
   if (words.length > 2 || new Set(words.map(fold)).size < words.length) return null;
-  if (isBlockedName(name) || isGlued(name, first, second)) return null;
+  const heads = [first, second].flatMap((u) => (u ? u.name.split(/\s+/).map(fold) : []));
+  if (isBlockedName(name, heads) || isGlued(name, first, second)) return null;
   return words.map((w) => w[0]!.toUpperCase() + w.slice(1).toLowerCase()).join(name.includes("-") && words.length > 1 ? "-" : " ");
 }
 
