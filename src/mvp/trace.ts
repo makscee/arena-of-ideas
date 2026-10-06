@@ -435,10 +435,14 @@ export function beatTiming(waves: number, quiet = false): { at: number[]; ms: nu
 
 /** Each beat's weight: a kill, a big hit, a summon or revive, the first
  * fatigue beat (the one holding the battle's first Fatigue event, else the
- * first beat of its turn after it), and the last beat. */
+ * first beat of its turn after it), and the last beat that changes the
+ * board (the deciding blow). */
 export function weightsOf(log: BattleEvent[], beats: PlayBeat[]): BeatWeight[] {
   const fatigue = log.find((e) => e.type === "Fatigue");
   const firstFatigue = fatigue ? beats.findIndex((b) => b.waves.some((w) => w.eventIds.includes(fatigue.id)) || (b.turn === fatigue.turn && b.end >= fatigue.id)) : -1;
+  // The deciding blow's beat, not the empty BattleEnd beat after it: its
+  // hold lands while the killed card is still on the board.
+  const decisive = beats.map((b) => b.waves.some((w) => w.changes.length)).lastIndexOf(true);
   return beats.map((b, i) => {
     const events = b.waves.flatMap((w) => w.eventIds.map((id) => log[id]));
     const w: BeatWeight = {};
@@ -446,7 +450,7 @@ export function weightsOf(log: BattleEvent[], beats: PlayBeat[]): BeatWeight[] {
     if (events.some((e) => e?.type === "Hurt" && e.amount >= BIG_HIT_MIN)) w.big = true;
     if (events.some((e) => e?.type === "Summon")) w.summon = true;
     if (i === firstFatigue) w.fatigue = true;
-    if (i === beats.length - 1) w.last = true;
+    if (i === (decisive >= 0 ? decisive : beats.length - 1)) w.last = true;
     return w;
   });
 }
@@ -561,6 +565,14 @@ function causeOfEvent(log: BattleEvent[], e: BattleEvent, whenOf?: WhenOf, hops 
   if (e.type === "BattleEnd") return null;
   const eff = effectOf(e) ?? { effect: "effect:damage" };
   const base = { effect: eff.effect, ...(eff.effectStatus ? { effectStatus: eff.effectStatus } : {}) };
+  // A status a hit or a heal used up (Shield spent on the blow) leaves
+  // because of that hit: its cause is the hit's, not the holder's own status,
+  // so a unit killed through its Shield reads as the striker's (R3-21).
+  const hit = e.type === "StatusRemoved" && e.causedBy !== null && e.causedBy < e.id ? log[e.causedBy] : undefined;
+  if (e.type === "StatusRemoved" && hit && (hit.type === "Hurt" || hit.type === "Heal") && hit.unit === e.unit && hops < MAX_HOPS) {
+    const up = causeOfEvent(log, hit, whenOf, hops + 1);
+    if (up) return withEffect(up, eff);
+  }
   if (e.source !== "kernel") {
     if (e.source.status !== undefined) return { at: e.source.unit, kind: "status", cause: `status:${e.source.status}`, ...base };
     const f = firedTrigger(log, e, whenOf);
@@ -1187,4 +1199,39 @@ export function timelineOf(log: BattleEvent[], beats: PlayBeat[], sides = sidesO
     if (fatigue && (ids.has(fatigue.id) || (b.turn === fatigue.turn && b.end >= fatigue.id)) && !turns.some((x) => x.marks.some((m) => m.kind === "fatigue")) && !t.marks.some((m) => m.kind === "fatigue")) t.marks.push({ kind: "fatigue", beat: b.index });
   }
   return turns;
+}
+
+/** What a beam shows (round 3, R3-21, battle.md (11)): the effect's kind, for its colour. */
+export type BeamKind = "damage" | "heal" | "buff" | "debuff" | "status" | "summon" | "silence";
+
+/** One beam of a wave: from the unit that acted (or the clash, for fatigue
+ * and a capped chain) to a unit it changed. from === to is a self-target
+ * (a Poison tick, a unit buffing itself): drawn as a ring on the card. */
+export interface Beam {
+  from: string;
+  to: string;
+  kind: BeamKind;
+  /** The status put on or taken off, for its colour. */
+  status?: string;
+}
+
+/** The beams a wave draws: one per unit it changed, from the unit its
+ * cause sits on (causeOf().at), in the kind of that unit's first change.
+ * A group effect is a fan from one source; a death wave draws none (the
+ * blow that killed already drew its beam); the battle's end has none. */
+export function beamsOf(log: BattleEvent[], step: Pick<Step, "eventIds" | "changes">, whenOf?: WhenOf): Beam[] {
+  const first = log[step.eventIds[0]!];
+  if (!first || first.type === "Death") return [];
+  const cause = causeOf(log, step, whenOf);
+  if (!cause) return [];
+  const beams: Beam[] = [];
+  const seen = new Set<string>();
+  for (const c of step.changes) {
+    if (c.kind === "death" || seen.has(c.unit)) continue;
+    seen.add(c.unit);
+    const e = log[c.eventId];
+    const status = e?.type === "StatusApplied" || e?.type === "StatusRemoved" ? e.status : undefined;
+    beams.push({ from: cause.at, to: c.unit, kind: c.kind as BeamKind, ...(status ? { status } : {}) });
+  }
+  return beams;
 }

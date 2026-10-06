@@ -10,7 +10,7 @@ import { MVP_RULES, type MvpContent, type PlayerRef } from "./contract.js";
 import { fightLines } from "./fight.js";
 import { lineUnitOf } from "./forms.js";
 import { mvpPool } from "./units.js";
-import { BEAT_MAX_MS, BEAT_MS, EMPHASIS_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, weightsOf, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, causeOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost } from "./trace.js";
+import { BEAT_MAX_MS, BEAT_MS, EMPHASIS_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, weightsOf, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, causeOf, beamsOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -265,7 +265,10 @@ describe("one beat at a time (R2-12)", () => {
     const log = run([dummy("Wall", 200, 1)], [dummy("Wall", 200, 5)]);
     const beats = beatPlayOf(log, stepsOf(log));
     const weights = weightsOf(log, beats);
-    expect(weights.at(-1)!.last).toBe(true);
+    // The deciding blow's beat holds, not the empty BattleEnd beat after it.
+    const decisive = beats.map((b) => b.waves.some((w) => w.changes.length)).lastIndexOf(true);
+    expect(beats.at(-1)!.waves.every((w) => !w.changes.length)).toBe(true);
+    expect(weights[decisive]!.last).toBe(true);
     expect(weights.filter((w) => w.last)).toHaveLength(1);
     const big = beats.filter((b) => b.waves.some((w) => w.eventIds.some((id) => { const e = log[id]!; return e.type === "Hurt" && e.amount >= 4; })));
     expect(big.length).toBeGreaterThan(0);
@@ -755,5 +758,50 @@ describe("the desktop timeline (R2-16)", () => {
     const first = log.find((e) => e.type === "Fatigue");
     if (first) expect(fat).toEqual([first.turn]);
     else expect(fat).toEqual([]);
+  });
+});
+
+describe("R3-21: target beams", () => {
+  const Rally = unit("Rally", 6, 1, { on: "BattleStart" }, [{ kind: "allAllies" }], ["GiveStrength"]);
+  const beamsIn = (log: BattleEvent[]) => beatPlayOf(log, stepsOf(log)).flatMap((b) => b.waves.map((w) => ({ w, beams: beamsOf(log, w) })));
+
+  test("a strike draws one beam, front to front, in damage", () => {
+    const log = run([Shieldbearer], [dummy("Dummy", 30, 1)]);
+    const hit = beamsIn(log).find(({ w }) => log[w.eventIds[0]!]!.type === "Hurt")!;
+    const strike = log[log[hit.w.eventIds[0]!]!.causedBy!] as Extract<BattleEvent, { type: "Strike" }>;
+    expect(hit.beams).toEqual([{ from: strike.striker, to: strike.defender, kind: "damage" }]);
+  });
+
+  test("an all-allies buff is a fan from its source to each ally", () => {
+    const log = run([Rally, Smith, Archer], [dummy("Dummy", 30, 1)]);
+    const fan = beamsIn(log).find(({ beams }) => beams.length > 1)!.beams;
+    expect(fan.map((b) => b.to).sort()).toEqual(["A1:Rally", "A2:Smith", "A3:Archer"]);
+    expect(new Set(fan.map((b) => b.from))).toEqual(new Set(["A1:Rally"]));
+    expect(fan.every((b) => b.kind === "status" && b.status === "Strength")).toBe(true);
+  });
+
+  test("a self-target is a beam to its own source (a ring), not a line", () => {
+    const log = run([Shieldbearer], [dummy("Dummy", 30, 1)]);
+    const own = beamsIn(log).find(({ w }) => log[w.eventIds[0]!]!.type === "StatusApplied")!;
+    expect(own.beams).toEqual([{ from: "A1:Shieldbearer", to: "A1:Shieldbearer", kind: "status", status: "Shield" }]);
+  });
+
+  test("fatigue beams start at the clash", () => {
+    const log = run([dummy("Rock", 400, 0)], [dummy("Stone", 400, 0)]);
+    const tired = beamsIn(log).filter(({ w }) => log[log[w.eventIds[0]!]!.causedBy!]?.type === "Fatigue");
+    expect(tired.length).toBeGreaterThan(0);
+    for (const { beams } of tired) for (const b of beams) expect(b).toMatchObject({ from: "clash", kind: "damage" });
+  });
+
+  test("a death draws no beam; a unit killed through its Shield reads as the striker's, never its own Shield", () => {
+    // Brute's 9 takes Bearer's Shield 2 and kills it: Death ← Shield gone ← the hit.
+    const Bearer = unit("Bearer", 4, 1, { on: "BattleStart" }, [{ kind: "holder" }], ["GiveShield"]);
+    const log = run([Bearer], [dummy("Brute", 30, 9)]);
+    const death = log.find((e) => e.type === "Death" && e.unit === "A1:Bearer")!;
+    expect(log[death.causedBy!]).toMatchObject({ type: "StatusRemoved", status: "Shield" });
+    expect(causeOf(log, { eventIds: [death.id], changes: [] })).toMatchObject({ at: "B1:Brute", kind: "strike", cause: "trigger:Strike" });
+    const gone = log.find((e) => e.type === "StatusRemoved" && e.unit === "A1:Bearer")!;
+    expect(causeOf(log, { eventIds: [gone.id], changes: [] })).toMatchObject({ at: "B1:Brute", effect: "status:Shield" });
+    expect(beamsOf(log, { eventIds: [death.id], changes: [changeOf(death)!] })).toEqual([]);
   });
 });

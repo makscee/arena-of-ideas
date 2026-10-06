@@ -20,7 +20,7 @@
 import { boardAt, type BoardState, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView, SummonContent } from "../../src/mvp/contract";
 import { chainCappedTip, STATUS_TERMS, termDef, termIcon, triggerLabel, type IconId, type TermId } from "../../src/glossary";
-import { BEAT_MS, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, causeOf, chainOf, damageByUnit, keyMomentsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, turnLabel, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Cause, type Change, type KeyMoment, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
+import { BEAT_MS, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, keyMomentsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, turnLabel, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { summonId } from "../../src/describe";
@@ -47,6 +47,8 @@ const MOTION_MS = 1300;
 const TRIG_FLASH_MS = 400;
 /** When a hit's shake ends, in animation ms after its wave lands (80 ms in, 400 ms long). */
 const SHAKE_END_MS = 480;
+/** How long the line takes to slide back a slot for a summon at its front, at 1×. */
+const PUSH_MS = 450;
 
 /** The changes that float up from a card. */
 const FLOATS = new Set<Change["kind"]>(["damage", "heal", "buff", "debuff", "summon"]);
@@ -191,9 +193,14 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** A dying card's skull burst, and a summoned card's slide-in delay, set by motion() for its slot. */
   const skullsOf = new WeakMap<HTMLElement, HTMLElement>();
   const enterOf = new WeakMap<HTMLElement, string>();
+  /** The line sliding back a slot as a summon enters at its front (note 2):
+   * each pushed unit's offset and when the push landed, kept for the beat so
+   * the next wave's render carries the slide on instead of cutting it. */
+  let pushed = new Map<string, { dx: number; at: number }>();
+  let pushedBeat = -2;
 
   /** Motion runs at the playback speed (CSS reads --bv-sp), so 2× never cuts it. */
-  const setSpeedVar = () => { for (const row of [enemy, mine, clash]) row.style.setProperty("--bv-sp", String(speed)); };
+  const setSpeedVar = () => { for (const row of [enemy, mine, clash, fx]) row.style.setProperty("--bv-sp", String(speed)); };
 
   const hud = h("div", { class: "hud" });
   // A run's fight keeps the run's ☰ (Codex, Rules, Title menu, Abandon), as the shop has it.
@@ -228,6 +235,13 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   sheet.append(h("div", { class: "row bv-tabs", role: "tablist" }, whyTab, logTab), whyBody, logBody);
   const timeline = h("div", { class: "bv-tl", "data-testid": "timeline", role: "slider", "aria-label": "Turn timeline: click or drag to scrub", tabindex: "-1" });
   const clashMark = icon("crossed-swords", 28, "tone-gold");
+  /** Who targets whom (R3-21, battle.md (11)): one fixed layer over the board, redrawn after each render. */
+  const fx = document.createElementNS(SVG_NS, "svg");
+  fx.setAttribute("class", "bv-fx");
+  fx.setAttribute("aria-hidden", "true");
+  fx.dataset.testid = "beams";
+  /** The waves the beams were last drawn for: a resize redraws them, still. */
+  let fxWaves: View["waves"] = [];
   // The clash mark (desktop) carries fatigue's badge (R3-19).
   const clash = h("div", { class: "bv-clash" }, clashMark);
   const end = h("div", { class: "bv-end panel stack", "data-testid": "end-card" });
@@ -1017,11 +1031,27 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     );
     clash.replaceChildren(clashMark, ...[triggerBadge("clash", v)].filter((x): x is HTMLElement => x !== null));
     drawBanner(v);
+    if (pushedBeat !== at) { pushed = new Map(); pushedBeat = at; }
+    const slides: [HTMLElement, { dx: number; at: number }][] = [];
     for (const [side, row] of [[them, enemy], [you, mine]] as const) {
       // The status row's width, from the cards on screen (read before they are replaced).
       const stsWidth = row.querySelector<HTMLElement>(".bv-card:not(.dead) .bv-sts")?.getBoundingClientRect().width ?? 0;
       const cards = lineOf(side, board, before, v, stsWidth);
+      const was = new Map([...row.querySelectorAll<HTMLElement>(".bv-slot")].map((sl) => [sl.querySelector<HTMLElement>(".bv-card")?.dataset.unit ?? "", sl.getBoundingClientRect().left]));
       row.replaceChildren(...cards);
+      // A summon entering at the front this wave pushes the line back a slot: each card slides from where it stood.
+      const newest = v.waves.at(-1);
+      const push = !!newest && newest.age !== null && !reduced() && newest.step.changes.some((c) => c.kind === "summon" && frontSummons.has(c.unit) && sides.get(c.unit) === side);
+      for (const sl of row.querySelectorAll<HTMLElement>(".bv-slot:not(.bv-enter)")) {
+        const id = sl.querySelector<HTMLElement>(".bv-card")?.dataset.unit ?? "";
+        const x0 = was.get(id);
+        if (push && x0 !== undefined && !pushed.has(id)) {
+          const dx = x0 - sl.getBoundingClientRect().left;
+          if (Math.abs(dx) > 1) pushed.set(id, { dx, at: now - newest!.age! });
+        }
+        const p = pushed.get(id);
+        if (p && (now - p.at) * speed < PUSH_MS) slides.push([sl, p]);
+      }
       // A falling card beside a full line widens the row instead of wrapping it.
       row.style.gridTemplateColumns = `repeat(${Math.max(5, cards.length)}, minmax(0, 1fr))`;
       row.classList.toggle("empty", !cards.length);
@@ -1030,6 +1060,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       // size showed "−…" for a frame on a narrow card (R2-17 batch F).
       if (row.isConnected) fitText(row);
     }
+    drawBeams(v.waves);
+    // After the beams: they aim at each card's slot, not where its slide starts.
+    for (const [sl, p] of slides) sl.animate([{ transform: `translateX(${p.dx}px)` }, { transform: "none" }], { duration: PUSH_MS / speed, delay: -(now - p.at), easing: "ease-out", fill: "backwards" });
     caption.replaceChildren(h("span", { class: "bv-cap" }, ...captionKids(step)));
     still.replaceChildren(...(reduced() ? stillList(v.changes) : []));
     still.style.display = reduced() && !finished ? "" : "none";
@@ -1080,6 +1113,85 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     backBtn.disabled = at < 0;
     fwdBtn.disabled = finished;
     endBtn.disabled = finished;
+  }
+
+  /** A beam from the source card to each target of every wave landed so
+   * far (R3-21): the newest wave bright, drawing from source to target in
+   * WAVE_MS at 1× (static when paused, stepped or under reduced motion);
+   * earlier waves of the beat thin, dashed and dim. A beam runs between card
+   * edges and bows away from the cards, so it never crosses a card's numbers:
+   * on the phone (rows stacked) from the facing edges across the caption band
+   * (the caption sits above the layer), a same-line beam over the enemy row
+   * or under yours; on desktop (rows side by side) over the top of the line.
+   * A self-target is a ring on the card; fatigue starts at the clash. */
+  function drawBeams(waves: View["waves"]): void {
+    fxWaves = waves;
+    const kids: SVGElement[] = [];
+    const er = enemy.getBoundingClientRect();
+    const mr = mine.getBoundingClientRect();
+    const stacked = Math.abs(er.top - mr.top) > Math.min(er.height, mr.height) / 2;
+    const boxOf = (id: string) => {
+      const el = [enemy, mine].map((r) => r.querySelector<HTMLElement>(`.bv-card[data-unit="${CSS.escape(id)}"]`)).find((x) => x);
+      // The slot, not the card: a lunging or shaking card's box moves with it.
+      const r = (el?.parentElement ?? el)?.getBoundingClientRect();
+      return el && r && r.width > 0 ? { r, row: enemy.contains(el) ? "them" : "you" } : null;
+    };
+    const clashAt = (): { x: number; y: number } => {
+      const c = clash.getBoundingClientRect();
+      if (c.width > 0) return { x: c.left + c.width / 2, y: c.top + c.height / 2 };
+      // The phone hides the clash mark: the caption band between the lines stands in.
+      return { x: (Math.max(er.left, mr.left) + Math.min(er.right, mr.right)) / 2, y: stacked ? (er.bottom + mr.top) / 2 : er.top };
+    };
+    const reduce = reduced();
+    waves.forEach(({ step, age }, i) => {
+      const newest = i === waves.length - 1;
+      const moving = newest && age !== null && !reduce && age * speed < MOTION_MS;
+      const cls = `bv-beam ${newest ? "now" : "old"}${moving ? " draw" : ""}`;
+      const delay = moving ? `${-Math.round(age! * speed)}ms` : "";
+      for (const b of beamsOf(log, step, whenOf)) {
+        const to = boxOf(b.to);
+        if (!to) continue;
+        const colour = beamColour(b);
+        const g = svg("g", { class: cls, style: `--bv-bc:${colour};${delay ? `--bv-bt:${delay}` : ""}`, "data-from": b.from, "data-to": b.to, "data-kind": b.kind });
+        if (b.from === b.to) {
+          const r = to.r;
+          g.classList.add("ring");
+          g.append(svg("rect", { x: r.left - 3, y: r.top - 3, width: r.width + 6, height: r.height + 6, rx: 6 }));
+          kids.push(g);
+          continue;
+        }
+        const from = b.from === "clash" ? null : boxOf(b.from);
+        if (b.from !== "clash" && !from) continue;
+        const cx = (r: DOMRect) => r.left + r.width / 2;
+        let p0: { x: number; y: number }, p1: { x: number; y: number }, c: { x: number; y: number };
+        if (stacked && (!from || from.row !== to.row)) {
+          // Across the clash on the phone: facing edges, a gentle sideways bow.
+          const down = from ? from.row === "them" : to.row === "you";
+          p0 = from ? { x: cx(from.r), y: down ? from.r.bottom : from.r.top } : clashAt();
+          p1 = { x: cx(to.r), y: down ? to.r.top : to.r.bottom };
+          const dx = p1.x - p0.x;
+          c = { x: (p0.x + p1.x) / 2 + Math.sign(dx || 1) * Math.min(24, Math.abs(dx) / 4), y: (p0.y + p1.y) / 2 };
+        } else {
+          // One line (or desktop): over the top, under your row on the phone.
+          const under = stacked && to.row === "you";
+          const edge = (r: DOMRect) => (under ? r.bottom : r.top);
+          p0 = from ? { x: cx(from.r), y: edge(from.r) } : clashAt();
+          p1 = { x: cx(to.r), y: edge(to.r) };
+          const lift = Math.min(72, 18 + Math.abs(p1.x - p0.x) * 0.2);
+          c = { x: (p0.x + p1.x) / 2, y: (under ? Math.max(p0.y, p1.y) : Math.min(p0.y, p1.y)) + (under ? lift : -lift) };
+        }
+        // The head: an arrow along the curve's last tangent (control → end).
+        const ang = Math.atan2(p1.y - c.y, p1.x - c.x);
+        const tip = (d: number, a: number) => `${(p1.x - d * Math.cos(ang + a)).toFixed(1)},${(p1.y - d * Math.sin(ang + a)).toFixed(1)}`;
+        g.append(
+          svg("path", { class: "bv-bl", d: `M${p0.x.toFixed(1)},${p0.y.toFixed(1)} Q${c.x.toFixed(1)},${c.y.toFixed(1)} ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`, pathLength: 1 }),
+          svg("circle", { class: "bv-bs", cx: p0.x.toFixed(1), cy: p0.y.toFixed(1), r: 3.5 }),
+          svg("polygon", { class: "bv-bh", points: `${p1.x.toFixed(1)},${p1.y.toFixed(1)} ${tip(10, 0.45)} ${tip(10, -0.45)}` }),
+        );
+        kids.push(g);
+      }
+    });
+    fx.replaceChildren(...kids);
   }
 
   function drawBanner(v: View): void {
@@ -1409,12 +1521,14 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       h("div", { class: "bv-below" }, still, recent),
       controls,
     ),
+    fx,
     sheet,
     end,
     errBox,
   );
   screen("battle");
   addEventListener("resize", placeEnd, { signal: freed.signal });
+  addEventListener("resize", () => drawBeams(fxWaves.map((w) => ({ ...w, age: null }))), { signal: freed.signal });
   onGone(free);
   buildTimeline();
   buildLog();
@@ -1449,6 +1563,21 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   // The line-up: the battle starts (once; a Replay starts over silently).
   playSfx("start");
   schedule();
+}
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+function svg(tag: string, attrs: Record<string, string | number>): SVGElement {
+  const el = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+  return el;
+}
+
+/** A beam's colour (battle.md (11)): damage, heal, Strength or a buff,
+ * Shield, Poison or Curse, a summon; other statuses take their glossary tone. */
+const STATUS_BEAM: Record<string, string> = { Shield: "#5aa7ff", Poison: "#b48cff", Curse: "#b48cff", Strength: "#ffa53d", Vitality: "#3fdc8f", Freeze: "#62d6ff", Blessing: "#ffd25c" };
+export function beamColour(b: Pick<Beam, "kind" | "status">): string {
+  if (b.status) return STATUS_BEAM[b.status] ?? "#ffa53d";
+  return { damage: "#ff6b4d", heal: "#3fdc8f", buff: "#ffa53d", debuff: "#b48cff", summon: "#2ee6d4", silence: "#9aa3b5", status: "#ffa53d" }[b.kind];
 }
 
 /** The "why I lost" card for side `you`: the 2–3 enemy chains that did the
