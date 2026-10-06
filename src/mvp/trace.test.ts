@@ -10,7 +10,7 @@ import { MVP_RULES, type MvpContent, type PlayerRef } from "./contract.js";
 import { fightLines } from "./fight.js";
 import { lineUnitOf } from "./forms.js";
 import { mvpPool } from "./units.js";
-import { BEAT_MAX_MS, BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, causeOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost } from "./trace.js";
+import { BEAT_MAX_MS, BEAT_MS, EMPHASIS_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, weightsOf, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, causeOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -218,21 +218,59 @@ describe("one beat at a time (R2-12)", () => {
   const Coach = unit("Coach", 6, 1, { on: "BattleStart" }, [{ kind: "allAllies" }], ["GiveStrength"]);
   const Bulwark = unit("Bulwark", 6, 1, { on: "BattleStart" }, [{ kind: "holder" }], ["GiveShield"]);
 
-  test("waves land 150 ms apart; a beat lasts 1 s, at most 1.4 s", () => {
+  test("waves land 220 ms apart; a beat lasts 1.3 s, at most 2.2 s (round 3, note 14)", () => {
+    expect([BEAT_MS, BEAT_MAX_MS, QUIET_BEAT_MS]).toEqual([1300, 2200, 900]);
     expect(beatTiming(1)).toEqual({ at: [0], ms: BEAT_MS });
-    expect(beatTiming(3)).toEqual({ at: [0, 150, 300], ms: BEAT_MS });
+    expect(beatTiming(3)).toEqual({ at: [0, 220, 440], ms: BEAT_MS });
+    expect(beatTiming(4)).toEqual({ at: [0, 220, 440, 660], ms: 1460 });
     const long = beatTiming(30);
     expect(long.ms).toBe(BEAT_MAX_MS);
-    expect(long.at.at(-1)!).toBeLessThanOrEqual(700);
+    expect(long.at.at(-1)!).toBe(1400);
   });
 
-  test("a quiet beat (one wave of plain hits) is shorter than a kill", () => {
+  test("a quiet beat (one wave of plain hits) stays at 0.9 s and is shorter than a kill", () => {
     const log = run([dummy("Squire", 20, 1)], [dummy("Dummy", 3, 1)]);
     const beats = beatPlayOf(log, stepsOf(log));
+    const weights = weightsOf(log, beats);
     const plain = beats.find((b) => b.waves.length === 1 && b.waves[0]!.changes.every((c) => c.kind === "damage"))!;
     const kill = beats.find((b) => b.waves.some((w) => w.changes.some((c) => c.kind === "death")))!;
-    expect(timingOf(plain).ms).toBe(QUIET_BEAT_MS);
-    expect(timingOf(kill).ms).toBeGreaterThanOrEqual(BEAT_MS);
+    expect(weights[plain.index]).toEqual({});
+    expect(timingOf(plain, weights[plain.index])).toEqual({ at: [0], ms: QUIET_BEAT_MS });
+    expect(weights[kill.index]!.kill).toBe(true);
+    expect(timingOf(kill, weights[kill.index]).ms).toBeGreaterThanOrEqual(BEAT_MS + EMPHASIS_MS.kill);
+  });
+
+  test("a kill beat is longer than the same beat without its death", () => {
+    const log = run([dummy("Squire", 20, 1)], [dummy("Dummy", 3, 1)]);
+    const beats = beatPlayOf(log, stepsOf(log));
+    const kill = beats.find((b) => b.waves.some((w) => w.changes.some((c) => c.kind === "death")))!;
+    expect(timingOf(kill, { kill: true }).ms - timingOf(kill).ms).toBe(EMPHASIS_MS.kill);
+  });
+
+  test("timingOf adds each big moment's time: kill 350, big hit 200, summon 250, first fatigue 500, last 600", () => {
+    const log = run([dummy("Squire", 20, 1)], [dummy("Dummy", 3, 1)]);
+    const beat = beatPlayOf(log, stepsOf(log))[0]!;
+    const base = timingOf(beat).ms;
+    expect(timingOf(beat, { kill: true }).ms).toBe(base + 350);
+    expect(timingOf(beat, { big: true }).ms).toBe(base + 200);
+    expect(timingOf(beat, { summon: true }).ms).toBe(base + 250);
+    expect(timingOf(beat, { fatigue: true }).ms).toBe(base + 500);
+    expect(timingOf(beat, { last: true }).ms).toBe(base + 600);
+    expect(timingOf(beat, { kill: true, big: true, last: true }).ms).toBe(base + 1150);
+    // The wave times don't move: the emphasis is held after the last wave.
+    expect(timingOf(beat, { kill: true, last: true }).at).toEqual(timingOf(beat).at);
+  });
+
+  test("weightsOf: big hits at 4+, the last beat, and fatigue only on its first beat", () => {
+    const log = run([dummy("Wall", 200, 1)], [dummy("Wall", 200, 5)]);
+    const beats = beatPlayOf(log, stepsOf(log));
+    const weights = weightsOf(log, beats);
+    expect(weights.at(-1)!.last).toBe(true);
+    expect(weights.filter((w) => w.last)).toHaveLength(1);
+    const big = beats.filter((b) => b.waves.some((w) => w.eventIds.some((id) => { const e = log[id]!; return e.type === "Hurt" && e.amount >= 4; })));
+    expect(big.length).toBeGreaterThan(0);
+    for (const b of big) expect(weights[b.index]!.big).toBe(true);
+    if (log.some((e) => e.type === "Fatigue")) expect(weights.filter((w) => w.fatigue)).toHaveLength(1);
   });
 
   test("every step's events play exactly once, inside their own beat", () => {
