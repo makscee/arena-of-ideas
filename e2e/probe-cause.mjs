@@ -3,7 +3,8 @@
 // every step shows a cause: the caption opens with the cause icon, and a
 // badge sits on the acting unit (or, for fatigue, on the clash mark on
 // desktop; the phone has fatigue in the caption only). It also checks that
-// a battle card's icon line doesn't overlap its emoji, status row or HP.
+// a battle card's icon line doesn't overlap its emoji, status row, HP or
+// change chip.
 // Screenshots go to --out. Needs a running MVP server (never the live one):
 //   node e2e/probe-cause.mjs --url http://127.0.0.1:8913/arena/ [--out e2e/.shots/cause] [--rounds 3] [--steps 40]
 import { mkdirSync } from "node:fs";
@@ -38,6 +39,9 @@ const readStep = () => {
       const p = card.querySelector(part);
       if (p && icons.some((c) => overlap(r(c), r(p)))) clashes.push(`${card.dataset.unit} icons over ${part}`);
     }
+    // The change chip never covers the icon line (R3-20: it hid icons 2 and up while the card acted).
+    const pill = card.querySelector(".bv-changes .bv-pill");
+    if (pill && icons.some((c) => overlap(r(c), r(pill)))) clashes.push(`${card.dataset.unit} change chip over its icons`);
     // The icon line stays inside its card.
     const cr = r(card);
     if (icons.some((c) => r(c).right > cr.right + 0.5)) clashes.push(`${card.dataset.unit} icons past the card's edge`);

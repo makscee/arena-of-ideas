@@ -398,20 +398,33 @@ export interface PlayBeat {
   start: number;
 }
 
-/** Milliseconds between waves at 1×, the shortest a beat lasts, and the cap. */
-export const WAVE_MS = 150;
-export const BEAT_MS = 1000;
-export const BEAT_MAX_MS = 1400;
+/** Milliseconds between waves at 1×, the shortest a beat lasts, and the cap
+ * (round 3, note 14: about 1.5× round 2's, so every hit can be followed). */
+export const WAVE_MS = 220;
+export const BEAT_MS = 1300;
+export const BEAT_MAX_MS = 2200;
 /** A quiet beat (one wave, a plain hit or a status tick, nothing dies) is
  * shorter: a −1 trade shouldn't take as long as a kill (pacing by weight). */
-export const QUIET_BEAT_MS = 700;
+export const QUIET_BEAT_MS = 900;
 /** How long the last wave stays before the next beat. */
-const BEAT_HOLD_MS = 700;
+const BEAT_HOLD_MS = 800;
+/** How long the line-up shows before the first beat, at 1×. */
+export const LINEUP_MS = 900;
+/** The time a beat's big moments add at 1× (note 14): a kill, a hit of
+ * BIG_HIT_MIN or more, a summon or revive, the first fatigue beat, and the
+ * battle's last beat (the deciding blow, before the end card). */
+export const EMPHASIS_MS = { kill: 350, big: 200, summon: 250, fatigue: 500, last: 600 } as const;
+/** How long a card stands still after its killing blow lands, before it pops. */
+export const KILL_FREEZE_MS = 120;
+/** A hit counts as big at this much damage (the timeline's marks also scale it to the battle). */
+export const BIG_HIT_MIN = 4;
+
+/** What a beat holds that earns it more time. */
+export type BeatWeight = Partial<Record<keyof typeof EMPHASIS_MS, boolean>>;
 
 /** When each wave lands (ms from the beat's start, at 1×) and how long the
- * beat lasts: waves 150 ms apart, squeezed so the last lands by 700 ms; the
- * beat lasts 1 s, up to 1.4 s for a long cascade, and 0.7 s when quiet
- * (tightened from 1.2/1.5 s so a median battle plays in about 25 s). */
+ * beat lasts: waves 220 ms apart, squeezed so the last lands by 1.4 s; the
+ * beat lasts 1.3 s, up to 2.2 s for a long cascade, and 0.9 s when quiet. */
 export function beatTiming(waves: number, quiet = false): { at: number[]; ms: number } {
   if (quiet && waves <= 1) return { at: [0], ms: QUIET_BEAT_MS };
   const span = BEAT_MAX_MS - BEAT_HOLD_MS;
@@ -420,11 +433,33 @@ export function beatTiming(waves: number, quiet = false): { at: number[]; ms: nu
   return { at, ms: Math.min(BEAT_MAX_MS, Math.max(BEAT_MS, (at.at(-1) ?? 0) + BEAT_HOLD_MS)) };
 }
 
+/** Each beat's weight: a kill, a big hit, a summon or revive, the first
+ * fatigue beat (the one holding the battle's first Fatigue event, else the
+ * first beat of its turn after it), and the last beat. */
+export function weightsOf(log: BattleEvent[], beats: PlayBeat[]): BeatWeight[] {
+  const fatigue = log.find((e) => e.type === "Fatigue");
+  const firstFatigue = fatigue ? beats.findIndex((b) => b.waves.some((w) => w.eventIds.includes(fatigue.id)) || (b.turn === fatigue.turn && b.end >= fatigue.id)) : -1;
+  return beats.map((b, i) => {
+    const events = b.waves.flatMap((w) => w.eventIds.map((id) => log[id]));
+    const w: BeatWeight = {};
+    if (events.some((e) => e?.type === "Death")) w.kill = true;
+    if (events.some((e) => e?.type === "Hurt" && e.amount >= BIG_HIT_MIN)) w.big = true;
+    if (events.some((e) => e?.type === "Summon")) w.summon = true;
+    if (i === firstFatigue) w.fatigue = true;
+    if (i === beats.length - 1) w.last = true;
+    return w;
+  });
+}
+
 /** A beat's timing at 1×, by its weight: one wave of plain hits, status
- * changes or nothing at all is quiet; anything more plays full length. */
-export function timingOf(beat: PlayBeat): { at: number[]; ms: number } {
+ * changes or nothing at all is quiet; anything more plays full length. Each
+ * big moment then adds its EMPHASIS_MS after the last wave (past the cap: a
+ * long cascade that kills still gets its beat of stillness). */
+export function timingOf(beat: PlayBeat, weight: BeatWeight = {}): { at: number[]; ms: number } {
   const quiet = beat.waves.length === 1 && beat.waves[0]!.changes.every((c) => c.kind === "damage" || c.kind === "status");
-  return beatTiming(beat.waves.length, quiet);
+  const t = beatTiming(beat.waves.length, quiet);
+  const extra = (Object.keys(EMPHASIS_MS) as (keyof typeof EMPHASIS_MS)[]).reduce((n, k) => n + (weight[k] ? EMPHASIS_MS[k] : 0), 0);
+  return { at: t.at, ms: t.ms + extra };
 }
 
 /** What a trigger badge shows (R2-13): the trigger a unit's ability answered
@@ -1123,8 +1158,6 @@ export interface TimelineTurn {
   marks: TimelineMark[];
 }
 
-/** A hit counts as big at this much damage, or at 60% of the battle's biggest when that is more. */
-const BIG_HIT_MIN = 4;
 
 /** The turn timeline: one block per turn, each with its beats and its marks
  * (deaths, big hits, fatigue setting in). Pure, like boardAt: scrubbing to a
@@ -1132,6 +1165,7 @@ const BIG_HIT_MIN = 4;
  * block of their own, turn 0, which the viewer labels "Start" (R2-17). */
 export function timelineOf(log: BattleEvent[], beats: PlayBeat[], sides = sidesOf(log)): TimelineTurn[] {
   const hits = log.flatMap((e) => (e.type === "Hurt" ? [e.amount] : []));
+  // A mark for a big hit: BIG_HIT_MIN, or 60% of the battle's biggest when that is more.
   const big = Math.max(BIG_HIT_MIN, Math.ceil(Math.max(0, ...hits) * 0.6));
   const fatigue = log.find((e) => e.type === "Fatigue");
   const turns: TimelineTurn[] = [];
