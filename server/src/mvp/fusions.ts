@@ -88,7 +88,8 @@ function portmanteauAvoiding(first: string, second: string, isTaken: (folded: st
  * stricter than a model's answer: no crude fragment anywhere ("Sexmancer",
  * "Hencummer" from Sexton and War Drummer). */
 const STANDIN_CRUDE = ["sex", "cum", "anal", "anus", "arse", "boner", "nig", "fag", "spic", "kike", "kyke", "rape", "porn", "piss", "dick",
-  "cock", "cunt", "fuck", "shit", "slut", "smut", "jizz", "homo", "dyke", "coon", "jew", "nazi", "turd", "twat", "wank", "pube", "tard", "poof"];
+  "cock", "cunt", "fuck", "shit", "slut", "smut", "jizz", "homo", "dyke", "coon", "jew", "nazi", "turd", "twat", "wank", "pube", "tard", "poof",
+  "pedo", "clit", "semen", "gay"];
 
 const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
 
@@ -157,6 +158,10 @@ const BLOCKED_STEMS = [
   "nutsack", "bukkake", "jewkill", "killjew", "whitepower", "siegheil", "heilhitler", "gaschamber", "holocaust", "auschwitz",
   "gestapo", "fuhrer", "redskin", "beaner", "golliwog", "jigaboo", "porchmonkey", "zipperhead", "slanteye", "mongoloid", "spastic",
   "lolicon", "necrophil", "bestiality", "masturbat", "orgasm", "knobhead", "bellend", "sexslave", "rimjob", "smegma", "sodom",
+  // roots a fusion of this content makes likely (Pediatrician, Sexton) and
+  // hate phrases: also caught joined ("Pedomancer", "Sexwraith", "Jew Slayer")
+  "pedo", "sex", "cum", "jew", "clit", "tits", "arse", "fag", "assface", "asslick", "asskick", "assclown", "asshead",
+  "whitepride", "chingchong", "junglebunny", "sandmonkey", "cameljockey", "killgays",
 ];
 // Ordinary words that contain a stem: taken out of a word before stems match.
 const ORDINARY = ["invader", "evader", "pervader", "hulking", "hulky", "marionette", "mariology", "mariolat", "marion", "snaper",
@@ -167,7 +172,10 @@ const ORDINARY = ["invader", "evader", "pervader", "hulking", "hulky", "marionet
   "bacchanal", "manal", "tanal", "hanal", "penistone", "scunthorpe", "swank", "niggl", "snigg", "niggard", "ashkenazi", "nazirite",
   "parse", "sparse", "coarse", "hoarse", "arsen", "booby", "prickl", "retardant", "chinkapin", "raccoon", "racoon", "cocoon", "tycoon",
   "puccoon", "pakistan", "negroni", "montenegro", "pussywillow", "fagot", "fagus", "titsch", "pissarro", "coonhound", "twattle", "shitake",
-  "cocker", "cockney", "dicky", "dickory", "dickon", "pussycat", "rapeseed", "serape", "chinking", "shittim", "shitzu", "marseill", "ranald"];
+  "cocker", "cockney", "dicky", "dickory", "dickon", "pussycat", "rapeseed", "serape", "chinking", "shittim", "shitzu", "marseill", "ranald",
+  "torpedo", "pedomet", "pedolog", "sexton", "sextant", "sextet", "sextup", "essex", "sussex", "wessex", "sexagen", "scum", "cumul",
+  "cucum", "cumber", "circum", "docum", "cumin", "incumb", "succumb", "talcum", "modicum", "capsicum", "jewel", "clitheroe", "clitter",
+  "petits", "tomtits", "farse", "hearse", "starse", "fagin", "fagot", "fagus"];
 // Words: short or ordinary enough that a stem would hit real words ("Thorn",
 // "Invader", "Marionette", "Smuggler", "Scamper"), so they match one word of
 // the name, also with a plural or possessive ending ("Marios", "Thor's").
@@ -178,7 +186,7 @@ const BLOCKED_WORDS = [
   "elsa", "olaf", "nemo", "dory", "fiona", "minnie", "thor", "loki", "avenger", "marvel",
   "zoro", "bart", "lego", "barney", "scam", "developer", "administrator",
   // crude words that hit ordinary words as roots: whole words only
-  "nig", "nog", "anus", "wop", "dago", "mofo", "choad", "fap",
+  "nig", "nog", "anus", "wop", "dago", "mofo", "choad", "fap", "gay", "gays",
   "abo", "arse", "arsehole", "ass", "asses", "asshat", "asshole", "asswipe", "auschwitz", "badass", "ballsack", "bastard", "bastards",
   "beaner", "beaners", "bellend", "bestiality", "beyotch", "biatch", "bitch", "bitches", "bollock", "bollocks", "boner", "boobies",
   "boobs", "boong", "bukkake", "bullshit", "buttplug", "chinaman", "chink", "cock", "cocks", "cocksucker", "coolie", "coon", "cripple",

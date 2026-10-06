@@ -145,9 +145,9 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
   });
 
   it("blocks profanity, slurs and hate words, and keeps the ordinary words that contain them (#587)", () => {
-    for (const raw of ["Shitlord", "Fuckwit", "Kike", "Retard", "Hitler", "Rapeblade", "Cumlord", "Asshole", "Ass", "Sex", "Pedophile", "Wetback", "Nig Nog", "Redskin", "Beaner", "Dumbass", "Kyke", "Whitepower", "Jewkiller", "Pussies", "Mongoloid"])
+    for (const raw of ["Shitlord", "Fuckwit", "Kike", "Retard", "Hitler", "Rapeblade", "Cumlord", "Asshole", "Ass", "Sex", "Pedophile", "Wetback", "Nig Nog", "Redskin", "Beaner", "Dumbass", "Kyke", "Whitepower", "Jewkiller", "Pussies", "Mongoloid", "Pedomancer", "Kill All Jews", "Jew Slayer", "Ching Chong", "Sexwraith", "Fagmancer", "Clitoris"])
       expect(cleanModelName(raw), raw).toBeNull();
-    for (const raw of ["Cockatoo", "Therapist", "Parapet", "Raccoon", "Cocoon", "Analyst", "Manaleech", "Assassin", "Glass Golem", "Mongoose", "Sexton Shade", "Scunthorpe", "Coarse", "Farseer", "Hearse", "Starseed", "Spices", "Pussycat", "Cockney", "Marseille"])
+    for (const raw of ["Cockatoo", "Therapist", "Parapet", "Raccoon", "Cocoon", "Analyst", "Manaleech", "Assassin", "Glass Golem", "Mongoose", "Sexton Shade", "Scunthorpe", "Coarse", "Farseer", "Hearse", "Starseed", "Spices", "Pussycat", "Cockney", "Marseille", "Torpedo", "Pedometer", "Sextant", "Scumlord", "Encumber", "Jewel Golem", "Pediatric Ward"])
       expect(cleanModelName(raw), raw).not.toBeNull();
   });
 
@@ -163,7 +163,7 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
         taken.push(name);
         expect(isBlockedName(name), `${a.name}+${b.name}=${name}`).toBe(false);
         // Held stricter than a model's answer: no crude fragment anywhere.
-        expect(name.toLowerCase(), `${a.name}+${b.name}`).not.toMatch(/sex|cum|nig|boner|anal|arse|rape|kike/);
+        expect(name.toLowerCase(), `${a.name}+${b.name}`).not.toMatch(/sex|cum|nig|boner|anal|arse|rape|kike|pedo/);
       }
   }, 30_000);
 
