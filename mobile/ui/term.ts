@@ -23,6 +23,30 @@ export function setCodexLink(open: ((id: TermId, scope?: UnitFilter) => void) | 
   codexLink = open;
 }
 
+/** A unit-ref run's emoji and what a click on it opens (R3-5: a summoned
+ * unit's card); set once the content loads (../content.ts). Unset: plain text. */
+let unitRefs: { emoji: (id: string) => string | undefined; open: (id: string) => void } | null = null;
+export function setUnitRefs(refs: typeof unitRefs): void {
+  unitRefs = refs;
+}
+
+/** A summoned unit named in a sentence ("Imp (1/2)"): a button with its
+ * emoji that opens its card. */
+function unitRefButton(seg: DescribeSegment, kids: (Node | string)[]): Node[] {
+  const id = seg.unitRef!;
+  const emoji = unitRefs?.emoji(id);
+  if (!unitRefs || !emoji) return kids.map((k) => (typeof k === "string" ? document.createTextNode(k) : k));
+  const open = unitRefs.open;
+  return edgeSpaced(kids, (inner) => {
+    const b = h("button", { type: "button", class: `t t-unit${seg.side ? ` tone-${seg.side}` : ""}`, "data-unit-ref": id, "data-testid": "unit-ref", "aria-label": `${seg.text}: open its card` }, h("span", { class: "t-emoji", "aria-hidden": "true" }, emoji), ...inner);
+    b.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      open(id);
+    });
+    return b;
+  });
+}
+
 /** What a run's tooltip and sheet say. An eventUnit target follows the words on
  * screen ("self", "it"), not the selector's generic label. */
 export function termInfo(seg: DescribeSegment): (TermDef & { id: TermId; scope?: UnitFilter }) | undefined {
@@ -82,8 +106,8 @@ export function richText(segs: DescribeSegment[], o: RichOptions = {}): Node[] {
       if (ic) pill.append(withPip(icon(ic, size, "tpill-ic"), scopePip(clause.find((s) => s.scope)?.scope)));
       out.push(pill);
     }
-    const info = clauseInfo(seg, segs, i);
-    const nodes: Node[] = info ? edgeSpaced(kids, (inner) => termButton(seg, info, inner, withAmount, size, !!pill)) : kids.map((k) => (typeof k === "string" ? document.createTextNode(k) : k));
+    const info = seg.unitRef ? undefined : clauseInfo(seg, segs, i);
+    const nodes: Node[] = seg.unitRef ? unitRefButton(seg, kids) : info ? edgeSpaced(kids, (inner) => termButton(seg, info, inner, withAmount, size, !!pill)) : kids.map((k) => (typeof k === "string" ? document.createTextNode(k) : k));
     if (pill) pill.append(...nodes);
     else out.push(...nodes);
   });

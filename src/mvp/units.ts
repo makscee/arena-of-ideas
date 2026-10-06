@@ -16,8 +16,9 @@
 // a group reaction to a group event fans out n² and swamps the chain cap.
 
 import { stressRegistry } from "../content/stress.js";
+import { summonId } from "../describe.js";
 import type { AbilityDef, AbilityRegistry, Effect, EventPattern, Family, Selector, StatusRegistry, UnitDef, When } from "../types.js";
-import type { Tier, UnitContent, UnitForm } from "./contract.js";
+import type { SummonContent, Tier, UnitContent, UnitForm } from "./contract.js";
 
 // ---------- When ----------
 
@@ -62,7 +63,7 @@ const body = (name: string, pwr: number, hp: number): UnitDef => ({
   name, base: { pwr, hp }, triggers: WHEN.start, selectors: [WHO.me], abilities: ["Strike"],
 });
 
-/** The summoned bodies, by Ability name. */
+/** The summoned bodies, by Ability name. Their emoji is in SUMMON_EMOJI. */
 const SUMMONS: Record<string, UnitDef> = {
   "Call Imp": body("Imp", 1, 2),
   "Call Wolf": body("Wolf", 2, 3),
@@ -70,6 +71,19 @@ const SUMMONS: Record<string, UnitDef> = {
   "Call Wraith": body("Wraith", 3, 3),
   "Call Treant": body("Treant", 1, 8),
 };
+
+/** Each summoned body's emoji, by its name (R3-5). */
+const SUMMON_EMOJI: Record<string, string> = { Imp: "👺", Wolf: "🐺", Golem: "🗿", Wraith: "👻", Treant: "🌳" };
+
+
+/** A summoned body as content: its emoji, and its form unless it only strikes. */
+export function summonContentOf(def: UnitDef, emoji: string): SummonContent {
+  const does = def.abilities ?? [];
+  const form: UnitForm | null = does.every((x) => x === "Strike")
+    ? null
+    : { when: def.triggers ?? [], who: def.selectors ?? [], does, ...(def.condition ? { condition: def.condition } : {}) };
+  return { id: summonId(def.name), name: def.name, emoji, base: { ...def.base }, form };
+}
 
 /** Ability names read as what they do: "Hit 3", "Poison 2", "Shield 2", …
  * "A + B" is one Ability doing A then B on the same target (a sleeping form
@@ -301,6 +315,7 @@ export interface MvpPool {
   units: UnitContent[];
   abilities: AbilityRegistry;
   statuses: StatusRegistry;
+  summons: SummonContent[];
 }
 
 /** The pool: every unit plus exactly the Abilities and statuses they use. */
@@ -310,5 +325,20 @@ export function mvpPool(rows: Row[] = ROWS): MvpPool {
   for (const u of units) for (const f of [u.forms.sleeping, u.forms.awoken]) for (const d of f.does) names.add(d);
   const abilities: AbilityRegistry = {};
   for (const n of [...names].sort()) abilities[n] = abilityOf(n);
-  return { units, abilities, statuses: { ...stressRegistry } };
+  // Every body a summon effect in the pool makes, once each. Names are unique
+  // among summons, so a Summon event's name finds exactly one body.
+  const bodies = new Map<string, UnitDef>();
+  for (const ab of Object.values(abilities))
+    for (const e of ab.effects) {
+      if (e.kind !== "summon") continue;
+      const seen = bodies.get(e.unit.name);
+      if (seen && JSON.stringify(seen) !== JSON.stringify(e.unit)) throw new Error(`two summoned bodies are named "${e.unit.name}"`);
+      bodies.set(e.unit.name, e.unit);
+    }
+  const summons = [...bodies.values()].map((d) => {
+    const emoji = SUMMON_EMOJI[d.name];
+    if (!emoji) throw new Error(`summon "${d.name}" has no emoji`);
+    return summonContentOf(d, emoji);
+  });
+  return { units, abilities, statuses: { ...stressRegistry }, summons };
 }

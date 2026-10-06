@@ -9,9 +9,10 @@
 // form the unit has now; win and pick rates are its one dim last line.
 import { cardIcons, type Pip } from "../../src/mvp/card-icons";
 import { formSegments, formText as sharedFormText } from "../../src/mvp/form-text";
-import { MVP_RULES, type BattleUnit, type LineUnit, type MvpContent, type UnitContent, type UnitForm } from "../../src/mvp/contract";
+import { MVP_RULES, type BattleUnit, type LineUnit, type MvpContent, type SummonContent, type UnitContent, type UnitForm } from "../../src/mvp/contract";
+import { summonId } from "../../src/describe";
 import type { AbilityRegistry, Stats } from "../../src/types";
-import { h } from "./dom";
+import { closable, h } from "./dom";
 import { discoveredLine } from "./fusion";
 import { icon } from "./icon";
 import { roman } from "./roman";
@@ -32,8 +33,8 @@ export interface CardOptions {
    * unit lit. With maxHp (R2-13) the card adds an HP bar and draws PWR and HP
    * big, each with its icon, HP red once the unit is hurt. */
   live?: { stats: Stats; maxHp?: number; dead?: boolean; acting?: boolean };
-  /** An offer's tier, drawn as a Roman numeral top-right. */
-  tier?: number;
+  /** An offer's tier, drawn as a Roman numeral top-right; "S" marks a summoned unit (R3-5). */
+  tier?: number | "S";
   /** Tapping the card opens this, usually overlay(unitSheet(...)). */
   onOpen?: () => void;
 }
@@ -44,7 +45,7 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
     "div",
     { class: `card ${o.side}`, ...(o.testid ? { "data-testid": o.testid } : {}) },
     iconLine(u.recipe, !!o.tier),
-    o.tier ? h("span", { class: "tier", "aria-label": `tier ${o.tier}` }, roman(o.tier)) : null,
+    o.tier ? h("span", { class: "tier", "aria-label": o.tier === "S" ? "summoned" : `tier ${o.tier}` }, o.tier === "S" ? "S" : roman(o.tier)) : null,
     h("div", { class: "emoji" }, u.emoji),
     // One line; ui/dom.ts fitText() shrinks a long name a little, then cuts it.
     h("div", { class: "name", title: u.name }, u.name),
@@ -144,6 +145,10 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
 
   const box = h("div", { class: "sheet-form", "data-testid": "sheet-form" });
   const children: (Node | null)[] = [];
+  // What the form shown summons, under its text (R3-5); swapped by See Awoken.
+  const summons = h("div", { class: "stack" });
+  const shownForm = fused && "recipe" in u ? u.recipe : now;
+  if (shownForm) summons.replaceChildren(...[summonsBlock(shownForm, content)].filter((n): n is HTMLElement => n !== null));
   if (fused && "fusion" in u && u.fusion) {
     const [a, b] = [unit(u.fusion.first), unit(u.fusion.second)];
     box.append(...formRich(u.recipe, content));
@@ -179,6 +184,8 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
     let showing = false;
     btn.addEventListener("click", () => {
       showing = !showing;
+      // The Summons block follows the form shown: Planter's Imp, its awoken Treant.
+      summons.replaceChildren(...[summonsBlock(showing ? c.forms.awoken : now, content)].filter((n): n is HTMLElement => n !== null));
       box.classList.toggle("other", showing);
       box.replaceChildren(...(showing ? [h("div", { class: "label" }, `Awoken · after copy ${MVP_RULES.copiesToAwaken}`), ...richText(awokePieces, { content: markChangedPieces(sleepPieces, awokePieces) })] : richText(sleepPieces)));
       btn.textContent = showing ? back : see;
@@ -197,7 +204,94 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
     opts.from ? h("div", { class: "dim small" }, "Your copy now → after buying") : null,
     box,
     ...children,
+    summons.childNodes.length || (sleeping && c) ? summons : null,
     fused ? null : unitStatsLine(unitId, opts.rates),
+  );
+}
+
+// ---------- summoned units (R3-5, docs/round3/words.md (3)) ----------
+
+/** A summon by its id; the content's summons (none in content before round 3). */
+export function summonById(content: MvpContent, id: string): SummonContent | undefined {
+  return content.summons?.find((s) => s.id === id);
+}
+
+/** What a form summons, in its Does order, once each. */
+export function summonsOf(form: UnitForm, content: MvpContent): SummonContent[] {
+  const out: SummonContent[] = [];
+  for (const d of form.does)
+    for (const e of content.abilities[d]?.effects ?? []) {
+      const s = e.kind === "summon" ? summonById(content, summonId(e.unit.name)) : undefined;
+      if (s && !out.includes(s)) out.push(s);
+    }
+  return out;
+}
+
+/** The units that summon it, and in which of their forms. */
+export function summonersOf(content: MvpContent, id: string): { unit: UnitContent; forms: ("sleeping" | "awoken")[] }[] {
+  return content.units.flatMap((unit) => {
+    const forms = (["sleeping", "awoken"] as const).filter((f) => summonsOf(unit.forms[f], content).some((s) => s.id === id));
+    return forms.length ? [{ unit, forms: [...forms] }] : [];
+  });
+}
+
+/** A summon drawn as a card: its emoji, name, numbers and icon line. */
+export function summonCard(s: SummonContent, o: CardOptions): HTMLElement {
+  return card({ emoji: s.emoji, name: s.name, stats: s.base, ...(s.form ? { recipe: s.form } : {}) }, o);
+}
+
+/** A summon's text, or the line that says it has none. */
+export function summonText(s: SummonContent, content: MvpContent): Node[] {
+  return s.form ? formRich(s.form, content) : [h("b", {}, "No ability: it fights with its PWR / HP.")];
+}
+
+/** A summoner's "Summons" block: each summoned unit's compact card and its
+ * text, inline, so nothing needs a second tap. Null when the form summons nothing. */
+function summonsBlock(form: UnitForm, content: MvpContent): HTMLElement | null {
+  const list = summonsOf(form, content);
+  if (!list.length) return null;
+  return h(
+    "div",
+    { class: "stack summons", "data-testid": "sheet-summons" },
+    h("div", { class: "label" }, "Summons"),
+    ...list.map((s) =>
+      h(
+        "div",
+        { class: "summon-row", "data-testid": "sheet-summon", "data-summon": s.id },
+        summonCard(s, { side: "you", testid: "summon-card", onOpen: () => openSummon(s, content) }),
+        h("div", { class: "sheet-form" }, ...summonText(s, content)),
+      ),
+    ),
+  );
+}
+
+/** Opens a summon's sheet over whatever is open. */
+export function openSummon(s: SummonContent, content: MvpContent): void {
+  closable(summonSheet(s, content));
+}
+
+/** A summoned unit's own sheet: name, emoji, PWR / HP, its text (or the
+ * no-ability line), and "Summoned by" chips that open those units. */
+export function summonSheet(s: SummonContent, content: MvpContent): HTMLElement {
+  const by = summonersOf(content, s.id);
+  return h(
+    "div",
+    { class: "stack", "data-testid": "summon-sheet", "data-summon": s.id },
+    h("div", { class: "row spread sheet-head" }, h("h2", {}, `${s.emoji} ${s.name}`), h("span", { class: "dim small", "data-testid": "sheet-state" }, "Summoned")),
+    h("div", { class: "num", "data-testid": "sheet-stats" }, `${s.base.pwr} PWR / ${s.base.hp} HP`),
+    h("div", { class: "sheet-form", "data-testid": "sheet-form" }, ...summonText(s, content)),
+    by.length ? h("div", { class: "label" }, "Summoned by") : null,
+    by.length
+      ? h(
+          "div",
+          { class: "chips", "data-testid": "summoned-by" },
+          ...by.map(({ unit, forms }) => {
+            const b = h("button", { class: "chip unit-chip", "data-testid": "summoned-by-unit", "data-unit": unit.id }, `${unit.emoji} ${unit.name}${forms.length === 1 && forms[0] === "awoken" ? " · Awoken" : ""}`);
+            b.addEventListener("click", () => closable(unitSheet(unit, content)));
+            return b;
+          }),
+        )
+      : null,
   );
 }
 
