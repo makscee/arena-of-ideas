@@ -61,8 +61,8 @@ export async function nowSheetChecks(page, errors, { shot, phone }) {
   const card = page.locator(`.bv-card:not(.dead)[data-unit="${pick.id}"]`);
   const want = (await readCards(page)).find((c) => c.id === pick.id);
   const box = await card.boundingBox();
-  // Click the card's name, clear of the change chip (which traces) and the status row.
-  await page.mouse.click(box.x + box.width / 2, box.y + 18);
+  // Click the card low, clear of the change chip on its top (which traces).
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height - 8);
   await page.getByTestId("now-sheet").waitFor({ timeout: 2_000 }).catch(() => errors.push("now sheet: a card's click didn't open it"));
   if (!(await page.getByTestId("now-sheet").count())) return;
   if (!(await paused())) errors.push("now sheet: opened with the battle still playing");
@@ -102,7 +102,7 @@ export async function nowSheetChecks(page, errors, { shot, phone }) {
     const sid = (await readCards(page)).find((c) => c.id?.includes("+"))?.id;
     const sb = sid ? await page.locator(`.bv-card:not(.dead)[data-unit="${sid}"]`).boundingBox() : null;
     if (sb) {
-      await page.mouse.click(sb.x + sb.width / 2, sb.y + 18);
+      await page.mouse.click(sb.x + sb.width / 2, sb.y + sb.height - 8);
       await page.getByTestId("now-sheet").waitFor({ timeout: 2_000 }).catch(() => errors.push(`now sheet: the summoned ${sid} didn't open it`));
       if (await page.getByTestId("now-sheet").count()) {
         const text = await page.getByTestId("now-ability").textContent();

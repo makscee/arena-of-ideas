@@ -480,9 +480,11 @@ try {
       // A battle card (below its chip) opens its Now sheet (R3-18), whose
       // Full card opens the unit's sheet, which closes with Close.
       await page.getByTestId("trace-close").click();
-      const box = await page.getByTestId("battle-you").locator(".bv-card").first().boundingBox();
+      // (A summon has no full card yet, R3-5: take a unit that entered the battle.)
+      const box = await page.getByTestId("battle-you").locator('.bv-card:not([data-unit*="+"])').first().boundingBox();
       await page.mouse.click(box.x + box.width / 2, box.y + box.height - 8);
       await page.getByTestId("now-sheet").waitFor();
+      await shot("battle-now-sheet-end"); await noHScroll("battle-now-sheet-end");
       await tap44("now sheet: full card", page.getByTestId("now-full-card"));
       await page.getByTestId("now-full-card").click();
       await page.getByTestId("unit-sheet").waitFor();
