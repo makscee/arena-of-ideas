@@ -192,11 +192,13 @@ describe("one hero per shape (round 3, docs/round3/units.md 1b)", () => {
     return [...loops];
   };
 
-  // Round 3 (R3-8): tiers I–II now; R3-9 widens it to every tier.
-  const R3_TIERS = [1, 2];
-  it("R3: every tier I–II Awoken form does something new, not just bigger numbers", () => {
+  // Maks's call (docs/round3/README.md): Awoken Necromancer revives at 1 HP
+  // with Strength 3, undead glass cannons. Its new part is a Strength rider,
+  // which R3 otherwise never counts.
+  const R3_EXCEPTIONS = ["necromancer"];
+  it("R3: every Awoken form does something new, not just bigger numbers", () => {
     const same = mvpPool()
-      .units.filter((u) => R3_TIERS.includes(u.tier) && awokenNewPart(u.forms.sleeping, u.forms.awoken) === null)
+      .units.filter((u) => !R3_EXCEPTIONS.includes(u.id) && awokenNewPart(u.forms.sleeping, u.forms.awoken) === null)
       .map((u) => `${u.name}: ${sig(u.forms.sleeping)} → ${u.forms.awoken.does.join(", ")}`);
     expect(same).toEqual([]);
   });
@@ -218,11 +220,14 @@ describe("one hero per shape (round 3, docs/round3/units.md 1b)", () => {
 
   it("R4 catches the old Equalizer ↔ Robber loop", () => {
     const rows = ROWS.map((r) => (r.name === "Robber" ? { ...r, does: "Strength 1" } : r));
-    expect(loopsOf(mvpPool(rows).units)).toContain("Curse →Robber (sleeping)→ Power →Equalizer (sleeping)→ Curse");
+    // Lightning's Awoken form also curses on Power, and is found first.
+    expect(loopsOf(mvpPool(rows).units)).toContain("Curse →Robber (sleeping)→ Power →Lightning (awoken)→ Curse");
+    const noLightning = rows.map((r) => (r.name === "Lightning" ? { ...r, awoken: { does: ["Hit 3"] } } : r));
+    expect(loopsOf(mvpPool(noLightning).units)).toContain("Curse →Robber (sleeping)→ Power →Equalizer (sleeping)→ Curse");
   });
 
   it("R4 catches the old Priest loop: a Blessing's save is a Heal, and Priest blessed healed allies", () => {
-    const rows = ROWS.map((r) => (r.name === "Priest" ? { ...r, when: "allyHealed" as WhenKey, who: "it" as const } : r));
+    const rows = ROWS.map((r) => (r.name === "Priest" ? { ...r, when: "allyHealed" as WhenKey, who: "it" as const, does: "Bless 1" } : r));
     expect(loopsOf(mvpPool(rows).units)).toContain("Heal →Priest (sleeping)→ Heal");
   });
 
@@ -266,7 +271,7 @@ describe("Priest's Blessing can't re-arm itself (R3-7 check of 7ee5eec1)", () =>
   });
 
   it("the old Priest (ally healed: bless it) saved one ally again and again", () => {
-    const old = contentWith(ROWS.map((r) => (r.name === "Priest" ? { ...r, when: "allyHealed" as WhenKey, who: "it" as const } : r)));
+    const old = contentWith(ROWS.map((r) => (r.name === "Priest" ? { ...r, when: "allyHealed" as WhenKey, who: "it" as const, does: "Bless 1" } : r)));
     expect(Math.max(...seeds.map((s) => saves(old, s)))).toBeGreaterThan(1);
   });
 });
@@ -277,7 +282,7 @@ describe("Summoner's Awoken form (R3-8)", () => {
 
   it("calls a Warg, a body with a job of its own: its strikes poison the front enemy", () => {
     const line = [lineUnitOf(unit("summoner"), "a0", 3), lineUnitOf(unit("bulwark"), "a1")];
-    const foe = ["duelist", "crusader"].map((id, i) => lineUnitOf(unit(id), `b${i}`, 3));
+    const foe = ["duelist", "fighter"].map((id, i) => lineUnitOf(unit(id), `b${i}`, 3));
     const p = { id: "p", name: "p", bot: false };
     const log = fightLines({ player: p, line }, { player: p, line: foe }, { battleId: "b", seed: 1, kind: "round", round: 1, runId: null, at: "2026-10-06T00:00:00.000Z", content, rules: MVP_RULES }).log;
     const warg = log.find((e) => e.type === "Summon" && e.name === "Warg");
@@ -289,5 +294,33 @@ describe("Summoner's Awoken form (R3-8)", () => {
   it("R3 counts the summoned body's job: Call Imp → Call Warg adds Poison", () => {
     const f = (does: string[]) => ({ ...unit("summoner").forms.sleeping, does });
     expect(awokenNewPart(f(["Call Imp"]), f(["Call Warg"]))).toBe("adds Poison");
+  });
+});
+
+describe("Necromancer's Awoken form (R3-9)", () => {
+  const content: MvpContent = { version: "test", ...mvpPool() };
+  const unit = (id: string) => content.units.find((u) => u.id === id)!;
+  const p = { id: "p", name: "p", bot: false };
+  const fight = (copies: number) => {
+    const line = [lineUnitOf(unit("fodder"), "a0"), lineUnitOf(unit("necromancer"), "a1", copies)];
+    const foe = ["duelist", "fighter"].map((id, i) => lineUnitOf(unit(id), `b${i}`, 3));
+    return fightLines({ player: p, line }, { player: p, line: foe }, { battleId: "b", seed: 1, kind: "round", round: 1, runId: null, at: "2026-10-06T00:00:00.000Z", content, rules: MVP_RULES }).log;
+  };
+
+  it("revives the fallen ally with 1 HP and Strength 3: an undead glass cannon", () => {
+    const log = fight(3);
+    const back = log.find((e) => e.type === "Summon" && e.resurrected);
+    if (back?.type !== "Summon") throw new Error("nobody revived");
+    expect(back.atHp).toBe(1);
+    const after = log.slice(log.indexOf(back));
+    expect(after.some((e) => e.type === "StatusApplied" && e.unit === back.unit && e.status === "Strength" && e.stacks === 3)).toBe(true);
+  });
+
+  it("sleeping, it revives at 2 HP with no Strength", () => {
+    const log = fight(1);
+    const back = log.find((e) => e.type === "Summon" && e.resurrected);
+    if (back?.type !== "Summon") throw new Error("nobody revived");
+    expect(back.atHp).toBe(2);
+    expect(log.some((e) => e.type === "StatusApplied" && e.unit === back.unit && e.status === "Strength")).toBe(false);
   });
 });

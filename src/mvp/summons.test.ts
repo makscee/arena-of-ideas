@@ -8,8 +8,8 @@ describe("summoned units (R3-5)", () => {
   const pool = mvpPool();
   const unit = (name: string) => pool.units.find((u) => u.name === name)!;
 
-  it("lists the 6 summoned bodies, each with an id, an emoji and its numbers", () => {
-    expect(pool.summons.map((s) => s.name).sort()).toEqual(["Golem", "Imp", "Treant", "Warg", "Wolf", "Wraith"]);
+  it("lists the 8 summoned bodies, each with an id, an emoji and its numbers", () => {
+    expect(pool.summons.map((s) => s.name).sort()).toEqual(["Chick", "Ghoul", "Imp", "Puffball", "Treant", "Warg", "Wolf", "Wraith"]);
     for (const s of pool.summons) {
       expect(s.id).toBe(summonId(s.name));
       expect(s.emoji).toMatch(/\p{Extended_Pictographic}/u);
