@@ -3,7 +3,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Champion } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
-import { BOT_DAILY_CROWNS, BOT_TARGET, botDecision, botPlayer, botWorld, crownsOwed, playBotRun, seedChampion, takenBotNames, thinRounds, topUpGhosts } from "./bots.js";
+import { BOT_DAILY_CROWNS, BOT_DAILY_SLAYERS, BOT_MAX_DAILY_CROWNS, BOT_TARGET, botDecision, botPlayer, botWorld, crownsOwed, playBotRun, seedChampion, takenBotNames, thinRounds, topUpGhosts } from "./bots.js";
 import { endDay } from "./day.js";
 import { mvpContent } from "./content.js";
 import { mvpRuntime, type MvpDeps } from "./runtime.js";
@@ -92,6 +92,10 @@ describe("MVP bots and world (slice 6)", () => {
       const t = topUpGhosts(rt, { target: 4, dailyCrowns: quota });
       expect(t).toMatchObject({ thin: [], crownsOwed: 0 });
       expect(botCrowns()).toBeGreaterThanOrEqual(quota);
+      // Past the quota, bots play on until 2 different bots slew (or the cap),
+      // so a player alone sees a real playoff at the day's end.
+      const slayers = new Set(rt.store.slays(rt.today().seq).filter((s) => s.player.bot).map((s) => s.player.id)).size;
+      expect(slayers >= BOT_DAILY_SLAYERS || botCrowns() >= BOT_MAX_DAILY_CROWNS).toBe(true);
       // Met: the next tick plays nothing.
       expect(topUpGhosts(rt, { target: 4, dailyCrowns: quota }).runs).toBe(0);
       endDay(rt);
