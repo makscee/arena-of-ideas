@@ -173,7 +173,8 @@ export const ROWS: Row[] = [
   r("Injector",      "🧪", 2, 2, 5, "hurt",       "front",   "Poison 1",    { does: ["Poison 2"] }),
   r("Venomancer",    "🐍", 2, 2, 7, "strike",     "front",   "Poison 2",    { does: ["Poison 2", "Curse 1"] }),
   r("Plague Rat",    "🐁", 2, 1, 5, "die",        "enemies", "Poison 2",    { does: ["Poison 2", "Freeze 1"] }),
-  r("Duelist",       "🤺", 2, 3, 7, "strike",     "front",   "Smite",       { does: ["Smite", "Curse 1"] }),
+  // Duelist opens with a lunge; Fighter is the one that hits on every strike.
+  r("Duelist",       "🤺", 2, 3, 7, "start",      "front",   "Smite",       { does: ["Smite", "Curse 1"] }),
   r("Berserker",     "🪓", 2, 3, 6, "hurt",       "me",      "Strength 1",  { does: ["Strength 2"] }),
   r("Emberling",     "🔥", 2, 3, 6, "die",        "enemies", "Hit 2",       { does: ["Hit 3"] }),
   r("Icebinder",     "🧊", 2, 2, 5, "start",      "random",  "Freeze 2",    { who: "enemies" }),
@@ -195,7 +196,9 @@ export const ROWS: Row[] = [
   // ---- tier 3: engines ----
   r("Commander",     "🎖️", 3, 2, 8, "strike",     "allies",  "Strength 1",  { does: ["Strength 1", "Shield 2"] }),
   r("War Drummer",   "🥁", 3, 2, 8, "turnStart",  "allies",  "Strength 1",  { does: ["Strength 1", "Heal 1"] }),
-  r("Physician",     "🩺", 3, 2, 8, "allyHurt",   "it",      "Vitality 1",  { does: ["Vitality 2"] }),
+  // Physician treats the cause, not the wound: it saps whoever is hitting
+  // (Nurse and Guardian tend the hit ally).
+  r("Physician",     "🩺", 3, 2, 8, "allyHurt",   "front",   "Curse 1",     { does: ["Curse 1", "Poison 1"] }),
   r("Pediatrician",  "🍼", 2, 2, 8, "allySummoned", "it",   "Strength 1",  { does: ["Strength 2"] }),
   r("Crusader",      "⚔️", 3, 3, 9, "turnStart",  "front",   "Hit 2",       { does: ["Hit 3"] }),
   r("Lightning",     "🌩️", 3, 3, 7, "allyPower",  "random",  "Hit 2",       { does: ["Hit 3"] }),
@@ -216,7 +219,9 @@ export const ROWS: Row[] = [
 
   // ---- tier 4: payoffs ----
   r("King",          "👑", 4, 3, 12, "start",     "allies",  "Vitality 2",  { does: ["Vitality 2", "Strength 1"] }),
-  r("Priest",        "⛪", 4, 2, 10, "allyHealed", "it",     "Bless 1",     { does: ["Bless 2"] }),
+  // Priest blesses once, before the fight. On "ally healed" it re-armed
+  // itself: a Blessing's save is a Heal, so a blessed ally could never die.
+  r("Priest",        "⛪", 4, 2, 10, "start",     "allies",  "Bless 1",     { does: ["Bless 2"] }),
   r("Divinity",      "😇", 4, 2, 8, "allyDies",  "allies",  "Bless 1",     { does: ["Bless 1", "Shield 2"] }),
   r("Phoenix",       "🐦", 4, 4, 9, "start",     "me",      "Bless 8",     { does: ["Bless 8", "Strength 2"] }),
   r("Lilith",        "🧛", 4, 4, 8, "enemyDies",  "me",      "Strength 2",  { does: ["Strength 2", "Mend"] }),
@@ -273,15 +278,15 @@ export function sig(form: UnitForm): string {
 }
 
 /** The effect kinds that make a hero's job: the heal family (Heal, Mend) is
- * one kind, and Strength and Vitality riders don't count next to another
+ * one kind, so is the damage family (Hit, Smite), and Strength and Vitality riders don't count next to another
  * kind ("Call Golem + Strength 1" is a summoner). A form that only grows
  * stats keeps them, since that is its job. */
 export function shapeKinds(does: string[]): string[] {
-  const kinds = [...new Set(effectKinds(does).map((k) => HEAL_FAMILY[k] ?? k))].sort();
+  const kinds = [...new Set(effectKinds(does).map((k) => FAMILY[k] ?? k))].sort();
   const job = kinds.filter((k) => !RIDERS.includes(k));
   return job.length ? job : kinds;
 }
-const HEAL_FAMILY: Record<string, string> = { Mend: "Heal" };
+const FAMILY: Record<string, string> = { Mend: "Heal", Smite: "Hit" };
 const RIDERS = ["Strength", "Vitality"];
 
 /** The link event each listening When reacts to. The other Whens are roots
@@ -297,10 +302,12 @@ export const LISTENS: Partial<Record<WhenKey, string>> = {
 };
 export const ROOT_WHENS: WhenKey[] = ["start", "turnStart", "turnEnd", "strike", "hurt", "allyHurt", "die", "allyDies", "enemyDies"];
 
-/** The link event each effect kind emits; the kinds no When listens to emit none. */
+/** The link event each effect kind emits; the kinds no When listens to emit none.
+ * Bless emits a Heal: a Blessing's death save heals (stress.ts Blessing). */
 export const EMITS: Record<string, string | null> = {
   Shield: "Shield", Heal: "Heal", Mend: "Heal", Strength: "Power", Poison: "Poison", Curse: "Curse", Call: "Summon", Revive: "Summon",
-  Hit: null, Smite: null, Vitality: null, Freeze: null, Bless: null, Silence: null,
+  Bless: "Heal",
+  Hit: null, Smite: null, Vitality: null, Freeze: null, Silence: null,
 };
 
 /** A form's edges in the listen → emit graph: the link it reacts to, to each
