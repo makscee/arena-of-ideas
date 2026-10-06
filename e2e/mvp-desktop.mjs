@@ -2,7 +2,7 @@
 // mouse and keyboard only (no taps), and a screenshot of every screen. Checks
 // the desktop layout: the top bar, the wide board with 132×172 cards, the
 // inspector on the right that reads the hovered or selected card (no pop-up
-// sheet in the shop), drag to reorder and the keys (1–7 buy, R reroll, Space
+// sheet in the shop), drag to reorder and the keys (1–7 buy, R reroll, L lock, Space
 // fight, ← → move, S sell, Esc back). Without --url it builds the mobile
 // client and starts the MVP server on a free port.
 //   npm run mvp:desktop -- [--url https://m1.twin-pogona.ts.net/arena/] [--out e2e/.shots/mvp-desktop]
@@ -145,6 +145,32 @@ try {
     await page.getByTestId("fight").waitFor({ timeout: 10_000 });
     round++;
     const crown = (await page.getByTestId("gold").count()) === 0;
+    if (round === 2 && !crown && (await gold()) >= 1 && (await page.getByTestId("offers").locator(".card").count()) >= 2) {
+      // Lock (R3-12): click offer 2, L locks it and it stays chosen; R keeps it
+      // at the left, still locked; right-click unlocks it.
+      const offer = (s) => page.getByTestId(`offer-${s}`);
+      const locked = (s) => offer(s).evaluate((el) => el.classList.contains("locked"));
+      const name = await offer(1).locator(".name").textContent();
+      await offer(1).click();
+      await page.getByTestId("inspector").getByTestId("lock").waitFor();
+      if (!(await page.getByTestId("inspector").getByTestId("lock").textContent()).startsWith("Lock · L")) errors.push("lock: no Lock · L in the inspector");
+      await page.keyboard.press("l");
+      await settle();
+      if (!(await locked(1))) errors.push("lock: L didn't lock the chosen offer");
+      await page.getByTestId("inspector").getByTestId("lock").waitFor();
+      if (!(await page.getByTestId("inspector").getByTestId("lock").textContent()).startsWith("Unlock")) errors.push("lock: the locked offer isn't still in the inspector with Unlock");
+      if (!(await page.getByTestId("keys").textContent()).includes("L lock")) errors.push("lock: the keys line has no L");
+      await shot("shop-locked");
+      const g1 = await gold();
+      await page.keyboard.press("r");
+      await settle();
+      if ((await gold()) !== g1 - 1) errors.push("lock: R didn't reroll with a locked offer");
+      if ((await offer(0).locator(".name").textContent()) !== name || !(await locked(0))) errors.push(`lock: after R offer 1 is "${await offer(0).locator(".name").textContent()}", not the locked "${name}"`);
+      await offer(0).click({ button: "right" });
+      await settle();
+      if (await locked(0)) errors.push("lock: right-click didn't unlock");
+      if ((await page.locator(".overlay, [role=menu]").count()) > 0) errors.push("lock: right-click opened something");
+    }
     if (round === 1) {
       await shot("shop"); await noHScroll("shop"); await wide("shop", W - 1);
       await cardSize("shop offers", "offers");
@@ -196,6 +222,7 @@ try {
       await settle();
       if ((await gold()) !== g0 - 1) errors.push("R didn't reroll");
     }
+
     if (!crown && !dragged && (await lineCount()) >= 2) {
       dragged = true;
       // Drag the front unit onto the second slot: they swap places.
