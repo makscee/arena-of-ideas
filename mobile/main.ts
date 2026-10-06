@@ -7,7 +7,7 @@
 // battleScreen) and, under "Dev", an "End day now" button (api.endDay(): 404
 // without MVP_DEV=1, 501 until slice 5).
 import type { BattleRecord, DayView, FightResult, HomeView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView } from "../src/mvp/contract";
-import { MVP_RULES } from "../src/mvp/contract";
+import { MVP_RULES, offersAt } from "../src/mvp/contract";
 import { ApiError, api } from "./api";
 import { getContent } from "./content";
 import { battleScreen, whyILost } from "./screens/battle";
@@ -49,6 +49,12 @@ let rules: MvpRules = MVP_RULES;
 let day: DayView | null = null;
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+const offersText = (r: MvpRules) => {
+  const grow = r.offersGrowAt ?? [];
+  if (grow.length === 0) return `${plural(r.offers, "offer")} a shop`;
+  const last = Math.max(...grow);
+  return `${plural(r.offers, "offer")} in round 1, growing to ${offersAt(r, last)} by round ${last}`;
+};
 const roundLabel = (round: number) => (round > rules.rounds ? "CROWN" : `R${round}/${rules.rounds}`);
 const hearts = (n: number) => h("span", { class: "hearts", "aria-label": plural(n, "heart") }, "♥".repeat(n) + "♡".repeat(Math.max(0, rules.hearts - n)));
 const openSheet = (u: Parameters<typeof unitSheet>[0], content: MvpContent) => () => closable(unitSheet(u, content));
@@ -73,7 +79,7 @@ function rulesSheet(): HTMLElement {
     h("h2", {}, "RULES"),
     h("div", { class: "label" }, "A run"),
     p(`${r.rounds} shop rounds, then the Crown: a fight against today's champion. You start with ${plural(r.hearts, "heart")}; a lost fight costs one, and at 0 the run ends before the Crown.`),
-    p(`${r.goldPerRound} gold every round, no carry-over. A unit costs ${r.unitCost}, a reroll ${r.rerollCost}, selling gives back ${r.sellRefund}. ${r.offers} offers a shop; stronger tiers open as rounds pass.`),
+    p(`${r.goldPerRound} gold every round, no carry-over. A unit costs ${r.unitCost}, a reroll ${r.rerollCost}, selling gives back ${r.sellRefund}. ${offersText(r)}; stronger tiers open as rounds pass.`),
     h("div", { class: "label" }, "The line"),
     p(`${r.lineSize} units in a line, front first. Change the order in the shop: tap a unit, then ◀ ▶. Each round you fight a team another player saved at the same round.`),
     h("div", { class: "label" }, "Copies, Awoken, fusion"),

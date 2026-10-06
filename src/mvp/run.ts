@@ -11,6 +11,7 @@
 import { rngStep } from "../rng.js";
 import {
   MVP_RULES,
+  offersAt,
   type BattleRecord,
   type Champion,
   type Decision,
@@ -47,7 +48,7 @@ export interface MvpRunState extends RunView {
   rules: MvpRules;
 }
 
-export { MvpBadDecision, MvpDecisionError };
+export { MvpBadDecision, MvpDecisionError, offersAt };
 
 /** Every Decision kind (the compiler checks the list against the contract). */
 const DECISION_KINDS: Record<DecisionKind, true> = { buy: true, sell: true, reroll: true, reorder: true, fuse: true, fight: true };
@@ -67,7 +68,7 @@ function openUnits(content: MvpContent, rules: MvpRules, round: number): UnitCon
 
 function rollOffers(s: MvpRunState, content: MvpContent): void {
   const open = openUnits(content, s.rules, s.round);
-  s.offers = Array.from({ length: s.rules.offers }, (_, slot): Offer => {
+  s.offers = Array.from({ length: offersAt(s.rules, s.round) }, (_, slot): Offer => {
     const u = open[draw(s, open.length)]!;
     return { slot, unitId: u.id, tier: u.tier, cost: s.rules.unitCost };
   });
