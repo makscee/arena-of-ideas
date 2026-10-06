@@ -170,7 +170,7 @@ function triggerOf(u: UnitContent): { icon: IconId; label: string } | null {
   const ic = termIcon(id, status);
   if (!ic) return null;
   const label = termDef(id)?.label ?? on.on;
-  return { icon: ic, label: status && (on.on === "StatusApplied" || on.on === "StatusRemoved") ? `${status} ${on.on === "StatusApplied" ? "lands" : "leaves"}` : label };
+  return { icon: ic, label: status && (on.on === "StatusApplied" || on.on === "StatusRemoved") ? `${on.on === "StatusApplied" ? "Gets" : "Loses"} ${status}` : label };
 }
 
 const byTierName = (x: UnitContent, y: UnitContent) => x.tier - y.tier || x.name.localeCompare(y.name);

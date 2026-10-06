@@ -41,7 +41,7 @@ const fusions: [string, UnitForm][] = pool.units.map((a, i) => {
 const KEYWORDS = [
   ...Object.keys(pool.statuses),
   "PWR", "HP", "stack", "damage", "heal", "summon", "silence", "revive",
-  "hit", "strikes", "dies", "healed", "summoned", "lands", "gains", "battle begins", "each turn", "would",
+  "hit", "strikes", "dies", "healed", "summoned", "gets", "gains", "start", "end", "would",
 ];
 const keywordIn = (text: string): string | undefined =>
   KEYWORDS.find((k) => new RegExp(`\\b${k}`, "i").test(text));
@@ -121,8 +121,8 @@ describe("wording", () => {
 
   test("no text promises lost HP for a hit Shield may block, or names the event's unit", () => {
     expect(all).not.toMatch(/is hurt|be hurt|event's unit|most recently dead/);
-    expect(all).toMatch(/After this unit is hit:/);
-    expect(all).toMatch(/heal that ally for 1/);
+    expect(all).toMatch(/^Hit:/m);
+    expect(all).toMatch(/heal it for 1/);
   });
 
   test("stats read PWR and HP, never lower case", () => {
@@ -130,9 +130,9 @@ describe("wording", () => {
   });
 
   test("silence, revive and summon read short", () => {
-    expect(all).toMatch(/silence the front enemy\./);
-    expect(all).toMatch(/revive the last fallen ally at 2 HP\./);
-    expect(all).toMatch(/summon an Imp \(1\/2\)/);
+    expect(all).toMatch(/silence front enemy\./);
+    expect(all).toMatch(/revive fallen ally at 2 HP\./);
+    expect(all).toMatch(/summon Imp \(1\/2\)/);
     expect(all).not.toMatch(/strip its statuses|back of this unit's side/);
   });
 
@@ -140,19 +140,18 @@ describe("wording", () => {
     const spike = pool.units.find((u) => u.name === "Spike")!;
     const segs = formSegments(spike.forms.sleeping, pool.abilities);
     expect(segs.filter((s) => s.clause === "when").map((s) => [s.text, s.term])).toEqual([
-      ["After ", "trigger:StatusApplied"],
+      ["Ally gets ", "trigger:StatusApplied"],
       ["Shield", "status:Shield"],
-      [" lands on an ally", "trigger:StatusApplied"],
     ]);
     expect(segs.find((s) => s.term === "target:frontEnemy")?.side).toBe("enemy");
     expect(segs.filter((s) => s.term === "effect:damage").map((s) => [s.text, s.amount ?? false])).toEqual([["1", true], ["damage", false]]);
     const nurse = pool.units.find((u) => u.name === "Nurse")!;
     expect(formSegments(nurse.forms.sleeping, pool.abilities).find((s) => s.term === "target:eventUnit")).toMatchObject({
-      text: "that ally",
+      text: "it",
       side: "ally",
     });
     const shield = describeStatusSegments(pool.statuses.Shield!);
-    expect(shield.find((s) => s.term === "term:would")?.text).toBe("would");
+    expect(shield.find((s) => s.term === "term:would")?.text).toBe("Would");
   });
 });
 

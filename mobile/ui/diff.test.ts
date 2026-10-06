@@ -19,8 +19,8 @@ test("each token stays in its piece, and the pieces still read as the sentence",
 
 test("only the words the awoken form adds are marked", () => {
   const seg = (text: string, term?: "effect:damage") => (term ? { text, term, amount: true as const } : { text });
-  const was = [seg("deal "), seg("2", "effect:damage"), seg(" damage to the front enemy.")];
-  const next = [seg("deal "), seg("4", "effect:damage"), seg(" damage to every enemy.")];
+  const was = [seg("2", "effect:damage"), seg(" damage to front enemy.")];
+  const next = [seg("4", "effect:damage"), seg(" damage to all enemies.")];
   const marked = changedTokens(was, next).filter((t) => t.changed).map((t) => [t.tok, t.piece]);
-  expect(marked).toEqual([["4", 1], ["every", 2]]);
+  expect(marked).toEqual([["4", 0], ["all", 1], ["enemies", 1]]);
 });

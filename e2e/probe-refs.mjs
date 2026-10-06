@@ -19,12 +19,12 @@ check(texts.includes("Poison"), "when-clause status renders as a ref", JSON.stri
 check(texts.includes("Shield"), "explicit-status consumeStacks renders as a ref", JSON.stringify(texts));
 
 // The when clause itself carries the ref (not just an effect clause): the
-// sentence around the Poison ref reads "After Poison lands on an ally". PRD #081:
+// sentence around the Poison ref reads "Ally gets Poison". PRD #081:
 // a unit references ONE ability, so the heal and the explicit-status
 // consumeStacks fold into that one sentence (both refs still tappable).
 const insText = await page.locator("#inspect-overlay").textContent();
-check(insText.includes("After Poison lands on an ally: heal this unit for 2"), "when-clause sentence intact", JSON.stringify(insText.slice(0, 200)));
-check(insText.includes("consume 2 stacks of Shield"), "consumeStacks sentence intact");
+check(insText.includes("Ally gets Poison: heal self for 2"), "when-clause sentence intact", JSON.stringify(insText.slice(0, 200)));
+check(insText.includes("spend 2 Shield"), "consumeStacks sentence intact");
 
 // Tap the Poison ref: references use the same app-wide inspector contract,
 // replacing the Unit body with Status anatomy rather than nesting a card.
@@ -33,7 +33,7 @@ await page.waitForSelector('#inspect-overlay .ins-entity-kind');
 check(await page.$eval('#inspect-overlay .ins-entity-kind', (el) => el.textContent.trim()) === "status", "status ref transitions the shared inspector to Status");
 const defText = await page.locator("#inspect-overlay").textContent();
 check(
-  defText.includes("At the end of each turn: deal damage equal to its stacks to the holder, then consume 1 stack of this status."),
+  defText.includes("Turn end: damage equal to stacks to holder, then spend 1 stack."),
   "Status inspector carries the verbatim describeStatus definition",
   JSON.stringify(defText),
 );
