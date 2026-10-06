@@ -360,6 +360,25 @@ describe("Why: the chain from a change back to the turn (R2-15)", () => {
     for (let i = 1; i < c.nodes.length; i++) expect(c.nodes[i]!.eventId).toBeLessThanOrEqual(c.nodes[i - 1]!.eventId);
   });
 
+  test("a Strike-When ability's hit keeps its strike: Fighter → Fodder −2 ← Fighter's ability ← Fighter strikes Fodder ← Turn N (R2-17)", () => {
+    // Fighter: "After this unit strikes: deal 2 damage to the front enemy".
+    const Fighter = unit("Fighter", 20, 1, { on: "Strike", striker: "holder" }, [{ kind: "frontEnemy" }], ["Shoot"]);
+    const log = run([Fighter], [dummy("Fodder", 30, 0)]);
+    const hit = log.find((e) => e.type === "Hurt" && e.source !== "kernel" && e.source.unit === "A1:Fighter")!;
+    const c = chainOf(log, hit.id);
+    expect(c.nodes.map((s) => `${s.kind}:${s.text}`)).toEqual([
+      "change:Fighter → Fodder −2",
+      "firing:Fighter's ability",
+      "event:Fighter strikes Fodder",
+      `root:Turn ${log[c.nodes.at(-1)!.eventId]!.turn}`,
+    ]);
+    expect(c.nodes[1]!.trigger).toBe("trigger:Strike");
+    expect(log[c.nodes[2]!.eventId]!.type).toBe("Strike");
+    // The strike's own hit still reads as one step with its strike.
+    const own = log.find((e) => e.type === "Hurt" && e.source === "kernel" && e.unit === "B1:Fodder")!;
+    expect(chainOf(log, own.id).nodes.map((s) => s.kind)).toEqual(["change", "root"]);
+  });
+
   test("a cascade alternates firings and the events that set them off, back to the battle's start", () => {
     const log = run([Shieldbearer, Smith, Archer], [dummy("Dummy", 20, 1)]);
     const shot = log.find((e) => e.type === "Hurt" && e.source !== "kernel")!;
