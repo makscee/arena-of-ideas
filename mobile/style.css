@@ -607,6 +607,13 @@ button.t:focus-visible { outline: 1px solid currentColor; outline-offset: 1px; }
 .t-status, .t-target, .t-stat, .t-term, .t-condition { text-decoration: underline dotted color-mix(in srgb, currentColor 60%, transparent); text-underline-offset: 3px; }
 .t-effect { font-weight: 600; }
 .t-amount { font-weight: 700; font-family: "IBM Plex Mono", monospace; }
+/* A summoned unit named in the text (R3-5): its emoji and name open its card. */
+button.t-unit { cursor: pointer; font-weight: 600; text-decoration: underline solid color-mix(in srgb, currentColor 50%, transparent); text-underline-offset: 3px; }
+button.t-unit .t-emoji { margin-right: 2px; text-decoration: none; display: inline-block; }
+.summons { border-top: 1px solid var(--line); padding-top: 8px; }
+.summon-row { display: flex; gap: 10px; align-items: center; }
+.summon-row .card { flex: none; width: 64px; }
+@media (min-width: 1024px) { .summon-row .card { width: min(var(--cw, 96px), 96px); } }
 .tpill { display: inline; border: 1px solid color-mix(in srgb, #ffbf47 55%, transparent); background: color-mix(in srgb, #ffbf47 12%, transparent); border-radius: 999px; padding: 0 7px 0 5px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 .tpill .tpill-ic { margin-right: 3px; }
 .term-head { display: flex; align-items: center; gap: 6px; font-size: 18px; }
@@ -637,6 +644,7 @@ button.chip.on { border-color: var(--you); color: var(--bg); background: var(--y
 button.chip.icon { padding: 0; display: inline-flex; align-items: center; justify-content: center; color: #ffbf47; }
 button.chip.icon.on { background: #ffbf47; border-color: #ffbf47; color: var(--bg); }
 .codex-grid { align-content: start; }
+.codex-grid .codex-group { grid-column: 1 / -1; margin-top: 8px; }
 .codex-none { grid-column: 1 / -1; }
 select { font: inherit; min-height: 44px; width: 100%; background: var(--panel); color: var(--text); border: 1px solid var(--line); padding: 0 8px; }
 .contents { display: contents; }

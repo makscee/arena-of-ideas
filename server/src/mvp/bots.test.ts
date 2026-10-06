@@ -1,7 +1,7 @@
 // Slice 6 (mission #574): the day-1 champion, bots keeping every round's
 // ghost pool full, the pool staying bounded, and the job that does both.
 import { describe, expect, it, vi } from "vitest";
-import type { Champion } from "../../../src/mvp/contract.js";
+import { offersAt, type Champion } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { BOT_DAILY_CROWNS, BOT_DAILY_SLAYERS, BOT_MAX_DAILY_CROWNS, BOT_TARGET, botDecision, botPlayer, botWorld, crownsOwed, playBotRun, seedChampion, takenBotNames, thinRounds, topUpGhosts } from "./bots.js";
 import { endDay } from "./day.js";
@@ -165,20 +165,26 @@ describe("MVP bots and world (slice 6)", () => {
     expect(d).toEqual({ kind: "fuse", first: line.findIndex((u) => asked[0]!.startsWith(u.uid)), second: line.findIndex((u) => asked[0]!.endsWith(u.uid)) });
   });
 
-  it("the bot locks a copy it can't afford, once, and never rerolls an all-locked shop", () => {
+  it("the bot locks a copy it can't afford, once (not in the last shop round), and never rerolls a shop full of locks", () => {
     const rt = world();
-    const [a, b] = rt.content.units;
+    const [a, b, c] = rt.content.units;
     const line = [lineUnitOf(a!, "u1", 1, rt.rules)];
     const offers = [{ slot: 0, unitId: b!.id, tier: b!.tier, cost: 3 }, { slot: 1, unitId: a!.id, tier: a!.tier, cost: 3 }];
-    const run = (o: typeof offers, gold: number) => ({ phase: "shop", line, offers: o, gold }) as never;
+    const run = (o: typeof offers, gold: number, round = 1) => ({ phase: "shop", round, line, offers: o, gold }) as never;
     expect(botDecision(run(offers, 2), rt.content, rt.rules, 0)).toEqual({ kind: "lock", slot: 1 });
+    expect(botDecision(run(offers, 2, rt.rules.rounds), rt.content, rt.rules, 0)).not.toMatchObject({ kind: "lock" });
     const lockedCopy = [offers[0]!, { ...offers[1]!, locked: true }];
     expect(botDecision(run(lockedCopy, 2), rt.content, rt.rules, 0)).not.toMatchObject({ kind: "lock" });
-    // Gold for a reroll but not the (pricier) offers: rerolls only while one is unlocked.
+    // Gold for a reroll but not the (pricier) offers: rerolls while the locks leave room.
     const pricey = lockedCopy.map((o) => ({ ...o, cost: 10 }));
     expect(botDecision(run(pricey, 9), rt.content, rt.rules, 0)).toEqual({ kind: "reroll" });
+    // Every offer locked but a slot empty (one was bought): the reroll refills it.
     const allLocked = pricey.map((o) => ({ ...o, locked: true }));
-    expect(botDecision(run(allLocked, 9), rt.content, rt.rules, 0)).toEqual({ kind: "fight" });
+    expect(botDecision(run(allLocked, 9), rt.content, rt.rules, 0)).toEqual({ kind: "reroll" });
+    // Locks filling the whole shop: a reroll would redraw nothing.
+    const full = [...allLocked, { slot: 2, unitId: c!.id, tier: c!.tier, cost: 10, locked: true }];
+    expect(full).toHaveLength(offersAt(rt.rules, 1));
+    expect(botDecision(run(full, 9), rt.content, rt.rules, 0)).toEqual({ kind: "fight" });
   });
 
   it("botWorld seeds the champion at start and tops up in the background until stopped", async () => {

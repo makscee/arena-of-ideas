@@ -22,8 +22,9 @@ import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView } from 
 import { chainCappedTip, STATUS_TERMS, termDef, termIcon, type IconId, type TermId } from "../../src/glossary";
 import { beatPlayOf, chainOf, damageByUnit, firingOf, keyMomentsOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Change, type Firing, type KeyMoment, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
-import type { Side, UnitDef } from "../../src/types";
-import { card, formRich, unitSheet } from "../ui/card";
+import type { Side } from "../../src/types";
+import { summonId } from "../../src/describe";
+import { card, formRich, summonById, summonSheet, summonText, unitSheet } from "../ui/card";
 import { app, button, closable, fitText, h, isDesktop, onGone, onKeys, onLeave, screen, show } from "../ui/dom";
 import { icon } from "../ui/icon";
 import { statusesShown, STATUS_ROW_FALLBACK } from "../ui/status-row";
@@ -119,7 +120,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   // everything it sets off, its effects landing in quick waves.
   const beats = beatPlayOf(log, stepsOf(log, TAGGED, sides, a.you ? { you: a.you } : { sideName: owner }), TAGGED);
   const units = new Map<string, BattleUnit>([...battle.teamA, ...battle.teamB].map((u) => [u.id, u]));
-  const emojiOf = (id: string) => units.get(id)?.emoji ?? "✨";
+  // A summoned unit's body (R3-5), by its Summon event's name: summon names
+  // are unique (mvpPool), so the name finds one body. A revived unit keeps its own id.
+  const summoned = new Map(log.flatMap((e) => (e.type === "Summon" && !e.resurrected && !units.has(e.unit) ? [[e.unit, summonById(a.content, summonId(e.name))] as const] : [])));
+  const emojiOf = (id: string) => units.get(id)?.emoji ?? summoned.get(id)?.emoji ?? "✨";
   const whenOf = whenLookup(units, a.content);
   // The end card's numbers (R2-14).
   const damage = damageByUnit(log, name, sides);
@@ -552,7 +556,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   function unitCard(u: BoardUnit, side: Side, v: View, stsWidth: number): HTMLElement {
     const step = v.now;
     const changes = v.changes.filter((c) => c.unit === u.id);
-    const el = card(units.get(u.id) ?? { emoji: emojiOf(u.id), name: u.name, stats: { pwr: u.pwr, hp: u.hp } }, {
+    const sum = summoned.get(u.id);
+    const el = card(units.get(u.id) ?? { emoji: emojiOf(u.id), name: u.name, stats: { pwr: u.pwr, hp: u.hp }, ...(sum?.form ? { recipe: sum.form } : {}) }, {
       side: side === you ? "you" : "ghost",
       live: { stats: { pwr: u.pwr, hp: u.hp }, maxHp: u.maxHp, acting: step?.actor === u.id },
       extra: [statusChips(u, stsWidth), changes.length ? h("div", { class: "bv-changes" }, changeBadge(changes)) : null],
@@ -650,12 +655,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const entered = units.get(u.id);
     const summon = entered ? undefined : log.find((e) => e.type === "Summon" && e.unit === u.id);
     const base = entered ? entered.stats : summon?.type === "Summon" ? { pwr: summon.pwr, hp: summon.hp } : null;
-    const body = entered ? null : summonBody(u.name);
-    const ability: Node[] = entered
-      ? formRich(entered.recipe, a.content)
-      : body && !(body.abilities ?? []).every((x) => x === "Strike")
-        ? formRich({ when: body.triggers ?? [], who: body.selectors ?? [], does: body.abilities ?? [], ...(body.condition ? { condition: body.condition } : {}) }, a.content)
-        : [h("b", {}, "No ability: it fights with its PWR / HP.")];
+    const body = entered ? undefined : summoned.get(u.id);
+    const ability: Node[] = entered ? formRich(entered.recipe, a.content) : body ? summonText(body, a.content) : [h("b", {}, "No ability: it fights with its PWR / HP.")];
     const pwr = h("span", { "data-testid": "now-pwr" }, `PWR ${u.pwr}`, base && base.pwr !== u.pwr ? h("span", { class: "dim" }, ` (base ${base.pwr})`) : "");
     // The max as the card's HP bar reads it: a heal past the max raises it.
     const max = Math.max(1, u.maxHp, u.hp);
@@ -666,7 +667,12 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
           app.querySelector('[data-testid="now-sheet"]')?.closest(".overlay")?.remove();
           closable(unitSheet(entered, a.content));
         }, "small link", "now-full-card")
-      : null;
+      : body
+        ? button("Full card ▸", () => {
+            app.querySelector('[data-testid="now-sheet"]')?.closest(".overlay")?.remove();
+            closable(summonSheet(body, a.content));
+          }, "small link", "now-full-card")
+        : null;
     return h(
       "div",
       { class: "stack bv-now", "data-testid": "now-sheet", "data-unit": u.id },
@@ -694,11 +700,6 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       base ? h("div", { class: "dim", "data-testid": "now-base" }, `Entered as ${base.pwr} PWR / ${base.hp} HP${summon ? " · summoned" : ""}`) : null,
       full,
     );
-  }
-  /** A summoned unit's body, by its name: the unit a summon effect in the content makes. */
-  function summonBody(unitName: string): UnitDef | null {
-    for (const ab of Object.values(a.content.abilities)) for (const e of ab.effects) if (e.kind === "summon" && e.unit.name === unitName) return e.unit;
-    return null;
   }
   /** The trigger badge over a unit whose ability fired this beat: [When icon]
    * → [Does icon]. It pops when its wave lands, stays for the beat, and opens
@@ -1307,11 +1308,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   buildTimeline();
   buildLog();
   setSpeedVar();
-  // Desktop keys: Space plays or pauses, ←/→ step a beat, R replays.
+  // Keys: Space plays or pauses, ←/→ step a beat, R replays. Esc (after a
+  // sheet, closed in ui/dom.ts) leaves the Why tab for the Log, then opens
+  // the run's menu, or goes back where a battle without a run came from.
   onKeys((e) => {
-    const over = app.querySelector(".overlay");
-    // Esc closes a sheet as a tap outside it does (the run menu then resumes play).
-    if (over) return e.key === "Escape" ? ((over as HTMLElement).click(), over.remove(), true) : false;
     // The end card is the result: Enter (or Space) goes on, as the result
     // screen's did, from its main button or with nothing in the card focused.
     // A focused Replay, Why, key moment or Damage row acts instead (R2-17 batch F).
@@ -1326,6 +1326,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     if (e.key.toLowerCase() === "r") return replay(), true;
     if (e.key === "Escape" && trace) return (trace = null), render(), true;
     if (e.key === "Escape" && a.outro) return openMenu(), true;
+    if (e.key === "Escape") return leave(), true;
     return false;
   });
   // The Codex opened over the battle (a term's "Open in Codex") pauses it.

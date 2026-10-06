@@ -107,6 +107,10 @@ export async function nowSheetChecks(page, errors, { shot, phone }) {
       if (await page.getByTestId("now-sheet").count()) {
         const text = await page.getByTestId("now-ability").textContent();
         console.log(`now sheet: summoned ${sid}: ${text}`);
+        // R3-5: the summon has its own emoji and card.
+        const head = (await page.locator('[data-testid="now-sheet"] h2').textContent()) ?? "";
+        if (head.includes("✨")) errors.push(`now sheet: the summoned ${sid} has no emoji ("${head}")`);
+        if (!(await page.getByTestId("now-full-card").count())) errors.push(`now sheet: the summoned ${sid} has no Full card`);
         await shot("battle-now-summon");
         await close();
       }
