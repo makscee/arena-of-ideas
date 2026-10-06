@@ -85,8 +85,9 @@ export function setCardAbilities(a: AbilityRegistry): void {
   abilities = a;
 }
 
-/** Icons past these counts fold into "+" (phone) or "+n" (desktop); style.css
- * hides the rest by width (docs/round3/words.md (8)). */
+/** Icons past these counts fold into "+" (phone) or "+n" (desktop; "+n" past
+ * 3 on the 1024–1279px shop, whose cards are narrower); style.css hides the
+ * rest by width (docs/round3/words.md (8)). */
 const PHONE_ICONS = 3;
 const DESKTOP_ICONS = 5;
 
@@ -110,6 +111,7 @@ function iconLine(form: UnitForm | undefined, tiered: boolean): Node | null {
     ...icons.map((c) => h("span", { class: `ci tone-${c.tone}`, title: c.label, "data-icon": c.icon, ...(c.pip ? { "data-pip": c.pip } : {}) }, withPip(icon(c.icon, 11), c.pip))),
     icons.length > PHONE_ICONS ? h("small", { class: "more phone-more", "aria-hidden": "true" }, "+") : null,
     icons.length > DESKTOP_ICONS ? h("small", { class: "more desk-more", "aria-hidden": "true" }, `+${icons.length - DESKTOP_ICONS}`) : null,
+    icons.length > PHONE_ICONS ? h("small", { class: "more mid-more", "aria-hidden": "true" }, `+${icons.length - PHONE_ICONS}`) : null,
   );
 }
 
