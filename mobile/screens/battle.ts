@@ -21,6 +21,9 @@ const LINEUP_MS = 400;
 /** How long a landed wave's motion runs: the longest animation (a float, 0.7 s, after up to 160 ms). A beat holds its last wave at least 0.7 s, so a beat change cuts a float off at most in its fade. */
 const MOTION_MS = 900;
 
+/** The changes that float up from a card. */
+const FLOATS = new Set<Change["kind"]>(["damage", "heal", "buff", "debuff", "summon"]);
+
 /** Reduced motion: nothing moves, and beats hold a little longer. */
 const reduced = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -263,7 +266,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         el.classList.add(flash);
         el.style.setProperty("--bv-ft", t);
       }
-      mine.slice(0, 3).forEach((c, i) => {
+      // Numbers float (−n, +n, ±PWR, a summon); a status or a death already
+      // sits in the card's chip, so floating it too only covers the card.
+      mine.filter((c) => FLOATS.has(c.kind)).slice(0, 3).forEach((c, i) => {
         const f = h("span", { class: `bv-float ${c.kind}`, "aria-hidden": "true" }, c.label);
         f.style.animationDelay = `${i * 80 - Math.round(age)}ms`;
         f.style.setProperty("--k", String(k++ % 3));

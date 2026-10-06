@@ -155,8 +155,9 @@ button.link { align-self: flex-start; border: none; background: none; color: var
  * a dying card pops before it greys, and the wave's numbers rise and fade.
  * battle.ts sets --bv-t (movement) and --bv-ft (flash) to minus the wave's
  * age, so a re-render picks each animation up where it was. Floats sit at
- * --k (0–2) slots: damage over the name, statuses and buffs smaller, above
- * it, clear of the name and PWR / HP; change the offsets here. */
+ * --k (0–2) slots: −n / +n over the name, ±PWR smaller above it, clear of
+ * the name and PWR / HP; a status doesn't float (its chip shows it). Change
+ * the offsets here. */
 .bv-card.bv-lunge-up { animation: bv-lunge-up 0.32s ease-out var(--bv-t, 0s); }
 .bv-card.bv-lunge-down { animation: bv-lunge-down 0.32s ease-out var(--bv-t, 0s); }
 .bv-card.bv-pulse { animation: bv-pulse 0.36s ease-out var(--bv-t, 0s); }
@@ -166,9 +167,10 @@ button.link { align-self: flex-start; border: none; background: none; color: var
 .bv-card.bv-glow::after { background: var(--you); }
 .bv-card.bv-dying { animation: bv-die 0.5s ease-out var(--bv-t, 0s); }
 .bv-float { --k: 0; position: absolute; left: 0; right: 0; top: calc(40px + var(--k) * 15px); z-index: 2; pointer-events: none; font-family: "IBM Plex Mono", monospace; font-size: 18px; font-weight: 700; text-shadow: 0 0 4px var(--bg), 0 0 2px var(--bg); white-space: nowrap; overflow: hidden; animation: bv-rise 0.7s ease-out both; }
-.bv-float.damage, .bv-float.death, .bv-float.debuff { color: var(--ghost); }
+.bv-float.damage, .bv-float.debuff { color: var(--ghost); }
 .bv-float.heal, .bv-float.summon { color: var(--you); }
-.bv-float.buff, .bv-float.status, .bv-float.silence { top: calc(20px + var(--k) * 6px); color: var(--gold); font-family: "Rajdhani", sans-serif; font-size: 11px; font-weight: 700; line-height: 12px; animation-name: bv-rise-small; }
+.bv-float.buff, .bv-float.debuff { top: calc(20px + var(--k) * 6px); font-family: "Rajdhani", sans-serif; font-size: 11px; font-weight: 700; line-height: 12px; animation-name: bv-rise-small; }
+.bv-float.buff { color: var(--gold); }
 @keyframes bv-lunge-up { 40% { transform: translateY(-14px) scale(1.06); } }
 @keyframes bv-lunge-down { 40% { transform: translateY(14px) scale(1.06); } }
 @keyframes bv-pulse { 40% { transform: scale(1.08); } }
