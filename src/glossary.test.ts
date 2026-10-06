@@ -7,7 +7,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import { describeAbility, describeStatus, describeStatusSegments, type DescribeSegment } from "./describe.js";
-import { GLOSSARY, ICON_IDS, STATUS_TERMS, scopedLabel, scopedTip, triggerLabel, termDef, termGroup, termIcon, type FixedTermId, type TermId } from "./glossary.js";
+import { chainCappedTip, GLOSSARY, ICON_IDS, STATUS_TERMS, scopedLabel, scopedTip, triggerLabel, termDef, termGroup, termIcon, type FixedTermId, type TermId } from "./glossary.js";
 import { MVP_RULES } from "./mvp/contract.js";
 import type { UnitForm } from "./mvp/contract.js";
 import { formSegments, formText } from "./mvp/form-text.js";
@@ -254,6 +254,9 @@ describe("keywords stand alone (R3-2, words.md (4))", () => {
 
   test("Chain stopped reads the cap from the rules", () => {
     expect(GLOSSARY["battle:chainCapped"].tip).toContain(`${MVP_RULES.chainStepCap} steps`);
+    // A run started under an older cap reads its own number (its ChainCapped event's steps).
+    expect(chainCappedTip(64)).toContain("ran 64 steps");
+    expect(GLOSSARY["battle:chainCapped"].tip).toBe(chainCappedTip(MVP_RULES.chainStepCap));
   });
 
   test("labels are the card's words", () => {

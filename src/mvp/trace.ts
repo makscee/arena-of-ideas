@@ -732,7 +732,7 @@ export function captionOf(log: BattleEvent[], id: number, name: NameOf = display
     case "Fatigue":
       return `Fatigue → everyone takes ${e.amount}`;
     case "ChainCapped":
-      return `Chain capped after ${e.steps} steps`;
+      return `Chain stopped after ${e.steps} steps`;
     case "Intercepted":
       // A status on the unit stopping its own act reads from the unit:
       // "Freeze on Rose → stops its strike", not "Rose (Freeze) → … on Rose".
