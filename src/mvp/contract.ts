@@ -41,7 +41,8 @@ export interface MvpRules {
   copyGrowth: Stats;
   /** tierOpensAt[t-1] = the round tier t enters the shop. */
   tierOpensAt: number[];
-  /** Cascade step cap; hitting it logs a visible "chain capped" event (slice 3). */
+  /** Cascade step cap; hitting it logs a visible "chain capped" event (slice 3).
+   * 32 since round 3 (note 19); a run keeps the cap it started with. */
   chainStepCap: number;
   /** Per-fight Elo (docs/round2/rating.md): K falls with runs played. A
    * player with fewer than `runsBelow` runs (the first step that fits) uses
@@ -71,7 +72,7 @@ export const MVP_RULES: MvpRules = {
   copiesToAwaken: 3,
   copyGrowth: { pwr: 1, hp: 2 },
   tierOpensAt: [1, 3, 6, 9],
-  chainStepCap: 64,
+  chainStepCap: 32,
   ratingKSteps: [{ runsBelow: 5, k: 32 }, { runsBelow: 15, k: 16 }],
   ratingK: 10,
   ratingStart: 1000,
