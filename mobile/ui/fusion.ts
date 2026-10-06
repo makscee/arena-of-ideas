@@ -18,8 +18,8 @@ export function discoveredLine(u: Partial<Pick<LineUnit, "kind" | "fusion">>, o:
   return line(`discovered by ${who}`);
 }
 
-/** The name a preview shows: "??? New fusion" for a pair nobody has fused
- * (the server sends no name until the fuse). */
-export function previewName(u: LineUnit): LineUnit {
-  return u.kind === "fused" && u.name === "" ? { ...u, name: "??? New fusion" } : u;
+/** The name a preview shows for a pair nobody has fused (the server sends no
+ * name until the fuse): "??? New fusion" on the sheet, `label` on a card. */
+export function previewName(u: LineUnit, label = "??? New fusion"): LineUnit {
+  return u.kind === "fused" && u.name === "" ? { ...u, name: label } : u;
 }

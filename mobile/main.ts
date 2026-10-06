@@ -387,6 +387,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
       const render = () => {
         const o = orders[at]!;
         const fused = previewName(views[at]!);
+        const shown = previewName(views[at]!, "???");
         const recipe = h(
           "div",
           { class: "recipe-line", "data-testid": "fusion-recipe" },
@@ -395,7 +396,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
           h("span", { class: "k" }, "Does"), " · both",
         );
         body.replaceChildren(
-          h("div", { class: "preview-card" }, card(fused, { side: "you", extra: [copiesBadge(fused)] })),
+          h("div", { class: "preview-card" }, card(shown, { side: "you", extra: [copiesBadge(shown)] })),
           recipe,
           h(
             "div",
