@@ -357,9 +357,21 @@ try {
     if (run.phase === "over") { run = await call("POST", "/runs", undefined, fuser.id); continue; }
     const dupe = run.offers.find((o) => run.line.some((u) => u.unitId === o.unitId && u.kind === "unit" && u.form === "sleeping"));
     const want = dupe ?? (run.line.length < 5 ? run.offers[0] : undefined);
-    const d = run.phase === "crown" ? { kind: "fight" } : want && run.gold >= want.cost ? { kind: "buy", slot: want.slot } : run.gold >= 1 ? { kind: "reroll" } : { kind: "fight" };
+    // An awakening's gift is skipped here (R3-15); the phone's chooser is R3-16's.
+    const d = run.gift ? { kind: "gift", pick: null } : run.phase === "crown" ? { kind: "fight" } : want && run.gold >= want.cost ? { kind: "buy", slot: want.slot } : run.gold >= 1 ? { kind: "reroll" } : { kind: "fight" };
     run = (await call("POST", `/runs/${run.runId}/decisions`, d, fuser.id)).run;
   }
+  // The awakening copy the page buys brings a gift (R3-15). Until the chooser
+  // (R3-16) the API skips it and the page reloads into the same shop.
+  const skipGift = async () => {
+    const r = await call("GET", `/runs/${run.runId}`, undefined, fuser.id);
+    if (!r.gift) { errors.push("awakening: no gift offered"); return; }
+    if (r.gift.length !== 3) errors.push(`awakening: ${r.gift.length} gift choices, want 3`);
+    await call("POST", `/runs/${run.runId}/decisions`, { kind: "gift", pick: null }, fuser.id);
+    await page.reload();
+    await page.getByTestId("play").click();
+    await page.getByTestId("fight").waitFor();
+  };
   if (!ready(run)) errors.push(`fusion setup: never reached two Awoken units (phase ${run.phase}, round ${run.round})`);
   else {
     await page.evaluate((p) => localStorage.setItem("arena.player", JSON.stringify(p)), fuser);
@@ -377,6 +389,7 @@ try {
     await page.keyboard.press(String(key));
     await page.getByTestId("hint").filter({ hasText: "fuse" }).waitFor();
     await wantSfx("the awakening copy", /^level-up$/);
+    await skipGift();
     const first = run.line.findIndex((u) => u.form === "awoken");
     const second = run.line.findIndex((u) => u.uid === almost.uid);
     await page.getByTestId(`line-${first}`).click();

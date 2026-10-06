@@ -292,3 +292,61 @@ describe("MVP API thin path", () => {
     expect(after.gold).toBe(r.gold);
   });
 });
+
+describe("MVP API awakening gift (R3-15)", () => {
+  it("an awakening shows 3 gift choices; a buy before picking is 409, a bad pick 400; the pick joins the line or bench", async () => {
+    const call = client();
+    const { json: p } = await call<PlayerRef>("POST", "/players", { name: "gifted" });
+    // Play until a copy awakens a unit: buy copies first, else anything with room, else reroll, else fight.
+    let run: RunView | null = null;
+    for (let runs = 0; runs < 10 && !run?.gift; runs++) {
+      let r = (await call<RunView>("POST", "/runs", undefined, p.id)).json;
+      const decide = async (d: unknown) => (r = (await call<DecisionResponse>("POST", `/runs/${r.runId}/decisions`, d, p.id)).json.run);
+      while (r.phase === "shop" && !r.gift) {
+        const owned = (id: string) => [...r.line, ...r.bench].some((u) => u.unitId === id && u.kind === "unit");
+        const room = r.line.length + r.bench.length < MVP_RULES.lineSize + MVP_RULES.benchSize!;
+        const buy = r.offers.find((o) => owned(o.unitId) && o.cost <= r.gold) ?? (room ? r.offers.find((o) => o.cost <= r.gold) : undefined);
+        if (buy) await decide({ kind: "buy", slot: buy.slot });
+        else if (r.gold >= MVP_RULES.rerollCost) await decide({ kind: "reroll" });
+        else await decide({ kind: "fight" });
+      }
+      if (r.gift) run = r;
+      else if (r.phase !== "over") await call("POST", `/runs/${r.runId}/abandon`, undefined, p.id);
+    }
+    expect(run?.gift).toHaveLength(3);
+    const r = run!;
+    const decide = (d: unknown, path = "decisions") => call<DecisionResponse & { error?: string }>("POST", `/runs/${r.runId}/${path}`, d, p.id);
+    if (r.offers.length > 0) {
+      const refused = await decide({ kind: "buy", slot: 0 });
+      expect(refused.status).toBe(409);
+      expect(JSON.stringify(refused.json)).toMatch(/gift/);
+    }
+    expect((await decide({ kind: "fight" })).status).toBe(409);
+    for (const pick of ["0", -1, 0.5, "__proto__"]) expect((await decide({ kind: "gift", pick })).status, String(pick)).toBe(400);
+    expect((await decide({ kind: "gift", pick: 3 })).status).toBe(409);
+    // Make room when the board is full and no choice is a copy: picking is refused until a sell.
+    const owns = (v: RunView, id: string) => [...v.line, ...v.bench].some((u) => u.unitId === id);
+    let v = r;
+    if (v.line.length + v.bench.length === MVP_RULES.lineSize + MVP_RULES.benchSize! && !owns(v, v.gift![0]!)) {
+      const full = await decide({ kind: "gift", pick: 0 });
+      expect(full.status).toBe(409);
+      expect(JSON.stringify(full.json)).toMatch(/make room/);
+      const sold = await decide({ kind: "sell", index: MVP_RULES.lineSize });
+      expect(sold.status).toBe(200);
+      v = sold.json.run;
+      expect(v.gift).toEqual(r.gift);
+    }
+    const merges = owns(v, v.gift![0]!);
+    const before = v.line.length + v.bench.length;
+    const shown = await decide({ kind: "gift", pick: 0 }, "preview");
+    expect(shown.status, JSON.stringify(shown.json)).toBe(200);
+    expect((await call<RunView>("GET", `/runs/${r.runId}`, undefined, p.id)).json.gift).toEqual(r.gift);
+    const picked = await decide({ kind: "gift", pick: 0 });
+    expect(picked.status).toBe(200);
+    const after = picked.json.run;
+    expect(owns(after, r.gift![0]!)).toBe(true);
+    expect(after.line.length + after.bench.length).toBe(before + (merges ? 0 : 1));
+    expect(after.gold).toBe(v.gold);
+    if (!after.gift) expect((await decide({ kind: "gift", pick: null })).status).toBe(409);
+  });
+});

@@ -196,9 +196,12 @@ describe("MVP lock (R3-12)", () => {
     expect(applyMvpDecision(s, { kind: "reroll" }, content).state.offers).toHaveLength(3);
   });
 
-  it("is refused at the Crown, and the Crown clears locked offers", () => {
+  it("is refused in the last shop round (unlocking still works), and at the Crown, and the Crown clears locked offers", () => {
     let s = initMvpRun({ runId: "r", player: me, seed: 7, content, ...day });
-    s = lock({ ...s, round: MVP_RULES.rounds }, 0);
+    // Locked in round 11, carried into round 12.
+    s = { ...lock({ ...s, round: MVP_RULES.rounds - 1 }, 0), round: MVP_RULES.rounds };
+    expect(() => lock(s, 1)).toThrow(/last shop round/);
+    expect(lock(s, 0).offers[0]!.locked).toBeUndefined();
     const crown = fight(s);
     if (crown.phase === "crown") {
       expect(crown.offers).toEqual([]);
