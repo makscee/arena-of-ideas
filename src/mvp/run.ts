@@ -193,9 +193,13 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       const why = fuseCheck(first, second);
       if (why) throw new MvpDecisionError("fuse", why);
       if (!ctx?.fuse) throw new MvpDecisionError("fuse", "no fusion name");
-      // The fused unit takes first's slot (and uid); second leaves the line.
-      s.line[d.first] = fuseUnits(first, second, ctx.fuse, content);
-      s.line.splice(d.second, 1);
+      // The fused unit takes the front-most of the two slots and keeps first's
+      // uid; the other slot leaves the line. Swapping the tap order changes
+      // only the recipe, never where the result stands.
+      const front = Math.min(d.first, d.second);
+      const fused = fuseUnits(first, second, ctx.fuse, content);
+      s.line.splice(Math.max(d.first, d.second), 1);
+      s.line[front] = fused;
       return { state: s };
     }
     case "fight": {

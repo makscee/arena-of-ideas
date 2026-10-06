@@ -343,10 +343,40 @@ try {
     await tap44("move buttons beside Fuse", page.locator('[data-testid="move-left"], [data-testid="move-right"]'), "width");
     await page.getByTestId("fuse").click();
     await shot("fuse-pick"); await noHScroll("fuse-pick");
+    // R2-5: both orders are previewed up front; a pair nobody has fused comes
+    // with no name in the response and shows "??? New fusion".
+    const previews = [];
+    const onPreview = async (res) => { if (/\/preview$/.test(res.url())) previews.push({ req: res.request().postDataJSON(), body: await res.text() }); };
+    page.on("response", onPreview);
     await page.getByTestId(`line-${second}`).click();
     await page.getByTestId("preview-confirm").waitFor();
+    page.off("response", onPreview);
+    const tapped = previews.find((p) => p.req.first === first && p.req.second === second);
+    const fusedIn = (p) => JSON.parse(p.body).run.line.find((u) => u.kind === "fused");
+    const isNew = tapped && fusedIn(tapped).name === "";
+    if (previews.length !== 2 || !tapped) errors.push(`fusion preview: expected both orders previewed, got ${previews.length}`);
+    const sheetText = await page.getByTestId("overlay").textContent();
+    if (isNew && !/\?\?\? New fusion/.test(sheetText)) errors.push("fusion preview: a new pair doesn't say '??? New fusion'");
+    if (tapped && !isNew && !sheetText.includes(fusedIn(tapped).name)) errors.push("fusion preview: a known pair doesn't show its name");
     await shot("fusion-preview"); await noHScroll("fusion-preview");
+    const recipe = await page.getByTestId("fusion-recipe").textContent();
+    await page.getByTestId("preview-swap").click();
+    const swapped = await page.getByTestId("fusion-recipe").textContent();
+    const names = [run.line[first].name, run.line[second].name];
+    if (!(recipe.indexOf(names[0]) < recipe.indexOf(names[1]) && swapped.indexOf(names[1]) < swapped.indexOf(names[0]))) errors.push(`fusion preview: Swap doesn't flip the recipe (${recipe} / ${swapped})`);
+    await shot("fusion-preview-swapped"); await noHScroll("fusion-preview-swapped");
+    await page.getByTestId("preview-swap").click();
     await page.getByTestId("preview-confirm").click();
+    if (isNew) {
+      await page.getByTestId("fusion-reveal").waitFor();
+      const reveal = await page.getByTestId("fusion-reveal").textContent();
+      const named = reveal.replace(/^.*You discovered /, "");
+      if (!/You discovered \S/.test(reveal)) errors.push(`fusion reveal: '${reveal}'`);
+      if (!/discovered by you/.test(await page.getByTestId("overlay").textContent())) errors.push("fusion reveal: no 'discovered by you'");
+      if (previews.some((p) => p.body.includes(named))) errors.push(`fusion preview: the response carried the name '${named}' before the fuse`);
+      await shot("fusion-reveal"); await noHScroll("fusion-reveal");
+      await page.getByTestId("sheet-close").click();
+    }
     await page.locator(".card.fused").waitFor();
     await shot("fused"); await noHScroll("fused");
     await page.locator(".card.fused").screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-fused-card.png` });

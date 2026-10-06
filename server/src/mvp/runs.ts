@@ -45,7 +45,7 @@ export interface RunDeps {
   nameFusion: NameFusion;
   /** The read-only namer (slice 10, ./fusions.ts): the stored name, else a
    * prefetched model name, else the portmanteau. It never records or waits.
-   * preview() uses it, so a preview names a fusion as the fuse will. */
+   * preview() uses it for the credit; it hides an unfused pair's name. */
   peekFusionName: NameFusion;
 }
 
@@ -209,15 +209,22 @@ function finish(deps: RunDeps, run: MvpRunState): MvpRunState {
 
 /** What `d` would do to `run`: the same rules on a copy, with no store
  * writes and no hooks (slice 8 shows the awakening and the fusion result card
- * with it). A fuse is named by peekFusionName: a preview never records a
- * discovery or calls a model. Not for fights: the route answers 400. */
+ * with it). A fuse previews a stored pair's name and credit; a pair nobody
+ * has fused previews name "" (R2-5: named when fused). A preview never
+ * records a discovery or calls a model. Not for fights: the route answers 400. */
 export function preview(deps: RunDeps, run: MvpRunState, d: Decision): DecisionResponse {
   // decide() would end such a run instead of applying `d`; its line may name
   // units the live content no longer has.
   if (run.phase !== "over" && run.contentVersion !== deps.content.version) throw new MvpDecisionError(d.kind, "the run's content is no longer live: start a new run");
   const ctx: DecisionContext = {};
   const fuse = fuseContext(deps.peekFusionName, deps.content, run, d);
-  if (fuse) ctx.fuse = fuse;
+  if (fuse && d.kind === "fuse") {
+    // A pair nobody has fused gets its name only from the fuse itself, so the
+    // name isn't in this response at all. A stored pair shows its stored
+    // credit: null while only bots have made it (the fuse then claims it).
+    const known = deps.store.fusion(run.line[d.first]!.unitId, run.line[d.second]!.unitId);
+    ctx.fuse = known ? { name: known.name, discoveredBy: known.discoveredBy } : { name: "", discoveredBy: fuse.discoveredBy };
+  }
   return { run: runView(applyMvpDecision(run, d, deps.content, ctx).state) };
 }
 
