@@ -45,6 +45,8 @@ const MOTION_MS = 1300;
 const TRIG_FLASH_MS = 400;
 /** When a hit's shake ends, in animation ms after its wave lands (80 ms in, 400 ms long). */
 const SHAKE_END_MS = 480;
+/** How long the line takes to slide back a slot for a summon at its front, at 1×. */
+const PUSH_MS = 450;
 
 /** The changes that float up from a card. */
 const FLOATS = new Set<Change["kind"]>(["damage", "heal", "buff", "debuff", "summon"]);
@@ -186,6 +188,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** A dying card's skull burst, and a summoned card's slide-in delay, set by motion() for its slot. */
   const skullsOf = new WeakMap<HTMLElement, HTMLElement>();
   const enterOf = new WeakMap<HTMLElement, string>();
+  /** The line sliding back a slot as a summon enters at its front (note 2):
+   * each pushed unit's offset and when the push landed, kept for the beat so
+   * the next wave's render carries the slide on instead of cutting it. */
+  let pushed = new Map<string, { dx: number; at: number }>();
+  let pushedBeat = -2;
 
   /** Motion runs at the playback speed (CSS reads --bv-sp), so 2× never cuts it. */
   const setSpeedVar = () => { for (const row of [enemy, mine, clash, fx]) row.style.setProperty("--bv-sp", String(speed)); };
@@ -1013,11 +1020,27 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     );
     clash.replaceChildren(clashMark, ...[triggerBadge("clash", v)].filter((x): x is HTMLElement => x !== null));
     drawBanner(v);
+    if (pushedBeat !== at) { pushed = new Map(); pushedBeat = at; }
+    const slides: [HTMLElement, { dx: number; at: number }][] = [];
     for (const [side, row] of [[them, enemy], [you, mine]] as const) {
       // The status row's width, from the cards on screen (read before they are replaced).
       const stsWidth = row.querySelector<HTMLElement>(".bv-card:not(.dead) .bv-sts")?.getBoundingClientRect().width ?? 0;
       const cards = lineOf(side, board, before, v, stsWidth);
+      const was = new Map([...row.querySelectorAll<HTMLElement>(".bv-slot")].map((sl) => [sl.querySelector<HTMLElement>(".bv-card")?.dataset.unit ?? "", sl.getBoundingClientRect().left]));
       row.replaceChildren(...cards);
+      // A summon entering at the front this wave pushes the line back a slot: each card slides from where it stood.
+      const newest = v.waves.at(-1);
+      const push = !!newest && newest.age !== null && !reduced() && newest.step.changes.some((c) => c.kind === "summon" && frontSummons.has(c.unit) && sides.get(c.unit) === side);
+      for (const sl of row.querySelectorAll<HTMLElement>(".bv-slot:not(.bv-enter)")) {
+        const id = sl.querySelector<HTMLElement>(".bv-card")?.dataset.unit ?? "";
+        const x0 = was.get(id);
+        if (push && x0 !== undefined && !pushed.has(id)) {
+          const dx = x0 - sl.getBoundingClientRect().left;
+          if (Math.abs(dx) > 1) pushed.set(id, { dx, at: now - newest!.age! });
+        }
+        const p = pushed.get(id);
+        if (p && (now - p.at) * speed < PUSH_MS) slides.push([sl, p]);
+      }
       // A falling card beside a full line widens the row instead of wrapping it.
       row.style.gridTemplateColumns = `repeat(${Math.max(5, cards.length)}, minmax(0, 1fr))`;
       row.classList.toggle("empty", !cards.length);
@@ -1027,6 +1050,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       if (row.isConnected) fitText(row);
     }
     drawBeams(v.waves);
+    // After the beams: they aim at each card's slot, not where its slide starts.
+    for (const [sl, p] of slides) sl.animate([{ transform: `translateX(${p.dx}px)` }, { transform: "none" }], { duration: PUSH_MS / speed, delay: -(now - p.at), easing: "ease-out", fill: "backwards" });
     caption.replaceChildren(h("span", { class: "bv-cap" }, ...captionKids(step)));
     still.replaceChildren(...(reduced() ? stillList(v.changes) : []));
     still.style.display = reduced() && !finished ? "" : "none";

@@ -39,7 +39,7 @@ const readBeams = (page) =>
 /** What hides what, measured: the layer is made hit-testable, then each
  * PWR/HP number's centre and each beam point inside the caption must still
  * hit the number or the caption, not the layer. */
-const covered = (page) =>
+export const covered = (page) =>
   page.evaluate(() => {
     const fx = document.querySelector(".bv-fx");
     if (!fx) return [];
