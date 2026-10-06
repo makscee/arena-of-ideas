@@ -6,7 +6,7 @@ import { battle } from "../battle.js";
 import { displayNames } from "../trace.js";
 import { stressAbilities, stressRegistry } from "../content/stress.js";
 import type { AbilityDef, AbilityRegistry, BattleEvent, UnitDef, When } from "../types.js";
-import { BEAT_MAX_MS, BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, stepsOf, timingOf, traceOf, whyILost } from "./trace.js";
+import { BEAT_MAX_MS, BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, stepsOf, timelineOf, timingOf, traceOf, whyILost } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -425,5 +425,36 @@ describe("Why: the chain from a change back to the turn (R2-15)", () => {
     expect(firingOf(log, step, whenOf({ Victim }))?.trigger).toBe("trigger:Hurt");
     // A Victim whose stamped When is Heal would read as Heal: the stamp wins over the event.
     expect(firingOf(log, step, () => ({ kind: "trigger", on: { on: "Heal" } }))?.trigger).toBe("trigger:Heal");
+  });
+});
+
+describe("the desktop timeline (R2-16)", () => {
+  test("one block per turn, in order, every beat in exactly one block", () => {
+    const log = run([dummy("Squire", 8, 1), dummy("Page", 6, 1)], [dummy("Dummy", 30, 2), Medic]);
+    const beats = beatPlayOf(log, stepsOf(log));
+    const tl = timelineOf(log, beats);
+    expect(tl.map((t) => t.turn)).toEqual([...new Set(tl.map((t) => t.turn))].sort((p, q) => p - q));
+    expect(tl.flatMap((t) => t.beats)).toEqual(beats.map((b) => b.index));
+    for (const t of tl) for (const i of t.beats) if (beats[i]!.turn >= 1) expect(beats[i]!.turn).toBe(t.turn);
+  });
+
+  test("each death is marked once, on the beat that shows it, in the fallen side", () => {
+    const log = run([dummy("Squire", 8, 1), dummy("Page", 6, 1)], [dummy("Dummy", 30, 2), Medic]);
+    const beats = beatPlayOf(log, stepsOf(log));
+    const deaths = timelineOf(log, beats).flatMap((t) => t.marks.filter((m) => m.kind === "death"));
+    expect(deaths.length).toBe(log.filter((e) => e.type === "Death").length);
+    for (const m of deaths) {
+      expect(m.side).toBe("A");
+      expect(beats[m.beat]!.waves.some((w) => w.changes.some((c) => c.kind === "death" && c.unit === m.unit))).toBe(true);
+    }
+  });
+
+  test("fatigue is marked once, on the turn it set in", () => {
+    const log = run([dummy("Wall", 60, 0)], [dummy("Wall", 60, 0)]);
+    const beats = beatPlayOf(log, stepsOf(log));
+    const fat = timelineOf(log, beats).flatMap((t) => t.marks.filter((m) => m.kind === "fatigue").map(() => t.turn));
+    const first = log.find((e) => e.type === "Fatigue");
+    if (first) expect(fat).toEqual([first.turn]);
+    else expect(fat).toEqual([]);
   });
 });

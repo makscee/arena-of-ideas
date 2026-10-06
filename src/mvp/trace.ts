@@ -850,3 +850,54 @@ export function keyMomentsOf(log: BattleEvent[], beats: PlayBeat[], name: NameOf
   if (out.length < 2 && last) add({ kind: "kill", beat: beatOfEvent(last.id), label: killLabel(last), ...(last.killer ? { unit: last.killer } : {}) });
   return out.sort((p, q) => p.beat - q.beat).slice(0, 3);
 }
+
+// ---------- the timeline under the desktop battle (R2-16) ----------
+
+/** What a turn's block marks: a death (in the fallen unit's side colour), a
+ * big hit, and the turn fatigue set in. Each mark sits on the beat it plays in. */
+export interface TimelineMark {
+  kind: "death" | "big" | "fatigue";
+  beat: number;
+  /** The fallen unit's side (deaths), the struck unit's side (big hits). */
+  side?: Side;
+  unit?: string;
+}
+
+/** One block per turn that has beats: its beats (playback indexes, in order) and its marks. */
+export interface TimelineTurn {
+  turn: number;
+  beats: number[];
+  marks: TimelineMark[];
+}
+
+/** A hit counts as big at this much damage, or at 60% of the battle's biggest when that is more. */
+const BIG_HIT_MIN = 4;
+
+/** The turn timeline: one block per turn, each with its beats and its marks
+ * (deaths, big hits, fatigue setting in). Pure, like boardAt: scrubbing to a
+ * block's beat is go(beat). Beats before the first turn (battle start) join
+ * the first block. */
+export function timelineOf(log: BattleEvent[], beats: PlayBeat[], sides = sidesOf(log)): TimelineTurn[] {
+  const hits = log.flatMap((e) => (e.type === "Hurt" ? [e.amount] : []));
+  const big = Math.max(BIG_HIT_MIN, Math.ceil(Math.max(0, ...hits) * 0.6));
+  const fatigue = log.find((e) => e.type === "Fatigue");
+  const turns: TimelineTurn[] = [];
+  for (const b of beats) {
+    const last = turns.at(-1);
+    const t = last && b.turn <= last.turn ? last : { turn: Math.max(1, b.turn), beats: [], marks: [] };
+    if (t !== last) turns.push(t);
+    t.beats.push(b.index);
+    const ids = new Set(b.waves.flatMap((w) => w.eventIds));
+    let bigHit = false;
+    for (const id of [...ids].sort((p, q) => p - q)) {
+      const e = log[id];
+      if (e?.type === "Death") t.marks.push({ kind: "death", beat: b.index, unit: e.unit, ...(sides.get(e.unit) ? { side: sides.get(e.unit)! } : {}) });
+      else if (e?.type === "Hurt" && e.amount >= big && !bigHit) {
+        bigHit = true;
+        t.marks.push({ kind: "big", beat: b.index, unit: e.unit, ...(sides.get(e.unit) ? { side: sides.get(e.unit)! } : {}) });
+      }
+    }
+    if (fatigue && (ids.has(fatigue.id) || (b.turn === fatigue.turn && b.end >= fatigue.id)) && !turns.some((x) => x.marks.some((m) => m.kind === "fatigue")) && !t.marks.some((m) => m.kind === "fatigue")) t.marks.push({ kind: "fatigue", beat: b.index });
+  }
+  return turns;
+}

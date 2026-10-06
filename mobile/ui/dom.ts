@@ -72,9 +72,9 @@ export const desktopQuery = matchMedia("(min-width: 1024px)");
 export const isDesktop = (): boolean => desktopQuery.matches;
 
 /** Names the screen on #app (data-screen), which turns on its desktop layout
- * in style.css; a screen without a name (the battle until R2-16, the name
+ * in style.css; a screen without a name (the name
  * screen) stays a phone column at every width. */
-export function screen(name: "home" | "shop" | "result" | "over" | "stats" | "codex"): void {
+export function screen(name: "home" | "shop" | "result" | "over" | "stats" | "codex" | "battle"): void {
   app.dataset.screen = name;
 }
 
