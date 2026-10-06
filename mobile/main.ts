@@ -181,7 +181,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
     champ
       ? hint(
           champ.player.id === api.player?.id
-            ? "This is your team: today the others try to beat it in the Crown. Tap a card to read it."
+            ? "This is your team. Others try to beat it today, and so can you, with another team. Tap a card to read it."
             : r
               ? "Tap a card to read it. Beat this team in the Crown to become a slayer."
               : "This is the team to beat. Tap a card to read it, then Play.",
@@ -278,7 +278,7 @@ type Pick = { mode: "none" } | { mode: "picked"; index: number } | { mode: "fuse
 function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
   if (run.phase === "over") return runOverScreen(run, content, notice);
   const crown = run.phase === "crown";
-  // The reigning champion's Crown is their own team: no slay to win.
+  // The reigning champion's Crown is their own team; a win is still a slay.
   const ownCrown = crown && run.nextOpponent?.player.id === run.player.id;
   const err = errorLine();
   err.textContent = notice;
@@ -344,7 +344,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
   const shopHint = (): HTMLElement | null => {
     if (pick.mode !== "none") return null;
     // run.ts refuses every decision but the fight in the crown phase: the line is final.
-    if (crown) return hint(ownCrown ? "The Crown: today's champion is your own team. Beating it doesn't count as a slay. Your line is final." : "The Crown: your line, as it is, against today's champion. Win it to become a slayer; a loss costs a heart.");
+    if (crown) return hint(ownCrown ? "The Crown: today's champion is your own team. Beat it to be a slayer again; a loss costs a heart. Your line is final." : "The Crown: your line, as it is, against today's champion. Win it to become a slayer; a loss costs a heart.");
     // Only a unit whose next copy is on offer right now.
     const almost = run.line.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === rules.copiesToAwaken - 1 && run.offers.some((o) => o.unitId === u.unitId));
     const canBuy = run.offers.some((o) => o.cost <= run.gold);
@@ -453,7 +453,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = ""): void {
     h(
       "div",
       { class: "row spread opp" },
-      h("span", { class: "dim", "data-testid": "next-opponent" }, ...(opp ? [`${crown ? "Crown vs" : "Next:"} `, who(opp.player.name), `${opp.player.bot ? " 🤖" : ""}${ownCrown ? " (your own team)" : ""}`] : [crown ? "Crown vs today's champion" : "Next: a team saved at this round"])),
+      h("span", { class: "dim", "data-testid": "next-opponent" }, ...(opp ? [`${crown ? "Crown vs" : "Next:"} `, who(opp.player.name), `${opp.player.bot ? " 🤖" : ""}${ownCrown ? " (your champion team)" : ""}`] : [crown ? "Crown vs today's champion" : "Next: a team saved at this round"])),
       pin,
     ),
     h(
@@ -526,8 +526,8 @@ function resultScreen(run: RunView, fight: FightResult, battle: BattleRecord, co
     fight.kind === "crown"
       ? own
         ? fight.outcome === "win"
-          ? "That was your own champion team: beating it doesn't count as a slay."
-          : `Your own champion team holds.${lostHearts}`
+          ? "You beat your own champion team. You are a slayer today."
+          : `Your champion team holds.${lostHearts}`
         : fight.outcome === "win"
           ? "You beat the champion. You are a slayer today."
           : `The champion holds.${lostHearts}`
@@ -577,10 +577,10 @@ function runEnd(run: RunView): { why: string; reach: string } {
       return { why: "No champion to face yet, so the run ends here.", reach: `Survived all ${rules.rounds} rounds.` };
     case "crown-won":
       return own
-        ? { why: "You beat your own champion team. It doesn't count as a slay: the others try to beat it today.", reach: "Won the Crown." }
+        ? { why: "👑 You beat your own champion team: you are a slayer today.", reach: "Won the Crown." }
         : { why: "👑 You beat the champion: you are a slayer today.", reach: "Won the Crown." };
     case "crown-lost":
-      return { why: own ? "Your own champion team held the Crown." : "The champion held the Crown.", reach: "Reached the Crown." };
+      return { why: own ? "Your champion team held the Crown." : "The champion held the Crown.", reach: "Reached the Crown." };
     case "content-changed":
       return { why: "The game's units changed since this run began, so it ended here. Your rating stays as it was.", reach: round };
     default:
