@@ -97,7 +97,7 @@ function legendSheet(): HTMLElement {
     { class: "stack legend", "data-testid": "legend" },
     h("h2", {}, "READING A CARD"),
     row(h("span", { class: "stats" }, span("p", "2"), " / ", span("h", "6")), "PWR / HP. PWR is what its strike deals; at 0 HP it falls."),
-    row(h("span", { class: "rates" }, span("w", "W59%"), " P9%"), "Today's rates. W: how often a team with it won its fight. P: how often it was on a finished run's line. — means no runs yet."),
+    row(h("span", { class: "rates" }, span("w", "W59%"), " P9%"), "Rates from every run since the units last changed. W: how often a team with it won its fight. P: how often it was on a finished run's line. — means no runs yet."),
     row(span("copies", "●●○"), `Copies toward Awoken: copy ${r.copiesToAwaken} awakens it. Each copy adds +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP.`),
     row(span("copies tag", "AWOKEN ×3"), "Awoken, its stronger form; ×3 copies merged in. Two Awoken units can fuse."),
     row(span("copies tag", "FUSED ×2"), "Two Awoken units fused into one: final, copies of either part still merge in. \"by @name\" is who discovered it."),

@@ -16,7 +16,8 @@
 //   model's final failure), so a bot never fixes the portmanteau while the
 //   model's name is coming, and the pool still holds fusions.
 //   Bots also play every day (#587): runs until BOT_DAILY_CROWNS of the day's
-//   Crown fights are bots', so each day's champion meets challengers and a
+//   Crown fights are bots' and BOT_DAILY_SLAYERS bots slew (capped by
+//   BOT_MAX_DAILY_CROWNS), so each day's champion meets challengers and a
 //   player alone still sees slayers and a playoff on day 2 and later, not only
 //   on a fresh world's first day. The pool stays bounded per day: a round
 //   below BOT_TARGET is filled, and a day adds the ghosts of the runs that
@@ -39,15 +40,19 @@ import { MemoryMvpStore } from "./store.js";
 
 /** Ghosts per round (live content) the bots keep. Tunable. */
 export const BOT_TARGET = 24;
-/** Bot Crown fights each day: bots play runs until this many of the day's
- * Crown fights are bots'. Measured on the MVP content (#587, 5 fresh worlds,
- * 3 days each, at 16): a bot run reaches the Crown about 1 time in 4 once
- * the pool is full; about 1 Crown fight in 10 beats the seeded day-1
- * champion and 1 in 6 a later one (it varies a lot by champion). So a day
- * sees 2 to 4 bot slayers on average, sometimes none, and about 100 bot runs
- * (about 25 MB of battles in SQLite). More bot slayers also mean a human
- * slayer meets more bots in the playoff. Tunable. */
-export const BOT_DAILY_CROWNS = 24;
+/** Bot Crown fights each day, at least: bots play runs until this many of
+ * the day's Crown fights are bots', so each day's champion meets challengers.
+ * A bot run reaches the Crown about 1 time in 4 once the pool is full. Set it
+ * to 0 for no daily bot runs at all. Tunable. */
+export const BOT_DAILY_CROWNS = 12;
+/** Bot slayers a day aims for, so a player alone sees a real playoff (how to
+ * try, step 5): past BOT_DAILY_CROWNS, bots keep fighting the Crown until this
+ * many different bots slew it, up to BOT_MAX_DAILY_CROWNS. How often a bot
+ * slays varies a lot with the champion (1 Crown in 10 to 1 in 3 measured), so
+ * a fixed quota left 8 of 20 fresh worlds with fewer than 2 (#587). Tunable. */
+export const BOT_DAILY_SLAYERS = 2;
+/** The most bot Crown fights a day (about 240 bot runs, ~60 MB of battles). */
+export const BOT_MAX_DAILY_CROWNS = 60;
 /** How often the top-up looks at the pool. */
 export const BOT_TOPUP_MS = 60_000;
 /** Bot runs per event-loop turn while topping up. */
@@ -202,13 +207,17 @@ export function thinRounds(rt: RunDeps, target = BOT_TARGET): number[] {
 }
 
 /** How many more Crown fights bots owe today: `quota` minus today's bot
- * Crown fights, or 0 with no live champion today (a run would end
- * "no-champion", never fighting one). */
+ * Crown fights; past it, one more while fewer than BOT_DAILY_SLAYERS
+ * different bots slew today's champion and fewer than BOT_MAX_DAILY_CROWNS
+ * were fought. 0 with no live champion today (a run would end "no-champion",
+ * never fighting one), or a quota of 0. Asked again after every Crown fight. */
 export function crownsOwed(rt: RunDeps, quota = BOT_DAILY_CROWNS): number {
   const champ = todaysChampion(rt);
   if (!champ || champ.contentVersion !== rt.content.version || quota <= 0) return 0;
   const fought = rt.store.battles({ kind: "crown", since: rt.today().startedAt }).filter((b) => b.player.bot).length;
-  return Math.max(0, quota - fought);
+  if (fought < quota) return quota - fought;
+  const slayers = new Set(rt.store.slays(rt.today().seq).filter((s) => s.player.bot).map((s) => s.player.id)).size;
+  return slayers < BOT_DAILY_SLAYERS && fought < BOT_MAX_DAILY_CROWNS ? 1 : 0;
 }
 
 const foughtCrown = (run: MvpRunState) => run.endedBy === "crown-won" || run.endedBy === "crown-lost";
@@ -223,7 +232,7 @@ export function topUpGhosts(rt: RunDeps, opts: { target?: number; maxRuns?: numb
   let owed = crownsOwed(rt, opts.dailyCrowns);
   let thin = thinRounds(rt, target);
   while ((thin.length > 0 || owed > 0) && runs < maxRuns) {
-    if (foughtCrown(playBotRun(rt))) owed--;
+    if (foughtCrown(playBotRun(rt))) owed = crownsOwed(rt, opts.dailyCrowns);
     runs++;
     thin = thinRounds(rt, target);
   }
@@ -327,7 +336,7 @@ export const botWorld: MvpJob = (rt: MvpRuntime) => {
       let owed = crownsOwed(rt);
       while (!stopped && runs < MAX_RUNS_PER_TOPUP && (owed > 0 || thinRounds(rt).length > 0)) {
         if (foughtCrown(await playBotRunWaiting(rt, isStopped))) {
-          owed--;
+          owed = crownsOwed(rt);
           crowns++;
         }
         if (++runs % RUNS_PER_TURN === 0) await yieldTurn();
