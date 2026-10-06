@@ -31,6 +31,8 @@ if (!url) {
   }
 }
 
+// Names are one per player (R2-17): a tag keeps a second pass at one server apart.
+const TAG = Date.now().toString(36).slice(-4);
 const browser = await launchChromium();
 const errors = [];
 let shots = 0;
@@ -68,7 +70,7 @@ try {
 
   await page.goto(url, { timeout: 20_000 });
   await page.getByTestId("name-input").waitFor({ timeout: 10_000 });
-  await page.keyboard.type("DeskTester");
+  await page.keyboard.type(`DeskTester${TAG}`);
   await page.keyboard.press("Enter");
   await page.getByTestId("play").waitFor();
   await shot("home"); await noHScroll("home"); await wide("home", 1100); await onScreen("home: Play", page.getByTestId("play"));
@@ -260,7 +262,7 @@ try {
     if (!res.ok) throw new Error(`${method} ${path}: ${json.error}`);
     return json;
   };
-  const fuser = await call("POST", "/players", { name: "DeskFuser" });
+  const fuser = await call("POST", "/players", { name: `DeskFuser${TAG}` });
   let run = await call("POST", "/runs", undefined, fuser.id);
   const ready = (r) => r.phase === "shop" && r.gold >= 3 && r.line.some((u) => u.kind === "unit" && u.form === "awoken") && r.line.some((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === 2 && r.offers.some((o) => o.unitId === u.unitId));
   for (let steps = 0; steps < 3000 && !ready(run); steps++) {

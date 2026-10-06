@@ -1,24 +1,30 @@
 // Scratch sim: bot runs in memory, fixed 5 offers vs a growing curve.
+// Each curve is the rules' own shape (offers in round 1, +1 at each
+// offersGrowAt round; the run engine applies it, src/mvp/contract.ts
+// offersAt), so nothing here adds offers on top of MVP_RULES' growth (R2-17).
+//   node --import tsx/esm docs/round2/sim/shop-curve.mts [runs=300] [seed=12345]
 const R = new URL("../../..", import.meta.url).pathname;
 const { mvpRuntime } = await import(`${R}/server/src/mvp/runtime.ts`);
 const { mvpContent } = await import(`${R}/server/src/mvp/content.ts`);
 const { MemoryMvpStore } = await import(`${R}/server/src/mvp/store.ts`);
-const { MVP_RULES } = await import(`${R}/src/mvp/contract.ts`);
+const { MVP_RULES, offersAt } = await import(`${R}/src/mvp/contract.ts`);
 const { botDecision } = await import(`${R}/server/src/mvp/bots.ts`);
 const { startRun, decide } = await import(`${R}/server/src/mvp/runs.ts`);
 
 const content = mvpContent();
-const curves: Record<string, (round: number) => number> = {
-  fixed5: () => 5,
-  hsbg3to6: (r) => (r >= 9 ? 6 : r >= 6 ? 5 : r >= 3 ? 4 : 3),
-  grow4to7: (r) => (r >= 9 ? 7 : r >= 6 ? 6 : r >= 3 ? 5 : 4),
-  fast3to6: (r) => (r >= 7 ? 6 : r >= 4 ? 5 : r >= 2 ? 4 : 3),
+const curves: Record<string, { offers: number; offersGrowAt: number[] }> = {
+  fixed5: { offers: 5, offersGrowAt: [] },
+  hsbg3to6: { offers: 3, offersGrowAt: [3, 6, 9] },
+  grow4to7: { offers: 4, offersGrowAt: [3, 6, 9] },
+  // The live rules (MVP_RULES): 3, 4 from round 2, 5 from 4, 6 from 7.
+  fast3to6: { offers: MVP_RULES.offers, offersGrowAt: MVP_RULES.offersGrowAt ?? [] },
 };
 const RUNS = Number(process.argv[2] ?? 300);
 for (const [name, curve] of Object.entries(curves)) {
   let s = Number(process.argv[3] ?? 12345);
   const seed = () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0));
-  const rules = { ...MVP_RULES, offers: curve(1) };
+  const rules = { ...MVP_RULES, ...curve };
+  console.log(`${name}: offers by round ${Array.from({ length: 12 }, (_, i) => offersAt(rules, i + 1)).join(" ")}`);
   const rt = mvpRuntime({ content, store: new MemoryMvpStore(), rules, seed, now: () => new Date("2026-10-06T10:00:00Z") });
   const awokenBy: number[] = Array(13).fill(0);
   let fused = 0, rerolls = 0, buys = 0, survived = 0, goldLeft = 0, shopRounds = 0;
@@ -35,7 +41,6 @@ for (const [name, curve] of Object.entries(curves)) {
       if (d.kind === "fuse") didFuse = true;
       if (d.kind === "fight" && run.phase === "shop") {
         goldLeft += run.gold; shopRounds++;
-        run = { ...run, rules: { ...run.rules, offers: curve(run.round + 1) } };
       }
       decide(rt, run, d);
       run = rt.store.run(run.runId)!;

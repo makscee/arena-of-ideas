@@ -95,9 +95,13 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
     const y = window.scrollY;
     let kids: Node[];
     try {
-      if (st.tab === "units") kids = unitsTab(a.content, st, set, open, st.sort === "tier" ? null : await cache.stats!);
+      if (st.tab === "units") kids = unitsTab(a.content, st, set, open, st.sort === "tier" ? null : await rates(), retryRates);
       else if (st.tab === "keywords") kids = [keywordsTab(a.content, open)];
-      else kids = fusionsTab(a.content, await (cache.fusions ??= api.fusions()), st, set, open);
+      else {
+        // The first draw of Fusions waits on /fusions: say so meanwhile (R2-17).
+        if (!body.hasChildNodes()) body.replaceChildren(h("div", { class: "dim", "data-testid": "codex-loading" }, "Loading fusions…"));
+        kids = fusionsTab(a.content, await (cache.fusions ??= api.fusions()), st, set, open);
+      }
     } catch (e) {
       delete cache.fusions; // a failed fetch is tried again on the next draw
       kids = [h("div", { class: "error", "data-testid": "error" }, e instanceof Error ? e.message : String(e))];
@@ -107,6 +111,13 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
     window.scrollTo(0, y);
     body.style.minHeight = "";
     if (st.tab === "keywords" && st.term) landOn(body, st.term, st.scope);
+  };
+  /** The rates for a rate sort; a fetch that failed (null) is tried again (R2-17). */
+  const rates = async (): Promise<StatsView | null> => (await cache.stats!) ?? (await (cache.stats = loadUnitRates()));
+  const retryRates = () => {
+    delete cache.stats;
+    cache.stats = loadUnitRates();
+    void draw();
   };
   /** A filter, sort or fusions change: the same tab, redrawn where it is. */
   const set = (next: Partial<CodexState>): void => {
@@ -176,6 +187,7 @@ function unitsTab(
   set: (next: Partial<CodexState>) => void,
   open: (node: HTMLElement, from?: HTMLElement) => void,
   stats: StatsView | null,
+  retry: () => void,
 ): Node[] {
   // A rate sort: highest first, units no run has counted yet last (by tier).
   const rates = new Map((stats?.units ?? []).filter((r) => r.runs > 0).map((r) => [r.unitId, r]));
@@ -248,7 +260,9 @@ function unitsTab(
   const picked = st.trigger ? triggers.get(st.trigger) : null;
   const note =
     st.sort !== "tier"
-      ? h("div", { class: "dim small" }, stats ? "Win: how often its team won the fight. Picked: how often it was on a finished line. Since the units last changed." : "Rates aren't available right now.")
+      ? stats
+        ? h("div", { class: "dim small" }, "Win: how often its team won the fight. Picked: how often it was on a finished line. Since the units last changed.")
+        : h("div", { class: "row dim small", "data-testid": "codex-rates-error" }, "Rates aren't available right now.", button("Try again", retry, "small", "codex-rates-retry"))
       : null;
   return [search, tierRow, trigRow, sortRow, picked ? h("div", { class: "dim small" }, `When: ${picked}`) : null, count, note, grid].filter((n): n is NonNullable<typeof n> => n !== null);
 }

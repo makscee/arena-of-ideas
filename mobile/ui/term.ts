@@ -3,13 +3,15 @@
 // clause is one amber pill with its icon, a status is its icon plus its word in
 // its colour, a target is tinted teal (ally) or pink (enemy), and an amount is
 // its effect's icon plus a bold number. Every term is a button: hovering it on
-// a desktop shows its rule in a tooltip, tapping it (or Enter) opens a small
-// sheet with the rule. Both offer "Open in Codex" once something registers a
-// Codex link (slice R2-11, setCodexLink).
+// a desktop shows its rule in a tooltip; tapping it (or Enter) opens a small
+// sheet with the rule on a phone, and on a desktop (1024px and wider) a
+// popover pinned to the term (R2-17), which Esc or a click outside closes.
+// Both offer "Open in Codex" once something registers a Codex link (slice
+// R2-11, setCodexLink).
 import type { DescribeSegment } from "../../src/describe";
 import { scopedTip, termDef, termIcon, type TermDef, type TermId } from "../../src/glossary";
 import type { UnitFilter } from "../../src/types";
-import { closable, h } from "./dom";
+import { closable, h, isDesktop } from "./dom";
 import { changedTokens } from "./diff";
 import { icon } from "./icon";
 
@@ -82,6 +84,23 @@ export function richText(segs: DescribeSegment[], o: RichOptions = {}): Node[] {
     if (pill) pill.append(...nodes);
     else out.push(...nodes);
   });
+  return glueStops(out);
+}
+
+/** A term is a button, and a line may break after a button: "this unit" then
+ * a lone "." on the next line. The punctuation that follows a term goes into
+ * one unbreakable box with it. */
+function glueStops(nodes: Node[]): Node[] {
+  const out: Node[] = [];
+  for (const n of nodes) {
+    const prev = out[out.length - 1];
+    const stop = n instanceof Text ? /^[.,;:!?)]+/.exec(n.data)?.[0] : undefined;
+    if (stop && prev instanceof HTMLElement && prev.matches("button.t")) {
+      out[out.length - 1] = h("span", { class: "t-glue" }, prev, stop);
+      const rest = (n as Text).data.slice(stop.length);
+      if (rest) out.push(document.createTextNode(rest));
+    } else out.push(n);
+  }
   return out;
 }
 
@@ -114,20 +133,22 @@ function termButton(seg: DescribeSegment, info: TermDef & { id: TermId }, kids: 
   const group = id.slice(0, id.indexOf(":"));
   const b = h("button", { type: "button", class: `t t-${group} ${toneOf(seg, info)}`, "data-term": id, "data-testid": "term", "aria-label": `${seg.text}: ${info.tip}` });
   if (seg.amount) b.classList.add("t-amount");
-  // Icons: a status shows its own; an amount shows its effect's; an effect
-  // with no number of its own (summon, revive, silence) shows it on the verb;
-  // a target shows its own. A trigger's icon is on its pill instead.
+  // Icons, one per idea: an amount shows its term's (a damage number its
+  // effect's, a stack count its status's, "2 HP" HP's), and then its word is
+  // only coloured; a status, stat or effect with no number of its own shows
+  // it on the word; a target shows its own. A trigger's icon is on its pill.
   let ic = undefined as ReturnType<typeof termIcon>;
   if (!inPill) {
-    if (group === "status" || group === "target") ic = info.icon;
-    else if (group === "effect") ic = seg.amount || !withAmount.has(id) ? info.icon : undefined;
+    if (group === "target") ic = info.icon;
+    else if (group === "status" || group === "stat" || group === "effect") ic = seg.amount || !withAmount.has(id) ? info.icon : undefined;
   }
   if (ic) b.append(icon(ic, size));
   b.append(...kids);
   b.addEventListener("click", (e) => {
     e.stopPropagation();
     hideTip();
-    openTermSheet(info);
+    if (isDesktop()) openTermPopover(b, info);
+    else openTermSheet(info);
   });
   b.addEventListener("pointerenter", (e) => e.pointerType === "mouse" && queueTip(b, info));
   b.addEventListener("pointerleave", hideTip);
@@ -164,6 +185,68 @@ export function openTermSheet(info: TermDef & { id: TermId; scope?: UnitFilter }
   return close;
 }
 
+// ---------- the desktop popover ----------
+
+let pop: HTMLElement | null = null;
+let popAnchor: HTMLElement | null = null;
+
+/** A desktop's click: the rule in a popover under (or over) the term, with
+ * "Open in Codex"; Esc, a click outside, a scroll or the term leaving the
+ * page closes it. A second click on the same term closes it too. */
+export function openTermPopover(anchor: HTMLElement, info: TermDef & { id: TermId; scope?: UnitFilter }): void {
+  const again = popAnchor === anchor;
+  closePopover();
+  if (again) return;
+  const kids: Node[] = [ruleBlock(info, 24)];
+  if (info.more) kids.push(h("div", { class: "dim small" }, info.more));
+  const codex = codexButton(info.id, info.scope);
+  if (codex) {
+    codex.addEventListener("click", closePopover);
+    kids.push(codex);
+  }
+  pop = h("div", { class: "stack term-pop", role: "dialog", "aria-label": info.label, "data-testid": "term-popover" }, h("div", { class: "stack term-sheet", "data-testid": "term-sheet" }, ...kids));
+  document.body.append(pop);
+  popAnchor = anchor;
+  place(pop, anchor);
+  requestAnimationFrame(watchPopover);
+}
+
+export function closePopover(): void {
+  pop?.remove();
+  pop = null;
+  popAnchor = null;
+}
+
+function watchPopover(): void {
+  if (!pop) return;
+  if (!popAnchor?.isConnected) return closePopover();
+  requestAnimationFrame(watchPopover);
+}
+
+/** Under the anchor when it fits, else over it; never past the window's sides. */
+function place(el: HTMLElement, anchor: HTMLElement): void {
+  const r = anchor.getBoundingClientRect();
+  const w = el.offsetWidth;
+  const left = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, innerWidth - w - 8));
+  const below = r.bottom + 6 + el.offsetHeight < innerHeight;
+  el.style.left = `${left + scrollX}px`;
+  el.style.top = `${(below ? r.bottom + 6 : Math.max(8, r.top - 6 - el.offsetHeight)) + scrollY}px`;
+}
+
+addEventListener(
+  "keydown",
+  (e) => {
+    if (!pop || e.key !== "Escape") return;
+    // Esc closes the popover only: the screen under it (the shop's menu) never sees it.
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    closePopover();
+  },
+  { capture: true },
+);
+addEventListener("pointerdown", (e) => pop && !pop.contains(e.target as Node) && e.target !== popAnchor && !popAnchor?.contains(e.target as Node) && closePopover(), { capture: true });
+addEventListener("scroll", (e) => pop && !pop.contains(e.target as Node) && closePopover(), { capture: true, passive: true });
+
 // ---------- the desktop tooltip ----------
 
 let tip: HTMLElement | null = null;
@@ -184,19 +267,15 @@ function queueTip(anchor: HTMLElement, info: TermDef & { id: TermId }, delay = 2
 }
 
 function showTip(anchor: HTMLElement, info: TermDef & { id: TermId }): void {
-  if (!anchor.isConnected) return;
+  // The popover already says it all.
+  if (!anchor.isConnected || popAnchor === anchor) return;
   hideTip();
   const codex = codexLink ? h("div", { class: "dim small" }, "Click for more · Open in Codex") : null;
   tip = h("div", { class: "term-tooltip", role: "tooltip", "data-testid": "term-tooltip" }, ruleBlock(info, 20), codex);
   document.body.append(tip);
   tipAnchor = anchor;
   requestAnimationFrame(watchAnchor);
-  const r = anchor.getBoundingClientRect();
-  const w = tip.offsetWidth;
-  const left = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, innerWidth - w - 8));
-  const below = r.bottom + 6 + tip.offsetHeight < innerHeight;
-  tip.style.left = `${left + scrollX}px`;
-  tip.style.top = `${(below ? r.bottom + 6 : r.top - 6 - tip.offsetHeight) + scrollY}px`;
+  place(tip, anchor);
 }
 
 function hideTip(): void {

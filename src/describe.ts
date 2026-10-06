@@ -71,9 +71,10 @@ export interface DescribeSegment {
    * enemy dies"), so the rule shown matches the scope (glossary scopedTip).
    * Unset for the turn and battle triggers, which have no unit. */
   scope?: UnitFilter;
-  /** On the number of a damage or heal ("deal [2] damage", "heal it for [2]"):
-   * the client draws it bold with its effect's icon, so the amount carries
-   * the icon and the verb is only coloured. */
+  /** On the number of a damage or heal ("deal [2] damage", "heal it for
+   * [2]"), a status's stacks ("apply [2] Poison") or an HP amount ("[2] HP"):
+   * the client draws it bold with its term's icon, so the amount carries the
+   * icon and the word is only coloured. */
   amount?: true;
 }
 
@@ -127,9 +128,10 @@ const statSeg = (stat: "pwr" | "hp"): DescribeSegment => ({ text: stat.toUpperCa
 /** "1 stack" / "2 stacks", the word carrying its term. */
 const stacksSegs = (n: number): DescribeSegment[] => [seg(`${n} `), { text: n === 1 ? "stack" : "stacks", term: "term:stacks" }];
 
-/** An HP amount: "2 HP", or "HP equal to its stacks" for a derived one. */
+/** An HP amount: "2 HP", or "HP equal to its stacks" for a derived one. The
+ * number is its own run, marked as the amount (with HP's icon, R2-17). */
 const hpSegs = (a: Amount, opts: DescribeOpts): DescribeSegment[] =>
-  a.kind === "const" ? [seg(`${a.value} `), statSeg("hp")] : [statSeg("hp"), seg(" equal to "), ...amountSegments(a, opts)];
+  a.kind === "const" ? [{ text: String(a.value), term: "stat:hp", amount: true }, seg(" "), statSeg("hp")] : [statSeg("hp"), seg(" equal to "), ...amountSegments(a, opts)];
 
 /** A when as a clause: triggers read "after X", interceptors "when X would …". */
 export function describeWhen(w: When, opts: DescribeOpts = {}): string {
@@ -336,7 +338,8 @@ export function describeEffectSegments(
         : [eT("heal"), e0(" "), ...tgt, e0(" for "), ...amountSegments(e.amount, opts)];
     case "applyStatus":
       return e.stacks.kind === "const"
-        ? [e0(`apply ${e.stacks.value} `), statusSeg(e.status), e0(" to "), ...tgt]
+        ? // The stacks are the amount, drawn with the status's icon like a damage number (R2-17).
+          [e0("apply "), { text: String(e.stacks.value), partRef: ref, term: `status:${e.status}`, amount: true }, e0(" "), statusSeg(e.status), e0(" to "), ...tgt]
         : [e0("apply "), statusSeg(e.status), e0(" equal to "), ...amountSegments(e.stacks, opts), e0(" to "), ...tgt];
     case "consumeStacks": {
       const which: DescribeSegment = e.status !== undefined ? statusSeg(e.status) : e0("this status");

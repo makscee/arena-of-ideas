@@ -8,6 +8,8 @@
 // now" under "Dev". The shop's ☰ (Esc on desktop) is the in-run menu.
 import type { BattleRecord, DayView, FightResult, HomeView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView } from "../src/mvp/contract";
 import { MVP_RULES, offersAt } from "../src/mvp/contract";
+import { mergeTarget } from "../src/mvp/forms";
+import { plainRefusal } from "./ui/refusal";
 import { ApiError, api, savedPlayer } from "./api";
 import { getContent } from "./content";
 import { battleScreen, whyILost } from "./screens/battle";
@@ -40,7 +42,7 @@ async function guarded(err: HTMLElement, fn: () => Promise<void>): Promise<void>
       api.forget();
       return nameScreen();
     }
-    err.textContent = e instanceof Error ? e.message : String(e);
+    err.textContent = e instanceof ApiError && e.status === 409 ? plainRefusal(e.message) : e instanceof Error ? e.message : String(e);
   } finally {
     busy = false;
     app.classList.remove("busy");
@@ -65,7 +67,7 @@ const openSheet = (u: Parameters<typeof unitSheet>[0], content: MvpContent) => (
 
 /** A line of cards, each opening its unit sheet. */
 function team(line: LineUnit[], side: "you" | "ghost", content: MvpContent, testid = ""): HTMLElement {
-  return h("div", { class: "slots", ...(testid ? { "data-testid": testid } : {}) }, ...line.map((u) => card(u, { side, onOpen: openSheet(u, content) })));
+  return h("div", { class: "slots", ...(testid ? { "data-testid": testid } : {}) }, ...line.map((u) => card(u, { side, extra: [copiesBadge(u)], onOpen: openSheet(u, content) })));
 }
 
 /** A hint's verb: "Tap" on the phone, "Click" on a desktop. */
@@ -168,8 +170,9 @@ async function homeScreen(ended: number | null = null): Promise<void> {
   if (active) play.replaceChildren(`Continue run · ${active.round > rules.rounds ? "Crown" : `R${active.round}`} `, hearts(active.hearts));
   const newRun = active
     ? button("New run", () => abandonSheet(active, "new", () => void guarded(err, async () => {
-        await api.abandon(active.runId);
-        shopScreen(await api.startRun(), content);
+        // The given-up run's end and rating change first, as ☰ Abandon shows
+        // them; its "New run" starts the next one.
+        runOverScreen(await api.abandon(active.runId), content, "", true);
       })), "", "new-run")
     : null;
   const codex = button("Codex", () => void guarded(err, () => openCodex()), "", "codex");
@@ -291,6 +294,9 @@ async function openCodex(state?: Partial<CodexState>): Promise<void> {
       if (isDesktop() !== desk && app.dataset.screen === "shop") rerender?.();
     };
   }
+  // A deep link (a term's "Open in Codex") is a fresh Codex: no tab keeps the
+  // scroll it had, whatever was open before (R2-17); fetched data stays.
+  if (state) codexCache.scroll = {};
   const back = codexBack;
   const content = await getContent();
   const onBack = () => ((codexBack = null), (codexRedraw = null), back());
@@ -311,13 +317,13 @@ function runMenu(run: RunView, content: MvpContent, err: HTMLElement): void {
     h(
       "div",
       { class: "stack run-menu", "data-testid": "run-menu" },
-      h("div", { class: "label" }, crown ? "Run · the Crown" : `Run · round ${run.round} of ${rules.rounds}`),
+      h("div", { class: "label" }, run.phase === "over" ? "Run · over" : crown ? "Run · the Crown" : `Run · round ${run.round} of ${rules.rounds}`),
       button("Resume", () => close(), "primary", "menu-resume"),
       codex,
       button("Rules", () => (close(), closable(rulesSheet())), "", "menu-rules"),
       button("Title menu", () => (close(), void guarded(err, () => homeScreen())), "", "menu-title"),
-      h("div", { class: "dim small" }, "The run waits; Continue brings you back."),
-      button("Abandon run…", () => (close(), abandonSheet(run, "menu", () => void guarded(err, async () => runOverScreen(await api.abandon(run.runId), content)))), "danger", "menu-abandon"),
+      run.phase === "over" ? null : h("div", { class: "dim small" }, "The run waits; Continue brings you back."),
+      run.phase === "over" ? null : button("Abandon run…", () => (close(), abandonSheet(run, "menu", () => void guarded(err, async () => runOverScreen(await api.abandon(run.runId), content)))), "danger", "menu-abandon"),
     ),
   );
 }
@@ -495,6 +501,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     return out;
   };
 
+  /** Desktop: a unit's win and pick rates are a subtle hint (docs/round2/
+   * README.md): the inspector's last line, at its foot, not mid-panel. */
+  const ratesToFoot = () => {
+    const r = inspector.querySelector('[data-testid="unit-rates"]');
+    if (r) inspector.append(r);
+  };
   /** Desktop: the hovered card, else the selected one (or a fusion waiting
    * for its Fuse), else how to use the board. `force` redraws even when the
    * same card is shown (the selection changed). */
@@ -508,11 +520,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const sel = pick.mode === "picked" ? pick.index : -1;
     if (at?.kind === "line" && run.line[at.index]) {
       const mine = at.index === sel;
-      return inspector.replaceChildren(
+      inspector.replaceChildren(
         h("div", { class: "label" }, `${mine ? "Selected · " : ""}In your line, slot ${at.index + 1}`),
         unitSheet(run.line[at.index]!, content),
         mine || pick.mode === "fuse" ? h("div", { class: "row actions", "data-testid": "actions" }, ...actionButtons()) : h("div", { class: "dim small" }, crown ? "Your line is final for the Crown." : "Click to select it: move, fuse or sell."),
       );
+      return ratesToFoot();
     }
     if (at?.kind === "offer") {
       const n = run.offers.findIndex((o) => o.slot === at.slot);
@@ -526,6 +539,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
           const buy = button(blocked || `Buy ${o.cost}g · ${n + 1}`, () => void decide({ kind: "buy", slot: o.slot }), "primary grow", "buy");
           buy.disabled = blocked !== "";
           inspector.replaceChildren(head, sheet, h("div", { class: "row" }, buy));
+          ratesToFoot();
         },
         (e: unknown) => {
           if (inspected === key) inspector.replaceChildren(head, h("div", { class: "error" }, e instanceof Error ? e.message : String(e)));
@@ -627,6 +641,20 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       );
     });
 
+  /** Why an offer can't be bought now, decided here so no request goes out
+   * (a full line used to cost a 409 on every preview); "" when it can. */
+  const buyBlock = (o: Offer): string => {
+    if (run.gold < o.cost) return `Needs ${o.cost}g`;
+    if (run.line.length >= rules.lineSize && mergeTarget(run.line, o.unitId) < 0) return "Line full: sell or fuse first";
+    return "";
+  };
+  /** Desktop's double-click and number keys: a blocked offer says why instead of asking the server. */
+  const buy = (o: Offer) => {
+    const why = buyBlock(o);
+    if (why) return void (err.textContent = why);
+    void decide({ kind: "buy", slot: o.slot });
+  };
+
   /** An offer's sheet: its form, and what buying it does to your line;
    * `blocked` says why it can't be bought now ("" when it can). The buy's dry
    * run is asked once per offer a shop (hovering on desktop asks again and
@@ -636,7 +664,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const buyPreview = (o: Offer) => api.preview(run.runId, { kind: "buy", slot: o.slot }).catch((e: unknown) => (e instanceof ApiError && e.status === 409 ? e : Promise.reject(e)));
   const offerBody = async (o: Offer): Promise<OfferBody> => {
     const u = unitOf(o.unitId);
-    const affordable = run.gold >= o.cost;
+    let blocked = buyBlock(o);
+    const affordable = blocked === "";
     let ask = previews.get(o.slot);
     if (affordable && !ask) {
       ask = buyPreview(o);
@@ -647,8 +676,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     let after: HTMLElement | null = null;
     // A unit you own: the sheet shows your copy, from now to after buying.
     let mine: { now: LineUnit; next: LineUnit } | null = null;
-    let blocked = affordable ? "" : `Needs ${o.cost}g`;
-    if (res instanceof ApiError) blocked = /line is full/i.test(res.message) ? "Line full: sell or fuse first" : "Can't buy this now";
+    if (res instanceof ApiError) blocked = plainRefusal(res.message);
     else if (res) {
       const before = new Map(run.line.map((x) => [x.uid, x]));
       const changed = res.run.line.find((x) => !before.has(x.uid) || before.get(x.uid)!.copies !== x.copies);
@@ -659,7 +687,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         after = h("div", { class: `stack after${was && was.form !== changed.form ? " awakens" : ""}`, "data-testid": "buy-preview" }, h("div", { class: "label" }, label), h("div", { class: "preview-card" }, card(changed, { side: "you", extra: [copiesBadge(changed)] })));
       }
     }
-    // Without a preview (no gold), an owned unit still shows your copy as it is.
+    // Without a preview (no gold, a full line), an owned unit still shows your copy as it is.
     const owned = mine ? null : run.line.find((x) => x.kind === "unit" && x.unitId === o.unitId) ?? null;
     const sheet = mine ? unitSheet(mine.next, content, { from: mine.now.stats }) : owned ? unitSheet(owned, content) : u ? unitSheet(u, content) : h("h2", {}, o.unitId);
     // What buying does goes inside the sheet, above its last line (the rates hint).
@@ -681,7 +709,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     ...run.offers.map((o: Offer) => {
       const u = unitOf(o.unitId);
       const cu: CardUnit = { unitId: o.unitId, emoji: u?.emoji ?? "?", name: u?.name ?? o.unitId, stats: u?.base ?? { pwr: 0, hp: 0 }, ...(u ? { recipe: u.forms.sleeping } : {}) };
-      const owned = run.line.find((x) => x.unitId === o.unitId || x.fusion?.second === o.unitId);
+      const owned = mergeTarget(run.line, o.unitId) >= 0;
       const c = card(cu, { side: "you", tier: o.tier, extra: [h("div", { class: "cost" }, owned ? `${o.cost}g ＋` : `${o.cost}g`)], testid: `offer-${o.slot}` });
       if (run.gold < o.cost) c.classList.add("poor");
       if (owned) c.classList.add("owned");
@@ -693,7 +721,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
           if (pick.mode === "picked") pick = { mode: "none" };
           renderLine();
         });
-        c.addEventListener("dblclick", () => void decide({ kind: "buy", slot: o.slot }));
+        c.addEventListener("dblclick", () => buy(o));
         desktopCard(c, { kind: "offer", slot: o.slot });
       }
       return c;
@@ -730,9 +758,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   menuBtn.setAttribute("aria-label", "Menu");
   if (desk) menuBtn.title = "Menu (Esc)";
 
+  // The number keys in plain words: "1–6 buy the offer with that number".
+  const n = Math.min(7, run.offers.length);
+  const numberKeys = n === 0 ? [] : n === 1 ? [kbd("1"), " buys the offer · "] : [kbd("1"), "–", kbd(String(n)), " buy the offer with that number · "];
   const keysLine =
     desk && !crown
-      ? h("div", { class: "dim small keys", "data-testid": "keys" }, "Hover a card to read it → · click selects · drag reorders · double-click buys · ", kbd("1"), "–", kbd(String(Math.min(7, Math.max(1, run.offers.length)))), " buy · ", kbd("R"), " reroll · ", kbd("Space"), " fight · ", kbd("←"), kbd("→"), " move · ", kbd("F"), " fuse · ", kbd("S"), " sell · ", kbd("Esc"), " menu")
+      ? h("div", { class: "dim small keys", "data-testid": "keys" }, "Hover a card to read it → · click selects · drag reorders · double-click buys · ", ...numberKeys, kbd("R"), " reroll · ", kbd("Space"), " fight · ", kbd("←"), kbd("→"), " move · ", kbd("F"), " fuse · ", kbd("S"), " sell · ", kbd("Esc"), " menu")
       : null;
   show(
     h(
@@ -802,7 +833,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     if (crown) return false;
     if (/^[1-7]$/.test(k)) {
       const o = run.offers[Number(k) - 1];
-      if (o) void decide({ kind: "buy", slot: o.slot });
+      if (o) buy(o);
       return true;
     }
     if (k === "r") {
@@ -904,8 +935,13 @@ function resultScreen(run: RunView, fight: FightResult, battle: BattleRecord, co
   // After a loss, "why I lost" comes first, under a compact header, so its
   // rows show above the sticky buttons; the two lines follow.
   const why = fight.outcome === "loss" ? whyILost(battle, content, "A") : null;
+  const err = errorLine();
+  // ☰ as in the shop (Esc on desktop): Codex, Rules, Title menu, Abandon.
+  const menuBtn = button("☰", () => runMenu(run, content, err), "menu-btn", "menu-open");
+  menuBtn.setAttribute("aria-label", "Menu");
+  if (isDesktop()) menuBtn.title = "Menu (Esc)";
   show(
-    h("div", { class: "hud" }, h("span", { "data-testid": "result-round" }, label), hearts(run.hearts), h("span", { class: "dim" }, record(run))),
+    h("div", { class: "hud" }, menuBtn, h("span", { "data-testid": "result-round" }, label), hearts(run.hearts), h("span", { class: "dim" }, record(run))),
     // Desktop: the outcome and why on the left, both lines on the right.
     h(
       "div",
@@ -930,11 +966,13 @@ function resultScreen(run: RunView, fight: FightResult, battle: BattleRecord, co
       button("Replay", () => battleScreen({ battle, content, you: "A", fight, run, onDone: () => resultScreen(run, fight, battle, content) }), "", "replay"),
       button(run.phase === "over" ? "See the run" : run.phase === "crown" ? "To the Crown" : "Next round", () => shopScreen(run, content), "primary grow", "continue"),
     ),
+    err,
   );
   screen("result");
-  // Desktop: Enter or Space moves on, R replays.
+  // Desktop: Enter or Space moves on, R replays, Esc opens the menu.
   onKeys((e) => {
     if (app.querySelector(".overlay")) return e.key === "Escape" ? (app.querySelector(".overlay")!.remove(), true) : false;
+    if (e.key === "Escape") return runMenu(run, content, err), true;
     if (e.key === "Enter" || e.key === " ") return shopScreen(run, content), true;
     if (e.key.toLowerCase() === "r") return battleScreen({ battle, content, you: "A", fight, run, onDone: () => resultScreen(run, fight, battle, content) }), true;
     return false;
@@ -976,14 +1014,20 @@ function runEnd(run: RunView): { why: string; reach: string } {
   }
 }
 
-function runOverScreen(run: RunView, content: MvpContent, notice = ""): void {
+/** `newRun`: the run was given up through Home's New run, so the footer
+ * starts the next run (Home stays a tap away). */
+function runOverScreen(run: RunView, content: MvpContent, notice = "", newRun = false): void {
   const { why, reach } = runEnd(run);
+  const err = errorLine();
+  err.textContent = notice;
+  const home = () => void homeScreen();
+  const next = () => void guarded(err, async () => shopScreen(await api.startRun(), content));
   const draws = run.fights.filter((f) => f.outcome === "draw").length;
   const rc = run.rating;
   const delta = rc ? rc.after - rc.before : 0;
   show(
     h("h1", {}, "RUN OVER"),
-    notice ? h("div", { class: "error", "data-testid": "error" }, notice) : null,
+    err,
     h(
       "div",
       { class: "panel stack", "data-testid": "run-over" },
@@ -997,10 +1041,10 @@ function runOverScreen(run: RunView, content: MvpContent, notice = ""): void {
     ),
     run.line.length ? h("div", { class: "over-line" }, h("div", { class: "label" }, "Your last line"), team(run.line, "you", content)) : null,
     h("div", { class: "spacer" }),
-    h("div", { class: "row footer" }, button("Home", () => void homeScreen(), "primary grow", "home")),
+    h("div", { class: "row footer" }, ...(newRun ? [button("Home", home, "grow", "home"), button("New run", next, "primary grow", "new-run-start")] : [button("Home", home, "primary grow", "home")])),
   );
   screen("over");
-  onKeys((e) => (e.key === "Enter" ? (void homeScreen(), true) : false));
+  onKeys((e) => (e.key === "Enter" ? ((newRun ? next : home)(), true) : false));
 }
 
 // ---------- boot ----------

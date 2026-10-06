@@ -43,6 +43,9 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     const body = (await c.req.json().catch(() => null)) as { name?: unknown } | null;
     const name = typeof body?.name === "string" ? body.name.trim() : "";
     if (!NAME_RE.test(name)) return bad(c, 400, "name: 1–24 letters, digits, spaces, _ or -");
+    // One player per name, case ignored (R2-17). Checked here, not by a
+    // UNIQUE index: the live world may already hold two of one name.
+    if (store.playerByName(name)) return bad(c, 409, "That name is taken: pick another.");
     const p: PlayerRef = { id: randomUUID(), name, bot: false };
     store.addPlayer(p);
     return c.json(p);

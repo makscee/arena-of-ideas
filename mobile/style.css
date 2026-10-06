@@ -336,9 +336,17 @@ button.bv-moment { display: grid; grid-template-columns: 32px 1fr auto; gap: 8px
 .bv-word.neutral { color: var(--text); font-size: 24px; }
 /* Slice 11: a unit's rates, only a hint since round 2: the sheet's dim last line. */
 .rates { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--dim); opacity: 0.75; }
-/* Home's champion panel: the line uses the panel's padding too, so its five
- * cards are as wide as the shop's. */
-.champion .slots { margin: 0 -6px; }
+/* Home's champion panel: the line runs to the panel's border, so its five
+ * cards are as wide as the shop's ("War Drummer" fits, R2-17). */
+.champion .slots { margin: 0 -11px; }
+/* Phone Home (R2-17): nothing sticks, so nothing sits under the menu: the
+ * champion and its hint, then the menu, then the last playoff (a fresh one
+ * too; the notice on top says the day ended). Play stays on the first screen. */
+@media (max-width: 1023.98px) {
+  #app[data-screen="home"] .title-menu { position: static; margin: 0; padding: 0; box-shadow: none; }
+  #app[data-screen="home"] .playoff { order: 1; }
+}
+.title-menu [data-testid="play"] .hearts { white-space: nowrap; }
 .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .tabs button { min-height: 44px; padding: 0 6px; font-size: 14px; }
 .tabs button.on { background: var(--you); color: var(--bg); }
@@ -444,10 +452,13 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
   #app[data-screen="shop"] .card.dragging { opacity: 0.4; }
   #app[data-screen="shop"] .card.drop { outline: 2px dashed var(--you); outline-offset: -2px; }
   #app[data-screen="shop"] .card[draggable="true"] { cursor: grab; }
+  /* The rates hint sits at the inspector's foot (main.ts ratesToFoot). */
+  #app[data-screen="shop"] .inspector > .rates { margin-top: auto; padding-top: 12px; }
 
   /* Home, the title menu: the champion and the day on the left; the menu on the right. */
   /* The menu column is narrow enough that the champion's 5 cards stay on one line at 1024px. */
-  #app[data-screen="home"] { max-width: 1200px; display: grid; grid-template-columns: minmax(0, 1fr) 280px; grid-template-rows: auto 1fr; column-gap: 24px; row-gap: 16px; padding: 24px; align-items: start; }
+  /* The left column is as wide as the champion's five cards (no slack, R2-17); the menu takes the rest, 280px at least. */
+  #app[data-screen="home"] { max-width: 1200px; display: grid; grid-template-columns: minmax(0, calc(5 * var(--cw) + 4 * var(--gap) + 26px)) minmax(280px, 1fr); grid-template-rows: auto 1fr; column-gap: 24px; row-gap: 16px; padding: 24px; align-items: start; }
   #app[data-screen="home"] > :first-child { grid-column: 1 / -1; }
   #app[data-screen="home"] .home-main, #app[data-screen="home"] .home-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
   #app[data-screen="home"] .home-side { position: sticky; top: 32px; }
@@ -475,6 +486,13 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
   #app[data-screen="over"] .spacer { display: none; }
   #app[data-screen="over"] .footer { grid-area: foot; position: static; margin: 0; padding: 0; box-shadow: none; align-self: start; }
 
+  /* Below 1280px the result and run-over screens tighten, so both lines keep a right gutter (R2-17). */
+  @media (max-width: 1279.98px) {
+    #app[data-screen="result"], #app[data-screen="over"] { grid-template-columns: minmax(280px, 1fr) auto; column-gap: 24px; padding: 24px; }
+  }
+  #app[data-screen="result"] > .hud { justify-content: flex-start; gap: 24px; }
+  #app[data-screen="result"] > .error { grid-area: rest; }
+
   /* Stats: a wider column; the tables read better at 960px than stretched. */
   #app[data-screen="stats"] { max-width: 960px; padding: 32px; }
 
@@ -488,6 +506,15 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
   #app[data-screen="codex"] .codex-filter, #app[data-screen="codex"] input[type="search"], #app[data-screen="codex"] select { max-width: 640px; }
   #app[data-screen="codex"] .kw-list { display: grid; grid-template-columns: 1fr 1fr; column-gap: 24px; }
   #app[data-screen="codex"] .codex-body > .panel { max-width: 960px; }
+}
+@media (min-width: 1024px) and (max-width: 1279.98px) {
+  /* Home at 1024–1279: a tighter gap and a smaller Continue, so "Continue run · R7 ♥♡♡♡♡" stays on one line (R2-17). */
+  #app[data-screen="home"] { column-gap: 16px; }
+  #app[data-screen="home"] .home-side .footer [data-testid="play"] { font-size: 17px; padding: 0 8px; letter-spacing: 0.03em; }
+  #app[data-screen="home"] .title-menu [data-testid="play"] .hearts { font-size: 15px; letter-spacing: 0; }
+  /* Six offers fit one row from 1024px (R2-17): a narrower inspector, and
+   * cards up to 120px wide, so the 6th offer never sits under Reroll / Fight. */
+  #app[data-screen="shop"] { --insp: 300px; --cw: min(120px, calc((100vw - var(--insp) - 48px - 5 * var(--gap)) / 6)); }
 }
 @media (min-width: 1280px) {
   #app[data-screen] { --cw: 132px; --gap: 12px; --insp: 380px; }
@@ -506,6 +533,17 @@ button.t:focus-visible { outline: 1px solid currentColor; outline-offset: 1px; }
 .term-tip { line-height: 1.35; }
 .term-tooltip { position: absolute; z-index: 50; max-width: 280px; padding: 8px 10px; background: var(--panel); border: 1px solid var(--line); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5); pointer-events: none; font-size: 15px; }
 .term-tooltip .term-head { font-size: 16px; }
+/* A desktop's click on a term (R2-17): its rule pinned under it, over any sheet. */
+.term-pop { position: absolute; z-index: 60; width: max-content; max-width: 340px; padding: 10px 12px 4px; background: var(--panel); border: 1px solid var(--you); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6); font-size: 15px; }
+.term-pop .term-head { font-size: 17px; }
+.term-pop button.link { min-height: 36px; }
+/* A term and the punctuation after it never part across lines. */
+.t-glue { white-space: nowrap; }
+/* Phone cards: the trigger icon at 14px (it was 12), still in the corner. */
+.card:not(.bv-card) .trig .ic { width: 14px; height: 14px; }
+/* The result's "Why I lost" rows show a long (fused) name in full. */
+#app[data-screen="result"] [data-testid="why-lost"] .bv-why { min-height: 44px; height: auto; padding-top: 6px; padding-bottom: 6px; }
+#app[data-screen="result"] [data-testid="why-lost"] .bv-why-chain { overflow: visible; white-space: normal; overflow-wrap: anywhere; min-width: 0; }
 @media (min-width: 1024px) {
   /* The fusion preview in the inspector: its buttons are a plain row, not a sheet's sticky footer. */
   #app[data-screen="shop"] .inspector .sheet-actions { position: static; margin: 0; padding: 0; background: none; }

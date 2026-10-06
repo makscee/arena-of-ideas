@@ -91,13 +91,17 @@ describe("glossary covers every unit's text", () => {
 });
 
 describe("amounts (R2-8)", () => {
-  test("a constant damage or heal number is its own run, marked as the amount", () => {
+  test("a constant damage or heal number, a status's stacks and an HP amount are their own run, marked as the amount", () => {
     for (const [name, form] of forms) {
       const segs = formSegments(form, pool.abilities);
       for (const s of segs.filter((x) => x.amount)) {
         expect(s.text, name).toMatch(/^\d+$/);
-        expect(["effect:damage", "effect:heal"], name).toContain(s.term);
+        expect(s.term, name).toMatch(/^(effect:damage|effect:heal|status:.+|stat:hp)$/);
       }
+      // R2-17: no number hides in a plain run before a status or a stat ("apply 2 " + "Poison").
+      segs.forEach((s, i) => {
+        if (!s.term && /\d $/.test(s.text) && /^(status|stat):/.test(segs[i + 1]?.term ?? "")) expect.fail(`${name}: "${s.text}" before ${segs[i + 1]!.term}`);
+      });
       // No number hides inside a damage or heal verb run.
       for (const s of segs.filter((x) => (x.term === "effect:damage" || x.term === "effect:heal") && !x.amount)) expect(s.text, name).not.toMatch(/\d/);
     }

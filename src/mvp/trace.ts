@@ -253,9 +253,12 @@ export function chainOf(log: BattleEvent[], eventId: number, o: { name?: NameOf;
     }
     const kind = nodes.length ? "event" : "change";
     if (cur.type === "Strike") {
-      // A strike's hit already reads "X strikes Y → −n"; a strike that set a firing off reads on its own.
+      // A strike's own hit (the kernel's Hurt) already reads "X strikes Y →
+      // −n"; a strike that set a firing off reads on its own, even when that
+      // firing's change is a Hurt too (a Strike-When unit's damage, R2-17).
       const prev = nodes.at(-1);
-      if (!(prev && log[prev.eventId]?.causedBy === cur.id && log[prev.eventId]?.type === "Hurt")) {
+      const hit = prev && prev.kind !== "firing" ? log[prev.eventId] : undefined;
+      if (!(hit && hit.causedBy === cur.id && hit.type === "Hurt" && hit.source === "kernel")) {
         nodes.push({ kind, eventId: cur.id, text: `${name(cur.striker)} strikes ${name(cur.defender)}`, unit: cur.striker, side: side(cur.striker), ...eventTrigger(cur) });
       }
     } else if (isStatusFollowUp(log, cur)) {

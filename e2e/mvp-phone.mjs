@@ -25,6 +25,8 @@ if (!url) {
   }
 }
 
+// Names are one per player (R2-17): a tag keeps a second pass at one server apart.
+const TAG = Date.now().toString(36).slice(-4);
 const browser = await launchChromium();
 const errors = [];
 let shots = 0;
@@ -129,7 +131,7 @@ try {
   await page.goto(url, { timeout: 20_000 });
   await page.getByTestId("name-input").waitFor({ timeout: 10_000 });
   await shot("name"); await noHScroll("name");
-  await page.getByTestId("name-input").fill("PhoneTester");
+  await page.getByTestId("name-input").fill(`PhoneTester${TAG}`);
   await page.getByTestId("name-submit").click();
   await page.getByTestId("play").waitFor();
   await shot("home"); await noHScroll("home"); await noRates("home"); await onScreen("home: Play", page.getByTestId("play"));
@@ -553,6 +555,21 @@ try {
   await page.getByTestId("home").click();
   await page.getByTestId("play").waitFor();
   if ((await page.getByTestId("play").textContent()) !== "Play") errors.push("abandon: the title menu still offers Continue");
+  // New run on the title menu gives the waiting run up too, and shows its
+  // end and rating change first; its New run starts the next run (R2-17).
+  await page.getByTestId("play").click();
+  await page.getByTestId("fight").waitFor();
+  await page.getByTestId("menu-open").click();
+  await page.getByTestId("menu-title").click();
+  await page.getByTestId("new-run").click();
+  await page.getByTestId("abandon-confirm").click();
+  await page.getByTestId("run-over").waitFor({ timeout: 10_000 });
+  if (!/You gave up/.test(await page.getByTestId("run-why").textContent())) errors.push("new run: run-over doesn't say the run was given up");
+  if ((await page.getByTestId("rating-change").count()) === 0) errors.push("new run: no rating change for the given-up run");
+  await shot("run-over-new-run"); await noHScroll("run-over-new-run");
+  await page.getByTestId("new-run-start").click();
+  await page.getByTestId("fight").waitFor();
+  if ((await page.getByTestId("round").textContent()) !== "R1/12") errors.push(`new run: starts at ${await page.getByTestId("round").textContent()}`);
 
   // Awakening and fusion (slice 8): a second player plays through the API
   // until it has one Awoken unit, a second unit one copy short and that copy
@@ -564,7 +581,7 @@ try {
     if (!res.ok) throw new Error(`${method} ${path}: ${json.error}`);
     return json;
   };
-  const fuser = await call("POST", "/players", { name: "Fuser" });
+  const fuser = await call("POST", "/players", { name: `Fuser${TAG}` });
   let run = await call("POST", "/runs", undefined, fuser.id);
   const ready = (r) => {
     const awake = r.line.filter((u) => u.kind === "unit" && u.form === "awoken");
@@ -626,17 +643,22 @@ try {
     await shot("fusion-preview-swapped"); await noHScroll("fusion-preview-swapped");
     await page.getByTestId("preview-swap").click();
     await page.getByTestId("preview-confirm").click();
-    if (isNew) {
-      await page.getByTestId("fusion-reveal").waitFor();
+    // The reveal comes with the fused line (main.ts fuse): for a new pair, and
+    // also for one only bots had made (its name was shown, the credit is now
+    // yours). Either way it is closed before the line is used (R2-17).
+    await page.getByTestId("line").locator(".card.fused").waitFor();
+    const revealed = (await page.getByTestId("fusion-reveal").count()) > 0;
+    if (isNew && !revealed) errors.push("fusion reveal: a new pair shows no reveal");
+    if (revealed) {
       const reveal = await page.getByTestId("fusion-reveal").textContent();
       const named = reveal.replace(/^.*You discovered /, "");
       if (!/You discovered \S/.test(reveal)) errors.push(`fusion reveal: '${reveal}'`);
       if (!/discovered by you/.test(await page.getByTestId("overlay").textContent())) errors.push("fusion reveal: no 'discovered by you'");
-      if (previews.some((p) => p.body.includes(named))) errors.push(`fusion preview: the response carried the name '${named}' before the fuse`);
+      if (isNew && previews.some((p) => p.body.includes(named))) errors.push(`fusion preview: the response carried the name '${named}' before the fuse`);
       await shot("fusion-reveal"); await noHScroll("fusion-reveal");
       await page.getByTestId("sheet-close").click();
     }
-    await page.locator(".card.fused").waitFor();
+    console.log(`mvp phone: the fusion was ${isNew ? "new" : "known"}${revealed ? ", revealed" : ""}`);
     await shot("fused"); await noHScroll("fused");
     await page.locator(".card.fused").screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-fused-card.png` });
     // The fused card's row lines up: every card in it is one height.
@@ -658,7 +680,7 @@ try {
   // Compact cards (R2-7): at 360×640 in round 8, with 5 units in the line and
   // the grown shop, nothing scrolls. A third player gets there through the API.
   {
-    const compact = await call("POST", "/players", { name: "Compact" });
+    const compact = await call("POST", "/players", { name: `Compact${TAG}` });
     let r = await call("POST", "/runs", undefined, compact.id);
     for (let steps = 0; steps < 2000 && !(r.phase === "shop" && r.round >= 8 && r.line.length === 5); steps++) {
       if (r.phase === "over") { r = await call("POST", "/runs", undefined, compact.id); continue; }
