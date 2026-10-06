@@ -1304,11 +1304,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   buildTimeline();
   buildLog();
   setSpeedVar();
-  // Desktop keys: Space plays or pauses, ←/→ step a beat, R replays.
+  // Keys: Space plays or pauses, ←/→ step a beat, R replays. Esc (after a
+  // sheet, closed in ui/dom.ts) leaves the Why tab for the Log, then opens
+  // the run's menu, or goes back where a battle without a run came from.
   onKeys((e) => {
-    const over = app.querySelector(".overlay");
-    // Esc closes a sheet as a tap outside it does (the run menu then resumes play).
-    if (over) return e.key === "Escape" ? ((over as HTMLElement).click(), over.remove(), true) : false;
     // The end card is the result: Enter (or Space) goes on, as the result
     // screen's did, from its main button or with nothing in the card focused.
     // A focused Replay, Why, key moment or Damage row acts instead (R2-17 batch F).
@@ -1323,6 +1322,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     if (e.key.toLowerCase() === "r") return replay(), true;
     if (e.key === "Escape" && trace) return (trace = null), render(), true;
     if (e.key === "Escape" && a.outro) return openMenu(), true;
+    if (e.key === "Escape") return leave(), true;
     return false;
   });
   // The Codex opened over the battle (a term's "Open in Codex") pauses it.

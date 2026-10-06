@@ -7,7 +7,7 @@
 // opens in battleScreen) and, on dev servers only (HomeView.dev), "End day
 // now" under "Dev". The shop's ☰ (Esc on desktop) is the in-run menu.
 import type { BattleRecord, DayView, FightResult, HomeView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView } from "../src/mvp/contract";
-import { MVP_RULES, offersAt, sellValue } from "../src/mvp/contract";
+import { lockedFull, MVP_RULES, offersAt, sellValue } from "../src/mvp/contract";
 import { mergeTarget } from "../src/mvp/forms";
 import { buttonRefusal, plainRefusal } from "./ui/refusal";
 import { ApiError, api, savedPlayer } from "./api";
@@ -19,7 +19,7 @@ import { statsScreen } from "./screens/stats";
 import { card, roman, unitSheet, type CardUnit } from "./ui/card";
 import { previewName } from "./ui/fusion";
 import { icon } from "./ui/icon";
-import { app, button, closable, desktopQuery, h, isDesktop, keepScreen, onKeys, overlay, screen, show, who } from "./ui/dom";
+import { app, button, closable, desktopQuery, dismissable, h, isDesktop, keepScreen, onKeys, overlay, screen, show, who } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
 import { initSound, onSoundChange, play, setSound, soundSettings } from "./ui/sound";
 import { shopSound } from "./ui/sound-map";
@@ -377,10 +377,8 @@ function runMenu(run: RunView, content: MvpContent, err: HTMLElement, fought?: F
     run.phase === "over" ? null : h("div", { class: "dim small" }, "The run waits; Continue brings you back."),
     run.phase === "over" ? null : button("Abandon run…", () => (close(), abandonSheet(run, "menu", () => void guarded(err, async () => runOverScreen(await api.abandon(run.runId), content)))), "danger", "menu-abandon"),
   );
-  const close = overlay(menu);
-  // A tap outside the menu (or the battle's Esc) is a Resume too.
-  const back = menu.closest(".overlay");
-  if (resume && back) back.addEventListener("click", (e) => e.target === back && resume());
+  // A tap outside the menu, or Esc, is a Resume too.
+  const close = dismissable((close) => (close(), resume?.()), menu);
 }
 
 /** The champion card's last line: what today's slayers mean at the day's end. */
@@ -477,6 +475,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   /** Lock or unlock an offer (free); on desktop it stays chosen in the inspector. */
   const lock = (o: Offer) => void decide({ kind: "lock", slot: o.slot }, -1, desk ? o.slot : -1);
   const lockLabel = (o: Offer) => (o.locked ? "Unlock" : "Lock");
+  // The last shop round has no Lock: the Crown clears the offers. Unlock stays.
+  const lastShop = run.round >= rules.rounds;
+  const canLock = (o: Offer) => o.locked === true || !lastShop;
 
   const line = h("div", { class: "slots", "data-testid": "line" });
   const actions = h("div", { class: "row actions", "data-testid": "actions" });
@@ -599,8 +600,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
           if (inspected !== key) return;
           const buy = button(buttonRefusal(blocked) || `Buy ${o.cost}g · ${n + 1}`, () => void decide({ kind: "buy", slot: o.slot }), "primary grow", "buy");
           buy.disabled = blocked !== "";
-          const lockBtn = button(`${lockLabel(o)} · L`, () => lock(o), "", "lock");
-          inspector.replaceChildren(head, sheet, h("div", { class: "row" }, lockBtn, buy));
+          const lockBtn = canLock(o) ? [button(`${lockLabel(o)} · L`, () => lock(o), "", "lock")] : [];
+          inspector.replaceChildren(head, sheet, h("div", { class: "row" }, ...lockBtn, buy));
           ratesToFoot();
         },
         (e: unknown) => {
@@ -629,8 +630,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     if (run.line.length === 0) return hint(desk ? "Double-click an offer, or press its number, to buy it. Your line fights front first." : "Tap an offer to read it and buy it. Your line fights front first.");
     if (run.round === 1 && run.line.length > 0 && run.gold < rules.unitCost) return hint("Out of gold for units. Fight when ready.");
     if (run.line.length > 1 && run.round <= 2) return hint(desk ? "Drag a unit to move it, or click it: ← → move it, S sells it." : "Tap a unit in your line to move, sell or read it.");
-    if (almost) return hint(`One more ${almost.name} awakens it. It's in the shop for ${run.offers.find((o) => o.unitId === almost.unitId)!.cost}g.`);
-    if (run.offers.some((o) => !o.locked && o.cost > run.gold && mergeTarget(run.line, o.unitId) >= 0)) return hint("Not enough gold: lock it to keep it for next round.");
+    if (almost) {
+      const o = run.offers.find((o) => o.unitId === almost.unitId)!;
+      const keep = !o.locked && !lastShop && o.cost > run.gold ? " Not enough gold: lock it to keep it for next round." : "";
+      return hint(`One more ${almost.name} awakens it. It's in the shop for ${o.cost}g.${keep}`);
+    }
+    if (!lastShop && run.offers.some((o) => !o.locked && o.cost > run.gold && mergeTarget(run.line, o.unitId) >= 0)) return hint("Not enough gold: lock it to keep it for next round.");
     return null;
   };
 
@@ -765,8 +770,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const { sheet, blocked } = await offerBody(o);
       const buy = button(buttonRefusal(blocked) || `Buy ${o.cost}g`, () => (close(), void decide({ kind: "buy", slot: o.slot })), "primary grow", "buy");
       buy.disabled = blocked !== "";
-      const lockBtn = button(o.locked ? "🔓 Unlock" : "🔒 Lock", () => (close(), lock(o)), "", "lock");
-      const close = overlay(sheet, h("div", { class: "row sheet-actions" }, button("Close", () => close(), "", "offer-close"), lockBtn, buy));
+      const lockBtn = canLock(o) ? [button(o.locked ? "🔓 Unlock" : "🔒 Lock", () => (close(), lock(o)), "", "lock")] : [];
+      const close = overlay(sheet, h("div", { class: "row sheet-actions" }, button("Close", () => close(), "", "offer-close"), ...lockBtn, buy));
     });
 
   const offers = h(
@@ -791,7 +796,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
           renderLine();
         });
         c.addEventListener("dblclick", () => buy(o));
-        c.addEventListener("contextmenu", (e) => (e.preventDefault(), lock(o)));
+        c.addEventListener("contextmenu", (e) => (e.preventDefault(), canLock(o) && lock(o)));
         desktopCard(c, { kind: "offer", slot: o.slot });
       }
       return c;
@@ -799,8 +804,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   );
 
   const reroll = button(`Reroll ${rules.rerollCost}g`, () => void decide({ kind: "reroll" }), "", "reroll");
-  // A reroll with every offer locked would redraw nothing (run.ts refuses it).
-  const allLocked = run.offers.length > 0 && run.offers.every((o) => o.locked);
+  // A reroll with locked offers filling the whole shop would redraw nothing
+  // (run.ts refuses it); empty slots still refill.
+  const allLocked = lockedFull({ offers: run.offers, rules, round: run.round });
   reroll.disabled = run.gold < rules.rerollCost || allLocked;
   if (allLocked) reroll.title = "Every offer is locked";
   const fight = button(crown ? "Fight the champion" : "Fight", () => void decide({ kind: "fight" }), "primary grow", "fight");
@@ -903,23 +909,11 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   );
   screen("shop");
   rerender = () => shopScreen(run, content, err.textContent ?? "", pick.mode === "picked" ? pick.index : -1);
-  if (!desk) return;
-  // ← / → pressed while the last move was out: the unit goes on by as many slots.
-  const queued = moveQueue;
-  moveQueue = 0;
-  if (queued && pick.mode === "picked" && !crown) {
-    const from = pick.index;
-    const to = Math.max(0, Math.min(run.line.length - 1, from + queued));
-    // After the answering request lets go (guarded ignores a decision while one is out).
-    if (to !== from) setTimeout(() => void decide({ kind: "reorder", from, to }, to), 0);
-  }
-
-  // Keys: 1–7 buy, R reroll, L lock the chosen or hovered offer, Space fight, ← → move the selected unit, F fuse,
-  // S sell; Esc steps back (a sheet, the fusion, the selection), then opens
-  // the ☰ run menu.
+  // Keys: Esc steps back (the fusion, the selection), then opens the ☰ run
+  // menu, at every width (a sheet over the shop closes first: ui/dom.ts).
+  // Desktop: 1–7 buy, R reroll, L lock the chosen or hovered offer, Space
+  // fight, ← → move the selected unit, F fuse, S sell.
   onKeys((e) => {
-    const open = app.querySelector(".overlay");
-    if (open) return e.key === "Escape" ? (open.remove(), true) : false;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     const sel = pick.mode === "picked" ? pick.index : -1;
     if (k === "Escape") {
@@ -930,6 +924,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       renderLine();
       return true;
     }
+    if (!desk) return false;
     if (k === " ") {
       if (!fight.disabled) void decide({ kind: "fight" });
       return true;
@@ -949,7 +944,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       // The chosen offer, else the one under the mouse.
       const slot = chosen ?? (hover?.kind === "offer" ? hover.slot : null);
       const o = slot === null ? undefined : run.offers[slot];
-      if (!o) return false;
+      if (!o || !canLock(o)) return false;
       lock(o);
       return true;
     }
@@ -976,6 +971,17 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     }
     return false;
   });
+  if (!desk) return;
+  // ← / → pressed while the last move was out: the unit goes on by as many slots.
+  const queued = moveQueue;
+  moveQueue = 0;
+  if (queued && pick.mode === "picked" && !crown) {
+    const from = pick.index;
+    const to = Math.max(0, Math.min(run.line.length - 1, from + queued));
+    // After the answering request lets go (guarded ignores a decision while one is out).
+    if (to !== from) setTimeout(() => void decide({ kind: "reorder", from, to }, to), 0);
+  }
+
 }
 
 /** ← / → presses the desktop shop took while a move was still out. */
@@ -1136,7 +1142,7 @@ function runOverScreen(run: RunView, content: MvpContent, notice = "", newRun = 
     h("div", { class: "row footer" }, ...(newRun ? [button("Home", home, "grow", "home"), button("New run", next, "primary grow", "new-run-start")] : [button("Home", home, "primary grow", "home")])),
   );
   screen("over");
-  onKeys((e) => (e.key === "Enter" ? ((newRun ? next : home)(), true) : false));
+  onKeys((e) => (e.key === "Enter" ? ((newRun ? next : home)(), true) : e.key === "Escape" ? (home(), true) : false));
 }
 
 // ---------- boot ----------

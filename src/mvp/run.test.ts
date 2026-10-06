@@ -133,11 +133,42 @@ describe("MVP lock (R3-12)", () => {
     expect(r.gold).toBe(s.gold - 1);
   });
 
-  it("refuses a reroll with every offer locked, gold unchanged", () => {
+  it("refuses a reroll when locked offers fill the whole shop, gold unchanged", () => {
     let s = initMvpRun({ runId: "r", player: me, seed: 3, content, ...day });
     for (const o of s.offers) s = lock(s, o.slot);
+    expect(s.offers).toHaveLength(offersAt(MVP_RULES, 1));
     expect(() => applyMvpDecision(s, { kind: "reroll" }, content)).toThrow(/every offer is locked/);
     expect(s.gold).toBe(10);
+  });
+
+  it("rerolls when every offer left is locked but a bought one left a slot empty", () => {
+    let s = lock(initMvpRun({ runId: "r", player: me, seed: 3, content, ...day }), 0);
+    s = applyMvpDecision(s, { kind: "buy", slot: 2 }, content).state;
+    s = applyMvpDecision(s, { kind: "buy", slot: 1 }, content).state;
+    expect(s.offers.map((o) => !!o.locked)).toEqual([true]);
+    expect(s.gold).toBe(4);
+    const r = applyMvpDecision(s, { kind: "reroll" }, content).state;
+    expect(r.offers).toHaveLength(offersAt(MVP_RULES, 1));
+    expect(r.offers[0]).toEqual(s.offers[0]);
+    expect(r.offers.slice(1).every((o) => !o.locked)).toBe(true);
+    expect(r.gold).toBe(3);
+  });
+
+  it("answers MvpBadDecision for an index that isn't a whole number ≥ 0, touching no prototype", () => {
+    const s = initMvpRun({ runId: "r", player: me, seed: 8, content, ...day });
+    const bad = ["__proto__", "length", "constructor", "0", -1, 1.5, null, undefined, NaN, Infinity, {}];
+    const kinds = [
+      (v: unknown) => ({ kind: "buy", slot: v }),
+      (v: unknown) => ({ kind: "lock", slot: v }),
+      (v: unknown) => ({ kind: "sell", index: v }),
+      (v: unknown) => ({ kind: "reorder", from: v, to: 0 }),
+      (v: unknown) => ({ kind: "reorder", from: 0, to: v }),
+      (v: unknown) => ({ kind: "fuse", first: v, second: 0 }),
+      (v: unknown) => ({ kind: "fuse", first: 0, second: v }),
+    ];
+    for (const k of kinds)
+      for (const v of bad) expect(() => applyMvpDecision(s, k(v) as never, content), JSON.stringify(k(v))).toThrow(MvpBadDecision);
+    expect(Object.hasOwn(Array.prototype, "locked")).toBe(false);
   });
 
   it("survives the fight into the next round, still locked, beside fresh offers up to offersAt", () => {
