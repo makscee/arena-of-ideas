@@ -67,6 +67,10 @@ export interface DescribeSegment {
   /** On every run of a trigger clause, so "After [Shield] lands on an ally"
    * draws as one pill. */
   clause?: "when";
+  /** On the number of a damage or heal ("deal [2] damage", "heal it for [2]"):
+   * the client draws it bold with its effect's icon, so the amount carries
+   * the icon and the verb is only coloured. */
+  amount?: true;
 }
 
 const seg = (text: string): DescribeSegment => ({ text });
@@ -313,14 +317,16 @@ export function describeEffectSegments(
   // A highlighted effect run: the Part ref plus the effect's term.
   const eT = (text: string): DescribeSegment => ({ text, partRef: ref, term: `effect:${e.kind}` });
   const statusSeg = (status: string): DescribeSegment => ({ text: status, statusRef: status, term: `status:${status}` });
+  // The effect's number: its own run, marked as the amount.
+  const eN = (n: number): DescribeSegment => ({ ...eT(String(n)), amount: true });
   switch (e.kind) {
     case "damage":
       return e.amount.kind === "const"
-        ? [e0("deal "), eT(`${e.amount.value} damage`), e0(" to "), ...tgt]
+        ? [e0("deal "), eN(e.amount.value), e0(" "), eT("damage"), e0(" to "), ...tgt]
         : [e0("deal "), eT("damage"), e0(" equal to "), ...amountSegments(e.amount, opts), e0(" to "), ...tgt];
     case "heal":
       return e.amount.kind === "const"
-        ? [eT("heal"), e0(" "), ...tgt, e0(" for "), eT(String(e.amount.value))]
+        ? [eT("heal"), e0(" "), ...tgt, e0(" for "), eN(e.amount.value)]
         : [eT("heal"), e0(" "), ...tgt, e0(" for "), ...amountSegments(e.amount, opts)];
     case "applyStatus":
       return e.stacks.kind === "const"
