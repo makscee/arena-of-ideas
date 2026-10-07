@@ -8,6 +8,7 @@ import { createServer } from "node:net";
 import { launchChromium } from "./browser.mjs";
 import { escPass } from "./esc-keys.mjs";
 import { beamChecks } from "./beams.mjs";
+import { danceChecks, stillChecks } from "./dance.mjs";
 import { nowSheetChecks } from "./now-sheet.mjs";
 
 const args = process.argv.slice(2);
@@ -449,11 +450,20 @@ try {
       await page.getByTestId("move-left").click();
       await page.getByTestId("fight").waitFor();
     }
+    // R4-16: the units in the shop bob on the beat.
+    if (round === 1) await danceChecks(page, "shop", errors);
     await page.getByTestId("fight").click();
     // The battle viewer (slice 9) comes first. In round 1, watch it play, then
     // tap a change and read its chain. End shows the end card, Continue goes
     // to the result, which shows "why I lost" after a loss (shot once).
     await page.getByTestId("battle-end").waitFor({ timeout: 10_000 });
+    // R4-16: so do the fighters; under reduced motion none moves.
+    if (round === 1) {
+      await danceChecks(page, "battle", errors);
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await stillChecks(page, "battle", errors);
+      await page.emulateMedia({ reducedMotion: null });
+    }
     // R2-14: the speed chosen in round 1 (4×) holds in the next battle.
     if (round === 2 && (await page.getByTestId("battle-speed").textContent()) !== "4×") errors.push(`speed: round 2 plays at ${await page.getByTestId("battle-speed").textContent()}, not the 4× chosen in round 1`);
     if (round === 1) {
