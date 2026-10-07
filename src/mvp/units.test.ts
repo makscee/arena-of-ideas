@@ -141,7 +141,7 @@ describe("one hero per shape (round 3, docs/round3/units.md 1b)", () => {
     const necro = ROWS.find((r) => r.name === "Necromancer")!;
     const rows = ROWS.map((r) => (r.name === "Divinity" ? { ...r, who: necro.who, does: necro.does, awoken: necro.awoken } : r));
     expect(collisions(mvpPool(rows).units, "sleeping")).toEqual(["allyDies · lastDeadAlly · Revive: Necromancer, Divinity"]);
-    expect(collisions(mvpPool(rows).units, "awoken")).toEqual(["allyDies · lastDeadAlly · Revive: Necromancer, Divinity"]);
+    expect(collisions(mvpPool(rows).units, "awoken")).toEqual(["allyDies · lastDeadAlly · Call+Revive: Necromancer, Divinity"]);
   });
 
   it("catches a hero that differs only by a rider or a heal word: Sexton + Strength, Medic with Mend", () => {
@@ -192,13 +192,10 @@ describe("one hero per shape (round 3, docs/round3/units.md 1b)", () => {
     return [...loops];
   };
 
-  // Maks's call (docs/round3/README.md): Awoken Necromancer revives at 1 HP
-  // with Strength 3, undead glass cannons. Its new part is a Strength rider,
-  // which R3 otherwise never counts.
-  const R3_EXCEPTIONS = ["necromancer"];
+  // No exceptions: Necromancer's Awoken form raises an Imp too (R3-26, Maks's note 1).
   it("R3: every Awoken form does something new, not just bigger numbers", () => {
     const same = mvpPool()
-      .units.filter((u) => !R3_EXCEPTIONS.includes(u.id) && awokenNewPart(u.forms.sleeping, u.forms.awoken) === null)
+      .units.filter((u) => awokenNewPart(u.forms.sleeping, u.forms.awoken) === null)
       .map((u) => `${u.name}: ${sig(u.forms.sleeping)} → ${u.forms.awoken.does.join(", ")}`);
     expect(same).toEqual([]);
   });
@@ -297,7 +294,7 @@ describe("Summoner's Awoken form (R3-8)", () => {
   });
 });
 
-describe("Necromancer's Awoken form (R3-9)", () => {
+describe("Necromancer's Awoken form (R3-26)", () => {
   const content: MvpContent = { version: "test", ...mvpPool() };
   const unit = (id: string) => content.units.find((u) => u.id === id)!;
   const p = { id: "p", name: "p", bot: false };
@@ -307,20 +304,23 @@ describe("Necromancer's Awoken form (R3-9)", () => {
     return fightLines({ player: p, line }, { player: p, line: foe }, { battleId: "b", seed: 1, kind: "round", round: 1, runId: null, at: "2026-10-06T00:00:00.000Z", content, rules: MVP_RULES }).log;
   };
 
-  it("revives the fallen ally with 1 HP and Strength 3: an undead glass cannon", () => {
+  it("revives the fallen ally at 2 HP and raises an Imp at the front: something new, not a stat rider", () => {
     const log = fight(3);
     const back = log.find((e) => e.type === "Summon" && e.resurrected);
     if (back?.type !== "Summon") throw new Error("nobody revived");
-    expect(back.atHp).toBe(1);
-    const after = log.slice(log.indexOf(back));
-    expect(after.some((e) => e.type === "StatusApplied" && e.unit === back.unit && e.status === "Strength" && e.stacks === 3)).toBe(true);
+    expect(back.atHp).toBe(2);
+    const imp = log.slice(log.indexOf(back)).find((e) => e.type === "Summon" && e.name === "Imp");
+    if (imp?.type !== "Summon") throw new Error("no Imp raised");
+    expect(imp.front).toBe(true);
+    expect(awokenNewPart(unit("necromancer").forms.sleeping, unit("necromancer").forms.awoken)).toBe("adds Call");
   });
 
-  it("sleeping, it revives at 2 HP with no Strength", () => {
+  it("sleeping, it only revives at 2 HP", () => {
     const log = fight(1);
     const back = log.find((e) => e.type === "Summon" && e.resurrected);
     if (back?.type !== "Summon") throw new Error("nobody revived");
     expect(back.atHp).toBe(2);
-    expect(log.some((e) => e.type === "StatusApplied" && e.unit === back.unit && e.status === "Strength")).toBe(false);
+    expect(log.some((e) => e.type === "Summon" && e.name === "Imp")).toBe(false);
   });
 });
+

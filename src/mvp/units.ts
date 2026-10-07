@@ -213,8 +213,9 @@ export const ROWS: Row[] = [
   r("Pathologist",   "🔬", 3, 2, 7, "enemyPoisoned", "me",   "Strength 1",  { does: ["Strength 1", "Heal 1"] }),
   r("Plague Doctor", "🦤", 3, 2, 7, "start",      "enemies", "Poison 2",    { does: ["Poison 2", "Curse 1"] }),
   r("Virus",         "🧫", 3, 2, 6, "enemyDies",  "enemies", "Poison 2",    { does: ["Poison 2", "Curse 1"] }),
-  // Awoken, the dead return as undead glass cannons: 1 HP, +3 PWR (1a).
-  r("Necromancer",   "💀", 3, 2, 7, "allyDies",   "fallen",  "Revive 2",    { does: ["Revive 1 + Strength 3"] }),
+  // Awoken, each death raises two: the fallen ally, and an Imp at the front
+  // (R3-26, Maks's note 1: Awoken does something new, not a stat rider).
+  r("Necromancer",   "💀", 3, 2, 7, "allyDies",   "fallen",  "Revive 2",    { does: ["Revive 2 + Call Imp"] }),
   r("Sexton",        "⚰️", 3, 3, 9, "allyDies",   "me",      "Call Wraith", { does: ["Call Ghoul"] }),
   r("Fungoid",       "🪸", 3, 2, 9, "turnEnd",    "me",      "Call Imp",    { does: ["Call Puffball"] }),
   r("Mesmerist",     "🌀", 3, 2, 7, "start",      "front",   "Freeze 1 + Curse 1", { who: "enemies", does: ["Freeze 1 + Curse 1"] }),

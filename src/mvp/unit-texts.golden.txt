@@ -174,7 +174,7 @@
   awoken:   Enemy dies: 2 Poison and 1 Curse to all enemies.
 💀 Necromancer
   sleeping: Ally dies: revive fallen ally at 2 HP.
-  awoken:   Ally dies: revive fallen ally at 1 HP, then 3 Strength to fallen ally.
+  awoken:   Ally dies: revive fallen ally at 2 HP, then summon Imp (1/2) for fallen ally.
 ⚰️ Sexton
   sleeping: Ally dies: summon Wraith (3/3).
   awoken:   Ally dies: summon Ghoul (3/3).
