@@ -1,7 +1,7 @@
 // R4-3: the battle Log on a long late-game fight. Finds one
 // (e2e/log-rows-battle.ts), plays a round on a LOCAL server with it swapped
 // in, ends it, and checks the Log: grouped rows (as many as logRowsOf
-// gives), no line repeating the one above in a beat, and a merged row's Why
+// gives, less those inside a folded turn), no line repeating the one above in a beat, and a merged row's Why
 // reaching each change it holds, each chip naming its unit.
 // Needs `npm run mvp:build` first.   node e2e/probe-log-rows.mjs [out.png]
 import { execFileSync, spawn } from "node:child_process";
@@ -11,7 +11,7 @@ import { dirname, join } from "node:path";
 import { launchChromium } from "./browser.mjs";
 const rec = join(mkdtempSync(join(tmpdir(), "log-rows-")), "long.json");
 const found = JSON.parse(execFileSync("node", ["--import", "tsx/esm", "e2e/log-rows-battle.ts", rec], { encoding: "utf8" }).trim().split("\n").at(-1));
-console.log(`long battle: ${found.events} events, ${found.waves} waves → ${found.rows} Log rows`);
+console.log(`long battle: ${found.events} events, ${found.waves} waves → ${found.rows} Log rows, ${found.folds} turns folded`);
 const long = JSON.parse(readFileSync(rec, "utf8"));
 const out = process.argv[2] ?? "e2e/.shots/log-rows.png";
 mkdirSync(dirname(out), { recursive: true });
@@ -45,7 +45,9 @@ try {
   const rows = page.locator("[data-testid=log-row]:visible");
   await rows.first().waitFor({ timeout: 30_000 });
   const texts = await rows.evaluateAll((els) => els.map((e) => ({ beat: e.getAttribute("data-beat"), text: e.textContent.trim() })));
-  if (texts.length !== found.rows) errors.push(`${texts.length} Log rows on screen, logRowsOf gives ${found.rows}`);
+  // Repeated turns fold (R4-13): a shut fold stands for its rows.
+  const shown = texts.length + (await page.locator("[data-testid=log-fold]:visible").count());
+  if (shown !== found.items) errors.push(`${shown} Log rows and folds on screen, foldTurnsOf gives ${found.items}`);
   const runs = texts.filter((t, i) => i && t.beat === texts[i - 1].beat && t.text === texts[i - 1].text);
   if (runs.length) errors.push(`${runs.length} rows repeat the one above, e.g. "${runs[0].text}"`);
   const merged = rows.filter({ hasText: /all allies|all enemies|\(×\d+\)|ticks \d+ units/ });

@@ -20,7 +20,7 @@
 import { boardAt, type BoardState, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView, SummonContent } from "../../src/mvp/contract";
 import { chainCappedTip, STATUS_TERMS, suddenDeathTip, termDef, timeUpTip, termIcon, triggerLabel, type IconId, type TermId } from "../../src/glossary";
-import { BEAT_MS, NO_ROOM, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, keyMomentsOf, logRowsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, turnLabel, whyILost as lossChains, sidesOf, turnSummaryOf, turnEndsOf, turnEndHoldMs, totalsPartsOf, totalsText, TURN_END_MS, type TotalsPart, type TurnSummary, type UnitTurnTotals, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
+import { BEAT_MS, NO_ROOM, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, foldTurnsOf, isLogFold, keyMomentsOf, logRowsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, turnLabel, whyILost as lossChains, sidesOf, turnSummaryOf, turnEndsOf, turnEndHoldMs, totalsPartsOf, totalsText, TURN_END_MS, type TotalsPart, type TurnSummary, type UnitTurnTotals, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type LogRow, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { summonId } from "../../src/describe";
@@ -485,51 +485,99 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   function setTab(t: "why" | "log"): void {
     tab = t;
     render();
-    if (t === "log") logRows[curRow()]?.scrollIntoView({ block: "nearest" });
+    if (t === "log") shownRow(curRow())?.scrollIntoView({ block: "nearest" });
   }
 
   /** The Log: every beat of the fight, its waves grouped into rows
    * (logRowsOf, R4-3), built once; render() shows the rows played so far and
    * lights the one on screen. A row's click moves the board to its last wave
-   * and opens its Why, which reaches every change the row merged. */
+   * and opens its Why, which reaches every change the row merged. A turn
+   * that repeats the one before it folds into one summary row (foldTurnsOf,
+   * R4-13) whose click shows or hides its rows. */
   const logRows: HTMLElement[] = [];
   const rowAt = logRowsOf(log, beats, TAGGED);
-  function buildLog(): void {
-    rowAt.forEach((r, i) => {
-      const first = i === 0 || rowAt[i - 1]!.beat !== r.beat;
-      const row = h(
-        "button",
-        { class: `bv-log-row${first ? " first" : ""}`, "data-testid": "log-row", "data-beat": String(r.beat) },
-        h("span", { class: "bv-log-t dim mono" }, first ? turnLabel(r.turn) : ""),
-        h("span", { class: "bv-log-c" }, ...(r.subjectSide ? [sideTag(r.subjectSide)] : []), ...richCaption(r.caption)),
-      );
-      row.addEventListener("click", () => {
-        pause();
-        finished = false;
-        at = r.beat;
-        wave = r.waves.at(-1)!;
-        landed = [];
-        const c = r.changes[0];
-        if (c) openTrace(c.eventId, r.changes);
-        else render();
-      });
-      logRows.push(row);
+  /** The folded turns: the summary row, the box of its rows, their indexes in rowAt. */
+  const folds: { el: HTMLElement; box: HTMLElement; rows: number[]; open: boolean }[] = [];
+  /** For each row of rowAt, the fold that holds it, or -1. */
+  const foldAt: number[] = rowAt.map(() => -1);
+  function logRow(r: LogRow, i: number, label: boolean): HTMLElement {
+    const first = i === 0 || rowAt[i - 1]!.beat !== r.beat;
+    const row = h(
+      "button",
+      { class: `bv-log-row${first ? " first" : ""}`, "data-testid": "log-row", "data-beat": String(r.beat) },
+      h("span", { class: "bv-log-t dim mono" }, first && label ? turnLabel(r.turn) : ""),
+      h("span", { class: "bv-log-c" }, ...(r.subjectSide ? [sideTag(r.subjectSide)] : []), ...richCaption(r.caption)),
+    );
+    row.addEventListener("click", () => {
+      pause();
+      finished = false;
+      at = r.beat;
+      wave = r.waves.at(-1)!;
+      landed = [];
+      const c = r.changes[0];
+      if (c) openTrace(c.eventId, r.changes);
+      else render();
     });
-    logBody.replaceChildren(...(logRows.length ? logRows : [h("div", { class: "dim" }, "Nothing happened.")]));
+    logRows[i] = row;
+    return row;
+  }
+  function buildLog(): void {
+    const items: HTMLElement[] = [];
+    let i = 0;
+    for (const it of foldTurnsOf(log, rowAt, TAGGED)) {
+      if (!isLogFold(it)) {
+        items.push(logRow(it, i, true));
+        i++;
+        continue;
+      }
+      const f = folds.length;
+      const rows = it.rows.map((_, k) => i + k);
+      const box = h("div", { class: "bv-log-folded", "data-testid": "log-fold-rows" }, ...it.rows.map((r, k) => logRow(r, i + k, false)));
+      const el = h(
+        "button",
+        { class: "bv-log-row first bv-log-fold", "data-testid": "log-fold", "data-turn": String(it.turn), "aria-expanded": "false", title: "This turn repeats the one before it: click to show its rows" },
+        h("span", { class: "bv-log-t dim mono" }, turnLabel(it.turn)),
+        h("span", { class: "bv-log-c" }, h("span", { class: "bv-fold-mark", "aria-hidden": "true" }, "▸"), ...richCaption(it.caption)),
+      );
+      el.addEventListener("click", () => {
+        folds[f]!.open = !folds[f]!.open;
+        drawLog();
+      });
+      for (const k of rows) foldAt[k] = f;
+      folds.push({ el, box, rows, open: false });
+      items.push(el, box);
+      i += it.rows.length;
+    }
+    logBody.replaceChildren(...(items.length ? items : [h("div", { class: "dim" }, "Nothing happened.")]));
   }
   /** The log row of the wave on screen (-1 before the first beat). */
   function curRow(): number {
     if (at < 0) return -1;
     return rowAt.findIndex((r) => r.beat === at && r.waves.includes(wave));
   }
+  /** What the Log shows for row `i`: the row, or its fold when that is shut. */
+  function shownRow(i: number): HTMLElement | undefined {
+    const f = folds[foldAt[i] ?? -1];
+    return f && !f.open ? f.el : logRows[i];
+  }
   function drawLog(): void {
     const cur = finished ? -1 : curRow();
-    logRows.forEach((r, i) => {
+    const played = (i: number) => {
       const row = rowAt[i]!;
-      r.hidden = !finished && (at < 0 || row.beat > at || (row.beat === at && row.waves[0]! > wave));
+      return finished || !(at < 0 || row.beat > at || (row.beat === at && row.waves[0]! > wave));
+    };
+    logRows.forEach((r, i) => {
+      r.hidden = !played(i);
       r.classList.toggle("on", i === cur);
     });
-    if (tab === "log" && playing && cur >= 0) logRows[cur]?.scrollIntoView({ block: "nearest" });
+    for (const f of folds) {
+      f.el.hidden = !played(f.rows[0]!);
+      f.box.hidden = !f.open || f.el.hidden;
+      f.el.setAttribute("aria-expanded", String(f.open));
+      f.el.classList.toggle("open", f.open);
+      f.el.classList.toggle("on", !f.open && f.rows.includes(cur));
+    }
+    if (tab === "log" && playing && cur >= 0) shownRow(cur)?.scrollIntoView({ block: "nearest" });
   }
 
   /** The timeline: a block per turn with its marks; a playhead on the beat on
@@ -1256,7 +1304,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     logTab.classList.toggle("on", tab === "log");
     whyBody.replaceChildren(...(trace ? traceView(trace) : []));
     drawLog();
-    if (backToLog) logRows[curRow()]?.scrollIntoView({ block: "nearest" });
+    if (backToLog) shownRow(curRow())?.scrollIntoView({ block: "nearest" });
     drawTimeline();
     // A trace opened from the end card (Why I lost) sits in its place until closed.
     end.style.display = finished && !trace ? "" : "none";
