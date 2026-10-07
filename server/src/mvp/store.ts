@@ -80,6 +80,11 @@ export interface MvpStore {
   /** Swaps the invite `oldCode` for `next` (a rotated code) and ends every
    * session of its player, in one step; returns how many sessions ended. */
   rotateInvite(oldCode: string, next: Invite): number;
+  // R4-20's open join link (#704); only ./invites.ts writes it.
+  /** The shared join code, or undefined before `mvp:invite -- open` made one. */
+  joinCode(): string | undefined;
+  /** Sets (or rotates) the shared join code. */
+  setJoinCode(code: string): void;
 }
 
 /** Devices per player: opening a link past this ends the oldest session. */
@@ -226,6 +231,9 @@ export class MemoryMvpStore implements MvpStore {
     return i.playerId;
   }
   sessionPlayer(tokenHash: string): string | undefined { return this.sessions.get(tokenHash); }
+  private join: string | undefined;
+  joinCode(): string | undefined { return this.join; }
+  setJoinCode(code: string): void { this.join = code; }
 }
 
 /** Ordered: (a, b) and (b, a) are different fusions. */

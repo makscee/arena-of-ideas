@@ -5,6 +5,7 @@
  *   npm run mvp:invite -- list
  *   npm run mvp:invite -- add <name> [--claim | --player <id>] [--admin | --no-admin]
  *   npm run mvp:invite -- revoke <name>
+ *   npm run mvp:invite -- open [--rotate]
  *
  * `add` prints the person's link. A new name makes a new player. A name an
  * existing human player has is refused unless --claim (the only human player
@@ -15,11 +16,15 @@
  * them. Links last until revoked: `revoke` ends every device's session and
  * prints the person's new link (the old one stops working). Env: MVP_DB (default data/arena-mvp.db),
  * MVP_PUBLIC_URL (default https://arena.makscee.ru/arena/, where testers play).
- * The code rides in the link's fragment (#invite=…), which browsers never
- * send, so no proxy's access log holds it.
+ * `open` (R4-20) prints the one shared join link (…#join=<code>): anyone
+ * who opens it picks a name and plays as a new player. The same link comes
+ * back until `open --rotate` makes a new one; the old link then stops making
+ * players, and those who joined keep their sessions and own links.
+ * The code rides in the link's fragment (#invite=…, #join=…), which browsers
+ * never send, so no proxy's access log holds it.
  */
 import { SqliteMvpStore } from "./sqlite-store.js";
-import { createInvite, InviteError, revokeInvite } from "./invites.js";
+import { createInvite, InviteError, openJoin, revokeInvite } from "./invites.js";
 
 const [cmd, ...rest] = process.argv.slice(2);
 const store = new SqliteMvpStore(process.env.MVP_DB ?? "data/arena-mvp.db");
@@ -62,8 +67,13 @@ try {
     const r = revokeInvite(store, name, new Date());
     if (!r) throw new InviteError(`no invite named ${name}`);
     console.log(`${r.invite.name}: the old link is dead, ${r.sessions} device session(s) ended. New link: ${link(r.invite.code)}`);
+  } else if (cmd === "open" && (rest.length === 0 || (rest.length === 1 && rest[0] === "--rotate"))) {
+    const rotate = rest[0] === "--rotate";
+    rest.length = 0;
+    const code = openJoin(store, rotate);
+    console.log(`${rotate ? "New join link (the old one makes no new players)" : "Join link"}: ${base}#join=${code}`);
   } else {
-    console.error("usage: mvp:invite -- list | add <name> [--claim | --player <id>] [--admin | --no-admin] | revoke <name>");
+    console.error("usage: mvp:invite -- list | add <name> [--claim | --player <id>] [--admin | --no-admin] | revoke <name> | open [--rotate]");
     process.exitCode = 2;
   }
 } catch (e) {

@@ -633,8 +633,13 @@ export interface HomeView {
 //   POST /api/v1/invites/lookup { code }     → { player: PlayerRef } (slice 13; whose link it is, opening nothing; 404 unknown code)
 //   POST /api/v1/invites/redeem { code }     → PlayerSession      (slice 13; 404 unknown code; the same link again: the same player,
 //                                                                  a new token; a player keeps their newest 10 devices' tokens)
-//   Invite codes travel in the link's fragment (…/arena/#invite=<code>) and in
-//   these bodies, never in a URL path or query, so no access log holds one.
+//   POST /api/v1/join/check  { code }        → { ok: true }       (R4-20; is this the open join link? 404 if not)
+//   POST /api/v1/join        { code, name }  → JoinSession        (R4-20; a new player, never admin, with their own invite;
+//                                                                  404 not the join code, 409 a taken or bot's name,
+//                                                                  400 a bad name, 429 over 30 joins an hour)
+//   Invite and join codes travel in the link's fragment (…/arena/#invite=<code>,
+//   #join=<code>) and in these bodies, never in a URL path or query, so no
+//   access log holds one.
 //   GET  /api/v1/home                        → HomeView
 //   POST /api/v1/runs                        → RunView            (starts a run; the player's active run if one is going)
 //   GET  /api/v1/runs/:runId                 → RunView
@@ -655,6 +660,12 @@ export const TOKEN_HEADER = "X-Arena-Token";
 export interface PlayerSession {
   player: PlayerRef;
   token: string;
+}
+
+/** R4-20: a join through the open link: the new player's session plus their
+ * own invite code (their link for another device). */
+export interface JoinSession extends PlayerSession {
+  invite: string;
 }
 
 export interface StatsView {
