@@ -1299,7 +1299,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   function termsIn(text: string, led: string | null = null): Node[] {
     // A number keeps to the word before it ("blocks 2", "→ −3") and PWR / HP
     // to their number: a lone "2" wrapped onto its own line (R3-26).
-    text = text.replace(/ (?=[−+]?\d)/g, "\u00A0").replace(/(\d) (?=(?:PWR|HP)\b)/g, "$1\u00A0");
+    text = text.replace(/ (?=[−+×]?\d)/g, "\u00A0").replace(/(\d) (?=(?:PWR|HP)\b)/g, "$1\u00A0");
     const out: Node[] = [];
     let i = 0;
     for (const m of text.matchAll(captionTerms)) {
