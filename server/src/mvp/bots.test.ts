@@ -90,7 +90,8 @@ describe("MVP bots and world (slice 6)", { timeout: 30_000 }, () => {
     expect(crownsOwed(rt)).toBe(BOT_DAILY_CROWNS);
     const quota = 6;
     const botCrowns = () => rt.store.battles({ kind: "crown", since: rt.today().startedAt }).filter((b) => b.player.bot).length;
-    for (let day = 1; day <= 3; day++) {
+    // Two days show "every day, not only the first"; a third only cost time (7 s idle, 30+ s under load).
+    for (let day = 1; day <= 2; day++) {
       // The pool is full after day 1: only the quota makes bots play.
       const t = topUpGhosts(rt, { target: 4, dailyCrowns: quota });
       expect(t).toMatchObject({ thin: [], crownsOwed: 0 });
@@ -103,7 +104,7 @@ describe("MVP bots and world (slice 6)", { timeout: 30_000 }, () => {
       expect(topUpGhosts(rt, { target: 4, dailyCrowns: quota }).runs).toBe(0);
       endDay(rt);
     }
-  }, 30_000);
+  }, 60_000);
 
   it("refills for new content: ghosts of other content don't count", () => {
     const rt = world();

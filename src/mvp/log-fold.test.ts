@@ -13,8 +13,8 @@ import { mvpPool } from "./units.js";
 
 /** A hand-built looping fight: each turn Ogre strikes, Nurse heals the one
  * hit, Poison ticks on Imp. Turn 3 hits Nurse instead of Rose (a target, not
- * a new effect); turn 5 adds Rose's death. */
-function loopLog(): BattleEvent[] {
+ * a new effect); the last turn (5) adds a death. */
+function loopLog(last = 5): BattleEvent[] {
   const log: BattleEvent[] = [];
   let turn = 0;
   const add = (causedBy: number | null, source: "kernel" | AbilityRef, body: EventBody) => {
@@ -24,18 +24,18 @@ function loopLog(): BattleEvent[] {
   const by = (unit: string, ability = 0, status?: string): AbilityRef => ({ unit, ability, ...(status ? { status } : {}) });
   const roster = (side: string, names: string[]) => names.map((n, i) => ({ id: `${side}${i + 1}:${n}`, name: n, hp: 30, pwr: 2 }));
   add(null, "kernel", { type: "BattleStart", teams: { A: roster("A", ["Rose", "Nurse"]), B: roster("B", ["Ogre", "Imp"]) } });
-  for (turn = 1; turn <= 5; turn++) {
+  for (turn = 1; turn <= last; turn++) {
     add(null, "kernel", { type: "TurnStart" });
     const target = turn === 3 ? "A2:Nurse" : "A1:Rose";
     const strike = add(null, "kernel", { type: "Strike", striker: "B1:Ogre", defender: target });
     const hurt = add(strike, "kernel", { type: "Hurt", unit: target, amount: turn + 1, hpAfter: 20 });
-    if (turn === 5) add(hurt, "kernel", { type: "Death", unit: target });
+    if (turn === last) add(hurt, "kernel", { type: "Death", unit: target });
     else add(hurt, by("A2:Nurse"), { type: "Heal", unit: target, amount: 1, hpAfter: 21 });
     const end = add(null, "kernel", { type: "TurnEnd" });
     add(end, by("B2:Imp", 0, "Poison"), { type: "Hurt", unit: "B2:Imp", amount: turn, hpAfter: 30 - turn });
   }
-  turn = 5;
-  add(null, "kernel", { type: "BattleEnd", winner: "B", turns: 5 });
+  turn = last;
+  add(null, "kernel", { type: "BattleEnd", winner: "B", turns: last });
   return log;
 }
 
@@ -47,28 +47,35 @@ describe("the Log folds a turn that repeats the one before it (R4-13)", () => {
   const items = foldTurnsOf(log, rows);
   const folds = items.filter(isLogFold);
 
-  test("turns 2–4 repeat the turn before them, amounts and targets aside; 1 and 5 stay rows", () => {
-    expect(folds.map((f) => f.turn)).toEqual([2, 3, 4]);
+  test("turns 2–4 repeat the turn before them, amounts and targets aside, and read as one fold T2–T4; 1 and 5 stay rows", () => {
+    expect(folds.map((f) => [f.turn, f.turnTo])).toEqual([[2, 4]]);
     expect([...new Set(items.filter((x) => !isLogFold(x)).map((x) => x.turn))]).toEqual([1, 5]);
   });
 
-  test("a fold sums its turn: damage, heals, deaths", () => {
-    const t3 = folds.find((f) => f.turn === 3)!;
-    expect(t3.damage).toEqual({ A: 4, B: 3 });
-    expect(t3.heals).toEqual({ A: 1, B: 0 });
-    expect(t3.deaths).toEqual([]);
-    expect(t3.blocked).toBe(0);
-    expect(t3.caption).toBe(`Same as last turn: −7 damage, +1 healed · ${t3.rows.length} rows`);
+  test("a fold sums its run of turns: damage, heals, deaths", () => {
+    const f = folds[0]!;
+    expect(f.damage).toEqual({ A: 3 + 4 + 5, B: 2 + 3 + 4 });
+    expect(f.heals).toEqual({ A: 3, B: 0 });
+    expect(f.deaths).toEqual([]);
+    expect(f.blocked).toBe(0);
+    expect(f.caption).toBe(`Same as last turn ×3: −21 damage, +3 healed · ${f.rows.length} rows`);
   });
 
-  test("a fold keeps its turn's rows, in order: every row once", () => {
+  test("a fold keeps its turns' rows, in order: every row once", () => {
     expect(rowsOf(items)).toEqual(rows);
-    for (const f of folds) expect(f.rows.every((r) => r.turn === f.turn)).toBe(true);
+    expect(folds[0]!.rows).toEqual(rows.filter((r) => r.turn >= 2 && r.turn <= 4));
+  });
+
+  test("one repeated turn alone reads as before, without a count", () => {
+    const short = loopLog(3);
+    const one = foldTurnsOf(short, logRowsOf(short, beatPlayOf(short, stepsOf(short)))).filter(isLogFold);
+    expect(one.map((f) => [f.turn, f.turnTo])).toEqual([[2, 2]]);
+    expect(one[0]!.caption).toMatch(/^Same as last turn: −5 damage/);
   });
 
   test("a death breaks the loop", () => {
     expect(rows.some((r) => r.turn === 5 && r.caption.includes("falls"))).toBe(true);
-    expect(folds.some((f) => f.turn === 5)).toBe(false);
+    expect(folds.some((f) => f.turnTo === 5)).toBe(false);
   });
 });
 
@@ -102,14 +109,17 @@ describe("folding on real late-game fights (R4-13)", () => {
       const rows = logRowsOf(log, beatPlayOf(log, stepsOf(log)));
       const items = foldTurnsOf(log, rows);
       expect(rowsOf(items)).toEqual(rows);
-      for (const x of items.filter(isLogFold)) {
+      const fs = items.filter(isLogFold);
+      for (const [k, x] of fs.entries()) {
         expect(x.rows.length).toBeGreaterThanOrEqual(2);
-        expect(rows.filter((r) => r.turn === x.turn)).toEqual(x.rows);
-        expect(rows.filter((r) => r.turn === x.turn - 1)).toHaveLength(x.rows.length);
+        expect(rows.filter((r) => r.turn >= x.turn && r.turn <= x.turnTo)).toEqual(x.rows);
+        const per = rows.filter((r) => r.turn === x.turn - 1).length;
+        for (let t = x.turn; t <= x.turnTo; t++) expect(rows.filter((r) => r.turn === t)).toHaveLength(per);
+        // A run is whole: the next fold never starts on the turn right after this one.
+        if (fs[k + 1]) expect(fs[k + 1]!.turn).toBeGreaterThan(x.turnTo + 1);
       }
-      const n = items.filter(isLogFold).length;
-      folded += n;
-      longest = Math.max(longest, n);
+      folded += fs.length;
+      for (const x of fs) longest = Math.max(longest, x.turnTo - x.turn + 1);
     }
     expect(folded).toBeGreaterThan(0);
     expect(longest).toBeGreaterThanOrEqual(3);

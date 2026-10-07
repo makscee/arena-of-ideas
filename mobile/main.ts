@@ -506,8 +506,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const owns = (unitId: string) => mergeTarget(board, unitId) >= 0;
   let pick: Pick = desk && unitAt(selected) ? { mode: "picked", index: selected } : { mode: "none" };
   const unitOf = (id: string) => content.units.find((x) => x.id === id);
+  /** Buy previews still out: a decision waits for them, or the server may
+   * apply a buy first and refuse the preview of its slot (a 409, R4-19). */
+  const previewsOut = new Set<Promise<unknown>>();
   const decide = (d: Parameters<typeof api.decide>[1], select = -1, offer = -1) =>
     guarded(err, async () => {
+      await Promise.allSettled([...previewsOut]);
       const res = await api.decide(run.runId, d);
       if (res.fight) return fightScreens(res.run, res.fight, content);
       play(shopSound(d, run, res.run));
@@ -825,7 +829,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
    * again); the sheet is built fresh each time. */
   type OfferBody = { sheet: HTMLElement; blocked: string };
   const previews = new Map<number, ReturnType<typeof buyPreview>>();
-  const buyPreview = (o: Offer) => api.preview(run.runId, { kind: "buy", slot: o.slot }).catch((e: unknown) => (e instanceof ApiError && e.status === 409 ? e : Promise.reject(e)));
+  const buyPreview = (o: Offer) => {
+    const ask = api.preview(run.runId, { kind: "buy", slot: o.slot }).catch((e: unknown) => (e instanceof ApiError && e.status === 409 ? e : Promise.reject(e)));
+    previewsOut.add(ask);
+    void ask.finally(() => previewsOut.delete(ask)).catch(() => {});
+    return ask;
+  };
   const offerBody = async (o: Offer): Promise<OfferBody> => {
     const u = unitOf(o.unitId);
     let blocked = buyBlock(o);

@@ -68,12 +68,13 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
   .bench-row .card.empty { display: block; }
   .bench-row .card .copies.tag { font-size: 10px; }
   .bench-row .card .tag-word { display: none; }
-  /* Round 8 with a full bench and a hint still fits 640 px: the labels sit
-   * 6 px from what they name, and the collapsed spacer costs no gap. */
+  /* Round 8 with a full bench and a one-line hint still fits 640 px: the
+   * labels and the hint sit 6 px from their neighbours, and the collapsed
+   * spacer costs no gap (at -4 px a hint made it 643 px, R4-19). */
   #app[data-screen="shop"] .line-head { margin-bottom: -6px; }
   #app[data-screen="shop"] [data-testid="offers"] { margin-top: -6px; }
   #app[data-screen="shop"] .spacer { margin-top: -12px; }
-  #app[data-screen="shop"] .hint { margin: -4px 0; }
+  #app[data-screen="shop"] .hint { margin: -6px 0; }
 }
 .bench-label span:last-child { color: var(--dim); }
 /* A locked offer's mark, in the corner, so the price row stays one line. */

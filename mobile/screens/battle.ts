@@ -563,11 +563,13 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       }
       const f = folds.length;
       const rows = it.rows.map((_, k) => i + k);
-      const box = h("div", { class: "bv-log-folded", "data-testid": "log-fold-rows" }, ...it.rows.map((r, k) => logRow(r, i + k, false)));
+      // A run of turns (T2–T4) labels each turn's rows inside; one turn needs no label.
+      const many = it.turnTo > it.turn;
+      const box = h("div", { class: "bv-log-folded", "data-testid": "log-fold-rows" }, ...it.rows.map((r, k) => logRow(r, i + k, many && (k === 0 || it.rows[k - 1]!.turn !== r.turn))));
       const el = h(
         "button",
-        { class: "bv-log-row first bv-log-fold", "data-testid": "log-fold", "data-turn": String(it.turn), "aria-expanded": "false", title: "This turn repeats the one before it: click to show its rows" },
-        h("span", { class: "bv-log-t dim mono" }, turnLabel(it.turn)),
+        { class: "bv-log-row first bv-log-fold", "data-testid": "log-fold", "data-turn": String(it.turn), "data-turn-to": String(it.turnTo), "aria-expanded": "false", title: many ? "These turns repeat the one before them: click to show their rows" : "This turn repeats the one before it: click to show its rows" },
+        h("span", { class: "bv-log-t dim mono" }, turnLabel(it.turn, it.turnTo)),
         h("span", { class: "bv-log-c" }, h("span", { class: "bv-fold-mark", "aria-hidden": "true" }, "▸"), ...richCaption(it.caption)),
       );
       el.addEventListener("click", () => {

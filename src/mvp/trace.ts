@@ -1044,7 +1044,10 @@ export function logRowsOf(log: BattleEvent[], beats: PlayBeat[], name: NameOf = 
 /** A turn of the Log that repeats the turn before it, read as one line:
  * what it did in sum (damage, heals, deaths), its rows behind a tap. */
 export interface LogFold {
+  /** The first turn of the run of repeated turns, and the last (the same
+   * for a single turn): T2–T4 each repeating the turn before read as one. */
   turn: number;
+  turnTo: number;
   caption: string;
   /** HP lost on each side (Shield's blocks aside), and HP healed. */
   damage: Record<Side, number>;
@@ -1089,8 +1092,8 @@ function rowShape(log: BattleEvent[], r: LogRow, plain: NameOf, sides: Map<strin
 /** Folds each turn whose rows repeat the previous turn's (the same rows in
  * the same order, the same actors and effects, amounts and targets aside)
  * into one summary row (round 4, note 4, R5): late fights loop, and the Log
- * then reads one line per repeated turn. A turn of one row stays a row. Every
- * row is kept, in order, inside its fold. */
+ * then reads one line per run of repeated turns (T2–T4, summed). A turn of
+ * one row stays a row. Every row is kept, in order, inside its fold. */
 export function foldTurnsOf(log: BattleEvent[], rows: LogRow[], name: NameOf = displayNames(log)): LogItem[] {
   const plain = displayNames(log);
   const sides = sidesOf(log);
@@ -1108,10 +1111,13 @@ export function foldTurnsOf(log: BattleEvent[], rows: LogRow[], name: NameOf = d
       out.push(...t.rows);
       return;
     }
-    const damage: Record<Side, number> = { A: 0, B: 0 };
-    const heals: Record<Side, number> = { A: 0, B: 0 };
-    const deaths: string[] = [];
-    let blocked = 0;
+    // A run of repeated turns is one fold: T3 repeating T2, itself folded, joins it.
+    const last = out.at(-1);
+    const run = last && isLogFold(last) && last.turnTo === t.turn - 1 ? last : undefined;
+    const damage: Record<Side, number> = run?.damage ?? { A: 0, B: 0 };
+    const heals: Record<Side, number> = run?.heals ?? { A: 0, B: 0 };
+    const deaths: string[] = run?.deaths ?? [];
+    let blocked = run?.blocked ?? 0;
     for (const r of t.rows)
       for (const id of r.eventIds) {
         const e = log[id]!;
@@ -1130,7 +1136,12 @@ export function foldTurnsOf(log: BattleEvent[], rows: LogRow[], name: NameOf = d
       ...(healed ? [`+${healed} healed`] : []),
       ...(deaths.length ? [`${deaths.join(", ")} ${deaths.length > 1 ? "fall" : "falls"}`] : []),
     ];
-    out.push({ turn: t.turn, caption: `Same as last turn: ${parts.join(", ")} · ${t.rows.length} rows`, damage, blocked, heals, deaths, rows: t.rows });
+    const rows = [...(run?.rows ?? []), ...t.rows];
+    const first = run?.turn ?? t.turn;
+    const times = t.turn - first + 1;
+    const fold: LogFold = { turn: first, turnTo: t.turn, caption: `Same as last turn${times > 1 ? ` ×${times}` : ""}: ${parts.join(", ")} · ${rows.length} rows`, damage, blocked, heals, deaths, rows };
+    if (run) out[out.length - 1] = fold;
+    else out.push(fold);
   });
   return out;
 }
@@ -1709,8 +1720,8 @@ export function keyMomentsOf(log: BattleEvent[], beats: PlayBeat[], name: NameOf
 }
 
 /** A turn as the viewer labels it: "T3", and the battle's start (turn 0) "Start". */
-export function turnLabel(turn: number): string {
-  return turn >= 1 ? `T${turn}` : "Start";
+export function turnLabel(turn: number, to = turn): string {
+  return turn >= 1 ? (to > turn ? `T${turn}–T${to}` : `T${turn}`) : "Start";
 }
 
 // ---------- the timeline under the desktop battle (R2-16) ----------
