@@ -15,7 +15,7 @@ describe("summoned units (R3-5)", () => {
       expect(s.emoji).toMatch(/\p{Extended_Pictographic}/u);
       expect(s.base.pwr).toBeGreaterThan(0);
     }
-    expect(pool.summons.find((s) => s.id === "imp")).toMatchObject({ emoji: "👺", base: { pwr: 1, hp: 2 }, form: null });
+    expect(pool.summons.find((s) => s.id === "imp")).toMatchObject({ emoji: "👺", base: { pwr: 1, hp: 3 }, form: null });
   });
 
   it("resolves every summon effect's unit to exactly one body", () => {
@@ -30,9 +30,9 @@ describe("summoned units (R3-5)", () => {
     const form = unit("Planter").forms.sleeping;
     const segs = formSegments(form, pool.abilities);
     expect(segs.map((s) => s.text).join("")).toBe(formText(form, pool.abilities));
-    expect(formText(form, pool.abilities)).toMatch(/^Battle start: summon Imp \(1\/2\), /);
+    expect(formText(form, pool.abilities)).toMatch(/^Battle start: summon Imp \(1\/3\), /);
     const ref = segs.find((s) => s.unitRef);
-    expect(ref).toMatchObject({ text: "Imp (1/2)", unitRef: "imp", side: "ally" });
+    expect(ref).toMatchObject({ text: "Imp (1/3)", unitRef: "imp", side: "ally" });
     expect(segs[segs.indexOf(ref!) - 1]).toMatchObject({ text: "summon ", term: "effect:summon" });
     const awoken = formSegments(unit("Planter").forms.awoken, pool.abilities);
     expect(awoken.find((s) => s.unitRef)?.unitRef).toBe("treant");

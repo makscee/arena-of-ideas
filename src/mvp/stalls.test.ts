@@ -1,8 +1,8 @@
 // Every battle ends by itself (R3-26, R4-1). Normal fights end by turn 20
 // (p99 17), but some lines stall: a Blessing re-armed every turn beats Fatigue
 // (Divinity's Awoken with a death each turn, or an "Ally gains PWR" fusion with
-// a blessing second part fed by War Drummer), and two Necromancers revive each
-// other. Round 3 cut them off at turnCap 30 ("Time's up: draw"). Round 4's
+// a blessing second part fed by War Drummer), and two Necromancers revived each
+// other (until R4-18's Revive 1). Round 3 cut them off at turnCap 30 ("Time's up: draw"). Round 4's
 // sudden death ends them instead: from turn 20 Fatigue doubles, pierces
 // Shield and Blessing, and Summon and Revive do nothing, so every fight here
 // ends by turn 21 (a fed fan-out fusion by turn 22), and none ever reaches the kernel's 200-turn net.
@@ -59,12 +59,10 @@ describe("every battle ends by itself (R3-26, R4-1)", () => {
       // A Blessing re-armed every turn: War Drummer feeds an "ally gains PWR" fusion that blesses the line.
       ["re-blessed (Equalizer+Prepper)", 1, (s) => [fused(s, "equalizer", "prepper"), ...plain(s, ["war-drummer", "fighter", "bulwark"])]],
       ["re-blessed (Lightning+Divinity)", 1, (s) => [fused(s, "lightning", "divinity"), ...plain(s, ["war-drummer", "fighter", "bulwark"])]],
-      // Two revivers bringing each other back. (R4-14: Guardian and Robber's
-      // stronger Awoken forms broke the stall, so Priest and Prepper stand in.)
-      ["two Necromancers", 64, (s) => plain(s, ["necromancer", "necromancer", "priest", "prepper", "fodder"], 0, 3)],
+      // Two revivers bringing each other back left with R4-18: Necromancer
+      // revives at 1 HP now, and no seed in 1–200 stalls any more.
     ];
-    // They stalled on round 3's line of 5 (two Necromancers have room to
-    // finish each other on R4-10's line of 8), so both runs keep that line.
+    // They stalled on round 3's line of 5, so both runs keep that line.
     const { battleSize: _bs, ...lineOf5 } = MVP_RULES;
     const { suddenDeathAt: _sd, ...noSudden } = lineOf5;
     const run = (team: (side: string) => LineUnit[], seed: number, rules: typeof MVP_RULES) =>
