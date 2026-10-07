@@ -6,7 +6,7 @@ import { applyMvpDecision, initMvpRun, MvpBadDecision, MvpDecisionError, offersA
 
 const units: UnitContent[] = DEFAULT_RUN_POOL.map((d, i) => {
   const form = { when: d.triggers ?? [], who: d.selectors ?? [], does: d.abilities ?? [] };
-  return { id: `u${i}`, name: d.name, emoji: "x", tier: 1, base: d.base, forms: { sleeping: form, awoken: form } };
+  return { id: `u${i}`, name: d.name, emoji: "x", archetype: "x", tier: 1, base: d.base, forms: { sleeping: form, awoken: form } };
 });
 const content: MvpContent = { version: "t", units, abilities: stressAbilities, statuses: stressRegistry };
 const me: PlayerRef = { id: "p", name: "me", bot: false };

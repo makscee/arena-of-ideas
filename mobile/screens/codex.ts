@@ -4,7 +4,7 @@
 // Three tabs:
 // - Units: all the content's units as compact cards, filtered by tier, by the
 //   When a card's icon line leads with (its pip tells "Dies" from "Ally
-//   dies") and by a search over names and both forms'
+//   dies") and by a search over names, archetypes (R4-8) and both forms'
 //   text. A card opens its sheet (active form, See Awoken, the dim rates line).
 //   A quiet Sort (tier, win rate, pick rate) compares the rates: only while a
 //   rate sort is on does each card show its number, dim.
@@ -214,7 +214,7 @@ function unitsTab(
     const t = trig.get(u.id);
     if (t && !triggers.has(t.key)) triggers.set(t.key, t);
   }
-  const text = new Map(units.map((u) => [u.id, `${u.name} ${formText(u.forms.sleeping, content.abilities)} ${formText(u.forms.awoken, content.abilities)}`.toLowerCase()]));
+  const text = new Map(units.map((u) => [u.id, `${u.name} ${u.archetype ?? ""} ${formText(u.forms.sleeping, content.abilities)} ${formText(u.forms.awoken, content.abilities)}`.toLowerCase()]));
 
   const summons = content.summons ?? [];
   const summonText = new Map(summons.map((x) => [x.id, `${x.name} ${x.form ? formText(x.form, content.abilities) : ""}`.toLowerCase()]));

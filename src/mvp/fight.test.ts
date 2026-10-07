@@ -9,7 +9,7 @@ import { TIME_UP_CAPTION, captionOf } from "./trace.js";
 
 const units: UnitContent[] = DEFAULT_RUN_POOL.map((d, i) => {
   const form = { when: d.triggers ?? [], who: d.selectors ?? [], does: d.abilities ?? [] };
-  return { id: `u${i}`, name: d.name, emoji: "x", tier: 1, base: d.base, forms: { sleeping: form, awoken: form } };
+  return { id: `u${i}`, name: d.name, emoji: "x", archetype: "x", tier: 1, base: d.base, forms: { sleeping: form, awoken: form } };
 });
 const content: MvpContent = { version: "t", units, abilities: stressAbilities, statuses: stressRegistry };
 const me: PlayerRef = { id: "p", name: "me", bot: false };
@@ -48,7 +48,7 @@ describe("fightLines: one line against another", () => {
     expect(DEFAULT_CHAIN_STEP_CAP).toBe(32);
     // Every Echo pings all enemies after any unit is hit: each hit fans out ×5.
     const form = { when: [{ kind: "trigger" as const, on: { on: "Hurt" as const } }], who: [{ kind: "allEnemies" as const }], does: ["Ping"] };
-    const echo: UnitContent = { id: "echo", name: "Echo", emoji: "x", tier: 1, base: { pwr: 1, hp: 30 }, forms: { sleeping: form, awoken: form } };
+    const echo: UnitContent = { id: "echo", name: "Echo", emoji: "x", archetype: "x", tier: 1, base: { pwr: 1, hp: 30 }, forms: { sleeping: form, awoken: form } };
     const c: MvpContent = { ...content, units: [echo], abilities: { ...stressAbilities, Ping: { name: "Ping", family: "Strike", effects: [{ kind: "damage", amount: { kind: "const", value: 1 } }] } } };
     const line = (p: string) => Array.from({ length: 5 }, (_, i) => lineUnitOf(echo, `${p}${i}`));
     const caps = (rules: typeof MVP_RULES) => {
@@ -68,7 +68,7 @@ describe("fightLines: one line against another", () => {
     const round3 = { ...noSudden, turnCap: ROUND3_TURN_CAP };
     // Walls: 1 PWR and more HP than 200 turns of Fatigue take, so only the clock ends it.
     const form = { when: [{ kind: "trigger" as const, on: { on: "BattleStart" as const } }], who: [{ kind: "holder" as const }], does: ["Strike"] };
-    const wall: UnitContent = { id: "wall", name: "Wall", emoji: "x", tier: 1, base: { pwr: 1, hp: 100_000 }, forms: { sleeping: form, awoken: form } };
+    const wall: UnitContent = { id: "wall", name: "Wall", emoji: "x", archetype: "x", tier: 1, base: { pwr: 1, hp: 100_000 }, forms: { sleeping: form, awoken: form } };
     const c: MvpContent = { ...content, units: [wall] };
     const fight = (rules: typeof MVP_RULES, crown = false) => {
       const s0 = initMvpRun({ runId: "r", player: me, seed: 9, content: c, day: 1, startedAt: at, rules });

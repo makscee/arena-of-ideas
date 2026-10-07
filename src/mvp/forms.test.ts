@@ -23,6 +23,7 @@ const Warden: UnitContent = {
   id: "warden",
   name: "Warden",
   emoji: "🛡️",
+  archetype: "A wall that shields itself.",
   tier: 1,
   base: { pwr: 1, hp: 6 },
   forms: {
@@ -36,6 +37,7 @@ const Archer: UnitContent = {
   id: "archer",
   name: "Archer",
   emoji: "🏹",
+  archetype: "Shoots back when an ally is hurt.",
   tier: 1,
   base: { pwr: 2, hp: 4 },
   forms: {

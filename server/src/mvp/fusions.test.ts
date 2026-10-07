@@ -13,7 +13,7 @@ import { mvpRuntime } from "./runtime.js";
 import { MemoryMvpStore, type MvpStore } from "./store.js";
 
 const form = { when: [], who: [], does: ["a"] };
-const unit = (id: string, name: string): UnitContent => ({ id, name, emoji: "x", tier: 1, base: { pwr: 1, hp: 1 }, forms: { sleeping: form, awoken: form } });
+const unit = (id: string, name: string): UnitContent => ({ id, name, emoji: "x", archetype: "x", tier: 1, base: { pwr: 1, hp: 1 }, forms: { sleeping: form, awoken: form } });
 const brawler = unit("brawler", "Brawler");
 const medic = unit("medic", "Medic");
 const maks: PlayerRef = { id: "p1", name: "Maks", bot: false };

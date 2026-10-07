@@ -136,6 +136,8 @@ interface Row {
   when: WhenKey;
   who: WhoKey;
   does: string;
+  /** One sentence on what the unit is about (ARCHETYPE below). */
+  archetype: string;
   /** The awoken form, built on top of the sleeping one (round 4, note 8):
    * Awoken only adds to or enhances, never drops (`awokenKeeps` checks it). */
   awoken: AwokenRow;
@@ -159,8 +161,102 @@ interface AwokenRow {
   also?: { who: WhoKey; does: string };
 }
 
+/** Each unit's archetype (round 4, note 3; docs/round4/units.md): one
+ * sentence on what the unit is about, unique across the pool. */
+/* eslint-disable prettier/prettier */
+const ARCHETYPE: Record<string, string> = {
+  Fighter:         "A plain brawler whose every swing adds a jab.",
+  Fodder:          "A sacrificial body that shields the team when it falls.",
+  Squire:          "A starter who powers itself up before the fight.",
+  Gnat:            "A pest that pings a random enemy every turn.",
+  Spore:           "Its own death weakens the whole enemy line.",
+  Rat:             "Its own death poisons whoever stands in front.",
+  Planter:         "Opens by planting a small body, and grows if there's no room.",
+  Nurse:           "A medic who patches each ally right after they're hit.",
+  Prepper:         "Hands the team a little armour before the fight.",
+  Coach:           "A pep talk: team-wide Strength at the start.",
+  Bat:             "A flier whose strikes land on a random enemy.",
+  Taser:           "Opens by freezing the front enemy.",
+  Wire:            "A wire that numbs the front enemy whenever an ally powers up.",
+  Rose:            "Thorns: hits back at the front when struck.",
+  Victim:          "A taunting tank whose pain powers the team.",
+  Saboteur:        "Opens by weakening the front enemy.",
+  Spike:           "Every Shield on an ally makes it lash out at the front.",
+  Wither:          "Each enemy kill powers the whole team.",
+  Distractor:      "A big decoy that swells each time it's hit.",
+  Henchman:        "Gets stronger each time a comrade falls (revenge).",
+  Sniper:          "One big opening shot at a random enemy.",
+  Medic:           "Steady team heal at every turn end.",
+  Guardian:        "Puts a Shield on each ally the moment it's hit.",
+  Almsgiver:       "Turns Shields into heals for the shielded ally.",
+  Sanctifier:      "Each heal also strengthens the healed ally.",
+  Enhancer:        "Each Shield also strengthens the shielded ally.",
+  Battery:         "Charges itself on every ally heal.",
+  Injector:        "Poisons the front enemy when hit.",
+  Venomancer:      "Strikes that stack Poison on the front enemy.",
+  "Plague Rat":    "Its own death poisons the whole enemy line.",
+  Duelist:         "Lunges at the front enemy with full power at the start.",
+  Berserker:       "Gets stronger with every wound.",
+  Emberling:       "Explodes on death, hurting every enemy.",
+  Icebinder:       "Frostbite: every cursed enemy also freezes.",
+  Summoner:        "Leaves a wolf behind when it dies.",
+  Gardener:        "Toughens every newly summoned ally.",
+  Fruiter:         "Drops a team-wide heal when it dies.",
+  Leech:           "Heals itself by its damage on every strike.",
+  Bloodthinner:    "Makes each poisoned enemy bleed at once.",
+  Hag:             "Each Poison it sees also curses the target.",
+  Trickster:       "Each Curse sets off damage.",
+  Custodian:       "Shields the team every time an ally falls.",
+  Silencer:        "Opens by shutting off the front enemy's ability.",
+  Scavenger:       "Heals itself off fallen allies.",
+  Syren:           "A lullaby that freezes a random enemy each turn.",
+  Rot:             "Drips Poison on the front enemy every turn.",
+  Bulwark:         "A wall that starts heavily shielded.",
+  Stoneskin:       "Hardens with every hit it takes.",
+  Commander:       "A captain whose every strike shields the line.",
+  "War Drummer":   "A team Strength ramp every turn.",
+  Physician:       "Saps the front enemy every turn.",
+  Pediatrician:    "Strengthens every new summon.",
+  Crusader:        "A heavy hit at the front every turn.",
+  Lightning:       "Ally power-ups call down random strikes.",
+  "Battle Mage":   "Ally Shields fire random bolts.",
+  Pathologist:     "A numbing toxin: every poisoned enemy also freezes.",
+  "Plague Doctor": "Poisons the whole enemy line at the start.",
+  Virus:           "Each kill spreads Poison to all enemies.",
+  Necromancer:     "Raises fallen allies.",
+  Sexton:          "Digs a fresh body for every ally that falls.",
+  Fungoid:         "Sprouts an Imp every turn.",
+  Mesmerist:       "Opens by locking down the front enemy.",
+  Redirector:      "Reflects hits at a random enemy.",
+  Keeper:          "Shields the team every turn.",
+  Wane:            "Each ally heal saps the front enemy.",
+  Harvest:         "Each kill feeds the team a heal.",
+  Robber:          "Steals HP whenever an enemy is cursed.",
+  Ritualist:       "Each ally death becomes damage to all enemies.",
+  King:            "Grants max HP to the whole team at the start.",
+  Priest:          "Avenges the fallen by silencing an enemy.",
+  Divinity:        "Each ally death blesses the team against dying.",
+  Phoenix:         "Comes back from death, many times over.",
+  Lilith:          "Grows on every kill.",
+  Famin:           "Slowly poisons random enemies.",
+  Mentalist:       "Each ally death freezes all enemies.",
+  Equalizer:       "Ally power-ups sap the front enemy.",
+  Director:        "Each ally death powers the team.",
+  Doctor:          "Heals the team each time it's hit.",
+  Ruin:            "Opens with damage to the whole enemy line.",
+  Fertilizer:      "Arms and armours every new summon.",
+  Morbid:          "Each ally death weakens all enemies.",
+};
+/* eslint-enable prettier/prettier */
+
+function archetypeOf(name: string): string {
+  const a = ARCHETYPE[name];
+  if (!a) throw new Error(`unit "${name}" has no archetype`);
+  return a;
+}
+
 const r = (name: string, emoji: string, tier: Tier, pwr: number, hp: number, when: WhenKey, who: WhoKey, does: string, awoken: Row["awoken"]): Row =>
-  ({ name, emoji, tier, pwr, hp, when, who, does, awoken });
+  ({ name, emoji, tier, pwr, hp, when, who, does, archetype: archetypeOf(name), awoken });
 
 /* eslint-disable prettier/prettier */
 export const ROWS: Row[] = [
@@ -265,6 +361,34 @@ export const ROWS: Row[] = [
 ];
 /* eslint-enable prettier/prettier */
 
+/** The most words an archetype may have (round 4, note 3: "one sentence"). */
+export const ARCHETYPE_MAX_WORDS = 15;
+
+/** What's wrong with the units' archetypes: each is one sentence (a capital
+ * first, one "." at the end, no other sentence end), at most
+ * ARCHETYPE_MAX_WORDS words, and no two are the same, case ignored. */
+export function archetypeProblems(units: Pick<UnitContent, "name" | "archetype">[]): string[] {
+  const out: string[] = [];
+  const seen = new Map<string, string>();
+  for (const u of units) {
+    const a = (u.archetype ?? "").trim();
+    if (!a) {
+      out.push(`${u.name}: no archetype`);
+      continue;
+    }
+    if (!/^[A-Z]/.test(a)) out.push(`${u.name}: archetype starts with a capital`);
+    if (!a.endsWith(".")) out.push(`${u.name}: archetype ends with "."`);
+    if (/[.!?]\s/.test(a)) out.push(`${u.name}: archetype is more than one sentence`);
+    const words = a.split(/\s+/).length;
+    if (words > ARCHETYPE_MAX_WORDS) out.push(`${u.name}: archetype has ${words} words (max ${ARCHETYPE_MAX_WORDS})`);
+    const key = a.toLowerCase();
+    const other = seen.get(key);
+    if (other) out.push(`${u.name}: same archetype as ${other}`);
+    else seen.set(key, u.name);
+  }
+  return out;
+}
+
 function slug(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
@@ -282,6 +406,7 @@ function unitOf(row: Row): UnitContent {
     id: slug(row.name),
     name: row.name,
     emoji: row.emoji,
+    archetype: row.archetype,
     tier: row.tier,
     base: { pwr: row.pwr, hp: row.hp },
     forms: { sleeping, awoken },

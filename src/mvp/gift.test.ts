@@ -13,7 +13,7 @@ const tierOf = (i: number): Tier => (i < 6 ? 1 : i < 9 ? 2 : 3) as Tier;
 const units: UnitContent[] = Array.from({ length: 12 }, (_, i) => {
   const d = DEFAULT_RUN_POOL[i % DEFAULT_RUN_POOL.length]!;
   const form = { when: d.triggers ?? [], who: d.selectors ?? [], does: d.abilities ?? [] };
-  return { id: `u${i}`, name: `${d.name} ${i}`, emoji: "x", tier: tierOf(i), base: d.base, forms: { sleeping: form, awoken: form } };
+  return { id: `u${i}`, name: `${d.name} ${i}`, emoji: "x", archetype: "x", tier: tierOf(i), base: d.base, forms: { sleeping: form, awoken: form } };
 });
 const content: MvpContent = { version: "t", units, abilities: stressAbilities, statuses: stressRegistry };
 const me: PlayerRef = { id: "p", name: "me", bot: false };
