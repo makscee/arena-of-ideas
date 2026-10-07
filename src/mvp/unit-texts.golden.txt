@@ -12,7 +12,7 @@
   awoken:   Turn end: 1 damage to all enemies.
 🍄 Spore
   sleeping: Dies: 1 Curse to all enemies.
-  awoken:   Dies: 1 Curse and 1 Poison to all enemies.
+  awoken:   Dies: 1 Freeze and 1 Curse to front enemy.
 🐀 Rat
   sleeping: Dies: 2 Poison to front enemy.
   awoken:   Dies: 2 Poison to all enemies.
@@ -54,7 +54,7 @@
   awoken:   Enemy dies: 1 Strength and 1 Shield to all allies.
 🤡 Distractor
   sleeping: Hit: 1 Vitality to self.
-  awoken:   Hit: 1 Vitality and 2 Shield to self.
+  awoken:   Hit: 1 Curse to front enemy.
 🦹 Henchman
   sleeping: Ally dies: 2 Strength to self.
   awoken:   Ally dies: 2 Strength and 2 Shield to self.
@@ -66,10 +66,10 @@
   awoken:   Turn end: heal all allies for 1, then 1 Shield to all allies.
 🛡️ Guardian
   sleeping: Ally hit: 1 Shield to it.
-  awoken:   Ally hit: 2 Shield to self.
+  awoken:   Ally hit: 1 Poison to front enemy.
 🪙 Almsgiver
   sleeping: Ally gets Shield: heal it for 1.
-  awoken:   Ally gets Shield: heal self for 2, then 1 Strength to self.
+  awoken:   Ally gets Shield: 1 Poison to random enemy.
 ✨ Sanctifier
   sleeping: Ally healed: 1 Strength to it.
   awoken:   Ally healed: PWR damage to front enemy.
@@ -81,7 +81,7 @@
   awoken:   Ally healed: 2 damage to random enemy.
 🧪 Injector
   sleeping: Hit: 1 Poison to front enemy.
-  awoken:   Hit: 1 Poison to all enemies.
+  awoken:   Hit: 1 Poison and 1 Freeze to front enemy.
 🐍 Venomancer
   sleeping: Strikes: 2 Poison to front enemy.
   awoken:   Strikes: 2 Poison and 1 Curse to front enemy.
@@ -105,7 +105,7 @@
   awoken:   Dies: summon Warg (2/4).
 🪴 Gardener
   sleeping: Ally summoned: 2 Vitality to it.
-  awoken:   Ally summoned: 2 Vitality and 2 Shield to self.
+  awoken:   Ally summoned: 2 Poison to random enemy.
 🍎 Fruiter
   sleeping: Dies: heal all allies for 3.
   awoken:   Dies: heal all allies for 2, then 1 Blessing to all allies.
@@ -114,7 +114,7 @@
   awoken:   Strikes: heal self for PWR, then 1 Shield to self.
 💧 Bloodthinner
   sleeping: Enemy gets Poison: 1 damage to it.
-  awoken:   Enemy gets Poison: 2 damage to front enemy.
+  awoken:   Enemy gets Poison: 1 Curse to random enemy.
 🧙 Hag
   sleeping: Enemy gets Poison: 1 Curse to it.
   awoken:   Enemy gets Poison: 1 Curse and 1 damage to it.
