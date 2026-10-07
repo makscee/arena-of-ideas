@@ -10,7 +10,8 @@ describe("MVP pool (slice 7)", () => {
   const content = { version: "test", ...pool };
 
   it("has about 80 units, every one shippable in both forms", () => {
-    expect(pool.units.length).toBeGreaterThanOrEqual(75);
+    // R4-15 cut 8 for unique archetypes: 81 → 73.
+    expect(pool.units.length).toBeGreaterThanOrEqual(73);
     expect(contentFormProblems(content)).toEqual([]);
   });
 
@@ -390,10 +391,7 @@ describe("no copied heroes (R3-26, Maks's note 1)", () => {
   // Units whose text copies another's in both forms, When aside. Left by
   // R3-26 (the quick meta or the vocabulary blocked a fix); the list may only shrink.
   const BOTH_FORMS_TWINS = [
-    "1 Strength to all allies. / 1 Strength and 1 Shield to all allies.: Coach, Wither",
     "1 Strength to all allies. / 1 Strength to all allies, then heal all allies for 1.: Victim, War Drummer",
-    "heal all allies for 1. / heal all allies for 1, then 1 Shield to all allies.: Medic, Doctor",
-    "1 Strength to self. / 1 Strength to self, then heal self for 1.: Berserker, Pathologist",
     "2 Poison to all enemies. / 2 Poison and 1 Curse to all enemies.: Plague Doctor, Virus",
     "1 Curse to front enemy. / 1 Curse and 1 damage to front enemy.: Wane, Equalizer",
   ];
@@ -405,24 +403,24 @@ describe("no copied heroes (R3-26, Maks's note 1)", () => {
   // one target leaves too few texts for 81 units; these are the ones left, and
   // the list may only shrink (a fixed group must leave it).
   const SLEEPING_TWINS = [
-    "1 damage to front enemy. Fighter, Wire, Spike",
-    "1 Shield to all allies. Fodder, Prepper, Keeper",
+    "1 Shield to all allies. Fodder, Prepper, Commander, Keeper",
     "2 Strength to self. Squire, Henchman, Lilith",
     "1 damage to random enemy. Gnat, Bat",
     "1 Curse to all enemies. Spore, Morbid",
-    "2 Poison to front enemy. Rat, Venomancer",
     "heal it for 1. Nurse, Almsgiver",
-    "1 Strength to all allies. Coach, Victim, Wither, Commander, War Drummer, Director",
+    "1 Strength to all allies. Coach, Victim, War Drummer",
+    // R4-15's approved changes (docs/round4/units.md): Wire numbs like Taser
+    // opens, and Pathologist and Icebinder freeze what Poison or Curse marks.
+    "1 Freeze to front enemy. Taser, Wire",
     "2 damage to front enemy. Rose, Crusader",
     "1 Curse to front enemy. Saboteur, Physician, Wane, Equalizer",
     "1 Vitality to self. Distractor, Robber",
-    "heal all allies for 1. Medic, Doctor",
-    "1 Strength to it. Sanctifier, Enhancer, Pediatrician",
-    "1 Strength to self. Battery, Berserker, Pathologist",
-    "1 Poison to front enemy. Injector, Rot",
+    "1 Strength to it. Sanctifier, Enhancer",
+    "1 Strength to self. Battery, Berserker",
     "2 Poison to all enemies. Plague Rat, Plague Doctor, Virus",
     "2 damage to all enemies. Emberling, Ritualist, Ruin",
-    "2 damage to random enemy. Trickster, Lightning, Battle Mage, Redirector",
+    "1 Freeze to it. Icebinder, Pathologist",
+    "2 damage to random enemy. Trickster, Lightning, Battle Mage",
   ];
   it("every unit's sleeping text differs from every other's by more than the When (except the listed twins)", () => {
     expect(groups((u) => doesText(u.forms.sleeping)).map(([t, names]) => `${t} ${names.join(", ")}`)).toEqual(SLEEPING_TWINS);
@@ -435,12 +433,10 @@ describe("awokenKeeps: Awoken builds on the sleeping form (round 4, note 8)", ()
   const form = (who: string, does: string[], also?: { who: string; does: string[] }[]) =>
     ({ when: WHEN.start, who: [{ kind: who }], does, ...(also ? { also: also.map((c) => ({ who: [{ kind: c.who }], does: c.does })) } : {}) }) as Parameters<typeof awokenKeeps>[0];
 
-  // R4-14 fixed the rest. Commander stays as it was: R4-15 redesigns it, and
-  // keeping its team Strength while adding the Smite took 42% of the quick
-  // meta. None may join this list.
-  const KNOWN_FAILURES = ["Commander"];
+  // R4-14 fixed the rest, and R4-15 redesigned Commander. None may join this list.
+  const KNOWN_FAILURES: string[] = [];
 
-  it("every Awoken form keeps every sleeping part, the same or wider Who, numbers no lower (Commander aside)", () => {
+  it("every Awoken form keeps every sleeping part, the same or wider Who, numbers no lower", () => {
     const fails = content.units.filter((u) => awokenKeeps(u.forms.sleeping, u.forms.awoken) !== null).map((u) => u.name);
     expect(fails).toEqual(KNOWN_FAILURES);
   });

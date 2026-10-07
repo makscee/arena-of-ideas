@@ -68,7 +68,7 @@ describe("unit texts", () => {
     expect(text("Medic", "sleeping")).toBe("Turn end: heal all allies for 1.");
     expect(text("Taser", "awoken")).toBe("Battle start: 1 Freeze and 2 damage to front enemy.");
     expect(text("Squire", "awoken")).toBe("Battle start: 2 Strength and 2 Shield to self.");
-    expect(text("Spike", "sleeping")).toBe("Ally gets Shield: 1 damage to front enemy.");
+    expect(text("Battle Mage", "sleeping")).toBe("Ally gets Shield: 2 damage to random enemy.");
     expect(text("Necromancer", "sleeping")).toBe("Ally dies: revive fallen ally at 2 HP.");
     expect(text("Leech", "awoken")).toBe("Strikes: heal self for PWR, then 1 Shield to self.");
     expect(text("Rose", "sleeping")).toBe("Hit: 2 damage to front enemy.");
