@@ -94,11 +94,11 @@ describe("MVP pool targeting", () => {
 describe("Planter", () => {
   const content: MvpContent = { version: "test", ...mvpPool() };
   const unit = (id: string) => content.units.find((u) => u.id === id)!;
-  const fight = (ids: string[]) => {
+  const fight = (ids: string[], rules = MVP_RULES) => {
     const line = ids.map((id, i) => lineUnitOf(unit(id), `a${i}`));
     const foe = [lineUnitOf(unit("fodder"), "b0")];
     const p = { id: "p", name: "p", bot: false };
-    return fightLines({ player: p, line }, { player: p, line: foe }, { battleId: "b", seed: 1, kind: "round", round: 1, runId: null, at: "2026-10-06T00:00:00.000Z", content, rules: MVP_RULES }).log;
+    return fightLines({ player: p, line }, { player: p, line: foe }, { battleId: "b", seed: 1, kind: "round", round: 1, runId: null, at: "2026-10-06T00:00:00.000Z", content, rules }).log;
   };
   const grew = (log: ReturnType<typeof fight>) => log.some((e) => e.type === "StatusApplied" && e.status === "Vitality" && e.unit.includes("Planter"));
   const summoned = (log: ReturnType<typeof fight>) => log.some((e) => e.type === "Summon" && e.name === "Imp");
@@ -123,9 +123,13 @@ describe("Planter", () => {
   });
 
   it("still does something in a full line: it grows", () => {
-    const log = fight(["planter", "fighter", "squire", "gnat", "rose"]);
+    // A team of 5 fills the line only under a stored run's line of 5 (R4-10:
+    // new runs fight on a line of 8, so there it calls the Imp too).
+    const { battleSize: _bs, ...lineOf5 } = MVP_RULES;
+    const log = fight(["planter", "fighter", "squire", "gnat", "rose"], lineOf5);
     expect(summoned(log)).toBe(false);
     expect(grew(log)).toBe(true);
+    expect(summoned(fight(["planter", "fighter", "squire", "gnat", "rose"]))).toBe(true);
   });
 });
 
