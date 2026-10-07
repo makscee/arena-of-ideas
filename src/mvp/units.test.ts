@@ -224,7 +224,7 @@ describe("one hero per shape (round 3, docs/round3/units.md 1b)", () => {
     const rows = ROWS.map((r) => (r.name === "Robber" ? { ...r, does: "Strength 1" } : r));
     // Lightning's Awoken form also curses on Power, and is found first.
     expect(loopsOf(mvpPool(rows).units)).toContain("Curse →Robber (sleeping)→ Power →Lightning (awoken)→ Curse");
-    const noLightning = rows.map((r) => (r.name === "Lightning" ? { ...r, awoken: { does: ["Hit 3"] } } : r));
+    const noLightning = rows.map((r) => (r.name === "Lightning" ? { ...r, awoken: { more: "Hit 3" } } : r));
     expect(loopsOf(mvpPool(noLightning).units)).toContain("Curse →Robber (sleeping)→ Power →Equalizer (sleeping)→ Curse");
   });
 
