@@ -44,6 +44,12 @@ try {
   const page = await browser.newPage({ viewport: { width: W, height: H } });
   page.on("pageerror", (e) => errors.push(`pageerror: ${e.message}`));
   page.on("console", (m) => m.type() === "error" && errors.push(`console: ${m.text()}`));
+  // A refused decision (409) names what was sent and why, beside its console line.
+  page.on("response", async (r) => {
+    if (r.status() !== 409) return;
+    const why = await r.text().catch(() => "");
+    errors.push(`409 on ${r.request().method()} ${new URL(r.url()).pathname}: sent ${r.request().postData() ?? "nothing"}, got ${why.slice(0, 200)}`);
+  });
   /** Every card's When · Who · Does icon line fits its card (R3-4): no row
    * overflows, and a line with more icons than it shows ends in "+". A
    * battle card's line lies in its corner, over the card (R3-19): it is left
