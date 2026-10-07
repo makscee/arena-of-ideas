@@ -929,6 +929,8 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-pill { padding: 0 1px; }
   #app[data-screen="battle"] .bv-pill .ic { width: 0.9em; height: 0.9em; }
   #app[data-screen="battle"] .bv-line { gap: 4px; }
+  /* A fused unit's 5 icons fit its ~100 px card (R3-26: they ran past it). */
+  #app[data-screen="battle"] .bv-card .icons .ic { width: 14px; height: 14px; }
 }
 
 /* R2-17, the phone's battle card: the change chip has its own row at the

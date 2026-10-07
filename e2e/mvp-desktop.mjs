@@ -89,7 +89,7 @@ try {
   const settle = async () => { await page.waitForTimeout(150); await page.waitForFunction(() => !document.getElementById("app").classList.contains("busy")); };
   /** A gift the run's own buys brought (an awakening copy, R3-15): skip it, so
    * the keys and Fight work again. The gift chooser has its own check below. */
-  const skipGift = async () => {
+  const dropOwnGift = async () => {
     if (!(await page.getByTestId("gift-title").isVisible()) && (await page.getByTestId("gift-open").isVisible())) await page.getByTestId("gift-open").click();
     if (!(await page.getByTestId("gift-title").isVisible())) return;
     await page.getByTestId("gift-skip").click();
@@ -226,7 +226,7 @@ try {
       await page.getByTestId("offers").locator(".card").first().dblclick();
       await settle();
       if ((await lineCount()) !== before + 1) errors.push("shop: double-click didn't buy");
-      await skipGift();
+      await dropOwnGift();
     }
     // Buy with the number keys while gold lasts (and the line has room).
     for (let k = 0; k < 4 && !crown; k++) {
@@ -253,7 +253,7 @@ try {
       if ((await gold()) === g0) { errors.push(`round ${round}: key 1 didn't buy`); break; }
       await wantSfx("key 1 (buy)", /^(coin|merge|level-up)$/);
       // A copy that awakens a unit brings a gift; its chooser (checked below) blocks the keys: skip it.
-      await skipGift();
+      await dropOwnGift();
     }
     if (round === 1 && !crown && (await gold()) >= 1) {
       // R rerolls.
@@ -319,7 +319,7 @@ try {
     // Space fights. Round 2 listens to it (round 3, note 16): the start
     // sting, wave sounds while it plays, nothing on a step, one end sound.
     if (round === 2) await page.evaluate(() => { window.__sfx = []; });
-    await skipGift();
+    await dropOwnGift();
     await page.keyboard.press("Space");
     await page.getByTestId("battle-end").waitFor({ timeout: 10_000 });
     if (round === 2) await battleSounds();

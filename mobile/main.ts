@@ -1008,10 +1008,10 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   // The number keys in plain words: "1–6 buy the offer with that number".
   const n = Math.min(7, run.offers.length);
   // One line at 1440 px (R3-26): short words, the keys say the rest.
-  const numberKeys = n === 0 ? [] : n === 1 ? [kbd("1"), " buy · "] : [kbd("1"), "–", kbd(String(n)), " buy · "];
+  const numberKeys = n === 0 ? [] : n === 1 ? [" or ", kbd("1")] : [" or ", kbd("1"), "–", kbd(String(n))];
   const keysLine =
     desk && !crown
-      ? h("div", { class: "dim small keys", "data-testid": "keys" }, "Hover reads → · click selects · drag reorders · double-click buys · ", ...numberKeys, kbd("R"), " reroll · ", kbd("L"), " lock · ", kbd("Space"), " fight · ", kbd("←"), kbd("→"), " move · ", kbd("F"), " fuse · ", kbd("S"), " sell · ", ...(B > 0 ? [kbd("B"), " bench · "] : []), kbd("M"), " sound · ", kbd("Esc"), " menu")
+      ? h("div", { class: "dim small keys", "data-testid": "keys" }, "Click selects · drag reorders · double-click", ...numberKeys, " buys · ", kbd("R"), " reroll · ", kbd("L"), " lock · ", kbd("Space"), " fight · ", kbd("←"), kbd("→"), " move · ", kbd("F"), " fuse · ", kbd("S"), " sell · ", ...(B > 0 ? [kbd("B"), " bench · "] : []), kbd("M"), " sound · ", kbd("Esc"), " menu")
       : null;
   show(
     h(
