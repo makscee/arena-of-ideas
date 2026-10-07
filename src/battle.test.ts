@@ -240,6 +240,34 @@ describe("fatigue and draw", () => {
     expect(end!.winner).toBe("draw");
     // Both die simultaneously from fatigue, well before TURN_CAP=200.
     expect(end!.turns).toBeLessThan(200);
+    // Decided by deaths, not by the clock: no timeUp.
+    expect(end!.timeUp).toBeUndefined();
+  });
+
+  test("turnCap: both sides standing after the last turn is a draw marked timeUp (R3-26)", () => {
+    const wall = vanilla("Wall", 100_000, 1);
+    const log = runBattle({ teamA: [wall], teamB: [wall], seed: 1, turnCap: 12 });
+    const end = ofType(log, "BattleEnd")[0]!;
+    expect(end).toMatchObject({ winner: "draw", turns: 12, timeUp: true, turn: 12, source: "kernel", causedBy: null });
+    expect(Math.max(...log.map((e) => e.turn))).toBe(12);
+    // Fatigue still ran until the cap.
+    expect(ofType(log, "Fatigue").map((e) => e.turn)).toEqual([10, 11, 12]);
+    // Omitted = TURN_CAP (200).
+    expect(ofType(runBattle({ teamA: [wall], teamB: [wall], seed: 1 }), "BattleEnd")[0]).toMatchObject({ winner: "draw", turns: 200, timeUp: true });
+  });
+
+  test("turnCap: a battle decided on the last turn is a win, not a time-up", () => {
+    // 10 hp against 1 pwr: the Ogre's tenth strike kills on turn 10.
+    const log = runBattle({ teamA: [vanilla("Ogre", 1_000, 1)], teamB: [vanilla("Mouse", 10, 0)], seed: 1, turnCap: 10 });
+    const end = ofType(log, "BattleEnd")[0]!;
+    expect(end).toMatchObject({ winner: "A", turns: 10 });
+    expect(end.timeUp).toBeUndefined();
+  });
+
+  test("turnCap must be a positive integer", () => {
+    const wall = vanilla("Wall", 50, 1);
+    expect(() => runBattle({ teamA: [wall], teamB: [wall], seed: 1, turnCap: 0 })).toThrow(/turnCap/);
+    expect(() => runBattle({ teamA: [wall], teamB: [wall], seed: 1, turnCap: 2.5 })).toThrow(/turnCap/);
   });
 });
 

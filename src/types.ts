@@ -218,7 +218,8 @@ export type EventBody =
   // to, `steps` the firings it ran; the firings still queued were dropped.
   | { type: "ChainCapped"; root: number; steps: number }
   | { type: "Intercepted"; by: AbilityRef; original: string; unit?: string }
-  | { type: "BattleEnd"; winner: Side | "draw"; turns: number };
+  // timeUp: the turn cap ran out with both sides standing (a draw); absent otherwise.
+  | { type: "BattleEnd"; winner: Side | "draw"; turns: number; timeUp?: true };
 
 export type EventType = EventBody["type"];
 
@@ -241,4 +242,7 @@ export interface BattleInput {
   /** Most trigger firings one cascade may run before it stops with a
    * ChainCapped event. Omitted = DEFAULT_CHAIN_STEP_CAP (battle.ts). */
   chainStepCap?: number;
+  /** Turns a battle may last; past them, both sides standing is a draw and
+   * BattleEnd says timeUp. Omitted = TURN_CAP (battle.ts). */
+  turnCap?: number;
 }

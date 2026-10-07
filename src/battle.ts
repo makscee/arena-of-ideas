@@ -29,6 +29,9 @@ import { legacyRecipe } from "./content-grammar.js";
 export const TEAM_SIZE = 5;
 export const FATIGUE_START = 10;
 export const FATIGUE_RAMP = 1;
+/** The kernel's default turn cap; BattleInput.turnCap overrides it (the MVP's
+ * rules set 30). A battle with both sides standing after the last turn ends
+ * as a draw, its BattleEnd marked timeUp. */
 export const TURN_CAP = 200;
 /** Most trigger firings one cascade (one settle) runs before it stops with a
  * visible ChainCapped event; BattleInput.chainStepCap overrides it. */
@@ -106,6 +109,7 @@ class Engine {
   private summonCounter = 0;
   private input: BattleInput;
   private chainStepCap: number;
+  private turnCap: number;
 
   constructor(input: BattleInput) {
     this.input = input;
@@ -116,6 +120,10 @@ class Engine {
     if (!Number.isInteger(this.chainStepCap) || this.chainStepCap < 1) {
       throw new Error(`chainStepCap must be a positive integer, got ${String(input.chainStepCap)}`);
     }
+    this.turnCap = input.turnCap ?? TURN_CAP;
+    if (!Number.isInteger(this.turnCap) || this.turnCap < 1) {
+      throw new Error(`turnCap must be a positive integer, got ${String(input.turnCap)}`);
+    }
   }
 
   run(): BattleEvent[] {
@@ -125,7 +133,7 @@ class Engine {
     this.settle();
 
     let turns = 0; // the turn the battle was decided on; 0 = decided before turn 1
-    for (this.turn = 1; this.turn <= TURN_CAP; this.turn++) {
+    for (this.turn = 1; this.turn <= this.turnCap; this.turn++) {
       if (!this.bothAlive()) break;
       turns = this.turn;
       const ts = this.propose({ type: "TurnStart" }, null, "kernel");
@@ -161,8 +169,10 @@ class Engine {
     const aAlive = this.lines.A.length > 0;
     const bAlive = this.lines.B.length > 0;
     const winner: Side | "draw" = aAlive === bAlive ? "draw" : aAlive ? "A" : "B";
+    // Time's up: the last turn ran out with both sides standing.
+    const timeUp = aAlive && bAlive && this.turn > this.turnCap;
     this.turn = turns; // BattleEnd is stamped with the deciding turn, not the loop's overshoot
-    this.propose({ type: "BattleEnd", winner, turns }, null, "kernel");
+    this.propose({ type: "BattleEnd", winner, turns, ...(timeUp ? { timeUp: true as const } : {}) }, null, "kernel");
     return this.log;
   }
 
