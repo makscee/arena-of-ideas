@@ -975,6 +975,15 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const stuck = cramped(gift);
     const none = !gift.some(giftPickable);
     const tier = unitOf(gift[0]!)?.tier;
+    // Desktop: the read pane, the hovered card's full sheet (the first card's to start).
+    const readers: (() => HTMLElement)[] = [];
+    const read = h("div", { class: "gift-read", "data-testid": "gift-read" });
+    const readGift = (i: number) => {
+      if (read.dataset.card === String(i)) return;
+      read.dataset.card = String(i);
+      read.replaceChildren(h("div", { class: "label" }, `Gift ${i + 1} of ${gift.length}`), readers[i]!());
+      choices.forEach((ch, j) => ch.classList.toggle("inspected", j === i));
+    };
     const choices = gift.map((id, i) => {
       const u = unitOf(id);
       // Yours: a copy merges in, a fused unit's part included (owns()).
@@ -982,7 +991,14 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const cu: CardUnit = { unitId: id, emoji: u?.emoji ?? "?", name: u?.name ?? id, stats: u?.base ?? { pwr: 0, hp: 0 }, ...(u ? { recipe: u.forms.sleeping } : {}) };
       const c = card(cu, { side: "you", ...(u ? { tier: u.tier } : {}), extra: mine ? [h("div", { class: "cost" }, "＋")] : [], testid: `gift-card-${i}` });
       if (mine) c.classList.add("owned");
-      c.addEventListener("click", () => (play("click"), void closable(mine ? unitSheet(mine, content) : u ? unitSheet(u, content) : h("h2", {}, id))));
+      const sheetOf = () => (mine ? unitSheet(mine, content) : u ? unitSheet(u, content) : h("h2", {}, id));
+      readers.push(() => sheetOf());
+      // Desktop (R4-5): hovering a card reads it in the pane beside the cards
+      // (a click too); a phone taps it open as a sheet over the chooser.
+      if (desk) {
+        c.addEventListener("mouseenter", () => readGift(i));
+        c.addEventListener("click", () => readGift(i));
+      } else c.addEventListener("click", () => (play("click"), void closable(sheetOf())));
       const ok = giftPickable(id);
       const pickBtn = button(ok ? (mine ? "Pick ＋" : "Pick") : "Full", () => (close(), void decide({ kind: "gift", pick: i })), "primary", `gift-pick-${i}`);
       pickBtn.disabled = !ok;
@@ -993,21 +1009,25 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       close();
       renderLine();
     };
-    const close = dismissable(
-      aside,
+    const kids = [
       h("div", { class: "label" }, "Awakening gift"),
       h("h2", { class: "reveal", "data-testid": "gift-title" }, "🎁 Awakened! Pick a gift"),
       h("div", { class: "dim small" }, `Free: one of these${tier ? ` tier ${roman(tier)}` : ""} units. It joins your line, else your bench; one you own merges in.`),
       ...(stuck ? [h("div", { class: "hint", "data-testid": "gift-full" }, none ? "Line and bench full: make room (sell a unit), then pick." : "Line and bench full: only a unit you own merges in now. Make room (sell a unit) to pick another.")] : []),
       h("div", { class: "gift-choices", "data-testid": "gift-choices" }, ...choices),
-      h("div", { class: "dim small" }, `${tapOrClick()} a card to read it.${isDesktop() ? " Esc sets the gift aside." : ""}`),
+      h("div", { class: "dim small" }, desk ? "Hover a card to read it here. Esc sets the gift aside." : "Tap a card to read it."),
       h(
         "div",
         { class: "row sheet-actions" },
         stuck ? button("Make room", aside, "grow", "gift-make-room") : null,
         button("Skip", () => (close(), void decide({ kind: "gift", pick: null })), stuck ? "" : "grow", "gift-skip"),
       ),
-    );
+    ];
+    const close = desk ? dismissable(aside, h("div", { class: "gift-split" }, h("div", { class: "stack gift-main" }, ...kids), read)) : dismissable(aside, ...kids);
+    if (desk) {
+      read.closest(".sheet")?.classList.add("gift-sheet");
+      readGift(0);
+    }
   }
 
   // "?" explains a card's numbers; until a player has opened it once, it says so.
