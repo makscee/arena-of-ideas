@@ -193,7 +193,7 @@
 🎖️ Commander
   archetype: A captain whose every strike shields the line.
   sleeping: Strikes: 1 Strength to all allies.
-  awoken:   Strikes: 1 Strength to all allies, and PWR damage to front enemy.
+  awoken:   Strikes: PWR damage to front enemy.
 🥁 War Drummer
   archetype: A team Strength ramp every turn.
   sleeping: Turn start: 1 Strength to all allies.

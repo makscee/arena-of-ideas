@@ -316,7 +316,7 @@ export const ROWS: Row[] = [
   r("Stoneskin",     "🪨", 2, 2, 7, "hurt",       "me",      "Shield 1",    { who: "allies" }),
 
   // ---- tier 3: engines ----
-  r("Commander",     "🎖️", 3, 2, 8, "strike",     "allies",  "Strength 1",  { also: { who: "front", does: "Smite" } }),
+  r("Commander",     "🎖️", 3, 2, 8, "strike",     "allies",  "Strength 1",  { who: "front", more: "Smite" }),
   r("War Drummer",   "🥁", 3, 1, 7, "turnStart",  "allies",  "Strength 1",  { add: ["Heal 1"] }),
   // Physician treats the cause, not the wound: once a turn it saps the front
   // enemy. On "ally hit" it cursed ~18 times a battle (R3-9).
