@@ -131,6 +131,7 @@ class Engine {
   private chainStepCap: number;
   private turnCap: number;
   private suddenDeathAt: number | undefined;
+  private lineCap: number;
 
   constructor(input: BattleInput) {
     this.input = input;
@@ -148,6 +149,10 @@ class Engine {
     this.suddenDeathAt = input.suddenDeathAt;
     if (this.suddenDeathAt !== undefined && (!Number.isInteger(this.suddenDeathAt) || this.suddenDeathAt < 1)) {
       throw new Error(`suddenDeathAt must be a positive integer, got ${String(input.suddenDeathAt)}`);
+    }
+    this.lineCap = input.lineCap ?? TEAM_SIZE;
+    if (!Number.isInteger(this.lineCap) || this.lineCap < TEAM_SIZE) {
+      throw new Error(`lineCap must be an integer ≥ ${TEAM_SIZE}, got ${String(input.lineCap)}`);
     }
   }
 
@@ -567,7 +572,7 @@ class Engine {
           this.applyEvent({ type: "SummonFailed", name: e.unit.name, side, reason: "suddenDeath" }, f.event.id, f.ref);
           return;
         }
-        if (this.lines[side].length >= TEAM_SIZE) {
+        if (this.lines[side].length >= this.lineCap) {
           this.applyEvent({ type: "NoRoom", unit: f.ref.unit, side, name: e.unit.name }, f.event.id, f.ref);
           return;
         }
@@ -603,7 +608,7 @@ class Engine {
           );
           return;
         }
-        if (this.lines[target.side].length >= TEAM_SIZE) {
+        if (this.lines[target.side].length >= this.lineCap) {
           this.applyEvent(
             { type: "NoRoom", unit: f.ref.unit, side: target.side, name: target.name, revive: target.id },
             f.event.id,
