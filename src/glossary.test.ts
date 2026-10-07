@@ -78,7 +78,8 @@ describe("glossary covers every unit's text", () => {
 
   test("the runs join to the plain sentence describeAbility gives", () => {
     for (const [, form] of forms) {
-      if (form.does.length !== 1) continue;
+      // One Does and no "and" clause: one ability's sentence.
+      if (form.does.length !== 1 || form.also?.length) continue;
       const ab = pool.abilities[form.does[0]!]!;
       expect(join(formSegments(form, pool.abilities))).toBe(describeAbility({ ...ab, whens: form.when, selectors: form.who }));
     }
