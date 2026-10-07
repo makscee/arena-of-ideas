@@ -123,9 +123,15 @@ const seen = { multi: false, between: 0, midDeath: false };
 for (const [label, viewport, mobile] of [["phone", { width: 360, height: 640 }, true], ["desktop", { width: 1440, height: 900 }, false]]) {
   const page = await browser.newPage({ viewport, deviceScaleFactor: 2, isMobile: mobile, hasTouch: mobile });
   page.on("pageerror", (e) => errors.push(`${label}: page error ${e.message}`));
-  await toBattle(page, `Rt${label[0]}${TAG}`);
-  const w = await watch(page, label);
-  seen.multi ||= w.multi; seen.between += w.between; seen.midDeath ||= w.midDeath;
+  // Short round-1 fights may have no multi-hit: play new runs (a fresh name each) until one shows.
+  const mine = { multi: false, between: 0, midDeath: false };
+  for (let k = 0; k < 4 && !(mine.multi && mine.between && mine.midDeath); k++) {
+    if (k) { await page.evaluate(() => localStorage.clear()); }
+    await toBattle(page, `Rt${label[0]}${k}${TAG}`);
+    const w = await watch(page, label);
+    mine.multi ||= w.multi; mine.between += w.between; mine.midDeath ||= w.midDeath;
+  }
+  seen.multi ||= mine.multi; seen.between += mine.between; seen.midDeath ||= mine.midDeath;
 
   // Paused: stepping shows the running sums of the beat on screen, and ← undoes a step's sums.
   await page.getByTestId("battle-replay").click();
