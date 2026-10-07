@@ -137,7 +137,7 @@ function rulesSheet(): HTMLElement {
     p(`${r.goldPerRound} gold every round, no carry-over. A unit costs ${r.unitCost}, a reroll ${r.rerollCost}, selling gives back ${r.sellRefund}${r.sellRefundAwoken && r.sellRefundAwoken !== r.sellRefund ? `, ${r.sellRefundAwoken} for an Awoken or fused unit` : ""}. ${offersText(r)}; ${tiersText(r)}.`),
     p(`Lock an offer to keep it: it stays until you buy it, through rerolls and rounds. Locking is free; ${isDesktop() ? "right-click an offer or press L" : "tap an offer, then Lock"}.`),
     h("div", { class: "label" }, "The line"),
-    p(`${r.lineSize} units in a line, front first. Change the order in the shop: ${isDesktop() ? "drag a unit, or click it, then ← →" : "tap a unit, then ◀ ▶"}. Each round you fight a team another player saved at the same round.`),
+    p(`${r.lineSize} units in a line, front first. Change the order in the shop: ${isDesktop() ? "drag a unit, or click it, then ← →" : "tap a unit, then ◀ ▶"}. ${r.battleSize && r.battleSize > r.lineSize ? ` In a fight, summons and revives can grow it to ${r.battleSize}.` : ""} Each round you fight a team another player saved at the same round.`),
     ...(benchSizeOf(r) > 0 ? [p(`${r.benchSize} bench slots hold units that don't fight; copies still merge into them. ${isDesktop() ? "Drag a unit between the line and the bench, or select it and press B" : "Tap a unit, then To bench or To line"}.`)] : []),
     h("div", { class: "label" }, "Copies, Awoken, fusion"),
     p(`Buying a unit you own merges it in: +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP a copy. Copy ${r.copiesToAwaken} awakens it: the same When, plus a new job.`),

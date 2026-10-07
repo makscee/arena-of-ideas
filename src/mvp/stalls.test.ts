@@ -62,14 +62,17 @@ describe("every battle ends by itself (R3-26, R4-1)", () => {
       // Two revivers bringing each other back.
       ["two Necromancers", 64, (s) => plain(s, ["necromancer", "necromancer", "guardian", "robber", "fodder"], 0, 3)],
     ];
-    const { suddenDeathAt: _sd, ...noSudden } = MVP_RULES;
+    // They stalled on round 3's line of 5 (two Necromancers have room to
+    // finish each other on R4-10's line of 8), so both runs keep that line.
+    const { battleSize: _bs, ...lineOf5 } = MVP_RULES;
+    const { suddenDeathAt: _sd, ...noSudden } = lineOf5;
     const run = (team: (side: string) => LineUnit[], seed: number, rules: typeof MVP_RULES) =>
       fightLines({ player: p, line: team("a") }, { player: p, line: team("b") }, { battleId: "x", seed, kind: "round", round: 9, runId: null, at: "2026-10-07T00:00:00.000Z", content, rules }).log;
     const all: Fought[] = [];
     for (const [label, seed, team] of teams) {
       // Without sudden death (and no cap) each runs to the kernel's 200: a real stall.
       expect(run(team, seed, noSudden).at(-1), label).toMatchObject({ type: "BattleEnd", timeUp: true, turns: 200 });
-      const log = run(team, seed, MVP_RULES);
+      const log = run(team, seed, lineOf5);
       const end = log.at(-1) as Extract<BattleEvent, { type: "BattleEnd" }>;
       all.push({ label, events: log.length, turns: end.turns, timeUp: end.timeUp === true });
       expect(end.turns, label).toBeGreaterThanOrEqual(MVP_RULES.suddenDeathAt!);
