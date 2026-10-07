@@ -147,7 +147,7 @@ export const api = {
     saveToken(null);
   },
   /** `invites`: the server is invite-only, so the name screen asks for a link. */
-  health: () => call<{ invites?: boolean }>("GET", "/health"),
+  health: () => call<{ invites?: boolean; open?: boolean }>("GET", "/health"),
   content: () => call<MvpContent>("GET", "/content"),
   home: () => call<HomeView>("GET", "/home"),
   startRun: () => call<RunView>("POST", "/runs"),

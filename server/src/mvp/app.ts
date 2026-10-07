@@ -10,7 +10,7 @@ import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, TOKEN_HEADER, type Deci
 import { checkDecision, MvpBadDecision, MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
 import { dayView, endDay, hiddenSlay } from "./day.js";
 import { MvpNotYet } from "./errors.js";
-import { isAdmin, isJoinCode, JoinRefused, joinOpen, NAME_RE, redeemInvite, sessionPlayer } from "./invites.js";
+import { isAdmin, isJoinCode, JoinRefused, joinOpen, NAME_RE, openJoin, redeemInvite, sessionPlayer } from "./invites.js";
 import { abandon, currentRun, decide, preview, startRun } from "./runs.js";
 import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
 import { statsView } from "./stats.js";
@@ -63,7 +63,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
       await next();
     });
 
-  api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: content.version, invites: rt.invites }));
+  api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: content.version, invites: rt.invites, open: rt.open }));
   api.get("/content", (c) => c.json(content));
 
   api.post("/players", async (c) => {
@@ -98,11 +98,13 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   // R4-20: the open join link. Anyone with its code picks a name and becomes a
   // new player (never admin), at most JOINS_PER_HOUR new players an hour for
   // the whole server, counted here in memory.
+  // Open to all (rt.open): no code joins too, through the join code.
   const joins: number[] = [];
-  api.post("/join/check", async (c) => (isJoinCode(store, await codeOf(c)) ? c.json({ ok: true }) : bad(c, 404, "no such join link")));
+  const joinWith = (code: string) => (rt.open && code === "" ? openJoin(store) : code);
+  api.post("/join/check", async (c) => (isJoinCode(store, joinWith(await codeOf(c))) ? c.json({ ok: true }) : bad(c, 404, "no such join link")));
   api.post("/join", async (c) => {
     const body = (await c.req.json().catch(() => null)) as { code?: unknown; name?: unknown } | null;
-    const code = typeof body?.code === "string" ? body.code : "";
+    const code = joinWith(typeof body?.code === "string" ? body.code : "");
     const name = typeof body?.name === "string" ? body.name : "";
     if (!isJoinCode(store, code)) return bad(c, 404, "no such join link");
     const now = rt.now();

@@ -279,6 +279,39 @@ describe("invite links (slice 13)", () => {
   }, 30_000);
 });
 
+describe("open to all (MVP_OPEN)", () => {
+  it("no code joins through the join code, never admin; health says open", async () => {
+    const { store, call } = world({ open: true });
+    expect((await call<{ open: boolean; invites: boolean }>("GET", "/health")).json).toMatchObject({ invites: true, open: true });
+    expect((await call("POST", "/join/check", {}, { code: "" })).json).toEqual({ ok: true });
+    const a = await call<JoinSession>("POST", "/join", {}, { code: "", name: "Walk-in" });
+    expect(a.status).toBe(200);
+    expect(a.json.player).toMatchObject({ name: "Walk-in", bot: false });
+    expect(isAdmin(store, a.json.player.id)).toBe(false);
+    expect(store.joinCode()).toBeTruthy();
+    // The shared code still works, and a wrong one is still refused.
+    expect((await call("POST", "/join", {}, { code: store.joinCode(), name: "Linked" })).status).toBe(200);
+    expect((await call("POST", "/join", {}, { code: "anything", name: "Wrong" })).status).toBe(404);
+    // Names and dev tools as for any join; still no /players and no header login.
+    expect((await call("POST", "/join", {}, { code: "", name: "walk-in" })).status).toBe(409);
+    expect((await call("POST", "/players", {}, { name: "Plain" })).status).toBe(403);
+    expect((await call("POST", "/runs", { "X-Arena-Player": a.json.player.id })).status).toBe(401);
+  });
+
+  it("the join limit counts open joins too", async () => {
+    const { call } = world({ open: true });
+    for (let i = 0; i < JOINS_PER_HOUR; i++) expect((await call("POST", "/join", {}, { code: "", name: `P${i}` })).status).toBe(200);
+    expect((await call("POST", "/join", {}, { code: "", name: "Late" })).status).toBe(429);
+  });
+
+  it("is off unless asked, and never on a server that isn't invite-only", async () => {
+    const shut = world();
+    expect((await shut.call<{ open: boolean }>("GET", "/health")).json.open).toBe(false);
+    expect((await shut.call("POST", "/join", {}, { code: "", name: "Walk-in" })).status).toBe(404);
+    expect(world({ invites: false, open: true }).rt.open).toBe(false);
+  });
+});
+
 describe("the open join link (R4-20)", () => {
   type Joined = JoinSession;
   const join = (call: ReturnType<typeof world>["call"], code: string, name: string, headers: Record<string, string> = {}) =>

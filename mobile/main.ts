@@ -196,10 +196,10 @@ function legendSheet(): HTMLElement {
 function nameScreen(): void {
   music("home");
   // An invite-only server (slice 13) takes no new names: a player comes from
-  // their invite link. Nothing but the title shows until /health says which.
+  // their invite link. One open to all joins them as the open link does. Nothing but the title shows until /health says which.
   show(h("h1", {}, "ARENA OF IDEAS"));
   void api.health().then(
-    (hl) => (hl.invites ? show(h("h1", {}, "ARENA OF IDEAS"), h("p", { class: "dim", "data-testid": "invite-only" }, "Arena is invite-only for now. Open your invite link on this device to play.")) : nameForm()),
+    (hl) => (hl.open ? joinForm("") : hl.invites ? show(h("h1", {}, "ARENA OF IDEAS"), h("p", { class: "dim", "data-testid": "invite-only" }, "Arena is invite-only for now. Open your invite link on this device to play.")) : nameForm()),
     () => nameForm(),
   );
 }

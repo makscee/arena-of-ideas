@@ -34,11 +34,16 @@ export interface MvpDeps {
   /** Invite-only (slice 13, main.ts: MVP_INVITES=1): players come from
    * invite links and session tokens, and only admin invites see /dev/*. */
   invites?: boolean;
+  /** Open to all (main.ts: MVP_OPEN=1), on an invite-only server: anyone who
+   * comes without a link gets the join name screen, as if they had opened the
+   * open join link (R4-20). Sessions, links and the join limit stay. */
+  open?: boolean;
 }
 
 export interface MvpRuntime extends RunDeps {
   dev: boolean;
   invites: boolean;
+  open: boolean;
 }
 
 /** A background job: starts on the runtime, returns its stop function. */
@@ -59,6 +64,7 @@ export function mvpRuntime(deps: MvpDeps): MvpRuntime {
     peekFusionName: naming.peek,
     dev: deps.dev ?? false,
     invites: deps.invites ?? false,
+    open: (deps.invites ?? false) && (deps.open ?? false),
   };
   return rt;
 }
