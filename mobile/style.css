@@ -421,6 +421,20 @@ button.bv-caption { position: relative; z-index: 2; }
 .bv-cap { text-shadow: 0 0 1px var(--bg), 0 0 2px var(--bg); }
 .bv-cap svg { filter: drop-shadow(0 0 1px var(--bg)); }
 .bv-fx { position: fixed; inset: 0; width: 100vw; height: 100dvh; z-index: 1; pointer-events: none; overflow: visible; }
+/* The running totals above each unit (R4-22): a fixed layer over the board;
+ * each unit's box sits on its slot's top edge, its rows stacking up from the
+ * card in the order their kinds first landed, so a new kind never moves one. */
+.bv-runs { position: fixed; inset: 0; z-index: 5; pointer-events: none; }
+.bv-run { position: absolute; translate: -50% -100%; display: flex; flex-direction: column-reverse; align-items: center; gap: 1px; padding-bottom: 2px; transition: left 0.3s ease-out, top 0.3s ease-out; }
+button.bv-run-row { pointer-events: auto; min-height: 0; height: 16px; max-width: 100%; padding: 0 3px; display: inline-flex; align-items: center; gap: 2px; border: none; border-radius: 3px; clip-path: none; background: color-mix(in srgb, var(--bg) 82%, transparent); text-transform: none; letter-spacing: 0; font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 700; line-height: 16px; white-space: nowrap; overflow: hidden; color: var(--text); text-shadow: 0 0 3px var(--bg); transition: opacity 0.2s ease; }
+button.bv-run-row.damage, button.bv-run-row.debuff { color: var(--ghost); }
+button.bv-run-row.heal { color: var(--you); }
+button.bv-run-row.buff { color: var(--gold); }
+button.bv-run-row.zero { opacity: 0.45; }
+.bv-run-row svg { flex: none; }
+.bv-cleared { position: absolute; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .bv-run, button.bv-run-row { transition: none; } }
+@media (min-width: 1024px) { button.bv-run-row { height: 20px; line-height: 20px; font-size: 17px; padding: 0 4px; } }
 .bv-beam { --bv-bc: #ff6b4d; color: var(--bv-bc); }
 .bv-beam .bv-bl { fill: none; stroke: var(--bv-bc); stroke-width: 3; stroke-linecap: round; filter: drop-shadow(0 0 3px var(--bv-bc)); }
 .bv-beam .bv-bs, .bv-beam .bv-bh { fill: var(--bv-bc); }
