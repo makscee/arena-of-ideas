@@ -337,6 +337,10 @@ export interface Perspective {
   sideName?: (side: Side) => string;
 }
 
+/** The end of a battle the turn cap stopped (BattleEnd.timeUp): its caption
+ * leads with the glossary's "Time's up" term (battle:timeUp). */
+export const TIME_UP_CAPTION = "Time's up: draw";
+
 /** How the battle's end reads from `p`. */
 export function endCaption(winner: Side | "draw", p: Perspective = {}): string {
   if (winner === "draw") return "Draw";
@@ -792,7 +796,8 @@ export function captionOf(log: BattleEvent[], id: number, name: NameOf = display
       if (e.by.status && e.unit === e.by.unit) return `${e.by.status} on ${name(e.unit)} → stops ${stoppedText(e.original, e.unit, true, name)}`;
       return `${name(e.by.unit)}${e.by.status ? ` (${e.by.status})` : ""} → stops ${stoppedText(e.original, e.unit, false, name)}`;
     case "BattleEnd":
-      return endCaption(e.winner, p);
+      // The turn cap ran out (R3-26): say why it is a draw.
+      return e.timeUp ? TIME_UP_CAPTION : endCaption(e.winner, p);
     default:
       return e.type;
   }

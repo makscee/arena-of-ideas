@@ -130,6 +130,13 @@ describe("playback steps", () => {
     expect(endCaption("B", {})).toBe("Side B wins");
     expect(endCaption("B", { sideName: (s) => (s === "A" ? "@ann" : "@bob") })).toBe("@bob wins");
     expect(endCaption("draw", { you: "B" })).toBe("Draw");
+    // A battle the turn cap stopped says so (R3-26).
+    const log: BattleEvent[] = [
+      { id: 0, turn: 0, causedBy: null, source: "kernel", type: "BattleStart", teams: { A: [], B: [] } },
+      { id: 1, turn: 30, causedBy: null, source: "kernel", type: "BattleEnd", winner: "draw", turns: 30, timeUp: true },
+    ];
+    expect(captionOf(log, 1)).toBe("Time's up: draw");
+    expect(captionOf([log[0]!, { id: 1, turn: 30, causedBy: null, source: "kernel", type: "BattleEnd", winner: "draw", turns: 30 }], 1)).toBe("Draw");
   });
 
   test("a death is captioned with its cause and lights the killer", () => {

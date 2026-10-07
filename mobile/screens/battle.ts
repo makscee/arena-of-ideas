@@ -19,7 +19,7 @@
 // so crossing 1024px needs no redraw. The phone keeps its stacked rows.
 import { boardAt, type BoardState, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView, SummonContent } from "../../src/mvp/contract";
-import { chainCappedTip, STATUS_TERMS, termDef, termIcon, triggerLabel, type IconId, type TermId } from "../../src/glossary";
+import { chainCappedTip, STATUS_TERMS, termDef, timeUpTip, termIcon, triggerLabel, type IconId, type TermId } from "../../src/glossary";
 import { BEAT_MS, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, keyMomentsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, turnLabel, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
@@ -151,7 +151,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const logStatuses = new Set(log.flatMap((e) => (e.type === "StatusApplied" ? [e.status] : [])));
   const esc = (w: string) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const words = [...new Set([...Object.keys(STATUS_TERMS), ...logStatuses, "Fatigue"])].filter(Boolean).sort((p, q) => q.length - p.length);
-  const captionTerms = new RegExp(`\\(\\d+ absorbed\\)|Chain stopped after \\d+ steps|(?<![\\p{L}\\d])(?:${words.map(esc).join("|")})(?![\\p{L}\\d])|\\b(?:PWR|HP)\\b|[−+]\\d+`, "gu");
+  // A battle the turn cap stopped (R3-26): its end caption leads with "Time's up".
+  const lastEvent = log[log.length - 1];
+  const timeUpCap = lastEvent?.type === "BattleEnd" && lastEvent.timeUp ? lastEvent.turns : null;
+  const captionTerms = new RegExp(`\\(\\d+ absorbed\\)|Chain stopped after \\d+ steps|Time's up|(?<![\\p{L}\\d])(?:${words.map(esc).join("|")})(?![\\p{L}\\d])|\\b(?:PWR|HP)\\b|[−+]\\d+`, "gu");
 
   let at = -1; // index of the beat on screen; -1 = the line-up before the first beat
   let wave = 0; // waves of that beat landed so far, minus one
@@ -1276,6 +1279,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     // the words here, as Fatigue's does.
     const capped = /^Chain stopped after (\d+) steps$/.exec(t);
     if (capped) return h("span", { class: "bv-ct tone-plain", "data-testid": "caption-term", title: chainCappedTip(Number(capped[1])) }, ...(led === "battle:chainCapped" ? [] : [icon("breaking-chain", 14), " "]), t);
+    // The turn cap ran out: the hourglass and the rule with this battle's own cap.
+    if (t === "Time's up" && timeUpCap !== null) return h("span", { class: "bv-ct tone-plain", "data-testid": "caption-term", title: timeUpTip(timeUpCap) }, icon("hourglass", 14), " ", t);
     if (t === "PWR") return h("span", { class: "tone-pwr" }, t);
     if (t === "HP") return h("span", { class: "tone-hp" }, t);
     if (t.startsWith("−")) return h("b", { class: "tone-dmg" }, t);
