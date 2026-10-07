@@ -7,7 +7,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import { describeAbility, describeStatus, describeStatusSegments, type DescribeSegment } from "./describe.js";
-import { chainCappedTip, GLOSSARY, ICON_IDS, STATUS_TERMS, scopedLabel, scopedTip, triggerLabel, termDef, termGroup, termIcon, type FixedTermId, type TermId } from "./glossary.js";
+import { chainCappedTip, timeUpTip, GLOSSARY, ICON_IDS, STATUS_TERMS, scopedLabel, scopedTip, triggerLabel, termDef, termGroup, termIcon, type FixedTermId, type TermId } from "./glossary.js";
 import { MVP_RULES } from "./mvp/contract.js";
 import type { UnitForm } from "./mvp/contract.js";
 import { formSegments, formText } from "./mvp/form-text.js";
@@ -235,7 +235,7 @@ describe("keywords stand alone (R3-2, words.md (4))", () => {
 
   test("the list of names covers every status and the named rules", () => {
     const labels = named.map(([, l]) => l);
-    for (const l of [...Object.keys(STATUS_TERMS), "Fatigue", "Summon", "Revive", "Silence", "Awoken", "Fused", "Chain stopped"]) expect(labels).toContain(l);
+    for (const l of [...Object.keys(STATUS_TERMS), "Fatigue", "Summon", "Revive", "Silence", "Awoken", "Fused", "Chain stopped", "Time's up"]) expect(labels).toContain(l);
   });
 
   const unique = [...new Map(rules.filter(([, t]) => t !== "").map(([id, t]) => [`${id}|${t}`, [id, t] as [TermId, string]])).values()];
@@ -257,6 +257,15 @@ describe("keywords stand alone (R3-2, words.md (4))", () => {
     // A run started under an older cap reads its own number (its ChainCapped event's steps).
     expect(chainCappedTip(64)).toContain("ran 64 steps");
     expect(GLOSSARY["battle:chainCapped"].tip).toBe(chainCappedTip(MVP_RULES.chainStepCap));
+  });
+
+  test("Time's up reads the turn cap from the rules (R3-26)", () => {
+    expect(GLOSSARY["battle:timeUp"]).toMatchObject({ label: "Time's up", icon: "hourglass" });
+    expect(GLOSSARY["battle:timeUp"].tip).toBe(timeUpTip(MVP_RULES.turnCap!));
+    expect(GLOSSARY["battle:timeUp"].tip).toContain(`after turn ${MVP_RULES.turnCap}`);
+    expect(GLOSSARY["battle:timeUp"].tip).toMatch(/draw/);
+    // A run started before the cap (the kernel's 200) reads its own number.
+    expect(timeUpTip(200)).toContain("after turn 200");
   });
 
   test("labels are the card's words", () => {

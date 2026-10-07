@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_CHAIN_STEP_CAP } from "../battle.js";
+import { DEFAULT_CHAIN_STEP_CAP, TURN_CAP } from "../battle.js";
 import { DEFAULT_RUN_POOL, stressAbilities, stressRegistry } from "../index.js";
 import { MVP_RULES, type MvpContent, type PlayerRef, type UnitContent } from "./contract.js";
 import { fightLines } from "./fight.js";
 import { lineUnitOf } from "./forms.js";
 import { applyMvpDecision, initMvpRun, synthGhost } from "./run.js";
-import { captionOf } from "./trace.js";
+import { TIME_UP_CAPTION, captionOf } from "./trace.js";
 
 const units: UnitContent[] = DEFAULT_RUN_POOL.map((d, i) => {
   const form = { when: d.triggers ?? [], who: d.selectors ?? [], does: d.abilities ?? [] };
@@ -59,5 +59,30 @@ describe("fightLines: one line against another", () => {
     };
     expect(caps(MVP_RULES)).toEqual(["Chain stopped after 32 steps"]);
     expect(caps({ ...MVP_RULES, chainStepCap: 64 })).toEqual(["Chain stopped after 64 steps"]);
+  });
+
+  it("ends a fight still going after turn 30 as a draw, Time's up; a run started before keeps 200 (R3-26)", () => {
+    expect(MVP_RULES.turnCap).toBe(30);
+    // Walls: 1 PWR and more HP than 200 turns of Fatigue take, so only the clock ends it.
+    const form = { when: [{ kind: "trigger" as const, on: { on: "BattleStart" as const } }], who: [{ kind: "holder" as const }], does: ["Strike"] };
+    const wall: UnitContent = { id: "wall", name: "Wall", emoji: "x", tier: 1, base: { pwr: 1, hp: 100_000 }, forms: { sleeping: form, awoken: form } };
+    const c: MvpContent = { ...content, units: [wall] };
+    const fight = (rules: typeof MVP_RULES, crown = false) => {
+      const s0 = initMvpRun({ runId: "r", player: me, seed: 9, content: c, day: 1, startedAt: at, rules });
+      const s = { ...s0, line: [lineUnitOf(wall, "a")], ...(crown ? { phase: "crown" as const, round: rules.rounds + 1 } : {}) };
+      const ghost = { ...synthGhost({ content: c, round: 1, seed: 5, ghostId: "g", createdAt: at }), line: [lineUnitOf(wall, "b")] };
+      return applyMvpDecision(s, { kind: "fight" }, c, { fight: { ghost, battleId: "b", battleSeed: 11, at } });
+    };
+    const step = fight(MVP_RULES);
+    const end = step.battle!.log.at(-1)!;
+    expect(end).toMatchObject({ type: "BattleEnd", winner: "draw", turns: 30, timeUp: true });
+    expect(captionOf(step.battle!.log, end.id)).toBe(TIME_UP_CAPTION);
+    // It counts as any draw: no heart lost, the run goes on; at the Crown, no slay.
+    expect(step.fight).toMatchObject({ outcome: "draw", heartsLost: 0, heartsAfter: MVP_RULES.hearts });
+    expect(step.state).toMatchObject({ round: 2, hearts: MVP_RULES.hearts, phase: "shop" });
+    expect(fight(MVP_RULES, true).state).toMatchObject({ phase: "over", endedBy: "crown-lost" });
+    // A run stored before the cap has no turnCap: the kernel's 200.
+    const { turnCap: _t, ...before } = MVP_RULES;
+    expect(fight(before).battle!.log.at(-1)).toMatchObject({ winner: "draw", turns: TURN_CAP, timeUp: true });
   });
 });

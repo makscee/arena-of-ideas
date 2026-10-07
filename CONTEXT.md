@@ -95,7 +95,7 @@ A team's ordered positions; index 0 is the front. On Death the unit leaves immed
 _Avoid_: row, formation, board
 
 **Turn**:
-One loop iteration: TurnStart → front pair strikes (alternating) → TurnEnd → Fatigue. TURN_CAP (200) is the hard backstop → draw.
+One loop iteration: TurnStart → front pair strikes (alternating) → TurnEnd → Fatigue. The turn cap is the hard backstop → draw (BattleEnd timeUp): `BattleInput.turnCap`, default TURN_CAP (200); the MVP's rules set 30.
 _Avoid_: round, tick
 
 **Strike**:

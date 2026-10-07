@@ -15,8 +15,10 @@ function world(deps: Partial<MvpDeps> = {}) {
 }
 const pool = (rt: ReturnType<typeof world>, round: number) => rt.store.ghosts(round, { excludePlayerId: "", contentVersion: rt.content.version });
 
-  // Champion seeding simulates whole bot runs; fused stalemates (a team Blessing re-armed every turn) make it slow under load.
-describe("MVP bots and world (slice 6)", () => {
+// Champion seeding simulates whole bot runs, slow under load: every test gets
+// 30 s, as the suite runs beside others on a shared machine (R3-26). Fused
+// stalemates (a team Blessing re-armed every turn) now stop at the turn cap.
+describe("MVP bots and world (slice 6)", { timeout: 30_000 }, () => {
   it("seeds a strong bot team as today's champion on a fresh store, once", async () => {
     const rt = world();
     const champ = (await seedChampion(rt))!;

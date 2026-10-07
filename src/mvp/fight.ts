@@ -1,8 +1,8 @@
 // One MVP line against another (mission #574). Every fight between two lines
 // goes through fightLines: the run's round and Crown fights (slice 4), the
 // playoff games and the strongest-team pick (slice 5), the day-1 champion
-// (slice 6) and the tuning sims (slice 7). So the rules (chainStepCap and the
-// rest) reach sims and real fights alike; nobody calls battle() on MVP lines
+// (slice 6) and the tuning sims (slice 7). So the rules (chainStepCap, turnCap
+// and the rest) reach sims and real fights alike; nobody calls battle() on MVP lines
 // directly. Pure: the caller supplies the ids, the seed and the time.
 
 import { battle, winnerOf } from "../battle.js";
@@ -71,6 +71,7 @@ export function fightLines(a: FightSide, b: FightSide, o: FightOptions): BattleR
     abilities: o.content.abilities,
     statuses: o.content.statuses,
     chainStepCap: o.rules.chainStepCap,
+    ...(o.rules.turnCap !== undefined ? { turnCap: o.rules.turnCap } : {}),
   });
   return {
     battleId: o.battleId,
