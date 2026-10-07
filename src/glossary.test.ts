@@ -1,5 +1,5 @@
 // The glossary covers every term a player reads (round 2, R2-6): every
-// highlighted run of all 81 units' texts, both forms, and a sample of
+// highlighted run of all 73 units' texts, both forms, and a sample of
 // fusions, resolves to a glossary entry; no keyword hides in glue text; the
 // runs join to the sentence; and every icon the glossary names ships in
 // mobile/icons/ with its credit.
@@ -62,8 +62,8 @@ function checkSegments(label: string, segs: DescribeSegment[]): void {
 }
 
 describe("glossary covers every unit's text", () => {
-  test("there are 81 units, both forms described", () => {
-    expect(pool.units).toHaveLength(81);
+  test("there are 73 units, both forms described", () => {
+    expect(pool.units).toHaveLength(73);
   });
 
   test.each(forms)("%s", (label, form) => {
@@ -140,14 +140,14 @@ describe("wording", () => {
   });
 
   test("a trigger clause marks every run, a target its side", () => {
-    const spike = pool.units.find((u) => u.name === "Spike")!;
-    const segs = formSegments(spike.forms.sleeping, pool.abilities);
+    const mage = pool.units.find((u) => u.name === "Battle Mage")!;
+    const segs = formSegments(mage.forms.sleeping, pool.abilities);
     expect(segs.filter((s) => s.clause === "when").map((s) => [s.text, s.term])).toEqual([
       ["Ally gets ", "trigger:StatusApplied"],
       ["Shield", "status:Shield"],
     ]);
-    expect(segs.find((s) => s.term === "target:frontEnemy")?.side).toBe("enemy");
-    expect(segs.filter((s) => s.term === "effect:damage").map((s) => [s.text, s.amount ?? false])).toEqual([["1", true], ["damage", false]]);
+    expect(segs.find((s) => s.term === "target:randomEnemy")?.side).toBe("enemy");
+    expect(segs.filter((s) => s.term === "effect:damage").map((s) => [s.text, s.amount ?? false])).toEqual([["2", true], ["damage", false]]);
     const nurse = pool.units.find((u) => u.name === "Nurse")!;
     expect(formSegments(nurse.forms.sleeping, pool.abilities).find((s) => s.term === "target:eventUnit")).toMatchObject({
       text: "it",
