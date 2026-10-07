@@ -67,7 +67,7 @@ describe("unit texts", () => {
     const text = (name: string, form: "sleeping" | "awoken") => formText(pool.units.find((u) => u.name === name)!.forms[form], pool.abilities);
     expect(text("Medic", "sleeping")).toBe("Turn end: heal all allies for 1.");
     expect(text("Taser", "awoken")).toBe("Battle start: 1 Freeze and 2 damage to front enemy.");
-    expect(text("Gardener", "awoken")).toBe("Ally summoned: 2 Vitality and 2 Shield to self.");
+    expect(text("Squire", "awoken")).toBe("Battle start: 2 Strength and 2 Shield to self.");
     expect(text("Spike", "sleeping")).toBe("Ally gets Shield: 1 damage to front enemy.");
     expect(text("Necromancer", "sleeping")).toBe("Ally dies: revive fallen ally at 2 HP.");
     expect(text("Leech", "awoken")).toBe("Strikes: heal self for PWR, then 1 Shield to self.");
