@@ -226,6 +226,13 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     : null;
   const enemy = h("div", { class: "slots bv-line theirs", "data-testid": "battle-them" });
   const mine = h("div", { class: "slots bv-line mine", "data-testid": "battle-you" });
+  /** Playing or not, on both lines: while playing, a chip's numbers that
+   * float above the card (.bv-dup) are not drawn twice (R4-6). */
+  function setPlaying(on: boolean): void {
+    playing = on;
+    for (const row of [enemy, mine]) row.classList.toggle("bv-playing", on);
+  }
+  setPlaying(playing);
   const caption = h("button", { class: "bv-caption", "data-testid": "caption" });
   /** Reduced motion's list of the beat's changes: below your line, its height
    * fixed, so nothing on the board moves while it fills. */
@@ -325,7 +332,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   function play(): void {
     // ▶ on the last beat shows the end card; Replay starts over.
     if (finished || atEnd()) return finish();
-    playing = true;
+    setPlaying(true);
     trace = null;
     landed = [];
     playBtn.textContent = "❚❚";
@@ -333,7 +340,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     schedule();
   }
   function pause(): void {
-    playing = false;
+    setPlaying(false);
     playBtn.textContent = "▶";
     if (timer) clearTimeout(timer);
     timer = null;
@@ -417,7 +424,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     at = Math.max(-1, Math.min(beats.length - 1, i));
     wave = 0;
     landed = at >= 0 ? [performance.now()] : [];
-    playing = true;
+    setPlaying(true);
     playBtn.textContent = "❚❚";
     render();
     schedule();
@@ -611,7 +618,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const el = card(units.get(u.id) ?? { emoji: emojiOf(u.id), name: u.name, stats: { pwr: u.pwr, hp: u.hp }, ...(sum?.form ? { recipe: sum.form } : {}) }, {
       side: side === you ? "you" : "ghost",
       live: { stats: { pwr: u.pwr, hp: u.hp }, maxHp: u.maxHp, acting: step?.actor === u.id },
-      extra: [statusChips(u, stsWidth), changes.length ? h("div", { class: "bv-changes" }, changeBadge(changes)) : null],
+      extra: [statusChips(u, stsWidth), changes.length ? h("div", { class: "bv-changes" }, changeBadge(changes, floatedOf(u.id, v))) : null],
     });
     el.classList.add("bv-card");
     el.dataset.unit = u.id;
@@ -625,16 +632,19 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** One chip for a unit's changes this step. Two changes (a status and the
    * stat it moves: "Vitality ×2" and "+2 HP") show as two lines, each in its
    * own colour; a third and more add "…" to the second line. The chip opens
-   * the first change's trace, which lists them all, each tappable. */
-  function changeBadge(changes: Change[]): HTMLElement {
+   * the first change's trace, which lists them all, each tappable. A change
+   * in `floated` (its number floats above the card) is marked .bv-dup: while
+   * playing it is not drawn, only tapped; paused or stepping, it shows (R4-6). */
+  function changeBadge(changes: Change[], floated: Set<number> = new Set()): HTMLElement {
     const c = changes[0]!;
     const more = changes.length - 2;
+    const dup = (x: Change) => (floated.has(x.eventId) ? " bv-dup" : "");
     // More than two: "…" ("+2" after a number read as a heal, R3-26); the trace lists them all.
-    const lines = changes.slice(0, 2).map((x, i) => h("span", { class: `bv-l ${x.kind}` }, ...changeLabel(x), i === 1 && more > 0 ? h("span", { class: "dim", title: `${more} more` }, "\u00A0…") : ""));
+    const lines = changes.slice(0, 2).map((x, i) => h("span", { class: `bv-l ${x.kind}${dup(x)}` }, ...changeLabel(x), i === 1 && more > 0 ? h("span", { class: "dim", title: `${more} more` }, "\u00A0…") : ""));
     const b = h(
       "button",
       { class: `bv-change ${c.kind}${changes.length > 1 ? " multi" : ""}`, "data-testid": "change", "data-event": String(c.eventId), "data-count": String(changes.length), "aria-label": changes.map((x) => x.label).join(", ") },
-      h("span", { class: `bv-pill${changes.length > 1 ? " two" : ""}${blockedBy(c) ? " blocked" : ""}` }, ...(changes.length > 1 ? lines : changeLabel(c))),
+      h("span", { class: `bv-pill${changes.length > 1 ? " two" : ""}${blockedBy(c) ? " blocked" : ""}${changes.every((x) => floated.has(x.eventId)) ? " bv-dup" : ""}` }, ...(changes.length > 1 ? lines : changeLabel(c))),
     );
     b.addEventListener("click", (ev) => { ev.stopPropagation(); openTrace(c.eventId, changes); });
     return b;
@@ -864,7 +874,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       h("div", { class: "hpbar" }, h("i", { style: "width:0" })),
       h("div", { class: "stats big" }, h("span", { class: "p" }, "✝")),
       h("div", { class: "foot" }, h("div", { class: "bv-sts" })),
-      death ? h("div", { class: "bv-changes" }, changeBadge(v.changes.filter((c) => c.unit === id))) : null,
+      death ? h("div", { class: "bv-changes" }, changeBadge(v.changes.filter((c) => c.unit === id), floatedOf(id, v))) : null,
     );
     el.dataset.unit = id;
     if (step?.actor === id) el.classList.add("acting");
@@ -997,15 +1007,40 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
    * else its PWR and HP changes ("+1 PWR", "+1/+3" for both, PWR / HP as a
    * card reads), else what Shield blocked, else a summon's label. */
   function mergedFloat(cs: Change[]): HTMLElement | null {
+    return floatParts(cs)?.el ?? null;
+  }
+  /** mergedFloat's float, and the changes it shows. */
+  function floatParts(cs: Change[]): { el: HTMLElement; shown: Change[] } | null {
     let dmg = 0, heal = 0, pwr = 0, hp = 0, blocked = 0;
     let summon: Change | null = null;
+    const of: Record<"dmg" | "heal" | "stat" | "blocked", Change[]> = { dmg: [], heal: [], stat: [], blocked: [] };
     for (const c of cs) {
       const e = log[c.eventId];
-      if (e?.type === "Hurt") { dmg += e.amount; blocked += e.amount === 0 ? (e.absorbed ?? 0) : 0; }
-      else if (e?.type === "Heal") heal += e.amount;
-      else if (e?.type === "StatChanged") { if (e.stat === "pwr") pwr += e.delta; else hp += e.delta; }
+      if (e?.type === "Hurt") {
+        dmg += e.amount;
+        blocked += e.amount === 0 ? (e.absorbed ?? 0) : 0;
+        of[e.amount > 0 ? "dmg" : "blocked"].push(c);
+      } else if (e?.type === "Heal") { heal += e.amount; of.heal.push(c); }
+      else if (e?.type === "StatChanged") { if (e.stat === "pwr") pwr += e.delta; else hp += e.delta; of.stat.push(c); }
       else if (c.kind === "summon") summon = c;
     }
+    const el = floatEl(dmg, heal, pwr, hp, blocked, summon);
+    if (!el) return null;
+    const shown = dmg > 0 ? of.dmg : heal > 0 ? of.heal : pwr || hp ? of.stat : blocked ? of.blocked : summon ? [summon] : [];
+    return { el, shown };
+  }
+  /** Which of unit `id`'s changes on the board float above its card while the
+   * beat plays (the chip would repeat them, R4-6): those the beat's merged
+   * float shows, as motion() draws it. Empty after a manual step (no motion)
+   * and under reduced motion (no floats). */
+  function floatedOf(id: string, v: View): Set<number> {
+    if (reduced() || !v.waves.some((w) => w.age !== null)) return new Set();
+    const p = floatParts(v.changes.filter((c) => c.unit === id && floats(c)));
+    if (!p) return new Set();
+    if (!isDesktop() && (p.el.classList.contains("buff") || p.el.classList.contains("debuff") || p.el.classList.contains("summon"))) return new Set();
+    return new Set(p.shown.map((c) => c.eventId));
+  }
+  function floatEl(dmg: number, heal: number, pwr: number, hp: number, blocked: number, summon: Change | null): HTMLElement | null {
     const sign = (n: number) => (n > 0 ? `+${n}` : `−${-n}`);
     const float = (kind: string, ...kids: (Node | string)[]) => h("span", { class: `bv-float ${kind}`, "data-testid": "float", "aria-hidden": "true" }, ...kids);
     if (dmg > 0) return float("damage", `−${dmg}`);

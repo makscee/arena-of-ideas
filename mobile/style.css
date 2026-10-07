@@ -367,6 +367,10 @@ button.bv-badge.past { z-index: 2; }
  * per unit a step; a status and the stat it moves share it on two lines
  * (.bv-pill.two). */
 .bv-changes { position: absolute; top: 14px; left: 0; right: 0; height: 44px; display: flex; }
+/* While playing, a change whose number floats above the card is not drawn
+ * again on the emoji (R4-6): the chip stays as its tap target, and shows
+ * again when paused or stepping. Reduced motion has no floats: it keeps them. */
+@media (prefers-reduced-motion: no-preference) { .bv-playing .bv-pill.bv-dup { visibility: hidden; } .bv-playing .bv-l.bv-dup { display: none; } }
 button.bv-change { flex: 1; min-width: 0; min-height: 44px; height: 44px; padding: 0 2px; border: none; background: transparent; clip-path: none; display: flex; align-items: center; justify-content: center; letter-spacing: 0; text-transform: none; }
 .bv-pill { max-width: 100%; height: 28px; line-height: 26px; padding: 0 5px; border: 1px solid; border-radius: 4px; background: var(--bg); font-family: "IBM Plex Mono", monospace; font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bv-change.damage .bv-pill, .bv-change.death .bv-pill, .bv-change.debuff .bv-pill { color: var(--ghost); }

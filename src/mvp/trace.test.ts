@@ -10,7 +10,7 @@ import { MVP_RULES, type MvpContent, type PlayerRef } from "./contract.js";
 import { fightLines } from "./fight.js";
 import { lineUnitOf } from "./forms.js";
 import { mvpPool } from "./units.js";
-import { BEAT_MAX_MS, BEAT_MS, EMPHASIS_MS, END_BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, weightsOf, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, causeOf, beamsOf, stepsOf, timelineOf, timingOf, traceOf, turnLabel, whyILost } from "./trace.js";
+import { BEAT_MAX_MS, BEAT_MS, EMPHASIS_MS, END_BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, weightsOf, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, causeOf, beamsOf, stepsOf, sidesOf, timelineOf, timingOf, traceOf, turnLabel, turnSummaryOf, whyILost } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -802,6 +802,80 @@ describe("the desktop timeline (R2-16)", () => {
     const first = log.find((e) => e.type === "Fatigue");
     if (first) expect(fat).toEqual([first.turn]);
     else expect(fat).toEqual([]);
+  });
+});
+
+describe("R4-6: per-turn totals", () => {
+  test("a battle-start cascade sums per unit: Shield gained, PWR gained, damage taken", () => {
+    const log = run([Shieldbearer, Smith, Archer], [dummy("Dummy", 30, 2)]);
+    const beats = beatPlayOf(log, stepsOf(log));
+    const start = turnSummaryOf(log, beats)[0]!;
+    expect(start.turn).toBe(0);
+    const at = (name: string) => start.units.find((u) => displayNames(log)(u.unit) === name);
+    expect(at("Shieldbearer")).toMatchObject({ side: "A", pwr: 1, damage: 0, died: false });
+    expect(at("Shieldbearer")!.statuses).toEqual([{ status: "Shield", stacks: 2 }, { status: "Strength", stacks: 1 }]);
+    expect(at("Dummy")).toMatchObject({ side: "B", damage: 2, died: false, statuses: [] });
+    // Each unit's eventIds are its own changes, in log order.
+    for (const u of start.units) {
+      expect(u.eventIds).toEqual([...u.eventIds].sort((p, q) => p - q));
+      for (const id of u.eventIds) expect((log[id] as { unit?: string }).unit).toBe(u.unit);
+    }
+  });
+
+  test("a hit Shield takes counts as blocked, and the Shield it spent nets out", () => {
+    const log = run([Shieldbearer], [dummy("Dummy", 30, 1)]);
+    const beats = beatPlayOf(log, stepsOf(log));
+    const hurt = log.find((e) => e.type === "Hurt" && e.absorbed && sidesOf(log).get(e.unit) === "A");
+    expect(hurt).toBeDefined();
+    const t = turnSummaryOf(log, beats).find((x) => x.turn === Math.max(0, hurt!.turn))!;
+    const sb = t.units.find((u) => u.eventIds.includes(hurt!.id))!;
+    const hurts = log.filter((e) => e.type === "Hurt" && e.unit === sb.unit && Math.max(0, e.turn) === t.turn) as Extract<BattleEvent, { type: "Hurt" }>[];
+    expect(sb.blocked).toBe(hurts.reduce((n, e) => n + (e.absorbed ?? 0), 0));
+    expect(sb.damage).toBe(hurts.reduce((n, e) => n + e.amount, 0));
+    const shield = sb.statuses.find((x) => x.status === "Shield");
+    expect(shield?.stacks ?? 0).toBeLessThanOrEqual(0);
+  });
+
+  test("real fights: every turn's totals equal the log's own sums, each death once, no empty unit", () => {
+    const pool = mvpPool();
+    const content: MvpContent = { version: "t", units: pool.units, abilities: pool.abilities, statuses: pool.statuses };
+    const p = (id: string): PlayerRef => ({ id, name: id, bot: false });
+    let r = 4242;
+    const rand = (n: number) => ((r = (r * 1103515245 + 12345) % 2147483648), r % n);
+    for (let seed = 0; seed < 40; seed++) {
+      const line = (s: string) => Array.from({ length: 5 }, (_, k) => lineUnitOf(pool.units[rand(pool.units.length)]!, `${s}${k}`, 1 + rand(4)));
+      const { log } = fightLines({ player: p("a"), line: line("a") }, { player: p("b"), line: line("b") }, { battleId: "x", seed, kind: "round", round: 5, runId: null, at: "2026-10-05T00:00:00Z", content, rules: MVP_RULES });
+      const beats = beatPlayOf(log, stepsOf(log));
+      const sum = turnSummaryOf(log, beats);
+      // The turns are the timeline's, beat for beat.
+      expect(sum.map((t) => [t.turn, t.beats]), `seed ${seed}`).toEqual(timelineOf(log, beats).map((t) => [t.turn, t.beats]));
+      // Expected: the log's events, grouped by the turn of the beat that reveals them.
+      const turnOf = new Map<number, number>();
+      for (const b of beats) for (let id = b.start; id <= b.end; id++) turnOf.set(id, Math.max(0, b.turn));
+      const want = new Map<string, { damage: number; healed: number; pwr: number; hp: number; blocked: number; died: boolean }>();
+      const key = (turn: number, unit: string) => `${turn}|${unit}`;
+      for (const e of log) {
+        const turn = turnOf.get(e.id);
+        if (turn === undefined || !("unit" in e) || !["Hurt", "Heal", "StatChanged", "Death"].includes(e.type)) continue;
+        const w = want.get(key(turn, e.unit)) ?? { damage: 0, healed: 0, pwr: 0, hp: 0, blocked: 0, died: false };
+        if (e.type === "Hurt") { w.damage += e.amount; w.blocked += e.absorbed ?? 0; }
+        else if (e.type === "Heal") w.healed += e.amount;
+        else if (e.type === "StatChanged") w[e.stat] += e.delta;
+        else if (e.type === "Death") w.died = true;
+        want.set(key(turn, e.unit), w);
+      }
+      for (const t of sum) {
+        for (const u of t.units) {
+          const w = want.get(key(t.turn, u.unit)) ?? { damage: 0, healed: 0, pwr: 0, hp: 0, blocked: 0, died: false };
+          expect({ damage: u.damage, healed: u.healed, pwr: u.pwr, hp: u.hp, blocked: u.blocked, died: u.died }, `seed ${seed} T${t.turn} ${u.unit}`).toEqual(w);
+          expect(u.damage || u.healed || u.pwr || u.hp || u.blocked || u.statuses.length || u.died).toBeTruthy();
+          for (const st of u.statuses) expect(st.stacks).not.toBe(0);
+        }
+      }
+      // Nothing changed is left out, and every death shows once.
+      for (const [k, w] of want) if (w.damage || w.healed || w.pwr || w.hp || w.blocked || w.died) expect(sum.some((t) => t.units.some((u) => key(t.turn, u.unit) === k)), `seed ${seed} ${k}`).toBe(true);
+      expect(sum.flatMap((t) => t.units.filter((u) => u.died)).length, `seed ${seed}`).toBe(log.filter((e) => e.type === "Death").length);
+    }
   });
 });
 

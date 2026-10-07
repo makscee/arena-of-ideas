@@ -1295,6 +1295,84 @@ export function timelineOf(log: BattleEvent[], beats: PlayBeat[], sides = sidesO
   return turns;
 }
 
+// ---------- per-turn totals (round 4, R4-6) ----------
+
+/** What a turn did to one unit, summed over every beat of that turn. */
+export interface UnitTurnTotals {
+  unit: string;
+  side: Side | null;
+  /** HP lost to hits, as the hits read ("−n"), Shield's share not counted. */
+  damage: number;
+  healed: number;
+  /** Net PWR and HP stat changes (StatChanged), signed. */
+  pwr: number;
+  hp: number;
+  /** What Shield took off hits. */
+  blocked: number;
+  /** Net stacks gained (+) or lost (−) per status, in the order they first
+   * moved; a status that came and went to net 0 is left out. */
+  statuses: { status: string; stacks: number }[];
+  died: boolean;
+  /** The events summed, in log order: the totals' traces. */
+  eventIds: number[];
+}
+
+/** One turn's totals (turn 0: the battle's start, as turnLabel reads it). */
+export interface TurnSummary {
+  turn: number;
+  /** The turn's beats (PlayBeat.index), in order; the summary shows after the last. */
+  beats: number[];
+  /** Each unit the turn changed, in the order it was first changed. */
+  units: UnitTurnTotals[];
+}
+
+/** Per unit per turn: damage taken, healing, PWR/HP change, Shield blocked,
+ * net status stacks, and who died (R4-6, the turn-end summary's numbers).
+ * Pure over the log and its playback beats: a turn is the events its beats
+ * reveal (start..end), grouped as the timeline groups them. */
+export function turnSummaryOf(log: BattleEvent[], beats: PlayBeat[], sides = sidesOf(log)): TurnSummary[] {
+  const turns: TurnSummary[] = [];
+  const seen = new Set<number>();
+  let byUnit = new Map<string, UnitTurnTotals>();
+  for (const b of beats) {
+    const turn = Math.max(0, b.turn);
+    let t = turns.at(-1);
+    if (!t || turn > t.turn) {
+      t = { turn, beats: [], units: [] };
+      turns.push(t);
+      byUnit = new Map();
+    }
+    t.beats.push(b.index);
+    for (let id = b.start; id <= b.end; id++) {
+      const e = log[id];
+      if (!e || seen.has(id)) continue;
+      seen.add(id);
+      if (e.type !== "Hurt" && e.type !== "Heal" && e.type !== "StatChanged" && e.type !== "StatusApplied" && e.type !== "StatusRemoved" && e.type !== "Death") continue;
+      let u = byUnit.get(e.unit);
+      if (!u) {
+        u = { unit: e.unit, side: sides.get(e.unit) ?? null, damage: 0, healed: 0, pwr: 0, hp: 0, blocked: 0, statuses: [], died: false, eventIds: [] };
+        byUnit.set(e.unit, u);
+        t.units.push(u);
+      }
+      u.eventIds.push(id);
+      if (e.type === "Hurt") { u.damage += e.amount; u.blocked += e.absorbed ?? 0; }
+      else if (e.type === "Heal") u.healed += e.amount;
+      else if (e.type === "StatChanged") u[e.stat] += e.delta;
+      else if (e.type === "Death") u.died = true;
+      else {
+        let st = u.statuses.find((x) => x.status === e.status);
+        if (!st) u.statuses.push((st = { status: e.status, stacks: 0 }));
+        st.stacks += e.type === "StatusApplied" ? e.stacks : -e.stacks;
+      }
+    }
+  }
+  for (const t of turns) {
+    for (const u of t.units) u.statuses = u.statuses.filter((x) => x.stacks !== 0);
+    t.units = t.units.filter((u) => u.damage || u.healed || u.pwr || u.hp || u.blocked || u.statuses.length || u.died);
+  }
+  return turns;
+}
+
 /** What a beam shows (round 3, R3-21, battle.md (11)): the effect's kind, for its colour. */
 export type BeamKind = "damage" | "heal" | "buff" | "debuff" | "status" | "summon" | "silence";
 
