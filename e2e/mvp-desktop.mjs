@@ -12,7 +12,6 @@ import { createServer } from "node:net";
 import { launchChromium } from "./browser.mjs";
 import { escPass } from "./esc-keys.mjs";
 import { beamChecks } from "./beams.mjs";
-import { danceChecks, stillChecks } from "./dance.mjs";
 import { nowSheetChecks } from "./now-sheet.mjs";
 
 const W = 1440;
@@ -336,17 +335,8 @@ try {
     // sting, wave sounds while it plays, nothing on a step, one end sound.
     if (round === 2) await page.evaluate(() => { window.__sfx = []; });
     await dropOwnGift();
-    // R4-16: the units in the shop bob on the beat, and so do the fighters;
-    // under reduced motion none moves.
-    if (round === 1) await danceChecks(page, "desktop shop", errors);
     await page.keyboard.press("Space");
     await page.getByTestId("battle-end").waitFor({ timeout: 10_000 });
-    if (round === 1) {
-      await danceChecks(page, "desktop battle", errors);
-      await page.emulateMedia({ reducedMotion: "reduce" });
-      await stillChecks(page, "desktop battle", errors);
-      await page.emulateMedia({ reducedMotion: null });
-    }
     if (round === 2) await battleSounds();
     if (round === 1) await shot("battle");
     if (round === 1) await logFirst("battle opens");

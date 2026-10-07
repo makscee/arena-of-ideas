@@ -10,7 +10,7 @@ import { MVP_RULES, type MvpContent, type PlayerRef } from "./contract.js";
 import { fightLines } from "./fight.js";
 import { lineUnitOf } from "./forms.js";
 import { mvpPool } from "./units.js";
-import { BEAT_MAX_MS, BEAT_MS, EMPHASIS_MS, END_BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, weightsOf, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, causeOf, beamsOf, stepsOf, sidesOf, timelineOf, timingOf, traceOf, turnLabel, turnSummaryOf, whyILost, TURN_END_MS, turnEndHoldMs, turnEndsOf, onBeat, onGrid, toGrid, totalsPartsOf, totalsText, type UnitTurnTotals } from "./trace.js";
+import { BEAT_MAX_MS, BEAT_MS, EMPHASIS_MS, END_BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, weightsOf, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, causeOf, beamsOf, stepsOf, sidesOf, timelineOf, timingOf, traceOf, turnLabel, turnSummaryOf, whyILost, TURN_END_MS, turnEndHoldMs, turnEndsOf, totalsPartsOf, totalsText, type UnitTurnTotals } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -922,67 +922,6 @@ describe("R4-12: turn-end summary", () => {
     ]);
     expect(totalsText(tot({ damage: 5, died: true }))).toBe("✝ · −5");
     expect(totalsText(tot({ blocked: 2 }))).toBe("2 blocked");
-  });
-});
-
-describe("R4-17: the battle on the beat", () => {
-  const BEAT = 600; // 100 BPM
-
-  test("a beat's length rounds to whole music beats: 900 → 1200, 1300 → 1200, 2200 → 2400 ms at 100 BPM", () => {
-    expect(onBeat({ at: [0], ms: QUIET_BEAT_MS }, BEAT).ms).toBe(1200);
-    expect(onBeat({ at: [0], ms: BEAT_MS }, BEAT).ms).toBe(1200);
-    expect(onBeat({ at: [0], ms: BEAT_MAX_MS }, BEAT).ms).toBe(2400);
-    // Other tempos: 90 BPM (667 ms), 134 BPM (448 ms).
-    expect(onBeat({ at: [0], ms: BEAT_MS }, 60000 / 90).ms).toBe(Math.round(2 * 60000 / 90));
-    expect(onBeat({ at: [0], ms: BEAT_MS }, 60000 / 134).ms).toBe(Math.round(3 * 60000 / 134));
-  });
-
-  test("waves land on 8th notes, each on its own, and the beat keeps an 8th after its last wave", () => {
-    expect(onBeat(beatTiming(3), BEAT)).toEqual({ at: [0, 300, 600], ms: 1200 });
-    expect(onBeat(beatTiming(4), BEAT)).toEqual({ at: [0, 300, 600, 900], ms: 1200 });
-    // A squeezed cascade (waves 70 ms apart) spreads onto the grid and the beat grows to fit it.
-    const long = onBeat(beatTiming(12), BEAT);
-    expect(long.at).toEqual(Array.from({ length: 12 }, (_, i) => i * 300));
-    expect(long.ms % BEAT).toBe(0);
-    expect(long.ms).toBeGreaterThanOrEqual(long.at.at(-1)! + 300);
-    for (const n of [1, 2, 5, 8, 30]) {
-      const t = onBeat(beatTiming(n), 60000 / 123);
-      for (const x of t.at) expect(Math.abs(x / (30000 / 123) - Math.round(x / (30000 / 123)))).toBeLessThan(0.01);
-      expect(Math.abs(t.ms / (60000 / 123) - Math.round(t.ms / (60000 / 123)))).toBeLessThan(0.01);
-    }
-  });
-
-  test("a beat's big moments still add time, in whole beats; an empty end beat keeps none", () => {
-    const log = run([Shieldbearer, Smith, Archer], [dummy("Dummy", 30, 2)]);
-    const beats = beatPlayOf(log, stepsOf(log));
-    const weights = weightsOf(log, beats);
-    const beat = beats.find((b) => b.waves.length >= 2)!;
-    expect(onBeat(timingOf(beat, { kill: true, last: true }), BEAT).ms).toBeGreaterThan(onBeat(timingOf(beat), BEAT).ms);
-    expect(onBeat(timingOf(beats.at(-1)!, weights.at(-1)), BEAT).ms).toBe(0);
-  });
-
-  test("2× is the half-beat grid: every 1× time halves onto it", () => {
-    const t = onBeat(beatTiming(3), BEAT);
-    for (const x of [...t.at, t.ms]) expect((x / 2) % (BEAT / 4)).toBe(0);
-  });
-
-  test("the turn-end hold fits the grid: 1200 at 1×, 600 at 2× on 100 BPM; whole steps on other tempos; none stays none", () => {
-    expect(onGrid(turnEndHoldMs(1), BEAT)).toBe(1200);
-    expect(onGrid(turnEndHoldMs(2), BEAT / 2)).toBe(600);
-    expect(onGrid(turnEndHoldMs(4), BEAT / 4)).toBe(0);
-    expect(onGrid(TURN_END_MS, 60000 / 134)).toBe(Math.round(3 * 60000 / 134));
-    expect(onGrid(100, BEAT)).toBe(BEAT);
-  });
-
-  test("toGrid waits on to the next line of the grid; a line just passed counts as now", () => {
-    // Grid from origin 50, every 600 ms: lines at 50, 650, 1250, ...
-    expect(toGrid(0, 300, 50, 600)).toBe(650);
-    expect(toGrid(0, 650, 50, 600)).toBe(650);
-    expect(toGrid(0, 660, 50, 600)).toBe(650); // 10 ms late: the line counts
-    expect(toGrid(0, 700, 50, 600)).toBe(1250);
-    expect(toGrid(1000, -50, 50, 600)).toBe(250);
-    // The half-beat grid at 2×.
-    expect(toGrid(0, 100, 0, 300)).toBe(300);
   });
 });
 

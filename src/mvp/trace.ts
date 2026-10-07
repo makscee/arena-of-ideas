@@ -513,45 +513,6 @@ export function timingOf(beat: PlayBeat, weight: BeatWeight = {}): { at: number[
   return { at: t.at, ms: t.ms + extra };
 }
 
-// ---------- the battle on the beat (round 4, R4-17) ----------
-
-/** A beat's timing fitted to the music (R4-17, music.md): its length rounds
- * to whole music beats (at 100 BPM: 900 → 1200, 1300 → 1200, 2200 → 2400 ms)
- * and its waves land on 8th notes, each on its own (a squeezed cascade
- * spreads out, and the beat grows a whole beat when its last wave would land
- * on its end). An empty end beat (under half a music beat) keeps no time.
- * `beatMs` is the music's beat at 1×; the player divides it all by the speed,
- * so 2× lands on the half-beat grid. */
-export function onBeat(t: { at: number[]; ms: number }, beatMs: number): { at: number[]; ms: number } {
-  const eighth = beatMs / 2;
-  const at: number[] = [];
-  for (const x of t.at) {
-    const slot = at.length ? Math.max(Math.round(x / eighth), Math.round(at.at(-1)! / eighth) + 1) : 0;
-    at.push(Math.round(slot * eighth));
-  }
-  const last = at.at(-1) ?? 0;
-  let beats = Math.round(t.ms / beatMs);
-  if (beats === 0 && last > 0) beats = 1;
-  while (last > 0 && beats * beatMs < last + eighth) beats++;
-  return { at, ms: Math.round(beats * beatMs) };
-}
-
-/** A hold of `ms` real time fitted to a grid of `gridMs`: whole grid steps,
- * at least one (the turn-end hold, R4-17); none stays none. */
-export function onGrid(ms: number, gridMs: number): number {
-  return ms <= 0 ? 0 : Math.round(Math.max(1, Math.round(ms / gridMs)) * gridMs);
-}
-
-/** How long to wait so that something due in `dueIn` ms lands on the grid:
- * the first grid line (`origin` + k·`gridMs`, all in performance.now() ms)
- * at or after it. A line passed by under `slackMs` counts as now, so a timer
- * that fires a little late doesn't wait a whole step. */
-export function toGrid(now: number, dueIn: number, origin: number, gridMs: number, slackMs = 25): number {
-  const due = now + Math.max(0, dueIn);
-  const k = Math.ceil((due - origin - slackMs) / gridMs);
-  return Math.max(0, origin + k * gridMs - now);
-}
-
 /** What a trigger badge shows (R2-13): the trigger a unit's ability answered
  * and what the ability did, as glossary terms for their icons. */
 export interface Firing {
