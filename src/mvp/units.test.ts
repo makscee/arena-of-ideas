@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { MVP_RULES, type MvpContent } from "./contract.js";
 import { fightLines } from "./fight.js";
 import { contentFormProblems, lineUnitOf } from "./forms.js";
-import { EMITS, LISTENS, ROOT_WHENS, ROWS, WHEN, awokenNewPart, effectKinds, linkEdges, mvpPool, shapeKinds, sig, type WhenKey } from "./units.js";
+import { formText } from "./form-text.js";
+import { EMITS, LISTENS, ROOT_WHENS, ROWS, WHEN, awokenNewPart, effectKinds, linkEdges, mvpPool, shapeKinds, sig, whenKeyOf, type WhenKey } from "./units.js";
 
 describe("MVP pool (slice 7)", () => {
   const pool = mvpPool();
@@ -324,3 +325,71 @@ describe("Necromancer's Awoken form (R3-26)", () => {
   });
 });
 
+describe("no copied heroes (R3-26, Maks's note 1)", () => {
+  const pool = mvpPool();
+  const ENEMY_EVENTS = new Set(["enemyPoisoned", "enemyCursed", "enemyDies"]);
+  const FAMILY: Record<string, string> = { Smite: "Hit", Mend: "Heal" };
+  // Who it reaches (an event's unit is a friend or a foe by the When) and
+  // every effect kind it has, riders included; the When and numbers ignored.
+  const job = (form: (typeof pool.units)[number]["forms"]["awoken"]) => {
+    const who = form.who.map((w) => (w.kind === "eventUnit" ? (ENEMY_EVENTS.has(whenKeyOf(form)) ? "thatEnemy" : "thatAlly") : w.kind)).join("+");
+    return `${who} ← ${[...new Set(effectKinds(form.does).map((k) => FAMILY[k] ?? k))].sort().join("+")}`;
+  };
+  const groups = (key: (u: (typeof pool.units)[number]) => string) => {
+    const by = new Map<string, string[]>();
+    for (const u of pool.units) by.set(key(u), [...(by.get(key(u)) ?? []), u.name]);
+    return [...by].filter(([, names]) => names.length > 1);
+  };
+  /** A form's text without its When ("Hit: 2 damage to front enemy." → "2 damage to front enemy."). */
+  const doesText = (form: (typeof pool.units)[number]["forms"]["awoken"]) => formText(form, pool.abilities).replace(/^[^:]*: /, "");
+
+  // The vocabulary has ~40 one-target jobs for 81 units, so some Awoken jobs
+  // repeat (docs: r326 content sweep). This count may only go down.
+  const SHARED_AWOKEN_JOBS = 45; // R3-26: 52 → 45
+  it("Awoken forms that share Who + effect kinds with another unit's Awoken (When ignored) don't grow", () => {
+    const shared = groups((u) => job(u.forms.awoken));
+    const count = shared.reduce((n, [, names]) => n + names.length, 0);
+    expect(count, shared.map(([j, names]) => `${j}: ${names.join(", ")}`).join("\n")).toBeLessThanOrEqual(SHARED_AWOKEN_JOBS);
+  });
+
+  // Units whose text copies another's in both forms, When aside. Left by
+  // R3-26 (the quick meta or the vocabulary blocked a fix); the list may only shrink.
+  const BOTH_FORMS_TWINS = [
+    "1 Strength to all allies. / 1 Strength and 1 Shield to all allies.: Coach, Wither",
+    "1 Strength to all allies. / 1 Strength to all allies, then heal all allies for 1.: Victim, War Drummer",
+    "heal all allies for 1. / heal all allies for 1, then 1 Shield to all allies.: Medic, Doctor",
+    "1 Strength to self. / 1 Strength to self, then heal self for 1.: Berserker, Pathologist",
+    "2 Poison to all enemies. / 2 Poison and 1 Curse to all enemies.: Plague Doctor, Virus",
+    "1 Curse to front enemy. / 1 Curse and 1 damage to front enemy.: Wane, Equalizer",
+  ];
+  it("no unit copies another's text in both forms, When aside (except the listed twins)", () => {
+    expect(groups((u) => `${doesText(u.forms.sleeping)} / ${doesText(u.forms.awoken)}`).map(([t, names]) => `${t}: ${names.join(", ")}`)).toEqual(BOTH_FORMS_TWINS);
+  });
+
+  // Sleeping forms that read the same once the When is dropped. One effect on
+  // one target leaves too few texts for 81 units; these are the ones left, and
+  // the list may only shrink (a fixed group must leave it).
+  const SLEEPING_TWINS = [
+    "1 damage to front enemy. Fighter, Wire, Spike",
+    "1 Shield to all allies. Fodder, Prepper, Keeper",
+    "2 Strength to self. Squire, Henchman, Lilith",
+    "1 damage to random enemy. Gnat, Bat",
+    "1 Curse to all enemies. Spore, Morbid",
+    "2 Poison to front enemy. Rat, Venomancer",
+    "heal it for 1. Nurse, Almsgiver",
+    "1 Strength to all allies. Coach, Victim, Wither, Commander, War Drummer, Director",
+    "2 damage to front enemy. Rose, Crusader",
+    "1 Curse to front enemy. Saboteur, Physician, Wane, Equalizer",
+    "1 Vitality to self. Distractor, Robber",
+    "heal all allies for 1. Medic, Doctor",
+    "1 Strength to it. Sanctifier, Enhancer, Pediatrician",
+    "1 Strength to self. Battery, Berserker, Pathologist",
+    "1 Poison to front enemy. Injector, Rot",
+    "2 Poison to all enemies. Plague Rat, Plague Doctor, Virus",
+    "2 damage to all enemies. Emberling, Ritualist, Ruin",
+    "2 damage to random enemy. Trickster, Lightning, Battle Mage, Redirector",
+  ];
+  it("every unit's sleeping text differs from every other's by more than the When (except the listed twins)", () => {
+    expect(groups((u) => doesText(u.forms.sleeping)).map(([t, names]) => `${t} ${names.join(", ")}`)).toEqual(SLEEPING_TWINS);
+  });
+});
