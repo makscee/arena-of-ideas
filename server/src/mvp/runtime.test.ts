@@ -8,7 +8,8 @@ import { MemoryMvpStore } from "./store.js";
 
 const maks: PlayerRef = { id: "p1", name: "Maks", bot: false };
 
-describe("MVP runtime: one world for routes, bots and jobs", () => {
+// 30 s each: building the content and starting the jobs is slow under load (R3-26).
+describe("MVP runtime: one world for routes, bots and jobs", { timeout: 30_000 }, () => {
   it("fills every default in one place and keeps the caller's hooks last", () => {
     const store = new MemoryMvpStore();
     const mine = {};

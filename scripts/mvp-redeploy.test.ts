@@ -94,7 +94,9 @@ afterEach(() => {
   }
 });
 
-describe("mvp-redeploy (--fresh and plain)", () => {
+// 30 s each: every test runs the real script with sleeps and child servers,
+// 0.3–9 s alone and much more under load (R3-26).
+describe("mvp-redeploy (--fresh and plain)", { timeout: 30_000 }, () => {
   it("refuses --fresh without ARENA_MVP_WIPE=1: the world holds real players", () => {
     const env = { ...process.env };
     delete env.ARENA_MVP_WIPE;
@@ -134,7 +136,7 @@ describe("mvp-redeploy (--fresh and plain)", () => {
     expect(existsSync(join(home, "loaded/ru.makscee.arena-mvp"))).toBe(true);
   });
 
-  it("an old server that doesn't stop fails the redeploy loudly: exit 1, no \"deployed\" line, nothing bootstrapped", { timeout: 15_000 }, () => {
+  it("an old server that doesn't stop fails the redeploy loudly: exit 1, no \"deployed\" line, nothing bootstrapped", { timeout: 30_000 }, () => {
     for (const args of [[], ["--fresh"]]) {
       const { home, db } = host();
       const r = deploy(home, { STUCK: "1" }, args); // launchd never lets the old job go
@@ -149,7 +151,7 @@ describe("mvp-redeploy (--fresh and plain)", () => {
     }
   });
 
-  it("a new server that never answers /health fails the redeploy: exit 1, no \"deployed\" line, the server log's end", { timeout: 15_000 }, () => {
+  it("a new server that never answers /health fails the redeploy: exit 1, no \"deployed\" line, the server log's end", { timeout: 30_000 }, () => {
     for (const args of [[], ["--fresh"]]) {
       const { home, dir } = host();
       writeFileSync(join(dir, "data/server.log"), "SyntaxError: boom\n");
@@ -183,7 +185,7 @@ describe("mvp-redeploy (--fresh and plain)", () => {
     expect(readFileSync(db, "utf8")).toBe("old world");
   });
 
-  it("never leaves an open server running: a /health without invites: true stops it, turns /arena off, exits 1", { timeout: 15_000 }, () => {
+  it("never leaves an open server running: a /health without invites: true stops it, turns /arena off, exits 1", { timeout: 30_000 }, () => {
     for (const health of ['{"ok":true}', '{"ok":true,"invites":false}']) {
       const { home } = host();
       const r = deploy(home, { STUB_HEALTH: health }, []);
@@ -197,7 +199,7 @@ describe("mvp-redeploy (--fresh and plain)", () => {
     }
   });
 
-  it("ARENA_MVP_INVITES=0 deploys an open server with a warning, and refuses while arena.makscee.ru serves this host", { timeout: 15_000 }, () => {
+  it("ARENA_MVP_INVITES=0 deploys an open server with a warning, and refuses while arena.makscee.ru serves this host", { timeout: 30_000 }, () => {
     const open = { ARENA_MVP_INVITES: "0", STUB_HEALTH: '{"ok":true,"build":"abc1234","invites":false}' };
     const off = host();
     const r = deploy(off.home, open, []);
@@ -265,7 +267,7 @@ describe("mvp-redeploy (--fresh and plain)", () => {
     expect(f.stderr).toContain("ARENA_MVP_OPEN_PUBLIC=1: deploying open although https://arena.makscee.ru/arena/ answers 502");
   });
 
-  it("a `tailscale serve` that fails stops the new server and turns /arena off: exit 1, with why", { timeout: 15_000 }, () => {
+  it("a `tailscale serve` that fails stops the new server and turns /arena off: exit 1, with why", { timeout: 30_000 }, () => {
     for (const env of [{}, { ARENA_MVP_INVITES: "0", STUB_HEALTH: '{"ok":true,"build":"abc1234","invites":false}' }]) {
       const { home } = host();
       const r = deploy(home, { SERVE_FAIL: "1", ...env }, []);
