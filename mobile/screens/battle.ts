@@ -20,7 +20,7 @@
 import { boardAt, type BoardState, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView, SummonContent } from "../../src/mvp/contract";
 import { chainCappedTip, STATUS_TERMS, suddenDeathTip, termDef, timeUpTip, termIcon, triggerLabel, type IconId, type TermId } from "../../src/glossary";
-import { BEAT_MS, NO_ROOM, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, foldTurnsOf, isLogFold, keyMomentsOf, logRowsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, turnLabel, whyILost as lossChains, sidesOf, turnSummaryOf, turnEndsOf, turnEndHoldMs, totalsPartsOf, totalsText, TURN_END_MS, type TotalsPart, type TurnSummary, type UnitTurnTotals, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type LogRow, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
+import { BEAT_MS, NO_ROOM, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, foldTurnsOf, isLogFold, keyMomentsOf, logRowsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, turnLabel, whyILost as lossChains, sidesOf, turnSummaryOf, turnEndsOf, turnEndHoldMs, onBeat, onGrid, toGrid, totalsPartsOf, totalsText, TURN_END_MS, type TotalsPart, type TurnSummary, type UnitTurnTotals, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type LogRow, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { summonId } from "../../src/describe";
@@ -29,7 +29,7 @@ import { app, button, closable, fitText, h, isDesktop, onGone, onKeys, onLeave, 
 import { icon } from "../ui/icon";
 import { statusesShown, STATUS_ROW_FALLBACK } from "../ui/status-row";
 import { beatCues, endSound } from "../ui/sound-map";
-import { play as playSfx } from "../ui/sound";
+import { beatClock, play as playSfx } from "../ui/sound";
 
 /** The least room the phone's end card takes under the caption (its word,
  * its line, two key moments and its buttons); with less (a phone on its side)
@@ -288,8 +288,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const controls = h("div", { class: "row bv-controls" }, backBtn, playBtn, fwdBtn, speedBtn, endBtn, replayBtn, keys);
   // How long playback should take at 1× (the line-up plus every beat), for
   // the e2e to compare with what the screen takes.
-  // the turn-end summaries included (R4-12).
-  controls.dataset.planMs = String(lineupMs + beats.reduce((t, b, i) => t + timingOf(b, weights[i]).ms, 0) + turnEnds.size * TURN_END_MS);
+  // the turn-end summaries included (R4-12), every beat and hold fitted to
+  // the music's beat (R4-17).
+  const planBeatMs = beatClock().beatMs;
+  controls.dataset.planMs = String(lineupMs + beats.reduce((t, _b, i) => t + timed(i, planBeatMs).ms, 0) + turnEnds.size * onGrid(TURN_END_MS, planBeatMs));
 
   caption.addEventListener("click", () => {
     if (ending !== null) return;
@@ -302,31 +304,47 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** The wave on screen: the step whose caption shows. */
   const stepOn = () => beats[at]?.waves[wave];
 
+  /** Beat i's timing at 1× on the music's beat (R4-17): its length in whole
+   * music beats, its waves on 8th notes; reduced motion stretches it first. */
+  function timed(i: number, beatMs: number): { at: number[]; ms: number } {
+    const t = timingOf(beats[i]!, weights[i]);
+    const slow = reduced() ? 1.25 : 1;
+    return onBeat({ at: t.at.map((x) => x * slow), ms: t.ms * slow }, beatMs);
+  }
   /** Plays the next wave of the open beat, or the next beat's first wave.
    * The wait counts from when the wave on screen landed, not from when its
-   * render ended, so drawing time doesn't add up over a battle. */
+   * render ended, so drawing time doesn't add up over a battle. Each beat,
+   * and each turn-end hold, starts on the music's beat (R4-17): the wait
+   * runs on to the next line of the grid, a beat at 1×, half a beat at 2×. */
   function schedule(): void {
     if (timer) clearTimeout(timer);
-    const slow = reduced() ? 1.25 : 1;
-    let ms: number;
-    let since: number;
+    const clock = beatClock();
+    const grid = clock.beatMs / speed;
+    let wait: number;
+    // Waits inside a beat fall on its 8th notes already; the rest start something on the beat.
+    let snap = true;
     if (ending !== null) {
-      // The turn-end summary: its hold is real time (no speed or reduced-motion stretch).
-      ms = turnEndHoldMs(speed) * speed / slow;
-      since = endingAt !== null ? performance.now() - endingAt : 0;
+      // The turn-end summary: its hold is real time (no speed or reduced-motion stretch), whole steps of the grid.
+      const since = endingAt !== null ? performance.now() - endingAt : 0;
+      wait = onGrid(turnEndHoldMs(speed), grid) - since;
     } else {
-      if (at < 0) ms = lineupMs;
+      let ms: number;
+      if (at < 0) ms = (lineupMs * (reduced() ? 1.25 : 1)) / speed;
       else {
-        const t = timingOf(beats[at]!, weights[at]);
-        ms = wave < lastWave(at) ? t.at[wave + 1]! - t.at[wave]! : t.ms - t.at[wave]!;
+        const t = timed(at, clock.beatMs);
+        snap = wave >= lastWave(at);
+        ms = (snap ? t.ms - t.at[wave]! : t.at[wave + 1]! - t.at[wave]!) / speed;
       }
-      since = landed[wave] !== undefined ? performance.now() - landed[wave]! : 0;
+      const since = landed[wave] !== undefined ? performance.now() - landed[wave]! : 0;
+      wait = ms - since;
     }
+    if (snap) wait = toGrid(performance.now(), wait, clock.origin, grid);
     timer = setTimeout(() => {
       if (ending === null && at >= 0 && wave < lastWave(at)) {
         wave++;
         landed[wave] = performance.now();
         render();
+        landedOnBeat(true);
         playSfx(cues[at]![wave]);
         return schedule();
       }
@@ -343,9 +361,20 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       wave = 0;
       landed = [performance.now()];
       render();
+      landedOnBeat();
       playSfx(cues[at]![0]);
       schedule();
-    }, Math.max(0, (ms * slow) / speed - since));
+    }, Math.max(0, wait));
+  }
+  /** For mvp:beats (R4-17): how far from the music's grid a beat (or a wave,
+   * on the 8th-note grid) landed as it played, in ms; the last 400. */
+  function landedOnBeat(isWave = false): void {
+    const b = beatClock();
+    const g = b.beatMs / speed / (isWave ? 2 : 1);
+    const off = (((performance.now() - b.origin) % g) + g) % g;
+    const w = window as { __onBeat?: { wave: boolean; off: number; grid: number }[] };
+    (w.__onBeat ??= []).push({ wave: isWave, off: Math.round(Math.min(off, g - off)), grid: Math.round(g) });
+    if (w.__onBeat.length > 400) w.__onBeat.shift();
   }
   /** Playback holds on beat i's turn totals: a turn's last beat, below 4×, unless a Replay or key moment started it. */
   function holdsAfter(i: number): boolean {
