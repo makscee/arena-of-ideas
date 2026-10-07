@@ -22,7 +22,7 @@ import { fuseWarning } from "./ui/fuse-warn";
 import { icon } from "./ui/icon";
 import { app, button, closable, desktopQuery, dismissable, h, isDesktop, keepScreen, onKeys, overlay, screen, show, who } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
-import { initSound, onSoundChange, play, setSound, soundSettings } from "./ui/sound";
+import { initSound, music, onSoundChange, play, setSound, soundSettings } from "./ui/sound";
 import { shopSound } from "./ui/sound-map";
 
 function errorLine(): HTMLElement {
@@ -90,7 +90,10 @@ function soundRow(): HTMLElement {
   // The slider is read from the event, not captured: no closure holds it.
   volume.addEventListener("input", (e) => setSound({ volume: Number((e.currentTarget as HTMLInputElement).value) / 100 }));
   volume.addEventListener("change", () => play("click"));
-  const row = h("div", { class: "row sound-row", "data-testid": "sound-row" }, toggle, volume);
+  const mToggle = button("", () => setSound({ music: !soundSettings().music }), "sound-toggle", "music-toggle");
+  const mVolume = h("input", { type: "range", min: "0", max: "100", step: "5", "aria-label": "Music volume", "data-testid": "music-volume" });
+  mVolume.addEventListener("input", (e) => setSound({ musicVolume: Number((e.currentTarget as HTMLInputElement).value) / 100 }));
+  const row = h("div", { class: "stack sound-row", "data-testid": "sound-row" }, h("div", { class: "row" }, toggle, volume), h("div", { class: "row" }, mToggle, mVolume));
   syncSoundRow(row);
   // A row set aside (the Codex over Home) still follows M; one thrown away
   // stops listening. The listener holds the row only by its WeakRef (no
@@ -105,15 +108,23 @@ function soundRow(): HTMLElement {
   return row;
 }
 
-/** Draws a Sound row's toggle and slider from the settings. */
+/** Draws a Sound row's toggles and sliders from the settings: Sound (the
+ * master, M) and Music under it (round 4, note 5). */
 function syncSoundRow(row: HTMLElement, s = soundSettings()): void {
-  const toggle = row.querySelector<HTMLButtonElement>('[data-testid="sound-toggle"]');
-  const volume = row.querySelector<HTMLInputElement>('[data-testid="sound-volume"]');
-  if (!toggle || !volume) return;
+  const get = <T extends HTMLElement>(id: string) => row.querySelector<T>(`[data-testid="${id}"]`);
+  const toggle = get<HTMLButtonElement>("sound-toggle");
+  const volume = get<HTMLInputElement>("sound-volume");
+  const mToggle = get<HTMLButtonElement>("music-toggle");
+  const mVolume = get<HTMLInputElement>("music-volume");
+  if (!toggle || !volume || !mToggle || !mVolume) return;
   toggle.textContent = s.on ? "🔊 Sound on" : "🔇 Sound off";
   toggle.setAttribute("aria-pressed", String(s.on));
   volume.value = String(Math.round(s.volume * 100));
   volume.disabled = !s.on;
+  mToggle.textContent = s.music ? "🎵 Music on" : "🎵 Music off";
+  mToggle.setAttribute("aria-pressed", String(s.music));
+  mVolume.value = String(Math.round(s.musicVolume * 100));
+  mVolume.disabled = !s.on || !s.music;
 }
 
 /** A hint's verb: "Tap" on the phone, "Click" on a desktop. */
@@ -182,6 +193,7 @@ function legendSheet(): HTMLElement {
 // ---------- name ----------
 
 function nameScreen(): void {
+  music("home");
   // An invite-only server (slice 13) takes no new names: a player comes from
   // their invite link. Nothing but the title shows until /health says which.
   show(h("h1", {}, "ARENA OF IDEAS"));
@@ -313,6 +325,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
     ),
   );
   screen("home");
+  music("home");
   if (justEnded) playoff?.classList.add("fresh");
 }
 
@@ -1056,6 +1069,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     err,
   );
   screen("shop");
+  music("shop", run.runId);
   // The gift opens by itself, unless it was set aside (and, if set aside for
   // a full board, there is still no room).
   if (run.gift && !crown && (giftAside?.key !== giftKey || (giftAside.full && !cramped(run.gift)))) openGift();
@@ -1203,6 +1217,7 @@ async function fightScreens(run: RunView, fight: FightResult, content: MvpConten
     const why = e instanceof Error ? e.message : String(e);
     return shopScreen(now, content, `${word} vs @${fight.opponent.player.name}${lost}. The replay didn't load: ${why}`);
   }
+  music("battle", run.runId);
   battleScreen({ battle, content, you: "A", fight, run, outro: outroOf(run, fight, content), onDone: () => shopScreen(run, content) });
 }
 
@@ -1311,6 +1326,7 @@ function runOverScreen(run: RunView, content: MvpContent, notice = "", newRun = 
     h("div", { class: "row footer" }, ...(newRun ? [button("Home", home, "grow", "home"), button("New run", next, "primary grow", "new-run-start")] : [button("Home", home, "primary grow", "home")])),
   );
   screen("over");
+  music("shop", run.runId);
   onKeys((e) => (e.key === "Enter" ? ((newRun ? next : home)(), true) : e.key === "Escape" ? (home(), true) : false));
 }
 
