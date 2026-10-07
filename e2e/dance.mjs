@@ -40,10 +40,13 @@ export async function danceChecks(page, where, errors) {
     else if (c.off === null || c.off > 0.06) errors.push(`dance (${where}): ${c.unit} is off the beat by ${c.off?.toFixed(3)} of a cycle`);
   }
   for (const c of r.cards.filter((c) => c.dead)) if (c.anim !== "none") errors.push(`dance (${where}): fallen ${c.unit} still bobs`);
+  const worst = Math.max(...live.map((c) => c.off ?? 1));
+  console.log(`dance (${where}): ${live.length} cards bob at ${r.beat.bpm} BPM, the furthest ${(worst * 2 * r.beat.beatMs).toFixed(0)} ms off the beat`);
 }
 
 /** Still: under prefers-reduced-motion no emoji moves. */
 export async function stillChecks(page, where, errors) {
   const r = await readDance(page);
   for (const c of r.cards) if (c.anim !== "none") errors.push(`dance (${where}, reduced motion): ${c.unit} still bobs`);
+  console.log(`dance (${where}, reduced motion): ${r.cards.length} cards still`);
 }
