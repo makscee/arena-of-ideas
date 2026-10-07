@@ -171,6 +171,6 @@ describe("player-driven-desktop-v1-playtest fixture integrity", () => {
 
   test("AOI-63 battle golden remains byte-identical", () => {
     const bytes = readFileSync(join(root, "src/__fixtures__/golden-battles.jsonl"));
-    expect(createHash("sha256").update(bytes).digest("hex")).toBe("c3dcc52f7e92d6f0ec5973a80a80272dc17798b03a0240119d879170511c813c");
+    expect(createHash("sha256").update(bytes).digest("hex")).toBe("d6a129a11a70be4dff5d079e35b63031cda662b0058723e9786599ae5e20f6a9");
   });
 });

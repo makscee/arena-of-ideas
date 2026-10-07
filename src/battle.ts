@@ -521,7 +521,10 @@ class Engine {
       }
       case "summon": {
         const side = target.side;
-        if (this.lines[side].length >= TEAM_SIZE) return;
+        if (this.lines[side].length >= TEAM_SIZE) {
+          this.applyEvent({ type: "NoRoom", unit: f.ref.unit, side, name: e.unit.name }, f.event.id, f.ref);
+          return;
+        }
         const id = `${side}+${++this.summonCounter}:${e.unit.name}`;
         const u = this.makeUnit(e.unit, side, id);
         this.propose(
@@ -546,7 +549,14 @@ class Engine {
       }
       case "resurrect": {
         if (target.alive) return;
-        if (this.lines[target.side].length >= TEAM_SIZE) return;
+        if (this.lines[target.side].length >= TEAM_SIZE) {
+          this.applyEvent(
+            { type: "NoRoom", unit: f.ref.unit, side: target.side, name: target.name, revive: target.id },
+            f.event.id,
+            f.ref,
+          );
+          return;
+        }
         const hp = Math.max(1, this.evalAmount(e.hp, amountCtx));
         this.propose(
           {
@@ -715,7 +725,7 @@ class Engine {
         return;
       }
       default:
-        return; // BattleStart/TurnStart/TurnEnd/Strike/Fatigue/ChainBlocked/ChainCapped/Intercepted/BattleEnd mutate nothing
+        return; // BattleStart/TurnStart/TurnEnd/Strike/Fatigue/ChainBlocked/ChainCapped/NoRoom/Intercepted/BattleEnd mutate nothing
     }
   }
 

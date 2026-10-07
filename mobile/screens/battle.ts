@@ -20,7 +20,7 @@
 import { boardAt, type BoardState, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView, SummonContent } from "../../src/mvp/contract";
 import { chainCappedTip, STATUS_TERMS, termDef, timeUpTip, termIcon, triggerLabel, type IconId, type TermId } from "../../src/glossary";
-import { BEAT_MS, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, keyMomentsOf, logRowsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, turnLabel, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
+import { BEAT_MS, NO_ROOM, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, keyMomentsOf, logRowsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, turnLabel, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { summonId } from "../../src/describe";
@@ -156,7 +156,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   // A battle the turn cap stopped (R3-26): its end caption leads with "Time's up".
   const lastEvent = log[log.length - 1];
   const timeUpCap = lastEvent?.type === "BattleEnd" && lastEvent.timeUp ? lastEvent.turns : null;
-  const captionTerms = new RegExp(`\\(\\d+ absorbed\\)|Chain stopped after\\s\\d+ steps|Time's up|(?<![\\p{L}\\d])(?:${words.map(esc).join("|")})(?![\\p{L}\\d])|\\b(?:PWR|HP)\\b|[−+]\\d+(?!\\d)(?!\\s+more)`, "gu");
+  const captionTerms = new RegExp(`\\(\\d+ absorbed\\)|Chain stopped after\\s\\d+ steps|Time's up|No room|(?<![\\p{L}\\d])(?:${words.map(esc).join("|")})(?![\\p{L}\\d])|\\b(?:PWR|HP)\\b|[−+]\\d+(?!\\d)(?!\\s+more)`, "gu");
 
   let at = -1; // index of the beat on screen; -1 = the line-up before the first beat
   let wave = 0; // waves of that beat landed so far, minus one
@@ -1324,6 +1324,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     // the words here, as Fatigue's does.
     const capped = /^Chain stopped after\s(\d+) steps$/.exec(t);
     if (capped) return h("span", { class: "bv-ct tone-plain", "data-testid": "caption-term", title: chainCappedTip(Number(capped[1])) }, ...(led === "battle:chainCapped" ? [] : [icon("breaking-chain", 14), " "]), t);
+    // A summon or revive that found its line full (R4-2).
+    if (t === NO_ROOM) return h("span", { class: "bv-ct tone-plain", "data-testid": "caption-term", title: termDef("battle:noRoom")!.tip }, ...(led === "battle:noRoom" ? [] : [icon(termDef("battle:noRoom")!.icon!, 14), " "]), t);
     // The turn cap ran out: the hourglass and the rule with this battle's own cap.
     if (t === "Time's up" && timeUpCap !== null) return h("span", { class: "bv-ct tone-plain", "data-testid": "caption-term", title: timeUpTip(timeUpCap) }, icon("hourglass", 14), " ", t);
     if (t === "PWR") return h("span", { class: "tone-pwr" }, t);
@@ -1724,6 +1726,7 @@ function chainView(c: Chain, o: { units: Map<string, BattleUnit>; summoned: Map<
     const tone = n.kind === "firing" ? "tone-when" : n.kind === "root" ? "tone-gold" : "dim";
     let id = n.trigger ? termIcon(n.trigger as TermId, n.triggerStatus) : undefined;
     if (!id && n.event === "Fatigue") id = "hourglass";
+    if (!id && n.event === "NoRoom") id = termDef("battle:noRoom")!.icon;
     if (!id && n.event === "Intercepted") id = (n.triggerStatus ? (STATUS_TERMS[n.triggerStatus] ?? termDef(`status:${n.triggerStatus}` as TermId, o.content.statuses))?.icon : undefined) ?? "breaking-chain";
     return id ? icon(id, 18, tone) : h("span", { class: tone }, n.kind === "firing" ? "⚡" : "•");
   };
