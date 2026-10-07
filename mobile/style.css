@@ -1028,3 +1028,12 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-end-moments { gap: 6px; }
   #app[data-screen="battle"] .bv-end-actions { bottom: -16px; margin: 0 -24px -16px; padding: 8px 24px 16px; }
 }
+/* R4-5: on desktop the gift chooser reads the hovered card in a pane beside the three cards. */
+@media (min-width: 1024px) {
+  .sheet.gift-sheet { max-width: min(1080px, calc(100vw - 48px)); }
+  .gift-split { display: grid; grid-template-columns: minmax(0, 1fr) var(--insp, 340px); gap: 24px; align-items: start; }
+  .gift-main { min-width: 0; }
+  .gift-read { border-left: 1px solid var(--line); padding-left: 20px; max-height: calc(85dvh - 48px); overflow-y: auto; }
+  .gift-read .sheet-actions { position: static; margin: 0; padding: 0; background: none; }
+  .gift-choice.inspected .card { border-color: var(--you); background: color-mix(in srgb, var(--you) 8%, var(--panel)); }
+}
