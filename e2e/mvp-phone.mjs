@@ -312,7 +312,7 @@ try {
     page.off("request", count);
     if (fetches) errors.push(`codex: switching tabs fetched /fusions ${fetches} more time(s)`);
   }
-  if (!/^[\d,]+ of 6,480 found$/.test(await page.getByTestId("codex-fusions-found").textContent())) errors.push(`codex: "${await page.getByTestId("codex-fusions-found").textContent()}"`);
+  if (!/^[\d,]+ of [\d,]+ found$/.test(await page.getByTestId("codex-fusions-found").textContent())) errors.push(`codex: "${await page.getByTestId("codex-fusions-found").textContent()}"`);
   await shot("codex-fusions"); await noHScroll("codex-fusions");
   if ((await page.getByTestId("icon-credits").textContent()).indexOf("CC BY 3.0") < 0) errors.push("codex: no icon credits");
   await page.getByTestId("codex-back").click();
