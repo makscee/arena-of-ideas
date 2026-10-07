@@ -18,10 +18,6 @@
   archetype: Its own death weakens the whole enemy line.
   sleeping: Dies: 1 Curse to all enemies.
   awoken:   Dies: 1 Curse to all enemies, and 1 Freeze to front enemy.
-🐀 Rat
-  archetype: Its own death poisons whoever stands in front.
-  sleeping: Dies: 2 Poison to front enemy.
-  awoken:   Dies: 2 Poison to all enemies.
 🌱 Planter
   archetype: Opens by planting a small body, and grows if there's no room.
   sleeping: Battle start: summon Imp (1/2), then 2 Vitality to self.
@@ -48,8 +44,8 @@
   awoken:   Battle start: 1 Freeze and 2 damage to front enemy.
 🔌 Wire
   archetype: A wire that numbs the front enemy whenever an ally powers up.
-  sleeping: Ally gains PWR: 1 damage to front enemy.
-  awoken:   Ally gains PWR: 1 damage to front enemy, then silence front enemy.
+  sleeping: Ally gains PWR: 1 Freeze to front enemy.
+  awoken:   Ally gains PWR: 1 Freeze and 1 damage to front enemy.
 🌹 Rose
   archetype: Thorns: hits back at the front when struck.
   sleeping: Hit: 2 damage to front enemy.
@@ -62,14 +58,6 @@
   archetype: Opens by weakening the front enemy.
   sleeping: Battle start: 1 Curse to front enemy.
   awoken:   Battle start: 1 Curse to all enemies.
-🌵 Spike
-  archetype: Every Shield on an ally makes it lash out at the front.
-  sleeping: Ally gets Shield: 1 damage to front enemy.
-  awoken:   Ally gets Shield: 1 damage and 1 Poison to front enemy.
-🥀 Wither
-  archetype: Each enemy kill powers the whole team.
-  sleeping: Enemy dies: 1 Strength to all allies.
-  awoken:   Enemy dies: 1 Strength and 1 Shield to all allies.
 🤡 Distractor
   archetype: A big decoy that swells each time it's hit.
   sleeping: Hit: 1 Vitality to self.
@@ -132,8 +120,8 @@
   awoken:   Dies: 2 damage and 1 Freeze to all enemies.
 🧊 Icebinder
   archetype: Frostbite: every cursed enemy also freezes.
-  sleeping: Battle start: 2 Freeze to random enemy.
-  awoken:   Battle start: 2 Freeze to all enemies.
+  sleeping: Enemy gets Curse: 1 Freeze to it.
+  awoken:   Enemy gets Curse: 1 Freeze and 1 damage to it.
 🔮 Summoner
   archetype: Leaves a wolf behind when it dies.
   sleeping: Dies: summon Wolf (2/3).
@@ -176,12 +164,8 @@
   awoken:   Ally dies: heal self for 3, then 1 Blessing to self.
 🧜 Syren
   archetype: A lullaby that freezes a random enemy each turn.
-  sleeping: Turn start: 1 Curse to random enemy.
-  awoken:   Turn start: 1 Curse to all enemies.
-🦠 Rot
-  archetype: Drips Poison on the front enemy every turn.
-  sleeping: Turn end: 1 Poison to front enemy.
-  awoken:   Turn end: 1 Poison to all enemies.
+  sleeping: Turn start: 1 Freeze to random enemy.
+  awoken:   Turn start: 1 Freeze and 1 Curse to random enemy.
 🧱 Bulwark
   archetype: A wall that starts heavily shielded.
   sleeping: Battle start: 3 Shield to self.
@@ -192,8 +176,8 @@
   awoken:   Hit: 1 Shield to all allies.
 🎖️ Commander
   archetype: A captain whose every strike shields the line.
-  sleeping: Strikes: 1 Strength to all allies.
-  awoken:   Strikes: PWR damage to front enemy.
+  sleeping: Strikes: 1 Shield to all allies.
+  awoken:   Strikes: 1 Shield and 1 Strength to all allies.
 🥁 War Drummer
   archetype: A team Strength ramp every turn.
   sleeping: Turn start: 1 Strength to all allies.
@@ -202,10 +186,6 @@
   archetype: Saps the front enemy every turn.
   sleeping: Turn end: 1 Curse to front enemy.
   awoken:   Turn end: 1 Curse and 1 Poison to front enemy.
-🍼 Pediatrician
-  archetype: Strengthens every new summon.
-  sleeping: Ally summoned: 1 Strength to it.
-  awoken:   Ally summoned: 1 Strength and 1 Blessing to it.
 ⚔️ Crusader
   archetype: A heavy hit at the front every turn.
   sleeping: Turn start: 2 damage to front enemy.
@@ -220,8 +200,8 @@
   awoken:   Ally gets Shield: 2 damage and 1 Poison to random enemy.
 🔬 Pathologist
   archetype: A numbing toxin: every poisoned enemy also freezes.
-  sleeping: Enemy gets Poison: 1 Strength to self.
-  awoken:   Enemy gets Poison: 1 Strength to self, then heal self for 1.
+  sleeping: Enemy gets Poison: 1 Freeze to it.
+  awoken:   Enemy gets Poison: 1 Freeze and 1 Curse to it.
 🦤 Plague Doctor
   archetype: Poisons the whole enemy line at the start.
   sleeping: Battle start: 2 Poison to all enemies.
@@ -246,10 +226,6 @@
   archetype: Opens by locking down the front enemy.
   sleeping: Battle start: 1 Freeze and 1 Curse to front enemy.
   awoken:   Battle start: silence front enemy, then 1 Freeze and 1 Curse to front enemy.
-🪞 Redirector
-  archetype: Reflects hits at a random enemy.
-  sleeping: Hit: 2 damage to random enemy.
-  awoken:   Hit: 2 damage and 1 Freeze to random enemy.
 🏰 Keeper
   archetype: Shields the team every turn.
   sleeping: Turn start: 1 Shield to all allies.
@@ -302,14 +278,6 @@
   archetype: Ally power-ups sap the front enemy.
   sleeping: Ally gains PWR: 1 Curse to front enemy.
   awoken:   Ally gains PWR: 1 Curse and 1 damage to front enemy.
-🎬 Director
-  archetype: Each ally death powers the team.
-  sleeping: Ally dies: 1 Strength to all allies.
-  awoken:   Ally dies: 1 Strength to all allies, then heal all allies for 2.
-🥼 Doctor
-  archetype: Heals the team each time it's hit.
-  sleeping: Hit: heal all allies for 1.
-  awoken:   Hit: heal all allies for 1, then 1 Shield to all allies.
 🌋 Ruin
   archetype: Opens with damage to the whole enemy line.
   sleeping: Battle start: 2 damage to all enemies.

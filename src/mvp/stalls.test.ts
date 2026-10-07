@@ -100,11 +100,11 @@ describe("every battle ends by itself (R3-26, R4-1)", () => {
     // What the bots' fansOut refuses but a human can fuse (content.md, R3-26).
     // A feeder makes the fused unit's When fire every turn.
     const FEEDERS: Record<string, string[]> = {
-      allyPower: ["war-drummer", "commander", "coach"],
-      allyShield: ["keeper", "fodder", "prepper"],
-      allyHealed: ["medic", "doctor", "harvest"],
+      allyPower: ["war-drummer", "coach"],
+      allyShield: ["keeper", "commander", "fodder", "prepper"],
+      allyHealed: ["medic", "harvest"],
       allySummoned: ["fungoid", "sexton", "summoner"],
-      enemyPoisoned: ["rot", "rat", "injector"],
+      enemyPoisoned: ["famin", "injector"],
       enemyCursed: ["physician", "spore", "saboteur"],
     };
     const has = (id: string) => pool.units.some((u) => u.id === id);

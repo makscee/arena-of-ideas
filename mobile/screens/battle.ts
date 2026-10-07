@@ -107,6 +107,8 @@ export interface RunOutro {
   error?: HTMLElement;
 }
 
+/** A line with more cards than this draws them compact (R4-11). */
+const COMPACT_OVER = 5;
 /** A phone on its side: compact cards with one status row (style.css, R2-17 batch E). */
 const shortScreen = matchMedia("(max-width: 1023.98px) and (max-height: 520px)");
 
@@ -737,14 +739,14 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     a.onDone();
   }
 
-  function unitCard(u: BoardUnit, side: Side, v: View, stsWidth: number): HTMLElement {
+  function unitCard(u: BoardUnit, side: Side, v: View, stsWidth: number, compact: boolean): HTMLElement {
     const step = v.now;
     const changes = v.changes.filter((c) => c.unit === u.id);
     const sum = summoned.get(u.id);
     const el = card(units.get(u.id) ?? { emoji: emojiOf(u.id), name: u.name, stats: { pwr: u.pwr, hp: u.hp }, ...(sum?.form ? { recipe: sum.form } : {}) }, {
       side: side === you ? "you" : "ghost",
       live: { stats: { pwr: u.pwr, hp: u.hp }, maxHp: u.maxHp, acting: step?.actor === u.id },
-      extra: [statusChips(u, stsWidth), v.totals?.has(u.id) ? h("div", { class: "bv-changes" }, totalsLabel(v.totals.get(u.id)!)) : changes.length ? h("div", { class: "bv-changes" }, changeBadge(changes, floatedOf(u.id, v))) : null],
+      extra: [statusChips(u, stsWidth, compact), v.totals?.has(u.id) ? h("div", { class: "bv-changes" }, totalsLabel(v.totals.get(u.id)!)) : changes.length ? h("div", { class: "bv-changes" }, changeBadge(changes, floatedOf(u.id, v))) : null],
     });
     el.classList.add("bv-card");
     el.dataset.unit = u.id;
@@ -828,11 +830,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
    * rows show as many as fit the row's width (`width`, measured last render;
    * a two-digit stack is a wider chip); with more, the last chip is "+n",
    * which opens the unit's live statuses (R2-17). */
-  function statusChips(u: BoardUnit, width: number): HTMLElement {
+  function statusChips(u: BoardUnit, width: number, compact = false): HTMLElement {
     const statuses = u.statuses;
     // The desktop's chips are drawn 1.2× larger (12 px, R2-17 batch E): the row holds fewer.
-    // A short phone screen (on its side) has one status row (style.css).
-    const shown = statusesShown(statuses.map((st) => st.stacks), (width > 0 ? width : STATUS_ROW_FALLBACK) / (isDesktop() ? 1.25 : 1), shortScreen.matches ? 1 : 2);
+    // A short phone screen (on its side) and a compact line (R4-11) have one status row (style.css).
+    const shown = statusesShown(statuses.map((st) => st.stacks), (width > 0 ? width : STATUS_ROW_FALLBACK) / (isDesktop() ? 1.25 : 1), shortScreen.matches || compact ? 1 : 2);
     const over = statuses.length - shown;
     let more: HTMLElement | null = null;
     if (over) {
@@ -1007,6 +1009,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       if (u) return void closable(nowSheet(u, side, !live));
     }
   }
+  /** Whether a fallen unit still stands in its slot this beat (deadCard). */
+  function showsDead(id: string, v: View): boolean {
+    if (v.totals) return !!v.totals.get(id)?.died;
+    return v.changes.some((c) => c.unit === id && c.kind === "death") || v.now?.actor === id;
+  }
   function deadCard(id: string, v: View): HTMLElement | null {
     // A unit that falls this beat stays in its slot, greyed, until the beat
     // ends, so its ✝ can be tapped; so does a fallen unit that acts (a
@@ -1015,7 +1022,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const death = v.changes.find((c) => c.unit === id && c.kind === "death");
     // On a turn's totals, the units the turn killed, with theirs (R4-12).
     const tot = v.totals?.get(id);
-    if (v.totals ? !tot?.died : !death && step?.actor !== id) return null;
+    if (!showsDead(id, v)) return null;
     const el = h(
       "div",
       { class: `card bv-card dead ${sides.get(id) === you ? "you" : "ghost"}` },
@@ -1210,8 +1217,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
 
   /** A line in the beat: the living units, and each unit that fell in this
    * beat back in the slot it held when the beat began. */
-  function lineOf(side: Side, board: ReturnType<typeof boardAt>, before: ReturnType<typeof boardAt>, v: View, stsWidth: number): HTMLElement[] {
-    const living: HTMLElement[] = board.lines[side].map((u) => slot(unitCard(u, side, v, stsWidth), u.id, v));
+  function lineOf(side: Side, board: ReturnType<typeof boardAt>, before: ReturnType<typeof boardAt>, v: View, stsWidth: number, compact: boolean): HTMLElement[] {
+    const living: HTMLElement[] = board.lines[side].map((u) => slot(unitCard(u, side, v, stsWidth, compact), u.id, v));
     // Units summoned to the front in this beat stand ahead of every slot the
     // line had when the beat began: a fallen card's slot moves back past them.
     const was = new Set(before.lines[side].map((u) => u.id));
@@ -1266,9 +1273,16 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     if (pushedBeat !== at) { pushed = new Map(); pushedBeat = at; }
     const slides: [HTMLElement, { dx: number; at: number }][] = [];
     for (const [side, row] of [[them, enemy], [you, mine]] as const) {
+      // A line of more than 5 cards (summons and revives grow it to 8, R4-10)
+      // draws them compact: emoji, PWR over HP, one status row (R4-11). Set
+      // before measuring, so the status row is measured at its compact width.
+      const count = board.lines[side].length + board.graves[side].filter((u) => showsDead(u.id, v)).length;
+      const compact = count > COMPACT_OVER;
+      row.classList.toggle("bv-compact", compact);
+      row.style.gridTemplateColumns = `repeat(${Math.max(5, count)}, minmax(0, 1fr))`;
       // The status row's width, from the cards on screen (read before they are replaced).
       const stsWidth = row.querySelector<HTMLElement>(".bv-card:not(.dead) .bv-sts")?.getBoundingClientRect().width ?? 0;
-      const cards = lineOf(side, board, before, v, stsWidth);
+      const cards = lineOf(side, board, before, v, stsWidth, compact);
       const was = new Map([...row.querySelectorAll<HTMLElement>(".bv-slot")].map((sl) => [sl.querySelector<HTMLElement>(".bv-card")?.dataset.unit ?? "", sl.getBoundingClientRect().left]));
       row.replaceChildren(...cards);
       // A summon entering at the front this wave pushes the line back a slot: each card slides from where it stood.

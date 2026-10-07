@@ -874,7 +874,9 @@ describe("R4-6: per-turn totals", () => {
       }
       // Nothing changed is left out, and every death shows once.
       for (const [k, w] of want) if (w.damage || w.healed || w.pwr || w.hp || w.blocked || w.died) expect(sum.some((t) => t.units.some((u) => key(t.turn, u.unit) === k)), `seed ${seed} ${k}`).toBe(true);
-      expect(sum.flatMap((t) => t.units.filter((u) => u.died)).length, `seed ${seed}`).toBe(log.filter((e) => e.type === "Death").length);
+      // A unit revived and killed again in one turn shows one ✝ for that turn.
+      const deaths = new Set(log.filter((e) => e.type === "Death").map((e) => key(turnOf.get(e.id) ?? Math.max(0, e.turn), (e as { unit: string }).unit)));
+      expect(sum.flatMap((t) => t.units.filter((u) => u.died)).length, `seed ${seed}`).toBe(deaths.size);
     }
   });
 });
