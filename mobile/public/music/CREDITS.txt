@@ -1,7 +1,6 @@
 Arena of Ideas music
 
-All five tracks come from Maks's own earlier games. The composer's name is
-still to be asked (round 4, note 5); this file will name them.
+Music by makscee. All five tracks come from Maks's own earlier games.
 - home.m4a: Arena of Ideas 2022, static/sounds/music_loop.ogg (commit b256823d),
   whole (85.3 s, 128 beats at 90 BPM).
 - theme1, theme2, theme4, theme9.m4a: "game theme 1/2/4/9.ogg" (Arena of Ideas
