@@ -1,0 +1,31 @@
+// A long late-game battle (R4-3): the most Log waves among random lines of the
+// shipped units with awoken units and fusions. Writes the BattleRecord to
+// argv[2] and prints its waves and Log rows. Used by e2e/probe-log-rows.mjs.
+import { writeFileSync } from "node:fs";
+import { MVP_RULES } from "../src/mvp/contract.js";
+import { fightLines } from "../src/mvp/fight.js";
+import { fuseUnits, lineUnitOf } from "../src/mvp/forms.js";
+import { beatPlayOf, logRowsOf, stepsOf } from "../src/mvp/trace.js";
+import { mvpContent } from "../server/src/mvp/content.js";
+const content = mvpContent();
+const P = { id: "p", name: "me", bot: false }, Q = { id: "q", name: "bot", bot: true };
+let r = 12345;
+const rnd = (n: number) => { r = (r * 1103515245 + 12345) % 2147483648; return r % n; };
+const unit = () => content.units[rnd(content.units.length)]!;
+const pick = (p: string) =>
+  Array.from({ length: 5 }, (_, k) => {
+    if (rnd(5) < 2) {
+      const a = lineUnitOf(unit(), `${p}${k}`, 3), b = lineUnitOf(unit(), `${p}${k}b`, 3);
+      try { return fuseUnits(a, b, { name: `${a.name}${b.name}`, discoveredBy: null }, content); } catch { return a; }
+    }
+    return lineUnitOf(unit(), `${p}${k}`, 1 + rnd(3));
+  });
+let best: { rec: ReturnType<typeof fightLines>; waves: number; rows: number } | null = null;
+for (let i = 0; i < Number(process.argv[3] ?? 200); i++) {
+  const rec = fightLines({ player: P, line: pick("a") }, { player: Q, line: pick("b") }, { battleId: "long", seed: i, kind: "playoff", round: 0, runId: null, at: "2026-10-07T19:00:00.000Z", content, rules: MVP_RULES });
+  const beats = beatPlayOf(rec.log, stepsOf(rec.log));
+  const waves = beats.reduce((s, b) => s + b.waves.length, 0);
+  if (!best || waves > best.waves) best = { rec, waves, rows: logRowsOf(rec.log, beats).length };
+}
+writeFileSync(process.argv[2]!, JSON.stringify(best!.rec));
+console.log(JSON.stringify({ events: best!.rec.log.length, waves: best!.waves, rows: best!.rows }));
