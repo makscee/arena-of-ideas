@@ -39,13 +39,19 @@ export interface CardOptions {
   onOpen?: () => void;
 }
 
+/** A tier's colour class (R4-4): .t1–.t4 on the --tier-1..4 tokens, .ts for a summoned unit. */
+export const tierClass = (tier: number | "S") => (tier === "S" ? "ts" : `t${tier}`);
+
+// A pool unit's sheet head, "Sleeping · Tier II", the numeral in its tier's colour.
+const poolState = (form: string, tier: number) => [`${form} · Tier `, h("span", { class: `tier ${tierClass(tier)}` }, roman(tier))];
+
 export function card(u: CardUnit, o: CardOptions): HTMLElement {
   const stats = o.live?.stats ?? u.stats;
   const el = h(
     "div",
     { class: `card ${o.side}`, ...(o.testid ? { "data-testid": o.testid } : {}) },
     iconLine(u.recipe, !!o.tier),
-    o.tier ? h("span", { class: "tier", "aria-label": o.tier === "S" ? "summoned" : `tier ${o.tier}` }, o.tier === "S" ? "S" : roman(o.tier)) : null,
+    o.tier ? h("span", { class: `tier ${tierClass(o.tier)}`, "aria-label": o.tier === "S" ? "summoned" : `tier ${o.tier}` }, o.tier === "S" ? "S" : roman(o.tier)) : null,
     h("div", { class: "emoji" }, u.emoji),
     // One line; ui/dom.ts fitText() shrinks a long name a little, then cuts it.
     h("div", { class: "name", title: u.name }, u.name),
@@ -154,7 +160,7 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
   const copies = "forms" in u ? 0 : u.copies;
 
   const box = h("div", { class: "sheet-form", "data-testid": "sheet-form" });
-  const state = h("span", { class: "dim small", "data-testid": "sheet-state" }, "stats" in u ? sheetState(u) : `Sleeping · Tier ${roman(u.tier)}`);
+  const state = h("span", { class: "dim small", "data-testid": "sheet-state" }, ...("stats" in u ? [sheetState(u)] : poolState("Sleeping", u.tier)));
   const children: (Node | null)[] = [];
   // What the form shown summons, under its text (R3-5); swapped by See Awoken.
   const summons = h("div", { class: "stack" });
@@ -203,7 +209,7 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
       box.replaceChildren(...(showing ? [h("div", { class: "label" }, `Awoken · after copy ${MVP_RULES.copiesToAwaken}`), ...richText(awokePieces, { content: markChangedPieces(sleepPieces, awokePieces) })] : richText(sleepPieces)));
       btn.textContent = showing ? back : see;
       // A unit from the pool (the Codex, an offer) heads its sheet with the form shown.
-      if (!("stats" in u)) state.textContent = `${showing ? "Awoken" : "Sleeping"} · Tier ${roman(u.tier)}`;
+      if (!("stats" in u)) state.replaceChildren(...poolState(showing ? "Awoken" : "Sleeping", u.tier));
       btn.dataset.testid = showing ? "see-sleeping" : "see-awoken";
       note.hidden = !showing;
     });
