@@ -10,6 +10,7 @@ export function unitTexts(pool: MvpPool): string {
   const out: string[] = [];
   for (const u of pool.units) {
     out.push(`${u.emoji} ${u.name}`);
+    out.push(`  archetype: ${u.archetype}`);
     out.push(`  sleeping: ${formText(u.forms.sleeping, pool.abilities)}`);
     out.push(`  awoken:   ${formText(u.forms.awoken, pool.abilities)}`);
   }

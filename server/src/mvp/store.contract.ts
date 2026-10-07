@@ -13,7 +13,7 @@ const eva: PlayerRef = { id: "p2", name: "Eva", bot: false };
 const form = { when: [], who: [], does: ["Strike"] };
 const content: MvpContent = {
   version: "v2",
-  units: [{ id: "brawler", name: "Brawler", emoji: "🥊", tier: 1, base: { pwr: 2, hp: 5 }, forms: { sleeping: form, awoken: form } }],
+  units: [{ id: "brawler", name: "Brawler", emoji: "🥊", archetype: "A plain brawler.", tier: 1, base: { pwr: 2, hp: 5 }, forms: { sleeping: form, awoken: form } }],
   abilities: {},
   statuses: {},
 };
