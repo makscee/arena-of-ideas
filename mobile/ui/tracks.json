@@ -1,0 +1,9 @@
+{
+  "home": { "file": "home.m4a", "bpm": 90.02, "offset": 0.441, "loopStart": 0, "loopEnd": 85.333 },
+  "themes": [
+    { "file": "theme1.m4a", "bpm": 105.02, "offset": 0.557, "loopStart": 0, "loopEnd": 109.693 },
+    { "file": "theme2.m4a", "bpm": 105.02, "offset": 0.557, "loopStart": 0, "loopEnd": 109.693 },
+    { "file": "theme4.m4a", "bpm": 105.02, "offset": 0.557, "loopStart": 0, "loopEnd": 109.693 },
+    { "file": "theme9.m4a", "bpm": 100, "offset": 0, "loopStart": 0, "loopEnd": 115.2 }
+  ]
+}

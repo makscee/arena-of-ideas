@@ -162,9 +162,11 @@ button.menu-btn { min-width: 44px; padding: 0 10px; font-size: 18px; line-height
 .hud { align-items: center; }
 .run-menu button { min-height: 48px; }
 .run-menu .dim.small { margin-top: -4px; text-align: center; }
-/* Sound (round 3, note 16): a toggle and a volume slider in both menus. */
-.sound-row { align-items: center; gap: 10px; }
-.sound-row button.sound-toggle { flex: none; min-width: 132px; text-transform: none; letter-spacing: 0; }
+/* Sound (round 3, note 16) and Music under it (round 4, note 5): a toggle
+ * and a volume slider each, in both menus. */
+.sound-row { gap: 4px; }
+.sound-row > .row { gap: 10px; }
+.sound-row button.sound-toggle { flex: none; width: 140px; text-transform: none; letter-spacing: 0; }
 .sound-row input[type="range"] { flex: 1; min-width: 0; height: 44px; padding: 0; border: 0; background: transparent; accent-color: var(--you); }
 .sound-row input[type="range"]:disabled { opacity: 0.4; }
 details.dev { color: var(--dim); font-size: 13px; }
