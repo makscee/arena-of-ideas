@@ -107,9 +107,9 @@ export interface RunOutro {
   error?: HTMLElement;
 }
 
-/** A phone on its side: compact cards with one status row (style.css, R2-17 batch E). */
 /** A line with more cards than this draws them compact (R4-11). */
 const COMPACT_OVER = 5;
+/** A phone on its side: compact cards with one status row (style.css, R2-17 batch E). */
 const shortScreen = matchMedia("(max-width: 1023.98px) and (max-height: 520px)");
 
 /** Reduced motion: nothing moves, and beats hold a little longer. */
