@@ -831,12 +831,14 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     let blocked = buyBlock(o);
     const affordable = blocked === "";
     let ask = previews.get(o.slot);
-    if (affordable && !ask) {
+    // Not while a decision is out: this shop is stale then (a hover just
+    // after a buy asked for the emptied slot, a 409, R4-19); the answer redraws it.
+    if (affordable && !ask && !busy) {
       ask = buyPreview(o);
       previews.set(o.slot, ask);
       ask.catch(() => previews.delete(o.slot)); // a failed dry run is asked again next time
     }
-    const res = affordable ? await ask! : null;
+    const res = affordable && ask ? await ask : null;
     let after: HTMLElement | null = null;
     // A unit you own: the sheet shows your copy, from now to after buying.
     let mine: { now: LineUnit; next: LineUnit } | null = null;
