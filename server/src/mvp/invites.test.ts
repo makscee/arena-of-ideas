@@ -4,10 +4,10 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import type { BattleRecord, HomeView, PlayerRef, PlayerSession, RunView } from "../../../src/mvp/contract.js";
-import { createMvpApp } from "./app.js";
+import type { BattleRecord, HomeView, JoinSession, PlayerRef, PlayerSession, RunView } from "../../../src/mvp/contract.js";
+import { createMvpApp, JOINS_PER_HOUR } from "./app.js";
 import { mvpContent } from "./content.js";
-import { createInvite, hashToken, InviteError, redeemInvite, revokeInvite } from "./invites.js";
+import { createInvite, hashToken, InviteError, isAdmin, openJoin, redeemInvite, revokeInvite } from "./invites.js";
 import { mvpRuntime, type MvpDeps } from "./runtime.js";
 import { SqliteMvpStore } from "./sqlite-store.js";
 import { MAX_SESSIONS, MemoryMvpStore } from "./store.js";
@@ -277,4 +277,104 @@ describe("invite links (slice 13)", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   }, 30_000);
+});
+
+describe("the open join link (R4-20)", () => {
+  type Joined = JoinSession;
+  const join = (call: ReturnType<typeof world>["call"], code: string, name: string, headers: Record<string, string> = {}) =>
+    call<Joined>("POST", "/join", headers, { code, name });
+
+  it("a good code makes a new player with a session and their own invite link; never admin", async () => {
+    for (const store of [new MemoryMvpStore(), new SqliteMvpStore(":memory:")]) {
+      const { call } = world({ store });
+      const code = openJoin(store);
+      expect(openJoin(store)).toBe(code);
+      expect((await call("POST", "/join/check", {}, { code })).json).toEqual({ ok: true });
+      const a = await join(call, code, "  Friend ");
+      expect(a.status).toBe(200);
+      expect(a.json.player).toMatchObject({ name: "Friend", bot: false });
+      const inv = store.invite(a.json.invite)!;
+      expect(inv).toMatchObject({ name: "Friend", playerId: a.json.player.id, admin: false });
+      expect(isAdmin(store, a.json.player.id)).toBe(false);
+      const home = await call<HomeView>("GET", "/home", tok(a.json));
+      expect(home.json.dev).toBe(false);
+      expect(home.json.rating?.player.id).toBe(a.json.player.id);
+      expect((await call("POST", "/dev/end-day", tok(a.json))).status).toBe(404);
+      expect((await call<RunView>("POST", "/runs", tok(a.json))).status).toBe(200);
+      // Their own link opens the same player on another device.
+      const b = await open(call, a.json.invite);
+      expect(b.json.player.id).toBe(a.json.player.id);
+      // A second person, another name.
+      const c = await join(call, code, "Other");
+      expect(c.status).toBe(200);
+      expect(c.json.player.id).not.toBe(a.json.player.id);
+    }
+  });
+
+  it("refuses a wrong code, no code yet, and a rotated code; joined players keep their sessions", async () => {
+    const { store, call } = world();
+    expect((await join(call, "", "Friend")).status).toBe(404);
+    expect((await join(call, "anything", "Friend")).status).toBe(404);
+    expect((await call("POST", "/join/check", {}, { code: "anything" })).status).toBe(404);
+    const old = openJoin(store);
+    expect((await join(call, old + "x", "Friend")).json.error).toBe("no such join link");
+    expect((await join(call, old.slice(0, -1), "Friend")).status).toBe(404);
+    const a = await join(call, old, "Friend");
+    const fresh = openJoin(store, true);
+    expect(fresh).not.toBe(old);
+    expect((await join(call, old, "Late")).status).toBe(404);
+    expect((await call("POST", "/join/check", {}, { code: old })).status).toBe(404);
+    expect((await call<HomeView>("GET", "/home", tok(a.json))).status).toBe(200);
+    expect((await open(call, a.json.invite)).status).toBe(200);
+    expect((await join(call, fresh, "Late")).status).toBe(200);
+    // Nothing was made by the refused joins.
+    expect(store.playersNamed("Late").length).toBe(1);
+  });
+
+  it("refuses taken, bot and bad names, with the same rules as invites", async () => {
+    const { store, call, now } = world();
+    const code = openJoin(store);
+    store.addPlayer({ id: "b1", name: "Mira", bot: true });
+    store.addPlayer({ id: "h1", name: "makscee", bot: false });
+    createInvite(store, { name: "Eva", now });
+    const cases: [string, number, RegExp][] = [
+      ["MaksCee", 409, /taken/],
+      ["eva", 409, /taken/],
+      ["mira", 409, /bot's name/],
+      ["bot-Ash", 409, /bot's name/],
+      ["", 400, /name:/],
+      ["bad/name", 400, /name:/],
+      ["x".repeat(25), 400, /name:/],
+    ];
+    for (const [name, status, msg] of cases) {
+      const r = await join(call, code, name);
+      expect([name, r.status], name).toEqual([name, status]);
+      expect(r.json.error).toMatch(msg);
+    }
+    expect((await call("POST", "/join", {}, { code, name: 7 })).status).toBe(400);
+    const ok = await join(call, code, "Friend");
+    expect((await join(call, code, "FRIEND")).status).toBe(409);
+    expect(store.invites().map((i) => i.name).sort()).toEqual(["Eva", "Friend"]);
+    // A stale token on the device doesn't block a join.
+    expect((await join(call, code, "Second", { "X-Arena-Token": "stale" })).status).toBe(200);
+    expect(ok.status).toBe(200);
+  });
+
+  it(`makes at most ${JOINS_PER_HOUR} players an hour, then 429 until the hour has passed`, async () => {
+    let t = new Date("2026-10-07T18:00:00Z").getTime();
+    const { store, call } = world({ now: () => new Date(t) });
+    const code = openJoin(store);
+    for (let i = 0; i < JOINS_PER_HOUR; i++) {
+      expect((await join(call, code, `p${i}`)).status).toBe(200);
+      t += 60_000;
+    }
+    const over = await join(call, code, "late");
+    expect(over.status).toBe(429);
+    expect(over.json.error).toMatch(/Too many new players/);
+    expect(store.playersNamed("late")).toEqual([]);
+    // Refused names and wrong codes don't use the budget; the first join's hour ends.
+    t = new Date("2026-10-07T19:00:00Z").getTime();
+    expect((await join(call, code, "late")).status).toBe(200);
+    expect((await join(call, code, "later")).status).toBe(429);
+  });
 });
