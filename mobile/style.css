@@ -183,6 +183,8 @@ button.pin-btn { display: flex; align-items: center; gap: 4px; min-height: 44px;
 .preview-card { width: 64px; margin: 0 auto; }
 .recipe-line { text-align: center; font-size: 12px; }
 .recipe-line .k { color: var(--dim); font-family: "IBM Plex Mono", monospace; font-size: 10px; text-transform: uppercase; }
+/* The fuse preview's plain warning (R3-26): the fusion hurts your own units or helps the enemy. */
+.fuse-warn { border: 1px solid var(--gold); color: var(--gold); padding: 6px 8px; font-size: 12px; line-height: 1.35; }
 .reveal { text-align: center; }
 .after.awakens .label { color: var(--gold); font-weight: 700; }
 /* The sheet: the active form's text in a box; "See Awoken" swaps in the other

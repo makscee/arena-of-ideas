@@ -18,6 +18,7 @@ import { setCodexLink } from "./ui/term";
 import { statsScreen } from "./screens/stats";
 import { card, roman, unitSheet, type CardUnit } from "./ui/card";
 import { previewName } from "./ui/fusion";
+import { fuseWarning } from "./ui/fuse-warn";
 import { icon } from "./ui/icon";
 import { app, button, closable, desktopQuery, dismissable, h, isDesktop, keepScreen, onKeys, overlay, screen, show, who } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
@@ -730,9 +731,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
           h("span", { class: "k" }, "Who"), ` · ${unitAt(o.second)!.name} → `,
           h("span", { class: "k" }, "Does"), " · both",
         );
+        // Fusions that hurt their own team stay (round 2); the preview says so plainly.
+        const warn = fuseWarning(views[at]!.recipe, [unitAt(o.first)!.recipe, unitAt(o.second)!.recipe], content);
         body.replaceChildren(
           h("div", { class: "preview-card" }, card(shown, { side: "you", extra: [copiesBadge(shown)] })),
           recipe,
+          ...(warn ? [h("div", { class: "fuse-warn", role: "note", "data-testid": "fuse-warn" }, warn)] : []),
           h(
             "div",
             { class: "row sheet-actions" },
