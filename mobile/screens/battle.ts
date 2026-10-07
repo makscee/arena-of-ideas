@@ -20,7 +20,7 @@
 import { boardAt, type BoardState, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView, SummonContent } from "../../src/mvp/contract";
 import { chainCappedTip, STATUS_TERMS, suddenDeathTip, termDef, timeUpTip, termIcon, triggerLabel, type IconId, type TermId } from "../../src/glossary";
-import { BEAT_MS, NO_ROOM, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, keyMomentsOf, logRowsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, turnLabel, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
+import { BEAT_MS, NO_ROOM, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, keyMomentsOf, logRowsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, turnLabel, whyILost as lossChains, sidesOf, turnSummaryOf, turnEndsOf, turnEndHoldMs, totalsPartsOf, totalsText, TURN_END_MS, type TotalsPart, type TurnSummary, type UnitTurnTotals, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { summonId } from "../../src/describe";
@@ -147,6 +147,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const damage = damageByUnit(log, name, sides);
   // Tagged names: the card colours each unit by its side, like the captions.
   const moments = keyMomentsOf(log, beats, TAGGED, sides);
+  /** The turn-end summary (R4-12): the beats playback holds after, each with its turn's totals. */
+  const turnEnds = turnEndsOf(turnSummaryOf(log, beats, sides), beats.length);
 
   // What richCaption highlights besides units (tagged by id): this battle's
   // statuses and the fixed words. Longest first, so "Rat King" beats "Rat".
@@ -168,6 +170,13 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
    * doesn't cut an earlier wave's lunge, shake or float short; empty after a
    * manual step, so nothing moves then. */
   let landed: number[] = [];
+  /** The beat whose turn-end summary is on screen (R4-12): the board holds
+   * each unit's totals for the turn, the dead greyed with theirs; null
+   * otherwise. `endingAt` is when playback put it up (null after a step). */
+  let ending: number | null = null;
+  let endingAt: number | null = null;
+  /** Playback holds on turn ends; a Replay or a key moment plays without them. */
+  let holds = true;
   // Set before setSpeedVar() runs, so motion and beat timing start in step.
   let speed = speedFor(battle.round, storedSpeed());
   let playing = true;
@@ -279,9 +288,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const controls = h("div", { class: "row bv-controls" }, backBtn, playBtn, fwdBtn, speedBtn, endBtn, replayBtn, keys);
   // How long playback should take at 1× (the line-up plus every beat), for
   // the e2e to compare with what the screen takes.
-  controls.dataset.planMs = String(lineupMs + beats.reduce((t, b, i) => t + timingOf(b, weights[i]).ms, 0));
+  // the turn-end summaries included (R4-12).
+  controls.dataset.planMs = String(lineupMs + beats.reduce((t, b, i) => t + timingOf(b, weights[i]).ms, 0) + turnEnds.size * TURN_END_MS);
 
   caption.addEventListener("click", () => {
+    if (ending !== null) return;
     const st = stepOn();
     const c = st?.changes[0];
     if (c) openTrace(c.eventId, st!.changes.filter((x) => x.unit === c.unit));
@@ -298,21 +309,35 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     if (timer) clearTimeout(timer);
     const slow = reduced() ? 1.25 : 1;
     let ms: number;
-    if (at < 0) ms = lineupMs;
-    else {
-      const t = timingOf(beats[at]!, weights[at]);
-      ms = wave < lastWave(at) ? t.at[wave + 1]! - t.at[wave]! : t.ms - t.at[wave]!;
+    let since: number;
+    if (ending !== null) {
+      // The turn-end summary: its hold is real time (no speed or reduced-motion stretch).
+      ms = turnEndHoldMs(speed) * speed / slow;
+      since = endingAt !== null ? performance.now() - endingAt : 0;
+    } else {
+      if (at < 0) ms = lineupMs;
+      else {
+        const t = timingOf(beats[at]!, weights[at]);
+        ms = wave < lastWave(at) ? t.at[wave + 1]! - t.at[wave]! : t.ms - t.at[wave]!;
+      }
+      since = landed[wave] !== undefined ? performance.now() - landed[wave]! : 0;
     }
-    const since = landed[wave] !== undefined ? performance.now() - landed[wave]! : 0;
     timer = setTimeout(() => {
-      if (at >= 0 && wave < lastWave(at)) {
+      if (ending === null && at >= 0 && wave < lastWave(at)) {
         wave++;
         landed[wave] = performance.now();
         render();
         playSfx(cues[at]![wave]);
         return schedule();
       }
+      if (ending === null && holdsAfter(at)) {
+        ending = at;
+        endingAt = performance.now();
+        render();
+        return schedule();
+      }
       if (at >= beats.length - 1) return finish();
+      ending = null;
       hudTurn = null;
       at++;
       wave = 0;
@@ -321,6 +346,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       playSfx(cues[at]![0]);
       schedule();
     }, Math.max(0, (ms * slow) / speed - since));
+  }
+  /** Playback holds on beat i's turn totals: a turn's last beat, below 4×, unless a Replay or key moment started it. */
+  function holdsAfter(i: number): boolean {
+    return holds && turnEnds.has(i) && turnEndHoldMs(speed) > 0;
   }
   /** Sets the speed (and the motion's --bv-sp with it), remembered for the next battle. */
   function setSpeed(s: number): void {
@@ -337,6 +366,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     setPlaying(true);
     trace = null;
     landed = [];
+    endingAt = null;
     playBtn.textContent = "❚❚";
     render();
     schedule();
@@ -350,6 +380,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** Jumps to beat i, every wave landed. */
   function go(i: number): void {
     hudTurn = null;
+    ending = null;
     at = Math.max(-1, Math.min(beats.length - 1, i));
     wave = lastWave(at);
     landed = [];
@@ -384,6 +415,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     at = b;
     wave = Math.max(0, w);
     landed = [];
+    ending = null;
     chainAt = id;
     // "Turn N" (its start, or its first pair facing) is the board as turn N
     // begins: the HUD says turn N, not the turn that just ended.
@@ -391,15 +423,27 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     hudTurn = root && (root.type === "TurnStart" || root.type === "PairFaced") ? root.turn : null;
     render();
   }
+  /** ←/→ count a turn's totals as a step after its last beat (R4-12). */
   function back(): void {
     pause();
     finished = false;
+    if (ending !== null) return go(at);
     go(at - 1);
+    if (turnEnds.has(at)) showEnding();
   }
   function forward(): void {
     pause();
+    if (ending === null && turnEnds.has(at)) return showEnding();
     if (atEnd()) return finish();
     go(at + 1);
+  }
+  /** The turn totals of the beat on screen, stepped to (no hold running). */
+  function showEnding(): void {
+    ending = at;
+    wave = lastWave(at);
+    landed = [];
+    endingAt = null;
+    render();
   }
   /** Jumps to the result: the last beat's board under the end card. */
   function finish(): void {
@@ -412,15 +456,18 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     if (!seenEnd) for (const c of endSound(outcome, battle.kind, a.you !== undefined)) playSfx(c);
     seenEnd = true;
     trace = null;
+    ending = null;
     at = beats.length - 1;
     wave = lastWave(at);
     landed = [];
     render();
   }
   /** Plays from beat i (-1: the line-up), the end card put away. */
-  function playFrom(i: number): void {
+  function playFrom(i: number, holdTurnEnds = false): void {
     pause();
     hudTurn = null;
+    ending = null;
+    holds = holdTurnEnds;
     finished = false;
     trace = null;
     at = Math.max(-1, Math.min(beats.length - 1, i));
@@ -620,7 +667,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const el = card(units.get(u.id) ?? { emoji: emojiOf(u.id), name: u.name, stats: { pwr: u.pwr, hp: u.hp }, ...(sum?.form ? { recipe: sum.form } : {}) }, {
       side: side === you ? "you" : "ghost",
       live: { stats: { pwr: u.pwr, hp: u.hp }, maxHp: u.maxHp, acting: step?.actor === u.id },
-      extra: [statusChips(u, stsWidth), changes.length ? h("div", { class: "bv-changes" }, changeBadge(changes, floatedOf(u.id, v))) : null],
+      extra: [statusChips(u, stsWidth), v.totals?.has(u.id) ? h("div", { class: "bv-changes" }, totalsLabel(v.totals.get(u.id)!)) : changes.length ? h("div", { class: "bv-changes" }, changeBadge(changes, floatedOf(u.id, v))) : null],
     });
     el.classList.add("bv-card");
     el.dataset.unit = u.id;
@@ -650,6 +697,28 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     );
     b.addEventListener("click", (ev) => { ev.stopPropagation(); openTrace(c.eventId, changes); });
     return b;
+  }
+  /** A unit's totals for the turn on its card (R4-12): its numbers on one
+   * line ("−7 · +2"), what Shield blocked and its statuses' net stacks on a
+   * second, in their colours; a fallen unit with nothing else reads "✝". */
+  function totalsLabel(t: UnitTurnTotals): HTMLElement {
+    const parts = totalsPartsOf(t);
+    const part = (p: TotalsPart): Node => {
+      if (p.kind === "blocked") return h("span", { class: "bv-pst tone-shield" }, icon("shield", 13), p.text);
+      if (p.kind === "status") {
+        const def = STATUS_TERMS[p.status!] ?? termDef(`status:${p.status}`);
+        return h("span", { class: `bv-pst tone-${def?.tone ?? "plain"}` }, ...(def?.icon ? [icon(def.icon, 13)] : [p.status!.slice(0, 2)]), p.text);
+      }
+      return h("span", { class: `bv-tp ${p.kind}` }, p.text);
+    };
+    const lines = [parts.filter((p) => p.kind !== "blocked" && p.kind !== "status"), parts.filter((p) => p.kind === "blocked" || p.kind === "status")].filter((l) => l.length);
+    const line = (l: TotalsPart[]) => h("span", { class: "bv-l" }, ...l.flatMap((p, i) => (i ? [h("span", { class: "dim" }, "·"), part(p)] : [part(p)])));
+    const text = totalsText(t);
+    return h(
+      "div",
+      { class: `bv-total${t.died ? " died" : ""}`, "data-testid": "turn-total", "data-unit": t.unit, "aria-label": text, title: text },
+      h("span", { class: `bv-pill bv-tot${lines.length > 1 ? " two" : ""}` }, ...(lines.length ? lines.map(line) : [h("span", { class: "bv-tp damage" }, "✝")])),
+    );
   }
   /** How much Shield blocked of a hit that did no damage (0: not a blocked hit). */
   function blockedBy(c: Change): number {
@@ -867,7 +936,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     // death-triggered ability), lit.
     const step = v.now;
     const death = v.changes.find((c) => c.unit === id && c.kind === "death");
-    if (!death && step?.actor !== id) return null;
+    // On a turn's totals, the units the turn killed, with theirs (R4-12).
+    const tot = v.totals?.get(id);
+    if (v.totals ? !tot?.died : !death && step?.actor !== id) return null;
     const el = h(
       "div",
       { class: `card bv-card dead ${sides.get(id) === you ? "you" : "ghost"}` },
@@ -876,7 +947,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       h("div", { class: "hpbar" }, h("i", { style: "width:0" })),
       h("div", { class: "stats big" }, h("span", { class: "p" }, "✝")),
       h("div", { class: "foot" }, h("div", { class: "bv-sts" })),
-      death ? h("div", { class: "bv-changes" }, changeBadge(v.changes.filter((c) => c.unit === id), floatedOf(id, v))) : null,
+      tot ? h("div", { class: "bv-changes" }, totalsLabel(tot)) : death ? h("div", { class: "bv-changes" }, changeBadge(v.changes.filter((c) => c.unit === id), floatedOf(id, v))) : null,
     );
     el.dataset.unit = id;
     if (step?.actor === id) el.classList.add("acting");
@@ -893,6 +964,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     /** The beat's waves landed so far, each with its age in ms when it landed
      * by playback (null after a manual step: no motion). */
     waves: { step: Step; age: number | null }[];
+    /** The turn-end summary on screen (R4-12): each changed unit's totals for the turn. */
+    totals?: Map<string, UnitTurnTotals>;
   }
 
   /** Motion for each wave landed so far: the striker lunges, a hit target
@@ -1089,14 +1162,20 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     // hold a lower id than one already landed.
     const pending = new Set(beat ? beat.waves.slice(wave + 1).flatMap((w) => w.eventIds) : []);
     const now = performance.now();
-    const v: View = {
-      now: step,
-      changes: shown.flatMap((w) => w.changes),
-      waves: shown.map((w, i) => ({ step: w, age: landed[i] !== undefined ? now - landed[i]! : null })),
-    };
+    // A turn's totals (R4-12): no chips, floats, badges or beams; each card one label.
+    const sum: TurnSummary | undefined = ending !== null && ending === at ? turnEnds.get(at) : undefined;
+    const v: View = sum
+      ? { now: undefined, changes: [], waves: [], totals: new Map(sum.units.map((u) => [u.unit, u])) }
+      : {
+          now: step,
+          changes: shown.flatMap((w) => w.changes),
+          waves: shown.map((w, i) => ({ step: w, age: landed[i] !== undefined ? now - landed[i]! : null })),
+        };
     const board = boardAt(log, upto, pending);
     shownBoard = board;
-    const before = beat ? boardAt(log, Math.max(0, beat.start - 1)) : board;
+    // The fallen go back to the slots they held as the beat (or, on the totals, the turn) began.
+    const startBeat = sum ? beats[sum.beats[0]!] : beat;
+    const before = startBeat ? boardAt(log, Math.max(0, startBeat.start - 1)) : board;
     const turn = step?.turn ?? 0;
     shownTurn = hudTurn ?? turn;
     hud.replaceChildren(
@@ -1140,11 +1219,12 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     drawBeams(v.waves);
     // After the beams: they aim at each card's slot, not where its slide starts.
     for (const [sl, p] of slides) sl.animate([{ transform: `translateX(${p.dx}px)` }, { transform: "none" }], { duration: PUSH_MS / speed, delay: -(now - p.at), easing: "ease-out", fill: "backwards" });
-    caption.replaceChildren(h("span", { class: "bv-cap" }, ...captionKids(step)));
-    still.replaceChildren(...(reduced() ? stillList(v.changes) : []));
+    caption.replaceChildren(h("span", { class: "bv-cap" }, ...(sum ? [h("span", { "data-testid": "caption-turn-end" }, sum.turn >= 1 ? `Turn ${sum.turn} totals` : "Start totals")] : captionKids(step))));
+    still.replaceChildren(...(reduced() ? (sum ? stillTotals(sum) : stillList(v.changes)) : []));
     still.style.display = reduced() && !finished ? "" : "none";
     fitStill();
-    caption.classList.toggle("tappable", !!step?.changes.length);
+    caption.classList.toggle("tappable", !sum && !!step?.changes.length);
+    controls.dataset.turnEnd = sum ? String(sum.turn) : "";
     // Under the end card the phone's caption keeps only its line (style.css).
     caption.classList.toggle("ended", finished && !trace);
     recent.replaceChildren(
@@ -1392,6 +1472,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         ...groups.map((g) => h("span", { class: `bv-l ${g.c.kind}` }, ...g.units.flatMap((u, i) => (i ? [", ", unitName(u)] : [unitName(u)])), ` ${g.c.label}`)),
       ),
     ];
+  }
+  /** Reduced motion's caption on a turn's totals (R4-12): each unit and its totals. */
+  function stillTotals(sum: TurnSummary): Node[] {
+    return [h("span", { class: "bv-still", "data-testid": "caption-changes" }, ...sum.units.map((u) => h("span", { class: "bv-l" }, unitName(u.unit), ` ${totalsText(u)}`)))];
   }
   /** The reduced-motion list never runs past its box: the oldest entries
    * give way to a count ("+3 earlier") until the rest fits (R2-17). */
