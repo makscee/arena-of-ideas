@@ -7,7 +7,7 @@ import { writeFileSync } from "node:fs";
 import { MVP_RULES } from "../src/mvp/contract.js";
 import { fightLines } from "../src/mvp/fight.js";
 import { fuseUnits, lineUnitOf } from "../src/mvp/forms.js";
-import { beatPlayOf, foldTurnsOf, isLogFold, logRowsOf, stepsOf } from "../src/mvp/trace.js";
+import { beatPlayOf, foldTurnsOf, isLogFold, logRowsOf, sidesOf, stepsOf } from "../src/mvp/trace.js";
 import { mvpContent } from "../server/src/mvp/content.js";
 const content = mvpContent();
 const P = { id: "p", name: "me", bot: false }, Q = { id: "q", name: "bot", bot: true };
@@ -26,10 +26,13 @@ const loop = process.argv[4] === "loop";
 let best: { rec: ReturnType<typeof fightLines>; waves: number; rows: number; items: number; folds: number } | null = null;
 for (let i = 0; i < Number(process.argv[3] ?? 200); i++) {
   const rec = fightLines({ player: P, line: pick("a") }, { player: Q, line: pick("b") }, { battleId: "long", seed: i, kind: "playoff", round: 0, runId: null, at: "2026-10-07T19:00:00.000Z", content, rules: MVP_RULES });
-  const beats = beatPlayOf(rec.log, stepsOf(rec.log));
+  // Count as the viewer does: it names units by id (two Treants are two names),
+  // from your side.
+  const byId = (id: string) => id;
+  const beats = beatPlayOf(rec.log, stepsOf(rec.log, byId, sidesOf(rec.log), { you: "A" }), byId);
   const waves = beats.reduce((s, b) => s + b.waves.length, 0);
-  const rows = logRowsOf(rec.log, beats);
-  const items = foldTurnsOf(rec.log, rows);
+  const rows = logRowsOf(rec.log, beats, byId);
+  const items = foldTurnsOf(rec.log, rows, byId);
   const folds = items.filter(isLogFold).length;
   if (!best || (loop ? folds > best.folds : waves > best.waves)) best = { rec, waves, rows: rows.length, items: items.length, folds };
 }
