@@ -15,6 +15,9 @@ import { termDef } from "../glossary.js";
 const pool = mvpPool();
 const content: MvpContent = { version: "no-room", ...pool };
 const p: PlayerRef = { id: "p", name: "p", bot: false };
+// A run stored before R4-10 has no battleSize: its line stays at 5, so it
+// still meets No room here (battle-size.test.ts has the line of 8).
+const { battleSize: _bs, ...RULES } = MVP_RULES;
 const unit = (id: string): UnitContent => {
   const u = pool.units.find((x) => x.id === id);
   if (!u) throw new Error(`no unit ${id} in the pool`);
@@ -22,12 +25,12 @@ const unit = (id: string): UnitContent => {
 };
 
 function fight(): BattleEvent[] {
-  const fused = fuseUnits(lineUnitOf(unit("sexton"), "a0", 3), lineUnitOf(unit("necromancer"), "a9", 3), { name: "Mortwrought", discoveredBy: null }, content, MVP_RULES);
+  const fused = fuseUnits(lineUnitOf(unit("sexton"), "a0", 3), lineUnitOf(unit("necromancer"), "a9", 3), { name: "Mortwrought", discoveredBy: null }, content, RULES);
   const fillers = ["squire", "squire", "squire", "squire"].map((id, i) => lineUnitOf(unit(id), `f${i}`, 1));
   // Mortwrought at the back, so the front fillers die and it answers.
   const a: LineUnit[] = [...fillers, fused];
   const b: LineUnit[] = [lineUnitOf(unit("squire"), "b0", 3)].map((u) => ({ ...u, stats: { pwr: 6, hp: 80 } }));
-  return fightLines({ player: p, line: a }, { player: p, line: b }, { battleId: "x", seed: 1, kind: "round", round: 9, runId: null, at: "2026-10-07T00:00:00.000Z", content, rules: MVP_RULES }).log;
+  return fightLines({ player: p, line: a }, { player: p, line: b }, { battleId: "x", seed: 1, kind: "round", round: 9, runId: null, at: "2026-10-07T00:00:00.000Z", content, rules: RULES }).log;
 }
 
 describe("No room in the viewer (R4-2)", () => {

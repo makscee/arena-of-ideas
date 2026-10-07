@@ -74,6 +74,7 @@ export function fightLines(a: FightSide, b: FightSide, o: FightOptions): BattleR
     chainStepCap: o.rules.chainStepCap,
     ...(o.rules.turnCap !== undefined ? { turnCap: o.rules.turnCap } : {}),
     ...(o.rules.suddenDeathAt !== undefined ? { suddenDeathAt: o.rules.suddenDeathAt } : {}),
+    ...(o.rules.battleSize !== undefined ? { lineCap: o.rules.battleSize } : {}),
   });
   return {
     battleId: o.battleId,

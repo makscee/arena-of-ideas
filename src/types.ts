@@ -267,4 +267,8 @@ export interface BattleInput {
    * pierces Shield and Blessing, and Summon and Revive do nothing (a
    * SummonFailed event says why). Omitted = no sudden death. */
   suddenDeathAt?: number;
+  /** Most units a side's battle line holds (R4-10): Summon and Revive find no
+   * room (a NoRoom event) past it. Teams still enter with at most TEAM_SIZE.
+   * Omitted = TEAM_SIZE. */
+  lineCap?: number;
 }

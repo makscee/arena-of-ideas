@@ -68,6 +68,10 @@ export interface MvpRules {
    * and Revive do nothing, so every fight ends by about turn 21. Runs stored
    * before it have no field: no sudden death (and their turnCap). */
   suddenDeathAt?: number;
+  /** Battle line (R4-10): Summon and Revive add units up to this many a side,
+   * though the team still enters with at most `lineSize`. Runs stored before
+   * it have no field and keep the kernel's TEAM_SIZE (5). */
+  battleSize?: number;
   /** Per-fight Elo (docs/round2/rating.md): K falls with runs played. A
    * player with fewer than `runsBelow` runs (the first step that fits) uses
    * its `k`; past every step, `ratingK`. Steps rather than an Infinity bound,
@@ -104,6 +108,7 @@ export const MVP_RULES: MvpRules = {
   tierOpensAt: [1, 3, 6, 9],
   chainStepCap: 32,
   suddenDeathAt: 20,
+  battleSize: 8,
   ratingKSteps: [{ runsBelow: 5, k: 32 }, { runsBelow: 15, k: 16 }],
   ratingK: 10,
   ratingStart: 1000,
