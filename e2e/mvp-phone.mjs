@@ -490,7 +490,7 @@ try {
           noBar: cards.filter((c) => !c.querySelector('[data-testid="hp-bar"]')).length,
           noRow: cards.filter((c) => !c.querySelector('[data-testid="card-statuses"]')).length,
           wordy: [...document.querySelectorAll('[data-testid="card-status"]')].filter((s) => !s.querySelector("svg")).length,
-          zero: [...document.querySelectorAll('[data-testid="change"], [data-testid="caption"], .bv-past, .bv-still, .bv-float')].filter((c) => /[−-]0(?!\d)/.test(c.textContent)).length,
+          zero: [...document.querySelectorAll('[data-testid="change"], [data-testid="caption"], .bv-past, .bv-still, .bv-float, .bv-run-row')].filter((c) => /[−-]0(?!\d)/.test(c.textContent)).length,
           hiddenStatus: [...document.querySelectorAll('[data-testid="card-statuses"]')].flatMap((row) => [...row.children].filter((c) => c.getBoundingClientRect().bottom > row.getBoundingClientRect().bottom + 0.5)).length,
           wrongSide: [...document.querySelectorAll(".bv-cn[data-unit]")].filter((n) => {
             const line = document.querySelector(`.bv-line [data-unit="${CSS.escape(n.dataset.unit)}"]`)?.closest(".bv-line");

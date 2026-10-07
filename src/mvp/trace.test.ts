@@ -10,7 +10,7 @@ import { MVP_RULES, type MvpContent, type PlayerRef } from "./contract.js";
 import { fightLines } from "./fight.js";
 import { lineUnitOf } from "./forms.js";
 import { mvpPool } from "./units.js";
-import { BEAT_MAX_MS, BEAT_MS, EMPHASIS_MS, END_BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, weightsOf, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, causeOf, beamsOf, stepsOf, sidesOf, timelineOf, timingOf, traceOf, turnLabel, turnSummaryOf, whyILost, TURN_END_MS, turnEndHoldMs, turnEndsOf, totalsPartsOf, totalsText, type UnitTurnTotals } from "./trace.js";
+import { BEAT_MAX_MS, BEAT_MS, EMPHASIS_MS, END_BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, weightsOf, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, causeOf, beamsOf, stepsOf, sidesOf, timelineOf, timingOf, traceOf, turnLabel, turnSummaryOf, whyILost, TURN_END_MS, turnEndHoldMs, turnEndsOf, totalsPartsOf, totalsText, runningTotalsOf, runRowText, turnSoFarIds, beatIdsOf, type UnitTurnTotals } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -967,5 +967,82 @@ describe("R3-21: target beams", () => {
     const gone = log.find((e) => e.type === "StatusRemoved" && e.unit === "A1:Bearer")!;
     expect(causeOf(log, { eventIds: [gone.id], changes: [] })).toMatchObject({ at: "B1:Brute", effect: "status:Shield" });
     expect(beamsOf(log, { eventIds: [death.id], changes: [changeOf(death)!] })).toEqual([]);
+  });
+});
+
+describe("R4-22: running totals above units", () => {
+  test("real fights: over the battle the rows sum to the turn totals; each event is one beat's; a death stays its showing beat's turn", () => {
+    const pool = mvpPool();
+    const content: MvpContent = { version: "t", units: pool.units, abilities: pool.abilities, statuses: pool.statuses };
+    const p = (id: string): PlayerRef => ({ id, name: id, bot: false });
+    let r = 99;
+    const rand = (n: number) => ((r = (r * 1103515245 + 12345) % 2147483648), r % n);
+    for (let seed = 0; seed < 30; seed++) {
+      const line = (s: string) => Array.from({ length: 5 }, (_, k) => lineUnitOf(pool.units[rand(pool.units.length)]!, `${s}${k}`, 1 + rand(4)));
+      const { log } = fightLines({ player: p("a"), line: line("a") }, { player: p("b"), line: line("b") }, { battleId: "x", seed, kind: "round", round: 5, runId: null, at: "2026-10-05T00:00:00Z", content, rules: MVP_RULES });
+      const beats = beatPlayOf(log, stepsOf(log));
+      const own = beatIdsOf(beats);
+      const all = own.flat();
+      expect(new Set(all).size).toBe(all.length);
+      const turns = turnSummaryOf(log, beats);
+      const turnOf = new Map(turns.flatMap((t) => t.beats.map((i) => [i, t.turn] as const)));
+      // A death a wave shows belongs to that wave's beat, so its turn.
+      for (const b of beats) for (const w of b.waves) for (const id of w.eventIds) expect(own[b.index]).toContain(id);
+      const want = new Map<string, number>(), got = new Map<string, number>();
+      const bump = (m: Map<string, number>, k: string, n: number) => m.set(k, (m.get(k) ?? 0) + n);
+      for (const t of turns) {
+        for (const u of t.units) for (const [k, n] of [["damage", u.damage], ["heal", u.healed], ["pwr", u.pwr], ["hp", u.hp], ["blocked", u.blocked]] as const) bump(want, `${u.unit}/${k}`, n);
+        for (const [unit, rs] of runningTotalsOf(log, turnSoFarIds(own, t, beats.length, () => true))) for (const x of rs) if (x.kind !== "status") bump(got, `${unit}/${x.key}`, x.value);
+        // Every beat of the turn is the turn's.
+        for (const i of t.beats) expect(turnOf.get(i)).toBe(t.turn);
+      }
+      for (const [k, n] of want) expect(got.get(k) ?? 0, k).toBe(n);
+    }
+  });
+
+  test("beat by beat, wave by wave, a turn's landed events only grow", () => {
+    const log = run([Shieldbearer, Smith, Archer], [dummy("Dummy", 30, 2)]);
+    const beats = beatPlayOf(log, stepsOf(log));
+    const own = beatIdsOf(beats);
+    for (const t of turnSummaryOf(log, beats)) {
+      let prev: number[] = [];
+      for (const at of t.beats) {
+        const b = beats[at]!;
+        for (let wave = 0; wave < b.waves.length; wave++) {
+          const shown = new Set(b.waves.slice(0, wave + 1).flatMap((w) => w.eventIds));
+          const ids = turnSoFarIds(own, t, at, (id) => shown.has(id));
+          expect(ids).toEqual(expect.arrayContaining(prev));
+          prev = ids;
+        }
+      }
+    }
+  });
+
+  test("rows keep the order their kinds first landed, beat after beat", () => {
+    const log = run([Shieldbearer, Smith, Archer], [dummy("Dummy", 30, 2)]);
+    const beats = beatPlayOf(log, stepsOf(log));
+    for (const t of turnSummaryOf(log, beats)) {
+      const seen = new Map<string, string[]>();
+      for (const at of t.beats) {
+        const b = beats[at]!;
+        void b;
+        const ids = turnSoFarIds(beatIdsOf(beats), t, at, () => true);
+        for (const [unit, rs] of runningTotalsOf(log, ids)) {
+          const keys = rs.map((x) => x.key);
+          const was = seen.get(unit) ?? [];
+          expect(keys.slice(0, was.length)).toEqual(was);
+          seen.set(unit, keys);
+        }
+      }
+    }
+  });
+
+  test("a row reads as its kind", () => {
+    expect(runRowText("damage", "damage", 5)).toBe("−5");
+    expect(runRowText("heal", "heal", 2)).toBe("+2");
+    expect(runRowText("buff", "pwr", 1)).toBe("+1 PWR");
+    expect(runRowText("debuff", "hp", -2)).toBe("−2 HP");
+    expect(runRowText("status", "status:Poison", 3)).toBe("×3");
+    expect(runRowText("status", "status:Shield", -1)).toBe("−1");
   });
 });

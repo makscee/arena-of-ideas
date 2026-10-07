@@ -1,8 +1,8 @@
 // The turn-end summary (round 4, R4-12): plays fights at 360×640 and
 // 1440×900 at 1× and watches each turn's end. After a turn's last beat the
-// board holds about 1.2 s: every card it changed shows one totals label, no
-// float, chip or beam is drawn, the dead stand greyed with theirs; then the
-// labels clear. Paused, the totals stay; → steps onto them; at 4× there are none.
+// board holds about 1.2 s: every unit it changed keeps its running totals
+// above it (R4-22, none in the card's centre), no float, chip or beam is
+// drawn, the dead stand greyed with theirs; then the rows clear. Paused, the totals stay; → steps onto them; at 4× there are none.
 // Screenshots go to --out. Needs a running MVP server (never the live one):
 //   node e2e/probe-turn-end.mjs --url http://127.0.0.1:8913/arena/ [--out e2e/.shots/turn-end]
 import { mkdirSync } from "node:fs";
@@ -22,7 +22,9 @@ const board = () => {
   const vis = (el) => { for (let x = el; x; x = x.parentElement) { const s = getComputedStyle(x); if (s.display === "none" || s.visibility === "hidden" || Number(s.opacity) < 0.05) return false; } return true; };
   return {
     turnEnd: document.querySelector(".bv-controls")?.dataset.turnEnd ?? "",
-    totals: [...document.querySelectorAll('[data-testid="turn-total"]')].map((t) => ({ unit: t.dataset.unit, text: t.getAttribute("aria-label"), dead: !!t.closest(".bv-card.dead") })),
+    // R4-22: the turn's totals are the running rows above each unit; none in a card's centre.
+    centre: document.querySelectorAll('[data-testid="turn-total"]').length,
+    totals: [...document.querySelectorAll('[data-testid="running-totals"] .bv-run:not(.out)')].filter((b) => b.style.visibility !== "hidden").map((b) => ({ unit: b.dataset.unit, text: b.textContent, dead: !!document.querySelector(`.bv-card.dead[data-unit="${CSS.escape(b.dataset.unit)}"]`) })),
     floats: [...document.querySelectorAll(".bv-float")].filter(vis).length,
     chips: document.querySelectorAll('[data-testid="change"]').length,
     badges: document.querySelectorAll('[data-testid="trigger-badge"]').length,
@@ -69,11 +71,11 @@ for (const [label, viewport, mobile] of [["phone", { width: 360, height: 640 }, 
     }
     if (b.turnEnd) {
       if (!b.totals.length) errors.push(`${label} T${b.turnEnd}: the summary shows no totals`);
-      if (b.floats || b.chips || b.badges || b.beams) errors.push(`${label} T${b.turnEnd}: the summary still draws ${JSON.stringify({ floats: b.floats, chips: b.chips, badges: b.badges, beams: b.beams })}`);
+      if (b.centre || b.floats || b.chips || b.badges || b.beams) errors.push(`${label} T${b.turnEnd}: the summary still draws ${JSON.stringify({ centre: b.centre, floats: b.floats, chips: b.chips, badges: b.badges, beams: b.beams })}`);
       if (b.totals.some((t) => t.dead)) sawDead = true;
       if (shot < 4 && shotOf !== b.turnEnd && now - since > 300) {
         shotOf = b.turnEnd; await page.screenshot({ path: `${out}/${label}-turn-end-${++shot}.png` }); console.log(`${label} T${b.turnEnd}: ${b.caption} | ${b.totals.map((t) => `${t.unit}${t.dead ? "(dead)" : ""} ${t.text}`).join("; ")}`); }
-    } else if (b.totals.length) errors.push(`${label}: ${b.totals.length} totals labels outside a summary`);
+    }
     await page.waitForTimeout(50);
   }
   if (!seen) errors.push(`${label}: no turn-end summary in a whole battle`);

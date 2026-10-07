@@ -1874,6 +1874,93 @@ export function totalsText(u: UnitTurnTotals): string {
   return [...(u.died ? ["✝"] : []), ...words].join(" · ");
 }
 
+// ---------- running totals above each unit (R4-22) ----------
+
+/** One row above a unit: what one kind of change has summed to so far this
+ * turn. Its key fixes its place: rows keep the order their kinds first
+ * showed in, and a row stays for the rest of the turn once shown. */
+export interface RunRow {
+  /** "damage", "heal", "pwr", "hp", "blocked", or "status:<name>". */
+  key: string;
+  kind: "damage" | "heal" | "buff" | "debuff" | "blocked" | "status";
+  /** The signed sum: damage and blocked as positive amounts, a status's net stacks. */
+  value: number;
+  status?: string;
+  /** The events summed, in log order (a row's tap traces the latest). */
+  eventIds: number[];
+}
+
+/** Each unit's running rows over `ids` (one turn's events landed so far, any
+ * order), in the order units were first changed. Shield taken off by a hit
+ * it blocked counts in "blocked", not again in Shield's row. */
+export function runningTotalsOf(log: BattleEvent[], ids: Iterable<number>): Map<string, RunRow[]> {
+  const out = new Map<string, RunRow[]>();
+  const add = (unit: string, key: string, kind: RunRow["kind"], delta: number, id: number, status?: string) => {
+    let rows = out.get(unit);
+    let r = rows?.find((x) => x.key === key);
+    if (!r) {
+      if (!delta) return;
+      if (!rows) out.set(unit, (rows = []));
+      rows.push((r = { key, kind, value: 0, ...(status ? { status } : {}), eventIds: [] }));
+    }
+    r.value += delta;
+    r.eventIds.push(id);
+    if (key === "pwr" || key === "hp") r.kind = r.value >= 0 ? "buff" : "debuff";
+  };
+  for (const id of [...new Set(ids)].sort((a, b) => a - b)) {
+    const e = log[id];
+    if (!e) continue;
+    if (e.type === "Hurt") {
+      add(e.unit, "damage", "damage", e.amount, id);
+      add(e.unit, "blocked", "blocked", e.absorbed ?? 0, id);
+    } else if (e.type === "Heal") add(e.unit, "heal", "heal", e.amount, id);
+    else if (e.type === "StatChanged") add(e.unit, e.stat, e.delta >= 0 ? "buff" : "debuff", e.delta, id);
+    else if (e.type === "StatusApplied") add(e.unit, `status:${e.status}`, "status", e.stacks, id, e.status);
+    else if (e.type === "StatusRemoved") {
+      const by = e.causedBy !== null ? log[e.causedBy] : undefined;
+      if (by?.type === "Hurt" && by.unit === e.unit && (by.absorbed ?? 0) > 0 && e.status === "Shield") continue;
+      add(e.unit, `status:${e.status}`, "status", -e.stacks, id, e.status);
+    }
+  }
+  return out;
+}
+
+/** A running row's number as it reads: "−7", "+2", "+1 PWR", "−1 HP", "3" (blocked), "×2" / "−1" (a status). */
+export function runRowText(kind: RunRow["kind"], key: string, value: number): string {
+  const sign = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : "0");
+  if (kind === "damage") return `−${value}`;
+  if (kind === "heal") return `+${value}`;
+  if (key === "pwr") return `${sign(value)} PWR`;
+  if (key === "hp") return `${sign(value)} HP`;
+  if (kind === "blocked") return `${value}`;
+  return value > 0 ? `×${value}` : value < 0 ? `−${-value}` : "0";
+}
+
+/** Each beat's own events (R4-22): those its waves show, and the rest of
+ * its range that no beat's wave shows. A wave can show an event from outside
+ * its beat's range (a death folded into the hit before it): that event is
+ * the showing beat's, so a running total or a fallen unit never waits for,
+ * or outlives, the beat that showed it. */
+export function beatIdsOf(beats: PlayBeat[]): number[][] {
+  const owner = new Map<number, number>();
+  for (const b of beats) for (let id = b.start; id <= b.end; id++) if (!owner.has(id)) owner.set(id, b.index);
+  for (const b of beats) for (const w of b.waves) for (const id of w.eventIds) owner.set(id, b.index);
+  const out: number[][] = beats.map(() => []);
+  for (const [id, i] of [...owner].sort((p, q) => p[0] - q[0])) out[i]?.push(id);
+  return out;
+}
+
+/** The ids of a turn's events landed by beat `at`: every earlier beat of the
+ * turn whole, and those of beat `at` that `landed` says are on screen. */
+export function turnSoFarIds(beatIds: number[][], turn: TurnSummary | undefined, at: number, landed: (id: number) => boolean): number[] {
+  const ids: number[] = [];
+  for (const i of turn?.beats ?? []) {
+    if (i > at) break;
+    for (const id of beatIds[i] ?? []) if (i < at || landed(id)) ids.push(id);
+  }
+  return ids;
+}
+
 /** What a beam shows (round 3, R3-21, battle.md (11)): the effect's kind, for its colour. */
 export type BeamKind = "damage" | "heal" | "buff" | "debuff" | "status" | "summon" | "silence";
 
