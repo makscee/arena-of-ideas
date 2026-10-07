@@ -191,6 +191,7 @@ button.pin-btn { display: flex; align-items: center; gap: 4px; min-height: 44px;
 /* The sheet: the active form's text in a box; "See Awoken" swaps in the other
  * form, gold-bordered, with what changes underlined. */
 .sheet-head h2 { margin: 0; }
+.archetype { font-style: italic; color: var(--dim); margin-top: -4px; }
 .sheet-form { border: 1px solid var(--line); padding: 8px 10px; line-height: 1.35; }
 .sheet-form.other { border-color: var(--gold); }
 .sheet-form.other .label { color: var(--gold); }

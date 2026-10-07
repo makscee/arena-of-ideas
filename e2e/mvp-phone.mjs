@@ -232,6 +232,16 @@ try {
   if (impHead !== "👺 Imp") errors.push(`codex: the Imp's sheet is titled "${impHead}"`);
   await shot("codex-summon-sheet");
   while (await page.getByTestId("sheet-close").count()) await page.getByTestId("sheet-close").last().click();
+  // R4-8: a word from an archetype finds its unit, whose sheet opens with that archetype on top.
+  await page.getByTestId("codex-search").fill("brawler");
+  const byArchetype = await page.getByTestId("codex-unit").count();
+  if (byArchetype !== 1) errors.push(`codex: searching "brawler" (Fighter's archetype) shows ${byArchetype} units, not 1`);
+  await page.getByTestId("codex-unit").first().click();
+  const fighterHead = (await page.locator('[data-testid="unit-sheet"] h2').textContent().catch(() => "")) ?? "";
+  const fighterArch = (await page.getByTestId("sheet-archetype").textContent({ timeout: 2_000 }).catch(() => "")) ?? "";
+  if (!fighterHead.includes("Fighter") || !fighterArch.includes("brawler")) errors.push(`codex: "brawler" opened "${fighterHead}" with archetype "${fighterArch}"`);
+  await shot("codex-archetype");
+  while (await page.getByTestId("sheet-close").count()) await page.getByTestId("sheet-close").last().click();
   await page.getByTestId("codex-search").fill("");
   // The Summoned chip: the 5 bodies, tagged S; the Wolf names who summons it.
   await page.getByTestId("codex-tier-summoned").click();
