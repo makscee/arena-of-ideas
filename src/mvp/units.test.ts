@@ -358,9 +358,13 @@ describe("no copied heroes (R3-26, Maks's note 1)", () => {
   const FAMILY: Record<string, string> = { Smite: "Hit", Mend: "Heal" };
   // Who it reaches (an event's unit is a friend or a foe by the When) and
   // every effect kind it has, riders included; the When and numbers ignored.
+  // An "and" clause is part of the job, with its own Who.
   const job = (form: (typeof pool.units)[number]["forms"]["awoken"]) => {
-    const who = form.who.map((w) => (w.kind === "eventUnit" ? (ENEMY_EVENTS.has(whenKeyOf(form)) ? "thatEnemy" : "thatAlly") : w.kind)).join("+");
-    return `${who} ← ${[...new Set(effectKinds(form.does).map((k) => FAMILY[k] ?? k))].sort().join("+")}`;
+    const clause = (c: { who: typeof form.who; does: string[] }) => {
+      const who = c.who.map((w) => (w.kind === "eventUnit" ? (ENEMY_EVENTS.has(whenKeyOf(form)) ? "thatEnemy" : "thatAlly") : w.kind)).join("+");
+      return `${who} ← ${[...new Set(effectKinds(c.does).map((k) => FAMILY[k] ?? k))].sort().join("+")}`;
+    };
+    return [form, ...(form.also ?? [])].map(clause).join(", and ");
   };
   const groups = (key: (u: (typeof pool.units)[number]) => string) => {
     const by = new Map<string, string[]>();
@@ -372,7 +376,7 @@ describe("no copied heroes (R3-26, Maks's note 1)", () => {
 
   // The vocabulary has ~40 one-target jobs for 81 units, so some Awoken jobs
   // repeat (docs: r326 content sweep). This count may only go down.
-  const SHARED_AWOKEN_JOBS = 45; // R3-26: 52 → 45
+  const SHARED_AWOKEN_JOBS = 42; // R3-26: 52 → 45; R4-14: 42
   it("Awoken forms that share Who + effect kinds with another unit's Awoken (When ignored) don't grow", () => {
     const shared = groups((u) => job(u.forms.awoken));
     const count = shared.reduce((n, [, names]) => n + names.length, 0);
@@ -427,17 +431,9 @@ describe("awokenKeeps: Awoken builds on the sleeping form (round 4, note 8)", ()
   const form = (who: string, does: string[], also?: { who: string; does: string[] }[]) =>
     ({ when: WHEN.start, who: [{ kind: who }], does, ...(also ? { also: also.map((c) => ({ who: [{ kind: c.who }], does: c.does })) } : {}) }) as Parameters<typeof awokenKeeps>[0];
 
-  // Awoken forms that still drop or weaken part of the sleeping one. R4-14
-  // rewrites them (docs/round4/units.md, "Awoken builds on the sleeping
-  // form"); each one it fixes leaves this list, and none may join it.
-  const KNOWN_FAILURES = [
-    "Spore", "Distractor", "Guardian", "Almsgiver", "Sanctifier", "Battery", "Gardener",
-    "Fruiter", "Bloodthinner", "Trickster", "Silencer", "Commander", "Robber",
-  ];
-
-  it("every Awoken form keeps every sleeping part, the same or wider Who, numbers no lower (known failures aside)", () => {
-    const fails = content.units.filter((u) => awokenKeeps(u.forms.sleeping, u.forms.awoken) !== null).map((u) => u.name);
-    expect(fails).toEqual(KNOWN_FAILURES);
+  it("every Awoken form keeps every sleeping part, the same or wider Who, numbers no lower", () => {
+    const fails = content.units.map((u) => [u.name, awokenKeeps(u.forms.sleeping, u.forms.awoken)]).filter(([, why]) => why !== null);
+    expect(fails).toEqual([]);
   });
 
   it("keeps: bigger numbers, added Does, a wider Who, a bigger body, an \"and\" clause", () => {
