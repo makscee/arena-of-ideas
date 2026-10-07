@@ -499,7 +499,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     });
   /** Lock or unlock an offer (free); on desktop it stays chosen in the inspector. */
   const lock = (o: Offer) => void decide({ kind: "lock", slot: o.slot }, -1, desk ? o.slot : -1);
-  const lockLabel = (o: Offer) => (o.locked ? "Unlock" : "Lock");
+  const lockLabel = (o: Offer) => (o.locked ? "🔓 Unlock" : "🔒 Lock");
   // The last shop round has no Lock: the Crown clears the offers. Unlock stays.
   const lastShop = run.round >= rules.rounds;
   const canLock = (o: Offer) => !run.gift && (o.locked === true || !lastShop);
@@ -558,7 +558,10 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       } else if (!desk && !crown && pick.mode === "picked" && pick.index >= L && !onBench && run.line.length >= L) {
         // Phone: a bench unit selected and the line full, a tap on a line unit swaps the two.
         return moveTo(pick.index, slot);
-      } else pick = pick.mode === "picked" && pick.index === slot ? { mode: "none" } : { mode: "picked", index: slot };
+      } else
+        // A second tap on the phone puts it down (its buttons go); on desktop a
+        // click keeps it in hand, so the next B, S or F still has a unit (Esc lets go).
+        pick = !desk && pick.mode === "picked" && pick.index === slot ? { mode: "none" } : { mode: "picked", index: slot };
       chosen = null;
       renderLine();
     });
@@ -618,7 +621,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     // On desktop the inspector already is the sheet: no Info.
     const out: HTMLElement[] = desk ? [left, right] : [left, right, info];
     const other = otherZone(i);
-    if (other !== null) out.push(button(i < L ? (desk ? "To bench · B" : "To bench") : desk ? "To line · B" : "To line", () => moveTo(i, other), "", i < L ? "to-bench" : "to-line"));
+    if (other !== null) {
+      // Into the other zone's first empty slot, else a swap with its back unit: the button says which.
+      const swaps = unitAt(other) !== undefined;
+      const word = i < L ? (swaps ? `Swap with bench ${B}` : "To bench") : swaps ? "Swap with back" : "To line";
+      out.push(button(desk ? `${word} · B` : word, () => moveTo(i, other), "", i < L ? "to-bench" : "to-line"));
+    }
     if (u.kind === "unit" && u.form === "awoken" && awoken >= 2 && !run.gift) out.push(button(desk ? "Fuse · F" : "Fuse", () => ((pick = { mode: "fuse", first: i }), renderLine()), "", "fuse"));
     const value = sellValue(rules, u);
     out.push(button(desk ? `Sell +${value}g · S` : `Sell +${value}`, () => void decide({ kind: "sell", index: i }), "danger", "sell"));
@@ -680,7 +688,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
 
   /** The hint that matters most right now, or none. */
   const shopHint = (): HTMLElement | null => {
-    if (!desk && !crown && pick.mode === "picked" && pick.index >= L && run.line.length >= L) return hint("Line full: tap a line unit to swap this one in.");
+    if (!desk && !crown && pick.mode === "picked" && pick.index >= L && run.line.length >= L) return hint("Line full: tap a line unit to swap this one in, or Swap with back.");
     if (pick.mode !== "none") return null;
     // run.ts refuses every decision but the fight in the crown phase: the line is final.
     if (crown) return hint(ownCrown ? "The Crown: today's champion is your own team. Beat it to be a slayer again; a loss costs a heart. Your line is final." : "The Crown: your line, as it is, against today's champion. Win it to become a slayer; a loss costs a heart.");
@@ -699,7 +707,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const keep = !o.locked && !lastShop && o.cost > run.gold ? " Not enough gold: lock it to keep it for next round." : "";
       return hint(`One more ${almost.name} awakens it. It's in the shop for ${o.cost}g.${keep}`);
     }
-    if (!lastShop && run.offers.some((o) => !o.locked && o.cost > run.gold && owns(o.unitId))) return hint("Not enough gold: lock it to keep it for next round.");
+    const keepIt = lastShop ? undefined : run.offers.find((o) => !o.locked && o.cost > run.gold && owns(o.unitId));
+    if (keepIt) return hint(`${unitOf(keepIt.unitId)?.name ?? "Your unit"} (you own one) costs ${keepIt.cost}g, you have ${run.gold}g: lock it to keep it for next round.`);
     return null;
   };
 
@@ -1089,6 +1098,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       if (busy) return (moveQueue += step), true;
       const to = sel + step;
       if (to >= zoneStart(sel) && to < zoneStart(sel) + zoneLen(sel)) void decide({ kind: "reorder", from: sel, to }, to);
+      return true;
+    }
+    // B, S or F with nothing in hand says so instead of doing nothing.
+    if ((k === "b" || k === "s" || k === "f") && sel < 0 && pick.mode !== "fuse") {
+      err.textContent = "Select a unit first: click it in your line or bench.";
+      play("wrong");
       return true;
     }
     if (k === "b" && sel >= 0) {

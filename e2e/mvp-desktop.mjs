@@ -179,12 +179,12 @@ try {
       const name = await offer(1).locator(".name").textContent();
       await offer(1).click();
       await page.getByTestId("inspector").getByTestId("lock").waitFor();
-      if (!(await page.getByTestId("inspector").getByTestId("lock").textContent()).startsWith("Lock · L")) errors.push("lock: no Lock · L in the inspector");
+      if (!(await page.getByTestId("inspector").getByTestId("lock").textContent()).startsWith("🔒 Lock · L")) errors.push("lock: no 🔒 Lock · L in the inspector");
       await page.keyboard.press("l");
       await settle();
       if (!(await locked(1))) errors.push("lock: L didn't lock the chosen offer");
       await page.getByTestId("inspector").getByTestId("lock").waitFor();
-      if (!(await page.getByTestId("inspector").getByTestId("lock").textContent()).startsWith("Unlock")) errors.push("lock: the locked offer isn't still in the inspector with Unlock");
+      if (!(await page.getByTestId("inspector").getByTestId("lock").textContent()).startsWith("🔓 Unlock")) errors.push("lock: the locked offer isn't still in the inspector with Unlock");
       if (!(await page.getByTestId("keys").textContent()).includes("L lock")) errors.push("lock: the keys line has no L");
       await shot("shop-locked");
       const g1 = await gold();
