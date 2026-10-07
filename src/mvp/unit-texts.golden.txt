@@ -57,7 +57,7 @@
   awoken:   Hit: 1 Curse to front enemy.
 🦹 Henchman
   sleeping: Ally dies: 2 Strength to self.
-  awoken:   Ally dies: silence front enemy.
+  awoken:   Ally dies: 2 Strength to self, and silence front enemy.
 🎯 Sniper
   sleeping: Battle start: 4 damage to random enemy.
   awoken:   Battle start: 4 damage and 2 Poison to random enemy.

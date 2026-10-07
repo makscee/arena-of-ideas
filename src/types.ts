@@ -26,6 +26,10 @@ export interface UnitDef {
   /** Canonical v2 behavior recipe: ordered refs to what happens. Base Units
    * carry exactly one; the array reserves the accepted two-Ability fused shape. */
   abilities?: string[];
+  /** "And" clauses (MVP round 4): more abilities on the same triggers and
+   * condition, each clause with selectors of its own, firing after
+   * `abilities`, in order. Canonical recipes only. */
+  also?: { selectors: Selector[]; abilities: string[] }[];
   /** v1 compatibility only. Parsers migrate this field deterministically and
    * reject it when mixed with any canonical recipe field. */
   ability?: string;
@@ -78,16 +82,20 @@ export function primaryAbilityIdOf(unit: UnitDef): string | undefined {
 /** Bind a canonical Unit's when/who recipe to its referenced action(s) for
  * execution/description. Legacy context is read only on the compatibility path. */
 export function unitActionsOf(unit: UnitDef, registry: AbilityRegistry): Ability[] {
-  return abilityIdsOf(unit).flatMap((id) => {
+  const clauses = [
+    { ids: abilityIdsOf(unit), selectors: unit.selectors },
+    ...(unit.also ?? []).map((c) => ({ ids: c.abilities, selectors: c.selectors as Selector[] | undefined })),
+  ];
+  return clauses.flatMap(({ ids, selectors }) => ids.flatMap((id) => {
     const action = registry[id];
     if (!action) return [];
     return [{
       ...action,
       whens: unit.triggers ?? action.whens ?? [],
-      selectors: unit.selectors ?? action.selectors ?? [],
+      selectors: selectors ?? action.selectors ?? [],
       ...(unit.condition ?? action.condition ? { condition: unit.condition ?? action.condition } : {}),
     }];
-  });
+  }));
 }
 
 /** Bind canonical Status context to each action for description tooling. */

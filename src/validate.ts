@@ -293,6 +293,22 @@ function validateUnit(u: unknown, registry: StatusRegistry, abilities: AbilityRe
         const action = typeof id === "string" ? abilities[id] : undefined;
         if (action) validateAbility({ whens: u["triggers"], selectors: u["selectors"], ...(u["condition"] !== undefined ? { condition: u["condition"] } : {}), effects: action.effects }, registry, abilities, "unit", `${path}.recipe[${i}]`, issues);
       }
+      // "And" clauses: the same When and condition, a Who of their own.
+      if (u["also"] !== undefined) {
+        if (!Array.isArray(u["also"])) issues.push({ path: `${path}.also`, message: "also must be an array of { selectors, abilities } clauses" });
+        else u["also"].forEach((clause, c) => {
+          const at = `${path}.also[${c}]`;
+          if (!isObject(clause) || !Array.isArray(clause["abilities"]) || clause["abilities"].length === 0) {
+            issues.push({ path: at, message: "an \"and\" clause needs ≥1 Ability refs" });
+            return;
+          }
+          clause["abilities"].forEach((id, i) => {
+            checkAbilityRef(id, abilities, `${at}.abilities[${i}]`, issues);
+            const action = typeof id === "string" ? abilities[id] : undefined;
+            if (action) validateAbility({ whens: u["triggers"], selectors: clause["selectors"], ...(u["condition"] !== undefined ? { condition: u["condition"] } : {}), effects: action.effects }, registry, abilities, "unit", `${at}.recipe[${i}]`, issues);
+          });
+        });
+      }
     }
   } else if (hasLegacy) {
     checkAbilityRef(u["ability"], abilities, `${path}.ability`, issues);

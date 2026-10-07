@@ -235,7 +235,7 @@ export function summonById(content: MvpContent, id: string): SummonContent | und
 /** What a form summons, in its Does order, once each. */
 export function summonsOf(form: UnitForm, content: MvpContent): SummonContent[] {
   const out: SummonContent[] = [];
-  for (const d of form.does)
+  for (const d of [...form.does, ...(form.also ?? []).flatMap((c) => c.does)])
     for (const e of content.abilities[d]?.effects ?? []) {
       const s = e.kind === "summon" ? summonById(content, summonId(e.unit.name)) : undefined;
       if (s && !out.includes(s)) out.push(s);

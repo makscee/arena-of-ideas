@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { MVP_RULES, type MvpContent } from "./contract.js";
 import { fightLines } from "./fight.js";
-import { contentFormProblems, lineUnitOf } from "./forms.js";
+import { contentFormProblems, fuseUnits, lineUnitOf } from "./forms.js";
 import { formText } from "./form-text.js";
-import { EMITS, LISTENS, ROOT_WHENS, ROWS, WHEN, awokenNewPart, effectKinds, linkEdges, mvpPool, shapeKinds, sig, whenKeyOf, type WhenKey } from "./units.js";
+import { EMITS, LISTENS, ROOT_WHENS, ROWS, WHEN, awokenKeeps, awokenNewPart, effectKinds, linkEdges, mvpPool, shapeKinds, sig, whenKeyOf, type WhenKey } from "./units.js";
 
 describe("MVP pool (slice 7)", () => {
   const pool = mvpPool();
@@ -51,9 +51,11 @@ describe("MVP pool targeting", () => {
   it("helps allies and hurts enemies, in both forms", () => {
     const wrong: string[] = [];
     for (const row of ROWS) {
+      const a = row.awoken;
       const forms = [
         { who: row.who, does: [row.does] },
-        { who: row.awoken.who ?? row.who, does: row.awoken.does ?? [row.does] },
+        { who: a.who ?? row.who, does: [...(a.before ?? []), a.more ?? row.does, ...(a.add ?? [])] },
+        ...(a.also ? [{ who: a.also.who, does: [a.also.does] }] : []),
       ];
       for (const f of forms) {
         for (const d of f.does) {
@@ -193,12 +195,14 @@ describe("one hero per shape (round 3, docs/round3/units.md 1b)", () => {
     return [...loops];
   };
 
-  // No exceptions: Necromancer's Awoken form raises an Imp too (R3-26, Maks's note 1).
-  it("R3: every Awoken form does something new, not just bigger numbers", () => {
-    const same = mvpPool()
-      .units.filter((u) => awokenNewPart(u.forms.sleeping, u.forms.awoken) === null)
-      .map((u) => `${u.name}: ${sig(u.forms.sleeping)} → ${u.forms.awoken.does.join(", ")}`);
-    expect(same).toEqual([]);
+  // R3 is relaxed in round 4 (note 8): a numbers-only Awoken is allowed, so
+  // awokenNewPart only describes what an Awoken adds; awokenKeeps is the rule.
+  it("R3 relaxed: a numbers-only Awoken form ships", () => {
+    const u = { ...mvpPool().units.find((x) => x.id === "fighter")! };
+    u.forms = { ...u.forms, awoken: { ...u.forms.sleeping, does: ["Hit 2"] } };
+    expect(awokenNewPart(u.forms.sleeping, u.forms.awoken)).toBeNull();
+    expect(awokenKeeps(u.forms.sleeping, u.forms.awoken)).toBeNull();
+    expect(contentFormProblems({ version: "t", ...mvpPool(), units: [u] })).toEqual([]);
   });
 
   it("R3 counts a new Who or a new effect kind, never a number, a family word or a stat rider", () => {
@@ -220,7 +224,7 @@ describe("one hero per shape (round 3, docs/round3/units.md 1b)", () => {
     const rows = ROWS.map((r) => (r.name === "Robber" ? { ...r, does: "Strength 1" } : r));
     // Lightning's Awoken form also curses on Power, and is found first.
     expect(loopsOf(mvpPool(rows).units)).toContain("Curse →Robber (sleeping)→ Power →Lightning (awoken)→ Curse");
-    const noLightning = rows.map((r) => (r.name === "Lightning" ? { ...r, awoken: { does: ["Hit 3"] } } : r));
+    const noLightning = rows.map((r) => (r.name === "Lightning" ? { ...r, awoken: { more: "Hit 3" } } : r));
     expect(loopsOf(mvpPool(noLightning).units)).toContain("Curse →Robber (sleeping)→ Power →Equalizer (sleeping)→ Curse");
   });
 
@@ -391,5 +395,81 @@ describe("no copied heroes (R3-26, Maks's note 1)", () => {
   ];
   it("every unit's sleeping text differs from every other's by more than the When (except the listed twins)", () => {
     expect(groups((u) => doesText(u.forms.sleeping)).map(([t, names]) => `${t} ${names.join(", ")}`)).toEqual(SLEEPING_TWINS);
+  });
+});
+
+describe("awokenKeeps: Awoken builds on the sleeping form (round 4, note 8)", () => {
+  const content: MvpContent = { version: "test", ...mvpPool() };
+  const unit = (id: string) => content.units.find((u) => u.id === id)!;
+  const form = (who: string, does: string[], also?: { who: string; does: string[] }[]) =>
+    ({ when: WHEN.start, who: [{ kind: who }], does, ...(also ? { also: also.map((c) => ({ who: [{ kind: c.who }], does: c.does })) } : {}) }) as Parameters<typeof awokenKeeps>[0];
+
+  // Awoken forms that still drop or weaken part of the sleeping one. R4-14
+  // rewrites them (docs/round4/units.md, "Awoken builds on the sleeping
+  // form"); each one it fixes leaves this list, and none may join it.
+  const KNOWN_FAILURES = [
+    "Spore", "Distractor", "Guardian", "Almsgiver", "Sanctifier", "Battery", "Gardener",
+    "Fruiter", "Bloodthinner", "Trickster", "Silencer", "Commander", "Robber",
+  ];
+
+  it("every Awoken form keeps every sleeping part, the same or wider Who, numbers no lower (known failures aside)", () => {
+    const fails = content.units.filter((u) => awokenKeeps(u.forms.sleeping, u.forms.awoken) !== null).map((u) => u.name);
+    expect(fails).toEqual(KNOWN_FAILURES);
+  });
+
+  it("keeps: bigger numbers, added Does, a wider Who, a bigger body, an \"and\" clause", () => {
+    expect(awokenKeeps(form("frontEnemy", ["Hit 1"]), form("frontEnemy", ["Hit 2"]))).toBeNull();
+    expect(awokenKeeps(form("frontEnemy", ["Hit 1"]), form("frontEnemy", ["Hit 1", "Curse 1"]))).toBeNull();
+    expect(awokenKeeps(form("frontEnemy", ["Hit 1"]), form("allEnemies", ["Hit 1"]))).toBeNull();
+    expect(awokenKeeps(form("holder", ["Strength 1"]), form("allAllies", ["Strength 1"]))).toBeNull();
+    expect(awokenKeeps(form("holder", ["Call Imp"]), form("holder", ["Call Treant"]))).toBeNull();
+    expect(awokenKeeps(form("lastDeadAlly", ["Revive 2"]), form("lastDeadAlly", ["Revive 2 + Call Imp"]))).toBeNull();
+    expect(awokenKeeps(form("holder", ["Strength 2"]), form("holder", ["Strength 2"], [{ who: "frontEnemy", does: ["Silence"] }]))).toBeNull();
+  });
+
+  it("catches: a lower number, a dropped Does, a narrower or different Who, a smaller body", () => {
+    expect(awokenKeeps(form("allAllies", ["Heal 3"]), form("allAllies", ["Heal 2", "Bless 1"]))).toMatch(/Heal 3/);
+    expect(awokenKeeps(form("holder", ["Strength 2"]), form("frontEnemy", ["Silence"]))).toMatch(/Strength 2/);
+    expect(awokenKeeps(form("allEnemies", ["Curse 1"]), form("frontEnemy", ["Curse 1"]))).toMatch(/Curse 1/);
+    expect(awokenKeeps(form("randomEnemy", ["Hit 2"]), form("eventUnit", ["Hit 2"]))).toMatch(/Hit 2/);
+    expect(awokenKeeps(form("holder", ["Call Wolf"]), form("holder", ["Call Imp"]))).toMatch(/Call Wolf/);
+    // An "and" clause aimed elsewhere doesn't keep the sleeping part.
+    expect(awokenKeeps(form("holder", ["Strength 2"]), form("holder", ["Shield 1"], [{ who: "frontEnemy", does: ["Strength 2"] }]))).toMatch(/Strength 2/);
+  });
+
+  it("Henchman's Awoken: ally dies → 2 Strength to me, and Silence the front enemy", () => {
+    const h = unit("henchman");
+    expect(h.forms.awoken.who).toEqual(h.forms.sleeping.who);
+    expect(h.forms.awoken.does).toEqual(["Strength 2"]);
+    expect(h.forms.awoken.also).toEqual([{ who: [{ kind: "frontEnemy" }], does: ["Silence"] }]);
+    expect(formText(h.forms.awoken, content.abilities)).toBe("Ally dies: 2 Strength to self, and silence front enemy.");
+  });
+
+  it("an Awoken Henchman does both in battle: it grows, and the front enemy is silenced", () => {
+    const p = { id: "p", name: "p", bot: false };
+    const line = [lineUnitOf(unit("fodder"), "a0"), lineUnitOf(unit("henchman"), "a1", 3)];
+    const foe = ["duelist", "bulwark"].map((id, i) => lineUnitOf(unit(id), `b${i}`, 3));
+    const log = fightLines({ player: p, line }, { player: p, line: foe }, { battleId: "b", seed: 1, kind: "round", round: 1, runId: null, at: "2026-10-07T00:00:00.000Z", content, rules: MVP_RULES }).log;
+    const death = log.find((e) => e.type === "Death" && e.unit.includes("Fodder"));
+    if (!death) throw new Error("Fodder never died");
+    const after = log.filter((e) => e.causedBy === death.id || (e.id > death.id && typeof e.source !== "string" && e.source.unit.includes("Henchman")));
+    const grew = after.find((e) => e.type === "StatusApplied" && e.status === "Strength" && e.unit.includes("Henchman"));
+    const silenced = after.find((e) => e.type === "Silenced" && e.unit.startsWith("B"));
+    expect(grew, "Henchman gains Strength").toBeDefined();
+    expect(silenced, "the front enemy is silenced").toBeDefined();
+    // Both come from the one reaction: Strength first, then the "and" clause.
+    expect(grew!.id).toBeLessThan(silenced!.id);
+  });
+
+  it("a fusion keeps each part's \"and\" clause with its own Who", () => {
+    const h = lineUnitOf(unit("henchman"), "a0", 3);
+    const f = lineUnitOf(unit("fighter"), "a1", 3);
+    const fused = fuseUnits(f, h, { name: "X", discoveredBy: null }, content);
+    expect(fused.recipe.who).toEqual(h.recipe.who);
+    expect(fused.recipe.does).toEqual(["Hit 1", "Strength 2"]);
+    expect(fused.recipe.also).toEqual([{ who: [{ kind: "frontEnemy" }], does: ["Silence"] }]);
+    const back = fuseUnits(h, f, { name: "Y", discoveredBy: null }, content);
+    expect(back.recipe.who).toEqual(f.recipe.who);
+    expect(back.recipe.also).toEqual(h.recipe.also);
   });
 });

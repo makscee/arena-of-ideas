@@ -8,11 +8,30 @@ import type { AbilityRegistry, Effect } from "../types.js";
 import type { UnitForm } from "./contract.js";
 
 /** A form as segments: its authored text (one plain segment), else described
- * from its abilities. Every Does shares the form's When and Who: one sentence,
+ * from its abilities. The form's own Does share its When and Who: one sentence,
  * the Does joined by "then" ("When the battle begins: summon …, then apply 3
  * Vitality to every ally."), unless a Does carries a condition of its own. */
 export function formSegments(form: UnitForm, abilities: AbilityRegistry): DescribeSegment[] {
   if (form.text) return [{ text: form.text }];
+  const out = clauseSegments(form, abilities);
+  // Each "and" clause (R4-7) reads on after the form's own Does, with its own
+  // Who and without the When again: "Ally dies: 2 Strength to self, and
+  // silence front enemy."
+  for (const clause of form.also ?? []) {
+    const segs = clauseSegments({ ...form, who: clause.who, does: clause.does, also: [] }, abilities);
+    const colon = segs.findIndex((s) => s.text === ": ");
+    if (colon < 0 || out[out.length - 1]?.text !== ".") {
+      out.push({ text: " " }, ...segs);
+      continue;
+    }
+    out.pop();
+    out.push({ text: ", and " }, ...segs.slice(colon + 1));
+  }
+  return out;
+}
+
+/** One clause (a form's Who and its Does) as one sentence. */
+function clauseSegments(form: UnitForm, abilities: AbilityRegistry): DescribeSegment[] {
   const abs = form.does.map((id) => abilities[id]);
   const cond = form.condition ? { condition: form.condition } : {};
   if (abs.length > 1 && abs.every((ab) => ab !== undefined && ab.condition === undefined)) {
