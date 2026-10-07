@@ -3,7 +3,7 @@ import { MVP_RULES, type MvpContent } from "./contract.js";
 import { fightLines } from "./fight.js";
 import { contentFormProblems, fuseUnits, lineUnitOf } from "./forms.js";
 import { formText } from "./form-text.js";
-import { EMITS, LISTENS, ROOT_WHENS, ROWS, WHEN, awokenKeeps, awokenNewPart, effectKinds, linkEdges, mvpPool, shapeKinds, sig, whenKeyOf, type WhenKey } from "./units.js";
+import { ARCHETYPE_MAX_WORDS, EMITS, LISTENS, ROOT_WHENS, ROWS, WHEN, archetypeProblems, awokenKeeps, awokenNewPart, effectKinds, linkEdges, mvpPool, shapeKinds, sig, whenKeyOf, type WhenKey } from "./units.js";
 
 describe("MVP pool (slice 7)", () => {
   const pool = mvpPool();
@@ -21,6 +21,29 @@ describe("MVP pool (slice 7)", () => {
     // splits into two pictures on older phones.
     expect(pool.units.filter((u) => [...u.emoji.replace(/\uFE0F$/u, "")].length !== 1).map((u) => `${u.name} ${u.emoji}`)).toEqual([]);
     for (const t of [1, 2, 3, 4]) expect(pool.units.some((u) => u.tier === t)).toBe(true);
+  });
+
+  it("gives every unit an archetype: one sentence, short, unique (round 4, note 3)", () => {
+    expect(archetypeProblems(pool.units)).toEqual([]);
+    for (const u of pool.units) expect(u.archetype.split(/\s+/).length).toBeLessThanOrEqual(ARCHETYPE_MAX_WORDS);
+  });
+
+  it("archetype check catches an empty, a run-on, a long and a repeated archetype", () => {
+    const bad = [
+      { name: "A", archetype: "" },
+      { name: "B", archetype: "Hits the front. Then heals" },
+      { name: "C", archetype: "One two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen." },
+      { name: "D", archetype: "Shields the team every turn." },
+      { name: "E", archetype: "shields the team every turn." },
+    ];
+    expect(archetypeProblems(bad)).toEqual([
+      "A: no archetype",
+      'B: archetype ends with "."',
+      "B: archetype is more than one sentence",
+      "C: archetype has 16 words (max 15)",
+      "E: archetype starts with a capital",
+      "E: same archetype as D",
+    ]);
   });
 
   it("contains chain links: units that listen to what other units emit", () => {

@@ -111,6 +111,10 @@ try {
   // The title menu's Sound row: on at 60% by default.
   if ((await page.getByTestId("home-actions").getByTestId("sound-toggle").textContent())?.includes("on") !== true) errors.push("sound: the title menu's toggle isn't on by default");
   if ((await page.getByTestId("home-actions").getByTestId("sound-volume").inputValue()) !== "60") errors.push("sound: the default volume isn't 60");
+  // Round 4, note 5: Music under it, on at 40%; the first key started home's loop.
+  if ((await page.getByTestId("home-actions").getByTestId("music-toggle").textContent())?.includes("on") !== true) errors.push("music: the title menu's toggle isn't on by default");
+  if ((await page.getByTestId("home-actions").getByTestId("music-volume").inputValue()) !== "40") errors.push("music: the default volume isn't 40");
+  if ((await page.evaluate(() => window.__music?.().track)) !== "home.m4a") errors.push("music: home's loop isn't playing");
   await shot("home"); await noHScroll("home"); await wide("home", 1100); await onScreen("home: Play", page.getByTestId("play"));
   await cardSize("home champion", "champion");
   // Home's two columns: Play sits right of the champion panel.
@@ -171,6 +175,11 @@ try {
   if (!(await page.getByTestId("codex-keywords").count())) errors.push("codex: Esc with a unit inspected left the Codex");
   await page.keyboard.press("Escape");
   await page.getByTestId("play").click();
+  // A run's theme: muffled in the shop (its low-pass closes within a second).
+  await page.getByTestId("fight").waitFor({ timeout: 10_000 });
+  await page.waitForFunction(() => /^theme\d\.m4a$/.test(window.__music?.().track ?? "") && window.__music().filterHz < 1000, null, { timeout: 5_000 })
+    .catch(async () => errors.push(`music: the shop doesn't play a muffled theme (${JSON.stringify(await page.evaluate(() => window.__music?.()))})`));
+  const theme = await page.evaluate(() => window.__music?.().track);
 
   let round = 0;
   let dragged = false;
@@ -511,6 +520,9 @@ try {
    * after a Replay played out to the end card. */
   async function battleSounds() {
     const sfx = () => page.evaluate(() => window.__sfx ?? []);
+    // The shop's theme plays on in battle, opened up, not restarted.
+    await page.waitForFunction((t) => window.__music?.().track === t && window.__music().filterHz > 5000, theme, { timeout: 5_000 })
+      .catch(async () => errors.push(`music: the battle doesn't open the shop's theme (${JSON.stringify(await page.evaluate(() => window.__music?.()))})`));
     if ((await sfx())[0] !== "start") errors.push(`battle sound: it opened with "${(await sfx())[0] ?? "nothing"}", not start`);
     await page.waitForFunction(() => (window.__sfx ?? []).some((k) => /^(hit|zap|block)$/.test(k)), null, { timeout: 15_000 })
       .catch(async () => errors.push(`battle sound: no hit, zap or block while it played (${(await sfx()).join(", ")})`));

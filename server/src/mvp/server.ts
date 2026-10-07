@@ -28,6 +28,12 @@ export function mvpServerApp(api: Hono, o: MvpServerOptions): Hono {
   // An API path no route answered is a 404 for the caller, not the client's page.
   app.all(MVP_API_PREFIX, (c) => c.json({ error: `no such API path: ${c.req.method} ${c.req.path}` }, 404));
   app.all(`${MVP_API_PREFIX}/*`, (c) => c.json({ error: `no such API path: ${c.req.method} ${c.req.path}` }, 404));
+  // Hono knows no .m4a: the music (round 4) must not go out as a download,
+  // or Safari won't play it.
+  app.use("/*", async (c, next) => {
+    await next();
+    if (c.req.path.endsWith(".m4a") && c.res.headers.get("content-type") === "application/octet-stream") c.res.headers.set("Content-Type", "audio/mp4");
+  });
   app.use("/*", serveStatic({ root: o.staticRoot }));
   app.get("/*", serveStatic({ root: o.staticRoot, path: "index.html" }));
   return app;

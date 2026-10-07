@@ -11,7 +11,7 @@ import { applyMvpDecision, initMvpRun, MvpDecisionError, runView, synthGhost, ty
 const units: UnitContent[] = Array.from({ length: 9 }, (_, i) => {
   const d = DEFAULT_RUN_POOL[i % DEFAULT_RUN_POOL.length]!;
   const form = { when: d.triggers ?? [], who: d.selectors ?? [], does: d.abilities ?? [] };
-  return { id: `u${i}`, name: `${d.name} ${i}`, emoji: "x", tier: 1, base: d.base, forms: { sleeping: form, awoken: form } };
+  return { id: `u${i}`, name: `${d.name} ${i}`, emoji: "x", archetype: "x", tier: 1, base: d.base, forms: { sleeping: form, awoken: form } };
 });
 const content: MvpContent = { version: "t", units, abilities: stressAbilities, statuses: stressRegistry };
 const me: PlayerRef = { id: "p", name: "me", bot: false };

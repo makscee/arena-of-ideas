@@ -1,0 +1,15 @@
+Arena of Ideas music
+
+All five tracks come from Maks's own earlier games. The composer's name is
+still to be asked (round 4, note 5); this file will name them.
+- home.m4a: Arena of Ideas 2022, static/sounds/music_loop.ogg (commit b256823d),
+  whole (85.3 s, 128 beats at 90 BPM).
+- theme1, theme2, theme4, theme9.m4a: "game theme 1/2/4/9.ogg" (Arena of Ideas
+  2024, assets/audio/bg at commit 878131b7, from Duamo, makscee/duamo), each cut
+  to 192 beats from its first beat with a 0.5 s crossfade baked into the seam, so
+  the file loops whole.
+
+Encoded to AAC-LC .m4a, 96 kbps stereo. BPM and offset (the first beat, in
+seconds) in mobile/ui/tracks.json were measured on these files: an onset comb
+over 70-170 BPM; each peak stands 5-10x above its neighbours.
+How they were made: docs/round4/music/README.md.

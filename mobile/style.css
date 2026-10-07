@@ -162,9 +162,11 @@ button.menu-btn { min-width: 44px; padding: 0 10px; font-size: 18px; line-height
 .hud { align-items: center; }
 .run-menu button { min-height: 48px; }
 .run-menu .dim.small { margin-top: -4px; text-align: center; }
-/* Sound (round 3, note 16): a toggle and a volume slider in both menus. */
-.sound-row { align-items: center; gap: 10px; }
-.sound-row button.sound-toggle { flex: none; min-width: 132px; text-transform: none; letter-spacing: 0; }
+/* Sound (round 3, note 16) and Music under it (round 4, note 5): a toggle
+ * and a volume slider each, in both menus. */
+.sound-row { gap: 4px; }
+.sound-row > .row { gap: 10px; }
+.sound-row button.sound-toggle { flex: none; width: 140px; text-transform: none; letter-spacing: 0; }
 .sound-row input[type="range"] { flex: 1; min-width: 0; height: 44px; padding: 0; border: 0; background: transparent; accent-color: var(--you); }
 .sound-row input[type="range"]:disabled { opacity: 0.4; }
 details.dev { color: var(--dim); font-size: 13px; }
@@ -202,6 +204,7 @@ button.pin-btn { display: flex; align-items: center; gap: 4px; min-height: 44px;
 /* The sheet: the active form's text in a box; "See Awoken" swaps in the other
  * form, gold-bordered, with what changes underlined. */
 .sheet-head h2 { margin: 0; }
+.archetype { font-style: italic; color: var(--dim); margin-top: -4px; }
 .sheet-form { border: 1px solid var(--line); padding: 8px 10px; line-height: 1.35; }
 .sheet-form.other { border-color: var(--gold); }
 .sheet-form.other .label { color: var(--gold); }

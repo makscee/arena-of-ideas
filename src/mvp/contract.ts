@@ -189,6 +189,9 @@ export interface UnitContent {
   id: UnitId;
   name: string;
   emoji: string;
+  /** What the unit is about, in one sentence (round 4, note 3): shown on top
+   * of its sheet and searched by the Codex. Unique across the pool. */
+  archetype: string;
   tier: Tier;
   base: Stats;
   forms: Record<FormKey, UnitForm>;
