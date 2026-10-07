@@ -625,7 +625,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     if (other !== null) {
       // Into the other zone's first empty slot, else a swap with its back unit: the button says which.
       const swaps = unitAt(other) !== undefined;
-      const word = i < L ? (swaps ? `Swap with bench ${B}` : "To bench") : swaps ? "Swap with back" : "To line";
+      // The phone's row of buttons stays one row: "Swap" there, the hint says with whom.
+      const word = i < L ? (swaps ? (desk ? `Swap with bench ${B}` : "Swap") : "To bench") : swaps ? (desk ? "Swap with back" : "Swap") : "To line";
       out.push(button(desk ? `${word} · B` : word, () => moveTo(i, other), "", i < L ? "to-bench" : "to-line"));
     }
     if (u.kind === "unit" && u.form === "awoken" && awoken >= 2 && !run.gift) out.push(button(desk ? "Fuse · F" : "Fuse", () => ((pick = { mode: "fuse", first: i }), renderLine()), "", "fuse"));
@@ -689,7 +690,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
 
   /** The hint that matters most right now, or none. */
   const shopHint = (): HTMLElement | null => {
-    if (!desk && !crown && pick.mode === "picked" && pick.index >= L && run.line.length >= L) return hint("Line full: tap a line unit to swap this one in, or Swap with back.");
+    if (!desk && !crown && pick.mode === "picked" && pick.index >= L && run.line.length >= L) return hint("Line full: Swap trades with the back unit, or tap one.");
     if (pick.mode !== "none") return null;
     // run.ts refuses every decision but the fight in the crown phase: the line is final.
     if (crown) return hint(ownCrown ? "The Crown: today's champion is your own team. Beat it to be a slayer again; a loss costs a heart. Your line is final." : "The Crown: your line, as it is, against today's champion. Win it to become a slayer; a loss costs a heart.");
