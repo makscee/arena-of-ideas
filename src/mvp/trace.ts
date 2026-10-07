@@ -1000,6 +1000,102 @@ export function logRowsOf(log: BattleEvent[], beats: PlayBeat[], name: NameOf = 
   return rows;
 }
 
+// ---------- the Log: repeated turns fold (round 4, R5, R4-13) ----------
+
+/** A turn of the Log that repeats the turn before it, read as one line:
+ * what it did in sum (damage, heals, deaths), its rows behind a tap. */
+export interface LogFold {
+  turn: number;
+  caption: string;
+  /** HP lost on each side (Shield's blocks aside), and HP healed. */
+  damage: Record<Side, number>;
+  /** Damage Shield took instead. */
+  blocked: number;
+  heals: Record<Side, number>;
+  /** Who fell, by name. */
+  deaths: string[];
+  rows: LogRow[];
+}
+
+/** A Log entry: a row, or a folded turn of rows. */
+export type LogItem = LogRow | LogFold;
+
+export function isLogFold(x: LogItem): x is LogFold {
+  return "rows" in x;
+}
+
+/** What a row does, amounts and targets aside: each event's kind, who acts
+ * (by name and side) and with what status or stat; for a death, who fell. A
+ * Shield spent by a hit is left out (how much a hit takes is an amount), and
+ * so are targets: a random pick or a Shield running out moves them, while
+ * the loop stays the same. */
+function rowShape(log: BattleEvent[], r: LogRow, plain: NameOf, sides: Map<string, Side>): string {
+  const who = (id: string) => `${plain(id)}:${sides.get(id) ?? ""}`;
+  const keys = new Set<string>();
+  for (const id of r.eventIds) {
+    const e = log[id]!;
+    const parent = e.causedBy !== null ? log[e.causedBy] : undefined;
+    if (e.type === "StatusRemoved" && parent?.type === "Hurt") continue;
+    // A status acts on its holder: Poison ticking is one actor, whoever holds it.
+    const src = e.source === "kernel" ? `kernel<${parent?.type ?? ""}` : e.source.status !== undefined ? `/${e.source.status}` : who(e.source.unit);
+    const parts: string[] = [e.type, src];
+    const b = e as unknown as Record<string, unknown>;
+    if (e.type === "Death") parts.push(who(e.unit));
+    for (const f of ["status", "stat", "name", "original", "side"]) if (typeof b[f] === "string") parts.push(`${f}=${b[f]}`);
+    keys.add(parts.join(" "));
+  }
+  return [...keys].sort().join("|");
+}
+
+/** Folds each turn whose rows repeat the previous turn's (the same rows in
+ * the same order, the same actors and effects, amounts and targets aside)
+ * into one summary row (round 4, note 4, R5): late fights loop, and the Log
+ * then reads one line per repeated turn. A turn of one row stays a row. Every
+ * row is kept, in order, inside its fold. */
+export function foldTurnsOf(log: BattleEvent[], rows: LogRow[], name: NameOf = displayNames(log)): LogItem[] {
+  const plain = displayNames(log);
+  const sides = sidesOf(log);
+  const turns: { turn: number; rows: LogRow[]; shape: string }[] = [];
+  for (const r of rows) {
+    let t = turns.at(-1);
+    if (!t || t.turn !== r.turn) turns.push((t = { turn: r.turn, rows: [], shape: "" }));
+    t.rows.push(r);
+  }
+  for (const t of turns) t.shape = t.rows.map((r) => rowShape(log, r, plain, sides)).join("\n");
+  const out: LogItem[] = [];
+  turns.forEach((t, i) => {
+    const prev = turns[i - 1];
+    if (t.turn < 1 || t.rows.length < 2 || !prev || prev.turn !== t.turn - 1 || prev.shape !== t.shape) {
+      out.push(...t.rows);
+      return;
+    }
+    const damage: Record<Side, number> = { A: 0, B: 0 };
+    const heals: Record<Side, number> = { A: 0, B: 0 };
+    const deaths: string[] = [];
+    let blocked = 0;
+    for (const r of t.rows)
+      for (const id of r.eventIds) {
+        const e = log[id]!;
+        const side = "unit" in e && typeof e.unit === "string" ? sides.get(e.unit) : undefined;
+        if (e.type === "Hurt" && side) {
+          damage[side] += e.amount;
+          blocked += e.absorbed ?? 0;
+        }
+        else if (e.type === "Heal" && side) heals[side] += e.amount;
+        else if (e.type === "Death") deaths.push(name(e.unit));
+      }
+    const hurt = damage.A + damage.B, healed = heals.A + heals.B;
+    const parts = [
+      hurt ? `−${hurt} damage` : "no damage",
+      ...(blocked ? [`${blocked} blocked`] : []),
+      ...(healed ? [`+${healed} healed`] : []),
+      ...(deaths.length ? [`${deaths.join(", ")} ${deaths.length > 1 ? "fall" : "falls"}`] : []),
+    ];
+    out.push({ turn: t.turn, caption: `Same as last turn: ${parts.join(", ")} · ${t.rows.length} rows`, damage, blocked, heals, deaths, rows: t.rows });
+  });
+  return out;
+}
+
 function fxCaption(log: BattleEvent[], fx: NonNullable<LogDraft["fx"]>, name: NameOf, eventIds: number[]): string {
   const effect = (t: Took): string => {
     switch (fx.type) {

@@ -917,6 +917,11 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   button.bv-log-row.on { background: color-mix(in srgb, var(--gold) 14%, transparent); box-shadow: inset 2px 0 0 var(--gold); }
   .bv-log-t { font-size: 12px; }
   .bv-log-c .bv-who { font-size: 10px; margin-right: 4px; }
+  /* A turn that repeats the one before folds into one row (R4-13). */
+  .bv-fold-mark { display: inline-block; width: 14px; font-style: normal; color: var(--gold); transition: transform 120ms; }
+  button.bv-log-fold.open .bv-fold-mark { transform: rotate(90deg); }
+  .bv-log-folded { display: flex; flex-direction: column; margin-left: 10px; border-left: 1px solid color-mix(in srgb, var(--gold) 40%, transparent); }
+  .bv-log-folded[hidden] { display: none; }
 
   /* The end card over the battle column, clear of the panel. */
   /* (battle.ts placeEnd sets its top under the HUD and its max-height above the timeline.) */
