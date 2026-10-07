@@ -23,7 +23,7 @@ const pick = (p: string) =>
     return lineUnitOf(unit(), `${p}${k}`, 1 + rnd(3));
   });
 const loop = process.argv[4] === "loop";
-let best: { rec: ReturnType<typeof fightLines>; waves: number; rows: number; items: number; folds: number } | null = null;
+let best: { rec: ReturnType<typeof fightLines>; waves: number; rows: number; items: number; folds: number; turns: number } | null = null;
 for (let i = 0; i < Number(process.argv[3] ?? 200); i++) {
   const rec = fightLines({ player: P, line: pick("a") }, { player: Q, line: pick("b") }, { battleId: "long", seed: i, kind: "playoff", round: 0, runId: null, at: "2026-10-07T19:00:00.000Z", content, rules: MVP_RULES });
   // Count as the viewer does: it names units by id (two Treants are two names),
@@ -34,7 +34,9 @@ for (let i = 0; i < Number(process.argv[3] ?? 200); i++) {
   const rows = logRowsOf(rec.log, beats, byId);
   const items = foldTurnsOf(rec.log, rows, byId);
   const folds = items.filter(isLogFold).length;
-  if (!best || (loop ? folds > best.folds : waves > best.waves)) best = { rec, waves, rows: rows.length, items: items.length, folds };
+  // A run of repeated turns is one fold (T2–T4): "loop" picks the most turns folded.
+  const turns = items.filter(isLogFold).reduce((s, f) => s + f.turnTo - f.turn + 1, 0);
+  if (!best || (loop ? turns > best.turns : waves > best.waves)) best = { rec, waves, rows: rows.length, items: items.length, folds, turns };
 }
 writeFileSync(process.argv[2]!, JSON.stringify(best!.rec));
-console.log(JSON.stringify({ events: best!.rec.log.length, waves: best!.waves, rows: best!.rows, items: best!.items, folds: best!.folds }));
+console.log(JSON.stringify({ events: best!.rec.log.length, waves: best!.waves, rows: best!.rows, items: best!.items, folds: best!.folds, turns: best!.turns }));

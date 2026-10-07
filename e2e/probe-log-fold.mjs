@@ -11,7 +11,7 @@ import { dirname, join } from "node:path";
 import { launchChromium } from "./browser.mjs";
 const rec = join(mkdtempSync(join(tmpdir(), "log-fold-")), "loop.json");
 const found = JSON.parse(execFileSync("node", ["--import", "tsx/esm", "e2e/log-rows-battle.ts", rec, "200", "loop"], { encoding: "utf8" }).trim().split("\n").at(-1));
-console.log(`looping battle: ${found.events} events, ${found.rows} Log rows → ${found.items} with ${found.folds} turns folded`);
+console.log(`looping battle: ${found.events} events, ${found.rows} Log rows → ${found.items} with ${found.turns} turns in ${found.folds} folds`);
 const loop = JSON.parse(readFileSync(rec, "utf8"));
 const out = process.argv[2] ?? "e2e/.shots/log-fold.png";
 mkdirSync(dirname(out), { recursive: true });
@@ -51,7 +51,9 @@ try {
   if (nFolds !== found.folds) errors.push(`${nFolds} folded turns on screen, foldTurnsOf gives ${found.folds}`);
   if (shown !== found.items) errors.push(`${shown} Log lines on screen, foldTurnsOf gives ${found.items}`);
   if (nFolds) {
-    const fold = folds.nth(Math.floor(nFolds / 2));
+    // The longest run of repeated turns (T5–T9), else the middle fold.
+    const spans = await folds.evaluateAll((els) => els.map((e) => Number(e.dataset.turnTo) - Number(e.dataset.turn)));
+    const fold = folds.nth(spans.some((x) => x > 0) ? spans.indexOf(Math.max(...spans)) : Math.floor(nFolds / 2));
     const turn = await fold.getAttribute("data-turn");
     await fold.scrollIntoViewIfNeeded();
     console.log(`fold T${turn}: "${(await fold.textContent()).trim()}"`);
@@ -66,8 +68,11 @@ try {
     if ((await rows.count()) !== before + nInside) errors.push(`opening a fold showed ${(await rows.count()) - before} rows, it holds ${nInside}`);
     console.log(`open: ${nInside} rows: ${(await inside.allTextContents()).slice(0, 4).map((t) => t.trim()).join(" | ")} …`);
     await page.screenshot({ path: out.replace(/\.png$/, "-open.png") });
-    await inside.first().click();
-    await page.getByTestId("trace-text").waitFor({ timeout: 5000 }).catch(() => errors.push("a row inside a fold did not open its Why"));
+    // A row that changes nothing (a Freeze stopping a strike) has no Why: the first that hurts or heals.
+    const texts = await inside.allTextContents();
+    const k = Math.max(0, texts.findIndex((t) => /\+\d|→ −\d/.test(t)));
+    await inside.nth(k).click();
+    await page.getByTestId("trace-text").waitFor({ timeout: 5000 }).catch(() => errors.push(`a row inside a fold did not open its Why: "${texts[k].trim()}"`));
     await page.getByTestId("trace-close").click().catch(() => {});
     await page.getByTestId("tab-log").click();
     const again = page.locator(`[data-testid=log-fold][data-turn="${turn}"]`);

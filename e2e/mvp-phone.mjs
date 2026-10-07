@@ -418,6 +418,12 @@ try {
       if (await page.getByTestId("buy").isDisabled()) { await page.getByTestId("offer-close").click(); break; }
       await page.getByTestId("buy").click();
       await page.waitForFunction((g) => !document.querySelector('[data-testid="gold"]') || document.querySelector('[data-testid="gold"]').textContent !== `${g}g`, gold);
+      // A 3rd copy awakens a unit and brings a gift (R3-15), whose chooser
+      // covers the shop: skip it here (R4-19 flake); the gift's own checks come later.
+      if (await page.getByTestId("gift-skip").isVisible().catch(() => false)) {
+        await page.getByTestId("gift-skip").click();
+        await page.getByTestId("gift-skip").waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
+      }
     }
     if (round === 1 && (await page.getByTestId("offers").locator(".card").count()) > 0) {
       lockedFromLast = await offerName(0);
