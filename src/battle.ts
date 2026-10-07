@@ -29,9 +29,10 @@ import { legacyRecipe } from "./content-grammar.js";
 export const TEAM_SIZE = 5;
 export const FATIGUE_START = 10;
 export const FATIGUE_RAMP = 1;
-/** The kernel's default turn cap; BattleInput.turnCap overrides it (the MVP's
- * rules set 30). A battle with both sides standing after the last turn ends
- * as a draw, its BattleEnd marked timeUp. */
+/** The kernel's default turn cap; BattleInput.turnCap overrides it (MVP runs
+ * stored before round 4 set 30). A battle with both sides standing after the
+ * last turn ends as a draw, its BattleEnd marked timeUp. With sudden death on
+ * (BattleInput.suddenDeathAt) it is only a safety net no fight reaches. */
 export const TURN_CAP = 200;
 /** Most trigger firings one cascade (one settle) runs before it stops with a
  * visible ChainCapped event; BattleInput.chainStepCap overrides it. */
@@ -39,8 +40,13 @@ export const DEFAULT_CHAIN_STEP_CAP = 32;
 
 /** Fatigue damage dealt at the end of a turn (>= FATIGUE_START) — exported so
  * display layers (the codex) derive the ramp from the same formula the loop
- * runs, never a re-written copy of it. */
-export const fatigueAmount = (turn: number): number => (turn - FATIGUE_START + 1) * FATIGUE_RAMP;
+ * runs, never a re-written copy of it. From `suddenDeathAt` on (R4-1) it
+ * doubles every turn: linear to turn 19, then 20, 40, 80… with the MVP's 20. */
+export const fatigueAmount = (turn: number, suddenDeathAt?: number): number => {
+  const linear = (t: number) => (t - FATIGUE_START + 1) * FATIGUE_RAMP;
+  if (suddenDeathAt === undefined || turn < suddenDeathAt) return linear(turn);
+  return Math.max(1, linear(suddenDeathAt - 1)) * 2 ** (turn - suddenDeathAt + 1);
+};
 
 interface StatusInstance {
   def: StatusDef;
@@ -110,6 +116,7 @@ class Engine {
   private input: BattleInput;
   private chainStepCap: number;
   private turnCap: number;
+  private suddenDeathAt: number | undefined;
 
   constructor(input: BattleInput) {
     this.input = input;
@@ -124,6 +131,16 @@ class Engine {
     if (!Number.isInteger(this.turnCap) || this.turnCap < 1) {
       throw new Error(`turnCap must be a positive integer, got ${String(input.turnCap)}`);
     }
+    this.suddenDeathAt = input.suddenDeathAt;
+    if (this.suddenDeathAt !== undefined && (!Number.isInteger(this.suddenDeathAt) || this.suddenDeathAt < 1)) {
+      throw new Error(`suddenDeathAt must be a positive integer, got ${String(input.suddenDeathAt)}`);
+    }
+  }
+
+  /** Sudden death (R4-1): from suddenDeathAt on, Fatigue doubles each turn and
+   * pierces every interceptor (Shield, Blessing), and Summon and Revive do nothing. */
+  private suddenDeath(): boolean {
+    return this.suddenDeathAt !== undefined && this.turn >= this.suddenDeathAt;
   }
 
   run(): BattleEvent[] {
@@ -160,8 +177,8 @@ class Engine {
       const te = this.propose({ type: "TurnEnd" }, null, "kernel");
       this.settle();
       if (te && this.turn >= FATIGUE_START && this.bothAlive()) {
-        const amount = fatigueAmount(this.turn);
-        this.propose({ type: "Fatigue", amount }, te.id, "kernel");
+        const amount = fatigueAmount(this.turn, this.suddenDeathAt);
+        this.propose({ type: "Fatigue", amount, ...(this.suddenDeath() ? { suddenDeath: true as const } : {}) }, te.id, "kernel");
         this.settle();
       }
     }
@@ -257,8 +274,10 @@ class Engine {
     const followUps: Array<(parentId: number) => void> = [];
     const handled = new Set<string>();
     let cancelledBy: AbilityRef | null = null;
+    // Sudden death's fatigue, and the death it deals, pass every interceptor.
+    const pierced = (draft.type === "Hurt" || draft.type === "Death") && draft.pierced === true;
 
-    for (const r of this.orderedReactors()) {
+    for (const r of pierced ? [] : this.orderedReactors()) {
       for (const when of r.ability.triggers) {
         if (when.kind !== "interceptor" || !this.matches(when.on, draft, r.holder)) continue;
         const k = refKey(r.ref);
@@ -521,6 +540,10 @@ class Engine {
       }
       case "summon": {
         const side = target.side;
+        if (this.suddenDeath()) {
+          this.applyEvent({ type: "SummonFailed", name: e.unit.name, side, reason: "suddenDeath" }, f.event.id, f.ref);
+          return;
+        }
         if (this.lines[side].length >= TEAM_SIZE) {
           this.applyEvent({ type: "NoRoom", unit: f.ref.unit, side, name: e.unit.name }, f.event.id, f.ref);
           return;
@@ -549,6 +572,14 @@ class Engine {
       }
       case "resurrect": {
         if (target.alive) return;
+        if (this.suddenDeath()) {
+          this.applyEvent(
+            { type: "SummonFailed", name: target.name, side: target.side, unit: target.id, revive: true, reason: "suddenDeath" },
+            f.event.id,
+            f.ref,
+          );
+          return;
+        }
         if (this.lines[target.side].length >= TEAM_SIZE) {
           this.applyEvent(
             { type: "NoRoom", unit: f.ref.unit, side: target.side, name: target.name, revive: target.id },
@@ -725,7 +756,7 @@ class Engine {
         return;
       }
       default:
-        return; // BattleStart/TurnStart/TurnEnd/Strike/Fatigue/ChainBlocked/ChainCapped/NoRoom/Intercepted/BattleEnd mutate nothing
+        return; // BattleStart/TurnStart/TurnEnd/Strike/Fatigue/ChainBlocked/ChainCapped/NoRoom/SummonFailed/Intercepted/BattleEnd mutate nothing
     }
   }
 
@@ -745,7 +776,7 @@ class Engine {
         for (const side of ["A", "B"] as const) {
           for (const uid of [...this.lines[side]]) {
             const u = this.units.get(uid);
-            if (u && u.alive) this.propose({ type: "Hurt", unit: uid, amount: ev.amount }, ev.id, "kernel");
+            if (u && u.alive) this.propose({ type: "Hurt", unit: uid, amount: ev.amount, ...(ev.suddenDeath ? { pierced: true as const } : {}) }, ev.id, "kernel");
           }
         }
         return;
@@ -778,7 +809,8 @@ class Engine {
       for (const uid of [...this.lines[side]]) {
         const u = this.units.get(uid);
         if (u && u.alive && this.curHp(u) <= 0) {
-          this.propose({ type: "Death", unit: uid }, cause.id, "kernel");
+          const pierced = cause.type === "Hurt" && cause.pierced === true && cause.unit === uid;
+          this.propose({ type: "Death", unit: uid, ...(pierced ? { pierced: true as const } : {}) }, cause.id, "kernel");
         }
       }
     }

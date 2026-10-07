@@ -58,8 +58,16 @@ export interface MvpRules {
    * which counts as any draw does (no heart lost; at the Crown, no slay).
    * Normal fights end by turn 20 (p99 17); the cap stops stalls (a Blessing
    * re-armed every turn beats Fatigue). Runs stored before it have no field
-   * and keep the kernel's TURN_CAP (200): a run keeps the rules it started with. */
+   * and keep the kernel's TURN_CAP (200): a run keeps the rules it started with.
+   * Round 4 dropped it from new runs: sudden death ends their fights instead,
+   * and the kernel's 200 is a net no fight reaches. Runs started under the
+   * cap keep it (ROUND3_TURN_CAP). */
   turnCap?: number;
+  /** Sudden death (R4-1, BattleInput.suddenDeathAt): from this turn on Fatigue
+   * doubles every turn (20, 40, 80…), pierces Shield and Blessing, and Summon
+   * and Revive do nothing, so every fight ends by about turn 21. Runs stored
+   * before it have no field: no sudden death (and their turnCap). */
+  suddenDeathAt?: number;
   /** Per-fight Elo (docs/round2/rating.md): K falls with runs played. A
    * player with fewer than `runsBelow` runs (the first step that fits) uses
    * its `k`; past every step, `ratingK`. Steps rather than an Infinity bound,
@@ -73,6 +81,10 @@ export interface MvpRules {
   dayEndsAt: string;
   dayTimeZone: string;
 }
+
+/** The turn cap round-3 runs started with (R3-26): their fights past it end
+ * "Time's up: draw". New runs have sudden death instead (suddenDeathAt). */
+export const ROUND3_TURN_CAP = 30;
 
 export const MVP_RULES: MvpRules = {
   rounds: 12,
@@ -91,7 +103,7 @@ export const MVP_RULES: MvpRules = {
   copyGrowth: { pwr: 1, hp: 2 },
   tierOpensAt: [1, 3, 6, 9],
   chainStepCap: 32,
-  turnCap: 30,
+  suddenDeathAt: 20,
   ratingKSteps: [{ runsBelow: 5, k: 32 }, { runsBelow: 15, k: 16 }],
   ratingK: 10,
   ratingStart: 1000,

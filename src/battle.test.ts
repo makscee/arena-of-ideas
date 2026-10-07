@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { battle, toJSONL } from "./battle.js";
+import { battle, fatigueAmount, toJSONL } from "./battle.js";
 import type { AbilityRegistry, BattleEvent, BattleInput, UnitDef } from "./types.js";
 import {
   Blessing,
@@ -254,6 +254,51 @@ describe("fatigue and draw", () => {
     expect(ofType(log, "Fatigue").map((e) => e.turn)).toEqual([10, 11, 12]);
     // Omitted = TURN_CAP (200).
     expect(ofType(runBattle({ teamA: [wall], teamB: [wall], seed: 1 }), "BattleEnd")[0]).toMatchObject({ winner: "draw", turns: 200, timeUp: true });
+  });
+
+  test("sudden death (R4-1): fatigue is linear to the turn before, then doubles every turn", () => {
+    expect([10, 11, 19].map((t) => fatigueAmount(t))).toEqual([1, 2, 10]);
+    expect([10, 19, 20, 21, 22].map((t) => fatigueAmount(t, 20))).toEqual([1, 10, 20, 40, 80]);
+    expect(fatigueAmount(25)).toBe(16); // no sudden death: linear forever
+  });
+
+  test("sudden death pierces Shield and Blessing, and the battle ends by itself", () => {
+    // Shield 1000 and Blessing 5 hold off linear fatigue; sudden death from turn 12 goes through both.
+    const tank: UnitDef = { name: "Tank", base: { hp: 200, pwr: 0 }, ability: "Strike", statuses: [{ status: "Shield", stacks: 1000 }, { status: "Blessing", stacks: 5 }] };
+    const log = runBattle({ teamA: [tank], teamB: [tank], seed: 1, statuses: stressRegistry, suddenDeathAt: 12 });
+    const fat = ofType(log, "Fatigue");
+    expect(fat.map((e) => [e.turn, e.amount, e.suddenDeath ?? false])).toEqual([
+      [10, 1, false], [11, 2, false], [12, 4, true], [13, 8, true], [14, 16, true], [15, 32, true], [16, 64, true], [17, 128, true],
+    ]);
+    const hurts = ofType(log, "Hurt").filter((h) => log[h.causedBy!]!.type === "Fatigue");
+    expect(hurts).toHaveLength(16);
+    // Before sudden death Shield takes it all; from turn 12 nothing is absorbed.
+    expect(hurts.filter((h) => h.turn < 12).every((h) => h.amount === 0 && h.absorbed! > 0 && !h.pierced)).toBe(true);
+    expect(hurts.filter((h) => h.turn >= 12).every((h) => h.pierced && h.absorbed === undefined)).toBe(true);
+    // Both fall on turn 17 (4+8+…+128 = 252 ≥ 200); Blessing never cancels the death.
+    expect(ofType(log, "Death").map((d) => [d.turn, d.pierced])).toEqual([[17, true], [17, true]]);
+    expect(ofType(log, "Intercepted")).toEqual([]);
+    expect(ofType(log, "BattleEnd")[0]).toMatchObject({ winner: "draw", turns: 17 });
+    expect(ofType(log, "BattleEnd")[0]!.timeUp).toBeUndefined();
+    // The same tanks without sudden death last until linear fatigue wears through the Shield.
+    expect(ofType(runBattle({ teamA: [tank], teamB: [tank], seed: 1, statuses: stressRegistry }), "BattleEnd")[0]!.turns).toBeGreaterThan(40);
+  });
+
+  test("in sudden death Summon and Revive do nothing, and the log says why", () => {
+    const ogre = vanilla("Ogre", 1_000, 10);
+    const teamA = [vanilla("Mouse", 1, 0), Summoner, Necromancer];
+    const on = runBattle({ teamA, teamB: [ogre], seed: 1, suddenDeathAt: 1 });
+    expect(ofType(on, "Summon")).toEqual([]);
+    const failed = ofType(on, "SummonFailed");
+    expect(failed.map((e) => [e.name, e.revive ?? false, e.reason])).toEqual(
+      expect.arrayContaining([["Imp", false, "suddenDeath"], ["Mouse", true, "suddenDeath"]]),
+    );
+    for (const e of failed) expect(e.source).not.toBe("kernel"); // sourced to the ability that tried
+    // Without it, the same line summons and revives.
+    const off = runBattle({ teamA, teamB: [ogre], seed: 1 });
+    expect(ofType(off, "Summon").length).toBeGreaterThan(0);
+    expect(ofType(off, "SummonFailed")).toEqual([]);
+    expect(() => runBattle({ teamA, teamB: [ogre], seed: 1, suddenDeathAt: 0 })).toThrow(/suddenDeathAt/);
   });
 
   test("turnCap: a battle decided on the last turn is a win, not a time-up", () => {

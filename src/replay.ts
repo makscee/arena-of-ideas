@@ -193,8 +193,20 @@ class Renderer {
       }
 
       case "Fatigue":
-        this.push(e, `Fatigue ${e.amount}: the drawn-out battle wears everyone down.`);
+        this.push(
+          e,
+          e.suddenDeath
+            ? `Sudden death: Fatigue ${e.amount}, doubling every turn — no Shield or Blessing stops it.`
+            : `Fatigue ${e.amount}: the drawn-out battle wears everyone down.`,
+        );
         return;
+
+      case "SummonFailed": {
+        const by = e.source !== "kernel" ? this.refDesc(e.source) : "the kernel";
+        const who = e.revive && e.unit ? this.name(e.unit) : e.name;
+        this.push(e, `${by} tries to ${e.revive ? "revive" : "summon"} ${who}, but in sudden death no one joins the line.`);
+        return;
+      }
 
       case "ChainBlocked": {
         const what = this.refDesc(e.ability);

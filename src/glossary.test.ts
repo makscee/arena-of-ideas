@@ -7,8 +7,8 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import { describeAbility, describeStatus, describeStatusSegments, type DescribeSegment } from "./describe.js";
-import { chainCappedTip, timeUpTip, GLOSSARY, ICON_IDS, STATUS_TERMS, scopedLabel, scopedTip, triggerLabel, termDef, termGroup, termIcon, type FixedTermId, type TermId } from "./glossary.js";
-import { MVP_RULES } from "./mvp/contract.js";
+import { chainCappedTip, fatigueTip, suddenDeathTip, timeUpTip, GLOSSARY, ICON_IDS, STATUS_TERMS, scopedLabel, scopedTip, triggerLabel, termDef, termGroup, termIcon, type FixedTermId, type TermId } from "./glossary.js";
+import { MVP_RULES, ROUND3_TURN_CAP } from "./mvp/contract.js";
 import type { UnitForm } from "./mvp/contract.js";
 import { formSegments, formText } from "./mvp/form-text.js";
 import type { UnitFilter } from "./types.js";
@@ -259,13 +259,23 @@ describe("keywords stand alone (R3-2, words.md (4))", () => {
     expect(GLOSSARY["battle:chainCapped"].tip).toBe(chainCappedTip(MVP_RULES.chainStepCap));
   });
 
-  test("Time's up reads the turn cap from the rules (R3-26)", () => {
+  test("Time's up reads round 3's turn cap (R3-26): new runs have none (R4-1)", () => {
+    expect(MVP_RULES.turnCap).toBeUndefined();
     expect(GLOSSARY["battle:timeUp"]).toMatchObject({ label: "Time's up", icon: "hourglass" });
-    expect(GLOSSARY["battle:timeUp"].tip).toBe(timeUpTip(MVP_RULES.turnCap!));
-    expect(GLOSSARY["battle:timeUp"].tip).toContain(`after turn ${MVP_RULES.turnCap}`);
+    expect(GLOSSARY["battle:timeUp"].tip).toBe(timeUpTip(ROUND3_TURN_CAP));
+    expect(GLOSSARY["battle:timeUp"].tip).toContain(`after turn ${ROUND3_TURN_CAP}`);
     expect(GLOSSARY["battle:timeUp"].tip).toMatch(/draw/);
     // A run started before the cap (the kernel's 200) reads its own number.
     expect(timeUpTip(200)).toContain("after turn 200");
+  });
+
+  test("Fatigue and Sudden death read their numbers from the kernel and the rules (R4-1)", () => {
+    expect(GLOSSARY["battle:fatigue"].tip).toBe(fatigueTip(MVP_RULES.suddenDeathAt));
+    expect(GLOSSARY["battle:fatigue"].tip).toBe("From turn 10, every unit takes damage at each turn's end: 1, then 2, 3 … From turn 20 it doubles every turn, so battles always end.");
+    expect(fatigueTip()).toMatch(/2, 3 … so battles always end\.$/);
+    expect(GLOSSARY["battle:suddenDeath"]).toMatchObject({ label: "Sudden death", icon: "death-skull", tone: "dmg" });
+    expect(GLOSSARY["battle:suddenDeath"].tip).toBe(suddenDeathTip(MVP_RULES.suddenDeathAt!));
+    expect(GLOSSARY["battle:suddenDeath"].tip).toContain("From turn 20, the turn-end damage doubles every turn (20, 40, 80 …)");
   });
 
   test("labels are the card's words", () => {

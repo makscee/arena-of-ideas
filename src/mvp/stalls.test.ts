@@ -1,11 +1,11 @@
-// Every battle ends sanely (R3-26). Normal fights end by turn 20 (p99 17), but
-// some lines stall: a Blessing re-armed every turn beats Fatigue (Divinity's
-// Awoken with a death each turn, or an "Ally gains PWR" fusion with a
-// blessing second part fed by War Drummer), so nobody dies and the battle ran
-// to the kernel's 200 turns (17k–58k events, up to 10 MB of log). The rules'
-// turnCap (30) now ends those as "Time's up: draw". This sweep keeps the cap a
-// backstop, not a way battles usually end: a new unit or fusion that stalls
-// shows up here by name.
+// Every battle ends by itself (R3-26, R4-1). Normal fights end by turn 20
+// (p99 17), but some lines stall: a Blessing re-armed every turn beats Fatigue
+// (Divinity's Awoken with a death each turn, or an "Ally gains PWR" fusion with
+// a blessing second part fed by War Drummer), and two Necromancers revive each
+// other. Round 3 cut them off at turnCap 30 ("Time's up: draw"). Round 4's
+// sudden death ends them instead: from turn 20 Fatigue doubles, pierces
+// Shield and Blessing, and Summon and Revive do nothing, so every fight here
+// ends by turn 21, and none ever reaches the kernel's 200-turn net.
 
 import { describe, expect, it } from "vitest";
 import type { BattleEvent } from "../types.js";
@@ -23,11 +23,10 @@ const unit = (id: string): UnitContent => {
   return u;
 };
 
-/** The sweep's limits. A stalled battle at the cap logs ~5–6k events (about
- * 200 a turn); no battle that ends by itself comes near 5,000. */
-const MAX_TIME_UP_SHARE = 0.005;
-const MAX_EVENTS = 10_000;
-const MAX_EVENTS_DECIDED = 5_000;
+/** The sweep's limits: the last turn a fight may reach (sudden death's
+ * second turn), and no fight comes near 5,000 events. */
+const LAST_TURN = MVP_RULES.suddenDeathAt! + 1;
+const MAX_EVENTS = 5_000;
 
 interface Fought {
   label: string;
@@ -42,15 +41,44 @@ function fight(a: LineUnit[], b: LineUnit[], seed: number, label: string): Fough
   return { label, events: log.length, turns: end.turns, timeUp: end.timeUp === true };
 }
 
-/** Every battle under the cap, and the decided ones well under 5,000 events. */
+/** Every battle over by sudden death's second turn, by itself (never time's
+ * up), and well under 5,000 events. */
 function expectBounded(all: Fought[]): void {
-  expect(all.filter((f) => f.turns > MVP_RULES.turnCap!).map((f) => f.label)).toEqual([]);
+  expect(MVP_RULES.turnCap, "new runs have no turn cap").toBeUndefined();
+  expect(all.filter((f) => f.turns > LAST_TURN).map((f) => `${f.label}: turn ${f.turns}`)).toEqual([]);
+  expect(all.filter((f) => f.timeUp).map((f) => f.label)).toEqual([]);
   expect(all.filter((f) => f.events > MAX_EVENTS).map((f) => `${f.label}: ${f.events} events`)).toEqual([]);
-  expect(all.filter((f) => !f.timeUp && f.events > MAX_EVENTS_DECIDED).map((f) => `${f.label}: ${f.events} events`)).toEqual([]);
 }
 
-describe("every battle ends sanely (R3-26)", () => {
-  it("random mirror lines at 3 copies: at most 0.5% run out of time", { timeout: 60_000 }, () => {
+describe("every battle ends by itself (R3-26, R4-1)", () => {
+  it("the known stall teams, which ran to the kernel's 200 turns, now end by turn 21", () => {
+    const fused = (side: string, a: string, b: string) =>
+      fuseUnits(lineUnitOf(unit(a), `${side}0`, 3), lineUnitOf(unit(b), `${side}9`, 3), { name: `${a}+${b}`, discoveredBy: null }, content, MVP_RULES);
+    const plain = (side: string, ids: string[], from = 1, copies = 1) => ids.map((id, i) => lineUnitOf(unit(id), `${side}${i + from}`, copies));
+    const teams: Array<[string, number, (side: string) => LineUnit[]]> = [
+      // A Blessing re-armed every turn: War Drummer feeds an "ally gains PWR" fusion that blesses the line.
+      ["re-blessed (Equalizer+Prepper)", 1, (s) => [fused(s, "equalizer", "prepper"), ...plain(s, ["war-drummer", "fighter", "bulwark"])]],
+      ["re-blessed (Lightning+Divinity)", 1, (s) => [fused(s, "lightning", "divinity"), ...plain(s, ["war-drummer", "fighter", "bulwark"])]],
+      // Two revivers bringing each other back.
+      ["two Necromancers", 64, (s) => plain(s, ["necromancer", "necromancer", "guardian", "robber", "fodder"], 0, 3)],
+    ];
+    const { suddenDeathAt: _sd, ...noSudden } = MVP_RULES;
+    const run = (team: (side: string) => LineUnit[], seed: number, rules: typeof MVP_RULES) =>
+      fightLines({ player: p, line: team("a") }, { player: p, line: team("b") }, { battleId: "x", seed, kind: "round", round: 9, runId: null, at: "2026-10-07T00:00:00.000Z", content, rules }).log;
+    const all: Fought[] = [];
+    for (const [label, seed, team] of teams) {
+      // Without sudden death (and no cap) each runs to the kernel's 200: a real stall.
+      expect(run(team, seed, noSudden).at(-1), label).toMatchObject({ type: "BattleEnd", timeUp: true, turns: 200 });
+      const log = run(team, seed, MVP_RULES);
+      const end = log.at(-1) as Extract<BattleEvent, { type: "BattleEnd" }>;
+      all.push({ label, events: log.length, turns: end.turns, timeUp: end.timeUp === true });
+      expect(end.turns, label).toBeGreaterThanOrEqual(MVP_RULES.suddenDeathAt!);
+      expect(log.some((e) => e.type === "Fatigue" && e.suddenDeath), label).toBe(true);
+    }
+    expectBounded(all);
+  });
+
+  it("random mirror lines at 3 copies all end by turn 21", { timeout: 60_000 }, () => {
     // Mirrors are where stalls live (non-mirror lines: 0 of 6,000 sampled).
     let s = 574;
     const rnd = () => (s = (Math.imul(s, 1103515245) + 12345) >>> 0) / 2 ** 32;
@@ -62,11 +90,9 @@ describe("every battle ends sanely (R3-26)", () => {
       all.push(fight(line("a"), line("b"), k, pick.join("·")));
     }
     expectBounded(all);
-    const timeUp = all.filter((f) => f.timeUp).map((f) => f.label);
-    expect(timeUp.length, `time's up in: ${timeUp.join(", ")}`).toBeLessThanOrEqual(Math.floor(all.length * MAX_TIME_UP_SHARE));
   });
 
-  it("every fan-out fusion (a one-unit When + a group Who): only the known pairs run out of time", { timeout: 60_000 }, () => {
+  it("every fan-out fusion (a one-unit When + a group Who) ends by turn 21", { timeout: 60_000 }, () => {
     // What the bots' fansOut refuses but a human can fuse (content.md, R3-26).
     // A feeder makes the fused unit's When fire every turn.
     const FEEDERS: Record<string, string[]> = {
@@ -84,9 +110,6 @@ describe("every battle ends sanely (R3-26)", () => {
       return id;
     };
     const fillers = ["fighter", "bulwark", "rose"].map(unit);
-    // The open question for Maks (Fatigue vs Blessing, or a fusion rule): these
-    // stall with War Drummer feeding them. The cap makes them a draw at turn 30.
-    const KNOWN = new Set(["lightning", "equalizer"].flatMap((a) => ["prepper", "divinity", "king", "fruiter"].map((b) => `${a}+${b}`)));
     const ONE_UNIT = new Set(["StatusApplied", "Heal", "StatChanged", "Summon"]);
     const all: Fought[] = [];
     let pairs = 0;
@@ -109,8 +132,5 @@ describe("every battle ends sanely (R3-26)", () => {
     // About 630 ordered pairs today; the sweep must not quietly empty.
     expect(pairs).toBeGreaterThan(300);
     expectBounded(all);
-    const fresh = all.filter((f) => f.timeUp && !KNOWN.has(f.label.split(" ")[0]!)).map((f) => f.label);
-    expect(fresh, "a new fusion stalls to the turn cap").toEqual([]);
-    expect(all.filter((f) => f.timeUp).length).toBeLessThanOrEqual(Math.max(KNOWN.size, Math.floor(all.length * MAX_TIME_UP_SHARE)));
   });
 });

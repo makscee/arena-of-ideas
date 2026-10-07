@@ -8,7 +8,8 @@
 //   web/codex.ts  — renders this as the Codex screen
 //   src/codex.test.ts — verifies coverage and tunable matching
 
-import { FATIGUE_RAMP, FATIGUE_START, TURN_CAP, fatigueAmount } from "./battle.js";
+import { FATIGUE_RAMP, FATIGUE_START, fatigueAmount } from "./battle.js";
+import { MVP_RULES } from "./mvp/contract.js";
 import {
   BOSS_TEAMS,
   BOOTSTRAP_TEAMS,
@@ -245,6 +246,9 @@ export function buildCodex(registry: StatusRegistry, units: UnitDef[], abilities
     FATIGUE_RAMP > 0
       ? "Damage grows every turn without limit — battles always end."
       : "The damage holds steady each turn.";
+  // Sudden death (R4-1): new runs' turn, numbers from the same fatigueAmount().
+  const sd = MVP_RULES.suddenDeathAt;
+  const sdAmount = (t: number) => fatigueAmount(t, sd);
 
   const rules: CodexRuleEntry[] = [
     {
@@ -255,9 +259,18 @@ export function buildCodex(registry: StatusRegistry, units: UnitDef[], abilities
       text:
         `From turn ${FATIGUE_START}, every living unit takes ` +
         `${fatigueAmount(FATIGUE_START)}, ${fatigueAmount(FATIGUE_START + 1)}, ${fatigueAmount(FATIGUE_START + 2)}… ` +
-        `damage at the end of each turn. ${fatigueGrowth} ` +
-        `(Hard cap: ${TURN_CAP} turns; reaching it is a draw.)`,
+        `damage at the end of each turn. ${fatigueGrowth}` +
+        (sd !== undefined ? ` From turn ${sd} it doubles every turn: Sudden death.` : ""),
     },
+    ...(sd !== undefined
+      ? [{
+          key: "sudden-death",
+          title: "Sudden death",
+          text:
+            `From turn ${sd}, Fatigue doubles every turn (${sdAmount(sd)}, ${sdAmount(sd + 1)}, ${sdAmount(sd + 2)}…). ` +
+            `It goes through Shield and Blessing, and Summon and Revive do nothing, so every battle ends within a turn or two.`,
+        }]
+      : []),
     {
       key: "income",
       title: "Income",

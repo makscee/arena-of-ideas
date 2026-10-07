@@ -9,8 +9,9 @@
 // like parts.ts: a new trigger, selector or effect kind can't ship without an
 // entry.
 
+import { FATIGUE_START, fatigueAmount } from "./battle.js";
 import { describeStatus } from "./describe.js";
-import { MVP_RULES } from "./mvp/contract.js";
+import { MVP_RULES, ROUND3_TURN_CAP } from "./mvp/contract.js";
 import type { Condition, Effect, EventPattern, Selector, StatusRegistry, UnitFilter } from "./types.js";
 
 /** Every term id. `status:` takes a registry name ("Shield", "Poison", …). */
@@ -22,7 +23,7 @@ export type TermId =
   | `target:${Selector["kind"]}`
   | `effect:${Effect["kind"]}`
   | `state:${"sleeping" | "awoken" | "fused"}`
-  | `battle:${"fatigue" | "chainCapped" | "timeUp" | "noRoom"}`
+  | `battle:${"fatigue" | "suddenDeath" | "chainCapped" | "timeUp" | "noRoom"}`
   | `term:${"stacks" | "would"}`;
 
 /** The terms with a fixed entry (every TermId but the open `status:` set). */
@@ -142,7 +143,11 @@ export const GLOSSARY: Record<FixedTermId, TermDef> = {
   // Battle
   "battle:fatigue": {
     label: "Fatigue", icon: "hourglass", tone: "dmg",
-    tip: "From turn 10, every unit takes damage at each turn's end: 1, then 2, 3 … so battles always end.",
+    tip: fatigueTip(MVP_RULES.suddenDeathAt),
+  },
+  "battle:suddenDeath": {
+    label: "Sudden death", icon: "death-skull", tone: "dmg",
+    tip: suddenDeathTip(MVP_RULES.suddenDeathAt ?? 20),
   },
   "battle:chainCapped": {
     label: "Chain stopped", icon: "breaking-chain", tone: "plain",
@@ -156,9 +161,9 @@ export const GLOSSARY: Record<FixedTermId, TermDef> = {
   },
   "battle:timeUp": {
     label: "Time's up", icon: "hourglass", tone: "plain",
-    // New runs' cap (MVP_RULES sets it), like Chain stopped's; a battle's
-    // own cap is its BattleEnd's turns.
-    tip: timeUpTip(MVP_RULES.turnCap!),
+    // Only runs started under round 3's cap end this way (new runs have
+    // sudden death); a battle's own cap is its BattleEnd's turns.
+    tip: timeUpTip(ROUND3_TURN_CAP),
   },
 
   // Words
@@ -169,6 +174,21 @@ export const GLOSSARY: Record<FixedTermId, TermDef> = {
  * event's steps, so a run started under an older cap reads its own number. */
 export function chainCappedTip(cap: number): string {
   return `A chain of reactions ran ${cap} steps and was cut off, so a battle can't loop forever.`;
+}
+
+/** Fatigue's rule, its numbers from the kernel's own fatigueAmount(). It
+ * stays self-sufficient: the doubling is said, not named. */
+export function fatigueTip(suddenDeathAt?: number): string {
+  const n = (t: number) => fatigueAmount(t, suddenDeathAt);
+  const linear = `From turn ${FATIGUE_START}, every unit takes damage at each turn's end: ${n(FATIGUE_START)}, then ${n(FATIGUE_START + 1)}, ${n(FATIGUE_START + 2)} …`;
+  if (suddenDeathAt === undefined) return `${linear} so battles always end.`;
+  return `${linear} From turn ${suddenDeathAt} it doubles every turn, so battles always end.`;
+}
+
+/** Sudden death's rule (R4-1) for the turn it starts. */
+export function suddenDeathTip(at: number): string {
+  const n = (t: number) => fatigueAmount(t, at);
+  return `From turn ${at}, the turn-end damage doubles every turn (${n(at)}, ${n(at + 1)}, ${n(at + 2)} …), nothing blocks it or saves a unit from it, and no unit can enter or return to the line.`;
 }
 
 /** Time's up's rule for a given turn cap: a battle passes its BattleEnd's

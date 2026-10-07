@@ -30,6 +30,7 @@ import {
   familyHex,
 } from "./tunables.js";
 import { FATIGUE_RAMP, FATIGUE_START, TURN_CAP, fatigueAmount } from "./battle.js";
+import { MVP_RULES } from "./mvp/contract.js";
 
 const codex = buildCodex(stressRegistry, codexUnits([], stressAbilities), stressAbilities);
 const rule = (key: string) => {
@@ -183,8 +184,19 @@ describe("codex — fatigue derives from the kernel's formula", () => {
     expect(r.text).toContain(seq);
   });
 
-  it("cites TURN_CAP", () => {
-    expect(rule("fatigue").text).toContain(String(TURN_CAP));
+  it("never shows the kernel's TURN_CAP: it's a net no fight reaches (R4-1)", () => {
+    expect(rule("fatigue").text).not.toContain(String(TURN_CAP));
+  });
+
+  it("sudden death: its turn from the rules, its numbers from fatigueAmount() (R4-1)", () => {
+    const sd = MVP_RULES.suddenDeathAt!;
+    expect(rule("fatigue").text).toContain(`From turn ${sd} it doubles every turn: Sudden death.`);
+    const r = rule("sudden-death");
+    expect(r.title).toBe("Sudden death");
+    expect(r.text).toContain(`From turn ${sd}, Fatigue doubles every turn (${fatigueAmount(sd, sd)}, ${fatigueAmount(sd + 1, sd)}, ${fatigueAmount(sd + 2, sd)}…)`);
+    expect(r.text).toContain("20, 40, 80");
+    expect(r.text).toMatch(/Shield and Blessing/);
+    expect(r.text).toMatch(/Summon and Revive do nothing/);
   });
 
   it("growth phrasing derives from FATIGUE_RAMP — 'without limit' only while the ramp ramps", () => {
