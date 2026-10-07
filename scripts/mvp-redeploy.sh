@@ -78,6 +78,11 @@ HOST_ALIAS="${ARENA_MVP_HOST:-m1}"
 INVITES="${ARENA_MVP_INVITES:-1}"
 case "$INVITES" in 0|1) ;; *) echo "ARENA_MVP_INVITES is 0 or 1, not '$INVITES'" >&2; exit 2 ;; esac
 OPEN_PUBLIC="${ARENA_MVP_OPEN_PUBLIC:-0}"
+# Open to all (Maks, 2026-10-08): on the invite-only server, anyone who comes
+# without a link gets the join name screen (MVP_OPEN, R4-20's join code and
+# limit). ARENA_MVP_OPEN=0 deploys it invite-only again.
+OPEN="${ARENA_MVP_OPEN:-1}"
+case "$OPEN" in 0|1) ;; *) echo "ARENA_MVP_OPEN is 0 or 1, not '$OPEN'" >&2; exit 2 ;; esac
 PUBLIC_URL=https://arena.makscee.ru/arena/
 TAILNET_URL=https://m1.twin-pogona.ts.net/arena/api/v1/health
 
@@ -204,6 +209,7 @@ cat > "\$PLIST" <<PL
     <key>BASE_PATH</key><string>/arena</string>
     <key>MVP_DEV</key><string>1</string>
     <key>MVP_INVITES</key><string>$INVITES</string>
+    <key>MVP_OPEN</key><string>$OPEN</string>
     <key>MVP_DB</key><string>\$DB</string>
     <key>MVP_BUILD</key><string>\$BUILD</string>
     <key>ARENA_NAMER_URL</key><string>http://127.0.0.1:$NAMER_PORT/v1/chat/completions</string>

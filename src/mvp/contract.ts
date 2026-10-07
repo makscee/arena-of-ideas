@@ -627,7 +627,7 @@ export interface HomeView {
 // path not listed here (and /dev/* off a dev server, or for a non-admin on an
 // invite-only one), 501 a route a slice hasn't filled in.
 //
-//   GET  /api/v1/health                      → { ok: true, api, contentVersion, build, invites }  (build: the deployed commit, or null; invites: invite-only)
+//   GET  /api/v1/health                      → { ok: true, api, contentVersion, build, invites, open }  (build: the deployed commit, or null; invites: invite-only; open: anyone without a link may join)
 //   GET  /api/v1/content                     → MvpContent
 //   POST /api/v1/players       { name }      → PlayerRef          (403 on an invite-only server)
 //   POST /api/v1/invites/lookup { code }     → { player: PlayerRef } (slice 13; whose link it is, opening nothing; 404 unknown code)

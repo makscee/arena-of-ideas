@@ -36,10 +36,10 @@ const dbPath = process.env.MVP_DB ?? "data/arena-mvp.db";
 if (dbPath !== ":memory:") mkdirSync(dirname(resolve(dbPath)), { recursive: true });
 const store = new SqliteMvpStore(dbPath);
 const content = mvpContent();
-const rt = mvpRuntime({ content, store, dev: process.env.MVP_DEV === "1", invites: process.env.MVP_INVITES === "1" });
+const rt = mvpRuntime({ content, store, dev: process.env.MVP_DEV === "1", invites: process.env.MVP_INVITES === "1", open: process.env.MVP_OPEN === "1" });
 const build = buildOf();
 const app = mvpServerApp(createMvpApp(rt), { staticRoot: root, build });
 
 serve({ port, hostname: host, fetch: underBasePath(app, basePath) });
 startMvpJobs(rt);
-console.log(`arena mvp on http://${host}:${port} (base ${basePath}, build ${build ?? "unknown"}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""}${rt.invites ? ", invite-only" : ""})`);
+console.log(`arena mvp on http://${host}:${port} (base ${basePath}, build ${build ?? "unknown"}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""}${rt.invites ? (rt.open ? ", open to all" : ", invite-only") : ""})`);
