@@ -32,9 +32,9 @@ const board = () => {
     turnEnd: document.querySelector(".bv-controls")?.dataset.turnEnd ?? "",
     centre: document.querySelectorAll('[data-testid="turn-total"]').length,
     floats: [...document.querySelectorAll(".bv-float")].filter(vis).length,
-    runs: [...document.querySelectorAll('[data-testid="running-totals"] .bv-run')].map((b) => ({
+    runs: [...document.querySelectorAll('[data-testid="running-totals"] .bv-run:not(.out)')].map((b) => ({
       unit: b.dataset.unit,
-      rows: [...b.querySelectorAll('[data-testid="run-row"]')].map((r) => ({ key: r.dataset.key, value: Number(r.dataset.value), text: r.querySelector(".n")?.textContent ?? "" })),
+      rows: [...b.querySelectorAll('[data-testid="run-row"]')].map((r) => ({ key: r.dataset.key, value: Number(r.dataset.value), text: r.querySelector(".n")?.textContent ?? "", counting: r.dataset.counting === "1" })),
     })),
     dead: [...document.querySelectorAll('[data-testid="battle-them"] .bv-card.dead, [data-testid="battle-you"] .bv-card.dead')].map((c) => c.dataset.unit),
     caption: document.querySelector('[data-testid="caption"]')?.textContent ?? "",
@@ -89,7 +89,7 @@ async function watch(page, label, still = false) {
         const shown = Number(x.text.replace(/[^\d]/g, "") || 0);
         const prev = last.get(id);
         if (prev && prev.value !== x.value) multi = true;
-        if (Math.abs(x.value) !== shown) {
+        if (Math.abs(x.value) !== shown || x.counting) {
           between++;
           if (still) errors.push(`${label} ${b.turn}: reduced motion counts ${id} (${x.text}, sum ${x.value})`);
         }

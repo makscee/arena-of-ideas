@@ -20,7 +20,7 @@
 import { boardAt, type BoardState, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView, SummonContent } from "../../src/mvp/contract";
 import { chainCappedTip, STATUS_TERMS, suddenDeathTip, termDef, timeUpTip, termIcon, triggerLabel, type IconId, type TermId } from "../../src/glossary";
-import { BEAT_MS, NO_ROOM, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, foldTurnsOf, isLogFold, keyMomentsOf, logRowsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, turnLabel, whyILost as lossChains, sidesOf, turnSummaryOf, turnEndsOf, turnEndHoldMs, totalsText, TURN_END_MS, runningTotalsOf, runRowText, turnSoFarIds, changeOf, type RunRow, type TurnSummary, type UnitTurnTotals, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type LogRow, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
+import { BEAT_MS, NO_ROOM, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, foldTurnsOf, isLogFold, keyMomentsOf, logRowsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, turnLabel, whyILost as lossChains, sidesOf, turnSummaryOf, turnEndsOf, turnEndHoldMs, totalsText, TURN_END_MS, runningTotalsOf, runRowText, turnSoFarIds, beatIdsOf, changeOf, type RunRow, type TurnSummary, type UnitTurnTotals, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type LogRow, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { summonId } from "../../src/describe";
@@ -160,6 +160,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const turnEnds = turnEndsOf(turnSums, beats.length);
   /** Each beat's turn (R4-22: the running totals and the dead last a turn). */
   const turnOfBeat = new Map(turnSums.flatMap((t) => t.beats.map((b) => [b, t] as const)));
+  const beatIds = beatIdsOf(beats);
 
   // What richCaption highlights besides units (tagged by id): this battle's
   // statuses and the fixed words. Longest first, so "Rat King" beats "Rat".
@@ -1152,9 +1153,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         };
     // The turn so far (R4-22): its earlier beats whole, this beat's landed events.
     const turnSum = sum ?? (beat ? turnOfBeat.get(at) : undefined);
-    const landedIds: number[] = [];
-    if (beat && !sum) for (let id = beat.start; id <= upto; id++) if (!pending.has(id)) landedIds.push(id);
-    const soFar = sum ? turnSoFarIds(beats, sum, beats.length, []) : turnSoFarIds(beats, turnSum, at, landedIds);
+    const onScreen = new Set(shown.flatMap((w) => w.eventIds));
+    const soFar = sum ? turnSoFarIds(beatIds, sum, beats.length, () => true) : turnSoFarIds(beatIds, turnSum, at, (id) => onScreen.has(id) || (id <= upto && !pending.has(id)));
     v.dead = new Set(soFar.flatMap((id) => { const e = log[id]; return e?.type === "Death" ? [e.unit] : []; }));
     const board = boardAt(log, upto, pending);
     shownBoard = board;
@@ -1300,7 +1300,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: RUN_FADE_MS / speed, easing: "ease-in", fill: "forwards" }).finished.then(() => el.remove(), () => el.remove());
     };
     if (turnKey !== runTurn) {
-      for (const b of runBoxes.values()) fade(b.el);
+      for (const b of runBoxes.values()) { b.el.classList.add("out"); fade(b.el); }
       runBoxes.clear();
       runTurn = turnKey;
       runs.dataset.turn = String(turnKey);
@@ -1358,13 +1358,16 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const from = x.shown;
     x.target = to;
     const set = (n: number) => { x.shown = n; x.num.textContent = runRowText(x.row.kind, x.row.key, n); };
+    delete x.el.dataset.counting;
     if (still) return set(to);
+    x.el.dataset.counting = "1";
     const dur = RUN_COUNT_MS / speed;
     const t0 = performance.now();
     const tick = (t: number) => {
       const k = Math.min(1, Math.max(0, (t - t0) / dur));
       set(Math.round(from + (to - from) * (1 - (1 - k) ** 3)));
       if (k < 1) x.anim = requestAnimationFrame(tick);
+      else delete x.el.dataset.counting;
     };
     x.anim = requestAnimationFrame(tick);
     x.el.animate([{ scale: 1 }, { scale: 1.3 }, { scale: 1 }], { duration: RUN_POP_MS / speed, easing: "ease-out" });

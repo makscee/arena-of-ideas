@@ -1907,7 +1907,7 @@ export function runningTotalsOf(log: BattleEvent[], ids: Iterable<number>): Map<
     r.eventIds.push(id);
     if (key === "pwr" || key === "hp") r.kind = r.value >= 0 ? "buff" : "debuff";
   };
-  for (const id of [...ids].sort((a, b) => a - b)) {
+  for (const id of [...new Set(ids)].sort((a, b) => a - b)) {
     const e = log[id];
     if (!e) continue;
     if (e.type === "Hurt") {
@@ -1936,16 +1936,28 @@ export function runRowText(kind: RunRow["kind"], key: string, value: number): st
   return value > 0 ? `×${value}` : value < 0 ? `−${-value}` : "0";
 }
 
-/** The ids of a turn's events landed by beat `at`'s first `wave`+1 waves:
- * every earlier beat of the turn whole, and the landed waves of `at`. */
-export function turnSoFarIds(beats: PlayBeat[], turn: TurnSummary | undefined, at: number, landed: Iterable<number>): number[] {
+/** Each beat's own events (R4-22): those its waves show, and the rest of
+ * its range that no beat's wave shows. A wave can show an event from outside
+ * its beat's range (a death folded into the hit before it): that event is
+ * the showing beat's, so a running total or a fallen unit never waits for,
+ * or outlives, the beat that showed it. */
+export function beatIdsOf(beats: PlayBeat[]): number[][] {
+  const owner = new Map<number, number>();
+  for (const b of beats) for (let id = b.start; id <= b.end; id++) if (!owner.has(id)) owner.set(id, b.index);
+  for (const b of beats) for (const w of b.waves) for (const id of w.eventIds) owner.set(id, b.index);
+  const out: number[][] = beats.map(() => []);
+  for (const [id, i] of [...owner].sort((p, q) => p[0] - q[0])) out[i]?.push(id);
+  return out;
+}
+
+/** The ids of a turn's events landed by beat `at`: every earlier beat of the
+ * turn whole, and those of beat `at` that `landed` says are on screen. */
+export function turnSoFarIds(beatIds: number[][], turn: TurnSummary | undefined, at: number, landed: (id: number) => boolean): number[] {
   const ids: number[] = [];
   for (const i of turn?.beats ?? []) {
-    if (i >= at) break;
-    const b = beats[i];
-    if (b) for (let id = b.start; id <= b.end; id++) ids.push(id);
+    if (i > at) break;
+    for (const id of beatIds[i] ?? []) if (i < at || landed(id)) ids.push(id);
   }
-  ids.push(...landed);
   return ids;
 }
 
