@@ -11,6 +11,7 @@ import {
   type DecisionResponse,
   type FusionDiscovery,
   type HomeView,
+  type JoinSession,
   type MvpContent,
   type PlayerRef,
   type PlayerSession,
@@ -22,6 +23,9 @@ const BASE = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "") + MVP_API_PREF
 const PLAYER_KEY = "arena.player";
 /** Slice 13: the session token from an invite link, kept on the device. */
 const TOKEN_KEY = "arena.token";
+/** R4-20: the invite code of a player who joined through the open link on
+ * this device, for Home's "Your link (for another device)". */
+const OWN_INVITE_KEY = "arena.ownInvite";
 
 export function savedPlayer(): PlayerRef | null {
   try {
@@ -49,6 +53,24 @@ let token: string | null = (() => {
     return null;
   }
 })();
+
+let ownInvite: string | null = (() => {
+  try {
+    return localStorage.getItem(OWN_INVITE_KEY);
+  } catch {
+    return null;
+  }
+})();
+
+function saveOwnInvite(code: string | null): void {
+  ownInvite = code;
+  try {
+    if (code) localStorage.setItem(OWN_INVITE_KEY, code);
+    else localStorage.removeItem(OWN_INVITE_KEY);
+  } catch {
+    /* private mode: the link shows this tab only */
+  }
+}
 
 function saveToken(t: string | null): void {
   try {
@@ -94,13 +116,31 @@ export const api = {
   /** Opens an invite link (slice 13): this device becomes its player. */
   async redeem(code: string): Promise<PlayerRef> {
     const s = await call<PlayerSession>("POST", "/invites/redeem", { code });
+    if (s.player.id !== player?.id) saveOwnInvite(null);
     player = s.player;
     token = s.token;
     savePlayer(player);
     saveToken(token);
     return player;
   },
+  /** R4-20: the invite code this device's player got by joining (their link), or null. */
+  get ownInvite() {
+    return ownInvite;
+  },
+  /** Is `code` the open join link (R4-20)? 404 ApiError if not. */
+  joinCheck: (code: string) => call<{ ok: true }>("POST", "/join/check", { code }),
+  /** Joins through the open link as a new player named `name`: this device becomes that player. */
+  async join(code: string, name: string): Promise<JoinSession> {
+    const s = await call<JoinSession>("POST", "/join", { code, name });
+    player = s.player;
+    token = s.token;
+    savePlayer(player);
+    saveToken(token);
+    saveOwnInvite(s.invite);
+    return s;
+  },
   forget(): void {
+    saveOwnInvite(null);
     player = null;
     token = null;
     savePlayer(null);

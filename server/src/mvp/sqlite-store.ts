@@ -173,6 +173,10 @@ export class SqliteMvpStore implements MvpStore {
   sessionPlayer(tokenHash: string): string | undefined {
     return (this.db.prepare("SELECT player_id FROM mvp_sessions WHERE token_hash = ?").get(tokenHash) as { player_id: string } | undefined)?.player_id;
   }
+  joinCode(): string | undefined {
+    return (this.db.prepare("SELECT value FROM mvp_settings WHERE key = 'join_code'").get() as { value: string } | undefined)?.value;
+  }
+  setJoinCode(code: string): void { this.write("INSERT INTO mvp_settings (key, value) VALUES ('join_code', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", code); }
   rotateInvite(oldCode: string, next: Invite): number {
     return this.db.transaction(() => {
       this.write("DELETE FROM mvp_invites WHERE code = ?", oldCode);

@@ -10,10 +10,13 @@ import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, TOKEN_HEADER, type Deci
 import { checkDecision, MvpBadDecision, MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
 import { dayView, endDay, hiddenSlay } from "./day.js";
 import { MvpNotYet } from "./errors.js";
-import { isAdmin, NAME_RE, redeemInvite, sessionPlayer } from "./invites.js";
+import { isAdmin, isJoinCode, JoinRefused, joinOpen, NAME_RE, redeemInvite, sessionPlayer } from "./invites.js";
 import { abandon, currentRun, decide, preview, startRun } from "./runs.js";
 import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
 import { statsView } from "./stats.js";
+
+/** New players the open join link (R4-20) makes per hour, server-wide. */
+export const JOINS_PER_HOUR = 30;
 
 /** The API on a runtime, or on a fresh one built from `deps`. */
 export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
@@ -21,7 +24,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   const { content, store } = rt;
   const api = new Hono();
 
-  const bad = (c: Context, status: 400 | 401 | 403 | 404 | 409 | 413 | 501, error: string) => c.json({ error }, status);
+  const bad = (c: Context, status: 400 | 401 | 403 | 404 | 409 | 413 | 429 | 501, error: string) => c.json({ error }, status);
   /** A stub that a later slice fills in answers 501 until then. */
   const notYet = (c: Context, fn: () => unknown) => {
     try {
@@ -50,7 +53,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   // shows the invite screen.
   api.use("*", async (c, next) => {
     const token = c.req.header(TOKEN_HEADER);
-    if (token && !c.req.path.includes("/invites/") && !sessionPlayer(store, token)) return unknownPlayer(c);
+    if (token && !/\/(invites|join)(\/|$)/.test(c.req.path) && !sessionPlayer(store, token)) return unknownPlayer(c);
     await next();
   });
   // A decision's body is read only from a known player.
@@ -90,6 +93,30 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   api.post("/invites/redeem", async (c) => {
     const session = redeemInvite(store, await codeOf(c), rt.now());
     return session ? c.json(session) : bad(c, 404, "no such invite");
+  });
+
+  // R4-20: the open join link. Anyone with its code picks a name and becomes a
+  // new player (never admin), at most JOINS_PER_HOUR new players an hour for
+  // the whole server, counted here in memory.
+  const joins: number[] = [];
+  api.post("/join/check", async (c) => (isJoinCode(store, await codeOf(c)) ? c.json({ ok: true }) : bad(c, 404, "no such join link")));
+  api.post("/join", async (c) => {
+    const body = (await c.req.json().catch(() => null)) as { code?: unknown; name?: unknown } | null;
+    const code = typeof body?.code === "string" ? body.code : "";
+    const name = typeof body?.name === "string" ? body.name : "";
+    if (!isJoinCode(store, code)) return bad(c, 404, "no such join link");
+    const now = rt.now();
+    while (joins.length && joins[0]! <= now.getTime() - 3_600_000) joins.shift();
+    if (joins.length >= JOINS_PER_HOUR) return bad(c, 429, "Too many new players this hour. Try again later.");
+    try {
+      const session = joinOpen(store, code, name, now);
+      if (!session) return bad(c, 404, "no such join link");
+      joins.push(now.getTime());
+      return c.json(session);
+    } catch (err) {
+      if (err instanceof JoinRefused) return bad(c, err.status, err.message);
+      throw err;
+    }
   });
 
   api.get("/home", (c) => {

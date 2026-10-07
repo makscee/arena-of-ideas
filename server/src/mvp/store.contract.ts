@@ -171,5 +171,14 @@ export function describeMvpStore(name: string, make: () => MvpStore): void {
       expect(s.redeemInvite("c3", "h2", "t4")).toBe("p1");
       expect(s.invite("c3")?.redeemedAt).toBe("t4");
     });
+
+    it("keeps one join code (R4-20), replaced on rotate", () => {
+      const s = make();
+      expect(s.joinCode()).toBeUndefined();
+      s.setJoinCode("j1");
+      expect(s.joinCode()).toBe("j1");
+      s.setJoinCode("j2");
+      expect(s.joinCode()).toBe("j2");
+    });
   });
 }

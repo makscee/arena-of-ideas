@@ -3,8 +3,8 @@
 // starts a session for that player: a fresh token the device keeps and sends
 // as X-Arena-Token. The same link on a second device gives the same player.
 // Invites are made on the host (./invite-cli.ts); the API only opens them.
-import { createHash, randomBytes, randomUUID } from "node:crypto";
-import type { PlayerRef, PlayerSession } from "../../../src/mvp/contract.js";
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
+import type { JoinSession, PlayerRef, PlayerSession } from "../../../src/mvp/contract.js";
 import { nameKey, type Invite, type MvpStore } from "./store.js";
 
 export const NAME_RE = /^[\p{L}\p{N}_\- ]{1,24}$/u;
@@ -12,6 +12,12 @@ export const NAME_RE = /^[\p{L}\p{N}_\- ]{1,24}$/u;
 export const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
 
 export class InviteError extends Error {}
+/** A join (R4-20) refused for its name: 400 unreadable, 409 taken or a bot's. */
+export class JoinRefused extends InviteError {
+  constructor(readonly status: 400 | 409, message: string) {
+    super(message);
+  }
+}
 
 export interface NewInvite {
   name: string;
@@ -90,3 +96,41 @@ export function sessionPlayer(store: MvpStore, token: string): PlayerRef | undef
 /** May this player use the dev tools on an invite-only server? Admin invites only. */
 export const isAdmin = (store: MvpStore, playerId: string | undefined) =>
   !!playerId && store.invites().some((i) => i.admin && i.playerId === playerId);
+
+// R4-20 (#704): the open join link, …/arena/#join=<code>. One shared code; whoever
+// holds it picks a name and becomes a new player with their own invite (their
+// link for another device). Made and rotated on the host (./invite-cli.ts:
+// `open`, `open --rotate`); rotating stops new joins on the old link, and the
+// players who joined keep their sessions and their own links.
+
+/** The join code, made on first call; `rotate` replaces it. */
+export function openJoin(store: MvpStore, rotate = false): string {
+  const had = store.joinCode();
+  if (had && !rotate) return had;
+  const code = newCode();
+  store.setJoinCode(code);
+  return code;
+}
+
+/** Is `code` the join code? Compared in constant time (hashes of equal length). */
+export function isJoinCode(store: MvpStore, code: string): boolean {
+  const want = store.joinCode();
+  if (!want || !code) return false;
+  return timingSafeEqual(createHash("sha256").update(code).digest(), createHash("sha256").update(want).digest());
+}
+
+/** Joins through the open link: a new player named `name`, never admin, with
+ * their own invite opened on this device. The name follows createInvite's
+ * rules (no taken name, no bot's); undefined for a code that isn't the join code. */
+export function joinOpen(store: MvpStore, code: string, name: string, now: Date): JoinSession | undefined {
+  if (!isJoinCode(store, code)) return undefined;
+  const n = name.trim();
+  if (!NAME_RE.test(n)) throw new JoinRefused(400, "name: 1–24 letters, digits, spaces, _ or -");
+  const key = nameKey(n);
+  if (key.startsWith("bot-") || store.playersNamed(n, { bots: true }).some((p) => p.bot)) throw new JoinRefused(409, `${n} is a bot's name: pick another`);
+  if (store.playersNamed(n).length || store.invites().some((i) => nameKey(i.name) === key)) throw new JoinRefused(409, `${n} is taken: pick another name`);
+  const invite = createInvite(store, { name: n, admin: false, now });
+  const session = redeemInvite(store, invite.code, now);
+  if (!session) throw new Error(`join: the new invite for ${n} didn't open`);
+  return { ...session, invite: invite.code };
+}

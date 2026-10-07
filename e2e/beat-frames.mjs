@@ -8,7 +8,9 @@
 // wave's render would last under 0.5 s at 1×, under 0.5 s / speed faster:
 // round 3's float runs 0.9 s, visible for about 0.75 s). It prints the
 // median battle's length on screen at each speed it played (round 3, note 14:
-// about 38 s at 1×, 19 s at 2×).
+// about 38 s at 1×, 19 s at 2×). It also reads how far from the music's
+// grid each beat and wave landed (R4-17: beats on the beat, half-beats at
+// 2×; waves on 8th notes), and fails when they drift off it.
 // Each run registers its own names (names are unique per server). Needs a
 // running MVP server:
 //   node e2e/beat-frames.mjs --url http://127.0.0.1:8911/arena/ [--out e2e/.shots/beats] [--rounds 3] [--speed 2]
@@ -33,6 +35,10 @@ const speeds = [];
 /** Damage floats' visible runs, each as a fraction of its battle's 1× float (ms × speed); runs that grew into the next wave's float, apart. */
 const floatMs = [];
 const mergedMs = [];
+/** How far each beat and wave landed from its grid line (ms), and the grid, from the viewer's window.__onBeat (R4-17). */
+const onBeat = [];
+/** Landings this far off their grid line or more count as off the beat (setTimeout and a render's own time). */
+const OFF_BEAT_MS = 50;
 /** A damage float visible for less than this (at 1×) was cut short, unless the next float on its card replaced it. */
 const FLOAT_MIN_MS = 500;
 /** In the page: every animation frame, which damage floats show (opacity > 0.3),
@@ -88,6 +94,7 @@ for (const motion of ["no-preference", "reduce"]) {
       plans.push(Number(await page.locator(".bv-controls").getAttribute("data-plan-ms")) / 1000 / speed);
       speeds.push(speed);
     }
+    if (motion !== "reduce") onBeat.push(...(await page.evaluate(() => { const o = window.__onBeat ?? []; window.__onBeat = []; return o; })).map((x) => ({ ...x, speed })));
     if (motion !== "reduce") for (const r of await page.waitForFunction(() => window.__floatRuns).then((h) => h.jsonValue())) (r.merged && r.ms * speed < FLOAT_MIN_MS ? mergedMs : floatMs).push(r.ms * speed);
     await page.screenshot({ path: `${out}/${motion === "reduce" ? "still" : "move"}-r${round}-end.png` });
     await page.getByTestId("battle-done").click();
@@ -109,6 +116,19 @@ for (const sp of [...new Set(speeds)].sort()) {
   const at = times.filter((_, i) => speeds[i] === sp).sort((p, q) => p - q);
   console.log(`at ${sp}×: ${at.length} battles, median ${(at[Math.floor((at.length - 1) / 2)] ?? 0).toFixed(1)} s on screen`);
 }
+// On the beat (R4-17): beats land on the grid (a beat at 1×, half at 2×), waves on its 8th notes.
+const pct = (xs, q) => { const s = [...xs].sort((p, r) => p - r); return s[Math.min(s.length - 1, Math.floor(q * s.length))] ?? 0; };
+for (const sp of [...new Set(onBeat.map((x) => x.speed))].sort()) {
+  for (const wave of [false, true]) {
+    const xs = onBeat.filter((x) => x.speed === sp && x.wave === wave);
+    if (!xs.length) continue;
+    const off = xs.filter((x) => x.off >= OFF_BEAT_MS).length;
+    console.log(`on the beat at ${sp}×, ${wave ? "waves" : "beats"}: ${xs.length} landed on a ${xs[0].grid} ms grid, median ${pct(xs.map((x) => x.off), 0.5)} ms off, 90% within ${pct(xs.map((x) => x.off), 0.9)} ms, ${off} off by ${OFF_BEAT_MS} ms or more`);
+  }
+}
+if (!onBeat.length) { console.log("no beat landings recorded (window.__onBeat)"); process.exitCode = 1; }
+// A few late timers are noise; more than a tenth off the beat is drift.
+if (onBeat.filter((x) => x.off >= OFF_BEAT_MS).length > onBeat.length / 10) { console.log("battle steps drift off the beat"); process.exitCode = 1; }
 // Every planned playback should run as planned (within 15% and 1.5 s): motion never slows the timer.
 const late = plans.filter((p, i) => times[i] > p * 1.15 + 1.5);
 if (late.length) { console.log(`${late.length} battles ran long against their plan`); process.exitCode = 1; }
