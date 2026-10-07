@@ -425,6 +425,8 @@ button.bv-caption { position: relative; z-index: 2; }
  * each unit's box sits on its slot's top edge, its rows stacking up from the
  * card in the order their kinds first landed, so a new kind never moves one. */
 .bv-runs { position: fixed; inset: 0; z-index: 5; pointer-events: none; }
+/* The header stays above the running totals (R4-22), so a row that grows up into it never takes the menu tap. */
+#app[data-screen="battle"] .bv-screen > .hud { position: relative; z-index: 6; }
 .bv-run { position: absolute; translate: -50% -100%; display: flex; flex-direction: column-reverse; align-items: center; gap: 1px; padding-bottom: 2px; transition: left 0.3s ease-out, top 0.3s ease-out; }
 button.bv-run-row { pointer-events: auto; min-height: 0; height: 16px; max-width: 100%; padding: 0 3px; display: inline-flex; align-items: center; gap: 2px; border: none; border-radius: 3px; clip-path: none; background: color-mix(in srgb, var(--bg) 82%, transparent); text-transform: none; letter-spacing: 0; font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 700; line-height: 16px; white-space: nowrap; overflow: hidden; color: var(--text); text-shadow: 0 0 3px var(--bg); transition: opacity 0.2s ease; }
 button.bv-run-row.damage, button.bv-run-row.debuff { color: var(--ghost); }
