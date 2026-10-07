@@ -43,8 +43,10 @@ export type ModelNamer = (first: UnitContent, second: UnitContent) => Promise<st
  * never a part's name or one of `taken` (the base units' names and the stored
  * fusions' names, compared folded): the split moves until it isn't ("Rose" +
  * "Rot" → "Rorot", not "Rot"; a second "Sileat" → "Silenat"), then any split,
- * then both names joined whole, and as a last resort a numeral ("Sileat II"). */
-export function portmanteau(first: string, second: string, taken: Iterable<string> = []): string {
+ * then both names joined whole, and as a last resort a numeral ("Sileat II").
+ * `taken` may be a test on folded names (foldName) instead: no copy per call. */
+export function portmanteau(first: string, second: string, taken: Iterable<string> | ((folded: string) => boolean) = []): string {
+  if (typeof taken === "function") return portmanteauAvoiding(first, second, taken);
   const avoid = new Set([...taken].map(fold));
   return portmanteauAvoiding(first, second, (folded) => avoid.has(folded));
 }
@@ -180,6 +182,11 @@ const BLOCKED_WHOLE = [
   "donkey kong", "wonder woman", "iron man", "spider man", "black widow", "captain america", "dark souls", "free vbucks",
 ].map(fold);
 const WORD_ENDINGS = ["", "s", "es", "z"];
+
+/** A name as `taken` compares it: no accents, case or punctuation. */
+export function foldName(s: string): string {
+  return fold(s);
+}
 
 function fold(s: string): string {
   return stripAccents(s).toLowerCase().replace(/[^a-z0-9]/g, "");

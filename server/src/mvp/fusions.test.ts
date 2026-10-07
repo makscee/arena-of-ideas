@@ -6,7 +6,7 @@ import { lineUnitOf } from "../../../src/mvp/forms.js";
 import { mvpContent } from "./content.js";
 import { hasCrudeStem } from "./crude.js";
 import { BENCH_NAMES, CRUDE_BEFORE_594, GLUED_STEMS, INNOCENT_NAMES, LIVE_NAMES, MASK_INNOCENT, MASK_LEAKS } from "./namer-corpus.js";
-import { awaitFusionName, cleanModelName, drainFusionNames, hasUnitName, NAMER_LETTERS, isBlockedName, fusionNameReady, fusionNaming, httpModelNamer, MODEL_DOWN_MS, NAMER_EXAMPLES, MODEL_FAILURES, MODEL_PROBE_MS, portmanteau, recordFusion, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
+import { awaitFusionName, cleanModelName, drainFusionNames, hasUnitName, NAMER_LETTERS, isBlockedName, foldName, fusionNameReady, fusionNaming, httpModelNamer, MODEL_DOWN_MS, NAMER_EXAMPLES, MODEL_FAILURES, MODEL_PROBE_MS, portmanteau, recordFusion, storedOrPortmanteau, type ModelNamer } from "./fusions.js";
 import { decide, preview, startRun } from "./runs.js";
 import { seedChampion } from "./bots.js";
 import { mvpRuntime } from "./runtime.js";
@@ -160,12 +160,13 @@ describe("MVP fusion names: the model's answer through the blocklist", () => {
     const units = mvpContent().units;
     const names = units.map((u) => u.name);
     expect(isBlockedName(portmanteau("King", "Spike", names))).toBe(false);
-    const taken: string[] = [];
+    // Folded names in one set: a copy of the growing list per pair took 30 s under load.
+    const taken = new Set(names.map(foldName));
     for (const a of units)
       for (const b of units) {
         if (a.id === b.id) continue;
-        const name = portmanteau(a.name, b.name, [...names, ...taken]);
-        taken.push(name);
+        const name = portmanteau(a.name, b.name, (f) => taken.has(f));
+        taken.add(foldName(name));
         expect(isBlockedName(name), `${a.name}+${b.name}=${name}`).toBe(false);
         // Held stricter than a model's answer: no crude stem anywhere, masks ignored.
         expect(hasCrudeStem(name), `${a.name}+${b.name}=${name}`).toBe(false);
