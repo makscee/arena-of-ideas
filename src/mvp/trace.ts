@@ -1706,6 +1706,67 @@ export function turnSummaryOf(log: BattleEvent[], beats: PlayBeat[], sides = sid
   return turns;
 }
 
+// ---------- the turn-end summary (round 4, R4-12) ----------
+
+/** How long playback holds on a turn's totals at 1×, after the turn's last
+ * beat (R4-12, viewer.md (6)): divided by the speed, and none from
+ * TURN_END_SKIP_SPEED up. */
+export const TURN_END_MS = 1200;
+export const TURN_END_SKIP_SPEED = 4;
+
+/** The hold at `speed`, in real ms. */
+export function turnEndHoldMs(speed: number): number {
+  return speed >= TURN_END_SKIP_SPEED ? 0 : Math.round(TURN_END_MS / speed);
+}
+
+/** The beats playback holds after, by beat index, each with its turn's
+ * totals: a turn's last beat, when the turn changed a unit and the battle
+ * goes on after it (the last beat opens the end card instead). */
+export function turnEndsOf(turns: TurnSummary[], beatCount: number): Map<number, TurnSummary> {
+  const out = new Map<number, TurnSummary>();
+  for (const t of turns) {
+    const last = t.beats.at(-1);
+    if (last !== undefined && last < beatCount - 1 && t.units.length) out.set(last, t);
+  }
+  return out;
+}
+
+/** One piece of a unit's turn-end label: a number ("−7", "+2", "+1/+2",
+ * "+1 PWR"), what Shield blocked, or a status's net stacks. */
+export interface TotalsPart {
+  kind: "damage" | "heal" | "buff" | "debuff" | "blocked" | "status";
+  text: string;
+  status?: string;
+  stacks?: number;
+}
+
+/** A unit's turn totals as its label reads them, in order: damage, healing,
+ * PWR/HP, Shield blocked, then each status's net stacks. Shield spent on the
+ * blocked hits is not listed again. */
+export function totalsPartsOf(u: UnitTurnTotals): TotalsPart[] {
+  const sign = (n: number) => (n > 0 ? `+${n}` : `−${-n}`);
+  const parts: TotalsPart[] = [];
+  if (u.damage) parts.push({ kind: "damage", text: `−${u.damage}` });
+  if (u.healed) parts.push({ kind: "heal", text: `+${u.healed}` });
+  if (u.pwr || u.hp) {
+    const kind = u.pwr + u.hp >= 0 ? "buff" : "debuff";
+    parts.push({ kind, text: u.pwr && u.hp ? `${sign(u.pwr)}/${sign(u.hp)}` : u.pwr ? `${sign(u.pwr)} PWR` : `${sign(u.hp)} HP` });
+  }
+  if (u.blocked) parts.push({ kind: "blocked", text: `${u.blocked}` });
+  for (const st of u.statuses) {
+    if (st.status === "Shield" && st.stacks < 0 && u.blocked) continue;
+    parts.push({ kind: "status", text: st.stacks > 0 ? `×${st.stacks}` : `−${-st.stacks}`, status: st.status, stacks: st.stacks });
+  }
+  return parts;
+}
+
+/** A unit's turn totals in words, for reduced motion's caption and the
+ * label's aria-label: "−7 · +2 · Shield ×3", "✝" first for the fallen. */
+export function totalsText(u: UnitTurnTotals): string {
+  const words = totalsPartsOf(u).map((p) => (p.kind === "blocked" ? `${p.text} blocked` : p.kind === "status" ? `${p.status} ${p.text}` : p.text));
+  return [...(u.died ? ["✝"] : []), ...words].join(" · ");
+}
+
 /** What a beam shows (round 3, R3-21, battle.md (11)): the effect's kind, for its colour. */
 export type BeamKind = "damage" | "heal" | "buff" | "debuff" | "status" | "summon" | "silence";
 

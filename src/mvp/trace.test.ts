@@ -10,7 +10,7 @@ import { MVP_RULES, type MvpContent, type PlayerRef } from "./contract.js";
 import { fightLines } from "./fight.js";
 import { lineUnitOf } from "./forms.js";
 import { mvpPool } from "./units.js";
-import { BEAT_MAX_MS, BEAT_MS, EMPHASIS_MS, END_BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, weightsOf, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, causeOf, beamsOf, stepsOf, sidesOf, timelineOf, timingOf, traceOf, turnLabel, turnSummaryOf, whyILost } from "./trace.js";
+import { BEAT_MAX_MS, BEAT_MS, EMPHASIS_MS, END_BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, weightsOf, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, causeOf, beamsOf, stepsOf, sidesOf, timelineOf, timingOf, traceOf, turnLabel, turnSummaryOf, whyILost, TURN_END_MS, turnEndHoldMs, turnEndsOf, totalsPartsOf, totalsText, type UnitTurnTotals } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -876,6 +876,50 @@ describe("R4-6: per-turn totals", () => {
       for (const [k, w] of want) if (w.damage || w.healed || w.pwr || w.hp || w.blocked || w.died) expect(sum.some((t) => t.units.some((u) => key(t.turn, u.unit) === k)), `seed ${seed} ${k}`).toBe(true);
       expect(sum.flatMap((t) => t.units.filter((u) => u.died)).length, `seed ${seed}`).toBe(log.filter((e) => e.type === "Death").length);
     }
+  });
+});
+
+describe("R4-12: turn-end summary", () => {
+  const tot = (o: Partial<UnitTurnTotals>): UnitTurnTotals => ({ unit: "u", side: "A", damage: 0, healed: 0, pwr: 0, hp: 0, blocked: 0, statuses: [], died: false, eventIds: [], ...o });
+
+  test("the hold: 1.2 s at 1×, divided by speed, none at 4×", () => {
+    expect(TURN_END_MS).toBe(1200);
+    expect(turnEndHoldMs(1)).toBe(1200);
+    expect(turnEndHoldMs(2)).toBe(600);
+    expect(turnEndHoldMs(4)).toBe(0);
+  });
+
+  test("it holds after each turn's last beat that changed a unit, never after the battle's last beat", () => {
+    const log = run([Shieldbearer, Smith, Archer], [dummy("Dummy", 30, 2)]);
+    const beats = beatPlayOf(log, stepsOf(log));
+    const turns = turnSummaryOf(log, beats);
+    const ends = turnEndsOf(turns, beats.length);
+    expect(ends.size).toBeGreaterThan(1);
+    for (const [beat, t] of ends) {
+      expect(t.beats.at(-1)).toBe(beat);
+      expect(t.units.length).toBeGreaterThan(0);
+      expect(beat).toBeLessThan(beats.length - 1);
+    }
+    // Every turn but the one the battle ends in (and those that changed no one).
+    expect(ends.size).toBe(turns.filter((t) => t.units.length && t.beats.at(-1)! < beats.length - 1).length);
+    expect([...ends.keys()]).toEqual([...ends.keys()].sort((p, q) => p - q));
+  });
+
+  test("a unit's label: damage, healing, PWR/HP, blocked, then statuses; spent Shield not repeated", () => {
+    expect(totalsPartsOf(tot({ damage: 7, healed: 2, statuses: [{ status: "Shield", stacks: 3 }] }))).toEqual([
+      { kind: "damage", text: "−7" },
+      { kind: "heal", text: "+2" },
+      { kind: "status", text: "×3", status: "Shield", stacks: 3 },
+    ]);
+    expect(totalsText(tot({ damage: 7, healed: 2, statuses: [{ status: "Shield", stacks: 3 }] }))).toBe("−7 · +2 · Shield ×3");
+    expect(totalsPartsOf(tot({ pwr: 1, hp: 2 }))).toEqual([{ kind: "buff", text: "+1/+2" }]);
+    expect(totalsPartsOf(tot({ pwr: -2 }))).toEqual([{ kind: "debuff", text: "−2 PWR" }]);
+    expect(totalsPartsOf(tot({ blocked: 3, statuses: [{ status: "Shield", stacks: -3 }, { status: "Poison", stacks: -1 }] }))).toEqual([
+      { kind: "blocked", text: "3" },
+      { kind: "status", text: "−1", status: "Poison", stacks: -1 },
+    ]);
+    expect(totalsText(tot({ damage: 5, died: true }))).toBe("✝ · −5");
+    expect(totalsText(tot({ blocked: 2 }))).toBe("2 blocked");
   });
 });
 

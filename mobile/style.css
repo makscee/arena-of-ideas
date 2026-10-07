@@ -395,6 +395,14 @@ button.bv-change { flex: 1; min-width: 0; min-height: 44px; height: 44px; paddin
 .bv-l.damage, .bv-l.death, .bv-l.debuff { color: var(--ghost); }
 .bv-l.heal, .bv-l.summon { color: var(--you); }
 .bv-l.buff, .bv-l.status, .bv-l.silence { color: var(--gold); }
+/* A turn's totals on its card (R4-12): one label, its numbers in their colours. */
+.bv-total { flex: 1; min-width: 0; height: 44px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.bv-pill.bv-tot { border-color: var(--dim); }
+.bv-pill.bv-tot:not(.two) { display: inline-flex; align-items: center; gap: 2px; font-size: 13px; padding: 0 3px; }
+.bv-tot .bv-l { display: inline-flex; align-items: center; justify-content: center; gap: 2px; }
+.bv-tp.damage, .bv-tp.debuff { color: var(--ghost); }
+.bv-tp.heal { color: var(--you); }
+.bv-tp.buff { color: var(--gold); }
 .bv-also { flex-wrap: wrap; gap: 6px; }
 button.bv-also-btn { min-height: 44px; padding: 0 10px; text-transform: none; letter-spacing: 0; font-family: "IBM Plex Mono", monospace; font-size: 14px; color: var(--gold); border-color: var(--line); }
 button.bv-also-btn.on { border-color: var(--gold); }
