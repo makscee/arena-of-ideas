@@ -25,7 +25,7 @@ import { fuseUnits, lineUnitOf } from "../../src/mvp/forms";
 import { cardIcons, type Pip } from "../../src/mvp/card-icons";
 import type { AbilityRegistry } from "../../src/types";
 import { api } from "../api";
-import { card, formRich, roman, summonCard, summonSheet, unitSheet, withPip } from "../ui/card";
+import { card, formRich, roman, summonCard, tierClass, summonSheet, unitSheet, withPip } from "../ui/card";
 import { app, button, closable, h, isDesktop, onKeys, screen, show, who } from "../ui/dom";
 import { icon } from "../ui/icon";
 import { loadUnitRates, pct } from "../ui/unit-stats";
@@ -258,7 +258,7 @@ function unitsTab(
     "div",
     { class: "row codex-filter", "data-testid": "codex-tiers" },
     h("span", { class: "label" }, "Tier"),
-    ...[null, ...tiers].map((t) => button(t === null ? "All" : roman(t), () => set({ tier: t }), st.tier === t ? "chip on" : "chip", `codex-tier-${t ?? "all"}`)),
+    ...[null, ...tiers].map((t) => button(t === null ? "All" : roman(t), () => set({ tier: t }), `${st.tier === t ? "chip on" : "chip"}${t === null ? "" : ` tier-chip ${tierClass(t)}`}`, `codex-tier-${t ?? "all"}`)),
     summons.length ? button("Summoned", () => set({ tier: "summoned", trigger: null }), st.tier === "summoned" ? "chip on" : "chip", "codex-tier-summoned") : null,
   );
   const trigRow = h(

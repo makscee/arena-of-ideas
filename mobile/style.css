@@ -8,6 +8,11 @@
   --you: #25e6d4;
   --ghost: #ff3d7f;
   --gold: #ffcc4d;
+  /* Tier colours (R4-4): the I–IV numeral on cards, sheets and Codex chips. */
+  --tier-1: #a8b3c7;
+  --tier-2: #3fdc8f;
+  --tier-3: #5aa7ff;
+  --tier-4: #c08cff;
   --chamfer: 10px;
   font-family: "Rajdhani", system-ui, sans-serif;
   color-scheme: dark;
@@ -107,7 +112,13 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .pip-any { background: var(--dim); }
 /* The tier numeral in a serif face, bold and brighter, so "I" reads as a
  * numeral and not a faint tick (R3-26). */
-.card .tier { position: absolute; top: 4px; right: 4px; font-family: Georgia, "Times New Roman", serif; font-size: 9px; line-height: 9px; font-weight: 700; letter-spacing: 0.5px; color: color-mix(in srgb, var(--text) 75%, var(--dim)); }
+.card .tier { position: absolute; top: 4px; right: 4px; font-family: Georgia, "Times New Roman", serif; font-size: 10px; line-height: 10px; font-weight: 700; letter-spacing: 0.5px; color: color-mix(in srgb, var(--text) 75%, var(--dim)); }
+/* Each tier its own colour, so the numeral reads at a glance (R4-4); "S", a summoned unit, stays neutral. */
+.tier { font-family: Georgia, "Times New Roman", serif; font-weight: 700; }
+.tier.t1 { color: var(--tier-1); }
+.tier.t2 { color: var(--tier-2); }
+.tier.t3 { color: var(--tier-3); }
+.tier.t4 { color: var(--tier-4); }
 .card .foot { min-height: 12px; display: flex; align-items: center; justify-content: center; max-width: 100%; }
 .discovered { font-size: 10px; color: var(--dim); font-family: "IBM Plex Mono", monospace; }
 .card .stats { font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600; line-height: 14px; }
@@ -762,6 +773,12 @@ button.t-unit .t-emoji { margin-right: 2px; text-decoration: none; display: inli
 .codex-filter { flex-wrap: wrap; gap: 6px; }
 button.chip { min-height: 44px; min-width: 44px; padding: 0 10px; font-size: 14px; border-color: var(--line); color: var(--text); }
 button.chip.on { border-color: var(--you); color: var(--bg); background: var(--you); }
+/* Codex tier chips: the numeral in its tier's colour, filled with it when picked (R4-4). */
+button.chip.tier-chip { font-family: Georgia, "Times New Roman", serif; font-weight: 700; }
+button.chip.tier-chip.t1 { color: var(--tier-1); } button.chip.tier-chip.t1.on { background: var(--tier-1); border-color: var(--tier-1); color: var(--bg); }
+button.chip.tier-chip.t2 { color: var(--tier-2); } button.chip.tier-chip.t2.on { background: var(--tier-2); border-color: var(--tier-2); color: var(--bg); }
+button.chip.tier-chip.t3 { color: var(--tier-3); } button.chip.tier-chip.t3.on { background: var(--tier-3); border-color: var(--tier-3); color: var(--bg); }
+button.chip.tier-chip.t4 { color: var(--tier-4); } button.chip.tier-chip.t4.on { background: var(--tier-4); border-color: var(--tier-4); color: var(--bg); }
 button.chip.icon { padding: 0; display: inline-flex; align-items: center; justify-content: center; color: #ffbf47; }
 button.chip.icon.on { background: #ffbf47; border-color: #ffbf47; color: var(--bg); }
 .codex-grid { align-content: start; }
