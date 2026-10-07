@@ -721,6 +721,336 @@ export function beatPlayOf(log: BattleEvent[], steps: Step[], name: NameOf = dis
   return out;
 }
 
+// ---------- the Log: a beat's waves grouped into rows (round 4, R4-3) ----------
+
+/** A row of the battle Log: one or more waves of one beat, read as one line.
+ * Long fights repeat themselves (a Shield on every ally after every hit, a
+ * Poison tick on each unit, a Blessing save as three lines), so the Log
+ * groups what playback shows wave by wave. */
+export interface LogRow {
+  beat: number;
+  /** The waves of `beat` this row stands for, in order. */
+  waves: number[];
+  turn: number;
+  subjectSide: Side | null;
+  caption: string;
+  /** Every change of every wave in it: the Why panel reaches each one. */
+  changes: Change[];
+  eventIds: number[];
+}
+
+/** What one target took in a grouped row, summed. */
+interface Took {
+  amount: number;
+  absorbed: number;
+  /** Stat follow-ups of a status (Vitality's +HP), by stat. */
+  stats: Record<string, number>;
+  /** HP a Blessing save gave back after the hit, or null. */
+  saved: number | null;
+  /** How many times it landed on this target. */
+  hits: number;
+}
+
+type FxType = "Hurt" | "Heal" | "StatChanged" | "StatusApplied";
+
+/** A row while it is being grouped. `fx` is set when the row is plain
+ * effects (one source, one kind) and so can be summed and re-captioned;
+ * other rows keep their wave's caption. */
+interface LogDraft {
+  waves: number[];
+  first: Step;
+  eventIds: number[];
+  changes: Change[];
+  caption: string;
+  sides: Set<Side | null>;
+  times: number;
+  fx: {
+    type: FxType;
+    /** The status or stat it is about ("" for hits and heals). */
+    what: string;
+    /** "Coach", "Fatigue", or the ticking status ("Poison"). */
+    cause: string;
+    /** The firing's source and kind; with `parent`, one firing. */
+    key: string;
+    parent: number | null;
+    actorSide: Side | null;
+    /** A status acting on its own holder at a turn's edge (a Poison tick). */
+    tick: boolean;
+    fades: number;
+    targets: string[];
+    took: Map<string, Took>;
+  } | null;
+}
+
+const FX_TYPES = new Set<string>(["Hurt", "Heal", "StatChanged", "StatusApplied"]);
+
+/** Who acts, as the Log reads it: by name and side, not ability or instance
+ * (a fused unit's two Shield abilities, or two War Drummers, are one effect). */
+function sourceKey(log: BattleEvent[], e: BattleEvent, plain: NameOf, sides: Map<string, Side>): string {
+  if (e.source === "kernel") return `kernel:${e.causedBy !== null ? log[e.causedBy]?.type ?? "" : ""}`;
+  return `${plain(e.source.unit)}:${sides.get(e.source.unit) ?? ""}/${e.source.status ?? ""}`;
+}
+
+/** The effect part of a wave, when it is plain enough to sum: every event is
+ * the same kind from the same source, plus the follow-ups its caption
+ * already covers (a status's stat change, the Shield an absorbed hit spent). */
+function fxOf(log: BattleEvent[], s: Step, plain: NameOf, sides: Map<string, Side>): LogDraft["fx"] {
+  const e = log[s.eventIds[0]!]!;
+  if (!FX_TYPES.has(e.type)) return null;
+  const type = e.type as FxType;
+  const parent = e.causedBy !== null ? log[e.causedBy] : undefined;
+  // A strike's hit reads "X strikes Y → −n": its own beat, nothing to group.
+  if (type === "Hurt" && e.source === "kernel" && parent?.type === "Strike") return null;
+  const what = e.type === "StatusApplied" ? e.status : e.type === "StatChanged" ? e.stat : "";
+  const src = sourceKey(log, e, plain, sides);
+  const took = new Map<string, Took>();
+  const targets: string[] = [];
+  for (const id of s.eventIds) {
+    const m = log[id]!;
+    if (m.type === e.type && m.causedBy === e.causedBy && sameSource(m, e) && "unit" in m) {
+      if ((m.type === "StatusApplied" && m.status !== what) || (m.type === "StatChanged" && m.stat !== what)) return null;
+      const unit = m.unit as string;
+      let t = took.get(unit);
+      if (!t) {
+        t = { amount: 0, absorbed: 0, stats: {}, saved: null, hits: 0 };
+        took.set(unit, t);
+        targets.push(unit);
+      }
+      t.hits++;
+      if (m.type === "Hurt") {
+        t.amount += m.amount;
+        t.absorbed += m.absorbed ?? 0;
+      } else if (m.type === "Heal") t.amount += m.amount;
+      else if (m.type === "StatChanged") t.amount += m.delta;
+      else if (m.type === "StatusApplied") t.amount += m.stacks;
+      continue;
+    }
+    if (m.type === "StatChanged" && isStatusFollowUp(log, m)) {
+      const t = took.get(m.unit);
+      if (!t || type !== "StatusApplied") return null;
+      t.stats[m.stat] = (t.stats[m.stat] ?? 0) + m.delta;
+      continue;
+    }
+    const spent = m.causedBy !== null ? log[m.causedBy] : undefined;
+    if (m.type === "StatusRemoved" && m.status === "Shield" && spent?.type === "Hurt" && spent.absorbed) continue;
+    return null;
+  }
+  const own = e.source !== "kernel" && e.source.status !== undefined && e.source.status !== "Blessing" && targets.length === 1 && targets[0] === e.source.unit;
+  const tick = own && (type === "Hurt" || type === "Heal") && (parent?.type === "TurnEnd" || parent?.type === "TurnStart");
+  return {
+    type,
+    what,
+    cause: tick && e.source !== "kernel" ? e.source.status! : s.caption.split(" → ")[0]!,
+    key: tick && e.source !== "kernel" ? `tick:${e.source.status}:${type}` : `${src}|${type}|${what}`,
+    parent: e.causedBy,
+    actorSide: s.actorSide,
+    tick,
+    fades: 0,
+    targets,
+    took,
+  };
+}
+
+function sameSource(a: BattleEvent, b: BattleEvent): boolean {
+  if (a.source === "kernel" || b.source === "kernel") return a.source === b.source;
+  return a.source.unit === b.source.unit && a.source.status === b.source.status;
+}
+
+/** The units alive on each side just before event `id`. */
+function aliveBefore(log: BattleEvent[], id: number): Map<Side, Set<string>> {
+  const alive = new Map<Side, Set<string>>([["A", new Set()], ["B", new Set()]]);
+  for (let i = 0; i < id && i < log.length; i++) {
+    const e = log[i]!;
+    if (e.type === "BattleStart") for (const s of ["A", "B"] as const) for (const r of e.teams[s]) alive.get(s)!.add(r.id);
+    else if (e.type === "Summon") alive.get(e.side)!.add(e.unit);
+    else if (e.type === "Death") for (const set of alive.values()) set.delete(e.unit);
+  }
+  return alive;
+}
+
+function sumStats(a: Record<string, number>, b: Record<string, number>): Record<string, number> {
+  const out = { ...a };
+  for (const [k, v] of Object.entries(b)) out[k] = (out[k] ?? 0) + v;
+  return out;
+}
+
+function signed(n: number): string {
+  return `${n >= 0 ? "+" : "−"}${Math.abs(n)}`;
+}
+
+/** Groups each beat's waves into Log rows (round 4, note 4):
+ * - R1: rows of one actor and one effect within a beat merge: one firing's
+ *   targets join up again, and a firing that repeats on the same targets
+ *   sums its amounts and says "(×N)";
+ * - R2: a status ticking on many units is one row, its fades folded in
+ *   ("Poison ticks 5 units, −4 each, 4 blocked");
+ * - R3: a Blessing save folds into the hit it stopped
+ *   ("Poison → Rose −112 → Blessing saves Rose (+113)");
+ * - R4: a target list that is a whole side reads "all allies" / "all enemies".
+ * Rows keep every change they merged, so the Why panel reaches each event. */
+export function logRowsOf(log: BattleEvent[], beats: PlayBeat[], name: NameOf = displayNames(log)): LogRow[] {
+  const rows: LogRow[] = [];
+  const plain = displayNames(log);
+  const sides = sidesOf(log);
+  for (const pb of beats) {
+    let drafts: LogDraft[] = pb.waves.map((w, i) => ({
+      waves: [i],
+      first: w,
+      eventIds: [...w.eventIds],
+      changes: [...w.changes],
+      caption: w.caption,
+      sides: new Set([w.subjectSide]),
+      times: 1,
+      fx: fxOf(log, w, plain, sides),
+    }));
+    const absorb = (into: LogDraft, d: LogDraft) => {
+      into.waves.push(...d.waves);
+      into.eventIds.push(...d.eventIds);
+      into.changes.push(...d.changes);
+      for (const s of d.sides) into.sides.add(s);
+    };
+    const holding = (id: number) => drafts.find((d) => d.eventIds.includes(id));
+    const gone = new Set<LogDraft>();
+    // R3: a Blessing save (the stopped death, its heal) joins the hit.
+    for (const d of drafts) {
+      const e = log[d.first.eventIds[0]!]!;
+      if (e.type !== "Intercepted" || e.original !== "Death" || e.by.status !== "Blessing" || !e.unit) continue;
+      const heal = drafts.find((h) => !gone.has(h) && h.eventIds.length === 1 && log[h.eventIds[0]!]?.type === "Heal" && log[h.eventIds[0]!]?.causedBy === e.id);
+      const amount = heal ? (log[heal.eventIds[0]!] as { amount: number }).amount : 0;
+      const hit = e.causedBy !== null ? holding(e.causedBy) : undefined;
+      const t = hit?.fx?.type === "Hurt" ? hit.fx.took.get(e.unit) : undefined;
+      if (hit && t) {
+        t.saved = (t.saved ?? 0) + amount;
+        absorb(hit, d);
+        gone.add(d);
+      } else {
+        d.fx = null;
+        d.caption = `Blessing saves ${name(e.unit)}${heal ? ` (+${amount})` : ""}`;
+      }
+      if (heal) {
+        absorb(t && hit ? hit : d, heal);
+        gone.add(heal);
+      }
+    }
+    drafts = drafts.filter((d) => !gone.has(d));
+    // R2: a status's fade at the turn's edge folds into its tick.
+    for (const d of drafts) {
+      const e = log[d.first.eventIds[0]!]!;
+      if (e.type !== "StatusRemoved" || d.eventIds.length !== 1 || e.source === "kernel") continue;
+      const tick = drafts.find((t) => !gone.has(t) && t.fx?.tick && t.fx.parent === e.causedBy && t.fx.key.startsWith(`tick:${e.status}:`) && t.fx.took.has(e.unit));
+      if (!tick) continue;
+      absorb(tick, d);
+      tick.fx!.fades++;
+      gone.add(d);
+    }
+    drafts = drafts.filter((d) => !gone.has(d));
+    // R1 and R2: one actor's same effect is one row, summed per target (a
+    // tick is one effect across its holders).
+    {
+      const out: LogDraft[] = [];
+      for (const d of drafts) {
+        const into = d.fx ? out.find((o) => o.fx && o.fx.key === d.fx!.key) : undefined;
+        if (!into) {
+          out.push(d);
+          continue;
+        }
+        absorb(into, d);
+        const f = into.fx!;
+        for (const u of d.fx!.targets) {
+          const a = f.took.get(u), b = d.fx!.took.get(u)!;
+          if (!a) {
+            f.targets.push(u);
+            f.took.set(u, { ...b });
+          } else {
+            a.amount += b.amount;
+            a.absorbed += b.absorbed;
+            a.stats = sumStats(a.stats, b.stats);
+            a.saved = a.saved === null && b.saved === null ? null : (a.saved ?? 0) + (b.saved ?? 0);
+            a.hits += b.hits;
+          }
+        }
+        f.fades += d.fx!.fades;
+      }
+      drafts = out;
+    }
+    // R1 for the rest (a summon, a stopped strike): the same line again is "(×N)".
+    const out: LogDraft[] = [];
+    for (const d of drafts) {
+      const into = !d.fx ? out.find((o) => !o.fx && o.caption === d.caption) : undefined;
+      if (into) {
+        absorb(into, d);
+        into.times += d.times;
+      } else out.push(d);
+    }
+    for (const d of out) {
+      const order = [...d.waves].sort((x, y) => x - y);
+      const side = d.sides.size === 1 ? [...d.sides][0]! : null;
+      const caption = d.fx ? fxCaption(log, d.fx, name, d.eventIds) : d.caption;
+      rows.push({ beat: pb.index, waves: order, turn: pb.turn, subjectSide: side, caption: d.times > 1 ? `${caption} (×${d.times})` : caption, changes: d.changes, eventIds: d.eventIds });
+    }
+  }
+  return rows;
+}
+
+function fxCaption(log: BattleEvent[], fx: NonNullable<LogDraft["fx"]>, name: NameOf, eventIds: number[]): string {
+  const effect = (t: Took): string => {
+    switch (fx.type) {
+      case "Hurt":
+        return t.amount > 0 ? `−${t.amount}${t.absorbed ? ` (${t.absorbed} absorbed)` : ""}` : t.absorbed ? `Shield blocks ${t.absorbed}` : "no damage";
+      case "Heal":
+        return `+${t.amount}`;
+      case "StatChanged":
+        return `${signed(t.amount)} ${fx.what.toUpperCase()}`;
+      case "StatusApplied": {
+        const stats = Object.entries(t.stats).map(([k, v]) => `${signed(v)} ${k.toUpperCase()}`);
+        return `${fx.what} ×${t.amount}${stats.length ? ` (${stats.join(", ")})` : ""}`;
+      }
+    }
+  };
+  const start = Math.min(...eventIds);
+  let alive: Map<Side, Set<string>> | null = null;
+  const list = (units: string[]): string => {
+    if (units.length >= 2 && fx.actorSide) {
+      alive ??= aliveBefore(log, start);
+      for (const [side, set] of alive) {
+        if (set.size === units.length && units.every((u) => set.has(u))) return side === fx.actorSide ? "all allies" : "all enemies";
+      }
+    }
+    return units.map(name).join(", ");
+  };
+  const saved = fx.targets.filter((u) => fx.took.get(u)!.saved !== null);
+  const saves = saved.length ? ` → Blessing saves ${saved.map(name).join(", ")} (+${saved.reduce((s, u) => s + fx.took.get(u)!.saved!, 0)})` : "";
+  if (fx.tick) {
+    // What each tick dealt, Shield's share included: "−4 each, 4 blocked".
+    const dealt = fx.targets.map((u) => fx.took.get(u)!.amount + fx.took.get(u)!.absorbed);
+    const total = dealt.reduce((s, x) => s + x, 0);
+    const blocked = fx.targets.reduce((s, u) => s + fx.took.get(u)!.absorbed, 0);
+    const n = fx.targets.length;
+    const sign = fx.type === "Heal" ? "+" : "−";
+    const parts = [n === 1 ? `${fx.cause} ticks ${name(fx.targets[0]!)}` : `${fx.cause} ticks ${n} units`];
+    parts.push(n === 1 ? `${sign}${total}` : dealt.every((x) => x === dealt[0]) ? `${sign}${dealt[0]} each` : `${sign}${total} in all`);
+    if (blocked) parts.push(`${blocked} blocked`);
+    if (fx.fades) parts.push(n === 1 ? "fades" : `${fx.fades} fade${fx.fades === 1 ? "s" : ""}`);
+    return parts.join(", ") + saves;
+  }
+  // Targets that took the same, together: "−2 on all enemies", "Rose −5; −2 on Ace, Kit".
+  // "(×N)": it landed N times on each (amounts summed); per group when that differs.
+  const hits = new Set(fx.targets.map((u) => fx.took.get(u)!.hits));
+  const times = hits.size === 1 ? [...hits][0]! : 1;
+  const groups: { text: string; units: string[] }[] = [];
+  for (const u of fx.targets) {
+    const t = fx.took.get(u)!;
+    const text = effect(t) + (hits.size > 1 && t.hits > 1 ? ` (×${t.hits})` : "");
+    const g = groups.find((x) => x.text === text);
+    if (g) g.units.push(u);
+    else groups.push({ text, units: [u] });
+  }
+  const body = groups
+    .map((g) => (fx.type === "StatusApplied" || g.units.length > 1 ? `${g.text} on ${list(g.units)}` : `${name(g.units[0]!)} ${g.text}`))
+    .join("; ");
+  return `${fx.cause} → ${body}${saves}${times > 1 ? ` (×${times})` : ""}`;
+}
+
 function causeName(log: BattleEvent[], e: BattleEvent, name: NameOf): string {
   const a = actorOf(log, e);
   if (a?.unit) return a.via === "strike" || a.via === "ability" ? name(a.unit) : a.via;

@@ -20,7 +20,7 @@
 import { boardAt, type BoardState, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView, SummonContent } from "../../src/mvp/contract";
 import { chainCappedTip, STATUS_TERMS, termDef, timeUpTip, termIcon, triggerLabel, type IconId, type TermId } from "../../src/glossary";
-import { BEAT_MS, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, keyMomentsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, turnLabel, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
+import { BEAT_MS, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, keyMomentsOf, logRowsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, turnLabel, whyILost as lossChains, sidesOf, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { summonId } from "../../src/describe";
@@ -432,46 +432,46 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     if (t === "log") logRows[curRow()]?.scrollIntoView({ block: "nearest" });
   }
 
-  /** The Log: one row per wave, every beat of the fight, built once; render()
-   * shows the rows played so far and lights the one on screen. A row's click
-   * moves the board there and opens its Why. */
+  /** The Log: every beat of the fight, its waves grouped into rows
+   * (logRowsOf, R4-3), built once; render() shows the rows played so far and
+   * lights the one on screen. A row's click moves the board to its last wave
+   * and opens its Why, which reaches every change the row merged. */
   const logRows: HTMLElement[] = [];
-  const rowAt: { beat: number; wave: number }[] = [];
+  const rowAt = logRowsOf(log, beats, TAGGED);
   function buildLog(): void {
-    beats.forEach((pb, bi) => {
-      pb.waves.forEach((st, wi) => {
-        const row = h(
-          "button",
-          { class: `bv-log-row${wi === 0 ? " first" : ""}`, "data-testid": "log-row", "data-beat": String(bi) },
-          h("span", { class: "bv-log-t dim mono" }, wi === 0 ? turnLabel(pb.turn) : ""),
-          h("span", { class: "bv-log-c" }, ...(st.subjectSide ? [sideTag(st.subjectSide)] : []), ...richCaption(st.caption)),
-        );
-        row.addEventListener("click", () => {
-          pause();
-          finished = false;
-          at = bi;
-          wave = wi;
-          landed = [];
-          const c = st.changes[0];
-          if (c) openTrace(c.eventId, st.changes.filter((x) => x.unit === c.unit));
-          else render();
-        });
-        logRows.push(row);
-        rowAt.push({ beat: bi, wave: wi });
+    rowAt.forEach((r, i) => {
+      const first = i === 0 || rowAt[i - 1]!.beat !== r.beat;
+      const row = h(
+        "button",
+        { class: `bv-log-row${first ? " first" : ""}`, "data-testid": "log-row", "data-beat": String(r.beat) },
+        h("span", { class: "bv-log-t dim mono" }, first ? turnLabel(r.turn) : ""),
+        h("span", { class: "bv-log-c" }, ...(r.subjectSide ? [sideTag(r.subjectSide)] : []), ...richCaption(r.caption)),
+      );
+      row.addEventListener("click", () => {
+        pause();
+        finished = false;
+        at = r.beat;
+        wave = r.waves.at(-1)!;
+        landed = [];
+        const c = r.changes[0];
+        if (c) openTrace(c.eventId, r.changes);
+        else render();
       });
+      logRows.push(row);
     });
     logBody.replaceChildren(...(logRows.length ? logRows : [h("div", { class: "dim" }, "Nothing happened.")]));
   }
   /** The log row of the wave on screen (-1 before the first beat). */
   function curRow(): number {
     if (at < 0) return -1;
-    return rowAt.findIndex((r) => r.beat === at && r.wave === wave);
+    return rowAt.findIndex((r) => r.beat === at && r.waves.includes(wave));
   }
   function drawLog(): void {
-    const cur = finished ? logRows.length - 1 : curRow();
+    const cur = finished ? -1 : curRow();
     logRows.forEach((r, i) => {
-      r.hidden = i > cur;
-      r.classList.toggle("on", i === cur && !finished);
+      const row = rowAt[i]!;
+      r.hidden = !finished && (at < 0 || row.beat > at || (row.beat === at && row.waves[0]! > wave));
+      r.classList.toggle("on", i === cur);
     });
     if (tab === "log" && playing && cur >= 0) logRows[cur]?.scrollIntoView({ block: "nearest" });
   }
@@ -1460,7 +1460,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
             { class: "row bv-also", "data-testid": "trace-group" },
             h("span", { class: "dim small" }, "This step:"),
             ...traceGroup.map((x) => {
-              const b = button(x.label, () => openTrace(x.eventId, traceGroup), `bv-also-btn ${x.kind}${x.eventId === t.eventId ? " on" : ""}`, "trace-group-change");
+              // A Log row merges changes on several units: each chip names its unit.
+              const label = traceGroup.some((y) => y.unit !== x.unit) ? `${x.label} ${name(x.unit)}` : x.label;
+              const b = button(label, () => openTrace(x.eventId, traceGroup), `bv-also-btn ${x.kind}${x.eventId === t.eventId ? " on" : ""}`, "trace-group-change");
               return b;
             }),
           )
