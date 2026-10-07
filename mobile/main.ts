@@ -87,7 +87,8 @@ function team(line: LineUnit[], side: "you" | "ghost", content: MvpContent, test
 function soundRow(): HTMLElement {
   const toggle = button("", () => setSound({ on: !soundSettings().on }), "sound-toggle", "sound-toggle");
   const volume = h("input", { type: "range", min: "0", max: "100", step: "5", "aria-label": "Volume", "data-testid": "sound-volume" });
-  volume.addEventListener("input", () => setSound({ volume: Number(volume.value) / 100 }));
+  // The slider is read from the event, not captured: no closure holds it.
+  volume.addEventListener("input", (e) => setSound({ volume: Number((e.currentTarget as HTMLInputElement).value) / 100 }));
   volume.addEventListener("change", () => play("click"));
   const row = h("div", { class: "row sound-row", "data-testid": "sound-row" }, toggle, volume);
   syncSoundRow(row);
@@ -940,9 +941,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const full = run.line.length >= L && run.bench.length >= B;
   const giftKey = run.gift ? `${run.runId}:${run.round}:${run.gift.join(",")}` : "";
   const giftPickable = (id: string) => !full || owns(id);
+  // Line and bench full and some pick can't join (one you own still merges in):
+  // the chooser says so and offers Make room, and a sale reopens it.
+  const cramped = (gift: string[]) => gift.some((id) => !giftPickable(id));
   function giftBanner(): HTMLElement | null {
     if (!run.gift || crown) return null;
-    const stuck = !run.gift.some(giftPickable);
+    const stuck = cramped(run.gift);
     return h(
       "div",
       { class: "gift-banner row", "data-testid": "gift-banner" },
@@ -954,11 +958,13 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const gift = run.gift;
     if (!gift) return;
     giftAside = null;
-    const stuck = !gift.some(giftPickable);
+    const stuck = cramped(gift);
+    const none = !gift.some(giftPickable);
     const tier = unitOf(gift[0]!)?.tier;
     const choices = gift.map((id, i) => {
       const u = unitOf(id);
-      const mine = board.find((x) => x.kind === "unit" && x.unitId === id) ?? null;
+      // Yours: a copy merges in, a fused unit's part included (owns()).
+      const mine = board[mergeTarget(board, id)] ?? null;
       const cu: CardUnit = { unitId: id, emoji: u?.emoji ?? "?", name: u?.name ?? id, stats: u?.base ?? { pwr: 0, hp: 0 }, ...(u ? { recipe: u.forms.sleeping } : {}) };
       const c = card(cu, { side: "you", ...(u ? { tier: u.tier } : {}), extra: mine ? [h("div", { class: "cost" }, "＋")] : [], testid: `gift-card-${i}` });
       if (mine) c.classList.add("owned");
@@ -978,7 +984,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       h("div", { class: "label" }, "Awakening gift"),
       h("h2", { class: "reveal", "data-testid": "gift-title" }, "🎁 Awakened! Pick a gift"),
       h("div", { class: "dim small" }, `Free: one of these${tier ? ` tier ${roman(tier)}` : ""} units. It joins your line, else your bench; one you own merges in.`),
-      ...(stuck ? [h("div", { class: "hint", "data-testid": "gift-full" }, "Line and bench full: make room (sell a unit), then pick.")] : []),
+      ...(stuck ? [h("div", { class: "hint", "data-testid": "gift-full" }, none ? "Line and bench full: make room (sell a unit), then pick." : "Line and bench full: only a unit you own merges in now. Make room (sell a unit) to pick another.")] : []),
       h("div", { class: "gift-choices", "data-testid": "gift-choices" }, ...choices),
       h("div", { class: "dim small" }, `${tapOrClick()} a card to read it.${isDesktop() ? " Esc sets the gift aside." : ""}`),
       h(
@@ -1050,7 +1056,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   screen("shop");
   // The gift opens by itself, unless it was set aside (and, if set aside for
   // a full board, there is still no room).
-  if (run.gift && !crown && (giftAside?.key !== giftKey || (giftAside.full && run.gift.some(giftPickable)))) openGift();
+  if (run.gift && !crown && (giftAside?.key !== giftKey || (giftAside.full && !cramped(run.gift)))) openGift();
   rerender = () => shopScreen(run, content, err.textContent ?? "", pick.mode === "picked" ? pick.index : -1);
   // Keys: Esc steps back (the fusion, the selection), then opens the ☰ run
   // menu, at every width (a sheet over the shop closes first: ui/dom.ts).
