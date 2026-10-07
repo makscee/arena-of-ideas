@@ -39,7 +39,7 @@
   awoken:   Ally gains PWR: 1 damage to front enemy, then silence front enemy.
 🌹 Rose
   sleeping: Hit: 2 damage to front enemy.
-  awoken:   Hit: 2 damage and 1 Curse to front enemy.
+  awoken:   Hit: 2 damage and 1 Poison to front enemy.
 😵 Victim
   sleeping: Hit: 1 Strength to all allies.
   awoken:   Hit: 1 Strength to all allies, then heal all allies for 1.
@@ -57,7 +57,7 @@
   awoken:   Hit: 1 Curse to front enemy.
 🦹 Henchman
   sleeping: Ally dies: 2 Strength to self.
-  awoken:   Ally dies: 2 Strength and 2 Shield to self.
+  awoken:   Ally dies: silence front enemy.
 🎯 Sniper
   sleeping: Battle start: 4 damage to random enemy.
   awoken:   Battle start: 4 damage and 2 Poison to random enemy.
@@ -78,7 +78,7 @@
   awoken:   Ally gets Shield: 1 Strength to it, then heal it for 1.
 🪫 Battery
   sleeping: Ally healed: 1 Strength to self.
-  awoken:   Ally healed: 2 damage to random enemy.
+  awoken:   Ally healed: 1 Freeze to random enemy.
 🧪 Injector
   sleeping: Hit: 1 Poison to front enemy.
   awoken:   Hit: 1 Poison and 1 Freeze to front enemy.
@@ -144,7 +144,7 @@
   awoken:   Hit: 1 Shield to all allies.
 🎖️ Commander
   sleeping: Strikes: 1 Strength to all allies.
-  awoken:   Strikes: 1 Strength to all allies, then heal all allies for 1.
+  awoken:   Strikes: PWR damage to front enemy.
 🥁 War Drummer
   sleeping: Turn start: 1 Strength to all allies.
   awoken:   Turn start: 1 Strength to all allies, then heal all allies for 1.
@@ -159,7 +159,7 @@
   awoken:   Turn start: 2 damage and 1 Curse to front enemy.
 🌩️ Lightning
   sleeping: Ally gains PWR: 2 damage to random enemy.
-  awoken:   Ally gains PWR: 1 damage and 1 Curse to random enemy.
+  awoken:   Ally gains PWR: 2 damage and 1 Curse to random enemy.
 🪄 Battle Mage
   sleeping: Ally gets Shield: 2 damage to random enemy.
   awoken:   Ally gets Shield: 2 damage and 1 Poison to random enemy.
@@ -183,7 +183,7 @@
   awoken:   Turn end: summon Puffball (1/3).
 🌀 Mesmerist
   sleeping: Battle start: 1 Freeze and 1 Curse to front enemy.
-  awoken:   Battle start: 1 Freeze and 1 Curse to all enemies.
+  awoken:   Battle start: silence front enemy, then 1 Freeze and 1 Curse to front enemy.
 🪞 Redirector
   sleeping: Hit: 2 damage to random enemy.
   awoken:   Hit: 2 damage and 1 Freeze to random enemy.
