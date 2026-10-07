@@ -371,7 +371,7 @@ button.bv-change { flex: 1; min-width: 0; min-height: 44px; height: 44px; paddin
 .bv-pill { max-width: 100%; height: 28px; line-height: 26px; padding: 0 5px; border: 1px solid; border-radius: 4px; background: var(--bg); font-family: "IBM Plex Mono", monospace; font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bv-change.damage .bv-pill, .bv-change.death .bv-pill, .bv-change.debuff .bv-pill { color: var(--ghost); }
 .bv-change.heal .bv-pill, .bv-change.summon .bv-pill { color: var(--you); }
-.bv-change.buff .bv-pill, .bv-change.status .bv-pill, .bv-change.silence .bv-pill { color: var(--gold); font-family: "Rajdhani", sans-serif; font-size: 12px; padding: 0 3px; }
+.bv-change.buff .bv-pill, .bv-change.status .bv-pill, .bv-change.silence .bv-pill, .bv-change.noRoom .bv-pill { color: var(--gold); font-family: "Rajdhani", sans-serif; font-size: 12px; padding: 0 3px; }
 /* Two changes on one unit in one step: two lines in the pill, each in its kind's colour. */
 .bv-pill.two { display: flex; flex-direction: column; height: auto; min-height: 28px; line-height: 13px; padding: 1px 2px; font-family: "Rajdhani", sans-serif; font-size: 11px; letter-spacing: -0.02em; border-color: var(--gold); }
 .bv-pill.two .bv-l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

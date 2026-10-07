@@ -22,7 +22,7 @@ export type TermId =
   | `target:${Selector["kind"]}`
   | `effect:${Effect["kind"]}`
   | `state:${"sleeping" | "awoken" | "fused"}`
-  | `battle:${"fatigue" | "chainCapped" | "timeUp"}`
+  | `battle:${"fatigue" | "chainCapped" | "timeUp" | "noRoom"}`
   | `term:${"stacks" | "would"}`;
 
 /** The terms with a fixed entry (every TermId but the open `status:` set). */
@@ -149,6 +149,10 @@ export const GLOSSARY: Record<FixedTermId, TermDef> = {
     // New runs' cap (the Codex). A battle's own cap is its ChainCapped event's
     // steps: a run keeps the rules it started with (chainCappedTip).
     tip: chainCappedTip(MVP_RULES.chainStepCap),
+  },
+  "battle:noRoom": {
+    label: "No room", icon: "magic-portal", tone: "plain",
+    tip: "When the line is full, a unit that would join it mid-battle never arrives: nothing happens.",
   },
   "battle:timeUp": {
     label: "Time's up", icon: "hourglass", tone: "plain",

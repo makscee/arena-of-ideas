@@ -57,7 +57,7 @@ export function sidesOf(log: BattleEvent[]): Map<string, Side> {
 
 // ---------- changes and their traces ----------
 
-export type ChangeKind = "damage" | "heal" | "buff" | "debuff" | "status" | "death" | "summon" | "silence";
+export type ChangeKind = "damage" | "heal" | "buff" | "debuff" | "status" | "death" | "summon" | "silence" | "noRoom";
 
 /** A change you can tap: a number (or mark) on a unit card. */
 export interface Change {
@@ -68,7 +68,7 @@ export interface Change {
   label: string;
 }
 
-const CHANGE_TYPES = new Set(["Hurt", "Heal", "StatChanged", "StatusApplied", "Death", "Summon", "Silenced"]);
+const CHANGE_TYPES = new Set(["Hurt", "Heal", "StatChanged", "StatusApplied", "Death", "Summon", "Silenced", "NoRoom"]);
 
 /** A hit as a change reads: "−n", or for a hit that did nothing, what
  * stopped it ("3 blocked" by Shield, or "no damage"), never "−0". */
@@ -94,6 +94,9 @@ export function changeOf(e: BattleEvent): Change | null {
       return { eventId: e.id, unit: e.unit, kind: "summon", label: e.resurrected ? "returns" : "new" };
     case "Silenced":
       return { eventId: e.id, unit: e.unit, kind: "silence", label: "silenced" };
+    // On the unit that tried, so it can be tapped for its trace (R4-2).
+    case "NoRoom":
+      return { eventId: e.id, unit: e.unit, kind: "noRoom", label: "no room" };
     default:
       return null;
   }
@@ -341,6 +344,10 @@ export interface Perspective {
  * leads with the glossary's "Time's up" term (battle:timeUp). */
 export const TIME_UP_CAPTION = "Time's up: draw";
 
+/** A summon or revive that found its line full (R4-2): the glossary's
+ * battle:noRoom term, as its caption reads it. */
+export const NO_ROOM = "No room";
+
 /** How the battle's end reads from `p`. */
 export function endCaption(winner: Side | "draw", p: Perspective = {}): string {
   if (winner === "draw") return "Draw";
@@ -555,6 +562,7 @@ function effectOf(e: BattleEvent | undefined): Pick<Firing, "effect" | "effectSt
     case "Fatigue": return { effect: "effect:damage" };
     case "Intercepted": return { effect: "effect:cancel" };
     case "ChainCapped": return { effect: "battle:chainCapped" };
+    case "NoRoom": return { effect: "battle:noRoom" };
     default: return null;
   }
 }
@@ -754,6 +762,7 @@ export function captionSubject(log: BattleEvent[], id: number, name: NameOf = di
     case "Silenced":
       return causeUnit(log, e, name) ?? e.unit;
     case "Summon":
+    case "NoRoom":
       return causeUnit(log, e, name) ?? e.unit;
     case "StatusRemoved":
       return e.unit;
@@ -839,6 +848,8 @@ export function captionOf(log: BattleEvent[], id: number, name: NameOf = display
       return `Fatigue → everyone takes ${e.amount}`;
     case "ChainCapped":
       return `Chain stopped after ${e.steps} steps`;
+    case "NoRoom":
+      return `${causeName(log, e, name)} → ${NO_ROOM} ${e.revive !== undefined ? `to revive ${name(e.revive)}` : `for ${e.name}`}`;
     case "Intercepted":
       // A status on the unit stopping its own act reads from the unit:
       // "Freeze on Rose → stops its strike", not "Rose (Freeze) → … on Rose".

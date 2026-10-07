@@ -212,6 +212,12 @@ class Renderer {
         return;
       }
 
+      case "NoRoom": {
+        const what = e.revive !== undefined ? `revive ${this.name(e.revive)}` : `summon ${e.name}`;
+        this.push(e, `(no room: ${this.name(e.unit)} tries to ${what}, but side ${e.side}'s line is full)`);
+        return;
+      }
+
       case "Intercepted": {
         const by = this.refDesc(e.by);
         const who = e.unit !== undefined ? this.name(e.unit) : undefined;

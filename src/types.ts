@@ -142,9 +142,9 @@ export type Effect =
   | { kind: "heal"; amount: Amount }
   | { kind: "applyStatus"; status: string; stacks: Amount }
   | { kind: "consumeStacks"; status?: string; stacks: Amount } // status omitted = the owning status
-  | { kind: "summon"; unit: UnitDef } // at the front of the target's team; skipped if line is full
+  | { kind: "summon"; unit: UnitDef } // at the front of the target's team; a full line logs NoRoom instead
   | { kind: "silence" } // remove all statuses, disable the unit's own abilities for the battle
-  | { kind: "resurrect"; hp: Amount } // revive the (dead) target at N hp, back of line
+  | { kind: "resurrect"; hp: Amount } // revive the (dead) target at N hp, back of line; a full line logs NoRoom
   // interceptor-context atoms — transform/cancel the proposed event
   | { kind: "cancel"; consumeSelf?: number } // cancel the event; optionally consume own stacks
   | { kind: "absorbHurt" } // reduce a proposed Hurt by min(own stacks, amount); consume = absorbed
@@ -217,6 +217,10 @@ export type EventBody =
   // A cascade hit the step cap: `root` is the event its first firing reacted
   // to, `steps` the firings it ran; the firings still queued were dropped.
   | { type: "ChainCapped"; root: number; steps: number }
+  // A Summon or Revive found its line full and did nothing (R4-2): `unit` is
+  // the holder whose ability tried, `side` the full line, `name` who found no
+  // room; `revive` is the dead unit's id when it was a revive.
+  | { type: "NoRoom"; unit: string; side: Side; name: string; revive?: string }
   | { type: "Intercepted"; by: AbilityRef; original: string; unit?: string }
   // timeUp: the turn cap ran out with both sides standing (a draw); absent otherwise.
   | { type: "BattleEnd"; winner: Side | "draw"; turns: number; timeUp?: true };
