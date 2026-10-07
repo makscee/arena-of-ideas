@@ -741,7 +741,7 @@ describe("R2-17: key moments, battle start, fatigue rows, Why's icons", () => {
       }
     }
     expect(blocked).toBeGreaterThan(0);
-  });
+  }, 30_000); // whole fights: 1.9 s idle, past 5 s on the CI runner (R4-19)
 
   test("battle start is its own timeline block (turn 0), labelled Start", () => {
     const log = run([Shieldbearer, Smith, Archer], [dummy("Dummy", 30, 2)]);
