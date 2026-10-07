@@ -5,7 +5,6 @@
 // loop, a run one theme, muffled in the shop and open in battle.
 import { SOUND_KEYS, cue, type Cue, type SoundKey } from "./sound-map";
 import TRACKS from "./tracks.json";
-import { makeBeatClock, type Beat, type BeatSource } from "./beat";
 
 export interface SoundSettings {
   on: boolean;
@@ -300,19 +299,3 @@ function applyMusic(): void {
   musicFilter.frequency.cancelScheduledValues(ctx.currentTime);
   musicFilter.frequency.setTargetAtTime(hz, ctx.currentTime, CROSSFADE_S / 3);
 }
-
-// ---------- the beat (round 4, note 5) ----------
-
-/** What the music says for the beat clock: the playing track's position,
- * minus what the speakers haven't played yet; null while it is off, loading
- * or paused, so the clock runs free at the track's BPM. */
-function musicSource(): BeatSource {
-  const t = playing ?? want?.track ?? HOME_TRACK;
-  const el = playing ? elements.get(playing.file) : undefined;
-  const live = !!el && !el.paused && el.readyState >= 3 && !!ctx && ctx.state === "running";
-  const lag = ctx ? (ctx.outputLatency || 0) + (ctx.baseLatency || 0) : 0;
-  return { bpm: t.bpm, offset: t.offset, time: live ? el!.currentTime - lag : null };
-}
-
-/** Where the beat is now: the music's, or a free one at its BPM. */
-export const beatClock: () => Beat = makeBeatClock(musicSource);

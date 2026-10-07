@@ -22,7 +22,6 @@ import { fuseWarning } from "./ui/fuse-warn";
 import { icon } from "./ui/icon";
 import { app, button, closable, desktopQuery, dismissable, h, isDesktop, keepScreen, onKeys, overlay, screen, show, who } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
-import { startDance } from "./ui/dance";
 import { initSound, music, onSoundChange, play, setSound, soundSettings } from "./ui/sound";
 import { shopSound } from "./ui/sound-map";
 
@@ -1495,7 +1494,6 @@ function switchScreen(code: string, mine: PlayerRef, theirs: PlayerRef): void {
 }
 
 initSound();
-startDance();
 // A link pasted into a tab that already shows the game only changes the
 // fragment, which reloads nothing: start over so the link opens.
 addEventListener("hashchange", () => {
