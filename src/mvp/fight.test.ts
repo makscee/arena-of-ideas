@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_CHAIN_STEP_CAP, TURN_CAP } from "../battle.js";
 import { DEFAULT_RUN_POOL, stressAbilities, stressRegistry } from "../index.js";
-import { MVP_RULES, type MvpContent, type PlayerRef, type UnitContent } from "./contract.js";
+import { MVP_RULES, ROUND3_TURN_CAP, type MvpContent, type PlayerRef, type UnitContent } from "./contract.js";
 import { fightLines } from "./fight.js";
 import { lineUnitOf } from "./forms.js";
 import { applyMvpDecision, initMvpRun, synthGhost } from "./run.js";
@@ -61,8 +61,11 @@ describe("fightLines: one line against another", () => {
     expect(caps({ ...MVP_RULES, chainStepCap: 64 })).toEqual(["Chain stopped after 64 steps"]);
   });
 
-  it("ends a fight still going after turn 30 as a draw, Time's up; a run started before keeps 200 (R3-26)", () => {
-    expect(MVP_RULES.turnCap).toBe(30);
+  it("a round-3 run ends a fight still going after turn 30 as a draw, Time's up; a run started before keeps 200 (R3-26)", () => {
+    // Round 4 dropped the cap from new runs (sudden death ends their fights); round-3 runs keep theirs.
+    expect(MVP_RULES.turnCap).toBeUndefined();
+    const { suddenDeathAt: _sd, ...noSudden } = MVP_RULES;
+    const round3 = { ...noSudden, turnCap: ROUND3_TURN_CAP };
     // Walls: 1 PWR and more HP than 200 turns of Fatigue take, so only the clock ends it.
     const form = { when: [{ kind: "trigger" as const, on: { on: "BattleStart" as const } }], who: [{ kind: "holder" as const }], does: ["Strike"] };
     const wall: UnitContent = { id: "wall", name: "Wall", emoji: "x", tier: 1, base: { pwr: 1, hp: 100_000 }, forms: { sleeping: form, awoken: form } };
@@ -73,16 +76,22 @@ describe("fightLines: one line against another", () => {
       const ghost = { ...synthGhost({ content: c, round: 1, seed: 5, ghostId: "g", createdAt: at }), line: [lineUnitOf(wall, "b")] };
       return applyMvpDecision(s, { kind: "fight" }, c, { fight: { ghost, battleId: "b", battleSeed: 11, at } });
     };
-    const step = fight(MVP_RULES);
+    const step = fight(round3);
     const end = step.battle!.log.at(-1)!;
     expect(end).toMatchObject({ type: "BattleEnd", winner: "draw", turns: 30, timeUp: true });
     expect(captionOf(step.battle!.log, end.id)).toBe(TIME_UP_CAPTION);
     // It counts as any draw: no heart lost, the run goes on; at the Crown, no slay.
     expect(step.fight).toMatchObject({ outcome: "draw", heartsLost: 0, heartsAfter: MVP_RULES.hearts });
     expect(step.state).toMatchObject({ round: 2, hearts: MVP_RULES.hearts, phase: "shop" });
-    expect(fight(MVP_RULES, true).state).toMatchObject({ phase: "over", endedBy: "crown-lost" });
+    expect(fight(round3, true).state).toMatchObject({ phase: "over", endedBy: "crown-lost" });
     // A run stored before the cap has no turnCap: the kernel's 200.
-    const { turnCap: _t, ...before } = MVP_RULES;
-    expect(fight(before).battle!.log.at(-1)).toMatchObject({ winner: "draw", turns: TURN_CAP, timeUp: true });
+    expect(fight(noSudden).battle!.log.at(-1)).toMatchObject({ winner: "draw", turns: TURN_CAP, timeUp: true });
+    // A new run: sudden death from turn 20 wears through even 100,000 HP, with no clock.
+    const now = fight(MVP_RULES).battle!.log;
+    expect(MVP_RULES.suddenDeathAt).toBe(20);
+    expect(now.at(-1)).toMatchObject({ type: "BattleEnd", winner: "draw" });
+    expect(now.at(-1)).not.toHaveProperty("timeUp");
+    expect(now.at(-1)!.turn).toBeLessThan(40);
+    expect(now.filter((e) => e.type === "Fatigue" && e.turn >= 20).every((e) => e.type === "Fatigue" && e.suddenDeath)).toBe(true);
   });
 });

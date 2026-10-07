@@ -1175,7 +1175,10 @@ export function captionOf(log: BattleEvent[], id: number, name: NameOf = display
     case "Silenced":
       return `${causeName(log, e, name)} → ${name(e.unit)} is silenced`;
     case "Fatigue":
-      return `Fatigue → everyone takes ${e.amount}`;
+      // Sudden death (R4-1): the caption says why nothing blocks it.
+      return e.suddenDeath ? `Sudden death: Fatigue → everyone takes ${e.amount}, nothing blocks it` : `Fatigue → everyone takes ${e.amount}`;
+    case "SummonFailed":
+      return `${causeName(log, e, name)} → ${e.revive && e.unit ? name(e.unit) : e.name} can't ${e.revive ? "return" : "appear"}: sudden death`;
     case "ChainCapped":
       return `Chain stopped after ${e.steps} steps`;
     case "NoRoom":

@@ -192,9 +192,11 @@ export type EventBody =
   | { type: "Strike"; striker: string; defender: string }
   // hpAfter = the unit's current hp after the event applied; stamped at apply time
   // (optional only because proposals are drafted without it — every logged event carries it).
-  | { type: "Hurt"; unit: string; amount: number; hpAfter?: number; absorbed?: number }
+  // pierced: sudden death's fatigue (R4-1), which no interceptor (Shield) can stop.
+  | { type: "Hurt"; unit: string; amount: number; hpAfter?: number; absorbed?: number; pierced?: true }
   | { type: "Heal"; unit: string; amount: number; hpAfter?: number }
-  | { type: "Death"; unit: string }
+  // pierced: dealt by a pierced Hurt, so no interceptor (Blessing) can stop it.
+  | { type: "Death"; unit: string; pierced?: true }
   | {
       type: "Summon";
       unit: string;
@@ -212,7 +214,8 @@ export type EventBody =
   // hpAfter is present on hp StatChanged events only (a pwr change moves no hp).
   | { type: "StatChanged"; unit: string; stat: StatName; delta: number; now: number; hpAfter?: number }
   | { type: "Silenced"; unit: string }
-  | { type: "Fatigue"; amount: number }
+  // suddenDeath: from BattleInput.suddenDeathAt on (R4-1): doubled, piercing.
+  | { type: "Fatigue"; amount: number; suddenDeath?: true }
   | { type: "ChainBlocked"; ability: AbilityRef; at: number }
   // A cascade hit the step cap: `root` is the event its first firing reacted
   // to, `steps` the firings it ran; the firings still queued were dropped.
@@ -221,6 +224,9 @@ export type EventBody =
   // the holder whose ability tried, `side` the full line, `name` who found no
   // room; `revive` is the dead unit's id when it was a revive.
   | { type: "NoRoom"; unit: string; side: Side; name: string; revive?: string }
+  // A Summon (or, with revive, a Revive of `unit`) that did nothing, and why:
+  // in sudden death (R4-1) nobody enters the line.
+  | { type: "SummonFailed"; name: string; side: Side; unit?: string; revive?: true; reason: "suddenDeath" }
   | { type: "Intercepted"; by: AbilityRef; original: string; unit?: string }
   // timeUp: the turn cap ran out with both sides standing (a draw); absent otherwise.
   | { type: "BattleEnd"; winner: Side | "draw"; turns: number; timeUp?: true };
@@ -249,4 +255,8 @@ export interface BattleInput {
   /** Turns a battle may last; past them, both sides standing is a draw and
    * BattleEnd says timeUp. Omitted = TURN_CAP (battle.ts). */
   turnCap?: number;
+  /** Sudden death (R4-1): from this turn on, Fatigue doubles every turn and
+   * pierces Shield and Blessing, and Summon and Revive do nothing (a
+   * SummonFailed event says why). Omitted = no sudden death. */
+  suddenDeathAt?: number;
 }

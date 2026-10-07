@@ -72,6 +72,7 @@ export function fightLines(a: FightSide, b: FightSide, o: FightOptions): BattleR
     statuses: o.content.statuses,
     chainStepCap: o.rules.chainStepCap,
     ...(o.rules.turnCap !== undefined ? { turnCap: o.rules.turnCap } : {}),
+    ...(o.rules.suddenDeathAt !== undefined ? { suddenDeathAt: o.rules.suddenDeathAt } : {}),
   });
   return {
     battleId: o.battleId,
