@@ -247,9 +247,9 @@ function unitsTab(
       );
     count.textContent =
       st.tier === "summoned"
-        ? `${sums.length} summoned units: other units bring them into battle. Tap one to read it.`
+        ? `${sums.length} summoned units: other units bring them into battle. ${isDesktop() ? "Click" : "Tap"} one to read it.`
         : shown.length === units.length
-          ? `All ${units.length} units, ${order}, then ${summons.length} summoned. Tap one to read it.`
+          ? `All ${units.length} units, ${order}, then ${summons.length} summoned. ${isDesktop() ? "Click" : "Tap"} one to read it.`
           : `${shown.length} of ${units.length} units, ${order}`;
     if (!shown.length && !sums.length) grid.append(h("div", { class: "dim codex-none" }, "No unit matches."));
   };

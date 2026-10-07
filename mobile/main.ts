@@ -139,9 +139,9 @@ function rulesSheet(): HTMLElement {
     p(`${r.lineSize} units in a line, front first. Change the order in the shop: ${isDesktop() ? "drag a unit, or click it, then ← →" : "tap a unit, then ◀ ▶"}. Each round you fight a team another player saved at the same round.`),
     ...(benchSizeOf(r) > 0 ? [p(`${r.benchSize} bench slots hold units that don't fight; copies still merge into them. ${isDesktop() ? "Drag a unit between the line and the bench, or select it and press B" : "Tap a unit, then To bench or To line"}.`)] : []),
     h("div", { class: "label" }, "Copies, Awoken, fusion"),
-    p(`Buying a unit you own merges it in: +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP a copy. Copy ${r.copiesToAwaken} awakens it: the same When, a stronger Who or Does.`),
+    p(`Buying a unit you own merges it in: +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP a copy. Copy ${r.copiesToAwaken} awakens it: the same When, plus a new job.`),
     ...(r.giftChoices ? [p(`The copy that awakens a unit brings a gift: a free pick of 1 of ${r.giftChoices} units from the highest tier open. It joins your line, else your bench; one you own merges in, and if that awakens it, another gift comes. With line and bench full, sell a unit to make room, or skip it. Until you pick or skip, you can only sell and reorder.`)] : []),
-    p(`Two Awoken units fuse: the When of the first you ${isDesktop() ? "pick" : "tap"}, the Who of the second, the Does of both, and the stronger PWR and HP of the two, +1 PWR / +2 HP. A fused unit is final; copies of either part still merge into it. The first player to make a pair names it.`),
+    p(`Two Awoken units fuse: the When of the first you ${isDesktop() ? "pick" : "tap"}, the Who of the second, the Does of both, and the stronger PWR and HP of the two, +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP. A fused unit is final; copies of either part still merge into it. The first player to make a pair names it.`),
     h("div", { class: "label" }, "Chains"),
     p(`Units react to events. When one happens, the units it triggers fire in line order, front to back, each at most once per event. In a fight, ${isDesktop() ? "click" : "tap"} any number to see the chain that caused it.`),
     h("div", { class: "label" }, "The day"),
@@ -167,12 +167,12 @@ function legendSheet(): HTMLElement {
     ),
     row(h("span", { class: "stats" }, span("p", "2"), "/", span("h", "6")), "PWR / HP. PWR is what its strike deals; at 0 HP it falls."),
     row(span("copies", "●●○"), `Copies toward Awoken: copy ${r.copiesToAwaken} awakens it. Each copy adds +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP.`),
-    row(span("copies tag", "AWOKEN ×3"), "Awoken, its stronger form; ×3 copies merged in. Two Awoken units can fuse."),
+    row(span("copies tag", "AWOKEN ×3"), `Awoken: the same When, plus a new job; ×${r.copiesToAwaken} copies merged in. Two Awoken units can fuse.`),
     ...(r.giftChoices ? [row(span("copies tag", "🎁 GIFT"), `Awakening a unit brings a gift: pick 1 of ${r.giftChoices} cards for free, or skip it. Set aside, it waits behind "Open gift".`)] : []),
     row(span("copies tag", "FUSED ×2"), "Two Awoken units fused into one: final, copies of either part still merge in."),
     row(span("cost", "3g ＋"), "An offer's price. ＋: you own it, so buying merges a copy in. The numeral top right (I–IV) is its tier."),
     row(span("cost", "🔒 3g"), "A locked offer: it stays through rerolls and rounds until you buy or unlock it."),
-    h("div", { class: "dim small" }, "Tap any card for its sheet: what it does now, and its Awoken form one tap away."),
+    h("div", { class: "dim small" }, `${tapOrClick()} any card for its sheet: what it does now, and its Awoken form one ${isDesktop() ? "click" : "tap"} away.`),
   );
   const close = closable(sheet, h("div", { class: "row" }, rulesBtn));
   return sheet;
