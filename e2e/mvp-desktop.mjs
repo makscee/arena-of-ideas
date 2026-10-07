@@ -392,7 +392,22 @@ try {
     if (cards !== 3) errors.push(`gift: ${cards} cards, want 3`);
     const width = await page.getByTestId("gift-card-0").evaluate((e) => Math.round(e.getBoundingClientRect().width));
     if (width < 100) errors.push(`gift: desktop cards are ${width}px wide`);
+    // R4-5: a read pane beside the cards shows the first card's sheet, and
+    // hovering another card reads that one there.
+    const pane = page.getByTestId("gift-read");
+    const nameOf = (i) => page.getByTestId(`gift-card-${i}`).locator(".name").textContent();
+    const reads = async (i) => (await pane.getAttribute("data-card")) === String(i) && (await pane.getByTestId("unit-sheet").count()) === 1 && (await pane.textContent()).includes(await nameOf(i));
+    if (!(await pane.isVisible())) errors.push("gift: no read pane on desktop");
+    else if (!(await reads(0))) errors.push("gift: the read pane doesn't show the first card's sheet by default");
     await shot("gift-chooser");
+    if (await pane.isVisible()) {
+      await page.getByTestId("gift-card-2").hover();
+      if (!(await reads(2))) errors.push("gift: hovering the third card doesn't read it in the pane");
+      await shot("gift-hover-3");
+      await page.getByTestId("gift-card-1").hover();
+      if (!(await reads(1))) errors.push("gift: hovering the second card doesn't read it in the pane");
+      if (await page.locator('.overlay [data-testid="sheet-close"]').count()) errors.push("gift: hovering opened a sheet over the chooser");
+    }
     await page.keyboard.press("Escape");
     await page.getByTestId("gift-banner").waitFor({ timeout: 3_000 }).catch(() => errors.push("gift: Esc leaves no banner"));
     if (await page.getByTestId("gift-title").isVisible()) errors.push("gift: Esc doesn't set the chooser aside");
