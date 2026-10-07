@@ -5,7 +5,7 @@
 // other. Round 3 cut them off at turnCap 30 ("Time's up: draw"). Round 4's
 // sudden death ends them instead: from turn 20 Fatigue doubles, pierces
 // Shield and Blessing, and Summon and Revive do nothing, so every fight here
-// ends by turn 21, and none ever reaches the kernel's 200-turn net.
+// ends by turn 21 (a fed fan-out fusion by turn 22), and none ever reaches the kernel's 200-turn net.
 
 import { describe, expect, it } from "vitest";
 import type { BattleEvent } from "../types.js";
@@ -43,9 +43,9 @@ function fight(a: LineUnit[], b: LineUnit[], seed: number, label: string): Fough
 
 /** Every battle over by sudden death's second turn, by itself (never time's
  * up), and well under 5,000 events. */
-function expectBounded(all: Fought[]): void {
+function expectBounded(all: Fought[], lastTurn = LAST_TURN): void {
   expect(MVP_RULES.turnCap, "new runs have no turn cap").toBeUndefined();
-  expect(all.filter((f) => f.turns > LAST_TURN).map((f) => `${f.label}: turn ${f.turns}`)).toEqual([]);
+  expect(all.filter((f) => f.turns > lastTurn).map((f) => `${f.label}: turn ${f.turns}`)).toEqual([]);
   expect(all.filter((f) => f.timeUp).map((f) => f.label)).toEqual([]);
   expect(all.filter((f) => f.events > MAX_EVENTS).map((f) => `${f.label}: ${f.events} events`)).toEqual([]);
 }
@@ -59,8 +59,9 @@ describe("every battle ends by itself (R3-26, R4-1)", () => {
       // A Blessing re-armed every turn: War Drummer feeds an "ally gains PWR" fusion that blesses the line.
       ["re-blessed (Equalizer+Prepper)", 1, (s) => [fused(s, "equalizer", "prepper"), ...plain(s, ["war-drummer", "fighter", "bulwark"])]],
       ["re-blessed (Lightning+Divinity)", 1, (s) => [fused(s, "lightning", "divinity"), ...plain(s, ["war-drummer", "fighter", "bulwark"])]],
-      // Two revivers bringing each other back.
-      ["two Necromancers", 64, (s) => plain(s, ["necromancer", "necromancer", "guardian", "robber", "fodder"], 0, 3)],
+      // Two revivers bringing each other back. (R4-14: Guardian and Robber's
+      // stronger Awoken forms broke the stall, so Priest and Prepper stand in.)
+      ["two Necromancers", 64, (s) => plain(s, ["necromancer", "necromancer", "priest", "prepper", "fodder"], 0, 3)],
     ];
     // They stalled on round 3's line of 5 (two Necromancers have room to
     // finish each other on R4-10's line of 8), so both runs keep that line.
@@ -95,7 +96,7 @@ describe("every battle ends by itself (R3-26, R4-1)", () => {
     expectBounded(all);
   });
 
-  it("every fan-out fusion (a one-unit When + a group Who) ends by turn 21", { timeout: 60_000 }, () => {
+  it("every fan-out fusion (a one-unit When + a group Who) ends by turn 22", { timeout: 60_000 }, () => {
     // What the bots' fansOut refuses but a human can fuse (content.md, R3-26).
     // A feeder makes the fused unit's When fire every turn.
     const FEEDERS: Record<string, string[]> = {
@@ -134,6 +135,9 @@ describe("every battle ends by itself (R3-26, R4-1)", () => {
       }
     // About 630 ordered pairs today; the sweep must not quietly empty.
     expect(pairs).toBeGreaterThan(300);
-    expectBounded(all);
+    // One turn more than the known stalls: since R4-14, Almsgiver+King fed by
+    // Keeper heals and grows its whole line on every ally Shield (its Awoken
+    // keeps the Heal), so its line outlives 40 and falls to 80 on turn 22.
+    expectBounded(all, LAST_TURN + 1);
   });
 });

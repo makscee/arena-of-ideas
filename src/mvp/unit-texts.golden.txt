@@ -17,7 +17,7 @@
 🍄 Spore
   archetype: Its own death weakens the whole enemy line.
   sleeping: Dies: 1 Curse to all enemies.
-  awoken:   Dies: 1 Freeze and 1 Curse to front enemy.
+  awoken:   Dies: 1 Curse to all enemies, and 1 Freeze to front enemy.
 🐀 Rat
   archetype: Its own death poisons whoever stands in front.
   sleeping: Dies: 2 Poison to front enemy.
@@ -73,7 +73,7 @@
 🤡 Distractor
   archetype: A big decoy that swells each time it's hit.
   sleeping: Hit: 1 Vitality to self.
-  awoken:   Hit: 1 Curse to front enemy.
+  awoken:   Hit: 1 Vitality to self, and 1 Curse to front enemy.
 🦹 Henchman
   archetype: Gets stronger each time a comrade falls (revenge).
   sleeping: Ally dies: 2 Strength to self.
@@ -89,15 +89,15 @@
 🛡️ Guardian
   archetype: Puts a Shield on each ally the moment it's hit.
   sleeping: Ally hit: 1 Shield to it.
-  awoken:   Ally hit: 1 Poison to front enemy.
+  awoken:   Ally hit: 1 Shield to it, and 1 Poison to front enemy.
 🪙 Almsgiver
   archetype: Turns Shields into heals for the shielded ally.
   sleeping: Ally gets Shield: heal it for 1.
-  awoken:   Ally gets Shield: 1 Poison to random enemy.
+  awoken:   Ally gets Shield: heal it for 1, and 1 Poison to random enemy.
 ✨ Sanctifier
   archetype: Each heal also strengthens the healed ally.
   sleeping: Ally healed: 1 Strength to it.
-  awoken:   Ally healed: PWR damage to front enemy.
+  awoken:   Ally healed: 1 Strength to it, and PWR damage to front enemy.
 🔋 Enhancer
   archetype: Each Shield also strengthens the shielded ally.
   sleeping: Ally gets Shield: 1 Strength to it.
@@ -105,7 +105,7 @@
 🪫 Battery
   archetype: Charges itself on every ally heal.
   sleeping: Ally healed: 1 Strength to self.
-  awoken:   Ally healed: 1 Freeze to random enemy.
+  awoken:   Ally healed: 1 Strength to self, and 1 Freeze to random enemy.
 🧪 Injector
   archetype: Poisons the front enemy when hit.
   sleeping: Hit: 1 Poison to front enemy.
@@ -141,11 +141,11 @@
 🪴 Gardener
   archetype: Toughens every newly summoned ally.
   sleeping: Ally summoned: 2 Vitality to it.
-  awoken:   Ally summoned: 2 Poison to random enemy.
+  awoken:   Ally summoned: 2 Vitality to it, and 2 Poison to random enemy.
 🍎 Fruiter
   archetype: Drops a team-wide heal when it dies.
   sleeping: Dies: heal all allies for 3.
-  awoken:   Dies: heal all allies for 2, then 1 Blessing to all allies.
+  awoken:   Dies: heal all allies for 3, then 1 Blessing to all allies.
 🩸 Leech
   archetype: Heals itself by its damage on every strike.
   sleeping: Strikes: heal self for PWR.
@@ -153,7 +153,7 @@
 💧 Bloodthinner
   archetype: Makes each poisoned enemy bleed at once.
   sleeping: Enemy gets Poison: 1 damage to it.
-  awoken:   Enemy gets Poison: 1 Curse to random enemy.
+  awoken:   Enemy gets Poison: 1 damage to it, and 1 Curse to random enemy.
 🧙 Hag
   archetype: Each Poison it sees also curses the target.
   sleeping: Enemy gets Poison: 1 Curse to it.
@@ -161,7 +161,7 @@
 🃏 Trickster
   archetype: Each Curse sets off damage.
   sleeping: Enemy gets Curse: 2 damage to random enemy.
-  awoken:   Enemy gets Curse: 2 damage to it.
+  awoken:   Enemy gets Curse: 2 damage to random enemy, and 1 damage to it.
 🗝️ Custodian
   archetype: Shields the team every time an ally falls.
   sleeping: Ally dies: 2 Shield to all allies.
@@ -169,7 +169,7 @@
 🤫 Silencer
   archetype: Opens by shutting off the front enemy's ability.
   sleeping: Battle start: silence front enemy.
-  awoken:   Battle start: silence random enemy, then 2 damage to random enemy.
+  awoken:   Battle start: silence front enemy, then 2 damage to front enemy.
 🦅 Scavenger
   archetype: Heals itself off fallen allies.
   sleeping: Ally dies: heal self for 3.
@@ -265,7 +265,7 @@
 💰 Robber
   archetype: Steals HP whenever an enemy is cursed.
   sleeping: Enemy gets Curse: 1 Vitality to self.
-  awoken:   Enemy gets Curse: 1 damage to front enemy.
+  awoken:   Enemy gets Curse: 1 Vitality to self, and 1 damage to front enemy.
 🕯️ Ritualist
   archetype: Each ally death becomes damage to all enemies.
   sleeping: Ally dies: 2 damage to all enemies.
