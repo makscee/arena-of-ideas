@@ -18,6 +18,7 @@ export function toBattleDef(u: LineUnit): UnitDef {
     selectors: u.recipe.who,
     abilities: u.recipe.does,
     ...(u.recipe.condition ? { condition: u.recipe.condition } : {}),
+    ...(u.recipe.also?.length ? { also: u.recipe.also.map((c) => ({ selectors: c.who, abilities: c.does })) } : {}),
   };
 }
 

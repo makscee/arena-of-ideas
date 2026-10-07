@@ -73,14 +73,17 @@ type Misfire = { hurts: string[]; helps: string[] };
 /** The effects a form sends the wrong way: harmful ones to your side, helpful
  * ones to theirs. */
 export function misfires(form: UnitForm, content: Pick<MvpContent, "abilities" | "statuses">): Misfire {
-  const sides = new Set(form.who.map((s) => sideOf(s, form.when)));
   const out: Misfire = { hurts: [], helps: [] };
-  for (const id of form.does) {
-    for (const e of content.abilities[id]?.effects ?? []) {
-      const sign = effectSign(e, content.statuses);
-      const name = effectName(e);
-      if (sign < 0 && sides.has("ally") && !out.hurts.includes(name)) out.hurts.push(name);
-      if (sign > 0 && sides.has("enemy") && !out.helps.includes(name)) out.helps.push(name);
+  // The form's own Does on its Who, then each "and" clause on its own Who.
+  for (const clause of [{ who: form.who, does: form.does }, ...(form.also ?? [])]) {
+    const sides = new Set(clause.who.map((s) => sideOf(s, form.when)));
+    for (const id of clause.does) {
+      for (const e of content.abilities[id]?.effects ?? []) {
+        const sign = effectSign(e, content.statuses);
+        const name = effectName(e);
+        if (sign < 0 && sides.has("ally") && !out.hurts.includes(name)) out.hurts.push(name);
+        if (sign > 0 && sides.has("enemy") && !out.helps.includes(name)) out.helps.push(name);
+      }
     }
   }
   return out;

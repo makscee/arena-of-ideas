@@ -151,8 +151,19 @@ export interface UnitForm {
   who: Selector[];
   /** Ordered ability ids (AbilityRegistry keys). A base form has exactly one. */
   does: string[];
+  /** "And" clauses (round 4, R4-7): more Does on the same When, each with a
+   * Who of its own, firing after the form's own Does, in order. "Ally dies:
+   * 2 Strength to me, and Silence the front enemy." A fusion keeps both
+   * parts' clauses, the first's then the second's. */
+  also?: AndClause[];
   /** Optional authored one-liner; clients fall back to describe(). */
   text?: string;
+}
+
+/** One "and" clause of a form: its own Who, and the Does it applies to them. */
+export interface AndClause {
+  who: Selector[];
+  does: string[];
 }
 
 /** A unit in the live pool. The awoken form keeps the same When and upgrades

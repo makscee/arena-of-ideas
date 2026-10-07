@@ -65,9 +65,10 @@ interface ReactorEntry {
   ref: AbilityRef; // the reactor's identity: a unit reacts as one (ability 0), a status ability on its own
   holder: string;
   ability: Reaction; // When, Who and condition of the reactor
-  /** The Does, in firing order, each with the ref its events are sourced to.
-   * A unit's recipe has one Who for all its Does (a fused unit has two). */
-  does: Array<{ ref: AbilityRef; effects: Effect[] }>;
+  /** The Does, in firing order, each with the ref its events are sourced to
+   * and its Who. A unit's recipe has one Who for all its own Does; each "and"
+   * clause has its own. */
+  does: Array<{ ref: AbilityRef; effects: Effect[]; selectors?: Selector[] }>;
 }
 
 interface Firing extends ReactorEntry {
@@ -78,6 +79,19 @@ interface Firing extends ReactorEntry {
 interface Pending {
   summon?: UnitState;
   resurrect?: { unit: string; hp: number };
+}
+
+/** A firing's Does split into runs that share one Who, in order. Does
+ * without a Who of their own take the reactor's. */
+function clausesOf(does: ReactorEntry["does"], fallback: Selector[]): { selectors: Selector[]; does: ReactorEntry["does"] }[] {
+  const out: { selectors: Selector[]; does: ReactorEntry["does"] }[] = [];
+  for (const d of does) {
+    const selectors = d.selectors ?? fallback;
+    const last = out[out.length - 1];
+    if (last && last.selectors === selectors) last.does.push(d);
+    else out.push({ selectors, does: [d] });
+  }
+  return out;
 }
 
 export function battle(input: BattleInput): BattleEvent[] {
@@ -220,10 +234,15 @@ class Engine {
       if (!def.triggers?.length || !def.selectors?.length || !def.abilities?.length) {
         throw new Error(`unit "${def.name}" needs non-empty triggers, selectors, and abilities`);
       }
-      return def.abilities.map((id) => {
-        const action = this.abilities[id];
-        if (!action) throw new Error(`unknown ability "${id}" — not in the ability registry`);
-        return { triggers: def.triggers!, selectors: def.selectors!, ...(def.condition ? { condition: def.condition } : {}), effects: action.effects };
+      // The recipe's own Does share its Who; each "and" clause brings its own.
+      const clauses = [{ selectors: def.selectors, abilities: def.abilities }, ...(def.also ?? [])];
+      return clauses.flatMap((clause) => {
+        if (!clause.selectors.length || !clause.abilities.length) throw new Error(`unit "${def.name}" has an empty "and" clause`);
+        return clause.abilities.map((id) => {
+          const action = this.abilities[id];
+          if (!action) throw new Error(`unknown ability "${id}" — not in the ability registry`);
+          return { triggers: def.triggers!, selectors: clause.selectors, ...(def.condition ? { condition: def.condition } : {}), effects: action.effects };
+        });
       });
     }
     const id = def.ability;
@@ -343,15 +362,19 @@ class Engine {
     if (!holder) return;
     if (f.ref.status === undefined && holder.silenced) return;
     if (f.ability.condition && !this.checkCondition(f.ability.condition, holder)) return;
-    // One reaction per unit: each Who is picked once, then every Does applies
-    // to those targets, in order.
-    for (const sel of f.ability.selectors) {
-      const targets = this.evalSelector(sel, holder, f.event);
-      for (const d of f.does) {
-        const firing = d.ref === f.ref ? f : { ...f, ref: d.ref };
-        for (const target of targets) {
-          for (const effect of d.effects) {
-            this.runEffect(effect, target, holder, firing);
+    // One reaction per unit: each Who is picked once, then every Does that
+    // shares it applies to those targets, in order. A run of Does with the
+    // same Who is one clause; an "and" clause with its own Who picks its own
+    // targets after the clauses before it have landed.
+    for (const clause of clausesOf(f.does, f.ability.selectors)) {
+      for (const sel of clause.selectors) {
+        const targets = this.evalSelector(sel, holder, f.event);
+        for (const d of clause.does) {
+          const firing = d.ref === f.ref ? f : { ...f, ref: d.ref };
+          for (const target of targets) {
+            for (const effect of d.effects) {
+              this.runEffect(effect, target, holder, firing);
+            }
           }
         }
       }
@@ -380,7 +403,7 @@ class Engine {
     const addUnit = (u: UnitState) => {
       const first = u.abilities[0];
       if (!u.silenced && first) {
-        const does = u.abilities.map((ab, i) => ({ ref: { unit: u.id, ability: i }, effects: ab.effects }));
+        const does = u.abilities.map((ab, i) => ({ ref: { unit: u.id, ability: i }, effects: ab.effects, selectors: ab.selectors }));
         out.push({ ref: does[0]!.ref, holder: u.id, ability: first, does });
       }
       for (const st of [...u.statuses].sort((p, q) => p.attachedAt - q.attachedAt)) {
