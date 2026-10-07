@@ -117,7 +117,7 @@ describe("MVP API thin path", () => {
     expect(after.fights.map((f) => f.round)).toEqual([1, 2, 3, 4, 5]);
     expect(after.round).toBe(after.phase === "over" ? 5 : 6);
     expect(after.hearts).toBe(5 - after.losses);
-    expect(after.gold).toBe(10);
+    expect(after.gold).toBe(after.phase === "over" ? 0 : 10);
     expect(after.line).toEqual(bought.line);
   });
 

@@ -134,8 +134,8 @@ describe("wording", () => {
 
   test("silence, revive and summon read short", () => {
     expect(all).toMatch(/silence front enemy\./);
-    expect(all).toMatch(/revive fallen ally at 2 HP\./);
-    expect(all).toMatch(/summon Imp \(1\/2\)/);
+    expect(all).toMatch(/revive fallen ally at 1 HP\./);
+    expect(all).toMatch(/summon Imp \(1\/3\)/);
     expect(all).not.toMatch(/strip its statuses|back of this unit's side/);
   });
 

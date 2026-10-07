@@ -337,22 +337,22 @@ describe("Necromancer's Awoken form (R3-26)", () => {
     return fightLines({ player: p, line }, { player: p, line: foe }, { battleId: "b", seed: 1, kind: "round", round: 1, runId: null, at: "2026-10-06T00:00:00.000Z", content, rules: MVP_RULES }).log;
   };
 
-  it("revives the fallen ally at 2 HP and raises an Imp at the front: something new, not a stat rider", () => {
+  it("revives the fallen ally at 1 HP (R4-18) and raises an Imp at the front: something new, not a stat rider", () => {
     const log = fight(3);
     const back = log.find((e) => e.type === "Summon" && e.resurrected);
     if (back?.type !== "Summon") throw new Error("nobody revived");
-    expect(back.atHp).toBe(2);
+    expect(back.atHp).toBe(1);
     const imp = log.slice(log.indexOf(back)).find((e) => e.type === "Summon" && e.name === "Imp");
     if (imp?.type !== "Summon") throw new Error("no Imp raised");
     expect(imp.front).toBe(true);
     expect(awokenNewPart(unit("necromancer").forms.sleeping, unit("necromancer").forms.awoken)).toBe("adds Call");
   });
 
-  it("sleeping, it only revives at 2 HP", () => {
+  it("sleeping, it only revives at 1 HP", () => {
     const log = fight(1);
     const back = log.find((e) => e.type === "Summon" && e.resurrected);
     if (back?.type !== "Summon") throw new Error("nobody revived");
-    expect(back.atHp).toBe(2);
+    expect(back.atHp).toBe(1);
     expect(log.some((e) => e.type === "Summon" && e.name === "Imp")).toBe(false);
   });
 });
@@ -421,6 +421,9 @@ describe("no copied heroes (R3-26, Maks's note 1)", () => {
     "2 damage to all enemies. Emberling, Ritualist, Ruin",
     "1 Freeze to it. Icebinder, Pathologist",
     "2 damage to random enemy. Trickster, Lightning, Battle Mage",
+    // R4-18: Priest silences the front enemy (was random) to break the
+    // ally-dies engine; Silencer does it once at battle start.
+    "silence front enemy. Silencer, Priest",
   ];
   it("every unit's sleeping text differs from every other's by more than the When (except the listed twins)", () => {
     expect(groups((u) => doesText(u.forms.sleeping)).map(([t, names]) => `${t} ${names.join(", ")}`)).toEqual(SLEEPING_TWINS);
