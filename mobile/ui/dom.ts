@@ -1,5 +1,5 @@
 // Plain-DOM helpers shared by every screen of the phone client (mission #574).
-import { escStep } from "./esc";
+import { backStays, escStep } from "./esc";
 import { toggleSound } from "./sound";
 
 export const app = document.getElementById("app")!;
@@ -122,26 +122,73 @@ function textField(t: EventTarget | null): HTMLElement | null {
   return t.tagName === "TEXTAREA" || t.isContentEditable ? t : null;
 }
 
+/** One Esc's first steps (escStep): closes the popover or the top sheet, or
+ * blurs the field. "screen" and "native" are left to the screen's keys and
+ * the browser. */
+function escClose(field: HTMLElement | null): ReturnType<typeof escStep> {
+  const closePop = popover?.() ?? null;
+  const top = topLayer();
+  const clearable = field instanceof HTMLInputElement && field.type === "search" && field.value !== "";
+  const step = escStep({ popover: closePop !== null, overlays: top ? 1 : 0, field: field ? (clearable ? "clearable" : "plain") : "none" });
+  if (step === "popover") closePop!();
+  else if (step === "overlay") top!.dismiss();
+  else if (step === "blur") field!.blur();
+  return step;
+}
+
 // Esc first, in capture: it closes the top-most thing before anything else
 // sees the key. Left to the screen ("screen"), it goes on like any key.
 addEventListener(
   "keydown",
   (e) => {
     if (e.key !== "Escape" || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
-    const field = textField(e.target);
-    const closePop = popover?.() ?? null;
-    const top = topLayer();
-    const clearable = field instanceof HTMLInputElement && field.type === "search" && field.value !== "";
-    const step = escStep({ popover: closePop !== null, overlays: top ? 1 : 0, field: field ? (clearable ? "clearable" : "plain") : "none" });
+    const step = escClose(textField(e.target));
     if (step === "screen" || step === "native") return;
     e.preventDefault();
     e.stopImmediatePropagation();
-    if (step === "popover") closePop!();
-    else if (step === "overlay") top!.dismiss();
-    else field!.blur();
   },
   { capture: true },
 );
+
+// ---------- Back (R3-26) ----------
+
+// The phone's Back gesture (Android's Esc) and the browser's Back are one Esc
+// while Esc has something to do (esc.ts backStays: a sheet, the shop, a
+// battle, the Codex...): one history entry of ours sits on top, and Back
+// pops it instead of leaving the game. Home has no Esc, so Back leaves there.
+const GUARD = "arenaBack";
+/** The top history entry is ours. */
+let armed = false;
+/** Our own history.back() calls whose popstate is still to come. */
+let ownBacks = 0;
+function syncBack(): void {
+  if (ownBacks > 0) return; // pushing now would race the pending back
+  const stays = backStays({ overlays: topLayer() ? 1 : 0, screen: app.dataset.screen ?? "" });
+  if (stays && !armed) {
+    history.pushState({ [GUARD]: true }, "");
+    armed = true;
+  } else if (!stays && armed) {
+    // A sheet closed by a tap, or Home: the entry goes, so the next Back leaves.
+    armed = false;
+    ownBacks++;
+    history.back();
+  }
+}
+addEventListener("popstate", (e) => {
+  if (ownBacks > 0) return void (ownBacks--, syncBack());
+  armed = (e.state as Record<string, unknown> | null)?.[GUARD] === true;
+  if (armed) return; // Forward, back onto our entry: nothing to undo
+  // The Esc path: the popover or the top sheet, else the screen's own Esc.
+  const step = escClose(null);
+  if (step === "screen" && !topLayer()) keys?.(new KeyboardEvent("keydown", { key: "Escape" }));
+  syncBack();
+});
+let backQueued = false;
+new MutationObserver(() => {
+  if (backQueued) return;
+  backQueued = true;
+  queueMicrotask(() => ((backQueued = false), syncBack()));
+}).observe(app, { childList: true, attributes: true, attributeFilter: ["data-screen"] });
 addEventListener("keydown", (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
   if (textField(e.target)) return;

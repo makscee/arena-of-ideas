@@ -268,3 +268,14 @@ describe("unit content forms", () => {
     expect(contentFormProblems({ ...content, units: [Warden, Warden] })).toEqual(["warden: duplicate unit id"]);
   });
 });
+
+describe("fused text (R3-26)", () => {
+  it("says a status the two parts both give once, with the stacks added up", async () => {
+    const { mvpPool } = await import("./units");
+    const { formText } = await import("./form-text");
+    const c = mvpPool();
+    const a = (n: string) => c.units.find((u) => u.name === n)!.forms.awoken;
+    const t = formText({ when: a("Fodder").when, who: a("Nurse").who, does: [...a("Fodder").does, ...a("Nurse").does] }, c.abilities);
+    expect(t.match(/Shield/g)).toHaveLength(1);
+  });
+});

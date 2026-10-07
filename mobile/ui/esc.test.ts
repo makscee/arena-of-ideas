@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { escStep } from "./esc";
+import { backStays, escStep } from "./esc";
 
 describe("escStep", () => {
   const none = { popover: false, overlays: 0, field: "none" } as const;
@@ -15,5 +15,19 @@ describe("escStep", () => {
   });
   it("hands the key to the screen when nothing is open", () => {
     expect(escStep(none)).toBe("screen");
+  });
+});
+
+describe("backStays", () => {
+  it("keeps Back in the game while a sheet is open, on any screen", () => {
+    expect(backStays({ overlays: 1, screen: "home" })).toBe(true);
+    expect(backStays({ overlays: 1, screen: "" })).toBe(true);
+  });
+  it("keeps Back in the game where Esc steps back: the shop, a battle, the Codex", () => {
+    for (const screen of ["shop", "battle", "codex", "stats", "over"]) expect(backStays({ overlays: 0, screen })).toBe(true);
+  });
+  it("lets Back leave from Home and the name form", () => {
+    expect(backStays({ overlays: 0, screen: "home" })).toBe(false);
+    expect(backStays({ overlays: 0, screen: "" })).toBe(false);
   });
 });

@@ -87,6 +87,15 @@ try {
   const lineCount = () => page.getByTestId("line").locator(".card.you").count();
   /** Waits until the shop is drawn again after a decision (the gold or the line changed). */
   const settle = async () => { await page.waitForTimeout(150); await page.waitForFunction(() => !document.getElementById("app").classList.contains("busy")); };
+  /** A gift the run's own buys brought (an awakening copy, R3-15): skip it, so
+   * the keys and Fight work again. The gift chooser has its own check below. */
+  const dropOwnGift = async () => {
+    if (!(await page.getByTestId("gift-title").isVisible()) && (await page.getByTestId("gift-open").isVisible())) await page.getByTestId("gift-open").click();
+    if (!(await page.getByTestId("gift-title").isVisible())) return;
+    await page.getByTestId("gift-skip").click();
+    await page.getByTestId("gift-title").waitFor({ state: "hidden", timeout: 5_000 }).catch(() => {});
+    await settle();
+  };
   /** The last sound the client asked for (round 3, note 16: ui/sound.ts logs each to window.__sfx). */
   const lastSfx = () => page.evaluate(() => window.__sfx?.at(-1) ?? "");
   const wantSfx = async (what, re) => {
@@ -179,12 +188,12 @@ try {
       const name = await offer(1).locator(".name").textContent();
       await offer(1).click();
       await page.getByTestId("inspector").getByTestId("lock").waitFor();
-      if (!(await page.getByTestId("inspector").getByTestId("lock").textContent()).startsWith("Lock · L")) errors.push("lock: no Lock · L in the inspector");
+      if (!(await page.getByTestId("inspector").getByTestId("lock").textContent()).startsWith("🔒 Lock · L")) errors.push("lock: no 🔒 Lock · L in the inspector");
       await page.keyboard.press("l");
       await settle();
       if (!(await locked(1))) errors.push("lock: L didn't lock the chosen offer");
       await page.getByTestId("inspector").getByTestId("lock").waitFor();
-      if (!(await page.getByTestId("inspector").getByTestId("lock").textContent()).startsWith("Unlock")) errors.push("lock: the locked offer isn't still in the inspector with Unlock");
+      if (!(await page.getByTestId("inspector").getByTestId("lock").textContent()).startsWith("🔓 Unlock")) errors.push("lock: the locked offer isn't still in the inspector with Unlock");
       if (!(await page.getByTestId("keys").textContent()).includes("L lock")) errors.push("lock: the keys line has no L");
       await shot("shop-locked");
       const g1 = await gold();
@@ -217,6 +226,7 @@ try {
       await page.getByTestId("offers").locator(".card").first().dblclick();
       await settle();
       if ((await lineCount()) !== before + 1) errors.push("shop: double-click didn't buy");
+      await dropOwnGift();
     }
     // Buy with the number keys while gold lasts (and the line has room).
     for (let k = 0; k < 4 && !crown; k++) {
@@ -242,6 +252,8 @@ try {
       await settle();
       if ((await gold()) === g0) { errors.push(`round ${round}: key 1 didn't buy`); break; }
       await wantSfx("key 1 (buy)", /^(coin|merge|level-up)$/);
+      // A copy that awakens a unit brings a gift; its chooser (checked below) blocks the keys: skip it.
+      await dropOwnGift();
     }
     if (round === 1 && !crown && (await gold()) >= 1) {
       // R rerolls.
@@ -307,6 +319,7 @@ try {
     // Space fights. Round 2 listens to it (round 3, note 16): the start
     // sting, wave sounds while it plays, nothing on a step, one end sound.
     if (round === 2) await page.evaluate(() => { window.__sfx = []; });
+    await dropOwnGift();
     await page.keyboard.press("Space");
     await page.getByTestId("battle-end").waitFor({ timeout: 10_000 });
     if (round === 2) await battleSounds();
