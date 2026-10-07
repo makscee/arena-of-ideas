@@ -321,6 +321,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
         codex,
         h("div", { class: "row" }, stats, rulesBtn),
         soundRow(),
+        api.ownInvite ? ownLinkRow(api.ownInvite) : null,
         home.dev ? h("details", { class: "dev" }, h("summary", {}, "Dev"), endDay) : null,
       ),
     ),
@@ -1351,6 +1352,27 @@ function runOverScreen(run: RunView, content: MvpContent, notice = "", newRun = 
   onKeys((e) => (e.key === "Enter" ? ((newRun ? next : home)(), true) : e.key === "Escape" ? (home(), true) : false));
 }
 
+/** This device's own invite link (R4-20), after a join through the open link. */
+const ownLink = (code: string) => `${location.origin}${location.pathname}#invite=${code}`;
+
+/** Home's "Your link (for another device)": folded, so the key isn't on screen
+ * until asked for. */
+function ownLinkRow(code: string): HTMLElement {
+  const link = ownLink(code);
+  const field = h("input", { readonly: "", value: link, "data-testid": "own-link" });
+  field.addEventListener("focus", () => field.select());
+  const copy = button("Copy", () => {
+    void navigator.clipboard?.writeText(link).then(() => (copy.textContent = "Copied"), () => field.select());
+  }, "small", "own-link-copy");
+  return h(
+    "details",
+    { class: "dev", "data-testid": "own-link-row" },
+    h("summary", {}, "Your link (for another device)"),
+    h("div", { class: "dim small" }, "Open it on your other phone or computer to play as you there. Keep it to yourself."),
+    h("div", { class: "row" }, field, copy),
+  );
+}
+
 // ---------- boot ----------
 
 /** `#invite=<code>` in the address (slice 13): open the link, then drop the
@@ -1359,6 +1381,11 @@ function runOverScreen(run: RunView, content: MvpContent, notice = "", newRun = 
  * device that is already another player asks first. A dead link offers Home
  * on a device with its own session, and otherwise asks for a new link. */
 const inviteCode = new URLSearchParams(location.hash.slice(1)).get("invite");
+/** `#join=<code>` (R4-20): the open join link. Anyone with it picks a name
+ * and plays as a new player; the fragment then becomes their own #invite=
+ * link, so a bookmark keeps working. A bad or rotated code shows the invite
+ * screen. */
+const joinCode = new URLSearchParams(location.hash.slice(1)).get("join");
 const dropInvite = () => {
   const url = new URL(location.href);
   url.hash = "";
@@ -1390,6 +1417,58 @@ function openInvite(code: string): void {
     );
   });
 }
+function openJoinLink(code: string): void {
+  const err = errorLine();
+  void guarded(err, async () => {
+    await api.joinCheck(code);
+    const mine = api.player;
+    if (mine && api.hasToken) return joinSwitchScreen(code, mine);
+    joinForm(code);
+  }).then(() => {
+    if (!err.textContent) return;
+    const own = api.player && api.hasToken;
+    const dead = err.textContent.startsWith("no such join link");
+    show(
+      h("h1", {}, "ARENA"),
+      h("p", { class: "dim", "data-testid": "invite-bad" }, dead ? (own ? "This invite link doesn't work any more." : "This invite link doesn't work. Ask for a new link.") : err.textContent),
+      own
+        ? button("Home", () => (dropInvite(), void guarded(errorLine(), () => homeScreen())), "primary", "invite-home")
+        : dead
+          ? h("span", {})
+          : button("Retry", () => location.reload(), "primary"),
+    );
+  });
+}
+/** A device that already plays as someone opens the join link: stay, or start a new player here. */
+function joinSwitchScreen(code: string, mine: PlayerRef): void {
+  const stay = () => (dropInvite(), void guarded(errorLine(), () => homeScreen()));
+  show(
+    h("h1", {}, "ARENA"),
+    h("p", { "data-testid": "join-switch" }, `You play as ${mine.name} on this device. Start a new player here?`),
+    h("p", { class: "dim" }, `${mine.name} then needs their own link to come back.`),
+    h("div", { class: "row footer" }, button("Stay", stay, "grow", "join-stay"), button("New player", () => joinForm(code), "primary grow", "join-new")),
+  );
+  onKeys((e) => (e.key === "Escape" ? (stay(), true) : false));
+}
+function joinForm(code: string): void {
+  music("home");
+  const input = h("input", { placeholder: "Your name", maxlength: "24", autocomplete: "nickname", "data-testid": "join-name" });
+  const err = errorLine();
+  const go = () => guarded(err, async () => {
+    const s = await api.join(code, input.value.trim());
+    history.replaceState(null, "", ownLink(s.invite));
+    await homeScreen();
+  });
+  input.addEventListener("keydown", (e) => e.key === "Enter" && void go());
+  show(
+    h("h1", {}, "ARENA OF IDEAS"),
+    h("p", { class: "dim" }, "An auto-battler of chains. Pick a name to play."),
+    input,
+    button("Play", () => void go(), "primary", "join-submit"),
+    err,
+  );
+  input.focus();
+}
 function switchScreen(code: string, mine: PlayerRef, theirs: PlayerRef): void {
   const stay = () => (dropInvite(), void guarded(errorLine(), () => homeScreen()));
   const go = () => void guarded(errorLine(), async () => {
@@ -1411,11 +1490,14 @@ startDance();
 // A link pasted into a tab that already shows the game only changes the
 // fragment, which reloads nothing: start over so the link opens.
 addEventListener("hashchange", () => {
-  if (new URLSearchParams(location.hash.slice(1)).has("invite")) location.reload();
+  const hash = new URLSearchParams(location.hash.slice(1));
+  if (hash.has("invite") || hash.has("join")) location.reload();
 });
 
 if (inviteCode) {
   openInvite(inviteCode);
+} else if (joinCode) {
+  openJoinLink(joinCode);
 } else if (api.player) {
   const err = errorLine();
   void guarded(err, async () => {

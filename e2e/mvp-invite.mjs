@@ -8,7 +8,11 @@
 // and the tester doesn't; another player's link asks before it switches; an
 // old device without a token and a bad link both land on a clear screen (a
 // bad link on a device with its own session offers Home); a revoked link ends
-// every device's session and its new link works. A screenshot of each.
+// every device's session and its new link works. R4-20's open join link
+// (#join=): a stranger picks a name and plays, the address becomes their own
+// #invite= link and Home offers it for another device; a second stranger
+// can't take a used name; a device with a player asks first; a rotated link
+// lands on the invite screen. A screenshot of each.
 import { spawn, execFileSync } from "node:child_process";
 import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { createServer } from "node:net";
@@ -149,6 +153,73 @@ try {
   await fresh.goto(url);
   await fresh.getByTestId("invite-only").waitFor({ timeout: 10_000 });
   await shot(fresh, "no-link-phone");
+
+  // R4-20: the open join link. A stranger picks a name and plays a fight.
+  const joinOf = (line) => line.slice(line.indexOf("#join=") + 6);
+  const jc = joinOf(cli("open"));
+  if (joinOf(cli("open")) !== jc) errors.push("join: open again gave another link");
+  const friend = `Friend${TAG}`;
+  const j1 = await device(PHONE);
+  await j1.goto(`${url}#join=${jc}`);
+  await j1.getByTestId("join-name").waitFor({ timeout: 10_000 });
+  await shot(j1, "join-name-phone");
+  await j1.getByTestId("join-name").fill(friend);
+  await j1.getByTestId("join-submit").click();
+  await j1.getByTestId("play").waitFor({ timeout: 15_000 });
+  if (!(await text(j1)).includes(friend)) errors.push("join: home doesn't show the picked name");
+  if (j1.url().includes("join=") || !j1.url().includes("#invite=")) errors.push("join: the address isn't the player's own #invite= link");
+  if (await j1.getByTestId("end-day").count()) errors.push("join: a joined player sees End day now");
+  const ownUrl = j1.url();
+  await j1.getByTestId("own-link-row").locator("summary").click();
+  if ((await j1.getByTestId("own-link").inputValue()) !== ownUrl) errors.push("join: Home's own link isn't the address's #invite= link");
+  await j1.getByTestId("own-link-copy").scrollIntoViewIfNeeded();
+  await shot(j1, "join-home-own-link-phone");
+  await j1.getByTestId("play").click();
+  await j1.getByTestId("fight").waitFor({ timeout: 10_000 });
+  await j1.getByTestId("offer-0").click();
+  await j1.getByTestId("buy").click();
+  await j1.getByTestId("fight").click();
+  await j1.getByTestId("battle-end").waitFor({ timeout: 10_000 });
+  await j1.getByTestId("battle-end").click();
+  await j1.getByTestId("end-card").waitFor({ timeout: 10_000 });
+  await shot(j1, "join-result-phone");
+  // The bookmarked address opens the same player on another device.
+  const j1b = await device(DESKTOP);
+  await j1b.goto(ownUrl);
+  await j1b.getByTestId("play").waitFor({ timeout: 15_000 });
+  if (!/Continue/i.test(await j1b.getByTestId("play").textContent())) errors.push("join: the own link on another device isn't the same player");
+
+  // A second stranger: a used name is refused, another one plays.
+  const j2 = await device(PHONE);
+  await j2.goto(`${url}#join=${jc}`);
+  await j2.getByTestId("join-name").fill(friend.toLowerCase());
+  await j2.getByTestId("join-submit").click();
+  await j2.getByTestId("error").filter({ hasText: "taken" }).waitFor({ timeout: 10_000 });
+  await shot(j2, "join-taken-phone");
+  await j2.getByTestId("join-name").fill(`Other${TAG}`);
+  await j2.getByTestId("join-submit").click();
+  await j2.getByTestId("play").waitFor({ timeout: 15_000 });
+  if (!(await text(j2)).includes(`Other${TAG}`)) errors.push("join: the second stranger isn't their own player");
+
+  // A device that already plays as someone asks first; Stay keeps them.
+  await j1.goto(`${url}#join=${jc}`);
+  await j1.getByTestId("join-switch").waitFor({ timeout: 10_000 });
+  await shot(j1, "join-switch-phone");
+  await j1.getByTestId("join-stay").click();
+  await j1.getByTestId("play").waitFor({ timeout: 10_000 });
+  if (!(await text(j1)).includes(friend)) errors.push("join: Stay didn't keep the player");
+
+  // Rotate: the old link lands on the invite screen, the new one asks for a name.
+  const jn = joinOf(cli("open", "--rotate"));
+  const j3 = await device(PHONE);
+  await j3.goto(`${url}#join=${jc}`);
+  await j3.getByTestId("invite-bad").waitFor({ timeout: 10_000 });
+  await shot(j3, "join-rotated-phone");
+  await j3.goto(`${url}#join=${jn}`);
+  await j3.getByTestId("join-name").waitFor({ timeout: 10_000 });
+  // The joined players keep playing.
+  await j2.reload();
+  await j2.getByTestId("play").waitFor({ timeout: 10_000 });
 } catch (e) {
   errors.push(`flow: ${e.message.split("\n")[0]}`);
 } finally {
@@ -160,4 +231,4 @@ if (errors.length) {
   for (const e of errors) console.error(`✗ ${e}`);
   process.exit(1);
 }
-console.log("✓ invite links work: tester, second device, admin dev tools, switch ask, old device, bad link, revoke");
+console.log("✓ invite links work: tester, second device, admin dev tools, switch ask, old device, bad link, revoke, open join link");
