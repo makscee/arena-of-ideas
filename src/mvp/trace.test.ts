@@ -241,10 +241,27 @@ describe("one beat at a time (R2-12)", () => {
     const weights = weightsOf(log, beats);
     const plain = beats.find((b) => b.waves.length === 1 && b.waves[0]!.changes.every((c) => c.kind === "damage"))!;
     const kill = beats.find((b) => b.waves.some((w) => w.changes.some((c) => c.kind === "death")))!;
-    expect(weights[plain.index]).toEqual({});
+    expect(weights[plain.index]).toEqual({ quiet: true });
     expect(timingOf(plain, weights[plain.index])).toEqual({ at: [0], ms: QUIET_BEAT_MS });
     expect(weights[kill.index]!.kill).toBe(true);
     expect(timingOf(kill, weights[kill.index]).ms).toBeGreaterThanOrEqual(BEAT_MS + EMPHASIS_MS.kill);
+  });
+
+  test("R3-26: quiet beats play shorter, a repeat of the turn before shorter still; kills keep their time", () => {
+    // Medic heals Squire each time Dummy's 1-PWR strike lands: the same two lines every turn.
+    const log = run([dummy("Squire", 30, 0), Medic], [dummy("Dummy", 30, 1)]);
+    const beats = beatPlayOf(log, stepsOf(log));
+    const weights = weightsOf(log, beats);
+    const trade = beats.filter((b) => b.waves.length > 1 && weights[b.index]!.quiet);
+    expect(trade.length).toBeGreaterThan(1);
+    const first = trade[0]!;
+    expect(weights[first.index]!.repeat).toBeUndefined();
+    expect(timingOf(first, weights[first.index]).ms).toBeLessThan(BEAT_MS);
+    const again = trade.find((b) => weights[b.index]!.repeat)!;
+    expect(again).toBeDefined();
+    expect(timingOf(again, weights[again.index]).ms).toBeLessThan(timingOf(first, weights[first.index]).ms);
+    // Nothing with a kill, a summon, a big hit, fatigue's first beat or the last beat is quiet.
+    for (const [i, w] of weights.entries()) if (w.kill || w.big || w.summon || w.fatigue || w.last || w.end) expect([i, w.quiet, w.repeat]).toEqual([i, undefined, undefined]);
   });
 
   test("a kill beat is longer than the same beat without its death", () => {
@@ -611,6 +628,21 @@ describe("a cause on every wave (R3-19)", () => {
 });
 
 describe("R2-17: key moments, battle start, fatigue rows, Why's icons", () => {
+  test("R3-26: fatigue's kills are its own: the falls line says Fatigue, why I lost lists it", () => {
+    const log = run([dummy("Wall", 60, 0), dummy("Wall2", 60, 0)], [dummy("Wall", 60, 0), dummy("Wall2", 60, 0)]);
+    const deaths = log.filter((e) => e.type === "Death");
+    expect(deaths.length).toBeGreaterThan(0);
+    for (const d of deaths) expect(captionOf(log, d.id)).toMatch(/^Fatigue → .* falls$/);
+    const rows = whyILost(log, "A");
+    const f = rows.find((r) => r.text === "Fatigue")!;
+    expect(f).toBeDefined();
+    expect(f.kills).toBe(deaths.filter((d) => d.type === "Death" && d.unit.startsWith("A")).length);
+    expect(f.damage).toBeGreaterThan(0);
+    expect(log[f.sampleEventId]).toMatchObject({ type: "Hurt" });
+    // Even past three bigger enemy chains, fatigue keeps a row once it killed.
+    expect(whyILost(log, "A", 1).map((r) => r.text)).toEqual(["Fatigue"]);
+  });
+
   test("a fight with more in it fills its key moments up to 3, never two on one beat", () => {
     const log = run([dummy("Squire", 8, 1), dummy("Page", 6, 1), dummy("Knave", 5, 1)], [dummy("Dummy", 30, 2), Medic]);
     const beats = beatPlayOf(log, stepsOf(log));
@@ -649,7 +681,8 @@ describe("R2-17: key moments, battle start, fatigue rows, Why's icons", () => {
     const log = run([dummy("Wall", 60, 0), dummy("Wall2", 60, 0)], [dummy("Wall", 60, 0), dummy("Wall2", 60, 0)]);
     const ms = keyMomentsOf(log, beatPlayOf(log, stepsOf(log)));
     const f = ms.find((m) => m.kind === "fatigue")!;
-    expect(f.label).toMatch(/^Fatigue kills Wall2? \+3$/);
+    // "+3" alone read as a heal (R3-26).
+    expect(f.label).toMatch(/^Fatigue kills Wall2?, \+3 more fell$/);
     expect(ms.filter((m) => m.kind === "fatigue")).toHaveLength(1);
     expect(f.label).not.toMatch(/sets in \(T\d+\)/);
   });

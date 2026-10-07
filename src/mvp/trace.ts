@@ -410,6 +410,14 @@ export const BEAT_MAX_MS = 2200;
 /** A quiet beat (one wave, a plain hit or a status tick, nothing dies) is
  * shorter: a −1 trade shouldn't take as long as a kill (pacing by weight). */
 export const QUIET_BEAT_MS = 900;
+/** A quiet beat of a few waves (a −1 hit and the +1 heal it sets off) holds
+ * its last wave this long, and lasts at least QUIET_MULTI_MS (R3-26). */
+const QUIET_HOLD_MS = 650;
+export const QUIET_MULTI_MS = 1000;
+/** A quiet beat that repeats one of the turn before (the same lines again:
+ * Medic heals itself +1 each turn against a 1-PWR striker) plays at this
+ * share of its time (R3-26: early fights were 40+ s of the same lines). */
+export const REPEAT_SHARE = 0.7;
 /** How long the last wave stays before the next beat. */
 const BEAT_HOLD_MS = 800;
 /** How long the line-up shows before the first beat, at 1×. */
@@ -426,8 +434,20 @@ export const KILL_FREEZE_MS = 120;
 /** A hit counts as big at this much damage (the timeline's marks also scale it to the battle). */
 export const BIG_HIT_MIN = 4;
 
-/** What a beat holds that earns it more time. */
-export type BeatWeight = Partial<Record<keyof typeof EMPHASIS_MS | "end", boolean>>;
+/** What a beat holds that earns it more time; `quiet` (only small changes)
+ * and `repeat` (a quiet beat the turn before already played) earn it less. */
+export type BeatWeight = Partial<Record<keyof typeof EMPHASIS_MS | "end" | "quiet" | "repeat", boolean>>;
+
+/** Only small changes: hits under BIG_HIT_MIN, heals, statuses, PWR / HP, a silence; no death or summon. */
+function quietBeat(log: BattleEvent[], b: PlayBeat): boolean {
+  return b.waves.every((w) => w.changes.every((c) => {
+    if (c.kind === "death" || c.kind === "summon") return false;
+    const e = log[c.eventId];
+    return !(e?.type === "Hurt" && e.amount >= BIG_HIT_MIN);
+  }));
+}
+/** A beat's lines, to tell a repeat: its waves' captions. */
+const linesOf = (b: PlayBeat) => b.waves.map((w) => w.caption).join("\n");
 
 /** When each wave lands (ms from the beat's start, at 1×) and how long the
  * beat lasts: waves 220 ms apart, squeezed so the last lands by 1.4 s; the
@@ -437,6 +457,7 @@ export function beatTiming(waves: number, quiet = false): { at: number[]; ms: nu
   const span = BEAT_MAX_MS - BEAT_HOLD_MS;
   const gap = waves > 1 ? Math.min(WAVE_MS, span / (waves - 1)) : 0;
   const at = Array.from({ length: waves }, (_, i) => Math.round(i * gap));
+  if (quiet) return { at, ms: Math.min(BEAT_MAX_MS, Math.max(QUIET_MULTI_MS, (at.at(-1) ?? 0) + QUIET_HOLD_MS)) };
   return { at, ms: Math.min(BEAT_MAX_MS, Math.max(BEAT_MS, (at.at(-1) ?? 0) + BEAT_HOLD_MS)) };
 }
 
@@ -459,6 +480,13 @@ export function weightsOf(log: BattleEvent[], beats: PlayBeat[]): BeatWeight[] {
     if (i === firstFatigue) w.fatigue = true;
     if (i === (decisive >= 0 ? decisive : beats.length - 1)) w.last = true;
     if (decisive >= 0 && i > decisive && b.waves.every((x) => !x.changes.length)) w.end = true;
+    // Empty time (R3-26): a beat with only small changes and nothing to
+    // emphasise is quiet; one that replays a line of the turn before, a repeat.
+    if (!w.kill && !w.big && !w.summon && !w.fatigue && !w.last && !w.end && b.waves.some((x) => x.changes.length) && quietBeat(log, b)) {
+      w.quiet = true;
+      const lines = linesOf(b);
+      if (b.turn >= 1 && beats.some((o) => o.turn === b.turn - 1 && linesOf(o) === lines)) w.repeat = true;
+    }
     return w;
   });
 }
@@ -470,9 +498,11 @@ export function weightsOf(log: BattleEvent[], beats: PlayBeat[]): BeatWeight[] {
  * after the deciding blow lasts END_BEAT_MS. */
 export function timingOf(beat: PlayBeat, weight: BeatWeight = {}): { at: number[]; ms: number } {
   if (weight.end) return { at: beat.waves.map(() => 0), ms: END_BEAT_MS };
-  const quiet = beat.waves.length === 1 && beat.waves[0]!.changes.every((c) => c.kind === "damage" || c.kind === "status");
+  const quiet = weight.quiet || (beat.waves.length === 1 && beat.waves[0]!.changes.every((c) => c.kind === "damage" || c.kind === "status"));
   const t = beatTiming(beat.waves.length, quiet);
   const extra = (Object.keys(EMPHASIS_MS) as (keyof typeof EMPHASIS_MS)[]).reduce((n, k) => n + (weight[k] ? EMPHASIS_MS[k] : 0), 0);
+  // A repeat keeps its waves' spacing and cuts its hold (never below its last wave plus 0.4 s).
+  if (weight.repeat) return { at: t.at, ms: Math.max((t.at.at(-1) ?? 0) + 400, Math.round(t.ms * REPEAT_SHARE)) + extra };
   return { at: t.at, ms: t.ms + extra };
 }
 
@@ -716,10 +746,11 @@ export function captionSubject(log: BattleEvent[], id: number, name: NameOf = di
       if (e.source === "kernel" && p?.type === "Strike") return p.striker;
       return causeUnit(log, e, name) ?? e.unit;
     }
+    case "Death":
+      return fellToFatigue(log, e) ? e.unit : (causeUnit(log, e, name) ?? e.unit);
     case "Heal":
     case "StatusApplied":
     case "StatChanged":
-    case "Death":
     case "Silenced":
       return causeUnit(log, e, name) ?? e.unit;
     case "Summon":
@@ -753,6 +784,24 @@ function stoppedText(original: string, unit: string | undefined, own: boolean, n
   }
 }
 
+/** The hit that felled a unit: its Death's cause, else the last hit on it. */
+function fellBy(log: BattleEvent[], death: BattleEvent & { type: "Death" }): BattleEvent | undefined {
+  const cause = death.causedBy !== null ? log[death.causedBy] : undefined;
+  if (cause?.type === "Hurt") return cause;
+  for (let i = death.id - 1; i >= 0; i--) {
+    const e = log[i];
+    if (e?.type === "Hurt" && e.unit === death.unit) return e;
+  }
+  return undefined;
+}
+/** Fatigue dealt the blow that felled the unit (R3-26: its "falls" line named
+ * the unit whose Shield it last held, as if that unit killed it). */
+export function fellToFatigue(log: BattleEvent[], death: BattleEvent): boolean {
+  if (death.type !== "Death") return false;
+  const hit = fellBy(log, death);
+  return hit?.causedBy !== null && hit?.causedBy !== undefined && log[hit.causedBy]?.type === "Fatigue";
+}
+
 /** One line, cause → effect, for the event `id` (plus merged follow-ups). */
 export function captionOf(log: BattleEvent[], id: number, name: NameOf = displayNames(log), merged: number[] = [id], p: Perspective = {}): string {
   const e = log[id];
@@ -779,7 +828,7 @@ export function captionOf(log: BattleEvent[], id: number, name: NameOf = display
     case "StatChanged":
       return `${causeName(log, e, name)} → ${name(e.unit)} ${e.delta >= 0 ? "+" : "−"}${Math.abs(e.delta)} ${e.stat.toUpperCase()}`;
     case "Death":
-      return `${causeName(log, e, name)} → ${name(e.unit)} falls`;
+      return `${fellToFatigue(log, e) ? "Fatigue" : causeName(log, e, name)} → ${name(e.unit)} falls`;
     case "Summon":
       return e.resurrected
         ? `${causeName(log, e, name)} → ${name(e.unit)} returns at ${e.atHp ?? e.hp} HP`
@@ -839,8 +888,10 @@ function slotOf(id: string): number | null {
 
 /** The enemy chains that did the most against `you` (default side A): every
  * Hurt on your units and Heal on theirs is traced, grouped by the chain of
- * units behind it, and ranked by impact. Fatigue and your own units' acts
- * are not enemy chains. */
+ * units behind it, and ranked by impact. Your own units' acts are not enemy
+ * chains. Fatigue is a row of its own ("Fatigue") once it killed one of your
+ * units, listed even when three chains did more (R3-26: it felled 3 of 5 and
+ * the card didn't say so). */
 export function whyILost(log: BattleEvent[], you: Side = "A", top = 3): LossChain[] {
   const name = displayNames(log);
   const sides = sidesOf(log);
@@ -863,7 +914,19 @@ export function whyILost(log: BattleEvent[], you: Side = "A", top = 3): LossChai
   // By instance and how it reads: a unit's strikes and abilities are one row
   // ("Medic"), its status ticks another ("Zealot (Poison)").
   const keyOf = (t: Trace) => t.links.map((l) => `${l.unit}|${linkText(l)}`).join(" ← ");
+  // Fatigue's hits on your units, and the kills they made.
+  const fatigue: LossChain = { names: ["Fatigue"], units: [], text: "Fatigue", impact: 0, damage: 0, heal: 0, kills: 0, times: 0, hits: 0, heals: 0, sampleEventId: -1, sampleKind: "none" };
+  const byFatigue = (e: BattleEvent) => e.causedBy !== null && log[e.causedBy]?.type === "Fatigue";
   const add = (e: BattleEvent, dmg: number, heal: number, kill: boolean) => {
+    if (e.type === "Hurt" && byFatigue(e)) {
+      if (dmg > 0) offer(fatigue, e.id, "hit", dmg);
+      dealt.set(e.id, dmg);
+      fatigue.damage += dmg;
+      fatigue.impact += dmg;
+      fatigue.times++;
+      fatigue.hits++;
+      return;
+    }
     const t = traceOf(log, e.id, name, sides);
     if (t.links[0]?.side !== them) return;
     const key = keyOf(t);
@@ -901,7 +964,11 @@ export function whyILost(log: BattleEvent[], you: Side = "A", top = 3): LossChai
     } else if (e.type === "Death" && sides.get(e.unit) === you) {
       // the kill belongs to the chain of the change that dropped the unit
       const cause = e.causedBy !== null ? log[e.causedBy] : undefined;
-      if (cause) {
+      if (fellToFatigue(log, e)) {
+        const hit = fellBy(log, e as BattleEvent & { type: "Death" })!;
+        fatigue.kills++;
+        offer(fatigue, hit.id, "kill", dealt.get(hit.id) ?? 0);
+      } else if (cause) {
         const t = traceOf(log, cause.id, name, sides);
         const g = groups.get(keyOf(t));
         if (g && t.links[0]?.side === them) {
@@ -923,7 +990,10 @@ export function whyILost(log: BattleEvent[], you: Side = "A", top = 3): LossChai
     if (slot === null) summons.set(g.text, k + 1);
     g.text = g.text.replace(g.names[0]!, slot !== null ? `${g.names[0]} #${slot}` : `${g.names[0]} (summon ${k + 1})`);
   }
-  return all.sort((a, b) => b.impact - a.impact || b.kills - a.kills).slice(0, top);
+  const ranked = all.sort((a, b) => b.impact - a.impact || b.kills - a.kills);
+  if (!fatigue.kills) return ranked.slice(0, top);
+  const out = [...ranked, fatigue].sort((a, b) => b.impact - a.impact || b.kills - a.kills).slice(0, top);
+  return out.includes(fatigue) ? out : [...out.slice(0, Math.max(0, top - 1)), fatigue];
 }
 
 // ---------- the end card (round 2, R2-14) ----------
@@ -1017,7 +1087,8 @@ export function keyMomentsOf(log: BattleEvent[], beats: PlayBeat[], name: NameOf
   /** The first label that fits MOMENT_CHARS in plain names, else the last (the shortest). */
   const fit = (...ways: ((n: NameOf) => string)[]) => ways.find((w) => w(plain).length <= MOMENT_CHARS)?.(name) ?? ways.at(-1)!(name);
   const killText = (k: Kill, n: NameOf) => {
-    if (!k.killer) return k.fatigue ? `Fatigue kills ${n(k.victim)}` : `${n(k.victim)} falls`;
+    if (k.fatigue) return `Fatigue kills ${n(k.victim)}`;
+    if (!k.killer) return `${n(k.victim)} falls`;
     // A status's tick says whose status it was: "Virus's Poison kills Knight".
     const who = k.via === "strike" || k.via === "ability" ? n(k.killer) : `${n(k.killer)}'s ${k.via}`;
     return `${who} kills ${n(k.victim)}`;
@@ -1108,7 +1179,7 @@ export function keyMomentsOf(log: BattleEvent[], beats: PlayBeat[], name: NameOf
           : stats
             ? `${stats}${to(n)}`
             : summoned.length
-              ? `${summoned[0]!.back ? "brings back" : "summons"} ${n(summoned[0]!.unit)}${summoned.length > 1 ? ` +${summoned.length - 1}` : ""}`
+              ? `${summoned[0]!.back ? "brings back" : "summons"} ${n(summoned[0]!.unit)}${summoned.length > 1 ? `, +${summoned.length - 1} more` : ""}`
               : blocked
                 ? `${blocked} blocked by Shield`
                 : null;
@@ -1116,7 +1187,7 @@ export function keyMomentsOf(log: BattleEvent[], beats: PlayBeat[], name: NameOf
       return { kind: "combo", beat: b.index, label: fit((n) => `${n(actor)}: ${what(n)} in ${steps} steps`, (n) => `${n(actor)}: ${what(n)}`), unit: actor };
     }
     const [u, d] = top;
-    const victims = (n: NameOf) => `kills ${n(d.kills[0]!)}${d.kills.length > 1 ? ` +${d.kills.length - 1}` : ""}`;
+    const victims = (n: NameOf) => `kills ${n(d.kills[0]!)}${d.kills.length > 1 ? `, +${d.kills.length - 1} more` : ""}`;
     const label = d.kills.length
       ? fit((n) => `${n(u)}: ${d.dmg} dmg, ${victims(n)}`, (n) => `${n(u)} ${victims(n)}`)
       : d.dmg
@@ -1129,7 +1200,8 @@ export function keyMomentsOf(log: BattleEvent[], beats: PlayBeat[], name: NameOf
   const fatigueMoment = (f: BattleEvent): KeyMoment => {
     const fk = kills.filter((k) => k.fatigue);
     const total = [...fatigueOf.keys()].reduce((t, id) => t + ((log[id] as { amount: number }).amount ?? 0), 0);
-    const label = fk.length ? fit((n) => `Fatigue kills ${n(fk[0]!.victim)}${fk.length > 1 ? ` +${fk.length - 1}` : ""}`) : `Fatigue sets in: ${total} dmg, no kills`;
+    // "+3" alone read as a heal (R3-26): "+3 more fell".
+    const label = fk.length ? fit((n) => `Fatigue kills ${n(fk[0]!.victim)}${fk.length > 1 ? `, +${fk.length - 1} more fell` : ""}`) : `Fatigue sets in: ${total} dmg, no kills`;
     return { kind: "fatigue", beat: beatOfEvent(f.id), label };
   };
 
