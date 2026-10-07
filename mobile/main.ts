@@ -18,6 +18,7 @@ import { setCodexLink } from "./ui/term";
 import { statsScreen } from "./screens/stats";
 import { card, roman, unitSheet, type CardUnit } from "./ui/card";
 import { previewName } from "./ui/fusion";
+import { fuseWarning } from "./ui/fuse-warn";
 import { icon } from "./ui/icon";
 import { app, button, closable, desktopQuery, dismissable, h, isDesktop, keepScreen, onKeys, overlay, screen, show, who } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
@@ -86,7 +87,8 @@ function team(line: LineUnit[], side: "you" | "ghost", content: MvpContent, test
 function soundRow(): HTMLElement {
   const toggle = button("", () => setSound({ on: !soundSettings().on }), "sound-toggle", "sound-toggle");
   const volume = h("input", { type: "range", min: "0", max: "100", step: "5", "aria-label": "Volume", "data-testid": "sound-volume" });
-  volume.addEventListener("input", () => setSound({ volume: Number(volume.value) / 100 }));
+  // The slider is read from the event, not captured: no closure holds it.
+  volume.addEventListener("input", (e) => setSound({ volume: Number((e.currentTarget as HTMLInputElement).value) / 100 }));
   volume.addEventListener("change", () => play("click"));
   const row = h("div", { class: "row sound-row", "data-testid": "sound-row" }, toggle, volume);
   syncSoundRow(row);
@@ -138,9 +140,9 @@ function rulesSheet(): HTMLElement {
     p(`${r.lineSize} units in a line, front first. Change the order in the shop: ${isDesktop() ? "drag a unit, or click it, then ← →" : "tap a unit, then ◀ ▶"}. Each round you fight a team another player saved at the same round.`),
     ...(benchSizeOf(r) > 0 ? [p(`${r.benchSize} bench slots hold units that don't fight; copies still merge into them. ${isDesktop() ? "Drag a unit between the line and the bench, or select it and press B" : "Tap a unit, then To bench or To line"}.`)] : []),
     h("div", { class: "label" }, "Copies, Awoken, fusion"),
-    p(`Buying a unit you own merges it in: +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP a copy. Copy ${r.copiesToAwaken} awakens it: the same When, a stronger Who or Does.`),
+    p(`Buying a unit you own merges it in: +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP a copy. Copy ${r.copiesToAwaken} awakens it: the same When, plus a new job.`),
     ...(r.giftChoices ? [p(`The copy that awakens a unit brings a gift: a free pick of 1 of ${r.giftChoices} units from the highest tier open. It joins your line, else your bench; one you own merges in, and if that awakens it, another gift comes. With line and bench full, sell a unit to make room, or skip it. Until you pick or skip, you can only sell and reorder.`)] : []),
-    p(`Two Awoken units fuse: the When of the first you ${isDesktop() ? "pick" : "tap"}, the Who of the second, the Does of both, and the stronger PWR and HP of the two, +1 PWR / +2 HP. A fused unit is final; copies of either part still merge into it. The first player to make a pair names it.`),
+    p(`Two Awoken units fuse: the When of the first you ${isDesktop() ? "pick" : "tap"}, the Who of the second, the Does of both, and the stronger PWR and HP of the two, +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP. A fused unit is final; copies of either part still merge into it. The first player to make a pair names it.`),
     h("div", { class: "label" }, "Chains"),
     p(`Units react to events. When one happens, the units it triggers fire in line order, front to back, each at most once per event. In a fight, ${isDesktop() ? "click" : "tap"} any number to see the chain that caused it.`),
     h("div", { class: "label" }, "The day"),
@@ -166,12 +168,12 @@ function legendSheet(): HTMLElement {
     ),
     row(h("span", { class: "stats" }, span("p", "2"), "/", span("h", "6")), "PWR / HP. PWR is what its strike deals; at 0 HP it falls."),
     row(span("copies", "●●○"), `Copies toward Awoken: copy ${r.copiesToAwaken} awakens it. Each copy adds +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP.`),
-    row(span("copies tag", "AWOKEN ×3"), "Awoken, its stronger form; ×3 copies merged in. Two Awoken units can fuse."),
+    row(span("copies tag", "AWOKEN ×3"), `Awoken: the same When, plus a new job; ×${r.copiesToAwaken} copies merged in. Two Awoken units can fuse.`),
     ...(r.giftChoices ? [row(span("copies tag", "🎁 GIFT"), `Awakening a unit brings a gift: pick 1 of ${r.giftChoices} cards for free, or skip it. Set aside, it waits behind "Open gift".`)] : []),
     row(span("copies tag", "FUSED ×2"), "Two Awoken units fused into one: final, copies of either part still merge in."),
     row(span("cost", "3g ＋"), "An offer's price. ＋: you own it, so buying merges a copy in. The numeral top right (I–IV) is its tier."),
     row(span("cost", "🔒 3g"), "A locked offer: it stays through rerolls and rounds until you buy or unlock it."),
-    h("div", { class: "dim small" }, "Tap any card for its sheet: what it does now, and its Awoken form one tap away."),
+    h("div", { class: "dim small" }, `${tapOrClick()} any card for its sheet: what it does now, and its Awoken form one ${isDesktop() ? "click" : "tap"} away.`),
   );
   const close = closable(sheet, h("div", { class: "row" }, rulesBtn));
   return sheet;
@@ -498,7 +500,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     });
   /** Lock or unlock an offer (free); on desktop it stays chosen in the inspector. */
   const lock = (o: Offer) => void decide({ kind: "lock", slot: o.slot }, -1, desk ? o.slot : -1);
-  const lockLabel = (o: Offer) => (o.locked ? "Unlock" : "Lock");
+  const lockLabel = (o: Offer) => (o.locked ? "🔓 Unlock" : "🔒 Lock");
   // The last shop round has no Lock: the Crown clears the offers. Unlock stays.
   const lastShop = run.round >= rules.rounds;
   const canLock = (o: Offer) => !run.gift && (o.locked === true || !lastShop);
@@ -557,7 +559,10 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       } else if (!desk && !crown && pick.mode === "picked" && pick.index >= L && !onBench && run.line.length >= L) {
         // Phone: a bench unit selected and the line full, a tap on a line unit swaps the two.
         return moveTo(pick.index, slot);
-      } else pick = pick.mode === "picked" && pick.index === slot ? { mode: "none" } : { mode: "picked", index: slot };
+      } else
+        // A second tap on the phone puts it down (its buttons go); on desktop a
+        // click keeps it in hand, so the next B, S or F still has a unit (Esc lets go).
+        pick = !desk && pick.mode === "picked" && pick.index === slot ? { mode: "none" } : { mode: "picked", index: slot };
       chosen = null;
       renderLine();
     });
@@ -617,7 +622,13 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     // On desktop the inspector already is the sheet: no Info.
     const out: HTMLElement[] = desk ? [left, right] : [left, right, info];
     const other = otherZone(i);
-    if (other !== null) out.push(button(i < L ? (desk ? "To bench · B" : "To bench") : desk ? "To line · B" : "To line", () => moveTo(i, other), "", i < L ? "to-bench" : "to-line"));
+    if (other !== null) {
+      // Into the other zone's first empty slot, else a swap with its back unit: the button says which.
+      const swaps = unitAt(other) !== undefined;
+      // The phone's row of buttons stays one row: "Swap" there, the hint says with whom.
+      const word = i < L ? (swaps ? (desk ? `Swap with bench ${B}` : "Swap") : "To bench") : swaps ? (desk ? "Swap with back" : "Swap") : "To line";
+      out.push(button(desk ? `${word} · B` : word, () => moveTo(i, other), "", i < L ? "to-bench" : "to-line"));
+    }
     if (u.kind === "unit" && u.form === "awoken" && awoken >= 2 && !run.gift) out.push(button(desk ? "Fuse · F" : "Fuse", () => ((pick = { mode: "fuse", first: i }), renderLine()), "", "fuse"));
     const value = sellValue(rules, u);
     out.push(button(desk ? `Sell +${value}g · S` : `Sell +${value}`, () => void decide({ kind: "sell", index: i }), "danger", "sell"));
@@ -679,7 +690,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
 
   /** The hint that matters most right now, or none. */
   const shopHint = (): HTMLElement | null => {
-    if (!desk && !crown && pick.mode === "picked" && pick.index >= L && run.line.length >= L) return hint("Line full: tap a line unit to swap this one in.");
+    if (!desk && !crown && pick.mode === "picked" && pick.index >= L && run.line.length >= L) return hint("Line full: Swap trades with the back unit, or tap one.");
     if (pick.mode !== "none") return null;
     // run.ts refuses every decision but the fight in the crown phase: the line is final.
     if (crown) return hint(ownCrown ? "The Crown: today's champion is your own team. Beat it to be a slayer again; a loss costs a heart. Your line is final." : "The Crown: your line, as it is, against today's champion. Win it to become a slayer; a loss costs a heart.");
@@ -698,7 +709,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const keep = !o.locked && !lastShop && o.cost > run.gold ? " Not enough gold: lock it to keep it for next round." : "";
       return hint(`One more ${almost.name} awakens it. It's in the shop for ${o.cost}g.${keep}`);
     }
-    if (!lastShop && run.offers.some((o) => !o.locked && o.cost > run.gold && owns(o.unitId))) return hint("Not enough gold: lock it to keep it for next round.");
+    const keepIt = lastShop ? undefined : run.offers.find((o) => !o.locked && o.cost > run.gold && owns(o.unitId));
+    if (keepIt) return hint(`${unitOf(keepIt.unitId)?.name ?? "Your unit"} (you own one) costs ${keepIt.cost}g, you have ${run.gold}g: lock it to keep it for next round.`);
     return null;
   };
 
@@ -730,9 +742,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
           h("span", { class: "k" }, "Who"), ` · ${unitAt(o.second)!.name} → `,
           h("span", { class: "k" }, "Does"), " · both",
         );
+        // Fusions that hurt their own team stay (round 2); the preview says so plainly.
+        const warn = fuseWarning(views[at]!.recipe, [unitAt(o.first)!.recipe, unitAt(o.second)!.recipe], content);
         body.replaceChildren(
           h("div", { class: "preview-card" }, card(shown, { side: "you", extra: [copiesBadge(shown)] })),
           recipe,
+          ...(warn ? [h("div", { class: "fuse-warn", role: "note", "data-testid": "fuse-warn" }, warn)] : []),
           h(
             "div",
             { class: "row sheet-actions" },
@@ -927,9 +942,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const full = run.line.length >= L && run.bench.length >= B;
   const giftKey = run.gift ? `${run.runId}:${run.round}:${run.gift.join(",")}` : "";
   const giftPickable = (id: string) => !full || owns(id);
+  // Line and bench full and some pick can't join (one you own still merges in):
+  // the chooser says so and offers Make room, and a sale reopens it.
+  const cramped = (gift: string[]) => gift.some((id) => !giftPickable(id));
   function giftBanner(): HTMLElement | null {
     if (!run.gift || crown) return null;
-    const stuck = !run.gift.some(giftPickable);
+    const stuck = cramped(run.gift);
     return h(
       "div",
       { class: "gift-banner row", "data-testid": "gift-banner" },
@@ -941,11 +959,13 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const gift = run.gift;
     if (!gift) return;
     giftAside = null;
-    const stuck = !gift.some(giftPickable);
+    const stuck = cramped(gift);
+    const none = !gift.some(giftPickable);
     const tier = unitOf(gift[0]!)?.tier;
     const choices = gift.map((id, i) => {
       const u = unitOf(id);
-      const mine = board.find((x) => x.kind === "unit" && x.unitId === id) ?? null;
+      // Yours: a copy merges in, a fused unit's part included (owns()).
+      const mine = board[mergeTarget(board, id)] ?? null;
       const cu: CardUnit = { unitId: id, emoji: u?.emoji ?? "?", name: u?.name ?? id, stats: u?.base ?? { pwr: 0, hp: 0 }, ...(u ? { recipe: u.forms.sleeping } : {}) };
       const c = card(cu, { side: "you", ...(u ? { tier: u.tier } : {}), extra: mine ? [h("div", { class: "cost" }, "＋")] : [], testid: `gift-card-${i}` });
       if (mine) c.classList.add("owned");
@@ -965,7 +985,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       h("div", { class: "label" }, "Awakening gift"),
       h("h2", { class: "reveal", "data-testid": "gift-title" }, "🎁 Awakened! Pick a gift"),
       h("div", { class: "dim small" }, `Free: one of these${tier ? ` tier ${roman(tier)}` : ""} units. It joins your line, else your bench; one you own merges in.`),
-      ...(stuck ? [h("div", { class: "hint", "data-testid": "gift-full" }, "Line and bench full: make room (sell a unit), then pick.")] : []),
+      ...(stuck ? [h("div", { class: "hint", "data-testid": "gift-full" }, none ? "Line and bench full: make room (sell a unit), then pick." : "Line and bench full: only a unit you own merges in now. Make room (sell a unit) to pick another.")] : []),
       h("div", { class: "gift-choices", "data-testid": "gift-choices" }, ...choices),
       h("div", { class: "dim small" }, `${tapOrClick()} a card to read it.${isDesktop() ? " Esc sets the gift aside." : ""}`),
       h(
@@ -987,10 +1007,11 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
 
   // The number keys in plain words: "1–6 buy the offer with that number".
   const n = Math.min(7, run.offers.length);
-  const numberKeys = n === 0 ? [] : n === 1 ? [kbd("1"), " buys the offer · "] : [kbd("1"), "–", kbd(String(n)), " buy the offer with that number · "];
+  // One line at 1440 px (R3-26): short words, the keys say the rest.
+  const numberKeys = n === 0 ? [] : n === 1 ? [" or ", kbd("1")] : [" or ", kbd("1"), "–", kbd(String(n))];
   const keysLine =
     desk && !crown
-      ? h("div", { class: "dim small keys", "data-testid": "keys" }, "Hover a card to read it → · click selects · drag reorders · double-click buys · ", ...numberKeys, kbd("R"), " reroll · ", kbd("L"), " lock · ", kbd("Space"), " fight · ", kbd("←"), kbd("→"), " move · ", kbd("F"), " fuse · ", kbd("S"), " sell · ", ...(B > 0 ? [kbd("B"), " bench · "] : []), kbd("M"), " sound · ", kbd("Esc"), " menu")
+      ? h("div", { class: "dim small keys", "data-testid": "keys" }, "Click selects · drag reorders · double-click", ...numberKeys, " buys · ", kbd("R"), " reroll · ", kbd("L"), " lock · ", kbd("Space"), " fight · ", kbd("←"), kbd("→"), " move · ", kbd("F"), " fuse · ", kbd("S"), " sell · ", ...(B > 0 ? [kbd("B"), " bench · "] : []), kbd("M"), " sound · ", kbd("Esc"), " menu")
       : null;
   show(
     h(
@@ -1037,7 +1058,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   screen("shop");
   // The gift opens by itself, unless it was set aside (and, if set aside for
   // a full board, there is still no room).
-  if (run.gift && !crown && (giftAside?.key !== giftKey || (giftAside.full && run.gift.some(giftPickable)))) openGift();
+  if (run.gift && !crown && (giftAside?.key !== giftKey || (giftAside.full && !cramped(run.gift)))) openGift();
   rerender = () => shopScreen(run, content, err.textContent ?? "", pick.mode === "picked" ? pick.index : -1);
   // Keys: Esc steps back (the fusion, the selection), then opens the ☰ run
   // menu, at every width (a sheet over the shop closes first: ui/dom.ts).
@@ -1085,6 +1106,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       if (busy) return (moveQueue += step), true;
       const to = sel + step;
       if (to >= zoneStart(sel) && to < zoneStart(sel) + zoneLen(sel)) void decide({ kind: "reorder", from: sel, to }, to);
+      return true;
+    }
+    // B, S or F with nothing in hand says so instead of doing nothing.
+    if ((k === "b" || k === "s" || k === "f") && sel < 0 && pick.mode !== "fuse") {
+      err.textContent = "Select a unit first: click it in your line or bench.";
+      play("wrong");
       return true;
     }
     if (k === "b" && sel >= 0) {

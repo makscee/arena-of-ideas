@@ -14,3 +14,14 @@ export function escStep(s: { popover: boolean; overlays: number; field: "none" |
   if (s.field === "plain") return "blur";
   return "screen";
 }
+
+/** The screens whose Esc does something (back, or the run menu): the phone's
+ * Back gesture is their Esc too (R3-26). Home and the name form have none, so
+ * Back there leaves the game, as an app's root does. */
+const BACK_SCREENS = new Set(["shop", "battle", "codex", "stats", "over"]);
+
+/** Whether Back must stay in the game right now (ui/dom.ts keeps one history
+ * entry for it): a sheet is open, or the screen has its own Esc step. */
+export function backStays(s: { overlays: number; screen: string }): boolean {
+  return s.overlays > 0 || BACK_SCREENS.has(s.screen);
+}

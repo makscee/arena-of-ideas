@@ -6,7 +6,7 @@
 import type { Champion, HomeView, MvpContent, StatsView } from "../../src/mvp/contract";
 import { api } from "../api";
 import { card, unitSheet } from "../ui/card";
-import { button, h, onKeys, overlay, screen, show, who } from "../ui/dom";
+import { button, h, isDesktop, onKeys, overlay, screen, show, who } from "../ui/dom";
 import { keepUnitRates } from "../ui/unit-stats";
 
 export async function statsScreen(a: { content: MvpContent; onBack: () => void; onCodex?: () => void }): Promise<void> {
@@ -82,7 +82,7 @@ function championSheet(c: Champion, content: MvpContent): HTMLElement {
     "div",
     { class: "stack", "data-testid": "champion-sheet" },
     h("h2", {}, `👑 Day ${c.seq} · `, who(c.player.name), c.player.bot ? " 🤖" : ""),
-    h("div", { class: "dim" }, `${c.day}, front first. Tap a unit to read it.`),
+    h("div", { class: "dim" }, `${c.day}, front first. ${isDesktop() ? "Click" : "Tap"} a unit to read it.`),
     h(
       "div",
       { class: "slots" },

@@ -150,7 +150,7 @@ export const ROWS: Row[] = [
   r("Fodder",        "🥔", 1, 1, 6, "die",        "allies",  "Shield 1",    { does: ["Shield 1", "Heal 2"] }),
   r("Squire",        "🗡️", 1, 2, 4, "start",      "me",      "Strength 2",  { does: ["Strength 2", "Shield 2"] }),
   r("Gnat",          "🦟", 1, 1, 4, "turnEnd",    "random",  "Hit 1",       { who: "enemies" }),
-  r("Spore",         "🍄", 1, 1, 5, "die",        "enemies", "Curse 1",     { does: ["Curse 1", "Poison 1"] }),
+  r("Spore",         "🍄", 1, 1, 5, "die",        "enemies", "Curse 1",     { who: "front", does: ["Freeze 1 + Curse 1"] }),
   r("Rat",           "🐀", 1, 2, 4, "die",        "front",   "Poison 2",    { who: "enemies" }),
   // A summon into a full line is skipped, so Planter also grows: in a full
   // line it is a sturdier body instead of a blank.
@@ -161,23 +161,23 @@ export const ROWS: Row[] = [
   r("Bat",           "🦇", 1, 2, 4, "strike",     "random",  "Hit 1",       { does: ["Hit 1", "Curse 1"] }),
   r("Taser",         "⚡", 1, 2, 4, "start",      "front",   "Freeze 1",    { does: ["Freeze 1", "Hit 2"] }),
   r("Wire",          "🔌", 1, 1, 5, "allyPower",  "front",   "Hit 1",       { does: ["Hit 1", "Silence"] }),
-  r("Rose",          "🌹", 1, 2, 6, "hurt",       "front",   "Hit 2",       { does: ["Hit 2", "Curse 1"] }),
+  r("Rose",          "🌹", 1, 2, 6, "hurt",       "front",   "Hit 2",       { does: ["Hit 2", "Poison 1"] }),
   r("Victim",        "😵", 1, 1, 7, "hurt",       "allies",  "Strength 1",  { does: ["Strength 1", "Heal 1"] }),
   r("Saboteur",      "🧨", 1, 2, 4, "start",      "front",   "Curse 1",     { who: "enemies" }),
   r("Spike",         "🌵", 1, 1, 6, "allyShield", "front",   "Hit 1",       { does: ["Hit 1", "Poison 1"] }),
   r("Wither",        "🥀", 1, 2, 4, "enemyDies",  "allies",  "Strength 1",  { does: ["Strength 1", "Shield 1"] }),
-  r("Distractor",    "🤡", 1, 1, 9, "hurt",       "me",      "Vitality 1",  { does: ["Vitality 1", "Shield 2"] }),
-  r("Henchman",      "🦹", 1, 2, 5, "allyDies",   "me",      "Strength 2",  { does: ["Strength 2", "Shield 2"] }),
+  r("Distractor",    "🤡", 1, 1, 9, "hurt",       "me",      "Vitality 1",  { who: "front", does: ["Curse 1"] }),
+  r("Henchman",      "🦹", 1, 2, 5, "allyDies",   "me",      "Strength 2",  { who: "front", does: ["Silence"] }),
   r("Sniper",        "🎯", 1, 2, 4, "start",      "random",  "Hit 4",       { does: ["Hit 4", "Poison 2"] }),
   r("Medic",         "⛑️", 1, 1, 6, "turnEnd",    "allies",  "Heal 1",      { does: ["Heal 1", "Shield 1"] }),
 
   // ---- tier 2: links that react to links ----
-  r("Guardian",      "🛡️", 2, 2, 6, "allyHurt",   "it",      "Shield 1",    { who: "me", does: ["Shield 2"] }),
-  r("Almsgiver",     "🪙", 2, 2, 7, "allyShield", "it",      "Heal 1",      { who: "me", does: ["Heal 2", "Strength 1"] }),
+  r("Guardian",      "🛡️", 2, 2, 6, "allyHurt",   "it",      "Shield 1",    { who: "front", does: ["Poison 1"] }),
+  r("Almsgiver",     "🪙", 2, 2, 7, "allyShield", "it",      "Heal 1",      { who: "random", does: ["Poison 1"] }),
   r("Sanctifier",    "✨", 2, 2, 6, "allyHealed", "it",      "Strength 1",  { who: "front", does: ["Smite"] }),
   r("Enhancer",      "🔋", 2, 1, 6, "allyShield", "it",      "Strength 1",  { does: ["Strength 1", "Heal 1"] }),
-  r("Battery",       "🪫", 2, 2, 5, "allyHealed", "me",      "Strength 1",  { who: "random", does: ["Hit 2"] }),
-  r("Injector",      "🧪", 2, 2, 5, "hurt",       "front",   "Poison 1",    { who: "enemies" }),
+  r("Battery",       "🪫", 2, 2, 5, "allyHealed", "me",      "Strength 1",  { who: "random", does: ["Freeze 1"] }),
+  r("Injector",      "🧪", 2, 2, 5, "hurt",       "front",   "Poison 1",    { does: ["Poison 1", "Freeze 1"] }),
   r("Venomancer",    "🐍", 2, 2, 7, "strike",     "front",   "Poison 2",    { does: ["Poison 2", "Curse 1"] }),
   r("Plague Rat",    "🐁", 2, 1, 5, "die",        "enemies", "Poison 2",    { does: ["Poison 2", "Freeze 1"] }),
   // Duelist opens with a lunge; Fighter is the one that hits on every strike.
@@ -186,10 +186,10 @@ export const ROWS: Row[] = [
   r("Emberling",     "🔥", 2, 3, 6, "die",        "enemies", "Hit 2",       { does: ["Hit 2", "Freeze 1"] }),
   r("Icebinder",     "🧊", 2, 2, 5, "start",      "random",  "Freeze 2",    { who: "enemies" }),
   r("Summoner",      "🔮", 2, 1, 6, "die",        "me",      "Call Wolf",   { does: ["Call Warg"] }),
-  r("Gardener",      "🪴", 2, 1, 7, "allySummoned", "it",  "Vitality 2",  { who: "me", does: ["Vitality 2", "Shield 2"] }),
+  r("Gardener",      "🪴", 2, 1, 7, "allySummoned", "it",  "Vitality 2",  { who: "random", does: ["Poison 2"] }),
   r("Fruiter",       "🍎", 2, 2, 6, "die",        "allies",  "Heal 3",      { does: ["Heal 2", "Bless 1"] }),
   r("Leech",         "🩸", 2, 2, 6, "strike",     "me",      "Mend",        { does: ["Mend", "Shield 1"] }),
-  r("Bloodthinner",  "💧", 2, 2, 5, "enemyPoisoned", "it",   "Hit 1",       { who: "front", does: ["Hit 2"] }),
+  r("Bloodthinner",  "💧", 2, 2, 5, "enemyPoisoned", "it",   "Hit 1",       { who: "random", does: ["Curse 1"] }),
   r("Hag",           "🧙", 2, 1, 6, "enemyPoisoned", "it",   "Curse 1",     { does: ["Curse 1", "Hit 1"] }),
   r("Trickster",     "🃏", 2, 2, 5, "enemyCursed", "random", "Hit 2",       { who: "it", does: ["Hit 2"] }),
   r("Custodian",     "🗝️", 2, 2, 9, "allyDies",   "allies",  "Shield 2",    { does: ["Shield 2", "Heal 1"] }),
@@ -201,23 +201,24 @@ export const ROWS: Row[] = [
   r("Stoneskin",     "🪨", 2, 2, 7, "hurt",       "me",      "Shield 1",    { who: "allies" }),
 
   // ---- tier 3: engines ----
-  r("Commander",     "🎖️", 3, 2, 8, "strike",     "allies",  "Strength 1",  { does: ["Strength 1", "Heal 1"] }),
+  r("Commander",     "🎖️", 3, 2, 8, "strike",     "allies",  "Strength 1",  { who: "front", does: ["Smite"] }),
   r("War Drummer",   "🥁", 3, 1, 7, "turnStart",  "allies",  "Strength 1",  { does: ["Strength 1", "Heal 1"] }),
   // Physician treats the cause, not the wound: once a turn it saps the front
   // enemy. On "ally hit" it cursed ~18 times a battle (R3-9).
   r("Physician",     "🩺", 3, 2, 8, "turnEnd",    "front",   "Curse 1",     { does: ["Curse 1", "Poison 1"] }),
   r("Pediatrician",  "🍼", 2, 2, 8, "allySummoned", "it",   "Strength 1",  { does: ["Strength 1", "Bless 1"] }),
   r("Crusader",      "⚔️", 3, 3, 9, "turnStart",  "front",   "Hit 2",       { does: ["Hit 2", "Curse 1"] }),
-  r("Lightning",     "🌩️", 3, 3, 7, "allyPower",  "random",  "Hit 2",       { does: ["Hit 1", "Curse 1"] }),
+  r("Lightning",     "🌩️", 3, 3, 7, "allyPower",  "random",  "Hit 2",       { does: ["Hit 2", "Curse 1"] }),
   r("Battle Mage",   "🪄", 3, 3, 7, "allyShield", "random", "Hit 2",       { does: ["Hit 2", "Poison 1"] }),
   r("Pathologist",   "🔬", 3, 2, 7, "enemyPoisoned", "me",   "Strength 1",  { does: ["Strength 1", "Heal 1"] }),
   r("Plague Doctor", "🦤", 3, 2, 7, "start",      "enemies", "Poison 2",    { does: ["Poison 2", "Curse 1"] }),
   r("Virus",         "🧫", 3, 2, 6, "enemyDies",  "enemies", "Poison 2",    { does: ["Poison 2", "Curse 1"] }),
-  // Awoken, the dead return as undead glass cannons: 1 HP, +3 PWR (1a).
-  r("Necromancer",   "💀", 3, 2, 7, "allyDies",   "fallen",  "Revive 2",    { does: ["Revive 1 + Strength 3"] }),
+  // Awoken, each death raises two: the fallen ally, and an Imp at the front
+  // (R3-26, Maks's note 1: Awoken does something new, not a stat rider).
+  r("Necromancer",   "💀", 3, 2, 7, "allyDies",   "fallen",  "Revive 2",    { does: ["Revive 2 + Call Imp"] }),
   r("Sexton",        "⚰️", 3, 3, 9, "allyDies",   "me",      "Call Wraith", { does: ["Call Ghoul"] }),
   r("Fungoid",       "🪸", 3, 2, 9, "turnEnd",    "me",      "Call Imp",    { does: ["Call Puffball"] }),
-  r("Mesmerist",     "🌀", 3, 2, 7, "start",      "front",   "Freeze 1 + Curse 1", { who: "enemies", does: ["Freeze 1 + Curse 1"] }),
+  r("Mesmerist",     "🌀", 3, 2, 7, "start",      "front",   "Freeze 1 + Curse 1", { who: "front", does: ["Silence", "Freeze 1 + Curse 1"] }),
   r("Redirector",    "🪞", 3, 2, 8, "hurt",       "random",  "Hit 2",       { does: ["Hit 2", "Freeze 1"] }),
   r("Keeper",        "🏰", 3, 1, 6, "turnStart",  "allies",  "Shield 1",    { does: ["Shield 1", "Heal 1"] }),
   r("Wane",          "🌘", 3, 2, 7, "allyHealed", "front",   "Curse 1",     { does: ["Curse 1", "Hit 1"] }),

@@ -22,7 +22,7 @@ export type TermId =
   | `target:${Selector["kind"]}`
   | `effect:${Effect["kind"]}`
   | `state:${"sleeping" | "awoken" | "fused"}`
-  | `battle:${"fatigue" | "chainCapped"}`
+  | `battle:${"fatigue" | "chainCapped" | "timeUp"}`
   | `term:${"stacks" | "would"}`;
 
 /** The terms with a fixed entry (every TermId but the open `status:` set). */
@@ -150,6 +150,12 @@ export const GLOSSARY: Record<FixedTermId, TermDef> = {
     // steps: a run keeps the rules it started with (chainCappedTip).
     tip: chainCappedTip(MVP_RULES.chainStepCap),
   },
+  "battle:timeUp": {
+    label: "Time's up", icon: "hourglass", tone: "plain",
+    // New runs' cap (MVP_RULES sets it), like Chain stopped's; a battle's
+    // own cap is its BattleEnd's turns.
+    tip: timeUpTip(MVP_RULES.turnCap!),
+  },
 
   // Words
   "term:stacks": { label: "Stacks", tone: "plain", tip: "The number next to a status. More stacks, stronger effect; some statuses use stacks up." },
@@ -159,6 +165,12 @@ export const GLOSSARY: Record<FixedTermId, TermDef> = {
  * event's steps, so a run started under an older cap reads its own number. */
 export function chainCappedTip(cap: number): string {
   return `A chain of reactions ran ${cap} steps and was cut off, so a battle can't loop forever.`;
+}
+
+/** Time's up's rule for a given turn cap: a battle passes its BattleEnd's
+ * turns, so a run started under an older cap reads its own number. */
+export function timeUpTip(cap: number): string {
+  return `A battle with both sides still standing after turn ${cap} ends in a draw, so no fight runs forever.`;
 }
 
 /** The group a term belongs to: the part before the colon. */

@@ -51,12 +51,15 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .bench-label { display: flex; flex-direction: column; justify-content: center; gap: 2px; font-size: 10px; line-height: 12px; }
 @media (max-width: 1023.98px) {
   .slots.bench-row { grid-template-columns: 40px repeat(3, minmax(0, 1fr)); margin-top: -8px; }
-  .bench-row .card { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; grid-template-rows: 13px 13px; column-gap: 4px; align-items: center; height: 32px; padding: 2px 6px; text-align: left; }
-  .bench-row .card .emoji { grid-row: 1 / span 2; grid-column: 1; font-size: 16px; line-height: 18px; height: 18px; margin: 0; }
-  .bench-row .card .name { grid-row: 1; grid-column: 2 / span 2; font-size: 12px; line-height: 13px; text-overflow: ellipsis; }
-  .bench-row .card .stats { grid-row: 2; grid-column: 2; font-size: 11px; line-height: 13px; }
-  .bench-row .card .foot { grid-row: 2; grid-column: 3; min-height: 0; }
-  .bench-row .card .icons, .bench-row .card .tier { display: none; }
+  /* 44 px tall, a full tap target (R3-26): the icon line on top, as on every
+   * card, then the name, then stats and copies. */
+  .bench-row .card { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; grid-template-rows: 11px 13px 13px; column-gap: 4px; row-gap: 1px; align-items: center; height: 44px; padding: 2px 6px; text-align: left; }
+  .bench-row .card .icons { grid-row: 1; grid-column: 2 / span 2; padding: 0; }
+  .bench-row .card .emoji { grid-row: 1 / span 3; grid-column: 1; font-size: 16px; line-height: 18px; height: 18px; margin: 0; }
+  .bench-row .card .name { grid-row: 2; grid-column: 2 / span 2; font-size: 12px; line-height: 13px; text-overflow: ellipsis; }
+  .bench-row .card .stats { grid-row: 3; grid-column: 2; font-size: 11px; line-height: 13px; }
+  .bench-row .card .foot { grid-row: 3; grid-column: 3; min-height: 0; }
+  .bench-row .card .tier { top: 2px; right: 4px; }
   .bench-row .card.empty { display: block; }
   .bench-row .card .copies.tag { font-size: 10px; }
   .bench-row .card .tag-word { display: none; }
@@ -102,7 +105,9 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .pip-ally { background: var(--you); }
 .pip-enemy { background: var(--ghost); }
 .pip-any { background: var(--dim); }
-.card .tier { position: absolute; top: 4px; right: 4px; font-family: "Chakra Petch", sans-serif; font-size: 8px; line-height: 9px; font-weight: 600; letter-spacing: 1px; color: var(--dim); }
+/* The tier numeral in a serif face, bold and brighter, so "I" reads as a
+ * numeral and not a faint tick (R3-26). */
+.card .tier { position: absolute; top: 4px; right: 4px; font-family: Georgia, "Times New Roman", serif; font-size: 9px; line-height: 9px; font-weight: 700; letter-spacing: 0.5px; color: color-mix(in srgb, var(--text) 75%, var(--dim)); }
 .card .foot { min-height: 12px; display: flex; align-items: center; justify-content: center; max-width: 100%; }
 .discovered { font-size: 10px; color: var(--dim); font-family: "IBM Plex Mono", monospace; }
 .card .stats { font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600; line-height: 14px; }
@@ -179,6 +184,8 @@ button.pin-btn { display: flex; align-items: center; gap: 4px; min-height: 44px;
 .preview-card { width: 64px; margin: 0 auto; }
 .recipe-line { text-align: center; font-size: 12px; }
 .recipe-line .k { color: var(--dim); font-family: "IBM Plex Mono", monospace; font-size: 10px; text-transform: uppercase; }
+/* The fuse preview's plain warning (R3-26): the fusion hurts your own units or helps the enemy. */
+.fuse-warn { border: 1px solid var(--gold); color: var(--gold); padding: 6px 8px; font-size: 12px; line-height: 1.35; }
 .reveal { text-align: center; }
 .after.awakens .label { color: var(--gold); font-weight: 700; }
 /* The sheet: the active form's text in a box; "See Awoken" swaps in the other
@@ -590,7 +597,7 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
   #app[data-screen] .card .icons .desk-more { display: inline; font-size: 12px; line-height: 16px; }
   #app[data-screen] .bv-card .icons { top: 7px; left: 8px; height: auto; padding: 0; }
   #app[data-screen] .bv-card .icons .ic { width: 18px; height: 18px; }
-  #app[data-screen] .card .tier { top: 8px; right: 8px; font-size: 11px; line-height: 12px; }
+  #app[data-screen] .card .tier { top: 7px; right: 8px; font-size: 13px; line-height: 13px; }
   #app[data-screen] .card.fused .emoji { font-size: 30px; padding-left: 0; }
   #app[data-screen] .card:not(.empty):hover { border-color: var(--you); }
   #app[data-screen] .bench-row .card { height: 140px; padding: 8px 6px 8px; }
@@ -704,6 +711,18 @@ button.t:focus-visible { outline: 1px solid currentColor; outline-offset: 1px; }
 .t-status, .t-target, .t-stat, .t-term, .t-condition { text-decoration: underline dotted color-mix(in srgb, currentColor 60%, transparent); text-underline-offset: 3px; }
 .t-effect { font-weight: 600; }
 .t-amount { font-weight: 700; font-family: "IBM Plex Mono", monospace; }
+/* A term's tap area grows on the phone (R3-26) without moving the text: an
+ * invisible box a little past it takes the tap. It stops short of the next
+ * line's terms (a 44 px box would steal their taps); the number and its
+ * word being one term is what makes the target big. */
+@media (max-width: 1023.98px) {
+  button.t { position: relative; }
+  button.t::after { content: ""; position: absolute; inset: -3px -3px; }
+}
+/* The sheet names the card's icons (R3-26: a tap on a card says what its icons mean). */
+.sheet-icons { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 12px; color: var(--dim); }
+.sheet-icons .ik { display: inline-flex; align-items: center; gap: 3px; }
+@media (min-width: 1024px) { .sheet-icons { display: none; } }
 /* A summoned unit named in the text (R3-5): its emoji and name open its card. */
 button.t-unit { cursor: pointer; font-weight: 600; text-decoration: underline solid color-mix(in srgb, currentColor 50%, transparent); text-underline-offset: 3px; }
 button.t-unit .t-emoji { margin-right: 2px; text-decoration: none; display: inline-block; }

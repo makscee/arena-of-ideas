@@ -159,6 +159,13 @@ try {
   await page.getByTestId("rules").waitFor();
   await shot("rules"); await noHScroll("rules");
   if (!/game-icons\.net, CC BY 3\.0/.test(await page.getByTestId("icon-credits").textContent().catch(() => ""))) errors.push("rules: no icon credits");
+  // The phone's Back (R3-26) closes the sheet and stays in the game.
+  const back = () => page.evaluate(() => history.back());
+  await back();
+  await page.getByTestId("rules").waitFor({ state: "detached", timeout: 3_000 }).catch(() => errors.push("back: Back didn't close the Rules sheet"));
+  if (!(await page.getByTestId("play").isVisible().catch(() => false))) errors.push(`back: Back with a sheet open left the game (${page.url()})`);
+  await page.getByTestId("rules-open").click();
+  await page.getByTestId("rules").waitFor();
   await page.getByTestId("overlay").click({ position: { x: 180, y: 10 } });
   await page.getByTestId("rules").waitFor({ state: "detached" });
   await page.getByTestId("stats").click();
@@ -333,6 +340,17 @@ try {
       await page.getByTestId("codex-back").click();
       await page.getByTestId("fight").waitFor();
       if ((await page.getByTestId("round").textContent()) !== at) errors.push(`codex from ☰: back in ${await page.getByTestId("round").textContent()}, not ${at}`);
+      // Back (R3-26) is Esc: in the shop it opens the run menu, again resumes;
+      // over the Codex it returns to the shop.
+      await back();
+      await page.getByTestId("run-menu").waitFor({ timeout: 3_000 }).catch(() => errors.push("back: Back in the shop didn't open the run menu"));
+      await back();
+      await page.getByTestId("run-menu").waitFor({ state: "detached", timeout: 3_000 }).catch(() => errors.push("back: Back didn't close the run menu"));
+      await page.getByTestId("menu-open").click();
+      await page.getByTestId("menu-codex").click();
+      await page.getByTestId("codex-units").waitFor();
+      await back();
+      await page.getByTestId("fight").waitFor({ timeout: 3_000 }).catch(() => errors.push(`back: Back in the Codex didn't return to the shop (${page.url()})`));
       await page.getByTestId("menu-open").click();
       await page.getByTestId("run-menu").waitFor();
       await page.getByTestId("menu-title").click();

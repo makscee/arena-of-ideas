@@ -91,6 +91,7 @@ EventTypes v1: `BattleStart, TurnStart, PairFaced, Strike, Hurt, Heal, Death, Su
 - `Hurt {unit, amount, hpAfter, absorbed?}` / `Heal {unit, amount, hpAfter}` — hp deltas. `Strike` proposes a `Hurt` of the striker's effective pwr. `hpAfter` is the unit's current hp after the event applied, stamped by the kernel at apply time — consumers (replay, client) read it instead of re-deriving hp bookkeeping. `absorbed?` records how many hp a Shield interceptor consumed; a fully-absorbed Hurt still applies with `amount` 0.
 - `StatChanged {unit, stat, delta, now, hpAfter?}` — an effective-stat change from a statMod attaching or detaching; `now` is the new effective stat. An hp change moves current hp with the max (cur = effective − damage), so hp StatChanged events also carry `hpAfter`, stamped like Hurt/Heal; pwr changes carry none.
 - `ChainBlocked {ability, at}` — a would-be firing suppressed by the no-self-retrigger law (§5). The replay explains chain stops with this event.
+- `BattleEnd {winner, turns, timeUp?}` — the last event. `timeUp: true` only when the turn cap ran out with both sides standing (a draw); absent otherwise.
 - `ChainCapped {root, steps}` — a cascade hit the step cap (§5) and stopped; `root` is the event its first firing reacted to, `steps` the firings it ran. It is caused by the event the next, dropped firing reacted to, so a trace shows where the chain was cut.
 - `Intercepted {by, original, unit?}` — emitted when an interceptor cancels a proposed event (e.g. Freeze cancelling a Strike, Blessing cancelling a Death); cancellations must be visible or the replay can't explain them. Interceptor side-effects (stack consumption, the replacement Heal) are caused by this event.
 - `Silenced {unit}` — the unit's own abilities are disabled for the battle (ability disabling is kernel state, not removable content).
@@ -108,7 +109,7 @@ EventTypes v1: `BattleStart, TurnStart, PairFaced, Strike, Hurt, Heal, Death, Su
 ```
 emit BattleStart; settle cascade
 turn = 1
-while both teams have living units and turn ≤ TURN_CAP:
+while both teams have living units and turn ≤ turnCap:   // BattleInput.turnCap, default TURN_CAP
   emit TurnStart; settle
   a = front(A), b = front(B)
   if (a,b) not faced before:
@@ -123,13 +124,16 @@ while both teams have living units and turn ≤ TURN_CAP:
 
 fatigue [PINNED, v3]: from turn FATIGUE_START onward, every living unit
 takes Fatigue damage = (turn − FATIGUE_START + 1) · FATIGUE_RAMP at end of turn.
-Grows without bound → battles end. TURN_CAP is the hard backstop → draw.
+Grows without bound → battles end. The turn cap is the hard backstop → draw.
 
 end: a team has no living units → BattleEnd {winner};
-both empty simultaneously, or TURN_CAP reached → BattleEnd {draw}.
+both empty simultaneously → BattleEnd {draw};
+the turn cap ran out with both standing → BattleEnd {draw, timeUp: true}.
 BattleEnd {turns} = the turn the battle was decided on (the last turn that
 started); 0 if it was decided in the BattleStart cascade, before turn 1.
 ```
+
+**[PINNED] Turn cap (MVP #574, R3-26):** a battle lasts at most `turnCap` turns (`BattleInput.turnCap`, default `TURN_CAP` = 200). The MVP's rules set `turnCap` 30 (`MvpRules.turnCap`): normal fights end by turn 20 (p99 17), so the cap only stops stalls, such as a Blessing re-armed every turn that Fatigue can never get through. Past the cap, both sides standing is a draw; its `BattleEnd` carries `timeUp: true` and the viewer captions it "Time's up: draw" (glossary `battle:timeUp`). It counts as any draw: no heart lost, no slay at the Crown, a draw's rating score. A run keeps the cap it started with: runs stored before the field have none and play to 200.
 
 - **Death and line collapse:** when a `Death` event applies, the unit leaves the line immediately and the team compacts forward (positions shift). Pairings are re-evaluated next strike; a fresh pairing rolls `PairFaced`.
 - Dead units go to the **graveyard** — a per-team list, the one zone besides the line **[PINNED]**: units are appended on death and spliced out on resurrection (death-ordered while there, not append-only). Death clears the unit's statuses (the corpse is clean). A resurrected unit returns at the back of the line at the effect's hp, floored at 1 (`max(1, N)` — a 0-hp revival would be an instant corpse), and keeps its pair memory (first-striker rolls).
@@ -146,7 +150,7 @@ Every state change flows through one pipeline: **propose → intercept → apply
 **[PINNED] Ordering rule (position priority):** whenever multiple abilities react to the same event, order is: side A front→back, then side B front→back; a unit's recipe is one reactor (its Abilities fire inside that one reaction, in list order); unit statuses after unit abilities, in attach order.
 
 **[PINNED] The no-self-retrigger law:** an ability instance X may not fire in response to event E if any event in E's `causedBy` ancestry has `source` = X. A unit's recipe is one instance: an event sourced to any of its Abilities blocks the whole recipe (a fused unit never re-triggers itself through its second Does); each status ability is its own instance. One sentence for players: *an ability never triggers itself, directly or through others.* A suppressed firing emits `ChainBlocked`.
-**[PINNED] Step cap (MVP #574):** one settle runs at most `chainStepCap` firings (`BattleInput.chainStepCap`, default 64). The next firing past the cap is not run: the queue is dropped and a visible `ChainCapped` event is logged. Depth is already bounded by the no-self law; the cap bounds breadth (many units reacting to many events). A unit's reaction counts as one step, however many Abilities it holds. *Known effect (for tuning sims):* the queue serves side A's reactions before side B's at each event, so a capped cascade can cut one side's reactions more than the other's; a mirror of five "on Hurt, ping all enemies" units can swing between sides with the cap's value. Not redesigned for the MVP.
+**[PINNED] Step cap (MVP #574):** one settle runs at most `chainStepCap` firings (`BattleInput.chainStepCap`, default 32; the MVP's rules set 32 since round 3 and a run keeps the cap it started with). The next firing past the cap is not run: the queue is dropped and a visible `ChainCapped` event is logged. Depth is already bounded by the no-self law; the cap bounds breadth (many units reacting to many events). A unit's reaction counts as one step, however many Abilities it holds. *Known effect (for tuning sims):* the queue serves side A's reactions before side B's at each event, so a capped cascade can cut one side's reactions more than the other's; a mirror of five "on Hurt, ping all enemies" units can swing between sides with the cap's value. Not redesigned for the MVP.
 *Termination:* every causal path can contain each ability instance at most once as a source, so cascade depth is bounded by the number of ability instances on the board; the queue always drains. **Validated at stress test (2026-06-10):** ChainBlocked observed, queue always drained; the cascade-energy fallback was not needed and stays dormant **[DEFER]**.
 Enqueued trigger firings resolve even if their holder has since died (MTG rule: triggers on the stack survive their source) — this is what lets on-death abilities like Summon fire.
 
@@ -157,7 +161,8 @@ Enqueued trigger firings resolve even if their holder has since died (MTG rule: 
 | TEAM_SIZE | 5 |
 | FATIGUE_START | 10 |
 | FATIGUE_RAMP | 1 |
-| TURN_CAP | 200 |
+| TURN_CAP | 200 (kernel default; the MVP's `MvpRules.turnCap` is 30) |
+| DEFAULT_CHAIN_STEP_CAP | 32 (`MvpRules.chainStepCap` 32) |
 
 ## 7. Stress set — the kernel acceptance content
 

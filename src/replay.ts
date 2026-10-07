@@ -229,7 +229,7 @@ class Renderer {
 
       case "BattleEnd": {
         this.lines.push("");
-        const verdict = e.winner === "draw" ? "Draw" : `Side ${e.winner} wins`;
+        const verdict = e.winner === "draw" ? (e.timeUp ? "Time's up: draw" : "Draw") : `Side ${e.winner} wins`;
         this.lines.push(`=== ${verdict} after ${e.turns} ${e.turns === 1 ? "turn" : "turns"} ===`);
         return;
       }
