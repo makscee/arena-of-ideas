@@ -65,7 +65,7 @@ const body = (name: string, pwr: number, hp: number): UnitDef => ({
 
 /** The summoned bodies, by Ability name. Their emoji is in SUMMON_EMOJI. */
 const SUMMONS: Record<string, UnitDef> = {
-  "Call Imp": body("Imp", 1, 2),
+  "Call Imp": body("Imp", 1, 3),
   "Call Wolf": body("Wolf", 2, 3),
   "Call Golem": body("Golem", 2, 6),
   "Call Wraith": body("Wraith", 3, 3),
@@ -317,9 +317,9 @@ export const ROWS: Row[] = [
   r("Virus",         "🧫", 3, 2, 6, "enemyDies",  "enemies", "Poison 2",    { add: ["Curse 1"] }),
   // Awoken, each death raises two: the fallen ally, and an Imp at the front
   // (R3-26, Maks's note 1: Awoken does something new, not a stat rider).
-  r("Necromancer",   "💀", 3, 2, 7, "allyDies",   "fallen",  "Revive 2",    { more: "Revive 2 + Call Imp" }),
+  r("Necromancer",   "💀", 3, 1, 5, "allyDies",   "fallen",  "Revive 1",    { more: "Revive 1 + Call Imp" }),
   r("Sexton",        "⚰️", 3, 3, 9, "allyDies",   "me",      "Call Wraith", { more: "Call Ghoul" }),
-  r("Fungoid",       "🪸", 3, 2, 9, "turnEnd",    "me",      "Call Imp",    { more: "Call Puffball" }),
+  r("Fungoid",       "🪸", 3, 1, 6, "turnEnd",    "me",      "Call Imp",    { more: "Call Puffball" }),
   r("Mesmerist",     "🌀", 3, 2, 7, "start",      "front",   "Freeze 1 + Curse 1", { before: ["Silence"] }),
   r("Keeper",        "🏰", 3, 1, 6, "turnStart",  "allies",  "Shield 1",    { add: ["Heal 1"] }),
   r("Wane",          "🌘", 3, 2, 7, "allyHealed", "front",   "Curse 1",     { add: ["Hit 1"] }),
@@ -332,7 +332,7 @@ export const ROWS: Row[] = [
   // Priest avenges the fallen: Silence strips an enemy's statuses (Shield, Blessing)
   // and its ability. Its old team blessing was Divinity's job (R3-9); King's
   // Awoken form keeps a one-off team blessing at battle start.
-  r("Priest",        "⛪", 4, 2, 10, "allyDies",  "random",  "Silence",     { add: ["Curse 1"] }),
+  r("Priest",        "⛪", 4, 1, 6,  "allyDies",  "front",   "Silence",     { add: ["Curse 1"] }),
   r("Divinity",      "😇", 4, 2, 8, "allyDies",  "allies",  "Bless 1",     { add: ["Shield 2"] }),
   r("Phoenix",       "🐦", 4, 4, 9, "start",     "me",      "Bless 8",     { add: ["Call Chick"] }),
   r("Lilith",        "🧛", 4, 4, 8, "enemyDies",  "me",      "Strength 2",  { add: ["Mend"] }),
@@ -341,7 +341,7 @@ export const ROWS: Row[] = [
   r("Equalizer",     "⚖️", 4, 3, 9, "allyPower", "front",   "Curse 1",     { add: ["Hit 1"] }),
   r("Ruin",          "🌋", 4, 4, 8, "start",     "enemies", "Hit 2",       { add: ["Curse 1"] }),
   r("Fertilizer",    "🌻", 4, 2, 10, "allySummoned", "it",  "Strength 2 + Shield 2", { add: ["Bless 1"] }),
-  r("Morbid",        "🦴", 4, 3, 9, "allyDies",  "enemies", "Curse 1",     { add: ["Poison 1"] }),
+  r("Morbid",        "🦴", 4, 2, 8, "allyDies",  "enemies", "Curse 1",     { add: ["Poison 1"] }),
 ];
 /* eslint-enable prettier/prettier */
 

@@ -20,7 +20,7 @@
   awoken:   Dies: 1 Curse to all enemies, and 1 Freeze to front enemy.
 🌱 Planter
   archetype: Opens by planting a small body, and grows if there's no room.
-  sleeping: Battle start: summon Imp (1/2), then 2 Vitality to self.
+  sleeping: Battle start: summon Imp (1/3), then 2 Vitality to self.
   awoken:   Battle start: summon Treant (1/8), then 2 Vitality and 2 Shield to self.
 💉 Nurse
   archetype: A medic who patches each ally right after they're hit.
@@ -212,15 +212,15 @@
   awoken:   Enemy dies: 2 Poison and 1 Curse to all enemies.
 💀 Necromancer
   archetype: Raises fallen allies.
-  sleeping: Ally dies: revive fallen ally at 2 HP.
-  awoken:   Ally dies: revive fallen ally at 2 HP, then summon Imp (1/2) for fallen ally.
+  sleeping: Ally dies: revive fallen ally at 1 HP.
+  awoken:   Ally dies: revive fallen ally at 1 HP, then summon Imp (1/3) for fallen ally.
 ⚰️ Sexton
   archetype: Digs a fresh body for every ally that falls.
   sleeping: Ally dies: summon Wraith (3/3).
   awoken:   Ally dies: summon Ghoul (3/3).
 🪸 Fungoid
   archetype: Sprouts an Imp every turn.
-  sleeping: Turn end: summon Imp (1/2).
+  sleeping: Turn end: summon Imp (1/3).
   awoken:   Turn end: summon Puffball (1/3).
 🌀 Mesmerist
   archetype: Opens by locking down the front enemy.
@@ -252,8 +252,8 @@
   awoken:   Battle start: 2 Vitality and 1 Blessing to all allies.
 ⛪ Priest
   archetype: Avenges the fallen by silencing an enemy.
-  sleeping: Ally dies: silence random enemy.
-  awoken:   Ally dies: silence random enemy, then 1 Curse to random enemy.
+  sleeping: Ally dies: silence front enemy.
+  awoken:   Ally dies: silence front enemy, then 1 Curse to front enemy.
 😇 Divinity
   archetype: Each ally death blesses the team against dying.
   sleeping: Ally dies: 1 Blessing to all allies.
