@@ -87,8 +87,15 @@ export function richText(segs: DescribeSegment[], o: RichOptions = {}): Node[] {
   // their verbs ("deal … damage", "heal") are only coloured.
   const withAmount = new Set(segs.filter((s) => s.amount && s.term).map((s) => s.term!));
   const out: Node[] = [];
+  /** The space and word an amount took into its own button. */
+  const joined = new Set<number>();
   let pill: HTMLElement | null = null;
   segs.forEach((seg, i) => {
+    // "1 Strength" is one term (R3-26): the number, a space and its word are
+    // one button, so a tap can't miss into a 23 px "1".
+    const word = seg.amount && seg.term && seg.clause !== "when" && segs[i + 1]?.text === " " && segs[i + 2]?.term === seg.term && !segs[i + 2]!.unitRef ? segs[i + 2]! : null;
+    if (word) joined.add(i + 1).add(i + 2);
+    if (joined.has(i)) return;
     // "1 damage" never wraps between the number and its word.
     const kids = segs[i - 1]?.amount && seg.text === " " ? ["\u00a0"] : (o.content?.[i] ?? [seg.text]);
     if (seg.clause !== "when") pill = null;
@@ -107,7 +114,13 @@ export function richText(segs: DescribeSegment[], o: RichOptions = {}): Node[] {
       out.push(pill);
     }
     const info = seg.unitRef ? undefined : clauseInfo(seg, segs, i);
-    const nodes: Node[] = seg.unitRef ? unitRefButton(seg, kids) : info ? edgeSpaced(kids, (inner) => termButton(seg, info, inner, withAmount, size, !!pill)) : kids.map((k) => (typeof k === "string" ? document.createTextNode(k) : k));
+    const nodes: Node[] = seg.unitRef
+      ? unitRefButton(seg, kids)
+      : info && word
+        ? [joinedTerm(seg, word, info, kids, o.content?.[i + 2] ?? [word.text], withAmount, size)]
+        : info
+          ? edgeSpaced(kids, (inner) => termButton(seg, info, inner, withAmount, size, !!pill))
+          : kids.map((k) => (typeof k === "string" ? document.createTextNode(k) : k));
     if (pill) pill.append(...nodes);
     else out.push(...nodes);
   });
@@ -196,6 +209,16 @@ function termButton(seg: DescribeSegment, info: TermDef & { id: TermId }, kids: 
   b.addEventListener("pointerleave", hideTip);
   b.addEventListener("focus", () => matchMedia("(hover: hover)").matches && queueTip(b, info, 0));
   b.addEventListener("blur", hideTip);
+  return b;
+}
+
+/** "1 Strength" as one button: the amount's icon and bold number, then its
+ * word in the word's own look (a status's dotted underline). */
+function joinedTerm(amount: DescribeSegment, word: DescribeSegment, info: TermDef & { id: TermId }, num: (Node | string)[], text: (Node | string)[], withAmount: Set<TermId>, size: number): HTMLElement {
+  const b = termButton(amount, info, [h("span", { class: "t-amount" }, ...num), "\u00a0", h("span", { class: "t-word" }, ...text)], withAmount, size, false);
+  b.classList.remove("t-amount");
+  b.classList.add("t-joined");
+  b.setAttribute("aria-label", `${amount.text} ${word.text}: ${info.tip}`);
   return b;
 }
 

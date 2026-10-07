@@ -115,6 +115,14 @@ function iconLine(form: UnitForm | undefined, tiered: boolean): Node | null {
   );
 }
 
+/** The card's icons, each with its name ("Battle start", "Front enemy",
+ * "Damage"): a phone has no hover, so the sheet says what they mean. */
+export function iconKey(form: UnitForm | undefined): HTMLElement | null {
+  const icons = form ? cardIcons(form, abilities) : [];
+  if (!icons.length) return null;
+  return h("div", { class: "sheet-icons", "data-testid": "sheet-icons" }, ...icons.map((c) => h("span", { class: `ik tone-${c.tone}` }, withPip(icon(c.icon, 14), c.pip), h("span", { class: "ik-name" }, c.label))));
+}
+
 /** A form as one line of text: its authored text, else described from the
  * content's abilities (When → Who → Does, each Does in order). */
 export function formText(form: UnitForm, content: MvpContent): string {
@@ -151,6 +159,7 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
   // What the form shown summons, under its text (R3-5); swapped by See Awoken.
   const summons = h("div", { class: "stack" });
   const shownForm = fused && "recipe" in u ? u.recipe : now;
+  const icons = h("div", {}, ...[iconKey(shownForm)].filter((n): n is HTMLElement => n !== null));
   if (shownForm) summons.replaceChildren(...[summonsBlock(shownForm, content)].filter((n): n is HTMLElement => n !== null));
   if (fused && "fusion" in u && u.fusion) {
     const [a, b] = [unit(u.fusion.first), unit(u.fusion.second)];
@@ -189,6 +198,7 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
       showing = !showing;
       // The Summons block follows the form shown: Planter's Imp, its awoken Treant.
       summons.replaceChildren(...[summonsBlock(showing ? c.forms.awoken : now, content)].filter((n): n is HTMLElement => n !== null));
+      icons.replaceChildren(...[iconKey(showing ? c.forms.awoken : now)].filter((n): n is HTMLElement => n !== null));
       box.classList.toggle("other", showing);
       box.replaceChildren(...(showing ? [h("div", { class: "label" }, `Awoken · after copy ${MVP_RULES.copiesToAwaken}`), ...richText(awokePieces, { content: markChangedPieces(sleepPieces, awokePieces) })] : richText(sleepPieces)));
       btn.textContent = showing ? back : see;
@@ -207,6 +217,7 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
     "forms" in u ? null : discoveredLine(u, { preview: opts.preview ?? false }),
     "stats" in u ? statsLine(u.stats) : h("div", { class: "num" }, `${u.base.pwr} PWR / ${u.base.hp} HP`),
     opts.from ? h("div", { class: "dim small" }, "Your copy now → after buying") : null,
+    icons.childNodes.length ? icons : null,
     box,
     ...children,
     summons.childNodes.length || (sleeping && c) ? summons : null,
