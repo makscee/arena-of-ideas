@@ -12,10 +12,11 @@
 //   npm run mvp:bot -- [--runs 50] [--url http://127.0.0.1:8791/arena] [--no-ideas]
 import { serve } from "@hono/node-server";
 import type { AddressInfo } from "node:net";
-import { MVP_RULES, type DecisionResponse, type HomeView, type MvpContent, type MyIdeasView, type PlayerRef, type RunView, type VoteCard } from "../src/mvp/contract.js";
+import { MVP_RULES, type DecisionResponse, type HomeView, type LibraryView, type MvpContent, type MyIdeasView, type PlayerRef, type RunView, type VoteCard } from "../src/mvp/contract.js";
 import { botDecision } from "../server/src/mvp/bots.js";
 import { createMvpApp } from "../server/src/mvp/app.js";
-import { mvpContent } from "../server/src/mvp/content.js";
+import { poolContent, seedUnits } from "../server/src/mvp/pool.js";
+import { MemoryMvpStore } from "../server/src/mvp/store.js";
 import { fakeIdeaReader } from "../server/src/mvp/idea-reader.js";
 import { ideaReadingJob, ideaReadingJobWith } from "../server/src/mvp/idea-reading.js";
 import { MVP_JOBS, startMvpJobs } from "../server/src/mvp/jobs.js";
@@ -34,7 +35,11 @@ let close = () => {};
 if (!base) {
   // A dev server: the fake reader every 100 ms, never a model; the tuner
   // passes at once, so the overnight check doesn't take minutes.
-  const rt = mvpRuntime({ content: mvpContent(), dev: true, tuner: { night: instantTuner, dev: instantTuner } });
+  // Units as data, as the server starts (main.ts): the seed pool live and the
+  // units cut in round 4 in the Library, so bots can propose versions.
+  const store = new MemoryMvpStore();
+  seedUnits(store, new Date());
+  const rt = mvpRuntime({ content: poolContent(store), store, dev: true, tuner: { night: instantTuner, dev: instantTuner } });
   const server = serve({ fetch: createMvpApp(rt).fetch, port: 0, hostname: "127.0.0.1" });
   const jobs = MVP_JOBS.map((job) => (job === ideaReadingJob ? ideaReadingJobWith(fakeIdeaReader(), 100) : job));
   const stopJobs = startMvpJobs(rt, jobs);
@@ -81,12 +86,18 @@ const IDEAS = [
   "A medic that always heals the weakest ally first.",
   "An odd little thief that steals gold from the shop.",
 ];
+/** What they write for a new version of a Library unit (mission 3): every
+ * third held idea goes to one, when the Library has a unit. */
+const VERSIONS = [
+  "Make it hit whoever attacks it instead of the front enemy.",
+  "It should help the allies at the back more.",
+];
 const live = /makscee\.ru|twin-pogona/.test(base);
 const wantIdeas = args.includes("--no-ideas") ? false : args.includes("--ideas") ? true : null;
 const devServer = (await call<HomeView>("GET", "/home")).dev;
 if (wantIdeas && (live || !devServer)) throw new Error("ideas mode is for a local dev server (MVP_DEV=1), never the live game");
 const ideasOn = wantIdeas ?? (devServer && !live);
-const ideas = { written: 0, picked: 0, voted: 0, failed: 0 };
+const ideas = { written: 0, proposed: 0, picked: 0, voted: 0, failed: 0 };
 /** Picks the game refused because another idea just took the name or the
  * shape (409): the idea goes back a step and the bot picks again later. */
 let retaken = 0;
@@ -118,6 +129,20 @@ async function ideaTurn(votes: number): Promise<boolean> {
     moved = true;
   }
   while (view.ideas.held > 0) {
+    // Every third idea proposes a new version of a Library unit (M3-4); a
+    // unit that left the Library meanwhile (409) gets a new idea instead.
+    const library = written % 3 === 2 ? (await call<LibraryView>("GET", "/library")).units : [];
+    const target = library[(written / 3) % Math.max(1, library.length) | 0];
+    if (target) {
+      try {
+        view = await call<MyIdeasView>("POST", "/ideas", { kind: "evolve", target: target.unit.id, text: VERSIONS[written++ % VERSIONS.length] });
+        ideas.proposed++;
+        moved = true;
+        continue;
+      } catch (e) {
+        if (!(e instanceof ApiError && e.status === 409)) throw e;
+      }
+    }
     view = await call<MyIdeasView>("POST", "/ideas", { text: IDEAS[written++ % IDEAS.length] });
     ideas.written++;
     moved = true;
@@ -201,7 +226,7 @@ if (ideasOn) {
     await new Promise((r) => setTimeout(r, 200));
   }
   // 50 runs earn each of the 5 bots 3 ideas: the path must go end to end.
-  if (runs >= 50 && (!ideas.written || !ideas.picked || !ideas.voted)) {
+  if (runs >= 50 && (!ideas.written || !ideas.proposed || !ideas.picked || !ideas.voted)) {
     tally.errors++;
     console.error(`the idea path stalled: ${JSON.stringify(ideas)}`);
   }
