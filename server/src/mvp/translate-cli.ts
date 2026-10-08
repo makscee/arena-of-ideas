@@ -1,7 +1,7 @@
 /**
  * Russian names and lines for the stored units (M4-4, mission #810).
  *
- *   npm run mvp:translate -- --db <path> [--dry-run] [--fake] [--out <page.md>] [--namer <url>]
+ *   npm run mvp:translate -- --db <path> [--dry-run] [--fake] [--out <page.md>] [--namer <url> [--fusion-limit <n>]]
  *
  * Asks Claude (`claude -p`, as the idea reader does; ARENA_IDEA_MODEL, default
  * sonnet; ARENA_CLAUDE_BIN) for each unit without one, checks each answer
@@ -10,7 +10,9 @@
  * each unit's `texts.ru` beside its row: the content version stays. `--fake`
  * spells the English in Cyrillic, for tests and trying the script. With
  * `--namer` (or ARENA_NAMER_URL), the stored fusions without a Russian name are
- * named too, by the local namer's Russian mode (./fusion-names-ru.ts). Safe to
+ * named too, by the local namer's Russian mode (./fusion-names-ru.ts), oldest
+ * first, at most --fusion-limit of them (the server's own pass names the rest,
+ * ten a minute, so a sample is enough for the review page). Safe to
  * run twice: units and fusions that have a Russian name keep it.
  */
 import { writeFileSync } from "node:fs";
@@ -44,7 +46,8 @@ async function main(): Promise<number> {
   if (namerUrl) {
     // The parts go by their Russian names: stored, or this dry run's.
     const ruNames = new Map(r.done.map((d) => [d.unit.unitId, d.ru.name]));
-    fusions = await nameFusionsRu(store, httpRuNamer(namerUrl), { dryRun, ruNames });
+    const limit = Number(value("--fusion-limit")) || undefined;
+    fusions = await nameFusionsRu(store, httpRuNamer(namerUrl), { dryRun, ruNames, ...(limit ? { limit } : {}) });
     console.log(`fusions: ${fusions.named.length} named in Russian, ${fusions.failed.length} not (they show the English name)${fusions.down ? "; the namer was down, stopped" : ""}`);
   }
   writeFileSync(out, reviewPage(r, { dryRun, at: new Date().toISOString().slice(0, 10), ...(fusions ? { fusions } : {}) }));
