@@ -6,6 +6,7 @@ import {
   PLAYER_HEADER,
   TOKEN_HEADER,
   type BattleRecord,
+  type CreditsView,
   type DayView,
   type Decision,
   type DecisionResponse,
@@ -14,6 +15,7 @@ import {
   type IdeasView,
   type MyIdeasView,
   type JoinSession,
+  type LibraryView,
   type MvpContent,
   type PlayerRef,
   type PlayerSession,
@@ -177,4 +179,10 @@ export const api = {
   stats: () => call<StatsView>("GET", "/stats"),
   /** Discovered fusions (slice 10). */
   fusions: () => call<FusionDiscovery[]>("GET", "/fusions"),
+  /** Who each live unit's idea was, NEW, your creator number (M2-9). */
+  credits: () => call<CreditsView>("GET", "/credits"),
+  /** The units that have left the pool (M2-9). */
+  library: () => call<LibraryView>("GET", "/library"),
+  /** Dev (M2-9): the unit becomes your idea, entered today. 404 unless MVP_DEV=1. */
+  creditUnit: (unitId?: string) => call<CreditsView>("POST", "/dev/credit-unit", unitId ? { unitId } : {}),
 };

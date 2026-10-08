@@ -114,6 +114,12 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 /* The tier numeral in a serif face, bold and brighter, so "I" reads as a
  * numeral and not a faint tick (R3-26). */
 .card .tier { position: absolute; top: 4px; right: 4px; font-family: Georgia, "Times New Roman", serif; font-size: 10px; line-height: 10px; font-weight: 700; letter-spacing: 0.5px; color: color-mix(in srgb, var(--text) 75%, var(--dim)); }
+/* M2-9: NEW on a unit that entered in the last 3 days, and the 💡 of a
+ * player's idea, small on the card's sides under its icon line. */
+.new-badge { position: absolute; top: 17px; left: 2px; padding: 0 3px; font-size: 8px; line-height: 11px; font-weight: 700; letter-spacing: 0.4px; color: var(--bg); background: var(--gold, #e3b341); border-radius: 2px; pointer-events: none; }
+.new-badge.inline { position: static; display: inline-block; margin-right: 6px; vertical-align: 1px; }
+.card .by-mark { position: absolute; top: 16px; right: 2px; font-size: 9px; line-height: 11px; pointer-events: none; }
+.lib-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; }
 /* Each tier its own colour, so the numeral reads at a glance (R4-4); "S", a summoned unit, stays neutral. */
 .tier { font-family: Georgia, "Times New Roman", serif; font-weight: 700; }
 .tier.t1 { color: var(--tier-1); }
@@ -569,8 +575,8 @@ button.bv-moment { display: grid; grid-template-columns: 38px 18px minmax(0, 1fr
   #app[data-screen="home"] .playoff { order: 1; }
 }
 .title-menu [data-testid="play"] .hearts { white-space: nowrap; }
-.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.tabs button { min-height: 44px; padding: 0 6px; font-size: 14px; }
+.tabs { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
+.tabs button { min-height: 44px; padding: 0 2px; font-size: 13px; letter-spacing: 0; }
 .tabs button.on { background: var(--you); color: var(--bg); }
 .stat-row { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
 .stat-row .emoji { font-size: 22px; width: 28px; text-align: center; flex: none; }

@@ -2,8 +2,9 @@
 // it: the ideas the player holds, "New idea", and the ideas they've sent with
 // their stage; a `written` one can be taken back, refunding it. The write
 // screen is one text box (IDEA_TEXT_MIN–MAX characters) and Send. Every text
-// here is the player's own: the API never returns anyone else's.
-import { IDEA_TEXT_MAX, IDEA_TEXT_MIN, type IdeaState, type MyIdea, type MyIdeasView } from "../../src/mvp/contract";
+// here is the player's own: the API never returns anyone else's. M2-9 adds
+// the creator number: the days the player's units have been live, all together.
+import { IDEA_TEXT_MAX, IDEA_TEXT_MIN, type CreditsView, type IdeaState, type MyIdea, type MyIdeasView } from "../../src/mvp/contract";
 import { api, ApiError } from "../api";
 import { button, h, onKeys, overlay, screen, show } from "../ui/dom";
 
@@ -35,8 +36,10 @@ export async function ideasScreen(nav: IdeasNav, sent = false): Promise<void> {
   const back = button("Back", nav.onBack, "primary grow", "ideas-back");
   const escBack = (e: KeyboardEvent) => (e.key === "Escape" ? (nav.onBack(), true) : false);
   let view: MyIdeasView;
+  let you: CreditsView["you"] = null;
   try {
-    view = await api.myIdeas();
+    // The creator number (M2-9) is extra: the page shows without it.
+    [view, you] = await Promise.all([api.myIdeas(), api.credits().then((c) => c.you, () => null)]);
   } catch (e) {
     if (e instanceof ApiError && e.status === 401) return nav.onUnknown();
     show(h("h1", {}, "MY IDEAS"), h("div", { class: "error", "data-testid": "error" }, errorText(e)), h("div", { class: "spacer" }), h("div", { class: "row footer" }, back));
@@ -63,12 +66,23 @@ export async function ideasScreen(nav: IdeasNav, sent = false): Promise<void> {
       { class: "panel stack", "data-testid": "ideas-sent" },
       ...(view.sent.length ? view.sent.map((i) => sentRow(i, nav, err)) : [h("div", { class: "dim" }, "Nothing sent yet. Your ideas show here with how far they've got.")]),
     ),
+    you ? creatorLine(you) : null,
     h("div", { class: "dim small" }, "Only you see what you write."),
     h("div", { class: "spacer" }),
     h("div", { class: "row footer" }, back),
   );
   screen("ideas");
   onKeys(escBack);
+}
+
+/** Your creator number: the days your units have been live, summed over every stay. */
+function creatorLine(you: NonNullable<CreditsView["you"]>): HTMLElement {
+  return h(
+    "div",
+    { class: "dim small", "data-testid": "creator-number" },
+    `💡 Creator number: ${you.days}. `,
+    you.units ? `The days your ${you.units === 1 ? "unit has" : `${plural(you.units, "unit")} have`} been live, all together.` : "Once an idea of yours is a unit, each day it's live adds one.",
+  );
 }
 
 function sentRow(i: MyIdea, nav: IdeasNav, err: HTMLElement): HTMLElement {

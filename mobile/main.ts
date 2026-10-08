@@ -17,7 +17,7 @@ import { codexScreen, newCodexCache, type CodexState } from "./screens/codex";
 import { setCodexLink } from "./ui/term";
 import { statsScreen } from "./screens/stats";
 import { ideasScreen } from "./screens/ideas";
-import { card, roman, unitSheet, type CardUnit } from "./ui/card";
+import { card, roman, setCardCredits, unitSheet, type CardUnit } from "./ui/card";
 import { previewName } from "./ui/fusion";
 import { fuseWarning } from "./ui/fuse-warn";
 import { icon } from "./ui/icon";
@@ -271,6 +271,8 @@ async function homeScreen(ended: number | null = null): Promise<void> {
     "end-day",
   );
   const grantIdea = button("+1 idea", () => void guarded(err, async () => { await api.grantIdea(); await homeScreen(); }), "small", "grant-idea");
+  // M2-9: a tier I unit becomes your idea, entered today: its cards show 💡 and NEW, its sheet "idea by @you".
+  const creditUnit = button("A unit is my idea", () => void guarded(err, async () => { setCardCredits((await api.creditUnit()).units); await homeScreen(); }), "small", "credit-unit");
   const last = home.day.lastPlayoff ?? null;
   const justEnded = ended !== null && last?.seq === ended ? last : null;
   const playoff = playoffPanel(last, champ?.player ?? null, content, err);
@@ -324,7 +326,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
         h("div", { class: "row" }, stats, rulesBtn),
         soundRow(),
         api.ownInvite ? ownLinkRow(api.ownInvite) : null,
-        home.dev ? h("details", { class: "dev" }, h("summary", {}, "Dev"), h("div", { class: "row" }, endDay, grantIdea)) : null,
+        home.dev ? h("details", { class: "dev" }, h("summary", {}, "Dev"), h("div", { class: "row" }, endDay, grantIdea, creditUnit)) : null,
       ),
     ),
   );

@@ -2,13 +2,13 @@
 // names units, abilities or statuses reads it from here.
 import type { MvpContent } from "../src/mvp/contract";
 import { api } from "./api";
-import { openSummon, setCardAbilities, summonById } from "./ui/card";
+import { openSummon, setCardAbilities, setCardCredits, summonById } from "./ui/card";
 import { setUnitRefs } from "./ui/term";
 
 let p: Promise<MvpContent> | null = null;
 
 export const getContent = (): Promise<MvpContent> =>
-  (p ??= api.content().then((c) => {
+  (p ??= Promise.all([api.content(), loadCredits()]).then(([c]) => {
     setCardAbilities(c.abilities); // cards draw their When · Who · Does icons from it
     // "Imp (1/2)" in a unit's text opens the Imp's card (R3-5).
     setUnitRefs({
@@ -23,3 +23,11 @@ export const getContent = (): Promise<MvpContent> =>
     p = null; // a failed load is retried on the next call
     throw e;
   }));
+
+/** The live units' credits (M2-9): who each idea was, NEW. A server without
+ * them, or one that fails, leaves the cards without credits. */
+export const loadCredits = (): Promise<void> =>
+  api.credits().then(
+    (v) => setCardCredits(v.units),
+    () => undefined,
+  );
