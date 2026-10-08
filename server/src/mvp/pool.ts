@@ -146,6 +146,11 @@ export interface SeedSync {
  * with its rows, so runs pinned to it keep buying the old row. Safe to run
  * twice: the second run finds nothing to change. With `dryRun` nothing is written. */
 export function syncSeed(store: MvpStore, now: Date, opts: { dryRun?: boolean } = {}): SeedSync {
+  // One write: a crash midway can't leave rows changed with no new snapshot.
+  return store.atomically(() => syncSeedNow(store, now, opts));
+}
+
+function syncSeedNow(store: MvpStore, now: Date, opts: { dryRun?: boolean }): SeedSync {
   const pool = store.currentPool();
   if (!pool) throw new Error("no pool: start the server once to seed it");
   const code = contentOf(ROWS);
@@ -228,6 +233,10 @@ export function servedContent(rt: { store: MvpStore; content: MvpContent }): Mvp
  * `out` goes to the library with its stint closed, `in` goes live in its
  * place with a new stint. Runs in progress keep their pool. Returns the new version. */
 export function swapUnit(store: MvpStore, outId: string, inId: string, now: Date): string {
+  return store.atomically(() => swapUnitNow(store, outId, inId, now));
+}
+
+function swapUnitNow(store: MvpStore, outId: string, inId: string, now: Date): string {
   const pool = store.currentPool();
   if (!pool) throw new Error("no pool: start the server once to seed it");
   const at = pool.unitIds.indexOf(outId);

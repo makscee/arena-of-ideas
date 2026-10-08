@@ -218,6 +218,7 @@ export class SqliteMvpStore implements MvpStore {
       return true;
     }).immediate();
   }
+  atomically<T>(fn: () => T): T { return this.db.transaction(fn).immediate(); }
   addDayTallies(daySeq: number, delta: DayTallies): void {
     this.db.transaction(() => {
       if (delta.runs) {

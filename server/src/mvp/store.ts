@@ -105,6 +105,9 @@ export interface MvpStore {
   /** Writes the first pool in one step: the units, the snapshot and the
    * stints, only while there is no pool yet. False: there was one, nothing written. */
   seedPool(units: StoredUnit[], pool: PoolSnapshot, stints: PoolStint[]): boolean;
+  /** Runs `fn` as one write: on SQLite one IMMEDIATE transaction, so a crash
+   * or a throw midway leaves nothing of it (M2-2's sync-seed and swap). */
+  atomically<T>(fn: () => T): T;
   /** Adds `delta` to day `daySeq`'s tallies (only ./stats.ts writes them). */
   addDayTallies(daySeq: number, delta: DayTallies): void;
   /** Day `daySeq`'s running totals; zero runs and no units before any. */
@@ -373,6 +376,7 @@ export class MemoryMvpStore implements MvpStore {
     for (const s of stints) this.putStint(s);
     return true;
   }
+  atomically<T>(fn: () => T): T { return fn(); }
   addDayTallies(daySeq: number, delta: DayTallies): void {
     const t = this.dayTalliesBySeq.get(daySeq) ?? { runs: 0, units: new Map<UnitId, UnitDayTally>() };
     t.runs += delta.runs;

@@ -196,4 +196,23 @@ describe("sync-seed (M2-2)", () => {
     expect(startRun(fresh, maks).runId).toBe(run.runId);
     expect(decide(fresh, fresh.store.run(run.runId)!, { kind: "reroll" }).run.phase).toBe("shop");
   });
+
+  it("is one write: a crash before the new snapshot leaves the rows unchanged", () => {
+    const store = new SqliteMvpStore(":memory:");
+    seedUnits(store, AT);
+    const id = contentOf(ROWS).units[0]!.id;
+    const stored = store.unit(id)!;
+    store.putUnit({ ...stored, row: { ...stored.row, hp: stored.row.hp + 5 } });
+    const pools = store.db.prepare("SELECT count(*) AS n FROM mvp_pools").get();
+    const putPool = store.putPool.bind(store);
+    let calls = 0;
+    // The first putPool (re-storing the old snapshot with its rows) lands, then the server dies.
+    store.putPool = (p) => { if (++calls > 1) throw new Error("crash"); putPool(p); };
+    expect(() => syncSeed(store, AT)).toThrow("crash");
+    store.putPool = putPool;
+    expect(store.unit(id)!.row.hp).toBe(stored.row.hp + 5);
+    expect(store.db.prepare("SELECT count(*) AS n FROM mvp_pools").get()).toEqual(pools);
+    expect(syncSeed(store, AT).changed).toEqual([id]);
+    expect(store.unit(id)!.row).toEqual(ROWS[0]);
+  });
 });
