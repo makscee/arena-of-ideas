@@ -94,8 +94,8 @@ const WORDS = {
     canYou: "Can you beat the champion?",
     entered: "New in the arena:",
     left: "Gone to the Library:",
-    ideaBy: (p: string) => `idea by @${p}`,
-    evolvedBy: (p: string) => `evolved by @${p}`,
+    ideaBy: (p: string) => `idea by ${p}`,
+    evolvedBy: (p: string) => `evolved by ${p}`,
     returned: "back from the Library",
     more: (n: number) => `…and ${n} more`,
     play: (url: string) => `Play: ${url}`,
@@ -108,8 +108,8 @@ const WORDS = {
     canYou: "Сможешь победить?",
     entered: "Новые в арене:",
     left: "Ушли в Библиотеку:",
-    ideaBy: (p: string) => `идея @${p}`,
-    evolvedBy: (p: string) => `развил @${p}`,
+    ideaBy: (p: string) => `идея ${p}`,
+    evolvedBy: (p: string) => `развил ${p}`,
     returned: "вернулся из Библиотеки",
     more: (n: number) => `…и ещё ${n}`,
     play: (url: string) => `Играть: ${url}`,
@@ -140,7 +140,7 @@ export function postText(f: PostFacts, lang: ShareLang, publicUrl = PUBLIC_URL, 
   const out: string[] = [];
   if (!f.champion) out.push(w.none(date));
   else {
-    const who = `@${f.champion.player.name}`;
+    const who = f.champion.player.name; // no "@": in Telegram it would link a stranger's username
     out.push(f.crowned ? w.champion(date, who) : w.keeps(date, who));
     out.push(f.champion.line.map((u) => `${u.emoji} ${u.name}`).join(" · "));
   }

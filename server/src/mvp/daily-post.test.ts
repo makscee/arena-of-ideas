@@ -138,15 +138,17 @@ describe("the daily post (M4-8)", () => {
     const champ = w.store.champion(2)!;
     expect([lev.id, bob.id]).toContain(champ.player.id);
     const [ru, en] = tg.calls;
-    expect(en!.text).toContain(`👑 Champion of Oct 9, 2026: @${champ.player.name}`);
+    expect(en!.text).toContain(`👑 Champion of Oct 9, 2026: ${champ.player.name}`);
     expect(en!.text).toContain(champ.line.map((u) => `${u.emoji} ${u.name}`).join(" · "));
     expect(en!.text).toContain("⚔️ 2 slayers yesterday. Can you beat the champion?");
-    expect(en!.text).toContain("New in the arena:\n🦔 Hedgehog — idea by @lev");
+    expect(en!.text).toContain("New in the arena:\n🦔 Hedgehog — idea by lev");
+    // Game names never carry "@": Telegram would link a stranger's username.
+    expect(en!.text).not.toMatch(/(?<![\w/])@(?!arenaofideas)/);
     expect(en!.text).toContain(`Gone to the Library:\n${left.row.emoji} ${left.row.name}`);
     expect(en!.text.endsWith("Play: https://arena.makscee.ru/arena/")).toBe(true);
-    expect(ru!.text).toContain(`👑 Чемпион 9 октября 2026: @${champ.player.name}`);
+    expect(ru!.text).toContain(`👑 Чемпион 9 октября 2026: ${champ.player.name}`);
     expect(ru!.text).toContain("⚔️ Вчера 2 убийцы чемпиона. Сможешь победить?");
-    expect(ru!.text).toContain("Новые в арене:\n🦔 Hedgehog — идея @lev");
+    expect(ru!.text).toContain("Новые в арене:\n🦔 Hedgehog — идея lev");
     expect(ru!.text).toContain("Играть: https://arena.makscee.ru/arena/");
     for (const c of tg.calls) expect([...c.photo!.slice(0, 4)]).toEqual([0x89, 0x50, 0x4e, 0x47]);
   });
@@ -316,7 +318,7 @@ describe("the daily post (M4-8)", () => {
     await postDay(rt, 2, { ...CFG, groups: [["en"]], send: tg.send, ...quiet });
     expect(tg.calls.map((c) => c.method)).toEqual(["sendMessage"]);
     expect(tg.calls[0]!.text).toContain("👑 Oct 9, 2026: the throne is empty");
-    expect(tg.calls[0]!.text).toContain(`${seed.row.emoji} ${seed.row.name} — evolved by @lev`);
+    expect(tg.calls[0]!.text).toContain(`${seed.row.emoji} ${seed.row.name} — evolved by lev`);
   });
 
   it("on with ARENA_TELEGRAM_POST=1: the job reads its channel, languages, API and token file from the env", async () => {
