@@ -14,7 +14,8 @@
 //
 // Writing one (M2-4, makscee/void-board#790) spends a held idea and stores its
 // text, private to its author, as a `written` Idea for M2-5's reader. Its
-// author may take a `written` one back, which refunds it.
+// author may take a `written` one back, which refunds it. M2-5's reader
+// (./idea-reading.ts) refunds one it couldn't make.
 import { randomUUID } from "node:crypto";
 import { IDEA_TEXT_MAX, IDEA_TEXT_MIN, type Idea, type IdeasView, type MvpRules, type MyIdeasView } from "../../../src/mvp/contract.js";
 import type { RunDeps } from "./runs.js";
@@ -72,6 +73,15 @@ export function spendIdea(deps: IdeaDeps, playerId: string): boolean {
   s.counts.spent++;
   deps.store.putIdeaCounts(playerId, s.counts);
   return true;
+}
+
+/** Gives back a spent idea (M2-5: an idea the reader couldn't make). Like
+ * any idea earned, one past the cap is forfeited. */
+export function refundIdea(deps: IdeaDeps, playerId: string): void {
+  const counts = deps.store.ideaCounts(playerId);
+  counts.spent = Math.max(0, counts.spent - 1);
+  deps.store.putIdeaCounts(playerId, counts);
+  settle(deps, playerId);
 }
 
 /** A write or cancel the rules refuse, with the HTTP status the API answers. */

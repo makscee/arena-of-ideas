@@ -373,7 +373,8 @@ export function archetypeProblems(units: Pick<UnitContent, "name" | "archetype">
   return out;
 }
 
-function slug(name: string): string {
+/** A unit's id from its name ("Plague Rat" → "plague-rat"). */
+export function slug(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
@@ -529,6 +530,34 @@ export function linkEdges(form: UnitForm): [string, string][] {
   const from = LISTENS[whenKeyOf(form) as WhenKey];
   if (!from) return [];
   return effectKinds(allDoes(form)).flatMap((k) => (EMITS[k] ? [[from, EMITS[k]!] as [string, string]] : []));
+}
+
+/** The loops in the units' listen → emit graph (R4), each as
+ * "Curse →Robber (sleeping)→ Power →Equalizer (sleeping)→ Curse"; empty when
+ * every cascade ends on its own. */
+export function linkLoops(units: Pick<UnitContent, "name" | "forms">[]): string[] {
+  const edges = new Map<string, Map<string, string>>();
+  for (const u of units) {
+    for (const form of ["sleeping", "awoken"] as const) {
+      for (const [from, to] of linkEdges(u.forms[form])) {
+        const out = edges.get(from) ?? new Map<string, string>();
+        if (!out.has(to)) out.set(to, `${u.name} (${form})`);
+        edges.set(from, out);
+      }
+    }
+  }
+  const loops = new Set<string>();
+  const walk = (node: string, path: { node: string; via: string }[]) => {
+    const at = path.findIndex((p) => p.node === node);
+    if (at >= 0) {
+      const loop = path.slice(at);
+      loops.add([...loop.map((p) => `${p.node} →${p.via}→ `), node].join(""));
+      return;
+    }
+    for (const [to, via] of edges.get(node) ?? []) walk(to, [...path, { node, via }]);
+  };
+  for (const n of edges.keys()) walk(n, []);
+  return [...loops];
 }
 
 export interface MvpPool {
