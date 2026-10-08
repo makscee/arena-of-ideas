@@ -3,6 +3,7 @@
 // fused unit; a bot's discovery has no credit until a human fuses the pair.
 import type { LineUnit } from "../../src/mvp/contract";
 import { savedPlayer } from "../api";
+import { t } from "../i18n";
 import { h } from "./dom";
 
 /** "discovered by you" / "discovered by @name" for a fused unit's sheet; null
@@ -11,15 +12,14 @@ import { h } from "./dom";
 export function discoveredLine(u: Partial<Pick<LineUnit, "kind" | "fusion">>, o: { preview?: boolean } = {}): HTMLElement | null {
   if (u.kind !== "fused" || !u.fusion) return null;
   const line = (text: string) => h("div", { class: "discovered", "data-testid": "discovered-by" }, text);
-  if (o.preview && u.fusion.name === "") return line("New fusion · named when you fuse");
+  if (o.preview && u.fusion.name === "") return line(t("fusion.newNamedWhenFused"));
   const by = u.fusion.discoveredBy;
-  if (!by) return o.preview ? line("made by bots · fuse it to claim the discovery") : null;
-  const who = by.id === savedPlayer()?.id ? "you" : `@${by.name}`;
-  return line(`discovered by ${who}`);
+  if (!by) return o.preview ? line(t("fusion.madeByBots")) : null;
+  return line(by.id === savedPlayer()?.id ? t("fusion.discoveredByYou") : t("fusion.discoveredBy", { name: by.name }));
 }
 
 /** The name a preview shows for a pair nobody has fused (the server sends no
  * name until the fuse): "??? New fusion" on the sheet, `label` on a card. */
-export function previewName(u: LineUnit, label = "??? New fusion"): LineUnit {
+export function previewName(u: LineUnit, label = t("fusion.previewName")): LineUnit {
   return u.kind === "fused" && u.name === "" ? { ...u, name: label } : u;
 }

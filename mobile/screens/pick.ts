@@ -16,6 +16,7 @@ import { formSegments } from "../../src/mvp/form-text";
 import { mvpPool, type Row } from "../../src/mvp/units";
 import { api, ApiError } from "../api";
 import { getContent } from "../content";
+import { t } from "../i18n";
 import { card, setCardAbilities, unitSheet } from "../ui/card";
 import { button, fitText, h, isDesktop, onKeys, screen, show } from "../ui/dom";
 import { richText } from "../ui/term";
@@ -34,10 +35,6 @@ function sayError(text: string): void {
   if (el) el.textContent = text;
 }
 
-/** What My ideas says after each step. */
-export const PICKED_ARCHETYPE = "Reading it as that archetype. We'll tell you when its readings are ready.";
-export const PICKED_READING = "We'll test it overnight.";
-export const READ_AGAIN = "Reading it once more for other options.";
 
 /** Opens the pick its idea waits for, fetched fresh (another device may have picked). */
 export async function pickScreen(ideaId: string, nav: PickNav): Promise<void> {
@@ -76,29 +73,29 @@ function head(title: string, step: string, idea: MyIdea): Node[] {
   const a = idea.data.archetype;
   const top =
     idea.data.kind === "evolve" && a
-      ? h("h1", { class: "h1-long", "data-testid": "pick-title" }, `A new version of ${a.emoji} ${a.name}`)
+      ? h("h1", { class: "h1-long", "data-testid": "pick-title" }, t("pick.newVersionTitle", { emoji: a.emoji, name: a.name }))
       : h("div", { class: "row spread" }, h("h1", { "data-testid": "pick-title" }, title), h("span", { class: "dim small num" }, step));
-  return [top, h("div", { class: "dim small idea-quote", "data-testid": "pick-idea" }, `“${idea.text}”`)];
+  return [top, h("div", { class: "dim small idea-quote", "data-testid": "pick-idea" }, t("pick.quoted", { text: idea.text }))];
 }
 
 /** "The game has no words yet for …": a part of the text the reader couldn't make (M2-5). */
 function cantLine(idea: MyIdea): HTMLElement | null {
   const parts = idea.data.cantExpress ?? [];
   if (!parts.length) return null;
-  return h("div", { class: "dim small", "data-testid": "pick-cant" }, `The game has no words yet for ${parts.map((p) => `“${p}”`).join(", ")}, so the options leave it out.`);
+  return h("div", { class: "dim small", "data-testid": "pick-cant" }, t("pick.cant", { parts: parts.map((p) => t("pick.quoted", { text: p })).join(t("pick.listSep")) }));
 }
 
 /** "None of these": once per stage it reads again; the second time it gives the idea back. */
 function noneButton(idea: MyIdea, stage: "archetypes" | "readings", nav: PickNav, err: HTMLElement): HTMLButtonElement {
   const last = !!idea.data.declined?.[stage];
-  const label = last ? "None of these: take my idea back" : "None of these: read it again";
+  const label = last ? t("pick.noneTakeBack") : t("pick.noneReadAgain");
   const b = button(
     label,
     () => {
       b.disabled = true;
       api
         .declineOptions(idea.ideaId)
-        .then(() => nav.toIdeas(last ? "Your idea is back: you can write another." : READ_AGAIN))
+        .then(() => nav.toIdeas(last ? t("pick.ideaBack") : t("pick.readAgain")))
         .catch((e: unknown) => {
           if (e instanceof ApiError && e.status === 401) return nav.onUnknown();
           err.textContent = errorText(e);
@@ -114,7 +111,7 @@ function noneButton(idea: MyIdea, stage: "archetypes" | "readings", nav: PickNav
 /** Confirm, after a tap; a refusal (the name or shape was just taken) reopens the pick as it now is. */
 function confirmButton(send: () => Promise<unknown>, done: string, idea: MyIdea, nav: PickNav, err: HTMLElement): HTMLButtonElement {
   const b = button(
-    "Confirm",
+    t("pick.confirm"),
     () => {
       b.disabled = true;
       err.textContent = "";
@@ -151,7 +148,7 @@ function archetypeScreen(idea: MyIdea, nav: PickNav): void {
   const options = idea.data.archetypes!;
   const err = h("div", { class: "error", "data-testid": "error" });
   let picked = -1;
-  const confirm = confirmButton(() => api.pickArchetype(idea.ideaId, picked), PICKED_ARCHETYPE, idea, nav, err);
+  const confirm = confirmButton(() => api.pickArchetype(idea.ideaId, picked), t("pick.pickedArchetype"), idea, nav, err);
   const rows = options.map((a, i) =>
     archetypeRow(a, i, () => {
       picked = i;
@@ -160,14 +157,14 @@ function archetypeScreen(idea: MyIdea, nav: PickNav): void {
     }),
   );
   show(
-    ...head("ARCHETYPE", "1 / 2", idea),
-    h("div", { class: "dim small" }, "What is your unit? Pick one."),
+    ...head(t("pick.archetypeTitle"), t("pick.step1"), idea),
+    h("div", { class: "dim small" }, t("pick.whatUnit")),
     h("div", { class: "stack pick-list", "data-testid": "pick-archetypes" }, ...rows),
     cantLine(idea),
     noneButton(idea, "archetypes", nav, err),
     err,
     h("div", { class: "spacer" }),
-    h("div", { class: "row footer" }, button("Back", () => nav.toIdeas(), "grow", "pick-back"), confirm),
+    h("div", { class: "row footer" }, button(t("pick.back"), () => nav.toIdeas(), "grow", "pick-back"), confirm),
   );
   screen("ideas");
   onKeys((e) => (e.key === "Escape" ? (nav.toIdeas(), true) : false));
@@ -197,9 +194,9 @@ function readingScreen(idea: MyIdea, content0: MvpContent, nav: PickNav, current
   setCardAbilities(content.abilities);
   const err = h("div", { class: "error", "data-testid": "error" });
   let picked = -1;
-  const confirm = confirmButton(() => api.pickReading(idea.ideaId, picked), PICKED_READING, idea, nav, err);
+  const confirm = confirmButton(() => api.pickReading(idea.ideaId, picked), t("pick.pickedReading"), idea, nav, err);
   const desk = isDesktop();
-  const detail = h(desk ? "aside" : "div", { class: desk ? "codex-insp stack" : "panel pick-detail", "data-testid": "pick-detail" }, h("div", { class: "dim" }, current ? "Tap a reading, or Now, to read it." : "Tap a reading to read it."));
+  const detail = h(desk ? "aside" : "div", { class: desk ? "codex-insp stack" : "panel pick-detail", "data-testid": "pick-detail" }, h("div", { class: "dim" }, current ? t("pick.tapReadingOrNow") : t("pick.tapReading")));
   const cards = units.map((u, i) => {
     const c = card({ ...u, stats: { pwr: 0, hp: 0 }, unitId: u.id, form: "sleeping", recipe: u.forms.sleeping }, { side: "you", testid: "pick-reading", unset: true, onOpen: () => tap(i) });
     c.dataset.index = String(i);
@@ -216,7 +213,7 @@ function readingScreen(idea: MyIdea, content0: MvpContent, nav: PickNav, current
   });
   // M3-5: the version it would replace, first, for comparison: its rule; a tap reads its sheet (it isn't an option).
   const now = current
-    ? h("button", { class: "propose-now", "data-testid": "pick-current" }, h("span", { class: "dim small" }, "Now: "), ...richText(formSegments(current.forms.sleeping, content.abilities), { size: 13 }))
+    ? h("button", { class: "propose-now", "data-testid": "pick-current" }, h("span", { class: "dim small" }, t("pick.now")), ...richText(formSegments(current.forms.sleeping, content.abilities), { size: 13 }))
     : null;
   now?.addEventListener("click", (e) => {
     if ((e.target as HTMLElement).closest("button") !== now) return; // a keyword's own tip
@@ -236,7 +233,7 @@ function readingScreen(idea: MyIdea, content0: MvpContent, nav: PickNav, current
   const main = h(
     "div",
     { class: desk ? "codex-main stack" : "pick-main" },
-    ...head("READING", "2 / 2", idea),
+    ...head(t("pick.readingTitle"), t("pick.step2"), idea),
     idea.data.kind === "evolve"
       ? h("div", { class: "dim small", "data-testid": "pick-archline" }, a.line)
       : h("div", { class: "pick-archline", "data-testid": "pick-archline" }, `${a.emoji} ${a.name}`, h("span", { class: "dim small" }, ` · ${a.line}`)),
@@ -248,7 +245,7 @@ function readingScreen(idea: MyIdea, content0: MvpContent, nav: PickNav, current
     err,
     // On a phone the sheet takes the room left (and scrolls in itself); on desktop the spacer does.
     desk ? h("div", { class: "spacer" }) : null,
-    h("div", { class: "row footer pick-foot" }, button("Back", () => nav.toIdeas(), "grow", "pick-back"), confirm),
+    h("div", { class: "row footer pick-foot" }, button(t("pick.back"), () => nav.toIdeas(), "grow", "pick-back"), confirm),
   );
   show(main, desk ? detail : null);
   screen(desk ? "codex" : "ideas");

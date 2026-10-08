@@ -12,6 +12,7 @@ import { formSegments, formText as sharedFormText } from "../../src/mvp/form-tex
 import { MVP_RULES, type BattleUnit, type UnitCredit, type VersionCredit, type LineUnit, type MvpContent, type SummonContent, type UnitContent, type UnitForm } from "../../src/mvp/contract";
 import { summonId } from "../../src/describe";
 import type { AbilityRegistry, Stats } from "../../src/types";
+import { t } from "../i18n";
 import { closable, h, who } from "./dom";
 import { discoveredLine } from "./fusion";
 import { icon } from "./icon";
@@ -48,9 +49,9 @@ export interface CardOptions {
 export const tierClass = (tier: number | "S") => (tier === "S" ? "ts" : `t${tier}`);
 
 // A pool unit's sheet head, "Sleeping · Tier II", the numeral in its tier's colour.
-const poolState = (form: string, tier: number) => [`${form} · Tier `, h("span", { class: `tier ${tierClass(tier)}` }, roman(tier))];
+const poolState = (form: string, tier: number) => [t("card.tierOf", { form }), h("span", { class: `tier ${tierClass(tier)}` }, roman(tier))];
 // An idea's candidate (M2-6) has no tier yet: the simulation sets it with the numbers.
-const SET_BY_SIM = "PWR / HP: set by simulation";
+const SET_BY_SIM = () => t("card.setBySim");
 
 /** The live units' credits (M2-9: who the idea was, NEW), set once the
  * content loads (../content.ts) and again after the dev tool credits one. */
@@ -67,15 +68,15 @@ export function liveIdOf(storedId: string): string | undefined {
   return credits.has(storedId) ? storedId : undefined;
 }
 
-export const daysLive = (n: number): string => `${n} ${n === 1 ? "day" : "days"} live`;
+export const daysLive = (n: number): string => t("card.daysLive", { n });
 
 /** A unit's credit (M2-9, M3-8), one dim line:
  * "NEW 💡 idea by @a, evolved by @b · v2 · 23 days live". A seed root evolved
  * says "evolved by @b" alone; a seed unit only its days live. */
 export function creditText(c: VersionCredit & { isNew?: boolean; liveDays: number | null }, testid = "sheet-credit"): HTMLElement | null {
   const by: (Node | string)[] = [
-    ...(c.by ? ["💡 idea by ", who(c.by.name)] : []),
-    ...(c.evolvedBy ? [c.by ? ", evolved by " : "evolved by ", who(c.evolvedBy.name)] : []),
+    ...(c.by ? [t("card.ideaBy"), who(c.by.name)] : []),
+    ...(c.evolvedBy ? [c.by ? t("card.andEvolvedBy") : t("card.evolvedBy"), who(c.evolvedBy.name)] : []),
   ];
   const parts: (Node | string)[][] = [by, c.version > 1 ? [`v${c.version}`] : [], c.liveDays !== null ? [h("span", { "data-testid": "sheet-days" }, daysLive(c.liveDays))] : []].filter((p) => p.length);
   if (!parts.length && !c.isNew) return null;
@@ -103,14 +104,14 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
     "div",
     { class: `card ${o.side}`, ...(o.testid ? { "data-testid": o.testid } : {}) },
     iconLine(u.recipe, !!o.tier),
-    o.tier ? h("span", { class: `tier ${tierClass(o.tier)}`, "aria-label": o.tier === "S" ? "summoned" : `tier ${o.tier}` }, o.tier === "S" ? "S" : roman(o.tier)) : null,
+    o.tier ? h("span", { class: `tier ${tierClass(o.tier)}`, "aria-label": o.tier === "S" ? t("card.summonedAria") : t("card.tierAria", { tier: o.tier }) }, o.tier === "S" ? "S" : roman(o.tier)) : null,
     credit?.isNew ? h("span", { class: "new-badge", "data-testid": "card-new" }, "NEW") : null,
     h("div", { class: "emoji" }, u.emoji),
     // One line; ui/dom.ts fitText() shrinks a long name a little, then cuts it.
     // A version that isn't its archetype's first says so beside it (M3-8).
     h("div", { class: "name", title: u.name }, u.name, ...(version > 1 ? [h("span", { class: "ver", "data-testid": "card-version" }, ` v${version}`)] : [])),
     ...(o.unset
-      ? [h("div", { class: "stats unset", title: "PWR / HP: set by simulation" }, h("span", { class: "p" }, "?"), "/", h("span", { class: "h" }, "?"))]
+      ? [h("div", { class: "stats unset", title: SET_BY_SIM() }, h("span", { class: "p" }, "?"), "/", h("span", { class: "h" }, "?"))]
       : o.live?.maxHp !== undefined
         ? liveStats(stats, o.live.maxHp)
         : [h("div", { class: "stats" }, h("span", { class: "p" }, `${stats.pwr}`), "/", h("span", { class: "h" }, `${stats.hp}`))]),
@@ -124,7 +125,7 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
     // No room on a 64px card for the words: a 💡 mark, the words on hover and for readers.
     el.dataset.by = credit.by.name;
     el.title = `${u.name}: idea by @${credit.by.name}`;
-    el.append(h("span", { class: "by-mark", "data-testid": "card-by", "aria-label": `idea by @${credit.by.name}` }, "💡"));
+    el.append(h("span", { class: "by-mark", "data-testid": "card-by", "aria-label": t("card.ideaByAria", { name: credit.by.name }) }, "💡"));
   }
   if (o.onOpen) el.addEventListener("click", o.onOpen);
   return el;
@@ -225,8 +226,8 @@ export function unitSheet(
   // opts.from: your copy's stats now, when u is that copy after a buy (the shop's offer sheet).
   const statsLine = (s: Stats) =>
     opts.from
-      ? h("div", { class: "num", "data-testid": "sheet-stats" }, `${opts.from.pwr} PWR / ${opts.from.hp} HP → ${s.pwr} PWR / ${s.hp} HP`)
-      : h("div", { class: "num", "data-testid": "sheet-stats" }, `${s.pwr} PWR / ${s.hp} HP`);
+      ? h("div", { class: "num", "data-testid": "sheet-stats" }, `${t("card.stats", { pwr: opts.from.pwr, hp: opts.from.hp })} → ${t("card.stats", { pwr: s.pwr, hp: s.hp })}`)
+      : h("div", { class: "num", "data-testid": "sheet-stats" }, t("card.stats", { pwr: s.pwr, hp: s.hp }));
   const fused = !("forms" in u) && u.kind === "fused";
   const c = fused ? undefined : unit(unitId);
   const now: UnitForm | undefined = "forms" in u ? u.forms.sleeping : u.recipe;
@@ -234,8 +235,8 @@ export function unitSheet(
   const copies = "forms" in u ? 0 : u.copies;
 
   const box = h("div", { class: "sheet-form", "data-testid": "sheet-form" });
-  const headState = (form: string) => (opts.candidate ? [form] : "stats" in u ? [sheetState(u)] : poolState(form, u.tier));
-  const state = h("span", { class: "dim small", "data-testid": "sheet-state" }, ...headState("Sleeping"));
+  const headState = (form: "sleeping" | "awoken") => (opts.candidate ? [formName(form)] : "stats" in u ? [sheetState(u)] : poolState(formName(form), u.tier));
+  const state = h("span", { class: "dim small", "data-testid": "sheet-state" }, ...headState("sleeping"));
   const children: (Node | null)[] = [];
   // What the form shown summons, under its text (R3-5); swapped by See Awoken.
   const summons = h("div", { class: "stack" });
@@ -249,12 +250,12 @@ export function unitSheet(
       "div",
       { class: "stack parts", "data-testid": "sheet-parts" },
       ...[
-        [a, "When"],
-        [b, "Who"],
-      ].map(([p, role]) => (p ? h("div", { class: "sheet-form part" }, h("div", { class: "label" }, `${(p as UnitContent).emoji} ${(p as UnitContent).name} · Awoken · gives ${role}`), ...formRich((p as UnitContent).forms.awoken, content)) : null)),
+        [a, t("card.when")],
+        [b, t("card.who")],
+      ].map(([p, role]) => (p ? h("div", { class: "sheet-form part" }, h("div", { class: "label" }, t("card.partGives", { unit: `${(p as UnitContent).emoji} ${(p as UnitContent).name}`, role: role as string })), ...formRich((p as UnitContent).forms.awoken, content)) : null)),
     );
     parts.hidden = true;
-    const label = `Made from ${a?.name ?? u.fusion.first} + ${b?.name ?? u.fusion.second}`;
+    const label = t("card.madeFrom", { a: a?.name ?? u.fusion.first, b: b?.name ?? u.fusion.second });
     const toggle = h("button", { class: "small link", "data-testid": "sheet-parts-open" }, `${label} ▸`);
     toggle.addEventListener("click", () => {
       parts.hidden = !parts.hidden;
@@ -269,9 +270,9 @@ export function unitSheet(
     const sleepPieces = formSegments(now, content.abilities);
     const awokePieces = formSegments(c.forms.awoken, content.abilities);
     // Short enough for one line in the 1024px inspector (R2-17).
-    const see = opts.candidate ? "▸ See Awoken" : `▸ Awoken in ${left} ${left === 1 ? "copy" : "copies"}`;
-    const back = "◂ Back to Sleeping";
-    const note = h("div", { class: "dim small" }, "What changes is underlined.");
+    const see = opts.candidate ? t("card.seeAwoken") : t("card.awokenIn", { n: left });
+    const back = t("card.backToSleeping");
+    const note = h("div", { class: "dim small" }, t("card.changesUnderlined"));
     note.hidden = true;
     const btn = h("button", { class: "see-awoken", "data-testid": "see-awoken" }, see);
     let showing = false;
@@ -281,10 +282,10 @@ export function unitSheet(
       summons.replaceChildren(...[summonsBlock(showing ? c.forms.awoken : now, content)].filter((n): n is HTMLElement => n !== null));
       icons.replaceChildren(...[iconKey(showing ? c.forms.awoken : now)].filter((n): n is HTMLElement => n !== null));
       box.classList.toggle("other", showing);
-      box.replaceChildren(...(showing ? [h("div", { class: "label" }, `Awoken · after copy ${MVP_RULES.copiesToAwaken}`), ...richText(awokePieces, { content: markChangedPieces(sleepPieces, awokePieces) })] : richText(sleepPieces)));
+      box.replaceChildren(...(showing ? [h("div", { class: "label" }, t("card.awokenAfter", { n: MVP_RULES.copiesToAwaken })), ...richText(awokePieces, { content: markChangedPieces(sleepPieces, awokePieces) })] : richText(sleepPieces)));
       btn.textContent = showing ? back : see;
       // A unit from the pool (the Codex, an offer) heads its sheet with the form shown.
-      if (!("stats" in u)) state.replaceChildren(...headState(showing ? "Awoken" : "Sleeping"));
+      if (!("stats" in u)) state.replaceChildren(...headState(showing ? "awoken" : "sleeping"));
       btn.dataset.testid = showing ? "see-sleeping" : "see-awoken";
       note.hidden = !showing;
     });
@@ -300,8 +301,8 @@ export function unitSheet(
     // opts.credit: a Library unit's own (M3-8), not a live version's that shares its id.
     fused ? null : opts.credit ? creditText(opts.credit) : creditLine(unitId),
     "forms" in u ? null : discoveredLine(u, { preview: opts.preview ?? false }),
-    opts.candidate ? h("div", { class: "dim small", "data-testid": "sheet-unset" }, SET_BY_SIM) : "stats" in u ? statsLine(u.stats) : h("div", { class: "num" }, `${u.base.pwr} PWR / ${u.base.hp} HP`),
-    opts.from ? h("div", { class: "dim small" }, "Your copy now → after buying") : null,
+    opts.candidate ? h("div", { class: "dim small", "data-testid": "sheet-unset" }, SET_BY_SIM()) : "stats" in u ? statsLine(u.stats) : h("div", { class: "num" }, t("card.stats", { pwr: u.base.pwr, hp: u.base.hp })),
+    opts.from ? h("div", { class: "dim small" }, t("card.yourCopyNow")) : null,
     icons.childNodes.length ? icons : null,
     box,
     ...children,
@@ -343,7 +344,7 @@ export function summonCard(s: SummonContent, o: CardOptions): HTMLElement {
 
 /** A summon's text, or the line that says it has none. */
 export function summonText(s: SummonContent, content: MvpContent): Node[] {
-  return s.form ? formRich(s.form, content) : [h("b", {}, "No ability: it fights with its PWR / HP.")];
+  return s.form ? formRich(s.form, content) : [h("b", {}, t("card.noAbility"))];
 }
 
 /** A summoner's "Summons" block: each summoned unit's compact card and its
@@ -354,7 +355,7 @@ function summonsBlock(form: UnitForm, content: MvpContent): HTMLElement | null {
   return h(
     "div",
     { class: "stack summons", "data-testid": "sheet-summons" },
-    h("div", { class: "label" }, "Summons"),
+    h("div", { class: "label" }, t("card.summons")),
     ...list.map((s) =>
       h(
         "div",
@@ -378,16 +379,16 @@ export function summonSheet(s: SummonContent, content: MvpContent): HTMLElement 
   return h(
     "div",
     { class: "stack", "data-testid": "summon-sheet", "data-summon": s.id },
-    h("div", { class: "row spread sheet-head" }, h("h2", {}, `${s.emoji} ${s.name}`), h("span", { class: "dim small", "data-testid": "sheet-state" }, "Summoned")),
-    h("div", { class: "num", "data-testid": "sheet-stats" }, `${s.base.pwr} PWR / ${s.base.hp} HP`),
+    h("div", { class: "row spread sheet-head" }, h("h2", {}, `${s.emoji} ${s.name}`), h("span", { class: "dim small", "data-testid": "sheet-state" }, t("card.summoned"))),
+    h("div", { class: "num", "data-testid": "sheet-stats" }, t("card.stats", { pwr: s.base.pwr, hp: s.base.hp })),
     h("div", { class: "sheet-form", "data-testid": "sheet-form" }, ...summonText(s, content)),
-    by.length ? h("div", { class: "label" }, "Summoned by") : null,
+    by.length ? h("div", { class: "label" }, t("card.summonedBy")) : null,
     by.length
       ? h(
           "div",
           { class: "chips", "data-testid": "summoned-by" },
           ...by.map(({ unit, forms }) => {
-            const b = h("button", { class: "chip unit-chip", "data-testid": "summoned-by-unit", "data-unit": unit.id }, `${unit.emoji} ${unit.name}${forms.length === 1 && forms[0] === "awoken" ? " · Awoken" : ""}`);
+            const b = h("button", { class: "chip unit-chip", "data-testid": "summoned-by-unit", "data-unit": unit.id }, `${unit.emoji} ${unit.name}${forms.length === 1 && forms[0] === "awoken" ? t("card.awokenSuffix") : ""}`);
             b.addEventListener("click", () => closable(unitSheet(unit, content)));
             return b;
           }),
@@ -398,6 +399,11 @@ export function summonSheet(s: SummonContent, content: MvpContent): HTMLElement 
 
 /** Form and copies; a fused unit says it is final (its credit is discoveredLine). */
 function sheetState(u: LineUnit | BattleUnit): string {
-  if (u.kind === "fused") return `Fused, final · ×${u.copies}`;
-  return `${u.form === "awoken" ? "Awoken" : "Sleeping"} · ×${u.copies}`;
+  if (u.kind === "fused") return t("card.fusedFinal", { n: u.copies });
+  return t("card.formCopies", { form: formName(u.form), n: u.copies });
+}
+
+/** A form's name: "Sleeping", "Awoken". */
+export function formName(form: "sleeping" | "awoken"): string {
+  return form === "awoken" ? t("card.awoken") : t("card.sleeping");
 }

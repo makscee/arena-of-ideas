@@ -7,6 +7,7 @@
 import type { MvpContent, UnitContent, VoteCard } from "../../src/mvp/contract";
 import { api } from "../api";
 import { addCardAbilities, card, formText } from "../ui/card";
+import { t } from "../i18n";
 import { button, h } from "../ui/dom";
 
 /** A box that fills itself with the player's next vote card, if any. */
@@ -14,7 +15,7 @@ export function votePanel(content: MvpContent): HTMLElement {
   const box = h("div", { class: "vote-box", "data-testid": "vote-box" });
   let sending = false;
   const render = (c: VoteCard | null, voted: boolean) => {
-    if (!c) return box.replaceChildren(...(voted ? [h("div", { class: "dim small", "data-testid": "vote-thanks" }, "Thanks for voting.")] : []));
+    if (!c) return box.replaceChildren(...(voted ? [h("div", { class: "dim small", "data-testid": "vote-thanks" }, t("vote.thanks"))] : []));
     addCardAbilities(c.pool.abilities);
     const known = new Set((content.summons ?? []).map((s) => s.id));
     const pool: MvpContent = {
@@ -40,7 +41,7 @@ export function votePanel(content: MvpContent): HTMLElement {
         ? []
         : u.id !== c.candidateId
           ? [h("div", { class: "small vote-tag" }, "\u00a0")]
-          : [h("div", { class: "small vote-tag", "data-testid": "vote-tag" }, c.candidateKind === "version" ? `new version of ${u.emoji} ${u.name}` : `${u.emoji} ${u.name}, unchanged`)];
+          : [h("div", { class: "small vote-tag", "data-testid": "vote-tag" }, c.candidateKind === "version" ? t("vote.newVersionOf", { emoji: u.emoji, name: u.name }) : t("vote.unchanged", { emoji: u.emoji, name: u.name }))];
     const choice = (u: UnitContent) => {
       const el = h(
         "button",
@@ -48,7 +49,7 @@ export function votePanel(content: MvpContent): HTMLElement {
         ...tag(u),
         card({ emoji: u.emoji, name: u.name, stats: u.base, recipe: u.forms.sleeping, unitId: u.id }, { side: "you", tier: u.tier }),
         h("div", { class: "small vote-text" }, formText(u.forms.sleeping, pool)),
-        h("div", { class: "dim small vote-text" }, `Awoken: ${formText(u.forms.awoken, pool)}`),
+        h("div", { class: "dim small vote-text" }, t("vote.awoken", { text: formText(u.forms.awoken, pool) })),
       );
       el.addEventListener("click", () => void send(u.id));
       return el;
@@ -57,7 +58,7 @@ export function votePanel(content: MvpContent): HTMLElement {
       h(
         "div",
         { class: "panel stack vote", "data-testid": "vote-card" },
-        h("div", { class: "row spread" }, h("div", { class: "label keep" }, "Which would you rather see in the game?"), button("Skip", () => void send(null), "small link", "vote-skip")),
+        h("div", { class: "row spread" }, h("div", { class: "label keep" }, t("vote.question")), button(t("vote.skip"), () => void send(null), "small link", "vote-skip")),
         h("div", { class: "vote-pair" }, choice(c.units[0]), choice(c.units[1])),
       ),
     );

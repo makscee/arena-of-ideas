@@ -1,4 +1,5 @@
 // Plain-DOM helpers shared by every screen of the phone client (mission #574).
+import { t } from "../i18n";
 import { backStays, escStep } from "./esc";
 import { toggleSound } from "./sound";
 
@@ -240,7 +241,7 @@ export function dismissable(dismiss: ((close: () => void) => void) | null, ...ki
 /** overlay() with a Close button pinned to the sheet's bottom, for a sheet
  * with nothing else to tap (a unit sheet, the rules, a why-I-lost row). */
 export function closable(...kids: Node[]): () => void {
-  const closeBtn = button("Close", () => close(), "grow", "sheet-close");
+  const closeBtn = button(t("common.close"), () => close(), "grow", "sheet-close");
   const close = overlay(...kids, h("div", { class: "row sheet-actions" }, closeBtn));
   return close;
 }
