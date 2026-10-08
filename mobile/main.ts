@@ -318,7 +318,6 @@ async function homeScreen(ended: number | null = null): Promise<void> {
           )
         : null,
       justEnded ? null : playoff,
-      votePanel(content),
     ),
     h(
       "div",
@@ -340,6 +339,8 @@ async function homeScreen(ended: number | null = null): Promise<void> {
           ? h("details", { class: "dev" }, h("summary", {}, "Dev"), h("div", { class: "row wrap" }, endDay, grantIdea, seedCandidate, overnight, fakeVotes, candidates))
           : null,
       ),
+      // M2-8's vote card, under the menu: quiet, and Play stays on the first screen.
+      votePanel(content),
     ),
   );
   screen("home");
@@ -359,7 +360,7 @@ function candidatesSheet(list: CandidateScore[]): HTMLElement {
           h(
             "div",
             { class: "idea-row", "data-testid": "candidate-row", "data-qualified": String(c.qualified) },
-            h("div", { class: "grow" }, `${c.emoji} ${c.name}`, h("div", { class: "dim small num" }, `${c.won}/${c.votes} votes · ${pct(c.share)} + novelty ${pct(c.novelty)} → ${pct(c.score)}`)),
+            h("div", { class: "grow" }, `${c.emoji} ${c.name}`, h("div", { class: "dim small num" }, `${c.won} of ${c.votes} votes (${pct(c.share)}) · novelty ${pct(c.novelty)} · score ${pct(c.score)}`)),
             h("div", { class: c.qualified ? "keep" : "dim keep" }, c.qualified ? "qualified" : "not yet"),
           ),
         )
