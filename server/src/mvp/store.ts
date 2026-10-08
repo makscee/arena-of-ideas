@@ -85,6 +85,21 @@ export interface MvpStore {
   joinCode(): string | undefined;
   /** Sets (or rotates) the shared join code. */
   setJoinCode(code: string): void;
+  // Mission 2's idea counts (M2-3); only ./ideas.ts writes them.
+  /** The player's counts; all zero before any write. */
+  ideaCounts(playerId: string): IdeaCounts;
+  putIdeaCounts(playerId: string, c: IdeaCounts): void;
+}
+
+/** What a player's ideas are counted from, besides their finished runs
+ * (Rating.runs): ./ideas.ts derives the ideas held from both. */
+export interface IdeaCounts {
+  /** Ideas written (M2-4) or refunded back (a negative step). */
+  spent: number;
+  /** Dev "+1 idea". */
+  granted: number;
+  /** Ideas earned while holding the cap, so never held. */
+  forfeited: number;
 }
 
 /** Devices per player: opening a link past this ends the oldest session. */
@@ -234,7 +249,12 @@ export class MemoryMvpStore implements MvpStore {
   private join: string | undefined;
   joinCode(): string | undefined { return this.join; }
   setJoinCode(code: string): void { this.join = code; }
+  private ideas = new Map<string, IdeaCounts>();
+  ideaCounts(playerId: string): IdeaCounts { return { ...(this.ideas.get(playerId) ?? NO_IDEAS) }; }
+  putIdeaCounts(playerId: string, c: IdeaCounts): void { this.ideas.set(playerId, { ...c }); }
 }
+
+export const NO_IDEAS: IdeaCounts = { spent: 0, granted: 0, forfeited: 0 };
 
 /** Ordered: (a, b) and (b, a) are different fusions. */
 function pairKey(first: UnitId, second: UnitId): string {

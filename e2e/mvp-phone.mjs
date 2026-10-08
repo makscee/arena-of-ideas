@@ -154,6 +154,8 @@ try {
   await page.getByTestId("name-submit").click();
   await page.getByTestId("play").waitFor();
   await shot("home"); await noHScroll("home"); await noRates("home"); await onScreen("home: Play", page.getByTestId("play"));
+  // M2-3: a quiet ideas line; a new player earns the first in 3 runs.
+  if ((await page.getByTestId("ideas").textContent()) !== "💡 next idea in 3 runs") errors.push(`home: ideas line "${await page.getByTestId("ideas").textContent()}"`);
   await tap44("dev summary", page.locator("details.dev summary"));
   await page.getByTestId("rules-open").click();
   await page.getByTestId("rules").waitFor();
@@ -704,6 +706,7 @@ try {
   await page.getByTestId("home").click();
   await page.getByTestId("play").waitFor();
   await shot("home-after");
+  if (!/^💡 (next idea in [12] runs?|[1-3] ideas?)$/.test((await page.getByTestId("ideas").textContent()) ?? "")) errors.push(`home after a run: ideas line "${await page.getByTestId("ideas").textContent()}"`);
 
   // Stats (slice 11, R2-11): records and the champion history; units and
   // fusions moved to the Codex.
@@ -1080,6 +1083,15 @@ try {
   await page.getByTestId("play").waitFor();
   const endedSeq = (await call("GET", "/day")).seq;
   await page.locator("details.dev summary").click();
+  // M2-3: dev "+1 idea" brings an idea home at once.
+  const heldBefore = Number(/^💡 (\d) ideas?$/.exec((await page.getByTestId("ideas").textContent()) ?? "")?.[1] ?? 0);
+  await page.getByTestId("grant-idea").click();
+  const heldNow = Math.min(3, heldBefore + 1);
+  await page.waitForFunction((t) => document.querySelector('[data-testid="ideas"]')?.textContent === t, `💡 ${heldNow} idea${heldNow === 1 ? "" : "s"}`, { timeout: 10_000 }).catch(() => errors.push(`dev +1 idea: ideas line "${heldNow}" never showed`));
+  await shot("home-idea-granted"); await noHScroll("home-idea-granted");
+  await onScreen("home after +1 idea: Play", page.getByTestId("play"));
+  await page.locator("details.dev summary").click().catch(() => {});
+  if (!(await page.getByTestId("end-day").isVisible())) await page.locator("details.dev summary").click();
   await page.getByTestId("end-day").click();
   // Home re-renders with the day just ended ("Day N ended" / "Playoff · day
   // N"), not the panel of the day before, which is already on screen.

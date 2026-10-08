@@ -212,6 +212,22 @@ describe("MVP API thin path", () => {
     expect(ended.json).toMatchObject({ seq: 2, slayers: 0, lastPlayoff: { seq: 1, entrants: [], winner: null } });
   });
 
+  it("shows the player's ideas on Home; the dev tools grant one (M2-3)", async () => {
+    const call = client();
+    expect((await call<HomeView>("GET", "/home")).json.ideas).toBeNull();
+    const { json: p } = await call<PlayerRef>("POST", "/players", { name: "thinker" });
+    expect((await call<HomeView>("GET", "/home", undefined, p.id)).json.ideas).toEqual({ held: 0, nextIn: 3 });
+    const { json: run } = await call<RunView>("POST", "/runs", undefined, p.id);
+    await call("POST", `/runs/${run.runId}/abandon`, undefined, p.id);
+    expect((await call<HomeView>("GET", "/home", undefined, p.id)).json.ideas).toEqual({ held: 0, nextIn: 2 });
+    expect((await call("POST", "/dev/grant-idea", undefined, p.id)).status).toBe(404);
+    const dev = client({ dev: true });
+    const { json: q } = await dev<PlayerRef>("POST", "/players", { name: "dev" });
+    expect((await dev("POST", "/dev/grant-idea")).status).toBe(401);
+    expect((await dev("POST", "/dev/grant-idea", undefined, q.id)).json).toEqual({ held: 1, nextIn: 3 });
+    expect((await dev<HomeView>("GET", "/home", undefined, q.id)).json.ideas).toEqual({ held: 1, nextIn: 3 });
+  });
+
   it("shows a run only to its player", async () => {
     const call = client();
     const { json: p } = await call<PlayerRef>("POST", "/players", { name: "owner" });

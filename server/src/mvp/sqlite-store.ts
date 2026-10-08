@@ -11,7 +11,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
-import { MAX_SESSIONS, nameKey, type Invite, type MvpStore, type UnitTallies, type UnitTally } from "./store.js";
+import { MAX_SESSIONS, NO_IDEAS, nameKey, type IdeaCounts, type Invite, type MvpStore, type UnitTallies, type UnitTally } from "./store.js";
 
 const SQL_DIR = fileURLToPath(new URL("./sql/", import.meta.url));
 
@@ -183,5 +183,9 @@ export class SqliteMvpStore implements MvpStore {
       this.putInvite(next);
       return this.db.prepare("DELETE FROM mvp_sessions WHERE player_id = ?").run(next.playerId).changes;
     }).immediate();
+  }
+  ideaCounts(playerId: string): IdeaCounts { return this.one<IdeaCounts>("SELECT json FROM mvp_idea_counts WHERE player_id = ?", playerId) ?? { ...NO_IDEAS }; }
+  putIdeaCounts(playerId: string, c: IdeaCounts): void {
+    this.write("INSERT INTO mvp_idea_counts (player_id, json) VALUES (?, ?) ON CONFLICT(player_id) DO UPDATE SET json = excluded.json", playerId, JSON.stringify(c));
   }
 }

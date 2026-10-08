@@ -180,5 +180,14 @@ export function describeMvpStore(name: string, make: () => MvpStore): void {
       s.setJoinCode("j2");
       expect(s.joinCode()).toBe("j2");
     });
+
+    it("keeps idea counts per player (M2-3), zero before any write", () => {
+      const s = make();
+      expect(s.ideaCounts("p1")).toEqual({ spent: 0, granted: 0, forfeited: 0 });
+      s.putIdeaCounts("p1", { spent: 1, granted: 2, forfeited: 0 });
+      s.putIdeaCounts("p1", { spent: 2, granted: 2, forfeited: 1 });
+      expect(s.ideaCounts("p1")).toEqual({ spent: 2, granted: 2, forfeited: 1 });
+      expect(s.ideaCounts("p2")).toEqual({ spent: 0, granted: 0, forfeited: 0 });
+    });
   });
 }
