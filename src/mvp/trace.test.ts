@@ -72,6 +72,15 @@ describe("tap a change to trace its chain", () => {
     expect(captionOf(log, tick.id)).toBe("Poison → Dummy −1");
   });
 
+  test("the attacker (M3-1): the Hedgehog's Poison lands on the striker and traces to its strike", () => {
+    const Hedgehog = unit("Hedgehog", 30, 1, { on: "Hurt", unit: "holder" }, [{ kind: "attacker" }], ["Envenom"]);
+    const log = run([Hedgehog], [dummy("Brute", 30, 2)]);
+    const poison = log.find((e) => e.type === "StatusApplied" && e.status === "Poison")!;
+    expect(poison).toMatchObject({ unit: "B1:Brute" });
+    expect(traceOf(log, poison.id).text).toBe("Poison ×1 ← Hedgehog ← Brute");
+    expect(captionOf(log, poison.id)).toMatch(/Brute/);
+  });
+
   test("every change in a battle traces without throwing and ends in a named cause", () => {
     const log = run([Shieldbearer, Smith, Archer, Medic, Zealot], [dummy("Dummy", 30, 3), Medic, Zealot]);
     for (const e of log) {
