@@ -83,6 +83,10 @@ OPEN_PUBLIC="${ARENA_MVP_OPEN_PUBLIC:-0}"
 # limit). ARENA_MVP_OPEN=0 deploys it invite-only again.
 OPEN="${ARENA_MVP_OPEN:-1}"
 case "$OPEN" in 0|1) ;; *) echo "ARENA_MVP_OPEN is 0 or 1, not '$OPEN'" >&2; exit 2 ;; esac
+# Who reads players' ideas (mission 2, M2-5; Maks: Claude, through Claude Code
+# on m1): claude by default here, ARENA_MVP_IDEA_READER=fake turns it off.
+IDEA_READER="${ARENA_MVP_IDEA_READER:-claude}"
+case "$IDEA_READER" in claude|fake) ;; *) echo "ARENA_MVP_IDEA_READER is claude or fake, not '$IDEA_READER'" >&2; exit 2 ;; esac
 PUBLIC_URL=https://arena.makscee.ru/arena/
 TAILNET_URL=https://m1.twin-pogona.ts.net/arena/api/v1/health
 
@@ -213,6 +217,8 @@ cat > "\$PLIST" <<PL
     <key>MVP_DB</key><string>\$DB</string>
     <key>MVP_BUILD</key><string>\$BUILD</string>
     <key>ARENA_NAMER_URL</key><string>http://127.0.0.1:$NAMER_PORT/v1/chat/completions</string>
+    <key>ARENA_IDEA_READER</key><string>$IDEA_READER</string>
+    <key>ARENA_CLAUDE_BIN</key><string>\$HOME/.local/bin/claude</string>
   </dict>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
