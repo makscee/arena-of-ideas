@@ -2,11 +2,14 @@
 // player gets "+1 idea", writes one, waits for the fake reader, sees Home's
 // "💡 Your idea is ready", turns the archetypes down once ("None of these"),
 // picks an archetype, then a reading (opening "See Awoken"), and My ideas
-// shows it as being tested. A screenshot of each screen; the pick screens
-// never scroll the page. Then the reading pick once at 1280×800, its sheet
-// in the side panel. Without --url it builds the client and starts a dev
-// server (fake reader, reading every 500 ms) on a free port; never point it
-// at the live game.
+// shows it as being tested. M2-11 (makscee/void-board#796): the dev "Run the
+// overnight check now" puts it in the vote, and a second player votes for it
+// on Home's either/or card (rotation, M2-10, isn't in yet). A screenshot of
+// each screen; the pick screens never scroll the page. Then My ideas and the
+// reading pick once at 1280×800, its sheet in the side panel. Without --url
+// it builds the client and starts a dev server (fake reader, reading every
+// 500 ms, the instant tuner) on a free port; never point it at the live game.
+// A --url server needs MVP_DEV=1 and ARENA_TUNER=instant for the check.
 //   npm run mvp:ideas-phone -- [--url http://127.0.0.1:PORT/arena/] [--out e2e/.shots/mvp-ideas]
 import { execFileSync, spawn } from "node:child_process";
 import { mkdirSync } from "node:fs";
@@ -23,7 +26,7 @@ let child = null;
 if (!url) {
   execFileSync("npm", ["run", "-s", "mvp:build"], { stdio: "inherit" });
   const port = await new Promise((r) => { const s = createServer().listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => r(p)); }); });
-  child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port), MVP_DEV: "1", MVP_DB: ":memory:", ARENA_IDEA_READER: "fake", ARENA_IDEA_READ_MS: "500" }, stdio: ["ignore", "inherit", "inherit"] });
+  child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port), MVP_DEV: "1", MVP_DB: ":memory:", ARENA_IDEA_READER: "fake", ARENA_IDEA_READ_MS: "500", ARENA_TUNER: "instant" }, stdio: ["ignore", "inherit", "inherit"] });
   url = `http://127.0.0.1:${port}/arena/`;
   for (let i = 0; i < 300; i++) {
     try { if ((await fetch(url + "api/v1/health")).ok) break; } catch {}
@@ -71,6 +74,7 @@ async function walk(viewport, name, full) {
   if (full) await shot("sent-being-read");
   // My ideas looks again on its own while the idea is read (10 s).
   await page.locator('[data-testid="idea-sent-row"][data-state="pick-archetype"]').waitFor({ timeout: 30_000 });
+  if (!full) await shot(`${name}-my-ideas`);
   if (full) {
     if ((await page.getByTestId("idea-stage").textContent()) !== "Ready: pick its archetype") errors.push(`my ideas: stage "${await page.getByTestId("idea-stage").textContent()}"`);
     await shot("ideas-ready");
@@ -133,6 +137,51 @@ async function walk(viewport, name, full) {
   if (!/test it overnight/.test(await page.getByTestId("idea-sent").textContent())) errors.push(`after the pick: "${await page.getByTestId("idea-sent").textContent()}"`);
   if (!/being tested/.test(await page.getByTestId("idea-stage").textContent())) errors.push(`my ideas after the pick: "${await page.getByTestId("idea-stage").textContent()}"`);
   await shot("ideas-being-tested");
+  // M2-11: the dev "Run the overnight check now" (the server's instant
+  // tuner), and My ideas shows the idea in the vote.
+  await page.getByTestId("ideas-back").click();
+  await page.locator("details.dev summary").click();
+  await page.getByTestId("overnight-check").click();
+  await page.waitForFunction(() => /Checking 1 idea/.test(document.querySelector('[data-testid="error"]')?.textContent ?? ""), null, { timeout: 10_000 });
+  await shot("overnight-check");
+  for (let i = 0; ; i++) {
+    await page.getByTestId("ideas").click();
+    await page.getByTestId("idea-sent-row").first().waitFor();
+    if ((await page.getByTestId("idea-sent-row").first().getAttribute("data-state")) === "voting") break;
+    if (i === 20) throw new Error(`the overnight check left the idea "${await page.getByTestId("idea-stage").first().textContent()}"`);
+    await page.getByTestId("ideas-back").click();
+    await page.waitForTimeout(500);
+  }
+  if (!/in the vote/.test(await page.getByTestId("idea-stage").first().textContent())) errors.push(`my ideas after the check: "${await page.getByTestId("idea-stage").first().textContent()}"`);
+  await shot("ideas-in-the-vote");
+  await page.close();
+  return vote(viewport);
+}
+
+/** A second player votes for the idea's unit on Home's either/or card. */
+async function vote(viewport) {
+  const [cand] = await (await fetch(url + "api/v1/dev/candidates")).json();
+  if (!cand) return void errors.push("vote: no candidate after the check");
+  const page = await browser.newPage({ viewport, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  page.on("pageerror", (e) => errors.push(`Voter: pageerror: ${e.message}`));
+  page.on("console", (m) => m.type() === "error" && errors.push(`Voter: console: ${m.text()}`));
+  const shot = (s) => page.screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-${s}.png` });
+  await page.goto(url);
+  await page.getByTestId("name-input").fill(`Vote${TAG}`);
+  await page.getByTestId("name-submit").click();
+  await page.getByTestId("vote-card").waitFor();
+  const mine = page.locator(`[data-testid="vote-pick"][data-unit="${cand.unitId}"]`);
+  if ((await mine.count()) !== 1) errors.push(`vote: the card doesn't show ${cand.name}`);
+  await page.getByTestId("vote-card").scrollIntoViewIfNeeded();
+  await shot("vote-card");
+  await mine.locator(".vote-text").first().click(); // the text, clear of the card itself
+  await page.waitForFunction(() => !!document.querySelector('[data-testid="vote-thanks"]') || !!document.querySelector('[data-testid="vote-card"]'));
+  await page.getByTestId("vote-box").scrollIntoViewIfNeeded();
+  await shot("voted");
+  const after = (await (await fetch(url + "api/v1/dev/candidates")).json()).find((c) => c.unitId === cand.unitId);
+  if (after?.votes !== 1) errors.push(`vote: ${cand.name} has ${after?.votes} votes, not 1`);
+  // Rotation (M2-10, "End the day now" with MVP_ROTATION=1) hasn't merged
+  // into the mission yet: the walk stops at the vote.
   await page.close();
 }
 
@@ -150,4 +199,4 @@ if (errors.length) {
   console.error(errors.map((e) => `✗ ${e}`).join("\n"));
   process.exit(1);
 }
-console.log("✓ write → archetype → reading on a phone, and the reading pick on desktop");
+console.log("✓ write → archetype → reading → overnight check → a second player's vote on a phone, and My ideas and the reading pick on desktop");
