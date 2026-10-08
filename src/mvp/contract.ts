@@ -423,14 +423,13 @@ export interface BattleRecord {
 /** shop: buy, sell, reroll, reorder, fuse, then fight the round's ghost.
  * crown: after the last round with hearts left; offers [], gold 0, the only
  * decision is { kind: "fight" } and nextOpponent is today's champion. With no
- * live champion (none, or a stale contentVersion) the run ends right after
- * the last round instead ("no-champion").
+ * champion the run ends right after the last round instead ("no-champion").
  * over: nothing more to do; endedBy says why.
  *
- * Content changes (slice 7 retunes it): a run started on other content than
- * the live one can't fight, so the server ends it cleanly ("content-changed",
- * rating null, no rating change) on its next decision, or when its player
- * starts a run. Its line is not rebuilt. */
+ * Pool changes (M2-2) end nothing: a run pins the pool it started on
+ * (contentVersion) and shops, gifts, copies and fuses on it until it ends,
+ * while its fights meet lines made on any pool. "content-changed" (rating
+ * null) only marks runs ended that way before M2-2. */
 export type RunPhase = "shop" | "crown" | "over";
 export type RunEndReason = "out-of-hearts" | "crown-won" | "crown-lost" | "no-champion" | "content-changed" | "abandoned";
 
@@ -509,11 +508,11 @@ export interface DecisionResponse {
 //   playoff (#587). Ratings are humans only: a bot's Rating row may carry its
 //   records (slays, playoffWins, daysAsChampion), never a rating change.
 //
-// Stale content: a Champion or Slay whose contentVersion isn't the live
-// content's may name abilities that no longer exist. Slice 6's seeder replaces
-// a stale champion for today().seq at startup, slice 4's Crown treats a stale
-// champion as none (endedBy "no-champion"), and slice 5's playoff skips slays
-// of another contentVersion.
+// Other pools (M2-2): a Champion, Slay or Ghost made on another pool fights
+// like any. Abilities are built from their names and the registry only grows,
+// so its line resolves; one that doesn't (never expected) is skipped with a
+// warning: the Crown treats such a champion as none, the playoff and the
+// ghost pick skip it. Slice 6's seeder only seeds when there is no champion.
 
 /** The current day as the server keeps it (MvpStore.currentDay). */
 export interface DayState {

@@ -60,11 +60,15 @@ describe("basic stats (slice 11)", () => {
     expect(rt.store.dayTallies(rt.today().seq + 1)).toEqual({ runs: 0, units: [] });
   });
 
-  it("leaves out tallies of other content versions and units no longer live", async () => {
+  it("rates units over the last 14 days' tallies, whatever pool they were played on, live units only (M2-2)", async () => {
     const { rt } = world();
+    rt.store.putDay({ ...rt.today(), seq: 20 });
     const live = rt.content.units[0]!.id;
-    rt.store.addUnitTallies("old", { runs: 4, units: [{ unitId: live, fights: 4, wins: 4, runs: 4 }] });
-    rt.store.addUnitTallies(rt.content.version, { runs: 4, units: [{ unitId: live, fights: 4, wins: 1, runs: 1 }, { unitId: "retired", fights: 9, wins: 9, runs: 4 }] });
+    const tally = (fights: number, wins: number, runs: number) => ({ unitId: live, fights, wins, runs, picks: 0 });
+    rt.store.addDayTallies(6, { runs: 9, units: [tally(9, 9, 9)] }); // 15 days ago: out of the window
+    rt.store.addDayTallies(7, { runs: 2, units: [tally(2, 0, 1)] });
+    rt.store.addDayTallies(20, { runs: 2, units: [tally(2, 1, 0), { unitId: "retired", fights: 9, wins: 9, runs: 2, picks: 0 }] });
+    rt.store.addUnitTallies(rt.content.version, { runs: 4, units: [{ unitId: live, fights: 40, wins: 40, runs: 4 }] });
     const res = await createMvpApp(rt).request("/api/v1/stats");
     expect(((await res.json()) as StatsView).units).toEqual([{ unitId: live, winRate: 0.25, pickRate: 0.25, runs: 1 }]);
   });

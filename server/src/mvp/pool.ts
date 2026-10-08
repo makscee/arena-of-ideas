@@ -222,3 +222,32 @@ export function servedContent(rt: { store: MvpStore; content: MvpContent }): Mvp
     summons: [...(live.summons ?? []), ...(left.summons ?? []).filter((b) => !bodies.has(b.id))],
   };
 }
+
+/** Swaps one live unit for a stored one in a new pool snapshot (dev and tests:
+ * `npm run mvp:pool -- swap <out> <in>`; M2-10's rotation does it for real).
+ * `out` goes to the library with its stint closed, `in` goes live in its
+ * place with a new stint. Runs in progress keep their pool. Returns the new version. */
+export function swapUnit(store: MvpStore, outId: string, inId: string, now: Date): string {
+  const pool = store.currentPool();
+  if (!pool) throw new Error("no pool: start the server once to seed it");
+  const at = pool.unitIds.indexOf(outId);
+  if (at < 0) throw new Error(`${outId} is not in the live pool`);
+  if (pool.unitIds.includes(inId)) throw new Error(`${inId} is already in the live pool`);
+  const out = store.unit(outId)!;
+  const inUnit = store.unit(inId);
+  if (!inUnit) throw new Error(`no stored unit ${inId}`);
+  const oldRows = rowsOf(store, pool);
+  if (!oldRows) throw new Error(`the current pool ${pool.version} names a unit the store doesn't have`);
+  const unitIds = pool.unitIds.map((id) => (id === outId ? inId : id));
+  const rows = oldRows.map((row, i) => (i === at ? inUnit.row : row));
+  const version = contentOf(rows).version;
+  const daySeq = store.currentDay()?.seq ?? pool.daySeq;
+  const iso = now.toISOString();
+  if (!pool.rows) store.putPool({ ...pool, rows: oldRows });
+  store.putUnit({ ...out, status: "library" });
+  store.putUnit({ ...inUnit, status: "live" });
+  for (const s of store.stints(outId)) if (s.leftSeq === null) store.putStint({ ...s, leftSeq: daySeq, reason: "swapped" });
+  store.putStint({ unitId: inId, enteredSeq: daySeq, leftSeq: null, reason: "swapped" });
+  store.putPool({ version, daySeq, unitIds, createdAt: iso, rows });
+  return version;
+}

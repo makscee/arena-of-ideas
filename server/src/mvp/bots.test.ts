@@ -46,13 +46,12 @@ describe("MVP bots and world (slice 6)", { timeout: 30_000 }, () => {
     throw new Error("no seeded champion held a fusion");
   }, 30_000);
 
-  it("replaces a champion built with other content, for today's seq", async () => {
+  it("keeps a champion made on another pool: a pool change never crowns a bot (M2-2)", async () => {
     const rt = world();
-    const stale: Champion = { seq: rt.today().seq, day: rt.today().day, player: { id: "b", name: "old", bot: true }, line: [], since: "t", contentVersion: "old" };
-    rt.store.putChampion(stale);
-    const champ = (await seedChampion(rt))!;
-    expect(champ.contentVersion).toBe(rt.content.version);
-    expect(rt.store.champions()).toHaveLength(1);
+    const human: Champion = { seq: rt.today().seq, day: rt.today().day, player: { id: "p-maks", name: "Maks", bot: false }, line: [], since: "t", contentVersion: "old" };
+    rt.store.putChampion(human);
+    expect(await seedChampion(rt)).toBeUndefined();
+    expect(rt.store.champions()).toEqual([human]);
   }, 30_000);
 
   it("fills every round's ghost pool with bot runs, and stops there", async () => {
