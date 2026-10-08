@@ -84,6 +84,12 @@ export interface MvpRules {
   /** Day rollover, "HH:MM" in dayTimeZone (slice 5). */
   dayEndsAt: string;
   dayTimeZone: string;
+  /** Mission 2 (M2-3): a player earns 1 idea per this many finished runs (any
+   * ending a rating counts: out of hearts, the Crown won or lost, given up).
+   * Read from the server's current rules, never a run's: absent, 3. */
+  ideaEveryRuns?: number;
+  /** Ideas a player holds at most; runs finished at the cap earn none. Absent, 3. */
+  ideaHold?: number;
 }
 
 /** The turn cap round-3 runs started with (R3-26): their fights past it end
@@ -115,6 +121,8 @@ export const MVP_RULES: MvpRules = {
   botRating: 1000,
   dayEndsAt: "04:00",
   dayTimeZone: "Europe/Moscow",
+  ideaEveryRuns: 3,
+  ideaHold: 3,
 };
 
 /** Offers in the shop at `round`: `offers`, +1 for each `offersGrowAt` round reached. */
@@ -610,6 +618,16 @@ export interface HomeView {
    * (anyone on an open server, only admin invites on an invite-only one):
    * the title menu shows them ("End day now"); every other player never does. */
   dev: boolean;
+  /** The player's ideas (M2-3); null without a player. */
+  ideas: IdeasView | null;
+}
+
+/** Ideas a player holds (M2-3, server/src/mvp/ideas.ts): earned by finished
+ * runs (MvpRules.ideaEveryRuns, ideaHold), spent by writing one (M2-4). */
+export interface IdeasView {
+  held: number;
+  /** Finished runs until the next idea; null while `held` is at the cap. */
+  nextIn: number | null;
 }
 
 // ---------- HTTP API ----------
@@ -650,6 +668,7 @@ export interface HomeView {
 //   GET  /api/v1/fusions                     → FusionDiscovery[]  (slice 10)
 //   GET  /api/v1/day                         → DayView            (slice 5)
 //   POST /api/v1/dev/end-day                 → DayView            (slice 5; 404 unless MVP_DEV=1)
+//   POST /api/v1/dev/grant-idea              → IdeasView          (M2-3; +1 idea up to the cap; 404 unless MVP_DEV=1)
 //   GET  /api/v1/stats                       → StatsView          (slice 11)
 
 export const PLAYER_HEADER = "X-Arena-Player";

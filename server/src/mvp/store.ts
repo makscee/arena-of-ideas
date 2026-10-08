@@ -109,6 +109,10 @@ export interface MvpStore {
   addDayTallies(daySeq: number, delta: DayTallies): void;
   /** Day `daySeq`'s running totals; zero runs and no units before any. */
   dayTallies(daySeq: number): DayTallies;
+  // Mission 2's idea counts (M2-3); only ./ideas.ts writes them.
+  /** The player's counts; all zero before any write. */
+  ideaCounts(playerId: string): IdeaCounts;
+  putIdeaCounts(playerId: string, c: IdeaCounts): void;
 }
 
 export type UnitStatus = "candidate" | "live" | "library" | "rejected";
@@ -156,6 +160,17 @@ export interface DayTallies {
 export interface UnitDayTally extends UnitTally {
   /** Times it was bought from the shop or taken as a gift. */
   picks: number;
+}
+
+/** What a player's ideas are counted from, besides their finished runs
+ * (Rating.runs): ./ideas.ts derives the ideas held from both. */
+export interface IdeaCounts {
+  /** Ideas written (M2-4) or refunded back (a negative step). */
+  spent: number;
+  /** Dev "+1 idea". */
+  granted: number;
+  /** Ideas earned while holding the cap, so never held. */
+  forfeited: number;
 }
 
 /** Devices per player: opening a link past this ends the oldest session. */
@@ -344,7 +359,12 @@ export class MemoryMvpStore implements MvpStore {
     const t = this.dayTalliesBySeq.get(daySeq);
     return { runs: t?.runs ?? 0, units: t ? [...t.units.values()].sort((a, b) => (a.unitId < b.unitId ? -1 : a.unitId > b.unitId ? 1 : 0)).map((u) => ({ ...u })) : [] };
   }
+  private ideas = new Map<string, IdeaCounts>();
+  ideaCounts(playerId: string): IdeaCounts { return { ...(this.ideas.get(playerId) ?? NO_IDEAS) }; }
+  putIdeaCounts(playerId: string, c: IdeaCounts): void { this.ideas.set(playerId, { ...c }); }
 }
+
+export const NO_IDEAS: IdeaCounts = { spent: 0, granted: 0, forfeited: 0 };
 
 /** Ordered: (a, b) and (b, a) are different fusions. */
 function pairKey(first: UnitId, second: UnitId): string {

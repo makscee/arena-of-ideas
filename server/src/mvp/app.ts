@@ -1,7 +1,7 @@
 // Arena MVP HTTP API (mission #574, slice 1). The routes and shapes are the
 // contract in src/mvp/contract.ts; this file only parses requests and calls
 // the runtime (./runtime.ts): the run engine (./runs.ts), the day (./day.ts),
-// the stats (./stats.ts) and the store. A slice fills in those modules, not
+// the stats (./stats.ts), ideas (./ideas.ts) and the store. A slice fills in those modules, not
 // these routes.
 import { randomUUID } from "node:crypto";
 import { Hono, type Context } from "hono";
@@ -10,6 +10,7 @@ import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, TOKEN_HEADER, type Deci
 import { checkDecision, MvpBadDecision, MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
 import { dayView, endDay, hiddenSlay } from "./day.js";
 import { MvpNotYet } from "./errors.js";
+import { grantIdea, ideasOf } from "./ideas.js";
 import { isAdmin, isJoinCode, JoinRefused, joinOpen, NAME_RE, openJoin, redeemInvite, sessionPlayer } from "./invites.js";
 import { abandon, currentRun, decide, preview, startRun } from "./runs.js";
 import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
@@ -129,6 +130,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
       rating: p ? store.rating(p.id) ?? { player: p, rating: rt.rules.ratingStart, runs: 0, slays: 0, daysAsChampion: 0, playoffWins: 0 } : null,
       activeRunId: p ? store.activeRun(p.id)?.runId ?? null : null,
       dev: devFor(c),
+      ideas: p ? ideasOf(rt, p.id) : null,
     };
     return c.json(home);
   });
@@ -233,6 +235,10 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     await next();
   });
   api.post("/dev/end-day", (c) => notYet(c, () => endDay(rt)));
+  api.post("/dev/grant-idea", (c) => {
+    const p = playerOf(c);
+    return p ? c.json(grantIdea(rt, p.id)) : unknownPlayer(c);
+  });
 
   const app = new Hono();
   app.route(MVP_API_PREFIX, api);

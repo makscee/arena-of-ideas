@@ -6,7 +6,7 @@
 // Home is the title menu (R2-10); it also shows DayView.lastPlayoff (a game
 // opens in battleScreen) and, on dev servers only (HomeView.dev), "End day
 // now" under "Dev". The shop's ☰ (Esc on desktop) is the in-run menu.
-import type { BattleRecord, DayView, FightResult, HomeView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView } from "../src/mvp/contract";
+import type { BattleRecord, DayView, FightResult, HomeView, IdeasView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView } from "../src/mvp/contract";
 import { benchSizeOf, lockedFull, MVP_RULES, offersAt, sellValue } from "../src/mvp/contract";
 import { mergeTarget } from "../src/mvp/forms";
 import { buttonRefusal, plainRefusal } from "./ui/refusal";
@@ -269,6 +269,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
     "small",
     "end-day",
   );
+  const grantIdea = button("+1 idea", () => void guarded(err, async () => { await api.grantIdea(); await homeScreen(); }), "small", "grant-idea");
   const last = home.day.lastPlayoff ?? null;
   const justEnded = ended !== null && last?.seq === ended ? last : null;
   const playoff = playoffPanel(last, champ?.player ?? null, content, err);
@@ -315,19 +316,28 @@ async function homeScreen(ended: number | null = null): Promise<void> {
       h(
         "div",
         { class: "stack footer title-menu", "data-testid": "home-actions" },
+        home.ideas ? ideasLine(home.ideas) : null,
         play,
         newRun,
         codex,
         h("div", { class: "row" }, stats, rulesBtn),
         soundRow(),
         api.ownInvite ? ownLinkRow(api.ownInvite) : null,
-        home.dev ? h("details", { class: "dev" }, h("summary", {}, "Dev"), endDay) : null,
+        home.dev ? h("details", { class: "dev" }, h("summary", {}, "Dev"), h("div", { class: "row" }, endDay, grantIdea)) : null,
       ),
     ),
   );
   screen("home");
   music("home");
   if (justEnded) playoff?.classList.add("fresh");
+}
+
+/** Home's quiet ideas line (M2-3): the ideas held, or the runs until the
+ * next. Tapping it does nothing yet (M2-4 adds the idea screen). */
+function ideasLine(ideas: IdeasView): HTMLElement {
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const text = ideas.held > 0 || ideas.nextIn === null ? `💡 ${plural(ideas.held, "idea")}` : `💡 next idea in ${plural(ideas.nextIn, "run")}`;
+  return h("div", { class: "dim small ideas", "data-testid": "ideas" }, text);
 }
 
 /** One confirm before a run is given up (R2-2's abandon): it says what the

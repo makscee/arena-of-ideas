@@ -11,6 +11,7 @@ import {
   type DecisionResponse,
   type FusionDiscovery,
   type HomeView,
+  type IdeasView,
   type JoinSession,
   type MvpContent,
   type PlayerRef,
@@ -163,6 +164,8 @@ export const api = {
   day: () => call<DayView>("GET", "/day"),
   /** Dev "end day now": 404 unless the server runs with MVP_DEV=1, 501 until slice 5. */
   endDay: () => call<DayView>("POST", "/dev/end-day"),
+  /** Dev "+1 idea" (M2-3): 404 unless MVP_DEV=1. */
+  grantIdea: () => call<IdeasView>("POST", "/dev/grant-idea"),
   /** 501 until slice 11. */
   stats: () => call<StatsView>("GET", "/stats"),
   /** Discovered fusions (slice 10). */
