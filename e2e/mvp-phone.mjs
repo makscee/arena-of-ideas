@@ -316,6 +316,16 @@ try {
   if (!/^[\d,]+ of [\d,]+ found$/.test(await page.getByTestId("codex-fusions-found").textContent())) errors.push(`codex: "${await page.getByTestId("codex-fusions-found").textContent()}"`);
   await shot("codex-fusions"); await noHScroll("codex-fusions");
   if ((await page.getByTestId("icon-credits").textContent()).indexOf("CC BY 3.0") < 0) errors.push("codex: no icon credits");
+  // M2-9: the Library lists the units that left (the 8 cut in round 4 on a
+  // fresh world), and one opens its sheet with how long it was live.
+  await page.getByTestId("codex-tab-library").click();
+  await page.getByTestId("codex-library").waitFor();
+  const libN = await page.getByTestId("library-unit").count();
+  if (libN < 8) errors.push(`codex: the Library lists ${libN} units, not the 8 cut in round 4`);
+  await page.getByTestId("library-unit").first().click({ position: { x: 30, y: 70 } });
+  await page.getByTestId("library-live").waitFor();
+  await shot("codex-library"); await noHScroll("codex-library");
+  await page.keyboard.press("Escape");
   await page.getByTestId("codex-back").click();
   await page.getByTestId("play").waitFor();
   await page.getByTestId("play").click();
