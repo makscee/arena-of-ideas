@@ -21,7 +21,9 @@
 // idea) → the write screen with its line and current rule → My ideas "new
 // version of …" → the reading pick titled "A new version of …" with the
 // current rule first → "being tested overnight"; at 360×740, and to the
-// reading pick at 1280×800.
+// reading pick at 1280×800. M3-9 (makscee/void-board#800): then the overnight
+// check, fake votes and the day end let the version in: the Codex shows it NEW
+// as v2, "evolved by @Prop…", with both versions; the old one stays in the Library.
 //   npm run mvp:ideas-phone -- [--url http://127.0.0.1:PORT/arena/] [--out e2e/.shots/mvp-ideas]
 import { execFileSync, spawn } from "node:child_process";
 import { mkdirSync } from "node:fs";
@@ -295,7 +297,8 @@ async function propose(viewport, name, full) {
   await page.getByTestId("idea-send").click();
   await page.getByTestId("idea-sent").waitFor();
   const stage = page.getByTestId("idea-stage").first();
-  if (!(await stage.textContent()).startsWith(`new version of ${unitName.emoji} ${unitName.name} · being read`)) errors.push(`${name}: my ideas while read "${await stage.textContent()}"`);
+  // The fake reader may have finished already: being read, or ready to pick.
+  if (!/ · (being read|Ready: pick its reading)/.test(await stage.textContent()) || !(await stage.textContent()).startsWith(`new version of ${unitName.emoji} ${unitName.name} · `)) errors.push(`${name}: my ideas while read "${await stage.textContent()}"`);
   await shot("propose-sent");
   // The reader skips the archetype: straight to the readings.
   await page.locator('[data-testid="idea-sent-row"][data-state="pick-reading"]').waitFor({ timeout: 30_000 });
@@ -326,6 +329,79 @@ async function propose(viewport, name, full) {
   if (after !== `new version of ${unitName.emoji} ${unitName.name} · being tested: we'll test it overnight`) errors.push(`${name}: my ideas after the pick "${after}"`);
   await shot("propose-being-tested");
   await page.close();
+  return { target, unit: unitName };
+}
+
+/** M3-9: the version goes through the overnight check and the vote, and the
+ * day end lets it in: the Codex shows it NEW as v2, "evolved by @Prop…", with
+ * both versions in its history; the old version stays in the Library. */
+async function entered(viewport, { target, unit }) {
+  const page = await browser.newPage({ viewport, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  page.on("pageerror", (e) => errors.push(`Enter: pageerror: ${e.message}`));
+  page.on("console", (m) => m.type() === "error" && errors.push(`Enter: console: ${m.text()}`));
+  const shot = (s) => page.screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-Enter-${s}.png` });
+  await page.goto(url);
+  await page.getByTestId("name-input").fill(`Enter${TAG}`);
+  await page.getByTestId("name-submit").click();
+  await page.getByTestId("play").waitFor();
+  await page.locator("details.dev summary").click();
+  await page.getByTestId("overnight-check").click();
+  let version;
+  for (let i = 0; !version && i < 40; i++) {
+    version = (await (await fetch(url + "api/v1/dev/candidates")).json()).find((c) => c.kind === "version" && c.rootId === target);
+    if (!version) await page.waitForTimeout(500);
+  }
+  if (!version) return void errors.push(`enter: no version of ${unit.name} in the vote after the check`);
+  // The vote card offers it as "new version of …", or "… unchanged".
+  await page.goto(url);
+  const tag = page.getByTestId("vote-tag");
+  if (await page.getByTestId("vote-card").count()) {
+    await page.getByTestId("vote-card").scrollIntoViewIfNeeded();
+    await shot("vote-card");
+    const tags = (await tag.allTextContents()).join(" | ");
+    if (tags && !tags.includes(unit.name)) errors.push(`enter: the vote card's tags "${tags}" don't name ${unit.name}`);
+  }
+  await page.locator("details.dev summary").click();
+  await Promise.all([page.waitForResponse((r) => r.url().endsWith("/dev/fake-votes")), page.getByTestId("fake-votes").click()]);
+  // Fake votes are even (4 of 5 for every candidate), so "unchanged" would win
+  // on novelty: a real voter prefers the version on every card it's on, and
+  // the typical unit over "unchanged".
+  const api = url + "api/v1";
+  const judge = (await (await fetch(api + "/players", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: `Judge${TAG}` }) })).json()).id;
+  const as = { "content-type": "application/json", "X-Arena-Player": judge };
+  let next = (await (await fetch(api + "/votes/next", { headers: as })).json()).card;
+  for (let i = 0; next && i < 30; i++) {
+    const pick = next.candidateId === version.unitId ? version.unitId : next.otherId;
+    next = (await (await fetch(api + "/votes", { method: "POST", headers: as, body: JSON.stringify({ candidateId: next.candidateId, otherId: next.otherId, pick }) })).json()).card;
+  }
+  const scored = (await (await fetch(url + "api/v1/dev/candidates")).json()).find((c) => c.unitId === version.unitId);
+  if (!scored?.entry) errors.push(`enter: the version isn't its archetype's entry (${JSON.stringify(scored)})`);
+  await page.goto(url);
+  await page.locator("details.dev summary").click();
+  await page.getByTestId("end-day").click();
+  await page.getByTestId("day-ended").waitFor({ timeout: 30_000 });
+  await page.reload();
+  await page.getByTestId("codex").click();
+  await page.getByTestId("codex-search").fill(unit.name);
+  const card = page.locator('[data-testid="codex-unit"]').filter({ has: page.getByTestId("card-version") });
+  await card.first().waitFor({ timeout: 10_000 });
+  if (!/v2/.test((await card.first().getByTestId("card-version").textContent()) ?? "")) errors.push(`enter: ${unit.name}'s card isn't v2`);
+  if ((await card.first().getByTestId("card-new").count()) !== 1) errors.push(`enter: ${unit.name} v2 isn't NEW`);
+  await shot("codex-v2");
+  await card.first().click({ position: { x: 32, y: 60 } });
+  const credit = page.getByTestId("sheet-credit");
+  await credit.waitFor();
+  const text = (await credit.textContent()) ?? "";
+  if (!text.includes(`evolved by @Prop${TAG}`)) errors.push(`enter: the sheet says "${text}"`);
+  const history = (await page.getByTestId("sheet-history").textContent()) ?? "";
+  if (!history.includes("Versions · 2")) errors.push(`enter: the history says "${history}"`);
+  await shot("v2-sheet");
+  const live = await (await fetch(url + "api/v1/content")).json();
+  if (!live.units.some((u) => u.id === version.unitId)) errors.push(`enter: ${version.unitId} isn't served under its own id`);
+  if (live.units.some((u) => u.id === target)) errors.push(`enter: the old version ${target} is live too`);
+  const lib = await (await fetch(url + "api/v1/library")).json();
+  if (!lib.units.some((l) => l.unit.id === target)) errors.push(`enter: the old version ${target} left the Library`);
+  await page.close();
 }
 const WANT = "Make it hit every enemy instead of only the front one.";
 
@@ -334,7 +410,8 @@ try {
   await walk({ width: 360, height: 740 }, "Tall", false); // M3-2: the three rules side by side on a common phone
   await walk({ width: 1280, height: 800 }, "Desk", false);
   // M3-5: the day end above sent a unit to the Library.
-  await propose({ width: 360, height: 740 }, "Prop", true);
+  const proposed = await propose({ width: 360, height: 740 }, "Prop", true);
+  await entered({ width: 360, height: 740 }, proposed);
   await propose({ width: 1280, height: 800 }, "PropDesk", false);
 } catch (e) {
   errors.push(`threw: ${e.message}`);
@@ -347,4 +424,4 @@ if (errors.length) {
   console.error(errors.map((e) => `✗ ${e}`).join("\n"));
   process.exit(1);
 }
-console.log("✓ write → archetype → reading → overnight check → a second player's vote → the day end lets it in, NEW and by its author, on a phone, and My ideas and the reading pick on desktop; a new version of a Library unit: Propose (off, then on) → write → reading pick with the current rule first → being tested, on a phone, and to the reading pick on desktop");
+console.log("✓ write → archetype → reading → overnight check → a second player's vote → the day end lets it in, NEW and by its author, on a phone, and My ideas and the reading pick on desktop; a new version of a Library unit: Propose (off, then on) → write → reading pick with the current rule first → being tested → the vote → the day end lets it in as v2, evolved by its author, on a phone, and to the reading pick on desktop");
