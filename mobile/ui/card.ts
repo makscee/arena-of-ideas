@@ -9,7 +9,7 @@
 // form the unit has now; win and pick rates are its one dim last line.
 import { cardIcons, type Pip } from "../../src/mvp/card-icons";
 import { formSegments, formText as sharedFormText } from "../../src/mvp/form-text";
-import { MVP_RULES, type BattleUnit, type UnitCredit, type LineUnit, type MvpContent, type SummonContent, type UnitContent, type UnitForm } from "../../src/mvp/contract";
+import { MVP_RULES, type BattleUnit, type UnitCredit, type VersionCredit, type LineUnit, type MvpContent, type SummonContent, type UnitContent, type UnitForm } from "../../src/mvp/contract";
 import { summonId } from "../../src/describe";
 import type { AbilityRegistry, Stats } from "../../src/types";
 import { closable, h, who } from "./dom";
@@ -39,6 +39,9 @@ export interface CardOptions {
   onOpen?: () => void;
   /** M2-6: a candidate's card: its PWR / HP are set by simulation, so it shows none. */
   unset?: boolean;
+  /** M3-8: a unit the live credits don't know (the Library's): its archetype
+   * version, and no live credit (NEW, 💡). */
+  version?: number;
 }
 
 /** A tier's colour class (R4-4): .t1–.t4 on the --tier-1..4 tokens, .ts for a summoned unit. */
@@ -57,17 +60,45 @@ export function setCardCredits(list: UnitCredit[]): void {
 }
 export const creditOf = (unitId: string | undefined): UnitCredit | undefined => (unitId ? credits.get(unitId) : undefined);
 
-/** A pool unit's sheet line: "💡 idea by @name" (seed units have none). */
+/** The live unit a stored version id is served as (M3-8: a version keeps its
+ * root's name, so the pool may serve it under its root's id). */
+export function liveIdOf(storedId: string): string | undefined {
+  for (const c of credits.values()) if (c.versions[c.version - 1]?.unitId === storedId) return c.unitId;
+  return credits.has(storedId) ? storedId : undefined;
+}
+
+export const daysLive = (n: number): string => `${n} ${n === 1 ? "day" : "days"} live`;
+
+/** A unit's credit (M2-9, M3-8), one dim line:
+ * "NEW 💡 idea by @a, evolved by @b · v2 · 23 days live". A seed root evolved
+ * says "evolved by @b" alone; a seed unit only its days live. */
+export function creditText(c: VersionCredit & { isNew?: boolean; liveDays: number | null }, testid = "sheet-credit"): HTMLElement | null {
+  const by: (Node | string)[] = [
+    ...(c.by ? ["💡 idea by ", who(c.by.name)] : []),
+    ...(c.evolvedBy ? [c.by ? ", evolved by " : "evolved by ", who(c.evolvedBy.name)] : []),
+  ];
+  const parts: (Node | string)[][] = [by, c.version > 1 ? [`v${c.version}`] : [], c.liveDays !== null ? [h("span", { "data-testid": "sheet-days" }, daysLive(c.liveDays))] : []].filter((p) => p.length);
+  if (!parts.length && !c.isNew) return null;
+  return h(
+    "div",
+    { class: "dim small credit-line", "data-testid": testid },
+    ...(c.isNew ? [h("span", { class: "new-badge inline", "data-testid": "sheet-new" }, "NEW")] : []),
+    ...parts.flatMap((p, i) => (i ? [" · ", ...p] : p)),
+  );
+}
+
+/** A pool unit's sheet line (creditText); none before the credits load. */
 function creditLine(unitId: string): HTMLElement | null {
   const c = creditOf(unitId);
-  if (!c?.by && !c?.isNew) return null;
-  return h("div", { class: "dim small credit-line", "data-testid": "sheet-credit" }, ...(c.isNew ? [h("span", { class: "new-badge inline", "data-testid": "sheet-new" }, "NEW")] : []), ...(c.by ? ["💡 idea by ", who(c.by.name)] : []));
+  return c ? creditText(c) : null;
 }
 
 export function card(u: CardUnit, o: CardOptions): HTMLElement {
   const stats = o.live?.stats ?? u.stats;
   // A fused unit is its finders' (discoveredLine); its parts' credits stay on theirs.
-  const credit = u.kind === "fused" ? undefined : creditOf(u.unitId);
+  // A Library card's unit isn't live: no live credit, even when a live version shares its id.
+  const credit = u.kind === "fused" || o.version !== undefined ? undefined : creditOf(u.unitId);
+  const version = o.version ?? credit?.version ?? 1;
   const el = h(
     "div",
     { class: `card ${o.side}`, ...(o.testid ? { "data-testid": o.testid } : {}) },
@@ -76,7 +107,8 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
     credit?.isNew ? h("span", { class: "new-badge", "data-testid": "card-new" }, "NEW") : null,
     h("div", { class: "emoji" }, u.emoji),
     // One line; ui/dom.ts fitText() shrinks a long name a little, then cuts it.
-    h("div", { class: "name", title: u.name }, u.name),
+    // A version that isn't its archetype's first says so beside it (M3-8).
+    h("div", { class: "name", title: u.name }, u.name, ...(version > 1 ? [h("span", { class: "ver", "data-testid": "card-version" }, ` v${version}`)] : [])),
     ...(o.unset
       ? [h("div", { class: "stats unset", title: "PWR / HP: set by simulation" }, h("span", { class: "p" }, "?"), "/", h("span", { class: "h" }, "?"))]
       : o.live?.maxHp !== undefined
@@ -180,8 +212,13 @@ export function formRich(form: UnitForm, content: MvpContent): Node[] {
  * sleeping unit's sheet swaps in its awoken text behind "See Awoken" (what
  * changes underlined), a fused unit's parts open behind a tap, and the unit's
  * win and pick rates are one dim line at the bottom. opts.preview: a fusion
- * preview's credit line (./fusion.ts). Open it with overlay(unitSheet(...)) from ./dom. */
-export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpContent, opts: { rates?: UnitRates; from?: Stats; preview?: boolean; candidate?: boolean } = {}): HTMLElement {
+ * preview's credit line (./fusion.ts). opts.credit: a Library unit's credit
+ * line. Open it with overlay(unitSheet(...)) from ./dom. */
+export function unitSheet(
+  u: LineUnit | BattleUnit | UnitContent,
+  content: MvpContent,
+  opts: { rates?: UnitRates; from?: Stats; preview?: boolean; candidate?: boolean; credit?: Parameters<typeof creditText>[0] } = {},
+): HTMLElement {
   const unitId = "forms" in u ? u.id : u.unitId;
   // A unit that left the pool (a champion's, a replay's) is in content.left (M2-2).
   const unit = (id: string) => content.units.find((x) => x.id === id) ?? content.left?.find((x) => x.id === id);
@@ -260,7 +297,8 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
     h("div", { class: "row spread sheet-head" }, h("h2", {}, `${u.emoji} ${u.name}`), state),
     // What the unit is about, in one sentence (R4-8); a fused unit has none.
     c?.archetype ? h("div", { class: "archetype", "data-testid": "sheet-archetype" }, c.archetype) : null,
-    fused ? null : creditLine(unitId),
+    // opts.credit: a Library unit's own (M3-8), not a live version's that shares its id.
+    fused ? null : opts.credit ? creditText(opts.credit) : creditLine(unitId),
     "forms" in u ? null : discoveredLine(u, { preview: opts.preview ?? false }),
     opts.candidate ? h("div", { class: "dim small", "data-testid": "sheet-unset" }, SET_BY_SIM) : "stats" in u ? statsLine(u.stats) : h("div", { class: "num" }, `${u.base.pwr} PWR / ${u.base.hp} HP`),
     opts.from ? h("div", { class: "dim small" }, "Your copy now → after buying") : null,

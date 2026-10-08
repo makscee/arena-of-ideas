@@ -650,14 +650,41 @@ export interface IdeasView {
   ready: number;
 }
 
-/** Who a live unit's idea was and whether it is new (M2-9,
- * server/src/mvp/credits.ts): only units with an author or a recent entry. */
-export interface UnitCredit {
+/** One version of an archetype (M3-8, server/src/mvp/credits.ts), in its
+ * history: the root is v1, then each version that entered the pool, in the
+ * order it entered. A proposal that never entered is not one. */
+export interface UnitVersion {
   unitId: UnitId;
-  /** The player whose idea it was; null for the seed. */
+  /** 1 for the archetype's first version. */
+  version: number;
+  /** The version's author; null for the seed. */
   by: PlayerRef | null;
+  /** Days this version was live; null when none was ever recorded. */
+  liveDays: number | null;
+  /** In the pool now. */
+  live: boolean;
+}
+
+/** Who a unit is by, across its archetype's versions (M3-8). */
+export interface VersionCredit {
+  /** The player whose idea the archetype was (its root's author); null for the seed. */
+  by: PlayerRef | null;
+  /** This version's author when it isn't the root's (M3-8). */
+  evolvedBy: PlayerRef | null;
+  /** Its number in `versions`; 1 for the root (cards show "v2" from 2). */
+  version: number;
+  /** The archetype's history, when it has more than one version; else []. */
+  versions: UnitVersion[];
+}
+
+/** Who a live unit's idea was, whether it is new and how long its archetype
+ * has been live (M2-9, M3-8, server/src/mvp/credits.ts): every live unit. */
+export interface UnitCredit extends VersionCredit {
+  unitId: UnitId;
   /** NEW: it entered the pool in the last NEW_DAYS days (seed units never are). */
   isNew: boolean;
+  /** Days its archetype has been live, over every version's stints (M3-8). */
+  liveDays: number;
 }
 
 /** GET /credits: the live units' credits, and the caller's creator number. */
@@ -666,16 +693,18 @@ export interface CreditsView {
   day: number;
   units: UnitCredit[];
   /** Null without a player. `days`: the days the player's units have been
-   * live, summed over every stint; `units`: how many units are theirs. */
+   * live, summed over every stint (M3-8: an archetype's first author counts
+   * every version's days, an evolver their own versions'); `units`: how many
+   * units are theirs. */
   you: { days: number; units: number } | null;
 }
 
 /** A unit that has left the pool (GET /library, M2-9). */
-export interface LibraryUnit {
+export interface LibraryUnit extends VersionCredit {
   unit: UnitContent;
-  by: PlayerRef | null;
-  /** Days it was live, summed over its stints; null when no stint was ever
-   * recorded (the units cut before units became data, M2-1). */
+  /** Days its archetype was live, summed over every version's stints (M3-8);
+   * null when no stint was ever recorded (the units cut before units became
+   * data, M2-1). */
   liveDays: number | null;
   /** Its fusions, as either part. */
   fusions: FusionDiscovery[];
