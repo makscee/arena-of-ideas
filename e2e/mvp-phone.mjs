@@ -116,7 +116,7 @@ try {
       await sheet.getByTestId("see-awoken").click();
       await sheet.locator(".sheet-form.other").waitFor();
       const after = await sheet.getByTestId("sheet-form").textContent();
-      if (!/^Awoken/i.test(after) || after.includes(before)) errors.push(`${name}: See Awoken shows "${after}"`);
+      if (!after.startsWith(L("card.awokenAfter").split(" ")[0]) || after.includes(before)) errors.push(`${name}: See Awoken shows "${after}"`);
       if (!(await sheet.locator(".sheet-form.other u.changed").count())) errors.push(`${name}: See Awoken underlines nothing`);
       await shot(`${name.replace(/ /g, "-")}-awoken`); await noHScroll(name);
       await sheet.getByTestId("see-sleeping").click();
@@ -274,7 +274,7 @@ try {
     const damage = (await page.locator('[data-term="effect:damage"] .kw-tip').textContent()) ?? "";
     if (/Shield/.test(damage) || !damage) errors.push(`codex: Damage reads "${damage}"`);
     const groups = await page.locator(".kw-group").allTextContents();
-    for (const g of ["When", "Who", "Does"]) if (!groups.includes(g)) errors.push(`codex: no "${g}" group (${groups.join(", ")})`);
+    for (const g of [L("codex.group.trigger"), L("codex.group.target"), L("codex.group.effect")]) if (!groups.includes(g)) errors.push(`codex: no "${g}" group (${groups.join(", ")})`);
     for (const t of ["effect:absorbHurt", "effect:preventDeathHeal", "effect:cancel", "effect:consumeStacks", "term:would"])
       if (await page.locator(`.kw-row[data-term="${t}"]`).count()) errors.push(`codex: the unused row ${t} shows`);
   }
@@ -385,7 +385,7 @@ try {
       await page.getByTestId("menu-title").click();
       await page.getByTestId("play").waitFor();
       const cont = await page.getByTestId("play").textContent();
-      if (!cont.includes(`Continue run · ${at.split("/")[0]}`)) errors.push(`title menu: "${cont}" doesn't continue ${at}`);
+      if (!cont.includes(L("home.continue", { where: at.split("/")[0] }).trim())) errors.push(`title menu: "${cont}" doesn't continue ${at}`);
       if ((await page.getByTestId("new-run").count()) === 0) errors.push("title menu: no New run while a run waits");
       await shot("home-continue"); await noHScroll("home-continue"); await onScreen("home: Continue", page.getByTestId("play"));
       await page.getByTestId("play").click();
@@ -623,7 +623,7 @@ try {
       await page.getByTestId("battle-play").click();
       if (!(await page.getByTestId("end-card").isVisible())) errors.push("end card: ▶ on the last beat didn't show it");
       const word = await page.getByTestId("battle-word").textContent();
-      if (!/^(VICTORY|DEFEAT|DRAW)$/.test(word)) errors.push(`end card: word "${word}"`);
+      if (![L("battle.end.victory"), L("battle.end.defeat"), L("battle.end.draw")].includes(word)) errors.push(`end card: word "${word}"`);
       if ((await page.getByTestId("damage-row").count()) < 2) errors.push("end card: no damage by unit");
       const moments = await page.getByTestId("key-moment").count();
       if (moments < 1 || moments > 3) errors.push(`end card: ${moments} key moments`);
@@ -635,6 +635,7 @@ try {
       await shot("battle-end-card"); await noHScroll("battle-end-card");
       if (await page.getByTestId("end-why").count()) {
         // Why I lost, or Why I won (R2-17).
+        const label = await page.getByTestId("end-why").textContent();
         const why = await page.getByTestId("end-why").getAttribute("data-why");
         await page.getByTestId("end-why").click();
         const panel = page.getByTestId(`why-${why}`);
@@ -700,14 +701,14 @@ try {
       const menu = (await page.getByTestId("run-menu").locator(".label").first().textContent()) ?? "";
       await page.getByTestId("menu-resume").click();
       await page.getByTestId("run-menu").waitFor({ state: "detached" });
-      const n = /round (\d+) of/.exec(menu)?.[1];
+      const n = new RegExp(pattern(L("menu.runRound")).replace(".+?", "(\\d+)")).exec(menu)?.[1];
       if (n !== undefined) {
         menuRounds++;
-        if (Number(n) !== round || /^R(\d+)\//.exec(shown)?.[1] !== n) errors.push(`end card ☰: "${menu}" after round ${round} ("${shown}")`);
-      } else if (!/^Run · (over|the Crown)$/.test(menu)) errors.push(`end card ☰: "${menu}" after round ${round}`);
+        if (Number(n) !== round || new RegExp(`^${pattern(L("run.roundLabel")).replace(".+?", "(\\d+)")}`).exec(shown)?.[1] !== n) errors.push(`end card ☰: "${menu}" after round ${round} ("${shown}")`);
+      } else if (![L("menu.runOver"), L("menu.runCrown")].includes(menu)) errors.push(`end card ☰: "${menu}" after round ${round}`);
     }
     const done = ((await page.getByTestId("battle-done").textContent()) ?? "").trim();
-    if (!/^(Next round|To the Crown|See the run)$/i.test(done)) errors.push(`end card: last button "${done}"`);
+    if (![L("fight.nextRound"), L("fight.toCrown"), L("fight.seeRun")].includes(done)) errors.push(`end card: last button "${done}"`);
     await page.getByTestId("battle-done").click();
     await page.waitForFunction(() => document.querySelector('[data-testid="fight"]') || document.querySelector('[data-testid="run-over"]'));
     if (await page.getByTestId("run-over").isVisible().catch(() => false)) break;
@@ -901,7 +902,7 @@ try {
     const isNew = tapped && fusedIn(tapped).name === "";
     if (previews.length !== 2 || !tapped) errors.push(`fusion preview: expected both orders previewed, got ${previews.length}`);
     const sheetText = await page.getByTestId("overlay").textContent();
-    if (isNew && !/\?\?\? New fusion/.test(sheetText)) errors.push("fusion preview: a new pair doesn't say '??? New fusion'");
+    if (isNew && !(sheetText.includes("???") && (sheetText.includes(L("fuse.new")) || sheetText.includes(L("fusion.newNamedWhenFused"))))) errors.push("fusion preview: a new pair doesn't say '??? New fusion'");
     if (tapped && !isNew && !sheetText.includes(fusedIn(tapped).name)) errors.push("fusion preview: a known pair doesn't show its name");
     await shot("fusion-preview"); await noHScroll("fusion-preview");
     const recipe = await page.getByTestId("fusion-recipe").textContent();
@@ -937,7 +938,7 @@ try {
     await page.getByTestId("info").click();
     await page.getByTestId("unit-sheet").waitFor();
     // The pair may be someone else's discovery already (live, or a reused DB).
-    if (!/discovered by (you|@\S+)/.test(await page.getByTestId("unit-sheet").textContent())) errors.push("fused sheet: no discovery credit");
+    if (!new RegExp(`${pattern(L("fusion.discoveredByYou"))}|${pattern(L("fusion.discoveredBy"))}\\S`).test(await page.getByTestId("unit-sheet").textContent())) errors.push("fused sheet: no discovery credit");
     if (!(await page.getByTestId("sheet-close").isVisible())) errors.push("unit sheet from Info: no Close button");
     await shot("fused-sheet"); await noHScroll("fused-sheet");
     await sheetChecks("fused sheet");
@@ -1042,7 +1043,7 @@ try {
       await tap44("make room buttons", page.locator('[data-testid="gift-make-room"], [data-testid="gift-skip"]'));
       await page.getByTestId("gift-make-room").click();
       await page.getByTestId("gift-banner").waitFor();
-      if ((await page.getByTestId("gift-banner").textContent()) !== L("gift.waitingFull")) errors.push(`make room: the banner says "${await page.getByTestId("gift-banner").textContent()}"`);
+      if (!(await page.getByTestId("gift-banner").textContent()).startsWith(L("gift.waitingFull"))) errors.push(`make room: the banner says "${await page.getByTestId("gift-banner").textContent()}"`);
       await shot("gift-make-room-aside"); await noHScroll("gift-make-room-aside"); await noVScroll("gift-make-room-aside");
       // Selling stays possible behind it: sell the front unit, and the chooser comes back.
       await page.getByTestId("line-0").click();
@@ -1134,7 +1135,7 @@ try {
     await page.reload();
     await page.getByTestId("play").waitFor();
     const homeText = await page.locator("#app").textContent();
-    if (!/This is your team\. Others try to beat it today, and so can you/.test(homeText) || /Beat this team in the Crown/.test(homeText)) errors.push("champion's home: no 'your team' hint");
+    if (!homeText.includes(L("home.hintOwnPhone")) || homeText.includes(L("home.hintRatedPhone"))) errors.push("champion's home: no 'your team' hint");
     await shot("home-champion"); await noHScroll("home-champion");
     await page.getByTestId("play").click();
     await page.getByTestId("fight").waitFor();
