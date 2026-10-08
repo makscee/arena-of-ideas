@@ -47,6 +47,9 @@ export interface MvpDeps {
    * `dev` for the dev button (the quick one). Default: M2-7's tuner as a
    * child process (./votes.ts childTuner). */
   tuner?: { night: Tuner; dev: Tuner };
+  /** M2-10's rotation at the day end (main.ts: MVP_ROTATION=1); off, the day
+   * end never changes the pool. */
+  rotation?: boolean;
 }
 
 export interface MvpRuntime extends RunDeps {
@@ -54,6 +57,7 @@ export interface MvpRuntime extends RunDeps {
   invites: boolean;
   open: boolean;
   tuner: { night: Tuner; dev: Tuner };
+  rotation: boolean;
 }
 
 /** A background job: starts on the runtime, returns its stop function. */
@@ -81,6 +85,7 @@ export function mvpRuntime(deps: MvpDeps): MvpRuntime {
     invites: deps.invites ?? false,
     open: (deps.invites ?? false) && (deps.open ?? false),
     tuner: deps.tuner ?? { night: childTuner("full"), dev: childTuner("quick") },
+    rotation: deps.rotation ?? false,
   };
   return rt;
 }
