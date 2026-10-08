@@ -155,7 +155,7 @@ try {
   await page.getByTestId("play").waitFor();
   await shot("home"); await noHScroll("home"); await noRates("home"); await onScreen("home: Play", page.getByTestId("play"));
   // M2-3: a quiet ideas line; a new player earns the first in 3 runs.
-  if ((await page.getByTestId("ideas").textContent()) !== "💡 next idea in 3 runs") errors.push(`home: ideas line "${await page.getByTestId("ideas").textContent()}"`);
+  if ((await page.getByTestId("ideas").textContent()) !== "💡 3 more runs for an idea") errors.push(`home: ideas line "${await page.getByTestId("ideas").textContent()}"`);
   await tap44("dev summary", page.locator("details.dev summary"));
   await page.getByTestId("rules-open").click();
   await page.getByTestId("rules").waitFor();
@@ -716,7 +716,7 @@ try {
   await page.getByTestId("home").click();
   await page.getByTestId("play").waitFor();
   await shot("home-after");
-  if (!/^💡 (next idea in [12] runs?|[1-3] ideas?)$/.test((await page.getByTestId("ideas").textContent()) ?? "")) errors.push(`home after a run: ideas line "${await page.getByTestId("ideas").textContent()}"`);
+  if (!/^💡 ([12] more runs? for an idea|[1-3] ideas?)$/.test((await page.getByTestId("ideas").textContent()) ?? "")) errors.push(`home after a run: ideas line "${await page.getByTestId("ideas").textContent()}"`);
 
   // Stats (slice 11, R2-11): records and the champion history; units and
   // fusions moved to the Codex.

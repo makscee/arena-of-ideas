@@ -2,7 +2,9 @@
 // player gets "+1 idea", writes one, waits for the fake reader, sees Home's
 // "💡 Your idea is ready", turns the archetypes down once ("None of these"),
 // picks an archetype, then a reading (opening "See Awoken"), and My ideas
-// shows it as being tested. M2-11 (makscee/void-board#796): the dev "Run the
+// shows it as being tested. M3-2 (makscee/void-board#802): each reading's rule
+// is text under its card, on screen untapped, and with the idea spent "New
+// idea" is off (unfilled, unpressable) with "N more runs for an idea" beside it. M2-11 (makscee/void-board#796): the dev "Run the
 // overnight check now" puts it in the vote, and a second player votes for it
 // on Home's either/or card; "+5 fake votes" and the dev "End day now" with
 // rotation on (M2-10) let it into the pool, and the Codex shows its card with
@@ -121,7 +123,18 @@ async function walk(viewport, name, full) {
   await page.getByTestId("pick-readings").waitFor();
   const cards = page.getByTestId("pick-reading");
   if ((await cards.count()) !== 3) errors.push(`readings: ${await cards.count()} cards`);
-  if (full) await shot("pick-reading");
+  // M3-2: each card's sleeping rule as text under it, readable without a tap, inside the screen.
+  const rules = page.getByTestId("pick-rule");
+  if ((await rules.count()) !== 3) errors.push(`readings: ${await rules.count()} rule lines`);
+  for (let i = 0; i < (await rules.count()); i++) {
+    const rule = rules.nth(i);
+    if (((await rule.textContent()) ?? "").trim().length < 10) errors.push(`reading ${i}: rule "${await rule.textContent()}"`);
+    await onScreen(`${name} reading ${i}'s rule`, rule);
+    const over = await rule.evaluate((el) => el.scrollWidth > el.clientWidth + 0.5);
+    if (over) errors.push(`${name} reading ${i}'s rule overflows its column`);
+  }
+  await shot(full ? "pick-reading" : `${name}-pick-reading`);
+  await noScroll(`${name} pick-reading (untapped)`);
   // Tap low on the card (its top opens nothing here, but stay clear of the icon line).
   await cards.nth(0).click({ position: { x: 30, y: 60 } });
   await page.getByTestId("unit-sheet").waitFor();
@@ -140,6 +153,13 @@ async function walk(viewport, name, full) {
   if (!/test it overnight/.test(await page.getByTestId("idea-sent").textContent())) errors.push(`after the pick: "${await page.getByTestId("idea-sent").textContent()}"`);
   if (!/being tested/.test(await page.getByTestId("idea-stage").textContent())) errors.push(`my ideas after the pick: "${await page.getByTestId("idea-stage").textContent()}"`);
   await shot("ideas-being-tested");
+  // M3-2: the idea is spent: New idea is off, muted, with the reason beside it.
+  const newIdea = page.getByTestId("idea-new");
+  if (!(await newIdea.isDisabled())) errors.push("my ideas with none held: New idea isn't disabled");
+  const look = await newIdea.evaluate((el) => { const c = getComputedStyle(el); return { bg: c.backgroundColor, op: c.opacity, pe: c.pointerEvents }; });
+  if (!/rgba\(0, 0, 0, 0\)|transparent/.test(look.bg) || look.pe !== "none") errors.push(`my ideas: New idea still looks live (${JSON.stringify(look)})`);
+  const why = (await page.getByTestId("idea-new-why").textContent()) ?? "";
+  if (!/^\d+ more runs? for an idea$/.test(why)) errors.push(`my ideas: New idea's reason "${why}"`);
   // M2-11: the dev "Run the overnight check now" (the server's instant
   // tuner), and My ideas shows the idea in the vote.
   await page.getByTestId("ideas-back").click();
@@ -213,6 +233,7 @@ async function vote(viewport) {
 
 try {
   await walk({ width: 360, height: 640 }, "Pick", true);
+  await walk({ width: 360, height: 740 }, "Tall", false); // M3-2: the three rules side by side on a common phone
   await walk({ width: 1280, height: 800 }, "Desk", false);
 } catch (e) {
   errors.push(`threw: ${e.message}`);

@@ -16,7 +16,7 @@ import { battleScreen, type RunOutro } from "./screens/battle";
 import { codexScreen, newCodexCache, type CodexState } from "./screens/codex";
 import { setCodexLink } from "./ui/term";
 import { statsScreen } from "./screens/stats";
-import { ideasScreen } from "./screens/ideas";
+import { ideasScreen, ideaWhy } from "./screens/ideas";
 import { votePanel } from "./screens/vote";
 import { card, roman, setCardCredits, unitSheet, type CardUnit } from "./ui/card";
 import { previewName } from "./ui/fusion";
@@ -371,7 +371,8 @@ function candidatesSheet(list: CandidateScore[]): HTMLElement {
 }
 
 /** Home's quiet ideas line (M2-3): the ideas held, or the runs until the
- * next. Tapping it opens My ideas (M2-4, screens/ideas.ts). */
+ * next, in My ideas' words ("💡 1 more run for an idea", M3-2). Tapping it
+ * opens My ideas (M2-4, screens/ideas.ts). */
 function ideasLine(ideas: IdeasView): HTMLElement {
   const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
   // M2-6: an idea waiting for its pick comes first: "💡 Your idea is ready".
@@ -381,7 +382,7 @@ function ideasLine(ideas: IdeasView): HTMLElement {
       : `💡 ${ideas.ready} ideas are ready`
     : ideas.held > 0 || ideas.nextIn === null
       ? `💡 ${plural(ideas.held, "idea")}`
-      : `💡 next idea in ${plural(ideas.nextIn, "run")}`;
+      : `💡 ${ideaWhy(ideas.nextIn)}`;
   const b = button(text, () => void ideasScreen({ onBack: () => void homeScreen(), onUnknown: () => (api.forget(), nameScreen()) }), "small link ideas", "ideas");
   if (ideas.ready) b.dataset.ready = String(ideas.ready);
   return b;
