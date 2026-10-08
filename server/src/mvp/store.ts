@@ -25,10 +25,10 @@ export interface MvpStore {
   run(id: string): MvpRunState | undefined;
   activeRun(playerId: string): MvpRunState | undefined;
   addGhost(g: Ghost): void;
-  /** Saved teams at this round built with `contentVersion`, never one of
+  /** Saved teams at this round, made on any pool (M2-2), never one of
    * `excludePlayerId`'s own, oldest first; with `limit`, only the newest
    * `limit` of them. */
-  ghosts(round: number, opts: { excludePlayerId: string; contentVersion: string; limit?: number }): Ghost[];
+  ghosts(round: number, opts: { excludePlayerId: string; limit?: number }): Ghost[];
   putBattle(b: BattleRecord): void;
   battle(id: string): BattleRecord | undefined;
   /** Stored battles, oldest first: of one kind, and/or fought at or after
@@ -105,6 +105,9 @@ export interface MvpStore {
   /** Writes the first pool in one step: the units, the snapshot and the
    * stints, only while there is no pool yet. False: there was one, nothing written. */
   seedPool(units: StoredUnit[], pool: PoolSnapshot, stints: PoolStint[]): boolean;
+  /** Runs `fn` as one write: on SQLite one IMMEDIATE transaction, so a crash
+   * or a throw midway leaves nothing of it (M2-2's sync-seed and swap). */
+  atomically<T>(fn: () => T): T;
   /** Adds `delta` to day `daySeq`'s tallies (only ./stats.ts writes them). */
   addDayTallies(daySeq: number, delta: DayTallies): void;
   /** Day `daySeq`'s running totals; zero runs and no units before any. */
@@ -121,11 +124,26 @@ export interface MvpStore {
   ideas(opts?: { playerId?: string; state?: IdeaState }): Idea[];
   /** Removes an idea (a `written` one its author took back). */
   deleteIdea(ideaId: string): void;
+  // Mission 2's new-words log (M2-5): what ideas needed that the game can't
+  // say yet. Only additions; ./idea-reading.ts writes it.
+  addWordRequest(w: WordRequest): void;
+  /** Every request, oldest first. */
+  wordRequests(): WordRequest[];
   // Mission 2's votes (M2-8); only ./votes.ts writes them.
   /** Adds a vote; false (nothing written) when the player already voted on this pair. */
   addVote(v: Vote): boolean;
   /** Votes oldest first: on one candidate, and/or by one player. */
   votes(opts?: { candidateId?: UnitId; playerId?: string }): Vote[];
+}
+
+/** An idea the reader couldn't fully make (M2-5): the game word it lacks
+ * ("steal gold"), as the model named it, and the part of the idea's text
+ * that needed it. */
+export interface WordRequest {
+  ideaId: string;
+  word: string;
+  part: string;
+  createdAt: string;
 }
 
 /** One player's either/or between a candidate and a live unit (M2-8):
@@ -162,6 +180,10 @@ export interface PoolSnapshot {
   daySeq: number;
   unitIds: UnitId[];
   createdAt: string;
+  /** The units' rows as they were in this pool (M2-2), so a run pinned to it
+   * buys what it bought before a later change to a unit's row. Missing on the
+   * seed snapshot: its rows are the stored units'. */
+  rows?: Row[];
 }
 
 /** One stay of a unit in the live pool, from day `enteredSeq` to `leftSeq`
@@ -259,8 +281,8 @@ export class MemoryMvpStore implements MvpStore {
     list.push(g);
     this.ghostsByRound.set(g.round, list);
   }
-  ghosts(round: number, opts: { excludePlayerId: string; contentVersion: string; limit?: number }): Ghost[] {
-    const all = (this.ghostsByRound.get(round) ?? []).filter((g) => g.player.id !== opts.excludePlayerId && g.contentVersion === opts.contentVersion);
+  ghosts(round: number, opts: { excludePlayerId: string; limit?: number }): Ghost[] {
+    const all = (this.ghostsByRound.get(round) ?? []).filter((g) => g.player.id !== opts.excludePlayerId);
     return opts.limit === undefined ? all : all.slice(Math.max(0, all.length - opts.limit));
   }
   putBattle(b: BattleRecord): void { this.battlesById.set(b.battleId, b); }
@@ -369,6 +391,7 @@ export class MemoryMvpStore implements MvpStore {
     for (const s of stints) this.putStint(s);
     return true;
   }
+  atomically<T>(fn: () => T): T { return fn(); }
   addDayTallies(daySeq: number, delta: DayTallies): void {
     const t = this.dayTalliesBySeq.get(daySeq) ?? { runs: 0, units: new Map<UnitId, UnitDayTally>() };
     t.runs += delta.runs;
@@ -403,6 +426,9 @@ export class MemoryMvpStore implements MvpStore {
   votes(opts: { candidateId?: UnitId; playerId?: string } = {}): Vote[] {
     return this.votesList.filter((v) => (opts.candidateId === undefined || v.candidateId === opts.candidateId) && (opts.playerId === undefined || v.playerId === opts.playerId)).map((v) => ({ ...v }));
   }
+  private words: WordRequest[] = [];
+  addWordRequest(w: WordRequest): void { this.words.push({ ...w }); }
+  wordRequests(): WordRequest[] { return this.words.map((w) => ({ ...w })); }
 }
 
 export const NO_IDEAS: IdeaCounts = { spent: 0, granted: 0, forfeited: 0 };

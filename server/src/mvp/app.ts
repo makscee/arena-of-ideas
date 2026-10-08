@@ -8,12 +8,15 @@ import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, TOKEN_HEADER, type Decision, type HomeView, type PlayerRef, type VoteRequest } from "../../../src/mvp/contract.js";
 import { checkDecision, MvpBadDecision, MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
+import { creditsView, creditUnit, libraryView } from "./credits.js";
 import { dayView, endDay, hiddenSlay } from "./day.js";
 import { MvpNotYet } from "./errors.js";
+import { declineOptions, myIdea, pickArchetype, pickReading } from "./idea-reading.js";
 import { cancelIdea, grantIdea, IdeaRefused, ideasOf, myIdeas, writeIdea } from "./ideas.js";
 import { isAdmin, isJoinCode, JoinRefused, joinOpen, NAME_RE, openJoin, redeemInvite, sessionPlayer } from "./invites.js";
 import { abandon, currentRun, decide, preview, startRun } from "./runs.js";
 import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
+import { servedContent } from "./pool.js";
 import { statsView } from "./stats.js";
 import { candidateScores, castVote, fakeVotes, nextCard, overnightCheck, seedCandidate, waitingForCheck } from "./votes.js";
 
@@ -23,7 +26,7 @@ export const JOINS_PER_HOUR = 30;
 /** The API on a runtime, or on a fresh one built from `deps`. */
 export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   const rt = isMvpRuntime(deps) ? deps : mvpRuntime(deps);
-  const { content, store } = rt;
+  const { store } = rt;
   const api = new Hono();
 
   const bad = (c: Context, status: 400 | 401 | 403 | 404 | 409 | 413 | 429 | 501, error: string) => c.json({ error }, status);
@@ -66,8 +69,8 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
       await next();
     });
 
-  api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: content.version, invites: rt.invites, open: rt.open }));
-  api.get("/content", (c) => c.json(content));
+  api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: rt.content.version, invites: rt.invites, open: rt.open }));
+  api.get("/content", (c) => c.json(servedContent(rt)));
 
   api.post("/players", async (c) => {
     if (rt.invites) return bad(c, 403, "invite only: open your invite link");
@@ -245,6 +248,27 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     return ideaCall(c, (p) => writeIdea(rt, p.id, text));
   });
   api.post("/ideas/:ideaId/cancel", (c) => ideaCall(c, (p) => cancelIdea(rt, p.id, c.req.param("ideaId"))));
+  // M2-5: one idea with its options, and its author's picks (M2-6's screens).
+  api.get("/ideas/:ideaId", (c) => {
+    const p = playerOf(c);
+    if (!p) return unknownPlayer(c);
+    try {
+      return c.json(myIdea(rt, p.id, c.req.param("ideaId")));
+    } catch (err) {
+      if (err instanceof IdeaRefused) return bad(c, err.status, err.message);
+      throw err;
+    }
+  });
+  const pick = (fn: typeof pickArchetype) => async (c: Context) => {
+    const body = (await c.req.json().catch(() => null)) as { index?: unknown } | null;
+    if (typeof body?.index !== "number") return bad(c, 400, "body must be { index }");
+    const index = body.index;
+    return ideaCall(c, (p) => fn(rt, p.id, c.req.param("ideaId")!, index));
+  };
+  api.post("/ideas/:ideaId/archetype", pick(pickArchetype));
+  api.post("/ideas/:ideaId/reading", pick(pickReading));
+  // M2-6: "None of these" at either pick.
+  api.post("/ideas/:ideaId/none", (c) => ideaCall(c, (p) => declineOptions(rt, p.id, c.req.param("ideaId"))));
 
   // M2-8's either/or cards: a candidate against a typical live unit.
   api.get("/votes/next", (c) => {
@@ -271,6 +295,10 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
 
   api.get("/day", (c) => c.json(dayView(rt)));
   api.get("/stats", (c) => notYet(c, () => statsView(rt)));
+  // M2-9: who each live unit's idea was, NEW, the caller's creator number;
+  // and the units that have left.
+  api.get("/credits", (c) => c.json(creditsView(rt, playerOf(c)?.id)));
+  api.get("/library", (c) => c.json(libraryView(rt)));
 
   // Dev-only tools (MvpDeps.dev, MVP_DEV=1 in main.ts): 404 without it, and
   // on an invite-only server for anyone but an admin invite's player.
@@ -282,6 +310,15 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   api.post("/dev/grant-idea", (c) => {
     const p = playerOf(c);
     return p ? c.json(grantIdea(rt, p.id)) : unknownPlayer(c);
+  });
+  api.post("/dev/credit-unit", async (c) => {
+    const p = playerOf(c);
+    if (!p) return unknownPlayer(c);
+    const body = (await c.req.json().catch(() => null)) as { unitId?: unknown } | null;
+    // No unitId: a tier I unit, so the shop offers it soon.
+    const unitId = typeof body?.unitId === "string" ? body.unitId : rt.content.units.find((u) => u.tier === 1)?.id;
+    if (!unitId || !creditUnit(rt, unitId, p.id)) return bad(c, 404, "no such live unit");
+    return c.json(creditsView(rt, p.id));
   });
 
   // M2-8: the overnight check now (the quick meta check), a dev candidate,

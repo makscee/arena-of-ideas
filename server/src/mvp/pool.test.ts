@@ -76,7 +76,11 @@ describe("units as data (M2-1)", { timeout: 60_000 }, () => {
     const old = new SqliteMvpStore(path, oldSql);
     const mainStore = new Proxy(old, {
       get(t, k, r) {
-        if (typeof k === "string" && ADDED.includes(k)) return k === "addDayTallies" ? () => {} : () => { throw new Error(`main had no ${k}`); };
+        // Main's world has no pool and no units: the runtime plays the content it is given.
+        if (typeof k === "string" && ADDED.includes(k)) {
+          if (k === "units") return () => [];
+          return k === "addDayTallies" || k === "currentPool" ? () => undefined : () => { throw new Error(`main had no ${k}`); };
+        }
         const v = Reflect.get(t, k, r);
         return typeof v === "function" ? v.bind(t) : v;
       },
@@ -101,7 +105,7 @@ describe("units as data (M2-1)", { timeout: 60_000 }, () => {
 
     // The new code on the same file: migrate, seed, build the content.
     const store = new SqliteMvpStore(path);
-    expect((store.db.prepare("SELECT name FROM mvp_migrations ORDER BY name").all() as { name: string }[]).map((r) => r.name)).toEqual([...MAIN_9EF07AC, "m2-01-units.sql", "m2-03-ideas.sql", "m2-04-ideas.sql", "m2-08-votes.sql"]);
+    expect((store.db.prepare("SELECT name FROM mvp_migrations ORDER BY name").all() as { name: string }[]).map((r) => r.name)).toEqual([...MAIN_9EF07AC, "m2-01-units.sql", "m2-02-pins.sql", "m2-02b-day-backfill.sql", "m2-03-ideas.sql", "m2-04-ideas.sql", "m2-05-words.sql", "m2-08-votes.sql"]);
     expect(dump(store, Object.keys(before))).toEqual(before);
     expect(seedUnits(store, new Date())).toBe(true);
     const content = poolContent(store);

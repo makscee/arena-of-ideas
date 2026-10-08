@@ -44,7 +44,7 @@ execFileSync("npm", ["run", "-s", "mvp:build"], { stdio: "inherit" });
 const port = await new Promise((r) => { const s = createServer().listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => r(p)); }); });
 const child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...env, PORT: String(port) }, stdio: ["ignore", "inherit", "inherit"] });
 const url = `http://127.0.0.1:${port}/arena/`;
-for (let i = 0; i < 50; i++) {
+for (let i = 0; i < 300; i++) { // up to 60 s: m1 and m4 are shared, and under load the server starts slowly
   try { if ((await fetch(url + "api/v1/health")).ok) break; } catch {}
   await new Promise((r) => setTimeout(r, 200));
 }

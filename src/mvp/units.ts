@@ -18,7 +18,7 @@
 import { stressRegistry } from "../content/stress.js";
 import { summonId } from "../describe.js";
 import type { AbilityDef, AbilityRegistry, Effect, EventPattern, Family, Selector, StatusRegistry, UnitDef, When } from "../types.js";
-import type { SummonContent, Tier, UnitContent, UnitForm } from "./contract.js";
+import type { LineUnit, SummonContent, Tier, UnitContent, UnitForm } from "./contract.js";
 
 // ---------- When ----------
 
@@ -373,7 +373,8 @@ export function archetypeProblems(units: Pick<UnitContent, "name" | "archetype">
   return out;
 }
 
-function slug(name: string): string {
+/** A unit's id from its name ("Plague Rat" → "plague-rat"). */
+export function slug(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
@@ -531,6 +532,34 @@ export function linkEdges(form: UnitForm): [string, string][] {
   return effectKinds(allDoes(form)).flatMap((k) => (EMITS[k] ? [[from, EMITS[k]!] as [string, string]] : []));
 }
 
+/** The loops in the units' listen → emit graph (R4), each as
+ * "Curse →Robber (sleeping)→ Power →Equalizer (sleeping)→ Curse"; empty when
+ * every cascade ends on its own. */
+export function linkLoops(units: Pick<UnitContent, "name" | "forms">[]): string[] {
+  const edges = new Map<string, Map<string, string>>();
+  for (const u of units) {
+    for (const form of ["sleeping", "awoken"] as const) {
+      for (const [from, to] of linkEdges(u.forms[form])) {
+        const out = edges.get(from) ?? new Map<string, string>();
+        if (!out.has(to)) out.set(to, `${u.name} (${form})`);
+        edges.set(from, out);
+      }
+    }
+  }
+  const loops = new Set<string>();
+  const walk = (node: string, path: { node: string; via: string }[]) => {
+    const at = path.findIndex((p) => p.node === node);
+    if (at >= 0) {
+      const loop = path.slice(at);
+      loops.add([...loop.map((p) => `${p.node} →${p.via}→ `), node].join(""));
+      return;
+    }
+    for (const [to, via] of edges.get(node) ?? []) walk(to, [...path, { node, via }]);
+  };
+  for (const n of edges.keys()) walk(n, []);
+  return [...loops];
+}
+
 export interface MvpPool {
   units: UnitContent[];
   abilities: AbilityRegistry;
@@ -539,14 +568,49 @@ export interface MvpPool {
 }
 
 /** The pool: every unit plus exactly the Abilities and statuses they use. */
+/** The abilities these names build, plus what the summoned bodies they make
+ * act with, sorted by name. An ability is built from its name alone, so the
+ * registry is one union that only grows: a line stored on any pool resolves
+ * as long as the grammar knows its names (M2-2). Throws on a name it doesn't. */
+export function registryOf(names: Iterable<string>): AbilityRegistry {
+  const all = new Set(names);
+  for (const n of [...all]) for (const part of n.split(" + ")) for (const a of SUMMONS[part]?.abilities ?? []) all.add(a);
+  const abilities: AbilityRegistry = {};
+  for (const n of [...all].sort()) abilities[n] = abilityOf(n);
+  return abilities;
+}
+
+/** Every ability name these lines fight with. */
+export function lineAbilityNames(lines: LineUnit[][]): string[] {
+  const names = new Set<string>(["Strike"]);
+  for (const line of lines) for (const u of line) for (const d of allDoes(u.recipe)) names.add(d);
+  return [...names];
+}
+
+/** `abilities` plus whatever these lines name that it lacks (M2-2: a ghost or
+ * champion made on another pool fights with the current one). Throws when a
+ * line names something the grammar doesn't know. */
+export function withLineAbilities(abilities: AbilityRegistry, lines: LineUnit[][]): AbilityRegistry {
+  const missing = lineAbilityNames(lines).filter((n) => !(n in abilities));
+  return missing.length === 0 ? abilities : { ...abilities, ...registryOf(missing) };
+}
+
+/** Whether every ability this line names resolves; a stored line that doesn't
+ * (it should never happen) is skipped, never fought. */
+export function lineResolves(line: LineUnit[], abilities: AbilityRegistry): boolean {
+  try {
+    withLineAbilities(abilities, [line]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function mvpPool(rows: Row[] = ROWS): MvpPool {
   const units = rows.map(unitOf);
   const names = new Set<string>(["Strike"]);
   for (const u of units) for (const f of [u.forms.sleeping, u.forms.awoken]) for (const d of allDoes(f)) names.add(d);
-  // …and what the summoned bodies act with.
-  for (const n of [...names]) for (const part of n.split(" + ")) for (const a of SUMMONS[part]?.abilities ?? []) names.add(a);
-  const abilities: AbilityRegistry = {};
-  for (const n of [...names].sort()) abilities[n] = abilityOf(n);
+  const abilities = registryOf(names);
   // Every body a summon effect in the pool makes, once each. Names are unique
   // among summons, so a Summon event's name finds exactly one body.
   const bodies = new Map<string, UnitDef>();

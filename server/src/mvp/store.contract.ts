@@ -52,16 +52,17 @@ export function describeMvpStore(name: string, make: () => MvpStore): void {
       expect(store.activeRun("p1")).toBeUndefined();
     });
 
-    it("serves ghosts at the round, never the player's own, only of the current content", () => {
+    it("serves ghosts at the round, never the player's own, made on any pool", () => {
       const store = make();
       const ghost = (ghostId: string, player: PlayerRef, round: number, contentVersion: string): Ghost => ({ ghostId, runId: `run-${ghostId}`, player, round, line: [], contentVersion, createdAt: "t", rating: 1000 });
       store.addGhost(ghost("mine", maks, 1, "v2"));
       store.addGhost(ghost("old", bot, 1, "v1"));
       store.addGhost(ghost("theirs", bot, 1, "v2"));
       store.addGhost(ghost("later", bot, 2, "v2"));
-      expect(store.ghosts(1, { excludePlayerId: "p1", contentVersion: "v2" }).map((g) => g.ghostId)).toEqual(["theirs"]);
-      expect(store.ghosts(1, { excludePlayerId: "bot", contentVersion: "v2" }).map((g) => g.ghostId)).toEqual(["mine"]);
-      expect(store.ghosts(3, { excludePlayerId: "p1", contentVersion: "v2" })).toEqual([]);
+      expect(store.ghosts(1, { excludePlayerId: "p1" }).map((g) => g.ghostId)).toEqual(["old", "theirs"]);
+      expect(store.ghosts(1, { excludePlayerId: "p1", limit: 1 }).map((g) => g.ghostId)).toEqual(["theirs"]);
+      expect(store.ghosts(1, { excludePlayerId: "bot" }).map((g) => g.ghostId)).toEqual(["mine"]);
+      expect(store.ghosts(3, { excludePlayerId: "p1" })).toEqual([]);
     });
 
     it("keeps battles and lists them oldest first, by kind and time", () => {
@@ -266,6 +267,16 @@ export function describeMvpStore(name: string, make: () => MvpStore): void {
       expect(s.votes({ candidateId: "c1" }).map((v) => [v.otherId, v.pick])).toEqual([["u1", "c1"], ["u2", null]]);
       expect(s.votes({ playerId: "p2" })).toEqual([{ playerId: "p2", candidateId: "c2", otherId: "u1", pick: "u1", createdAt: at }]);
       expect(s.votes()).toHaveLength(3);
+    });
+
+    it("logs new-word requests (M2-5), oldest first", () => {
+      const s = make();
+      expect(s.wordRequests()).toEqual([]);
+      const w = (ideaId: string, word: string) => ({ ideaId, word, part: `the ${word} part`, createdAt: "2026-10-08T08:00:00.000Z" });
+      s.addWordRequest(w("i1", "steal gold"));
+      s.addWordRequest(w("i2", "swap places"));
+      s.addWordRequest(w("i1", "steal gold"));
+      expect(s.wordRequests()).toEqual([w("i1", "steal gold"), w("i2", "swap places"), w("i1", "steal gold")]);
     });
   });
 }

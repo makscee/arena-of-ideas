@@ -46,7 +46,10 @@ describe("the overnight check (M2-8)", () => {
     expect(idea.state).toBe("voting");
     const unit = w.store.unit(idea.data.unitId!)!;
     expect(unit).toMatchObject({ status: "candidate", authorId: maks.id, origin: "idea" });
-    expect(unit.row.pwr).toBe(idea.data.row!.pwr);
+    // The tuned row replaced the picked one; the name stays.
+    const from = ROWS.find((r) => unit.row.name.startsWith(`${r.name} Echo`))!;
+    expect(unit.row.pwr).toBe(from.pwr + 1);
+    expect(idea.data.checkedAt).toBe(w.rt.now().toISOString());
     expect(w.store.ideas({ state: "simulating" })).toEqual([]);
   });
 
@@ -55,24 +58,41 @@ describe("the overnight check (M2-8)", () => {
     const before = w.store.ideaCounts(maks.id).spent;
     w.store.putIdeaCounts(maks.id, { ...w.store.ideaCounts(maks.id), spent: before + 1 });
     const idea = await candidate(w);
-    expect(idea).toMatchObject({ state: "failed", data: { reason: "too strong in a damage team" } });
+    expect(idea).toMatchObject({ state: "failed", data: { failure: "It didn't pass the overnight check: too strong in a damage team." } });
     expect(w.store.unit(idea.data.unitId!)?.status).toBe("rejected");
     expect(w.store.ideaCounts(maks.id).spent).toBe(before);
   });
 
-  it("gives distinct ids to two units with the same name", async () => {
+  it("tunes against the DB's current pool, not the code's ROWS", async () => {
+    const seen: Row[][] = [];
+    const w = world(async (row, pool) => (seen.push(pool), { pass: true, reason: "fits", row }));
+    // The pool in the DB drops its first unit (as a rotation would).
+    const cur = w.store.currentPool()!;
+    w.store.putPool({ ...cur, version: "mvp-test", unitIds: cur.unitIds.slice(1), createdAt: w.rt.now().toISOString() });
+    await candidate(w);
+    expect(seen).toHaveLength(1);
+    expect(seen[0]!.map((r) => r.name)).toEqual(cur.unitIds.slice(1).map((id) => w.store.unit(id)!.row.name));
+    expect(seen[0]!.length).toBe(ROWS.length - 1);
+  });
+
+  it("leaves an idea alone whose unit isn't a candidate any more", async () => {
     const w = world();
-    const a = await candidate(w);
-    const row = { ...a.data.row! };
-    w.store.putIdea({ ideaId: "again", playerId: eva.id, text: "the same unit again", state: "simulating", createdAt: "2026-10-08T08:00:00.000Z", data: { row } });
-    await overnightCheck(w.rt, w.rt.tuner.dev);
-    const b = w.store.idea("again")!;
-    expect(b.data.unitId).not.toBe(a.data.unitId);
-    expect(b.data.unitId).toMatch(/-2$/);
+    await w.call("POST", "/dev/seed-candidate", maks);
+    const idea = w.store.ideas({ playerId: maks.id })[0]!;
+    w.store.putUnit({ ...w.store.unit(idea.data.unitId!)!, status: "rejected" });
+    expect(await overnightCheck(w.rt, w.rt.tuner.dev)).toBe(0);
+    expect(w.store.idea(idea.ideaId)?.state).toBe("simulating");
+  });
+
+  it("puts on cards only candidates whose idea is in voting (M2-5's simulating ones wait)", async () => {
+    const w = world();
+    await w.call("POST", "/dev/seed-candidate", maks);
+    expect((await w.call<{ card: VoteCard | null }>("GET", "/votes/next", eva)).json.card).toBeNull();
+    expect(candidateScores(w.rt)).toEqual([]);
   });
 
   it("leaves a unit cut off at the deadline in simulating for the next night", async () => {
-    const hang: Tuner = (_row, signal) => new Promise((resolve) => signal.addEventListener("abort", () => resolve(null)));
+    const hang: Tuner = (_row, _pool, signal) => new Promise((resolve) => signal.addEventListener("abort", () => resolve(null)));
     const w = world(hang);
     await w.call("POST", "/dev/seed-candidate", maks);
     const judged = await overnightCheck(w.rt, hang, new Date(w.rt.now().getTime() + 20));

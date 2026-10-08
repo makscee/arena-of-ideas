@@ -1,10 +1,12 @@
 // Votes, and the overnight check (mission 2, M2-8, makscee/void-board#793).
 //
-// The overnight check: every idea in `simulating` (its unit picked, M2-6) goes
-// through M2-7's tuner (scripts/tune-unit.ts, one child process per unit, so
-// the server keeps answering). A pass stores the tuned row in mvp_units as a
-// `candidate` and moves the idea to `voting`; a fail stores it `rejected`,
-// moves the idea to `failed` with the tuner's reason and refunds the idea. A
+// The overnight check: every idea in `simulating` (its reading picked, M2-6;
+// its unit a `candidate` in mvp_units, M2-5) goes through M2-7's tuner
+// (scripts/tune-unit.ts, one child process per unit, so the server keeps
+// answering), measured against the current pool in the DB. A pass stores the
+// tuned row on its unit and moves the idea to `voting`; a fail stores it
+// `rejected`, moves the idea to `failed` with the tuner's reason and refunds
+// the idea. A
 // unit the tuner couldn't finish (cut off at the deadline, or crashed) stays
 // in `simulating` for the next night. The job runs it after the day ends
 // (rules.dayEndsAt) and stops starting units at NIGHT_HOURS later; the dev
@@ -13,7 +15,7 @@
 // Votes: a player gets either/or cards, a candidate against a typical live
 // unit (one near the median pick rate of the last TYPICAL_DAYS days' tallies),
 // in random order, never their own candidate and never a pair they voted on.
-// A candidate's score is the share of votes it won (skips not counted) plus a
+// Only ideas in `voting` are on cards. A candidate's score is the share of votes it won (skips not counted) plus a
 // novelty bonus for When/Who/Does parts rare in the live pool; it qualifies
 // with at least rules.voteMin votes and a score over one half. M2-10 enters
 // qualified(candidateScores(rt)) best first.
@@ -26,7 +28,7 @@ import type { CandidateScore, Idea, MvpRules, PlayerRef, UnitContent, UnitId, Vo
 import { nextRollover } from "../../../src/mvp/day.js";
 import { slugOf } from "../../../src/mvp/tune.js";
 import { allDoes, effectKinds, mvpPool, ROWS, type Row } from "../../../src/mvp/units.js";
-import { IdeaRefused } from "./ideas.js";
+import { IdeaRefused, refundIdea } from "./ideas.js";
 import type { RunDeps } from "./runs.js";
 import type { MvpJob, MvpRuntime } from "./runtime.js";
 import type { MvpStore, StoredUnit } from "./store.js";
@@ -46,23 +48,26 @@ export interface TuneVerdict {
   reason: string;
   row: Row;
 }
-/** Tunes one unit; null when it couldn't finish (aborted, or the tuner failed). */
-export type Tuner = (row: Row, signal: AbortSignal) => Promise<TuneVerdict | null>;
+/** Tunes one unit against the live `pool`; null when it couldn't finish
+ * (aborted, or the tuner failed). */
+export type Tuner = (row: Row, pool: Row[], signal: AbortSignal) => Promise<TuneVerdict | null>;
 
 /** Hours after the day end the overnight check may start a unit. */
 export const NIGHT_HOURS = 5;
 const NIGHT_TICK_MS = 10 * 60_000;
 const REPO_ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 
-/** The tuner as a child process: `npm run mvp:tune -- --batch <one row>`,
- * with the full meta check, or the quick one. */
+/** The tuner as a child process: `npm run mvp:tune -- --batch <one row>
+ * --pool <the live rows>`, with the full meta check, or the quick one. */
 export function childTuner(meta: "full" | "quick"): Tuner {
-  return (row, signal) =>
+  return (row, pool, signal) =>
     new Promise((resolve) => {
       const dir = mkdtempSync(join(tmpdir(), "arena-tune-"));
       const file = join(dir, "rows.json");
+      const poolFile = join(dir, "pool.json");
       writeFileSync(file, JSON.stringify([row]));
-      const args = ["--import", "tsx/esm", "scripts/tune-unit.ts", "--batch", file, ...(meta === "quick" ? ["--quick"] : [])];
+      writeFileSync(poolFile, JSON.stringify(pool));
+      const args = ["--import", "tsx/esm", "scripts/tune-unit.ts", "--batch", file, "--pool", poolFile, ...(meta === "quick" ? ["--quick"] : [])];
       const child = spawn(process.execPath, args, { cwd: REPO_ROOT, stdio: ["ignore", "ignore", "pipe"] });
       let tail = "";
       child.stderr.on("data", (d: Buffer) => (tail = (tail + d.toString()).slice(-2000)));
@@ -91,31 +96,45 @@ function freshUnitId(store: MvpStore, name: string): UnitId {
   return id;
 }
 
-/** Gives an idea back to its author (a failed check). */
-function refundIdea(store: MvpStore, playerId: string): void {
-  const counts = store.ideaCounts(playerId);
-  counts.spent = Math.max(0, counts.spent - 1);
-  store.putIdeaCounts(playerId, counts);
+type CheckDeps = Pick<RunDeps, "store" | "rules" | "now">;
+
+/** What a player reads when their idea failed the check. */
+export function checkFailure(reason: string): string {
+  return `It didn't pass the overnight check: ${reason.replace(/\.$/, "")}.`;
 }
 
-/** Applies a verdict to its idea: the unit stored, the idea moved on. */
-export function judgeIdea(rt: Pick<RunDeps, "store" | "now">, idea: Idea, v: TuneVerdict): Idea {
+/** Applies a verdict to its idea: the tuned row on its unit (`rejected` on a
+ * fail), the idea moved on (a fail refunded). */
+export function judgeIdea(rt: CheckDeps, idea: Idea, unit: StoredUnit, v: TuneVerdict): Idea {
   const now = rt.now().toISOString();
-  const unitId = idea.data.unitId ?? freshUnitId(rt.store, v.row.name);
-  const unit: StoredUnit = { unitId, status: v.pass ? "candidate" : "rejected", row: v.row, authorId: idea.playerId, origin: "idea", parentId: null, createdAt: now };
-  rt.store.putUnit(unit);
-  const next: Idea = { ...idea, state: v.pass ? "voting" : "failed", data: { ...idea.data, row: v.row, unitId, checkedAt: now, ...(v.pass ? {} : { reason: v.reason }) } };
+  rt.store.putUnit({ ...unit, status: v.pass ? "candidate" : "rejected", row: { ...v.row, name: unit.row.name } });
+  const next: Idea = { ...idea, state: v.pass ? "voting" : "failed", data: { ...idea.data, checkedAt: now, ...(v.pass ? {} : { failure: checkFailure(v.reason) }) } };
   rt.store.putIdea(next);
-  if (!v.pass) refundIdea(rt.store, idea.playerId);
+  if (!v.pass) refundIdea(rt, idea.playerId);
   return next;
+}
+
+/** The current pool's rows, in its order: what a candidate is measured
+ * against (the code pool before the store is seeded: tests). */
+export function poolRows(store: MvpStore): Row[] {
+  const pool = store.currentPool();
+  if (!pool) return ROWS;
+  const rows = pool.unitIds.map((id) => store.unit(id)?.row);
+  return rows.every((r) => r) ? (rows as Row[]) : ROWS;
+}
+
+/** An idea's unit while it waits for the check: its stored candidate. */
+function checkedUnit(store: MvpStore, idea: Idea): StoredUnit | null {
+  const u = idea.data.unitId ? store.unit(idea.data.unitId) : null;
+  return u && u.status === "candidate" ? u : null;
 }
 
 const running = new WeakMap<MvpStore, Promise<number>>();
 
-/** Runs the check on every `simulating` idea with a row, oldest first, one
+/** Runs the check on every `simulating` idea with a unit, oldest first, one
  * at a time, starting none after `deadline`. Resolves to the ideas judged.
  * A second call while one runs gets the running one. */
-export function overnightCheck(rt: Pick<RunDeps, "store" | "now">, tuner: Tuner, deadline: Date | null = null): Promise<number> {
+export function overnightCheck(rt: CheckDeps, tuner: Tuner, deadline: Date | null = null): Promise<number> {
   const busy = running.get(rt.store);
   if (busy) return busy;
   const ac = new AbortController();
@@ -125,11 +144,14 @@ export function overnightCheck(rt: Pick<RunDeps, "store" | "now">, tuner: Tuner,
     let judged = 0;
     for (const idea of rt.store.ideas({ state: "simulating" })) {
       if (ac.signal.aborted || (deadline && rt.now() >= deadline)) break;
-      if (!idea.data.row) continue;
-      const v = await tuner(idea.data.row, ac.signal);
-      // Taken back or moved on meanwhile: leave it.
-      if (!v || rt.store.idea(idea.ideaId)?.state !== "simulating") continue;
-      judgeIdea(rt, rt.store.idea(idea.ideaId)!, v);
+      const unit = checkedUnit(rt.store, idea);
+      if (!unit) continue;
+      const v = await tuner(unit.row, poolRows(rt.store), ac.signal);
+      // Moved on meanwhile: leave it.
+      const now = rt.store.idea(idea.ideaId);
+      const still = now && checkedUnit(rt.store, now);
+      if (!v || now?.state !== "simulating" || !still) continue;
+      judgeIdea(rt, now, still, v);
       judged++;
     }
     return judged;
@@ -143,7 +165,7 @@ export function overnightCheck(rt: Pick<RunDeps, "store" | "now">, tuner: Tuner,
 
 /** Ideas waiting for the check (what the dev button starts on). */
 export function waitingForCheck(store: MvpStore): number {
-  return store.ideas({ state: "simulating" }).filter((i) => i.data.row).length;
+  return store.ideas({ state: "simulating" }).filter((i) => checkedUnit(store, i)).length;
 }
 
 /** The end of tonight's window when `now` is in it (after the day end, for
@@ -169,15 +191,18 @@ export const overnightJob: MvpJob = (rt: MvpRuntime) => {
   return () => clearInterval(timer);
 };
 
-/** Dev: an idea of `playerId`'s in `simulating`, its unit a live one renamed
- * (M2-5 and M2-6 fill in real ones): `unit`'s copy, else a random one's.
+/** Dev: an idea of `playerId`'s in `simulating` without the model (M2-5),
+ * its candidate unit a live one renamed: `unit`'s copy, else a random one's.
  * Spends nothing. */
 export function seedCandidate(rt: Pick<RunDeps, "store" | "content" | "now" | "seed">, playerId: string, unit?: UnitId): Idea {
-  const live = liveRows(rt.store);
+  const live = poolRows(rt.store);
   const from = (unit && live.find((r) => slugOf(r.name) === unit)) || live[rt.seed() % live.length]!;
   const n = rt.store.ideas().length + 1;
   const row: Row = { ...from, name: `${from.name} Echo ${n}` };
-  const idea: Idea = { ideaId: `dev-${n}-${rt.seed().toString(36)}`, playerId, text: `A dev candidate: ${row.name}.`, state: "simulating", createdAt: rt.now().toISOString(), data: { row } };
+  const now = rt.now().toISOString();
+  const unitId = freshUnitId(rt.store, row.name);
+  rt.store.putUnit({ unitId, status: "candidate", row, authorId: playerId, origin: "idea", parentId: null, createdAt: now });
+  const idea: Idea = { ideaId: `dev-${n}-${rt.seed().toString(36)}`, playerId, text: `A dev candidate: ${row.name}.`, state: "simulating", createdAt: now, data: { unitId } };
   rt.store.putIdea(idea);
   return idea;
 }
@@ -211,16 +236,12 @@ function unitContentOf(id: UnitId, row: Row): UnitContent {
   return { ...mvpPool([row]).units[0]!, id };
 }
 
-/** The live units' rows: the stored ones, or the code pool before the store
- * is seeded (tests). */
-function liveRows(store: MvpStore): Row[] {
-  const live = store.units({ status: "live" }).map((u) => u.row);
-  return live.length ? live : ROWS;
-}
-
-/** Candidates being voted on: stored `candidate` units. */
+/** Candidates being voted on: the units of ideas in `voting`. */
 function candidates(store: MvpStore): StoredUnit[] {
-  return store.units({ status: "candidate" });
+  return store
+    .ideas({ state: "voting" })
+    .map((i) => checkedUnit(store, i))
+    .filter((u): u is StoredUnit => u !== null);
 }
 
 /** The next card for `player`, or null: the candidate with the fewest votes
@@ -250,8 +271,8 @@ export function nextCard(rt: VoteDeps, player: PlayerRef): VoteCard | null {
  * 400 a pick of neither, 409 their own candidate or a pair already voted). */
 export function castVote(rt: VoteDeps, player: PlayerRef, req: VoteRequest): void {
   if (player.bot) throw new IdeaRefused(409, "bots don't vote");
-  const cand = rt.store.unit(req.candidateId);
-  if (!cand || cand.status !== "candidate" || !rt.content.units.some((u) => u.id === req.otherId)) throw new IdeaRefused(404, "no such pair");
+  const cand = candidates(rt.store).find((c) => c.unitId === req.candidateId);
+  if (!cand || !rt.content.units.some((u) => u.id === req.otherId)) throw new IdeaRefused(404, "no such pair");
   if (req.pick !== null && req.pick !== req.candidateId && req.pick !== req.otherId) throw new IdeaRefused(400, "pick one of the two, or skip");
   if (cand.authorId === player.id) throw new IdeaRefused(409, "you can't vote on your own idea");
   const ok = rt.store.addVote({ playerId: player.id, candidateId: req.candidateId, otherId: req.otherId, pick: req.pick, createdAt: rt.now().toISOString() });
@@ -291,7 +312,7 @@ const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.l
 /** Every candidate's standing, qualified ones first, best first. */
 export function candidateScores(rt: Pick<RunDeps, "store" | "rules">): CandidateScore[] {
   const { min, bonus } = voteRules(rt.rules);
-  const live = liveRows(rt.store);
+  const live = poolRows(rt.store);
   return candidates(rt.store)
     .map((c) => {
       const counted = rt.store.votes({ candidateId: c.unitId }).filter((v) => v.pick !== null);

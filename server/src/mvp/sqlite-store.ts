@@ -11,7 +11,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, Idea, IdeaState, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
-import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally, type Vote } from "./store.js";
+import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally, type Vote, type WordRequest } from "./store.js";
 
 const SQL_DIR = fileURLToPath(new URL("./sql/", import.meta.url));
 
@@ -76,12 +76,12 @@ export class SqliteMvpStore implements MvpStore {
   addGhost(g: Ghost): void {
     this.write("INSERT INTO mvp_ghosts (ghost_id, round, player_id, content_version, json) VALUES (?, ?, ?, ?, ?)", g.ghostId, g.round, g.player.id, g.contentVersion, JSON.stringify(g));
   }
-  ghosts(round: number, opts: { excludePlayerId: string; contentVersion: string; limit?: number }): Ghost[] {
-    // The newest `limit` (-1: all) through the (round, content_version) index,
-    // whose entries are in seq (rowid) order, then oldest first.
+  ghosts(round: number, opts: { excludePlayerId: string; limit?: number }): Ghost[] {
+    // The newest `limit` (-1: all) through the (round, seq) index (M2-2), then
+    // oldest first.
     return this.all(
-      "SELECT json FROM (SELECT seq, json FROM mvp_ghosts WHERE round = ? AND content_version = ? AND player_id != ? ORDER BY seq DESC LIMIT ?) ORDER BY seq",
-      round, opts.contentVersion, opts.excludePlayerId, opts.limit ?? -1,
+      "SELECT json FROM (SELECT seq, json FROM mvp_ghosts WHERE round = ? AND player_id != ? ORDER BY seq DESC LIMIT ?) ORDER BY seq",
+      round, opts.excludePlayerId, opts.limit ?? -1,
     );
   }
 
@@ -218,6 +218,7 @@ export class SqliteMvpStore implements MvpStore {
       return true;
     }).immediate();
   }
+  atomically<T>(fn: () => T): T { return this.db.transaction(fn).immediate(); }
   addDayTallies(daySeq: number, delta: DayTallies): void {
     this.db.transaction(() => {
       if (delta.runs) {
@@ -267,6 +268,12 @@ export class SqliteMvpStore implements MvpStore {
       .prepare("SELECT * FROM mvp_votes WHERE (@candidate IS NULL OR candidate_id = @candidate) AND (@player IS NULL OR player_id = @player) ORDER BY rowid")
       .all({ candidate: opts.candidateId ?? null, player: opts.playerId ?? null }) as VoteRow[])
       .map((r) => ({ playerId: r.player_id, candidateId: r.candidate_id, otherId: r.other_id, pick: r.pick, createdAt: r.created_at }));
+  }
+  addWordRequest(w: WordRequest): void {
+    this.write("INSERT INTO mvp_word_requests (idea_id, word, part, created_at) VALUES (?, ?, ?, ?)", w.ideaId, w.word, w.part, w.createdAt);
+  }
+  wordRequests(): WordRequest[] {
+    return this.db.prepare("SELECT idea_id AS ideaId, word, part, created_at AS createdAt FROM mvp_word_requests ORDER BY id").all() as WordRequest[];
   }
 }
 

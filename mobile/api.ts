@@ -6,17 +6,20 @@ import {
   PLAYER_HEADER,
   TOKEN_HEADER,
   type BattleRecord,
+  type CreditsView,
   type DayView,
   type Decision,
   type DecisionResponse,
   type FusionDiscovery,
   type HomeView,
   type IdeasView,
+  type MyIdea,
   type MyIdeasView,
   type CandidateScore,
   type VoteCard,
   type VoteRequest,
   type JoinSession,
+  type LibraryView,
   type MvpContent,
   type PlayerRef,
   type PlayerSession,
@@ -151,8 +154,9 @@ export const api = {
     savePlayer(null);
     saveToken(null);
   },
-  /** `invites`: the server is invite-only, so the name screen asks for a link. */
-  health: () => call<{ invites?: boolean; open?: boolean }>("GET", "/health"),
+  /** `invites`: the server is invite-only, so the name screen asks for a link.
+   * `contentVersion`: the live pool's; ./content.ts refetches when it moves. */
+  health: () => call<{ invites?: boolean; open?: boolean; contentVersion?: string }>("GET", "/health"),
   content: () => call<MvpContent>("GET", "/content"),
   home: () => call<HomeView>("GET", "/home"),
   startRun: () => call<RunView>("POST", "/runs"),
@@ -188,8 +192,22 @@ export const api = {
   writeIdea: (text: string) => call<MyIdeasView>("POST", "/ideas", { text }),
   /** Takes back a `written` idea, refunding it. */
   cancelIdea: (ideaId: string) => call<MyIdeasView>("POST", `/ideas/${encodeURIComponent(ideaId)}/cancel`),
+  /** One of the player's own ideas with its options (M2-5). */
+  idea: (ideaId: string) => call<MyIdea>("GET", `/ideas/${encodeURIComponent(ideaId)}`),
+  /** Picks archetype `index` (M2-6): the idea is read for readings next. */
+  pickArchetype: (ideaId: string, index: number) => call<MyIdeasView>("POST", `/ideas/${encodeURIComponent(ideaId)}/archetype`, { index }),
+  /** Picks reading `index` (M2-6): the idea goes on to the simulation. */
+  pickReading: (ideaId: string, index: number) => call<MyIdeasView>("POST", `/ideas/${encodeURIComponent(ideaId)}/reading`, { index }),
+  /** "None of these" (M2-6): read once more; the second time refunds the idea. */
+  declineOptions: (ideaId: string) => call<MyIdeasView>("POST", `/ideas/${encodeURIComponent(ideaId)}/none`),
   /** 501 until slice 11. */
   stats: () => call<StatsView>("GET", "/stats"),
   /** Discovered fusions (slice 10). */
   fusions: () => call<FusionDiscovery[]>("GET", "/fusions"),
+  /** Who each live unit's idea was, NEW, your creator number (M2-9). */
+  credits: () => call<CreditsView>("GET", "/credits"),
+  /** The units that have left the pool (M2-9). */
+  library: () => call<LibraryView>("GET", "/library"),
+  /** Dev (M2-9): the unit becomes your idea, entered today. 404 unless MVP_DEV=1. */
+  creditUnit: (unitId?: string) => call<CreditsView>("POST", "/dev/credit-unit", unitId ? { unitId } : {}),
 };

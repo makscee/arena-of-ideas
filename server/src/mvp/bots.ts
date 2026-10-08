@@ -200,7 +200,7 @@ export function playBotRun(deps: RunDeps, player: PlayerRef = botPlayer(deps.see
       round = run.round;
       rerolled = 0;
     }
-    const d = botDecision(run, deps.content, deps.rules, rerolled, ready);
+    const d = botDecision(run, deps.contentFor(run.contentVersion), deps.rules, rerolled, ready);
     if (d.kind === "reroll") rerolled++;
     decide(deps, run, d);
     run = deps.store.run(run.runId)!;
@@ -232,7 +232,7 @@ export async function playBotRunWaiting(deps: RunDeps, stopped: () => boolean = 
       round = run.round;
       rerolled = 0;
     }
-    const d = botDecision(run, deps.content, deps.rules, rerolled);
+    const d = botDecision(run, deps.contentFor(run.contentVersion), deps.rules, rerolled);
     if (d.kind === "fuse") {
       const [first, second] = [boardUnit(run, run.rules, d.first)!, boardUnit(run, run.rules, d.second)!];
       if (!fusionNameReady(deps.store, first.unitId, second.unitId)) {
@@ -250,11 +250,11 @@ export async function playBotRunWaiting(deps: RunDeps, stopped: () => boolean = 
 
 // ---------- the pool ----------
 
-/** Rounds whose live-content pool holds fewer than `target` ghosts. */
+/** Rounds that hold fewer than `target` ghosts (made on any pool). */
 export function thinRounds(rt: RunDeps, target = BOT_TARGET): number[] {
   const out: number[] = [];
   for (let r = 1; r <= rt.rules.rounds; r++) {
-    if (rt.store.ghosts(r, { excludePlayerId: "", contentVersion: rt.content.version, limit: target }).length < target) out.push(r);
+    if (rt.store.ghosts(r, { excludePlayerId: "", limit: target }).length < target) out.push(r);
   }
   return out;
 }
@@ -262,11 +262,11 @@ export function thinRounds(rt: RunDeps, target = BOT_TARGET): number[] {
 /** How many more Crown fights bots owe today: `quota` minus today's bot
  * Crown fights; past it, one more while fewer than BOT_DAILY_SLAYERS
  * different bots slew today's champion and fewer than BOT_MAX_DAILY_CROWNS
- * were fought. 0 with no live champion today (a run would end "no-champion",
+ * were fought. 0 with no champion today (a run would end "no-champion",
  * never fighting one), or a quota of 0. Asked again after every Crown fight. */
 export function crownsOwed(rt: RunDeps, quota = BOT_DAILY_CROWNS): number {
   const champ = todaysChampion(rt);
-  if (!champ || champ.contentVersion !== rt.content.version || quota <= 0) return 0;
+  if (!champ || quota <= 0) return 0;
   const fought = rt.store.battles({ kind: "crown", since: rt.today().startedAt }).filter((b) => b.player.bot).length;
   if (fought < quota) return quota - fought;
   const slayers = new Set(rt.store.slays(rt.today().seq).filter((s) => s.player.bot).map((s) => s.player.id)).size;
@@ -329,7 +329,8 @@ export function strongBotLine(rt: RunDeps): { player: PlayerRef; line: LineUnit[
 }
 
 /** Writes a strong bot team as the champion for today().seq when there is no
- * champion or it was built with other content. Its fusions are stored as bot
+ * champion (the day-1 seed). A champion made on another pool stays: a pool
+ * change never hands a human's crown to a bot (M2-2). Its fusions are stored as bot
  * discoveries (slice 10's recordFusion, discoveredBy null), each once its name
  * is ready (awaitFusionName: the model's, or the portmanteau after the model's
  * final failure); a pair already stored keeps its name, and the champion's
@@ -337,13 +338,11 @@ export function strongBotLine(rt: RunDeps): { player: PlayerRef; line: LineUnit[
  * claims the credit. Resolves to the one written, or undefined when the
  * current one stays. */
 export async function seedChampion(rt: RunDeps): Promise<Champion | undefined> {
-  const cur = rt.store.currentChampion();
-  if (cur && cur.contentVersion === rt.content.version) return undefined;
+  if (rt.store.currentChampion()) return undefined;
   const { player, line } = strongBotLine(rt);
   await Promise.all(line.map((u) => (u.fusion ? awaitFusionName(rt.store, u.fusion.first, u.fusion.second) : undefined)));
   // Checked again: a champion may have been written while the names came.
-  const now = rt.store.currentChampion();
-  if (now && now.contentVersion === rt.content.version) return undefined;
+  if (rt.store.currentChampion()) return undefined;
   const day = rt.today();
   const at = rt.now().toISOString();
   const unit = (id: string) => rt.content.units.find((c) => c.id === id)!;

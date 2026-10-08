@@ -11,14 +11,14 @@ import { benchSizeOf, lockedFull, MVP_RULES, offersAt, sellValue } from "../src/
 import { mergeTarget } from "../src/mvp/forms";
 import { buttonRefusal, plainRefusal } from "./ui/refusal";
 import { ApiError, api, savedPlayer } from "./api";
-import { getContent } from "./content";
+import { getContent, unitIn } from "./content";
 import { battleScreen, type RunOutro } from "./screens/battle";
 import { codexScreen, newCodexCache, type CodexState } from "./screens/codex";
 import { setCodexLink } from "./ui/term";
 import { statsScreen } from "./screens/stats";
 import { ideasScreen } from "./screens/ideas";
 import { votePanel } from "./screens/vote";
-import { card, roman, unitSheet, type CardUnit } from "./ui/card";
+import { card, roman, setCardCredits, unitSheet, type CardUnit } from "./ui/card";
 import { previewName } from "./ui/fusion";
 import { fuseWarning } from "./ui/fuse-warn";
 import { icon } from "./ui/icon";
@@ -272,6 +272,8 @@ async function homeScreen(ended: number | null = null): Promise<void> {
     "end-day",
   );
   const grantIdea = button("+1 idea", () => void guarded(err, async () => { await api.grantIdea(); await homeScreen(); }), "small", "grant-idea");
+  // M2-9: a tier I unit becomes your idea, entered today: its cards show 💡 and NEW, its sheet "idea by @you".
+  const creditUnit = button("A unit is my idea", () => void guarded(err, async () => { setCardCredits((await api.creditUnit()).units); await homeScreen(); }), "small", "credit-unit");
   // M2-8: a candidate without the model (M2-5, M2-6), the overnight check now,
   // fake votes, and who qualifies.
   const devNote = (text: string) => ((err.textContent = text), err.classList.add("dev-note"));
@@ -336,7 +338,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
         soundRow(),
         api.ownInvite ? ownLinkRow(api.ownInvite) : null,
         home.dev
-          ? h("details", { class: "dev" }, h("summary", {}, "Dev"), h("div", { class: "row wrap" }, endDay, grantIdea, seedCandidate, overnight, fakeVotes, candidates))
+          ? h("details", { class: "dev" }, h("summary", {}, "Dev"), h("div", { class: "row wrap" }, endDay, grantIdea, creditUnit, seedCandidate, overnight, fakeVotes, candidates))
           : null,
       ),
       // M2-8's vote card, under the menu: quiet, and Play stays on the first screen.
@@ -372,8 +374,17 @@ function candidatesSheet(list: CandidateScore[]): HTMLElement {
  * next. Tapping it opens My ideas (M2-4, screens/ideas.ts). */
 function ideasLine(ideas: IdeasView): HTMLElement {
   const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
-  const text = ideas.held > 0 || ideas.nextIn === null ? `💡 ${plural(ideas.held, "idea")}` : `💡 next idea in ${plural(ideas.nextIn, "run")}`;
-  return button(text, () => void ideasScreen({ onBack: () => void homeScreen(), onUnknown: () => (api.forget(), nameScreen()) }), "small link ideas", "ideas");
+  // M2-6: an idea waiting for its pick comes first: "💡 Your idea is ready".
+  const text = ideas.ready
+    ? ideas.ready === 1
+      ? "💡 Your idea is ready"
+      : `💡 ${ideas.ready} ideas are ready`
+    : ideas.held > 0 || ideas.nextIn === null
+      ? `💡 ${plural(ideas.held, "idea")}`
+      : `💡 next idea in ${plural(ideas.nextIn, "run")}`;
+  const b = button(text, () => void ideasScreen({ onBack: () => void homeScreen(), onUnknown: () => (api.forget(), nameScreen()) }), "small link ideas", "ideas");
+  if (ideas.ready) b.dataset.ready = String(ideas.ready);
+  return b;
 }
 
 /** One confirm before a run is given up (R2-2's abandon): it says what the
@@ -550,7 +561,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const board = [...run.line, ...run.bench];
   const owns = (unitId: string) => mergeTarget(board, unitId) >= 0;
   let pick: Pick = desk && unitAt(selected) ? { mode: "picked", index: selected } : { mode: "none" };
-  const unitOf = (id: string) => content.units.find((x) => x.id === id);
+  const unitOf = (id: string) => unitIn(content, id); // a run on an older pool may hold a unit that left
   /** Buy previews still out: a decision waits for them, or the server may
    * apply a buy first and refuse the preview of its slot (a 409, R4-19). */
   const previewsOut = new Set<Promise<unknown>>();
