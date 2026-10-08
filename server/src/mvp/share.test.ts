@@ -20,7 +20,7 @@ function world() {
   seedUnits(store, new Date("2026-10-08T08:00:00.000Z"));
   const rt = mvpRuntime({ content: poolContent(store), store, dev: true });
   const [a, b, c, d, e] = rt.content.units;
-  const fused: LineUnit = { ...lineUnitOf(d!, "u4", 1, rt.rules), kind: "fused", emoji: `${d!.emoji}${e!.emoji}`, name: LONG, fusion: { first: d!.id, second: e!.id } };
+  const fused: LineUnit = { ...lineUnitOf(d!, "u4", 1, rt.rules), kind: "fused", emoji: `${d!.emoji}${e!.emoji}`, name: LONG, fusion: { first: d!.id, second: e!.id, name: LONG, discoveredBy: ann } };
   const line = [lineUnitOf(a!, "u1", 3, rt.rules), lineUnitOf(b!, "u2", 1, rt.rules), lineUnitOf(c!, "u3", 2, rt.rules), fused, lineUnitOf(e!, "u5", 1, rt.rules)];
   const day = rt.today();
   const champ: Champion = { seq: day.seq, day: day.day, player: ann, line, since: "2026-10-08T01:00:00.000Z", contentVersion: rt.content.version };
