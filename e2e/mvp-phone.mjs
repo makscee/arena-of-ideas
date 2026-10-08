@@ -44,6 +44,9 @@ try {
   const page = await browser.newPage({ viewport: { width: 360, height }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: localeOf(lang) });
   page.on("pageerror", (e) => errors.push(`pageerror: ${e.message}`));
   page.on("console", (m) => m.type() === "error" && errors.push(`console: ${m.text()}`));
+  // M4-2: every API call says the player's language, so server text can follow it.
+  const apiLangs = new Set();
+  page.on("request", (r) => r.url().includes("/api/v1/") && r.resourceType() === "fetch" && apiLangs.add(r.headers()["accept-language"]));
   /** Every player name on screen (ui/dom.ts who()) sits on one line: never
    * "@bot-" / "3" across two (#587). */
   const namesOneLine = async (name) => {
@@ -157,10 +160,22 @@ try {
   await page.goto(url, { timeout: 20_000 });
   await page.getByTestId("name-input").waitFor({ timeout: 10_000 });
   await shot("name"); await noHScroll("name");
+  if ((await page.evaluate(() => document.documentElement.lang)) !== lang) errors.push(`lang: the page is <html lang="${await page.evaluate(() => document.documentElement.lang)}">, not ${lang}`);
   await page.getByTestId("name-input").fill(`PhoneTester${TAG}`);
   await page.getByTestId("name-submit").click();
   await page.getByTestId("play").waitFor();
+  if (apiLangs.size !== 1 || !apiLangs.has(lang)) errors.push(`lang: API calls said Accept-Language ${JSON.stringify([...apiLangs])}, not ${lang}`);
   await shot("home"); await noHScroll("home"); await noRates("home"); await onScreen("home: Play", page.getByTestId("play"));
+  // M4-2: the switch beside Sound redraws the page in the other language,
+  // kept on the device, and back.
+  for (const to of [lang === "ru" ? "en" : "ru", lang]) {
+    await Promise.all([page.waitForEvent("load"), page.getByTestId(`lang-${to}`).click()]);
+    await page.getByTestId("play").waitFor();
+    const Lto = catalog(to);
+    if ((await page.getByTestId("play").textContent()) !== Lto("home.play") || (await page.evaluate(() => document.documentElement.lang)) !== to) errors.push(`lang switch: Home after ${to} reads "${await page.getByTestId("play").textContent()}"`);
+    if ((await page.getByTestId(`lang-${to}`).getAttribute("aria-pressed")) !== "true") errors.push(`lang switch: ${to} isn't marked as chosen`);
+    if (to !== lang) { await page.getByTestId("lang-row").scrollIntoViewIfNeeded(); await shot(`home-switched-${to}`); await noHScroll(`home-switched-${to}`); }
+  }
   // M2-3: a quiet ideas line; a new player earns the first in 3 runs.
   if ((await page.getByTestId("ideas").textContent()) !== L("home.ideasNext", { why: L("ideas.why", { n: 3 }) })) errors.push(`home: ideas line "${await page.getByTestId("ideas").textContent()}"`);
   await tap44("dev summary", page.locator("details.dev summary"));

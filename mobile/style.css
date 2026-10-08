@@ -220,7 +220,7 @@ button.menu-btn { min-width: 44px; padding: 0 10px; font-size: 18px; line-height
 .sound-row input[type="range"]:disabled { opacity: 0.4; }
 .lang-row { gap: 10px; }
 .lang-row button { flex: 1; text-transform: none; letter-spacing: 0; }
-.lang-row button.lang-on { border-color: var(--you); color: var(--you); }
+.lang-row button:not(.lang-on) { color: var(--dim); border-color: var(--dim); }
 details.dev { color: var(--dim); font-size: 13px; }
 details.dev summary { min-height: 44px; line-height: 44px; cursor: pointer; }
 .opp { font-size: 15px; min-height: 44px; }
