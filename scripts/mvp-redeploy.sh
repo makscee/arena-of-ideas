@@ -96,6 +96,17 @@ VOTE_MIN="${ARENA_MVP_VOTE_MIN:-2}"
 case "$VOTE_MIN" in [1-9]|[1-9][0-9]) ;; *) echo "ARENA_MVP_VOTE_MIN is a number from 1 to 99, not '$VOTE_MIN'" >&2; exit 2 ;; esac
 ROTATION="${ARENA_MVP_ROTATION:-1}"
 case "$ROTATION" in 0|1) ;; *) echo "ARENA_MVP_ROTATION is 0 or 1, not '$ROTATION'" >&2; exit 2 ;; esac
+# Mission 4 (#810): Telegram. The bot's token lives only in this file on the
+# host (TELEGRAM_BOT_TOKEN=..., mode 600); the server reads it at start, so it
+# never enters the plist or the repo. A missing file leaves Telegram login off.
+# The daily post (M4-8) stays off unless ARENA_MVP_TELEGRAM_POST=1, and needs
+# ARENA_MVP_TELEGRAM_CHANNEL (e.g. @arenaofideas).
+TELEGRAM_ENV="${ARENA_MVP_TELEGRAM_ENV:-\$HOME/.config/arena/telegram.env}"
+TELEGRAM_POST="${ARENA_MVP_TELEGRAM_POST:-0}"
+case "$TELEGRAM_POST" in 0|1) ;; *) echo "ARENA_MVP_TELEGRAM_POST is 0 or 1, not '$TELEGRAM_POST'" >&2; exit 2 ;; esac
+TELEGRAM_CHANNEL="${ARENA_MVP_TELEGRAM_CHANNEL:-}"
+case "$TELEGRAM_CHANNEL" in ""|@[A-Za-z0-9_]*) ;; *) echo "ARENA_MVP_TELEGRAM_CHANNEL is @name, not '$TELEGRAM_CHANNEL'" >&2; exit 2 ;; esac
+[ "$TELEGRAM_POST" = 1 ] && [ -z "$TELEGRAM_CHANNEL" ] && { echo "ARENA_MVP_TELEGRAM_POST=1 needs ARENA_MVP_TELEGRAM_CHANNEL" >&2; exit 2; }
 PUBLIC_URL=https://arena.makscee.ru/arena/
 TAILNET_URL=https://m1.twin-pogona.ts.net/arena/api/v1/health
 
@@ -228,6 +239,9 @@ cat > "\$PLIST" <<PL
     <key>ARENA_NAMER_URL</key><string>http://127.0.0.1:$NAMER_PORT/v1/chat/completions</string>
     <key>MVP_VOTE_MIN</key><string>$VOTE_MIN</string>
     <key>MVP_ROTATION</key><string>$ROTATION</string>
+    <key>ARENA_TELEGRAM_ENV</key><string>$TELEGRAM_ENV</string>
+    <key>ARENA_TELEGRAM_POST</key><string>$TELEGRAM_POST</string>
+    <key>ARENA_TELEGRAM_CHANNEL</key><string>$TELEGRAM_CHANNEL</string>
     <key>ARENA_IDEA_READER</key><string>$IDEA_READER</string>
     <key>ARENA_CLAUDE_BIN</key><string>\$HOME/.local/bin/claude</string>
   </dict>
