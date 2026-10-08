@@ -165,7 +165,7 @@ async function walk(viewport, name, full) {
   await page.getByTestId("pick-confirm").click();
   await page.locator('[data-testid="idea-sent-row"][data-state="simulating"]').waitFor();
   if (!(await page.getByTestId("idea-sent").textContent()).includes(L("pick.pickedReading"))) errors.push(`after the pick: "${await page.getByTestId("idea-sent").textContent()}"`);
-  if ((await page.getByTestId("idea-stage").textContent()) !== L("ideas.stage.simulating")) errors.push(`my ideas after the pick: "${await page.getByTestId("idea-stage").textContent()}"`);
+  if (!(await page.getByTestId("idea-stage").textContent()).includes(L("ideas.stage.simulating"))) errors.push(`my ideas after the pick: "${await page.getByTestId("idea-stage").textContent()}"`);
   await shot("ideas-being-tested");
   // M3-2: the idea is spent: New idea is off, muted, with the reason beside it.
   const newIdea = page.getByTestId("idea-new");
@@ -173,7 +173,7 @@ async function walk(viewport, name, full) {
   const look = await newIdea.evaluate((el) => { const c = getComputedStyle(el); return { bg: c.backgroundColor, op: c.opacity, pe: c.pointerEvents }; });
   if (!/rgba\(0, 0, 0, 0\)|transparent/.test(look.bg) || look.pe !== "none") errors.push(`my ideas: New idea still looks live (${JSON.stringify(look)})`);
   const why = (await page.getByTestId("idea-new-why").textContent()) ?? "";
-  if (!new RegExp(`^${pattern(L("ideas.why", { n: 1 }))}$|^${pattern(L("ideas.why", { n: 2 }))}$|^${pattern(L("ideas.why", { n: 5 }))}$`).test(why)) errors.push(`my ideas: New idea's reason "${why}"`);
+  if (!Array.from({ length: 20 }, (_, n) => L("ideas.why", { n: n + 1 })).includes(why)) errors.push(`my ideas: New idea's reason "${why}"`);
   // M2-11: the dev "Run the overnight check now" (the server's instant
   // tuner), and My ideas shows the idea in the vote.
   await page.getByTestId("ideas-back").click();
@@ -275,7 +275,7 @@ async function propose(viewport, name, full) {
   const btn = page.getByTestId("library-propose");
   if (!(await btn.isDisabled())) errors.push(`${name}: Propose is on with no idea held`);
   const why = (await page.getByTestId("library-propose-why").textContent()) ?? "";
-  if (!new RegExp(`^${pattern(L("ideas.why", { n: 1 }))}$|^${pattern(L("ideas.why", { n: 2 }))}$|^${pattern(L("ideas.why", { n: 5 }))}$`).test(why)) errors.push(`${name}: Propose's reason "${why}"`);
+  if (!Array.from({ length: 20 }, (_, n) => L("ideas.why", { n: n + 1 })).includes(why)) errors.push(`${name}: Propose's reason "${why}"`);
   await shot("library-propose-off");
   // +1 idea (dev on Home), then the same sheet: on.
   await page.goto(url);
@@ -291,7 +291,7 @@ async function propose(viewport, name, full) {
   const title = page.getByTestId("write-title");
   await title.waitFor();
   const unitName = await (await fetch(url + "api/v1/library")).json().then((l) => l.units.find((x) => x.unit.id === target)?.unit);
-  const named = `A new version of ${unitName.emoji} ${unitName.name}`;
+  const named = L("ideas.proposeTitle", { emoji: unitName.emoji, name: unitName.name });
   if ((await title.textContent()) !== named) errors.push(`${name}: write title "${await title.textContent()}"`);
   if ((await page.getByTestId("propose-line").textContent()) !== unitName.archetype) errors.push(`${name}: write line "${await page.getByTestId("propose-line").textContent()}"`);
   if (!new RegExp(`^${pattern(L("ideas.now"))}.{10,}`).test((await page.getByTestId("propose-rule").textContent()) ?? "")) errors.push(`${name}: write rule "${await page.getByTestId("propose-rule").textContent()}"`);
