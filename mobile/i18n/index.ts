@@ -35,3 +35,9 @@ export function t(key: Key, params: Params = {}): string {
 function pluralForm(msg: Plural, n: number): string {
   return msg[rules.select(n) as keyof Plural] ?? msg.other;
 }
+
+/** A catalog sentence with elements in it: "{who} stays champion" with an
+ * @name element at {who}. Splits the text on each {name} in `nodes`. */
+export function withNodes(text: string, nodes: Record<string, Node>): (Node | string)[] {
+  return text.split(/\{(\w+)\}/).map((part, i) => (i % 2 ? (nodes[part] ?? `{${part}}`) : part)).filter((x) => x !== "");
+}

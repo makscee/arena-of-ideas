@@ -26,7 +26,7 @@ import { app, button, closable, desktopQuery, dismissable, h, isDesktop, keepScr
 import { loadUnitRates } from "./ui/unit-stats";
 import { initSound, music, onSoundChange, play, setSound, soundSettings } from "./ui/sound";
 import { shopSound } from "./ui/sound-map";
-import { t } from "./i18n";
+import { t, withNodes } from "./i18n";
 
 function errorLine(): HTMLElement {
   return h("div", { class: "error", "data-testid": "error" });
@@ -488,12 +488,6 @@ function playoffSummary(p: PlayoffResult, champion: PlayerRef | null): (Node | s
   const bots = p.entrants.filter((x) => x.bot).length;
   const field = t("playoff.field", { n: p.entrants.length, bots: bots === p.entrants.length ? t("playoff.allBots") : bots ? t("playoff.someBots", { n: bots }) : "" });
   return p.winner ? withNodes(t("playoff.won", { field }), { who: whoMark(p.winner) }) : [t("playoff.noWinner", { field })];
-}
-
-/** A catalog sentence with nodes in it: "{who} stays champion." with an
- * element for {who}, as the pieces h() appends. */
-function withNodes(text: string, nodes: Record<string, Node>): (Node | string)[] {
-  return text.split(/\{(\w+)\}/).map((part, i) => (i % 2 ? (nodes[part] ?? `{${part}}`) : part)).filter((x) => x !== "");
 }
 
 /** A day's end: a sentence, and with a real playoff (two or more slayers)
