@@ -5,6 +5,7 @@
 import type { Side } from "../types.js";
 import type { BattleRecord, Champion, LineUnit, MvpContent, MvpRules, PlayerRef, PlayoffResult, Slay } from "./contract.js";
 import { fightLines } from "./fight.js";
+import { lineResolves } from "./units.js";
 
 // ---------- time ----------
 
@@ -76,11 +77,11 @@ export interface PlayoffEntrant {
 }
 
 /** Each slayer's strongest slaying team of the day, by simulation: every
- * candidate (their latest STRONGEST_MAX_CANDIDATES slays on the live content)
+ * candidate (their latest STRONGEST_MAX_CANDIDATES slays, on any pool)
  * fights the day's champion STRONGEST_SIM_SEEDS times as side A and as many as
  * side B; the most wins (then fewest losses, then the latest slay) enters.
  * Bots' slays enter like humans' (#587: a player alone still sees a real
- * playoff); slays on other content are skipped. The reigning champion's own
+ * playoff); a slay whose line doesn't resolve is skipped (M2-2). The reigning champion's own
  * slays enter like anyone's, so they can be crowned again with another team.
  * Entrants come in the order of each slayer's
  * first slay. */
@@ -92,7 +93,7 @@ export function playoffEntrants(slays: Slay[], champion: Champion | undefined, c
   for (const own of byPlayer.values()) {
     const candidates = own.slice(-STRONGEST_MAX_CANDIDATES);
     let best = candidates.at(-1)!;
-    if (candidates.length > 1 && champion && champion.contentVersion === content.version) {
+    if (candidates.length > 1 && champion && lineResolves(champion.line, content.abilities)) {
       let bestScore = -Infinity;
       candidates.forEach((s, ci) => {
         const score = simScore(s.line, champion, content, rules, ci);
@@ -105,11 +106,16 @@ export function playoffEntrants(slays: Slay[], champion: Champion | undefined, c
   return out;
 }
 
-/** The slays that can enter the playoff: on the live content, by a human or
- * a bot alike, the reigning champion's own included. Home's slayer count uses
- * the same rule. */
-export function playoffSlays(slays: Slay[], content: Pick<MvpContent, "version">): Slay[] {
-  return slays.filter((s) => s.contentVersion === content.version);
+/** The slays that can enter the playoff: made on any pool (M2-2), by a human
+ * or a bot alike, the reigning champion's own included; only a line that
+ * doesn't resolve (never expected) is left out, with a warning. Home's slayer
+ * count uses the same rule. */
+export function playoffSlays(slays: Slay[], content: Pick<MvpContent, "abilities">): Slay[] {
+  return slays.filter((s) => {
+    if (lineResolves(s.line, content.abilities)) return true;
+    console.warn(`[day] slay of run ${s.runId} has a line that doesn't resolve; skipped`);
+    return false;
+  });
 }
 
 /** Wins minus a thousandth per loss, over both sides, against the champion. */

@@ -151,8 +151,9 @@ export const api = {
     savePlayer(null);
     saveToken(null);
   },
-  /** `invites`: the server is invite-only, so the name screen asks for a link. */
-  health: () => call<{ invites?: boolean; open?: boolean }>("GET", "/health"),
+  /** `invites`: the server is invite-only, so the name screen asks for a link.
+   * `contentVersion`: the live pool's; ./content.ts refetches when it moves. */
+  health: () => call<{ invites?: boolean; open?: boolean; contentVersion?: string }>("GET", "/health"),
   content: () => call<MvpContent>("GET", "/content"),
   home: () => call<HomeView>("GET", "/home"),
   startRun: () => call<RunView>("POST", "/runs"),

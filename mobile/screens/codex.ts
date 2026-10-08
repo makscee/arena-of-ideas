@@ -323,7 +323,8 @@ function fusionsTab(
   go: (next: Partial<CodexState>) => void,
   open: (node: HTMLElement, from?: HTMLElement) => void,
 ): Node[] {
-  const byId = new Map(content.units.map((u) => [u.id, u]));
+  // A discovered pair whose part left the pool still shows (M2-2).
+  const byId = new Map([...(content.left ?? []), ...content.units].map((u) => [u.id, u]));
   const me = api.player?.id;
   const n = content.units.length;
   const total = n * (n - 1);

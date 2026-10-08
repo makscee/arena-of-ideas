@@ -76,12 +76,12 @@ export class SqliteMvpStore implements MvpStore {
   addGhost(g: Ghost): void {
     this.write("INSERT INTO mvp_ghosts (ghost_id, round, player_id, content_version, json) VALUES (?, ?, ?, ?, ?)", g.ghostId, g.round, g.player.id, g.contentVersion, JSON.stringify(g));
   }
-  ghosts(round: number, opts: { excludePlayerId: string; contentVersion: string; limit?: number }): Ghost[] {
-    // The newest `limit` (-1: all) through the (round, content_version) index,
-    // whose entries are in seq (rowid) order, then oldest first.
+  ghosts(round: number, opts: { excludePlayerId: string; limit?: number }): Ghost[] {
+    // The newest `limit` (-1: all) through the (round, seq) index (M2-2), then
+    // oldest first.
     return this.all(
-      "SELECT json FROM (SELECT seq, json FROM mvp_ghosts WHERE round = ? AND content_version = ? AND player_id != ? ORDER BY seq DESC LIMIT ?) ORDER BY seq",
-      round, opts.contentVersion, opts.excludePlayerId, opts.limit ?? -1,
+      "SELECT json FROM (SELECT seq, json FROM mvp_ghosts WHERE round = ? AND player_id != ? ORDER BY seq DESC LIMIT ?) ORDER BY seq",
+      round, opts.excludePlayerId, opts.limit ?? -1,
     );
   }
 
@@ -218,6 +218,7 @@ export class SqliteMvpStore implements MvpStore {
       return true;
     }).immediate();
   }
+  atomically<T>(fn: () => T): T { return this.db.transaction(fn).immediate(); }
   addDayTallies(daySeq: number, delta: DayTallies): void {
     this.db.transaction(() => {
       if (delta.runs) {

@@ -11,7 +11,7 @@ import { benchSizeOf, lockedFull, MVP_RULES, offersAt, sellValue } from "../src/
 import { mergeTarget } from "../src/mvp/forms";
 import { buttonRefusal, plainRefusal } from "./ui/refusal";
 import { ApiError, api, savedPlayer } from "./api";
-import { getContent } from "./content";
+import { getContent, unitIn } from "./content";
 import { battleScreen, type RunOutro } from "./screens/battle";
 import { codexScreen, newCodexCache, type CodexState } from "./screens/codex";
 import { setCodexLink } from "./ui/term";
@@ -526,7 +526,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const board = [...run.line, ...run.bench];
   const owns = (unitId: string) => mergeTarget(board, unitId) >= 0;
   let pick: Pick = desk && unitAt(selected) ? { mode: "picked", index: selected } : { mode: "none" };
-  const unitOf = (id: string) => content.units.find((x) => x.id === id);
+  const unitOf = (id: string) => unitIn(content, id); // a run on an older pool may hold a unit that left
   /** Buy previews still out: a decision waits for them, or the server may
    * apply a buy first and refuse the preview of its slot (a 409, R4-19). */
   const previewsOut = new Set<Promise<unknown>>();
