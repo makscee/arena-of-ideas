@@ -437,8 +437,9 @@ async function openCodex(state?: Partial<CodexState>): Promise<void> {
   const back = codexBack;
   const content = await getContent();
   const onBack = () => ((codexBack = null), (codexRedraw = null), back());
-  codexRedraw = () => void codexScreen({ content, state: { ...codexCache.state, term: undefined, scope: undefined }, onBack, cache: codexCache });
-  await codexScreen({ content, state, onBack, cache: codexCache });
+  const onUnknown = () => ((codexBack = null), (codexRedraw = null), api.forget(), nameScreen());
+  codexRedraw = () => void codexScreen({ content, state: { ...codexCache.state, term: undefined, scope: undefined }, onBack, onUnknown, cache: codexCache });
+  await codexScreen({ content, state, onBack, onUnknown, cache: codexCache });
 }
 // Every highlighted term's "Open in Codex" lands on its Keywords row (a scoped trigger's line in it).
 setCodexLink((term, scope) => void openCodex({ tab: "keywords", term, scope }));
