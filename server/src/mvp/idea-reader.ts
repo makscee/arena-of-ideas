@@ -116,7 +116,9 @@ export function fakeIdeaReader(): IdeaReader {
       const start = (hashOf(text) + (opts.problems ? 97 : 0)) % combos.length;
       const order = combos.map((_, i) => combos[(start + i * 37) % combos.length]!);
       const options: ReadingDraft[] = [];
-      for (const d of [...attackerCombos(text), ...order]) {
+      // Turned down or retried: the attacker readings from the other end.
+      const attacker = opts.problems ? attackerCombos(text).reverse() : attackerCombos(text);
+      for (const d of [...attacker, ...order]) {
         if (options.length >= opts.want) break;
         const ok = checkReading(d, archetype, taken);
         if ("row" in ok) {
