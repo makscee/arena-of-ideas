@@ -9,10 +9,10 @@
 // form the unit has now; win and pick rates are its one dim last line.
 import { cardIcons, type Pip } from "../../src/mvp/card-icons";
 import { formSegments, formText as sharedFormText } from "../../src/mvp/form-text";
-import { MVP_RULES, type BattleUnit, type LineUnit, type MvpContent, type SummonContent, type UnitContent, type UnitForm } from "../../src/mvp/contract";
+import { MVP_RULES, type BattleUnit, type UnitCredit, type LineUnit, type MvpContent, type SummonContent, type UnitContent, type UnitForm } from "../../src/mvp/contract";
 import { summonId } from "../../src/describe";
 import type { AbilityRegistry, Stats } from "../../src/types";
-import { closable, h } from "./dom";
+import { closable, h, who } from "./dom";
 import { discoveredLine } from "./fusion";
 import { icon } from "./icon";
 import { roman } from "./roman";
@@ -37,6 +37,8 @@ export interface CardOptions {
   tier?: number | "S";
   /** Tapping the card opens this, usually overlay(unitSheet(...)). */
   onOpen?: () => void;
+  /** M2-6: a candidate's card: its PWR / HP are set by simulation, so it shows none. */
+  unset?: boolean;
 }
 
 /** A tier's colour class (R4-4): .t1–.t4 on the --tier-1..4 tokens, .ts for a summoned unit. */
@@ -44,24 +46,54 @@ export const tierClass = (tier: number | "S") => (tier === "S" ? "ts" : `t${tier
 
 // A pool unit's sheet head, "Sleeping · Tier II", the numeral in its tier's colour.
 const poolState = (form: string, tier: number) => [`${form} · Tier `, h("span", { class: `tier ${tierClass(tier)}` }, roman(tier))];
+// An idea's candidate (M2-6) has no tier yet: the simulation sets it with the numbers.
+const SET_BY_SIM = "PWR / HP: set by simulation";
+
+/** The live units' credits (M2-9: who the idea was, NEW), set once the
+ * content loads (../content.ts) and again after the dev tool credits one. */
+let credits = new Map<string, UnitCredit>();
+export function setCardCredits(list: UnitCredit[]): void {
+  credits = new Map(list.map((c) => [c.unitId, c]));
+}
+export const creditOf = (unitId: string | undefined): UnitCredit | undefined => (unitId ? credits.get(unitId) : undefined);
+
+/** A pool unit's sheet line: "💡 idea by @name" (seed units have none). */
+function creditLine(unitId: string): HTMLElement | null {
+  const c = creditOf(unitId);
+  if (!c?.by && !c?.isNew) return null;
+  return h("div", { class: "dim small credit-line", "data-testid": "sheet-credit" }, ...(c.isNew ? [h("span", { class: "new-badge inline", "data-testid": "sheet-new" }, "NEW")] : []), ...(c.by ? ["💡 idea by ", who(c.by.name)] : []));
+}
 
 export function card(u: CardUnit, o: CardOptions): HTMLElement {
   const stats = o.live?.stats ?? u.stats;
+  // A fused unit is its finders' (discoveredLine); its parts' credits stay on theirs.
+  const credit = u.kind === "fused" ? undefined : creditOf(u.unitId);
   const el = h(
     "div",
     { class: `card ${o.side}`, ...(o.testid ? { "data-testid": o.testid } : {}) },
     iconLine(u.recipe, !!o.tier),
     o.tier ? h("span", { class: `tier ${tierClass(o.tier)}`, "aria-label": o.tier === "S" ? "summoned" : `tier ${o.tier}` }, o.tier === "S" ? "S" : roman(o.tier)) : null,
+    credit?.isNew ? h("span", { class: "new-badge", "data-testid": "card-new" }, "NEW") : null,
     h("div", { class: "emoji" }, u.emoji),
     // One line; ui/dom.ts fitText() shrinks a long name a little, then cuts it.
     h("div", { class: "name", title: u.name }, u.name),
-    ...(o.live?.maxHp !== undefined ? liveStats(stats, o.live.maxHp) : [h("div", { class: "stats" }, h("span", { class: "p" }, `${stats.pwr}`), "/", h("span", { class: "h" }, `${stats.hp}`))]),
+    ...(o.unset
+      ? [h("div", { class: "stats unset", title: "PWR / HP: set by simulation" }, h("span", { class: "p" }, "?"), "/", h("span", { class: "h" }, "?"))]
+      : o.live?.maxHp !== undefined
+        ? liveStats(stats, o.live.maxHp)
+        : [h("div", { class: "stats" }, h("span", { class: "p" }, `${stats.pwr}`), "/", h("span", { class: "h" }, `${stats.hp}`))]),
     h("div", { class: "foot" }, ...(o.extra ?? [])),
   );
   if (u.kind === "fused") el.classList.add("fused");
   else if (u.form === "awoken") el.classList.add("awoken");
   if (o.live?.dead) el.classList.add("dead");
   if (o.live?.acting) el.classList.add("acting");
+  if (credit?.by) {
+    // No room on a 64px card for the words: a 💡 mark, the words on hover and for readers.
+    el.dataset.by = credit.by.name;
+    el.title = `${u.name}: idea by @${credit.by.name}`;
+    el.append(h("span", { class: "by-mark", "data-testid": "card-by", "aria-label": `idea by @${credit.by.name}` }, "💡"));
+  }
   if (o.onOpen) el.addEventListener("click", o.onOpen);
   return el;
 }
@@ -89,6 +121,10 @@ function liveStats(stats: Stats, maxHp: number): Node[] {
 let abilities: AbilityRegistry = {};
 export function setCardAbilities(a: AbilityRegistry): void {
   abilities = a;
+}
+/** Adds abilities the content lacks (a vote card's candidate, M2-8). */
+export function addCardAbilities(a: AbilityRegistry): void {
+  abilities = { ...abilities, ...a };
 }
 
 /** Icons past these counts fold into "+" (phone) or "+n" (desktop; "+n" past
@@ -145,9 +181,10 @@ export function formRich(form: UnitForm, content: MvpContent): Node[] {
  * changes underlined), a fused unit's parts open behind a tap, and the unit's
  * win and pick rates are one dim line at the bottom. opts.preview: a fusion
  * preview's credit line (./fusion.ts). Open it with overlay(unitSheet(...)) from ./dom. */
-export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpContent, opts: { rates?: UnitRates; from?: Stats; preview?: boolean } = {}): HTMLElement {
+export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpContent, opts: { rates?: UnitRates; from?: Stats; preview?: boolean; candidate?: boolean } = {}): HTMLElement {
   const unitId = "forms" in u ? u.id : u.unitId;
-  const unit = (id: string) => content.units.find((x) => x.id === id);
+  // A unit that left the pool (a champion's, a replay's) is in content.left (M2-2).
+  const unit = (id: string) => content.units.find((x) => x.id === id) ?? content.left?.find((x) => x.id === id);
   // opts.from: your copy's stats now, when u is that copy after a buy (the shop's offer sheet).
   const statsLine = (s: Stats) =>
     opts.from
@@ -160,7 +197,8 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
   const copies = "forms" in u ? 0 : u.copies;
 
   const box = h("div", { class: "sheet-form", "data-testid": "sheet-form" });
-  const state = h("span", { class: "dim small", "data-testid": "sheet-state" }, ...("stats" in u ? [sheetState(u)] : poolState("Sleeping", u.tier)));
+  const headState = (form: string) => (opts.candidate ? [form] : "stats" in u ? [sheetState(u)] : poolState(form, u.tier));
+  const state = h("span", { class: "dim small", "data-testid": "sheet-state" }, ...headState("Sleeping"));
   const children: (Node | null)[] = [];
   // What the form shown summons, under its text (R3-5); swapped by See Awoken.
   const summons = h("div", { class: "stack" });
@@ -194,7 +232,7 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
     const sleepPieces = formSegments(now, content.abilities);
     const awokePieces = formSegments(c.forms.awoken, content.abilities);
     // Short enough for one line in the 1024px inspector (R2-17).
-    const see = `▸ Awoken in ${left} ${left === 1 ? "copy" : "copies"}`;
+    const see = opts.candidate ? "▸ See Awoken" : `▸ Awoken in ${left} ${left === 1 ? "copy" : "copies"}`;
     const back = "◂ Back to Sleeping";
     const note = h("div", { class: "dim small" }, "What changes is underlined.");
     note.hidden = true;
@@ -209,7 +247,7 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
       box.replaceChildren(...(showing ? [h("div", { class: "label" }, `Awoken · after copy ${MVP_RULES.copiesToAwaken}`), ...richText(awokePieces, { content: markChangedPieces(sleepPieces, awokePieces) })] : richText(sleepPieces)));
       btn.textContent = showing ? back : see;
       // A unit from the pool (the Codex, an offer) heads its sheet with the form shown.
-      if (!("stats" in u)) state.replaceChildren(...poolState(showing ? "Awoken" : "Sleeping", u.tier));
+      if (!("stats" in u)) state.replaceChildren(...headState(showing ? "Awoken" : "Sleeping"));
       btn.dataset.testid = showing ? "see-sleeping" : "see-awoken";
       note.hidden = !showing;
     });
@@ -222,14 +260,15 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
     h("div", { class: "row spread sheet-head" }, h("h2", {}, `${u.emoji} ${u.name}`), state),
     // What the unit is about, in one sentence (R4-8); a fused unit has none.
     c?.archetype ? h("div", { class: "archetype", "data-testid": "sheet-archetype" }, c.archetype) : null,
+    fused ? null : creditLine(unitId),
     "forms" in u ? null : discoveredLine(u, { preview: opts.preview ?? false }),
-    "stats" in u ? statsLine(u.stats) : h("div", { class: "num" }, `${u.base.pwr} PWR / ${u.base.hp} HP`),
+    opts.candidate ? h("div", { class: "dim small", "data-testid": "sheet-unset" }, SET_BY_SIM) : "stats" in u ? statsLine(u.stats) : h("div", { class: "num" }, `${u.base.pwr} PWR / ${u.base.hp} HP`),
     opts.from ? h("div", { class: "dim small" }, "Your copy now → after buying") : null,
     icons.childNodes.length ? icons : null,
     box,
     ...children,
     summons.childNodes.length || (sleeping && c) ? summons : null,
-    fused ? null : unitStatsLine(unitId, opts.rates),
+    fused || opts.candidate ? null : unitStatsLine(unitId, opts.rates),
   );
 }
 

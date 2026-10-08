@@ -9,9 +9,16 @@
  *   MVP_DEV     1 serves the dev tools (/api/v1/dev/*, "end day now")
  *   MVP_INVITES 1 makes it invite-only (slice 13): players come from invite
  *               links (npm run mvp:invite), the dev tools only for admin invites
+ *   MVP_VOTE_MIN votes a candidate needs before it can qualify (MvpRules.voteMin,
+ *                ./votes.ts; absent, 5). The live game has few players yet.
+ *   MVP_ROTATION 1 rotates the pool at each day end (M2-10, ./rotation.ts):
+ *               qualified candidates enter, units live 2+ weeks leave; off by
+ *               default (dry run: npm run mvp:rotate -- --db <file> --dry-run)
  *   MVP_DB      the SQLite file (default data/arena-mvp.db); ":memory:" keeps nothing
  *   ARENA_NAMER_URL  the fusion namer (OpenAI-compatible chat endpoint, slice
  *               10); without it every fusion gets the portmanteau
+ *   ARENA_TUNER instant (with MVP_DEV=1 only): the overnight check passes
+ *               every unit at once, for e2e; default the real tuner (M2-7)
  *   MVP_BUILD   the deployed commit, `build` on /api/v1/health (default: the
  *               checkout's HEAD); scripts/mvp-redeploy.sh sets it
  * Run: npm run mvp:server
@@ -20,11 +27,13 @@ import { serve } from "@hono/node-server";
 import { mkdirSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { createMvpApp } from "./app.js";
-import { mvpContent } from "./content.js";
 import { startMvpJobs } from "./jobs.js";
+import { poolContent, seedUnits } from "./pool.js";
+import { MVP_RULES } from "../../../src/mvp/contract.js";
 import { mvpRuntime } from "./runtime.js";
 import { buildOf, mvpServerApp, underBasePath } from "./server.js";
 import { SqliteMvpStore } from "./sqlite-store.js";
+import { instantTuner } from "./votes.js";
 
 const port = Number(process.env.PORT ?? 8791);
 const host = process.env.HOST ?? "127.0.0.1";
@@ -35,11 +44,18 @@ const root = relative(process.cwd(), staticDir) || ".";
 const dbPath = process.env.MVP_DB ?? "data/arena-mvp.db";
 if (dbPath !== ":memory:") mkdirSync(dirname(resolve(dbPath)), { recursive: true });
 const store = new SqliteMvpStore(dbPath);
-const content = mvpContent();
-const rt = mvpRuntime({ content, store, dev: process.env.MVP_DEV === "1", invites: process.env.MVP_INVITES === "1", open: process.env.MVP_OPEN === "1" });
+// M2-1: the pool lives in the DB; the first start seeds it from the code pool.
+seedUnits(store, new Date());
+const content = poolContent(store);
+const dev = process.env.MVP_DEV === "1";
+if (process.env.ARENA_TUNER && !(process.env.ARENA_TUNER === "instant" && dev)) throw new Error("ARENA_TUNER=instant needs MVP_DEV=1");
+const tuner = process.env.ARENA_TUNER === "instant" ? { night: instantTuner, dev: instantTuner } : undefined;
+const voteMin = Number(process.env.MVP_VOTE_MIN);
+const rules = Number.isInteger(voteMin) && voteMin > 0 ? { ...MVP_RULES, voteMin } : undefined;
+const rt = mvpRuntime({ content, store, dev, ...(rules ? { rules } : {}), ...(tuner ? { tuner } : {}), invites: process.env.MVP_INVITES === "1", open: process.env.MVP_OPEN === "1", rotation: process.env.MVP_ROTATION === "1" });
 const build = buildOf();
 const app = mvpServerApp(createMvpApp(rt), { staticRoot: root, build });
 
 serve({ port, hostname: host, fetch: underBasePath(app, basePath) });
 startMvpJobs(rt);
-console.log(`arena mvp on http://${host}:${port} (base ${basePath}, build ${build ?? "unknown"}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""}${rt.invites ? (rt.open ? ", open to all" : ", invite-only") : ""})`);
+console.log(`arena mvp on http://${host}:${port} (base ${basePath}, build ${build ?? "unknown"}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""}${tuner ? ", instant tuner" : ""}${rt.rotation ? ", rotation on" : ""}${rt.invites ? (rt.open ? ", open to all" : ", invite-only") : ""})`);

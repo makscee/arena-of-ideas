@@ -1,19 +1,24 @@
 // Arena MVP HTTP API (mission #574, slice 1). The routes and shapes are the
 // contract in src/mvp/contract.ts; this file only parses requests and calls
 // the runtime (./runtime.ts): the run engine (./runs.ts), the day (./day.ts),
-// the stats (./stats.ts) and the store. A slice fills in those modules, not
+// the stats (./stats.ts), ideas (./ideas.ts) and the store. A slice fills in those modules, not
 // these routes.
 import { randomUUID } from "node:crypto";
 import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, TOKEN_HEADER, type Decision, type HomeView, type PlayerRef } from "../../../src/mvp/contract.js";
+import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, TOKEN_HEADER, type Decision, type HomeView, type PlayerRef, type VoteRequest } from "../../../src/mvp/contract.js";
 import { checkDecision, MvpBadDecision, MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
+import { creditsView, creditUnit, libraryView } from "./credits.js";
 import { dayView, endDay, hiddenSlay } from "./day.js";
 import { MvpNotYet } from "./errors.js";
+import { declineOptions, myIdea, pickArchetype, pickReading } from "./idea-reading.js";
+import { cancelIdea, grantIdea, IdeaRefused, ideasOf, myIdeas, writeIdea } from "./ideas.js";
 import { isAdmin, isJoinCode, JoinRefused, joinOpen, NAME_RE, openJoin, redeemInvite, sessionPlayer } from "./invites.js";
 import { abandon, currentRun, decide, preview, startRun } from "./runs.js";
 import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
+import { servedContent } from "./pool.js";
 import { statsView } from "./stats.js";
+import { candidateScores, castVote, fakeVotes, nextCard, overnightCheck, seedCandidate, waitingForCheck } from "./votes.js";
 
 /** New players the open join link (R4-20) makes per hour, server-wide. */
 export const JOINS_PER_HOUR = 30;
@@ -21,7 +26,7 @@ export const JOINS_PER_HOUR = 30;
 /** The API on a runtime, or on a fresh one built from `deps`. */
 export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   const rt = isMvpRuntime(deps) ? deps : mvpRuntime(deps);
-  const { content, store } = rt;
+  const { store } = rt;
   const api = new Hono();
 
   const bad = (c: Context, status: 400 | 401 | 403 | 404 | 409 | 413 | 429 | 501, error: string) => c.json({ error }, status);
@@ -46,7 +51,8 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   /** The dev tools: anyone on an open dev server, admin invites on an invite-only one. */
   const devFor = (c: Context) => rt.dev && (!rt.invites || isAdmin(store, playerOf(c)?.id));
 
-  // Every body here is a name or a Decision: a few hundred bytes.
+  // Every body here is a name, a Decision or an idea: a few hundred bytes (an
+  // idea's 400 characters, a few KB at most).
   api.use("*", bodyLimit({ maxSize: 16 * 1024, onError: (c) => bad(c, 413, "body too large") }));
   // A token that names no session (a revoked link) is no player anywhere but
   // the invite routes: 401 "unknown player", so the device forgets it and
@@ -63,8 +69,8 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
       await next();
     });
 
-  api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: content.version, invites: rt.invites, open: rt.open }));
-  api.get("/content", (c) => c.json(content));
+  api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: rt.content.version, invites: rt.invites, open: rt.open }));
+  api.get("/content", (c) => c.json(servedContent(rt)));
 
   api.post("/players", async (c) => {
     if (rt.invites) return bad(c, 403, "invite only: open your invite link");
@@ -129,6 +135,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
       rating: p ? store.rating(p.id) ?? { player: p, rating: rt.rules.ratingStart, runs: 0, slays: 0, daysAsChampion: 0, playoffWins: 0 } : null,
       activeRunId: p ? store.activeRun(p.id)?.runId ?? null : null,
       dev: devFor(c),
+      ideas: p ? ideasOf(rt, p.id) : null,
     };
     return c.json(home);
   });
@@ -220,11 +227,78 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     return c.json(b);
   });
 
+  // Mission 2's ideas (M2-4): each player reads and writes only their own;
+  // no route ever returns another player's text.
+  const ideaCall = (c: Context, fn: (p: PlayerRef) => void) => {
+    const p = playerOf(c);
+    if (!p) return unknownPlayer(c);
+    try {
+      fn(p);
+    } catch (err) {
+      if (err instanceof IdeaRefused) return bad(c, err.status, err.message);
+      throw err;
+    }
+    return c.json(myIdeas(rt, p.id));
+  };
+  api.get("/ideas", (c) => ideaCall(c, () => {}));
+  api.post("/ideas", async (c) => {
+    const body = (await c.req.json().catch(() => null)) as { text?: unknown } | null;
+    if (typeof body?.text !== "string") return bad(c, 400, "body must be { text }");
+    const text = body.text;
+    return ideaCall(c, (p) => writeIdea(rt, p.id, text));
+  });
+  api.post("/ideas/:ideaId/cancel", (c) => ideaCall(c, (p) => cancelIdea(rt, p.id, c.req.param("ideaId"))));
+  // M2-5: one idea with its options, and its author's picks (M2-6's screens).
+  api.get("/ideas/:ideaId", (c) => {
+    const p = playerOf(c);
+    if (!p) return unknownPlayer(c);
+    try {
+      return c.json(myIdea(rt, p.id, c.req.param("ideaId")));
+    } catch (err) {
+      if (err instanceof IdeaRefused) return bad(c, err.status, err.message);
+      throw err;
+    }
+  });
+  const pick = (fn: typeof pickArchetype) => async (c: Context) => {
+    const body = (await c.req.json().catch(() => null)) as { index?: unknown } | null;
+    if (typeof body?.index !== "number") return bad(c, 400, "body must be { index }");
+    const index = body.index;
+    return ideaCall(c, (p) => fn(rt, p.id, c.req.param("ideaId")!, index));
+  };
+  api.post("/ideas/:ideaId/archetype", pick(pickArchetype));
+  api.post("/ideas/:ideaId/reading", pick(pickReading));
+  // M2-6: "None of these" at either pick.
+  api.post("/ideas/:ideaId/none", (c) => ideaCall(c, (p) => declineOptions(rt, p.id, c.req.param("ideaId"))));
+
+  // M2-8's either/or cards: a candidate against a typical live unit.
+  api.get("/votes/next", (c) => {
+    const p = playerOf(c);
+    return p ? c.json({ card: nextCard(rt, p) }) : unknownPlayer(c);
+  });
+  api.post("/votes", async (c) => {
+    const body = (await c.req.json().catch(() => null)) as Partial<VoteRequest> | null;
+    const p = playerOf(c);
+    if (!p) return unknownPlayer(c);
+    if (typeof body?.candidateId !== "string" || typeof body.otherId !== "string" || !(body.pick === null || typeof body.pick === "string"))
+      return bad(c, 400, "body must be { candidateId, otherId, pick }");
+    try {
+      castVote(rt, p, { candidateId: body.candidateId, otherId: body.otherId, pick: body.pick });
+    } catch (err) {
+      if (err instanceof IdeaRefused) return bad(c, err.status, err.message);
+      throw err;
+    }
+    return c.json({ card: nextCard(rt, p) });
+  });
+
   // Slice 10 owns this route and the store behind it; slice 11 only reads.
   api.get("/fusions", (c) => c.json(store.fusions()));
 
   api.get("/day", (c) => c.json(dayView(rt)));
   api.get("/stats", (c) => notYet(c, () => statsView(rt)));
+  // M2-9: who each live unit's idea was, NEW, the caller's creator number;
+  // and the units that have left.
+  api.get("/credits", (c) => c.json(creditsView(rt, playerOf(c)?.id)));
+  api.get("/library", (c) => c.json(libraryView(rt)));
 
   // Dev-only tools (MvpDeps.dev, MVP_DEV=1 in main.ts): 404 without it, and
   // on an invite-only server for anyone but an admin invite's player.
@@ -233,6 +307,36 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     await next();
   });
   api.post("/dev/end-day", (c) => notYet(c, () => endDay(rt)));
+  api.post("/dev/grant-idea", (c) => {
+    const p = playerOf(c);
+    return p ? c.json(grantIdea(rt, p.id)) : unknownPlayer(c);
+  });
+  api.post("/dev/credit-unit", async (c) => {
+    const p = playerOf(c);
+    if (!p) return unknownPlayer(c);
+    const body = (await c.req.json().catch(() => null)) as { unitId?: unknown } | null;
+    // No unitId: a tier I unit, so the shop offers it soon.
+    const unitId = typeof body?.unitId === "string" ? body.unitId : rt.content.units.find((u) => u.tier === 1)?.id;
+    if (!unitId || !creditUnit(rt, unitId, p.id)) return bad(c, 404, "no such live unit");
+    return c.json(creditsView(rt, p.id));
+  });
+
+  // M2-8: the overnight check now (the quick meta check), a dev candidate,
+  // fake votes, and the candidates' standing.
+  api.post("/dev/overnight-check", (c) => {
+    const started = waitingForCheck(store);
+    overnightCheck(rt, rt.tuner.dev).catch((err) => console.error("[overnight] dev check failed", err));
+    return c.json({ started });
+  });
+  api.post("/dev/seed-candidate", async (c) => {
+    const body = (await c.req.json().catch(() => null)) as { unit?: unknown } | null;
+    const p = playerOf(c);
+    if (!p) return unknownPlayer(c);
+    seedCandidate(rt, p.id, typeof body?.unit === "string" ? body.unit : undefined);
+    return c.json(myIdeas(rt, p.id));
+  });
+  api.post("/dev/fake-votes", (c) => c.json(fakeVotes(rt)));
+  api.get("/dev/candidates", (c) => c.json(candidateScores(rt)));
 
   const app = new Hono();
   app.route(MVP_API_PREFIX, api);

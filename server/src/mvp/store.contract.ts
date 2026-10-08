@@ -3,9 +3,10 @@
 // that adds a method to MvpStore adds its case here. Compare with toEqual:
 // a store may hand back copies.
 import { describe, expect, it } from "vitest";
-import type { BattleRecord, Champion, DayState, FusionDiscovery, Ghost, MvpContent, PlayerRef, PlayoffResult, Rating, Slay } from "../../../src/mvp/contract.js";
+import type { BattleRecord, Champion, DayState, FusionDiscovery, Ghost, Idea, MvpContent, PlayerRef, PlayoffResult, Rating, Slay } from "../../../src/mvp/contract.js";
 import { initMvpRun } from "../../../src/mvp/run.js";
-import type { MvpStore } from "./store.js";
+import { ROWS } from "../../../src/mvp/units.js";
+import type { MvpStore, PoolSnapshot, StoredUnit } from "./store.js";
 
 const bot: PlayerRef = { id: "bot", name: "bot-Ash", bot: true };
 const maks: PlayerRef = { id: "p1", name: "Maks", bot: false };
@@ -51,16 +52,17 @@ export function describeMvpStore(name: string, make: () => MvpStore): void {
       expect(store.activeRun("p1")).toBeUndefined();
     });
 
-    it("serves ghosts at the round, never the player's own, only of the current content", () => {
+    it("serves ghosts at the round, never the player's own, made on any pool", () => {
       const store = make();
       const ghost = (ghostId: string, player: PlayerRef, round: number, contentVersion: string): Ghost => ({ ghostId, runId: `run-${ghostId}`, player, round, line: [], contentVersion, createdAt: "t", rating: 1000 });
       store.addGhost(ghost("mine", maks, 1, "v2"));
       store.addGhost(ghost("old", bot, 1, "v1"));
       store.addGhost(ghost("theirs", bot, 1, "v2"));
       store.addGhost(ghost("later", bot, 2, "v2"));
-      expect(store.ghosts(1, { excludePlayerId: "p1", contentVersion: "v2" }).map((g) => g.ghostId)).toEqual(["theirs"]);
-      expect(store.ghosts(1, { excludePlayerId: "bot", contentVersion: "v2" }).map((g) => g.ghostId)).toEqual(["mine"]);
-      expect(store.ghosts(3, { excludePlayerId: "p1", contentVersion: "v2" })).toEqual([]);
+      expect(store.ghosts(1, { excludePlayerId: "p1" }).map((g) => g.ghostId)).toEqual(["old", "theirs"]);
+      expect(store.ghosts(1, { excludePlayerId: "p1", limit: 1 }).map((g) => g.ghostId)).toEqual(["theirs"]);
+      expect(store.ghosts(1, { excludePlayerId: "bot" }).map((g) => g.ghostId)).toEqual(["mine"]);
+      expect(store.ghosts(3, { excludePlayerId: "p1" })).toEqual([]);
     });
 
     it("keeps battles and lists them oldest first, by kind and time", () => {
@@ -179,6 +181,102 @@ export function describeMvpStore(name: string, make: () => MvpStore): void {
       expect(s.joinCode()).toBe("j1");
       s.setJoinCode("j2");
       expect(s.joinCode()).toBe("j2");
+    });
+
+    it("keeps units by permanent id, pool snapshots newest last, and stints (M2-1)", () => {
+      const s = make();
+      const unit = (unitId: string, status: StoredUnit["status"], i: number): StoredUnit =>
+        ({ unitId, status, row: ROWS[i]!, authorId: null, origin: "seed", parentId: null, createdAt: "t" });
+      const fighter = unit("fighter", "live", 0);
+      const fodder = unit("fodder", "library", 1);
+      const pool: PoolSnapshot = { version: "v1", daySeq: 1, unitIds: ["fighter"], createdAt: "t" };
+      expect(s.currentPool()).toBeUndefined();
+      expect(s.seedPool([fighter, fodder], pool, [{ unitId: "fighter", enteredSeq: 1, leftSeq: null, reason: "seed" }])).toBe(true);
+      expect(s.seedPool([unit("squire", "live", 2)], { ...pool, version: "v0" }, [])).toBe(false);
+      expect(s.units()).toEqual([fighter, fodder]);
+      expect(s.units({ status: "library" })).toEqual([fodder]);
+      expect(s.unit("fighter")).toEqual(fighter);
+      expect(s.unit("squire")).toBeUndefined();
+      // Replacing keeps a unit's place.
+      s.putUnit({ ...fighter, status: "library" });
+      s.putUnit({ ...unit("idea-1", "candidate", 2), authorId: "p1", origin: "idea" });
+      expect(s.units().map((u) => [u.unitId, u.status])).toEqual([["fighter", "library"], ["fodder", "library"], ["idea-1", "candidate"]]);
+      expect(s.unit("idea-1")?.authorId).toBe("p1");
+      s.putPool({ version: "v2", daySeq: 2, unitIds: ["fodder"], createdAt: "t2" });
+      s.putPool({ version: "v1", daySeq: 3, unitIds: ["fighter"], createdAt: "t3" });
+      expect(s.currentPool()).toEqual({ version: "v1", daySeq: 3, unitIds: ["fighter"], createdAt: "t3" });
+      expect(s.pool("v2")?.daySeq).toBe(2);
+      expect(s.pool("v1")?.daySeq).toBe(3);
+      expect(s.pool("v9")).toBeUndefined();
+      s.putStint({ unitId: "fighter", enteredSeq: 1, leftSeq: 2, reason: "replaced" });
+      s.putStint({ unitId: "fodder", enteredSeq: 2, leftSeq: null, reason: "return" });
+      s.putStint({ unitId: "fighter", enteredSeq: 3, leftSeq: null, reason: "return" });
+      expect(s.stints()).toEqual([
+        { unitId: "fighter", enteredSeq: 1, leftSeq: 2, reason: "replaced" },
+        { unitId: "fighter", enteredSeq: 3, leftSeq: null, reason: "return" },
+        { unitId: "fodder", enteredSeq: 2, leftSeq: null, reason: "return" },
+      ]);
+      expect(s.stints("fodder")).toHaveLength(1);
+    });
+
+    it("adds unit tallies per day (M2-1)", () => {
+      const s = make();
+      expect(s.dayTallies(1)).toEqual({ runs: 0, units: [] });
+      s.addDayTallies(1, { runs: 0, units: [{ unitId: "b", fights: 1, wins: 1, runs: 0, picks: 0 }, { unitId: "a", fights: 0, wins: 0, runs: 0, picks: 2 }] });
+      s.addDayTallies(1, { runs: 1, units: [{ unitId: "b", fights: 1, wins: 0, runs: 1, picks: 1 }] });
+      s.addDayTallies(2, { runs: 1, units: [] });
+      expect(s.dayTallies(1)).toEqual({ runs: 1, units: [{ unitId: "a", fights: 0, wins: 0, runs: 0, picks: 2 }, { unitId: "b", fights: 2, wins: 1, runs: 1, picks: 1 }] });
+      expect(s.dayTallies(2)).toEqual({ runs: 1, units: [] });
+    });
+
+    it("keeps idea counts per player (M2-3), zero before any write", () => {
+      const s = make();
+      expect(s.ideaCounts("p1")).toEqual({ spent: 0, granted: 0, forfeited: 0 });
+      s.putIdeaCounts("p1", { spent: 1, granted: 2, forfeited: 0 });
+      s.putIdeaCounts("p1", { spent: 2, granted: 2, forfeited: 1 });
+      expect(s.ideaCounts("p1")).toEqual({ spent: 2, granted: 2, forfeited: 1 });
+      expect(s.ideaCounts("p2")).toEqual({ spent: 0, granted: 0, forfeited: 0 });
+    });
+
+    it("keeps written ideas (M2-4): by player and state, oldest first, replaced in place", () => {
+      const s = make();
+      const idea = (ideaId: string, playerId: string, state: Idea["state"] = "written"): Idea => ({ ideaId, playerId, text: `idea ${ideaId} text`, state, createdAt: "2026-10-08T08:00:00.000Z", data: {} });
+      s.putIdea(idea("i1", "p1"));
+      s.putIdea(idea("i2", "p2"));
+      s.putIdea(idea("i3", "p1"));
+      expect(s.idea("i2")).toEqual(idea("i2", "p2"));
+      expect(s.idea("nope")).toBeUndefined();
+      expect(s.ideas({ playerId: "p1" }).map((i) => i.ideaId)).toEqual(["i1", "i3"]);
+      s.putIdea({ ...idea("i1", "p1", "reading"), data: { later: [1, 2] } as Idea["data"] });
+      expect(s.ideas().map((i) => i.ideaId)).toEqual(["i1", "i2", "i3"]);
+      expect(s.idea("i1")).toMatchObject({ state: "reading", data: { later: [1, 2] } });
+      expect(s.ideas({ state: "written" }).map((i) => i.ideaId)).toEqual(["i2", "i3"]);
+      expect(s.ideas({ playerId: "p1", state: "written" }).map((i) => i.ideaId)).toEqual(["i3"]);
+      s.deleteIdea("i3");
+      expect(s.idea("i3")).toBeUndefined();
+      expect(s.ideas({ playerId: "p1" }).map((i) => i.ideaId)).toEqual(["i1"]);
+    });
+
+    it("keeps votes (M2-8): one per player per pair, by candidate and player, oldest first", () => {
+      const s = make();
+      const at = "2026-10-08T08:00:00.000Z";
+      expect(s.addVote({ playerId: "p1", candidateId: "c1", otherId: "u1", pick: "c1", createdAt: at })).toBe(true);
+      expect(s.addVote({ playerId: "p1", candidateId: "c1", otherId: "u1", pick: "u1", createdAt: at })).toBe(false);
+      expect(s.addVote({ playerId: "p1", candidateId: "c1", otherId: "u2", pick: null, createdAt: at })).toBe(true);
+      expect(s.addVote({ playerId: "p2", candidateId: "c2", otherId: "u1", pick: "u1", createdAt: at })).toBe(true);
+      expect(s.votes({ candidateId: "c1" }).map((v) => [v.otherId, v.pick])).toEqual([["u1", "c1"], ["u2", null]]);
+      expect(s.votes({ playerId: "p2" })).toEqual([{ playerId: "p2", candidateId: "c2", otherId: "u1", pick: "u1", createdAt: at }]);
+      expect(s.votes()).toHaveLength(3);
+    });
+
+    it("logs new-word requests (M2-5), oldest first", () => {
+      const s = make();
+      expect(s.wordRequests()).toEqual([]);
+      const w = (ideaId: string, word: string) => ({ ideaId, word, part: `the ${word} part`, createdAt: "2026-10-08T08:00:00.000Z" });
+      s.addWordRequest(w("i1", "steal gold"));
+      s.addWordRequest(w("i2", "swap places"));
+      s.addWordRequest(w("i1", "steal gold"));
+      expect(s.wordRequests()).toEqual([w("i1", "steal gold"), w("i2", "swap places"), w("i1", "steal gold")]);
     });
   });
 }

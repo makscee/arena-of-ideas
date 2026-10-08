@@ -7,6 +7,7 @@
 // file only adds the MVP's run, day and rating layer on top.
 
 import type { AbilityRegistry, BattleEvent, Condition, Selector, Side, Stats, StatusRegistry, When } from "../types.js";
+import type { AwokenRow, WhenKey, WhoKey } from "./units.js";
 
 export const MVP_API_VERSION = 1;
 /** Every API path hangs off this prefix, relative to the app's base URL
@@ -84,6 +85,25 @@ export interface MvpRules {
   /** Day rollover, "HH:MM" in dayTimeZone (slice 5). */
   dayEndsAt: string;
   dayTimeZone: string;
+  /** Mission 2 (M2-3): a player earns 1 idea per this many finished runs (any
+   * ending a rating counts: out of hearts, the Crown won or lost, given up).
+   * Read from the server's current rules, never a run's: absent, 3. */
+  ideaEveryRuns?: number;
+  /** Ideas a player holds at most; runs finished at the cap earn none. Absent, 3. */
+  ideaHold?: number;
+  /** Mission 2 (M2-8): votes (skips not counted) a candidate needs before it
+   * can qualify to enter. Absent, 5. */
+  voteMin?: number;
+  /** The most the novelty bonus adds to a candidate's vote share (at novelty
+   * 1). Absent, 0.1. */
+  voteNoveltyBonus?: number;
+  /** Mission 2 (M2-10): candidates that enter the pool at most per day end.
+   * Absent, 3. */
+  rotationEntrants?: number;
+  /** Days a unit stays live at least before it may leave. Absent, 14. */
+  rotationMinStay?: number;
+  /** Days of tallies a leaver's play is read from. Absent, 14. */
+  rotationWindow?: number;
 }
 
 /** The turn cap round-3 runs started with (R3-26): their fights past it end
@@ -115,6 +135,8 @@ export const MVP_RULES: MvpRules = {
   botRating: 1000,
   dayEndsAt: "04:00",
   dayTimeZone: "Europe/Moscow",
+  ideaEveryRuns: 3,
+  ideaHold: 3,
 };
 
 /** Offers in the shop at `round`: `offers`, +1 for each `offersGrowAt` round reached. */
@@ -214,6 +236,10 @@ export interface SummonContent {
 export interface MvpContent {
   version: string;
   units: UnitContent[];
+  /** GET /content only (M2-2): units outside the live pool that a stored line
+   * can still show (the library, units that left): the champion's line, the
+   * Codex, replays. Never in the shop. */
+  left?: UnitContent[];
   abilities: AbilityRegistry;
   statuses: StatusRegistry;
   /** The summoned bodies (R3-5); absent in content built before round 3. */
@@ -411,14 +437,13 @@ export interface BattleRecord {
 /** shop: buy, sell, reroll, reorder, fuse, then fight the round's ghost.
  * crown: after the last round with hearts left; offers [], gold 0, the only
  * decision is { kind: "fight" } and nextOpponent is today's champion. With no
- * live champion (none, or a stale contentVersion) the run ends right after
- * the last round instead ("no-champion").
+ * champion the run ends right after the last round instead ("no-champion").
  * over: nothing more to do; endedBy says why.
  *
- * Content changes (slice 7 retunes it): a run started on other content than
- * the live one can't fight, so the server ends it cleanly ("content-changed",
- * rating null, no rating change) on its next decision, or when its player
- * starts a run. Its line is not rebuilt. */
+ * Pool changes (M2-2) end nothing: a run pins the pool it started on
+ * (contentVersion) and shops, gifts, copies and fuses on it until it ends,
+ * while its fights meet lines made on any pool. "content-changed" (rating
+ * null) only marks runs ended that way before M2-2. */
 export type RunPhase = "shop" | "crown" | "over";
 export type RunEndReason = "out-of-hearts" | "crown-won" | "crown-lost" | "no-champion" | "content-changed" | "abandoned";
 
@@ -497,11 +522,11 @@ export interface DecisionResponse {
 //   playoff (#587). Ratings are humans only: a bot's Rating row may carry its
 //   records (slays, playoffWins, daysAsChampion), never a rating change.
 //
-// Stale content: a Champion or Slay whose contentVersion isn't the live
-// content's may name abilities that no longer exist. Slice 6's seeder replaces
-// a stale champion for today().seq at startup, slice 4's Crown treats a stale
-// champion as none (endedBy "no-champion"), and slice 5's playoff skips slays
-// of another contentVersion.
+// Other pools (M2-2): a Champion, Slay or Ghost made on another pool fights
+// like any. Abilities are built from their names and the registry only grows,
+// so its line resolves; one that doesn't (never expected) is skipped with a
+// warning: the Crown treats such a champion as none, the playoff and the
+// ghost pick skip it. Slice 6's seeder only seeds when there is no champion.
 
 /** The current day as the server keeps it (MvpStore.currentDay). */
 export interface DayState {
@@ -610,6 +635,176 @@ export interface HomeView {
    * (anyone on an open server, only admin invites on an invite-only one):
    * the title menu shows them ("End day now"); every other player never does. */
   dev: boolean;
+  /** The player's ideas (M2-3); null without a player. */
+  ideas: IdeasView | null;
+}
+
+/** Ideas a player holds (M2-3, server/src/mvp/ideas.ts): earned by finished
+ * runs (MvpRules.ideaEveryRuns, ideaHold), spent by writing one (M2-4). */
+export interface IdeasView {
+  held: number;
+  /** Finished runs until the next idea; null while `held` is at the cap. */
+  nextIn: number | null;
+  /** M2-6: the player's ideas waiting for their pick (`pick-archetype`,
+   * `pick-reading`); Home shows "💡 Your idea is ready". */
+  ready: number;
+}
+
+/** Who a live unit's idea was and whether it is new (M2-9,
+ * server/src/mvp/credits.ts): only units with an author or a recent entry. */
+export interface UnitCredit {
+  unitId: UnitId;
+  /** The player whose idea it was; null for the seed. */
+  by: PlayerRef | null;
+  /** NEW: it entered the pool in the last NEW_DAYS days (seed units never are). */
+  isNew: boolean;
+}
+
+/** GET /credits: the live units' credits, and the caller's creator number. */
+export interface CreditsView {
+  /** Today's day seq. */
+  day: number;
+  units: UnitCredit[];
+  /** Null without a player. `days`: the days the player's units have been
+   * live, summed over every stint; `units`: how many units are theirs. */
+  you: { days: number; units: number } | null;
+}
+
+/** A unit that has left the pool (GET /library, M2-9). */
+export interface LibraryUnit {
+  unit: UnitContent;
+  by: PlayerRef | null;
+  /** Days it was live, summed over its stints; null when no stint was ever
+   * recorded (the units cut before units became data, M2-1). */
+  liveDays: number | null;
+  /** Its fusions, as either part. */
+  fusions: FusionDiscovery[];
+}
+
+/** GET /library: the units that have left, newest first, with the abilities,
+ * statuses and summons their sheets need (the live content may lack them). */
+export interface LibraryView {
+  units: LibraryUnit[];
+  abilities: AbilityRegistry;
+  statuses: StatusRegistry;
+  summons: SummonContent[];
+}
+
+/** Where a written idea is on its way to a unit (mission 2), in order:
+ * `written` (M2-4) waits for the reader; `reading` (M2-5) is with the model;
+ * `pick-archetype` and `pick-reading` (M2-6) wait for its author; `simulating`
+ * (M2-7) sets its numbers; `voting` (M2-8); `live` in the pool (M2-10);
+ * `failed` back to its author with the reason, the idea refunded; `library`
+ * left the pool. */
+export const IDEA_STATES = ["written", "reading", "pick-archetype", "pick-reading", "simulating", "voting", "live", "failed", "library"] as const;
+export type IdeaState = (typeof IDEA_STATES)[number];
+
+/** An idea's text, in characters after trimming. */
+export const IDEA_TEXT_MIN = 10;
+export const IDEA_TEXT_MAX = 400;
+
+/** A written idea as stored (mvp_ideas, server/src/mvp/ideas.ts). Its text is
+ * private: only its author ever gets it back. */
+export interface Idea {
+  ideaId: string;
+  playerId: string;
+  text: string;
+  state: IdeaState;
+  createdAt: string;
+  /** What later stages add (M2-5's archetypes and readings, M2-6's picks,
+   * M2-7's numbers, a failure's reason, the unit it became). */
+  data: IdeaData;
+}
+
+/** What later stages add to an idea; each slice adds its own optional keys. */
+export interface IdeaData {
+  /** M2-5: the archetypes read from the text (`pick-archetype`), checked. */
+  archetypes?: IdeaArchetype[];
+  /** M2-5: the archetype its author picked; the readings are read for it. */
+  archetype?: IdeaArchetype;
+  /** M2-5: the readings for that archetype (`pick-reading`), checked. */
+  readings?: IdeaReading[];
+  /** M2-5: the parts of the text the game has no words for yet, quoted from
+   * the text itself (the missing words go to the new-words log). */
+  cantExpress?: string[];
+  /** Why the idea came back (`failed`); the idea was refunded. */
+  failure?: string;
+  /** M2-5: the candidate unit its picked reading became (`simulating`);
+   * M2-8's overnight check stores its tuned row there, `rejected` on a fail. */
+  unitId?: UnitId;
+  /** M2-8: when the overnight check judged it. */
+  checkedAt?: string;
+  /** M2-5: the reader's failed tries at this stage, and when it tries again
+   * (ISO); a model error or timeout only delays the idea. */
+  tries?: number;
+  retryAt?: string;
+  /** M2-6: the options its author turned down with "None of these", by
+   * stage. Each stage may be turned down once; the reader is asked for
+   * different ones, and a second "None of these" refunds the idea. */
+  declined?: { archetypes?: IdeaArchetype[]; readings?: IdeaReading[] };
+}
+
+/** M2-5: an archetype the reader made of an idea: a name, an emoji and a
+ * one-sentence line, all checked (archetypeProblems, the crude checks, a
+ * name no unit or candidate has). */
+export interface IdeaArchetype {
+  name: string;
+  emoji: string;
+  line: string;
+}
+
+/** M2-5: a reading of an idea as When → Who → Does in the words of
+ * src/mvp/units.ts (a `Row` without name and numbers: those are
+ * placeholders M2-7 tunes), and each form as formText renders it. Only
+ * these rendered forms and the archetype are ever shown. */
+export interface IdeaReading {
+  when: WhenKey;
+  who: WhoKey;
+  does: string;
+  awoken: AwokenRow;
+  text: { sleeping: string; awoken: string };
+}
+
+/** An either/or vote card (M2-8): a candidate and a typical live unit, in
+ * random order. `pool` holds what both units' sheets need (their abilities
+ * and summons): a candidate isn't in the content. */
+export interface VoteCard {
+  candidateId: UnitId;
+  otherId: UnitId;
+  units: [UnitContent, UnitContent];
+  pool: { abilities: AbilityRegistry; statuses: StatusRegistry; summons: SummonContent[] };
+}
+
+/** POST /votes: the unit picked, or null to skip. */
+export interface VoteRequest {
+  candidateId: UnitId;
+  otherId: UnitId;
+  pick: UnitId | null;
+}
+
+/** A candidate's standing (M2-8, server/src/mvp/votes.ts): `share` the votes it
+ * won against typical live units (skips not counted), `novelty` 0–1 how rare
+ * its When/Who/Does are in the live pool, `score` = share + the novelty bonus. */
+export interface CandidateScore {
+  unitId: UnitId;
+  name: string;
+  emoji: string;
+  authorId: string | null;
+  votes: number;
+  won: number;
+  share: number;
+  novelty: number;
+  score: number;
+  qualified: boolean;
+}
+
+/** One of the player's own ideas, as My ideas shows it. */
+export type MyIdea = Omit<Idea, "playerId">;
+
+/** The My ideas screen: the ideas held, and the ones sent, newest first. */
+export interface MyIdeasView {
+  ideas: IdeasView;
+  sent: MyIdea[];
 }
 
 // ---------- HTTP API ----------
@@ -650,7 +845,33 @@ export interface HomeView {
 //   GET  /api/v1/fusions                     → FusionDiscovery[]  (slice 10)
 //   GET  /api/v1/day                         → DayView            (slice 5)
 //   POST /api/v1/dev/end-day                 → DayView            (slice 5; 404 unless MVP_DEV=1)
+//   POST /api/v1/dev/grant-idea              → IdeasView          (M2-3; +1 idea up to the cap; 404 unless MVP_DEV=1)
+//   GET  /api/v1/ideas                       → MyIdeasView        (M2-4; the caller's own ideas only, 401 without a player)
+//   POST /api/v1/ideas         { text }      → MyIdeasView        (M2-4; writes one, spending a held idea: 400 text not
+//                                                                  IDEA_TEXT_MIN–MAX characters, 409 no idea held)
+//   POST /api/v1/ideas/:ideaId/cancel        → MyIdeasView        (M2-4; takes back a `written` idea and refunds it: 404 not
+//                                                                  the caller's, 409 past `written` or ideas held at the cap)
+//   GET  /api/v1/ideas/:ideaId               → MyIdea             (M2-5; the caller's own idea with its options; 404 not theirs)
+//   POST /api/v1/ideas/:ideaId/archetype { index } → MyIdeasView  (M2-5; picks an archetype in `pick-archetype`: the reader
+//                                                                  reads its readings next; 400 no such option, 409 another state)
+//   POST /api/v1/ideas/:ideaId/reading   { index } → MyIdeasView  (M2-5; picks a reading in `pick-reading`: the idea is
+//                                                                  `simulating`, its unit a candidate; 409 another state, or the
+//                                                                  name or shape was just taken, the option dropped)
+//   POST /api/v1/ideas/:ideaId/none          → MyIdeasView        (M2-6; "None of these" in `pick-archetype` or `pick-reading`:
+//                                                                  the stage is read once more; the second time the idea
+//                                                                  fails and is refunded; 409 another state)
+//   GET  /api/v1/votes/next                  → { card: VoteCard | null }  (M2-8; never the caller's own candidate, nor a pair they voted on)
+//   POST /api/v1/votes         VoteRequest   → { card: VoteCard | null }  (M2-8; the next card: 404 no such candidate or live unit,
+//                                                                  400 a pick of neither, 409 already voted on this pair or
+//                                                                  the caller's own candidate or a bot)
+//   POST /api/v1/dev/overnight-check         → { started: number }        (M2-8; starts the simulation on every `simulating` idea)
+//   POST /api/v1/dev/seed-candidate { unit? } → MyIdeasView               (M2-8; the caller's idea in `simulating`: a renamed live unit, `unit`'s or a random one)
+//   POST /api/v1/dev/fake-votes              → CandidateScore[]           (M2-8; 5 fake votes on each candidate, 4 for it)
+//   GET  /api/v1/dev/candidates              → CandidateScore[]           (M2-8; every candidate, qualified ones first, best first)
 //   GET  /api/v1/stats                       → StatsView          (slice 11)
+//   GET  /api/v1/credits                     → CreditsView        (M2-9; authors, NEW, your creator number)
+//   GET  /api/v1/library                     → LibraryView        (M2-9; the units that have left)
+//   POST /api/v1/dev/credit-unit { unitId }  → CreditsView        (M2-9; dev: the unit becomes your idea, entered today)
 
 export const PLAYER_HEADER = "X-Arena-Player";
 /** Slice 13: the session token from POST /invites/redeem. */

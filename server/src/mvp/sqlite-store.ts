@@ -9,9 +9,9 @@
 import Database from "better-sqlite3";
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
+import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, Idea, IdeaState, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
-import { MAX_SESSIONS, nameKey, type Invite, type MvpStore, type UnitTallies, type UnitTally } from "./store.js";
+import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally, type Vote, type WordRequest } from "./store.js";
 
 const SQL_DIR = fileURLToPath(new URL("./sql/", import.meta.url));
 
@@ -46,12 +46,13 @@ const parseAll = <T>(rows: unknown[]): T[] => rows.map((r) => JSON.parse((r as R
 export class SqliteMvpStore implements MvpStore {
   readonly db: Database.Database;
 
-  /** `path` is a file, or ":memory:" for tests. */
-  constructor(path: string) {
+  /** `path` is a file, or ":memory:" for tests. `sqlDir`: the migrations
+   * (tests build an older schema from a copy of fewer files). */
+  constructor(path: string, sqlDir = SQL_DIR) {
     this.db = new Database(path);
     this.db.pragma("journal_mode = WAL");
     this.db.pragma("busy_timeout = 5000");
-    migrateMvp(this.db);
+    migrateMvp(this.db, sqlDir);
   }
 
   close(): void { this.db.close(); }
@@ -75,12 +76,12 @@ export class SqliteMvpStore implements MvpStore {
   addGhost(g: Ghost): void {
     this.write("INSERT INTO mvp_ghosts (ghost_id, round, player_id, content_version, json) VALUES (?, ?, ?, ?, ?)", g.ghostId, g.round, g.player.id, g.contentVersion, JSON.stringify(g));
   }
-  ghosts(round: number, opts: { excludePlayerId: string; contentVersion: string; limit?: number }): Ghost[] {
-    // The newest `limit` (-1: all) through the (round, content_version) index,
-    // whose entries are in seq (rowid) order, then oldest first.
+  ghosts(round: number, opts: { excludePlayerId: string; limit?: number }): Ghost[] {
+    // The newest `limit` (-1: all) through the (round, seq) index (M2-2), then
+    // oldest first.
     return this.all(
-      "SELECT json FROM (SELECT seq, json FROM mvp_ghosts WHERE round = ? AND content_version = ? AND player_id != ? ORDER BY seq DESC LIMIT ?) ORDER BY seq",
-      round, opts.contentVersion, opts.excludePlayerId, opts.limit ?? -1,
+      "SELECT json FROM (SELECT seq, json FROM mvp_ghosts WHERE round = ? AND player_id != ? ORDER BY seq DESC LIMIT ?) ORDER BY seq",
+      round, opts.excludePlayerId, opts.limit ?? -1,
     );
   }
 
@@ -184,4 +185,100 @@ export class SqliteMvpStore implements MvpStore {
       return this.db.prepare("DELETE FROM mvp_sessions WHERE player_id = ?").run(next.playerId).changes;
     }).immediate();
   }
+
+  putUnit(u: StoredUnit): void {
+    this.write(
+      "INSERT INTO mvp_units (unit_id, status, author_id, json) VALUES (?, ?, ?, ?) ON CONFLICT(unit_id) DO UPDATE SET status = excluded.status, author_id = excluded.author_id, json = excluded.json",
+      u.unitId, u.status, u.authorId, JSON.stringify(u),
+    );
+  }
+  unit(id: UnitId): StoredUnit | undefined { return this.one("SELECT json FROM mvp_units WHERE unit_id = ?", id); }
+  units(opts: { status?: UnitStatus } = {}): StoredUnit[] {
+    return this.all("SELECT json FROM mvp_units WHERE (@status IS NULL OR status = @status) ORDER BY rowid", { status: opts.status ?? null });
+  }
+  putPool(p: PoolSnapshot): void { this.write("INSERT INTO mvp_pools (version, day_seq, json) VALUES (?, ?, ?)", p.version, p.daySeq, JSON.stringify(p)); }
+  pool(version: string): PoolSnapshot | undefined { return this.one("SELECT json FROM mvp_pools WHERE version = ? ORDER BY seq DESC LIMIT 1", version); }
+  currentPool(): PoolSnapshot | undefined { return this.one("SELECT json FROM mvp_pools ORDER BY seq DESC LIMIT 1"); }
+  putStint(s: PoolStint): void {
+    this.write(
+      "INSERT INTO mvp_pool_stints (unit_id, entered_seq, json) VALUES (?, ?, ?) ON CONFLICT(unit_id, entered_seq) DO UPDATE SET json = excluded.json",
+      s.unitId, s.enteredSeq, JSON.stringify(s),
+    );
+  }
+  stints(unitId?: UnitId): PoolStint[] {
+    return this.all("SELECT json FROM mvp_pool_stints WHERE (@unit IS NULL OR unit_id = @unit) ORDER BY unit_id, entered_seq", { unit: unitId ?? null });
+  }
+  seedPool(units: StoredUnit[], pool: PoolSnapshot, stints: PoolStint[]): boolean {
+    // IMMEDIATE: two servers starting on one file can't both seed.
+    return this.db.transaction(() => {
+      if (this.db.prepare("SELECT 1 FROM mvp_pools LIMIT 1").get()) return false;
+      for (const u of units) this.putUnit(u);
+      this.putPool(pool);
+      for (const s of stints) this.putStint(s);
+      return true;
+    }).immediate();
+  }
+  atomically<T>(fn: () => T): T { return this.db.transaction(fn).immediate(); }
+  addDayTallies(daySeq: number, delta: DayTallies): void {
+    this.db.transaction(() => {
+      if (delta.runs) {
+        this.write("INSERT INTO mvp_day_run_tallies (day_seq, runs) VALUES (?, ?) ON CONFLICT(day_seq) DO UPDATE SET runs = runs + excluded.runs", daySeq, delta.runs);
+      }
+      const up = this.db.prepare(
+        "INSERT INTO mvp_unit_day_tallies (day_seq, unit_id, fights, wins, runs, picks) VALUES (?, ?, ?, ?, ?, ?) " +
+          "ON CONFLICT(day_seq, unit_id) DO UPDATE SET fights = fights + excluded.fights, wins = wins + excluded.wins, runs = runs + excluded.runs, picks = picks + excluded.picks",
+      );
+      for (const u of delta.units) up.run(daySeq, u.unitId, u.fights, u.wins, u.runs, u.picks);
+    })();
+  }
+  dayTallies(daySeq: number): DayTallies {
+    const runs = (this.db.prepare("SELECT runs FROM mvp_day_run_tallies WHERE day_seq = ?").get(daySeq) as { runs: number } | undefined)?.runs ?? 0;
+    const units = this.db
+      .prepare("SELECT unit_id AS unitId, fights, wins, runs, picks FROM mvp_unit_day_tallies WHERE day_seq = ? ORDER BY unit_id")
+      .all(daySeq) as UnitDayTally[];
+    return { runs, units };
+  }
+  ideaCounts(playerId: string): IdeaCounts { return this.one<IdeaCounts>("SELECT json FROM mvp_idea_counts WHERE player_id = ?", playerId) ?? { ...NO_IDEAS }; }
+  putIdeaCounts(playerId: string, c: IdeaCounts): void {
+    this.write("INSERT INTO mvp_idea_counts (player_id, json) VALUES (?, ?) ON CONFLICT(player_id) DO UPDATE SET json = excluded.json", playerId, JSON.stringify(c));
+  }
+  putIdea(i: Idea): void {
+    this.write(
+      "INSERT INTO mvp_ideas (id, player_id, text, state, created_at, json) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET player_id = excluded.player_id, text = excluded.text, state = excluded.state, created_at = excluded.created_at, json = excluded.json",
+      i.ideaId, i.playerId, i.text, i.state, i.createdAt, JSON.stringify(i.data),
+    );
+  }
+  idea(ideaId: string): Idea | undefined { return ideaOf(this.db.prepare("SELECT * FROM mvp_ideas WHERE id = ?").get(ideaId)); }
+  ideas(opts: { playerId?: string; state?: IdeaState } = {}): Idea[] {
+    return this.db
+      .prepare("SELECT * FROM mvp_ideas WHERE (@player IS NULL OR player_id = @player) AND (@state IS NULL OR state = @state) ORDER BY rowid")
+      .all({ player: opts.playerId ?? null, state: opts.state ?? null })
+      .map((r) => ideaOf(r)!);
+  }
+  deleteIdea(ideaId: string): void { this.write("DELETE FROM mvp_ideas WHERE id = ?", ideaId); }
+  addVote(v: Vote): boolean {
+    const r = this.db
+      .prepare("INSERT OR IGNORE INTO mvp_votes (player_id, candidate_id, other_id, pick, created_at) VALUES (?, ?, ?, ?, ?)")
+      .run(v.playerId, v.candidateId, v.otherId, v.pick, v.createdAt);
+    return r.changes > 0;
+  }
+  votes(opts: { candidateId?: UnitId; playerId?: string } = {}): Vote[] {
+    type VoteRow = { player_id: string; candidate_id: string; other_id: string; pick: string | null; created_at: string };
+    return (this.db
+      .prepare("SELECT * FROM mvp_votes WHERE (@candidate IS NULL OR candidate_id = @candidate) AND (@player IS NULL OR player_id = @player) ORDER BY rowid")
+      .all({ candidate: opts.candidateId ?? null, player: opts.playerId ?? null }) as VoteRow[])
+      .map((r) => ({ playerId: r.player_id, candidateId: r.candidate_id, otherId: r.other_id, pick: r.pick, createdAt: r.created_at }));
+  }
+  addWordRequest(w: WordRequest): void {
+    this.write("INSERT INTO mvp_word_requests (idea_id, word, part, created_at) VALUES (?, ?, ?, ?)", w.ideaId, w.word, w.part, w.createdAt);
+  }
+  wordRequests(): WordRequest[] {
+    return this.db.prepare("SELECT idea_id AS ideaId, word, part, created_at AS createdAt FROM mvp_word_requests ORDER BY id").all() as WordRequest[];
+  }
 }
+
+type IdeaRow = { id: string; player_id: string; text: string; state: IdeaState; created_at: string; json: string };
+const ideaOf = (row: unknown): Idea | undefined => {
+  const r = row as IdeaRow | undefined;
+  return r && { ideaId: r.id, playerId: r.player_id, text: r.text, state: r.state, createdAt: r.created_at, data: JSON.parse(r.json) as Idea["data"] };
+};

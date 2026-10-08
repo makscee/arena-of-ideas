@@ -22,7 +22,7 @@ if (!url) {
   const port = await new Promise((r) => { const s = createServer().listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => r(p)); }); });
   child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port), MVP_DEV: "1", MVP_DB: ":memory:" }, stdio: ["ignore", "inherit", "inherit"] });
   url = `http://127.0.0.1:${port}/arena/`;
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 300; i++) { // up to 60 s: m1 and m4 are shared, and under load the server starts slowly
     try { if ((await fetch(url + "api/v1/health")).ok) break; } catch {}
     await new Promise((r) => setTimeout(r, 200));
   }
@@ -154,6 +154,8 @@ try {
   await page.getByTestId("name-submit").click();
   await page.getByTestId("play").waitFor();
   await shot("home"); await noHScroll("home"); await noRates("home"); await onScreen("home: Play", page.getByTestId("play"));
+  // M2-3: a quiet ideas line; a new player earns the first in 3 runs.
+  if ((await page.getByTestId("ideas").textContent()) !== "💡 next idea in 3 runs") errors.push(`home: ideas line "${await page.getByTestId("ideas").textContent()}"`);
   await tap44("dev summary", page.locator("details.dev summary"));
   await page.getByTestId("rules-open").click();
   await page.getByTestId("rules").waitFor();
@@ -314,6 +316,16 @@ try {
   if (!/^[\d,]+ of [\d,]+ found$/.test(await page.getByTestId("codex-fusions-found").textContent())) errors.push(`codex: "${await page.getByTestId("codex-fusions-found").textContent()}"`);
   await shot("codex-fusions"); await noHScroll("codex-fusions");
   if ((await page.getByTestId("icon-credits").textContent()).indexOf("CC BY 3.0") < 0) errors.push("codex: no icon credits");
+  // M2-9: the Library lists the units that left (the 8 cut in round 4 on a
+  // fresh world), and one opens its sheet with how long it was live.
+  await page.getByTestId("codex-tab-library").click();
+  await page.getByTestId("codex-library").waitFor();
+  const libN = await page.getByTestId("library-unit").count();
+  if (libN < 8) errors.push(`codex: the Library lists ${libN} units, not the 8 cut in round 4`);
+  await page.getByTestId("library-unit").first().click({ position: { x: 30, y: 70 } });
+  await page.getByTestId("library-live").waitFor();
+  await shot("codex-library"); await noHScroll("codex-library");
+  await page.keyboard.press("Escape");
   await page.getByTestId("codex-back").click();
   await page.getByTestId("play").waitFor();
   await page.getByTestId("play").click();
@@ -704,6 +716,7 @@ try {
   await page.getByTestId("home").click();
   await page.getByTestId("play").waitFor();
   await shot("home-after");
+  if (!/^💡 (next idea in [12] runs?|[1-3] ideas?)$/.test((await page.getByTestId("ideas").textContent()) ?? "")) errors.push(`home after a run: ideas line "${await page.getByTestId("ideas").textContent()}"`);
 
   // Stats (slice 11, R2-11): records and the champion history; units and
   // fusions moved to the Codex.
@@ -1080,6 +1093,15 @@ try {
   await page.getByTestId("play").waitFor();
   const endedSeq = (await call("GET", "/day")).seq;
   await page.locator("details.dev summary").click();
+  // M2-3: dev "+1 idea" brings an idea home at once.
+  const heldBefore = Number(/^💡 (\d) ideas?$/.exec((await page.getByTestId("ideas").textContent()) ?? "")?.[1] ?? 0);
+  await page.getByTestId("grant-idea").click();
+  const heldNow = Math.min(3, heldBefore + 1);
+  await page.waitForFunction((t) => document.querySelector('[data-testid="ideas"]')?.textContent === t, `💡 ${heldNow} idea${heldNow === 1 ? "" : "s"}`, { timeout: 10_000 }).catch(() => errors.push(`dev +1 idea: ideas line "${heldNow}" never showed`));
+  await shot("home-idea-granted"); await noHScroll("home-idea-granted");
+  await onScreen("home after +1 idea: Play", page.getByTestId("play"));
+  await page.locator("details.dev summary").click().catch(() => {});
+  if (!(await page.getByTestId("end-day").isVisible())) await page.locator("details.dev summary").click();
   await page.getByTestId("end-day").click();
   // Home re-renders with the day just ended ("Day N ended" / "Playoff · day
   // N"), not the panel of the day before, which is already on screen.

@@ -8,6 +8,7 @@
 import { battle, winnerOf } from "../battle.js";
 import type { BattleEvent, Side, UnitDef } from "../types.js";
 import type { BattleRecord, BattleUnit, FightKind, LineUnit, MvpContent, MvpRules, PlayerRef } from "./contract.js";
+import { withLineAbilities } from "./units.js";
 
 /** A line unit as battle() input. */
 export function toBattleDef(u: LineUnit): UnitDef {
@@ -69,7 +70,8 @@ export function fightLines(a: FightSide, b: FightSide, o: FightOptions): BattleR
     teamA: a.line.map(toBattleDef),
     teamB: b.line.map(toBattleDef),
     seed: o.seed,
-    abilities: o.content.abilities,
+    // A line made on another pool (a ghost, the champion) brings its own names (M2-2).
+    abilities: withLineAbilities(o.content.abilities, [a.line, b.line]),
     statuses: o.content.statuses,
     chainStepCap: o.rules.chainStepCap,
     ...(o.rules.turnCap !== undefined ? { turnCap: o.rules.turnCap } : {}),

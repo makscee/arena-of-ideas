@@ -13,7 +13,8 @@
 // A fused unit counts for both its parts. Records (slays, days as champion,
 // playoff wins) are each player's Rating, which slices 4 and 5 write; the
 // client reads them from GET /home.
-import type { BattleRecord, LineUnit, StatsView, UnitId } from "../../../src/mvp/contract.js";
+import type { BattleRecord, Decision, LineUnit, StatsView, UnitId } from "../../../src/mvp/contract.js";
+import type { MvpRunState } from "../../../src/mvp/run.js";
 import type { RunDeps, RunHooks } from "./runs.js";
 import type { UnitTally } from "./store.js";
 
@@ -35,32 +36,64 @@ export function isWalkover(b: Pick<BattleRecord, "teamA" | "teamB">): boolean {
   return b.teamA.length === 0 || b.teamB.length === 0;
 }
 
-/** Slice 11's observers of the run engine: one tally write per fight and per finished run. */
+/** The unit a decision took into the run: a shop buy or a gift pick. */
+export function pickedUnit(before: Pick<MvpRunState, "offers" | "gift">, d: Decision): UnitId | undefined {
+  if (d.kind === "buy") return before.offers.find((o) => o.slot === d.slot)?.unitId;
+  if (d.kind === "gift" && d.pick !== null) return before.gift?.[d.pick];
+  return undefined;
+}
+
+/** Slice 11's observers of the run engine: one tally write per fight and per
+ * finished run, per content version and (M2-1) per day; per day also each pick. */
 export function statsHooks(rt: Pick<RunDeps, "store" | "content" | "now">): RunHooks {
+  // The stored day, never rolled over here: a fight just past 04:00, before
+  // anything ends the day, counts for the day it was fought in.
+  const daySeq = () => rt.store.currentDay()?.seq ?? 1;
   return {
+    onDecision(before, d) {
+      const unitId = pickedUnit(before, d);
+      if (unitId) rt.store.addDayTallies(daySeq(), { runs: 0, units: [{ unitId, fights: 0, wins: 0, runs: 0, picks: 1 }] });
+    },
     onFight(run, fight, battle) {
       if (isWalkover(battle)) return;
       const won = fight.outcome === "win" ? 1 : 0;
-      rt.store.addUnitTallies(run.contentVersion, { runs: 0, units: lineUnitIds(run.line).map((unitId) => ({ unitId, fights: 1, wins: won, runs: 0 })) });
+      const ids = lineUnitIds(run.line);
+      rt.store.addUnitTallies(run.contentVersion, { runs: 0, units: ids.map((unitId) => ({ unitId, fights: 1, wins: won, runs: 0 })) });
+      rt.store.addDayTallies(daySeq(), { runs: 0, units: ids.map((unitId) => ({ unitId, fights: 1, wins: won, runs: 0, picks: 0 })) });
     },
     onRunEnd(run) {
-      rt.store.addUnitTallies(run.contentVersion, { runs: 1, units: lineUnitIds(run.line).map((unitId) => ({ unitId, fights: 0, wins: 0, runs: 1 })) });
+      const ids = lineUnitIds(run.line);
+      rt.store.addUnitTallies(run.contentVersion, { runs: 1, units: ids.map((unitId) => ({ unitId, fights: 0, wins: 0, runs: 1 })) });
+      rt.store.addDayTallies(daySeq(), { runs: 1, units: ids.map((unitId) => ({ unitId, fights: 0, wins: 0, runs: 1, picks: 0 })) });
     },
   };
 }
 
-/** GET /stats: the live content's unit rates (most picked first), every
- * day's champion up to today (oldest first) and the discovered fusions. A day
- * end that failed after crowning leaves tomorrow's champion stored early (a
- * slayer's team, hidden until the day ends); like /day and the Crown, it
- * isn't listed until its day starts. */
+/** How many days, today included, the unit rates on GET /stats cover (M2-2). */
+export const STATS_WINDOW_DAYS = 14;
+
+/** GET /stats: the live pool's unit rates over the last STATS_WINDOW_DAYS
+ * days' tallies, whatever pools they were played on (most picked first),
+ * every day's champion up to today (oldest first) and the discovered fusions.
+ * A day end that failed after crowning leaves tomorrow's champion stored
+ * early (a slayer's team, hidden until the day ends); like /day and the
+ * Crown, it isn't listed until its day starts. */
 export function statsView(rt: RunDeps): StatsView {
-  const t = rt.store.unitTallies(rt.content.version);
-  const live = new Set(rt.content.units.map((u) => u.id));
-  const units = t.units
-    .filter((u: UnitTally) => live.has(u.unitId))
-    .map((u) => ({ unitId: u.unitId, winRate: u.fights ? u.wins / u.fights : 0, pickRate: t.runs ? u.runs / t.runs : 0, runs: u.runs }))
-    .sort((a, b) => b.pickRate - a.pickRate || b.winRate - a.winRate || a.unitId.localeCompare(b.unitId));
   const seq = rt.today().seq;
+  let runs = 0;
+  const byUnit = new Map<string, UnitTally>();
+  for (let day = Math.max(1, seq - STATS_WINDOW_DAYS + 1); day <= seq; day++) {
+    const t = rt.store.dayTallies(day);
+    runs += t.runs;
+    for (const u of t.units) {
+      const sum = byUnit.get(u.unitId) ?? { unitId: u.unitId, fights: 0, wins: 0, runs: 0 };
+      byUnit.set(u.unitId, { unitId: u.unitId, fights: sum.fights + u.fights, wins: sum.wins + u.wins, runs: sum.runs + u.runs });
+    }
+  }
+  const live = new Set(rt.content.units.map((u) => u.id));
+  const units = [...byUnit.values()]
+    .filter((u) => live.has(u.unitId))
+    .map((u) => ({ unitId: u.unitId, winRate: u.fights ? u.wins / u.fights : 0, pickRate: runs ? u.runs / runs : 0, runs: u.runs }))
+    .sort((a, b) => b.pickRate - a.pickRate || b.winRate - a.winRate || a.unitId.localeCompare(b.unitId));
   return { units, champions: rt.store.champions().filter((c) => c.seq <= seq), fusions: rt.store.fusions() };
 }

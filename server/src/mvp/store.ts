@@ -14,8 +14,9 @@
 //   another slice's or one that has shipped: a recorded file doesn't run again.
 // - Caches that aren't the game's record stay out of MvpStore (slice 10's name
 //   cache lives in ./fusions.ts).
-import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
+import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, Idea, IdeaState, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
+import type { Row } from "../../../src/mvp/units.js";
 
 export interface MvpStore {
   addPlayer(p: PlayerRef): void;
@@ -24,10 +25,10 @@ export interface MvpStore {
   run(id: string): MvpRunState | undefined;
   activeRun(playerId: string): MvpRunState | undefined;
   addGhost(g: Ghost): void;
-  /** Saved teams at this round built with `contentVersion`, never one of
+  /** Saved teams at this round, made on any pool (M2-2), never one of
    * `excludePlayerId`'s own, oldest first; with `limit`, only the newest
    * `limit` of them. */
-  ghosts(round: number, opts: { excludePlayerId: string; contentVersion: string; limit?: number }): Ghost[];
+  ghosts(round: number, opts: { excludePlayerId: string; limit?: number }): Ghost[];
   putBattle(b: BattleRecord): void;
   battle(id: string): BattleRecord | undefined;
   /** Stored battles, oldest first: of one kind, and/or fought at or after
@@ -85,6 +86,136 @@ export interface MvpStore {
   joinCode(): string | undefined;
   /** Sets (or rotates) the shared join code. */
   setJoinCode(code: string): void;
+  // M2-1's units as data (mission #735); ./pool.ts seeds and reads them.
+  /** Stores or replaces the unit with this id. */
+  putUnit(u: StoredUnit): void;
+  unit(id: UnitId): StoredUnit | undefined;
+  /** Every unit (or those with `status`), oldest first. */
+  units(opts?: { status?: UnitStatus }): StoredUnit[];
+  /** Adds a pool snapshot; it becomes the current one. */
+  putPool(p: PoolSnapshot): void;
+  /** The newest snapshot with this content version. */
+  pool(version: string): PoolSnapshot | undefined;
+  /** The newest snapshot: the live pool. */
+  currentPool(): PoolSnapshot | undefined;
+  /** Stores or replaces the stint (unit, enteredSeq). */
+  putStint(s: PoolStint): void;
+  /** Every stint (or one unit's), by unit then enteredSeq. */
+  stints(unitId?: UnitId): PoolStint[];
+  /** Writes the first pool in one step: the units, the snapshot and the
+   * stints, only while there is no pool yet. False: there was one, nothing written. */
+  seedPool(units: StoredUnit[], pool: PoolSnapshot, stints: PoolStint[]): boolean;
+  /** Runs `fn` as one write: on SQLite one IMMEDIATE transaction, so a crash
+   * or a throw midway leaves nothing of it (M2-2's sync-seed and swap). */
+  atomically<T>(fn: () => T): T;
+  /** Adds `delta` to day `daySeq`'s tallies (only ./stats.ts writes them). */
+  addDayTallies(daySeq: number, delta: DayTallies): void;
+  /** Day `daySeq`'s running totals; zero runs and no units before any. */
+  dayTallies(daySeq: number): DayTallies;
+  // Mission 2's idea counts (M2-3); only ./ideas.ts writes them.
+  /** The player's counts; all zero before any write. */
+  ideaCounts(playerId: string): IdeaCounts;
+  putIdeaCounts(playerId: string, c: IdeaCounts): void;
+  // Mission 2's written ideas (M2-4); ./ideas.ts and the later stages write them.
+  /** Stores or replaces the idea with this id. */
+  putIdea(i: Idea): void;
+  idea(ideaId: string): Idea | undefined;
+  /** Ideas oldest first: one player's, and/or in one state (the reader's queue). */
+  ideas(opts?: { playerId?: string; state?: IdeaState }): Idea[];
+  /** Removes an idea (a `written` one its author took back). */
+  deleteIdea(ideaId: string): void;
+  // Mission 2's new-words log (M2-5): what ideas needed that the game can't
+  // say yet. Only additions; ./idea-reading.ts writes it.
+  addWordRequest(w: WordRequest): void;
+  /** Every request, oldest first. */
+  wordRequests(): WordRequest[];
+  // Mission 2's votes (M2-8); only ./votes.ts writes them.
+  /** Adds a vote; false (nothing written) when the player already voted on this pair. */
+  addVote(v: Vote): boolean;
+  /** Votes oldest first: on one candidate, and/or by one player. */
+  votes(opts?: { candidateId?: UnitId; playerId?: string }): Vote[];
+}
+
+/** An idea the reader couldn't fully make (M2-5): the game word it lacks
+ * ("steal gold"), as the model named it, and the part of the idea's text
+ * that needed it. */
+export interface WordRequest {
+  ideaId: string;
+  word: string;
+  part: string;
+  createdAt: string;
+}
+
+/** One player's either/or between a candidate and a live unit (M2-8):
+ * `pick` is the unit chosen, null for a skip. One per player per pair. */
+export interface Vote {
+  playerId: string;
+  candidateId: UnitId;
+  otherId: UnitId;
+  pick: UnitId | null;
+  createdAt: string;
+}
+
+export type UnitStatus = "candidate" | "live" | "library" | "rejected";
+export type UnitOrigin = "idea" | "evolution" | "return" | "seed";
+
+/** A unit as data (M2-1). Its id is permanent and never reused, even for a
+ * unit with the same name; `row` is what the pool is built from (mvpPool). */
+export interface StoredUnit {
+  unitId: UnitId;
+  status: UnitStatus;
+  row: Row;
+  /** The player whose idea it was; null for the seed. */
+  authorId: string | null;
+  origin: UnitOrigin;
+  /** The unit it evolved from or returns as; null otherwise. */
+  parentId: UnitId | null;
+  createdAt: string;
+}
+
+/** The live units at a day: `version` is the content version built from
+ * `unitIds`, in this order. */
+export interface PoolSnapshot {
+  version: string;
+  daySeq: number;
+  unitIds: UnitId[];
+  createdAt: string;
+  /** The units' rows as they were in this pool (M2-2), so a run pinned to it
+   * buys what it bought before a later change to a unit's row. Missing on the
+   * seed snapshot: its rows are the stored units'. */
+  rows?: Row[];
+}
+
+/** One stay of a unit in the live pool, from day `enteredSeq` to `leftSeq`
+ * (null: still there). */
+export interface PoolStint {
+  unitId: UnitId;
+  enteredSeq: number;
+  leftSeq: number | null;
+  /** Why it entered (while there) or left. */
+  reason: string;
+}
+
+/** Day tallies: finished runs, and per unit what UnitTally counts plus picks. */
+export interface DayTallies {
+  runs: number;
+  units: UnitDayTally[];
+}
+
+export interface UnitDayTally extends UnitTally {
+  /** Times it was bought from the shop or taken as a gift. */
+  picks: number;
+}
+
+/** What a player's ideas are counted from, besides their finished runs
+ * (Rating.runs): ./ideas.ts derives the ideas held from both. */
+export interface IdeaCounts {
+  /** Ideas written (M2-4) or refunded back (a negative step). */
+  spent: number;
+  /** Dev "+1 idea". */
+  granted: number;
+  /** Ideas earned while holding the cap, so never held. */
+  forfeited: number;
 }
 
 /** Devices per player: opening a link past this ends the oldest session. */
@@ -150,8 +281,8 @@ export class MemoryMvpStore implements MvpStore {
     list.push(g);
     this.ghostsByRound.set(g.round, list);
   }
-  ghosts(round: number, opts: { excludePlayerId: string; contentVersion: string; limit?: number }): Ghost[] {
-    const all = (this.ghostsByRound.get(round) ?? []).filter((g) => g.player.id !== opts.excludePlayerId && g.contentVersion === opts.contentVersion);
+  ghosts(round: number, opts: { excludePlayerId: string; limit?: number }): Ghost[] {
+    const all = (this.ghostsByRound.get(round) ?? []).filter((g) => g.player.id !== opts.excludePlayerId);
     return opts.limit === undefined ? all : all.slice(Math.max(0, all.length - opts.limit));
   }
   putBattle(b: BattleRecord): void { this.battlesById.set(b.battleId, b); }
@@ -234,7 +365,73 @@ export class MemoryMvpStore implements MvpStore {
   private join: string | undefined;
   joinCode(): string | undefined { return this.join; }
   setJoinCode(code: string): void { this.join = code; }
+  private unitsById = new Map<UnitId, StoredUnit>();
+  private pools: PoolSnapshot[] = [];
+  private stintsByKey = new Map<string, PoolStint>();
+  private dayTalliesBySeq = new Map<number, { runs: number; units: Map<UnitId, UnitDayTally> }>();
+  putUnit(u: StoredUnit): void { this.unitsById.set(u.unitId, structuredClone(u)); }
+  unit(id: UnitId): StoredUnit | undefined { const u = this.unitsById.get(id); return u && structuredClone(u); }
+  units(opts: { status?: UnitStatus } = {}): StoredUnit[] {
+    return [...this.unitsById.values()].filter((u) => opts.status === undefined || u.status === opts.status).map((u) => structuredClone(u));
+  }
+  putPool(p: PoolSnapshot): void { this.pools.push(structuredClone(p)); }
+  pool(version: string): PoolSnapshot | undefined { const p = [...this.pools].reverse().find((x) => x.version === version); return p && structuredClone(p); }
+  currentPool(): PoolSnapshot | undefined { const p = this.pools.at(-1); return p && structuredClone(p); }
+  putStint(s: PoolStint): void { this.stintsByKey.set(JSON.stringify([s.unitId, s.enteredSeq]), { ...s }); }
+  stints(unitId?: UnitId): PoolStint[] {
+    return [...this.stintsByKey.values()]
+      .filter((s) => unitId === undefined || s.unitId === unitId)
+      .sort((a, b) => (a.unitId < b.unitId ? -1 : a.unitId > b.unitId ? 1 : a.enteredSeq - b.enteredSeq))
+      .map((s) => ({ ...s }));
+  }
+  seedPool(units: StoredUnit[], pool: PoolSnapshot, stints: PoolStint[]): boolean {
+    if (this.pools.length) return false;
+    for (const u of units) this.putUnit(u);
+    this.putPool(pool);
+    for (const s of stints) this.putStint(s);
+    return true;
+  }
+  atomically<T>(fn: () => T): T { return fn(); }
+  addDayTallies(daySeq: number, delta: DayTallies): void {
+    const t = this.dayTalliesBySeq.get(daySeq) ?? { runs: 0, units: new Map<UnitId, UnitDayTally>() };
+    t.runs += delta.runs;
+    for (const d of delta.units) {
+      const u = t.units.get(d.unitId) ?? { unitId: d.unitId, fights: 0, wins: 0, runs: 0, picks: 0 };
+      t.units.set(d.unitId, { unitId: d.unitId, fights: u.fights + d.fights, wins: u.wins + d.wins, runs: u.runs + d.runs, picks: u.picks + d.picks });
+    }
+    this.dayTalliesBySeq.set(daySeq, t);
+  }
+  dayTallies(daySeq: number): DayTallies {
+    const t = this.dayTalliesBySeq.get(daySeq);
+    return { runs: t?.runs ?? 0, units: t ? [...t.units.values()].sort((a, b) => (a.unitId < b.unitId ? -1 : a.unitId > b.unitId ? 1 : 0)).map((u) => ({ ...u })) : [] };
+  }
+  private ideaCountsBy = new Map<string, IdeaCounts>();
+  ideaCounts(playerId: string): IdeaCounts { return { ...(this.ideaCountsBy.get(playerId) ?? NO_IDEAS) }; }
+  putIdeaCounts(playerId: string, c: IdeaCounts): void { this.ideaCountsBy.set(playerId, { ...c }); }
+  private written = new Map<string, Idea>();
+  putIdea(i: Idea): void {
+    this.written.set(i.ideaId, structuredClone(i));
+  }
+  idea(ideaId: string): Idea | undefined { const i = this.written.get(ideaId); return i && structuredClone(i); }
+  ideas(opts: { playerId?: string; state?: IdeaState } = {}): Idea[] {
+    return [...this.written.values()].filter((i) => (opts.playerId === undefined || i.playerId === opts.playerId) && (opts.state === undefined || i.state === opts.state)).map((i) => structuredClone(i));
+  }
+  deleteIdea(ideaId: string): void { this.written.delete(ideaId); }
+  private votesList: Vote[] = [];
+  addVote(v: Vote): boolean {
+    if (this.votesList.some((x) => x.playerId === v.playerId && x.candidateId === v.candidateId && x.otherId === v.otherId)) return false;
+    this.votesList.push({ ...v });
+    return true;
+  }
+  votes(opts: { candidateId?: UnitId; playerId?: string } = {}): Vote[] {
+    return this.votesList.filter((v) => (opts.candidateId === undefined || v.candidateId === opts.candidateId) && (opts.playerId === undefined || v.playerId === opts.playerId)).map((v) => ({ ...v }));
+  }
+  private words: WordRequest[] = [];
+  addWordRequest(w: WordRequest): void { this.words.push({ ...w }); }
+  wordRequests(): WordRequest[] { return this.words.map((w) => ({ ...w })); }
 }
+
+export const NO_IDEAS: IdeaCounts = { spent: 0, granted: 0, forfeited: 0 };
 
 /** Ordered: (a, b) and (b, a) are different fusions. */
 function pairKey(first: UnitId, second: UnitId): string {

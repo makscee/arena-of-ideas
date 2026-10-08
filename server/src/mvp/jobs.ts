@@ -5,12 +5,16 @@
 import { botWorld } from "./bots.js";
 import { dayRollover } from "./day.js";
 import { fusionNamingJob } from "./fusions.js";
+import { ideaReadingJob } from "./idea-reading.js";
 import type { MvpJob, MvpRuntime } from "./runtime.js";
+import { overnightJob } from "./votes.js";
 
 export const MVP_JOBS: MvpJob[] = [
   dayRollover, // slice 5: the 04:00 rollover
   botWorld, // slice 6: the champion seed and the bot top-up
   fusionNamingJob, // slice 10: the naming queue
+  ideaReadingJob, // M2-5: reads written ideas (ARENA_IDEA_READER)
+  overnightJob, // M2-8: the overnight check after the day end
 ];
 
 /** Starts every job on `rt`; returns one function that stops them all. */

@@ -1230,6 +1230,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     controls.dataset.turnEnd = sum ? String(sum.turn) : "";
     // Under the end card the phone's caption keeps only its line (style.css).
     caption.classList.toggle("ended", finished && !trace);
+    clearBeams();
     recent.replaceChildren(
       ...beats.slice(Math.max(0, at - 3), Math.max(0, at)).reverse().map((pb) => {
         // A past beat reads as its first wave, the strike or tick that opened it.
@@ -1475,6 +1476,54 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       }
     });
     fx.replaceChildren(...kids);
+  }
+
+  /** Nothing over a bright beam hides it (#798). Where it passes under the
+   * caption, the caption's words turn see-through along it: a mask over the
+   * caption (its text, icons and border) with the beam's own path stroked
+   * faint, so the beam reads end to end and the words either side stay. A
+   * unit's running totals over the beam step aside, beside the beam and on
+   * screen, clear of other totals; with no room for that they stay and turn
+   * see-through along it too. */
+  const masks = new WeakMap<HTMLElement, string>();
+  function maskBeams(el: HTMLElement, r: DOMRect, ds: string[], width: number): void {
+    const [x, y, w, hh] = [r.left, r.top, r.width, r.height].map((n) => n.toFixed(1));
+    const mask = ds.length
+      ? `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="${SVG_NS}" viewBox="${x} ${y} ${w} ${hh}" width="${w}" height="${hh}" preserveAspectRatio="none"><mask id="m" maskUnits="userSpaceOnUse" x="${x}" y="${y}" width="${w}" height="${hh}"><rect x="${x}" y="${y}" width="${w}" height="${hh}" fill="white"/>${ds.map((d) => `<path d="${d}" fill="none" stroke="rgb(38,38,38)" stroke-width="${width}" stroke-linecap="round"/>`).join("")}</mask><rect x="${x}" y="${y}" width="${w}" height="${hh}" mask="url(#m)"/></svg>`)}")`
+      : "";
+    if ((masks.get(el) ?? "") === mask) return;
+    masks.set(el, mask);
+    el.style.maskImage = mask;
+    el.style.maskSize = mask ? "100% 100%" : "";
+    el.style.maskRepeat = mask ? "no-repeat" : "";
+  }
+  function clearBeams(): void {
+    const lines = [...fx.querySelectorAll<SVGPathElement>(".bv-beam.now:not(.ring) path")].map((p) => {
+      const len = p.getTotalLength();
+      return { d: p.getAttribute("d") ?? "", pts: Array.from({ length: 41 }, (_, i) => p.getPointAtLength((len * i) / 40)) };
+    });
+    const hits = (r: DOMRect, padX = 4, padY = 2) => lines.filter((l) => l.pts.some((p) => p.x >= r.left - padX && p.x <= r.right + padX && p.y >= r.top - padY && p.y <= r.bottom + padY));
+    const cap = caption.getBoundingClientRect();
+    maskBeams(caption, cap, cap.width > 0 ? hits(cap, 6, 6).map((l) => l.d) : [], 10);
+    const boxes = [...runBoxes].filter(([, b]) => b.el.style.visibility !== "hidden");
+    for (const [, b] of boxes) { b.el.style.translate = ""; maskBeams(b.el, b.el.getBoundingClientRect(), [], 0); }
+    for (const [unit, b] of boxes) {
+      const box = b.el.getBoundingClientRect();
+      const on = hits(box);
+      if (!on.length) continue;
+      const xs = on.flatMap((l) => l.pts.filter((p) => p.y >= box.top - 2 && p.y <= box.bottom + 2).map((p) => p.x));
+      const card = [enemy, mine].map((row) => row.querySelector<HTMLElement>(`.bv-card[data-unit="${CSS.escape(unit)}"]`)).find((c) => c);
+      const slot = (card?.parentElement ?? card)?.getBoundingClientRect();
+      const others = boxes.filter(([u]) => u !== unit).map(([, o]) => o.el.getBoundingClientRect());
+      // Beside the beam, on screen, over no other totals and no beam; the less past its slot, the better.
+      const fits = [Math.max(...xs) + 5 - box.left, Math.min(...xs) - 5 - box.right]
+        .map((dx) => ({ dx, r: new DOMRect(box.left + dx, box.top, box.width, box.height) }))
+        .filter(({ r }) => r.left >= 2 && r.right <= innerWidth - 2 && !hits(r, 2, 2).length && !others.some((o) => o.left < r.right && o.right > r.left && o.top < r.bottom && o.bottom > r.top))
+        .map(({ dx, r }) => ({ dx, past: slot ? Math.max(0, slot.left - r.left, r.right - slot.right) : 0 }))
+        .sort((p, q) => p.past - q.past || Math.abs(p.dx) - Math.abs(q.dx));
+      if (fits[0]) b.el.style.translate = `calc(-50% + ${Math.round(fits[0].dx)}px) -100%`;
+      else maskBeams(b.el, box, on.map((l) => l.d), 6);
+    }
   }
 
   function drawBanner(v: View): void {
@@ -1858,7 +1907,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   addEventListener("resize", placeEnd, { signal: freed.signal });
   addEventListener("resize", placeRuns, { signal: freed.signal });
   addEventListener("resize", placeSheet, { signal: freed.signal });
-  addEventListener("resize", () => drawBeams(fxWaves.map((w) => ({ ...w, age: null }))), { signal: freed.signal });
+  addEventListener("resize", () => { drawBeams(fxWaves.map((w) => ({ ...w, age: null }))); clearBeams(); }, { signal: freed.signal });
   onGone(free);
   buildTimeline();
   buildLog();

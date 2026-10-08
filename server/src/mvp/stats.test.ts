@@ -1,8 +1,13 @@
+import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { DecisionResponse, LineUnit, PlayerRef, RunView, StatsView } from "../../../src/mvp/contract.js";
 import { createMvpApp } from "./app.js";
 import { mvpContent } from "./content.js";
 import { mvpRuntime } from "./runtime.js";
+import { SqliteMvpStore } from "./sqlite-store.js";
 import { decide, startRun } from "./runs.js";
 import { isWalkover, lineUnitIds } from "./stats.js";
 
@@ -49,13 +54,65 @@ describe("basic stats (slice 11)", () => {
     expect(rt.store.unitTallies(rt.content.version).runs).toBe(2);
   });
 
-  it("leaves out tallies of other content versions and units no longer live", async () => {
+  it("also tallies per day (M2-1): fights, wins, finished runs and picks", async () => {
+    const { rt, call } = world();
+    const a = await playOne(call, "one");
+    const unit = a.line[0]!.unitId;
+    const day = rt.store.dayTallies(rt.today().seq);
+    expect(day.runs).toBe(1);
+    const v = rt.store.unitTallies(rt.content.version).units.find((u) => u.unitId === unit)!;
+    expect(day.units.find((u) => u.unitId === unit)).toEqual({ ...v, picks: 1 });
+    expect(rt.store.dayTallies(rt.today().seq + 1)).toEqual({ runs: 0, units: [] });
+  });
+
+  it("rates units over the last 14 days' tallies, whatever pool they were played on, live units only (M2-2)", async () => {
     const { rt } = world();
+    rt.store.putDay({ ...rt.today(), seq: 20 });
     const live = rt.content.units[0]!.id;
-    rt.store.addUnitTallies("old", { runs: 4, units: [{ unitId: live, fights: 4, wins: 4, runs: 4 }] });
-    rt.store.addUnitTallies(rt.content.version, { runs: 4, units: [{ unitId: live, fights: 4, wins: 1, runs: 1 }, { unitId: "retired", fights: 9, wins: 9, runs: 4 }] });
+    const tally = (fights: number, wins: number, runs: number) => ({ unitId: live, fights, wins, runs, picks: 0 });
+    rt.store.addDayTallies(6, { runs: 9, units: [tally(9, 9, 9)] }); // 15 days ago: out of the window
+    rt.store.addDayTallies(7, { runs: 2, units: [tally(2, 0, 1)] });
+    rt.store.addDayTallies(20, { runs: 2, units: [tally(2, 1, 0), { unitId: "retired", fights: 9, wins: 9, runs: 2, picks: 0 }] });
+    rt.store.addUnitTallies(rt.content.version, { runs: 4, units: [{ unitId: live, fights: 40, wins: 40, runs: 4 }] });
     const res = await createMvpApp(rt).request("/api/v1/stats");
     expect(((await res.json()) as StatsView).units).toEqual([{ unitId: live, winRate: 0.25, pickRate: 0.25, runs: 1 }]);
+  });
+
+  it("a world with only per-version tallies keeps its rates: the migration puts them on the current day once, without counting a day tally twice (M2-2)", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "arena-789-"));
+    try {
+      const sqlDir = fileURLToPath(new URL("./sql/", import.meta.url));
+      const oldSql = join(dir, "sql");
+      mkdirSync(oldSql);
+      // The live world before M2-2: every migration up to the backfill.
+      for (const f of readdirSync(sqlDir)) if (f.endsWith(".sql") && f < "m2-02b") copyFileSync(join(sqlDir, f), join(oldSql, f));
+      const path = join(dir, "world.db");
+      const content = mvpContent();
+      const [x, y] = [content.units[0]!.id, content.units[1]!.id];
+      const old = new SqliteMvpStore(path, oldSql);
+      const oldRt = mvpRuntime({ content, store: old, seed: () => 1 });
+      old.putDay({ ...oldRt.today(), seq: 5 });
+      // Before M2-1: per-version tallies only, on an older content version and this one.
+      old.addUnitTallies("mvp-older", { runs: 4, units: [{ unitId: x, fights: 10, wins: 6, runs: 3 }, { unitId: y, fights: 3, wins: 3, runs: 1 }] });
+      old.addUnitTallies(content.version, { runs: 1, units: [{ unitId: x, fights: 4, wins: 2, runs: 1 }] });
+      // Since M2-1 the same hooks also wrote today's day tallies: a part of the above.
+      old.addDayTallies(5, { runs: 1, units: [{ unitId: x, fights: 2, wins: 1, runs: 1, picks: 3 }] });
+      old.close();
+
+      for (let open = 0; open < 2; open++) {
+        const store = new SqliteMvpStore(path);
+        expect(store.dayTallies(5)).toEqual({ runs: 5, units: [{ unitId: x, fights: 14, wins: 8, runs: 4, picks: 3 }, { unitId: y, fights: 3, wins: 3, runs: 1, picks: 0 }] });
+        const rt = mvpRuntime({ content, store, seed: () => 1 });
+        const res = await createMvpApp(rt).request("/api/v1/stats");
+        expect(((await res.json()) as StatsView).units).toEqual([
+          { unitId: x, winRate: 8 / 14, pickRate: 4 / 5, runs: 4 },
+          { unitId: y, winRate: 1, pickRate: 1 / 5, runs: 1 },
+        ]);
+        store.close();
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it("leaves walkovers (an empty enemy line) out of the win rates", () => {

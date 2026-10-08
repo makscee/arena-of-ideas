@@ -310,7 +310,7 @@ describe("MVP day", () => {
     expect(store.rating(ann.id)).toMatchObject({ slays: 1, playoffWins: 1, daysAsChampion: 1 });
   });
 
-  it("counts as slayers only the players the playoff takes: live content, the champion too, bots like humans", async () => {
+  it("counts as slayers only the players the playoff takes: any pool (M2-2), the champion too, bots like humans", async () => {
     const { rt, call, human } = world();
     const ann = human("ann");
     const bob = human("bob");
@@ -320,16 +320,18 @@ describe("MVP day", () => {
     const line = bigLine(rt.content);
     const stray = { seq: own.seq, runId: "r", battleId: "b", line, at: "2026-10-05T10:00:00.000Z" };
     rt.store.addSlay({ ...stray, player: ann, contentVersion: rt.content.version }); // the champion's own
-    rt.store.addSlay({ ...stray, player: eve, contentVersion: "mvp-old" }); // on content no longer live
-    expect((await call<DayView>("GET", "/day")).json.slayers).toBe(1);
-    expect((await call<{ day: DayView }>("GET", "/home")).json.day.slayers).toBe(1);
+    rt.store.addSlay({ ...stray, player: eve, contentVersion: "mvp-old" }); // made on an older pool: it counts
+    const broken = line.map((u) => ({ ...u, recipe: { ...u.recipe, does: ["Teleport 9"] } }));
+    rt.store.addSlay({ ...stray, player: bob, line: broken, contentVersion: rt.content.version }); // never expected: skipped
+    expect((await call<DayView>("GET", "/day")).json.slayers).toBe(2);
+    expect((await call<{ day: DayView }>("GET", "/home")).json.day.slayers).toBe(2);
     const elm = { id: "b2", name: "bot-Elm", bot: true };
     rt.store.addSlay({ ...stray, player: elm, contentVersion: rt.content.version });
-    expect((await call<DayView>("GET", "/day")).json.slayers).toBe(2);
-    slay(rt, bob, line);
     expect((await call<DayView>("GET", "/day")).json.slayers).toBe(3);
+    slay(rt, bob, line);
+    expect((await call<DayView>("GET", "/day")).json.slayers).toBe(4);
     const { json: day } = await call<DayView>("POST", "/dev/end-day");
-    expect(day.lastPlayoff?.entrants).toEqual([ann, elm, bob]);
+    expect(day.lastPlayoff?.entrants).toEqual([ann, eve, elm, bob]);
   });
 
   it("a day end that failed after crowning shows and fights today's champion, not tomorrow's", async () => {
