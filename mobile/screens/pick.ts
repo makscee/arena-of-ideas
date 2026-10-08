@@ -19,6 +19,7 @@ import { getContent } from "../content";
 import { card, setCardAbilities, unitSheet } from "../ui/card";
 import { button, fitText, h, isDesktop, onKeys, screen, show } from "../ui/dom";
 import { richText } from "../ui/term";
+import { rulesLangOpt } from "../lang";
 
 export interface PickNav {
   /** Back to My ideas; `notice` is the line it opens with. */
@@ -208,7 +209,7 @@ function readingScreen(idea: MyIdea, content0: MvpContent, nav: PickNav, current
   // M3-2: each card's sleeping rule as text under it (the sheet's words), so
   // the three compare at a glance; a tap off its keywords picks it too.
   const cols = cards.map((c, i) => {
-    const rule = h("div", { class: "pick-rule", "data-testid": "pick-rule" }, ...richText(formSegments(units[i]!.forms.sleeping, content.abilities), { size: 13 }));
+    const rule = h("div", { class: "pick-rule", "data-testid": "pick-rule" }, ...richText(formSegments(units[i]!.forms.sleeping, content.abilities, rulesLangOpt()), { size: 13 }));
     rule.addEventListener("click", (e) => {
       if (!(e.target as HTMLElement).closest("button")) tap(i);
     });
@@ -216,7 +217,7 @@ function readingScreen(idea: MyIdea, content0: MvpContent, nav: PickNav, current
   });
   // M3-5: the version it would replace, first, for comparison: its rule; a tap reads its sheet (it isn't an option).
   const now = current
-    ? h("button", { class: "propose-now", "data-testid": "pick-current" }, h("span", { class: "dim small" }, "Now: "), ...richText(formSegments(current.forms.sleeping, content.abilities), { size: 13 }))
+    ? h("button", { class: "propose-now", "data-testid": "pick-current" }, h("span", { class: "dim small" }, "Now: "), ...richText(formSegments(current.forms.sleeping, content.abilities, rulesLangOpt()), { size: 13 }))
     : null;
   now?.addEventListener("click", (e) => {
     if ((e.target as HTMLElement).closest("button") !== now) return; // a keyword's own tip

@@ -30,6 +30,7 @@ import { icon } from "../ui/icon";
 import { statusesShown, STATUS_ROW_FALLBACK } from "../ui/status-row";
 import { beatCues, endSound } from "../ui/sound-map";
 import { play as playSfx } from "../ui/sound";
+import { rulesLangOpt } from "../lang";
 
 /** The least room the phone's end card takes under the caption (its word,
  * its line, two key moments and its buttons); with less (a phone on its side)
@@ -899,7 +900,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const trig = causeIcon(c);
     const eff = termIcon(c.effect as TermId, c.effectStatus);
     const effTone = (c.effectStatus ? termDef(`status:${c.effectStatus}`, a.content.statuses)?.tone : undefined) ?? termDef(c.effect as TermId, a.content.statuses)?.tone ?? "plain";
-    const does = c.effectStatus ?? termDef(c.effect as TermId)?.label ?? "";
+    const does = (c.effectStatus ? (rulesLangOpt() ? termDef(`status:${c.effectStatus}`, a.content.statuses, "ru")?.label : undefined) ?? c.effectStatus : undefined) ?? termDef(c.effect as TermId, {}, rulesLangOpt())?.label ?? "";
     const b = h(
       "button",
       { class: `bv-badge${newest ? "" : " past"}`, "data-testid": "trigger-badge", "data-cause": c.cause, "data-kind": c.kind, "data-trigger": c.cause.startsWith("trigger:") ? c.cause : "", "data-effect": c.effect, "aria-label": `${causeLabel(c)} → ${does}` },
@@ -956,7 +957,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** A cause in words, scoped like the card says it: "Ally gets Shield", "Strikes", "Poison". */
   function causeLabel(c: Cause): string {
     if (c.kind === "status") return c.cause.slice("status:".length);
-    return triggerLabel(c.cause as TermId, c.causeStatus, c.causeScope);
+    return triggerLabel(c.cause as TermId, c.causeStatus, c.causeScope, rulesLangOpt());
   }
   /** A card in its slot, with the trigger badge on its outer edge when one
    * fired, and its floating numbers (outside the card: its clip-path would cut them). */
@@ -2026,9 +2027,9 @@ function chainView(c: Chain, o: { units: Map<string, BattleUnit>; summoned: Map<
     const s = o.summoned.get(id);
     const u = o.units.get(id) ?? (s?.form ? { emoji: s.emoji, recipe: s.form } : undefined);
     // Scoped like the card says it: "Ally gets Shield", "Ally dies" (R3-19).
-    const label = n.trigger ? triggerLabel(n.trigger as TermId, n.triggerStatus, n.triggerScope) : undefined;
+    const label = n.trigger ? triggerLabel(n.trigger as TermId, n.triggerStatus, n.triggerScope, rulesLangOpt()) : undefined;
     if (n.status) {
-      const tip = termDef(`status:${n.status}` as TermId, o.content.statuses)?.tip;
+      const tip = termDef(`status:${n.status}` as TermId, o.content.statuses, rulesLangOpt())?.tip;
       return [h("span", { class: "bv-step-head" }, ...tagOf(n), h("b", { class: who }, ...text(n.text)), label ? h("span", { class: "dim" }, ` · ${label}`) : null), tip ? h("span", { class: "bv-step-text dim" }, tip) : null].filter((x): x is HTMLElement => x !== null);
     }
     const w = u && n.ref?.when !== undefined ? u.recipe.when[n.ref.when] : undefined;
