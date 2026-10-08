@@ -51,6 +51,7 @@ const WORDS = {
     game: "ARENA OF IDEAS",
     championOf: (day: string) => `Champion of ${day}`,
     slayers: (n: number) => `${n} ${n === 1 ? "slayer" : "slayers"}`,
+    slewYesterday: (n: number) => `${n} slew yesterday`,
     canYou: "Can you beat them?",
     awoken: "AWOKEN",
     fused: "FUSED",
@@ -68,6 +69,7 @@ const WORDS = {
     game: "ARENA OF IDEAS",
     championOf: (day: string) => `Чемпион ${day}`,
     slayers: (n: number) => `Сразили: ${n}`,
+    slewYesterday: (n: number) => `Сразили вчера: ${n}`,
     canYou: "Сможешь победить?",
     awoken: "ПРОБУЖДЁН",
     fused: "СЛИЯНИЕ",
@@ -242,8 +244,10 @@ function unitCard(u: { emoji: string; name: string; pwr: number; hp: number; tie
 
 // ---------- the two cards ----------
 
-/** Day `seq`'s champion: null when the day has none yet, or hasn't come. */
-export function championSvg(rt: ShareDeps, seq: number, lang: ShareLang): string | null {
+/** Day `seq`'s champion: null when the day has none yet, or hasn't come.
+ * `slewYesterday` shows the day before's slayers instead of day `seq`'s (the
+ * daily post, M4-8: right after the day end today's count is still 0). */
+export function championSvg(rt: ShareDeps, seq: number, lang: ShareLang, slewYesterday?: number): string | null {
   if (seq > rt.today().seq) return null;
   const champ = championOf(rt.store, seq);
   if (!champ) return null;
@@ -256,7 +260,7 @@ export function championSvg(rt: ShareDeps, seq: number, lang: ShareLang): string
     textEl(who.text, 56, 200, who.size, BODY, C.gold),
     lineCards(champ.line, lang),
     emojiRow("⚔️", 72, SHARE_H - 74, 32),
-    textEl(`${w.slayers(slayers)} · ${w.canYou}`, 100, SHARE_H - 46, 28, BODY, C.dim),
+    textEl(`${slewYesterday === undefined ? w.slayers(slayers) : w.slewYesterday(slewYesterday)} · ${w.canYou}`, 100, SHARE_H - 46, 28, BODY, C.dim),
   ].join("\n");
   return frame(body, lang);
 }

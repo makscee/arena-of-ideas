@@ -52,7 +52,7 @@ export interface PostFacts {
   champion: Champion | null;
   /** True: the playoff crowned them; false: the champion kept the throne. */
   crowned: boolean;
-  /** The players who slew the champion on the day that ended. */
+  /** The slayers (players and bots) of the day that ended. */
   slayers: number;
   entered: PostUnit[];
   left: PostUnit[];
@@ -90,8 +90,8 @@ const WORDS = {
     champion: (date: string, who: string) => `👑 Champion of ${date}: ${who}`,
     keeps: (date: string, who: string) => `👑 ${who} keeps the crown on ${date}`,
     none: (date: string) => `👑 ${date}: the throne is empty`,
-    slayers: (n: number) => (n === 0 ? "⚔️ No one slew the champion yesterday." : `⚔️ ${n} ${n === 1 ? "player" : "players"} slew the champion yesterday.`),
-    canYou: "Can you beat them?",
+    slayers: (n: number) => (n === 0 ? "⚔️ No slayers yesterday." : `⚔️ ${n} ${n === 1 ? "slayer" : "slayers"} yesterday.`),
+    canYou: "Can you beat the champion?",
     entered: "New in the arena:",
     left: "Gone to the Library:",
     ideaBy: (p: string) => `idea by @${p}`,
@@ -104,7 +104,7 @@ const WORDS = {
     champion: (date: string, who: string) => `👑 Чемпион ${date}: ${who}`,
     keeps: (date: string, who: string) => `👑 ${who} сохраняет корону ${date}`,
     none: (date: string) => `👑 ${date}: трон пуст`,
-    slayers: (n: number) => (n === 0 ? "⚔️ Вчера чемпиона не сразил никто." : `⚔️ Вчера чемпиона сразили: ${n}.`),
+    slayers: (n: number) => (n === 0 ? "⚔️ Вчера убийц чемпиона не было." : `⚔️ Вчера ${n} ${ruSlayers(n)} чемпиона.`),
     canYou: "Сможешь победить?",
     entered: "Новые в арене:",
     left: "Ушли в Библиотеку:",
@@ -115,6 +115,14 @@ const WORDS = {
     play: (url: string) => `Играть: ${url}`,
   },
 } satisfies Record<ShareLang, unknown>;
+
+/** 1 убийца, 2 убийцы, 5 убийц, 21 убийца. */
+function ruSlayers(n: number): string {
+  const [d, dd] = [n % 10, n % 100];
+  if (d === 1 && dd !== 11) return "убийца";
+  if (d >= 2 && d <= 4 && (dd < 12 || dd > 14)) return "убийцы";
+  return "убийц";
+}
 
 /** A photo's caption holds at most 1024 characters (Telegram's limit). */
 export const CAPTION_MAX = 1024;
@@ -164,7 +172,8 @@ export function dailyMessages(rt: PostDeps, seq: number, groups: ShareLang[][], 
     const text = (max: number) => langs.map((l) => postText(f, l, publicUrl, max)).join("\n\n");
     let max = Math.max(f.entered.length, f.left.length);
     while (max > 0 && text(max).length > CAPTION_MAX) max--;
-    const svg = championSvg(rt, seq, langs[0]!);
+    // The card counts the same slayers as the text: the day that ended.
+    const svg = championSvg(rt, seq, langs[0]!, f.slayers);
     return { key: langs.join("+"), langs, text: text(max), png: svg ? sharePng(svg).png : null };
   });
 }

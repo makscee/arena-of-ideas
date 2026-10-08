@@ -9,9 +9,10 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { Champion, PlayerRef } from "../../../src/mvp/contract.js";
 import { lineUnitOf } from "../../../src/mvp/forms.js";
-import { CAPTION_MAX, dailyMessages, dailyPostConfig, dailyPostJob, dailyPostJobWith, postDay, postFacts, postGroups, POST_WINDOW_MS, readBotToken, telegramSender, type TelegramSender } from "./daily-post.js";
+import { CAPTION_MAX, dailyMessages, dailyPostConfig, dailyPostJob, dailyPostJobWith, postDay, postFacts, postGroups, postText, POST_WINDOW_MS, readBotToken, telegramSender, type TelegramSender } from "./daily-post.js";
 import { poolContent, seedUnits } from "./pool.js";
 import { mvpRuntime } from "./runtime.js";
+import { championSvg, sharePng } from "./share.js";
 import { MemoryMvpStore } from "./store.js";
 
 const TOKEN = "123456:TEST-token-never-real";
@@ -139,15 +140,47 @@ describe("the daily post (M4-8)", () => {
     const [ru, en] = tg.calls;
     expect(en!.text).toContain(`👑 Champion of Oct 9, 2026: @${champ.player.name}`);
     expect(en!.text).toContain(champ.line.map((u) => `${u.emoji} ${u.name}`).join(" · "));
-    expect(en!.text).toContain("⚔️ 2 players slew the champion yesterday. Can you beat them?");
+    expect(en!.text).toContain("⚔️ 2 slayers yesterday. Can you beat the champion?");
     expect(en!.text).toContain("New in the arena:\n🦔 Hedgehog — idea by @lev");
     expect(en!.text).toContain(`Gone to the Library:\n${left.row.emoji} ${left.row.name}`);
     expect(en!.text.endsWith("Play: https://arena.makscee.ru/arena/")).toBe(true);
     expect(ru!.text).toContain(`👑 Чемпион 9 октября 2026: @${champ.player.name}`);
-    expect(ru!.text).toContain("⚔️ Вчера чемпиона сразили: 2. Сможешь победить?");
+    expect(ru!.text).toContain("⚔️ Вчера 2 убийцы чемпиона. Сможешь победить?");
     expect(ru!.text).toContain("Новые в арене:\n🦔 Hedgehog — идея @lev");
     expect(ru!.text).toContain("Играть: https://arena.makscee.ru/arena/");
     for (const c of tg.calls) expect([...c.photo!.slice(0, 4)]).toEqual([0x89, 0x50, 0x4e, 0x47]);
+  });
+
+  it("the photo agrees with the text: the card counts the ended day's slayers, the live card today's", async () => {
+    const w = world();
+    w.clock.t = AFTER;
+    expect(w.rt.today().seq).toBe(2);
+    // The live /share card of today: no slays yet on day 2.
+    expect(championSvg(w.rt, 2, "en")).toContain("0 slayers · Can you beat them?");
+    expect(championSvg(w.rt, 2, "en", 2)).toContain("2 slew yesterday · Can you beat them?");
+    expect(championSvg(w.rt, 2, "ru", 2)).toContain("Сразили вчера: 2 · Сможешь победить?");
+    const [ru, en] = dailyMessages(w.rt, 2, [["ru"], ["en"]], CFG.publicUrl);
+    expect(postFacts(w.rt, 2).slayers).toBe(2);
+    expect(Buffer.compare(ru!.png!, sharePng(championSvg(w.rt, 2, "ru", 2)!).png)).toBe(0);
+    expect(Buffer.compare(en!.png!, sharePng(championSvg(w.rt, 2, "en", 2)!).png)).toBe(0);
+  });
+
+  it("counts slayers in Russian with the right word form", () => {
+    const w = world();
+    w.clock.t = AFTER;
+    const f = postFacts(w.rt, 2);
+    const line = (n: number) => postText({ ...f, slayers: n }, "ru").split("\n").find((l) => l.startsWith("⚔️"));
+    expect([1, 2, 5, 11, 21, 22, 112].map(line)).toEqual([
+      "⚔️ Вчера 1 убийца чемпиона. Сможешь победить?",
+      "⚔️ Вчера 2 убийцы чемпиона. Сможешь победить?",
+      "⚔️ Вчера 5 убийц чемпиона. Сможешь победить?",
+      "⚔️ Вчера 11 убийц чемпиона. Сможешь победить?",
+      "⚔️ Вчера 21 убийца чемпиона. Сможешь победить?",
+      "⚔️ Вчера 22 убийцы чемпиона. Сможешь победить?",
+      "⚔️ Вчера 112 убийц чемпиона. Сможешь победить?",
+    ]);
+    expect(postText({ ...f, slayers: 0 }, "ru")).toContain("⚔️ Вчера убийц чемпиона не было. Сможешь победить?");
+    expect(postText({ ...f, slayers: 1 }, "en")).toContain("⚔️ 1 slayer yesterday. Can you beat the champion?");
   });
 
   it("posts a day once: again, from a second job (a restart) or after a retried day end, nothing more is sent", async () => {
@@ -173,7 +206,7 @@ describe("the daily post (M4-8)", () => {
     expect(tg.calls).toHaveLength(4);
     expect(tg.calls[2]!.text).toContain("сохраняет корону"); // no slayers on day 2: the champion keeps the throne
     expect(tg.calls[3]!.text).toContain("keeps the crown on Oct 10, 2026");
-    expect(tg.calls[3]!.text).toContain("No one slew the champion yesterday.");
+    expect(tg.calls[3]!.text).toContain("⚔️ No slayers yesterday.");
   });
 
   it("a failed send is retried with backoff (Telegram's retry_after wins), then recorded as sent", async () => {
