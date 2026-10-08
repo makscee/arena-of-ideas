@@ -127,7 +127,7 @@ function abilityOf(name: string): AbilityDef {
 
 // ---------- the units ----------
 
-interface Row {
+export interface Row {
   name: string;
   emoji: string;
   tier: Tier;
@@ -145,7 +145,7 @@ interface Row {
 
 /** What Awoken adds to the sleeping form. Each part is optional; with none
  * but `more`, it is a numbers-only Awoken (allowed since round 4). */
-interface AwokenRow {
+export interface AwokenRow {
   /** A wider Who for the sleeping Does (front → all enemies, me → all allies). */
   who?: WhoKey;
   /** The sleeping Does, enhanced: the same parts with numbers no lower, or

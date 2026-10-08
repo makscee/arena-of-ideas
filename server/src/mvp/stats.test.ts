@@ -49,6 +49,17 @@ describe("basic stats (slice 11)", () => {
     expect(rt.store.unitTallies(rt.content.version).runs).toBe(2);
   });
 
+  it("also tallies per day (M2-1): fights, wins, finished runs and picks", async () => {
+    const { rt, call } = world();
+    const a = await playOne(call, "one");
+    const unit = a.line[0]!.unitId;
+    const day = rt.store.dayTallies(rt.today().seq);
+    expect(day.runs).toBe(1);
+    const v = rt.store.unitTallies(rt.content.version).units.find((u) => u.unitId === unit)!;
+    expect(day.units.find((u) => u.unitId === unit)).toEqual({ ...v, picks: 1 });
+    expect(rt.store.dayTallies(rt.today().seq + 1)).toEqual({ runs: 0, units: [] });
+  });
+
   it("leaves out tallies of other content versions and units no longer live", async () => {
     const { rt } = world();
     const live = rt.content.units[0]!.id;
