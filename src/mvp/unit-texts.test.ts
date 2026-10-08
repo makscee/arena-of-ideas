@@ -2,7 +2,7 @@
 // and the card-speak rules they follow (words.md (6)).
 
 import { describe, expect, it } from "vitest";
-import type { DescribeSegment } from "../describe.js";
+import { describeAbility, type DescribeSegment } from "../describe.js";
 import { formSegments, formText } from "./form-text.js";
 import { unitTexts } from "./unit-texts.js";
 import { mvpPool } from "./units.js";
@@ -73,5 +73,32 @@ describe("unit texts", () => {
     expect(text("Leech", "awoken")).toBe("Strikes: heal self for PWR, then 1 Shield to self.");
     expect(text("Rose", "sleeping")).toBe("Hit: 2 damage to front enemy.");
     expect(text("Planter", "awoken")).toBe("Battle start: summon Treant (1/8), then 2 Vitality and 2 Shield to self.");
+  });
+
+  // M4-3: the same rules in Russian, from a Russian word table and grammar.
+  it("in Russian match their golden file (`npm run -s mvp:texts -- --ru`)", async () => {
+    await expect(unitTexts(pool, "ru")).toMatchFileSnapshot("./unit-texts.ru.golden.txt");
+  });
+
+  it("in Russian read as Russian card-speak", () => {
+    const text = (name: string, form: "sleeping" | "awoken") => formText(pool.units.find((u) => u.name === name)!.forms[form], pool.abilities, "ru");
+    // Maks's examples (mission 4, M4-3).
+    expect(describeAbility({ whens: [{ kind: "trigger", on: { on: "Hurt", unit: "holder" } }], selectors: [{ kind: "attacker" }], effects: [{ kind: "applyStatus", status: "Poison", stacks: { kind: "const", value: 1 } }] }, { lang: "ru" })).toBe("Удар: 1 Яд атакующему.");
+    expect(text("Prepper", "sleeping")).toBe("Начало боя: 1 Щит всем союзникам.");
+    // Plurals by Intl.PluralRules: 1 Щит, 2 Щита, 8 Благословений.
+    expect(text("Squire", "awoken")).toBe("Начало боя: 2 Силы и 2 Щита себе.");
+    expect(text("Medic", "sleeping")).toBe("Конец хода: лечение на 1 всем союзникам.");
+    expect(text("Taser", "awoken")).toBe("Начало боя: 1 Заморозка и 2 урона переднему врагу.");
+    expect(text("Necromancer", "sleeping")).toBe("Смерть союзника: воскресить павшего союзника с 1 ОЗ.");
+    expect(text("Planter", "awoken")).toBe("Начало боя: призвать Treant (1/8), затем 2 Живучести и 2 Щита себе.");
+  });
+
+  it("in Russian keep every English run's terms, refs and sides (word order may differ)", () => {
+    for (const [name, form] of forms) {
+      const strip = (segs: DescribeSegment[]) => segs.filter((s) => s.term || s.partRef?.family === "selector" || s.unitRef).map((s) => [s.term, s.side, s.statusRef, s.unitRef, s.amount, s.clause].join("|")).sort();
+      const en = strip(formSegments(form, pool.abilities));
+      const ru = strip(formSegments(form, pool.abilities, "ru"));
+      expect(ru, name).toEqual(en);
+    }
   });
 });
