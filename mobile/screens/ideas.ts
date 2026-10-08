@@ -76,7 +76,7 @@ function sentRow(i: MyIdea, nav: IdeasNav, err: HTMLElement): HTMLElement {
   return h(
     "div",
     { class: "idea-row", "data-testid": "idea-sent-row", "data-state": i.state },
-    h("div", { class: "grow" }, h("div", { class: "idea-text" }, i.text), h("div", { class: "dim small", "data-testid": "idea-stage" }, IDEA_STAGE[i.state])),
+    h("div", { class: "grow" }, h("div", { class: "idea-text" }, i.text), h("div", { class: "dim small", "data-testid": "idea-stage" }, i.state === "failed" && i.data.reason ? `${IDEA_STAGE.failed}: ${i.data.reason}. Your idea came back to you.` : IDEA_STAGE[i.state])),
     cancel,
   );
 }

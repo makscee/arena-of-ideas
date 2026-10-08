@@ -6,7 +6,7 @@
 // Home is the title menu (R2-10); it also shows DayView.lastPlayoff (a game
 // opens in battleScreen) and, on dev servers only (HomeView.dev), "End day
 // now" under "Dev". The shop's ☰ (Esc on desktop) is the in-run menu.
-import type { BattleRecord, DayView, FightResult, HomeView, IdeasView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView } from "../src/mvp/contract";
+import type { BattleRecord, CandidateScore, DayView, FightResult, HomeView, IdeasView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView } from "../src/mvp/contract";
 import { benchSizeOf, lockedFull, MVP_RULES, offersAt, sellValue } from "../src/mvp/contract";
 import { mergeTarget } from "../src/mvp/forms";
 import { buttonRefusal, plainRefusal } from "./ui/refusal";
@@ -17,6 +17,7 @@ import { codexScreen, newCodexCache, type CodexState } from "./screens/codex";
 import { setCodexLink } from "./ui/term";
 import { statsScreen } from "./screens/stats";
 import { ideasScreen } from "./screens/ideas";
+import { votePanel } from "./screens/vote";
 import { card, roman, unitSheet, type CardUnit } from "./ui/card";
 import { previewName } from "./ui/fusion";
 import { fuseWarning } from "./ui/fuse-warn";
@@ -271,6 +272,16 @@ async function homeScreen(ended: number | null = null): Promise<void> {
     "end-day",
   );
   const grantIdea = button("+1 idea", () => void guarded(err, async () => { await api.grantIdea(); await homeScreen(); }), "small", "grant-idea");
+  // M2-8: a candidate without the model (M2-5, M2-6), the overnight check now,
+  // fake votes, and who qualifies.
+  const devNote = (text: string) => ((err.textContent = text), err.classList.add("dev-note"));
+  const seedCandidate = button("Seed a candidate", () => void guarded(err, async () => { await api.seedCandidate(); devNote("A candidate of yours waits for the overnight check."); }), "small", "seed-candidate");
+  const overnight = button("Run the overnight check now", () => void guarded(err, async () => {
+    const { started } = await api.overnightCheck();
+    devNote(started ? `Checking ${started === 1 ? "1 idea" : `${started} ideas`}: a few minutes each. My ideas shows the result.` : "No idea waits for the check.");
+  }), "small", "overnight-check");
+  const fakeVotes = button("+5 fake votes", () => void guarded(err, async () => { await api.fakeVotes(); closable(candidatesSheet(await api.candidates())); }), "small", "fake-votes");
+  const candidates = button("Candidates", () => void guarded(err, async () => void closable(candidatesSheet(await api.candidates()))), "small", "candidates");
   const last = home.day.lastPlayoff ?? null;
   const justEnded = ended !== null && last?.seq === ended ? last : null;
   const playoff = playoffPanel(last, champ?.player ?? null, content, err);
@@ -307,6 +318,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
           )
         : null,
       justEnded ? null : playoff,
+      votePanel(content),
     ),
     h(
       "div",
@@ -324,13 +336,35 @@ async function homeScreen(ended: number | null = null): Promise<void> {
         h("div", { class: "row" }, stats, rulesBtn),
         soundRow(),
         api.ownInvite ? ownLinkRow(api.ownInvite) : null,
-        home.dev ? h("details", { class: "dev" }, h("summary", {}, "Dev"), h("div", { class: "row" }, endDay, grantIdea)) : null,
+        home.dev
+          ? h("details", { class: "dev" }, h("summary", {}, "Dev"), h("div", { class: "row wrap" }, endDay, grantIdea, seedCandidate, overnight, fakeVotes, candidates))
+          : null,
       ),
     ),
   );
   screen("home");
   music("home");
   if (justEnded) playoff?.classList.add("fresh");
+}
+
+/** Dev (M2-8): every candidate's votes and score, qualified ones first. */
+function candidatesSheet(list: CandidateScore[]): HTMLElement {
+  const pct = (x: number) => `${Math.round(x * 100)}%`;
+  return h(
+    "div",
+    { class: "stack", "data-testid": "candidates" },
+    h("div", { class: "label" }, "Candidates"),
+    ...(list.length
+      ? list.map((c) =>
+          h(
+            "div",
+            { class: "idea-row", "data-testid": "candidate-row", "data-qualified": String(c.qualified) },
+            h("div", { class: "grow" }, `${c.emoji} ${c.name}`, h("div", { class: "dim small num" }, `${c.won}/${c.votes} votes · ${pct(c.share)} + novelty ${pct(c.novelty)} → ${pct(c.score)}`)),
+            h("div", { class: c.qualified ? "keep" : "dim keep" }, c.qualified ? "qualified" : "not yet"),
+          ),
+        )
+      : [h("div", { class: "dim" }, "No candidates in the vote.")]),
+  );
 }
 
 /** Home's quiet ideas line (M2-3): the ideas held, or the runs until the
@@ -1363,6 +1397,7 @@ function runOverScreen(run: RunView, content: MvpContent, notice = "", newRun = 
       rc ? h("div", { class: "dim small num", "data-testid": "rating-why" }, `expected ${rc.expected.toFixed(1)} wins, got ${+rc.actual.toFixed(1)}`) : null,
     ),
     run.line.length ? h("div", { class: "over-line" }, h("div", { class: "label" }, "Your last line"), team(run.line, "you", content)) : null,
+    votePanel(content),
     h("div", { class: "spacer" }),
     h("div", { class: "row footer" }, ...(newRun ? [button("Home", home, "grow", "home"), button("New run", next, "primary grow", "new-run-start")] : [button("Home", home, "primary grow", "home")])),
   );

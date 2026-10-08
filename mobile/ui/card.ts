@@ -90,6 +90,10 @@ let abilities: AbilityRegistry = {};
 export function setCardAbilities(a: AbilityRegistry): void {
   abilities = a;
 }
+/** Adds abilities the content lacks (a vote card's candidate, M2-8). */
+export function addCardAbilities(a: AbilityRegistry): void {
+  abilities = { ...abilities, ...a };
+}
 
 /** Icons past these counts fold into "+" (phone) or "+n" (desktop; "+n" past
  * 3 on the 1024–1279px shop, whose cards are narrower); style.css hides the
