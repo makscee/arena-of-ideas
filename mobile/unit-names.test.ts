@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { mvpPool } from "../src/mvp/units";
 import type { MvpContent } from "../src/mvp/contract";
-import { discoveryName, fusionName, localArchetype, localContent, setFusionTexts, unitName } from "./unit-names";
+import { discoveryName, englishName, fusionName, localArchetype, localContent, setFusionTexts, unitName } from "./unit-names";
 
 const pool = mvpPool();
 const [a, b] = pool.units;
@@ -27,6 +27,15 @@ describe("unitName", () => {
     expect(unitName(a!.id, "Stormfang", "ru")).toBe("Stormfang");
     expect(unitName(b!.id, b!.name, "ru")).toBe(b!.name);
     expect(unitName(a!.id, a!.name, "en")).toBe(a!.name);
+  });
+});
+
+describe("englishName", () => {
+  it("gives a Russian-named unit's English name, so the Codex finds it by either", () => {
+    const ru = localContent(content, "ru");
+    expect(englishName(ru.units[0]!)).toBe(a!.name);
+    expect(englishName(ru.units[1]!)).toBe("");
+    expect(englishName(localContent(content, "en").units[0]!)).toBe("");
   });
 });
 

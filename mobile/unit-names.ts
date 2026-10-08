@@ -42,6 +42,13 @@ export function unitName(unitId: string | undefined, name: string, lang = rulesL
   return t && t.en === name ? t.name : name;
 }
 
+/** A unit's English name when the page shows it in Russian (localContent
+ * remembers it), else "": so a search finds it by either name. */
+export const englishName = (u: Pick<UnitContent, "id" | "name">): string => {
+  const t = ru.get(u.id);
+  return t && t.name === u.name ? t.en : "";
+};
+
 /** Remembers the discoveries' Russian names (GET /fusions) for fusionName. */
 export function setFusionTexts(list: readonly FusionDiscovery[]): void {
   fusionRu = new Map(list.flatMap((f) => (f.texts?.ru ? [[pairKey(f.first, f.second), { en: f.name, name: f.texts.ru.name }] as const] : [])));

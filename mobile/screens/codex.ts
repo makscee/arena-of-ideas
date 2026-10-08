@@ -39,7 +39,7 @@ import { icon } from "../ui/icon";
 import { loadUnitRates, pct } from "../ui/unit-stats";
 import { ideaWhy, proposeScreen } from "./ideas";
 import { rulesLangOpt } from "../lang";
-import { discoveryName } from "../unit-names";
+import { discoveryName, englishName } from "../unit-names";
 
 export type CodexTab = "units" | "fusions" | "library" | "keywords";
 export type CodexSort = "tier" | "win" | "pick";
@@ -278,7 +278,7 @@ function unitsTab(
     const t = trig.get(u.id);
     if (t && !triggers.has(t.key)) triggers.set(t.key, t);
   }
-  const text = new Map(units.map((u) => [u.id, `${u.name} ${u.archetype ?? ""} ${formText(u.forms.sleeping, content.abilities, rulesLangOpt())} ${formText(u.forms.awoken, content.abilities, rulesLangOpt())}`.toLowerCase()]));
+  const text = new Map(units.map((u) => [u.id, `${u.name} ${englishName(u)} ${u.archetype ?? ""} ${formText(u.forms.sleeping, content.abilities, rulesLangOpt())} ${formText(u.forms.awoken, content.abilities, rulesLangOpt())}`.toLowerCase()]));
 
   const summons = content.summons ?? [];
   const summonText = new Map(summons.map((x) => [x.id, `${x.name} ${x.form ? formText(x.form, content.abilities, rulesLangOpt()) : ""}`.toLowerCase()]));

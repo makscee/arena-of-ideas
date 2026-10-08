@@ -59,7 +59,7 @@ export function votePanel(content: MvpContent): HTMLElement {
       h(
         "div",
         { class: "panel stack vote", "data-testid": "vote-card" },
-        h("div", { class: "row spread" }, h("div", { class: "label keep" }, t("vote.question")), button(t("vote.skip"), () => void send(null), "small link", "vote-skip")),
+        h("div", { class: "row spread" }, h("div", { class: "label" }, t("vote.question")), button(t("vote.skip"), () => void send(null), "small link keep", "vote-skip")),
         h("div", { class: "vote-pair" }, choice(localUnit(c.units[0])), choice(localUnit(c.units[1]))),
       ),
     );
