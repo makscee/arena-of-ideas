@@ -100,6 +100,10 @@ export interface MvpRules {
   /** Mission 2 (M2-10): candidates that enter the pool at most per day end.
    * Absent, 3. */
   rotationEntrants?: number;
+  /** Mission 3 (M3-7): of rotationEntrants, the slots for evolutions and
+   * returns (the rest are for ideas). A slot one queue can't fill goes to the
+   * other. Absent, 1. */
+  rotationEvolveShare?: number;
   /** Days a unit stays live at least before it may leave. Absent, 14. */
   rotationMinStay?: number;
   /** Days of tallies a leaver's play is read from. Absent, 14. */

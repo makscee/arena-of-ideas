@@ -259,8 +259,8 @@ interface Candidate {
 
 /** Candidates being voted on: the units of ideas in `voting` (new ideas and
  * new versions), and for each archetype with a version among them its Library
- * version, "unchanged": the newest one in the Library, none while a version
- * of it is live. */
+ * version, "unchanged": the newest one in the Library that has been live,
+ * none while a version of it is live. */
 function candidates(store: MvpStore): Candidate[] {
   const out: Candidate[] = [];
   const roots = new Set<UnitId>();
@@ -275,7 +275,8 @@ function candidates(store: MvpStore): Candidate[] {
   for (const rootId of roots) {
     const versions = lineage(store, rootId);
     if (versions.some((u) => u.status === "live")) continue;
-    const unit = versions.filter((u) => u.status === "library").at(-1);
+    // M3-7: a proposal that lost is in the Library too, but was never live.
+    const unit = versions.filter((u) => u.status === "library" && (u.origin === "seed" || store.stints(u.unitId).length)).at(-1);
     if (unit) out.push({ unit, kind: "unchanged", rootId });
   }
   return out;

@@ -7,9 +7,13 @@ import { createHash } from "node:crypto";
 import type { MvpContent } from "../../../src/mvp/contract.js";
 import { mvpPool, ROWS, type Row } from "../../../src/mvp/units.js";
 
-/** The content of these rows, in this order. */
-export function contentOf(rows: Row[]): MvpContent {
+/** The content of these rows, in this order. `ids` are the units' stored ids
+ * (M3-7: a version keeps its root's name, so `slug(name)` isn't its id); absent,
+ * each unit's id is its name's slug. Ids equal to the slugs build the same
+ * content and version as none. */
+export function contentOf(rows: Row[], ids?: readonly string[]): MvpContent {
   const body = mvpPool(rows);
+  if (ids) body.units = body.units.map((u, i) => ({ ...u, id: ids[i] ?? u.id }));
   const version = "mvp-" + createHash("sha256").update(JSON.stringify(body)).digest("hex").slice(0, 10);
   return { version, ...body };
 }
