@@ -39,6 +39,7 @@ import { icon } from "../ui/icon";
 import { loadUnitRates, pct } from "../ui/unit-stats";
 import { ideaWhy, proposeScreen } from "./ideas";
 import { rulesLangOpt } from "../lang";
+import { discoveryName } from "../unit-names";
 
 export type CodexTab = "units" | "fusions" | "library" | "keywords";
 export type CodexSort = "tier" | "win" | "pick";
@@ -364,7 +365,7 @@ function unitsTab(
 
 /** The fused unit an ordered pair makes, as fuseUnits builds it in a run. */
 function fusedOf(first: UnitContent, second: UnitContent, f: FusionDiscovery | undefined, content: MvpContent): LineUnit {
-  return fuseUnits(lineUnitOf(first, "a", 3), lineUnitOf(second, "b", 3), { name: f?.name ?? "???", discoveredBy: f?.discoveredBy ?? null }, content);
+  return fuseUnits(lineUnitOf(first, "a", 3), lineUnitOf(second, "b", 3), { name: f ? discoveryName(f) : "???", discoveredBy: f?.discoveredBy ?? null }, content);
 }
 
 /** Rows drawn at once; "Show more" draws the next batch. */
@@ -421,7 +422,7 @@ function fusionsTab(
       h(
         "span",
         { class: "grow" },
-        h("div", { class: "fusion-name" }, f ? f.name : "?"),
+        h("div", { class: "fusion-name" }, f ? discoveryName(f) : "?"),
         h("div", { class: "dim small" }, t("codex.whenWho", { a: a.name, b: b.name })),
         f ? h("div", { class: "fusion-recipe small" }, ...formRich(fused.recipe, content)) : null,
         f ? h("div", { class: "discovered" }, ...(by ? [t("codex.discoveredBy"), by] : [t("codex.byBots")])) : h("div", { class: "discovered" }, t("codex.nobodyYet")),
@@ -513,7 +514,7 @@ function librarySheet(content: MvpContent, lib: LibraryView, l: LibraryUnit, pro
       "div",
       { class: "stat-row fusion-row", "data-testid": "library-fusion" },
       h("span", { class: "emoji pair" }, `${a?.emoji ?? "?"}${b?.emoji ?? "?"}`),
-      h("span", { class: "grow" }, h("div", { class: "fusion-name" }, f.name), h("div", { class: "dim small" }, `${a?.name ?? f.first} + ${b?.name ?? f.second}`), h("div", { class: "discovered" }, ...(by ? [t("codex.discoveredBy"), by] : [t("codex.byBots")]))),
+      h("span", { class: "grow" }, h("div", { class: "fusion-name" }, discoveryName(f)), h("div", { class: "dim small" }, `${a?.name ?? f.first} + ${b?.name ?? f.second}`), h("div", { class: "discovered" }, ...(by ? [t("codex.discoveredBy"), by] : [t("codex.byBots")]))),
     );
   });
   s.append(

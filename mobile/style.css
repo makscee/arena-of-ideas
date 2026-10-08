@@ -1181,3 +1181,7 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
 .history { gap: 0; }
 .history button.link { min-height: 36px; text-align: left; }
 .history button.link.on { color: var(--text); }
+/* M4-6: Log in with Telegram. "Open Telegram" is a link that looks like the primary button. */
+a.button { display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 16px; text-decoration: none; font-family: "Chakra Petch", sans-serif; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
+a.button.primary { background: var(--you); color: var(--bg); }
+img.tg-qr { align-self: center; width: 200px; height: 200px; image-rendering: pixelated; background: #fff; }

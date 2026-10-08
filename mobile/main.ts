@@ -24,6 +24,7 @@ import { fuseWarning } from "./ui/fuse-warn";
 import { icon } from "./ui/icon";
 import { app, button, closable, desktopQuery, dismissable, h, isDesktop, keepScreen, onKeys, overlay, screen, show, who } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
+import { telegramSheet } from "./screens/telegram";
 import { initSound, music, onSoundChange, play, setSound, soundSettings } from "./ui/sound";
 import { shopSound } from "./ui/sound-map";
 import { t, withNodes } from "./i18n";
@@ -215,12 +216,39 @@ function nameScreen(): void {
   // their invite link. One open to all joins them as the open link does. Nothing but the title shows until /health says which.
   show(h("h1", {}, t("name.title")));
   void api.health().then(
-    (hl) => (hl.open ? joinForm("") : hl.invites ? show(h("h1", {}, t("name.title")), h("p", { class: "dim", "data-testid": "invite-only" }, t("name.inviteOnly"))) : nameForm()),
+    (hl) => {
+      const tg = telegramLogin(hl.telegram);
+      if (hl.open) joinForm("", tg);
+      else if (hl.invites) show(h("h1", {}, t("name.title")), h("p", { class: "dim", "data-testid": "invite-only" }, t("name.inviteOnly")), tg);
+      else nameForm(tg);
+    },
     () => nameForm(),
   );
 }
 
-function nameForm(): void {
+/** M4-6: "Log in with Telegram" on the welcome screens, when the server has it. */
+function telegramLogin(mode: false | "bot" | "fake" | undefined): HTMLElement | null {
+  if (!mode) return null;
+  return button(t("tg.login"), () => telegramSheet({ link: false, fake: mode === "fake", onDone: () => void homeScreen() }), "", "tg-login");
+}
+
+/** M4-6: the title menu's Telegram row: Link Telegram, or linked with Unlink. */
+function telegramRow(linked: boolean, err: HTMLElement): HTMLElement {
+  const link = () => void guarded(err, async () => {
+    const hl = await api.health();
+    telegramSheet({ link: true, fake: hl.telegram === "fake", onDone: () => void homeScreen() });
+  });
+  return linked
+    ? h(
+        "div",
+        { class: "row", "data-testid": "tg-row" },
+        h("span", { class: "dim small grow", "data-testid": "tg-linked" }, t("tg.linked")),
+        button(t("tg.unlink"), () => void guarded(err, async () => { await api.telegramUnlink(); await homeScreen(); }), "small", "tg-unlink"),
+      )
+    : button(t("tg.link"), link, "", "tg-link");
+}
+
+function nameForm(tg: HTMLElement | null = null): void {
   const input = h("input", { placeholder: t("name.placeholder"), maxlength: "24", autocomplete: "nickname", "data-testid": "name-input" });
   const err = errorLine();
   const go = () => guarded(err, async () => {
@@ -233,6 +261,7 @@ function nameForm(): void {
     h("p", { class: "dim" }, t("name.intro")),
     input,
     button(t("name.enter"), () => void go(), "primary", "name-submit"),
+    tg,
     err,
   );
   input.focus();
@@ -353,6 +382,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
         soundRow(),
         langRow(),
         api.ownInvite ? ownLinkRow(api.ownInvite) : null,
+        home.telegram?.enabled ? telegramRow(home.telegram.linked, err) : null,
         home.dev
           ? h("details", { class: "dev" }, h("summary", {}, t("dev.title")), h("div", { class: "row wrap" }, endDay, grantIdea, creditUnit, seedCandidate, overnight, fakeVotes, candidates))
           : null,
@@ -1526,7 +1556,7 @@ function joinSwitchScreen(code: string, mine: PlayerRef): void {
   );
   onKeys((e) => (e.key === "Escape" ? (stay(), true) : false));
 }
-function joinForm(code: string): void {
+function joinForm(code: string, tg: HTMLElement | null = null): void {
   music("home");
   const input = h("input", { placeholder: t("join.yourName"), maxlength: "24", autocomplete: "nickname", "data-testid": "join-name" });
   const err = errorLine();
@@ -1541,6 +1571,7 @@ function joinForm(code: string): void {
     h("p", { class: "dim" }, t("join.about")),
     input,
     button(t("join.play"), () => void go(), "primary", "join-submit"),
+    tg,
     err,
   );
   input.focus();
