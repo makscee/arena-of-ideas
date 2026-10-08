@@ -245,9 +245,10 @@ export function typicalUnits(rt: Pick<RunDeps, "store" | "content" | "today">): 
   return sorted.slice(third, sorted.length - third);
 }
 
-/** A candidate's unit as the client draws it, under its own id. */
-function unitContentOf(id: UnitId, row: Row): UnitContent {
-  return { ...mvpPool([row]).units[0]!, id };
+/** A candidate's unit as the client draws it, under its own id, with its
+ * Russian name and line when it has them (M4-5). */
+function unitContentOf(id: UnitId, row: Row, texts?: StoredUnit["texts"]): UnitContent {
+  return { ...mvpPool([row]).units[0]!, id, ...(texts?.ru ? { texts } : {}) };
 }
 
 /** A unit on the vote cards, and what it is. */
@@ -301,8 +302,10 @@ export function nextCard(rt: VoteDeps, player: PlayerRef): VoteCard | null {
   if (!pick) return null;
   const r = rt.seed();
   const otherId = pick.others[r % pick.others.length]!;
-  const other = rt.content.units.find((u) => u.id === otherId)!;
-  const cand = unitContentOf(pick.c.unit.unitId, pick.c.unit.row);
+  const live = rt.content.units.find((u) => u.id === otherId)!;
+  const otherTexts = rt.store.unit(otherId)?.texts;
+  const other: UnitContent = otherTexts?.ru && !live.texts ? { ...live, texts: otherTexts } : live;
+  const cand = unitContentOf(pick.c.unit.unitId, pick.c.unit.row, pick.c.unit.texts);
   const pool = mvpPool([pick.c.unit.row]);
   const units: [UnitContent, UnitContent] = (r >> 8) % 2 ? [cand, other] : [other, cand];
   // The live unit's abilities are in the content already; the card carries the candidate's.

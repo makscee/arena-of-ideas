@@ -21,6 +21,7 @@ import { card, setCardAbilities, unitSheet } from "../ui/card";
 import { button, fitText, h, isDesktop, onKeys, screen, show } from "../ui/dom";
 import { richText } from "../ui/term";
 import { rulesLangOpt } from "../lang";
+import { localArchetype, localUnit } from "../unit-names";
 
 export interface PickNav {
   /** Back to My ideas; `notice` is the line it opens with. */
@@ -52,7 +53,7 @@ export async function pickScreen(ideaId: string, nav: PickNav): Promise<void> {
     // M3-5: a proposal compares with its unit as it is now, from the Library.
     const lib = idea.data.kind === "evolve" ? await api.library().catch(() => null) : null;
     const current = lib?.units.find((l) => l.unit.id === idea.data.target)?.unit;
-    return readingScreen(idea, lib ? withLib(content, lib) : content, nav, current);
+    return readingScreen(idea, lib ? withLib(content, lib) : content, nav, current && localUnit(current));
   }
   nav.toIdeas();
 }
@@ -71,7 +72,7 @@ function withLib(content: MvpContent, lib: LibraryView): MvpContent {
 /** The header both picks share: the step, and the player's own text. A
  * proposal's (M3-5) is "A new version of 🦔 Quillback", with no step. */
 function head(title: string, step: string, idea: MyIdea): Node[] {
-  const a = idea.data.archetype;
+  const a = idea.data.archetype && localArchetype(idea.data.archetype);
   const top =
     idea.data.kind === "evolve" && a
       ? h("h1", { class: "h1-long", "data-testid": "pick-title" }, t("pick.newVersionTitle", { emoji: a.emoji, name: a.name }))
@@ -146,7 +147,7 @@ function archetypeRow(a: IdeaArchetype, i: number, onTap: () => void): HTMLButto
 }
 
 function archetypeScreen(idea: MyIdea, nav: PickNav): void {
-  const options = idea.data.archetypes!;
+  const options = idea.data.archetypes!.map((a) => localArchetype(a));
   const err = h("div", { class: "error", "data-testid": "error" });
   let picked = -1;
   const confirm = confirmButton(() => api.pickArchetype(idea.ideaId, picked), t("pick.pickedArchetype"), idea, nav, err);
@@ -182,7 +183,7 @@ function readingPool(a: IdeaArchetype, r: IdeaReading, i: number) {
 }
 
 function readingScreen(idea: MyIdea, content0: MvpContent, nav: PickNav, current?: UnitContent): void {
-  const a = idea.data.archetype!;
+  const a = localArchetype(idea.data.archetype!);
   const readings = idea.data.readings!;
   const units = readings.map((r, i) => readingPool(a, r, i));
   const content: MvpContent = {

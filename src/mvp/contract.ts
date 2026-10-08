@@ -804,6 +804,10 @@ export interface IdeaArchetype {
   name: string;
   emoji: string;
   line: string;
+  /** M4-5: the name and line in Russian. English stays the unit's `Row`; the
+   * Russian goes beside the unit (`StoredUnit.texts.ru`) once it is picked.
+   * Absent on ideas read before M4-5 and on versions of untranslated units. */
+  texts?: { ru?: { name: string; line: string } };
 }
 
 /** M2-5: a reading of an idea as When → Who → Does in the words of

@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { mvpPool } from "../src/mvp/units";
 import type { MvpContent } from "../src/mvp/contract";
-import { discoveryName, fusionName, localContent, setFusionTexts, unitName } from "./unit-names";
+import { discoveryName, fusionName, localArchetype, localContent, setFusionTexts, unitName } from "./unit-names";
 
 const pool = mvpPool();
 const [a, b] = pool.units;
@@ -42,5 +42,15 @@ describe("fusionName", () => {
     expect(fusionName({ first: "a", second: "b" }, "Stormfang", "en")).toBe("Stormfang");
     expect(discoveryName({ name: "Stormfang", texts: { ru: { name: "Грозоклык" } } }, "ru")).toBe("Грозоклык");
     expect(discoveryName({ name: "Fangstorm" }, "ru")).toBe("Fangstorm");
+  });
+});
+
+describe("localArchetype (M4-5)", () => {
+  const hog = { name: "Old Travit", emoji: "🦔", line: "An old travit the team leans on.", texts: { ru: { name: "Старый Травит", line: "Старый травит, на кого опирается команда." } } };
+  it("reads an idea's archetype in Russian on a Russian page, as it came otherwise", () => {
+    expect(localArchetype(hog, "ru")).toMatchObject({ name: "Старый Травит", line: "Старый травит, на кого опирается команда.", emoji: "🦔" });
+    expect(localArchetype(hog, "en")).toBe(hog);
+    const old = { name: "Hedgehog", emoji: "🦔", line: "A hedgehog." };
+    expect(localArchetype(old, "ru")).toBe(old);
   });
 });
