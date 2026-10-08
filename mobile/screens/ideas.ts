@@ -6,15 +6,18 @@
 // the creator number: the days the player's units have been live, all together.
 import { IDEA_TEXT_MAX, IDEA_TEXT_MIN, type CreditsView, type IdeaState, type MyIdea, type MyIdeasView } from "../../src/mvp/contract";
 import { api, ApiError } from "../api";
-import { button, h, onKeys, overlay, screen, show } from "../ui/dom";
+import { getContent } from "../content";
+import { unitSheet } from "../ui/card";
+import { button, closable, h, onGone, onKeys, overlay, screen, show } from "../ui/dom";
+import { pickScreen } from "./pick";
 
 /** How My ideas names each stage. */
 export const IDEA_STAGE: Record<IdeaState, string> = {
   written: "being read",
   reading: "being read",
-  "pick-archetype": "pick its archetype",
-  "pick-reading": "pick its reading",
-  simulating: "being tested",
+  "pick-archetype": "Ready: pick its archetype",
+  "pick-reading": "Ready: pick its reading",
+  simulating: "being tested: we'll test it overnight",
   voting: "in the vote",
   live: "live",
   failed: "didn't pass",
@@ -31,8 +34,11 @@ interface IdeasNav {
   onUnknown: () => void;
 }
 
-/** My ideas; `sent` says an idea was just sent, so it opens with the notice. */
-export async function ideasScreen(nav: IdeasNav, sent = false): Promise<void> {
+/** How often My ideas looks again while an idea is with the reader. */
+const READ_POLL_MS = 10_000;
+
+/** My ideas; `notice` is what just happened (an idea sent, a pick made), said on top. */
+export async function ideasScreen(nav: IdeasNav, notice: string | null = null): Promise<void> {
   const back = button("Back", nav.onBack, "primary grow", "ideas-back");
   const escBack = (e: KeyboardEvent) => (e.key === "Escape" ? (nav.onBack(), true) : false);
   let view: MyIdeasView;
@@ -56,7 +62,7 @@ export async function ideasScreen(nav: IdeasNav, sent = false): Promise<void> {
   if (held === 0) write.disabled = true;
   show(
     h("h1", {}, "MY IDEAS"),
-    sent ? h("div", { class: "notice", "data-testid": "idea-sent" }, "Your idea is being read. We'll tell you when it's ready.") : null,
+    notice ? h("div", { class: "notice", "data-testid": "idea-sent" }, notice) : null,
     h("div", { "data-testid": "ideas-held" }, holdLine),
     write,
     err,
@@ -73,6 +79,14 @@ export async function ideasScreen(nav: IdeasNav, sent = false): Promise<void> {
   );
   screen("ideas");
   onKeys(escBack);
+  // An idea with the reader is ready within minutes: look again while this screen is up.
+  if (view.sent.some((i) => i.state === "written" || i.state === "reading")) {
+    const shown = document.querySelector('[data-testid="ideas-sent"]');
+    const timer = setTimeout(() => {
+      if (shown?.isConnected && !document.querySelector(".overlay")) void ideasScreen(nav, notice);
+    }, READ_POLL_MS);
+    onGone(() => clearTimeout(timer));
+  }
 }
 
 /** Your creator number: the days your units have been live, summed over every stay. */
@@ -86,13 +100,36 @@ function creatorLine(you: NonNullable<CreditsView["you"]>): HTMLElement {
 }
 
 function sentRow(i: MyIdea, nav: IdeasNav, err: HTMLElement): HTMLElement {
-  const cancel = i.state === "written" ? button("Cancel", () => cancelSheet(i, nav, err), "small", "idea-cancel") : null;
+  const ready = i.state === "pick-archetype" || i.state === "pick-reading";
+  const action =
+    i.state === "written"
+      ? button("Cancel", () => cancelSheet(i, nav, err), "small", "idea-cancel")
+      : ready
+        ? button("Pick", () => void pickScreen(i.ideaId, { toIdeas: (n) => void ideasScreen(nav, n ?? null), onUnknown: nav.onUnknown }), "small primary", "idea-pick")
+        : i.state === "live" && i.data.unitId
+          ? button("Its card", () => void openUnit(i.data.unitId!, err), "small", "idea-card")
+          : null;
+  const named = i.data.archetype ? `${i.data.archetype.emoji} ${i.data.archetype.name} · ` : "";
   return h(
     "div",
-    { class: "idea-row", "data-testid": "idea-sent-row", "data-state": i.state },
-    h("div", { class: "grow" }, h("div", { class: "idea-text" }, i.text), h("div", { class: "dim small", "data-testid": "idea-stage" }, IDEA_STAGE[i.state])),
-    cancel,
+    { class: `idea-row${ready ? " ready" : ""}`, "data-testid": "idea-sent-row", "data-state": i.state },
+    h(
+      "div",
+      { class: "grow" },
+      h("div", { class: "idea-text" }, i.text),
+      h("div", { class: ready ? "small idea-ready" : "dim small", "data-testid": "idea-stage" }, `${named}${IDEA_STAGE[i.state]}`),
+      i.state === "failed" && i.data.failure ? h("div", { class: "dim small", "data-testid": "idea-failure" }, `${i.data.failure} Your idea was refunded.`) : null,
+    ),
+    action,
   );
+}
+
+/** A live idea's unit: its sheet, from the live content. */
+async function openUnit(unitId: string, err: HTMLElement): Promise<void> {
+  const content = await getContent().catch(() => null);
+  const unit = content?.units.find((u) => u.id === unitId);
+  if (!content || !unit) return void (err.textContent = "Its card shows once the pool has it.");
+  closable(unitSheet(unit, content));
 }
 
 function cancelSheet(i: MyIdea, nav: IdeasNav, err: HTMLElement): void {
@@ -145,7 +182,7 @@ function writeScreen(nav: IdeasNav): void {
       err.textContent = "";
       api
         .writeIdea(box.value)
-        .then(() => ideasScreen(nav, true))
+        .then(() => ideasScreen(nav, "Your idea is being read. We'll tell you when it's ready."))
         .catch((e: unknown) => {
           if (e instanceof ApiError && e.status === 401) return nav.onUnknown();
           err.textContent = errorText(e);

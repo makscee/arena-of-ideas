@@ -5,7 +5,7 @@ import { createMvpApp } from "./app.js";
 import { mvpContent } from "./content.js";
 import { archetypeDraftProblems, checkReading, takenShapes, type ArchetypeDraft, type ReadingDraft } from "./idea-checks.js";
 import { archetypesPrompt, fakeIdeaReader, ideaBlock, ideaReaderFromEnv, readerArgs, readerSystemPrompt, type IdeaReader, type ReaderAnswer } from "./idea-reader.js";
-import { COULD_NOT, dueIdeas, ideaReadingJobWith, pickArchetype, pickReading, readEveryMs, readIdeas } from "./idea-reading.js";
+import { COULD_NOT, DECLINED_TWICE, declineOptions, dueIdeas, ideaReadingJobWith, pickArchetype, pickReading, readEveryMs, readIdeas } from "./idea-reading.js";
 import { grantIdea, ideasOf, writeIdea } from "./ideas.js";
 import { seedUnits } from "./pool.js";
 import { mvpRuntime } from "./runtime.js";
@@ -306,5 +306,74 @@ describe("the idea endpoints (M2-5)", () => {
     expect(picked.status).toBe(200);
     expect(picked.json.sent[0]).toMatchObject({ state: "simulating", data: { unitId: "old-hedgehog" } });
     expect(rt.store.unit("old-hedgehog")).toMatchObject({ status: "candidate", authorId: p.id });
+  });
+});
+
+describe("None of these, and the ready count (M2-6)", () => {
+  it("turning down archetypes reads others once; turning them down again refunds the idea", async () => {
+    const { store, deps, write } = world();
+    const idea = write(HEDGEHOG);
+    const reader = fakeIdeaReader();
+    await readIdeas(deps, reader);
+    const first = store.idea(idea.ideaId)!.data.archetypes!;
+    expect(ideasOf(deps, "p1")).toMatchObject({ held: 0, ready: 1 });
+    declineOptions(deps, "p1", idea.ideaId);
+    expect(store.idea(idea.ideaId)).toMatchObject({ state: "reading", data: { declined: { archetypes: first } } });
+    expect(store.idea(idea.ideaId)!.data.archetypes).toBeUndefined();
+    expect(ideasOf(deps, "p1").ready).toBe(0);
+    await readIdeas(deps, reader);
+    const again = store.idea(idea.ideaId)!;
+    expect(again.state).toBe("pick-archetype");
+    expect(again.data.archetypes!.length).toBeGreaterThan(0);
+    for (const a of again.data.archetypes!) expect(first.map((f) => f.name)).not.toContain(a.name);
+    declineOptions(deps, "p1", idea.ideaId);
+    expect(store.idea(idea.ideaId)).toMatchObject({ state: "failed", data: { failure: DECLINED_TWICE } });
+    expect(ideasOf(deps, "p1")).toMatchObject({ held: 1, ready: 0 });
+  });
+
+  it("turning down readings keeps the archetype and asks for other readings", async () => {
+    const { store, deps, write } = world();
+    const idea = write(HEDGEHOG);
+    const { reader, calls } = scripted([answer([arch("Spinehog"), arch("Quillback"), arch("Burrhog")])], []);
+    await readIdeas(deps, reader);
+    pickArchetype(deps, "p1", idea.ideaId, 0);
+    const fake = fakeIdeaReader();
+    await readIdeas(deps, { ...reader, readings: fake.readings });
+    const shown = store.idea(idea.ideaId)!.data.readings!;
+    declineOptions(deps, "p1", idea.ideaId);
+    const back = store.idea(idea.ideaId)!;
+    expect(back).toMatchObject({ state: "reading", data: { archetype: { name: "Spinehog" }, declined: { readings: shown } } });
+    let problems: string[] | undefined;
+    await readIdeas(deps, { ...reader, readings: (t, a, o) => ((problems = o.problems), fake.readings(t, a, o)) });
+    expect(problems?.[0]).toContain("turned down");
+    const next = store.idea(idea.ideaId)!;
+    expect(next.state).toBe("pick-reading");
+    for (const r of next.data.readings!) expect(shown.map((s) => s.text.sleeping)).not.toContain(r.text.sleeping);
+    expect(calls[0]!.problems).toBeUndefined();
+  });
+
+  it("None of these only while a pick waits, and only on your own idea", async () => {
+    const { deps, write } = world();
+    const idea = write(HEDGEHOG);
+    expect(() => declineOptions(deps, "p1", idea.ideaId)).toThrow(/isn't waiting/);
+    expect(() => declineOptions(deps, "p2", idea.ideaId)).toThrow(/no such idea/);
+  });
+
+  it("POST /ideas/:id/none answers My ideas", async () => {
+    const rt = mvpRuntime({ content: mvpContent(), dev: true });
+    seedUnits(rt.store, rt.now());
+    const app = createMvpApp(rt);
+    const call = (path: string, p: PlayerRef | null, body?: unknown) =>
+      app.request(`/api/v1${path}`, { method: body === undefined ? "GET" : "POST", headers: { "content-type": "application/json", ...(p ? { "X-Arena-Player": p.id } : {}) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+    const p = (await (await call("/players", null, { name: "Nonna" })).json()) as PlayerRef;
+    await call("/dev/grant-idea", p, {});
+    const sent = (await (await call("/ideas", p, { text: HEDGEHOG })).json()) as MyIdeasView;
+    const id = sent.sent[0]!.ideaId;
+    expect((await call(`/ideas/${id}/none`, p, {})).status).toBe(409);
+    await readIdeas(rt, fakeIdeaReader());
+    expect(((await (await call("/home", p)).json()) as { ideas: { ready: number } }).ideas.ready).toBe(1);
+    const res = await call(`/ideas/${id}/none`, p, {});
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as MyIdeasView).sent[0]!.state).toBe("reading");
   });
 });

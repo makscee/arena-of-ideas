@@ -6,6 +6,8 @@
 //          → reading → pick-reading      (3 readings for it, checked)
 //   its author picks one (POST /ideas/:id/reading)
 //          → simulating                  (the Row is a `candidate` in mvp_units)
+// "None of these" (POST /ideas/:id/none, M2-6) reads a stage once more for
+// other options; a second one at the same stage refunds the idea.
 // An option that fails ./idea-checks.ts is retried once with its problems,
 // then dropped; fewer than 3 shows what there is; none fails the idea with
 // the reason and refunds it. A part the game can't say goes to the
@@ -86,7 +88,10 @@ async function readArchetypes(deps: ReadDeps, reader: IdeaReader, idea: Idea): P
     }
     return problems;
   };
-  const first = await reader.archetypes(idea.text, { want: OPTIONS, units });
+  // Options its author turned down (M2-6) are taken: the reader is asked for others.
+  const declined = idea.data.declined?.archetypes;
+  for (const d of declined ?? []) taken.push({ name: d.name, archetype: d.line });
+  const first = await reader.archetypes(idea.text, { want: OPTIONS, units, ...turnedDown(declined?.map((d) => `${d.emoji} ${d.name}: ${d.line}`)) });
   const problems = check(first.options);
   const cant = [...first.cantExpress];
   if (problems.length && ok.length < OPTIONS) {
@@ -115,7 +120,9 @@ async function readReadings(deps: ReadDeps, reader: IdeaReader, idea: Idea, arch
     });
     return problems;
   };
-  const first = await reader.readings(idea.text, archetype, { want: OPTIONS, units });
+  const declined = idea.data.declined?.readings;
+  for (const d of declined ?? []) taken.accept(rowOf(archetype, d));
+  const first = await reader.readings(idea.text, archetype, { want: OPTIONS, units, ...turnedDown(declined?.map((d) => d.text.sleeping)) });
   const problems = check(first.options);
   const cant = [...first.cantExpress];
   if (problems.length && ok.length < OPTIONS) {
@@ -126,6 +133,11 @@ async function readReadings(deps: ReadDeps, reader: IdeaReader, idea: Idea, arch
   const parts = logCantExpress(deps, idea, cant);
   if (!ok.length) return fail(deps, idea, parts);
   deps.store.putIdea({ ...idea, state: "pick-reading", data: settled({ ...idea.data, readings: ok }, parts) });
+}
+
+/** The reader's problems when its author turned down the last options (M2-6). */
+function turnedDown(options: string[] | undefined): { problems?: string[] } {
+  return options?.length ? { problems: [`The player turned down these options; give different ones: ${options.join(" | ")}`] } : {};
 }
 
 /** The data with this stage's can't-express parts, and no retry pending. */
@@ -215,6 +227,27 @@ export function pickReading(deps: ReadDeps, playerId: string, ideaId: string, in
   const unitId = freshUnitId(store, archetype.name);
   store.putUnit({ unitId, status: "candidate", row: rowOf(archetype, reading), authorId: playerId, origin: "idea", parentId: null, createdAt: deps.now().toISOString() });
   store.putIdea({ ...idea, state: "simulating", data: { ...idea.data, unitId } });
+}
+
+/** Why an idea turned down twice came back. */
+export const DECLINED_TWICE = "None of the options fit, so the idea is back with you to write again.";
+
+/** "None of these" (M2-6): the stage waiting for a pick is read once more,
+ * the options shown kept as turned down so the reader offers others. The
+ * same stage turned down again fails the idea and refunds it. */
+export function declineOptions(deps: ReadDeps, playerId: string, ideaId: string): void {
+  const idea = ownIdea(deps, playerId, ideaId);
+  const stage = idea.state === "pick-archetype" ? "archetypes" : idea.state === "pick-reading" ? "readings" : null;
+  if (!stage) throw new IdeaRefused(409, "This idea isn't waiting for a pick.");
+  const declined = idea.data.declined ?? {};
+  if (declined[stage]) {
+    deps.store.putIdea({ ...idea, state: "failed", data: { ...idea.data, failure: DECLINED_TWICE } });
+    refundIdea(deps, playerId);
+    return;
+  }
+  const { archetypes, readings, ...data } = idea.data;
+  const kept = stage === "archetypes" ? { declined: { ...declined, archetypes: archetypes ?? [] } } : { ...(archetypes ? { archetypes } : {}), declined: { ...declined, readings: readings ?? [] } };
+  deps.store.putIdea({ ...idea, state: "reading", data: { ...data, ...kept } });
 }
 
 /** A unit id no unit has had: ids are permanent, so the same name gets "-2", "-3"… */

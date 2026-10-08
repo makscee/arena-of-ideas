@@ -44,14 +44,18 @@ function settle(deps: IdeaDeps, playerId: string): { counts: IdeaCounts; runs: n
   return { counts, runs, held: Math.max(0, Math.min(raw, hold)) };
 }
 
-function view(deps: IdeaDeps, s: { runs: number; held: number }): IdeasView {
+/** M2-6: the states where an idea waits for its author's pick. */
+const READY_STATES = new Set(["pick-archetype", "pick-reading"]);
+
+function view(deps: IdeaDeps, playerId: string, s: { runs: number; held: number }): IdeasView {
   const { every, hold } = ideaRules(deps.rules);
-  return { held: s.held, nextIn: s.held >= hold ? null : every - (s.runs % every) };
+  const ready = deps.store.ideas({ playerId }).filter((i) => READY_STATES.has(i.state)).length;
+  return { held: s.held, nextIn: s.held >= hold ? null : every - (s.runs % every), ready };
 }
 
 /** The player's ideas, for Home. */
 export function ideasOf(deps: IdeaDeps, playerId: string): IdeasView {
-  return view(deps, settle(deps, playerId));
+  return view(deps, playerId, settle(deps, playerId));
 }
 
 /** Dev "+1 idea": one more, unless the player already holds the cap. */
@@ -62,7 +66,7 @@ export function grantIdea(deps: IdeaDeps, playerId: string): IdeasView {
     deps.store.putIdeaCounts(playerId, s.counts);
     s.held++;
   }
-  return view(deps, s);
+  return view(deps, playerId, s);
 }
 
 /** Spends one idea (M2-4 calls it when an idea is written): false when the

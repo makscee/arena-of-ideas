@@ -339,8 +339,17 @@ async function homeScreen(ended: number | null = null): Promise<void> {
  * next. Tapping it opens My ideas (M2-4, screens/ideas.ts). */
 function ideasLine(ideas: IdeasView): HTMLElement {
   const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
-  const text = ideas.held > 0 || ideas.nextIn === null ? `💡 ${plural(ideas.held, "idea")}` : `💡 next idea in ${plural(ideas.nextIn, "run")}`;
-  return button(text, () => void ideasScreen({ onBack: () => void homeScreen(), onUnknown: () => (api.forget(), nameScreen()) }), "small link ideas", "ideas");
+  // M2-6: an idea waiting for its pick comes first: "💡 Your idea is ready".
+  const text = ideas.ready
+    ? ideas.ready === 1
+      ? "💡 Your idea is ready"
+      : `💡 ${ideas.ready} ideas are ready`
+    : ideas.held > 0 || ideas.nextIn === null
+      ? `💡 ${plural(ideas.held, "idea")}`
+      : `💡 next idea in ${plural(ideas.nextIn, "run")}`;
+  const b = button(text, () => void ideasScreen({ onBack: () => void homeScreen(), onUnknown: () => (api.forget(), nameScreen()) }), "small link ideas", "ideas");
+  if (ideas.ready) b.dataset.ready = String(ideas.ready);
+  return b;
 }
 
 /** One confirm before a run is given up (R2-2's abandon): it says what the

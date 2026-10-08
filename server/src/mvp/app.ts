@@ -11,7 +11,7 @@ import { checkDecision, MvpBadDecision, MvpDecisionError, runView, type MvpRunSt
 import { creditsView, creditUnit, libraryView } from "./credits.js";
 import { dayView, endDay, hiddenSlay } from "./day.js";
 import { MvpNotYet } from "./errors.js";
-import { myIdea, pickArchetype, pickReading } from "./idea-reading.js";
+import { declineOptions, myIdea, pickArchetype, pickReading } from "./idea-reading.js";
 import { cancelIdea, grantIdea, IdeaRefused, ideasOf, myIdeas, writeIdea } from "./ideas.js";
 import { isAdmin, isJoinCode, JoinRefused, joinOpen, NAME_RE, openJoin, redeemInvite, sessionPlayer } from "./invites.js";
 import { abandon, currentRun, decide, preview, startRun } from "./runs.js";
@@ -265,6 +265,8 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   };
   api.post("/ideas/:ideaId/archetype", pick(pickArchetype));
   api.post("/ideas/:ideaId/reading", pick(pickReading));
+  // M2-6: "None of these" at either pick.
+  api.post("/ideas/:ideaId/none", (c) => ideaCall(c, (p) => declineOptions(rt, p.id, c.req.param("ideaId"))));
 
   // Slice 10 owns this route and the store behind it; slice 11 only reads.
   api.get("/fusions", (c) => c.json(store.fusions()));

@@ -37,6 +37,8 @@ export interface CardOptions {
   tier?: number | "S";
   /** Tapping the card opens this, usually overlay(unitSheet(...)). */
   onOpen?: () => void;
+  /** M2-6: a candidate's card: its PWR / HP are set by simulation, so it shows none. */
+  unset?: boolean;
 }
 
 /** A tier's colour class (R4-4): .t1–.t4 on the --tier-1..4 tokens, .ts for a summoned unit. */
@@ -44,6 +46,8 @@ export const tierClass = (tier: number | "S") => (tier === "S" ? "ts" : `t${tier
 
 // A pool unit's sheet head, "Sleeping · Tier II", the numeral in its tier's colour.
 const poolState = (form: string, tier: number) => [`${form} · Tier `, h("span", { class: `tier ${tierClass(tier)}` }, roman(tier))];
+// An idea's candidate (M2-6) has no tier yet: the simulation sets it with the numbers.
+const SET_BY_SIM = "PWR / HP: set by simulation";
 
 /** The live units' credits (M2-9: who the idea was, NEW), set once the
  * content loads (../content.ts) and again after the dev tool credits one. */
@@ -73,7 +77,11 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
     h("div", { class: "emoji" }, u.emoji),
     // One line; ui/dom.ts fitText() shrinks a long name a little, then cuts it.
     h("div", { class: "name", title: u.name }, u.name),
-    ...(o.live?.maxHp !== undefined ? liveStats(stats, o.live.maxHp) : [h("div", { class: "stats" }, h("span", { class: "p" }, `${stats.pwr}`), "/", h("span", { class: "h" }, `${stats.hp}`))]),
+    ...(o.unset
+      ? [h("div", { class: "stats unset", title: "PWR / HP: set by simulation" }, h("span", { class: "p" }, "?"), "/", h("span", { class: "h" }, "?"))]
+      : o.live?.maxHp !== undefined
+        ? liveStats(stats, o.live.maxHp)
+        : [h("div", { class: "stats" }, h("span", { class: "p" }, `${stats.pwr}`), "/", h("span", { class: "h" }, `${stats.hp}`))]),
     h("div", { class: "foot" }, ...(o.extra ?? [])),
   );
   if (u.kind === "fused") el.classList.add("fused");
@@ -169,7 +177,7 @@ export function formRich(form: UnitForm, content: MvpContent): Node[] {
  * changes underlined), a fused unit's parts open behind a tap, and the unit's
  * win and pick rates are one dim line at the bottom. opts.preview: a fusion
  * preview's credit line (./fusion.ts). Open it with overlay(unitSheet(...)) from ./dom. */
-export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpContent, opts: { rates?: UnitRates; from?: Stats; preview?: boolean } = {}): HTMLElement {
+export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpContent, opts: { rates?: UnitRates; from?: Stats; preview?: boolean; candidate?: boolean } = {}): HTMLElement {
   const unitId = "forms" in u ? u.id : u.unitId;
   const unit = (id: string) => content.units.find((x) => x.id === id);
   // opts.from: your copy's stats now, when u is that copy after a buy (the shop's offer sheet).
@@ -184,7 +192,8 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
   const copies = "forms" in u ? 0 : u.copies;
 
   const box = h("div", { class: "sheet-form", "data-testid": "sheet-form" });
-  const state = h("span", { class: "dim small", "data-testid": "sheet-state" }, ...("stats" in u ? [sheetState(u)] : poolState("Sleeping", u.tier)));
+  const headState = (form: string) => (opts.candidate ? [form] : "stats" in u ? [sheetState(u)] : poolState(form, u.tier));
+  const state = h("span", { class: "dim small", "data-testid": "sheet-state" }, ...headState("Sleeping"));
   const children: (Node | null)[] = [];
   // What the form shown summons, under its text (R3-5); swapped by See Awoken.
   const summons = h("div", { class: "stack" });
@@ -218,7 +227,7 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
     const sleepPieces = formSegments(now, content.abilities);
     const awokePieces = formSegments(c.forms.awoken, content.abilities);
     // Short enough for one line in the 1024px inspector (R2-17).
-    const see = `▸ Awoken in ${left} ${left === 1 ? "copy" : "copies"}`;
+    const see = opts.candidate ? "▸ See Awoken" : `▸ Awoken in ${left} ${left === 1 ? "copy" : "copies"}`;
     const back = "◂ Back to Sleeping";
     const note = h("div", { class: "dim small" }, "What changes is underlined.");
     note.hidden = true;
@@ -233,7 +242,7 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
       box.replaceChildren(...(showing ? [h("div", { class: "label" }, `Awoken · after copy ${MVP_RULES.copiesToAwaken}`), ...richText(awokePieces, { content: markChangedPieces(sleepPieces, awokePieces) })] : richText(sleepPieces)));
       btn.textContent = showing ? back : see;
       // A unit from the pool (the Codex, an offer) heads its sheet with the form shown.
-      if (!("stats" in u)) state.replaceChildren(...poolState(showing ? "Awoken" : "Sleeping", u.tier));
+      if (!("stats" in u)) state.replaceChildren(...headState(showing ? "Awoken" : "Sleeping"));
       btn.dataset.testid = showing ? "see-sleeping" : "see-awoken";
       note.hidden = !showing;
     });
@@ -248,13 +257,13 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
     c?.archetype ? h("div", { class: "archetype", "data-testid": "sheet-archetype" }, c.archetype) : null,
     fused ? null : creditLine(unitId),
     "forms" in u ? null : discoveredLine(u, { preview: opts.preview ?? false }),
-    "stats" in u ? statsLine(u.stats) : h("div", { class: "num" }, `${u.base.pwr} PWR / ${u.base.hp} HP`),
+    opts.candidate ? h("div", { class: "dim small", "data-testid": "sheet-unset" }, SET_BY_SIM) : "stats" in u ? statsLine(u.stats) : h("div", { class: "num" }, `${u.base.pwr} PWR / ${u.base.hp} HP`),
     opts.from ? h("div", { class: "dim small" }, "Your copy now → after buying") : null,
     icons.childNodes.length ? icons : null,
     box,
     ...children,
     summons.childNodes.length || (sleeping && c) ? summons : null,
-    fused ? null : unitStatsLine(unitId, opts.rates),
+    fused || opts.candidate ? null : unitStatsLine(unitId, opts.rates),
   );
 }
 
