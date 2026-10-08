@@ -29,12 +29,24 @@ import { legacyRecipe } from "./content-grammar.js";
 export const TEAM_SIZE = 5;
 export const FATIGUE_START = 10;
 export const FATIGUE_RAMP = 1;
+/** The kernel's default turn cap; BattleInput.turnCap overrides it (MVP runs
+ * stored before round 4 set 30). A battle with both sides standing after the
+ * last turn ends as a draw, its BattleEnd marked timeUp. With sudden death on
+ * (BattleInput.suddenDeathAt) it is only a safety net no fight reaches. */
 export const TURN_CAP = 200;
+/** Most trigger firings one cascade (one settle) runs before it stops with a
+ * visible ChainCapped event; BattleInput.chainStepCap overrides it. */
+export const DEFAULT_CHAIN_STEP_CAP = 32;
 
 /** Fatigue damage dealt at the end of a turn (>= FATIGUE_START) — exported so
  * display layers (the codex) derive the ramp from the same formula the loop
- * runs, never a re-written copy of it. */
-export const fatigueAmount = (turn: number): number => (turn - FATIGUE_START + 1) * FATIGUE_RAMP;
+ * runs, never a re-written copy of it. From `suddenDeathAt` on (R4-1) it
+ * doubles every turn: linear to turn 19, then 20, 40, 80… with the MVP's 20. */
+export const fatigueAmount = (turn: number, suddenDeathAt?: number): number => {
+  const linear = (t: number) => (t - FATIGUE_START + 1) * FATIGUE_RAMP;
+  if (suddenDeathAt === undefined || turn < suddenDeathAt) return linear(turn);
+  return Math.max(1, linear(suddenDeathAt - 1)) * 2 ** (turn - suddenDeathAt + 1);
+};
 
 interface StatusInstance {
   def: StatusDef;
@@ -56,9 +68,13 @@ interface UnitState {
 }
 
 interface ReactorEntry {
-  ref: AbilityRef;
+  ref: AbilityRef; // the reactor's identity: a unit reacts as one (ability 0), a status ability on its own
   holder: string;
-  ability: Reaction;
+  ability: Reaction; // When, Who and condition of the reactor
+  /** The Does, in firing order, each with the ref its events are sourced to
+   * and its Who. A unit's recipe has one Who for all its own Does; each "and"
+   * clause has its own. */
+  does: Array<{ ref: AbilityRef; effects: Effect[]; selectors?: Selector[] }>;
 }
 
 interface Firing extends ReactorEntry {
@@ -69,6 +85,19 @@ interface Firing extends ReactorEntry {
 interface Pending {
   summon?: UnitState;
   resurrect?: { unit: string; hp: number };
+}
+
+/** A firing's Does split into runs that share one Who, in order. Does
+ * without a Who of their own take the reactor's. */
+function clausesOf(does: ReactorEntry["does"], fallback: Selector[]): { selectors: Selector[]; does: ReactorEntry["does"] }[] {
+  const out: { selectors: Selector[]; does: ReactorEntry["does"] }[] = [];
+  for (const d of does) {
+    const selectors = d.selectors ?? fallback;
+    const last = out[out.length - 1];
+    if (last && last.selectors === selectors) last.does.push(d);
+    else out.push({ selectors, does: [d] });
+  }
+  return out;
 }
 
 export function battle(input: BattleInput): BattleEvent[] {
@@ -99,12 +128,38 @@ class Engine {
   private attachCounter = 0;
   private summonCounter = 0;
   private input: BattleInput;
+  private chainStepCap: number;
+  private turnCap: number;
+  private suddenDeathAt: number | undefined;
+  private lineCap: number;
 
   constructor(input: BattleInput) {
     this.input = input;
     this.rng = mulberry32(input.seed);
     this.registry = input.statuses ?? {};
     this.abilities = input.abilities ?? {};
+    this.chainStepCap = input.chainStepCap ?? DEFAULT_CHAIN_STEP_CAP;
+    if (!Number.isInteger(this.chainStepCap) || this.chainStepCap < 1) {
+      throw new Error(`chainStepCap must be a positive integer, got ${String(input.chainStepCap)}`);
+    }
+    this.turnCap = input.turnCap ?? TURN_CAP;
+    if (!Number.isInteger(this.turnCap) || this.turnCap < 1) {
+      throw new Error(`turnCap must be a positive integer, got ${String(input.turnCap)}`);
+    }
+    this.suddenDeathAt = input.suddenDeathAt;
+    if (this.suddenDeathAt !== undefined && (!Number.isInteger(this.suddenDeathAt) || this.suddenDeathAt < 1)) {
+      throw new Error(`suddenDeathAt must be a positive integer, got ${String(input.suddenDeathAt)}`);
+    }
+    this.lineCap = input.lineCap ?? TEAM_SIZE;
+    if (!Number.isInteger(this.lineCap) || this.lineCap < TEAM_SIZE) {
+      throw new Error(`lineCap must be an integer ≥ ${TEAM_SIZE}, got ${String(input.lineCap)}`);
+    }
+  }
+
+  /** Sudden death (R4-1): from suddenDeathAt on, Fatigue doubles each turn and
+   * pierces every interceptor (Shield, Blessing), and Summon and Revive do nothing. */
+  private suddenDeath(): boolean {
+    return this.suddenDeathAt !== undefined && this.turn >= this.suddenDeathAt;
   }
 
   run(): BattleEvent[] {
@@ -114,7 +169,7 @@ class Engine {
     this.settle();
 
     let turns = 0; // the turn the battle was decided on; 0 = decided before turn 1
-    for (this.turn = 1; this.turn <= TURN_CAP; this.turn++) {
+    for (this.turn = 1; this.turn <= this.turnCap; this.turn++) {
       if (!this.bothAlive()) break;
       turns = this.turn;
       const ts = this.propose({ type: "TurnStart" }, null, "kernel");
@@ -141,8 +196,8 @@ class Engine {
       const te = this.propose({ type: "TurnEnd" }, null, "kernel");
       this.settle();
       if (te && this.turn >= FATIGUE_START && this.bothAlive()) {
-        const amount = fatigueAmount(this.turn);
-        this.propose({ type: "Fatigue", amount }, te.id, "kernel");
+        const amount = fatigueAmount(this.turn, this.suddenDeathAt);
+        this.propose({ type: "Fatigue", amount, ...(this.suddenDeath() ? { suddenDeath: true as const } : {}) }, te.id, "kernel");
         this.settle();
       }
     }
@@ -150,8 +205,10 @@ class Engine {
     const aAlive = this.lines.A.length > 0;
     const bAlive = this.lines.B.length > 0;
     const winner: Side | "draw" = aAlive === bAlive ? "draw" : aAlive ? "A" : "B";
+    // Time's up: the last turn ran out with both sides standing.
+    const timeUp = aAlive && bAlive && this.turn > this.turnCap;
     this.turn = turns; // BattleEnd is stamped with the deciding turn, not the loop's overshoot
-    this.propose({ type: "BattleEnd", winner, turns }, null, "kernel");
+    this.propose({ type: "BattleEnd", winner, turns, ...(timeUp ? { timeUp: true as const } : {}) }, null, "kernel");
     return this.log;
   }
 
@@ -199,10 +256,15 @@ class Engine {
       if (!def.triggers?.length || !def.selectors?.length || !def.abilities?.length) {
         throw new Error(`unit "${def.name}" needs non-empty triggers, selectors, and abilities`);
       }
-      return def.abilities.map((id) => {
-        const action = this.abilities[id];
-        if (!action) throw new Error(`unknown ability "${id}" — not in the ability registry`);
-        return { triggers: def.triggers!, selectors: def.selectors!, ...(def.condition ? { condition: def.condition } : {}), effects: action.effects };
+      // The recipe's own Does share its Who; each "and" clause brings its own.
+      const clauses = [{ selectors: def.selectors, abilities: def.abilities }, ...(def.also ?? [])];
+      return clauses.flatMap((clause) => {
+        if (!clause.selectors.length || !clause.abilities.length) throw new Error(`unit "${def.name}" has an empty "and" clause`);
+        return clause.abilities.map((id) => {
+          const action = this.abilities[id];
+          if (!action) throw new Error(`unknown ability "${id}" — not in the ability registry`);
+          return { triggers: def.triggers!, selectors: clause.selectors, ...(def.condition ? { condition: def.condition } : {}), effects: action.effects };
+        });
       });
     }
     const id = def.ability;
@@ -236,23 +298,26 @@ class Engine {
     const followUps: Array<(parentId: number) => void> = [];
     const handled = new Set<string>();
     let cancelledBy: AbilityRef | null = null;
+    // Sudden death's fatigue, and the death it deals, pass every interceptor.
+    const pierced = (draft.type === "Hurt" || draft.type === "Death") && draft.pierced === true;
 
-    for (const r of this.orderedReactors()) {
+    for (const r of pierced ? [] : this.orderedReactors()) {
       for (const when of r.ability.triggers) {
         if (when.kind !== "interceptor" || !this.matches(when.on, draft, r.holder)) continue;
         const k = refKey(r.ref);
         if (handled.has(k)) continue;
+        const stamped = withWhen(r, r.ability.triggers.indexOf(when));
         if (this.violatesNoSelf(r.ref, source, causedBy)) {
-          this.applyEvent({ type: "ChainBlocked", ability: r.ref, at: causedBy ?? -1 }, causedBy, "kernel");
+          this.applyEvent({ type: "ChainBlocked", ability: stamped.ref, at: causedBy ?? -1 }, causedBy, "kernel");
           continue;
         }
         const holder = this.units.get(r.holder);
         if (!holder || (r.ref.status === undefined && holder.silenced)) continue;
         if (r.ability.condition && !this.checkCondition(r.ability.condition, holder)) continue;
         handled.add(k);
-        const res = this.runInterceptor(r, draft, followUps);
+        const res = this.runInterceptor(stamped, draft, followUps);
         if (res === "cancel") {
-          cancelledBy = r.ref;
+          cancelledBy = stamped.ref;
           break;
         }
       }
@@ -283,20 +348,31 @@ class Engine {
     const ev: BattleEvent = { id: this.log.length, turn: this.turn, causedBy, source, ...body };
     this.mutate(ev, pending);
     this.log.push(ev);
+    // Reactors come in line order (front to back); each reacts to an event at
+    // most once, however many of its Triggers match it.
     for (const r of reactors) {
-      for (const when of r.ability.triggers) {
-        if (when.kind === "trigger" && this.matches(when.on, ev, r.holder)) {
-          this.queue.push({ ...r, event: ev });
-        }
-      }
+      const when = r.ability.triggers.findIndex((w) => w.kind === "trigger" && this.matches(w.on, ev, r.holder));
+      if (when >= 0) this.queue.push({ ...withWhen(r, when), event: ev });
     }
     this.kernelConsequences(ev);
     return ev;
   }
 
+  /** Drain the trigger queue. A cascade that takes more than chainStepCap
+   * firings stops: the rest of the queue is dropped and a ChainCapped event,
+   * caused by the event the next firing reacted to, says so in the log. */
   private settle(): void {
+    let steps = 0;
+    let root: number | null = null;
     while (this.queue.length > 0) {
       const f = this.queue.shift()!;
+      root ??= f.event.id;
+      if (steps >= this.chainStepCap) {
+        this.queue = [];
+        this.applyEvent({ type: "ChainCapped", root, steps }, f.event.id, "kernel");
+        return;
+      }
+      steps++;
       this.processFiring(f);
     }
   }
@@ -310,10 +386,20 @@ class Engine {
     if (!holder) return;
     if (f.ref.status === undefined && holder.silenced) return;
     if (f.ability.condition && !this.checkCondition(f.ability.condition, holder)) return;
-    for (const sel of f.ability.selectors) {
-      for (const target of this.evalSelector(sel, holder, f.event)) {
-        for (const effect of f.ability.effects) {
-          this.runEffect(effect, target, holder, f);
+    // One reaction per unit: each Who is picked once, then every Does that
+    // shares it applies to those targets, in order. A run of Does with the
+    // same Who is one clause; an "and" clause with its own Who picks its own
+    // targets after the clauses before it have landed.
+    for (const clause of clausesOf(f.does, f.ability.selectors)) {
+      for (const sel of clause.selectors) {
+        const targets = this.evalSelector(sel, holder, f.event);
+        for (const d of clause.does) {
+          const firing = d.ref === f.ref ? f : { ...f, ref: d.ref };
+          for (const target of targets) {
+            for (const effect of d.effects) {
+              this.runEffect(effect, target, holder, firing);
+            }
+          }
         }
       }
     }
@@ -339,8 +425,10 @@ class Engine {
   private orderedReactors(): ReactorEntry[] {
     const out: ReactorEntry[] = [];
     const addUnit = (u: UnitState) => {
-      if (!u.silenced) {
-        u.abilities.forEach((ab, i) => out.push({ ref: { unit: u.id, ability: i }, holder: u.id, ability: ab }));
+      const first = u.abilities[0];
+      if (!u.silenced && first) {
+        const does = u.abilities.map((ab, i) => ({ ref: { unit: u.id, ability: i }, effects: ab.effects, selectors: ab.selectors }));
+        out.push({ ref: does[0]!.ref, holder: u.id, ability: first, does });
       }
       for (const st of [...u.statuses].sort((p, q) => p.attachedAt - q.attachedAt)) {
         st.def.abilities.forEach((ab, i) => {
@@ -348,9 +436,11 @@ class Engine {
           const selectors = st.def.selectors ?? ab.selectors;
           if (!triggers?.length || !selectors?.length) return;
           const condition = st.def.condition ?? ab.condition;
+          const ref = { unit: u.id, status: st.def.name, ability: i };
           out.push({
-            ref: { unit: u.id, status: st.def.name, ability: i }, holder: u.id,
+            ref, holder: u.id,
             ability: { triggers, selectors, ...(condition ? { condition } : {}), effects: ab.effects },
+            does: [{ ref, effects: ab.effects }],
           });
         });
       }
@@ -374,6 +464,11 @@ class Engine {
     if ("status" in p && (body.type === "StatusApplied" || body.type === "StatusRemoved")) {
       if (p.status !== undefined && p.status !== body.status) return false;
     }
+    if (p.on === "StatChanged" && body.type === "StatChanged") {
+      if (p.stat !== undefined && p.stat !== body.stat) return false;
+      if (p.sign === "gain" && !(body.delta > 0)) return false;
+      if (p.sign === "loss" && !(body.delta < 0)) return false;
+    }
     if ("unit" in p) {
       const subj = subjectOf(body);
       if (subj === undefined) return false;
@@ -387,6 +482,7 @@ class Engine {
     if (f === "holder") return unitId === holder.id;
     const u = this.units.get(unitId);
     if (!u) return false;
+    if (f === "otherAlly") return u.side === holder.side && u.id !== holder.id;
     return f === "ally" ? u.side === holder.side : u.side !== holder.side;
   }
 
@@ -472,11 +568,18 @@ class Engine {
       }
       case "summon": {
         const side = target.side;
-        if (this.lines[side].length >= TEAM_SIZE) return;
+        if (this.suddenDeath()) {
+          this.applyEvent({ type: "SummonFailed", name: e.unit.name, side, reason: "suddenDeath" }, f.event.id, f.ref);
+          return;
+        }
+        if (this.lines[side].length >= this.lineCap) {
+          this.applyEvent({ type: "NoRoom", unit: f.ref.unit, side, name: e.unit.name }, f.event.id, f.ref);
+          return;
+        }
         const id = `${side}+${++this.summonCounter}:${e.unit.name}`;
         const u = this.makeUnit(e.unit, side, id);
         this.propose(
-          { type: "Summon", unit: id, name: u.name, side, hp: u.base.hp, pwr: u.base.pwr },
+          { type: "Summon", unit: id, name: u.name, side, hp: u.base.hp, pwr: u.base.pwr, front: true },
           f.event.id,
           f.ref,
           { summon: u },
@@ -497,7 +600,22 @@ class Engine {
       }
       case "resurrect": {
         if (target.alive) return;
-        if (this.lines[target.side].length >= TEAM_SIZE) return;
+        if (this.suddenDeath()) {
+          this.applyEvent(
+            { type: "SummonFailed", name: target.name, side: target.side, unit: target.id, revive: true, reason: "suddenDeath" },
+            f.event.id,
+            f.ref,
+          );
+          return;
+        }
+        if (this.lines[target.side].length >= this.lineCap) {
+          this.applyEvent(
+            { type: "NoRoom", unit: f.ref.unit, side: target.side, name: target.name, revive: target.id },
+            f.event.id,
+            f.ref,
+          );
+          return;
+        }
         const hp = Math.max(1, this.evalAmount(e.hp, amountCtx));
         this.propose(
           {
@@ -550,7 +668,7 @@ class Engine {
       );
     };
 
-    for (const effect of r.ability.effects) {
+    for (const { ref, effects } of r.does) for (const effect of effects) {
       switch (effect.kind) {
         case "cancel": {
           if (effect.consumeSelf !== undefined) consumeOwn(effect.consumeSelf);
@@ -568,12 +686,12 @@ class Engine {
         case "preventDeathHeal": {
           if (draft.type !== "Death") break;
           const unitId = draft.unit;
-          const toHp = this.evalAmount(effect.toHp, { holder, ref: r.ref });
+          const toHp = this.evalAmount(effect.toHp, { holder, ref });
           followUps.push((parentId) => {
             const u = this.units.get(unitId);
             if (!u) return;
             const amount = toHp - this.curHp(u);
-            if (amount > 0) this.propose({ type: "Heal", unit: unitId, amount }, parentId, r.ref);
+            if (amount > 0) this.propose({ type: "Heal", unit: unitId, amount }, parentId, ref);
           });
           if (effect.removeSelf && own && r.ref.status !== undefined) consumeOwn(own.stacks);
           return "cancel";
@@ -626,7 +744,8 @@ class Engine {
           this.lines[u.side].push(u.id);
         } else if (pending?.summon) {
           this.units.set(pending.summon.id, pending.summon);
-          this.lines[pending.summon.side].push(pending.summon.id);
+          // a summon enters at the front so it acts at once; the newest summon is the front
+          this.lines[pending.summon.side].unshift(pending.summon.id);
         }
         return;
       }
@@ -665,7 +784,7 @@ class Engine {
         return;
       }
       default:
-        return; // BattleStart/TurnStart/TurnEnd/Strike/Fatigue/ChainBlocked/Intercepted/BattleEnd mutate nothing
+        return; // BattleStart/TurnStart/TurnEnd/Strike/Fatigue/ChainBlocked/ChainCapped/NoRoom/SummonFailed/Intercepted/BattleEnd mutate nothing
     }
   }
 
@@ -685,7 +804,7 @@ class Engine {
         for (const side of ["A", "B"] as const) {
           for (const uid of [...this.lines[side]]) {
             const u = this.units.get(uid);
-            if (u && u.alive) this.propose({ type: "Hurt", unit: uid, amount: ev.amount }, ev.id, "kernel");
+            if (u && u.alive) this.propose({ type: "Hurt", unit: uid, amount: ev.amount, ...(ev.suddenDeath ? { pierced: true as const } : {}) }, ev.id, "kernel");
           }
         }
         return;
@@ -718,7 +837,8 @@ class Engine {
       for (const uid of [...this.lines[side]]) {
         const u = this.units.get(uid);
         if (u && u.alive && this.curHp(u) <= 0) {
-          this.propose({ type: "Death", unit: uid }, cause.id, "kernel");
+          const pierced = cause.type === "Hurt" && cause.pierced === true && cause.unit === uid;
+          this.propose({ type: "Death", unit: uid, ...(pierced ? { pierced: true as const } : {}) }, cause.id, "kernel");
         }
       }
     }
@@ -783,10 +903,17 @@ function subjectOf(body: EventBody): string | undefined {
   }
 }
 
+/** Did this source come from the reactor `ref`? A unit reacts as one, so any of
+ * its own Does counts; a status ability is its own reactor. */
 function sourceIs(source: SourceRef, ref: AbilityRef): boolean {
-  return (
-    source !== "kernel" && source.unit === ref.unit && source.status === ref.status && source.ability === ref.ability
-  );
+  if (source === "kernel" || source.unit !== ref.unit || source.status !== ref.status) return false;
+  return ref.status === undefined || source.ability === ref.ability;
+}
+
+/** The reactor as it fires off its When #`when`: every ref its events carry
+ * says which When matched (AbilityRef.when), so a Why chain needn't re-match. */
+function withWhen(r: ReactorEntry, when: number): ReactorEntry {
+  return { ...r, ref: { ...r.ref, when }, does: r.does.map((d) => ({ ...d, ref: { ...d.ref, when } })) };
 }
 
 function refKey(r: AbilityRef): string {

@@ -91,11 +91,11 @@ The single number seeding the battle's one RNG stream (mulberry32). Only the ker
 _Avoid_: random state
 
 **Line**:
-A team's ordered positions; index 0 is the front. On Death the unit leaves immediately and the line compacts forward; summons and resurrections enter at the back.
+A team's ordered positions; index 0 is the front. On Death the unit leaves immediately and the line compacts forward; summons enter at the front (newest first), resurrections at the back.
 _Avoid_: row, formation, board
 
 **Turn**:
-One loop iteration: TurnStart → front pair strikes (alternating) → TurnEnd → Fatigue. TURN_CAP (200) is the hard backstop → draw.
+One loop iteration: TurnStart → front pair strikes (alternating) → TurnEnd → Fatigue. The turn cap is the hard backstop → draw (BattleEnd timeUp): `BattleInput.turnCap`, default TURN_CAP (200); the MVP's rules set 30.
 _Avoid_: round, tick
 
 **Strike**:
@@ -175,7 +175,7 @@ The effect removes all statuses from the target and disables its own abilities f
 _Avoid_: mute, disable
 
 **Summon**:
-The event for a unit entering the line mid-battle, at the back; skipped if the line is full (5). Resurrect reuses it with a `resurrected` flag and `atHp`.
+The event for a unit entering the line mid-battle, at the front (newest first); skipped if the line is full (5). Resurrect reuses it with a `resurrected` flag and `atHp`, and returns the unit at the back.
 _Avoid_: spawn
 
 **Resurrect**:

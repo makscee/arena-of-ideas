@@ -16,14 +16,25 @@ import type {
   UnitFilter,
   When,
 } from "./types.js";
+import type { TermId } from "./glossary.js";
 
-/** How the describing context names the holder: "this unit" on a unit's own
- * ability, "the holder" on a status's (the unit the status is attached to). */
+/** How the describing context names the holder: "self" on a unit's own
+ * ability, "holder" on a status's (the unit the status is attached to). */
 export interface DescribeOpts {
   holder?: string;
+  /** The ability fires on its holder's own death: the holder has left the
+   * line, so an every-ally effect doesn't include it. */
+  holderGone?: boolean;
+  /** How an eventUnit selector reads ("that ally", "that enemy"), worked out
+   * from the ability's whens by describeAbilitySegments. */
+  eventUnit?: { text: string; side?: Side };
 }
 
-const HOLDER_DEFAULT = "this unit";
+/** Which side a target is on, relative to the holder: the client tints ally
+ * terms teal and enemy terms pink. */
+export type Side = "ally" | "enemy";
+
+const HOLDER_DEFAULT = "self";
 
 /** A Part-card coordinate: the codex card a Part term deep-links to
  * (#codex/part/<family>/<kind>, #078 slice 3). `family` is the atom family,
@@ -48,6 +59,27 @@ export interface DescribeSegment {
   statusRef?: string;
   /** Set when `text` names a Part atom — its codex Part card. */
   partRef?: PartRef;
+  /** Set on every highlighted run: its glossary term (src/glossary.ts). Glue
+   * text ("to", ", then", ":") has none. */
+  term?: TermId;
+  /** On target runs: which side the target is on. On a unit-ref run, the
+   * side the summoned unit joins. */
+  side?: Side;
+  /** A summoned unit's name and numbers ("Imp (1/2)", R3-5): its summon id
+   * (MvpContent.summons), which the client opens as that unit's card. */
+  unitRef?: string;
+  /** On every run of a trigger clause, so "After [Shield] lands on an ally"
+   * draws as one pill. */
+  clause?: "when";
+  /** On a trigger clause's runs: whose event it is ("an enemy" in "after an
+   * enemy dies"), so the rule shown matches the scope (glossary scopedTip).
+   * Unset for the turn and battle triggers, which have no unit. */
+  scope?: UnitFilter;
+  /** On the number of a damage or heal ("deal [2] damage", "heal it for
+   * [2]"), a status's stacks ("apply [2] Poison") or an HP amount ("[2] HP"):
+   * the client draws it bold with its term's icon, so the amount carries the
+   * icon and the word is only coloured. */
+  amount?: true;
 }
 
 const seg = (text: string): DescribeSegment => ({ text });
@@ -58,126 +90,192 @@ const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? "" 
 
 const capitalize = (s: string): string => (s.length > 0 ? s[0]!.toUpperCase() + s.slice(1) : s);
 
-/** A unit filter as a noun phrase, relative to the holder. */
-function filterPhrase(f: UnitFilter | undefined, holder: string): string {
+/** A trigger's subject, card-speak: none for the holder itself ("Hit"),
+ * "ally" (always another ally in the MVP pool), "enemy", "any unit". */
+function subject(f: UnitFilter | undefined): string {
   switch (f) {
     case "holder":
-      return holder;
+      return "";
     case "ally":
-      return "an ally";
+    case "otherAlly":
+      return "ally";
     case "enemy":
-      return "an enemy";
+      return "enemy";
     default:
       return "any unit"; // "any" and an omitted filter mean the same thing
   }
 }
 
-/** An amount as a noun phrase: "3", "this unit's pwr", "its stacks". */
+/** "ally hit", or "hit" when the subject is the holder. */
+const subj = (f: UnitFilter | undefined, rest: string): string => {
+  const who = subject(f);
+  return who ? `${who} ${rest}` : rest;
+};
+
+/** An amount as a noun phrase: "3", "PWR", "stacks". */
 export function describeAmount(a: Amount, opts: DescribeOpts = {}): string {
-  const holder = opts.holder ?? HOLDER_DEFAULT;
+  return joinSegments(amountSegments(a, opts));
+}
+
+/** describeAmount as segments: a stat or "stacks" word carries its term. */
+export function amountSegments(a: Amount, _opts: DescribeOpts = {}): DescribeSegment[] {
   switch (a.kind) {
     case "const":
-      return String(a.value);
+      return [seg(String(a.value))];
     case "stat":
-      return `${holder}'s ${a.stat}`;
+      // An Amount stat is always the holder's (types.ts), so it needs no owner.
+      return [statSeg(a.stat)];
     case "level":
-      return `${holder}'s level`;
+      return [seg("level")];
     case "stacks":
-      return "its stacks";
+      return [{ text: "stacks", term: "term:stacks" }];
   }
 }
 
-/** A const amount reads inline ("deal 3 damage"); anything derived reads as
- * "equal to …" so the sentence stays grammatical for every Amount kind. */
-const amountClause = (a: Amount, opts: DescribeOpts): string =>
-  a.kind === "const" ? String(a.value) : `an amount equal to ${describeAmount(a, opts)}`;
+/** A stat word, upper case, carrying its term: "PWR", "HP". */
+const statSeg = (stat: "pwr" | "hp"): DescribeSegment => ({ text: stat.toUpperCase(), term: `stat:${stat}` });
 
-/** A when as a clause: triggers read "after X", interceptors "when X would …". */
+/** "1 stack" / "2 stacks", the word carrying its term. */
+const stacksSegs = (n: number): DescribeSegment[] => [seg(`${n} `), { text: n === 1 ? "stack" : "stacks", term: "term:stacks" }];
+
+/** An HP amount: "2 HP", or "HP equal to stacks" for a derived one. The
+ * number is its own run, marked as the amount (with HP's icon, R2-17). */
+const hpSegs = (a: Amount, opts: DescribeOpts): DescribeSegment[] =>
+  a.kind === "const" ? [{ text: String(a.value), term: "stat:hp", amount: true }, seg(" "), statSeg("hp")] : [statSeg("hp"), seg(" equal to "), ...amountSegments(a, opts)];
+
+/** A when as a clause, card-speak: triggers read "ally dies", interceptors
+ * "would be hit". */
 export function describeWhen(w: When, opts: DescribeOpts = {}): string {
   return joinSegments(describeWhenSegments(w, opts));
 }
 
-/** describeWhen as segments — identical text, with an explicit status pattern
- * (StatusApplied/StatusRemoved naming a status) marked as a ref, so
- * editor-made content like "After Poison lands on an ally" gets a tappable
- * Poison exactly like effect clauses do. */
-export function describeWhenSegments(w: When, opts: DescribeOpts = {}): DescribeSegment[] {
-  const holder = opts.holder ?? HOLDER_DEFAULT;
+/** describeWhen as segments — identical text. Every run of the clause carries
+ * the trigger's term and `clause: "when"`; a status the pattern names
+ * (StatusApplied/StatusRemoved) is its own run with the status's term, and an
+ * interceptor's "would" is its own run too.
+ *
+ * The Hurt event reads "is hit", not "is hurt": it fires for every damage that
+ * comes at a unit, even a hit Shield blocks completely, so the wording mustn't
+ * promise lost HP. "Is struck" would collide with the Strike trigger
+ * ("strikes"), and Poison or Fatigue damage isn't a strike; "is damaged"
+ * promises the HP loss again. */
+export function describeWhenSegments(w: When, _opts: DescribeOpts = {}): DescribeSegment[] {
   const p: EventPattern = w.on;
   const intercept = w.kind === "interceptor";
   // The when clause names a Trigger or Interceptor Part (keyed on the event
   // pattern's `on` tag) — the clause's lead phrasing carries the codex ref.
   const ref: PartRef = { family: intercept ? "interceptor" : "trigger", kind: p.on };
-  // A whole-clause segment that IS the trigger term: text + the Part ref.
-  const whenSeg = (text: string): DescribeSegment => ({ text, partRef: ref });
+  const term: TermId = `trigger:${p.on}`;
+  // A clause run: text + the Part ref + the trigger's term; " would " splits
+  // out as its own run.
+  const filter = p.on === "Strike" ? p.striker : "unit" in p ? p.unit : undefined;
+  const scope: { scope?: UnitFilter } = p.on === "BattleStart" || p.on === "TurnStart" || p.on === "TurnEnd" ? {} : { scope: filter ?? "any" };
+  const whenSeg = (text: string): DescribeSegment[] =>
+    text.split(/(?<=^| )(would)(?= )/).filter((t) => t !== "").map((t) =>
+      t === "would" ? { text: t, partRef: ref, term: "term:would", clause: "when" } : { text: t, partRef: ref, term, clause: "when", ...scope },
+    );
+  const statusSeg = (status: string): DescribeSegment => ({ text: status, statusRef: status, term: `status:${status}`, clause: "when" });
+  // Interceptors say "would …" before the verb: "would be hit", "ally would die".
+  const verb = (trig: string, icpt: string): string => subj(filter, intercept ? icpt : trig);
   switch (p.on) {
     case "BattleStart":
-      return [whenSeg("when the battle begins")];
+      return whenSeg("battle start");
     case "TurnStart":
-      return [whenSeg("at the start of each turn")];
+      return whenSeg("turn start");
     case "TurnEnd":
-      return [whenSeg("at the end of each turn")];
-    case "Strike": {
-      const who = filterPhrase(p.striker, holder);
-      return [whenSeg(intercept ? `when ${who} would strike` : `after ${who} strikes`)];
-    }
-    case "Hurt": {
-      const who = filterPhrase(p.unit, holder);
-      return [whenSeg(intercept ? `when ${who} would be hurt` : `after ${who} is hurt`)];
-    }
-    case "Heal": {
-      const who = filterPhrase(p.unit, holder);
-      return [whenSeg(intercept ? `when ${who} would be healed` : `after ${who} is healed`)];
-    }
-    case "Death": {
-      const who = filterPhrase(p.unit, holder);
-      return [whenSeg(intercept ? `when ${who} would die` : `after ${who} dies`)];
-    }
-    case "Summon": {
-      const who = filterPhrase(p.unit, holder);
-      return [whenSeg(intercept ? `when ${who} would be summoned` : `after ${who} is summoned`)];
-    }
-    case "StatusApplied": {
-      const who = filterPhrase(p.unit, holder);
-      if (p.status === undefined)
-        return [whenSeg(intercept ? `when a status would land on ${who}` : `after a status lands on ${who}`)];
+      return whenSeg("turn end");
+    case "Strike":
+      return whenSeg(verb("strikes", "would strike"));
+    case "Hurt":
+      return whenSeg(verb("hit", "would be hit"));
+    case "Heal":
+      return whenSeg(verb("healed", "would be healed"));
+    case "Death":
+      return whenSeg(verb("dies", "would die"));
+    case "Summon":
+      return whenSeg(verb("summoned", "would be summoned"));
+    case "StatusApplied":
+    case "StatusRemoved": {
+      const v = p.on === "StatusApplied" ? (intercept ? "would get" : "gets") : intercept ? "would lose" : "loses";
+      if (p.status === undefined) return whenSeg(subj(filter, `${v} a status`));
       // The status name carries statusRef; the surrounding trigger phrasing
       // carries the Part ref, so both the status and the trigger are tappable.
-      const sref: DescribeSegment = { text: p.status, statusRef: p.status };
-      return intercept
-        ? [whenSeg("when "), sref, whenSeg(` would land on ${who}`)]
-        : [whenSeg("after "), sref, whenSeg(` lands on ${who}`)];
+      return [...whenSeg(subj(filter, `${v} `)), statusSeg(p.status)];
     }
-    case "StatusRemoved": {
-      const who = filterPhrase(p.unit, holder);
-      if (p.status === undefined)
-        return [whenSeg(intercept ? `when a status would leave ${who}` : `after a status leaves ${who}`)];
-      const sref: DescribeSegment = { text: p.status, statusRef: p.status };
-      return intercept
-        ? [whenSeg("when "), sref, whenSeg(` would leave ${who}`)]
-        : [whenSeg("after "), sref, whenSeg(` leaves ${who}`)];
+    case "StatChanged": {
+      // Trigger-only (validate rejects an interceptor): "ally gains PWR".
+      const stat = p.stat !== undefined ? p.stat.toUpperCase() : "a stat";
+      if (p.sign === "gain" || p.sign === "loss") return whenSeg(subj(filter, `${p.sign === "gain" ? "gains" : "loses"} ${stat}`));
+      const what = p.stat !== undefined ? p.stat.toUpperCase() : "stat";
+      const who = subject(filter);
+      return whenSeg(who ? `${who}'s ${what} changes` : `${what} changes`);
     }
   }
 }
 
-/** A condition as a "while …" clause. */
+/** The unit an event is about, as the trigger's filter names it: an eventUnit
+ * selector reads "it", tinted by side ("ally dies" → an ally, "enemy hit" → an
+ * enemy), or the holder's word when the event is the holder's own. Undefined
+ * when the whens disagree or name no one (plain "it"). */
+function eventUnitOf(whens: When[], holder: string): { text: string; side?: Side } | undefined {
+  const filters = whens.map((w) => {
+    const p = w.on;
+    switch (p.on) {
+      case "BattleStart":
+      case "TurnStart":
+      case "TurnEnd":
+        return undefined;
+      case "Strike":
+        return p.striker;
+      default:
+        return p.unit;
+    }
+  });
+  const first = filters[0];
+  if (first === undefined || filters.some((f) => f !== first)) return undefined;
+  switch (first) {
+    case "holder":
+      return { text: holder, side: "ally" };
+    case "ally":
+    case "otherAlly":
+      return { text: "it", side: "ally" };
+    case "enemy":
+      return { text: "it", side: "enemy" };
+    default:
+      return undefined;
+  }
+}
+
+/** A condition as a clause: "at 5 HP or less". */
 export function describeCondition(c: Condition, opts: DescribeOpts = {}): string {
-  const holder = opts.holder ?? HOLDER_DEFAULT;
+  return joinSegments(describeConditionSegments(c, opts));
+}
+
+/** describeCondition as segments, carrying its Condition Part ref and term. */
+export function describeConditionSegments(c: Condition, _opts: DescribeOpts = {}): DescribeSegment[] {
+  const partRef: PartRef = { family: "condition", kind: c.kind };
   switch (c.kind) {
     case "holderHpAtMost":
-      return `while ${holder} is at ${c.value} hp or less`;
+      return [{ text: `at ${c.value} HP or less`, partRef, term: `condition:${c.kind}` }];
   }
 }
 
-/** describeCondition as one segment, carrying its Condition Part ref. */
-export function describeConditionSegments(c: Condition, opts: DescribeOpts = {}): DescribeSegment[] {
-  return [{ text: describeCondition(c, opts), partRef: { family: "condition", kind: c.kind } }];
-}
+/** Which side each selector kind picks from (eventUnit: from the trigger). */
+const SELECTOR_SIDE: Record<Selector["kind"], Side | undefined> = {
+  holder: "ally",
+  eventUnit: undefined,
+  frontEnemy: "enemy",
+  allEnemies: "enemy",
+  allAllies: "ally",
+  randomEnemy: "enemy",
+  lastDeadAlly: "ally",
+};
 
-/** describeSelector as one segment, carrying its Selector Part ref — the noun
- * phrase a UI makes tappable to the selector's codex card. */
+/** describeSelector as one segment, carrying its Selector Part ref, term and
+ * side — the noun phrase a UI makes tappable to the selector's codex card. */
 export function describeSelectorSegments(s: Selector, opts: DescribeOpts = {}): DescribeSegment[] {
-  return [{ text: describeSelector(s, opts), partRef: { family: "selector", kind: s.kind } }];
+  const side = s.kind === "eventUnit" ? opts.eventUnit?.side : SELECTOR_SIDE[s.kind];
+  return [{ text: describeSelector(s, opts), partRef: { family: "selector", kind: s.kind }, term: `target:${s.kind}`, ...(side ? { side } : {}) }];
 }
 
 /** A selector as the noun phrase of what it picks. */
@@ -187,26 +285,29 @@ export function describeSelector(s: Selector, opts: DescribeOpts = {}): string {
     case "holder":
       return holder;
     case "eventUnit":
-      return "the event's unit";
+      return opts.eventUnit?.text ?? "it";
     case "frontEnemy":
-      return "the front enemy";
+      return "front enemy";
     case "allEnemies":
-      return "every enemy";
+      return "all enemies";
     case "allAllies":
-      return "every ally";
+      return "all allies";
     case "randomEnemy":
-      return "a random enemy";
+      return "random enemy";
     case "lastDeadAlly":
-      return "the most recently dead ally";
+      return "fallen ally";
   }
 }
 
-/** An effect as segments: the same verb phrase describeEffect yields, with
- * status names (applyStatus / consumeStacks) marked as refs a UI can wire to
- * the registry's definition, and every effect-text run carrying the Effect's
- * own Part ref. `target` arrives as segments (the selectors' own ref-bearing
- * segments) so a selector term inside the sentence stays tappable to its
- * Selector card; a bare string target is lifted to one plain segment. */
+/** A summoned body's id (MvpContent.summons): its name, lower-cased ("Imp" → "imp"). */
+export const summonId = (name: string): string => name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+/** An effect as segments: the same verb phrase describeEffect yields. The
+ * highlighted runs carry their term (the amount with its effect, a status
+ * name, a stat word); the glue runs carry the Effect's Part ref only. `target`
+ * arrives as segments (the selectors' own term-bearing segments) so a selector
+ * term inside the sentence stays tappable; a bare string target is lifted to
+ * one plain segment. */
 export function describeEffectSegments(
   e: Effect,
   target: string | DescribeSegment[],
@@ -217,48 +318,94 @@ export function describeEffectSegments(
   // Effect-text runs carry this effect's Part ref (the codex Effect card).
   const ref: PartRef = { family: "effect", kind: e.kind };
   const e0 = (text: string): DescribeSegment => ({ text, partRef: ref });
+  // A highlighted effect run: the Part ref plus the effect's term.
+  const eT = (text: string): DescribeSegment => ({ text, partRef: ref, term: `effect:${e.kind}` });
+  const statusSeg = (status: string): DescribeSegment => ({ text: status, statusRef: status, term: `status:${status}` });
+  // The effect's number: its own run, marked as the amount.
+  const eN = (n: number): DescribeSegment => ({ ...eT(String(n)), amount: true });
+  const head = shortEffectHead(e);
+  if (head) return [...head, e0(" to "), ...tgt];
   switch (e.kind) {
     case "damage":
-      return e.amount.kind === "const"
-        ? [e0(`deal ${e.amount.value} damage to `), ...tgt]
-        : [e0(`deal damage equal to ${describeAmount(e.amount, opts)} to `), ...tgt];
+      // "PWR damage to T"; any other derived amount: "damage equal to stacks to T".
+      return e.amount.kind === "stat"
+        ? [...amountSegments(e.amount, opts), e0(" "), eT("damage"), e0(" to "), ...tgt]
+        : [eT("damage"), e0(" equal to "), ...amountSegments(e.amount, opts), e0(" to "), ...tgt];
     case "heal":
-      return [e0("heal "), ...tgt, e0(` for ${amountClause(e.amount, opts)}`)];
-    case "applyStatus": {
-      const sref: DescribeSegment = { text: e.status, statusRef: e.status };
-      return e.stacks.kind === "const"
-        ? [e0(`apply ${e.stacks.value} `), sref, e0(" to "), ...tgt]
-        : [e0("apply "), sref, e0(` equal to ${describeAmount(e.stacks, opts)} to `), ...tgt];
-    }
+      return e.amount.kind === "const"
+        ? [eT("heal"), e0(" "), ...tgt, e0(" for "), eN(e.amount.value)]
+        : [eT("heal"), e0(" "), ...tgt, e0(" for "), ...amountSegments(e.amount, opts)];
+    case "applyStatus":
+      return [statusSeg(e.status), e0(" equal to "), ...amountSegments(e.stacks, opts), e0(" to "), ...tgt];
     case "consumeStacks": {
-      const which: DescribeSegment = e.status !== undefined ? { text: e.status, statusRef: e.status } : e0("this status");
-      return e.stacks.kind === "const"
-        ? [e0(`consume ${plural(e.stacks.value, "stack")} of `), which]
-        : [e0("consume stacks of "), which, e0(` equal to ${describeAmount(e.stacks, opts)}`)];
+      // "spend 2 Shield"; a status's own stacks: "spend 1 stack".
+      if (e.stacks.kind === "const")
+        return e.status !== undefined ? [e0(`spend ${e.stacks.value} `), statusSeg(e.status)] : [e0("spend "), ...stacksSegs(e.stacks.value)];
+      const which: DescribeSegment = e.status !== undefined ? statusSeg(e.status) : { text: "stacks", term: "term:stacks" };
+      return [e0("spend "), which, e0(" equal to "), ...amountSegments(e.stacks, opts)];
     }
-    case "summon":
-      return [
-        e0(`summon ${e.unit.name} (${e.unit.base.pwr} PWR / ${e.unit.base.hp} HP) at the back of `),
-        ...tgt,
-        e0("'s side"),
-      ];
+    case "summon": {
+      // "summon Imp (1/2)": the numbers are its PWR / HP, which the term's
+      // tip says. The kernel summons at the front of the target's line.
+      // "Imp (1/2)" is its own run, a ref to the summoned unit's card (R3-5).
+      const unitRun = (side: Side): DescribeSegment => ({
+        text: `${e.unit.name} (${e.unit.base.pwr}/${e.unit.base.hp})`,
+        partRef: ref,
+        unitRef: summonId(e.unit.name),
+        side,
+      });
+      const summon = (side: Side): DescribeSegment[] => [eT("summon "), unitRun(side)];
+      // All allies / all enemies: the kernel summons once per target, at the
+      // front of that target's line, skipping it once the line is full.
+      const kinds = tgt.flatMap((t) => (t.partRef?.family === "selector" ? [t.partRef.kind] : []));
+      const side: Side = tgt.find((t) => t.side)?.side ?? "ally";
+      if (kinds.length === 1 && (kinds[0] === "allAllies" || kinds[0] === "allEnemies")) {
+        const ally = kinds[0] === "allAllies";
+        // "for each ally": the selector's run, worded per target.
+        const each = tgt.map((t) => (t.partRef?.family === "selector" ? { ...t, text: ally ? "each ally" : "each enemy" } : t));
+        return [
+          ...summon(ally ? "ally" : "enemy"),
+          e0(" for "),
+          ...each,
+          e0(`${ally && !opts.holderGone ? `, ${opts.holder ?? HOLDER_DEFAULT} included` : ""}, if there's room`),
+        ];
+      }
+      if (kinds.length === 1 && kinds[0] === "holder") return summon("ally");
+      return [...summon(side), e0(" for "), ...tgt];
+    }
     case "silence":
-      return [e0("silence "), ...tgt, e0(" — strip its statuses and disable its abilities for the battle")];
-    case "resurrect": {
-      // "hp" leads the derived form ("at hp equal to its level"), the
-      // preventDeathHeal pattern — trailing it ("at … its level hp") is not English.
-      const at = e.hp.kind === "const" ? `${e.hp.value} hp` : `hp equal to ${describeAmount(e.hp, opts)}`;
-      return [e0("return "), ...tgt, e0(` to the back of the line at ${at}`)];
-    }
+      return [eT("silence"), e0(" "), ...tgt];
+    case "resurrect":
+      return [eT("revive"), e0(" "), ...tgt, e0(" at "), ...hpSegs(e.hp, opts)];
     case "cancel":
-      return [e0(`cancel it${e.consumeSelf !== undefined ? `, consuming ${plural(e.consumeSelf, "stack")}` : ""}`)];
+      return e.consumeSelf !== undefined ? [eT("cancel it"), e0(", spend "), ...stacksSegs(e.consumeSelf)] : [eT("cancel it")];
     case "absorbHurt":
-      return [e0("absorb the damage up to its stacks, consuming what it absorbs")];
-    case "preventDeathHeal": {
-      const to = e.toHp.kind === "const" ? `${e.toHp.value} hp` : `hp equal to ${describeAmount(e.toHp, opts)}`;
-      return [e0("cancel the death and heal "), ...tgt, e0(` to ${to}${e.removeSelf ? ", spending this status" : ""}`)];
-    }
+      return [eT("block damage"), e0(" up to "), { text: "stacks", term: "term:stacks" }, e0(", spending them")];
+    case "preventDeathHeal":
+      return [eT("cancel death"), e0(", set "), ...tgt, e0(" to "), ...hpSegs(e.toHp, opts), e0(e.removeSelf ? ", spend this status" : "")];
   }
+}
+
+/** The "amount, word" head of an effect that reads "amount, word, to T"
+ * (a constant damage or status: "2 damage", "1 Freeze"), else undefined.
+ * Consecutive such effects on one target merge: "1 Freeze and 2 damage to
+ * front enemy". */
+function shortEffectHead(e: Effect): DescribeSegment[] | undefined {
+  const ref: PartRef = { family: "effect", kind: e.kind };
+  if (e.kind === "damage" && e.amount.kind === "const")
+    return [
+      { text: String(e.amount.value), partRef: ref, term: "effect:damage", amount: true },
+      { text: " ", partRef: ref },
+      { text: "damage", partRef: ref, term: "effect:damage" },
+    ];
+  if (e.kind === "applyStatus" && e.stacks.kind === "const")
+    // The stacks are the amount, drawn with the status's icon like a damage number (R2-17).
+    return [
+      { text: String(e.stacks.value), partRef: ref, term: `status:${e.status}`, amount: true },
+      { text: " ", partRef: ref },
+      { text: e.status, statusRef: e.status, term: `status:${e.status}` },
+    ];
+  return undefined;
 }
 
 /** An effect as a verb phrase against a target phrase. */
@@ -287,7 +434,10 @@ export function describeAbilityDef(def: AbilityDef, opts: DescribeOpts = {}): st
 /** describeAbility as segments — identical text, with status AND Part refs
  * marked: every term (trigger/interceptor when, condition, selector, effect)
  * carries the codex card it links to (#078 slice 3). */
-export function describeAbilitySegments(ab: Ability, opts: DescribeOpts = {}): DescribeSegment[] {
+export function describeAbilitySegments(ab: Ability, opts0: DescribeOpts = {}): DescribeSegment[] {
+  // An eventUnit target reads as the unit the trigger is about ("that ally").
+  const eventUnit = opts0.eventUnit ?? eventUnitOf(ab.whens ?? [], opts0.holder ?? HOLDER_DEFAULT);
+  const opts: DescribeOpts = eventUnit ? { ...opts0, eventUnit } : opts0;
   // The selected targets as segments — each selector its own tappable term,
   // joined by plain " and " text. Reused for every effect in the sequence.
   const target: DescribeSegment[] = [];
@@ -310,9 +460,18 @@ export function describeAbilitySegments(ab: Ability, opts: DescribeOpts = {}): D
     segs.push(...describeConditionSegments(ab.condition, opts));
   }
   segs.push(seg(": "));
+  const gone = (ab.whens ?? []).some((w) => w.kind !== "interceptor" && w.on.on === "Death" && w.on.unit === "holder");
+  // Every effect shares the ability's targets, so a run of "amount, word, to T"
+  // effects names T once: "1 Freeze and 2 damage to front enemy", and with
+  // three or more, commas then a final "and" ("1 Strength, 1 Vitality and 4
+  // damage to …"). Any other pair keeps ", then"; the order stays left to right.
   ab.effects.forEach((e, i) => {
-    if (i > 0) segs.push(seg(", then "));
-    segs.push(...describeEffectSegments(e, target, opts));
+    const head = shortEffectHead(e);
+    const nextHead = i + 1 < ab.effects.length && head !== undefined && shortEffectHead(ab.effects[i + 1]!) !== undefined;
+    const prevHead = i > 0 && head !== undefined && shortEffectHead(ab.effects[i - 1]!) !== undefined;
+    if (i > 0) segs.push(seg(prevHead ? (nextHead ? ", " : " and ") : ", then "));
+    if (nextHead) segs.push(...head!);
+    else segs.push(...describeEffectSegments(e, target, gone ? { ...opts, holderGone: true } : opts));
   });
   segs.push(seg("."));
   return segs;
@@ -337,32 +496,34 @@ export interface AbilityChips {
   action?: string | undefined;
 }
 
-/** Trigger label + glyph per event kind (mockup trigger legend). Terse: "On
- * strike", not "after this unit strikes". An interceptor reuses its event's
- * label — the chip line names the moment, not the trigger/interceptor split. */
+/** Trigger label + glyph per event kind (mockup trigger legend), in the card's
+ * words (the glossary's labels): "Strikes", not "after this unit strikes". An
+ * interceptor reuses its event's label — the chip line names the moment, not
+ * the trigger/interceptor split. */
 const TRIGGER_CHIP: Record<EventPattern["on"], { label: string; glyph: string }> = {
   BattleStart: { label: "Battle start", glyph: "⚑" },
   TurnStart: { label: "Turn start", glyph: "⟳" },
   TurnEnd: { label: "Turn end", glyph: "⟲" },
-  Strike: { label: "On strike", glyph: "⚔" },
-  Hurt: { label: "On damaged", glyph: "✸" },
-  Heal: { label: "On heal", glyph: "✚" },
-  Death: { label: "On death", glyph: "☠" },
-  Summon: { label: "On summon", glyph: "✦" },
-  StatusApplied: { label: "Status gained", glyph: "✦" },
-  StatusRemoved: { label: "Status lost", glyph: "✦" },
+  Strike: { label: "Strikes", glyph: "⚔" },
+  Hurt: { label: "Hit", glyph: "✸" },
+  Heal: { label: "Healed", glyph: "✚" },
+  Death: { label: "Dies", glyph: "☠" },
+  Summon: { label: "Summoned", glyph: "✦" },
+  StatusApplied: { label: "Gets status", glyph: "✦" },
+  StatusRemoved: { label: "Loses status", glyph: "✦" },
+  StatChanged: { label: "Stat changes", glyph: "▲" },
 };
 
-/** Terse target label per selector (mockup target legend). "Front enemy", not
- * "the front enemy". */
+/** Terse target label per selector, in the card's words (the glossary's
+ * labels). "Front enemy", not "the front enemy". */
 const SELECTOR_CHIP: Record<Selector["kind"], string> = {
   holder: "Self",
-  eventUnit: "Trigger unit",
+  eventUnit: "It",
   frontEnemy: "Front enemy",
   allEnemies: "All enemies",
   allAllies: "All allies",
   randomEnemy: "Random enemy",
-  lastDeadAlly: "Last dead ally",
+  lastDeadAlly: "Fallen ally",
 };
 
 /** A magnitude as a terse chip token: a const reads as its number, anything
@@ -460,12 +621,13 @@ export function describeStatus(def: StatusDef): string {
 export function describeStatusSegments(def: StatusDef): DescribeSegment[] {
   const segs: DescribeSegment[] = [];
   if (def.statMods !== undefined) {
-    const mods: string[] = [];
     for (const stat of ["hp", "pwr"] as const) {
       const v = def.statMods[stat];
-      if (v !== undefined && v !== 0) mods.push(`${v > 0 ? "+" : ""}${v} ${stat} per stack`);
+      if (v === undefined || v === 0) continue;
+      if (segs.length > 0) segs.push(seg(", "));
+      segs.push(seg(`${v > 0 ? "+" : ""}${v} `), statSeg(stat), seg(" per "), { text: "stack", term: "term:stacks" });
     }
-    if (mods.length > 0) segs.push(seg(`${capitalize(mods.join(", "))}.`));
+    if (segs.length > 0) segs.push(seg("."));
   }
   for (const action of def.abilities) {
     if (segs.length > 0) segs.push(seg(" "));
@@ -475,7 +637,7 @@ export function describeStatusSegments(def: StatusDef): DescribeSegment[] {
       selectors: def.selectors ?? action.selectors ?? [],
       ...(def.condition ?? action.condition ? { condition: def.condition ?? action.condition } : {}),
     };
-    segs.push(...describeAbilitySegments(ab, { holder: "the holder" }));
+    segs.push(...describeAbilitySegments(ab, { holder: "holder" }));
   }
   if (segs.length === 0) segs.push(seg("No effect."));
   return segs;

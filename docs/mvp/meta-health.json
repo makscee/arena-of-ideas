@@ -1,0 +1,1014 @@
+{
+  "contentVersion": "mvp-54f5b971e2",
+  "units": 73,
+  "quick": false,
+  "seed": 24301,
+  "setup": {
+    "copies": 3,
+    "gauntlet": 12,
+    "searchSeeds": 3,
+    "searchSteps": 25,
+    "matrixSeeds": 8,
+    "counterRounds": 6,
+    "counterRestarts": 3,
+    "candidateTeams": 112,
+    "countersFound": 39
+  },
+  "battles": 275424,
+  "chainCappedRate": 0.0722,
+  "seconds": 907,
+  "healthy": true,
+  "checks": {
+    "teamsInEquilibrium": {
+      "value": 8,
+      "pass": true,
+      "rule": "≥5 teams with ≥2% share"
+    },
+    "largestShare": {
+      "value": 0.234,
+      "pass": true,
+      "rule": "largest share ≤40%"
+    },
+    "topTeamsBeaten": {
+      "value": 7,
+      "pass": true,
+      "rule": "every top team beaten ≥60% by ≥3 others"
+    }
+  },
+  "equilibrium": [
+    {
+      "share": 0.234,
+      "team": [
+        "stoneskin",
+        "scavenger",
+        "keeper",
+        "battle-mage",
+        "necromancer"
+      ],
+      "fieldScore": 0.875,
+      "beatenReliablyBy": 7
+    },
+    {
+      "share": 0.198,
+      "team": [
+        "priest",
+        "crusader",
+        "guardian",
+        "custodian",
+        "necromancer"
+      ],
+      "fieldScore": 0.773,
+      "beatenReliablyBy": 18
+    },
+    {
+      "share": 0.173,
+      "team": [
+        "necromancer",
+        "virus",
+        "ritualist",
+        "fungoid",
+        "gnat"
+      ],
+      "fieldScore": 0.834,
+      "beatenReliablyBy": 13
+    },
+    {
+      "share": 0.13,
+      "team": [
+        "divinity",
+        "fruiter",
+        "necromancer",
+        "ritualist",
+        "priest"
+      ],
+      "fieldScore": 0.77,
+      "beatenReliablyBy": 17
+    },
+    {
+      "share": 0.098,
+      "team": [
+        "king",
+        "fungoid",
+        "keeper",
+        "morbid",
+        "necromancer"
+      ],
+      "fieldScore": 0.789,
+      "beatenReliablyBy": 16
+    },
+    {
+      "share": 0.073,
+      "team": [
+        "guardian",
+        "battle-mage",
+        "nurse",
+        "divinity",
+        "almsgiver"
+      ],
+      "fieldScore": 0.56,
+      "beatenReliablyBy": 43
+    },
+    {
+      "share": 0.048,
+      "team": [
+        "virus",
+        "wire",
+        "war-drummer",
+        "necromancer",
+        "henchman"
+      ],
+      "fieldScore": 0.679,
+      "beatenReliablyBy": 32
+    },
+    {
+      "share": 0.021,
+      "team": [
+        "lightning",
+        "rose",
+        "ritualist",
+        "virus",
+        "fungoid"
+      ],
+      "fieldScore": 0.729,
+      "beatenReliablyBy": 29
+    }
+  ],
+  "breakers": [
+    {
+      "unit": "fighter",
+      "team": [
+        "fertilizer",
+        "fighter",
+        "keeper",
+        "battle-mage",
+        "necromancer"
+      ],
+      "gauntletScore": 1,
+      "fieldScore": 0.756
+    },
+    {
+      "unit": "fodder",
+      "team": [
+        "mesmerist",
+        "commander",
+        "fodder",
+        "battle-mage",
+        "guardian"
+      ],
+      "gauntletScore": 0.875,
+      "fieldScore": 0.347
+    },
+    {
+      "unit": "squire",
+      "team": [
+        "squire",
+        "enhancer",
+        "ritualist",
+        "necromancer",
+        "medic"
+      ],
+      "gauntletScore": 1,
+      "fieldScore": 0.68
+    },
+    {
+      "unit": "gnat",
+      "team": [
+        "victim",
+        "lightning",
+        "lilith",
+        "sanctifier",
+        "gnat"
+      ],
+      "gauntletScore": 0.833,
+      "fieldScore": 0.489
+    },
+    {
+      "unit": "spore",
+      "team": [
+        "commander",
+        "almsgiver",
+        "spore",
+        "phoenix",
+        "mentalist"
+      ],
+      "gauntletScore": 0.528,
+      "fieldScore": 0.201
+    },
+    {
+      "unit": "planter",
+      "team": [
+        "lilith",
+        "taser",
+        "planter",
+        "divinity",
+        "silencer"
+      ],
+      "gauntletScore": 0.521,
+      "fieldScore": 0.244
+    },
+    {
+      "unit": "nurse",
+      "team": [
+        "rose",
+        "almsgiver",
+        "nurse",
+        "physician",
+        "stoneskin"
+      ],
+      "gauntletScore": 0.764,
+      "fieldScore": 0.474
+    },
+    {
+      "unit": "prepper",
+      "team": [
+        "king",
+        "prepper",
+        "icebinder",
+        "stoneskin",
+        "sexton"
+      ],
+      "gauntletScore": 0.569,
+      "fieldScore": 0.258
+    },
+    {
+      "unit": "coach",
+      "team": [
+        "equalizer",
+        "silencer",
+        "king",
+        "guardian",
+        "coach"
+      ],
+      "gauntletScore": 0.632,
+      "fieldScore": 0.352
+    },
+    {
+      "unit": "bat",
+      "team": [
+        "bat",
+        "silencer",
+        "victim",
+        "lightning",
+        "war-drummer"
+      ],
+      "gauntletScore": 0.764,
+      "fieldScore": 0.624
+    },
+    {
+      "unit": "taser",
+      "team": [
+        "spore",
+        "sexton",
+        "taser",
+        "harvest",
+        "divinity"
+      ],
+      "gauntletScore": 0.882,
+      "fieldScore": 0.592
+    },
+    {
+      "unit": "wire",
+      "team": [
+        "morbid",
+        "fungoid",
+        "wire",
+        "keeper",
+        "virus"
+      ],
+      "gauntletScore": 0.701,
+      "fieldScore": 0.555
+    },
+    {
+      "unit": "rose",
+      "team": [
+        "mesmerist",
+        "plague-rat",
+        "prepper",
+        "rose",
+        "ritualist"
+      ],
+      "gauntletScore": 0.41,
+      "fieldScore": 0.286
+    },
+    {
+      "unit": "victim",
+      "team": [
+        "venomancer",
+        "fungoid",
+        "victim",
+        "scavenger",
+        "morbid"
+      ],
+      "gauntletScore": 0.896,
+      "fieldScore": 0.681
+    },
+    {
+      "unit": "saboteur",
+      "team": [
+        "icebinder",
+        "saboteur",
+        "rose",
+        "stoneskin",
+        "gnat"
+      ],
+      "gauntletScore": 0.097,
+      "fieldScore": 0.044
+    },
+    {
+      "unit": "distractor",
+      "team": [
+        "duelist",
+        "squire",
+        "stoneskin",
+        "gardener",
+        "distractor"
+      ],
+      "gauntletScore": 0.222,
+      "fieldScore": 0.094
+    },
+    {
+      "unit": "henchman",
+      "team": [
+        "berserker",
+        "medic",
+        "sanctifier",
+        "keeper",
+        "henchman"
+      ],
+      "gauntletScore": 0.861,
+      "fieldScore": 0.631
+    },
+    {
+      "unit": "sniper",
+      "team": [
+        "sniper",
+        "ruin",
+        "icebinder",
+        "plague-doctor",
+        "victim"
+      ],
+      "gauntletScore": 0.319,
+      "fieldScore": 0.199
+    },
+    {
+      "unit": "medic",
+      "team": [
+        "sanctifier",
+        "custodian",
+        "king",
+        "medic",
+        "necromancer"
+      ],
+      "gauntletScore": 0.875,
+      "fieldScore": 0.746
+    },
+    {
+      "unit": "guardian",
+      "team": [
+        "physician",
+        "virus",
+        "medic",
+        "necromancer",
+        "guardian"
+      ],
+      "gauntletScore": 1,
+      "fieldScore": 0.837
+    },
+    {
+      "unit": "almsgiver",
+      "team": [
+        "almsgiver",
+        "commander",
+        "distractor",
+        "enhancer",
+        "silencer"
+      ],
+      "gauntletScore": 0.25,
+      "fieldScore": 0.216
+    },
+    {
+      "unit": "sanctifier",
+      "team": [
+        "taser",
+        "necromancer",
+        "war-drummer",
+        "sanctifier",
+        "guardian"
+      ],
+      "gauntletScore": 0.833,
+      "fieldScore": 0.756
+    },
+    {
+      "unit": "enhancer",
+      "team": [
+        "silencer",
+        "guardian",
+        "enhancer",
+        "syren",
+        "necromancer"
+      ],
+      "gauntletScore": 0.667,
+      "fieldScore": 0.61
+    },
+    {
+      "unit": "battery",
+      "team": [
+        "coach",
+        "sniper",
+        "battery",
+        "king",
+        "nurse"
+      ],
+      "gauntletScore": 0.368,
+      "fieldScore": 0.297
+    },
+    {
+      "unit": "injector",
+      "team": [
+        "lightning",
+        "injector",
+        "war-drummer",
+        "venomancer",
+        "guardian"
+      ],
+      "gauntletScore": 0.521,
+      "fieldScore": 0.43
+    },
+    {
+      "unit": "venomancer",
+      "team": [
+        "wane",
+        "venomancer",
+        "sexton",
+        "victim",
+        "prepper"
+      ],
+      "gauntletScore": 0.486,
+      "fieldScore": 0.187
+    },
+    {
+      "unit": "plague-rat",
+      "team": [
+        "stoneskin",
+        "almsgiver",
+        "plague-rat",
+        "plague-doctor",
+        "medic"
+      ],
+      "gauntletScore": 0.681,
+      "fieldScore": 0.683
+    },
+    {
+      "unit": "duelist",
+      "team": [
+        "medic",
+        "duelist",
+        "fungoid",
+        "guardian",
+        "silencer"
+      ],
+      "gauntletScore": 0.688,
+      "fieldScore": 0.51
+    },
+    {
+      "unit": "berserker",
+      "team": [
+        "berserker",
+        "syren",
+        "keeper",
+        "nurse",
+        "enhancer"
+      ],
+      "gauntletScore": 0.875,
+      "fieldScore": 0.709
+    },
+    {
+      "unit": "emberling",
+      "team": [
+        "emberling",
+        "lilith",
+        "distractor",
+        "sanctifier",
+        "mentalist"
+      ],
+      "gauntletScore": 0.333,
+      "fieldScore": 0.247
+    },
+    {
+      "unit": "icebinder",
+      "team": [
+        "saboteur",
+        "medic",
+        "icebinder",
+        "sexton",
+        "stoneskin"
+      ],
+      "gauntletScore": 0.583,
+      "fieldScore": 0.445
+    },
+    {
+      "unit": "summoner",
+      "team": [
+        "summoner",
+        "keeper",
+        "nurse",
+        "fungoid",
+        "battery"
+      ],
+      "gauntletScore": 0.625,
+      "fieldScore": 0.376
+    },
+    {
+      "unit": "gardener",
+      "team": [
+        "ruin",
+        "medic",
+        "gardener",
+        "taser",
+        "guardian"
+      ],
+      "gauntletScore": 0.306,
+      "fieldScore": 0.302
+    },
+    {
+      "unit": "fruiter",
+      "team": [
+        "victim",
+        "pathologist",
+        "fruiter",
+        "virus",
+        "mesmerist"
+      ],
+      "gauntletScore": 0.486,
+      "fieldScore": 0.39
+    },
+    {
+      "unit": "leech",
+      "team": [
+        "leech",
+        "keeper",
+        "nurse",
+        "enhancer",
+        "necromancer"
+      ],
+      "gauntletScore": 0.938,
+      "fieldScore": 0.752
+    },
+    {
+      "unit": "bloodthinner",
+      "team": [
+        "spore",
+        "lilith",
+        "bloodthinner",
+        "famin",
+        "fungoid"
+      ],
+      "gauntletScore": 0.632,
+      "fieldScore": 0.324
+    },
+    {
+      "unit": "hag",
+      "team": [
+        "hag",
+        "sexton",
+        "silencer",
+        "custodian",
+        "necromancer"
+      ],
+      "gauntletScore": 0.826,
+      "fieldScore": 0.715
+    },
+    {
+      "unit": "trickster",
+      "team": [
+        "trickster",
+        "prepper",
+        "stoneskin",
+        "harvest",
+        "planter"
+      ],
+      "gauntletScore": 0.285,
+      "fieldScore": 0.171
+    },
+    {
+      "unit": "custodian",
+      "team": [
+        "mentalist",
+        "fungoid",
+        "custodian",
+        "scavenger",
+        "enhancer"
+      ],
+      "gauntletScore": 0.792,
+      "fieldScore": 0.553
+    },
+    {
+      "unit": "silencer",
+      "team": [
+        "battle-mage",
+        "silencer",
+        "necromancer",
+        "fertilizer",
+        "keeper"
+      ],
+      "gauntletScore": 0.861,
+      "fieldScore": 0.725
+    },
+    {
+      "unit": "scavenger",
+      "team": [
+        "king",
+        "phoenix",
+        "medic",
+        "scavenger",
+        "mesmerist"
+      ],
+      "gauntletScore": 0.493,
+      "fieldScore": 0.415
+    },
+    {
+      "unit": "syren",
+      "team": [
+        "bulwark",
+        "mesmerist",
+        "virus",
+        "syren",
+        "war-drummer"
+      ],
+      "gauntletScore": 0.882,
+      "fieldScore": 0.638
+    },
+    {
+      "unit": "bulwark",
+      "team": [
+        "victim",
+        "harvest",
+        "nurse",
+        "bulwark",
+        "enhancer"
+      ],
+      "gauntletScore": 0.625,
+      "fieldScore": 0.665
+    },
+    {
+      "unit": "stoneskin",
+      "team": [
+        "victim",
+        "berserker",
+        "famin",
+        "stoneskin",
+        "pathologist"
+      ],
+      "gauntletScore": 0.264,
+      "fieldScore": 0.266
+    },
+    {
+      "unit": "commander",
+      "team": [
+        "wane",
+        "commander",
+        "plague-rat",
+        "medic",
+        "enhancer"
+      ],
+      "gauntletScore": 0.472,
+      "fieldScore": 0.376
+    },
+    {
+      "unit": "war-drummer",
+      "team": [
+        "lightning",
+        "silencer",
+        "war-drummer",
+        "emberling",
+        "wire"
+      ],
+      "gauntletScore": 0.854,
+      "fieldScore": 0.438
+    },
+    {
+      "unit": "physician",
+      "team": [
+        "venomancer",
+        "crusader",
+        "virus",
+        "physician",
+        "guardian"
+      ],
+      "gauntletScore": 0.736,
+      "fieldScore": 0.606
+    },
+    {
+      "unit": "crusader",
+      "team": [
+        "priest",
+        "crusader",
+        "guardian",
+        "custodian",
+        "necromancer"
+      ],
+      "gauntletScore": 0.882,
+      "fieldScore": 0.773
+    },
+    {
+      "unit": "lightning",
+      "team": [
+        "lightning",
+        "medic",
+        "battle-mage",
+        "virus",
+        "keeper"
+      ],
+      "gauntletScore": 0.785,
+      "fieldScore": 0.723
+    },
+    {
+      "unit": "battle-mage",
+      "team": [
+        "commander",
+        "battle-mage",
+        "syren",
+        "virus",
+        "scavenger"
+      ],
+      "gauntletScore": 0.243,
+      "fieldScore": 0.396
+    },
+    {
+      "unit": "pathologist",
+      "team": [
+        "guardian",
+        "equalizer",
+        "pathologist",
+        "injector",
+        "scavenger"
+      ],
+      "gauntletScore": 0.035,
+      "fieldScore": 0.03
+    },
+    {
+      "unit": "plague-doctor",
+      "team": [
+        "plague-doctor",
+        "priest",
+        "trickster",
+        "sexton",
+        "saboteur"
+      ],
+      "gauntletScore": 0.444,
+      "fieldScore": 0.35
+    },
+    {
+      "unit": "virus",
+      "team": [
+        "virus",
+        "stoneskin",
+        "henchman",
+        "sexton",
+        "distractor"
+      ],
+      "gauntletScore": 0.347,
+      "fieldScore": 0.303
+    },
+    {
+      "unit": "necromancer",
+      "team": [
+        "medic",
+        "prepper",
+        "battery",
+        "fungoid",
+        "necromancer"
+      ],
+      "gauntletScore": 0.611,
+      "fieldScore": 0.492
+    },
+    {
+      "unit": "sexton",
+      "team": [
+        "sexton",
+        "keeper",
+        "sanctifier",
+        "necromancer",
+        "divinity"
+      ],
+      "gauntletScore": 0.819,
+      "fieldScore": 0.806
+    },
+    {
+      "unit": "fungoid",
+      "team": [
+        "king",
+        "fungoid",
+        "keeper",
+        "morbid",
+        "necromancer"
+      ],
+      "gauntletScore": 0.951,
+      "fieldScore": 0.789
+    },
+    {
+      "unit": "mesmerist",
+      "team": [
+        "mesmerist",
+        "pathologist",
+        "physician",
+        "trickster",
+        "famin"
+      ],
+      "gauntletScore": 0.417,
+      "fieldScore": 0.33
+    },
+    {
+      "unit": "keeper",
+      "team": [
+        "leech",
+        "saboteur",
+        "battle-mage",
+        "medic",
+        "keeper"
+      ],
+      "gauntletScore": 0.681,
+      "fieldScore": 0.615
+    },
+    {
+      "unit": "wane",
+      "team": [
+        "almsgiver",
+        "phoenix",
+        "wane",
+        "henchman",
+        "divinity"
+      ],
+      "gauntletScore": 0.243,
+      "fieldScore": 0.266
+    },
+    {
+      "unit": "harvest",
+      "team": [
+        "sanctifier",
+        "harvest",
+        "keeper",
+        "sexton",
+        "divinity"
+      ],
+      "gauntletScore": 0.646,
+      "fieldScore": 0.742
+    },
+    {
+      "unit": "robber",
+      "team": [
+        "robber",
+        "ruin",
+        "plague-doctor",
+        "ritualist",
+        "war-drummer"
+      ],
+      "gauntletScore": 0.528,
+      "fieldScore": 0.33
+    },
+    {
+      "unit": "ritualist",
+      "team": [
+        "war-drummer",
+        "wire",
+        "ritualist",
+        "morbid",
+        "necromancer"
+      ],
+      "gauntletScore": 0.972,
+      "fieldScore": 0.779
+    },
+    {
+      "unit": "king",
+      "team": [
+        "icebinder",
+        "divinity",
+        "morbid",
+        "king",
+        "fungoid"
+      ],
+      "gauntletScore": 0.861,
+      "fieldScore": 0.801
+    },
+    {
+      "unit": "priest",
+      "team": [
+        "harvest",
+        "king",
+        "priest",
+        "nurse",
+        "fungoid"
+      ],
+      "gauntletScore": 0.694,
+      "fieldScore": 0.61
+    },
+    {
+      "unit": "divinity",
+      "team": [
+        "guardian",
+        "battle-mage",
+        "nurse",
+        "divinity",
+        "almsgiver"
+      ],
+      "gauntletScore": 0.743,
+      "fieldScore": 0.56
+    },
+    {
+      "unit": "phoenix",
+      "team": [
+        "phoenix",
+        "morbid",
+        "plague-doctor",
+        "stoneskin",
+        "ritualist"
+      ],
+      "gauntletScore": 0.368,
+      "fieldScore": 0.387
+    },
+    {
+      "unit": "lilith",
+      "team": [
+        "lilith",
+        "venomancer",
+        "harvest",
+        "sexton",
+        "ritualist"
+      ],
+      "gauntletScore": 0.556,
+      "fieldScore": 0.598
+    },
+    {
+      "unit": "famin",
+      "team": [
+        "commander",
+        "king",
+        "keeper",
+        "famin",
+        "harvest"
+      ],
+      "gauntletScore": 0.465,
+      "fieldScore": 0.53
+    },
+    {
+      "unit": "mentalist",
+      "team": [
+        "king",
+        "keeper",
+        "stoneskin",
+        "war-drummer",
+        "mentalist"
+      ],
+      "gauntletScore": 0.563,
+      "fieldScore": 0.656
+    },
+    {
+      "unit": "equalizer",
+      "team": [
+        "silencer",
+        "stoneskin",
+        "summoner",
+        "almsgiver",
+        "equalizer"
+      ],
+      "gauntletScore": 0.076,
+      "fieldScore": 0.194
+    },
+    {
+      "unit": "ruin",
+      "team": [
+        "ruin",
+        "king",
+        "keeper",
+        "guardian",
+        "sanctifier"
+      ],
+      "gauntletScore": 0.521,
+      "fieldScore": 0.667
+    },
+    {
+      "unit": "fertilizer",
+      "team": [
+        "stoneskin",
+        "bulwark",
+        "fertilizer",
+        "guardian",
+        "almsgiver"
+      ],
+      "gauntletScore": 0.597,
+      "fieldScore": 0.57
+    },
+    {
+      "unit": "morbid",
+      "team": [
+        "king",
+        "stoneskin",
+        "keeper",
+        "sanctifier",
+        "morbid"
+      ],
+      "gauntletScore": 0.507,
+      "fieldScore": 0.581
+    }
+  ]
+}

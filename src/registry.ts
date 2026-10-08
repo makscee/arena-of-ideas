@@ -23,7 +23,7 @@
  */
 
 import { isObject, migrateContentEnvelope } from "./content-grammar.js";
-import { assertValidContent } from "./validate.js";
+import { assertValidPool } from "./validate.js";
 import type { AbilityRegistry, StatusRegistry, UnitDef } from "./types.js";
 
 /** A unit as stored in the approved registry: a plain UnitDef plus an optional
@@ -71,7 +71,7 @@ export function parseApprovedRegistry(data: unknown, registry: StatusRegistry, a
     Object.keys(rawFileAbilities).map((key) => [key, migrated.abilities[key]!]),
   ) as AbilityRegistry;
   const merged: AbilityRegistry = { ...abilities, ...fileAbilities };
-  if (migrated.units.length > 0) assertValidContent(migrated.units, registry, merged, `${label}.units`);
+  if (migrated.units.length > 0) assertValidPool(migrated.units, registry, merged, `${label}.units`);
   migrated.units.forEach((u, i) => {
     const cred = (u as unknown as Record<string, unknown>)["_creator"];
     if (cred !== undefined && (typeof cred !== "string" || cred.length === 0)) {

@@ -39,9 +39,11 @@ interface UnitProj extends BoardUnit {
 
 /**
  * Project the board after events `0..upto` (inclusive) have applied.
- * `upto` past the end of the log projects the final board.
+ * `upto` past the end of the log projects the final board. Events in `skip`
+ * don't apply (a beat's waves still to land, when an earlier wave holds a
+ * later id).
  */
-export function boardAt(log: BattleEvent[], upto: number): BoardState {
+export function boardAt(log: BattleEvent[], upto: number, skip?: ReadonlySet<number>): BoardState {
   const units = new Map<string, UnitProj>();
   const state: BoardState = { turn: 0, lines: { A: [], B: [] }, graves: { A: [], B: [] } };
 
@@ -58,7 +60,7 @@ export function boardAt(log: BattleEvent[], upto: number): BoardState {
   const last = Math.min(upto, log.length - 1);
   for (let i = 0; i <= last; i++) {
     const e = log[i];
-    if (!e) continue;
+    if (!e || skip?.has(i)) continue;
     state.turn = e.turn;
     switch (e.type) {
       case "BattleStart":
@@ -96,7 +98,10 @@ export function boardAt(log: BattleEvent[], upto: number): BoardState {
           u.hp = Math.min(e.atHp ?? 1, u.maxHp); // kernel caps revival hp at effective max
           state.lines[u.side].push(u);
         } else {
-          state.lines[e.side].push(add(e.unit, e.name, e.side, e.hp, e.pwr));
+          const u = add(e.unit, e.name, e.side, e.hp, e.pwr);
+          // old logs have no `front`: their summons went to the back
+          if (e.front) state.lines[e.side].unshift(u);
+          else state.lines[e.side].push(u);
         }
         break;
       }

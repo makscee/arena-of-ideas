@@ -1,0 +1,1 @@
+{"model": "mlx-community/gemma-3-4b-it-4bit", "load_s": 2.7, "n": 80, "lat_med": 1.251, "lat_p90": 1.317, "lat_max": 2.777, "peak_gpu_gb": 2.84, "maxrss_gb": 2.6}

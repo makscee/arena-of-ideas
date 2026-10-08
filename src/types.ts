@@ -26,6 +26,10 @@ export interface UnitDef {
   /** Canonical v2 behavior recipe: ordered refs to what happens. Base Units
    * carry exactly one; the array reserves the accepted two-Ability fused shape. */
   abilities?: string[];
+  /** "And" clauses (MVP round 4): more abilities on the same triggers and
+   * condition, each clause with selectors of its own, firing after
+   * `abilities`, in order. Canonical recipes only. */
+  also?: { selectors: Selector[]; abilities: string[] }[];
   /** v1 compatibility only. Parsers migrate this field deterministically and
    * reject it when mixed with any canonical recipe field. */
   ability?: string;
@@ -78,16 +82,20 @@ export function primaryAbilityIdOf(unit: UnitDef): string | undefined {
 /** Bind a canonical Unit's when/who recipe to its referenced action(s) for
  * execution/description. Legacy context is read only on the compatibility path. */
 export function unitActionsOf(unit: UnitDef, registry: AbilityRegistry): Ability[] {
-  return abilityIdsOf(unit).flatMap((id) => {
+  const clauses = [
+    { ids: abilityIdsOf(unit), selectors: unit.selectors },
+    ...(unit.also ?? []).map((c) => ({ ids: c.abilities, selectors: c.selectors as Selector[] | undefined })),
+  ];
+  return clauses.flatMap(({ ids, selectors }) => ids.flatMap((id) => {
     const action = registry[id];
     if (!action) return [];
     return [{
       ...action,
       whens: unit.triggers ?? action.whens ?? [],
-      selectors: unit.selectors ?? action.selectors ?? [],
+      selectors: selectors ?? action.selectors ?? [],
       ...(unit.condition ?? action.condition ? { condition: unit.condition ?? action.condition } : {}),
     }];
-  });
+  }));
 }
 
 /** Bind canonical Status context to each action for description tooling. */
@@ -105,14 +113,18 @@ export interface When {
   on: EventPattern;
 }
 
-/** Unit filters are relative to the ability's holder. "ally" includes the holder's side (and the holder). */
-export type UnitFilter = "holder" | "ally" | "enemy" | "any";
+/** Unit filters are relative to the ability's holder. "ally" includes the holder's side (and the holder);
+ * "otherAlly" is the holder's side minus the holder ("after an ally dies" never fires on its own death). */
+export type UnitFilter = "holder" | "ally" | "otherAlly" | "enemy" | "any";
 
 export type EventPattern =
   | { on: "BattleStart" | "TurnStart" | "TurnEnd" }
   | { on: "Strike"; striker?: UnitFilter }
   | { on: "Hurt" | "Heal" | "Death" | "Summon"; unit?: UnitFilter }
-  | { on: "StatusApplied" | "StatusRemoved"; unit?: UnitFilter; status?: string };
+  | { on: "StatusApplied" | "StatusRemoved"; unit?: UnitFilter; status?: string }
+  // A stat moved (a statMod status landed or left). Trigger-only: the change
+  // follows from its status event, so there is nothing to intercept.
+  | { on: "StatChanged"; unit?: UnitFilter; stat?: StatName; sign?: "gain" | "loss" };
 
 export type Condition = { kind: "holderHpAtMost"; value: number };
 
@@ -138,9 +150,9 @@ export type Effect =
   | { kind: "heal"; amount: Amount }
   | { kind: "applyStatus"; status: string; stacks: Amount }
   | { kind: "consumeStacks"; status?: string; stacks: Amount } // status omitted = the owning status
-  | { kind: "summon"; unit: UnitDef } // at the back of the target's team; skipped if line is full
+  | { kind: "summon"; unit: UnitDef } // at the front of the target's team; a full line logs NoRoom instead
   | { kind: "silence" } // remove all statuses, disable the unit's own abilities for the battle
-  | { kind: "resurrect"; hp: Amount } // revive the (dead) target at N hp, back of line
+  | { kind: "resurrect"; hp: Amount } // revive the (dead) target at N hp, back of line; a full line logs NoRoom
   // interceptor-context atoms — transform/cancel the proposed event
   | { kind: "cancel"; consumeSelf?: number } // cancel the event; optionally consume own stacks
   | { kind: "absorbHurt" } // reduce a proposed Hurt by min(own stacks, amount); consume = absorbed
@@ -165,6 +177,10 @@ export interface AbilityRef {
   unit: string; // holding unit instance id
   status?: string; // present when the ability lives on a status
   ability: number; // index within the ability list
+  /** Which of the reactor's Whens (index in its triggers) set this firing off
+   * (or would have, on a ChainBlocked). Stamped by the kernel; absent on logs
+   * from before round 2 (R2-15). */
+  when?: number;
 }
 
 export type SourceRef = "kernel" | AbilityRef;
@@ -184,19 +200,44 @@ export type EventBody =
   | { type: "Strike"; striker: string; defender: string }
   // hpAfter = the unit's current hp after the event applied; stamped at apply time
   // (optional only because proposals are drafted without it — every logged event carries it).
-  | { type: "Hurt"; unit: string; amount: number; hpAfter?: number; absorbed?: number }
+  // pierced: sudden death's fatigue (R4-1), which no interceptor (Shield) can stop.
+  | { type: "Hurt"; unit: string; amount: number; hpAfter?: number; absorbed?: number; pierced?: true }
   | { type: "Heal"; unit: string; amount: number; hpAfter?: number }
-  | { type: "Death"; unit: string }
-  | { type: "Summon"; unit: string; name: string; side: Side; hp: number; pwr: number; resurrected?: boolean; atHp?: number }
+  // pierced: dealt by a pierced Hurt, so no interceptor (Blessing) can stop it.
+  | { type: "Death"; unit: string; pierced?: true }
+  | {
+      type: "Summon";
+      unit: string;
+      name: string;
+      side: Side;
+      hp: number;
+      pwr: number;
+      resurrected?: boolean;
+      atHp?: number;
+      // the unit entered at the front of its line; absent = at the back (revives, and summons in logs before R3)
+      front?: boolean;
+    }
   | { type: "StatusApplied"; unit: string; status: string; stacks: number; total: number }
   | { type: "StatusRemoved"; unit: string; status: string; stacks: number; remaining: number }
   // hpAfter is present on hp StatChanged events only (a pwr change moves no hp).
   | { type: "StatChanged"; unit: string; stat: StatName; delta: number; now: number; hpAfter?: number }
   | { type: "Silenced"; unit: string }
-  | { type: "Fatigue"; amount: number }
+  // suddenDeath: from BattleInput.suddenDeathAt on (R4-1): doubled, piercing.
+  | { type: "Fatigue"; amount: number; suddenDeath?: true }
   | { type: "ChainBlocked"; ability: AbilityRef; at: number }
+  // A cascade hit the step cap: `root` is the event its first firing reacted
+  // to, `steps` the firings it ran; the firings still queued were dropped.
+  | { type: "ChainCapped"; root: number; steps: number }
+  // A Summon or Revive found its line full and did nothing (R4-2): `unit` is
+  // the holder whose ability tried, `side` the full line, `name` who found no
+  // room; `revive` is the dead unit's id when it was a revive.
+  | { type: "NoRoom"; unit: string; side: Side; name: string; revive?: string }
+  // A Summon (or, with revive, a Revive of `unit`) that did nothing, and why:
+  // in sudden death (R4-1) nobody enters the line.
+  | { type: "SummonFailed"; name: string; side: Side; unit?: string; revive?: true; reason: "suddenDeath" }
   | { type: "Intercepted"; by: AbilityRef; original: string; unit?: string }
-  | { type: "BattleEnd"; winner: Side | "draw"; turns: number };
+  // timeUp: the turn cap ran out with both sides standing (a draw); absent otherwise.
+  | { type: "BattleEnd"; winner: Side | "draw"; turns: number; timeUp?: true };
 
 export type EventType = EventBody["type"];
 
@@ -216,4 +257,18 @@ export interface BattleInput {
   statuses?: StatusRegistry;
   /** Registry resolving the Unit recipe's ordered `abilities` action refs. */
   abilities?: AbilityRegistry;
+  /** Most trigger firings one cascade may run before it stops with a
+   * ChainCapped event. Omitted = DEFAULT_CHAIN_STEP_CAP (battle.ts). */
+  chainStepCap?: number;
+  /** Turns a battle may last; past them, both sides standing is a draw and
+   * BattleEnd says timeUp. Omitted = TURN_CAP (battle.ts). */
+  turnCap?: number;
+  /** Sudden death (R4-1): from this turn on, Fatigue doubles every turn and
+   * pierces Shield and Blessing, and Summon and Revive do nothing (a
+   * SummonFailed event says why). Omitted = no sudden death. */
+  suddenDeathAt?: number;
+  /** Most units a side's battle line holds (R4-10): Summon and Revive find no
+   * room (a NoRoom event) past it. Teams still enter with at most TEAM_SIZE.
+   * Omitted = TEAM_SIZE. */
+  lineCap?: number;
 }

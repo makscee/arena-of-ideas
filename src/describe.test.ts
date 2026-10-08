@@ -27,20 +27,20 @@ describe("describeStatus", () => {
   });
 
   test("known wordings (the shipped statuses)", () => {
-    expect(describeStatus(stressRegistry.Strength!)).toMatchInlineSnapshot(`"+1 pwr per stack."`);
-    expect(describeStatus(stressRegistry.Vitality!)).toMatchInlineSnapshot(`"+1 hp per stack."`);
-    expect(describeStatus(stressRegistry.Curse!)).toMatchInlineSnapshot(`"-1 pwr per stack."`);
+    expect(describeStatus(stressRegistry.Strength!)).toMatchInlineSnapshot(`"+1 PWR per stack."`);
+    expect(describeStatus(stressRegistry.Vitality!)).toMatchInlineSnapshot(`"+1 HP per stack."`);
+    expect(describeStatus(stressRegistry.Curse!)).toMatchInlineSnapshot(`"-1 PWR per stack."`);
     expect(describeStatus(stressRegistry.Poison!)).toMatchInlineSnapshot(
-      `"At the end of each turn: deal damage equal to its stacks to the holder, then consume 1 stack of this status."`,
+      `"Turn end: damage equal to stacks to holder, then spend 1 stack."`,
     );
     expect(describeStatus(stressRegistry.Shield!)).toMatchInlineSnapshot(
-      `"When the holder would be hurt: absorb the damage up to its stacks, consuming what it absorbs."`,
+      `"Would be hit: block damage up to stacks, spending them."`,
     );
     expect(describeStatus(stressRegistry.Freeze!)).toMatchInlineSnapshot(
-      `"When the holder would strike: cancel it, consuming 1 stack."`,
+      `"Would strike: cancel it, spend 1 stack."`,
     );
     expect(describeStatus(stressRegistry.Blessing!)).toMatchInlineSnapshot(
-      `"When the holder would die: cancel the death and heal the holder to hp equal to its stacks, spending this status."`,
+      `"Would die: cancel death, set holder to HP equal to stacks, spend this status."`,
     );
   });
 });
@@ -54,18 +54,30 @@ describe("describeAbility", () => {
     }
   });
 
+  test("a summon for every ally reads as one per ally, not 'every ally's side' (#587)", () => {
+    const ab = { ...unitActionsOf(Summoner, stressAbilities)[0]!, selectors: [{ kind: "allAllies" as const }] };
+    expect(describeAbility(ab)).toBe(
+      "Dies: summon Imp (1/2) for each ally, if there's room.",
+    );
+    // Fired at battle start, the holder is still in the line and gets one too.
+    const atStart = { ...ab, whens: [{ kind: "trigger" as const, on: { on: "BattleStart" as const } }] };
+    expect(describeAbility(atStart)).toBe(
+      "Battle start: summon Imp (1/2) for each ally, self included, if there's room.",
+    );
+  });
+
   test("known wordings (the shipped stress units)", () => {
     expect(describeAbility(unitActionsOf(Venomancer, stressAbilities)[0]!)).toMatchInlineSnapshot(
-      `"After this unit strikes: apply 2 Poison to the front enemy."`,
+      `"Strikes: 2 Poison to front enemy."`,
     );
     expect(describeAbility(unitActionsOf(Summoner, stressAbilities)[0]!)).toMatchInlineSnapshot(
-      `"After this unit dies: summon Imp (1 PWR / 2 HP) at the back of this unit's side."`,
+      `"Dies: summon Imp (1/2)."`,
     );
     expect(describeAbility(unitActionsOf(Silencer, stressAbilities)[0]!)).toMatchInlineSnapshot(
-      `"When the battle begins: silence the front enemy — strip its statuses and disable its abilities for the battle."`,
+      `"Battle start: silence front enemy."`,
     );
     expect(describeAbility(unitActionsOf(Necromancer, stressAbilities)[0]!)).toMatchInlineSnapshot(
-      `"After an ally dies: return the most recently dead ally to the back of the line at 1 hp."`,
+      `"Ally dies: revive fallen ally at 1 HP."`,
     );
   });
 
@@ -76,14 +88,14 @@ describe("describeAbility", () => {
       effects: [{ kind: "resurrect", hp: { kind: "level", of: "holder" } }],
     });
     expect(text).toMatchInlineSnapshot(
-      `"After an ally dies: return the most recently dead ally to the back of the line at hp equal to this unit's level."`,
+      `"Ally dies: revive fallen ally at HP equal to level."`,
     );
   });
 
   test("a status-held ability speaks of the holder", () => {
-    const text = describeAbility(statusActionsOf(stressRegistry.Poison!)[0]!, { holder: "the holder" });
-    expect(text).toContain("the holder");
-    expect(text).not.toContain("this unit");
+    const text = describeAbility(statusActionsOf(stressRegistry.Poison!)[0]!, { holder: "holder" });
+    expect(text).toContain("to holder");
+    expect(text).not.toContain("self");
   });
 
   test("multiple whens, a condition, and multiple selectors all surface", () => {
@@ -97,23 +109,23 @@ describe("describeAbility", () => {
       effects: [{ kind: "heal", amount: { kind: "stat", stat: "pwr", of: "holder" } }],
     });
     expect(text).toMatchInlineSnapshot(
-      `"After this unit is hurt, or at the end of each turn, while this unit is at 5 hp or less: heal every ally and a random enemy for an amount equal to this unit's pwr."`,
+      `"Hit, or turn end, at 5 HP or less: heal all allies and random enemy for PWR."`,
     );
   });
 });
 
 describe("abilityChips — the card's terse 3-chip line (#082)", () => {
   test("the shipped stress units read as short trigger/target/action + glyph", () => {
-    // Venom: ⚔ On strike ▸ Front enemy ▸ ☣ Poison 2 (the mockup's canonical row;
+    // Venom: ⚔ Strikes ▸ Front enemy ▸ ☣ Poison 2 (the mockup's canonical row;
     // the action glyph ☣ is the family glyph the card derives, not in the chips).
     expect(abilityChips(unitActionsOf(Venomancer, stressAbilities)[0]!)).toEqual({
-      trigger: "On strike",
+      trigger: "Strikes",
       triggerGlyph: "⚔",
       target: "Front enemy",
       action: "Poison 2",
     });
     expect(abilityChips(unitActionsOf(Summoner, stressAbilities)[0]!)).toEqual({
-      trigger: "On death",
+      trigger: "Dies",
       triggerGlyph: "☠",
       target: "Self",
       action: "Summon Imp",
@@ -125,9 +137,9 @@ describe("abilityChips — the card's terse 3-chip line (#082)", () => {
       action: "Silence",
     });
     expect(abilityChips(unitActionsOf(Necromancer, stressAbilities)[0]!)).toEqual({
-      trigger: "On death",
+      trigger: "Dies",
       triggerGlyph: "☠",
-      target: "Last dead ally",
+      target: "Fallen ally",
       action: "Revive",
     });
   });
@@ -208,7 +220,7 @@ describe("describe segments / status refs", () => {
 
   test("Venomancer's ability marks Poison as a ref, the rest as plain text", () => {
     const segs = describeAbilitySegments(unitActionsOf(Venomancer, stressAbilities)[0]!);
-    expect(segs.filter((s) => s.statusRef !== undefined)).toEqual([{ text: "Poison", statusRef: "Poison" }]);
+    expect(segs.filter((s) => s.statusRef !== undefined)).toEqual([{ text: "Poison", statusRef: "Poison", term: "status:Poison" }]);
     expect(abilityStatusRefs(unitActionsOf(Venomancer, stressAbilities)[0]!)).toEqual(["Poison"]);
   });
 
@@ -230,10 +242,10 @@ describe("when-clause status refs (constructed content — shipped whens carry n
 
   test("a status-pattern when reads the same and marks the status as a ref", () => {
     expect(describeAbility(onAllyPoisoned)).toMatchInlineSnapshot(
-      `"After Poison lands on an ally: heal this unit for 2."`,
+      `"Ally gets Poison: heal self for 2."`,
     );
     const refs = describeAbilitySegments(onAllyPoisoned).filter((s) => s.statusRef !== undefined);
-    expect(refs).toEqual([{ text: "Poison", statusRef: "Poison" }]);
+    expect(refs).toEqual([{ text: "Poison", statusRef: "Poison", term: "status:Poison", clause: "when" }]);
     expect(abilityStatusRefs(onAllyPoisoned)).toEqual(["Poison"]);
   });
 
@@ -261,7 +273,7 @@ describe("when-clause status refs (constructed content — shipped whens carry n
   test("a statusless when pattern yields no ref", () => {
     const w: When = { kind: "interceptor", on: { on: "StatusApplied", unit: "holder" } };
     expect(describeWhenSegments(w).every((s) => s.statusRef === undefined)).toBe(true);
-    expect(describeWhen(w)).toBe("when a status would land on this unit");
+    expect(describeWhen(w)).toBe("would get a status");
   });
 });
 
@@ -280,10 +292,10 @@ describe("explicit-status consumeStacks refs (constructed — shipped content ha
 
   test("the named status is a ref and the sentence still joins exactly", () => {
     expect(describeAbility(shieldBreaker)).toMatchInlineSnapshot(
-      `"After this unit strikes: consume 2 stacks of Shield, then deal 3 damage to the front enemy."`,
+      `"Strikes: spend 2 Shield, then 3 damage to front enemy."`,
     );
     const segs = describeAbilitySegments(shieldBreaker);
-    expect(segs.filter((s) => s.statusRef !== undefined)).toEqual([{ text: "Shield", statusRef: "Shield" }]);
+    expect(segs.filter((s) => s.statusRef !== undefined)).toEqual([{ text: "Shield", statusRef: "Shield", term: "status:Shield" }]);
     expect(segs.map((s) => s.text).join("")).toBe(describeAbility(shieldBreaker));
     expect(abilityStatusRefs(shieldBreaker)).toEqual(["Shield"]);
   });

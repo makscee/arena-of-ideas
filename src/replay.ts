@@ -158,7 +158,7 @@ class Renderer {
           this.push(e, `${this.name(e.unit)} rises from the grave${at}, back of side ${e.side} — ${by}'s doing.`);
         } else {
           this.units.set(e.unit, { baseHp: e.hp, maxHp: e.hp });
-          this.push(e, `${by} summons ${this.name(e.unit)} (${e.pwr} PWR / ${e.hp} HP) to the back of side ${e.side}.`);
+          this.push(e, `${by} summons ${this.name(e.unit)} (${e.pwr} PWR / ${e.hp} HP) to the ${e.front ? "front" : "back"} of side ${e.side}.`);
         }
         return;
       }
@@ -193,8 +193,20 @@ class Renderer {
       }
 
       case "Fatigue":
-        this.push(e, `Fatigue ${e.amount}: the drawn-out battle wears everyone down.`);
+        this.push(
+          e,
+          e.suddenDeath
+            ? `Sudden death: Fatigue ${e.amount}, doubling every turn — no Shield or Blessing stops it.`
+            : `Fatigue ${e.amount}: the drawn-out battle wears everyone down.`,
+        );
         return;
+
+      case "SummonFailed": {
+        const by = e.source !== "kernel" ? this.refDesc(e.source) : "the kernel";
+        const who = e.revive && e.unit ? this.name(e.unit) : e.name;
+        this.push(e, `${by} tries to ${e.revive ? "revive" : "summon"} ${who}, but in sudden death no one joins the line.`);
+        return;
+      }
 
       case "ChainBlocked": {
         const what = this.refDesc(e.ability);
@@ -203,6 +215,18 @@ class Renderer {
           e,
           `(chain stopped: ${what} stayed quiet after ${after} — it already acted in this chain, and an ability never triggers itself)`,
         );
+        return;
+      }
+
+      case "ChainCapped": {
+        const after = this.shortDesc(this.log[e.root]);
+        this.push(e, `(chain capped: the cascade after ${after} ran ${e.steps} reactions and stopped there)`);
+        return;
+      }
+
+      case "NoRoom": {
+        const what = e.revive !== undefined ? `revive ${this.name(e.revive)}` : `summon ${e.name}`;
+        this.push(e, `(no room: ${this.name(e.unit)} tries to ${what}, but side ${e.side}'s line is full)`);
         return;
       }
 
@@ -223,7 +247,7 @@ class Renderer {
 
       case "BattleEnd": {
         this.lines.push("");
-        const verdict = e.winner === "draw" ? "Draw" : `Side ${e.winner} wins`;
+        const verdict = e.winner === "draw" ? (e.timeUp ? "Time's up: draw" : "Draw") : `Side ${e.winner} wins`;
         this.lines.push(`=== ${verdict} after ${e.turns} ${e.turns === 1 ? "turn" : "turns"} ===`);
         return;
       }

@@ -62,8 +62,10 @@ describe("checkCandidate verdicts", () => {
 
   test("a pooled-in-band candidate that folds one matchup is bounced as counter-folded (the floor closes the gameable-pool hole)", () => {
     // The pre-floor "sane" fixture: curse-only striker fronted by a body. It
-    // pools to ~54% (in [35,65]) yet folds StatStack to 0% — it would have
-    // passed a pooled-only gate. The per-matchup floor catches it.
+    // pools to ~63% (in [35,65]) yet folds StatStack to 20% — it would have
+    // passed a pooled-only gate. The per-matchup floor catches it. (#466
+    // softened StatStack; the Vanguard body shrank from 3/11 to 2/8 to keep
+    // the fold.)
     const chill: AbilityRegistry = {
       Chill: {
         name: "Chill",
@@ -74,7 +76,7 @@ describe("checkCandidate verdicts", () => {
       },
     };
     const gameable: UnitDef[] = [
-      { name: "Vanguard", base: { hp: 11, pwr: 3 }, ability: "Strike" },
+      { name: "Vanguard", base: { hp: 8, pwr: 2 }, ability: "Strike" },
       { name: "Frostmage", base: { hp: 8, pwr: 2 }, ability: "Chill" },
       { name: "Squire", base: { hp: 7, pwr: 2 }, ability: "Strike" },
     ];

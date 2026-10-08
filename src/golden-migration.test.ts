@@ -31,6 +31,15 @@ const cursed: UnitDef = { name: "Cursed", base: { hp: 9, pwr: 5 }, ability: "Str
 const frozen: UnitDef = { name: "Frozen", base: { hp: 8, pwr: 4 }, ability: "Strike", statuses: [{ status: "Freeze", stacks: 2 }] };
 const blessed: UnitDef = { name: "Blessed", base: { hp: 6, pwr: 2 }, ability: "Strike", statuses: [{ status: "Blessing", stacks: 5 }] };
 
+// The StatStack team as it stood when the golden was captured. The gate's
+// REFERENCE_META StatStack was softened later (#466, a content change); the
+// golden pins engine determinism, so it keeps the captured team.
+const goldenStatStack: UnitDef[] = [
+  Venomancer,
+  { name: "Warlord", base: { hp: 16, pwr: 4 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"], statuses: [{ status: "Strength", stacks: 2 }] },
+  { name: "Bulwark", base: { hp: 14, pwr: 3 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"], statuses: [{ status: "Vitality", stacks: 3 }] },
+];
+
 interface GoldenBattle {
   label: string;
   teamA: UnitDef[];
@@ -44,7 +53,7 @@ interface GoldenBattle {
 const GOLDEN_BATTLES: GoldenBattle[] = [
   { label: "aggro-vs-sustain s1", teamA: [...REFERENCE_META[0]!.units], teamB: [...REFERENCE_META[1]!.units], seed: 1 },
   { label: "aggro-vs-sustain s7", teamA: [...REFERENCE_META[0]!.units], teamB: [...REFERENCE_META[1]!.units], seed: 7 },
-  { label: "statstack-vs-champion s2", teamA: [...REFERENCE_META[2]!.units], teamB: [...BOSS_TEAMS[TOWER_HEIGHT - 1]!], seed: 2 },
+  { label: "statstack-vs-champion s2", teamA: [...goldenStatStack], teamB: [...BOSS_TEAMS[TOWER_HEIGHT - 1]!], seed: 2 },
   { label: "bootstrap-top-vs-boss s1", teamA: [...BOOTSTRAP_TEAMS[TOWER_HEIGHT - 1]![0]!], teamB: [...BOSS_TEAMS[2]!], seed: 1 },
   { label: "interceptors s1", teamA: [shieldTank, cursed], teamB: [frozen, blessed], seed: 1 },
   { label: "interceptors s3", teamA: [blessed, shieldTank], teamB: [cursed, frozen], seed: 3 },

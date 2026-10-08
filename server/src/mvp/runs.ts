@@ -1,0 +1,265 @@
+// Arena MVP run engine on the server (mission #574): the bookkeeping around
+// the pure run (src/mvp/run.ts). Routes only parse and call these. Slice 6's
+// bots play in-process through them, and slices 5, 10 and 11 observe runs
+// through RunHooks instead of editing decide().
+import { randomUUID } from "node:crypto";
+import { boardUnit, type BattleRecord, type DayState, type Decision, type DecisionResponse, type FightResult, type FuseContext, type Ghost, type LineUnit, type MvpContent, type MvpRules, type PlayerRef, type Rating, type RunView } from "../../../src/mvp/contract.js";
+import { fuseCheck } from "../../../src/mvp/forms.js";
+import { abandonRun, applyMvpDecision, championGhost, endRun, initMvpRun, MvpDecisionError, ratingChange, runView, setOpponent, slewChampion, synthGhost, unitById, type DecisionContext, type MvpRunState, type MvpStep } from "../../../src/mvp/run.js";
+import { todaysChampion } from "./day.js";
+import type { NameFusion } from "./fusions.js";
+import type { MvpStore } from "./store.js";
+
+/** Observers of the run engine (slice 10's fusion names, slice 11's stats,
+ * whatever slice 5 needs). decide() calls them after its store writes,
+ * synchronously: every onDecision first, then onFuse, onFight and onRunEnd as
+ * they apply, each in registration order. A preview calls none. A hook must
+ * not throw: the decision is already saved. */
+export interface RunHooks {
+  /** Any decision went through: the run before it and after it. Slice 10
+   * prefetches fusion names here. */
+  onDecision?(before: MvpRunState, d: Decision, after: MvpRunState): void;
+  /** A fuse went through: `fused` is the new unit on `run`'s line, `ctx` the
+   * name and credit it got. Slice 10 records the FusionDiscovery here. */
+  onFuse?(run: MvpRunState, fused: LineUnit, ctx: FuseContext): void;
+  /** A fight was fought; `run` is the state after it. */
+  onFight?(run: MvpRunState, fight: FightResult, battle: BattleRecord): void;
+  /** The decision ended the run. */
+  onRunEnd?(run: MvpRunState): void;
+}
+
+/** What the run engine needs. MvpRuntime (./runtime.ts) is one, and
+ * mvpRuntime() is the only place that fills it. */
+export interface RunDeps {
+  store: MvpStore;
+  content: MvpContent;
+  rules: MvpRules;
+  /** Seed source; tests pin it. */
+  seed(): number;
+  now(): Date;
+  /** The current day (./day.ts today(), slice 5's): a run starts on it and
+   * the Crown and the Slay read it. */
+  today(): DayState;
+  hooks: RunHooks[];
+  /** decide()'s namer for a fuse; peekFusionName unless a test overrides it. */
+  nameFusion: NameFusion;
+  /** The read-only namer (slice 10, ./fusions.ts): the stored name, else a
+   * prefetched model name, else the portmanteau. It never records or waits.
+   * preview() uses it for the credit; it hides an unfused pair's name. */
+  peekFusionName: NameFusion;
+}
+
+/** Starts a run for `player` on today's day, with round 1's opponent picked,
+ * and stores it. One active run per player: if one is going, that one comes
+ * back instead (a run on content that is no longer live is ended first, and a
+ * new one starts). Synchronous, so parallel starts can't create two. */
+export function startRun(deps: RunDeps, player: PlayerRef): MvpRunState {
+  const active = deps.store.activeRun(player.id);
+  if (active) {
+    if (active.contentVersion === deps.content.version) return currentRun(deps, active);
+    const ended = finish(deps, endRun(active, "content-changed"));
+    for (const h of deps.hooks) h.onRunEnd?.(ended);
+  }
+  // The rating every ghost and Slay of this run carries: a human's as it is
+  // now (it only moves when a run ends, and only one runs at a time).
+  const rating = player.bot ? deps.rules.botRating : (deps.store.rating(player.id)?.rating ?? deps.rules.ratingStart);
+  const fresh = initMvpRun({ runId: randomUUID(), player, seed: deps.seed(), content: deps.content, day: deps.today().seq, startedAt: deps.now().toISOString(), rules: deps.rules, rating });
+  const run = setOpponent(fresh, pickGhost(deps, fresh));
+  deps.store.putRun(run);
+  return run;
+}
+
+/** Applies one decision to a stored run and records what it produced: the
+ * snapshot ghost and the battle of a fight, the next opponent (the round's
+ * ghost, or the champion for the Crown), the Slay, the rating at the run's
+ * end, the new run state, then the hooks. Synchronous on purpose: read the
+ * run and call this with no await in between, so two decisions on one run
+ * can't start from the same state. Throws MvpDecisionError when the rules
+ * refuse the decision. A run on content that is no longer live is ended
+ * ("content-changed") instead of applying `d`. */
+export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionResponse {
+  const { store, content, seed, now } = deps;
+  if (run.phase !== "over" && run.contentVersion !== content.version) {
+    const ended = finish(deps, endRun(run, "content-changed"));
+    for (const h of deps.hooks) h.onRunEnd?.(ended);
+    return { run: runView(ended) };
+  }
+  // A rollover since round 12 ended crowned a new champion: fight that one.
+  if (d.kind === "fight" && run.phase === "crown") run = currentCrown(deps, run);
+  const ctx: DecisionContext = {};
+  const fuse = fuseContext(deps.nameFusion, content, run, d);
+  if (fuse) ctx.fuse = fuse;
+  if (d.kind === "fight") {
+    // The opponent picked at round start; a run stored without one picks now.
+    const ghost = run.opponent ?? pickGhost(deps, run);
+    ctx.fight = { ghost, battleId: randomUUID(), battleSeed: seed(), at: now().toISOString() };
+  }
+  const step = applyMvpDecision(run, d, content, ctx);
+  // The line as it went into a round's fight becomes someone's ghost, win or
+  // lose; only after the rules accepted the fight, so a refused one adds
+  // nothing. An empty line (a walkover) is nobody's opponent.
+  if (step.fight?.kind === "round" && run.line.length > 0) store.addGhost(ghostOf(deps, run, now()));
+  // A bot's Crown win is a slay like a human's (contract: "day, champion,
+  // rating"), and so is the reigning champion beating their own team.
+  if (step.fight?.kind === "crown" && step.fight.outcome === "win" && run.crownSeq !== null) {
+    store.addSlay({ seq: run.crownSeq, player: run.player, runId: run.runId, battleId: step.fight.battleId, line: structuredClone(run.line), contentVersion: run.contentVersion, at: ctx.fight!.at, rating: runRating(deps, run) });
+  }
+  if (step.fight) step.state = nextOpponent(deps, step.state);
+  if (step.state.phase === "over") step.state = finish(deps, step.state);
+  else store.putRun(step.state);
+  if (step.battle) store.putBattle(step.battle);
+  notify(deps.hooks, run, d, step, ctx);
+  return { run: runView(step.state), ...(step.fight ? { fight: step.fight } : {}) };
+}
+
+/** Gives a stored run up (POST /runs/:id/abandon): it ends "abandoned", each
+ * heart left (the Crown, at the Crown) rated a lost fight against the opponent
+ * already picked (abandonRun), with the rating written and the onRunEnd hooks
+ * called like any end. A run waiting for the Crown forfeits against the
+ * current champion (currentRun). A run on content that is no longer live ends
+ * "content-changed" instead, rating untouched, as decide() would end it.
+ * Throws MvpDecisionError on a run that is already over. Synchronous, like
+ * decide(). */
+export function abandon(deps: RunDeps, run: MvpRunState): RunView {
+  const stale = run.phase !== "over" && run.contentVersion !== deps.content.version;
+  const ended = finish(deps, stale ? endRun(run, "content-changed") : abandonRun(currentRun(deps, run)));
+  for (const h of deps.hooks) h.onRunEnd?.(ended);
+  return runView(ended);
+}
+
+/** After a fight: the next round's ghost, or today's champion for the Crown
+ * (never one a failed day end stored early); a Crown with no live champion
+ * ends the run ("no-champion"). */
+function nextOpponent(deps: RunDeps, run: MvpRunState): MvpRunState {
+  if (run.phase === "shop") return setOpponent(run, pickGhost(deps, run));
+  if (run.phase !== "crown") return run;
+  const champ = todaysChampion(deps);
+  if (!champ || champ.contentVersion !== deps.content.version) return endRun(run, "no-champion");
+  return setOpponent(run, championGhost(champ, run.rules), champ.seq);
+}
+
+/** A stored run as its player sees it now (GET /runs/:id, and an active run
+ * POST /runs hands back): a run waiting for the Crown shows the current
+ * champion after a rollover (currentCrown), and the switch is stored, so the
+ * fight is the one shown. Other runs come back as they are. */
+export function currentRun(deps: RunDeps, run: MvpRunState): MvpRunState {
+  if (run.phase !== "crown") return run;
+  deps.today(); // a day past its end rolls over first
+  const cur = currentCrown(deps, run);
+  if (cur !== run) deps.store.putRun(cur);
+  return cur;
+}
+
+/** The Crown's opponent as of now: when today's champion (todaysChampion)
+ * is not the one picked when round 12 ended (a rollover in between) and it is
+ * on the live content, the run fights it instead, and a slay counts for its
+ * seq. */
+function currentCrown(deps: RunDeps, run: MvpRunState): MvpRunState {
+  const champ = todaysChampion(deps);
+  if (!champ || champ.seq === run.crownSeq || champ.contentVersion !== deps.content.version) return run;
+  return setOpponent(run, championGhost(champ, run.rules), champ.seq);
+}
+
+/** How many of a round's newest saved teams a ghost pick draws from. Tunable. */
+export const GHOST_PICK_POOL = 200;
+
+/** A saved team at the run's round, never the player's own, built with the
+ * live content; a seeded bot team when the round has none (slice 6's bots
+ * fill the pool). Never a team of a run that slew today's champion: its
+ * round-12 line is its Crown line, hidden until the day ends (hiddenSlay).
+ * Nor of a run still waiting in the Crown, which may become such a slay. */
+function pickGhost(deps: RunDeps, run: MvpRunState): Ghost {
+  const { store, content, now } = deps;
+  const slayers = new Set(store.slays(deps.today().seq).map((s) => s.runId));
+  const hidden = (g: Ghost) => slayers.has(g.runId) || store.run(g.runId)?.phase === "crown";
+  const candidates = store.ghosts(run.round, { excludePlayerId: run.player.id, contentVersion: content.version, limit: GHOST_PICK_POOL }).filter((g) => !hidden(g));
+  const pick = deps.seed();
+  return candidates.length > 0
+    ? candidates[pick % candidates.length]!
+    : synthGhost({ content, round: run.round, seed: pick, ghostId: `bot-${randomUUID()}`, createdAt: now().toISOString(), rules: deps.rules });
+}
+
+/** The rating a run's ghosts and Slay carry: stamped at its start; a run
+ * from before round 2 has none and counts as a start rating (a bot's run as
+ * botRating). */
+function runRating(deps: RunDeps, r: MvpRunState): number {
+  return r.ratingAtStart ?? (r.player.bot ? deps.rules.botRating : deps.rules.ratingStart);
+}
+
+/** Stamps a run that just ended, writes a human's rating (once per run) and
+ * stores the run. Bots and a "content-changed" end move no rating; a bot's
+ * slay still counts in its records (slays), its rating and runs untouched. */
+function finish(deps: RunDeps, run: MvpRunState): MvpRunState {
+  const { store, rules } = deps;
+  const r = structuredClone(run);
+  r.endedAt = deps.now().toISOString();
+  r.rating = null;
+  const prev = (): Rating => store.rating(r.player.id) ?? { player: r.player, rating: rules.ratingStart, runs: 0, slays: 0, daysAsChampion: 0, playoffWins: 0 };
+  if (!r.player.bot && r.endedBy !== "content-changed") {
+    const before = prev();
+    r.rating = ratingChange(before.rating, before.runs, r, rules);
+    store.putRating({ ...before, player: r.player, rating: r.rating.after, runs: before.runs + 1, slays: before.slays + (slewChampion(r) ? 1 : 0) });
+  } else if (r.player.bot && slewChampion(r)) {
+    const before = prev();
+    store.putRating({ ...before, slays: before.slays + 1 });
+  }
+  store.putRun(r);
+  return r;
+}
+
+/** What `d` would do to `run`: the same rules on a copy, with no store
+ * writes and no hooks (slice 8 shows the awakening and the fusion result card
+ * with it). A fuse previews a stored pair's name and credit; a pair nobody
+ * has fused previews name "" (R2-5: named when fused). A preview never
+ * records a discovery or calls a model. Not for fights: the route answers 400. */
+export function preview(deps: RunDeps, run: MvpRunState, d: Decision): DecisionResponse {
+  // decide() would end such a run instead of applying `d`; its line may name
+  // units the live content no longer has.
+  if (run.phase !== "over" && run.contentVersion !== deps.content.version) throw new MvpDecisionError(d.kind, "the run's content is no longer live: start a new run");
+  const ctx: DecisionContext = {};
+  const fuse = fuseContext(deps.peekFusionName, deps.content, run, d);
+  if (fuse && d.kind === "fuse") {
+    // A pair nobody has fused gets its name only from the fuse itself, so the
+    // name isn't in this response at all. A stored pair shows its stored
+    // credit: null while only bots have made it (the fuse then claims it).
+    const known = deps.store.fusion(boardUnit(run, run.rules, d.first)!.unitId, boardUnit(run, run.rules, d.second)!.unitId);
+    ctx.fuse = known ? { name: known.name, discoveredBy: known.discoveredBy } : { name: "", discoveredBy: fuse.discoveredBy };
+  }
+  return { run: runView(applyMvpDecision(run, d, deps.content, ctx).state) };
+}
+
+function notify(hooks: RunHooks[], before: MvpRunState, d: Decision, step: MvpStep, ctx: DecisionContext): void {
+  const after = step.state;
+  for (const h of hooks) h.onDecision?.(before, d, after);
+  if (d.kind === "fuse" && ctx.fuse) {
+    // The fused unit keeps first's uid.
+    const uid = boardUnit(before, before.rules, d.first)!.uid;
+    const fused = [...after.line, ...after.bench].find((u) => u.uid === uid)!;
+    for (const h of hooks) h.onFuse?.(after, fused, ctx.fuse);
+  }
+  if (step.fight && step.battle) for (const h of hooks) h.onFight?.(after, step.fight, step.battle);
+  if (after.phase === "over") for (const h of hooks) h.onRunEnd?.(after);
+}
+
+/** The name and credit for a fuse the rules allow; undefined otherwise (the
+ * run then refuses the fuse with the reason). */
+function fuseContext(nameFusion: NameFusion, content: MvpContent, run: MvpRunState, d: Decision): FuseContext | undefined {
+  if (d.kind !== "fuse" || d.first === d.second) return undefined;
+  const first = boardUnit(run, run.rules, d.first);
+  const second = boardUnit(run, run.rules, d.second);
+  if (!first || !second || fuseCheck(first, second) !== null) return undefined;
+  return nameFusion(unitById(content, first.unitId), unitById(content, second.unitId), run.player);
+}
+
+function ghostOf(deps: RunDeps, r: MvpRunState, at: Date): Ghost {
+  return {
+    rating: runRating(deps, r),
+    ghostId: `${r.runId}-r${r.round}`,
+    runId: r.runId,
+    player: r.player,
+    round: r.round,
+    line: structuredClone(r.line),
+    contentVersion: r.contentVersion,
+    createdAt: at.toISOString(),
+  };
+}

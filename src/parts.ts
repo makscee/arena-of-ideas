@@ -95,6 +95,7 @@ const EVENT_PATTERN_SAMPLES: Record<EventPattern["on"], EventPattern> = {
   Summon: { on: "Summon" },
   StatusApplied: { on: "StatusApplied" },
   StatusRemoved: { on: "StatusRemoved" },
+  StatChanged: { on: "StatChanged" },
 };
 
 // Which event patterns make sense as INTERCEPTORS: a kernel-emitted lifecycle

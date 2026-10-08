@@ -1,0 +1,26 @@
+click aoi-2022/click.ogg
+coin aoi-2022/coin.ogg
+sell aoi-2022/shop.ogg
+merge aoi-2022/merge.ogg
+level-up aoi-2022/level_up.ogg
+fuse duamo-2024/insert_main.ogg
+discover duamo-2024/field_complete.ogg 2.6
+wrong duamo-2024/insert_wrong.ogg
+move-left duamo-2024/move_attached_left_1.ogg
+move-right duamo-2024/move_attached_right_1.ogg
+reroll duamo-2024/move_attached_rotate_left_1.ogg
+freeze duamo-2024/shape_sides_close.ogg
+unfreeze duamo-2024/shape_sides_open.ogg
+start aoi-2022/start_game.ogg
+hit aoi-2022/face_hit.ogg
+zap aoi-2022/remote_attack.ogg
+block aoi-2022/absorb.ogg
+shield aoi-2022/shield.ogg
+status duamo-2024/insert_start.ogg
+status-off duamo-2024/undo.ogg
+buff aoi-2022/buff.ogg
+debuff aoi-2022/debuff.ogg
+spawn aoi-2022/spawn.ogg
+win aoi-2022/win_game.ogg
+lose aoi-2022/lose_game.ogg
+draw duamo-2024/field_close.ogg

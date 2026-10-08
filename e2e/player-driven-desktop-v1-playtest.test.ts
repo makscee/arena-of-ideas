@@ -55,25 +55,31 @@ describe("player-driven-desktop-v1-playtest fixture integrity", () => {
   test("seed 0 reaches the released shop/fusion/tower plan only through production transitions", () => {
     const content = seasonTwoContent();
     const ladder = new InMemoryLadderStore();
-    let state = initRun({ seed: 0, runId: "fixture-random-real-run-id", ...content });
+    let state = initRun({ seed: 272, runId: "fixture-random-real-run-id", ...content });
 
-    expect(offerNames(state)).toEqual(["Silencer", "Venomancer", "Silencer"]);
-    state = buy(state, 1);
-    state = ladderFight(state, ladder);
-    expect(offerNames(state)).toEqual(["Brawler", "Bulwark", "Bulwark"]);
-
-    state = ladderFight(state, ladder);
-    expect(offerNames(state)).toEqual(["Venomancer", "Glacier", "Necromancer"]);
+    expect(offerNames(state)).toEqual(["Venomancer", "Stoneskin", "War Drummer"]);
     state = buy(state, 0);
-    state = reroll(state);
-    expect(offerNames(state)).toEqual(["Squire", "Bulwark", "Frostbiter"]);
+    state = ladderFight(state, ladder);
+    expect(offerNames(state)).toEqual(["Brawler", "Bulwark", "Frostbiter"]);
     state = buy(state, 2);
     state = ladderFight(state, ladder);
 
-    expect(offerNames(state)).toEqual(["Frostbiter", "Silencer", "Venomancer", "Frostbiter"]);
+    expect(offerNames(state)).toEqual(["Glacier", "Necromancer", "Duelist"]);
+    state = reroll(state);
+    expect(offerNames(state)).toEqual(["Plague Rat", "Emberling", "Bog Witch"]);
+    state = reroll(state);
+    expect(offerNames(state)).toEqual(["Venomancer", "Leech", "Medic"]);
     state = buy(state, 0);
-    state = buy(state, 1);
-    state = buy(state, 1);
+    state = ladderFight(state, ladder);
+
+    expect(offerNames(state)).toEqual(["Berserker", "Icebinder", "Frostbiter", "Bulwark"]);
+    state = buy(state, 2);
+    state = reroll(state);
+    expect(offerNames(state)).toEqual(["Emberling", "Icebinder", "Venomancer", "Phoenix"]);
+    state = buy(state, 2);
+    state = reroll(state);
+    expect(offerNames(state)).toEqual(["Frostbiter", "Sniper", "Necromancer", "Phoenix"]);
+    state = buy(state, 0);
     expect(state.team.map((unit) => [unit.name, unit.progression, unit.copies])).toEqual([
       ["Venomancer", "Awakened", 3],
       ["Frostbiter", "Awakened", 3],
@@ -85,7 +91,7 @@ describe("player-driven-desktop-v1-playtest fixture integrity", () => {
       name: "Frostbiter + Venomancer",
       pwr: 7,
       hp: 25,
-      gold: 3,
+      gold: 0,
       lives: 4,
     });
     expect(fused.fusion?.parents.map((parent) => [parent.name, parent.def._creator ?? null])).toEqual([
@@ -118,7 +124,7 @@ describe("player-driven-desktop-v1-playtest fixture integrity", () => {
     const death = summon?.causedBy === null ? undefined : log[summon?.causedBy ?? -1];
     const hurt = death?.causedBy === null ? undefined : log[death?.causedBy ?? -1];
     const strike = hurt?.causedBy === null ? undefined : log[hurt?.causedBy ?? -1];
-    expect([strike?.id, hurt?.id, death?.id, summon?.id]).toEqual([12, 13, 14, 15]);
+    expect([strike?.id, hurt?.id, death?.id, summon?.id]).toEqual([5, 6, 7, 12]);
 
     state = ladderFight(state, ladder);
     const finalFight = state.log.filter((event) => event.type === "FightFought").at(-1)!;
@@ -165,6 +171,6 @@ describe("player-driven-desktop-v1-playtest fixture integrity", () => {
 
   test("AOI-63 battle golden remains byte-identical", () => {
     const bytes = readFileSync(join(root, "src/__fixtures__/golden-battles.jsonl"));
-    expect(createHash("sha256").update(bytes).digest("hex")).toBe("5a6b2de2b96ceb51ee32f6c923c349a379bb6606a8960f785dfe602b7a59b7f8");
+    expect(createHash("sha256").update(bytes).digest("hex")).toBe("d6a129a11a70be4dff5d079e35b63031cda662b0058723e9786599ae5e20f6a9");
   });
 });

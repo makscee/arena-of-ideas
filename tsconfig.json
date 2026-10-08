@@ -11,5 +11,5 @@
     "resolveJsonModule": true,
     "types": ["node"]
   },
-  "include": ["src", "web", "server/src", "vite.config.ts", "vitest.config.ts"]
+  "include": ["src", "web", "mobile", "server/src", "scripts", "e2e/mvp-api-bot.ts", "e2e/mvp-own-crown.ts", "vite.config.ts", "vitest.config.ts"]
 }

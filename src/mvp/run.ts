@@ -1,0 +1,498 @@
+// Arena MVP run (mission #574, slices 1 and 4): 12 shop rounds, then the
+// Crown fight against today's champion; 5 hearts, gold per round, shop tiers,
+// buy/reroll/sell/reorder/fuse, and the run-end rating. Pure: every
+// transition returns a new state, and the server (server/src/mvp/runs.ts)
+// supplies what needs the store: each round's opponent (setOpponent, picked at
+// round start), the champion for the Crown, the rating at the run's start. Copies,
+// awakening and fusion are slice 2's, in ./forms.ts, and a fight is
+// ./fight.ts's fightLines: this file only calls them. The shapes come from
+// ./contract.ts.
+
+import { rngStep } from "../rng.js";
+import {
+  MVP_RULES,
+  benchSizeOf,
+  boardSlot,
+  lockedFull,
+  offersAt,
+  sellValue,
+  type BattleRecord,
+  type Champion,
+  type Decision,
+  type DecisionKind,
+  type FightResult,
+  type FuseContext,
+  type Ghost,
+  type LineUnit,
+  type MvpContent,
+  type MvpRules,
+  type Offer,
+  type Outcome,
+  type PlayerRef,
+  type RatingChange,
+  type RunEndReason,
+  type RunView,
+  type UnitContent,
+  type UnitId,
+} from "./contract.js";
+import { MvpBadDecision, MvpDecisionError } from "./errors.js";
+import { fightLines } from "./fight.js";
+import { addCopy, fuseCheck, fuseUnits, lineUnitOf, mergeTarget } from "./forms.js";
+
+export interface MvpRunState extends RunView {
+  /** The next fight's opponent, picked at round start (setOpponent): a saved
+   * ghost in the shop, the champion as a ghost in the crown phase. The fight
+   * uses this one. Null until the server picks it. */
+  opponent: Ghost | null;
+  /** The seq of the champion the Crown fights (Slay.seq); null before the crown phase. */
+  crownSeq: number | null;
+  seed: number;
+  /** rngStep state — the run's one seeded stream. */
+  rng: number;
+  nextUid: number;
+  rules: MvpRules;
+  /** The player's rating when the run started (a bot's: rules.botRating),
+   * stamped on every ghost the run leaves and on its Slay. Absent on runs
+   * from before round 2: rules.ratingStart. */
+  ratingAtStart?: number;
+}
+
+export { lockedFull, MvpBadDecision, MvpDecisionError, offersAt };
+
+/** Every Decision kind (the compiler checks the list against the contract). */
+const DECISION_KINDS: Record<DecisionKind, true> = { buy: true, sell: true, reroll: true, lock: true, reorder: true, fuse: true, fight: true, gift: true };
+/** The index fields of each kind: whole numbers ≥ 0, or the decision is unreadable. */
+const DECISION_INDEXES: Record<DecisionKind, readonly string[]> = { buy: ["slot"], sell: ["index"], reroll: [], lock: ["slot"], reorder: ["from", "to"], fuse: ["first", "second"], fight: [], gift: ["pick"] };
+/** Index fields that may also be null: the gift's pick (null skips it). */
+const NULLABLE_INDEXES: Partial<Record<DecisionKind, readonly string[]>> = { gift: ["pick"] };
+/** What may happen while an awakening gift waits: the pick, and making room for it. */
+const WHILE_GIFT: ReadonlySet<DecisionKind> = new Set<DecisionKind>(["gift", "sell", "reorder"]);
+
+/** Throws MvpBadDecision (the API's 400) for an unknown kind or an index that
+ * isn't a whole number ≥ 0. Without it `slot: "__proto__"` reads
+ * Array.prototype as an offer, and `"length"` reads a number. Range against
+ * the run stays with each rule (409). */
+export function checkDecision(d: Decision): void {
+  if (!Object.hasOwn(DECISION_KINDS, d.kind)) throw new MvpBadDecision(d.kind);
+  for (const f of DECISION_INDEXES[d.kind]) {
+    const v = (d as unknown as Record<string, unknown>)[f];
+    if (v === null && NULLABLE_INDEXES[d.kind]?.includes(f)) continue;
+    if (!Number.isInteger(v) || (v as number) < 0) throw new MvpBadDecision(d.kind, `${f} must be a whole number ≥ 0, got ${JSON.stringify(v) ?? String(v)}`);
+  }
+}
+/** Moved to fight.ts; re-exported for scripts that import it from here (slice 7's meta report). */
+export { toBattleDef } from "./fight.js";
+
+function draw(s: MvpRunState, n: number): number {
+  const { value, state } = rngStep(s.rng);
+  s.rng = state;
+  return Math.floor(value * n);
+}
+
+function openUnits(content: MvpContent, rules: MvpRules, round: number): UnitContent[] {
+  const open = content.units.filter((u) => (rules.tierOpensAt[u.tier - 1] ?? Infinity) <= round);
+  return open.length > 0 ? open : content.units;
+}
+
+/** Locked offers stay, moved to the left in their order; fresh draws fill the
+ * rest up to offersAt (which never shrinks, so the locked ones always fit). */
+function rollOffers(s: MvpRunState, content: MvpContent): void {
+  const open = openUnits(content, s.rules, s.round);
+  const kept = s.offers.filter((o) => o.locked);
+  const fresh = Array.from({ length: Math.max(0, offersAt(s.rules, s.round) - kept.length) }, (): Offer => {
+    const u = open[draw(s, open.length)]!;
+    return { slot: 0, unitId: u.id, tier: u.tier, cost: s.rules.unitCost };
+  });
+  s.offers = [...kept, ...fresh].map((o, slot) => ({ ...o, slot }));
+}
+
+/** Rolls the awakening gift: rules.giftChoices different units drawn from the
+ * highest tier open this round (tierOpensAt; the highest that has units). No-op
+ * for a run whose rules have no gift. */
+function rollGift(s: MvpRunState, content: MvpContent): void {
+  const n = s.rules.giftChoices ?? 0;
+  if (n <= 0) return;
+  const open = openUnits(content, s.rules, s.round);
+  const tier = Math.max(...open.map((u) => u.tier));
+  const left = open.filter((u) => u.tier === tier).map((u) => u.id);
+  const gift: UnitId[] = [];
+  while (gift.length < n && left.length > 0) gift.push(left.splice(draw(s, left.length), 1)[0]!);
+  s.gift = gift;
+}
+
+/** Adds one unit the way a buy does: a copy merges into its unit wherever it
+ * stands (line, then bench) and can awaken on the bench; a new unit takes the
+ * line, else the bench. Throws `full` when it has nowhere to go. A copy that
+ * awakens a unit rolls the awakening gift. */
+function addUnit(s: MvpRunState, u: UnitContent, content: MvpContent, kind: DecisionKind, full: (bench: boolean) => string): void {
+  const at = mergeTarget(s.line, u.id);
+  const onBench = at < 0 ? mergeTarget(s.bench, u.id) : -1;
+  const zone = at >= 0 ? s.line : onBench >= 0 ? s.bench : null;
+  if (zone) {
+    const i = at >= 0 ? at : onBench;
+    const before = zone[i]!;
+    const after = addCopy(before, content, s.rules);
+    zone[i] = after;
+    if (after.kind === "unit" && before.form === "sleeping" && after.form === "awoken") rollGift(s, content);
+  } else if (s.line.length < s.rules.lineSize) s.line.push(lineUnitOf(u, `u${s.nextUid++}`));
+  else if (s.bench.length < benchSizeOf(s.rules)) s.bench.push(lineUnitOf(u, `u${s.nextUid++}`));
+  else throw new MvpDecisionError(kind, full(benchSizeOf(s.rules) > 0));
+}
+
+/** A new run. The kernel has no clock: the caller passes the day (DayView.seq)
+ * and the start time. */
+export function initMvpRun(args: { runId: string; player: PlayerRef; seed: number; content: MvpContent; day: number; startedAt: string; rules?: MvpRules; rating?: number }): MvpRunState {
+  const rules = args.rules ?? MVP_RULES;
+  const s: MvpRunState = {
+    runId: args.runId,
+    player: args.player,
+    contentVersion: args.content.version,
+    phase: "shop",
+    round: 1,
+    hearts: rules.hearts,
+    gold: rules.goldPerRound,
+    wins: 0,
+    losses: 0,
+    line: [],
+    bench: [],
+    offers: [],
+    nextOpponent: null,
+    opponent: null,
+    crownSeq: null,
+    fights: [],
+    day: args.day,
+    startedAt: args.startedAt,
+    seed: args.seed >>> 0,
+    rng: args.seed >>> 0,
+    nextUid: 1,
+    rules,
+    ratingAtStart: args.rating ?? (args.player.bot ? rules.botRating : rules.ratingStart),
+  };
+  rollOffers(s, args.content);
+  return s;
+}
+
+export function unitById(content: MvpContent, id: string): UnitContent {
+  const u = content.units.find((x) => x.id === id);
+  if (!u) throw new Error(`unknown unit ${id}`);
+  return u;
+}
+
+function clone(s: MvpRunState): MvpRunState {
+  const c = structuredClone(s);
+  c.bench ??= [];
+  return c;
+}
+
+/** The zone array a board slot points into, and the index there; null past the board. */
+function zoneAt(s: MvpRunState, slot: number): { units: LineUnit[]; size: number; index: number; zone: "line" | "bench" } | null {
+  const at = boardSlot(s.rules, slot);
+  if (!at) return null;
+  return at.zone === "line"
+    ? { units: s.line, size: s.rules.lineSize, index: at.index, zone: "line" }
+    : { units: s.bench, size: benchSizeOf(s.rules), index: at.index, zone: "bench" };
+}
+
+export interface FightContext {
+  ghost: Ghost;
+  battleId: string;
+  battleSeed: number;
+  /** ISO time of the fight (BattleRecord.at). */
+  at: string;
+}
+
+/** What the server supplies for decisions the pure run can't decide alone. */
+export interface DecisionContext {
+  /** Required for a fight: the opponent and the ids. */
+  fight?: FightContext;
+  /** Required for a fuse: the pair's name and credit (slice 10). */
+  fuse?: FuseContext;
+}
+
+export interface MvpStep {
+  state: MvpRunState;
+  fight?: FightResult;
+  battle?: BattleRecord;
+}
+
+/** Apply one decision. A fight needs its opponent and ids, a fuse its name,
+ * from the caller (the server picks the ghost and names the pair; the kernel
+ * stays pure). Throws MvpBadDecision for a kind it doesn't know (the API
+ * answers 400) and MvpDecisionError when the rules refuse it (409). */
+export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpContent, ctx?: DecisionContext): MvpStep {
+  checkDecision(d);
+  if (state.phase === "over") throw new MvpDecisionError(d.kind, `the run is over (${state.endedBy})`);
+  if (state.phase === "crown" && d.kind !== "fight") throw new MvpDecisionError(d.kind, "only the Crown fight is left");
+  if (state.gift && !WHILE_GIFT.has(d.kind)) throw new MvpDecisionError(d.kind, "pick your awakening gift first, or skip it");
+  const s = clone(state);
+  switch (d.kind) {
+    case "buy": {
+      const offer = s.offers[d.slot];
+      if (!offer) throw new MvpDecisionError("buy", `no offer in slot ${d.slot}`);
+      if (s.gold < offer.cost) throw new MvpDecisionError("buy", `costs ${offer.cost}, have ${s.gold}`);
+      addUnit(s, unitById(content, offer.unitId), content, "buy", (bench) => (bench ? "your line and bench are full" : "the line is full"));
+      s.gold -= offer.cost;
+      s.offers = s.offers.filter((o) => o.slot !== d.slot).map((o, i) => ({ ...o, slot: i }));
+      return { state: s };
+    }
+    case "reroll": {
+      if (lockedFull(s)) throw new MvpDecisionError("reroll", "every offer is locked");
+      if (s.gold < s.rules.rerollCost) throw new MvpDecisionError("reroll", `costs ${s.rules.rerollCost}, have ${s.gold}`);
+      s.gold -= s.rules.rerollCost;
+      rollOffers(s, content);
+      return { state: s };
+    }
+    case "lock": {
+      const offer = s.offers[d.slot];
+      if (!offer) throw new MvpDecisionError("lock", `no offer in slot ${d.slot}`);
+      if (offer.locked) delete offer.locked;
+      else if (s.round >= s.rules.rounds) throw new MvpDecisionError("lock", "the last shop round: the Crown clears the offers, so a lock keeps nothing");
+      else offer.locked = true;
+      return { state: s };
+    }
+    case "sell": {
+      const at = zoneAt(s, d.index);
+      const sold = at?.units[at.index];
+      if (!at || !sold) throw new MvpDecisionError("sell", `no unit at ${d.index}`);
+      at.units.splice(at.index, 1);
+      s.gold += sellValue(s.rules, sold);
+      return { state: s };
+    }
+    case "reorder": {
+      const from = zoneAt(s, d.from);
+      const to = zoneAt(s, d.to);
+      const u = from?.units[from.index];
+      if (!from || !to || !u) throw new MvpDecisionError("reorder", `bad move ${d.from}→${d.to}`);
+      if (from.zone === to.zone) {
+        // Within one zone: move and shift, onto a unit's slot only.
+        if (to.index >= to.units.length) throw new MvpDecisionError("reorder", `bad move ${d.from}→${d.to}`);
+        from.units.splice(from.index, 1);
+        from.units.splice(to.index, 0, u);
+      } else if (to.index < to.units.length) {
+        // Across line and bench onto a unit: the two swap.
+        from.units[from.index] = to.units[to.index]!;
+        to.units[to.index] = u;
+      } else {
+        // Across, into an empty slot: the unit moves to the end of that zone (packed).
+        if (to.units.length >= to.size) throw new MvpDecisionError("reorder", `the ${to.zone} is full`);
+        from.units.splice(from.index, 1);
+        to.units.push(u);
+      }
+      return { state: s };
+    }
+    case "fuse": {
+      const a = zoneAt(s, d.first);
+      const b = zoneAt(s, d.second);
+      const first = a?.units[a.index];
+      const second = b?.units[b.index];
+      if (!a || !b || !first || !second || d.first === d.second) throw new MvpDecisionError("fuse", `no pair at ${d.first} and ${d.second}`);
+      const why = fuseCheck(first, second);
+      if (why) throw new MvpDecisionError("fuse", why);
+      if (!ctx?.fuse) throw new MvpDecisionError("fuse", "no fusion name");
+      // The fused unit keeps first's uid and takes the front-most of the two
+      // slots: a line slot when either part is on the line (board slots put
+      // the line first), else the lower bench slot. The other part leaves.
+      // Swapping the tap order changes only the recipe, never where it stands.
+      const fused = fuseUnits(first, second, ctx.fuse, content, s.rules);
+      const [keep, drop] = d.first < d.second ? [a, b] : [b, a];
+      drop.units.splice(drop.index, 1);
+      keep.units[keep.index] = fused;
+      return { state: s };
+    }
+    case "gift": {
+      const gift = s.gift;
+      if (!gift) throw new MvpDecisionError("gift", "no awakening gift is waiting");
+      if (d.pick === null) {
+        delete s.gift;
+        return { state: s };
+      }
+      const id = gift[d.pick];
+      if (id === undefined) throw new MvpDecisionError("gift", `no gift choice ${d.pick} (there are ${gift.length})`);
+      // Cleared first: a pick that awakens a unit rolls the next gift.
+      delete s.gift;
+      addUnit(s, unitById(content, id), content, "gift", (bench) => `your line${bench ? " and bench are" : " is"} full: sell a unit to make room, or skip the gift`);
+      return { state: s };
+    }
+    case "fight": {
+      // An empty line still fights, and loses (fightLines' walkover): the run
+      // always moves on, so a player who sold everything or went broke isn't stuck.
+      if (!ctx?.fight) throw new MvpDecisionError("fight", "no opponent");
+      const crown = s.phase === "crown";
+      const kind = crown ? "crown" : "round";
+      const { ghost, battleId, battleSeed, at } = ctx.fight;
+      // Only the line fights; the bench stays as it is for the next round.
+      const record = fightLines(
+        { player: s.player, line: s.line },
+        { player: ghost.player, line: ghost.line },
+        { battleId, seed: battleSeed, kind, round: s.round, runId: s.runId, at, content, rules: s.rules },
+      );
+      const winner = record.winner;
+      const outcome: Outcome = winner === "A" ? "win" : winner === "B" ? "loss" : "draw";
+      const heartsLost = outcome === "loss" ? 1 : 0;
+      s.hearts -= heartsLost;
+      if (outcome === "win") s.wins += 1;
+      if (outcome === "loss") s.losses += 1;
+      const fight: FightResult = {
+        battleId,
+        kind,
+        round: s.round,
+        opponent: { ghostId: ghost.ghostId, player: ghost.player, round: ghost.round, rating: ghost.rating ?? s.rules.ratingStart },
+        outcome,
+        heartsLost,
+        heartsAfter: s.hearts,
+      };
+      s.fights.push(fight);
+      s.opponent = null;
+      s.nextOpponent = null;
+      if (crown) endIn(s, outcome === "win" ? "crown-won" : "crown-lost");
+      else if (s.hearts <= 0) endIn(s, "out-of-hearts");
+      else if (s.round >= s.rules.rounds) {
+        // The Crown is next: no shop, the server sets the champion (setOpponent).
+        s.phase = "crown";
+        s.round = s.rules.rounds + 1;
+        s.gold = 0;
+        s.offers = [];
+      } else {
+        s.round += 1;
+        s.gold = s.rules.goldPerRound;
+        rollOffers(s, content);
+      }
+      return { state: s, fight, battle: record };
+    }
+    default:
+      throw new MvpBadDecision((d as { kind: unknown }).kind);
+  }
+}
+
+function endIn(s: MvpRunState, why: RunEndReason): void {
+  s.phase = "over";
+  s.endedBy = why;
+  delete s.gift;
+  s.gold = 0;
+  s.offers = [];
+  s.opponent = null;
+  s.nextOpponent = null;
+}
+
+/** Sets the next fight's opponent: a round's ghost in the shop, or in the
+ * crown phase the champion as a ghost (championGhost) with its seq. */
+export function setOpponent(state: MvpRunState, ghost: Ghost, crownSeq?: number): MvpRunState {
+  if (state.phase === "over") throw new MvpDecisionError("fight", `the run is over (${state.endedBy})`);
+  const s = clone(state);
+  s.opponent = structuredClone(ghost);
+  s.nextOpponent = { player: ghost.player, round: ghost.round };
+  if (s.phase === "crown") s.crownSeq = crownSeq ?? null;
+  return s;
+}
+
+/** Ends a run that can't go on: "no-champion" (the Crown has no live
+ * champion) or "content-changed" (the live content isn't the run's). */
+export function endRun(state: MvpRunState, why: "no-champion" | "content-changed"): MvpRunState {
+  const s = clone(state);
+  endIn(s, why);
+  return s;
+}
+
+/** Gives a run up (endedBy "abandoned"): every heart left in the shop, or
+ * the Crown at the Crown, becomes a forfeited fight against the opponent
+ * already picked (RunView.forfeit), which ratingChange counts as a loss. So
+ * giving up scores like the worst way of playing on, never better. Hearts
+ * drop to 0. Throws MvpDecisionError on a run that is already over. */
+export function abandonRun(state: MvpRunState): MvpRunState {
+  if (state.phase === "over") throw new MvpDecisionError("abandon", `the run is over (${state.endedBy})`);
+  const s = clone(state);
+  const fights = s.phase === "crown" ? 1 : s.hearts;
+  s.forfeit = { fights, opponentRating: s.opponent?.rating ?? s.rules.ratingStart };
+  s.losses += fights;
+  s.hearts = 0;
+  endIn(s, "abandoned");
+  return s;
+}
+
+/** Today's champion as the Crown's opponent, rated at Champion.rating. */
+export function championGhost(c: Champion, rules: MvpRules = MVP_RULES): Ghost {
+  return {
+    rating: c.rating ?? rules.ratingStart,
+    ghostId: `champion-${c.seq}`,
+    runId: `champion-${c.seq}`,
+    player: c.player,
+    round: rules.rounds + 1,
+    line: structuredClone(c.line),
+    contentVersion: c.contentVersion,
+    createdAt: c.since,
+  };
+}
+
+/** What a drawn fight scores. Tunable. */
+export const DRAW_SCORE = 0.5;
+
+/** True when the run slew the champion: it won the Crown. Beating your own
+ * champion team counts too (Maks, round 2): the reigning champion can slay
+ * and be crowned again with another team. */
+export function slewChampion(run: Pick<RunView, "endedBy">): boolean {
+  return run.endedBy === "crown-won";
+}
+
+/** K for a player who has finished `runs` runs before this one. */
+export function ratingK(runs: number, rules: MvpRules = MVP_RULES): number {
+  return (rules.ratingKSteps ?? []).find((step) => runs < step.runsBelow)?.k ?? rules.ratingK;
+}
+
+/** The run-end rating: per-fight Elo, applied once (docs/round2/rating.md §3).
+ * Every rated fight (each round fight and the Crown) scores S − E against the
+ * rating stamped on that opponent (a fight from before round 2 has none:
+ * rules.ratingStart); an abandoned run adds its forfeits as losses. The sum,
+ * times K for `runs` runs played before (ratingK), is the change. No slay
+ * bonus: the Crown is one more fight. `before` is the rating at the run's
+ * start (it doesn't move during a run). */
+export function ratingChange(before: number, runs: number, run: Pick<RunView, "fights"> & Partial<Pick<RunView, "forfeit">>, rules: MvpRules = MVP_RULES): RatingChange {
+  const expect = (opp: number) => 1 / (1 + 10 ** ((opp - before) / 400));
+  let expected = 0;
+  let actual = 0;
+  for (const f of run.fights) {
+    if (f.kind === "playoff") continue;
+    expected += expect(f.opponent.rating ?? rules.ratingStart);
+    actual += f.outcome === "win" ? 1 : f.outcome === "draw" ? DRAW_SCORE : 0;
+  }
+  if (run.forfeit) expected += run.forfeit.fights * expect(run.forfeit.opponentRating);
+  const k = ratingK(runs, rules);
+  return { before, after: Math.round(before + k * (actual - expected)), expected, actual, k };
+}
+
+/** The public view of a run (drops the rng and bookkeeping). */
+export function runView(s: MvpRunState): RunView {
+  const { seed: _seed, rng: _rng, nextUid: _n, rules: _r, opponent: _o, crownSeq: _c, ratingAtStart: _ra, ...view } = s;
+  return { ...view, bench: view.bench ?? [] };
+}
+
+/** A bot ghost for a round with no saved teams: `size` seeded picks from the
+ * units open at that round, copies merged. Slice 6's bots replace it.
+ * `createdAt` comes from the caller (the kernel has no clock). */
+export function synthGhost(args: { content: MvpContent; round: number; seed: number; ghostId: string; createdAt: string; rules?: MvpRules }): Ghost {
+  const rules = args.rules ?? MVP_RULES;
+  const s = initMvpRun({ runId: `bot-${args.ghostId}`, player: { id: "bot", name: "bot", bot: true }, seed: args.seed, content: args.content, day: 0, startedAt: args.createdAt, rules });
+  s.round = args.round;
+  const size = Math.min(rules.lineSize, 1 + Math.floor(args.round / 2));
+  const open = openUnits(args.content, rules, args.round);
+  const copiesBudget = Math.floor(args.round / 3);
+  for (let i = 0; i < size; i++) s.line.push(lineUnitOf(open[draw(s, open.length)]!, `g${i}`));
+  for (let i = 0; i < copiesBudget; i++) {
+    const k = draw(s, s.line.length);
+    s.line[k] = addCopy(s.line[k]!, args.content, rules);
+  }
+  return {
+    ghostId: args.ghostId,
+    runId: s.runId,
+    player: { id: "bot", name: botName(args.seed), bot: true },
+    round: args.round,
+    line: s.line,
+    contentVersion: args.content.version,
+    createdAt: args.createdAt,
+    rating: rules.botRating ?? rules.ratingStart,
+  };
+}
+
+const BOT_NAMES = ["Ash", "Bram", "Cleo", "Dov", "Esk", "Fyn", "Gale", "Hux", "Ives", "Juno", "Kip", "Lux"];
+function botName(seed: number): string {
+  return `bot-${BOT_NAMES[(seed >>> 0) % BOT_NAMES.length]}`;
+}

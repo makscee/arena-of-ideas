@@ -323,7 +323,7 @@ describe("AOI-62 operator governance and atomic season boundary", () => {
     stageBounce(deps, expected, "idea-bounce", REASON);
     rollSeason(deps, expected);
     const active = readActiveContent(deps.db);
-    const state = initRun({ seed: 9, runId: "roundtrip", pool: active.pool, statuses: active.statuses, abilities: active.abilities });
+    const state = initRun({ seed: 4, runId: "roundtrip", pool: active.pool, statuses: active.statuses, abilities: active.abilities });
     expect(deserializeRun(serializeRun(state))).toEqual(state);
     expect(state.offers.map((u) => u.name)).toContain("Frostbiter");
     expect(state.abilities.Frostbite).toBeDefined();

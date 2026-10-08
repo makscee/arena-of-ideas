@@ -1,0 +1,10 @@
+const R = "/Users/admin/Work/arena-574/scout-r3";
+const { mvpContent } = await import(`${R}/server/src/mvp/content.ts`);
+const { MVP_RULES } = await import(`${R}/src/mvp/contract.ts`);
+const { fightLines } = await import(`${R}/src/mvp/fight.ts`);
+const { lineUnitOf } = await import(`${R}/src/mvp/forms.ts`);
+const content = mvpContent();
+const u = (id: string, c = 3) => lineUnitOf(content.units.find((x: any) => x.id === id), id + c, c);
+const P = { id: "p", name: "p", bot: true };
+const rec = fightLines({ player: P, line: [u("fighter", 1), u("divinity")] }, { player: P, line: [u("ruin"), u("duelist")] }, { battleId: "x", seed: 3, kind: "round", round: 12, runId: null, at: "x", content, rules: MVP_RULES });
+for (const e of rec.log) if (["Summon", "StatusApplied", "Death"].includes(e.type)) console.log(e.id, e.type, (e as any).unit, (e as any).status ?? "", (e as any).stacks ?? "", (e as any).atHp ?? "");

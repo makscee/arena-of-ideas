@@ -34,6 +34,28 @@ jobs:
       - run: npm run typecheck
       - run: npm test
 
+  # Arena MVP (mission #574) verification ladder: 50 runs through the HTTP
+  # API, then a whole game in Chromium at 360×640 with a screenshot per screen.
+  mvp:
+    runs-on: ${{ fromJSON(github.event.pull_request.head.repo.fork && '"ubuntu-latest"' || vars.CI_RUNS_ON || '["self-hosted","void-ci"]') }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      # Our runner has no sudo; it has Chromium's libraries preinstalled
+      # (homelab gh_ci_playwright_version).
+      - run: npx playwright install ${{ runner.environment == 'github-hosted' && '--with-deps' || '' }} chromium
+      - run: npm run mvp:bot -- --runs 50
+      - run: npm run mvp:phone
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mvp-phone-shots
+          path: e2e/.shots/mvp
+
   build-image:
     needs: test
     runs-on: ${{ fromJSON(github.event.pull_request.head.repo.fork && '"ubuntu-latest"' || vars.CI_RUNS_ON || '["self-hosted","void-ci"]') }}

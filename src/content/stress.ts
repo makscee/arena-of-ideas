@@ -72,7 +72,7 @@ export const Venom: AbilityDef = {
 /** The summoned body — a vanilla Imp (Strike family). Referenced by `Conjure`. */
 export const Imp: UnitDef = { name: "Imp", base: { hp: 2, pwr: 1 }, triggers: [{ kind: "trigger", on: { on: "BattleStart" } }], selectors: [{ kind: "holder" }], abilities: ["Strike"] };
 
-/** Summoner's ability — spawn an Imp at the back of its team when it dies. */
+/** Summoner's ability — spawn an Imp at the front of its team when it dies. */
 export const Conjure: AbilityDef = {
   name: "Conjure",
   family: "Summon",

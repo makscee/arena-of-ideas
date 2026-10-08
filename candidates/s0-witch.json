@@ -1,0 +1,134 @@
+{
+  "grammarVersion": 2,
+  "id": "s0-witch",
+  "units": [
+    {
+      "name": "Bog Witch",
+      "base": {
+        "hp": 10,
+        "pwr": 2
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "TurnStart"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "randomEnemy"
+        }
+      ],
+      "abilities": [
+        "Bog Curse"
+      ]
+    },
+    {
+      "name": "Brawler",
+      "base": {
+        "hp": 12,
+        "pwr": 2
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "BattleStart"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "holder"
+        }
+      ],
+      "abilities": [
+        "Strike"
+      ]
+    },
+    {
+      "name": "Squire",
+      "base": {
+        "hp": 8,
+        "pwr": 2
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "BattleStart"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "holder"
+        }
+      ],
+      "abilities": [
+        "Strike"
+      ]
+    }
+  ],
+  "abilities": {
+    "Bog Curse": {
+      "name": "Bog Curse",
+      "family": "Poison",
+      "effects": [
+        {
+          "kind": "applyStatus",
+          "status": "Poison",
+          "stacks": {
+            "kind": "const",
+            "value": 2
+          }
+        }
+      ]
+    }
+  },
+  "provenance": {
+    "ideaText": "Bog Witch (Season 0 launch pool, Poison): Bog Curse. At the start of each turn: apply 2 Poison to a random enemy.",
+    "creator": "Maks",
+    "harness": "claude-code",
+    "model": "claude-opus-5-5",
+    "timestamp": "2026-09-29T15:10:59.678Z",
+    "attempts": 1
+  },
+  "gate": {
+    "verdict": "in-band",
+    "overallWinRate": 0.5533333333333333,
+    "band": {
+      "min": 0.35,
+      "max": 0.65
+    },
+    "floor": 0.25,
+    "matchups": [
+      {
+        "opponent": "AggroVenom",
+        "winRate": 0.84,
+        "wins": 42,
+        "losses": 8,
+        "draws": 0,
+        "seeds": 50
+      },
+      {
+        "opponent": "SustainControl",
+        "winRate": 0.48,
+        "wins": 24,
+        "losses": 26,
+        "draws": 0,
+        "seeds": 50
+      },
+      {
+        "opponent": "StatStack",
+        "winRate": 0.34,
+        "wins": 17,
+        "losses": 29,
+        "draws": 4,
+        "seeds": 50
+      }
+    ]
+  }
+}

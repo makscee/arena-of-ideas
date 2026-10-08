@@ -1,0 +1,135 @@
+{
+  "grammarVersion": 2,
+  "id": "s0-plague-rat",
+  "units": [
+    {
+      "name": "Plague Rat",
+      "base": {
+        "hp": 9,
+        "pwr": 3
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "Death",
+            "unit": "holder"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "allEnemies"
+        }
+      ],
+      "abilities": [
+        "Plague Burst"
+      ]
+    },
+    {
+      "name": "Brawler",
+      "base": {
+        "hp": 12,
+        "pwr": 2
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "BattleStart"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "holder"
+        }
+      ],
+      "abilities": [
+        "Strike"
+      ]
+    },
+    {
+      "name": "Squire",
+      "base": {
+        "hp": 8,
+        "pwr": 2
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "BattleStart"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "holder"
+        }
+      ],
+      "abilities": [
+        "Strike"
+      ]
+    }
+  ],
+  "abilities": {
+    "Plague Burst": {
+      "name": "Plague Burst",
+      "family": "Poison",
+      "effects": [
+        {
+          "kind": "applyStatus",
+          "status": "Poison",
+          "stacks": {
+            "kind": "const",
+            "value": 2
+          }
+        }
+      ]
+    }
+  },
+  "provenance": {
+    "ideaText": "Plague Rat (Season 0 launch pool, Poison): Plague Burst. After this unit dies: apply 2 Poison to every enemy.",
+    "creator": "Maks",
+    "harness": "claude-code",
+    "model": "claude-opus-5-5",
+    "timestamp": "2026-09-29T15:10:55.660Z",
+    "attempts": 1
+  },
+  "gate": {
+    "verdict": "in-band",
+    "overallWinRate": 0.5133333333333333,
+    "band": {
+      "min": 0.35,
+      "max": 0.65
+    },
+    "floor": 0.25,
+    "matchups": [
+      {
+        "opponent": "AggroVenom",
+        "winRate": 0.94,
+        "wins": 47,
+        "losses": 3,
+        "draws": 0,
+        "seeds": 50
+      },
+      {
+        "opponent": "SustainControl",
+        "winRate": 0.32,
+        "wins": 16,
+        "losses": 0,
+        "draws": 34,
+        "seeds": 50
+      },
+      {
+        "opponent": "StatStack",
+        "winRate": 0.28,
+        "wins": 14,
+        "losses": 31,
+        "draws": 5,
+        "seeds": 50
+      }
+    ]
+  }
+}
