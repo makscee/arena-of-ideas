@@ -8,7 +8,7 @@ export const battle = {
   "battle.tab.why": "Почему",
   "battle.tab.log": "Журнал",
   "battle.timelineAria": "Ходы боя: нажми или тяни, чтобы перемотать",
-  "battle.endButton": "Итог",
+  "battle.endButton": "⏭",
   "battle.replayAria": "Повтор с начала",
   "battle.replayEnd": "↻ Заново",
   "battle.replayFromStart": " с начала",
