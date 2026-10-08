@@ -16,6 +16,7 @@
 //   cache lives in ./fusions.ts).
 import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
+import type { Row } from "../../../src/mvp/units.js";
 
 export interface MvpStore {
   addPlayer(p: PlayerRef): void;
@@ -85,10 +86,80 @@ export interface MvpStore {
   joinCode(): string | undefined;
   /** Sets (or rotates) the shared join code. */
   setJoinCode(code: string): void;
+  // M2-1's units as data (mission #735); ./pool.ts seeds and reads them.
+  /** Stores or replaces the unit with this id. */
+  putUnit(u: StoredUnit): void;
+  unit(id: UnitId): StoredUnit | undefined;
+  /** Every unit (or those with `status`), oldest first. */
+  units(opts?: { status?: UnitStatus }): StoredUnit[];
+  /** Adds a pool snapshot; it becomes the current one. */
+  putPool(p: PoolSnapshot): void;
+  /** The newest snapshot with this content version. */
+  pool(version: string): PoolSnapshot | undefined;
+  /** The newest snapshot: the live pool. */
+  currentPool(): PoolSnapshot | undefined;
+  /** Stores or replaces the stint (unit, enteredSeq). */
+  putStint(s: PoolStint): void;
+  /** Every stint (or one unit's), by unit then enteredSeq. */
+  stints(unitId?: UnitId): PoolStint[];
+  /** Writes the first pool in one step: the units, the snapshot and the
+   * stints, only while there is no pool yet. False: there was one, nothing written. */
+  seedPool(units: StoredUnit[], pool: PoolSnapshot, stints: PoolStint[]): boolean;
+  /** Adds `delta` to day `daySeq`'s tallies (only ./stats.ts writes them). */
+  addDayTallies(daySeq: number, delta: DayTallies): void;
+  /** Day `daySeq`'s running totals; zero runs and no units before any. */
+  dayTallies(daySeq: number): DayTallies;
   // Mission 2's idea counts (M2-3); only ./ideas.ts writes them.
   /** The player's counts; all zero before any write. */
   ideaCounts(playerId: string): IdeaCounts;
   putIdeaCounts(playerId: string, c: IdeaCounts): void;
+}
+
+export type UnitStatus = "candidate" | "live" | "library" | "rejected";
+export type UnitOrigin = "idea" | "evolution" | "return" | "seed";
+
+/** A unit as data (M2-1). Its id is permanent and never reused, even for a
+ * unit with the same name; `row` is what the pool is built from (mvpPool). */
+export interface StoredUnit {
+  unitId: UnitId;
+  status: UnitStatus;
+  row: Row;
+  /** The player whose idea it was; null for the seed. */
+  authorId: string | null;
+  origin: UnitOrigin;
+  /** The unit it evolved from or returns as; null otherwise. */
+  parentId: UnitId | null;
+  createdAt: string;
+}
+
+/** The live units at a day: `version` is the content version built from
+ * `unitIds`, in this order. */
+export interface PoolSnapshot {
+  version: string;
+  daySeq: number;
+  unitIds: UnitId[];
+  createdAt: string;
+}
+
+/** One stay of a unit in the live pool, from day `enteredSeq` to `leftSeq`
+ * (null: still there). */
+export interface PoolStint {
+  unitId: UnitId;
+  enteredSeq: number;
+  leftSeq: number | null;
+  /** Why it entered (while there) or left. */
+  reason: string;
+}
+
+/** Day tallies: finished runs, and per unit what UnitTally counts plus picks. */
+export interface DayTallies {
+  runs: number;
+  units: UnitDayTally[];
+}
+
+export interface UnitDayTally extends UnitTally {
+  /** Times it was bought from the shop or taken as a gift. */
+  picks: number;
 }
 
 /** What a player's ideas are counted from, besides their finished runs
@@ -249,6 +320,45 @@ export class MemoryMvpStore implements MvpStore {
   private join: string | undefined;
   joinCode(): string | undefined { return this.join; }
   setJoinCode(code: string): void { this.join = code; }
+  private unitsById = new Map<UnitId, StoredUnit>();
+  private pools: PoolSnapshot[] = [];
+  private stintsByKey = new Map<string, PoolStint>();
+  private dayTalliesBySeq = new Map<number, { runs: number; units: Map<UnitId, UnitDayTally> }>();
+  putUnit(u: StoredUnit): void { this.unitsById.set(u.unitId, structuredClone(u)); }
+  unit(id: UnitId): StoredUnit | undefined { const u = this.unitsById.get(id); return u && structuredClone(u); }
+  units(opts: { status?: UnitStatus } = {}): StoredUnit[] {
+    return [...this.unitsById.values()].filter((u) => opts.status === undefined || u.status === opts.status).map((u) => structuredClone(u));
+  }
+  putPool(p: PoolSnapshot): void { this.pools.push(structuredClone(p)); }
+  pool(version: string): PoolSnapshot | undefined { const p = [...this.pools].reverse().find((x) => x.version === version); return p && structuredClone(p); }
+  currentPool(): PoolSnapshot | undefined { const p = this.pools.at(-1); return p && structuredClone(p); }
+  putStint(s: PoolStint): void { this.stintsByKey.set(JSON.stringify([s.unitId, s.enteredSeq]), { ...s }); }
+  stints(unitId?: UnitId): PoolStint[] {
+    return [...this.stintsByKey.values()]
+      .filter((s) => unitId === undefined || s.unitId === unitId)
+      .sort((a, b) => (a.unitId < b.unitId ? -1 : a.unitId > b.unitId ? 1 : a.enteredSeq - b.enteredSeq))
+      .map((s) => ({ ...s }));
+  }
+  seedPool(units: StoredUnit[], pool: PoolSnapshot, stints: PoolStint[]): boolean {
+    if (this.pools.length) return false;
+    for (const u of units) this.putUnit(u);
+    this.putPool(pool);
+    for (const s of stints) this.putStint(s);
+    return true;
+  }
+  addDayTallies(daySeq: number, delta: DayTallies): void {
+    const t = this.dayTalliesBySeq.get(daySeq) ?? { runs: 0, units: new Map<UnitId, UnitDayTally>() };
+    t.runs += delta.runs;
+    for (const d of delta.units) {
+      const u = t.units.get(d.unitId) ?? { unitId: d.unitId, fights: 0, wins: 0, runs: 0, picks: 0 };
+      t.units.set(d.unitId, { unitId: d.unitId, fights: u.fights + d.fights, wins: u.wins + d.wins, runs: u.runs + d.runs, picks: u.picks + d.picks });
+    }
+    this.dayTalliesBySeq.set(daySeq, t);
+  }
+  dayTallies(daySeq: number): DayTallies {
+    const t = this.dayTalliesBySeq.get(daySeq);
+    return { runs: t?.runs ?? 0, units: t ? [...t.units.values()].sort((a, b) => (a.unitId < b.unitId ? -1 : a.unitId > b.unitId ? 1 : 0)).map((u) => ({ ...u })) : [] };
+  }
   private ideas = new Map<string, IdeaCounts>();
   ideaCounts(playerId: string): IdeaCounts { return { ...(this.ideas.get(playerId) ?? NO_IDEAS) }; }
   putIdeaCounts(playerId: string, c: IdeaCounts): void { this.ideas.set(playerId, { ...c }); }

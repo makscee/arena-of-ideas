@@ -11,7 +11,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
-import { MAX_SESSIONS, NO_IDEAS, nameKey, type IdeaCounts, type Invite, type MvpStore, type UnitTallies, type UnitTally } from "./store.js";
+import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally } from "./store.js";
 
 const SQL_DIR = fileURLToPath(new URL("./sql/", import.meta.url));
 
@@ -46,12 +46,13 @@ const parseAll = <T>(rows: unknown[]): T[] => rows.map((r) => JSON.parse((r as R
 export class SqliteMvpStore implements MvpStore {
   readonly db: Database.Database;
 
-  /** `path` is a file, or ":memory:" for tests. */
-  constructor(path: string) {
+  /** `path` is a file, or ":memory:" for tests. `sqlDir`: the migrations
+   * (tests build an older schema from a copy of fewer files). */
+  constructor(path: string, sqlDir = SQL_DIR) {
     this.db = new Database(path);
     this.db.pragma("journal_mode = WAL");
     this.db.pragma("busy_timeout = 5000");
-    migrateMvp(this.db);
+    migrateMvp(this.db, sqlDir);
   }
 
   close(): void { this.db.close(); }
@@ -183,6 +184,58 @@ export class SqliteMvpStore implements MvpStore {
       this.putInvite(next);
       return this.db.prepare("DELETE FROM mvp_sessions WHERE player_id = ?").run(next.playerId).changes;
     }).immediate();
+  }
+
+  putUnit(u: StoredUnit): void {
+    this.write(
+      "INSERT INTO mvp_units (unit_id, status, author_id, json) VALUES (?, ?, ?, ?) ON CONFLICT(unit_id) DO UPDATE SET status = excluded.status, author_id = excluded.author_id, json = excluded.json",
+      u.unitId, u.status, u.authorId, JSON.stringify(u),
+    );
+  }
+  unit(id: UnitId): StoredUnit | undefined { return this.one("SELECT json FROM mvp_units WHERE unit_id = ?", id); }
+  units(opts: { status?: UnitStatus } = {}): StoredUnit[] {
+    return this.all("SELECT json FROM mvp_units WHERE (@status IS NULL OR status = @status) ORDER BY rowid", { status: opts.status ?? null });
+  }
+  putPool(p: PoolSnapshot): void { this.write("INSERT INTO mvp_pools (version, day_seq, json) VALUES (?, ?, ?)", p.version, p.daySeq, JSON.stringify(p)); }
+  pool(version: string): PoolSnapshot | undefined { return this.one("SELECT json FROM mvp_pools WHERE version = ? ORDER BY seq DESC LIMIT 1", version); }
+  currentPool(): PoolSnapshot | undefined { return this.one("SELECT json FROM mvp_pools ORDER BY seq DESC LIMIT 1"); }
+  putStint(s: PoolStint): void {
+    this.write(
+      "INSERT INTO mvp_pool_stints (unit_id, entered_seq, json) VALUES (?, ?, ?) ON CONFLICT(unit_id, entered_seq) DO UPDATE SET json = excluded.json",
+      s.unitId, s.enteredSeq, JSON.stringify(s),
+    );
+  }
+  stints(unitId?: UnitId): PoolStint[] {
+    return this.all("SELECT json FROM mvp_pool_stints WHERE (@unit IS NULL OR unit_id = @unit) ORDER BY unit_id, entered_seq", { unit: unitId ?? null });
+  }
+  seedPool(units: StoredUnit[], pool: PoolSnapshot, stints: PoolStint[]): boolean {
+    // IMMEDIATE: two servers starting on one file can't both seed.
+    return this.db.transaction(() => {
+      if (this.db.prepare("SELECT 1 FROM mvp_pools LIMIT 1").get()) return false;
+      for (const u of units) this.putUnit(u);
+      this.putPool(pool);
+      for (const s of stints) this.putStint(s);
+      return true;
+    }).immediate();
+  }
+  addDayTallies(daySeq: number, delta: DayTallies): void {
+    this.db.transaction(() => {
+      if (delta.runs) {
+        this.write("INSERT INTO mvp_day_run_tallies (day_seq, runs) VALUES (?, ?) ON CONFLICT(day_seq) DO UPDATE SET runs = runs + excluded.runs", daySeq, delta.runs);
+      }
+      const up = this.db.prepare(
+        "INSERT INTO mvp_unit_day_tallies (day_seq, unit_id, fights, wins, runs, picks) VALUES (?, ?, ?, ?, ?, ?) " +
+          "ON CONFLICT(day_seq, unit_id) DO UPDATE SET fights = fights + excluded.fights, wins = wins + excluded.wins, runs = runs + excluded.runs, picks = picks + excluded.picks",
+      );
+      for (const u of delta.units) up.run(daySeq, u.unitId, u.fights, u.wins, u.runs, u.picks);
+    })();
+  }
+  dayTallies(daySeq: number): DayTallies {
+    const runs = (this.db.prepare("SELECT runs FROM mvp_day_run_tallies WHERE day_seq = ?").get(daySeq) as { runs: number } | undefined)?.runs ?? 0;
+    const units = this.db
+      .prepare("SELECT unit_id AS unitId, fights, wins, runs, picks FROM mvp_unit_day_tallies WHERE day_seq = ? ORDER BY unit_id")
+      .all(daySeq) as UnitDayTally[];
+    return { runs, units };
   }
   ideaCounts(playerId: string): IdeaCounts { return this.one<IdeaCounts>("SELECT json FROM mvp_idea_counts WHERE player_id = ?", playerId) ?? { ...NO_IDEAS }; }
   putIdeaCounts(playerId: string, c: IdeaCounts): void {
