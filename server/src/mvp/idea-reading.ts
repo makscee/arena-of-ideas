@@ -16,7 +16,7 @@
 import type { Idea, IdeaArchetype, MyIdea } from "../../../src/mvp/contract.js";
 import { slug, type Row } from "../../../src/mvp/units.js";
 import { archetypeDraftProblems, checkReading, rowOf, takenShapes, type ArchetypeDraft } from "./idea-checks.js";
-import { ideaReaderFromEnv, type CantExpress, type IdeaReader } from "./idea-reader.js";
+import { ideaReaderFromEnv, type CantExpress, type IdeaReader, type NearMiss } from "./idea-reader.js";
 import { IdeaRefused, refundIdea } from "./ideas.js";
 import type { RunDeps } from "./runs.js";
 import type { MvpJob } from "./runtime.js";
@@ -124,11 +124,11 @@ async function readReadings(deps: ReadDeps, reader: IdeaReader, idea: Idea, arch
   for (const d of declined ?? []) taken.accept(rowOf(archetype, d));
   const first = await reader.readings(idea.text, archetype, { want: OPTIONS, units, ...turnedDown(declined?.map((d) => d.text.sleeping)) });
   const problems = check(first.options);
-  const cant = [...first.cantExpress];
+  const cant: Logged[] = [...first.cantExpress, ...nearMissWords(first.nearMiss)];
   if (problems.length && ok.length < OPTIONS) {
     const again = await reader.readings(idea.text, archetype, { want: OPTIONS - ok.length, units, problems });
     check(again.options);
-    cant.push(...again.cantExpress);
+    cant.push(...again.cantExpress, ...nearMissWords(again.nearMiss));
   }
   const parts = logCantExpress(deps, idea, cant);
   if (!ok.length) return fail(deps, idea, parts);
@@ -147,10 +147,21 @@ function settled(data: Idea["data"], parts: string[]): Idea["data"] {
   return all.length ? { ...rest, cantExpress: all } : rest;
 }
 
+/** Near misses (M3-1) go to the new-words log beside the missing words: the
+ * word the player meant, and which game word stood in for it ("the weakest
+ * enemy (read as random)"). The readings made them, so their parts show
+ * nothing to the player. */
+function nearMissWords(near: NearMiss[] | undefined): Logged[] {
+  return (near ?? []).map((n) => ({ part: n.part, word: `${n.meant.trim().slice(0, 28)} (read as ${n.used.trim().slice(0, 20)})`, near: true }));
+}
+
+/** A missing word, or a near miss (logged, never shown). */
+type Logged = CantExpress & { near?: true };
+
 /** Logs each missing word once per idea, and returns the parts to show: only
  * those quoted from the idea's own text (the player's words, never the
  * model's), as the text has them. */
-function logCantExpress(deps: ReadDeps, idea: Idea, cant: CantExpress[]): string[] {
+function logCantExpress(deps: ReadDeps, idea: Idea, cant: Logged[]): string[] {
   const logged = new Set(deps.store.wordRequests().filter((w) => w.ideaId === idea.ideaId).map((w) => w.word.toLowerCase()));
   const parts: string[] = [];
   for (const c of cant) {
@@ -161,6 +172,7 @@ function logCantExpress(deps: ReadDeps, idea: Idea, cant: CantExpress[]): string
       logged.add(word.toLowerCase());
       deps.store.addWordRequest({ ideaId: idea.ideaId, word, part, createdAt: deps.now().toISOString() });
     }
+    if (c.near) continue;
     const at = part ? idea.text.toLowerCase().indexOf(part.toLowerCase()) : -1;
     if (at >= 0) parts.push(idea.text.slice(at, at + part.length));
   }

@@ -15,6 +15,7 @@ export function sideOf(sel: Selector, when: When[]): Side {
     case "allAllies":
     case "lastDeadAlly":
       return "ally";
+    case "attacker":
     case "frontEnemy":
     case "allEnemies":
     case "randomEnemy":

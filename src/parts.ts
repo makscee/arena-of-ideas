@@ -68,6 +68,7 @@ const EFFECT_SAMPLES: Record<Effect["kind"], Effect> = {
 const SELECTOR_SAMPLES: Record<Selector["kind"], Selector> = {
   holder: { kind: "holder" },
   eventUnit: { kind: "eventUnit" },
+  attacker: { kind: "attacker" },
   frontEnemy: { kind: "frontEnemy" },
   allEnemies: { kind: "allEnemies" },
   allAllies: { kind: "allAllies" },

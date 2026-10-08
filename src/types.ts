@@ -131,6 +131,7 @@ export type Condition = { kind: "holderHpAtMost"; value: number };
 export type Selector =
   | { kind: "holder" } // the owning unit; resolves even if it just died (on-death abilities)
   | { kind: "eventUnit" } // the subject unit of the triggering event (striker for Strike)
+  | { kind: "attacker" } // who dealt the triggering Hurt, while alive; none for status damage
   | { kind: "frontEnemy" }
   | { kind: "allEnemies" }
   | { kind: "allAllies" } // living, includes holder
