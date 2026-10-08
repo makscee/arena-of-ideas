@@ -6,7 +6,7 @@
 import { randomUUID } from "node:crypto";
 import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, TOKEN_HEADER, type Decision, type HomeView, type PlayerRef } from "../../../src/mvp/contract.js";
+import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, TOKEN_HEADER, type Decision, type HomeView, type PlayerRef, type VoteRequest } from "../../../src/mvp/contract.js";
 import { checkDecision, MvpBadDecision, MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
 import { creditsView, creditUnit, libraryView } from "./credits.js";
 import { dayView, endDay, hiddenSlay } from "./day.js";
@@ -18,6 +18,7 @@ import { abandon, currentRun, decide, preview, startRun } from "./runs.js";
 import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
 import { servedContent } from "./pool.js";
 import { statsView } from "./stats.js";
+import { candidateScores, castVote, fakeVotes, nextCard, overnightCheck, seedCandidate, waitingForCheck } from "./votes.js";
 
 /** New players the open join link (R4-20) makes per hour, server-wide. */
 export const JOINS_PER_HOUR = 30;
@@ -269,6 +270,26 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   // M2-6: "None of these" at either pick.
   api.post("/ideas/:ideaId/none", (c) => ideaCall(c, (p) => declineOptions(rt, p.id, c.req.param("ideaId"))));
 
+  // M2-8's either/or cards: a candidate against a typical live unit.
+  api.get("/votes/next", (c) => {
+    const p = playerOf(c);
+    return p ? c.json({ card: nextCard(rt, p) }) : unknownPlayer(c);
+  });
+  api.post("/votes", async (c) => {
+    const body = (await c.req.json().catch(() => null)) as Partial<VoteRequest> | null;
+    const p = playerOf(c);
+    if (!p) return unknownPlayer(c);
+    if (typeof body?.candidateId !== "string" || typeof body.otherId !== "string" || !(body.pick === null || typeof body.pick === "string"))
+      return bad(c, 400, "body must be { candidateId, otherId, pick }");
+    try {
+      castVote(rt, p, { candidateId: body.candidateId, otherId: body.otherId, pick: body.pick });
+    } catch (err) {
+      if (err instanceof IdeaRefused) return bad(c, err.status, err.message);
+      throw err;
+    }
+    return c.json({ card: nextCard(rt, p) });
+  });
+
   // Slice 10 owns this route and the store behind it; slice 11 only reads.
   api.get("/fusions", (c) => c.json(store.fusions()));
 
@@ -299,6 +320,23 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     if (!unitId || !creditUnit(rt, unitId, p.id)) return bad(c, 404, "no such live unit");
     return c.json(creditsView(rt, p.id));
   });
+
+  // M2-8: the overnight check now (the quick meta check), a dev candidate,
+  // fake votes, and the candidates' standing.
+  api.post("/dev/overnight-check", (c) => {
+    const started = waitingForCheck(store);
+    overnightCheck(rt, rt.tuner.dev).catch((err) => console.error("[overnight] dev check failed", err));
+    return c.json({ started });
+  });
+  api.post("/dev/seed-candidate", async (c) => {
+    const body = (await c.req.json().catch(() => null)) as { unit?: unknown } | null;
+    const p = playerOf(c);
+    if (!p) return unknownPlayer(c);
+    seedCandidate(rt, p.id, typeof body?.unit === "string" ? body.unit : undefined);
+    return c.json(myIdeas(rt, p.id));
+  });
+  api.post("/dev/fake-votes", (c) => c.json(fakeVotes(rt)));
+  api.get("/dev/candidates", (c) => c.json(candidateScores(rt)));
 
   const app = new Hono();
   app.route(MVP_API_PREFIX, api);

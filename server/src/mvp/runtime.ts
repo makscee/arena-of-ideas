@@ -8,6 +8,7 @@
 //   ./bots.ts     slice 6   the champion seed and the bot top-up job
 //   ./fusions.ts  slice 10  the namer, its hooks and its job
 //   ./stats.ts    slice 11  the stats hooks and GET /stats
+//   ./votes.ts    M2-8      the overnight check's tuner and job, votes
 // Slice 4 passes its SQLite store from main.ts; tests keep the memory store.
 import { MVP_RULES, type MvpContent, type MvpRules } from "../../../src/mvp/contract.js";
 import { today } from "./day.js";
@@ -16,6 +17,7 @@ import { poolBook } from "./pool.js";
 import type { RunDeps, RunHooks } from "./runs.js";
 import { statsHooks } from "./stats.js";
 import { MemoryMvpStore, type MvpStore } from "./store.js";
+import { childTuner, type Tuner } from "./votes.js";
 
 export interface MvpDeps {
   /** The content while the store has no pool (tests with a bare store); with
@@ -41,12 +43,17 @@ export interface MvpDeps {
    * comes without a link gets the join name screen, as if they had opened the
    * open join link (R4-20). Sessions, links and the join limit stay. */
   open?: boolean;
+  /** M2-8's overnight check: `night` for the job (the full meta check),
+   * `dev` for the dev button (the quick one). Default: M2-7's tuner as a
+   * child process (./votes.ts childTuner). */
+  tuner?: { night: Tuner; dev: Tuner };
 }
 
 export interface MvpRuntime extends RunDeps {
   dev: boolean;
   invites: boolean;
   open: boolean;
+  tuner: { night: Tuner; dev: Tuner };
 }
 
 /** A background job: starts on the runtime, returns its stop function. */
@@ -73,6 +80,7 @@ export function mvpRuntime(deps: MvpDeps): MvpRuntime {
     dev: deps.dev ?? false,
     invites: deps.invites ?? false,
     open: (deps.invites ?? false) && (deps.open ?? false),
+    tuner: deps.tuner ?? { night: childTuner("full"), dev: childTuner("quick") },
   };
   return rt;
 }

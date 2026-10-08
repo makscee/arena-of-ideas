@@ -91,6 +91,12 @@ export interface MvpRules {
   ideaEveryRuns?: number;
   /** Ideas a player holds at most; runs finished at the cap earn none. Absent, 3. */
   ideaHold?: number;
+  /** Mission 2 (M2-8): votes (skips not counted) a candidate needs before it
+   * can qualify to enter. Absent, 5. */
+  voteMin?: number;
+  /** The most the novelty bonus adds to a candidate's vote share (at novelty
+   * 1). Absent, 0.1. */
+  voteNoveltyBonus?: number;
 }
 
 /** The turn cap round-3 runs started with (R3-26): their fights past it end
@@ -716,8 +722,11 @@ export interface IdeaData {
   cantExpress?: string[];
   /** Why the idea came back (`failed`); the idea was refunded. */
   failure?: string;
-  /** M2-5: the candidate unit its picked reading became (`simulating`). */
+  /** M2-5: the candidate unit its picked reading became (`simulating`);
+   * M2-8's overnight check stores its tuned row there, `rejected` on a fail. */
   unitId?: UnitId;
+  /** M2-8: when the overnight check judged it. */
+  checkedAt?: string;
   /** M2-5: the reader's failed tries at this stage, and when it tries again
    * (ISO); a model error or timeout only delays the idea. */
   tries?: number;
@@ -747,6 +756,39 @@ export interface IdeaReading {
   does: string;
   awoken: AwokenRow;
   text: { sleeping: string; awoken: string };
+}
+
+/** An either/or vote card (M2-8): a candidate and a typical live unit, in
+ * random order. `pool` holds what both units' sheets need (their abilities
+ * and summons): a candidate isn't in the content. */
+export interface VoteCard {
+  candidateId: UnitId;
+  otherId: UnitId;
+  units: [UnitContent, UnitContent];
+  pool: { abilities: AbilityRegistry; statuses: StatusRegistry; summons: SummonContent[] };
+}
+
+/** POST /votes: the unit picked, or null to skip. */
+export interface VoteRequest {
+  candidateId: UnitId;
+  otherId: UnitId;
+  pick: UnitId | null;
+}
+
+/** A candidate's standing (M2-8, server/src/mvp/votes.ts): `share` the votes it
+ * won against typical live units (skips not counted), `novelty` 0–1 how rare
+ * its When/Who/Does are in the live pool, `score` = share + the novelty bonus. */
+export interface CandidateScore {
+  unitId: UnitId;
+  name: string;
+  emoji: string;
+  authorId: string | null;
+  votes: number;
+  won: number;
+  share: number;
+  novelty: number;
+  score: number;
+  qualified: boolean;
 }
 
 /** One of the player's own ideas, as My ideas shows it. */
@@ -811,6 +853,14 @@ export interface MyIdeasView {
 //   POST /api/v1/ideas/:ideaId/none          → MyIdeasView        (M2-6; "None of these" in `pick-archetype` or `pick-reading`:
 //                                                                  the stage is read once more; the second time the idea
 //                                                                  fails and is refunded; 409 another state)
+//   GET  /api/v1/votes/next                  → { card: VoteCard | null }  (M2-8; never the caller's own candidate, nor a pair they voted on)
+//   POST /api/v1/votes         VoteRequest   → { card: VoteCard | null }  (M2-8; the next card: 404 no such candidate or live unit,
+//                                                                  400 a pick of neither, 409 already voted on this pair or
+//                                                                  the caller's own candidate or a bot)
+//   POST /api/v1/dev/overnight-check         → { started: number }        (M2-8; starts the simulation on every `simulating` idea)
+//   POST /api/v1/dev/seed-candidate { unit? } → MyIdeasView               (M2-8; the caller's idea in `simulating`: a renamed live unit, `unit`'s or a random one)
+//   POST /api/v1/dev/fake-votes              → CandidateScore[]           (M2-8; 5 fake votes on each candidate, 4 for it)
+//   GET  /api/v1/dev/candidates              → CandidateScore[]           (M2-8; every candidate, qualified ones first, best first)
 //   GET  /api/v1/stats                       → StatsView          (slice 11)
 //   GET  /api/v1/credits                     → CreditsView        (M2-9; authors, NEW, your creator number)
 //   GET  /api/v1/library                     → LibraryView        (M2-9; the units that have left)

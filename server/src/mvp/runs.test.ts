@@ -179,7 +179,7 @@ describe("MVP run server", () => {
     const again = new SqliteMvpStore(dir);
     expect(again.run(run.runId)).toMatchObject({ phase: "over", endedBy: end.run.endedBy, rating: end.run.rating });
     expect(again.rating(maks.id)?.runs).toBe(1);
-    expect(again.db.prepare("SELECT name FROM mvp_migrations").all()).toEqual([{ name: "04-runs.sql" }, { name: "11-stats.sql" }, { name: "13-invites.sql" }, { name: "13b-join.sql" }, { name: "m2-01-units.sql" }, { name: "m2-02-pins.sql" }, { name: "m2-02b-day-backfill.sql" }, { name: "m2-03-ideas.sql" }, { name: "m2-04-ideas.sql" }, { name: "m2-05-words.sql" }]);
+    expect(again.db.prepare("SELECT name FROM mvp_migrations").all()).toEqual([{ name: "04-runs.sql" }, { name: "11-stats.sql" }, { name: "13-invites.sql" }, { name: "13b-join.sql" }, { name: "m2-01-units.sql" }, { name: "m2-02-pins.sql" }, { name: "m2-02b-day-backfill.sql" }, { name: "m2-03-ideas.sql" }, { name: "m2-04-ideas.sql" }, { name: "m2-05-words.sql" }, { name: "m2-08-votes.sql" }]);
     again.close();
   });
 });

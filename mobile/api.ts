@@ -15,6 +15,9 @@ import {
   type IdeasView,
   type MyIdea,
   type MyIdeasView,
+  type CandidateScore,
+  type VoteCard,
+  type VoteRequest,
   type JoinSession,
   type LibraryView,
   type MvpContent,
@@ -171,6 +174,18 @@ export const api = {
   endDay: () => call<DayView>("POST", "/dev/end-day"),
   /** Dev "+1 idea" (M2-3): 404 unless MVP_DEV=1. */
   grantIdea: () => call<IdeasView>("POST", "/dev/grant-idea"),
+  /** The next either/or vote card (M2-8), or null. */
+  nextVote: () => call<{ card: VoteCard | null }>("GET", "/votes/next"),
+  /** Votes (pick null skips); answers the next card. */
+  vote: (v: VoteRequest) => call<{ card: VoteCard | null }>("POST", "/votes", v),
+  /** Dev (M2-8): a candidate idea of the caller's in `simulating`. */
+  seedCandidate: () => call<MyIdeasView>("POST", "/dev/seed-candidate"),
+  /** Dev (M2-8): starts the overnight check now; how many it started on. */
+  overnightCheck: () => call<{ started: number }>("POST", "/dev/overnight-check"),
+  /** Dev (M2-8): 5 fake votes on each candidate. */
+  fakeVotes: () => call<CandidateScore[]>("POST", "/dev/fake-votes"),
+  /** Dev (M2-8): every candidate's standing, qualified first. */
+  candidates: () => call<CandidateScore[]>("GET", "/dev/candidates"),
   /** My ideas (M2-4): the ideas held and the player's own sent ones. */
   myIdeas: () => call<MyIdeasView>("GET", "/ideas"),
   /** Sends an idea, spending one held (400 its length, 409 none held). */

@@ -1140,3 +1140,12 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   .gift-read .sheet-actions { position: static; margin: 0; padding: 0; background: none; }
   .gift-choice.inspected .card { border-color: var(--you); background: color-mix(in srgb, var(--you) 8%, var(--panel)); }
 }
+
+/* M2-8's vote card: two units side by side, each a tap target. */
+.vote-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.vote-pick { display: flex; flex-direction: column; gap: 4px; align-items: stretch; text-align: left; padding: 0; background: none; border: none; clip-path: none; color: var(--text, inherit); font: inherit; font-weight: 400; letter-spacing: normal; text-transform: none; cursor: pointer; min-width: 0; }
+.vote-pick .card { pointer-events: none; }
+.vote-text { overflow-wrap: anywhere; }
+.vote .label { white-space: normal; }
+.row.wrap { flex-wrap: wrap; }
+.error.dev-note { color: var(--dim); }
