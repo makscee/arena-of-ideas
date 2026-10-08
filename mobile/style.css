@@ -32,6 +32,10 @@ button { background: transparent; color: var(--you); border: 1px solid var(--you
 button.primary { background: var(--you); color: var(--bg); }
 button.danger { color: var(--ghost); border-color: var(--ghost); }
 button:disabled { opacity: 0.35; cursor: default; }
+/* M3-2: a button off for a reason said beside it ("New idea"): muted, unfilled, nothing to press. */
+button.off:disabled, button.primary.off:disabled { opacity: 1; background: transparent; color: var(--dim); border-color: var(--line); pointer-events: none; }
+.off-row { display: flex; align-items: center; gap: 12px; }
+.off-row > button { flex: none; }
 input { width: 100%; background: var(--panel); color: var(--text); border: 1px solid var(--line); padding: 0 12px; }
 .row { display: flex; gap: 8px; align-items: center; }
 .row.spread { justify-content: space-between; }
@@ -163,12 +167,23 @@ button.pick-none { align-self: center; }
 .pick-main { display: contents; }
 .pick-cards { display: flex; gap: 8px; justify-content: center; }
 .pick-cards .card.inspected { border-color: var(--you); background: color-mix(in srgb, var(--you) 10%, var(--panel)); }
+/* M3-2: a reading is its card with its sleeping rule under it, three side by side. */
+.pick-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.pick-rule { font-size: 13px; line-height: 1.3; overflow-wrap: anywhere; cursor: pointer; color: var(--text); }
+.pick-col.picked .pick-rule { color: var(--you); }
+/* Only the sheet gives up height on a short phone: the quote and the rules above it stay whole. */
+.pick-main > :not(.pick-detail) { flex-shrink: 0; }
 .pick-detail { flex: 0 1 auto; min-height: 0; overflow-y: auto; }
 .pick-foot { margin-top: auto; }
 /* The phone's reading pick is one screen tall: the sheet's box scrolls, never the page. */
 #app:has(.pick-detail) { height: 100dvh; }
 .pick-detail h2 { font-size: 17px; }
 .card .stats.unset { color: var(--dim); }
+/* M3-5: a proposal's title names its unit; its line and current rule sit over the text box, and over the readings. */
+h1.h1-long { font-size: 22px; line-height: 1.2; overflow-wrap: anywhere; }
+.propose-now { font-size: 14px; line-height: 1.35; padding: 8px 10px; overflow-wrap: anywhere; }
+button.propose-now { display: block; width: 100%; text-align: left; text-transform: none; letter-spacing: 0; font-family: inherit; font-weight: 400; font-size: 14px; line-height: 1.35; padding: 8px 10px; color: var(--text); background: var(--panel); border: 1px solid var(--line); min-height: 0; }
+button.propose-now.inspected { border-color: var(--you); }
 .idea-box { width: 100%; font: inherit; background: var(--panel); color: var(--text); border: 1px solid var(--line); padding: 10px 12px; resize: vertical; min-height: 140px; }
 button.small { min-height: 44px; font-size: 14px; padding: 0 12px; }
 .center { text-align: center; }
@@ -676,6 +691,10 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
   #app[data-screen] .card .tier { top: 7px; right: 8px; font-size: 13px; line-height: 13px; }
   #app[data-screen] .card.fused .emoji { font-size: 30px; padding-left: 0; }
   #app[data-screen] .card:not(.empty):hover { border-color: var(--you); }
+  #app[data-screen] .pick-cards { gap: 16px; }
+  #app[data-screen] .pick-col { flex: 0 1 200px; }
+  #app[data-screen] .pick-col .card { align-self: center; width: var(--cw); }
+  #app[data-screen] .pick-rule { font-size: 15px; }
   #app[data-screen] .bench-row .card { height: 140px; padding: 8px 6px 8px; }
   #app[data-screen] .bench-row .card .emoji { font-size: 28px; line-height: 32px; height: 32px; margin-top: 2px; }
   #app[data-screen] .bench-label { font-size: 13px; line-height: 16px; }
@@ -1146,6 +1165,12 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
 .vote-pick { display: flex; flex-direction: column; gap: 4px; align-items: stretch; text-align: left; padding: 0; background: none; border: none; clip-path: none; color: var(--text, inherit); font: inherit; font-weight: 400; letter-spacing: normal; text-transform: none; cursor: pointer; min-width: 0; }
 .vote-pick .card { pointer-events: none; }
 .vote-text { overflow-wrap: anywhere; }
+.vote-tag { font-weight: 600; color: var(--gold); overflow-wrap: anywhere; }
 .vote .label { white-space: normal; }
 .row.wrap { flex-wrap: wrap; }
 .error.dev-note { color: var(--dim); }
+/* M3-8: a version that isn't its archetype's first, beside its name. */
+.card .name .ver { font-size: 0.8em; font-weight: 500; color: var(--dim); }
+.history { gap: 0; }
+.history button.link { min-height: 36px; text-align: left; }
+.history button.link.on { color: var(--text); }

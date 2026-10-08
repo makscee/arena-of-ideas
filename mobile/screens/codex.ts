@@ -13,6 +13,10 @@
 //   nobody has made as "?".
 // - Library (M2-9): the units that have left the pool, each with its sheet,
 //   who the idea was, how long it was live and its fusions (GET /library).
+// A unit with more than one version (M3-8) lists them under its sheet, each
+// opening its own: the live one, or one in the Library.
+// M3-5: a Library unit's sheet proposes a new version of it, which needs a
+// held idea (off, with the reason beside it, otherwise).
 // - Keywords: every glossary term with its 48px icon, its rule and the units
 //   whose text uses it; a term's deep link lands on its row. A trigger said of
 //   someone else ("After an enemy dies") has its own line there.
@@ -20,17 +24,18 @@
 // The icon credits (CC BY 3.0) sit at its foot. Reads /content, /stats and
 // /fusions, each once while it stays open (CodexCache).
 import { GLOSSARY, STATUS_TERMS, scopedLabel, scopedTip, termDef, termGroup, type FixedTermId, type IconId, type TermGroup, type TermId } from "../../src/glossary";
-import type { FusionDiscovery, LibraryUnit, LibraryView, LineUnit, MvpContent, StatsView, UnitContent, UnitId } from "../../src/mvp/contract";
+import type { FusionDiscovery, IdeasView, LibraryUnit, LibraryView, LineUnit, MvpContent, StatsView, UnitContent, UnitId, UnitVersion, VersionCredit } from "../../src/mvp/contract";
 import type { UnitFilter } from "../../src/types";
 import { formSegments, formText } from "../../src/mvp/form-text";
 import { fuseUnits, lineUnitOf } from "../../src/mvp/forms";
 import { cardIcons, type Pip } from "../../src/mvp/card-icons";
 import type { AbilityRegistry } from "../../src/types";
 import { api } from "../api";
-import { card, formRich, roman, setCardAbilities, summonCard, tierClass, summonSheet, unitSheet, withPip } from "../ui/card";
+import { card, creditOf, formRich, liveIdOf, roman, setCardAbilities, summonCard, tierClass, summonSheet, unitSheet, withPip } from "../ui/card";
 import { app, button, closable, h, isDesktop, onKeys, screen, show, who } from "../ui/dom";
 import { icon } from "../ui/icon";
 import { loadUnitRates, pct } from "../ui/unit-stats";
+import { ideaWhy, proposeScreen } from "./ideas";
 
 export type CodexTab = "units" | "fusions" | "library" | "keywords";
 export type CodexSort = "tier" | "win" | "pick";
@@ -62,6 +67,8 @@ export interface CodexCache {
   stats?: Promise<StatsView | null>;
   fusions?: Promise<FusionDiscovery[]>;
   library?: Promise<LibraryView>;
+  /** The ideas the player holds, for the Library's "Propose a new version" (M3-5); null when it failed. */
+  ideas?: Promise<IdeasView | null>;
   /** Each tab's window scroll, put back on a switch. */
   scroll: Partial<Record<CodexTab, number>>;
   /** Where the open Codex is (its tab and filters), for a redraw at 1024px. */
@@ -72,7 +79,7 @@ export const newCodexCache = (): CodexCache => ({ scroll: {} });
 /** Draws the Codex once; a tab or filter change redraws only its body and
  * keeps the scroll. On desktop (R2-9) a unit or a fusion opens in the
  * inspector on the right, never in an overlay (ui.md (e)). */
-export async function codexScreen(a: { content: MvpContent; onBack: () => void; state?: Partial<CodexState> | undefined; cache?: CodexCache }): Promise<void> {
+export async function codexScreen(a: { content: MvpContent; onBack: () => void; onUnknown?: () => void; state?: Partial<CodexState> | undefined; cache?: CodexCache }): Promise<void> {
   const cache = a.cache ?? newCodexCache();
   cache.stats ??= loadUnitRates(); // the dim rates line on unit sheets, and the rate sorts
   const st: CodexState = { ...DEFAULTS, ...a.state };
@@ -100,6 +107,47 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
     inspected = true;
   };
 
+  /** M3-8: a unit's versions under its sheet, each opening its own sheet. */
+  const history = (c: VersionCredit | undefined, sheet: HTMLElement): HTMLElement => {
+    if (!c?.versions.length) return sheet;
+    const current = c.versions[c.version - 1]?.unitId;
+    const rows = c.versions.map((v) => {
+      const b = button(versionText(v), () => void openVersion(v), `small link${v.unitId === current ? " on" : ""}`, "history-version");
+      b.dataset.unit = v.unitId;
+      return b;
+    });
+    sheet.append(h("div", { class: "stack history", "data-testid": "sheet-history" }, h("div", { class: "label" }, `Versions · ${c.versions.length}`), ...rows));
+    return sheet;
+  };
+  const liveSheet = (u: UnitContent): HTMLElement => history(creditOf(u.id), unitSheet(u, a.content));
+  /** M3-5: the ideas held, fetched before a Library sheet opens (heldIdeas). */
+  let heldIdeas: IdeasView | null = null;
+  const loadIdeas = async (): Promise<void> => {
+    heldIdeas = await (cache.ideas ??= api.myIdeas().then((v) => v.ideas, () => null));
+  };
+  /** M3-5: the write screen for a new version of a Library unit; Back (and
+   * My ideas' Back once it's sent) returns to the Library as it was. */
+  const propose = (unit: UnitContent, all: MvpContent): void => {
+    const back = () => {
+      delete cache.ideas;
+      void codexScreen({ ...a, state: st, cache });
+    };
+    proposeScreen(unit, all, { onBack: back, onUnknown: a.onUnknown ?? a.onBack });
+  };
+  const libSheet = (lib: LibraryView, l: LibraryUnit): HTMLElement => history(l, librarySheet(a.content, lib, l, (all) => proposeRow(l.unit, all, heldIdeas, propose)));
+  const openVersion = async (v: UnitVersion): Promise<void> => {
+    const liveId = v.live ? liveIdOf(v.unitId) : undefined;
+    const u = liveId ? a.content.units.find((x) => x.id === liveId) : undefined;
+    if (u) return open(liveSheet(u));
+    try {
+      const [lib] = await Promise.all([(cache.library ??= api.library()), loadIdeas()]);
+      const l = lib.units.find((x) => x.unit.id === v.unitId);
+      if (l) open(libSheet(lib, l));
+    } catch {
+      delete cache.library; // tried again on the next tap
+    }
+  };
+
   let drawing = 0;
   const draw = async (): Promise<void> => {
     const n = ++drawing;
@@ -109,11 +157,12 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
     const y = window.scrollY;
     let kids: Node[];
     try {
-      if (st.tab === "units") kids = unitsTab(a.content, st, set, open, st.sort === "tier" ? null : await rates(), retryRates);
+      if (st.tab === "units") kids = unitsTab(a.content, st, set, open, st.sort === "tier" ? null : await rates(), retryRates, liveSheet);
       else if (st.tab === "keywords") kids = [keywordsTab(a.content, open)];
       else if (st.tab === "library") {
         if (!body.hasChildNodes()) body.replaceChildren(h("div", { class: "dim", "data-testid": "codex-loading" }, "Loading the library…"));
-        kids = libraryTab(a.content, await (cache.library ??= api.library()), open);
+        const [lib] = await Promise.all([(cache.library ??= api.library()), loadIdeas()]);
+        kids = libraryTab(a.content, lib, open, (l) => libSheet(lib, l));
       }
       else {
         // The first draw of Fusions waits on /fusions: say so meanwhile (R2-17).
@@ -124,6 +173,7 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
       // A failed fetch is tried again on the next draw.
       delete cache.fusions;
       delete cache.library;
+      delete cache.ideas;
       kids = [h("div", { class: "error", "data-testid": "error" }, e instanceof Error ? e.message : String(e))];
     }
     if (n !== drawing || !body.isConnected) return; // redrawn or left meanwhile
@@ -206,6 +256,7 @@ function unitsTab(
   open: (node: HTMLElement, from?: HTMLElement) => void,
   stats: StatsView | null,
   retry: () => void,
+  sheetOf: (u: UnitContent) => HTMLElement,
 ): Node[] {
   // A rate sort: highest first, units no run has counted yet last (by tier).
   const rates = new Map((stats?.units ?? []).filter((r) => r.runs > 0).map((r) => [r.unitId, r]));
@@ -238,7 +289,7 @@ function unitsTab(
         const r = st.sort === "tier" ? undefined : rateOf(u);
         // The rate shows on a card only while a rate sort is on: a quiet number under it.
         const extra = st.sort === "tier" ? [] : [h("span", { class: "codex-rate", "data-testid": "codex-rate" }, r === undefined ? "–" : pct(r))];
-        const el = card({ emoji: u.emoji, name: u.name, stats: u.base, recipe: u.forms.sleeping, unitId: u.id }, { side: "you", tier: u.tier, testid: "codex-unit", extra, onOpen: () => open(unitSheet(u, content), el) });
+        const el = card({ emoji: u.emoji, name: u.name, stats: u.base, recipe: u.forms.sleeping, unitId: u.id }, { side: "you", tier: u.tier, testid: "codex-unit", extra, onOpen: () => open(sheetOf(u), el) });
         return el;
       }),
     );
@@ -428,37 +479,57 @@ function withLibrary(content: MvpContent, lib: LibraryView): MvpContent {
 
 const liveFor = (l: LibraryUnit): string => (l.liveDays === null ? "Left before days were recorded" : `Live ${l.liveDays} ${l.liveDays === 1 ? "day" : "days"}`);
 
-function libraryTab(content: MvpContent, lib: LibraryView, open: (node: HTMLElement, from?: HTMLElement) => void): Node[] {
+/** One version in a unit's history (M3-8): "v1 by @a, 14 days", "v2 by @b, live". */
+function versionText(v: UnitVersion): string {
+  const days = v.live ? "live" : v.liveDays === null ? "left before days were recorded" : `${v.liveDays} ${v.liveDays === 1 ? "day" : "days"}`;
+  return `v${v.version}${v.by ? ` by @${v.by.name}` : ""}, ${days}`;
+}
+
+/** "Propose a new version" (M3-5): on with an idea held; off, with the reason beside it (M3-2's style), without. */
+function proposeRow(unit: UnitContent, all: MvpContent, ideas: IdeasView | null, propose: (unit: UnitContent, all: MvpContent) => void): HTMLElement {
+  const held = (ideas?.held ?? 0) > 0;
+  const b = button("Propose a new version", () => propose(unit, all), held ? "primary" : "primary off", "library-propose");
+  if (held) return h("div", { class: "row" }, b);
+  b.disabled = true;
+  const why = ideas ? ideaWhy(ideas.nextIn ?? 0) : "Your ideas didn't load";
+  return h("div", { class: "off-row" }, b, h("span", { class: "dim small", "data-testid": "library-propose-why" }, why));
+}
+
+/** A library unit's sheet, then its time live, its credit, "Propose a new version" (M3-5) and its fusions. */
+function librarySheet(content: MvpContent, lib: LibraryView, l: LibraryUnit, proposal: (all: MvpContent) => HTMLElement): HTMLElement {
   const all = withLibrary(content, lib);
-  setCardAbilities(all.abilities); // their cards' icon lines may use abilities no live unit has
   const byId = new Map(all.units.map((u) => [u.id, u]));
   const me = api.player?.id;
-  /** A library unit's sheet, then its time live, its credit and its fusions. */
-  const sheet = (l: LibraryUnit): HTMLElement => {
-    const s = unitSheet(l.unit, all);
-    const fusions = l.fusions.map((f) => {
-      const [a, b] = [byId.get(f.first), byId.get(f.second)];
-      const by = f.discoveredBy ? (f.discoveredBy.id === me ? "you" : who(f.discoveredBy.name)) : null;
-      return h(
-        "div",
-        { class: "stat-row fusion-row", "data-testid": "library-fusion" },
-        h("span", { class: "emoji pair" }, `${a?.emoji ?? "?"}${b?.emoji ?? "?"}`),
-        h("span", { class: "grow" }, h("div", { class: "fusion-name" }, f.name), h("div", { class: "dim small" }, `${a?.name ?? f.first} + ${b?.name ?? f.second}`), h("div", { class: "discovered" }, ...(by ? ["discovered by ", by] : ["made by bots, unclaimed"]))),
-      );
-    });
-    s.append(
-      h("div", { class: "dim small lib-meta", "data-testid": "library-meta" }, h("span", {}, "In the Library"), h("span", { "data-testid": "library-live" }, liveFor(l)), ...(l.by ? [h("span", {}, "💡 idea by ", who(l.by.name))] : [])),
-      h("div", { class: "label" }, `Fusions · ${l.fusions.length}`),
-      fusions.length ? h("div", { class: "panel stack", "data-testid": "library-fusions" }, ...fusions) : h("div", { class: "dim small" }, "None were found while it was live."),
+  // Its own row first: a live version may share its id (M3-8). Its credit is
+  // its own, its archetype's days live in the meta line below.
+  const s = unitSheet(l.unit, { ...all, units: [l.unit, ...all.units] }, { credit: { ...l, liveDays: null } });
+  const fusions = l.fusions.map((f) => {
+    const [a, b] = [byId.get(f.first), byId.get(f.second)];
+    const by = f.discoveredBy ? (f.discoveredBy.id === me ? "you" : who(f.discoveredBy.name)) : null;
+    return h(
+      "div",
+      { class: "stat-row fusion-row", "data-testid": "library-fusion" },
+      h("span", { class: "emoji pair" }, `${a?.emoji ?? "?"}${b?.emoji ?? "?"}`),
+      h("span", { class: "grow" }, h("div", { class: "fusion-name" }, f.name), h("div", { class: "dim small" }, `${a?.name ?? f.first} + ${b?.name ?? f.second}`), h("div", { class: "discovered" }, ...(by ? ["discovered by ", by] : ["made by bots, unclaimed"]))),
     );
-    return s;
-  };
+  });
+  s.append(
+    h("div", { class: "dim small lib-meta", "data-testid": "library-meta" }, h("span", {}, "In the Library"), h("span", { "data-testid": "library-live" }, liveFor(l))),
+    proposal(all),
+    h("div", { class: "label" }, `Fusions · ${l.fusions.length}`),
+    fusions.length ? h("div", { class: "panel stack", "data-testid": "library-fusions" }, ...fusions) : h("div", { class: "dim small" }, "None were found while it was live."),
+  );
+  return s;
+}
+
+function libraryTab(content: MvpContent, lib: LibraryView, open: (node: HTMLElement, from?: HTMLElement) => void, sheet: (l: LibraryUnit) => HTMLElement): Node[] {
+  setCardAbilities(withLibrary(content, lib).abilities); // their cards' icon lines may use abilities no live unit has
   const grid = h(
     "div",
     { class: "slots codex-grid", "data-testid": "codex-library" },
     ...lib.units.map((l) => {
       const u = l.unit;
-      const el = card({ emoji: u.emoji, name: u.name, stats: u.base, recipe: u.forms.sleeping, unitId: u.id }, { side: "ghost", tier: u.tier, testid: "library-unit", onOpen: () => open(sheet(l), el) });
+      const el = card({ emoji: u.emoji, name: u.name, stats: u.base, recipe: u.forms.sleeping, unitId: u.id }, { side: "ghost", tier: u.tier, testid: "library-unit", version: l.version, onOpen: () => open(sheet(l), el) });
       el.dataset.unit = u.id;
       return el;
     }),

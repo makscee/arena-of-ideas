@@ -37,7 +37,7 @@ const STAT_SIGNS = ["gain", "loss"] as const;
 const WHEN_KINDS = ["trigger", "interceptor"] as const;
 const UNIT_FILTERS = ["holder", "ally", "otherAlly", "enemy", "any"] as const;
 const CONDITION_KINDS = ["holderHpAtMost"] as const;
-const SELECTOR_KINDS = ["holder", "eventUnit", "frontEnemy", "allEnemies", "allAllies", "randomEnemy", "lastDeadAlly"] as const;
+const SELECTOR_KINDS = ["holder", "eventUnit", "attacker", "frontEnemy", "allEnemies", "allAllies", "randomEnemy", "lastDeadAlly"] as const;
 const AMOUNT_KINDS = ["const", "stat", "level", "stacks"] as const;
 const STAT_NAMES = ["hp", "pwr"] as const;
 // An AbilityDef's family is visual identity only and must be one of these seven;

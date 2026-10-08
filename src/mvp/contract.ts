@@ -100,6 +100,10 @@ export interface MvpRules {
   /** Mission 2 (M2-10): candidates that enter the pool at most per day end.
    * Absent, 3. */
   rotationEntrants?: number;
+  /** Mission 3 (M3-7): of rotationEntrants, the slots for evolutions and
+   * returns (the rest are for ideas). A slot one queue can't fill goes to the
+   * other. Absent, 1. */
+  rotationEvolveShare?: number;
   /** Days a unit stays live at least before it may leave. Absent, 14. */
   rotationMinStay?: number;
   /** Days of tallies a leaver's play is read from. Absent, 14. */
@@ -650,14 +654,41 @@ export interface IdeasView {
   ready: number;
 }
 
-/** Who a live unit's idea was and whether it is new (M2-9,
- * server/src/mvp/credits.ts): only units with an author or a recent entry. */
-export interface UnitCredit {
+/** One version of an archetype (M3-8, server/src/mvp/credits.ts), in its
+ * history: the root is v1, then each version that entered the pool, in the
+ * order it entered. A proposal that never entered is not one. */
+export interface UnitVersion {
   unitId: UnitId;
-  /** The player whose idea it was; null for the seed. */
+  /** 1 for the archetype's first version. */
+  version: number;
+  /** The version's author; null for the seed. */
   by: PlayerRef | null;
+  /** Days this version was live; null when none was ever recorded. */
+  liveDays: number | null;
+  /** In the pool now. */
+  live: boolean;
+}
+
+/** Who a unit is by, across its archetype's versions (M3-8). */
+export interface VersionCredit {
+  /** The player whose idea the archetype was (its root's author); null for the seed. */
+  by: PlayerRef | null;
+  /** This version's author when it isn't the root's (M3-8). */
+  evolvedBy: PlayerRef | null;
+  /** Its number in `versions`; 1 for the root (cards show "v2" from 2). */
+  version: number;
+  /** The archetype's history, when it has more than one version; else []. */
+  versions: UnitVersion[];
+}
+
+/** Who a live unit's idea was, whether it is new and how long its archetype
+ * has been live (M2-9, M3-8, server/src/mvp/credits.ts): every live unit. */
+export interface UnitCredit extends VersionCredit {
+  unitId: UnitId;
   /** NEW: it entered the pool in the last NEW_DAYS days (seed units never are). */
   isNew: boolean;
+  /** Days its archetype has been live, over every version's stints (M3-8). */
+  liveDays: number;
 }
 
 /** GET /credits: the live units' credits, and the caller's creator number. */
@@ -666,16 +697,18 @@ export interface CreditsView {
   day: number;
   units: UnitCredit[];
   /** Null without a player. `days`: the days the player's units have been
-   * live, summed over every stint; `units`: how many units are theirs. */
+   * live, summed over every stint (M3-8: an archetype's first author counts
+   * every version's days, an evolver their own versions'); `units`: how many
+   * units are theirs. */
   you: { days: number; units: number } | null;
 }
 
 /** A unit that has left the pool (GET /library, M2-9). */
-export interface LibraryUnit {
+export interface LibraryUnit extends VersionCredit {
   unit: UnitContent;
-  by: PlayerRef | null;
-  /** Days it was live, summed over its stints; null when no stint was ever
-   * recorded (the units cut before units became data, M2-1). */
+  /** Days its archetype was live, summed over every version's stints (M3-8);
+   * null when no stint was ever recorded (the units cut before units became
+   * data, M2-1). */
   liveDays: number | null;
   /** Its fusions, as either part. */
   fusions: FusionDiscovery[];
@@ -718,6 +751,11 @@ export interface Idea {
 
 /** What later stages add to an idea; each slice adds its own optional keys. */
 export interface IdeaData {
+  /** M3-3: a new archetype, or a new version of a Library unit (mission 3).
+   * Absent: "new", as every idea written before mission 3 (ideaKind). */
+  kind?: IdeaKind;
+  /** M3-3: the Library unit an "evolve" proposal is for. */
+  target?: UnitId;
   /** M2-5: the archetypes read from the text (`pick-archetype`), checked. */
   archetypes?: IdeaArchetype[];
   /** M2-5: the archetype its author picked; the readings are read for it. */
@@ -743,6 +781,14 @@ export interface IdeaData {
    * different ones, and a second "None of these" refunds the idea. */
   declined?: { archetypes?: IdeaArchetype[]; readings?: IdeaReading[] };
 }
+
+export type IdeaKind = "new" | "evolve";
+
+/** POST /ideas: a new idea, or (M3-4) a new version of the Library unit `target`. */
+export type WriteIdeaRequest = { text: string; kind?: "new" } | { text: string; kind: "evolve"; target: UnitId };
+
+/** An idea's kind, "new" when it has none (written before mission 3). */
+export const ideaKind = (i: Idea): IdeaKind => i.data.kind ?? "new";
 
 /** M2-5: an archetype the reader made of an idea: a name, an emoji and a
  * one-sentence line, all checked (archetypeProblems, the crude checks, a
@@ -770,6 +816,10 @@ export interface IdeaReading {
  * and summons): a candidate isn't in the content. */
 export interface VoteCard {
   candidateId: UnitId;
+  /** M3-6: what the candidate is: a new idea's unit, a new version of a
+   * Library unit ("new version of Quillback"), or the Library version itself
+   * while versions of it are voted on ("Quillback, unchanged"). */
+  candidateKind: CandidateKind;
   otherId: UnitId;
   units: [UnitContent, UnitContent];
   pool: { abilities: AbilityRegistry; statuses: StatusRegistry; summons: SummonContent[] };
@@ -782,11 +832,20 @@ export interface VoteRequest {
   pick: UnitId | null;
 }
 
+/** M3-6: a candidate on the vote cards: a new idea's unit, a new version of
+ * a Library unit, or that Library unit "unchanged". */
+export type CandidateKind = "idea" | "version" | "unchanged";
+
 /** A candidate's standing (M2-8, server/src/mvp/votes.ts): `share` the votes it
  * won against typical live units (skips not counted), `novelty` 0–1 how rare
- * its When/Who/Does are in the live pool, `score` = share + the novelty bonus. */
+ * its When/Who/Does are in the live pool, `score` = share + the novelty bonus.
+ * M3-6: versions and "unchanged" of one archetype (`rootId`) compete: `entry`
+ * marks the one of them that may enter (an idea's unit is its own archetype). */
 export interface CandidateScore {
   unitId: UnitId;
+  kind: CandidateKind;
+  /** The archetype's first version (an idea's unit: itself). */
+  rootId: UnitId;
   name: string;
   emoji: string;
   authorId: string | null;
@@ -796,6 +855,10 @@ export interface CandidateScore {
   novelty: number;
   score: number;
   qualified: boolean;
+  /** M3-6: qualified, and its archetype's best qualified candidate; only
+   * these may enter. "Unchanged" is the entry only when it scores above
+   * every qualified version. */
+  entry: boolean;
 }
 
 /** One of the player's own ideas, as My ideas shows it. */
@@ -847,8 +910,10 @@ export interface MyIdeasView {
 //   POST /api/v1/dev/end-day                 → DayView            (slice 5; 404 unless MVP_DEV=1)
 //   POST /api/v1/dev/grant-idea              → IdeasView          (M2-3; +1 idea up to the cap; 404 unless MVP_DEV=1)
 //   GET  /api/v1/ideas                       → MyIdeasView        (M2-4; the caller's own ideas only, 401 without a player)
-//   POST /api/v1/ideas         { text }      → MyIdeasView        (M2-4; writes one, spending a held idea: 400 text not
-//                                                                  IDEA_TEXT_MIN–MAX characters, 409 no idea held)
+//   POST /api/v1/ideas         WriteIdeaRequest → MyIdeasView     (M2-4; writes one, spending a held idea: 400 text not
+//                                                                  IDEA_TEXT_MIN–MAX characters, 409 no idea held; M3-4: kind
+//                                                                  "evolve" proposes a new version of `target`: 404 no such
+//                                                                  unit, 409 the target isn't in the Library)
 //   POST /api/v1/ideas/:ideaId/cancel        → MyIdeasView        (M2-4; takes back a `written` idea and refunds it: 404 not
 //                                                                  the caller's, 409 past `written` or ideas held at the cap)
 //   GET  /api/v1/ideas/:ideaId               → MyIdea             (M2-5; the caller's own idea with its options; 404 not theirs)
@@ -860,7 +925,8 @@ export interface MyIdeasView {
 //   POST /api/v1/ideas/:ideaId/none          → MyIdeasView        (M2-6; "None of these" in `pick-archetype` or `pick-reading`:
 //                                                                  the stage is read once more; the second time the idea
 //                                                                  fails and is refunded; 409 another state)
-//   GET  /api/v1/votes/next                  → { card: VoteCard | null }  (M2-8; never the caller's own candidate, nor a pair they voted on)
+//   GET  /api/v1/votes/next                  → { card: VoteCard | null }  (M2-8; never the caller's own candidate, nor a pair they voted on;
+//                                                                              M3-6: new versions, and "unchanged" open to anyone)
 //   POST /api/v1/votes         VoteRequest   → { card: VoteCard | null }  (M2-8; the next card: 404 no such candidate or live unit,
 //                                                                  400 a pick of neither, 409 already voted on this pair or
 //                                                                  the caller's own candidate or a bot)

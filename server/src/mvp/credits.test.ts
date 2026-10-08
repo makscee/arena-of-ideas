@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import type { CreditsView, FusionDiscovery, LibraryView, PlayerRef } from "../../../src/mvp/contract.js";
 import { createMvpApp } from "./app.js";
 import { mvpContent } from "./content.js";
-import { liveDays, NEW_DAYS } from "./credits.js";
-import { CUT_IN_ROUND_4, poolContent, seedUnits } from "./pool.js";
+import { creditsView, libraryView, liveDays, NEW_DAYS } from "./credits.js";
+import { CUT_IN_ROUND_4, poolContent, seedUnits, swapUnit } from "./pool.js";
 import { mvpRuntime } from "./runtime.js";
 import { SqliteMvpStore } from "./sqlite-store.js";
-import { MemoryMvpStore, type MvpStore } from "./store.js";
+import { MemoryMvpStore, type MvpStore, type StoredUnit } from "./store.js";
 
 function world(store: MvpStore = new MemoryMvpStore(), dev = true) {
   seedUnits(store, new Date("2026-10-08T08:00:00.000Z"));
@@ -32,9 +32,9 @@ function world(store: MvpStore = new MemoryMvpStore(), dev = true) {
 
 describe("credits and the library (M2-9)", () => {
   it("liveDays counts each day a unit was in the pool", () => {
-    expect(liveDays([{ unitId: "x", enteredSeq: 5, leftSeq: null, reason: "" }], 5)).toBe(1);
-    expect(liveDays([{ unitId: "x", enteredSeq: 5, leftSeq: null, reason: "" }], 9)).toBe(5);
-    expect(liveDays([{ unitId: "x", enteredSeq: 2, leftSeq: 4, reason: "" }, { unitId: "x", enteredSeq: 7, leftSeq: null, reason: "" }], 8)).toBe(4);
+    expect(liveDays([{ unitId: "x", enteredSeq: 5, leftSeq: null, reason: "seed" }], 5)).toBe(1);
+    expect(liveDays([{ unitId: "x", enteredSeq: 5, leftSeq: null, reason: "seed" }], 9)).toBe(5);
+    expect(liveDays([{ unitId: "x", enteredSeq: 2, leftSeq: 4, reason: "seed" }, { unitId: "x", enteredSeq: 7, leftSeq: null, reason: "seed" }], 8)).toBe(4);
   });
 
   it("the seed has no credits and nothing NEW; the 8 cut in round 4 are the library", async () => {
@@ -43,7 +43,9 @@ describe("credits and the library (M2-9)", () => {
       await call("GET", "/day"); // day 1
       const { json: p } = await call<PlayerRef>("POST", "/players", { name: "Maks" });
       const { json: credits } = await call<CreditsView>("GET", "/credits", undefined, p.id);
-      expect(credits.units).toEqual([]);
+      // Every live unit: no author, nothing NEW, its first day live (M3-8).
+      expect(credits.units).toHaveLength(store.currentPool()!.unitIds.length);
+      for (const c of credits.units) expect(c).toEqual({ unitId: c.unitId, by: null, evolvedBy: null, version: 1, versions: [], isNew: false, liveDays: 1 });
       expect(credits.you).toEqual({ days: 0, units: 0 });
       expect((await call<CreditsView>("GET", "/credits")).json.you).toBeNull();
       const { json: lib } = await call<LibraryView>("GET", "/library");
@@ -65,19 +67,20 @@ describe("credits and the library (M2-9)", () => {
     const version = rt.content.version;
     const { status, json } = await call<CreditsView>("POST", "/dev/credit-unit", {}, maks.id);
     expect(status).toBe(200);
-    const unitId = json.units[0]!.unitId;
+    const unitId = json.units.find((u) => u.by)!.unitId;
     expect(rt.content.units.find((u) => u.id === unitId)!.tier).toBe(1);
-    expect(json.units).toEqual([{ unitId, by: maks, isNew: true }]);
+    const credited = (c: CreditsView) => c.units.filter((u) => u.by || u.isNew).map(({ unitId, by, isNew }) => ({ unitId, by, isNew }));
+    expect(credited(json)).toEqual([{ unitId, by: maks, isNew: true }]);
     expect(json.you).toEqual({ days: 1, units: 1 });
     expect(poolContent(rt.store).version).toBe(version); // credits are not content
 
     toDay(1 + NEW_DAYS - 1);
     let c = (await call<CreditsView>("GET", "/credits", undefined, other.id)).json;
-    expect(c.units).toEqual([{ unitId, by: maks, isNew: true }]);
+    expect(credited(c)).toEqual([{ unitId, by: maks, isNew: true }]);
     expect(c.you).toEqual({ days: 0, units: 0 });
     toDay(1 + NEW_DAYS);
     c = (await call<CreditsView>("GET", "/credits", undefined, maks.id)).json;
-    expect(c.units).toEqual([{ unitId, by: maks, isNew: false }]);
+    expect(credited(c)).toEqual([{ unitId, by: maks, isNew: false }]);
     expect(c.you).toEqual({ days: NEW_DAYS + 1, units: 1 });
   });
 
@@ -86,11 +89,11 @@ describe("credits and the library (M2-9)", () => {
     await call("GET", "/day");
     const { json: maks } = await call<PlayerRef>("POST", "/players", { name: "Maks" });
     const { json: c } = await call<CreditsView>("POST", "/dev/credit-unit", {}, maks.id);
-    const unitId = c.units[0]!.unitId;
+    const unitId = c.units.find((u) => u.by)!.unitId;
     // It leaves at day 6 (M2-10's rotation will do this): live days 1–5.
     toDay(6);
     const open = store.stints(unitId).find((s) => s.leftSeq === null)!;
-    store.putStint({ ...open, leftSeq: 6, reason: "replaced" });
+    store.putStint({ ...open, leftSeq: 6, reason: "rotated" });
     store.putUnit({ ...store.unit(unitId)!, status: "library" });
     const other = store.currentPool()!.unitIds.find((id) => id !== unitId)!;
     const f: FusionDiscovery = { first: unitId, second: other, name: "Testfuse", discoveredBy: maks, discoveredAt: "2026-10-08T09:00:00.000Z", nameSource: "fallback" };
@@ -124,5 +127,109 @@ describe("credits and the library (M2-9)", () => {
     expect(credits.units).toEqual([]);
     const lib = (await (await app.request("/api/v1/library")).json()) as LibraryView;
     expect(lib.units).toEqual([]);
+  });
+});
+
+// M3-8 (mission #800): an archetype's versions (M3-3's lineage) share the
+// root's "idea by" and their days live; each adds "evolved by".
+describe("credits across versions (M3-8)", () => {
+  const AT = new Date("2026-10-08T08:00:00.000Z");
+  const A: PlayerRef = { id: "pa", name: "a", bot: false };
+  const B: PlayerRef = { id: "pb", name: "b", bot: false };
+  const C: PlayerRef = { id: "pc", name: "c", bot: false };
+
+  /** A seeded world with 3 players, on day `seq`. */
+  function chainWorld(store: MvpStore) {
+    seedUnits(store, AT);
+    for (const p of [A, B, C]) store.addPlayer(p);
+    const toDay = (seq: number) => store.putDay({ ...store.currentDay()!, seq });
+    const deps = () => ({ store, content: poolContent(store) });
+    /** A version of `root` (or a new root) by `author`, stored but not live. */
+    const version = (unitId: string, author: PlayerRef | null, root: string | null, parent: string | null, status: StoredUnit["status"] = "library"): void =>
+      store.putUnit({ unitId, status, row: root ? store.unit(root)!.row : { ...store.unit("rat")!.row, name: "Hog" }, authorId: author?.id ?? null, origin: root ? "evolution" : "idea", parentId: parent, ...(root ? { rootId: root } : {}), createdAt: AT.toISOString() });
+    return { toDay, deps, version };
+  }
+
+  for (const make of [() => new MemoryMvpStore(), () => new SqliteMvpStore(":memory:")] as (() => MvpStore)[])
+    it(`a 3-version chain by a, b and c: credits, days, history and both creator numbers (${make().constructor.name})`, () => {
+      const store = make();
+      const { toDay, deps, version } = chainWorld(store);
+      store.putDay({ ...store.currentDay()!, seq: 2 });
+      // v1 by a, live days 2–5; v2 by b, days 6–9; v3 by c, live from day 10.
+      version("hog", A, null, null);
+      swapUnit(store, "fighter", "hog", AT);
+      toDay(6);
+      version("hog-2", B, "hog", "hog");
+      swapUnit(store, "hog", "hog-2", AT);
+      toDay(10);
+      version("hog-3", C, "hog", "hog-2");
+      swapUnit(store, "hog-2", "hog-3", AT);
+      // Proposals that never entered: one still a candidate, one that lost (M3-7 closes it to the library).
+      version("hog-4", B, "hog", "hog-3", "candidate");
+      version("hog-5", B, "hog", "hog-3", "library");
+      toDay(12);
+
+      const history = [
+        { unitId: "hog", version: 1, by: A, liveDays: 4, live: false },
+        { unitId: "hog-2", version: 2, by: B, liveDays: 4, live: false },
+        { unitId: "hog-3", version: 3, by: C, liveDays: 3, live: true },
+      ];
+      const credits = creditsView(deps(), A.id);
+      // The pool serves a version under its own id (M3-7), though it keeps its root's name.
+      expect(credits.units.find((u) => u.unitId === "hog-3")).toEqual({ unitId: "hog-3", by: A, evolvedBy: C, version: 3, versions: history, isNew: true, liveDays: 11 });
+      expect(credits.units.filter((u) => u.unitId.startsWith("hog"))).toHaveLength(1);
+      // The first author counts the whole archetype; each evolver their own versions.
+      expect(credits.you).toEqual({ units: 1, days: 11 });
+      expect(creditsView(deps(), B.id).you).toEqual({ units: 3, days: 4 });
+      expect(creditsView(deps(), C.id).you).toEqual({ units: 1, days: 3 });
+
+      // The Library: v1 and v2 (v2 left last, so first), with the archetype's days; never the proposals that lost.
+      const lib = libraryView(deps());
+      expect(lib.units.map((l) => l.unit.id).filter((id) => id.startsWith("hog"))).toEqual(["hog-2", "hog"]);
+      const [v2, v1] = lib.units;
+      expect({ by: v2!.by, evolvedBy: v2!.evolvedBy, version: v2!.version, liveDays: v2!.liveDays, versions: v2!.versions }).toEqual({ by: A, evolvedBy: B, version: 2, liveDays: 11, versions: history });
+      expect({ by: v1!.by, evolvedBy: v1!.evolvedBy, version: v1!.version, liveDays: v1!.liveDays }).toEqual({ by: A, evolvedBy: null, version: 1, liveDays: 11 });
+      // A unit with one version has no history.
+      expect(lib.units.find((l) => l.unit.id === "fighter")).toMatchObject({ version: 1, versions: [], evolvedBy: null, liveDays: 1 });
+    });
+
+  it("a seed unit evolved: \"evolved by\" alone, its seed days counted, the evolver's number only theirs", () => {
+    const store = new MemoryMvpStore();
+    const { toDay, deps, version } = chainWorld(store);
+    toDay(3);
+    // Fighter (seed, live days 1–2) gives way to b's version on day 3.
+    version("fighter-2", B, "fighter", "fighter", "candidate");
+    swapUnit(store, "fighter", "fighter-2", AT);
+    toDay(5);
+    const c = creditsView(deps(), B.id);
+    expect(c.units.find((u) => u.unitId === "fighter-2")).toEqual({
+      unitId: "fighter-2",
+      by: null,
+      evolvedBy: B,
+      version: 2,
+      versions: [
+        { unitId: "fighter", version: 1, by: null, liveDays: 2, live: false },
+        { unitId: "fighter-2", version: 2, by: B, liveDays: 3, live: true },
+      ],
+      isNew: true,
+      liveDays: 5,
+    });
+    expect(c.you).toEqual({ units: 1, days: 3 });
+    expect(libraryView(deps()).units.find((l) => l.unit.id === "fighter")).toMatchObject({ by: null, evolvedBy: null, version: 1, liveDays: 5 });
+  });
+
+  it("NEW applies to an entering version, and to a seed unit back unchanged", () => {
+    const store = new MemoryMvpStore();
+    const { toDay, deps } = chainWorld(store);
+    toDay(3);
+    swapUnit(store, "fighter", "rat", AT);
+    toDay(4);
+    swapUnit(store, "rat", "fighter", AT);
+    const back = store.stints("fighter").find((s) => s.leftSeq === null)!;
+    store.putStint({ ...back, reason: "return" });
+    const c = creditsView(deps());
+    expect(c.units.find((u) => u.unitId === "fighter")).toMatchObject({ isNew: true, liveDays: 3, version: 1 });
+    toDay(4 + NEW_DAYS);
+    expect(creditsView(deps()).units.find((u) => u.unitId === "fighter")!.isNew).toBe(false);
   });
 });

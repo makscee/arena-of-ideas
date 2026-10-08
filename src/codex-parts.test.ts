@@ -41,6 +41,7 @@ const EFFECT_KINDS = [
 const SELECTOR_KINDS = [
   "holder",
   "eventUnit",
+  "attacker",
   "frontEnemy",
   "allEnemies",
   "allAllies",
