@@ -133,15 +133,18 @@ describe("versions on the vote cards (M3-6)", () => {
     expect(qualified([...s.values()]).map((x) => [x.unitId, x.kind])).toEqual([[rat, "unchanged"]]);
   });
 
-  it("on a tie with unchanged, the version enters", () => {
+  it("on even votes the version enters: unchanged gets no novelty bonus", () => {
     const w = world();
     const rat = w.library[0]!.unitId;
-    // The same row as the Library unit: the same novelty, so the same score.
-    const a = version(w, maks, rat, 0);
+    // A version close to the Library unit (a little less novel than it):
+    // even votes, and unchanged still doesn't win on novelty (#800).
+    const a = version(w, maks, rat, 1);
     votes(w, a, 4, 5);
     votes(w, rat, 4, 5);
     const s = byId(candidateScores(w.rt));
-    expect(s.get(a)!.score).toBe(s.get(rat)!.score);
+    expect(s.get(rat)!.novelty).toBe(0);
+    expect(s.get(rat)!.score).toBe(0.8);
+    expect(s.get(a)!.score).toBeGreaterThan(s.get(rat)!.score);
     expect(qualified([...s.values()]).map((x) => x.unitId)).toEqual([a]);
   });
 
