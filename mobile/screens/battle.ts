@@ -829,7 +829,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         const ic = def?.icon;
         return h(
           "span",
-          { class: `bv-st tone-${def?.tone ?? "plain"}`, title: `${st.status} ${st.stacks}`, "aria-label": `${st.status} ${st.stacks}`, "data-testid": "card-status", "data-status": st.status },
+          { class: `bv-st tone-${def?.tone ?? "plain"}`, title: `${rulesLangOpt() ? ruStatusName(st.status) : st.status} ${st.stacks}`, "aria-label": `${rulesLangOpt() ? ruStatusName(st.status) : st.status} ${st.stacks}`, "data-testid": "card-status", "data-status": st.status },
           ...(ic ? [icon(ic, 12)] : [st.status.slice(0, 2)]),
           h("b", {}, `${st.stacks}`),
         );
@@ -876,11 +876,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         { class: "stack", "data-testid": "live-statuses", "data-count": String(u.statuses.length) },
         u.silenced ? h("div", { class: "bv-live-st", "data-testid": "now-silenced" }, h("b", {}, "Silenced: "), h("span", { class: "dim" }, "its ability is off.")) : null,
         ...u.statuses.map((st) => {
-          const def = STATUS_TERMS[st.status] ?? termDef(`status:${st.status}`);
+          const def = (rulesLangOpt() ? termDef(`status:${st.status}`, {}, rulesLangOpt()) : undefined) ?? STATUS_TERMS[st.status] ?? termDef(`status:${st.status}`);
           return h(
             "div",
             { class: "bv-live-st", "data-testid": "live-status", "data-status": st.status, "data-stacks": String(st.stacks) },
-            h("span", { class: `bv-live-st-head tone-${def?.tone ?? "plain"}` }, ...(def?.icon ? [icon(def.icon, 18)] : []), h("b", {}, ` ${st.status} ×${st.stacks}`)),
+            h("span", { class: `bv-live-st-head tone-${def?.tone ?? "plain"}` }, ...(def?.icon ? [icon(def.icon, 18)] : []), h("b", {}, ` ${rulesLangOpt() ? ruStatusName(st.status) : st.status} ×${st.stacks}`)),
             def?.tip ? h("span", { class: "dim" }, def.tip) : null,
           );
         }),

@@ -717,7 +717,7 @@ export function beatPlayOf(log: BattleEvent[], steps: Step[], name: NameOf = dis
       parent.changes.push(...s.changes);
       // A Shield spent on a hit is already in its caption ("Shield blocks n", "(n absorbed)").
       const spent = log[first.causedBy!];
-      if (!(first.status === "Shield" && spent?.type === "Hurt" && spent.absorbed)) parent.caption += `, ${first.status} −${first.stacks}`;
+      if (!(first.status === "Shield" && spent?.type === "Hurt" && spent.absorbed)) parent.caption += `, ${st(first.status)} −${first.stacks}`;
       for (const id of s.eventIds) byEvent.set(id, parent);
       continue;
     }
@@ -1974,7 +1974,7 @@ export function totalsPartsOf(u: UnitTurnTotals): TotalsPart[] {
   if (u.healed) parts.push({ kind: "heal", text: `+${u.healed}` });
   if (u.pwr || u.hp) {
     const kind = u.pwr + u.hp >= 0 ? "buff" : "debuff";
-    parts.push({ kind, text: u.pwr && u.hp ? `${sign(u.pwr)}/${sign(u.hp)}` : u.pwr ? `${sign(u.pwr)} PWR` : `${sign(u.hp)} HP` });
+    parts.push({ kind, text: u.pwr && u.hp ? `${sign(u.pwr)}/${sign(u.hp)}` : u.pwr ? `${sign(u.pwr)} ${statWord("pwr")}` : `${sign(u.hp)} ${statWord("hp")}` });
   }
   if (u.blocked) parts.push({ kind: "blocked", text: `${u.blocked}` });
   for (const st of u.statuses) {
@@ -2047,8 +2047,8 @@ export function runRowText(kind: RunRow["kind"], key: string, value: number): st
   const sign = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : "0");
   if (kind === "damage") return `−${value}`;
   if (kind === "heal") return `+${value}`;
-  if (key === "pwr") return `${sign(value)} PWR`;
-  if (key === "hp") return `${sign(value)} HP`;
+  if (key === "pwr") return `${sign(value)} ${statWord("pwr")}`;
+  if (key === "hp") return `${sign(value)} ${statWord("hp")}`;
   if (kind === "blocked") return `${value}`;
   return value > 0 ? `×${value}` : value < 0 ? `−${-value}` : "0";
 }
