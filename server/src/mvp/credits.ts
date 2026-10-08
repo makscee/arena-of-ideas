@@ -138,7 +138,8 @@ export function libraryView(deps: CreditDeps): LibraryView {
     .sort((a, b) => left(b.unitId) - left(a.unitId) || a.row.tier - b.row.tier || a.row.name.localeCompare(b.row.name));
   for (const s of stored) {
     const c = contentOf([s.row]);
-    const unit = { ...c.units[0]!, id: s.unitId };
+    // M4-5: its Russian name and line ride along, as on GET /content.
+    const unit = { ...c.units[0]!, id: s.unitId, ...(s.texts?.ru ? { texts: s.texts } : {}) };
     Object.assign(out.abilities, c.abilities);
     Object.assign(out.statuses, c.statuses);
     for (const x of c.summons ?? []) if (!out.summons.some((y) => y.id === x.id)) out.summons.push(x);

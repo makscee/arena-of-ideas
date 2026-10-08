@@ -2,7 +2,7 @@
 // carries each translated unit's Russian name and line (`texts.ru`, beside
 // the unit, never in its version); a Russian page reads them, and a unit
 // without one keeps its English name and line.
-import type { FusionDiscovery, MvpContent, UnitContent } from "../src/mvp/contract";
+import type { FusionDiscovery, IdeaArchetype, MvpContent, UnitContent } from "../src/mvp/contract";
 import { rulesLang } from "./lang";
 
 let ru = new Map<string, { en: string; name: string; line: string }>();
@@ -14,6 +14,13 @@ const pairKey = (first: string, second: string) => `${first} ${second}`;
 export function localUnit(u: UnitContent, lang = rulesLang()): UnitContent {
   const t = lang === "ru" ? u.texts?.ru : undefined;
   return t ? { ...u, name: t.name, archetype: t.line } : u;
+}
+
+/** An idea's archetype in `lang` (M4-5): its Russian name and line when it
+ * has them and `lang` is Russian, else as it came. */
+export function localArchetype(a: IdeaArchetype, lang = rulesLang()): IdeaArchetype {
+  const t = lang === "ru" ? a.texts?.ru : undefined;
+  return t ? { ...a, name: t.name, line: t.line } : a;
 }
 
 /** The pack in the page's language (localUnit on every unit, live and left),

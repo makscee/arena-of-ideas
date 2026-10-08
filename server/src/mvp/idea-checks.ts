@@ -9,6 +9,7 @@ import { formText } from "../../../src/mvp/form-text.js";
 import { formProblems } from "../../../src/mvp/forms.js";
 import { archetypeProblems, awokenKeeps, linkLoops, mvpPool, sig, WHEN, WHO, type AwokenRow, type Row, type WhenKey, type WhoKey } from "../../../src/mvp/units.js";
 import { hasCrudeStem, isCrudeName } from "./crude.js";
+import { ruTextProblem } from "./translate.js";
 
 /** A candidate's numbers until M2-7's tuner sets them. */
 export const PLACEHOLDER_STATS: Pick<Row, "tier" | "pwr" | "hp"> = { tier: 2, pwr: 2, hp: 5 };
@@ -18,6 +19,8 @@ export interface ArchetypeDraft {
   name: string;
   emoji: string;
   line: string;
+  /** M4-5: the name and line in Russian, whichever language the idea was in. */
+  ru?: { name: string; line: string };
 }
 
 /** A reading as the reader drafted it: unchecked strings. */
@@ -36,8 +39,10 @@ const EMOJI = /^(?:\p{Extended_Pictographic}|\p{Emoji_Modifier}|\p{Regional_Indi
 
 /** What's wrong with a drafted archetype; empty when it can be shown. `taken`
  * is every unit and candidate so far (any status) plus the options already
- * accepted: the name and the line must differ from all of them. */
-export function archetypeDraftProblems(d: ArchetypeDraft, taken: Pick<Row, "name" | "archetype">[]): string[] {
+ * accepted: the name and the line must differ from all of them. M4-5: with
+ * `takenRu` (Russian names in use, as nameKey has them) the draft must also
+ * carry a Russian name and line that pass ruTextProblem. */
+export function archetypeDraftProblems(d: ArchetypeDraft, taken: Pick<Row, "name" | "archetype">[], takenRu?: ReadonlySet<string>): string[] {
   const out: string[] = [];
   const name = typeof d.name === "string" ? d.name.trim() : "";
   const emoji = typeof d.emoji === "string" ? d.emoji.trim() : "";
@@ -51,6 +56,11 @@ export function archetypeDraftProblems(d: ArchetypeDraft, taken: Pick<Row, "name
   // Word by word: isCrudeName joins a name's words, which a sentence's
   // neighbours would trip ("numbs the").
   if (line.split(/[^A-Za-z'’-]+/).some((w) => w && isCrudeName(w))) out.push(`${at}: the line reads crude`);
+  if (takenRu) {
+    const ru = typeof d.ru?.name === "string" && typeof d.ru.line === "string" ? d.ru : null;
+    const p = ru ? ruTextProblem(ru, takenRu) : "the Russian name and line are missing";
+    if (p) out.push(`${at}: in Russian, ${p}`);
+  }
   // archetypeProblems over the taken lines plus this one: only what this one adds.
   const before = new Set(archetypeProblems(taken));
   const self = "\u0000candidate";

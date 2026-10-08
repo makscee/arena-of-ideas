@@ -18,6 +18,7 @@ import { button, closable, h, onGone, onKeys, overlay, screen, show } from "../u
 import { richText } from "../ui/term";
 import { pickScreen } from "./pick";
 import { rulesLangOpt } from "../lang";
+import { localArchetype, localUnit } from "../unit-names";
 
 /** How My ideas names each stage. */
 export const IDEA_STAGE: Record<IdeaState, Key> = {
@@ -117,13 +118,13 @@ const targetNames = new Map<string, string>();
 async function nameTargets(sent: MyIdea[]): Promise<void> {
   if (!sent.some((i) => i.data.kind === "evolve" && !i.data.archetype && i.data.target && !targetNames.has(i.data.target))) return;
   const lib = await api.library().catch(() => null);
-  for (const l of lib?.units ?? []) targetNames.set(l.unit.id, `${l.unit.emoji} ${l.unit.name}`);
+  for (const l of lib?.units ?? []) targetNames.set(l.unit.id, `${l.unit.emoji} ${localUnit(l.unit).name}`);
 }
 
 /** What My ideas calls an idea before its stage: "🦔 Quillback · ", or for a
  * proposal (M3-5) "new version of 🦔 Quillback · ". */
 export function ideaNamed(i: MyIdea): string {
-  const a = i.data.archetype;
+  const a = i.data.archetype && localArchetype(i.data.archetype);
   if (i.data.kind !== "evolve") return a ? t("ideas.named", { emoji: a.emoji, name: a.name }) : "";
   const unit = a ? `${a.emoji} ${a.name}` : (i.data.target && targetNames.get(i.data.target)) || t("ideas.aLibraryUnit");
   return t("ideas.namedVersion", { unit });

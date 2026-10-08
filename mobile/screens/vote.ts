@@ -9,6 +9,7 @@ import { api } from "../api";
 import { addCardAbilities, card, formText } from "../ui/card";
 import { t } from "../i18n";
 import { button, h } from "../ui/dom";
+import { localUnit } from "../unit-names";
 
 /** A box that fills itself with the player's next vote card, if any. */
 export function votePanel(content: MvpContent): HTMLElement {
@@ -59,7 +60,7 @@ export function votePanel(content: MvpContent): HTMLElement {
         "div",
         { class: "panel stack vote", "data-testid": "vote-card" },
         h("div", { class: "row spread" }, h("div", { class: "label keep" }, t("vote.question")), button(t("vote.skip"), () => void send(null), "small link", "vote-skip")),
-        h("div", { class: "vote-pair" }, choice(c.units[0]), choice(c.units[1])),
+        h("div", { class: "vote-pair" }, choice(localUnit(c.units[0])), choice(localUnit(c.units[1]))),
       ),
     );
   };
