@@ -11,7 +11,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, Idea, IdeaState, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
-import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally } from "./store.js";
+import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally, type WordRequest } from "./store.js";
 
 const SQL_DIR = fileURLToPath(new URL("./sql/", import.meta.url));
 
@@ -255,6 +255,12 @@ export class SqliteMvpStore implements MvpStore {
       .map((r) => ideaOf(r)!);
   }
   deleteIdea(ideaId: string): void { this.write("DELETE FROM mvp_ideas WHERE id = ?", ideaId); }
+  addWordRequest(w: WordRequest): void {
+    this.write("INSERT INTO mvp_word_requests (idea_id, word, part, created_at) VALUES (?, ?, ?, ?)", w.ideaId, w.word, w.part, w.createdAt);
+  }
+  wordRequests(): WordRequest[] {
+    return this.db.prepare("SELECT idea_id AS ideaId, word, part, created_at AS createdAt FROM mvp_word_requests ORDER BY id").all() as WordRequest[];
+  }
 }
 
 type IdeaRow = { id: string; player_id: string; text: string; state: IdeaState; created_at: string; json: string };

@@ -121,6 +121,21 @@ export interface MvpStore {
   ideas(opts?: { playerId?: string; state?: IdeaState }): Idea[];
   /** Removes an idea (a `written` one its author took back). */
   deleteIdea(ideaId: string): void;
+  // Mission 2's new-words log (M2-5): what ideas needed that the game can't
+  // say yet. Only additions; ./idea-reading.ts writes it.
+  addWordRequest(w: WordRequest): void;
+  /** Every request, oldest first. */
+  wordRequests(): WordRequest[];
+}
+
+/** An idea the reader couldn't fully make (M2-5): the game word it lacks
+ * ("steal gold"), as the model named it, and the part of the idea's text
+ * that needed it. */
+export interface WordRequest {
+  ideaId: string;
+  word: string;
+  part: string;
+  createdAt: string;
 }
 
 export type UnitStatus = "candidate" | "live" | "library" | "rejected";
@@ -379,6 +394,9 @@ export class MemoryMvpStore implements MvpStore {
     return [...this.written.values()].filter((i) => (opts.playerId === undefined || i.playerId === opts.playerId) && (opts.state === undefined || i.state === opts.state)).map((i) => structuredClone(i));
   }
   deleteIdea(ideaId: string): void { this.written.delete(ideaId); }
+  private words: WordRequest[] = [];
+  addWordRequest(w: WordRequest): void { this.words.push({ ...w }); }
+  wordRequests(): WordRequest[] { return this.words.map((w) => ({ ...w })); }
 }
 
 export const NO_IDEAS: IdeaCounts = { spent: 0, granted: 0, forfeited: 0 };

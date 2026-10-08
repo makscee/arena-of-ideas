@@ -10,6 +10,7 @@ import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, TOKEN_HEADER, type Deci
 import { checkDecision, MvpBadDecision, MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
 import { dayView, endDay, hiddenSlay } from "./day.js";
 import { MvpNotYet } from "./errors.js";
+import { myIdea, pickArchetype, pickReading } from "./idea-reading.js";
 import { cancelIdea, grantIdea, IdeaRefused, ideasOf, myIdeas, writeIdea } from "./ideas.js";
 import { isAdmin, isJoinCode, JoinRefused, joinOpen, NAME_RE, openJoin, redeemInvite, sessionPlayer } from "./invites.js";
 import { abandon, currentRun, decide, preview, startRun } from "./runs.js";
@@ -244,6 +245,25 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     return ideaCall(c, (p) => writeIdea(rt, p.id, text));
   });
   api.post("/ideas/:ideaId/cancel", (c) => ideaCall(c, (p) => cancelIdea(rt, p.id, c.req.param("ideaId"))));
+  // M2-5: one idea with its options, and its author's picks (M2-6's screens).
+  api.get("/ideas/:ideaId", (c) => {
+    const p = playerOf(c);
+    if (!p) return unknownPlayer(c);
+    try {
+      return c.json(myIdea(rt, p.id, c.req.param("ideaId")));
+    } catch (err) {
+      if (err instanceof IdeaRefused) return bad(c, err.status, err.message);
+      throw err;
+    }
+  });
+  const pick = (fn: typeof pickArchetype) => async (c: Context) => {
+    const body = (await c.req.json().catch(() => null)) as { index?: unknown } | null;
+    if (typeof body?.index !== "number") return bad(c, 400, "body must be { index }");
+    const index = body.index;
+    return ideaCall(c, (p) => fn(rt, p.id, c.req.param("ideaId")!, index));
+  };
+  api.post("/ideas/:ideaId/archetype", pick(pickArchetype));
+  api.post("/ideas/:ideaId/reading", pick(pickReading));
 
   // Slice 10 owns this route and the store behind it; slice 11 only reads.
   api.get("/fusions", (c) => c.json(store.fusions()));

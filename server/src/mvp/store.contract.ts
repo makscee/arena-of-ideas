@@ -255,5 +255,15 @@ export function describeMvpStore(name: string, make: () => MvpStore): void {
       expect(s.idea("i3")).toBeUndefined();
       expect(s.ideas({ playerId: "p1" }).map((i) => i.ideaId)).toEqual(["i1"]);
     });
+
+    it("logs new-word requests (M2-5), oldest first", () => {
+      const s = make();
+      expect(s.wordRequests()).toEqual([]);
+      const w = (ideaId: string, word: string) => ({ ideaId, word, part: `the ${word} part`, createdAt: "2026-10-08T08:00:00.000Z" });
+      s.addWordRequest(w("i1", "steal gold"));
+      s.addWordRequest(w("i2", "swap places"));
+      s.addWordRequest(w("i1", "steal gold"));
+      expect(s.wordRequests()).toEqual([w("i1", "steal gold"), w("i2", "swap places"), w("i1", "steal gold")]);
+    });
   });
 }

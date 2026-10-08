@@ -7,6 +7,7 @@
 // file only adds the MVP's run, day and rating layer on top.
 
 import type { AbilityRegistry, BattleEvent, Condition, Selector, Side, Stats, StatusRegistry, When } from "../types.js";
+import type { AwokenRow, WhenKey, WhoKey } from "./units.js";
 
 export const MVP_API_VERSION = 1;
 /** Every API path hangs off this prefix, relative to the app's base URL
@@ -656,8 +657,47 @@ export interface Idea {
   data: IdeaData;
 }
 
-/** Empty until M2-5: each later slice adds its own optional keys. */
-export interface IdeaData {}
+/** What later stages add to an idea; each slice adds its own optional keys. */
+export interface IdeaData {
+  /** M2-5: the archetypes read from the text (`pick-archetype`), checked. */
+  archetypes?: IdeaArchetype[];
+  /** M2-5: the archetype its author picked; the readings are read for it. */
+  archetype?: IdeaArchetype;
+  /** M2-5: the readings for that archetype (`pick-reading`), checked. */
+  readings?: IdeaReading[];
+  /** M2-5: the parts of the text the game has no words for yet, quoted from
+   * the text itself (the missing words go to the new-words log). */
+  cantExpress?: string[];
+  /** Why the idea came back (`failed`); the idea was refunded. */
+  failure?: string;
+  /** M2-5: the candidate unit its picked reading became (`simulating`). */
+  unitId?: UnitId;
+  /** M2-5: the reader's failed tries at this stage, and when it tries again
+   * (ISO); a model error or timeout only delays the idea. */
+  tries?: number;
+  retryAt?: string;
+}
+
+/** M2-5: an archetype the reader made of an idea: a name, an emoji and a
+ * one-sentence line, all checked (archetypeProblems, the crude checks, a
+ * name no unit or candidate has). */
+export interface IdeaArchetype {
+  name: string;
+  emoji: string;
+  line: string;
+}
+
+/** M2-5: a reading of an idea as When → Who → Does in the words of
+ * src/mvp/units.ts (a `Row` without name and numbers: those are
+ * placeholders M2-7 tunes), and each form as formText renders it. Only
+ * these rendered forms and the archetype are ever shown. */
+export interface IdeaReading {
+  when: WhenKey;
+  who: WhoKey;
+  does: string;
+  awoken: AwokenRow;
+  text: { sleeping: string; awoken: string };
+}
 
 /** One of the player's own ideas, as My ideas shows it. */
 export type MyIdea = Omit<Idea, "playerId">;
@@ -712,6 +752,12 @@ export interface MyIdeasView {
 //                                                                  IDEA_TEXT_MIN–MAX characters, 409 no idea held)
 //   POST /api/v1/ideas/:ideaId/cancel        → MyIdeasView        (M2-4; takes back a `written` idea and refunds it: 404 not
 //                                                                  the caller's, 409 past `written` or ideas held at the cap)
+//   GET  /api/v1/ideas/:ideaId               → MyIdea             (M2-5; the caller's own idea with its options; 404 not theirs)
+//   POST /api/v1/ideas/:ideaId/archetype { index } → MyIdeasView  (M2-5; picks an archetype in `pick-archetype`: the reader
+//                                                                  reads its readings next; 400 no such option, 409 another state)
+//   POST /api/v1/ideas/:ideaId/reading   { index } → MyIdeasView  (M2-5; picks a reading in `pick-reading`: the idea is
+//                                                                  `simulating`, its unit a candidate; 409 another state, or the
+//                                                                  name or shape was just taken, the option dropped)
 //   GET  /api/v1/stats                       → StatsView          (slice 11)
 
 export const PLAYER_HEADER = "X-Arena-Player";
