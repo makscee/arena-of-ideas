@@ -120,8 +120,9 @@ export interface MvpStore {
   /** Stores or replaces the idea with this id. */
   putIdea(i: Idea): void;
   idea(ideaId: string): Idea | undefined;
-  /** Ideas oldest first: one player's, and/or in one state (the reader's queue). */
-  ideas(opts?: { playerId?: string; state?: IdeaState }): Idea[];
+  /** Ideas oldest first: one player's, and/or in one state (the reader's
+   * queue), and/or the evolve proposals for one Library unit (M3-3, `target`). */
+  ideas(opts?: { playerId?: string; state?: IdeaState; target?: UnitId }): Idea[];
   /** Removes an idea (a `written` one its author took back). */
   deleteIdea(ideaId: string): void;
   // Mission 2's new-words log (M2-5): what ideas needed that the game can't
@@ -170,6 +171,9 @@ export interface StoredUnit {
   origin: UnitOrigin;
   /** The unit it evolved from or returns as; null otherwise. */
   parentId: UnitId | null;
+  /** M3-3: the archetype's first version (./lineage.ts). Absent: the unit is
+   * its own root, as every unit made before mission 3 is. */
+  rootId?: UnitId;
   createdAt: string;
 }
 
@@ -186,6 +190,11 @@ export interface PoolSnapshot {
   rows?: Row[];
 }
 
+/** Why a stint began or ended: the seed pool, an idea's or an evolution's
+ * entrant, a return of a Library unit unchanged (M3-3), the rotation's
+ * leaver, a dev swap or credit. */
+export type StintReason = "seed" | "idea" | "evolution" | "return" | "rotated" | "swapped" | "dev: credited";
+
 /** One stay of a unit in the live pool, from day `enteredSeq` to `leftSeq`
  * (null: still there). */
 export interface PoolStint {
@@ -193,7 +202,7 @@ export interface PoolStint {
   enteredSeq: number;
   leftSeq: number | null;
   /** Why it entered (while there) or left. */
-  reason: string;
+  reason: StintReason;
 }
 
 /** Day tallies: finished runs, and per unit what UnitTally counts plus picks. */
@@ -413,8 +422,10 @@ export class MemoryMvpStore implements MvpStore {
     this.written.set(i.ideaId, structuredClone(i));
   }
   idea(ideaId: string): Idea | undefined { const i = this.written.get(ideaId); return i && structuredClone(i); }
-  ideas(opts: { playerId?: string; state?: IdeaState } = {}): Idea[] {
-    return [...this.written.values()].filter((i) => (opts.playerId === undefined || i.playerId === opts.playerId) && (opts.state === undefined || i.state === opts.state)).map((i) => structuredClone(i));
+  ideas(opts: { playerId?: string; state?: IdeaState; target?: UnitId } = {}): Idea[] {
+    return [...this.written.values()]
+      .filter((i) => (opts.playerId === undefined || i.playerId === opts.playerId) && (opts.state === undefined || i.state === opts.state) && (opts.target === undefined || i.data.target === opts.target))
+      .map((i) => structuredClone(i));
   }
   deleteIdea(ideaId: string): void { this.written.delete(ideaId); }
   private votesList: Vote[] = [];

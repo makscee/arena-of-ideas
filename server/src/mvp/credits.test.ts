@@ -32,9 +32,9 @@ function world(store: MvpStore = new MemoryMvpStore(), dev = true) {
 
 describe("credits and the library (M2-9)", () => {
   it("liveDays counts each day a unit was in the pool", () => {
-    expect(liveDays([{ unitId: "x", enteredSeq: 5, leftSeq: null, reason: "" }], 5)).toBe(1);
-    expect(liveDays([{ unitId: "x", enteredSeq: 5, leftSeq: null, reason: "" }], 9)).toBe(5);
-    expect(liveDays([{ unitId: "x", enteredSeq: 2, leftSeq: 4, reason: "" }, { unitId: "x", enteredSeq: 7, leftSeq: null, reason: "" }], 8)).toBe(4);
+    expect(liveDays([{ unitId: "x", enteredSeq: 5, leftSeq: null, reason: "seed" }], 5)).toBe(1);
+    expect(liveDays([{ unitId: "x", enteredSeq: 5, leftSeq: null, reason: "seed" }], 9)).toBe(5);
+    expect(liveDays([{ unitId: "x", enteredSeq: 2, leftSeq: 4, reason: "seed" }, { unitId: "x", enteredSeq: 7, leftSeq: null, reason: "seed" }], 8)).toBe(4);
   });
 
   it("the seed has no credits and nothing NEW; the 8 cut in round 4 are the library", async () => {
@@ -90,7 +90,7 @@ describe("credits and the library (M2-9)", () => {
     // It leaves at day 6 (M2-10's rotation will do this): live days 1–5.
     toDay(6);
     const open = store.stints(unitId).find((s) => s.leftSeq === null)!;
-    store.putStint({ ...open, leftSeq: 6, reason: "replaced" });
+    store.putStint({ ...open, leftSeq: 6, reason: "rotated" });
     store.putUnit({ ...store.unit(unitId)!, status: "library" });
     const other = store.currentPool()!.unitIds.find((id) => id !== unitId)!;
     const f: FusionDiscovery = { first: unitId, second: other, name: "Testfuse", discoveredBy: maks, discoveredAt: "2026-10-08T09:00:00.000Z", nameSource: "fallback" };
