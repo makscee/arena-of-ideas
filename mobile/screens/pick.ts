@@ -2,18 +2,20 @@
 // player's idea becomes. The reader (M2-5) offers 3 archetypes (emoji, name,
 // one line); the player taps one and confirms, and the idea is read again
 // for 3 readings of it: unit cards like the shop's and the Codex's, each
-// with its sheet (keywords lit, "See Awoken"), numbers "set by simulation".
+// with its sleeping rule as text under it (M3-2) and its sheet (keywords lit, "See Awoken"), numbers "set by simulation".
 // Tap one, confirm: the idea is tested overnight. "None of these" asks for
 // other options once per stage; the second time the idea comes back,
 // refunded. Phone first: 360×640 shows a pick without scrolling the page
 // (only the sheet's own box scrolls); the desktop puts the sheet in the side
 // panel, as the Codex does.
 import type { IdeaArchetype, IdeaReading, MvpContent, MyIdea } from "../../src/mvp/contract";
+import { formSegments } from "../../src/mvp/form-text";
 import { mvpPool, type Row } from "../../src/mvp/units";
 import { api, ApiError } from "../api";
 import { getContent } from "../content";
 import { card, setCardAbilities, unitSheet } from "../ui/card";
 import { button, fitText, h, isDesktop, onKeys, screen, show } from "../ui/dom";
+import { richText } from "../ui/term";
 
 export interface PickNav {
   /** Back to My ideas; `notice` is the line it opens with. */
@@ -177,9 +179,19 @@ function readingScreen(idea: MyIdea, content0: MvpContent, nav: PickNav): void {
     c.dataset.index = String(i);
     return c;
   });
+  // M3-2: each card's sleeping rule as text under it (the sheet's words), so
+  // the three compare at a glance; a tap off its keywords picks it too.
+  const cols = cards.map((c, i) => {
+    const rule = h("div", { class: "pick-rule", "data-testid": "pick-rule" }, ...richText(formSegments(units[i]!.forms.sleeping, content.abilities), { size: 13 }));
+    rule.addEventListener("click", (e) => {
+      if (!(e.target as HTMLElement).closest("button")) tap(i);
+    });
+    return h("div", { class: "pick-col" }, c, rule);
+  });
   const tap = (i: number) => {
     picked = i;
     cards.forEach((c, k) => c.classList.toggle("inspected", k === i));
+    cols.forEach((c, k) => c.classList.toggle("picked", k === i));
     const { pool: _, ...u } = units[i]!;
     detail.replaceChildren(unitSheet(u, content, { candidate: true }));
     confirm.disabled = false;
@@ -189,7 +201,7 @@ function readingScreen(idea: MyIdea, content0: MvpContent, nav: PickNav): void {
     { class: desk ? "codex-main stack" : "pick-main" },
     ...head("READING", "2 / 2", idea),
     h("div", { class: "pick-archline", "data-testid": "pick-archline" }, `${a.emoji} ${a.name}`, h("span", { class: "dim small" }, ` · ${a.line}`)),
-    h("div", { class: "slots pick-cards", "data-testid": "pick-readings" }, ...cards),
+    h("div", { class: "pick-cards", "data-testid": "pick-readings" }, ...cols),
     cantLine(idea),
     desk ? null : detail,
     noneButton(idea, "readings", nav, err),
