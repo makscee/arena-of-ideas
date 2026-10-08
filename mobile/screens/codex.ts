@@ -237,7 +237,7 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
 /** The When icon a unit's card leads with (card.ts iconLine), its pip and
  * its label. The key tells "Dies" from "Ally dies" ("death-skull.ally"). */
 function triggerOf(u: UnitContent, abilities: AbilityRegistry): { key: string; icon: IconId; pip?: Pip; label: string } | null {
-  const w = cardIcons(u.forms.sleeping, abilities)[0];
+  const w = cardIcons(u.forms.sleeping, abilities, rulesLangOpt())[0];
   if (!w || w.role !== "when") return null;
   return { key: w.pip ? `${w.icon}.${w.pip}` : w.icon, icon: w.icon, ...(w.pip ? { pip: w.pip } : {}), label: w.label };
 }

@@ -177,7 +177,7 @@ export function withPip(ic: Element, pip: Pip | undefined): Element {
 /** The card's top row: When, Who, then each Does, one icon per idea, each in
  * its tone. Hovering names them all ("Battle start · Front enemy · Freeze"). */
 function iconLine(form: UnitForm | undefined, tiered: boolean): Node | null {
-  const icons = form ? cardIcons(form, abilities) : [];
+  const icons = form ? cardIcons(form, abilities, rulesLangOpt()) : [];
   if (!icons.length) return null;
   const names = icons.map((c) => c.label).join(" · ");
   return h(
@@ -193,7 +193,7 @@ function iconLine(form: UnitForm | undefined, tiered: boolean): Node | null {
 /** The card's icons, each with its name ("Battle start", "Front enemy",
  * "Damage"): a phone has no hover, so the sheet says what they mean. */
 export function iconKey(form: UnitForm | undefined): HTMLElement | null {
-  const icons = form ? cardIcons(form, abilities) : [];
+  const icons = form ? cardIcons(form, abilities, rulesLangOpt()) : [];
   if (!icons.length) return null;
   return h("div", { class: "sheet-icons", "data-testid": "sheet-icons" }, ...icons.map((c) => h("span", { class: `ik tone-${c.tone}` }, withPip(icon(c.icon, 14), c.pip), h("span", { class: "ik-name" }, c.label))));
 }
