@@ -11,6 +11,8 @@ import { IDEA_TEXT_MAX, IDEA_TEXT_MIN, type CreditsView, type IdeaState, type Mv
 import { formSegments } from "../../src/mvp/form-text";
 import { api, ApiError } from "../api";
 import { getContent } from "../content";
+import { t } from "../i18n";
+import type { Key } from "../i18n/en";
 import { unitSheet } from "../ui/card";
 import { button, closable, h, onGone, onKeys, overlay, screen, show } from "../ui/dom";
 import { richText } from "../ui/term";
@@ -18,21 +20,20 @@ import { pickScreen } from "./pick";
 import { rulesLangOpt } from "../lang";
 
 /** How My ideas names each stage. */
-export const IDEA_STAGE: Record<IdeaState, string> = {
-  written: "being read",
-  reading: "being read",
-  "pick-archetype": "Ready: pick its archetype",
-  "pick-reading": "Ready: pick its reading",
-  simulating: "being tested: we'll test it overnight",
-  voting: "in the vote",
-  live: "live",
-  failed: "didn't pass",
-  library: "in the library",
+export const IDEA_STAGE: Record<IdeaState, Key> = {
+  written: "ideas.stage.written",
+  reading: "ideas.stage.reading",
+  "pick-archetype": "ideas.stage.pickArchetype",
+  "pick-reading": "ideas.stage.pickReading",
+  simulating: "ideas.stage.simulating",
+  voting: "ideas.stage.voting",
+  live: "ideas.stage.live",
+  failed: "ideas.stage.failed",
+  library: "ideas.stage.library",
 };
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 /** Why New idea is off: "1 more run for an idea" (Home's ideas line says the same). */
-export const ideaWhy = (runs: number) => `${plural(runs, "more run")} for an idea`;
+export const ideaWhy = (runs: number) => t("ideas.why", { n: runs });
 const chars = (s: string) => [...s.trim()].length;
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -47,7 +48,7 @@ const READ_POLL_MS = 10_000;
 
 /** My ideas; `notice` is what just happened (an idea sent, a pick made), said on top. */
 export async function ideasScreen(nav: IdeasNav, notice: string | null = null): Promise<void> {
-  const back = button("Back", nav.onBack, "primary grow", "ideas-back");
+  const back = button(t("ideas.back"), nav.onBack, "primary grow", "ideas-back");
   const escBack = (e: KeyboardEvent) => (e.key === "Escape" ? (nav.onBack(), true) : false);
   let view: MyIdeasView;
   let you: CreditsView["you"] = null;
@@ -57,7 +58,7 @@ export async function ideasScreen(nav: IdeasNav, notice: string | null = null): 
     await nameTargets(view.sent);
   } catch (e) {
     if (e instanceof ApiError && e.status === 401) return nav.onUnknown();
-    show(h("h1", {}, "MY IDEAS"), h("div", { class: "error", "data-testid": "error" }, errorText(e)), h("div", { class: "spacer" }), h("div", { class: "row footer" }, back));
+    show(h("h1", {}, t("ideas.title")), h("div", { class: "error", "data-testid": "error" }, errorText(e)), h("div", { class: "spacer" }), h("div", { class: "row footer" }, back));
     onKeys(escBack);
     return;
   }
@@ -65,26 +66,26 @@ export async function ideasScreen(nav: IdeasNav, notice: string | null = null): 
   const { held, nextIn } = view.ideas;
   const holdLine =
     held > 0
-      ? `💡 You hold ${plural(held, "idea")}.${nextIn === null ? " That's the most you can: send one to keep earning." : ""}`
-      : "💡 You hold no ideas.";
+      ? `${t("ideas.hold", { n: held })}${nextIn === null ? t("ideas.holdMax") : ""}`
+      : t("ideas.holdNone");
   // M3-2: with none held, New idea is off (muted, nothing to press) and says why beside it.
-  const write = button("New idea", () => writeScreen(nav), held > 0 ? "primary" : "primary off", "idea-new");
+  const write = button(t("ideas.new"), () => writeScreen(nav), held > 0 ? "primary" : "primary off", "idea-new");
   if (held === 0) write.disabled = true;
   const newIdea = held > 0 ? write : h("div", { class: "off-row" }, write, h("span", { class: "dim small", "data-testid": "idea-new-why" }, ideaWhy(nextIn ?? 0)));
   show(
-    h("h1", {}, "MY IDEAS"),
+    h("h1", {}, t("ideas.title")),
     notice ? h("div", { class: "notice", "data-testid": "idea-sent" }, notice) : null,
     h("div", { "data-testid": "ideas-held" }, holdLine),
     newIdea,
     err,
-    h("div", { class: "label" }, "Sent"),
+    h("div", { class: "label" }, t("ideas.sent")),
     h(
       "div",
       { class: "panel stack", "data-testid": "ideas-sent" },
-      ...(view.sent.length ? view.sent.map((i) => sentRow(i, nav, err)) : [h("div", { class: "dim" }, "Nothing sent yet. Your ideas show here with how far they've got.")]),
+      ...(view.sent.length ? view.sent.map((i) => sentRow(i, nav, err)) : [h("div", { class: "dim" }, t("ideas.nothingSent"))]),
     ),
     you ? creatorLine(you) : null,
-    h("div", { class: "dim small" }, "Only you see what you write."),
+    h("div", { class: "dim small" }, t("ideas.private")),
     h("div", { class: "spacer" }),
     h("div", { class: "row footer" }, back),
   );
@@ -105,8 +106,8 @@ function creatorLine(you: NonNullable<CreditsView["you"]>): HTMLElement {
   return h(
     "div",
     { class: "dim small", "data-testid": "creator-number" },
-    `💡 Creator number: ${you.days}. `,
-    you.units ? `The days your ${you.units === 1 ? "unit has" : `${plural(you.units, "unit")} have`} been live, all together.` : "Once an idea of yours is a unit, each day it's live adds one.",
+    t("ideas.creator", { days: you.days }),
+    you.units ? t("ideas.creatorDays", { n: you.units }) : t("ideas.creatorNone"),
   );
 }
 
@@ -123,20 +124,20 @@ async function nameTargets(sent: MyIdea[]): Promise<void> {
  * proposal (M3-5) "new version of 🦔 Quillback · ". */
 export function ideaNamed(i: MyIdea): string {
   const a = i.data.archetype;
-  if (i.data.kind !== "evolve") return a ? `${a.emoji} ${a.name} · ` : "";
-  const unit = a ? `${a.emoji} ${a.name}` : (i.data.target && targetNames.get(i.data.target)) || "a Library unit";
-  return `new version of ${unit} · `;
+  if (i.data.kind !== "evolve") return a ? t("ideas.named", { emoji: a.emoji, name: a.name }) : "";
+  const unit = a ? `${a.emoji} ${a.name}` : (i.data.target && targetNames.get(i.data.target)) || t("ideas.aLibraryUnit");
+  return t("ideas.namedVersion", { unit });
 }
 
 function sentRow(i: MyIdea, nav: IdeasNav, err: HTMLElement): HTMLElement {
   const ready = i.state === "pick-archetype" || i.state === "pick-reading";
   const action =
     i.state === "written"
-      ? button("Cancel", () => cancelSheet(i, nav, err), "small", "idea-cancel")
+      ? button(t("ideas.cancel"), () => cancelSheet(i, nav, err), "small", "idea-cancel")
       : ready
-        ? button("Pick", () => void pickScreen(i.ideaId, { toIdeas: (n) => void ideasScreen(nav, n ?? null), onUnknown: nav.onUnknown }), "small primary", "idea-pick")
+        ? button(t("ideas.pick"), () => void pickScreen(i.ideaId, { toIdeas: (n) => void ideasScreen(nav, n ?? null), onUnknown: nav.onUnknown }), "small primary", "idea-pick")
         : i.state === "live" && i.data.unitId
-          ? button("Its card", () => void openUnit(i.data.unitId!, err), "small", "idea-card")
+          ? button(t("ideas.itsCard"), () => void openUnit(i.data.unitId!, err), "small", "idea-card")
           : null;
   const named = ideaNamed(i);
   return h(
@@ -146,8 +147,8 @@ function sentRow(i: MyIdea, nav: IdeasNav, err: HTMLElement): HTMLElement {
       "div",
       { class: "grow" },
       h("div", { class: "idea-text" }, i.text),
-      h("div", { class: ready ? "small idea-ready" : "dim small", "data-testid": "idea-stage" }, `${named}${IDEA_STAGE[i.state]}`),
-      i.state === "failed" && i.data.failure ? h("div", { class: "dim small", "data-testid": "idea-failure" }, `${i.data.failure} Your idea was refunded.`) : null,
+      h("div", { class: ready ? "small idea-ready" : "dim small", "data-testid": "idea-stage" }, `${named}${t(IDEA_STAGE[i.state])}`),
+      i.state === "failed" && i.data.failure ? h("div", { class: "dim small", "data-testid": "idea-failure" }, t("ideas.failure", { failure: i.data.failure })) : null,
     ),
     action,
   );
@@ -157,20 +158,20 @@ function sentRow(i: MyIdea, nav: IdeasNav, err: HTMLElement): HTMLElement {
 async function openUnit(unitId: string, err: HTMLElement): Promise<void> {
   const content = await getContent().catch(() => null);
   const unit = content?.units.find((u) => u.id === unitId);
-  if (!content || !unit) return void (err.textContent = "Its card shows once the pool has it.");
+  if (!content || !unit) return void (err.textContent = t("ideas.cardLater"));
   closable(unitSheet(unit, content));
 }
 
 function cancelSheet(i: MyIdea, nav: IdeasNav, err: HTMLElement): void {
   const close = overlay(
-    h("div", { class: "label" }, "Cancel idea"),
-    h("p", {}, "Take this idea back? Its text is deleted, and you get the idea back to write another."),
+    h("div", { class: "label" }, t("ideas.cancelTitle")),
+    h("p", {}, t("ideas.cancelBody")),
     h(
       "div",
       { class: "row sheet-actions" },
-      button("Keep it", () => close(), "grow", "idea-keep"),
+      button(t("ideas.keep"), () => close(), "grow", "idea-keep"),
       button(
-        "Take back",
+        t("ideas.takeBack"),
         () => {
           close();
           void api
@@ -191,12 +192,12 @@ function cancelSheet(i: MyIdea, nav: IdeasNav, err: HTMLElement): void {
 /** One text box and Send; sending spends one held idea. */
 function writeScreen(nav: IdeasNav): void {
   textScreen({
-    title: "NEW IDEA",
+    title: t("ideas.writeTitle"),
     above: [],
-    label: "Your idea for a unit, in your own words",
-    placeholder: "A healer who grows stronger every time an ally falls.",
+    label: t("ideas.writeLabel"),
+    placeholder: t("ideas.writePlaceholder"),
     send: (text) => api.writeIdea(text),
-    sent: "Your idea is being read. We'll tell you when it's ready.",
+    sent: t("ideas.writeSent"),
     onBack: () => void ideasScreen(nav),
     nav,
   });
@@ -207,21 +208,21 @@ function writeScreen(nav: IdeasNav): void {
  * spends one held idea and opens My ideas. `content` has the unit's abilities. */
 export function proposeScreen(unit: UnitContent, content: MvpContent, nav: IdeasNav): void {
   textScreen({
-    title: `A new version of ${unit.emoji} ${unit.name}`,
+    title: t("ideas.proposeTitle", { emoji: unit.emoji, name: unit.name }),
     long: true,
     above: [
       h("div", { class: "dim small", "data-testid": "propose-line" }, unit.archetype),
       h(
         "div",
         { class: "panel propose-now", "data-testid": "propose-rule" },
-        h("span", { class: "dim small" }, "Now: "),
+        h("span", { class: "dim small" }, t("ideas.now")),
         ...richText(formSegments(unit.forms.sleeping, content.abilities, rulesLangOpt()), { size: 14 }),
       ),
     ],
-    label: "What should change?",
-    placeholder: "Make it hit every enemy instead of only the front one.",
+    label: t("ideas.proposeLabel"),
+    placeholder: t("ideas.proposePlaceholder"),
     send: (text) => api.proposeVersion(unit.id, text),
-    sent: `Your new version of ${unit.emoji} ${unit.name} is being read. We'll tell you when it's ready.`,
+    sent: t("ideas.proposeSent", { emoji: unit.emoji, name: unit.name }),
     onBack: nav.onBack,
     nav,
   });
@@ -255,7 +256,7 @@ function textScreen(o: TextScreen): void {
   const err = h("div", { class: "error", "data-testid": "error" });
   let sending = false;
   const send = button(
-    "Send",
+    t("ideas.send"),
     () => {
       if (sending) return;
       sending = true;
@@ -275,7 +276,7 @@ function textScreen(o: TextScreen): void {
   );
   const update = () => {
     const n = chars(box.value);
-    count.textContent = n < IDEA_TEXT_MIN ? `${n} / ${IDEA_TEXT_MAX} · at least ${IDEA_TEXT_MIN}` : `${n} / ${IDEA_TEXT_MAX}`;
+    count.textContent = n < IDEA_TEXT_MIN ? t("ideas.countMin", { n, max: IDEA_TEXT_MAX, min: IDEA_TEXT_MIN }) : t("ideas.count", { n, max: IDEA_TEXT_MAX });
     send.disabled = sending || n < IDEA_TEXT_MIN || n > IDEA_TEXT_MAX;
   };
   box.addEventListener("input", update);
@@ -286,10 +287,10 @@ function textScreen(o: TextScreen): void {
     h("label", { class: "label", for: "idea-box" }, o.label),
     box,
     count,
-    h("div", { class: "dim small" }, "Only you see your text. Sending spends one idea."),
+    h("div", { class: "dim small" }, t("ideas.writeNote")),
     err,
     h("div", { class: "spacer" }),
-    h("div", { class: "row footer" }, button("Back", o.onBack, "grow", "idea-write-back"), send),
+    h("div", { class: "row footer" }, button(t("ideas.back"), o.onBack, "grow", "idea-write-back"), send),
   );
   box.id = "idea-box";
   screen("ideas");

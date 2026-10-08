@@ -4,6 +4,7 @@
 // "Fusions that hurt their own team stay"); the preview only says so.
 import type { MvpContent, UnitForm } from "../../src/mvp/contract";
 import type { Effect, Selector, StatusRegistry, When } from "../../src/types";
+import { t } from "../i18n";
 
 type Side = "ally" | "enemy" | null;
 
@@ -63,9 +64,9 @@ export function effectSign(e: Effect, statuses: StatusRegistry): 1 | -1 | 0 {
 /** What an effect is called in the warning. */
 function effectName(e: Effect): string {
   if (e.kind === "applyStatus") return e.status;
-  if (e.kind === "resurrect") return "revive";
-  if (e.kind === "summon") return "a summon";
-  if (e.kind === "silence") return "Silence";
+  if (e.kind === "resurrect") return t("fuseWarn.revive");
+  if (e.kind === "summon") return t("fuseWarn.summon");
+  if (e.kind === "silence") return t("fuseWarn.silence");
   return e.kind;
 }
 
@@ -90,7 +91,7 @@ export function misfires(form: UnitForm, content: Pick<MvpContent, "abilities" |
   return out;
 }
 
-const list = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
+const list = (xs: string[]) => (xs.length < 2 ? xs.join("") : t("fuseWarn.list", { head: xs.slice(0, -1).join(t("fuseWarn.comma")), last: xs[xs.length - 1]! }));
 
 /** The fuse preview's warning, or null: only what the fusion adds, not what
  * a part already did on its own (a unit built to hurt itself). */
@@ -100,7 +101,7 @@ export function fuseWarning(fused: UnitForm, parts: UnitForm[], content: Pick<Mv
   const hurts = m.hurts.filter((n) => !own.some((o) => o.hurts.includes(n)));
   const helps = m.helps.filter((n) => !own.some((o) => o.helps.includes(n)));
   const says: string[] = [];
-  if (hurts.length) says.push(`hurts your own units (its ${list(hurts)} ${hurts.length === 1 ? "lands" : "land"} on them)`);
-  if (helps.length) says.push(`helps the enemy (its ${list(helps)} ${helps.length === 1 ? "goes" : "go"} to them)`);
-  return says.length ? `⚠ This fusion ${says.join(" and ")}.` : null;
+  if (hurts.length) says.push(t("fuseWarn.hurts", { list: list(hurts), n: hurts.length }));
+  if (helps.length) says.push(t("fuseWarn.helps", { list: list(helps), n: helps.length }));
+  return says.length ? t("fuseWarn.warning", { says: says.join(t("fuseWarn.and")) }) : null;
 }
