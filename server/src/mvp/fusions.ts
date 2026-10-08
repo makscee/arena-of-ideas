@@ -27,6 +27,7 @@
 //   pair is asked every MODEL_PROBE_MS; the first answer brings it back.
 import { fuseCheck } from "../../../src/mvp/forms.js";
 import { hasCrudeStem, isCrudeName } from "./crude.js";
+import { leftUnits } from "./pool.js";
 import type { FuseContext, FusionDiscovery, FusionParts, PlayerRef, UnitContent, UnitId } from "../../../src/mvp/contract.js";
 import type { RunDeps, RunHooks } from "./runs.js";
 import type { MvpJob } from "./runtime.js";
@@ -530,9 +531,20 @@ export function fusionNaming(
   opts: { model?: ModelNamer | null; backoffMs?: (failures: number) => number; clock?: () => number } = {},
 ): FusionNaming {
   const { store } = rt;
+  let unitsAt = "";
+  let unitsMap = new Map<UnitId, UnitContent>();
   const n: Namer = {
     model: opts.model === undefined ? envModelNamer() : opts.model,
-    units: new Map(rt.content.units.map((u) => [u.id, u])),
+    // The live pool's units, then those that left: a fusion whose parts left
+    // is still named (M2-2). Rebuilt when the pool changes.
+    get units() {
+      const live = rt.content;
+      if (unitsAt !== live.version) {
+        unitsMap = new Map([...leftUnits(store, live), ...live.units].map((u) => [u.id, u]));
+        unitsAt = live.version;
+      }
+      return unitsMap;
+    },
     taken: null,
     prepared: new Map(),
     human: [],

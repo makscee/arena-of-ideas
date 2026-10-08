@@ -80,7 +80,7 @@ describe("MVP run server", () => {
     expect(won.run.rating).toEqual(change);
     expect(rt.store.rating(maks.id)).toEqual({ player: maks, rating: change.after, runs: 1, slays: 1, daysAsChampion: 0, playoffWins: 0 });
     // No Crown ghost is saved: ghosts are shop rounds only.
-    expect(rt.store.ghosts(13, { excludePlayerId: "x", contentVersion: rt.content.version })).toEqual([]);
+    expect(rt.store.ghosts(13, { excludePlayerId: "x" })).toEqual([]);
   });
 
   it("a bot's Crown win writes a Slay like a human's and counts it in its records; its rating never moves (#587)", () => {
@@ -191,7 +191,7 @@ describe("MVP bench on the server (R3-13)", () => {
     const benched: MvpRunState = { ...run, bench: [lineUnitOf(rt.content.units[0]!, "b1", 1, rt.rules)] };
     rt.store.putRun(benched);
     decide(rt, benched, { kind: "fight" });
-    const ghost = rt.store.ghosts(rt.rules.rounds, { excludePlayerId: "x", contentVersion: rt.content.version }).find((g) => g.runId === run.runId)!;
+    const ghost = rt.store.ghosts(rt.rules.rounds, { excludePlayerId: "x" }).find((g) => g.runId === run.runId)!;
     expect(ghost.line.map((u) => u.uid)).toEqual(run.line.map((u) => u.uid));
     const crown = rt.store.run(run.runId)!;
     expect(crown.bench.map((u) => u.uid)).toEqual(["b1"]);
@@ -312,7 +312,7 @@ describe("MVP giving up and stamped ratings (round 2)", () => {
     weakChampion(rt);
     const run = lastRound(rt, maks);
     decide(rt, run, { kind: "fight" });
-    const ghost = rt.store.ghosts(rt.rules.rounds, { excludePlayerId: "x", contentVersion: rt.content.version }).find((g) => g.runId === run.runId);
+    const ghost = rt.store.ghosts(rt.rules.rounds, { excludePlayerId: "x" }).find((g) => g.runId === run.runId);
     expect(ghost?.rating).toBe(1137);
     const won = decide(rt, rt.store.run(run.runId)!, { kind: "fight" });
     expect(won.run.endedBy).toBe("crown-won");
@@ -432,7 +432,7 @@ describe("MVP run server fixes (#579 check of a3c9b113)", () => {
     const battle = rt.store.battle(r.fight!.battleId)!;
     expect(battle.log.map((e) => e.type)).toEqual(["BattleStart", "BattleEnd"]);
     expect(battle.winner).toBe("B");
-    expect(rt.store.ghosts(1, { excludePlayerId: "x", contentVersion: rt.content.version })).toEqual([]);
+    expect(rt.store.ghosts(1, { excludePlayerId: "x" })).toEqual([]);
     // Fighting empty to the end runs out of hearts and the next start is a new run.
     let cur = r;
     while (cur.run.phase !== "over") cur = decide(rt, rt.store.run(run.runId)!, { kind: "fight" });
@@ -490,7 +490,7 @@ describe("MVP run server fixes (#579 check of a3c9b113)", () => {
     const won = decide(rt, rt.store.run(run.runId)!, { kind: "fight" });
     expect(won.run.endedBy).toBe("crown-won");
     // The slayer's round-12 line is the only saved team at round 12.
-    expect(rt.store.ghosts(rt.rules.rounds, { excludePlayerId: "x", contentVersion: rt.content.version }).map((g) => g.runId)).toEqual([run.runId]);
+    expect(rt.store.ghosts(rt.rules.rounds, { excludePlayerId: "x" }).map((g) => g.runId)).toEqual([run.runId]);
     const ann: PlayerRef = { id: "p2", name: "Ann", bot: false };
     const slayerGhost = `${run.runId}-r${rt.rules.rounds}`;
     // Ann reaches round 12 with no opponent picked yet: the fight picks it now.
@@ -549,7 +549,7 @@ describe("MVP run server fixes (#579 check of a3c9b113)", () => {
       for (let i = 0; i < 10; i++) store.addGhost(g(i));
       store.addGhost(g(10, maks));
       store.addGhost(g(11, botP, 2));
-      const ids = (limit?: number) => store.ghosts(1, { excludePlayerId: maks.id, contentVersion: "v", ...(limit === undefined ? {} : { limit }) }).map((x) => x.ghostId);
+      const ids = (limit?: number) => store.ghosts(1, { excludePlayerId: maks.id, ...(limit === undefined ? {} : { limit }) }).map((x) => x.ghostId);
       expect(ids()).toEqual(["g0", "g1", "g2", "g3", "g4", "g5", "g6", "g7", "g8", "g9"]);
       expect(ids(3)).toEqual(["g7", "g8", "g9"]);
       expect(ids(30)).toHaveLength(10);

@@ -14,6 +14,7 @@ import { grantIdea, ideasOf } from "./ideas.js";
 import { isAdmin, isJoinCode, JoinRefused, joinOpen, NAME_RE, openJoin, redeemInvite, sessionPlayer } from "./invites.js";
 import { abandon, currentRun, decide, preview, startRun } from "./runs.js";
 import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
+import { servedContent } from "./pool.js";
 import { statsView } from "./stats.js";
 
 /** New players the open join link (R4-20) makes per hour, server-wide. */
@@ -22,7 +23,7 @@ export const JOINS_PER_HOUR = 30;
 /** The API on a runtime, or on a fresh one built from `deps`. */
 export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   const rt = isMvpRuntime(deps) ? deps : mvpRuntime(deps);
-  const { content, store } = rt;
+  const { store } = rt;
   const api = new Hono();
 
   const bad = (c: Context, status: 400 | 401 | 403 | 404 | 409 | 413 | 429 | 501, error: string) => c.json({ error }, status);
@@ -64,8 +65,8 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
       await next();
     });
 
-  api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: content.version, invites: rt.invites, open: rt.open }));
-  api.get("/content", (c) => c.json(content));
+  api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: rt.content.version, invites: rt.invites, open: rt.open }));
+  api.get("/content", (c) => c.json(servedContent(rt)));
 
   api.post("/players", async (c) => {
     if (rt.invites) return bad(c, 403, "invite only: open your invite link");

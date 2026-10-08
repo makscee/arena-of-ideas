@@ -222,6 +222,10 @@ export interface SummonContent {
 export interface MvpContent {
   version: string;
   units: UnitContent[];
+  /** GET /content only (M2-2): units outside the live pool that a stored line
+   * can still show (the library, units that left): the champion's line, the
+   * Codex, replays. Never in the shop. */
+  left?: UnitContent[];
   abilities: AbilityRegistry;
   statuses: StatusRegistry;
   /** The summoned bodies (R3-5); absent in content built before round 3. */

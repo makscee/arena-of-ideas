@@ -13,7 +13,7 @@ function world(deps: Partial<MvpDeps> = {}) {
   let s = 7;
   return mvpRuntime({ content: mvpContent(), seed: () => (s = (s * 1103515245 + 12345) >>> 0), ...deps });
 }
-const pool = (rt: ReturnType<typeof world>, round: number) => rt.store.ghosts(round, { excludePlayerId: "", contentVersion: rt.content.version });
+const pool = (rt: ReturnType<typeof world>, round: number) => rt.store.ghosts(round, { excludePlayerId: "" });
 
 // Champion seeding simulates whole bot runs, slow under load: every test gets
 // 30 s, as the suite runs beside others on a shared machine (R3-26). Fused

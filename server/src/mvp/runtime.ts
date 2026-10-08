@@ -12,12 +12,15 @@
 import { MVP_RULES, type MvpContent, type MvpRules } from "../../../src/mvp/contract.js";
 import { today } from "./day.js";
 import { fusionNaming, type NameFusion } from "./fusions.js";
+import { poolBook } from "./pool.js";
 import type { RunDeps, RunHooks } from "./runs.js";
 import { statsHooks } from "./stats.js";
 import { MemoryMvpStore, type MvpStore } from "./store.js";
 
 export interface MvpDeps {
-  content: MvpContent;
+  /** The content while the store has no pool (tests with a bare store); with
+   * a pool (main.ts seeds one), rt.content is always the store's live pool. */
+  content?: MvpContent;
   /** Default: an in-memory store. */
   store?: MvpStore;
   /** Default: MVP_RULES. */
@@ -52,10 +55,15 @@ export type MvpJob = (rt: MvpRuntime) => () => void;
 export function mvpRuntime(deps: MvpDeps): MvpRuntime {
   const store = deps.store ?? new MemoryMvpStore();
   const now = deps.now ?? (() => new Date());
-  const base = { store, content: deps.content, now };
+  const pools = poolBook(store, deps.content);
+  // A getter: a pool change (a new snapshot) reaches every reader at once.
+  const base = { store, get content() { return pools.current(); }, contentFor: pools.of, now };
   const naming = fusionNaming(base);
   const rt: MvpRuntime = {
-    ...base,
+    store,
+    get content() { return pools.current(); },
+    contentFor: pools.of,
+    now,
     rules: deps.rules ?? MVP_RULES,
     seed: deps.seed ?? (() => Math.floor(Math.random() * 2 ** 32)),
     today: () => today(rt),
