@@ -62,9 +62,12 @@ export function ideaReaderFromEnv(env: NodeJS.ProcessEnv = process.env): IdeaRea
 
 const STOP = new Set(["that", "this", "with", "when", "whoever", "which", "their", "there", "they", "them", "from", "into", "every", "each", "unit", "enemy", "enemies", "ally", "allies", "the", "and", "its", "who", "for"]);
 const FAKE_EMOJI = ["🦔", "🌀", "🪶", "🔮", "🧩", "🪵", "🐚", "🕯️"];
-const FAKE_DOES = ["Hit 1", "Poison 1", "Shield 1", "Heal 1", "Curse 1", "Freeze 1", "Strength 1"];
-const FAKE_ADD = ["Hit 1", "Shield 1", "Poison 1"];
-const FAKE_WHO = ["front", "enemies", "random", "me", "allies", "it"];
+/** The fake's words by side: harm goes to enemies, help to allies, and
+ * Awoken adds one more of the same side. */
+const FAKE_SIDES = [
+  { who: ["front", "enemies", "random"], does: ["Hit 1", "Poison 1", "Curse 1", "Freeze 1"], add: ["Hit 1", "Poison 1"] },
+  { who: ["me", "allies"], does: ["Shield 1", "Heal 1", "Strength 1"], add: ["Shield 1", "Heal 1"] },
+];
 
 const hashOf = (s: string) => createHash("sha256").update(s).digest().readUInt32BE(0);
 
@@ -91,11 +94,12 @@ export function fakeIdeaReader(): IdeaReader {
       const taken = takenShapes(opts.units);
       const combos: ReadingDraft[] = [];
       for (const when of Object.keys(WHEN))
-        for (const who of FAKE_WHO)
-          for (const does of FAKE_DOES) {
-            const kind = does.split(" ")[0];
-            combos.push({ when, who, does, awoken: { add: [FAKE_ADD.find((a) => a.split(" ")[0] !== kind)!] } });
-          }
+        for (const side of FAKE_SIDES)
+          for (const who of side.who)
+            for (const does of side.does) {
+              const kind = does.split(" ")[0];
+              combos.push({ when, who, does, awoken: { add: [side.add.find((a) => a.split(" ")[0] !== kind)!] } });
+            }
       const start = (hashOf(text) + (opts.problems ? 97 : 0)) % combos.length;
       const options: ReadingDraft[] = [];
       for (let i = 0; i < combos.length && options.length < opts.want; i++) {

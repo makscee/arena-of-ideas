@@ -1,11 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { MVP_RULES, type IdeaArchetype, type MyIdea, type MyIdeasView, type PlayerRef } from "../../../src/mvp/contract.js";
 import { ROWS, type Row } from "../../../src/mvp/units.js";
 import { createMvpApp } from "./app.js";
 import { mvpContent } from "./content.js";
 import { archetypeDraftProblems, checkReading, takenShapes, type ArchetypeDraft, type ReadingDraft } from "./idea-checks.js";
 import { archetypesPrompt, fakeIdeaReader, ideaBlock, ideaReaderFromEnv, readerArgs, readerSystemPrompt, type IdeaReader, type ReaderAnswer } from "./idea-reader.js";
-import { COULD_NOT, dueIdeas, pickArchetype, pickReading, readIdeas } from "./idea-reading.js";
+import { COULD_NOT, dueIdeas, ideaReadingJobWith, pickArchetype, pickReading, readEveryMs, readIdeas } from "./idea-reading.js";
 import { grantIdea, ideasOf, writeIdea } from "./ideas.js";
 import { seedUnits } from "./pool.js";
 import { mvpRuntime } from "./runtime.js";
@@ -93,6 +93,21 @@ describe("reading ideas with the fake reader (M2-5)", () => {
     const ids = ["one", "two", "three", "four"].map((w, i) => write(`an idea called ${w} for the game`, `p${i}`).ideaId);
     expect(await readIdeas(deps, fakeIdeaReader(), 3)).toBe(3);
     expect(ids.map((id) => store.idea(id)!.state)).toEqual(["pick-archetype", "pick-archetype", "pick-archetype", "written"]);
+  });
+
+  it("the job reads on start and again every few seconds, and stops", async () => {
+    const rt = mvpRuntime({ content: mvpContent() });
+    seedUnits(rt.store, rt.now());
+    grantIdea(rt, "p1");
+    const first = writeIdea(rt, "p1", HEDGEHOG);
+    const stop = ideaReadingJobWith(fakeIdeaReader(), 20)(rt);
+    await vi.waitFor(() => expect(rt.store.idea(first.ideaId)!.state).toBe("pick-archetype"));
+    grantIdea(rt, "p1");
+    const second = writeIdea(rt, "p1", "a lantern that wakes the sleeping allies");
+    await vi.waitFor(() => expect(rt.store.idea(second.ideaId)!.state).toBe("pick-archetype"));
+    stop();
+    expect(readEveryMs(fakeIdeaReader(), {})).toBe(5_000);
+    expect(readEveryMs({ ...fakeIdeaReader(), kind: "claude" }, {})).toBe(180_000);
   });
 
   it("picks ARENA_IDEA_READER's reader, the fake by default", () => {
