@@ -45,11 +45,12 @@ describe("the playoff", () => {
     expect(playoffEntrants([slay(ann, tiny(), "1"), slay(ann, big(5), "2")], champion, content, MVP_RULES)[0]!.slay.at).toBe("2");
   });
 
-  it("enters bots' slays like humans' (#587) and the champion's own; skips slays on other content", () => {
-    const slays = [slay(p("b", true), big(5), "1"), slay(p("old"), big(5), "2", { contentVersion: "old" }), slay(p("ann"), big(2), "3"), slay(champion.player, big(5), "4")];
-    expect(playoffSlays(slays, content).map((s) => s.player.id)).toEqual(["b", "ann", champion.player.id]);
+  it("enters bots' slays like humans' (#587), the champion's own and slays made on another pool (M2-2); skips a line that doesn't resolve", () => {
+    const broken = big(1).map((u) => ({ ...u, recipe: { ...u.recipe, does: ["Teleport 9"] } }));
+    const slays = [slay(p("b", true), big(5), "1"), slay(p("old"), big(5), "2", { contentVersion: "old" }), slay(p("ann"), big(2), "3"), slay(champion.player, big(5), "4"), slay(p("bad"), broken, "5")];
+    expect(playoffSlays(slays, content).map((s) => s.player.id)).toEqual(["b", "old", "ann", champion.player.id]);
     const entrants = playoffEntrants(slays, champion, content, MVP_RULES);
-    expect(entrants.map((e) => e.player.id)).toEqual(["b", "ann", champion.player.id]);
+    expect(entrants.map((e) => e.player.id)).toEqual(["b", "old", "ann", champion.player.id]);
     expect(entrants[0]!.player.bot).toBe(true);
   });
 
