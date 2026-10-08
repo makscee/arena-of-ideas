@@ -768,7 +768,7 @@ export interface MyIdeasView {
 //                                                                  400 a pick of neither, 409 already voted on this pair or
 //                                                                  the caller's own candidate or a bot)
 //   POST /api/v1/dev/overnight-check         → { started: number }        (M2-8; starts the simulation on every `simulating` idea)
-//   POST /api/v1/dev/seed-candidate          → MyIdeasView                (M2-8; the caller's idea in `simulating`: a renamed live unit)
+//   POST /api/v1/dev/seed-candidate { unit? } → MyIdeasView               (M2-8; the caller's idea in `simulating`: a renamed live unit, `unit`'s or a random one)
 //   POST /api/v1/dev/fake-votes              → CandidateScore[]           (M2-8; 5 fake votes on each candidate, 4 for it)
 //   GET  /api/v1/dev/candidates              → CandidateScore[]           (M2-8; every candidate, qualified ones first, best first)
 //   GET  /api/v1/stats                       → StatsView          (slice 11)

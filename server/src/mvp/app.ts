@@ -291,10 +291,11 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     overnightCheck(rt, rt.tuner.dev).catch((err) => console.error("[overnight] dev check failed", err));
     return c.json({ started });
   });
-  api.post("/dev/seed-candidate", (c) => {
+  api.post("/dev/seed-candidate", async (c) => {
+    const body = (await c.req.json().catch(() => null)) as { unit?: unknown } | null;
     const p = playerOf(c);
     if (!p) return unknownPlayer(c);
-    seedCandidate(rt, p.id);
+    seedCandidate(rt, p.id, typeof body?.unit === "string" ? body.unit : undefined);
     return c.json(myIdeas(rt, p.id));
   });
   api.post("/dev/fake-votes", (c) => c.json(fakeVotes(rt)));

@@ -170,10 +170,11 @@ export const overnightJob: MvpJob = (rt: MvpRuntime) => {
 };
 
 /** Dev: an idea of `playerId`'s in `simulating`, its unit a live one renamed
- * (M2-5 and M2-6 fill in real ones). Spends nothing. */
-export function seedCandidate(rt: Pick<RunDeps, "store" | "content" | "now" | "seed">, playerId: string): Idea {
+ * (M2-5 and M2-6 fill in real ones): `unit`'s copy, else a random one's.
+ * Spends nothing. */
+export function seedCandidate(rt: Pick<RunDeps, "store" | "content" | "now" | "seed">, playerId: string, unit?: UnitId): Idea {
   const live = liveRows(rt.store);
-  const from = live[rt.seed() % live.length]!;
+  const from = (unit && live.find((r) => slugOf(r.name) === unit)) || live[rt.seed() % live.length]!;
   const n = rt.store.ideas().length + 1;
   const row: Row = { ...from, name: `${from.name} Echo ${n}` };
   const idea: Idea = { ideaId: `dev-${n}-${rt.seed().toString(36)}`, playerId, text: `A dev candidate: ${row.name}.`, state: "simulating", createdAt: rt.now().toISOString(), data: { row } };
