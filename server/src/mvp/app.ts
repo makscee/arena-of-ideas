@@ -242,10 +242,13 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   };
   api.get("/ideas", (c) => ideaCall(c, () => {}));
   api.post("/ideas", async (c) => {
-    const body = (await c.req.json().catch(() => null)) as { text?: unknown } | null;
+    const body = (await c.req.json().catch(() => null)) as { text?: unknown; kind?: unknown; target?: unknown } | null;
     if (typeof body?.text !== "string") return bad(c, 400, "body must be { text }");
-    const text = body.text;
-    return ideaCall(c, (p) => writeIdea(rt, p.id, text));
+    const { text, kind, target } = body;
+    if (kind !== undefined && kind !== "new" && kind !== "evolve") return bad(c, 400, 'kind is "new" or "evolve"');
+    // M3-4: a new version of a Library unit.
+    if (kind === "evolve" && typeof target !== "string") return bad(c, 400, "body must be { text, kind: \"evolve\", target }");
+    return ideaCall(c, (p) => writeIdea(rt, p.id, text, kind === "evolve" ? { target: target as string } : undefined));
   });
   api.post("/ideas/:ideaId/cancel", (c) => ideaCall(c, (p) => cancelIdea(rt, p.id, c.req.param("ideaId"))));
   // M2-5: one idea with its options, and its author's picks (M2-6's screens).

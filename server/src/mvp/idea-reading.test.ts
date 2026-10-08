@@ -43,6 +43,7 @@ function scripted(archetypes: ReaderAnswer<ArchetypeDraft>[], readings: ReaderAn
       if (!r) throw new Error("no script left");
       return r;
     },
+    faithful: async () => ({ true: true, reason: "" }),
   };
   return { reader, calls };
 }

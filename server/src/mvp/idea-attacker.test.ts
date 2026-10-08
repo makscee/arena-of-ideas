@@ -104,6 +104,7 @@ describe("the attacker in the reader", () => {
     const reader: IdeaReader = {
       kind: "scripted",
       archetypes: fake.archetypes,
+      faithful: fake.faithful,
       async readings(text, a, opts) {
         const out = await fake.readings(text, a, opts);
         return { ...out, nearMiss: [{ part: "front enemy who hits it", meant: "the attacker", used: "front" }, { part: "front enemy who hits it", meant: "the attacker", used: "front" }] };

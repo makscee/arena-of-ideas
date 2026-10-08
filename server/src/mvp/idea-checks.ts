@@ -150,3 +150,18 @@ export function checkReading(d: ReadingDraft, archetype: IdeaArchetype, taken: T
   const text = { sleeping: formText(unit.forms.sleeping, pool.abilities), awoken: formText(unit.forms.awoken, pool.abilities) };
   return { reading: { when: row.when, who: row.who, does: row.does, awoken, text }, row };
 }
+
+/** M3-4: whether a reading's `row` has `current`'s shape in both forms (a new
+ * version must change When, Who or Does somewhere; numbers are tuned later). */
+export function sameShape(row: Row, current: Row): boolean {
+  const a = mvpPool([row]).units[0];
+  const b = mvpPool([current]).units[0];
+  return sig(a!.forms.sleeping) === sig(b!.forms.sleeping) && sig(a!.forms.awoken) === sig(b!.forms.awoken);
+}
+
+/** M3-4: a unit's rule as formText renders both forms. */
+export function ruleText(row: Row): { sleeping: string; awoken: string } {
+  const pool = mvpPool([row]);
+  const u = pool.units[0]!;
+  return { sleeping: formText(u.forms.sleeping, pool.abilities), awoken: formText(u.forms.awoken, pool.abilities) };
+}
