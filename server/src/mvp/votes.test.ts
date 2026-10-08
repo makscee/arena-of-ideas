@@ -3,6 +3,9 @@ import { MVP_RULES, type CandidateScore, type MyIdeasView, type PlayerRef, type 
 import { ROWS, type Row } from "../../../src/mvp/units.js";
 import { createMvpApp } from "./app.js";
 import { mvpContent } from "./content.js";
+import { fakeIdeaReader } from "./idea-reader.js";
+import { pickArchetype, pickReading, readIdeas } from "./idea-reading.js";
+import { grantIdea, writeIdea } from "./ideas.js";
 import { seedUnits } from "./pool.js";
 import { mvpRuntime } from "./runtime.js";
 import { MemoryMvpStore } from "./store.js";
@@ -61,6 +64,26 @@ describe("the overnight check (M2-8)", () => {
     expect(idea).toMatchObject({ state: "failed", data: { failure: "It didn't pass the overnight check: too strong in a damage team." } });
     expect(w.store.unit(idea.data.unitId!)?.status).toBe("rejected");
     expect(w.store.ideaCounts(maks.id).spent).toBe(before);
+  });
+
+  it("takes an idea M2-5 read and M2-6 picked through to a vote card", async () => {
+    const w = world();
+    const deps = { store: w.store, rules: MVP_RULES, now: w.rt.now };
+    grantIdea(deps, maks.id);
+    const idea = writeIdea(deps, maks.id, "a hedgehog that punishes whoever hits it");
+    const reader = fakeIdeaReader();
+    await readIdeas(deps, reader);
+    pickArchetype(deps, maks.id, idea.ideaId, 0);
+    await readIdeas(deps, reader);
+    pickReading(deps, maks.id, idea.ideaId, 0);
+    const picked = w.store.idea(idea.ideaId)!;
+    expect(picked.state).toBe("simulating");
+    expect(await overnightCheck(w.rt, w.rt.tuner.dev)).toBe(1);
+    const voting = w.store.idea(idea.ideaId)!;
+    expect(voting).toMatchObject({ state: "voting", data: { unitId: picked.data.unitId } });
+    expect(w.store.unit(picked.data.unitId!)).toMatchObject({ status: "candidate", row: { name: "Hedgehog" } });
+    expect((await w.call<{ card: VoteCard | null }>("GET", "/votes/next", eva)).json.card?.candidateId).toBe(picked.data.unitId);
+    expect((await w.call<{ card: VoteCard | null }>("GET", "/votes/next", maks)).json.card).toBeNull();
   });
 
   it("tunes against the DB's current pool, not the code's ROWS", async () => {
