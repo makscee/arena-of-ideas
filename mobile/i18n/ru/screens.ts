@@ -97,4 +97,17 @@ export const screens = {
   "ideas.countMin": "{n} / {max} · минимум {min}",
   "ideas.count": "{n} / {max}",
   "ideas.writeNote": "Твой текст видишь только ты. Отправка тратит одну идею.",
+  // screens/telegram (M4-6)
+  "tg.login": "Войти через Telegram",
+  "tg.link": "Привязать Telegram",
+  "tg.linked": "Telegram привязан ✓",
+  "tg.unlink": "Отвязать",
+  "tg.open": "Открыть Telegram",
+  "tg.instructions": "Нажми «Старт» в боте и «Да», потом вернись: эта страница войдёт сама.",
+  "tg.qrAlt": "QR-код: наведи на него камеру телефона",
+  "tg.devAccept": "Dev: бот принимает",
+  "tg.devDecline": "Dev: «Нет» в боте",
+  "tg.expired": "Время входа истекло.",
+  "tg.declined": "Отклонено в Telegram.",
+  "tg.retry": "Ещё раз",
 } satisfies Record<keyof typeof en, Msg>;
