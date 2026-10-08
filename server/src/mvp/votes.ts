@@ -368,13 +368,18 @@ export function candidateScores(rt: Pick<RunDeps, "store" | "rules">): Candidate
     .sort((a, b) => Number(b.qualified) - Number(a.qualified) || b.score - a.score || b.votes - a.votes);
   // Each archetype's entry: its best qualified version, unless "unchanged"
   // scores above it (on a tie the version enters).
-  const best = new Map<UnitId, CandidateScore>();
+  const best = new Map<UnitId, { version?: CandidateScore; unchanged?: CandidateScore }>();
   for (const s of scores) {
     if (!s.qualified) continue;
-    const cur = best.get(s.rootId);
-    if (!cur || (cur.kind === "unchanged" && s.score >= cur.score)) best.set(s.rootId, s);
+    const b = best.get(s.rootId) ?? {};
+    if (s.kind === "unchanged") b.unchanged = s;
+    else b.version ??= s; // scores are best first
+    best.set(s.rootId, b);
   }
-  for (const s of best.values()) s.entry = true;
+  for (const { version, unchanged } of best.values()) {
+    const entry = unchanged && (!version || unchanged.score > version.score) ? unchanged : version;
+    if (entry) entry.entry = true;
+  }
   return scores;
 }
 
