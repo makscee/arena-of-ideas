@@ -4,6 +4,7 @@
 // api.stats() (loadUnitRates; Home, the Stats page and the Codex refresh it).
 import type { StatsView, UnitId } from "../../src/mvp/contract";
 import { api } from "../api";
+import { t } from "../i18n";
 import { h } from "./dom";
 
 export interface UnitRates {
@@ -42,8 +43,8 @@ export function unitStatsLine(unitId?: UnitId, rates?: UnitRates): Node | null {
     {
       class: "rates",
       "data-testid": "unit-rates",
-      title: "Win: how often a team with it won its fight. Picked: how often it was on a finished run's line. From every run since the units last changed.",
+      title: t("rates.title"),
     },
-    `wins ${pct(r.winRate)} · picked ${pct(r.pickRate)}`,
+    t("rates.line", { win: pct(r.winRate), picked: pct(r.pickRate) }),
   );
 }

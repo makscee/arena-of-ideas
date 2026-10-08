@@ -4,4 +4,4 @@
 import { unitTexts } from "../src/mvp/unit-texts.js";
 import { mvpPool } from "../src/mvp/units.js";
 
-process.stdout.write(unitTexts(mvpPool()));
+process.stdout.write(unitTexts(mvpPool(), process.argv.includes("--ru") ? "ru" : undefined));

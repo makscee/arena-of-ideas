@@ -3,6 +3,8 @@
 // then the built phone client, with index.html for every other GET (the
 // client's own routes). Here rather than in main.ts so tests can call it.
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { MVP_API_PREFIX } from "../../../src/mvp/contract.js";
@@ -12,6 +14,9 @@ export interface MvpServerOptions {
   staticRoot: string;
   /** The deployed commit, reported as `build` on /health; null when unknown. */
   build: string | null;
+  /** M4-7: Open Graph tags for the game's page opened from a shared link
+   * (share.ts shareMeta), or null for an ordinary page. */
+  pageMeta?: (url: URL, acceptLanguage: string | undefined) => string | null;
 }
 
 export function mvpServerApp(api: Hono, o: MvpServerOptions): Hono {
@@ -34,6 +39,22 @@ export function mvpServerApp(api: Hono, o: MvpServerOptions): Hono {
     await next();
     if (c.req.path.endsWith(".m4a") && c.res.headers.get("content-type") === "application/octet-stream") c.res.headers.set("Content-Type", "audio/mp4");
   });
+  // A shared link (?share=…) gets the page with its Open Graph tags, so a
+  // chat's link preview shows the share card.
+  if (o.pageMeta) {
+    const pageMeta = o.pageMeta;
+    app.get("/*", async (c, next) => {
+      const meta = c.req.query("share") ? pageMeta(new URL(c.req.url), c.req.header("Accept-Language")) : null;
+      if (!meta) return next();
+      let html: string;
+      try {
+        html = readFileSync(join(o.staticRoot, "index.html"), "utf8");
+      } catch {
+        return next();
+      }
+      return c.html(html.replace("</head>", `  ${meta}\n  </head>`));
+    });
+  }
   app.use("/*", serveStatic({ root: o.staticRoot }));
   app.get("/*", serveStatic({ root: o.staticRoot, path: "index.html" }));
   return app;

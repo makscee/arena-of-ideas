@@ -6,18 +6,19 @@
 import type { Champion, HomeView, MvpContent, StatsView } from "../../src/mvp/contract";
 import { api } from "../api";
 import { card, unitSheet } from "../ui/card";
+import { t } from "../i18n";
 import { button, h, isDesktop, onKeys, overlay, screen, show, who } from "../ui/dom";
 import { keepUnitRates } from "../ui/unit-stats";
 
 export async function statsScreen(a: { content: MvpContent; onBack: () => void; onCodex?: () => void }): Promise<void> {
-  const back = button("Back", a.onBack, "primary grow", "stats-back");
+  const back = button(t("stats.back"), a.onBack, "primary grow", "stats-back");
   // Esc goes back, once any sheet over the page is closed (ui/dom.ts).
   const escBack = (e: KeyboardEvent) => (e.key === "Escape" ? (a.onBack(), true) : false);
   let data: [StatsView, HomeView];
   try {
     data = await Promise.all([api.stats(), api.home()]);
   } catch (e) {
-    show(h("h1", {}, "STATS"), h("div", { class: "error", "data-testid": "error" }, e instanceof Error ? e.message : String(e)), h("div", { class: "spacer" }), h("div", { class: "row footer" }, back));
+    show(h("h1", {}, t("stats.title")), h("div", { class: "error", "data-testid": "error" }, e instanceof Error ? e.message : String(e)), h("div", { class: "spacer" }), h("div", { class: "row footer" }, back));
     onKeys(escBack);
     return;
   }
@@ -25,11 +26,11 @@ export async function statsScreen(a: { content: MvpContent; onBack: () => void; 
   keepUnitRates(stats.units);
   const { content } = a;
   show(
-    h("h1", {}, "STATS"),
+    h("h1", {}, t("stats.title")),
     recordsPanel(home),
-    h("div", { class: "label" }, "Champions"),
+    h("div", { class: "label" }, t("stats.champions")),
     championsPanel(stats.champions, content),
-    a.onCodex ? h("div", { class: "dim small" }, "Units, their win and pick rates, and every fusion found are in the ", codexLink(a.onCodex), ".") : null,
+    a.onCodex ? h("div", { class: "dim small" }, t("stats.codexBefore"), codexLink(a.onCodex), t("stats.codexAfter")) : null,
     h("div", { class: "spacer" }),
     // Stuck to the bottom: the lists grow long, and Back is the only way home.
     h("div", { class: "row footer" }, back),
@@ -39,7 +40,7 @@ export async function statsScreen(a: { content: MvpContent; onBack: () => void; 
 }
 
 const codexLink = (open: () => void): HTMLElement => {
-  const b = h("button", { type: "button", class: "small link", "data-testid": "stats-codex" }, "Codex");
+  const b = h("button", { type: "button", class: "small link", "data-testid": "stats-codex" }, t("stats.codex"));
   b.addEventListener("click", open);
   return b;
 };
@@ -50,15 +51,15 @@ function recordsPanel(home: HomeView): HTMLElement {
   return h(
     "div",
     { class: "stack" },
-    h("div", { class: "label" }, "Your records"),
+    h("div", { class: "label" }, t("stats.records")),
     h(
       "div",
       { class: "panel records", "data-testid": "stats-records" },
-      record("Rating", r?.rating ?? home.rules.ratingStart),
-      record("Runs", r?.runs ?? 0),
-      record("Slays", r?.slays ?? 0),
-      record("Days 👑", r?.daysAsChampion ?? 0),
-      record("Playoff W", r?.playoffWins ?? 0),
+      record(t("stats.rating"), r?.rating ?? home.rules.ratingStart),
+      record(t("stats.runs"), r?.runs ?? 0),
+      record(t("stats.slays"), r?.slays ?? 0),
+      record(t("stats.daysChampion"), r?.daysAsChampion ?? 0),
+      record(t("stats.playoffWins"), r?.playoffWins ?? 0),
     ),
   );
 }
@@ -69,20 +70,20 @@ function championsPanel(champions: Champion[], content: MvpContent): HTMLElement
       "div",
       { class: "stat-row", "data-testid": "stats-champion" },
       h("span", { class: "emoji" }, "👑"),
-      h("span", { class: "grow" }, h("div", {}, `Day ${c.seq} · `, who(c.player.name), c.player.bot ? " 🤖" : ""), h("div", { class: "dim small" }, `${c.day} · ${c.line.map((u) => u.emoji).join(" ")}`)),
+      h("span", { class: "grow" }, h("div", {}, t("stats.dayPrefix", { seq: c.seq }), who(c.player.name), c.player.bot ? " 🤖" : ""), h("div", { class: "dim small" }, `${c.day} · ${c.line.map((u) => u.emoji).join(" ")}`)),
     );
     row.addEventListener("click", () => overlay(championSheet(c, content)));
     return row;
   });
-  return h("div", { class: "panel stack", "data-testid": "stats-champions" }, ...(rows.length ? rows : [h("div", { class: "dim" }, "No champion yet.")]));
+  return h("div", { class: "panel stack", "data-testid": "stats-champions" }, ...(rows.length ? rows : [h("div", { class: "dim" }, t("stats.noChampion"))]));
 }
 
 function championSheet(c: Champion, content: MvpContent): HTMLElement {
   return h(
     "div",
     { class: "stack", "data-testid": "champion-sheet" },
-    h("h2", {}, `👑 Day ${c.seq} · `, who(c.player.name), c.player.bot ? " 🤖" : ""),
-    h("div", { class: "dim" }, `${c.day}, front first. ${isDesktop() ? "Click" : "Tap"} a unit to read it.`),
+    h("h2", {}, t("stats.sheetDayPrefix", { seq: c.seq }), who(c.player.name), c.player.bot ? " 🤖" : ""),
+    h("div", { class: "dim" }, isDesktop() ? t("stats.sheetHintDesktop", { day: c.day }) : t("stats.sheetHintPhone", { day: c.day })),
     h(
       "div",
       { class: "slots" },
