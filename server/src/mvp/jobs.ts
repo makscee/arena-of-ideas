@@ -3,6 +3,7 @@
 // main.ts; app tests start none. Each slice fills in its own job in its own
 // module; this list already names them all.
 import { botWorld } from "./bots.js";
+import { dailyPostJob } from "./daily-post.js";
 import { dayRollover } from "./day.js";
 import { fusionNamingJob } from "./fusions.js";
 import { ideaReadingJob } from "./idea-reading.js";
@@ -15,6 +16,7 @@ export const MVP_JOBS: MvpJob[] = [
   fusionNamingJob, // slice 10: the naming queue
   ideaReadingJob, // M2-5: reads written ideas (ARENA_IDEA_READER)
   overnightJob, // M2-8: the overnight check after the day end
+  dailyPostJob, // M4-8: the daily post to Telegram (ARENA_TELEGRAM_POST=1)
 ];
 
 /** Starts every job on `rt`; returns one function that stops them all. */

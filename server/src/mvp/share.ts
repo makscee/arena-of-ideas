@@ -40,7 +40,7 @@ const MONTHS: Record<ShareLang, string[]> = {
   ru: ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"],
 };
 /** "Oct 8, 2026" / "8 октября 2026" from a YYYY-MM-DD label. */
-function dateText(day: string, lang: ShareLang): string {
+export function dateText(day: string, lang: ShareLang): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
   if (!m) return day;
   const [y, mo, d] = [m[1]!, MONTHS[lang][Number(m[2]) - 1] ?? m[2]!, String(Number(m[3]))];

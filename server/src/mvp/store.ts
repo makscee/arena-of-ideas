@@ -135,6 +135,25 @@ export interface MvpStore {
   addVote(v: Vote): boolean;
   /** Votes oldest first: on one candidate, and/or by one player. */
   votes(opts?: { candidateId?: UnitId; playerId?: string }): Vote[];
+  // Mission 4's daily post to Telegram (M4-8); only ./daily-post.ts writes it.
+  /** Claims day `seq`'s message `key` ("ru", "en", "ru+en") as being sent;
+   * false (nothing written) when it was claimed before: a day posts once. */
+  claimDailyPost(seq: number, key: string, at: string): boolean;
+  /** Records how a claimed message went. */
+  putDailyPost(p: DailyPost): void;
+  /** The messages claimed for one day, or every day's, in claim order. */
+  dailyPosts(seq?: number): DailyPost[];
+}
+
+/** One message of a day's post (M4-8): claimed ("sending") before it is
+ * sent, then "sent" or "failed" after its last try. */
+export interface DailyPost {
+  seq: number;
+  key: string;
+  state: "sending" | "sent" | "failed";
+  tries: number;
+  at: string;
+  error?: string;
 }
 
 /** An idea the reader couldn't fully make (M2-5): the game word it lacks
@@ -440,6 +459,18 @@ export class MemoryMvpStore implements MvpStore {
   private words: WordRequest[] = [];
   addWordRequest(w: WordRequest): void { this.words.push({ ...w }); }
   wordRequests(): WordRequest[] { return this.words.map((w) => ({ ...w })); }
+  private posts: DailyPost[] = [];
+  claimDailyPost(seq: number, key: string, at: string): boolean {
+    if (this.posts.some((p) => p.seq === seq && p.key === key)) return false;
+    this.posts.push({ seq, key, state: "sending", tries: 0, at });
+    return true;
+  }
+  putDailyPost(p: DailyPost): void {
+    const i = this.posts.findIndex((x) => x.seq === p.seq && x.key === p.key);
+    if (i >= 0) this.posts[i] = { ...p };
+    else this.posts.push({ ...p });
+  }
+  dailyPosts(seq?: number): DailyPost[] { return this.posts.filter((p) => seq === undefined || p.seq === seq).map((p) => ({ ...p })); }
 }
 
 export const NO_IDEAS: IdeaCounts = { spent: 0, granted: 0, forfeited: 0 };

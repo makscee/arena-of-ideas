@@ -11,7 +11,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, Idea, IdeaState, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
-import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally, type Vote, type WordRequest } from "./store.js";
+import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally, type Vote, type WordRequest, type DailyPost } from "./store.js";
 
 const SQL_DIR = fileURLToPath(new URL("./sql/", import.meta.url));
 
@@ -274,6 +274,25 @@ export class SqliteMvpStore implements MvpStore {
   }
   wordRequests(): WordRequest[] {
     return this.db.prepare("SELECT idea_id AS ideaId, word, part, created_at AS createdAt FROM mvp_word_requests ORDER BY id").all() as WordRequest[];
+  }
+  claimDailyPost(seq: number, key: string, at: string): boolean {
+    return this.db.prepare("INSERT OR IGNORE INTO mvp_daily_posts (seq, key, state, tries, at) VALUES (?, ?, 'sending', 0, ?)").run(seq, key, at).changes > 0;
+  }
+  putDailyPost(p: DailyPost): void {
+    // An update keeps the row's place (claim order); a row never claimed is added.
+    const r = this.db.prepare("UPDATE mvp_daily_posts SET state = ?, tries = ?, at = ?, error = ? WHERE seq = ? AND key = ?").run(p.state, p.tries, p.at, p.error ?? null, p.seq, p.key);
+    if (!r.changes) this.write("INSERT INTO mvp_daily_posts (seq, key, state, tries, at, error) VALUES (?, ?, ?, ?, ?, ?)", p.seq, p.key, p.state, p.tries, p.at, p.error ?? null);
+  }
+  dailyPosts(seq?: number): DailyPost[] {
+    type PostRow = { seq: number; key: string; state: DailyPost["state"]; tries: number; at: string; error: string | null };
+    return (this.db.prepare("SELECT * FROM mvp_daily_posts WHERE (@seq IS NULL OR seq = @seq) ORDER BY rowid").all({ seq: seq ?? null }) as PostRow[]).map((r) => ({
+      seq: r.seq,
+      key: r.key,
+      state: r.state,
+      tries: r.tries,
+      at: r.at,
+      ...(r.error === null ? {} : { error: r.error }),
+    }));
   }
 }
 

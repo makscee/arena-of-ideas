@@ -21,6 +21,10 @@
  *               every unit at once, for e2e; default the real tuner (M2-7)
  *   ARENA_PUBLIC_URL  the game's public address, for share links' Open Graph
  *               tags (default https://arena.makscee.ru/arena, M4-7)
+ *   ARENA_TELEGRAM_POST  1 posts the day to the Telegram channel after each
+ *               day end (M4-8, ./daily-post.ts, with ARENA_TELEGRAM_CHANNEL,
+ *               ARENA_TELEGRAM_ENV, ARENA_TELEGRAM_POST_LANGS); off by
+ *               default (dry run: npm run mvp:post -- --db <file> --dry-run)
  *   MVP_BUILD   the deployed commit, `build` on /api/v1/health (default: the
  *               checkout's HEAD); scripts/mvp-redeploy.sh sets it
  * Run: npm run mvp:server
