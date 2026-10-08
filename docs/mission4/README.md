@@ -21,7 +21,7 @@ Why: live has 3 human players and 0 ideas written. Ideas, votes and the daily tr
 - **Ideas:** the reader accepts either language and returns the name and line in both. Archetype words stay the game's own.
 - **Telegram login is a deep link, not the web widget** (the widget needs a domain set in BotFather and is awkward on phones):
   1. "Войти через Telegram / Log in with Telegram" makes a one-time code and opens `https://t.me/arenaofideas_bot?start=<code>` (on a laptop, also a QR).
-  2. The bot gets `/start <code>` (long polling `getUpdates`, one poller in the server), links that Telegram user to the player whose code it is (or, when that Telegram user is already linked, logs this device in as that player), and replies "Done, go back to the game".
+  2. The bot gets `/start <code>` (long polling `getUpdates`, one poller in the server), links that Telegram user to the player whose code it is (or, when that Telegram user is already linked, logs this device in as that player), and replies "Done, go back to the game". It never acts on `/start` alone: it first asks what the code would do (log a device in as @name, link @name, or create @name) with [Yes] [No] buttons, and only Yes acts, checked again at the tap (the same Telegram user, the code unused and in time, the links unchanged). No shows "Declined in Telegram" on the page (orchestrator's review of PR #706).
   3. The page polls the code and gets a session token (the same kind invite links give: `X-Arena-Token`).
   - Codes expire after 10 minutes and work once. A Telegram user links to one player; a player to one Telegram user. Unlinking is in settings.
   - Admin stays invite-only: a Telegram login never makes an admin.

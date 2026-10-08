@@ -943,11 +943,12 @@ export interface MyIdeasView {
 //   POST /api/v1/auth/telegram/start         → TelegramStart      (M4-6; a one-time login code and its t.me deep link, for the caller
 //                                                                  (Link Telegram) or for none (Log in); 404 Telegram login off,
 //                                                                  403 a bot or an admin, 409 already linked, 429 over 20 an hour)
-//   POST /api/v1/auth/telegram/poll { code } → TelegramPoll       (M4-6; "waiting" until the bot accepts, then the session, once;
+//   POST /api/v1/auth/telegram/poll { code } → TelegramPoll       (M4-6; "waiting" until Yes in the bot, then the session, once; "declined" after No;
 //                                                                  404 unknown, expired or used: start again)
 //   GET  /api/v1/auth/telegram               → TelegramStatus     (M4-6; is Telegram login on, is the caller linked)
 //   POST /api/v1/auth/telegram/unlink        → TelegramStatus     (M4-6; unlinks the caller's Telegram)
-//   POST /api/v1/dev/telegram/accept { code } → { reply: string } (M4-6; ARENA_TELEGRAM_FAKE=1 only: the fake bot's user sends /start <code>)
+//   POST /api/v1/dev/telegram/accept { code, decline? } → { reply: string } (M4-6; ARENA_TELEGRAM_FAKE=1 only: the fake bot's user sends
+//                                                                  /start <code>, then taps Yes, or No with decline: true)
 //   Telegram login codes, like invite codes, travel only in bodies and the t.me link.
 
 export const PLAYER_HEADER = "X-Arena-Player";
@@ -967,8 +968,9 @@ export interface TelegramStart {
   expiresAt: string;
 }
 
-/** M4-6: a poll of a Telegram login code. */
-export type TelegramPoll = { status: "waiting" } | ({ status: "done" } & PlayerSession);
+/** M4-6: a poll of a Telegram login code: "declined" when the user tapped No
+ * in the bot (once; then the code is gone). */
+export type TelegramPoll = { status: "waiting" } | { status: "declined" } | ({ status: "done" } & PlayerSession);
 
 /** M4-6: Telegram login for the settings screen. */
 export interface TelegramStatus {

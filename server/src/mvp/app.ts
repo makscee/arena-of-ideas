@@ -155,7 +155,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   api.post("/auth/telegram/poll", async (c) => {
     const r = pollTelegramLogin(store, await codeOf(c), rt.now());
     if (!r) return bad(c, 404, "This login has expired or was used: start again");
-    return c.json<TelegramPoll>(r === "waiting" ? { status: "waiting" } : { status: "done", ...r });
+    return c.json<TelegramPoll>(typeof r === "string" ? { status: r } : { status: "done", ...r });
   });
   api.get("/auth/telegram", (c) => {
     const p = playerOf(c);
@@ -346,11 +346,13 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   api.get("/library", (c) => c.json(libraryView(rt)));
 
   // The fake bot's side (ARENA_TELEGRAM_FAKE=1, which needs MVP_DEV=1): its
-  // user sends /start <code>, as tapping the link in Telegram would. Before the
-  // dev gate: a logged-out device plays it on an invite-only dev server too.
+  // user sends /start <code>, as tapping the link in Telegram would, then taps
+  // Yes (or No: `decline`). Before the dev gate: a logged-out device plays it
+  // on an invite-only dev server too.
   api.post("/dev/telegram/accept", async (c) => {
     if (!(rt.telegram instanceof FakeTelegram)) return bad(c, 404, "no fake Telegram");
-    return c.json({ reply: await rt.telegram.press(await codeOf(c)) });
+    const body = (await c.req.json().catch(() => ({}))) as { code?: unknown; decline?: unknown };
+    return c.json({ reply: await rt.telegram.answer(typeof body.code === "string" ? body.code : "", body.decline !== true) });
   });
   // Dev-only tools (MvpDeps.dev, MVP_DEV=1 in main.ts): 404 without it, and
   // on an invite-only server for anyone but an admin invite's player.

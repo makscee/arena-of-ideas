@@ -264,15 +264,23 @@ export interface Invite {
 
 /** A Telegram login code (M4-6), kept by the SHA-256 of the code in the deep
  * link. `playerId`: the player who asked (Link Telegram), or null (Log in).
- * The bot sets `readyFor` to the player the device logs in as; the page's
- * next poll takes it, once. */
+ * `asked`: what the bot asked the Telegram user who pressed Start; their Yes
+ * sets `readyFor` to the player the device logs in as (the page's next poll
+ * takes it, once), their No sets `declined`. */
 export interface TelegramCode {
   codeHash: string;
   playerId: string | null;
   createdAt: string;
   expiresAt: string;
   readyFor: string | null;
+  asked?: TelegramAsk;
+  declined?: boolean;
 }
+
+/** What a code does for a Telegram user, worked out when they press Start and
+ * again when they tap Yes (it must not have changed in between): log a device
+ * in as their linked player, link the asking player, or make a new player. */
+export type TelegramAsk = { kind: "login" | "link"; playerId: string; tgUserId: string } | { kind: "new"; playerId: null; tgUserId: string };
 
 /** One Telegram user linked to one player (M4-6). */
 export interface TelegramLink {

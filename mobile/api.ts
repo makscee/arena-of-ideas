@@ -170,8 +170,9 @@ export const api = {
   },
   /** M4-6: unlinks this player's Telegram. */
   telegramUnlink: () => call<TelegramStatus>("POST", "/auth/telegram/unlink"),
-  /** M4-6 dev (ARENA_TELEGRAM_FAKE=1): the fake bot's user presses Start. */
-  devTelegramAccept: (code: string) => call<{ reply: string }>("POST", "/dev/telegram/accept", { code }),
+  /** M4-6 dev (ARENA_TELEGRAM_FAKE=1): the fake bot's user presses Start,
+   * then taps Yes (or No: `decline`). */
+  devTelegramAccept: (code: string, decline = false) => call<{ reply: string }>("POST", "/dev/telegram/accept", { code, ...(decline ? { decline } : {}) }),
   forget(): void {
     saveOwnInvite(null);
     player = null;
