@@ -12,9 +12,8 @@ const root = join(__dirname, "..");
 
 /** Literals that read like words but no player sees as text. */
 const ALLOWED = new Set<string>([
-  // battle.ts matches the caption words src/mvp/trace.ts and src/glossary.ts
-  // build (the game's own words, M4-3), never shows these.
-  String.raw`\(\d+ absorbed\)|Chain stopped after\s\d+ steps|Time's up|No room|[Ss]udden death|(?<![\p{L}\d])(?:{})(?![\p{L}\d])|\b(?:PWR|HP)\b|[−+]\d+(?!\d)(?!\s+more)`,
+  // battle.ts matches the caption word src/mvp/trace.ts builds (the game's
+  // own words, M4-3), never shows it.
   "Time's up",
 ]);
 
@@ -70,6 +69,8 @@ export function literals(src: string): { text: string; line: number }[] {
 /** Reads like text for a player: a capitalised word then a word ("Sell or
  * fuse"), or words ending a sentence ("is over."). */
 export function looksLikeText(s: string): boolean {
+  // A regex's source (battle.ts's caption terms) is code, not text.
+  if (/\\[dsbwp]|\(\?/.test(s)) return false;
   return /\b[A-Z][a-z']+,? [a-z{]/.test(s) || /[a-z]{2,} [a-z]{2,}[.!?]$/.test(s) || /^[A-Z][a-z]+[.!?]$/.test(s);
 }
 

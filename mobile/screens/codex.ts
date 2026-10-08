@@ -38,6 +38,7 @@ import { app, button, closable, h, isDesktop, onKeys, screen, show, who } from "
 import { icon } from "../ui/icon";
 import { loadUnitRates, pct } from "../ui/unit-stats";
 import { ideaWhy, proposeScreen } from "./ideas";
+import { rulesLangOpt } from "../lang";
 
 export type CodexTab = "units" | "fusions" | "library" | "keywords";
 export type CodexSort = "tier" | "win" | "pick";
@@ -238,7 +239,7 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
 /** The When icon a unit's card leads with (card.ts iconLine), its pip and
  * its label. The key tells "Dies" from "Ally dies" ("death-skull.ally"). */
 function triggerOf(u: UnitContent, abilities: AbilityRegistry): { key: string; icon: IconId; pip?: Pip; label: string } | null {
-  const w = cardIcons(u.forms.sleeping, abilities)[0];
+  const w = cardIcons(u.forms.sleeping, abilities, rulesLangOpt())[0];
   if (!w || w.role !== "when") return null;
   return { key: w.pip ? `${w.icon}.${w.pip}` : w.icon, icon: w.icon, ...(w.pip ? { pip: w.pip } : {}), label: w.label };
 }
@@ -276,10 +277,10 @@ function unitsTab(
     const t = trig.get(u.id);
     if (t && !triggers.has(t.key)) triggers.set(t.key, t);
   }
-  const text = new Map(units.map((u) => [u.id, `${u.name} ${u.archetype ?? ""} ${formText(u.forms.sleeping, content.abilities)} ${formText(u.forms.awoken, content.abilities)}`.toLowerCase()]));
+  const text = new Map(units.map((u) => [u.id, `${u.name} ${u.archetype ?? ""} ${formText(u.forms.sleeping, content.abilities, rulesLangOpt())} ${formText(u.forms.awoken, content.abilities, rulesLangOpt())}`.toLowerCase()]));
 
   const summons = content.summons ?? [];
-  const summonText = new Map(summons.map((x) => [x.id, `${x.name} ${x.form ? formText(x.form, content.abilities) : ""}`.toLowerCase()]));
+  const summonText = new Map(summons.map((x) => [x.id, `${x.name} ${x.form ? formText(x.form, content.abilities, rulesLangOpt()) : ""}`.toLowerCase()]));
   const grid = h("div", { class: "slots codex-grid", "data-testid": "codex-units" });
   const count = h("div", { class: "dim small", "data-testid": "codex-count" });
   const order = st.sort === "tier" ? t("codex.orderTier") : st.sort === "win" ? t("codex.orderWin") : t("codex.orderPick");
@@ -578,7 +579,7 @@ function usersByTerm(content: MvpContent): Map<string, UnitContent[]> {
   const out = new Map<string, UnitContent[]>();
   for (const u of [...content.units].sort(byTierName)) {
     const keys = new Set<string>();
-    for (const form of [u.forms.sleeping, u.forms.awoken]) for (const s of formSegments(form, content.abilities)) if (s.term) keys.add(useKey(s.term, s.scope));
+    for (const form of [u.forms.sleeping, u.forms.awoken]) for (const s of formSegments(form, content.abilities, rulesLangOpt())) if (s.term) keys.add(useKey(s.term, s.scope));
     for (const k of keys) out.set(k, [...(out.get(k) ?? []), u]);
   }
   return out;
@@ -605,7 +606,7 @@ function keywordsTab(content: MvpContent, open: (node: HTMLElement, from?: HTMLE
   };
   const usedBy = (n: number) => h("div", { class: "dim small" }, t("codex.usedBy", { n }));
   const row = (id: TermId): HTMLElement | null => {
-    const def = termDef(id, content.statuses);
+    const def = termDef(id, content.statuses, rulesLangOpt());
     if (!def) return null;
     const used = users.get(id) ?? [];
     // A trigger said of someone else gets its own line, with its own label,
@@ -613,13 +614,13 @@ function keywordsTab(content: MvpContent, open: (node: HTMLElement, from?: HTMLE
     // "When it dies."
     const scoped = (id.startsWith("trigger:") ? SCOPES : []).flatMap((sc) => {
       const them = users.get(useKey(id, sc));
-      const tip = them && scopedTip(id, sc);
+      const tip = them && scopedTip(id, sc, rulesLangOpt());
       return them && tip
         ? [
             h(
               "div",
               { class: "stack kw-scope", "data-scope": sc, "data-testid": "codex-term-scope" },
-              h("b", { class: `tone-${def.tone}`, "data-testid": "codex-term-scope-label" }, scopedLabel(id, sc) ?? def.label),
+              h("b", { class: `tone-${def.tone}`, "data-testid": "codex-term-scope-label" }, scopedLabel(id, sc, rulesLangOpt()) ?? def.label),
               h("div", { class: "kw-tip" }, tip),
               usedBy(them.length),
               chipsOf(them),

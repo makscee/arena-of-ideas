@@ -19,6 +19,8 @@
  *               10); without it every fusion gets the portmanteau
  *   ARENA_TUNER instant (with MVP_DEV=1 only): the overnight check passes
  *               every unit at once, for e2e; default the real tuner (M2-7)
+ *   ARENA_PUBLIC_URL  the game's public address, for share links' Open Graph
+ *               tags (default https://arena.makscee.ru/arena, M4-7)
  *   MVP_BUILD   the deployed commit, `build` on /api/v1/health (default: the
  *               checkout's HEAD); scripts/mvp-redeploy.sh sets it
  * Run: npm run mvp:server
@@ -32,6 +34,7 @@ import { poolContent, seedUnits } from "./pool.js";
 import { MVP_RULES } from "../../../src/mvp/contract.js";
 import { mvpRuntime } from "./runtime.js";
 import { buildOf, mvpServerApp, underBasePath } from "./server.js";
+import { shareMeta } from "./share.js";
 import { SqliteMvpStore } from "./sqlite-store.js";
 import { instantTuner } from "./votes.js";
 
@@ -54,7 +57,8 @@ const voteMin = Number(process.env.MVP_VOTE_MIN);
 const rules = Number.isInteger(voteMin) && voteMin > 0 ? { ...MVP_RULES, voteMin } : undefined;
 const rt = mvpRuntime({ content, store, dev, ...(rules ? { rules } : {}), ...(tuner ? { tuner } : {}), invites: process.env.MVP_INVITES === "1", open: process.env.MVP_OPEN === "1", rotation: process.env.MVP_ROTATION === "1" });
 const build = buildOf();
-const app = mvpServerApp(createMvpApp(rt), { staticRoot: root, build });
+const publicUrl = (process.env.ARENA_PUBLIC_URL ?? "https://arena.makscee.ru/arena").replace(/\/$/, "");
+const app = mvpServerApp(createMvpApp(rt), { staticRoot: root, build, pageMeta: (url, lang) => shareMeta(rt, url, publicUrl, lang) });
 
 serve({ port, hostname: host, fetch: underBasePath(app, basePath) });
 startMvpJobs(rt);

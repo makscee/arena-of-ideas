@@ -17,10 +17,16 @@ import type {
   When,
 } from "./types.js";
 import type { TermId } from "./glossary.js";
+import { describeAbilitySegmentsRu, describeStatusSegmentsRu } from "./describe-ru.js";
+
+/** The language card text is written in (M4-3): English, or Russian from
+ * describe-ru.ts's word table. Unset means English. */
+export type Lang = "en" | "ru";
 
 /** How the describing context names the holder: "self" on a unit's own
  * ability, "holder" on a status's (the unit the status is attached to). */
 export interface DescribeOpts {
+  lang?: Lang;
   holder?: string;
   /** The ability fires on its holder's own death: the holder has left the
    * line, so an every-ally effect doesn't include it. */
@@ -441,6 +447,7 @@ export function describeAbilitySegments(ab: Ability, opts0: DescribeOpts = {}): 
   // An eventUnit target reads as the unit the trigger is about ("that ally").
   const eventUnit = opts0.eventUnit ?? eventUnitOf(ab.whens ?? [], opts0.holder ?? HOLDER_DEFAULT);
   const opts: DescribeOpts = eventUnit ? { ...opts0, eventUnit } : opts0;
+  if (opts.lang === "ru") return describeAbilitySegmentsRu(ab, opts);
   // The selected targets as segments — each selector its own tappable term,
   // joined by plain " and " text. Reused for every effect in the sequence.
   const target: DescribeSegment[] = [];
@@ -617,12 +624,13 @@ export function abilityPartRefs(ab: Ability): PartRef[] {
  * (decay, consumption) surface from the content itself — consumeStacks,
  * absorbHurt, removeSelf all say what they spend.
  */
-export function describeStatus(def: StatusDef): string {
-  return joinSegments(describeStatusSegments(def));
+export function describeStatus(def: StatusDef, lang?: Lang): string {
+  return joinSegments(describeStatusSegments(def, lang));
 }
 
 /** describeStatus as segments — identical text, with status refs marked. */
-export function describeStatusSegments(def: StatusDef): DescribeSegment[] {
+export function describeStatusSegments(def: StatusDef, lang?: Lang): DescribeSegment[] {
+  if (lang === "ru") return describeStatusSegmentsRu(def);
   const segs: DescribeSegment[] = [];
   if (def.statMods !== undefined) {
     for (const stat of ["hp", "pwr"] as const) {

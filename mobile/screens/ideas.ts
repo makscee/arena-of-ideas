@@ -17,6 +17,7 @@ import { unitSheet } from "../ui/card";
 import { button, closable, h, onGone, onKeys, overlay, screen, show } from "../ui/dom";
 import { richText } from "../ui/term";
 import { pickScreen } from "./pick";
+import { rulesLangOpt } from "../lang";
 
 /** How My ideas names each stage. */
 export const IDEA_STAGE: Record<IdeaState, Key> = {
@@ -215,7 +216,7 @@ export function proposeScreen(unit: UnitContent, content: MvpContent, nav: Ideas
         "div",
         { class: "panel propose-now", "data-testid": "propose-rule" },
         h("span", { class: "dim small" }, t("ideas.now")),
-        ...richText(formSegments(unit.forms.sleeping, content.abilities), { size: 14 }),
+        ...richText(formSegments(unit.forms.sleeping, content.abilities, rulesLangOpt()), { size: 14 }),
       ),
     ],
     label: t("ideas.proposeLabel"),

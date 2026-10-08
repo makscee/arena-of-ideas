@@ -3,7 +3,7 @@
 // describe.ts: the segments carry glossary terms, and joining their text gives
 // the plain sentence.
 
-import { describeAbilitySegments, type DescribeSegment } from "../describe.js";
+import { describeAbilitySegments, type DescribeSegment, type Lang } from "../describe.js";
 import type { AbilityRegistry, Effect } from "../types.js";
 import type { UnitForm } from "./contract.js";
 
@@ -11,37 +11,38 @@ import type { UnitForm } from "./contract.js";
  * from its abilities. The form's own Does share its When and Who: one sentence,
  * the Does joined by "then" ("When the battle begins: summon …, then apply 3
  * Vitality to every ally."), unless a Does carries a condition of its own. */
-export function formSegments(form: UnitForm, abilities: AbilityRegistry): DescribeSegment[] {
+export function formSegments(form: UnitForm, abilities: AbilityRegistry, lang?: Lang): DescribeSegment[] {
   if (form.text) return [{ text: form.text }];
-  const out = clauseSegments(form, abilities);
+  const out = clauseSegments(form, abilities, lang);
   // Each "and" clause (R4-7) reads on after the form's own Does, with its own
   // Who and without the When again: "Ally dies: 2 Strength to self, and
   // silence front enemy."
   for (const clause of form.also ?? []) {
-    const segs = clauseSegments({ ...form, who: clause.who, does: clause.does, also: [] }, abilities);
+    const segs = clauseSegments({ ...form, who: clause.who, does: clause.does, also: [] }, abilities, lang);
     const colon = segs.findIndex((s) => s.text === ": ");
     if (colon < 0 || out[out.length - 1]?.text !== ".") {
       out.push({ text: " " }, ...segs);
       continue;
     }
     out.pop();
-    out.push({ text: ", and " }, ...segs.slice(colon + 1));
+    out.push({ text: lang === "ru" ? ", и " : ", and " }, ...segs.slice(colon + 1));
   }
   return out;
 }
 
 /** One clause (a form's Who and its Does) as one sentence. */
-function clauseSegments(form: UnitForm, abilities: AbilityRegistry): DescribeSegment[] {
+function clauseSegments(form: UnitForm, abilities: AbilityRegistry, lang?: Lang): DescribeSegment[] {
   const abs = form.does.map((id) => abilities[id]);
   const cond = form.condition ? { condition: form.condition } : {};
+  const opts = lang ? { lang } : {};
   if (abs.length > 1 && abs.every((ab) => ab !== undefined && ab.condition === undefined)) {
-    return describeAbilitySegments({ ...abs[0]!, whens: form.when, selectors: form.who, effects: sumStatuses(abs.flatMap((ab) => ab!.effects)), ...cond });
+    return describeAbilitySegments({ ...abs[0]!, whens: form.when, selectors: form.who, effects: sumStatuses(abs.flatMap((ab) => ab!.effects)), ...cond }, opts);
   }
   const out: DescribeSegment[] = [];
   form.does.forEach((id, i) => {
     if (i > 0) out.push({ text: " " });
     const ab = abilities[id];
-    out.push(...(ab ? describeAbilitySegments({ ...ab, whens: form.when, selectors: form.who, ...cond }) : [{ text: id }]));
+    out.push(...(ab ? describeAbilitySegments({ ...ab, whens: form.when, selectors: form.who, ...cond }, opts) : [{ text: id }]));
   });
   return out;
 }
@@ -62,5 +63,5 @@ function sumStatuses(effects: Effect[]): Effect[] {
 }
 
 /** formSegments joined: the form's plain sentence. */
-export const formText = (form: UnitForm, abilities: AbilityRegistry): string =>
-  formSegments(form, abilities).map((s) => s.text).join("");
+export const formText = (form: UnitForm, abilities: AbilityRegistry, lang?: Lang): string =>
+  formSegments(form, abilities, lang).map((s) => s.text).join("");
