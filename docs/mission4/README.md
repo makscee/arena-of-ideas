@@ -32,14 +32,14 @@ Why: live has 3 human players and 0 ideas written. Ideas, votes and the daily tr
 ## Slices
 | # | Slice | Waits for | Risk |
 |---|---|---|---|
-| 1 | Strings in one place (English catalog) | – | |
-| 2 | Russian screens + language switch | 1 | |
-| 3 | Russian rules: card text, keywords, captions, traces | 1 | |
-| 4 | Russian names: units and fusions | 3 | prod data |
-| 5 | Ideas in Russian | 4 | |
-| 6 | Log in with Telegram | – | auth |
-| 7 | Share cards | – | |
-| 8 | The daily post | 7 | outward |
+| 1 (#811) | Strings in one place (English catalog) | – | |
+| 2 (#814) | Russian screens + language switch | 1 | |
+| 3 (#815) | Russian rules: card text, keywords, captions, traces | 1 | |
+| 4 (#817) | Russian names: units and fusions | 3 | prod data |
+| 5 (#818) | Ideas in Russian | 4 | |
+| 6 (#812) | Log in with Telegram | – | auth |
+| 7 (#813) | Share cards | – | |
+| 8 (#816) | The daily post | 7 | outward |
 | 9 | Bots, e2e both languages, playtest, report (orchestrator) | all | |
 
 ## Rules for every slice
