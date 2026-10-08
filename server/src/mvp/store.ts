@@ -209,7 +209,13 @@ export interface StoredUnit {
    * its own root, as every unit made before mission 3 is. */
   rootId?: UnitId;
   createdAt: string;
+  /** M4-4: the name and line in other languages (`npm run mvp:translate`),
+   * kept beside the row and never in it, so the content version stays. */
+  texts?: UnitTexts;
 }
+
+/** A unit's name and line (its archetype sentence) by language; English is the row's. */
+export type UnitTexts = { ru?: { name: string; line: string } };
 
 /** The live units at a day: `version` is the content version built from
  * `unitIds`, in this order. */

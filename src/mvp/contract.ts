@@ -221,6 +221,9 @@ export interface UnitContent {
   tier: Tier;
   base: Stats;
   forms: Record<FormKey, UnitForm>;
+  /** M4-4, GET /content only: the name and line (`archetype`) in Russian,
+   * when the unit has been translated. Never part of the version. */
+  texts?: { ru?: { name: string; line: string } };
 }
 
 /** A summoned body (round 3, R3-5): what a Summon effect puts on the line.
@@ -304,6 +307,8 @@ export interface FusionDiscovery {
   discoveredAt: string;
   /** The local model's name, or the deterministic portmanteau when it was down. */
   nameSource: "model" | "fallback";
+  /** M4-4: the name in Russian, beside the English one; absent until named. */
+  texts?: { ru?: { name: string } };
 }
 
 export interface LineUnit {

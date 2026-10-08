@@ -373,7 +373,7 @@ export function readerArgs(o: ClaudeReaderOptions, system: string, schema: objec
 
 /** Runs `claude -p` once and returns its structured output; throws on a
  * spawn error, a timeout, a non-zero exit or an answer without one. */
-function callClaude(o: ClaudeReaderOptions, system: string, prompt: string, schema: object): Promise<unknown> {
+export function callClaude(o: ClaudeReaderOptions, system: string, prompt: string, schema: object): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const child = spawn(o.bin, readerArgs(o, system, schema), { cwd: tmpdir(), stdio: ["pipe", "pipe", "pipe"] });
     let stdout = "";

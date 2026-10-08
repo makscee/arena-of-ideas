@@ -32,6 +32,7 @@ import { statusesShown, STATUS_ROW_FALLBACK } from "../ui/status-row";
 import { beatCues, endSound } from "../ui/sound-map";
 import { play as playSfx } from "../ui/sound";
 import { rulesLangOpt } from "../lang";
+import { fusionName, unitName as localUnitName } from "../unit-names";
 import { ruStatusName } from "../../src/describe-ru";
 
 /** The Russian caption words richCaption highlights (M4-3), after the English ones. */
@@ -136,7 +137,13 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const outcome = battle.winner === "draw" ? "draw" : battle.winner === you ? "win" : "loss";
   const owner = (s: Side) => `@${(s === "A" ? battle.player : battle.opponent).name}`;
   const log = battle.log;
-  const name = displayNames(log);
+  // M4-4: the log names units in English; a Russian page reads their Russian names.
+  const shown = displayNames(log);
+  const lineUnits = new Map([...battle.teamA, ...battle.teamB].map((u) => [u.id, u]));
+  const name = (id: string) => {
+    const u = lineUnits.get(id);
+    return u ? (u.kind === "fused" ? fusionName(u.fusion, shown(id)) : localUnitName(u.unitId, shown(id))) : shown(id);
+  };
   const sides = sidesOf(log);
   // Playback goes beat by beat (round 2, R2-12): a strike or a turn end plus
   // everything it sets off, its effects landing in quick waves.
