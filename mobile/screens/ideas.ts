@@ -1,0 +1,180 @@
+// My ideas (mission 2, M2-4, makscee/void-board#790). Home's "💡" line opens
+// it: the ideas the player holds, "New idea", and the ideas they've sent with
+// their stage; a `written` one can be taken back, refunding it. The write
+// screen is one text box (IDEA_TEXT_MIN–MAX characters) and Send. Every text
+// here is the player's own: the API never returns anyone else's. M2-9 adds
+// the creator number: the days the player's units have been live, all together.
+import { IDEA_TEXT_MAX, IDEA_TEXT_MIN, type CreditsView, type IdeaState, type MyIdea, type MyIdeasView } from "../../src/mvp/contract";
+import { api, ApiError } from "../api";
+import { button, h, onKeys, overlay, screen, show } from "../ui/dom";
+
+/** How My ideas names each stage. */
+export const IDEA_STAGE: Record<IdeaState, string> = {
+  written: "being read",
+  reading: "being read",
+  "pick-archetype": "pick its archetype",
+  "pick-reading": "pick its reading",
+  simulating: "being tested",
+  voting: "in the vote",
+  live: "live",
+  failed: "didn't pass",
+  library: "in the library",
+};
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+const chars = (s: string) => [...s.trim()].length;
+const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+interface IdeasNav {
+  onBack: () => void;
+  /** The device's player is gone (a 401): back to the name screen. */
+  onUnknown: () => void;
+}
+
+/** My ideas; `sent` says an idea was just sent, so it opens with the notice. */
+export async function ideasScreen(nav: IdeasNav, sent = false): Promise<void> {
+  const back = button("Back", nav.onBack, "primary grow", "ideas-back");
+  const escBack = (e: KeyboardEvent) => (e.key === "Escape" ? (nav.onBack(), true) : false);
+  let view: MyIdeasView;
+  let you: CreditsView["you"] = null;
+  try {
+    // The creator number (M2-9) is extra: the page shows without it.
+    [view, you] = await Promise.all([api.myIdeas(), api.credits().then((c) => c.you, () => null)]);
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401) return nav.onUnknown();
+    show(h("h1", {}, "MY IDEAS"), h("div", { class: "error", "data-testid": "error" }, errorText(e)), h("div", { class: "spacer" }), h("div", { class: "row footer" }, back));
+    onKeys(escBack);
+    return;
+  }
+  const err = h("div", { class: "error", "data-testid": "error" });
+  const { held, nextIn } = view.ideas;
+  const holdLine =
+    held > 0
+      ? `💡 You hold ${plural(held, "idea")}.${nextIn === null ? " That's the most you can: send one to keep earning." : ""}`
+      : `💡 You hold no ideas. The next one comes in ${plural(nextIn ?? 0, "finished run")}.`;
+  const write = button("New idea", () => writeScreen(nav), "primary", "idea-new");
+  if (held === 0) write.disabled = true;
+  show(
+    h("h1", {}, "MY IDEAS"),
+    sent ? h("div", { class: "notice", "data-testid": "idea-sent" }, "Your idea is being read. We'll tell you when it's ready.") : null,
+    h("div", { "data-testid": "ideas-held" }, holdLine),
+    write,
+    err,
+    h("div", { class: "label" }, "Sent"),
+    h(
+      "div",
+      { class: "panel stack", "data-testid": "ideas-sent" },
+      ...(view.sent.length ? view.sent.map((i) => sentRow(i, nav, err)) : [h("div", { class: "dim" }, "Nothing sent yet. Your ideas show here with how far they've got.")]),
+    ),
+    you ? creatorLine(you) : null,
+    h("div", { class: "dim small" }, "Only you see what you write."),
+    h("div", { class: "spacer" }),
+    h("div", { class: "row footer" }, back),
+  );
+  screen("ideas");
+  onKeys(escBack);
+}
+
+/** Your creator number: the days your units have been live, summed over every stay. */
+function creatorLine(you: NonNullable<CreditsView["you"]>): HTMLElement {
+  return h(
+    "div",
+    { class: "dim small", "data-testid": "creator-number" },
+    `💡 Creator number: ${you.days}. `,
+    you.units ? `The days your ${you.units === 1 ? "unit has" : `${plural(you.units, "unit")} have`} been live, all together.` : "Once an idea of yours is a unit, each day it's live adds one.",
+  );
+}
+
+function sentRow(i: MyIdea, nav: IdeasNav, err: HTMLElement): HTMLElement {
+  const cancel = i.state === "written" ? button("Cancel", () => cancelSheet(i, nav, err), "small", "idea-cancel") : null;
+  return h(
+    "div",
+    { class: "idea-row", "data-testid": "idea-sent-row", "data-state": i.state },
+    h("div", { class: "grow" }, h("div", { class: "idea-text" }, i.text), h("div", { class: "dim small", "data-testid": "idea-stage" }, IDEA_STAGE[i.state])),
+    cancel,
+  );
+}
+
+function cancelSheet(i: MyIdea, nav: IdeasNav, err: HTMLElement): void {
+  const close = overlay(
+    h("div", { class: "label" }, "Cancel idea"),
+    h("p", {}, "Take this idea back? Its text is deleted, and you get the idea back to write another."),
+    h(
+      "div",
+      { class: "row sheet-actions" },
+      button("Keep it", () => close(), "grow", "idea-keep"),
+      button(
+        "Take back",
+        () => {
+          close();
+          void api
+            .cancelIdea(i.ideaId)
+            .then(() => ideasScreen(nav))
+            .catch((e: unknown) => {
+              if (e instanceof ApiError && e.status === 401) return nav.onUnknown();
+              err.textContent = errorText(e);
+            });
+        },
+        "danger grow",
+        "idea-cancel-confirm",
+      ),
+    ),
+  );
+}
+
+/** One text box and Send; sending spends one held idea. */
+function writeScreen(nav: IdeasNav): void {
+  const toList = () => void ideasScreen(nav);
+  const box = h("textarea", {
+    class: "idea-box",
+    "data-testid": "idea-text",
+    rows: "6",
+    maxlength: String(IDEA_TEXT_MAX),
+    "aria-label": "Your idea for a unit, in your own words",
+    placeholder: "A healer who grows stronger every time an ally falls.",
+  });
+  const count = h("div", { class: "dim small num", "data-testid": "idea-count" });
+  const err = h("div", { class: "error", "data-testid": "error" });
+  let sending = false;
+  const send = button(
+    "Send",
+    () => {
+      if (sending) return;
+      sending = true;
+      send.disabled = true;
+      err.textContent = "";
+      api
+        .writeIdea(box.value)
+        .then(() => ideasScreen(nav, true))
+        .catch((e: unknown) => {
+          if (e instanceof ApiError && e.status === 401) return nav.onUnknown();
+          err.textContent = errorText(e);
+          sending = false;
+          update();
+        });
+    },
+    "primary grow",
+    "idea-send",
+  );
+  const update = () => {
+    const n = chars(box.value);
+    count.textContent = n < IDEA_TEXT_MIN ? `${n} / ${IDEA_TEXT_MAX} · at least ${IDEA_TEXT_MIN}` : `${n} / ${IDEA_TEXT_MAX}`;
+    send.disabled = sending || n < IDEA_TEXT_MIN || n > IDEA_TEXT_MAX;
+  };
+  box.addEventListener("input", update);
+  update();
+  show(
+    h("h1", {}, "NEW IDEA"),
+    h("label", { class: "label", for: "idea-box" }, "Your idea for a unit, in your own words"),
+    box,
+    count,
+    h("div", { class: "dim small" }, "Only you see your text. Sending spends one idea."),
+    err,
+    h("div", { class: "spacer" }),
+    h("div", { class: "row footer" }, button("Back", toList, "grow", "idea-write-back"), send),
+  );
+  box.id = "idea-box";
+  screen("ideas");
+  onKeys((e) => (e.key === "Escape" ? (toList(), true) : false));
+  box.focus();
+}

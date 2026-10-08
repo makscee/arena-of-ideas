@@ -11,7 +11,7 @@ import { checkDecision, MvpBadDecision, MvpDecisionError, runView, type MvpRunSt
 import { creditsView, creditUnit, libraryView } from "./credits.js";
 import { dayView, endDay, hiddenSlay } from "./day.js";
 import { MvpNotYet } from "./errors.js";
-import { grantIdea, ideasOf } from "./ideas.js";
+import { cancelIdea, grantIdea, IdeaRefused, ideasOf, myIdeas, writeIdea } from "./ideas.js";
 import { isAdmin, isJoinCode, JoinRefused, joinOpen, NAME_RE, openJoin, redeemInvite, sessionPlayer } from "./invites.js";
 import { abandon, currentRun, decide, preview, startRun } from "./runs.js";
 import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
@@ -48,7 +48,8 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   /** The dev tools: anyone on an open dev server, admin invites on an invite-only one. */
   const devFor = (c: Context) => rt.dev && (!rt.invites || isAdmin(store, playerOf(c)?.id));
 
-  // Every body here is a name or a Decision: a few hundred bytes.
+  // Every body here is a name, a Decision or an idea: a few hundred bytes (an
+  // idea's 400 characters, a few KB at most).
   api.use("*", bodyLimit({ maxSize: 16 * 1024, onError: (c) => bad(c, 413, "body too large") }));
   // A token that names no session (a revoked link) is no player anywhere but
   // the invite routes: 401 "unknown player", so the device forgets it and
@@ -222,6 +223,28 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     if (!b || hiddenSlay(rt, b.battleId, playerOf(c)?.id)) return bad(c, 404, "no such battle");
     return c.json(b);
   });
+
+  // Mission 2's ideas (M2-4): each player reads and writes only their own;
+  // no route ever returns another player's text.
+  const ideaCall = (c: Context, fn: (p: PlayerRef) => void) => {
+    const p = playerOf(c);
+    if (!p) return unknownPlayer(c);
+    try {
+      fn(p);
+    } catch (err) {
+      if (err instanceof IdeaRefused) return bad(c, err.status, err.message);
+      throw err;
+    }
+    return c.json(myIdeas(rt, p.id));
+  };
+  api.get("/ideas", (c) => ideaCall(c, () => {}));
+  api.post("/ideas", async (c) => {
+    const body = (await c.req.json().catch(() => null)) as { text?: unknown } | null;
+    if (typeof body?.text !== "string") return bad(c, 400, "body must be { text }");
+    const text = body.text;
+    return ideaCall(c, (p) => writeIdea(rt, p.id, text));
+  });
+  api.post("/ideas/:ideaId/cancel", (c) => ideaCall(c, (p) => cancelIdea(rt, p.id, c.req.param("ideaId"))));
 
   // Slice 10 owns this route and the store behind it; slice 11 only reads.
   api.get("/fusions", (c) => c.json(store.fusions()));

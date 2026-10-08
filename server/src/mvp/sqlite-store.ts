@@ -9,7 +9,7 @@
 import Database from "better-sqlite3";
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
+import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, Idea, IdeaState, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
 import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally } from "./store.js";
 
@@ -241,4 +241,24 @@ export class SqliteMvpStore implements MvpStore {
   putIdeaCounts(playerId: string, c: IdeaCounts): void {
     this.write("INSERT INTO mvp_idea_counts (player_id, json) VALUES (?, ?) ON CONFLICT(player_id) DO UPDATE SET json = excluded.json", playerId, JSON.stringify(c));
   }
+  putIdea(i: Idea): void {
+    this.write(
+      "INSERT INTO mvp_ideas (id, player_id, text, state, created_at, json) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET player_id = excluded.player_id, text = excluded.text, state = excluded.state, created_at = excluded.created_at, json = excluded.json",
+      i.ideaId, i.playerId, i.text, i.state, i.createdAt, JSON.stringify(i.data),
+    );
+  }
+  idea(ideaId: string): Idea | undefined { return ideaOf(this.db.prepare("SELECT * FROM mvp_ideas WHERE id = ?").get(ideaId)); }
+  ideas(opts: { playerId?: string; state?: IdeaState } = {}): Idea[] {
+    return this.db
+      .prepare("SELECT * FROM mvp_ideas WHERE (@player IS NULL OR player_id = @player) AND (@state IS NULL OR state = @state) ORDER BY rowid")
+      .all({ player: opts.playerId ?? null, state: opts.state ?? null })
+      .map((r) => ideaOf(r)!);
+  }
+  deleteIdea(ideaId: string): void { this.write("DELETE FROM mvp_ideas WHERE id = ?", ideaId); }
 }
+
+type IdeaRow = { id: string; player_id: string; text: string; state: IdeaState; created_at: string; json: string };
+const ideaOf = (row: unknown): Idea | undefined => {
+  const r = row as IdeaRow | undefined;
+  return r && { ideaId: r.id, playerId: r.player_id, text: r.text, state: r.state, createdAt: r.created_at, data: JSON.parse(r.json) as Idea["data"] };
+};

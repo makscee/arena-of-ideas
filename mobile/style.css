@@ -143,8 +143,14 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .spacer { flex: 1; }
 /* Slice 8: home, shop, result. */
 .small { font-size: 14px; }
-/* Home's ideas line (M2-3): quiet, centred over Play. */
-.title-menu .ideas { text-align: center; }
+/* Home's ideas line (M2-3): quiet, centred over Play; it opens My ideas (M2-4). */
+.title-menu .ideas { text-align: center; align-self: center; }
+/* My ideas and the write screen (M2-4, screens/ideas.ts). */
+.idea-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.idea-row:last-child { border-bottom: none; }
+.idea-row .grow { flex: 1; min-width: 0; }
+.idea-text { overflow-wrap: anywhere; white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.idea-box { width: 100%; font: inherit; background: var(--panel); color: var(--text); border: 1px solid var(--line); padding: 10px 12px; resize: vertical; min-height: 140px; }
 button.small { min-height: 44px; font-size: 14px; padding: 0 12px; }
 .center { text-align: center; }
 .ghost-name { color: var(--ghost); font-weight: 600; }
@@ -727,6 +733,7 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
 
   /* Stats: a wider column; the tables read better at 960px than stretched. */
   #app[data-screen="stats"] { max-width: 960px; padding: 32px; }
+  #app[data-screen="ideas"] { max-width: 640px; padding: 32px; }
 
   /* Codex: the cards and lists on the left, the inspector (a unit's or a fusion's sheet) on the right; keywords in two columns of rows. */
   #app[data-screen="codex"] { max-width: none; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr) var(--insp); gap: 0; align-items: start; }

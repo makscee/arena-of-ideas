@@ -16,6 +16,7 @@ import { battleScreen, type RunOutro } from "./screens/battle";
 import { codexScreen, newCodexCache, type CodexState } from "./screens/codex";
 import { setCodexLink } from "./ui/term";
 import { statsScreen } from "./screens/stats";
+import { ideasScreen } from "./screens/ideas";
 import { card, roman, setCardCredits, unitSheet, type CardUnit } from "./ui/card";
 import { previewName } from "./ui/fusion";
 import { fuseWarning } from "./ui/fuse-warn";
@@ -335,11 +336,11 @@ async function homeScreen(ended: number | null = null): Promise<void> {
 }
 
 /** Home's quiet ideas line (M2-3): the ideas held, or the runs until the
- * next. Tapping it does nothing yet (M2-4 adds the idea screen). */
+ * next. Tapping it opens My ideas (M2-4, screens/ideas.ts). */
 function ideasLine(ideas: IdeasView): HTMLElement {
   const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
   const text = ideas.held > 0 || ideas.nextIn === null ? `💡 ${plural(ideas.held, "idea")}` : `💡 next idea in ${plural(ideas.nextIn, "run")}`;
-  return h("div", { class: "dim small ideas", "data-testid": "ideas" }, text);
+  return button(text, () => void ideasScreen({ onBack: () => void homeScreen(), onUnknown: () => (api.forget(), nameScreen()) }), "small link ideas", "ideas");
 }
 
 /** One confirm before a run is given up (R2-2's abandon): it says what the

@@ -670,6 +670,44 @@ export interface LibraryView {
   summons: SummonContent[];
 }
 
+/** Where a written idea is on its way to a unit (mission 2), in order:
+ * `written` (M2-4) waits for the reader; `reading` (M2-5) is with the model;
+ * `pick-archetype` and `pick-reading` (M2-6) wait for its author; `simulating`
+ * (M2-7) sets its numbers; `voting` (M2-8); `live` in the pool (M2-10);
+ * `failed` back to its author with the reason, the idea refunded; `library`
+ * left the pool. */
+export const IDEA_STATES = ["written", "reading", "pick-archetype", "pick-reading", "simulating", "voting", "live", "failed", "library"] as const;
+export type IdeaState = (typeof IDEA_STATES)[number];
+
+/** An idea's text, in characters after trimming. */
+export const IDEA_TEXT_MIN = 10;
+export const IDEA_TEXT_MAX = 400;
+
+/** A written idea as stored (mvp_ideas, server/src/mvp/ideas.ts). Its text is
+ * private: only its author ever gets it back. */
+export interface Idea {
+  ideaId: string;
+  playerId: string;
+  text: string;
+  state: IdeaState;
+  createdAt: string;
+  /** What later stages add (M2-5's archetypes and readings, M2-6's picks,
+   * M2-7's numbers, a failure's reason, the unit it became). */
+  data: IdeaData;
+}
+
+/** Empty until M2-5: each later slice adds its own optional keys. */
+export interface IdeaData {}
+
+/** One of the player's own ideas, as My ideas shows it. */
+export type MyIdea = Omit<Idea, "playerId">;
+
+/** The My ideas screen: the ideas held, and the ones sent, newest first. */
+export interface MyIdeasView {
+  ideas: IdeasView;
+  sent: MyIdea[];
+}
+
 // ---------- HTTP API ----------
 //
 // Identity on an open server (dev, tests): a name kept on the device: POST
@@ -709,6 +747,11 @@ export interface LibraryView {
 //   GET  /api/v1/day                         → DayView            (slice 5)
 //   POST /api/v1/dev/end-day                 → DayView            (slice 5; 404 unless MVP_DEV=1)
 //   POST /api/v1/dev/grant-idea              → IdeasView          (M2-3; +1 idea up to the cap; 404 unless MVP_DEV=1)
+//   GET  /api/v1/ideas                       → MyIdeasView        (M2-4; the caller's own ideas only, 401 without a player)
+//   POST /api/v1/ideas         { text }      → MyIdeasView        (M2-4; writes one, spending a held idea: 400 text not
+//                                                                  IDEA_TEXT_MIN–MAX characters, 409 no idea held)
+//   POST /api/v1/ideas/:ideaId/cancel        → MyIdeasView        (M2-4; takes back a `written` idea and refunds it: 404 not
+//                                                                  the caller's, 409 past `written` or ideas held at the cap)
 //   GET  /api/v1/stats                       → StatsView          (slice 11)
 //   GET  /api/v1/credits                     → CreditsView        (M2-9; authors, NEW, your creator number)
 //   GET  /api/v1/library                     → LibraryView        (M2-9; the units that have left)
