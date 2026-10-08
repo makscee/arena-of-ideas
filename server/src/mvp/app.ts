@@ -8,6 +8,7 @@ import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, TOKEN_HEADER, type Decision, type HomeView, type PlayerRef } from "../../../src/mvp/contract.js";
 import { checkDecision, MvpBadDecision, MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
+import { creditsView, creditUnit, libraryView } from "./credits.js";
 import { dayView, endDay, hiddenSlay } from "./day.js";
 import { MvpNotYet } from "./errors.js";
 import { grantIdea, ideasOf } from "./ideas.js";
@@ -227,6 +228,10 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
 
   api.get("/day", (c) => c.json(dayView(rt)));
   api.get("/stats", (c) => notYet(c, () => statsView(rt)));
+  // M2-9: who each live unit's idea was, NEW, the caller's creator number;
+  // and the units that have left.
+  api.get("/credits", (c) => c.json(creditsView(rt, playerOf(c)?.id)));
+  api.get("/library", (c) => c.json(libraryView(rt)));
 
   // Dev-only tools (MvpDeps.dev, MVP_DEV=1 in main.ts): 404 without it, and
   // on an invite-only server for anyone but an admin invite's player.
@@ -238,6 +243,15 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   api.post("/dev/grant-idea", (c) => {
     const p = playerOf(c);
     return p ? c.json(grantIdea(rt, p.id)) : unknownPlayer(c);
+  });
+  api.post("/dev/credit-unit", async (c) => {
+    const p = playerOf(c);
+    if (!p) return unknownPlayer(c);
+    const body = (await c.req.json().catch(() => null)) as { unitId?: unknown } | null;
+    // No unitId: a tier I unit, so the shop offers it soon.
+    const unitId = typeof body?.unitId === "string" ? body.unitId : rt.content.units.find((u) => u.tier === 1)?.id;
+    if (!unitId || !creditUnit(rt, unitId, p.id)) return bad(c, 404, "no such live unit");
+    return c.json(creditsView(rt, p.id));
   });
 
   const app = new Hono();

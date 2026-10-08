@@ -8,9 +8,11 @@
 //   text. A card opens its sheet (active form, See Awoken, the dim rates line).
 //   A quiet Sort (tier, win rate, pick rate) compares the rates: only while a
 //   rate sort is on does each card show its number, dim.
-// - Fusions: every discovered pair with its recipe and its credit, "N of 6,480
-//   found"; picking a unit lists all its pairs as the first part, the ones
+// - Fusions: every discovered pair with its recipe and its credit, "N of M
+//   found", both counted from the live pool (M2-9); picking a unit lists all its pairs as the first part, the ones
 //   nobody has made as "?".
+// - Library (M2-9): the units that have left the pool, each with its sheet,
+//   who the idea was, how long it was live and its fusions (GET /library).
 // - Keywords: every glossary term with its 48px icon, its rule and the units
 //   whose text uses it; a term's deep link lands on its row. A trigger said of
 //   someone else ("After an enemy dies") has its own line there.
@@ -18,19 +20,19 @@
 // The icon credits (CC BY 3.0) sit at its foot. Reads /content, /stats and
 // /fusions, each once while it stays open (CodexCache).
 import { GLOSSARY, STATUS_TERMS, scopedLabel, scopedTip, termDef, termGroup, type FixedTermId, type IconId, type TermGroup, type TermId } from "../../src/glossary";
-import type { FusionDiscovery, LineUnit, MvpContent, StatsView, UnitContent, UnitId } from "../../src/mvp/contract";
+import type { FusionDiscovery, LibraryUnit, LibraryView, LineUnit, MvpContent, StatsView, UnitContent, UnitId } from "../../src/mvp/contract";
 import type { UnitFilter } from "../../src/types";
 import { formSegments, formText } from "../../src/mvp/form-text";
 import { fuseUnits, lineUnitOf } from "../../src/mvp/forms";
 import { cardIcons, type Pip } from "../../src/mvp/card-icons";
 import type { AbilityRegistry } from "../../src/types";
 import { api } from "../api";
-import { card, formRich, roman, summonCard, tierClass, summonSheet, unitSheet, withPip } from "../ui/card";
+import { card, formRich, roman, setCardAbilities, summonCard, tierClass, summonSheet, unitSheet, withPip } from "../ui/card";
 import { app, button, closable, h, isDesktop, onKeys, screen, show, who } from "../ui/dom";
 import { icon } from "../ui/icon";
 import { loadUnitRates, pct } from "../ui/unit-stats";
 
-export type CodexTab = "units" | "fusions" | "keywords";
+export type CodexTab = "units" | "fusions" | "library" | "keywords";
 export type CodexSort = "tier" | "win" | "pick";
 
 export interface CodexState {
@@ -59,6 +61,7 @@ const DEFAULTS: CodexState = { tab: "units", tier: null, trigger: null, query: "
 export interface CodexCache {
   stats?: Promise<StatsView | null>;
   fusions?: Promise<FusionDiscovery[]>;
+  library?: Promise<LibraryView>;
   /** Each tab's window scroll, put back on a switch. */
   scroll: Partial<Record<CodexTab, number>>;
   /** Where the open Codex is (its tab and filters), for a redraw at 1024px. */
@@ -100,7 +103,7 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
   let drawing = 0;
   const draw = async (): Promise<void> => {
     const n = ++drawing;
-    tabs.replaceChildren(tabBtn("units", "Units"), tabBtn("fusions", "Fusions"), tabBtn("keywords", "Keywords"));
+    tabs.replaceChildren(tabBtn("units", "Units"), tabBtn("fusions", "Fusions"), tabBtn("library", "Library"), tabBtn("keywords", "Keywords"));
     // The body's height stays while it redraws, so the window keeps its scroll.
     body.style.minHeight = `${body.offsetHeight}px`;
     const y = window.scrollY;
@@ -108,13 +111,19 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
     try {
       if (st.tab === "units") kids = unitsTab(a.content, st, set, open, st.sort === "tier" ? null : await rates(), retryRates);
       else if (st.tab === "keywords") kids = [keywordsTab(a.content, open)];
+      else if (st.tab === "library") {
+        if (!body.hasChildNodes()) body.replaceChildren(h("div", { class: "dim", "data-testid": "codex-loading" }, "Loading the library…"));
+        kids = libraryTab(a.content, await (cache.library ??= api.library()), open);
+      }
       else {
         // The first draw of Fusions waits on /fusions: say so meanwhile (R2-17).
         if (!body.hasChildNodes()) body.replaceChildren(h("div", { class: "dim", "data-testid": "codex-loading" }, "Loading fusions…"));
         kids = fusionsTab(a.content, await (cache.fusions ??= api.fusions()), st, set, open);
       }
     } catch (e) {
-      delete cache.fusions; // a failed fetch is tried again on the next draw
+      // A failed fetch is tried again on the next draw.
+      delete cache.fusions;
+      delete cache.library;
       kids = [h("div", { class: "error", "data-testid": "error" }, e instanceof Error ? e.message : String(e))];
     }
     if (n !== drawing || !body.isConnected) return; // redrawn or left meanwhile
@@ -318,6 +327,8 @@ function fusionsTab(
   const me = api.player?.id;
   const n = content.units.length;
   const total = n * (n - 1);
+  // Found: the discoveries whose parts are both live (a unit that left takes its pairs to the Library).
+  const live = fusions.filter((f) => byId.has(f.first) && byId.has(f.second));
   const known = new Map(fusions.map((f) => [`${f.first}>${f.second}`, f]));
   const mine = fusions.filter((f) => f.discoveredBy?.id === me);
 
@@ -389,13 +400,76 @@ function fusionsTab(
     h(
       "div",
       { class: "row spread" },
-      h("div", { class: "num", "data-testid": "codex-fusions-found" }, `${fusions.length.toLocaleString("en")} of ${total.toLocaleString("en")} found`),
+      h("div", { class: "num", "data-testid": "codex-fusions-found" }, `${live.length.toLocaleString("en")} of ${total.toLocaleString("en")} found`),
       mineBtn,
     ),
     pick,
     first ? h("div", { class: "dim small" }, `${first.name} first: ${found} of ${n - 1} pairs found. Order matters: the first part gives the When, the second the Who.`) : h("div", { class: "dim small" }, "Newest first. Pick a unit to see all its pairs, the ones nobody has found as \"?\"."),
     list,
   ];
+}
+
+// ---------- library ----------
+
+/** The live content with the library's units, abilities and summons added,
+ * so a library unit's sheet (and its fusions) read like a live one's. */
+function withLibrary(content: MvpContent, lib: LibraryView): MvpContent {
+  const ids = new Set(content.units.map((u) => u.id));
+  const sums = new Set((content.summons ?? []).map((x) => x.id));
+  return {
+    ...content,
+    units: [...content.units, ...lib.units.map((l) => l.unit).filter((u) => !ids.has(u.id))],
+    abilities: { ...lib.abilities, ...content.abilities },
+    statuses: { ...lib.statuses, ...content.statuses },
+    summons: [...(content.summons ?? []), ...lib.summons.filter((x) => !sums.has(x.id))],
+  };
+}
+
+const liveFor = (l: LibraryUnit): string => (l.liveDays === null ? "Left before days were recorded" : `Live ${l.liveDays} ${l.liveDays === 1 ? "day" : "days"}`);
+
+function libraryTab(content: MvpContent, lib: LibraryView, open: (node: HTMLElement, from?: HTMLElement) => void): Node[] {
+  const all = withLibrary(content, lib);
+  setCardAbilities(all.abilities); // their cards' icon lines may use abilities no live unit has
+  const byId = new Map(all.units.map((u) => [u.id, u]));
+  const me = api.player?.id;
+  /** A library unit's sheet, then its time live, its credit and its fusions. */
+  const sheet = (l: LibraryUnit): HTMLElement => {
+    const s = unitSheet(l.unit, all);
+    const fusions = l.fusions.map((f) => {
+      const [a, b] = [byId.get(f.first), byId.get(f.second)];
+      const by = f.discoveredBy ? (f.discoveredBy.id === me ? "you" : who(f.discoveredBy.name)) : null;
+      return h(
+        "div",
+        { class: "stat-row fusion-row", "data-testid": "library-fusion" },
+        h("span", { class: "emoji pair" }, `${a?.emoji ?? "?"}${b?.emoji ?? "?"}`),
+        h("span", { class: "grow" }, h("div", { class: "fusion-name" }, f.name), h("div", { class: "dim small" }, `${a?.name ?? f.first} + ${b?.name ?? f.second}`), h("div", { class: "discovered" }, ...(by ? ["discovered by ", by] : ["made by bots, unclaimed"]))),
+      );
+    });
+    s.append(
+      h("div", { class: "dim small lib-meta", "data-testid": "library-meta" }, h("span", {}, "In the Library"), h("span", { "data-testid": "library-live" }, liveFor(l)), ...(l.by ? [h("span", {}, "💡 idea by ", who(l.by.name))] : [])),
+      h("div", { class: "label" }, `Fusions · ${l.fusions.length}`),
+      fusions.length ? h("div", { class: "panel stack", "data-testid": "library-fusions" }, ...fusions) : h("div", { class: "dim small" }, "None were found while it was live."),
+    );
+    return s;
+  };
+  const grid = h(
+    "div",
+    { class: "slots codex-grid", "data-testid": "codex-library" },
+    ...lib.units.map((l) => {
+      const u = l.unit;
+      const el = card({ emoji: u.emoji, name: u.name, stats: u.base, recipe: u.forms.sleeping, unitId: u.id }, { side: "ghost", tier: u.tier, testid: "library-unit", onOpen: () => open(sheet(l), el) });
+      el.dataset.unit = u.id;
+      return el;
+    }),
+  );
+  return [
+    h(
+      "div",
+      { class: "dim small", "data-testid": "library-count" },
+      lib.units.length ? `${lib.units.length} ${lib.units.length === 1 ? "unit has" : "units have"} left the pool. ${isDesktop() ? "Click" : "Tap"} one to read it.` : "No unit has left the pool yet.",
+    ),
+    lib.units.length ? grid : null,
+  ].filter((n): n is NonNullable<typeof n> => n !== null);
 }
 
 // ---------- keywords ----------

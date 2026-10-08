@@ -630,6 +630,46 @@ export interface IdeasView {
   nextIn: number | null;
 }
 
+/** Who a live unit's idea was and whether it is new (M2-9,
+ * server/src/mvp/credits.ts): only units with an author or a recent entry. */
+export interface UnitCredit {
+  unitId: UnitId;
+  /** The player whose idea it was; null for the seed. */
+  by: PlayerRef | null;
+  /** NEW: it entered the pool in the last NEW_DAYS days (seed units never are). */
+  isNew: boolean;
+}
+
+/** GET /credits: the live units' credits, and the caller's creator number. */
+export interface CreditsView {
+  /** Today's day seq. */
+  day: number;
+  units: UnitCredit[];
+  /** Null without a player. `days`: the days the player's units have been
+   * live, summed over every stint; `units`: how many units are theirs. */
+  you: { days: number; units: number } | null;
+}
+
+/** A unit that has left the pool (GET /library, M2-9). */
+export interface LibraryUnit {
+  unit: UnitContent;
+  by: PlayerRef | null;
+  /** Days it was live, summed over its stints; null when no stint was ever
+   * recorded (the units cut before units became data, M2-1). */
+  liveDays: number | null;
+  /** Its fusions, as either part. */
+  fusions: FusionDiscovery[];
+}
+
+/** GET /library: the units that have left, newest first, with the abilities,
+ * statuses and summons their sheets need (the live content may lack them). */
+export interface LibraryView {
+  units: LibraryUnit[];
+  abilities: AbilityRegistry;
+  statuses: StatusRegistry;
+  summons: SummonContent[];
+}
+
 // ---------- HTTP API ----------
 //
 // Identity on an open server (dev, tests): a name kept on the device: POST
@@ -670,6 +710,9 @@ export interface IdeasView {
 //   POST /api/v1/dev/end-day                 → DayView            (slice 5; 404 unless MVP_DEV=1)
 //   POST /api/v1/dev/grant-idea              → IdeasView          (M2-3; +1 idea up to the cap; 404 unless MVP_DEV=1)
 //   GET  /api/v1/stats                       → StatsView          (slice 11)
+//   GET  /api/v1/credits                     → CreditsView        (M2-9; authors, NEW, your creator number)
+//   GET  /api/v1/library                     → LibraryView        (M2-9; the units that have left)
+//   POST /api/v1/dev/credit-unit { unitId }  → CreditsView        (M2-9; dev: the unit becomes your idea, entered today)
 
 export const PLAYER_HEADER = "X-Arena-Player";
 /** Slice 13: the session token from POST /invites/redeem. */
