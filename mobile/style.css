@@ -1168,3 +1168,8 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
 .vote .label { white-space: normal; }
 .row.wrap { flex-wrap: wrap; }
 .error.dev-note { color: var(--dim); }
+/* M3-8: a version that isn't its archetype's first, beside its name. */
+.card .name .ver { font-size: 0.8em; font-weight: 500; color: var(--dim); }
+.history { gap: 0; }
+.history button.link { min-height: 36px; text-align: left; }
+.history button.link.on { color: var(--text); }
