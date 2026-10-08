@@ -131,9 +131,11 @@ export function fakeIdeaReader(): IdeaReader {
 
 /** "whoever hits it": the fake's attacker readings, the Does the text names first. */
 function attackerCombos(text: string): ReadingDraft[] {
-  if (!/\b(?:whoever|who|what(?:ever)?)\s+(?:hits?|strikes?|attacks?|hurts?)\b|\battackers?\b/i.test(text)) return [];
+  const who = /\b(?:whoever|who|what(?:ever)?)\s+(?:hits?|strikes?|attacks?|hurts?)\b|\battackers?\b/gi;
+  if (!who.test(text)) return [];
+  const rest = text.replace(who, " ");
   const harm = FAKE_SIDES[0]!;
-  const named = (d: string) => new RegExp(`\\b${d.split(" ")[0]!.toLowerCase()}`, "i").test(text);
+  const named = (d: string) => new RegExp(`\\b${d.split(" ")[0]!.toLowerCase()}`, "i").test(rest);
   const does = [...harm.does.filter(named), ...harm.does.filter((d) => !named(d))];
   return ["hurt", "allyHurt"].flatMap((when) =>
     does.map((d) => ({ when, who: "attacker", does: d, awoken: { add: [harm.add.find((a) => a.split(" ")[0] !== d.split(" ")[0])!] } })),
