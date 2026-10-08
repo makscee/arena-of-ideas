@@ -892,7 +892,8 @@ export interface MyIdeasView {
 //   POST /api/v1/ideas/:ideaId/none          → MyIdeasView        (M2-6; "None of these" in `pick-archetype` or `pick-reading`:
 //                                                                  the stage is read once more; the second time the idea
 //                                                                  fails and is refunded; 409 another state)
-//   GET  /api/v1/votes/next                  → { card: VoteCard | null }  (M2-8; never the caller's own candidate, nor a pair they voted on)
+//   GET  /api/v1/votes/next                  → { card: VoteCard | null }  (M2-8; never the caller's own candidate, nor a pair they voted on;
+//                                                                              M3-6: new versions, and "unchanged" open to anyone)
 //   POST /api/v1/votes         VoteRequest   → { card: VoteCard | null }  (M2-8; the next card: 404 no such candidate or live unit,
 //                                                                  400 a pick of neither, 409 already voted on this pair or
 //                                                                  the caller's own candidate or a bot)
