@@ -114,6 +114,7 @@ export const GLOSSARY: Record<FixedTermId, TermDef> = {
   // Targets (Who)
   "target:holder": { label: "Self", icon: "person", tone: "ally", tip: "The unit that has this ability." },
   "target:eventUnit": { label: "It", icon: "pointing", tone: "plain", tip: "The unit the trigger was about." },
+  "target:attacker": { label: "Attacker", icon: "crossed-swords", tone: "enemy", tip: "Whoever dealt the hit, by a strike or an ability. Poison and other status damage have no attacker, so nothing happens; nor if the attacker has died." },
   "target:frontEnemy": { label: "Front enemy", icon: "targeted", tone: "enemy", tip: "The first enemy in line, the one fighting right now." },
   "target:randomEnemy": { label: "Random enemy", icon: "perspective-dice-six-faces-random", tone: "enemy", tip: "One living enemy, picked at random." },
   "target:allEnemies": { label: "All enemies", icon: "minions", tone: "enemy", tip: "Every living enemy." },

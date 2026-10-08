@@ -48,6 +48,8 @@ export type WhenKey = keyof typeof WHEN;
 export const WHO = {
   me: { kind: "holder" },
   it: { kind: "eventUnit" },
+  // Who dealt the hit (M3-1): only with the hurt and allyHurt Whens.
+  attacker: { kind: "attacker" },
   front: { kind: "frontEnemy" },
   enemies: { kind: "allEnemies" },
   allies: { kind: "allAllies" },
@@ -466,6 +468,7 @@ const WIDER: Record<string, string[]> = {
   randomEnemy: ["allEnemies"],
   holder: ["allAllies"],
   eventUnit: [],
+  attacker: [],
   lastDeadAlly: [],
 };
 
