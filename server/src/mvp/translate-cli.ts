@@ -12,7 +12,7 @@
  * `--namer` (or ARENA_NAMER_URL), the stored fusions without a Russian name are
  * named too, by the local namer's Russian mode (./fusion-names-ru.ts), oldest
  * first, at most --fusion-limit of them (the server's own pass names the rest,
- * ten a minute, so a sample is enough for the review page). Safe to
+ * three a minute, so a sample is enough for the review page). Safe to
  * run twice: units and fusions that have a Russian name keep it.
  */
 import { writeFileSync } from "node:fs";

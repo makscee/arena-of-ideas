@@ -129,9 +129,10 @@ export async function nameFusionsRu(store: MvpStore, namer: RuNamer, opts: { lim
   return report;
 }
 
-/** How often the runtime names new discoveries in Russian, and how many at most. */
+/** How often the runtime names discoveries in Russian, and how many at most:
+ * few, so the shared model stays free for the English names players wait on. */
 export const RU_NAMING_MS = 60_000;
-const RU_NAMING_BATCH = 10;
+const RU_NAMING_BATCH = 3;
 
 /** The Russian naming pass, every RU_NAMING_MS while ARENA_NAMER_URL is set.
  * A pair the model can't name isn't asked again until the server restarts. */
