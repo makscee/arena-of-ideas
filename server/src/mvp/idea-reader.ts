@@ -308,7 +308,7 @@ const NEAR_SCHEMA = {
   maxItems: 3,
   items: { type: "object", properties: { part: { type: "string" }, meant: { type: "string" }, used: { type: "string" } }, required: ["part", "meant", "used"], additionalProperties: false },
 };
-const ARCHETYPES_SCHEMA = {
+export const ARCHETYPES_SCHEMA = {
   type: "object",
   properties: {
     archetypes: {
