@@ -9,6 +9,7 @@
 //   ./fusions.ts  slice 10  the namer, its hooks and its job
 //   ./stats.ts    slice 11  the stats hooks and GET /stats
 //   ./votes.ts    M2-8      the overnight check's tuner and job, votes
+//   ./telegram.ts M4-6      Telegram login: codes, the bot and its job
 // Slice 4 passes its SQLite store from main.ts; tests keep the memory store.
 import { MVP_RULES, type MvpContent, type MvpRules } from "../../../src/mvp/contract.js";
 import { today } from "./day.js";
@@ -16,6 +17,7 @@ import { fusionNaming, type NameFusion } from "./fusions.js";
 import { poolBook } from "./pool.js";
 import type { RunDeps, RunHooks } from "./runs.js";
 import { statsHooks } from "./stats.js";
+import type { TelegramApi } from "./telegram.js";
 import { MemoryMvpStore, type MvpStore } from "./store.js";
 import { childTuner, type Tuner } from "./votes.js";
 
@@ -50,6 +52,9 @@ export interface MvpDeps {
   /** M2-10's rotation at the day end (main.ts: MVP_ROTATION=1); off, the day
    * end never changes the pool. */
   rotation?: boolean;
+  /** M4-6's Telegram bot (main.ts: ARENA_TELEGRAM_ENV, or ARENA_TELEGRAM_FAKE=1);
+   * without it there is no Telegram login. */
+  telegram?: TelegramApi;
 }
 
 export interface MvpRuntime extends RunDeps {
@@ -58,6 +63,7 @@ export interface MvpRuntime extends RunDeps {
   open: boolean;
   tuner: { night: Tuner; dev: Tuner };
   rotation: boolean;
+  telegram: TelegramApi | undefined;
 }
 
 /** A background job: starts on the runtime, returns its stop function. */
@@ -86,6 +92,7 @@ export function mvpRuntime(deps: MvpDeps): MvpRuntime {
     open: (deps.invites ?? false) && (deps.open ?? false),
     tuner: deps.tuner ?? { night: childTuner("full"), dev: childTuner("quick") },
     rotation: deps.rotation ?? false,
+    telegram: deps.telegram,
   };
   return rt;
 }

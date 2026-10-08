@@ -86,6 +86,21 @@ export interface MvpStore {
   joinCode(): string | undefined;
   /** Sets (or rotates) the shared join code. */
   setJoinCode(code: string): void;
+  // M4-6's Telegram login (mission #810); only ./telegram.ts writes it.
+  /** Adds a session for this player (a Telegram login), keeping the player's
+   * newest `MAX_SESSIONS`, as opening an invite link does. */
+  addSession(playerId: string, tokenHash: string, at: string): void;
+  /** Stores or replaces a login code (by its hash). */
+  putTelegramCode(c: TelegramCode): void;
+  telegramCode(codeHash: string): TelegramCode | undefined;
+  /** Removes a login code; true when it was there (so only one caller gets it). */
+  dropTelegramCode(codeHash: string): boolean;
+  /** Links a Telegram user and a player. Throws when either is linked already. */
+  linkTelegram(l: TelegramLink): void;
+  /** The link of this Telegram user, or of this player. */
+  telegramLink(by: { tgUserId: string } | { playerId: string }): TelegramLink | undefined;
+  /** Removes this player's link; true when there was one. */
+  unlinkTelegram(playerId: string): boolean;
   // M2-1's units as data (mission #735); ./pool.ts seeds and reads them.
   /** Stores or replaces the unit with this id. */
   putUnit(u: StoredUnit): void;
@@ -135,6 +150,25 @@ export interface MvpStore {
   addVote(v: Vote): boolean;
   /** Votes oldest first: on one candidate, and/or by one player. */
   votes(opts?: { candidateId?: UnitId; playerId?: string }): Vote[];
+  // Mission 4's daily post to Telegram (M4-8); only ./daily-post.ts writes it.
+  /** Claims day `seq`'s message `key` ("ru", "en", "ru+en") as being sent;
+   * false (nothing written) when it was claimed before: a day posts once. */
+  claimDailyPost(seq: number, key: string, at: string): boolean;
+  /** Records how a claimed message went. */
+  putDailyPost(p: DailyPost): void;
+  /** The messages claimed for one day, or every day's, in claim order. */
+  dailyPosts(seq?: number): DailyPost[];
+}
+
+/** One message of a day's post (M4-8): claimed ("sending") before it is
+ * sent, then "sent" or "failed" after its last try. */
+export interface DailyPost {
+  seq: number;
+  key: string;
+  state: "sending" | "sent" | "failed";
+  tries: number;
+  at: string;
+  error?: string;
 }
 
 /** An idea the reader couldn't fully make (M2-5): the game word it lacks
@@ -251,6 +285,33 @@ export interface Invite {
   createdAt: string;
   /** When it was first opened. */
   redeemedAt: string | null;
+}
+
+/** A Telegram login code (M4-6), kept by the SHA-256 of the code in the deep
+ * link. `playerId`: the player who asked (Link Telegram), or null (Log in).
+ * `asked`: what the bot asked the Telegram user who pressed Start; their Yes
+ * sets `readyFor` to the player the device logs in as (the page's next poll
+ * takes it, once), their No sets `declined`. */
+export interface TelegramCode {
+  codeHash: string;
+  playerId: string | null;
+  createdAt: string;
+  expiresAt: string;
+  readyFor: string | null;
+  asked?: TelegramAsk;
+  declined?: boolean;
+}
+
+/** What a code does for a Telegram user, worked out when they press Start and
+ * again when they tap Yes (it must not have changed in between): log a device
+ * in as their linked player, link the asking player, or make a new player. */
+export type TelegramAsk = { kind: "login" | "link"; playerId: string; tgUserId: string } | { kind: "new"; playerId: null; tgUserId: string };
+
+/** One Telegram user linked to one player (M4-6). */
+export interface TelegramLink {
+  tgUserId: string;
+  playerId: string;
+  linkedAt: string;
 }
 
 /** Counted as runs go (./stats.ts): `runs` is the finished runs, and per unit
@@ -380,6 +441,28 @@ export class MemoryMvpStore implements MvpStore {
   private join: string | undefined;
   joinCode(): string | undefined { return this.join; }
   setJoinCode(code: string): void { this.join = code; }
+  addSession(playerId: string, tokenHash: string, _at: string): void {
+    this.sessions.set(tokenHash, playerId);
+    const mine = [...this.sessions].filter(([, id]) => id === playerId);
+    for (const [h] of mine.slice(0, Math.max(0, mine.length - MAX_SESSIONS))) this.sessions.delete(h);
+  }
+  private tgCodes = new Map<string, TelegramCode>();
+  private tgLinks = new Map<string, TelegramLink>();
+  putTelegramCode(c: TelegramCode): void { this.tgCodes.set(c.codeHash, { ...c }); }
+  telegramCode(codeHash: string): TelegramCode | undefined { const c = this.tgCodes.get(codeHash); return c && { ...c }; }
+  dropTelegramCode(codeHash: string): boolean { return this.tgCodes.delete(codeHash); }
+  linkTelegram(l: TelegramLink): void {
+    if (this.tgLinks.has(l.tgUserId) || this.telegramLink({ playerId: l.playerId })) throw new Error(`telegram ${l.tgUserId} or player ${l.playerId} is linked already`);
+    this.tgLinks.set(l.tgUserId, { ...l });
+  }
+  telegramLink(by: { tgUserId: string } | { playerId: string }): TelegramLink | undefined {
+    const l = "tgUserId" in by ? this.tgLinks.get(by.tgUserId) : [...this.tgLinks.values()].find((x) => x.playerId === by.playerId);
+    return l && { ...l };
+  }
+  unlinkTelegram(playerId: string): boolean {
+    const l = this.telegramLink({ playerId });
+    return !!l && this.tgLinks.delete(l.tgUserId);
+  }
   private unitsById = new Map<UnitId, StoredUnit>();
   private pools: PoolSnapshot[] = [];
   private stintsByKey = new Map<string, PoolStint>();
@@ -446,6 +529,18 @@ export class MemoryMvpStore implements MvpStore {
   private words: WordRequest[] = [];
   addWordRequest(w: WordRequest): void { this.words.push({ ...w }); }
   wordRequests(): WordRequest[] { return this.words.map((w) => ({ ...w })); }
+  private posts: DailyPost[] = [];
+  claimDailyPost(seq: number, key: string, at: string): boolean {
+    if (this.posts.some((p) => p.seq === seq && p.key === key)) return false;
+    this.posts.push({ seq, key, state: "sending", tries: 0, at });
+    return true;
+  }
+  putDailyPost(p: DailyPost): void {
+    const i = this.posts.findIndex((x) => x.seq === p.seq && x.key === p.key);
+    if (i >= 0) this.posts[i] = { ...p };
+    else this.posts.push({ ...p });
+  }
+  dailyPosts(seq?: number): DailyPost[] { return this.posts.filter((p) => seq === undefined || p.seq === seq).map((p) => ({ ...p })); }
 }
 
 export const NO_IDEAS: IdeaCounts = { spent: 0, granted: 0, forfeited: 0 };

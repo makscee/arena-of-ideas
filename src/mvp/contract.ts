@@ -646,6 +646,8 @@ export interface HomeView {
   dev: boolean;
   /** The player's ideas (M2-3); null without a player. */
   ideas: IdeasView | null;
+  /** M4-6: Telegram login (Link Telegram, Unlink in the title menu); null without a player. */
+  telegram?: TelegramStatus | null;
 }
 
 /** Ideas a player holds (M2-3, server/src/mvp/ideas.ts): earned by finished
@@ -890,7 +892,7 @@ export interface MyIdeasView {
 // path not listed here (and /dev/* off a dev server, or for a non-admin on an
 // invite-only one), 501 a route a slice hasn't filled in.
 //
-//   GET  /api/v1/health                      → { ok: true, api, contentVersion, build, invites, open }  (build: the deployed commit, or null; invites: invite-only; open: anyone without a link may join)
+//   GET  /api/v1/health                      → { ok: true, api, contentVersion, build, invites, open, telegram }  (build: the deployed commit, or null; invites: invite-only; open: anyone without a link may join; telegram: false, or Telegram login is on with the "bot" or the dev "fake", M4-6)
 //   GET  /api/v1/content                     → MvpContent
 //   POST /api/v1/players       { name }      → PlayerRef          (403 on an invite-only server)
 //   POST /api/v1/invites/lookup { code }     → { player: PlayerRef } (slice 13; whose link it is, opening nothing; 404 unknown code)
@@ -943,6 +945,16 @@ export interface MyIdeasView {
 //   GET  /api/v1/credits                     → CreditsView        (M2-9; authors, NEW, your creator number)
 //   GET  /api/v1/library                     → LibraryView        (M2-9; the units that have left)
 //   POST /api/v1/dev/credit-unit { unitId }  → CreditsView        (M2-9; dev: the unit becomes your idea, entered today)
+//   POST /api/v1/auth/telegram/start         → TelegramStart      (M4-6; a one-time login code and its t.me deep link, for the caller
+//                                                                  (Link Telegram) or for none (Log in); 404 Telegram login off,
+//                                                                  403 a bot or an admin, 409 already linked, 429 over 20 an hour)
+//   POST /api/v1/auth/telegram/poll { code } → TelegramPoll       (M4-6; "waiting" until Yes in the bot, then the session, once; "declined" after No;
+//                                                                  404 unknown, expired or used: start again)
+//   GET  /api/v1/auth/telegram               → TelegramStatus     (M4-6; is Telegram login on, is the caller linked)
+//   POST /api/v1/auth/telegram/unlink        → TelegramStatus     (M4-6; unlinks the caller's Telegram)
+//   POST /api/v1/dev/telegram/accept { code, decline? } → { reply: string } (M4-6; ARENA_TELEGRAM_FAKE=1 only: the fake bot's user sends
+//                                                                  /start <code>, then taps Yes, or No with decline: true)
+//   Telegram login codes, like invite codes, travel only in bodies and the t.me link.
 
 export const PLAYER_HEADER = "X-Arena-Player";
 /** Slice 13: the session token from POST /invites/redeem. */
@@ -952,6 +964,23 @@ export const TOKEN_HEADER = "X-Arena-Token";
 export interface PlayerSession {
   player: PlayerRef;
   token: string;
+}
+
+/** M4-6: a Telegram login code; the page opens `url` and polls `code`. */
+export interface TelegramStart {
+  code: string;
+  url: string;
+  expiresAt: string;
+}
+
+/** M4-6: a poll of a Telegram login code: "declined" when the user tapped No
+ * in the bot (once; then the code is gone). */
+export type TelegramPoll = { status: "waiting" } | { status: "declined" } | ({ status: "done" } & PlayerSession);
+
+/** M4-6: Telegram login for the settings screen. */
+export interface TelegramStatus {
+  enabled: boolean;
+  linked: boolean;
 }
 
 /** R4-20: a join through the open link: the new player's session plus their

@@ -297,5 +297,22 @@ export function describeMvpStore(name: string, make: () => MvpStore): void {
       s.addWordRequest(w("i1", "steal gold"));
       expect(s.wordRequests()).toEqual([w("i1", "steal gold"), w("i2", "swap places"), w("i1", "steal gold")]);
     });
+
+    it("claims a day's post message once (M4-8), and records how it went", () => {
+      const s = make();
+      const at = "2026-10-09T01:00:00.000Z";
+      expect(s.claimDailyPost(5, "ru", at)).toBe(true);
+      expect(s.claimDailyPost(5, "ru", at)).toBe(false);
+      expect(s.claimDailyPost(5, "en", at)).toBe(true);
+      expect(s.claimDailyPost(6, "ru", at)).toBe(true);
+      s.putDailyPost({ seq: 5, key: "ru", state: "sent", tries: 2, at });
+      s.putDailyPost({ seq: 5, key: "en", state: "failed", tries: 4, at, error: "HTTP 500" });
+      expect(s.claimDailyPost(5, "en", at)).toBe(false);
+      expect(s.dailyPosts(5)).toEqual([
+        { seq: 5, key: "ru", state: "sent", tries: 2, at },
+        { seq: 5, key: "en", state: "failed", tries: 4, at, error: "HTTP 500" },
+      ]);
+      expect(s.dailyPosts().map((p) => [p.seq, p.key, p.state])).toEqual([[5, "ru", "sent"], [5, "en", "failed"], [6, "ru", "sending"]]);
+    });
   });
 }
