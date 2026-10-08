@@ -41,7 +41,7 @@ describe("MVP runtime: one world for routes, bots and jobs", { timeout: 30_000 }
     const stop = startMvpJobs(rt, [job("a"), job("b")]);
     stop();
     expect(log).toEqual(["start a true", "start b true", "stop a", "stop b"]);
-    expect(MVP_JOBS).toHaveLength(4);
+    expect(MVP_JOBS).toHaveLength(5);
     startMvpJobs(rt)();
   });
 });
