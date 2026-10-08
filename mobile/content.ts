@@ -6,6 +6,7 @@ import type { MvpContent, UnitContent } from "../src/mvp/contract";
 import { api } from "./api";
 import { openSummon, setCardAbilities, setCardCredits, summonById } from "./ui/card";
 import { setUnitRefs } from "./ui/term";
+import { localContent } from "./unit-names";
 
 /** How often, at most, a screen's getContent() asks /health for the version. */
 const CHECK_MS = 15_000;
@@ -14,8 +15,9 @@ let p: Promise<MvpContent> | null = null;
 let checkedAt = 0;
 
 const load = (): Promise<MvpContent> =>
-  Promise.all([api.content(), loadCredits()]).then(([c]) => {
+  Promise.all([api.content(), loadCredits()]).then(([raw]) => {
     checkedAt = Date.now();
+    const c = localContent(raw); // M4-4: Russian names and lines on a Russian page
     setCardAbilities(c.abilities); // cards draw their When · Who · Does icons from it
     // "Imp (1/2)" in a unit's text opens the Imp's card (R3-5).
     setUnitRefs({

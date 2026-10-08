@@ -218,11 +218,16 @@ const leftCache = new WeakMap<MvpStore, { version: string; left: Left }>();
 export function servedContent(rt: { store: MvpStore; content: MvpContent }): MvpContent {
   const live = rt.content;
   const left = leftContent(rt.store, live);
-  if (!left.units.length) return live;
+  // M4-4: each unit's Russian name and line, read fresh (mvp:translate writes
+  // them while the server runs); beside the units, never in the version.
+  const texts = new Map(rt.store.units().flatMap((u) => (u.texts?.ru ? [[u.unitId, u.texts] as const] : [])));
+  const withTexts = (units: UnitContent[]) => (texts.size ? units.map((u) => { const t = texts.get(u.id); return t ? { ...u, texts: t } : u; }) : units);
+  if (!left.units.length) return texts.size ? { ...live, units: withTexts(live.units) } : live;
   const bodies = new Set((live.summons ?? []).map((b) => b.id));
   return {
     ...live,
-    left: left.units,
+    units: withTexts(live.units),
+    left: withTexts(left.units),
     abilities: { ...left.abilities, ...live.abilities },
     summons: [...(live.summons ?? []), ...(left.summons ?? []).filter((b) => !bodies.has(b.id))],
   };

@@ -233,3 +233,18 @@ export function hasCrudeStem(name: string): boolean {
   const folded = fold(name);
   return CRUDE_STEMS.anywhere.some((stem) => folded.includes(stem));
 }
+
+// M4-4: Russian mat and slurs, matched as substrings of the name's letters
+// joined (ё as е); not "секс", which Секстон holds. isBlockedName only reads Latin letters, so a Russian name
+// passes both checks: isBlockedName on its Latin part, this on the rest.
+const RU_CRUDE = [
+  "хуй", "хуе", "хуя", "хуи", "пизд", "ебан", "ебат", "ебал", "ебло", "ебар", "ебуч", "ебну", "уеб", "заеб", "блят", "бляд", "пидор", "пидар", "педик",
+  "залуп", "гандон", "шлюх", "дроч", "мудак", "мудил", "манда", "сучк", "сучар", "жоп", "говн", "срак", "срат", "ссан", "порн",
+  "нацис", "гитлер", "свастик", "хач", "чурк", "жид", "негр", "ниггер", "даун", "дебил", "дегенерат",
+];
+
+/** True when a Russian name reads crude (RU_CRUDE), or its Latin part does. */
+export function isCrudeRuName(name: string): boolean {
+  const joined = name.toLowerCase().replace(/ё/g, "е").replace(/[^а-я]/g, "");
+  return RU_CRUDE.some((stem) => joined.includes(stem));
+}
