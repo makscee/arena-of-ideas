@@ -124,9 +124,8 @@ export function answerStart(store: MvpStore, from: TelegramUser, code: string, n
 
 /** A player name from a Telegram name: NAME_RE's letters only, never a bot's. */
 export function telegramName(u: TelegramUser): string {
-  const raw = [u.first_name, u.last_name].filter(Boolean).join(" ") || u.username || "";
-  let name = raw.normalize("NFKC").replace(/[^\p{L}\p{N}_\- ]/gu, "").replace(/\s+/g, " ").trim().slice(0, 20).trim();
-  if (!name) name = "Player";
+  const clean = (raw: string) => raw.normalize("NFKC").replace(/[^\p{L}\p{N}_\- ]/gu, "").replace(/\s+/g, " ").trim().slice(0, 20).trim();
+  let name = clean([u.first_name, u.last_name].filter(Boolean).join(" ")) || clean(u.username ?? "") || "Player";
   if (nameKey(name).startsWith("bot-")) name = `Tg ${name}`.slice(0, 20).trim();
   return name;
 }
