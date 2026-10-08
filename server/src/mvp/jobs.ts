@@ -8,6 +8,7 @@ import { dayRollover } from "./day.js";
 import { fusionNamingJob } from "./fusions.js";
 import { ideaReadingJob } from "./idea-reading.js";
 import type { MvpJob, MvpRuntime } from "./runtime.js";
+import { telegramJob } from "./telegram.js";
 import { overnightJob } from "./votes.js";
 
 export const MVP_JOBS: MvpJob[] = [
@@ -16,6 +17,7 @@ export const MVP_JOBS: MvpJob[] = [
   fusionNamingJob, // slice 10: the naming queue
   ideaReadingJob, // M2-5: reads written ideas (ARENA_IDEA_READER)
   overnightJob, // M2-8: the overnight check after the day end
+  telegramJob, // M4-6: the Telegram bot's long poll (only with rt.telegram)
   dailyPostJob, // M4-8: the daily post to Telegram (ARENA_TELEGRAM_POST=1)
 ];
 

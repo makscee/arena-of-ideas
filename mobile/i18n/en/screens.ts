@@ -96,4 +96,17 @@ export const screens = {
   "ideas.countMin": "{n} / {max} · at least {min}",
   "ideas.count": "{n} / {max}",
   "ideas.writeNote": "Only you see your text. Sending spends one idea.",
+  // screens/telegram.ts and the welcome screens' and title menu's Telegram rows (M4-6)
+  "tg.login": "Log in with Telegram",
+  "tg.link": "Link Telegram",
+  "tg.linked": "Telegram linked ✓",
+  "tg.unlink": "Unlink",
+  "tg.open": "Open Telegram",
+  "tg.instructions": "Press Start in the bot and tap Yes, then come back: this page logs you in by itself.",
+  "tg.qrAlt": "QR code: scan it with your phone's camera",
+  "tg.devAccept": "Dev: the bot accepts",
+  "tg.devDecline": "Dev: No in the bot",
+  "tg.expired": "This login has expired.",
+  "tg.declined": "Declined in Telegram.",
+  "tg.retry": "Try again",
 } satisfies Record<string, Msg>;
