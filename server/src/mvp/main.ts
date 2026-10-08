@@ -15,6 +15,8 @@
  *   MVP_DB      the SQLite file (default data/arena-mvp.db); ":memory:" keeps nothing
  *   ARENA_NAMER_URL  the fusion namer (OpenAI-compatible chat endpoint, slice
  *               10); without it every fusion gets the portmanteau
+ *   ARENA_TUNER instant (with MVP_DEV=1 only): the overnight check passes
+ *               every unit at once, for e2e; default the real tuner (M2-7)
  *   MVP_BUILD   the deployed commit, `build` on /api/v1/health (default: the
  *               checkout's HEAD); scripts/mvp-redeploy.sh sets it
  * Run: npm run mvp:server
@@ -28,6 +30,7 @@ import { poolContent, seedUnits } from "./pool.js";
 import { mvpRuntime } from "./runtime.js";
 import { buildOf, mvpServerApp, underBasePath } from "./server.js";
 import { SqliteMvpStore } from "./sqlite-store.js";
+import { instantTuner } from "./votes.js";
 
 const port = Number(process.env.PORT ?? 8791);
 const host = process.env.HOST ?? "127.0.0.1";
@@ -41,10 +44,13 @@ const store = new SqliteMvpStore(dbPath);
 // M2-1: the pool lives in the DB; the first start seeds it from the code pool.
 seedUnits(store, new Date());
 const content = poolContent(store);
-const rt = mvpRuntime({ content, store, dev: process.env.MVP_DEV === "1", invites: process.env.MVP_INVITES === "1", open: process.env.MVP_OPEN === "1", rotation: process.env.MVP_ROTATION === "1" });
+const dev = process.env.MVP_DEV === "1";
+if (process.env.ARENA_TUNER && !(process.env.ARENA_TUNER === "instant" && dev)) throw new Error("ARENA_TUNER=instant needs MVP_DEV=1");
+const tuner = process.env.ARENA_TUNER === "instant" ? { night: instantTuner, dev: instantTuner } : undefined;
+const rt = mvpRuntime({ content, store, dev, ...(tuner ? { tuner } : {}), invites: process.env.MVP_INVITES === "1", open: process.env.MVP_OPEN === "1", rotation: process.env.MVP_ROTATION === "1" });
 const build = buildOf();
 const app = mvpServerApp(createMvpApp(rt), { staticRoot: root, build });
 
 serve({ port, hostname: host, fetch: underBasePath(app, basePath) });
 startMvpJobs(rt);
-console.log(`arena mvp on http://${host}:${port} (base ${basePath}, build ${build ?? "unknown"}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""}${rt.rotation ? ", rotation on" : ""}${rt.invites ? (rt.open ? ", open to all" : ", invite-only") : ""})`);
+console.log(`arena mvp on http://${host}:${port} (base ${basePath}, build ${build ?? "unknown"}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""}${tuner ? ", instant tuner" : ""}${rt.rotation ? ", rotation on" : ""}${rt.invites ? (rt.open ? ", open to all" : ", invite-only") : ""})`);
