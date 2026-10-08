@@ -144,8 +144,8 @@ function liveStats(stats: Stats, maxHp: number): Node[] {
     h(
       "div",
       { class: "stats big" },
-      h("span", { class: "p", title: "PWR" }, icon("broadsword", 11, "stat-ic"), `${stats.pwr}`),
-      h("span", { class: `h${stats.hp < max ? " hurt" : ""}`, title: "HP" }, icon("hearts", 11, "stat-ic"), `${stats.hp}`),
+      h("span", { class: "p", title: t("card.pwr") }, icon("broadsword", 11, "stat-ic"), `${stats.pwr}`),
+      h("span", { class: `h${stats.hp < max ? " hurt" : ""}`, title: t("card.hp") }, icon("hearts", 11, "stat-ic"), `${stats.hp}`),
     ),
   ];
 }

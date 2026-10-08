@@ -75,7 +75,7 @@ export async function nowSheetChecks(page, errors, { shot, phone }) {
     none: !!el.querySelector('[data-testid="now-no-statuses"]'),
   }));
   if (got.unit !== pick.id) errors.push(`now sheet: opened for ${got.unit}, not the clicked ${pick.id}`);
-  if (!/^PWR \d+.* · HP \d+ \/ \d+/.test(got.stats)) errors.push(`now sheet: stats read "${got.stats}"`);
+  if (!/^(PWR|АТК) \d+.* · (HP|ОЗ) \d+ \/ \d+/.test(got.stats)) errors.push(`now sheet: stats read "${got.stats}"`);
   if (want.hp && !got.stats.includes(`HP ${want.hp} /`)) errors.push(`now sheet: HP "${got.stats}" isn't the card's ${want.hp}`);
   if (got.statuses.length !== want.count) errors.push(`now sheet: ${got.statuses.length} statuses, the card holds ${want.count}`);
   for (const s of want.statuses) if (!got.statuses.includes(s)) errors.push(`now sheet: the card shows ${s}, the sheet lists ${got.statuses.join(", ") || "none"}`);

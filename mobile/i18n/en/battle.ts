@@ -31,6 +31,8 @@ export const battle = {
   "battle.now.noAbility": "No ability: it fights with its PWR / HP.",
   "battle.now.hpFallen": "HP 0 / {max} · fallen",
   "battle.now.hp": "HP {hp} / {max}",
+  "battle.now.pwr": "PWR {pwr}",
+  "battle.now.base": " (base {pwr})",
   "battle.now.fullCard": "Full card ▸",
   "battle.now.thisBeat": "{turn} · this beat",
   "battle.now.statuses": "Statuses",

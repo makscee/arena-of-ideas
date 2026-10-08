@@ -11,6 +11,8 @@ export const ui = {
   "card.andEvolvedBy": ", развил ",
   "card.evolvedBy": "развил ",
   "card.new": "НОВЫЙ",
+  "card.pwr": "АТК",
+  "card.hp": "ОЗ",
   "card.summonedAria": "призван",
   "card.tierAria": "уровень {tier}",
   "card.ideaByAria": "идея @{name}",

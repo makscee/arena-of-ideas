@@ -10,6 +10,8 @@ export const ui = {
   "card.andEvolvedBy": ", evolved by ",
   "card.evolvedBy": "evolved by ",
   "card.new": "NEW",
+  "card.pwr": "PWR",
+  "card.hp": "HP",
   "card.summonedAria": "summoned",
   "card.tierAria": "tier {tier}",
   "card.ideaByAria": "idea by @{name}",

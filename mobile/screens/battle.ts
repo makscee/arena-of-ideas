@@ -848,7 +848,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const base = entered ? entered.stats : summon?.type === "Summon" ? { pwr: summon.pwr, hp: summon.hp } : null;
     const body = entered ? undefined : summoned.get(u.id);
     const ability: Node[] = entered ? formRich(entered.recipe, a.content) : body ? summonText(body, a.content) : [h("b", {}, tr("battle.now.noAbility"))];
-    const pwr = h("span", { "data-testid": "now-pwr" }, `PWR ${u.pwr}`, base && base.pwr !== u.pwr ? h("span", { class: "dim" }, ` (base ${base.pwr})`) : "");
+    const pwr = h("span", { "data-testid": "now-pwr" }, tr("battle.now.pwr", { pwr: u.pwr }), base && base.pwr !== u.pwr ? h("span", { class: "dim" }, tr("battle.now.base", { pwr: base.pwr })) : "");
     // The max as the card's HP bar reads it: a heal past the max raises it.
     const max = Math.max(1, u.maxHp, u.hp);
     const hp = h("span", { "data-testid": "now-hp" }, fallen ? tr("battle.now.hpFallen", { max }) : tr("battle.now.hp", { hp: u.hp, max }));

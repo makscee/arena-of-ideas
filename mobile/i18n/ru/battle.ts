@@ -31,6 +31,8 @@ export const battle = {
   "battle.now.noAbility": "Без способности: бьётся своими АТК / ОЗ.",
   "battle.now.hpFallen": "ОЗ 0 / {max} · пал",
   "battle.now.hp": "ОЗ {hp} / {max}",
+  "battle.now.pwr": "АТК {pwr}",
+  "battle.now.base": " (база {pwr})",
   "battle.now.fullCard": "Вся карта ▸",
   "battle.now.thisBeat": "{turn} · этот шаг",
   "battle.now.statuses": "Статусы",
