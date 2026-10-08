@@ -4,7 +4,7 @@
 // next screen that asks gets the new pack, without a reload.
 import type { MvpContent, UnitContent } from "../src/mvp/contract";
 import { api } from "./api";
-import { openSummon, setCardAbilities, summonById } from "./ui/card";
+import { openSummon, setCardAbilities, setCardCredits, summonById } from "./ui/card";
 import { setUnitRefs } from "./ui/term";
 
 /** How often, at most, a screen's getContent() asks /health for the version. */
@@ -14,7 +14,7 @@ let p: Promise<MvpContent> | null = null;
 let checkedAt = 0;
 
 const load = (): Promise<MvpContent> =>
-  api.content().then((c) => {
+  Promise.all([api.content(), loadCredits()]).then(([c]) => {
     checkedAt = Date.now();
     setCardAbilities(c.abilities); // cards draw their When · Who · Does icons from it
     // "Imp (1/2)" in a unit's text opens the Imp's card (R3-5).
@@ -47,3 +47,11 @@ export async function getContent(): Promise<MvpContent> {
 export function unitIn(content: MvpContent, id: string): UnitContent | undefined {
   return content.units.find((x) => x.id === id) ?? content.left?.find((x) => x.id === id);
 }
+
+/** The live units' credits (M2-9): who each idea was, NEW. A server without
+ * them, or one that fails, leaves the cards without credits. */
+export const loadCredits = (): Promise<void> =>
+  api.credits().then(
+    (v) => setCardCredits(v.units),
+    () => undefined,
+  );

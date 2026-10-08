@@ -3,7 +3,7 @@ import { MVP_RULES, type MvpContent } from "./contract.js";
 import { fightLines } from "./fight.js";
 import { contentFormProblems, fuseUnits, lineUnitOf } from "./forms.js";
 import { formText } from "./form-text.js";
-import { ARCHETYPE_MAX_WORDS, EMITS, LISTENS, ROOT_WHENS, ROWS, WHEN, archetypeProblems, awokenKeeps, awokenNewPart, effectKinds, linkEdges, mvpPool, shapeKinds, sig, whenKeyOf, type WhenKey } from "./units.js";
+import { ARCHETYPE_MAX_WORDS, EMITS, LISTENS, ROOT_WHENS, ROWS, WHEN, archetypeProblems, awokenKeeps, awokenNewPart, effectKinds, linkLoops, mvpPool, shapeKinds, sig, whenKeyOf, type WhenKey } from "./units.js";
 
 describe("MVP pool (slice 7)", () => {
   const pool = mvpPool();
@@ -198,30 +198,7 @@ describe("one hero per shape (round 3, docs/round3/units.md 1b)", () => {
 
   // The listen → emit graph over link events; returns each loop found, as
   // "Power →Equalizer (sleeping)→ Curse →Robber (sleeping)→ Power".
-  const loopsOf = (units: ReturnType<typeof mvpPool>["units"]) => {
-    const edges = new Map<string, Map<string, string>>();
-    for (const u of units) {
-      for (const form of ["sleeping", "awoken"] as Form[]) {
-        for (const [from, to] of linkEdges(u.forms[form])) {
-          const out = edges.get(from) ?? new Map<string, string>();
-          if (!out.has(to)) out.set(to, `${u.name} (${form})`);
-          edges.set(from, out);
-        }
-      }
-    }
-    const loops = new Set<string>();
-    const walk = (node: string, path: { node: string; via: string }[]) => {
-      const at = path.findIndex((p) => p.node === node);
-      if (at >= 0) {
-        const loop = path.slice(at);
-        loops.add([...loop.map((p) => `${p.node} →${p.via}→ `), node].join(""));
-        return;
-      }
-      for (const [to, via] of edges.get(node) ?? []) walk(to, [...path, { node, via }]);
-    };
-    for (const n of edges.keys()) walk(n, []);
-    return [...loops];
-  };
+  const loopsOf = linkLoops;
 
   // R3 is relaxed in round 4 (note 8): a numbers-only Awoken is allowed, so
   // awokenNewPart only describes what an Awoken adds; awokenKeeps is the rule.

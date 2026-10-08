@@ -7,6 +7,7 @@
 // file only adds the MVP's run, day and rating layer on top.
 
 import type { AbilityRegistry, BattleEvent, Condition, Selector, Side, Stats, StatusRegistry, When } from "../types.js";
+import type { AwokenRow, WhenKey, WhoKey } from "./units.js";
 
 export const MVP_API_VERSION = 1;
 /** Every API path hangs off this prefix, relative to the app's base URL
@@ -633,6 +634,123 @@ export interface IdeasView {
   nextIn: number | null;
 }
 
+/** Who a live unit's idea was and whether it is new (M2-9,
+ * server/src/mvp/credits.ts): only units with an author or a recent entry. */
+export interface UnitCredit {
+  unitId: UnitId;
+  /** The player whose idea it was; null for the seed. */
+  by: PlayerRef | null;
+  /** NEW: it entered the pool in the last NEW_DAYS days (seed units never are). */
+  isNew: boolean;
+}
+
+/** GET /credits: the live units' credits, and the caller's creator number. */
+export interface CreditsView {
+  /** Today's day seq. */
+  day: number;
+  units: UnitCredit[];
+  /** Null without a player. `days`: the days the player's units have been
+   * live, summed over every stint; `units`: how many units are theirs. */
+  you: { days: number; units: number } | null;
+}
+
+/** A unit that has left the pool (GET /library, M2-9). */
+export interface LibraryUnit {
+  unit: UnitContent;
+  by: PlayerRef | null;
+  /** Days it was live, summed over its stints; null when no stint was ever
+   * recorded (the units cut before units became data, M2-1). */
+  liveDays: number | null;
+  /** Its fusions, as either part. */
+  fusions: FusionDiscovery[];
+}
+
+/** GET /library: the units that have left, newest first, with the abilities,
+ * statuses and summons their sheets need (the live content may lack them). */
+export interface LibraryView {
+  units: LibraryUnit[];
+  abilities: AbilityRegistry;
+  statuses: StatusRegistry;
+  summons: SummonContent[];
+}
+
+/** Where a written idea is on its way to a unit (mission 2), in order:
+ * `written` (M2-4) waits for the reader; `reading` (M2-5) is with the model;
+ * `pick-archetype` and `pick-reading` (M2-6) wait for its author; `simulating`
+ * (M2-7) sets its numbers; `voting` (M2-8); `live` in the pool (M2-10);
+ * `failed` back to its author with the reason, the idea refunded; `library`
+ * left the pool. */
+export const IDEA_STATES = ["written", "reading", "pick-archetype", "pick-reading", "simulating", "voting", "live", "failed", "library"] as const;
+export type IdeaState = (typeof IDEA_STATES)[number];
+
+/** An idea's text, in characters after trimming. */
+export const IDEA_TEXT_MIN = 10;
+export const IDEA_TEXT_MAX = 400;
+
+/** A written idea as stored (mvp_ideas, server/src/mvp/ideas.ts). Its text is
+ * private: only its author ever gets it back. */
+export interface Idea {
+  ideaId: string;
+  playerId: string;
+  text: string;
+  state: IdeaState;
+  createdAt: string;
+  /** What later stages add (M2-5's archetypes and readings, M2-6's picks,
+   * M2-7's numbers, a failure's reason, the unit it became). */
+  data: IdeaData;
+}
+
+/** What later stages add to an idea; each slice adds its own optional keys. */
+export interface IdeaData {
+  /** M2-5: the archetypes read from the text (`pick-archetype`), checked. */
+  archetypes?: IdeaArchetype[];
+  /** M2-5: the archetype its author picked; the readings are read for it. */
+  archetype?: IdeaArchetype;
+  /** M2-5: the readings for that archetype (`pick-reading`), checked. */
+  readings?: IdeaReading[];
+  /** M2-5: the parts of the text the game has no words for yet, quoted from
+   * the text itself (the missing words go to the new-words log). */
+  cantExpress?: string[];
+  /** Why the idea came back (`failed`); the idea was refunded. */
+  failure?: string;
+  /** M2-5: the candidate unit its picked reading became (`simulating`). */
+  unitId?: UnitId;
+  /** M2-5: the reader's failed tries at this stage, and when it tries again
+   * (ISO); a model error or timeout only delays the idea. */
+  tries?: number;
+  retryAt?: string;
+}
+
+/** M2-5: an archetype the reader made of an idea: a name, an emoji and a
+ * one-sentence line, all checked (archetypeProblems, the crude checks, a
+ * name no unit or candidate has). */
+export interface IdeaArchetype {
+  name: string;
+  emoji: string;
+  line: string;
+}
+
+/** M2-5: a reading of an idea as When → Who → Does in the words of
+ * src/mvp/units.ts (a `Row` without name and numbers: those are
+ * placeholders M2-7 tunes), and each form as formText renders it. Only
+ * these rendered forms and the archetype are ever shown. */
+export interface IdeaReading {
+  when: WhenKey;
+  who: WhoKey;
+  does: string;
+  awoken: AwokenRow;
+  text: { sleeping: string; awoken: string };
+}
+
+/** One of the player's own ideas, as My ideas shows it. */
+export type MyIdea = Omit<Idea, "playerId">;
+
+/** The My ideas screen: the ideas held, and the ones sent, newest first. */
+export interface MyIdeasView {
+  ideas: IdeasView;
+  sent: MyIdea[];
+}
+
 // ---------- HTTP API ----------
 //
 // Identity on an open server (dev, tests): a name kept on the device: POST
@@ -672,7 +790,21 @@ export interface IdeasView {
 //   GET  /api/v1/day                         → DayView            (slice 5)
 //   POST /api/v1/dev/end-day                 → DayView            (slice 5; 404 unless MVP_DEV=1)
 //   POST /api/v1/dev/grant-idea              → IdeasView          (M2-3; +1 idea up to the cap; 404 unless MVP_DEV=1)
+//   GET  /api/v1/ideas                       → MyIdeasView        (M2-4; the caller's own ideas only, 401 without a player)
+//   POST /api/v1/ideas         { text }      → MyIdeasView        (M2-4; writes one, spending a held idea: 400 text not
+//                                                                  IDEA_TEXT_MIN–MAX characters, 409 no idea held)
+//   POST /api/v1/ideas/:ideaId/cancel        → MyIdeasView        (M2-4; takes back a `written` idea and refunds it: 404 not
+//                                                                  the caller's, 409 past `written` or ideas held at the cap)
+//   GET  /api/v1/ideas/:ideaId               → MyIdea             (M2-5; the caller's own idea with its options; 404 not theirs)
+//   POST /api/v1/ideas/:ideaId/archetype { index } → MyIdeasView  (M2-5; picks an archetype in `pick-archetype`: the reader
+//                                                                  reads its readings next; 400 no such option, 409 another state)
+//   POST /api/v1/ideas/:ideaId/reading   { index } → MyIdeasView  (M2-5; picks a reading in `pick-reading`: the idea is
+//                                                                  `simulating`, its unit a candidate; 409 another state, or the
+//                                                                  name or shape was just taken, the option dropped)
 //   GET  /api/v1/stats                       → StatsView          (slice 11)
+//   GET  /api/v1/credits                     → CreditsView        (M2-9; authors, NEW, your creator number)
+//   GET  /api/v1/library                     → LibraryView        (M2-9; the units that have left)
+//   POST /api/v1/dev/credit-unit { unitId }  → CreditsView        (M2-9; dev: the unit becomes your idea, entered today)
 
 export const PLAYER_HEADER = "X-Arena-Player";
 /** Slice 13: the session token from POST /invites/redeem. */

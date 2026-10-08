@@ -8,9 +8,11 @@ import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, TOKEN_HEADER, type Decision, type HomeView, type PlayerRef } from "../../../src/mvp/contract.js";
 import { checkDecision, MvpBadDecision, MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
+import { creditsView, creditUnit, libraryView } from "./credits.js";
 import { dayView, endDay, hiddenSlay } from "./day.js";
 import { MvpNotYet } from "./errors.js";
-import { grantIdea, ideasOf } from "./ideas.js";
+import { myIdea, pickArchetype, pickReading } from "./idea-reading.js";
+import { cancelIdea, grantIdea, IdeaRefused, ideasOf, myIdeas, writeIdea } from "./ideas.js";
 import { isAdmin, isJoinCode, JoinRefused, joinOpen, NAME_RE, openJoin, redeemInvite, sessionPlayer } from "./invites.js";
 import { abandon, currentRun, decide, preview, startRun } from "./runs.js";
 import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
@@ -48,7 +50,8 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   /** The dev tools: anyone on an open dev server, admin invites on an invite-only one. */
   const devFor = (c: Context) => rt.dev && (!rt.invites || isAdmin(store, playerOf(c)?.id));
 
-  // Every body here is a name or a Decision: a few hundred bytes.
+  // Every body here is a name, a Decision or an idea: a few hundred bytes (an
+  // idea's 400 characters, a few KB at most).
   api.use("*", bodyLimit({ maxSize: 16 * 1024, onError: (c) => bad(c, 413, "body too large") }));
   // A token that names no session (a revoked link) is no player anywhere but
   // the invite routes: 401 "unknown player", so the device forgets it and
@@ -223,11 +226,56 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     return c.json(b);
   });
 
+  // Mission 2's ideas (M2-4): each player reads and writes only their own;
+  // no route ever returns another player's text.
+  const ideaCall = (c: Context, fn: (p: PlayerRef) => void) => {
+    const p = playerOf(c);
+    if (!p) return unknownPlayer(c);
+    try {
+      fn(p);
+    } catch (err) {
+      if (err instanceof IdeaRefused) return bad(c, err.status, err.message);
+      throw err;
+    }
+    return c.json(myIdeas(rt, p.id));
+  };
+  api.get("/ideas", (c) => ideaCall(c, () => {}));
+  api.post("/ideas", async (c) => {
+    const body = (await c.req.json().catch(() => null)) as { text?: unknown } | null;
+    if (typeof body?.text !== "string") return bad(c, 400, "body must be { text }");
+    const text = body.text;
+    return ideaCall(c, (p) => writeIdea(rt, p.id, text));
+  });
+  api.post("/ideas/:ideaId/cancel", (c) => ideaCall(c, (p) => cancelIdea(rt, p.id, c.req.param("ideaId"))));
+  // M2-5: one idea with its options, and its author's picks (M2-6's screens).
+  api.get("/ideas/:ideaId", (c) => {
+    const p = playerOf(c);
+    if (!p) return unknownPlayer(c);
+    try {
+      return c.json(myIdea(rt, p.id, c.req.param("ideaId")));
+    } catch (err) {
+      if (err instanceof IdeaRefused) return bad(c, err.status, err.message);
+      throw err;
+    }
+  });
+  const pick = (fn: typeof pickArchetype) => async (c: Context) => {
+    const body = (await c.req.json().catch(() => null)) as { index?: unknown } | null;
+    if (typeof body?.index !== "number") return bad(c, 400, "body must be { index }");
+    const index = body.index;
+    return ideaCall(c, (p) => fn(rt, p.id, c.req.param("ideaId")!, index));
+  };
+  api.post("/ideas/:ideaId/archetype", pick(pickArchetype));
+  api.post("/ideas/:ideaId/reading", pick(pickReading));
+
   // Slice 10 owns this route and the store behind it; slice 11 only reads.
   api.get("/fusions", (c) => c.json(store.fusions()));
 
   api.get("/day", (c) => c.json(dayView(rt)));
   api.get("/stats", (c) => notYet(c, () => statsView(rt)));
+  // M2-9: who each live unit's idea was, NEW, the caller's creator number;
+  // and the units that have left.
+  api.get("/credits", (c) => c.json(creditsView(rt, playerOf(c)?.id)));
+  api.get("/library", (c) => c.json(libraryView(rt)));
 
   // Dev-only tools (MvpDeps.dev, MVP_DEV=1 in main.ts): 404 without it, and
   // on an invite-only server for anyone but an admin invite's player.
@@ -239,6 +287,15 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   api.post("/dev/grant-idea", (c) => {
     const p = playerOf(c);
     return p ? c.json(grantIdea(rt, p.id)) : unknownPlayer(c);
+  });
+  api.post("/dev/credit-unit", async (c) => {
+    const p = playerOf(c);
+    if (!p) return unknownPlayer(c);
+    const body = (await c.req.json().catch(() => null)) as { unitId?: unknown } | null;
+    // No unitId: a tier I unit, so the shop offers it soon.
+    const unitId = typeof body?.unitId === "string" ? body.unitId : rt.content.units.find((u) => u.tier === 1)?.id;
+    if (!unitId || !creditUnit(rt, unitId, p.id)) return bad(c, 404, "no such live unit");
+    return c.json(creditsView(rt, p.id));
   });
 
   const app = new Hono();

@@ -9,10 +9,10 @@
 // form the unit has now; win and pick rates are its one dim last line.
 import { cardIcons, type Pip } from "../../src/mvp/card-icons";
 import { formSegments, formText as sharedFormText } from "../../src/mvp/form-text";
-import { MVP_RULES, type BattleUnit, type LineUnit, type MvpContent, type SummonContent, type UnitContent, type UnitForm } from "../../src/mvp/contract";
+import { MVP_RULES, type BattleUnit, type UnitCredit, type LineUnit, type MvpContent, type SummonContent, type UnitContent, type UnitForm } from "../../src/mvp/contract";
 import { summonId } from "../../src/describe";
 import type { AbilityRegistry, Stats } from "../../src/types";
-import { closable, h } from "./dom";
+import { closable, h, who } from "./dom";
 import { discoveredLine } from "./fusion";
 import { icon } from "./icon";
 import { roman } from "./roman";
@@ -45,13 +45,31 @@ export const tierClass = (tier: number | "S") => (tier === "S" ? "ts" : `t${tier
 // A pool unit's sheet head, "Sleeping · Tier II", the numeral in its tier's colour.
 const poolState = (form: string, tier: number) => [`${form} · Tier `, h("span", { class: `tier ${tierClass(tier)}` }, roman(tier))];
 
+/** The live units' credits (M2-9: who the idea was, NEW), set once the
+ * content loads (../content.ts) and again after the dev tool credits one. */
+let credits = new Map<string, UnitCredit>();
+export function setCardCredits(list: UnitCredit[]): void {
+  credits = new Map(list.map((c) => [c.unitId, c]));
+}
+export const creditOf = (unitId: string | undefined): UnitCredit | undefined => (unitId ? credits.get(unitId) : undefined);
+
+/** A pool unit's sheet line: "💡 idea by @name" (seed units have none). */
+function creditLine(unitId: string): HTMLElement | null {
+  const c = creditOf(unitId);
+  if (!c?.by && !c?.isNew) return null;
+  return h("div", { class: "dim small credit-line", "data-testid": "sheet-credit" }, ...(c.isNew ? [h("span", { class: "new-badge inline", "data-testid": "sheet-new" }, "NEW")] : []), ...(c.by ? ["💡 idea by ", who(c.by.name)] : []));
+}
+
 export function card(u: CardUnit, o: CardOptions): HTMLElement {
   const stats = o.live?.stats ?? u.stats;
+  // A fused unit is its finders' (discoveredLine); its parts' credits stay on theirs.
+  const credit = u.kind === "fused" ? undefined : creditOf(u.unitId);
   const el = h(
     "div",
     { class: `card ${o.side}`, ...(o.testid ? { "data-testid": o.testid } : {}) },
     iconLine(u.recipe, !!o.tier),
     o.tier ? h("span", { class: `tier ${tierClass(o.tier)}`, "aria-label": o.tier === "S" ? "summoned" : `tier ${o.tier}` }, o.tier === "S" ? "S" : roman(o.tier)) : null,
+    credit?.isNew ? h("span", { class: "new-badge", "data-testid": "card-new" }, "NEW") : null,
     h("div", { class: "emoji" }, u.emoji),
     // One line; ui/dom.ts fitText() shrinks a long name a little, then cuts it.
     h("div", { class: "name", title: u.name }, u.name),
@@ -62,6 +80,12 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
   else if (u.form === "awoken") el.classList.add("awoken");
   if (o.live?.dead) el.classList.add("dead");
   if (o.live?.acting) el.classList.add("acting");
+  if (credit?.by) {
+    // No room on a 64px card for the words: a 💡 mark, the words on hover and for readers.
+    el.dataset.by = credit.by.name;
+    el.title = `${u.name}: idea by @${credit.by.name}`;
+    el.append(h("span", { class: "by-mark", "data-testid": "card-by", "aria-label": `idea by @${credit.by.name}` }, "💡"));
+  }
   if (o.onOpen) el.addEventListener("click", o.onOpen);
   return el;
 }
@@ -223,6 +247,7 @@ export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpCo
     h("div", { class: "row spread sheet-head" }, h("h2", {}, `${u.emoji} ${u.name}`), state),
     // What the unit is about, in one sentence (R4-8); a fused unit has none.
     c?.archetype ? h("div", { class: "archetype", "data-testid": "sheet-archetype" }, c.archetype) : null,
+    fused ? null : creditLine(unitId),
     "forms" in u ? null : discoveredLine(u, { preview: opts.preview ?? false }),
     "stats" in u ? statsLine(u.stats) : h("div", { class: "num" }, `${u.base.pwr} PWR / ${u.base.hp} HP`),
     opts.from ? h("div", { class: "dim small" }, "Your copy now → after buying") : null,

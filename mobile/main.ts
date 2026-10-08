@@ -16,7 +16,8 @@ import { battleScreen, type RunOutro } from "./screens/battle";
 import { codexScreen, newCodexCache, type CodexState } from "./screens/codex";
 import { setCodexLink } from "./ui/term";
 import { statsScreen } from "./screens/stats";
-import { card, roman, unitSheet, type CardUnit } from "./ui/card";
+import { ideasScreen } from "./screens/ideas";
+import { card, roman, setCardCredits, unitSheet, type CardUnit } from "./ui/card";
 import { previewName } from "./ui/fusion";
 import { fuseWarning } from "./ui/fuse-warn";
 import { icon } from "./ui/icon";
@@ -270,6 +271,8 @@ async function homeScreen(ended: number | null = null): Promise<void> {
     "end-day",
   );
   const grantIdea = button("+1 idea", () => void guarded(err, async () => { await api.grantIdea(); await homeScreen(); }), "small", "grant-idea");
+  // M2-9: a tier I unit becomes your idea, entered today: its cards show 💡 and NEW, its sheet "idea by @you".
+  const creditUnit = button("A unit is my idea", () => void guarded(err, async () => { setCardCredits((await api.creditUnit()).units); await homeScreen(); }), "small", "credit-unit");
   const last = home.day.lastPlayoff ?? null;
   const justEnded = ended !== null && last?.seq === ended ? last : null;
   const playoff = playoffPanel(last, champ?.player ?? null, content, err);
@@ -323,7 +326,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
         h("div", { class: "row" }, stats, rulesBtn),
         soundRow(),
         api.ownInvite ? ownLinkRow(api.ownInvite) : null,
-        home.dev ? h("details", { class: "dev" }, h("summary", {}, "Dev"), h("div", { class: "row" }, endDay, grantIdea)) : null,
+        home.dev ? h("details", { class: "dev" }, h("summary", {}, "Dev"), h("div", { class: "row" }, endDay, grantIdea, creditUnit)) : null,
       ),
     ),
   );
@@ -333,11 +336,11 @@ async function homeScreen(ended: number | null = null): Promise<void> {
 }
 
 /** Home's quiet ideas line (M2-3): the ideas held, or the runs until the
- * next. Tapping it does nothing yet (M2-4 adds the idea screen). */
+ * next. Tapping it opens My ideas (M2-4, screens/ideas.ts). */
 function ideasLine(ideas: IdeasView): HTMLElement {
   const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
   const text = ideas.held > 0 || ideas.nextIn === null ? `💡 ${plural(ideas.held, "idea")}` : `💡 next idea in ${plural(ideas.nextIn, "run")}`;
-  return h("div", { class: "dim small ideas", "data-testid": "ideas" }, text);
+  return button(text, () => void ideasScreen({ onBack: () => void homeScreen(), onUnknown: () => (api.forget(), nameScreen()) }), "small link ideas", "ideas");
 }
 
 /** One confirm before a run is given up (R2-2's abandon): it says what the
