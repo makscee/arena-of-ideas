@@ -246,7 +246,7 @@ export function declineOptions(deps: ReadDeps, playerId: string, ideaId: string)
     return;
   }
   const { archetypes, readings, ...data } = idea.data;
-  const kept = stage === "archetypes" ? { declined: { ...declined, archetypes: archetypes ?? [] } } : { archetypes, declined: { ...declined, readings: readings ?? [] } };
+  const kept = stage === "archetypes" ? { declined: { ...declined, archetypes: archetypes ?? [] } } : { ...(archetypes ? { archetypes } : {}), declined: { ...declined, readings: readings ?? [] } };
   deps.store.putIdea({ ...idea, state: "reading", data: { ...data, ...kept } });
 }
 

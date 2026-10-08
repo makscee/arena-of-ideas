@@ -13,6 +13,7 @@ import {
   type FusionDiscovery,
   type HomeView,
   type IdeasView,
+  type MyIdea,
   type MyIdeasView,
   type JoinSession,
   type LibraryView,
@@ -175,6 +176,14 @@ export const api = {
   writeIdea: (text: string) => call<MyIdeasView>("POST", "/ideas", { text }),
   /** Takes back a `written` idea, refunding it. */
   cancelIdea: (ideaId: string) => call<MyIdeasView>("POST", `/ideas/${encodeURIComponent(ideaId)}/cancel`),
+  /** One of the player's own ideas with its options (M2-5). */
+  idea: (ideaId: string) => call<MyIdea>("GET", `/ideas/${encodeURIComponent(ideaId)}`),
+  /** Picks archetype `index` (M2-6): the idea is read for readings next. */
+  pickArchetype: (ideaId: string, index: number) => call<MyIdeasView>("POST", `/ideas/${encodeURIComponent(ideaId)}/archetype`, { index }),
+  /** Picks reading `index` (M2-6): the idea goes on to the simulation. */
+  pickReading: (ideaId: string, index: number) => call<MyIdeasView>("POST", `/ideas/${encodeURIComponent(ideaId)}/reading`, { index }),
+  /** "None of these" (M2-6): read once more; the second time refunds the idea. */
+  declineOptions: (ideaId: string) => call<MyIdeasView>("POST", `/ideas/${encodeURIComponent(ideaId)}/none`),
   /** 501 until slice 11. */
   stats: () => call<StatsView>("GET", "/stats"),
   /** Discovered fusions (slice 10). */
