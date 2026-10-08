@@ -258,13 +258,15 @@ describe("the bot token", () => {
     expect(api!.bot).toBe("arenaofideas_bot");
     expect(JSON.stringify(api)).not.toContain(TOKEN);
     expect(() => telegramFromEnv({ ARENA_TELEGRAM_FAKE: "1" }, false)).toThrow(/MVP_DEV/);
-    writeFileSync(file, "OTHER=1\n");
-    expect(() => telegramFromEnv({ ARENA_TELEGRAM_ENV: file }, false)).toThrow(/no TELEGRAM_BOT_TOKEN/);
-
     // The real API's failures (network down, 401, 409) through the bot loop: logged, without the token.
     const lines: string[] = [];
     for (const m of ["log", "error", "warn", "info", "debug"] as const)
       vi.spyOn(console, m).mockImplementation((...a: unknown[]) => void lines.push(a.map(String).join(" ")));
+    // A file without the token, or none: Telegram login is off, the server still starts.
+    writeFileSync(file, "OTHER=1\n");
+    expect(telegramFromEnv({ ARENA_TELEGRAM_ENV: file }, false)).toBeUndefined();
+    expect(telegramFromEnv({ ARENA_TELEGRAM_ENV: join(dir, "missing.env") }, false)).toBeUndefined();
+    expect(lines.splice(0)).toEqual([`telegram: ${file} has no TELEGRAM_BOT_TOKEN: Telegram login is off`, `telegram: can't read ${join(dir, "missing.env")}: Telegram login is off`]);
     const urls: string[] = [];
     let n = 0;
     const fakeFetch = (async (url: string | URL | Request) => {

@@ -255,7 +255,7 @@ export const FAKE_TELEGRAM_USER: TelegramUser = { id: 1001, is_bot: false, first
 
 /** The Telegram main.ts runs: the fake (ARENA_TELEGRAM_FAKE=1, dev only),
  * the real bot (ARENA_TELEGRAM_ENV names a file with TELEGRAM_BOT_TOKEN=…),
- * or none (no Telegram login). */
+ * or none (no Telegram login, also when the file is missing or has no token). */
 export function telegramFromEnv(env: NodeJS.ProcessEnv, dev: boolean): TelegramApi | undefined {
   const bot = env.ARENA_TELEGRAM_BOT || TELEGRAM_BOT;
   if (env.ARENA_TELEGRAM_FAKE === "1") {
@@ -264,8 +264,19 @@ export function telegramFromEnv(env: NodeJS.ProcessEnv, dev: boolean): TelegramA
   }
   const file = env.ARENA_TELEGRAM_ENV;
   if (!file) return undefined;
-  const token = readEnvFile(readFileSync(file, "utf8")).TELEGRAM_BOT_TOKEN;
-  if (!token) throw new Error(`${file} has no TELEGRAM_BOT_TOKEN`);
+  // A missing or broken file turns Telegram login off; the game still starts.
+  let text: string;
+  try {
+    text = readFileSync(file, "utf8");
+  } catch {
+    console.error(`telegram: can't read ${file}: Telegram login is off`);
+    return undefined;
+  }
+  const token = readEnvFile(text).TELEGRAM_BOT_TOKEN;
+  if (!token) {
+    console.error(`telegram: ${file} has no TELEGRAM_BOT_TOKEN: Telegram login is off`);
+    return undefined;
+  }
   return new TelegramHttpApi(token, bot);
 }
 
