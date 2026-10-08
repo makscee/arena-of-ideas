@@ -88,6 +88,11 @@ export function childTuner(meta: "full" | "quick"): Tuner {
     });
 }
 
+/** Dev servers and the bot (M2-11): a tuner that passes every unit at once
+ * with its numbers as read, so an e2e walks the vote without minutes of
+ * simulation (main.ts: ARENA_TUNER=instant with MVP_DEV=1). */
+export const instantTuner: Tuner = async (row) => ({ pass: true, reason: "instant tuner (dev)", row });
+
 /** A unit id for `name` no unit has had: its slug, or slug-2, slug-3… */
 function freshUnitId(store: MvpStore, name: string): UnitId {
   const base = slugOf(name) || "unit";
