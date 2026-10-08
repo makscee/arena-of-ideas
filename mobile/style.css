@@ -182,7 +182,7 @@ button.pick-none { align-self: center; }
 /* M3-5: a proposal's title names its unit; its line and current rule sit over the text box, and over the readings. */
 h1.h1-long { font-size: 22px; line-height: 1.2; overflow-wrap: anywhere; }
 .propose-now { font-size: 14px; line-height: 1.35; padding: 8px 10px; overflow-wrap: anywhere; }
-button.propose-now { display: block; width: 100%; text-align: left; text-transform: none; letter-spacing: 0; font-family: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line); min-height: 0; }
+button.propose-now { display: block; width: 100%; text-align: left; text-transform: none; letter-spacing: 0; font-family: inherit; font-weight: 400; font-size: 14px; line-height: 1.35; padding: 8px 10px; color: var(--text); background: var(--panel); border: 1px solid var(--line); min-height: 0; }
 button.propose-now.inspected { border-color: var(--you); }
 .idea-box { width: 100%; font: inherit; background: var(--panel); color: var(--text); border: 1px solid var(--line); padding: 10px 12px; resize: vertical; min-height: 140px; }
 button.small { min-height: 44px; font-size: 14px; padding: 0 12px; }

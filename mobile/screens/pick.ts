@@ -199,7 +199,7 @@ function readingScreen(idea: MyIdea, content0: MvpContent, nav: PickNav, current
   let picked = -1;
   const confirm = confirmButton(() => api.pickReading(idea.ideaId, picked), PICKED_READING, idea, nav, err);
   const desk = isDesktop();
-  const detail = h(desk ? "aside" : "div", { class: desk ? "codex-insp stack" : "panel pick-detail", "data-testid": "pick-detail" }, h("div", { class: "dim" }, "Tap a reading to read it."));
+  const detail = h(desk ? "aside" : "div", { class: desk ? "codex-insp stack" : "panel pick-detail", "data-testid": "pick-detail" }, h("div", { class: "dim" }, current ? "Tap a reading, or Now, to read it." : "Tap a reading to read it."));
   const cards = units.map((u, i) => {
     const c = card({ ...u, stats: { pwr: 0, hp: 0 }, unitId: u.id, form: "sleeping", recipe: u.forms.sleeping }, { side: "you", testid: "pick-reading", unset: true, onOpen: () => tap(i) });
     c.dataset.index = String(i);
