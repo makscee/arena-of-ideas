@@ -4,12 +4,15 @@
 // picks an archetype, then a reading (opening "See Awoken"), and My ideas
 // shows it as being tested. M2-11 (makscee/void-board#796): the dev "Run the
 // overnight check now" puts it in the vote, and a second player votes for it
-// on Home's either/or card (rotation, M2-10, isn't in yet). A screenshot of
+// on Home's either/or card; "+5 fake votes" and the dev "End day now" with
+// rotation on (M2-10) let it into the pool, and the Codex shows its card with
+// NEW and its sheet with "idea by @Pick…". A screenshot of
 // each screen; the pick screens never scroll the page. Then My ideas and the
 // reading pick once at 1280×800, its sheet in the side panel. Without --url
 // it builds the client and starts a dev server (fake reader, reading every
-// 500 ms, the instant tuner) on a free port; never point it at the live game.
-// A --url server needs MVP_DEV=1 and ARENA_TUNER=instant for the check.
+// 500 ms, the instant tuner, rotation on) on a free port; never point it at
+// the live game. A --url server needs MVP_DEV=1, ARENA_TUNER=instant and
+// MVP_ROTATION=1.
 //   npm run mvp:ideas-phone -- [--url http://127.0.0.1:PORT/arena/] [--out e2e/.shots/mvp-ideas]
 import { execFileSync, spawn } from "node:child_process";
 import { mkdirSync } from "node:fs";
@@ -26,7 +29,7 @@ let child = null;
 if (!url) {
   execFileSync("npm", ["run", "-s", "mvp:build"], { stdio: "inherit" });
   const port = await new Promise((r) => { const s = createServer().listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => r(p)); }); });
-  child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port), MVP_DEV: "1", MVP_DB: ":memory:", ARENA_IDEA_READER: "fake", ARENA_IDEA_READ_MS: "500", ARENA_TUNER: "instant" }, stdio: ["ignore", "inherit", "inherit"] });
+  child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port), MVP_DEV: "1", MVP_DB: ":memory:", ARENA_IDEA_READER: "fake", ARENA_IDEA_READ_MS: "500", ARENA_TUNER: "instant", MVP_ROTATION: "1" }, stdio: ["ignore", "inherit", "inherit"] });
   url = `http://127.0.0.1:${port}/arena/`;
   for (let i = 0; i < 300; i++) {
     try { if ((await fetch(url + "api/v1/health")).ok) break; } catch {}
@@ -180,8 +183,31 @@ async function vote(viewport) {
   await shot("voted");
   const after = (await (await fetch(url + "api/v1/dev/candidates")).json()).find((c) => c.unitId === cand.unitId);
   if (after?.votes !== 1) errors.push(`vote: ${cand.name} has ${after?.votes} votes, not 1`);
-  // Rotation (M2-10, "End the day now" with MVP_ROTATION=1) hasn't merged
-  // into the mission yet: the walk stops at the vote.
+  // Rotation (M2-10): "+5 fake votes" lifts it over the vote bar, "End day
+  // now" (MVP_ROTATION=1) lets it in, and the Codex shows it NEW, by its author.
+  await page.locator("details.dev summary").click();
+  await Promise.all([page.waitForResponse((r) => r.url().endsWith("/dev/fake-votes")), page.getByTestId("fake-votes").click()]);
+  const scored = (await (await fetch(url + "api/v1/dev/candidates")).json()).find((c) => c.unitId === cand.unitId);
+  if (!scored?.qualified) errors.push(`rotation: ${cand.name} doesn't qualify (${JSON.stringify(scored)})`);
+  await page.goto(url);
+  await page.locator("details.dev summary").click();
+  await page.getByTestId("end-day").click();
+  await page.getByTestId("day-ended").waitFor({ timeout: 30_000 });
+  await shot("day-ended");
+  await page.reload(); // a fresh load takes the new pool at once (otherwise within 15 s)
+  await page.getByTestId("codex").click();
+  await page.getByTestId("codex-search").fill(cand.name);
+  const card = page.locator('[data-testid="codex-unit"]').filter({ has: page.getByTestId("card-new") });
+  await card.first().waitFor({ timeout: 10_000 });
+  if ((await card.count()) !== 1) errors.push(`rotation: ${await card.count()} NEW cards named ${cand.name}`);
+  if ((await card.first().getByTestId("card-by").count()) !== 1) errors.push(`rotation: ${cand.name}'s card has no 💡`);
+  await shot("codex-new-unit");
+  await card.first().click({ position: { x: 32, y: 60 } });
+  const credit = page.getByTestId("sheet-credit");
+  await credit.waitFor();
+  const text = (await credit.textContent()) ?? "";
+  if (!/NEW/.test(text) || !text.includes(`idea by @Pick${TAG}`)) errors.push(`rotation: the sheet says "${text}"`);
+  await shot("new-unit-sheet");
   await page.close();
 }
 
@@ -199,4 +225,4 @@ if (errors.length) {
   console.error(errors.map((e) => `✗ ${e}`).join("\n"));
   process.exit(1);
 }
-console.log("✓ write → archetype → reading → overnight check → a second player's vote on a phone, and My ideas and the reading pick on desktop");
+console.log("✓ write → archetype → reading → overnight check → a second player's vote → the day end lets it in, NEW and by its author, on a phone, and My ideas and the reading pick on desktop");
