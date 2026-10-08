@@ -69,7 +69,7 @@ export function postFacts(rt: PostDeps, seq: number): PostFacts {
     return { emoji: u.row.emoji, name: u.row.name, by: c.by, evolvedBy: c.evolvedBy, returned };
   };
   const stints = store.stints();
-  const entered = stints.filter((s) => s.enteredSeq === seq && s.reason !== "seed").map((s) => unit(s.unitId, s.reason === "return"));
+  const entered = stints.filter((s) => s.enteredSeq === seq && s.leftSeq !== seq && s.reason !== "seed").map((s) => unit(s.unitId, s.reason === "return"));
   const left = stints.filter((s) => s.leftSeq === seq).map((s) => unit(s.unitId, false));
   const t = rt.today();
   return {
