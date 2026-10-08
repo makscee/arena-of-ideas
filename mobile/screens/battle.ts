@@ -855,7 +855,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const base = entered ? entered.stats : summon?.type === "Summon" ? { pwr: summon.pwr, hp: summon.hp } : null;
     const body = entered ? undefined : summoned.get(u.id);
     const ability: Node[] = entered ? formRich(entered.recipe, a.content) : body ? summonText(body, a.content) : [h("b", {}, tr("battle.now.noAbility"))];
-    const pwr = h("span", { "data-testid": "now-pwr" }, `PWR ${u.pwr}`, base && base.pwr !== u.pwr ? h("span", { class: "dim" }, ` (base ${base.pwr})`) : "");
+    const pwr = h("span", { "data-testid": "now-pwr" }, tr("battle.now.pwr", { pwr: u.pwr }), base && base.pwr !== u.pwr ? h("span", { class: "dim" }, tr("battle.now.base", { pwr: base.pwr })) : "");
     // The max as the card's HP bar reads it: a heal past the max raises it.
     const max = Math.max(1, u.maxHp, u.hp);
     const hp = h("span", { "data-testid": "now-hp" }, fallen ? tr("battle.now.hpFallen", { max }) : tr("battle.now.hp", { hp: u.hp, max }));
@@ -1816,10 +1816,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const cls = !a.you && battle.winner !== "draw" ? "neutral" : outcome;
     // Why I lost, or Why I won (R2-17): the chains that did the most, theirs or yours.
     const whyBtn = endWhy ? button(outcome === "win" ? tr("battle.whyWon") : tr("battle.whyLost"), endWhy, "", "end-why") : null;
+    whyBtn?.setAttribute("data-why", outcome === "win" ? "won" : "lost");
     const hide = button("✕", () => { finished = false; render(); }, "bv-close", "end-close");
     hide.setAttribute("aria-label", tr("battle.end.seeBoard"));
     const replayEnd = button("", replay, "bv-end-replay", "end-replay");
-    replayEnd.append("↻ Replay", h("span", { class: "bv-dk" }, " from start"));
+    replayEnd.append(tr("battle.replayEnd"), h("span", { class: "bv-dk" }, tr("battle.replayFromStart")));
     return [
       h("div", { class: "row spread bv-end-top" }, h("div", { class: "bv-end-head" }, h("div", { class: `bv-word ${cls}`, "data-testid": "battle-word" }, word), h("div", { class: "bv-end-sub dim", "data-testid": "end-sub" }, ...endSubtitle())), hide),
       // The run line spans the card, not the head beside ✕: on a 360px phone the head is too narrow and the line wrapped (R2-17).

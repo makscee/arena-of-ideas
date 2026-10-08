@@ -85,7 +85,7 @@ export function creditText(c: VersionCredit & { isNew?: boolean; liveDays: numbe
   return h(
     "div",
     { class: "dim small credit-line", "data-testid": testid },
-    ...(c.isNew ? [h("span", { class: "new-badge inline", "data-testid": "sheet-new" }, "NEW")] : []),
+    ...(c.isNew ? [h("span", { class: "new-badge inline", "data-testid": "sheet-new" }, t("card.new"))] : []),
     ...parts.flatMap((p, i) => (i ? [" · ", ...p] : p)),
   );
 }
@@ -109,7 +109,7 @@ export function card(u: CardUnit, o: CardOptions): HTMLElement {
     { class: `card ${o.side}`, ...(o.testid ? { "data-testid": o.testid } : {}) },
     iconLine(u.recipe, !!o.tier),
     o.tier ? h("span", { class: `tier ${tierClass(o.tier)}`, "aria-label": o.tier === "S" ? t("card.summonedAria") : t("card.tierAria", { tier: o.tier }) }, o.tier === "S" ? "S" : roman(o.tier)) : null,
-    credit?.isNew ? h("span", { class: "new-badge", "data-testid": "card-new" }, "NEW") : null,
+    credit?.isNew ? h("span", { class: "new-badge", "data-testid": "card-new" }, t("card.new")) : null,
     h("div", { class: "emoji" }, u.emoji),
     // One line; ui/dom.ts fitText() shrinks a long name a little, then cuts it.
     // A version that isn't its archetype's first says so beside it (M3-8).
@@ -147,8 +147,8 @@ function liveStats(stats: Stats, maxHp: number): Node[] {
     h(
       "div",
       { class: "stats big" },
-      h("span", { class: "p", title: "PWR" }, icon("broadsword", 11, "stat-ic"), `${stats.pwr}`),
-      h("span", { class: `h${stats.hp < max ? " hurt" : ""}`, title: "HP" }, icon("hearts", 11, "stat-ic"), `${stats.hp}`),
+      h("span", { class: "p", title: t("card.pwr") }, icon("broadsword", 11, "stat-ic"), `${stats.pwr}`),
+      h("span", { class: `h${stats.hp < max ? " hurt" : ""}`, title: t("card.hp") }, icon("hearts", 11, "stat-ic"), `${stats.hp}`),
     ),
   ];
 }

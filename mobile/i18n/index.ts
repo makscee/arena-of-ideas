@@ -1,7 +1,9 @@
 // The client's words (mission #810, M4-1): every player-facing string lives in
 // a catalog (en.ts), keyed, with {params} and plurals, so a second language
 // is a second table. t("ideas.held", { n: 2 }) reads "2 ideas".
+import { uiLang } from "../lang";
 import { en, type Key } from "./en";
+import { ru } from "./ru";
 
 /** A message with plural forms, picked by Intl.PluralRules on params.n:
  * English uses one / other; Russian adds few / many (1 идея, 2 идеи, 5 идей). */
@@ -13,7 +15,7 @@ let lang = "en";
 let table: Record<string, Msg> = en;
 let rules = new Intl.PluralRules(lang);
 
-/** Switch the catalog (M4-2 adds Russian). Missing keys fall back to English. */
+/** Switch the catalog. Missing keys fall back to English. */
 export function setLang(code: string, messages: Partial<Record<Key, Msg>>): void {
   lang = code;
   table = { ...en, ...messages } as Record<string, Msg>;
@@ -31,6 +33,9 @@ export function t(key: Key, params: Params = {}): string {
   const text = typeof msg === "string" ? msg : pluralForm(msg, Number(params.n ?? 0));
   return text.replace(/\{(\w+)\}/g, (all, name: string) => (name in params ? String(params[name]) : all));
 }
+
+/** The player's language (lang.ts) picks the catalog before any screen draws. */
+if (uiLang() === "ru") setLang("ru", ru);
 
 function pluralForm(msg: Plural, n: number): string {
   return msg[rules.select(n) as keyof Plural] ?? msg.other;

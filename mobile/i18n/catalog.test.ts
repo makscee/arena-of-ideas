@@ -5,8 +5,10 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
-import { en } from "./en";
-import { setLang, t } from "./index";
+import { pickLang } from "../lang";
+import { en, type Key } from "./en";
+import { setLang, t, type Msg } from "./index";
+import { ru } from "./ru";
 
 const root = join(__dirname, "..");
 
@@ -97,5 +99,47 @@ describe("client strings live in the catalog", () => {
       const forms = typeof msg === "string" ? [msg] : Object.values(msg);
       for (const form of forms) expect(form, key).not.toBe("");
     }
+  });
+});
+
+describe("the Russian catalog (M4-2)", () => {
+  // battle.end.your is empty on purpose: Russian reads "1 из 3 в строю" with no "your".
+  const EMPTY_OK = new Set(["battle.end.your"]);
+
+  it("has every key of the English one, and nothing else", () => {
+    expect(Object.keys(en).filter((k) => !(k in ru))).toEqual([]);
+    expect(Object.keys(ru).filter((k) => !(k in en))).toEqual([]);
+  });
+
+  it("keeps every {param}, and fills every plural form Russian needs", () => {
+    const params = (m: Msg) => [...new Set((typeof m === "string" ? [m] : Object.values(m)).flatMap((f) => f.match(/\{\w+\}/g) ?? []))].sort();
+    for (const key of Object.keys(en) as Key[]) {
+      const ruMsg = ru[key] as Msg;
+      expect(params(ruMsg), key).toEqual(params(en[key] as Msg));
+      if (typeof en[key] !== "string") expect(typeof ruMsg === "string" ? [] : ["one", "few", "many", "other"].filter((f) => !(f in ruMsg)), key).toEqual([]);
+      for (const form of typeof ruMsg === "string" ? [ruMsg] : Object.values(ruMsg)) if (!EMPTY_OK.has(key)) expect(form, key).not.toBe("");
+    }
+  });
+
+  it("reads Russian once switched", () => {
+    setLang("ru", ru);
+    expect([1, 2, 5].map((n) => t("run.hearts", { n }))).toEqual(["1 сердце", "2 сердца", "5 сердец"]);
+    setLang("en", {});
+    expect(t("run.hearts", { n: 2 })).toBe("2 hearts");
+  });
+});
+
+describe("picking the language (M4-2)", () => {
+  it("the address, then the saved switch, then the phone", () => {
+    expect(pickLang(null, null, "ru-RU")).toBe("ru");
+    expect(pickLang(null, null, "ru")).toBe("ru");
+    expect(pickLang(null, null, "en-GB")).toBe("en");
+    expect(pickLang(null, null, "uk-UA")).toBe("en");
+    expect(pickLang(null, null, undefined)).toBe("en");
+    expect(pickLang(null, "en", "ru-RU")).toBe("en");
+    expect(pickLang(null, "ru", "en-US")).toBe("ru");
+    expect(pickLang(null, "fr", "ru-RU")).toBe("ru");
+    expect(pickLang("en", "ru", "ru-RU")).toBe("en");
+    expect(pickLang("ru", null, "en-US")).toBe("ru");
   });
 });
