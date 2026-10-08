@@ -72,7 +72,10 @@ const rows = candidates();
 const b = band();
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 log(`band ${pct(b.low)}–${pct(b.high)}, target ${pct(b.target)}; field ${field.length} teams`);
-const opts = { liveRows: ROWS, field, band: b, settings, meta, log };
+// A copy of a live unit never teams up with its original.
+const unitArg = arg("--unit");
+const notWith = unitArg && ROWS.some((r) => slugOf(r.name) === unitArg) ? [unitArg] : [];
+const opts = { liveRows: ROWS, field, band: b, settings, meta, notWith, log };
 const batch = arg("--batch");
 const results: TuneResult[] = batch
   ? tuneBatch(rows, opts, (i, r) => {

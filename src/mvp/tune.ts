@@ -44,7 +44,7 @@ const COPIES = 3;
 export interface Band {
   low: number;
   high: number;
-  /** Where the search aims: the live median. */
+  /** The live median, for reference. */
   target: number;
   /** The margin Awoken's field score must have over sleeping's: as much as
    * the live units' at BAND_LOW_Q, at least awokenMarginFloor. */
@@ -293,6 +293,8 @@ export interface TuneOptions {
   field: Team[];
   band: Band;
   settings?: TuneSettings;
+  /** Live units never drawn as its teammates (a copy's original). */
+  notWith?: string[];
   /** The whole meta check with the unit added; null skips it. */
   meta?: MetaSettings | null;
   log?: (line: string) => void;
@@ -306,7 +308,7 @@ export function tuneUnit(candidate: Row, o: TuneOptions): TuneResult {
   const { band } = o;
   const id = slugOf(candidate.name);
   if (o.liveRows.some((r) => slugOf(r.name) === id)) throw new Error(`candidate id "${id}" is already a live unit`);
-  const livePool = mvpPool(o.liveRows).units;
+  const livePool = mvpPool(o.liveRows).units.filter((u) => !(o.notWith ?? []).includes(u.id));
   const knobs = knobsOf(candidate, o.liveRows);
 
   const contentFor = (row: Row) => {
@@ -322,11 +324,15 @@ export function tuneUnit(candidate: Row, o: TuneOptions): TuneResult {
   };
   const onTeam = (row: Row, team: Team): Measure => measureTeam(contentFor(row).content, team, id, o.field, s);
   const margin = (m: Measure) => m.score - m.sleeping;
-  const cost = (m: Measure) => Math.abs(m.score - band.target) + 2 * Math.max(0, band.margin - margin(m));
-  const tol = (band.high - band.low) / 4;
-  const done = (m: Measure) => Math.abs(m.score - band.target) <= tol && margin(m) >= band.margin;
+  // The search aims just inside the band, so numbers that already fit stay
+  // as they are and a unit out of it moves the least it must.
+  const w = band.high - band.low;
+  const [lo, hi] = [band.low + w / 8, band.high - w / 8];
+  const off = (m: Measure) => (m.score < lo ? lo - m.score : m.score > hi ? m.score - hi : 0);
+  const cost = (m: Measure) => off(m) + 2 * Math.max(0, band.margin - margin(m));
+  const done = (m: Measure) => off(m) === 0 && margin(m) >= band.margin;
   const show = (r: Row) => `${r.pwr}/${r.hp} ${doesStrings(r).filter(Boolean).join(" · ")}`;
-  const line = (m: Measure) => `score ${pct(m.score)}, asleep ${pct(m.sleeping)} (target ${pct(band.target)}, band ${pct(band.low)}–${pct(band.high)})`;
+  const line = (m: Measure) => `score ${pct(m.score)}, asleep ${pct(m.sleeping)} (band ${pct(band.low)}–${pct(band.high)})`;
 
   let row = clampRow(candidate, knobs);
   if (keepsProblem(row)) throw new Error(`${candidate.name}: ${keepsProblem(row)}`);
@@ -341,9 +347,9 @@ export function tuneUnit(candidate: Row, o: TuneOptions): TuneResult {
     while (steps.length < s.maxEvals && !done(cur)) {
       // Weaker or stronger: the numbers all push the same way. Awoken's own
       // numbers widen its margin over sleeping.
-      const dir = cur.score > band.target ? -1 : 1;
+      const dir = cur.score > (lo + hi) / 2 ? -1 : 1;
       const wantMargin = margin(cur) < band.margin;
-      const far = Math.abs(cur.score - band.target) > 2 * tol;
+      const far = off(cur) > w / 4;
       const moves: { knob: Knob; to: number }[] = [];
       for (const k of knobs) {
         const v = k.get(row);
