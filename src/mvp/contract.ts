@@ -629,6 +629,9 @@ export interface IdeasView {
   held: number;
   /** Finished runs until the next idea; null while `held` is at the cap. */
   nextIn: number | null;
+  /** M2-6: the player's ideas waiting for their pick (`pick-archetype`,
+   * `pick-reading`); Home shows "💡 Your idea is ready". */
+  ready: number;
 }
 
 /** Who a live unit's idea was and whether it is new (M2-9,
@@ -716,6 +719,10 @@ export interface IdeaData {
    * (ISO); a model error or timeout only delays the idea. */
   tries?: number;
   retryAt?: string;
+  /** M2-6: the options its author turned down with "None of these", by
+   * stage. Each stage may be turned down once; the reader is asked for
+   * different ones, and a second "None of these" refunds the idea. */
+  declined?: { archetypes?: IdeaArchetype[]; readings?: IdeaReading[] };
 }
 
 /** M2-5: an archetype the reader made of an idea: a name, an emoji and a
@@ -798,6 +805,9 @@ export interface MyIdeasView {
 //   POST /api/v1/ideas/:ideaId/reading   { index } → MyIdeasView  (M2-5; picks a reading in `pick-reading`: the idea is
 //                                                                  `simulating`, its unit a candidate; 409 another state, or the
 //                                                                  name or shape was just taken, the option dropped)
+//   POST /api/v1/ideas/:ideaId/none          → MyIdeasView        (M2-6; "None of these" in `pick-archetype` or `pick-reading`:
+//                                                                  the stage is read once more; the second time the idea
+//                                                                  fails and is refunded; 409 another state)
 //   GET  /api/v1/stats                       → StatsView          (slice 11)
 //   GET  /api/v1/credits                     → CreditsView        (M2-9; authors, NEW, your creator number)
 //   GET  /api/v1/library                     → LibraryView        (M2-9; the units that have left)

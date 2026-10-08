@@ -19,25 +19,25 @@ describe("earning ideas (M2-3)", () => {
   it("earns 1 idea per 3 finished runs, given-up runs included", () => {
     let n = 7;
     const rt = mvpRuntime({ content: mvpContent(), seed: () => (n = (n * 1103515245 + 12345) >>> 0) });
-    expect(ideasOf(rt, maks.id)).toEqual({ held: 0, nextIn: 3 });
+    expect(ideasOf(rt, maks.id)).toEqual({ held: 0, nextIn: 3, ready: 0 });
     const finishOne = () => abandon(rt, startRun(rt, maks));
     finishOne();
     finishOne();
-    expect(ideasOf(rt, maks.id)).toEqual({ held: 0, nextIn: 1 });
+    expect(ideasOf(rt, maks.id)).toEqual({ held: 0, nextIn: 1, ready: 0 });
     finishOne();
-    expect(ideasOf(rt, maks.id)).toEqual({ held: 1, nextIn: 3 });
+    expect(ideasOf(rt, maks.id)).toEqual({ held: 1, nextIn: 3, ready: 0 });
   });
 
   it("holds at most 3: runs finished at the cap earn nothing, even once one is spent", () => {
     const { d, setRuns } = deps();
     setRuns(9);
-    expect(ideasOf(d, maks.id)).toEqual({ held: 3, nextIn: null });
+    expect(ideasOf(d, maks.id)).toEqual({ held: 3, nextIn: null, ready: 0 });
     setRuns(12 + 1); // 3 more runs at the cap, then 1
-    expect(ideasOf(d, maks.id)).toEqual({ held: 3, nextIn: null });
+    expect(ideasOf(d, maks.id)).toEqual({ held: 3, nextIn: null, ready: 0 });
     expect(spendIdea(d, maks.id)).toBe(true);
-    expect(ideasOf(d, maks.id)).toEqual({ held: 2, nextIn: 2 });
+    expect(ideasOf(d, maks.id)).toEqual({ held: 2, nextIn: 2, ready: 0 });
     setRuns(15);
-    expect(ideasOf(d, maks.id)).toEqual({ held: 3, nextIn: null });
+    expect(ideasOf(d, maks.id)).toEqual({ held: 3, nextIn: null, ready: 0 });
   });
 
   it("forfeits the same whether Home was read at every run or only at the end", () => {
@@ -52,7 +52,7 @@ describe("earning ideas (M2-3)", () => {
     spendIdea(once.d, maks.id);
     once.setRuns(20);
     expect(ideasOf(once.d, maks.id)).toEqual(ideasOf(often.d, maks.id));
-    expect(ideasOf(once.d, maks.id)).toEqual({ held: 3, nextIn: null });
+    expect(ideasOf(once.d, maks.id)).toEqual({ held: 3, nextIn: null, ready: 0 });
   });
 
   it("spends only an idea held", () => {
@@ -61,25 +61,25 @@ describe("earning ideas (M2-3)", () => {
     setRuns(3);
     expect(spendIdea(d, maks.id)).toBe(true);
     expect(spendIdea(d, maks.id)).toBe(false);
-    expect(ideasOf(d, maks.id)).toEqual({ held: 0, nextIn: 3 });
+    expect(ideasOf(d, maks.id)).toEqual({ held: 0, nextIn: 3, ready: 0 });
   });
 
   it("dev +1 idea adds one up to the cap", () => {
     const { d, setRuns } = deps();
     setRuns(2);
-    expect(grantIdea(d, maks.id)).toEqual({ held: 1, nextIn: 1 });
-    expect(grantIdea(d, maks.id)).toEqual({ held: 2, nextIn: 1 });
-    expect(grantIdea(d, maks.id)).toEqual({ held: 3, nextIn: null });
-    expect(grantIdea(d, maks.id)).toEqual({ held: 3, nextIn: null });
+    expect(grantIdea(d, maks.id)).toEqual({ held: 1, nextIn: 1, ready: 0 });
+    expect(grantIdea(d, maks.id)).toEqual({ held: 2, nextIn: 1, ready: 0 });
+    expect(grantIdea(d, maks.id)).toEqual({ held: 3, nextIn: null, ready: 0 });
+    expect(grantIdea(d, maks.id)).toEqual({ held: 3, nextIn: null, ready: 0 });
     expect(d.store.ideaCounts(maks.id).granted).toBe(3);
   });
 
   it("takes the rate and cap from the rules", () => {
     const { d, setRuns } = deps({ ...MVP_RULES, ideaEveryRuns: 2, ideaHold: 5 });
     setRuns(9);
-    expect(ideasOf(d, maks.id)).toEqual({ held: 4, nextIn: 1 });
+    expect(ideasOf(d, maks.id)).toEqual({ held: 4, nextIn: 1, ready: 0 });
     setRuns(10);
-    expect(ideasOf(d, maks.id)).toEqual({ held: 5, nextIn: null });
+    expect(ideasOf(d, maks.id)).toEqual({ held: 5, nextIn: null, ready: 0 });
   });
 });
 
@@ -101,7 +101,7 @@ describe("writing ideas (M2-4)", () => {
     grantIdea(d, maks.id);
     const idea = writeIdea(d, maks.id, "  A healer who grows stronger every time an ally falls.  ");
     expect(idea).toMatchObject({ playerId: maks.id, text: "A healer who grows stronger every time an ally falls.", state: "written", createdAt: "2026-10-08T08:00:00.000Z", data: {} });
-    expect(myIdeas(d, maks.id)).toEqual({ ideas: { held: 1, nextIn: 3 }, sent: [{ ideaId: idea.ideaId, text: idea.text, state: "written", createdAt: idea.createdAt, data: {} }] });
+    expect(myIdeas(d, maks.id)).toEqual({ ideas: { held: 1, nextIn: 3, ready: 0 }, sent: [{ ideaId: idea.ideaId, text: idea.text, state: "written", createdAt: idea.createdAt, data: {} }] });
   });
 
   it("takes 10–400 characters after trimming, counted as characters", () => {
@@ -141,7 +141,7 @@ describe("writing ideas (M2-4)", () => {
     refused(() => cancelIdea(d, maks.id, "no-such-id"), 404);
     expect(myIdeas(d, maks.id).ideas.held).toBe(0);
     cancelIdea(d, maks.id, mine.ideaId);
-    expect(myIdeas(d, maks.id)).toEqual({ ideas: { held: 1, nextIn: 3 }, sent: [] });
+    expect(myIdeas(d, maks.id)).toEqual({ ideas: { held: 1, nextIn: 3, ready: 0 }, sent: [] });
     refused(() => cancelIdea(d, maks.id, mine.ideaId), 404);
     d.store.putIdea({ ...theirs, state: "reading" });
     refused(() => cancelIdea(d, "p2", theirs.ideaId), 409);
@@ -153,10 +153,10 @@ describe("writing ideas (M2-4)", () => {
     setRuns(9);
     const idea = writeIdea(d, maks.id, "A knight who guards the weakest ally.");
     setRuns(12);
-    expect(myIdeas(d, maks.id).ideas).toEqual({ held: 3, nextIn: null });
+    expect(myIdeas(d, maks.id).ideas).toEqual({ held: 3, nextIn: null, ready: 0 });
     refused(() => cancelIdea(d, maks.id, idea.ideaId), 409);
     writeIdea(d, maks.id, "Another idea to make room.");
     cancelIdea(d, maks.id, idea.ideaId);
-    expect(myIdeas(d, maks.id).ideas).toEqual({ held: 3, nextIn: null });
+    expect(myIdeas(d, maks.id).ideas).toEqual({ held: 3, nextIn: null, ready: 0 });
   });
 });
