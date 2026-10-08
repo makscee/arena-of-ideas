@@ -361,7 +361,9 @@ export function candidateScores(rt: Pick<RunDeps, "store" | "rules">): Candidate
       const counted = rt.store.votes({ candidateId: c.unitId }).filter((v) => v.pick !== null);
       const won = counted.filter((v) => v.pick === c.unitId).length;
       const share = counted.length ? won / counted.length : 0;
-      const nov = novelty(c.row, live);
+      // "Unchanged" isn't new: no novelty bonus, so a version wins an even
+      // vote and unchanged enters only when players prefer it (#800, Maks).
+      const nov = kind === "unchanged" ? 0 : novelty(c.row, live);
       const score = share + bonus * nov;
       const r3 = (x: number) => Math.round(x * 1000) / 1000;
       return { unitId: c.unitId, kind, rootId, name: c.row.name, emoji: c.row.emoji, authorId: c.authorId, votes: counted.length, won, share: r3(share), novelty: r3(nov), score: r3(score), qualified: counted.length >= min && score > 0.5, entry: false };
