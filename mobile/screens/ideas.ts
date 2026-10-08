@@ -25,6 +25,8 @@ export const IDEA_STAGE: Record<IdeaState, string> = {
 };
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+/** Why New idea is off: "1 more run for an idea" (Home's ideas line says the same). */
+export const ideaWhy = (runs: number) => `${plural(runs, "more run")} for an idea`;
 const chars = (s: string) => [...s.trim()].length;
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -57,14 +59,16 @@ export async function ideasScreen(nav: IdeasNav, notice: string | null = null): 
   const holdLine =
     held > 0
       ? `💡 You hold ${plural(held, "idea")}.${nextIn === null ? " That's the most you can: send one to keep earning." : ""}`
-      : `💡 You hold no ideas. The next one comes in ${plural(nextIn ?? 0, "finished run")}.`;
-  const write = button("New idea", () => writeScreen(nav), "primary", "idea-new");
+      : "💡 You hold no ideas.";
+  // M3-2: with none held, New idea is off (muted, nothing to press) and says why beside it.
+  const write = button("New idea", () => writeScreen(nav), held > 0 ? "primary" : "primary off", "idea-new");
   if (held === 0) write.disabled = true;
+  const newIdea = held > 0 ? write : h("div", { class: "off-row" }, write, h("span", { class: "dim small", "data-testid": "idea-new-why" }, ideaWhy(nextIn ?? 0)));
   show(
     h("h1", {}, "MY IDEAS"),
     notice ? h("div", { class: "notice", "data-testid": "idea-sent" }, notice) : null,
     h("div", { "data-testid": "ideas-held" }, holdLine),
-    write,
+    newIdea,
     err,
     h("div", { class: "label" }, "Sent"),
     h(

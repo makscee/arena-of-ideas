@@ -3,7 +3,7 @@
  * file (safe while the server runs: it reads the current pool on every use,
  * and a new snapshot ends no run).
  *
- *   npm run mvp:pool -- show
+ *   npm run mvp:pool -- show        (the pool, the Library, the candidates with their parents)
  *   npm run mvp:pool -- sync-seed [--dry-run]
  *   npm run mvp:pool -- swap <out-id> <in-id>     (MVP_DEV=1 only)
  *
@@ -32,6 +32,9 @@ function main(): number {
     console.log(`pool ${pool.version} (day ${pool.daySeq}, ${pool.unitIds.length} units): ${pool.unitIds.join(" ")}`);
     const library = store.units({ status: "library" }).map((u) => u.unitId);
     console.log(`library (${library.length}): ${library.join(" ")}`);
+    // M3-4: a new version shows the unit it was proposed from.
+    const candidates = store.units({ status: "candidate" }).map((u) => (u.parentId ? `${u.unitId} (version of ${u.parentId})` : u.unitId));
+    console.log(`candidates (${candidates.length}): ${candidates.join(" ")}`);
     return 0;
   }
   if (cmd === "sync-seed") {

@@ -504,6 +504,11 @@ class Engine {
         const u = subj !== undefined ? this.units.get(subj) : undefined;
         return u ? [u] : [];
       }
+      case "attacker": {
+        const id = hurtAttacker(event, this.log);
+        const u = id !== undefined ? this.units.get(id) : undefined;
+        return u && u.alive ? [u] : [];
+      }
       case "frontEnemy": {
         const id = this.lines[other(holder.side)][0];
         const u = id !== undefined ? this.units.get(id) : undefined;
@@ -901,6 +906,17 @@ function subjectOf(body: EventBody): string | undefined {
     default:
       return undefined;
   }
+}
+
+/** Who dealt a Hurt: the striker of the Strike it came from, or the unit
+ * whose own ability dealt it. Status damage (Poison), fatigue and sudden
+ * death have no attacker. The Hurt's `source` and `causedBy` already carry
+ * this, so the log needs no new field. */
+export function hurtAttacker(ev: BattleEvent, log: readonly BattleEvent[]): string | undefined {
+  if (ev.type !== "Hurt") return undefined;
+  if (ev.source !== "kernel") return ev.source.status === undefined ? ev.source.unit : undefined;
+  const cause = ev.causedBy !== null ? log[ev.causedBy] : undefined;
+  return cause?.type === "Strike" ? cause.striker : undefined;
 }
 
 /** Did this source come from the reactor `ref`? A unit reacts as one, so any of

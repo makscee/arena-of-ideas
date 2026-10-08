@@ -158,6 +158,11 @@ export function formProblems(u: UnitContent, content: Pick<MvpContent, "abilitie
     out.push(`${u.id}: the awoken form must upgrade the Who and/or the Does`);
   }
   for (const [key, form] of [["sleeping", sleeping], ["awoken", awoken]] as const) {
+    // "The attacker" is who dealt a hit: only a When on a hit (hurt, allyHurt) has one.
+    const usesAttacker = [form.who, ...(form.also ?? []).map((c) => c.who)].some((who) => who.some((w) => w.kind === "attacker"));
+    if (usesAttacker && !(form.when.length > 0 && form.when.every((w) => w.kind === "trigger" && w.on.on === "Hurt"))) {
+      out.push(`${u.id}.${key}: "the attacker" needs a When on a hit (hurt or allyHurt)`);
+    }
     for (const issue of validateTeam([formDef(u, form, key)], content.statuses, content.abilities, `${u.id}.${key}`)) {
       out.push(`${issue.path}: ${issue.message}`);
     }

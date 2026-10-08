@@ -264,6 +264,7 @@ export function describeConditionSegments(c: Condition, _opts: DescribeOpts = {}
 const SELECTOR_SIDE: Record<Selector["kind"], Side | undefined> = {
   holder: "ally",
   eventUnit: undefined,
+  attacker: "enemy",
   frontEnemy: "enemy",
   allEnemies: "enemy",
   allAllies: "ally",
@@ -286,6 +287,8 @@ export function describeSelector(s: Selector, opts: DescribeOpts = {}): string {
       return holder;
     case "eventUnit":
       return opts.eventUnit?.text ?? "it";
+    case "attacker":
+      return "the attacker";
     case "frontEnemy":
       return "front enemy";
     case "allEnemies":
@@ -519,6 +522,7 @@ const TRIGGER_CHIP: Record<EventPattern["on"], { label: string; glyph: string }>
 const SELECTOR_CHIP: Record<Selector["kind"], string> = {
   holder: "Self",
   eventUnit: "It",
+  attacker: "Attacker",
   frontEnemy: "Front enemy",
   allEnemies: "All enemies",
   allAllies: "All allies",

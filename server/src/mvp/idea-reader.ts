@@ -6,6 +6,9 @@
 //   claude  Claude Code on m1 (`claude -p`, as src/create/claude-code.ts
 //           does): JSON output with a schema, no tools, a cheap model
 //           (ARENA_IDEA_MODEL, default sonnet), ARENA_CLAUDE_BIN, a timeout.
+// M3-4: a proposal for a new version of a Library unit is read with the same
+// readings call (ReadOpts.version gives the current rule), and each reading
+// that passes the checks gets a second call: is it true to the line?
 // The reader only drafts: ./idea-checks.ts checks every option, and
 // ./idea-reading.ts shows nothing that didn't pass. The player's text goes to
 // the model as data between <idea> tags, never as instructions.
@@ -13,7 +16,7 @@ import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { parseEnvelope } from "../../../src/create/claude-code.js";
-import type { IdeaArchetype } from "../../../src/mvp/contract.js";
+import type { IdeaArchetype, IdeaReading } from "../../../src/mvp/contract.js";
 import { WHEN, WHO, type Row } from "../../../src/mvp/units.js";
 import { checkReading, takenShapes, type ArchetypeDraft, type ReadingDraft } from "./idea-checks.js";
 
@@ -24,9 +27,20 @@ export interface CantExpress {
   word: string;
 }
 
+/** A game word the reader used for a nearby one the player meant (M3-1):
+ * `part` quoted from the text, `meant` the word the idea asked for ("whoever
+ * is weakest"), `used` the game word that stood in ("random"). */
+export interface NearMiss {
+  part: string;
+  meant: string;
+  used: string;
+}
+
 export interface ReaderAnswer<T> {
   options: T[];
   cantExpress: CantExpress[];
+  /** Readings only: words that stood in for the one the player meant. */
+  nearMiss?: NearMiss[];
 }
 
 export interface ReadOpts {
@@ -37,12 +51,23 @@ export interface ReadOpts {
   units: Row[];
   /** On the one retry: what was wrong with the last options. */
   problems?: string[];
+  /** M3-4: readings for a new version of a unit (the archetype is its name,
+   * emoji and line): its current rule, as formText renders both forms. */
+  version?: { sleeping: string; awoken: string };
+}
+
+/** M3-4: whether a reading of a new version is true to its archetype's line. */
+export interface Faithfulness {
+  true: boolean;
+  reason: string;
 }
 
 export interface IdeaReader {
   readonly kind: "claude" | "fake" | string;
   archetypes(text: string, opts: ReadOpts): Promise<ReaderAnswer<ArchetypeDraft>>;
   readings(text: string, archetype: IdeaArchetype, opts: ReadOpts): Promise<ReaderAnswer<ReadingDraft>>;
+  /** M3-4: is this reading of a new version true to `archetype`'s line? */
+  faithful(text: string, archetype: IdeaArchetype, reading: IdeaReading): Promise<Faithfulness>;
 }
 
 /** The reader ARENA_IDEA_READER names: `claude`, or the fake (default). */
@@ -74,7 +99,10 @@ const hashOf = (s: string) => createHash("sha256").update(s).digest().readUInt32
 /** A deterministic reader: the same text gives the same options. Archetypes
  * are named after the idea's longest word; readings are the first shapes, in
  * an order the text picks, that pass the checks. "steal" or "gold" in the
- * text is a part it can't express (the path an odd idea takes). */
+ * text is a part it can't express (the path an odd idea takes). "whoever
+ * hits it" puts an attacker reading first (its Does the one the text names);
+ * "weakest" is a near miss read as a random enemy. A new version's reading
+ * is true to its line unless the text says "unfaithful" (M3-4's tests). */
 export function fakeIdeaReader(): IdeaReader {
   return {
     kind: "fake",
@@ -101,18 +129,42 @@ export function fakeIdeaReader(): IdeaReader {
               combos.push({ when, who, does, awoken: { add: [side.add.find((a) => a.split(" ")[0] !== kind)!] } });
             }
       const start = (hashOf(text) + (opts.problems ? 97 : 0)) % combos.length;
+      const order = combos.map((_, i) => combos[(start + i * 37) % combos.length]!);
       const options: ReadingDraft[] = [];
-      for (let i = 0; i < combos.length && options.length < opts.want; i++) {
-        const d = combos[(start + i * 37) % combos.length]!;
+      // Turned down or retried: the attacker readings from the other end.
+      const attacker = opts.problems ? attackerCombos(text).reverse() : attackerCombos(text);
+      for (const d of [...attacker, ...order]) {
+        if (options.length >= opts.want) break;
         const ok = checkReading(d, archetype, taken);
         if ("row" in ok) {
           taken.accept(ok.row);
           options.push(d);
         }
       }
-      return { options, cantExpress: cantExpressOf(text) };
+      return { options, cantExpress: cantExpressOf(text), nearMiss: nearMissOf(text) };
+    },
+    async faithful(text, archetype) {
+      return /\bunfaithful\b/i.test(text) ? { true: false, reason: `it isn't ${archetype.name} any more` } : { true: true, reason: `still ${archetype.name}` };
     },
   };
+}
+
+/** "whoever hits it": the fake's attacker readings, the Does the text names first. */
+function attackerCombos(text: string): ReadingDraft[] {
+  const who = /\b(?:whoever|who|what(?:ever)?)\s+(?:hits?|strikes?|attacks?|hurts?)\b|\battackers?\b/gi;
+  if (!who.test(text)) return [];
+  const rest = text.replace(who, " ");
+  const harm = FAKE_SIDES[0]!;
+  const named = (d: string) => new RegExp(`\\b${d.split(" ")[0]!.toLowerCase()}`, "i").test(rest);
+  const does = [...harm.does.filter(named), ...harm.does.filter((d) => !named(d))];
+  return ["hurt", "allyHurt"].flatMap((when) =>
+    does.map((d) => ({ when, who: "attacker", does: d, awoken: { add: [harm.add.find((a) => a.split(" ")[0] !== d.split(" ")[0])!] } })),
+  );
+}
+
+function nearMissOf(text: string): NearMiss[] {
+  const m = /[^.,;!?]*\bweakest\b[^.,;!?]*/i.exec(text);
+  return m ? [{ part: m[0].trim(), meant: "the weakest enemy", used: "random" }] : [];
 }
 
 function cantExpressOf(text: string): CantExpress[] {
@@ -148,6 +200,7 @@ const WHEN_HELP: Record<string, string> = {
 const WHO_HELP: Record<string, string> = {
   me: "this unit itself",
   it: "the unit the When is about (the hit or healed ally, the poisoned enemy, the new summon)",
+  attacker: "whoever dealt the hit, by a strike or an ability (only with hurt and allyHurt; poison and other status damage have no attacker)",
   front: "the front enemy",
   enemies: "every enemy",
   allies: "every ally",
@@ -196,6 +249,7 @@ export function readerSystemPrompt(units: Row[]): string {
     "",
     "An archetype is a name (1 to 3 plain words, a capital first, no emoji, not one of the names above), one emoji, and a line: one sentence of at most 15 words, a capital first and a full stop at the end, in the style of the lines above, about what the unit does in the game.",
     "If part of the idea needs something the game has no words for (for example stealing gold, moving units, money), still make what you can, and list that part in cantExpress: `part` quoted exactly from the idea, `word` the missing game word in 1 to 3 words.",
+    "When readings use a nearby game word for something the player meant that the game has no exact word for (for example random for \"the weakest enemy\"), list it in nearMiss: `part` quoted exactly from the idea, `meant` what the player meant in 1 to 4 words, `used` the game word you used instead.",
     "Answer only through the structured output.",
   ].join("\n");
 }
@@ -204,6 +258,11 @@ const CANT_SCHEMA = {
   type: "array",
   maxItems: 3,
   items: { type: "object", properties: { part: { type: "string" }, word: { type: "string" } }, required: ["part", "word"], additionalProperties: false },
+};
+const NEAR_SCHEMA = {
+  type: "array",
+  maxItems: 3,
+  items: { type: "object", properties: { part: { type: "string" }, meant: { type: "string" }, used: { type: "string" } }, required: ["part", "meant", "used"], additionalProperties: false },
 };
 const ARCHETYPES_SCHEMA = {
   type: "object",
@@ -249,8 +308,9 @@ const READINGS_SCHEMA = {
       },
     },
     cantExpress: CANT_SCHEMA,
+    nearMiss: NEAR_SCHEMA,
   },
-  required: ["readings", "cantExpress"],
+  required: ["readings", "cantExpress", "nearMiss"],
   additionalProperties: false,
 };
 
@@ -268,9 +328,30 @@ export function archetypesPrompt(text: string, opts: ReadOpts): string {
 }
 
 export function readingsPrompt(text: string, archetype: IdeaArchetype, opts: ReadOpts): string {
+  if (opts.version) return versionPrompt(text, archetype, opts.version, opts);
   return (
     `${ideaBlock(text)}\n\nThe player picked this archetype: ${archetype.emoji} ${archetype.name}, "${archetype.line}"\n` +
     `Give ${opts.want} different readings of it as When → Who → Does, each with its awoken form, in the game's words only.${retryNote(opts)}`
+  );
+}
+
+/** M3-4: readings of a new version of a Library unit: what the player wants
+ * changed, the unit's line (what stays true) and its current rule. */
+export function versionPrompt(text: string, archetype: IdeaArchetype, rule: NonNullable<ReadOpts["version"]>, opts: ReadOpts): string {
+  return (
+    `${ideaBlock(text)}\n\nThe idea is what the player wants changed in a new version of ${archetype.emoji} ${archetype.name}, line "${archetype.line}".\n` +
+    `Its current rule: sleeping "${rule.sleeping}"; awoken "${rule.awoken}".\n` +
+    `Give ${opts.want} different readings of the new version as When → Who → Does, each with its awoken form, in the game's words only. ` +
+    `The name, emoji and line stay: each reading must stay true to the line, and must differ from the current rule.${retryNote(opts)}`
+  );
+}
+
+/** M3-4: the faithfulness question for one reading of a new version. */
+export function faithfulPrompt(text: string, archetype: IdeaArchetype, reading: IdeaReading): string {
+  return (
+    `${ideaBlock(text)}\n\nA new version of ${archetype.emoji} ${archetype.name}, whose line is "${archetype.line}", was read from this idea as:\n` +
+    `sleeping "${reading.text.sleeping}"; awoken "${reading.text.awoken}".\n` +
+    "Is this reading true to the line? Answer `true` yes or no, and the reason in one short sentence."
   );
 }
 
@@ -323,6 +404,15 @@ function callClaude(o: ClaudeReaderOptions, system: string, prompt: string, sche
 
 const cantOf = (x: unknown): CantExpress[] =>
   Array.isArray(x) ? x.filter((c): c is CantExpress => typeof c?.part === "string" && typeof c?.word === "string").slice(0, 3) : [];
+const nearOf = (x: unknown): NearMiss[] =>
+  Array.isArray(x) ? x.filter((c): c is NearMiss => typeof c?.part === "string" && typeof c?.meant === "string" && typeof c?.used === "string").slice(0, 3) : [];
+
+const FAITHFUL_SCHEMA = {
+  type: "object",
+  properties: { true: { type: "boolean" }, reason: { type: "string" } },
+  required: ["true", "reason"],
+  additionalProperties: false,
+};
 
 export function claudeIdeaReader(o: ClaudeReaderOptions): IdeaReader {
   return {
@@ -332,8 +422,13 @@ export function claudeIdeaReader(o: ClaudeReaderOptions): IdeaReader {
       return { options: Array.isArray(out?.archetypes) ? (out.archetypes as ArchetypeDraft[]).slice(0, opts.want) : [], cantExpress: cantOf(out?.cantExpress) };
     },
     async readings(text, archetype, opts) {
-      const out = (await callClaude(o, readerSystemPrompt(opts.units), readingsPrompt(text, archetype, opts), READINGS_SCHEMA)) as { readings?: unknown; cantExpress?: unknown };
-      return { options: Array.isArray(out?.readings) ? (out.readings as ReadingDraft[]).slice(0, opts.want) : [], cantExpress: cantOf(out?.cantExpress) };
+      const out = (await callClaude(o, readerSystemPrompt(opts.units), readingsPrompt(text, archetype, opts), READINGS_SCHEMA)) as { readings?: unknown; cantExpress?: unknown; nearMiss?: unknown };
+      return { options: Array.isArray(out?.readings) ? (out.readings as ReadingDraft[]).slice(0, opts.want) : [], cantExpress: cantOf(out?.cantExpress), nearMiss: nearOf(out?.nearMiss) };
+    },
+    async faithful(text, archetype, reading) {
+      const out = (await callClaude(o, readerSystemPrompt([]), faithfulPrompt(text, archetype, reading), FAITHFUL_SCHEMA)) as { true?: unknown; reason?: unknown };
+      if (typeof out?.true !== "boolean") throw new Error("claude -p gave no faithfulness answer");
+      return { true: out.true, reason: typeof out.reason === "string" ? out.reason.slice(0, 200) : "" };
     },
   };
 }
