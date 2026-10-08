@@ -1073,6 +1073,8 @@ describe("captions in Russian", () => {
       for (const s of steps) expect(s.caption, s.caption).not.toMatch(/\b(strikes|on|wins|absorbed|blocks|falls|appears|returns|Shield|Strength|PWR|HP)\b/);
       expect(chainOf(log, shot.id).nodes.at(-1)!.text).toMatch(/^(Начало боя|Ход \d+|Конец хода \d+)$/);
       expect(endCaption("draw")).toBe("Ничья");
+      expect(runRowText("buff", "pwr", 1)).toBe("+1 АТК");
+      expect(totalsPartsOf({ unit: "A1:X", side: "A", damage: 0, healed: 0, pwr: 0, hp: 2, blocked: 0, statuses: [], died: false, eventIds: [] }).map((p) => p.text)).toEqual(["+2 ОЗ"]);
     } finally {
       setTraceLang(undefined);
     }
