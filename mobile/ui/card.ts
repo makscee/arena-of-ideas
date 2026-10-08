@@ -147,7 +147,8 @@ export function formRich(form: UnitForm, content: MvpContent): Node[] {
  * preview's credit line (./fusion.ts). Open it with overlay(unitSheet(...)) from ./dom. */
 export function unitSheet(u: LineUnit | BattleUnit | UnitContent, content: MvpContent, opts: { rates?: UnitRates; from?: Stats; preview?: boolean } = {}): HTMLElement {
   const unitId = "forms" in u ? u.id : u.unitId;
-  const unit = (id: string) => content.units.find((x) => x.id === id);
+  // A unit that left the pool (a champion's, a replay's) is in content.left (M2-2).
+  const unit = (id: string) => content.units.find((x) => x.id === id) ?? content.left?.find((x) => x.id === id);
   // opts.from: your copy's stats now, when u is that copy after a buy (the shop's offer sheet).
   const statsLine = (s: Stats) =>
     opts.from
