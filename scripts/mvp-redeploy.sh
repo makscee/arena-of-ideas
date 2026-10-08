@@ -90,6 +90,10 @@ case "$IDEA_READER" in claude|fake) ;; *) echo "ARENA_MVP_IDEA_READER is claude 
 # The pool's daily rotation at 04:00 (mission 2, M2-10): on, after a dry run on a
 # copy of the live DB (npm run mvp:rotate -- --db <copy> --dry-run).
 # ARENA_MVP_ROTATION=0 turns it off.
+# Votes a candidate needs (MvpRules.voteMin): 2 while the live game has few
+# players (an author never votes on their own idea). ARENA_MVP_VOTE_MIN overrides.
+VOTE_MIN="${ARENA_MVP_VOTE_MIN:-2}"
+case "$VOTE_MIN" in [1-9]|[1-9][0-9]) ;; *) echo "ARENA_MVP_VOTE_MIN is a number from 1 to 99, not '$VOTE_MIN'" >&2; exit 2 ;; esac
 ROTATION="${ARENA_MVP_ROTATION:-1}"
 case "$ROTATION" in 0|1) ;; *) echo "ARENA_MVP_ROTATION is 0 or 1, not '$ROTATION'" >&2; exit 2 ;; esac
 PUBLIC_URL=https://arena.makscee.ru/arena/
@@ -222,6 +226,7 @@ cat > "\$PLIST" <<PL
     <key>MVP_DB</key><string>\$DB</string>
     <key>MVP_BUILD</key><string>\$BUILD</string>
     <key>ARENA_NAMER_URL</key><string>http://127.0.0.1:$NAMER_PORT/v1/chat/completions</string>
+    <key>MVP_VOTE_MIN</key><string>$VOTE_MIN</string>
     <key>MVP_ROTATION</key><string>$ROTATION</string>
     <key>ARENA_IDEA_READER</key><string>$IDEA_READER</string>
     <key>ARENA_CLAUDE_BIN</key><string>\$HOME/.local/bin/claude</string>
