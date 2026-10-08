@@ -137,6 +137,8 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .spacer { flex: 1; }
 /* Slice 8: home, shop, result. */
 .small { font-size: 14px; }
+/* Home's ideas line (M2-3): quiet, centred over Play. */
+.title-menu .ideas { text-align: center; }
 button.small { min-height: 44px; font-size: 14px; padding: 0 12px; }
 .center { text-align: center; }
 .ghost-name { color: var(--ghost); font-weight: 600; }
