@@ -175,8 +175,8 @@ describe("credits across versions (M3-8)", () => {
         { unitId: "hog-3", version: 3, by: C, liveDays: 3, live: true },
       ];
       const credits = creditsView(deps(), A.id);
-      // A version keeps its name, so the pool serves it under its root's slug.
-      expect(credits.units.find((u) => u.unitId === "hog")).toEqual({ unitId: "hog", by: A, evolvedBy: C, version: 3, versions: history, isNew: true, liveDays: 11 });
+      // The pool serves a version under its own id (M3-7), though it keeps its root's name.
+      expect(credits.units.find((u) => u.unitId === "hog-3")).toEqual({ unitId: "hog-3", by: A, evolvedBy: C, version: 3, versions: history, isNew: true, liveDays: 11 });
       expect(credits.units.filter((u) => u.unitId.startsWith("hog"))).toHaveLength(1);
       // The first author counts the whole archetype; each evolver their own versions.
       expect(credits.you).toEqual({ units: 1, days: 11 });
@@ -202,8 +202,8 @@ describe("credits across versions (M3-8)", () => {
     swapUnit(store, "fighter", "fighter-2", AT);
     toDay(5);
     const c = creditsView(deps(), B.id);
-    expect(c.units.find((u) => u.unitId === "fighter")).toEqual({
-      unitId: "fighter",
+    expect(c.units.find((u) => u.unitId === "fighter-2")).toEqual({
+      unitId: "fighter-2",
       by: null,
       evolvedBy: B,
       version: 2,
