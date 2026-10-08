@@ -15,6 +15,13 @@
 // 500 ms, the instant tuner, rotation on) on a free port; never point it at
 // the live game. A --url server needs MVP_DEV=1, ARENA_TUNER=instant and
 // MVP_ROTATION=1.
+// M3-5 (makscee/void-board#807): once the day end has sent a unit to the
+// Library, a new player proposes a new version of it: Codex → Library → its
+// sheet's "Propose a new version" (off, with the reason, until they hold an
+// idea) → the write screen with its line and current rule → My ideas "new
+// version of …" → the reading pick titled "A new version of …" with the
+// current rule first → "being tested overnight"; at 360×740, and to the
+// reading pick at 1280×800.
 //   npm run mvp:ideas-phone -- [--url http://127.0.0.1:PORT/arena/] [--out e2e/.shots/mvp-ideas]
 import { execFileSync, spawn } from "node:child_process";
 import { mkdirSync } from "node:fs";
@@ -231,10 +238,104 @@ async function vote(viewport) {
   await page.close();
 }
 
+/** M3-5: a new player proposes a new version of a Library unit, to the reading pick (`full`: through Confirm). */
+async function propose(viewport, name, full) {
+  const page = await browser.newPage({ viewport, deviceScaleFactor: 2, isMobile: viewport.width < 700, hasTouch: viewport.width < 700 });
+  page.on("pageerror", (e) => errors.push(`${name}: pageerror: ${e.message}`));
+  page.on("console", (m) => m.type() === "error" && errors.push(`${name}: console: ${m.text()}`));
+  const shot = (s) => page.screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-${name}-${s}.png` });
+  const noScroll = async (s) => {
+    const { w, h } = await page.evaluate(() => ({ w: document.documentElement.scrollWidth, h: document.documentElement.scrollHeight }));
+    if (w > viewport.width) errors.push(`${name} ${s}: horizontal scroll (${w}px)`);
+    if (h > viewport.height + 1) errors.push(`${name} ${s}: the page scrolls (${h}px tall)`);
+  };
+  await page.goto(url);
+  await page.getByTestId("name-input").fill(`${name}${TAG}`);
+  await page.getByTestId("name-submit").click();
+  await page.getByTestId("play").waitFor();
+  const openLibraryUnit = async () => {
+    await page.getByTestId("codex").click();
+    await page.getByTestId("codex-tab-library").click();
+    const unit = page.getByTestId("library-unit").first();
+    await unit.waitFor({ timeout: 10_000 });
+    const id = await unit.getAttribute("data-unit");
+    await unit.click({ position: { x: 30, y: 60 } });
+    await page.getByTestId("library-propose").waitFor();
+    return id;
+  };
+  // No idea held: the button is off, with the reason beside it.
+  await openLibraryUnit();
+  const btn = page.getByTestId("library-propose");
+  if (!(await btn.isDisabled())) errors.push(`${name}: Propose is on with no idea held`);
+  const why = (await page.getByTestId("library-propose-why").textContent()) ?? "";
+  if (!/^\d+ more runs? for an idea$/.test(why)) errors.push(`${name}: Propose's reason "${why}"`);
+  await shot("library-propose-off");
+  // +1 idea (dev on Home), then the same sheet: on.
+  await page.goto(url);
+  await page.locator("details.dev summary").click();
+  await page.getByTestId("grant-idea").click();
+  await page.waitForFunction(() => /^💡 1 idea$/.test(document.querySelector('[data-testid="ideas"]')?.textContent ?? ""), null, { timeout: 10_000 });
+  const target = await openLibraryUnit();
+  if (await btn.isDisabled()) errors.push(`${name}: Propose is off with an idea held`);
+  if ((await page.getByTestId("library-propose-why").count()) !== 0) errors.push(`${name}: Propose says why it's off while on`);
+  await shot("library-propose-on");
+  await btn.click();
+  // The write screen: its title, line and current rule over the box.
+  const title = page.getByTestId("write-title");
+  await title.waitFor();
+  const unitName = await (await fetch(url + "api/v1/library")).json().then((l) => l.units.find((x) => x.unit.id === target)?.unit);
+  const named = `A new version of ${unitName.emoji} ${unitName.name}`;
+  if ((await title.textContent()) !== named) errors.push(`${name}: write title "${await title.textContent()}"`);
+  if ((await page.getByTestId("propose-line").textContent()) !== unitName.archetype) errors.push(`${name}: write line "${await page.getByTestId("propose-line").textContent()}"`);
+  if (!/^Now: .{10,}/.test((await page.getByTestId("propose-rule").textContent()) ?? "")) errors.push(`${name}: write rule "${await page.getByTestId("propose-rule").textContent()}"`);
+  if (!(await page.locator('label[for="idea-box"]').textContent()).includes("What should change?")) errors.push(`${name}: the box isn't "What should change?"`);
+  await page.getByTestId("idea-text").fill(WANT);
+  await shot("propose-write");
+  await noScroll("propose-write");
+  await page.getByTestId("idea-send").click();
+  await page.getByTestId("idea-sent").waitFor();
+  const stage = page.getByTestId("idea-stage").first();
+  if (!(await stage.textContent()).startsWith(`new version of ${unitName.emoji} ${unitName.name} · being read`)) errors.push(`${name}: my ideas while read "${await stage.textContent()}"`);
+  await shot("propose-sent");
+  // The reader skips the archetype: straight to the readings.
+  await page.locator('[data-testid="idea-sent-row"][data-state="pick-reading"]').waitFor({ timeout: 30_000 });
+  await page.getByTestId("idea-pick").click();
+  await page.getByTestId("pick-readings").waitFor();
+  if ((await page.getByTestId("pick-title").textContent()) !== named) errors.push(`${name}: reading title "${await page.getByTestId("pick-title").textContent()}"`);
+  const now = page.getByTestId("pick-current");
+  if (!/^Now: .{10,}/.test((await now.textContent()) ?? "")) errors.push(`${name}: reading pick's current rule "${await now.textContent()}"`);
+  const nowBox = await now.boundingBox();
+  const firstCard = await page.getByTestId("pick-reading").first().boundingBox();
+  if (!nowBox || !firstCard || nowBox.y >= firstCard.y) errors.push(`${name}: the current version isn't above the readings`);
+  if ((await page.getByTestId("pick-reading").count()) !== 3) errors.push(`${name}: ${await page.getByTestId("pick-reading").count()} readings`);
+  await shot("propose-reading-pick");
+  await noScroll("propose-reading-pick");
+  // Its current version's sheet, then a reading's.
+  await now.click({ position: { x: 12, y: 10 } });
+  await page.locator('[data-testid="pick-detail"] [data-testid="unit-sheet"]').waitFor();
+  if (!(await page.getByTestId("pick-confirm").isDisabled())) errors.push(`${name}: the current version can be confirmed`);
+  await shot("propose-reading-current");
+  await page.getByTestId("pick-reading").nth(0).click({ position: { x: 30, y: 60 } });
+  await page.getByTestId("sheet-unset").waitFor();
+  await shot("propose-reading-tapped");
+  await noScroll("propose-reading-tapped");
+  if (!full) return page.close();
+  await page.getByTestId("pick-confirm").click();
+  await page.locator('[data-testid="idea-sent-row"][data-state="simulating"]').waitFor();
+  const after = (await page.getByTestId("idea-stage").first().textContent()) ?? "";
+  if (after !== `new version of ${unitName.emoji} ${unitName.name} · being tested: we'll test it overnight`) errors.push(`${name}: my ideas after the pick "${after}"`);
+  await shot("propose-being-tested");
+  await page.close();
+}
+const WANT = "Make it hit every enemy instead of only the front one.";
+
 try {
   await walk({ width: 360, height: 640 }, "Pick", true);
   await walk({ width: 360, height: 740 }, "Tall", false); // M3-2: the three rules side by side on a common phone
   await walk({ width: 1280, height: 800 }, "Desk", false);
+  // M3-5: the day end above sent a unit to the Library.
+  await propose({ width: 360, height: 740 }, "Prop", true);
+  await propose({ width: 1280, height: 800 }, "PropDesk", false);
 } catch (e) {
   errors.push(`threw: ${e.message}`);
 } finally {
@@ -246,4 +347,4 @@ if (errors.length) {
   console.error(errors.map((e) => `✗ ${e}`).join("\n"));
   process.exit(1);
 }
-console.log("✓ write → archetype → reading → overnight check → a second player's vote → the day end lets it in, NEW and by its author, on a phone, and My ideas and the reading pick on desktop");
+console.log("✓ write → archetype → reading → overnight check → a second player's vote → the day end lets it in, NEW and by its author, on a phone, and My ideas and the reading pick on desktop; a new version of a Library unit: Propose (off, then on) → write → reading pick with the current rule first → being tested, on a phone, and to the reading pick on desktop");

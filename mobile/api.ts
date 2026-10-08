@@ -25,6 +25,8 @@ import {
   type PlayerSession,
   type RunView,
   type StatsView,
+  type UnitId,
+  type WriteIdeaRequest,
 } from "../src/mvp/contract";
 
 const BASE = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "") + MVP_API_PREFIX;
@@ -190,6 +192,9 @@ export const api = {
   myIdeas: () => call<MyIdeasView>("GET", "/ideas"),
   /** Sends an idea, spending one held (400 its length, 409 none held). */
   writeIdea: (text: string) => call<MyIdeasView>("POST", "/ideas", { text }),
+  /** Proposes a new version of the Library unit `target` (M3-4), spending one
+   * held idea (400 its length, 404 no such unit, 409 none held or not in the Library). */
+  proposeVersion: (target: UnitId, text: string) => call<MyIdeasView>("POST", "/ideas", { text, kind: "evolve", target } satisfies WriteIdeaRequest),
   /** Takes back a `written` idea, refunding it. */
   cancelIdea: (ideaId: string) => call<MyIdeasView>("POST", `/ideas/${encodeURIComponent(ideaId)}/cancel`),
   /** One of the player's own ideas with its options (M2-5). */

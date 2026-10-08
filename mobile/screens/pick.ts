@@ -8,7 +8,10 @@
 // refunded. Phone first: 360×640 shows a pick without scrolling the page
 // (only the sheet's own box scrolls); the desktop puts the sheet in the side
 // panel, as the Codex does.
-import type { IdeaArchetype, IdeaReading, MvpContent, MyIdea } from "../../src/mvp/contract";
+// M3-5 (makscee/void-board#807): a proposal for a new version has no
+// archetype pick; its reading pick is titled "A new version of 🦔 Quillback"
+// and shows the current version's rule first (a tap opens its sheet).
+import type { IdeaArchetype, IdeaReading, LibraryView, MvpContent, MyIdea, UnitContent } from "../../src/mvp/contract";
 import { formSegments } from "../../src/mvp/form-text";
 import { mvpPool, type Row } from "../../src/mvp/units";
 import { api, ApiError } from "../api";
@@ -46,13 +49,36 @@ export async function pickScreen(ideaId: string, nav: PickNav): Promise<void> {
     return nav.toIdeas();
   }
   if (idea.state === "pick-archetype" && idea.data.archetypes?.length) return archetypeScreen(idea, nav);
-  if (idea.state === "pick-reading" && idea.data.readings?.length && idea.data.archetype) return readingScreen(idea, await getContent(), nav);
+  if (idea.state === "pick-reading" && idea.data.readings?.length && idea.data.archetype) {
+    const content = await getContent();
+    // M3-5: a proposal compares with its unit as it is now, from the Library.
+    const lib = idea.data.kind === "evolve" ? await api.library().catch(() => null) : null;
+    const current = lib?.units.find((l) => l.unit.id === idea.data.target)?.unit;
+    return readingScreen(idea, lib ? withLib(content, lib) : content, nav, current);
+  }
   nav.toIdeas();
 }
 
-/** The header both picks share: the step, and the player's own text. */
+/** The live content with the Library's abilities, statuses and summons, so the current version's rule reads (M3-5). */
+function withLib(content: MvpContent, lib: LibraryView): MvpContent {
+  const sums = new Set((content.summons ?? []).map((x) => x.id));
+  return {
+    ...content,
+    abilities: { ...lib.abilities, ...content.abilities },
+    statuses: { ...lib.statuses, ...content.statuses },
+    summons: [...(content.summons ?? []), ...lib.summons.filter((x) => !sums.has(x.id))],
+  };
+}
+
+/** The header both picks share: the step, and the player's own text. A
+ * proposal's (M3-5) is "A new version of 🦔 Quillback", with no step. */
 function head(title: string, step: string, idea: MyIdea): Node[] {
-  return [h("div", { class: "row spread" }, h("h1", {}, title), h("span", { class: "dim small num" }, step)), h("div", { class: "dim small idea-quote", "data-testid": "pick-idea" }, `“${idea.text}”`)];
+  const a = idea.data.archetype;
+  const top =
+    idea.data.kind === "evolve" && a
+      ? h("h1", { class: "h1-long", "data-testid": "pick-title" }, `A new version of ${a.emoji} ${a.name}`)
+      : h("div", { class: "row spread" }, h("h1", { "data-testid": "pick-title" }, title), h("span", { class: "dim small num" }, step));
+  return [top, h("div", { class: "dim small idea-quote", "data-testid": "pick-idea" }, `“${idea.text}”`)];
 }
 
 /** "The game has no words yet for …": a part of the text the reader couldn't make (M2-5). */
@@ -157,7 +183,7 @@ function readingPool(a: IdeaArchetype, r: IdeaReading, i: number) {
   return { ...pool.units[0]!, id: `reading-${i}`, pool };
 }
 
-function readingScreen(idea: MyIdea, content0: MvpContent, nav: PickNav): void {
+function readingScreen(idea: MyIdea, content0: MvpContent, nav: PickNav, current?: UnitContent): void {
   const a = idea.data.archetype!;
   const readings = idea.data.readings!;
   const units = readings.map((r, i) => readingPool(a, r, i));
@@ -173,7 +199,7 @@ function readingScreen(idea: MyIdea, content0: MvpContent, nav: PickNav): void {
   let picked = -1;
   const confirm = confirmButton(() => api.pickReading(idea.ideaId, picked), PICKED_READING, idea, nav, err);
   const desk = isDesktop();
-  const detail = h(desk ? "aside" : "div", { class: desk ? "codex-insp stack" : "panel pick-detail", "data-testid": "pick-detail" }, h("div", { class: "dim" }, "Tap a reading to read it."));
+  const detail = h(desk ? "aside" : "div", { class: desk ? "codex-insp stack" : "panel pick-detail", "data-testid": "pick-detail" }, h("div", { class: "dim" }, current ? "Tap a reading, or Now, to read it." : "Tap a reading to read it."));
   const cards = units.map((u, i) => {
     const c = card({ ...u, stats: { pwr: 0, hp: 0 }, unitId: u.id, form: "sleeping", recipe: u.forms.sleeping }, { side: "you", testid: "pick-reading", unset: true, onOpen: () => tap(i) });
     c.dataset.index = String(i);
@@ -188,8 +214,19 @@ function readingScreen(idea: MyIdea, content0: MvpContent, nav: PickNav): void {
     });
     return h("div", { class: "pick-col" }, c, rule);
   });
+  // M3-5: the version it would replace, first, for comparison: its rule; a tap reads its sheet (it isn't an option).
+  const now = current
+    ? h("button", { class: "propose-now", "data-testid": "pick-current" }, h("span", { class: "dim small" }, "Now: "), ...richText(formSegments(current.forms.sleeping, content.abilities), { size: 13 }))
+    : null;
+  now?.addEventListener("click", (e) => {
+    if ((e.target as HTMLElement).closest("button") !== now) return; // a keyword's own tip
+    cards.forEach((c) => c.classList.remove("inspected"));
+    now.classList.add("inspected");
+    detail.replaceChildren(unitSheet(current!, { ...content, units: [...content.units, current!] }));
+  });
   const tap = (i: number) => {
     picked = i;
+    now?.classList.remove("inspected");
     cards.forEach((c, k) => c.classList.toggle("inspected", k === i));
     cols.forEach((c, k) => c.classList.toggle("picked", k === i));
     const { pool: _, ...u } = units[i]!;
@@ -200,7 +237,10 @@ function readingScreen(idea: MyIdea, content0: MvpContent, nav: PickNav): void {
     "div",
     { class: desk ? "codex-main stack" : "pick-main" },
     ...head("READING", "2 / 2", idea),
-    h("div", { class: "pick-archline", "data-testid": "pick-archline" }, `${a.emoji} ${a.name}`, h("span", { class: "dim small" }, ` · ${a.line}`)),
+    idea.data.kind === "evolve"
+      ? h("div", { class: "dim small", "data-testid": "pick-archline" }, a.line)
+      : h("div", { class: "pick-archline", "data-testid": "pick-archline" }, `${a.emoji} ${a.name}`, h("span", { class: "dim small" }, ` · ${a.line}`)),
+    now,
     h("div", { class: "pick-cards", "data-testid": "pick-readings" }, ...cols),
     cantLine(idea),
     desk ? null : detail,

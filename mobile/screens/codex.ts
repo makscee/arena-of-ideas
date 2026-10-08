@@ -15,6 +15,8 @@
 //   who the idea was, how long it was live and its fusions (GET /library).
 // A unit with more than one version (M3-8) lists them under its sheet, each
 // opening its own: the live one, or one in the Library.
+// M3-5: a Library unit's sheet proposes a new version of it, which needs a
+// held idea (off, with the reason beside it, otherwise).
 // - Keywords: every glossary term with its 48px icon, its rule and the units
 //   whose text uses it; a term's deep link lands on its row. A trigger said of
 //   someone else ("After an enemy dies") has its own line there.
@@ -22,7 +24,7 @@
 // The icon credits (CC BY 3.0) sit at its foot. Reads /content, /stats and
 // /fusions, each once while it stays open (CodexCache).
 import { GLOSSARY, STATUS_TERMS, scopedLabel, scopedTip, termDef, termGroup, type FixedTermId, type IconId, type TermGroup, type TermId } from "../../src/glossary";
-import type { FusionDiscovery, LibraryUnit, LibraryView, LineUnit, MvpContent, StatsView, UnitContent, UnitId, UnitVersion, VersionCredit } from "../../src/mvp/contract";
+import type { FusionDiscovery, IdeasView, LibraryUnit, LibraryView, LineUnit, MvpContent, StatsView, UnitContent, UnitId, UnitVersion, VersionCredit } from "../../src/mvp/contract";
 import type { UnitFilter } from "../../src/types";
 import { formSegments, formText } from "../../src/mvp/form-text";
 import { fuseUnits, lineUnitOf } from "../../src/mvp/forms";
@@ -33,6 +35,7 @@ import { card, creditOf, formRich, liveIdOf, roman, setCardAbilities, summonCard
 import { app, button, closable, h, isDesktop, onKeys, screen, show, who } from "../ui/dom";
 import { icon } from "../ui/icon";
 import { loadUnitRates, pct } from "../ui/unit-stats";
+import { ideaWhy, proposeScreen } from "./ideas";
 
 export type CodexTab = "units" | "fusions" | "library" | "keywords";
 export type CodexSort = "tier" | "win" | "pick";
@@ -64,6 +67,8 @@ export interface CodexCache {
   stats?: Promise<StatsView | null>;
   fusions?: Promise<FusionDiscovery[]>;
   library?: Promise<LibraryView>;
+  /** The ideas the player holds, for the Library's "Propose a new version" (M3-5); null when it failed. */
+  ideas?: Promise<IdeasView | null>;
   /** Each tab's window scroll, put back on a switch. */
   scroll: Partial<Record<CodexTab, number>>;
   /** Where the open Codex is (its tab and filters), for a redraw at 1024px. */
@@ -74,7 +79,7 @@ export const newCodexCache = (): CodexCache => ({ scroll: {} });
 /** Draws the Codex once; a tab or filter change redraws only its body and
  * keeps the scroll. On desktop (R2-9) a unit or a fusion opens in the
  * inspector on the right, never in an overlay (ui.md (e)). */
-export async function codexScreen(a: { content: MvpContent; onBack: () => void; state?: Partial<CodexState> | undefined; cache?: CodexCache }): Promise<void> {
+export async function codexScreen(a: { content: MvpContent; onBack: () => void; onUnknown?: () => void; state?: Partial<CodexState> | undefined; cache?: CodexCache }): Promise<void> {
   const cache = a.cache ?? newCodexCache();
   cache.stats ??= loadUnitRates(); // the dim rates line on unit sheets, and the rate sorts
   const st: CodexState = { ...DEFAULTS, ...a.state };
@@ -115,13 +120,27 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
     return sheet;
   };
   const liveSheet = (u: UnitContent): HTMLElement => history(creditOf(u.id), unitSheet(u, a.content));
-  const libSheet = (lib: LibraryView, l: LibraryUnit): HTMLElement => history(l, librarySheet(a.content, lib, l));
+  /** M3-5: the ideas held, fetched before a Library sheet opens (heldIdeas). */
+  let heldIdeas: IdeasView | null = null;
+  const loadIdeas = async (): Promise<void> => {
+    heldIdeas = await (cache.ideas ??= api.myIdeas().then((v) => v.ideas, () => null));
+  };
+  /** M3-5: the write screen for a new version of a Library unit; Back (and
+   * My ideas' Back once it's sent) returns to the Library as it was. */
+  const propose = (unit: UnitContent, all: MvpContent): void => {
+    const back = () => {
+      delete cache.ideas;
+      void codexScreen({ ...a, state: st, cache });
+    };
+    proposeScreen(unit, all, { onBack: back, onUnknown: a.onUnknown ?? a.onBack });
+  };
+  const libSheet = (lib: LibraryView, l: LibraryUnit): HTMLElement => history(l, librarySheet(a.content, lib, l, (all) => proposeRow(l.unit, all, heldIdeas, propose)));
   const openVersion = async (v: UnitVersion): Promise<void> => {
     const liveId = v.live ? liveIdOf(v.unitId) : undefined;
     const u = liveId ? a.content.units.find((x) => x.id === liveId) : undefined;
     if (u) return open(liveSheet(u));
     try {
-      const lib = await (cache.library ??= api.library());
+      const [lib] = await Promise.all([(cache.library ??= api.library()), loadIdeas()]);
       const l = lib.units.find((x) => x.unit.id === v.unitId);
       if (l) open(libSheet(lib, l));
     } catch {
@@ -142,7 +161,7 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
       else if (st.tab === "keywords") kids = [keywordsTab(a.content, open)];
       else if (st.tab === "library") {
         if (!body.hasChildNodes()) body.replaceChildren(h("div", { class: "dim", "data-testid": "codex-loading" }, "Loading the library…"));
-        const lib = await (cache.library ??= api.library());
+        const [lib] = await Promise.all([(cache.library ??= api.library()), loadIdeas()]);
         kids = libraryTab(a.content, lib, open, (l) => libSheet(lib, l));
       }
       else {
@@ -154,6 +173,7 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
       // A failed fetch is tried again on the next draw.
       delete cache.fusions;
       delete cache.library;
+      delete cache.ideas;
       kids = [h("div", { class: "error", "data-testid": "error" }, e instanceof Error ? e.message : String(e))];
     }
     if (n !== drawing || !body.isConnected) return; // redrawn or left meanwhile
@@ -465,8 +485,18 @@ function versionText(v: UnitVersion): string {
   return `v${v.version}${v.by ? ` by @${v.by.name}` : ""}, ${days}`;
 }
 
-/** A library unit's sheet, then its time live, its credit and its fusions. */
-function librarySheet(content: MvpContent, lib: LibraryView, l: LibraryUnit): HTMLElement {
+/** "Propose a new version" (M3-5): on with an idea held; off, with the reason beside it (M3-2's style), without. */
+function proposeRow(unit: UnitContent, all: MvpContent, ideas: IdeasView | null, propose: (unit: UnitContent, all: MvpContent) => void): HTMLElement {
+  const held = (ideas?.held ?? 0) > 0;
+  const b = button("Propose a new version", () => propose(unit, all), held ? "primary" : "primary off", "library-propose");
+  if (held) return h("div", { class: "row" }, b);
+  b.disabled = true;
+  const why = ideas ? ideaWhy(ideas.nextIn ?? 0) : "Your ideas didn't load";
+  return h("div", { class: "off-row" }, b, h("span", { class: "dim small", "data-testid": "library-propose-why" }, why));
+}
+
+/** A library unit's sheet, then its time live, its credit, "Propose a new version" (M3-5) and its fusions. */
+function librarySheet(content: MvpContent, lib: LibraryView, l: LibraryUnit, proposal: (all: MvpContent) => HTMLElement): HTMLElement {
   const all = withLibrary(content, lib);
   const byId = new Map(all.units.map((u) => [u.id, u]));
   const me = api.player?.id;
@@ -485,6 +515,7 @@ function librarySheet(content: MvpContent, lib: LibraryView, l: LibraryUnit): HT
   });
   s.append(
     h("div", { class: "dim small lib-meta", "data-testid": "library-meta" }, h("span", {}, "In the Library"), h("span", { "data-testid": "library-live" }, liveFor(l))),
+    proposal(all),
     h("div", { class: "label" }, `Fusions · ${l.fusions.length}`),
     fusions.length ? h("div", { class: "panel stack", "data-testid": "library-fusions" }, ...fusions) : h("div", { class: "dim small" }, "None were found while it was live."),
   );
