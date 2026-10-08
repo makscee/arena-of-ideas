@@ -7,6 +7,7 @@
 // file only adds the MVP's run, day and rating layer on top.
 
 import type { AbilityRegistry, BattleEvent, Condition, Selector, Side, Stats, StatusRegistry, When } from "../types.js";
+import type { Row } from "./units.js";
 
 export const MVP_API_VERSION = 1;
 /** Every API path hangs off this prefix, relative to the app's base URL
@@ -90,6 +91,12 @@ export interface MvpRules {
   ideaEveryRuns?: number;
   /** Ideas a player holds at most; runs finished at the cap earn none. Absent, 3. */
   ideaHold?: number;
+  /** Mission 2 (M2-8): votes (skips not counted) a candidate needs before it
+   * can qualify to enter. Absent, 5. */
+  voteMin?: number;
+  /** The most the novelty bonus adds to a candidate's vote share (at novelty
+   * 1). Absent, 0.1. */
+  voteNoveltyBonus?: number;
 }
 
 /** The turn cap round-3 runs started with (R3-26): their fights past it end
@@ -656,8 +663,52 @@ export interface Idea {
   data: IdeaData;
 }
 
-/** Empty until M2-5: each later slice adds its own optional keys. */
-export interface IdeaData {}
+/** Each later slice adds its own optional keys. */
+export interface IdeaData {
+  /** The unit as its author picked it (M2-6), its numbers placeholders until
+   * the overnight check (M2-8) replaces them with the tuned ones. */
+  row?: Row;
+  /** Its unit in mvp_units (M2-8): status `candidate` while voting,
+   * `rejected` when it failed the simulation. */
+  unitId?: UnitId;
+  /** Why it failed, one line a player can read (state `failed`). */
+  reason?: string;
+  /** When the overnight check judged it. */
+  checkedAt?: string;
+}
+
+/** An either/or vote card (M2-8): a candidate and a typical live unit, in
+ * random order. `pool` holds what both units' sheets need (their abilities
+ * and summons): a candidate isn't in the content. */
+export interface VoteCard {
+  candidateId: UnitId;
+  otherId: UnitId;
+  units: [UnitContent, UnitContent];
+  pool: { abilities: AbilityRegistry; statuses: StatusRegistry; summons: SummonContent[] };
+}
+
+/** POST /votes: the unit picked, or null to skip. */
+export interface VoteRequest {
+  candidateId: UnitId;
+  otherId: UnitId;
+  pick: UnitId | null;
+}
+
+/** A candidate's standing (M2-8, server/src/mvp/votes.ts): `share` the votes it
+ * won against typical live units (skips not counted), `novelty` 0–1 how rare
+ * its When/Who/Does are in the live pool, `score` = share + the novelty bonus. */
+export interface CandidateScore {
+  unitId: UnitId;
+  name: string;
+  emoji: string;
+  authorId: string | null;
+  votes: number;
+  won: number;
+  share: number;
+  novelty: number;
+  score: number;
+  qualified: boolean;
+}
 
 /** One of the player's own ideas, as My ideas shows it. */
 export type MyIdea = Omit<Idea, "playerId">;
@@ -712,6 +763,14 @@ export interface MyIdeasView {
 //                                                                  IDEA_TEXT_MIN–MAX characters, 409 no idea held)
 //   POST /api/v1/ideas/:ideaId/cancel        → MyIdeasView        (M2-4; takes back a `written` idea and refunds it: 404 not
 //                                                                  the caller's, 409 past `written` or ideas held at the cap)
+//   GET  /api/v1/votes/next                  → { card: VoteCard | null }  (M2-8; never the caller's own candidate, nor a pair they voted on)
+//   POST /api/v1/votes         VoteRequest   → { card: VoteCard | null }  (M2-8; the next card: 404 no such candidate or live unit,
+//                                                                  400 a pick of neither, 409 already voted on this pair or
+//                                                                  the caller's own candidate or a bot)
+//   POST /api/v1/dev/overnight-check         → { started: number }        (M2-8; starts the simulation on every `simulating` idea)
+//   POST /api/v1/dev/seed-candidate          → MyIdeasView                (M2-8; the caller's idea in `simulating`: a renamed live unit)
+//   POST /api/v1/dev/fake-votes              → CandidateScore[]           (M2-8; 5 fake votes on each candidate, 4 for it)
+//   GET  /api/v1/dev/candidates              → CandidateScore[]           (M2-8; every candidate, qualified ones first, best first)
 //   GET  /api/v1/stats                       → StatsView          (slice 11)
 
 export const PLAYER_HEADER = "X-Arena-Player";

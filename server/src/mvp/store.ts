@@ -121,6 +121,21 @@ export interface MvpStore {
   ideas(opts?: { playerId?: string; state?: IdeaState }): Idea[];
   /** Removes an idea (a `written` one its author took back). */
   deleteIdea(ideaId: string): void;
+  // Mission 2's votes (M2-8); only ./votes.ts writes them.
+  /** Adds a vote; false (nothing written) when the player already voted on this pair. */
+  addVote(v: Vote): boolean;
+  /** Votes oldest first: on one candidate, and/or by one player. */
+  votes(opts?: { candidateId?: UnitId; playerId?: string }): Vote[];
+}
+
+/** One player's either/or between a candidate and a live unit (M2-8):
+ * `pick` is the unit chosen, null for a skip. One per player per pair. */
+export interface Vote {
+  playerId: string;
+  candidateId: UnitId;
+  otherId: UnitId;
+  pick: UnitId | null;
+  createdAt: string;
 }
 
 export type UnitStatus = "candidate" | "live" | "library" | "rejected";
@@ -379,6 +394,15 @@ export class MemoryMvpStore implements MvpStore {
     return [...this.written.values()].filter((i) => (opts.playerId === undefined || i.playerId === opts.playerId) && (opts.state === undefined || i.state === opts.state)).map((i) => structuredClone(i));
   }
   deleteIdea(ideaId: string): void { this.written.delete(ideaId); }
+  private votesList: Vote[] = [];
+  addVote(v: Vote): boolean {
+    if (this.votesList.some((x) => x.playerId === v.playerId && x.candidateId === v.candidateId && x.otherId === v.otherId)) return false;
+    this.votesList.push({ ...v });
+    return true;
+  }
+  votes(opts: { candidateId?: UnitId; playerId?: string } = {}): Vote[] {
+    return this.votesList.filter((v) => (opts.candidateId === undefined || v.candidateId === opts.candidateId) && (opts.playerId === undefined || v.playerId === opts.playerId)).map((v) => ({ ...v }));
+  }
 }
 
 export const NO_IDEAS: IdeaCounts = { spent: 0, granted: 0, forfeited: 0 };

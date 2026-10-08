@@ -11,7 +11,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, Idea, IdeaState, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
-import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally } from "./store.js";
+import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally, type Vote } from "./store.js";
 
 const SQL_DIR = fileURLToPath(new URL("./sql/", import.meta.url));
 
@@ -255,6 +255,19 @@ export class SqliteMvpStore implements MvpStore {
       .map((r) => ideaOf(r)!);
   }
   deleteIdea(ideaId: string): void { this.write("DELETE FROM mvp_ideas WHERE id = ?", ideaId); }
+  addVote(v: Vote): boolean {
+    const r = this.db
+      .prepare("INSERT OR IGNORE INTO mvp_votes (player_id, candidate_id, other_id, pick, created_at) VALUES (?, ?, ?, ?, ?)")
+      .run(v.playerId, v.candidateId, v.otherId, v.pick, v.createdAt);
+    return r.changes > 0;
+  }
+  votes(opts: { candidateId?: UnitId; playerId?: string } = {}): Vote[] {
+    type VoteRow = { player_id: string; candidate_id: string; other_id: string; pick: string | null; created_at: string };
+    return (this.db
+      .prepare("SELECT * FROM mvp_votes WHERE (@candidate IS NULL OR candidate_id = @candidate) AND (@player IS NULL OR player_id = @player) ORDER BY rowid")
+      .all({ candidate: opts.candidateId ?? null, player: opts.playerId ?? null }) as VoteRow[])
+      .map((r) => ({ playerId: r.player_id, candidateId: r.candidate_id, otherId: r.other_id, pick: r.pick, createdAt: r.created_at }));
+  }
 }
 
 type IdeaRow = { id: string; player_id: string; text: string; state: IdeaState; created_at: string; json: string };

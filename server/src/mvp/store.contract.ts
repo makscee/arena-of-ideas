@@ -255,5 +255,17 @@ export function describeMvpStore(name: string, make: () => MvpStore): void {
       expect(s.idea("i3")).toBeUndefined();
       expect(s.ideas({ playerId: "p1" }).map((i) => i.ideaId)).toEqual(["i1"]);
     });
+
+    it("keeps votes (M2-8): one per player per pair, by candidate and player, oldest first", () => {
+      const s = make();
+      const at = "2026-10-08T08:00:00.000Z";
+      expect(s.addVote({ playerId: "p1", candidateId: "c1", otherId: "u1", pick: "c1", createdAt: at })).toBe(true);
+      expect(s.addVote({ playerId: "p1", candidateId: "c1", otherId: "u1", pick: "u1", createdAt: at })).toBe(false);
+      expect(s.addVote({ playerId: "p1", candidateId: "c1", otherId: "u2", pick: null, createdAt: at })).toBe(true);
+      expect(s.addVote({ playerId: "p2", candidateId: "c2", otherId: "u1", pick: "u1", createdAt: at })).toBe(true);
+      expect(s.votes({ candidateId: "c1" }).map((v) => [v.otherId, v.pick])).toEqual([["u1", "c1"], ["u2", null]]);
+      expect(s.votes({ playerId: "p2" })).toEqual([{ playerId: "p2", candidateId: "c2", otherId: "u1", pick: "u1", createdAt: at }]);
+      expect(s.votes()).toHaveLength(3);
+    });
   });
 }
