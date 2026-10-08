@@ -14,7 +14,7 @@
 //   another slice's or one that has shipped: a recorded file doesn't run again.
 // - Caches that aren't the game's record stay out of MvpStore (slice 10's name
 //   cache lives in ./fusions.ts).
-import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
+import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, Idea, IdeaState, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
 
 export interface MvpStore {
@@ -89,6 +89,14 @@ export interface MvpStore {
   /** The player's counts; all zero before any write. */
   ideaCounts(playerId: string): IdeaCounts;
   putIdeaCounts(playerId: string, c: IdeaCounts): void;
+  // Mission 2's written ideas (M2-4); ./ideas.ts and the later stages write them.
+  /** Stores or replaces the idea with this id. */
+  putIdea(i: Idea): void;
+  idea(ideaId: string): Idea | undefined;
+  /** Ideas oldest first: one player's, and/or in one state (the reader's queue). */
+  ideas(opts?: { playerId?: string; state?: IdeaState }): Idea[];
+  /** Removes an idea (a `written` one its author took back). */
+  deleteIdea(ideaId: string): void;
 }
 
 /** What a player's ideas are counted from, besides their finished runs
@@ -249,9 +257,18 @@ export class MemoryMvpStore implements MvpStore {
   private join: string | undefined;
   joinCode(): string | undefined { return this.join; }
   setJoinCode(code: string): void { this.join = code; }
-  private ideas = new Map<string, IdeaCounts>();
-  ideaCounts(playerId: string): IdeaCounts { return { ...(this.ideas.get(playerId) ?? NO_IDEAS) }; }
-  putIdeaCounts(playerId: string, c: IdeaCounts): void { this.ideas.set(playerId, { ...c }); }
+  private ideaCountsBy = new Map<string, IdeaCounts>();
+  ideaCounts(playerId: string): IdeaCounts { return { ...(this.ideaCountsBy.get(playerId) ?? NO_IDEAS) }; }
+  putIdeaCounts(playerId: string, c: IdeaCounts): void { this.ideaCountsBy.set(playerId, { ...c }); }
+  private written = new Map<string, Idea>();
+  putIdea(i: Idea): void {
+    this.written.set(i.ideaId, structuredClone(i));
+  }
+  idea(ideaId: string): Idea | undefined { const i = this.written.get(ideaId); return i && structuredClone(i); }
+  ideas(opts: { playerId?: string; state?: IdeaState } = {}): Idea[] {
+    return [...this.written.values()].filter((i) => (opts.playerId === undefined || i.playerId === opts.playerId) && (opts.state === undefined || i.state === opts.state)).map((i) => structuredClone(i));
+  }
+  deleteIdea(ideaId: string): void { this.written.delete(ideaId); }
 }
 
 export const NO_IDEAS: IdeaCounts = { spent: 0, granted: 0, forfeited: 0 };
