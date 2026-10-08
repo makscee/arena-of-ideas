@@ -16,6 +16,7 @@ import { changedTokens } from "./diff";
 import { icon } from "./icon";
 import { withPip } from "./card";
 import { scopePip } from "../../src/mvp/card-icons";
+import { rulesLangOpt } from "../lang";
 
 /** Opens a term's Codex entry; set by the Codex (R2-11). Unset: no link. */
 let codexLink: ((id: TermId, scope?: UnitFilter) => void) | null = null;
@@ -52,15 +53,15 @@ function unitRefButton(seg: DescribeSegment, kids: (Node | string)[]): Node[] {
 export function termInfo(seg: DescribeSegment): (TermDef & { id: TermId; scope?: UnitFilter }) | undefined {
   const id = seg.term;
   if (!id) return undefined;
-  const def = termDef(id);
+  const def = termDef(id, {}, rulesLangOpt());
   if (!def) return undefined;
   if (id === "target:eventUnit") {
     const label = seg.text.charAt(0).toUpperCase() + seg.text.slice(1);
-    const holder = termDef("target:holder")!;
-    return /^self$/i.test(seg.text) ? { ...holder, id, label } : { ...def, id, label };
+    const holder = termDef("target:holder", {}, rulesLangOpt())!;
+    return /^(self|себе|себя)$/i.test(seg.text) ? { ...holder, id, label } : { ...def, id, label };
   }
   // A trigger clause's rule follows its scope ("after an enemy dies"), and so does its Codex line.
-  return seg.scope ? { ...def, id, scope: seg.scope, label: scopedLabel(id, seg.scope) ?? def.label, tip: scopedTip(id, seg.scope) ?? def.tip } : { ...def, id };
+  return seg.scope ? { ...def, id, scope: seg.scope, label: scopedLabel(id, seg.scope, rulesLangOpt()) ?? def.label, tip: scopedTip(id, seg.scope, rulesLangOpt()) ?? def.tip } : { ...def, id };
 }
 
 /** The status a run is about: its own status term, or the status a "gets"

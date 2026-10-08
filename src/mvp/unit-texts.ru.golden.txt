@@ -1,0 +1,301 @@
+🥊 Fighter
+  archetype: A plain brawler whose every swing adds a jab.
+  sleeping: Атака: 1 урон переднему врагу.
+  awoken:   Атака: 1 урон всем врагам.
+🥔 Fodder
+  archetype: A sacrificial body that shields the team when it falls.
+  sleeping: Смерть: 1 Щит всем союзникам.
+  awoken:   Смерть: 1 Щит всем союзникам, затем лечение на 2 всем союзникам.
+🗡️ Squire
+  archetype: A starter who powers itself up before the fight.
+  sleeping: Начало боя: 2 Силы себе.
+  awoken:   Начало боя: 2 Силы и 2 Щита себе.
+🦟 Gnat
+  archetype: A pest that pings a random enemy every turn.
+  sleeping: Конец хода: 1 урон случайному врагу.
+  awoken:   Конец хода: 1 урон всем врагам.
+🍄 Spore
+  archetype: Its own death weakens the whole enemy line.
+  sleeping: Смерть: 1 Проклятие всем врагам.
+  awoken:   Смерть: 1 Проклятие всем врагам, и 1 Заморозка переднему врагу.
+🌱 Planter
+  archetype: Opens by planting a small body, and grows if there's no room.
+  sleeping: Начало боя: призвать Imp (1/3), затем 2 Живучести себе.
+  awoken:   Начало боя: призвать Treant (1/8), затем 2 Живучести и 2 Щита себе.
+💉 Nurse
+  archetype: A medic who patches each ally right after they're hit.
+  sleeping: Удар по союзнику: лечение на 1 ему.
+  awoken:   Удар по союзнику: лечение на 1 ему, затем 1 Щит ему.
+🎒 Prepper
+  archetype: Hands the team a little armour before the fight.
+  sleeping: Начало боя: 1 Щит всем союзникам.
+  awoken:   Начало боя: 1 Щит и 1 Благословение всем союзникам.
+📣 Coach
+  archetype: A pep talk: team-wide Strength at the start.
+  sleeping: Начало боя: 1 Сила всем союзникам.
+  awoken:   Начало боя: 1 Сила и 1 Щит всем союзникам.
+🦇 Bat
+  archetype: A flier whose strikes land on a random enemy.
+  sleeping: Атака: 1 урон случайному врагу.
+  awoken:   Атака: 1 урон и 1 Проклятие случайному врагу.
+⚡ Taser
+  archetype: Opens by freezing the front enemy.
+  sleeping: Начало боя: 1 Заморозка переднему врагу.
+  awoken:   Начало боя: 1 Заморозка и 2 урона переднему врагу.
+🔌 Wire
+  archetype: A wire that numbs the front enemy whenever an ally powers up.
+  sleeping: Союзник набирает АТК: 1 Заморозка переднему врагу.
+  awoken:   Союзник набирает АТК: 1 Заморозка и 1 урон переднему врагу.
+🌹 Rose
+  archetype: Thorns: hits back at the front when struck.
+  sleeping: Удар: 2 урона переднему врагу.
+  awoken:   Удар: 2 урона и 1 Яд переднему врагу.
+😵 Victim
+  archetype: A taunting tank whose pain powers the team.
+  sleeping: Удар: 1 Сила всем союзникам.
+  awoken:   Удар: 1 Сила всем союзникам, затем лечение на 1 всем союзникам.
+🧨 Saboteur
+  archetype: Opens by weakening the front enemy.
+  sleeping: Начало боя: 1 Проклятие переднему врагу.
+  awoken:   Начало боя: 1 Проклятие всем врагам.
+🤡 Distractor
+  archetype: A big decoy that swells each time it's hit.
+  sleeping: Удар: 1 Живучесть себе.
+  awoken:   Удар: 1 Живучесть себе, и 1 Проклятие переднему врагу.
+🦹 Henchman
+  archetype: Gets stronger each time a comrade falls (revenge).
+  sleeping: Смерть союзника: 2 Силы себе.
+  awoken:   Смерть союзника: 2 Силы себе, и заглушить переднего врага.
+🎯 Sniper
+  archetype: One big opening shot at a random enemy.
+  sleeping: Начало боя: 4 урона случайному врагу.
+  awoken:   Начало боя: 4 урона и 2 Яда случайному врагу.
+⛑️ Medic
+  archetype: Steady team heal at every turn end.
+  sleeping: Конец хода: лечение на 1 всем союзникам.
+  awoken:   Конец хода: лечение на 1 всем союзникам, затем 1 Щит всем союзникам.
+🛡️ Guardian
+  archetype: Puts a Shield on each ally the moment it's hit.
+  sleeping: Удар по союзнику: 1 Щит ему.
+  awoken:   Удар по союзнику: 1 Щит ему, и 1 Яд переднему врагу.
+🪙 Almsgiver
+  archetype: Turns Shields into heals for the shielded ally.
+  sleeping: Союзник получает Щит: лечение на 1 ему.
+  awoken:   Союзник получает Щит: лечение на 1 ему, и 1 Яд случайному врагу.
+✨ Sanctifier
+  archetype: Each heal also strengthens the healed ally.
+  sleeping: Лечение союзника: 1 Сила ему.
+  awoken:   Лечение союзника: 1 Сила ему, и урон, равный АТК, переднему врагу.
+🔋 Enhancer
+  archetype: Each Shield also strengthens the shielded ally.
+  sleeping: Союзник получает Щит: 1 Сила ему.
+  awoken:   Союзник получает Щит: 1 Сила ему, затем лечение на 1 ему.
+🪫 Battery
+  archetype: Charges itself on every ally heal.
+  sleeping: Лечение союзника: 1 Сила себе.
+  awoken:   Лечение союзника: 1 Сила себе, и 1 Заморозка случайному врагу.
+🧪 Injector
+  archetype: Poisons the front enemy when hit.
+  sleeping: Удар: 1 Яд переднему врагу.
+  awoken:   Удар: 1 Яд и 1 Заморозка переднему врагу.
+🐍 Venomancer
+  archetype: Strikes that stack Poison on the front enemy.
+  sleeping: Атака: 2 Яда переднему врагу.
+  awoken:   Атака: 2 Яда и 1 Проклятие переднему врагу.
+🐁 Plague Rat
+  archetype: Its own death poisons the whole enemy line.
+  sleeping: Смерть: 2 Яда всем врагам.
+  awoken:   Смерть: 2 Яда и 1 Заморозка всем врагам.
+🤺 Duelist
+  archetype: Lunges at the front enemy with full power at the start.
+  sleeping: Начало боя: урон, равный АТК, переднему врагу.
+  awoken:   Начало боя: урон, равный АТК, переднему врагу, затем 1 Проклятие переднему врагу.
+🪓 Berserker
+  archetype: Gets stronger with every wound.
+  sleeping: Удар: 1 Сила себе.
+  awoken:   Удар: 1 Сила себе, затем лечение на 1 себе.
+🔥 Emberling
+  archetype: Explodes on death, hurting every enemy.
+  sleeping: Смерть: 2 урона всем врагам.
+  awoken:   Смерть: 2 урона и 1 Заморозка всем врагам.
+🧊 Icebinder
+  archetype: Frostbite: every cursed enemy also freezes.
+  sleeping: Враг получает Проклятие: 1 Заморозка ему.
+  awoken:   Враг получает Проклятие: 1 Заморозка и 1 урон ему.
+🔮 Summoner
+  archetype: Leaves a wolf behind when it dies.
+  sleeping: Смерть: призвать Wolf (2/3).
+  awoken:   Смерть: призвать Warg (2/4).
+🪴 Gardener
+  archetype: Toughens every newly summoned ally.
+  sleeping: Призыв союзника: 2 Живучести ему.
+  awoken:   Призыв союзника: 2 Живучести ему, и 2 Яда случайному врагу.
+🍎 Fruiter
+  archetype: Drops a team-wide heal when it dies.
+  sleeping: Смерть: лечение на 3 всем союзникам.
+  awoken:   Смерть: лечение на 3 всем союзникам, затем 1 Благословение всем союзникам.
+🩸 Leech
+  archetype: Heals itself by its damage on every strike.
+  sleeping: Атака: лечение на АТК себе.
+  awoken:   Атака: лечение на АТК себе, затем 1 Щит себе.
+💧 Bloodthinner
+  archetype: Makes each poisoned enemy bleed at once.
+  sleeping: Враг получает Яд: 1 урон ему.
+  awoken:   Враг получает Яд: 1 урон ему, и 1 Проклятие случайному врагу.
+🧙 Hag
+  archetype: Each Poison it sees also curses the target.
+  sleeping: Враг получает Яд: 1 Проклятие ему.
+  awoken:   Враг получает Яд: 1 Проклятие и 1 урон ему.
+🃏 Trickster
+  archetype: Each Curse sets off damage.
+  sleeping: Враг получает Проклятие: 2 урона случайному врагу.
+  awoken:   Враг получает Проклятие: 2 урона случайному врагу, и 1 урон ему.
+🗝️ Custodian
+  archetype: Shields the team every time an ally falls.
+  sleeping: Смерть союзника: 2 Щита всем союзникам.
+  awoken:   Смерть союзника: 2 Щита всем союзникам, затем лечение на 1 всем союзникам.
+🤫 Silencer
+  archetype: Opens by shutting off the front enemy's ability.
+  sleeping: Начало боя: заглушить переднего врага.
+  awoken:   Начало боя: заглушить переднего врага, затем 2 урона переднему врагу.
+🦅 Scavenger
+  archetype: Heals itself off fallen allies.
+  sleeping: Смерть союзника: лечение на 3 себе.
+  awoken:   Смерть союзника: лечение на 3 себе, затем 1 Благословение себе.
+🧜 Syren
+  archetype: A lullaby that freezes a random enemy each turn.
+  sleeping: Начало хода: 1 Заморозка случайному врагу.
+  awoken:   Начало хода: 1 Заморозка и 1 Проклятие случайному врагу.
+🧱 Bulwark
+  archetype: A wall that starts heavily shielded.
+  sleeping: Начало боя: 3 Щита себе.
+  awoken:   Начало боя: 3 Щита и 1 Благословение себе.
+🪨 Stoneskin
+  archetype: Hardens with every hit it takes.
+  sleeping: Удар: 1 Щит себе.
+  awoken:   Удар: 1 Щит всем союзникам.
+🎖️ Commander
+  archetype: A captain whose every strike shields the line.
+  sleeping: Атака: 1 Щит всем союзникам.
+  awoken:   Атака: 1 Щит и 1 Сила всем союзникам.
+🥁 War Drummer
+  archetype: A team Strength ramp every turn.
+  sleeping: Начало хода: 1 Сила всем союзникам.
+  awoken:   Начало хода: 1 Сила всем союзникам, затем лечение на 1 всем союзникам.
+🩺 Physician
+  archetype: Saps the front enemy every turn.
+  sleeping: Конец хода: 1 Проклятие переднему врагу.
+  awoken:   Конец хода: 1 Проклятие и 1 Яд переднему врагу.
+⚔️ Crusader
+  archetype: A heavy hit at the front every turn.
+  sleeping: Начало хода: 2 урона переднему врагу.
+  awoken:   Начало хода: 2 урона и 1 Проклятие переднему врагу.
+🌩️ Lightning
+  archetype: Ally power-ups call down random strikes.
+  sleeping: Союзник набирает АТК: 2 урона случайному врагу.
+  awoken:   Союзник набирает АТК: 2 урона и 1 Проклятие случайному врагу.
+🪄 Battle Mage
+  archetype: Ally Shields fire random bolts.
+  sleeping: Союзник получает Щит: 2 урона случайному врагу.
+  awoken:   Союзник получает Щит: 2 урона и 1 Яд случайному врагу.
+🔬 Pathologist
+  archetype: A numbing toxin: every poisoned enemy also freezes.
+  sleeping: Враг получает Яд: 1 Заморозка ему.
+  awoken:   Враг получает Яд: 1 Заморозка и 1 Проклятие ему.
+🦤 Plague Doctor
+  archetype: Poisons the whole enemy line at the start.
+  sleeping: Начало боя: 2 Яда всем врагам.
+  awoken:   Начало боя: 2 Яда и 1 Проклятие всем врагам.
+🧫 Virus
+  archetype: Each kill spreads Poison to all enemies.
+  sleeping: Смерть врага: 2 Яда всем врагам.
+  awoken:   Смерть врага: 2 Яда и 1 Проклятие всем врагам.
+💀 Necromancer
+  archetype: Raises fallen allies.
+  sleeping: Смерть союзника: воскресить павшего союзника с 1 ОЗ.
+  awoken:   Смерть союзника: воскресить павшего союзника с 1 ОЗ, затем призвать Imp (1/3) за павшего союзника.
+⚰️ Sexton
+  archetype: Digs a fresh body for every ally that falls.
+  sleeping: Смерть союзника: призвать Wraith (3/3).
+  awoken:   Смерть союзника: призвать Ghoul (3/3).
+🪸 Fungoid
+  archetype: Sprouts an Imp every turn.
+  sleeping: Конец хода: призвать Imp (1/3).
+  awoken:   Конец хода: призвать Puffball (1/3).
+🌀 Mesmerist
+  archetype: Opens by locking down the front enemy.
+  sleeping: Начало боя: 1 Заморозка и 1 Проклятие переднему врагу.
+  awoken:   Начало боя: заглушить переднего врага, затем 1 Заморозка и 1 Проклятие переднему врагу.
+🏰 Keeper
+  archetype: Shields the team every turn.
+  sleeping: Начало хода: 1 Щит всем союзникам.
+  awoken:   Начало хода: 1 Щит всем союзникам, затем лечение на 1 всем союзникам.
+🌘 Wane
+  archetype: Each ally heal saps the front enemy.
+  sleeping: Лечение союзника: 1 Проклятие переднему врагу.
+  awoken:   Лечение союзника: 1 Проклятие и 1 урон переднему врагу.
+🌾 Harvest
+  archetype: Each kill feeds the team a heal.
+  sleeping: Смерть врага: лечение на 2 всем союзникам.
+  awoken:   Смерть врага: лечение на 2 всем союзникам, затем 1 Щит всем союзникам.
+💰 Robber
+  archetype: Steals HP whenever an enemy is cursed.
+  sleeping: Враг получает Проклятие: 1 Живучесть себе.
+  awoken:   Враг получает Проклятие: 1 Живучесть себе, и 1 урон переднему врагу.
+🕯️ Ritualist
+  archetype: Each ally death becomes damage to all enemies.
+  sleeping: Смерть союзника: 2 урона всем врагам.
+  awoken:   Смерть союзника: 2 урона и 1 Яд всем врагам.
+👑 King
+  archetype: Grants max HP to the whole team at the start.
+  sleeping: Начало боя: 2 Живучести всем союзникам.
+  awoken:   Начало боя: 2 Живучести и 1 Благословение всем союзникам.
+⛪ Priest
+  archetype: Avenges the fallen by silencing an enemy.
+  sleeping: Смерть союзника: заглушить переднего врага.
+  awoken:   Смерть союзника: заглушить переднего врага, затем 1 Проклятие переднему врагу.
+😇 Divinity
+  archetype: Each ally death blesses the team against dying.
+  sleeping: Смерть союзника: 1 Благословение всем союзникам.
+  awoken:   Смерть союзника: 1 Благословение и 2 Щита всем союзникам.
+🐦 Phoenix
+  archetype: Comes back from death, many times over.
+  sleeping: Начало боя: 8 Благословений себе.
+  awoken:   Начало боя: 8 Благословений себе, затем призвать Chick (1/3).
+🧛 Lilith
+  archetype: Grows on every kill.
+  sleeping: Смерть врага: 2 Силы себе.
+  awoken:   Смерть врага: 2 Силы себе, затем лечение на АТК себе.
+☠️ Famin
+  archetype: Slowly poisons random enemies.
+  sleeping: Конец хода: 1 Яд случайному врагу.
+  awoken:   Конец хода: 1 Яд и 1 Проклятие случайному врагу.
+🧠 Mentalist
+  archetype: Each ally death freezes all enemies.
+  sleeping: Смерть союзника: 1 Заморозка всем врагам.
+  awoken:   Смерть союзника: 1 Заморозка и 1 Проклятие всем врагам.
+⚖️ Equalizer
+  archetype: Ally power-ups sap the front enemy.
+  sleeping: Союзник набирает АТК: 1 Проклятие переднему врагу.
+  awoken:   Союзник набирает АТК: 1 Проклятие и 1 урон переднему врагу.
+🌋 Ruin
+  archetype: Opens with damage to the whole enemy line.
+  sleeping: Начало боя: 2 урона всем врагам.
+  awoken:   Начало боя: 2 урона и 1 Проклятие всем врагам.
+🌻 Fertilizer
+  archetype: Arms and armours every new summon.
+  sleeping: Призыв союзника: 2 Силы и 2 Щита ему.
+  awoken:   Призыв союзника: 2 Силы, 2 Щита и 1 Благословение ему.
+🦴 Morbid
+  archetype: Each ally death weakens all enemies.
+  sleeping: Смерть союзника: 1 Проклятие всем врагам.
+  awoken:   Смерть союзника: 1 Проклятие и 1 Яд всем врагам.
+
+Statuses
+  Сила: +1 АТК за заряд.
+  Живучесть: +1 ОЗ за заряд.
+  Проклятие: -1 АТК за заряд.
+  Яд: Конец хода: урон, равный числу зарядов, носителю, затем потратить 1 заряд.
+  Щит: Перед ударом: заблокировать урон до числа зарядов, тратя их.
+  Заморозка: Перед атакой: отменить её, потратить 1 заряд.
+  Благословение: Перед смертью: отменить смерть, установить носителю ОЗ, равные числу зарядов, потратить этот статус.

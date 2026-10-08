@@ -3,7 +3,8 @@
 // Does. Display-only, built from formSegments' glossary terms, so fusions and
 // summons get it free. Pure data; the client draws it (mobile/ui/card.ts).
 
-import { scopeLabel, termDef, termIcon, triggerLabel, type IconId, type TermId } from "../glossary.js";
+import type { Lang } from "../describe.js";
+import { scopedLabel as glossaryScopedLabel, scopeLabel, termDef, termIcon, triggerLabel, type IconId, type TermId } from "../glossary.js";
 import type { AbilityRegistry, UnitFilter } from "../types.js";
 import type { UnitForm } from "./contract.js";
 import { formSegments } from "./form-text.js";
@@ -43,9 +44,9 @@ export function scopedLabel(label: string, pip: Pip | undefined): string {
  * dropped, but a Does that shares its icon with the When stays ("Ally healed:
  * heal it" shows the heal twice). An authored text line is ignored: the icons
  * come from the form's parts. */
-export function cardIcons(form: UnitForm, abilities: AbilityRegistry): CardIcon[] {
+export function cardIcons(form: UnitForm, abilities: AbilityRegistry, lang?: Lang): CardIcon[] {
   const { text: _authored, ...parts } = form;
-  const segs = formSegments(parts, abilities);
+  const segs = formSegments(parts, abilities, lang);
   const out: CardIcon[] = [];
   const seen = new Set<string>();
   const add = (c: CardIcon | null) => {
@@ -66,12 +67,14 @@ export function cardIcons(form: UnitForm, abilities: AbilityRegistry): CardIcon[
       const pip = scopePip(trig.scope);
       // A status trigger reads as the status: "Gets Shield", "Ally loses Poison".
       const base = status ? triggerLabel(trig.term, status) : (termDef(trig.term)?.label ?? trig.term);
-      if (ic) add({ icon: ic, role: "when", tone: "when", label: scopedLabel(base, pip), ...(pip ? { pip } : {}) });
+      // Russian scopes its own way ("Смерть союзника", "Союзник получает Щит").
+      const label = lang === "ru" ? (status ? triggerLabel(trig.term, status, trig.scope, lang) : (glossaryScopedLabel(trig.term, trig.scope, lang) ?? trig.term)) : scopedLabel(base, pip);
+      if (ic) add({ icon: ic, role: "when", tone: "when", label, ...(pip ? { pip } : {}) });
       continue;
     }
     const term = seg.term;
     if (!term) continue;
-    add(termCardIcon(term, seg));
+    add(termCardIcon(term, seg, lang));
   }
   const rank = { when: 0, who: 1, does: 2 } as const;
   return out.sort((a, b) => rank[a.role] - rank[b.role]);
@@ -79,8 +82,8 @@ export function cardIcons(form: UnitForm, abilities: AbilityRegistry): CardIcon[
 
 /** A Who or Does run's icon: a target in its side's colour, an effect or a
  * status in its own. Stats, conditions and plain words get none. */
-function termCardIcon(term: TermId, seg: { text: string; side?: string }): CardIcon | null {
-  const def = termDef(term);
+function termCardIcon(term: TermId, seg: { text: string; side?: string }, lang?: Lang): CardIcon | null {
+  const def = termDef(term, {}, lang);
   const ic = termIcon(term);
   if (!def || !ic) return null;
   if (term.startsWith("target:")) {

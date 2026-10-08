@@ -20,7 +20,7 @@
 import { boardAt, type BoardState, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView, SummonContent } from "../../src/mvp/contract";
 import { chainCappedTip, STATUS_TERMS, suddenDeathTip, termDef, timeUpTip, termIcon, triggerLabel, type IconId, type TermId } from "../../src/glossary";
-import { BEAT_MS, NO_ROOM, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, foldTurnsOf, isLogFold, keyMomentsOf, logRowsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, turnLabel, whyILost as lossChains, sidesOf, turnSummaryOf, turnEndsOf, turnEndHoldMs, totalsText, TURN_END_MS, runningTotalsOf, runRowText, turnSoFarIds, beatIdsOf, changeOf, type RunRow, type TurnSummary, type UnitTurnTotals, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type LogRow, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
+import { BEAT_MS, NO_ROOM, NO_ROOM_RU, setTraceLang, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, foldTurnsOf, isLogFold, keyMomentsOf, logRowsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, turnLabel, whyILost as lossChains, sidesOf, turnSummaryOf, turnEndsOf, turnEndHoldMs, totalsText, TURN_END_MS, runningTotalsOf, runRowText, turnSoFarIds, beatIdsOf, changeOf, type RunRow, type TurnSummary, type UnitTurnTotals, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type LogRow, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { summonId } from "../../src/describe";
@@ -30,6 +30,11 @@ import { icon } from "../ui/icon";
 import { statusesShown, STATUS_ROW_FALLBACK } from "../ui/status-row";
 import { beatCues, endSound } from "../ui/sound-map";
 import { play as playSfx } from "../ui/sound";
+import { rulesLangOpt } from "../lang";
+import { ruStatusName } from "../../src/describe-ru";
+
+/** The Russian caption words richCaption highlights (M4-3), after the English ones. */
+const RU_CAPTION_TERMS = "|\\(\\d+ поглощено\\)|Цепь прервана после\\s\\d+ шаг(?:а|ов)|Время вышло|Нет места|[Вв]незапная смерть|(?<![\\p{L}\\d])(?:АТК|ОЗ)(?![\\p{L}\\d])";
 
 /** The least room the phone's end card takes under the caption (its word,
  * its line, two key moments and its buttons); with less (a phone on its side)
@@ -134,6 +139,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const sides = sidesOf(log);
   // Playback goes beat by beat (round 2, R2-12): a strike or a turn end plus
   // everything it sets off, its effects landing in quick waves.
+  // M4-3: captions, change labels and chain roots in the rules' language.
+  setTraceLang(rulesLangOpt());
   const beats = beatPlayOf(log, stepsOf(log, TAGGED, sides, a.you ? { you: a.you } : { sideName: owner }), TAGGED);
   // Each beat's big moments (a kill, a big hit, a summon, the first fatigue, the last beat) add time (round 3, note 14).
   const weights = weightsOf(log, beats);
@@ -166,13 +173,16 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   // statuses and the fixed words. Longest first, so "Rat King" beats "Rat".
   const logStatuses = new Set(log.flatMap((e) => (e.type === "StatusApplied" ? [e.status] : [])));
   const esc = (w: string) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const words = [...new Set([...Object.keys(STATUS_TERMS), ...logStatuses, "Fatigue"])].filter(Boolean).sort((p, q) => q.length - p.length);
+  // In Russian the captions name statuses in Russian (M4-3): each Russian name
+  // maps back to its status.
+  const ruStatus = new Map(rulesLangOpt() === "ru" ? [...new Set([...Object.keys(STATUS_TERMS), ...logStatuses])].map((k) => [ruStatusName(k), k] as const) : []);
+  const words = [...new Set([...Object.keys(STATUS_TERMS), ...logStatuses, "Fatigue", ...ruStatus.keys(), ...(ruStatus.size ? ["Усталость"] : [])])].filter(Boolean).sort((p, q) => q.length - p.length);
   // A battle the turn cap stopped (R3-26): its end caption leads with "Time's up".
   const lastEvent = log[log.length - 1];
   const timeUpCap = lastEvent?.type === "BattleEnd" && lastEvent.timeUp ? lastEvent.turns : null;
   // Sudden death (R4-1): the turn it began in this battle, for its rule's tip.
   const suddenAt = Math.min(...log.flatMap((e) => ((e.type === "Fatigue" && e.suddenDeath) || e.type === "SummonFailed" ? [e.turn] : [])));
-  const captionTerms = new RegExp(`\\(\\d+ absorbed\\)|Chain stopped after\\s\\d+ steps|Time's up|No room|[Ss]udden death|(?<![\\p{L}\\d])(?:${words.map(esc).join("|")})(?![\\p{L}\\d])|\\b(?:PWR|HP)\\b|[−+]\\d+(?!\\d)(?!\\s+more)`, "gu");
+  const captionTerms = new RegExp(`\\(\\d+ absorbed\\)|Chain stopped after\\s\\d+ steps|Time's up|No room|[Ss]udden death|(?<![\\p{L}\\d])(?:${words.map(esc).join("|")})(?![\\p{L}\\d])|\\b(?:PWR|HP)\\b|[−+]\\d+(?!\\d)(?!\\s+more)${ruStatus.size ? RU_CAPTION_TERMS : ""}`, "gu");
 
   let at = -1; // index of the beat on screen; -1 = the line-up before the first beat
   let wave = 0; // waves of that beat landed so far, minus one
@@ -819,7 +829,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         const ic = def?.icon;
         return h(
           "span",
-          { class: `bv-st tone-${def?.tone ?? "plain"}`, title: `${st.status} ${st.stacks}`, "aria-label": `${st.status} ${st.stacks}`, "data-testid": "card-status", "data-status": st.status },
+          { class: `bv-st tone-${def?.tone ?? "plain"}`, title: `${rulesLangOpt() ? ruStatusName(st.status) : st.status} ${st.stacks}`, "aria-label": `${rulesLangOpt() ? ruStatusName(st.status) : st.status} ${st.stacks}`, "data-testid": "card-status", "data-status": st.status },
           ...(ic ? [icon(ic, 12)] : [st.status.slice(0, 2)]),
           h("b", {}, `${st.stacks}`),
         );
@@ -866,11 +876,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         { class: "stack", "data-testid": "live-statuses", "data-count": String(u.statuses.length) },
         u.silenced ? h("div", { class: "bv-live-st", "data-testid": "now-silenced" }, h("b", {}, "Silenced: "), h("span", { class: "dim" }, "its ability is off.")) : null,
         ...u.statuses.map((st) => {
-          const def = STATUS_TERMS[st.status] ?? termDef(`status:${st.status}`);
+          const def = (rulesLangOpt() ? termDef(`status:${st.status}`, {}, rulesLangOpt()) : undefined) ?? STATUS_TERMS[st.status] ?? termDef(`status:${st.status}`);
           return h(
             "div",
             { class: "bv-live-st", "data-testid": "live-status", "data-status": st.status, "data-stacks": String(st.stacks) },
-            h("span", { class: `bv-live-st-head tone-${def?.tone ?? "plain"}` }, ...(def?.icon ? [icon(def.icon, 18)] : []), h("b", {}, ` ${st.status} ×${st.stacks}`)),
+            h("span", { class: `bv-live-st-head tone-${def?.tone ?? "plain"}` }, ...(def?.icon ? [icon(def.icon, 18)] : []), h("b", {}, ` ${rulesLangOpt() ? ruStatusName(st.status) : st.status} ×${st.stacks}`)),
             def?.tip ? h("span", { class: "dim" }, def.tip) : null,
           );
         }),
@@ -899,7 +909,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const trig = causeIcon(c);
     const eff = termIcon(c.effect as TermId, c.effectStatus);
     const effTone = (c.effectStatus ? termDef(`status:${c.effectStatus}`, a.content.statuses)?.tone : undefined) ?? termDef(c.effect as TermId, a.content.statuses)?.tone ?? "plain";
-    const does = c.effectStatus ?? termDef(c.effect as TermId)?.label ?? "";
+    const does = (c.effectStatus ? (rulesLangOpt() ? termDef(`status:${c.effectStatus}`, a.content.statuses, "ru")?.label : undefined) ?? c.effectStatus : undefined) ?? termDef(c.effect as TermId, {}, rulesLangOpt())?.label ?? "";
     const b = h(
       "button",
       { class: `bv-badge${newest ? "" : " past"}`, "data-testid": "trigger-badge", "data-cause": c.cause, "data-kind": c.kind, "data-trigger": c.cause.startsWith("trigger:") ? c.cause : "", "data-effect": c.effect, "aria-label": `${causeLabel(c)} → ${does}` },
@@ -956,7 +966,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** A cause in words, scoped like the card says it: "Ally gets Shield", "Strikes", "Poison". */
   function causeLabel(c: Cause): string {
     if (c.kind === "status") return c.cause.slice("status:".length);
-    return triggerLabel(c.cause as TermId, c.causeStatus, c.causeScope);
+    return triggerLabel(c.cause as TermId, c.causeStatus, c.causeScope, rulesLangOpt());
   }
   /** A card in its slot, with the trigger badge on its outer edge when one
    * fired, and its floating numbers (outside the card: its clip-path would cut them). */
@@ -1581,7 +1591,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   function termsIn(text: string, led: string | null = null): Node[] {
     // A number keeps to the word before it ("blocks 2", "→ −3") and PWR / HP
     // to their number: a lone "2" wrapped onto its own line (R3-26).
-    text = text.replace(/ (?=[−+×]?\d)/g, "\u00A0").replace(/(\d) (?=(?:PWR|HP)\b)/g, "$1\u00A0");
+    text = text.replace(/ (?=[−+×]?\d)/g, "\u00A0").replace(/(\d) (?=(?:PWR|HP)\b)/g, "$1\u00A0").replace(/(\d) (?=(?:АТК|ОЗ)(?![\p{L}\d]))/gu, "$1\u00A0");
     const out: Node[] = [];
     let i = 0;
     for (const m of text.matchAll(captionTerms)) {
@@ -1595,21 +1605,24 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   function captionTerm(t: string, led: string | null = null): Node {
     const absorbed = /^\((\d+) absorbed\)$/.exec(t);
     if (absorbed) return h("span", { class: "bv-ct tone-shield", "data-testid": "caption-term" }, icon("shield", 14), `\u00A0${absorbed[1]}\u00A0blocked`);
-    const status = STATUS_TERMS[t] ?? (logStatuses.has(t) ? termDef(`status:${t}`) : undefined);
+    const absorbedRu = /^\((\d+) поглощено\)$/.exec(t);
+    if (absorbedRu) return h("span", { class: "bv-ct tone-shield", "data-testid": "caption-term" }, icon("shield", 14), `\u00A0${absorbedRu[1]}\u00A0заблокировано`);
+    const key = ruStatus.get(t) ?? t;
+    const status = STATUS_TERMS[key] && !ruStatus.size ? STATUS_TERMS[key] : (STATUS_TERMS[key] || logStatuses.has(key) ? termDef(`status:${key}`, {}, rulesLangOpt()) : undefined);
     if (status) return h("span", { class: `bv-ct tone-${status.tone}`, "data-testid": "caption-term" }, ...(status.icon ? [icon(status.icon, 14), " "] : []), t);
-    if (t === "Fatigue") return h("span", { class: "bv-ct tone-dmg", "data-testid": "caption-term" }, ...(led === "battle:fatigue" ? [] : [icon("hourglass", 14), " "]), t);
+    if (t === "Fatigue" || t === "Усталость") return h("span", { class: "bv-ct tone-dmg", "data-testid": "caption-term" }, ...(led === "battle:fatigue" ? [] : [icon("hourglass", 14), " "]), t);
     // A capped cascade: the breaking chain, its rule with this battle's own
     // cap. A caption that leads with that icon (its cause, R3-19) keeps only
     // the words here, as Fatigue's does.
-    const capped = /^Chain stopped after\s(\d+) steps$/.exec(t);
-    if (capped) return h("span", { class: "bv-ct tone-plain", "data-testid": "caption-term", title: chainCappedTip(Number(capped[1])) }, ...(led === "battle:chainCapped" ? [] : [icon("breaking-chain", 14), " "]), t);
+    const capped = /^Chain stopped after\s(\d+) steps$/.exec(t) ?? /^Цепь прервана после\s(\d+) шаг(?:а|ов)$/.exec(t);
+    if (capped) return h("span", { class: "bv-ct tone-plain", "data-testid": "caption-term", title: chainCappedTip(Number(capped[1]), rulesLangOpt()) }, ...(led === "battle:chainCapped" ? [] : [icon("breaking-chain", 14), " "]), t);
     // A summon or revive that found its line full (R4-2).
-    if (t === NO_ROOM) return h("span", { class: "bv-ct tone-plain", "data-testid": "caption-term", title: termDef("battle:noRoom")!.tip }, ...(led === "battle:noRoom" ? [] : [icon(termDef("battle:noRoom")!.icon!, 14), " "]), t);
+    if (t === NO_ROOM || t === NO_ROOM_RU) return h("span", { class: "bv-ct tone-plain", "data-testid": "caption-term", title: termDef("battle:noRoom", {}, rulesLangOpt())!.tip }, ...(led === "battle:noRoom" ? [] : [icon(termDef("battle:noRoom")!.icon!, 14), " "]), t);
     // The turn cap ran out: the hourglass and the rule with this battle's own cap.
-    if (t === "Time's up" && timeUpCap !== null) return h("span", { class: "bv-ct tone-plain", "data-testid": "caption-term", title: timeUpTip(timeUpCap) }, icon("hourglass", 14), " ", t);
-    if (/^sudden death$/i.test(t)) return h("span", { class: "bv-ct tone-dmg", "data-testid": "caption-term", title: suddenDeathTip(Number.isFinite(suddenAt) ? suddenAt : 20) }, icon("death-skull", 14), " ", t);
-    if (t === "PWR") return h("span", { class: "tone-pwr" }, t);
-    if (t === "HP") return h("span", { class: "tone-hp" }, t);
+    if ((t === "Time's up" || t === "Время вышло") && timeUpCap !== null) return h("span", { class: "bv-ct tone-plain", "data-testid": "caption-term", title: timeUpTip(timeUpCap, rulesLangOpt()) }, icon("hourglass", 14), " ", t);
+    if (/^(sudden death|внезапная смерть)$/i.test(t)) return h("span", { class: "bv-ct tone-dmg", "data-testid": "caption-term", title: suddenDeathTip(Number.isFinite(suddenAt) ? suddenAt : 20, rulesLangOpt()) }, icon("death-skull", 14), " ", t);
+    if (t === "PWR" || t === "АТК") return h("span", { class: "tone-pwr" }, t);
+    if (t === "HP" || t === "ОЗ") return h("span", { class: "tone-hp" }, t);
     if (t.startsWith("−")) return h("b", { class: "tone-dmg" }, t);
     if (t.startsWith("+")) return h("b", { class: "tone-heal" }, t);
     return document.createTextNode(t);
@@ -2026,9 +2039,9 @@ function chainView(c: Chain, o: { units: Map<string, BattleUnit>; summoned: Map<
     const s = o.summoned.get(id);
     const u = o.units.get(id) ?? (s?.form ? { emoji: s.emoji, recipe: s.form } : undefined);
     // Scoped like the card says it: "Ally gets Shield", "Ally dies" (R3-19).
-    const label = n.trigger ? triggerLabel(n.trigger as TermId, n.triggerStatus, n.triggerScope) : undefined;
+    const label = n.trigger ? triggerLabel(n.trigger as TermId, n.triggerStatus, n.triggerScope, rulesLangOpt()) : undefined;
     if (n.status) {
-      const tip = termDef(`status:${n.status}` as TermId, o.content.statuses)?.tip;
+      const tip = termDef(`status:${n.status}` as TermId, o.content.statuses, rulesLangOpt())?.tip;
       return [h("span", { class: "bv-step-head" }, ...tagOf(n), h("b", { class: who }, ...text(n.text)), label ? h("span", { class: "dim" }, ` · ${label}`) : null), tip ? h("span", { class: "bv-step-text dim" }, tip) : null].filter((x): x is HTMLElement => x !== null);
     }
     const w = u && n.ref?.when !== undefined ? u.recipe.when[n.ref.when] : undefined;
