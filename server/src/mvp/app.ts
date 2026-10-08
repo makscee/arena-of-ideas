@@ -17,6 +17,7 @@ import { isAdmin, isJoinCode, JoinRefused, joinOpen, NAME_RE, openJoin, redeemIn
 import { abandon, currentRun, decide, preview, startRun } from "./runs.js";
 import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
 import { servedContent } from "./pool.js";
+import { championSvg, shareLang, sharePng, unitSvg } from "./share.js";
 import { statsView } from "./stats.js";
 import { candidateScores, castVote, fakeVotes, nextCard, overnightCheck, seedCandidate, waitingForCheck } from "./votes.js";
 
@@ -302,6 +303,26 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   // and the units that have left.
   api.get("/credits", (c) => c.json(creditsView(rt, playerOf(c)?.id)));
   api.get("/library", (c) => c.json(libraryView(rt)));
+
+  // M4-7: share cards, PNGs for link previews and the daily post. Rendered
+  // once per content (share.ts caches by the SVG's hash, the ETag here).
+  const png = (c: Context, svg: string | null) => {
+    if (!svg) return bad(c, 404, "nothing to share");
+    const { png: body, hash } = sharePng(svg);
+    const etag = `"${hash}"`;
+    const headers = { "Content-Type": "image/png", "Cache-Control": "public, max-age=600", ETag: etag };
+    if (c.req.header("If-None-Match") === etag) return c.body(null, 304, headers);
+    return c.body(new Uint8Array(body), 200, headers);
+  };
+  const langOf = (c: Context) => shareLang(c.req.query("lang"), c.req.header("Accept-Language"));
+  api.get("/share/champion/:file", (c) => {
+    const m = /^(\d{1,9})\.png$/.exec(c.req.param("file"));
+    return png(c, m ? championSvg(rt, Number(m[1]), langOf(c)) : null);
+  });
+  api.get("/share/unit/:file", (c) => {
+    const m = /^(.{1,80})\.png$/.exec(c.req.param("file"));
+    return png(c, m ? unitSvg(rt, m[1]!, langOf(c)) : null);
+  });
 
   // Dev-only tools (MvpDeps.dev, MVP_DEV=1 in main.ts): 404 without it, and
   // on an invite-only server for anyone but an admin invite's player.
