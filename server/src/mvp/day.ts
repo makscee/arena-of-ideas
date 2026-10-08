@@ -7,11 +7,16 @@
 // src/mvp/day.ts.
 import type { Champion, DayState, DayView, PlayerRef, Rating } from "../../../src/mvp/contract.js";
 import { dayLabel, nextRollover, playoffEntrants, playoffSlays, playRoundRobin } from "../../../src/mvp/day.js";
+import { describePlan, rotate } from "./rotation.js";
 import type { RunDeps } from "./runs.js";
 import type { MvpJob } from "./runtime.js";
 import type { MvpStore } from "./store.js";
 
-type DayDeps = Pick<RunDeps, "store" | "now" | "rules" | "content">;
+type DayDeps = Pick<RunDeps, "store" | "now" | "rules" | "content"> & {
+  /** M2-10's rotation (MVP_ROTATION=1); absent or false, the day end never
+   * changes the pool. */
+  rotation?: boolean;
+};
 
 /** The stored day without rolling it over: the first call creates day 1, and
  * a day stored with a placeholder endsAt (before slice 5) gets the real one. */
@@ -115,6 +120,17 @@ export function endDay(rt: DayDeps): DayView {
     crowned = { ...structuredClone(champ), seq: next.seq, day: next.day };
   }
   if (crowned) store.putChampion(crowned);
+  // M2-10: the pool for day seq + 1, behind its switch. It writes nothing
+  // twice (a stored pool for seq + 1 means it ran), and a rotation that fails
+  // writes nothing and never holds the day end up: the pool stays as it is.
+  if (rt.rotation) {
+    try {
+      const plan = rotate(rt, d.seq);
+      if (plan.swaps.length) console.log(describePlan(plan, rules).join("\n"));
+    } catch (err) {
+      console.error(`[rotation] day ${next.seq}: the pool stays as it is`, err);
+    }
+  }
   // Every write above is keyed by seq, so a retry after a failure rewrites
   // the same rows. The records only move once day seq + 1 is stored: an end
   // that failed before this point and runs again never counts them twice.
@@ -122,7 +138,7 @@ export function endDay(rt: DayDeps): DayView {
   // Records count for bots too (bump never touches a rating).
   if (winner) bump(rt, winner.player, "playoffWins");
   if (crowned) bump(rt, crowned.player, "daysAsChampion");
-  return dayView({ store, content, today: () => next });
+  return dayView({ store, content: rt.content, today: () => next });
 }
 
 function bump(rt: DayDeps, player: PlayerRef, field: "playoffWins" | "daysAsChampion"): void {

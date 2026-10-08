@@ -28,6 +28,7 @@
     "mvp:server": "node --import tsx/esm server/src/mvp/main.ts",
     "mvp:invite": "node --import tsx/esm server/src/mvp/invite-cli.ts",
     "mvp:pool": "node --import tsx/esm server/src/mvp/pool-cli.ts",
+    "mvp:rotate": "node --import tsx/esm server/src/mvp/rotate-cli.ts",
     "mvp:invite-e2e": "node e2e/mvp-invite.mjs",
     "mvp:bot": "node --import tsx/esm e2e/mvp-api-bot.ts",
     "mvp:phone": "node e2e/mvp-phone.mjs",
