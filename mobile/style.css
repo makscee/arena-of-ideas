@@ -1160,6 +1160,7 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
 .vote-pick { display: flex; flex-direction: column; gap: 4px; align-items: stretch; text-align: left; padding: 0; background: none; border: none; clip-path: none; color: var(--text, inherit); font: inherit; font-weight: 400; letter-spacing: normal; text-transform: none; cursor: pointer; min-width: 0; }
 .vote-pick .card { pointer-events: none; }
 .vote-text { overflow-wrap: anywhere; }
+.vote-tag { font-weight: 600; color: var(--gold); overflow-wrap: anywhere; }
 .vote .label { white-space: normal; }
 .row.wrap { flex-wrap: wrap; }
 .error.dev-note { color: var(--dim); }

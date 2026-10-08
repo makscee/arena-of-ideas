@@ -812,6 +812,10 @@ export interface IdeaReading {
  * and summons): a candidate isn't in the content. */
 export interface VoteCard {
   candidateId: UnitId;
+  /** M3-6: what the candidate is: a new idea's unit, a new version of a
+   * Library unit ("new version of Quillback"), or the Library version itself
+   * while versions of it are voted on ("Quillback, unchanged"). */
+  candidateKind: CandidateKind;
   otherId: UnitId;
   units: [UnitContent, UnitContent];
   pool: { abilities: AbilityRegistry; statuses: StatusRegistry; summons: SummonContent[] };
@@ -824,11 +828,20 @@ export interface VoteRequest {
   pick: UnitId | null;
 }
 
+/** M3-6: a candidate on the vote cards: a new idea's unit, a new version of
+ * a Library unit, or that Library unit "unchanged". */
+export type CandidateKind = "idea" | "version" | "unchanged";
+
 /** A candidate's standing (M2-8, server/src/mvp/votes.ts): `share` the votes it
  * won against typical live units (skips not counted), `novelty` 0–1 how rare
- * its When/Who/Does are in the live pool, `score` = share + the novelty bonus. */
+ * its When/Who/Does are in the live pool, `score` = share + the novelty bonus.
+ * M3-6: versions and "unchanged" of one archetype (`rootId`) compete: `entry`
+ * marks the one of them that may enter (an idea's unit is its own archetype). */
 export interface CandidateScore {
   unitId: UnitId;
+  kind: CandidateKind;
+  /** The archetype's first version (an idea's unit: itself). */
+  rootId: UnitId;
   name: string;
   emoji: string;
   authorId: string | null;
@@ -838,6 +851,10 @@ export interface CandidateScore {
   novelty: number;
   score: number;
   qualified: boolean;
+  /** M3-6: qualified, and its archetype's best qualified candidate; only
+   * these may enter. "Unchanged" is the entry only when it scores above
+   * every qualified version. */
+  entry: boolean;
 }
 
 /** One of the player's own ideas, as My ideas shows it. */
@@ -904,7 +921,8 @@ export interface MyIdeasView {
 //   POST /api/v1/ideas/:ideaId/none          → MyIdeasView        (M2-6; "None of these" in `pick-archetype` or `pick-reading`:
 //                                                                  the stage is read once more; the second time the idea
 //                                                                  fails and is refunded; 409 another state)
-//   GET  /api/v1/votes/next                  → { card: VoteCard | null }  (M2-8; never the caller's own candidate, nor a pair they voted on)
+//   GET  /api/v1/votes/next                  → { card: VoteCard | null }  (M2-8; never the caller's own candidate, nor a pair they voted on;
+//                                                                              M3-6: new versions, and "unchanged" open to anyone)
 //   POST /api/v1/votes         VoteRequest   → { card: VoteCard | null }  (M2-8; the next card: 404 no such candidate or live unit,
 //                                                                  400 a pick of neither, 409 already voted on this pair or
 //                                                                  the caller's own candidate or a bot)
