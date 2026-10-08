@@ -215,7 +215,7 @@ function logCantExpress(deps: ReadDeps, idea: Idea, cant: Logged[]): string[] {
 }
 
 function fail(deps: ReadDeps, idea: Idea, parts: string[], reason = COULD_NOT): void {
-  const failure = parts.length ? `${reason} The game has no words yet for: ${parts.map((p) => `"${p}"`).join(", ")}.` : COULD_NOT;
+  const failure = parts.length ? `${reason} The game has no words yet for: ${parts.map((p) => `"${p}"`).join(", ")}.` : reason;
   deps.store.putIdea({ ...idea, state: "failed", data: { ...settled(idea.data, parts), failure } });
   refundIdea(deps, idea.playerId);
 }
