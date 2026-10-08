@@ -4,6 +4,7 @@
 // module; this list already names them all.
 import { botWorld } from "./bots.js";
 import { dayRollover } from "./day.js";
+import { fusionRuNamingJob } from "./fusion-names-ru.js";
 import { fusionNamingJob } from "./fusions.js";
 import { ideaReadingJob } from "./idea-reading.js";
 import type { MvpJob, MvpRuntime } from "./runtime.js";
@@ -13,6 +14,7 @@ export const MVP_JOBS: MvpJob[] = [
   dayRollover, // slice 5: the 04:00 rollover
   botWorld, // slice 6: the champion seed and the bot top-up
   fusionNamingJob, // slice 10: the naming queue
+  fusionRuNamingJob, // M4-4: Russian names for stored discoveries (ARENA_NAMER_URL)
   ideaReadingJob, // M2-5: reads written ideas (ARENA_IDEA_READER)
   overnightJob, // M2-8: the overnight check after the day end
 ];

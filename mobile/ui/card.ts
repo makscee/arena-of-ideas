@@ -20,7 +20,7 @@ import { roman } from "./roman";
 import { markChangedPieces, richText } from "./term";
 import { unitStatsLine, type UnitRates } from "./unit-stats";
 import { rulesLangOpt } from "../lang";
-import { unitName } from "../unit-names";
+import { fusionName, unitName } from "../unit-names";
 
 export { roman };
 
@@ -97,8 +97,8 @@ function creditLine(unitId: string): HTMLElement | null {
 }
 
 export function card(u: CardUnit, o: CardOptions): HTMLElement {
-  // M4-4: a line or battle unit comes named in English; a fused one keeps its name.
-  if (u.kind !== "fused") u = { ...u, name: unitName(u.unitId, u.name) };
+  // M4-4: a line or battle unit comes named in English: its Russian name on a Russian page.
+  u = { ...u, name: u.kind === "fused" ? fusionName(u.fusion, u.name) : unitName(u.unitId, u.name) };
   const stats = o.live?.stats ?? u.stats;
   // A fused unit is its finders' (discoveredLine); its parts' credits stay on theirs.
   // A Library card's unit isn't live: no live credit, even when a live version shares its id.
@@ -299,7 +299,7 @@ export function unitSheet(
   return h(
     "div",
     { class: "stack", "data-testid": "unit-sheet" },
-    h("div", { class: "row spread sheet-head" }, h("h2", {}, `${u.emoji} ${fused ? u.name : unitName(unitId, u.name)}`), state),
+    h("div", { class: "row spread sheet-head" }, h("h2", {}, `${u.emoji} ${fused ? fusionName("fusion" in u ? u.fusion : undefined, u.name) : unitName(unitId, u.name)}`), state),
     // What the unit is about, in one sentence (R4-8); a fused unit has none.
     c?.archetype ? h("div", { class: "archetype", "data-testid": "sheet-archetype" }, c.archetype) : null,
     // opts.credit: a Library unit's own (M3-8), not a live version's that shares its id.

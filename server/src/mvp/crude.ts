@@ -234,17 +234,27 @@ export function hasCrudeStem(name: string): boolean {
   return CRUDE_STEMS.anywhere.some((stem) => folded.includes(stem));
 }
 
-// M4-4: Russian mat and slurs, matched as substrings of the name's letters
-// joined (ё as е); not "секс", which Секстон holds. isBlockedName only reads Latin letters, so a Russian name
-// passes both checks: isBlockedName on its Latin part, this on the rest.
-const RU_CRUDE = [
-  "хуй", "хуе", "хуя", "хуи", "пизд", "ебан", "ебат", "ебал", "ебло", "ебар", "ебуч", "ебну", "уеб", "заеб", "блят", "бляд", "пидор", "пидар", "педик",
-  "залуп", "гандон", "шлюх", "дроч", "мудак", "мудил", "манда", "сучк", "сучар", "жоп", "говн", "срак", "срат", "ссан", "порн",
-  "нацис", "гитлер", "свастик", "хач", "чурк", "жид", "негр", "ниггер", "даун", "дебил", "дегенерат",
+// M4-4: Russian mat and slurs (ё read as е). Stems match inside a word,
+// and a name's words joined; WHOLE only as a word of its own, since inside
+// one they hit ordinary words (негромко, жидкий, команда, Кассандра).
+// isBlockedName only reads Latin letters, so a Russian name passes both checks.
+const RU_STEMS = [
+  "хуй", "хуе", "хуя", "хуи", "пизд", "ебан", "ебат", "ебал", "ебло", "ебар", "ебуч", "ебну", "уеб", "заеб", "блят", "бляд", "пидор",
+  "пидар", "педик", "залуп", "гандон", "шлюх", "дроч", "мудак", "мудил", "сучк", "сучар", "жоп", "говн", "порн", "нацис", "гитлер",
+  "свастик", "чурк", "ниггер", "дебил", "дегенерат",
 ];
+const RU_WHOLE = new Set(["жид", "жиды", "жидов", "негр", "негры", "негров", "хач", "хачи", "даун", "дауны", "манда", "срака", "ссать", "сука", "суки", "сучка", "секс"]);
 
-/** True when a Russian name reads crude (RU_CRUDE), or its Latin part does. */
+const ruWords = (s: string) => s.toLowerCase().replace(/ё/g, "е").split(/[^а-я]+/).filter(Boolean);
+const ruCrudeWord = (w: string) => RU_WHOLE.has(w) || RU_STEMS.some((stem) => w.includes(stem));
+
+/** True when a Russian name reads crude: a word of it, or its words joined. */
 export function isCrudeRuName(name: string): boolean {
-  const joined = name.toLowerCase().replace(/ё/g, "е").replace(/[^а-я]/g, "");
-  return RU_CRUDE.some((stem) => joined.includes(stem));
+  const words = ruWords(name);
+  return words.some(ruCrudeWord) || RU_STEMS.some((stem) => words.join("").includes(stem));
+}
+
+/** True when a Russian sentence (a unit's line) has a crude word. */
+export function isCrudeRuLine(text: string): boolean {
+  return ruWords(text).some(ruCrudeWord);
 }

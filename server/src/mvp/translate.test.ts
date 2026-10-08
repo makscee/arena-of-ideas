@@ -1,6 +1,6 @@
 // M4-4: Russian names and lines beside the stored units (./translate.ts).
 import { describe, expect, it } from "vitest";
-import { isCrudeRuName } from "./crude.js";
+import { isCrudeRuLine, isCrudeRuName } from "./crude.js";
 import { poolContent, seedUnits, servedContent } from "./pool.js";
 import { SqliteMvpStore } from "./sqlite-store.js";
 import { MemoryMvpStore, nameKey, type MvpStore } from "./store.js";
@@ -83,6 +83,11 @@ describe("ruTextProblem", () => {
   it("reads Russian mat with ё as е", () => {
     expect(isCrudeRuName("Пиздорез")).toBe(true);
     expect(isCrudeRuName("Страж Рассвета")).toBe(false);
+    // ordinary words that hold a short stem pass; the stem alone doesn't
+    expect(isCrudeRuLine("Жертвенное тело: когда падает, команда получает щит.")).toBe(false);
+    expect(isCrudeRuLine("Негромко льёт жидкий огонь на Кассандру.")).toBe(false);
+    expect(isCrudeRuLine("Ты жид.")).toBe(true);
+    expect(isCrudeRuName("Секстон")).toBe(false);
   });
 });
 

@@ -5,7 +5,8 @@
 // (./translate-cli.ts) runs it and writes a review page for Maks.
 import { callClaude, type ClaudeReaderOptions } from "./idea-reader.js";
 import { isBlockedName } from "./fusions.js";
-import { isCrudeRuName } from "./crude.js";
+import { isCrudeRuLine, isCrudeRuName } from "./crude.js";
+import type { RuFusionReport } from "./fusion-names-ru.js";
 import { nameKey, type MvpStore, type StoredUnit } from "./store.js";
 
 /** What a translator is given: a unit's English name and line. */
@@ -43,7 +44,7 @@ export function ruTextProblem(t: { name: string; line: string }, taken: Readonly
   if (!/[а-яё]/i.test(line)) return "the line must be in Russian";
   if (line.length > 140) return "the line is longer than 140 characters";
   if (!/[.!]$/.test(line)) return "the line must end with a full stop";
-  if (isCrudeRuName(line.replace(/[.,!?;:]/g, " "))) return "the line reads crude";
+  if (isCrudeRuLine(line)) return "the line reads crude";
   return null;
 }
 
@@ -93,7 +94,8 @@ export async function translateUnits(store: MvpStore, tr: Translator, opts: Tran
       const byId = new Map(answers.map((a) => [a.unitId, a]));
       for (const u of group) {
         const a = byId.get(u.unitId);
-        const why = a ? ruTextProblem(a, taken) : "no answer";
+        const problem = a ? ruTextProblem(a, taken) : "no answer";
+        const why = problem && a ? `${problem} (${a.name} | ${a.line})` : problem;
         if (why) {
           notes.set(u.unitId, why);
           next.push(u);
@@ -120,7 +122,7 @@ const cell = (s: string) => s.replace(/\|/g, "\\|").replace(/\n/g, " ");
 
 /** The one page Maks skims before the names go live: emoji, English name and
  * line, Russian name and line, by status then English name. */
-export function reviewPage(r: TranslateReport, opts: { dryRun?: boolean; at?: string } = {}): string {
+export function reviewPage(r: TranslateReport, opts: { dryRun?: boolean; at?: string; fusions?: RuFusionReport } = {}): string {
   const rows = [
     ...r.done.map((d) => ({ u: d.unit, ru: d.ru, note: "" })),
     ...r.kept.map((u) => ({ u, ru: u.texts!.ru!, note: "kept" })),
@@ -138,7 +140,23 @@ export function reviewPage(r: TranslateReport, opts: { dryRun?: boolean; at?: st
     "|---|---|---|---|---|---|",
     ...rows.map(({ u, ru, note }) => `| ${u.row.emoji} | **${cell(u.row.name)}** | ${cell(u.row.archetype)} | **${cell(ru.name)}** | ${cell(ru.line)} | ${u.status}${note ? `, ${cell(note)}` : ""} |`),
     "",
+    ...(opts.fusions ? fusionSection(opts.fusions) : []),
   ].join("\n");
+}
+
+/** The fusions the namer named in Russian, and those it couldn't (they show the English name). */
+function fusionSection(f: RuFusionReport): string[] {
+  return [
+    "## Fusion names",
+    "",
+    `The local namer's Russian mode: ${f.named.length} named, ${f.failed.length} left English${f.down ? " (the namer went down; the rest wait for the next pass)" : ""}.`,
+    "",
+    "| English | Русский | Parts |",
+    "|---|---|---|",
+    ...f.named.map(({ fusion, name }) => `| ${cell(fusion.name)} | **${cell(name)}** | ${fusion.first} + ${fusion.second} |`),
+    ...f.failed.map((fusion) => `| ${cell(fusion.name)} | — | ${fusion.first} + ${fusion.second} |`),
+    "",
+  ];
 }
 
 // ---------- claude -p ----------
