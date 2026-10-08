@@ -569,8 +569,8 @@ button.bv-moment { display: grid; grid-template-columns: 38px 18px minmax(0, 1fr
   #app[data-screen="home"] .playoff { order: 1; }
 }
 .title-menu [data-testid="play"] .hearts { white-space: nowrap; }
-.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.tabs button { min-height: 44px; padding: 0 6px; font-size: 14px; }
+.tabs { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
+.tabs button { min-height: 44px; padding: 0 2px; font-size: 13px; letter-spacing: 0; }
 .tabs button.on { background: var(--you); color: var(--bg); }
 .stat-row { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
 .stat-row .emoji { font-size: 22px; width: 28px; text-align: center; flex: none; }

@@ -46,14 +46,15 @@ export function creditsView(deps: CreditDeps, playerId?: string): CreditsView {
   return { day, units, you };
 }
 
-/** The units that have left, the one that left last first, each built on its
+/** The units that have left, the one that left last first (then by tier and
+ * name), each built on its
  * own (its id kept) with the abilities and summons their sheets need. */
 export function libraryView(deps: CreditDeps): LibraryView {
   const day = today(deps);
   const out: LibraryView = { units: [], abilities: {}, statuses: {}, summons: [] };
   const fusions = deps.store.fusions();
   const left = (id: UnitId) => Math.max(0, ...deps.store.stints(id).map((s) => s.leftSeq ?? 0));
-  const stored = deps.store.units({ status: "library" }).reverse().sort((a, b) => left(b.unitId) - left(a.unitId));
+  const stored = deps.store.units({ status: "library" }).sort((a, b) => left(b.unitId) - left(a.unitId) || a.row.tier - b.row.tier || a.row.name.localeCompare(b.row.name));
   for (const s of stored) {
     const c = contentOf([s.row]);
     const unit = { ...c.units[0]!, id: s.unitId };
