@@ -190,6 +190,6 @@ describe("versions on the vote cards (M3-6)", () => {
     expect(text).toContain(`    ${b} version by ${eva.id}: score`);
     expect(text).toMatch(new RegExp(`    ${a} version by ${maks.id}: .*; qualified, beaten`));
     expect(text).toMatch(new RegExp(`    ${rat} unchanged: score .* = 2/5 votes .*; not qualified`));
-    expect(text).toContain(`enters ${w.store.unit(rat)!.row.emoji} ${w.store.unit(rat)!.row.name} (${b}, version by ${eva.id})`);
+    expect(text).toContain(`enters ${w.store.unit(rat)!.row.emoji} ${w.store.unit(rat)!.row.name} (${b}, version by ${eva.id}; evolution slot)`);
   });
 });

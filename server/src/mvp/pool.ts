@@ -54,7 +54,7 @@ export function poolContent(store: MvpStore): MvpContent {
     if (!u) throw new Error(`pool ${pool.version} names unknown unit ${id}`);
     return u.row;
   });
-  const content = contentOf(rows);
+  const content = contentOf(rows, pool.unitIds);
   // The version is derived from the built content, so a code change to how a
   // row is built (an Ability's effects) shows up here as a new version.
   if (content.version !== pool.version) console.warn(`[pool] the current pool was stored as ${pool.version} but builds as ${content.version}`);
@@ -96,7 +96,7 @@ export function poolBook(store: MvpStore, fixed?: MvpContent): PoolBook {
     if (have) return have;
     const rows = rowsOf(store, pool);
     if (!rows) return undefined;
-    const content = { ...contentOf(rows), version: pool.version };
+    const content = { ...contentOf(rows, pool.unitIds), version: pool.version };
     built.set(pool.version, content);
     return content;
   };
@@ -167,7 +167,7 @@ function syncSeedNow(store: MvpStore, now: Date, opts: { dryRun?: boolean }): Se
   const oldRows = rowsOf(store, pool);
   if (!oldRows) throw new Error(`the current pool ${pool.version} names a unit the store doesn't have`);
   const rows = unitIds.map((id, i) => rowById.get(id) ?? oldRows[i]!);
-  const version = contentOf(rows).version;
+  const version = contentOf(rows, unitIds).version;
   const wrote = (changed.length > 0 || added.length > 0) && !opts.dryRun;
   if (wrote) {
     const at = now.toISOString();
@@ -249,7 +249,7 @@ function swapUnitNow(store: MvpStore, outId: string, inId: string, now: Date): s
   if (!oldRows) throw new Error(`the current pool ${pool.version} names a unit the store doesn't have`);
   const unitIds = pool.unitIds.map((id) => (id === outId ? inId : id));
   const rows = oldRows.map((row, i) => (i === at ? inUnit.row : row));
-  const version = contentOf(rows).version;
+  const version = contentOf(rows, unitIds).version;
   const daySeq = store.currentDay()?.seq ?? pool.daySeq;
   const iso = now.toISOString();
   if (!pool.rows) store.putPool({ ...pool, rows: oldRows });
