@@ -211,6 +211,11 @@ async function vote(viewport) {
   if ((await mine.count()) !== 1) errors.push(`vote: the card doesn't show ${cand.name}`);
   await page.getByTestId("vote-card").scrollIntoViewIfNeeded();
   await shot("vote-card");
+  const cut = await page.getByTestId("vote-skip").evaluate((b) => {
+    const r = b.getBoundingClientRect(), box = b.closest('[data-testid="vote-card"]').getBoundingClientRect();
+    return b.scrollWidth > b.clientWidth + 1 || r.right > box.right + 1 ? `${b.textContent} (${Math.round(r.right)} > ${Math.round(box.right)})` : "";
+  });
+  if (cut) errors.push(`vote: Skip is cut off: ${cut}`);
   await mine.locator(".vote-text").first().click(); // the text, clear of the card itself
   await page.waitForFunction(() => !!document.querySelector('[data-testid="vote-thanks"]') || !!document.querySelector('[data-testid="vote-card"]'));
   await page.getByTestId("vote-box").scrollIntoViewIfNeeded();

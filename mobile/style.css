@@ -1174,6 +1174,9 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
 .vote-text { overflow-wrap: anywhere; }
 .vote-tag { font-weight: 600; color: var(--gold); overflow-wrap: anywhere; }
 .vote .label { white-space: normal; }
+/* The question wraps; Skip keeps its whole word beside it (a Russian «Пропустить» at 390px). */
+.vote > .row.spread > .label { min-width: 0; }
+.vote > .row.spread > button.link { white-space: nowrap; }
 .row.wrap { flex-wrap: wrap; }
 .error.dev-note { color: var(--dim); }
 /* M3-8: a version that isn't its archetype's first, beside its name. */
