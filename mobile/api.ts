@@ -25,6 +25,9 @@ import {
   type PlayerSession,
   type RunView,
   type StatsView,
+  type TelegramPoll,
+  type TelegramStart,
+  type TelegramStatus,
   type UnitId,
   type WriteIdeaRequest,
 } from "../src/mvp/contract";
@@ -149,6 +152,26 @@ export const api = {
     saveOwnInvite(s.invite);
     return s;
   },
+  /** M4-6: a Telegram login code and its t.me link, for this player (Link
+   * Telegram) or for none (Log in with Telegram). */
+  telegramStart: () => call<TelegramStart>("POST", "/auth/telegram/start"),
+  /** M4-6: "waiting" until the bot accepts the code; then this device becomes
+   * the player it names (404 ApiError: expired or used). */
+  async telegramPoll(code: string): Promise<TelegramPoll> {
+    const r = await call<TelegramPoll>("POST", "/auth/telegram/poll", { code });
+    if (r.status === "done") {
+      if (r.player.id !== player?.id) saveOwnInvite(null);
+      player = r.player;
+      token = r.token;
+      savePlayer(player);
+      saveToken(token);
+    }
+    return r;
+  },
+  /** M4-6: unlinks this player's Telegram. */
+  telegramUnlink: () => call<TelegramStatus>("POST", "/auth/telegram/unlink"),
+  /** M4-6 dev (ARENA_TELEGRAM_FAKE=1): the fake bot's user presses Start. */
+  devTelegramAccept: (code: string) => call<{ reply: string }>("POST", "/dev/telegram/accept", { code }),
   forget(): void {
     saveOwnInvite(null);
     player = null;
@@ -157,8 +180,9 @@ export const api = {
     saveToken(null);
   },
   /** `invites`: the server is invite-only, so the name screen asks for a link.
+   * `telegram` (M4-6): Telegram login is on, with the real bot or the fake.
    * `contentVersion`: the live pool's; ./content.ts refetches when it moves. */
-  health: () => call<{ invites?: boolean; open?: boolean; contentVersion?: string }>("GET", "/health"),
+  health: () => call<{ invites?: boolean; open?: boolean; contentVersion?: string; telegram?: false | "bot" | "fake" }>("GET", "/health"),
   content: () => call<MvpContent>("GET", "/content"),
   home: () => call<HomeView>("GET", "/home"),
   startRun: () => call<RunView>("POST", "/runs"),

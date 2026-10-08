@@ -641,6 +641,8 @@ export interface HomeView {
   dev: boolean;
   /** The player's ideas (M2-3); null without a player. */
   ideas: IdeasView | null;
+  /** M4-6: Telegram login (Link Telegram, Unlink in the title menu); null without a player. */
+  telegram?: TelegramStatus | null;
 }
 
 /** Ideas a player holds (M2-3, server/src/mvp/ideas.ts): earned by finished
@@ -885,7 +887,7 @@ export interface MyIdeasView {
 // path not listed here (and /dev/* off a dev server, or for a non-admin on an
 // invite-only one), 501 a route a slice hasn't filled in.
 //
-//   GET  /api/v1/health                      → { ok: true, api, contentVersion, build, invites, open }  (build: the deployed commit, or null; invites: invite-only; open: anyone without a link may join)
+//   GET  /api/v1/health                      → { ok: true, api, contentVersion, build, invites, open, telegram }  (build: the deployed commit, or null; invites: invite-only; open: anyone without a link may join; telegram: false, or Telegram login is on with the "bot" or the dev "fake", M4-6)
 //   GET  /api/v1/content                     → MvpContent
 //   POST /api/v1/players       { name }      → PlayerRef          (403 on an invite-only server)
 //   POST /api/v1/invites/lookup { code }     → { player: PlayerRef } (slice 13; whose link it is, opening nothing; 404 unknown code)

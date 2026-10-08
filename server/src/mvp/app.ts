@@ -70,7 +70,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
       await next();
     });
 
-  api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: rt.content.version, invites: rt.invites, open: rt.open }));
+  api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: rt.content.version, invites: rt.invites, open: rt.open, telegram: rt.telegram ? (rt.telegram instanceof FakeTelegram ? "fake" : "bot") : false }));
   api.get("/content", (c) => c.json(servedContent(rt)));
 
   api.post("/players", async (c) => {
@@ -177,6 +177,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
       activeRunId: p ? store.activeRun(p.id)?.runId ?? null : null,
       dev: devFor(c),
       ideas: p ? ideasOf(rt, p.id) : null,
+      telegram: p ? tgStatus(p) : null,
     };
     return c.json(home);
   });
