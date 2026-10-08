@@ -1,7 +1,9 @@
 // MVP phone e2e (mission #574 verification ladder): a whole game at 360×640
 // in Chromium, with a screenshot of every screen. Without --url it builds the
 // mobile client and starts the MVP server on a free port.
-//   npm run mvp:phone -- [--url https://m1.twin-pogona.ts.net/arena/] [--out e2e/.shots/mvp]
+//   npm run mvp:phone -- [--url https://m1.twin-pogona.ts.net/arena/] [--out e2e/.shots/mvp] [--lang ru] [--height 740]
+// --lang ru plays it on a Russian phone (the client picks Russian from the
+// browser's locale) and reads every checked text from the Russian catalog.
 import { spawn, execFileSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { createServer } from "node:net";
@@ -9,10 +11,14 @@ import { launchChromium } from "./browser.mjs";
 import { escPass } from "./esc-keys.mjs";
 import { beamChecks } from "./beams.mjs";
 import { nowSheetChecks } from "./now-sheet.mjs";
+import { catalog, e2eLang, localeOf, pattern } from "./lang.mjs";
 
 const args = process.argv.slice(2);
 const opt = (n) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : undefined; };
-const out = opt("out") ?? "e2e/.shots/mvp";
+const lang = e2eLang(args);
+const L = catalog(lang);
+const height = Number(opt("height") ?? 640);
+const out = opt("out") ?? `e2e/.shots/mvp${lang === "en" ? "" : `-${lang}`}${height === 640 ? "" : `-${height}`}`;
 mkdirSync(out, { recursive: true });
 
 let url = opt("url");
@@ -34,7 +40,7 @@ const browser = await launchChromium();
 const errors = [];
 let shots = 0;
 try {
-  const page = await browser.newPage({ viewport: { width: 360, height: 640 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const page = await browser.newPage({ viewport: { width: 360, height }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: localeOf(lang) });
   page.on("pageerror", (e) => errors.push(`pageerror: ${e.message}`));
   page.on("console", (m) => m.type() === "error" && errors.push(`console: ${m.text()}`));
   /** Every player name on screen (ui/dom.ts who()) sits on one line: never
@@ -139,12 +145,12 @@ try {
   /** The page doesn't scroll at 640 px. */
   const noVScroll = async (name) => {
     const hgt = await page.evaluate(() => document.documentElement.scrollHeight);
-    if (hgt > 640 + 0.5) errors.push(`${name}: scrolls (${hgt}px tall)`);
+    if (hgt > height + 0.5) errors.push(`${name}: scrolls (${hgt}px tall)`);
   };
   /** The element is on screen without scrolling (the bottom of a 640 px phone). */
   const onScreen = async (name, locator) => {
     const box = await locator.boundingBox();
-    if (!box || box.y + box.height > 640 + 0.5 || box.y < 0) errors.push(`${name}: off screen (${box ? Math.round(box.y + box.height) : "none"}px)`);
+    if (!box || box.y + box.height > height + 0.5 || box.y < 0) errors.push(`${name}: off screen (${box ? Math.round(box.y + box.height) : "none"}px)`);
   };
 
   await page.goto(url, { timeout: 20_000 });
@@ -543,7 +549,7 @@ try {
         if (!(await worded.first().evaluate((e) => e.classList.contains("on")))) errors.push("why: a tap on a step's word didn't light the step");
       }
       const bar = await page.getByTestId("battle-play").boundingBox();
-      if (!bar || bar.y + bar.height > 640) errors.push(`why: the control bar is off screen with Why open (${JSON.stringify(bar)})`);
+      if (!bar || bar.y + bar.height > height) errors.push(`why: the control bar is off screen with Why open (${JSON.stringify(bar)})`);
       await shot("battle-why-step"); await noHScroll("battle-why-step");
       console.log(`why: ${kinds.join(" ← ")}; the root's click moved the board ${turnBefore} → ${turnAfter}`);
       await tap44("change chip", page.getByTestId("change"));

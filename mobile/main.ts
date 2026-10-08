@@ -27,6 +27,7 @@ import { loadUnitRates } from "./ui/unit-stats";
 import { initSound, music, onSoundChange, play, setSound, soundSettings } from "./ui/sound";
 import { shopSound } from "./ui/sound-map";
 import { t, withNodes } from "./i18n";
+import { chooseLang, LANGS, uiLang } from "./lang";
 
 function errorLine(): HTMLElement {
   return h("div", { class: "error", "data-testid": "error" });
@@ -109,6 +110,20 @@ function soundRow(): HTMLElement {
     else off();
   });
   return row;
+}
+
+/** The language switch, beside Sound (M4-2): Русский / English, each in its
+ * own words. Picking the other one keeps it on this device and redraws the
+ * page in it. */
+function langRow(): HTMLElement {
+  const now = uiLang();
+  const pick = (code: (typeof LANGS)[number]) => {
+    const b = button(t(`lang.${code}`), () => code !== now && chooseLang(code), code === now ? "lang-on" : "", `lang-${code}`);
+    b.setAttribute("aria-pressed", String(code === now));
+    b.lang = code;
+    return b;
+  };
+  return h("div", { class: "row lang-row", role: "group", "aria-label": t("lang.label"), "data-testid": "lang-row" }, ...LANGS.map(pick));
 }
 
 /** Draws a Sound row's toggles and sliders from the settings: Sound (the
@@ -336,6 +351,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
         codex,
         h("div", { class: "row" }, stats, rulesBtn),
         soundRow(),
+        langRow(),
         api.ownInvite ? ownLinkRow(api.ownInvite) : null,
         home.dev
           ? h("details", { class: "dev" }, h("summary", {}, t("dev.title")), h("div", { class: "row wrap" }, endDay, grantIdea, creditUnit, seedCandidate, overnight, fakeVotes, candidates))
@@ -456,6 +472,7 @@ function runMenu(run: RunView, content: MvpContent, err: HTMLElement, fought?: F
     codex,
     button(t("menu.rules"), () => (close(), closable(rulesSheet())), "", "menu-rules"),
     soundRow(),
+    langRow(),
     button(t("menu.titleMenu"), () => (close(), void guarded(err, () => homeScreen())), "", "menu-title"),
     run.phase === "over" ? null : h("div", { class: "dim small" }, t("menu.waits")),
     run.phase === "over" ? null : button(t("menu.abandon"), () => (close(), abandonSheet(run, "menu", () => void guarded(err, async () => runOverScreen(await api.abandon(run.runId), content)))), "danger", "menu-abandon"),
@@ -1544,6 +1561,7 @@ function switchScreen(code: string, mine: PlayerRef, theirs: PlayerRef): void {
   onKeys((e) => (e.key === "Escape" ? (stay(), true) : false));
 }
 
+document.documentElement.lang = uiLang();
 initSound();
 // A link pasted into a tab that already shows the game only changes the
 // fragment, which reloads nothing: start over so the link opens.

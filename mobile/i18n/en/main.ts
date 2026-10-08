@@ -14,6 +14,10 @@ export const main = {
   "sound.off": "🔇 Sound off",
   "sound.musicOn": "🎵 Music on",
   "sound.musicOff": "🎵 Music off",
+  // The language switch: each language in its own words.
+  "lang.label": "Language",
+  "lang.en": "English",
+  "lang.ru": "Русский",
 
   "rules.title": "RULES",
   "rules.runLabel": "A run",

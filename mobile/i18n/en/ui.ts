@@ -9,6 +9,7 @@ export const ui = {
   "card.ideaBy": "💡 idea by ",
   "card.andEvolvedBy": ", evolved by ",
   "card.evolvedBy": "evolved by ",
+  "card.new": "NEW",
   "card.summonedAria": "summoned",
   "card.tierAria": "tier {tier}",
   "card.ideaByAria": "idea by @{name}",

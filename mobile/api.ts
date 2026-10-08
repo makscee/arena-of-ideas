@@ -28,6 +28,7 @@ import {
   type UnitId,
   type WriteIdeaRequest,
 } from "../src/mvp/contract";
+import { uiLang } from "./lang";
 
 const BASE = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "") + MVP_API_PREFIX;
 const PLAYER_KEY = "arena.player";
@@ -100,7 +101,9 @@ export class ApiError extends Error {
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(BASE + path, {
     method,
-    headers: { "content-type": "application/json", ...(token ? { [TOKEN_HEADER]: token } : player ? { [PLAYER_HEADER]: player.id } : {}) },
+    // The player's language rides on every call, so server text (refusals,
+    // an idea's "couldn't make it" reason) can follow it (M4-2).
+    headers: { "content-type": "application/json", "accept-language": uiLang(), ...(token ? { [TOKEN_HEADER]: token } : player ? { [PLAYER_HEADER]: player.id } : {}) },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
   const json = (await res.json().catch(() => ({ error: res.statusText }))) as T & { error?: string };
