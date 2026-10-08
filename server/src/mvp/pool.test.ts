@@ -105,7 +105,7 @@ describe("units as data (M2-1)", { timeout: 60_000 }, () => {
 
     // The new code on the same file: migrate, seed, build the content.
     const store = new SqliteMvpStore(path);
-    expect((store.db.prepare("SELECT name FROM mvp_migrations ORDER BY name").all() as { name: string }[]).map((r) => r.name)).toEqual([...MAIN_9EF07AC, "m2-01-units.sql", "m2-02-pins.sql", "m2-02b-day-backfill.sql", "m2-03-ideas.sql", "m2-04-ideas.sql", "m2-05-words.sql", "m2-08-votes.sql"]);
+    expect((store.db.prepare("SELECT name FROM mvp_migrations ORDER BY name").all() as { name: string }[]).map((r) => r.name)).toEqual([...MAIN_9EF07AC, "m2-01-units.sql", "m2-02-pins.sql", "m2-02b-day-backfill.sql", "m2-03-ideas.sql", "m2-04-ideas.sql", "m2-05-words.sql", "m2-08-votes.sql", "m4-08-daily-posts.sql"]);
     expect(dump(store, Object.keys(before))).toEqual(before);
     expect(seedUnits(store, new Date())).toBe(true);
     const content = poolContent(store);

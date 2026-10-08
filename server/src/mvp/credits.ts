@@ -79,6 +79,13 @@ function archetypes(deps: CreditDeps, day: number) {
   return { units, stintsOf, ofUnit, credit };
 }
 
+/** A stored unit's credit ("idea by", "evolved by"), for any unit, live or
+ * not (M4-8's daily post: the units that entered and left). Reads every unit
+ * once; call the returned function per unit. */
+export function versionCredits(deps: CreditDeps): (u: StoredUnit) => VersionCredit {
+  return archetypes(deps, today(deps)).credit;
+}
+
 /** The live units' credits, NEW badges and days live, and the caller's
  * creator number. */
 export function creditsView(deps: CreditDeps, playerId?: string): CreditsView {
