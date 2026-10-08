@@ -137,8 +137,23 @@ describe("rotation at the day end (M2-10)", { timeout: 60_000 }, () => {
     expect(rt.store.ideas({ state: "voting" })).toHaveLength(2);
   });
 
+  it("lets the seed's units leave on their first stay at the first day end", () => {
+    const rt = world();
+    const ids = rt.content.units.map((u) => u.id);
+    tallies(rt, 1, [ids[7]!]);
+    const a = qualifiedCandidate(rt, ids[0]!);
+    expect(rotationPlan(rt).swaps.map((s) => s.leaver.unitId)).toEqual([ids[7]]);
+    endDay(rt);
+    const live = rt.content.units.map((u) => u.id);
+    expect(live).toContain(a);
+    expect(live).not.toContain(ids[7]);
+    expect(live).toHaveLength(ids.length);
+  });
+
   it("keeps every unit at least rules.rotationMinStay days", () => {
     const rt = world();
+    // Stays that aren't the seed's first, so the minimum stay holds them.
+    for (const u of rt.content.units) rt.store.putStint({ unitId: u.id, enteredSeq: 1, leftSeq: null, reason: "return" });
     toDay(rt, 13);
     const ids = rt.content.units.map((u) => u.id);
     const a = qualifiedCandidate(rt, ids[0]!);
@@ -149,6 +164,7 @@ describe("rotation at the day end (M2-10)", { timeout: 60_000 }, () => {
     expect(rt.content.units.map((u) => u.id)).toContain(a);
     // A shorter stay is a rule.
     const short = world();
+    for (const u of short.content.units) short.store.putStint({ unitId: u.id, enteredSeq: 1, leftSeq: null, reason: "return" });
     short.rules = { ...MVP_RULES, rotationMinStay: 2 };
     endDay(short);
     const b = qualifiedCandidate(short, short.content.units[0]!.id);

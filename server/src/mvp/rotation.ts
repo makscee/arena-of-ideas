@@ -95,7 +95,11 @@ export function rotationPlan(rt: { store: MvpStore; rules: MvpRules }, endingSeq
     if (!unit) continue;
     const entered = open?.enteredSeq ?? pool.daySeq;
     const days = endingSeq - entered + 1;
-    if (days >= tun.minStay) eligible.push({ unitId, row: unit.row, days });
+    // The minimum stay gives a new unit time to be tried. The seed's units were
+    // tried from the game's first day, so their first stay never holds them
+    // (orchestrator's call on #735: ideas can enter from the first rotation).
+    const seedStay = unit.origin === "seed" && open?.reason === "seed";
+    if (seedStay || days >= tun.minStay) eligible.push({ unitId, row: unit.row, days });
     else {
       plan.tooNew++;
       const may = entered + tun.minStay;
