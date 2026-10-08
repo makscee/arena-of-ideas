@@ -31,14 +31,14 @@ Card: makscee/void-board#800. Plan page: https://m1.twin-pogona.ts.net/r/arena-m
 ## Slices
 | # | Slice | Waits for | Prod data |
 |---|---|---|---|
-| 1 | The "attacker" word + near-miss logging | – | |
-| 2 | Idea screens: reading card text, disabled New idea | – | |
-| 3 | Lineage: rootId, idea kind/target | – | yes |
-| 4 | Propose and read (server) | 1, 3 | |
-| 5 | Propose screens (client) | 2, 4 | |
-| 6 | Versions on the vote cards, "unchanged" | 4 | |
-| 7 | Slots at 04:00: split, evolution/return entrants | 6 | yes |
-| 8 | Credits and history | 3 | |
+| 1 (#801) | The "attacker" word + near-miss logging | – | |
+| 2 (#802) | Idea screens: reading card text, disabled New idea | – | |
+| 3 (#803) | Lineage: rootId, idea kind/target | – | yes |
+| 4 (#805) | Propose and read (server) | 1, 3 | |
+| 5 (#807) | Propose screens (client) | 2, 4 | |
+| 6 (#806) | Versions on the vote cards, "unchanged" | 4 | |
+| 7 (#808) | Slots at 04:00: split, evolution/return entrants | 6 | yes |
+| 8 (#804) | Credits and history | 3 | |
 | 9 | Bots, e2e, playtest, report (orchestrator) | all | |
 
 ## Rules for every slice
