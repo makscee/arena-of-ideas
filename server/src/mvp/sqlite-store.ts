@@ -249,10 +249,10 @@ export class SqliteMvpStore implements MvpStore {
     );
   }
   idea(ideaId: string): Idea | undefined { return ideaOf(this.db.prepare("SELECT * FROM mvp_ideas WHERE id = ?").get(ideaId)); }
-  ideas(opts: { playerId?: string; state?: IdeaState } = {}): Idea[] {
+  ideas(opts: { playerId?: string; state?: IdeaState; target?: UnitId } = {}): Idea[] {
     return this.db
-      .prepare("SELECT * FROM mvp_ideas WHERE (@player IS NULL OR player_id = @player) AND (@state IS NULL OR state = @state) ORDER BY rowid")
-      .all({ player: opts.playerId ?? null, state: opts.state ?? null })
+      .prepare("SELECT * FROM mvp_ideas WHERE (@player IS NULL OR player_id = @player) AND (@state IS NULL OR state = @state) AND (@target IS NULL OR json_extract(json, '$.target') = @target) ORDER BY rowid")
+      .all({ player: opts.playerId ?? null, state: opts.state ?? null, target: opts.target ?? null })
       .map((r) => ideaOf(r)!);
   }
   deleteIdea(ideaId: string): void { this.write("DELETE FROM mvp_ideas WHERE id = ?", ideaId); }

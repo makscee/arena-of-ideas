@@ -208,11 +208,11 @@ export function describeMvpStore(name: string, make: () => MvpStore): void {
       expect(s.pool("v2")?.daySeq).toBe(2);
       expect(s.pool("v1")?.daySeq).toBe(3);
       expect(s.pool("v9")).toBeUndefined();
-      s.putStint({ unitId: "fighter", enteredSeq: 1, leftSeq: 2, reason: "replaced" });
+      s.putStint({ unitId: "fighter", enteredSeq: 1, leftSeq: 2, reason: "rotated" });
       s.putStint({ unitId: "fodder", enteredSeq: 2, leftSeq: null, reason: "return" });
       s.putStint({ unitId: "fighter", enteredSeq: 3, leftSeq: null, reason: "return" });
       expect(s.stints()).toEqual([
-        { unitId: "fighter", enteredSeq: 1, leftSeq: 2, reason: "replaced" },
+        { unitId: "fighter", enteredSeq: 1, leftSeq: 2, reason: "rotated" },
         { unitId: "fighter", enteredSeq: 3, leftSeq: null, reason: "return" },
         { unitId: "fodder", enteredSeq: 2, leftSeq: null, reason: "return" },
       ]);
@@ -255,6 +255,25 @@ export function describeMvpStore(name: string, make: () => MvpStore): void {
       s.deleteIdea("i3");
       expect(s.idea("i3")).toBeUndefined();
       expect(s.ideas({ playerId: "p1" }).map((i) => i.ideaId)).toEqual(["i1"]);
+    });
+
+    it("keeps a version's rootId and an idea's kind and target, and finds proposals by target (M3-3)", () => {
+      const s = make();
+      const v2: StoredUnit = { unitId: "fighter-v2", status: "candidate", row: ROWS[0]!, authorId: "p2", origin: "evolution", parentId: "fighter", rootId: "fighter", createdAt: "t" };
+      s.putUnit(v2);
+      expect(s.unit("fighter-v2")).toEqual(v2);
+      expect(s.units({ status: "candidate" })).toEqual([v2]);
+      const idea = (ideaId: string, data: Idea["data"]): Idea => ({ ideaId, playerId: "p1", text: `idea ${ideaId} text`, state: "voting", createdAt: "2026-10-08T08:00:00.000Z", data });
+      s.putIdea(idea("i1", {}));
+      s.putIdea(idea("i2", { kind: "evolve", target: "fighter" }));
+      s.putIdea(idea("i3", { kind: "evolve", target: "fodder" }));
+      s.putIdea(idea("i4", { kind: "evolve", target: "fighter", unitId: "fighter-v2" }));
+      expect(s.idea("i2")).toEqual(idea("i2", { kind: "evolve", target: "fighter" }));
+      expect(s.ideas({ target: "fighter" }).map((i) => i.ideaId)).toEqual(["i2", "i4"]);
+      expect(s.ideas({ target: "fighter", state: "voting" }).map((i) => i.ideaId)).toEqual(["i2", "i4"]);
+      expect(s.ideas({ target: "fighter", state: "live" })).toEqual([]);
+      expect(s.ideas({ target: "nobody" })).toEqual([]);
+      expect(s.ideas().map((i) => i.ideaId)).toEqual(["i1", "i2", "i3", "i4"]);
     });
 
     it("keeps votes (M2-8): one per player per pair, by candidate and player, oldest first", () => {

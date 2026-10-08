@@ -718,6 +718,11 @@ export interface Idea {
 
 /** What later stages add to an idea; each slice adds its own optional keys. */
 export interface IdeaData {
+  /** M3-3: a new archetype, or a new version of a Library unit (mission 3).
+   * Absent: "new", as every idea written before mission 3 (ideaKind). */
+  kind?: IdeaKind;
+  /** M3-3: the Library unit an "evolve" proposal is for. */
+  target?: UnitId;
   /** M2-5: the archetypes read from the text (`pick-archetype`), checked. */
   archetypes?: IdeaArchetype[];
   /** M2-5: the archetype its author picked; the readings are read for it. */
@@ -743,6 +748,11 @@ export interface IdeaData {
    * different ones, and a second "None of these" refunds the idea. */
   declined?: { archetypes?: IdeaArchetype[]; readings?: IdeaReading[] };
 }
+
+export type IdeaKind = "new" | "evolve";
+
+/** An idea's kind, "new" when it has none (written before mission 3). */
+export const ideaKind = (i: Idea): IdeaKind => i.data.kind ?? "new";
 
 /** M2-5: an archetype the reader made of an idea: a name, an emoji and a
  * one-sentence line, all checked (archetypeProblems, the crude checks, a
