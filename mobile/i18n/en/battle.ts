@@ -10,6 +10,8 @@ export const battle = {
   "battle.timelineAria": "Turn timeline: click or drag to scrub",
   "battle.endButton": "End",
   "battle.replayAria": "Replay from the start",
+  "battle.replayEnd": "↻ Replay",
+  "battle.replayFromStart": " from start",
   "battle.keys.space": "Space",
   "battle.keys.pause": " pause · ",
   "battle.keys.beat": " beat · ",

@@ -635,9 +635,9 @@ try {
       await shot("battle-end-card"); await noHScroll("battle-end-card");
       if (await page.getByTestId("end-why").count()) {
         // Why I lost, or Why I won (R2-17).
-        const label = await page.getByTestId("end-why").textContent();
+        const why = await page.getByTestId("end-why").getAttribute("data-why");
         await page.getByTestId("end-why").click();
-        const panel = page.getByTestId(label === L("battle.whyWon") ? "why-won" : "why-lost");
+        const panel = page.getByTestId(`why-${why}`);
         await panel.waitFor();
         await shot("battle-end-why");
         if (await panel.locator("button.bv-why").count()) {
@@ -673,7 +673,7 @@ try {
     await page.getByTestId("end-card").waitFor({ timeout: 10_000 });
     if (await page.getByTestId("outcome").count()) errors.push("a result screen still follows the end card");
     await onScreen("end card: the way on", page.getByTestId("battle-done"));
-    if (!whyShot && (await page.getByTestId("end-why").textContent().catch(() => "")) === L("battle.whyLost")) {
+    if (!whyShot && (await page.getByTestId("end-why").getAttribute("data-why").catch(() => "")) === "lost") {
       whyShot = true;
       await shot("result-after-loss"); await noHScroll("result-after-loss");
       await page.getByTestId("end-why").click();
