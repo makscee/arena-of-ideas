@@ -19,16 +19,25 @@
 // novelty bonus for When/Who/Does parts rare in the live pool; it qualifies
 // with at least rules.voteMin votes and a score over one half. M2-10 enters
 // qualified(candidateScores(rt)) best first.
+//
+// M3-6 (mission #800): a new version of a Library unit (an `evolve` idea in
+// `voting`) is a candidate like an idea's unit, and while its archetype has
+// one, the archetype's Library version is a candidate too, "unchanged" (no new
+// row: its votes are under the Library unit's id). Anyone may vote on
+// "unchanged", its author included. Of one archetype's candidates only the
+// best qualified one is its entry; "unchanged" only by scoring above every
+// qualified version.
 import { spawn } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { CandidateScore, Idea, MvpRules, PlayerRef, UnitContent, UnitId, VoteCard, VoteRequest } from "../../../src/mvp/contract.js";
+import { ideaKind, type CandidateKind, type CandidateScore, type Idea, type MvpRules, type PlayerRef, type UnitContent, type UnitId, type VoteCard, type VoteRequest } from "../../../src/mvp/contract.js";
 import { nextRollover } from "../../../src/mvp/day.js";
 import { slugOf } from "../../../src/mvp/tune.js";
 import { allDoes, effectKinds, mvpPool, ROWS, type Row } from "../../../src/mvp/units.js";
 import { IdeaRefused, refundIdea } from "./ideas.js";
+import { lineage } from "./lineage.js";
 import type { RunDeps } from "./runs.js";
 import type { MvpJob, MvpRuntime } from "./runtime.js";
 import type { MvpStore, StoredUnit } from "./store.js";
@@ -241,13 +250,40 @@ function unitContentOf(id: UnitId, row: Row): UnitContent {
   return { ...mvpPool([row]).units[0]!, id };
 }
 
-/** Candidates being voted on: the units of ideas in `voting`. */
-function candidates(store: MvpStore): StoredUnit[] {
-  return store
-    .ideas({ state: "voting" })
-    .map((i) => checkedUnit(store, i))
-    .filter((u): u is StoredUnit => u !== null);
+/** A unit on the vote cards, and what it is. */
+interface Candidate {
+  unit: StoredUnit;
+  kind: CandidateKind;
+  rootId: UnitId;
 }
+
+/** Candidates being voted on: the units of ideas in `voting` (new ideas and
+ * new versions), and for each archetype with a version among them its Library
+ * version, "unchanged": the newest one in the Library, none while a version
+ * of it is live. */
+function candidates(store: MvpStore): Candidate[] {
+  const out: Candidate[] = [];
+  const roots = new Set<UnitId>();
+  for (const i of store.ideas({ state: "voting" })) {
+    const unit = checkedUnit(store, i);
+    if (!unit) continue;
+    const version = ideaKind(i) === "evolve";
+    const rootId = unit.rootId ?? unit.unitId;
+    out.push({ unit, kind: version ? "version" : "idea", rootId });
+    if (version) roots.add(rootId);
+  }
+  for (const rootId of roots) {
+    const versions = lineage(store, rootId);
+    if (versions.some((u) => u.status === "live")) continue;
+    const unit = versions.filter((u) => u.status === "library").at(-1);
+    if (unit) out.push({ unit, kind: "unchanged", rootId });
+  }
+  return out;
+}
+
+/** May `playerId` vote on `c`? Not on their own idea or version; on
+ * "unchanged", anyone. */
+const mayVote = (c: Candidate, playerId: string) => c.kind === "unchanged" || c.unit.authorId !== playerId;
 
 /** The next card for `player`, or null: the candidate with the fewest votes
  * they may still vote on, against a typical unit they haven't met it with. */
@@ -256,8 +292,8 @@ export function nextCard(rt: VoteDeps, player: PlayerRef): VoteCard | null {
   const mine = rt.store.votes({ playerId: player.id });
   const typical = typicalUnits(rt);
   const open = candidates(rt.store)
-    .filter((c) => c.authorId !== player.id)
-    .map((c) => ({ c, n: rt.store.votes({ candidateId: c.unitId }).length, others: typical.filter((o) => !mine.some((v) => v.candidateId === c.unitId && v.otherId === o)) }))
+    .filter((c) => mayVote(c, player.id))
+    .map((c) => ({ c, n: rt.store.votes({ candidateId: c.unit.unitId }).length, others: typical.filter((o) => !mine.some((v) => v.candidateId === c.unit.unitId && v.otherId === o)) }))
     .filter((x) => x.others.length)
     .sort((a, b) => a.n - b.n);
   const pick = open[0];
@@ -265,21 +301,21 @@ export function nextCard(rt: VoteDeps, player: PlayerRef): VoteCard | null {
   const r = rt.seed();
   const otherId = pick.others[r % pick.others.length]!;
   const other = rt.content.units.find((u) => u.id === otherId)!;
-  const cand = unitContentOf(pick.c.unitId, pick.c.row);
-  const pool = mvpPool([pick.c.row]);
+  const cand = unitContentOf(pick.c.unit.unitId, pick.c.unit.row);
+  const pool = mvpPool([pick.c.unit.row]);
   const units: [UnitContent, UnitContent] = (r >> 8) % 2 ? [cand, other] : [other, cand];
   // The live unit's abilities are in the content already; the card carries the candidate's.
-  return { candidateId: cand.id, otherId, units, pool: { abilities: pool.abilities, statuses: pool.statuses, summons: pool.summons } };
+  return { candidateId: cand.id, candidateKind: pick.c.kind, otherId, units, pool: { abilities: pool.abilities, statuses: pool.statuses, summons: pool.summons } };
 }
 
 /** Records `player`'s vote. Throws IdeaRefused (409 a bot, 404 no such pair,
  * 400 a pick of neither, 409 their own candidate or a pair already voted). */
 export function castVote(rt: VoteDeps, player: PlayerRef, req: VoteRequest): void {
   if (player.bot) throw new IdeaRefused(409, "bots don't vote");
-  const cand = candidates(rt.store).find((c) => c.unitId === req.candidateId);
+  const cand = candidates(rt.store).find((c) => c.unit.unitId === req.candidateId);
   if (!cand || !rt.content.units.some((u) => u.id === req.otherId)) throw new IdeaRefused(404, "no such pair");
   if (req.pick !== null && req.pick !== req.candidateId && req.pick !== req.otherId) throw new IdeaRefused(400, "pick one of the two, or skip");
-  if (cand.authorId === player.id) throw new IdeaRefused(409, "you can't vote on your own idea");
+  if (!mayVote(cand, player.id)) throw new IdeaRefused(409, "you can't vote on your own idea");
   const ok = rt.store.addVote({ playerId: player.id, candidateId: req.candidateId, otherId: req.otherId, pick: req.pick, createdAt: rt.now().toISOString() });
   if (!ok) throw new IdeaRefused(409, "you voted on this pair already");
 }
@@ -314,33 +350,52 @@ export function novelty(row: Row, liveRows: Row[]): number {
 
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 
-/** Every candidate's standing, qualified ones first, best first. */
+/** Every candidate's standing, qualified ones first, best first, each
+ * archetype's entry marked (M3-6). */
 export function candidateScores(rt: Pick<RunDeps, "store" | "rules">): CandidateScore[] {
   const { min, bonus } = voteRules(rt.rules);
   const live = poolRows(rt.store);
-  return candidates(rt.store)
-    .map((c) => {
+  const scores = candidates(rt.store)
+    .map(({ unit: c, kind, rootId }): CandidateScore => {
       const counted = rt.store.votes({ candidateId: c.unitId }).filter((v) => v.pick !== null);
       const won = counted.filter((v) => v.pick === c.unitId).length;
       const share = counted.length ? won / counted.length : 0;
       const nov = novelty(c.row, live);
       const score = share + bonus * nov;
       const r3 = (x: number) => Math.round(x * 1000) / 1000;
-      return { unitId: c.unitId, name: c.row.name, emoji: c.row.emoji, authorId: c.authorId, votes: counted.length, won, share: r3(share), novelty: r3(nov), score: r3(score), qualified: counted.length >= min && score > 0.5 };
+      return { unitId: c.unitId, kind, rootId, name: c.row.name, emoji: c.row.emoji, authorId: c.authorId, votes: counted.length, won, share: r3(share), novelty: r3(nov), score: r3(score), qualified: counted.length >= min && score > 0.5, entry: false };
     })
     .sort((a, b) => Number(b.qualified) - Number(a.qualified) || b.score - a.score || b.votes - a.votes);
+  // Each archetype's entry: its best qualified version, unless "unchanged"
+  // scores above it (on a tie the version enters).
+  const best = new Map<UnitId, CandidateScore>();
+  for (const s of scores) {
+    if (!s.qualified) continue;
+    const cur = best.get(s.rootId);
+    if (!cur || (cur.kind === "unchanged" && s.score >= cur.score)) best.set(s.rootId, s);
+  }
+  for (const s of best.values()) s.entry = true;
+  return scores;
 }
 
-/** The candidates that may enter (M2-10), best first. */
+/** The candidates that may enter (M2-10), best first: one per archetype (M3-6). */
 export function qualified(scores: CandidateScore[]): CandidateScore[] {
-  return scores.filter((s) => s.qualified).sort((a, b) => b.score - a.score);
+  return scores.filter((s) => s.qualified && s.entry).sort((a, b) => b.score - a.score);
+}
+
+/** M3-6: the archetypes with versions on the cards, each with its versions
+ * and "unchanged", best first (from candidateScores). */
+export function contests(scores: CandidateScore[]): { rootId: UnitId; candidates: CandidateScore[] }[] {
+  const by = new Map<UnitId, CandidateScore[]>();
+  for (const s of scores) if (s.kind !== "idea") by.set(s.rootId, [...(by.get(s.rootId) ?? []), s]);
+  return [...by].map(([rootId, cs]) => ({ rootId, candidates: [...cs].sort((a, b) => Number(b.entry) - Number(a.entry) || b.score - a.score || b.votes - a.votes) }));
 }
 
 /** Dev: FAKE_VOTES votes on each candidate from fake voters, all but one for it. */
 export const FAKE_VOTES = 5;
 export function fakeVotes(rt: VoteDeps): CandidateScore[] {
   const typical = typicalUnits(rt);
-  for (const c of candidates(rt.store)) {
+  for (const { unit: c } of candidates(rt.store)) {
     const n = rt.store.votes({ candidateId: c.unitId }).length;
     for (let i = 0; i < FAKE_VOTES; i++) {
       const otherId = typical[(n + i) % typical.length]!;

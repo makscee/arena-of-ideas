@@ -2,7 +2,8 @@
 // would you rather see in the game?", a candidate unit and a typical live one
 // in the server's random order. One tap picks, Skip skips, and the next card
 // takes its place. Quiet: nothing shows when there's no card. Home and the
-// run-over screen each show one.
+// run-over screen each show one. M3-6: a new version of a Library unit is
+// tagged "new version of Quillback", its Library version "Quillback, unchanged".
 import type { MvpContent, UnitContent, VoteCard } from "../../src/mvp/contract";
 import { api } from "../api";
 import { addCardAbilities, card, formText } from "../ui/card";
@@ -33,10 +34,18 @@ export function votePanel(content: MvpContent): HTMLElement {
         sending = false;
       }
     };
+    // Both sides get the line, so the two cards stay level.
+    const tag = (u: UnitContent) =>
+      c.candidateKind === "idea"
+        ? []
+        : u.id !== c.candidateId
+          ? [h("div", { class: "small vote-tag" }, "\u00a0")]
+          : [h("div", { class: "small vote-tag", "data-testid": "vote-tag" }, c.candidateKind === "version" ? `new version of ${u.emoji} ${u.name}` : `${u.emoji} ${u.name}, unchanged`)];
     const choice = (u: UnitContent) => {
       const el = h(
         "button",
         { class: "vote-pick", "data-testid": "vote-pick", "data-unit": u.id, "aria-label": `${u.name}` },
+        ...tag(u),
         card({ emoji: u.emoji, name: u.name, stats: u.base, recipe: u.forms.sleeping, unitId: u.id }, { side: "you", tier: u.tier }),
         h("div", { class: "small vote-text" }, formText(u.forms.sleeping, pool)),
         h("div", { class: "dim small vote-text" }, `Awoken: ${formText(u.forms.awoken, pool)}`),

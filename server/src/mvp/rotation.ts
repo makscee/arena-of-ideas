@@ -17,7 +17,7 @@ import type { CandidateScore, MvpRules, UnitId } from "../../../src/mvp/contract
 import type { Row } from "../../../src/mvp/units.js";
 import { contentOf } from "./content.js";
 import type { MvpStore, PoolSnapshot } from "./store.js";
-import { candidateScores, qualified } from "./votes.js";
+import { candidateScores, contests, qualified } from "./votes.js";
 
 /** The rotation tunables, defaults filled in. */
 export function rotationRules(rules: Pick<MvpRules, "rotationEntrants" | "rotationMinStay" | "rotationWindow">): { entrants: number; minStay: number; window: number } {
@@ -64,6 +64,9 @@ export interface RotationPlan {
   swaps: { entrant: CandidateScore; leaver: LeaverScore }[];
   /** Qualified candidates with no leaver for them today. */
   waiting: CandidateScore[];
+  /** M3-6: each archetype whose versions are on the cards: its versions and
+   * "unchanged", the entry (if any) first. */
+  contests: { rootId: UnitId; candidates: CandidateScore[] }[];
   /** Every live unit that may leave, the first to leave first. */
   leavers: LeaverScore[];
   /** Live units that haven't stayed long enough to leave. */
@@ -83,7 +86,7 @@ export function rotationPlan(rt: { store: MvpStore; rules: MvpRules }, endingSeq
   const tun = rotationRules(rt.rules);
   const pool = store.currentPool();
   const daySeq = endingSeq + 1;
-  const plan: RotationPlan = { daySeq, from: pool?.version ?? "", swaps: [], waiting: [], leavers: [], tooNew: 0, nextLeaverSeq: null };
+  const plan: RotationPlan = { daySeq, from: pool?.version ?? "", swaps: [], waiting: [], contests: [], leavers: [], tooNew: 0, nextLeaverSeq: null };
   if (!pool) return { ...plan, none: "no pool in the store" };
   if (pool.daySeq >= daySeq) return { ...plan, none: `the pool for day ${daySeq} is already stored` };
 
@@ -139,9 +142,12 @@ export function rotationPlan(rt: { store: MvpStore; rules: MvpRules }, endingSeq
     })
     .sort((a, b) => a.keep - b.keep || a.picks - b.picks || b.days - a.days || (a.unitId < b.unitId ? -1 : 1));
 
-  // Entrants: the qualified candidates, best first, never one already live.
+  // Entrants: the qualified candidates, best first, one per archetype, never
+  // one already live.
   const live = new Set(pool.unitIds);
-  const ready = qualified(candidateScores(rt)).filter((s) => !live.has(s.unitId));
+  const scores = candidateScores(rt);
+  plan.contests = contests(scores);
+  const ready = qualified(scores).filter((s) => !live.has(s.unitId));
   const k = Math.min(tun.entrants, ready.length, plan.leavers.length);
   plan.swaps = ready.slice(0, k).map((entrant, i) => ({ entrant, leaver: plan.leavers[i]! }));
   plan.waiting = ready.slice(k);
@@ -204,10 +210,21 @@ export function describePlan(plan: RotationPlan, rules: MvpRules): string[] {
   const out = [`rotation for day ${plan.daySeq} (pool ${plan.from}; at most ${tun.entrants} a day, leavers live ≥ ${tun.minStay} days, played over the last ${tun.window} days)`];
   if (plan.none) out.push(`nothing changes: ${plan.none}`);
   for (const { entrant: e, leaver: l } of plan.swaps) {
-    out.push(`  enters ${e.emoji} ${e.name} (${e.unitId}, idea by ${e.authorId ?? "?"}): score ${e.score} = ${e.won}/${e.votes} votes + novelty ${e.novelty}`);
+    const by = e.kind === "unchanged" ? "unchanged" : `${e.kind === "version" ? "version" : "idea"} by ${e.authorId ?? "?"}`;
+    out.push(`  enters ${e.emoji} ${e.name} (${e.unitId}, ${by}): score ${e.score} = ${e.won}/${e.votes} votes + novelty ${e.novelty}`);
     out.push(`  leaves ${l.emoji} ${l.name} (${l.unitId}): keep ${l.keep} = play ${l.play} (${l.picks} picks) + ${COOL_WEIGHT}×coolness ${l.coolness} (${l.votes} votes) + ${HEALTH_WEIGHT}×health ${l.health}; live ${l.days} days`);
   }
   for (const e of plan.waiting) out.push(`  waits ${e.emoji} ${e.name} (${e.unitId}): qualified, score ${e.score}, no leaver for it today`);
+  for (const c of plan.contests) {
+    const entry = c.candidates.find((s) => s.entry);
+    const first = c.candidates[0]!;
+    out.push(`  contest ${first.emoji} ${first.name} (archetype ${c.rootId}): ${entry ? `${entry.unitId} is its entry` : "no entry yet"}`);
+    for (const s of c.candidates) {
+      const what = s.kind === "unchanged" ? "unchanged" : `version by ${s.authorId ?? "?"}`;
+      const verdict = s.entry ? "entry" : s.qualified ? "qualified, beaten" : `not qualified`;
+      out.push(`    ${s.unitId} ${what}: score ${s.score} = ${s.won}/${s.votes} votes + novelty ${s.novelty}; ${verdict}`);
+    }
+  }
   const stays = plan.leavers.slice(plan.swaps.length, plan.swaps.length + 5);
   if (stays.length) out.push(`  next to leave: ${stays.map((l) => `${l.name} (keep ${l.keep})`).join(", ")}`);
   out.push(`  ${plan.leavers.length} live units may leave, ${plan.tooNew} stayed too short${plan.nextLeaverSeq !== null ? ` (the first of them may leave at the end of day ${plan.nextLeaverSeq - 1})` : ""}`);
