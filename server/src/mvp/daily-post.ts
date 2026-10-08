@@ -197,16 +197,16 @@ export function telegramSender(token: string, api = "https://api.telegram.org", 
   return {
     async post(chat, text, png) {
       const method = png ? "sendPhoto" : "sendMessage";
-      let body: Uint8Array | string;
+      let body: Blob | string;
       const headers: Record<string, string> = {};
       if (png) {
         // Multipart by hand: FormData would turn the caption's \n into \r\n.
         const boundary = `arena${randomBytes(12).toString("hex")}`;
         const field = (name: string, value: string) => `--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`;
-        body = Buffer.concat([
-          Buffer.from(field("chat_id", chat) + field("caption", text) + `--${boundary}\r\nContent-Disposition: form-data; name="photo"; filename="champion.png"\r\nContent-Type: image/png\r\n\r\n`),
-          png,
-          Buffer.from(`\r\n--${boundary}--\r\n`),
+        body = new Blob([
+          field("chat_id", chat) + field("caption", text) + `--${boundary}\r\nContent-Disposition: form-data; name="photo"; filename="champion.png"\r\nContent-Type: image/png\r\n\r\n`,
+          new Uint8Array(png),
+          `\r\n--${boundary}--\r\n`,
         ]);
         headers["content-type"] = `multipart/form-data; boundary=${boundary}`;
       } else {
