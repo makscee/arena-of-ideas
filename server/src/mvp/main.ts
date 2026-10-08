@@ -9,6 +9,9 @@
  *   MVP_DEV     1 serves the dev tools (/api/v1/dev/*, "end day now")
  *   MVP_INVITES 1 makes it invite-only (slice 13): players come from invite
  *               links (npm run mvp:invite), the dev tools only for admin invites
+ *   MVP_ROTATION 1 rotates the pool at each day end (M2-10, ./rotation.ts):
+ *               qualified candidates enter, units live 2+ weeks leave; off by
+ *               default (dry run: npm run mvp:rotate -- --db <file> --dry-run)
  *   MVP_DB      the SQLite file (default data/arena-mvp.db); ":memory:" keeps nothing
  *   ARENA_NAMER_URL  the fusion namer (OpenAI-compatible chat endpoint, slice
  *               10); without it every fusion gets the portmanteau
@@ -44,10 +47,10 @@ const content = poolContent(store);
 const dev = process.env.MVP_DEV === "1";
 if (process.env.ARENA_TUNER && !(process.env.ARENA_TUNER === "instant" && dev)) throw new Error("ARENA_TUNER=instant needs MVP_DEV=1");
 const tuner = process.env.ARENA_TUNER === "instant" ? { night: instantTuner, dev: instantTuner } : undefined;
-const rt = mvpRuntime({ content, store, dev, ...(tuner ? { tuner } : {}), invites: process.env.MVP_INVITES === "1", open: process.env.MVP_OPEN === "1" });
+const rt = mvpRuntime({ content, store, dev, ...(tuner ? { tuner } : {}), invites: process.env.MVP_INVITES === "1", open: process.env.MVP_OPEN === "1", rotation: process.env.MVP_ROTATION === "1" });
 const build = buildOf();
 const app = mvpServerApp(createMvpApp(rt), { staticRoot: root, build });
 
 serve({ port, hostname: host, fetch: underBasePath(app, basePath) });
 startMvpJobs(rt);
-console.log(`arena mvp on http://${host}:${port} (base ${basePath}, build ${build ?? "unknown"}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""}${tuner ? ", instant tuner" : ""}${rt.invites ? (rt.open ? ", open to all" : ", invite-only") : ""})`);
+console.log(`arena mvp on http://${host}:${port} (base ${basePath}, build ${build ?? "unknown"}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""}${tuner ? ", instant tuner" : ""}${rt.rotation ? ", rotation on" : ""}${rt.invites ? (rt.open ? ", open to all" : ", invite-only") : ""})`);

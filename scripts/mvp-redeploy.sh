@@ -87,6 +87,11 @@ case "$OPEN" in 0|1) ;; *) echo "ARENA_MVP_OPEN is 0 or 1, not '$OPEN'" >&2; exi
 # on m1): claude by default here, ARENA_MVP_IDEA_READER=fake turns it off.
 IDEA_READER="${ARENA_MVP_IDEA_READER:-claude}"
 case "$IDEA_READER" in claude|fake) ;; *) echo "ARENA_MVP_IDEA_READER is claude or fake, not '$IDEA_READER'" >&2; exit 2 ;; esac
+# The pool's daily rotation at 04:00 (mission 2, M2-10): on, after a dry run on a
+# copy of the live DB (npm run mvp:rotate -- --db <copy> --dry-run).
+# ARENA_MVP_ROTATION=0 turns it off.
+ROTATION="${ARENA_MVP_ROTATION:-1}"
+case "$ROTATION" in 0|1) ;; *) echo "ARENA_MVP_ROTATION is 0 or 1, not '$ROTATION'" >&2; exit 2 ;; esac
 PUBLIC_URL=https://arena.makscee.ru/arena/
 TAILNET_URL=https://m1.twin-pogona.ts.net/arena/api/v1/health
 
@@ -217,6 +222,7 @@ cat > "\$PLIST" <<PL
     <key>MVP_DB</key><string>\$DB</string>
     <key>MVP_BUILD</key><string>\$BUILD</string>
     <key>ARENA_NAMER_URL</key><string>http://127.0.0.1:$NAMER_PORT/v1/chat/completions</string>
+    <key>MVP_ROTATION</key><string>$ROTATION</string>
     <key>ARENA_IDEA_READER</key><string>$IDEA_READER</string>
     <key>ARENA_CLAUDE_BIN</key><string>\$HOME/.local/bin/claude</string>
   </dict>

@@ -97,6 +97,13 @@ export interface MvpRules {
   /** The most the novelty bonus adds to a candidate's vote share (at novelty
    * 1). Absent, 0.1. */
   voteNoveltyBonus?: number;
+  /** Mission 2 (M2-10): candidates that enter the pool at most per day end.
+   * Absent, 3. */
+  rotationEntrants?: number;
+  /** Days a unit stays live at least before it may leave. Absent, 14. */
+  rotationMinStay?: number;
+  /** Days of tallies a leaver's play is read from. Absent, 14. */
+  rotationWindow?: number;
 }
 
 /** The turn cap round-3 runs started with (R3-26): their fights past it end
