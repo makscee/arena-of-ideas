@@ -173,6 +173,7 @@ button.pick-none { align-self: center; }
 /* A term (a button) breaks inside its column too: Russian's longer words ("Удар по союзнику") stay in a third of a phone (M4-2). */
 .pick-rule button { max-width: 100%; overflow-wrap: anywhere; }
 .pick-rule .tpill button { max-width: calc(100% - 14px); } /* the pill's padding and border */
+.pick-rule .t-glue button { white-space: normal; max-width: calc(100% - 6px); } /* room for the glued "." */
 .pick-col.picked .pick-rule { color: var(--you); }
 /* Only the sheet gives up height on a short phone: the quote and the rules above it stay whole. */
 .pick-main > :not(.pick-detail) { flex-shrink: 0; }
