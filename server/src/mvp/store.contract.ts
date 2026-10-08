@@ -3,7 +3,7 @@
 // that adds a method to MvpStore adds its case here. Compare with toEqual:
 // a store may hand back copies.
 import { describe, expect, it } from "vitest";
-import type { BattleRecord, Champion, DayState, FusionDiscovery, Ghost, MvpContent, PlayerRef, PlayoffResult, Rating, Slay } from "../../../src/mvp/contract.js";
+import type { BattleRecord, Champion, DayState, FusionDiscovery, Ghost, Idea, MvpContent, PlayerRef, PlayoffResult, Rating, Slay } from "../../../src/mvp/contract.js";
 import { initMvpRun } from "../../../src/mvp/run.js";
 import { ROWS } from "../../../src/mvp/units.js";
 import type { MvpStore, PoolSnapshot, StoredUnit } from "./store.js";
@@ -235,6 +235,25 @@ export function describeMvpStore(name: string, make: () => MvpStore): void {
       s.putIdeaCounts("p1", { spent: 2, granted: 2, forfeited: 1 });
       expect(s.ideaCounts("p1")).toEqual({ spent: 2, granted: 2, forfeited: 1 });
       expect(s.ideaCounts("p2")).toEqual({ spent: 0, granted: 0, forfeited: 0 });
+    });
+
+    it("keeps written ideas (M2-4): by player and state, oldest first, replaced in place", () => {
+      const s = make();
+      const idea = (ideaId: string, playerId: string, state: Idea["state"] = "written"): Idea => ({ ideaId, playerId, text: `idea ${ideaId} text`, state, createdAt: "2026-10-08T08:00:00.000Z", data: {} });
+      s.putIdea(idea("i1", "p1"));
+      s.putIdea(idea("i2", "p2"));
+      s.putIdea(idea("i3", "p1"));
+      expect(s.idea("i2")).toEqual(idea("i2", "p2"));
+      expect(s.idea("nope")).toBeUndefined();
+      expect(s.ideas({ playerId: "p1" }).map((i) => i.ideaId)).toEqual(["i1", "i3"]);
+      s.putIdea({ ...idea("i1", "p1", "reading"), data: { later: [1, 2] } as Idea["data"] });
+      expect(s.ideas().map((i) => i.ideaId)).toEqual(["i1", "i2", "i3"]);
+      expect(s.idea("i1")).toMatchObject({ state: "reading", data: { later: [1, 2] } });
+      expect(s.ideas({ state: "written" }).map((i) => i.ideaId)).toEqual(["i2", "i3"]);
+      expect(s.ideas({ playerId: "p1", state: "written" }).map((i) => i.ideaId)).toEqual(["i3"]);
+      s.deleteIdea("i3");
+      expect(s.idea("i3")).toBeUndefined();
+      expect(s.ideas({ playerId: "p1" }).map((i) => i.ideaId)).toEqual(["i1"]);
     });
   });
 }

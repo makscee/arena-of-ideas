@@ -12,6 +12,7 @@ import {
   type FusionDiscovery,
   type HomeView,
   type IdeasView,
+  type MyIdeasView,
   type JoinSession,
   type MvpContent,
   type PlayerRef,
@@ -166,6 +167,12 @@ export const api = {
   endDay: () => call<DayView>("POST", "/dev/end-day"),
   /** Dev "+1 idea" (M2-3): 404 unless MVP_DEV=1. */
   grantIdea: () => call<IdeasView>("POST", "/dev/grant-idea"),
+  /** My ideas (M2-4): the ideas held and the player's own sent ones. */
+  myIdeas: () => call<MyIdeasView>("GET", "/ideas"),
+  /** Sends an idea, spending one held (400 its length, 409 none held). */
+  writeIdea: (text: string) => call<MyIdeasView>("POST", "/ideas", { text }),
+  /** Takes back a `written` idea, refunding it. */
+  cancelIdea: (ideaId: string) => call<MyIdeasView>("POST", `/ideas/${encodeURIComponent(ideaId)}/cancel`),
   /** 501 until slice 11. */
   stats: () => call<StatsView>("GET", "/stats"),
   /** Discovered fusions (slice 10). */
