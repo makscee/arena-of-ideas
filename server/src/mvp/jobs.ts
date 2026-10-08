@@ -14,7 +14,7 @@ export const MVP_JOBS: MvpJob[] = [
   dayRollover, // slice 5: the 04:00 rollover
   botWorld, // slice 6: the champion seed and the bot top-up
   fusionNamingJob, // slice 10: the naming queue
-  fusionRuNamingJob, // M4-4: Russian names for stored discoveries (ARENA_NAMER_URL)
+  fusionRuNamingJob, // M4-4: Russian names for stored discoveries (ARENA_NAMER_URL, ARENA_NAMER_RU=1)
   ideaReadingJob, // M2-5: reads written ideas (ARENA_IDEA_READER)
   overnightJob, // M2-8: the overnight check after the day end
 ];

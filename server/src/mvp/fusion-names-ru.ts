@@ -134,11 +134,13 @@ export async function nameFusionsRu(store: MvpStore, namer: RuNamer, opts: { lim
 export const RU_NAMING_MS = 60_000;
 const RU_NAMING_BATCH = 3;
 
-/** The Russian naming pass, every RU_NAMING_MS while ARENA_NAMER_URL is set.
+/** The Russian naming pass, every RU_NAMING_MS while ARENA_NAMER_URL is set
+ * and ARENA_NAMER_RU=1: off until Maks has seen the namer's Russian sample
+ * (docs/mission4/names-ru.md), since a stored name stays for good.
  * A pair the model can't name isn't asked again until the server restarts. */
 export const fusionRuNamingJob: MvpJob = (rt) => {
   const url = process.env.ARENA_NAMER_URL;
-  if (!url) return () => {};
+  if (!url || process.env.ARENA_NAMER_RU !== "1") return () => {};
   const namer = httpRuNamer(url);
   let running = false;
   const gaveUp = new Set<string>();
