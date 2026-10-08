@@ -751,6 +751,9 @@ export interface IdeaData {
 
 export type IdeaKind = "new" | "evolve";
 
+/** POST /ideas: a new idea, or (M3-4) a new version of the Library unit `target`. */
+export type WriteIdeaRequest = { text: string; kind?: "new" } | { text: string; kind: "evolve"; target: UnitId };
+
 /** An idea's kind, "new" when it has none (written before mission 3). */
 export const ideaKind = (i: Idea): IdeaKind => i.data.kind ?? "new";
 
@@ -857,8 +860,10 @@ export interface MyIdeasView {
 //   POST /api/v1/dev/end-day                 → DayView            (slice 5; 404 unless MVP_DEV=1)
 //   POST /api/v1/dev/grant-idea              → IdeasView          (M2-3; +1 idea up to the cap; 404 unless MVP_DEV=1)
 //   GET  /api/v1/ideas                       → MyIdeasView        (M2-4; the caller's own ideas only, 401 without a player)
-//   POST /api/v1/ideas         { text }      → MyIdeasView        (M2-4; writes one, spending a held idea: 400 text not
-//                                                                  IDEA_TEXT_MIN–MAX characters, 409 no idea held)
+//   POST /api/v1/ideas         WriteIdeaRequest → MyIdeasView     (M2-4; writes one, spending a held idea: 400 text not
+//                                                                  IDEA_TEXT_MIN–MAX characters, 409 no idea held; M3-4: kind
+//                                                                  "evolve" proposes a new version of `target`: 404 no such
+//                                                                  unit, 409 the target isn't in the Library)
 //   POST /api/v1/ideas/:ideaId/cancel        → MyIdeasView        (M2-4; takes back a `written` idea and refunds it: 404 not
 //                                                                  the caller's, 409 past `written` or ideas held at the cap)
 //   GET  /api/v1/ideas/:ideaId               → MyIdea             (M2-5; the caller's own idea with its options; 404 not theirs)

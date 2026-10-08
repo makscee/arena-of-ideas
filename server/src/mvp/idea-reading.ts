@@ -13,11 +13,18 @@
 // the reason and refunds it. A part the game can't say goes to the
 // new-words log. A reader error or timeout leaves the idea `reading` and
 // retries later: nothing waits on the model.
-import type { Idea, IdeaArchetype, MyIdea } from "../../../src/mvp/contract.js";
+// M3-4: a proposal for a new version of a Library unit (kind "evolve") skips
+// the archetype stage: its archetype is the target's name, emoji and line,
+//   written → reading → pick-reading → simulating (an `evolution` candidate)
+// and each reading must also differ from the target's shape and be true to
+// its line (the reader's faithfulness call); one that isn't is dropped like a
+// failed check.
+import { ideaKind, type Idea, type IdeaArchetype, type MyIdea } from "../../../src/mvp/contract.js";
 import { slug, type Row } from "../../../src/mvp/units.js";
-import { archetypeDraftProblems, checkReading, rowOf, takenShapes, type ArchetypeDraft } from "./idea-checks.js";
+import { archetypeDraftProblems, checkReading, rowOf, ruleText, sameShape, takenShapes, type ArchetypeDraft } from "./idea-checks.js";
 import { ideaReaderFromEnv, type CantExpress, type IdeaReader, type NearMiss } from "./idea-reader.js";
 import { IdeaRefused, refundIdea } from "./ideas.js";
+import { rootOf } from "./lineage.js";
 import type { RunDeps } from "./runs.js";
 import type { MvpJob } from "./runtime.js";
 import type { MvpStore } from "./store.js";
@@ -29,6 +36,8 @@ export const READ_BATCH = 3;
 /** Options per stage. */
 export const OPTIONS = 3;
 export const COULD_NOT = "We couldn't make this idea into a unit yet.";
+/** M3-4: why a proposal fails when the unit it was for is gone. */
+export const TARGET_GONE = "The unit this new version was for is gone.";
 
 /** The rows a new unit's shape must differ from: live units and candidates. */
 function shapeRows(store: MvpStore): Row[] {
@@ -61,7 +70,8 @@ export async function readIdea(deps: ReadDeps, reader: IdeaReader, idea: Idea): 
   const at: Idea = { ...idea, state: "reading" };
   store.putIdea(at);
   try {
-    if (at.data.archetype) await readReadings(deps, reader, at, at.data.archetype);
+    if (ideaKind(at) === "evolve") await readVersion(deps, reader, at);
+    else if (at.data.archetype) await readReadings(deps, reader, at, at.data.archetype);
     else await readArchetypes(deps, reader, at);
   } catch (err) {
     const tries = (at.data.tries ?? 0) + 1;
@@ -104,30 +114,55 @@ async function readArchetypes(deps: ReadDeps, reader: IdeaReader, idea: Idea): P
   deps.store.putIdea({ ...idea, state: "pick-archetype", data: settled({ ...idea.data, archetypes: ok }, parts) });
 }
 
-async function readReadings(deps: ReadDeps, reader: IdeaReader, idea: Idea, archetype: IdeaArchetype): Promise<void> {
+/** M3-4: a new version's readings, its archetype the target's name, emoji
+ * and line, its current row the shape to move away from. */
+async function readVersion(deps: ReadDeps, reader: IdeaReader, idea: Idea): Promise<void> {
+  const target = idea.data.target ? deps.store.unit(idea.data.target) : undefined;
+  if (!target) return fail(deps, idea, [], TARGET_GONE);
+  const archetype: IdeaArchetype = { name: target.row.name, emoji: target.row.emoji, line: target.row.archetype };
+  await readReadings(deps, reader, { ...idea, data: { ...idea.data, archetype } }, archetype, target.row);
+}
+
+/** The readings of `archetype`; for a new version (M3-4) `current` is the
+ * target's row: a reading must differ from its shape and be true to the line. */
+async function readReadings(deps: ReadDeps, reader: IdeaReader, idea: Idea, archetype: IdeaArchetype, current?: Row): Promise<void> {
   const units = shapeRows(deps.store);
   const taken = takenShapes(units);
+  const version = current ? { version: ruleText(current) } : {};
   const ok: NonNullable<Idea["data"]["readings"]> = [];
-  const check = (drafts: Parameters<typeof checkReading>[0][]) => {
+  const check = async (drafts: Parameters<typeof checkReading>[0][]) => {
     const problems: string[] = [];
-    drafts.forEach((d, i) => {
+    for (const [i, d] of drafts.entries()) {
       const r = checkReading(d, archetype, taken);
-      if ("problems" in r) problems.push(...r.problems.map((p) => `reading ${i + 1}: ${p}`));
-      else if (ok.length < OPTIONS) {
-        ok.push(r.reading);
-        taken.accept(r.row);
+      if ("problems" in r) {
+        problems.push(...r.problems.map((p) => `reading ${i + 1}: ${p}`));
+        continue;
       }
-    });
+      if (ok.length >= OPTIONS) continue;
+      if (current && sameShape(r.row, current)) {
+        problems.push(`reading ${i + 1}: it has the current version's shape; change its When, Who or Does`);
+        continue;
+      }
+      if (current) {
+        const f = await reader.faithful(idea.text, archetype, r.reading);
+        if (!f.true) {
+          problems.push(`reading ${i + 1}: it isn't true to the line "${archetype.line}": ${f.reason}`);
+          continue;
+        }
+      }
+      ok.push(r.reading);
+      taken.accept(r.row);
+    }
     return problems;
   };
   const declined = idea.data.declined?.readings;
   for (const d of declined ?? []) taken.accept(rowOf(archetype, d));
-  const first = await reader.readings(idea.text, archetype, { want: OPTIONS, units, ...turnedDown(declined?.map((d) => d.text.sleeping)) });
-  const problems = check(first.options);
+  const first = await reader.readings(idea.text, archetype, { want: OPTIONS, units, ...version, ...turnedDown(declined?.map((d) => d.text.sleeping)) });
+  const problems = await check(first.options);
   const cant: Logged[] = [...first.cantExpress, ...nearMissWords(first.nearMiss)];
   if (problems.length && ok.length < OPTIONS) {
-    const again = await reader.readings(idea.text, archetype, { want: OPTIONS - ok.length, units, problems });
-    check(again.options);
+    const again = await reader.readings(idea.text, archetype, { want: OPTIONS - ok.length, units, ...version, problems });
+    await check(again.options);
     cant.push(...again.cantExpress, ...nearMissWords(again.nearMiss));
   }
   const parts = logCantExpress(deps, idea, cant);
@@ -179,8 +214,8 @@ function logCantExpress(deps: ReadDeps, idea: Idea, cant: Logged[]): string[] {
   return [...new Set(parts)];
 }
 
-function fail(deps: ReadDeps, idea: Idea, parts: string[]): void {
-  const failure = parts.length ? `${COULD_NOT} The game has no words yet for: ${parts.map((p) => `"${p}"`).join(", ")}.` : COULD_NOT;
+function fail(deps: ReadDeps, idea: Idea, parts: string[], reason = COULD_NOT): void {
+  const failure = parts.length ? `${reason} The game has no words yet for: ${parts.map((p) => `"${p}"`).join(", ")}.` : COULD_NOT;
   deps.store.putIdea({ ...idea, state: "failed", data: { ...settled(idea.data, parts), failure } });
   refundIdea(deps, idea.playerId);
 }
@@ -213,7 +248,8 @@ export function pickArchetype(deps: ReadDeps, playerId: string, ideaId: string, 
 }
 
 /** Picks reading `index`: its Row becomes a candidate unit by the player, and
- * the idea goes on to the simulation. Another idea may have taken the name or
+ * the idea goes on to the simulation. M3-4: a new version's candidate is an
+ * `evolution` with its target as parent and the target's root as root. Another idea may have taken the name or
  * the shape since: then that option goes (and the stage is read again when
  * none is left) and the pick answers 409. */
 export function pickReading(deps: ReadDeps, playerId: string, ideaId: string, index: unknown): void {
@@ -223,7 +259,9 @@ export function pickReading(deps: ReadDeps, playerId: string, ideaId: string, in
   const i = pickIndex(index, idea.data.readings);
   const archetype = idea.data.archetype!;
   const reading = idea.data.readings![i]!;
-  if (archetypeDraftProblems(archetype, store.units().map((u) => u.row)).length) {
+  // M3-4: a new version keeps its target's name.
+  const target = ideaKind(idea) === "evolve" ? idea.data.target! : null;
+  if (!target && archetypeDraftProblems(archetype, store.units().map((u) => u.row)).length) {
     const archetypes = (idea.data.archetypes ?? []).filter((a) => a.name !== archetype.name);
     const { archetype: _a, readings: _r, archetypes: _x, ...data } = idea.data;
     store.putIdea({ ...idea, state: archetypes.length ? "pick-archetype" : "reading", data: archetypes.length ? { ...data, archetypes } : data });
@@ -237,7 +275,8 @@ export function pickReading(deps: ReadDeps, playerId: string, ideaId: string, in
     throw new IdeaRefused(409, "Another unit just took this reading's shape. Pick another one.");
   }
   const unitId = freshUnitId(store, archetype.name);
-  store.putUnit({ unitId, status: "candidate", row: rowOf(archetype, reading), authorId: playerId, origin: "idea", parentId: null, createdAt: deps.now().toISOString() });
+  const lineage = target ? { origin: "evolution" as const, parentId: target, rootId: rootOf(store, target) } : { origin: "idea" as const, parentId: null };
+  store.putUnit({ unitId, status: "candidate", row: rowOf(archetype, reading), authorId: playerId, ...lineage, createdAt: deps.now().toISOString() });
   store.putIdea({ ...idea, state: "simulating", data: { ...idea.data, unitId } });
 }
 
