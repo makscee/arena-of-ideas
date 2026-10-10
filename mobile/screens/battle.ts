@@ -61,6 +61,8 @@ const RUN_COUNT_MS = 380;
 const RUN_POP_MS = 260;
 const RUN_IN_MS = 200;
 const RUN_FADE_MS = 320;
+/** A phone's running totals start this far down the card: under its icon row (style.css .bv-run). */
+const PHONE_RUN_TOP = 17;
 /** A dying card's pop (bv-die), in animation ms. */
 const DIE_MS = 500;
 
@@ -1429,7 +1431,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     x.anim = requestAnimationFrame(tick);
     x.el.animate([{ scale: 1 }, { scale: 1.3 }, { scale: 1 }], { duration: RUN_POP_MS / speed, easing: "ease-out" });
   }
-  /** Each box sits above its unit's slot; it eases along when the line closes up. */
+  /** Each box sits above its unit's slot (a phone: on the card, see .bv-runs); it eases along when the line closes up. */
   function placeRuns(): void {
     for (const [unit, b] of runBoxes) {
       const el = [enemy, mine].map((r) => r.querySelector<HTMLElement>(`.bv-card[data-unit="${CSS.escape(unit)}"]`)).find((x) => x);
@@ -1437,7 +1439,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       if (!box || box.width <= 0) { b.el.style.visibility = "hidden"; continue; }
       b.el.style.visibility = "";
       b.el.style.left = `${Math.round(box.left + box.width / 2)}px`;
-      b.el.style.top = `${Math.round(box.top)}px`;
+      // M5-6: a phone has no room above a card (the side's label, the caption sit
+      // there): the box sits on the card's face under its icon row, stacking down.
+      b.el.style.top = `${Math.round(isDesktop() ? box.top : box.top + PHONE_RUN_TOP)}px`;
       b.el.style.maxWidth = `${Math.round(box.width)}px`;
     }
   }

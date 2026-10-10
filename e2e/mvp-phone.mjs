@@ -766,19 +766,19 @@ try {
   await page.getByTestId("last-run").waitFor({ timeout: 5_000 }).catch(() => errors.push("home after a run: no Last run panel"));
   if ((await page.getByTestId("last-run").locator(".fpip").count()) < 1) errors.push("home after a run: Last run has no fights");
 
-  // Stats (slice 11, R2-11): records and the champion history; units and
-  // fusions moved to the Codex.
+  // Champions (slice 11, R2-11; M5-6 the Codex's Champions tab): the champion
+  // history and your records.
   await page.getByTestId("stats").click();
   await page.getByTestId("stats-champions").waitFor();
   if ((await page.getByTestId("stats-records").count()) === 0) errors.push("stats: no records");
-  if ((await page.getByTestId("stats-tab-units").count()) > 0) errors.push("stats: still has a Units tab (the Codex has it)");
+  if (!(await page.getByTestId("codex-tab-champions").evaluate((b) => b.classList.contains("on")))) errors.push("stats: the Codex didn't open on Champions");
   await shot("stats"); await noHScroll("stats");
   {
     // Back stays on the first screen however long the lists grow.
-    const box = await page.getByTestId("stats-back").boundingBox();
+    const box = await page.getByTestId("codex-back").boundingBox();
     if (!box || box.y + box.height > 640) throw new Error(`stats: Back is off screen (${box && Math.round(box.y)})`);
   }
-  await page.getByTestId("stats-back").click();
+  await page.getByTestId("codex-back").click();
   await page.getByTestId("play").waitFor();
 
   // Giving up (R2-10 on R2-2's abandon): New run on the title menu asks to
