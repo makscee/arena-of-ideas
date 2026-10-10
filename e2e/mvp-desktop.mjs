@@ -80,8 +80,8 @@ try {
     if (w < min) errors.push(`${name}: the screen is ${Math.round(w)}px wide, want ≥ ${min}`);
   };
   /** Desktop cards are 132×172 at this width. */
-  const cardSize = async (name, testid) => {
-    const box = await page.getByTestId(testid).locator(".card").first().boundingBox();
+  const cardSize = async (name, testid, nth = 0) => {
+    const box = await page.getByTestId(testid).locator(".card").nth(nth).boundingBox();
     if (!box || Math.abs(box.width - 132) > 1 || Math.abs(box.height - 172) > 1) errors.push(`${name}: card ${box ? `${Math.round(box.width)}×${Math.round(box.height)}` : "missing"}, want 132×172`);
   };
   /** Whole on screen, no scrolling. */
@@ -129,7 +129,7 @@ try {
   await shot("settings");
   await page.getByTestId("sheet-close").click();
   await shot("home"); await noHScroll("home"); await wide("home", 1100); await onScreen("home: Play", page.getByTestId("play"));
-  await cardSize("home champion", "champion");
+  await cardSize("home champion", "champion", 2); // the middle card of the fan: the others are tilted
   // Home's two columns: Play sits right of the champion panel.
   const [champBox, playBox] = [await page.getByTestId("champion").boundingBox(), await page.getByTestId("play").boundingBox()];
   if (!(playBox.x > champBox.x + champBox.width)) errors.push("home: Play isn't in the right column");

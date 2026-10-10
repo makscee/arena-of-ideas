@@ -1166,7 +1166,7 @@ try {
     await page.reload();
     await page.getByTestId("play").waitFor();
     const homeText = await page.locator("#app").textContent();
-    if (!homeText.includes(L("home.playSubOwn", { n: 12 })) || homeText.includes(L("home.playSub", { n: 12 }))) errors.push("champion's home: Play doesn't say it's your own team");
+    if (!homeText.includes(L("home.ownTeam"))) errors.push("champion's home: the hero doesn't say it's your team");
     await shot("home-champion"); await noHScroll("home-champion");
     await page.getByTestId("play").click();
     await page.getByTestId("fight").waitFor();

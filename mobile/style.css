@@ -329,7 +329,10 @@ button.gear { width: 44px; height: 44px; padding: 0; border-radius: 22px; border
 .crown-badge { position: absolute; right: 14px; top: -22px; width: 56px; height: 56px; border-radius: 28px; background: var(--action); border: 3px solid var(--outline); display: flex; align-items: center; justify-content: center; transform: rotate(12deg); }
 .hero-label { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding-right: 60px; }
 .hero-name { font-size: 30px; line-height: 1.05; color: var(--outline); padding-right: 40px; }
-.hero-name .who { white-space: normal; overflow-wrap: anywhere; }
+.hero-name { min-width: 0; }
+.hero-name .who-mark { display: inline-flex; align-items: center; max-width: 100%; }
+.hero-name .who-mark > .who { flex: 0 1 auto; }
+:root:lang(ru) .hero-name { font-size: 26px; }
 .hero-day { font-size: 15px; }
 /* The champion's five cards, fanned like a hand (the same card as everywhere). */
 .hero-team { margin-top: 14px; }
@@ -348,7 +351,7 @@ button.play-big:active:not(:disabled) { translate: 0 4px; box-shadow: 0 3px 0 va
 .play-big .play-main:has(.hearts) { font-size: 22px; text-transform: none; }
 .play-big .play-sub { font-family: var(--font-body); font-size: 13px; font-weight: 700; }
 .title-menu .hearts { letter-spacing: 0.04em; }
-button.link { background: none; border: none; box-shadow: none; color: var(--dim); text-decoration: underline; align-self: center; }
+.title-menu > button.link { box-shadow: none; text-decoration: underline; align-self: center; padding: 0 12px; }
 /* The idea meter: a pip per run toward the next idea. */
 button.idea-meter { display: flex; align-items: center; gap: 12px; min-height: 50px; padding: 10px 14px; text-align: left; border-width: 3px; border-radius: 22px; box-shadow: none; }
 .idea-meter .idea-label { font-size: 17px; }
@@ -905,8 +908,8 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
 
   /* Home, the title menu: the champion and the day on the left; the menu on the right. */
   /* The menu column is narrow enough that the champion's 5 cards stay on one line at 1024px. */
-  /* The left column is as wide as the champion's five cards (no slack, R2-17); the menu takes the rest, 280px at least. */
-  #app[data-screen="home"] { max-width: 1200px; display: grid; grid-template-columns: minmax(0, calc(5 * var(--cw) + 4 * var(--gap) + 28px)) minmax(280px, 1fr); grid-template-rows: auto 1fr; column-gap: 24px; row-gap: 16px; padding: 24px; align-items: start; }
+  /* The left column is as wide as the champion's five cards plus the hero's padding and 3px border (no slack, R2-17); the menu takes the rest, 280px at least. */
+  #app[data-screen="home"] { max-width: 1200px; display: grid; grid-template-columns: minmax(0, calc(5 * var(--cw) + 4 * var(--gap) + 38px)) minmax(280px, 1fr); grid-template-rows: auto 1fr; column-gap: 24px; row-gap: 16px; padding: 24px; align-items: start; }
   #app[data-screen="home"] > :first-child { grid-column: 1 / -1; }
   #app[data-screen="home"] .home-main, #app[data-screen="home"] .home-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
   #app[data-screen="home"] .home-side { position: sticky; top: 32px; }

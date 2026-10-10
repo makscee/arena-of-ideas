@@ -96,6 +96,7 @@ export const main = {
   "home.playSubNone": { one: "{n} round", other: "{n} rounds" },
   "home.ideaNext": "Your next idea",
   "home.ideaRuns": { one: "{n} run", other: "{n} runs" },
+  "home.ownTeam": "Your team: the others try to beat it today.",
   "home.lastRun": "Last run",
   "home.settings": "Settings",
   "home.playingAs": "Playing as",

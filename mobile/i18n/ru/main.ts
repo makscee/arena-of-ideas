@@ -95,6 +95,7 @@ export const main = {
   "home.playSubNone": { one: "{n} раунд", few: "{n} раунда", many: "{n} раундов", other: "{n} раунда" },
   "home.ideaNext": "Следующая идея",
   "home.ideaRuns": { one: "{n} забег", few: "{n} забега", many: "{n} забегов", other: "{n} забега" },
+  "home.ownTeam": "Это твоя команда: сегодня её пытаются победить другие.",
   "home.lastRun": "Последний забег",
   "home.settings": "Настройки",
   "home.playingAs": "Ты играешь как",

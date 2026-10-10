@@ -384,6 +384,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
         h("div", { class: "crown-badge", "aria-hidden": "true" }, CROWN_SVG()),
         h("div", { class: "hero-label" }, t("home.champion")),
         champ ? h("h2", { class: "hero-name" }, whoMark(champ.player)) : h("div", {}, t("home.noChampion")),
+        own ? h("div", { class: "hero-day", "data-testid": "own-team" }, t("home.ownTeam")) : null,
         h("div", { class: "hero-day", "data-testid": "slayers" }, champ ? slayersLine(home.day.slayers) : t("home.newChampionAt", { at: rules.dayEndsAt })),
         champ ? h("div", { class: "hero-team" }, team(champ.line, "ghost", content)) : null,
       ),
