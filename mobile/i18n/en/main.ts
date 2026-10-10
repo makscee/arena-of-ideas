@@ -18,6 +18,11 @@ export const main = {
   "lang.label": "Language",
   "lang.en": "English",
   "lang.ru": "Русский",
+  // The palette switch (M5-1): the same roles, three looks.
+  "theme.label": "Colours",
+  "theme.plum": "Night Plum",
+  "theme.brass": "Ink & Brass",
+  "theme.felt": "Felt Table",
 
   "rules.title": "RULES",
   "rules.runLabel": "A run",
