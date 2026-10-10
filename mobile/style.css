@@ -1425,7 +1425,7 @@ img.tg-qr { align-self: center; width: 200px; height: 200px; image-rendering: pi
   #app[data-screen="shop"] .run-panel .slots.bench-row { margin-top: 0; }
   #app[data-screen="shop"] .run-panel [data-testid="offers"] { margin-top: -2px; }
   #app[data-screen="shop"] .run-panel > .label { line-height: 22px; padding: 1px 0 0 4px; }
-  #app[data-screen="shop"] .run-panel .line-head { margin-bottom: -4px; padding-left: 4px; }
+  #app[data-screen="shop"] .run-panel .line-head { margin-bottom: -6px; padding-left: 4px; }
 }
 #app[data-screen="shop"] .run-panel > .label { font-family: var(--font-head); font-weight: var(--head-weight); color: var(--text); letter-spacing: 0.02em; }
 #app[data-screen="shop"] .line-head .label { font-family: var(--font-head); font-weight: var(--head-weight); color: var(--text); letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
@@ -1515,4 +1515,8 @@ button.reroll-btn:disabled .cost-chip { background: var(--soft); }
 /* An empty actions row or hint slot takes no gap on the phone. */
 @media (max-width: 1023.98px) {
   #app[data-screen="shop"] [data-testid="actions"]:empty, #app[data-screen="shop"] .hint-slot:empty { display: none; }
+}
+/* The phone's bench label fits its 40 px column in both languages ("ЗАПАС" was clipped). */
+@media (max-width: 1023.98px) {
+  #app[data-screen="shop"] .label.bench-label { font-size: 10px; letter-spacing: 0.02em; }
 }
