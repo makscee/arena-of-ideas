@@ -1937,7 +1937,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         { class: "bv-board" },
         // Where each front is (R2-17): on the phone both run front first from
         // the left; on desktop the fronts meet in the middle.
-        h("div", { class: "label bv-lab-them" }, h("span", { class: "bv-dk" }, tr("battle.lab.frontLeft")), a.you ? tr("battle.them") : owner(them), h("span", { class: "bv-ph" }, tr("battle.lab.frontFirst"))),
+        // On the phone a run's fight names them here: its HUD row holds the run bar (M5-4).
+        h("div", { class: "label bv-lab-them" }, h("span", { class: "bv-dk" }, tr("battle.lab.frontLeft")), a.you ? tr("battle.them") : owner(them), a.outro?.bar ? h("span", { class: "bv-ph bv-lab-who" }, ` · ${owner(them)}`) : null, h("span", { class: "bv-ph" }, tr("battle.lab.frontFirst"))),
         enemy,
         caption,
         banner,

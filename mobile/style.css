@@ -1533,10 +1533,13 @@ button.reroll-btn:disabled .cost-chip { background: var(--soft); }
   .run-bar .gold { padding: 0 8px 0 3px; gap: 3px; }
   .run-bar .gold::before { width: 13px; height: 13px; }
   .run-bar .round-pill { padding: 0 8px; }
+  /* Its name is on the Them label; the row keeps the turn. */
+  #app[data-screen="battle"] .bv-screen > .hud:has(> .run-bar) > .who { display: none; }
+  .bv-lab-who { text-transform: none; }
 }
 @media (min-width: 1024px) {
-  #app[data-screen="battle"] .bv-screen > .hud:has(> .run-bar) { min-height: 84px; font-size: 22px; gap: 18px; }
-  .run-bar { gap: 18px; }
+  #app[data-screen="battle"] .bv-screen > .hud:has(> .run-bar) { min-height: 84px; font-size: 22px; gap: 14px; }
+  .run-bar { gap: 14px; }
   #app[data-screen="battle"] .bv-sheet[data-tab="unit"] .bv-why-body, #app[data-screen="battle"] .bv-sheet[data-tab="unit"] .bv-log { display: none; }
   #app[data-screen="battle"] .bv-sheet[data-tab="unit"] .bv-unit-body { display: flex; }
 }

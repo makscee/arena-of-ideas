@@ -659,7 +659,7 @@ try {
       await page.mouse.down();
       await page.mouse.move(to.x + to.width / 2, to.y + 10, { steps: 6 });
       await page.mouse.up();
-      const hud = (await page.locator(".hud span").nth(2).textContent()) ?? "";
+      const hud = (await page.getByTestId("battle-turn").textContent()) ?? "";
       const label = (t) => (Number(t) >= 1 ? `T${t}` : "Start");
       if (hud !== label(turn)) errors.push(`timeline: dragged to turn ${turn}, the board shows ${hud}`);
       if (!(await turns.nth(target).evaluate((e) => e.classList.contains("on")))) errors.push("timeline: the dragged-to turn isn't lit");
@@ -672,7 +672,7 @@ try {
         if (!(await block.count())) continue;
         const bb = await block.boundingBox();
         await page.mouse.click(bb.x + 1, bb.y + bb.height - 4);
-        const at = (await page.locator(".hud span").nth(2).textContent()) ?? "";
+        const at = (await page.getByTestId("battle-turn").textContent()) ?? "";
         if (at !== label(t)) errors.push(`timeline: clicked the start of ${label(t)}'s block, the HUD reads ${at}`);
       }
       // A mark's click jumps to its own beat.
@@ -750,7 +750,7 @@ try {
           const column = await page.locator(".bv-screen").boundingBox();
           if (!panel || !column || panel.x < column.x + column.width) errors.push(`why: the panel ${JSON.stringify(panel)} covers the battle column ${JSON.stringify(column)}`);
           await shot("battle-why"); await noHScroll("battle-why");
-          const hud = () => page.locator(".hud span").nth(2).textContent();
+          const hud = () => page.getByTestId("battle-turn").textContent();
           const before = await hud();
           await steps.nth(kinds.indexOf("event")).click();
           const after = await hud();

@@ -101,7 +101,8 @@ function runTrack(run: RunView): HTMLElement {
   for (const f of run.fights) if (f.round <= rules.rounds) last.set(f.round, f.outcome);
   const dots = Array.from({ length: rules.rounds }, (_, i) => {
     const r = i + 1;
-    const cls = r === run.round ? "now" : last.get(r) ?? (r < run.round ? "draw" : "");
+    // A round fought shows its result, even as the run ends on it (the fight's end card, M5-4).
+    const cls = last.get(r) ?? (r === run.round ? "now" : r < run.round ? "draw" : "");
     return h("span", { class: `track-dot ${cls}` }, String(r));
   });
   const crown = h("span", { class: `track-dot crown${run.round > rules.rounds ? " now" : ""}`, "aria-hidden": "true" }, "👑");
@@ -1493,14 +1494,15 @@ async function fightScreens(run: RunView, fight: FightResult, content: MvpConten
     return shopScreen(now, content, t("fight.replayFailed", { word, name: fight.opponent.player.name, lost, why }));
   }
   music("battle", run.runId);
-  battleScreen({ battle, content, you: "A", fight, run, outro: { ...outroOf(run, fight, content), bar: (over) => runBar(over ? run : before) }, onDone: () => shopScreen(run, content) });
+  battleScreen({ battle, content, you: "A", fight, run, outro: { ...outroOf(run, fight, content), bar: (over) => runBar(over ? run : before, before) }, onDone: () => shopScreen(run, content) });
 }
 
 /** The shop's top bar, on the fight (M5-4: one run board): the round (the
- * track on desktop), hearts and gold; the Crown has no gold. */
-function runBar(run: RunView): HTMLElement[] {
+ * track on desktop), hearts and gold; the Crown has no gold. The phone's pill
+ * names the round fought (`fought`), as the end card does. */
+function runBar(run: RunView, fought: RunView = run): HTMLElement[] {
   return [
-    isDesktop() ? runTrack(run) : h("span", { class: "round-pill", "data-testid": "round" }, roundLabel(run.round)),
+    isDesktop() ? runTrack(run) : h("span", { class: "round-pill", "data-testid": "round" }, roundLabel(fought.round)),
     heartIcons(run.hearts),
     ...(run.phase === "crown" || run.round > rules.rounds ? [] : [h("span", { class: "gold", "data-testid": "gold" }, t("shop.gold", { n: run.gold }))]),
   ];

@@ -572,11 +572,11 @@ try {
       const kinds = await page.getByTestId("why-step").evaluateAll((els) => els.map((e) => e.dataset.kind));
       if (kinds[0] !== "change" || kinds.at(-1) !== "root") errors.push(`why: the chain runs ${kinds.join(" ← ")}, not change … root`);
       await tap44("why step", page.getByTestId("why-step"));
-      const turnBefore = await page.locator(".hud span").nth(2).textContent();
+      const turnBefore = await page.getByTestId("battle-turn").textContent();
       await page.getByTestId("why-step").last().click();
       if (!(await page.getByTestId("why-step").last().evaluate((e) => e.classList.contains("on")))) errors.push("why: the clicked step isn't lit");
       if ((await page.getByTestId("battle-play").textContent()) !== "▶") errors.push("why: a step's click didn't leave the battle paused");
-      const turnAfter = await page.locator(".hud span").nth(2).textContent();
+      const turnAfter = await page.getByTestId("battle-turn").textContent();
       // R2-17: "Turn N" lands on turn N's start, and the HUD says so.
       const root = (await page.getByTestId("why-step").last().textContent()) ?? "";
       const rootTurn = /Turn (\d+)/.exec(root)?.[1];
@@ -696,7 +696,7 @@ try {
         if (await page.getByTestId("end-card").isVisible()) errors.push("key moment: the end card stayed up");
         if ((await page.getByTestId("battle-play").textContent()) !== "❚❚") errors.push("key moment: not playing");
         await page.getByTestId("battle-play").click();
-        const turn = await page.locator(".hud span").nth(2).textContent();
+        const turn = await page.getByTestId("battle-turn").textContent();
         console.log(`mvp phone: key moment at beat ${beat} plays from ${turn}`);
         await page.getByTestId("battle-end").click();
       }
