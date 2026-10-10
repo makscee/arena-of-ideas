@@ -156,7 +156,7 @@ input { width: 100%; background: var(--panel); color: var(--text); border: var(-
 .hud .hearts { color: var(--them); }
 /* Compact cards (round 2, R2-7): 64×84 at 360px, five a row with 4px gaps. */
 .slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
-.card { position: relative; height: 84px; min-width: 0; background: var(--panel); border: var(--bw) solid var(--outline); padding: 5px 3px 4px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; border-radius: var(--radius); cursor: pointer; -webkit-user-select: none; user-select: none; }
+.card { position: relative; height: 84px; min-width: 0; background: var(--panel); border: var(--bw) solid var(--outline); padding: 5px 2px 4px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; border-radius: var(--radius); cursor: pointer; -webkit-user-select: none; user-select: none; }
 .card { box-shadow: var(--drop); }
 .card.you { border-color: var(--you); }
 .card.ghost { border-color: var(--them); }
