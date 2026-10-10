@@ -796,7 +796,7 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
   #app[data-screen] { --cw: 120px; --gap: 8px; --insp: 340px; max-width: none; }
   /* Desktop cards: 120×172, 132×172 from 1280px (docs/round2/ui.md (b)). */
   #app[data-screen] .slots { grid-template-columns: repeat(auto-fill, var(--cw)); gap: var(--gap); }
-  #app[data-screen] .card { height: 172px; padding: 12px 6px 10px; }
+  #app[data-screen] .card { height: 172px; padding: 12px 5px 10px; }
   #app[data-screen] .card .emoji { font-size: 44px; line-height: 52px; height: 52px; margin-top: 8px; }
   #app[data-screen] .card .name { font-size: 17px; line-height: 20px; }
   #app[data-screen] .card .stats { font-size: 18px; line-height: 22px; }
@@ -858,7 +858,7 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
   /* Home, the title menu: the champion and the day on the left; the menu on the right. */
   /* The menu column is narrow enough that the champion's 5 cards stay on one line at 1024px. */
   /* The left column is as wide as the champion's five cards (no slack, R2-17); the menu takes the rest, 280px at least. */
-  #app[data-screen="home"] { max-width: 1200px; display: grid; grid-template-columns: minmax(0, calc(5 * var(--cw) + 4 * var(--gap) + 26px)) minmax(280px, 1fr); grid-template-rows: auto 1fr; column-gap: 24px; row-gap: 16px; padding: 24px; align-items: start; }
+  #app[data-screen="home"] { max-width: 1200px; display: grid; grid-template-columns: minmax(0, calc(5 * var(--cw) + 4 * var(--gap) + 28px)) minmax(280px, 1fr); grid-template-rows: auto 1fr; column-gap: 24px; row-gap: 16px; padding: 24px; align-items: start; }
   #app[data-screen="home"] > :first-child { grid-column: 1 / -1; }
   #app[data-screen="home"] .home-main, #app[data-screen="home"] .home-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
   #app[data-screen="home"] .home-side { position: sticky; top: 32px; }
