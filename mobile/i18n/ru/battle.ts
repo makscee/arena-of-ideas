@@ -27,6 +27,7 @@ export const battle = {
   "battle.timeline.startShort": "С",
   "battle.battleStart": "Начало боя",
   "battle.turn": "Ход {n}",
+  "battle.turnShort": "Х{n}",
   "battle.more": "ещё {n}",
   "battle.pastMore": " · ещё {n}",
   "battle.noDmg": "без урона",

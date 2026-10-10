@@ -20,7 +20,7 @@
 import { boardAt, type BoardState, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView, SummonContent } from "../../src/mvp/contract";
 import { chainCappedTip, STATUS_TERMS, suddenDeathTip, termDef, timeUpTip, termIcon, triggerLabel, type IconId, type TermId } from "../../src/glossary";
-import { BEAT_MS, NO_ROOM, NO_ROOM_RU, setTraceLang, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, foldTurnsOf, isLogFold, keyMomentsOf, logRowsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, turnLabel, whyILost as lossChains, sidesOf, turnSummaryOf, turnEndsOf, turnEndHoldMs, totalsText, TURN_END_MS, runningTotalsOf, runRowText, turnSoFarIds, beatIdsOf, changeOf, type RunRow, type TurnSummary, type UnitTurnTotals, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type LogRow, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
+import { BEAT_MS, NO_ROOM, NO_ROOM_RU, setTraceLang, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, foldTurnsOf, isLogFold, keyMomentsOf, logRowsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, whyILost as lossChains, sidesOf, turnSummaryOf, turnEndsOf, turnEndHoldMs, totalsText, TURN_END_MS, runningTotalsOf, runRowText, turnSoFarIds, beatIdsOf, changeOf, type RunRow, type TurnSummary, type UnitTurnTotals, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type LogRow, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { summonId } from "../../src/describe";
@@ -131,6 +131,13 @@ const COMPACT_OVER = 5;
 const shortScreen = matchMedia("(max-width: 1023.98px) and (max-height: 520px)");
 
 /** Reduced motion: nothing moves, and beats hold a little longer. */
+/** A turn as the viewer labels it, in the page's language: "Start" / "Старт", "T3" / "Х3", "T3–T5". */
+export function turnLabel(turn: number, to = turn): string {
+  if (turn < 1) return tr("battle.timeline.start");
+  const one = (n: number) => tr("battle.turnShort", { n });
+  return to > turn ? `${one(turn)}–${one(to)}` : one(turn);
+}
+
 const reduced = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you?: Side; fight?: FightResult; run?: RunView; outro?: RunOutro; onDone: () => void }): void {
@@ -1213,7 +1220,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       ...runBar(),
       // The run bar names the round itself.
       ...(a.outro?.bar ? [] : [h("span", {}, battle.kind === "crown" ? tr("battle.hud.crown") : battle.kind === "playoff" ? tr("battle.hud.playoff") : tr("battle.hud.round", { n: battle.round }))]),
-      h("span", { class: "dim who", title: battle.opponent.name }, tr("battle.hud.vs", { name: battle.opponent.name })),
+      h("span", { class: "dim who", "data-testid": "battle-vs", title: battle.opponent.name }, tr("battle.hud.vs", { name: battle.opponent.name })),
       h("span", { "data-testid": "battle-turn" }, turnLabel(hudTurn ?? turn)),
     );
     clash.replaceChildren(clashMark, ...[triggerBadge("clash", v)].filter((x): x is HTMLElement => x !== null));
@@ -1266,6 +1273,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       if (row.isConnected) fitText(row);
     }
     drawBeams(v.waves);
+    placeCaption();
     drawRuns(runningTotalsOf(log, soFar), turnKey, v.waves.some((w) => w.age !== null));
     // After the beams: they aim at each card's slot, not where its slide starts.
     for (const [sl, p] of slides) sl.animate([{ transform: `translateX(${p.dx}px)` }, { transform: "none" }], { duration: PUSH_MS / speed, delay: -(now - p.at), easing: "ease-out", fill: "backwards" });
@@ -1758,6 +1766,24 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
    * control bar, so its top never cuts the caption in half and its last line
    * is in the sheet, scrolled to if long (R3-26); a short screen without that
    * room keeps the CSS's place (over the caption). Desktop: the side panel. */
+  /** Desktop (M5-5, the Simplify wireframe): the beat's caption sits under
+   * the card acting, so the event reads where it happens; a turn's totals or
+   * a beat with nobody acting keep it centred. It slides, never leaves the board. */
+  function placeCaption(): void {
+    caption.style.translate = "";
+    delete caption.dataset.at;
+    if (!isDesktop() || finished) return;
+    const card = [mine, enemy].map((r) => r.querySelector<HTMLElement>(".bv-card.acting")).find((x) => x);
+    const board = caption.parentElement?.getBoundingClientRect();
+    if (!card || !board) return;
+    const c = caption.getBoundingClientRect();
+    const k = (card.parentElement ?? card).getBoundingClientRect();
+    if (!c.width || !k.width) return;
+    const x = Math.max(board.left, Math.min(board.right - c.width, k.left + k.width / 2 - c.width / 2));
+    caption.style.translate = `${Math.round(x - c.left)}px 0`;
+    caption.dataset.at = card.dataset.unit ?? "";
+  }
+
   function placeSheet(): void {
     if (isDesktop() || !trace) {
       sheet.style.top = sheet.style.bottom = sheet.style.maxHeight = "";
@@ -1938,7 +1964,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         // Where each front is (R2-17): on the phone both run front first from
         // the left; on desktop the fronts meet in the middle.
         // On the phone a run's fight names them here: its HUD row holds the run bar (M5-4).
-        h("div", { class: "label bv-lab-them" }, h("span", { class: "bv-dk" }, tr("battle.lab.frontLeft")), a.you ? tr("battle.them") : owner(them), a.outro?.bar ? h("span", { class: "bv-ph bv-lab-who" }, ` · ${owner(them)}`) : null, h("span", { class: "bv-ph" }, tr("battle.lab.frontFirst"))),
+        h("div", { class: "label bv-lab-them" }, h("span", { class: "bv-dk" }, tr("battle.lab.frontLeft")), a.you ? tr("battle.them") : owner(them), a.outro?.bar ? h("span", { class: "bv-lab-who", "data-testid": "battle-them-who" }, ` · ${owner(them)}`) : null, h("span", { class: "bv-ph" }, tr("battle.lab.frontFirst"))),
         enemy,
         caption,
         banner,
@@ -1960,6 +1986,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   addEventListener("resize", placeEnd, { signal: freed.signal });
   addEventListener("resize", placeRuns, { signal: freed.signal });
   addEventListener("resize", placeSheet, { signal: freed.signal });
+  addEventListener("resize", placeCaption, { signal: freed.signal });
   addEventListener("resize", () => { drawBeams(fxWaves.map((w) => ({ ...w, age: null }))); clearBeams(); }, { signal: freed.signal });
   onGone(free);
   buildTimeline();
