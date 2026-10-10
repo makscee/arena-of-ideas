@@ -61,8 +61,8 @@ const RUN_COUNT_MS = 380;
 const RUN_POP_MS = 260;
 const RUN_IN_MS = 200;
 const RUN_FADE_MS = 320;
-/** A phone's running totals start this far down the card: under its icon row (style.css .bv-run). */
-const PHONE_RUN_TOP = 17;
+/** A phone's running totals start this far down the card: under its icon row and its change chip (.bv-changes, 17px + 24px), so they never take the chip's tap. */
+const PHONE_RUN_TOP = 42;
 /** A dying card's pop (bv-die), in animation ms. */
 const DIE_MS = 500;
 
@@ -1440,7 +1440,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       b.el.style.visibility = "";
       b.el.style.left = `${Math.round(box.left + box.width / 2)}px`;
       // M5-6: a phone has no room above a card (the side's label, the caption sit
-      // there): the box sits on the card's face under its icon row, stacking down.
+      // there): the box sits on the card's face under its change chip, stacking down.
       b.el.style.top = `${Math.round(isDesktop() ? box.top : box.top + PHONE_RUN_TOP)}px`;
       b.el.style.maxWidth = `${Math.round(box.width)}px`;
     }
