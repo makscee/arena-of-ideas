@@ -106,7 +106,7 @@ export const shop = {
   "line.crown": "Your line · front first · final",
   "line.phone": "Your line · front first",
   "shop.offersDesk": { one: "Shop · {n} offer", other: "Shop · {n} offers" },
-  "shop.offersPhone": "Shop · tap to read and buy",
+  "shop.offersPhone": "Shop",
   "shop.selectFirst": "Select a unit first: click it in your line or bench.",
   "copies.fused": "FUSED ",
   "copies.awoken": "AWOKEN ",

@@ -1520,7 +1520,7 @@ function runBar(run: RunView, fought: RunView = run): HTMLElement[] {
  * something). Both lines are on the board and in the card's Damage list,
  * each unit's sheet a tap away; "vs @name" is in the battle's HUD. */
 function outroOf(run: RunView, fight: FightResult, content: MvpContent): RunOutro {
-  const label = fight.kind === "crown" ? "CROWN" : roundLabel(fight.round);
+  const label = fight.kind === "crown" ? t("run.crownLabel") : roundLabel(fight.round);
   const own = fight.kind === "crown" && fight.opponent.player.id === run.player.id;
   // Short notes: they share the run line with the round, hearts and record,
   // which is 310px wide on a 360px phone (R2-17). The hearts show a Crown

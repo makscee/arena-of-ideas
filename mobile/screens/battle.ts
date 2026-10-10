@@ -2120,7 +2120,7 @@ function chainView(c: Chain, o: { units: Map<string, BattleUnit>; summoned: Map<
     const w = u && n.ref?.when !== undefined ? u.recipe.when[n.ref.when] : undefined;
     const fired = u && w ? formRich({ ...u.recipe, when: [w] }, o.content) : [];
     return [
-      h("span", { class: "bv-step-head" }, ...tagOf(n), h("span", { class: "emoji" }, u?.emoji ?? "✨"), " ", h("b", { class: who }, o.name(n.unit ?? "")), h("span", { class: "dim" }, `'s ability${label ? ` · ${label}` : ""}`)),
+      h("span", { class: "bv-step-head" }, ...tagOf(n), h("span", { class: "emoji" }, u?.emoji ?? "✨"), " ", h("b", { class: who }, o.name(n.unit ?? "")), h("span", { class: "dim" }, `${tr("battle.trace.ability")}${label ? ` · ${label}` : ""}`)),
       fired.length ? h("span", { class: "bv-step-text" }, ...fired) : null,
     ].filter((x): x is HTMLElement => x !== null);
   };
@@ -2128,7 +2128,7 @@ function chainView(c: Chain, o: { units: Map<string, BattleUnit>; summoned: Map<
     "div",
     { class: "bv-chain", "data-testid": "why-chain" },
     ...c.nodes.map((n, i) => {
-      const kids = [h("span", { class: "bv-step-ic" }, stepIcon(n)), h("span", { class: "bv-step-body" }, ...(i ? [h("span", { class: "bv-step-by dim" }, "caused by")] : []), ...body(n))];
+      const kids = [h("span", { class: "bv-step-ic" }, stepIcon(n)), h("span", { class: "bv-step-body" }, ...(i ? [h("span", { class: "bv-step-by dim" }, tr("battle.trace.causedBy"))] : []), ...body(n))];
       const attrs = { class: `bv-step ${n.kind}${o.active === n.eventId ? " on" : ""}`, "data-testid": "why-step", "data-kind": n.kind, "data-event": String(n.eventId) };
       if (!o.onStep) return h("div", attrs, ...kids);
       const b = h("button", attrs, ...kids);

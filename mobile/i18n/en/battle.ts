@@ -65,6 +65,8 @@ export const battle = {
   "battle.trace.why": "Why: {change} {target}",
   "battle.trace.result": "‹ Result",
   "battle.continue": "Continue",
+  "battle.trace.ability": "'s ability",
+  "battle.trace.causedBy": "caused by",
   "battle.trace.thisStep": "This step:",
   "battle.trace.keysDesktop": "Click a step to see its moment; hover a highlighted word for its meaning.",
   "battle.trace.keysPhone": "Tap a step to see its moment; hold a highlighted word for its meaning.",

@@ -105,7 +105,7 @@ export const shop = {
   "line.crown": "Строй · первый впереди · окончательный",
   "line.phone": "Строй · первый впереди",
   "shop.offersDesk": { one: "Лавка · {n} карта", few: "Лавка · {n} карты", many: "Лавка · {n} карт", other: "Лавка · {n} карты" },
-  "shop.offersPhone": "Лавка · нажми на карту",
+  "shop.offersPhone": "Лавка",
   "shop.selectFirst": "Сначала выбери юнита: щёлкни его в строю или запасе.",
   "copies.fused": "СЛИТ ",
   "copies.awoken": "ПРОБУЖД. ",
