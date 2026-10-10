@@ -328,7 +328,7 @@ button.gear { width: 44px; height: 44px; padding: 0; border-radius: 22px; border
 .throne-hero { position: relative; gap: 6px; padding: 18px 16px 22px; margin-top: 12px; background: color-mix(in srgb, var(--them) 80%, var(--paper)); color: var(--outline); border: 3px solid var(--outline); border-radius: 24px; box-shadow: 0 6px 0 var(--outline); }
 .crown-badge { position: absolute; right: 14px; top: -22px; width: 56px; height: 56px; border-radius: 28px; background: var(--action); border: 3px solid var(--outline); display: flex; align-items: center; justify-content: center; transform: rotate(12deg); }
 .hero-label { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding-right: 60px; }
-.hero-name { font-size: 30px; line-height: 1.05; color: var(--outline); padding-right: 40px; }
+.hero-name { font-size: 30px; line-height: 1.05; color: var(--outline); }
 .hero-name { min-width: 0; }
 .hero-name .who-mark { display: inline-flex; align-items: center; max-width: 100%; }
 .hero-name .who-mark > .who { flex: 0 1 auto; }
