@@ -1273,7 +1273,6 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       if (row.isConnected) fitText(row);
     }
     drawBeams(v.waves);
-    placeCaption();
     drawRuns(runningTotalsOf(log, soFar), turnKey, v.waves.some((w) => w.age !== null));
     // After the beams: they aim at each card's slot, not where its slide starts.
     for (const [sl, p] of slides) sl.animate([{ transform: `translateX(${p.dx}px)` }, { transform: "none" }], { duration: PUSH_MS / speed, delay: -(now - p.at), easing: "ease-out", fill: "backwards" });
@@ -1285,6 +1284,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     controls.dataset.turnEnd = sum ? String(sum.turn) : "";
     // Under the end card the phone's caption keeps only its line (style.css).
     caption.classList.toggle("ended", finished && !trace);
+    placeCaption();
     clearBeams();
     recent.replaceChildren(
       ...beats.slice(Math.max(0, at - 3), Math.max(0, at)).reverse().map((pb) => {

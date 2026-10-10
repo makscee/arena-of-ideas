@@ -38,7 +38,7 @@ try {
     // Land on a beat a card acts in (not a turn's totals), so the caption has a card to sit under.
     for (let i = 0; i < 6 && !(await page.locator(".bv-line .bv-card.acting").count()); i++) await page.getByTestId("battle-step").click();
     await page.waitForTimeout(800);
-    const m = await page.evaluate(() => {
+    const clipped = () => page.evaluate(() => {
       const bad = [];
       for (const card of document.querySelectorAll(".bv-line .bv-card")) {
         const n = card.querySelector(".name"), bar = card.querySelector(".hpbar");
@@ -46,8 +46,11 @@ try {
         const nr = n.getBoundingClientRect(), br = bar.getBoundingClientRect();
         // The text's own box: a range over the name's text.
         const r = document.createRange(); r.selectNodeContents(n); const tr = r.getBoundingClientRect();
-        if (tr.bottom > br.top + 1 || nr.height < tr.height - 1 || n.scrollWidth > n.clientWidth + 1) bad.push(`${n.textContent} (text ${Math.round(tr.top)}–${Math.round(tr.bottom)}, box ${Math.round(nr.height)}, bar at ${Math.round(br.top)})`);
+        if (tr.bottom > br.top + 1 || nr.height < tr.height - 1 || n.scrollWidth > n.clientWidth + 1) bad.push(`${n.textContent}${card.classList.contains("acting") ? " (acting)" : ""} (text ${Math.round(tr.top)}–${Math.round(tr.bottom)}, box ${Math.round(nr.height)}, bar at ${Math.round(br.top)})`);
       }
+      return bad;
+    });
+    const m = await page.evaluate(() => {
       // The opponent's name: the bar's "vs @…" when it shows, else the Them label's.
       const bar = document.querySelector("[data-testid=battle-vs]");
       const vs = bar && bar.offsetParent ? bar : document.querySelector("[data-testid=battle-them-who]");
@@ -63,9 +66,16 @@ try {
       }
       const cardW = Math.round(document.querySelector(".bv-line .bv-card")?.getBoundingClientRect().width ?? 0);
       const capAt = cap?.dataset.at ?? "";
-      return { capAt, capOff, cardW, bad, vs: vs?.textContent ?? null, vsCut, sw: document.documentElement.scrollWidth, vw: innerWidth, turn: document.querySelector("[data-testid=battle-turn]")?.textContent ?? "" };
+      return { capAt, capOff, cardW, vs: vs?.textContent ?? null, vsCut, sw: document.documentElement.scrollWidth, vw: innerWidth, turn: document.querySelector("[data-testid=battle-turn]")?.textContent ?? "" };
     });
     await page.screenshot({ path: `${out}/${lang}-${label}.png` });
+    // Every name on every beat, playing on to the end: acting, hurt, dying.
+    const bad = new Set(await clipped());
+    for (let i = 0; i < 60 && !(await page.getByTestId("end-card").isVisible()); i++) {
+      await page.getByTestId("battle-step").click();
+      for (const b of await clipped()) bad.add(b.replace(/ \(text.*$/, ""));
+    }
+    m.bad = [...bad];
     const fail = [];
     if (m.bad.length) fail.push(`clipped names: ${m.bad.join("; ")}`);
     if (m.vsCut) fail.push(`opponent cut: ${m.vs}`);

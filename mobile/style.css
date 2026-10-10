@@ -518,7 +518,7 @@ button.bv-badge.past { z-index: 2; }
 /* The gold ring is drawn inside the border, over the padding: the acting card
  * gets 2px more padding on each side, so its name (fitted to the
  * content box, ui/dom.ts fitText) stay clear of the ring. */
-.bv-card.acting { transform: translateY(-3px); box-shadow: 0 0 0 2px var(--action) inset; padding-left: 4px; padding-right: 4px; }
+.bv-card.acting { transform: translateY(-3px); box-shadow: 0 0 0 2px var(--action) inset; }
 .bv-card.you.acting { background: color-mix(in srgb, var(--you) 16%, var(--panel)); }
 .bv-card.ghost.acting { background: color-mix(in srgb, var(--them) 16%, var(--panel)); }
 .bv-card.silenced .emoji { filter: grayscale(1); }
