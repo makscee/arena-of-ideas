@@ -158,8 +158,10 @@ addEventListener(
 // battle, the Codex...): one history entry of ours sits on top, and Back
 // pops it instead of leaving the game. Home has no Esc, so Back leaves there.
 const GUARD = "arenaBack";
-/** The top history entry is ours. */
-let armed = false;
+/** The top history entry is ours. A reload with a sheet open (the language
+ * switch in the Throne's settings, M5-3) keeps our entry on top: it counts as
+ * armed, so the first sync takes it off instead of stacking a second one. */
+let armed = (history.state as Record<string, unknown> | null)?.[GUARD] === true;
 /** Our own history.back() calls whose popstate is still to come. */
 let ownBacks = 0;
 function syncBack(): void {

@@ -259,8 +259,6 @@ input { width: 100%; background: var(--panel); color: var(--text); border: var(-
 .spacer { flex: 1; }
 /* Slice 8: home, shop, result. */
 .small { font-size: 14px; }
-/* Home's ideas line (M2-3): quiet, centred over Play; it opens My ideas (M2-4). */
-.title-menu .ideas { text-align: center; align-self: center; }
 /* My ideas and the write screen (M2-4, screens/ideas.ts). */
 .idea-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: var(--bw) solid var(--outline); }
 .idea-row:last-child { border-bottom: none; }
@@ -317,9 +315,58 @@ button.small { min-height: 44px; font-size: 14px; padding: 0 12px; }
 .champion { border-color: color-mix(in srgb, var(--them) 40%, var(--line)); }
 .games { display: flex; flex-wrap: wrap; gap: 6px; }
 button.game { text-transform: none; letter-spacing: 0; font-family: var(--font-body); }
-/* The title menu (R2-10): one big Continue/Play, the rest a tap away. */
-.title-menu [data-testid="play"] { min-height: 56px; font-size: 18px; }
+/* The Throne (M5-3, canvas C-Throne): ARENA, the rating pill and the gear;
+ * the champion as the hero; one big Play; the idea meter and the last run on
+ * panels; Codex and Champions as two quiet pills at the foot. */
+.throne-top { min-height: 48px; gap: 10px; }
+.rating-pill { height: 40px; display: flex; align-items: center; gap: 6px; padding: 0 14px; background: var(--paper); color: var(--outline); border: 3px solid var(--outline); border-radius: 20px; box-shadow: var(--drop); }
+.rating-pill .num { font-family: var(--font-head); font-size: 18px; }
+.rating-pill .delta { font-size: 12px; font-weight: 700; }
+.rating-pill .delta.down { color: var(--loss); }
+.rating-pill .delta.up { color: color-mix(in srgb, var(--you) 70%, var(--outline)); }
+button.gear { width: 44px; height: 44px; padding: 0; border-radius: 22px; border-width: 3px; background: var(--paper); color: var(--outline); display: flex; align-items: center; justify-content: center; }
+.throne-hero { position: relative; gap: 6px; padding: 18px 16px 22px; margin-top: 12px; background: color-mix(in srgb, var(--them) 80%, var(--paper)); color: var(--outline); border: 3px solid var(--outline); border-radius: 24px; box-shadow: 0 6px 0 var(--outline); }
+.crown-badge { position: absolute; right: 14px; top: -22px; width: 56px; height: 56px; border-radius: 28px; background: var(--action); border: 3px solid var(--outline); display: flex; align-items: center; justify-content: center; transform: rotate(12deg); }
+.hero-label { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding-right: 60px; }
+.hero-name { font-size: 30px; line-height: 1.05; color: var(--outline); padding-right: 40px; }
+.hero-name .who { white-space: normal; overflow-wrap: anywhere; }
+.hero-day { font-size: 15px; }
+/* The champion's five cards, fanned like a hand (the same card as everywhere). */
+.hero-team { margin-top: 14px; }
+.throne-hero .hero-team .slots { margin: 0 -6px; gap: 2px; }
+.hero-team .card:nth-child(1) { rotate: -9deg; translate: 0 6px; }
+.hero-team .card:nth-child(2) { rotate: -4deg; }
+.hero-team .card:nth-child(3) { translate: 0 -6px; }
+.hero-team .card:nth-child(4) { rotate: 4deg; }
+.hero-team .card:nth-child(5) { rotate: 9deg; translate: 0 6px; }
+.hero-team .card { transition: rotate 0.12s, translate 0.12s; }
+.hero-team .card:hover { rotate: 0deg; translate: 0 -8px; z-index: 1; }
+/* Play: the one big button, its line under it. */
+button.play-big { min-height: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-width: 3px; border-radius: 38px; box-shadow: 0 7px 0 var(--outline); padding: 6px 16px; }
+button.play-big:active:not(:disabled) { translate: 0 4px; box-shadow: 0 3px 0 var(--outline); }
+.play-big .play-main { font-size: 34px; line-height: 1; text-transform: uppercase; }
+.play-big .play-main:has(.hearts) { font-size: 22px; text-transform: none; }
+.play-big .play-sub { font-family: var(--font-body); font-size: 13px; font-weight: 700; }
 .title-menu .hearts { letter-spacing: 0.04em; }
+button.link { background: none; border: none; box-shadow: none; color: var(--dim); text-decoration: underline; align-self: center; }
+/* The idea meter: a pip per run toward the next idea. */
+button.idea-meter { display: flex; align-items: center; gap: 12px; min-height: 50px; padding: 10px 14px; text-align: left; border-width: 3px; border-radius: 22px; box-shadow: none; }
+.idea-meter .idea-label { font-size: 17px; }
+.idea-meter[data-ready] { background: var(--action); color: var(--outline); box-shadow: var(--drop); }
+.idea-pips { display: flex; gap: 6px; }
+.idea-pips span { width: 22px; height: 22px; border-radius: 11px; border: 3px solid var(--awoken); }
+.idea-pips span.on { background: var(--awoken); }
+.idea-runs { font-family: var(--font-body); font-size: 13px; font-weight: 700; color: var(--dim); }
+.last-run { gap: 10px; padding: 12px 14px; background: var(--panel); border: 3px solid var(--outline); border-radius: 22px; }
+.last-run .display { font-size: 17px; }
+.fight-pips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fpip { width: 30px; height: 30px; border-radius: 15px; border: 3px solid var(--outline); background: var(--paper); color: var(--outline); display: flex; align-items: center; justify-content: center; font-family: var(--font-head); font-size: 13px; }
+.fpip.win { background: var(--you); }
+.fpip.loss { background: var(--them); }
+.throne-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+button.throne-link { min-height: 54px; background: var(--paper); color: var(--outline); border-width: 3px; border-radius: 27px; box-shadow: 0 4px 0 var(--outline); font-size: 19px; }
+.settings .theme-row, .settings .lang-row { flex-wrap: wrap; }
+.title-menu .error:empty { display: none; }
 .me { gap: 6px; min-width: 0; }
 .me .num { color: var(--you); }
 /* The in-run menu: ☰ in the HUD, a dialog of full-width buttons. */
@@ -726,9 +773,6 @@ button.bv-moment { display: grid; grid-template-columns: 38px 18px minmax(0, 1fr
 .bv-word.neutral { color: var(--text); font-size: 24px; }
 /* Slice 11: a unit's rates, only a hint since round 2: the sheet's dim last line. */
 .rates { font-family: var(--font-num); font-size: 11px; color: var(--dim); opacity: 0.75; }
-/* Home's champion panel: the line runs to the panel's border, so its five
- * cards are as wide as the shop's ("War Drummer" fits, R2-17). */
-.champion .slots { margin: 0 -11px; }
 /* Phone Home (R2-17): nothing sticks, so nothing sits under the menu: the
  * champion and its hint, then the menu, then the last playoff (a fresh one
  * too; the notice on top says the day ended). Play stays on the first screen. */
@@ -867,8 +911,6 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
   #app[data-screen="home"] .home-main, #app[data-screen="home"] .home-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
   #app[data-screen="home"] .home-side { position: sticky; top: 32px; }
   #app[data-screen="home"] .home-side .spacer { display: none; }
-  #app[data-screen="home"] .home-side .footer { position: static; margin: 0; padding: 0; box-shadow: none; }
-  #app[data-screen="home"] .home-side .footer [data-testid="play"] { order: -1; font-size: 20px; }
   .run-menu { min-width: 360px; }
 
   /* The result: the outcome and why on the left, both lines on the right, the buttons under the left. */
@@ -915,8 +957,7 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
 @media (min-width: 1024px) and (max-width: 1279.98px) {
   /* Home at 1024–1279: a tighter gap and a smaller Continue, so "Continue run · R7 ♥♡♡♡♡" stays on one line (R2-17). */
   #app[data-screen="home"] { column-gap: 16px; }
-  #app[data-screen="home"] .home-side .footer [data-testid="play"] { font-size: 17px; padding: 0 8px; letter-spacing: 0.03em; }
-  #app[data-screen="home"] .title-menu [data-testid="play"] .hearts { font-size: 15px; letter-spacing: 0; }
+  #app[data-screen="home"] .play-big .play-main:has(.hearts) { font-size: 19px; }
   /* Six offers fit one row from 1024px (R2-17): a narrower inspector, and
    * cards up to 120px wide, so the 6th offer never sits under Reroll / Fight. */
   #app[data-screen="shop"] { --insp: 300px; --cw: min(120px, calc((100vw - var(--insp) - 48px - 5 * var(--gap)) / 6)); }

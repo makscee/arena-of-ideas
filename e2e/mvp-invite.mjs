@@ -170,6 +170,7 @@ try {
   if (j1.url().includes("join=") || !j1.url().includes("#invite=")) errors.push("join: the address isn't the player's own #invite= link");
   if (await j1.getByTestId("end-day").count()) errors.push("join: a joined player sees End day now");
   const ownUrl = j1.url();
+  await j1.getByTestId("settings").click();
   await j1.getByTestId("own-link-row").locator("summary").click();
   if ((await j1.getByTestId("own-link").inputValue()) !== ownUrl) errors.push("join: Home's own link isn't the address's #invite= link");
   await j1.getByTestId("own-link-copy").scrollIntoViewIfNeeded();

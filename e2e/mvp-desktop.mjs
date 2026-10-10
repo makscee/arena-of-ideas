@@ -117,13 +117,17 @@ try {
   await page.keyboard.type(`DeskTester${TAG}`);
   await page.keyboard.press("Enter");
   await page.getByTestId("play").waitFor();
-  // The title menu's Sound row: on at 60% by default.
-  if ((await page.getByTestId("home-actions").getByTestId("sound-toggle").textContent())?.includes("on") !== true) errors.push("sound: the title menu's toggle isn't on by default");
-  if ((await page.getByTestId("home-actions").getByTestId("sound-volume").inputValue()) !== "60") errors.push("sound: the default volume isn't 60");
+  // The gear's Sound row (M5-3: settings left the Throne): on at 60% by default.
+  await page.getByTestId("settings").click();
+  await page.getByTestId("settings-sheet").waitFor();
+  if ((await page.getByTestId("settings-sheet").getByTestId("sound-toggle").textContent())?.includes("on") !== true) errors.push("sound: the title menu's toggle isn't on by default");
+  if ((await page.getByTestId("settings-sheet").getByTestId("sound-volume").inputValue()) !== "60") errors.push("sound: the default volume isn't 60");
   // Round 4, note 5: Music under it, on at 40%; the first key started home's loop.
-  if ((await page.getByTestId("home-actions").getByTestId("music-toggle").textContent())?.includes("on") !== true) errors.push("music: the title menu's toggle isn't on by default");
-  if ((await page.getByTestId("home-actions").getByTestId("music-volume").inputValue()) !== "40") errors.push("music: the default volume isn't 40");
+  if ((await page.getByTestId("settings-sheet").getByTestId("music-toggle").textContent())?.includes("on") !== true) errors.push("music: the title menu's toggle isn't on by default");
+  if ((await page.getByTestId("settings-sheet").getByTestId("music-volume").inputValue()) !== "40") errors.push("music: the default volume isn't 40");
   if ((await page.evaluate(() => window.__music?.().track)) !== "home.m4a") errors.push("music: home's loop isn't playing");
+  await shot("settings");
+  await page.getByTestId("sheet-close").click();
   await shot("home"); await noHScroll("home"); await wide("home", 1100); await onScreen("home: Play", page.getByTestId("play"));
   await cardSize("home champion", "champion");
   // Home's two columns: Play sits right of the champion panel.
@@ -133,7 +137,7 @@ try {
     // At 1024px the champion's 5 cards stay on one line (R2-10).
     const size = page.viewportSize();
     await page.setViewportSize({ width: 1024, height: size.height });
-    const tops = await page.getByTestId("champion").locator(".card").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+    const tops = await page.getByTestId("champion").locator(".card").evaluateAll((els) => els.map((e) => e.offsetTop)); // the fan tilts them: layout, not the drawn box
     if (new Set(tops).size > 1) errors.push(`home at 1024px: the champion's cards wrap (${tops.join(",")})`);
     await shot("home-1024");
     await page.setViewportSize(size);

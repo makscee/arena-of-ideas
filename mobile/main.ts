@@ -16,7 +16,7 @@ import { battleScreen, type RunOutro } from "./screens/battle";
 import { codexScreen, newCodexCache, type CodexState } from "./screens/codex";
 import { setCodexLink } from "./ui/term";
 import { statsScreen } from "./screens/stats";
-import { ideasScreen, ideaWhy } from "./screens/ideas";
+import { ideasScreen } from "./screens/ideas";
 import { votePanel } from "./screens/vote";
 import { card, roman, setCardCredits, unitSheet, type CardUnit } from "./ui/card";
 import { previewName } from "./ui/fusion";
@@ -292,10 +292,12 @@ function nameForm(tg: HTMLElement | null = null): void {
 
 // ---------- home ----------
 
-/** Home is the title menu (R2-10, docs/round2/ui.md (e)): the champion,
- * your name and rating, one big Continue run (or Play), then New run (only
- * while a run waits: it asks to abandon that run first), Codex, Stats and
- * Rules. Records live in Stats; "End day now" shows on dev servers only.
+/** Home is the Throne (mission 5, M5-3, canvas C-Throne and the Simplify
+ * map): the champion of the day as the hero, one big Play (or Continue, with
+ * New run under it while a run waits), the idea meter (it opens My ideas),
+ * your last run, then two quiet links, Codex and Champions (Stats). Sound,
+ * language, palette, Rules, your link and Telegram sit behind the gear;
+ * "End day now" shows on dev servers only.
  * `ended`: the day the dev "End day now" just closed, so Home says how it
  * ended at the top and brings the playoff panel into view. */
 async function homeScreen(ended: number | null = null): Promise<void> {
@@ -309,20 +311,26 @@ async function homeScreen(ended: number | null = null): Promise<void> {
   const active = waiting && waiting.phase !== "over" ? waiting : null;
   const champ = home.day.champion;
   const r = home.rating;
+  const own = champ?.player.id === api.player?.id;
   const play = active
     ? button("", () => void guarded(err, async () => shopScreen(await api.run(active.runId), content)), "primary", "play")
-    : button(t("home.play"), () => void guarded(err, async () => shopScreen(await api.startRun(), content)), "primary", "play");
-  if (active) play.replaceChildren(t("home.continue", { where: active.round > rules.rounds ? t("home.continueCrown") : t("home.continueRound", { round: active.round }) }), hearts(active.hearts));
+    : button("", () => void guarded(err, async () => shopScreen(await api.startRun(), content)), "primary", "play");
+  play.classList.add("play-big");
+  play.append(
+    active
+      ? h("span", { class: "play-main" }, t("home.continue", { where: active.round > rules.rounds ? t("home.continueCrown") : t("home.continueRound", { round: active.round }) }), hearts(active.hearts))
+      : h("span", { class: "play-main" }, t("home.play")),
+  );
+  if (!active) play.append(h("span", { class: "play-sub" }, t(!champ ? "home.playSubNone" : own ? "home.playSubOwn" : "home.playSub", { n: rules.rounds })));
   const newRun = active
     ? button(t("home.newRun"), () => abandonSheet(active, "new", () => void guarded(err, async () => {
         // The given-up run's end and rating change first, as ☰ Abandon shows
         // them; its "New run" starts the next one.
         runOverScreen(await api.abandon(active.runId), content, "", true);
-      })), "", "new-run")
+      })), "small link", "new-run")
     : null;
-  const codex = button(t("menu.codex"), () => void guarded(err, () => openCodex()), "", "codex");
-  const stats = button(t("home.stats"), () => void statsScreen({ content, onBack: () => void homeScreen(), onCodex: () => void openCodex() }), "grow", "stats");
-  const rulesBtn = button(t("menu.rules"), () => closable(rulesSheet()), "grow", "rules-open");
+  const codex = button(t("menu.codex"), () => void guarded(err, () => openCodex()), "throne-link", "codex");
+  const stats = button(t("home.stats"), () => void statsScreen({ content, onBack: () => void homeScreen(), onCodex: () => void openCodex() }), "throne-link", "stats");
   const endDay = button(
     t("dev.endDay"),
     () =>
@@ -354,63 +362,50 @@ async function homeScreen(ended: number | null = null): Promise<void> {
   const last = home.day.lastPlayoff ?? null;
   const justEnded = ended !== null && last?.seq === ended ? last : null;
   const playoff = playoffPanel(last, champ?.player ?? null, content, err);
+  const rating = h("span", { class: "num", "data-testid": "rating" }, `${r?.rating ?? rules.ratingStart}`);
+  const pill = h("div", { class: "rating-pill keep", title: t("home.ratingAria") }, rating);
+  const gear = button("", () => settingsSheet(home, err), "gear keep", "settings");
+  gear.setAttribute("aria-label", t("home.settings"));
+  gear.append(GEAR_SVG());
   show(
-    h(
-      "div",
-      { class: "row spread" },
-      h("h1", {}, t("home.title")),
-      h("div", { class: "row me" }, who(api.player?.name ?? "", "dim"), h("span", { class: "dim keep" }, "·"), h("span", { class: "num keep", "data-testid": "rating" }, `${r?.rating ?? rules.ratingStart}`)),
-    ),
+    h("header", { class: "row throne-top" }, h("h1", {}, t("home.title")), h("div", { class: "grow" }), pill, gear),
     // The dev "End day now" just ran: say so first, with how the day ended
     // (the playoff panel) right under it, before today's champion.
-    // Desktop: the champion and the day on the left, the menu on the right
-    // (.home-main, .home-side; on the phone they are one column).
+    // Desktop: the champion and the day on the left, Play and the rest on the
+    // right (.home-main, .home-side; on the phone they are one column).
     h(
       "div",
       { class: "home-main" },
       ended !== null ? h("div", { class: "notice", "data-testid": "day-ended" }, t("home.dayEnded", { ended, today: home.day.seq })) : null,
       justEnded ? playoff : null,
       h(
-        "div",
-        { class: "panel stack champion", "data-testid": "champion" },
-        h("div", { class: "row spread" }, h("div", { class: "label keep" }, t("home.champion", { day: home.day.seq })), champ ? whoMark(champ.player, "ghost-name") : null),
-        champ ? team(champ.line, "ghost", content) : h("div", { class: "dim" }, t("home.noChampion")),
-        h("div", { class: "dim small", "data-testid": "slayers" }, champ ? slayersLine(home.day.slayers) : t("home.newChampionAt", { at: rules.dayEndsAt })),
+        "section",
+        { class: "stack champion throne-hero", "data-testid": "champion" },
+        h("div", { class: "crown-badge", "aria-hidden": "true" }, CROWN_SVG()),
+        h("div", { class: "hero-label" }, t("home.champion")),
+        champ ? h("h2", { class: "hero-name" }, whoMark(champ.player)) : h("div", {}, t("home.noChampion")),
+        h("div", { class: "hero-day", "data-testid": "slayers" }, champ ? slayersLine(home.day.slayers) : t("home.newChampionAt", { at: rules.dayEndsAt })),
+        champ ? h("div", { class: "hero-team" }, team(champ.line, "ghost", content)) : null,
       ),
-      champ
-        ? hint(
-            champ.player.id === api.player?.id
-              ? t(isDesktop() ? "home.hintOwnDesk" : "home.hintOwnPhone")
-              : r
-                ? t(isDesktop() ? "home.hintRatedDesk" : "home.hintRatedPhone")
-                : t(isDesktop() ? "home.hintNewDesk" : "home.hintNewPhone"),
-          )
-        : null,
       justEnded ? null : playoff,
     ),
     h(
       "div",
       { class: "home-side" },
-      err,
-      h("div", { class: "spacer" }),
-      // The menu stays on the first screen however long Home runs (a playoff's table).
       h(
         "div",
-        { class: "stack footer title-menu", "data-testid": "home-actions" },
-        home.ideas ? ideasLine(home.ideas) : null,
+        { class: "stack title-menu", "data-testid": "home-actions" },
         play,
         newRun,
-        codex,
-        h("div", { class: "row" }, stats, rulesBtn),
-        soundRow(),
-        langRow(),
-        themeRow(),
-        api.ownInvite ? ownLinkRow(api.ownInvite) : null,
-        home.telegram?.enabled ? telegramRow(home.telegram.linked, err) : null,
-        home.dev
-          ? h("details", { class: "dev" }, h("summary", {}, t("dev.title")), h("div", { class: "row wrap" }, endDay, grantIdea, creditUnit, seedCandidate, overnight, fakeVotes, candidates))
-          : null,
+        err,
+        home.ideas ? ideasMeter(home.ideas) : null,
+        lastRunPanel(r?.rating ?? null, pill),
       ),
+      h("div", { class: "spacer" }),
+      h("nav", { class: "throne-nav" }, codex, stats),
+      home.dev
+        ? h("details", { class: "dev" }, h("summary", {}, t("dev.title")), h("div", { class: "row wrap" }, endDay, grantIdea, creditUnit, seedCandidate, overnight, fakeVotes, candidates))
+        : null,
       // M2-8's vote card, under the menu: quiet, and Play stays on the first screen.
       votePanel(content),
     ),
@@ -418,6 +413,109 @@ async function homeScreen(ended: number | null = null): Promise<void> {
   screen("home");
   music("home");
   if (justEnded) playoff?.classList.add("fresh");
+}
+
+const svg = (paths: string, attrs: Record<string, string>) => () => {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  for (const [k, v] of Object.entries({ viewBox: "0 0 24 24", "aria-hidden": "true", ...attrs })) el.setAttribute(k, v);
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", paths);
+  el.append(path);
+  return el;
+};
+const GEAR_SVG = svg("M9 12a3 3 0 1 0 6 0a3 3 0 1 0-6 0M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1", { width: "20", height: "20", fill: "none", stroke: "currentColor", "stroke-width": "2.4", "stroke-linecap": "round" });
+const CROWN_SVG = svg("M3 18h18L19 7l-5 4-2-6-2 6-5-4z", { width: "30", height: "30", fill: "var(--paper)", stroke: "var(--outline)", "stroke-width": "2.2", "stroke-linejoin": "round" });
+
+/** The gear's sheet (M5-3): everything that was the title menu's second rank.
+ * Sound and Music, the language, the palette, Rules (until the Codex's How to
+ * play), this device's link and Telegram. */
+function settingsSheet(home: HomeView, err: HTMLElement): void {
+  const close = closable(
+    h(
+      "div",
+      { class: "stack settings", "data-testid": "settings-sheet" },
+      h("h2", {}, t("home.settings")),
+      h("div", { class: "row me" }, h("span", { class: "dim keep" }, t("home.playingAs")), who(api.player?.name ?? "")),
+      soundRow(),
+      langRow(),
+      themeRow(),
+      button(t("menu.rules"), () => (close(), closable(rulesSheet())), "", "rules-open"),
+      api.ownInvite ? ownLinkRow(api.ownInvite) : null,
+      home.telegram?.enabled ? telegramRow(home.telegram.linked, err) : null,
+    ),
+  );
+}
+
+/** The Throne's idea meter (M2-3, M5-3): the runs until the next idea as
+ * pips, or the ideas held, or one waiting for its pick first. Tapping it
+ * opens My ideas (M2-4, screens/ideas.ts). */
+function ideasMeter(ideas: IdeasView): HTMLElement {
+  const every = rules.ideaEveryRuns ?? 3;
+  const counting = !ideas.ready && ideas.held === 0 && ideas.nextIn !== null;
+  // M2-6: an idea waiting for its pick comes first: "💡 Your idea is ready".
+  const label = ideas.ready
+    ? t("home.ideasReady", { n: ideas.ready })
+    : counting
+      ? t("home.ideaNext")
+      : t("home.ideasHeld", { n: ideas.held });
+  const done = counting ? Math.max(0, every - (ideas.nextIn ?? every)) : 0;
+  const b = button("", () => void ideasScreen({ onBack: () => void homeScreen(), onUnknown: () => (api.forget(), nameScreen()) }), "idea-meter", "ideas");
+  b.append(h("span", { class: "grow idea-label", "data-testid": "ideas-label" }, label));
+  if (counting)
+    b.append(
+      h("span", { class: "idea-pips", "aria-hidden": "true" }, ...Array.from({ length: every }, (_, i) => h("span", { class: i < done ? "on" : "" }))),
+      h("span", { class: "idea-runs", "data-testid": "ideas-runs" }, t("home.ideaRuns", { n: ideas.nextIn ?? 0 })),
+    );
+  if (ideas.ready) b.dataset.ready = String(ideas.ready);
+  return b;
+}
+
+/** This device's last finished run (M5-3): the run-over screen keeps its id,
+ * the Throne reads it back. Per device, like the palette; null if none. */
+const LAST_RUN_KEY = "arena.lastRun";
+function rememberLastRun(run: RunView): void {
+  try {
+    localStorage.setItem(LAST_RUN_KEY, JSON.stringify({ player: run.player.id, runId: run.runId }));
+  } catch {
+    // Private mode: the Throne just shows no last run.
+  }
+}
+function lastRunId(): string | null {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LAST_RUN_KEY) ?? "null") as { player?: string; runId?: string } | null;
+    return saved && saved.player === api.player?.id && saved.runId ? saved.runId : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The Throne's "Last run": a pip per fight (won, drawn, lost; the Crown a
+ * crown), how it ended and the record. It fills in when the run arrives; the
+ * rating pill then shows the run's change when it is the latest one. */
+function lastRunPanel(rating: number | null, pill: HTMLElement): HTMLElement | null {
+  const id = lastRunId();
+  if (!id) return null;
+  const panel = h("section", { class: "stack last-run", "data-testid": "last-run", hidden: "" });
+  void api.run(id).then(
+    (run) => {
+      if (run.phase !== "over") return panel.remove();
+      const draws = run.fights.filter((f) => f.outcome === "draw").length;
+      panel.append(
+        h("div", { class: "display" }, t("home.lastRun")),
+        h("div", { class: "fight-pips" }, ...run.fights.map((f) => h("span", { class: `fpip ${f.outcome}`, title: f.outcome }, f.kind === "crown" ? "👑" : String(f.round)))),
+        h("div", { class: "small" }, runEnd(run).why),
+        h("div", { class: "small dim num" }, t("over.record", { wins: t("over.wins", { n: run.wins }), draws: t("over.draws", { n: draws }), losses: t("over.losses", { n: run.losses }) })),
+      );
+      panel.hidden = false;
+      const rc = run.rating;
+      if (rc && rc.after === rating && rc.after !== rc.before) {
+        const delta = rc.after - rc.before;
+        pill.append(h("span", { class: `delta ${delta > 0 ? "up" : "down"}`, "data-testid": "rating-delta" }, `${delta > 0 ? "+" : "−"}${Math.abs(delta)}`));
+      }
+    },
+    () => panel.remove(),
+  );
+  return panel;
 }
 
 /** Dev (M2-8): every candidate's votes and score, qualified ones first. */
@@ -438,21 +536,6 @@ function candidatesSheet(list: CandidateScore[]): HTMLElement {
         )
       : [h("div", { class: "dim" }, t("dev.noCandidates"))]),
   );
-}
-
-/** Home's quiet ideas line (M2-3): the ideas held, or the runs until the
- * next, in My ideas' words ("💡 1 more run for an idea", M3-2). Tapping it
- * opens My ideas (M2-4, screens/ideas.ts). */
-function ideasLine(ideas: IdeasView): HTMLElement {
-  // M2-6: an idea waiting for its pick comes first: "💡 Your idea is ready".
-  const text = ideas.ready
-    ? t("home.ideasReady", { n: ideas.ready })
-    : ideas.held > 0 || ideas.nextIn === null
-      ? t("home.ideasHeld", { n: ideas.held })
-      : t("home.ideasNext", { why: ideaWhy(ideas.nextIn) });
-  const b = button(text, () => void ideasScreen({ onBack: () => void homeScreen(), onUnknown: () => (api.forget(), nameScreen()) }), "small link ideas", "ideas");
-  if (ideas.ready) b.dataset.ready = String(ideas.ready);
-  return b;
 }
 
 /** One confirm before a run is given up (R2-2's abandon): it says what the
@@ -536,7 +619,7 @@ function runMenu(run: RunView, content: MvpContent, err: HTMLElement, fought?: F
   const close = dismissable((close) => (close(), resume?.()), menu);
 }
 
-/** The champion card's last line: what today's slayers mean at the day's end. */
+/** The champion card's last line: today's slayers, and when the day ends. */
 function slayersLine(n: number): string {
   const at = rules.dayEndsAt;
   return n === 0 ? t("home.slayersNone", { at }) : t("home.slayers", { n, at });
@@ -1451,6 +1534,7 @@ function runEnd(run: RunView): { why: string; reach: string } {
 /** `newRun`: the run was given up through Home's New run, so the footer
  * starts the next run (Home stays a tap away). */
 function runOverScreen(run: RunView, content: MvpContent, notice = "", newRun = false): void {
+  rememberLastRun(run);
   const { why, reach } = runEnd(run);
   const err = errorLine();
   err.textContent = notice;

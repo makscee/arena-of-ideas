@@ -171,17 +171,25 @@ try {
   await shot("home"); await noHScroll("home"); await noRates("home"); await onScreen("home: Play", page.getByTestId("play"));
   // M4-2: the switch beside Sound redraws the page in the other language,
   // kept on the device, and back.
+  // M5-3: the switch lives behind the Throne's gear.
+  const playMain = () => page.getByTestId("play").locator(".play-main").textContent();
   for (const to of [lang === "ru" ? "en" : "ru", lang]) {
+    await page.getByTestId("settings").click();
     await Promise.all([page.waitForEvent("load"), page.getByTestId(`lang-${to}`).click()]);
     await page.getByTestId("play").waitFor();
     const Lto = catalog(to);
-    if ((await page.getByTestId("play").textContent()) !== Lto("home.play") || (await page.evaluate(() => document.documentElement.lang)) !== to) errors.push(`lang switch: Home after ${to} reads "${await page.getByTestId("play").textContent()}"`);
+    if ((await playMain()) !== Lto("home.play") || (await page.evaluate(() => document.documentElement.lang)) !== to) errors.push(`lang switch: Home after ${to} reads "${await playMain()}"`);
+    await page.getByTestId("settings").click();
     if ((await page.getByTestId(`lang-${to}`).getAttribute("aria-pressed")) !== "true") errors.push(`lang switch: ${to} isn't marked as chosen`);
-    if (to !== lang) { await page.getByTestId("lang-row").scrollIntoViewIfNeeded(); await shot(`home-switched-${to}`); await noHScroll(`home-switched-${to}`); }
+    if (to !== lang) { await page.getByTestId("lang-row").scrollIntoViewIfNeeded(); await shot(`settings-switched-${to}`); await noHScroll(`settings-switched-${to}`); }
+    await page.getByTestId("sheet-close").click();
+    if (to !== lang) { await shot(`home-switched-${to}`); await noHScroll(`home-switched-${to}`); }
   }
   // M2-3: a quiet ideas line; a new player earns the first in 3 runs.
-  if ((await page.getByTestId("ideas").textContent()) !== L("home.ideasNext", { why: L("ideas.why", { n: 3 }) })) errors.push(`home: ideas line "${await page.getByTestId("ideas").textContent()}"`);
+  if ((await page.getByTestId("ideas-label").textContent()) !== L("home.ideaNext") || (await page.getByTestId("ideas-runs").textContent()) !== L("home.ideaRuns", { n: 3 })) errors.push(`home: ideas meter "${await page.getByTestId("ideas").textContent()}"`);
   await tap44("dev summary", page.locator("details.dev summary"));
+  await tap44("settings gear", page.getByTestId("settings"));
+  await page.getByTestId("settings").click();
   await page.getByTestId("rules-open").click();
   await page.getByTestId("rules").waitFor();
   await shot("rules"); await noHScroll("rules");
@@ -191,6 +199,7 @@ try {
   await back();
   await page.getByTestId("rules").waitFor({ state: "detached", timeout: 3_000 }).catch(() => errors.push("back: Back didn't close the Rules sheet"));
   if (!(await page.getByTestId("play").isVisible().catch(() => false))) errors.push(`back: Back with a sheet open left the game (${page.url()})`);
+  await page.getByTestId("settings").click();
   await page.getByTestId("rules-open").click();
   await page.getByTestId("rules").waitFor();
   await page.getByTestId("overlay").click({ position: { x: 180, y: 10 } });
@@ -743,7 +752,10 @@ try {
   await page.getByTestId("home").click();
   await page.getByTestId("play").waitFor();
   await shot("home-after");
-  if (![1, 2].map((n) => L("home.ideasNext", { why: L("ideas.why", { n }) })).concat([1, 2, 3].map((n) => L("home.ideasHeld", { n }))).includes((await page.getByTestId("ideas").textContent()) ?? "")) errors.push(`home after a run: ideas line "${await page.getByTestId("ideas").textContent()}"`);
+  if (![L("home.ideaNext")].concat([1, 2, 3].map((n) => L("home.ideasHeld", { n }))).includes((await page.getByTestId("ideas-label").textContent()) ?? "")) errors.push(`home after a run: ideas meter "${await page.getByTestId("ideas").textContent()}"`);
+  // M5-3: the Throne shows the run just played, a pip per fight.
+  await page.getByTestId("last-run").waitFor({ timeout: 5_000 }).catch(() => errors.push("home after a run: no Last run panel"));
+  if ((await page.getByTestId("last-run").locator(".fpip").count()) < 1) errors.push("home after a run: Last run has no fights");
 
   // Stats (slice 11, R2-11): records and the champion history; units and
   // fusions moved to the Codex.
@@ -785,7 +797,7 @@ try {
   if ((await page.getByTestId("rating-change").count()) === 0) errors.push("abandon: no rating change on the run-over screen");
   await page.getByTestId("home").click();
   await page.getByTestId("play").waitFor();
-  if ((await page.getByTestId("play").textContent()) !== L("home.play")) errors.push("abandon: the title menu still offers Continue");
+  if ((await page.getByTestId("play").locator(".play-main").textContent()) !== L("home.play")) errors.push("abandon: the title menu still offers Continue");
   // New run on the title menu gives the waiting run up too, and shows its
   // end and rating change first; its New run starts the next run (R2-17).
   await page.getByTestId("play").click();
@@ -1121,11 +1133,11 @@ try {
   const endedSeq = (await call("GET", "/day")).seq;
   await page.locator("details.dev summary").click();
   // M2-3: dev "+1 idea" brings an idea home at once.
-  const heldText = (await page.getByTestId("ideas").textContent()) ?? "";
+  const heldText = (await page.getByTestId("ideas-label").textContent()) ?? "";
   const heldBefore = [1, 2, 3].find((n) => heldText === L("home.ideasHeld", { n })) ?? 0;
   await page.getByTestId("grant-idea").click();
   const heldNow = Math.min(3, heldBefore + 1);
-  await page.waitForFunction((t) => document.querySelector('[data-testid="ideas"]')?.textContent === t, L("home.ideasHeld", { n: heldNow }), { timeout: 10_000 }).catch(() => errors.push(`dev +1 idea: ideas line "${heldNow}" never showed`));
+  await page.waitForFunction((t) => document.querySelector('[data-testid="ideas-label"]')?.textContent === t, L("home.ideasHeld", { n: heldNow }), { timeout: 10_000 }).catch(() => errors.push(`dev +1 idea: ideas line "${heldNow}" never showed`));
   await shot("home-idea-granted"); await noHScroll("home-idea-granted");
   await onScreen("home after +1 idea: Play", page.getByTestId("play"));
   await page.locator("details.dev summary").click().catch(() => {});
@@ -1154,7 +1166,7 @@ try {
     await page.reload();
     await page.getByTestId("play").waitFor();
     const homeText = await page.locator("#app").textContent();
-    if (!homeText.includes(L("home.hintOwnPhone")) || homeText.includes(L("home.hintRatedPhone"))) errors.push("champion's home: no 'your team' hint");
+    if (!homeText.includes(L("home.playSubOwn", { n: 12 })) || homeText.includes(L("home.playSub", { n: 12 }))) errors.push("champion's home: Play doesn't say it's your own team");
     await shot("home-champion"); await noHScroll("home-champion");
     await page.getByTestId("play").click();
     await page.getByTestId("fight").waitFor();
