@@ -1,6 +1,7 @@
 // M5-6: on a phone (360, 390), EN and RU, nothing that floats over the fight
 // (a ±number, a stat pill, a trigger badge) covers a side's label or the
-// caption, at any moment of the first fight. Plays it on a LOCAL server and
+// caption, and no running total covers a live card's name or HP bar (M5-7),
+// at any moment of the first fight. Plays it on a LOCAL server and
 // samples the page while it plays.
 // Needs `npm run mvp:build` first.   node e2e/probe-battle-floats.mjs [outdir]
 import { spawn } from "node:child_process";
@@ -41,6 +42,16 @@ try {
           if (f.children.length && !f.matches(".bv-pill, .bv-badge-pill, .bv-float, .bv-run-row")) continue; // leaves and pills, not their frames
           const a = vis(f); if (!a) continue;
           for (const [el, b] of targets) if (a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1) bad.push(`${String(f.className.baseVal ?? f.className).split(" ")[0] || f.tagName} "${f.textContent.trim()}" over ${el.dataset.testid ?? el.className.split(" ").slice(0, 2).join(".")}`);
+        }
+        // M5-7: a running total never covers a live card's name or HP bar (the
+        // phone's box sits on the card's face; rows it clips, and moments a card or
+        // its box is still moving, don't count).
+        const faces = [...document.querySelectorAll(".bv-line .bv-card:not(.dead) .name, .bv-line .bv-card:not(.dead) .hpbar")].map((el) => [el, vis(el)]).filter(([, r]) => r);
+        for (const row of document.querySelectorAll(".bv-run-row")) {
+          const a = vis(row), box = row.closest(".bv-run") && vis(row.closest(".bv-run")); if (!a || !box) continue;
+          const top = Math.max(a.top, box.top), bottom = Math.min(a.bottom, box.bottom); if (bottom - top < 2) continue;
+          if (row.closest(".bv-run").getAnimations().length) continue; // still gliding to its card
+          for (const [el, b] of faces) if (!el.closest(".bv-slot")?.getAnimations({ subtree: true }).length && a.left < b.right - 1 && a.right > b.left + 1 && top < b.bottom - 1 && bottom > b.top + 1) bad.push(`bv-run-row "${row.textContent.trim()}" over ${el.className.split(" ")[0]} of ${el.closest(".bv-card").dataset.unit}`);
         }
         return bad;
       });
