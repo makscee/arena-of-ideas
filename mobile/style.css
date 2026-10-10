@@ -115,26 +115,30 @@
   --radius: 12px;
   --drop: 0 3px 0 var(--outline);
   --font-head: "Lilita One", "Arial Rounded MT Bold", sans-serif;
+  --head-weight: 400;
   --font-body: "Rubik", "Trebuchet MS", sans-serif;
   --font-num: "Rubik", "Trebuchet MS", sans-serif;
   font-family: var(--font-body);
   font-variant-numeric: tabular-nums;
   color-scheme: dark;
 }
+/* Lilita One has no Cyrillic: in Russian, headings and buttons take Rubik
+ * semibold instead of a plain fallback (700 widened the shop's buttons). */
+:root:lang(ru) { --font-head: "Rubik", "Trebuchet MS", sans-serif; --head-weight: 600; }
 /* end of tokens */
 * { box-sizing: border-box; }
 /* The ground: a faint dot grid, as on the Toybox boards. */
 html, body { margin: 0; background-color: var(--ground); background-image: radial-gradient(var(--dots) 1.6px, transparent 1.6px); background-size: 22px 22px; color: var(--text); }
 body { min-height: 100dvh; font-size: 16px; font-weight: 500; -webkit-tap-highlight-color: transparent; }
 #app { max-width: 480px; margin: 0 auto; padding: 12px 12px calc(16px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; min-height: 100dvh; }
-h1, h2, .display { font-family: var(--font-head); font-weight: 400; letter-spacing: 0.01em; margin: 0; }
+h1, h2, .display { font-family: var(--font-head); font-weight: var(--head-weight); letter-spacing: 0.01em; margin: 0; }
 h1 { font-size: 30px; color: var(--action); text-shadow: 0 3px 0 var(--outline); }
 h2 { font-size: 20px; }
 .mono, .num { font-family: var(--font-num); }
 .dim { color: var(--dim); }
 .panel { background: var(--panel); border: var(--bw) solid var(--outline); padding: 12px; border-radius: var(--radius); box-shadow: var(--drop); }
 button, input { font: inherit; min-height: 44px; }
-button { background: var(--panel); color: var(--text); border: var(--bw) solid var(--outline); padding: 0 16px; font-family: var(--font-head); font-weight: 400; letter-spacing: 0.02em; text-transform: none; cursor: pointer; border-radius: var(--radius); box-shadow: var(--drop); }
+button { background: var(--panel); color: var(--text); border: var(--bw) solid var(--outline); padding: 0 16px; font-family: var(--font-head); font-weight: var(--head-weight); letter-spacing: 0.02em; text-transform: none; cursor: pointer; border-radius: var(--radius); box-shadow: var(--drop); }
 button:active:not(:disabled) { translate: 0 2px; box-shadow: 0 1px 0 var(--outline); }
 button.primary { background: var(--action); color: var(--outline); }
 button.danger { background: var(--them-deep); color: var(--outline); }
@@ -247,7 +251,7 @@ input { width: 100%; background: var(--panel); color: var(--text); border: var(-
 .card .copies.tag { font-size: 8px; color: var(--action); }
 .card .cost { font-family: var(--font-num); font-size: 12px; color: var(--action); }
 .label { font-size: 13px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
-.outcome { font-family: var(--font-head); font-size: 44px; text-align: center; }
+.outcome { font-family: var(--font-head); font-weight: var(--head-weight); font-size: 44px; text-align: center; }
 .outcome.win { color: var(--you); }
 .outcome.loss { color: var(--them); }
 .outcome.draw { color: var(--dim); }
@@ -270,7 +274,7 @@ button.pick-arch { display: flex; align-items: center; gap: 12px; width: 100%; m
 button.pick-arch[aria-pressed="true"] { border-color: var(--you); background: color-mix(in srgb, var(--you) 10%, var(--panel)); }
 .pick-emoji { font-size: 32px; line-height: 1; flex: none; }
 .pick-words { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.pick-name { font-family: var(--font-head); font-size: 18px; font-weight: 600; }
+.pick-name { font-family: var(--font-head); font-weight: var(--head-weight); font-size: 18px; font-weight: 600; }
 button.pick-none { align-self: center; }
 .pick-main { display: contents; }
 .pick-cards { display: flex; gap: 8px; justify-content: center; }
@@ -506,7 +510,7 @@ button.bv-badge.past { z-index: 2; }
 /* The big moment's title over the board (note 14): "Crown fight" over the
  * line-up, "Fatigue" as it first sets in; --bv-bn is its length at 1×. */
 .bv-banner { display: none; }
-.bv-banner.on { position: fixed; z-index: 6; left: 50%; top: 42%; translate: -50% -50%; display: flex; align-items: center; gap: 8px; padding: 6px 16px; pointer-events: none; border: 1px solid var(--action); background: color-mix(in srgb, var(--ground) 88%, transparent); border-radius: var(--radius); font-family: var(--font-head); font-size: 24px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--action); animation: bv-banner calc(var(--bv-bn, 1.2s) / var(--bv-sp, 1)) ease-out both; }
+.bv-banner.on { position: fixed; z-index: 6; left: 50%; top: 42%; translate: -50% -50%; display: flex; align-items: center; gap: 8px; padding: 6px 16px; pointer-events: none; border: 1px solid var(--action); background: color-mix(in srgb, var(--ground) 88%, transparent); border-radius: var(--radius); font-family: var(--font-head); font-weight: var(--head-weight); font-size: 24px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--action); animation: bv-banner calc(var(--bv-bn, 1.2s) / var(--bv-sp, 1)) ease-out both; }
 .bv-banner.fatigue { border-color: var(--them); color: var(--them); }
 @keyframes bv-banner { 0% { opacity: 0; transform: scale(0.8); } 15% { opacity: 1; transform: scale(1.05); } 25% { transform: none; } 80% { opacity: 1; } 100% { opacity: 0; } }
 /* Floats hang in the card's slot. On desktop they rise above the card, into
@@ -650,9 +654,9 @@ button.bv-step:hover { background: color-mix(in srgb, var(--you) 8%, transparent
 .bv-step-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; word-break: break-word; }
 .bv-step-by { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
 .bv-step.firing .bv-step-head b { font-weight: 700; }
-.bv-step.root .bv-step-text { color: var(--action); font-family: var(--font-head); }
+.bv-step.root .bv-step-text { color: var(--action); font-family: var(--font-head); font-weight: var(--head-weight); }
 button.bv-close { min-height: 44px; min-width: 44px; padding: 0 12px; }
-.bv-word { font-family: var(--font-head); font-size: 30px; line-height: 1; text-align: center; }
+.bv-word { font-family: var(--font-head); font-weight: var(--head-weight); font-size: 30px; line-height: 1; text-align: center; }
 .bv-word.win { color: var(--you); }
 .bv-word.loss { color: var(--them); }
 .bv-word.draw { color: var(--dim); }
@@ -998,7 +1002,7 @@ select { font: inherit; min-height: 44px; width: 100%; background: var(--panel);
 .kw-row { display: flex; gap: 12px; padding: 10px 0; border-bottom: var(--bw) solid var(--outline); scroll-margin: 80px; }
 .kw-row.landed { background: color-mix(in srgb, var(--you) 10%, transparent); outline: 1px solid var(--you); outline-offset: 2px; }
 .kw-icon { flex: none; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; }
-.kw-noicon { font-family: var(--font-head); font-size: 28px; font-weight: 700; opacity: 0.6; }
+.kw-noicon { font-family: var(--font-head); font-weight: var(--head-weight); font-size: 28px; font-weight: 700; opacity: 0.6; }
 .kw-text { gap: 4px; min-width: 0; flex: 1; }
 .chips { display: flex; flex-wrap: wrap; gap: 4px; }
 button.chip.unit-chip { min-height: 44px; padding: 0 8px; font-size: 13px; text-transform: none; letter-spacing: 0; font-family: var(--font-body); }
@@ -1302,6 +1306,6 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
 .history button.link { min-height: 36px; text-align: left; }
 .history button.link.on { color: var(--text); }
 /* M4-6: Log in with Telegram. "Open Telegram" is a link that looks like the primary button. */
-a.button { display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 16px; text-decoration: none; font-family: var(--font-head); font-weight: 400; letter-spacing: 0.02em; text-transform: none; border-radius: var(--radius); }
+a.button { display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 16px; text-decoration: none; font-family: var(--font-head); font-weight: var(--head-weight); letter-spacing: 0.02em; text-transform: none; border-radius: var(--radius); }
 a.button.primary { background: var(--action); color: var(--outline); border: var(--bw) solid var(--outline); box-shadow: var(--drop); }
 img.tg-qr { align-self: center; width: 200px; height: 200px; image-rendering: pixelated; background: var(--qr-white); }
