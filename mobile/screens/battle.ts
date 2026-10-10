@@ -1287,6 +1287,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     // Under the end card the phone's caption keeps only its line (style.css).
     caption.classList.toggle("ended", finished && !trace);
     placeCaption();
+    // The caption measures the acting card's slot: once the lines' slides and
+    // entries settle, place it again where the card landed.
+    const moving = [mine, enemy].flatMap((r) => r.getAnimations({ subtree: true }));
+    if (moving.length) Promise.all(moving.map((a) => a.finished)).then(placeCaption, () => {});
     clearBeams();
     recent.replaceChildren(
       ...beats.slice(Math.max(0, at - 3), Math.max(0, at)).reverse().map((pb) => {
@@ -1774,17 +1778,20 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
    * the card acting, so the event reads where it happens; a turn's totals or
    * a beat with nobody acting keep it centred. It slides, never leaves the board. */
   function placeCaption(): void {
-    caption.style.translate = "";
     delete caption.dataset.at;
-    if (!isDesktop() || finished) return;
-    const card = [mine, enemy].map((r) => r.querySelector<HTMLElement>(".bv-card.acting")).find((x) => x);
+    const card = isDesktop() && !finished ? [mine, enemy].map((r) => r.querySelector<HTMLElement>(".bv-card.acting")).find((x) => x) : undefined;
     const board = caption.parentElement?.getBoundingClientRect();
-    if (!card || !board) return;
     const c = caption.getBoundingClientRect();
-    const k = (card.parentElement ?? card).getBoundingClientRect();
-    if (!c.width || !k.width) return;
+    const k = card && (card.parentElement ?? card).getBoundingClientRect();
+    if (!card || !board || !k || !c.width || !k.width) {
+      caption.style.translate = "";
+      return;
+    }
+    // The caption's own place: its box minus the slide it's in (the translate
+    // transition is mid-way while it moves from the last beat's card).
+    const base = c.left - (parseFloat(getComputedStyle(caption).translate) || 0);
     const x = Math.max(board.left, Math.min(board.right - c.width, k.left + k.width / 2 - c.width / 2));
-    caption.style.translate = `${Math.round(x - c.left)}px 0`;
+    caption.style.translate = `${Math.round(x - base)}px 0`;
     caption.dataset.at = card.dataset.unit ?? "";
   }
 
@@ -1991,6 +1998,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   addEventListener("resize", placeRuns, { signal: freed.signal });
   addEventListener("resize", placeSheet, { signal: freed.signal });
   addEventListener("resize", placeCaption, { signal: freed.signal });
+  // A summon joining the line resizes every card in it.
+  const lineSize = new ResizeObserver(() => placeCaption());
+  for (const r of [mine, enemy]) lineSize.observe(r);
+  freed.signal.addEventListener("abort", () => lineSize.disconnect());
   addEventListener("resize", () => { drawBeams(fxWaves.map((w) => ({ ...w, age: null }))); clearBeams(); }, { signal: freed.signal });
   onGone(free);
   buildTimeline();
