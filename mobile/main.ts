@@ -760,7 +760,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const line = h("div", { class: "slots", "data-testid": "line" });
   const bench = h("div", { class: "slots bench-row", "data-testid": "bench" });
   const actions = h("div", { class: "row actions", "data-testid": "actions" });
-  const hintSlot = h("div", {});
+  const hintSlot = h("div", { class: "hint-slot" });
   const awoken = board.filter((u) => u.kind === "unit" && u.form === "awoken").length;
   // Desktop: the inspector, the card under the mouse, an offer clicked, a fusion waiting for its Fuse.
   const inspector = h("aside", { class: "inspector stack", "data-testid": "inspector" });
@@ -1292,6 +1292,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     desk && !crown
       ? h("div", { class: "dim small keys", "data-testid": "keys" }, t("keys.lead"), ...numberKeys, t("keys.buys"), kbd("R"), t("keys.reroll"), kbd("L"), t("keys.lock"), kbd("Space"), t("keys.fight"), kbd("←"), kbd("→"), t("keys.move"), kbd("F"), t("keys.fuse"), kbd("S"), t("keys.sell"), ...(B > 0 ? [kbd("B"), t("keys.bench")] : []), kbd("M"), t("keys.sound"), kbd("Esc"), t("keys.menu"))
       : null;
+  const nextOpp = h("span", { class: "dim next-opp", "data-testid": "next-opponent" }, ...(opp ? [`${crown ? t("opp.crownVs") : t("opp.next")} `, who(opp.player.name), `${opp.player.bot ? " 🤖" : ""}${ownCrown ? t("opp.yourChampionTeam") : ""}`] : [crown ? t("opp.crownVsChampion") : t("opp.nextSaved")]));
   show(
     h(
       "div",
@@ -1308,7 +1309,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       h(
         "div",
         { class: "row spread opp" },
-        h("span", { class: "dim", "data-testid": "next-opponent" }, ...(opp ? [`${crown ? t("opp.crownVs") : t("opp.next")} `, who(opp.player.name), `${opp.player.bot ? " 🤖" : ""}${ownCrown ? t("opp.yourChampionTeam") : ""}`] : [crown ? t("opp.crownVsChampion") : t("opp.nextSaved")])),
+        desk ? null : nextOpp,
         crown ? null : pin,
       ),
     ),
@@ -1323,13 +1324,17 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
           "div",
           { class: "row spread line-head" },
           h("div", { class: "label" }, crown ? t("line.crown") : desk ? t("line.desk") : t("line.phone")),
-          h("div", { class: "row" }, legendBtn, button(t("shop.rules"), () => closable(rulesSheet()), "small", "shop-rules")),
+          // Desktop: who's next sits on the line's panel (C-Shop), the top bar keeps the track.
+          h("div", { class: "row" }, desk ? nextOpp : null, legendBtn, button(t("shop.rules"), () => closable(rulesSheet()), "small", "shop-rules")),
         ),
         line,
+        // The phone keeps the bench in the line's panel: one frame less, so round 8 fits 640 px.
+        desk || B === 0 ? null : bench,
       ),
-      B > 0 ? h("section", { class: "run-panel bench-panel" }, bench) : null,
+      // Desktop: the bench and the hint share a row (C-Shop's bench beside the fuse note).
+      desk ? h("div", { class: "bench-hint" }, B > 0 ? h("section", { class: "run-panel bench-panel" }, bench) : null, hintSlot) : null,
       desk ? null : actions,
-      hintSlot,
+      desk ? null : hintSlot,
       h("section", { class: "run-panel shop-panel" }, crown ? null : h("div", { class: "label" }, desk ? t("shop.offersDesk", { n: run.offers.length }) : t("shop.offersPhone")), crown ? foe : offers),
       keysLine,
     ),

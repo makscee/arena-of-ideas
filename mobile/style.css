@@ -1419,9 +1419,14 @@ img.tg-qr { align-self: center; width: 200px; height: 200px; image-rendering: pi
  * and (desktop) the run as a track of rounds ending in the Crown; Reroll
  * carries its price as a gold chip and Fight is the one big yellow button. */
 .run-panel { display: flex; flex-direction: column; gap: 6px; padding: 6px 8px 8px; background: var(--panel); border: var(--bw) solid var(--outline); border-radius: 16px; min-width: 0; }
-#app[data-screen="shop"] .run-panel .line-head { margin-bottom: 0; min-height: 36px; }
-#app[data-screen="shop"] .run-panel .line-head button.small { min-height: 36px; }
-#app[data-screen="shop"] .run-panel .slots.bench-row { margin-top: 0; }
+@media (max-width: 1023.98px) {
+  /* The phone: thin frames that reach 6 px into the gutter, so the cards keep 64 px and round 8 fits 640 px. */
+  .run-panel { gap: 4px; margin: 0 -6px; padding: 0 4px 4px; border-radius: 14px; }
+  #app[data-screen="shop"] .run-panel .slots.bench-row { margin-top: 0; }
+  #app[data-screen="shop"] .run-panel [data-testid="offers"] { margin-top: -2px; }
+  #app[data-screen="shop"] .run-panel > .label { line-height: 22px; padding: 1px 0 0 4px; }
+  #app[data-screen="shop"] .run-panel .line-head { margin-bottom: -4px; padding-left: 4px; }
+}
 #app[data-screen="shop"] .run-panel > .label { font-family: var(--font-head); font-weight: var(--head-weight); color: var(--text); letter-spacing: 0.02em; }
 #app[data-screen="shop"] .line-head .label { font-family: var(--font-head); font-weight: var(--head-weight); color: var(--text); letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 #app[data-screen="shop"] .line-head > .row { flex: none; }
@@ -1457,14 +1462,57 @@ button.reroll-btn:disabled .cost-chip { background: var(--soft); }
   .heart-icons .heart { width: 28px; height: 28px; }
   #app[data-screen="shop"] .hud .gold { padding: 4px 14px 4px 6px; font-size: 22px; gap: 8px; }
   #app[data-screen="shop"] .hud .gold::before { width: 26px; height: 26px; }
+  #app[data-screen="shop"] .line-head .next-opp { margin-right: 8px; font-size: 16px; white-space: nowrap; }
+  #app[data-screen="shop"] .line-head .label { flex: 1 1 auto; }
   #app[data-screen="shop"] .shop-foot { border-top: 0; justify-content: flex-end; gap: 14px; }
   #app[data-screen="shop"] .shop-foot button { min-height: 56px; border-radius: 28px; font-size: 20px; border-width: 3px; }
   #app[data-screen="shop"] .shop-foot button[data-testid="fight"] { min-height: 64px; font-size: 30px; border-radius: 34px; }
   #app[data-screen="shop"] .shop-foot button[data-testid="fight"]:not(:disabled) { box-shadow: 0 7px 0 var(--outline); }
-  /* The inspector is C-Shop's cream detail card: ink text on --sheet. */
-  #app[data-screen="shop"] .inspector { --text: var(--outline); --dim: var(--ink-dim); --panel: var(--face); color: var(--outline); background: var(--sheet); margin: 0 24px 24px 0; border: 3px solid var(--outline); border-radius: 26px; box-shadow: 0 7px 0 var(--outline); }
+  /* The inspector is C-Shop's detail card: outlined and rounded, docked right.
+   * It keeps the dark panel: the keyword colours are tuned for it, not for cream. */
+  #app[data-screen="shop"] { grid-template-columns: minmax(0, 1fr) calc(var(--insp) + 24px); }
+  #app[data-screen="shop"] .inspector { background: var(--panel); margin: 0 24px 24px 0; border: 3px solid var(--outline); border-radius: 26px; box-shadow: 0 7px 0 var(--outline); }
+}
+@media (min-width: 1024px) {
+  /* The bench: three short wide cards (emoji, then name over stats) beside the hint, as C-Shop. */
+  #app[data-screen="shop"] .bench-hint { display: flex; gap: 12px; align-items: stretch; }
+  #app[data-screen="shop"] .bench-hint > div:empty { display: none; }
+  #app[data-screen="shop"] .bench-hint > div { flex: 1 1 0; min-width: 0; display: flex; }
+  #app[data-screen="shop"] .bench-hint .hint { flex: 1; display: flex; align-items: center; margin: 0; padding: 8px 16px; color: var(--outline); background: var(--awoken); border: 3px solid var(--outline); border-radius: 22px; box-shadow: 0 4px 0 var(--outline); font-weight: 700; }
+  #app[data-screen="shop"] .bench-panel { flex: none; padding: 10px 14px; }
+  #app[data-screen="shop"] .slots.bench-row { grid-template-columns: 56px repeat(3, 160px); }
+  #app[data-screen="shop"] .bench-label { font-family: var(--font-head); font-weight: var(--head-weight); font-size: 17px; line-height: 20px; color: var(--text); text-transform: none; letter-spacing: 0.02em; }
+  #app[data-screen="shop"] .bench-row .card { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; grid-template-rows: 16px 20px 20px; column-gap: 6px; row-gap: 1px; align-items: center; height: 72px; padding: 4px 8px; text-align: left; }
+  #app[data-screen="shop"] .bench-row .card .icons { grid-row: 1; grid-column: 2 / span 2; padding: 0; }
+  #app[data-screen="shop"] .bench-row .card .emoji { grid-row: 1 / span 3; grid-column: 1; font-size: 28px; line-height: 32px; height: 32px; margin: 0; }
+  #app[data-screen="shop"] .bench-row .card .name { grid-row: 2; grid-column: 2 / span 2; font-size: 15px; line-height: 20px; text-overflow: ellipsis; }
+  #app[data-screen="shop"] .bench-row .card .stats { grid-row: 3; grid-column: 2; justify-content: flex-start; }
+  #app[data-screen="shop"] .bench-row .card .stats:not(.big) > span { font-size: 13px; line-height: 14px; padding: 0 5px; }
+  #app[data-screen="shop"] .bench-row .card .foot { grid-row: 3; grid-column: 3; min-height: 0; }
+  #app[data-screen="shop"] .bench-row .card .tier { top: 4px; right: 6px; }
+  #app[data-screen="shop"] .bench-row .card.empty { display: block; }
+  #app[data-screen="shop"] .bench-row .card .tag-word { display: none; }
+  /* A short card shows 3 icons and "+n", and a fused pair of emoji at half size. */
+  #app[data-screen="shop"] .bench-row .card .icons .ci:nth-of-type(n+4), #app[data-screen="shop"] .bench-row .card .icons .desk-more { display: none; }
+  #app[data-screen="shop"] .bench-row .card .icons .mid-more { display: inline; font-size: 12px; line-height: 16px; }
+  #app[data-screen="shop"] .bench-row .card.fused .emoji { font-size: 16px; letter-spacing: -0.1em; white-space: nowrap; }
 }
 @media (min-width: 1024px) and (max-width: 1279.98px) {
+  #app[data-screen="shop"] .slots.bench-row { grid-template-columns: 48px repeat(3, 136px); }
   .track { gap: 6px; padding: 4px 10px; }
   .track-dot { width: 22px; height: 22px; font-size: 11px; }
+}
+/* A short desktop (1024×768): the panels and the bars tighten so the shop still fits without scrolling. */
+@media (min-width: 1024px) and (max-height: 820px) {
+  #app[data-screen="shop"] .topbar { min-height: 64px; }
+  #app[data-screen="shop"] .board { gap: 8px; padding-top: 4px; padding-bottom: 8px; }
+  .run-panel { gap: 6px; padding: 6px 12px 10px; }
+  #app[data-screen="shop"] .run-panel .line-head, #app[data-screen="shop"] .run-panel .line-head button.small { min-height: 36px; }
+  #app[data-screen="shop"] .shop-foot { padding: 6px 24px 10px; }
+  #app[data-screen="shop"] .shop-foot button { min-height: 48px; }
+  #app[data-screen="shop"] .shop-foot button[data-testid="fight"] { min-height: 52px; font-size: 26px; }
+}
+/* An empty actions row or hint slot takes no gap on the phone. */
+@media (max-width: 1023.98px) {
+  #app[data-screen="shop"] [data-testid="actions"]:empty, #app[data-screen="shop"] .hint-slot:empty { display: none; }
 }
