@@ -100,7 +100,7 @@ async function walk(viewport, name, full) {
     // Home: the quiet "Your idea is ready".
     await page.getByTestId("ideas-back").click();
     await page.getByTestId("play").waitFor();
-    if ((await page.getByTestId("ideas").textContent()) !== L("home.ideasReady", { n: 1 })) errors.push(`home: ideas line "${await page.getByTestId("ideas").textContent()}"`);
+    if ((await page.getByTestId("ideas-label").textContent()) !== L("home.ideasReady", { n: 1 })) errors.push(`home: ideas line "${await page.getByTestId("ideas").textContent()}"`);
     await shot("home-idea-ready");
     await page.getByTestId("ideas").click();
   }

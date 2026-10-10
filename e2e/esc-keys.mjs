@@ -28,7 +28,12 @@ export async function escPass(browser, url, { label, viewport, touch = false, er
     await tid("name-submit").click();
     await tid("play").waitFor();
 
-    // Home: Esc closes the rules; with nothing open it stays on Home.
+    // Home: Esc closes the settings; Rules from them, then Esc closes the rules; with nothing open it stays on Home.
+    await tid("settings").click();
+    await tid("settings-sheet").waitFor();
+    await esc();
+    await expectShown("Home → Settings → Esc", tid("settings-sheet"), false);
+    await tid("settings").click();
     await tid("rules-open").click();
     await tid("rules").waitFor();
     await esc();
