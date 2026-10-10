@@ -50,7 +50,7 @@ export const shop = {
   "buy.close": "Close",
   "offer.locked": "locked",
   "shop.gold": "{n}g",
-  "shop.reroll": "Reroll {cost}g",
+  "shop.reroll": "Reroll",
   "shop.allLocked": "Every offer is locked",
   "shop.fightChampion": "Fight the champion",
   "shop.fight": "Fight",

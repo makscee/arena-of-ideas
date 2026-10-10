@@ -49,7 +49,7 @@ export const shop = {
   "buy.close": "Закрыть",
   "offer.locked": "закреплена",
   "shop.gold": "{n}з",
-  "shop.reroll": "Обновить {cost} зол.",
+  "shop.reroll": "Обновить",
   "shop.allLocked": "Все карты закреплены",
   "shop.fightChampion": "Бой с чемпионом",
   "shop.fight": "В бой",
@@ -110,8 +110,8 @@ export const shop = {
   "shop.offersDesk": { one: "Лавка · {n} карта", few: "Лавка · {n} карты", many: "Лавка · {n} карт", other: "Лавка · {n} карты" },
   "shop.offersPhone": "Лавка · нажми на карту",
   "shop.selectFirst": "Сначала выбери юнита: щёлкни его в строю или запасе.",
-  "copies.fused": "СЛИЯНИЕ ",
-  "copies.awoken": "ПРОБУЖДЁН ",
+  "copies.fused": "СЛИТ ",
+  "copies.awoken": "ПРОБУЖД. ",
   "copies.aria": "{copies} из {n} копий",
 
   // A fight's end.

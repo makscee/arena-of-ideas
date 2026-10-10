@@ -79,6 +79,34 @@ const tiersText = (r: MvpRules) =>
     .map((x, i) => t(i === 0 ? "rules.tierFirst" : "rules.tierNext", { tier: roman(x.tier), round: x.round }))
     .join(", ") || t("rules.tiersOpen");
 const roundLabel = (round: number) => (round > rules.rounds ? t("run.crownLabel") : t("run.roundLabel", { round, rounds: rules.rounds }));
+const HEART = "M12 20.5 4.2 13C2.6 11.4 2 10 2 8.5A5.5 5.5 0 0 1 12 5.2 5.5 5.5 0 0 1 22 8.5c0 1.5-.6 2.9-2.2 4.5z";
+/** The run's hearts as drawn hearts (C-Shop): full ones red, lost ones dim. */
+function heartIcons(n: number): HTMLElement {
+  const box = h("span", { class: "hearts heart-icons", role: "img", "aria-label": t("run.hearts", { n }) });
+  for (let i = 0; i < rules.hearts; i++) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("class", i < n ? "heart full" : "heart lost");
+    svg.setAttribute("aria-hidden", "true");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", HEART);
+    svg.append(path);
+    box.append(svg);
+  }
+  return box;
+}
+/** Desktop's run track (C-Shop): a dot per round, won green, lost red, this one big; the Crown at the end. */
+function runTrack(run: RunView): HTMLElement {
+  const last = new Map<number, string>();
+  for (const f of run.fights) if (f.round <= rules.rounds) last.set(f.round, f.outcome);
+  const dots = Array.from({ length: rules.rounds }, (_, i) => {
+    const r = i + 1;
+    const cls = r === run.round ? "now" : last.get(r) ?? (r < run.round ? "draw" : "");
+    return h("span", { class: `track-dot ${cls}` }, String(r));
+  });
+  const crown = h("span", { class: `track-dot crown${run.round > rules.rounds ? " now" : ""}`, "aria-hidden": "true" }, "👑");
+  return h("span", { class: "track", "data-testid": "round", role: "img", "aria-label": roundLabel(run.round) }, ...dots, crown);
+}
 const hearts = (n: number) => h("span", { class: "hearts", "aria-label": t("run.hearts", { n }) }, "♥".repeat(n) + "♡".repeat(Math.max(0, rules.hearts - n)));
 const openSheet = (u: Parameters<typeof unitSheet>[0], content: MvpContent) => () => closable(unitSheet(u, content));
 
@@ -1113,7 +1141,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     }),
   );
 
-  const reroll = button(t("shop.reroll", { cost: rules.rerollCost }), () => void decide({ kind: "reroll" }), "", "reroll");
+  // C-Shop: "Reroll" with its price in a gold chip.
+  const reroll = button(t("shop.reroll"), () => void decide({ kind: "reroll" }), "reroll-btn", "reroll");
+  reroll.append(h("span", { class: "cost-chip" }, t("shop.gold", { n: rules.rerollCost })));
   // A reroll with locked offers filling the whole shop would redraw nothing
   // (run.ts refuses it); empty slots still refill.
   const allLocked = lockedFull({ offers: run.offers, rules, round: run.round });
@@ -1270,8 +1300,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         "div",
         { class: "hud", "data-testid": "hud" },
         menuBtn,
-        h("span", { "data-testid": "round" }, roundLabel(run.round)),
-        hearts(run.hearts),
+        desk ? runTrack(run) : h("span", { class: "round-pill", "data-testid": "round" }, roundLabel(run.round)),
+        heartIcons(run.hearts),
         // The Crown has no shop: no gold to show.
         crown ? h("span", {}) : h("span", { class: "gold", "data-testid": "gold" }, t("shop.gold", { n: run.gold })),
       ),
@@ -1285,18 +1315,22 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     h(
       "div",
       { class: "board" },
+      // C-Shop: the line, the bench and the shop are three outlined panels on one board.
       h(
-        "div",
-        { class: "row spread line-head" },
-        h("div", { class: "label" }, crown ? t("line.crown") : desk ? t("line.desk") : t("line.phone")),
-        h("div", { class: "row" }, legendBtn, button(t("shop.rules"), () => closable(rulesSheet()), "small", "shop-rules")),
+        "section",
+        { class: "run-panel line-panel" },
+        h(
+          "div",
+          { class: "row spread line-head" },
+          h("div", { class: "label" }, crown ? t("line.crown") : desk ? t("line.desk") : t("line.phone")),
+          h("div", { class: "row" }, legendBtn, button(t("shop.rules"), () => closable(rulesSheet()), "small", "shop-rules")),
+        ),
+        line,
       ),
-      line,
-      B > 0 ? bench : null,
+      B > 0 ? h("section", { class: "run-panel bench-panel" }, bench) : null,
       desk ? null : actions,
       hintSlot,
-      crown ? null : h("div", { class: "label" }, desk ? t("shop.offersDesk", { n: run.offers.length }) : t("shop.offersPhone")),
-      crown ? foe : offers,
+      h("section", { class: "run-panel shop-panel" }, crown ? null : h("div", { class: "label" }, desk ? t("shop.offersDesk", { n: run.offers.length }) : t("shop.offersPhone")), crown ? foe : offers),
       keysLine,
     ),
     desk ? inspector : null,

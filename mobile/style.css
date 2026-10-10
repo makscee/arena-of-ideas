@@ -1414,3 +1414,57 @@ img.tg-qr { align-self: center; width: 200px; height: 200px; image-rendering: pi
   .sheet-portrait { width: 72px; height: 72px; font-size: 42px; }
   .sheet-portrait.fused { font-size: 26px; }
 }
+/* M5-4: the Run board as C-Shop. The line, the bench and the shop sit in
+ * three outlined panels; the HUD draws the hearts, the gold as a coin pill
+ * and (desktop) the run as a track of rounds ending in the Crown; Reroll
+ * carries its price as a gold chip and Fight is the one big yellow button. */
+.run-panel { display: flex; flex-direction: column; gap: 6px; padding: 6px 8px 8px; background: var(--panel); border: var(--bw) solid var(--outline); border-radius: 16px; min-width: 0; }
+#app[data-screen="shop"] .run-panel .line-head { margin-bottom: 0; min-height: 36px; }
+#app[data-screen="shop"] .run-panel .line-head button.small { min-height: 36px; }
+#app[data-screen="shop"] .run-panel .slots.bench-row { margin-top: 0; }
+#app[data-screen="shop"] .run-panel > .label { font-family: var(--font-head); font-weight: var(--head-weight); color: var(--text); letter-spacing: 0.02em; }
+#app[data-screen="shop"] .line-head .label { font-family: var(--font-head); font-weight: var(--head-weight); color: var(--text); letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+#app[data-screen="shop"] .line-head > .row { flex: none; }
+.heart-icons { display: inline-flex; gap: 1px; align-items: center; }
+.heart-icons .heart { width: 18px; height: 18px; stroke: var(--outline); stroke-width: 2; stroke-linejoin: round; }
+.heart-icons .heart.full { fill: var(--them); }
+.heart-icons .heart.lost { fill: var(--muted); }
+#app[data-screen="shop"] .hud .gold { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px 2px 4px; color: var(--outline); background: var(--paper); border: var(--bw) solid var(--outline); border-radius: 999px; box-shadow: var(--drop); font-family: var(--font-head); }
+#app[data-screen="shop"] .hud .gold::before { content: ""; width: 16px; height: 16px; box-sizing: border-box; border-radius: 50%; background: var(--action); border: var(--bw) solid var(--outline); }
+.round-pill { padding: 2px 10px; color: var(--outline); background: var(--paper); border: var(--bw) solid var(--outline); border-radius: 999px; box-shadow: var(--drop); font-family: var(--font-head); }
+.track { display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px; background: var(--panel); border: var(--bw) solid var(--outline); border-radius: 999px; }
+.track-dot { width: 28px; height: 28px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: var(--bw) solid var(--outline); background: var(--ground); color: var(--muted); font-family: var(--font-head); font-size: 13px; line-height: 1; }
+.track-dot.win { background: var(--you); color: var(--outline); }
+.track-dot.loss { background: var(--them); color: var(--outline); }
+.track-dot.draw { background: var(--soft); color: var(--outline); }
+.track-dot.now { background: var(--paper); color: var(--outline); transform: scale(1.25); }
+.track-dot.crown { width: auto; padding: 0 8px; border-radius: 999px; background: var(--action); font-size: 15px; }
+.track-dot.crown.now { transform: none; box-shadow: var(--drop); }
+button.reroll-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--paper); color: var(--outline); }
+button.reroll-btn .cost-chip { padding: 1px 7px; font-size: 0.8em; line-height: 1.2; background: var(--action); border: var(--bw) solid var(--outline); border-radius: 999px; }
+button.reroll-btn:disabled .cost-chip { background: var(--soft); }
+#app[data-screen="shop"] .shop-foot button[data-testid="fight"] { font-size: 22px; letter-spacing: 0.04em; text-transform: uppercase; }
+#app[data-screen="shop"] .shop-foot button[data-testid="fight"]:not(:disabled) { box-shadow: 0 5px 0 var(--outline); }
+/* RU state labels ("ПРОБУЖД. ×3") stay on one line on every card (#891 note). */
+.card .copies.tag { white-space: nowrap; }
+@media (min-width: 1024px) {
+  .run-panel { gap: 10px; padding: 12px 16px 18px; border-width: 3px; border-radius: 22px; }
+  #app[data-screen="shop"] .run-panel .line-head { min-height: 44px; }
+  #app[data-screen="shop"] .run-panel .line-head button.small { min-height: 44px; }
+  #app[data-screen="shop"] .run-panel > .label, #app[data-screen="shop"] .line-head .label { font-size: 20px; text-transform: none; }
+  #app[data-screen="shop"] .topbar { min-height: 84px; border-bottom: 0; }
+  #app[data-screen="shop"] .topbar .hud { gap: 18px; }
+  .heart-icons .heart { width: 28px; height: 28px; }
+  #app[data-screen="shop"] .hud .gold { padding: 4px 14px 4px 6px; font-size: 22px; gap: 8px; }
+  #app[data-screen="shop"] .hud .gold::before { width: 26px; height: 26px; }
+  #app[data-screen="shop"] .shop-foot { border-top: 0; justify-content: flex-end; gap: 14px; }
+  #app[data-screen="shop"] .shop-foot button { min-height: 56px; border-radius: 28px; font-size: 20px; border-width: 3px; }
+  #app[data-screen="shop"] .shop-foot button[data-testid="fight"] { min-height: 64px; font-size: 30px; border-radius: 34px; }
+  #app[data-screen="shop"] .shop-foot button[data-testid="fight"]:not(:disabled) { box-shadow: 0 7px 0 var(--outline); }
+  /* The inspector is C-Shop's cream detail card: ink text on --sheet. */
+  #app[data-screen="shop"] .inspector { --text: var(--outline); --dim: var(--ink-dim); --panel: var(--face); color: var(--outline); background: var(--sheet); margin: 0 24px 24px 0; border: 3px solid var(--outline); border-radius: 26px; box-shadow: 0 7px 0 var(--outline); }
+}
+@media (min-width: 1024px) and (max-width: 1279.98px) {
+  .track { gap: 6px; padding: 4px 10px; }
+  .track-dot { width: 22px; height: 22px; font-size: 11px; }
+}
