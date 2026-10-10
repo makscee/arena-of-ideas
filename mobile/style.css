@@ -1309,3 +1309,64 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
 a.button { display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 16px; text-decoration: none; font-family: var(--font-head); font-weight: var(--head-weight); letter-spacing: 0.02em; text-transform: none; border-radius: var(--radius); }
 a.button.primary { background: var(--action); color: var(--outline); border: var(--bw) solid var(--outline); box-shadow: var(--drop); }
 img.tg-qr { align-self: center; width: 200px; height: 200px; image-rendering: pixelated; background: var(--qr-white); }
+/* M5-2: one Toybox card everywhere (shop, line, bench, battle, Codex, vote;
+ * canvas C-Shop): a light face under the thick dark outline, its tint the
+ * only colour that says whose it is (yours, theirs), ink text, the name in
+ * the heading face, PWR and HP as chips in their own colours, the price a
+ * gold chip. Inside a card the text tokens turn to ink, so every part that
+ * draws with --text / --dim / --panel reads on the light face. */
+.card { --text: var(--outline); --dim: var(--ink-dim); --panel: var(--face); background: var(--face); color: var(--outline); border-color: var(--outline); }
+.card.you { --panel: var(--face-you); background: var(--face-you); border-color: var(--outline); }
+.card.ghost { --panel: var(--tint-them); background: var(--tint-them); border-color: var(--outline); }
+.card.awoken { border-color: var(--outline); box-shadow: var(--drop), inset 0 0 0 2px var(--action); }
+.card.fused { --panel: color-mix(in srgb, var(--awoken) 45%, var(--face)); background: var(--panel); border-color: var(--outline); box-shadow: var(--drop), inset 0 0 0 2px var(--action); }
+.card.empty { --text: var(--paper); --dim: var(--muted); background: transparent; border-color: var(--muted); }
+/* Descenders (y, g, p) stay whole: the name clips sideways only (#889 note). */
+.card .name { font-family: var(--font-head); font-weight: var(--head-weight); letter-spacing: 0.01em; overflow-x: clip; overflow-y: visible; }
+.card .stats:not(.big) { display: flex; justify-content: center; gap: 3px; font-size: 0; }
+.card .stats:not(.big) > span { padding: 0 4px; font-size: 11px; line-height: 11px; border: 1.5px solid var(--outline); border-radius: 7px; color: var(--outline); }
+.card .stats:not(.big) .p { background: var(--power); }
+.card .stats:not(.big) .h { background: var(--them); }
+.card .stats.unset > span { background: var(--soft); }
+.bv-card .stats.big .p { color: var(--level); }
+.bv-card .stats.big .h { color: color-mix(in srgb, var(--k-heal) 60%, var(--outline)); }
+.bv-card .stats.big .h.hurt { color: var(--loss); }
+.card .copies { color: var(--ink-dim); }
+.card .copies.tag { color: var(--level); }
+.card .cost { padding: 0 5px; line-height: 11px; color: var(--outline); background: var(--action); border: 1.5px solid var(--outline); border-radius: 7px; }
+.card.owned .cost { color: var(--outline); background: var(--face-you); }
+.card.locked .cost { color: var(--outline); }
+.card .icons .more { color: var(--ink-dim); }
+@media (max-width: 1023.98px) {
+  .bench-row .card .stats:not(.big) > span { font-size: 10px; line-height: 10px; padding: 0 3px; }
+}
+@media (min-width: 1024px) {
+  #app[data-screen] .card .stats:not(.big) { font-size: 0; gap: 6px; }
+  #app[data-screen] .card .stats:not(.big) > span { padding: 1px 7px; font-size: 16px; line-height: 17px; border-width: 2px; border-radius: 11px; }
+  #app[data-screen] .card .cost { padding: 1px 7px; line-height: 15px; border-width: 2px; border-radius: 10px; }
+}
+/* 120px cards (1024–1279) hold 3 icons and "+n", not 5: a fused champion's
+ * line of 6 overflowed the home card under the 2px outline (#889 note). */
+@media (min-width: 1024px) and (max-width: 1279.98px) {
+  #app[data-screen] .card .icons .ci:nth-of-type(n+4), #app[data-screen] .card .icons .desk-more { display: none; }
+  #app[data-screen] .card .icons .mid-more { display: inline; font-size: 12px; line-height: 16px; }
+}
+/* M5-2: the unit's detail panel (C-Shop's inspector): the portrait in a
+ * round light frame, the name big beside it, PWR and HP as two chips in the
+ * card's colours, the form's text in a rounded outlined box. */
+.sheet-head { align-items: center; gap: 12px; }
+.sheet-title { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sheet-title h2 { line-height: 1.1; overflow-wrap: anywhere; }
+.sheet-portrait { flex: none; width: 56px; height: 56px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 32px; line-height: 1; background: var(--face); border: var(--bw) solid var(--outline); border-radius: 50%; box-shadow: var(--drop); }
+.sheet-portrait.fused { font-size: 20px; letter-spacing: -0.08em; background: color-mix(in srgb, var(--awoken) 45%, var(--face)); }
+.sheet-stats { display: flex; gap: 8px; }
+.sheet-stat { flex: 1; display: flex; align-items: baseline; gap: 6px; padding: 4px 10px; color: var(--outline); border: var(--bw) solid var(--outline); border-radius: var(--radius); box-shadow: var(--drop); }
+.sheet-stat b { font-family: var(--font-head); font-weight: var(--head-weight); font-size: 22px; line-height: 26px; }
+.sheet-stat small { font-size: 12px; font-weight: 700; }
+.sheet-stat.p { background: var(--power); }
+.sheet-stat.h { background: var(--them); }
+.sheet-form { border-radius: var(--radius); }
+@media (min-width: 1024px) {
+  .sheet-portrait { width: 72px; height: 72px; font-size: 42px; }
+  .sheet-portrait.fused { font-size: 26px; }
+}

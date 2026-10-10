@@ -231,7 +231,7 @@ export function unitSheet(
   const statsLine = (s: Stats) =>
     opts.from
       ? h("div", { class: "num", "data-testid": "sheet-stats" }, `${t("card.stats", { pwr: opts.from.pwr, hp: opts.from.hp })} → ${t("card.stats", { pwr: s.pwr, hp: s.hp })}`)
-      : h("div", { class: "num", "data-testid": "sheet-stats" }, t("card.stats", { pwr: s.pwr, hp: s.hp }));
+      : sheetStats(s.pwr, s.hp);
   const fused = !("forms" in u) && u.kind === "fused";
   const c = fused ? undefined : unit(unitId);
   const now: UnitForm | undefined = "forms" in u ? u.forms.sleeping : u.recipe;
@@ -299,19 +299,35 @@ export function unitSheet(
   return h(
     "div",
     { class: "stack", "data-testid": "unit-sheet" },
-    h("div", { class: "row spread sheet-head" }, h("h2", {}, `${u.emoji} ${fused ? fusionName("fusion" in u ? u.fusion : undefined, u.name) : unitName(unitId, u.name)}`), state),
+    // M5-2 (C-Shop's inspector): the portrait in a round frame, the name big, its state under it.
+    h(
+      "div",
+      { class: "row sheet-head" },
+      h("span", { class: `sheet-portrait${fused ? " fused" : ""}`, "aria-hidden": "true" }, u.emoji),
+      h("div", { class: "sheet-title" }, h("h2", {}, fused ? fusionName("fusion" in u ? u.fusion : undefined, u.name) : unitName(unitId, u.name)), state),
+    ),
     // What the unit is about, in one sentence (R4-8); a fused unit has none.
     c?.archetype ? h("div", { class: "archetype", "data-testid": "sheet-archetype" }, c.archetype) : null,
     // opts.credit: a Library unit's own (M3-8), not a live version's that shares its id.
     fused ? null : opts.credit ? creditText(opts.credit) : creditLine(unitId),
     "forms" in u ? null : discoveredLine(u, { preview: opts.preview ?? false }),
-    opts.candidate ? h("div", { class: "dim small", "data-testid": "sheet-unset" }, SET_BY_SIM()) : "stats" in u ? statsLine(u.stats) : h("div", { class: "num" }, t("card.stats", { pwr: u.base.pwr, hp: u.base.hp })),
+    opts.candidate ? h("div", { class: "dim small", "data-testid": "sheet-unset" }, SET_BY_SIM()) : "stats" in u ? statsLine(u.stats) : sheetStats(u.base.pwr, u.base.hp),
     opts.from ? h("div", { class: "dim small" }, t("card.yourCopyNow")) : null,
     icons.childNodes.length ? icons : null,
     box,
     ...children,
     summons.childNodes.length || (sleeping && c) ? summons : null,
     fused || opts.candidate ? null : unitStatsLine(unitId, opts.rates),
+  );
+}
+
+/** A sheet's numbers as two chips (C-Shop's inspector): PWR in its colour, HP in its. */
+function sheetStats(pwr: number, hp: number): HTMLElement {
+  return h(
+    "div",
+    { class: "num sheet-stats", "data-testid": "sheet-stats", "aria-label": t("card.stats", { pwr, hp }) },
+    h("span", { class: "sheet-stat p" }, h("b", {}, `${pwr}`), h("small", {}, t("card.pwr"))),
+    h("span", { class: "sheet-stat h" }, h("b", {}, `${hp}`), h("small", {}, t("card.hp"))),
   );
 }
 
@@ -383,8 +399,8 @@ export function summonSheet(s: SummonContent, content: MvpContent): HTMLElement 
   return h(
     "div",
     { class: "stack", "data-testid": "summon-sheet", "data-summon": s.id },
-    h("div", { class: "row spread sheet-head" }, h("h2", {}, `${s.emoji} ${s.name}`), h("span", { class: "dim small", "data-testid": "sheet-state" }, t("card.summoned"))),
-    h("div", { class: "num", "data-testid": "sheet-stats" }, t("card.stats", { pwr: s.base.pwr, hp: s.base.hp })),
+    h("div", { class: "row sheet-head" }, h("span", { class: "sheet-portrait", "aria-hidden": "true" }, s.emoji), h("div", { class: "sheet-title" }, h("h2", {}, s.name), h("span", { class: "dim small", "data-testid": "sheet-state" }, t("card.summoned")))),
+    sheetStats(s.base.pwr, s.base.hp),
     h("div", { class: "sheet-form", "data-testid": "sheet-form" }, ...summonText(s, content)),
     by.length ? h("div", { class: "label" }, t("card.summonedBy")) : null,
     by.length

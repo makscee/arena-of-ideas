@@ -253,7 +253,8 @@ try {
   await page.locator('[data-testid="sheet-form"] [data-testid="unit-ref"]').first().click();
   await page.getByTestId("summon-sheet").waitFor({ timeout: 2_000 }).catch(() => errors.push("codex: Planter's \"Imp (1/2)\" didn't open the Imp's card"));
   const impHead = (await page.locator('[data-testid="summon-sheet"] h2').textContent().catch(() => "")) ?? "";
-  if (impHead !== "👺 Imp") errors.push(`codex: the Imp's sheet is titled "${impHead}"`);
+  const impFace = (await page.locator('[data-testid="summon-sheet"] .sheet-portrait').textContent().catch(() => "")) ?? "";
+  if (impHead !== "Imp" || impFace !== "👺") errors.push(`codex: the Imp's sheet is titled "${impFace} ${impHead}"`);
   await shot("codex-summon-sheet");
   while (await page.getByTestId("sheet-close").count()) await page.getByTestId("sheet-close").last().click();
   // R4-8: a word from an archetype finds its unit, whose sheet opens with that archetype on top.
