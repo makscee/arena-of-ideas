@@ -15,7 +15,6 @@ import { getContent, unitIn } from "./content";
 import { battleScreen, type RunOutro } from "./screens/battle";
 import { codexScreen, newCodexCache, type CodexState } from "./screens/codex";
 import { setCodexLink } from "./ui/term";
-import { statsScreen } from "./screens/stats";
 import { ideasScreen } from "./screens/ideas";
 import { votePanel } from "./screens/vote";
 import { card, roman, setCardCredits, unitSheet, type CardUnit } from "./ui/card";
@@ -203,8 +202,27 @@ function hint(text: string): HTMLElement {
   return h("div", { class: "hint", "data-testid": "hint" }, text);
 }
 
-/** The rules, readable any time (Home's Rules button). */
-function rulesSheet(): HTMLElement {
+/** The Codex's How to play (M5-6): the rules, then how to read a card. It
+ * replaces the Rules sheet and the shop's "Reading a card" sheet. */
+const howTo = (): Node[] => [rulesPage(), legendPage(), ...(isDesktop() ? [keysPage()] : [])];
+
+/** Desktop's keys, all in one place (Simplify: the keys sit on their buttons, How to play lists them). */
+function keysPage(): HTMLElement {
+  // The number keys in plain words: "1–6 buy the offer with that number".
+  const grow = rules.offersGrowAt ?? [];
+  const n = Math.min(7, grow.length ? offersAt(rules, Math.max(...grow)) : rules.offers);
+  const numberKeys = n === 0 ? [] : n === 1 ? [t("keys.or"), kbd("1")] : [t("keys.or"), kbd("1"), "–", kbd(String(n))];
+  const B = benchSizeOf(rules);
+  return h(
+    "div",
+    { class: "stack" },
+    h("div", { class: "label" }, t("keys.title")),
+    h("div", { class: "keys", "data-testid": "keys" }, t("keys.lead"), ...numberKeys, t("keys.buys"), kbd("R"), t("keys.reroll"), kbd("L"), t("keys.lock"), kbd("Space"), t("keys.fight"), kbd("←"), kbd("→"), t("keys.move"), kbd("F"), t("keys.fuse"), kbd("S"), t("keys.sell"), ...(B > 0 ? [kbd("B"), t("keys.bench")] : []), kbd("M"), t("keys.sound"), kbd("Esc"), t("keys.menu")),
+  );
+}
+
+/** The rules, from the numbers Home last saw. */
+function rulesPage(): HTMLElement {
   const r = rules;
   const p = (text: string) => h("p", {}, text);
   const desk = isDesktop();
@@ -229,17 +247,15 @@ function rulesSheet(): HTMLElement {
     h("div", { class: "label" }, t("rules.dayLabel")),
     p(t("rules.day", { at: r.dayEndsAt })),
     p(t("rules.rating")),
-    h("div", { class: "dim small", "data-testid": "icon-credits" }, t("rules.iconCredits")),
   );
 }
 
-/** How to read a card (the shop's "?"): each number and mark, with a sample. */
-function legendSheet(): HTMLElement {
+/** How to read a card: each number and mark, with a sample. */
+function legendPage(): HTMLElement {
   const r = rules;
   const row = (sample: Node, text: string) => h("div", { class: "legend-row" }, h("div", { class: "legend-sample" }, sample), h("div", {}, text));
   const span = (cls: string, text: string) => h("span", { class: cls }, text);
-  const rulesBtn = button(t("menu.rules"), () => (close(), closable(rulesSheet())), "grow", "legend-rules");
-  const sheet = h(
+  return h(
     "div",
     { class: "stack legend", "data-testid": "legend" },
     h("h2", {}, t("legend.title")),
@@ -256,8 +272,6 @@ function legendSheet(): HTMLElement {
     row(span("cost", t("legend.lockedTag")), t("legend.locked")),
     h("div", { class: "dim small" }, t(isDesktop() ? "legend.sheetDesk" : "legend.sheetPhone")),
   );
-  const close = closable(sheet, h("div", { class: "row" }, rulesBtn));
-  return sheet;
 }
 
 // ---------- name ----------
@@ -359,7 +373,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
       })), "small link", "new-run")
     : null;
   const codex = button(t("menu.codex"), () => void guarded(err, () => openCodex()), "throne-link", "codex");
-  const stats = button(t("home.stats"), () => void statsScreen({ content, onBack: () => void homeScreen(), onCodex: () => void openCodex() }), "throne-link", "stats");
+  const stats = button(t("home.stats"), () => void guarded(err, () => openCodex({ tab: "champions" })), "throne-link", "stats");
   const endDay = button(
     t("dev.endDay"),
     () =>
@@ -469,7 +483,7 @@ function settingsSheet(home: HomeView, err: HTMLElement): void {
       soundRow(),
       langRow(),
       themeRow(),
-      button(t("menu.rules"), () => (close(), closable(rulesSheet())), "", "rules-open"),
+      button(t("codex.tab.howto"), () => (close(), void guarded(err, () => openCodex({ tab: "howto" }))), "", "rules-open"),
       api.ownInvite ? ownLinkRow(api.ownInvite) : null,
       home.telegram?.enabled ? telegramRow(home.telegram.linked, err) : null,
     ),
@@ -614,8 +628,8 @@ async function openCodex(state?: Partial<CodexState>): Promise<void> {
   const content = await getContent();
   const onBack = () => ((codexBack = null), (codexRedraw = null), back());
   const onUnknown = () => ((codexBack = null), (codexRedraw = null), api.forget(), nameScreen());
-  codexRedraw = () => void codexScreen({ content, state: { ...codexCache.state, term: undefined, scope: undefined }, onBack, onUnknown, cache: codexCache });
-  await codexScreen({ content, state, onBack, onUnknown, cache: codexCache });
+  codexRedraw = () => void codexScreen({ content, state: { ...codexCache.state, term: undefined, scope: undefined }, onBack, onUnknown, cache: codexCache, howTo });
+  await codexScreen({ content, state, onBack, onUnknown, cache: codexCache, howTo });
 }
 // Every highlighted term's "Open in Codex" lands on its Keywords row (a scoped trigger's line in it).
 setCodexLink((term, scope) => void openCodex({ tab: "keywords", term, scope }));
@@ -637,7 +651,6 @@ function runMenu(run: RunView, content: MvpContent, err: HTMLElement, fought?: F
     // Over a battle that was playing, Resume plays on (R2-17 batch F).
     button(t("menu.resume"), () => (close(), resume?.()), "primary", "menu-resume"),
     codex,
-    button(t("menu.rules"), () => (close(), closable(rulesSheet())), "", "menu-rules"),
     soundRow(),
     langRow(),
     themeRow(),
@@ -1180,7 +1193,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const ch = d?.champion;
     if (!ch) return pin.replaceChildren(h("span", { class: "dim" }, t("pin.noChampion")));
     const b = h("button", { class: "pin-btn", "data-testid": "champion-pin-open" }, h("span", {}, "👑"), who(ch.player.name, "ghost-name"), h("span", { class: "pin-emoji" }, ch.line.map((u) => u.emoji).join("")));
-    b.addEventListener("click", () => closable(h("div", { class: "label" }, t("pin.championOfDay", { seq: d!.seq }), who(ch.player.name)), team(ch.line, "ghost", content), hint(isDesktop() ? t("pin.readCardClick") : t("pin.readCardTap"))));
+    b.addEventListener("click", () => closable(h("div", { class: "label" }, t("pin.championOfDay", { seq: d!.seq }), who(ch.player.name)), team(ch.line, "ghost", content)));
     pin.replaceChildren(b);
   };
   if (crown) {
@@ -1277,22 +1290,14 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     }
   }
 
-  // "?" explains a card's numbers; until a player has opened it once, it says so.
-  const legendBtn = button(seen("legend") ? "?" : t("shop.legendNew"), () => (markSeen("legend"), (legendBtn.textContent = "?"), legendBtn.classList.remove("new"), legendSheet()), seen("legend") ? "small" : "small new", "legend-open");
+  // "?" opens the Codex's How to play (M5-6: the rules and how to read a card); until a player has opened it once, it says so.
+  const legendBtn = button(seen("legend") ? "?" : t("shop.legendNew"), () => (markSeen("legend"), void guarded(err, () => openCodex({ tab: "howto" }))), seen("legend") ? "small" : "small new", "legend-open");
   renderLine();
 
   const menuBtn = button("☰", () => runMenu(run, content, err), "menu-btn", "menu-open");
   menuBtn.setAttribute("aria-label", t("shop.menu"));
   if (desk) menuBtn.title = t("shop.menuEsc");
 
-  // The number keys in plain words: "1–6 buy the offer with that number".
-  const n = Math.min(7, run.offers.length);
-  // One line at 1440 px (R3-26): short words, the keys say the rest.
-  const numberKeys = n === 0 ? [] : n === 1 ? [t("keys.or"), kbd("1")] : [t("keys.or"), kbd("1"), "–", kbd(String(n))];
-  const keysLine =
-    desk && !crown
-      ? h("div", { class: "dim small keys", "data-testid": "keys" }, t("keys.lead"), ...numberKeys, t("keys.buys"), kbd("R"), t("keys.reroll"), kbd("L"), t("keys.lock"), kbd("Space"), t("keys.fight"), kbd("←"), kbd("→"), t("keys.move"), kbd("F"), t("keys.fuse"), kbd("S"), t("keys.sell"), ...(B > 0 ? [kbd("B"), t("keys.bench")] : []), kbd("M"), t("keys.sound"), kbd("Esc"), t("keys.menu"))
-      : null;
   const nextOpp = h("span", { class: "dim next-opp", "data-testid": "next-opponent" }, ...(opp ? [`${crown ? t("opp.crownVs") : t("opp.next")} `, who(opp.player.name), `${opp.player.bot ? " 🤖" : ""}${ownCrown ? t("opp.yourChampionTeam") : ""}`] : [crown ? t("opp.crownVsChampion") : t("opp.nextSaved")]));
   show(
     h(
@@ -1324,9 +1329,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         h(
           "div",
           { class: "row spread line-head" },
-          h("div", { class: "label" }, crown ? t("line.crown") : desk ? t("line.desk") : t("line.phone")),
+          h("div", { class: "label" }, crown ? t("line.crown") : t("line.phone")),
           // Desktop: who's next sits on the line's panel (C-Shop), the top bar keeps the track.
-          h("div", { class: "row" }, desk ? nextOpp : null, legendBtn, button(t("shop.rules"), () => closable(rulesSheet()), "small", "shop-rules")),
+          h("div", { class: "row" }, desk ? nextOpp : null, legendBtn),
         ),
         line,
         // The phone keeps the bench in the line's panel: one frame less, so round 8 fits 640 px.
@@ -1337,7 +1342,6 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       desk ? null : actions,
       desk ? null : hintSlot,
       h("section", { class: "run-panel shop-panel" }, crown ? null : h("div", { class: "label" }, desk ? t("shop.offersDesk", { n: run.offers.length }) : t("shop.offersPhone")), crown ? foe : offers),
-      keysLine,
     ),
     desk ? inspector : null,
     h("div", { class: "spacer" }),

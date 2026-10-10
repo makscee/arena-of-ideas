@@ -12,8 +12,11 @@ export const codex = {
   "codex.tab.fusions": "Слияния",
   "codex.tab.library": "Архив",
   "codex.tab.keywords": "Слова",
+  "codex.tab.champions": "Чемпионы",
+  "codex.tab.howto": "Как играть",
   "codex.loadingLibrary": "Загружаю архив…",
   "codex.loadingFusions": "Загружаю слияния…",
+  "codex.loadingChampions": "Загружаю чемпионов…",
   // the units tab
   "codex.sort.tier": "Уровень",
   "codex.sort.win": "Победы",

@@ -1129,16 +1129,26 @@ export function foldTurnsOf(log: BattleEvent[], rows: LogRow[], name: NameOf = d
         else if (e.type === "Death") deaths.push(name(e.unit));
       }
     const hurt = damage.A + damage.B, healed = heals.A + heals.B;
-    const parts = [
-      hurt ? `−${hurt} damage` : "no damage",
-      ...(blocked ? [`${blocked} blocked`] : []),
-      ...(healed ? [`+${healed} healed`] : []),
-      ...(deaths.length ? [`${deaths.join(", ")} ${deaths.length > 1 ? "fall" : "falls"}`] : []),
-    ];
+    // M5-6: the fold's caption in the Log's language, like every other caption.
+    const parts = ru()
+      ? [
+          hurt ? `−${hurt} урона` : "без урона",
+          ...(blocked ? [`${blocked} заблокировано`] : []),
+          ...(healed ? [`+${healed} лечения`] : []),
+          ...(deaths.length ? [`${deaths.join(", ")} ${deaths.length > 1 ? "падают" : "падает"}`] : []),
+        ]
+      : [
+          hurt ? `−${hurt} damage` : "no damage",
+          ...(blocked ? [`${blocked} blocked`] : []),
+          ...(healed ? [`+${healed} healed`] : []),
+          ...(deaths.length ? [`${deaths.join(", ")} ${deaths.length > 1 ? "fall" : "falls"}`] : []),
+        ];
     const rows = [...(run?.rows ?? []), ...t.rows];
     const first = run?.turn ?? t.turn;
     const times = t.turn - first + 1;
-    const fold: LogFold = { turn: first, turnTo: t.turn, caption: `Same as last turn${times > 1 ? ` ×${times}` : ""}: ${parts.join(", ")} · ${rows.length} rows`, damage, blocked, heals, deaths, rows };
+    const nRows = ru() ? `${rows.length} ${ruCount(rows.length, ["строка", "строки", "строк"])}` : `${rows.length} rows`;
+    const caption = `${ru() ? "Как прошлый ход" : "Same as last turn"}${times > 1 ? ` ×${times}` : ""}: ${parts.join(", ")} · ${nRows}`;
+    const fold: LogFold = { turn: first, turnTo: t.turn, caption, damage, blocked, heals, deaths, rows };
     if (run) out[out.length - 1] = fold;
     else out.push(fold);
   });

@@ -144,9 +144,9 @@ try {
   }
 
   await page.getByTestId("stats").click();
-  await page.getByTestId("stats-back").waitFor();
+  await page.getByTestId("stats-champions").waitFor();
   await shot("stats"); await noHScroll("stats"); await wide("stats", 900);
-  await page.getByTestId("stats-back").click();
+  await page.getByTestId("codex-back").click();
   // The Codex uses the width: its unit grid runs many cards a row; Esc goes back.
   await page.getByTestId("codex").click();
   await page.getByTestId("codex-units").waitFor();

@@ -190,24 +190,21 @@ try {
   await tap44("dev summary", page.locator("details.dev summary"));
   await tap44("settings gear", page.getByTestId("settings"));
   await page.getByTestId("settings").click();
+  // M5-6: Rules and Stats live in the Codex (How to play, Champions); no sheet of their own.
   await page.getByTestId("rules-open").click();
   await page.getByTestId("rules").waitFor();
+  await page.getByTestId("legend").waitFor();
   await shot("rules"); await noHScroll("rules");
-  if (!/game-icons\.net, CC BY 3\.0/.test(await page.getByTestId("icon-credits").textContent().catch(() => ""))) errors.push("rules: no icon credits");
-  // The phone's Back (R3-26) closes the sheet and stays in the game.
+  if (!/game-icons\.net/.test(await page.getByTestId("icon-credits").textContent().catch(() => ""))) errors.push("rules: no icon credits");
+  // The phone's Back (R3-26) leaves the Codex and stays in the game.
   const back = () => page.evaluate(() => history.back());
   await back();
-  await page.getByTestId("rules").waitFor({ state: "detached", timeout: 3_000 }).catch(() => errors.push("back: Back didn't close the Rules sheet"));
-  if (!(await page.getByTestId("play").isVisible().catch(() => false))) errors.push(`back: Back with a sheet open left the game (${page.url()})`);
-  await page.getByTestId("settings").click();
-  await page.getByTestId("rules-open").click();
-  await page.getByTestId("rules").waitFor();
-  await page.getByTestId("overlay").click({ position: { x: 180, y: 10 } });
-  await page.getByTestId("rules").waitFor({ state: "detached" });
+  await page.getByTestId("rules").waitFor({ state: "detached", timeout: 3_000 }).catch(() => errors.push("back: Back didn't close How to play"));
+  await page.getByTestId("play").waitFor({ timeout: 3_000 }).catch(() => errors.push(`back: Back from the Codex left the game (${page.url()})`));
   await page.getByTestId("stats").click();
-  await page.getByTestId("stats-back").waitFor();
+  await page.getByTestId("stats-champions").waitFor();
   await shot("stats"); await noHScroll("stats");
-  await page.getByTestId("stats-back").click();
+  await page.getByTestId("codex-back").click();
   await page.getByTestId("play").waitFor();
 
   // The Codex (R2-11) from the title menu: tier 3 filtered by a trigger icon,
@@ -478,16 +475,16 @@ try {
     round++;
     if (round === 1) { await shot("shop"); await noHScroll("shop"); await noRates("shop"); }
     if (round === 1) {
-      // The shop's "?" explains a card's numbers, and Rules open during a run (#587).
+      // The shop's "?" opens the Codex's How to play: how to read a card and the rules (#587, M5-6).
+      await tap44("shop ?", page.getByTestId("legend-open"));
+      await tap44("shop ?", page.getByTestId("legend-open"), "width");
       await page.getByTestId("legend-open").click();
       await page.getByTestId("legend").waitFor();
       await shot("legend"); await noHScroll("legend"); await noRates("legend");
-      await page.getByTestId("legend-rules").click();
       await page.getByTestId("rules").waitFor();
-      await page.getByTestId("sheet-close").click();
-      await page.getByTestId("rules").waitFor({ state: "detached" });
-      await tap44("shop ? and Rules", page.locator('[data-testid="legend-open"], [data-testid="shop-rules"]'));
-      await tap44("shop ? and Rules", page.locator('[data-testid="legend-open"], [data-testid="shop-rules"]'), "width");
+      await page.getByTestId("codex-back").click();
+      await page.getByTestId("legend").waitFor({ state: "detached" });
+      await page.getByTestId("line").waitFor();
     }
     if (round === 2 && (await page.getByTestId("line").locator(".card.you").count()) > 1) {
       await page.getByTestId("line-1").click();

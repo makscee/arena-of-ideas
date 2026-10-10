@@ -53,7 +53,6 @@ export const main = {
   "rules.dayLabel": "The day",
   "rules.day": "Beat the champion in the Crown and you are a slayer. At {at} Moscow the slayers' best teams play a round-robin, and the winner is the next champion.",
   "rules.rating": "Your rating moves once per run: every fight, the Crown too, counts against its opponent's rating (Elo), added up when the run ends. Giving up counts each heart left as a lost fight.",
-  "rules.iconCredits": "Icons: Lorc, Delapouite, Sbed, Skoll from game-icons.net, CC BY 3.0; heart-plus by Zeromancer, CC0.",
 
   "legend.title": "READING A CARD",
   "legend.icons": "Top: what it does in icons: when, who, what (here: at battle start, the front enemy, damage). A dot on the first says whose event: teal an ally's, pink an enemy's. Its sheet says it in words.",
@@ -133,7 +132,6 @@ export const main = {
   "abandon.confirm": "Abandon",
 
   "menu.codex": "Codex",
-  "menu.rules": "Rules",
   "menu.runOver": "Run · over",
   "menu.runCrown": "Run · the Crown",
   "menu.runRound": "Run · round {round} of {rounds}",

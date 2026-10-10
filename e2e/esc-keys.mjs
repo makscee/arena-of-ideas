@@ -38,12 +38,11 @@ export async function escPass(browser, url, { label, viewport, touch = false, er
     await tid("rules").waitFor();
     await esc();
     await expectShown("Home → Rules → Esc", tid("rules"), false);
-    await esc();
     await home();
 
-    // Stats → Esc → Home.
+    // Champions (the Codex) → Esc → Home.
     await tid("stats").click();
-    await tid("stats-back").waitFor();
+    await tid("codex-back").waitFor();
     await esc();
     await home();
 
@@ -85,7 +84,7 @@ export async function escPass(browser, url, { label, viewport, touch = false, er
       await expectShown("Shop → offer → Esc", tid("offer-close"), false);
       if ((await tid("gold").textContent()) !== gold) fail(`Shop → offer → Esc bought it (${gold} → ${await tid("gold").textContent()})`);
     }
-    await tid("shop-rules").click();
+    await tid("legend-open").click();
     await tid("rules").waitFor();
     await esc();
     await expectShown("Shop → Rules → Esc", tid("rules"), false);
