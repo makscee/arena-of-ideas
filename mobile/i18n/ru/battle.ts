@@ -6,6 +6,7 @@ export const battle = {
   "battle.menu": "Меню",
   "battle.menuEsc": "Меню (Esc)",
   "battle.tab.why": "Почему",
+  "battle.tab.unit": "Эта карта",
   "battle.tab.log": "Журнал",
   "battle.timelineAria": "Ходы боя: нажми или тяни, чтобы перемотать",
   "battle.endButton": "⏭",

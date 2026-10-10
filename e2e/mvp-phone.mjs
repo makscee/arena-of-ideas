@@ -507,6 +507,17 @@ try {
     // tap a change and read its chain. End shows the end card, Continue goes
     // to the result, which shows "why I lost" after a loss (shot once).
     await page.getByTestId("battle-end").waitFor({ timeout: 10_000 });
+    // M5-4 (#892): the fight plays on the run board: the top bar (round, hearts, gold) stays, the line plays under it.
+    {
+      const bar = page.getByTestId("run-bar");
+      if (!(await bar.isVisible().catch(() => false))) errors.push(`run board: round ${round}'s fight has no run bar`);
+      else {
+        if (!(await bar.getByTestId("round").count()) || !(await bar.locator(".heart-icons").count())) errors.push("run board: the fight's top bar lacks the round or hearts");
+        if (!(await bar.getByTestId("gold").count()) && !(await bar.getByTestId("round").textContent().catch(() => "")).match(/CROWN|КОРОН/i)) errors.push("run board: the fight's top bar has no gold");
+        const [b, them] = [await bar.boundingBox(), await page.getByTestId("battle-them").boundingBox()];
+        if (b && them && them.y < b.y + b.height) errors.push("run board: the fight sits over the top bar");
+      }
+    }
     // R2-14: the speed chosen in round 1 (4×) holds in the next battle.
     if (round === 2 && (await page.getByTestId("battle-speed").textContent()) !== "4×") errors.push(`speed: round 2 plays at ${await page.getByTestId("battle-speed").textContent()}, not the 4× chosen in round 1`);
     if (round === 1) {
@@ -735,6 +746,7 @@ try {
         if (Number(n) !== round || new RegExp(`^${pattern(L("run.roundLabel")).replace(".+?", "(\\d+)")}`).exec(shown)?.[1] !== n) errors.push(`end card ☰: "${menu}" after round ${round} ("${shown}")`);
       } else if (![L("menu.runOver"), L("menu.runCrown")].includes(menu)) errors.push(`end card ☰: "${menu}" after round ${round}`);
     }
+    if (!(await page.getByTestId("run-bar").isVisible().catch(() => false))) errors.push(`run board: round ${round}'s result has no run bar`);
     const done = ((await page.getByTestId("battle-done").textContent()) ?? "").trim();
     if (![L("fight.nextRound"), L("fight.toCrown"), L("fight.seeRun")].includes(done)) errors.push(`end card: last button "${done}"`);
     await page.getByTestId("battle-done").click();

@@ -6,6 +6,7 @@ export const battle = {
   "battle.menu": "Menu",
   "battle.menuEsc": "Menu (Esc)",
   "battle.tab.why": "Why",
+  "battle.tab.unit": "This card",
   "battle.tab.log": "Log",
   "battle.timelineAria": "Turn timeline: click or drag to scrub",
   "battle.endButton": "End",

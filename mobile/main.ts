@@ -746,7 +746,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     guarded(err, async () => {
       await Promise.allSettled([...previewsOut]);
       const res = await api.decide(run.runId, d);
-      if (res.fight) return fightScreens(res.run, res.fight, content);
+      if (res.fight) return fightScreens(res.run, res.fight, content, run);
       play(shopSound(d, run, res.run));
       shopScreen(res.run, content, "", select, offer);
     });
@@ -1479,7 +1479,7 @@ function copiesBadge(u: LineUnit): HTMLElement {
 
 // ---------- battle, then result ----------
 
-async function fightScreens(run: RunView, fight: FightResult, content: MvpContent): Promise<void> {
+async function fightScreens(run: RunView, fight: FightResult, content: MvpContent, before: RunView = run): Promise<void> {
   let battle: BattleRecord;
   try {
     battle = await api.battle(fight.battleId);
@@ -1493,7 +1493,17 @@ async function fightScreens(run: RunView, fight: FightResult, content: MvpConten
     return shopScreen(now, content, t("fight.replayFailed", { word, name: fight.opponent.player.name, lost, why }));
   }
   music("battle", run.runId);
-  battleScreen({ battle, content, you: "A", fight, run, outro: outroOf(run, fight, content), onDone: () => shopScreen(run, content) });
+  battleScreen({ battle, content, you: "A", fight, run, outro: { ...outroOf(run, fight, content), bar: (over) => runBar(over ? run : before) }, onDone: () => shopScreen(run, content) });
+}
+
+/** The shop's top bar, on the fight (M5-4: one run board): the round (the
+ * track on desktop), hearts and gold; the Crown has no gold. */
+function runBar(run: RunView): HTMLElement[] {
+  return [
+    isDesktop() ? runTrack(run) : h("span", { class: "round-pill", "data-testid": "round" }, roundLabel(run.round)),
+    heartIcons(run.hearts),
+    ...(run.phase === "crown" || run.round > rules.rounds ? [] : [h("span", { class: "gold", "data-testid": "gold" }, t("shop.gold", { n: run.gold }))]),
+  ];
 }
 
 /** What the battle's end card adds for a run's fight (R2-17 batch E): it is
