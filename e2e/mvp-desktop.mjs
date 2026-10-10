@@ -144,9 +144,9 @@ try {
   }
 
   await page.getByTestId("stats").click();
-  await page.getByTestId("stats-back").waitFor();
+  await page.getByTestId("stats-champions").waitFor();
   await shot("stats"); await noHScroll("stats"); await wide("stats", 900);
-  await page.getByTestId("stats-back").click();
+  await page.getByTestId("codex-back").click();
   // The Codex uses the width: its unit grid runs many cards a row; Esc goes back.
   await page.getByTestId("codex").click();
   await page.getByTestId("codex-units").waitFor();
@@ -216,7 +216,7 @@ try {
       if (!(await locked(1))) errors.push("lock: L didn't lock the chosen offer");
       await page.getByTestId("inspector").getByTestId("lock").waitFor();
       if (!(await page.getByTestId("inspector").getByTestId("lock").textContent()).startsWith("🔓 Unlock")) errors.push("lock: the locked offer isn't still in the inspector with Unlock");
-      if (!(await page.getByTestId("keys").textContent()).includes("L lock")) errors.push("lock: the keys line has no L");
+      // M5-6: the keys line moved to Codex › How to play; the L sits on the inspector's Lock (checked above).
       await shot("shop-locked");
       const g1 = await gold();
       await page.keyboard.press("r");

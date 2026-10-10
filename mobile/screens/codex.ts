@@ -20,11 +20,14 @@
 // - Keywords: every glossary term with its 48px icon, its rule and the units
 //   whose text uses it; a term's deep link lands on its row. A trigger said of
 //   someone else ("After an enemy dies") has its own line there.
+// - Champions (M5-6, the stats page folded in): every day's champion, a
+//   champion opening its team, and your records.
+// - How to play (M5-6): the rules and how to read a card, drawn by main.ts.
 // On desktop a sheet opens in the inspector on the right, not an overlay.
 // The icon credits (CC BY 3.0) sit at its foot. Reads /content, /stats and
 // /fusions, each once while it stays open (CodexCache).
 import { GLOSSARY, STATUS_TERMS, scopedLabel, scopedTip, termDef, termGroup, type FixedTermId, type IconId, type TermGroup, type TermId } from "../../src/glossary";
-import type { FusionDiscovery, IdeasView, LibraryUnit, LibraryView, LineUnit, MvpContent, StatsView, UnitContent, UnitId, UnitVersion, VersionCredit } from "../../src/mvp/contract";
+import type { FusionDiscovery, HomeView, IdeasView, LibraryUnit, LibraryView, LineUnit, MvpContent, StatsView, UnitContent, UnitId, UnitVersion, VersionCredit } from "../../src/mvp/contract";
 import type { UnitFilter } from "../../src/types";
 import { formSegments, formText } from "../../src/mvp/form-text";
 import { fuseUnits, lineUnitOf } from "../../src/mvp/forms";
@@ -38,10 +41,11 @@ import { app, button, closable, h, isDesktop, onKeys, screen, show, who } from "
 import { icon } from "../ui/icon";
 import { loadUnitRates, pct } from "../ui/unit-stats";
 import { ideaWhy, proposeScreen } from "./ideas";
+import { championsTab } from "./stats";
 import { rulesLangOpt } from "../lang";
 import { discoveryName, englishName } from "../unit-names";
 
-export type CodexTab = "units" | "fusions" | "library" | "keywords";
+export type CodexTab = "units" | "fusions" | "library" | "keywords" | "champions" | "howto";
 export type CodexSort = "tier" | "win" | "pick";
 
 export interface CodexState {
@@ -73,6 +77,8 @@ export interface CodexCache {
   library?: Promise<LibraryView>;
   /** The ideas the player holds, for the Library's "Propose a new version" (M3-5); null when it failed. */
   ideas?: Promise<IdeasView | null>;
+  /** M5-6: the Champions tab (the stats page folded in): champions and your records. */
+  champions?: Promise<[StatsView, HomeView]>;
   /** Each tab's window scroll, put back on a switch. */
   scroll: Partial<Record<CodexTab, number>>;
   /** Where the open Codex is (its tab and filters), for a redraw at 1024px. */
@@ -83,7 +89,15 @@ export const newCodexCache = (): CodexCache => ({ scroll: {} });
 /** Draws the Codex once; a tab or filter change redraws only its body and
  * keeps the scroll. On desktop (R2-9) a unit or a fusion opens in the
  * inspector on the right, never in an overlay (ui.md (e)). */
-export async function codexScreen(a: { content: MvpContent; onBack: () => void; onUnknown?: () => void; state?: Partial<CodexState> | undefined; cache?: CodexCache }): Promise<void> {
+export async function codexScreen(a: {
+  content: MvpContent;
+  onBack: () => void;
+  onUnknown?: () => void;
+  state?: Partial<CodexState> | undefined;
+  cache?: CodexCache;
+  /** M5-6: How to play, the rules and how to read a card (main.ts owns the numbers). */
+  howTo?: () => Node[];
+}): Promise<void> {
   const cache = a.cache ?? newCodexCache();
   cache.stats ??= loadUnitRates(); // the dim rates line on unit sheets, and the rate sorts
   const st: CodexState = { ...DEFAULTS, ...a.state };
@@ -155,7 +169,14 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
   let drawing = 0;
   const draw = async (): Promise<void> => {
     const n = ++drawing;
-    tabs.replaceChildren(tabBtn("units", t("codex.tab.units")), tabBtn("fusions", t("codex.tab.fusions")), tabBtn("library", t("codex.tab.library")), tabBtn("keywords", t("codex.tab.keywords")));
+    tabs.replaceChildren(
+      tabBtn("units", t("codex.tab.units")),
+      tabBtn("fusions", t("codex.tab.fusions")),
+      tabBtn("keywords", t("codex.tab.keywords")),
+      tabBtn("champions", t("codex.tab.champions")),
+      tabBtn("library", t("codex.tab.library")),
+      tabBtn("howto", t("codex.tab.howto")),
+    );
     // The body's height stays while it redraws, so the window keeps its scroll.
     body.style.minHeight = `${body.offsetHeight}px`;
     const y = window.scrollY;
@@ -163,6 +184,12 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
     try {
       if (st.tab === "units") kids = unitsTab(a.content, st, set, open, st.sort === "tier" ? null : await rates(), retryRates, liveSheet);
       else if (st.tab === "keywords") kids = [keywordsTab(a.content, open)];
+      else if (st.tab === "howto") kids = a.howTo?.() ?? [];
+      else if (st.tab === "champions") {
+        if (!body.hasChildNodes()) body.replaceChildren(h("div", { class: "dim", "data-testid": "codex-loading" }, t("codex.loadingChampions")));
+        const [stats, home] = await (cache.champions ??= Promise.all([api.stats(), api.home()]));
+        kids = championsTab(stats, home, a.content);
+      }
       else if (st.tab === "library") {
         if (!body.hasChildNodes()) body.replaceChildren(h("div", { class: "dim", "data-testid": "codex-loading" }, t("codex.loadingLibrary")));
         const [lib] = await Promise.all([(cache.library ??= api.library()), loadIdeas()]);
@@ -178,6 +205,7 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
       delete cache.fusions;
       delete cache.library;
       delete cache.ideas;
+      delete cache.champions;
       kids = [h("div", { class: "error", "data-testid": "error" }, e instanceof Error ? e.message : String(e))];
     }
     if (n !== drawing || !body.isConnected) return; // redrawn or left meanwhile

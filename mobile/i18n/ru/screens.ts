@@ -11,12 +11,7 @@ export const screens = {
   "vote.question": "Что ты хочешь видеть в игре?",
   "vote.skip": "Пропустить",
   // screens/stats.ts
-  "stats.back": "Назад",
-  "stats.title": "СТАТИСТИКА",
   "stats.champions": "Чемпионы",
-  "stats.codexBefore": "Юниты, их доли побед и выбора и все найденные слияния — в ",
-  "stats.codex": "Кодексе",
-  "stats.codexAfter": ".",
   "stats.records": "Твои рекорды",
   "stats.rating": "Рейтинг",
   "stats.runs": "Забеги",

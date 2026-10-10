@@ -8,7 +8,7 @@ import type { AbilityRef, BattleEvent, EventBody } from "../types.js";
 import { MVP_RULES } from "./contract.js";
 import { toBattleDef } from "./fight.js";
 import { fuseUnits, lineUnitOf } from "./forms.js";
-import { beatPlayOf, foldTurnsOf, isLogFold, logRowsOf, stepsOf, type LogItem, type LogRow } from "./trace.js";
+import { beatPlayOf, foldTurnsOf, isLogFold, logRowsOf, setTraceLang, stepsOf, type LogItem, type LogRow } from "./trace.js";
 import { mvpPool } from "./units.js";
 
 /** A hand-built looping fight: each turn Ogre strikes, Nurse heals the one
@@ -59,6 +59,17 @@ describe("the Log folds a turn that repeats the one before it (R4-13)", () => {
     expect(f.deaths).toEqual([]);
     expect(f.blocked).toBe(0);
     expect(f.caption).toBe(`Same as last turn ×3: −21 damage, +3 healed · ${f.rows.length} rows`);
+  });
+
+  test("in Russian the fold reads Russian (M5-6)", () => {
+    setTraceLang("ru");
+    try {
+      const f = foldTurnsOf(log, rows).filter(isLogFold)[0]!;
+      expect(f.caption).toBe(`Как прошлый ход ×3: −21 урона, +3 лечения · ${f.rows.length} строк`);
+      expect(f.caption).not.toMatch(/[A-Za-z]/);
+    } finally {
+      setTraceLang(undefined);
+    }
   });
 
   test("a fold keeps its turns' rows, in order: every row once", () => {

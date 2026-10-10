@@ -664,6 +664,17 @@ button.bv-run-row.zero { opacity: 0.45; }
 .bv-cleared { position: absolute; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .bv-run, button.bv-run-row { transition: none; } }
 @media (min-width: 1024px) { button.bv-run-row { height: 20px; line-height: 20px; font-size: 17px; padding: 0 4px; } }
+/* M5-6: a phone's box sits on the card's face under its icon row (battle.ts
+ * PHONE_RUN_TOP) and stacks down, so no row reaches the side's label or the
+ * caption over or under the line. */
+@media (max-width: 1023.98px) {
+  .bv-run { translate: -50% 0; flex-direction: column; padding: 0; }
+  /* The trigger badge hugs its card, clear of the side's label. */
+  #app[data-screen="battle"] .bv-line.theirs button.bv-badge { bottom: calc(100% + 1px); }
+  #app[data-screen="battle"] .bv-line.mine button.bv-badge { top: calc(100% + 1px); }
+}
+/* The badge's 44px tap box is invisible: no button drop under it (it drew a dark tab over the label). */
+button.bv-badge, button.bv-badge:active:not(:disabled) { box-shadow: none; }
 .bv-beam { --bv-bc: var(--k-dmg); color: var(--bv-bc); }
 .bv-beam .bv-bl { fill: none; stroke: var(--bv-bc); stroke-width: 3; stroke-linecap: round; filter: drop-shadow(0 0 3px var(--bv-bc)); }
 .bv-beam .bv-bs, .bv-beam .bv-bh { fill: var(--bv-bc); }
@@ -786,6 +797,9 @@ button.bv-moment { display: grid; grid-template-columns: 38px 18px minmax(0, 1fr
 }
 .title-menu [data-testid="play"] .hearts { white-space: nowrap; }
 .tabs { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
+/* M5-6: the Codex's six tabs sit 3 a row on a phone, one row from 1024px. */
+.codex-main .tabs { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (min-width: 1024px) { .codex-main .tabs { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 .tabs button { min-height: 44px; padding: 0 2px; font-size: 13px; letter-spacing: 0; }
 .tabs button.on { background: var(--you); color: var(--outline); }
 .stat-row { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 0; border-bottom: var(--bw) solid var(--outline); cursor: pointer; }
@@ -1562,3 +1576,11 @@ button.reroll-btn:disabled .cost-chip { background: var(--soft); }
   #app[data-screen="battle"] .bv-card .stats.big { font-size: 22px; line-height: 26px; }
   #app[data-screen="battle"] .bv-changes { top: 52px; }
 }
+/* M5-6: on the light card face the tier numeral is a notch in its tier's
+ * colour with dark ink (Simplify: tiers keep their four colours as a notch),
+ * so I and II read on every palette. */
+.card .tier.t1, .card .tier.t2, .card .tier.t3, .card .tier.t4 { color: var(--outline); padding: 1px 3px; border-radius: 4px; box-shadow: 0 0 0 1.5px var(--outline); }
+.card .tier.t1 { background: var(--tier-1); }
+.card .tier.t2 { background: var(--tier-2); }
+.card .tier.t3 { background: var(--tier-3); }
+.card .tier.t4 { background: var(--tier-4); }

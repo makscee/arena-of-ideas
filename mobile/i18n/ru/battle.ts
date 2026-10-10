@@ -65,6 +65,8 @@ export const battle = {
   "battle.trace.why": "Почему: {change} {target}",
   "battle.trace.result": "‹ Итог",
   "battle.continue": "Дальше",
+  "battle.trace.ability": " · способность",
+  "battle.trace.causedBy": "из-за",
   "battle.trace.thisStep": "Этот шаг:",
   "battle.trace.keysDesktop": "Нажми на шаг, чтобы увидеть его момент; наведи на выделенное слово, чтобы узнать его смысл.",
   "battle.trace.keysPhone": "Нажми на шаг, чтобы увидеть его момент; удерживай выделенное слово, чтобы узнать его смысл.",

@@ -190,24 +190,21 @@ try {
   await tap44("dev summary", page.locator("details.dev summary"));
   await tap44("settings gear", page.getByTestId("settings"));
   await page.getByTestId("settings").click();
+  // M5-6: Rules and Stats live in the Codex (How to play, Champions); no sheet of their own.
   await page.getByTestId("rules-open").click();
   await page.getByTestId("rules").waitFor();
+  await page.getByTestId("legend").waitFor();
   await shot("rules"); await noHScroll("rules");
-  if (!/game-icons\.net, CC BY 3\.0/.test(await page.getByTestId("icon-credits").textContent().catch(() => ""))) errors.push("rules: no icon credits");
-  // The phone's Back (R3-26) closes the sheet and stays in the game.
+  if (!/game-icons\.net/.test(await page.getByTestId("icon-credits").textContent().catch(() => ""))) errors.push("rules: no icon credits");
+  // The phone's Back (R3-26) leaves the Codex and stays in the game.
   const back = () => page.evaluate(() => history.back());
   await back();
-  await page.getByTestId("rules").waitFor({ state: "detached", timeout: 3_000 }).catch(() => errors.push("back: Back didn't close the Rules sheet"));
-  if (!(await page.getByTestId("play").isVisible().catch(() => false))) errors.push(`back: Back with a sheet open left the game (${page.url()})`);
-  await page.getByTestId("settings").click();
-  await page.getByTestId("rules-open").click();
-  await page.getByTestId("rules").waitFor();
-  await page.getByTestId("overlay").click({ position: { x: 180, y: 10 } });
-  await page.getByTestId("rules").waitFor({ state: "detached" });
+  await page.getByTestId("rules").waitFor({ state: "detached", timeout: 3_000 }).catch(() => errors.push("back: Back didn't close How to play"));
+  await page.getByTestId("play").waitFor({ timeout: 3_000 }).catch(() => errors.push(`back: Back from the Codex left the game (${page.url()})`));
   await page.getByTestId("stats").click();
-  await page.getByTestId("stats-back").waitFor();
+  await page.getByTestId("stats-champions").waitFor();
   await shot("stats"); await noHScroll("stats");
-  await page.getByTestId("stats-back").click();
+  await page.getByTestId("codex-back").click();
   await page.getByTestId("play").waitFor();
 
   // The Codex (R2-11) from the title menu: tier 3 filtered by a trigger icon,
@@ -478,16 +475,16 @@ try {
     round++;
     if (round === 1) { await shot("shop"); await noHScroll("shop"); await noRates("shop"); }
     if (round === 1) {
-      // The shop's "?" explains a card's numbers, and Rules open during a run (#587).
+      // The shop's "?" opens the Codex's How to play: how to read a card and the rules (#587, M5-6).
+      await tap44("shop ?", page.getByTestId("legend-open"));
+      await tap44("shop ?", page.getByTestId("legend-open"), "width");
       await page.getByTestId("legend-open").click();
       await page.getByTestId("legend").waitFor();
       await shot("legend"); await noHScroll("legend"); await noRates("legend");
-      await page.getByTestId("legend-rules").click();
       await page.getByTestId("rules").waitFor();
-      await page.getByTestId("sheet-close").click();
-      await page.getByTestId("rules").waitFor({ state: "detached" });
-      await tap44("shop ? and Rules", page.locator('[data-testid="legend-open"], [data-testid="shop-rules"]'));
-      await tap44("shop ? and Rules", page.locator('[data-testid="legend-open"], [data-testid="shop-rules"]'), "width");
+      await page.getByTestId("codex-back").click();
+      await page.getByTestId("legend").waitFor({ state: "detached" });
+      await page.getByTestId("line").waitFor();
     }
     if (round === 2 && (await page.getByTestId("line").locator(".card.you").count()) > 1) {
       await page.getByTestId("line-1").click();
@@ -769,19 +766,19 @@ try {
   await page.getByTestId("last-run").waitFor({ timeout: 5_000 }).catch(() => errors.push("home after a run: no Last run panel"));
   if ((await page.getByTestId("last-run").locator(".fpip").count()) < 1) errors.push("home after a run: Last run has no fights");
 
-  // Stats (slice 11, R2-11): records and the champion history; units and
-  // fusions moved to the Codex.
+  // Champions (slice 11, R2-11; M5-6 the Codex's Champions tab): the champion
+  // history and your records.
   await page.getByTestId("stats").click();
   await page.getByTestId("stats-champions").waitFor();
   if ((await page.getByTestId("stats-records").count()) === 0) errors.push("stats: no records");
-  if ((await page.getByTestId("stats-tab-units").count()) > 0) errors.push("stats: still has a Units tab (the Codex has it)");
+  if (!(await page.getByTestId("codex-tab-champions").evaluate((b) => b.classList.contains("on")))) errors.push("stats: the Codex didn't open on Champions");
   await shot("stats"); await noHScroll("stats");
   {
     // Back stays on the first screen however long the lists grow.
-    const box = await page.getByTestId("stats-back").boundingBox();
+    const box = await page.getByTestId("codex-back").boundingBox();
     if (!box || box.y + box.height > 640) throw new Error(`stats: Back is off screen (${box && Math.round(box.y)})`);
   }
-  await page.getByTestId("stats-back").click();
+  await page.getByTestId("codex-back").click();
   await page.getByTestId("play").waitFor();
 
   // Giving up (R2-10 on R2-2's abandon): New run on the title menu asks to

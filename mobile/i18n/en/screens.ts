@@ -10,12 +10,7 @@ export const screens = {
   "vote.question": "Which would you rather see in the game?",
   "vote.skip": "Skip",
   // screens/stats.ts
-  "stats.back": "Back",
-  "stats.title": "STATS",
   "stats.champions": "Champions",
-  "stats.codexBefore": "Units, their win and pick rates, and every fusion found are in the ",
-  "stats.codex": "Codex",
-  "stats.codexAfter": ".",
   "stats.records": "Your records",
   "stats.rating": "Rating",
   "stats.runs": "Runs",
