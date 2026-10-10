@@ -65,6 +65,9 @@ try {
       if (c.over) errors.push(`${name}: ${c.name}'s icon line overflows its card`);
       if (c.short) errors.push(`${name}: ${c.name} hides icons without a "+"`);
     }
+    // M5-2: a card's name keeps its descenders (y, g, p): it clips sideways only (#889's "Bulwpper").
+    const cut = await page.evaluate(() => [...document.querySelectorAll(".card:not(.bv-card) .name")].filter((el) => el.getClientRects().length).filter((el) => getComputedStyle(el).overflowY !== "visible").map((el) => el.textContent));
+    for (const n of cut) errors.push(`${name}: ${n}'s name is clipped at the bottom`);
   };
   const shot = async (name) => { await page.screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-${name}.png` }); await iconsFit(name); };
   const noHScroll = async (name) => {

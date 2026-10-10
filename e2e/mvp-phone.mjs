@@ -68,6 +68,9 @@ try {
       if (c.over) errors.push(`${name}: ${c.name}'s icon line overflows its card`);
       if (c.short) errors.push(`${name}: ${c.name} hides icons without a "+"`);
     }
+    // M5-2: a card's name keeps its descenders (y, g, p): it clips sideways only (#889's "Bulwpper").
+    const cut = await page.evaluate(() => [...document.querySelectorAll(".card:not(.bv-card) .name")].filter((el) => el.getClientRects().length).filter((el) => getComputedStyle(el).overflowY !== "visible").map((el) => el.textContent));
+    for (const n of cut) errors.push(`${name}: ${n}'s name is clipped at the bottom`);
   };
   const shot = async (name) => { await page.screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-${name}.png` }); await namesOneLine(name); await iconsFit(name); };
   const noHScroll = async (name) => {
@@ -253,7 +256,8 @@ try {
   await page.locator('[data-testid="sheet-form"] [data-testid="unit-ref"]').first().click();
   await page.getByTestId("summon-sheet").waitFor({ timeout: 2_000 }).catch(() => errors.push("codex: Planter's \"Imp (1/2)\" didn't open the Imp's card"));
   const impHead = (await page.locator('[data-testid="summon-sheet"] h2').textContent().catch(() => "")) ?? "";
-  if (impHead !== "👺 Imp") errors.push(`codex: the Imp's sheet is titled "${impHead}"`);
+  const impFace = (await page.locator('[data-testid="summon-sheet"] .sheet-portrait').textContent().catch(() => "")) ?? "";
+  if (impHead !== "Imp" || impFace !== "👺") errors.push(`codex: the Imp's sheet is titled "${impFace} ${impHead}"`);
   await shot("codex-summon-sheet");
   while (await page.getByTestId("sheet-close").count()) await page.getByTestId("sheet-close").last().click();
   // R4-8: a word from an archetype finds its unit, whose sheet opens with that archetype on top.
