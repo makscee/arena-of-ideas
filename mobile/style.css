@@ -1533,6 +1533,8 @@ button.reroll-btn:disabled .cost-chip { background: var(--soft); }
   .run-bar .gold { padding: 0 8px 0 3px; gap: 3px; }
   .run-bar .gold::before { width: 13px; height: 13px; }
   .run-bar .round-pill { padding: 0 8px; }
+  /* Who's next stays on one line beside the champion's pin (a long bot name wrapped it, and round 8 scrolled in RU). */
+  #app[data-screen="shop"] .opp .next-opp { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* Its name is on the Them label; the row keeps the turn. */
   #app[data-screen="battle"] .bv-screen > .hud:has(> .run-bar) > .who { display: none; }
   .bv-lab-who { text-transform: none; }
