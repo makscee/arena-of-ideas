@@ -669,6 +669,9 @@ button.bv-run-row.zero { opacity: 0.45; }
  * covers the name or the stats, nor reaches the side's label or the caption. */
 @media (max-width: 1023.98px) {
   .bv-run { translate: -50% 0; flex-direction: column; padding: 0; overflow: hidden; }
+  /* On the card's face a total is a label: a tap goes to the change chip or the
+   * card under it, which open the same trace. */
+  button.bv-run-row { pointer-events: none; }
   /* The trigger badge hugs its card, clear of the side's label. */
   #app[data-screen="battle"] .bv-line.theirs button.bv-badge { bottom: calc(100% + 1px); }
   #app[data-screen="battle"] .bv-line.mine button.bv-badge { top: calc(100% + 1px); }
