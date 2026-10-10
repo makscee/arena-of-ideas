@@ -507,6 +507,17 @@ try {
     // tap a change and read its chain. End shows the end card, Continue goes
     // to the result, which shows "why I lost" after a loss (shot once).
     await page.getByTestId("battle-end").waitFor({ timeout: 10_000 });
+    // M5-4 (#892): the fight plays on the run board: the top bar (round, hearts, gold) stays, the line plays under it.
+    {
+      const bar = page.getByTestId("run-bar");
+      if (!(await bar.isVisible().catch(() => false))) errors.push(`run board: round ${round}'s fight has no run bar`);
+      else {
+        if (!(await bar.getByTestId("round").count()) || !(await bar.locator(".heart-icons").count())) errors.push("run board: the fight's top bar lacks the round or hearts");
+        if (!(await bar.getByTestId("gold").count()) && !(await bar.getByTestId("round").textContent().catch(() => "")).match(/CROWN|КОРОН/i)) errors.push("run board: the fight's top bar has no gold");
+        const [b, them] = [await bar.boundingBox(), await page.getByTestId("battle-them").boundingBox()];
+        if (b && them && them.y < b.y + b.height) errors.push("run board: the fight sits over the top bar");
+      }
+    }
     // R2-14: the speed chosen in round 1 (4×) holds in the next battle.
     if (round === 2 && (await page.getByTestId("battle-speed").textContent()) !== "4×") errors.push(`speed: round 2 plays at ${await page.getByTestId("battle-speed").textContent()}, not the 4× chosen in round 1`);
     if (round === 1) {
@@ -561,11 +572,11 @@ try {
       const kinds = await page.getByTestId("why-step").evaluateAll((els) => els.map((e) => e.dataset.kind));
       if (kinds[0] !== "change" || kinds.at(-1) !== "root") errors.push(`why: the chain runs ${kinds.join(" ← ")}, not change … root`);
       await tap44("why step", page.getByTestId("why-step"));
-      const turnBefore = await page.locator(".hud span").nth(2).textContent();
+      const turnBefore = await page.getByTestId("battle-turn").textContent();
       await page.getByTestId("why-step").last().click();
       if (!(await page.getByTestId("why-step").last().evaluate((e) => e.classList.contains("on")))) errors.push("why: the clicked step isn't lit");
       if ((await page.getByTestId("battle-play").textContent()) !== "▶") errors.push("why: a step's click didn't leave the battle paused");
-      const turnAfter = await page.locator(".hud span").nth(2).textContent();
+      const turnAfter = await page.getByTestId("battle-turn").textContent();
       // R2-17: "Turn N" lands on turn N's start, and the HUD says so.
       const root = (await page.getByTestId("why-step").last().textContent()) ?? "";
       const rootTurn = /Turn (\d+)/.exec(root)?.[1];
@@ -685,7 +696,7 @@ try {
         if (await page.getByTestId("end-card").isVisible()) errors.push("key moment: the end card stayed up");
         if ((await page.getByTestId("battle-play").textContent()) !== "❚❚") errors.push("key moment: not playing");
         await page.getByTestId("battle-play").click();
-        const turn = await page.locator(".hud span").nth(2).textContent();
+        const turn = await page.getByTestId("battle-turn").textContent();
         console.log(`mvp phone: key moment at beat ${beat} plays from ${turn}`);
         await page.getByTestId("battle-end").click();
       }
@@ -735,6 +746,7 @@ try {
         if (Number(n) !== round || new RegExp(`^${pattern(L("run.roundLabel")).replace(".+?", "(\\d+)")}`).exec(shown)?.[1] !== n) errors.push(`end card ☰: "${menu}" after round ${round} ("${shown}")`);
       } else if (![L("menu.runOver"), L("menu.runCrown")].includes(menu)) errors.push(`end card ☰: "${menu}" after round ${round}`);
     }
+    if (!(await page.getByTestId("run-bar").isVisible().catch(() => false))) errors.push(`run board: round ${round}'s result has no run bar`);
     const done = ((await page.getByTestId("battle-done").textContent()) ?? "").trim();
     if (![L("fight.nextRound"), L("fight.toCrown"), L("fight.seeRun")].includes(done)) errors.push(`end card: last button "${done}"`);
     await page.getByTestId("battle-done").click();

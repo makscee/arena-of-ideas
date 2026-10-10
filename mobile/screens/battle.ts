@@ -118,6 +118,11 @@ export interface RunOutro {
   /** Where the menu's errors land (Codex or Title menu failing): the battle
    * shows it over everything, under the HUD (R2-17 batch F). */
   error?: HTMLElement;
+  /** The run's top bar (M5-4): its round (the track on desktop), hearts and
+   * gold, as the shop shows them, at the head of the HUD: the fight plays on
+   * the run board. Before the end card the run as the fight began; from the
+   * end card on (over), as it left it: the round's dot won or lost. */
+  bar?: (over: boolean) => Node[];
 }
 
 /** A line with more cards than this draws them compact (R4-11). */
@@ -225,7 +230,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   let seenEnd = false;
   /** The desktop side panel's tab (R2-16). It opens on Log; a trace opening
    * switches to Why, and Why turns off again once nothing is traced (R3-17). */
-  let tab: "why" | "log" = "log";
+  let tab: "why" | "log" | "unit" = "log";
+  /** Desktop, a run's fight (M5-4): the fighting card clicked, shown in the
+   * docked column (its Now sheet) instead of over the board. */
+  let docked: HTMLElement | null = null;
   /** Why's "Turn N" step shows the board as turn N starts (the end of turn
    * N−1): the HUD then reads turn N (R2-17). Any other move clears it. */
   let hudTurn: number | null = null;
@@ -287,7 +295,16 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** The end card's Why I lost (or won): the Why tab opens it once the battle is over (R3-26). */
   let endWhy: (() => void) | null = null;
   const logTab = button(tr("battle.tab.log"), () => setTab("log"), "bv-tab", "tab-log");
-  sheet.append(h("div", { class: "row bv-tabs", role: "tablist" }, whyTab, logTab), whyBody, logBody);
+  const unitBody = h("div", { class: "bv-tab-body stack bv-unit-body", "data-testid": "docked-unit" });
+  sheet.append(h("div", { class: "row bv-tabs", role: "tablist" }, whyTab, logTab), whyBody, logBody, unitBody);
+  /** The run bar's two states, built once each. */
+  const bars = new Map<boolean, HTMLElement>();
+  const runBar = (): HTMLElement[] => {
+    if (!a.outro?.bar) return [];
+    let el = bars.get(seenEnd);
+    if (!el) bars.set(seenEnd, (el = h("span", { class: "run-bar", "data-testid": "run-bar" }, ...a.outro.bar(seenEnd))));
+    return [el];
+  };
   const timeline = h("div", { class: "bv-tl", "data-testid": "timeline", role: "slider", "aria-label": tr("battle.timelineAria"), tabindex: "-1" });
   const clashMark = icon("crossed-swords", 28, "tone-gold");
   /** Who targets whom (R3-21, battle.md (11)): one fixed layer over the board, redrawn after each render. */
@@ -401,6 +418,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     if (finished || atEnd()) return finish();
     setPlaying(true);
     trace = null;
+    docked = null;
     landed = [];
     endingAt = null;
     playBtn.textContent = "❚❚";
@@ -429,6 +447,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     chain = chainOf(log, eventId, { name: TAGGED, sides, whenOf });
     chainAt = null;
     traceGroup = group.length > 1 ? group : [];
+    docked = null;
     tab = "why";
     render();
   }
@@ -519,6 +538,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   // ---------- the desktop side panel and timeline (R2-16) ----------
 
   function setTab(t: "why" | "log"): void {
+    docked = null;
     tab = t;
     render();
     if (t === "log") shownRow(curRow())?.scrollIntoView({ block: "nearest" });
@@ -991,7 +1011,14 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       const live = shownBoard.lines[side].find((x) => x.id === id);
       const fell = live ? undefined : shownBoard.graves[side].find((x) => x.id === id);
       const u = live ?? fell;
-      if (u) return void closable(nowSheet(u, side, !live));
+      if (!u) continue;
+      // A run's fight on desktop: the card shows in the docked column (M5-4).
+      if (a.outro && isDesktop()) {
+        trace = null;
+        docked = nowSheet(u, side, !live);
+        return void render();
+      }
+      return void closable(nowSheet(u, side, !live));
     }
   }
   /** Whether a fallen unit still stands in its slot this beat (deadCard). */
@@ -1183,7 +1210,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     shownTurn = hudTurn ?? turn;
     hud.replaceChildren(
       ...(menuBtn ? [menuBtn] : []),
-      h("span", {}, battle.kind === "crown" ? tr("battle.hud.crown") : battle.kind === "playoff" ? tr("battle.hud.playoff") : tr("battle.hud.round", { n: battle.round })),
+      ...runBar(),
+      // The run bar names the round itself.
+      ...(a.outro?.bar ? [] : [h("span", {}, battle.kind === "crown" ? tr("battle.hud.crown") : battle.kind === "playoff" ? tr("battle.hud.playoff") : tr("battle.hud.round", { n: battle.round }))]),
       h("span", { class: "dim who", title: battle.opponent.name }, tr("battle.hud.vs", { name: battle.opponent.name })),
       h("span", { "data-testid": "battle-turn" }, turnLabel(hudTurn ?? turn)),
     );
@@ -1267,9 +1296,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     sheet.classList.toggle("open", !!trace);
     placeSheet();
     // Nothing traced (✕, Esc, ▶, the end card): Why is off and the panel is back on Log (R3-17).
-    const backToLog = !trace && tab === "why";
-    if (!trace) tab = "log";
+    const backToLog = !trace && !docked && tab === "why";
+    if (!trace) tab = docked ? "unit" : "log";
     sheet.dataset.tab = tab;
+    unitBody.replaceChildren(...(docked ? [h("div", { class: "row spread" }, h("div", { class: "label" }, tr("battle.tab.unit")), button("✕", () => { docked = null; render(); }, "bv-close", "docked-close")), docked] : []));
     // Over the end card, Why opens Why I lost (or won), as the card's button does (R3-26).
     const whyEnd = finished && !trace && !!endWhy;
     whyTab.disabled = !trace && !whyEnd;
@@ -1907,7 +1937,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         { class: "bv-board" },
         // Where each front is (R2-17): on the phone both run front first from
         // the left; on desktop the fronts meet in the middle.
-        h("div", { class: "label bv-lab-them" }, h("span", { class: "bv-dk" }, tr("battle.lab.frontLeft")), a.you ? tr("battle.them") : owner(them), h("span", { class: "bv-ph" }, tr("battle.lab.frontFirst"))),
+        // On the phone a run's fight names them here: its HUD row holds the run bar (M5-4).
+        h("div", { class: "label bv-lab-them" }, h("span", { class: "bv-dk" }, tr("battle.lab.frontLeft")), a.you ? tr("battle.them") : owner(them), a.outro?.bar ? h("span", { class: "bv-ph bv-lab-who" }, ` · ${owner(them)}`) : null, h("span", { class: "bv-ph" }, tr("battle.lab.frontFirst"))),
         enemy,
         caption,
         banner,
@@ -1950,6 +1981,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     if (e.key === "ArrowLeft") return back(), true;
     if (e.key === "ArrowRight") return forward(), true;
     if (e.key.toLowerCase() === "r") return replay(), true;
+    if (e.key === "Escape" && docked) return (docked = null), render(), true;
     if (e.key === "Escape" && trace) return (trace = null), render(), true;
     if (e.key === "Escape" && a.outro) return openMenu(), true;
     if (e.key === "Escape") return leave(), true;

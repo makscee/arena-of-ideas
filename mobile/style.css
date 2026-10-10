@@ -1434,8 +1434,8 @@ img.tg-qr { align-self: center; width: 200px; height: 200px; image-rendering: pi
 .heart-icons .heart { width: 18px; height: 18px; stroke: var(--outline); stroke-width: 2; stroke-linejoin: round; }
 .heart-icons .heart.full { fill: var(--them); }
 .heart-icons .heart.lost { fill: var(--muted); }
-#app[data-screen="shop"] .hud .gold { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px 2px 4px; color: var(--outline); background: var(--paper); border: var(--bw) solid var(--outline); border-radius: 999px; box-shadow: var(--drop); font-family: var(--font-head); }
-#app[data-screen="shop"] .hud .gold::before { content: ""; width: 16px; height: 16px; box-sizing: border-box; border-radius: 50%; background: var(--action); border: var(--bw) solid var(--outline); }
+#app[data-screen="shop"] .hud .gold, .run-bar .gold { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px 2px 4px; color: var(--outline); background: var(--paper); border: var(--bw) solid var(--outline); border-radius: 999px; box-shadow: var(--drop); font-family: var(--font-head); }
+#app[data-screen="shop"] .hud .gold::before, .run-bar .gold::before { content: ""; width: 16px; height: 16px; box-sizing: border-box; border-radius: 50%; background: var(--action); border: var(--bw) solid var(--outline); }
 .round-pill { padding: 2px 10px; color: var(--outline); background: var(--paper); border: var(--bw) solid var(--outline); border-radius: 999px; box-shadow: var(--drop); font-family: var(--font-head); }
 .track { display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px; background: var(--panel); border: var(--bw) solid var(--outline); border-radius: 999px; }
 .track-dot { width: 28px; height: 28px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: var(--bw) solid var(--outline); background: var(--ground); color: var(--muted); font-family: var(--font-head); font-size: 13px; line-height: 1; }
@@ -1460,8 +1460,8 @@ button.reroll-btn:disabled .cost-chip { background: var(--soft); }
   #app[data-screen="shop"] .topbar { min-height: 84px; border-bottom: 0; }
   #app[data-screen="shop"] .topbar .hud { gap: 18px; }
   .heart-icons .heart { width: 28px; height: 28px; }
-  #app[data-screen="shop"] .hud .gold { padding: 4px 14px 4px 6px; font-size: 22px; gap: 8px; }
-  #app[data-screen="shop"] .hud .gold::before { width: 26px; height: 26px; }
+  #app[data-screen="shop"] .hud .gold, .run-bar .gold { padding: 4px 14px 4px 6px; font-size: 22px; gap: 8px; }
+  #app[data-screen="shop"] .hud .gold::before, .run-bar .gold::before { width: 26px; height: 26px; }
   #app[data-screen="shop"] .line-head .next-opp { margin-right: 8px; font-size: 16px; white-space: nowrap; }
   #app[data-screen="shop"] .line-head .label { flex: 1 1 auto; }
   #app[data-screen="shop"] .shop-foot { border-top: 0; justify-content: flex-end; gap: 14px; }
@@ -1519,4 +1519,32 @@ button.reroll-btn:disabled .cost-chip { background: var(--soft); }
 /* The phone's bench label fits its 40 px column in both languages ("ЗАПАС" was clipped). */
 @media (max-width: 1023.98px) {
   #app[data-screen="shop"] .label.bench-label { font-size: 10px; letter-spacing: 0.02em; }
+}
+
+/* M5-4: the fight plays on the run board. The shop's top bar (round or track,
+ * hearts, gold) heads the battle's HUD; the fight fills the board left of the
+ * docked column (Why, Log, the card clicked), the result shows on it. */
+.run-bar { display: inline-flex; align-items: center; gap: 8px; flex: none; min-width: 0; }
+.hud > .run-bar { flex: none; }
+.bv-unit-body { display: none; }
+@media (max-width: 1023.98px) {
+  /* The phone's HUD row holds the bar: one row, so the fight keeps its height at 360×640. */
+  .run-bar .heart-icons .heart { width: 16px; height: 16px; }
+  .run-bar .gold { padding: 0 8px 0 3px; gap: 3px; }
+  .run-bar .gold::before { width: 13px; height: 13px; }
+  .run-bar .round-pill { padding: 0 8px; }
+  /* Who's next stays on one line beside the champion's pin (a long bot name wrapped it, and round 8 scrolled in RU). */
+  #app[data-screen="shop"] .opp .next-opp { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Its name is on the Them label; the row keeps the turn. */
+  #app[data-screen="battle"] .bv-screen > .hud:has(> .run-bar) > .who { display: none; }
+  .bv-lab-who { text-transform: none; }
+}
+@media (min-width: 1024px) {
+  #app[data-screen="battle"] .bv-screen > .hud:has(> .run-bar) { min-height: 84px; font-size: 22px; gap: 14px; }
+  .run-bar { gap: 14px; }
+  #app[data-screen="battle"] .bv-sheet[data-tab="unit"] .bv-why-body, #app[data-screen="battle"] .bv-sheet[data-tab="unit"] .bv-log { display: none; }
+  #app[data-screen="battle"] .bv-sheet[data-tab="unit"] .bv-unit-body { display: flex; }
+}
+@media (min-width: 1024px) and (max-height: 820px) {
+  #app[data-screen="battle"] .bv-screen > .hud:has(> .run-bar) { min-height: 60px; }
 }

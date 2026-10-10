@@ -346,6 +346,7 @@ try {
     await page.getByTestId("battle-end").waitFor({ timeout: 10_000 });
     if (round === 2) await battleSounds();
     if (round === 1) await shot("battle");
+    await runBoardFight(round, crown);
     if (round === 1) await logFirst("battle opens");
     if (round === 1) await whyOnDesktop();
     if (round === 1) await desktopBattle();
@@ -355,6 +356,7 @@ try {
     // R2-17 batch E: the end card is the fight's one result: the round
     // fought, hearts and record, and its button goes straight on.
     await page.getByTestId("end-card").waitFor({ timeout: 10_000 });
+    await runBoardResult(round, crown);
     const runLine = (await page.getByTestId("end-run").textContent().catch(() => "")) ?? "";
     if (!(crown ? /CROWN/ : new RegExp(`R${round}/12`)).test(runLine) || !/[♥♡]/.test(runLine) || !/\d+W/.test(runLine)) errors.push(`end card: run line "${runLine}" after round ${round}`);
     const done = (await page.getByTestId("battle-done").textContent()) ?? "";
@@ -527,6 +529,49 @@ try {
   await page.waitForTimeout(200);
   if (await page.getByTestId("inspector").count()) errors.push("1023px: the inspector shows on the phone layout");
   await shot("shop-1023");
+  /** M5-4 (#892): the fight plays on the run board. The run's track (its
+   * dots and the Crown), hearts and gold stay in the top bar; the fight
+   * fills the board's main area, left of the docked column (Why/Log), never
+   * a full-screen swap. A fighting card's click shows that card in the
+   * column. The fought round's dot stays "now" until the end card. */
+  async function runBoardFight(round, crown) {
+    const bar = page.getByTestId("run-bar");
+    if (!(await bar.isVisible().catch(() => false))) return void errors.push(`run board: round ${round}'s fight has no run bar (track, hearts, gold)`);
+    if (!(await bar.locator(".track .track-dot.crown").count())) errors.push("run board: the fight's top bar has no run track ending in the Crown");
+    if (!(await bar.locator(".heart-icons").count())) errors.push("run board: the fight's top bar has no hearts");
+    if (!crown && !(await bar.getByTestId("gold").count())) errors.push("run board: the fight's top bar has no gold");
+    const now = await bar.locator(".track-dot.now").count();
+    if (now !== 1) errors.push(`run board: ${now} dots are "now" during round ${round}'s fight`);
+    const [b, col, board] = [await bar.boundingBox(), await page.getByTestId("trace").boundingBox(), await page.getByTestId("battle-you").boundingBox()];
+    if (!col || col.width < 200) errors.push("run board: no docked column beside the fight");
+    else if (board && board.x + board.width > col.x + 1) errors.push("run board: the fight runs under the docked column");
+    if (b && board && board.y < b.y + b.height) errors.push("run board: the fight sits over the top bar");
+    if (round !== 1) return;
+    // A fighting card (clicked low: its top opens a trace) shows in the column, not over the board.
+    const card = page.locator('[data-testid="battle-you"] .bv-card').first();
+    const cb = await card.boundingBox();
+    if (!cb) return;
+    await page.mouse.click(cb.x + cb.width / 2, cb.y + cb.height - 20);
+    const docked = page.locator('[data-testid="trace"] [data-testid="now-sheet"]');
+    await docked.waitFor({ timeout: 2_000 }).catch(() => errors.push("run board: a fighting card's click didn't show it in the docked column"));
+    if (await page.getByTestId("overlay").isVisible().catch(() => false)) errors.push("run board: a fighting card opened over the board, not in the column");
+    await shot("battle-card-docked");
+    await page.keyboard.press("Escape");
+    await docked.waitFor({ state: "detached", timeout: 2_000 }).catch(() => errors.push("run board: Esc didn't close the docked card"));
+    if (await page.getByTestId("run-menu").count()) { errors.push("run board: Esc on the docked card opened the run menu"); await page.keyboard.press("Escape"); }
+  }
+  /** M5-4: the result in place: the bar stays, the fought round's dot turns won or lost, the end card sits on the board. */
+  async function runBoardResult(round, crown) {
+    const bar = page.getByTestId("run-bar");
+    if (!(await bar.isVisible().catch(() => false))) return void errors.push(`run board: round ${round}'s result has no run bar`);
+    if (!crown) {
+      const cls = (await bar.locator(".track-dot").nth(round - 1).getAttribute("class").catch(() => "")) ?? "";
+      if (!/\b(win|loss|draw)\b/.test(cls)) errors.push(`run board: round ${round}'s dot is "${cls}" on the end card, not won or lost`);
+    }
+    const [b, e] = [await bar.boundingBox(), await page.getByTestId("end-card").boundingBox()];
+    if (b && e && e.y < b.y + b.height) errors.push("run board: the end card covers the top bar");
+  }
+
   /** Round 3, note 16: a battle's sounds, read off window.__sfx. It opens
    * with "start", plays a hit, zap or block as waves land, makes none on ←
    * (a step) or a timeline jump, and plays its end sound once: not again
@@ -614,7 +659,7 @@ try {
       await page.mouse.down();
       await page.mouse.move(to.x + to.width / 2, to.y + 10, { steps: 6 });
       await page.mouse.up();
-      const hud = (await page.locator(".hud span").nth(2).textContent()) ?? "";
+      const hud = (await page.getByTestId("battle-turn").textContent()) ?? "";
       const label = (t) => (Number(t) >= 1 ? `T${t}` : "Start");
       if (hud !== label(turn)) errors.push(`timeline: dragged to turn ${turn}, the board shows ${hud}`);
       if (!(await turns.nth(target).evaluate((e) => e.classList.contains("on")))) errors.push("timeline: the dragged-to turn isn't lit");
@@ -627,7 +672,7 @@ try {
         if (!(await block.count())) continue;
         const bb = await block.boundingBox();
         await page.mouse.click(bb.x + 1, bb.y + bb.height - 4);
-        const at = (await page.locator(".hud span").nth(2).textContent()) ?? "";
+        const at = (await page.getByTestId("battle-turn").textContent()) ?? "";
         if (at !== label(t)) errors.push(`timeline: clicked the start of ${label(t)}'s block, the HUD reads ${at}`);
       }
       // A mark's click jumps to its own beat.
@@ -705,7 +750,7 @@ try {
           const column = await page.locator(".bv-screen").boundingBox();
           if (!panel || !column || panel.x < column.x + column.width) errors.push(`why: the panel ${JSON.stringify(panel)} covers the battle column ${JSON.stringify(column)}`);
           await shot("battle-why"); await noHScroll("battle-why");
-          const hud = () => page.locator(".hud span").nth(2).textContent();
+          const hud = () => page.getByTestId("battle-turn").textContent();
           const before = await hud();
           await steps.nth(kinds.indexOf("event")).click();
           const after = await hud();

@@ -101,7 +101,8 @@ function runTrack(run: RunView): HTMLElement {
   for (const f of run.fights) if (f.round <= rules.rounds) last.set(f.round, f.outcome);
   const dots = Array.from({ length: rules.rounds }, (_, i) => {
     const r = i + 1;
-    const cls = r === run.round ? "now" : last.get(r) ?? (r < run.round ? "draw" : "");
+    // A round fought shows its result, even as the run ends on it (the fight's end card, M5-4).
+    const cls = last.get(r) ?? (r === run.round ? "now" : r < run.round ? "draw" : "");
     return h("span", { class: `track-dot ${cls}` }, String(r));
   });
   const crown = h("span", { class: `track-dot crown${run.round > rules.rounds ? " now" : ""}`, "aria-hidden": "true" }, "👑");
@@ -746,7 +747,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     guarded(err, async () => {
       await Promise.allSettled([...previewsOut]);
       const res = await api.decide(run.runId, d);
-      if (res.fight) return fightScreens(res.run, res.fight, content);
+      if (res.fight) return fightScreens(res.run, res.fight, content, run);
       play(shopSound(d, run, res.run));
       shopScreen(res.run, content, "", select, offer);
     });
@@ -1479,7 +1480,7 @@ function copiesBadge(u: LineUnit): HTMLElement {
 
 // ---------- battle, then result ----------
 
-async function fightScreens(run: RunView, fight: FightResult, content: MvpContent): Promise<void> {
+async function fightScreens(run: RunView, fight: FightResult, content: MvpContent, before: RunView = run): Promise<void> {
   let battle: BattleRecord;
   try {
     battle = await api.battle(fight.battleId);
@@ -1493,7 +1494,18 @@ async function fightScreens(run: RunView, fight: FightResult, content: MvpConten
     return shopScreen(now, content, t("fight.replayFailed", { word, name: fight.opponent.player.name, lost, why }));
   }
   music("battle", run.runId);
-  battleScreen({ battle, content, you: "A", fight, run, outro: outroOf(run, fight, content), onDone: () => shopScreen(run, content) });
+  battleScreen({ battle, content, you: "A", fight, run, outro: { ...outroOf(run, fight, content), bar: (over) => runBar(over ? run : before, before) }, onDone: () => shopScreen(run, content) });
+}
+
+/** The shop's top bar, on the fight (M5-4: one run board): the round (the
+ * track on desktop), hearts and gold; the Crown has no gold. The phone's pill
+ * names the round fought (`fought`), as the end card does. */
+function runBar(run: RunView, fought: RunView = run): HTMLElement[] {
+  return [
+    isDesktop() ? runTrack(run) : h("span", { class: "round-pill", "data-testid": "round" }, roundLabel(fought.round)),
+    heartIcons(run.hearts),
+    ...(run.phase === "crown" || run.round > rules.rounds ? [] : [h("span", { class: "gold", "data-testid": "gold" }, t("shop.gold", { n: run.gold }))]),
+  ];
 }
 
 /** What the battle's end card adds for a run's fight (R2-17 batch E): it is
