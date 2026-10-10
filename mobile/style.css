@@ -1,59 +1,171 @@
-/* "B · Arena": dark, cyan for you, magenta for the ghost, chamfered cards. */
+/* "C · Toybox" (mission 5, M5-1): thick dark outlines, hard drop shadows,
+ * Lilita One headings over Rubik. Colour comes only from these roles; one
+ * means your side (--you), one theirs (--them), one the action (--action).
+ * Three palettes share the roles (canvas Toybox-Palettes, C1/C2/C3 boards):
+ * Night Plum is the default, Ink & Brass and Felt Table are picked in
+ * settings (theme.ts puts data-theme on <html>; a .swatch takes one too).
+ * The first eight are the palette table's roles: Ground, Panel, Outline,
+ * Action, Power, Card (--paper), Your side, Their side; the rest are the
+ * boards' shades of them (dot grid, muted lines, dim text, card faces…). */
+:root, .swatch[data-theme="plum"] {
+  --ground: #241d33;
+  --panel: #32294a;
+  --outline: #120e1c;
+  --action: #f0c24b;
+  --power: #e99a45;
+  --paper: #fbf7f0;
+  --you: #3fb9a0;
+  --them: #e07a86;
+  --dots: #2a2240;
+  --muted: #75699a;
+  --them-deep: #d0566a;
+  --icon-fill: #4a4068;
+  --dim: #b1a9c6;
+  --face: #e6e6f0;
+  --awoken: #b9a6e0;
+  --cost: #f6dc96;
+  --ink-dim: #3e3459;
+  --sheet: #f4ecdf;
+  --tint-them: #f4dbe0;
+  --tint-action: #f7e9c4;
+  --face-you: #d6efe7;
+  --level: #bf7425;
+  --loss: #a83246;
+  --soft: #d6d0e4;
+}
+:root[data-theme="brass"], .swatch[data-theme="brass"] {
+  --ground: #1b2133;
+  --panel: #252d45;
+  --outline: #0e1220;
+  --action: #e8b44a;
+  --power: #e0913a;
+  --paper: #f6f1e6;
+  --you: #3fa98f;
+  --them: #d9765f;
+  --dots: #222a40;
+  --muted: #5a6584;
+  --them-deep: #c8553d;
+  --icon-fill: #3d4763;
+  --dim: #a9b2c7;
+  --face: #dfe5ee;
+  --awoken: #a9b6d9;
+  --cost: #f3d48e;
+  --ink-dim: #313a55;
+  --sheet: #efe7d6;
+  --tint-them: #f3d9cf;
+  --tint-action: #f6e7c1;
+  --face-you: #d7ede4;
+  --level: #b86a1f;
+  --loss: #a83a26;
+  --soft: #cdd3e0;
+}
+:root[data-theme="felt"], .swatch[data-theme="felt"] {
+  --ground: #1f3229;
+  --panel: #2a4538;
+  --outline: #101a15;
+  --action: #e6b93d;
+  --power: #e2893a;
+  --paper: #f7f2e4;
+  --you: #5ab0d6;
+  --them: #d0644f;
+  --dots: #253a30;
+  --muted: #6a8a7a;
+  --them-deep: #c24a3a;
+  --icon-fill: #416253;
+  --dim: #a9bfae;
+  --face: #e3eadf;
+  --awoken: #c9b6e0;
+  --cost: #f2d98a;
+  --ink-dim: #355345;
+  --sheet: #efe6cf;
+  --tint-them: #f2d8cd;
+  --tint-action: #f5e6bd;
+  --face-you: #d8ecf5;
+  --level: #b4621c;
+  --loss: #a2321f;
+  --soft: #d2dfd4;
+}
+/* Shared by every palette: keyword tones (toned down to sit on any ground),
+ * tiers, and the names the rest of this file uses. */
 :root {
-  --bg: #07080c;
-  --panel: #10131b;
-  --line: #1f2533;
-  --text: #e8ecf4;
-  --dim: #8a93a6;
-  --you: #25e6d4;
-  --ghost: #ff3d7f;
-  --gold: #ffcc4d;
+  --text: var(--paper);
+  --line: var(--muted);
+  --k-pwr: var(--power);
+  --k-hp: #e5636f;
+  --k-shield: #6fa8e8;
+  --k-heal: #5cc98a;
+  --k-str: #f0a34e;
+  --k-curse: #d877b4;
+  --k-poison: #a98be0;
+  --k-freeze: #7cc7e6;
+  --k-bless: #f2d27a;
+  --k-silence: #a8a2b8;
+  --k-dmg: #ec6a50;
+  --k-summon: #4fc2b4;
+  --k-lock: #8fc6e6;
+  --k-plain: var(--soft);
+  --qr-white: #ffffff;
+  --shade: #0009;
   /* Tier colours (R4-4): the I–IV numeral on cards, sheets and Codex chips. */
-  --tier-1: #a8b3c7;
-  --tier-2: #3fdc8f;
-  --tier-3: #5aa7ff;
-  --tier-4: #c08cff;
-  --chamfer: 10px;
-  font-family: "Rajdhani", system-ui, sans-serif;
+  --tier-1: #b8b2c8;
+  --tier-2: #5cc98a;
+  --tier-3: #6fa8e8;
+  --tier-4: #b69be6;
+  --bw: 2px;
+  --radius: 12px;
+  --drop: 0 3px 0 var(--outline);
+  --font-head: "Lilita One", "Arial Rounded MT Bold", sans-serif;
+  --head-weight: 400;
+  --font-body: "Rubik", "Trebuchet MS", sans-serif;
+  --font-num: "Rubik", "Trebuchet MS", sans-serif;
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
   color-scheme: dark;
 }
+/* Lilita One has no Cyrillic: in Russian, headings and buttons take Rubik
+ * semibold instead of a plain fallback (700 widened the shop's buttons). */
+:root:lang(ru) { --font-head: "Rubik", "Trebuchet MS", sans-serif; --head-weight: 600; }
+/* end of tokens */
 * { box-sizing: border-box; }
-html, body { margin: 0; background: var(--bg); color: var(--text); }
-body { min-height: 100dvh; font-size: 17px; -webkit-tap-highlight-color: transparent; }
+/* The ground: a faint dot grid, as on the Toybox boards. */
+html, body { margin: 0; background-color: var(--ground); background-image: radial-gradient(var(--dots) 1.6px, transparent 1.6px); background-size: 22px 22px; color: var(--text); }
+body { min-height: 100dvh; font-size: 16px; font-weight: 500; -webkit-tap-highlight-color: transparent; }
 #app { max-width: 480px; margin: 0 auto; padding: 12px 12px calc(16px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; min-height: 100dvh; }
-h1, h2, .display { font-family: "Chakra Petch", sans-serif; letter-spacing: 0.04em; margin: 0; }
-h1 { font-size: 30px; color: var(--you); }
+h1, h2, .display { font-family: var(--font-head); font-weight: var(--head-weight); letter-spacing: 0.01em; margin: 0; }
+h1 { font-size: 30px; color: var(--action); text-shadow: 0 3px 0 var(--outline); }
 h2 { font-size: 20px; }
-.mono, .num { font-family: "IBM Plex Mono", monospace; }
+.mono, .num { font-family: var(--font-num); }
 .dim { color: var(--dim); }
-.panel { background: var(--panel); border: 1px solid var(--line); padding: 12px; clip-path: polygon(var(--chamfer) 0, 100% 0, 100% calc(100% - var(--chamfer)), calc(100% - var(--chamfer)) 100%, 0 100%, 0 var(--chamfer)); }
+.panel { background: var(--panel); border: var(--bw) solid var(--outline); padding: 12px; border-radius: var(--radius); box-shadow: var(--drop); }
 button, input { font: inherit; min-height: 44px; }
-button { background: transparent; color: var(--you); border: 1px solid var(--you); padding: 0 16px; font-family: "Chakra Petch", sans-serif; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
-button.primary { background: var(--you); color: var(--bg); }
-button.danger { color: var(--ghost); border-color: var(--ghost); }
+button { background: var(--panel); color: var(--text); border: var(--bw) solid var(--outline); padding: 0 16px; font-family: var(--font-head); font-weight: var(--head-weight); letter-spacing: 0.02em; text-transform: none; cursor: pointer; border-radius: var(--radius); box-shadow: var(--drop); }
+button:active:not(:disabled) { translate: 0 2px; box-shadow: 0 1px 0 var(--outline); }
+button.primary { background: var(--action); color: var(--outline); }
+button.danger { background: var(--them-deep); color: var(--outline); }
 button:disabled { opacity: 0.35; cursor: default; }
 /* M3-2: a button off for a reason said beside it ("New idea"): muted, unfilled, nothing to press. */
-button.off:disabled, button.primary.off:disabled { opacity: 1; background: transparent; color: var(--dim); border-color: var(--line); pointer-events: none; }
+button.off:disabled, button.primary.off:disabled { opacity: 1; background: transparent; color: var(--dim); border-color: var(--line); box-shadow: none; pointer-events: none; }
 .off-row { display: flex; align-items: center; gap: 12px; }
 .off-row > button { flex: none; }
-input { width: 100%; background: var(--panel); color: var(--text); border: 1px solid var(--line); padding: 0 12px; }
+input { width: 100%; background: var(--panel); color: var(--text); border: var(--bw) solid var(--outline); padding: 0 12px; }
 .row { display: flex; gap: 8px; align-items: center; }
 .row.spread { justify-content: space-between; }
 .grow { flex: 1; }
 .stack { display: flex; flex-direction: column; gap: 8px; }
 /* `hidden` wins over any display rule (a .stack with hidden showed anyway, R2-7). */
 [hidden] { display: none !important; }
-.hud { display: flex; justify-content: space-between; gap: 8px; font-family: "IBM Plex Mono", monospace; font-size: 15px; }
+.hud { display: flex; justify-content: space-between; gap: 8px; font-family: var(--font-num); font-size: 15px; }
 .hud > * { flex: none; }
-.hud .gold { color: var(--gold); }
-.hud .hearts { color: var(--ghost); }
+.hud .gold { color: var(--action); }
+.hud .hearts { color: var(--them); }
 /* Compact cards (round 2, R2-7): 64×84 at 360px, five a row with 4px gaps. */
 .slots { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
-.card { position: relative; height: 84px; min-width: 0; background: var(--panel); border: 1px solid var(--line); padding: 5px 3px 4px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); cursor: pointer; -webkit-user-select: none; user-select: none; }
-.card.you { border-color: color-mix(in srgb, var(--you) 45%, transparent); }
-.card.ghost { border-color: color-mix(in srgb, var(--ghost) 45%, transparent); }
-.card.selected { outline: 2px solid var(--you); outline-offset: -2px; }
-.card.empty { cursor: default; opacity: 0.4; border-style: dashed; }
+.card { position: relative; height: 84px; min-width: 0; background: var(--panel); border: var(--bw) solid var(--outline); padding: 5px 2px 4px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; border-radius: var(--radius); cursor: pointer; -webkit-user-select: none; user-select: none; }
+.card { box-shadow: var(--drop); }
+.card.you { border-color: var(--you); }
+.card.ghost { border-color: var(--them); }
+.card.selected { outline: 3px solid var(--action); outline-offset: -1px; }
+.card.empty { cursor: default; opacity: 0.6; background: transparent; border-color: var(--muted); border-style: dashed; box-shadow: none; }
 /* The bench (R3-14): a row just under the line, its label in the first
  * column. On the phone its cards are short and wide (emoji, then name over
  * stats and copies), so round 8 with a full bench still fits 640 px. */
@@ -99,7 +211,7 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .card .icons.tiered { padding-right: 12px; }
 .card .icons .ci { flex: none; display: inline-flex; }
 .card .icons .ci:nth-of-type(n+4), .card .icons .desk-more, .card .icons .mid-more { display: none; }
-.card .icons .more { flex: none; font-family: "IBM Plex Mono", monospace; font-size: 9px; line-height: 11px; font-weight: 600; color: var(--dim); }
+.card .icons .more { flex: none; font-family: var(--font-num); font-size: 9px; line-height: 11px; font-weight: 600; color: var(--dim); }
 .card:not(.bv-card) .emoji { margin-top: 0; }
 /* A battle card shows its whole When · Who · Does line in the top-left corner
  * (R3-19, note 8): 3 then "+" on the phone, 5 then "+n" on the desktop. It
@@ -113,14 +225,14 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .pipped { position: relative; display: inline-flex; line-height: 0; }
 .pip { position: absolute; top: -1px; right: -2px; width: 4px; height: 4px; border-radius: 50%; box-shadow: 0 0 0 1px var(--panel); }
 .pip-ally { background: var(--you); }
-.pip-enemy { background: var(--ghost); }
+.pip-enemy { background: var(--them); }
 .pip-any { background: var(--dim); }
 /* The tier numeral in a serif face, bold and brighter, so "I" reads as a
  * numeral and not a faint tick (R3-26). */
 .card .tier { position: absolute; top: 4px; right: 4px; font-family: Georgia, "Times New Roman", serif; font-size: 10px; line-height: 10px; font-weight: 700; letter-spacing: 0.5px; color: color-mix(in srgb, var(--text) 75%, var(--dim)); }
 /* M2-9: NEW on a unit that entered in the last 3 days, and the 💡 of a
  * player's idea, small on the card's sides under its icon line. */
-.new-badge { position: absolute; top: 17px; left: 2px; padding: 0 3px; font-size: 8px; line-height: 11px; font-weight: 700; letter-spacing: 0.4px; color: var(--bg); background: var(--gold, #e3b341); border-radius: 2px; pointer-events: none; }
+.new-badge { position: absolute; top: 17px; left: 2px; padding: 0 3px; font-size: 8px; line-height: 11px; font-weight: 700; letter-spacing: 0.4px; color: var(--outline); background: var(--action); border-radius: 2px; pointer-events: none; }
 .new-badge.inline { position: static; display: inline-block; margin-right: 6px; vertical-align: 1px; }
 .card .by-mark { position: absolute; top: 16px; right: 2px; font-size: 9px; line-height: 11px; pointer-events: none; }
 .lib-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; }
@@ -131,26 +243,26 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .tier.t3 { color: var(--tier-3); }
 .tier.t4 { color: var(--tier-4); }
 .card .foot { min-height: 12px; display: flex; align-items: center; justify-content: center; max-width: 100%; }
-.discovered { font-size: 10px; color: var(--dim); font-family: "IBM Plex Mono", monospace; }
-.card .stats { font-family: "IBM Plex Mono", monospace; font-size: 12px; font-weight: 600; line-height: 14px; }
-.card .stats .p { color: var(--gold); }
-.card .stats .h { color: var(--ghost); }
-.card .copies { font-family: "IBM Plex Mono", monospace; font-size: 10px; line-height: 1; color: var(--you); letter-spacing: 0.04em; }
-.card .copies.tag { font-size: 8px; color: var(--gold); }
-.card .cost { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--gold); }
+.discovered { font-size: 10px; color: var(--dim); font-family: var(--font-num); }
+.card .stats { font-family: var(--font-num); font-size: 12px; font-weight: 600; line-height: 14px; }
+.card .stats .p { color: var(--action); }
+.card .stats .h { color: var(--them); }
+.card .copies { font-family: var(--font-num); font-size: 10px; line-height: 1; color: var(--you); letter-spacing: 0.04em; }
+.card .copies.tag { font-size: 8px; color: var(--action); }
+.card .cost { font-family: var(--font-num); font-size: 12px; color: var(--action); }
 .label { font-size: 13px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
-.outcome { font-family: "Chakra Petch", sans-serif; font-size: 44px; text-align: center; }
+.outcome { font-family: var(--font-head); font-weight: var(--head-weight); font-size: 44px; text-align: center; }
 .outcome.win { color: var(--you); }
-.outcome.loss { color: var(--ghost); }
+.outcome.loss { color: var(--them); }
 .outcome.draw { color: var(--dim); }
-.error { color: var(--ghost); font-size: 15px; min-height: 20px; }
+.error { color: var(--them); font-size: 15px; min-height: 20px; }
 .spacer { flex: 1; }
 /* Slice 8: home, shop, result. */
 .small { font-size: 14px; }
 /* Home's ideas line (M2-3): quiet, centred over Play; it opens My ideas (M2-4). */
 .title-menu .ideas { text-align: center; align-self: center; }
 /* My ideas and the write screen (M2-4, screens/ideas.ts). */
-.idea-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.idea-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: var(--bw) solid var(--outline); }
 .idea-row:last-child { border-bottom: none; }
 .idea-row .grow { flex: 1; min-width: 0; }
 .idea-text { overflow-wrap: anywhere; white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -158,11 +270,11 @@ input { width: 100%; background: var(--panel); color: var(--text); border: 1px s
 .idea-row.ready .idea-ready { color: var(--you); }
 .idea-quote { overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .pick-list { gap: 8px; }
-button.pick-arch { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 72px; padding: 10px 12px; text-align: left; text-transform: none; letter-spacing: 0; font-family: inherit; background: var(--panel); color: var(--text); border: 1px solid var(--line); }
+button.pick-arch { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 72px; padding: 10px 12px; text-align: left; text-transform: none; letter-spacing: 0; font-family: inherit; background: var(--panel); color: var(--text); border: var(--bw) solid var(--outline); }
 button.pick-arch[aria-pressed="true"] { border-color: var(--you); background: color-mix(in srgb, var(--you) 10%, var(--panel)); }
 .pick-emoji { font-size: 32px; line-height: 1; flex: none; }
 .pick-words { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.pick-name { font-family: "Chakra Petch", sans-serif; font-size: 18px; font-weight: 600; }
+.pick-name { font-family: var(--font-head); font-weight: var(--head-weight); font-size: 18px; font-weight: 600; }
 button.pick-none { align-self: center; }
 .pick-main { display: contents; }
 .pick-cards { display: flex; gap: 8px; justify-content: center; }
@@ -186,12 +298,12 @@ button.pick-none { align-self: center; }
 /* M3-5: a proposal's title names its unit; its line and current rule sit over the text box, and over the readings. */
 h1.h1-long { font-size: 22px; line-height: 1.2; overflow-wrap: anywhere; }
 .propose-now { font-size: 14px; line-height: 1.35; padding: 8px 10px; overflow-wrap: anywhere; }
-button.propose-now { display: block; width: 100%; text-align: left; text-transform: none; letter-spacing: 0; font-family: inherit; font-weight: 400; font-size: 14px; line-height: 1.35; padding: 8px 10px; color: var(--text); background: var(--panel); border: 1px solid var(--line); min-height: 0; }
+button.propose-now { display: block; width: 100%; text-align: left; text-transform: none; letter-spacing: 0; font-family: inherit; font-weight: 400; font-size: 14px; line-height: 1.35; padding: 8px 10px; color: var(--text); background: var(--panel); border: var(--bw) solid var(--outline); min-height: 0; }
 button.propose-now.inspected { border-color: var(--you); }
-.idea-box { width: 100%; font: inherit; background: var(--panel); color: var(--text); border: 1px solid var(--line); padding: 10px 12px; resize: vertical; min-height: 140px; }
+.idea-box { width: 100%; font: inherit; background: var(--panel); color: var(--text); border: var(--bw) solid var(--outline); padding: 10px 12px; resize: vertical; min-height: 140px; }
 button.small { min-height: 44px; font-size: 14px; padding: 0 12px; }
 .center { text-align: center; }
-.ghost-name { color: var(--ghost); font-weight: 600; }
+.ghost-name { color: var(--them); font-weight: 600; }
 /* A player's name (ui/dom.ts who()) stays on one line, never split at a
  * hyphen or a space; too long for its place, it ends in "…". In a row it
  * gives way first, and what sits beside it keeps its width (.keep). */
@@ -202,9 +314,9 @@ button.small { min-height: 44px; font-size: 14px; padding: 0 12px; }
 .records { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; text-align: center; }
 .records .num { font-size: 18px; }
 .records .label { font-size: 11px; letter-spacing: 0.04em; }
-.champion { border-color: color-mix(in srgb, var(--ghost) 40%, var(--line)); }
+.champion { border-color: color-mix(in srgb, var(--them) 40%, var(--line)); }
 .games { display: flex; flex-wrap: wrap; gap: 6px; }
-button.game { text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; }
+button.game { text-transform: none; letter-spacing: 0; font-family: var(--font-body); }
 /* The title menu (R2-10): one big Continue/Play, the rest a tap away. */
 .title-menu [data-testid="play"] { min-height: 56px; font-size: 18px; }
 .title-menu .hearts { letter-spacing: 0.04em; }
@@ -224,13 +336,22 @@ button.menu-btn { min-width: 44px; padding: 0 10px; font-size: 18px; line-height
 .sound-row input[type="range"]:disabled { opacity: 0.4; }
 .lang-row { gap: 10px; }
 .lang-row button { flex: 1; text-transform: none; letter-spacing: 0; }
-.lang-row button:not(.lang-on) { color: var(--dim); border-color: var(--dim); }
+.lang-row button:not(.lang-on), .theme-row button:not(.theme-on) { color: var(--dim); box-shadow: none; }
+.lang-row button.lang-on, .theme-row button.theme-on { background: var(--you); color: var(--outline); }
+/* The palette switch (M5-1): three buttons, each with its swatch. */
+.theme-row { gap: 8px; }
+.theme-row button { flex: 1; min-width: 0; padding: 4px 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 14px; line-height: 1.1; }
+.swatch { display: inline-flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--ground); border: var(--bw) solid var(--outline); }
+.swatch i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--outline); }
+.swatch i:nth-child(1) { background: var(--you); }
+.swatch i:nth-child(2) { background: var(--them); }
+.swatch i:nth-child(3) { background: var(--action); }
 details.dev { color: var(--dim); font-size: 13px; }
 details.dev summary { min-height: 44px; line-height: 44px; cursor: pointer; }
 .opp { font-size: 15px; min-height: 44px; }
 .opp > :first-child { flex: 1 1 0; min-width: 0; }
 .pin { display: flex; min-width: 0; }
-button.pin-btn { display: flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 10px; color: var(--text); border-color: color-mix(in srgb, var(--ghost) 55%, transparent); text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-size: 15px; max-width: 200px; min-width: 0; overflow: hidden; }
+button.pin-btn { display: flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 10px; color: var(--text); border-color: color-mix(in srgb, var(--them) 55%, transparent); text-transform: none; letter-spacing: 0; font-family: var(--font-body); font-size: 15px; max-width: 200px; min-width: 0; overflow: hidden; }
 /* The pill's name keeps its room (a long one ends in "…" at 120px); the
  * team's emoji give way. */
 .pin-btn > :first-child, .pin-btn .who { flex: none; }
@@ -240,32 +361,32 @@ button.pin-btn { display: flex; align-items: center; gap: 4px; min-height: 44px;
 .actions:empty { display: none; }
 .actions { gap: 6px; }
 .actions button { padding: 0 8px; min-width: 44px; flex: none; letter-spacing: 0.02em; }
-.card.awoken { border-color: var(--gold); box-shadow: inset 0 0 12px color-mix(in srgb, var(--gold) 22%, transparent); }
-.card.fused { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 10%, var(--panel)); }
-.card.fusable { outline: 2px dashed var(--gold); outline-offset: -2px; }
+.card.awoken { border-color: var(--action); box-shadow: inset 0 0 12px color-mix(in srgb, var(--action) 22%, transparent); }
+.card.fused { border-color: var(--action); background: color-mix(in srgb, var(--action) 10%, var(--panel)); }
+.card.fusable { outline: 2px dashed var(--action); outline-offset: -2px; }
 .card.muted { opacity: 0.35; }
 .card.poor { opacity: 0.45; }
 .card.owned .cost { color: var(--you); }
 /* A locked offer (R3-12): a cool outline, kept through rerolls and rounds. */
-.card.locked { outline: 2px dotted #8fd3ff; outline-offset: -2px; }
-.card.locked .cost { color: #8fd3ff; }
+.card.locked { outline: 2px dotted var(--k-lock); outline-offset: -2px; }
+.card.locked .cost { color: var(--k-lock); }
 .card.locked.poor { opacity: 0.7; }
 .preview-card { width: 64px; margin: 0 auto; }
 .recipe-line { text-align: center; font-size: 12px; }
-.recipe-line .k { color: var(--dim); font-family: "IBM Plex Mono", monospace; font-size: 10px; text-transform: uppercase; }
+.recipe-line .k { color: var(--dim); font-family: var(--font-num); font-size: 10px; text-transform: uppercase; }
 /* The fuse preview's plain warning (R3-26): the fusion hurts your own units or helps the enemy. */
-.fuse-warn { border: 1px solid var(--gold); color: var(--gold); padding: 6px 8px; font-size: 12px; line-height: 1.35; }
+.fuse-warn { border: 1px solid var(--action); color: var(--action); padding: 6px 8px; font-size: 12px; line-height: 1.35; }
 .reveal { text-align: center; }
-.after.awakens .label { color: var(--gold); font-weight: 700; }
+.after.awakens .label { color: var(--action); font-weight: 700; }
 /* The sheet: the active form's text in a box; "See Awoken" swaps in the other
  * form, gold-bordered, with what changes underlined. */
 .sheet-head h2 { margin: 0; }
 .archetype { font-style: italic; color: var(--dim); margin-top: -4px; }
-.sheet-form { border: 1px solid var(--line); padding: 8px 10px; line-height: 1.35; }
-.sheet-form.other { border-color: var(--gold); }
-.sheet-form.other .label { color: var(--gold); }
-.sheet-form u.changed { text-decoration-color: var(--gold); text-underline-offset: 2px; }
-button.see-awoken { border-color: var(--gold); color: var(--gold); }
+.sheet-form { border: var(--bw) solid var(--outline); padding: 8px 10px; line-height: 1.35; }
+.sheet-form.other { border-color: var(--action); }
+.sheet-form.other .label { color: var(--action); }
+.sheet-form u.changed { text-decoration-color: var(--action); text-underline-offset: 2px; }
+button.see-awoken { border-color: var(--action); color: var(--action); }
 button.link { align-self: flex-start; border: none; background: none; color: var(--dim); padding: 0; min-height: 44px; text-transform: none; letter-spacing: 0; }
 .sheet-actions { position: sticky; bottom: calc(-16px - env(safe-area-inset-bottom)); background: var(--panel); padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); margin-bottom: calc(-16px - env(safe-area-inset-bottom)); z-index: 1; }
 .rules p { margin: 0; line-height: 1.3; }
@@ -274,10 +395,10 @@ button.link { align-self: flex-start; border: none; background: none; color: var
  * the footer sticks at the bottom edge and pads its buttons up by 12px (plus
  * the safe area); its negative margin takes the place of #app's own bottom
  * padding, so the gap is the same at the end of the page. */
-.footer { position: sticky; bottom: 0; z-index: 2; background: var(--bg); padding: 8px 0 calc(12px + env(safe-area-inset-bottom)); margin-bottom: calc(-16px - env(safe-area-inset-bottom)); box-shadow: 0 -12px 16px -4px var(--bg); }
+.footer { position: sticky; bottom: 0; z-index: 2; background: var(--ground); padding: 8px 0 calc(12px + env(safe-area-inset-bottom)); margin-bottom: calc(-16px - env(safe-area-inset-bottom)); box-shadow: 0 -12px 16px -4px var(--ground); }
 .why-sheet .bv-trace-text { margin-top: 2px; }
 /* ui/dom.ts overlay(): a sheet over the screen. */
-.overlay { position: fixed; inset: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 70%, transparent); display: flex; align-items: flex-end; justify-content: center; }
+.overlay { position: fixed; inset: 0; z-index: 10; background: color-mix(in srgb, var(--ground) 70%, transparent); display: flex; align-items: flex-end; justify-content: center; }
 .sheet { width: 100%; max-width: 480px; max-height: 85dvh; overflow-y: auto; background: var(--panel); border-top: 1px solid var(--you); padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
 /* A request is out (main.ts guarded): no taps until it answers. */
 #app.busy button, #app.busy .card { pointer-events: none; }
@@ -289,12 +410,12 @@ button.link { align-self: flex-start; border: none; background: none; color: var
  * trigger badge, outside the card's chamfer clip. */
 .bv-slot { position: relative; min-width: 0; }
 .bv-card { height: 112px; min-height: 0; justify-content: flex-start; gap: 2px; transition: transform 0.15s, box-shadow 0.15s; }
-.bv-card .hpbar { width: calc(100% - 6px); height: 4px; flex: none; margin: 2px 0 1px; border-radius: 2px; background: color-mix(in srgb, var(--line) 80%, var(--bg)); overflow: hidden; }
-.bv-card .hpbar i { display: block; height: 100%; background: var(--vital, #3fdc8f); transition: width 0.2s; }
-.bv-card .hpbar.low i { background: #ff6b4d; }
+.bv-card .hpbar { width: calc(100% - 6px); height: 4px; flex: none; margin: 2px 0 1px; border-radius: 2px; background: color-mix(in srgb, var(--line) 80%, var(--ground)); overflow: hidden; }
+.bv-card .hpbar i { display: block; height: 100%; background: var(--k-heal); transition: width 0.2s; }
+.bv-card .hpbar.low i { background: var(--k-dmg); }
 .bv-card .stats.big { width: 100%; display: flex; justify-content: space-between; padding: 0 3px; font-size: 16px; line-height: 18px; font-weight: 700; }
-.bv-card .stats.big .h { color: #3fdc8f; }
-.bv-card .stats.big .h.hurt { color: #ff6b4d; }
+.bv-card .stats.big .h { color: var(--k-heal); }
+.bv-card .stats.big .h.hurt { color: var(--k-dmg); }
 .bv-card .stat-ic { display: none; margin-right: 1px; vertical-align: -1px; }
 .bv-card .foot { width: 100%; min-height: 27px; margin-top: auto; align-items: flex-end; }
 /* The status row spans the card, so battle.ts measures the room it has, not the chips it holds (R2-17 batch E). */
@@ -302,19 +423,19 @@ button.link { align-self: flex-start; border: none; background: none; color: var
 /* Statuses take up to two rows (six chips; battle.ts turns a seventh into "+n"),
  * and the row keeps its height when empty. */
 .bv-sts { display: flex; flex-wrap: wrap; justify-content: center; align-content: flex-end; gap: 1px 2px; min-height: 27px; max-height: 27px; overflow: hidden; }
-.bv-st { display: inline-flex; align-items: center; gap: 0; font-family: "IBM Plex Mono", monospace; font-size: 10px; line-height: 13px; letter-spacing: -0.04em; }
+.bv-st { display: inline-flex; align-items: center; gap: 0; font-family: var(--font-num); font-size: 10px; line-height: 13px; letter-spacing: -0.04em; }
 .bv-st .ic { width: 11px; height: 11px; }
 .bv-st b { font-weight: 700; }
 .bv-st.more { color: var(--dim); font-weight: 700; }
 /* "+n" opens the unit's live statuses; its tap box reaches past the chip. */
-button.bv-st.more { position: relative; min-height: 0; height: 13px; padding: 0 2px; border: 1px solid var(--line); border-radius: 3px; clip-path: none; background: var(--bg); color: var(--text); font-family: "IBM Plex Mono", monospace; font-size: 10px; line-height: 11px; letter-spacing: -0.04em; text-transform: none; }
+button.bv-st.more { position: relative; min-height: 0; height: 13px; padding: 0 2px; border: var(--bw) solid var(--outline); border-radius: 3px; clip-path: none; background: var(--ground); color: var(--text); font-family: var(--font-num); font-size: 10px; line-height: 11px; letter-spacing: -0.04em; text-transform: none; }
 button.bv-st.more::before { content: ""; position: absolute; inset: -14px -8px -6px; }
-.bv-live-st { display: flex; flex-direction: column; gap: 2px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.bv-live-st { display: flex; flex-direction: column; gap: 2px; padding: 6px 0; border-bottom: var(--bw) solid var(--outline); font-size: 15px; }
 .bv-live-st-head .ic { vertical-align: -3px; }
 /* A status landing on a card's chip: its icon and stacks. */
-.bv-pst { display: inline-flex; align-items: center; gap: 1px; font-family: "IBM Plex Mono", monospace; font-weight: 700; }
+.bv-pst { display: inline-flex; align-items: center; gap: 1px; font-family: var(--font-num); font-weight: 700; }
 .bv-pst .ic { width: 13px; height: 13px; }
-.bv-nodmg { font-family: "Rajdhani", sans-serif; font-size: 12px; color: var(--dim); }
+.bv-nodmg { font-family: var(--font-body); font-size: 12px; color: var(--dim); }
 /* The trigger badge: [When icon] → [Does icon], a pill just outside the
  * card's outer edge (it covers nothing on the card), inside a 44 px tall
  * transparent button so it's big enough to tap. The pill sits in the line's
@@ -323,7 +444,7 @@ button.bv-st.more::before { content: ""; position: absolute; inset: -14px -8px -
 button.bv-badge { position: absolute; z-index: 3; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); min-height: 0; height: 44px; padding: 0; display: flex; align-items: flex-end; border: none; background: transparent; clip-path: none; text-transform: none; letter-spacing: 0; }
 /* The pill pops in (0.6 → 1.15 → 1), not the button: its 44 px tap box keeps its size throughout (R2-17). */
 button.bv-badge .bv-badge-pill { animation: bv-badge calc(0.35s / var(--bv-sp, 1)) ease-out calc(var(--bv-bt, 0s) / var(--bv-sp, 1)) both; }
-.bv-badge-pill { height: 20px; padding: 0 5px; display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; border: 1px solid #ffbf47; border-radius: 11px; background: color-mix(in srgb, #ffbf47 18%, var(--bg)); box-shadow: 0 0 8px color-mix(in srgb, #ffbf47 45%, transparent); }
+.bv-badge-pill { height: 20px; padding: 0 5px; display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; border: 1px solid var(--action); border-radius: 11px; background: color-mix(in srgb, var(--action) 18%, var(--ground)); box-shadow: 0 0 8px color-mix(in srgb, var(--action) 45%, transparent); }
 button.bv-badge.still .bv-badge-pill { animation: none; }
 /* Your line's badges hang below the cards (the chip is on top), toward your label. */
 .bv-line.mine button.bv-badge { bottom: auto; top: calc(100% + 4px); align-items: flex-start; }
@@ -341,15 +462,15 @@ button.bv-badge.past { z-index: 2; }
 .bv-cap-cause { display: inline-flex; vertical-align: -2px; margin-right: 5px; }
 /* A card's When icon flashes gold for 0.4 s when it fires. */
 .bv-card .icons .ci.bv-fired { animation: bv-fired calc(0.4s / var(--bv-sp, 1)) ease-out calc(var(--bv-ftt, 0s) / var(--bv-sp, 1)) both; border-radius: 3px; }
-.bv-card .icons .ci.bv-fired.still { animation: none; color: #ffbf47; background: color-mix(in srgb, #ffbf47 30%, transparent); box-shadow: 0 0 0 1px #ffbf47; }
+.bv-card .icons .ci.bv-fired.still { animation: none; color: var(--action); background: color-mix(in srgb, var(--action) 30%, transparent); box-shadow: 0 0 0 1px var(--action); }
 .bv-card .icons .ci.bv-fired .ic { color: inherit; }
-@keyframes bv-fired { 0% { color: #ffbf47; background: color-mix(in srgb, #ffbf47 55%, transparent); box-shadow: 0 0 6px #ffbf47; transform: scale(1.35); } 100% { background: transparent; box-shadow: none; transform: none; } }
+@keyframes bv-fired { 0% { color: var(--action); background: color-mix(in srgb, var(--action) 55%, transparent); box-shadow: 0 0 6px var(--action); transform: scale(1.35); } 100% { background: transparent; box-shadow: none; transform: none; } }
 /* The gold ring is drawn inside the border, over the padding: the acting card
  * gets 2px more padding on each side, so its name (fitted to the
  * content box, ui/dom.ts fitText) stay clear of the ring. */
-.bv-card.acting { transform: translateY(-3px); box-shadow: 0 0 0 2px var(--gold) inset; padding-left: 4px; padding-right: 4px; }
+.bv-card.acting { transform: translateY(-3px); box-shadow: 0 0 0 2px var(--action) inset; padding-left: 4px; padding-right: 4px; }
 .bv-card.you.acting { background: color-mix(in srgb, var(--you) 16%, var(--panel)); }
-.bv-card.ghost.acting { background: color-mix(in srgb, var(--ghost) 16%, var(--panel)); }
+.bv-card.ghost.acting { background: color-mix(in srgb, var(--them) 16%, var(--panel)); }
 .bv-card.silenced .emoji { filter: grayscale(1); }
 .bv-card.dead { opacity: 0.5; }
 .bv-card.dead .emoji { filter: grayscale(1); }
@@ -369,7 +490,7 @@ button.bv-badge.past { z-index: 2; }
 /* A big hit (4+ damage) shakes harder (round 3, note 14). */
 .bv-card.bv-hit.bv-big { animation-name: bv-shake-big; }
 .bv-card.bv-flash-hit::after, .bv-card.bv-glow::after { content: ""; position: absolute; inset: 0; pointer-events: none; animation: bv-flash calc(0.4s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
-.bv-card.bv-flash-hit::after { background: var(--ghost); }
+.bv-card.bv-flash-hit::after { background: var(--them); }
 .bv-card.bv-glow::after { background: var(--you); }
 /* A killing blow: the shake plays out, the card stands still for 120 ms,
  * then it pops, large, and dims (--bv-dt starts the pop after the shake and
@@ -377,7 +498,7 @@ button.bv-badge.past { z-index: 2; }
 .bv-card.bv-dying { animation: bv-die calc(0.5s / var(--bv-sp, 1)) ease-out calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) forwards; }
 .bv-card.bv-hit.bv-dying { animation: bv-shake calc(0.4s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-t, 0s)) / var(--bv-sp, 1)), bv-die calc(0.5s / var(--bv-sp, 1)) ease-out calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) forwards; }
 .bv-card.bv-hit.bv-big.bv-dying { animation-name: bv-shake-big, bv-die; }
-.bv-skull { position: absolute; z-index: 4; left: 50%; top: 40%; translate: -50% -50%; display: flex; pointer-events: none; opacity: 0; filter: drop-shadow(0 0 4px var(--bg)); animation: bv-skull calc(0.6s / var(--bv-sp, 1)) ease-out calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) both; }
+.bv-skull { position: absolute; z-index: 4; left: 50%; top: 40%; translate: -50% -50%; display: flex; pointer-events: none; opacity: 0; filter: drop-shadow(0 0 4px var(--ground)); animation: bv-skull calc(0.6s / var(--bv-sp, 1)) ease-out calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) both; }
 @keyframes bv-skull { 0% { opacity: 0; transform: scale(0.4); } 30% { opacity: 1; transform: scale(1.5); } 70% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0; transform: scale(1.3); } }
 /* A summoned unit slides in from the clash side: on the phone theirs from
  * below, yours from above (the caption between the lines); on desktop from
@@ -389,22 +510,22 @@ button.bv-badge.past { z-index: 2; }
 /* The big moment's title over the board (note 14): "Crown fight" over the
  * line-up, "Fatigue" as it first sets in; --bv-bn is its length at 1×. */
 .bv-banner { display: none; }
-.bv-banner.on { position: fixed; z-index: 6; left: 50%; top: 42%; translate: -50% -50%; display: flex; align-items: center; gap: 8px; padding: 6px 16px; pointer-events: none; border: 1px solid var(--gold); background: color-mix(in srgb, var(--bg) 88%, transparent); clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); font-family: "Chakra Petch", sans-serif; font-size: 24px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); animation: bv-banner calc(var(--bv-bn, 1.2s) / var(--bv-sp, 1)) ease-out both; }
-.bv-banner.fatigue { border-color: var(--ghost); color: var(--ghost); }
+.bv-banner.on { position: fixed; z-index: 6; left: 50%; top: 42%; translate: -50% -50%; display: flex; align-items: center; gap: 8px; padding: 6px 16px; pointer-events: none; border: 1px solid var(--action); background: color-mix(in srgb, var(--ground) 88%, transparent); border-radius: var(--radius); font-family: var(--font-head); font-weight: var(--head-weight); font-size: 24px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--action); animation: bv-banner calc(var(--bv-bn, 1.2s) / var(--bv-sp, 1)) ease-out both; }
+.bv-banner.fatigue { border-color: var(--them); color: var(--them); }
 @keyframes bv-banner { 0% { opacity: 0; transform: scale(0.8); } 15% { opacity: 1; transform: scale(1.05); } 25% { transform: none; } 80% { opacity: 1; } 100% { opacity: 0; } }
 /* Floats hang in the card's slot. On desktop they rise above the card, into
  * the line's room for them; on the phone (below) over the card's emoji. ±PWR sits over PWR's side, ±HP over HP's. */
-.bv-float { position: absolute; left: 50%; right: auto; width: max-content; max-width: calc(100% - 4px); translate: -50% 0; top: auto; bottom: calc(100% + 2px); z-index: 4; text-align: center; line-height: 20px; pointer-events: none; font-family: "IBM Plex Mono", monospace; font-size: 18px; font-weight: 700; text-shadow: 0 0 4px var(--bg), 0 0 2px var(--bg); white-space: nowrap; overflow: hidden; animation: bv-rise calc(0.9s / var(--bv-sp, 1)) ease-out both; }
+.bv-float { position: absolute; left: 50%; right: auto; width: max-content; max-width: calc(100% - 4px); translate: -50% 0; top: auto; bottom: calc(100% + 2px); z-index: 4; text-align: center; line-height: 20px; pointer-events: none; font-family: var(--font-num); font-size: 18px; font-weight: 700; text-shadow: 0 0 4px var(--ground), 0 0 2px var(--ground); white-space: nowrap; overflow: hidden; animation: bv-rise calc(0.9s / var(--bv-sp, 1)) ease-out both; }
 /* A big hit's float is 1.4× larger (note 14). */
 .bv-float.damage.big { scale: 1.4; }
-.bv-float.damage, .bv-float.debuff { color: var(--ghost); }
+.bv-float.damage, .bv-float.debuff { color: var(--them); }
 .bv-float.heal, .bv-float.summon { color: var(--you); }
-.bv-float.buff, .bv-float.debuff { font-family: "Rajdhani", sans-serif; font-size: 12px; font-weight: 700; line-height: 12px; animation-name: bv-rise-small; }
+.bv-float.buff, .bv-float.debuff { font-family: var(--font-body); font-size: 12px; font-weight: 700; line-height: 12px; animation-name: bv-rise-small; }
 /* A ±stat float is a small pill. */
-.bv-float.buff, .bv-float.debuff { width: max-content; max-width: calc(100% - 4px); left: 50%; right: auto; translate: -50% 0; padding: 1px 3px; border-radius: 3px; background: var(--bg); }
+.bv-float.buff, .bv-float.debuff { width: max-content; max-width: calc(100% - 4px); left: 50%; right: auto; translate: -50% 0; padding: 1px 3px; border-radius: 3px; background: var(--ground); }
 .bv-float.on-pwr { left: 2px; translate: none; }
 .bv-float.on-hp { left: auto; right: 2px; translate: none; }
-.bv-float.buff { color: var(--gold); }
+.bv-float.buff { color: var(--action); }
 @keyframes bv-lunge-up { 40% { transform: translateY(-14px) scale(1.06); } }
 @keyframes bv-lunge-down { 40% { transform: translateY(14px) scale(1.06); } }
 @keyframes bv-pulse { 40% { transform: scale(1.08); } }
@@ -420,10 +541,10 @@ button.bv-badge.past { z-index: 2; }
  * buffed one a soft one; the chips hold the numbers in place, and the
  * caption lists every change of the beat (.bv-still). */
 .bv-stillbox { flex: 0 1 auto; min-height: 0; overflow-y: auto; }
-.bv-still { display: flex; flex-wrap: wrap; gap: 0 8px; font-size: 13px; font-family: "IBM Plex Mono", monospace; }
+.bv-still { display: flex; flex-wrap: wrap; gap: 0 8px; font-size: 13px; font-family: var(--font-num); }
 @media (prefers-reduced-motion: reduce) {
   .bv-card, .bv-card.bv-lunge-up, .bv-card.bv-lunge-down, .bv-card.bv-pulse, .bv-card.bv-hit, .bv-card.bv-dying { animation: none; transition: none; }
-  .bv-card.bv-flash-hit::after, .bv-card.bv-glow::after { animation: none; background: none; opacity: 1; box-shadow: 0 0 0 2px var(--ghost) inset; }
+  .bv-card.bv-flash-hit::after, .bv-card.bv-glow::after { animation: none; background: none; opacity: 1; box-shadow: 0 0 0 2px var(--them) inset; }
   .bv-card.bv-glow::after { box-shadow: 0 0 0 2px var(--you) inset; }
   .bv-float, .bv-skull { display: none; }
   .bv-slot.bv-enter, .bv-banner.on { animation: none; }
@@ -442,30 +563,30 @@ button.bv-badge.past { z-index: 2; }
  * again when paused or stepping. Reduced motion has no floats: it keeps them. */
 @media (prefers-reduced-motion: no-preference) { .bv-playing .bv-pill.bv-dup { visibility: hidden; } .bv-playing .bv-l.bv-dup { display: none; } }
 button.bv-change { flex: 1; min-width: 0; min-height: 44px; height: 44px; padding: 0 2px; border: none; background: transparent; clip-path: none; display: flex; align-items: center; justify-content: center; letter-spacing: 0; text-transform: none; }
-.bv-pill { max-width: 100%; height: 28px; line-height: 26px; padding: 0 5px; border: 1px solid; border-radius: 4px; background: var(--bg); font-family: "IBM Plex Mono", monospace; font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bv-change.damage .bv-pill, .bv-change.death .bv-pill, .bv-change.debuff .bv-pill { color: var(--ghost); }
+.bv-pill { max-width: 100%; height: 28px; line-height: 26px; padding: 0 5px; border: 1px solid; border-radius: 4px; background: var(--ground); font-family: var(--font-num); font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bv-change.damage .bv-pill, .bv-change.death .bv-pill, .bv-change.debuff .bv-pill { color: var(--them); }
 .bv-change.heal .bv-pill, .bv-change.summon .bv-pill { color: var(--you); }
-.bv-change.buff .bv-pill, .bv-change.status .bv-pill, .bv-change.silence .bv-pill, .bv-change.noRoom .bv-pill { color: var(--gold); font-family: "Rajdhani", sans-serif; font-size: 12px; padding: 0 3px; }
+.bv-change.buff .bv-pill, .bv-change.status .bv-pill, .bv-change.silence .bv-pill, .bv-change.noRoom .bv-pill { color: var(--action); font-family: var(--font-body); font-size: 12px; padding: 0 3px; }
 /* Two changes on one unit in one step: two lines in the pill, each in its kind's colour. */
-.bv-pill.two { display: flex; flex-direction: column; height: auto; min-height: 28px; line-height: 13px; padding: 1px 2px; font-family: "Rajdhani", sans-serif; font-size: 11px; letter-spacing: -0.02em; border-color: var(--gold); }
+.bv-pill.two { display: flex; flex-direction: column; height: auto; min-height: 28px; line-height: 13px; padding: 1px 2px; font-family: var(--font-body); font-size: 11px; letter-spacing: -0.02em; border-color: var(--action); }
 .bv-pill.two .bv-l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bv-l.damage, .bv-l.death, .bv-l.debuff { color: var(--ghost); }
+.bv-l.damage, .bv-l.death, .bv-l.debuff { color: var(--them); }
 .bv-l.heal, .bv-l.summon { color: var(--you); }
-.bv-l.buff, .bv-l.status, .bv-l.silence { color: var(--gold); }
+.bv-l.buff, .bv-l.status, .bv-l.silence { color: var(--action); }
 /* A turn's totals on its card (R4-12): one label, its numbers in their colours. */
 .bv-total { flex: 1; min-width: 0; height: 44px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
 .bv-pill.bv-tot { border-color: var(--dim); }
 .bv-pill.bv-tot:not(.two) { display: inline-flex; align-items: center; gap: 2px; font-size: 13px; padding: 0 3px; }
 .bv-tot .bv-l { display: inline-flex; align-items: center; justify-content: center; gap: 2px; }
-.bv-tp.damage, .bv-tp.debuff { color: var(--ghost); }
+.bv-tp.damage, .bv-tp.debuff { color: var(--them); }
 .bv-tp.heal { color: var(--you); }
-.bv-tp.buff { color: var(--gold); }
+.bv-tp.buff { color: var(--action); }
 .bv-also { flex-wrap: wrap; gap: 6px; }
-button.bv-also-btn { min-height: 44px; padding: 0 10px; text-transform: none; letter-spacing: 0; font-family: "IBM Plex Mono", monospace; font-size: 14px; color: var(--gold); border-color: var(--line); }
-button.bv-also-btn.on { border-color: var(--gold); }
-button.bv-also-btn.damage, button.bv-also-btn.debuff, button.bv-also-btn.death { color: var(--ghost); }
+button.bv-also-btn { min-height: 44px; padding: 0 10px; text-transform: none; letter-spacing: 0; font-family: var(--font-num); font-size: 14px; color: var(--action); border-color: var(--line); }
+button.bv-also-btn.on { border-color: var(--action); }
+button.bv-also-btn.damage, button.bv-also-btn.debuff, button.bv-also-btn.death { color: var(--them); }
 button.bv-also-btn.heal, button.bv-also-btn.summon { color: var(--you); }
-button.bv-caption { height: 52px; min-height: 0; overflow: hidden; width: 100%; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 17px; color: var(--text); border-color: var(--line); text-align: left; padding: 4px 12px; }
+button.bv-caption { height: 52px; min-height: 0; overflow: hidden; width: 100%; text-transform: none; letter-spacing: 0; font-family: var(--font-body); font-weight: 600; font-size: 17px; color: var(--text); border-color: var(--line); text-align: left; padding: 4px 12px; }
 button.bv-caption { display: flex; align-items: center; }
 /* Target beams (R3-21): one fixed layer over the cards, under the caption,
    the badges, the floats, the sheets and the end card. The caption band is
@@ -473,8 +594,8 @@ button.bv-caption { display: flex; align-items: center; }
    halo in the background's colour, so the beam passes behind the words
    without hiding them. */
 button.bv-caption { position: relative; z-index: 2; }
-.bv-cap { text-shadow: 0 0 1px var(--bg), 0 0 2px var(--bg); }
-.bv-cap svg { filter: drop-shadow(0 0 1px var(--bg)); }
+.bv-cap { text-shadow: 0 0 1px var(--ground), 0 0 2px var(--ground); }
+.bv-cap svg { filter: drop-shadow(0 0 1px var(--ground)); }
 .bv-fx { position: fixed; inset: 0; width: 100vw; height: 100dvh; z-index: 1; pointer-events: none; overflow: visible; }
 /* The running totals above each unit (R4-22): a fixed layer over the board;
  * each unit's box sits on its slot's top edge, its rows stacking up from the
@@ -483,16 +604,16 @@ button.bv-caption { position: relative; z-index: 2; }
 /* The header stays above the running totals (R4-22), so a row that grows up into it never takes the menu tap. */
 #app[data-screen="battle"] .bv-screen > .hud { position: relative; z-index: 6; }
 .bv-run { position: absolute; translate: -50% -100%; display: flex; flex-direction: column-reverse; align-items: center; gap: 1px; padding-bottom: 2px; transition: left 0.3s ease-out, top 0.3s ease-out; }
-button.bv-run-row { pointer-events: auto; min-height: 0; height: 16px; max-width: 100%; padding: 0 3px; display: inline-flex; align-items: center; gap: 2px; border: none; border-radius: 3px; clip-path: none; background: color-mix(in srgb, var(--bg) 82%, transparent); text-transform: none; letter-spacing: 0; font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 700; line-height: 16px; white-space: nowrap; overflow: hidden; color: var(--text); text-shadow: 0 0 3px var(--bg); transition: opacity 0.2s ease; }
-button.bv-run-row.damage, button.bv-run-row.debuff { color: var(--ghost); }
+button.bv-run-row { pointer-events: auto; min-height: 0; height: 16px; max-width: 100%; padding: 0 3px; display: inline-flex; align-items: center; gap: 2px; border: none; border-radius: 3px; clip-path: none; background: color-mix(in srgb, var(--ground) 82%, transparent); text-transform: none; letter-spacing: 0; font-family: var(--font-num); font-size: 13px; font-weight: 700; line-height: 16px; white-space: nowrap; overflow: hidden; color: var(--text); text-shadow: 0 0 3px var(--ground); transition: opacity 0.2s ease; }
+button.bv-run-row.damage, button.bv-run-row.debuff { color: var(--them); }
 button.bv-run-row.heal { color: var(--you); }
-button.bv-run-row.buff { color: var(--gold); }
+button.bv-run-row.buff { color: var(--action); }
 button.bv-run-row.zero { opacity: 0.45; }
 .bv-run-row svg { flex: none; }
 .bv-cleared { position: absolute; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .bv-run, button.bv-run-row { transition: none; } }
 @media (min-width: 1024px) { button.bv-run-row { height: 20px; line-height: 20px; font-size: 17px; padding: 0 4px; } }
-.bv-beam { --bv-bc: #ff6b4d; color: var(--bv-bc); }
+.bv-beam { --bv-bc: var(--k-dmg); color: var(--bv-bc); }
 .bv-beam .bv-bl { fill: none; stroke: var(--bv-bc); stroke-width: 3; stroke-linecap: round; filter: drop-shadow(0 0 3px var(--bv-bc)); }
 .bv-beam .bv-bs, .bv-beam .bv-bh { fill: var(--bv-bc); }
 .bv-beam.ring rect { fill: none; stroke: var(--bv-bc); stroke-width: 2.5; filter: drop-shadow(0 0 4px var(--bv-bc)); }
@@ -511,35 +632,35 @@ button.bv-caption.tappable::after { content: "ⓘ"; flex: none; margin-left: 4px
 .bv-cap { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 20px; }
 .bv-cn { font-weight: 700; }
 .bv-ct .ic { vertical-align: -2px; }
-.bv-pill.blocked { display: inline-flex; align-items: center; gap: 1px; border-color: #5aa7ff; }
+.bv-pill.blocked { display: inline-flex; align-items: center; gap: 1px; border-color: var(--k-shield); }
 /* Whose unit acted: a tag before the caption, in its side's colour. */
 .bv-who { display: inline-block; max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; margin-right: 6px; padding: 0 5px; border: 1px solid; border-radius: 3px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .bv-who.you { color: var(--you); }
-.bv-who.ghost { color: var(--ghost); }
+.bv-who.ghost { color: var(--them); }
 .bv-recent { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 2px; }
-button.bv-past { min-height: 44px; border: none; clip-path: none; text-align: left; padding: 0 12px; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-weight: 500; font-size: 14px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bv-sheet { position: fixed; z-index: 10; left: 12px; right: 12px; bottom: calc(68px + env(safe-area-inset-bottom)); max-width: 456px; margin: 0 auto; max-height: 60dvh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; border-color: var(--gold); box-shadow: 0 -12px 32px #000c; }
-.bv-trace-text { font-size: 15px; color: var(--gold); word-break: break-word; }
+button.bv-past { min-height: 44px; border: none; clip-path: none; text-align: left; padding: 0 12px; text-transform: none; letter-spacing: 0; font-family: var(--font-body); font-weight: 500; font-size: 14px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bv-sheet { position: fixed; z-index: 10; left: 12px; right: 12px; bottom: calc(68px + env(safe-area-inset-bottom)); max-width: 456px; margin: 0 auto; max-height: 60dvh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; border-color: var(--action); box-shadow: 0 -12px 32px var(--shade); }
+.bv-trace-text { font-size: 15px; color: var(--action); word-break: break-word; }
 /* R2-15: Why's chain, the change first, each cause below it, back to the turn.
  * A step's icon is its trigger; a line joins the icons; the step whose
  * moment is on the board is lit. */
 .bv-chain { display: flex; flex-direction: column; }
 .bv-step { display: grid; grid-template-columns: 28px 1fr; gap: 8px; align-items: start; position: relative; padding: 6px 4px; min-height: 44px; font-size: 15px; line-height: 1.3; text-align: left; }
-button.bv-step { color: var(--text); border: 0; clip-path: none; font-family: "Rajdhani", sans-serif; font-weight: 500; letter-spacing: 0; text-transform: none; }
+button.bv-step { color: var(--text); border: 0; clip-path: none; font-family: var(--font-body); font-weight: 500; letter-spacing: 0; text-transform: none; }
 button.bv-step:hover { background: color-mix(in srgb, var(--you) 8%, transparent); }
-.bv-step.on { background: color-mix(in srgb, var(--gold) 14%, transparent); box-shadow: inset 2px 0 0 var(--gold); }
+.bv-step.on { background: color-mix(in srgb, var(--action) 14%, transparent); box-shadow: inset 2px 0 0 var(--action); }
 .bv-step + .bv-step::before { content: ""; position: absolute; left: 17px; top: -6px; height: 12px; border-left: 1px dashed var(--line); }
 .bv-step-ic { display: flex; justify-content: center; padding-top: 2px; }
 .bv-step-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; word-break: break-word; }
 .bv-step-by { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
 .bv-step.firing .bv-step-head b { font-weight: 700; }
-.bv-step.root .bv-step-text { color: var(--gold); font-family: "Chakra Petch", sans-serif; }
+.bv-step.root .bv-step-text { color: var(--action); font-family: var(--font-head); font-weight: var(--head-weight); }
 button.bv-close { min-height: 44px; min-width: 44px; padding: 0 12px; }
-.bv-word { font-family: "Chakra Petch", sans-serif; font-size: 30px; line-height: 1; text-align: center; }
+.bv-word { font-family: var(--font-head); font-weight: var(--head-weight); font-size: 30px; line-height: 1; text-align: center; }
 .bv-word.win { color: var(--you); }
-.bv-word.loss { color: var(--ghost); }
+.bv-word.loss { color: var(--them); }
 .bv-word.draw { color: var(--dim); }
-button.bv-why { display: flex; align-items: center; justify-content: space-between; gap: 8px; text-transform: none; letter-spacing: 0; color: var(--ghost); border-color: color-mix(in srgb, var(--ghost) 45%, transparent); font-family: "Rajdhani", sans-serif; font-size: 16px; text-align: left; }
+button.bv-why { display: flex; align-items: center; justify-content: space-between; gap: 8px; text-transform: none; letter-spacing: 0; color: var(--them); border-color: color-mix(in srgb, var(--them) 45%, transparent); font-family: var(--font-body); font-size: 16px; text-align: left; }
 .bv-why-chain { overflow: hidden; text-overflow: ellipsis; }
 button.bv-why.won { color: var(--you); border-color: color-mix(in srgb, var(--you) 45%, transparent); }
 .you-name { color: var(--you); font-weight: 600; }
@@ -553,7 +674,7 @@ button.bv-why.won { color: var(--you); border-color: color-mix(in srgb, var(--yo
 .bv-controls button { flex: 1; min-width: 44px; padding: 0 4px; font-size: 20px; }
 .bv-controls button[data-testid="battle-end"], .bv-controls button[data-testid="battle-speed"] { font-size: 16px; }
 /* The end card: over the board, above the control bar, scrolling inside itself when it runs long. */
-.bv-end { position: fixed; z-index: 10; left: 12px; right: 12px; bottom: calc(68px + env(safe-area-inset-bottom)); max-width: 456px; margin: 0 auto; max-height: calc(100dvh - 80px - env(safe-area-inset-bottom)); overflow-y: auto; gap: 6px; border-color: var(--line); box-shadow: 0 -12px 32px #000c; }
+.bv-end { position: fixed; z-index: 10; left: 12px; right: 12px; bottom: calc(68px + env(safe-area-inset-bottom)); max-width: 456px; margin: 0 auto; max-height: calc(100dvh - 80px - env(safe-area-inset-bottom)); overflow-y: auto; gap: 6px; border-color: var(--line); box-shadow: 0 -12px 32px var(--shade); }
 /* R2-17: the word and a line under it (turns, who stands, your best); key
  * moments (the fun part) first, then damage dealt; Replay / Why / Continue
  * pinned at the card's foot. The phone's card is short: three moments fit
@@ -564,11 +685,11 @@ button.bv-why.won { color: var(--you); border-color: color-mix(in srgb, var(--yo
 .bv-end-sub { font-size: 14px; line-height: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* A run's fight: the round fought, hearts and record after it, what it cost or won (R2-17 batch E). */
 .bv-end-run { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-size: 13px; line-height: 17px; margin-top: -4px; }
-.bv-end-run .hearts { color: var(--ghost); letter-spacing: 1px; }
+.bv-end-run .hearts { color: var(--them); letter-spacing: 1px; }
 .bv-end-run .error { font-size: inherit; min-height: 0; }
 /* The run menu's errors over a battle (Codex or Title menu failing): under
  * the HUD, over the board and the end card, until ✕ or the next try (R2-17 batch F). */
-.bv-error { position: fixed; z-index: 12; left: 12px; right: 12px; max-width: 456px; margin: 0 auto; align-items: center; gap: 8px; padding: 0 0 0 12px; border-color: var(--ghost); box-shadow: 0 8px 24px #000c; }
+.bv-error { position: fixed; z-index: 12; left: 12px; right: 12px; max-width: 456px; margin: 0 auto; align-items: center; gap: 8px; padding: 0 0 0 12px; border-color: var(--them); box-shadow: 0 8px 24px var(--shade); }
 .bv-error .error { flex: 1; min-width: 0; min-height: 0; }
 .bv-error:has(> .error:empty) { display: none; }
 .bv-trace-end { gap: 6px; }
@@ -594,8 +715,8 @@ button.bv-dmg-more { padding: 0 10px; font-size: 13px; }
 .bv-dmg-bar { height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--line) 50%, transparent); overflow: hidden; }
 .bv-dmg-bar i { display: block; height: 100%; border-radius: 4px; }
 .bv-dmg.you .bv-dmg-bar i { background: var(--you); }
-.bv-dmg.ghost .bv-dmg-bar i { background: var(--ghost); }
-button.bv-moment { display: grid; grid-template-columns: 38px 18px minmax(0, 1fr) auto; gap: 6px; align-items: center; min-height: 44px; text-align: left; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-weight: 600; font-size: 15px; color: var(--text); border-color: var(--line); padding: 2px 10px; }
+.bv-dmg.ghost .bv-dmg-bar i { background: var(--them); }
+button.bv-moment { display: grid; grid-template-columns: 38px 18px minmax(0, 1fr) auto; gap: 6px; align-items: center; min-height: 44px; text-align: left; text-transform: none; letter-spacing: 0; font-family: var(--font-body); font-weight: 600; font-size: 15px; color: var(--text); border-color: var(--line); padding: 2px 10px; }
 .bv-moment-t { font-size: 12px; }
 .bv-moment-ic { display: flex; }
 .bv-moment-l { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 17px; }
@@ -604,7 +725,7 @@ button.bv-moment { display: grid; grid-template-columns: 38px 18px minmax(0, 1fr
 .bv-line.empty { min-height: 0; display: block; }
 .bv-word.neutral { color: var(--text); font-size: 24px; }
 /* Slice 11: a unit's rates, only a hint since round 2: the sheet's dim last line. */
-.rates { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--dim); opacity: 0.75; }
+.rates { font-family: var(--font-num); font-size: 11px; color: var(--dim); opacity: 0.75; }
 /* Home's champion panel: the line runs to the panel's border, so its five
  * cards are as wide as the shop's ("War Drummer" fits, R2-17). */
 .champion .slots { margin: 0 -11px; }
@@ -618,16 +739,16 @@ button.bv-moment { display: grid; grid-template-columns: 38px 18px minmax(0, 1fr
 .title-menu [data-testid="play"] .hearts { white-space: nowrap; }
 .tabs { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
 .tabs button { min-height: 44px; padding: 0 2px; font-size: 13px; letter-spacing: 0; }
-.tabs button.on { background: var(--you); color: var(--bg); }
-.stat-row { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+.tabs button.on { background: var(--you); color: var(--outline); }
+.stat-row { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 0; border-bottom: var(--bw) solid var(--outline); cursor: pointer; }
 .stat-row .emoji { font-size: 22px; width: 28px; text-align: center; flex: none; }
 .stat-row .grow { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.stat-row .num { font-family: "IBM Plex Mono", monospace; font-size: 13px; text-align: right; flex: none; }
+.stat-row .num { font-family: var(--font-num); font-size: 13px; text-align: right; flex: none; }
 .stat-head { display: flex; gap: 8px; font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.06em; }
 .stat-head .grow { flex: 1; padding-left: 36px; }
 .stat-head span:not(.grow), .stat-row .num { width: 48px; }
 /* Home (#587): a day that just ended, said first; the playoff compact, its games behind a tap. */
-.notice { font-size: 16px; color: var(--gold); border: 1px solid color-mix(in srgb, var(--gold) 55%, transparent); background: color-mix(in srgb, var(--gold) 8%, transparent); padding: 8px 10px; }
+.notice { font-size: 16px; color: var(--action); border: 1px solid color-mix(in srgb, var(--action) 55%, transparent); background: color-mix(in srgb, var(--action) 8%, transparent); padding: 8px 10px; }
 .who-mark { white-space: nowrap; min-width: 0; max-width: 100%; }
 .who-mark > .who { min-width: 0; }
 .playoff { gap: 6px; }
@@ -644,28 +765,28 @@ button.bv-moment { display: grid; grid-template-columns: 38px 18px minmax(0, 1fr
 /* The shop's "?" (#587): how to read a card. */
 .line-head { min-height: 44px; }
 .line-head button.small { min-height: 44px; min-width: 44px; padding: 0 10px; font-size: 14px; }
-.line-head button.new { background: var(--you); color: var(--bg); }
+.line-head button.new { background: var(--you); color: var(--outline); }
 .legend-row { display: grid; grid-template-columns: 92px 1fr; gap: 10px; align-items: baseline; font-size: 15px; line-height: 1.25; }
-.legend-sample { font-family: "IBM Plex Mono", monospace; font-size: 14px; text-align: center; padding: 4px 0; border: 1px solid var(--line); }
-.legend-sample .p { color: var(--gold); }
-.legend-sample .h { color: var(--ghost); }
+.legend-sample { font-family: var(--font-num); font-size: 14px; text-align: center; padding: 4px 0; border: var(--bw) solid var(--outline); }
+.legend-sample .p { color: var(--action); }
+.legend-sample .h { color: var(--them); }
 .legend-sample .copies { color: var(--you); }
-.legend-sample .copies.tag { color: var(--gold); font-size: 11px; }
-.legend-sample .cost { color: var(--gold); }
+.legend-sample .copies.tag { color: var(--action); font-size: 11px; }
+.legend-sample .cost { color: var(--action); }
 .who-mark > .bot { margin-left: 4px; vertical-align: bottom; }
-.playoff.fresh { border-color: color-mix(in srgb, var(--gold) 55%, var(--line)); }
+.playoff.fresh { border-color: color-mix(in srgb, var(--action) 55%, var(--line)); }
 .standing .who-mark { display: flex; align-items: center; }
 
 /* Glossary terms (src/glossary.ts): a term's tone colours its words and its
  * icon (mobile/ui/icon.ts, filled with currentColor). Dark values from
  * docs/round2/mockups/icons.html. */
 .ic { display: inline-block; vertical-align: -0.15em; flex: none; fill: currentColor; }
-.tone-pwr { color: #ff8a5c; } .tone-hp { color: #ff5c7a; } .tone-shield { color: #5aa7ff; }
-.tone-vital { color: #3fdc8f; } .tone-str { color: #ffa53d; } .tone-curse { color: #ff6fb5; }
-.tone-poison { color: #b48cff; } .tone-freeze { color: #62d6ff; } .tone-bless { color: #ffd25c; }
-.tone-silence { color: #a3acbf; } .tone-dmg { color: #ff6b4d; } .tone-heal { color: #3fdc8f; }
-.tone-summon { color: #2ee6d4; } .tone-when { color: #ffbf47; } .tone-ally { color: #2ee6d4; }
-.tone-enemy { color: #ff4d88; } .tone-gold { color: #ffd25c; } .tone-plain { color: #c9d1e0; }
+.tone-pwr { color: var(--k-pwr); } .tone-hp { color: var(--k-hp); } .tone-shield { color: var(--k-shield); }
+.tone-vital { color: var(--k-heal); } .tone-str { color: var(--k-str); } .tone-curse { color: var(--k-curse); }
+.tone-poison { color: var(--k-poison); } .tone-freeze { color: var(--k-freeze); } .tone-bless { color: var(--k-bless); }
+.tone-silence { color: var(--k-silence); } .tone-dmg { color: var(--k-dmg); } .tone-heal { color: var(--k-heal); }
+.tone-summon { color: var(--k-summon); } .tone-when { color: var(--action); } .tone-ally { color: var(--k-summon); }
+.tone-enemy { color: var(--them); } .tone-gold { color: var(--k-bless); } .tone-plain { color: var(--k-plain); }
 
 /* Desktop (round 2, R2-9): 1024px and wider. A screen that names itself
  * (ui/dom.ts screen(): home, shop, result, over, stats) uses the width; the
@@ -673,13 +794,13 @@ button.bv-moment { display: grid; grid-template-columns: 38px 18px minmax(0, 1fr
  * wrappers the desktop grids place (.topbar, .board, .home-main, …) are
  * display: contents on the phone, so its layout is as it was. */
 .topbar, .board, .home-main, .home-side, .result-main, .result-teams, .over-line { display: contents; }
-kbd { display: inline-block; min-width: 1.6em; padding: 0 4px; margin: 0 1px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 3px; font-family: "IBM Plex Mono", monospace; font-size: 0.8em; line-height: 1.4; text-align: center; color: var(--text); background: var(--panel); }
+kbd { display: inline-block; min-width: 1.6em; padding: 0 4px; margin: 0 1px; border: var(--bw) solid var(--outline); border-bottom-width: 2px; border-radius: 3px; font-family: var(--font-num); font-size: 0.8em; line-height: 1.4; text-align: center; color: var(--text); background: var(--panel); }
 button kbd { color: inherit; background: transparent; border-color: currentColor; opacity: 0.7; text-transform: none; letter-spacing: 0; margin-left: 6px; }
 @media (min-width: 1024px) {
   #app[data-screen] { --cw: 120px; --gap: 8px; --insp: 340px; max-width: none; }
   /* Desktop cards: 120×172, 132×172 from 1280px (docs/round2/ui.md (b)). */
   #app[data-screen] .slots { grid-template-columns: repeat(auto-fill, var(--cw)); gap: var(--gap); }
-  #app[data-screen] .card { height: 172px; padding: 12px 6px 10px; }
+  #app[data-screen] .card { height: 172px; padding: 12px 5px 10px; }
   #app[data-screen] .card .emoji { font-size: 44px; line-height: 52px; height: 52px; margin-top: 8px; }
   #app[data-screen] .card .name { font-size: 17px; line-height: 20px; }
   #app[data-screen] .card .stats { font-size: 18px; line-height: 22px; }
@@ -715,7 +836,7 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
 
   /* The shop: a top bar, the board, the inspector on the right, the buttons along the bottom. */
   #app[data-screen="shop"] { display: grid; grid-template-columns: minmax(0, 1fr) var(--insp); grid-template-rows: auto 1fr auto auto; grid-template-areas: "top top" "board insp" "foot insp" "err insp"; gap: 0; padding: 0; height: 100dvh; min-height: 0; }
-  #app[data-screen="shop"] .topbar { grid-area: top; display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 60px; padding: 0 24px; border-bottom: 1px solid var(--line); }
+  #app[data-screen="shop"] .topbar { grid-area: top; display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 60px; padding: 0 24px; border-bottom: var(--bw) solid var(--outline); }
   #app[data-screen="shop"] .topbar .hud { gap: 24px; font-size: 22px; align-items: center; }
   #app[data-screen="shop"] .topbar .hud .gold { font-weight: 700; }
   #app[data-screen="shop"] .topbar .opp { flex: 0 1 auto; min-width: 0; gap: 16px; font-size: 17px; }
@@ -723,10 +844,10 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
   #app[data-screen="shop"] .pin-btn .who { max-width: 180px; }
   #app[data-screen="shop"] .pin-emoji { font-size: 16px; }
   #app[data-screen="shop"] .board { grid-area: board; display: flex; flex-direction: column; gap: 12px; padding: 16px 24px; overflow-y: auto; min-height: 0; }
-  #app[data-screen="shop"] .inspector { grid-area: insp; border-left: 1px solid var(--line); padding: 16px 20px; overflow-y: auto; min-height: 0; background: color-mix(in srgb, var(--panel) 40%, var(--bg)); }
+  #app[data-screen="shop"] .inspector { grid-area: insp; border-left: var(--bw) solid var(--outline); padding: 16px 20px; overflow-y: auto; min-height: 0; background: color-mix(in srgb, var(--panel) 40%, var(--ground)); }
   #app[data-screen="shop"] .inspector .actions { flex-wrap: wrap; }
   #app[data-screen="shop"] .spacer { display: none; }
-  #app[data-screen="shop"] .shop-foot { grid-area: foot; justify-content: space-between; padding: 12px 24px; border-top: 1px solid var(--line); }
+  #app[data-screen="shop"] .shop-foot { grid-area: foot; justify-content: space-between; padding: 12px 24px; border-top: var(--bw) solid var(--outline); }
   #app[data-screen="shop"] .shop-foot button { min-height: 48px; }
   #app[data-screen="shop"] .shop-foot button.grow { flex: 0 1 280px; margin-left: auto; }
   #app[data-screen="shop"] > .error { grid-area: err; padding: 0 24px 8px; min-height: 0; }
@@ -741,7 +862,7 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
   /* Home, the title menu: the champion and the day on the left; the menu on the right. */
   /* The menu column is narrow enough that the champion's 5 cards stay on one line at 1024px. */
   /* The left column is as wide as the champion's five cards (no slack, R2-17); the menu takes the rest, 280px at least. */
-  #app[data-screen="home"] { max-width: 1200px; display: grid; grid-template-columns: minmax(0, calc(5 * var(--cw) + 4 * var(--gap) + 26px)) minmax(280px, 1fr); grid-template-rows: auto 1fr; column-gap: 24px; row-gap: 16px; padding: 24px; align-items: start; }
+  #app[data-screen="home"] { max-width: 1200px; display: grid; grid-template-columns: minmax(0, calc(5 * var(--cw) + 4 * var(--gap) + 28px)) minmax(280px, 1fr); grid-template-rows: auto 1fr; column-gap: 24px; row-gap: 16px; padding: 24px; align-items: start; }
   #app[data-screen="home"] > :first-child { grid-column: 1 / -1; }
   #app[data-screen="home"] .home-main, #app[data-screen="home"] .home-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
   #app[data-screen="home"] .home-side { position: sticky; top: 32px; }
@@ -783,7 +904,7 @@ button kbd { color: inherit; background: transparent; border-color: currentColor
   /* Codex: the cards and lists on the left, the inspector (a unit's or a fusion's sheet) on the right; keywords in two columns of rows. */
   #app[data-screen="codex"] { max-width: none; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr) var(--insp); gap: 0; align-items: start; }
   #app[data-screen="codex"] .codex-main { padding: 32px; min-width: 0; min-height: 100dvh; }
-  #app[data-screen="codex"] .codex-insp { position: sticky; top: 0; height: 100dvh; overflow-y: auto; padding: 24px 20px; border-left: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 40%, var(--bg)); }
+  #app[data-screen="codex"] .codex-insp { position: sticky; top: 0; height: 100dvh; overflow-y: auto; padding: 24px 20px; border-left: var(--bw) solid var(--outline); background: color-mix(in srgb, var(--panel) 40%, var(--ground)); }
   #app[data-screen="codex"] .codex-insp .sheet-actions { position: static; margin: 0; padding: 0; background: none; }
   #app[data-screen="codex"] .card.inspected { border-color: var(--you); background: color-mix(in srgb, var(--you) 8%, var(--panel)); }
   #app[data-screen="codex"] .inspected:not(.card) { outline: 1px solid var(--you); outline-offset: 1px; }
@@ -813,7 +934,7 @@ button.t .ic { margin-right: 2px; }
 button.t:focus-visible { outline: 1px solid currentColor; outline-offset: 1px; }
 .t-status, .t-target, .t-stat, .t-term, .t-condition { text-decoration: underline dotted color-mix(in srgb, currentColor 60%, transparent); text-underline-offset: 3px; }
 .t-effect { font-weight: 600; }
-.t-amount { font-weight: 700; font-family: "IBM Plex Mono", monospace; }
+.t-amount { font-weight: 700; font-family: var(--font-num); }
 /* A term's tap area grows on the phone (R3-26) without moving the text: an
  * invisible box a little past it takes the tap. It stops short of the next
  * line's terms (a 44 px box would steal their taps); the number and its
@@ -829,18 +950,18 @@ button.t:focus-visible { outline: 1px solid currentColor; outline-offset: 1px; }
 /* A summoned unit named in the text (R3-5): its emoji and name open its card. */
 button.t-unit { cursor: pointer; font-weight: 600; text-decoration: underline solid color-mix(in srgb, currentColor 50%, transparent); text-underline-offset: 3px; }
 button.t-unit .t-emoji { margin-right: 2px; text-decoration: none; display: inline-block; }
-.summons { border-top: 1px solid var(--line); padding-top: 8px; }
+.summons { border-top: var(--bw) solid var(--outline); padding-top: 8px; }
 .summon-row { display: flex; gap: 10px; align-items: center; }
 .summon-row .card { flex: none; width: 64px; }
 @media (min-width: 1024px) { .summon-row .card { width: min(var(--cw, 96px), 96px); } }
-.tpill { display: inline; border: 1px solid color-mix(in srgb, #ffbf47 55%, transparent); background: color-mix(in srgb, #ffbf47 12%, transparent); border-radius: 999px; padding: 0 7px 0 5px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.tpill { display: inline; border: 1px solid color-mix(in srgb, var(--action) 55%, transparent); background: color-mix(in srgb, var(--action) 12%, transparent); border-radius: 999px; padding: 0 7px 0 5px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 .tpill .tpill-ic { margin-right: 3px; }
 .term-head { display: flex; align-items: center; gap: 6px; font-size: 18px; }
 .term-tip { line-height: 1.35; }
-.term-tooltip { position: absolute; z-index: 50; max-width: 280px; padding: 8px 10px; background: var(--panel); border: 1px solid var(--line); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5); pointer-events: none; font-size: 15px; }
+.term-tooltip { position: absolute; z-index: 50; max-width: 280px; padding: 8px 10px; background: var(--panel); border: var(--bw) solid var(--outline); box-shadow: 0 4px 18px var(--shade); pointer-events: none; font-size: 15px; }
 .term-tooltip .term-head { font-size: 16px; }
 /* A desktop's click on a term (R2-17): its rule pinned under it, over any sheet. */
-.term-pop { position: absolute; z-index: 60; width: max-content; max-width: 340px; padding: 10px 12px 4px; background: var(--panel); border: 1px solid var(--you); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6); font-size: 15px; }
+.term-pop { position: absolute; z-index: 60; width: max-content; max-width: 340px; padding: 10px 12px 4px; background: var(--panel); border: 1px solid var(--you); box-shadow: 0 6px 24px var(--shade); font-size: 15px; }
 .term-pop .term-head { font-size: 17px; }
 .term-pop button.link { min-height: 36px; }
 /* A term and the punctuation after it never part across lines. */
@@ -859,45 +980,45 @@ button.t-unit .t-emoji { margin-right: 2px; text-decoration: none; display: inli
 /* The Codex (R2-11, mobile/screens/codex.ts). */
 .codex-filter { flex-wrap: wrap; gap: 6px; }
 button.chip { min-height: 44px; min-width: 44px; padding: 0 10px; font-size: 14px; border-color: var(--line); color: var(--text); }
-button.chip.on { border-color: var(--you); color: var(--bg); background: var(--you); }
+button.chip.on { border-color: var(--you); color: var(--outline); background: var(--you); }
 /* Codex tier chips: the numeral in its tier's colour, filled with it when picked (R4-4). */
 button.chip.tier-chip { font-family: Georgia, "Times New Roman", serif; font-weight: 700; }
-button.chip.tier-chip.t1 { color: var(--tier-1); } button.chip.tier-chip.t1.on { background: var(--tier-1); border-color: var(--tier-1); color: var(--bg); }
-button.chip.tier-chip.t2 { color: var(--tier-2); } button.chip.tier-chip.t2.on { background: var(--tier-2); border-color: var(--tier-2); color: var(--bg); }
-button.chip.tier-chip.t3 { color: var(--tier-3); } button.chip.tier-chip.t3.on { background: var(--tier-3); border-color: var(--tier-3); color: var(--bg); }
-button.chip.tier-chip.t4 { color: var(--tier-4); } button.chip.tier-chip.t4.on { background: var(--tier-4); border-color: var(--tier-4); color: var(--bg); }
-button.chip.icon { padding: 0; display: inline-flex; align-items: center; justify-content: center; color: #ffbf47; }
-button.chip.icon.on { background: #ffbf47; border-color: #ffbf47; color: var(--bg); }
+button.chip.tier-chip.t1 { color: var(--tier-1); } button.chip.tier-chip.t1.on { background: var(--tier-1); border-color: var(--tier-1); color: var(--outline); }
+button.chip.tier-chip.t2 { color: var(--tier-2); } button.chip.tier-chip.t2.on { background: var(--tier-2); border-color: var(--tier-2); color: var(--outline); }
+button.chip.tier-chip.t3 { color: var(--tier-3); } button.chip.tier-chip.t3.on { background: var(--tier-3); border-color: var(--tier-3); color: var(--outline); }
+button.chip.tier-chip.t4 { color: var(--tier-4); } button.chip.tier-chip.t4.on { background: var(--tier-4); border-color: var(--tier-4); color: var(--outline); }
+button.chip.icon { padding: 0; display: inline-flex; align-items: center; justify-content: center; color: var(--action); }
+button.chip.icon.on { background: var(--action); border-color: var(--action); color: var(--outline); }
 .codex-grid { align-content: start; }
 .codex-grid .codex-group { grid-column: 1 / -1; margin-top: 8px; }
 .codex-none { grid-column: 1 / -1; }
-select { font: inherit; min-height: 44px; width: 100%; background: var(--panel); color: var(--text); border: 1px solid var(--line); padding: 0 8px; }
+select { font: inherit; min-height: 44px; width: 100%; background: var(--panel); color: var(--text); border: var(--bw) solid var(--outline); padding: 0 8px; }
 .contents { display: contents; }
 .fusion-row .emoji.pair { width: auto; min-width: 44px; font-size: 18px; letter-spacing: -0.08em; }
 .fusion-row.unknown .fusion-name { color: var(--dim); }
 .fusion-name { font-weight: 700; }
 .fusion-recipe { line-height: 1.35; }
 .kw-group { margin-top: 6px; }
-.kw-row { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); scroll-margin: 80px; }
+.kw-row { display: flex; gap: 12px; padding: 10px 0; border-bottom: var(--bw) solid var(--outline); scroll-margin: 80px; }
 .kw-row.landed { background: color-mix(in srgb, var(--you) 10%, transparent); outline: 1px solid var(--you); outline-offset: 2px; }
 .kw-icon { flex: none; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; }
-.kw-noicon { font-family: "Chakra Petch", sans-serif; font-size: 28px; font-weight: 700; opacity: 0.6; }
+.kw-noicon { font-family: var(--font-head); font-weight: var(--head-weight); font-size: 28px; font-weight: 700; opacity: 0.6; }
 .kw-text { gap: 4px; min-width: 0; flex: 1; }
 .chips { display: flex; flex-wrap: wrap; gap: 4px; }
-button.chip.unit-chip { min-height: 44px; padding: 0 8px; font-size: 13px; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; }
+button.chip.unit-chip { min-height: 44px; padding: 0 8px; font-size: 13px; text-transform: none; letter-spacing: 0; font-family: var(--font-body); }
 .credits a { color: var(--dim); }
 .codex-insp { display: none; }
 @media (min-width: 1024px) { .codex-insp { display: flex; } }
 /* The rate a rate sort shows, quiet on the card's foot. */
-.codex-rate { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--dim); opacity: 0.8; }
+.codex-rate { font-family: var(--font-num); font-size: 11px; color: var(--dim); opacity: 0.8; }
 button.chip.quiet { min-height: 44px; font-size: 13px; color: var(--dim); }
 button.chip.quiet.on { background: none; color: var(--text); border-color: var(--text); }
-.kw-scope { border-left: 2px solid color-mix(in srgb, #ffbf47 45%, transparent); padding-left: 10px; margin-top: 4px; gap: 4px; }
-.kw-scope.landed { border-left-color: #ffbf47; }
+.kw-scope { border-left: 2px solid color-mix(in srgb, var(--action) 45%, transparent); padding-left: 10px; margin-top: 4px; gap: 4px; }
+.kw-scope.landed { border-left-color: var(--action); }
 
 /* R2-15: on desktop Why is a panel on the right, beside the battle column, not a sheet over it. */
 @media (min-width: 1024px) {
-  .bv-sheet { left: auto; right: 24px; top: 24px; bottom: 24px; width: clamp(280px, calc(50vw - 256px), 440px); max-width: none; max-height: none; margin: 0; box-shadow: -12px 0 32px #000c; }
+  .bv-sheet { left: auto; right: 24px; top: 24px; bottom: 24px; width: clamp(280px, calc(50vw - 256px), 440px); max-width: none; max-height: none; margin: 0; box-shadow: -12px 0 32px var(--shade); }
 }
 
 /* R2-16: the desktop battle. Every piece is in the DOM at every width; the
@@ -910,8 +1031,8 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
 @media (min-width: 1024px) {
   #app[data-screen="battle"] { --insp: 300px; display: grid; grid-template-columns: minmax(0, 1fr) var(--insp); gap: 0; padding: 0; height: 100dvh; min-height: 0; overflow: hidden; }
   #app[data-screen="battle"] .bv-screen { grid-column: 1; grid-row: 1; min-width: 0; height: 100dvh; padding: 0 24px 16px; gap: 12px; }
-  #app[data-screen="battle"] .bv-screen > .hud { min-height: 56px; margin: 0 -24px; padding: 0 24px; align-items: center; gap: 24px; justify-content: flex-start; border-bottom: 1px solid var(--line); font-size: 20px; }
-  #app[data-screen="battle"] .bv-screen > .hud > :last-child { margin-left: auto; color: var(--gold); }
+  #app[data-screen="battle"] .bv-screen > .hud { min-height: 56px; margin: 0 -24px; padding: 0 24px; align-items: center; gap: 24px; justify-content: flex-start; border-bottom: var(--bw) solid var(--outline); font-size: 20px; }
+  #app[data-screen="battle"] .bv-screen > .hud > :last-child { margin-left: auto; color: var(--action); }
   /* Your line left, theirs right, fronts meeting at the clash mark; the caption under both. */
   #app[data-screen="battle"] .bv-board { flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 48px minmax(0, 1fr); grid-template-areas: "lyou . lthem" "mine clash enemy" "cap cap cap"; row-gap: 8px; align-content: center; }
   #app[data-screen="battle"] .bv-lab-you { grid-area: lyou; text-align: right; }
@@ -920,7 +1041,7 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-ph { display: none; }
   /* The mockup's key hints, right of the controls. */
   #app[data-screen="battle"] .bv-keys { display: flex; align-items: center; gap: 3px; margin-left: auto; font-size: 13px; white-space: nowrap; }
-  .bv-keys kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 3px; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--text); }
+  .bv-keys kbd { padding: 1px 5px; border: var(--bw) solid var(--outline); border-radius: 3px; font-family: var(--font-num); font-size: 11px; color: var(--text); }
   #app[data-screen="battle"] .bv-clash { grid-area: clash; display: flex; align-items: center; justify-content: center; opacity: 0.8; }
   /* Room above a card for its floats, below it for its trigger badge (both lines: they share a row now). */
   #app[data-screen="battle"] .bv-line { display: flex; gap: 6px; margin: 0; padding: 48px 0 50px; min-height: 0; }
@@ -965,9 +1086,9 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-tl { display: block; flex: none; }
   .bv-tl-track { position: relative; display: flex; gap: 3px; cursor: pointer; touch-action: none; user-select: none; }
   .bv-tl-turn { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-  .bv-tl-box { height: 32px; display: flex; align-items: center; justify-content: center; gap: 1px; overflow: hidden; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 60%, var(--bg)); }
-  .bv-tl-turn.past .bv-tl-box { background: color-mix(in srgb, var(--line) 70%, var(--bg)); }
-  .bv-tl-turn.on .bv-tl-box { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 14%, var(--bg)); }
+  .bv-tl-box { height: 32px; display: flex; align-items: center; justify-content: center; gap: 1px; overflow: hidden; border: var(--bw) solid var(--outline); background: color-mix(in srgb, var(--panel) 60%, var(--ground)); }
+  .bv-tl-turn.past .bv-tl-box { background: color-mix(in srgb, var(--line) 70%, var(--ground)); }
+  .bv-tl-turn.on .bv-tl-box { border-color: var(--action); background: color-mix(in srgb, var(--action) 14%, var(--ground)); }
   .bv-tl-turn:hover .bv-tl-box { border-color: var(--you); }
   .bv-tl-mark { display: inline-flex; flex: none; }
   /* A mark ahead of the playhead, before the end was seen: hidden, not gone, so nothing shifts when it shows (R2-17 batch E). */
@@ -975,29 +1096,29 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   .bv-tl-more { flex: none; font-size: 11px; line-height: 14px; color: var(--text); }
   .bv-tl-n { overflow: hidden; white-space: nowrap; }
   .bv-tl-n { height: 14px; font-size: 11px; line-height: 14px; text-align: center; }
-  .bv-tl-turn.on .bv-tl-n { color: var(--gold); }
-  .bv-tl-head { position: absolute; top: -3px; width: 2px; height: 38px; margin-left: -1px; background: var(--gold); box-shadow: 0 0 6px var(--gold); pointer-events: none; }
+  .bv-tl-turn.on .bv-tl-n { color: var(--action); }
+  .bv-tl-head { position: absolute; top: -3px; width: 2px; height: 38px; margin-left: -1px; background: var(--action); box-shadow: 0 0 6px var(--action); pointer-events: none; }
 
   /* The side panel: Why and Log tabs, always there, beside the battle column. */
-  #app[data-screen="battle"] .bv-sheet, #app[data-screen="battle"] .bv-sheet:not(.open) { position: static; grid-column: 2; grid-row: 1; display: flex; flex-direction: column; gap: 0; width: auto; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0 16px; overflow: hidden; border: 0; border-left: 1px solid var(--line); clip-path: none; box-shadow: none; background: color-mix(in srgb, var(--panel) 40%, var(--bg)); }
-  #app[data-screen="battle"] .bv-tabs { display: flex; flex: none; margin: 0 -16px 8px; border-bottom: 1px solid var(--line); }
+  #app[data-screen="battle"] .bv-sheet, #app[data-screen="battle"] .bv-sheet:not(.open) { position: static; grid-column: 2; grid-row: 1; display: flex; flex-direction: column; gap: 0; width: auto; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0 16px; overflow: hidden; border: 0; border-left: var(--bw) solid var(--outline); clip-path: none; box-shadow: none; background: color-mix(in srgb, var(--panel) 40%, var(--ground)); }
+  #app[data-screen="battle"] .bv-tabs { display: flex; flex: none; margin: 0 -16px 8px; border-bottom: var(--bw) solid var(--outline); }
   button.bv-tab { flex: 1; min-height: 56px; border: 0; clip-path: none; background: none; color: var(--dim); font-size: 14px; }
-  button.bv-tab.on { color: var(--gold); box-shadow: inset 0 -2px 0 var(--gold); }
+  button.bv-tab.on { color: var(--action); box-shadow: inset 0 -2px 0 var(--action); }
   #app[data-screen="battle"] .bv-tab-body { flex: 1 1 0; min-height: 0; overflow-y: auto; padding-bottom: 16px; }
   #app[data-screen="battle"] .bv-sheet[data-tab="log"] .bv-why-body { display: none; }
   #app[data-screen="battle"] .bv-sheet[data-tab="why"] .bv-log { display: none; }
   #app[data-screen="battle"] .bv-sheet[data-tab="log"] .bv-log { display: flex; flex-direction: column; }
-  button.bv-log-row { display: grid; grid-template-columns: 38px 1fr; gap: 4px; align-items: baseline; flex: none; height: auto; min-height: 30px; padding: 4px 6px; border: 0; clip-path: none; background: none; text-align: left; text-transform: none; letter-spacing: 0; font-family: "Rajdhani", sans-serif; font-weight: 500; font-size: 15px; line-height: 1.3; color: var(--text); }
+  button.bv-log-row { display: grid; grid-template-columns: 38px 1fr; gap: 4px; align-items: baseline; flex: none; height: auto; min-height: 30px; padding: 4px 6px; border: 0; clip-path: none; background: none; text-align: left; text-transform: none; letter-spacing: 0; font-family: var(--font-body); font-weight: 500; font-size: 15px; line-height: 1.3; color: var(--text); }
   button.bv-log-row[hidden] { display: none; }
   button.bv-log-row.first { border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent); }
   button.bv-log-row:hover { background: color-mix(in srgb, var(--you) 8%, transparent); }
-  button.bv-log-row.on { background: color-mix(in srgb, var(--gold) 14%, transparent); box-shadow: inset 2px 0 0 var(--gold); }
+  button.bv-log-row.on { background: color-mix(in srgb, var(--action) 14%, transparent); box-shadow: inset 2px 0 0 var(--action); }
   .bv-log-t { font-size: 12px; }
   .bv-log-c .bv-who { font-size: 10px; margin-right: 4px; }
   /* A turn that repeats the one before folds into one row (R4-13). */
-  .bv-fold-mark { display: inline-block; width: 14px; font-style: normal; color: var(--gold); transition: transform 120ms; }
+  .bv-fold-mark { display: inline-block; width: 14px; font-style: normal; color: var(--action); transition: transform 120ms; }
   button.bv-log-fold.open .bv-fold-mark { transform: rotate(90deg); }
-  .bv-log-folded { display: flex; flex-direction: column; margin-left: 10px; border-left: 1px solid color-mix(in srgb, var(--gold) 40%, transparent); }
+  .bv-log-folded { display: flex; flex-direction: column; margin-left: 10px; border-left: 1px solid color-mix(in srgb, var(--action) 40%, transparent); }
   .bv-log-folded[hidden] { display: none; }
 
   /* The end card over the battle column, clear of the panel. */
@@ -1089,7 +1210,7 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
    * over the controls or the HUD; a slimmer pill on the status row only, so
    * PWR and HP stay readable (R2-17 batch F). */
   #app[data-screen="battle"] .bv-line button.bv-badge, #app[data-screen="battle"] .bv-line.mine button.bv-badge { top: auto; bottom: 0; height: 24px; align-items: flex-end; }
-  #app[data-screen="battle"] .bv-badge-pill { height: 14px; padding: 0 4px; gap: 1px; box-shadow: 0 0 4px color-mix(in srgb, #ffbf47 45%, transparent); }
+  #app[data-screen="battle"] .bv-badge-pill { height: 14px; padding: 0 4px; gap: 1px; box-shadow: 0 0 4px color-mix(in srgb, var(--action) 45%, transparent); }
   #app[data-screen="battle"] .bv-badge-pill .ic { width: 11px; height: 11px; }
   #app[data-screen="battle"] .bv-badge-arrow { font-size: 9px; line-height: 12px; }
   #app[data-screen="battle"] .bv-sts { min-height: 13px; max-height: 13px; }
@@ -1162,7 +1283,7 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   .sheet.gift-sheet { max-width: min(1080px, calc(100vw - 48px)); }
   .gift-split { display: grid; grid-template-columns: minmax(0, 1fr) var(--insp, 340px); gap: 24px; align-items: start; }
   .gift-main { min-width: 0; }
-  .gift-read { border-left: 1px solid var(--line); padding-left: 20px; max-height: calc(85dvh - 48px); overflow-y: auto; }
+  .gift-read { border-left: var(--bw) solid var(--outline); padding-left: 20px; max-height: calc(85dvh - 48px); overflow-y: auto; }
   .gift-read .sheet-actions { position: static; margin: 0; padding: 0; background: none; }
   .gift-choice.inspected .card { border-color: var(--you); background: color-mix(in srgb, var(--you) 8%, var(--panel)); }
 }
@@ -1172,7 +1293,7 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
 .vote-pick { display: flex; flex-direction: column; gap: 4px; align-items: stretch; text-align: left; padding: 0; background: none; border: none; clip-path: none; color: var(--text, inherit); font: inherit; font-weight: 400; letter-spacing: normal; text-transform: none; cursor: pointer; min-width: 0; }
 .vote-pick .card { pointer-events: none; }
 .vote-text { overflow-wrap: anywhere; }
-.vote-tag { font-weight: 600; color: var(--gold); overflow-wrap: anywhere; }
+.vote-tag { font-weight: 600; color: var(--action); overflow-wrap: anywhere; }
 .vote .label { white-space: normal; }
 /* The question wraps; Skip keeps its whole word beside it (a Russian «Пропустить» at 390px). */
 .vote > .row.spread > .label { min-width: 0; }
@@ -1185,6 +1306,6 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
 .history button.link { min-height: 36px; text-align: left; }
 .history button.link.on { color: var(--text); }
 /* M4-6: Log in with Telegram. "Open Telegram" is a link that looks like the primary button. */
-a.button { display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 16px; text-decoration: none; font-family: "Chakra Petch", sans-serif; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
-a.button.primary { background: var(--you); color: var(--bg); }
-img.tg-qr { align-self: center; width: 200px; height: 200px; image-rendering: pixelated; background: #fff; }
+a.button { display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 16px; text-decoration: none; font-family: var(--font-head); font-weight: var(--head-weight); letter-spacing: 0.02em; text-transform: none; border-radius: var(--radius); }
+a.button.primary { background: var(--action); color: var(--outline); border: var(--bw) solid var(--outline); box-shadow: var(--drop); }
+img.tg-qr { align-self: center; width: 200px; height: 200px; image-rendering: pixelated; background: var(--qr-white); }

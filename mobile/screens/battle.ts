@@ -1974,11 +1974,12 @@ function svg(tag: string, attrs: Record<string, string | number>): SVGElement {
 }
 
 /** A beam's colour (battle.md (11)): damage, heal, Strength or a buff,
- * Shield, Poison or Curse, a summon; other statuses take their glossary tone. */
-const STATUS_BEAM: Record<string, string> = { Shield: "#5aa7ff", Poison: "#b48cff", Curse: "#b48cff", Strength: "#ffa53d", Vitality: "#3fdc8f", Freeze: "#62d6ff", Blessing: "#ffd25c" };
+ * Shield, Poison or Curse, a summon; other statuses take their glossary tone.
+ * Tokens from style.css (M5-1), so a beam follows the palette. */
+const STATUS_BEAM: Record<string, string> = { Shield: "var(--k-shield)", Poison: "var(--k-poison)", Curse: "var(--k-poison)", Strength: "var(--k-str)", Vitality: "var(--k-heal)", Freeze: "var(--k-freeze)", Blessing: "var(--k-bless)" };
 export function beamColour(b: Pick<Beam, "kind" | "status">): string {
-  if (b.status) return STATUS_BEAM[b.status] ?? "#ffa53d";
-  return { damage: "#ff6b4d", heal: "#3fdc8f", buff: "#ffa53d", debuff: "#b48cff", summon: "#2ee6d4", silence: "#9aa3b5", status: "#ffa53d" }[b.kind];
+  if (b.status) return STATUS_BEAM[b.status] ?? "var(--k-str)";
+  return { damage: "var(--k-dmg)", heal: "var(--k-heal)", buff: "var(--k-str)", debuff: "var(--k-poison)", summon: "var(--k-summon)", silence: "var(--k-silence)", status: "var(--k-str)" }[b.kind];
 }
 
 /** The "why I lost" card for side `you`: the 2–3 enemy chains that did the

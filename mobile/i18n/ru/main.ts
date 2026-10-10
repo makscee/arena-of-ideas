@@ -18,6 +18,10 @@ export const main = {
   "lang.label": "Язык",
   "lang.en": "English",
   "lang.ru": "Русский",
+  "theme.label": "Цвета",
+  "theme.plum": "Ночная слива",
+  "theme.brass": "Чернила и латунь",
+  "theme.felt": "Игорный стол",
 
   "rules.title": "ПРАВИЛА",
   "rules.runLabel": "Забег",

@@ -29,6 +29,7 @@ import { initSound, music, onSoundChange, play, setSound, soundSettings } from "
 import { shopSound } from "./ui/sound-map";
 import { t, withNodes } from "./i18n";
 import { chooseLang, LANGS, uiLang } from "./lang";
+import { applyTheme, chooseTheme, THEMES, uiTheme } from "./theme";
 
 function errorLine(): HTMLElement {
   return h("div", { class: "error", "data-testid": "error" });
@@ -125,6 +126,28 @@ function langRow(): HTMLElement {
     return b;
   };
   return h("div", { class: "row lang-row", role: "group", "aria-label": t("lang.label"), "data-testid": "lang-row" }, ...LANGS.map(pick));
+}
+
+/** The palette switch, under the language (M5-1): Night Plum, Ink & Brass,
+ * Felt Table, each with its swatch. Picking one keeps it on this device and
+ * recolours the page at once. */
+function themeRow(): HTMLElement {
+  const pick = (code: (typeof THEMES)[number]) => {
+    const swatch = h("span", { class: "swatch", "data-theme": code, "aria-hidden": "true" }, h("i", {}), h("i", {}), h("i", {}));
+    const b = button("", () => {
+      chooseTheme(code);
+      for (const o of row.querySelectorAll("button")) {
+        const on = o === b;
+        o.classList.toggle("theme-on", on);
+        o.setAttribute("aria-pressed", String(on));
+      }
+    }, code === uiTheme() ? "theme-on" : "", `theme-${code}`);
+    b.append(swatch, h("span", {}, t(`theme.${code}`)));
+    b.setAttribute("aria-pressed", String(code === uiTheme()));
+    return b;
+  };
+  const row: HTMLElement = h("div", { class: "row theme-row", role: "group", "aria-label": t("theme.label"), "data-testid": "theme-row" }, ...THEMES.map(pick));
+  return row;
 }
 
 /** Draws a Sound row's toggles and sliders from the settings: Sound (the
@@ -381,6 +404,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
         h("div", { class: "row" }, stats, rulesBtn),
         soundRow(),
         langRow(),
+        themeRow(),
         api.ownInvite ? ownLinkRow(api.ownInvite) : null,
         home.telegram?.enabled ? telegramRow(home.telegram.linked, err) : null,
         home.dev
@@ -503,6 +527,7 @@ function runMenu(run: RunView, content: MvpContent, err: HTMLElement, fought?: F
     button(t("menu.rules"), () => (close(), closable(rulesSheet())), "", "menu-rules"),
     soundRow(),
     langRow(),
+    themeRow(),
     button(t("menu.titleMenu"), () => (close(), void guarded(err, () => homeScreen())), "", "menu-title"),
     run.phase === "over" ? null : h("div", { class: "dim small" }, t("menu.waits")),
     run.phase === "over" ? null : button(t("menu.abandon"), () => (close(), abandonSheet(run, "menu", () => void guarded(err, async () => runOverScreen(await api.abandon(run.runId), content)))), "danger", "menu-abandon"),
@@ -1593,6 +1618,7 @@ function switchScreen(code: string, mine: PlayerRef, theirs: PlayerRef): void {
 }
 
 document.documentElement.lang = uiLang();
+applyTheme();
 initSound();
 // A link pasted into a tab that already shows the game only changes the
 // fragment, which reloads nothing: start over so the link opens.
