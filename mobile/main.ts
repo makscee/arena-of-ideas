@@ -24,8 +24,11 @@ import { fuseWarning } from "./ui/fuse-warn";
 import { icon } from "./ui/icon";
 import { app, button, closable, desktopQuery, dismissable, h, isDesktop, keepScreen, onKeys, overlay, screen, show, who } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
+import { telegramSheet } from "./screens/telegram";
 import { initSound, music, onSoundChange, play, setSound, soundSettings } from "./ui/sound";
 import { shopSound } from "./ui/sound-map";
+import { t, withNodes } from "./i18n";
+import { chooseLang, LANGS, uiLang } from "./lang";
 
 function errorLine(): HTMLElement {
   return h("div", { class: "error", "data-testid": "error" });
@@ -63,19 +66,19 @@ let day: DayView | null = null;
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const offersText = (r: MvpRules) => {
   const grow = r.offersGrowAt ?? [];
-  if (grow.length === 0) return `${plural(r.offers, "offer")} a shop`;
+  if (grow.length === 0) return t("rules.offersFixed", { n: r.offers });
   const last = Math.max(...grow);
-  return `${plural(r.offers, "offer")} in round 1, growing to ${offersAt(r, last)} by round ${last}`;
+  return t("rules.offersGrow", { n: r.offers, max: offersAt(r, last), last });
 };
 // "tier II opens in round 3, III in 6, IV in 9", from the rules.
 const tiersText = (r: MvpRules) =>
   r.tierOpensAt
     .map((round, i) => ({ tier: i + 1, round }))
-    .filter((t) => t.round > 1)
-    .map((t, i) => (i === 0 ? `tier ${roman(t.tier)} opens in round ${t.round}` : `${roman(t.tier)} in ${t.round}`))
-    .join(", ") || "every tier is open from round 1";
-const roundLabel = (round: number) => (round > rules.rounds ? "CROWN" : `R${round}/${rules.rounds}`);
-const hearts = (n: number) => h("span", { class: "hearts", "aria-label": plural(n, "heart") }, "♥".repeat(n) + "♡".repeat(Math.max(0, rules.hearts - n)));
+    .filter((x) => x.round > 1)
+    .map((x, i) => t(i === 0 ? "rules.tierFirst" : "rules.tierNext", { tier: roman(x.tier), round: x.round }))
+    .join(", ") || t("rules.tiersOpen");
+const roundLabel = (round: number) => (round > rules.rounds ? t("run.crownLabel") : t("run.roundLabel", { round, rounds: rules.rounds }));
+const hearts = (n: number) => h("span", { class: "hearts", "aria-label": t("run.hearts", { n }) }, "♥".repeat(n) + "♡".repeat(Math.max(0, rules.hearts - n)));
 const openSheet = (u: Parameters<typeof unitSheet>[0], content: MvpContent) => () => closable(unitSheet(u, content));
 
 /** A line of cards, each opening its unit sheet. */
@@ -88,12 +91,12 @@ function team(line: LineUnit[], side: "you" | "ghost", content: MvpContent, test
  * the slider plays a click at the new level. */
 function soundRow(): HTMLElement {
   const toggle = button("", () => setSound({ on: !soundSettings().on }), "sound-toggle", "sound-toggle");
-  const volume = h("input", { type: "range", min: "0", max: "100", step: "5", "aria-label": "Volume", "data-testid": "sound-volume" });
+  const volume = h("input", { type: "range", min: "0", max: "100", step: "5", "aria-label": t("sound.volume"), "data-testid": "sound-volume" });
   // The slider is read from the event, not captured: no closure holds it.
   volume.addEventListener("input", (e) => setSound({ volume: Number((e.currentTarget as HTMLInputElement).value) / 100 }));
   volume.addEventListener("change", () => play("click"));
   const mToggle = button("", () => setSound({ music: !soundSettings().music }), "sound-toggle", "music-toggle");
-  const mVolume = h("input", { type: "range", min: "0", max: "100", step: "5", "aria-label": "Music volume", "data-testid": "music-volume" });
+  const mVolume = h("input", { type: "range", min: "0", max: "100", step: "5", "aria-label": t("sound.musicVolume"), "data-testid": "music-volume" });
   mVolume.addEventListener("input", (e) => setSound({ musicVolume: Number((e.currentTarget as HTMLInputElement).value) / 100 }));
   const row = h("div", { class: "stack sound-row", "data-testid": "sound-row" }, h("div", { class: "row" }, toggle, volume), h("div", { class: "row" }, mToggle, mVolume));
   syncSoundRow(row);
@@ -110,6 +113,20 @@ function soundRow(): HTMLElement {
   return row;
 }
 
+/** The language switch, beside Sound (M4-2): Русский / English, each in its
+ * own words. Picking the other one keeps it on this device and redraws the
+ * page in it. */
+function langRow(): HTMLElement {
+  const now = uiLang();
+  const pick = (code: (typeof LANGS)[number]) => {
+    const b = button(t(`lang.${code}`), () => code !== now && chooseLang(code), code === now ? "lang-on" : "", `lang-${code}`);
+    b.setAttribute("aria-pressed", String(code === now));
+    b.lang = code;
+    return b;
+  };
+  return h("div", { class: "row lang-row", role: "group", "aria-label": t("lang.label"), "data-testid": "lang-row" }, ...LANGS.map(pick));
+}
+
 /** Draws a Sound row's toggles and sliders from the settings: Sound (the
  * master, M) and Music under it (round 4, note 5). */
 function syncSoundRow(row: HTMLElement, s = soundSettings()): void {
@@ -119,18 +136,15 @@ function syncSoundRow(row: HTMLElement, s = soundSettings()): void {
   const mToggle = get<HTMLButtonElement>("music-toggle");
   const mVolume = get<HTMLInputElement>("music-volume");
   if (!toggle || !volume || !mToggle || !mVolume) return;
-  toggle.textContent = s.on ? "🔊 Sound on" : "🔇 Sound off";
+  toggle.textContent = s.on ? t("sound.on") : t("sound.off");
   toggle.setAttribute("aria-pressed", String(s.on));
   volume.value = String(Math.round(s.volume * 100));
   volume.disabled = !s.on;
-  mToggle.textContent = s.music ? "🎵 Music on" : "🎵 Music off";
+  mToggle.textContent = s.music ? t("sound.musicOn") : t("sound.musicOff");
   mToggle.setAttribute("aria-pressed", String(s.music));
   mVolume.value = String(Math.round(s.musicVolume * 100));
   mVolume.disabled = !s.on || !s.music;
 }
-
-/** A hint's verb: "Tap" on the phone, "Click" on a desktop. */
-const tapOrClick = () => (isDesktop() ? "Click" : "Tap");
 
 /** One contextual hint: a line of text, shown where it applies. */
 function hint(text: string): HTMLElement {
@@ -140,28 +154,30 @@ function hint(text: string): HTMLElement {
 /** The rules, readable any time (Home's Rules button). */
 function rulesSheet(): HTMLElement {
   const r = rules;
-  const p = (t: string) => h("p", {}, t);
+  const p = (text: string) => h("p", {}, text);
+  const desk = isDesktop();
+  const growth = { pwr: r.copyGrowth.pwr, hp: r.copyGrowth.hp };
   return h(
     "div",
     { class: "stack rules", "data-testid": "rules" },
-    h("h2", {}, "RULES"),
-    h("div", { class: "label" }, "A run"),
-    p(`${r.rounds} shop rounds, then the Crown: a fight against today's champion. You start with ${plural(r.hearts, "heart")}; a lost fight costs one, and at 0 the run ends before the Crown.`),
-    p(`${r.goldPerRound} gold every round, no carry-over. A unit costs ${r.unitCost}, a reroll ${r.rerollCost}, selling gives back ${r.sellRefund}${r.sellRefundAwoken && r.sellRefundAwoken !== r.sellRefund ? `, ${r.sellRefundAwoken} for an Awoken or fused unit` : ""}. ${offersText(r)}; ${tiersText(r)}.`),
-    p(`Lock an offer to keep it: it stays until you buy it, through rerolls and rounds. Locking is free; ${isDesktop() ? "right-click an offer or press L" : "tap an offer, then Lock"}.`),
-    h("div", { class: "label" }, "The line"),
-    p(`${r.lineSize} units in a line, front first. Change the order in the shop: ${isDesktop() ? "drag a unit, or click it, then ← →" : "tap a unit, then ◀ ▶"}. ${r.battleSize && r.battleSize > r.lineSize ? ` In a fight, summons and revives can grow it to ${r.battleSize}.` : ""} Each round you fight a team another player saved at the same round.`),
-    ...(benchSizeOf(r) > 0 ? [p(`${r.benchSize} bench slots hold units that don't fight; copies still merge into them. ${isDesktop() ? "Drag a unit between the line and the bench, or select it and press B" : "Tap a unit, then To bench or To line"}.`)] : []),
-    h("div", { class: "label" }, "Copies, Awoken, fusion"),
-    p(`Buying a unit you own merges it in: +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP a copy. Copy ${r.copiesToAwaken} awakens it: the same When, plus a new job.`),
-    ...(r.giftChoices ? [p(`The copy that awakens a unit brings a gift: a free pick of 1 of ${r.giftChoices} units from the highest tier open. It joins your line, else your bench; one you own merges in, and if that awakens it, another gift comes. With line and bench full, sell a unit to make room, or skip it. Until you pick or skip, you can only sell and reorder.`)] : []),
-    p(`Two Awoken units fuse: the When of the first you ${isDesktop() ? "pick" : "tap"}, the Who of the second, the Does of both, and the stronger PWR and HP of the two, +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP. A fused unit is final; copies of either part still merge into it. The first player to make a pair names it.`),
-    h("div", { class: "label" }, "Chains"),
-    p(`Units react to events. When one happens, the units it triggers fire in line order, front to back, each at most once per event. In a fight, ${isDesktop() ? "click" : "tap"} any number to see the chain that caused it.`),
-    h("div", { class: "label" }, "The day"),
-    p(`Beat the champion in the Crown and you are a slayer. At ${r.dayEndsAt} Moscow the slayers' best teams play a round-robin, and the winner is the next champion.`),
-    p("Your rating moves once per run: every fight, the Crown too, counts against its opponent's rating (Elo), added up when the run ends. Giving up counts each heart left as a lost fight."),
-    h("div", { class: "dim small", "data-testid": "icon-credits" }, "Icons: Lorc, Delapouite, Sbed, Skoll from game-icons.net, CC BY 3.0; heart-plus by Zeromancer, CC0."),
+    h("h2", {}, t("rules.title")),
+    h("div", { class: "label" }, t("rules.runLabel")),
+    p(t("rules.run", { rounds: r.rounds, hearts: t("run.hearts", { n: r.hearts }) })),
+    p(t("rules.gold", { gold: r.goldPerRound, unit: r.unitCost, reroll: r.rerollCost, refund: r.sellRefund, awoken: r.sellRefundAwoken && r.sellRefundAwoken !== r.sellRefund ? t("rules.goldAwoken", { n: r.sellRefundAwoken }) : "", offers: offersText(r), tiers: tiersText(r) })),
+    p(t(desk ? "rules.lockDesk" : "rules.lockPhone")),
+    h("div", { class: "label" }, t("rules.lineLabel")),
+    p(t(desk ? "rules.lineDesk" : "rules.linePhone", { n: r.lineSize, battle: r.battleSize && r.battleSize > r.lineSize ? t("rules.lineBattle", { n: r.battleSize }) : "" })),
+    ...(benchSizeOf(r) > 0 ? [p(t(desk ? "rules.benchDesk" : "rules.benchPhone", { n: r.benchSize ?? 0 }))] : []),
+    h("div", { class: "label" }, t("rules.copiesLabel")),
+    p(t("rules.copies", { ...growth, awaken: r.copiesToAwaken })),
+    ...(r.giftChoices ? [p(t("rules.gift", { n: r.giftChoices }))] : []),
+    p(t(desk ? "rules.fuseDesk" : "rules.fusePhone", growth)),
+    h("div", { class: "label" }, t("rules.chainsLabel")),
+    p(t(desk ? "rules.chainsDesk" : "rules.chainsPhone")),
+    h("div", { class: "label" }, t("rules.dayLabel")),
+    p(t("rules.day", { at: r.dayEndsAt })),
+    p(t("rules.rating")),
+    h("div", { class: "dim small", "data-testid": "icon-credits" }, t("rules.iconCredits")),
   );
 }
 
@@ -169,24 +185,24 @@ function rulesSheet(): HTMLElement {
 function legendSheet(): HTMLElement {
   const r = rules;
   const row = (sample: Node, text: string) => h("div", { class: "legend-row" }, h("div", { class: "legend-sample" }, sample), h("div", {}, text));
-  const span = (cls: string, t: string) => h("span", { class: cls }, t);
-  const rulesBtn = button("Rules", () => (close(), closable(rulesSheet())), "grow", "legend-rules");
+  const span = (cls: string, text: string) => h("span", { class: cls }, text);
+  const rulesBtn = button(t("menu.rules"), () => (close(), closable(rulesSheet())), "grow", "legend-rules");
   const sheet = h(
     "div",
     { class: "stack legend", "data-testid": "legend" },
-    h("h2", {}, "READING A CARD"),
+    h("h2", {}, t("legend.title")),
     row(
       h("span", { class: "legend-icons" }, h("span", { class: "tone-when" }, icon("flying-flag", 16)), h("span", { class: "tone-enemy" }, icon("targeted", 16)), h("span", { class: "tone-dmg" }, icon("spiky-explosion", 16))),
-      "Top: what it does in icons: when, who, what (here: at battle start, the front enemy, damage). A dot on the first says whose event: teal an ally's, pink an enemy's. Its sheet says it in words.",
+      t("legend.icons"),
     ),
-    row(h("span", { class: "stats" }, span("p", "2"), "/", span("h", "6")), "PWR / HP. PWR is what its strike deals; at 0 HP it falls."),
-    row(span("copies", "●●○"), `Copies toward Awoken: copy ${r.copiesToAwaken} awakens it. Each copy adds +${r.copyGrowth.pwr} PWR / +${r.copyGrowth.hp} HP.`),
-    row(span("copies tag", "AWOKEN ×3"), `Awoken: the same When, plus a new job; ×${r.copiesToAwaken} copies merged in. Two Awoken units can fuse.`),
-    ...(r.giftChoices ? [row(span("copies tag", "🎁 GIFT"), `Awakening a unit brings a gift: pick 1 of ${r.giftChoices} cards for free, or skip it. Set aside, it waits behind "Open gift".`)] : []),
-    row(span("copies tag", "FUSED ×2"), "Two Awoken units fused into one: final, copies of either part still merge in."),
-    row(span("cost", "3g ＋"), "An offer's price. ＋: you own it, so buying merges a copy in. The numeral top right (I–IV) is its tier."),
-    row(span("cost", "🔒 3g"), "A locked offer: it stays through rerolls and rounds until you buy or unlock it."),
-    h("div", { class: "dim small" }, `${tapOrClick()} any card for its sheet: what it does now, and its Awoken form one ${isDesktop() ? "click" : "tap"} away.`),
+    row(h("span", { class: "stats" }, span("p", "2"), "/", span("h", "6")), t("legend.stats")),
+    row(span("copies", "●●○"), t("legend.copies", { awaken: r.copiesToAwaken, pwr: r.copyGrowth.pwr, hp: r.copyGrowth.hp })),
+    row(span("copies tag", t("legend.awokenTag")), t("legend.awoken", { n: r.copiesToAwaken })),
+    ...(r.giftChoices ? [row(span("copies tag", t("legend.giftTag")), t("legend.gift", { n: r.giftChoices }))] : []),
+    row(span("copies tag", t("legend.fusedTag")), t("legend.fused")),
+    row(span("cost", t("legend.costTag")), t("legend.cost")),
+    row(span("cost", t("legend.lockedTag")), t("legend.locked")),
+    h("div", { class: "dim small" }, t(isDesktop() ? "legend.sheetDesk" : "legend.sheetPhone")),
   );
   const close = closable(sheet, h("div", { class: "row" }, rulesBtn));
   return sheet;
@@ -198,15 +214,42 @@ function nameScreen(): void {
   music("home");
   // An invite-only server (slice 13) takes no new names: a player comes from
   // their invite link. One open to all joins them as the open link does. Nothing but the title shows until /health says which.
-  show(h("h1", {}, "ARENA OF IDEAS"));
+  show(h("h1", {}, t("name.title")));
   void api.health().then(
-    (hl) => (hl.open ? joinForm("") : hl.invites ? show(h("h1", {}, "ARENA OF IDEAS"), h("p", { class: "dim", "data-testid": "invite-only" }, "Arena is invite-only for now. Open your invite link on this device to play.")) : nameForm()),
+    (hl) => {
+      const tg = telegramLogin(hl.telegram);
+      if (hl.open) joinForm("", tg);
+      else if (hl.invites) show(h("h1", {}, t("name.title")), h("p", { class: "dim", "data-testid": "invite-only" }, t("name.inviteOnly")), tg);
+      else nameForm(tg);
+    },
     () => nameForm(),
   );
 }
 
-function nameForm(): void {
-  const input = h("input", { placeholder: "Your name", maxlength: "24", autocomplete: "nickname", "data-testid": "name-input" });
+/** M4-6: "Log in with Telegram" on the welcome screens, when the server has it. */
+function telegramLogin(mode: false | "bot" | "fake" | undefined): HTMLElement | null {
+  if (!mode) return null;
+  return button(t("tg.login"), () => telegramSheet({ link: false, fake: mode === "fake", onDone: () => void homeScreen() }), "", "tg-login");
+}
+
+/** M4-6: the title menu's Telegram row: Link Telegram, or linked with Unlink. */
+function telegramRow(linked: boolean, err: HTMLElement): HTMLElement {
+  const link = () => void guarded(err, async () => {
+    const hl = await api.health();
+    telegramSheet({ link: true, fake: hl.telegram === "fake", onDone: () => void homeScreen() });
+  });
+  return linked
+    ? h(
+        "div",
+        { class: "row", "data-testid": "tg-row" },
+        h("span", { class: "dim small grow", "data-testid": "tg-linked" }, t("tg.linked")),
+        button(t("tg.unlink"), () => void guarded(err, async () => { await api.telegramUnlink(); await homeScreen(); }), "small", "tg-unlink"),
+      )
+    : button(t("tg.link"), link, "", "tg-link");
+}
+
+function nameForm(tg: HTMLElement | null = null): void {
+  const input = h("input", { placeholder: t("name.placeholder"), maxlength: "24", autocomplete: "nickname", "data-testid": "name-input" });
   const err = errorLine();
   const go = () => guarded(err, async () => {
     await api.register(input.value.trim());
@@ -214,10 +257,11 @@ function nameForm(): void {
   });
   input.addEventListener("keydown", (e) => e.key === "Enter" && void go());
   show(
-    h("h1", {}, "ARENA OF IDEAS"),
-    h("p", { class: "dim" }, "An auto-battler of chains. Pick a name; it stays on this device."),
+    h("h1", {}, t("name.title")),
+    h("p", { class: "dim" }, t("name.intro")),
     input,
-    button("Enter", () => void go(), "primary", "name-submit"),
+    button(t("name.enter"), () => void go(), "primary", "name-submit"),
+    tg,
     err,
   );
   input.focus();
@@ -244,26 +288,26 @@ async function homeScreen(ended: number | null = null): Promise<void> {
   const r = home.rating;
   const play = active
     ? button("", () => void guarded(err, async () => shopScreen(await api.run(active.runId), content)), "primary", "play")
-    : button("Play", () => void guarded(err, async () => shopScreen(await api.startRun(), content)), "primary", "play");
-  if (active) play.replaceChildren(`Continue run · ${active.round > rules.rounds ? "Crown" : `R${active.round}`} `, hearts(active.hearts));
+    : button(t("home.play"), () => void guarded(err, async () => shopScreen(await api.startRun(), content)), "primary", "play");
+  if (active) play.replaceChildren(t("home.continue", { where: active.round > rules.rounds ? t("home.continueCrown") : t("home.continueRound", { round: active.round }) }), hearts(active.hearts));
   const newRun = active
-    ? button("New run", () => abandonSheet(active, "new", () => void guarded(err, async () => {
+    ? button(t("home.newRun"), () => abandonSheet(active, "new", () => void guarded(err, async () => {
         // The given-up run's end and rating change first, as ☰ Abandon shows
         // them; its "New run" starts the next one.
         runOverScreen(await api.abandon(active.runId), content, "", true);
       })), "", "new-run")
     : null;
-  const codex = button("Codex", () => void guarded(err, () => openCodex()), "", "codex");
-  const stats = button("Stats", () => void statsScreen({ content, onBack: () => void homeScreen(), onCodex: () => void openCodex() }), "grow", "stats");
-  const rulesBtn = button("Rules", () => closable(rulesSheet()), "grow", "rules-open");
+  const codex = button(t("menu.codex"), () => void guarded(err, () => openCodex()), "", "codex");
+  const stats = button(t("home.stats"), () => void statsScreen({ content, onBack: () => void homeScreen(), onCodex: () => void openCodex() }), "grow", "stats");
+  const rulesBtn = button(t("menu.rules"), () => closable(rulesSheet()), "grow", "rules-open");
   const endDay = button(
-    "End day now",
+    t("dev.endDay"),
     () =>
       void guarded(err, async () => {
         try {
           await api.endDay();
         } catch (e) {
-          if (e instanceof ApiError && (e.status === 404 || e.status === 501)) throw new Error(e.status === 404 ? "End day is a dev tool (MVP_DEV=1)." : "The day arrives in slice 5.");
+          if (e instanceof ApiError && (e.status === 404 || e.status === 501)) throw new Error(e.status === 404 ? t("dev.endDayDev") : t("dev.endDaySlice"));
           throw e;
         }
         await homeScreen(home.day.seq);
@@ -271,19 +315,19 @@ async function homeScreen(ended: number | null = null): Promise<void> {
     "small",
     "end-day",
   );
-  const grantIdea = button("+1 idea", () => void guarded(err, async () => { await api.grantIdea(); await homeScreen(); }), "small", "grant-idea");
+  const grantIdea = button(t("dev.grantIdea"), () => void guarded(err, async () => { await api.grantIdea(); await homeScreen(); }), "small", "grant-idea");
   // M2-9: a tier I unit becomes your idea, entered today: its cards show 💡 and NEW, its sheet "idea by @you".
-  const creditUnit = button("A unit is my idea", () => void guarded(err, async () => { setCardCredits((await api.creditUnit()).units); await homeScreen(); }), "small", "credit-unit");
+  const creditUnit = button(t("dev.creditUnit"), () => void guarded(err, async () => { setCardCredits((await api.creditUnit()).units); await homeScreen(); }), "small", "credit-unit");
   // M2-8: a candidate without the model (M2-5, M2-6), the overnight check now,
   // fake votes, and who qualifies.
   const devNote = (text: string) => ((err.textContent = text), err.classList.add("dev-note"));
-  const seedCandidate = button("Seed a candidate", () => void guarded(err, async () => { await api.seedCandidate(); devNote("A candidate of yours waits for the overnight check."); }), "small", "seed-candidate");
-  const overnight = button("Run the overnight check now", () => void guarded(err, async () => {
+  const seedCandidate = button(t("dev.seedCandidate"), () => void guarded(err, async () => { await api.seedCandidate(); devNote(t("dev.seeded")); }), "small", "seed-candidate");
+  const overnight = button(t("dev.overnight"), () => void guarded(err, async () => {
     const { started } = await api.overnightCheck();
-    devNote(started ? `Checking ${started === 1 ? "1 idea" : `${started} ideas`}: a few minutes each. My ideas shows the result.` : "No idea waits for the check.");
+    devNote(started ? t("dev.checking", { n: started }) : t("dev.noCheck"));
   }), "small", "overnight-check");
-  const fakeVotes = button("+5 fake votes", () => void guarded(err, async () => { await api.fakeVotes(); closable(candidatesSheet(await api.candidates())); }), "small", "fake-votes");
-  const candidates = button("Candidates", () => void guarded(err, async () => void closable(candidatesSheet(await api.candidates()))), "small", "candidates");
+  const fakeVotes = button(t("dev.fakeVotes"), () => void guarded(err, async () => { await api.fakeVotes(); closable(candidatesSheet(await api.candidates())); }), "small", "fake-votes");
+  const candidates = button(t("dev.candidates"), () => void guarded(err, async () => void closable(candidatesSheet(await api.candidates()))), "small", "candidates");
   const last = home.day.lastPlayoff ?? null;
   const justEnded = ended !== null && last?.seq === ended ? last : null;
   const playoff = playoffPanel(last, champ?.player ?? null, content, err);
@@ -291,7 +335,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
     h(
       "div",
       { class: "row spread" },
-      h("h1", {}, "ARENA"),
+      h("h1", {}, t("home.title")),
       h("div", { class: "row me" }, who(api.player?.name ?? "", "dim"), h("span", { class: "dim keep" }, "·"), h("span", { class: "num keep", "data-testid": "rating" }, `${r?.rating ?? rules.ratingStart}`)),
     ),
     // The dev "End day now" just ran: say so first, with how the day ended
@@ -301,22 +345,22 @@ async function homeScreen(ended: number | null = null): Promise<void> {
     h(
       "div",
       { class: "home-main" },
-      ended !== null ? h("div", { class: "notice", "data-testid": "day-ended" }, `Day ${ended} ended just now. Today is day ${home.day.seq}.`) : null,
+      ended !== null ? h("div", { class: "notice", "data-testid": "day-ended" }, t("home.dayEnded", { ended, today: home.day.seq })) : null,
       justEnded ? playoff : null,
       h(
         "div",
         { class: "panel stack champion", "data-testid": "champion" },
-        h("div", { class: "row spread" }, h("div", { class: "label keep" }, `👑 Champion · day ${home.day.seq}`), champ ? whoMark(champ.player, "ghost-name") : null),
-        champ ? team(champ.line, "ghost", content) : h("div", { class: "dim" }, "No champion yet. The day arrives soon."),
-        h("div", { class: "dim small", "data-testid": "slayers" }, champ ? slayersLine(home.day.slayers) : `New champion at ${rules.dayEndsAt} Moscow.`),
+        h("div", { class: "row spread" }, h("div", { class: "label keep" }, t("home.champion", { day: home.day.seq })), champ ? whoMark(champ.player, "ghost-name") : null),
+        champ ? team(champ.line, "ghost", content) : h("div", { class: "dim" }, t("home.noChampion")),
+        h("div", { class: "dim small", "data-testid": "slayers" }, champ ? slayersLine(home.day.slayers) : t("home.newChampionAt", { at: rules.dayEndsAt })),
       ),
       champ
         ? hint(
             champ.player.id === api.player?.id
-              ? `This is your team. Others try to beat it today, and so can you, with another team. ${tapOrClick()} a card to read it.`
+              ? t(isDesktop() ? "home.hintOwnDesk" : "home.hintOwnPhone")
               : r
-                ? `${tapOrClick()} a card to read it. Beat this team in the Crown to become a slayer.`
-                : `This is the team to beat. ${tapOrClick()} a card to read it, then Play.`,
+                ? t(isDesktop() ? "home.hintRatedDesk" : "home.hintRatedPhone")
+                : t(isDesktop() ? "home.hintNewDesk" : "home.hintNewPhone"),
           )
         : null,
       justEnded ? null : playoff,
@@ -336,9 +380,11 @@ async function homeScreen(ended: number | null = null): Promise<void> {
         codex,
         h("div", { class: "row" }, stats, rulesBtn),
         soundRow(),
+        langRow(),
         api.ownInvite ? ownLinkRow(api.ownInvite) : null,
+        home.telegram?.enabled ? telegramRow(home.telegram.linked, err) : null,
         home.dev
-          ? h("details", { class: "dev" }, h("summary", {}, "Dev"), h("div", { class: "row wrap" }, endDay, grantIdea, creditUnit, seedCandidate, overnight, fakeVotes, candidates))
+          ? h("details", { class: "dev" }, h("summary", {}, t("dev.title")), h("div", { class: "row wrap" }, endDay, grantIdea, creditUnit, seedCandidate, overnight, fakeVotes, candidates))
           : null,
       ),
       // M2-8's vote card, under the menu: quiet, and Play stays on the first screen.
@@ -356,17 +402,17 @@ function candidatesSheet(list: CandidateScore[]): HTMLElement {
   return h(
     "div",
     { class: "stack", "data-testid": "candidates" },
-    h("div", { class: "label" }, "Candidates"),
+    h("div", { class: "label" }, t("dev.candidates")),
     ...(list.length
       ? list.map((c) =>
           h(
             "div",
             { class: "idea-row", "data-testid": "candidate-row", "data-qualified": String(c.qualified) },
-            h("div", { class: "grow" }, `${c.emoji} ${c.name}`, h("div", { class: "dim small num" }, `${c.won} of ${c.votes} votes (${pct(c.share)}) · novelty ${pct(c.novelty)} · score ${pct(c.score)}`)),
-            h("div", { class: c.qualified ? "keep" : "dim keep" }, c.qualified ? "qualified" : "not yet"),
+            h("div", { class: "grow" }, `${c.emoji} ${c.name}`, h("div", { class: "dim small num" }, t("dev.candidateScore", { won: c.won, votes: c.votes, share: pct(c.share), novelty: pct(c.novelty), score: pct(c.score) }))),
+            h("div", { class: c.qualified ? "keep" : "dim keep" }, c.qualified ? t("dev.qualified") : t("dev.notYet")),
           ),
         )
-      : [h("div", { class: "dim" }, "No candidates in the vote.")]),
+      : [h("div", { class: "dim" }, t("dev.noCandidates"))]),
   );
 }
 
@@ -374,15 +420,12 @@ function candidatesSheet(list: CandidateScore[]): HTMLElement {
  * next, in My ideas' words ("💡 1 more run for an idea", M3-2). Tapping it
  * opens My ideas (M2-4, screens/ideas.ts). */
 function ideasLine(ideas: IdeasView): HTMLElement {
-  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
   // M2-6: an idea waiting for its pick comes first: "💡 Your idea is ready".
   const text = ideas.ready
-    ? ideas.ready === 1
-      ? "💡 Your idea is ready"
-      : `💡 ${ideas.ready} ideas are ready`
+    ? t("home.ideasReady", { n: ideas.ready })
     : ideas.held > 0 || ideas.nextIn === null
-      ? `💡 ${plural(ideas.held, "idea")}`
-      : `💡 ${ideaWhy(ideas.nextIn)}`;
+      ? t("home.ideasHeld", { n: ideas.held })
+      : t("home.ideasNext", { why: ideaWhy(ideas.nextIn) });
   const b = button(text, () => void ideasScreen({ onBack: () => void homeScreen(), onUnknown: () => (api.forget(), nameScreen()) }), "small link ideas", "ideas");
   if (ideas.ready) b.dataset.ready = String(ideas.ready);
   return b;
@@ -393,19 +436,15 @@ function ideasLine(ideas: IdeasView): HTMLElement {
  * menu, which ends the waiting run first. */
 function abandonSheet(run: RunView, why: "menu" | "new", onConfirm: () => void): void {
   const crown = run.round > rules.rounds;
-  const cost = crown
-    ? "It counts as a lost Crown, and your rating moves for it."
-    : run.hearts === 1
-      ? "The 1 heart left counts as a lost fight, and your rating moves for it."
-      : `Every heart left counts as a lost fight: ${run.hearts} losses, and your rating moves for them.`;
+  const cost = crown ? t("abandon.costCrown") : t("abandon.costHearts", { n: run.hearts });
   const close = overlay(
-    h("div", { class: "label" }, why === "new" ? `A run waits · ${crown ? "the Crown" : `round ${run.round} of ${rules.rounds}`}` : "Abandon run"),
-    h("p", { "data-testid": "abandon-text" }, `${why === "new" ? "Abandon this run? You'll see how it went, then start a new one. " : "End this run now? "}${cost}`),
+    h("div", { class: "label" }, why === "new" ? (crown ? t("abandon.waitsCrown") : t("abandon.waitsRound", { round: run.round, rounds: rules.rounds })) : t("abandon.title")),
+    h("p", { "data-testid": "abandon-text" }, t(why === "new" ? "abandon.askNew" : "abandon.askMenu", { cost })),
     h(
       "div",
       { class: "row sheet-actions" },
-      button("Cancel", () => close(), "grow", "abandon-cancel"),
-      button("Abandon", () => (close(), onConfirm()), "danger grow", "abandon-confirm"),
+      button(t("abandon.cancel"), () => close(), "grow", "abandon-cancel"),
+      button(t("abandon.confirm"), () => (close(), onConfirm()), "danger grow", "abandon-confirm"),
     ),
   );
 }
@@ -453,19 +492,20 @@ function runMenu(run: RunView, content: MvpContent, err: HTMLElement, fought?: F
   if (app.querySelector('[data-testid="run-menu"]')) return;
   const round = fought ? fought.round : run.round;
   const crown = fought ? fought.kind === "crown" : round > rules.rounds;
-  const codex = button("Codex", () => (close(), void guarded(err, () => openCodex())), "", "menu-codex");
+  const codex = button(t("menu.codex"), () => (close(), void guarded(err, () => openCodex())), "", "menu-codex");
   const menu = h(
     "div",
     { class: "stack run-menu", "data-testid": "run-menu" },
-    h("div", { class: "label" }, run.phase === "over" ? "Run · over" : crown ? "Run · the Crown" : `Run · round ${round} of ${rules.rounds}`),
+    h("div", { class: "label" }, run.phase === "over" ? t("menu.runOver") : crown ? t("menu.runCrown") : t("menu.runRound", { round, rounds: rules.rounds })),
     // Over a battle that was playing, Resume plays on (R2-17 batch F).
-    button("Resume", () => (close(), resume?.()), "primary", "menu-resume"),
+    button(t("menu.resume"), () => (close(), resume?.()), "primary", "menu-resume"),
     codex,
-    button("Rules", () => (close(), closable(rulesSheet())), "", "menu-rules"),
+    button(t("menu.rules"), () => (close(), closable(rulesSheet())), "", "menu-rules"),
     soundRow(),
-    button("Title menu", () => (close(), void guarded(err, () => homeScreen())), "", "menu-title"),
-    run.phase === "over" ? null : h("div", { class: "dim small" }, "The run waits; Continue brings you back."),
-    run.phase === "over" ? null : button("Abandon run…", () => (close(), abandonSheet(run, "menu", () => void guarded(err, async () => runOverScreen(await api.abandon(run.runId), content)))), "danger", "menu-abandon"),
+    langRow(),
+    button(t("menu.titleMenu"), () => (close(), void guarded(err, () => homeScreen())), "", "menu-title"),
+    run.phase === "over" ? null : h("div", { class: "dim small" }, t("menu.waits")),
+    run.phase === "over" ? null : button(t("menu.abandon"), () => (close(), abandonSheet(run, "menu", () => void guarded(err, async () => runOverScreen(await api.abandon(run.runId), content)))), "danger", "menu-abandon"),
   );
   // A tap outside the menu, or Esc, is a Resume too.
   const close = dismissable((close) => (close(), resume?.()), menu);
@@ -473,30 +513,28 @@ function runMenu(run: RunView, content: MvpContent, err: HTMLElement, fought?: F
 
 /** The champion card's last line: what today's slayers mean at the day's end. */
 function slayersLine(n: number): string {
-  const at = `${rules.dayEndsAt} Moscow`;
-  if (n === 0) return `No slayers yet. If nobody slays it by ${at}, this team stays champion.`;
-  if (n === 1) return `1 slayer today. At ${at} the slayer's team takes the crown, unless others slay it too.`;
-  return `${n} slayers today. At ${at} their teams play a round-robin for the crown.`;
+  const at = rules.dayEndsAt;
+  return n === 0 ? t("home.slayersNone", { at }) : t("home.slayers", { n, at });
 }
 
 /** "@name", with 🤖 after a bot's. */
 function whoMark(p: PlayerRef, cls = ""): HTMLElement {
   const el = who(p.name, cls);
-  return p.bot ? h("span", { class: "who-mark" }, el, h("span", { class: "bot", "aria-label": "bot" }, "🤖")) : el;
+  return p.bot ? h("span", { class: "who-mark" }, el, h("span", { class: "bot", "aria-label": t("who.bot") }, "🤖")) : el;
 }
 
 /** How a day ended, in one sentence. With no playoff to show (no slayers,
  * or one who won without a game) the sentence is all there is; `champion` is
  * today's, the one who stayed or was crowned. Slayers may be bots (🤖). */
 function playoffSummary(p: PlayoffResult, champion: PlayerRef | null): (Node | string)[] {
-  if (p.entrants.length === 0) return champion ? ["No slayers, so ", whoMark(champion), " stays champion."] : ["No slayers, and no champion yet."];
+  if (p.entrants.length === 0) return champion ? withNodes(t("playoff.noSlayersStays"), { who: whoMark(champion) }) : [t("playoff.noSlayers")];
   if (p.entrants.length === 1) {
     const only = p.winner ?? p.entrants[0]!;
-    return [whoMark(only), " was the only slayer, so ", only.bot ? "its" : "their", " team is the new champion."];
+    return withNodes(t(only.bot ? "playoff.onlySlayerBot" : "playoff.onlySlayer"), { who: whoMark(only) });
   }
   const bots = p.entrants.filter((x) => x.bot).length;
-  const field = `${p.entrants.length} slayers${bots === p.entrants.length ? ", all bots" : bots ? `, ${bots} of them ${bots === 1 ? "a bot" : "bots"}` : ""}`;
-  return p.winner ? ["👑 ", whoMark(p.winner), ` won the playoff (${field}) and is the new champion.`] : [`The playoff (${field}) had no winner.`];
+  const field = t("playoff.field", { n: p.entrants.length, bots: bots === p.entrants.length ? t("playoff.allBots") : bots ? t("playoff.someBots", { n: bots }) : "" });
+  return p.winner ? withNodes(t("playoff.won", { field }), { who: whoMark(p.winner) }) : [t("playoff.noWinner", { field })];
 }
 
 /** A day's end: a sentence, and with a real playoff (two or more slayers)
@@ -508,26 +546,26 @@ function playoffPanel(p: PlayoffResult | null, champion: PlayerRef | null, conte
       const battle = await api.battle(battleId);
       battleScreen({ battle, content, onDone: () => void homeScreen() });
     }), "small game", "playoff-game");
-    btn.replaceChildren(whoMark(a), " v ", whoMark(b));
+    btn.replaceChildren(...withNodes(t("playoff.versus"), { a: whoMark(a), b: whoMark(b) }));
     return btn;
   };
   const played = p.entrants.length >= 2;
   const games = h("div", { class: "games", "data-testid": "playoff-games" }, ...p.games.map((g) => watch(g.battleId, g.a, g.b)));
   games.hidden = true;
-  const toggle = button(`Watch the games (${p.games.length})`, () => {
+  const toggle = button(t("playoff.watch", { n: p.games.length }), () => {
     games.hidden = !games.hidden;
-    toggle.textContent = games.hidden ? `Watch the games (${p.games.length})` : "Hide the games";
+    toggle.textContent = games.hidden ? t("playoff.watch", { n: p.games.length }) : t("playoff.hide");
   }, "small", "playoff-games-open");
   return h(
     "div",
     { class: "panel stack playoff", "data-testid": "playoff" },
-    h("div", { class: "label" }, played ? `Playoff · day ${p.seq}` : `Day ${p.seq} ended`),
+    h("div", { class: "label" }, played ? t("playoff.label", { day: p.seq }) : t("playoff.dayEnded", { day: p.seq })),
     h("div", { "data-testid": "playoff-summary" }, ...playoffSummary(p, champion)),
     played
       ? h(
           "div",
           { class: "standings" },
-          ...p.standings.map((s, i) => h("div", { class: "standing", "data-testid": "playoff-standing" }, h("span", { class: "dim" }, `${i + 1}`), whoMark(s.player), h("span", { class: "num" }, `${s.wins}W ${s.draws}D ${s.losses}L`))),
+          ...p.standings.map((s, i) => h("div", { class: "standing", "data-testid": "playoff-standing" }, h("span", { class: "dim" }, `${i + 1}`), whoMark(s.player), h("span", { class: "num" }, t("playoff.record", { w: s.wins, d: s.draws, l: s.losses })))),
         )
       : null,
     played && p.games.length ? toggle : null,
@@ -577,7 +615,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     });
   /** Lock or unlock an offer (free); on desktop it stays chosen in the inspector. */
   const lock = (o: Offer) => void decide({ kind: "lock", slot: o.slot }, -1, desk ? o.slot : -1);
-  const lockLabel = (o: Offer) => (o.locked ? "🔓 Unlock" : "🔒 Lock");
+  const lockLabel = (o: Offer) => (o.locked ? t("board.unlock") : t("board.lock"));
   // The last shop round has no Lock: the Crown clears the offers. Unlock stays.
   const lastShop = run.round >= rules.rounds;
   const canLock = (o: Offer) => !run.gift && (o.locked === true || !lastShop);
@@ -650,7 +688,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const renderLine = () => {
     line.replaceChildren(...Array.from({ length: L }, (_, i) => slotCard(i)));
     bench.replaceChildren(
-      h("div", { class: "bench-label label" }, h("span", {}, "Bench"), h("span", {}, `${run.bench.length}/${B}`)),
+      h("div", { class: "bench-label label" }, h("span", {}, t("board.bench")), h("span", {}, `${run.bench.length}/${B}`)),
       ...Array.from({ length: B }, (_, i) => slotCard(L + i)),
     );
     for (const o of offers.children) o.classList.toggle("selected", chosen !== null && (o as HTMLElement).dataset.testid === `offer-${chosen}`);
@@ -686,11 +724,11 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   };
 
   const actionButtons = (): HTMLElement[] => {
-    if (pick.mode === "fuse") return [h("span", { class: "dim grow" }, desk ? "Click the second Awoken unit." : "Tap the second Awoken unit."), button(desk ? "Cancel · Esc" : "Cancel", () => ((pick = { mode: "none" }), renderLine()), "", "fuse-cancel")];
+    if (pick.mode === "fuse") return [h("span", { class: "dim grow" }, desk ? t("board.fuseSecondDesk") : t("board.fuseSecondPhone")), button(desk ? t("board.cancelDesk") : t("board.cancel"), () => ((pick = { mode: "none" }), renderLine()), "", "fuse-cancel")];
     if (pick.mode !== "picked") return [];
     const i = pick.index;
     const u = unitAt(i)!;
-    const info = button("Info", openSheet(u, content), "", "info");
+    const info = button(t("board.info"), openSheet(u, content), "", "info");
     if (crown) return desk ? [] : [info];
     const left = button(desk ? "◀ ←" : "◀", () => void decide({ kind: "reorder", from: i, to: i - 1 }, i - 1), "", "move-left");
     const right = button(desk ? "→ ▶" : "▶", () => void decide({ kind: "reorder", from: i, to: i + 1 }, i + 1), "", "move-right");
@@ -703,12 +741,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       // Into the other zone's first empty slot, else a swap with its back unit: the button says which.
       const swaps = unitAt(other) !== undefined;
       // The phone's row of buttons stays one row: "Swap" there, the hint says with whom.
-      const word = i < L ? (swaps ? (desk ? `Swap with bench ${B}` : "Swap") : "To bench") : swaps ? (desk ? "Swap with back" : "Swap") : "To line";
+      const word = i < L ? (swaps ? (desk ? t("board.swapBench", { n: B }) : t("board.swap")) : t("board.toBench")) : swaps ? (desk ? t("board.swapBack") : t("board.swap")) : t("board.toLine");
       out.push(button(desk ? `${word} · B` : word, () => moveTo(i, other), "", i < L ? "to-bench" : "to-line"));
     }
-    if (u.kind === "unit" && u.form === "awoken" && awoken >= 2 && !run.gift) out.push(button(desk ? "Fuse · F" : "Fuse", () => ((pick = { mode: "fuse", first: i }), renderLine()), "", "fuse"));
+    if (u.kind === "unit" && u.form === "awoken" && awoken >= 2 && !run.gift) out.push(button(desk ? t("board.fuseDesk") : t("board.fuse"), () => ((pick = { mode: "fuse", first: i }), renderLine()), "", "fuse"));
     const value = sellValue(rules, u);
-    out.push(button(desk ? `Sell +${value}g · S` : `Sell +${value}`, () => void decide({ kind: "sell", index: i }), "danger", "sell"));
+    out.push(button(desk ? t("board.sellDesk", { n: value }) : t("board.sell", { n: value }), () => void decide({ kind: "sell", index: i }), "danger", "sell"));
     return out;
   };
 
@@ -732,9 +770,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     if (at?.kind === "line" && unitAt(at.index)) {
       const mine = at.index === sel;
       inspector.replaceChildren(
-        h("div", { class: "label" }, `${mine ? "Selected · " : ""}${at.index < L ? `In your line, slot ${at.index + 1}` : `On your bench, slot ${at.index - L + 1} · doesn't fight`}`),
+        h("div", { class: "label" }, (mine ? t("board.selected") : "") + (at.index < L ? t("board.inLine", { n: at.index + 1 }) : t("board.onBench", { n: at.index - L + 1 }))),
         unitSheet(unitAt(at.index)!, content),
-        mine || pick.mode === "fuse" ? h("div", { class: "row actions", "data-testid": "actions" }, ...actionButtons()) : h("div", { class: "dim small" }, crown ? "Your line is final for the Crown." : "Click to select it: move, bench, fuse or sell."),
+        mine || pick.mode === "fuse" ? h("div", { class: "row actions", "data-testid": "actions" }, ...actionButtons()) : h("div", { class: "dim small" }, crown ? t("board.crownFinal") : t("board.clickSelect")),
       );
       return ratesToFoot();
     }
@@ -742,12 +780,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const n = run.offers.findIndex((o) => o.slot === at.slot);
       const o = run.offers[n];
       if (!o) return;
-      const head = h("div", { class: "label" }, `Shop · offer ${n + 1} · key ${n + 1}`);
+      const head = h("div", { class: "label" }, t("board.offerHead", { n: n + 1 }));
       inspector.replaceChildren(head, h("div", { class: "dim small" }, "…"));
       void offerBody(o).then(
         ({ sheet, blocked }) => {
           if (inspected !== key) return;
-          const buy = button(buttonRefusal(blocked) || `Buy ${o.cost}g · ${n + 1}`, () => void decide({ kind: "buy", slot: o.slot }), "primary grow", "buy");
+          const buy = button(buttonRefusal(blocked) || t("board.buyDesk", { cost: o.cost, n: n + 1 }), () => void decide({ kind: "buy", slot: o.slot }), "primary grow", "buy");
           buy.disabled = blocked !== "";
           const lockBtn = canLock(o) ? [button(`${lockLabel(o)} · L`, () => lock(o), "", "lock")] : [];
           inspector.replaceChildren(head, sheet, h("div", { class: "row" }, ...lockBtn, buy));
@@ -761,33 +799,33 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     }
     inspector.replaceChildren(
       ...(pick.mode === "fuse" ? [h("div", { class: "row actions", "data-testid": "actions" }, ...actionButtons())] : []),
-      h("div", { class: "dim" }, crown ? "Hover a card to read it here." : "Hover a card to read it here. Click a unit in your line to select it; double-click an offer to buy it."),
+      h("div", { class: "dim" }, crown ? t("inspector.idleCrown") : t("inspector.idle")),
     );
   };
 
   /** The hint that matters most right now, or none. */
   const shopHint = (): HTMLElement | null => {
-    if (!desk && !crown && pick.mode === "picked" && pick.index >= L && run.line.length >= L) return hint("Line full: Swap trades with the back unit, or tap one.");
+    if (!desk && !crown && pick.mode === "picked" && pick.index >= L && run.line.length >= L) return hint(t("hint.lineFullSwap"));
     if (pick.mode !== "none") return null;
     // run.ts refuses every decision but the fight in the crown phase: the line is final.
-    if (crown) return hint(ownCrown ? "The Crown: today's champion is your own team. Beat it to be a slayer again; a loss costs a heart. Your line is final." : "The Crown: your line, as it is, against today's champion. Win it to become a slayer; a loss costs a heart.");
+    if (crown) return hint(ownCrown ? t("hint.ownCrown") : t("hint.crown"));
     // Only a unit whose next copy is on offer right now.
     const almost = board.find((u) => u.kind === "unit" && u.form === "sleeping" && u.copies === rules.copiesToAwaken - 1 && run.offers.some((o) => o.unitId === u.unitId));
     const canBuy = run.offers.some((o) => o.cost <= run.gold);
-    if (awoken >= 2 && !run.gift) return hint(desk ? "Two Awoken units can fuse: select one, then F." : "Two Awoken units can fuse: tap one, then Fuse.");
-    if (almost && run.offers.some((o) => o.unitId === almost.unitId && o.cost <= run.gold)) return hint(`One more ${almost.name} awakens it. It's in the shop.`);
-    if (run.line.length === 0 && run.bench.length > 0) return hint("Move a unit to your line: only the line fights.");
-    if (run.line.length === 0 && !canBuy) return hint("No gold for a unit. Fight to move on: an empty line loses, and costs a heart.");
-    if (run.line.length === 0) return hint(desk ? "Double-click an offer, or press its number, to buy it. Your line fights front first." : "Tap an offer to read it and buy it. Your line fights front first.");
-    if (run.round === 1 && run.line.length > 0 && run.gold < rules.unitCost) return hint("Out of gold for units. Fight when ready.");
-    if (run.line.length > 1 && run.round <= 2) return hint(desk ? "Drag a unit to move it, or click it: ← → move it, S sells it." : "Tap a unit in your line to move, sell or read it.");
+    if (awoken >= 2 && !run.gift) return hint(desk ? t("hint.fuseDesk") : t("hint.fusePhone"));
+    if (almost && run.offers.some((o) => o.unitId === almost.unitId && o.cost <= run.gold)) return hint(t("hint.oneMore", { name: almost.name }));
+    if (run.line.length === 0 && run.bench.length > 0) return hint(t("hint.moveToLine"));
+    if (run.line.length === 0 && !canBuy) return hint(t("hint.noGold"));
+    if (run.line.length === 0) return hint(desk ? t("hint.buyDesk") : t("hint.buyPhone"));
+    if (run.round === 1 && run.line.length > 0 && run.gold < rules.unitCost) return hint(t("hint.outOfGold"));
+    if (run.line.length > 1 && run.round <= 2) return hint(desk ? t("hint.moveDesk") : t("hint.movePhone"));
     if (almost) {
       const o = run.offers.find((o) => o.unitId === almost.unitId)!;
-      const keep = !o.locked && !lastShop && o.cost > run.gold ? " Not enough gold: lock it to keep it for next round." : "";
-      return hint(`One more ${almost.name} awakens it. It's in the shop for ${o.cost}g.${keep}`);
+      const keep = !o.locked && !lastShop && o.cost > run.gold ? t("hint.lockToKeep") : "";
+      return hint(t("hint.oneMoreCost", { name: almost.name, cost: o.cost, keep }));
     }
     const keepIt = lastShop ? undefined : run.offers.find((o) => !o.locked && o.cost > run.gold && owns(o.unitId));
-    if (keepIt) return hint(`${unitOf(keepIt.unitId)?.name ?? "Your unit"} (you own one) costs ${keepIt.cost}g, you have ${run.gold}g: lock it to keep it for next round.`);
+    if (keepIt) return hint(t("hint.ownedCosts", { name: unitOf(keepIt.unitId)?.name ?? t("hint.yourUnit"), cost: keepIt.cost, gold: run.gold }));
     return null;
   };
 
@@ -815,9 +853,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         const recipe = h(
           "div",
           { class: "recipe-line", "data-testid": "fusion-recipe" },
-          h("span", { class: "k" }, "When"), ` · ${unitAt(o.first)!.name} → `,
-          h("span", { class: "k" }, "Who"), ` · ${unitAt(o.second)!.name} → `,
-          h("span", { class: "k" }, "Does"), " · both",
+          h("span", { class: "k" }, t("fuse.when")), ` · ${unitAt(o.first)!.name} → `,
+          h("span", { class: "k" }, t("fuse.who")), ` · ${unitAt(o.second)!.name} → `,
+          h("span", { class: "k" }, t("fuse.does")), t("fuse.both"),
         );
         // Fusions that hurt their own team stay (round 2); the preview says so plainly.
         const warn = fuseWarning(views[at]!.recipe, [unitAt(o.first)!.recipe, unitAt(o.second)!.recipe], content);
@@ -828,15 +866,15 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
           h(
             "div",
             { class: "row sheet-actions" },
-            button("Cancel", () => close(), "grow", "preview-cancel"),
-            button("⇄ Swap", () => ((at = 1 - at), render()), "", "preview-swap"),
-            button("Fuse", () => (close(), void fuse(o, views[at]!)), "primary grow", "preview-confirm"),
+            button(t("fuse.cancel"), () => close(), "grow", "preview-cancel"),
+            button(t("fuse.swap"), () => ((at = 1 - at), render()), "", "preview-swap"),
+            button(t("fuse.confirm"), () => (close(), void fuse(o, views[at]!)), "primary grow", "preview-confirm"),
           ),
           unitSheet(fused, content, { preview: true }),
         );
       };
       render();
-      const head = h("div", { class: "label" }, "Fusion preview");
+      const head = h("div", { class: "label" }, t("fuse.preview"));
       pick = { mode: "none" };
       let close: () => void;
       if (desk) {
@@ -859,8 +897,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       if (!fused || !discovered || fused.fusion?.discoveredBy?.id !== me) return;
       play("discover");
       closable(
-        h("div", { class: "label" }, "New fusion"),
-        h("h2", { class: "reveal", "data-testid": "fusion-reveal" }, `✨ You discovered ${fused.name}`),
+        h("div", { class: "label" }, t("fuse.new")),
+        h("h2", { class: "reveal", "data-testid": "fusion-reveal" }, t("fuse.discovered", { name: fused.name })),
         h("div", { class: "preview-card" }, card(fused, { side: "you", extra: [copiesBadge(fused)] })),
         unitSheet(fused, content),
       );
@@ -869,9 +907,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   /** Why an offer can't be bought now, decided here so no request goes out
    * (a full line used to cost a 409 on every preview); "" when it can. */
   const buyBlock = (o: Offer): string => {
-    if (run.gift) return "Pick your gift first";
-    if (run.gold < o.cost) return `Needs ${o.cost}g`;
-    if (run.line.length >= L && run.bench.length >= B && !owns(o.unitId)) return B > 0 ? "Line and bench full: sell or fuse first" : "Line full: sell or fuse first";
+    if (run.gift) return t("buy.giftFirst");
+    if (run.gold < o.cost) return t("buy.needs", { cost: o.cost });
+    if (run.line.length >= L && run.bench.length >= B && !owns(o.unitId)) return B > 0 ? t("refusal.bothFull") : t("refusal.lineFull");
     return "";
   };
   /** Desktop's double-click and number keys: a blocked offer says why instead of asking the server. */
@@ -913,7 +951,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const changed = [...res.run.line, ...res.run.bench].find((x) => !before.has(x.uid) || before.get(x.uid)!.copies !== x.copies);
       if (changed) {
         const was = before.get(changed.uid);
-        const label = !was ? (res.run.bench.some((x) => x.uid === changed.uid) ? "Goes to your bench" : "Joins your line") : was.form !== changed.form ? "Awakens!" : `Merges in: ×${changed.copies}`;
+        const label = !was ? (res.run.bench.some((x) => x.uid === changed.uid) ? t("buy.toBench") : t("buy.toLine")) : was.form !== changed.form ? t("buy.awakens") : t("buy.mergesIn", { copies: changed.copies });
         if (was) mine = { now: was, next: changed };
         after = h("div", { class: `stack after${was && was.form !== changed.form ? " awakens" : ""}`, "data-testid": "buy-preview" }, h("div", { class: "label" }, label), h("div", { class: "preview-card" }, card(changed, { side: "you", extra: [copiesBadge(changed)] })));
       }
@@ -929,10 +967,10 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   const offerSheet = (o: Offer) =>
     guarded(err, async () => {
       const { sheet, blocked } = await offerBody(o);
-      const buy = button(buttonRefusal(blocked) || `Buy ${o.cost}g`, () => (close(), void decide({ kind: "buy", slot: o.slot })), "primary grow", "buy");
+      const buy = button(buttonRefusal(blocked) || t("buy.button", { cost: o.cost }), () => (close(), void decide({ kind: "buy", slot: o.slot })), "primary grow", "buy");
       buy.disabled = blocked !== "";
       const lockBtn = canLock(o) ? [button(lockLabel(o), () => (close(), lock(o)), "", "lock")] : [];
-      const close = overlay(sheet, h("div", { class: "row sheet-actions" }, button("Close", () => close(), "", "offer-close"), ...lockBtn, buy));
+      const close = overlay(sheet, h("div", { class: "row sheet-actions" }, button(t("buy.close"), () => close(), "", "offer-close"), ...lockBtn, buy));
     });
 
   const offers = h(
@@ -943,9 +981,9 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       const cu: CardUnit = { unitId: o.unitId, emoji: u?.emoji ?? "?", name: u?.name ?? o.unitId, stats: u?.base ?? { pwr: 0, hp: 0 }, ...(u ? { recipe: u.forms.sleeping } : {}) };
       const owned = owns(o.unitId);
       // The lock is a corner mark, so "3g ＋" keeps one line at 360 px.
-      const price = `${o.cost}g${owned ? " ＋" : ""}`;
+      const price = `${t("shop.gold", { n: o.cost })}${owned ? " ＋" : ""}`;
       const c = card(cu, { side: "you", tier: o.tier, extra: [h("div", { class: "cost" }, price)], testid: `offer-${o.slot}` });
-      if (o.locked) c.append(h("span", { class: "lock-mark", "aria-label": "locked" }, "🔒"));
+      if (o.locked) c.append(h("span", { class: "lock-mark", "aria-label": t("offer.locked") }, "🔒"));
       if (run.gold < o.cost) c.classList.add("poor");
       if (o.locked) c.classList.add("locked");
       if (owned) c.classList.add("owned");
@@ -966,13 +1004,13 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     }),
   );
 
-  const reroll = button(`Reroll ${rules.rerollCost}g`, () => void decide({ kind: "reroll" }), "", "reroll");
+  const reroll = button(t("shop.reroll", { cost: rules.rerollCost }), () => void decide({ kind: "reroll" }), "", "reroll");
   // A reroll with locked offers filling the whole shop would redraw nothing
   // (run.ts refuses it); empty slots still refill.
   const allLocked = lockedFull({ offers: run.offers, rules, round: run.round });
   reroll.disabled = run.gold < rules.rerollCost || allLocked || !!run.gift;
-  if (allLocked) reroll.title = "Every offer is locked";
-  const fight = button(crown ? "Fight the champion" : "Fight", () => void decide({ kind: "fight" }), "primary grow", "fight");
+  if (allLocked) reroll.title = t("shop.allLocked");
+  const fight = button(crown ? t("shop.fightChampion") : t("shop.fight"), () => void decide({ kind: "fight" }), "primary grow", "fight");
   // An empty line can fight (and lose a heart) once nothing is affordable, so a broke run moves on.
   fight.disabled = (run.line.length === 0 && run.offers.some((o) => o.cost <= run.gold)) || !!run.gift;
   if (desk) {
@@ -994,15 +1032,15 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const ch = d?.champion;
     const line = ch && ch.player.id === opp.player.id ? ch.line : null;
     foe.replaceChildren(
-      h("div", { class: "label" }, ownCrown ? "You face · your champion team · " : "You face · today's champion · ", who(opp.player.name, "ghost-name")),
-      line ? team(line, "ghost", content, "crown-foe-line") : h("div", { class: "dim small" }, settled ? "Their line shows in the fight." : "…"),
+      h("div", { class: "label" }, ownCrown ? t("foe.ownCrown") : t("foe.crown"), who(opp.player.name, "ghost-name")),
+      line ? team(line, "ghost", content, "crown-foe-line") : h("div", { class: "dim small" }, settled ? t("foe.lineInFight") : "…"),
     );
   };
   const fillPin = (d: DayView | null) => {
     const ch = d?.champion;
-    if (!ch) return pin.replaceChildren(h("span", { class: "dim" }, "👑 No champion yet"));
+    if (!ch) return pin.replaceChildren(h("span", { class: "dim" }, t("pin.noChampion")));
     const b = h("button", { class: "pin-btn", "data-testid": "champion-pin-open" }, h("span", {}, "👑"), who(ch.player.name, "ghost-name"), h("span", { class: "pin-emoji" }, ch.line.map((u) => u.emoji).join("")));
-    b.addEventListener("click", () => closable(h("div", { class: "label" }, `Champion of day ${d!.seq} · `, who(ch.player.name)), team(ch.line, "ghost", content), hint(`${tapOrClick()} a card to read it.`)));
+    b.addEventListener("click", () => closable(h("div", { class: "label" }, t("pin.championOfDay", { seq: d!.seq }), who(ch.player.name)), team(ch.line, "ghost", content), hint(isDesktop() ? t("pin.readCardClick") : t("pin.readCardTap"))));
     pin.replaceChildren(b);
   };
   if (crown) {
@@ -1033,8 +1071,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     return h(
       "div",
       { class: "gift-banner row", "data-testid": "gift-banner" },
-      h("span", { class: "grow" }, stuck ? "🎁 Gift waiting: sell a unit to make room, then pick." : "🎁 Your awakening gift is waiting."),
-      button("Open gift", () => openGift(), "primary small", "gift-open"),
+      h("span", { class: "grow" }, stuck ? t("gift.waitingFull") : t("gift.waiting")),
+      button(t("gift.open"), () => openGift(), "primary small", "gift-open"),
     );
   }
   function openGift(): void {
@@ -1050,7 +1088,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const readGift = (i: number) => {
       if (read.dataset.card === String(i)) return;
       read.dataset.card = String(i);
-      read.replaceChildren(h("div", { class: "label" }, `Gift ${i + 1} of ${gift.length}`), readers[i]!());
+      read.replaceChildren(h("div", { class: "label" }, t("gift.of", { i: i + 1, n: gift.length })), readers[i]!());
       choices.forEach((ch, j) => ch.classList.toggle("inspected", j === i));
     };
     const choices = gift.map((id, i) => {
@@ -1069,7 +1107,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         c.addEventListener("click", () => readGift(i));
       } else c.addEventListener("click", () => (play("click"), void closable(sheetOf())));
       const ok = giftPickable(id);
-      const pickBtn = button(ok ? (mine ? "Pick ＋" : "Pick") : "Full", () => (close(), void decide({ kind: "gift", pick: i })), "primary", `gift-pick-${i}`);
+      const pickBtn = button(ok ? (mine ? t("gift.pickOwned") : t("gift.pick")) : t("gift.full"), () => (close(), void decide({ kind: "gift", pick: i })), "primary", `gift-pick-${i}`);
       pickBtn.disabled = !ok;
       return h("div", { class: "gift-choice" }, c, pickBtn);
     });
@@ -1079,17 +1117,17 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       renderLine();
     };
     const kids = [
-      h("div", { class: "label" }, "Awakening gift"),
-      h("h2", { class: "reveal", "data-testid": "gift-title" }, "🎁 Awakened! Pick a gift"),
-      h("div", { class: "dim small" }, `Free: one of these${tier ? ` tier ${roman(tier)}` : ""} units. It joins your line, else your bench; one you own merges in.`),
-      ...(stuck ? [h("div", { class: "hint", "data-testid": "gift-full" }, none ? "Line and bench full: make room (sell a unit), then pick." : "Line and bench full: only a unit you own merges in now. Make room (sell a unit) to pick another.")] : []),
+      h("div", { class: "label" }, t("gift.label")),
+      h("h2", { class: "reveal", "data-testid": "gift-title" }, t("gift.title")),
+      h("div", { class: "dim small" }, tier ? t("gift.freeTier", { tier: roman(tier) }) : t("gift.free")),
+      ...(stuck ? [h("div", { class: "hint", "data-testid": "gift-full" }, none ? t("gift.noneFits") : t("gift.onlyOwned"))] : []),
       h("div", { class: "gift-choices", "data-testid": "gift-choices" }, ...choices),
-      h("div", { class: "dim small" }, desk ? "Hover a card to read it here. Esc sets the gift aside." : "Tap a card to read it."),
+      h("div", { class: "dim small" }, desk ? t("gift.readDesk") : t("gift.readPhone")),
       h(
         "div",
         { class: "row sheet-actions" },
-        stuck ? button("Make room", aside, "grow", "gift-make-room") : null,
-        button("Skip", () => (close(), void decide({ kind: "gift", pick: null })), stuck ? "" : "grow", "gift-skip"),
+        stuck ? button(t("gift.makeRoom"), aside, "grow", "gift-make-room") : null,
+        button(t("gift.skip"), () => (close(), void decide({ kind: "gift", pick: null })), stuck ? "" : "grow", "gift-skip"),
       ),
     ];
     const close = desk ? dismissable(aside, h("div", { class: "gift-split" }, h("div", { class: "stack gift-main" }, ...kids), read)) : dismissable(aside, ...kids);
@@ -1100,20 +1138,20 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   }
 
   // "?" explains a card's numbers; until a player has opened it once, it says so.
-  const legendBtn = button(seen("legend") ? "?" : "? Cards", () => (markSeen("legend"), (legendBtn.textContent = "?"), legendBtn.classList.remove("new"), legendSheet()), seen("legend") ? "small" : "small new", "legend-open");
+  const legendBtn = button(seen("legend") ? "?" : t("shop.legendNew"), () => (markSeen("legend"), (legendBtn.textContent = "?"), legendBtn.classList.remove("new"), legendSheet()), seen("legend") ? "small" : "small new", "legend-open");
   renderLine();
 
   const menuBtn = button("☰", () => runMenu(run, content, err), "menu-btn", "menu-open");
-  menuBtn.setAttribute("aria-label", "Menu");
-  if (desk) menuBtn.title = "Menu (Esc)";
+  menuBtn.setAttribute("aria-label", t("shop.menu"));
+  if (desk) menuBtn.title = t("shop.menuEsc");
 
   // The number keys in plain words: "1–6 buy the offer with that number".
   const n = Math.min(7, run.offers.length);
   // One line at 1440 px (R3-26): short words, the keys say the rest.
-  const numberKeys = n === 0 ? [] : n === 1 ? [" or ", kbd("1")] : [" or ", kbd("1"), "–", kbd(String(n))];
+  const numberKeys = n === 0 ? [] : n === 1 ? [t("keys.or"), kbd("1")] : [t("keys.or"), kbd("1"), "–", kbd(String(n))];
   const keysLine =
     desk && !crown
-      ? h("div", { class: "dim small keys", "data-testid": "keys" }, "Click selects · drag reorders · double-click", ...numberKeys, " buys · ", kbd("R"), " reroll · ", kbd("L"), " lock · ", kbd("Space"), " fight · ", kbd("←"), kbd("→"), " move · ", kbd("F"), " fuse · ", kbd("S"), " sell · ", ...(B > 0 ? [kbd("B"), " bench · "] : []), kbd("M"), " sound · ", kbd("Esc"), " menu")
+      ? h("div", { class: "dim small keys", "data-testid": "keys" }, t("keys.lead"), ...numberKeys, t("keys.buys"), kbd("R"), t("keys.reroll"), kbd("L"), t("keys.lock"), kbd("Space"), t("keys.fight"), kbd("←"), kbd("→"), t("keys.move"), kbd("F"), t("keys.fuse"), kbd("S"), t("keys.sell"), ...(B > 0 ? [kbd("B"), t("keys.bench")] : []), kbd("M"), t("keys.sound"), kbd("Esc"), t("keys.menu"))
       : null;
   show(
     h(
@@ -1126,12 +1164,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
         h("span", { "data-testid": "round" }, roundLabel(run.round)),
         hearts(run.hearts),
         // The Crown has no shop: no gold to show.
-        crown ? h("span", {}) : h("span", { class: "gold", "data-testid": "gold" }, `${run.gold}g`),
+        crown ? h("span", {}) : h("span", { class: "gold", "data-testid": "gold" }, t("shop.gold", { n: run.gold })),
       ),
       h(
         "div",
         { class: "row spread opp" },
-        h("span", { class: "dim", "data-testid": "next-opponent" }, ...(opp ? [`${crown ? "Crown vs" : "Next:"} `, who(opp.player.name), `${opp.player.bot ? " 🤖" : ""}${ownCrown ? " (your champion team)" : ""}`] : [crown ? "Crown vs today's champion" : "Next: a team saved at this round"])),
+        h("span", { class: "dim", "data-testid": "next-opponent" }, ...(opp ? [`${crown ? t("opp.crownVs") : t("opp.next")} `, who(opp.player.name), `${opp.player.bot ? " 🤖" : ""}${ownCrown ? t("opp.yourChampionTeam") : ""}`] : [crown ? t("opp.crownVsChampion") : t("opp.nextSaved")])),
         crown ? null : pin,
       ),
     ),
@@ -1141,14 +1179,14 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       h(
         "div",
         { class: "row spread line-head" },
-        h("div", { class: "label" }, crown ? "Your line · front first · final" : desk ? "Your line · front first · drag to reorder or bench" : "Your line · front first"),
-        h("div", { class: "row" }, legendBtn, button("Rules", () => closable(rulesSheet()), "small", "shop-rules")),
+        h("div", { class: "label" }, crown ? t("line.crown") : desk ? t("line.desk") : t("line.phone")),
+        h("div", { class: "row" }, legendBtn, button(t("shop.rules"), () => closable(rulesSheet()), "small", "shop-rules")),
       ),
       line,
       B > 0 ? bench : null,
       desk ? null : actions,
       hintSlot,
-      crown ? null : h("div", { class: "label" }, desk ? `Shop · ${plural(run.offers.length, "offer")}` : "Shop · tap to read and buy"),
+      crown ? null : h("div", { class: "label" }, desk ? t("shop.offersDesk", { n: run.offers.length }) : t("shop.offersPhone")),
       crown ? foe : offers,
       keysLine,
     ),
@@ -1213,7 +1251,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     }
     // B, S or F with nothing in hand says so instead of doing nothing.
     if ((k === "b" || k === "s" || k === "f") && sel < 0 && pick.mode !== "fuse") {
-      err.textContent = "Select a unit first: click it in your line or bench.";
+      err.textContent = t("shop.selectFirst");
       play("wrong");
       return true;
     }
@@ -1285,10 +1323,10 @@ function markSeen(key: string): void {
 /** ●●○ toward awakening for a sleeping unit; AWOKEN or FUSED otherwise. */
 function copiesBadge(u: LineUnit): HTMLElement {
   // The word is its own span: the bench's short cards show only "×n" (R3-14).
-  if (u.kind === "fused") return h("div", { class: "copies tag" }, h("span", { class: "tag-word" }, "FUSED "), `×${u.copies}`);
-  if (u.form === "awoken") return h("div", { class: "copies tag" }, h("span", { class: "tag-word" }, "AWOKEN "), `×${u.copies}`);
+  if (u.kind === "fused") return h("div", { class: "copies tag" }, h("span", { class: "tag-word" }, t("copies.fused")), `×${u.copies}`);
+  if (u.form === "awoken") return h("div", { class: "copies tag" }, h("span", { class: "tag-word" }, t("copies.awoken")), `×${u.copies}`);
   const n = rules.copiesToAwaken;
-  return h("div", { class: "copies pips", "aria-label": `${u.copies} of ${n} copies` }, "●".repeat(Math.min(u.copies, n)) + "○".repeat(Math.max(0, n - u.copies)));
+  return h("div", { class: "copies pips", "aria-label": t("copies.aria", { copies: u.copies, n }) }, "●".repeat(Math.min(u.copies, n)) + "○".repeat(Math.max(0, n - u.copies)));
 }
 
 // ---------- battle, then result ----------
@@ -1301,10 +1339,10 @@ async function fightScreens(run: RunView, fight: FightResult, content: MvpConten
     // The fight is already decided: never leave the player on the pre-fight
     // shop. Show the run as it is now, with the outcome and what failed.
     const now = await api.run(run.runId).catch(() => run);
-    const word = fight.outcome === "win" ? "Won" : fight.outcome === "loss" ? "Lost" : "Drew";
-    const lost = fight.heartsLost > 0 ? ` (−${plural(fight.heartsLost, "heart")})` : "";
+    const word = fight.outcome === "win" ? t("fight.won") : fight.outcome === "loss" ? t("fight.lost") : t("fight.drew");
+    const lost = fight.heartsLost > 0 ? t("fight.heartsLost", { hearts: t("fight.hearts", { n: fight.heartsLost }) }) : "";
     const why = e instanceof Error ? e.message : String(e);
-    return shopScreen(now, content, `${word} vs @${fight.opponent.player.name}${lost}. The replay didn't load: ${why}`);
+    return shopScreen(now, content, t("fight.replayFailed", { word, name: fight.opponent.player.name, lost, why }));
   }
   music("battle", run.runId);
   battleScreen({ battle, content, you: "A", fight, run, outro: outroOf(run, fight, content), onDone: () => shopScreen(run, content) });
@@ -1326,14 +1364,14 @@ function outroOf(run: RunView, fight: FightResult, content: MvpContent): RunOutr
   const sub =
     fight.kind === "crown"
       ? fight.outcome === "win"
-        ? "Slayer today!"
+        ? t("fight.slayer")
         : own
-          ? "Your team holds."
-          : "The champion holds."
+          ? t("fight.ownHolds")
+          : t("fight.championHolds")
       : fight.heartsLost > 0
-        ? `−${plural(fight.heartsLost, "heart")}`
+        ? t("fight.heartsLostShort", { hearts: t("fight.hearts", { n: fight.heartsLost }) })
         : fight.outcome === "draw"
-          ? "No heart lost."
+          ? t("fight.noHeartLost")
           : "";
   const err = errorLine();
   return {
@@ -1343,7 +1381,7 @@ function outroOf(run: RunView, fight: FightResult, content: MvpContent): RunOutr
       h("span", { class: "mono dim" }, record(run)),
       sub ? h("span", { class: fight.heartsLost > 0 ? "error" : "", "data-testid": "result-sub" }, sub) : null,
     ].filter((x): x is HTMLElement => x !== null),
-    doneLabel: run.phase === "over" ? "See the run" : run.phase === "crown" ? "To the Crown" : "Next round",
+    doneLabel: run.phase === "over" ? t("fight.seeRun") : run.phase === "crown" ? t("fight.toCrown") : t("fight.nextRound"),
     menu: (resume) => runMenu(run, content, err, fight, resume),
     // The menu's errors show over the battle, not only inside the end card (R2-17 batch F).
     error: err,
@@ -1353,35 +1391,35 @@ function outroOf(run: RunView, fight: FightResult, content: MvpContent): RunOutr
 /** "3W 1D 2L": the run's record, draws only when there are any. */
 function record(run: RunView): string {
   const draws = run.fights.filter((f) => f.outcome === "draw").length;
-  return `${run.wins}W ${draws ? `${draws}D ` : ""}${run.losses}L`;
+  return draws ? t("run.recordDraws", { wins: run.wins, draws, losses: run.losses }) : t("run.record", { wins: run.wins, losses: run.losses });
 }
 
 /** Why a run ended, as a sentence, and how far it got; never "Reached the
  * Crown" for a run that had no champion to fight. */
 function runEnd(run: RunView): { why: string; reach: string } {
-  const round = `Ended in round ${Math.min(run.round, rules.rounds)} of ${rules.rounds}.`;
+  const round = t("end.round", { round: Math.min(run.round, rules.rounds), rounds: rules.rounds });
   const own = run.fights.some((f) => f.kind === "crown" && f.opponent.player.id === run.player.id);
   switch (run.endedBy) {
     case "out-of-hearts":
-      return { why: "Out of hearts.", reach: round };
+      return { why: t("end.outOfHearts"), reach: round };
     case "no-champion":
-      return { why: "No champion to face yet, so the run ends here.", reach: `Survived all ${rules.rounds} rounds.` };
+      return { why: t("end.noChampion"), reach: t("end.survived", { rounds: rules.rounds }) };
     case "crown-won":
       return own
-        ? { why: "👑 You beat your own champion team: you are a slayer today.", reach: "Won the Crown." }
-        : { why: "👑 You beat the champion: you are a slayer today.", reach: "Won the Crown." };
+        ? { why: t("end.beatOwn"), reach: t("end.wonCrown") }
+        : { why: t("end.beatChampion"), reach: t("end.wonCrown") };
     case "crown-lost":
-      return { why: own ? "Your champion team held the Crown." : "The champion held the Crown.", reach: "Reached the Crown." };
+      return { why: own ? t("end.ownHeld") : t("end.championHeld"), reach: t("end.reachedCrown") };
     case "abandoned": {
       const n = run.forfeit?.fights ?? 0;
       return run.round > rules.rounds
-        ? { why: "You gave up at the Crown: it counts as a lost Crown.", reach: "Reached the Crown." }
-        : { why: n === 1 ? "You gave up: the 1 heart left counts as a lost fight." : `You gave up: the ${n} hearts left count as lost fights.`, reach: round };
+        ? { why: t("end.gaveUpCrown"), reach: t("end.reachedCrown") }
+        : { why: t("end.gaveUp", { n }), reach: round };
     }
     case "content-changed":
-      return { why: "The game's units changed since this run began, so it ended here. Your rating stays as it was.", reach: round };
+      return { why: t("end.contentChanged"), reach: round };
     default:
-      return { why: "The run ended.", reach: round };
+      return { why: t("end.ended"), reach: round };
   }
 }
 
@@ -1397,23 +1435,23 @@ function runOverScreen(run: RunView, content: MvpContent, notice = "", newRun = 
   const rc = run.rating;
   const delta = rc ? rc.after - rc.before : 0;
   show(
-    h("h1", {}, "RUN OVER"),
+    h("h1", {}, t("over.title")),
     err,
     h(
       "div",
       { class: "panel stack", "data-testid": "run-over" },
       h("div", { "data-testid": "run-why" }, why),
-      h("div", { class: "num", "data-testid": "run-record" }, `${plural(run.wins, "win")} · ${plural(draws, "draw")} · ${plural(run.losses, "loss", "losses")}`),
+      h("div", { class: "num", "data-testid": "run-record" }, t("over.record", { wins: t("over.wins", { n: run.wins }), draws: t("over.draws", { n: draws }), losses: t("over.losses", { n: run.losses }) })),
       h("div", { class: "dim" }, reach),
-      rc ? h("div", { class: "num", "data-testid": "rating-change" }, `Rating ${rc.before} → ${rc.after} (${delta >= 0 ? "+" : ""}${delta})`) : null,
+      rc ? h("div", { class: "num", "data-testid": "rating-change" }, t("over.rating", { before: rc.before, after: rc.after, delta: `${delta >= 0 ? "+" : ""}${delta}` })) : null,
       // A subtle why: each fight is rated against its opponent (Elo), so the
       // change is K × (wins got − wins expected at your rating).
-      rc ? h("div", { class: "dim small num", "data-testid": "rating-why" }, `expected ${rc.expected.toFixed(1)} wins, got ${+rc.actual.toFixed(1)}`) : null,
+      rc ? h("div", { class: "dim small num", "data-testid": "rating-why" }, t("over.ratingWhy", { expected: rc.expected.toFixed(1), actual: +rc.actual.toFixed(1) })) : null,
     ),
-    run.line.length ? h("div", { class: "over-line" }, h("div", { class: "label" }, "Your last line"), team(run.line, "you", content)) : null,
+    run.line.length ? h("div", { class: "over-line" }, h("div", { class: "label" }, t("over.lastLine")), team(run.line, "you", content)) : null,
     votePanel(content),
     h("div", { class: "spacer" }),
-    h("div", { class: "row footer" }, ...(newRun ? [button("Home", home, "grow", "home"), button("New run", next, "primary grow", "new-run-start")] : [button("Home", home, "primary grow", "home")])),
+    h("div", { class: "row footer" }, ...(newRun ? [button(t("over.home"), home, "grow", "home"), button(t("over.newRun"), next, "primary grow", "new-run-start")] : [button(t("over.home"), home, "primary grow", "home")])),
   );
   screen("over");
   music("shop", run.runId);
@@ -1429,14 +1467,14 @@ function ownLinkRow(code: string): HTMLElement {
   const link = ownLink(code);
   const field = h("input", { readonly: "", value: link, "data-testid": "own-link" });
   field.addEventListener("focus", () => field.select());
-  const copy = button("Copy", () => {
-    void navigator.clipboard?.writeText(link).then(() => (copy.textContent = "Copied"), () => field.select());
+  const copy = button(t("link.copy"), () => {
+    void navigator.clipboard?.writeText(link).then(() => (copy.textContent = t("link.copied")), () => field.select());
   }, "small", "own-link-copy");
   return h(
     "details",
     { class: "dev", "data-testid": "own-link-row" },
-    h("summary", {}, "Your link (for another device)"),
-    h("div", { class: "dim small" }, "Open it on your other phone or computer to play as you there. Keep it to yourself."),
+    h("summary", {}, t("link.summary")),
+    h("div", { class: "dim small" }, t("link.about")),
     h("div", { class: "row" }, field, copy),
   );
 }
@@ -1475,13 +1513,13 @@ function openInvite(code: string): void {
     const own = api.player && api.hasToken;
     const dead = err.textContent.startsWith("no such invite");
     show(
-      h("h1", {}, "ARENA"),
-      h("p", { class: "dim", "data-testid": "invite-bad" }, dead ? (own ? "This invite link doesn't work any more." : "This invite link doesn't work. Ask for a new link.") : err.textContent),
+      h("h1", {}, t("invite.title")),
+      h("p", { class: "dim", "data-testid": "invite-bad" }, dead ? (own ? t("invite.deadOwn") : t("invite.dead")) : err.textContent),
       own
-        ? button("Home", () => (dropInvite(), void guarded(errorLine(), () => homeScreen())), "primary", "invite-home")
+        ? button(t("invite.home"), () => (dropInvite(), void guarded(errorLine(), () => homeScreen())), "primary", "invite-home")
         : dead
           ? h("span", {})
-          : button("Retry", () => location.reload(), "primary"),
+          : button(t("invite.retry"), () => location.reload(), "primary"),
     );
   });
 }
@@ -1497,13 +1535,13 @@ function openJoinLink(code: string): void {
     const own = api.player && api.hasToken;
     const dead = err.textContent.startsWith("no such join link");
     show(
-      h("h1", {}, "ARENA"),
-      h("p", { class: "dim", "data-testid": "invite-bad" }, dead ? (own ? "This invite link doesn't work any more." : "This invite link doesn't work. Ask for a new link.") : err.textContent),
+      h("h1", {}, t("invite.title")),
+      h("p", { class: "dim", "data-testid": "invite-bad" }, dead ? (own ? t("invite.deadOwn") : t("invite.dead")) : err.textContent),
       own
-        ? button("Home", () => (dropInvite(), void guarded(errorLine(), () => homeScreen())), "primary", "invite-home")
+        ? button(t("invite.home"), () => (dropInvite(), void guarded(errorLine(), () => homeScreen())), "primary", "invite-home")
         : dead
           ? h("span", {})
-          : button("Retry", () => location.reload(), "primary"),
+          : button(t("invite.retry"), () => location.reload(), "primary"),
     );
   });
 }
@@ -1511,16 +1549,16 @@ function openJoinLink(code: string): void {
 function joinSwitchScreen(code: string, mine: PlayerRef): void {
   const stay = () => (dropInvite(), void guarded(errorLine(), () => homeScreen()));
   show(
-    h("h1", {}, "ARENA"),
-    h("p", { "data-testid": "join-switch" }, `You play as ${mine.name} on this device. Start a new player here?`),
-    h("p", { class: "dim" }, `${mine.name} then needs their own link to come back.`),
-    h("div", { class: "row footer" }, button("Stay", stay, "grow", "join-stay"), button("New player", () => joinForm(code), "primary grow", "join-new")),
+    h("h1", {}, t("invite.title")),
+    h("p", { "data-testid": "join-switch" }, t("join.playingAs", { name: mine.name })),
+    h("p", { class: "dim" }, t("join.needsLink", { name: mine.name })),
+    h("div", { class: "row footer" }, button(t("join.stay"), stay, "grow", "join-stay"), button(t("join.newPlayer"), () => joinForm(code), "primary grow", "join-new")),
   );
   onKeys((e) => (e.key === "Escape" ? (stay(), true) : false));
 }
-function joinForm(code: string): void {
+function joinForm(code: string, tg: HTMLElement | null = null): void {
   music("home");
-  const input = h("input", { placeholder: "Your name", maxlength: "24", autocomplete: "nickname", "data-testid": "join-name" });
+  const input = h("input", { placeholder: t("join.yourName"), maxlength: "24", autocomplete: "nickname", "data-testid": "join-name" });
   const err = errorLine();
   const go = () => guarded(err, async () => {
     const s = await api.join(code, input.value.trim());
@@ -1529,10 +1567,11 @@ function joinForm(code: string): void {
   });
   input.addEventListener("keydown", (e) => e.key === "Enter" && void go());
   show(
-    h("h1", {}, "ARENA OF IDEAS"),
-    h("p", { class: "dim" }, "An auto-battler of chains. Pick a name to play."),
+    h("h1", {}, t("join.title")),
+    h("p", { class: "dim" }, t("join.about")),
     input,
-    button("Play", () => void go(), "primary", "join-submit"),
+    button(t("join.play"), () => void go(), "primary", "join-submit"),
+    tg,
     err,
   );
   input.focus();
@@ -1545,14 +1584,15 @@ function switchScreen(code: string, mine: PlayerRef, theirs: PlayerRef): void {
     await homeScreen();
   });
   show(
-    h("h1", {}, "ARENA"),
-    h("p", { "data-testid": "invite-switch" }, `This link is for ${theirs.name}. Switch from ${mine.name}?`),
-    h("p", { class: "dim" }, `This device then plays as ${theirs.name}. ${mine.name} needs their own link to come back.`),
-    h("div", { class: "row footer" }, button("Stay", stay, "grow", "invite-stay"), button("Switch", go, "primary grow", "invite-switch-go")),
+    h("h1", {}, t("invite.title")),
+    h("p", { "data-testid": "invite-switch" }, t("switch.for", { theirs: theirs.name, mine: mine.name })),
+    h("p", { class: "dim" }, t("switch.then", { theirs: theirs.name, mine: mine.name })),
+    h("div", { class: "row footer" }, button(t("join.stay"), stay, "grow", "invite-stay"), button(t("switch.go"), go, "primary grow", "invite-switch-go")),
   );
   onKeys((e) => (e.key === "Escape" ? (stay(), true) : false));
 }
 
+document.documentElement.lang = uiLang();
 initSound();
 // A link pasted into a tab that already shows the game only changes the
 // fragment, which reloads nothing: start over so the link opens.
@@ -1576,6 +1616,6 @@ if (inviteCode) {
     }
     await homeScreen();
   }).then(() => {
-    if (err.textContent) show(h("h1", {}, "ARENA"), err, button("Retry", () => location.reload(), "primary"));
+    if (err.textContent) show(h("h1", {}, t("invite.title")), err, button(t("invite.retry"), () => location.reload(), "primary"));
   });
 } else nameScreen();

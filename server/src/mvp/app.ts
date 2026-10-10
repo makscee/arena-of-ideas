@@ -6,7 +6,7 @@
 import { randomUUID } from "node:crypto";
 import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, TOKEN_HEADER, type Decision, type HomeView, type PlayerRef, type VoteRequest } from "../../../src/mvp/contract.js";
+import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, TOKEN_HEADER, type Decision, type HomeView, type PlayerRef, type TelegramPoll, type TelegramStatus, type VoteRequest } from "../../../src/mvp/contract.js";
 import { checkDecision, MvpBadDecision, MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
 import { creditsView, creditUnit, libraryView } from "./credits.js";
 import { dayView, endDay, hiddenSlay } from "./day.js";
@@ -17,7 +17,9 @@ import { isAdmin, isJoinCode, JoinRefused, joinOpen, NAME_RE, openJoin, redeemIn
 import { abandon, currentRun, decide, preview, startRun } from "./runs.js";
 import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
 import { servedContent } from "./pool.js";
+import { championSvg, shareLang, sharePng, unitSvg } from "./share.js";
 import { statsView } from "./stats.js";
+import { FakeTelegram, pollTelegramLogin, startTelegramLogin, TELEGRAM_STARTS_PER_HOUR, TelegramRefused } from "./telegram.js";
 import { candidateScores, castVote, fakeVotes, nextCard, overnightCheck, seedCandidate, waitingForCheck } from "./votes.js";
 
 /** New players the open join link (R4-20) makes per hour, server-wide. */
@@ -55,11 +57,11 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   // idea's 400 characters, a few KB at most).
   api.use("*", bodyLimit({ maxSize: 16 * 1024, onError: (c) => bad(c, 413, "body too large") }));
   // A token that names no session (a revoked link) is no player anywhere but
-  // the invite routes: 401 "unknown player", so the device forgets it and
+  // the invite routes and a Telegram login: 401 "unknown player", so the device forgets it and
   // shows the invite screen.
   api.use("*", async (c, next) => {
     const token = c.req.header(TOKEN_HEADER);
-    if (token && !/\/(invites|join)(\/|$)/.test(c.req.path) && !sessionPlayer(store, token)) return unknownPlayer(c);
+    if (token && !/\/(invites|join|auth\/telegram\/(start|poll))(\/|$)/.test(c.req.path) && !sessionPlayer(store, token)) return unknownPlayer(c);
     await next();
   });
   // A decision's body is read only from a known player.
@@ -69,7 +71,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
       await next();
     });
 
-  api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: rt.content.version, invites: rt.invites, open: rt.open }));
+  api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: rt.content.version, invites: rt.invites, open: rt.open, telegram: rt.telegram ? (rt.telegram instanceof FakeTelegram ? "fake" : "bot") : false }));
   api.get("/content", (c) => c.json(servedContent(rt)));
 
   api.post("/players", async (c) => {
@@ -127,6 +129,46 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     }
   });
 
+  // M4-6: log in with Telegram (./telegram.ts). Starts are counted per player,
+  // or per address logged out (the nearest proxy's X-Forwarded-For entry), in memory.
+  const tgStarts = new Map<string, number[]>();
+  const addressOf = (c: Context) => {
+    const hops = (c.req.header("x-forwarded-for") ?? "").split(",").map((h) => h.trim()).filter(Boolean);
+    return hops.at(-1) ?? (c.env as { incoming?: { socket?: { remoteAddress?: string } } } | undefined)?.incoming?.socket?.remoteAddress ?? "local";
+  };
+  const tgStatus = (p: PlayerRef): TelegramStatus => ({ enabled: !!rt.telegram, linked: !!store.telegramLink({ playerId: p.id }) });
+  api.post("/auth/telegram/start", (c) => {
+    if (!rt.telegram) return bad(c, 404, "Telegram login is off");
+    const p = playerOf(c);
+    const key = p ? `player:${p.id}` : `address:${addressOf(c)}`;
+    const now = rt.now();
+    const recent = (tgStarts.get(key) ?? []).filter((t) => t > now.getTime() - 3_600_000);
+    if (recent.length >= TELEGRAM_STARTS_PER_HOUR) return bad(c, 429, "Too many Telegram logins this hour. Try again later.");
+    try {
+      const start = startTelegramLogin(store, p, rt.telegram.bot, now);
+      tgStarts.set(key, [...recent, now.getTime()]);
+      return c.json(start);
+    } catch (err) {
+      if (err instanceof TelegramRefused) return bad(c, err.status, err.message);
+      throw err;
+    }
+  });
+  api.post("/auth/telegram/poll", async (c) => {
+    const r = pollTelegramLogin(store, await codeOf(c), rt.now());
+    if (!r) return bad(c, 404, "This login has expired or was used: start again");
+    return c.json<TelegramPoll>(typeof r === "string" ? { status: r } : { status: "done", ...r });
+  });
+  api.get("/auth/telegram", (c) => {
+    const p = playerOf(c);
+    return p ? c.json(tgStatus(p)) : unknownPlayer(c);
+  });
+  api.post("/auth/telegram/unlink", (c) => {
+    const p = playerOf(c);
+    if (!p) return unknownPlayer(c);
+    store.unlinkTelegram(p.id);
+    return c.json(tgStatus(p));
+  });
+
   api.get("/home", (c) => {
     const p = playerOf(c);
     const home: HomeView = {
@@ -136,6 +178,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
       activeRunId: p ? store.activeRun(p.id)?.runId ?? null : null,
       dev: devFor(c),
       ideas: p ? ideasOf(rt, p.id) : null,
+      telegram: p ? tgStatus(p) : null,
     };
     return c.json(home);
   });
@@ -302,6 +345,36 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   // and the units that have left.
   api.get("/credits", (c) => c.json(creditsView(rt, playerOf(c)?.id)));
   api.get("/library", (c) => c.json(libraryView(rt)));
+
+  // The fake bot's side (ARENA_TELEGRAM_FAKE=1, which needs MVP_DEV=1): its
+  // user sends /start <code>, as tapping the link in Telegram would, then taps
+  // Yes (or No: `decline`). Before the dev gate: a logged-out device plays it
+  // on an invite-only dev server too.
+  api.post("/dev/telegram/accept", async (c) => {
+    if (!(rt.telegram instanceof FakeTelegram)) return bad(c, 404, "no fake Telegram");
+    const body = (await c.req.json().catch(() => ({}))) as { code?: unknown; decline?: unknown };
+    return c.json({ reply: await rt.telegram.answer(typeof body.code === "string" ? body.code : "", body.decline !== true) });
+  });
+
+  // M4-7: share cards, PNGs for link previews and the daily post. Rendered
+  // once per content (share.ts caches by the SVG's hash, the ETag here).
+  const png = (c: Context, svg: string | null) => {
+    if (!svg) return bad(c, 404, "nothing to share");
+    const { png: body, hash } = sharePng(svg);
+    const etag = `"${hash}"`;
+    const headers = { "Content-Type": "image/png", "Cache-Control": "public, max-age=600", ETag: etag };
+    if (c.req.header("If-None-Match") === etag) return c.body(null, 304, headers);
+    return c.body(new Uint8Array(body), 200, headers);
+  };
+  const langOf = (c: Context) => shareLang(c.req.query("lang"), c.req.header("Accept-Language"));
+  api.get("/share/champion/:file", (c) => {
+    const m = /^(\d{1,9})\.png$/.exec(c.req.param("file"));
+    return png(c, m ? championSvg(rt, Number(m[1]), langOf(c)) : null);
+  });
+  api.get("/share/unit/:file", (c) => {
+    const m = /^(.{1,80})\.png$/.exec(c.req.param("file"));
+    return png(c, m ? unitSvg(rt, m[1]!, langOf(c)) : null);
+  });
 
   // Dev-only tools (MvpDeps.dev, MVP_DEV=1 in main.ts): 404 without it, and
   // on an invite-only server for anyone but an admin invite's player.

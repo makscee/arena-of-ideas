@@ -25,9 +25,13 @@ import {
   type PlayerSession,
   type RunView,
   type StatsView,
+  type TelegramPoll,
+  type TelegramStart,
+  type TelegramStatus,
   type UnitId,
   type WriteIdeaRequest,
 } from "../src/mvp/contract";
+import { uiLang } from "./lang";
 
 const BASE = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "") + MVP_API_PREFIX;
 const PLAYER_KEY = "arena.player";
@@ -100,7 +104,9 @@ export class ApiError extends Error {
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(BASE + path, {
     method,
-    headers: { "content-type": "application/json", ...(token ? { [TOKEN_HEADER]: token } : player ? { [PLAYER_HEADER]: player.id } : {}) },
+    // The player's language rides on every call, so server text (refusals,
+    // an idea's "couldn't make it" reason) can follow it (M4-2).
+    headers: { "content-type": "application/json", "accept-language": uiLang(), ...(token ? { [TOKEN_HEADER]: token } : player ? { [PLAYER_HEADER]: player.id } : {}) },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
   const json = (await res.json().catch(() => ({ error: res.statusText }))) as T & { error?: string };
@@ -149,6 +155,27 @@ export const api = {
     saveOwnInvite(s.invite);
     return s;
   },
+  /** M4-6: a Telegram login code and its t.me link, for this player (Link
+   * Telegram) or for none (Log in with Telegram). */
+  telegramStart: () => call<TelegramStart>("POST", "/auth/telegram/start"),
+  /** M4-6: "waiting" until the bot accepts the code; then this device becomes
+   * the player it names (404 ApiError: expired or used). */
+  async telegramPoll(code: string): Promise<TelegramPoll> {
+    const r = await call<TelegramPoll>("POST", "/auth/telegram/poll", { code });
+    if (r.status === "done") {
+      if (r.player.id !== player?.id) saveOwnInvite(null);
+      player = r.player;
+      token = r.token;
+      savePlayer(player);
+      saveToken(token);
+    }
+    return r;
+  },
+  /** M4-6: unlinks this player's Telegram. */
+  telegramUnlink: () => call<TelegramStatus>("POST", "/auth/telegram/unlink"),
+  /** M4-6 dev (ARENA_TELEGRAM_FAKE=1): the fake bot's user presses Start,
+   * then taps Yes (or No: `decline`). */
+  devTelegramAccept: (code: string, decline = false) => call<{ reply: string }>("POST", "/dev/telegram/accept", { code, ...(decline ? { decline } : {}) }),
   forget(): void {
     saveOwnInvite(null);
     player = null;
@@ -157,8 +184,9 @@ export const api = {
     saveToken(null);
   },
   /** `invites`: the server is invite-only, so the name screen asks for a link.
+   * `telegram` (M4-6): Telegram login is on, with the real bot or the fake.
    * `contentVersion`: the live pool's; ./content.ts refetches when it moves. */
-  health: () => call<{ invites?: boolean; open?: boolean; contentVersion?: string }>("GET", "/health"),
+  health: () => call<{ invites?: boolean; open?: boolean; contentVersion?: string; telegram?: false | "bot" | "fake" }>("GET", "/health"),
   content: () => call<MvpContent>("GET", "/content"),
   home: () => call<HomeView>("GET", "/home"),
   startRun: () => call<RunView>("POST", "/runs"),

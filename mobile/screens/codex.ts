@@ -31,11 +31,15 @@ import { fuseUnits, lineUnitOf } from "../../src/mvp/forms";
 import { cardIcons, type Pip } from "../../src/mvp/card-icons";
 import type { AbilityRegistry } from "../../src/types";
 import { api } from "../api";
+import { t } from "../i18n";
+import type { Key } from "../i18n/en";
 import { card, creditOf, formRich, liveIdOf, roman, setCardAbilities, summonCard, tierClass, summonSheet, unitSheet, withPip } from "../ui/card";
 import { app, button, closable, h, isDesktop, onKeys, screen, show, who } from "../ui/dom";
 import { icon } from "../ui/icon";
 import { loadUnitRates, pct } from "../ui/unit-stats";
 import { ideaWhy, proposeScreen } from "./ideas";
+import { rulesLangOpt } from "../lang";
+import { discoveryName, englishName } from "../unit-names";
 
 export type CodexTab = "units" | "fusions" | "library" | "keywords";
 export type CodexSort = "tier" | "win" | "pick";
@@ -85,7 +89,7 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
   const st: CodexState = { ...DEFAULTS, ...a.state };
   cache.state = st;
   const desk = isDesktop();
-  const back = button("Back", a.onBack, "primary grow", "codex-back");
+  const back = button(t("codex.back"), a.onBack, "primary grow", "codex-back");
   const tabs = h("div", { class: "tabs", role: "tablist" });
   const body = h("div", { class: "stack codex-body" });
   const inspector = desk ? h("aside", { class: "codex-insp stack", "data-testid": "inspector" }) : null;
@@ -94,7 +98,7 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
   const idle = () => {
     inspected = false;
     for (const el of app.querySelectorAll(".codex-body .inspected")) el.classList.remove("inspected");
-    inspector?.replaceChildren(h("div", { class: "dim" }, "Pick a unit or a fusion to read it here."));
+    inspector?.replaceChildren(h("div", { class: "dim" }, t("codex.inspectorHint")));
   };
   idle();
   /** A unit's (or a fused unit's) sheet: the inspector on desktop, an overlay on a phone. */
@@ -116,7 +120,7 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
       b.dataset.unit = v.unitId;
       return b;
     });
-    sheet.append(h("div", { class: "stack history", "data-testid": "sheet-history" }, h("div", { class: "label" }, `Versions · ${c.versions.length}`), ...rows));
+    sheet.append(h("div", { class: "stack history", "data-testid": "sheet-history" }, h("div", { class: "label" }, t("codex.versions", { n: c.versions.length })), ...rows));
     return sheet;
   };
   const liveSheet = (u: UnitContent): HTMLElement => history(creditOf(u.id), unitSheet(u, a.content));
@@ -151,7 +155,7 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
   let drawing = 0;
   const draw = async (): Promise<void> => {
     const n = ++drawing;
-    tabs.replaceChildren(tabBtn("units", "Units"), tabBtn("fusions", "Fusions"), tabBtn("library", "Library"), tabBtn("keywords", "Keywords"));
+    tabs.replaceChildren(tabBtn("units", t("codex.tab.units")), tabBtn("fusions", t("codex.tab.fusions")), tabBtn("library", t("codex.tab.library")), tabBtn("keywords", t("codex.tab.keywords")));
     // The body's height stays while it redraws, so the window keeps its scroll.
     body.style.minHeight = `${body.offsetHeight}px`;
     const y = window.scrollY;
@@ -160,13 +164,13 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
       if (st.tab === "units") kids = unitsTab(a.content, st, set, open, st.sort === "tier" ? null : await rates(), retryRates, liveSheet);
       else if (st.tab === "keywords") kids = [keywordsTab(a.content, open)];
       else if (st.tab === "library") {
-        if (!body.hasChildNodes()) body.replaceChildren(h("div", { class: "dim", "data-testid": "codex-loading" }, "Loading the library…"));
+        if (!body.hasChildNodes()) body.replaceChildren(h("div", { class: "dim", "data-testid": "codex-loading" }, t("codex.loadingLibrary")));
         const [lib] = await Promise.all([(cache.library ??= api.library()), loadIdeas()]);
         kids = libraryTab(a.content, lib, open, (l) => libSheet(lib, l));
       }
       else {
         // The first draw of Fusions waits on /fusions: say so meanwhile (R2-17).
-        if (!body.hasChildNodes()) body.replaceChildren(h("div", { class: "dim", "data-testid": "codex-loading" }, "Loading fusions…"));
+        if (!body.hasChildNodes()) body.replaceChildren(h("div", { class: "dim", "data-testid": "codex-loading" }, t("codex.loadingFusions")));
         kids = fusionsTab(a.content, await (cache.fusions ??= api.fusions()), st, set, open);
       }
     } catch (e) {
@@ -212,7 +216,7 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
   const main = h(
     "div",
     { class: "stack codex-main" },
-    h("div", { class: "row spread" }, h("h1", {}, "CODEX"), h("span", { class: "dim small" }, `${a.content.units.length} units`)),
+    h("div", { class: "row spread" }, h("h1", {}, t("codex.title")), h("span", { class: "dim small" }, t("codex.unitCount", { n: a.content.units.length }))),
     tabs,
     body,
     credits(),
@@ -236,17 +240,17 @@ export async function codexScreen(a: { content: MvpContent; onBack: () => void; 
 /** The When icon a unit's card leads with (card.ts iconLine), its pip and
  * its label. The key tells "Dies" from "Ally dies" ("death-skull.ally"). */
 function triggerOf(u: UnitContent, abilities: AbilityRegistry): { key: string; icon: IconId; pip?: Pip; label: string } | null {
-  const w = cardIcons(u.forms.sleeping, abilities)[0];
+  const w = cardIcons(u.forms.sleeping, abilities, rulesLangOpt())[0];
   if (!w || w.role !== "when") return null;
   return { key: w.pip ? `${w.icon}.${w.pip}` : w.icon, icon: w.icon, ...(w.pip ? { pip: w.pip } : {}), label: w.label };
 }
 
 const byTierName = (x: UnitContent, y: UnitContent) => x.tier - y.tier || x.name.localeCompare(y.name);
 
-const SORTS: [CodexSort, string][] = [
-  ["tier", "Tier"],
-  ["win", "Win rate"],
-  ["pick", "Pick rate"],
+const SORTS: [CodexSort, Key][] = [
+  ["tier", "codex.sort.tier"],
+  ["win", "codex.sort.win"],
+  ["pick", "codex.sort.pick"],
 ];
 
 function unitsTab(
@@ -274,13 +278,13 @@ function unitsTab(
     const t = trig.get(u.id);
     if (t && !triggers.has(t.key)) triggers.set(t.key, t);
   }
-  const text = new Map(units.map((u) => [u.id, `${u.name} ${u.archetype ?? ""} ${formText(u.forms.sleeping, content.abilities)} ${formText(u.forms.awoken, content.abilities)}`.toLowerCase()]));
+  const text = new Map(units.map((u) => [u.id, `${u.name} ${englishName(u)} ${u.archetype ?? ""} ${formText(u.forms.sleeping, content.abilities, rulesLangOpt())} ${formText(u.forms.awoken, content.abilities, rulesLangOpt())}`.toLowerCase()]));
 
   const summons = content.summons ?? [];
-  const summonText = new Map(summons.map((x) => [x.id, `${x.name} ${x.form ? formText(x.form, content.abilities) : ""}`.toLowerCase()]));
+  const summonText = new Map(summons.map((x) => [x.id, `${x.name} ${x.form ? formText(x.form, content.abilities, rulesLangOpt()) : ""}`.toLowerCase()]));
   const grid = h("div", { class: "slots codex-grid", "data-testid": "codex-units" });
   const count = h("div", { class: "dim small", "data-testid": "codex-count" });
-  const order = st.sort === "tier" ? "by tier" : `by ${st.sort === "win" ? "win" : "pick"} rate, highest first`;
+  const order = st.sort === "tier" ? t("codex.orderTier") : st.sort === "win" ? t("codex.orderWin") : t("codex.orderPick");
   const draw = () => {
     const q = st.query.trim().toLowerCase();
     const shown = units.filter((u) => st.tier !== "summoned" && (st.tier === null || u.tier === st.tier) && (st.trigger === null || trig.get(u.id)?.key === st.trigger) && (!q || text.get(u.id)!.includes(q)));
@@ -298,7 +302,7 @@ function unitsTab(
     const sums = st.tier === null || st.tier === "summoned" ? summons.filter((x) => st.trigger === null && (!q || summonText.get(x.id)!.includes(q))) : [];
     if (sums.length)
       grid.append(
-        h("div", { class: "label codex-group", "data-testid": "codex-summoned" }, "Summoned"),
+        h("div", { class: "label codex-group", "data-testid": "codex-summoned" }, t("codex.summoned")),
         ...sums.map((x) => {
           const el = summonCard(x, { side: "you", tier: "S", testid: "codex-summon", onOpen: () => open(summonSheet(x, content), el) });
           el.dataset.summon = x.id;
@@ -307,19 +311,19 @@ function unitsTab(
       );
     count.textContent =
       st.tier === "summoned"
-        ? `${sums.length} summoned units: other units bring them into battle. ${isDesktop() ? "Click" : "Tap"} one to read it.`
+        ? t(isDesktop() ? "codex.summonedCountDesktop" : "codex.summonedCountPhone", { n: sums.length })
         : shown.length === units.length
-          ? `All ${units.length} units, ${order}, then ${summons.length} summoned. ${isDesktop() ? "Click" : "Tap"} one to read it.`
-          : `${shown.length} of ${units.length} units, ${order}`;
-    if (!shown.length && !sums.length) grid.append(h("div", { class: "dim codex-none" }, "No unit matches."));
+          ? t(isDesktop() ? "codex.allCountDesktop" : "codex.allCountPhone", { n: units.length, order, summons: summons.length })
+          : t("codex.someCount", { shown: shown.length, n: units.length, order });
+    if (!shown.length && !sums.length) grid.append(h("div", { class: "dim codex-none" }, t("codex.noMatch")));
   };
 
   const tierRow = h(
     "div",
     { class: "row codex-filter", "data-testid": "codex-tiers" },
-    h("span", { class: "label" }, "Tier"),
-    ...[null, ...tiers].map((t) => button(t === null ? "All" : roman(t), () => set({ tier: t }), `${st.tier === t ? "chip on" : "chip"}${t === null ? "" : ` tier-chip ${tierClass(t)}`}`, `codex-tier-${t ?? "all"}`)),
-    summons.length ? button("Summoned", () => set({ tier: "summoned", trigger: null }), st.tier === "summoned" ? "chip on" : "chip", "codex-tier-summoned") : null,
+    h("span", { class: "label" }, t("codex.tierLabel")),
+    ...[null, ...tiers].map((tr) => button(tr === null ? t("codex.tierAll") : roman(tr), () => set({ tier: tr }), `${st.tier === tr ? "chip on" : "chip"}${tr === null ? "" : ` tier-chip ${tierClass(tr)}`}`, `codex-tier-${tr ?? "all"}`)),
+    summons.length ? button(t("codex.summoned"), () => set({ tier: "summoned", trigger: null }), st.tier === "summoned" ? "chip on" : "chip", "codex-tier-summoned") : null,
   );
   const trigRow = h(
     "div",
@@ -337,10 +341,10 @@ function unitsTab(
   const sortRow = h(
     "div",
     { class: "row codex-filter codex-sort", "data-testid": "codex-sort" },
-    h("span", { class: "label" }, "Sort"),
-    ...SORTS.map(([s, label]) => button(label, () => set({ sort: s }), st.sort === s ? "chip quiet on" : "chip quiet", `codex-sort-${s}`)),
+    h("span", { class: "label" }, t("codex.sortLabel")),
+    ...SORTS.map(([s, label]) => button(t(label), () => set({ sort: s }), st.sort === s ? "chip quiet on" : "chip quiet", `codex-sort-${s}`)),
   );
-  const search = h("input", { type: "search", placeholder: "Search names and text", "data-testid": "codex-search", "aria-label": "Search units" });
+  const search = h("input", { type: "search", placeholder: t("codex.searchPlaceholder"), "data-testid": "codex-search", "aria-label": t("codex.searchLabel") });
   search.value = st.query;
   search.addEventListener("input", () => {
     st.query = search.value;
@@ -351,17 +355,17 @@ function unitsTab(
   const note =
     st.sort !== "tier"
       ? stats
-        ? h("div", { class: "dim small" }, "Win: how often its team won the fight. Picked: how often it was on a finished line. Since the units last changed.")
-        : h("div", { class: "row dim small", "data-testid": "codex-rates-error" }, "Rates aren't available right now.", button("Try again", retry, "small", "codex-rates-retry"))
+        ? h("div", { class: "dim small" }, t("codex.ratesNote"))
+        : h("div", { class: "row dim small", "data-testid": "codex-rates-error" }, t("codex.ratesError"), button(t("codex.tryAgain"), retry, "small", "codex-rates-retry"))
       : null;
-  return [search, tierRow, trigRow, sortRow, picked ? h("div", { class: "dim small" }, `When: ${picked.label}`) : null, count, note, grid].filter((n): n is NonNullable<typeof n> => n !== null);
+  return [search, tierRow, trigRow, sortRow, picked ? h("div", { class: "dim small" }, t("codex.whenFilter", { label: picked.label })) : null, count, note, grid].filter((n): n is NonNullable<typeof n> => n !== null);
 }
 
 // ---------- fusions ----------
 
 /** The fused unit an ordered pair makes, as fuseUnits builds it in a run. */
 function fusedOf(first: UnitContent, second: UnitContent, f: FusionDiscovery | undefined, content: MvpContent): LineUnit {
-  return fuseUnits(lineUnitOf(first, "a", 3), lineUnitOf(second, "b", 3), { name: f?.name ?? "???", discoveredBy: f?.discoveredBy ?? null }, content);
+  return fuseUnits(lineUnitOf(first, "a", 3), lineUnitOf(second, "b", 3), { name: f ? discoveryName(f) : "???", discoveredBy: f?.discoveredBy ?? null }, content);
 }
 
 /** Rows drawn at once; "Show more" draws the next batch. */
@@ -384,11 +388,11 @@ function fusionsTab(
   const known = new Map(fusions.map((f) => [`${f.first}>${f.second}`, f]));
   const mine = fusions.filter((f) => f.discoveredBy?.id === me);
 
-  const pick = h("select", { "data-testid": "codex-fusions-of", "aria-label": "Pairs of one unit" }) as HTMLSelectElement;
-  pick.append(h("option", { value: "" }, "Every discovery"), ...[...content.units].sort((x, y) => x.name.localeCompare(y.name)).map((u) => h("option", { value: u.id }, `${u.emoji} ${u.name} + …`)));
+  const pick = h("select", { "data-testid": "codex-fusions-of", "aria-label": t("codex.pairsLabel") }) as HTMLSelectElement;
+  pick.append(h("option", { value: "" }, t("codex.everyDiscovery")), ...[...content.units].sort((x, y) => x.name.localeCompare(y.name)).map((u) => h("option", { value: u.id }, t("codex.pairsOf", { emoji: u.emoji, name: u.name }))));
   pick.value = st.fusionsOf ?? "";
   pick.addEventListener("change", () => go({ fusionsOf: pick.value || null }));
-  const mineBtn = button(`Mine · ${mine.length}`, () => go({ mine: !st.mine }), st.mine ? "chip on" : "chip", "codex-fusions-mine");
+  const mineBtn = button(t("codex.mine", { n: mine.length }), () => go({ mine: !st.mine }), st.mine ? "chip on" : "chip", "codex-fusions-mine");
 
   type Row = { a: UnitContent; b: UnitContent; f?: FusionDiscovery | undefined };
   let rows: Row[];
@@ -410,7 +414,7 @@ function fusionsTab(
 
   const row = ({ a, b, f }: Row): HTMLElement => {
     const fused = fusedOf(a, b, f, content);
-    const by = f?.discoveredBy ? (f.discoveredBy.id === me ? "you" : who(f.discoveredBy.name)) : null;
+    const by = f?.discoveredBy ? (f.discoveredBy.id === me ? t("codex.you") : who(f.discoveredBy.name)) : null;
     const el = h(
       "div",
       { class: `stat-row fusion-row${f ? "" : " unknown"}`, "data-testid": f ? "codex-fusion" : "codex-fusion-unknown" },
@@ -418,10 +422,10 @@ function fusionsTab(
       h(
         "span",
         { class: "grow" },
-        h("div", { class: "fusion-name" }, f ? f.name : "?"),
-        h("div", { class: "dim small" }, `When of ${a.name} · Who of ${b.name}`),
+        h("div", { class: "fusion-name" }, f ? discoveryName(f) : "?"),
+        h("div", { class: "dim small" }, t("codex.whenWho", { a: a.name, b: b.name })),
         f ? h("div", { class: "fusion-recipe small" }, ...formRich(fused.recipe, content)) : null,
-        f ? h("div", { class: "discovered" }, ...(by ? ["discovered by ", by] : ["made by bots, unclaimed"])) : h("div", { class: "discovered" }, "nobody has made it yet"),
+        f ? h("div", { class: "discovered" }, ...(by ? [t("codex.discoveredBy"), by] : [t("codex.byBots")])) : h("div", { class: "discovered" }, t("codex.nobodyYet")),
       ),
       h("span", { class: "num dim" }, `${fused.stats.pwr}/${fused.stats.hp}`),
     );
@@ -434,7 +438,7 @@ function fusionsTab(
 
   const list = h("div", { class: "panel stack", "data-testid": "codex-fusions" });
   let drawn = 0;
-  const more = button("Show more", () => drawMore(), "small", "codex-fusions-more");
+  const more = button(t("codex.showMore"), () => drawMore(), "small", "codex-fusions-more");
   const drawMore = () => {
     list.insertBefore(h("div", { class: "contents" }, ...rows.slice(drawn, drawn + BATCH).map(row)), more);
     drawn = Math.min(rows.length, drawn + BATCH);
@@ -444,7 +448,7 @@ function fusionsTab(
   if (rows.length) drawMore();
   else {
     more.hidden = true;
-    list.prepend(h("div", { class: "dim" }, st.mine ? "You haven't discovered a fusion yet. Fuse two Awoken units in a run to name one." : "No fusions yet. Fuse two Awoken units in a run to discover one."));
+    list.prepend(h("div", { class: "dim" }, st.mine ? t("codex.noMine") : t("codex.noFusions")));
   }
 
   const found = first ? rows.filter((r) => r.f).length : null;
@@ -452,11 +456,11 @@ function fusionsTab(
     h(
       "div",
       { class: "row spread" },
-      h("div", { class: "num", "data-testid": "codex-fusions-found" }, `${live.length.toLocaleString("en")} of ${total.toLocaleString("en")} found`),
+      h("div", { class: "num", "data-testid": "codex-fusions-found" }, t("codex.found", { n: live.length.toLocaleString("en"), total: total.toLocaleString("en") })),
       mineBtn,
     ),
     pick,
-    first ? h("div", { class: "dim small" }, `${first.name} first: ${found} of ${n - 1} pairs found. Order matters: the first part gives the When, the second the Who.`) : h("div", { class: "dim small" }, "Newest first. Pick a unit to see all its pairs, the ones nobody has found as \"?\"."),
+    first ? h("div", { class: "dim small" }, t("codex.firstPairs", { name: first.name, found: found ?? 0, n: n - 1 })) : h("div", { class: "dim small" }, t("codex.newestFirst")),
     list,
   ];
 }
@@ -477,21 +481,21 @@ function withLibrary(content: MvpContent, lib: LibraryView): MvpContent {
   };
 }
 
-const liveFor = (l: LibraryUnit): string => (l.liveDays === null ? "Left before days were recorded" : `Live ${l.liveDays} ${l.liveDays === 1 ? "day" : "days"}`);
+const liveFor = (l: LibraryUnit): string => (l.liveDays === null ? t("codex.leftBeforeDays") : t("codex.liveDays", { n: l.liveDays }));
 
 /** One version in a unit's history (M3-8): "v1 by @a, 14 days", "v2 by @b, live". */
 function versionText(v: UnitVersion): string {
-  const days = v.live ? "live" : v.liveDays === null ? "left before days were recorded" : `${v.liveDays} ${v.liveDays === 1 ? "day" : "days"}`;
-  return `v${v.version}${v.by ? ` by @${v.by.name}` : ""}, ${days}`;
+  const days = v.live ? t("codex.versionLive") : v.liveDays === null ? t("codex.versionLeftBeforeDays") : t("codex.days", { n: v.liveDays });
+  return v.by ? t("codex.versionBy", { v: v.version, name: v.by.name, days }) : t("codex.version", { v: v.version, days });
 }
 
 /** "Propose a new version" (M3-5): on with an idea held; off, with the reason beside it (M3-2's style), without. */
 function proposeRow(unit: UnitContent, all: MvpContent, ideas: IdeasView | null, propose: (unit: UnitContent, all: MvpContent) => void): HTMLElement {
   const held = (ideas?.held ?? 0) > 0;
-  const b = button("Propose a new version", () => propose(unit, all), held ? "primary" : "primary off", "library-propose");
+  const b = button(t("codex.propose"), () => propose(unit, all), held ? "primary" : "primary off", "library-propose");
   if (held) return h("div", { class: "row" }, b);
   b.disabled = true;
-  const why = ideas ? ideaWhy(ideas.nextIn ?? 0) : "Your ideas didn't load";
+  const why = ideas ? ideaWhy(ideas.nextIn ?? 0) : t("codex.ideasDidntLoad");
   return h("div", { class: "off-row" }, b, h("span", { class: "dim small", "data-testid": "library-propose-why" }, why));
 }
 
@@ -505,19 +509,19 @@ function librarySheet(content: MvpContent, lib: LibraryView, l: LibraryUnit, pro
   const s = unitSheet(l.unit, { ...all, units: [l.unit, ...all.units] }, { credit: { ...l, liveDays: null } });
   const fusions = l.fusions.map((f) => {
     const [a, b] = [byId.get(f.first), byId.get(f.second)];
-    const by = f.discoveredBy ? (f.discoveredBy.id === me ? "you" : who(f.discoveredBy.name)) : null;
+    const by = f.discoveredBy ? (f.discoveredBy.id === me ? t("codex.you") : who(f.discoveredBy.name)) : null;
     return h(
       "div",
       { class: "stat-row fusion-row", "data-testid": "library-fusion" },
       h("span", { class: "emoji pair" }, `${a?.emoji ?? "?"}${b?.emoji ?? "?"}`),
-      h("span", { class: "grow" }, h("div", { class: "fusion-name" }, f.name), h("div", { class: "dim small" }, `${a?.name ?? f.first} + ${b?.name ?? f.second}`), h("div", { class: "discovered" }, ...(by ? ["discovered by ", by] : ["made by bots, unclaimed"]))),
+      h("span", { class: "grow" }, h("div", { class: "fusion-name" }, discoveryName(f)), h("div", { class: "dim small" }, `${a?.name ?? f.first} + ${b?.name ?? f.second}`), h("div", { class: "discovered" }, ...(by ? [t("codex.discoveredBy"), by] : [t("codex.byBots")]))),
     );
   });
   s.append(
-    h("div", { class: "dim small lib-meta", "data-testid": "library-meta" }, h("span", {}, "In the Library"), h("span", { "data-testid": "library-live" }, liveFor(l))),
+    h("div", { class: "dim small lib-meta", "data-testid": "library-meta" }, h("span", {}, t("codex.inLibrary")), h("span", { "data-testid": "library-live" }, liveFor(l))),
     proposal(all),
-    h("div", { class: "label" }, `Fusions · ${l.fusions.length}`),
-    fusions.length ? h("div", { class: "panel stack", "data-testid": "library-fusions" }, ...fusions) : h("div", { class: "dim small" }, "None were found while it was live."),
+    h("div", { class: "label" }, t("codex.fusionsCount", { n: l.fusions.length })),
+    fusions.length ? h("div", { class: "panel stack", "data-testid": "library-fusions" }, ...fusions) : h("div", { class: "dim small" }, t("codex.noneFoundLive")),
   );
   return s;
 }
@@ -538,7 +542,7 @@ function libraryTab(content: MvpContent, lib: LibraryView, open: (node: HTMLElem
     h(
       "div",
       { class: "dim small", "data-testid": "library-count" },
-      lib.units.length ? `${lib.units.length} ${lib.units.length === 1 ? "unit has" : "units have"} left the pool. ${isDesktop() ? "Click" : "Tap"} one to read it.` : "No unit has left the pool yet.",
+      lib.units.length ? t(isDesktop() ? "codex.leftPoolDesktop" : "codex.leftPoolPhone", { n: lib.units.length }) : t("codex.noneLeftPool"),
     ),
     lib.units.length ? grid : null,
   ].filter((n): n is NonNullable<typeof n> => n !== null);
@@ -546,16 +550,16 @@ function libraryTab(content: MvpContent, lib: LibraryView, open: (node: HTMLElem
 
 // ---------- keywords ----------
 
-const GROUPS: [TermGroup, string][] = [
-  ["status", "Statuses"],
-  ["trigger", "When"],
-  ["condition", "Conditions"],
-  ["target", "Who"],
-  ["effect", "Does"],
-  ["stat", "Stats"],
-  ["state", "Unit states"],
-  ["battle", "Battle"],
-  ["term", "Words"],
+const GROUPS: [TermGroup, Key][] = [
+  ["status", "codex.group.status"],
+  ["trigger", "codex.group.trigger"],
+  ["condition", "codex.group.condition"],
+  ["target", "codex.group.target"],
+  ["effect", "codex.group.effect"],
+  ["stat", "codex.group.stat"],
+  ["state", "codex.group.state"],
+  ["battle", "codex.group.battle"],
+  ["term", "codex.group.term"],
 ];
 
 /** Rows that show only when a unit's text uses them: the rest (statuses,
@@ -576,7 +580,7 @@ function usersByTerm(content: MvpContent): Map<string, UnitContent[]> {
   const out = new Map<string, UnitContent[]>();
   for (const u of [...content.units].sort(byTierName)) {
     const keys = new Set<string>();
-    for (const form of [u.forms.sleeping, u.forms.awoken]) for (const s of formSegments(form, content.abilities)) if (s.term) keys.add(useKey(s.term, s.scope));
+    for (const form of [u.forms.sleeping, u.forms.awoken]) for (const s of formSegments(form, content.abilities, rulesLangOpt())) if (s.term) keys.add(useKey(s.term, s.scope));
     for (const k of keys) out.set(k, [...(out.get(k) ?? []), u]);
   }
   return out;
@@ -596,14 +600,14 @@ function keywordsTab(content: MvpContent, open: (node: HTMLElement, from?: HTMLE
     };
     const chips = h("div", { class: "chips" }, ...used.slice(0, CHIPS).map(chip));
     if (used.length > CHIPS) {
-      const rest = button(`+${used.length - CHIPS} more`, () => rest.replaceWith(...used.slice(CHIPS).map(chip)), "chip", "codex-term-more");
+      const rest = button(t("codex.more", { n: used.length - CHIPS }), () => rest.replaceWith(...used.slice(CHIPS).map(chip)), "chip", "codex-term-more");
       chips.append(rest);
     }
     return chips;
   };
-  const usedBy = (n: number) => h("div", { class: "dim small" }, `Used by ${n} ${n === 1 ? "unit" : "units"}`);
+  const usedBy = (n: number) => h("div", { class: "dim small" }, t("codex.usedBy", { n }));
   const row = (id: TermId): HTMLElement | null => {
-    const def = termDef(id, content.statuses);
+    const def = termDef(id, content.statuses, rulesLangOpt());
     if (!def) return null;
     const used = users.get(id) ?? [];
     // A trigger said of someone else gets its own line, with its own label,
@@ -611,13 +615,13 @@ function keywordsTab(content: MvpContent, open: (node: HTMLElement, from?: HTMLE
     // "When it dies."
     const scoped = (id.startsWith("trigger:") ? SCOPES : []).flatMap((sc) => {
       const them = users.get(useKey(id, sc));
-      const tip = them && scopedTip(id, sc);
+      const tip = them && scopedTip(id, sc, rulesLangOpt());
       return them && tip
         ? [
             h(
               "div",
               { class: "stack kw-scope", "data-scope": sc, "data-testid": "codex-term-scope" },
-              h("b", { class: `tone-${def.tone}`, "data-testid": "codex-term-scope-label" }, scopedLabel(id, sc) ?? def.label),
+              h("b", { class: `tone-${def.tone}`, "data-testid": "codex-term-scope-label" }, scopedLabel(id, sc, rulesLangOpt()) ?? def.label),
               h("div", { class: "kw-tip" }, tip),
               usedBy(them.length),
               chipsOf(them),
@@ -647,7 +651,7 @@ function keywordsTab(content: MvpContent, open: (node: HTMLElement, from?: HTMLE
     { class: "stack keywords", "data-testid": "codex-keywords" },
     ...GROUPS.flatMap(([g, title]) => {
       const rows = ids.filter((id) => termGroup(id) === g).map(row).filter((r): r is HTMLElement => r !== null);
-      return rows.length ? [h("div", { class: "label kw-group" }, title), h("div", { class: "panel stack kw-list" }, ...rows)] : [];
+      return rows.length ? [h("div", { class: "label kw-group" }, t(title)), h("div", { class: "panel stack kw-list" }, ...rows)] : [];
     }),
   );
 }
@@ -674,10 +678,10 @@ function credits(): HTMLElement {
   return h(
     "div",
     { class: "dim small credits", "data-testid": "icon-credits" },
-    "Icons made by Delapouite, Lorc, Sbed and Skoll from ",
+    t("codex.credits1"),
     a("https://game-icons.net", "game-icons.net"),
-    ", licensed ",
+    t("codex.credits2"),
     a("https://creativecommons.org/licenses/by/3.0/", "CC BY 3.0"),
-    ". Heart-plus by Zeromancer (CC0). Icons were recoloured and their background removed.",
+    t("codex.credits3"),
   );
 }

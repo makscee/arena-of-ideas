@@ -10,6 +10,7 @@ import { grantIdea, ideasOf, writeIdea } from "./ideas.js";
 import { seedUnits } from "./pool.js";
 import { mvpRuntime } from "./runtime.js";
 import { MemoryMvpStore } from "./store.js";
+import { cyrillic } from "./translate.js";
 
 const HEDGEHOG = "a hedgehog that punishes whoever hits it";
 
@@ -48,7 +49,7 @@ function scripted(archetypes: ReaderAnswer<ArchetypeDraft>[], readings: ReaderAn
   return { reader, calls };
 }
 
-const arch = (name: string, line = `A ${name.toLowerCase()} with spines for every foe.`): ArchetypeDraft => ({ name, emoji: "🦔", line });
+const arch = (name: string, line = `A ${name.toLowerCase()} with spines for every foe.`): ArchetypeDraft => ({ name, emoji: "🦔", line, ru: { name: cyrillic(name), line: `Ру: ${cyrillic(line)}` } });
 const answer = <T>(options: T[], cantExpress: ReaderAnswer<T>["cantExpress"] = []): ReaderAnswer<T> => ({ options, cantExpress });
 const HOG: IdeaArchetype = { name: "Spinehog", emoji: "🦔", line: "Spines that punish every hit it takes." };
 

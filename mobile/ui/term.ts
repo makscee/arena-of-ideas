@@ -11,11 +11,13 @@
 import type { DescribeSegment } from "../../src/describe";
 import { scopedLabel, scopedTip, termDef, termIcon, type TermDef, type TermId } from "../../src/glossary";
 import type { UnitFilter } from "../../src/types";
+import { t } from "../i18n";
 import { closable, h, isDesktop, onPopoverEsc } from "./dom";
 import { changedTokens } from "./diff";
 import { icon } from "./icon";
 import { withPip } from "./card";
 import { scopePip } from "../../src/mvp/card-icons";
+import { rulesLangOpt } from "../lang";
 
 /** Opens a term's Codex entry; set by the Codex (R2-11). Unset: no link. */
 let codexLink: ((id: TermId, scope?: UnitFilter) => void) | null = null;
@@ -38,7 +40,7 @@ function unitRefButton(seg: DescribeSegment, kids: (Node | string)[]): Node[] {
   if (!unitRefs || !emoji) return kids.map((k) => (typeof k === "string" ? document.createTextNode(k) : k));
   const open = unitRefs.open;
   return edgeSpaced(kids, (inner) => {
-    const b = h("button", { type: "button", class: `t t-unit${seg.side ? ` tone-${seg.side}` : ""}`, "data-unit-ref": id, "data-testid": "unit-ref", "aria-label": `${seg.text}: open its card` }, h("span", { class: "t-emoji", "aria-hidden": "true" }, emoji), ...inner);
+    const b = h("button", { type: "button", class: `t t-unit${seg.side ? ` tone-${seg.side}` : ""}`, "data-unit-ref": id, "data-testid": "unit-ref", "aria-label": t("term.openCardAria", { text: seg.text }) }, h("span", { class: "t-emoji", "aria-hidden": "true" }, emoji), ...inner);
     b.addEventListener("click", (ev) => {
       ev.stopPropagation();
       open(id);
@@ -52,15 +54,15 @@ function unitRefButton(seg: DescribeSegment, kids: (Node | string)[]): Node[] {
 export function termInfo(seg: DescribeSegment): (TermDef & { id: TermId; scope?: UnitFilter }) | undefined {
   const id = seg.term;
   if (!id) return undefined;
-  const def = termDef(id);
+  const def = termDef(id, {}, rulesLangOpt());
   if (!def) return undefined;
   if (id === "target:eventUnit") {
     const label = seg.text.charAt(0).toUpperCase() + seg.text.slice(1);
-    const holder = termDef("target:holder")!;
-    return /^self$/i.test(seg.text) ? { ...holder, id, label } : { ...def, id, label };
+    const holder = termDef("target:holder", {}, rulesLangOpt())!;
+    return /^(self|себе|себя)$/i.test(seg.text) ? { ...holder, id, label } : { ...def, id, label };
   }
   // A trigger clause's rule follows its scope ("after an enemy dies"), and so does its Codex line.
-  return seg.scope ? { ...def, id, scope: seg.scope, label: scopedLabel(id, seg.scope) ?? def.label, tip: scopedTip(id, seg.scope) ?? def.tip } : { ...def, id };
+  return seg.scope ? { ...def, id, scope: seg.scope, label: scopedLabel(id, seg.scope, rulesLangOpt()) ?? def.label, tip: scopedTip(id, seg.scope, rulesLangOpt()) ?? def.tip } : { ...def, id };
 }
 
 /** The status a run is about: its own status term, or the status a "gets"
@@ -235,7 +237,7 @@ function ruleBlock(info: TermDef & { id: TermId }, size: number): HTMLElement {
 const codexButton = (id: TermId, scope?: UnitFilter): HTMLElement | null => {
   if (!codexLink) return null;
   const open = codexLink;
-  const b = h("button", { type: "button", class: "small link", "data-testid": "term-codex" }, "Open in Codex ▸");
+  const b = h("button", { type: "button", class: "small link", "data-testid": "term-codex" }, t("term.openInCodex"));
   b.addEventListener("click", () => open(id, scope));
   return b;
 };
@@ -326,7 +328,7 @@ function showTip(anchor: HTMLElement, info: TermDef & { id: TermId }): void {
   // The popover already says it all.
   if (!anchor.isConnected || popAnchor === anchor) return;
   hideTip();
-  const codex = codexLink ? h("div", { class: "dim small" }, "Click for more · Open in Codex") : null;
+  const codex = codexLink ? h("div", { class: "dim small" }, t("term.clickForMore")) : null;
   tip = h("div", { class: "term-tooltip", role: "tooltip", "data-testid": "term-tooltip" }, ruleBlock(info, 20), codex);
   document.body.append(tip);
   tipAnchor = anchor;

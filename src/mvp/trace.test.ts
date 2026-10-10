@@ -10,7 +10,7 @@ import { MVP_RULES, type MvpContent, type PlayerRef } from "./contract.js";
 import { fightLines } from "./fight.js";
 import { lineUnitOf } from "./forms.js";
 import { mvpPool } from "./units.js";
-import { BEAT_MAX_MS, BEAT_MS, EMPHASIS_MS, END_BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, weightsOf, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, causeOf, beamsOf, stepsOf, sidesOf, timelineOf, timingOf, traceOf, turnLabel, turnSummaryOf, whyILost, TURN_END_MS, turnEndHoldMs, turnEndsOf, totalsPartsOf, totalsText, runningTotalsOf, runRowText, turnSoFarIds, beatIdsOf, type UnitTurnTotals } from "./trace.js";
+import { setTraceLang, BEAT_MAX_MS, BEAT_MS, EMPHASIS_MS, END_BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, weightsOf, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, causeOf, beamsOf, stepsOf, sidesOf, timelineOf, timingOf, traceOf, turnLabel, turnSummaryOf, whyILost, TURN_END_MS, turnEndHoldMs, turnEndsOf, totalsPartsOf, totalsText, runningTotalsOf, runRowText, turnSoFarIds, beatIdsOf, type UnitTurnTotals } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -1053,5 +1053,31 @@ describe("R4-22: running totals above units", () => {
     expect(runRowText("debuff", "hp", -2)).toBe("−2 HP");
     expect(runRowText("status", "status:Poison", 3)).toBe("×3");
     expect(runRowText("status", "status:Shield", -1)).toBe("−1");
+  });
+});
+
+// M4-3: the same captions in Russian; English stays as it was once reset.
+describe("captions in Russian", () => {
+  test("steps, changes and traces read in Russian, then English again", () => {
+    const log = run([Shieldbearer, Smith, Archer], [dummy("Dummy", 20, 1)]);
+    const shot = log.find((e) => e.type === "Hurt" && e.source !== "kernel")!;
+    const english = stepsOf(log).map((s) => s.caption);
+    setTraceLang("ru");
+    try {
+      const steps = stepsOf(log);
+      expect(steps.find((s) => s.caption.includes("Сила"))!.caption).toBe("Smith → Сила ×1 на Shieldbearer (+1 АТК)");
+      expect(steps.find((s) => s.caption.includes("Сила"))!.changes.map((c) => c.label)).toEqual(["Сила ×1", "+1 АТК"]);
+      expect(steps.find((s) => s.caption.includes("бьёт"))!.caption).toMatch(/^\w+ бьёт \w+ → −\d+$/);
+      expect(steps.at(-1)!.caption).toMatch(/Сторона [AB] побеждает|Ничья/);
+      expect(stepsOf(log, undefined, undefined, { you: "A" }).at(-1)!.caption).toMatch(/Вы победили|Они победили|Ничья/);
+      for (const s of steps) expect(s.caption, s.caption).not.toMatch(/\b(strikes|on|wins|absorbed|blocks|falls|appears|returns|Shield|Strength|PWR|HP)\b/);
+      expect(chainOf(log, shot.id).nodes.at(-1)!.text).toMatch(/^(Начало боя|Ход \d+|Конец хода \d+)$/);
+      expect(endCaption("draw")).toBe("Ничья");
+      expect(runRowText("buff", "pwr", 1)).toBe("+1 АТК");
+      expect(totalsPartsOf({ unit: "A1:X", side: "A", damage: 0, healed: 0, pwr: 0, hp: 2, blocked: 0, statuses: [], died: false, eventIds: [] }).map((p) => p.text)).toEqual(["+2 ОЗ"]);
+    } finally {
+      setTraceLang(undefined);
+    }
+    expect(stepsOf(log).map((s) => s.caption)).toEqual(english);
   });
 });

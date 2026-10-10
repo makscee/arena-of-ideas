@@ -10,7 +10,9 @@
 // entry.
 
 import { FATIGUE_START, fatigueAmount } from "./battle.js";
-import { describeStatus } from "./describe.js";
+import { describeStatus, type Lang } from "./describe.js";
+import { RU_STATUSES } from "./describe-ru.js";
+import { chainCappedTipRu, fatigueTipRu, RU_SCOPE_WHO, RU_SCOPED_EVENT, RU_TERMS, ruStatusTerm, scopeLabelRu, suddenDeathTipRu, timeUpTipRu } from "./glossary-ru.js";
 import { MVP_RULES, ROUND3_TURN_CAP } from "./mvp/contract.js";
 import type { Condition, Effect, EventPattern, Selector, StatusRegistry, UnitFilter } from "./types.js";
 
@@ -173,13 +175,15 @@ export const GLOSSARY: Record<FixedTermId, TermDef> = {
 
 /** Chain stopped's rule for a given cap: a battle passes its ChainCapped
  * event's steps, so a run started under an older cap reads its own number. */
-export function chainCappedTip(cap: number): string {
+export function chainCappedTip(cap: number, lang?: Lang): string {
+  if (lang === "ru") return chainCappedTipRu(cap);
   return `A chain of reactions ran ${cap} steps and was cut off, so a battle can't loop forever.`;
 }
 
 /** Fatigue's rule, its numbers from the kernel's own fatigueAmount(). It
  * stays self-sufficient: the doubling is said, not named. */
-export function fatigueTip(suddenDeathAt?: number): string {
+export function fatigueTip(suddenDeathAt?: number, lang?: Lang): string {
+  if (lang === "ru") return fatigueTipRu(suddenDeathAt);
   const n = (t: number) => fatigueAmount(t, suddenDeathAt);
   const linear = `From turn ${FATIGUE_START}, every unit takes damage at each turn's end: ${n(FATIGUE_START)}, then ${n(FATIGUE_START + 1)}, ${n(FATIGUE_START + 2)} …`;
   if (suddenDeathAt === undefined) return `${linear} so battles always end.`;
@@ -187,14 +191,16 @@ export function fatigueTip(suddenDeathAt?: number): string {
 }
 
 /** Sudden death's rule (R4-1) for the turn it starts. */
-export function suddenDeathTip(at: number): string {
+export function suddenDeathTip(at: number, lang?: Lang): string {
+  if (lang === "ru") return suddenDeathTipRu(at);
   const n = (t: number) => fatigueAmount(t, at);
   return `From turn ${at}, the turn-end damage doubles every turn (${n(at)}, ${n(at + 1)}, ${n(at + 2)} …), nothing blocks it or saves a unit from it, and no unit can enter or return to the line.`;
 }
 
 /** Time's up's rule for a given turn cap: a battle passes its BattleEnd's
  * turns, so a run started under an older cap reads its own number. */
-export function timeUpTip(cap: number): string {
+export function timeUpTip(cap: number, lang?: Lang): string {
+  if (lang === "ru") return timeUpTipRu(cap);
   return `A battle with both sides still standing after turn ${cap} ends in a draw, so no fight runs forever.`;
 }
 
@@ -204,7 +210,8 @@ export const termGroup = (id: TermId): TermGroup => id.slice(0, id.indexOf(":"))
 /** A term's entry. A status the glossary doesn't list (player-made content)
  * gets its label from its name and its tip from its own definition; a status
  * the registry doesn't know either has no entry (undefined). */
-export function termDef(id: TermId, statuses: StatusRegistry = {}): TermDef | undefined {
+export function termDef(id: TermId, statuses: StatusRegistry = {}, lang?: Lang): TermDef | undefined {
+  if (lang === "ru") return termDefRu(id, statuses);
   if (id.startsWith("status:")) {
     const name = id.slice("status:".length);
     const known = STATUS_TERMS[name];
@@ -213,6 +220,30 @@ export function termDef(id: TermId, statuses: StatusRegistry = {}): TermDef | un
     return def ? { label: name, tone: "plain", tip: describeStatus(def) } : undefined;
   }
   return GLOSSARY[id as FixedTermId];
+}
+
+/** termDef in Russian (M4-3): glossary.ts's icon and tone, glossary-ru.ts's
+ * words. A player-made status keeps its name and reads its own definition. */
+function termDefRu(id: TermId, statuses: StatusRegistry): TermDef | undefined {
+  const en = termDef(id, statuses);
+  if (!en) return undefined;
+  if (id.startsWith("status:")) {
+    const name = id.slice("status:".length);
+    const ru = ruStatusTerm(name);
+    if (ru) return { ...en, label: ru.label, tip: ru.tip };
+    const def = statuses[name];
+    return def ? { ...en, label: RU_STATUSES[name]?.name ?? name, tip: describeStatus(def, "ru") } : en;
+  }
+  const ru = RU_TERMS[id];
+  if (!ru) return en;
+  const tip =
+    id === "battle:fatigue" ? fatigueTipRu(MVP_RULES.suddenDeathAt)
+    : id === "battle:suddenDeath" ? suddenDeathTipRu(MVP_RULES.suddenDeathAt ?? 20)
+    : id === "battle:chainCapped" ? chainCappedTipRu(MVP_RULES.chainStepCap)
+    : id === "battle:timeUp" ? timeUpTipRu(ROUND3_TURN_CAP)
+    : ru.tip;
+  const { more: _more, ...rest } = en;
+  return { ...rest, label: ru.label, tip, ...(ru.more ? { more: ru.more } : {}) };
 }
 
 /** The icon a term shows. A status lands / apply status run shows the status's
@@ -246,11 +277,12 @@ const SCOPE_WHO: Record<Exclude<UnitFilter, "holder">, string> = {
 /** A trigger's rule as its sentence scopes it: "After an enemy dies" shows
  * "When an enemy dies.", not the holder's own-death rule. The holder's scope
  * (and a term that isn't a unit trigger) keeps the plain tip. */
-export function scopedTip(id: TermId, scope?: UnitFilter): string | undefined {
-  const def = termDef(id);
+export function scopedTip(id: TermId, scope?: UnitFilter, lang?: Lang): string | undefined {
+  const def = termDef(id, {}, lang);
   if (!def || !scope || scope === "holder" || !id.startsWith("trigger:")) return def?.tip;
-  const event = SCOPED_EVENT[id.slice("trigger:".length) as EventPattern["on"]];
-  return event ? `${SCOPE_WHO[scope]} ${event}` : def.tip;
+  const on = id.slice("trigger:".length) as EventPattern["on"];
+  const event = (lang === "ru" ? RU_SCOPED_EVENT : SCOPED_EVENT)[on];
+  return event ? `${(lang === "ru" ? RU_SCOPE_WHO : SCOPE_WHO)[scope]} ${event}` : def.tip;
 }
 
 /** Who a scoped trigger is about, as the card's text opens it ("Ally dies"). */
@@ -264,10 +296,11 @@ const SCOPE_SUBJECT: Record<Exclude<UnitFilter, "holder">, string> = {
 /** A trigger's label as its sentence scopes it, in the card's words: "Ally
  * dies", "Enemy hit", "Ally gains PWR". The holder's scope (and a term that
  * isn't a unit trigger) keeps the plain label. */
-export function scopedLabel(id: TermId, scope?: UnitFilter): string | undefined {
-  const def = termDef(id);
-  if (!def || !id.startsWith("trigger:") || !SCOPED_EVENT[id.slice("trigger:".length) as EventPattern["on"]]) return def?.label;
-  return scopeLabel(def.label, scope);
+export function scopedLabel(id: TermId, scope?: UnitFilter, lang?: Lang): string | undefined {
+  const def = termDef(id, {}, lang);
+  const on = id.slice("trigger:".length) as EventPattern["on"];
+  if (!def || !id.startsWith("trigger:") || !SCOPED_EVENT[on]) return def?.label;
+  return lang === "ru" ? scopeLabelRu(on, def.label, scope) : scopeLabel(def.label, scope);
 }
 
 /** Any label said of a scope: "Dies" → "Ally dies". The one place the words
@@ -279,8 +312,10 @@ export function scopeLabel(label: string, scope?: UnitFilter): string {
 
 /** A fired trigger's label, scoped, a status trigger read as its status:
  * "Ally gets Shield", "Loses Poison", "Enemy hit", "Turn end". */
-export function triggerLabel(id: TermId, status?: string, scope?: UnitFilter): string {
-  if (status && (id === "trigger:StatusApplied" || id === "trigger:StatusRemoved"))
+export function triggerLabel(id: TermId, status?: string, scope?: UnitFilter, lang?: Lang): string {
+  if (status && (id === "trigger:StatusApplied" || id === "trigger:StatusRemoved")) {
+    if (lang === "ru") return scopeLabelRu(undefined, `${id === "trigger:StatusRemoved" ? "Теряет" : "Получает"} ${RU_STATUSES[status]?.acc ?? status}`, scope);
     return scopeLabel(`${id === "trigger:StatusRemoved" ? "Loses" : "Gets"} ${status}`, scope);
-  return scopedLabel(id, scope) ?? id;
+  }
+  return scopedLabel(id, scope, lang) ?? id;
 }

@@ -6,6 +6,26 @@
 import { beatsOf, isRootKind } from "../beats.js";
 import { displayNames, type NameOf } from "../trace.js";
 import type { AbilityRef, BattleEvent, Side, UnitFilter, When } from "../types.js";
+import type { Lang } from "../describe.js";
+import { ruCount, ruStatusName, RU_STAT } from "../describe-ru.js";
+
+// ---------- language (M4-3) ----------
+
+/** The language captions, change labels and chain roots are written in. The
+ * battle viewer is the only user and a page reads one language, so it is set
+ * once (setTraceLang) rather than threaded through every caller; unset is
+ * English, exactly as before. */
+let LANG: Lang | undefined;
+
+export function setTraceLang(lang: Lang | undefined): void {
+  LANG = lang;
+}
+
+const ru = (): boolean => LANG === "ru";
+/** A status's name in the caption's language. */
+const st = (status: string): string => (ru() ? ruStatusName(status) : status);
+/** A stat word in the caption's language: "PWR" / "АТК". */
+const statWord = (stat: string): string => (ru() && (stat === "pwr" || stat === "hp") ? RU_STAT[stat] : stat.toUpperCase());
 
 // ---------- who acted ----------
 
@@ -74,6 +94,7 @@ const CHANGE_TYPES = new Set(["Hurt", "Heal", "StatChanged", "StatusApplied", "D
  * stopped it ("3 blocked" by Shield, or "no damage"), never "−0". */
 export function hurtLabel(amount: number, absorbed?: number): string {
   if (amount > 0) return `−${amount}`;
+  if (ru()) return absorbed ? `${absorbed} заблокировано` : "без урона";
   return absorbed ? `${absorbed} blocked` : "no damage";
 }
 
@@ -85,18 +106,18 @@ export function changeOf(e: BattleEvent): Change | null {
     case "Heal":
       return { eventId: e.id, unit: e.unit, kind: "heal", label: `+${e.amount}` };
     case "StatChanged":
-      return { eventId: e.id, unit: e.unit, kind: e.delta >= 0 ? "buff" : "debuff", label: `${e.delta >= 0 ? "+" : "−"}${Math.abs(e.delta)} ${e.stat.toUpperCase()}` };
+      return { eventId: e.id, unit: e.unit, kind: e.delta >= 0 ? "buff" : "debuff", label: `${e.delta >= 0 ? "+" : "−"}${Math.abs(e.delta)} ${statWord(e.stat)}` };
     case "StatusApplied":
-      return { eventId: e.id, unit: e.unit, kind: "status", label: `${e.status} ×${e.stacks}` };
+      return { eventId: e.id, unit: e.unit, kind: "status", label: `${st(e.status)} ×${e.stacks}` };
     case "Death":
       return { eventId: e.id, unit: e.unit, kind: "death", label: "✝" };
     case "Summon":
-      return { eventId: e.id, unit: e.unit, kind: "summon", label: e.resurrected ? "returns" : "new" };
+      return { eventId: e.id, unit: e.unit, kind: "summon", label: ru() ? (e.resurrected ? "возвращается" : "новый") : e.resurrected ? "returns" : "new" };
     case "Silenced":
-      return { eventId: e.id, unit: e.unit, kind: "silence", label: "silenced" };
+      return { eventId: e.id, unit: e.unit, kind: "silence", label: ru() ? "заглушён" : "silenced" };
     // On the unit that tried, so it can be tapped for its trace (R4-2).
     case "NoRoom":
-      return { eventId: e.id, unit: e.unit, kind: "noRoom", label: "no room" };
+      return { eventId: e.id, unit: e.unit, kind: "noRoom", label: ru() ? "нет места" : "no room" };
     default:
       return null;
   }
@@ -149,17 +170,18 @@ export function traceOf(log: BattleEvent[], eventId: number, name: NameOf = disp
 }
 
 function linkText(l: TraceLink): string {
-  return l.via === "strike" || l.via === "ability" ? l.name : `${l.name} (${l.via})`;
+  return l.via === "strike" || l.via === "ability" ? l.name : `${l.name} (${st(l.via)})`;
 }
 
 /** What a trace with no acting unit came from: fatigue, or the battle's start. */
 function rootText(log: BattleEvent[], eventId: number): string {
   let cur = log[eventId];
   for (let hops = 0; cur && hops < MAX_HOPS; hops++) {
-    if (cur.type === "Fatigue") return "Fatigue";
+    if (cur.type === "Fatigue") return ru() ? "Усталость" : "Fatigue";
     if (cur.causedBy === null) break;
     cur = log[cur.causedBy];
   }
+  if (ru()) return cur?.type === "BattleStart" ? "начало боя" : "правила";
   return cur?.type === "BattleStart" ? "battle start" : "the rules";
 }
 
@@ -234,6 +256,15 @@ function firedTrigger(log: BattleEvent[], e: BattleEvent, whenOf?: WhenOf): Pick
 }
 
 function rootNodeText(e: BattleEvent): string {
+  if (ru())
+    switch (e.type) {
+      case "TurnStart": return `Ход ${e.turn}`;
+      case "TurnEnd": return `Конец хода ${e.turn}`;
+      case "BattleStart": return "Начало боя";
+      case "Fatigue": return `Усталость (ход ${e.turn})`;
+      case "PairFaced": return `Ход ${e.turn}`;
+      default: return e.type;
+    }
   switch (e.type) {
     case "TurnStart": return `Turn ${e.turn}`;
     case "TurnEnd": return `Turn ${e.turn} ends`;
@@ -343,13 +374,20 @@ export interface Perspective {
 /** The end of a battle the turn cap stopped (BattleEnd.timeUp): its caption
  * leads with the glossary's "Time's up" term (battle:timeUp). */
 export const TIME_UP_CAPTION = "Time's up: draw";
+export const TIME_UP_CAPTION_RU = "Время вышло: ничья";
 
 /** A summon or revive that found its line full (R4-2): the glossary's
  * battle:noRoom term, as its caption reads it. */
 export const NO_ROOM = "No room";
+export const NO_ROOM_RU = "Нет места";
 
 /** How the battle's end reads from `p`. */
 export function endCaption(winner: Side | "draw", p: Perspective = {}): string {
+  if (ru()) {
+    if (winner === "draw") return "Ничья";
+    if (p.you) return winner === p.you ? "Вы победили" : "Они победили";
+    return `${p.sideName ? p.sideName(winner) : `Сторона ${winner}`} побеждает`;
+  }
   if (winner === "draw") return "Draw";
   if (p.you) return winner === p.you ? "You win" : "They win";
   return `${p.sideName ? p.sideName(winner) : `Side ${winner}`} wins`;
@@ -664,7 +702,7 @@ function waveKey(log: BattleEvent[], s: Step): string {
 /** One caption for several targets of one firing: "Coach → Strength ×1 on Rose, Ace". */
 function groupCaption(first: Step, names: string[], label: string): string {
   const cause = first.caption.split(" → ")[0];
-  return `${cause} → ${label} on ${names.join(", ")}`;
+  return `${cause} → ${label} ${ru() ? "на" : "on"} ${names.join(", ")}`;
 }
 
 export function beatPlayOf(log: BattleEvent[], steps: Step[], name: NameOf = displayNames(log)): PlayBeat[] {
@@ -679,7 +717,7 @@ export function beatPlayOf(log: BattleEvent[], steps: Step[], name: NameOf = dis
       parent.changes.push(...s.changes);
       // A Shield spent on a hit is already in its caption ("Shield blocks n", "(n absorbed)").
       const spent = log[first.causedBy!];
-      if (!(first.status === "Shield" && spent?.type === "Hurt" && spent.absorbed)) parent.caption += `, ${first.status} −${first.stacks}`;
+      if (!(first.status === "Shield" && spent?.type === "Hurt" && spent.absorbed)) parent.caption += `, ${st(first.status)} −${first.stacks}`;
       for (const id of s.eventIds) byEvent.set(id, parent);
       continue;
     }
@@ -1111,14 +1149,15 @@ function fxCaption(log: BattleEvent[], fx: NonNullable<LogDraft["fx"]>, name: Na
   const effect = (t: Took): string => {
     switch (fx.type) {
       case "Hurt":
+        if (ru()) return t.amount > 0 ? `−${t.amount}${t.absorbed ? ` (${t.absorbed} поглощено)` : ""}` : t.absorbed ? `${st("Shield")} блокирует ${t.absorbed}` : "без урона";
         return t.amount > 0 ? `−${t.amount}${t.absorbed ? ` (${t.absorbed} absorbed)` : ""}` : t.absorbed ? `Shield blocks ${t.absorbed}` : "no damage";
       case "Heal":
         return `+${t.amount}`;
       case "StatChanged":
-        return `${signed(t.amount)} ${fx.what.toUpperCase()}`;
+        return `${signed(t.amount)} ${statWord(fx.what)}`;
       case "StatusApplied": {
-        const stats = Object.entries(t.stats).map(([k, v]) => `${signed(v)} ${k.toUpperCase()}`);
-        return `${fx.what} ×${t.amount}${stats.length ? ` (${stats.join(", ")})` : ""}`;
+        const stats = Object.entries(t.stats).map(([k, v]) => `${signed(v)} ${statWord(k)}`);
+        return `${st(fx.what)} ×${t.amount}${stats.length ? ` (${stats.join(", ")})` : ""}`;
       }
     }
   };
@@ -1128,13 +1167,13 @@ function fxCaption(log: BattleEvent[], fx: NonNullable<LogDraft["fx"]>, name: Na
     if (units.length >= 2 && fx.actorSide) {
       alive ??= aliveBefore(log, start);
       for (const [side, set] of alive) {
-        if (set.size === units.length && units.every((u) => set.has(u))) return side === fx.actorSide ? "all allies" : "all enemies";
+        if (set.size === units.length && units.every((u) => set.has(u))) return ru() ? (side === fx.actorSide ? "всех союзников" : "всех врагов") : side === fx.actorSide ? "all allies" : "all enemies";
       }
     }
     return units.map(name).join(", ");
   };
   const saved = fx.targets.filter((u) => fx.took.get(u)!.saved !== null);
-  const saves = saved.length ? ` → Blessing saves ${saved.map(name).join(", ")} (+${saved.reduce((s, u) => s + fx.took.get(u)!.saved!, 0)})` : "";
+  const saves = saved.length ? ` → ${ru() ? `${st("Blessing")} спасает` : "Blessing saves"} ${saved.map(name).join(", ")} (+${saved.reduce((s, u) => s + fx.took.get(u)!.saved!, 0)})` : "";
   if (fx.tick) {
     // What each tick dealt, Shield's share included: "−4 each, 4 blocked".
     const dealt = fx.targets.map((u) => fx.took.get(u)!.amount + fx.took.get(u)!.absorbed);
@@ -1142,6 +1181,14 @@ function fxCaption(log: BattleEvent[], fx: NonNullable<LogDraft["fx"]>, name: Na
     const blocked = fx.targets.reduce((s, u) => s + fx.took.get(u)!.absorbed, 0);
     const n = fx.targets.length;
     const sign = fx.type === "Heal" ? "+" : "−";
+    if (ru()) {
+      const cause = st(fx.cause);
+      const partsRu = [n === 1 ? `${cause} действует на ${name(fx.targets[0]!)}` : `${cause} действует на ${n} ${ruCount(n, ["юнита", "юнита", "юнитов"])}`];
+      partsRu.push(n === 1 ? `${sign}${total}` : dealt.every((x) => x === dealt[0]) ? `${sign}${dealt[0]} каждому` : `${sign}${total} всего`);
+      if (blocked) partsRu.push(`${blocked} заблокировано`);
+      if (fx.fades) partsRu.push(n === 1 ? "спадает" : `спадает у ${fx.fades}`);
+      return partsRu.join(", ") + saves;
+    }
     const parts = [n === 1 ? `${fx.cause} ticks ${name(fx.targets[0]!)}` : `${fx.cause} ticks ${n} units`];
     parts.push(n === 1 ? `${sign}${total}` : dealt.every((x) => x === dealt[0]) ? `${sign}${dealt[0]} each` : `${sign}${total} in all`);
     if (blocked) parts.push(`${blocked} blocked`);
@@ -1161,9 +1208,9 @@ function fxCaption(log: BattleEvent[], fx: NonNullable<LogDraft["fx"]>, name: Na
     else groups.push({ text, units: [u] });
   }
   const body = groups
-    .map((g) => (fx.type === "StatusApplied" || g.units.length > 1 ? `${g.text} on ${list(g.units)}` : `${name(g.units[0]!)} ${g.text}`))
+    .map((g) => (fx.type === "StatusApplied" || g.units.length > 1 ? `${g.text} ${ru() ? "на" : "on"} ${list(g.units)}` : `${name(g.units[0]!)} ${g.text}`))
     .join("; ");
-  return `${fx.cause} → ${body}${saves}${times > 1 ? ` (×${times})` : ""}`;
+  return `${ru() && fx.cause === "Fatigue" ? "Усталость" : st(fx.cause)} → ${body}${saves}${times > 1 ? ` (×${times})` : ""}`;
 }
 
 function causeName(log: BattleEvent[], e: BattleEvent, name: NameOf): string {
@@ -1252,6 +1299,7 @@ export function fellToFatigue(log: BattleEvent[], death: BattleEvent): boolean {
 export function captionOf(log: BattleEvent[], id: number, name: NameOf = displayNames(log), merged: number[] = [id], p: Perspective = {}): string {
   const e = log[id];
   if (!e) return "";
+  if (ru()) return captionOfRu(log, e, name, merged, p);
   switch (e.type) {
     case "Hurt": {
       const p = e.causedBy !== null ? log[e.causedBy] : undefined;
@@ -1300,6 +1348,75 @@ export function captionOf(log: BattleEvent[], id: number, name: NameOf = display
       return e.timeUp ? TIME_UP_CAPTION : endCaption(e.winner, p);
     default:
       return e.type;
+  }
+}
+
+/** captionOf in Russian (M4-3): the same captions, the same "→" and numbers,
+ * Russian words. Unit names stay as they are (M4-4). */
+function captionOfRu(log: BattleEvent[], e: BattleEvent, name: NameOf, merged: number[], p: Perspective): string {
+  switch (e.type) {
+    case "Hurt": {
+      const by = e.causedBy !== null ? log[e.causedBy] : undefined;
+      const absorbed = e.absorbed ? ` (${e.absorbed} поглощено)` : "";
+      const effect = e.amount > 0 ? `−${e.amount}${absorbed}` : e.absorbed ? `${st("Shield")} блокирует ${e.absorbed}` : "без урона";
+      if (e.source === "kernel" && by?.type === "Strike") return `${name(by.striker)} бьёт ${name(e.unit)} → ${effect}`;
+      return `${causeName(log, e, name)} → ${name(e.unit)} ${effect}`;
+    }
+    case "Heal":
+      return `${causeName(log, e, name)} → ${name(e.unit)} +${e.amount}`;
+    case "StatusApplied": {
+      const stat = merged
+        .map((i) => log[i])
+        .flatMap((m) => (m && m.type === "StatChanged" ? [`${m.delta >= 0 ? "+" : "−"}${Math.abs(m.delta)} ${statWord(m.stat)}`] : []));
+      return `${causeName(log, e, name)} → ${st(e.status)} ×${e.stacks} на ${name(e.unit)}${stat.length ? ` (${stat.join(", ")})` : ""}`;
+    }
+    case "StatusRemoved":
+      return `${st(e.status)} спадает с ${name(e.unit)}${e.remaining > 0 ? ` (осталось ${e.remaining})` : ""}`;
+    case "StatChanged":
+      return `${causeName(log, e, name)} → ${name(e.unit)} ${e.delta >= 0 ? "+" : "−"}${Math.abs(e.delta)} ${statWord(e.stat)}`;
+    case "Death":
+      return `${fellToFatigue(log, e) ? "Усталость" : causeName(log, e, name)} → ${name(e.unit)} падает`;
+    case "Summon":
+      return e.resurrected
+        ? `${causeName(log, e, name)} → ${name(e.unit)} возвращается с ${e.atHp ?? e.hp} ${RU_STAT.hp}`
+        : `${causeName(log, e, name)} → ${e.name} появляется (${e.pwr}/${e.hp})`;
+    case "Silenced":
+      return `${causeName(log, e, name)} → ${name(e.unit)} заглушён`;
+    case "Fatigue":
+      return e.suddenDeath ? `Внезапная смерть: Усталость → все получают ${e.amount}, ничто не блокирует` : `Усталость → все получают ${e.amount}`;
+    case "SummonFailed":
+      return `${causeName(log, e, name)} → ${e.revive && e.unit ? name(e.unit) : e.name} не может ${e.revive ? "вернуться" : "появиться"}: внезапная смерть`;
+    case "ChainCapped":
+      return `Цепь прервана после ${e.steps} ${ruCount(e.steps, ["шага", "шагов", "шагов"])}`;
+    case "NoRoom":
+      return `${causeName(log, e, name)} → ${NO_ROOM_RU} ${e.revive !== undefined ? `для воскрешения ${name(e.revive)}` : `для ${e.name}`}`;
+    case "Intercepted":
+      if (e.by.status && e.unit === e.by.unit) return `${st(e.by.status)} на ${name(e.unit)} → останавливает ${stoppedTextRu(e.original, e.unit, true, name)}`;
+      return `${name(e.by.unit)}${e.by.status ? ` (${st(e.by.status)})` : ""} → останавливает ${stoppedTextRu(e.original, e.unit, false, name)}`;
+    case "BattleEnd":
+      return e.timeUp ? TIME_UP_CAPTION_RU : endCaption(e.winner, p);
+    default:
+      return e.type;
+  }
+}
+
+/** stoppedText in Russian: "атаку", "удар по Rose", "атаку Rose". */
+function stoppedTextRu(original: string, unit: string | undefined, own: boolean, name: NameOf): string {
+  const n = unit ? name(unit) : "";
+  const of = unit && !own ? ` ${n}` : "";
+  switch (original) {
+    case "Strike":
+      return `атаку${of}`;
+    case "Death":
+      return `смерть${of}`;
+    case "Hurt":
+      return unit && !own ? `удар по ${n}` : "удар";
+    case "Heal":
+      return unit && !own ? `лечение для ${n}` : "лечение";
+    case "StatusApplied":
+      return unit && !own ? `статус на ${n}` : "статус";
+    default:
+      return `${original}${unit && !own ? ` на ${n}` : ""}`;
   }
 }
 
@@ -1857,7 +1974,7 @@ export function totalsPartsOf(u: UnitTurnTotals): TotalsPart[] {
   if (u.healed) parts.push({ kind: "heal", text: `+${u.healed}` });
   if (u.pwr || u.hp) {
     const kind = u.pwr + u.hp >= 0 ? "buff" : "debuff";
-    parts.push({ kind, text: u.pwr && u.hp ? `${sign(u.pwr)}/${sign(u.hp)}` : u.pwr ? `${sign(u.pwr)} PWR` : `${sign(u.hp)} HP` });
+    parts.push({ kind, text: u.pwr && u.hp ? `${sign(u.pwr)}/${sign(u.hp)}` : u.pwr ? `${sign(u.pwr)} ${statWord("pwr")}` : `${sign(u.hp)} ${statWord("hp")}` });
   }
   if (u.blocked) parts.push({ kind: "blocked", text: `${u.blocked}` });
   for (const st of u.statuses) {
@@ -1930,8 +2047,8 @@ export function runRowText(kind: RunRow["kind"], key: string, value: number): st
   const sign = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : "0");
   if (kind === "damage") return `−${value}`;
   if (kind === "heal") return `+${value}`;
-  if (key === "pwr") return `${sign(value)} PWR`;
-  if (key === "hp") return `${sign(value)} HP`;
+  if (key === "pwr") return `${sign(value)} ${statWord("pwr")}`;
+  if (key === "hp") return `${sign(value)} ${statWord("hp")}`;
   if (kind === "blocked") return `${value}`;
   return value > 0 ? `×${value}` : value < 0 ? `−${-value}` : "0";
 }

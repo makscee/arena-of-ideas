@@ -29,6 +29,7 @@
     "mvp:invite": "node --import tsx/esm server/src/mvp/invite-cli.ts",
     "mvp:pool": "node --import tsx/esm server/src/mvp/pool-cli.ts",
     "mvp:rotate": "node --import tsx/esm server/src/mvp/rotate-cli.ts",
+    "mvp:post": "node --import tsx/esm server/src/mvp/post-cli.ts",
     "mvp:invite-e2e": "node e2e/mvp-invite.mjs",
     "mvp:bot": "node --import tsx/esm e2e/mvp-api-bot.ts",
     "mvp:phone": "node e2e/mvp-phone.mjs",
@@ -42,6 +43,7 @@
     "mvp:redeploy": "scripts/mvp-redeploy.sh",
     "mvp:meta": "node --import tsx/esm scripts/meta-health.ts",
     "mvp:tune": "node --import tsx/esm scripts/tune-unit.ts",
+    "mvp:translate": "node --import tsx/esm server/src/mvp/translate-cli.ts",
     "mvp:texts": "node --import tsx/esm scripts/unit-texts.ts",
     "mvp:check": "npm run -s typecheck && npm test && npm run -s mvp:bot -- --runs 50 && npm run -s mvp:phone && npm run -s mvp:desktop && npm run -s mvp:ideas-phone && npm run -s mvp:terms"
   },
@@ -52,5 +54,8 @@
     "typescript": "^5.8.3",
     "vite": "^6.4.3",
     "vitest": "^3.2.0"
+  },
+  "dependencies": {
+    "qrcode-generator": "2.0.4"
   }
 }

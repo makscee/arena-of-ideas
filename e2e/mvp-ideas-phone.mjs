@@ -24,15 +24,20 @@
 // reading pick at 1280×800. M3-9 (makscee/void-board#800): then the overnight
 // check, fake votes and the day end let the version in: the Codex shows it NEW
 // as v2, "evolved by @Prop…", with both versions; the old one stays in the Library.
-//   npm run mvp:ideas-phone -- [--url http://127.0.0.1:PORT/arena/] [--out e2e/.shots/mvp-ideas]
+//   npm run mvp:ideas-phone -- [--url http://127.0.0.1:PORT/arena/] [--out e2e/.shots/mvp-ideas] [--lang ru]
+// --lang ru walks it on Russian phones (the browser's locale) and reads every
+// checked text from the Russian catalog.
 import { execFileSync, spawn } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { createServer } from "node:net";
 import { launchChromium } from "./browser.mjs";
+import { catalog, e2eLang, localeOf, pattern } from "./lang.mjs";
 
 const args = process.argv.slice(2);
 const opt = (n) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : undefined; };
-const out = opt("out") ?? "e2e/.shots/mvp-ideas";
+const lang = e2eLang(args);
+const L = catalog(lang);
+const out = opt("out") ?? `e2e/.shots/mvp-ideas${lang === "en" ? "" : `-${lang}`}`;
 mkdirSync(out, { recursive: true });
 
 let url = opt("url");
@@ -57,7 +62,7 @@ let shots = 0;
 
 /** One player's walk at `viewport`; `full` walks every step, else only to the reading pick. */
 async function walk(viewport, name, full) {
-  const page = await browser.newPage({ viewport, deviceScaleFactor: 2, isMobile: viewport.width < 700, hasTouch: viewport.width < 700 });
+  const page = await browser.newPage({ viewport, deviceScaleFactor: 2, isMobile: viewport.width < 700, hasTouch: viewport.width < 700, locale: localeOf(lang) });
   page.on("pageerror", (e) => errors.push(`${name}: pageerror: ${e.message}`));
   page.on("console", (m) => m.type() === "error" && errors.push(`${name}: console: ${m.text()}`));
   const shot = (s) => page.screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-${s}.png` });
@@ -78,7 +83,7 @@ async function walk(viewport, name, full) {
   // Dev "+1 idea", then My ideas → New idea → Send.
   await page.locator("details.dev summary").click();
   await page.getByTestId("grant-idea").click();
-  await page.waitForFunction(() => /^💡 1 idea$/.test(document.querySelector('[data-testid="ideas"]')?.textContent ?? ""), null, { timeout: 10_000 });
+  await page.waitForFunction((want) => document.querySelector('[data-testid="ideas"]')?.textContent === want, L("home.ideasHeld", { n: 1 }), { timeout: 10_000 });
   await page.getByTestId("ideas").click();
   await page.getByTestId("idea-new").click();
   await page.getByTestId("idea-text").fill(IDEA);
@@ -90,12 +95,12 @@ async function walk(viewport, name, full) {
   await page.locator('[data-testid="idea-sent-row"][data-state="pick-archetype"]').waitFor({ timeout: 30_000 });
   if (!full) await shot(`${name}-my-ideas`);
   if (full) {
-    if ((await page.getByTestId("idea-stage").textContent()) !== "Ready: pick its archetype") errors.push(`my ideas: stage "${await page.getByTestId("idea-stage").textContent()}"`);
+    if ((await page.getByTestId("idea-stage").textContent()) !== L("ideas.stage.pickArchetype")) errors.push(`my ideas: stage "${await page.getByTestId("idea-stage").textContent()}"`);
     await shot("ideas-ready");
     // Home: the quiet "Your idea is ready".
     await page.getByTestId("ideas-back").click();
     await page.getByTestId("play").waitFor();
-    if ((await page.getByTestId("ideas").textContent()) !== "💡 Your idea is ready") errors.push(`home: ideas line "${await page.getByTestId("ideas").textContent()}"`);
+    if ((await page.getByTestId("ideas").textContent()) !== L("home.ideasReady", { n: 1 })) errors.push(`home: ideas line "${await page.getByTestId("ideas").textContent()}"`);
     await shot("home-idea-ready");
     await page.getByTestId("ideas").click();
   }
@@ -111,7 +116,7 @@ async function walk(viewport, name, full) {
     await onScreen("pick-archetype: Confirm", page.getByTestId("pick-confirm"));
     // None of these, once: read again for other archetypes.
     const first = await rows.allTextContents();
-    if (!/read it again/.test(await page.getByTestId("pick-none").textContent())) errors.push("none: the first one doesn't read again");
+    if ((await page.getByTestId("pick-none").textContent()) !== L("pick.noneReadAgain")) errors.push("none: the first one doesn't read again");
     await page.getByTestId("pick-none").click();
     await page.getByTestId("idea-sent").waitFor();
     await page.locator('[data-testid="idea-sent-row"][data-state="pick-archetype"]').waitFor({ timeout: 30_000 });
@@ -119,7 +124,7 @@ async function walk(viewport, name, full) {
     await page.getByTestId("pick-archetypes").waitFor();
     const again = await rows.allTextContents();
     if (again.some((t) => first.includes(t))) errors.push(`none: the same archetypes again (${again.join(" | ")})`);
-    if (!/take my idea back/.test(await page.getByTestId("pick-none").textContent())) errors.push("none: the second one doesn't say it gives the idea back");
+    if ((await page.getByTestId("pick-none").textContent()) !== L("pick.noneTakeBack")) errors.push("none: the second one doesn't say it gives the idea back");
   }
   await rows.nth(1).click();
   if (await page.getByTestId("pick-confirm").isDisabled()) errors.push("archetypes: Confirm stays off after a tap");
@@ -147,20 +152,20 @@ async function walk(viewport, name, full) {
   // Tap low on the card (its top opens nothing here, but stay clear of the icon line).
   await cards.nth(0).click({ position: { x: 30, y: 60 } });
   await page.getByTestId("unit-sheet").waitFor();
-  if (!/set by simulation/.test(await page.getByTestId("sheet-unset").textContent())) errors.push("reading sheet: no 'set by simulation'");
+  if (!(await page.getByTestId("sheet-unset").textContent()).includes(L("card.setBySim"))) errors.push("reading sheet: no 'set by simulation'");
   if ((await page.locator('[data-testid="pick-detail"] .term, [data-testid="pick-detail"] [data-term]').count()) === 0) errors.push("reading sheet: no highlighted keywords");
   await shot(`${name}-pick-reading-tapped`);
   await noScroll(`${name} pick-reading`);
   await onScreen(`${name} pick-reading: Confirm`, page.getByTestId("pick-confirm"));
   await page.getByTestId("see-awoken").click();
-  if (!/Awoken/.test(await page.getByTestId("sheet-state").textContent())) errors.push("see awoken: the sheet still says Sleeping");
+  if ((await page.getByTestId("sheet-state").textContent()).includes(L("card.sleeping"))) errors.push("see awoken: the sheet still says Sleeping");
   await shot(`${name}-pick-reading-awoken`);
   await noScroll(`${name} pick-reading-awoken`);
   if (!full) return page.close();
   await page.getByTestId("pick-confirm").click();
   await page.locator('[data-testid="idea-sent-row"][data-state="simulating"]').waitFor();
-  if (!/test it overnight/.test(await page.getByTestId("idea-sent").textContent())) errors.push(`after the pick: "${await page.getByTestId("idea-sent").textContent()}"`);
-  if (!/being tested/.test(await page.getByTestId("idea-stage").textContent())) errors.push(`my ideas after the pick: "${await page.getByTestId("idea-stage").textContent()}"`);
+  if (!(await page.getByTestId("idea-sent").textContent()).includes(L("pick.pickedReading"))) errors.push(`after the pick: "${await page.getByTestId("idea-sent").textContent()}"`);
+  if (!(await page.getByTestId("idea-stage").textContent()).includes(L("ideas.stage.simulating"))) errors.push(`my ideas after the pick: "${await page.getByTestId("idea-stage").textContent()}"`);
   await shot("ideas-being-tested");
   // M3-2: the idea is spent: New idea is off, muted, with the reason beside it.
   const newIdea = page.getByTestId("idea-new");
@@ -168,13 +173,13 @@ async function walk(viewport, name, full) {
   const look = await newIdea.evaluate((el) => { const c = getComputedStyle(el); return { bg: c.backgroundColor, op: c.opacity, pe: c.pointerEvents }; });
   if (!/rgba\(0, 0, 0, 0\)|transparent/.test(look.bg) || look.pe !== "none") errors.push(`my ideas: New idea still looks live (${JSON.stringify(look)})`);
   const why = (await page.getByTestId("idea-new-why").textContent()) ?? "";
-  if (!/^\d+ more runs? for an idea$/.test(why)) errors.push(`my ideas: New idea's reason "${why}"`);
+  if (!Array.from({ length: 20 }, (_, n) => L("ideas.why", { n: n + 1 })).includes(why)) errors.push(`my ideas: New idea's reason "${why}"`);
   // M2-11: the dev "Run the overnight check now" (the server's instant
   // tuner), and My ideas shows the idea in the vote.
   await page.getByTestId("ideas-back").click();
   await page.locator("details.dev summary").click();
   await page.getByTestId("overnight-check").click();
-  await page.waitForFunction(() => /Checking 1 idea/.test(document.querySelector('[data-testid="error"]')?.textContent ?? ""), null, { timeout: 10_000 });
+  await page.waitForFunction((want) => document.querySelector('[data-testid="error"]')?.textContent === want, L("dev.checking", { n: 1 }), { timeout: 10_000 });
   await shot("overnight-check");
   for (let i = 0; ; i++) {
     await page.getByTestId("ideas").click();
@@ -184,7 +189,7 @@ async function walk(viewport, name, full) {
     await page.getByTestId("ideas-back").click();
     await page.waitForTimeout(500);
   }
-  if (!/in the vote/.test(await page.getByTestId("idea-stage").first().textContent())) errors.push(`my ideas after the check: "${await page.getByTestId("idea-stage").first().textContent()}"`);
+  if (!(await page.getByTestId("idea-stage").first().textContent()).includes(L("ideas.stage.voting"))) errors.push(`my ideas after the check: "${await page.getByTestId("idea-stage").first().textContent()}"`);
   await shot("ideas-in-the-vote");
   await page.close();
   return vote(viewport);
@@ -194,7 +199,7 @@ async function walk(viewport, name, full) {
 async function vote(viewport) {
   const [cand] = await (await fetch(url + "api/v1/dev/candidates")).json();
   if (!cand) return void errors.push("vote: no candidate after the check");
-  const page = await browser.newPage({ viewport, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const page = await browser.newPage({ viewport, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: localeOf(lang) });
   page.on("pageerror", (e) => errors.push(`Voter: pageerror: ${e.message}`));
   page.on("console", (m) => m.type() === "error" && errors.push(`Voter: console: ${m.text()}`));
   const shot = (s) => page.screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-${s}.png` });
@@ -206,6 +211,11 @@ async function vote(viewport) {
   if ((await mine.count()) !== 1) errors.push(`vote: the card doesn't show ${cand.name}`);
   await page.getByTestId("vote-card").scrollIntoViewIfNeeded();
   await shot("vote-card");
+  const cut = await page.getByTestId("vote-skip").evaluate((b) => {
+    const r = b.getBoundingClientRect(), box = b.closest('[data-testid="vote-card"]').getBoundingClientRect();
+    return b.scrollWidth > b.clientWidth + 1 || r.right > box.right + 1 ? `${b.textContent} (${Math.round(r.right)} > ${Math.round(box.right)})` : "";
+  });
+  if (cut) errors.push(`vote: Skip is cut off: ${cut}`);
   await mine.locator(".vote-text").first().click(); // the text, clear of the card itself
   await page.waitForFunction(() => !!document.querySelector('[data-testid="vote-thanks"]') || !!document.querySelector('[data-testid="vote-card"]'));
   await page.getByTestId("vote-box").scrollIntoViewIfNeeded();
@@ -235,14 +245,14 @@ async function vote(viewport) {
   const credit = page.getByTestId("sheet-credit");
   await credit.waitFor();
   const text = (await credit.textContent()) ?? "";
-  if (!/NEW/.test(text) || !text.includes(`idea by @Pick${TAG}`)) errors.push(`rotation: the sheet says "${text}"`);
+  if (!text.includes(L("card.new")) || !text.includes(`${L("card.ideaBy")}@Pick${TAG}`)) errors.push(`rotation: the sheet says "${text}"`);
   await shot("new-unit-sheet");
   await page.close();
 }
 
 /** M3-5: a new player proposes a new version of a Library unit, to the reading pick (`full`: through Confirm). */
 async function propose(viewport, name, full) {
-  const page = await browser.newPage({ viewport, deviceScaleFactor: 2, isMobile: viewport.width < 700, hasTouch: viewport.width < 700 });
+  const page = await browser.newPage({ viewport, deviceScaleFactor: 2, isMobile: viewport.width < 700, hasTouch: viewport.width < 700, locale: localeOf(lang) });
   page.on("pageerror", (e) => errors.push(`${name}: pageerror: ${e.message}`));
   page.on("console", (m) => m.type() === "error" && errors.push(`${name}: console: ${m.text()}`));
   const shot = (s) => page.screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-${name}-${s}.png` });
@@ -270,13 +280,13 @@ async function propose(viewport, name, full) {
   const btn = page.getByTestId("library-propose");
   if (!(await btn.isDisabled())) errors.push(`${name}: Propose is on with no idea held`);
   const why = (await page.getByTestId("library-propose-why").textContent()) ?? "";
-  if (!/^\d+ more runs? for an idea$/.test(why)) errors.push(`${name}: Propose's reason "${why}"`);
+  if (!Array.from({ length: 20 }, (_, n) => L("ideas.why", { n: n + 1 })).includes(why)) errors.push(`${name}: Propose's reason "${why}"`);
   await shot("library-propose-off");
   // +1 idea (dev on Home), then the same sheet: on.
   await page.goto(url);
   await page.locator("details.dev summary").click();
   await page.getByTestId("grant-idea").click();
-  await page.waitForFunction(() => /^💡 1 idea$/.test(document.querySelector('[data-testid="ideas"]')?.textContent ?? ""), null, { timeout: 10_000 });
+  await page.waitForFunction((want) => document.querySelector('[data-testid="ideas"]')?.textContent === want, L("home.ideasHeld", { n: 1 }), { timeout: 10_000 });
   const target = await openLibraryUnit();
   if (await btn.isDisabled()) errors.push(`${name}: Propose is off with an idea held`);
   if ((await page.getByTestId("library-propose-why").count()) !== 0) errors.push(`${name}: Propose says why it's off while on`);
@@ -286,11 +296,11 @@ async function propose(viewport, name, full) {
   const title = page.getByTestId("write-title");
   await title.waitFor();
   const unitName = await (await fetch(url + "api/v1/library")).json().then((l) => l.units.find((x) => x.unit.id === target)?.unit);
-  const named = `A new version of ${unitName.emoji} ${unitName.name}`;
+  const named = L("ideas.proposeTitle", { emoji: unitName.emoji, name: unitName.name });
   if ((await title.textContent()) !== named) errors.push(`${name}: write title "${await title.textContent()}"`);
   if ((await page.getByTestId("propose-line").textContent()) !== unitName.archetype) errors.push(`${name}: write line "${await page.getByTestId("propose-line").textContent()}"`);
-  if (!/^Now: .{10,}/.test((await page.getByTestId("propose-rule").textContent()) ?? "")) errors.push(`${name}: write rule "${await page.getByTestId("propose-rule").textContent()}"`);
-  if (!(await page.locator('label[for="idea-box"]').textContent()).includes("What should change?")) errors.push(`${name}: the box isn't "What should change?"`);
+  if (!new RegExp(`^${pattern(L("ideas.now"))}.{10,}`).test((await page.getByTestId("propose-rule").textContent()) ?? "")) errors.push(`${name}: write rule "${await page.getByTestId("propose-rule").textContent()}"`);
+  if (!(await page.locator('label[for="idea-box"]').textContent()).includes(L("ideas.proposeLabel"))) errors.push(`${name}: the box isn't "What should change?"`);
   await page.getByTestId("idea-text").fill(WANT);
   await shot("propose-write");
   await noScroll("propose-write");
@@ -298,7 +308,9 @@ async function propose(viewport, name, full) {
   await page.getByTestId("idea-sent").waitFor();
   const stage = page.getByTestId("idea-stage").first();
   // The fake reader may have finished already: being read, or ready to pick.
-  if (!/ · (being read|Ready: pick its reading)/.test(await stage.textContent()) || !(await stage.textContent()).startsWith(`new version of ${unitName.emoji} ${unitName.name} · `)) errors.push(`${name}: my ideas while read "${await stage.textContent()}"`);
+  const stageText = (await stage.textContent()) ?? "";
+  const stageHead = L("ideas.namedVersion", { unit: `${unitName.emoji} ${unitName.name}` });
+  if (!stageText.startsWith(stageHead) || ![L("ideas.stage.reading"), L("ideas.stage.pickReading")].includes(stageText.slice(stageHead.length))) errors.push(`${name}: my ideas while read "${stageText}"`);
   await shot("propose-sent");
   // The reader skips the archetype: straight to the readings.
   await page.locator('[data-testid="idea-sent-row"][data-state="pick-reading"]').waitFor({ timeout: 30_000 });
@@ -306,7 +318,7 @@ async function propose(viewport, name, full) {
   await page.getByTestId("pick-readings").waitFor();
   if ((await page.getByTestId("pick-title").textContent()) !== named) errors.push(`${name}: reading title "${await page.getByTestId("pick-title").textContent()}"`);
   const now = page.getByTestId("pick-current");
-  if (!/^Now: .{10,}/.test((await now.textContent()) ?? "")) errors.push(`${name}: reading pick's current rule "${await now.textContent()}"`);
+  if (!new RegExp(`^${pattern(L("pick.now"))}.{10,}`).test((await now.textContent()) ?? "")) errors.push(`${name}: reading pick's current rule "${await now.textContent()}"`);
   const nowBox = await now.boundingBox();
   const firstCard = await page.getByTestId("pick-reading").first().boundingBox();
   if (!nowBox || !firstCard || nowBox.y >= firstCard.y) errors.push(`${name}: the current version isn't above the readings`);
@@ -326,7 +338,7 @@ async function propose(viewport, name, full) {
   await page.getByTestId("pick-confirm").click();
   await page.locator('[data-testid="idea-sent-row"][data-state="simulating"]').waitFor();
   const after = (await page.getByTestId("idea-stage").first().textContent()) ?? "";
-  if (after !== `new version of ${unitName.emoji} ${unitName.name} · being tested: we'll test it overnight`) errors.push(`${name}: my ideas after the pick "${after}"`);
+  if (after !== `${L("ideas.namedVersion", { unit: `${unitName.emoji} ${unitName.name}` })}${L("ideas.stage.simulating")}`) errors.push(`${name}: my ideas after the pick "${after}"`);
   await shot("propose-being-tested");
   await page.close();
   return { target, unit: unitName };
@@ -336,7 +348,7 @@ async function propose(viewport, name, full) {
  * day end lets it in: the Codex shows it NEW as v2, "evolved by @Prop…", with
  * both versions in its history; the old version stays in the Library. */
 async function entered(viewport, { target, unit }) {
-  const page = await browser.newPage({ viewport, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const page = await browser.newPage({ viewport, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: localeOf(lang) });
   page.on("pageerror", (e) => errors.push(`Enter: pageerror: ${e.message}`));
   page.on("console", (m) => m.type() === "error" && errors.push(`Enter: console: ${m.text()}`));
   const shot = (s) => page.screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-Enter-${s}.png` });
@@ -392,9 +404,9 @@ async function entered(viewport, { target, unit }) {
   const credit = page.getByTestId("sheet-credit");
   await credit.waitFor();
   const text = (await credit.textContent()) ?? "";
-  if (!text.includes(`evolved by @Prop${TAG}`)) errors.push(`enter: the sheet says "${text}"`);
+  if (!text.includes(`${L("card.evolvedBy")}@Prop${TAG}`)) errors.push(`enter: the sheet says "${text}"`);
   const history = (await page.getByTestId("sheet-history").textContent()) ?? "";
-  if (!history.includes("Versions · 2")) errors.push(`enter: the history says "${history}"`);
+  if (!history.includes(L("codex.versions", { n: 2 }))) errors.push(`enter: the history says "${history}"`);
   await shot("v2-sheet");
   const live = await (await fetch(url + "api/v1/content")).json();
   if (!live.units.some((u) => u.id === version.unitId)) errors.push(`enter: ${version.unitId} isn't served under its own id`);

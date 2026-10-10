@@ -19,6 +19,10 @@
 // and each reading must also differ from the target's shape and be true to
 // its line (the reader's faithfulness call); one that isn't is dropped like a
 // failed check.
+// M4-5: an idea may be in Russian or English. Each archetype carries its
+// name and line in both (checked like the English: the filter, uniqueness),
+// and the picked unit keeps the Russian beside its row (StoredUnit.texts.ru);
+// a new version keeps its target's.
 import { ideaKind, type Idea, type IdeaArchetype, type MyIdea } from "../../../src/mvp/contract.js";
 import { slug, type Row } from "../../../src/mvp/units.js";
 import { archetypeDraftProblems, checkReading, rowOf, ruleText, sameShape, takenShapes, type ArchetypeDraft } from "./idea-checks.js";
@@ -27,7 +31,7 @@ import { IdeaRefused, refundIdea } from "./ideas.js";
 import { rootOf } from "./lineage.js";
 import type { RunDeps } from "./runs.js";
 import type { MvpJob } from "./runtime.js";
-import type { MvpStore } from "./store.js";
+import { nameKey, type MvpStore } from "./store.js";
 
 type ReadDeps = Pick<RunDeps, "store" | "rules" | "now">;
 
@@ -42,6 +46,17 @@ export const TARGET_GONE = "The unit this new version was for is gone.";
 /** The rows a new unit's shape must differ from: live units and candidates. */
 function shapeRows(store: MvpStore): Row[] {
   return store.units().filter((u) => u.status === "live" || u.status === "candidate").map((u) => u.row);
+}
+
+/** Russian names every unit has (any status), as nameKey has them (M4-5). */
+function ruNames(store: MvpStore): Set<string> {
+  return new Set(store.units().flatMap((u) => (u.texts?.ru ? [nameKey(u.texts.ru.name)] : [])));
+}
+
+/** An archetype as stored: trimmed, the Russian in `texts.ru` (M4-5). */
+function archetypeOf(d: ArchetypeDraft): IdeaArchetype {
+  const a: IdeaArchetype = { name: d.name.trim(), emoji: d.emoji.trim(), line: d.line.trim() };
+  return d.ru ? { ...a, texts: { ru: { name: d.ru.name.trim(), line: d.ru.line.trim() } } } : a;
 }
 
 /** Wait before try `tries + 1` after a reader error: 1, 2, 4 … 30 minutes. */
@@ -84,23 +99,28 @@ export async function readIdea(deps: ReadDeps, reader: IdeaReader, idea: Idea): 
 async function readArchetypes(deps: ReadDeps, reader: IdeaReader, idea: Idea): Promise<void> {
   const units = shapeRows(deps.store);
   const taken: Pick<Row, "name" | "archetype">[] = deps.store.units().map((u) => u.row);
+  const takenRu = ruNames(deps.store);
   const ok: IdeaArchetype[] = [];
   const check = (drafts: ArchetypeDraft[]) => {
     const problems: string[] = [];
     for (const d of drafts) {
-      const p = archetypeDraftProblems(d, taken);
+      const p = archetypeDraftProblems(d, taken, takenRu);
       if (p.length) problems.push(...p);
       else if (ok.length < OPTIONS) {
-        const a = { name: d.name.trim(), emoji: d.emoji.trim(), line: d.line.trim() };
+        const a = archetypeOf(d);
         ok.push(a);
         taken.push({ name: a.name, archetype: a.line });
+        if (a.texts?.ru) takenRu.add(nameKey(a.texts.ru.name));
       }
     }
     return problems;
   };
   // Options its author turned down (M2-6) are taken: the reader is asked for others.
   const declined = idea.data.declined?.archetypes;
-  for (const d of declined ?? []) taken.push({ name: d.name, archetype: d.line });
+  for (const d of declined ?? []) {
+    taken.push({ name: d.name, archetype: d.line });
+    if (d.texts?.ru) takenRu.add(nameKey(d.texts.ru.name));
+  }
   const first = await reader.archetypes(idea.text, { want: OPTIONS, units, ...turnedDown(declined?.map((d) => `${d.emoji} ${d.name}: ${d.line}`)) });
   const problems = check(first.options);
   const cant = [...first.cantExpress];
@@ -119,7 +139,7 @@ async function readArchetypes(deps: ReadDeps, reader: IdeaReader, idea: Idea): P
 async function readVersion(deps: ReadDeps, reader: IdeaReader, idea: Idea): Promise<void> {
   const target = idea.data.target ? deps.store.unit(idea.data.target) : undefined;
   if (!target) return fail(deps, idea, [], TARGET_GONE);
-  const archetype: IdeaArchetype = { name: target.row.name, emoji: target.row.emoji, line: target.row.archetype };
+  const archetype: IdeaArchetype = { name: target.row.name, emoji: target.row.emoji, line: target.row.archetype, ...(target.texts?.ru ? { texts: { ru: { ...target.texts.ru } } } : {}) };
   await readReadings(deps, reader, { ...idea, data: { ...idea.data, archetype } }, archetype, target.row);
 }
 
@@ -261,7 +281,8 @@ export function pickReading(deps: ReadDeps, playerId: string, ideaId: string, in
   const reading = idea.data.readings![i]!;
   // M3-4: a new version keeps its target's name.
   const target = ideaKind(idea) === "evolve" ? idea.data.target! : null;
-  if (!target && archetypeDraftProblems(archetype, store.units().map((u) => u.row)).length) {
+  const ru = archetype.texts?.ru;
+  if (!target && archetypeDraftProblems({ ...archetype, ...(ru ? { ru } : {}) }, store.units().map((u) => u.row), ru ? ruNames(store) : undefined).length) {
     const archetypes = (idea.data.archetypes ?? []).filter((a) => a.name !== archetype.name);
     const { archetype: _a, readings: _r, archetypes: _x, ...data } = idea.data;
     store.putIdea({ ...idea, state: archetypes.length ? "pick-archetype" : "reading", data: archetypes.length ? { ...data, archetypes } : data });
@@ -276,7 +297,9 @@ export function pickReading(deps: ReadDeps, playerId: string, ideaId: string, in
   }
   const unitId = freshUnitId(store, archetype.name);
   const lineage = target ? { origin: "evolution" as const, parentId: target, rootId: rootOf(store, target) } : { origin: "idea" as const, parentId: null };
-  store.putUnit({ unitId, status: "candidate", row: rowOf(archetype, reading), authorId: playerId, ...lineage, createdAt: deps.now().toISOString() });
+  // M4-5: the Russian name and line beside the row; a new version keeps its target's.
+  const texts = target ? store.unit(target)?.texts : ru ? { ru: { ...ru } } : undefined;
+  store.putUnit({ unitId, status: "candidate", row: rowOf(archetype, reading), authorId: playerId, ...lineage, ...(texts ? { texts } : {}), createdAt: deps.now().toISOString() });
   store.putIdea({ ...idea, state: "simulating", data: { ...idea.data, unitId } });
 }
 

@@ -1,7 +1,9 @@
 // MVP phone e2e (mission #574 verification ladder): a whole game at 360×640
 // in Chromium, with a screenshot of every screen. Without --url it builds the
 // mobile client and starts the MVP server on a free port.
-//   npm run mvp:phone -- [--url https://m1.twin-pogona.ts.net/arena/] [--out e2e/.shots/mvp]
+//   npm run mvp:phone -- [--url https://m1.twin-pogona.ts.net/arena/] [--out e2e/.shots/mvp] [--lang ru] [--height 740]
+// --lang ru plays it on a Russian phone (the client picks Russian from the
+// browser's locale) and reads every checked text from the Russian catalog.
 import { spawn, execFileSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { createServer } from "node:net";
@@ -9,10 +11,15 @@ import { launchChromium } from "./browser.mjs";
 import { escPass } from "./esc-keys.mjs";
 import { beamChecks } from "./beams.mjs";
 import { nowSheetChecks } from "./now-sheet.mjs";
+import { catalog, e2eLang, localeOf, pattern } from "./lang.mjs";
+const { scopedLabel, scopedTip } = await import("../src/glossary.ts");
 
 const args = process.argv.slice(2);
 const opt = (n) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : undefined; };
-const out = opt("out") ?? "e2e/.shots/mvp";
+const lang = e2eLang(args);
+const L = catalog(lang);
+const height = Number(opt("height") ?? 640);
+const out = opt("out") ?? `e2e/.shots/mvp${lang === "en" ? "" : `-${lang}`}${height === 640 ? "" : `-${height}`}`;
 mkdirSync(out, { recursive: true });
 
 let url = opt("url");
@@ -34,9 +41,12 @@ const browser = await launchChromium();
 const errors = [];
 let shots = 0;
 try {
-  const page = await browser.newPage({ viewport: { width: 360, height: 640 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const page = await browser.newPage({ viewport: { width: 360, height }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: localeOf(lang) });
   page.on("pageerror", (e) => errors.push(`pageerror: ${e.message}`));
   page.on("console", (m) => m.type() === "error" && errors.push(`console: ${m.text()}`));
+  // M4-2: every API call says the player's language, so server text can follow it.
+  const apiLangs = new Set();
+  page.on("request", (r) => r.url().includes("/api/v1/") && r.resourceType() === "fetch" && apiLangs.add(r.headers()["accept-language"]));
   /** Every player name on screen (ui/dom.ts who()) sits on one line: never
    * "@bot-" / "3" across two (#587). */
   const namesOneLine = async (name) => {
@@ -109,7 +119,7 @@ try {
       await sheet.getByTestId("see-awoken").click();
       await sheet.locator(".sheet-form.other").waitFor();
       const after = await sheet.getByTestId("sheet-form").textContent();
-      if (!/^Awoken/i.test(after) || after.includes(before)) errors.push(`${name}: See Awoken shows "${after}"`);
+      if (!after.startsWith(L("card.awokenAfter").split(" ")[0]) || after.includes(before)) errors.push(`${name}: See Awoken shows "${after}"`);
       if (!(await sheet.locator(".sheet-form.other u.changed").count())) errors.push(`${name}: See Awoken underlines nothing`);
       await shot(`${name.replace(/ /g, "-")}-awoken`); await noHScroll(name);
       await sheet.getByTestId("see-sleeping").click();
@@ -139,23 +149,35 @@ try {
   /** The page doesn't scroll at 640 px. */
   const noVScroll = async (name) => {
     const hgt = await page.evaluate(() => document.documentElement.scrollHeight);
-    if (hgt > 640 + 0.5) errors.push(`${name}: scrolls (${hgt}px tall)`);
+    if (hgt > height + 0.5) errors.push(`${name}: scrolls (${hgt}px tall)`);
   };
   /** The element is on screen without scrolling (the bottom of a 640 px phone). */
   const onScreen = async (name, locator) => {
     const box = await locator.boundingBox();
-    if (!box || box.y + box.height > 640 + 0.5 || box.y < 0) errors.push(`${name}: off screen (${box ? Math.round(box.y + box.height) : "none"}px)`);
+    if (!box || box.y + box.height > height + 0.5 || box.y < 0) errors.push(`${name}: off screen (${box ? Math.round(box.y + box.height) : "none"}px)`);
   };
 
   await page.goto(url, { timeout: 20_000 });
   await page.getByTestId("name-input").waitFor({ timeout: 10_000 });
   await shot("name"); await noHScroll("name");
+  if ((await page.evaluate(() => document.documentElement.lang)) !== lang) errors.push(`lang: the page is <html lang="${await page.evaluate(() => document.documentElement.lang)}">, not ${lang}`);
   await page.getByTestId("name-input").fill(`PhoneTester${TAG}`);
   await page.getByTestId("name-submit").click();
   await page.getByTestId("play").waitFor();
+  if (apiLangs.size !== 1 || !apiLangs.has(lang)) errors.push(`lang: API calls said Accept-Language ${JSON.stringify([...apiLangs])}, not ${lang}`);
   await shot("home"); await noHScroll("home"); await noRates("home"); await onScreen("home: Play", page.getByTestId("play"));
+  // M4-2: the switch beside Sound redraws the page in the other language,
+  // kept on the device, and back.
+  for (const to of [lang === "ru" ? "en" : "ru", lang]) {
+    await Promise.all([page.waitForEvent("load"), page.getByTestId(`lang-${to}`).click()]);
+    await page.getByTestId("play").waitFor();
+    const Lto = catalog(to);
+    if ((await page.getByTestId("play").textContent()) !== Lto("home.play") || (await page.evaluate(() => document.documentElement.lang)) !== to) errors.push(`lang switch: Home after ${to} reads "${await page.getByTestId("play").textContent()}"`);
+    if ((await page.getByTestId(`lang-${to}`).getAttribute("aria-pressed")) !== "true") errors.push(`lang switch: ${to} isn't marked as chosen`);
+    if (to !== lang) { await page.getByTestId("lang-row").scrollIntoViewIfNeeded(); await shot(`home-switched-${to}`); await noHScroll(`home-switched-${to}`); }
+  }
   // M2-3: a quiet ideas line; a new player earns the first in 3 runs.
-  if ((await page.getByTestId("ideas").textContent()) !== "💡 3 more runs for an idea") errors.push(`home: ideas line "${await page.getByTestId("ideas").textContent()}"`);
+  if ((await page.getByTestId("ideas").textContent()) !== L("home.ideasNext", { why: L("ideas.why", { n: 3 }) })) errors.push(`home: ideas line "${await page.getByTestId("ideas").textContent()}"`);
   await tap44("dev summary", page.locator("details.dev summary"));
   await page.getByTestId("rules-open").click();
   await page.getByTestId("rules").waitFor();
@@ -267,7 +289,7 @@ try {
     const damage = (await page.locator('[data-term="effect:damage"] .kw-tip').textContent()) ?? "";
     if (/Shield/.test(damage) || !damage) errors.push(`codex: Damage reads "${damage}"`);
     const groups = await page.locator(".kw-group").allTextContents();
-    for (const g of ["When", "Who", "Does"]) if (!groups.includes(g)) errors.push(`codex: no "${g}" group (${groups.join(", ")})`);
+    for (const g of [L("codex.group.trigger"), L("codex.group.target"), L("codex.group.effect")]) if (!groups.includes(g)) errors.push(`codex: no "${g}" group (${groups.join(", ")})`);
     for (const t of ["effect:absorbHurt", "effect:preventDeathHeal", "effect:cancel", "effect:consumeStacks", "term:would"])
       if (await page.locator(`.kw-row[data-term="${t}"]`).count()) errors.push(`codex: the unused row ${t} shows`);
   }
@@ -277,9 +299,9 @@ try {
     const enemyDies = page.locator('[data-term="trigger:Death"] .kw-scope[data-scope="enemy"]');
     if (!(await enemyDies.count())) errors.push("codex: Dies has no \"an enemy dies\" line");
     else {
-      if (!/When an enemy dies/.test(await enemyDies.locator(".kw-tip").textContent())) errors.push(`codex: the enemy-death line reads "${await enemyDies.locator(".kw-tip").textContent()}"`);
+      if ((await enemyDies.locator(".kw-tip").textContent()) !== scopedTip("trigger:Death", "enemy", lang === "ru" ? "ru" : undefined)) errors.push(`codex: the enemy-death line reads "${await enemyDies.locator(".kw-tip").textContent()}"`);
       // R3-2: the scoped line has its own label in the card's words.
-      if ((await enemyDies.getByTestId("codex-term-scope-label").textContent()) !== "Enemy dies") errors.push(`codex: the enemy-death line's label reads "${await enemyDies.getByTestId("codex-term-scope-label").textContent()}"`);
+      if ((await enemyDies.getByTestId("codex-term-scope-label").textContent()) !== scopedLabel("trigger:Death", "enemy", lang === "ru" ? "ru" : undefined)) errors.push(`codex: the enemy-death line's label reads "${await enemyDies.getByTestId("codex-term-scope-label").textContent()}"`);
       if (!(await enemyDies.getByTestId("codex-term-unit").count())) errors.push("codex: the enemy-death line lists no units");
       await enemyDies.scrollIntoViewIfNeeded();
       await shot("codex-dies-scoped");
@@ -313,7 +335,7 @@ try {
     page.off("request", count);
     if (fetches) errors.push(`codex: switching tabs fetched /fusions ${fetches} more time(s)`);
   }
-  if (!/^[\d,]+ of [\d,]+ found$/.test(await page.getByTestId("codex-fusions-found").textContent())) errors.push(`codex: "${await page.getByTestId("codex-fusions-found").textContent()}"`);
+  if (!new RegExp(`^${pattern(L("codex.found"))}$`).test(await page.getByTestId("codex-fusions-found").textContent())) errors.push(`codex: "${await page.getByTestId("codex-fusions-found").textContent()}"`);
   await shot("codex-fusions"); await noHScroll("codex-fusions");
   if ((await page.getByTestId("icon-credits").textContent()).indexOf("CC BY 3.0") < 0) errors.push("codex: no icon credits");
   // M2-9: the Library lists the units that left (the 8 cut in round 4 on a
@@ -351,9 +373,9 @@ try {
       const toggle = page.getByTestId("run-menu").getByTestId("sound-toggle");
       await tap44("sound toggle", toggle);
       await toggle.click();
-      if (!(await toggle.textContent()).includes("off")) errors.push("sound: the menu toggle didn't turn sound off");
+      if ((await toggle.textContent()) !== L("sound.off")) errors.push("sound: the menu toggle didn't turn sound off");
       await toggle.click();
-      if (!(await toggle.textContent()).includes("on")) errors.push("sound: the menu toggle didn't turn sound back on");
+      if ((await toggle.textContent()) !== L("sound.on")) errors.push("sound: the menu toggle didn't turn sound back on");
       const vbox = await page.getByTestId("run-menu").getByTestId("sound-volume").boundingBox();
       if (!vbox || vbox.width < 100) errors.push(`sound: the volume slider is ${vbox ? Math.round(vbox.width) : 0}px wide`);
       // ☰ Codex opens over the shop; Back returns to the same round.
@@ -378,7 +400,7 @@ try {
       await page.getByTestId("menu-title").click();
       await page.getByTestId("play").waitFor();
       const cont = await page.getByTestId("play").textContent();
-      if (!cont.includes(`Continue run · ${at.split("/")[0]}`)) errors.push(`title menu: "${cont}" doesn't continue ${at}`);
+      if (!cont.includes(L("home.continue", { where: at.split("/")[0] }).trim())) errors.push(`title menu: "${cont}" doesn't continue ${at}`);
       if ((await page.getByTestId("new-run").count()) === 0) errors.push("title menu: no New run while a run waits");
       await shot("home-continue"); await noHScroll("home-continue"); await onScreen("home: Continue", page.getByTestId("play"));
       await page.getByTestId("play").click();
@@ -393,7 +415,7 @@ try {
     const lockFromSheet = async (slot, want) => {
       await page.getByTestId(`offer-${slot}`).click();
       await page.getByTestId("lock").waitFor();
-      if (!(await page.getByTestId("lock").textContent()).includes(want)) errors.push(`lock: offer ${slot}'s sheet says "${await page.getByTestId("lock").textContent()}", not ${want}`);
+      if (!(await page.getByTestId("lock").textContent()).includes(L(want === "Lock" ? "board.lock" : "board.unlock"))) errors.push(`lock: offer ${slot}'s sheet says "${await page.getByTestId("lock").textContent()}", not ${want}`);
       if (want === "Lock" && round === 0) { await shot("offer-sheet-lock"); await tap44("Lock", page.getByTestId("lock")); }
       await page.getByTestId("lock").click();
       await page.waitForFunction(([s, on]) => document.querySelector(`[data-testid="offer-${s}"]`)?.classList.contains("locked") === on, [slot, want === "Lock"]);
@@ -418,7 +440,7 @@ try {
     // Buy while the gold allows and the line has room.
     for (let k = 0; k < 4; k++) {
       if ((await page.getByTestId("gold").count()) === 0) break; // the Crown: no shop, no gold
-      const gold = Number((await page.getByTestId("gold").textContent()).replace("g", ""));
+      const gold = Number((await page.getByTestId("gold").textContent()).replace(L("shop.gold", { n: "" }), ""));
       if (gold < 3 || (await page.getByTestId("offers").locator(".card").count()) === 0) break;
       const filled = await page.getByTestId("line").locator(".card.you").count();
       if (filled >= 5) break;
@@ -428,7 +450,7 @@ try {
       if (round === 0 && k === 0) { await shot("offer-sheet"); await noHScroll("offer-sheet"); }
       if (await page.getByTestId("buy").isDisabled()) { await page.getByTestId("offer-close").click(); break; }
       await page.getByTestId("buy").click();
-      await page.waitForFunction((g) => !document.querySelector('[data-testid="gold"]') || document.querySelector('[data-testid="gold"]').textContent !== `${g}g`, gold);
+      await page.waitForFunction((g) => !document.querySelector('[data-testid="gold"]') || document.querySelector('[data-testid="gold"]').textContent !== g, L("shop.gold", { n: gold }));
       // A 3rd copy awakens a unit and brings a gift (R3-15), whose chooser
       // covers the shop: skip it here (R4-19 flake); the gift's own checks come later.
       if (await page.getByTestId("gift-skip").isVisible().catch(() => false)) {
@@ -543,7 +565,7 @@ try {
         if (!(await worded.first().evaluate((e) => e.classList.contains("on")))) errors.push("why: a tap on a step's word didn't light the step");
       }
       const bar = await page.getByTestId("battle-play").boundingBox();
-      if (!bar || bar.y + bar.height > 640) errors.push(`why: the control bar is off screen with Why open (${JSON.stringify(bar)})`);
+      if (!bar || bar.y + bar.height > height) errors.push(`why: the control bar is off screen with Why open (${JSON.stringify(bar)})`);
       await shot("battle-why-step"); await noHScroll("battle-why-step");
       console.log(`why: ${kinds.join(" ← ")}; the root's click moved the board ${turnBefore} → ${turnAfter}`);
       await tap44("change chip", page.getByTestId("change"));
@@ -616,7 +638,7 @@ try {
       await page.getByTestId("battle-play").click();
       if (!(await page.getByTestId("end-card").isVisible())) errors.push("end card: ▶ on the last beat didn't show it");
       const word = await page.getByTestId("battle-word").textContent();
-      if (!/^(VICTORY|DEFEAT|DRAW)$/.test(word)) errors.push(`end card: word "${word}"`);
+      if (![L("battle.end.victory"), L("battle.end.defeat"), L("battle.end.draw")].includes(word)) errors.push(`end card: word "${word}"`);
       if ((await page.getByTestId("damage-row").count()) < 2) errors.push("end card: no damage by unit");
       const moments = await page.getByTestId("key-moment").count();
       if (moments < 1 || moments > 3) errors.push(`end card: ${moments} key moments`);
@@ -629,8 +651,9 @@ try {
       if (await page.getByTestId("end-why").count()) {
         // Why I lost, or Why I won (R2-17).
         const label = await page.getByTestId("end-why").textContent();
+        const why = await page.getByTestId("end-why").getAttribute("data-why");
         await page.getByTestId("end-why").click();
-        const panel = page.getByTestId(label === "Why I won" ? "why-won" : "why-lost");
+        const panel = page.getByTestId(`why-${why}`);
         await panel.waitFor();
         await shot("battle-end-why");
         if (await panel.locator("button.bv-why").count()) {
@@ -656,7 +679,7 @@ try {
       // Replay plays from the start: the line-up first.
       await page.getByTestId("end-replay").click();
       if (await page.getByTestId("end-card").isVisible()) errors.push("replay: the end card stayed up");
-      if (!/The lines face off/.test(await page.getByTestId("caption").textContent())) errors.push(`replay: didn't start from the line-up ("${await page.getByTestId("caption").textContent()}")`);
+      if (!(await page.getByTestId("caption").textContent()).includes(L("battle.caption.faceOff"))) errors.push(`replay: didn't start from the line-up ("${await page.getByTestId("caption").textContent()}")`);
       const ctl = await page.evaluate(() => window.__ctl);
       if (ctl.off || ctl.scroll > 0) errors.push(`battle: controls off screen in ${ctl.off}/${ctl.frames} frames, page scrolls ${ctl.scroll}px`);
     }
@@ -666,7 +689,7 @@ try {
     await page.getByTestId("end-card").waitFor({ timeout: 10_000 });
     if (await page.getByTestId("outcome").count()) errors.push("a result screen still follows the end card");
     await onScreen("end card: the way on", page.getByTestId("battle-done"));
-    if (!whyShot && (await page.getByTestId("end-why").textContent().catch(() => "")) === "Why I lost") {
+    if (!whyShot && (await page.getByTestId("end-why").getAttribute("data-why").catch(() => "")) === "lost") {
       whyShot = true;
       await shot("result-after-loss"); await noHScroll("result-after-loss");
       await page.getByTestId("end-why").click();
@@ -693,14 +716,14 @@ try {
       const menu = (await page.getByTestId("run-menu").locator(".label").first().textContent()) ?? "";
       await page.getByTestId("menu-resume").click();
       await page.getByTestId("run-menu").waitFor({ state: "detached" });
-      const n = /round (\d+) of/.exec(menu)?.[1];
+      const n = new RegExp(pattern(L("menu.runRound")).replace(".+?", "(\\d+)")).exec(menu)?.[1];
       if (n !== undefined) {
         menuRounds++;
-        if (Number(n) !== round || /^R(\d+)\//.exec(shown)?.[1] !== n) errors.push(`end card ☰: "${menu}" after round ${round} ("${shown}")`);
-      } else if (!/^Run · (over|the Crown)$/.test(menu)) errors.push(`end card ☰: "${menu}" after round ${round}`);
+        if (Number(n) !== round || new RegExp(`^${pattern(L("run.roundLabel")).replace(".+?", "(\\d+)")}`).exec(shown)?.[1] !== n) errors.push(`end card ☰: "${menu}" after round ${round} ("${shown}")`);
+      } else if (![L("menu.runOver"), L("menu.runCrown")].includes(menu)) errors.push(`end card ☰: "${menu}" after round ${round}`);
     }
     const done = ((await page.getByTestId("battle-done").textContent()) ?? "").trim();
-    if (!/^(Next round|To the Crown|See the run)$/i.test(done)) errors.push(`end card: last button "${done}"`);
+    if (![L("fight.nextRound"), L("fight.toCrown"), L("fight.seeRun")].includes(done)) errors.push(`end card: last button "${done}"`);
     await page.getByTestId("battle-done").click();
     await page.waitForFunction(() => document.querySelector('[data-testid="fight"]') || document.querySelector('[data-testid="run-over"]'));
     if (await page.getByTestId("run-over").isVisible().catch(() => false)) break;
@@ -710,13 +733,13 @@ try {
   await page.getByTestId("run-over").waitFor({ timeout: 10_000 });
   await shot("run-over"); await noHScroll("run-over"); await noRates("run-over");
   const over = await page.getByTestId("run-over").textContent();
-  if (/No champion/.test(over) && /Reached the Crown/.test(over)) errors.push(`run over: "${over}" contradicts itself`);
+  if (over.includes(L("end.noChampion")) && over.includes(L("end.reachedCrown"))) errors.push(`run over: "${over}" contradicts itself`);
   // A standalone count only: the rating line's "expected 3.1 wins" is no "1 wins".
-  if (/(?<![\w.])1 (wins|draws|losses)\b|(?<![\w.])([02-9]|\d\d+) (win|draw|loss)\b/.test(over)) errors.push(`run over: plural wrong in "${over}"`);
+  if (lang === "en" && /(?<![\w.])1 (wins|draws|losses)\b|(?<![\w.])([02-9]|\d\d+) (win|draw|loss)\b/.test(over)) errors.push(`run over: plural wrong in "${over}"`);
   await page.getByTestId("home").click();
   await page.getByTestId("play").waitFor();
   await shot("home-after");
-  if (!/^💡 ([12] more runs? for an idea|[1-3] ideas?)$/.test((await page.getByTestId("ideas").textContent()) ?? "")) errors.push(`home after a run: ideas line "${await page.getByTestId("ideas").textContent()}"`);
+  if (![1, 2].map((n) => L("home.ideasNext", { why: L("ideas.why", { n }) })).concat([1, 2, 3].map((n) => L("home.ideasHeld", { n }))).includes((await page.getByTestId("ideas").textContent()) ?? "")) errors.push(`home after a run: ideas line "${await page.getByTestId("ideas").textContent()}"`);
 
   // Stats (slice 11, R2-11): records and the champion history; units and
   // fusions moved to the Codex.
@@ -743,7 +766,7 @@ try {
   await page.getByTestId("new-run").click();
   await page.getByTestId("abandon-text").waitFor();
   await shot("new-run-confirm"); await noHScroll("new-run-confirm");
-  if (!/Every heart left counts as a lost fight/.test(await page.getByTestId("abandon-text").textContent())) errors.push("new run: the confirm doesn't say what abandoning costs");
+  if (!(await page.getByTestId("abandon-text").textContent()).includes(L("abandon.costHearts", { n: 3 }).split(":")[0])) errors.push("new run: the confirm doesn't say what abandoning costs");
   await page.getByTestId("abandon-cancel").click();
   await page.getByTestId("play").click();
   await page.getByTestId("fight").waitFor();
@@ -754,11 +777,11 @@ try {
   await page.getByTestId("abandon-confirm").click();
   await page.getByTestId("run-over").waitFor({ timeout: 10_000 });
   await shot("run-over-abandoned"); await noHScroll("run-over-abandoned");
-  if (!/You gave up/.test(await page.getByTestId("run-why").textContent())) errors.push("abandon: run-over doesn't say the run was given up");
+  if (!(await page.getByTestId("run-why").textContent()).startsWith(L("end.gaveUp", { n: 3 }).split(":")[0])) errors.push("abandon: run-over doesn't say the run was given up");
   if ((await page.getByTestId("rating-change").count()) === 0) errors.push("abandon: no rating change on the run-over screen");
   await page.getByTestId("home").click();
   await page.getByTestId("play").waitFor();
-  if ((await page.getByTestId("play").textContent()) !== "Play") errors.push("abandon: the title menu still offers Continue");
+  if ((await page.getByTestId("play").textContent()) !== L("home.play")) errors.push("abandon: the title menu still offers Continue");
   // New run on the title menu gives the waiting run up too, and shows its
   // end and rating change first; its New run starts the next run (R2-17).
   await page.getByTestId("play").click();
@@ -768,12 +791,12 @@ try {
   await page.getByTestId("new-run").click();
   await page.getByTestId("abandon-confirm").click();
   await page.getByTestId("run-over").waitFor({ timeout: 10_000 });
-  if (!/You gave up/.test(await page.getByTestId("run-why").textContent())) errors.push("new run: run-over doesn't say the run was given up");
+  if (!(await page.getByTestId("run-why").textContent()).startsWith(L("end.gaveUp", { n: 3 }).split(":")[0])) errors.push("new run: run-over doesn't say the run was given up");
   if ((await page.getByTestId("rating-change").count()) === 0) errors.push("new run: no rating change for the given-up run");
   await shot("run-over-new-run"); await noHScroll("run-over-new-run");
   await page.getByTestId("new-run-start").click();
   await page.getByTestId("fight").waitFor();
-  if ((await page.getByTestId("round").textContent()) !== "R1/12") errors.push(`new run: starts at ${await page.getByTestId("round").textContent()}`);
+  if ((await page.getByTestId("round").textContent()) !== L("run.roundLabel", { round: 1, rounds: 12 })) errors.push(`new run: starts at ${await page.getByTestId("round").textContent()}`);
 
   // Awakening and fusion (slice 8): a second player plays through the API
   // until it has one Awoken unit, a second unit one copy short and that copy
@@ -811,7 +834,7 @@ try {
     if (!before.gift) return void errors.push("awakening: no gift offered");
     const shown = await page.getByTestId("gift-title").waitFor({ timeout: 5_000 }).then(() => true, () => false);
     if (!shown) return void errors.push("gift: the chooser doesn't open after the awakening copy");
-    if (!/Awakened! Pick a gift/.test(await page.getByTestId("gift-title").textContent())) errors.push("gift: no 'Awakened! Pick a gift'");
+    if ((await page.getByTestId("gift-title").textContent()) !== L("gift.title")) errors.push("gift: no 'Awakened! Pick a gift'");
     const cards = await page.getByTestId("gift-choices").locator(".card").count();
     if (cards !== 3) errors.push(`gift: ${cards} cards, want 3`);
     await shot("gift-chooser"); await noHScroll("gift-chooser"); await noVScroll("gift-chooser");
@@ -869,11 +892,11 @@ try {
     await shot("shop-almost"); await noHScroll("shop-almost");
     await page.getByTestId(`offer-${slot}`).click();
     await page.getByTestId("buy-preview").waitFor();
-    if (!/Awakens/.test(await page.getByTestId("buy-preview").textContent())) errors.push("awaken preview: no 'Awakens!'");
+    if (!(await page.getByTestId("buy-preview").textContent()).includes(L("buy.awakens"))) errors.push("awaken preview: no 'Awakens!'");
     await shot("awaken-preview"); await noHScroll("awaken-preview");
     await page.getByTestId("buy").click();
     await chooseGift();
-    await page.getByTestId("hint").filter({ hasText: "fuse" }).waitFor();
+    await page.getByTestId("hint").filter({ hasText: L("hint.fusePhone") }).waitFor();
     const first = run.line.findIndex((u) => u.form === "awoken");
     const second = run.line.findIndex((u) => u.uid === almost.uid);
     await page.getByTestId(`line-${first}`).click();
@@ -894,7 +917,7 @@ try {
     const isNew = tapped && fusedIn(tapped).name === "";
     if (previews.length !== 2 || !tapped) errors.push(`fusion preview: expected both orders previewed, got ${previews.length}`);
     const sheetText = await page.getByTestId("overlay").textContent();
-    if (isNew && !/\?\?\? New fusion/.test(sheetText)) errors.push("fusion preview: a new pair doesn't say '??? New fusion'");
+    if (isNew && !(sheetText.includes("???") && (sheetText.includes(L("fuse.new")) || sheetText.includes(L("fusion.newNamedWhenFused"))))) errors.push("fusion preview: a new pair doesn't say '??? New fusion'");
     if (tapped && !isNew && !sheetText.includes(fusedIn(tapped).name)) errors.push("fusion preview: a known pair doesn't show its name");
     await shot("fusion-preview"); await noHScroll("fusion-preview");
     const recipe = await page.getByTestId("fusion-recipe").textContent();
@@ -914,8 +937,8 @@ try {
     if (revealed) {
       const reveal = await page.getByTestId("fusion-reveal").textContent();
       const named = reveal.replace(/^.*You discovered /, "");
-      if (!/You discovered \S/.test(reveal)) errors.push(`fusion reveal: '${reveal}'`);
-      if (!/discovered by you/.test(await page.getByTestId("overlay").textContent())) errors.push("fusion reveal: no 'discovered by you'");
+      if (!new RegExp(`${pattern(L("fuse.discovered"))}\\S`).test(reveal)) errors.push(`fusion reveal: '${reveal}'`);
+      if (!(await page.getByTestId("overlay").textContent()).includes(L("fusion.discoveredByYou"))) errors.push("fusion reveal: no 'discovered by you'");
       if (isNew && previews.some((p) => p.body.includes(named))) errors.push(`fusion preview: the response carried the name '${named}' before the fuse`);
       await shot("fusion-reveal"); await noHScroll("fusion-reveal");
       await page.getByTestId("sheet-close").click();
@@ -930,7 +953,7 @@ try {
     await page.getByTestId("info").click();
     await page.getByTestId("unit-sheet").waitFor();
     // The pair may be someone else's discovery already (live, or a reused DB).
-    if (!/discovered by (you|@\S+)/.test(await page.getByTestId("unit-sheet").textContent())) errors.push("fused sheet: no discovery credit");
+    if (!new RegExp(`${pattern(L("fusion.discoveredByYou"))}|${pattern(L("fusion.discoveredBy"))}\\S`).test(await page.getByTestId("unit-sheet").textContent())) errors.push("fused sheet: no discovery credit");
     if (!(await page.getByTestId("sheet-close").isVisible())) errors.push("unit sheet from Info: no Close button");
     await shot("fused-sheet"); await noHScroll("fused-sheet");
     await sheetChecks("fused sheet");
@@ -964,7 +987,7 @@ try {
       const o = fresh(r);
       await page.getByTestId(`offer-${o.slot}`).click();
       await page.getByTestId("buy-preview").waitFor();
-      if (!/Goes to your bench/.test(await page.getByTestId("buy-preview").textContent())) errors.push(`bench: the buy preview says "${await page.getByTestId("buy-preview").locator(".label").textContent()}", not "Goes to your bench"`);
+      if (!(await page.getByTestId("buy-preview").textContent()).includes(L("buy.toBench"))) errors.push(`bench: the buy preview says "${await page.getByTestId("buy-preview").locator(".label").textContent()}", not "Goes to your bench"`);
       await shot("bench-buy-preview"); await noHScroll("bench-buy-preview");
       await page.getByTestId("buy").click();
       await page.getByTestId("bench-0").waitFor();
@@ -975,7 +998,7 @@ try {
       const last = await name("line-4");
       await page.getByTestId("bench-0").click();
       await page.getByTestId("to-line").waitFor();
-      if ((await page.getByTestId("hint").filter({ hasText: "swap" }).count()) === 0) errors.push("bench: no swap hint with a bench unit selected and the line full");
+      if ((await page.getByTestId("hint").filter({ hasText: L("hint.lineFullSwap") }).count()) === 0) errors.push("bench: no swap hint with a bench unit selected and the line full");
       await shot("bench-selected"); await noHScroll("bench-selected"); await noVScroll("bench-selected");
       await tap44("bench actions", page.getByTestId("actions").locator("button"));
       await page.getByTestId("line-4").click();
@@ -1035,7 +1058,7 @@ try {
       await tap44("make room buttons", page.locator('[data-testid="gift-make-room"], [data-testid="gift-skip"]'));
       await page.getByTestId("gift-make-room").click();
       await page.getByTestId("gift-banner").waitFor();
-      if (!/make room/.test(await page.getByTestId("gift-banner").textContent())) errors.push(`make room: the banner says "${await page.getByTestId("gift-banner").textContent()}"`);
+      if (!(await page.getByTestId("gift-banner").textContent()).startsWith(L("gift.waitingFull"))) errors.push(`make room: the banner says "${await page.getByTestId("gift-banner").textContent()}"`);
       await shot("gift-make-room-aside"); await noHScroll("gift-make-room-aside"); await noVScroll("gift-make-room-aside");
       // Selling stays possible behind it: sell the front unit, and the chooser comes back.
       await page.getByTestId("line-0").click();
@@ -1094,10 +1117,11 @@ try {
   const endedSeq = (await call("GET", "/day")).seq;
   await page.locator("details.dev summary").click();
   // M2-3: dev "+1 idea" brings an idea home at once.
-  const heldBefore = Number(/^💡 (\d) ideas?$/.exec((await page.getByTestId("ideas").textContent()) ?? "")?.[1] ?? 0);
+  const heldText = (await page.getByTestId("ideas").textContent()) ?? "";
+  const heldBefore = [1, 2, 3].find((n) => heldText === L("home.ideasHeld", { n })) ?? 0;
   await page.getByTestId("grant-idea").click();
   const heldNow = Math.min(3, heldBefore + 1);
-  await page.waitForFunction((t) => document.querySelector('[data-testid="ideas"]')?.textContent === t, `💡 ${heldNow} idea${heldNow === 1 ? "" : "s"}`, { timeout: 10_000 }).catch(() => errors.push(`dev +1 idea: ideas line "${heldNow}" never showed`));
+  await page.waitForFunction((t) => document.querySelector('[data-testid="ideas"]')?.textContent === t, L("home.ideasHeld", { n: heldNow }), { timeout: 10_000 }).catch(() => errors.push(`dev +1 idea: ideas line "${heldNow}" never showed`));
   await shot("home-idea-granted"); await noHScroll("home-idea-granted");
   await onScreen("home after +1 idea: Play", page.getByTestId("play"));
   await page.locator("details.dev summary").click().catch(() => {});
@@ -1105,13 +1129,14 @@ try {
   await page.getByTestId("end-day").click();
   // Home re-renders with the day just ended ("Day N ended" / "Playoff · day
   // N"), not the panel of the day before, which is already on screen.
-  await page.waitForFunction((n) => new RegExp(`\\b[Dd]ay ${n}\\b`).test(document.querySelector('[data-testid="playoff"] .label')?.textContent ?? ""), endedSeq, { timeout: 10_000 });
+  await page.waitForFunction((want) => want.includes(document.querySelector('[data-testid="playoff"] .label')?.textContent), [L("playoff.label", { day: endedSeq }), L("playoff.dayEnded", { day: endedSeq })], { timeout: 10_000 });
   const ended = await page.getByTestId("playoff-summary").textContent();
   const table = await page.getByTestId("playoff-standing").count();
-  if (!/^No slayers|was the only slayer|won the playoff/.test(ended)) errors.push(`day end: "${ended}"`);
-  if (/^No slayers|only slayer/.test(ended) && table > 0) errors.push(`day end: a table under "${ended}"`);
-  if (/won the playoff/.test(ended) && table < 2) errors.push(`day end: playoff without its table`);
-  if (!/^Day \d+ ended/.test((await page.getByTestId("day-ended").textContent().catch(() => "")) ?? "")) errors.push("day end: no 'Day N ended' notice");
+  const noPlayoff = new RegExp(["playoff.noSlayersStays", "playoff.noSlayers", "playoff.onlySlayer", "playoff.onlySlayerBot"].map((k) => `^${pattern(L(k))}$`).join("|"));
+  if (!noPlayoff.test(ended) && !new RegExp(pattern(L("playoff.won"))).test(ended)) errors.push(`day end: "${ended}"`);
+  if (noPlayoff.test(ended) && table > 0) errors.push(`day end: a table under "${ended}"`);
+  if (new RegExp(pattern(L("playoff.won"))).test(ended) && table < 2) errors.push(`day end: playoff without its table`);
+  if (!new RegExp(`^${pattern(L("home.dayEnded"))}$`).test((await page.getByTestId("day-ended").textContent().catch(() => "")) ?? "")) errors.push("day end: no 'Day N ended' notice");
   await shot("home-day-ended"); await noHScroll("home-day-ended");
   await onScreen("home after day end: Play", page.getByTestId("play"));
 
@@ -1125,26 +1150,26 @@ try {
     await page.reload();
     await page.getByTestId("play").waitFor();
     const homeText = await page.locator("#app").textContent();
-    if (!/This is your team\. Others try to beat it today, and so can you/.test(homeText) || /Beat this team in the Crown/.test(homeText)) errors.push("champion's home: no 'your team' hint");
+    if (!homeText.includes(L("home.hintOwnPhone")) || homeText.includes(L("home.hintRatedPhone"))) errors.push("champion's home: no 'your team' hint");
     await shot("home-champion"); await noHScroll("home-champion");
     await page.getByTestId("play").click();
     await page.getByTestId("fight").waitFor();
     const opp = await page.getByTestId("next-opponent").textContent();
-    if (!/\(your champion team\)/.test(opp)) errors.push(`own crown: next opponent "${opp}"`);
-    if (!/Beat it to be a slayer again/.test(await page.getByTestId("hint").textContent())) errors.push("own crown: the hint promises no slay");
+    if (!opp.includes(L("opp.yourChampionTeam").trim())) errors.push(`own crown: next opponent "${opp}"`);
+    if ((await page.getByTestId("hint").textContent()) !== L("hint.ownCrown")) errors.push("own crown: the hint promises no slay");
     await shot("crown-own"); await noHScroll("crown-own");
     await page.getByTestId("fight").click();
     await page.getByTestId("battle-end").click();
     await page.getByTestId("end-card").waitFor({ timeout: 10_000 });
     const result = await page.getByTestId("end-card").textContent();
-    const ownWon = (await page.getByTestId("battle-word").textContent()).includes("VICTORY");
-    if (ownWon ? !/Slayer today/.test(result) : !/Your team holds/.test(result)) errors.push(`own crown result: "${result.slice(0, 200)}"`);
+    const ownWon = (await page.getByTestId("battle-word").textContent()).includes(L("battle.end.victory"));
+    if (!result.includes(L(ownWon ? "fight.slayer" : "fight.ownHolds"))) errors.push(`own crown result: "${result.slice(0, 200)}"`);
     await shot("result-own-crown"); await noHScroll("result-own-crown");
     console.log(`mvp phone: the champion's own Crown: ${await page.getByTestId("battle-word").textContent()}`);
     await page.getByTestId("battle-done").click();
     await page.getByTestId("run-over").waitFor({ timeout: 10_000 });
     const ownOver = await page.getByTestId("run-over").textContent();
-    if (ownWon ? !/You beat your own champion team: you are a slayer today/.test(ownOver) : !/Your champion team held the Crown/.test(ownOver)) errors.push(`own crown run over: "${ownOver}"`);
+    if (!ownOver.includes(L(ownWon ? "end.beatOwn" : "end.ownHeld"))) errors.push(`own crown run over: "${ownOver}"`);
     await shot("run-over-own-crown"); await noHScroll("run-over-own-crown");
   }
   console.log(`mvp phone: ${round} fights, ${shots} screenshots in ${out}, ${iconCards} card icon lines fit`);
