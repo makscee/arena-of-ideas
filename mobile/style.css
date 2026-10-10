@@ -664,11 +664,11 @@ button.bv-run-row.zero { opacity: 0.45; }
 .bv-cleared { position: absolute; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .bv-run, button.bv-run-row { transition: none; } }
 @media (min-width: 1024px) { button.bv-run-row { height: 20px; line-height: 20px; font-size: 17px; padding: 0 4px; } }
-/* M5-6: a phone's box sits on the card's face under its icon row (battle.ts
- * PHONE_RUN_TOP) and stacks down, so no row reaches the side's label or the
- * caption over or under the line. */
+/* M5-6: a phone's box sits on the card's face between its icon row and its
+ * name (battle.ts placeRuns) and stacks down, clipped above the name, so no row
+ * covers the name or the stats, nor reaches the side's label or the caption. */
 @media (max-width: 1023.98px) {
-  .bv-run { translate: -50% 0; flex-direction: column; padding: 0; }
+  .bv-run { translate: -50% 0; flex-direction: column; padding: 0; overflow: hidden; }
   /* The trigger badge hugs its card, clear of the side's label. */
   #app[data-screen="battle"] .bv-line.theirs button.bv-badge { bottom: calc(100% + 1px); }
   #app[data-screen="battle"] .bv-line.mine button.bv-badge { top: calc(100% + 1px); }

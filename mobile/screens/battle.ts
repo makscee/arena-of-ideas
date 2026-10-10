@@ -1443,9 +1443,15 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       if (!box || box.width <= 0) { b.el.style.visibility = "hidden"; continue; }
       b.el.style.visibility = "";
       b.el.style.left = `${Math.round(box.left + box.width / 2)}px`;
-      // M5-6: a phone has no room above a card (the side's label, the caption sit
-      // there): the box sits on the card's face under its change chip, stacking down.
-      b.el.style.top = `${Math.round(isDesktop() ? box.top : box.top + PHONE_RUN_TOP)}px`;
+      // M5-6: a phone has no room above or below a card (the side's label, the
+      // caption sit there): the box sits on the card's face between its icon row
+      // and its name, stacking down; rows past the name are clipped (the log and
+      // Why keep every number), so the name and stats stay readable.
+      const icons = el?.querySelector<HTMLElement>(".icons")?.getBoundingClientRect();
+      const name = el?.querySelector<HTMLElement>(".name")?.getBoundingClientRect();
+      const top = isDesktop() ? box.top : icons?.height ? icons.bottom + 1 : box.top + PHONE_RUN_TOP;
+      b.el.style.top = `${Math.round(top)}px`;
+      b.el.style.maxHeight = !isDesktop() && name?.height ? `${Math.max(0, Math.floor(name.top - 1 - top))}px` : "";
       b.el.style.maxWidth = `${Math.round(box.width)}px`;
     }
   }
