@@ -22,8 +22,8 @@ const port = 18000 + Math.floor(Math.random() * 1000);
 const child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port), MVP_DEV: "1", MVP_DB: ":memory:", STATIC_DIR: "mobile/dist" }, stdio: ["ignore", "ignore", "inherit"] });
 const url = `http://127.0.0.1:${port}/arena/`;
 const CAPTION = { en: /Squire returns to its place at \d+ HP/, ru: /Squire возвращается на своё место с \d+/ };
-const AGAIN = { en: /Squire can't return again: once per battle/, ru: /Squire не может вернуться снова: раз за бой/ };
-const CHIP = { en: "can't return", ru: "не вернётся" };
+const AGAIN = { en: /Squire can't return again: once per battle/, ru: /Squire не вернётся: раз за бой/ };
+const CHIP = { en: "can't return", ru: "лишь раз" };
 try {
   for (let i = 0; i < 360; i++) { try { if ((await fetch(url + "api/v1/health")).ok) break; } catch {} await new Promise((r) => setTimeout(r, 500)); }
   const browser = await launchChromium();

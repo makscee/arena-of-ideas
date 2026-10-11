@@ -121,7 +121,7 @@ export function changeOf(e: BattleEvent): Change | null {
     // A second revive of the same unit (#918): on the reviver, like no room.
     case "SummonFailed":
       if (e.reason !== "revivedOnce" || e.source === "kernel") return null;
-      return { eventId: e.id, unit: e.source.unit, kind: "noRoom", label: ru() ? "не вернётся" : "can't return" };
+      return { eventId: e.id, unit: e.source.unit, kind: "noRoom", label: ru() ? "лишь раз" : "can't return" };
     default:
       return null;
   }
@@ -1416,7 +1416,7 @@ function captionOfRu(log: BattleEvent[], e: BattleEvent, name: NameOf, merged: n
     case "Fatigue":
       return e.suddenDeath ? `Внезапная смерть: Усталость → все получают ${e.amount}, ничто не блокирует` : `Усталость → все получают ${e.amount}`;
     case "SummonFailed":
-      if (e.reason === "revivedOnce") return `${causeName(log, e, name)} → ${e.unit ? name(e.unit) : e.name} не может вернуться снова: раз за бой`;
+      if (e.reason === "revivedOnce") return `${causeName(log, e, name)} → ${e.unit ? name(e.unit) : e.name} не вернётся: раз за бой`;
       return `${causeName(log, e, name)} → ${e.revive && e.unit ? name(e.unit) : e.name} не может ${e.revive ? "вернуться" : "появиться"}: внезапная смерть`;
     case "ChainCapped":
       return `Цепь прервана после ${e.steps} ${ruCount(e.steps, ["шага", "шагов", "шагов"])}`;
