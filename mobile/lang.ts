@@ -48,10 +48,21 @@ export function uiLang(): Lang {
   return lang;
 }
 
+/** Where the language switch goes next: the address without its `?lang=`
+ * (it would win over the choice), or null when that is the address itself.
+ * Then only a reload redraws the page: `location.replace` to the same address
+ * with a `#` in it (the own `#invite=` link after joining) is a hash
+ * navigation, which reloads nothing (#919). */
+export function langAddress(href: string): string | null {
+  const url = new URL(href);
+  if (!url.searchParams.has("lang")) return null;
+  url.searchParams.delete("lang");
+  return url.toString();
+}
+
 /** The settings switch: keeps the choice on this device, then reloads the
  * page so every screen, card and caption is drawn in it (the run waits on the
- * server; Continue brings it back). A `?lang=` in the address goes, or it
- * would win over the choice. */
+ * server; Continue brings it back). */
 export function chooseLang(next: Lang): void {
   try {
     localStorage.setItem(LANG_KEY, next);
@@ -60,9 +71,9 @@ export function chooseLang(next: Lang): void {
   }
   lang = next;
   try {
-    const url = new URL(location.href);
-    url.searchParams.delete("lang");
-    location.replace(url.toString());
+    const to = langAddress(location.href);
+    if (to) location.replace(to);
+    else location.reload();
   } catch {
     /* no page (tests) */
   }

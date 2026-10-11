@@ -5,7 +5,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
-import { pickLang } from "../lang";
+import { langAddress, pickLang } from "../lang";
 import { en, type Key } from "./en";
 import { setLang, t, type Msg } from "./index";
 import { ru } from "./ru";
@@ -141,5 +141,15 @@ describe("picking the language (M4-2)", () => {
     expect(pickLang(null, "fr", "ru-RU")).toBe("ru");
     expect(pickLang("en", "ru", "ru-RU")).toBe("en");
     expect(pickLang("ru", null, "en-US")).toBe("ru");
+  });
+});
+
+describe("the language switch's reload (#919)", () => {
+  it("drops ?lang= and keeps the rest; else reloads in place, hash or not", () => {
+    expect(langAddress("https://x.test/arena/")).toBeNull();
+    expect(langAddress("https://x.test/arena/#invite=abc")).toBeNull();
+    expect(langAddress("https://x.test/arena/?theme=felt#invite=abc")).toBeNull();
+    expect(langAddress("https://x.test/arena/?lang=en#invite=abc")).toBe("https://x.test/arena/#invite=abc");
+    expect(langAddress("https://x.test/arena/?lang=ru&theme=felt")).toBe("https://x.test/arena/?theme=felt");
   });
 });
