@@ -5,12 +5,12 @@ import { describe, expect, test } from "vitest";
 import { battle } from "../battle.js";
 import { displayNames } from "../trace.js";
 import { stressAbilities, stressRegistry } from "../content/stress.js";
-import type { AbilityDef, AbilityRegistry, BattleEvent, UnitDef, When } from "../types.js";
+import type { AbilityDef, AbilityRegistry, BattleEvent, Side, UnitDef, When } from "../types.js";
 import { MVP_RULES, type MvpContent, type PlayerRef } from "./contract.js";
 import { fightLines } from "./fight.js";
 import { lineUnitOf } from "./forms.js";
 import { mvpPool } from "./units.js";
-import { setTraceLang, BEAT_MAX_MS, BEAT_MS, EMPHASIS_MS, END_BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, weightsOf, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, causeOf, beamsOf, stepsOf, sidesOf, timelineOf, timingOf, traceOf, turnLabel, turnSummaryOf, whyILost, TURN_END_MS, turnEndHoldMs, turnEndsOf, totalsPartsOf, totalsText, runningTotalsOf, runRowText, turnSoFarIds, beatIdsOf, type UnitTurnTotals } from "./trace.js";
+import { setTraceLang, CHAIN_LINK_MS, CHAIN_SUM_MS, chainSummaryOf, chainSideText, type PlayBeat, BEAT_MAX_MS, BEAT_MS, EMPHASIS_MS, END_BEAT_MS, QUIET_BEAT_MS, beatPlayOf, beatTiming, weightsOf, captionOf, chainOf, captionSubject, changeOf, damageByUnit, endCaption, keyMomentsOf, firingOf, causeOf, beamsOf, stepsOf, sidesOf, timelineOf, timingOf, traceOf, turnLabel, turnSummaryOf, whyILost, TURN_END_MS, turnEndHoldMs, turnEndsOf, totalsPartsOf, totalsText, runningTotalsOf, runRowText, turnSoFarIds, beatIdsOf, type UnitTurnTotals } from "./trace.js";
 
 const ab = (name: string, family: AbilityDef["family"], effects: AbilityDef["effects"]): AbilityDef => ({ name, family, effects });
 const n = (value: number) => ({ kind: "const" as const, value });
@@ -234,14 +234,30 @@ describe("one beat at a time (R2-12)", () => {
   const Coach = unit("Coach", 6, 1, { on: "BattleStart" }, [{ kind: "allAllies" }], ["GiveStrength"]);
   const Bulwark = unit("Bulwark", 6, 1, { on: "BattleStart" }, [{ kind: "holder" }], ["GiveShield"]);
 
-  test("waves land 220 ms apart; a beat lasts 1.3 s, at most 2.2 s (round 3, note 14)", () => {
+  test("waves land 220 ms apart; a beat lasts 1.3 s (round 3, note 14); a chain of 4+ gets 520 ms a link and its summary (#913)", () => {
     expect([BEAT_MS, BEAT_MAX_MS, QUIET_BEAT_MS]).toEqual([1300, 2200, 900]);
     expect(beatTiming(1)).toEqual({ at: [0], ms: BEAT_MS });
     expect(beatTiming(3)).toEqual({ at: [0, 220, 440], ms: BEAT_MS });
-    expect(beatTiming(4)).toEqual({ at: [0, 220, 440, 660], ms: 1460 });
+    expect(beatTiming(4)).toEqual({ at: [0, 520, 1040, 1560], ms: 1560 + CHAIN_SUM_MS });
     const long = beatTiming(30);
-    expect(long.ms).toBe(BEAT_MAX_MS);
-    expect(long.at.at(-1)!).toBe(1400);
+    expect(long.at.at(-1)!).toBe(29 * CHAIN_LINK_MS);
+    expect(long.ms).toBe(29 * CHAIN_LINK_MS + CHAIN_SUM_MS);
+  });
+
+  test("a chain's summary sums what it did to each side (#913)", () => {
+    const beat = { index: 0, turn: 0, start: 0, end: 5, waves: [{ eventIds: [0, 1, 2], turn: 0, actor: "a", actorSide: "A", subject: "a", subjectSide: "A", caption: "", changes: [] }, { eventIds: [3, 4, 5], turn: 0, actor: "b", actorSide: "B", subject: "b", subjectSide: "B", caption: "", changes: [] }] } as unknown as PlayBeat;
+    const log = [
+      { id: 0, type: "StatChanged", unit: "a", stat: "pwr", delta: 2 },
+      { id: 1, type: "StatChanged", unit: "a2", stat: "pwr", delta: 3 },
+      { id: 2, type: "StatusApplied", unit: "a", status: "Shield", stacks: 2 },
+      { id: 3, type: "Hurt", unit: "b", amount: 4 },
+      { id: 4, type: "Death", unit: "b" },
+      { id: 5, type: "Summon", unit: "b9" },
+    ] as unknown as BattleEvent[];
+    const sides = new Map<string, Side>([["a", "A"], ["a2", "A"], ["b", "B"], ["b9", "B"]]);
+    const sum = chainSummaryOf(log, beat, sides);
+    expect(chainSideText(sum.A!)).toBe("+5 PWR · Shield ×2");
+    expect(chainSideText(sum.B!)).toBe("−4 dmg · 1 summoned · 1 fell");
   });
 
   test("a quiet beat (one wave of plain hits) stays at 0.9 s and is shorter than a kill", () => {

@@ -264,8 +264,22 @@ const CARD_NAME_MIN_PX = 9;
  * not guessed from letter counts; one that still doesn't fit at the smallest
  * size ends in an ellipsis. */
 export function fitText(root: ParentNode = app): void {
-  for (const el of root.querySelectorAll<HTMLElement>(FIT)) {
-    if (!el.isConnected || el.clientWidth === 0) continue;
+  // Read every width first, in one layout, then write (#913): measuring each
+  // line after the last one's write forced a layout per name, every redraw.
+  const els = [...root.querySelectorAll<HTMLElement>(FIT)].map((el) => ({ el, w: el.isConnected ? el.clientWidth : 0 }));
+  const misses: { el: HTMLElement; key: string }[] = [];
+  for (const { el, w } of els) {
+    if (w === 0) continue;
+    // A line fitted before at this width with this text and font fits the
+    // same: a battle redraws the same names every wave.
+    const key = `${el.className}|${el.style.fontSize}|${w}|${el.closest(".bv-card, .card")?.className ?? ""}|${el.textContent}`;
+    const hit = fitted.get(key);
+    if (hit) {
+      el.style.fontSize = hit.px;
+      el.classList.toggle("clip", hit.clip);
+    } else misses.push({ el, key });
+  }
+  for (const { el, key } of misses) {
     el.style.fontSize = "";
     el.classList.remove("clip");
     let px = parseFloat(getComputedStyle(el).fontSize);
@@ -275,8 +289,14 @@ export function fitText(root: ParentNode = app): void {
       el.style.fontSize = `${px}px`;
     }
     if (el.scrollWidth > el.clientWidth + 0.5) el.classList.add("clip");
+    if (fitted.size > 2000) fitted.clear();
+    fitted.set(key, { px: el.style.fontSize, clip: el.classList.contains("clip") });
   }
 }
+/** Each fitted line's size, by its text, classes, card and width (#913). */
+const fitted = new Map<string, { px: string; clip: boolean }>();
+// A font arriving changes every measure.
+const refit = () => fitted.clear();
 
 let fitQueued = false;
 const queueFit = () => {
@@ -288,7 +308,7 @@ const queueFit = () => {
   });
 };
 new MutationObserver(queueFit).observe(app, { childList: true, subtree: true });
-addEventListener("resize", queueFit);
-void document.fonts?.ready.then(queueFit);
+addEventListener("resize", () => { refit(); queueFit(); });
+void document.fonts?.ready.then(() => { refit(); queueFit(); });
 // A name measured in a fallback font is cut wrongly: measure again once a font arrives.
-document.fonts?.addEventListener?.("loadingdone", queueFit);
+document.fonts?.addEventListener?.("loadingdone", () => { refit(); queueFit(); });

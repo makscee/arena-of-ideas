@@ -1587,3 +1587,24 @@ button.reroll-btn:disabled .cost-chip { background: var(--soft); }
 .card .tier.t2 { background: var(--tier-2); }
 .card .tier.t3 { background: var(--tier-3); }
 .card .tier.t4 { background: var(--tier-4); }
+
+/* ---------- a chain you can read (#913) ---------- */
+/* The card acting in a chain's link wears the link's number, top left. */
+.bv-card > .bv-chain-chip { position: absolute; bottom: 4px; left: 4px; z-index: 4; min-width: 26px; height: 26px; padding: 0 5px; border-radius: 13px; display: inline-flex; align-items: center; justify-content: center; background: var(--action); color: var(--outline); border: 2px solid var(--outline); box-shadow: 2px 2px 0 var(--outline); font-family: var(--font-head, inherit); font-size: 15px; line-height: 1; pointer-events: none; animation: bv-chip-in calc(220ms / var(--bv-sp, 1)) ease-out backwards; }
+.bv-card > .bv-chain-chip.still { animation: none; }
+@keyframes bv-chip-in { from { transform: scale(0.4); opacity: 0; } to { transform: none; opacity: 1; } }
+/* "Chain 3/12" leads the caption. */
+.bv-cap-chain { display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: 8px; background: var(--action); color: var(--outline); font-size: 0.8em; font-weight: 700; line-height: 1.35; text-shadow: none; white-space: nowrap; }
+/* The chain's summary below the board, at its last link. */
+.bv-chainbox:empty { display: none; }
+.bv-chain-sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 6px 10px; border: 2px solid var(--outline); border-radius: 10px; background: var(--panel); box-shadow: 3px 3px 0 var(--outline); font-size: 14px; font-weight: 600; line-height: 1.35; animation: bv-chip-in 220ms ease-out backwards; }
+.bv-chain-of { color: var(--action); font-weight: 700; }
+.bv-chain-side { display: inline-flex; flex-wrap: wrap; gap: 0 5px; align-items: baseline; }
+button.bv-skip { white-space: nowrap; flex: 0 0 auto; width: auto; padding: 0 12px; }
+/* The phone's row is full: while a chain plays, Skip stands where End is. */
+@media (max-width: 1023.98px) { .bv-controls.chain [data-testid="battle-end"] { display: none; } button.bv-skip { font-size: 13px; padding: 0 8px; } }
+@media (prefers-reduced-motion: reduce) { .bv-card > .bv-chain-chip, .bv-chain-sum { animation: none; } }
+@media (min-width: 1024px) {
+  #app[data-screen="battle"] .bv-chainbox { display: flex; justify-content: center; }
+  #app[data-screen="battle"] .bv-chain-sum { font-size: 16px; max-width: 900px; }
+}
