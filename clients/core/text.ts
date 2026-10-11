@@ -3,7 +3,7 @@
 // helpers the phone uses (src/mvp/form-text.ts for card text, src/mvp/trace.ts
 // for battle rows and the why-chain, src/glossary.ts), so the words match the
 // app's. English by default; `lang: "ru"` reads Russian where the app does.
-import type { BattleRecord, FightResult, LineUnit, MvpContent, MvpRules, RunView, UnitContent } from "../../src/mvp/contract.js";
+import type { BattleRecord, FightResult, HomeView, LineUnit, MvpContent, MvpRules, RunView, UnitContent } from "../../src/mvp/contract.js";
 import type { Lang } from "../../src/describe.js";
 import { GLOSSARY, termDef, type FixedTermId, type TermId } from "../../src/glossary.js";
 import { formText } from "../../src/mvp/form-text.js";
@@ -80,6 +80,25 @@ export function runText(run: RunView, content: MvpContent, rules: MvpRules, o: T
   }
   const last = run.fights.at(-1);
   if (last) out.push(`LAST   ${fightText(last)}`);
+  return out.join("\n");
+}
+
+/** The title screen as text: who you are, the day and its champion, the runs
+ * going (ranked and practice), the ideas held. A home with no rating is a
+ * caller with no login. */
+export function homeText(h: HomeView, content: MvpContent, o: TextOpts = {}): string {
+  const out: string[] = [];
+  const r = h.rating;
+  if (r) out.push(`@${r.player.name} · rating ${r.rating} · ${r.runs} runs · ${r.slays} slays · ${r.daysAsChampion} days as champion`);
+  else out.push("Not logged in: use login (email code) or set ARENA_TOKEN.");
+  out.push(`Day ${h.day.seq} (${h.day.day}), ends ${h.day.endsAt} · ${h.day.slayers} slayer${h.day.slayers === 1 ? "" : "s"} so far`);
+  const c = h.day.champion;
+  if (c) out.push(`Champion: @${c.player.name} (since ${c.since})`, ...c.line.map((u) => `  ${lineUnitText(u, content, o)}`));
+  else out.push("Champion: none yet");
+  if (r) {
+    out.push(`Ranked run: ${h.activeRunId ?? "none"} (needs your tap on the phone; agents can read it) · Practice run: ${h.practiceRunId ?? "none (start_run begins one)"}`);
+    if (h.ideas) out.push(`Ideas: ${h.ideas.held}/${h.ideas.perDay} held${h.ideas.ready ? `, ${h.ideas.ready} ready for your pick` : ""}`);
+  }
   return out.join("\n");
 }
 
