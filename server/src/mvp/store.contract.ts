@@ -52,6 +52,21 @@ export function describeMvpStore(name: string, make: () => MvpStore): void {
       expect(store.activeRun("p1")).toBeUndefined();
     });
 
+    it("keeps one active run of each mode: ranked by default, practice by name (#958)", () => {
+      const store = make();
+      const practice = { ...run("r2", maks), mode: "practice" as const };
+      store.putRun(practice);
+      expect(store.activeRun("p1")).toBeUndefined();
+      expect(store.activeRun("p1", "practice")?.runId).toBe("r2");
+      store.putRun(run("r1", maks));
+      expect(store.activeRun("p1")?.runId).toBe("r1");
+      expect(store.activeRun("p1", "ranked")?.runId).toBe("r1");
+      expect(store.run("r2")).toEqual(practice);
+      store.putRun({ ...practice, phase: "over", endedBy: "abandoned" });
+      expect(store.activeRun("p1", "practice")).toBeUndefined();
+      expect(store.activeRun("p1")?.runId).toBe("r1");
+    });
+
     it("serves ghosts at the round, never the player's own, made on any pool", () => {
       const store = make();
       const ghost = (ghostId: string, player: PlayerRef, round: number, contentVersion: string): Ghost => ({ ghostId, runId: `run-${ghostId}`, player, round, line: [], contentVersion, createdAt: "t", rating: 1000 });

@@ -3,7 +3,7 @@
   "info": {
     "title": "Arena of Ideas",
     "version": "1",
-    "description": "The game's HTTP JSON API, generated from src/mvp/routes.ts. Battle logs follow battle-events/1 (protocol/battle-events.md). /api/v1 and battle-events/1 only gain things (fields, routes, event and type kinds); renaming or removing one means /api/v2. A client ignores fields and event types it doesn't know."
+    "description": "The game's HTTP JSON API, generated from src/mvp/routes.ts. Battle logs follow battle-events/1 (protocol/battle-events.md). /api/v1 and battle-events/1 only gain things (fields, routes, event and type kinds); renaming or removing one means /api/v2. A client ignores fields and event types it doesn't know. Agent clients send X-Arena-Client: agent/<name> and play practice runs only (assist only, #958)."
   },
   "servers": [
     {
@@ -2379,6 +2379,12 @@
               "null"
             ]
           },
+          "practiceRunId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "dev": {
             "type": "boolean"
           },
@@ -3389,6 +3395,13 @@
           "abandoned"
         ]
       },
+      "RunMode": {
+        "type": "string",
+        "enum": [
+          "ranked",
+          "practice"
+        ]
+      },
       "RunPhase": {
         "type": "string",
         "enum": [
@@ -3405,6 +3418,9 @@
           },
           "player": {
             "$ref": "#/components/schemas/PlayerRef"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/RunMode"
           },
           "contentVersion": {
             "type": "string"
@@ -3702,6 +3718,14 @@
             "$ref": "#/components/schemas/AbilityRef"
           }
         ]
+      },
+      "StartRunRequest": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/RunMode"
+          }
+        }
       },
       "StartedResponse": {
         "type": "object",
@@ -4507,6 +4531,18 @@
         ]
       }
     },
+    "parameters": {
+      "client": {
+        "name": "X-Arena-Client",
+        "in": "header",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "pattern": "^agent/"
+        },
+        "description": "#958, assist only: `agent/<name>` from an agent client (MCP, the Claude Code mod). It may read, preview, log in and play practice runs; other writes answer 403."
+      }
+    },
     "securitySchemes": {
       "token": {
         "type": "apiKey",
@@ -4537,6 +4573,11 @@
         "operationId": "getHealth",
         "summary": "The server: API version, content version, deployed build, and which logins are on.",
         "description": "The server: API version, content version, deployed build, and which logins are on.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -4566,6 +4607,11 @@
         "operationId": "getContent",
         "summary": "The live pool: rules, units, summons, glossary.",
         "description": "The live pool: rules, units, summons, glossary.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -4595,6 +4641,11 @@
         "operationId": "postPlayers",
         "summary": "A device identity on an open server.",
         "description": "A device identity on an open server. 403 on an invite-only server.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -4634,6 +4685,11 @@
         "operationId": "postInvitesLookup",
         "summary": "Whose invite link it is, opening nothing (slice 13).",
         "description": "Whose invite link it is, opening nothing (slice 13). 404 unknown code.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -4673,6 +4729,11 @@
         "operationId": "postInvitesRedeem",
         "summary": "Opens an invite link: the same link again is the same player with a new token; a player keeps their newest 10 devices' tokens.",
         "description": "Opens an invite link: the same link again is the same player with a new token; a player keeps their newest 10 devices' tokens. 404 unknown code.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -4712,6 +4773,11 @@
         "operationId": "postJoinCheck",
         "summary": "Is this the open join link (R4-20)? 404 if not.",
         "description": "Is this the open join link (R4-20)? 404 if not.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -4751,6 +4817,11 @@
         "operationId": "postJoin",
         "summary": "A new player through the open join link, never admin, with their own invite.",
         "description": "A new player through the open join link, never admin, with their own invite. 404 not the join code, 409 a taken or bot's name, 400 a bad name, 429 over 30 joins an hour.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -4790,6 +4861,11 @@
         "operationId": "postAuthEmailStart",
         "summary": "Mails a 6-digit code to `email`, for sign-in or sign-up, or with a session to attach it; never says whether the email has a player (#929).",
         "description": "Mails a 6-digit code to `email`, for sign-in or sign-up, or with a session to attach it; never says whether the email has a player (#929). 400 a bad email or name, 404 email login off, 429 a code a minute per email or too many this hour, 502 not sent.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -4829,6 +4905,11 @@
         "operationId": "postAuthEmailVerify",
         "summary": "A known email logs in; a new one with `name` makes the player (with `join` on an invite-only server); without `name` \"needsName\" and the code stays.",
         "description": "A known email logs in; a new one with `name` makes the player (with `join` on an invite-only server); without `name` \"needsName\" and the code stays. 400 a wrong code (5 tries), 404 no code or expired, 403 invite only, 409 name taken.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -4868,6 +4949,11 @@
         "operationId": "postAuthEmailAttach",
         "summary": "Ties the email to the caller, who has none yet, with the code from a start sent with their session.",
         "description": "Ties the email to the caller, who has none yet, with the code from a start sent with their session. 409 the email has a player.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -4885,6 +4971,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EmailStatus"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An agent client (X-Arena-Client: agent/…): agents don't make this move, a human does.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -4907,6 +5003,11 @@
         "operationId": "getAuthEmail",
         "summary": "Is email login on, and the caller's email.",
         "description": "Is email login on, and the caller's email.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -4936,6 +5037,11 @@
         "operationId": "postAuthTelegramStart",
         "summary": "A one-time login code and its t.me deep link, for the caller (Link Telegram) or for none (Log in) (M4-6).",
         "description": "A one-time login code and its t.me deep link, for the caller (Link Telegram) or for none (Log in) (M4-6). 404 Telegram login off, 403 a bot or an admin, 409 already linked, 429 over 20 an hour.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -4943,6 +5049,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TelegramStart"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An agent client (X-Arena-Client: agent/…) with a session: agents log in, never link a login.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -4965,6 +5081,11 @@
         "operationId": "postAuthTelegramPoll",
         "summary": "\"waiting\" until Yes in the bot, then the session, once; \"declined\" after No.",
         "description": "\"waiting\" until Yes in the bot, then the session, once; \"declined\" after No. 404 unknown, expired or used: start again.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -5004,6 +5125,11 @@
         "operationId": "getAuthTelegram",
         "summary": "Is Telegram login on, is the caller linked.",
         "description": "Is Telegram login on, is the caller linked.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -5033,6 +5159,11 @@
         "operationId": "postAuthTelegramUnlink",
         "summary": "Unlinks the caller's Telegram.",
         "description": "Unlinks the caller's Telegram.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -5040,6 +5171,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TelegramStatus"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An agent client (X-Arena-Client: agent/…): agents don't make this move, a human does.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -5060,8 +5201,13 @@
     "/api/v1/home": {
       "get": {
         "operationId": "getHome",
-        "summary": "The home screen: rules, the day, the caller's rating and active run.",
-        "description": "The home screen: rules, the day, the caller's rating and active run.",
+        "summary": "The home screen: rules, the day, the caller's rating, active run and practice run.",
+        "description": "The home screen: rules, the day, the caller's rating, active run and practice run.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -5089,8 +5235,23 @@
     "/api/v1/runs": {
       "post": {
         "operationId": "postRuns",
-        "summary": "Starts a run; the player's active run if one is going.",
-        "description": "Starts a run; the player's active run if one is going.",
+        "summary": "Starts a run, ranked unless `mode` is \"practice\" (#958); the player's run of that mode if one is going.",
+        "description": "Starts a run, ranked unless `mode` is \"practice\" (#958); the player's run of that mode if one is going.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartRunRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "OK",
@@ -5098,6 +5259,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RunView"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An agent client (X-Arena-Client: agent/…) on a ranked run: agents play practice runs only.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -5128,6 +5299,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/client"
           }
         ],
         "responses": {
@@ -5167,6 +5341,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/client"
           }
         ],
         "requestBody": {
@@ -5186,6 +5363,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DecisionResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An agent client (X-Arena-Client: agent/…) on a ranked run: agents play practice runs only.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -5216,6 +5403,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/client"
           }
         ],
         "requestBody": {
@@ -5265,6 +5455,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/client"
           }
         ],
         "responses": {
@@ -5274,6 +5467,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RunView"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An agent client (X-Arena-Client: agent/…) on a ranked run: agents play practice runs only.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -5304,6 +5507,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/client"
           }
         ],
         "responses": {
@@ -5335,6 +5541,11 @@
         "operationId": "getIdeas",
         "summary": "The caller's own ideas only (M2-4).",
         "description": "The caller's own ideas only (M2-4). 401 without a player.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -5362,6 +5573,11 @@
         "operationId": "postIdeas",
         "summary": "Writes one, spending a held idea (M2-4).",
         "description": "Writes one, spending a held idea (M2-4). 400 text not IDEA_TEXT_MIN–MAX characters, 409 no idea held; kind \"evolve\" proposes a new version of `target` (M3-4): 404 no such unit, 409 the target isn't in the Library.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -5379,6 +5595,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MyIdeasView"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An agent client (X-Arena-Client: agent/…): agents don't make this move, a human does.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -5409,6 +5635,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/client"
           }
         ],
         "responses": {
@@ -5418,6 +5647,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MyIdeasView"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An agent client (X-Arena-Client: agent/…): agents don't make this move, a human does.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -5448,6 +5687,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/client"
           }
         ],
         "responses": {
@@ -5487,6 +5729,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/client"
           }
         ],
         "requestBody": {
@@ -5506,6 +5751,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MyIdeasView"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An agent client (X-Arena-Client: agent/…): agents don't make this move, a human does.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -5536,6 +5791,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/client"
           }
         ],
         "requestBody": {
@@ -5555,6 +5813,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MyIdeasView"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An agent client (X-Arena-Client: agent/…): agents don't make this move, a human does.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -5585,6 +5853,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/client"
           }
         ],
         "responses": {
@@ -5594,6 +5865,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MyIdeasView"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An agent client (X-Arena-Client: agent/…): agents don't make this move, a human does.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -5616,6 +5897,11 @@
         "operationId": "getVotesNext",
         "summary": "Never the caller's own candidate, nor a pair they voted on (M2-8); new versions, and \"unchanged\" open to anyone (M3-6).",
         "description": "Never the caller's own candidate, nor a pair they voted on (M2-8); new versions, and \"unchanged\" open to anyone (M3-6).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -5645,6 +5931,11 @@
         "operationId": "postVotes",
         "summary": "Votes, and the next card.",
         "description": "Votes, and the next card. 404 no such candidate or live unit, 400 a pick of neither, 409 already voted on this pair, or the caller's own candidate, or a bot.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -5662,6 +5953,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/VoteCardResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An agent client (X-Arena-Client: agent/…): agents don't make this move, a human does.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -5684,6 +5985,11 @@
         "operationId": "getFusions",
         "summary": "Every fusion found so far, with its credit (slice 10).",
         "description": "Every fusion found so far, with its credit (slice 10).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -5716,6 +6022,11 @@
         "operationId": "getDay",
         "summary": "Today: the champion, slayers, the throne (slice 5).",
         "description": "Today: the champion, slayers, the throne (slice 5).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -5745,6 +6056,11 @@
         "operationId": "getStats",
         "summary": "Unit win and pick rates, champions (slice 11).",
         "description": "Unit win and pick rates, champions (slice 11).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -5774,6 +6090,11 @@
         "operationId": "getCredits",
         "summary": "Authors, NEW, the caller's creator number (M2-9).",
         "description": "Authors, NEW, the caller's creator number (M2-9).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -5803,6 +6124,11 @@
         "operationId": "getLibrary",
         "summary": "The units that have left the pool (M2-9).",
         "description": "The units that have left the pool (M2-9).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -5840,6 +6166,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/client"
           }
         ],
         "responses": {
@@ -5880,6 +6209,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/client"
           }
         ],
         "responses": {
@@ -5912,6 +6244,11 @@
         "operationId": "getSchemaJson",
         "summary": "This protocol's types (protocol/schema.json, #957).",
         "description": "This protocol's types (protocol/schema.json, #957).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -5941,6 +6278,11 @@
         "operationId": "getOpenapiJson",
         "summary": "This route table as OpenAPI 3.1 (protocol/openapi.json, #957).",
         "description": "This route table as OpenAPI 3.1 (protocol/openapi.json, #957).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -5970,6 +6312,11 @@
         "operationId": "postDevTelegramAccept",
         "summary": "The fake bot's user sends /start <code>, then taps Yes, or No with decline: true.",
         "description": "The fake bot's user sends /start <code>, then taps Yes, or No with decline: true. Only with ARENA_TELEGRAM_FAKE=1.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -5987,6 +6334,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ReplyResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An agent client (X-Arena-Client: agent/…): agents don't make this move, a human does.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -6010,6 +6367,11 @@
         "operationId": "postDevMailLast",
         "summary": "The last code mailed to `email`.",
         "description": "The last code mailed to `email`. Only with ARENA_MAIL_FAKE=1.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -6050,6 +6412,11 @@
         "operationId": "postDevEndDay",
         "summary": "Ends the day now (slice 5).",
         "description": "Ends the day now (slice 5). Only with MVP_DEV=1.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -6057,6 +6424,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DayView"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An agent client (X-Arena-Client: agent/…): agents don't make this move, a human does.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -6080,6 +6457,11 @@
         "operationId": "postDevGrantIdea",
         "summary": "+1 idea up to the cap (M2-3).",
         "description": "+1 idea up to the cap (M2-3). Only with MVP_DEV=1.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -6087,6 +6469,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/IdeasView"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An agent client (X-Arena-Client: agent/…): agents don't make this move, a human does.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -6110,6 +6502,11 @@
         "operationId": "postDevCreditUnit",
         "summary": "The unit becomes the caller's idea, entered today (M2-9).",
         "description": "The unit becomes the caller's idea, entered today (M2-9). Only with MVP_DEV=1.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -6127,6 +6524,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CreditsView"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An agent client (X-Arena-Client: agent/…): agents don't make this move, a human does.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -6150,6 +6557,11 @@
         "operationId": "postDevOvernightCheck",
         "summary": "Starts the simulation on every `simulating` idea (M2-8).",
         "description": "Starts the simulation on every `simulating` idea (M2-8). Only with MVP_DEV=1.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -6157,6 +6569,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StartedResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An agent client (X-Arena-Client: agent/…): agents don't make this move, a human does.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -6180,6 +6602,11 @@
         "operationId": "postDevSeedCandidate",
         "summary": "The caller's idea in `simulating`: a renamed live unit, `unit`'s or a random one (M2-8).",
         "description": "The caller's idea in `simulating`: a renamed live unit, `unit`'s or a random one (M2-8). Only with MVP_DEV=1.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -6197,6 +6624,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MyIdeasView"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An agent client (X-Arena-Client: agent/…): agents don't make this move, a human does.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -6220,6 +6657,11 @@
         "operationId": "postDevFakeVotes",
         "summary": "5 fake votes on each candidate, 4 for it (M2-8).",
         "description": "5 fake votes on each candidate, 4 for it (M2-8). Only with MVP_DEV=1.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -6230,6 +6672,16 @@
                   "items": {
                     "$ref": "#/components/schemas/CandidateScore"
                   }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "An agent client (X-Arena-Client: agent/…): agents don't make this move, a human does.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -6253,6 +6705,11 @@
         "operationId": "getDevCandidates",
         "summary": "Every candidate, qualified ones first, best first (M2-8).",
         "description": "Every candidate, qualified ones first, best first (M2-8). Only with MVP_DEV=1.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/client"
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",

@@ -7,7 +7,8 @@ import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, TOKEN_HEADER, type Decision, type HomeView, type PlayerRef, type EmailVerify, type TelegramPoll, type TelegramStatus, type VoteRequest } from "../../../src/mvp/contract.js";
+import { CLIENT_HEADER, isAgentClient, MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, TOKEN_HEADER, type Decision, type HomeView, type PlayerRef, type RunMode, type EmailVerify, type TelegramPoll, type TelegramStatus, type VoteRequest } from "../../../src/mvp/contract.js";
+import { API_ROUTES } from "../../../src/mvp/routes.js";
 import { checkDecision, MvpBadDecision, MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
 import { creditsView, creditUnit, libraryView } from "./credits.js";
 import { dayView, endDay, hiddenSlay } from "./day.js";
@@ -23,6 +24,18 @@ import { statsView } from "./stats.js";
 import { attachEmail, EMAIL_STARTS_PER_ADDRESS_HOUR, EMAIL_STARTS_PER_HOUR, EmailRefused, emailRequired, emailStatus, FakeMailer, startEmailLogin, verifyEmailLogin } from "./email.js";
 import { FakeTelegram, pollTelegramLogin, startTelegramLogin, TELEGRAM_STARTS_PER_HOUR, TelegramRefused } from "./telegram.js";
 import { candidateScores, castVote, fakeVotes, nextCard, overnightCheck, seedCandidate, waitingForCheck } from "./votes.js";
+
+/** #958, assist only: what an agent client (CLIENT_HEADER) hears from a
+ * write it may not make (ApiRoute.agent). */
+export const AGENT_REFUSED = {
+  move: "Agents can't make this move: it needs a human's tap.",
+  ranked: "Agents play practice runs only: a ranked move needs a human's tap.",
+  link: "Agents log in, never link a login.",
+} as const;
+
+/** The POST paths an agent client may call (ApiRoute.agent), as patterns on
+ * the full path. */
+const AGENT_WRITES = API_ROUTES.filter((r) => r.method === "POST" && r.agent).map((r) => new RegExp(`^${MVP_API_PREFIX}${r.path.replace(/:\w+/g, "[^/]+")}$`));
 
 /** New players the open join link (R4-20) makes per hour, server-wide. */
 export const JOINS_PER_HOUR = 30;
@@ -64,6 +77,14 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   api.use("*", async (c, next) => {
     const token = c.req.header(TOKEN_HEADER);
     if (token && !/\/(invites|join|auth\/telegram\/(start|poll)|auth\/email\/(start|verify))(\/|$)/.test(c.req.path) && !sessionPlayer(store, token)) return unknownPlayer(c);
+    await next();
+  });
+  // #958, assist only: an agent client reads anything and writes only through
+  // the routes ./routes.ts opens to it; POST /runs, decide and abandon check
+  // the run's mode, Telegram's start the session.
+  const agent = (c: Context) => isAgentClient(c.req.header(CLIENT_HEADER));
+  api.use("*", async (c, next) => {
+    if (agent(c) && c.req.method !== "GET" && !AGENT_WRITES.some((re) => re.test(c.req.path))) return bad(c, 403, AGENT_REFUSED.move);
     await next();
   });
   // A decision's body is read only from a known player.
@@ -207,6 +228,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   api.post("/auth/telegram/start", (c) => {
     if (!rt.telegram) return bad(c, 404, "Telegram login is off");
     const p = playerOf(c);
+    if (p && agent(c)) return bad(c, 403, AGENT_REFUSED.link);
     const key = p ? `player:${p.id}` : `address:${addressOf(c)}`;
     const now = rt.now();
     const recent = (tgStarts.get(key) ?? []).filter((t) => t > now.getTime() - 3_600_000);
@@ -243,6 +265,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
       day: dayView(rt),
       rating: p ? store.rating(p.id) ?? { player: p, rating: rt.rules.ratingStart, runs: 0, slays: 0, daysAsChampion: 0, playoffWins: 0 } : null,
       activeRunId: p ? store.activeRun(p.id)?.runId ?? null : null,
+      ...(p ? { practiceRunId: store.activeRun(p.id, "practice")?.runId ?? null } : {}),
       dev: devFor(c),
       ideas: p ? ideasOf(rt, p.id) : null,
       telegram: p ? tgStatus(p) : null,
@@ -251,11 +274,16 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     return c.json(home);
   });
 
-  api.post("/runs", (c) => {
+  api.post("/runs", async (c) => {
+    // No body (the phone) is a ranked run.
+    const body = (await c.req.json().catch(() => null)) as { mode?: unknown } | null;
     const p = playerOf(c);
     if (!p) return unknownPlayer(c);
+    const mode = body?.mode ?? "ranked";
+    if (mode !== "ranked" && mode !== "practice") return bad(c, 400, 'mode is "ranked" or "practice"');
+    if (mode === "ranked" && agent(c)) return bad(c, 403, AGENT_REFUSED.ranked);
     if (emailRequired(rt) && !p.bot && !store.emailLink({ playerId: p.id })) return bad(c, 403, "Add your email first.");
-    return c.json(runView(startRun(rt, p)));
+    return c.json(runView(startRun(rt, p, mode as RunMode)));
   });
 
   // Only the run's player reads it: a round fight's ghostId names the
@@ -299,6 +327,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   api.post("/runs/:runId/decisions", async (c) => {
     const req = runAndDecision(c, await c.req.json().catch(() => null));
     if (req instanceof Response) return req;
+    if (agent(c) && req.run.mode !== "practice") return bad(c, 403, AGENT_REFUSED.ranked);
     try {
       return c.json(decide(rt, req.run, req.d));
     } catch (err) {
@@ -312,6 +341,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     const run = store.run(c.req.param("runId"));
     if (!run) return bad(c, 404, "no such run");
     if (playerOf(c)?.id !== run.player.id) return bad(c, 401, "not your run");
+    if (agent(c) && run.mode !== "practice") return bad(c, 403, AGENT_REFUSED.ranked);
     try {
       return c.json(abandon(rt, run));
     } catch (err) {

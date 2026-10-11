@@ -9,6 +9,11 @@
 // and votes on the cards it's shown; it starts the overnight check now and
 // then. The summary gains `ideas: {written, picked, voted, failed}`. Never on
 // the live game: bots don't submit ideas there (Maks, mission #735).
+//
+// Then an agent client (#958, assist only): a player sending
+// X-Arena-Client: agent/mvp-bot plays one practice run to the end, its rating
+// untouched, and gets 403 on a ranked start and on a ranked decide. The
+// summary gains `agent: {practice, refused}`.
 //   npm run mvp:bot -- [--runs 50] [--url http://127.0.0.1:8791/arena] [--no-ideas]
 import { serve } from "@hono/node-server";
 import type { AddressInfo } from "node:net";
@@ -224,11 +229,47 @@ if (ideasOn) {
     console.error(`the idea path stalled: ${JSON.stringify(ideas)}`);
   }
 }
+// #958: the agent client. Its own player, so the bots' runs above don't mix in.
+const agent = { practice: 0, refused: 0 };
+try {
+  player = (await call<PlayerRef>("POST", "/players", { name: `agent-${tag}` })).id;
+  const ranked = await call<RunView>("POST", "/runs");
+  const ratingBefore = (await call<HomeView>("GET", "/home")).rating;
+  conn.client = "agent/mvp-bot";
+  for (const [method, path, body] of [
+    ["POST", "/runs", undefined],
+    ["POST", `/runs/${ranked.runId}/decisions`, { kind: "reroll" }],
+  ] as const) {
+    try {
+      await call(method, path, body);
+      throw new Error(`agent client: ${method} ${path} went through on a ranked run`);
+    } catch (e) {
+      if (!(e instanceof ApiError && e.status === 403)) throw e;
+      agent.refused++;
+    }
+  }
+  let run = await call<RunView>("POST", "/runs", { mode: "practice" });
+  if (run.mode !== "practice") throw new Error(`agent client: POST /runs {mode: "practice"} gave a ${run.mode ?? "ranked"} run`);
+  for (let guard = 0, rerolled = 0, round = run.round; run.phase !== "over" && guard < 1000; guard++) {
+    if (run.round !== round) [round, rerolled] = [run.round, 0];
+    const d = botDecision(run, content, MVP_RULES, rerolled);
+    if (d.kind === "reroll") rerolled++;
+    run = (await call<DecisionResponse>("POST", `/runs/${run.runId}/decisions`, d)).run;
+  }
+  if (run.phase !== "over" || run.rating !== null) throw new Error(`agent client: practice run ${run.runId} ended ${run.phase}/${run.endedBy} with rating ${JSON.stringify(run.rating)}`);
+  const home = await call<HomeView>("GET", "/home");
+  if (JSON.stringify(home.rating) !== JSON.stringify(ratingBefore) || home.activeRunId !== ranked.runId) throw new Error("agent client: a practice run changed the rating or the ranked run");
+  agent.practice++;
+} catch (e) {
+  tally.errors++;
+  console.error(`agent: ${(e as Error).message}`);
+}
+delete conn.client;
 close();
 // Slice 6 seeds a champion at start: a run that survives round 12 meets it.
 if (tally.ends["no-champion"]) {
   tally.errors++;
   console.error(`${tally.ends["no-champion"]} runs found no champion at the Crown`);
 }
-console.log(JSON.stringify({ ...tally, ...(ideasOn ? { ideas, retaken } : {}), ms: Date.now() - t0 }));
+console.log(JSON.stringify({ ...tally, ...(ideasOn ? { ideas, retaken } : {}), agent, ms: Date.now() - t0 }));
 process.exit(tally.errors === 0 && tally.runs === runs ? 0 : 1);

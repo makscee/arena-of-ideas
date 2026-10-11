@@ -2371,6 +2371,12 @@
             "null"
           ]
         },
+        "practiceRunId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "dev": {
           "type": "boolean"
         },
@@ -3381,6 +3387,13 @@
         "abandoned"
       ]
     },
+    "RunMode": {
+      "type": "string",
+      "enum": [
+        "ranked",
+        "practice"
+      ]
+    },
     "RunPhase": {
       "type": "string",
       "enum": [
@@ -3397,6 +3410,9 @@
         },
         "player": {
           "$ref": "#/definitions/PlayerRef"
+        },
+        "mode": {
+          "$ref": "#/definitions/RunMode"
         },
         "contentVersion": {
           "type": "string"
@@ -3694,6 +3710,14 @@
           "$ref": "#/definitions/AbilityRef"
         }
       ]
+    },
+    "StartRunRequest": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "$ref": "#/definitions/RunMode"
+        }
+      }
     },
     "StartedResponse": {
       "type": "object",

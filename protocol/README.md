@@ -29,3 +29,20 @@ A client that reads battles and cards without the DOM or Node starts from `clien
 Send `X-Arena-Token: <token>` from a `PlayerSession` (invite link, join link, email or Telegram
 login). On an open dev server, `POST /players {name}` returns an id to send as `X-Arena-Player`.
 Errors are `{ "error": string }` with a 4xx or 5xx status.
+
+## Agents: assist only
+
+An agent client (an MCP server, the Claude Code mod, any bot acting for a player) sends
+`X-Arena-Client: agent/<name>` (`client` in `clients/core`'s `Connection`). With it the server
+allows reads, `preview` of any move, logging in, and practice runs; a move that counts needs a
+human's tap, so every other write answers `403`: a ranked start, decide or abandon, ideas, votes,
+linking a login, the dev tools. Which writes are open is `agent` in `src/mvp/routes.ts`; the
+OpenAPI file lists each route's `403`.
+
+A practice run is `POST /runs {"mode": "practice"}`. It plays the same shops, ghosts and Crown,
+and counts for nothing: no rating, never a Slay (so never the throne), no ghost saved, no stats,
+no fusion credit (a pair nobody has fused shows a provisional name). A player may have one ranked
+and one practice run going; `GET /home` shows both (`activeRunId`, `practiceRunId`).
+
+Until per-player API tokens (mission #955, slice 5) this is an honest-client rule: our clients
+send the header, a hand-written one could leave it out.

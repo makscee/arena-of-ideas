@@ -461,10 +461,19 @@ export interface BattleRecord {
  * null) only marks runs ended that way before M2-2. */
 export type RunPhase = "shop" | "crown" | "over";
 export type RunEndReason = "out-of-hearts" | "crown-won" | "crown-lost" | "no-champion" | "content-changed" | "abandoned";
+/** #958: a ranked run counts. A practice run plays the same shops, ghosts and
+ * Crown and counts for nothing: no rating, never a Slay (so never the
+ * throne), no ghost saved, no stats, no fusion credit (a pair nobody has
+ * fused shows a provisional name and is named for good only by a ranked
+ * fuse). A player may have one of each going. Agent clients (CLIENT_HEADER)
+ * play practice runs only. */
+export type RunMode = "ranked" | "practice";
 
 export interface RunView {
   runId: string;
   player: PlayerRef;
+  /** "practice" on a practice run (#958); absent on a ranked one. */
+  mode?: RunMode;
   contentVersion: string;
   phase: RunPhase;
   /** 1..rules.rounds; rules.rounds + 1 means the Crown fight is next. */
@@ -646,6 +655,8 @@ export interface HomeView {
   /** Null before the player's first run. */
   rating: Rating | null;
   activeRunId: string | null;
+  /** #958: the player's practice run going, if any (absent without a player). */
+  practiceRunId?: string | null;
   /** True on a dev server (MVP_DEV=1) for a player who may use the dev tools
    * (anyone on an open server, only admin invites on an invite-only one):
    * the title menu shows them ("End day now"); every other player never does. */
@@ -918,6 +929,15 @@ export interface MyIdeasView {
 export const PLAYER_HEADER = "X-Arena-Player";
 /** Slice 13: the session token from POST /invites/redeem. */
 export const TOKEN_HEADER = "X-Arena-Token";
+/** #958, assist only: an agent client (an MCP server, the Claude Code mod)
+ * sends `agent/<name>`. It may read anything, preview any move, log in, and
+ * start and play practice runs; every other write answers 403 (ranked runs,
+ * ideas, votes, linking a login, dev tools): a move that counts needs a
+ * human's tap. Which writes are open is ApiRoute.agent in ./routes.ts. An
+ * honest-client rule until per-player API tokens (mission #955 slice 5). */
+export const CLIENT_HEADER = "X-Arena-Client";
+/** The CLIENT_HEADER value of an agent client. */
+export const isAgentClient = (value: string | undefined): boolean => /^agent\//i.test(value?.trim() ?? "");
 
 /** An opened invite link: the player it names and this device's token. */
 export interface PlayerSession {
@@ -1006,6 +1026,10 @@ export interface HealthView {
   telegram: false | "bot" | "fake";
   /** Email login: off, SMTP, or the dev fake (#929). */
   mail: false | "smtp" | "fake";
+}
+/** #958: POST /runs's body, optional: no body is a ranked run. */
+export interface StartRunRequest {
+  mode?: RunMode;
 }
 export interface NameRequest {
   name: string;

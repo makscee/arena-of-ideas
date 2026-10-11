@@ -31,6 +31,7 @@ import {
   type PlayerRef,
   type RatingChange,
   type RunEndReason,
+  type RunMode,
   type RunView,
   type UnitContent,
   type UnitId,
@@ -144,7 +145,7 @@ function addUnit(s: MvpRunState, u: UnitContent, content: MvpContent, kind: Deci
 
 /** A new run. The kernel has no clock: the caller passes the day (DayView.seq)
  * and the start time. */
-export function initMvpRun(args: { runId: string; player: PlayerRef; seed: number; content: MvpContent; day: number; startedAt: string; rules?: MvpRules; rating?: number }): MvpRunState {
+export function initMvpRun(args: { runId: string; player: PlayerRef; seed: number; content: MvpContent; day: number; startedAt: string; rules?: MvpRules; rating?: number; mode?: RunMode }): MvpRunState {
   const rules = args.rules ?? MVP_RULES;
   const s: MvpRunState = {
     runId: args.runId,
@@ -171,6 +172,7 @@ export function initMvpRun(args: { runId: string; player: PlayerRef; seed: numbe
     rules,
     ratingAtStart: args.rating ?? (args.player.bot ? rules.botRating : rules.ratingStart),
   };
+  if (args.mode === "practice") s.mode = "practice";
   rollOffers(s, args.content);
   return s;
 }
