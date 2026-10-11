@@ -1601,8 +1601,8 @@ button.reroll-btn:disabled .cost-chip { background: var(--soft); }
 .bv-chain-of { color: var(--action); font-weight: 700; }
 .bv-chain-side { display: inline-flex; flex-wrap: wrap; gap: 0 5px; align-items: baseline; }
 button.bv-skip { white-space: nowrap; flex: 0 0 auto; width: auto; padding: 0 12px; }
-/* The phone's row is full: while a chain plays, Skip stands where End is. */
-@media (max-width: 1023.98px) { .bv-controls.chain [data-testid="battle-end"] { display: none; } button.bv-skip { font-size: 13px; padding: 0 8px; } }
+/* The phone's row is full: while a chain plays, Skip stands where Replay is (End stays). */
+@media (max-width: 1023.98px) { .bv-controls.chain [data-testid="battle-replay"] { display: none; } button.bv-skip { font-size: 13px; padding: 0 8px; } }
 @media (prefers-reduced-motion: reduce) { .bv-card > .bv-chain-chip, .bv-chain-sum { animation: none; } }
 @media (min-width: 1024px) {
   #app[data-screen="battle"] .bv-chainbox { display: flex; justify-content: center; }
