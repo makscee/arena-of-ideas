@@ -1,0 +1,14 @@
+{
+  "name": "arena-of-ideas",
+  "description": "Arena of Ideas' Claude Code mod",
+  "owner": {
+    "name": "makscee"
+  },
+  "plugins": [
+    {
+      "name": "arena",
+      "source": "./clients/claude-code",
+      "description": "Play Arena of Ideas in a pane; the session's Claude coaches and suggests, you send its pick with y"
+    }
+  ]
+}

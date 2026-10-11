@@ -9,5 +9,6 @@ import { defineConfig } from "vitest/config";
 // fails the run with "Timeout calling onTaskUpdate". VITEST_MAX_WORKERS
 // overrides it on an idle machine.
 export default defineConfig({
-  test: { maxWorkers: process.env.VITEST_MAX_WORKERS ?? "50%" },
+  // clients/claude-code/tests run in Claude Code's engine (`claude plugin test clients/claude-code`), not here.
+  test: { maxWorkers: process.env.VITEST_MAX_WORKERS ?? "50%", exclude: ["**/node_modules/**", "clients/claude-code/tests/**"] },
 });

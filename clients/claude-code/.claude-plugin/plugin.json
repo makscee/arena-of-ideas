@@ -1,0 +1,9 @@
+{
+  "name": "arena",
+  "version": "0.1.0",
+  "description": "Play Arena of Ideas in a pane with keys; the session's Claude coaches and suggests, you accept with y (hosted API)",
+  "author": {
+    "name": "makscee"
+  },
+  "types": "./types/index.d.ts"
+}
