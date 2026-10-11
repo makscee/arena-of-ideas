@@ -125,7 +125,7 @@ try {
   // Round 4, note 5: Music under it, on at 40%; the first key started home's loop.
   if ((await page.getByTestId("settings-sheet").getByTestId("music-toggle").textContent())?.includes("on") !== true) errors.push("music: the title menu's toggle isn't on by default");
   if ((await page.getByTestId("settings-sheet").getByTestId("music-volume").inputValue()) !== "40") errors.push("music: the default volume isn't 40");
-  if ((await page.evaluate(() => window.__music?.().track)) !== "home.m4a") errors.push("music: home's loop isn't playing");
+  if (!/^theme\d\.m4a$/.test((await page.evaluate(() => window.__music?.().track)) ?? "")) errors.push("music: home's theme isn't playing (void-board#922: home plays a run theme)");
   await shot("settings");
   await page.getByTestId("sheet-close").click();
   await shot("home"); await noHScroll("home"); await wide("home", 1100); await onScreen("home: Play", page.getByTestId("play"));

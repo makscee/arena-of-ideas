@@ -30,8 +30,9 @@ test("round 3's saved settings gain music on at 40%", () => {
   expect(loadSettings(store)).toEqual({ on: true, volume: 0.3, music: true, musicVolume: 0.4 });
 });
 
-test("home plays the loop; a run keeps one theme, muffled in the shop and open in battle", () => {
+test("home plays a run theme (one music family, void-board#922); a run keeps one theme, muffled in the shop and open in battle", () => {
   expect(sceneTrack("home")).toEqual({ track: HOME_TRACK, muffled: false });
+  expect(THEMES.map((t) => t.file)).toContain(HOME_TRACK.file);
   const shop = sceneTrack("shop", "run-1");
   const battle = sceneTrack("battle", "run-1");
   expect(shop.track).toBe(battle.track);
@@ -51,6 +52,9 @@ test("tracks.json: four themes, each with a measured beat and a loop inside its 
     expect(t.offset).toBeGreaterThanOrEqual(0);
     expect(t.offset).toBeLessThan(60 / t.bpm);
     expect(t.loopEnd).toBeGreaterThan(t.loopStart);
+    // Levelled (docs/mission5/sound/level.py): within ±3 dB of the others.
+    expect(t.gain).toBeGreaterThan(0.7);
+    expect(t.gain).toBeLessThan(1.42);
     expect(existsSync(new URL(`../public/music/${t.file}`, import.meta.url))).toBe(true);
   }
 });

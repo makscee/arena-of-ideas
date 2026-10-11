@@ -1,8 +1,8 @@
 Arena of Ideas music
 
-Music by makscee. All five tracks come from Maks's own earlier games.
-- home.m4a: Arena of Ideas 2022, static/sounds/music_loop.ogg (commit b256823d),
-  whole (85.3 s, 128 beats at 90 BPM).
+Music by makscee. All four tracks come from Maks's own earlier games. Home
+plays theme4 (void-board#922: the 2022 home loop sounded unlike the rest and
+was dropped).
 - theme1, theme2, theme4, theme9.m4a: "game theme 1/2/4/9.ogg" (Arena of Ideas
   2024, assets/audio/bg at commit 878131b7, from Duamo, makscee/duamo), each cut
   to 192 beats from its first beat with a 0.5 s crossfade baked into the seam, so

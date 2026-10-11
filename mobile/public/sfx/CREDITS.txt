@@ -1,10 +1,17 @@
 Arena of Ideas sound effects
 
-All 26 sounds come from Maks's own past games:
-- Arena of Ideas 2022 (makscee/arena-of-ideas static/sounds): click, coin, sell,
-  merge, level-up, start, hit, zap, block, shield, buff, debuff, spawn, win, lose.
-- Duamo (makscee/duamo): fuse, discover, wrong, move-left, move-right, reroll,
-  freeze, unfreeze, status, status-off, draw.
+All 13 sounds come from Duamo (makscee/duamo, Assets/Sounds), Maks's own game,
+the same game as the music themes (void-board#922 keeps one family: Duamo's
+warm synth sounds sit with its themes; the brighter Arena of Ideas 2022 set
+was dropped):
+- discover (field_complete, cut to 2.6 s), draw (field_close), freeze
+  (shape_sides_close), fuse (insert_main), move-left / move-right
+  (move_attached_left/right_1), reroll (move_attached_rotate_left_1), start
+  (field_open), status (insert_start), status-off (undo), turn
+  (move_attached_rotate_right_1), unfreeze (shape_sides_open), wrong
+  (insert_wrong).
 
-Converted to mono MP3 (trimmed, peak-normalised) from the originals; the source
-of each file is in docs/round3/sounds/web-map.txt and docs/round3/sounds/README.md.
+Converted to mono MP3 (trimmed, peak-normalised) from the originals; the
+older ones are listed in docs/round3/sounds/web-map.txt. Which cue plays
+which file, at what rate and gain: mobile/ui/sounds.json, levelled by
+docs/mission5/sound/level.py.

@@ -1,9 +1,9 @@
 {
-  "home": { "file": "home.m4a", "bpm": 90.02, "offset": 0.441, "loopStart": 0, "loopEnd": 85.333 },
+  "home": {"file": "theme4.m4a", "bpm": 105.02, "offset": 0.557, "loopStart": 0, "loopEnd": 109.693, "gain": 1.33},
   "themes": [
-    { "file": "theme1.m4a", "bpm": 105.02, "offset": 0.557, "loopStart": 0, "loopEnd": 109.693 },
-    { "file": "theme2.m4a", "bpm": 105.02, "offset": 0.557, "loopStart": 0, "loopEnd": 109.693 },
-    { "file": "theme4.m4a", "bpm": 105.02, "offset": 0.557, "loopStart": 0, "loopEnd": 109.693 },
-    { "file": "theme9.m4a", "bpm": 100, "offset": 0, "loopStart": 0, "loopEnd": 115.2 }
+    {"file": "theme1.m4a", "bpm": 105.02, "offset": 0.557, "loopStart": 0, "loopEnd": 109.693, "gain": 1.02},
+    {"file": "theme2.m4a", "bpm": 105.02, "offset": 0.557, "loopStart": 0, "loopEnd": 109.693, "gain": 1.0},
+    {"file": "theme4.m4a", "bpm": 105.02, "offset": 0.557, "loopStart": 0, "loopEnd": 109.693, "gain": 1.33},
+    {"file": "theme9.m4a", "bpm": 100, "offset": 0, "loopStart": 0, "loopEnd": 115.2, "gain": 0.98}
   ]
 }
