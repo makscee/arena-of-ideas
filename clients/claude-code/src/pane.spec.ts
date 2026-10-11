@@ -67,8 +67,8 @@ describe("Claude Code mod", () => {
     expect(run.mode ?? "ranked").toBe("ranked");
     const lines = paneLines(run, content, rules);
     expect(lines[0]).toMatch(/^Arena · Round 1\/12 · ♥\d+ · \d+g · 0W 0L · vs @\S+ {3}\[ranked\]$/);
-    expect(lines.find((l) => l.startsWith("SHOP"))).toMatch(/^SHOP {3}1 \S+/);
-    expect(lines.find((l) => l.startsWith("LINE"))).toBe(`LINE   ${Array.from({ length: rules.lineSize }, (_, i) => `${i + 1} —`).join(" · ")}`);
+    expect(lines.find((l) => l.startsWith("SHOP"))).toMatch(/^SHOP {4}1 \S+/);
+    expect(lines.find((l) => l.startsWith("LINE"))).toBe(`LINE    ${Array.from({ length: rules.lineSize }, (_, i) => `${i + 1} —`).join(" · ")}`);
 
     // A key is the player's move: 1 buys the first offer.
     const play = async (key: string, pending: Pending | null = null, suggestion: Suggestion | null = null) => {

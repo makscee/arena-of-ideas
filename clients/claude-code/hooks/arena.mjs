@@ -2198,8 +2198,8 @@ function decisionText(d, run, rules, content, o = {}) {
 var short = (u, content, o) => `${u.emoji} ${u.kind === "fused" ? u.name : unitName(u.unitId, u.name, content, o)} ${u.stats.pwr}/${u.stats.hp}${u.kind === "fused" ? " \u2726" : u.form === "awoken" ? " \u2605" : ` ${u.copies}/3`}`;
 function paneLines(run, content, rules, o = {}, wide = false) {
   const ru2 = o.lang === "ru";
-  const tag = (en, r) => (ru2 ? r : en).padEnd(7);
-  const blank = "".padEnd(7);
+  const tag = (en, r) => (ru2 ? r : en).padEnd(7) + " ";
+  const blank = "".padEnd(8);
   const outcome = (x) => ru2 ? { win: "\u043F\u043E\u0431\u0435\u0434\u0430", loss: "\u043F\u043E\u0440\u0430\u0436\u0435\u043D\u0438\u0435", draw: "\u043D\u0438\u0447\u044C\u044F" }[x] ?? x : x;
   const round = run.phase === "crown" || run.round > rules.rounds ? ru2 ? "\u041A\u043E\u0440\u043E\u043D\u0430" : "Crown" : `${ru2 ? "\u0420\u0430\u0443\u043D\u0434" : "Round"} ${run.round}/${rules.rounds}`;
   const vs = run.nextOpponent ? ` \xB7 vs @${run.nextOpponent.player.name}` : "";

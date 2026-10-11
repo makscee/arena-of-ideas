@@ -68,12 +68,12 @@ test('keys are the player moves; Claude only suggests on a ranked run', async ($
     props: { title: 'Arena', isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { bodyRows: 30 } } as never,
   })
   expect(await ui.find({ type: 'Text', text: /^Arena · Round 1\/12 · ♥5 · 10g · 0W 0L · vs @bot-Esk {3}\[ranked\]$/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /^SHOP {3}1 Nurse T1 3g {3}2 Rose T1 3g {3}3 Saboteur T1 3g$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^SHOP {4}1 Nurse T1 3g {3}2 Rose T1 3g {3}3 Saboteur T1 3g$/ })).toBeDefined()
 
   // A key: the player's own move, no agent header.
   await ui.press({ key: '2' })
   expect(calls).toContain('human POST /runs/r1/decisions {"kind":"buy","slot":1}')
-  expect(await ui.find({ type: 'Text', text: /^LINE {3}1 · Rose 2\/4 1\/3 · 2 — / })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^LINE {4}1 · Rose 2\/4 1\/3 · 2 — / })).toBeDefined()
 
   // Claude's decide on the ranked run reads it as an agent and moves nothing.
   calls.length = 0
@@ -90,7 +90,7 @@ test('keys are the player moves; Claude only suggests on a ranked run', async ($
   expect(await ui.find({ type: 'Text', text: /Claude suggests: reroll \(no pair here\) {3}y accept/ })).toBeDefined()
   await ui.press({ key: 'y' })
   expect(calls).toContain('human POST /runs/r1/decisions {"kind":"reroll"}')
-  expect(await ui.find({ type: 'Text', text: /^SHOP {3}1 Saboteur/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^SHOP {4}1 Saboteur/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Claude suggests/ })).toBeUndefined()
 
   // RU/EN.

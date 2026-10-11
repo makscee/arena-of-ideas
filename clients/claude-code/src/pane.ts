@@ -153,8 +153,8 @@ const short = (u: LineUnit, content: MvpContent, o: TextOpts) =>
  * shop unit and board unit does. */
 export function paneLines(run: RunView, content: MvpContent, rules: MvpRules, o: TextOpts = {}, wide = false): string[] {
   const ru = o.lang === "ru";
-  const tag = (en: string, r: string) => (ru ? r : en).padEnd(7);
-  const blank = "".padEnd(7);
+  const tag = (en: string, r: string) => (ru ? r : en).padEnd(7) + " ";
+  const blank = "".padEnd(8);
   const outcome = (x: string) => (ru ? ({ win: "победа", loss: "поражение", draw: "ничья" } as Record<string, string>)[x] ?? x : x);
   const round = run.phase === "crown" || run.round > rules.rounds ? (ru ? "Корона" : "Crown") : `${ru ? "Раунд" : "Round"} ${run.round}/${rules.rounds}`;
   const vs = run.nextOpponent ? ` · vs @${run.nextOpponent.player.name}` : "";
