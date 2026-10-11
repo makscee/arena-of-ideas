@@ -3,7 +3,7 @@
 // bots play in-process through them, and slices 5, 10 and 11 observe runs
 // through RunHooks instead of editing decide().
 import { randomUUID } from "node:crypto";
-import { boardUnit, type BattleRecord, type Champion, type DayState, type Decision, type DecisionResponse, type FightResult, type FuseContext, type Ghost, type LineUnit, type MvpContent, type MvpRules, type PlayerRef, type Rating, type RunView } from "../../../src/mvp/contract.js";
+import { boardUnit, type BattleRecord, type Champion, type DayState, type Decision, type DecisionResponse, type FightResult, type FuseContext, type Ghost, type LineUnit, type MvpContent, type MvpRules, type PlayerRef, type Rating, type RunMode, type RunView } from "../../../src/mvp/contract.js";
 import { fuseCheck } from "../../../src/mvp/forms.js";
 import { lineResolves } from "../../../src/mvp/units.js";
 import { abandonRun, applyMvpDecision, championGhost, endRun, initMvpRun, ratingChange, runView, setOpponent, slewChampion, synthGhost, unitById, type DecisionContext, type MvpRunState, type MvpStep } from "../../../src/mvp/run.js";
@@ -14,8 +14,9 @@ import type { MvpStore } from "./store.js";
 /** Observers of the run engine (slice 10's fusion names, slice 11's stats,
  * whatever slice 5 needs). decide() calls them after its store writes,
  * synchronously: every onDecision first, then onFuse, onFight and onRunEnd as
- * they apply, each in registration order. A preview calls none. A hook must
- * not throw: the decision is already saved. */
+ * they apply, each in registration order. A preview calls none, and nothing
+ * calls them for a practice run (#958): it feeds nothing derived from runs.
+ * A hook must not throw: the decision is already saved. */
 export interface RunHooks {
   /** Any decision went through: the run before it and after it. Slice 10
    * prefetches fusion names here. */
@@ -54,17 +55,18 @@ export interface RunDeps {
   peekFusionName: NameFusion;
 }
 
-/** Starts a run for `player` on today's day and the live pool, with round
- * 1's opponent picked, and stores it. One active run per player: if one is
- * going, that one comes back instead, on whatever pool it started (a pool
- * change ends nothing, M2-2). Synchronous, so parallel starts can't create two. */
-export function startRun(deps: RunDeps, player: PlayerRef): MvpRunState {
-  const active = deps.store.activeRun(player.id);
+/** Starts a run of `mode` for `player` on today's day and the live pool,
+ * with round 1's opponent picked, and stores it. One active run of each mode
+ * per player (#958): if one is going, that one comes back instead, on
+ * whatever pool it started (a pool change ends nothing, M2-2). Synchronous,
+ * so parallel starts can't create two. */
+export function startRun(deps: RunDeps, player: PlayerRef, mode: RunMode = "ranked"): MvpRunState {
+  const active = deps.store.activeRun(player.id, mode);
   if (active) return currentRun(deps, active);
   // The rating every ghost and Slay of this run carries: a human's as it is
   // now (it only moves when a run ends, and only one runs at a time).
   const rating = player.bot ? deps.rules.botRating : (deps.store.rating(player.id)?.rating ?? deps.rules.ratingStart);
-  const fresh = initMvpRun({ runId: randomUUID(), player, seed: deps.seed(), content: deps.content, day: deps.today().seq, startedAt: deps.now().toISOString(), rules: deps.rules, rating });
+  const fresh = initMvpRun({ runId: randomUUID(), player, seed: deps.seed(), content: deps.content, day: deps.today().seq, startedAt: deps.now().toISOString(), rules: deps.rules, rating, mode });
   const run = setOpponent(fresh, pickGhost(deps, fresh));
   deps.store.putRun(run);
   return run;
@@ -76,14 +78,18 @@ export function startRun(deps: RunDeps, player: PlayerRef): MvpRunState {
  * end, the new run state, then the hooks. Synchronous on purpose: read the
  * run and call this with no await in between, so two decisions on one run
  * can't start from the same state. Throws MvpDecisionError when the rules
- * refuse the decision. The run plays on the pool it pinned at its start. */
+ * refuse the decision. The run plays on the pool it pinned at its start.
+ * A practice run (#958) plays the same, and records only itself and its
+ * battles: no ghost, no Slay, no rating, no hooks (stats, fusion names), and a
+ * fuse claims no credit (practiceFuse). */
 export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionResponse {
   const { store, seed, now } = deps;
   const content = deps.contentFor(run.contentVersion);
+  const practice = run.mode === "practice";
   // A rollover since round 12 ended crowned a new champion: fight that one.
   if (d.kind === "fight" && run.phase === "crown") run = currentCrown(deps, run);
   const ctx: DecisionContext = {};
-  const fuse = fuseContext(deps.nameFusion, content, run, d);
+  const fuse = practice ? practiceFuse(deps, content, run, d) : fuseContext(deps.nameFusion, content, run, d);
   if (fuse) ctx.fuse = fuse;
   if (d.kind === "fight") {
     // The opponent picked at round start; a run stored without one picks now.
@@ -94,17 +100,17 @@ export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionRe
   // The line as it went into a round's fight becomes someone's ghost, win or
   // lose; only after the rules accepted the fight, so a refused one adds
   // nothing. An empty line (a walkover) is nobody's opponent.
-  if (step.fight?.kind === "round" && run.line.length > 0) store.addGhost(ghostOf(deps, run, now()));
+  if (step.fight?.kind === "round" && run.line.length > 0 && !practice) store.addGhost(ghostOf(deps, run, now()));
   // A bot's Crown win is a slay like a human's (contract: "day, champion,
   // rating"), and so is the reigning champion beating their own team.
-  if (step.fight?.kind === "crown" && step.fight.outcome === "win" && run.crownSeq !== null) {
+  if (step.fight?.kind === "crown" && step.fight.outcome === "win" && run.crownSeq !== null && !practice) {
     store.addSlay({ seq: run.crownSeq, player: run.player, runId: run.runId, battleId: step.fight.battleId, line: structuredClone(run.line), contentVersion: run.contentVersion, at: ctx.fight!.at, rating: runRating(deps, run) });
   }
   if (step.fight) step.state = nextOpponent(deps, step.state);
   if (step.state.phase === "over") step.state = finish(deps, step.state);
   else store.putRun(step.state);
   if (step.battle) store.putBattle(step.battle);
-  notify(deps.hooks, run, d, step, ctx);
+  if (!practice) notify(deps.hooks, run, d, step, ctx);
   return { run: runView(step.state), ...(step.fight ? { fight: step.fight } : {}) };
 }
 
@@ -116,7 +122,7 @@ export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionRe
  * decide(). */
 export function abandon(deps: RunDeps, run: MvpRunState): RunView {
   const ended = finish(deps, abandonRun(currentRun(deps, run)));
-  for (const h of deps.hooks) h.onRunEnd?.(ended);
+  if (ended.mode !== "practice") for (const h of deps.hooks) h.onRunEnd?.(ended);
   return runView(ended);
 }
 
@@ -195,8 +201,8 @@ function runRating(deps: RunDeps, r: MvpRunState): number {
 }
 
 /** Stamps a run that just ended, writes a human's rating (once per run) and
- * stores the run. Bots and a "content-changed" end (only runs ended before
- * M2-2) move no rating; a bot's
+ * stores the run. Bots, a practice run (#958) and a "content-changed" end
+ * (only runs ended before M2-2) move no rating; a bot's
  * slay still counts in its records (slays), its rating and runs untouched. */
 function finish(deps: RunDeps, run: MvpRunState): MvpRunState {
   const { store, rules } = deps;
@@ -204,11 +210,12 @@ function finish(deps: RunDeps, run: MvpRunState): MvpRunState {
   r.endedAt = deps.now().toISOString();
   r.rating = null;
   const prev = (): Rating => store.rating(r.player.id) ?? { player: r.player, rating: rules.ratingStart, runs: 0, slays: 0, daysAsChampion: 0, playoffWins: 0 };
-  if (!r.player.bot && r.endedBy !== "content-changed") {
+  const counts = r.mode !== "practice";
+  if (counts && !r.player.bot && r.endedBy !== "content-changed") {
     const before = prev();
     r.rating = ratingChange(before.rating, before.runs, r, rules);
     store.putRating({ ...before, player: r.player, rating: r.rating.after, runs: before.runs + 1, slays: before.slays + (slewChampion(r) ? 1 : 0) });
-  } else if (r.player.bot && slewChampion(r)) {
+  } else if (counts && r.player.bot && slewChampion(r)) {
     const before = prev();
     store.putRating({ ...before, slays: before.slays + 1 });
   }
@@ -256,6 +263,16 @@ function fuseContext(nameFusion: NameFusion, content: MvpContent, run: MvpRunSta
   const second = boardUnit(run, run.rules, d.second);
   if (!first || !second || fuseCheck(first, second) !== null) return undefined;
   return nameFusion(unitById(content, first.unitId), unitById(content, second.unitId), run.player);
+}
+
+/** A practice run's fuse (#958): the pair's stored name and credit, else a
+ * provisional name (the read-only namer's, never recorded) credited to no one.
+ * A bots' pair keeps its null credit for the first ranked human fuse. */
+function practiceFuse(deps: RunDeps, content: MvpContent, run: MvpRunState, d: Decision): FuseContext | undefined {
+  const fuse = fuseContext(deps.peekFusionName, content, run, d);
+  if (!fuse || d.kind !== "fuse") return fuse;
+  const known = deps.store.fusion(boardUnit(run, run.rules, d.first)!.unitId, boardUnit(run, run.rules, d.second)!.unitId);
+  return { name: known?.name ?? fuse.name, discoveredBy: known?.discoveredBy ?? null };
 }
 
 function ghostOf(deps: RunDeps, r: MvpRunState, at: Date): Ghost {

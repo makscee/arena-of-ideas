@@ -7,7 +7,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createGenerator } from "ts-json-schema-generator";
-import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, TOKEN_HEADER } from "../src/mvp/contract.js";
+import { CLIENT_HEADER, MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, TOKEN_HEADER } from "../src/mvp/contract.js";
 import { API_ROUTES } from "../src/mvp/routes.js";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
@@ -40,6 +40,13 @@ export function buildSchema(): Json {
   };
 }
 
+/** #958: the 403 an agent client gets from a write (ApiRoute.agent). */
+const AGENT_403: Record<"none" | "practice" | "logged-out", string> = {
+  none: `An agent client (${CLIENT_HEADER}: agent/…): agents don't make this move, a human does.`,
+  practice: `An agent client (${CLIENT_HEADER}: agent/…) on a ranked run: agents play practice runs only.`,
+  "logged-out": `An agent client (${CLIENT_HEADER}: agent/…) with a session: agents log in, never link a login.`,
+};
+
 const ref = (name: string): Json => (name.endsWith("[]") ? { type: "array", items: ref(name.slice(0, -2)) } : { $ref: `#/components/schemas/${name}` });
 
 export function buildOpenApi(schema: Json): Json {
@@ -48,7 +55,9 @@ export function buildOpenApi(schema: Json): Json {
   const paths: Record<string, Json> = {};
   for (const r of API_ROUTES) {
     const path = MVP_API_PREFIX + r.path.replace(/:(\w+)/g, "{$1}");
-    const params = [...r.path.matchAll(/:(\w+)/g)].map((m) => ({ name: m[1], in: "path", required: true, schema: { type: "string" } }));
+    const params: Json[] = [...r.path.matchAll(/:(\w+)/g)].map((m) => ({ name: m[1], in: "path", required: true, schema: { type: "string" } }));
+    params.push({ $ref: "#/components/parameters/client" });
+    const agent403 = r.method === "POST" && r.agent !== true ? { "403": { description: AGENT_403[r.agent ?? "none"], content: { "application/json": { schema: ref("ApiError") } } } } : {};
     const ok =
       r.response === "image/png"
         ? { description: "OK", content: { "image/png": { schema: { type: "string", format: "binary" } } } }
@@ -59,9 +68,9 @@ export function buildOpenApi(schema: Json): Json {
         operationId: `${r.method.toLowerCase()}${r.path.replace(/[/:.-](\w)/g, (_, c: string) => c.toUpperCase())}`,
         summary: r.note.split(/(?<=\.) /)[0],
         description: r.note + (r.only ? ` Only with ${r.only === "dev" ? "MVP_DEV=1" : r.only === "fake-mail" ? "ARENA_MAIL_FAKE=1" : "ARENA_TELEGRAM_FAKE=1"}.` : ""),
-        ...(params.length ? { parameters: params } : {}),
-        ...(r.body ? { requestBody: { required: true, content: { "application/json": { schema: ref(r.body) } } } } : {}),
-        responses: { "200": ok, default: { description: "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.", content: { "application/json": { schema: ref("ApiError") } } } },
+        parameters: params,
+        ...(r.body ? { requestBody: { required: !r.bodyOptional, content: { "application/json": { schema: ref(r.body) } } } } : {}),
+        responses: { "200": ok, ...agent403, default: { description: "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.", content: { "application/json": { schema: ref("ApiError") } } } },
         ...(r.only ? { "x-only": r.only } : {}),
       },
     };
@@ -73,11 +82,15 @@ export function buildOpenApi(schema: Json): Json {
       version: String(MVP_API_VERSION),
       description:
         "The game's HTTP JSON API, generated from src/mvp/routes.ts. Battle logs follow battle-events/1 (protocol/battle-events.md). " +
-        "/api/v1 and battle-events/1 only gain things (fields, routes, event and type kinds); renaming or removing one means /api/v2. A client ignores fields and event types it doesn't know.",
+        "/api/v1 and battle-events/1 only gain things (fields, routes, event and type kinds); renaming or removing one means /api/v2. A client ignores fields and event types it doesn't know. " +
+        `Agent clients send ${CLIENT_HEADER}: agent/<name> and play practice runs only (assist only, #958).`,
     },
     servers: [{ url: "https://arena.makscee.ru" }],
     components: {
       schemas: components,
+      parameters: {
+        client: { name: CLIENT_HEADER, in: "header", required: false, schema: { type: "string", pattern: "^agent/" }, description: "#958, assist only: `agent/<name>` from an agent client (MCP, the Claude Code mod). It may read, preview, log in and play practice runs; other writes answer 403." },
+      },
       securitySchemes: {
         token: { type: "apiKey", in: "header", name: TOKEN_HEADER, description: "A PlayerSession token (invite, join, email or Telegram login)." },
         player: { type: "apiKey", in: "header", name: PLAYER_HEADER, description: "A device player id, open servers only (POST /players)." },

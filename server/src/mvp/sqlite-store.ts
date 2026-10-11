@@ -9,7 +9,7 @@
 import Database from "better-sqlite3";
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, Idea, IdeaState, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
+import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, Idea, IdeaState, PlayerRef, PlayoffResult, Rating, RunMode, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
 import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type TelegramCode, type TelegramLink, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally, type Vote, type WordRequest, type DailyPost, type EmailCode, type EmailLink } from "./store.js";
 
@@ -71,7 +71,11 @@ export class SqliteMvpStore implements MvpStore {
     );
   }
   run(id: string): MvpRunState | undefined { return withBench(this.one("SELECT json FROM mvp_runs WHERE id = ?", id)); }
-  activeRun(playerId: string): MvpRunState | undefined { return withBench(this.one("SELECT json FROM mvp_runs WHERE player_id = ? AND over = 0 ORDER BY rowid LIMIT 1", playerId)); }
+  // The (player_id, over) index finds a player's few unfinished runs; the mode
+  // (#958) is read from the JSON, absent on a ranked run, so no migration.
+  activeRun(playerId: string, mode: RunMode = "ranked"): MvpRunState | undefined {
+    return withBench(this.one("SELECT json FROM mvp_runs WHERE player_id = ? AND over = 0 AND coalesce(json_extract(json, '$.mode'), 'ranked') = ? ORDER BY rowid LIMIT 1", playerId, mode));
+  }
 
   addGhost(g: Ghost): void {
     this.write("INSERT INTO mvp_ghosts (ghost_id, round, player_id, content_version, json) VALUES (?, ?, ?, ?, ?)", g.ghostId, g.round, g.player.id, g.contentVersion, JSON.stringify(g));

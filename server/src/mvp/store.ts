@@ -14,7 +14,7 @@
 //   another slice's or one that has shipped: a recorded file doesn't run again.
 // - Caches that aren't the game's record stay out of MvpStore (slice 10's name
 //   cache lives in ./fusions.ts).
-import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, Idea, IdeaState, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
+import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, Idea, IdeaState, PlayerRef, PlayoffResult, Rating, RunMode, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
 import type { Row } from "../../../src/mvp/units.js";
 
@@ -23,7 +23,8 @@ export interface MvpStore {
   player(id: string): PlayerRef | undefined;
   putRun(r: MvpRunState): void;
   run(id: string): MvpRunState | undefined;
-  activeRun(playerId: string): MvpRunState | undefined;
+  /** The player's run of `mode` (default ranked) not over yet (#958: one of each). */
+  activeRun(playerId: string, mode?: RunMode): MvpRunState | undefined;
   addGhost(g: Ghost): void;
   /** Saved teams at this round, made on any pool (M2-2), never one of
    * `excludePlayerId`'s own, oldest first; with `limit`, only the newest
@@ -384,8 +385,8 @@ export class MemoryMvpStore implements MvpStore {
   player(id: string): PlayerRef | undefined { return this.players.get(id); }
   putRun(r: MvpRunState): void { this.runs.set(r.runId, r); }
   run(id: string): MvpRunState | undefined { return this.runs.get(id); }
-  activeRun(playerId: string): MvpRunState | undefined {
-    for (const r of this.runs.values()) if (r.player.id === playerId && r.phase !== "over") return r;
+  activeRun(playerId: string, mode: RunMode = "ranked"): MvpRunState | undefined {
+    for (const r of this.runs.values()) if (r.player.id === playerId && r.phase !== "over" && (r.mode ?? "ranked") === mode) return r;
     return undefined;
   }
   addGhost(g: Ghost): void {
