@@ -123,9 +123,10 @@ describe("Claude Code mod", () => {
     const ru = await battle.run({ battleId: run.fights[0]!.battleId, lang: "ru" });
     expect(ru).toMatch(/^Старт$/m);
     expect(ru).not.toMatch(/^(Start|Turns? \d)/m);
-    const page = battlePage(ru, 0, 10);
-    expect(page.lines).toHaveLength(10);
-    expect(battlePage(ru, 99, 10).page).toBe(page.pages - 1);
+    const page = battlePage(ru, 0, 3); // a battle is at least its 3 header lines and an end
+    expect(page.lines).toHaveLength(3);
+    expect(page.pages).toBe(Math.ceil(ru.split("\n").length / 3));
+    expect(battlePage(ru, 99, 3).page).toBe(page.pages - 1);
     expect(paneLines(run, content, rules, { lang: "ru" })[0]).toMatch(/^Arena · Раунд 2\/12 .* \[рейтинг\]$/);
     expect(keysFor(run, rules, null, null, "run", { lang: "ru" }).map((k) => k.label)).toContain("в бой");
   });

@@ -1,0 +1,5 @@
+{
+  "//": "src/ is plain TypeScript checked with the repo (and its nearest tsconfig for vitest): the mod's own tsconfig.json extends types Claude Code lays only once it has loaded the mod.",
+  "extends": "../../../tsconfig.json",
+  "include": ["."]
+}
