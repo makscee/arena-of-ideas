@@ -132,7 +132,7 @@ export const GLOSSARY: Record<FixedTermId, TermDef> = {
     label: "Summon", icon: "magic-portal", tone: "summon",
     tip: "Adds a new unit at the front of the line, if the line has room (5 max). The numbers are its PWR / HP.",
   },
-  "effect:resurrect": { label: "Revive", icon: "raise-zombie", tone: "bless", tip: "Brings a fallen ally back at the back of the line with that much HP, if there's room." },
+  "effect:resurrect": { label: "Revive", icon: "raise-zombie", tone: "bless", tip: "Brings a fallen ally back to its place in the line with that much HP, if there's room." },
   "effect:silence": { label: "Silence", icon: "silence", tone: "silence", tip: "Removes all its statuses and turns off its abilities for the rest of the battle." },
   "effect:cancel": { label: "Cancel", tone: "plain", tip: "Stops the thing that was about to happen." },
   "effect:absorbHurt": { label: "Absorb", icon: "shield", tone: "shield", tip: "Blocks damage up to its stacks, using up what it blocks." },
