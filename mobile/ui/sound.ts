@@ -1,9 +1,10 @@
 // The sound engine (round 3, note 16; docs/round3/sounds.md): Web Audio,
-// unlocked by the first tap or key, the 26 files preloaded then, one master
-// gain. What plays when is ui/sound-map.ts. Music (round 4, note 5;
-// docs/round4/music.md) streams through the same context: home plays the
-// loop, a run one theme, muffled in the shop and open in battle.
-import { SOUND_KEYS, cue, type Cue, type SoundKey } from "./sound-map";
+// unlocked by the first tap or key, the sfx files preloaded then, one master
+// gain. What plays when is ui/sound-map.ts, and its admit() keeps cues from
+// piling up (void-board#922). Music (round 4, note 5; docs/round4/music.md)
+// streams through the same context: home plays one theme, a run one theme,
+// muffled in the shop and open in battle.
+import { SOUND_FILES, admit, cue, type Cue, type SoundKey, type Voice } from "./sound-map";
 import TRACKS from "./tracks.json";
 
 export interface SoundSettings {
@@ -12,14 +13,15 @@ export interface SoundSettings {
   volume: number;
   /** The music channel, under the master: on by default at 40%. */
   music: boolean;
-  /** 0..1, squared like the master. */
+  /** 0..1, linear: 40% sets the loops (levelled to −18 LUFS) about 8 dB
+   * under the battle sounds, a bed under them, not far below. */
   musicVolume: number;
 }
 
 export const SOUND_STORE = "arena.sound";
 export const SOUND_DEFAULTS: SoundSettings = { on: true, volume: 0.6, music: true, musicVolume: 0.4 };
-/** The same sound never starts twice within this many ms. */
-export const THROTTLE_MS = 70;
+/** How long a cut-short voice takes to fade out, in seconds. */
+const CUT_FADE_S = 0.04;
 const LOG_MAX = 50;
 
 /** The saved settings, or the defaults when storage is missing, throws, or
@@ -53,8 +55,10 @@ export function saveSettings(s: SoundSettings, store: () => Pick<Storage, "setIt
 let settings: SoundSettings = SOUND_DEFAULTS;
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
-const buffers = new Map<SoundKey, AudioBuffer>();
-const lastStart = new Map<SoundKey, number>();
+const buffers = new Map<string, AudioBuffer>();
+/** The sfx voices still sounding, for admit(), with how to cut each. */
+const voices = new Map<number, Voice & { stop: (fade: number) => void }>();
+let nextVoice = 1;
 const listeners = new Set<(s: SoundSettings) => void>();
 
 declare global {
@@ -89,7 +93,7 @@ function unlock(): void {
     musicFilter.connect(musicGain).connect(master);
     const base = `${import.meta.env.BASE_URL}sfx/`;
     const audio = ctx;
-    for (const key of SOUND_KEYS) {
+    for (const key of SOUND_FILES) {
       void fetch(`${base}${key}.mp3`)
         .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
         .then((b) => audio.decodeAudioData(b))
@@ -164,19 +168,47 @@ export function play(c: Cue | SoundKey | null | undefined): void {
   log.push(settings.on ? q.key : `${q.key} (muted)`);
   if (log.length > LOG_MAX) log.splice(0, log.length - LOG_MAX);
   if (!settings.on || document.hidden || !ctx || !master) return;
-  const buf = buffers.get(q.key);
+  const buf = buffers.get(q.file);
   if (!buf) return;
   const now = performance.now();
-  if (now - (lastStart.get(q.key) ?? -Infinity) < THROTTLE_MS) return;
-  lastStart.set(q.key, now);
+  // A voice whose end never came (a suspended tab) stops counting after 4 s.
+  for (const [id, v] of voices) if (now - v.at > 4000) voices.delete(id);
+  const verdict = admit([...voices.values()], q, now);
+  if (!verdict.play) return;
+  for (const id of verdict.cut) voices.get(id)?.stop(CUT_FADE_S);
   try {
-    const src = ctx.createBufferSource();
+    const audio = ctx;
+    const src = audio.createBufferSource();
     src.buffer = buf;
     src.playbackRate.value = q.rate;
-    const g = ctx.createGain();
+    const g = audio.createGain();
     g.gain.value = q.gain;
     src.connect(g).connect(master);
+    const id = nextVoice++;
+    let stopped = false;
+    const stop = (fade: number, at = audio.currentTime) => {
+      if (stopped) return;
+      stopped = true;
+      voices.delete(id);
+      try {
+        g.gain.cancelScheduledValues(at);
+        g.gain.setValueAtTime(g.gain.value, at);
+        g.gain.linearRampToValueAtTime(0, at + fade);
+        src.stop(at + fade + 0.01);
+      } catch {
+        // an older Safari refuses a second stop(): the cut's own stop ends it
+      }
+    };
+    src.onended = () => void voices.delete(id);
+    voices.set(id, { id, key: q.key, prio: q.prio, at: now, stop });
     src.start();
+    // A long file made a short cue: it fades out at its cut.
+    if (q.cut && q.cut < buf.duration / q.rate) {
+      const fade = 0.06;
+      g.gain.setValueAtTime(q.gain, audio.currentTime + q.cut - fade);
+      g.gain.linearRampToValueAtTime(0, audio.currentTime + q.cut);
+      src.stop(audio.currentTime + q.cut + 0.01);
+    }
   } catch {
     // a context closed under us: stay silent
   }
@@ -186,6 +218,8 @@ export function play(c: Cue | SoundKey | null | undefined): void {
 
 export interface Track {
   file: string;
+  /** Linear gain that levels the track to −18 LUFS (docs/mission5/sound/level.py). */
+  gain: number;
   bpm: number;
   /** Seconds to the first beat. */
   offset: number;
@@ -195,7 +229,7 @@ export interface Track {
 export const HOME_TRACK: Track = TRACKS.home;
 export const THEMES: readonly Track[] = TRACKS.themes;
 
-/** Where the music is: home's loop, or a run's theme in the shop (muffled)
+/** Where the music is: home's theme, or a run's theme in the shop (muffled)
  * or in battle (open). */
 export type MusicScene = "home" | "shop" | "battle";
 
@@ -224,7 +258,7 @@ const elements = new Map<string, HTMLAudioElement>();
 const fades = new Map<string, GainNode>();
 const stopTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-const musicLevel = () => (settings.music ? settings.musicVolume * settings.musicVolume : 0);
+const musicLevel = () => (settings.music ? settings.musicVolume : 0);
 
 function log(entry: string): void {
   const l = (window.__sfx ??= []);
@@ -282,7 +316,8 @@ function applyMusic(): void {
   if (!ctx || !musicFilter) return;
   const on = settings.music && !document.hidden && want !== null;
   const target = on ? want!.track : null;
-  if (playing && playing !== target) {
+  // Home's theme is a run theme too: the same file plays on, never restarts.
+  if (playing && playing.file !== target?.file) {
     const old = playing;
     fadeTo(old.file, 0);
     stopTimers.set(old.file, setTimeout(() => elements.get(old.file)?.pause(), CROSSFADE_S * 1000 + 50));
@@ -292,7 +327,7 @@ function applyMusic(): void {
   const el = element(target);
   if (!el) return;
   clearTimeout(stopTimers.get(target.file));
-  if (playing !== target) fadeTo(target.file, 1);
+  if (playing?.file !== target.file) fadeTo(target.file, target.gain);
   playing = target;
   if (el.paused) void el.play().catch(() => {});
   const hz = want!.muffled ? MUFFLED_HZ : OPEN_HZ;
