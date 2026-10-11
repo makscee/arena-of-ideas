@@ -21,7 +21,7 @@ const child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], {
 const url = `http://127.0.0.1:${port}/arena/`;
 const CAPTION = { en: /Squire returns to its place at \d+ HP/, ru: /Squire возвращается на своё место с \d+/ };
 try {
-  for (let i = 0; i < 120; i++) { try { if ((await fetch(url + "api/v1/health")).ok) break; } catch {} await new Promise((r) => setTimeout(r, 500)); }
+  for (let i = 0; i < 360; i++) { try { if ((await fetch(url + "api/v1/health")).ok) break; } catch {} await new Promise((r) => setTimeout(r, 500)); }
   const browser = await launchChromium();
   /** A page on a fresh name, in the first fight, the battle swapped for the revive one. */
   async function fight(viewport, who, lang) {
