@@ -120,6 +120,7 @@ try {
         await page.getByTestId("chain-summary").waitFor({ timeout: 3000 });
         console.log("  skip chain: OK");
       } catch { fail("Skip chain missing or didn't reach the summary"); }
+      await page.waitForTimeout(700); // the summary fades in
       await page.screenshot({ path: `${out}/${r.label}-skip.png` });
     }
     await page.close();

@@ -1596,13 +1596,14 @@ button.reroll-btn:disabled .cost-chip { background: var(--soft); }
 /* "Chain 3/12" leads the caption. */
 .bv-cap-chain { display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: 8px; background: var(--action); color: var(--outline); font-size: 0.8em; font-weight: 700; line-height: 1.35; text-shadow: none; white-space: nowrap; }
 /* The chain's summary below the board, at its last link. */
-.bv-chainbox:empty { display: none; }
+/* Its height stays put, empty or not: on desktop the board centres above it, and a box coming and going moved every card. */
+.bv-chainbox { min-height: 44px; flex: none; display: flex; align-items: center; }
 .bv-chain-sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 6px 10px; border: 2px solid var(--outline); border-radius: 10px; background: var(--panel); box-shadow: 3px 3px 0 var(--outline); font-size: 14px; font-weight: 600; line-height: 1.35; animation: bv-chip-in 220ms ease-out backwards; }
 .bv-chain-of { color: var(--action); font-weight: 700; }
 .bv-chain-side { display: inline-flex; flex-wrap: wrap; gap: 0 5px; align-items: baseline; }
 button.bv-skip { align-self: center; white-space: nowrap; min-height: 40px; padding: 0 16px; font-size: 15px; }
 @media (prefers-reduced-motion: reduce) { .bv-card > .bv-chain-chip, .bv-chain-sum { animation: none; } }
 @media (min-width: 1024px) {
-  #app[data-screen="battle"] .bv-chainbox { display: flex; justify-content: center; }
+  #app[data-screen="battle"] .bv-chainbox { justify-content: center; height: 64px; }
   #app[data-screen="battle"] .bv-chain-sum { font-size: 16px; max-width: 900px; }
 }
