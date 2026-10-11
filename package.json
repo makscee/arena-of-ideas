@@ -36,6 +36,7 @@
     "mvp:desktop": "node e2e/mvp-desktop.mjs",
     "mvp:ideas-phone": "node e2e/mvp-ideas-phone.mjs",
     "mvp:terms": "node e2e/probe-terms-desktop.mjs",
+    "mvp:underlines": "node e2e/probe-underlines.mjs",
     "mvp:beats": "node e2e/beat-frames.mjs",
     "mvp:now-sheet": "node e2e/probe-now-sheet.mjs",
     "mvp:cause": "node e2e/probe-cause.mjs",
