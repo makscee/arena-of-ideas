@@ -186,10 +186,11 @@ export function play(c: Cue | SoundKey | null | undefined): void {
     src.connect(g).connect(master);
     const id = nextVoice++;
     let stopped = false;
-    const stop = (fade: number, at = audio.currentTime) => {
+    const stop = (fade: number) => {
       if (stopped) return;
       stopped = true;
       voices.delete(id);
+      const at = audio.currentTime;
       try {
         g.gain.cancelScheduledValues(at);
         g.gain.setValueAtTime(g.gain.value, at);
