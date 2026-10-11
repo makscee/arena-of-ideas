@@ -104,6 +104,28 @@
   --k-summon: #4fc2b4;
   --k-lock: #8fc6e6;
   --k-plain: var(--soft);
+  /* R2 (#914): the same tones deepened toward the outline ink, for the light
+   * card face: icons ≥ 3.5:1 on every palette's face, the *-text ones (PWR,
+   * HP numbers) ≥ 4.5:1. They resolve here at the root, so a card can point
+   * its --k-* at them (below). */
+  --kf-pwr: color-mix(in srgb, var(--k-pwr), var(--outline) 35%);
+  --kf-hp: color-mix(in srgb, var(--k-hp), var(--outline) 20%);
+  --kf-shield: color-mix(in srgb, var(--k-shield), var(--outline) 35%);
+  --kf-heal: color-mix(in srgb, var(--k-heal), var(--outline) 40%);
+  --kf-str: color-mix(in srgb, var(--k-str), var(--outline) 40%);
+  --kf-curse: color-mix(in srgb, var(--k-curse), var(--outline) 25%);
+  --kf-poison: color-mix(in srgb, var(--k-poison), var(--outline) 30%);
+  --kf-freeze: color-mix(in srgb, var(--k-freeze), var(--outline) 45%);
+  --kf-bless: color-mix(in srgb, var(--k-bless), var(--outline) 50%);
+  --kf-silence: color-mix(in srgb, var(--k-silence), var(--outline) 35%);
+  --kf-dmg: color-mix(in srgb, var(--k-dmg), var(--outline) 20%);
+  --kf-summon: color-mix(in srgb, var(--k-summon), var(--outline) 40%);
+  --kf-lock: color-mix(in srgb, var(--k-lock), var(--outline) 45%);
+  --kf-when: color-mix(in srgb, var(--action), var(--outline) 45%);
+  --kf-enemy: color-mix(in srgb, var(--them), var(--outline) 25%);
+  --kf-plain: var(--ink-dim);
+  --kf-pwr-text: color-mix(in srgb, var(--power), var(--outline) 55%);
+  --kf-heal-text: color-mix(in srgb, var(--k-heal), var(--outline) 58%);
   --qr-white: #ffffff;
   --shade: #0009;
   /* Tier colours (R4-4): the I–IV numeral on cards, sheets and Codex chips. */
@@ -1379,10 +1401,25 @@ img.tg-qr { align-self: center; width: 200px; height: 200px; image-rendering: pi
  * gold chip. Inside a card the text tokens turn to ink, so every part that
  * draws with --text / --dim / --panel reads on the light face. */
 .card { --text: var(--outline); --dim: var(--ink-dim); --panel: var(--face); background: var(--face); color: var(--outline); border-color: var(--outline); }
-.card.you { --panel: var(--face-you); background: var(--face-you); border-color: var(--outline); }
-.card.ghost { --panel: var(--tint-them); background: var(--tint-them); border-color: var(--outline); }
-.card.awoken { border-color: var(--outline); box-shadow: var(--drop), inset 0 0 0 2px var(--action); }
-.card.fused { --panel: color-mix(in srgb, var(--awoken) 45%, var(--face)); background: var(--panel); border-color: var(--outline); box-shadow: var(--drop), inset 0 0 0 2px var(--action); }
+/* R2 (#914, Maks: "card backgrounds look really bad"): every card shares one
+ * neutral face (the boards' F1), as on C-Shop; whose it is shows as a band
+ * along its foot in --you / --them (Simplify: colour frames your side), not
+ * a pale wash over the whole face. The Codex's cards and the shop's offers
+ * are nobody's yet: no band.
+ * Awoken, fused and the acting card ring in --action. Keyword icons take the
+ * deepened --kf-* tones, so they read on the light face. */
+.card { --side: transparent; --ring: transparent; --band: 5px; --k-pwr: var(--kf-pwr); --k-hp: var(--kf-hp); --k-shield: var(--kf-shield); --k-heal: var(--kf-heal); --k-str: var(--kf-str); --k-curse: var(--kf-curse); --k-poison: var(--kf-poison); --k-freeze: var(--kf-freeze); --k-bless: var(--kf-bless); --k-silence: var(--kf-silence); --k-dmg: var(--kf-dmg); --k-summon: var(--kf-summon); --k-lock: var(--kf-lock); --k-plain: var(--kf-plain); }
+.card.you { --side: var(--you); border-color: var(--outline); }
+.card.ghost { --side: var(--them); border-color: var(--outline); }
+#app[data-screen="codex"] .card.you, .card[data-testid^="offer-"] { --side: transparent; }
+.card.awoken, .card.fused, .bv-card.acting { --ring: var(--action); border-color: var(--outline); }
+.card:not(.empty) { box-shadow: var(--drop), inset 0 calc(-1 * var(--band)) 0 var(--side), inset 0 0 0 2px var(--ring); }
+.card.fused { --panel: color-mix(in srgb, var(--awoken) 40%, var(--face)); background: var(--panel); }
+.bv-card.you.acting { background: color-mix(in srgb, var(--you) 14%, var(--face)); }
+.bv-card.ghost.acting { background: color-mix(in srgb, var(--them) 14%, var(--face)); }
+.card .tone-when { color: var(--kf-when); }
+.card .tone-enemy { color: var(--kf-enemy); }
+@media (min-width: 1024px) { .card { --band: 7px; } }
 .card.empty { --text: var(--paper); --dim: var(--muted); background: transparent; border-color: var(--muted); }
 /* Descenders (y, g, p) stay whole: the name clips sideways only (#889 note). */
 .card .name { font-family: var(--font-head); font-weight: var(--head-weight); letter-spacing: 0.01em; overflow-x: clip; overflow-y: visible; }
@@ -1391,11 +1428,11 @@ img.tg-qr { align-self: center; width: 200px; height: 200px; image-rendering: pi
 .card .stats:not(.big) .p { background: var(--power); }
 .card .stats:not(.big) .h { background: var(--them); }
 .card .stats.unset > span { background: var(--soft); }
-.bv-card .stats.big .p { color: var(--level); }
-.bv-card .stats.big .h { color: color-mix(in srgb, var(--k-heal) 60%, var(--outline)); }
+.bv-card .stats.big .p { color: var(--kf-pwr-text); }
+.bv-card .stats.big .h { color: var(--kf-heal-text); }
 .bv-card .stats.big .h.hurt { color: var(--loss); }
 .card .copies { color: var(--ink-dim); }
-.card .copies.tag { color: var(--level); }
+.card .copies.tag { color: var(--kf-pwr-text); }
 .card .cost { padding: 0 5px; line-height: 11px; color: var(--outline); background: var(--action); border: 1.5px solid var(--outline); border-radius: 7px; }
 .card.owned .cost { color: var(--outline); background: var(--face-you); }
 .card.locked .cost { color: var(--outline); }
