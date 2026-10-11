@@ -7,7 +7,7 @@
 // Prints that player and run as JSON on the last line.
 //   node --import tsx/esm e2e/mvp-own-crown.ts --url http://127.0.0.1:8791/arena
 import { MVP_RULES, type DayView, type DecisionResponse, type HomeView, type MvpContent, type PlayerRef, type RunView } from "../src/mvp/contract.js";
-import { botDecision } from "../server/src/mvp/bots.js";
+import { botDecision } from "../clients/core/bot.js";
 
 const args = process.argv.slice(2);
 const i = args.indexOf("--url");

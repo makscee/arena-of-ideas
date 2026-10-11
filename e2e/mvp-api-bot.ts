@@ -13,7 +13,7 @@
 import { serve } from "@hono/node-server";
 import type { AddressInfo } from "node:net";
 import { MVP_RULES, type DecisionResponse, type HomeView, type LibraryView, type MvpContent, type MyIdeasView, type PlayerRef, type RunView, type VoteCard } from "../src/mvp/contract.js";
-import { botDecision } from "../server/src/mvp/bots.js";
+import { apiCall, ApiError, botDecision, type Connection } from "../clients/core/index.js";
 import { createMvpApp } from "../server/src/mvp/app.js";
 import { poolContent, seedUnits } from "../server/src/mvp/pool.js";
 import { MemoryMvpStore } from "../server/src/mvp/store.js";
@@ -54,25 +54,18 @@ if (!base) {
 }
 base = base.replace(/\/$/, "") + "/api/v1";
 
+// Every call goes through clients/core's fetch client (#957), as any
+// outside client's would; a refusal names the call that failed.
+const conn: Connection = { api: base, fetch: (url, init) => fetch(url, { ...init, signal: AbortSignal.timeout(10_000) }) };
 let player = "";
-class ApiError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-  ) {
-    super(message);
-  }
-}
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(base + path, {
-    method,
-    headers: { "content-type": "application/json", ...(player ? { "X-Arena-Player": player } : {}) },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-    signal: AbortSignal.timeout(10_000),
-  });
-  const json = await res.json();
-  if (!res.ok) throw new ApiError(`${method} ${path} ${JSON.stringify(body ?? "")} → ${res.status} ${JSON.stringify(json)}`, res.status);
-  return json as T;
+  conn.player = player || null;
+  try {
+    return await apiCall<T>(conn, method, path, body);
+  } catch (e) {
+    if (e instanceof ApiError) throw new ApiError(e.status, `${method} ${path} ${JSON.stringify(body ?? "")} → ${e.status} ${e.message}`);
+    throw e;
+  }
 }
 
 const content = await call<MvpContent>("GET", "/content");
