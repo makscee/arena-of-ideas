@@ -106,25 +106,26 @@
   --k-plain: var(--soft);
   /* R2 (#914): the same tones deepened toward the outline ink, for the light
    * card face: icons ≥ 3.5:1 on every palette's face, the *-text ones (PWR,
-   * HP numbers) ≥ 4.5:1. */
-  --kf-pwr: color-mix(in srgb, var(--power), var(--outline) 35%);
-  --kf-hp: color-mix(in srgb, #e5636f, var(--outline) 20%);
-  --kf-shield: color-mix(in srgb, #6fa8e8, var(--outline) 35%);
-  --kf-heal: color-mix(in srgb, #5cc98a, var(--outline) 40%);
-  --kf-str: color-mix(in srgb, #f0a34e, var(--outline) 40%);
-  --kf-curse: color-mix(in srgb, #d877b4, var(--outline) 25%);
-  --kf-poison: color-mix(in srgb, #a98be0, var(--outline) 30%);
-  --kf-freeze: color-mix(in srgb, #7cc7e6, var(--outline) 45%);
-  --kf-bless: color-mix(in srgb, #f2d27a, var(--outline) 50%);
-  --kf-silence: color-mix(in srgb, #a8a2b8, var(--outline) 35%);
-  --kf-dmg: color-mix(in srgb, #ec6a50, var(--outline) 20%);
-  --kf-summon: color-mix(in srgb, #4fc2b4, var(--outline) 40%);
-  --kf-lock: color-mix(in srgb, #8fc6e6, var(--outline) 45%);
+   * HP numbers) ≥ 4.5:1. They resolve here at the root, so a card can point
+   * its --k-* at them (below). */
+  --kf-pwr: color-mix(in srgb, var(--k-pwr), var(--outline) 35%);
+  --kf-hp: color-mix(in srgb, var(--k-hp), var(--outline) 20%);
+  --kf-shield: color-mix(in srgb, var(--k-shield), var(--outline) 35%);
+  --kf-heal: color-mix(in srgb, var(--k-heal), var(--outline) 40%);
+  --kf-str: color-mix(in srgb, var(--k-str), var(--outline) 40%);
+  --kf-curse: color-mix(in srgb, var(--k-curse), var(--outline) 25%);
+  --kf-poison: color-mix(in srgb, var(--k-poison), var(--outline) 30%);
+  --kf-freeze: color-mix(in srgb, var(--k-freeze), var(--outline) 45%);
+  --kf-bless: color-mix(in srgb, var(--k-bless), var(--outline) 50%);
+  --kf-silence: color-mix(in srgb, var(--k-silence), var(--outline) 35%);
+  --kf-dmg: color-mix(in srgb, var(--k-dmg), var(--outline) 20%);
+  --kf-summon: color-mix(in srgb, var(--k-summon), var(--outline) 40%);
+  --kf-lock: color-mix(in srgb, var(--k-lock), var(--outline) 45%);
   --kf-when: color-mix(in srgb, var(--action), var(--outline) 45%);
   --kf-enemy: color-mix(in srgb, var(--them), var(--outline) 25%);
   --kf-plain: var(--ink-dim);
-  --kf-pwr-text: color-mix(in srgb, var(--power), var(--outline) 45%);
-  --kf-heal-text: color-mix(in srgb, #5cc98a, var(--outline) 50%);
+  --kf-pwr-text: color-mix(in srgb, var(--power), var(--outline) 55%);
+  --kf-heal-text: color-mix(in srgb, var(--k-heal), var(--outline) 58%);
   --qr-white: #ffffff;
   --shade: #0009;
   /* Tier colours (R4-4): the I–IV numeral on cards, sheets and Codex chips. */

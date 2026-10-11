@@ -4,6 +4,7 @@
 // Codex; then measures the text on every card face (contrast ≥ 4.5:1).
 // Needs `npm run mvp:build` first.
 //   node e2e/shots-card-colours.mjs [outdir] [--lang ru]
+// A loaded machine can take minutes to start the server: it waits up to 3.
 import { spawn } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { launchChromium } from "./browser.mjs";
@@ -13,8 +14,9 @@ const lang = args.includes("--lang") ? args[args.indexOf("--lang") + 1] : "en";
 const out = args.find((a, i) => !a.startsWith("--") && args[i - 1] !== "--lang") ?? "e2e/.shots/card-colours";
 mkdirSync(out, { recursive: true });
 const port = 18000 + Math.floor(Math.random() * 1000);
-const child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port), MVP_DEV: "1", MVP_DB: ":memory:", STATIC_DIR: "mobile/dist" }, stdio: ["ignore", "ignore", "inherit"] });
-const url = `http://127.0.0.1:${port}/arena/`;
+// ARENA_URL=http://127.0.0.1:PORT/arena/ reuses a running server instead.
+const child = process.env.ARENA_URL ? null : spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port), MVP_DEV: "1", MVP_DB: ":memory:", STATIC_DIR: "mobile/dist" }, stdio: ["ignore", "ignore", "inherit"] });
+const url = process.env.ARENA_URL ?? `http://127.0.0.1:${port}/arena/`;
 const low = [];
 // Every text on a card face against the face behind it (WCAG contrast).
 const contrast = (page) => page.evaluate(() => {
@@ -37,11 +39,13 @@ const contrast = (page) => page.evaluate(() => {
   return [...bad];
 });
 try {
-  for (let i = 0; i < 120; i++) { try { if ((await fetch(url + "api/v1/health")).ok) break; } catch {} await new Promise((r) => setTimeout(r, 500)); }
+  for (let i = 0; i < 360; i++) { try { if ((await fetch(url + "api/v1/health")).ok) break; } catch {} await new Promise((r) => setTimeout(r, 500)); }
   const browser = await launchChromium();
   for (const theme of ["plum", "brass", "felt"]) for (const [label, viewport] of [["360", { width: 360, height: 640 }], ["1280", { width: 1280, height: 800 }]]) {
     const phone = viewport.width < 1024;
     const page = await browser.newPage({ viewport, deviceScaleFactor: 2, locale: localeOf(lang), ...(phone ? { isMobile: true, hasTouch: true } : {}) });
+    page.setDefaultTimeout(120_000);
+    page.setDefaultNavigationTimeout(180_000);
     const shot = async (what) => {
       await page.waitForTimeout(300);
       await page.screenshot({ path: `${out}/${theme}-${label}-${what}.png` });
@@ -77,7 +81,7 @@ try {
   }
   await browser.close();
 } finally {
-  child.kill();
+  child?.kill();
 }
 console.log(low.length ? `low contrast on the card face (${low.length}):\n${low.join("\n")}` : "card faces: every text ≥ 4.5:1");
 process.exit(low.length ? 1 : 0);
