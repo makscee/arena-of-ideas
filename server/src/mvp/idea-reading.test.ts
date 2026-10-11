@@ -138,11 +138,11 @@ describe("checks, retries and failures (M2-5)", () => {
   it("no valid archetype: the idea fails with the reason and is refunded", async () => {
     const { store, deps, write } = world();
     const idea = write(HEDGEHOG);
-    expect(ideasOf(deps, "p1").held).toBe(0);
+    expect(ideasOf(deps, "p1").held).toBe(2);
     const { reader } = scripted([answer([arch("Fighter")]), answer([arch("Nurse")])]);
     await readIdeas(deps, reader);
     expect(store.idea(idea.ideaId)).toMatchObject({ state: "failed", data: { failure: COULD_NOT } });
-    expect(ideasOf(deps, "p1").held).toBe(1);
+    expect(ideasOf(deps, "p1").held).toBe(3);
   });
 
   it("can't express: logs the word; shows only a part quoted from the text, and says it when nothing is made", async () => {
@@ -318,7 +318,7 @@ describe("None of these, and the ready count (M2-6)", () => {
     const reader = fakeIdeaReader();
     await readIdeas(deps, reader);
     const first = store.idea(idea.ideaId)!.data.archetypes!;
-    expect(ideasOf(deps, "p1")).toMatchObject({ held: 0, ready: 1 });
+    expect(ideasOf(deps, "p1")).toMatchObject({ held: 2, ready: 1 });
     declineOptions(deps, "p1", idea.ideaId);
     expect(store.idea(idea.ideaId)).toMatchObject({ state: "reading", data: { declined: { archetypes: first } } });
     expect(store.idea(idea.ideaId)!.data.archetypes).toBeUndefined();
@@ -330,7 +330,7 @@ describe("None of these, and the ready count (M2-6)", () => {
     for (const a of again.data.archetypes!) expect(first.map((f) => f.name)).not.toContain(a.name);
     declineOptions(deps, "p1", idea.ideaId);
     expect(store.idea(idea.ideaId)).toMatchObject({ state: "failed", data: { failure: DECLINED_TWICE } });
-    expect(ideasOf(deps, "p1")).toMatchObject({ held: 1, ready: 0 });
+    expect(ideasOf(deps, "p1")).toMatchObject({ held: 3, ready: 0 });
   });
 
   it("turning down readings keeps the archetype and asks for other readings", async () => {
