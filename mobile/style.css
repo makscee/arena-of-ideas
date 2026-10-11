@@ -1436,7 +1436,7 @@ img.tg-qr { align-self: center; width: 200px; height: 200px; image-rendering: pi
 .card .stats.unset > span { background: var(--soft); }
 .bv-card .stats.big .p { color: var(--kf-pwr-text); }
 .bv-card .stats.big .h { color: var(--kf-heal-text); }
-.bv-card .stats.big .h.hurt { color: var(--loss); }
+.bv-card .stats.big .h.hurt { color: color-mix(in srgb, var(--loss), var(--outline) 15%); }
 .card .copies { color: var(--ink-dim); }
 .card .copies.tag { color: var(--kf-pwr-text); }
 .card .cost { padding: 0 5px; line-height: 11px; color: var(--outline); background: var(--action); border: 1.5px solid var(--outline); border-radius: 7px; }
