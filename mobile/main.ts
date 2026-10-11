@@ -1274,7 +1274,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const kids = [
       h("div", { class: "label" }, t("gift.label")),
       h("h2", { class: "reveal", "data-testid": "gift-title" }, t("gift.title")),
-      h("div", { class: "dim small" }, tier ? t(tier > shopTier ? "gift.freeTierAhead" : "gift.freeTier", { tier: roman(tier) }) : t("gift.free")),
+      h("div", { class: "dim small", "data-testid": "gift-free" }, tier ? t(tier > shopTier ? "gift.freeTierAhead" : "gift.freeTier", { tier: roman(tier) }) : t("gift.free")),
       ...(stuck ? [h("div", { class: "hint", "data-testid": "gift-full" }, none ? t("gift.noneFits") : t("gift.onlyOwned"))] : []),
       h("div", { class: "gift-choices", "data-testid": "gift-choices" }, ...choices),
       h("div", { class: "dim small" }, desk ? t("gift.readDesk") : t("gift.readPhone")),
