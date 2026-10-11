@@ -497,7 +497,20 @@ const linesOf = (b: PlayBeat) => b.waves.map((w) => w.caption).join("\n");
 /** When each wave lands (ms from the beat's start, at 1×) and how long the
  * beat lasts: waves 220 ms apart, squeezed so the last lands by 1.4 s; the
  * beat lasts 1.3 s, up to 2.2 s for a long cascade, and 0.9 s when quiet. */
+/** A beat of CHAIN_MIN waves or more plays as a chain (#913): each link
+ * gets CHAIN_LINK_MS at 1×, however long the chain, and the chain's summary
+ * holds CHAIN_SUM_MS after its last link. Under the old 2.2 s cap a 19-step
+ * Start chain ran at 70 ms a link: one flash nobody could follow. */
+export const CHAIN_MIN = 4;
+export const CHAIN_LINK_MS = 520;
+export const CHAIN_SUM_MS = 1800;
+export const isChain = (beat: Pick<PlayBeat, "waves">): boolean => beat.waves.length >= CHAIN_MIN;
+
 export function beatTiming(waves: number, quiet = false): { at: number[]; ms: number } {
+  if (waves >= CHAIN_MIN) {
+    const at = Array.from({ length: waves }, (_, i) => i * CHAIN_LINK_MS);
+    return { at, ms: at.at(-1)! + CHAIN_SUM_MS };
+  }
   if (quiet && waves <= 1) return { at: [0], ms: QUIET_BEAT_MS };
   const span = BEAT_MAX_MS - BEAT_HOLD_MS;
   const gap = waves > 1 ? Math.min(WAVE_MS, span / (waves - 1)) : 0;
@@ -1951,6 +1964,62 @@ export function turnSummaryOf(log: BattleEvent[], beats: PlayBeat[], sides = sid
     t.units = t.units.filter((u) => u.damage || u.healed || u.pwr || u.hp || u.blocked || u.statuses.length || u.died);
   }
   return turns;
+}
+
+/** What a chain did to one side (#913): HP its units lost and healed, net
+ * PWR / HP stat changes, net status stacks, who fell and who was summoned. */
+export interface ChainSide {
+  damage: number;
+  healed: number;
+  pwr: number;
+  hp: number;
+  statuses: { status: string; stacks: number }[];
+  fell: number;
+  summoned: number;
+}
+/** A chain beat's summary, per side: the line that says why a team is
+ * strong at the Start (#913). A side the chain didn't touch is left out. */
+export function chainSummaryOf(log: BattleEvent[], beat: PlayBeat, sides = sidesOf(log)): Partial<Record<Side, ChainSide>> {
+  const out: Partial<Record<Side, ChainSide>> = {};
+  const of = (unit: string): ChainSide | null => {
+    const side = sides.get(unit);
+    if (!side) return null;
+    return (out[side] ??= { damage: 0, healed: 0, pwr: 0, hp: 0, statuses: [], fell: 0, summoned: 0 });
+  };
+  const seen = new Set<number>();
+  for (const id of beat.waves.flatMap((w) => w.eventIds)) {
+    const e = log[id];
+    if (!e || seen.has(id)) continue;
+    seen.add(id);
+    if (e.type === "Summon") { const t = of(e.unit); if (t) t.summoned++; continue; }
+    if (e.type !== "Hurt" && e.type !== "Heal" && e.type !== "StatChanged" && e.type !== "StatusApplied" && e.type !== "StatusRemoved" && e.type !== "Death") continue;
+    const t = of(e.unit);
+    if (!t) continue;
+    if (e.type === "Hurt") t.damage += e.amount;
+    else if (e.type === "Heal") t.healed += e.amount;
+    else if (e.type === "StatChanged") t[e.stat] += e.delta;
+    else if (e.type === "Death") t.fell++;
+    else {
+      let st = t.statuses.find((x) => x.status === e.status);
+      if (!st) t.statuses.push((st = { status: e.status, stacks: 0 }));
+      st.stacks += e.type === "StatusApplied" ? e.stacks : -e.stacks;
+    }
+  }
+  for (const t of Object.values(out)) t.statuses = t.statuses.filter((x) => x.stacks !== 0);
+  return out;
+}
+/** A side's chain summary as words: "+6 PWR · +4 HP · Shield ×3 · −9 HP · 1 fell". */
+export function chainSideText(t: ChainSide, status: (s: string) => string = (s) => s): string {
+  const sign = (n: number) => (n > 0 ? `+${n}` : `−${-n}`);
+  return [
+    ...(t.pwr ? [`${sign(t.pwr)} ${statWord("pwr")}`] : []),
+    ...(t.hp ? [`${sign(t.hp)} ${statWord("hp")}`] : []),
+    ...(t.healed ? [ru() ? `+${t.healed} лечения` : `+${t.healed} healed`] : []),
+    ...t.statuses.map((x) => `${status(x.status)} ${x.stacks > 0 ? `×${x.stacks}` : `−${-x.stacks}`}`),
+    ...(t.damage ? [`−${t.damage} ${ru() ? "урона" : "dmg"}`] : []),
+    ...(t.summoned ? [ru() ? `призвано: ${t.summoned}` : `${t.summoned} summoned`] : []),
+    ...(t.fell ? [ru() ? `пало: ${t.fell}` : `${t.fell} fell`] : []),
+  ].join(" · ");
 }
 
 // ---------- the turn-end summary (round 4, R4-12) ----------
