@@ -904,83 +904,16 @@ export interface MyIdeasView {
 // request the API can't read (a Decision of an unknown kind), 401 no player
 // ("unknown player: …", the client forgets its device identity) or not the
 // run's player, 403 invite only, 413 a body over 16 KB, 409 a decision the rules refuse, 404 any
-// path not listed here (and /dev/* off a dev server, or for a non-admin on an
+// path not in ./routes.ts (and /dev/* off a dev server, or for a non-admin on an
 // invite-only one), 501 a route a slice hasn't filled in.
 //
-//   GET  /api/v1/health                      → { ok: true, api, contentVersion, build, invites, open, telegram }  (build: the deployed commit, or null; invites: invite-only; open: anyone without a link may join; telegram: false, or Telegram login is on with the "bot" or the dev "fake", M4-6)
-//   GET  /api/v1/content                     → MvpContent
-//   POST /api/v1/players       { name }      → PlayerRef          (403 on an invite-only server)
-//   POST /api/v1/invites/lookup { code }     → { player: PlayerRef } (slice 13; whose link it is, opening nothing; 404 unknown code)
-//   POST /api/v1/invites/redeem { code }     → PlayerSession      (slice 13; 404 unknown code; the same link again: the same player,
-//                                                                  a new token; a player keeps their newest 10 devices' tokens)
-//   POST /api/v1/join/check  { code }        → { ok: true }       (R4-20; is this the open join link? 404 if not)
-//   POST /api/v1/join        { code, name }  → JoinSession        (R4-20; a new player, never admin, with their own invite;
-//                                                                  404 not the join code, 409 a taken or bot's name,
-//                                                                  400 a bad name, 429 over 30 joins an hour)
+//   The routes, their bodies and answers are the table in ./routes.ts
+//   (API_ROUTES); protocol/openapi.json and protocol/schema.json are built
+//   from it and from this file (npm run protocol, #957).
 //   Invite and join codes travel in the link's fragment (…/arena/#invite=<code>,
 //   #join=<code>) and in these bodies, never in a URL path or query, so no
 //   access log holds one.
-//   GET  /api/v1/home                        → HomeView
-//   POST /api/v1/runs                        → RunView            (starts a run; the player's active run if one is going)
-//   GET  /api/v1/runs/:runId                 → RunView
-//   POST /api/v1/runs/:runId/decisions  Decision → DecisionResponse
-//   POST /api/v1/runs/:runId/preview    Decision → DecisionResponse  (dry run, no writes; 400 for a fight)
-//   POST /api/v1/runs/:runId/abandon             → RunView            (gives the run up: endedBy "abandoned"; 409 when over)
-//   GET  /api/v1/battles/:battleId           → BattleRecord
-//   GET  /api/v1/fusions                     → FusionDiscovery[]  (slice 10)
-//   GET  /api/v1/day                         → DayView            (slice 5)
-//   POST /api/v1/dev/end-day                 → DayView            (slice 5; 404 unless MVP_DEV=1)
-//   POST /api/v1/dev/grant-idea              → IdeasView          (M2-3; +1 idea up to the cap; 404 unless MVP_DEV=1)
-//   GET  /api/v1/ideas                       → MyIdeasView        (M2-4; the caller's own ideas only, 401 without a player)
-//   POST /api/v1/ideas         WriteIdeaRequest → MyIdeasView     (M2-4; writes one, spending a held idea: 400 text not
-//                                                                  IDEA_TEXT_MIN–MAX characters, 409 no idea held; M3-4: kind
-//                                                                  "evolve" proposes a new version of `target`: 404 no such
-//                                                                  unit, 409 the target isn't in the Library)
-//   POST /api/v1/ideas/:ideaId/cancel        → MyIdeasView        (M2-4; takes back a `written` idea and refunds it: 404 not
-//                                                                  the caller's, 409 past `written` or ideas held at the cap)
-//   GET  /api/v1/ideas/:ideaId               → MyIdea             (M2-5; the caller's own idea with its options; 404 not theirs)
-//   POST /api/v1/ideas/:ideaId/archetype { index } → MyIdeasView  (M2-5; picks an archetype in `pick-archetype`: the reader
-//                                                                  reads its readings next; 400 no such option, 409 another state)
-//   POST /api/v1/ideas/:ideaId/reading   { index } → MyIdeasView  (M2-5; picks a reading in `pick-reading`: the idea is
-//                                                                  `simulating`, its unit a candidate; 409 another state, or the
-//                                                                  name or shape was just taken, the option dropped)
-//   POST /api/v1/ideas/:ideaId/none          → MyIdeasView        (M2-6; "None of these" in `pick-archetype` or `pick-reading`:
-//                                                                  the stage is read once more; the second time the idea
-//                                                                  fails and is refunded; 409 another state)
-//   GET  /api/v1/votes/next                  → { card: VoteCard | null }  (M2-8; never the caller's own candidate, nor a pair they voted on;
-//                                                                              M3-6: new versions, and "unchanged" open to anyone)
-//   POST /api/v1/votes         VoteRequest   → { card: VoteCard | null }  (M2-8; the next card: 404 no such candidate or live unit,
-//                                                                  400 a pick of neither, 409 already voted on this pair or
-//                                                                  the caller's own candidate or a bot)
-//   POST /api/v1/dev/overnight-check         → { started: number }        (M2-8; starts the simulation on every `simulating` idea)
-//   POST /api/v1/dev/seed-candidate { unit? } → MyIdeasView               (M2-8; the caller's idea in `simulating`: a renamed live unit, `unit`'s or a random one)
-//   POST /api/v1/dev/fake-votes              → CandidateScore[]           (M2-8; 5 fake votes on each candidate, 4 for it)
-//   GET  /api/v1/dev/candidates              → CandidateScore[]           (M2-8; every candidate, qualified ones first, best first)
-//   GET  /api/v1/stats                       → StatsView          (slice 11)
-//   GET  /api/v1/credits                     → CreditsView        (M2-9; authors, NEW, your creator number)
-//   GET  /api/v1/library                     → LibraryView        (M2-9; the units that have left)
-//   POST /api/v1/dev/credit-unit { unitId }  → CreditsView        (M2-9; dev: the unit becomes your idea, entered today)
-//   POST /api/v1/auth/telegram/start         → TelegramStart      (M4-6; a one-time login code and its t.me deep link, for the caller
-//                                                                  (Link Telegram) or for none (Log in); 404 Telegram login off,
-//                                                                  403 a bot or an admin, 409 already linked, 429 over 20 an hour)
-//   POST /api/v1/auth/telegram/poll { code } → TelegramPoll       (M4-6; "waiting" until Yes in the bot, then the session, once; "declined" after No;
-//                                                                  404 unknown, expired or used: start again)
-//   GET  /api/v1/auth/telegram               → TelegramStatus     (M4-6; is Telegram login on, is the caller linked)
-//   POST /api/v1/auth/telegram/unlink        → TelegramStatus     (M4-6; unlinks the caller's Telegram)
-//   POST /api/v1/dev/telegram/accept { code, decline? } → { reply: string } (M4-6; ARENA_TELEGRAM_FAKE=1 only: the fake bot's user sends
-//                                                                  /start <code>, then taps Yes, or No with decline: true)
 //   Telegram login codes, like invite codes, travel only in bodies and the t.me link.
-//   POST /api/v1/auth/email/start  EmailStartRequest → { ok: true, expiresAt } (#929; mails a 6-digit code to `email`, for sign-in or
-//                                                                  sign-up, or with a session to attach it; never says whether the
-//                                                                  email has a player; 400 a bad email or name, 404 email login off,
-//                                                                  429 a code a minute per email, or too many this hour, 502 not sent)
-//   POST /api/v1/auth/email/verify EmailVerifyRequest → EmailVerify (#929; a known email logs in; a new one with `name` makes the
-//                                                                  player (with `join`, the join code, on an invite-only server);
-//                                                                  without `name` "needsName" and the code stays; 400 a wrong code
-//                                                                  (5 tries), 404 no code or expired, 403 invite only, 409 name taken)
-//   POST /api/v1/auth/email/attach { email, code } → EmailStatus   (#929; ties the email to the caller, who has none yet; the code
-//                                                                  from a start sent with their session; 409 the email has a player)
-//   POST /api/v1/dev/mail/last { email } → { code, subject, text }  (#929; ARENA_MAIL_FAKE=1 only: the last code mailed there)
 
 export const PLAYER_HEADER = "X-Arena-Player";
 /** Slice 13: the session token from POST /invites/redeem. */
@@ -1055,4 +988,76 @@ export interface StatsView {
 
 export interface ApiError {
   error: string;
+}
+
+// ---------- small bodies (#957: named so the protocol schema has them) ----------
+
+/** GET /health. `build` is added by server.ts: the deployed commit, or null. */
+export interface HealthView {
+  ok: true;
+  api: number;
+  contentVersion: string;
+  build?: string | null;
+  /** Invite-only server. */
+  invites: boolean;
+  /** Anyone without a link may join (R4-20). */
+  open: boolean;
+  /** Telegram login: off, the real bot, or the dev fake (M4-6). */
+  telegram: false | "bot" | "fake";
+  /** Email login: off, SMTP, or the dev fake (#929). */
+  mail: false | "smtp" | "fake";
+}
+export interface NameRequest {
+  name: string;
+}
+export interface CodeRequest {
+  code: string;
+}
+export interface JoinRequest {
+  code: string;
+  name: string;
+}
+export interface InviteLookup {
+  player: PlayerRef;
+}
+export interface OkResponse {
+  ok: true;
+}
+export interface EmailStartResponse {
+  ok: true;
+  expiresAt: string;
+}
+export interface EmailAttachRequest {
+  email: string;
+  code: string;
+}
+export interface IndexRequest {
+  index: number;
+}
+export interface VoteCardResponse {
+  card: VoteCard | null;
+}
+export interface UnitIdRequest {
+  unitId: UnitId;
+}
+export interface SeedCandidateRequest {
+  unit?: UnitId;
+}
+export interface StartedResponse {
+  started: number;
+}
+export interface TelegramAcceptRequest {
+  code: string;
+  decline?: boolean;
+}
+export interface ReplyResponse {
+  reply: string;
+}
+export interface MailLastRequest {
+  email: string;
+}
+export interface MailLast {
+  code: string;
+  subject: string;
+  text: string;
 }
