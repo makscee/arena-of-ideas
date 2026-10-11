@@ -85,3 +85,44 @@ describe("a revive returns to its place in the line", () => {
     expect(lineAt(old, rev.id)).toEqual(["A", "C", "Necromancer", "B"]);
   });
 });
+
+// With the same rule a unit is revived once per battle (#918): without it a
+// revived 1-HP unit died again at the front and fed the next revive, and
+// Necromancer lines took 82% of the meta. A second revive fails with
+// SummonFailed "revivedOnce", a beat the battle view shows.
+describe("a unit is revived once per battle", () => {
+  const failed = (log: BattleEvent[]) =>
+    log.filter((e): e is Extract<BattleEvent, { type: "SummonFailed" }> => e.type === "SummonFailed");
+  const named = <E extends BattleEvent>(es: E[], name: string) => es.filter((e) => "unit" in e && typeof e.unit === "string" && e.unit.endsWith(`:${name}`));
+  const deaths = (log: BattleEvent[]) => log.filter((e): e is Extract<BattleEvent, { type: "Death" }> => e.type === "Death");
+
+  test("the same unit dies twice with a Necromancer alive → revived once, the second death stays", () => {
+    // B falls to the battle-start blast and returns at 1 HP; the next hit
+    // kills it again while Necromancer still stands.
+    const log = run([dummy("A"), dummy("B", 1), dummy("C"), Necromancer], [bomber("Bomber", 1)]);
+    expect(named(revives(log), "B")).toHaveLength(1);
+    const again = failed(log)[0]!;
+    expect(again).toMatchObject({ name: "B", side: "A", revive: true, reason: "revivedOnce" });
+    expect(again.unit).toMatch(/:B$/);
+    expect(named(deaths(log), "B")).toHaveLength(2);
+    expect(again.causedBy).toBe(named(deaths(log), "B")[1]!.id);
+    expect(lineAt(log, again.id)).toEqual(["A", "C", "Necromancer"]);
+  });
+
+  test("two different allies die → both revived (the limit is per unit)", () => {
+    const log = run([dummy("A", 1), dummy("B", 1), dummy("C"), Necromancer], [bomber("Bomber", 1)]);
+    const atStart = revives(log).filter((e) => e.turn === 0);
+    expect(atStart.map((e) => e.name).sort()).toEqual(["A", "B"]);
+    expect(failed(log).filter((e) => e.turn === 0)).toHaveLength(0);
+    expect(lineAt(log, atStart[1]!.id)).toEqual(["A", "B", "C", "Necromancer"]);
+  });
+
+  test("without the rule → unchanged: revives at the back, no limit", () => {
+    const log = run([dummy("A"), dummy("B", 1), dummy("C"), Necromancer], [bomber("Bomber", 1)], 1, false);
+    const rev = named(revives(log), "B");
+    expect(rev.length).toBeGreaterThan(1);
+    expect(rev.every((e) => e.slot === undefined)).toBe(true);
+    expect(failed(log).filter((e) => e.reason === "revivedOnce")).toHaveLength(0);
+    expect(lineAt(log, rev[1]!.id)).toEqual(["A", "C", "Necromancer", "B"]);
+  });
+});

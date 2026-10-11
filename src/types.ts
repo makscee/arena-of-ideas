@@ -237,8 +237,9 @@ export type EventBody =
   // room; `revive` is the dead unit's id when it was a revive.
   | { type: "NoRoom"; unit: string; side: Side; name: string; revive?: string }
   // A Summon (or, with revive, a Revive of `unit`) that did nothing, and why:
-  // in sudden death (R4-1) nobody enters the line.
-  | { type: "SummonFailed"; name: string; side: Side; unit?: string; revive?: true; reason: "suddenDeath" }
+  // in sudden death (R4-1) nobody enters the line; with reviveInPlace a unit
+  // returns once per battle, so its second revive fails ("revivedOnce", #918).
+  | { type: "SummonFailed"; name: string; side: Side; unit?: string; revive?: true; reason: "suddenDeath" | "revivedOnce" }
   | { type: "Intercepted"; by: AbilityRef; original: string; unit?: string }
   // timeUp: the turn cap ran out with both sides standing (a draw); absent otherwise.
   | { type: "BattleEnd"; winner: Side | "draw"; turns: number; timeUp?: true };
@@ -278,6 +279,7 @@ export interface BattleInput {
   /** A revive returns the unit to its index in the line at death, clamped to
    * the line's length (#918), and its Summon event says `slot`. Omitted =
    * the back of the line, as fights before it had (the desktop ladder and
-   * its goldens re-sim those). */
+   * its goldens re-sim those). It also limits a unit to one revive a
+   * battle: a second fails with SummonFailed "revivedOnce". */
   reviveInPlace?: boolean;
 }

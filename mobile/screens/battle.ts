@@ -203,7 +203,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const lastEvent = log[log.length - 1];
   const timeUpCap = lastEvent?.type === "BattleEnd" && lastEvent.timeUp ? lastEvent.turns : null;
   // Sudden death (R4-1): the turn it began in this battle, for its rule's tip.
-  const suddenAt = Math.min(...log.flatMap((e) => ((e.type === "Fatigue" && e.suddenDeath) || e.type === "SummonFailed" ? [e.turn] : [])));
+  const suddenAt = Math.min(...log.flatMap((e) => ((e.type === "Fatigue" && e.suddenDeath) || (e.type === "SummonFailed" && e.reason === "suddenDeath") ? [e.turn] : [])));
   const captionTerms = new RegExp(`\\(\\d+ absorbed\\)|Chain stopped after\\s\\d+ steps|Time's up|No room|[Ss]udden death|(?<![\\p{L}\\d])(?:${words.map(esc).join("|")})(?![\\p{L}\\d])|\\b(?:PWR|HP)\\b|[−+]\\d+(?!\\d)(?!\\s+more)${ruStatus.size ? RU_CAPTION_TERMS : ""}`, "gu");
 
   let at = -1; // index of the beat on screen; -1 = the line-up before the first beat
@@ -2171,6 +2171,7 @@ function chainView(c: Chain, o: { units: Map<string, BattleUnit>; summoned: Map<
     let id = n.trigger ? termIcon(n.trigger as TermId, n.triggerStatus) : undefined;
     if (!id && n.event === "Fatigue") id = "hourglass";
     if (!id && n.event === "NoRoom") id = termDef("battle:noRoom")!.icon;
+    if (!id && n.event === "SummonFailed") id = termDef("effect:resurrect")!.icon;
     if (!id && n.event === "Intercepted") id = (n.triggerStatus ? (STATUS_TERMS[n.triggerStatus] ?? termDef(`status:${n.triggerStatus}` as TermId, o.content.statuses))?.icon : undefined) ?? "breaking-chain";
     return id ? icon(id, 18, tone) : h("span", { class: tone }, n.kind === "firing" ? "⚡" : "•");
   };

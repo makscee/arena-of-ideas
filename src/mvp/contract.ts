@@ -77,8 +77,8 @@ export interface MvpRules {
    * though the team still enters with at most `lineSize`. Runs stored before
    * it have no field and keep the kernel's TEAM_SIZE (5). */
   battleSize?: number;
-  /** A revive returns the unit to where it fell in the line (#918,
-   * BattleInput.reviveInPlace). Runs stored before it have no field and keep
+  /** A revive returns the unit to where it fell in the line, and a unit is
+   * revived once per battle (#918, BattleInput.reviveInPlace). Runs stored before it have no field and keep
    * revives at the back, so their next fights play as their first did. */
   reviveInPlace?: boolean;
   /** Per-fight Elo (docs/round2/rating.md): K falls with runs played. A

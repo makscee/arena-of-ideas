@@ -67,6 +67,8 @@ interface UnitState {
   alive: boolean;
   /** Its index in the line when it last died; a revive returns it there (#918). */
   fellAt?: number;
+  /** Revived already this battle; with reviveInPlace it never returns again (#918). */
+  revived?: boolean;
 }
 
 interface ReactorEntry {
@@ -607,6 +609,16 @@ class Engine {
       }
       case "resurrect": {
         if (target.alive) return;
+        if (this.input.reviveInPlace && target.revived) {
+          // once per battle (#918): a revived unit that falls again stays down,
+          // or a 1-HP return at the front feeds the next revive forever
+          this.applyEvent(
+            { type: "SummonFailed", name: target.name, side: target.side, unit: target.id, revive: true, reason: "revivedOnce" },
+            f.event.id,
+            f.ref,
+          );
+          return;
+        }
         if (this.suddenDeath()) {
           this.applyEvent(
             { type: "SummonFailed", name: target.name, side: target.side, unit: target.id, revive: true, reason: "suddenDeath" },
@@ -757,6 +769,7 @@ class Engine {
             const slot = Math.min(u.fellAt ?? line.length, line.length);
             line.splice(slot, 0, u.id);
             ev.slot = slot;
+            u.revived = true;
           } else line.push(u.id);
         } else if (pending?.summon) {
           this.units.set(pending.summon.id, pending.summon);

@@ -206,6 +206,10 @@ class Renderer {
       case "SummonFailed": {
         const by = e.source !== "kernel" ? this.refDesc(e.source) : "the kernel";
         const who = e.revive && e.unit ? this.name(e.unit) : e.name;
+        if (e.reason === "revivedOnce") {
+          this.push(e, `${by} tries to revive ${who} again, but a unit returns only once per battle.`);
+          return;
+        }
         this.push(e, `${by} tries to ${e.revive ? "revive" : "summon"} ${who}, but in sudden death no one joins the line.`);
         return;
       }
