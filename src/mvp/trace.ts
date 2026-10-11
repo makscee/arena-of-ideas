@@ -88,7 +88,7 @@ export interface Change {
   label: string;
 }
 
-const CHANGE_TYPES = new Set(["Hurt", "Heal", "StatChanged", "StatusApplied", "Death", "Summon", "Silenced", "NoRoom"]);
+const CHANGE_TYPES = new Set(["Hurt", "Heal", "StatChanged", "StatusApplied", "Death", "Summon", "Silenced", "NoRoom", "SummonFailed"]);
 
 /** A hit as a change reads: "−n", or for a hit that did nothing, what
  * stopped it ("3 blocked" by Shield, or "no damage"), never "−0". */
@@ -118,6 +118,10 @@ export function changeOf(e: BattleEvent): Change | null {
     // On the unit that tried, so it can be tapped for its trace (R4-2).
     case "NoRoom":
       return { eventId: e.id, unit: e.unit, kind: "noRoom", label: ru() ? "нет места" : "no room" };
+    // A second revive of the same unit (#918): on the reviver, like no room.
+    case "SummonFailed":
+      if (e.reason !== "revivedOnce" || e.source === "kernel") return null;
+      return { eventId: e.id, unit: e.source.unit, kind: "noRoom", label: ru() ? "не вернётся" : "can't return" };
     default:
       return null;
   }
@@ -614,6 +618,7 @@ function effectOf(e: BattleEvent | undefined): Pick<Firing, "effect" | "effectSt
     case "Intercepted": return { effect: "effect:cancel" };
     case "ChainCapped": return { effect: "battle:chainCapped" };
     case "NoRoom": return { effect: "battle:noRoom" };
+    case "SummonFailed": return e.reason === "revivedOnce" ? { effect: "effect:resurrect" } : null;
     default: return null;
   }
 }
@@ -1271,6 +1276,8 @@ export function captionSubject(log: BattleEvent[], id: number, name: NameOf = di
     case "Summon":
     case "NoRoom":
       return causeUnit(log, e, name) ?? e.unit;
+    case "SummonFailed":
+      return e.reason === "revivedOnce" ? (causeUnit(log, e, name) ?? e.unit ?? null) : null;
     case "StatusRemoved":
       return e.unit;
     case "Intercepted":
@@ -1356,6 +1363,7 @@ export function captionOf(log: BattleEvent[], id: number, name: NameOf = display
       // Sudden death (R4-1): the caption says why nothing blocks it.
       return e.suddenDeath ? `Sudden death: Fatigue → everyone takes ${e.amount}, nothing blocks it` : `Fatigue → everyone takes ${e.amount}`;
     case "SummonFailed":
+      if (e.reason === "revivedOnce") return `${causeName(log, e, name)} → ${e.unit ? name(e.unit) : e.name} can't return again: once per battle`;
       return `${causeName(log, e, name)} → ${e.revive && e.unit ? name(e.unit) : e.name} can't ${e.revive ? "return" : "appear"}: sudden death`;
     case "ChainCapped":
       return `Chain stopped after ${e.steps} steps`;
@@ -1408,6 +1416,7 @@ function captionOfRu(log: BattleEvent[], e: BattleEvent, name: NameOf, merged: n
     case "Fatigue":
       return e.suddenDeath ? `Внезапная смерть: Усталость → все получают ${e.amount}, ничто не блокирует` : `Усталость → все получают ${e.amount}`;
     case "SummonFailed":
+      if (e.reason === "revivedOnce") return `${causeName(log, e, name)} → ${e.unit ? name(e.unit) : e.name} не может вернуться снова: раз за бой`;
       return `${causeName(log, e, name)} → ${e.revive && e.unit ? name(e.unit) : e.name} не может ${e.revive ? "вернуться" : "появиться"}: внезапная смерть`;
     case "ChainCapped":
       return `Цепь прервана после ${e.steps} ${ruCount(e.steps, ["шага", "шагов", "шагов"])}`;
