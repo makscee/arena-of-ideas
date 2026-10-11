@@ -113,6 +113,19 @@ function inLang<T>(o: TextOpts, fn: () => T): T {
   }
 }
 
+/** The turn headers of battle text, in the phone's words (#960): the
+ * `battle.timeline.start` and `battle.turn` keys of mobile/i18n/<lang>/battle.ts
+ * (core.test.ts holds them equal). */
+export const TURN_HEADS = {
+  en: { start: "Start", turn: "Turn {n}", turns: "Turns {n}" },
+  ru: { start: "Старт", turn: "Ход {n}", turns: "Ходы {n}" },
+} as const;
+
+const turnHead = (o: TextOpts, from: number, to = from): string => {
+  const h = TURN_HEADS[o.lang === "ru" ? "ru" : "en"];
+  return from === to ? h.turn.replace("{n}", String(from)) : h.turns.replace("{n}", `${from}–${to}`);
+};
+
 export interface BattleTextOpts extends TextOpts {
   /** The reader's side: the end reads "You win" / "They win". */
   you?: Side;
@@ -143,12 +156,12 @@ export function battleText(b: BattleRecord, o: BattleTextOpts = {}): string {
     for (const it of foldTurnsOf(log, rows, name)) {
       if (isLogFold(it)) {
         turn = it.turnTo;
-        out.push(`${it.turn === it.turnTo ? `Turn ${it.turn}` : `Turns ${it.turn}–${it.turnTo}`}`, `  … ${it.caption}`);
+        out.push(turnHead(o, it.turn, it.turnTo), `  … ${it.caption}`);
         continue;
       }
       if (it.turn !== turn) {
         turn = it.turn;
-        out.push(turn === 0 ? "Start" : `Turn ${turn}`);
+        out.push(turn === 0 ? TURN_HEADS[o.lang === "ru" ? "ru" : "en"].start : turnHead(o, turn));
       }
       const side = it.subjectSide ? `${it.subjectSide} ` : "";
       out.push(`  ${side}${it.caption}  #${it.eventIds.at(-1)}`);

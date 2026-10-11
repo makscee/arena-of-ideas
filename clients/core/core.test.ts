@@ -7,7 +7,9 @@ import { describe, expect, it } from "vitest";
 import { MVP_RULES } from "../../src/mvp/contract.js";
 import { createMvpApp } from "../../server/src/mvp/app.js";
 import { mvpContent } from "../../server/src/mvp/content.js";
-import { ApiError, ArenaClient, battleText, botDecision, cardText, glossaryText, runText, traceText } from "./index.js";
+import { battle as enBattle } from "../../mobile/i18n/en/battle.js";
+import { battle as ruBattle } from "../../mobile/i18n/ru/battle.js";
+import { ApiError, ArenaClient, battleText, botDecision, cardText, glossaryText, runText, traceText, TURN_HEADS } from "./index.js";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -80,10 +82,22 @@ describe("clients/core", () => {
     const id = Number(/#(\d+)/.exec(steps.split("Turn 1")[1]!)![1]);
     expect(traceText(b, id).split("\n").length).toBeGreaterThan(0);
     expect(battleText(b, { you: "A", view: "summary" }).split("\n").length).toBe(5);
-    expect(battleText(b, { you: "A", lang: "ru" })).toMatch(/[а-я]/);
+    const ru = battleText(b, { you: "A", lang: "ru" });
+    expect(ru).toMatch(/[а-я]/);
+    // #960: the turn headers are Russian too, never "Start", "Turn N" or "Turns a–b".
+    expect(ru).toMatch(/^Старт$/m);
+    expect(ru).toMatch(/^Ход 1$/m);
+    expect(ru).not.toMatch(/^(Start|Turns? \d)/m);
     // English again after a Russian replay.
     expect(battleText(b, { you: "A" })).toBe(steps);
     await expect(client.run("nope")).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it("battle turn headers are the phone's words (#960)", () => {
+    expect(TURN_HEADS.en.start).toBe(enBattle["battle.timeline.start"]);
+    expect(TURN_HEADS.en.turn).toBe(enBattle["battle.turn"]);
+    expect(TURN_HEADS.ru.start).toBe(ruBattle["battle.timeline.start"]);
+    expect(TURN_HEADS.ru.turn).toBe(ruBattle["battle.turn"]);
   });
 
   it("card and glossary text, English and Russian", () => {
