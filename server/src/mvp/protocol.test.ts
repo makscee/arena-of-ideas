@@ -44,3 +44,15 @@ describe("protocol", () => {
     }
   });
 });
+
+describe("battle-events/1", () => {
+  it("protocol/battle-events.md has a section for every BattleEvent type", () => {
+    const schema = JSON.parse(readFileSync(SCHEMA_FILE, "utf8")) as { definitions: { BattleEvent: { anyOf: { properties: { type: { const: string } } }[] } } };
+    const types = schema.definitions.BattleEvent.anyOf.map((b) => b.properties.type.const);
+    expect(types.length).toBeGreaterThan(15);
+    const md = readFileSync(new URL("../../../protocol/battle-events.md", import.meta.url), "utf8");
+    const headed = new Set([...md.matchAll(/^### (.+)$/gm)].flatMap((m) => m[1]!.split(" / ")));
+    expect(types.filter((t) => !headed.has(t))).toEqual([]);
+    expect([...headed].filter((t) => !types.includes(t))).toEqual([]);
+  });
+});
