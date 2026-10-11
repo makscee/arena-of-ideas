@@ -1600,9 +1600,7 @@ button.reroll-btn:disabled .cost-chip { background: var(--soft); }
 .bv-chain-sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 6px 10px; border: 2px solid var(--outline); border-radius: 10px; background: var(--panel); box-shadow: 3px 3px 0 var(--outline); font-size: 14px; font-weight: 600; line-height: 1.35; animation: bv-chip-in 220ms ease-out backwards; }
 .bv-chain-of { color: var(--action); font-weight: 700; }
 .bv-chain-side { display: inline-flex; flex-wrap: wrap; gap: 0 5px; align-items: baseline; }
-button.bv-skip { white-space: nowrap; flex: 0 0 auto; width: auto; padding: 0 12px; }
-/* The phone's row is full: while a chain plays, Skip stands where Replay is (End stays). */
-@media (max-width: 1023.98px) { .bv-controls.chain [data-testid="battle-replay"] { display: none; } button.bv-skip { font-size: 13px; padding: 0 8px; } }
+button.bv-skip { align-self: center; white-space: nowrap; min-height: 40px; padding: 0 16px; font-size: 15px; }
 @media (prefers-reduced-motion: reduce) { .bv-card > .bv-chain-chip, .bv-chain-sum { animation: none; } }
 @media (min-width: 1024px) {
   #app[data-screen="battle"] .bv-chainbox { display: flex; justify-content: center; }

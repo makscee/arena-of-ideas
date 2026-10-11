@@ -351,7 +351,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   // Desktop's keys, as the mockup lists them (the phone hides the line).
   const kbd = (k: string) => h("kbd", {}, k);
   const keys = h("div", { class: "bv-keys dim", "data-testid": "battle-keys", "aria-hidden": "true" }, kbd(tr("battle.keys.space")), tr("battle.keys.pause"), kbd("←"), kbd("→"), tr("battle.keys.beat"), kbd("R"), tr("battle.keys.replay"));
-  const controls = h("div", { class: "row bv-controls" }, backBtn, playBtn, fwdBtn, speedBtn, skipBtn, endBtn, replayBtn, keys);
+  const controls = h("div", { class: "row bv-controls" }, backBtn, playBtn, fwdBtn, speedBtn, endBtn, replayBtn, keys);
   // How long playback should take at 1× (the line-up plus every beat), for
   // the e2e to compare with what the screen takes.
   // the turn-end summaries included (R4-12).
@@ -1318,10 +1318,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const chained = !sum && !!beat && isChain(beat);
     const link = chained ? [h("span", { class: "bv-cap-chain", "data-testid": "caption-chain" }, tr("battle.chain.step", { n: wave + 1, of: beat!.waves.length }))] : [];
     caption.replaceChildren(h("span", { class: "bv-cap" }, ...(sum ? [h("span", { "data-testid": "caption-turn-end" }, sum.turn >= 1 ? tr("battle.totals.turn", { n: sum.turn }) : tr("battle.totals.start"))] : [...link, ...captionKids(step)])));
-    skipBtn.hidden = !inChain();
-    controls.classList.toggle("chain", inChain());
-    // The chain's summary, below the board at its last link (#913).
-    chainBox.replaceChildren(...(chained && wave === lastWave(at) ? [chainSummary(beat!)] : []));
+    // Below the board (#913): Skip chain while a chain plays, its summary at its last link.
+    chainBox.replaceChildren(...(inChain() ? [skipBtn] : chained && wave === lastWave(at) ? [chainSummary(beat!)] : []));
     still.replaceChildren(...(reduced() ? (sum ? stillTotals(sum) : stillList(v.changes)) : []));
     still.style.display = reduced() && !finished ? "" : "none";
     fitStill();
