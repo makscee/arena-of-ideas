@@ -19,6 +19,7 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { launchChromium } from "./browser.mjs";
+import { catalog } from "./lang.mjs";
 
 const args = process.argv.slice(2);
 const opt = (n) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : undefined; };
@@ -170,10 +171,41 @@ try {
   if (j1.url().includes("join=") || !j1.url().includes("#invite=")) errors.push("join: the address isn't the player's own #invite= link");
   if (await j1.getByTestId("end-day").count()) errors.push("join: a joined player sees End day now");
   const ownUrl = j1.url();
+  await j1.getByTestId("settings").click();
   await j1.getByTestId("own-link-row").locator("summary").click();
   if ((await j1.getByTestId("own-link").inputValue()) !== ownUrl) errors.push("join: Home's own link isn't the address's #invite= link");
   await j1.getByTestId("own-link-copy").scrollIntoViewIfNeeded();
   await shot(j1, "join-home-own-link-phone");
+  // #919: the language switch redraws the page with the own #invite= link in
+  // the address (a hash-only change reloads nothing), with the settings sheet
+  // open, and with a ?lang= that would win over the choice; the palette
+  // switches in place there too. Then English back.
+  const throneIn = async (lang, why) => {
+    const L = catalog(lang);
+    await j1.getByTestId("play").waitFor({ timeout: 10_000 });
+    const play = await j1.getByTestId("play").locator(".play-main").textContent();
+    const html = await j1.evaluate(() => document.documentElement.lang);
+    if (play !== L("home.play") || html !== lang) errors.push(`lang ${why}: the Throne reads "${play}" (<html lang=${html}>), not ${lang}`);
+  };
+  const switchLang = async (to, why) => {
+    if (!(await j1.getByTestId(`lang-${to}`).count())) await j1.getByTestId("settings").click();
+    const loaded = j1.waitForEvent("load", { timeout: 10_000 }).then(() => true, () => false);
+    await j1.getByTestId(`lang-${to}`).click();
+    if (!(await loaded)) errors.push(`lang ${why}: tapping ${to} doesn't redraw the page (${j1.url()})`);
+    await throneIn(to, why);
+  };
+  await switchLang("ru", "with #invite=");
+  await shot(j1, "join-lang-ru-phone");
+  await j1.getByTestId("settings").click();
+  await j1.getByTestId("theme-felt").click();
+  if ((await j1.evaluate(() => document.documentElement.dataset.theme)) !== "felt") errors.push("theme: Felt Table didn't recolour the page with #invite=");
+  await j1.getByTestId("theme-plum").click();
+  await switchLang("en", "back with #invite=");
+  await j1.goto(ownUrl.replace("#", "?lang=en#"));
+  await throneIn("en", "?lang=en");
+  await switchLang("ru", "with ?lang=en#invite=");
+  if (j1.url().includes("lang=")) errors.push(`lang: ?lang= stays in the address (${j1.url()})`);
+  await switchLang("en", "back after ?lang=");
   await j1.getByTestId("play").click();
   await j1.getByTestId("fight").waitFor({ timeout: 10_000 });
   await j1.getByTestId("offer-0").click();

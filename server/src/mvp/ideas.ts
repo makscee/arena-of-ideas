@@ -1,16 +1,10 @@
-// Earning ideas (mission 2, M2-3, makscee/void-board#787): 1 idea per
-// MvpRules.ideaEveryRuns finished runs, held up to ideaHold. Counted from what
-// the store already knows, the finished runs on the rating row (Rating.runs:
-// every ending a rating counts, given up included), plus the player's
-// IdeaCounts: nothing to backfill for players who played before ideas.
-//
-//   earned = floor(runs / every) + granted
-//   held   = earned − spent − forfeited, at most `hold`
-//
-// Ideas earned past the cap are forfeited, written down the next time the
-// counts are read (settle), so a spent idea doesn't bring back the runs
-// played while full. Earning only grows between reads and every write
-// settles first, so settling late gives what settling at each run would.
+// Ideas a day (Toybox R2, makscee/void-board#915; before it, M2-3 earned 1
+// per 3 finished runs): each arena day (./day.ts today(), the champion's
+// day) a player gets their ideas back up to MvpRules.ideaHold (3). Unspent
+// ones don't stack past it; runs earn none. IdeaCounts keeps the ideas held
+// and the day they were last refilled: the first read on a later day (or
+// ever, a fresh player or one from before this rule) refills, so nobody
+// loses an idea they held.
 //
 // Writing one (M2-4, makscee/void-board#790) spends a held idea and stores its
 // text, private to its author, as a `written` Idea for M2-5's reader. Its
@@ -22,36 +16,41 @@ import { IDEA_TEXT_MAX, IDEA_TEXT_MIN, type Idea, type IdeasView, type MvpRules,
 import type { RunDeps } from "./runs.js";
 import type { IdeaCounts } from "./store.js";
 
-type IdeaDeps = Pick<RunDeps, "store" | "rules">;
-type WriteDeps = Pick<RunDeps, "store" | "rules" | "now">;
+type IdeaDeps = Pick<RunDeps, "store" | "rules" | "today">;
+type WriteDeps = Pick<RunDeps, "store" | "rules" | "today" | "now">;
 
-/** The idea tunables, defaults filled in. */
-export function ideaRules(rules: Pick<MvpRules, "ideaEveryRuns" | "ideaHold">): { every: number; hold: number } {
-  return { every: Math.max(1, rules.ideaEveryRuns ?? 3), hold: Math.max(0, rules.ideaHold ?? 3) };
+/** The ideas a player gets back each day and holds at most; absent, 3. */
+export function ideaHold(rules: Pick<MvpRules, "ideaHold">): number {
+  return Math.max(0, rules.ideaHold ?? 3);
 }
 
-/** Reads the player's counts, forfeits ideas earned past the cap (writing
- * only when that changed something), and returns them with the ideas held. */
-function settle(deps: IdeaDeps, playerId: string): { counts: IdeaCounts; runs: number; held: number } {
-  const { every, hold } = ideaRules(deps.rules);
-  const runs = deps.store.rating(playerId)?.runs ?? 0;
+/** Reads the player's counts and refills them on a new day (writing only
+ * when that changed something); returns them with the ideas held and the
+ * day's end, when the next refill comes. */
+function settle(deps: IdeaDeps, playerId: string): { counts: IdeaCounts; held: number; refillsAt: string } {
+  const hold = ideaHold(deps.rules);
+  const day = deps.today();
   const counts = deps.store.ideaCounts(playerId);
-  const raw = Math.floor(runs / every) + counts.granted - counts.spent - counts.forfeited;
-  if (raw > hold) {
-    counts.forfeited += raw - hold;
+  if (counts.day !== day.seq) {
+    counts.held = Math.max(counts.held ?? 0, hold);
+    counts.day = day.seq;
     deps.store.putIdeaCounts(playerId, counts);
   }
-  // A rate raised later can earn less than was spent: none held, not negative.
-  return { counts, runs, held: Math.max(0, Math.min(raw, hold)) };
+  return { counts, held: counts.held ?? 0, refillsAt: day.endsAt };
+}
+
+/** Stores a new number of ideas held. */
+function hold(deps: IdeaDeps, playerId: string, counts: IdeaCounts, held: number): void {
+  counts.held = held;
+  deps.store.putIdeaCounts(playerId, counts);
 }
 
 /** M2-6: the states where an idea waits for its author's pick. */
 const READY_STATES = new Set(["pick-archetype", "pick-reading"]);
 
-function view(deps: IdeaDeps, playerId: string, s: { runs: number; held: number }): IdeasView {
-  const { every, hold } = ideaRules(deps.rules);
+function view(deps: IdeaDeps, playerId: string, s: { held: number; refillsAt: string }): IdeasView {
   const ready = deps.store.ideas({ playerId }).filter((i) => READY_STATES.has(i.state)).length;
-  return { held: s.held, nextIn: s.held >= hold ? null : every - (s.runs % every), ready };
+  return { held: s.held, perDay: ideaHold(deps.rules), refillsAt: s.refillsAt, ready };
 }
 
 /** The player's ideas, for Home. */
@@ -62,10 +61,9 @@ export function ideasOf(deps: IdeaDeps, playerId: string): IdeasView {
 /** Dev "+1 idea": one more, unless the player already holds the cap. */
 export function grantIdea(deps: IdeaDeps, playerId: string): IdeasView {
   const s = settle(deps, playerId);
-  if (s.held < ideaRules(deps.rules).hold) {
+  if (s.held < ideaHold(deps.rules)) {
     s.counts.granted++;
-    deps.store.putIdeaCounts(playerId, s.counts);
-    s.held++;
+    hold(deps, playerId, s.counts, ++s.held);
   }
   return view(deps, playerId, s);
 }
@@ -76,17 +74,17 @@ export function spendIdea(deps: IdeaDeps, playerId: string): boolean {
   const s = settle(deps, playerId);
   if (s.held < 1) return false;
   s.counts.spent++;
-  deps.store.putIdeaCounts(playerId, s.counts);
+  hold(deps, playerId, s.counts, s.held - 1);
   return true;
 }
 
-/** Gives back a spent idea (M2-5: an idea the reader couldn't make). Like
- * any idea earned, one past the cap is forfeited. */
+/** Gives back a spent idea (M2-5: an idea the reader couldn't make). One
+ * past the cap is forfeited. */
 export function refundIdea(deps: IdeaDeps, playerId: string): void {
-  const counts = deps.store.ideaCounts(playerId);
-  counts.spent = Math.max(0, counts.spent - 1);
-  deps.store.putIdeaCounts(playerId, counts);
-  settle(deps, playerId);
+  const s = settle(deps, playerId);
+  s.counts.spent = Math.max(0, s.counts.spent - 1);
+  if (s.held >= ideaHold(deps.rules)) s.counts.forfeited++;
+  hold(deps, playerId, s.counts, Math.min(ideaHold(deps.rules), s.held + 1));
 }
 
 /** A write or cancel the rules refuse, with the HTTP status the API answers. */
@@ -119,7 +117,7 @@ export function writeIdea(deps: WriteDeps, playerId: string, text: string, evolv
   const t = text.trim();
   const chars = [...t].length;
   if (chars < IDEA_TEXT_MIN || chars > IDEA_TEXT_MAX) throw new IdeaRefused(400, `An idea is ${IDEA_TEXT_MIN}–${IDEA_TEXT_MAX} characters.`);
-  if (!spendIdea(deps, playerId)) throw new IdeaRefused(409, "You hold no idea to send. Finish runs to earn one.");
+  if (!spendIdea(deps, playerId)) throw new IdeaRefused(409, "You have no ideas left today. They come back at the day's end.");
   const idea: Idea = { ideaId: randomUUID(), playerId, text: t, state: "written", createdAt: deps.now().toISOString(), data: evolve ? { kind: "evolve", target: evolve.target } : {} };
   deps.store.putIdea(idea);
   return idea;
@@ -133,8 +131,8 @@ export function cancelIdea(deps: IdeaDeps, playerId: string, ideaId: string): vo
   if (!idea || idea.playerId !== playerId) throw new IdeaRefused(404, "no such idea");
   if (idea.state !== "written") throw new IdeaRefused(409, "This idea is being read already.");
   const s = settle(deps, playerId);
-  if (s.held >= ideaRules(deps.rules).hold) throw new IdeaRefused(409, `You hold ${s.held} ideas, the most you can. Send one first.`);
+  if (s.held >= ideaHold(deps.rules)) throw new IdeaRefused(409, `You hold ${s.held} ideas, the most you can. Send one first.`);
   deps.store.deleteIdea(ideaId);
   s.counts.spent--;
-  deps.store.putIdeaCounts(playerId, s.counts);
+  hold(deps, playerId, s.counts, s.held + 1);
 }

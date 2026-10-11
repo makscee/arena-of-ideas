@@ -106,15 +106,18 @@ function rollOffers(s: MvpRunState, content: MvpContent): void {
   s.offers = [...kept, ...fresh].map((o, slot) => ({ ...o, slot }));
 }
 
-/** Rolls the awakening gift: rules.giftChoices different units drawn from the
- * highest tier open this round (tierOpensAt; the highest that has units). No-op
- * for a run whose rules have no gift. */
+/** Rolls the awakening gift: rules.giftChoices different units drawn from
+ * rules.giftTierAhead tiers above the highest tier open this round
+ * (tierOpensAt; the highest that has units), capped at the top tier that has
+ * units. Runs stored before R2 of mission 5 have no giftTierAhead: the highest
+ * open tier itself. No-op for a run whose rules have no gift. */
 function rollGift(s: MvpRunState, content: MvpContent): void {
   const n = s.rules.giftChoices ?? 0;
   if (n <= 0) return;
   const open = openUnits(content, s.rules, s.round);
-  const tier = Math.max(...open.map((u) => u.tier));
-  const left = open.filter((u) => u.tier === tier).map((u) => u.id);
+  const want = Math.max(...open.map((u) => u.tier)) + (s.rules.giftTierAhead ?? 0);
+  const tier = Math.max(...content.units.map((u) => u.tier).filter((t) => t <= want));
+  const left = content.units.filter((u) => u.tier === tier).map((u) => u.id);
   const gift: UnitId[] = [];
   while (gift.length < n && left.length > 0) gift.push(left.splice(draw(s, left.length), 1)[0]!);
   s.gift = gift;

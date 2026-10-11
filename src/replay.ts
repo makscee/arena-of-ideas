@@ -155,7 +155,9 @@ class Renderer {
           const u = this.units.get(e.unit);
           if (u) u.maxHp = u.baseHp; // the corpse was clean: stat-modding statuses ended at death
           const at = e.atHp !== undefined ? ` at ${e.atHp} hp` : "";
-          this.push(e, `${this.name(e.unit)} rises from the grave${at}, back of side ${e.side} — ${by}'s doing.`);
+          // where it fell (#918); revives in older logs went to the back
+          const where = e.slot !== undefined ? `slot ${e.slot + 1}` : "back";
+          this.push(e, `${this.name(e.unit)} rises from the grave${at}, ${where} of side ${e.side} — ${by}'s doing.`);
         } else {
           this.units.set(e.unit, { baseHp: e.hp, maxHp: e.hp });
           this.push(e, `${by} summons ${this.name(e.unit)} (${e.pwr} PWR / ${e.hp} HP) to the ${e.front ? "front" : "back"} of side ${e.side}.`);
@@ -204,6 +206,10 @@ class Renderer {
       case "SummonFailed": {
         const by = e.source !== "kernel" ? this.refDesc(e.source) : "the kernel";
         const who = e.revive && e.unit ? this.name(e.unit) : e.name;
+        if (e.reason === "revivedOnce") {
+          this.push(e, `${by} tries to revive ${who} again, but a unit returns only once per battle.`);
+          return;
+        }
         this.push(e, `${by} tries to ${e.revive ? "revive" : "summon"} ${who}, but in sudden death no one joins the line.`);
         return;
       }

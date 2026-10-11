@@ -96,7 +96,9 @@ export function boardAt(log: BattleEvent[], upto: number, skip?: ReadonlySet<num
           if (!u) break;
           removeFrom(state.graves[u.side], u.id);
           u.hp = Math.min(e.atHp ?? 1, u.maxHp); // kernel caps revival hp at effective max
-          state.lines[u.side].push(u);
+          // where it fell (#918); old logs have no `slot`: their revives went to the back
+          const line = state.lines[u.side];
+          line.splice(e.slot !== undefined ? Math.min(e.slot, line.length) : line.length, 0, u);
         } else {
           const u = add(e.unit, e.name, e.side, e.hp, e.pwr);
           // old logs have no `front`: their summons went to the back

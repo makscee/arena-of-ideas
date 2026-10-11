@@ -47,6 +47,10 @@ export interface MvpRules {
    * pick of 1 of this many units from the highest tier open that round
    * (RunView.gift). Runs stored before it have no field: no gift. */
   giftChoices?: number;
+  /** Mission 5 R2 (void-board#916): the gift draws from this many tiers above
+   * the highest tier open that round, capped at the top tier. Runs stored
+   * before it have no field: 0, the highest open tier. */
+  giftTierAhead?: number;
   /** Stats each extra copy adds. */
   copyGrowth: Stats;
   /** tierOpensAt[t-1] = the round tier t enters the shop. */
@@ -73,6 +77,10 @@ export interface MvpRules {
    * though the team still enters with at most `lineSize`. Runs stored before
    * it have no field and keep the kernel's TEAM_SIZE (5). */
   battleSize?: number;
+  /** A revive returns the unit to where it fell in the line, and a unit is
+   * revived once per battle (#918, BattleInput.reviveInPlace). Runs stored before it have no field and keep
+   * revives at the back, so their next fights play as their first did. */
+  reviveInPlace?: boolean;
   /** Per-fight Elo (docs/round2/rating.md): K falls with runs played. A
    * player with fewer than `runsBelow` runs (the first step that fits) uses
    * its `k`; past every step, `ratingK`. Steps rather than an Infinity bound,
@@ -85,11 +93,8 @@ export interface MvpRules {
   /** Day rollover, "HH:MM" in dayTimeZone (slice 5). */
   dayEndsAt: string;
   dayTimeZone: string;
-  /** Mission 2 (M2-3): a player earns 1 idea per this many finished runs (any
-   * ending a rating counts: out of hearts, the Crown won or lost, given up).
-   * Read from the server's current rules, never a run's: absent, 3. */
-  ideaEveryRuns?: number;
-  /** Ideas a player holds at most; runs finished at the cap earn none. Absent, 3. */
+  /** Ideas a player gets back each arena day, and holds at most (#915; from
+   * M2-3 until then, 1 per 3 finished runs). Absent, 3. */
   ideaHold?: number;
   /** Mission 2 (M2-8): votes (skips not counted) a candidate needs before it
    * can qualify to enter. Absent, 5. */
@@ -128,18 +133,19 @@ export const MVP_RULES: MvpRules = {
   benchSize: 3,
   copiesToAwaken: 3,
   giftChoices: 3,
+  giftTierAhead: 1,
   copyGrowth: { pwr: 1, hp: 2 },
   tierOpensAt: [1, 3, 6, 9],
   chainStepCap: 32,
   suddenDeathAt: 20,
   battleSize: 8,
+  reviveInPlace: true,
   ratingKSteps: [{ runsBelow: 5, k: 32 }, { runsBelow: 15, k: 16 }],
   ratingK: 10,
   ratingStart: 1000,
   botRating: 1000,
   dayEndsAt: "04:00",
   dayTimeZone: "Europe/Moscow",
-  ideaEveryRuns: 3,
   ideaHold: 3,
 };
 
@@ -474,7 +480,7 @@ export interface RunView {
   bench: LineUnit[];
   offers: Offer[];
   /** The awakening gift waiting to be picked (rules.giftChoices units from
-   * the highest tier open that round), absent when none waits. While it
+   * one tier above the highest open that round, rules.giftTierAhead), absent when none waits. While it
    * waits only sell, reorder and the `gift` decision are allowed. In the game
    * it is a "gift", never "Discover" (fusions are "discovered"). */
   gift?: UnitId[];
@@ -650,12 +656,14 @@ export interface HomeView {
   telegram?: TelegramStatus | null;
 }
 
-/** Ideas a player holds (M2-3, server/src/mvp/ideas.ts): earned by finished
- * runs (MvpRules.ideaEveryRuns, ideaHold), spent by writing one (M2-4). */
+/** Ideas a player holds (M2-3, server/src/mvp/ideas.ts): back up to
+ * MvpRules.ideaHold each arena day (#915), spent by writing one (M2-4). */
 export interface IdeasView {
   held: number;
-  /** Finished runs until the next idea; null while `held` is at the cap. */
-  nextIn: number | null;
+  /** The ideas a day: each day's end brings `held` back up to it (MvpRules.ideaHold). */
+  perDay: number;
+  /** ISO time the day ends and the ideas come back up to `perDay`. */
+  refillsAt: string;
   /** M2-6: the player's ideas waiting for their pick (`pick-archetype`,
    * `pick-reading`); Home shows "💡 Your idea is ready". */
   ready: number;

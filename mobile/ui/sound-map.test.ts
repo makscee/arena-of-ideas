@@ -3,8 +3,8 @@ import { expect, test } from "vitest";
 import type { BattleEvent } from "../../src/types";
 import type { LineUnit, RunView } from "../../src/mvp/contract";
 import type { PlayBeat, Step } from "../../src/mvp/trace";
-import { BEAT_CAP, GAIN, SOUND_KEYS, beatCues, endSound, shopSound, waveSound } from "./sound-map";
-import { readdirSync } from "node:fs";
+import { BEAT_CAP, GAP_MS, GAIN, KEY_COOLDOWN_MS, MAX_VOICES, SOUND_FILES, SOUND_KEYS, admit, beatCues, cue, endSound, shopSound, waveSound, type Voice } from "./sound-map";
+import { readdirSync, readFileSync } from "node:fs";
 import { MVP_RULES, type MvpContent, type PlayerRef } from "../../src/mvp/contract";
 import { fightLines } from "../../src/mvp/fight";
 import { lineUnitOf } from "../../src/mvp/forms";
@@ -15,10 +15,60 @@ const unit = (uid: string, copies: number, form: "sleeping" | "awoken" = "sleepi
   ({ uid, kind: "unit", unitId: uid, name: uid, emoji: "?", copies, form, stats: { pwr: 1, hp: 1 } }) as unknown as LineUnit;
 const runOf = (...line: LineUnit[]): RunView => ({ line }) as unknown as RunView;
 
-test("every key has a file and a gain, and every file a key", () => {
+test("every cue plays a shipped file at a gain, and every file is used (void-board#922)", () => {
   const files = readdirSync(new URL("../public/sfx/", import.meta.url)).filter((f) => f.endsWith(".mp3")).map((f) => f.replace(/\.mp3$/, ""));
-  expect(files.sort()).toEqual([...SOUND_KEYS].sort());
-  for (const k of SOUND_KEYS) expect(GAIN[k]).toBeGreaterThan(0);
+  expect(files.sort()).toEqual([...SOUND_FILES].sort());
+  const used = new Set(SOUND_KEYS.map((k) => cue(k).file));
+  expect([...used].sort()).toEqual([...SOUND_FILES].sort());
+  for (const k of SOUND_KEYS) {
+    expect(GAIN[k]).toBeGreaterThan(0);
+    expect(GAIN[k]).toBeLessThan(1.5);
+    expect(cue(k).rate).toBeGreaterThan(0.5);
+  }
+});
+
+test("one family: only Duamo's files ship, the 2022 set is gone (void-board#922)", () => {
+  const credits = readFileSync(new URL("../public/sfx/CREDITS.txt", import.meta.url), "utf8");
+  for (const f of SOUND_FILES) expect(credits).toContain(f);
+  expect(credits).not.toMatch(/static\/sounds/);
+});
+
+const v = (id: number, key: Voice["key"], at: number): Voice => ({ id, key, prio: cue(key).prio, at });
+
+test("the mix: one sound per moment, the stronger wins (void-board#922)", () => {
+  // A merge that also levels up, a fuse with its discovery: the bigger one.
+  expect(admit([v(1, "fuse", 0)], cue("discover"), 10)).toEqual({ play: true, cut: [1] });
+  expect(admit([v(1, "discover", 0)], cue("fuse"), 10)).toEqual({ play: false, cut: [] });
+  // A death beats the hit it lands with; two hits at once are one.
+  expect(admit([v(1, "hit", 0)], cue("death"), 30).cut).toEqual([1]);
+  expect(admit([v(1, "hit", 0)], cue("zap"), 30).play).toBe(false);
+  // Past the gap both play.
+  expect(admit([v(1, "hit", 0)], cue("zap"), GAP_MS)).toEqual({ play: true, cut: [] });
+});
+
+test("the mix: a cooldown per cue, and at most MAX_VOICES at once", () => {
+  expect(admit([v(1, "hit", 0)], cue("hit"), KEY_COOLDOWN_MS - 1).play).toBe(false);
+  expect(admit([v(1, "hit", 0)], cue("hit"), KEY_COOLDOWN_MS).play).toBe(true);
+  const three = [v(1, "start", 0), v(2, "status", 200), v(3, "buff", 400)];
+  expect(three).toHaveLength(MAX_VOICES);
+  // The weakest goes first (status, prio 2), then the oldest of a tie.
+  expect(admit(three, cue("hit"), 600)).toEqual({ play: true, cut: [2] });
+});
+
+test("the mix: a fast chain thins out instead of piling up", () => {
+  // 12 waves 40 ms apart (a long chain at 4×), each sound 0.4 s long.
+  const playing: Voice[] = [];
+  let heard = 0;
+  for (let i = 0; i < 12; i++) {
+    const now = i * 40;
+    for (let j = playing.length - 1; j >= 0; j--) if (now - playing[j]!.at >= 400) playing.splice(j, 1);
+    const r = admit(playing, cue(i % 2 ? "buff" : "status"), now);
+    for (const id of r.cut) playing.splice(playing.findIndex((p) => p.id === id), 1);
+    if (r.play) (heard++, playing.push(v(i, i % 2 ? "buff" : "status", now)));
+    expect(playing.length).toBeLessThanOrEqual(MAX_VOICES);
+  }
+  expect(heard).toBeLessThanOrEqual(6);
+  expect(heard).toBeGreaterThan(1);
 });
 
 test("a buy clinks, a copy merges, the third copy levels up", () => {
@@ -78,8 +128,8 @@ test("a Strike's Hurt hits, an ability's zaps, a fully blocked one blocks", () =
   expect(waveSound(stepOf(1), log, 0)?.key).toBe("hit");
   expect(waveSound(stepOf(2), log, 0)?.key).toBe("zap");
   expect(waveSound(stepOf(3), log, 0)?.key).toBe("block");
-  // Death beats Hurt, and is the low thud.
-  expect(waveSound(stepOf(1, 4), log, 0)).toMatchObject({ key: "debuff", rate: 0.7 });
+  // Death beats Hurt, with its own sound.
+  expect(waveSound(stepOf(1, 4), log, 0)?.key).toBe("death");
 });
 
 test("Shield applied, another status, heal at 1.2, stats, removed, capped", () => {
@@ -95,21 +145,22 @@ test("Shield applied, another status, heal at 1.2, stats, removed, capped", () =
   );
   expect(waveSound(stepOf(0), log, 0)?.key).toBe("shield");
   expect(waveSound(stepOf(1), log, 0)?.key).toBe("status");
-  expect(waveSound(stepOf(2), log, 0)).toMatchObject({ key: "buff", rate: 1.2 });
-  expect(waveSound(stepOf(3), log, 0)).toMatchObject({ key: "buff", rate: 1 });
+  expect(waveSound(stepOf(2), log, 0)).toMatchObject({ key: "buff", rate: Math.round(cue("buff").rate * 1.2 * 1000) / 1000 });
+  expect(waveSound(stepOf(3), log, 0)).toMatchObject({ key: "buff", rate: cue("buff").rate });
   expect(waveSound(stepOf(4), log, 0)?.key).toBe("debuff");
   expect(waveSound(stepOf(5), log, 0)?.key).toBe("status-off");
   expect(waveSound(stepOf(1, 5), log, 0)?.key).toBe("status");
   expect(waveSound(stepOf(6), log, 0)?.key).toBe("wrong");
-  expect(waveSound(stepOf(7), log, 3)).toMatchObject({ key: "spawn", rate: 1.15 });
+  expect(waveSound(stepOf(7), log, 3)).toMatchObject({ key: "spawn", rate: Math.round(cue("spawn").rate * 1.15 * 1000) / 1000 });
 });
 
 test("a chain rises in pitch, up to 1.3", () => {
   const log = logOf({ type: "Heal", unit: "a1", amount: 1 }, { type: "StatChanged", unit: "a1", stat: "hp", delta: 1, now: 3 });
-  expect([0, 1, 2, 6, 9].map((i) => waveSound(stepOf(1), log, i)?.rate)).toEqual([1, 1.05, 1.1, 1.3, 1.3]);
+  const base = cue("buff").rate;
+  expect([0, 1, 2, 6, 9].map((i) => waveSound(stepOf(1), log, i)!.rate / base).map((r) => Math.round(r * 100) / 100)).toEqual([1, 1.05, 1.1, 1.3, 1.3]);
 });
 
-test("a 12-wave beat makes at most 5 sounds, plus every death", () => {
+test("a 12-wave beat makes at most BEAT_CAP sounds, plus every death", () => {
   const bodies: Partial<BattleEvent>[] = [];
   for (let i = 0; i < 12; i++) bodies.push(i % 4 === 3 ? { type: "Death", unit: `b${i}` } : { type: "StatChanged", unit: "a1", stat: "pwr", delta: 1, now: 2 + i });
   const log = logOf(...bodies);
@@ -117,16 +168,16 @@ test("a 12-wave beat makes at most 5 sounds, plus every death", () => {
   const cues = beatCues(beat, log);
   expect(cues).toHaveLength(12);
   const played = cues.filter((c) => c !== null);
-  const deaths = played.filter((c) => c!.rate === 0.7);
+  const deaths = played.filter((c) => c!.key === "death");
   expect(deaths).toHaveLength(3);
   expect(played.length - deaths.length).toBe(BEAT_CAP);
 });
 
-test("the end: win, lose, draw; a slay adds the chime half a second later", () => {
+test("the end: win, lose, draw; a slay plays the win a step higher", () => {
   expect(endSound("win", "round").map((c) => c.key)).toEqual(["win"]);
   expect(endSound("loss", "round").map((c) => c.key)).toEqual(["lose"]);
   expect(endSound("draw", "crown").map((c) => c.key)).toEqual(["draw"]);
-  expect(endSound("win", "crown")).toMatchObject([{ key: "win" }, { key: "discover", delay: 500 }]);
+  expect(endSound("win", "crown")).toMatchObject([{ key: "win", rate: Math.round(cue("win").rate * 1.12 * 1000) / 1000 }]);
   expect(endSound("loss", "playoff", false).map((c) => c.key)).toEqual(["win"]);
 });
 
@@ -147,7 +198,7 @@ test("real battles: every landed hit sounds, no beat goes past the cap", () => {
         if (c) heard.add(c.key);
         if (w.eventIds.some((id) => log[id]?.type === "Hurt" && (log[id] as { amount: number }).amount > 0)) expect(c).not.toBeNull();
       });
-      const capped = cues.filter((c) => c && c.key !== "spawn" && !(c.key === "debuff" && c.rate === 0.7));
+      const capped = cues.filter((c) => c && c.key !== "spawn" && c.key !== "death");
       expect(capped.length).toBeLessThanOrEqual(BEAT_CAP);
     }
   }

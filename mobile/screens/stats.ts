@@ -1,49 +1,19 @@
-// The stats page (mission #574). Slice 11 owns this file. Home's "Stats"
-// button opens it: your records (HomeView.rating, which slices 4 and 5
+// The Champions (mission #574, slice 11; M5-6 folded the stats page into the
+// Codex's Champions tab): your records (HomeView.rating, which slices 4 and 5
 // write) and the champion history; a champion opens its team. Round 2
 // (R2-11): units with their rates and the discovered fusions moved to the
 // Codex (./codex.ts), where a unit's rates are the dim line on its sheet.
 import type { Champion, HomeView, MvpContent, StatsView } from "../../src/mvp/contract";
-import { api } from "../api";
 import { card, unitSheet } from "../ui/card";
 import { t } from "../i18n";
-import { button, h, isDesktop, onKeys, overlay, screen, show, who } from "../ui/dom";
+import { h, isDesktop, overlay, who } from "../ui/dom";
 import { keepUnitRates } from "../ui/unit-stats";
 
-export async function statsScreen(a: { content: MvpContent; onBack: () => void; onCodex?: () => void }): Promise<void> {
-  const back = button(t("stats.back"), a.onBack, "primary grow", "stats-back");
-  // Esc goes back, once any sheet over the page is closed (ui/dom.ts).
-  const escBack = (e: KeyboardEvent) => (e.key === "Escape" ? (a.onBack(), true) : false);
-  let data: [StatsView, HomeView];
-  try {
-    data = await Promise.all([api.stats(), api.home()]);
-  } catch (e) {
-    show(h("h1", {}, t("stats.title")), h("div", { class: "error", "data-testid": "error" }, e instanceof Error ? e.message : String(e)), h("div", { class: "spacer" }), h("div", { class: "row footer" }, back));
-    onKeys(escBack);
-    return;
-  }
-  const [stats, home] = data;
+/** The Codex's Champions tab (M5-6): the champions, newest first, then your records. */
+export function championsTab(stats: StatsView, home: HomeView, content: MvpContent): Node[] {
   keepUnitRates(stats.units);
-  const { content } = a;
-  show(
-    h("h1", {}, t("stats.title")),
-    recordsPanel(home),
-    h("div", { class: "label" }, t("stats.champions")),
-    championsPanel(stats.champions, content),
-    a.onCodex ? h("div", { class: "dim small" }, t("stats.codexBefore"), codexLink(a.onCodex), t("stats.codexAfter")) : null,
-    h("div", { class: "spacer" }),
-    // Stuck to the bottom: the lists grow long, and Back is the only way home.
-    h("div", { class: "row footer" }, back),
-  );
-  screen("stats");
-  onKeys(escBack);
+  return [h("div", { class: "label" }, t("stats.champions")), championsPanel(stats.champions, content), recordsPanel(home)];
 }
-
-const codexLink = (open: () => void): HTMLElement => {
-  const b = h("button", { type: "button", class: "small link", "data-testid": "stats-codex" }, t("stats.codex"));
-  b.addEventListener("click", open);
-  return b;
-};
 
 function recordsPanel(home: HomeView): HTMLElement {
   const r = home.rating;

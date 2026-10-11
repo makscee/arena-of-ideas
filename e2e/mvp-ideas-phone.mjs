@@ -80,10 +80,8 @@ async function walk(viewport, name, full) {
   await page.getByTestId("name-input").fill(`${name}${TAG}`);
   await page.getByTestId("name-submit").click();
   await page.getByTestId("play").waitFor();
-  // Dev "+1 idea", then My ideas → New idea → Send.
-  await page.locator("details.dev summary").click();
-  await page.getByTestId("grant-idea").click();
-  await page.waitForFunction((want) => document.querySelector('[data-testid="ideas"]')?.textContent === want, L("home.ideasHeld", { n: 1 }), { timeout: 10_000 });
+  // #915: a new player has today's 3 ideas; My ideas → New idea → Send.
+  if ((await page.getByTestId("ideas").textContent()) !== L("home.ideasHeld", { n: 3 })) errors.push(`${name} home: ideas meter "${await page.getByTestId("ideas").textContent()}"`);
   await page.getByTestId("ideas").click();
   await page.getByTestId("idea-new").click();
   await page.getByTestId("idea-text").fill(IDEA);
@@ -100,7 +98,7 @@ async function walk(viewport, name, full) {
     // Home: the quiet "Your idea is ready".
     await page.getByTestId("ideas-back").click();
     await page.getByTestId("play").waitFor();
-    if ((await page.getByTestId("ideas").textContent()) !== L("home.ideasReady", { n: 1 })) errors.push(`home: ideas line "${await page.getByTestId("ideas").textContent()}"`);
+    if ((await page.getByTestId("ideas-label").textContent()) !== L("home.ideasReady", { n: 1 })) errors.push(`home: ideas line "${await page.getByTestId("ideas").textContent()}"`);
     await shot("home-idea-ready");
     await page.getByTestId("ideas").click();
   }
@@ -167,13 +165,11 @@ async function walk(viewport, name, full) {
   if (!(await page.getByTestId("idea-sent").textContent()).includes(L("pick.pickedReading"))) errors.push(`after the pick: "${await page.getByTestId("idea-sent").textContent()}"`);
   if (!(await page.getByTestId("idea-stage").textContent()).includes(L("ideas.stage.simulating"))) errors.push(`my ideas after the pick: "${await page.getByTestId("idea-stage").textContent()}"`);
   await shot("ideas-being-tested");
-  // M3-2: the idea is spent: New idea is off, muted, with the reason beside it.
-  const newIdea = page.getByTestId("idea-new");
-  if (!(await newIdea.isDisabled())) errors.push("my ideas with none held: New idea isn't disabled");
-  const look = await newIdea.evaluate((el) => { const c = getComputedStyle(el); return { bg: c.backgroundColor, op: c.opacity, pe: c.pointerEvents }; });
-  if (!/rgba\(0, 0, 0, 0\)|transparent/.test(look.bg) || look.pe !== "none") errors.push(`my ideas: New idea still looks live (${JSON.stringify(look)})`);
-  const why = (await page.getByTestId("idea-new-why").textContent()) ?? "";
-  if (!Array.from({ length: 20 }, (_, n) => L("ideas.why", { n: n + 1 })).includes(why)) errors.push(`my ideas: New idea's reason "${why}"`);
+  // #915: the idea is spent, 2 are left today: New idea stays on, and My
+  // ideas says when they're back to 3. (Off with none held: ideas.test.ts.)
+  if (await page.getByTestId("idea-new").isDisabled()) errors.push("my ideas with 2 held: New idea is off");
+  const heldLine = (await page.getByTestId("ideas-held").textContent()) ?? "";
+  if (!heldLine.startsWith(L("ideas.hold", { n: 2 })) || heldLine === L("ideas.hold", { n: 2 })) errors.push(`my ideas: held line "${heldLine}"`);
   // M2-11: the dev "Run the overnight check now" (the server's instant
   // tuner), and My ideas shows the idea in the vote.
   await page.getByTestId("ideas-back").click();
@@ -275,18 +271,8 @@ async function propose(viewport, name, full) {
     await page.getByTestId("library-propose").waitFor();
     return id;
   };
-  // No idea held: the button is off, with the reason beside it.
-  await openLibraryUnit();
+  // #915: a new player holds today's ideas, so Propose is on.
   const btn = page.getByTestId("library-propose");
-  if (!(await btn.isDisabled())) errors.push(`${name}: Propose is on with no idea held`);
-  const why = (await page.getByTestId("library-propose-why").textContent()) ?? "";
-  if (!Array.from({ length: 20 }, (_, n) => L("ideas.why", { n: n + 1 })).includes(why)) errors.push(`${name}: Propose's reason "${why}"`);
-  await shot("library-propose-off");
-  // +1 idea (dev on Home), then the same sheet: on.
-  await page.goto(url);
-  await page.locator("details.dev summary").click();
-  await page.getByTestId("grant-idea").click();
-  await page.waitForFunction((want) => document.querySelector('[data-testid="ideas"]')?.textContent === want, L("home.ideasHeld", { n: 1 }), { timeout: 10_000 });
   const target = await openLibraryUnit();
   if (await btn.isDisabled()) errors.push(`${name}: Propose is off with an idea held`);
   if ((await page.getByTestId("library-propose-why").count()) !== 0) errors.push(`${name}: Propose says why it's off while on`);

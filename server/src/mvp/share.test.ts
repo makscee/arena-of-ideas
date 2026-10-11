@@ -18,7 +18,8 @@ const ann: PlayerRef = { id: "p-ann", name: "Annabelle_the_Unbeatable", bot: fal
 function world() {
   const store = new MemoryMvpStore();
   seedUnits(store, new Date("2026-10-08T08:00:00.000Z"));
-  const rt = mvpRuntime({ content: poolContent(store), store, dev: true });
+  // The clock stays on the seeded day: the card prints the champion's date.
+  const rt = mvpRuntime({ content: poolContent(store), store, dev: true, now: () => new Date("2026-10-08T08:00:00.000Z") });
   const [a, b, c, d, e] = rt.content.units;
   const fused: LineUnit = { ...lineUnitOf(d!, "u4", 1, rt.rules), kind: "fused", emoji: `${d!.emoji}${e!.emoji}`, name: LONG, fusion: { first: d!.id, second: e!.id, name: LONG, discoveredBy: ann } };
   const line = [lineUnitOf(a!, "u1", 3, rt.rules), lineUnitOf(b!, "u2", 1, rt.rules), lineUnitOf(c!, "u3", 2, rt.rules), fused, lineUnitOf(e!, "u5", 1, rt.rules)];

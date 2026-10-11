@@ -256,15 +256,21 @@ export interface UnitDayTally extends UnitTally {
   picks: number;
 }
 
-/** What a player's ideas are counted from, besides their finished runs
- * (Rating.runs): ./ideas.ts derives the ideas held from both. */
+/** A player's ideas (./ideas.ts): the ones held, the day they were last
+ * refilled, and tallies of what happened to them. */
 export interface IdeaCounts {
   /** Ideas written (M2-4) or refunded back (a negative step). */
   spent: number;
   /** Dev "+1 idea". */
   granted: number;
-  /** Ideas earned while holding the cap, so never held. */
+  /** Ideas refunded while holding the cap, so never held. (Before #915 also
+   * the ideas runs earned at the cap.) */
   forfeited: number;
+  /** Ideas held as of `day` (#915). Absent before the player's first read
+   * under the ideas-a-day rule, which refills them. */
+  held?: number;
+  /** The day seq (DayState.seq) the ideas were last refilled. */
+  day?: number;
 }
 
 /** Devices per player: opening a link past this ends the oldest session. */

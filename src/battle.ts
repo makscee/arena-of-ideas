@@ -65,6 +65,10 @@ interface UnitState {
   damage: number; // taken; current hp = effective hp − damage
   silenced: boolean;
   alive: boolean;
+  /** Its index in the line when it last died; a revive returns it there (#918). */
+  fellAt?: number;
+  /** Revived already this battle; with reviveInPlace it never returns again (#918). */
+  revived?: boolean;
 }
 
 interface ReactorEntry {
@@ -605,6 +609,16 @@ class Engine {
       }
       case "resurrect": {
         if (target.alive) return;
+        if (this.input.reviveInPlace && target.revived) {
+          // once per battle (#918): a revived unit that falls again stays down,
+          // or a 1-HP return at the front feeds the next revive forever
+          this.applyEvent(
+            { type: "SummonFailed", name: target.name, side: target.side, unit: target.id, revive: true, reason: "revivedOnce" },
+            f.event.id,
+            f.ref,
+          );
+          return;
+        }
         if (this.suddenDeath()) {
           this.applyEvent(
             { type: "SummonFailed", name: target.name, side: target.side, unit: target.id, revive: true, reason: "suddenDeath" },
@@ -735,6 +749,8 @@ class Engine {
         const line = this.lines[u.side];
         const i = line.indexOf(u.id);
         if (i >= 0) line.splice(i, 1);
+        if (i >= 0) u.fellAt = i;
+        else delete u.fellAt;
         this.graves[u.side].push(u.id);
         return;
       }
@@ -746,7 +762,15 @@ class Engine {
           u.damage = Math.max(0, this.effStat(u, "hp") - pending.resurrect.hp);
           const gi = this.graves[u.side].indexOf(u.id);
           if (gi >= 0) this.graves[u.side].splice(gi, 1);
-          this.lines[u.side].push(u.id);
+          const line = this.lines[u.side];
+          if (this.input.reviveInPlace) {
+            // back where it fell (#918), clamped if the line shrank since;
+            // stamped so the log replays it without the engine
+            const slot = Math.min(u.fellAt ?? line.length, line.length);
+            line.splice(slot, 0, u.id);
+            ev.slot = slot;
+            u.revived = true;
+          } else line.push(u.id);
         } else if (pending?.summon) {
           this.units.set(pending.summon.id, pending.summon);
           // a summon enters at the front so it acts at once; the newest summon is the front

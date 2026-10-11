@@ -6,7 +6,7 @@ import type { Msg } from "../index";
 export const shop = {
   // The desktop inspector, empty.
   "inspector.idleCrown": "Hover a card to read it here.",
-  "inspector.idle": "Hover a card to read it here. Click a unit in your line to select it; double-click an offer to buy it.",
+  "inspector.idle": "Hover a card to read it here.",
 
   // The shop's one hint.
   "hint.lineFullSwap": "Line full: Swap trades with the back unit, or tap one.",
@@ -17,8 +17,8 @@ export const shop = {
   "hint.oneMore": "One more {name} awakens it. It's in the shop.",
   "hint.moveToLine": "Move a unit to your line: only the line fights.",
   "hint.noGold": "No gold for a unit. Fight to move on: an empty line loses, and costs a heart.",
-  "hint.buyDesk": "Double-click an offer, or press its number, to buy it. Your line fights front first.",
-  "hint.buyPhone": "Tap an offer to read it and buy it. Your line fights front first.",
+  "hint.buyDesk": "Double-click an offer, or press its number, to buy it.",
+  "hint.buyPhone": "Tap an offer to read it and buy it.",
   "hint.outOfGold": "Out of gold for units. Fight when ready.",
   "hint.moveDesk": "Drag a unit to move it, or click it: ← → move it, S sells it.",
   "hint.movePhone": "Tap a unit in your line to move, sell or read it.",
@@ -50,7 +50,7 @@ export const shop = {
   "buy.close": "Close",
   "offer.locked": "locked",
   "shop.gold": "{n}g",
-  "shop.reroll": "Reroll {cost}g",
+  "shop.reroll": "Reroll",
   "shop.allLocked": "Every offer is locked",
   "shop.fightChampion": "Fight the champion",
   "shop.fight": "Fight",
@@ -61,8 +61,6 @@ export const shop = {
   "foe.lineInFight": "Their line shows in the fight.",
   "pin.noChampion": "👑 No champion yet",
   "pin.championOfDay": "Champion of day {seq} · ",
-  "pin.readCardClick": "Click a card to read it.",
-  "pin.readCardTap": "Tap a card to read it.",
 
   // The awakening gift.
   "gift.waitingFull": "🎁 Gift waiting: sell a unit to make room, then pick.",
@@ -76,6 +74,7 @@ export const shop = {
   "gift.title": "🎁 Awakened! Pick a gift",
   "gift.free": "Free: one of these units. It joins your line, else your bench; one you own merges in.",
   "gift.freeTier": "Free: one of these tier {tier} units. It joins your line, else your bench; one you own merges in.",
+  "gift.freeTierAhead": "Free: one of these tier {tier} units, a tier ahead of the shop. It joins your line, else your bench; one you own merges in.",
   "gift.noneFits": "Line and bench full: make room (sell a unit), then pick.",
   "gift.onlyOwned": "Line and bench full: only a unit you own merges in now. Make room (sell a unit) to pick another.",
   "gift.readDesk": "Hover a card to read it here. Esc sets the gift aside.",
@@ -87,6 +86,7 @@ export const shop = {
   "shop.legendNew": "? Cards",
   "shop.menu": "Menu",
   "shop.menuEsc": "Menu (Esc)",
+  "keys.title": "Keys",
   "keys.lead": "Click selects · drag reorders · double-click",
   "keys.or": " or ",
   "keys.buys": " buys · ",
@@ -105,11 +105,9 @@ export const shop = {
   "opp.crownVsChampion": "Crown vs today's champion",
   "opp.nextSaved": "Next: a team saved at this round",
   "line.crown": "Your line · front first · final",
-  "line.desk": "Your line · front first · drag to reorder or bench",
   "line.phone": "Your line · front first",
-  "shop.rules": "Rules",
   "shop.offersDesk": { one: "Shop · {n} offer", other: "Shop · {n} offers" },
-  "shop.offersPhone": "Shop · tap to read and buy",
+  "shop.offersPhone": "Shop",
   "shop.selectFirst": "Select a unit first: click it in your line or bench.",
   "copies.fused": "FUSED ",
   "copies.awoken": "AWOKEN ",

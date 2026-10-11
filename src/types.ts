@@ -153,7 +153,7 @@ export type Effect =
   | { kind: "consumeStacks"; status?: string; stacks: Amount } // status omitted = the owning status
   | { kind: "summon"; unit: UnitDef } // at the front of the target's team; a full line logs NoRoom instead
   | { kind: "silence" } // remove all statuses, disable the unit's own abilities for the battle
-  | { kind: "resurrect"; hp: Amount } // revive the (dead) target at N hp, back of line; a full line logs NoRoom
+  | { kind: "resurrect"; hp: Amount } // revive the (dead) target at N hp, back of line (BattleInput.reviveInPlace: where it fell); a full line logs NoRoom
   // interceptor-context atoms — transform/cancel the proposed event
   | { kind: "cancel"; consumeSelf?: number } // cancel the event; optionally consume own stacks
   | { kind: "absorbHurt" } // reduce a proposed Hurt by min(own stacks, amount); consume = absorbed
@@ -217,6 +217,9 @@ export type EventBody =
       atHp?: number;
       // the unit entered at the front of its line; absent = at the back (revives, and summons in logs before R3)
       front?: boolean;
+      // a revive's index in its line: where it fell, clamped to the line's length (#918);
+      // absent on revives in older logs, which returned at the back
+      slot?: number;
     }
   | { type: "StatusApplied"; unit: string; status: string; stacks: number; total: number }
   | { type: "StatusRemoved"; unit: string; status: string; stacks: number; remaining: number }
@@ -234,8 +237,9 @@ export type EventBody =
   // room; `revive` is the dead unit's id when it was a revive.
   | { type: "NoRoom"; unit: string; side: Side; name: string; revive?: string }
   // A Summon (or, with revive, a Revive of `unit`) that did nothing, and why:
-  // in sudden death (R4-1) nobody enters the line.
-  | { type: "SummonFailed"; name: string; side: Side; unit?: string; revive?: true; reason: "suddenDeath" }
+  // in sudden death (R4-1) nobody enters the line; with reviveInPlace a unit
+  // returns once per battle, so its second revive fails ("revivedOnce", #918).
+  | { type: "SummonFailed"; name: string; side: Side; unit?: string; revive?: true; reason: "suddenDeath" | "revivedOnce" }
   | { type: "Intercepted"; by: AbilityRef; original: string; unit?: string }
   // timeUp: the turn cap ran out with both sides standing (a draw); absent otherwise.
   | { type: "BattleEnd"; winner: Side | "draw"; turns: number; timeUp?: true };
@@ -272,4 +276,10 @@ export interface BattleInput {
    * room (a NoRoom event) past it. Teams still enter with at most TEAM_SIZE.
    * Omitted = TEAM_SIZE. */
   lineCap?: number;
+  /** A revive returns the unit to its index in the line at death, clamped to
+   * the line's length (#918), and its Summon event says `slot`. Omitted =
+   * the back of the line, as fights before it had (the desktop ladder and
+   * its goldens re-sim those). It also limits a unit to one revive a
+   * battle: a second fails with SummonFailed "revivedOnce". */
+  reviveInPlace?: boolean;
 }

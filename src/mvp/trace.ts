@@ -88,7 +88,7 @@ export interface Change {
   label: string;
 }
 
-const CHANGE_TYPES = new Set(["Hurt", "Heal", "StatChanged", "StatusApplied", "Death", "Summon", "Silenced", "NoRoom"]);
+const CHANGE_TYPES = new Set(["Hurt", "Heal", "StatChanged", "StatusApplied", "Death", "Summon", "Silenced", "NoRoom", "SummonFailed"]);
 
 /** A hit as a change reads: "−n", or for a hit that did nothing, what
  * stopped it ("3 blocked" by Shield, or "no damage"), never "−0". */
@@ -118,6 +118,10 @@ export function changeOf(e: BattleEvent): Change | null {
     // On the unit that tried, so it can be tapped for its trace (R4-2).
     case "NoRoom":
       return { eventId: e.id, unit: e.unit, kind: "noRoom", label: ru() ? "нет места" : "no room" };
+    // A second revive of the same unit (#918): on the reviver, like no room.
+    case "SummonFailed":
+      if (e.reason !== "revivedOnce" || e.source === "kernel") return null;
+      return { eventId: e.id, unit: e.source.unit, kind: "noRoom", label: ru() ? "лишь раз" : "can't return" };
     default:
       return null;
   }
@@ -319,7 +323,7 @@ export function chainOf(log: BattleEvent[], eventId: number, o: { name?: NameOf;
       const src: AbilityRef = cur.source;
       const fired = firedTrigger(log, cur, o.whenOf);
       if (src.status === undefined) {
-        nodes.push({ event: cur.type, kind: "firing", eventId: cur.id, text: `${name(src.unit)}'s ability`, unit: src.unit, side: side(src.unit), ...fired, ref: src });
+        nodes.push({ event: cur.type, kind: "firing", eventId: cur.id, text: ru() ? `способность ${name(src.unit)}` : `${name(src.unit)}'s ability`, unit: src.unit, side: side(src.unit), ...fired, ref: src });
       } else {
         const origin = statusOriginId(log, src.unit, src.status, cur.id);
         nodes.push({ event: cur.type, kind: "firing", eventId: cur.id, text: `${src.status} on ${name(src.unit)}`, unit: src.unit, side: side(src.unit), ...fired, ref: src, status: src.status, ...(origin !== undefined ? { origin } : {}) });
@@ -497,7 +501,20 @@ const linesOf = (b: PlayBeat) => b.waves.map((w) => w.caption).join("\n");
 /** When each wave lands (ms from the beat's start, at 1×) and how long the
  * beat lasts: waves 220 ms apart, squeezed so the last lands by 1.4 s; the
  * beat lasts 1.3 s, up to 2.2 s for a long cascade, and 0.9 s when quiet. */
+/** A beat of CHAIN_MIN waves or more plays as a chain (#913): each link
+ * gets CHAIN_LINK_MS at 1×, however long the chain, and the chain's summary
+ * holds CHAIN_SUM_MS after its last link. Under the old 2.2 s cap a 19-step
+ * Start chain ran at 70 ms a link: one flash nobody could follow. */
+export const CHAIN_MIN = 4;
+export const CHAIN_LINK_MS = 520;
+export const CHAIN_SUM_MS = 1800;
+export const isChain = (beat: Pick<PlayBeat, "waves">): boolean => beat.waves.length >= CHAIN_MIN;
+
 export function beatTiming(waves: number, quiet = false): { at: number[]; ms: number } {
+  if (waves >= CHAIN_MIN) {
+    const at = Array.from({ length: waves }, (_, i) => i * CHAIN_LINK_MS);
+    return { at, ms: at.at(-1)! + CHAIN_SUM_MS };
+  }
   if (quiet && waves <= 1) return { at: [0], ms: QUIET_BEAT_MS };
   const span = BEAT_MAX_MS - BEAT_HOLD_MS;
   const gap = waves > 1 ? Math.min(WAVE_MS, span / (waves - 1)) : 0;
@@ -601,6 +618,7 @@ function effectOf(e: BattleEvent | undefined): Pick<Firing, "effect" | "effectSt
     case "Intercepted": return { effect: "effect:cancel" };
     case "ChainCapped": return { effect: "battle:chainCapped" };
     case "NoRoom": return { effect: "battle:noRoom" };
+    case "SummonFailed": return e.reason === "revivedOnce" ? { effect: "effect:resurrect" } : null;
     default: return null;
   }
 }
@@ -1129,16 +1147,26 @@ export function foldTurnsOf(log: BattleEvent[], rows: LogRow[], name: NameOf = d
         else if (e.type === "Death") deaths.push(name(e.unit));
       }
     const hurt = damage.A + damage.B, healed = heals.A + heals.B;
-    const parts = [
-      hurt ? `−${hurt} damage` : "no damage",
-      ...(blocked ? [`${blocked} blocked`] : []),
-      ...(healed ? [`+${healed} healed`] : []),
-      ...(deaths.length ? [`${deaths.join(", ")} ${deaths.length > 1 ? "fall" : "falls"}`] : []),
-    ];
+    // M5-6: the fold's caption in the Log's language, like every other caption.
+    const parts = ru()
+      ? [
+          hurt ? `−${hurt} урона` : "без урона",
+          ...(blocked ? [`${blocked} заблокировано`] : []),
+          ...(healed ? [`+${healed} лечения`] : []),
+          ...(deaths.length ? [`${deaths.join(", ")} ${deaths.length > 1 ? "падают" : "падает"}`] : []),
+        ]
+      : [
+          hurt ? `−${hurt} damage` : "no damage",
+          ...(blocked ? [`${blocked} blocked`] : []),
+          ...(healed ? [`+${healed} healed`] : []),
+          ...(deaths.length ? [`${deaths.join(", ")} ${deaths.length > 1 ? "fall" : "falls"}`] : []),
+        ];
     const rows = [...(run?.rows ?? []), ...t.rows];
     const first = run?.turn ?? t.turn;
     const times = t.turn - first + 1;
-    const fold: LogFold = { turn: first, turnTo: t.turn, caption: `Same as last turn${times > 1 ? ` ×${times}` : ""}: ${parts.join(", ")} · ${rows.length} rows`, damage, blocked, heals, deaths, rows };
+    const nRows = ru() ? `${rows.length} ${ruCount(rows.length, ["строка", "строки", "строк"])}` : `${rows.length} rows`;
+    const caption = `${ru() ? "Как прошлый ход" : "Same as last turn"}${times > 1 ? ` ×${times}` : ""}: ${parts.join(", ")} · ${nRows}`;
+    const fold: LogFold = { turn: first, turnTo: t.turn, caption, damage, blocked, heals, deaths, rows };
     if (run) out[out.length - 1] = fold;
     else out.push(fold);
   });
@@ -1248,6 +1276,8 @@ export function captionSubject(log: BattleEvent[], id: number, name: NameOf = di
     case "Summon":
     case "NoRoom":
       return causeUnit(log, e, name) ?? e.unit;
+    case "SummonFailed":
+      return e.reason === "revivedOnce" ? (causeUnit(log, e, name) ?? e.unit ?? null) : null;
     case "StatusRemoved":
       return e.unit;
     case "Intercepted":
@@ -1325,7 +1355,7 @@ export function captionOf(log: BattleEvent[], id: number, name: NameOf = display
       return `${fellToFatigue(log, e) ? "Fatigue" : causeName(log, e, name)} → ${name(e.unit)} falls`;
     case "Summon":
       return e.resurrected
-        ? `${causeName(log, e, name)} → ${name(e.unit)} returns at ${e.atHp ?? e.hp} HP`
+        ? `${causeName(log, e, name)} → ${name(e.unit)} returns${e.slot !== undefined ? " to its place" : ""} at ${e.atHp ?? e.hp} HP`
         : `${causeName(log, e, name)} → ${e.name} appears (${e.pwr}/${e.hp})`;
     case "Silenced":
       return `${causeName(log, e, name)} → ${name(e.unit)} is silenced`;
@@ -1333,6 +1363,7 @@ export function captionOf(log: BattleEvent[], id: number, name: NameOf = display
       // Sudden death (R4-1): the caption says why nothing blocks it.
       return e.suddenDeath ? `Sudden death: Fatigue → everyone takes ${e.amount}, nothing blocks it` : `Fatigue → everyone takes ${e.amount}`;
     case "SummonFailed":
+      if (e.reason === "revivedOnce") return `${causeName(log, e, name)} → ${e.unit ? name(e.unit) : e.name} can't return again: once per battle`;
       return `${causeName(log, e, name)} → ${e.revive && e.unit ? name(e.unit) : e.name} can't ${e.revive ? "return" : "appear"}: sudden death`;
     case "ChainCapped":
       return `Chain stopped after ${e.steps} steps`;
@@ -1378,13 +1409,14 @@ function captionOfRu(log: BattleEvent[], e: BattleEvent, name: NameOf, merged: n
       return `${fellToFatigue(log, e) ? "Усталость" : causeName(log, e, name)} → ${name(e.unit)} падает`;
     case "Summon":
       return e.resurrected
-        ? `${causeName(log, e, name)} → ${name(e.unit)} возвращается с ${e.atHp ?? e.hp} ${RU_STAT.hp}`
+        ? `${causeName(log, e, name)} → ${name(e.unit)} возвращается${e.slot !== undefined ? " на своё место" : ""} с ${e.atHp ?? e.hp} ${RU_STAT.hp}`
         : `${causeName(log, e, name)} → ${e.name} появляется (${e.pwr}/${e.hp})`;
     case "Silenced":
       return `${causeName(log, e, name)} → ${name(e.unit)} заглушён`;
     case "Fatigue":
       return e.suddenDeath ? `Внезапная смерть: Усталость → все получают ${e.amount}, ничто не блокирует` : `Усталость → все получают ${e.amount}`;
     case "SummonFailed":
+      if (e.reason === "revivedOnce") return `${causeName(log, e, name)} → ${e.unit ? name(e.unit) : e.name} не вернётся: раз за бой`;
       return `${causeName(log, e, name)} → ${e.revive && e.unit ? name(e.unit) : e.name} не может ${e.revive ? "вернуться" : "появиться"}: внезапная смерть`;
     case "ChainCapped":
       return `Цепь прервана после ${e.steps} ${ruCount(e.steps, ["шага", "шагов", "шагов"])}`;
@@ -1633,6 +1665,12 @@ const MOMENT_CHARS = 40;
  * two on one beat. */
 export function keyMomentsOf(log: BattleEvent[], beats: PlayBeat[], name: NameOf = displayNames(log), sides = sidesOf(log)): KeyMoment[] {
   const plain = displayNames(log);
+  // M5-6: the moments in the page's language, like the captions (M4-3).
+  const R = ru();
+  const stepsRu = (k: number) => `${k} ${ruCount(k, ["шаг", "шага", "шагов"])}`;
+  const inSteps = (k: number) => (R ? ` за ${stepsRu(k)}` : ` in ${k} steps`);
+  const unitsN = (k: number) => (R ? `${k} ${ruCount(k, ["юнит", "юнита", "юнитов"])}` : k === 1 ? "1 unit" : `${k} units`);
+  const more = (k: number) => (R ? `, ещё +${k}` : `, +${k} more`);
   const beatOfEvent = (id: number) => beats.find((b) => b.waves.some((w) => w.eventIds.includes(id)))?.index ?? beats.find((b) => b.end >= id)?.index ?? beats.length - 1;
   // Who dealt a hurt, and through what: the nearest unit in its chain (a status tick's, whoever put the status on).
   const dealer = (id: number) => traceOf(log, id, plain, sides).links[0] ?? null;
@@ -1655,11 +1693,11 @@ export function keyMomentsOf(log: BattleEvent[], beats: PlayBeat[], name: NameOf
   /** The first label that fits MOMENT_CHARS in plain names, else the last (the shortest). */
   const fit = (...ways: ((n: NameOf) => string)[]) => ways.find((w) => w(plain).length <= MOMENT_CHARS)?.(name) ?? ways.at(-1)!(name);
   const killText = (k: Kill, n: NameOf) => {
-    if (k.fatigue) return `Fatigue kills ${n(k.victim)}`;
-    if (!k.killer) return `${n(k.victim)} falls`;
+    if (k.fatigue) return R ? `Усталость убивает ${n(k.victim)}` : `Fatigue kills ${n(k.victim)}`;
+    if (!k.killer) return R ? `${n(k.victim)} падает` : `${n(k.victim)} falls`;
     // A status's tick says whose status it was: "Virus's Poison kills Knight".
-    const who = k.via === "strike" || k.via === "ability" ? n(k.killer) : `${n(k.killer)}'s ${k.via}`;
-    return `${who} kills ${n(k.victim)}`;
+    const who = k.via === "strike" || k.via === "ability" ? n(k.killer) : R ? `${st(k.via)} (${n(k.killer)})` : `${n(k.killer)}'s ${k.via}`;
+    return R ? `${who} убивает ${n(k.victim)}` : `${who} kills ${n(k.victim)}`;
   };
   const killMoment = (k: Kill): KeyMoment => ({
     kind: "kill",
@@ -1690,9 +1728,9 @@ export function keyMomentsOf(log: BattleEvent[], beats: PlayBeat[], name: NameOf
     }
     if (at && lead > 0) {
       const k = at.type === "Death" ? kills.find((x) => x.id === at!.id) : undefined;
-      const what = (n: NameOf) => (k ? killText(k, n) : at!.type === "Summon" ? `${n(at!.unit)} joins` : `${n((at as { unit: string }).unit)} falls`);
+      const what = (n: NameOf) => (k ? killText(k, n) : at!.type === "Summon" ? `${n(at!.unit)} ${R ? "вступает" : "joins"}` : `${n((at as { unit: string }).unit)} ${R ? "падает" : "falls"}`);
       const kind = at.type === "Summon" ? "summon" : "kill";
-      turning = { kind, beat: beatOfEvent(at.id), label: fit((n) => `Turning point: ${what(n)}`, (n) => `Decisive: ${what(n)}`, what), ...(k?.killer ? { unit: k.killer } : at.type === "Summon" ? { unit: at.unit } : {}) };
+      turning = { kind, beat: beatOfEvent(at.id), label: fit((n) => `${R ? "Перелом" : "Turning point"}: ${what(n)}`, (n) => `${R ? "Решающее" : "Decisive"}: ${what(n)}`, what), ...(k?.killer ? { unit: k.killer } : at.type === "Summon" ? { unit: at.unit } : {}) };
     }
   }
 
@@ -1738,29 +1776,34 @@ export function keyMomentsOf(log: BattleEvent[], beats: PlayBeat[], name: NameOf
       }
       const st = [...on].sort((p, q) => q[1].size - p[1].size)[0];
       const signed = (v: number, what: string) => `${v > 0 ? "+" : "−"}${Math.abs(v)} ${what}`;
-      const stats = [stat.pwr ? signed(stat.pwr, "PWR") : "", stat.hp ? signed(stat.hp, "HP") : ""].filter(Boolean).join(", ");
+      const stats = [stat.pwr ? signed(stat.pwr, statWord("pwr")) : "", stat.hp ? signed(stat.hp, statWord("hp")) : ""].filter(Boolean).join(", ");
       const mine = [...stat.units].every((u) => sides.get(u) === sides.get(actor));
-      const to = (n: NameOf) => (stat.units.size === 1 ? ` ${mine ? "to" : "on"} ${n([...stat.units][0]!)}` : mine ? " to the line" : ` on ${stat.units.size} units`);
+      const to = (n: NameOf) =>
+        R
+          ? stat.units.size === 1 ? ` для ${n([...stat.units][0]!)}` : mine ? " строю" : ` на ${unitsN(stat.units.size)}`
+          : stat.units.size === 1 ? ` ${mine ? "to" : "on"} ${n([...stat.units][0]!)}` : mine ? " to the line" : ` on ${stat.units.size} units`;
       const what = (n: NameOf): string | null =>
         st
-          ? `${st[0]} on ${st[1].size === 1 ? "1 unit" : `${st[1].size} units`}`
+          ? `${R ? ruStatusName(st[0]) : st[0]} ${R ? "на" : "on"} ${unitsN(st[1].size)}`
           : stats
             ? `${stats}${to(n)}`
             : summoned.length
-              ? `${summoned[0]!.back ? "brings back" : "summons"} ${n(summoned[0]!.unit)}${summoned.length > 1 ? `, +${summoned.length - 1} more` : ""}`
+              ? `${summoned[0]!.back ? (R ? "возвращает" : "brings back") : R ? "призывает" : "summons"} ${n(summoned[0]!.unit)}${summoned.length > 1 ? more(summoned.length - 1) : ""}`
               : blocked
-                ? `${blocked} blocked by Shield`
+                ? R ? `${blocked} заблокировано Щитом` : `${blocked} blocked by Shield`
                 : null;
-      if (what(plain) === null) return { kind: "combo", beat: b.index, label: fit((n) => `${n(actor)}: ${steps} steps`), unit: actor };
-      return { kind: "combo", beat: b.index, label: fit((n) => `${n(actor)}: ${what(n)} in ${steps} steps`, (n) => `${n(actor)}: ${what(n)}`), unit: actor };
+      if (what(plain) === null) return { kind: "combo", beat: b.index, label: fit((n) => `${n(actor)}: ${R ? stepsRu(steps) : `${steps} steps`}`), unit: actor };
+      return { kind: "combo", beat: b.index, label: fit((n) => `${n(actor)}: ${what(n)}${inSteps(steps)}`, (n) => `${n(actor)}: ${what(n)}`), unit: actor };
     }
     const [u, d] = top;
-    const victims = (n: NameOf) => `kills ${n(d.kills[0]!)}${d.kills.length > 1 ? `, +${d.kills.length - 1} more` : ""}`;
+    const victims = (n: NameOf) => `${R ? "убивает" : "kills"} ${n(d.kills[0]!)}${d.kills.length > 1 ? more(d.kills.length - 1) : ""}`;
+    const dmg = R ? `${d.dmg} урона` : `${d.dmg} dmg`;
+    const heal = `+${d.heal} ${statWord("hp")}`;
     const label = d.kills.length
-      ? fit((n) => `${n(u)}: ${d.dmg} dmg, ${victims(n)}`, (n) => `${n(u)} ${victims(n)}`)
+      ? fit((n) => `${n(u)}: ${dmg}, ${victims(n)}`, (n) => `${n(u)} ${victims(n)}`)
       : d.dmg
-        ? fit((n) => `${n(u)}: ${d.dmg} dmg in ${steps} steps`, (n) => `${n(u)}: ${d.dmg} dmg`)
-        : fit((n) => `${n(u)}: +${d.heal} HP in ${steps} steps`, (n) => `${n(u)}: +${d.heal} HP`);
+        ? fit((n) => `${n(u)}: ${dmg}${inSteps(steps)}`, (n) => `${n(u)}: ${dmg}`)
+        : fit((n) => `${n(u)}: ${heal}${inSteps(steps)}`, (n) => `${n(u)}: ${heal}`);
     return { kind: "combo", beat: b.index, label, unit: u };
   };
 
@@ -1769,7 +1812,9 @@ export function keyMomentsOf(log: BattleEvent[], beats: PlayBeat[], name: NameOf
     const fk = kills.filter((k) => k.fatigue);
     const total = [...fatigueOf.keys()].reduce((t, id) => t + ((log[id] as { amount: number }).amount ?? 0), 0);
     // "+3" alone read as a heal (R3-26): "+3 more fell".
-    const label = fk.length ? fit((n) => `Fatigue kills ${n(fk[0]!.victim)}${fk.length > 1 ? `, +${fk.length - 1} more fell` : ""}`) : `Fatigue sets in: ${total} dmg, no kills`;
+    const label = R
+      ? fk.length ? fit((n) => `Усталость убивает ${n(fk[0]!.victim)}${fk.length > 1 ? `, пали ещё ${fk.length - 1}` : ""}`) : `Усталость: ${total} урона, без убийств`
+      : fk.length ? fit((n) => `Fatigue kills ${n(fk[0]!.victim)}${fk.length > 1 ? `, +${fk.length - 1} more fell` : ""}`) : `Fatigue sets in: ${total} dmg, no kills`;
     return { kind: "fatigue", beat: beatOfEvent(f.id), label };
   };
 
@@ -1928,6 +1973,62 @@ export function turnSummaryOf(log: BattleEvent[], beats: PlayBeat[], sides = sid
     t.units = t.units.filter((u) => u.damage || u.healed || u.pwr || u.hp || u.blocked || u.statuses.length || u.died);
   }
   return turns;
+}
+
+/** What a chain did to one side (#913): HP its units lost and healed, net
+ * PWR / HP stat changes, net status stacks, who fell and who was summoned. */
+export interface ChainSide {
+  damage: number;
+  healed: number;
+  pwr: number;
+  hp: number;
+  statuses: { status: string; stacks: number }[];
+  fell: number;
+  summoned: number;
+}
+/** A chain beat's summary, per side: the line that says why a team is
+ * strong at the Start (#913). A side the chain didn't touch is left out. */
+export function chainSummaryOf(log: BattleEvent[], beat: PlayBeat, sides = sidesOf(log)): Partial<Record<Side, ChainSide>> {
+  const out: Partial<Record<Side, ChainSide>> = {};
+  const of = (unit: string): ChainSide | null => {
+    const side = sides.get(unit);
+    if (!side) return null;
+    return (out[side] ??= { damage: 0, healed: 0, pwr: 0, hp: 0, statuses: [], fell: 0, summoned: 0 });
+  };
+  const seen = new Set<number>();
+  for (const id of beat.waves.flatMap((w) => w.eventIds)) {
+    const e = log[id];
+    if (!e || seen.has(id)) continue;
+    seen.add(id);
+    if (e.type === "Summon") { const t = of(e.unit); if (t) t.summoned++; continue; }
+    if (e.type !== "Hurt" && e.type !== "Heal" && e.type !== "StatChanged" && e.type !== "StatusApplied" && e.type !== "StatusRemoved" && e.type !== "Death") continue;
+    const t = of(e.unit);
+    if (!t) continue;
+    if (e.type === "Hurt") t.damage += e.amount;
+    else if (e.type === "Heal") t.healed += e.amount;
+    else if (e.type === "StatChanged") t[e.stat] += e.delta;
+    else if (e.type === "Death") t.fell++;
+    else {
+      let st = t.statuses.find((x) => x.status === e.status);
+      if (!st) t.statuses.push((st = { status: e.status, stacks: 0 }));
+      st.stacks += e.type === "StatusApplied" ? e.stacks : -e.stacks;
+    }
+  }
+  for (const t of Object.values(out)) t.statuses = t.statuses.filter((x) => x.stacks !== 0);
+  return out;
+}
+/** A side's chain summary as words: "+6 PWR · +4 HP · Shield ×3 · −9 HP · 1 fell". */
+export function chainSideText(t: ChainSide, status: (s: string) => string = (s) => s): string {
+  const sign = (n: number) => (n > 0 ? `+${n}` : `−${-n}`);
+  return [
+    ...(t.pwr ? [`${sign(t.pwr)} ${statWord("pwr")}`] : []),
+    ...(t.hp ? [`${sign(t.hp)} ${statWord("hp")}`] : []),
+    ...(t.healed ? [ru() ? `+${t.healed} лечения` : `+${t.healed} healed`] : []),
+    ...t.statuses.map((x) => `${status(x.status)} ${x.stacks > 0 ? `×${x.stacks}` : `−${-x.stacks}`}`),
+    ...(t.damage ? [`−${t.damage} ${ru() ? "урона" : "dmg"}`] : []),
+    ...(t.summoned ? [ru() ? `призвано: ${t.summoned}` : `${t.summoned} summoned`] : []),
+    ...(t.fell ? [ru() ? `пало: ${t.fell}` : `${t.fell} fell`] : []),
+  ].join(" · ");
 }
 
 // ---------- the turn-end summary (round 4, R4-12) ----------

@@ -77,6 +77,7 @@ export function fightLines(a: FightSide, b: FightSide, o: FightOptions): BattleR
     ...(o.rules.turnCap !== undefined ? { turnCap: o.rules.turnCap } : {}),
     ...(o.rules.suddenDeathAt !== undefined ? { suddenDeathAt: o.rules.suddenDeathAt } : {}),
     ...(o.rules.battleSize !== undefined ? { lineCap: o.rules.battleSize } : {}),
+    ...(o.rules.reviveInPlace ? { reviveInPlace: true } : {}),
   });
   return {
     battleId: o.battleId,

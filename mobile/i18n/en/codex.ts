@@ -11,8 +11,11 @@ export const codex = {
   "codex.tab.fusions": "Fusions",
   "codex.tab.library": "Library",
   "codex.tab.keywords": "Keywords",
+  "codex.tab.champions": "Champions",
+  "codex.tab.howto": "How to play",
   "codex.loadingLibrary": "Loading the library…",
   "codex.loadingFusions": "Loading fusions…",
+  "codex.loadingChampions": "Loading the champions…",
   // the units tab
   "codex.sort.tier": "Tier",
   "codex.sort.win": "Win rate",
