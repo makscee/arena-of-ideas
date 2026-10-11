@@ -42,6 +42,8 @@ export interface ToolContext {
   token?: string | undefined;
   store: SessionStore;
   fetch?: typeof fetch;
+  /** X-Arena-Client, an agent's (default agent/mcp; the Claude Code mod's is agent/claude-code). */
+  client?: string;
 }
 
 export interface Tool {
@@ -80,7 +82,7 @@ const DECISION = {
 /** The tools, on one connection. */
 export function arenaTools(ctx: ToolContext): Tool[] {
   const root = ctx.url.replace(/\/api\/v1\/?$/, "");
-  const client = new ArenaClient({ api: apiBase(root), client: CLIENT, token: ctx.token || ctx.store.load().token || null, ...(ctx.fetch ? { fetch: ctx.fetch } : {}) });
+  const client = new ArenaClient({ api: apiBase(root), client: ctx.client ?? CLIENT, token: ctx.token || ctx.store.load().token || null, ...(ctx.fetch ? { fetch: ctx.fetch } : {}) });
   let cache: { at: number; content: MvpContent; rules: MvpRules } | undefined;
   let me: string | undefined;
 

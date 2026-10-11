@@ -11,5 +11,6 @@
     "resolveJsonModule": true,
     "types": ["node"]
   },
-  "include": ["src", "clients", "web", "mobile", "server/src", "scripts", "e2e/mvp-api-bot.ts", "e2e/mvp-own-crown.ts", "vite.config.ts", "vitest.config.ts"]
+  "include": ["src", "clients", "web", "mobile", "server/src", "scripts", "e2e/mvp-api-bot.ts", "e2e/mvp-own-crown.ts", "vite.config.ts", "vitest.config.ts"],
+  "exclude": ["clients/claude-code/hooks", "clients/claude-code/tests", "clients/claude-code/types", "clients/claude-code/.claude-plugin"]
 }

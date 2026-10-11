@@ -48,7 +48,8 @@
     "mvp:texts": "node --import tsx/esm scripts/unit-texts.ts",
     "mvp:check": "npm run -s typecheck && npm test && npm run -s mvp:bot -- --runs 50 && npm run -s mvp:phone && npm run -s mvp:desktop && npm run -s mvp:ideas-phone && npm run -s mvp:terms",
     "protocol": "node --import tsx/esm scripts/protocol.ts",
-    "mcp:build": "node --import tsx/esm scripts/mcp-bundle.ts"
+    "mcp:build": "node --import tsx/esm scripts/mcp-bundle.ts",
+    "mod:build": "node --import tsx/esm scripts/mod-bundle.ts"
   },
   "devDependencies": {
     "@types/node": "^25.9.2",
