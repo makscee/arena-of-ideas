@@ -7,7 +7,7 @@
 // underline runs under an icon, a number or a space, stops short of the word,
 // or a wrapped term's line has none. Without --url it builds the client and
 // starts a local server.
-//   node e2e/probe-underlines.mjs [--url http://127.0.0.1:<port>/arena/] [--out dir] [--limit n]
+//   npm run mvp:underlines -- [--url http://127.0.0.1:<port>/arena/] [--out dir] [--limit n]
 import { execFileSync, spawn } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { createServer } from "node:net";
@@ -72,6 +72,13 @@ async function terms(page, root) {
           line.top = Math.min(line.top, rc.top); line.bottom = Math.max(line.bottom, rc.bottom);
         }
       }
+      // The box the term itself paints in on each line (its own fragment), so
+      // a neighbour's underline one space away doesn't count as this one's.
+      const frag = [...b.getClientRects()].filter((r) => r.width > 0 && r.height > 0);
+      for (const l of lines) {
+        const f = frag.filter((r) => r.bottom >= l.top + 1 && r.top <= l.bottom - 1);
+        l.fl = Math.min(l.left, ...f.map((r) => r.left)); l.fr = Math.max(l.right, ...f.map((r) => r.right));
+      }
       if (lines.length) res.push({ id: b.dataset.term ?? b.dataset.unitRef ?? "?", text: b.textContent.replace(/\s+/g, " ").trim(), underlined, lines });
     }
     return res;
@@ -111,7 +118,7 @@ async function painted(page, list) {
     return list.map((t) => t.lines.map((l) => {
       // The band from the text's foot to a few px under it: the dotted line
       // (offset 3px) and anything else that reads as a line under the word.
-      const x0 = Math.max(0, Math.floor((l.left - 30 - clip.x) * DPR)), x1 = Math.min(A.w, Math.ceil((l.right + 30 - clip.x) * DPR));
+      const x0 = Math.max(0, Math.floor((l.fl - 1 - clip.x) * DPR)), x1 = Math.min(A.w, Math.ceil((l.fr + 1 - clip.x) * DPR));
       const y0 = Math.max(0, Math.floor((l.bottom - 2 - clip.y) * DPR)), y1 = Math.min(A.h, Math.ceil((l.bottom + 8 - clip.y) * DPR));
       let lo = Infinity, hi = -Infinity;
       for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
@@ -141,7 +148,8 @@ async function check(page, root, where, label, bad, shots) {
     const key = `${label} ${t.id} "${t.text}"${t.lines.length > 1 ? ` line ${j + 1}/${t.lines.length}` : ""}: ${why}`;
     if (!bad.has(key)) bad.set(key, where);
   }));
-  if (bad.size > shots.n && shots.n < 12) { shots.n = bad.size; await page.screenshot({ path: `${out}/${label}-${String(shots.k++).padStart(2, "0")}.png` }); }
+  const mine = [...bad.keys()].filter((k) => k.startsWith(`${label} `)).length;
+  if (mine > shots.n && shots.k < 12) { shots.n = mine; await page.screenshot({ path: `${out}/${label}-${String(shots.k++).padStart(2, "0")}.png` }); }
   return list.length;
 }
 
