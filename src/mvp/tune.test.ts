@@ -54,10 +54,10 @@ describe("tuneUnit on a small field", () => {
   });
 
   it("tunes a scrambled copy of a live unit back into the band", () => {
-    // Morbid, not Venomancer: since revives return in place (#918), a weak
-    // Venomancer copy's best team is Ruin · Keeper · … · Necromancer, which
-    // wins on its own, so its copy starts above the band whatever its numbers.
-    const scrambled = scrambleRow({ ...live("Morbid"), name: "Morbid Copy" }, ROWS, 3);
+    // Venomancer again (#918): with revives in place but no limit, its weak
+    // copy's best team was Ruin · Keeper · … · Necromancer and started above
+    // the band; once a unit returns only once a battle, it starts below it.
+    const scrambled = scrambleRow({ ...live("Venomancer"), name: "Venomancer Copy" }, ROWS, 3);
     const r = tuneUnit(scrambled, { liveRows: ROWS, field, band, settings: s, meta: null });
     // It started out of the band and was moved into it.
     expect(r.steps[0]!.measure.score).toBeLessThan(band.low);
