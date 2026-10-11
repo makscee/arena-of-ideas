@@ -186,8 +186,8 @@ try {
     await page.getByTestId("sheet-close").click();
     if (to !== lang) { await shot(`home-switched-${to}`); await noHScroll(`home-switched-${to}`); }
   }
-  // M2-3: a quiet ideas line; a new player earns the first in 3 runs.
-  if ((await page.getByTestId("ideas-label").textContent()) !== L("home.ideaNext") || (await page.getByTestId("ideas-runs").textContent()) !== L("home.ideaRuns", { n: 3 })) errors.push(`home: ideas meter "${await page.getByTestId("ideas").textContent()}"`);
+  // #915: a quiet ideas line; a new player has today's 3, so no refill time.
+  if ((await page.getByTestId("ideas-label").textContent()) !== L("home.ideasHeld", { n: 3 }) || (await page.getByTestId("ideas-refill").count()) !== 0) errors.push(`home: ideas meter "${await page.getByTestId("ideas").textContent()}"`);
   await tap44("dev summary", page.locator("details.dev summary"));
   await tap44("settings gear", page.getByTestId("settings"));
   await page.getByTestId("settings").click();
@@ -762,7 +762,7 @@ try {
   await page.getByTestId("home").click();
   await page.getByTestId("play").waitFor();
   await shot("home-after");
-  if (![L("home.ideaNext")].concat([1, 2, 3].map((n) => L("home.ideasHeld", { n }))).includes((await page.getByTestId("ideas-label").textContent()) ?? "")) errors.push(`home after a run: ideas meter "${await page.getByTestId("ideas").textContent()}"`);
+  if (![L("home.ideasNone")].concat([1, 2, 3].map((n) => L("home.ideasHeld", { n }))).includes((await page.getByTestId("ideas-label").textContent()) ?? "")) errors.push(`home after a run: ideas meter "${await page.getByTestId("ideas").textContent()}"`);
   // M5-3: the Throne shows the run just played, a pip per fight.
   await page.getByTestId("last-run").waitFor({ timeout: 5_000 }).catch(() => errors.push("home after a run: no Last run panel"));
   if ((await page.getByTestId("last-run").locator(".fpip").count()) < 1) errors.push("home after a run: Last run has no fights");

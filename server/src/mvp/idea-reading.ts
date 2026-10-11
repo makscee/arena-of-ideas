@@ -33,7 +33,7 @@ import type { RunDeps } from "./runs.js";
 import type { MvpJob } from "./runtime.js";
 import { nameKey, type MvpStore } from "./store.js";
 
-type ReadDeps = Pick<RunDeps, "store" | "rules" | "now">;
+type ReadDeps = Pick<RunDeps, "store" | "rules" | "now" | "today">;
 
 /** Ideas read per wake. */
 export const READ_BATCH = 3;

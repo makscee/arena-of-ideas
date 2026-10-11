@@ -523,7 +523,7 @@ function proposeRow(unit: UnitContent, all: MvpContent, ideas: IdeasView | null,
   const b = button(t("codex.propose"), () => propose(unit, all), held ? "primary" : "primary off", "library-propose");
   if (held) return h("div", { class: "row" }, b);
   b.disabled = true;
-  const why = ideas ? ideaWhy(ideas.nextIn ?? 0) : t("codex.ideasDidntLoad");
+  const why = ideas ? ideaWhy(ideas.refillsAt) : t("codex.ideasDidntLoad");
   return h("div", { class: "off-row" }, b, h("span", { class: "dim small", "data-testid": "library-propose-why" }, why));
 }
 

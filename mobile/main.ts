@@ -15,7 +15,7 @@ import { getContent, unitIn } from "./content";
 import { battleScreen, type RunOutro } from "./screens/battle";
 import { codexScreen, newCodexCache, type CodexState } from "./screens/codex";
 import { setCodexLink } from "./ui/term";
-import { ideasScreen } from "./screens/ideas";
+import { ideasScreen, refillTime } from "./screens/ideas";
 import { votePanel } from "./screens/vote";
 import { card, roman, setCardCredits, unitSheet, type CardUnit } from "./ui/card";
 import { previewName } from "./ui/fusion";
@@ -490,26 +490,16 @@ function settingsSheet(home: HomeView, err: HTMLElement): void {
   );
 }
 
-/** The Throne's idea meter (M2-3, M5-3): the runs until the next idea as
- * pips, or the ideas held, or one waiting for its pick first. Tapping it
- * opens My ideas (M2-4, screens/ideas.ts). */
+/** The Throne's idea meter (M2-3, M5-3; #915 ideas a day): the ideas left
+ * today and how many come back at the day's end, or one waiting for its pick
+ * first. Tapping it opens My ideas (M2-4, screens/ideas.ts). */
 function ideasMeter(ideas: IdeasView): HTMLElement {
-  const every = rules.ideaEveryRuns ?? 3;
-  const counting = !ideas.ready && ideas.held === 0 && ideas.nextIn !== null;
   // M2-6: an idea waiting for its pick comes first: "💡 Your idea is ready".
-  const label = ideas.ready
-    ? t("home.ideasReady", { n: ideas.ready })
-    : counting
-      ? t("home.ideaNext")
-      : t("home.ideasHeld", { n: ideas.held });
-  const done = counting ? Math.max(0, every - (ideas.nextIn ?? every)) : 0;
+  const label = ideas.ready ? t("home.ideasReady", { n: ideas.ready }) : ideas.held > 0 ? t("home.ideasHeld", { n: ideas.held }) : t("home.ideasNone");
   const b = button("", () => void ideasScreen({ onBack: () => void homeScreen(), onUnknown: () => (api.forget(), nameScreen()) }), "idea-meter", "ideas");
   b.append(h("span", { class: "grow idea-label", "data-testid": "ideas-label" }, label));
-  if (counting)
-    b.append(
-      h("span", { class: "idea-pips", "aria-hidden": "true" }, ...Array.from({ length: every }, (_, i) => h("span", { class: i < done ? "on" : "" }))),
-      h("span", { class: "idea-runs", "data-testid": "ideas-runs" }, t("home.ideaRuns", { n: ideas.nextIn ?? 0 })),
-    );
+  if (!ideas.ready && ideas.held < ideas.perDay)
+    b.append(h("span", { class: "idea-runs", "data-testid": "ideas-refill" }, t("home.ideaRefill", { n: ideas.perDay - ideas.held, time: refillTime(ideas.refillsAt) })));
   if (ideas.ready) b.dataset.ready = String(ideas.ready);
   return b;
 }

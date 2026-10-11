@@ -11,7 +11,7 @@ import { IDEA_TEXT_MAX, IDEA_TEXT_MIN, type CreditsView, type IdeaState, type Mv
 import { formSegments } from "../../src/mvp/form-text";
 import { api, ApiError } from "../api";
 import { getContent } from "../content";
-import { t } from "../i18n";
+import { currentLang, t } from "../i18n";
 import type { Key } from "../i18n/en";
 import { unitSheet } from "../ui/card";
 import { button, closable, h, onGone, onKeys, overlay, screen, show } from "../ui/dom";
@@ -33,8 +33,10 @@ export const IDEA_STAGE: Record<IdeaState, Key> = {
   library: "ideas.stage.library",
 };
 
-/** Why New idea is off: "1 more run for an idea" (Home's ideas line says the same). */
-export const ideaWhy = (runs: number) => t("ideas.why", { n: runs });
+/** The time of day ideas come back (IdeasView.refillsAt), in the player's clock: "04:00". */
+export const refillTime = (iso: string) => new Intl.DateTimeFormat(currentLang(), { hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(iso));
+/** Why New idea is off: "Ideas come back at 04:00" (Home's ideas line says the same). */
+export const ideaWhy = (refillsAt: string) => t("ideas.why", { time: refillTime(refillsAt) });
 const chars = (s: string) => [...s.trim()].length;
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -64,15 +66,13 @@ export async function ideasScreen(nav: IdeasNav, notice: string | null = null): 
     return;
   }
   const err = h("div", { class: "error", "data-testid": "error" });
-  const { held, nextIn } = view.ideas;
-  const holdLine =
-    held > 0
-      ? `${t("ideas.hold", { n: held })}${nextIn === null ? t("ideas.holdMax") : ""}`
-      : t("ideas.holdNone");
+  const { held, perDay, refillsAt } = view.ideas;
+  const refill = held >= perDay ? t("ideas.holdMax") : t("ideas.refill", { n: perDay, time: refillTime(refillsAt) });
+  const holdLine = `${held > 0 ? t("ideas.hold", { n: held }) : t("ideas.holdNone")}${refill}`;
   // M3-2: with none held, New idea is off (muted, nothing to press) and says why beside it.
   const write = button(t("ideas.new"), () => writeScreen(nav), held > 0 ? "primary" : "primary off", "idea-new");
   if (held === 0) write.disabled = true;
-  const newIdea = held > 0 ? write : h("div", { class: "off-row" }, write, h("span", { class: "dim small", "data-testid": "idea-new-why" }, ideaWhy(nextIn ?? 0)));
+  const newIdea = held > 0 ? write : h("div", { class: "off-row" }, write, h("span", { class: "dim small", "data-testid": "idea-new-why" }, ideaWhy(refillsAt)));
   show(
     h("h1", {}, t("ideas.title")),
     notice ? h("div", { class: "notice", "data-testid": "idea-sent" }, notice) : null,

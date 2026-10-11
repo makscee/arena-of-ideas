@@ -9,7 +9,7 @@ import { mvpContent } from "./content.js";
 import { sameShape } from "./idea-checks.js";
 import { fakeIdeaReader, readingsPrompt, type IdeaReader } from "./idea-reader.js";
 import { COULD_NOT, pickReading, readIdeas, TARGET_GONE } from "./idea-reading.js";
-import { grantIdea, ideasOf, writeIdea } from "./ideas.js";
+import { grantIdea, ideasOf, spendIdea, writeIdea } from "./ideas.js";
 import { seedUnits, swapUnit } from "./pool.js";
 import { mvpRuntime } from "./runtime.js";
 import { MemoryMvpStore } from "./store.js";
@@ -28,6 +28,7 @@ function world(pass = true) {
   swapUnit(store, "fighter", "rat", now);
   const rt = mvpRuntime({ content: mvpContent(), store, now: () => now, rules: MVP_RULES, dev: true, tuner: { night: tuner(pass), dev: tuner(pass) } });
   store.addPlayer(maks);
+  for (let i = 0; i < 3; i++) spendIdea(rt, maks.id); // a player who spent today's ideas (#915: 3 a day)
   const app = createMvpApp(rt);
   const call = async <T>(method: string, path: string, body?: unknown): Promise<{ status: number; json: T }> => {
     const headers = { "content-type": "application/json", "X-Arena-Player": maks.id };
