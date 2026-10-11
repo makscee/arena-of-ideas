@@ -3,6 +3,7 @@
 // `fetch`, so it runs in a browser, Node 18+, Bun or Deno. The routes are
 // protocol/openapi.json (src/mvp/routes.ts).
 import {
+  CLIENT_HEADER,
   MVP_API_PREFIX,
   PLAYER_HEADER,
   TOKEN_HEADER,
@@ -17,6 +18,7 @@ import {
   type LibraryView,
   type MvpContent,
   type PlayerRef,
+  type RunMode,
   type RunView,
 } from "../../src/mvp/contract.js";
 
@@ -39,6 +41,9 @@ export interface Connection {
   player?: string | null;
   /** Sent as Accept-Language, so server text (refusals) follows it. */
   lang?: string;
+  /** Sent as X-Arena-Client: `agent/<name>` for an agent client (#958), which
+   * plays practice runs only; a ranked move answers it 403. */
+  client?: string;
   fetch?: typeof fetch;
 }
 
@@ -52,6 +57,7 @@ export async function apiCall<T>(c: Connection, method: string, path: string, bo
     headers: {
       "content-type": "application/json",
       ...(c.lang ? { "accept-language": c.lang } : {}),
+      ...(c.client ? { [CLIENT_HEADER]: c.client } : {}),
       ...(c.token ? { [TOKEN_HEADER]: c.token } : c.player ? { [PLAYER_HEADER]: c.player } : {}),
     },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
@@ -83,8 +89,9 @@ export class ArenaClient {
     return r;
   };
   home = () => this.call<HomeView>("GET", "/home");
-  /** Starts a run, or returns the active one. */
-  startRun = () => this.call<RunView>("POST", "/runs");
+  /** Starts a run, or returns the active one of that mode (#958: ranked
+   * unless "practice"; an agent client starts practice runs only). */
+  startRun = (mode?: RunMode) => this.call<RunView>("POST", "/runs", mode ? { mode } : undefined);
   run = (runId: string) => this.call<RunView>("GET", `/runs/${encodeURIComponent(runId)}`);
   decide = (runId: string, d: Decision) => this.call<DecisionResponse>("POST", `/runs/${encodeURIComponent(runId)}/decisions`, d);
   preview = (runId: string, d: Decision) => this.call<DecisionResponse>("POST", `/runs/${encodeURIComponent(runId)}/preview`, d);

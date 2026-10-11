@@ -237,7 +237,8 @@ export function preview(deps: RunDeps, run: MvpRunState, d: Decision): DecisionR
     // name isn't in this response at all. A stored pair shows its stored
     // credit: null while only bots have made it (the fuse then claims it).
     const known = deps.store.fusion(boardUnit(run, run.rules, d.first)!.unitId, boardUnit(run, run.rules, d.second)!.unitId);
-    ctx.fuse = known ? { name: known.name, discoveredBy: known.discoveredBy } : { name: "", discoveredBy: fuse.discoveredBy };
+    // A practice fuse claims nothing (#958).
+    ctx.fuse = known ? { name: known.name, discoveredBy: known.discoveredBy } : { name: "", discoveredBy: run.mode === "practice" ? null : fuse.discoveredBy };
   }
   return { run: runView(applyMvpDecision(run, d, content, ctx).state) };
 }
