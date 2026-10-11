@@ -13,6 +13,7 @@ import { beamChecks } from "./beams.mjs";
 import { nowSheetChecks } from "./now-sheet.mjs";
 import { catalog, e2eLang, localeOf, pattern } from "./lang.mjs";
 const { scopedLabel, scopedTip } = await import("../src/glossary.ts");
+const { MVP_RULES } = await import("../src/mvp/contract.ts");
 
 const args = process.argv.slice(2);
 const opt = (n) => { const i = args.indexOf(`--${n}`); return i >= 0 ? args[i + 1] : undefined; };
@@ -860,6 +861,15 @@ try {
     const shown = await page.getByTestId("gift-title").waitFor({ timeout: 5_000 }).then(() => true, () => false);
     if (!shown) return void errors.push("gift: the chooser doesn't open after the awakening copy");
     if ((await page.getByTestId("gift-title").textContent()) !== L("gift.title")) errors.push("gift: no 'Awakened! Pick a gift'");
+    // #916: the gift is one tier above the shop's highest (the top tier at most), and says so.
+    const content = await call("GET", "/content");
+    const tierOf = (id) => content.units.find((u) => u.id === id)?.tier;
+    const shopTier = MVP_RULES.tierOpensAt.reduce((top, round, i) => (round <= before.round ? i + 1 : top), 0);
+    const wantTier = Math.min(shopTier + 1, Math.max(...content.units.map((u) => u.tier)));
+    const tiers = before.gift.map(tierOf);
+    if (tiers.some((t) => t !== wantTier)) errors.push(`gift: round ${before.round} offers tiers ${tiers}, want all ${wantTier}`);
+    const free = (await page.getByTestId("gift-free").textContent()) ?? "";
+    if (wantTier > shopTier && !new RegExp(pattern(L("gift.freeTierAhead"))).test(free)) errors.push(`gift: the chooser doesn't say a tier ahead: "${free}"`);
     const cards = await page.getByTestId("gift-choices").locator(".card").count();
     if (cards !== 3) errors.push(`gift: ${cards} cards, want 3`);
     await shot("gift-chooser"); await noHScroll("gift-chooser"); await noVScroll("gift-chooser");

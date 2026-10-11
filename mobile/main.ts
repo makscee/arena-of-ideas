@@ -240,7 +240,7 @@ function rulesPage(): HTMLElement {
     ...(benchSizeOf(r) > 0 ? [p(t(desk ? "rules.benchDesk" : "rules.benchPhone", { n: r.benchSize ?? 0 }))] : []),
     h("div", { class: "label" }, t("rules.copiesLabel")),
     p(t("rules.copies", { ...growth, awaken: r.copiesToAwaken })),
-    ...(r.giftChoices ? [p(t("rules.gift", { n: r.giftChoices }))] : []),
+    ...(r.giftChoices ? [p(t(r.giftTierAhead ? "rules.giftAhead" : "rules.gift", { n: r.giftChoices }))] : []),
     p(t(desk ? "rules.fuseDesk" : "rules.fusePhone", growth)),
     h("div", { class: "label" }, t("rules.chainsLabel")),
     p(t(desk ? "rules.chainsDesk" : "rules.chainsPhone")),
@@ -1235,6 +1235,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const stuck = cramped(gift);
     const none = !gift.some(giftPickable);
     const tier = unitOf(gift[0]!)?.tier;
+    // A tier ahead of the shop (#916), unless the shop already sells the top tier.
+    const shopTier = rules.tierOpensAt.reduce((top, round, i) => (round <= run.round ? i + 1 : top), 0);
     // Desktop: the read pane, the hovered card's full sheet (the first card's to start).
     const readers: (() => HTMLElement)[] = [];
     const read = h("div", { class: "gift-read", "data-testid": "gift-read" });
@@ -1272,7 +1274,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     const kids = [
       h("div", { class: "label" }, t("gift.label")),
       h("h2", { class: "reveal", "data-testid": "gift-title" }, t("gift.title")),
-      h("div", { class: "dim small" }, tier ? t("gift.freeTier", { tier: roman(tier) }) : t("gift.free")),
+      h("div", { class: "dim small", "data-testid": "gift-free" }, tier ? t(tier > shopTier ? "gift.freeTierAhead" : "gift.freeTier", { tier: roman(tier) }) : t("gift.free")),
       ...(stuck ? [h("div", { class: "hint", "data-testid": "gift-full" }, none ? t("gift.noneFits") : t("gift.onlyOwned"))] : []),
       h("div", { class: "gift-choices", "data-testid": "gift-choices" }, ...choices),
       h("div", { class: "dim small" }, desk ? t("gift.readDesk") : t("gift.readPhone")),
