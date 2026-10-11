@@ -654,6 +654,9 @@ export interface HomeView {
   ideas: IdeasView | null;
   /** M4-6: Telegram login (Link Telegram, Unlink in the title menu); null without a player. */
   telegram?: TelegramStatus | null;
+  /** #929: the player's email (Settings), and whether they must add one
+   * before playing; null without a player. */
+  email?: EmailStatus | null;
 }
 
 /** Ideas a player holds (M2-3, server/src/mvp/ideas.ts): back up to
@@ -967,6 +970,17 @@ export interface MyIdeasView {
 //   POST /api/v1/dev/telegram/accept { code, decline? } → { reply: string } (M4-6; ARENA_TELEGRAM_FAKE=1 only: the fake bot's user sends
 //                                                                  /start <code>, then taps Yes, or No with decline: true)
 //   Telegram login codes, like invite codes, travel only in bodies and the t.me link.
+//   POST /api/v1/auth/email/start  EmailStartRequest → { ok: true, expiresAt } (#929; mails a 6-digit code to `email`, for sign-in or
+//                                                                  sign-up, or with a session to attach it; never says whether the
+//                                                                  email has a player; 400 a bad email or name, 404 email login off,
+//                                                                  429 a code a minute per email, or too many this hour, 502 not sent)
+//   POST /api/v1/auth/email/verify EmailVerifyRequest → EmailVerify (#929; a known email logs in; a new one with `name` makes the
+//                                                                  player (with `join`, the join code, on an invite-only server);
+//                                                                  without `name` "needsName" and the code stays; 400 a wrong code
+//                                                                  (5 tries), 404 no code or expired, 403 invite only, 409 name taken)
+//   POST /api/v1/auth/email/attach { email, code } → EmailStatus   (#929; ties the email to the caller, who has none yet; the code
+//                                                                  from a start sent with their session; 409 the email has a player)
+//   POST /api/v1/dev/mail/last { email } → { code, subject, text }  (#929; ARENA_MAIL_FAKE=1 only: the last code mailed there)
 
 export const PLAYER_HEADER = "X-Arena-Player";
 /** Slice 13: the session token from POST /invites/redeem. */
@@ -993,6 +1007,37 @@ export type TelegramPoll = { status: "waiting" } | { status: "declined" } | ({ s
 export interface TelegramStatus {
   enabled: boolean;
   linked: boolean;
+}
+
+/** #929: POST /auth/email/start. `name` (sign-up) is only checked for its
+ * form here; `lang` picks the mail's language. */
+export interface EmailStartRequest {
+  email: string;
+  name?: string;
+  lang?: "en" | "ru";
+}
+
+/** #929: POST /auth/email/verify. `join`: the join code (#join=…) on an
+ * invite-only server that isn't open to all. */
+export interface EmailVerifyRequest {
+  email: string;
+  code: string;
+  name?: string;
+  join?: string;
+}
+
+/** #929: a verified code: the session, or "needsName" for an email with no
+ * player yet and no name sent (the code stays for the next try with one). */
+export type EmailVerify = { status: "needsName" } | ({ status: "done" } & PlayerSession);
+
+/** #929: email login for Settings and the "add your email" step. */
+export interface EmailStatus {
+  /** Email login is on (a mailer is set up). */
+  enabled: boolean;
+  /** The player must add an email before playing (an invite-only server with email login on). */
+  required: boolean;
+  /** The player's email, or null. */
+  address: string | null;
 }
 
 /** R4-20: a join through the open link: the new player's session plus their

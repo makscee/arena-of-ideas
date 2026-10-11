@@ -24,6 +24,7 @@ import { icon } from "./ui/icon";
 import { app, button, closable, desktopQuery, dismissable, h, isDesktop, keepScreen, onKeys, overlay, screen, show, who } from "./ui/dom";
 import { loadUnitRates } from "./ui/unit-stats";
 import { telegramSheet } from "./screens/telegram";
+import { emailAttach, emailSignIn, emailSignUp } from "./screens/email";
 import { initSound, music, onSoundChange, play, setSound, soundSettings } from "./ui/sound";
 import { shopSound } from "./ui/sound-map";
 import { t, withNodes } from "./i18n";
@@ -284,13 +285,26 @@ function nameScreen(): void {
   void api.health().then(
     (hl) => {
       const tg = telegramLogin(hl.telegram);
-      if (hl.open) joinForm("", tg);
+      // #929: with email login on, an invite-only server signs up and in by email.
+      if (hl.invites && hl.mail) {
+        if (hl.open) emailSignUp({ join: "", extra: tg, onDone: signedIn });
+        else
+          show(
+            h("h1", {}, t("name.title")),
+            h("p", { class: "dim", "data-testid": "invite-only" }, t("name.inviteOnly")),
+            button(t("email.signIn"), () => emailSignIn({ back: nameScreen, onDone: signedIn }), "primary", "email-signin-open"),
+            tg,
+          );
+      } else if (hl.open) joinForm("", tg);
       else if (hl.invites) show(h("h1", {}, t("name.title")), h("p", { class: "dim", "data-testid": "invite-only" }, t("name.inviteOnly")), tg);
-      else nameForm(tg);
+      else nameForm(tg, !!hl.mail);
     },
     () => nameForm(),
   );
 }
+
+/** #929: this device just became a player by email: Home, with no join code left in the address. */
+const signedIn = () => (dropInvite(), void homeScreen());
 
 /** M4-6: "Log in with Telegram" on the welcome screens, when the server has it. */
 function telegramLogin(mode: false | "bot" | "fake" | undefined): HTMLElement | null {
@@ -314,7 +328,7 @@ function telegramRow(linked: boolean, err: HTMLElement): HTMLElement {
     : button(t("tg.link"), link, "", "tg-link");
 }
 
-function nameForm(tg: HTMLElement | null = null): void {
+function nameForm(tg: HTMLElement | null = null, mail = false): void {
   const input = h("input", { placeholder: t("name.placeholder"), maxlength: "24", autocomplete: "nickname", "data-testid": "name-input" });
   const err = errorLine();
   const go = () => guarded(err, async () => {
@@ -327,6 +341,7 @@ function nameForm(tg: HTMLElement | null = null): void {
     h("p", { class: "dim" }, t("name.intro")),
     input,
     button(t("name.enter"), () => void go(), "primary", "name-submit"),
+    mail ? button(t("email.signIn"), () => emailSignIn({ back: nameScreen, onDone: signedIn }), "", "email-signin-open") : null,
     tg,
     err,
   );
@@ -347,6 +362,8 @@ async function homeScreen(ended: number | null = null): Promise<void> {
   const err = errorLine();
   void loadUnitRates(); // the rates hint on unit sheets (slice 11)
   const [home, content]: [HomeView, MvpContent] = await Promise.all([api.home(), getContent()]);
+  // #929: a player from before email login adds an email before playing.
+  if (home.email?.required && !home.email.address) return emailAttach({ playerName: api.player?.name ?? "", onDone: () => void homeScreen() });
   rules = home.rules;
   day = home.day;
   // The run that waits, for Continue's round and hearts (null if it ended meanwhile).
@@ -480,6 +497,7 @@ function settingsSheet(home: HomeView, err: HTMLElement): void {
       { class: "stack settings", "data-testid": "settings-sheet" },
       h("h2", {}, t("home.settings")),
       h("div", { class: "row me" }, h("span", { class: "dim keep" }, t("home.playingAs")), who(api.player?.name ?? "")),
+      home.email?.address ? h("div", { class: "row me", "data-testid": "settings-email" }, h("span", { class: "dim keep" }, t("email.label")), h("span", { class: "grow" }, home.email.address)) : null,
       soundRow(),
       langRow(),
       themeRow(),
@@ -1713,8 +1731,15 @@ function joinSwitchScreen(code: string, mine: PlayerRef): void {
   );
   onKeys((e) => (e.key === "Escape" ? (stay(), true) : false));
 }
+/** The join link's sign-up: by email (#929) when the server has it, else a name. */
 function joinForm(code: string, tg: HTMLElement | null = null): void {
   music("home");
+  void api.health().then(
+    (hl) => (hl.invites && hl.mail ? emailSignUp({ join: code, extra: tg, onDone: signedIn }) : nameJoinForm(code, tg)),
+    () => nameJoinForm(code, tg),
+  );
+}
+function nameJoinForm(code: string, tg: HTMLElement | null): void {
   const input = h("input", { placeholder: t("join.yourName"), maxlength: "24", autocomplete: "nickname", "data-testid": "join-name" });
   const err = errorLine();
   const go = () => guarded(err, async () => {

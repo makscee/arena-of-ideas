@@ -11,7 +11,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, Idea, IdeaState, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
-import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type TelegramCode, type TelegramLink, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally, type Vote, type WordRequest, type DailyPost } from "./store.js";
+import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type TelegramCode, type TelegramLink, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally, type Vote, type WordRequest, type DailyPost, type EmailCode, type EmailLink } from "./store.js";
 
 const SQL_DIR = fileURLToPath(new URL("./sql/", import.meta.url));
 
@@ -202,6 +202,20 @@ export class SqliteMvpStore implements MvpStore {
       : this.one("SELECT json FROM mvp_telegram_links WHERE player_id = ?", by.playerId);
   }
   unlinkTelegram(playerId: string): boolean { return this.db.prepare("DELETE FROM mvp_telegram_links WHERE player_id = ?").run(playerId).changes > 0; }
+  linkEmail(l: EmailLink): void {
+    // Both keys are unique: a second email of either side fails here.
+    this.write("INSERT INTO mvp_emails (email_key, player_id, json) VALUES (?, ?, ?)", l.emailKey, l.playerId, JSON.stringify(l));
+  }
+  emailLink(by: { emailKey: string } | { playerId: string }): EmailLink | undefined {
+    return "emailKey" in by
+      ? this.one("SELECT json FROM mvp_emails WHERE email_key = ?", by.emailKey)
+      : this.one("SELECT json FROM mvp_emails WHERE player_id = ?", by.playerId);
+  }
+  putEmailCode(c: EmailCode): void {
+    this.write("INSERT INTO mvp_email_codes (email_key, json) VALUES (?, ?) ON CONFLICT(email_key) DO UPDATE SET json = excluded.json", c.emailKey, JSON.stringify(c));
+  }
+  emailCode(emailKey: string): EmailCode | undefined { return this.one("SELECT json FROM mvp_email_codes WHERE email_key = ?", emailKey); }
+  dropEmailCode(emailKey: string): boolean { return this.db.prepare("DELETE FROM mvp_email_codes WHERE email_key = ?").run(emailKey).changes > 0; }
   rotateInvite(oldCode: string, next: Invite): number {
     return this.db.transaction(() => {
       this.write("DELETE FROM mvp_invites WHERE code = ?", oldCode);

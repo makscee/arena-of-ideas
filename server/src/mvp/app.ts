@@ -6,7 +6,7 @@
 import { randomUUID } from "node:crypto";
 import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, TOKEN_HEADER, type Decision, type HomeView, type PlayerRef, type TelegramPoll, type TelegramStatus, type VoteRequest } from "../../../src/mvp/contract.js";
+import { MVP_API_PREFIX, MVP_API_VERSION, PLAYER_HEADER, TOKEN_HEADER, type Decision, type HomeView, type PlayerRef, type EmailVerify, type TelegramPoll, type TelegramStatus, type VoteRequest } from "../../../src/mvp/contract.js";
 import { checkDecision, MvpBadDecision, MvpDecisionError, runView, type MvpRunState } from "../../../src/mvp/run.js";
 import { creditsView, creditUnit, libraryView } from "./credits.js";
 import { dayView, endDay, hiddenSlay } from "./day.js";
@@ -19,6 +19,7 @@ import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runti
 import { servedContent } from "./pool.js";
 import { championSvg, shareLang, sharePng, unitSvg } from "./share.js";
 import { statsView } from "./stats.js";
+import { attachEmail, EMAIL_STARTS_PER_ADDRESS_HOUR, EMAIL_STARTS_PER_HOUR, EmailRefused, emailRequired, emailStatus, FakeMailer, startEmailLogin, verifyEmailLogin } from "./email.js";
 import { FakeTelegram, pollTelegramLogin, startTelegramLogin, TELEGRAM_STARTS_PER_HOUR, TelegramRefused } from "./telegram.js";
 import { candidateScores, castVote, fakeVotes, nextCard, overnightCheck, seedCandidate, waitingForCheck } from "./votes.js";
 
@@ -31,7 +32,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   const { store } = rt;
   const api = new Hono();
 
-  const bad = (c: Context, status: 400 | 401 | 403 | 404 | 409 | 413 | 429 | 501, error: string) => c.json({ error }, status);
+  const bad = (c: Context, status: 400 | 401 | 403 | 404 | 409 | 413 | 429 | 501 | 502, error: string) => c.json({ error }, status);
   /** A stub that a later slice fills in answers 501 until then. */
   const notYet = (c: Context, fn: () => unknown) => {
     try {
@@ -61,7 +62,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   // shows the invite screen.
   api.use("*", async (c, next) => {
     const token = c.req.header(TOKEN_HEADER);
-    if (token && !/\/(invites|join|auth\/telegram\/(start|poll))(\/|$)/.test(c.req.path) && !sessionPlayer(store, token)) return unknownPlayer(c);
+    if (token && !/\/(invites|join|auth\/telegram\/(start|poll)|auth\/email\/(start|verify))(\/|$)/.test(c.req.path) && !sessionPlayer(store, token)) return unknownPlayer(c);
     await next();
   });
   // A decision's body is read only from a known player.
@@ -71,7 +72,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
       await next();
     });
 
-  api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: rt.content.version, invites: rt.invites, open: rt.open, telegram: rt.telegram ? (rt.telegram instanceof FakeTelegram ? "fake" : "bot") : false }));
+  api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: rt.content.version, invites: rt.invites, open: rt.open, telegram: rt.telegram ? (rt.telegram instanceof FakeTelegram ? "fake" : "bot") : false, mail: rt.mail ? (rt.mail instanceof FakeMailer ? "fake" : "smtp") : false }));
   api.get("/content", (c) => c.json(servedContent(rt)));
 
   api.post("/players", async (c) => {
@@ -115,6 +116,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     const code = joinWith(typeof body?.code === "string" ? body.code : "");
     const name = typeof body?.name === "string" ? body.name : "";
     if (!isJoinCode(store, code)) return bad(c, 404, "no such join link");
+    if (emailRequired(rt)) return bad(c, 403, "Sign up with your email.");
     const now = rt.now();
     while (joins.length && joins[0]! <= now.getTime() - 3_600_000) joins.shift();
     if (joins.length >= JOINS_PER_HOUR) return bad(c, 429, "Too many new players this hour. Try again later.");
@@ -129,13 +131,77 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     }
   });
 
-  // M4-6: log in with Telegram (./telegram.ts). Starts are counted per player,
-  // or per address logged out (the nearest proxy's X-Forwarded-For entry), in memory.
-  const tgStarts = new Map<string, number[]>();
   const addressOf = (c: Context) => {
     const hops = (c.req.header("x-forwarded-for") ?? "").split(",").map((h) => h.trim()).filter(Boolean);
     return hops.at(-1) ?? (c.env as { incoming?: { socket?: { remoteAddress?: string } } } | undefined)?.incoming?.socket?.remoteAddress ?? "local";
   };
+  // #929: email login (./email.ts). Codes mailed are counted per address
+  // and for the whole server, an hour, in memory; new players share the join
+  // link's hourly limit.
+  const mailStarts = new Map<string, number[]>();
+  let allMailStarts: number[] = [];
+  const hourOf = (list: number[], now: number) => list.filter((t) => t > now - 3_600_000);
+  const emailCall = async (c: Context, fn: () => unknown | Promise<unknown>) => {
+    try {
+      return c.json((await fn()) as object);
+    } catch (err) {
+      if (err instanceof EmailRefused) return bad(c, err.status, err.message);
+      throw err;
+    }
+  };
+  const emailBody = async (c: Context) => (await c.req.json().catch(() => null)) as { email?: unknown; code?: unknown; name?: unknown; lang?: unknown; join?: unknown } | null;
+  const str = (x: unknown) => (typeof x === "string" ? x : "");
+  api.post("/auth/email/start", async (c) => {
+    const mail = rt.mail;
+    if (!mail) return bad(c, 404, "Email login is off");
+    const body = await emailBody(c);
+    const email = str(body?.email);
+    const name = str(body?.name).trim();
+    if (name && !NAME_RE.test(name)) return bad(c, 400, "name: 1–24 letters, digits, spaces, _ or -");
+    const lang = body?.lang === "ru" || body?.lang === "en" ? body.lang : shareLang(undefined, c.req.header("Accept-Language"));
+    const now = rt.now().getTime();
+    const key = addressOf(c);
+    const mine = hourOf(mailStarts.get(key) ?? [], now);
+    allMailStarts = hourOf(allMailStarts, now);
+    if (mine.length >= EMAIL_STARTS_PER_ADDRESS_HOUR || allMailStarts.length >= EMAIL_STARTS_PER_HOUR) return bad(c, 429, "Too many codes this hour. Try again later.");
+    return emailCall(c, async () => {
+      const r = await startEmailLogin(store, mail, email, playerOf(c), lang, rt.now());
+      mailStarts.set(key, [...mine, now]);
+      allMailStarts.push(now);
+      return { ok: true, ...r };
+    });
+  });
+  api.post("/auth/email/verify", async (c) => {
+    if (!rt.mail) return bad(c, 404, "Email login is off");
+    const body = await emailBody(c);
+    const name = str(body?.name);
+    // A new player: anyone on an open server, the join code's holder on an
+    // invite-only one (open to all: no code needed, as for the join link).
+    const canSignUp = !rt.invites || isJoinCode(store, joinWith(str(body?.join)));
+    const now = rt.now();
+    const admit = () => {
+      while (joins.length && joins[0]! <= now.getTime() - 3_600_000) joins.shift();
+      if (joins.length >= JOINS_PER_HOUR) return false;
+      joins.push(now.getTime());
+      return true;
+    };
+    return emailCall(c, (): EmailVerify => verifyEmailLogin(store, str(body?.email), str(body?.code), name || undefined, now, { canSignUp, admit }));
+  });
+  api.post("/auth/email/attach", async (c) => {
+    if (!rt.mail) return bad(c, 404, "Email login is off");
+    const p = playerOf(c);
+    if (!p) return unknownPlayer(c);
+    const body = await emailBody(c);
+    return emailCall(c, () => attachEmail(rt, p, str(body?.email), str(body?.code), rt.now()));
+  });
+  api.get("/auth/email", (c) => {
+    const p = playerOf(c);
+    return p ? c.json(emailStatus(rt, p.id)) : unknownPlayer(c);
+  });
+
+  // M4-6: log in with Telegram (./telegram.ts). Starts are counted per player,
+  // or per address logged out (the nearest proxy's X-Forwarded-For entry), in memory.
+  const tgStarts = new Map<string, number[]>();
   const tgStatus = (p: PlayerRef): TelegramStatus => ({ enabled: !!rt.telegram, linked: !!store.telegramLink({ playerId: p.id }) });
   api.post("/auth/telegram/start", (c) => {
     if (!rt.telegram) return bad(c, 404, "Telegram login is off");
@@ -179,6 +245,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
       dev: devFor(c),
       ideas: p ? ideasOf(rt, p.id) : null,
       telegram: p ? tgStatus(p) : null,
+      email: p ? emailStatus(rt, p.id) : null,
     };
     return c.json(home);
   });
@@ -186,6 +253,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
   api.post("/runs", (c) => {
     const p = playerOf(c);
     if (!p) return unknownPlayer(c);
+    if (emailRequired(rt) && !p.bot && !store.emailLink({ playerId: p.id })) return bad(c, 403, "Add your email first.");
     return c.json(runView(startRun(rt, p)));
   });
 
@@ -354,6 +422,16 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     if (!(rt.telegram instanceof FakeTelegram)) return bad(c, 404, "no fake Telegram");
     const body = (await c.req.json().catch(() => ({}))) as { code?: unknown; decline?: unknown };
     return c.json({ reply: await rt.telegram.answer(typeof body.code === "string" ? body.code : "", body.decline !== true) });
+  });
+
+  // The fake mailer's inbox (ARENA_MAIL_FAKE=1, which needs MVP_DEV=1): the
+  // last code mailed to an email. Before the dev gate, like the fake bot: a
+  // logged-out device signs up with it on an invite-only dev server too.
+  api.post("/dev/mail/last", async (c) => {
+    if (!(rt.mail instanceof FakeMailer)) return bad(c, 404, "no fake mail");
+    const body = await emailBody(c);
+    const m = rt.mail.last(str(body?.email));
+    return m ? c.json({ code: rt.mail.lastCode(m.to), subject: m.subject, text: m.text }) : bad(c, 404, "no mail to this email");
   });
 
   // M4-7: share cards, PNGs for link previews and the daily post. Rendered

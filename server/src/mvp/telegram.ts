@@ -7,7 +7,9 @@
 // next poll (POST /auth/telegram/poll) takes a session token, the same kind an invite link gives (./invites.ts).
 // Codes live 10 minutes, work once and are kept only as their SHA-256. One
 // Telegram user ↔ one player. A Telegram login never makes or reaches an
-// admin: admins stay invite-only.
+// admin: admins stay invite-only. With email login required (#929,
+// ./email.ts), a Telegram login never makes a player either: it logs in to,
+// or links, a player who signed up with an email.
 //
 // The bot token is read from the file ARENA_TELEGRAM_ENV names and lives only
 // inside TelegramHttpApi: no message, error or log line carries it.
@@ -35,6 +37,7 @@ export const REPLY = {
   declined: "Отменено — ничего не произошло / Declined: nothing happened",
   changed: "Что-то изменилось — начните заново в игре / Something changed: start again in the game",
   notYours: "Эта кнопка не для вас / This button isn't yours",
+  needsEmail: "Сначала зарегистрируйтесь в игре по почте, потом свяжите Telegram в настройках / Sign up in the game with your email first, then link Telegram in Settings",
 } as const;
 
 /** A start the server refuses: 403 a bot or an admin, 409 already linked. */
@@ -111,8 +114,14 @@ export function pollTelegramLogin(store: MvpStore, code: string, now: Date): Pla
   return { player, token };
 }
 
+/** What a Telegram login may do on this server: `newPlayers` false (email
+ * login required, #929) refuses to make a player for an unlinked Telegram user. */
+export interface TelegramRules {
+  newPlayers?: boolean;
+}
+
 /** The decision for `from` and code `c`, or the reply that refuses it. */
-function decide(store: MvpStore, from: TelegramUser, c: TelegramCode, now: Date): TelegramAsk | string {
+function decide(store: MvpStore, from: TelegramUser, c: TelegramCode, now: Date, rules: TelegramRules): TelegramAsk | string {
   if (from.is_bot) return REPLY.bot;
   if (c.readyFor || c.declined || Date.parse(c.expiresAt) <= now.getTime()) return REPLY.expired;
   const tgUserId = String(from.id);
@@ -125,6 +134,7 @@ function decide(store: MvpStore, from: TelegramUser, c: TelegramCode, now: Date)
     if (store.telegramLink({ playerId: c.playerId })) return REPLY.taken;
     return { kind: "link", playerId: c.playerId, tgUserId };
   }
+  if (rules.newPlayers === false) return REPLY.needsEmail;
   return { kind: "new", playerId: null, tgUserId };
 }
 
@@ -144,11 +154,11 @@ const NO = "n:";
 
 /** The bot's answer to `/start <code>` from `from`: never acts at once, but
  * asks what the code would do, with [Yes] [No] (answerTap does it). */
-export function answerStart(store: MvpStore, from: TelegramUser, code: string, now: Date): BotReply {
+export function answerStart(store: MvpStore, from: TelegramUser, code: string, now: Date, rules: TelegramRules = {}): BotReply {
   const h = hashToken(code);
   const c = store.telegramCode(h);
   if (!c) return { text: REPLY.expired };
-  const d = decide(store, from, c, now);
+  const d = decide(store, from, c, now, rules);
   if (typeof d === "string") return { text: d };
   store.putTelegramCode({ ...c, asked: d });
   const name = (id: string) => store.player(id)?.name ?? "?";
@@ -183,14 +193,14 @@ const ask = (ru: string, en: string) => `${ru}\n\n${en}`;
  * they were), then Yes does what the question said and No drops the code.
  * `edit`: the question's message becomes the result (false: it stays, as for
  * a stranger's tap). */
-export function answerTap(store: MvpStore, from: TelegramUser, data: string, now: Date): { text: string; edit: boolean } {
+export function answerTap(store: MvpStore, from: TelegramUser, data: string, now: Date, rules: TelegramRules = {}): { text: string; edit: boolean } {
   const yes = data.startsWith(YES);
   if (!yes && !data.startsWith(NO)) return { text: REPLY.expired, edit: false };
   const h = hashToken(data.slice(YES.length));
   const c = store.telegramCode(h);
   if (!c?.asked) return { text: REPLY.expired, edit: true };
   if (c.asked.tgUserId !== String(from.id)) return { text: REPLY.notYours, edit: false };
-  const d = decide(store, from, c, now);
+  const d = decide(store, from, c, now, rules);
   if (typeof d === "string") return { text: d, edit: true };
   if (d.kind !== c.asked.kind || d.playerId !== c.asked.playerId) {
     store.dropTelegramCode(h);
@@ -238,11 +248,12 @@ const START = /^\/start(?:@\w+)?(?:\s+(\S+))?\s*$/;
 /** Answers one update: `/start <code>`, a bare `/start` and a tap on a
  * question's button; the rest is ignored. */
 export async function handleUpdate(rt: MvpRuntime, api: TelegramApi, u: TelegramUpdate): Promise<void> {
+  const rules: TelegramRules = { newPlayers: !(rt.invites && rt.mail) };
   const q = u.callback_query;
   if (q) {
     let r: { text: string; edit: boolean };
     try {
-      r = answerTap(rt.store, q.from, q.data ?? "", rt.now());
+      r = answerTap(rt.store, q.from, q.data ?? "", rt.now(), rules);
     } catch {
       // A link race (one side linked meanwhile) or a name clash: try again.
       r = { text: REPLY.failed, edit: true };
@@ -256,7 +267,7 @@ export async function handleUpdate(rt: MvpRuntime, api: TelegramApi, u: Telegram
   if (!m || !match || !m.from) return;
   let reply: BotReply;
   try {
-    reply = match[1] ? answerStart(rt.store, m.from, match[1], rt.now()) : { text: REPLY.hello };
+    reply = match[1] ? answerStart(rt.store, m.from, match[1], rt.now(), rules) : { text: REPLY.hello };
   } catch {
     reply = { text: REPLY.failed };
   }

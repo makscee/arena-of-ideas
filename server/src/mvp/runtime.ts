@@ -10,6 +10,7 @@
 //   ./stats.ts    slice 11  the stats hooks and GET /stats
 //   ./votes.ts    M2-8      the overnight check's tuner and job, votes
 //   ./telegram.ts M4-6      Telegram login: codes, the bot and its job
+//   ./email.ts    #929      email login: codes and the mailer
 // Slice 4 passes its SQLite store from main.ts; tests keep the memory store.
 import { MVP_RULES, type MvpContent, type MvpRules } from "../../../src/mvp/contract.js";
 import { today } from "./day.js";
@@ -17,6 +18,7 @@ import { fusionNaming, type NameFusion } from "./fusions.js";
 import { poolBook } from "./pool.js";
 import type { RunDeps, RunHooks } from "./runs.js";
 import { statsHooks } from "./stats.js";
+import type { Mailer } from "./email.js";
 import type { TelegramApi } from "./telegram.js";
 import { MemoryMvpStore, type MvpStore } from "./store.js";
 import { childTuner, type Tuner } from "./votes.js";
@@ -55,6 +57,10 @@ export interface MvpDeps {
   /** M4-6's Telegram bot (main.ts: ARENA_TELEGRAM_ENV, or ARENA_TELEGRAM_FAKE=1);
    * without it there is no Telegram login. */
   telegram?: TelegramApi;
+  /** #929's mailer (main.ts: ARENA_MAIL_ENV, or ARENA_MAIL_FAKE=1); without
+   * it there is no email login. On an invite-only server it makes the email
+   * required: new players sign up with one, others add one before playing. */
+  mail?: Mailer;
 }
 
 export interface MvpRuntime extends RunDeps {
@@ -64,6 +70,7 @@ export interface MvpRuntime extends RunDeps {
   tuner: { night: Tuner; dev: Tuner };
   rotation: boolean;
   telegram: TelegramApi | undefined;
+  mail: Mailer | undefined;
 }
 
 /** A background job: starts on the runtime, returns its stop function. */
@@ -93,6 +100,7 @@ export function mvpRuntime(deps: MvpDeps): MvpRuntime {
     tuner: deps.tuner ?? { night: childTuner("full"), dev: childTuner("quick") },
     rotation: deps.rotation ?? false,
     telegram: deps.telegram,
+    mail: deps.mail,
   };
   return rt;
 }

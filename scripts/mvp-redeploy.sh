@@ -107,6 +107,11 @@ case "$TELEGRAM_POST" in 0|1) ;; *) echo "ARENA_MVP_TELEGRAM_POST is 0 or 1, not
 TELEGRAM_CHANNEL="${ARENA_MVP_TELEGRAM_CHANNEL:-}"
 case "$TELEGRAM_CHANNEL" in ""|@[A-Za-z0-9_]*) ;; *) echo "ARENA_MVP_TELEGRAM_CHANNEL is @name, not '$TELEGRAM_CHANNEL'" >&2; exit 2 ;; esac
 [ "$TELEGRAM_POST" = 1 ] && [ -z "$TELEGRAM_CHANNEL" ] && { echo "ARENA_MVP_TELEGRAM_POST=1 needs ARENA_MVP_TELEGRAM_CHANNEL" >&2; exit 2; }
+# #929: email login. The SMTP account (SMTP_HOST, SMTP_PORT, SMTP_USER,
+# SMTP_PASS, SMTP_FROM) lives only in this file on the host (mode 600); the
+# server reads it at start, so the password never enters the plist or the
+# repo. A missing file leaves email login off (sign-up then works as before).
+MAIL_ENV="${ARENA_MVP_MAIL_ENV:-\$HOME/.config/arena/mail.env}"
 PUBLIC_URL=https://arena.makscee.ru/arena/
 TAILNET_URL=https://m1.twin-pogona.ts.net/arena/api/v1/health
 
@@ -242,6 +247,7 @@ cat > "\$PLIST" <<PL
     <key>ARENA_TELEGRAM_ENV</key><string>$TELEGRAM_ENV</string>
     <key>ARENA_TELEGRAM_POST</key><string>$TELEGRAM_POST</string>
     <key>ARENA_TELEGRAM_CHANNEL</key><string>$TELEGRAM_CHANNEL</string>
+    <key>ARENA_MAIL_ENV</key><string>$MAIL_ENV</string>
     <key>ARENA_IDEA_READER</key><string>$IDEA_READER</string>
     <key>ARENA_CLAUDE_BIN</key><string>\$HOME/.local/bin/claude</string>
   </dict>

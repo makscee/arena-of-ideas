@@ -10,6 +10,8 @@ import {
   type DayView,
   type Decision,
   type DecisionResponse,
+  type EmailStatus,
+  type EmailVerify,
   type FusionDiscovery,
   type HomeView,
   type IdeasView,
@@ -171,6 +173,27 @@ export const api = {
     }
     return r;
   },
+  /** #929: mails a 6-digit code to `email` (sign-in, sign-up with `name`,
+   * or, signed in without an email, to attach it). */
+  emailStart: (email: string, name?: string) => call<{ ok: true; expiresAt: string }>("POST", "/auth/email/start", { email, ...(name ? { name } : {}), lang: uiLang() }),
+  /** #929: the code back: this device becomes the email's player (a new one
+   * named `name` for a new email; "needsName" without one). `join`: the join
+   * code on an invite-only server. */
+  async emailVerify(email: string, code: string, name?: string, join?: string): Promise<EmailVerify> {
+    const r = await call<EmailVerify>("POST", "/auth/email/verify", { email, code, ...(name ? { name } : {}), ...(join ? { join } : {}) });
+    if (r.status === "done") {
+      if (r.player.id !== player?.id) saveOwnInvite(null);
+      player = r.player;
+      token = r.token;
+      savePlayer(player);
+      saveToken(token);
+    }
+    return r;
+  },
+  /** #929: ties `email` to this player, with the code a start sent. */
+  emailAttach: (email: string, code: string) => call<EmailStatus>("POST", "/auth/email/attach", { email, code }),
+  /** #929 dev (ARENA_MAIL_FAKE=1): the last code the fake mailer sent to `email`. */
+  devMailCode: (email: string) => call<{ code: string }>("POST", "/dev/mail/last", { email }).then((r) => r.code),
   /** M4-6: unlinks this player's Telegram. */
   telegramUnlink: () => call<TelegramStatus>("POST", "/auth/telegram/unlink"),
   /** M4-6 dev (ARENA_TELEGRAM_FAKE=1): the fake bot's user presses Start,
@@ -185,8 +208,9 @@ export const api = {
   },
   /** `invites`: the server is invite-only, so the name screen asks for a link.
    * `telegram` (M4-6): Telegram login is on, with the real bot or the fake.
+   * `mail` (#929): email login is on, by SMTP or the fake mailer.
    * `contentVersion`: the live pool's; ./content.ts refetches when it moves. */
-  health: () => call<{ invites?: boolean; open?: boolean; contentVersion?: string; telegram?: false | "bot" | "fake" }>("GET", "/health"),
+  health: () => call<{ invites?: boolean; open?: boolean; contentVersion?: string; telegram?: false | "bot" | "fake"; mail?: false | "smtp" | "fake" }>("GET", "/health"),
   content: () => call<MvpContent>("GET", "/content"),
   home: () => call<HomeView>("GET", "/home"),
   startRun: () => call<RunView>("POST", "/runs"),
