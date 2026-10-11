@@ -28,7 +28,7 @@
 //   tick so requests keep flowing. The seed waits
 //   for the model's names of the champion's fusions before it writes them.
 import { randomUUID } from "node:crypto";
-import { benchSizeOf, boardUnit, lockedFull, type Champion, type Decision, type LineUnit, type MvpContent, type MvpRules, type PlayerRef, type RunView } from "../../../src/mvp/contract.js";
+import { boardUnit, type Champion, type LineUnit, type PlayerRef } from "../../../src/mvp/contract.js";
 import { fightLines } from "../../../src/mvp/fight.js";
 import { botDecision, botScore } from "../../../clients/core/bot.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
