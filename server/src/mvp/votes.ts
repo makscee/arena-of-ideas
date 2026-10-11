@@ -110,7 +110,7 @@ function freshUnitId(store: MvpStore, name: string): UnitId {
   return id;
 }
 
-type CheckDeps = Pick<RunDeps, "store" | "rules" | "now">;
+type CheckDeps = Pick<RunDeps, "store" | "rules" | "now" | "today">;
 
 /** What a player reads when their idea failed the check. */
 export function checkFailure(reason: string): string {

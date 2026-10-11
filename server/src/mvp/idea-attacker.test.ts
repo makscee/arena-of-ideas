@@ -20,7 +20,7 @@ const row = (when: Row["when"], who: Row["who"], does = "Poison 1"): Row =>
 
 function world() {
   const store = new MemoryMvpStore();
-  const deps = { store, rules: MVP_RULES, now: () => new Date("2026-10-08T08:00:00.000Z") };
+  const deps = { store, rules: MVP_RULES, now: () => new Date("2026-10-08T08:00:00.000Z"), today: () => ({ seq: 1, day: "Oct 8, 2026", startedAt: "2026-10-08T01:00:00.000Z", endsAt: "2026-10-09T01:00:00.000Z" }) };
   seedUnits(store, deps.now());
   const write = (text: string) => {
     grantIdea(deps, "p1");

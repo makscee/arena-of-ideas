@@ -68,7 +68,7 @@ describe("the overnight check (M2-8)", () => {
 
   it("takes an idea M2-5 read and M2-6 picked through to a vote card", async () => {
     const w = world();
-    const deps = { store: w.store, rules: MVP_RULES, now: w.rt.now };
+    const deps = { store: w.store, rules: MVP_RULES, now: w.rt.now, today: w.rt.today };
     grantIdea(deps, maks.id);
     const idea = writeIdea(deps, maks.id, "a hedgehog that punishes whoever hits it");
     const reader = fakeIdeaReader();

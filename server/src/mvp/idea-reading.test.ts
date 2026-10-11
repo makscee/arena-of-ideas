@@ -18,7 +18,7 @@ const HEDGEHOG = "a hedgehog that punishes whoever hits it";
 function world() {
   const store = new MemoryMvpStore();
   let t = Date.parse("2026-10-08T08:00:00.000Z");
-  const deps = { store, rules: MVP_RULES, now: () => new Date(t) };
+  const deps = { store, rules: MVP_RULES, now: () => new Date(t), today: () => ({ seq: 1, day: "Oct 8, 2026", startedAt: "2026-10-08T01:00:00.000Z", endsAt: "2026-10-09T01:00:00.000Z" }) };
   seedUnits(store, deps.now());
   const write = (text: string, playerId = "p1") => {
     grantIdea(deps, playerId);
