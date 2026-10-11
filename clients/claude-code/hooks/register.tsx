@@ -149,6 +149,7 @@ async function onKey($: $, key: string) {
   if ('decision' in p) return move($, p.decision)
   if ('pending' in p) return void (await update($, pending, () => p.pending))
   if (!('do' in p)) return
+  await update($, status, () => '') // a hint from the last move ("b: replay the fight") is spent
   switch (p.do) {
     case 'lang':
       await update($, lang, l => (l === 'ru' ? 'en' : 'ru'))

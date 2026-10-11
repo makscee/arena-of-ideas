@@ -145,7 +145,9 @@ export function battleText(b: BattleRecord, o: BattleTextOpts = {}): string {
     const beats = beatPlayOf(log, stepsOf(log, name, sides, p), name);
     const rows = logRowsOf(log, beats, name);
     const team = (s: Side) => (s === "A" ? b.teamA : b.teamB).map((u) => `${u.emoji} ${u.name} ${u.stats.pwr}/${u.stats.hp}`).join(", ");
-    const out = [`Battle ${b.battleId} · ${b.kind}${b.kind === "round" ? ` ${b.round}` : ""} · @${b.player.name} (A) vs @${b.opponent.name} (B)`, `A: ${team("A")}`, `B: ${team("B")}`];
+    const ru = o.lang === "ru";
+    const kind = ru ? ({ round: "раунд", crown: "Корона", playoff: "плей-офф" } as Record<string, string>)[b.kind] ?? b.kind : b.kind;
+    const out = [`${ru ? "Бой" : "Battle"} ${b.battleId} · ${kind}${b.kind === "round" ? ` ${b.round}` : ""} · @${b.player.name} (A) vs @${b.opponent.name} (B)`, `A: ${team("A")}`, `B: ${team("B")}`];
     const end = log.at(-1);
     const endLine = end?.type === "BattleEnd" ? endCaption(end.winner, p) : "";
     if (o.view === "summary") {

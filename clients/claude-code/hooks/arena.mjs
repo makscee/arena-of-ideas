@@ -1825,7 +1825,9 @@ function battleText(b, o = {}) {
     const beats = beatPlayOf(log, stepsOf(log, name, sides, p), name);
     const rows = logRowsOf(log, beats, name);
     const team = (s) => (s === "A" ? b.teamA : b.teamB).map((u) => `${u.emoji} ${u.name} ${u.stats.pwr}/${u.stats.hp}`).join(", ");
-    const out = [`Battle ${b.battleId} \xB7 ${b.kind}${b.kind === "round" ? ` ${b.round}` : ""} \xB7 @${b.player.name} (A) vs @${b.opponent.name} (B)`, `A: ${team("A")}`, `B: ${team("B")}`];
+    const ru2 = o.lang === "ru";
+    const kind = ru2 ? { round: "\u0440\u0430\u0443\u043D\u0434", crown: "\u041A\u043E\u0440\u043E\u043D\u0430", playoff: "\u043F\u043B\u0435\u0439-\u043E\u0444\u0444" }[b.kind] ?? b.kind : b.kind;
+    const out = [`${ru2 ? "\u0411\u043E\u0439" : "Battle"} ${b.battleId} \xB7 ${kind}${b.kind === "round" ? ` ${b.round}` : ""} \xB7 @${b.player.name} (A) vs @${b.opponent.name} (B)`, `A: ${team("A")}`, `B: ${team("B")}`];
     const end = log.at(-1);
     const endLine = end?.type === "BattleEnd" ? endCaption(end.winner, p) : "";
     if (o.view === "summary") {

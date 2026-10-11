@@ -85,6 +85,7 @@ describe("clients/core", () => {
     const ru = battleText(b, { you: "A", lang: "ru" });
     expect(ru).toMatch(/[а-я]/);
     // #960: the turn headers are Russian too, never "Start", "Turn N" or "Turns a–b".
+    expect(ru).toMatch(/^Бой \S+ · раунд \d+ · @/);
     expect(ru).toMatch(/^Старт$/m);
     expect(ru).toMatch(/^Ход 1$/m);
     expect(ru).not.toMatch(/^(Start|Turns? \d)/m);
