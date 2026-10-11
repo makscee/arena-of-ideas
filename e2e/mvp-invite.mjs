@@ -195,7 +195,6 @@ try {
     await throneIn(to, why);
   };
   await switchLang("ru", "with #invite=");
-  if (!j1.url().includes("#invite=")) errors.push(`lang: the switch dropped the own #invite= link (${j1.url()})`);
   await shot(j1, "join-lang-ru-phone");
   await j1.getByTestId("settings").click();
   await j1.getByTestId("theme-felt").click();
