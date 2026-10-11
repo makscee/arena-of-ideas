@@ -1,0 +1,4502 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "arena-of-ideas/api/v1/schema.json",
+  "title": "Arena of Ideas API v1",
+  "description": "Generated from src/mvp/contract.ts by scripts/protocol.ts. /api/v1 only gains things: renaming or removing one means /api/v2.",
+  "definitions": {
+    "Ability": {
+      "type": "object",
+      "properties": {
+        "effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Effect"
+          }
+        },
+        "whens": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/When"
+          }
+        },
+        "condition": {
+          "$ref": "#/definitions/Condition"
+        },
+        "selectors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Selector"
+          }
+        }
+      },
+      "required": [
+        "effects"
+      ]
+    },
+    "AbilityDef": {
+      "type": "object",
+      "properties": {
+        "effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Effect"
+          }
+        },
+        "whens": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/When"
+          }
+        },
+        "condition": {
+          "$ref": "#/definitions/Condition"
+        },
+        "selectors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Selector"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "family": {
+          "$ref": "#/definitions/Family"
+        }
+      },
+      "required": [
+        "effects",
+        "family",
+        "name"
+      ]
+    },
+    "AbilityRef": {
+      "type": "object",
+      "properties": {
+        "unit": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "ability": {
+          "type": "number"
+        },
+        "when": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "unit",
+        "ability"
+      ]
+    },
+    "AbilityRegistry": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/AbilityDef"
+      }
+    },
+    "Amount": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "const"
+            },
+            "value": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "stat"
+            },
+            "stat": {
+              "$ref": "#/definitions/StatName"
+            },
+            "of": {
+              "type": "string",
+              "const": "holder"
+            }
+          },
+          "required": [
+            "kind",
+            "stat",
+            "of"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "level"
+            },
+            "of": {
+              "type": "string",
+              "const": "holder"
+            }
+          },
+          "required": [
+            "kind",
+            "of"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "stacks"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        }
+      ]
+    },
+    "AndClause": {
+      "type": "object",
+      "properties": {
+        "who": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Selector"
+          }
+        },
+        "does": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "who",
+        "does"
+      ]
+    },
+    "ApiError": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "error"
+      ]
+    },
+    "AwokenRow": {
+      "type": "object",
+      "properties": {
+        "who": {
+          "$ref": "#/definitions/WhoKey"
+        },
+        "more": {
+          "type": "string"
+        },
+        "before": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "add": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "also": {
+          "type": "object",
+          "properties": {
+            "who": {
+              "$ref": "#/definitions/WhoKey"
+            },
+            "does": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "who",
+            "does"
+          ]
+        }
+      }
+    },
+    "BattleEvent": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "BattleStart"
+            },
+            "teams": {
+              "type": "object",
+              "properties": {
+                "A": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/RosterEntry"
+                  }
+                },
+                "B": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/RosterEntry"
+                  }
+                }
+              },
+              "required": [
+                "A",
+                "B"
+              ]
+            },
+            "id": {
+              "type": "number"
+            },
+            "turn": {
+              "type": "number"
+            },
+            "causedBy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "source": {
+              "$ref": "#/definitions/SourceRef"
+            }
+          },
+          "required": [
+            "causedBy",
+            "id",
+            "source",
+            "teams",
+            "turn",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "TurnStart"
+            },
+            "id": {
+              "type": "number"
+            },
+            "turn": {
+              "type": "number"
+            },
+            "causedBy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "source": {
+              "$ref": "#/definitions/SourceRef"
+            }
+          },
+          "required": [
+            "causedBy",
+            "id",
+            "source",
+            "turn",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "TurnEnd"
+            },
+            "id": {
+              "type": "number"
+            },
+            "turn": {
+              "type": "number"
+            },
+            "causedBy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "source": {
+              "$ref": "#/definitions/SourceRef"
+            }
+          },
+          "required": [
+            "causedBy",
+            "id",
+            "source",
+            "turn",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "PairFaced"
+            },
+            "a": {
+              "type": "string"
+            },
+            "b": {
+              "type": "string"
+            },
+            "first": {
+              "type": "string"
+            },
+            "id": {
+              "type": "number"
+            },
+            "turn": {
+              "type": "number"
+            },
+            "causedBy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "source": {
+              "$ref": "#/definitions/SourceRef"
+            }
+          },
+          "required": [
+            "a",
+            "b",
+            "causedBy",
+            "first",
+            "id",
+            "source",
+            "turn",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "Strike"
+            },
+            "striker": {
+              "type": "string"
+            },
+            "defender": {
+              "type": "string"
+            },
+            "id": {
+              "type": "number"
+            },
+            "turn": {
+              "type": "number"
+            },
+            "causedBy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "source": {
+              "$ref": "#/definitions/SourceRef"
+            }
+          },
+          "required": [
+            "causedBy",
+            "defender",
+            "id",
+            "source",
+            "striker",
+            "turn",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "Hurt"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "amount": {
+              "type": "number"
+            },
+            "hpAfter": {
+              "type": "number"
+            },
+            "absorbed": {
+              "type": "number"
+            },
+            "pierced": {
+              "type": "boolean",
+              "const": true
+            },
+            "id": {
+              "type": "number"
+            },
+            "turn": {
+              "type": "number"
+            },
+            "causedBy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "source": {
+              "$ref": "#/definitions/SourceRef"
+            }
+          },
+          "required": [
+            "amount",
+            "causedBy",
+            "id",
+            "source",
+            "turn",
+            "type",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "Heal"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "amount": {
+              "type": "number"
+            },
+            "hpAfter": {
+              "type": "number"
+            },
+            "id": {
+              "type": "number"
+            },
+            "turn": {
+              "type": "number"
+            },
+            "causedBy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "source": {
+              "$ref": "#/definitions/SourceRef"
+            }
+          },
+          "required": [
+            "amount",
+            "causedBy",
+            "id",
+            "source",
+            "turn",
+            "type",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "Death"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "pierced": {
+              "type": "boolean",
+              "const": true
+            },
+            "id": {
+              "type": "number"
+            },
+            "turn": {
+              "type": "number"
+            },
+            "causedBy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "source": {
+              "$ref": "#/definitions/SourceRef"
+            }
+          },
+          "required": [
+            "causedBy",
+            "id",
+            "source",
+            "turn",
+            "type",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "Summon"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "side": {
+              "$ref": "#/definitions/Side"
+            },
+            "hp": {
+              "type": "number"
+            },
+            "pwr": {
+              "type": "number"
+            },
+            "resurrected": {
+              "type": "boolean"
+            },
+            "atHp": {
+              "type": "number"
+            },
+            "front": {
+              "type": "boolean"
+            },
+            "slot": {
+              "type": "number"
+            },
+            "id": {
+              "type": "number"
+            },
+            "turn": {
+              "type": "number"
+            },
+            "causedBy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "source": {
+              "$ref": "#/definitions/SourceRef"
+            }
+          },
+          "required": [
+            "causedBy",
+            "hp",
+            "id",
+            "name",
+            "pwr",
+            "side",
+            "source",
+            "turn",
+            "type",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "StatusApplied"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "stacks": {
+              "type": "number"
+            },
+            "total": {
+              "type": "number"
+            },
+            "id": {
+              "type": "number"
+            },
+            "turn": {
+              "type": "number"
+            },
+            "causedBy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "source": {
+              "$ref": "#/definitions/SourceRef"
+            }
+          },
+          "required": [
+            "causedBy",
+            "id",
+            "source",
+            "stacks",
+            "status",
+            "total",
+            "turn",
+            "type",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "StatusRemoved"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            },
+            "stacks": {
+              "type": "number"
+            },
+            "remaining": {
+              "type": "number"
+            },
+            "id": {
+              "type": "number"
+            },
+            "turn": {
+              "type": "number"
+            },
+            "causedBy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "source": {
+              "$ref": "#/definitions/SourceRef"
+            }
+          },
+          "required": [
+            "causedBy",
+            "id",
+            "remaining",
+            "source",
+            "stacks",
+            "status",
+            "turn",
+            "type",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "StatChanged"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "stat": {
+              "$ref": "#/definitions/StatName"
+            },
+            "delta": {
+              "type": "number"
+            },
+            "now": {
+              "type": "number"
+            },
+            "hpAfter": {
+              "type": "number"
+            },
+            "id": {
+              "type": "number"
+            },
+            "turn": {
+              "type": "number"
+            },
+            "causedBy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "source": {
+              "$ref": "#/definitions/SourceRef"
+            }
+          },
+          "required": [
+            "causedBy",
+            "delta",
+            "id",
+            "now",
+            "source",
+            "stat",
+            "turn",
+            "type",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "Silenced"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "id": {
+              "type": "number"
+            },
+            "turn": {
+              "type": "number"
+            },
+            "causedBy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "source": {
+              "$ref": "#/definitions/SourceRef"
+            }
+          },
+          "required": [
+            "causedBy",
+            "id",
+            "source",
+            "turn",
+            "type",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "Fatigue"
+            },
+            "amount": {
+              "type": "number"
+            },
+            "suddenDeath": {
+              "type": "boolean",
+              "const": true
+            },
+            "id": {
+              "type": "number"
+            },
+            "turn": {
+              "type": "number"
+            },
+            "causedBy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "source": {
+              "$ref": "#/definitions/SourceRef"
+            }
+          },
+          "required": [
+            "amount",
+            "causedBy",
+            "id",
+            "source",
+            "turn",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "ChainBlocked"
+            },
+            "ability": {
+              "$ref": "#/definitions/AbilityRef"
+            },
+            "at": {
+              "type": "number"
+            },
+            "id": {
+              "type": "number"
+            },
+            "turn": {
+              "type": "number"
+            },
+            "causedBy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "source": {
+              "$ref": "#/definitions/SourceRef"
+            }
+          },
+          "required": [
+            "ability",
+            "at",
+            "causedBy",
+            "id",
+            "source",
+            "turn",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "ChainCapped"
+            },
+            "root": {
+              "type": "number"
+            },
+            "steps": {
+              "type": "number"
+            },
+            "id": {
+              "type": "number"
+            },
+            "turn": {
+              "type": "number"
+            },
+            "causedBy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "source": {
+              "$ref": "#/definitions/SourceRef"
+            }
+          },
+          "required": [
+            "causedBy",
+            "id",
+            "root",
+            "source",
+            "steps",
+            "turn",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "NoRoom"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "side": {
+              "$ref": "#/definitions/Side"
+            },
+            "name": {
+              "type": "string"
+            },
+            "revive": {
+              "type": "string"
+            },
+            "id": {
+              "type": "number"
+            },
+            "turn": {
+              "type": "number"
+            },
+            "causedBy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "source": {
+              "$ref": "#/definitions/SourceRef"
+            }
+          },
+          "required": [
+            "causedBy",
+            "id",
+            "name",
+            "side",
+            "source",
+            "turn",
+            "type",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "SummonFailed"
+            },
+            "name": {
+              "type": "string"
+            },
+            "side": {
+              "$ref": "#/definitions/Side"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "revive": {
+              "type": "boolean",
+              "const": true
+            },
+            "reason": {
+              "type": "string",
+              "enum": [
+                "suddenDeath",
+                "revivedOnce"
+              ]
+            },
+            "id": {
+              "type": "number"
+            },
+            "turn": {
+              "type": "number"
+            },
+            "causedBy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "source": {
+              "$ref": "#/definitions/SourceRef"
+            }
+          },
+          "required": [
+            "causedBy",
+            "id",
+            "name",
+            "reason",
+            "side",
+            "source",
+            "turn",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "Intercepted"
+            },
+            "by": {
+              "$ref": "#/definitions/AbilityRef"
+            },
+            "original": {
+              "type": "string"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "id": {
+              "type": "number"
+            },
+            "turn": {
+              "type": "number"
+            },
+            "causedBy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "source": {
+              "$ref": "#/definitions/SourceRef"
+            }
+          },
+          "required": [
+            "by",
+            "causedBy",
+            "id",
+            "original",
+            "source",
+            "turn",
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "BattleEnd"
+            },
+            "winner": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Side"
+                },
+                {
+                  "type": "string",
+                  "const": "draw"
+                }
+              ]
+            },
+            "turns": {
+              "type": "number"
+            },
+            "timeUp": {
+              "type": "boolean",
+              "const": true
+            },
+            "id": {
+              "type": "number"
+            },
+            "turn": {
+              "type": "number"
+            },
+            "causedBy": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "source": {
+              "$ref": "#/definitions/SourceRef"
+            }
+          },
+          "required": [
+            "causedBy",
+            "id",
+            "source",
+            "turn",
+            "turns",
+            "type",
+            "winner"
+          ]
+        }
+      ]
+    },
+    "BattleRecord": {
+      "type": "object",
+      "properties": {
+        "battleId": {
+          "type": "string"
+        },
+        "runId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "player": {
+          "$ref": "#/definitions/PlayerRef"
+        },
+        "seed": {
+          "type": "number"
+        },
+        "contentVersion": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/definitions/FightKind"
+        },
+        "round": {
+          "type": "number"
+        },
+        "at": {
+          "type": "string"
+        },
+        "teamA": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/BattleUnit"
+          }
+        },
+        "teamB": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/BattleUnit"
+          }
+        },
+        "opponent": {
+          "$ref": "#/definitions/PlayerRef"
+        },
+        "winner": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Side"
+            },
+            {
+              "type": "string",
+              "const": "draw"
+            }
+          ]
+        },
+        "log": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/BattleEvent"
+          }
+        }
+      },
+      "required": [
+        "battleId",
+        "runId",
+        "player",
+        "seed",
+        "contentVersion",
+        "kind",
+        "round",
+        "at",
+        "teamA",
+        "teamB",
+        "opponent",
+        "winner",
+        "log"
+      ]
+    },
+    "BattleUnit": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "uid": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "unit",
+            "fused"
+          ]
+        },
+        "unitId": {
+          "$ref": "#/definitions/UnitId"
+        },
+        "name": {
+          "type": "string"
+        },
+        "emoji": {
+          "type": "string"
+        },
+        "copies": {
+          "type": "number"
+        },
+        "form": {
+          "$ref": "#/definitions/FormKey"
+        },
+        "stats": {
+          "$ref": "#/definitions/Stats"
+        },
+        "recipe": {
+          "$ref": "#/definitions/UnitForm"
+        },
+        "fusion": {
+          "$ref": "#/definitions/FusionParts"
+        }
+      },
+      "required": [
+        "copies",
+        "emoji",
+        "form",
+        "id",
+        "kind",
+        "name",
+        "recipe",
+        "stats",
+        "uid",
+        "unitId"
+      ]
+    },
+    "CandidateKind": {
+      "type": "string",
+      "enum": [
+        "idea",
+        "version",
+        "unchanged"
+      ]
+    },
+    "CandidateScore": {
+      "type": "object",
+      "properties": {
+        "unitId": {
+          "$ref": "#/definitions/UnitId"
+        },
+        "kind": {
+          "$ref": "#/definitions/CandidateKind"
+        },
+        "rootId": {
+          "$ref": "#/definitions/UnitId"
+        },
+        "name": {
+          "type": "string"
+        },
+        "emoji": {
+          "type": "string"
+        },
+        "authorId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "votes": {
+          "type": "number"
+        },
+        "won": {
+          "type": "number"
+        },
+        "share": {
+          "type": "number"
+        },
+        "novelty": {
+          "type": "number"
+        },
+        "score": {
+          "type": "number"
+        },
+        "qualified": {
+          "type": "boolean"
+        },
+        "entry": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "unitId",
+        "kind",
+        "rootId",
+        "name",
+        "emoji",
+        "authorId",
+        "votes",
+        "won",
+        "share",
+        "novelty",
+        "score",
+        "qualified",
+        "entry"
+      ]
+    },
+    "Champion": {
+      "type": "object",
+      "properties": {
+        "seq": {
+          "type": "number"
+        },
+        "day": {
+          "type": "string"
+        },
+        "player": {
+          "$ref": "#/definitions/PlayerRef"
+        },
+        "line": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LineUnit"
+          }
+        },
+        "since": {
+          "type": "string"
+        },
+        "contentVersion": {
+          "type": "string"
+        },
+        "rating": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "seq",
+        "day",
+        "player",
+        "line",
+        "since",
+        "contentVersion"
+      ]
+    },
+    "CodeRequest": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code"
+      ]
+    },
+    "Condition": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "holderHpAtMost"
+        },
+        "value": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "kind",
+        "value"
+      ]
+    },
+    "CreditsView": {
+      "type": "object",
+      "properties": {
+        "day": {
+          "type": "number"
+        },
+        "units": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UnitCredit"
+          }
+        },
+        "you": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "days": {
+                  "type": "number"
+                },
+                "units": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "days",
+                "units"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "day",
+        "units",
+        "you"
+      ]
+    },
+    "DayState": {
+      "type": "object",
+      "properties": {
+        "seq": {
+          "type": "number"
+        },
+        "day": {
+          "type": "string"
+        },
+        "startedAt": {
+          "type": "string"
+        },
+        "endsAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "seq",
+        "day",
+        "startedAt",
+        "endsAt"
+      ]
+    },
+    "DayView": {
+      "type": "object",
+      "properties": {
+        "seq": {
+          "type": "number"
+        },
+        "day": {
+          "type": "string"
+        },
+        "endsAt": {
+          "type": "string"
+        },
+        "champion": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Champion"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "slayers": {
+          "type": "number"
+        },
+        "lastPlayoff": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PlayoffResult"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "seq",
+        "day",
+        "endsAt",
+        "champion",
+        "slayers"
+      ]
+    },
+    "Decision": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "buy"
+            },
+            "slot": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "kind",
+            "slot"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "sell"
+            },
+            "index": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "kind",
+            "index"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "reroll"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "lock"
+            },
+            "slot": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "kind",
+            "slot"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "reorder"
+            },
+            "from": {
+              "type": "number"
+            },
+            "to": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "kind",
+            "from",
+            "to"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "fuse"
+            },
+            "first": {
+              "type": "number"
+            },
+            "second": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "kind",
+            "first",
+            "second"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "fight"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "gift"
+            },
+            "pick": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "pick"
+          ]
+        }
+      ]
+    },
+    "DecisionKind": {
+      "type": "string",
+      "enum": [
+        "buy",
+        "sell",
+        "reroll",
+        "lock",
+        "reorder",
+        "fuse",
+        "fight",
+        "gift"
+      ]
+    },
+    "DecisionResponse": {
+      "type": "object",
+      "properties": {
+        "run": {
+          "$ref": "#/definitions/RunView"
+        },
+        "fight": {
+          "$ref": "#/definitions/FightResult"
+        }
+      },
+      "required": [
+        "run"
+      ]
+    },
+    "Effect": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "damage"
+            },
+            "amount": {
+              "$ref": "#/definitions/Amount"
+            }
+          },
+          "required": [
+            "kind",
+            "amount"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "heal"
+            },
+            "amount": {
+              "$ref": "#/definitions/Amount"
+            }
+          },
+          "required": [
+            "kind",
+            "amount"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "applyStatus"
+            },
+            "status": {
+              "type": "string"
+            },
+            "stacks": {
+              "$ref": "#/definitions/Amount"
+            }
+          },
+          "required": [
+            "kind",
+            "status",
+            "stacks"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "consumeStacks"
+            },
+            "status": {
+              "type": "string"
+            },
+            "stacks": {
+              "$ref": "#/definitions/Amount"
+            }
+          },
+          "required": [
+            "kind",
+            "stacks"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "summon"
+            },
+            "unit": {
+              "$ref": "#/definitions/UnitDef"
+            }
+          },
+          "required": [
+            "kind",
+            "unit"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "silence"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "resurrect"
+            },
+            "hp": {
+              "$ref": "#/definitions/Amount"
+            }
+          },
+          "required": [
+            "kind",
+            "hp"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "cancel"
+            },
+            "consumeSelf": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "absorbHurt"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "preventDeathHeal"
+            },
+            "toHp": {
+              "$ref": "#/definitions/Amount"
+            },
+            "removeSelf": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "kind",
+            "toHp"
+          ]
+        }
+      ]
+    },
+    "EmailAttachRequest": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "email",
+        "code"
+      ]
+    },
+    "EmailStartRequest": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "lang": {
+          "type": "string",
+          "enum": [
+            "en",
+            "ru"
+          ]
+        }
+      },
+      "required": [
+        "email"
+      ]
+    },
+    "EmailStartResponse": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean",
+          "const": true
+        },
+        "expiresAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ok",
+        "expiresAt"
+      ]
+    },
+    "EmailStatus": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "address": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "enabled",
+        "required",
+        "address"
+      ]
+    },
+    "EmailVerify": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "needsName"
+            }
+          },
+          "required": [
+            "status"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "player": {
+              "$ref": "#/definitions/PlayerRef"
+            },
+            "token": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "const": "done"
+            }
+          },
+          "required": [
+            "player",
+            "status",
+            "token"
+          ]
+        }
+      ]
+    },
+    "EmailVerifyRequest": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "join": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "email",
+        "code"
+      ]
+    },
+    "EventPattern": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "on": {
+              "type": "string",
+              "enum": [
+                "BattleStart",
+                "TurnStart",
+                "TurnEnd"
+              ]
+            }
+          },
+          "required": [
+            "on"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "on": {
+              "type": "string",
+              "const": "Strike"
+            },
+            "striker": {
+              "$ref": "#/definitions/UnitFilter"
+            }
+          },
+          "required": [
+            "on"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "on": {
+              "type": "string",
+              "enum": [
+                "Hurt",
+                "Heal",
+                "Death",
+                "Summon"
+              ]
+            },
+            "unit": {
+              "$ref": "#/definitions/UnitFilter"
+            }
+          },
+          "required": [
+            "on"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "on": {
+              "type": "string",
+              "enum": [
+                "StatusApplied",
+                "StatusRemoved"
+              ]
+            },
+            "unit": {
+              "$ref": "#/definitions/UnitFilter"
+            },
+            "status": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "on"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "on": {
+              "type": "string",
+              "const": "StatChanged"
+            },
+            "unit": {
+              "$ref": "#/definitions/UnitFilter"
+            },
+            "stat": {
+              "$ref": "#/definitions/StatName"
+            },
+            "sign": {
+              "type": "string",
+              "enum": [
+                "gain",
+                "loss"
+              ]
+            }
+          },
+          "required": [
+            "on"
+          ]
+        }
+      ]
+    },
+    "Family": {
+      "type": "string",
+      "enum": [
+        "Poison",
+        "Strike",
+        "Shield",
+        "Summon",
+        "Arcane",
+        "Control",
+        "Heal"
+      ]
+    },
+    "FightKind": {
+      "type": "string",
+      "enum": [
+        "round",
+        "crown",
+        "playoff"
+      ]
+    },
+    "FightResult": {
+      "type": "object",
+      "properties": {
+        "battleId": {
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/definitions/FightKind"
+        },
+        "round": {
+          "type": "number"
+        },
+        "opponent": {
+          "type": "object",
+          "properties": {
+            "ghostId": {
+              "type": "string"
+            },
+            "player": {
+              "$ref": "#/definitions/PlayerRef"
+            },
+            "round": {
+              "type": "number"
+            },
+            "rating": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "ghostId",
+            "player",
+            "round",
+            "rating"
+          ]
+        },
+        "outcome": {
+          "$ref": "#/definitions/Outcome"
+        },
+        "heartsLost": {
+          "type": "number"
+        },
+        "heartsAfter": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "battleId",
+        "kind",
+        "round",
+        "opponent",
+        "outcome",
+        "heartsLost",
+        "heartsAfter"
+      ]
+    },
+    "FormKey": {
+      "type": "string",
+      "enum": [
+        "sleeping",
+        "awoken"
+      ]
+    },
+    "FuseContext": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "discoveredBy": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PlayerRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "discoveredBy"
+      ]
+    },
+    "FusionDiscovery": {
+      "type": "object",
+      "properties": {
+        "first": {
+          "$ref": "#/definitions/UnitId"
+        },
+        "second": {
+          "$ref": "#/definitions/UnitId"
+        },
+        "name": {
+          "type": "string"
+        },
+        "discoveredBy": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PlayerRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "discoveredAt": {
+          "type": "string"
+        },
+        "nameSource": {
+          "type": "string",
+          "enum": [
+            "model",
+            "fallback"
+          ]
+        },
+        "texts": {
+          "type": "object",
+          "properties": {
+            "ru": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ]
+            }
+          }
+        }
+      },
+      "required": [
+        "first",
+        "second",
+        "name",
+        "discoveredBy",
+        "discoveredAt",
+        "nameSource"
+      ]
+    },
+    "FusionParts": {
+      "type": "object",
+      "properties": {
+        "first": {
+          "$ref": "#/definitions/UnitId"
+        },
+        "second": {
+          "$ref": "#/definitions/UnitId"
+        },
+        "name": {
+          "type": "string"
+        },
+        "discoveredBy": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PlayerRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "first",
+        "second",
+        "name",
+        "discoveredBy"
+      ]
+    },
+    "Ghost": {
+      "type": "object",
+      "properties": {
+        "ghostId": {
+          "type": "string"
+        },
+        "runId": {
+          "type": "string"
+        },
+        "player": {
+          "$ref": "#/definitions/PlayerRef"
+        },
+        "round": {
+          "type": "number"
+        },
+        "line": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LineUnit"
+          }
+        },
+        "contentVersion": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "rating": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "ghostId",
+        "runId",
+        "player",
+        "round",
+        "line",
+        "contentVersion",
+        "createdAt",
+        "rating"
+      ]
+    },
+    "HealthView": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean",
+          "const": true
+        },
+        "api": {
+          "type": "number"
+        },
+        "contentVersion": {
+          "type": "string"
+        },
+        "build": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "invites": {
+          "type": "boolean"
+        },
+        "open": {
+          "type": "boolean"
+        },
+        "telegram": {
+          "type": [
+            "boolean",
+            "string"
+          ],
+          "enum": [
+            false,
+            "bot",
+            "fake"
+          ]
+        },
+        "mail": {
+          "type": [
+            "boolean",
+            "string"
+          ],
+          "enum": [
+            false,
+            "smtp",
+            "fake"
+          ]
+        }
+      },
+      "required": [
+        "ok",
+        "api",
+        "contentVersion",
+        "invites",
+        "open",
+        "telegram",
+        "mail"
+      ]
+    },
+    "HomeView": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "$ref": "#/definitions/MvpRules"
+        },
+        "day": {
+          "$ref": "#/definitions/DayView"
+        },
+        "rating": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Rating"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "activeRunId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "dev": {
+          "type": "boolean"
+        },
+        "ideas": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/IdeasView"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "telegram": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/TelegramStatus"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "email": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/EmailStatus"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "rules",
+        "day",
+        "rating",
+        "activeRunId",
+        "dev",
+        "ideas"
+      ]
+    },
+    "Idea": {
+      "type": "object",
+      "properties": {
+        "ideaId": {
+          "type": "string"
+        },
+        "playerId": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/IdeaState"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/definitions/IdeaData"
+        }
+      },
+      "required": [
+        "ideaId",
+        "playerId",
+        "text",
+        "state",
+        "createdAt",
+        "data"
+      ]
+    },
+    "IdeaArchetype": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "emoji": {
+          "type": "string"
+        },
+        "line": {
+          "type": "string"
+        },
+        "texts": {
+          "type": "object",
+          "properties": {
+            "ru": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "line": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "line"
+              ]
+            }
+          }
+        }
+      },
+      "required": [
+        "name",
+        "emoji",
+        "line"
+      ]
+    },
+    "IdeaData": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "$ref": "#/definitions/IdeaKind"
+        },
+        "target": {
+          "$ref": "#/definitions/UnitId"
+        },
+        "archetypes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/IdeaArchetype"
+          }
+        },
+        "archetype": {
+          "$ref": "#/definitions/IdeaArchetype"
+        },
+        "readings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/IdeaReading"
+          }
+        },
+        "cantExpress": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "failure": {
+          "type": "string"
+        },
+        "unitId": {
+          "$ref": "#/definitions/UnitId"
+        },
+        "checkedAt": {
+          "type": "string"
+        },
+        "tries": {
+          "type": "number"
+        },
+        "retryAt": {
+          "type": "string"
+        },
+        "declined": {
+          "type": "object",
+          "properties": {
+            "archetypes": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/IdeaArchetype"
+              }
+            },
+            "readings": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/IdeaReading"
+              }
+            }
+          }
+        }
+      }
+    },
+    "IdeaKind": {
+      "type": "string",
+      "enum": [
+        "new",
+        "evolve"
+      ]
+    },
+    "IdeaReading": {
+      "type": "object",
+      "properties": {
+        "when": {
+          "$ref": "#/definitions/WhenKey"
+        },
+        "who": {
+          "$ref": "#/definitions/WhoKey"
+        },
+        "does": {
+          "type": "string"
+        },
+        "awoken": {
+          "$ref": "#/definitions/AwokenRow"
+        },
+        "text": {
+          "type": "object",
+          "properties": {
+            "sleeping": {
+              "type": "string"
+            },
+            "awoken": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "sleeping",
+            "awoken"
+          ]
+        }
+      },
+      "required": [
+        "when",
+        "who",
+        "does",
+        "awoken",
+        "text"
+      ]
+    },
+    "IdeaState": {
+      "type": "string",
+      "enum": [
+        "written",
+        "reading",
+        "pick-archetype",
+        "pick-reading",
+        "simulating",
+        "voting",
+        "live",
+        "failed",
+        "library"
+      ]
+    },
+    "IdeasView": {
+      "type": "object",
+      "properties": {
+        "held": {
+          "type": "number"
+        },
+        "perDay": {
+          "type": "number"
+        },
+        "refillsAt": {
+          "type": "string"
+        },
+        "ready": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "held",
+        "perDay",
+        "refillsAt",
+        "ready"
+      ]
+    },
+    "IndexRequest": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "index"
+      ]
+    },
+    "InviteLookup": {
+      "type": "object",
+      "properties": {
+        "player": {
+          "$ref": "#/definitions/PlayerRef"
+        }
+      },
+      "required": [
+        "player"
+      ]
+    },
+    "JoinRequest": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "name"
+      ]
+    },
+    "JoinSession": {
+      "type": "object",
+      "properties": {
+        "player": {
+          "$ref": "#/definitions/PlayerRef"
+        },
+        "token": {
+          "type": "string"
+        },
+        "invite": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "invite",
+        "player",
+        "token"
+      ]
+    },
+    "LibraryUnit": {
+      "type": "object",
+      "properties": {
+        "by": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PlayerRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evolvedBy": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PlayerRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "type": "number"
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UnitVersion"
+          }
+        },
+        "unit": {
+          "$ref": "#/definitions/UnitContent"
+        },
+        "liveDays": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "fusions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FusionDiscovery"
+          }
+        }
+      },
+      "required": [
+        "by",
+        "evolvedBy",
+        "fusions",
+        "liveDays",
+        "unit",
+        "version",
+        "versions"
+      ]
+    },
+    "LibraryView": {
+      "type": "object",
+      "properties": {
+        "units": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LibraryUnit"
+          }
+        },
+        "abilities": {
+          "$ref": "#/definitions/AbilityRegistry"
+        },
+        "statuses": {
+          "$ref": "#/definitions/StatusRegistry"
+        },
+        "summons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SummonContent"
+          }
+        }
+      },
+      "required": [
+        "units",
+        "abilities",
+        "statuses",
+        "summons"
+      ]
+    },
+    "LineUnit": {
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "unit",
+            "fused"
+          ]
+        },
+        "unitId": {
+          "$ref": "#/definitions/UnitId"
+        },
+        "name": {
+          "type": "string"
+        },
+        "emoji": {
+          "type": "string"
+        },
+        "copies": {
+          "type": "number"
+        },
+        "form": {
+          "$ref": "#/definitions/FormKey"
+        },
+        "stats": {
+          "$ref": "#/definitions/Stats"
+        },
+        "recipe": {
+          "$ref": "#/definitions/UnitForm"
+        },
+        "fusion": {
+          "$ref": "#/definitions/FusionParts"
+        }
+      },
+      "required": [
+        "uid",
+        "kind",
+        "unitId",
+        "name",
+        "emoji",
+        "copies",
+        "form",
+        "stats",
+        "recipe"
+      ]
+    },
+    "MailLast": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "subject": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "subject",
+        "text"
+      ]
+    },
+    "MailLastRequest": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "email"
+      ]
+    },
+    "MvpContent": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "units": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UnitContent"
+          }
+        },
+        "left": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UnitContent"
+          }
+        },
+        "abilities": {
+          "$ref": "#/definitions/AbilityRegistry"
+        },
+        "statuses": {
+          "$ref": "#/definitions/StatusRegistry"
+        },
+        "summons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SummonContent"
+          }
+        }
+      },
+      "required": [
+        "version",
+        "units",
+        "abilities",
+        "statuses"
+      ]
+    },
+    "MvpRules": {
+      "type": "object",
+      "properties": {
+        "rounds": {
+          "type": "number"
+        },
+        "hearts": {
+          "type": "number"
+        },
+        "goldPerRound": {
+          "type": "number"
+        },
+        "unitCost": {
+          "type": "number"
+        },
+        "rerollCost": {
+          "type": "number"
+        },
+        "sellRefund": {
+          "type": "number"
+        },
+        "sellRefundAwoken": {
+          "type": "number"
+        },
+        "offers": {
+          "type": "number"
+        },
+        "offersGrowAt": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "lineSize": {
+          "type": "number"
+        },
+        "benchSize": {
+          "type": "number"
+        },
+        "copiesToAwaken": {
+          "type": "number"
+        },
+        "giftChoices": {
+          "type": "number"
+        },
+        "giftTierAhead": {
+          "type": "number"
+        },
+        "copyGrowth": {
+          "$ref": "#/definitions/Stats"
+        },
+        "tierOpensAt": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "chainStepCap": {
+          "type": "number"
+        },
+        "turnCap": {
+          "type": "number"
+        },
+        "suddenDeathAt": {
+          "type": "number"
+        },
+        "battleSize": {
+          "type": "number"
+        },
+        "reviveInPlace": {
+          "type": "boolean"
+        },
+        "ratingKSteps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "runsBelow": {
+                "type": "number"
+              },
+              "k": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "runsBelow",
+              "k"
+            ]
+          }
+        },
+        "ratingK": {
+          "type": "number"
+        },
+        "ratingStart": {
+          "type": "number"
+        },
+        "botRating": {
+          "type": "number"
+        },
+        "dayEndsAt": {
+          "type": "string"
+        },
+        "dayTimeZone": {
+          "type": "string"
+        },
+        "ideaHold": {
+          "type": "number"
+        },
+        "voteMin": {
+          "type": "number"
+        },
+        "voteNoveltyBonus": {
+          "type": "number"
+        },
+        "rotationEntrants": {
+          "type": "number"
+        },
+        "rotationEvolveShare": {
+          "type": "number"
+        },
+        "rotationMinStay": {
+          "type": "number"
+        },
+        "rotationWindow": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "rounds",
+        "hearts",
+        "goldPerRound",
+        "unitCost",
+        "rerollCost",
+        "sellRefund",
+        "offers",
+        "lineSize",
+        "copiesToAwaken",
+        "copyGrowth",
+        "tierOpensAt",
+        "chainStepCap",
+        "ratingKSteps",
+        "ratingK",
+        "ratingStart",
+        "botRating",
+        "dayEndsAt",
+        "dayTimeZone"
+      ]
+    },
+    "MyIdea": {
+      "type": "object",
+      "properties": {
+        "ideaId": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/definitions/IdeaState"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/definitions/IdeaData"
+        }
+      },
+      "required": [
+        "ideaId",
+        "text",
+        "state",
+        "createdAt",
+        "data"
+      ]
+    },
+    "MyIdeasView": {
+      "type": "object",
+      "properties": {
+        "ideas": {
+          "$ref": "#/definitions/IdeasView"
+        },
+        "sent": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/MyIdea"
+          }
+        }
+      },
+      "required": [
+        "ideas",
+        "sent"
+      ]
+    },
+    "NameRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "Offer": {
+      "type": "object",
+      "properties": {
+        "slot": {
+          "type": "number"
+        },
+        "unitId": {
+          "$ref": "#/definitions/UnitId"
+        },
+        "tier": {
+          "$ref": "#/definitions/Tier"
+        },
+        "cost": {
+          "type": "number"
+        },
+        "locked": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "slot",
+        "unitId",
+        "tier",
+        "cost"
+      ]
+    },
+    "OkResponse": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": [
+        "ok"
+      ]
+    },
+    "Outcome": {
+      "type": "string",
+      "enum": [
+        "win",
+        "loss",
+        "draw"
+      ]
+    },
+    "PlayerRef": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "bot": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "bot"
+      ]
+    },
+    "PlayerSession": {
+      "type": "object",
+      "properties": {
+        "player": {
+          "$ref": "#/definitions/PlayerRef"
+        },
+        "token": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "player",
+        "token"
+      ]
+    },
+    "PlayoffResult": {
+      "type": "object",
+      "properties": {
+        "seq": {
+          "type": "number"
+        },
+        "day": {
+          "type": "string"
+        },
+        "entrants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PlayerRef"
+          }
+        },
+        "winner": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PlayerRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "battleIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "standings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "player": {
+                "$ref": "#/definitions/PlayerRef"
+              },
+              "wins": {
+                "type": "number"
+              },
+              "draws": {
+                "type": "number"
+              },
+              "losses": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "player",
+              "wins",
+              "draws",
+              "losses"
+            ]
+          }
+        },
+        "games": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "$ref": "#/definitions/PlayerRef"
+              },
+              "b": {
+                "$ref": "#/definitions/PlayerRef"
+              },
+              "battleId": {
+                "type": "string"
+              },
+              "winner": {
+                "anyOf": [
+                  {
+                    "$ref": "#/definitions/Side"
+                  },
+                  {
+                    "type": "string",
+                    "const": "draw"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "a",
+              "b",
+              "battleId",
+              "winner"
+            ]
+          }
+        }
+      },
+      "required": [
+        "seq",
+        "day",
+        "entrants",
+        "winner",
+        "battleIds",
+        "standings",
+        "games"
+      ]
+    },
+    "Rating": {
+      "type": "object",
+      "properties": {
+        "player": {
+          "$ref": "#/definitions/PlayerRef"
+        },
+        "rating": {
+          "type": "number"
+        },
+        "runs": {
+          "type": "number"
+        },
+        "slays": {
+          "type": "number"
+        },
+        "daysAsChampion": {
+          "type": "number"
+        },
+        "playoffWins": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "player",
+        "rating",
+        "runs",
+        "slays",
+        "daysAsChampion",
+        "playoffWins"
+      ]
+    },
+    "RatingChange": {
+      "type": "object",
+      "properties": {
+        "before": {
+          "type": "number"
+        },
+        "after": {
+          "type": "number"
+        },
+        "expected": {
+          "type": "number"
+        },
+        "actual": {
+          "type": "number"
+        },
+        "k": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "before",
+        "after",
+        "expected",
+        "actual",
+        "k"
+      ]
+    },
+    "ReplyResponse": {
+      "type": "object",
+      "properties": {
+        "reply": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "reply"
+      ]
+    },
+    "RosterEntry": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "hp": {
+          "type": "number"
+        },
+        "pwr": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "hp",
+        "pwr"
+      ]
+    },
+    "RunEndReason": {
+      "type": "string",
+      "enum": [
+        "out-of-hearts",
+        "crown-won",
+        "crown-lost",
+        "no-champion",
+        "content-changed",
+        "abandoned"
+      ]
+    },
+    "RunPhase": {
+      "type": "string",
+      "enum": [
+        "shop",
+        "crown",
+        "over"
+      ]
+    },
+    "RunView": {
+      "type": "object",
+      "properties": {
+        "runId": {
+          "type": "string"
+        },
+        "player": {
+          "$ref": "#/definitions/PlayerRef"
+        },
+        "contentVersion": {
+          "type": "string"
+        },
+        "phase": {
+          "$ref": "#/definitions/RunPhase"
+        },
+        "round": {
+          "type": "number"
+        },
+        "hearts": {
+          "type": "number"
+        },
+        "gold": {
+          "type": "number"
+        },
+        "wins": {
+          "type": "number"
+        },
+        "losses": {
+          "type": "number"
+        },
+        "line": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LineUnit"
+          }
+        },
+        "bench": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LineUnit"
+          }
+        },
+        "offers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Offer"
+          }
+        },
+        "gift": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UnitId"
+          }
+        },
+        "nextOpponent": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "player": {
+                  "$ref": "#/definitions/PlayerRef"
+                },
+                "round": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "player",
+                "round"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fights": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FightResult"
+          }
+        },
+        "day": {
+          "type": "number"
+        },
+        "startedAt": {
+          "type": "string"
+        },
+        "endedAt": {
+          "type": "string"
+        },
+        "endedBy": {
+          "$ref": "#/definitions/RunEndReason"
+        },
+        "forfeit": {
+          "type": "object",
+          "properties": {
+            "fights": {
+              "type": "number"
+            },
+            "opponentRating": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "fights",
+            "opponentRating"
+          ]
+        },
+        "rating": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/RatingChange"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "runId",
+        "player",
+        "contentVersion",
+        "phase",
+        "round",
+        "hearts",
+        "gold",
+        "wins",
+        "losses",
+        "line",
+        "bench",
+        "offers",
+        "nextOpponent",
+        "fights",
+        "day",
+        "startedAt"
+      ]
+    },
+    "SeedCandidateRequest": {
+      "type": "object",
+      "properties": {
+        "unit": {
+          "$ref": "#/definitions/UnitId"
+        }
+      }
+    },
+    "Selector": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "holder"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "eventUnit"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "attacker"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "frontEnemy"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "allEnemies"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "allAllies"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "randomEnemy"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "lastDeadAlly"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        }
+      ]
+    },
+    "Side": {
+      "type": "string",
+      "enum": [
+        "A",
+        "B"
+      ]
+    },
+    "Slay": {
+      "type": "object",
+      "properties": {
+        "seq": {
+          "type": "number"
+        },
+        "player": {
+          "$ref": "#/definitions/PlayerRef"
+        },
+        "runId": {
+          "type": "string"
+        },
+        "battleId": {
+          "type": "string"
+        },
+        "line": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LineUnit"
+          }
+        },
+        "contentVersion": {
+          "type": "string"
+        },
+        "at": {
+          "type": "string"
+        },
+        "rating": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "seq",
+        "player",
+        "runId",
+        "battleId",
+        "line",
+        "contentVersion",
+        "at"
+      ]
+    },
+    "SourceRef": {
+      "anyOf": [
+        {
+          "type": "string",
+          "const": "kernel"
+        },
+        {
+          "$ref": "#/definitions/AbilityRef"
+        }
+      ]
+    },
+    "StartedResponse": {
+      "type": "object",
+      "properties": {
+        "started": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "started"
+      ]
+    },
+    "StatName": {
+      "type": "string",
+      "enum": [
+        "hp",
+        "pwr"
+      ]
+    },
+    "Stats": {
+      "type": "object",
+      "properties": {
+        "hp": {
+          "type": "number"
+        },
+        "pwr": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "hp",
+        "pwr"
+      ]
+    },
+    "StatsView": {
+      "type": "object",
+      "properties": {
+        "units": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "unitId": {
+                "$ref": "#/definitions/UnitId"
+              },
+              "winRate": {
+                "type": "number"
+              },
+              "pickRate": {
+                "type": "number"
+              },
+              "runs": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "unitId",
+              "winRate",
+              "pickRate",
+              "runs"
+            ]
+          }
+        },
+        "champions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Champion"
+          }
+        },
+        "fusions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FusionDiscovery"
+          }
+        }
+      },
+      "required": [
+        "units",
+        "champions",
+        "fusions"
+      ]
+    },
+    "StatusDef": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "statMods": {
+          "type": "object",
+          "properties": {
+            "hp": {
+              "type": "number"
+            },
+            "pwr": {
+              "type": "number"
+            }
+          }
+        },
+        "triggers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/When"
+          }
+        },
+        "condition": {
+          "$ref": "#/definitions/Condition"
+        },
+        "selectors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Selector"
+          }
+        },
+        "abilities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Ability"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "abilities"
+      ]
+    },
+    "StatusRegistry": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/StatusDef"
+      }
+    },
+    "SummonContent": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "emoji": {
+          "type": "string"
+        },
+        "base": {
+          "$ref": "#/definitions/Stats"
+        },
+        "form": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/UnitForm"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "emoji",
+        "base",
+        "form"
+      ]
+    },
+    "TelegramAcceptRequest": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "decline": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code"
+      ]
+    },
+    "TelegramPoll": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "waiting"
+            }
+          },
+          "required": [
+            "status"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "declined"
+            }
+          },
+          "required": [
+            "status"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "player": {
+              "$ref": "#/definitions/PlayerRef"
+            },
+            "token": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "const": "done"
+            }
+          },
+          "required": [
+            "player",
+            "status",
+            "token"
+          ]
+        }
+      ]
+    },
+    "TelegramStart": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "expiresAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "url",
+        "expiresAt"
+      ]
+    },
+    "TelegramStatus": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "linked": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "enabled",
+        "linked"
+      ]
+    },
+    "Tier": {
+      "type": "number",
+      "enum": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    "UnitContent": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/UnitId"
+        },
+        "name": {
+          "type": "string"
+        },
+        "emoji": {
+          "type": "string"
+        },
+        "archetype": {
+          "type": "string"
+        },
+        "tier": {
+          "$ref": "#/definitions/Tier"
+        },
+        "base": {
+          "$ref": "#/definitions/Stats"
+        },
+        "forms": {
+          "type": "object",
+          "properties": {
+            "sleeping": {
+              "$ref": "#/definitions/UnitForm"
+            },
+            "awoken": {
+              "$ref": "#/definitions/UnitForm"
+            }
+          },
+          "required": [
+            "sleeping",
+            "awoken"
+          ]
+        },
+        "texts": {
+          "type": "object",
+          "properties": {
+            "ru": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "line": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "line"
+              ]
+            }
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "emoji",
+        "archetype",
+        "tier",
+        "base",
+        "forms"
+      ]
+    },
+    "UnitCredit": {
+      "type": "object",
+      "properties": {
+        "by": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PlayerRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evolvedBy": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PlayerRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "type": "number"
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UnitVersion"
+          }
+        },
+        "unitId": {
+          "$ref": "#/definitions/UnitId"
+        },
+        "isNew": {
+          "type": "boolean"
+        },
+        "liveDays": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "by",
+        "evolvedBy",
+        "isNew",
+        "liveDays",
+        "unitId",
+        "version",
+        "versions"
+      ]
+    },
+    "UnitDef": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "_creator": {
+          "type": "string"
+        },
+        "base": {
+          "$ref": "#/definitions/Stats"
+        },
+        "level": {
+          "type": "number"
+        },
+        "triggers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/When"
+          }
+        },
+        "condition": {
+          "$ref": "#/definitions/Condition"
+        },
+        "selectors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Selector"
+          }
+        },
+        "abilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "also": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "selectors": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/Selector"
+                }
+              },
+              "abilities": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "selectors",
+              "abilities"
+            ]
+          }
+        },
+        "ability": {
+          "type": "string"
+        },
+        "statuses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              },
+              "stacks": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "status",
+              "stacks"
+            ]
+          }
+        }
+      },
+      "required": [
+        "name",
+        "base"
+      ]
+    },
+    "UnitFilter": {
+      "type": "string",
+      "enum": [
+        "holder",
+        "ally",
+        "otherAlly",
+        "enemy",
+        "any"
+      ]
+    },
+    "UnitForm": {
+      "type": "object",
+      "properties": {
+        "when": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/When"
+          }
+        },
+        "condition": {
+          "$ref": "#/definitions/Condition"
+        },
+        "who": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Selector"
+          }
+        },
+        "does": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "also": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AndClause"
+          }
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "when",
+        "who",
+        "does"
+      ]
+    },
+    "UnitId": {
+      "type": "string"
+    },
+    "UnitIdRequest": {
+      "type": "object",
+      "properties": {
+        "unitId": {
+          "$ref": "#/definitions/UnitId"
+        }
+      },
+      "required": [
+        "unitId"
+      ]
+    },
+    "UnitVersion": {
+      "type": "object",
+      "properties": {
+        "unitId": {
+          "$ref": "#/definitions/UnitId"
+        },
+        "version": {
+          "type": "number"
+        },
+        "by": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PlayerRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "liveDays": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "live": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "unitId",
+        "version",
+        "by",
+        "liveDays",
+        "live"
+      ]
+    },
+    "VersionCredit": {
+      "type": "object",
+      "properties": {
+        "by": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PlayerRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evolvedBy": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PlayerRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "version": {
+          "type": "number"
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UnitVersion"
+          }
+        }
+      },
+      "required": [
+        "by",
+        "evolvedBy",
+        "version",
+        "versions"
+      ]
+    },
+    "VoteCard": {
+      "type": "object",
+      "properties": {
+        "candidateId": {
+          "$ref": "#/definitions/UnitId"
+        },
+        "candidateKind": {
+          "$ref": "#/definitions/CandidateKind"
+        },
+        "otherId": {
+          "$ref": "#/definitions/UnitId"
+        },
+        "units": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UnitContent"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "pool": {
+          "type": "object",
+          "properties": {
+            "abilities": {
+              "$ref": "#/definitions/AbilityRegistry"
+            },
+            "statuses": {
+              "$ref": "#/definitions/StatusRegistry"
+            },
+            "summons": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/SummonContent"
+              }
+            }
+          },
+          "required": [
+            "abilities",
+            "statuses",
+            "summons"
+          ]
+        }
+      },
+      "required": [
+        "candidateId",
+        "candidateKind",
+        "otherId",
+        "units",
+        "pool"
+      ]
+    },
+    "VoteCardResponse": {
+      "type": "object",
+      "properties": {
+        "card": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/VoteCard"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "card"
+      ]
+    },
+    "VoteRequest": {
+      "type": "object",
+      "properties": {
+        "candidateId": {
+          "$ref": "#/definitions/UnitId"
+        },
+        "otherId": {
+          "$ref": "#/definitions/UnitId"
+        },
+        "pick": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/UnitId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "candidateId",
+        "otherId",
+        "pick"
+      ]
+    },
+    "When": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "trigger",
+            "interceptor"
+          ]
+        },
+        "on": {
+          "$ref": "#/definitions/EventPattern"
+        }
+      },
+      "required": [
+        "kind",
+        "on"
+      ]
+    },
+    "WhenKey": {
+      "type": "string",
+      "enum": [
+        "start",
+        "turnStart",
+        "turnEnd",
+        "strike",
+        "hurt",
+        "allyHurt",
+        "die",
+        "allyDies",
+        "enemyDies",
+        "allyShield",
+        "allyHealed",
+        "allyPower",
+        "enemyPoisoned",
+        "enemyCursed",
+        "allySummoned"
+      ]
+    },
+    "WhoKey": {
+      "type": "string",
+      "enum": [
+        "me",
+        "it",
+        "attacker",
+        "front",
+        "enemies",
+        "allies",
+        "random",
+        "fallen"
+      ]
+    },
+    "WriteIdeaRequest": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "new"
+            }
+          },
+          "required": [
+            "text"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "evolve"
+            },
+            "target": {
+              "$ref": "#/definitions/UnitId"
+            }
+          },
+          "required": [
+            "text",
+            "kind",
+            "target"
+          ]
+        }
+      ]
+    }
+  }
+}

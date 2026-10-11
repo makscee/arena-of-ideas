@@ -1,0 +1,6285 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Arena of Ideas",
+    "version": "1",
+    "description": "The game's HTTP JSON API, generated from src/mvp/routes.ts. Battle logs follow battle-events/1 (protocol/battle-events.md). /api/v1 and battle-events/1 only gain things (fields, routes, event and type kinds); renaming or removing one means /api/v2. A client ignores fields and event types it doesn't know."
+  },
+  "servers": [
+    {
+      "url": "https://arena.makscee.ru"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "Ability": {
+        "type": "object",
+        "properties": {
+          "effects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Effect"
+            }
+          },
+          "whens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/When"
+            }
+          },
+          "condition": {
+            "$ref": "#/components/schemas/Condition"
+          },
+          "selectors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Selector"
+            }
+          }
+        },
+        "required": [
+          "effects"
+        ]
+      },
+      "AbilityDef": {
+        "type": "object",
+        "properties": {
+          "effects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Effect"
+            }
+          },
+          "whens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/When"
+            }
+          },
+          "condition": {
+            "$ref": "#/components/schemas/Condition"
+          },
+          "selectors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Selector"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "family": {
+            "$ref": "#/components/schemas/Family"
+          }
+        },
+        "required": [
+          "effects",
+          "family",
+          "name"
+        ]
+      },
+      "AbilityRef": {
+        "type": "object",
+        "properties": {
+          "unit": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "ability": {
+            "type": "number"
+          },
+          "when": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "unit",
+          "ability"
+        ]
+      },
+      "AbilityRegistry": {
+        "type": "object",
+        "additionalProperties": {
+          "$ref": "#/components/schemas/AbilityDef"
+        }
+      },
+      "Amount": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "const"
+              },
+              "value": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "kind",
+              "value"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "stat"
+              },
+              "stat": {
+                "$ref": "#/components/schemas/StatName"
+              },
+              "of": {
+                "type": "string",
+                "const": "holder"
+              }
+            },
+            "required": [
+              "kind",
+              "stat",
+              "of"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "level"
+              },
+              "of": {
+                "type": "string",
+                "const": "holder"
+              }
+            },
+            "required": [
+              "kind",
+              "of"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "stacks"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          }
+        ]
+      },
+      "AndClause": {
+        "type": "object",
+        "properties": {
+          "who": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Selector"
+            }
+          },
+          "does": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "who",
+          "does"
+        ]
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "AwokenRow": {
+        "type": "object",
+        "properties": {
+          "who": {
+            "$ref": "#/components/schemas/WhoKey"
+          },
+          "more": {
+            "type": "string"
+          },
+          "before": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "add": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "also": {
+            "type": "object",
+            "properties": {
+              "who": {
+                "$ref": "#/components/schemas/WhoKey"
+              },
+              "does": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "who",
+              "does"
+            ]
+          }
+        }
+      },
+      "BattleEvent": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "BattleStart"
+              },
+              "teams": {
+                "type": "object",
+                "properties": {
+                  "A": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/RosterEntry"
+                    }
+                  },
+                  "B": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/RosterEntry"
+                    }
+                  }
+                },
+                "required": [
+                  "A",
+                  "B"
+                ]
+              },
+              "id": {
+                "type": "number"
+              },
+              "turn": {
+                "type": "number"
+              },
+              "causedBy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "source": {
+                "$ref": "#/components/schemas/SourceRef"
+              }
+            },
+            "required": [
+              "causedBy",
+              "id",
+              "source",
+              "teams",
+              "turn",
+              "type"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "TurnStart"
+              },
+              "id": {
+                "type": "number"
+              },
+              "turn": {
+                "type": "number"
+              },
+              "causedBy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "source": {
+                "$ref": "#/components/schemas/SourceRef"
+              }
+            },
+            "required": [
+              "causedBy",
+              "id",
+              "source",
+              "turn",
+              "type"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "TurnEnd"
+              },
+              "id": {
+                "type": "number"
+              },
+              "turn": {
+                "type": "number"
+              },
+              "causedBy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "source": {
+                "$ref": "#/components/schemas/SourceRef"
+              }
+            },
+            "required": [
+              "causedBy",
+              "id",
+              "source",
+              "turn",
+              "type"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "PairFaced"
+              },
+              "a": {
+                "type": "string"
+              },
+              "b": {
+                "type": "string"
+              },
+              "first": {
+                "type": "string"
+              },
+              "id": {
+                "type": "number"
+              },
+              "turn": {
+                "type": "number"
+              },
+              "causedBy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "source": {
+                "$ref": "#/components/schemas/SourceRef"
+              }
+            },
+            "required": [
+              "a",
+              "b",
+              "causedBy",
+              "first",
+              "id",
+              "source",
+              "turn",
+              "type"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "Strike"
+              },
+              "striker": {
+                "type": "string"
+              },
+              "defender": {
+                "type": "string"
+              },
+              "id": {
+                "type": "number"
+              },
+              "turn": {
+                "type": "number"
+              },
+              "causedBy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "source": {
+                "$ref": "#/components/schemas/SourceRef"
+              }
+            },
+            "required": [
+              "causedBy",
+              "defender",
+              "id",
+              "source",
+              "striker",
+              "turn",
+              "type"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "Hurt"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "amount": {
+                "type": "number"
+              },
+              "hpAfter": {
+                "type": "number"
+              },
+              "absorbed": {
+                "type": "number"
+              },
+              "pierced": {
+                "type": "boolean",
+                "const": true
+              },
+              "id": {
+                "type": "number"
+              },
+              "turn": {
+                "type": "number"
+              },
+              "causedBy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "source": {
+                "$ref": "#/components/schemas/SourceRef"
+              }
+            },
+            "required": [
+              "amount",
+              "causedBy",
+              "id",
+              "source",
+              "turn",
+              "type",
+              "unit"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "Heal"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "amount": {
+                "type": "number"
+              },
+              "hpAfter": {
+                "type": "number"
+              },
+              "id": {
+                "type": "number"
+              },
+              "turn": {
+                "type": "number"
+              },
+              "causedBy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "source": {
+                "$ref": "#/components/schemas/SourceRef"
+              }
+            },
+            "required": [
+              "amount",
+              "causedBy",
+              "id",
+              "source",
+              "turn",
+              "type",
+              "unit"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "Death"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "pierced": {
+                "type": "boolean",
+                "const": true
+              },
+              "id": {
+                "type": "number"
+              },
+              "turn": {
+                "type": "number"
+              },
+              "causedBy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "source": {
+                "$ref": "#/components/schemas/SourceRef"
+              }
+            },
+            "required": [
+              "causedBy",
+              "id",
+              "source",
+              "turn",
+              "type",
+              "unit"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "Summon"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "side": {
+                "$ref": "#/components/schemas/Side"
+              },
+              "hp": {
+                "type": "number"
+              },
+              "pwr": {
+                "type": "number"
+              },
+              "resurrected": {
+                "type": "boolean"
+              },
+              "atHp": {
+                "type": "number"
+              },
+              "front": {
+                "type": "boolean"
+              },
+              "slot": {
+                "type": "number"
+              },
+              "id": {
+                "type": "number"
+              },
+              "turn": {
+                "type": "number"
+              },
+              "causedBy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "source": {
+                "$ref": "#/components/schemas/SourceRef"
+              }
+            },
+            "required": [
+              "causedBy",
+              "hp",
+              "id",
+              "name",
+              "pwr",
+              "side",
+              "source",
+              "turn",
+              "type",
+              "unit"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "StatusApplied"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "stacks": {
+                "type": "number"
+              },
+              "total": {
+                "type": "number"
+              },
+              "id": {
+                "type": "number"
+              },
+              "turn": {
+                "type": "number"
+              },
+              "causedBy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "source": {
+                "$ref": "#/components/schemas/SourceRef"
+              }
+            },
+            "required": [
+              "causedBy",
+              "id",
+              "source",
+              "stacks",
+              "status",
+              "total",
+              "turn",
+              "type",
+              "unit"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "StatusRemoved"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "stacks": {
+                "type": "number"
+              },
+              "remaining": {
+                "type": "number"
+              },
+              "id": {
+                "type": "number"
+              },
+              "turn": {
+                "type": "number"
+              },
+              "causedBy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "source": {
+                "$ref": "#/components/schemas/SourceRef"
+              }
+            },
+            "required": [
+              "causedBy",
+              "id",
+              "remaining",
+              "source",
+              "stacks",
+              "status",
+              "turn",
+              "type",
+              "unit"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "StatChanged"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "stat": {
+                "$ref": "#/components/schemas/StatName"
+              },
+              "delta": {
+                "type": "number"
+              },
+              "now": {
+                "type": "number"
+              },
+              "hpAfter": {
+                "type": "number"
+              },
+              "id": {
+                "type": "number"
+              },
+              "turn": {
+                "type": "number"
+              },
+              "causedBy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "source": {
+                "$ref": "#/components/schemas/SourceRef"
+              }
+            },
+            "required": [
+              "causedBy",
+              "delta",
+              "id",
+              "now",
+              "source",
+              "stat",
+              "turn",
+              "type",
+              "unit"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "Silenced"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "id": {
+                "type": "number"
+              },
+              "turn": {
+                "type": "number"
+              },
+              "causedBy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "source": {
+                "$ref": "#/components/schemas/SourceRef"
+              }
+            },
+            "required": [
+              "causedBy",
+              "id",
+              "source",
+              "turn",
+              "type",
+              "unit"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "Fatigue"
+              },
+              "amount": {
+                "type": "number"
+              },
+              "suddenDeath": {
+                "type": "boolean",
+                "const": true
+              },
+              "id": {
+                "type": "number"
+              },
+              "turn": {
+                "type": "number"
+              },
+              "causedBy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "source": {
+                "$ref": "#/components/schemas/SourceRef"
+              }
+            },
+            "required": [
+              "amount",
+              "causedBy",
+              "id",
+              "source",
+              "turn",
+              "type"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "ChainBlocked"
+              },
+              "ability": {
+                "$ref": "#/components/schemas/AbilityRef"
+              },
+              "at": {
+                "type": "number"
+              },
+              "id": {
+                "type": "number"
+              },
+              "turn": {
+                "type": "number"
+              },
+              "causedBy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "source": {
+                "$ref": "#/components/schemas/SourceRef"
+              }
+            },
+            "required": [
+              "ability",
+              "at",
+              "causedBy",
+              "id",
+              "source",
+              "turn",
+              "type"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "ChainCapped"
+              },
+              "root": {
+                "type": "number"
+              },
+              "steps": {
+                "type": "number"
+              },
+              "id": {
+                "type": "number"
+              },
+              "turn": {
+                "type": "number"
+              },
+              "causedBy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "source": {
+                "$ref": "#/components/schemas/SourceRef"
+              }
+            },
+            "required": [
+              "causedBy",
+              "id",
+              "root",
+              "source",
+              "steps",
+              "turn",
+              "type"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "NoRoom"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "side": {
+                "$ref": "#/components/schemas/Side"
+              },
+              "name": {
+                "type": "string"
+              },
+              "revive": {
+                "type": "string"
+              },
+              "id": {
+                "type": "number"
+              },
+              "turn": {
+                "type": "number"
+              },
+              "causedBy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "source": {
+                "$ref": "#/components/schemas/SourceRef"
+              }
+            },
+            "required": [
+              "causedBy",
+              "id",
+              "name",
+              "side",
+              "source",
+              "turn",
+              "type",
+              "unit"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "SummonFailed"
+              },
+              "name": {
+                "type": "string"
+              },
+              "side": {
+                "$ref": "#/components/schemas/Side"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "revive": {
+                "type": "boolean",
+                "const": true
+              },
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "suddenDeath",
+                  "revivedOnce"
+                ]
+              },
+              "id": {
+                "type": "number"
+              },
+              "turn": {
+                "type": "number"
+              },
+              "causedBy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "source": {
+                "$ref": "#/components/schemas/SourceRef"
+              }
+            },
+            "required": [
+              "causedBy",
+              "id",
+              "name",
+              "reason",
+              "side",
+              "source",
+              "turn",
+              "type"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "Intercepted"
+              },
+              "by": {
+                "$ref": "#/components/schemas/AbilityRef"
+              },
+              "original": {
+                "type": "string"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "id": {
+                "type": "number"
+              },
+              "turn": {
+                "type": "number"
+              },
+              "causedBy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "source": {
+                "$ref": "#/components/schemas/SourceRef"
+              }
+            },
+            "required": [
+              "by",
+              "causedBy",
+              "id",
+              "original",
+              "source",
+              "turn",
+              "type"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "BattleEnd"
+              },
+              "winner": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/Side"
+                  },
+                  {
+                    "type": "string",
+                    "const": "draw"
+                  }
+                ]
+              },
+              "turns": {
+                "type": "number"
+              },
+              "timeUp": {
+                "type": "boolean",
+                "const": true
+              },
+              "id": {
+                "type": "number"
+              },
+              "turn": {
+                "type": "number"
+              },
+              "causedBy": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "source": {
+                "$ref": "#/components/schemas/SourceRef"
+              }
+            },
+            "required": [
+              "causedBy",
+              "id",
+              "source",
+              "turn",
+              "turns",
+              "type",
+              "winner"
+            ]
+          }
+        ]
+      },
+      "BattleRecord": {
+        "type": "object",
+        "properties": {
+          "battleId": {
+            "type": "string"
+          },
+          "runId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "player": {
+            "$ref": "#/components/schemas/PlayerRef"
+          },
+          "seed": {
+            "type": "number"
+          },
+          "contentVersion": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/FightKind"
+          },
+          "round": {
+            "type": "number"
+          },
+          "at": {
+            "type": "string"
+          },
+          "teamA": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BattleUnit"
+            }
+          },
+          "teamB": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BattleUnit"
+            }
+          },
+          "opponent": {
+            "$ref": "#/components/schemas/PlayerRef"
+          },
+          "winner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Side"
+              },
+              {
+                "type": "string",
+                "const": "draw"
+              }
+            ]
+          },
+          "log": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BattleEvent"
+            }
+          }
+        },
+        "required": [
+          "battleId",
+          "runId",
+          "player",
+          "seed",
+          "contentVersion",
+          "kind",
+          "round",
+          "at",
+          "teamA",
+          "teamB",
+          "opponent",
+          "winner",
+          "log"
+        ]
+      },
+      "BattleUnit": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "uid": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "unit",
+              "fused"
+            ]
+          },
+          "unitId": {
+            "$ref": "#/components/schemas/UnitId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "emoji": {
+            "type": "string"
+          },
+          "copies": {
+            "type": "number"
+          },
+          "form": {
+            "$ref": "#/components/schemas/FormKey"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/Stats"
+          },
+          "recipe": {
+            "$ref": "#/components/schemas/UnitForm"
+          },
+          "fusion": {
+            "$ref": "#/components/schemas/FusionParts"
+          }
+        },
+        "required": [
+          "copies",
+          "emoji",
+          "form",
+          "id",
+          "kind",
+          "name",
+          "recipe",
+          "stats",
+          "uid",
+          "unitId"
+        ]
+      },
+      "CandidateKind": {
+        "type": "string",
+        "enum": [
+          "idea",
+          "version",
+          "unchanged"
+        ]
+      },
+      "CandidateScore": {
+        "type": "object",
+        "properties": {
+          "unitId": {
+            "$ref": "#/components/schemas/UnitId"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/CandidateKind"
+          },
+          "rootId": {
+            "$ref": "#/components/schemas/UnitId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "emoji": {
+            "type": "string"
+          },
+          "authorId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "votes": {
+            "type": "number"
+          },
+          "won": {
+            "type": "number"
+          },
+          "share": {
+            "type": "number"
+          },
+          "novelty": {
+            "type": "number"
+          },
+          "score": {
+            "type": "number"
+          },
+          "qualified": {
+            "type": "boolean"
+          },
+          "entry": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "unitId",
+          "kind",
+          "rootId",
+          "name",
+          "emoji",
+          "authorId",
+          "votes",
+          "won",
+          "share",
+          "novelty",
+          "score",
+          "qualified",
+          "entry"
+        ]
+      },
+      "Champion": {
+        "type": "object",
+        "properties": {
+          "seq": {
+            "type": "number"
+          },
+          "day": {
+            "type": "string"
+          },
+          "player": {
+            "$ref": "#/components/schemas/PlayerRef"
+          },
+          "line": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LineUnit"
+            }
+          },
+          "since": {
+            "type": "string"
+          },
+          "contentVersion": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "seq",
+          "day",
+          "player",
+          "line",
+          "since",
+          "contentVersion"
+        ]
+      },
+      "CodeRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "Condition": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "holderHpAtMost"
+          },
+          "value": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "kind",
+          "value"
+        ]
+      },
+      "CreditsView": {
+        "type": "object",
+        "properties": {
+          "day": {
+            "type": "number"
+          },
+          "units": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnitCredit"
+            }
+          },
+          "you": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "days": {
+                    "type": "number"
+                  },
+                  "units": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "days",
+                  "units"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "day",
+          "units",
+          "you"
+        ]
+      },
+      "DayState": {
+        "type": "object",
+        "properties": {
+          "seq": {
+            "type": "number"
+          },
+          "day": {
+            "type": "string"
+          },
+          "startedAt": {
+            "type": "string"
+          },
+          "endsAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "seq",
+          "day",
+          "startedAt",
+          "endsAt"
+        ]
+      },
+      "DayView": {
+        "type": "object",
+        "properties": {
+          "seq": {
+            "type": "number"
+          },
+          "day": {
+            "type": "string"
+          },
+          "endsAt": {
+            "type": "string"
+          },
+          "champion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Champion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "slayers": {
+            "type": "number"
+          },
+          "lastPlayoff": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayoffResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "seq",
+          "day",
+          "endsAt",
+          "champion",
+          "slayers"
+        ]
+      },
+      "Decision": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "buy"
+              },
+              "slot": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "kind",
+              "slot"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "sell"
+              },
+              "index": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "kind",
+              "index"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "reroll"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "lock"
+              },
+              "slot": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "kind",
+              "slot"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "reorder"
+              },
+              "from": {
+                "type": "number"
+              },
+              "to": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "kind",
+              "from",
+              "to"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "fuse"
+              },
+              "first": {
+                "type": "number"
+              },
+              "second": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "kind",
+              "first",
+              "second"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "fight"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "gift"
+              },
+              "pick": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "pick"
+            ]
+          }
+        ]
+      },
+      "DecisionKind": {
+        "type": "string",
+        "enum": [
+          "buy",
+          "sell",
+          "reroll",
+          "lock",
+          "reorder",
+          "fuse",
+          "fight",
+          "gift"
+        ]
+      },
+      "DecisionResponse": {
+        "type": "object",
+        "properties": {
+          "run": {
+            "$ref": "#/components/schemas/RunView"
+          },
+          "fight": {
+            "$ref": "#/components/schemas/FightResult"
+          }
+        },
+        "required": [
+          "run"
+        ]
+      },
+      "Effect": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "damage"
+              },
+              "amount": {
+                "$ref": "#/components/schemas/Amount"
+              }
+            },
+            "required": [
+              "kind",
+              "amount"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "heal"
+              },
+              "amount": {
+                "$ref": "#/components/schemas/Amount"
+              }
+            },
+            "required": [
+              "kind",
+              "amount"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "applyStatus"
+              },
+              "status": {
+                "type": "string"
+              },
+              "stacks": {
+                "$ref": "#/components/schemas/Amount"
+              }
+            },
+            "required": [
+              "kind",
+              "status",
+              "stacks"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "consumeStacks"
+              },
+              "status": {
+                "type": "string"
+              },
+              "stacks": {
+                "$ref": "#/components/schemas/Amount"
+              }
+            },
+            "required": [
+              "kind",
+              "stacks"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "summon"
+              },
+              "unit": {
+                "$ref": "#/components/schemas/UnitDef"
+              }
+            },
+            "required": [
+              "kind",
+              "unit"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "silence"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "resurrect"
+              },
+              "hp": {
+                "$ref": "#/components/schemas/Amount"
+              }
+            },
+            "required": [
+              "kind",
+              "hp"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "cancel"
+              },
+              "consumeSelf": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "absorbHurt"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "preventDeathHeal"
+              },
+              "toHp": {
+                "$ref": "#/components/schemas/Amount"
+              },
+              "removeSelf": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "toHp"
+            ]
+          }
+        ]
+      },
+      "EmailAttachRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "code"
+        ]
+      },
+      "EmailStartRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "lang": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ru"
+            ]
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "EmailStartResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "expiresAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "expiresAt"
+        ]
+      },
+      "EmailStatus": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "enabled",
+          "required",
+          "address"
+        ]
+      },
+      "EmailVerify": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "const": "needsName"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "player": {
+                "$ref": "#/components/schemas/PlayerRef"
+              },
+              "token": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "const": "done"
+              }
+            },
+            "required": [
+              "player",
+              "status",
+              "token"
+            ]
+          }
+        ]
+      },
+      "EmailVerifyRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "join": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "code"
+        ]
+      },
+      "EventPattern": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "on": {
+                "type": "string",
+                "enum": [
+                  "BattleStart",
+                  "TurnStart",
+                  "TurnEnd"
+                ]
+              }
+            },
+            "required": [
+              "on"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "on": {
+                "type": "string",
+                "const": "Strike"
+              },
+              "striker": {
+                "$ref": "#/components/schemas/UnitFilter"
+              }
+            },
+            "required": [
+              "on"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "on": {
+                "type": "string",
+                "enum": [
+                  "Hurt",
+                  "Heal",
+                  "Death",
+                  "Summon"
+                ]
+              },
+              "unit": {
+                "$ref": "#/components/schemas/UnitFilter"
+              }
+            },
+            "required": [
+              "on"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "on": {
+                "type": "string",
+                "enum": [
+                  "StatusApplied",
+                  "StatusRemoved"
+                ]
+              },
+              "unit": {
+                "$ref": "#/components/schemas/UnitFilter"
+              },
+              "status": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "on"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "on": {
+                "type": "string",
+                "const": "StatChanged"
+              },
+              "unit": {
+                "$ref": "#/components/schemas/UnitFilter"
+              },
+              "stat": {
+                "$ref": "#/components/schemas/StatName"
+              },
+              "sign": {
+                "type": "string",
+                "enum": [
+                  "gain",
+                  "loss"
+                ]
+              }
+            },
+            "required": [
+              "on"
+            ]
+          }
+        ]
+      },
+      "Family": {
+        "type": "string",
+        "enum": [
+          "Poison",
+          "Strike",
+          "Shield",
+          "Summon",
+          "Arcane",
+          "Control",
+          "Heal"
+        ]
+      },
+      "FightKind": {
+        "type": "string",
+        "enum": [
+          "round",
+          "crown",
+          "playoff"
+        ]
+      },
+      "FightResult": {
+        "type": "object",
+        "properties": {
+          "battleId": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/FightKind"
+          },
+          "round": {
+            "type": "number"
+          },
+          "opponent": {
+            "type": "object",
+            "properties": {
+              "ghostId": {
+                "type": "string"
+              },
+              "player": {
+                "$ref": "#/components/schemas/PlayerRef"
+              },
+              "round": {
+                "type": "number"
+              },
+              "rating": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "ghostId",
+              "player",
+              "round",
+              "rating"
+            ]
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/Outcome"
+          },
+          "heartsLost": {
+            "type": "number"
+          },
+          "heartsAfter": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "battleId",
+          "kind",
+          "round",
+          "opponent",
+          "outcome",
+          "heartsLost",
+          "heartsAfter"
+        ]
+      },
+      "FormKey": {
+        "type": "string",
+        "enum": [
+          "sleeping",
+          "awoken"
+        ]
+      },
+      "FuseContext": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "discoveredBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayerRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "discoveredBy"
+        ]
+      },
+      "FusionDiscovery": {
+        "type": "object",
+        "properties": {
+          "first": {
+            "$ref": "#/components/schemas/UnitId"
+          },
+          "second": {
+            "$ref": "#/components/schemas/UnitId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "discoveredBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayerRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "discoveredAt": {
+            "type": "string"
+          },
+          "nameSource": {
+            "type": "string",
+            "enum": [
+              "model",
+              "fallback"
+            ]
+          },
+          "texts": {
+            "type": "object",
+            "properties": {
+              "ru": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "required": [
+          "first",
+          "second",
+          "name",
+          "discoveredBy",
+          "discoveredAt",
+          "nameSource"
+        ]
+      },
+      "FusionParts": {
+        "type": "object",
+        "properties": {
+          "first": {
+            "$ref": "#/components/schemas/UnitId"
+          },
+          "second": {
+            "$ref": "#/components/schemas/UnitId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "discoveredBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayerRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "first",
+          "second",
+          "name",
+          "discoveredBy"
+        ]
+      },
+      "Ghost": {
+        "type": "object",
+        "properties": {
+          "ghostId": {
+            "type": "string"
+          },
+          "runId": {
+            "type": "string"
+          },
+          "player": {
+            "$ref": "#/components/schemas/PlayerRef"
+          },
+          "round": {
+            "type": "number"
+          },
+          "line": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LineUnit"
+            }
+          },
+          "contentVersion": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "ghostId",
+          "runId",
+          "player",
+          "round",
+          "line",
+          "contentVersion",
+          "createdAt",
+          "rating"
+        ]
+      },
+      "HealthView": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "api": {
+            "type": "number"
+          },
+          "contentVersion": {
+            "type": "string"
+          },
+          "build": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "invites": {
+            "type": "boolean"
+          },
+          "open": {
+            "type": "boolean"
+          },
+          "telegram": {
+            "type": [
+              "boolean",
+              "string"
+            ],
+            "enum": [
+              false,
+              "bot",
+              "fake"
+            ]
+          },
+          "mail": {
+            "type": [
+              "boolean",
+              "string"
+            ],
+            "enum": [
+              false,
+              "smtp",
+              "fake"
+            ]
+          }
+        },
+        "required": [
+          "ok",
+          "api",
+          "contentVersion",
+          "invites",
+          "open",
+          "telegram",
+          "mail"
+        ]
+      },
+      "HomeView": {
+        "type": "object",
+        "properties": {
+          "rules": {
+            "$ref": "#/components/schemas/MvpRules"
+          },
+          "day": {
+            "$ref": "#/components/schemas/DayView"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Rating"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "activeRunId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dev": {
+            "type": "boolean"
+          },
+          "ideas": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdeasView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "telegram": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TelegramStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "email": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmailStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "rules",
+          "day",
+          "rating",
+          "activeRunId",
+          "dev",
+          "ideas"
+        ]
+      },
+      "Idea": {
+        "type": "object",
+        "properties": {
+          "ideaId": {
+            "type": "string"
+          },
+          "playerId": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/IdeaState"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/IdeaData"
+          }
+        },
+        "required": [
+          "ideaId",
+          "playerId",
+          "text",
+          "state",
+          "createdAt",
+          "data"
+        ]
+      },
+      "IdeaArchetype": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "emoji": {
+            "type": "string"
+          },
+          "line": {
+            "type": "string"
+          },
+          "texts": {
+            "type": "object",
+            "properties": {
+              "ru": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "line": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "line"
+                ]
+              }
+            }
+          }
+        },
+        "required": [
+          "name",
+          "emoji",
+          "line"
+        ]
+      },
+      "IdeaData": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/IdeaKind"
+          },
+          "target": {
+            "$ref": "#/components/schemas/UnitId"
+          },
+          "archetypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdeaArchetype"
+            }
+          },
+          "archetype": {
+            "$ref": "#/components/schemas/IdeaArchetype"
+          },
+          "readings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdeaReading"
+            }
+          },
+          "cantExpress": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "failure": {
+            "type": "string"
+          },
+          "unitId": {
+            "$ref": "#/components/schemas/UnitId"
+          },
+          "checkedAt": {
+            "type": "string"
+          },
+          "tries": {
+            "type": "number"
+          },
+          "retryAt": {
+            "type": "string"
+          },
+          "declined": {
+            "type": "object",
+            "properties": {
+              "archetypes": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IdeaArchetype"
+                }
+              },
+              "readings": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IdeaReading"
+                }
+              }
+            }
+          }
+        }
+      },
+      "IdeaKind": {
+        "type": "string",
+        "enum": [
+          "new",
+          "evolve"
+        ]
+      },
+      "IdeaReading": {
+        "type": "object",
+        "properties": {
+          "when": {
+            "$ref": "#/components/schemas/WhenKey"
+          },
+          "who": {
+            "$ref": "#/components/schemas/WhoKey"
+          },
+          "does": {
+            "type": "string"
+          },
+          "awoken": {
+            "$ref": "#/components/schemas/AwokenRow"
+          },
+          "text": {
+            "type": "object",
+            "properties": {
+              "sleeping": {
+                "type": "string"
+              },
+              "awoken": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "sleeping",
+              "awoken"
+            ]
+          }
+        },
+        "required": [
+          "when",
+          "who",
+          "does",
+          "awoken",
+          "text"
+        ]
+      },
+      "IdeaState": {
+        "type": "string",
+        "enum": [
+          "written",
+          "reading",
+          "pick-archetype",
+          "pick-reading",
+          "simulating",
+          "voting",
+          "live",
+          "failed",
+          "library"
+        ]
+      },
+      "IdeasView": {
+        "type": "object",
+        "properties": {
+          "held": {
+            "type": "number"
+          },
+          "perDay": {
+            "type": "number"
+          },
+          "refillsAt": {
+            "type": "string"
+          },
+          "ready": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "held",
+          "perDay",
+          "refillsAt",
+          "ready"
+        ]
+      },
+      "IndexRequest": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "index"
+        ]
+      },
+      "InviteLookup": {
+        "type": "object",
+        "properties": {
+          "player": {
+            "$ref": "#/components/schemas/PlayerRef"
+          }
+        },
+        "required": [
+          "player"
+        ]
+      },
+      "JoinRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ]
+      },
+      "JoinSession": {
+        "type": "object",
+        "properties": {
+          "player": {
+            "$ref": "#/components/schemas/PlayerRef"
+          },
+          "token": {
+            "type": "string"
+          },
+          "invite": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "invite",
+          "player",
+          "token"
+        ]
+      },
+      "LibraryUnit": {
+        "type": "object",
+        "properties": {
+          "by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayerRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evolvedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayerRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "type": "number"
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnitVersion"
+            }
+          },
+          "unit": {
+            "$ref": "#/components/schemas/UnitContent"
+          },
+          "liveDays": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "fusions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FusionDiscovery"
+            }
+          }
+        },
+        "required": [
+          "by",
+          "evolvedBy",
+          "fusions",
+          "liveDays",
+          "unit",
+          "version",
+          "versions"
+        ]
+      },
+      "LibraryView": {
+        "type": "object",
+        "properties": {
+          "units": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LibraryUnit"
+            }
+          },
+          "abilities": {
+            "$ref": "#/components/schemas/AbilityRegistry"
+          },
+          "statuses": {
+            "$ref": "#/components/schemas/StatusRegistry"
+          },
+          "summons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SummonContent"
+            }
+          }
+        },
+        "required": [
+          "units",
+          "abilities",
+          "statuses",
+          "summons"
+        ]
+      },
+      "LineUnit": {
+        "type": "object",
+        "properties": {
+          "uid": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "unit",
+              "fused"
+            ]
+          },
+          "unitId": {
+            "$ref": "#/components/schemas/UnitId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "emoji": {
+            "type": "string"
+          },
+          "copies": {
+            "type": "number"
+          },
+          "form": {
+            "$ref": "#/components/schemas/FormKey"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/Stats"
+          },
+          "recipe": {
+            "$ref": "#/components/schemas/UnitForm"
+          },
+          "fusion": {
+            "$ref": "#/components/schemas/FusionParts"
+          }
+        },
+        "required": [
+          "uid",
+          "kind",
+          "unitId",
+          "name",
+          "emoji",
+          "copies",
+          "form",
+          "stats",
+          "recipe"
+        ]
+      },
+      "MailLast": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "subject",
+          "text"
+        ]
+      },
+      "MailLastRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "MvpContent": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "units": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnitContent"
+            }
+          },
+          "left": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnitContent"
+            }
+          },
+          "abilities": {
+            "$ref": "#/components/schemas/AbilityRegistry"
+          },
+          "statuses": {
+            "$ref": "#/components/schemas/StatusRegistry"
+          },
+          "summons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SummonContent"
+            }
+          }
+        },
+        "required": [
+          "version",
+          "units",
+          "abilities",
+          "statuses"
+        ]
+      },
+      "MvpRules": {
+        "type": "object",
+        "properties": {
+          "rounds": {
+            "type": "number"
+          },
+          "hearts": {
+            "type": "number"
+          },
+          "goldPerRound": {
+            "type": "number"
+          },
+          "unitCost": {
+            "type": "number"
+          },
+          "rerollCost": {
+            "type": "number"
+          },
+          "sellRefund": {
+            "type": "number"
+          },
+          "sellRefundAwoken": {
+            "type": "number"
+          },
+          "offers": {
+            "type": "number"
+          },
+          "offersGrowAt": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "lineSize": {
+            "type": "number"
+          },
+          "benchSize": {
+            "type": "number"
+          },
+          "copiesToAwaken": {
+            "type": "number"
+          },
+          "giftChoices": {
+            "type": "number"
+          },
+          "giftTierAhead": {
+            "type": "number"
+          },
+          "copyGrowth": {
+            "$ref": "#/components/schemas/Stats"
+          },
+          "tierOpensAt": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "chainStepCap": {
+            "type": "number"
+          },
+          "turnCap": {
+            "type": "number"
+          },
+          "suddenDeathAt": {
+            "type": "number"
+          },
+          "battleSize": {
+            "type": "number"
+          },
+          "reviveInPlace": {
+            "type": "boolean"
+          },
+          "ratingKSteps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "runsBelow": {
+                  "type": "number"
+                },
+                "k": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "runsBelow",
+                "k"
+              ]
+            }
+          },
+          "ratingK": {
+            "type": "number"
+          },
+          "ratingStart": {
+            "type": "number"
+          },
+          "botRating": {
+            "type": "number"
+          },
+          "dayEndsAt": {
+            "type": "string"
+          },
+          "dayTimeZone": {
+            "type": "string"
+          },
+          "ideaHold": {
+            "type": "number"
+          },
+          "voteMin": {
+            "type": "number"
+          },
+          "voteNoveltyBonus": {
+            "type": "number"
+          },
+          "rotationEntrants": {
+            "type": "number"
+          },
+          "rotationEvolveShare": {
+            "type": "number"
+          },
+          "rotationMinStay": {
+            "type": "number"
+          },
+          "rotationWindow": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "rounds",
+          "hearts",
+          "goldPerRound",
+          "unitCost",
+          "rerollCost",
+          "sellRefund",
+          "offers",
+          "lineSize",
+          "copiesToAwaken",
+          "copyGrowth",
+          "tierOpensAt",
+          "chainStepCap",
+          "ratingKSteps",
+          "ratingK",
+          "ratingStart",
+          "botRating",
+          "dayEndsAt",
+          "dayTimeZone"
+        ]
+      },
+      "MyIdea": {
+        "type": "object",
+        "properties": {
+          "ideaId": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/IdeaState"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/IdeaData"
+          }
+        },
+        "required": [
+          "ideaId",
+          "text",
+          "state",
+          "createdAt",
+          "data"
+        ]
+      },
+      "MyIdeasView": {
+        "type": "object",
+        "properties": {
+          "ideas": {
+            "$ref": "#/components/schemas/IdeasView"
+          },
+          "sent": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyIdea"
+            }
+          }
+        },
+        "required": [
+          "ideas",
+          "sent"
+        ]
+      },
+      "NameRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "Offer": {
+        "type": "object",
+        "properties": {
+          "slot": {
+            "type": "number"
+          },
+          "unitId": {
+            "$ref": "#/components/schemas/UnitId"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/Tier"
+          },
+          "cost": {
+            "type": "number"
+          },
+          "locked": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "slot",
+          "unitId",
+          "tier",
+          "cost"
+        ]
+      },
+      "OkResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "ok"
+        ]
+      },
+      "Outcome": {
+        "type": "string",
+        "enum": [
+          "win",
+          "loss",
+          "draw"
+        ]
+      },
+      "PlayerRef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "bot": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "bot"
+        ]
+      },
+      "PlayerSession": {
+        "type": "object",
+        "properties": {
+          "player": {
+            "$ref": "#/components/schemas/PlayerRef"
+          },
+          "token": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "player",
+          "token"
+        ]
+      },
+      "PlayoffResult": {
+        "type": "object",
+        "properties": {
+          "seq": {
+            "type": "number"
+          },
+          "day": {
+            "type": "string"
+          },
+          "entrants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlayerRef"
+            }
+          },
+          "winner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayerRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "battleIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "standings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "player": {
+                  "$ref": "#/components/schemas/PlayerRef"
+                },
+                "wins": {
+                  "type": "number"
+                },
+                "draws": {
+                  "type": "number"
+                },
+                "losses": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "player",
+                "wins",
+                "draws",
+                "losses"
+              ]
+            }
+          },
+          "games": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "$ref": "#/components/schemas/PlayerRef"
+                },
+                "b": {
+                  "$ref": "#/components/schemas/PlayerRef"
+                },
+                "battleId": {
+                  "type": "string"
+                },
+                "winner": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Side"
+                    },
+                    {
+                      "type": "string",
+                      "const": "draw"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "a",
+                "b",
+                "battleId",
+                "winner"
+              ]
+            }
+          }
+        },
+        "required": [
+          "seq",
+          "day",
+          "entrants",
+          "winner",
+          "battleIds",
+          "standings",
+          "games"
+        ]
+      },
+      "Rating": {
+        "type": "object",
+        "properties": {
+          "player": {
+            "$ref": "#/components/schemas/PlayerRef"
+          },
+          "rating": {
+            "type": "number"
+          },
+          "runs": {
+            "type": "number"
+          },
+          "slays": {
+            "type": "number"
+          },
+          "daysAsChampion": {
+            "type": "number"
+          },
+          "playoffWins": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "player",
+          "rating",
+          "runs",
+          "slays",
+          "daysAsChampion",
+          "playoffWins"
+        ]
+      },
+      "RatingChange": {
+        "type": "object",
+        "properties": {
+          "before": {
+            "type": "number"
+          },
+          "after": {
+            "type": "number"
+          },
+          "expected": {
+            "type": "number"
+          },
+          "actual": {
+            "type": "number"
+          },
+          "k": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "before",
+          "after",
+          "expected",
+          "actual",
+          "k"
+        ]
+      },
+      "ReplyResponse": {
+        "type": "object",
+        "properties": {
+          "reply": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reply"
+        ]
+      },
+      "RosterEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "hp": {
+            "type": "number"
+          },
+          "pwr": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "hp",
+          "pwr"
+        ]
+      },
+      "RunEndReason": {
+        "type": "string",
+        "enum": [
+          "out-of-hearts",
+          "crown-won",
+          "crown-lost",
+          "no-champion",
+          "content-changed",
+          "abandoned"
+        ]
+      },
+      "RunPhase": {
+        "type": "string",
+        "enum": [
+          "shop",
+          "crown",
+          "over"
+        ]
+      },
+      "RunView": {
+        "type": "object",
+        "properties": {
+          "runId": {
+            "type": "string"
+          },
+          "player": {
+            "$ref": "#/components/schemas/PlayerRef"
+          },
+          "contentVersion": {
+            "type": "string"
+          },
+          "phase": {
+            "$ref": "#/components/schemas/RunPhase"
+          },
+          "round": {
+            "type": "number"
+          },
+          "hearts": {
+            "type": "number"
+          },
+          "gold": {
+            "type": "number"
+          },
+          "wins": {
+            "type": "number"
+          },
+          "losses": {
+            "type": "number"
+          },
+          "line": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LineUnit"
+            }
+          },
+          "bench": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LineUnit"
+            }
+          },
+          "offers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Offer"
+            }
+          },
+          "gift": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnitId"
+            }
+          },
+          "nextOpponent": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "player": {
+                    "$ref": "#/components/schemas/PlayerRef"
+                  },
+                  "round": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "player",
+                  "round"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fights": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FightResult"
+            }
+          },
+          "day": {
+            "type": "number"
+          },
+          "startedAt": {
+            "type": "string"
+          },
+          "endedAt": {
+            "type": "string"
+          },
+          "endedBy": {
+            "$ref": "#/components/schemas/RunEndReason"
+          },
+          "forfeit": {
+            "type": "object",
+            "properties": {
+              "fights": {
+                "type": "number"
+              },
+              "opponentRating": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "fights",
+              "opponentRating"
+            ]
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RatingChange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "runId",
+          "player",
+          "contentVersion",
+          "phase",
+          "round",
+          "hearts",
+          "gold",
+          "wins",
+          "losses",
+          "line",
+          "bench",
+          "offers",
+          "nextOpponent",
+          "fights",
+          "day",
+          "startedAt"
+        ]
+      },
+      "SeedCandidateRequest": {
+        "type": "object",
+        "properties": {
+          "unit": {
+            "$ref": "#/components/schemas/UnitId"
+          }
+        }
+      },
+      "Selector": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "holder"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "eventUnit"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "attacker"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "frontEnemy"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "allEnemies"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "allAllies"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "randomEnemy"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "lastDeadAlly"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          }
+        ]
+      },
+      "Side": {
+        "type": "string",
+        "enum": [
+          "A",
+          "B"
+        ]
+      },
+      "Slay": {
+        "type": "object",
+        "properties": {
+          "seq": {
+            "type": "number"
+          },
+          "player": {
+            "$ref": "#/components/schemas/PlayerRef"
+          },
+          "runId": {
+            "type": "string"
+          },
+          "battleId": {
+            "type": "string"
+          },
+          "line": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LineUnit"
+            }
+          },
+          "contentVersion": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "seq",
+          "player",
+          "runId",
+          "battleId",
+          "line",
+          "contentVersion",
+          "at"
+        ]
+      },
+      "SourceRef": {
+        "anyOf": [
+          {
+            "type": "string",
+            "const": "kernel"
+          },
+          {
+            "$ref": "#/components/schemas/AbilityRef"
+          }
+        ]
+      },
+      "StartedResponse": {
+        "type": "object",
+        "properties": {
+          "started": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "started"
+        ]
+      },
+      "StatName": {
+        "type": "string",
+        "enum": [
+          "hp",
+          "pwr"
+        ]
+      },
+      "Stats": {
+        "type": "object",
+        "properties": {
+          "hp": {
+            "type": "number"
+          },
+          "pwr": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "hp",
+          "pwr"
+        ]
+      },
+      "StatsView": {
+        "type": "object",
+        "properties": {
+          "units": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "unitId": {
+                  "$ref": "#/components/schemas/UnitId"
+                },
+                "winRate": {
+                  "type": "number"
+                },
+                "pickRate": {
+                  "type": "number"
+                },
+                "runs": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "unitId",
+                "winRate",
+                "pickRate",
+                "runs"
+              ]
+            }
+          },
+          "champions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Champion"
+            }
+          },
+          "fusions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FusionDiscovery"
+            }
+          }
+        },
+        "required": [
+          "units",
+          "champions",
+          "fusions"
+        ]
+      },
+      "StatusDef": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "statMods": {
+            "type": "object",
+            "properties": {
+              "hp": {
+                "type": "number"
+              },
+              "pwr": {
+                "type": "number"
+              }
+            }
+          },
+          "triggers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/When"
+            }
+          },
+          "condition": {
+            "$ref": "#/components/schemas/Condition"
+          },
+          "selectors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Selector"
+            }
+          },
+          "abilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Ability"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "abilities"
+        ]
+      },
+      "StatusRegistry": {
+        "type": "object",
+        "additionalProperties": {
+          "$ref": "#/components/schemas/StatusDef"
+        }
+      },
+      "SummonContent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "emoji": {
+            "type": "string"
+          },
+          "base": {
+            "$ref": "#/components/schemas/Stats"
+          },
+          "form": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UnitForm"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "emoji",
+          "base",
+          "form"
+        ]
+      },
+      "TelegramAcceptRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "decline": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "TelegramPoll": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "const": "waiting"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "const": "declined"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "player": {
+                "$ref": "#/components/schemas/PlayerRef"
+              },
+              "token": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "const": "done"
+              }
+            },
+            "required": [
+              "player",
+              "status",
+              "token"
+            ]
+          }
+        ]
+      },
+      "TelegramStart": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "url",
+          "expiresAt"
+        ]
+      },
+      "TelegramStatus": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "linked": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled",
+          "linked"
+        ]
+      },
+      "Tier": {
+        "type": "number",
+        "enum": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "UnitContent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/UnitId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "emoji": {
+            "type": "string"
+          },
+          "archetype": {
+            "type": "string"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/Tier"
+          },
+          "base": {
+            "$ref": "#/components/schemas/Stats"
+          },
+          "forms": {
+            "type": "object",
+            "properties": {
+              "sleeping": {
+                "$ref": "#/components/schemas/UnitForm"
+              },
+              "awoken": {
+                "$ref": "#/components/schemas/UnitForm"
+              }
+            },
+            "required": [
+              "sleeping",
+              "awoken"
+            ]
+          },
+          "texts": {
+            "type": "object",
+            "properties": {
+              "ru": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "line": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "line"
+                ]
+              }
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "emoji",
+          "archetype",
+          "tier",
+          "base",
+          "forms"
+        ]
+      },
+      "UnitCredit": {
+        "type": "object",
+        "properties": {
+          "by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayerRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evolvedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayerRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "type": "number"
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnitVersion"
+            }
+          },
+          "unitId": {
+            "$ref": "#/components/schemas/UnitId"
+          },
+          "isNew": {
+            "type": "boolean"
+          },
+          "liveDays": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "by",
+          "evolvedBy",
+          "isNew",
+          "liveDays",
+          "unitId",
+          "version",
+          "versions"
+        ]
+      },
+      "UnitDef": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "_creator": {
+            "type": "string"
+          },
+          "base": {
+            "$ref": "#/components/schemas/Stats"
+          },
+          "level": {
+            "type": "number"
+          },
+          "triggers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/When"
+            }
+          },
+          "condition": {
+            "$ref": "#/components/schemas/Condition"
+          },
+          "selectors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Selector"
+            }
+          },
+          "abilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "also": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "selectors": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Selector"
+                  }
+                },
+                "abilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "selectors",
+                "abilities"
+              ]
+            }
+          },
+          "ability": {
+            "type": "string"
+          },
+          "statuses": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string"
+                },
+                "stacks": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "status",
+                "stacks"
+              ]
+            }
+          }
+        },
+        "required": [
+          "name",
+          "base"
+        ]
+      },
+      "UnitFilter": {
+        "type": "string",
+        "enum": [
+          "holder",
+          "ally",
+          "otherAlly",
+          "enemy",
+          "any"
+        ]
+      },
+      "UnitForm": {
+        "type": "object",
+        "properties": {
+          "when": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/When"
+            }
+          },
+          "condition": {
+            "$ref": "#/components/schemas/Condition"
+          },
+          "who": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Selector"
+            }
+          },
+          "does": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "also": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AndClause"
+            }
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "when",
+          "who",
+          "does"
+        ]
+      },
+      "UnitId": {
+        "type": "string"
+      },
+      "UnitIdRequest": {
+        "type": "object",
+        "properties": {
+          "unitId": {
+            "$ref": "#/components/schemas/UnitId"
+          }
+        },
+        "required": [
+          "unitId"
+        ]
+      },
+      "UnitVersion": {
+        "type": "object",
+        "properties": {
+          "unitId": {
+            "$ref": "#/components/schemas/UnitId"
+          },
+          "version": {
+            "type": "number"
+          },
+          "by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayerRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "liveDays": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "live": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "unitId",
+          "version",
+          "by",
+          "liveDays",
+          "live"
+        ]
+      },
+      "VersionCredit": {
+        "type": "object",
+        "properties": {
+          "by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayerRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evolvedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayerRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "type": "number"
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnitVersion"
+            }
+          }
+        },
+        "required": [
+          "by",
+          "evolvedBy",
+          "version",
+          "versions"
+        ]
+      },
+      "VoteCard": {
+        "type": "object",
+        "properties": {
+          "candidateId": {
+            "$ref": "#/components/schemas/UnitId"
+          },
+          "candidateKind": {
+            "$ref": "#/components/schemas/CandidateKind"
+          },
+          "otherId": {
+            "$ref": "#/components/schemas/UnitId"
+          },
+          "units": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnitContent"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "pool": {
+            "type": "object",
+            "properties": {
+              "abilities": {
+                "$ref": "#/components/schemas/AbilityRegistry"
+              },
+              "statuses": {
+                "$ref": "#/components/schemas/StatusRegistry"
+              },
+              "summons": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SummonContent"
+                }
+              }
+            },
+            "required": [
+              "abilities",
+              "statuses",
+              "summons"
+            ]
+          }
+        },
+        "required": [
+          "candidateId",
+          "candidateKind",
+          "otherId",
+          "units",
+          "pool"
+        ]
+      },
+      "VoteCardResponse": {
+        "type": "object",
+        "properties": {
+          "card": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VoteCard"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "card"
+        ]
+      },
+      "VoteRequest": {
+        "type": "object",
+        "properties": {
+          "candidateId": {
+            "$ref": "#/components/schemas/UnitId"
+          },
+          "otherId": {
+            "$ref": "#/components/schemas/UnitId"
+          },
+          "pick": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UnitId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "candidateId",
+          "otherId",
+          "pick"
+        ]
+      },
+      "When": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "trigger",
+              "interceptor"
+            ]
+          },
+          "on": {
+            "$ref": "#/components/schemas/EventPattern"
+          }
+        },
+        "required": [
+          "kind",
+          "on"
+        ]
+      },
+      "WhenKey": {
+        "type": "string",
+        "enum": [
+          "start",
+          "turnStart",
+          "turnEnd",
+          "strike",
+          "hurt",
+          "allyHurt",
+          "die",
+          "allyDies",
+          "enemyDies",
+          "allyShield",
+          "allyHealed",
+          "allyPower",
+          "enemyPoisoned",
+          "enemyCursed",
+          "allySummoned"
+        ]
+      },
+      "WhoKey": {
+        "type": "string",
+        "enum": [
+          "me",
+          "it",
+          "attacker",
+          "front",
+          "enemies",
+          "allies",
+          "random",
+          "fallen"
+        ]
+      },
+      "WriteIdeaRequest": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "const": "new"
+              }
+            },
+            "required": [
+              "text"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "const": "evolve"
+              },
+              "target": {
+                "$ref": "#/components/schemas/UnitId"
+              }
+            },
+            "required": [
+              "text",
+              "kind",
+              "target"
+            ]
+          }
+        ]
+      }
+    },
+    "securitySchemes": {
+      "token": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Arena-Token",
+        "description": "A PlayerSession token (invite, join, email or Telegram login)."
+      },
+      "player": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Arena-Player",
+        "description": "A device player id, open servers only (POST /players)."
+      }
+    }
+  },
+  "security": [
+    {
+      "token": []
+    },
+    {
+      "player": []
+    },
+    {}
+  ],
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "The server: API version, content version, deployed build, and which logins are on.",
+        "description": "The server: API version, content version, deployed build, and which logins are on.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/content": {
+      "get": {
+        "operationId": "getContent",
+        "summary": "The live pool: rules, units, summons, glossary.",
+        "description": "The live pool: rules, units, summons, glossary.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MvpContent"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/players": {
+      "post": {
+        "operationId": "postPlayers",
+        "summary": "A device identity on an open server.",
+        "description": "A device identity on an open server. 403 on an invite-only server.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NameRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerRef"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/invites/lookup": {
+      "post": {
+        "operationId": "postInvitesLookup",
+        "summary": "Whose invite link it is, opening nothing (slice 13).",
+        "description": "Whose invite link it is, opening nothing (slice 13). 404 unknown code.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteLookup"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/invites/redeem": {
+      "post": {
+        "operationId": "postInvitesRedeem",
+        "summary": "Opens an invite link: the same link again is the same player with a new token; a player keeps their newest 10 devices' tokens.",
+        "description": "Opens an invite link: the same link again is the same player with a new token; a player keeps their newest 10 devices' tokens. 404 unknown code.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerSession"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/join/check": {
+      "post": {
+        "operationId": "postJoinCheck",
+        "summary": "Is this the open join link (R4-20)? 404 if not.",
+        "description": "Is this the open join link (R4-20)? 404 if not.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/join": {
+      "post": {
+        "operationId": "postJoin",
+        "summary": "A new player through the open join link, never admin, with their own invite.",
+        "description": "A new player through the open join link, never admin, with their own invite. 404 not the join code, 409 a taken or bot's name, 400 a bad name, 429 over 30 joins an hour.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinSession"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/email/start": {
+      "post": {
+        "operationId": "postAuthEmailStart",
+        "summary": "Mails a 6-digit code to `email`, for sign-in or sign-up, or with a session to attach it; never says whether the email has a player (#929).",
+        "description": "Mails a 6-digit code to `email`, for sign-in or sign-up, or with a session to attach it; never says whether the email has a player (#929). 400 a bad email or name, 404 email login off, 429 a code a minute per email or too many this hour, 502 not sent.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailStartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailStartResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/email/verify": {
+      "post": {
+        "operationId": "postAuthEmailVerify",
+        "summary": "A known email logs in; a new one with `name` makes the player (with `join` on an invite-only server); without `name` \"needsName\" and the code stays.",
+        "description": "A known email logs in; a new one with `name` makes the player (with `join` on an invite-only server); without `name` \"needsName\" and the code stays. 400 a wrong code (5 tries), 404 no code or expired, 403 invite only, 409 name taken.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailVerifyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailVerify"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/email/attach": {
+      "post": {
+        "operationId": "postAuthEmailAttach",
+        "summary": "Ties the email to the caller, who has none yet, with the code from a start sent with their session.",
+        "description": "Ties the email to the caller, who has none yet, with the code from a start sent with their session. 409 the email has a player.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailAttachRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailStatus"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/email": {
+      "get": {
+        "operationId": "getAuthEmail",
+        "summary": "Is email login on, and the caller's email.",
+        "description": "Is email login on, and the caller's email.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailStatus"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/telegram/start": {
+      "post": {
+        "operationId": "postAuthTelegramStart",
+        "summary": "A one-time login code and its t.me deep link, for the caller (Link Telegram) or for none (Log in) (M4-6).",
+        "description": "A one-time login code and its t.me deep link, for the caller (Link Telegram) or for none (Log in) (M4-6). 404 Telegram login off, 403 a bot or an admin, 409 already linked, 429 over 20 an hour.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramStart"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/telegram/poll": {
+      "post": {
+        "operationId": "postAuthTelegramPoll",
+        "summary": "\"waiting\" until Yes in the bot, then the session, once; \"declined\" after No.",
+        "description": "\"waiting\" until Yes in the bot, then the session, once; \"declined\" after No. 404 unknown, expired or used: start again.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramPoll"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/telegram": {
+      "get": {
+        "operationId": "getAuthTelegram",
+        "summary": "Is Telegram login on, is the caller linked.",
+        "description": "Is Telegram login on, is the caller linked.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramStatus"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/telegram/unlink": {
+      "post": {
+        "operationId": "postAuthTelegramUnlink",
+        "summary": "Unlinks the caller's Telegram.",
+        "description": "Unlinks the caller's Telegram.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TelegramStatus"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/home": {
+      "get": {
+        "operationId": "getHome",
+        "summary": "The home screen: rules, the day, the caller's rating and active run.",
+        "description": "The home screen: rules, the day, the caller's rating and active run.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/runs": {
+      "post": {
+        "operationId": "postRuns",
+        "summary": "Starts a run; the player's active run if one is going.",
+        "description": "Starts a run; the player's active run if one is going.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/runs/{runId}": {
+      "get": {
+        "operationId": "getRuns/RunId",
+        "summary": "A run as its player sees it.",
+        "description": "A run as its player sees it.",
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/runs/{runId}/decisions": {
+      "post": {
+        "operationId": "postRuns/RunIdDecisions",
+        "summary": "One move.",
+        "description": "One move. 400 a Decision of an unknown kind, 409 a move the rules refuse.",
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Decision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/runs/{runId}/preview": {
+      "post": {
+        "operationId": "postRuns/RunIdPreview",
+        "summary": "A dry run of one move, no writes.",
+        "description": "A dry run of one move, no writes. 400 for a fight.",
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Decision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/runs/{runId}/abandon": {
+      "post": {
+        "operationId": "postRuns/RunIdAbandon",
+        "summary": "Gives the run up: endedBy \"abandoned\".",
+        "description": "Gives the run up: endedBy \"abandoned\". 409 when over.",
+        "parameters": [
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/battles/{battleId}": {
+      "get": {
+        "operationId": "getBattles/BattleId",
+        "summary": "A stored battle with its full log (battle-events/1).",
+        "description": "A stored battle with its full log (battle-events/1).",
+        "parameters": [
+          {
+            "name": "battleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleRecord"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ideas": {
+      "get": {
+        "operationId": "getIdeas",
+        "summary": "The caller's own ideas only (M2-4).",
+        "description": "The caller's own ideas only (M2-4). 401 without a player.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyIdeasView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "postIdeas",
+        "summary": "Writes one, spending a held idea (M2-4).",
+        "description": "Writes one, spending a held idea (M2-4). 400 text not IDEA_TEXT_MIN–MAX characters, 409 no idea held; kind \"evolve\" proposes a new version of `target` (M3-4): 404 no such unit, 409 the target isn't in the Library.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WriteIdeaRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyIdeasView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ideas/{ideaId}/cancel": {
+      "post": {
+        "operationId": "postIdeas/IdeaIdCancel",
+        "summary": "Takes back a `written` idea and refunds it.",
+        "description": "Takes back a `written` idea and refunds it. 404 not the caller's, 409 past `written` or ideas held at the cap.",
+        "parameters": [
+          {
+            "name": "ideaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyIdeasView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ideas/{ideaId}": {
+      "get": {
+        "operationId": "getIdeas/IdeaId",
+        "summary": "The caller's own idea with its options (M2-5).",
+        "description": "The caller's own idea with its options (M2-5). 404 not theirs.",
+        "parameters": [
+          {
+            "name": "ideaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyIdea"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ideas/{ideaId}/archetype": {
+      "post": {
+        "operationId": "postIdeas/IdeaIdArchetype",
+        "summary": "Picks an archetype in `pick-archetype`: the reader reads its readings next.",
+        "description": "Picks an archetype in `pick-archetype`: the reader reads its readings next. 400 no such option, 409 another state.",
+        "parameters": [
+          {
+            "name": "ideaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IndexRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyIdeasView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ideas/{ideaId}/reading": {
+      "post": {
+        "operationId": "postIdeas/IdeaIdReading",
+        "summary": "Picks a reading in `pick-reading`: the idea is `simulating`, its unit a candidate.",
+        "description": "Picks a reading in `pick-reading`: the idea is `simulating`, its unit a candidate. 409 another state, or the name or shape was just taken, the option dropped.",
+        "parameters": [
+          {
+            "name": "ideaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IndexRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyIdeasView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ideas/{ideaId}/none": {
+      "post": {
+        "operationId": "postIdeas/IdeaIdNone",
+        "summary": "\"None of these\" in `pick-archetype` or `pick-reading`: the stage is read once more; the second time the idea fails and is refunded (M2-6).",
+        "description": "\"None of these\" in `pick-archetype` or `pick-reading`: the stage is read once more; the second time the idea fails and is refunded (M2-6). 409 another state.",
+        "parameters": [
+          {
+            "name": "ideaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyIdeasView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/votes/next": {
+      "get": {
+        "operationId": "getVotesNext",
+        "summary": "Never the caller's own candidate, nor a pair they voted on (M2-8); new versions, and \"unchanged\" open to anyone (M3-6).",
+        "description": "Never the caller's own candidate, nor a pair they voted on (M2-8); new versions, and \"unchanged\" open to anyone (M3-6).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoteCardResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/votes": {
+      "post": {
+        "operationId": "postVotes",
+        "summary": "Votes, and the next card.",
+        "description": "Votes, and the next card. 404 no such candidate or live unit, 400 a pick of neither, 409 already voted on this pair, or the caller's own candidate, or a bot.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoteCardResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fusions": {
+      "get": {
+        "operationId": "getFusions",
+        "summary": "Every fusion found so far, with its credit (slice 10).",
+        "description": "Every fusion found so far, with its credit (slice 10).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FusionDiscovery"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/day": {
+      "get": {
+        "operationId": "getDay",
+        "summary": "Today: the champion, slayers, the throne (slice 5).",
+        "description": "Today: the champion, slayers, the throne (slice 5).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DayView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stats": {
+      "get": {
+        "operationId": "getStats",
+        "summary": "Unit win and pick rates, champions (slice 11).",
+        "description": "Unit win and pick rates, champions (slice 11).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/credits": {
+      "get": {
+        "operationId": "getCredits",
+        "summary": "Authors, NEW, the caller's creator number (M2-9).",
+        "description": "Authors, NEW, the caller's creator number (M2-9).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditsView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/library": {
+      "get": {
+        "operationId": "getLibrary",
+        "summary": "The units that have left the pool (M2-9).",
+        "description": "The units that have left the pool (M2-9).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/share/champion/{file}": {
+      "get": {
+        "operationId": "getShareChampion/File",
+        "summary": "`<day>.png`: the champion's share card (M4-7); ?lang=en|ru.",
+        "description": "`<day>.png`: the champion's share card (M4-7); ?lang=en|ru.",
+        "parameters": [
+          {
+            "name": "file",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/share/unit/{file}": {
+      "get": {
+        "operationId": "getShareUnit/File",
+        "summary": "`<unitId>.png`: a unit's share card (M4-7); ?lang=en|ru.",
+        "description": "`<unitId>.png`: a unit's share card (M4-7); ?lang=en|ru.",
+        "parameters": [
+          {
+            "name": "file",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schema.json": {
+      "get": {
+        "operationId": "getSchemaJson",
+        "summary": "This protocol's types (protocol/schema.json, #957).",
+        "description": "This protocol's types (protocol/schema.json, #957).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/openapi.json": {
+      "get": {
+        "operationId": "getOpenapiJson",
+        "summary": "This route table as OpenAPI 3.1 (protocol/openapi.json, #957).",
+        "description": "This route table as OpenAPI 3.1 (protocol/openapi.json, #957).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dev/telegram/accept": {
+      "post": {
+        "operationId": "postDevTelegramAccept",
+        "summary": "The fake bot's user sends /start <code>, then taps Yes, or No with decline: true.",
+        "description": "The fake bot's user sends /start <code>, then taps Yes, or No with decline: true. Only with ARENA_TELEGRAM_FAKE=1.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelegramAcceptRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "x-only": "fake-telegram"
+      }
+    },
+    "/api/v1/dev/mail/last": {
+      "post": {
+        "operationId": "postDevMailLast",
+        "summary": "The last code mailed to `email`.",
+        "description": "The last code mailed to `email`. Only with ARENA_MAIL_FAKE=1.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MailLastRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MailLast"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "x-only": "fake-mail"
+      }
+    },
+    "/api/v1/dev/end-day": {
+      "post": {
+        "operationId": "postDevEndDay",
+        "summary": "Ends the day now (slice 5).",
+        "description": "Ends the day now (slice 5). Only with MVP_DEV=1.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DayView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "x-only": "dev"
+      }
+    },
+    "/api/v1/dev/grant-idea": {
+      "post": {
+        "operationId": "postDevGrantIdea",
+        "summary": "+1 idea up to the cap (M2-3).",
+        "description": "+1 idea up to the cap (M2-3). Only with MVP_DEV=1.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdeasView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "x-only": "dev"
+      }
+    },
+    "/api/v1/dev/credit-unit": {
+      "post": {
+        "operationId": "postDevCreditUnit",
+        "summary": "The unit becomes the caller's idea, entered today (M2-9).",
+        "description": "The unit becomes the caller's idea, entered today (M2-9). Only with MVP_DEV=1.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnitIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditsView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "x-only": "dev"
+      }
+    },
+    "/api/v1/dev/overnight-check": {
+      "post": {
+        "operationId": "postDevOvernightCheck",
+        "summary": "Starts the simulation on every `simulating` idea (M2-8).",
+        "description": "Starts the simulation on every `simulating` idea (M2-8). Only with MVP_DEV=1.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartedResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "x-only": "dev"
+      }
+    },
+    "/api/v1/dev/seed-candidate": {
+      "post": {
+        "operationId": "postDevSeedCandidate",
+        "summary": "The caller's idea in `simulating`: a renamed live unit, `unit`'s or a random one (M2-8).",
+        "description": "The caller's idea in `simulating`: a renamed live unit, `unit`'s or a random one (M2-8). Only with MVP_DEV=1.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeedCandidateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyIdeasView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "x-only": "dev"
+      }
+    },
+    "/api/v1/dev/fake-votes": {
+      "post": {
+        "operationId": "postDevFakeVotes",
+        "summary": "5 fake votes on each candidate, 4 for it (M2-8).",
+        "description": "5 fake votes on each candidate, 4 for it (M2-8). Only with MVP_DEV=1.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CandidateScore"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "x-only": "dev"
+      }
+    },
+    "/api/v1/dev/candidates": {
+      "get": {
+        "operationId": "getDevCandidates",
+        "summary": "Every candidate, qualified ones first, best first (M2-8).",
+        "description": "Every candidate, qualified ones first, best first (M2-8). Only with MVP_DEV=1.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CandidateScore"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "An error: 400 unreadable, 401 no player, 403 refused, 404 not found, 409 the rules refuse, 413 body over 16 KB, 429 too many, 501 not yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        },
+        "x-only": "dev"
+      }
+    }
+  }
+}

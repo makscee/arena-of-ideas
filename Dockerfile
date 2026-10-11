@@ -60,6 +60,7 @@ COPY package.json ./
 COPY server/package.json ./server/package.json
 COPY server/src ./server/src
 COPY src ./src
+COPY protocol ./protocol
 COPY registry ./registry
 COPY --from=build /app/dist ./public
 

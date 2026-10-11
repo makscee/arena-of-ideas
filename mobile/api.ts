@@ -3,8 +3,6 @@
 // the app's base (/arena/ on the test instance).
 import {
   MVP_API_PREFIX,
-  PLAYER_HEADER,
-  TOKEN_HEADER,
   type BattleRecord,
   type CreditsView,
   type DayView,
@@ -33,6 +31,7 @@ import {
   type UnitId,
   type WriteIdeaRequest,
 } from "../src/mvp/contract";
+import { apiCall } from "../clients/core/api";
 import { uiLang } from "./lang";
 
 const BASE = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "") + MVP_API_PREFIX;
@@ -97,24 +96,12 @@ function saveToken(t: string | null): void {
   }
 }
 
-export class ApiError extends Error {
-  constructor(readonly status: number, message: string) {
-    super(message);
-  }
-}
+export { ApiError } from "../clients/core/api";
 
-async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const res = await fetch(BASE + path, {
-    method,
-    // The player's language rides on every call, so server text (refusals,
-    // an idea's "couldn't make it" reason) can follow it (M4-2).
-    headers: { "content-type": "application/json", "accept-language": uiLang(), ...(token ? { [TOKEN_HEADER]: token } : player ? { [PLAYER_HEADER]: player.id } : {}) },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-  });
-  const json = (await res.json().catch(() => ({ error: res.statusText }))) as T & { error?: string };
-  if (!res.ok) throw new ApiError(res.status, json.error ?? `HTTP ${res.status}`);
-  return json;
-}
+// Every call goes through clients/core's fetch client (#957), the one other
+// clients use; the player's language rides on every call, so server text (refusals,
+// an idea's "couldn't make it" reason) can follow it (M4-2).
+const call = <T>(method: string, path: string, body?: unknown): Promise<T> => apiCall<T>({ api: BASE, token, player: player?.id ?? null, lang: uiLang() }, method, path, body);
 
 export const api = {
   get player() {
