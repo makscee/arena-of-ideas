@@ -121,7 +121,7 @@ describe("Claude Code mod", () => {
     expect(press("b", run, rules, null, null, "run")).toEqual({ do: "battle" });
     const battle = claude.find((t) => t.name === "battle")!;
     const ru = await battle.run({ battleId: run.fights[0]!.battleId, lang: "ru" });
-    expect(ru).toMatch(/^Старт$/m);
+    expect(ru).toMatch(/^(Старт|Ходы? \d)/m); // a battle with nothing at its start has no "Старт" row
     expect(ru).not.toMatch(/^(Start|Turns? \d)/m);
     const page = battlePage(ru, 0, 3); // a battle is at least its 3 header lines and an end
     expect(page.lines).toHaveLength(3);
