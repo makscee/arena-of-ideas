@@ -174,6 +174,26 @@ export function describeMvpStore(name: string, make: () => MvpStore): void {
       expect(s.invite("c3")?.redeemedAt).toBe("t4");
     });
 
+    it("ties one email to one player, and keeps one login code per email (#929)", () => {
+      const s = make();
+      const l = { emailKey: "maks@example.com", playerId: "p1", linkedAt: "t" };
+      expect(s.emailLink({ emailKey: l.emailKey })).toBeUndefined();
+      s.linkEmail(l);
+      expect(s.emailLink({ emailKey: l.emailKey })).toEqual(l);
+      expect(s.emailLink({ playerId: "p1" })).toEqual(l);
+      expect(s.emailLink({ playerId: "p2" })).toBeUndefined();
+      expect(() => s.linkEmail({ ...l, playerId: "p2" })).toThrow();
+      expect(() => s.linkEmail({ ...l, emailKey: "other@example.com" })).toThrow();
+      const c = { emailKey: l.emailKey, codeHash: "h1", playerId: null, sentAt: "t1", expiresAt: "t2", tries: 0 };
+      s.putEmailCode(c);
+      s.putEmailCode({ ...c, tries: 2 });
+      expect(s.emailCode(l.emailKey)).toEqual({ ...c, tries: 2 });
+      expect(s.emailCode("x@example.com")).toBeUndefined();
+      expect(s.dropEmailCode(l.emailKey)).toBe(true);
+      expect(s.dropEmailCode(l.emailKey)).toBe(false);
+      expect(s.emailCode(l.emailKey)).toBeUndefined();
+    });
+
     it("keeps one join code (R4-20), replaced on rotate", () => {
       const s = make();
       expect(s.joinCode()).toBeUndefined();

@@ -14,9 +14,11 @@
     "better-sqlite3": "^12.4.1",
     "drizzle-orm": "^0.44.2",
     "hono": "^4.7.0",
+    "nodemailer": "^7.0.13",
     "tsx": "^4.22.4"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13"
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/nodemailer": "^8.0.2"
   }
 }

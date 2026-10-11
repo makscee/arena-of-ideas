@@ -101,6 +101,16 @@ export interface MvpStore {
   telegramLink(by: { tgUserId: string } | { playerId: string }): TelegramLink | undefined;
   /** Removes this player's link; true when there was one. */
   unlinkTelegram(playerId: string): boolean;
+  // #929's email login; only ./email.ts writes it.
+  /** Ties an email to a player. Throws when either has one already. */
+  linkEmail(l: EmailLink): void;
+  /** The email of this player, or the player of this email (by its key). */
+  emailLink(by: { emailKey: string } | { playerId: string }): EmailLink | undefined;
+  /** Stores or replaces the login code of an email (one per email). */
+  putEmailCode(c: EmailCode): void;
+  emailCode(emailKey: string): EmailCode | undefined;
+  /** Removes an email's code; true when it was there (so only one caller gets it). */
+  dropEmailCode(emailKey: string): boolean;
   // M2-1's units as data (mission #735); ./pool.ts seeds and reads them.
   /** Stores or replaces the unit with this id. */
   putUnit(u: StoredUnit): void;
@@ -313,6 +323,26 @@ export interface TelegramCode {
  * in as their linked player, link the asking player, or make a new player. */
 export type TelegramAsk = { kind: "login" | "link"; playerId: string; tgUserId: string } | { kind: "new"; playerId: null; tgUserId: string };
 
+/** One email tied to one player (#929). `emailKey`: the email trimmed and
+ * lower-cased, which is also how it shows. */
+export interface EmailLink {
+  emailKey: string;
+  playerId: string;
+  linkedAt: string;
+}
+
+/** An email login code (#929): only its SHA-256 (with the email, ./email.ts
+ * codeHash), wrong tries so far, when it was sent. `playerId`: the signed-in
+ * player who asked to attach this email, or null (sign-in or sign-up). */
+export interface EmailCode {
+  emailKey: string;
+  codeHash: string;
+  playerId: string | null;
+  sentAt: string;
+  expiresAt: string;
+  tries: number;
+}
+
 /** One Telegram user linked to one player (M4-6). */
 export interface TelegramLink {
   tgUserId: string;
@@ -469,6 +499,19 @@ export class MemoryMvpStore implements MvpStore {
     const l = this.telegramLink({ playerId });
     return !!l && this.tgLinks.delete(l.tgUserId);
   }
+  private emails = new Map<string, EmailLink>();
+  private emailCodes = new Map<string, EmailCode>();
+  linkEmail(l: EmailLink): void {
+    if (this.emails.has(l.emailKey) || this.emailLink({ playerId: l.playerId })) throw new Error(`email ${l.emailKey} or player ${l.playerId} has one already`);
+    this.emails.set(l.emailKey, { ...l });
+  }
+  emailLink(by: { emailKey: string } | { playerId: string }): EmailLink | undefined {
+    const l = "emailKey" in by ? this.emails.get(by.emailKey) : [...this.emails.values()].find((x) => x.playerId === by.playerId);
+    return l && { ...l };
+  }
+  putEmailCode(c: EmailCode): void { this.emailCodes.set(c.emailKey, { ...c }); }
+  emailCode(emailKey: string): EmailCode | undefined { const c = this.emailCodes.get(emailKey); return c && { ...c }; }
+  dropEmailCode(emailKey: string): boolean { return this.emailCodes.delete(emailKey); }
   private unitsById = new Map<UnitId, StoredUnit>();
   private pools: PoolSnapshot[] = [];
   private stintsByKey = new Map<string, PoolStint>();

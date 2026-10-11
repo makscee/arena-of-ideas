@@ -183,6 +183,8 @@ describe("mvp-redeploy (--fresh and plain)", { timeout: 30_000 }, () => {
     expect(r.stdout).toContain("deployed abc1234 (mission-574-mvp)");
     expect(r.log).toMatch(/bootout gui\/\d+\/ru\.makscee\.arena-mvp[\s\S]*bootstrap gui\/\d+ .*ru\.makscee\.arena-mvp\.plist/);
     expect(readFileSync(db, "utf8")).toBe("old world");
+    // #929: the mail account's file, read by the server at start (never its contents).
+    expect(readFileSync(join(home, "Library/LaunchAgents/ru.makscee.arena-mvp.plist"), "utf8")).toContain(`<key>ARENA_MAIL_ENV</key><string>${home}/.config/arena/mail.env</string>`);
   });
 
   it("never leaves an open server running: a /health without invites: true stops it, turns /arena off, exits 1", { timeout: 30_000 }, () => {

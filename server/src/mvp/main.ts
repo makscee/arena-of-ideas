@@ -23,6 +23,11 @@
  *               Telegram login is on; the token is never logged
  *   ARENA_TELEGRAM_FAKE 1 (with MVP_DEV=1 only): a fake bot instead, played by
  *               POST /api/v1/dev/telegram/accept; ARENA_TELEGRAM_BOT the bot's @name
+ *   ARENA_MAIL_ENV  a file with SMTP_HOST, SMTP_PORT (default 465), SMTP_USER,
+ *               SMTP_PASS, SMTP_FROM (#929): email login is on, and on an
+ *               invite-only server required; the password is never logged
+ *   ARENA_MAIL_FAKE 1 (with MVP_DEV=1 only): a fake mailer instead that logs
+ *               each code and keeps it for POST /api/v1/dev/mail/last
  *   ARENA_PUBLIC_URL  the game's public address, for share links' Open Graph
  *               tags (default https://arena.makscee.ru/arena, M4-7)
  *   ARENA_TELEGRAM_POST  1 posts the day to the Telegram channel after each
@@ -44,6 +49,7 @@ import { mvpRuntime } from "./runtime.js";
 import { buildOf, mvpServerApp, underBasePath } from "./server.js";
 import { shareMeta } from "./share.js";
 import { SqliteMvpStore } from "./sqlite-store.js";
+import { FakeMailer, mailFromEnv } from "./email.js";
 import { FakeTelegram, telegramFromEnv } from "./telegram.js";
 import { instantTuner } from "./votes.js";
 
@@ -65,11 +71,12 @@ const tuner = process.env.ARENA_TUNER === "instant" ? { night: instantTuner, dev
 const voteMin = Number(process.env.MVP_VOTE_MIN);
 const rules = Number.isInteger(voteMin) && voteMin > 0 ? { ...MVP_RULES, voteMin } : undefined;
 const telegram = telegramFromEnv(process.env, dev);
-const rt = mvpRuntime({ content, store, dev, ...(rules ? { rules } : {}), ...(tuner ? { tuner } : {}), invites: process.env.MVP_INVITES === "1", open: process.env.MVP_OPEN === "1", rotation: process.env.MVP_ROTATION === "1", ...(telegram ? { telegram } : {}) });
+const mail = mailFromEnv(process.env, dev);
+const rt = mvpRuntime({ content, store, dev, ...(rules ? { rules } : {}), ...(tuner ? { tuner } : {}), invites: process.env.MVP_INVITES === "1", open: process.env.MVP_OPEN === "1", rotation: process.env.MVP_ROTATION === "1", ...(telegram ? { telegram } : {}), ...(mail ? { mail } : {}) });
 const build = buildOf();
 const publicUrl = (process.env.ARENA_PUBLIC_URL ?? "https://arena.makscee.ru/arena").replace(/\/$/, "");
 const app = mvpServerApp(createMvpApp(rt), { staticRoot: root, build, pageMeta: (url, lang) => shareMeta(rt, url, publicUrl, lang) });
 
 serve({ port, hostname: host, fetch: underBasePath(app, basePath) });
 startMvpJobs(rt);
-console.log(`arena mvp on http://${host}:${port} (base ${basePath}, build ${build ?? "unknown"}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""}${tuner ? ", instant tuner" : ""}${rt.rotation ? ", rotation on" : ""}${rt.invites ? (rt.open ? ", open to all" : ", invite-only") : ""}${telegram ? (telegram instanceof FakeTelegram ? ", fake telegram" : `, telegram @${telegram.bot}`) : ""})`);
+console.log(`arena mvp on http://${host}:${port} (base ${basePath}, build ${build ?? "unknown"}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""}${tuner ? ", instant tuner" : ""}${rt.rotation ? ", rotation on" : ""}${rt.invites ? (rt.open ? ", open to all" : ", invite-only") : ""}${telegram ? (telegram instanceof FakeTelegram ? ", fake telegram" : `, telegram @${telegram.bot}`) : ""}${mail ? (mail instanceof FakeMailer ? ", fake mail" : ", mail") : ""})`);

@@ -12,7 +12,10 @@
 // (#join=): a stranger picks a name and plays, the address becomes their own
 // #invite= link and Home offers it for another device; a second stranger
 // can't take a used name; a device with a player asks first; a rotated link
-// lands on the invite screen. A screenshot of each.
+// lands on the invite screen. #929, email login (the fake mailer,
+// ARENA_MAIL_FAKE=1): an invite link's player adds an email before playing,
+// a fresh device signs in by email alone, and the join link signs up with a
+// name, an email and the mailed code. A screenshot of each.
 import { spawn, execFileSync } from "node:child_process";
 import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { createServer } from "node:net";
@@ -33,7 +36,7 @@ for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => process.exit(130)
 if (opt("db")) copyFileSync(opt("db"), db);
 const claim = opt("claim");
 
-const env = { ...process.env, MVP_DB: db, MVP_DEV: "1", MVP_INVITES: "1" };
+const env = { ...process.env, MVP_DB: db, MVP_DEV: "1", MVP_INVITES: "1", ARENA_MAIL_FAKE: "1" };
 const cli = (...a) => execFileSync("node", ["--import", "tsx/esm", "server/src/mvp/invite-cli.ts", ...a], { env: { ...env, MVP_PUBLIC_URL: "BASE/" }, encoding: "utf8" }).trim();
 const codeOf = (line) => line.slice(line.indexOf("#invite=") + 8);
 const TAG = Date.now().toString(36).slice(-4);
@@ -63,13 +66,43 @@ async function device(opts) {
 }
 const shot = (page, name) => page.screenshot({ path: `${out}/${String(++shots).padStart(2, "0")}-${name}.png` });
 const text = (page) => page.evaluate(() => document.body.innerText);
+/** Who the device plays as: Settings' "Playing as" (Home shows no name since M5-3). */
+async function playsAs(page) {
+  await page.getByTestId("settings").click();
+  const sheet = page.getByTestId("settings-sheet");
+  const who = await sheet.locator(".row.me").first().textContent();
+  await page.keyboard.press("Escape");
+  await sheet.waitFor({ state: "detached", timeout: 5_000 });
+  return who ?? "";
+}
+// #929: the fake mailer's last code to an email, and the code step.
+const mailCode = async (email) => (await (await fetch(url + "api/v1/dev/mail/last", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email }) })).json()).code;
+async function enterCode(page, email) {
+  await page.getByTestId("email-code").waitFor({ timeout: 10_000 });
+  const code = await mailCode(email);
+  if (!/^\d{6}$/.test(code ?? "")) errors.push(`mail: no code for ${email}`);
+  await page.getByTestId("email-code").fill(code ?? "");
+  await page.getByTestId("email-code-submit").click();
+}
+/** The "add your email" step after an invite link (an account without one). */
+async function attach(page, email, name) {
+  await page.getByTestId("email-attach").waitFor({ timeout: 15_000 });
+  await shot(page, `attach-${name}`);
+  await page.getByTestId("attach-email").fill(email);
+  await page.getByTestId("attach-submit").click();
+  await enterCode(page, email);
+}
+const testerMail = `Tester${TAG}@Example.com`;
+const adminMail = `maks${TAG}@example.com`;
 try {
   // A tester's phone: the link gives the name; buy, fight, see the result.
   const a = await device(PHONE);
   await a.goto(`${url}#invite=${guest}`);
+  // #929: the invite's player has no email yet: it's asked for before Home.
+  await attach(a, testerMail, "tester-phone");
   await a.getByTestId("play").waitFor({ timeout: 15_000 });
   await shot(a, "tester-home-phone");
-  if (!(await text(a)).includes(tester)) errors.push("tester: home doesn't show the invited name");
+  if (!(await playsAs(a)).includes(tester)) errors.push("tester: home doesn't show the invited name");
   if (a.url().includes("invite=")) errors.push(`tester: the code stays in the address (${a.url()})`);
   if (await a.getByTestId("end-day").count()) errors.push("tester: sees End day now");
   await a.getByTestId("play").click();
@@ -98,8 +131,9 @@ try {
   // The admin link on a desktop: the claimed player and the dev tools.
   const m = await device(DESKTOP);
   await m.goto(`${url}#invite=${admin}`);
+  await attach(m, adminMail, "admin-desktop");
   await m.getByTestId("play").waitFor({ timeout: 15_000 });
-  if (!(await text(m)).includes(claim ?? "Maks")) errors.push("admin: home doesn't show the name");
+  if (!(await playsAs(m)).includes(claim ?? "Maks")) errors.push("admin: home doesn't show the name");
   if (!(await m.getByTestId("end-day").count())) errors.push("admin: no End day now");
   await shot(m, "admin-home-desktop");
 
@@ -117,7 +151,7 @@ try {
   await shot(a, "switch-ask-phone");
   await a.getByTestId("invite-stay").click();
   await a.getByTestId("play").waitFor({ timeout: 10_000 });
-  if (!(await text(a)).includes(tester)) errors.push("switch: Stay didn't keep the tester");
+  if (!(await playsAs(a)).includes(tester)) errors.push("switch: Stay didn't keep the tester");
 
   // A bad link on a device with its own session: Home, not a Retry loop.
   await a.goto(`${url}#invite=nope`);
@@ -154,6 +188,24 @@ try {
   await fresh.goto(url);
   await fresh.getByTestId("invite-only").waitFor({ timeout: 10_000 });
   await shot(fresh, "no-link-phone");
+  // #929: a fresh device signs in by email alone, any case: the tester again.
+  await fresh.getByTestId("email-signin-open").click();
+  await fresh.getByTestId("signin-email").fill(`  ${testerMail.toUpperCase()} `);
+  await fresh.getByTestId("signin-submit").click();
+  await fresh.getByTestId("email-code").waitFor({ timeout: 10_000 });
+  await shot(fresh, "signin-code-phone");
+  // A wrong code is refused with the tries left.
+  const right = await mailCode(testerMail);
+  await fresh.getByTestId("email-code").fill(right === "000000" ? "111111" : "000000");
+  await fresh.getByTestId("email-code-submit").click();
+  await fresh.getByTestId("error").filter({ hasText: "4 tries left" }).waitFor({ timeout: 10_000 });
+  await enterCode(fresh, testerMail);
+  await fresh.getByTestId("play").waitFor({ timeout: 15_000 });
+  if (!(await playsAs(fresh)).includes(tester)) errors.push("email sign-in: Home isn't the tester's");
+  if (!/Continue/i.test(await fresh.getByTestId("play").textContent())) errors.push("email sign-in: not the same player (no Continue)");
+  await fresh.getByTestId("settings").click();
+  if (!(await fresh.getByTestId("settings-email").textContent()).includes(testerMail.toLowerCase())) errors.push("settings: no Email: line with the tester's email");
+  await shot(fresh, "settings-email-phone");
 
   // R4-20: the open join link. A stranger picks a name and plays a fight.
   const joinOf = (line) => line.slice(line.indexOf("#join=") + 6);
@@ -161,21 +213,28 @@ try {
   if (joinOf(cli("open")) !== jc) errors.push("join: open again gave another link");
   const friend = `Friend${TAG}`;
   const j1 = await device(PHONE);
+  const friendMail = `friend${TAG}@example.com`;
   await j1.goto(`${url}#join=${jc}`);
   await j1.getByTestId("join-name").waitFor({ timeout: 10_000 });
   await shot(j1, "join-name-phone");
   await j1.getByTestId("join-name").fill(friend);
+  await j1.getByTestId("join-email").fill("not-an-email");
   await j1.getByTestId("join-submit").click();
+  await j1.getByTestId("error").filter({ hasText: "email address" }).waitFor({ timeout: 10_000 });
+  await j1.getByTestId("join-email").fill(friendMail);
+  await j1.getByTestId("join-submit").click();
+  await enterCode(j1, friendMail);
   await j1.getByTestId("play").waitFor({ timeout: 15_000 });
-  if (!(await text(j1)).includes(friend)) errors.push("join: home doesn't show the picked name");
-  if (j1.url().includes("join=") || !j1.url().includes("#invite=")) errors.push("join: the address isn't the player's own #invite= link");
+  if (!(await playsAs(j1)).includes(friend)) errors.push("join: home doesn't show the picked name");
+  if (j1.url().includes("join=")) errors.push("join: the join code stays in the address");
   if (await j1.getByTestId("end-day").count()) errors.push("join: a joined player sees End day now");
-  const ownUrl = j1.url();
   await j1.getByTestId("settings").click();
-  await j1.getByTestId("own-link-row").locator("summary").click();
-  if ((await j1.getByTestId("own-link").inputValue()) !== ownUrl) errors.push("join: Home's own link isn't the address's #invite= link");
-  await j1.getByTestId("own-link-copy").scrollIntoViewIfNeeded();
-  await shot(j1, "join-home-own-link-phone");
+  if (!(await j1.getByTestId("settings-email").textContent()).includes(friendMail)) errors.push("join: Settings doesn't show the email");
+  await shot(j1, "join-home-settings-phone");
+  await j1.keyboard.press("Escape");
+  // An address with a # in it (#919): the language switch still reloads.
+  const ownUrl = `${url}#welcome`;
+  await j1.goto(ownUrl);
   // #919: the language switch redraws the page with the own #invite= link in
   // the address (a hash-only change reloads nothing), with the settings sheet
   // open, and with a ?lang= that would win over the choice; the palette
@@ -194,16 +253,16 @@ try {
     if (!(await loaded)) errors.push(`lang ${why}: tapping ${to} doesn't redraw the page (${j1.url()})`);
     await throneIn(to, why);
   };
-  await switchLang("ru", "with #invite=");
+  await switchLang("ru", "with a #");
   await shot(j1, "join-lang-ru-phone");
   await j1.getByTestId("settings").click();
   await j1.getByTestId("theme-felt").click();
-  if ((await j1.evaluate(() => document.documentElement.dataset.theme)) !== "felt") errors.push("theme: Felt Table didn't recolour the page with #invite=");
+  if ((await j1.evaluate(() => document.documentElement.dataset.theme)) !== "felt") errors.push("theme: Felt Table didn't recolour the page with a #");
   await j1.getByTestId("theme-plum").click();
-  await switchLang("en", "back with #invite=");
+  await switchLang("en", "back with a #");
   await j1.goto(ownUrl.replace("#", "?lang=en#"));
   await throneIn("en", "?lang=en");
-  await switchLang("ru", "with ?lang=en#invite=");
+  await switchLang("ru", "with ?lang=en#");
   if (j1.url().includes("lang=")) errors.push(`lang: ?lang= stays in the address (${j1.url()})`);
   await switchLang("en", "back after ?lang=");
   await j1.getByTestId("play").click();
@@ -215,23 +274,29 @@ try {
   await j1.getByTestId("battle-end").click();
   await j1.getByTestId("end-card").waitFor({ timeout: 10_000 });
   await shot(j1, "join-result-phone");
-  // The bookmarked address opens the same player on another device.
+  // Another device: the same player by email.
   const j1b = await device(DESKTOP);
-  await j1b.goto(ownUrl);
+  await j1b.goto(url);
+  await j1b.getByTestId("email-signin-open").click();
+  await j1b.getByTestId("signin-email").fill(friendMail);
+  await j1b.getByTestId("signin-submit").click();
+  await enterCode(j1b, friendMail);
   await j1b.getByTestId("play").waitFor({ timeout: 15_000 });
-  if (!/Continue/i.test(await j1b.getByTestId("play").textContent())) errors.push("join: the own link on another device isn't the same player");
+  if (!/Continue/i.test(await j1b.getByTestId("play").textContent())) errors.push("join: email sign-in on another device isn't the same player");
 
   // A second stranger: a used name is refused, another one plays.
   const j2 = await device(PHONE);
   await j2.goto(`${url}#join=${jc}`);
   await j2.getByTestId("join-name").fill(friend.toLowerCase());
+  await j2.getByTestId("join-email").fill(`other${TAG}@example.com`);
   await j2.getByTestId("join-submit").click();
+  await enterCode(j2, `other${TAG}@example.com`);
   await j2.getByTestId("error").filter({ hasText: "taken" }).waitFor({ timeout: 10_000 });
   await shot(j2, "join-taken-phone");
-  await j2.getByTestId("join-name").fill(`Other${TAG}`);
-  await j2.getByTestId("join-submit").click();
+  await j2.getByTestId("email-name").fill(`Other${TAG}`);
+  await j2.getByTestId("email-code-submit").click();
   await j2.getByTestId("play").waitFor({ timeout: 15_000 });
-  if (!(await text(j2)).includes(`Other${TAG}`)) errors.push("join: the second stranger isn't their own player");
+  if (!(await playsAs(j2)).includes(`Other${TAG}`)) errors.push("join: the second stranger isn't their own player");
 
   // A device that already plays as someone asks first; Stay keeps them.
   await j1.goto(`${url}#join=${jc}`);
@@ -239,7 +304,7 @@ try {
   await shot(j1, "join-switch-phone");
   await j1.getByTestId("join-stay").click();
   await j1.getByTestId("play").waitFor({ timeout: 10_000 });
-  if (!(await text(j1)).includes(friend)) errors.push("join: Stay didn't keep the player");
+  if (!(await playsAs(j1)).includes(friend)) errors.push("join: Stay didn't keep the player");
 
   // Rotate: the old link lands on the invite screen, the new one asks for a name.
   const jn = joinOf(cli("open", "--rotate"));
@@ -263,4 +328,4 @@ if (errors.length) {
   for (const e of errors) console.error(`✗ ${e}`);
   process.exit(1);
 }
-console.log("✓ invite links work: tester, second device, admin dev tools, switch ask, old device, bad link, revoke, open join link");
+console.log("✓ invite links work: tester, second device, admin dev tools, switch ask, old device, bad link, revoke, open join link; email: add, sign in, sign up");
