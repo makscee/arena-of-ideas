@@ -47,6 +47,10 @@ export interface MvpRules {
    * pick of 1 of this many units from the highest tier open that round
    * (RunView.gift). Runs stored before it have no field: no gift. */
   giftChoices?: number;
+  /** Mission 5 R2 (void-board#916): the gift draws from this many tiers above
+   * the highest tier open that round, capped at the top tier. Runs stored
+   * before it have no field: 0, the highest open tier. */
+  giftTierAhead?: number;
   /** Stats each extra copy adds. */
   copyGrowth: Stats;
   /** tierOpensAt[t-1] = the round tier t enters the shop. */
@@ -128,6 +132,7 @@ export const MVP_RULES: MvpRules = {
   benchSize: 3,
   copiesToAwaken: 3,
   giftChoices: 3,
+  giftTierAhead: 1,
   copyGrowth: { pwr: 1, hp: 2 },
   tierOpensAt: [1, 3, 6, 9],
   chainStepCap: 32,
@@ -474,7 +479,7 @@ export interface RunView {
   bench: LineUnit[];
   offers: Offer[];
   /** The awakening gift waiting to be picked (rules.giftChoices units from
-   * the highest tier open that round), absent when none waits. While it
+   * one tier above the highest open that round, rules.giftTierAhead), absent when none waits. While it
    * waits only sell, reorder and the `gift` decision are allowed. In the game
    * it is a "gift", never "Discover" (fusions are "discovered"). */
   gift?: UnitId[];

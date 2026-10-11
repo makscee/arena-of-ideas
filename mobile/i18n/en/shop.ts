@@ -74,6 +74,7 @@ export const shop = {
   "gift.title": "🎁 Awakened! Pick a gift",
   "gift.free": "Free: one of these units. It joins your line, else your bench; one you own merges in.",
   "gift.freeTier": "Free: one of these tier {tier} units. It joins your line, else your bench; one you own merges in.",
+  "gift.freeTierAhead": "Free: one of these tier {tier} units, a tier ahead of the shop. It joins your line, else your bench; one you own merges in.",
   "gift.noneFits": "Line and bench full: make room (sell a unit), then pick.",
   "gift.onlyOwned": "Line and bench full: only a unit you own merges in now. Make room (sell a unit) to pick another.",
   "gift.readDesk": "Hover a card to read it here. Esc sets the gift aside.",

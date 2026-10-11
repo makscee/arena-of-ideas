@@ -45,6 +45,7 @@ export const main = {
   "rules.copiesLabel": "Copies, Awoken, fusion",
   "rules.copies": "Buying a unit you own merges it in: +{pwr} PWR / +{hp} HP a copy. Copy {awaken} awakens it: the same When, plus a new job.",
   "rules.gift": "The copy that awakens a unit brings a gift: a free pick of 1 of {n} units from the highest tier open. It joins your line, else your bench; one you own merges in, and if that awakens it, another gift comes. With line and bench full, sell a unit to make room, or skip it. Until you pick or skip, you can only sell and reorder.",
+  "rules.giftAhead": "The copy that awakens a unit brings a gift: a free pick of 1 of {n} units one tier above the highest tier open (the top tier at most). It joins your line, else your bench; one you own merges in, and if that awakens it, another gift comes. With line and bench full, sell a unit to make room, or skip it. Until you pick or skip, you can only sell and reorder.",
   "rules.fuseDesk": "Two Awoken units fuse: the When of the first you pick, the Who of the second, the Does of both, and the stronger PWR and HP of the two, +{pwr} PWR / +{hp} HP. A fused unit is final; copies of either part still merge into it. The first player to make a pair names it.",
   "rules.fusePhone": "Two Awoken units fuse: the When of the first you tap, the Who of the second, the Does of both, and the stronger PWR and HP of the two, +{pwr} PWR / +{hp} HP. A fused unit is final; copies of either part still merge into it. The first player to make a pair names it.",
   "rules.chainsLabel": "Chains",

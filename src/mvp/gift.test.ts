@@ -28,16 +28,41 @@ const apply = (s: MvpRunState, d: Decision) => applyMvpDecision(s, d, content, {
 const ready = (round = 1, line = [unit(0, "a", 2)], bench: LineUnit[] = []) => ({ ...run(line, bench, round), offers: offers("u0", "u1") });
 
 describe("MVP awakening gift (R3-15)", () => {
-  it("the copy that awakens a unit offers 3 different units from the highest tier open that round", () => {
+  it("the copy that awakens a unit offers 3 different units one tier above the highest open that round, capped at the top tier (#916)", () => {
     expect(MVP_RULES.giftChoices).toBe(3);
-    for (const [round, tier] of [[1, 1], [3, 2], [6, 3], [9, 3]] as const) {
+    expect(MVP_RULES.giftTierAhead).toBe(1);
+    // Rounds 1/3/6/9 open tiers 1/2/3/4 (u-content has no tier 4, so 3 is its top).
+    for (const [round, tier] of [[1, 2], [3, 3], [6, 3], [9, 3]] as const) {
       const s = apply(ready(round), { kind: "buy", slot: 0 });
       expect(s.line[0]!.form).toBe("awoken");
       expect(s.gift).toHaveLength(3);
       expect(new Set(s.gift).size).toBe(3);
-      for (const id of s.gift!) expect(units.find((u) => u.id === id)!.tier).toBe(tier);
+      for (const id of s.gift!) expect(units.find((u) => u.id === id)!.tier, `round ${round}`).toBe(tier);
       expect(runView(s).gift).toEqual(s.gift);
     }
+  });
+
+  it("round 1 offers only tier-2 units, and a round with the top tier open offers top-tier units, with the real content's 4 tiers", () => {
+    const four: UnitContent[] = units.map((u, i) => (i >= 10 ? { ...u, tier: 4 as Tier } : u));
+    const c4: MvpContent = { ...content, units: four };
+    const tierIn = (id: string) => four.find((u) => u.id === id)!.tier;
+    for (let seed = 1; seed <= 20; seed++) {
+      const at = (round: number) => applyMvpDecision({ ...run([unit(0, "a", 2)], [], round, seed), offers: offers("u0") }, { kind: "buy", slot: 0 }, c4, { fuse }).state.gift!;
+      expect(at(1).map(tierIn)).toEqual([2, 2, 2]);
+      expect(at(6).map(tierIn).every((t) => t === 4)).toBe(true);
+      expect(at(9).map(tierIn).every((t) => t === 4)).toBe(true);
+    }
+  });
+
+  it("a run stored before #916 (no giftTierAhead) still draws from the highest open tier, the same units as before", () => {
+    const { giftTierAhead: _a, ...old } = MVP_RULES;
+    for (const [round, tier] of [[1, 1], [3, 2], [6, 3], [9, 3]] as const) {
+      const s = apply({ ...ready(round), rules: old }, { kind: "buy", slot: 0 });
+      for (const id of s.gift!) expect(units.find((u) => u.id === id)!.tier).toBe(tier);
+    }
+    // Pinned from the pre-#916 kernel (seed 3): a stored run replays to the same gifts.
+    const pre916 = { 1: ["u0", "u4", "u2"], 3: ["u6", "u8", "u7"], 6: ["u9", "u11", "u10"], 9: ["u9", "u11", "u10"] };
+    for (const [round, gift] of Object.entries(pre916)) expect(apply({ ...ready(Number(round)), rules: old }, { kind: "buy", slot: 0 }).gift).toEqual(gift);
   });
 
   it("only the awakening copy gives one: not a first buy, not a 2nd copy, not a 4th, not a fused unit's copy", () => {
