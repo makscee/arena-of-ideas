@@ -1335,7 +1335,7 @@ export function captionOf(log: BattleEvent[], id: number, name: NameOf = display
       return `${fellToFatigue(log, e) ? "Fatigue" : causeName(log, e, name)} → ${name(e.unit)} falls`;
     case "Summon":
       return e.resurrected
-        ? `${causeName(log, e, name)} → ${name(e.unit)} returns at ${e.atHp ?? e.hp} HP`
+        ? `${causeName(log, e, name)} → ${name(e.unit)} returns${e.slot !== undefined ? " to its place" : ""} at ${e.atHp ?? e.hp} HP`
         : `${causeName(log, e, name)} → ${e.name} appears (${e.pwr}/${e.hp})`;
     case "Silenced":
       return `${causeName(log, e, name)} → ${name(e.unit)} is silenced`;
@@ -1388,7 +1388,7 @@ function captionOfRu(log: BattleEvent[], e: BattleEvent, name: NameOf, merged: n
       return `${fellToFatigue(log, e) ? "Усталость" : causeName(log, e, name)} → ${name(e.unit)} падает`;
     case "Summon":
       return e.resurrected
-        ? `${causeName(log, e, name)} → ${name(e.unit)} возвращается с ${e.atHp ?? e.hp} ${RU_STAT.hp}`
+        ? `${causeName(log, e, name)} → ${name(e.unit)} возвращается${e.slot !== undefined ? " на своё место" : ""} с ${e.atHp ?? e.hp} ${RU_STAT.hp}`
         : `${causeName(log, e, name)} → ${e.name} появляется (${e.pwr}/${e.hp})`;
     case "Silenced":
       return `${causeName(log, e, name)} → ${name(e.unit)} заглушён`;

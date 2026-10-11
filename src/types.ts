@@ -153,7 +153,7 @@ export type Effect =
   | { kind: "consumeStacks"; status?: string; stacks: Amount } // status omitted = the owning status
   | { kind: "summon"; unit: UnitDef } // at the front of the target's team; a full line logs NoRoom instead
   | { kind: "silence" } // remove all statuses, disable the unit's own abilities for the battle
-  | { kind: "resurrect"; hp: Amount } // revive the (dead) target at N hp, back of line; a full line logs NoRoom
+  | { kind: "resurrect"; hp: Amount } // revive the (dead) target at N hp, back of line (BattleInput.reviveInPlace: where it fell); a full line logs NoRoom
   // interceptor-context atoms — transform/cancel the proposed event
   | { kind: "cancel"; consumeSelf?: number } // cancel the event; optionally consume own stacks
   | { kind: "absorbHurt" } // reduce a proposed Hurt by min(own stacks, amount); consume = absorbed
@@ -217,6 +217,9 @@ export type EventBody =
       atHp?: number;
       // the unit entered at the front of its line; absent = at the back (revives, and summons in logs before R3)
       front?: boolean;
+      // a revive's index in its line: where it fell, clamped to the line's length (#918);
+      // absent on revives in older logs, which returned at the back
+      slot?: number;
     }
   | { type: "StatusApplied"; unit: string; status: string; stacks: number; total: number }
   | { type: "StatusRemoved"; unit: string; status: string; stacks: number; remaining: number }
@@ -272,4 +275,9 @@ export interface BattleInput {
    * room (a NoRoom event) past it. Teams still enter with at most TEAM_SIZE.
    * Omitted = TEAM_SIZE. */
   lineCap?: number;
+  /** A revive returns the unit to its index in the line at death, clamped to
+   * the line's length (#918), and its Summon event says `slot`. Omitted =
+   * the back of the line, as fights before it had (the desktop ladder and
+   * its goldens re-sim those). */
+  reviveInPlace?: boolean;
 }

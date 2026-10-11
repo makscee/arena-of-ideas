@@ -1,5 +1,5 @@
 // R3 (#642): a summon enters at the FRONT of its line, so it acts at once.
-// Revives still return at the back. The Summon event says `front: true`, and
+// Revives still return at the back, unless BattleInput.reviveInPlace (#918). The Summon event says `front: true`, and
 // boardAt honours it, so logs written before R3 still replay at the back.
 import { describe, expect, test } from "vitest";
 import { battle, TEAM_SIZE } from "./battle.js";

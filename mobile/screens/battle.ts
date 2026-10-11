@@ -170,7 +170,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   // deaths and summons always, rising in pitch along a chain.
   const cues = beats.map((b) => beatCues(b, log));
   const lineupMs = battle.kind === "crown" ? CROWN_LINEUP_MS : LINEUP_MS;
-  /** Units a Summon put at the front of their line (R3-22); revives go to the back. */
+  /** Units a Summon put at the front of their line (R3-22); revives return where they fell (#918). */
   const frontSummons = new Set(log.flatMap((e) => (e.type === "Summon" && e.front ? [e.unit] : [])));
   /** The first beat with fatigue, for its banner. */
   const fatigueBeat = weights.findIndex((w) => w.fatigue);
@@ -1248,9 +1248,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       const was = new Map([...row.querySelectorAll<HTMLElement>(".bv-slot")].map((sl) => [sl.querySelector<HTMLElement>(".bv-card")?.dataset.unit ?? "", sl.getBoundingClientRect().left]));
       if (closing) fadeCleared(row, cards);
       row.replaceChildren(...cards);
-      // A summon entering at the front this wave pushes the line back a slot: each card slides from where it stood.
+      // A summon entering at the front this wave, or a revive back in its place
+      // (#918), pushes the cards behind it back a slot: each slides from where it stood.
       const newest = v.waves.at(-1);
-      const push = !!newest && newest.age !== null && !reduced() && newest.step.changes.some((c) => c.kind === "summon" && frontSummons.has(c.unit) && sides.get(c.unit) === side);
+      const push = !!newest && newest.age !== null && !reduced() && newest.step.changes.some((c) => c.kind === "summon" && sides.get(c.unit) === side);
       for (const sl of row.querySelectorAll<HTMLElement>(".bv-slot:not(.bv-enter)")) {
         const id = sl.querySelector<HTMLElement>(".bv-card")?.dataset.unit ?? "";
         const x0 = was.get(id);

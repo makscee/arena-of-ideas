@@ -73,6 +73,10 @@ export interface MvpRules {
    * though the team still enters with at most `lineSize`. Runs stored before
    * it have no field and keep the kernel's TEAM_SIZE (5). */
   battleSize?: number;
+  /** A revive returns the unit to where it fell in the line (#918,
+   * BattleInput.reviveInPlace). Runs stored before it have no field and keep
+   * revives at the back, so their next fights play as their first did. */
+  reviveInPlace?: boolean;
   /** Per-fight Elo (docs/round2/rating.md): K falls with runs played. A
    * player with fewer than `runsBelow` runs (the first step that fits) uses
    * its `k`; past every step, `ratingK`. Steps rather than an Infinity bound,
@@ -133,6 +137,7 @@ export const MVP_RULES: MvpRules = {
   chainStepCap: 32,
   suddenDeathAt: 20,
   battleSize: 8,
+  reviveInPlace: true,
   ratingKSteps: [{ runsBelow: 5, k: 32 }, { runsBelow: 15, k: 16 }],
   ratingK: 10,
   ratingStart: 1000,
