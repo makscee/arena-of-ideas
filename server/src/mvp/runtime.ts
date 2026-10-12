@@ -40,6 +40,8 @@ export interface MvpDeps {
   hooks?: RunHooks[];
   /** Serves /dev/* (main.ts: MVP_DEV=1); without it they answer 404. */
   dev?: boolean;
+  /** Serves the test scenes, /dev/scenes (#1026, main.ts: ARENA_SCENES=1, only with MVP_DEV=1 on :memory:). */
+  scenes?: boolean;
   /** Invite-only (slice 13, main.ts: MVP_INVITES=1): players come from
    * invite links and session tokens, and only admin invites see /dev/*. */
   invites?: boolean;
@@ -65,6 +67,7 @@ export interface MvpDeps {
 
 export interface MvpRuntime extends RunDeps {
   dev: boolean;
+  scenes: boolean;
   invites: boolean;
   open: boolean;
   tuner: { night: Tuner; dev: Tuner };
@@ -95,6 +98,7 @@ export function mvpRuntime(deps: MvpDeps): MvpRuntime {
     nameFusion: deps.nameFusion ?? naming.nameFusion,
     peekFusionName: naming.peek,
     dev: deps.dev ?? false,
+    scenes: (deps.dev ?? false) && (deps.scenes ?? false),
     invites: deps.invites ?? false,
     open: (deps.invites ?? false) && (deps.open ?? false),
     tuner: deps.tuner ?? { night: childTuner("full"), dev: childTuner("quick") },

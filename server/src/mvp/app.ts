@@ -21,6 +21,7 @@ import { championSvg, shareLang, sharePng, unitSvg } from "./share.js";
 import { statsView } from "./stats.js";
 import { attachEmail, EMAIL_STARTS_PER_ADDRESS_HOUR, EMAIL_STARTS_PER_HOUR, EmailRefused, emailRequired, emailStatus, FakeMailer, startEmailLogin, verifyEmailLogin } from "./email.js";
 import { FakeTelegram, pollTelegramLogin, startTelegramLogin, TELEGRAM_STARTS_PER_HOUR, TelegramRefused } from "./telegram.js";
+import { sceneById, SceneMissing, sceneList } from "./scenes.js";
 import { candidateScores, castVote, fakeVotes, nextCard, overnightCheck, seedCandidate, waitingForCheck } from "./votes.js";
 
 /** New players the open join link (R4-20) makes per hour, server-wide. */
@@ -490,6 +491,18 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     return c.json(myIdeas(rt, p.id));
   });
   api.post("/dev/fake-votes", (c) => c.json(fakeVotes(rt)));
+  // #1026: the test scenes, on a scenes server only (ARENA_SCENES=1, main.ts).
+  api.get("/dev/scenes", (c) => (rt.scenes ? c.json(sceneList()) : bad(c, 404, "not found")));
+  api.post("/dev/scenes/:id", async (c) => {
+    const scene = rt.scenes ? sceneById(c.req.param("id")) : undefined;
+    if (!scene) return bad(c, 404, rt.scenes ? "no such scene" : "not found");
+    try {
+      return c.json(await scene.build(rt));
+    } catch (err) {
+      if (err instanceof SceneMissing) return bad(c, 409, err.message);
+      throw err;
+    }
+  });
   api.get("/dev/candidates", (c) => c.json(candidateScores(rt)));
 
   const app = new Hono();
