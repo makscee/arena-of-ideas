@@ -1667,6 +1667,20 @@ const inviteCode = new URLSearchParams(location.hash.slice(1)).get("invite");
  * link, so a bookmark keeps working. A bad or rotated code shows the invite
  * screen. */
 const joinCode = new URLSearchParams(location.hash.slice(1)).get("join");
+/** `#battle=<id>` (mission 1007 follow-up): open one recorded battle in the
+ * viewer straight away, no sign-in, so a change to the battle view can be
+ * judged from a list of links. Battles are public by id (GET /battles/:id);
+ * a slay still hidden today answers 404, as in the playoff panel. */
+const battleLink = new URLSearchParams(location.hash.slice(1)).get("battle");
+function openBattleLink(id: string): void {
+  const err = errorLine();
+  void guarded(err, async () => {
+    const [battle, content] = await Promise.all([api.battle(id), getContent()]);
+    battleScreen({ battle, content, onDone: () => location.reload() });
+  }).then(() => {
+    if (err.textContent) show(h("h1", {}, "Battle " + id), err);
+  });
+}
 const dropInvite = () => {
   const url = new URL(location.href);
   url.hash = "";
@@ -1781,10 +1795,12 @@ initSound();
 // fragment, which reloads nothing: start over so the link opens.
 addEventListener("hashchange", () => {
   const hash = new URLSearchParams(location.hash.slice(1));
-  if (hash.has("invite") || hash.has("join")) location.reload();
+  if (hash.has("invite") || hash.has("join") || hash.has("battle")) location.reload();
 });
 
-if (inviteCode) {
+if (battleLink) {
+  openBattleLink(battleLink);
+} else if (inviteCode) {
   openInvite(inviteCode);
 } else if (joinCode) {
   openJoinLink(joinCode);
