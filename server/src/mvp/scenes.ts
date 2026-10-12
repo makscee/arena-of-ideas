@@ -44,6 +44,9 @@ export interface Scene {
   look: string;
   /** Desktop gets its own link where its layout differs from the phone's. */
   desktop: boolean;
+  /** A view only (a battle, a run's end) of a state that takes many runs to
+   * reach: built once, at the server's start (warmScenes), and kept. */
+  keep?: boolean;
   build: (rt: MvpRuntime) => SceneBuilt | Promise<SceneBuilt>;
 }
 
@@ -81,6 +84,8 @@ async function playTo(rt: MvpRuntime, stop: (run: MvpRunState) => boolean, what:
       decide(rt, run, d);
       run = rt.store.run(run.runId)!;
     }
+    // A rare state takes many runs: let requests through between them.
+    await new Promise((r) => setImmediate(r));
   }
   throw new SceneMissing(`no run reached ${what} in ${tries} tries`);
 }
@@ -137,16 +142,16 @@ export const SCENES: Scene[] = [
     build: async (rt) => shop(await playTo(rt, (r) => r.phase === "shop" && !r.gift && botDecision(r, rt.contentFor(r.contentVersion), rt.rules, 9).kind === "fuse", "two Awoken to fuse", 80)),
   },
 
-  { id: "battle-win", group: "Battle", title: "A battle you win", look: "Pacing, beams, the ledger, the end card", desktop: true, build: battleOf("round", "win") },
-  { id: "battle-loss", group: "Battle", title: "A battle you lose", look: "The loss end card, hearts lost", desktop: true, build: battleOf("round", "loss") },
-  { id: "battle-draw", group: "Battle", title: "A draw", look: "The draw end card", desktop: true, build: battleOf("round", "draw") },
-  { id: "battle-ledger", group: "Battle", title: "The ledger, paused mid-battle", look: "Stepped a few beats and paused: the turn ledger readable?", desktop: true, build: battleOf("round", "win", ["Space", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight"]) },
+  { id: "battle-win", keep: true, group: "Battle", title: "A battle you win", look: "Pacing, beams, the ledger, the end card", desktop: true, build: battleOf("round", "win") },
+  { id: "battle-loss", keep: true, group: "Battle", title: "A battle you lose", look: "The loss end card, hearts lost", desktop: true, build: battleOf("round", "loss") },
+  { id: "battle-draw", keep: true, group: "Battle", title: "A draw", look: "The draw end card", desktop: true, build: battleOf("round", "draw") },
+  { id: "battle-ledger", keep: true, group: "Battle", title: "The ledger, paused mid-battle", look: "Stepped a few beats and paused: the turn ledger readable?", desktop: true, build: battleOf("round", "win", ["Space", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight"]) },
 
   { id: "crown", group: "Crown & day", title: "The Crown fight is next", look: "After round 12: the champion's team, the Crown button", desktop: true, build: async (rt) => shop(await playTo(rt, (r) => r.phase === "crown", "the Crown", 80)) },
-  { id: "crown-fight", group: "Crown & day", title: "The Crown fight, lost", look: "Your team against the champion", desktop: true, build: battleOf("crown", "loss") },
-  { id: "slay", group: "Crown & day", title: "A slay (the Crown won)", look: "Beating the champion: the battle and its end", desktop: true, build: battleOf("crown", "win") },
+  { id: "crown-fight", keep: true, group: "Crown & day", title: "The Crown fight, lost", look: "Your team against the champion", desktop: true, build: battleOf("crown", "loss") },
+  { id: "slay", keep: true, group: "Crown & day", title: "A slay (the Crown won)", look: "Beating the champion: the battle and its end", desktop: true, build: battleOf("crown", "win") },
   {
-    id: "day-end", group: "Crown & day", title: "Day end with a playoff", look: "'The day ended' notice, the playoff panel, the new champion", desktop: true,
+    id: "day-end", keep: true, group: "Crown & day", title: "Day end with a playoff", look: "'The day ended' notice, the playoff panel, the new champion", desktop: true,
     build: async (rt) => {
       await world(rt);
       if (dayEnded === null) {
@@ -163,9 +168,9 @@ export const SCENES: Scene[] = [
     },
   },
 
-  { id: "run-won", group: "Run end", title: "Run over: the Crown won", look: "The run's end: record, rating change, New run", desktop: true, build: ended(["crown-won"]) },
-  { id: "run-crown-lost", group: "Run end", title: "Run over: the Crown lost", look: "Reached the Crown, lost it", desktop: false, build: ended(["crown-lost"]) },
-  { id: "run-out", group: "Run end", title: "Run over: out of hearts", look: "The run's end with no hearts left", desktop: true, build: ended(["out-of-hearts"]) },
+  { id: "run-won", keep: true, group: "Run end", title: "Run over: the Crown won", look: "The run's end: record, rating change, New run", desktop: true, build: ended(["crown-won"]) },
+  { id: "run-crown-lost", keep: true, group: "Run end", title: "Run over: the Crown lost", look: "Reached the Crown, lost it", desktop: false, build: ended(["crown-lost"]) },
+  { id: "run-out", keep: true, group: "Run end", title: "Run over: out of hearts", look: "The run's end with no hearts left", desktop: true, build: ended(["out-of-hearts"]) },
 
   {
     id: "ideas", group: "Ideas", title: "My ideas", look: "Ideas held, refill line, sent ideas at different stages", desktop: true,
@@ -217,6 +222,30 @@ export const SCENES: Scene[] = [
 ];
 
 export const sceneById = (id: string): Scene | undefined => SCENES.find((s) => s.id === id);
+
+const kept = new Map<string, Promise<SceneBuilt>>();
+/** Builds a scene: a kept one once (a failed build is tried again next time). */
+export function buildScene(rt: MvpRuntime, scene: Scene): Promise<SceneBuilt> {
+  if (!scene.keep) return Promise.resolve(scene.build(rt));
+  let built = kept.get(scene.id);
+  if (!built) {
+    built = Promise.resolve(scene.build(rt));
+    kept.set(scene.id, built);
+    built.catch(() => kept.delete(scene.id));
+  }
+  return built;
+}
+
+/** Builds the kept scenes one by one in the background, so their links open at once. */
+export async function warmScenes(rt: MvpRuntime): Promise<void> {
+  for (const s of SCENES.filter((x) => x.keep)) {
+    const started = Date.now();
+    await buildScene(rt, s).then(
+      () => console.log(`[scenes] ${s.id} ready in ${Date.now() - started} ms`),
+      (err) => console.warn(`[scenes] ${s.id} failed: ${(err as Error).message}`),
+    );
+  }
+}
 
 /** The table without builders, for GET /dev/scenes, the index and the check. */
 export const sceneList = () => SCENES.map(({ id, group, title, look, desktop }) => ({ id, group, title, look, desktop }));

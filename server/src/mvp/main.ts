@@ -50,7 +50,7 @@ import { MVP_RULES } from "../../../src/mvp/contract.js";
 import { mvpRuntime } from "./runtime.js";
 import { buildOf, mvpServerApp, underBasePath } from "./server.js";
 import { shareMeta } from "./share.js";
-import { checkScenesEnv } from "./scenes.js";
+import { checkScenesEnv, warmScenes } from "./scenes.js";
 import { SqliteMvpStore } from "./sqlite-store.js";
 import { FakeMailer, mailFromEnv } from "./email.js";
 import { FakeTelegram, telegramFromEnv } from "./telegram.js";
@@ -83,4 +83,5 @@ const app = mvpServerApp(createMvpApp(rt), { staticRoot: root, build, pageMeta: 
 
 serve({ port, hostname: host, fetch: underBasePath(app, basePath) });
 startMvpJobs(rt);
+if (rt.scenes) void warmScenes(rt);
 console.log(`arena mvp on http://${host}:${port} (base ${basePath}, build ${build ?? "unknown"}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""}${rt.scenes ? ", scenes" : ""}${tuner ? ", instant tuner" : ""}${rt.rotation ? ", rotation on" : ""}${rt.invites ? (rt.open ? ", open to all" : ", invite-only") : ""}${telegram ? (telegram instanceof FakeTelegram ? ", fake telegram" : `, telegram @${telegram.bot}`) : ""}${mail ? (mail instanceof FakeMailer ? ", fake mail" : ", mail") : ""})`);
