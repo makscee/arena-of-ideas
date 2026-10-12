@@ -1,5 +1,5 @@
 {
-  "files": ["discover", "draw", "freeze", "fuse", "move-left", "move-right", "reroll", "start", "status", "status-off", "turn", "unfreeze", "wrong"],
+  "files": ["discover", "draw", "freeze", "fuse", "heal", "move-left", "move-right", "reroll", "start", "status", "status-off", "turn", "unfreeze", "wrong"],
   "tiers": {"ui": -22, "shop": -18, "battle": -17, "jingle": -14},
   "cues": {
     "click": {"file": "move-right", "rate": 1.3, "tier": "ui", "prio": 0, "gain": 0.87},
@@ -20,6 +20,7 @@
     "zap": {"file": "wrong", "rate": 1.15, "tier": "battle", "prio": 5, "gain": 0.86},
     "block": {"file": "status-off", "rate": 0.8, "tier": "battle", "prio": 4, "gain": 0.6},
     "shield": {"file": "status", "rate": 0.85, "tier": "battle", "prio": 3, "gain": 0.58},
+    "heal": {"file": "heal", "rate": 1, "tier": "battle", "prio": 3, "gain": 0.58},
     "buff": {"file": "turn", "rate": 1.1, "tier": "battle", "prio": 3, "gain": 1.27},
     "debuff": {"file": "reroll", "rate": 0.85, "tier": "battle", "prio": 3, "gain": 0.89},
     "status": {"file": "status", "rate": 1.1, "tier": "battle", "prio": 2, "gain": 0.58},

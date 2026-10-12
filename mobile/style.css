@@ -96,6 +96,7 @@
   --k-heal: #5cc98a;
   --k-str: #f0a34e;
   --k-curse: #d877b4;
+  --k-status: #b78ee6;
   --k-poison: #a98be0;
   --k-freeze: #7cc7e6;
   --k-bless: #f2d27a;
@@ -561,23 +562,29 @@ button.bv-badge.past { z-index: 2; }
 .bv-card.bv-hit { animation: bv-shake calc(0.4s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-t, 0s)) / var(--bv-sp, 1)); }
 /* A big hit (4+ damage) shakes harder (round 3, note 14). */
 .bv-card.bv-hit.bv-big { animation-name: bv-shake-big; }
-.bv-card.bv-flash-hit::after, .bv-card.bv-glow::after { content: ""; position: absolute; inset: 0; pointer-events: none; animation: bv-flash calc(0.4s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
-.bv-card.bv-flash-hit::after { background: var(--them); }
-.bv-card.bv-glow::after { background: var(--you); }
+.bv-card.bv-flash-hit::after { content: ""; position: absolute; inset: 0; pointer-events: none; animation: bv-flash calc(0.4s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
+.bv-card.bv-flash-hit::after { background: var(--k-dmg); }
+/* Effect language (mission 1007, #1011; ui/effects.ts LANGUAGE): a heal's green glow rises through the card. */
+.bv-card.bv-heal::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to top, color-mix(in srgb, var(--k-heal) 80%, transparent), transparent 33%) 0 150% / 100% 300% no-repeat; animation: bv-heal-rise calc(0.7s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
+@keyframes bv-heal-rise { 0% { background-position: 0 150%; } 100% { background-position: 0 0; } }
 /* A killing blow: the shake plays out, the card stands still for 120 ms,
  * then it pops, large, and dims (--bv-dt starts the pop after the shake and
  * the freeze; its fill holds back until then), while a skull bursts. */
-.bv-card.bv-dying { animation: bv-die calc(0.5s / var(--bv-sp, 1)) ease-out calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) forwards; }
-.bv-card.bv-hit.bv-dying { animation: bv-shake calc(0.4s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-t, 0s)) / var(--bv-sp, 1)), bv-die calc(0.5s / var(--bv-sp, 1)) ease-out calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) forwards; }
+.bv-card.bv-dying { animation: bv-die calc(0.5s / var(--bv-sp, 1)) ease-in calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) both; }
+.bv-card.dead { filter: grayscale(1); transform: translateY(8px); }
+.bv-card.dead.bv-dying { filter: none; transform: none; }
+.bv-card.bv-hit.bv-dying { animation: bv-shake calc(0.4s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-t, 0s)) / var(--bv-sp, 1)), bv-die calc(0.5s / var(--bv-sp, 1)) ease-in calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) both; }
 .bv-card.bv-hit.bv-big.bv-dying { animation-name: bv-shake-big, bv-die; }
-.bv-skull { position: absolute; z-index: 4; left: 50%; top: 40%; translate: -50% -50%; display: flex; pointer-events: none; opacity: 0; filter: drop-shadow(0 0 4px var(--ground)); animation: bv-skull calc(0.6s / var(--bv-sp, 1)) ease-out calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) both; }
-@keyframes bv-skull { 0% { opacity: 0; transform: scale(0.4); } 30% { opacity: 1; transform: scale(1.5); } 70% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0; transform: scale(1.3); } }
+.bv-skull { position: absolute; z-index: 4; left: 50%; top: 40%; translate: -50% -50%; display: flex; pointer-events: none; opacity: 0; font-size: 26px; line-height: 26px; font-weight: 800; color: var(--text); text-shadow: 0 0 4px var(--ground), 0 0 2px var(--ground); animation: bv-skull calc(0.6s / var(--bv-sp, 1)) ease-out calc(var(--bv-dt, 0s) / var(--bv-sp, 1)) both; }
+@keyframes bv-skull { 0% { opacity: 0; transform: translateY(-4px); } 30% { opacity: 1; transform: translateY(0); } 70% { opacity: 1; transform: translateY(6px); } 100% { opacity: 0; transform: translateY(10px); } }
 /* A summoned unit slides in from the clash side: on the phone theirs from
  * below, yours from above (the caption between the lines); on desktop from
  * the middle. */
 .bv-slot.bv-enter { animation: bv-enter calc(0.45s / var(--bv-sp, 1)) ease-out calc(var(--bv-t, 0s) / var(--bv-sp, 1)) both; }
-.bv-line.theirs .bv-slot.bv-enter { --enter: 0 28px; }
-.bv-line.mine .bv-slot.bv-enter { --enter: 0 -28px; }
+.bv-slot.bv-enter { --enter: 0 14px; }
+/* A summon or revive rises from below inside a gold ring (#1011). */
+.bv-slot.bv-enter::after { content: ""; position: absolute; inset: -3px; border: 2.5px solid var(--action); border-radius: calc(var(--radius, 8px) + 3px); pointer-events: none; animation: bv-ring-out calc(0.6s / var(--bv-sp, 1)) ease-out calc(var(--bv-t, 0s) / var(--bv-sp, 1)) both; }
+@keyframes bv-ring-out { 0% { opacity: 0; transform: scale(1.35); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1); } }
 @keyframes bv-enter { from { opacity: 0; translate: var(--enter, 0 0); } to { opacity: 1; translate: 0 0; } }
 /* The big moment's title over the board (note 14): "Crown fight" over the
  * line-up, "Fatigue" as it first sets in; --bv-bn is its length at 1×. */
@@ -601,10 +608,12 @@ button.bv-badge.past { z-index: 2; }
 @keyframes bv-lunge-up { 40% { transform: translateY(-14px) scale(1.06); } }
 @keyframes bv-lunge-down { 40% { transform: translateY(14px) scale(1.06); } }
 @keyframes bv-pulse { 40% { transform: scale(1.08); } }
-@keyframes bv-shake { 20% { transform: translateX(-4px); } 40% { transform: translateX(4px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
-@keyframes bv-shake-big { 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+/* A hit knocks the card back, away from the other line (--bv-kd: 1 down for yours, -1 up for theirs), then it settles. */
+@keyframes bv-shake { 20% { transform: translateY(calc(var(--bv-kd, 1) * 6px)); } 50% { transform: translateY(calc(var(--bv-kd, 1) * 4px)); } 80% { transform: translateY(calc(var(--bv-kd, 1) * -1px)); } }
+@keyframes bv-shake-big { 20% { transform: translateY(calc(var(--bv-kd, 1) * 9px)); } 50% { transform: translateY(calc(var(--bv-kd, 1) * 6px)); } 80% { transform: translateY(calc(var(--bv-kd, 1) * -2px)); } }
 @keyframes bv-flash { from { opacity: 0.45; } to { opacity: 0; } }
-@keyframes bv-die { 0% { opacity: 1; transform: scale(1.25); } 100% { opacity: 0.4; transform: none; } }
+/* Death: held as it was (the freeze), then it greys and drops 8 px, a ghost until the turn ends. */
+@keyframes bv-die { 0% { opacity: 1; filter: none; } 100% { opacity: 0.5; filter: grayscale(1); transform: translateY(8px); } }
 @keyframes bv-rise { 0% { opacity: 0; transform: translateY(8px); } 12% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
 /* A shorter rise (R2-17), so a float stays in its room: above the card on desktop (clear of the side's label), over the emoji on the phone. */
 @keyframes bv-rise-short { 0% { opacity: 0; transform: translateY(var(--rise, 6px)); } 12% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(calc(-1 * var(--rise, 6px))); } }
@@ -612,12 +621,45 @@ button.bv-badge.past { z-index: 2; }
 /* Reduced motion: nothing moves. The hit card gets a ring, a healed or
  * buffed one a soft one; the chips hold the numbers in place, and the
  * caption lists every change of the beat (.bv-still). */
+/* Effects over the board (#1011): damage drops, heal rises, a block pops a bubble, a status flies in. */
+.bv-fxnums { position: fixed; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
+.bv-fxn { position: absolute; translate: -50% -50%; display: inline-flex; align-items: center; gap: 2px; font-family: var(--font-num); font-size: 21px; font-weight: 800; line-height: 22px; white-space: nowrap; text-shadow: 0 0 3px var(--ground), 0 0 2px var(--ground), 0 1px 0 var(--ground); }
+.bv-fxn.damage { color: var(--k-dmg); }
+.bv-fxn.heal { color: var(--k-heal); }
+.bv-fxn.blocked, .bv-fxn.debuff { color: var(--dim); }
+.bv-fxn.summon, .bv-fxn.buff { color: var(--action); }
+.bv-fxn.status { color: var(--k-status); }
+.bv-fxn.death { color: var(--k-silence); }
+.bv-fxn.summon { font-family: var(--font-body); font-size: 14px; }
+.bv-fxn.damage.big { scale: 1.35; }
+.bv-fxn.damage { animation: bv-fx-drop calc(0.9s / var(--bv-sp, 1)) ease-in calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
+.bv-fxn.heal, .bv-fxn.summon { animation: bv-fx-rise calc(0.9s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
+.bv-fxn.blocked { animation: bv-fx-pop calc(0.8s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
+@keyframes bv-fx-drop { 0% { opacity: 0; transform: translateY(-8px); } 15% { opacity: 1; transform: none; } 65% { opacity: 1; } 100% { opacity: 0; transform: translateY(14px); } }
+@keyframes bv-fx-rise { 0% { opacity: 0; transform: translateY(10px); } 15% { opacity: 1; transform: none; } 65% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
+@keyframes bv-fx-pop { 0% { opacity: 0; transform: scale(0.6); } 20% { opacity: 1; transform: scale(1.15); } 35% { transform: none; } 75% { opacity: 1; } 100% { opacity: 0; } }
+.bv-fxb { position: absolute; translate: -50% -50%; width: 46px; height: 46px; border-radius: 50%; border: 2.5px solid var(--k-shield); background: color-mix(in srgb, var(--k-shield) 22%, transparent); box-shadow: 0 0 8px var(--k-shield); animation: bv-fx-bubble calc(0.7s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
+@keyframes bv-fx-bubble { 0% { opacity: 0; transform: scale(0.5); } 25% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0; transform: scale(1.2); } }
+.bv-fxfly { position: absolute; display: inline-flex; align-items: center; gap: 1px; padding: 1px 4px; border-radius: 9px; font-family: var(--font-num); font-size: 12px; font-weight: 800; line-height: 14px; background: color-mix(in srgb, var(--ground) 85%, transparent); border: 1.5px solid currentColor; will-change: transform; }
+.bv-fxfly b { color: var(--text); }
+/* A status chip lands as the icon's flight ends; the row pulses. */
+.bv-st.bv-st-new { animation: bv-st-land calc(0.35s / var(--bv-sp, 1)) ease-out calc((0.34s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
+@keyframes bv-st-land { 0% { opacity: 0; transform: scale(0.3); } 60% { opacity: 1; transform: scale(1.45); } 100% { opacity: 1; transform: none; } }
+/* Buff and debuff live on the card's own digit: it grows and turns gold, or shrinks and turns grey, and stays so until the turn ends. */
+.card .stats:not(.big) > .bv-up { background: var(--action); color: var(--outline); }
+.card .stats:not(.big) > .bv-down { background: var(--dim); color: var(--outline); }
+.card .stats > .bv-pop-up { display: inline-block; animation: bv-pop-up calc(0.7s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
+.card .stats > .bv-pop-down { display: inline-block; animation: bv-pop-down calc(0.7s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
+@keyframes bv-pop-up { 0% { transform: scale(1); } 30% { transform: scale(1.5); } 100% { transform: scale(1); } }
+@keyframes bv-pop-down { 0% { transform: scale(1); } 30% { transform: scale(0.65); } 100% { transform: scale(1); } }
 .bv-stillbox { flex: 0 1 auto; min-height: 0; overflow-y: auto; }
 .bv-still { display: flex; flex-wrap: wrap; gap: 0 8px; font-size: 13px; font-family: var(--font-num); }
 @media (prefers-reduced-motion: reduce) {
   .bv-card, .bv-card.bv-lunge-up, .bv-card.bv-lunge-down, .bv-card.bv-pulse, .bv-card.bv-hit, .bv-card.bv-dying { animation: none; transition: none; }
-  .bv-card.bv-flash-hit::after, .bv-card.bv-glow::after { animation: none; background: none; opacity: 1; box-shadow: 0 0 0 2px var(--them) inset; }
-  .bv-card.bv-glow::after { box-shadow: 0 0 0 2px var(--you) inset; }
+  .bv-card.bv-flash-hit::after, .bv-card.bv-heal::after { animation: none; background: none; opacity: 1; box-shadow: 0 0 0 2px var(--k-dmg) inset; }
+  .bv-card.bv-heal::after { box-shadow: 0 0 0 2px var(--k-heal) inset; }
+  .bv-card.dead.bv-dying { filter: grayscale(1); transform: translateY(8px); }
+  .bv-st.bv-st-new, .card .stats > .bv-pop-up, .card .stats > .bv-pop-down, .bv-slot.bv-enter::after { animation: none; }
   .bv-float, .bv-skull { display: none; }
   .bv-slot.bv-enter, .bv-banner.on { animation: none; }
   button.bv-badge .bv-badge-pill { animation: none; }
@@ -642,15 +684,22 @@ button.bv-badge.past { z-index: 2; }
 /* No Toybox drop or radius: its shadow drew a dark band through the name under the chip (#893). */
 button.bv-change { flex: 1; min-width: 0; min-height: 44px; height: 44px; padding: 0 2px; border: none; border-radius: 0; background: transparent; box-shadow: none; translate: none; clip-path: none; display: flex; align-items: center; justify-content: center; letter-spacing: 0; text-transform: none; }
 .bv-pill { max-width: 100%; height: 28px; line-height: 26px; padding: 0 5px; border: 1px solid; border-radius: 4px; background: var(--ground); font-family: var(--font-num); font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bv-change.damage .bv-pill, .bv-change.death .bv-pill, .bv-change.debuff .bv-pill { color: var(--them); }
-.bv-change.heal .bv-pill, .bv-change.summon .bv-pill { color: var(--you); }
-.bv-change.buff .bv-pill, .bv-change.status .bv-pill, .bv-change.silence .bv-pill, .bv-change.noRoom .bv-pill { color: var(--action); font-family: var(--font-body); font-size: 12px; padding: 0 3px; }
+.bv-change.damage .bv-pill { color: var(--k-dmg); }
+.bv-change.death .bv-pill { color: var(--k-silence); }
+.bv-change.debuff .bv-pill { color: var(--dim); }
+.bv-change.heal .bv-pill { color: var(--k-heal); }
+.bv-change.status .bv-pill { color: var(--k-status); font-family: var(--font-body); font-size: 12px; padding: 0 3px; }
+.bv-change.summon .bv-pill { color: var(--action); }
+.bv-change.buff .bv-pill, .bv-change.silence .bv-pill, .bv-change.noRoom .bv-pill { color: var(--action); font-family: var(--font-body); font-size: 12px; padding: 0 3px; }
 /* Two changes on one unit in one step: two lines in the pill, each in its kind's colour. */
 .bv-pill.two { display: flex; flex-direction: column; height: auto; min-height: 28px; line-height: 13px; padding: 1px 2px; font-family: var(--font-body); font-size: 11px; letter-spacing: -0.02em; border-color: var(--action); }
 .bv-pill.two .bv-l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.bv-l.damage, .bv-l.death, .bv-l.debuff { color: var(--them); }
-.bv-l.heal, .bv-l.summon { color: var(--you); }
-.bv-l.buff, .bv-l.status, .bv-l.silence { color: var(--action); }
+.bv-l.damage { color: var(--k-dmg); }
+.bv-l.death { color: var(--k-silence); }
+.bv-l.debuff { color: var(--dim); }
+.bv-l.heal { color: var(--k-heal); }
+.bv-l.status { color: var(--k-status); }
+.bv-l.summon, .bv-l.buff, .bv-l.silence { color: var(--action); }
 /* A turn's totals on its card (R4-12): one label, its numbers in their colours. */
 .bv-total { flex: 1; min-width: 0; height: 44px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
 .bv-pill.bv-tot { border-color: var(--dim); }
@@ -726,11 +775,18 @@ button.bv-caption.tappable::after { content: "ⓘ"; flex: none; margin-left: 4px
 .bv-strip-line { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; overflow: hidden; white-space: nowrap; line-height: 22px; }
 .bv-strip-line > * { flex: none; }
 .bv-strip-line > .bv-cn, .bv-strip-line > .bv-strip-text { flex: 0 1 auto; min-width: 3em; overflow: hidden; text-overflow: ellipsis; }
+/* The actor's name shrinks last, never under 6 characters; the target gives way first (#1011). */
+.bv-strip-line > .bv-cn:first-child { min-width: 6ch; }
+.bv-strip-line > .bv-eff ~ .bv-cn { flex-shrink: 8; }
 .bv-strip-line .bv-eff { display: inline-flex; align-items: center; }
 .bv-num { font-family: var(--font-num); font-size: 1.1em; }
-.bv-num.damage, .bv-num.death, .bv-num.debuff, .bv-eff.damage, .bv-eff.death, .bv-eff.debuff { color: var(--them); }
-.bv-num.heal, .bv-num.summon, .bv-eff.heal, .bv-eff.summon { color: var(--you); }
-.bv-num.buff, .bv-num.status, .bv-num.silence, .bv-eff.buff, .bv-eff.status, .bv-eff.silence { color: var(--action); }
+/* The strip tells each kind in the colour its effect has on the board (ui/effects.ts LANGUAGE). */
+.bv-num.damage, .bv-eff.damage { color: var(--k-dmg); }
+.bv-num.death, .bv-eff.death { color: var(--k-silence); }
+.bv-num.debuff, .bv-eff.debuff { color: var(--dim); }
+.bv-num.heal, .bv-eff.heal { color: var(--k-heal); }
+.bv-num.summon, .bv-num.buff, .bv-num.silence, .bv-eff.buff, .bv-eff.summon, .bv-eff.silence { color: var(--action); }
+.bv-num.status, .bv-eff.status { color: var(--k-status); }
 .bv-dots { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; padding-left: 8px; font-family: var(--font-num); font-size: 14px; color: var(--dim); }
 .bv-dots i { width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--action); box-sizing: border-box; }
 .bv-dots i.on { background: var(--action); }
@@ -1155,8 +1211,6 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] .bv-line.empty { align-items: center; justify-content: center; }
   #app[data-screen="battle"] .bv-slot { flex: 0 1 var(--cw); min-width: 0; }
   /* A summon slides in from the clash mark between the fronts. */
-  #app[data-screen="battle"] .bv-line.mine .bv-slot.bv-enter { --enter: 28px 0; }
-  #app[data-screen="battle"] .bv-line.theirs .bv-slot.bv-enter { --enter: -28px 0; }
   #app[data-screen="battle"] .bv-line button.bv-badge { bottom: auto; top: calc(100% + 4px); align-items: flex-start; }
   /* A card's one float rises in the line's 48 px above the card, clear of
    * the card's top (its trigger icon) and of "YOU · FRONT →" (R2-17). */

@@ -1,9 +1,11 @@
 Arena of Ideas sound effects
 
-All 13 sounds come from Duamo (makscee/duamo, Assets/Sounds), Maks's own game,
+The sounds come from Duamo (makscee/duamo, Assets/Sounds), Maks's own game,
 the same game as the music themes (void-board#922 keeps one family: Duamo's
 warm synth sounds sit with its themes; the brighter Arena of Ideas 2022 set
 was dropped):
+- heal is the exception: a synthesised two-note chime (docs/mission1007/make-heal-sfx.py),
+  so a heal never sounds like a buff.
 - discover (field_complete, cut to 2.6 s), draw (field_close), freeze
   (shape_sides_close), fuse (insert_main), move-left / move-right
   (move_attached_left/right_1), reroll (move_attached_rotate_left_1), start
