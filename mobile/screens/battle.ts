@@ -29,6 +29,7 @@ import { app, button, closable, fitText, h, isDesktop, onGone, onKeys, onLeave, 
 import { t as tr } from "../i18n";
 import { icon } from "../ui/icon";
 import { statusesShown, STATUS_ROW_FALLBACK } from "../ui/status-row";
+import { effectsOf, statNets, type Effect } from "../ui/effects";
 import { beatCues, endSound } from "../ui/sound-map";
 import { play as playSfx } from "../ui/sound";
 import { rulesLangOpt } from "../lang";
@@ -69,6 +70,8 @@ const RUN_IN_MS = 200;
 const RUN_FADE_MS = 320;
 /** A phone's running totals start this far down the card: under its icon row and its change chip (.bv-changes, 17px + 24px), so they never take the chip's tap. */
 const PHONE_RUN_TOP = 42;
+/** A status icon's flight along its beam into the status row, at 1× (the chip lands as it ends, .bv-st-new). */
+const FLY_MS = 420;
 /** A dying card's pop (bv-die), in animation ms. */
 const DIE_MS = 500;
 
@@ -269,7 +272,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   let drawnTurn: number | null = null;
 
   /** Motion runs at the playback speed (CSS reads --bv-sp), so 2× never cuts it. */
-  const setSpeedVar = () => { for (const row of [enemy, mine, clash, fx]) row.style.setProperty("--bv-sp", String(speed)); };
+  const setSpeedVar = () => { for (const row of [enemy, mine, clash, fx, fxNums]) row.style.setProperty("--bv-sp", String(speed)); };
 
   const hud = h("div", { class: "hud" });
   // A run's fight keeps the run's ☰ (Codex, Rules, Title menu, Abandon), as the shop has it.
@@ -326,6 +329,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   fx.setAttribute("class", "bv-fx");
   fx.setAttribute("aria-hidden", "true");
   fx.dataset.testid = "beams";
+  /** The effect numbers and flights (mission 1007, #1011): one fixed layer over the board; each effect
+   * is a node that plays once and removes itself, so a re-render of the board never restarts it. */
+  const fxNums = h("div", { class: "bv-fxnums", "aria-hidden": "true", "data-testid": "effects" });
+  /** The waves whose effects were drawn (by beat, wave and landing time), so a render that isn't a new wave draws none. */
+  const fxDone = new Set<string>();
   /** Each unit's running totals for the turn (R4-22): one fixed layer over
    * the board, its rows kept between renders so their numbers count. */
   const runs = h("div", { class: "bv-runs", "data-testid": "running-totals" });
@@ -1095,6 +1103,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     totals?: Map<string, UnitTurnTotals>;
     /** The units fallen this turn so far: they stand greyed until it ends (R4-22). */
     dead?: Set<string>;
+    /** Each unit's net PWR / HP stat change this turn so far: its digit stays gold or grey until the turn ends (#1011). */
+    nets?: Map<string, { pwr: number; hp: number }>;
   }
 
   /** Motion for each wave landed so far: the striker lunges, a hit target
@@ -1122,6 +1132,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       if (mine.some((c) => c.kind === "damage")) {
         move = "bv-hit";
         hitAge = age * speed;
+        // Knocked back away from the other line: your cards down, theirs up (#1011).
+        el.style.setProperty("--bv-kd", side === you ? "1" : "-1");
         // A big hit shakes harder (6 px, not 4) and its float is larger (note 14).
         el.classList.toggle("bv-big", mine.some((c) => { const e = log[c.eventId]; return e?.type === "Hurt" && e.amount >= BIG_HIT_MIN; }));
       }
@@ -1137,7 +1149,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         const start = hitAge !== null ? Math.max(-own, SHAKE_END_MS + KILL_FREEZE_MS - hitAge) : -own;
         el.classList.add("bv-dying");
         el.style.setProperty("--bv-dt", `${Math.round(start)}ms`);
-        skullsOf.set(el, h("span", { class: "bv-skull", "aria-hidden": "true", style: `--bv-dt:${Math.round(start)}ms` }, icon("death-skull", 22, "tone-enemy")));
+        skullsOf.set(el, h("span", { class: "bv-skull", "aria-hidden": "true", style: `--bv-dt:${Math.round(start)}ms` }, "✝"));
         if (hitAge === null) el.classList.remove("bv-lunge-up", "bv-lunge-down", "bv-pulse");
         move = null;
       }
@@ -1153,14 +1165,100 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         enterWait = summonWait(side, v, v.waves.findIndex((w) => w.step === step));
         enterOf.set(el, `${Math.round(-age * speed + enterWait)}ms`);
       }
-      const flash = mine.some((c) => c.kind === "damage" || c.kind === "death") ? "bv-flash-hit" : mine.some((c) => c.kind === "heal" || c.kind === "buff") ? "bv-glow" : null;
+      // A hit flashes red, a heal's green glow rises through the card; a buff or debuff leaves the card alone (its digit moves, below).
+      const flash = mine.some((c) => c.kind === "damage" || c.kind === "death") ? "bv-flash-hit" : mine.some((c) => c.kind === "heal") ? "bv-heal" : null;
       if (flash) {
-        el.classList.remove("bv-flash-hit", "bv-glow");
+        el.classList.remove("bv-flash-hit", "bv-heal");
         el.classList.add(flash);
         el.style.setProperty("--bv-ft", t);
       }
+      // The stat digit grows gold (a buff) or shrinks grey (a debuff); a status chip lands after its icon's flight.
+      if (!el.classList.contains("dead")) {
+        for (const c of mine) {
+          const e = log[c.eventId];
+          if (e?.type === "StatChanged" && (e.stat === "pwr" || e.stat === "hp")) {
+            const digit = el.querySelector<HTMLElement>(`.stats .${e.stat === "pwr" ? "p" : "h"}`);
+            digit?.classList.remove("bv-pop-up", "bv-pop-down");
+            digit?.classList.add(e.delta >= 0 ? "bv-pop-up" : "bv-pop-down");
+            digit?.style.setProperty("--bv-ft", t);
+          }
+          if (e?.type === "StatusApplied") {
+            const chip = el.querySelector<HTMLElement>(`.bv-st[data-status="${CSS.escape(e.status)}"]`);
+            chip?.classList.add("bv-st-new");
+            chip?.style.setProperty("--bv-ft", t);
+          }
+        }
+      }
+    }
+    // Gold or grey until the turn ends: the net of the turn's stat changes.
+    const net = v.nets?.get(id);
+    if (net && !el.classList.contains("dead")) {
+      for (const stat of ["pwr", "hp"] as const) {
+        if (net[stat] === 0) continue;
+        el.querySelector(`.stats .${stat === "pwr" ? "p" : "h"}`)?.classList.add(net[stat] > 0 ? "bv-up" : "bv-down");
+      }
     }
     // The numbers sum up above the card instead (R4-22, drawRuns).
+  }
+  /** The effects of each wave that just landed (mission 1007, #1011), in the fixed layer over the board:
+   * a damage "−n" that drops, a heal "+n" that rises, a blocked bubble with a grey 0, a summon's "new" and
+   * the status icon flying along the beam into the card's status row. A buff, debuff and death have no
+   * node here: their digit and card move (motion()). With reduced motion nothing moves and nothing is
+   * drawn here: the card's chip and ring carry the kind's colour and icon. */
+  function playEffects(v: View): void {
+    if (v.totals) { fxNums.replaceChildren(); return; }
+    const still = reduced();
+    v.waves.forEach(({ step, age }, i) => {
+      if (age === null || age * speed > MOTION_MS) return;
+      const key = `${at}:${i}:${Math.round(landed[i] ?? 0)}`;
+      if (fxDone.has(key)) return;
+      fxDone.add(key);
+      const beams = beamsOf(log, step, whenOf);
+      for (const e of effectsOf(step.changes, log)) drawEffect(e, still, `${-Math.round(age * speed)}ms`, beams.find((b) => b.to === e.unit && b.from !== "clash")?.from ?? step.actor ?? null);
+    });
+  }
+  function cardBox(unit: string): { box: DOMRect; card: HTMLElement } | null {
+    const card = [enemy, mine].map((r) => r.querySelector<HTMLElement>(`.bv-card[data-unit="${CSS.escape(unit)}"]`)).find((x) => x);
+    const box = (card?.parentElement ?? card)?.getBoundingClientRect();
+    return card && box && box.width > 0 ? { box, card } : null;
+  }
+  function drawEffect(e: Effect, still: boolean, delay: string, from: string | null): void {
+    const at0 = cardBox(e.unit);
+    if (!at0) return;
+    const { box, card } = at0;
+    const place = (node: HTMLElement, y = 0.3): HTMLElement => {
+      node.style.left = `${Math.round(box.left + box.width / 2)}px`;
+      node.style.top = `${Math.round(box.top + box.height * y)}px`;
+      node.style.setProperty("--bv-ft", delay);
+      fxNums.append(node);
+      if (!still) node.addEventListener("animationend", () => node.remove(), { once: true });
+      return node;
+    };
+    // Reduced motion draws nothing here: the card keeps its change chip (icon, number, the kind's colour) and its ring.
+    if (still) return;
+    if (e.kind === "damage") place(h("span", { class: `bv-fxn damage${e.big ? " big" : ""}` }, e.text ?? ""));
+    else if (e.kind === "heal") place(h("span", { class: "bv-fxn heal" }, e.text ?? ""));
+    else if (e.kind === "summon") place(h("span", { class: "bv-fxn summon" }, e.text ?? ""), 0.18);
+    else if (e.kind === "blocked") {
+      place(h("span", { class: "bv-fxb" }), 0.5);
+      place(h("span", { class: "bv-fxn blocked" }, icon("shield", 13, "tone-shield"), h("b", {}, e.text ?? "")));
+    } else if (e.kind === "status" && e.status) {
+      // The icon leaves the card that gave it and lands in this card's status row.
+      const src = from && from !== e.unit ? cardBox(from) : null;
+      const row = card.querySelector<HTMLElement>(".bv-sts")?.getBoundingClientRect();
+      const to = { x: (row && row.width > 0 ? row.left + row.width / 2 : box.left + box.width / 2), y: row && row.height > 0 ? row.top + row.height / 2 : box.bottom - 12 };
+      const start = src ? { x: src.box.left + src.box.width / 2, y: src.box.top + src.box.height / 2 } : { x: to.x, y: to.y - 26 };
+      const fly = h("span", { class: "bv-fxfly", style: `color:${STATUS_BEAM[e.status] ?? "var(--k-str)"}` }, statusMark(e.status), h("b", {}, e.text ?? ""));
+      fly.style.left = "0";
+      fly.style.top = "0";
+      fxNums.append(fly);
+      const dur = FLY_MS / speed;
+      const anim = fly.animate(
+        [{ transform: `translate(${start.x}px, ${start.y}px) translate(-50%, -50%) scale(1.3)`, opacity: 1 }, { transform: `translate(${to.x}px, ${to.y}px) translate(-50%, -50%) scale(0.9)`, opacity: 1, offset: 0.85 }, { transform: `translate(${to.x}px, ${to.y}px) translate(-50%, -50%) scale(0.6)`, opacity: 0 }],
+        { duration: dur, easing: "ease-in", delay: Number.parseFloat(delay) / speed },
+      );
+      anim.finished.then(() => fly.remove(), () => fly.remove());
+    }
   }
   /** How long (animation ms after wave `upto` landed) a summon entering
    * then waits for the cards of its line that die earlier in the beat to
@@ -1240,6 +1338,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const onScreen = new Set(shown.flatMap((w) => w.eventIds));
     const soFar = sum ? turnSoFarIds(beatIds, sum, beats.length, () => true) : turnSoFarIds(beatIds, turnSum, at, (id) => onScreen.has(id) || (id <= upto && !pending.has(id)));
     v.dead = new Set(soFar.flatMap((id) => { const e = log[id]; return e?.type === "Death" ? [e.unit] : []; }));
+    v.nets = statNets(soFar, log);
     const board = boardAt(log, upto, pending);
     shownBoard = board;
     // The fallen go back to the slots they held as the beat (or, on the totals, the turn) began.
@@ -1320,6 +1419,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     // size showed "−…" for a frame on a narrow card (R2-17 batch F).
     if (mine.isConnected) fitText(mine.parentElement ?? mine);
     drawBeams(v.waves);
+    playEffects(v);
     drawRuns(runningTotalsOf(log, soFar), turnKey, v.waves.some((w) => w.age !== null));
     // After the beams: they aim at each card's slot, not where its slide starts.
     for (const [sl, p] of slides) sl.animate([{ transform: `translateX(${p.dx}px)` }, { transform: "none" }], { duration: PUSH_MS / speed, delay: -(now - p.at), easing: "ease-out", fill: "backwards" });
@@ -1610,8 +1710,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       return { d: p.getAttribute("d") ?? "", pts: Array.from({ length: 41 }, (_, i) => p.getPointAtLength((len * i) / 40)) };
     });
     const hits = (r: DOMRect, padX = 4, padY = 2) => lines.filter((l) => l.pts.some((p) => p.x >= r.left - padX && p.x <= r.right + padX && p.y >= r.top - padY && p.y <= r.bottom + padY));
-    const cap = caption.getBoundingClientRect();
-    maskBeams(caption, cap, cap.width > 0 ? hits(cap, 6, 6).map((l) => l.d) : [], 10);
+    // The strip sits over the beam (mission 1007): it is opaque and the beam passes behind it, never through its words.
     const boxes = [...runBoxes].filter(([, b]) => b.el.style.visibility !== "hidden");
     for (const [, b] of boxes) { b.el.style.translate = ""; maskBeams(b.el, b.el.getBoundingClientRect(), [], 0); }
     for (const [unit, b] of boxes) {
@@ -2066,6 +2165,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       controls,
     ),
     fx,
+    fxNums,
     runs,
     sheet,
     end,

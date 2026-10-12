@@ -132,7 +132,7 @@ test("a Strike's Hurt hits, an ability's zaps, a fully blocked one blocks", () =
   expect(waveSound(stepOf(1, 4), log, 0)?.key).toBe("death");
 });
 
-test("Shield applied, another status, heal at 1.2, stats, removed, capped", () => {
+test("Shield applied, another status, heal (its own sound), stats, removed, capped", () => {
   const log = logOf(
     { type: "StatusApplied", unit: "a1", status: "Shield", stacks: 2, total: 2 },
     { type: "StatusApplied", unit: "a1", status: "Poison", stacks: 1, total: 1 },
@@ -145,7 +145,9 @@ test("Shield applied, another status, heal at 1.2, stats, removed, capped", () =
   );
   expect(waveSound(stepOf(0), log, 0)?.key).toBe("shield");
   expect(waveSound(stepOf(1), log, 0)?.key).toBe("status");
-  expect(waveSound(stepOf(2), log, 0)).toMatchObject({ key: "buff", rate: Math.round(cue("buff").rate * 1.2 * 1000) / 1000 });
+  // A heal never sounds like a buff (mission 1007): its own cue and file.
+  expect(waveSound(stepOf(2), log, 0)).toMatchObject({ key: "heal", rate: cue("heal").rate });
+  expect(cue("heal").file).not.toBe(cue("buff").file);
   expect(waveSound(stepOf(3), log, 0)).toMatchObject({ key: "buff", rate: cue("buff").rate });
   expect(waveSound(stepOf(4), log, 0)?.key).toBe("debuff");
   expect(waveSound(stepOf(5), log, 0)?.key).toBe("status-off");
