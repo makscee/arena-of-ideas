@@ -47,15 +47,15 @@ try {
       page.on("console", (m) => m.type() === "error" && errs.push(`console: ${m.text()}`));
       page.on("response", (r) => r.url().includes("/api/v1/") && r.status() >= 400 && errs.push(`HTTP ${r.status()} ${new URL(r.url()).pathname}`));
       const started = Date.now();
-      await page.goto(`${url}#scene=${s.id}&lang=${v.lang}`);
+      const loaded = await page.goto(`${url}#scene=${s.id}&lang=${v.lang}`, { timeout: 120_000 }).then(() => true, (e) => (errs.push(`load: ${e.message.split("\n")[0]}`), false));
       // Loaded: the screen shows something other than the scene's error line.
-      const shown = await page.waitForFunction(() => {
+      const shown = loaded && await page.waitForFunction(() => {
         const app = document.querySelector("#app");
         return app && app.textContent.trim().length > 20 && document.querySelector("#app h1, #app [data-testid], #app .card, #app canvas, #app svg");
       }, null, { timeout: 120_000 }).then(() => true, () => false);
       await page.waitForTimeout(1500);
-      const scenErr = await page.evaluate(() => [...document.querySelectorAll("#app h1")].some((h) => h.textContent.startsWith("Scene ")));
-      await page.screenshot({ path: `${out}/${s.id}-${v.name}.png` });
+      const scenErr = loaded && await page.evaluate(() => [...document.querySelectorAll("#app h1")].some((h) => h.textContent.startsWith("Scene ")));
+      if (loaded) await page.screenshot({ path: `${out}/${s.id}-${v.name}.png` });
       const ms = Date.now() - started;
       const why = [...errs, ...(shown ? [] : ["blank screen"]), ...(scenErr ? ["the scene's error line"] : [])];
       console.log(`${why.length ? "FAIL" : "ok  "} ${s.id} ${v.name} ${ms} ms${why.length ? ": " + why.join("; ") : ""}`);

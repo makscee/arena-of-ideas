@@ -62,10 +62,11 @@ launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
 launchctl bootstrap "gui/$(id -u)" "$PLIST"
 "$TS" serve --bg --set-path /arena-lab "http://127.0.0.1:$PORT" >/dev/null
 
-for _ in $(seq 1 120); do
+# Under load (m1 at 20+) the start takes minutes: it seeds the day's champion first.
+for _ in $(seq 1 300); do
   curl -fsS --max-time 2 "http://127.0.0.1:$PORT/arena-lab/api/v1/health" >/dev/null 2>&1 && break
   sleep 1
 done
-curl -fsS --max-time 5 "http://127.0.0.1:$PORT/arena-lab/api/v1/health" >/dev/null || { echo "the lab didn't answer in 2 min: $DIR/data/server.log" >&2; exit 1; }
+curl -fsS --max-time 5 "http://127.0.0.1:$PORT/arena-lab/api/v1/health" >/dev/null || { echo "the lab didn't answer in 5 min: $DIR/data/server.log" >&2; exit 1; }
 "$NODE" --import tsx/esm scripts/scenes-index.ts
 echo "lab: $BRANCH at $BUILD on https://m1.twin-pogona.ts.net/arena-lab/ (index: https://m1.twin-pogona.ts.net/r/arena-scenes.html)"
