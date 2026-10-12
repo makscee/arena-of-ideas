@@ -59,6 +59,8 @@ cat > "$PLIST" <<PL
 </dict></plist>
 PL
 launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
+# bootout returns before the old job is gone; bootstrap fails (5) until it is.
+for _ in $(seq 1 30); do launchctl print "gui/$(id -u)/$LABEL" >/dev/null 2>&1 || break; sleep 1; done
 launchctl bootstrap "gui/$(id -u)" "$PLIST"
 "$TS" serve --bg --set-path /arena-lab "http://127.0.0.1:$PORT" >/dev/null
 
