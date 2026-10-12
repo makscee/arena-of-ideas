@@ -71,7 +71,9 @@ done
 PORT="${ARENA_MVP_PORT:-8791}"
 # Slice 10's fusion namer (Qwen3-4B since round 2, R2-4): a local model behind an OpenAI-compatible
 # endpoint (mlx_lm.server), its own launchd agent so a redeploy doesn't reload
-# it. The server falls back to a portmanteau whenever it is down.
+# it. The server falls back to a portmanteau whenever it is down. The model
+# (~2.2 GB) loads only while asked (scripts/namer-on-demand.py keeps the port,
+# stops it after 10 idle minutes): asked a few minutes a day, it swapped m1.
 NAMER_PORT="${ARENA_NAMER_PORT:-8792}"
 NAMER_MODEL="${ARENA_NAMER_MODEL:-mlx-community/Qwen3-4B-Instruct-2507-4bit}"
 HOST_ALIAS="${ARENA_MVP_HOST:-m1}"
@@ -204,8 +206,8 @@ cat > "\$NPLIST.new" <<PL
 <plist version="1.0"><dict>
   <key>Label</key><string>\$NAMER</string>
   <key>ProgramArguments</key><array>
-    <string>/opt/homebrew/bin/uvx</string><string>--from</string><string>mlx-lm</string><string>mlx_lm.server</string>
-    <string>--model</string><string>$NAMER_MODEL</string><string>--host</string><string>127.0.0.1</string><string>--port</string><string>$NAMER_PORT</string>
+    <string>/opt/homebrew/bin/python3</string><string>\$DIR/scripts/namer-on-demand.py</string>
+    <string>--model</string><string>$NAMER_MODEL</string><string>--port</string><string>$NAMER_PORT</string><string>--idle</string><string>600</string>
   </array>
   <key>EnvironmentVariables</key><dict><key>PATH</key><string>/opt/homebrew/bin:/usr/bin:/bin</string></dict>
   <key>RunAtLoad</key><true/>
