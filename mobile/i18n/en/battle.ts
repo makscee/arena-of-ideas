@@ -60,6 +60,7 @@ export const battle = {
   "battle.ledger.fell": "{names} fell",
   "battle.ledger.many": "{n} units",
   "battle.ledger.empty": "Nothing yet this turn",
+  "battle.ledger.more": "↓ {n} more",
   "battle.totals.start": "Start totals",
   "battle.whyWon": "Why I won",
   "battle.whyLost": "Why I lost",

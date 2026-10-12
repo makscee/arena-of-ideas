@@ -5,14 +5,31 @@
 //   - a chip, once drawn, stays (its unit's row never loses one) until the next turn clears the list;
 // and at every turn end (controls[data-turn-end]) that the foot reads the turn's bottom line, whose
 // "dealt" and "took" equal the damage chips of the two columns, and that it stays until the next turn.
+// Nothing the eye reads is clipped (the reopened #1010): on the phone (390×844 EN, 360×740 and 360×640 RU/EN) and the desktop
+// (1536×960), on every frame
+//   - no name or chip group in a ledger row is ellipsised unless its row already spans its whole column;
+//   - a row is shown whole or not at all in the list's window (and the window holds 2 whole rows when 2 exist), a row out of the window shows the "more" hint,
+//     and the foot line is never covered by the list;
+//   - the action strip's actor keeps at least 6 characters (its whole name when shorter) and nothing in the
+//     strip runs past the line.
 // Needs `npm run mvp:build` first; starts its own local server, or uses one you give it:
 //   node e2e/battle-ledger.mjs [--url http://127.0.0.1:8911/arena/] [--rounds 3]
 import { spawn } from "node:child_process";
 import { launchChromium } from "./browser.mjs";
+import { localeOf } from "./lang.mjs";
 
 const arg = (k, d) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : d; };
 let url = arg("--url");
 const rounds = Number(arg("--rounds", "3"));
+/** Where it plays: the phone as before, a short RU phone, the desktop. */
+const SCENES = [
+  { name: "phone 390×844 EN", viewport: { width: 390, height: 844 }, lang: "en" },
+  { name: "phone 360×740 RU", viewport: { width: 360, height: 740 }, lang: "ru" },
+  { name: "phone 360×640 EN", viewport: { width: 360, height: 640 }, lang: "en" },
+  { name: "phone 360×640 RU", viewport: { width: 360, height: 640 }, lang: "ru" },
+  { name: "desktop 1536×960 EN", viewport: { width: 1536, height: 960 }, lang: "en" },
+];
+const only = arg("--scene");
 let server = null;
 if (!url) {
   const port = 19000 + Math.floor(Math.random() * 1000);
@@ -37,6 +54,56 @@ const watch = () => {
       damage: Number(r.querySelector('[data-testid="ledger-chip"][data-key="damage"]')?.dataset.value ?? 0),
     })));
     return { turn: el.dataset.turn, cols, foot: el.querySelector('[data-testid="ledger-foot"]')?.textContent ?? "", line: el.querySelector('[data-testid="turn-line"]')?.textContent ?? "" };
+  };
+  const seen = new Set();
+  const once = (msg) => { if (!seen.has(msg)) { seen.add(msg); L.bad.push(msg); } };
+  const wide = (el) => el.scrollWidth > el.clientWidth + 1;
+  /** The clipping checks of one frame. */
+  const clipped = (now) => {
+    const el = document.querySelector('[data-testid="ledger"]');
+    const list = el.querySelector('[data-testid="ledger-rows"]');
+    const foot = el.querySelector('[data-testid="ledger-foot"]');
+    const lr = list.getBoundingClientRect();
+    let hidden = 0;
+    for (const row of el.querySelectorAll('[data-testid="ledger-row"]')) {
+      const rr = row.getBoundingClientRect();
+      const colW = row.parentElement.getBoundingClientRect().width;
+      for (const part of [row.querySelector(".bv-lname"), row.querySelector(".bv-lchips")]) {
+        if (part && wide(part) && rr.width < colW - 2) once(`turn ${now.turn}: "${part.textContent.trim()}" is clipped in a row ${Math.round(rr.width)}px wide, its column ${Math.round(colW)}px`);
+      }
+      const half = rr.top < lr.bottom - 0.5 && rr.bottom > lr.bottom + 0.5 || rr.top < lr.top - 0.5 && rr.bottom > lr.top + 0.5;
+      if (half) once(`turn ${now.turn}: ${row.dataset.unit}'s row is cut by the list's edge (row ${Math.round(rr.top)}–${Math.round(rr.bottom)}, list ${Math.round(lr.top)}–${Math.round(lr.bottom)})`);
+      if (rr.top >= lr.bottom - 0.5 || rr.bottom <= lr.top + 0.5) hidden++;
+    }
+    for (const col of el.querySelectorAll(".bv-lcol")) {
+      const rows = [...col.children];
+      const whole = rows.filter((r) => r.getBoundingClientRect().top >= lr.top - 0.5 && r.getBoundingClientRect().bottom <= lr.bottom + 0.5).length;
+      if (rows.length >= 2 && whole < 2) once(`turn ${now.turn}: the list's window holds ${whole} whole row${whole === 1 ? "" : "s"} of ${rows.length}, it must hold 2 (window ${Math.round(lr.height)}px)`);
+    }
+    const more = el.querySelector('[data-testid="ledger-more"]');
+    if (hidden && (!more || more.hidden || getComputedStyle(more).display === "none")) once(`turn ${now.turn}: ${hidden} rows are out of the window and nothing says so`);
+    if (!hidden && more && !more.hidden && getComputedStyle(more).display !== "none") once(`turn ${now.turn}: the "more" hint shows with every row in view`);
+    if (foot.getBoundingClientRect().top < lr.bottom - 0.5) once(`turn ${now.turn}: the list runs over the foot line`);
+    // The action strip: the actor keeps 6 characters, and nothing runs past the line.
+    const line = document.querySelector('[data-testid="caption"] .bv-strip-line');
+    if (line) {
+      if (line.scrollWidth > line.clientWidth + 1) once(`strip "${line.textContent}" runs past its line (${line.scrollWidth} > ${line.clientWidth}; parts ${[...line.children].map((c) => Math.round(c.getBoundingClientRect().width)).join("+")})`);
+      const actor = line.querySelector(":scope > .bv-cn");
+      if (actor && wide(actor)) {
+        const text = actor.textContent;
+        // What a clipped name really shows: the laid-out width of its first 6 characters (a Range reads it off the text node), plus an ellipsis in the same style.
+        const range = document.createRange();
+        range.setStart(actor.firstChild, 0);
+        range.setEnd(actor.firstChild, Math.min(6, text.length));
+        const ell = actor.cloneNode(false);
+        ell.textContent = "…";
+        Object.assign(ell.style, { position: "absolute", visibility: "hidden", flex: "none", minWidth: "0", overflow: "visible" });
+        line.append(ell);
+        const need = [...text].length <= 6 ? actor.scrollWidth : range.getBoundingClientRect().width + ell.getBoundingClientRect().width;
+        ell.remove();
+        if (actor.clientWidth < need - 1.5) once(`strip actor "${text}" is cut to ${actor.clientWidth}px, it needs ${Math.round(need)}px for 6 characters`);
+      }
+    }
   };
   const tick = () => {
     const end = document.querySelector('[data-testid="end-card"]');
@@ -66,6 +133,7 @@ const watch = () => {
       } else if (prev && prev.turn === now.turn && prev.line && !now.line && document.querySelector('[data-testid="battle-turn"]')) {
         // The line may go only with the turn's end (the next beat begins the next turn: its rows clear together).
       }
+      clipped(now);
       prev = now;
     }
     requestAnimationFrame(tick);
@@ -75,7 +143,9 @@ const watch = () => {
 
 const browser = await launchChromium();
 let bad = 0;
-const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+for (const scene of SCENES.filter((x) => !only || x.name.includes(only))) {
+console.log(scene.name);
+const page = await browser.newPage({ viewport: scene.viewport, deviceScaleFactor: 1, isMobile: scene.viewport.width < 1000, hasTouch: scene.viewport.width < 1000, locale: localeOf(scene.lang) });
 await page.goto(url, { timeout: 20_000 });
 await page.getByTestId("name-input").fill(`Ledger${Date.now().toString(36).slice(-4)}`);
 await page.getByTestId("name-submit").click();
@@ -86,10 +156,25 @@ for (let round = 1; round <= rounds; round++) {
     if ((await page.getByTestId("gold").count()) === 0) break;
     const gold = Number((await page.getByTestId("gold").textContent()).replace("g", ""));
     if (gold < 3 || (await page.getByTestId("line").locator(".card.you").count()) >= 5) break;
+    if ((await page.getByTestId("overlay").count()) > 0) await page.keyboard.press("Escape"); // a notice left open by the last battle
     await page.getByTestId("offer-0").click();
     if (await page.getByTestId("buy").isDisabled()) { await page.getByTestId("offer-close").click(); break; }
     await page.getByTestId("buy").click();
     await page.waitForFunction((g) => document.querySelector('[data-testid="gold"]')?.textContent !== `${g}g`, gold);
+  }
+  // A 3rd copy awakens a unit and brings a gift chooser over the shop: skip it (as mvp-phone does).
+  if (await page.getByTestId("gift-skip").isVisible().catch(() => false)) {
+    await page.getByTestId("gift-skip").click();
+    await page.getByTestId("gift-skip").waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
+  }
+  // A line left empty (nothing bought, the offers unaffordable) can't fight: try the other offers.
+  for (const i of [1, 2]) {
+    if (!(await page.getByTestId("fight").isDisabled())) break;
+    if ((await page.getByTestId("overlay").count()) > 0) await page.keyboard.press("Escape");
+    if ((await page.getByTestId(`offer-${i}`).count()) === 0) continue;
+    await page.getByTestId(`offer-${i}`).click();
+    if (await page.getByTestId("buy").isDisabled()) { await page.getByTestId("offer-close").click(); continue; }
+    await page.getByTestId("buy").click();
   }
   await page.getByTestId("fight").click();
   await page.getByTestId("battle-end").waitFor({ timeout: 10_000 });
@@ -107,6 +192,8 @@ for (let round = 1; round <= rounds; round++) {
   await page.getByTestId("battle-done").click();
   await page.waitForFunction(() => document.querySelector('[data-testid="fight"]') || document.querySelector('[data-testid="run-over"]'));
   if (await page.getByTestId("run-over").isVisible().catch(() => false)) break;
+}
+await page.close();
 }
 await browser.close();
 server?.kill();

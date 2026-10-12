@@ -60,6 +60,7 @@ export const battle = {
   "battle.ledger.fell": "Пали: {names}",
   "battle.ledger.many": "{n}",
   "battle.ledger.empty": "Пока ничего за ход",
+  "battle.ledger.more": "↓ ещё {n}",
   "battle.totals.start": "Итоги старта",
   "battle.whyWon": "Разбор",
   "battle.whyLost": "Разбор",

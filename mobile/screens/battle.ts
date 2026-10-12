@@ -365,6 +365,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const ledgerList = h("div", { class: "bv-ledger-list", "data-testid": "ledger-rows" }, ...ledgerCols.values());
   const ledgerFoot = h("div", { class: "bv-ledger-foot", "data-testid": "ledger-foot", role: "status" });
   const ledgerBody = h("div", { class: "bv-ledger-body" }, ledgerList, ledgerFoot);
+  /** "↓ 2 more" in the head while rows wait below the list's window; the window itself is whole rows (fitLedger). */
+  const ledgerMore = h("span", { class: "bv-ledger-more", "data-testid": "ledger-more" });
+  ledgerMore.hidden = true;
   const ledger = h("div", { class: "bv-ledger", "data-testid": "ledger" }, ledgerHead, ledgerBody);
   /** The ledger's rows by unit, kept between renders so their numbers count in place. */
   interface LedgerRow { el: HTMLElement; box: HTMLElement; chips: Map<string, RunEl>; mark: HTMLElement | null }
@@ -1434,8 +1437,9 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const chained = !sum && !!beat && isChain(beat);
     caption.replaceChildren(h("span", { class: "bv-strip-line bv-cap" }, ...(sum ? [h("span", { class: "bv-strip-text", "data-testid": "caption-turn-end" }, sum.turn >= 1 ? tr("battle.totals.turn", { n: sum.turn }) : tr("battle.totals.start"))] : stripKids(step)), ...(chained ? [chainDots(beat!.waves.length, wave)] : [])));
     caption.setAttribute("aria-label", sum ? tr("battle.totals.turn", { n: sum.turn }) : plainCaption(step));
+    fitStrip();
     // The ledger (below the board): the turn, Skip chain while a chain plays, a row per unit changed, a chain's summary or the turn's bottom line.
-    ledgerHead.replaceChildren(h("span", { class: "bv-ledger-turn", "data-testid": "ledger-turn" }, turnLabel(shownTurn)), ...(inChain() ? [skipBtn] : []));
+    ledgerHead.replaceChildren(h("span", { class: "bv-ledger-turn", "data-testid": "ledger-turn" }, turnLabel(shownTurn)), ledgerMore, ...(inChain() ? [skipBtn] : []));
     const ledgerLive = v.waves.some((w) => w.age !== null) && !reduced();
     drawLedger(runRows, turnKey, v.dead ?? new Set(), ledgerLive);
     ledger.classList.toggle("frozen", !!sum);
@@ -1641,6 +1645,27 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const none = !order.get(you)!.length && !order.get(them)!.length;
     ledgerList.classList.toggle("empty", none);
     ledgerList.dataset.empty = none ? tr("battle.ledger.empty") : "";
+    markMore();
+  }
+  /** The list's window shows whole rows: its height is the most whole rows (row + gap) the box leaves above the foot line. The box is fixed, so this is set once per size, never by what the list holds. */
+  function fitLedger(): void {
+    const col = ledgerCols.get(you)!;
+    const cs = getComputedStyle(col);
+    const gap = parseFloat(cs.rowGap) || 0;
+    const pitch = (parseFloat(cs.gridAutoRows) || 24) + gap;
+    const room = ledgerBody.clientHeight - ledgerFoot.offsetHeight - parseFloat(getComputedStyle(ledgerBody).rowGap || "0");
+    if (room <= 0) return;
+    const rows = Math.max(1, Math.floor((room + gap) / pitch));
+    ledgerList.style.height = `${rows * pitch - gap}px`;
+    markMore();
+  }
+  /** Says how many rows sit out of the window (the most in either column), or nothing. */
+  function markMore(): void {
+    const view = ledgerList.getBoundingClientRect();
+    let n = 0;
+    for (const col of ledgerCols.values()) n = Math.max(n, [...col.children].filter((r) => r.getBoundingClientRect().bottom > view.bottom + 0.5).length);
+    ledgerMore.hidden = n === 0;
+    ledgerMore.textContent = n ? tr("battle.ledger.more", { n }) : "";
   }
   /** The turn's bottom line, once it ends: "You dealt 2 · took 4 · Spore fell" (a spectator: "@a dealt 2 · @b dealt 4"). */
   function turnLine(sum: TurnSummary): HTMLElement {
@@ -1848,12 +1873,44 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const targets = [...new Set(step.changes.map((x) => x.unit))];
     const arrow = () => h("span", { class: "bv-arrow dim", "aria-hidden": "true" }, "→");
     return [
-      unitName(actor),
+      stripName(actor, "actor"),
       arrow(),
       kindIcon(c),
-      ...(targets.length === 1 && targets[0] === actor ? [] : [arrow(), unitName(c.unit), ...(targets.length > 1 ? [h("span", { class: "bv-more dim" }, `+${targets.length - 1}`)] : [])]),
-      h("b", { class: `bv-num ${c.kind}`, "data-testid": "strip-num" }, c.label),
+      ...(targets.length === 1 && targets[0] === actor ? [] : [arrow(), stripName(c.unit, "target"), ...(targets.length > 1 ? [h("span", { class: "bv-more dim" }, `+${targets.length - 1}`)] : [])]),
+      stripNum(c),
     ];
+  }
+  /** The number in the strip: "Curse ×1" is a word and its count. A line too full to hold it drops the word ("×1", "no damage" → "0"): fitStrip. A short one ("−4") keeps its width. */
+  function stripNum(c: Change): HTMLElement {
+    const m = /^([^\d×+−-]+?)\s*([×+−-]?\d.*)$/.exec(c.label);
+    const t = /^([×+−-]?\d+)\s+(\p{L}{6,})$/u.exec(c.label); // "1 blocked": the count, then a long word
+    const el = m
+      ? h("b", { class: `bv-num ${c.kind}`, "data-testid": "strip-num" }, h("span", { class: "bv-w" }, `${m[1]} `), m[2]!)
+      : t
+        ? h("b", { class: `bv-num ${c.kind}`, "data-testid": "strip-num" }, `${t[1]} `, h("span", { class: "bv-w" }, t[2]!))
+        : h("b", { class: `bv-num ${c.kind}`, "data-testid": "strip-num" }, c.label);
+    if (!m && c.kind === "damage" && !/\d/.test(c.label)) { el.dataset.short = "0"; el.classList.add("wordy"); }
+    if (m) el.dataset.short = m[2]!;
+    if (t) el.dataset.short = t[1]!;
+    el.style.flexShrink = "0";
+    el.style.minWidth = "0";
+    return el;
+  }
+  /** Drops the strip's number to its short form when the line runs out of room (the number is never cut or covered, the word goes first). */
+  function fitStrip(): void {
+    const line = caption.querySelector<HTMLElement>(".bv-strip-line");
+    if (!line) return;
+    line.classList.remove("tight");
+    if (line.scrollWidth > line.clientWidth + 1) line.classList.add("tight");
+  }
+  /** A name in the strip. A short name keeps its whole width; a long one gives way with an ellipsis, the target first (CSS) and the actor last, never under 6 characters. */
+  function stripName(id: string, role: "actor" | "target"): HTMLElement {
+    const el = unitName(id) as HTMLElement;
+    el.classList.add(`bv-strip-${role}`);
+    const n = [...name(id)].length;
+    if (n <= (role === "actor" ? 6 : 4)) { el.style.flexShrink = "0"; el.style.minWidth = "0"; }
+    else if (role === "actor") el.style.minWidth = `${6 * 0.62 + 0.8}em`;
+    return el;
   }
   /** The effect's icon in its kind's colour (a status shows its own). */
   function kindIcon(c: Change): Node {
@@ -1863,7 +1920,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   }
   /** A chain's links as dots (●●●○: landed filled); a long chain is "n/N". Never wraps. */
   function chainDots(links: number, at: number): HTMLElement {
-    if (links > CHAIN_DOTS_MAX) return h("span", { class: "bv-dots", "data-testid": "caption-chain" }, tr("battle.chain.step", { n: at + 1, of: links }));
+    if (links > CHAIN_DOTS_MAX) return h("span", { class: "bv-dots", "data-testid": "caption-chain", "aria-label": tr("battle.chain.step", { n: at + 1, of: links }) }, `${at + 1}/${links}`);
     return h("span", { class: "bv-dots", "data-testid": "caption-chain", "aria-label": tr("battle.chain.step", { n: at + 1, of: links }) }, ...Array.from({ length: links }, (_, i) => h("i", { class: i <= at ? "on" : "" })));
   }
   /** The caption as plain text, for the strip's label. */
@@ -1993,6 +2050,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
    * the card acting, so the event reads where it happens; a turn's totals or
    * a beat with nobody acting keep it centred. It slides, never leaves the board. */
   function placeCaption(): void {
+    fitStrip();
     delete caption.dataset.at;
     const card = isDesktop() && !finished ? [mine, enemy].map((r) => r.querySelector<HTMLElement>(".bv-card.acting")).find((x) => x) : undefined;
     const board = caption.parentElement?.getBoundingClientRect();
@@ -2214,6 +2272,10 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   addEventListener("resize", placeRuns, { signal: freed.signal });
   addEventListener("resize", placeSheet, { signal: freed.signal });
   addEventListener("resize", placeCaption, { signal: freed.signal });
+  ledgerList.addEventListener("scroll", markMore, { passive: true });
+  const ledgerSize = new ResizeObserver(fitLedger);
+  ledgerSize.observe(ledgerBody);
+  freed.signal.addEventListener("abort", () => ledgerSize.disconnect());
   // A summon joining the line resizes every card in it.
   const lineSize = new ResizeObserver(() => placeCaption());
   for (const r of [mine, enemy]) lineSize.observe(r);
