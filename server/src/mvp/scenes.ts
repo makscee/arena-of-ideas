@@ -11,7 +11,7 @@ import { randomUUID } from "node:crypto";
 import { benchSizeOf, type LineUnit, type PlayerRef, type RunView, type UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
 import { botDecision, seedChampion } from "./bots.js";
-import { endDay } from "./day.js";
+import { dayView, endDay } from "./day.js";
 import { fakeIdeaReader } from "./idea-reader.js";
 import { pickArchetype, readIdea } from "./idea-reading.js";
 import { grantIdea, writeIdea } from "./ideas.js";
@@ -155,12 +155,9 @@ export const SCENES: Scene[] = [
     build: async (rt) => {
       await world(rt);
       if (dayEnded === null) {
-        // Slayers first, so the day's end has a playoff; then a champion again for the other scenes.
-        const slayers = new Set<string>();
-        for (let i = 0; i < 4 && slayers.size < 2; i++) {
-          const run = await playTo(rt, (r) => r.phase === "over" && r.endedBy === "crown-won", "a slay", 80).catch(() => null);
-          if (run) slayers.add(run.player.id);
-        }
+        // Slayers first (the bot world makes a few each day), so the day's
+        // end has a playoff; then a champion again for the other scenes.
+        for (let i = 0; i < 3 && dayView(rt).slayers < 2; i++) await playTo(rt, (r) => r.phase === "over" && r.endedBy === "crown-won", "a slay", 80).catch(() => null);
         dayEnded = endDay(rt).seq - 1;
         await world(rt);
       }
