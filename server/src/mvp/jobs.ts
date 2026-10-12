@@ -23,6 +23,11 @@ export const MVP_JOBS: MvpJob[] = [
   dailyPostJob, // M4-8: the daily post to Telegram (ARENA_TELEGRAM_POST=1)
 ];
 
+/** A scenes server's jobs (#1026): a still world, so a scene shows the same
+ * state each time and the server stays quick; scenes.ts seeds the champion
+ * and its runs leave the ghosts. Only fusions get their names. */
+export const SCENE_JOBS: MvpJob[] = [fusionNamingJob];
+
 /** Starts every job on `rt`; returns one function that stops them all. */
 export function startMvpJobs(rt: MvpRuntime, jobs: MvpJob[] = MVP_JOBS): () => void {
   const stops = jobs.map((job) => job(rt));

@@ -16,6 +16,29 @@ npm test
 npm run typecheck
 ```
 
+## Test scenes: every screen from one link
+
+Every screen and state of the MVP opens from one link, with no playing to
+reach it: `https://m1.twin-pogona.ts.net/arena-lab/#scene=<id>[&lang=en|ru][&theme=plum|brass|felt][&speed=1|2|4]`.
+The index of them all is https://m1.twin-pogona.ts.net/r/arena-scenes.html (tailnet only).
+
+- **Scenes** are rows in `server/src/mvp/scenes.ts`: a fixture built in code
+  (a run played by the bot's rules to a round, a battle record, ideas, a day
+  end) and the screen the client opens (`openScene` in `mobile/main.ts`).
+  Only a server with `MVP_DEV=1 ARENA_SCENES=1 MVP_DB=:memory:` serves them;
+  it refuses to start otherwise, so a scene never touches a real world. A
+  scene tab keeps its player, language and palette in memory
+  (`mobile/scene.ts`): the browser's saved login stays as it was.
+- **The lab** (m1, launchd `ru.makscee.arena-lab`, `:8796`, `tailscale serve
+  /arena-lab`) runs one branch: `npm run mvp:lab -- <branch>` (default `main`)
+  checks it out in `~/arena-lab`, builds, restarts it and rewrites the index.
+- **The check** `npm run mvp:scenes` opens every scene headless (phone EN and
+  RU, desktop) and fails on an error or a blank screen; it is part of `mvp:check`.
+
+**The rule:** a card that changes a screen adds or updates its scenes here,
+and its How to try gives those scene links (point the lab at the card's
+branch first: `npm run mvp:lab -- <branch>`).
+
 ## Deploy
 
 One container ships the whole game: the arena server (`server/`, see

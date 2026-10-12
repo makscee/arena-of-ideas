@@ -34,6 +34,8 @@
  *               day end (M4-8, ./daily-post.ts, with ARENA_TELEGRAM_CHANNEL,
  *               ARENA_TELEGRAM_ENV, ARENA_TELEGRAM_POST_LANGS); off by
  *               default (dry run: npm run mvp:post -- --db <file> --dry-run)
+ *   ARENA_SCENES 1 serves the test scenes (#1026, ./scenes.ts: #scene=<id>
+ *               links); refuses to start without MVP_DEV=1 and MVP_DB=:memory:
  *   MVP_BUILD   the deployed commit, `build` on /api/v1/health (default: the
  *               checkout's HEAD); scripts/mvp-redeploy.sh sets it
  * Run: npm run mvp:server
@@ -42,12 +44,13 @@ import { serve } from "@hono/node-server";
 import { mkdirSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { createMvpApp } from "./app.js";
-import { startMvpJobs } from "./jobs.js";
+import { SCENE_JOBS, startMvpJobs } from "./jobs.js";
 import { poolContent, seedUnits } from "./pool.js";
 import { MVP_RULES } from "../../../src/mvp/contract.js";
 import { mvpRuntime } from "./runtime.js";
 import { buildOf, mvpServerApp, underBasePath } from "./server.js";
 import { shareMeta } from "./share.js";
+import { checkScenesEnv, warmScenes } from "./scenes.js";
 import { SqliteMvpStore } from "./sqlite-store.js";
 import { FakeMailer, mailFromEnv } from "./email.js";
 import { FakeTelegram, telegramFromEnv } from "./telegram.js";
@@ -59,6 +62,7 @@ const basePath = (process.env.BASE_PATH ?? "/arena").replace(/\/$/, "");
 const staticDir = resolve(process.env.STATIC_DIR ?? "mobile/dist");
 const root = relative(process.cwd(), staticDir) || ".";
 
+const scenes = checkScenesEnv(process.env);
 const dbPath = process.env.MVP_DB ?? "data/arena-mvp.db";
 if (dbPath !== ":memory:") mkdirSync(dirname(resolve(dbPath)), { recursive: true });
 const store = new SqliteMvpStore(dbPath);
@@ -72,11 +76,12 @@ const voteMin = Number(process.env.MVP_VOTE_MIN);
 const rules = Number.isInteger(voteMin) && voteMin > 0 ? { ...MVP_RULES, voteMin } : undefined;
 const telegram = telegramFromEnv(process.env, dev);
 const mail = mailFromEnv(process.env, dev);
-const rt = mvpRuntime({ content, store, dev, ...(rules ? { rules } : {}), ...(tuner ? { tuner } : {}), invites: process.env.MVP_INVITES === "1", open: process.env.MVP_OPEN === "1", rotation: process.env.MVP_ROTATION === "1", ...(telegram ? { telegram } : {}), ...(mail ? { mail } : {}) });
+const rt = mvpRuntime({ content, store, dev, scenes, ...(rules ? { rules } : {}), ...(tuner ? { tuner } : {}), invites: process.env.MVP_INVITES === "1", open: process.env.MVP_OPEN === "1", rotation: process.env.MVP_ROTATION === "1", ...(telegram ? { telegram } : {}), ...(mail ? { mail } : {}) });
 const build = buildOf();
 const publicUrl = (process.env.ARENA_PUBLIC_URL ?? "https://arena.makscee.ru/arena").replace(/\/$/, "");
 const app = mvpServerApp(createMvpApp(rt), { staticRoot: root, build, pageMeta: (url, lang) => shareMeta(rt, url, publicUrl, lang) });
 
 serve({ port, hostname: host, fetch: underBasePath(app, basePath) });
-startMvpJobs(rt);
-console.log(`arena mvp on http://${host}:${port} (base ${basePath}, build ${build ?? "unknown"}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""}${tuner ? ", instant tuner" : ""}${rt.rotation ? ", rotation on" : ""}${rt.invites ? (rt.open ? ", open to all" : ", invite-only") : ""}${telegram ? (telegram instanceof FakeTelegram ? ", fake telegram" : `, telegram @${telegram.bot}`) : ""}${mail ? (mail instanceof FakeMailer ? ", fake mail" : ", mail") : ""})`);
+startMvpJobs(rt, rt.scenes ? SCENE_JOBS : undefined);
+if (rt.scenes) void warmScenes(rt);
+console.log(`arena mvp on http://${host}:${port} (base ${basePath}, build ${build ?? "unknown"}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""}${rt.scenes ? ", scenes" : ""}${tuner ? ", instant tuner" : ""}${rt.rotation ? ", rotation on" : ""}${rt.invites ? (rt.open ? ", open to all" : ", invite-only") : ""}${telegram ? (telegram instanceof FakeTelegram ? ", fake telegram" : `, telegram @${telegram.bot}`) : ""}${mail ? (mail instanceof FakeMailer ? ", fake mail" : ", mail") : ""})`);

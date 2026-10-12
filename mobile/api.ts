@@ -34,6 +34,7 @@ import {
   type WriteIdeaRequest,
 } from "../src/mvp/contract";
 import { uiLang } from "./lang";
+import type { SceneBuilt } from "../server/src/mvp/scenes";
 
 const BASE = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "") + MVP_API_PREFIX;
 const PLAYER_KEY = "arena.player";
@@ -199,6 +200,13 @@ export const api = {
   /** M4-6 dev (ARENA_TELEGRAM_FAKE=1): the fake bot's user presses Start,
    * then taps Yes (or No: `decline`). */
   devTelegramAccept: (code: string, decline = false) => call<{ reply: string }>("POST", "/dev/telegram/accept", { code, ...(decline ? { decline } : {}) }),
+  /** #1026: builds a test scene on a scenes server; this tab becomes its player (in memory, ./scene.ts). */
+  async scene(id: string): Promise<SceneBuilt> {
+    const built = await call<SceneBuilt>("POST", `/dev/scenes/${encodeURIComponent(id)}`);
+    player = built.player;
+    token = null;
+    return built;
+  },
   forget(): void {
     saveOwnInvite(null);
     player = null;

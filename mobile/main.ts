@@ -6,6 +6,7 @@
 // Home is the title menu (R2-10); it also shows DayView.lastPlayoff (a game
 // opens in battleScreen) and, on dev servers only (HomeView.dev), "End day
 // now" under "Dev". The shop's ☰ (Esc on desktop) is the in-run menu.
+import { sceneId } from "./scene";
 import type { BattleRecord, CandidateScore, DayView, FightResult, HomeView, IdeasView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView } from "../src/mvp/contract";
 import { benchSizeOf, lockedFull, MVP_RULES, offersAt, sellValue } from "../src/mvp/contract";
 import { mergeTarget } from "../src/mvp/forms";
@@ -17,6 +18,7 @@ import { codexScreen, newCodexCache, type CodexState } from "./screens/codex";
 import { setCodexLink } from "./ui/term";
 import { ideasScreen, refillTime } from "./screens/ideas";
 import { votePanel } from "./screens/vote";
+import { pickScreen } from "./screens/pick";
 import { card, roman, setCardCredits, unitSheet, type CardUnit } from "./ui/card";
 import { previewName } from "./ui/fusion";
 import { fuseWarning } from "./ui/fuse-warn";
@@ -1681,6 +1683,47 @@ function openBattleLink(id: string): void {
     if (err.textContent) show(h("h1", {}, "Battle " + id), err);
   });
 }
+/** `#scene=<id>` (#1026, ./scene.ts): a scenes server builds the fixture
+ * (server/src/mvp/scenes.ts) and this opens its screen as its player, who
+ * lives in memory only. */
+function openScene(id: string): void {
+  const err = errorLine();
+  const settle = (fn: () => void) => setTimeout(fn, 300);
+  void guarded(err, async () => {
+    const { entry } = await api.scene(id);
+    const content = await getContent();
+    switch (entry.screen) {
+      case "name":
+        return nameScreen();
+      case "home":
+        await homeScreen(entry.ended ?? null);
+        if (entry.click) settle(() => document.querySelector<HTMLElement>(`[data-testid="${entry.click}"]`)?.click());
+        if (entry.scroll) settle(() => document.querySelector(`[data-testid="${entry.scroll}"]`)?.scrollIntoView({ block: "center" }));
+        return;
+      case "shop":
+        return shopScreen(await api.run(entry.runId), content);
+      case "run-over":
+        return runOverScreen(await api.run(entry.runId), content);
+      case "battle": {
+        const battle = await api.battle(entry.battleId);
+        battleScreen({ battle, content, onDone: () => location.reload() });
+        const keys = entry.keys ?? [];
+        keys.forEach((key, i) => setTimeout(() => document.dispatchEvent(new KeyboardEvent("keydown", { key: key === "Space" ? " " : key, code: key, bubbles: true })), 600 + i * 120));
+        return;
+      }
+      case "codex":
+        return openCodex({ tab: entry.tab });
+      case "ideas":
+        await ideasScreen({ onBack: () => void homeScreen(), onUnknown: () => location.reload() });
+        if (entry.click) settle(() => document.querySelector<HTMLElement>(`[data-testid="${entry.click}"]`)?.click());
+        return;
+      case "pick":
+        return pickScreen(entry.ideaId, { toIdeas: (notice) => void ideasScreen({ onBack: () => void homeScreen(), onUnknown: () => location.reload() }, notice ?? null), onUnknown: () => location.reload() });
+    }
+  }).then(() => {
+    if (err.textContent) show(h("h1", {}, "Scene " + id), err);
+  });
+}
 const dropInvite = () => {
   const url = new URL(location.href);
   url.hash = "";
@@ -1795,10 +1838,12 @@ initSound();
 // fragment, which reloads nothing: start over so the link opens.
 addEventListener("hashchange", () => {
   const hash = new URLSearchParams(location.hash.slice(1));
-  if (hash.has("invite") || hash.has("join") || hash.has("battle")) location.reload();
+  if (hash.has("invite") || hash.has("join") || hash.has("battle") || hash.has("scene")) location.reload();
 });
 
-if (battleLink) {
+if (sceneId) {
+  openScene(sceneId);
+} else if (battleLink) {
   openBattleLink(battleLink);
 } else if (inviteCode) {
   openInvite(inviteCode);
