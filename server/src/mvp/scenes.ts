@@ -17,7 +17,7 @@ import { pickArchetype, readIdea } from "./idea-reading.js";
 import { grantIdea, writeIdea } from "./ideas.js";
 import { decide, startRun } from "./runs.js";
 import type { MvpRuntime } from "./runtime.js";
-import { seedCandidate } from "./votes.js";
+import { instantTuner, nextCard, overnightCheck, seedCandidate } from "./votes.js";
 
 /** What the client opens once the fixture is built (mobile/main.ts openScene). */
 export type SceneEntry =
@@ -206,7 +206,11 @@ export const SCENES: Scene[] = [
       const author = fixturePlayer(rt);
       const units = rt.content.units.filter((u) => u.tier === 1).map((u) => u.id as UnitId);
       for (const unit of units.slice(0, 2)) seedCandidate(rt, author.id, unit);
-      return { player: fixturePlayer(rt), entry: { screen: "home", scroll: "vote-box" } };
+      // Past the overnight check, so they are up for votes.
+      await overnightCheck(rt, instantTuner);
+      const voter = fixturePlayer(rt);
+      if (!nextCard(rt, voter)) throw new SceneMissing("no vote card after seeding two candidates");
+      return { player: voter, entry: { screen: "home", scroll: "vote-box" } };
     },
   },
 

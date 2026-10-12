@@ -30,6 +30,7 @@ describe("test scenes (#1026)", () => {
     const built = (await res.json()) as { player: { id: string }; entry: { screen: string; runId: string } };
     expect(built.entry.screen).toBe("shop");
     expect((await app.request(`/api/v1/runs/${built.entry.runId}`, { headers: { "X-Arena-Player": built.player.id } })).status).toBe(200);
+    expect((await app.request("/api/v1/dev/scenes/vote", { method: "POST" })).status).toBe(200);
     expect((await app.request("/api/v1/dev/scenes/nope", { method: "POST" })).status).toBe(404);
   }, 120_000);
 });
