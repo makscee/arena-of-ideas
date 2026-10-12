@@ -633,7 +633,12 @@ button.bv-badge.past { z-index: 2; }
 /* While playing, a change whose number floats above the card is not drawn
  * again on the emoji (R4-6): the chip stays as its tap target, and shows
  * again when paused or stepping. Reduced motion has no floats: it keeps them. */
-@media (prefers-reduced-motion: no-preference) { .bv-playing .bv-pill.bv-dup { visibility: hidden; } .bv-playing .bv-l.bv-dup { display: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .bv-playing .bv-pill:not(.bv-tot) { visibility: hidden; }
+  .bv-playing .bv-l.bv-dup { display: none; }
+  /* The running totals stack over the cards: not while playing (mission 1007), cards and one number move, nothing else sits on a card's face. */
+  .bv-screen:has(.bv-playing) ~ .bv-runs { visibility: hidden; }
+}
 /* No Toybox drop or radius: its shadow drew a dark band through the name under the chip (#893). */
 button.bv-change { flex: 1; min-width: 0; min-height: 44px; height: 44px; padding: 0 2px; border: none; border-radius: 0; background: transparent; box-shadow: none; translate: none; clip-path: none; display: flex; align-items: center; justify-content: center; letter-spacing: 0; text-transform: none; }
 .bv-pill { max-width: 100%; height: 28px; line-height: 26px; padding: 0 5px; border: 1px solid; border-radius: 4px; background: var(--ground); font-family: var(--font-num); font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -659,7 +664,7 @@ button.bv-also-btn { min-height: 44px; padding: 0 10px; text-transform: none; le
 button.bv-also-btn.on { border-color: var(--action); }
 button.bv-also-btn.damage, button.bv-also-btn.debuff, button.bv-also-btn.death { color: var(--them); }
 button.bv-also-btn.heal, button.bv-also-btn.summon { color: var(--you); }
-button.bv-caption { height: 52px; min-height: 0; overflow: hidden; width: 100%; text-transform: none; letter-spacing: 0; font-family: var(--font-body); font-weight: 600; font-size: 17px; color: var(--text); border-color: var(--line); text-align: left; padding: 4px 12px; }
+button.bv-caption { height: 44px; min-height: 0; overflow: hidden; width: 100%; text-transform: none; letter-spacing: 0; font-family: var(--font-body); font-weight: 600; font-size: 17px; color: var(--text); border-color: var(--line); text-align: left; padding: 4px 12px; }
 button.bv-caption { display: flex; align-items: center; }
 /* Target beams (R3-21): one fixed layer over the cards, under the caption,
    the badges, the floats, the sheets and the end card. The caption band is
@@ -715,8 +720,20 @@ button.bv-badge, button.bv-badge:active:not(:disabled) { box-shadow: none; }
 @keyframes bv-ring { from { opacity: 0; transform: scale(1.12); } to { opacity: 1; transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .bv-fx * { animation: none !important; } }
 button.bv-caption.tappable::after { content: "ⓘ"; flex: none; margin-left: 4px; color: var(--dim); }
-/* Two lines at most: a caption's length never moves your line. */
-.bv-cap { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 20px; }
+/* The action strip (mission 1007) is one line that never wraps: actor → effect
+ * icon → target, then the number in its kind's colour, a chain's links as dots
+ * at the right. A long name gives way with an ellipsis; the box never grows. */
+.bv-strip-line { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; overflow: hidden; white-space: nowrap; line-height: 22px; }
+.bv-strip-line > * { flex: none; }
+.bv-strip-line > .bv-cn, .bv-strip-line > .bv-strip-text { flex: 0 1 auto; min-width: 3em; overflow: hidden; text-overflow: ellipsis; }
+.bv-strip-line .bv-eff { display: inline-flex; align-items: center; }
+.bv-num { font-family: var(--font-num); font-size: 1.1em; }
+.bv-num.damage, .bv-num.death, .bv-num.debuff, .bv-eff.damage, .bv-eff.death, .bv-eff.debuff { color: var(--them); }
+.bv-num.heal, .bv-num.summon, .bv-eff.heal, .bv-eff.summon { color: var(--you); }
+.bv-num.buff, .bv-num.status, .bv-num.silence, .bv-eff.buff, .bv-eff.status, .bv-eff.silence { color: var(--action); }
+.bv-dots { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; padding-left: 8px; font-family: var(--font-num); font-size: 14px; color: var(--dim); }
+.bv-dots i { width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--action); box-sizing: border-box; }
+.bv-dots i.on { background: var(--action); }
 .bv-cn { font-weight: 700; }
 .bv-ct .ic { vertical-align: -2px; }
 .bv-pill.blocked { display: inline-flex; align-items: center; gap: 1px; border-color: var(--k-shield); }
@@ -724,8 +741,6 @@ button.bv-caption.tappable::after { content: "ⓘ"; flex: none; margin-left: 4px
 .bv-who { display: inline-block; max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; margin-right: 6px; padding: 0 5px; border: 1px solid; border-radius: 3px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .bv-who.you { color: var(--you); }
 .bv-who.ghost { color: var(--them); }
-.bv-recent { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 2px; }
-button.bv-past { min-height: 44px; border: none; clip-path: none; text-align: left; padding: 0 12px; text-transform: none; letter-spacing: 0; font-family: var(--font-body); font-weight: 500; font-size: 14px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bv-sheet { position: fixed; z-index: 10; left: 12px; right: 12px; bottom: calc(68px + env(safe-area-inset-bottom)); max-width: 456px; margin: 0 auto; max-height: 60dvh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; border-color: var(--action); box-shadow: 0 -12px 32px var(--shade); }
 .bv-trace-text { font-size: 15px; color: var(--action); word-break: break-word; }
 /* R2-15: Why's chain, the change first, each cause below it, back to the turn.
@@ -1169,8 +1184,7 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   /* The caption hugs its event and sits under the acting card (battle.ts placeCaption, M5-5). */
   #app[data-screen="battle"] button.bv-caption { grid-area: cap; justify-self: center; width: auto; min-width: min(100%, 320px); max-width: min(100%, 600px); font-size: 19px; transition: translate 0.18s ease-out; }
   #app[data-screen="battle"] .bv-screen > .bv-below { flex: none; }
-  #app[data-screen="battle"] .bv-recent { display: none; }
-  #app[data-screen="battle"] .bv-controls { justify-content: flex-start; }
+  #app[data-screen="battle"]   #app[data-screen="battle"] .bv-controls { justify-content: flex-start; }
   #app[data-screen="battle"] .bv-controls button { flex: 0 1 88px; min-height: 44px; }
 
   /* The turn timeline: a block per turn with its marks; the gold playhead; click or drag scrubs. */
@@ -1636,17 +1650,22 @@ button.reroll-btn:disabled .cost-chip { background: var(--soft); }
 .bv-card > .bv-chain-chip { position: absolute; bottom: 4px; left: 4px; z-index: 4; min-width: 26px; height: 26px; padding: 0 5px; border-radius: 13px; display: inline-flex; align-items: center; justify-content: center; background: var(--action); color: var(--outline); border: 2px solid var(--outline); box-shadow: 2px 2px 0 var(--outline); font-family: var(--font-head, inherit); font-size: 15px; line-height: 1; pointer-events: none; animation: bv-chip-in calc(220ms / var(--bv-sp, 1)) ease-out backwards; }
 .bv-card > .bv-chain-chip.still { animation: none; }
 @keyframes bv-chip-in { from { transform: scale(0.4); opacity: 0; } to { transform: none; opacity: 1; } }
-/* "Chain 3/12" leads the caption. */
-.bv-cap-chain { display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: 8px; background: var(--action); color: var(--outline); font-size: 0.8em; font-weight: 700; line-height: 1.35; text-shadow: none; white-space: nowrap; }
-/* The chain's summary below the board, at its last link. */
-/* Its height stays put, empty or not: on desktop the board centres above it, and a box coming and going moved every card. */
-.bv-chainbox { min-height: 44px; flex: none; display: flex; align-items: center; }
+/* The turn ledger below the board (mission 1007): one box whose height the
+ * screen sets and its content never does (on desktop the board centres above
+ * it, and a box growing or shrinking moved every card). Its head holds the
+ * turn and Skip chain; its body, a chain's summary at its last link. */
+.bv-ledger { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 4px; padding: 0 12px 6px; border: var(--bw) solid var(--outline); border-radius: 10px; background: var(--panel); }
+.bv-ledger-head { flex: none; height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.bv-ledger-turn { font-family: var(--font-head); font-weight: var(--head-weight); font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dim); }
+.bv-ledger-body { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 4px; }
+.bv-ledger .bv-chain-sum { padding: 0; border: none; box-shadow: none; background: none; }
+/* The chain's summary, at its last link. */
 .bv-chain-sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 6px 10px; border: 2px solid var(--outline); border-radius: 10px; background: var(--panel); box-shadow: 3px 3px 0 var(--outline); font-size: 14px; font-weight: 600; line-height: 1.35; animation: bv-chip-in 220ms ease-out backwards; }
 .bv-chain-of { color: var(--action); font-weight: 700; }
 .bv-chain-side { display: inline-flex; flex-wrap: wrap; gap: 0 5px; align-items: baseline; }
-button.bv-skip { align-self: center; white-space: nowrap; min-height: 40px; padding: 0 16px; font-size: 15px; }
+button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padding: 0 16px; font-size: 15px; }
 @media (prefers-reduced-motion: reduce) { .bv-card > .bv-chain-chip, .bv-chain-sum { animation: none; } }
 @media (min-width: 1024px) {
-  #app[data-screen="battle"] .bv-chainbox { justify-content: center; height: 64px; }
+  #app[data-screen="battle"] .bv-ledger { flex: none; height: 112px; }
   #app[data-screen="battle"] .bv-chain-sum { font-size: 16px; max-width: 900px; }
 }

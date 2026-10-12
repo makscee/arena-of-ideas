@@ -29,7 +29,6 @@ export const battle = {
   "battle.turn": "Turn {n}",
   "battle.turnShort": "T{n}",
   "battle.more": "{n} more",
-  "battle.pastMore": " · {n} more",
   "battle.noDmg": "no dmg",
   "battle.statusMoreAria": "{over} more: all {n} statuses",
   "battle.now.noAbility": "No ability: it fights with its PWR / HP.",

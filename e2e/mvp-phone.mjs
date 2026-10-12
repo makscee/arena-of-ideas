@@ -546,7 +546,7 @@ try {
           noBar: cards.filter((c) => !c.querySelector('[data-testid="hp-bar"]')).length,
           noRow: cards.filter((c) => !c.querySelector('[data-testid="card-statuses"]')).length,
           wordy: [...document.querySelectorAll('[data-testid="card-status"]')].filter((s) => !s.querySelector("svg")).length,
-          zero: [...document.querySelectorAll('[data-testid="change"], [data-testid="caption"], .bv-past, .bv-still, .bv-float, .bv-run-row')].filter((c) => /[−-]0(?!\d)/.test(c.textContent)).length,
+          zero: [...document.querySelectorAll('[data-testid="change"], [data-testid="caption"], .bv-ledger, .bv-still, .bv-float, .bv-run-row')].filter((c) => /[−-]0(?!\d)/.test(c.textContent)).length,
           hiddenStatus: [...document.querySelectorAll('[data-testid="card-statuses"]')].flatMap((row) => [...row.children].filter((c) => c.getBoundingClientRect().bottom > row.getBoundingClientRect().bottom + 0.5)).length,
           wrongSide: [...document.querySelectorAll(".bv-cn[data-unit]")].filter((n) => {
             const line = document.querySelector(`.bv-line [data-unit="${CSS.escape(n.dataset.unit)}"]`)?.closest(".bv-line");
@@ -593,9 +593,8 @@ try {
       await tap44("change chip", page.getByTestId("change"));
       await tap44("trace close", page.getByTestId("trace-close"));
       await tap44("trace close", page.getByTestId("trace-close"), "width");
-      await tap44("past step", page.locator("button.bv-past"));
       await tap44("trigger badge", page.getByTestId("trigger-badge"));
-      if ((await page.getByTestId("caption-side").count()) === 0 && /→/.test(await page.getByTestId("caption").textContent())) errors.push("battle caption: no side tag on a unit's act");
+      if (/→/.test(await page.getByTestId("caption").textContent()) && (await page.getByTestId("caption").locator(".bv-cn").count()) === 0) errors.push("battle strip: an act names no unit");
       // A battle card (below its chip) opens its Now sheet (R3-18), whose
       // Full card opens the unit's sheet, which closes with Close.
       await page.getByTestId("trace-close").click();
