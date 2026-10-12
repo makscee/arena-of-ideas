@@ -57,6 +57,25 @@ const sampleFloats = () => {
   };
   requestAnimationFrame(tick);
 };
+/** In the page: how long each line of the action strip stays (mission 1007, slice 4). A chain's links (dots in the strip) and the empty end are not lines to read; a repeat turn (the ⏩ in the HUD) plays at twice the speed. */
+const sampleLines = () => {
+  const el = document.querySelector('[data-testid="caption"]');
+  const lines = (window.__lines = []);
+  let cur = null;
+  const note = () => {
+    const t = performance.now();
+    const key = el.textContent;
+    if (cur && cur.key === key) return;
+    if (cur) lines.push({ ms: cur.ms === undefined ? t - cur.at : cur.ms, chain: cur.chain, rep: cur.rep, key: cur.key });
+    cur = { key, at: t, chain: !!el.querySelector('[data-testid="caption-chain"]'), rep: !!document.querySelector('.bv-repeat') };
+  };
+  new MutationObserver(note).observe(el, { subtree: true, childList: true, characterData: true });
+  note();
+};
+/** The line floor at a speed, as src/mvp/trace.ts lineFloorMs has it. */
+const lineFloor = (speed) => Math.max(200, Math.round(600 / speed));
+/** Every plain line seen, as ms on screen with the floor of its speed: the ones short of 90% of it. */
+const lineRuns = [];
 for (const motion of ["no-preference", "reduce"]) {
   const page = await browser.newPage({ viewport: { width: 360, height: 640 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, reducedMotion: motion });
   await page.goto(url, { timeout: 20_000 });
@@ -81,12 +100,16 @@ for (const motion of ["no-preference", "reduce"]) {
     const speed = await speedOf();
     const t0 = Date.now();
     if (motion !== "reduce") await page.evaluate(sampleFloats);
+    if (motion !== "reduce") await page.evaluate(sampleLines);
     if (round === rounds) for (let f = 0; f < 30; f++) { await page.screenshot({ path: `${out}/${motion === "reduce" ? "still" : "move"}-r${round}-f${String(f).padStart(2, "0")}.png` }); await page.waitForTimeout(100); }
     await page.getByTestId("battle-done").waitFor({ timeout: 300_000 });
     if (motion !== "reduce") {
       times.push((Date.now() - t0) / 1000);
       plans.push(Number(await page.locator(".bv-controls").getAttribute("data-plan-ms")) / 1000 / speed);
       speeds.push(speed);
+    }
+    if (motion !== "reduce") {
+      for (const l of await page.evaluate(() => window.__lines)) if (!l.chain) lineRuns.push({ ms: l.ms, floor: lineFloor(Math.min(4, speed * (l.rep ? 2 : 1))), key: l.key });
     }
     if (motion !== "reduce") for (const r of await page.waitForFunction(() => window.__floatRuns).then((h) => h.jsonValue())) (r.merged && r.ms * speed < FLOAT_MIN_MS ? mergedMs : floatMs).push(r.ms * speed);
     await page.screenshot({ path: `${out}/${motion === "reduce" ? "still" : "move"}-r${round}-end.png` });
@@ -102,6 +125,11 @@ const sorted = [...floatMs].sort((p, q) => p - q);
 // Float times are scaled to 1× (ms × speed), so the bar holds at any speed.
 const cut = sorted.filter((ms) => ms < FLOAT_MIN_MS).length;
 console.log(`damage floats: ${sorted.length} seen, median ${Math.round(sorted[Math.floor(sorted.length / 2)] ?? 0)} ms visible at 1×, ${cut} under ${FLOAT_MIN_MS / 1000} s at 1× (${sorted.filter((ms) => ms < FLOAT_MIN_MS).map((ms) => Math.round(ms)).join(", ")}); ${mergedMs.length} grew into the next wave's float`);
+// Lines (the strip's text, a chain's links apart) shorter than their speed's floor (600 / 300 / 200 ms at 1× / 2× / 4×; a repeat turn has its doubled speed's), 10% slack for the timer.
+const shortLines = lineRuns.filter((l) => l.ms < l.floor * 0.9);
+const lineSorted = lineRuns.map((l) => l.ms).sort((p, q) => p - q);
+console.log(`strip lines: ${lineRuns.length} seen, median ${Math.round(lineSorted[Math.floor(lineSorted.length / 2)] ?? 0)} ms, shortest ${Math.round(lineSorted[0] ?? 0)} ms, ${shortLines.length} under their floor${shortLines.length ? ` (${shortLines.slice(0, 6).map((l) => `${Math.round(l.ms)} ms "${l.key.slice(0, 30)}"`).join("; ")})` : ""}`);
+if (shortLines.length) process.exitCode = 1;
 const med = [...times].sort((p, q) => p - q)[Math.floor((times.length - 1) / 2)] ?? 0;
 console.log(`planned vs on screen: ${plans.map((p, i) => `${p.toFixed(1)}→${times[i].toFixed(1)} s at ${speeds[i]}×`).join(", ")}`);
 console.log(`median ${med.toFixed(1)} s`);
