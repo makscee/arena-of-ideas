@@ -45,6 +45,12 @@ const END_MIN_PX = 240;
 
 /** The end card's Damage rows a side, until "All n" (R2-17 batch E). */
 const DMG_ROWS = 3;
+/** What the action strip draws for each kind of change, before its target (mission 1007). */
+const KIND_ICON: Record<Change["kind"], IconId> = { damage: "broadsword", heal: "heart-plus", buff: "upgrade", debuff: "broken-heart", status: "cursed-star", death: "death-skull", summon: "magic-portal", silence: "silence", noRoom: "tombstone" };
+/** The kinds of change the strip tells as actor → effect → target; the rest read as their caption. */
+const ARROWED = new Set<Change["kind"]>(["damage", "heal", "buff", "debuff", "status", "silence"]);
+/** A chain of more links than this shows "n/N" instead of one dot a link. */
+const CHAIN_DOTS_MAX = 10;
 
 /** How long a Crown fight's line-up shows, under its "Crown fight" title, at 1× (round 3, note 14). */
 const CROWN_LINEUP_MS = 1200;
@@ -295,8 +301,6 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** Reduced motion's list of the beat's changes: below your line, its height
    * fixed, so nothing on the board moves while it fills. */
   const still = h("div", { class: "bv-stillbox" });
-  const recent = h("div", { class: "bv-recent", "data-testid": "recent" });
-  const chainBox = h("div", { class: "bv-chainbox", "aria-live": "polite" });
   const sheet = h("div", { class: "bv-sheet panel", "data-testid": "trace" });
   // The desktop side panel: Why and Log tabs over the same sheet (the phone shows only Why, as a sheet).
   const whyBody = h("div", { class: "bv-tab-body stack bv-why-body" });
@@ -347,6 +351,11 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   /** Skip chain (#913): while a chain plays, jumps to its last link and its summary. */
   const skipBtn = button(tr("battle.chain.skip"), () => skipChain(), "bv-skip", "chain-skip");
   skipBtn.title = tr("battle.chain.skipKey");
+  /** The turn ledger (mission 1007): one fixed box under the board, its height set by the screen and never by what it holds. Its head names the turn and
+   * holds Skip chain while a chain plays; its body holds a chain's summary at the last link and reduced motion's list of changes. */
+  const ledgerHead = h("div", { class: "bv-ledger-head" });
+  const ledgerBody = h("div", { class: "bv-ledger-body" }, still);
+  const ledger = h("div", { class: "bv-ledger", "data-testid": "ledger", "aria-live": "polite" }, ledgerHead, ledgerBody);
   replayBtn.setAttribute("aria-label", tr("battle.replayAria"));
   // Desktop's keys, as the mockup lists them (the phone hides the line).
   const kbd = (k: string) => h("kbd", {}, k);
@@ -1314,13 +1323,13 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     drawRuns(runningTotalsOf(log, soFar), turnKey, v.waves.some((w) => w.age !== null));
     // After the beams: they aim at each card's slot, not where its slide starts.
     for (const [sl, p] of slides) sl.animate([{ transform: `translateX(${p.dx}px)` }, { transform: "none" }], { duration: PUSH_MS / speed, delay: -(now - p.at), easing: "ease-out", fill: "backwards" });
-    // A chain (#913): its link's number leads the caption ("Chain 3/12"), and
-    // its last link adds what the chain did to each side.
+    // The action strip (mission 1007): one line, actor → effect → target → number, a chain's links as dots.
     const chained = !sum && !!beat && isChain(beat);
-    const link = chained ? [h("span", { class: "bv-cap-chain", "data-testid": "caption-chain" }, tr("battle.chain.step", { n: wave + 1, of: beat!.waves.length }))] : [];
-    caption.replaceChildren(h("span", { class: "bv-cap" }, ...(sum ? [h("span", { "data-testid": "caption-turn-end" }, sum.turn >= 1 ? tr("battle.totals.turn", { n: sum.turn }) : tr("battle.totals.start"))] : [...link, ...captionKids(step)])));
-    // Below the board (#913): Skip chain while a chain plays, its summary at its last link.
-    chainBox.replaceChildren(...(inChain() ? [skipBtn] : chained && wave === lastWave(at) ? [chainSummary(beat!)] : []));
+    caption.replaceChildren(h("span", { class: "bv-strip-line bv-cap" }, ...(sum ? [h("span", { class: "bv-strip-text", "data-testid": "caption-turn-end" }, sum.turn >= 1 ? tr("battle.totals.turn", { n: sum.turn }) : tr("battle.totals.start"))] : stripKids(step)), ...(chained ? [chainDots(beat!.waves.length, wave)] : [])));
+    caption.setAttribute("aria-label", sum ? tr("battle.totals.turn", { n: sum.turn }) : plainCaption(step));
+    // The ledger (below the board): the turn, Skip chain while a chain plays, a chain's summary at its last link.
+    ledgerHead.replaceChildren(h("span", { class: "bv-ledger-turn", "data-testid": "ledger-turn" }, turnLabel(shownTurn)), ...(inChain() ? [skipBtn] : []));
+    ledgerBody.replaceChildren(...(chained && !inChain() && wave === lastWave(at) ? [chainSummary(beat!)] : []), still);
     still.replaceChildren(...(reduced() ? (sum ? stillTotals(sum) : stillList(v.changes)) : []));
     still.style.display = reduced() && !finished ? "" : "none";
     fitStill();
@@ -1334,20 +1343,6 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const moving = [mine, enemy].flatMap((r) => r.getAnimations({ subtree: true }));
     if (moving.length) Promise.all(moving.map((a) => a.finished)).then(placeCaption, () => {});
     clearBeams();
-    recent.replaceChildren(
-      ...beats.slice(Math.max(0, at - 3), Math.max(0, at)).reverse().map((pb) => {
-        // A past beat reads as its first wave, the strike or tick that opened it.
-        const s = pb.waves[0]!;
-        const b = h("button", { class: "bv-past" }, ...(s.subjectSide ? [sideTag(s.subjectSide)] : []), ...richCaption(s.caption), pb.waves.length > 1 ? h("span", { class: "dim bv-past-more" }, tr("battle.pastMore", { n: pb.waves.length - 1 })) : null);
-        b.addEventListener("click", () => {
-          const c = s.changes[0];
-          if (c) openTrace(c.eventId, s.changes.filter((x) => x.unit === c.unit));
-        });
-        return b;
-      }),
-    );
-    recent.style.display = finished ? "none" : "";
-    fitRecent();
     // The phone shows the sheet only with a trace; the desktop panel is always there (style.css).
     sheet.classList.toggle("open", !!trace);
     placeSheet();
@@ -1666,6 +1661,39 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const tag = a.you ? (side === you ? tr("battle.you") : tr("battle.them")) : owner(side);
     return h("span", { class: `bv-who ${side === you ? "you" : "ghost"}`, ...(testid ? { "data-testid": testid } : {}) }, tag);
   }
+  /** The action strip's words (mission 1007): actor → effect icon → target, then the
+   * number in the kind's colour. A step that changes nothing, or has no actor
+   * (the face-off, Fatigue, a fall, the end), reads as its caption. */
+  function stripKids(step: Step | undefined): Node[] {
+    const c = step?.changes[0];
+    const actor = step?.actor ?? step?.subject ?? null;
+    if (!step || !c || !actor || !ARROWED.has(c.kind)) return [h("span", { class: "bv-strip-text" }, ...captionKids(step))];
+    const targets = [...new Set(step.changes.map((x) => x.unit))];
+    const arrow = () => h("span", { class: "bv-arrow dim", "aria-hidden": "true" }, "→");
+    return [
+      unitName(actor),
+      arrow(),
+      kindIcon(c),
+      ...(targets.length === 1 && targets[0] === actor ? [] : [arrow(), unitName(c.unit), ...(targets.length > 1 ? [h("span", { class: "bv-more dim" }, `+${targets.length - 1}`)] : [])]),
+      h("b", { class: `bv-num ${c.kind}`, "data-testid": "strip-num" }, c.label),
+    ];
+  }
+  /** The effect's icon in its kind's colour (a status shows its own). */
+  function kindIcon(c: Change): Node {
+    const e = log[c.eventId];
+    const status = c.kind === "status" && e?.type === "StatusApplied" ? termDef(`status:${e.status}` as TermId, a.content.statuses) : undefined;
+    return h("span", { class: `bv-eff ${c.kind}`, "data-testid": "strip-icon", "data-kind": c.kind }, icon(status?.icon ?? KIND_ICON[c.kind], 18, status ? `tone-${status.tone}` : ""));
+  }
+  /** A chain's links as dots (●●●○: landed filled); a long chain is "n/N". Never wraps. */
+  function chainDots(links: number, at: number): HTMLElement {
+    if (links > CHAIN_DOTS_MAX) return h("span", { class: "bv-dots", "data-testid": "caption-chain" }, tr("battle.chain.step", { n: at + 1, of: links }));
+    return h("span", { class: "bv-dots", "data-testid": "caption-chain", "aria-label": tr("battle.chain.step", { n: at + 1, of: links }) }, ...Array.from({ length: links }, (_, i) => h("i", { class: i <= at ? "on" : "" })));
+  }
+  /** The caption as plain text, for the strip's label. */
+  function plainCaption(step: Step | undefined): string {
+    return step ? step.caption.replace(TAG, (_m, id: string) => name(id)) : tr("battle.caption.faceOff");
+  }
+
   /** The caption, led by whose unit it is about (the first one it names). */
   function captionKids(step: Step | undefined): Node[] {
     if (!step) return [document.createTextNode(tr("battle.caption.faceOff"))];
@@ -1781,16 +1809,6 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       if (!more) list.prepend((more = h("span", { class: "bv-l dim bv-still-more" })));
       more.textContent = `+${dropped} earlier`;
     }
-  }
-  /** The recent beats show only rows that fit whole: when the reduced-motion
-   * list above them grows a line, the oldest row goes instead of being cut
-   * by the control bar (R2-17). */
-  function fitRecent(): void {
-    if (recent.style.display === "none") return;
-    const rows = [...recent.children] as HTMLElement[];
-    for (const r of rows) r.hidden = false;
-    const bottom = recent.getBoundingClientRect().bottom;
-    for (const r of rows) if (r.getBoundingClientRect().bottom > bottom + 0.5) r.hidden = true;
   }
   /** The end card sits under the caption on the phone (its last line, "They
    * win", stays readable) and under the HUD on desktop, as tall as what it
@@ -2044,7 +2062,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         h("div", { class: "label bv-lab-you" }, a.you ? tr("battle.you") : owner(you), h("span", { class: "bv-ph" }, tr("battle.lab.frontFirst")), h("span", { class: "bv-dk" }, tr("battle.lab.frontRight"))),
       ),
       timeline,
-      h("div", { class: "bv-below" }, chainBox, still, recent),
+      h("div", { class: "bv-below" }, ledger),
       controls,
     ),
     fx,
