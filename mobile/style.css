@@ -1658,7 +1658,33 @@ button.reroll-btn:disabled .cost-chip { background: var(--soft); }
 .bv-ledger-head { flex: none; height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .bv-ledger-turn { font-family: var(--font-head); font-weight: var(--head-weight); font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dim); }
 .bv-ledger-body { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 4px; }
-.bv-ledger .bv-chain-sum { padding: 0; border: none; box-shadow: none; background: none; }
+/* One row per unit changed this turn, your side's column and theirs. Rows only fill in, they never slide; a short phone scrolls the list by hand (the log has every number). */
+.bv-ledger-list { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; align-content: start; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 8px; }
+.bv-lcol { grid-row: 1; display: grid; grid-auto-rows: 24px; gap: 2px; align-content: start; min-width: 0; }
+.bv-ledger-list.empty::before { content: attr(data-empty); grid-column: 1 / -1; grid-row: 1; color: var(--dim); font-size: 14px; line-height: 24px; }
+.bv-lrow { display: flex; align-items: center; gap: 4px; min-width: 0; height: 24px; border-left: 3px solid var(--you); padding-left: 5px; overflow: hidden; cursor: pointer; }
+.bv-lrow.ghost { border-left-color: var(--them); }
+.bv-lrow.fallen .bv-lname { text-decoration: line-through; opacity: 0.7; }
+.bv-lchips { flex: 0 1 auto; min-width: 0; display: flex; align-items: center; gap: 2px; overflow: hidden; }
+.bv-lname { flex: 0 1 auto; min-width: 0; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; }
+button.bv-lchip, span.bv-lchip { flex: none; pointer-events: auto; min-height: 0; height: 20px; padding: 0 2px; display: inline-flex; align-items: center; gap: 2px; border: none; border-radius: 3px; clip-path: none; box-shadow: none; translate: none; background: none; text-transform: none; letter-spacing: 0; font-family: var(--font-num); font-size: 14px; font-weight: 700; line-height: 20px; white-space: nowrap; color: var(--text); }
+button.bv-lchip.damage, button.bv-lchip.debuff, span.bv-lchip.dead { color: var(--them); }
+button.bv-lchip.heal { color: var(--you); }
+button.bv-lchip.buff { color: var(--action); }
+button.bv-lchip.zero { opacity: 0.45; }
+.bv-lchip svg { flex: none; }
+/* A phone's column is narrow: the name takes a line of its own, the unit's numbers the next. */
+@media (max-width: 1023.98px) {
+  .bv-lcol { grid-auto-rows: 38px; }
+  .bv-lrow { height: 38px; flex-direction: column; align-items: stretch; justify-content: center; gap: 0; }
+  .bv-lname { flex: none; max-width: none; line-height: 18px; }
+  .bv-lchips { flex: none; height: 20px; }
+  button.bv-lchip, span.bv-lchip { font-size: 13px; }
+  .bv-ledger-head { height: 34px; }
+  .bv-ledger button.bv-skip { min-height: 30px; padding: 0 12px; font-size: 14px; }
+}
+.bv-ledger-foot { flex: none; height: 22px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 14px; font-weight: 600; line-height: 22px; }
+.bv-ledger-foot .bv-chain-sum { flex-wrap: nowrap; overflow: hidden; line-height: 22px; animation: none; padding: 0; border: none; box-shadow: none; background: none; }
 /* The chain's summary, at its last link. */
 .bv-chain-sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 6px 10px; border: 2px solid var(--outline); border-radius: 10px; background: var(--panel); box-shadow: 3px 3px 0 var(--outline); font-size: 14px; font-weight: 600; line-height: 1.35; animation: bv-chip-in 220ms ease-out backwards; }
 .bv-chain-of { color: var(--action); font-weight: 700; }
@@ -1666,6 +1692,12 @@ button.reroll-btn:disabled .cost-chip { background: var(--soft); }
 button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padding: 0 16px; font-size: 15px; }
 @media (prefers-reduced-motion: reduce) { .bv-card > .bv-chain-chip, .bv-chain-sum { animation: none; } }
 @media (min-width: 1024px) {
-  #app[data-screen="battle"] .bv-ledger { flex: none; height: 112px; }
+  #app[data-screen="battle"] .bv-ledger { flex: none; height: 208px; }
+  #app[data-screen="battle"] .bv-ledger-head { height: 32px; }
+  .bv-ledger button.bv-skip { min-height: 28px; padding: 0 12px; }
+  .bv-ledger-list { gap: 0 24px; }
+  .bv-lcol { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 12px; }
+  .bv-lname { font-size: 16px; max-width: 55%; }
+  button.bv-lchip, span.bv-lchip { font-size: 16px; }
   #app[data-screen="battle"] .bv-chain-sum { font-size: 16px; max-width: 900px; }
 }
