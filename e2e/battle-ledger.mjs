@@ -88,6 +88,10 @@ const watch = () => {
     const line = document.querySelector('[data-testid="caption"] .bv-strip-line');
     if (line) {
       if (line.scrollWidth > line.clientWidth + 1) once(`strip "${line.textContent}" runs past its line (${line.scrollWidth} > ${line.clientWidth}; parts ${[...line.children].map((c) => Math.round(c.getBoundingClientRect().width)).join("+")})`);
+      // A name cut with an ellipsis while the line has room to spare (a rounded-down width cut "Gnat" to "Gn…").
+      const kids = [...line.children];
+      const free = line.clientWidth - kids.reduce((n, k) => n + k.getBoundingClientRect().width + 4, -4) + (line.querySelector(".bv-dots")?.getBoundingClientRect().width ?? 0) - 28;
+      for (const nm of line.querySelectorAll(":scope > .bv-cn")) if (nm.scrollWidth > nm.clientWidth + 0.5 && free > 8) once(`strip name "${nm.textContent}" is cut (${nm.clientWidth}px of ${nm.scrollWidth}px) with ${Math.round(free)}px free on the line`);
       const actor = line.querySelector(":scope > .bv-cn");
       if (actor && wide(actor)) {
         const text = actor.textContent;

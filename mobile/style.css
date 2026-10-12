@@ -784,6 +784,7 @@ button.bv-caption.tappable::after { content: "ⓘ"; flex: none; margin-left: 4px
 .bv-strip-line .bv-arrow { font-size: 13px; }
 /* A line too full for the number's word shows its short form: "Curse ×1" → "×1", "no damage" → "0" (battle.ts fitStrip). */
 .bv-strip-line.tight > .bv-num[data-short] > .bv-w { display: none; }
+.bv-strip-line.tight > .bv-num.wordonly { display: none; }
 .bv-strip-line.tight > .bv-num.wordy { font-size: 0; }
 .bv-strip-line.tight > .bv-num.wordy::after { content: attr(data-short); font-size: 1.1rem; }
 .bv-num { font-family: var(--font-num); font-size: 1.1em; }

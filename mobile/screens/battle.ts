@@ -29,6 +29,7 @@ import { app, button, closable, fitText, h, isDesktop, onGone, onKeys, onLeave, 
 import { t as tr } from "../i18n";
 import { icon } from "../ui/icon";
 import { statusesShown, STATUS_ROW_FALLBACK } from "../ui/status-row";
+import { numFormOf, planStrip } from "../ui/strip-fit";
 import { effectsOf, statNets, type Effect } from "../ui/effects";
 import { beatCues, endSound } from "../ui/sound-map";
 import { play as playSfx } from "../ui/sound";
@@ -1897,26 +1898,52 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   }
   /** The number in the strip: "Curse ×1" is a word and its count. A line too full to hold it drops the word ("×1", "no damage" → "0"): fitStrip. A short one ("−4") keeps its width. */
   function stripNum(c: Change): HTMLElement {
-    const m = /^([^\d×+−-]+?)\s*([×+−-]?\d.*)$/.exec(c.label);
-    const t = /^([×+−-]?\d+)\s+(\p{L}{6,})$/u.exec(c.label); // "1 blocked": the count, then a long word
-    const el = m
-      ? h("b", { class: `bv-num ${c.kind}`, "data-testid": "strip-num" }, h("span", { class: "bv-w" }, `${m[1]} `), m[2]!)
-      : t
-        ? h("b", { class: `bv-num ${c.kind}`, "data-testid": "strip-num" }, `${t[1]} `, h("span", { class: "bv-w" }, t[2]!))
-        : h("b", { class: `bv-num ${c.kind}`, "data-testid": "strip-num" }, c.label);
-    if (!m && c.kind === "damage" && !/\d/.test(c.label)) { el.dataset.short = "0"; el.classList.add("wordy"); }
-    if (m) el.dataset.short = m[2]!;
-    if (t) el.dataset.short = t[1]!;
+    const f = numFormOf(c.label, c.kind);
+    const el = f.word !== undefined
+      ? h("b", { class: `bv-num ${c.kind}`, "data-testid": "strip-num" }, ...(f.wordFirst ? [h("span", { class: "bv-w" }, `${f.word} `), f.count!] : [`${f.count} `, h("span", { class: "bv-w" }, f.word)]))
+      : h("b", { class: `bv-num ${c.kind}`, "data-testid": "strip-num" }, c.label);
+    if (f.wordOnly) el.classList.add(f.short === "" ? "wordonly" : "wordy"); // "silenced": the icon says it
+    if (f.short) el.dataset.short = f.short;
     el.style.flexShrink = "0";
     el.style.minWidth = "0";
     return el;
   }
-  /** Drops the strip's number to its short form when the line runs out of room (the number is never cut or covered, the word goes first). */
+  /** Fits the strip's line (planStrip, mobile/ui/strip-fit.ts): when it runs over, the target shrinks, then the actor (never under ~6 characters), then the number drops its word to the icon; the number stays. */
   function fitStrip(): void {
     const line = caption.querySelector<HTMLElement>(".bv-strip-line");
     if (!line) return;
     line.classList.remove("tight");
-    if (line.scrollWidth > line.clientWidth + 1) line.classList.add("tight");
+    const kids = [...line.children] as HTMLElement[];
+    const actor = line.querySelector<HTMLElement>(":scope > .bv-strip-actor");
+    const target = line.querySelector<HTMLElement>(":scope > .bv-strip-target");
+    const num = line.querySelector<HTMLElement>(":scope > .bv-num");
+    for (const el of [actor, target]) if (el) { el.style.removeProperty("flex"); el.style.removeProperty("width"); }
+    if (!actor || !num || !line.clientWidth) return;
+    const GAP = 4;
+    // Natural widths: every name unshrunk, the number with and without its word; the plan then gives them back what the line can hold.
+    for (const el of [actor, target]) if (el) { el.style.flex = "none"; el.style.width = "auto"; }
+    const w = (el: HTMLElement) => el.getBoundingClientRect().width;
+    const em = (el: HTMLElement) => parseFloat(getComputedStyle(el).fontSize) || 16;
+    const floor = (el: HTMLElement, role: "actor" | "target") => Math.min(w(el), (role === "actor" ? 6 * 0.62 + 0.8 : 2.4) * em(el));
+    const full = w(num);
+    line.classList.add("tight");
+    const short = getComputedStyle(num).display === "none" ? 0 : w(num);
+    line.classList.remove("tight");
+    const rest = kids.filter((k) => k !== actor && k !== target && k !== num);
+    const restW = rest.reduce((sum, k) => sum + (k.classList.contains("bv-dots") ? Math.min(w(k), parseFloat(getComputedStyle(k).minWidth) || 0) : w(k)), 0);
+    const parts = rest.length + 1 + (target ? 1 : 0);
+    const plan = planStrip({
+      avail: line.clientWidth,
+      others: restW + GAP * (parts - 1),
+      actor: { nat: w(actor), min: floor(actor, "actor") },
+      target: target ? { nat: w(target), min: floor(target, "target") } : null,
+      num: { full: full + GAP, short: short ? short + GAP : 0 },
+    });
+    for (const [el, px] of [[actor, plan.actor], [target, plan.target]] as const) {
+      if (!el) continue;
+      if (px < w(el) - 0.01) { el.style.flex = `0 0 ${px}px`; el.style.width = `${px}px`; } else { el.style.flex = "none"; el.style.width = "auto"; el.style.minWidth = "0"; }
+    }
+    line.classList.toggle("tight", plan.short);
   }
   /** A name in the strip. A short name keeps its whole width; a long one gives way with an ellipsis, the target first (CSS) and the actor last, never under 6 characters. */
   function stripName(id: string, role: "actor" | "target"): HTMLElement {
