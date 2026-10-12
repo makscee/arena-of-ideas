@@ -22,10 +22,10 @@ if (!url) {
   const port = await new Promise((r) => { const s = createServer().listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => r(p)); }); });
   child = spawn("node", ["--import", "tsx/esm", "server/src/mvp/main.ts"], { env: { ...process.env, PORT: String(port), MVP_DEV: "1", ARENA_SCENES: "1", MVP_DB: ":memory:", ARENA_TUNER: "instant" }, stdio: ["ignore", "inherit", "inherit"] });
   url = `http://127.0.0.1:${port}/arena/`;
-  for (let i = 0; i < 300; i++) { // up to 60 s on a loaded machine
-    try { if ((await fetch(url + "api/v1/health")).ok) break; } catch {}
-    await new Promise((r) => setTimeout(r, 200));
-  }
+}
+for (let i = 0; i < 300; i++) { // up to 60 s on a loaded machine
+  try { if ((await fetch(url + "api/v1/health")).ok) break; } catch {}
+  await new Promise((r) => setTimeout(r, 200));
 }
 
 const scenes = (await (await fetch(url + "api/v1/dev/scenes")).json()).filter((s) => !only || only.includes(s.id));
