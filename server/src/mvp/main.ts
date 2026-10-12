@@ -44,7 +44,7 @@ import { serve } from "@hono/node-server";
 import { mkdirSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { createMvpApp } from "./app.js";
-import { startMvpJobs } from "./jobs.js";
+import { SCENE_JOBS, startMvpJobs } from "./jobs.js";
 import { poolContent, seedUnits } from "./pool.js";
 import { MVP_RULES } from "../../../src/mvp/contract.js";
 import { mvpRuntime } from "./runtime.js";
@@ -82,6 +82,6 @@ const publicUrl = (process.env.ARENA_PUBLIC_URL ?? "https://arena.makscee.ru/are
 const app = mvpServerApp(createMvpApp(rt), { staticRoot: root, build, pageMeta: (url, lang) => shareMeta(rt, url, publicUrl, lang) });
 
 serve({ port, hostname: host, fetch: underBasePath(app, basePath) });
-startMvpJobs(rt);
+startMvpJobs(rt, rt.scenes ? SCENE_JOBS : undefined);
 if (rt.scenes) void warmScenes(rt);
 console.log(`arena mvp on http://${host}:${port} (base ${basePath}, build ${build ?? "unknown"}, content ${content.version}, db ${dbPath}, static ${staticDir}${rt.dev ? ", dev" : ""}${rt.scenes ? ", scenes" : ""}${tuner ? ", instant tuner" : ""}${rt.rotation ? ", rotation on" : ""}${rt.invites ? (rt.open ? ", open to all" : ", invite-only") : ""}${telegram ? (telegram instanceof FakeTelegram ? ", fake telegram" : `, telegram @${telegram.bot}`) : ""}${mail ? (mail instanceof FakeMailer ? ", fake mail" : ", mail") : ""})`);
