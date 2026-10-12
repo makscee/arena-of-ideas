@@ -781,6 +781,10 @@ button.bv-caption.tappable::after { content: "ⓘ"; flex: none; margin-left: 4px
 .bv-strip-line > .bv-num { flex: 0 2 auto; min-width: 4.5em; overflow: hidden; text-overflow: ellipsis; }
 .bv-strip-line .bv-eff { display: inline-flex; align-items: center; }
 .bv-strip-line .bv-arrow { font-size: 13px; }
+/* A line too full for the number's word shows its short form: "Curse ×1" → "×1", "no damage" → "0" (battle.ts fitStrip). */
+.bv-strip-line.tight > .bv-num[data-short] > .bv-w { display: none; }
+.bv-strip-line.tight > .bv-num.wordy { font-size: 0; }
+.bv-strip-line.tight > .bv-num.wordy::after { content: attr(data-short); font-size: 1.1rem; }
 .bv-num { font-family: var(--font-num); font-size: 1.1em; }
 /* The strip tells each kind in the colour its effect has on the board (ui/effects.ts LANGUAGE). */
 .bv-num.damage, .bv-eff.damage { color: var(--k-dmg); }
@@ -1354,6 +1358,13 @@ button.chip.quiet.on { background: none; color: var(--text); border-color: var(-
   #app[data-screen="battle"] button.bv-caption.ended { height: auto; }
 }
 
+/* A phone of 640 px (360×640): the ledger needs two whole rows (mission 1007, #1010), so the gaps between the screen's boxes, the caption and the ledger's head give theirs up. */
+@media (max-width: 1023.98px) and (min-height: 521px) and (max-height: 700px) {
+  #app[data-screen="battle"] .bv-screen { gap: 4px; }
+  #app[data-screen="battle"] button.bv-caption { height: 38px; padding-top: 2px; padding-bottom: 2px; }
+  #app[data-screen="battle"] .bv-ledger-head { height: 26px; }
+  #app[data-screen="battle"] .bv-ledger button.bv-skip { min-height: 24px; padding: 0 10px; font-size: 13px; }
+}
 /* R2-17 batch E: a short phone screen (a phone on its side, 640×360). The
  * battle still fits whole, the control bar on screen: tighter gaps, no side
  * labels (the caption's YOU / THEM tags say whose), a shorter caption and

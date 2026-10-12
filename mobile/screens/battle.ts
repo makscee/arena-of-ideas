@@ -1437,6 +1437,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const chained = !sum && !!beat && isChain(beat);
     caption.replaceChildren(h("span", { class: "bv-strip-line bv-cap" }, ...(sum ? [h("span", { class: "bv-strip-text", "data-testid": "caption-turn-end" }, sum.turn >= 1 ? tr("battle.totals.turn", { n: sum.turn }) : tr("battle.totals.start"))] : stripKids(step)), ...(chained ? [chainDots(beat!.waves.length, wave)] : [])));
     caption.setAttribute("aria-label", sum ? tr("battle.totals.turn", { n: sum.turn }) : plainCaption(step));
+    fitStrip();
     // The ledger (below the board): the turn, Skip chain while a chain plays, a row per unit changed, a chain's summary or the turn's bottom line.
     ledgerHead.replaceChildren(h("span", { class: "bv-ledger-turn", "data-testid": "ledger-turn" }, turnLabel(shownTurn)), ledgerMore, ...(inChain() ? [skipBtn] : []));
     const ledgerLive = v.waves.some((w) => w.age !== null) && !reduced();
@@ -1879,11 +1880,28 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
       stripNum(c),
     ];
   }
-  /** The number in the strip: a short one ("−4") keeps its width, a long label ("Strength ×1") may give way, after the target. */
+  /** The number in the strip: "Curse ×1" is a word and its count. A line too full to hold it drops the word ("×1", "no damage" → "0"): fitStrip. A short one ("−4") keeps its width. */
   function stripNum(c: Change): HTMLElement {
-    const el = h("b", { class: `bv-num ${c.kind}`, "data-testid": "strip-num" }, c.label);
-    if ([...c.label].length <= 8) { el.style.flexShrink = "0"; el.style.minWidth = "0"; }
+    const m = /^([^\d×+−-]+?)\s*([×+−-]?\d.*)$/.exec(c.label);
+    const t = /^([×+−-]?\d+)\s+(\p{L}{6,})$/u.exec(c.label); // "1 blocked": the count, then a long word
+    const el = m
+      ? h("b", { class: `bv-num ${c.kind}`, "data-testid": "strip-num" }, h("span", { class: "bv-w" }, `${m[1]} `), m[2]!)
+      : t
+        ? h("b", { class: `bv-num ${c.kind}`, "data-testid": "strip-num" }, `${t[1]} `, h("span", { class: "bv-w" }, t[2]!))
+        : h("b", { class: `bv-num ${c.kind}`, "data-testid": "strip-num" }, c.label);
+    if (!m && c.kind === "damage" && !/\d/.test(c.label)) { el.dataset.short = "0"; el.classList.add("wordy"); }
+    if (m) el.dataset.short = m[2]!;
+    if (t) el.dataset.short = t[1]!;
+    el.style.flexShrink = "0";
+    el.style.minWidth = "0";
     return el;
+  }
+  /** Drops the strip's number to its short form when the line runs out of room (the number is never cut or covered, the word goes first). */
+  function fitStrip(): void {
+    const line = caption.querySelector<HTMLElement>(".bv-strip-line");
+    if (!line) return;
+    line.classList.remove("tight");
+    if (line.scrollWidth > line.clientWidth + 1) line.classList.add("tight");
   }
   /** A name in the strip. A short name keeps its whole width; a long one gives way with an ellipsis, the target first (CSS) and the actor last, never under 6 characters. */
   function stripName(id: string, role: "actor" | "target"): HTMLElement {
@@ -2032,6 +2050,7 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
    * the card acting, so the event reads where it happens; a turn's totals or
    * a beat with nobody acting keep it centred. It slides, never leaves the board. */
   function placeCaption(): void {
+    fitStrip();
     delete caption.dataset.at;
     const card = isDesktop() && !finished ? [mine, enemy].map((r) => r.querySelector<HTMLElement>(".bv-card.acting")).find((x) => x) : undefined;
     const board = caption.parentElement?.getBoundingClientRect();

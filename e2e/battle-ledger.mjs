@@ -5,10 +5,10 @@
 //   - a chip, once drawn, stays (its unit's row never loses one) until the next turn clears the list;
 // and at every turn end (controls[data-turn-end]) that the foot reads the turn's bottom line, whose
 // "dealt" and "took" equal the damage chips of the two columns, and that it stays until the next turn.
-// Nothing the eye reads is clipped (the reopened #1010): on the phone (390×844 EN, 360×740 RU) and the desktop
+// Nothing the eye reads is clipped (the reopened #1010): on the phone (390×844 EN, 360×740 and 360×640 RU/EN) and the desktop
 // (1536×960), on every frame
 //   - no name or chip group in a ledger row is ellipsised unless its row already spans its whole column;
-//   - a row is shown whole or not at all in the list's window, a row out of the window shows the "more" hint,
+//   - a row is shown whole or not at all in the list's window (and the window holds 2 whole rows when 2 exist), a row out of the window shows the "more" hint,
 //     and the foot line is never covered by the list;
 //   - the action strip's actor keeps at least 6 characters (its whole name when shorter) and nothing in the
 //     strip runs past the line.
@@ -25,6 +25,8 @@ const rounds = Number(arg("--rounds", "3"));
 const SCENES = [
   { name: "phone 390×844 EN", viewport: { width: 390, height: 844 }, lang: "en" },
   { name: "phone 360×740 RU", viewport: { width: 360, height: 740 }, lang: "ru" },
+  { name: "phone 360×640 EN", viewport: { width: 360, height: 640 }, lang: "en" },
+  { name: "phone 360×640 RU", viewport: { width: 360, height: 640 }, lang: "ru" },
   { name: "desktop 1536×960 EN", viewport: { width: 1536, height: 960 }, lang: "en" },
 ];
 const only = arg("--scene");
@@ -72,6 +74,11 @@ const watch = () => {
       const half = rr.top < lr.bottom - 0.5 && rr.bottom > lr.bottom + 0.5 || rr.top < lr.top - 0.5 && rr.bottom > lr.top + 0.5;
       if (half) once(`turn ${now.turn}: ${row.dataset.unit}'s row is cut by the list's edge (row ${Math.round(rr.top)}–${Math.round(rr.bottom)}, list ${Math.round(lr.top)}–${Math.round(lr.bottom)})`);
       if (rr.top >= lr.bottom - 0.5 || rr.bottom <= lr.top + 0.5) hidden++;
+    }
+    for (const col of el.querySelectorAll(".bv-lcol")) {
+      const rows = [...col.children];
+      const whole = rows.filter((r) => r.getBoundingClientRect().top >= lr.top - 0.5 && r.getBoundingClientRect().bottom <= lr.bottom + 0.5).length;
+      if (rows.length >= 2 && whole < 2) once(`turn ${now.turn}: the list's window holds ${whole} whole row${whole === 1 ? "" : "s"} of ${rows.length}, it must hold 2 (window ${Math.round(lr.height)}px)`);
     }
     const more = el.querySelector('[data-testid="ledger-more"]');
     if (hidden && (!more || more.hidden || getComputedStyle(more).display === "none")) once(`turn ${now.turn}: ${hidden} rows are out of the window and nothing says so`);
@@ -154,6 +161,20 @@ for (let round = 1; round <= rounds; round++) {
     if (await page.getByTestId("buy").isDisabled()) { await page.getByTestId("offer-close").click(); break; }
     await page.getByTestId("buy").click();
     await page.waitForFunction((g) => document.querySelector('[data-testid="gold"]')?.textContent !== `${g}g`, gold);
+  }
+  // A 3rd copy awakens a unit and brings a gift chooser over the shop: skip it (as mvp-phone does).
+  if (await page.getByTestId("gift-skip").isVisible().catch(() => false)) {
+    await page.getByTestId("gift-skip").click();
+    await page.getByTestId("gift-skip").waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
+  }
+  // A line left empty (nothing bought, the offers unaffordable) can't fight: try the other offers.
+  for (const i of [1, 2]) {
+    if (!(await page.getByTestId("fight").isDisabled())) break;
+    if ((await page.getByTestId("overlay").count()) > 0) await page.keyboard.press("Escape");
+    if ((await page.getByTestId(`offer-${i}`).count()) === 0) continue;
+    await page.getByTestId(`offer-${i}`).click();
+    if (await page.getByTestId("buy").isDisabled()) { await page.getByTestId("offer-close").click(); continue; }
+    await page.getByTestId("buy").click();
   }
   await page.getByTestId("fight").click();
   await page.getByTestId("battle-end").waitFor({ timeout: 10_000 });
