@@ -9,7 +9,7 @@ import SOUNDS from "./sounds.json";
  * SOUND_FILES at its own rate (void-board#922: one family, Duamo's, so a cue
  * from the 2022 set now plays a Duamo file instead). */
 export const SOUND_KEYS = [
-  "block", "buff", "click", "coin", "death", "debuff", "discover", "draw", "freeze", "fuse", "hit", "level-up", "lose", "merge",
+  "block", "buff", "click", "coin", "death", "debuff", "discover", "draw", "freeze", "fuse", "heal", "hit", "level-up", "lose", "merge",
   "move-left", "move-right", "reroll", "sell", "shield", "spawn", "start", "status", "status-off", "unfreeze", "win", "wrong", "zap",
 ] as const;
 export type SoundKey = (typeof SOUND_KEYS)[number];
@@ -150,7 +150,7 @@ export function waveSound(step: Step, log: BattleEvent[], waveIndex: number): Cu
     return cue(struck ? "hit" : "zap", rate);
   }
   if (hurts.some((e) => (e.absorbed ?? 0) > 0)) return cue("block", rate);
-  if (has("Heal")) return cue("buff", 1.2 * rate);
+  if (has("Heal")) return cue("heal", rate);
   const stats = evs.filter((e): e is Extract<BattleEvent, { type: "StatChanged" }> => e.type === "StatChanged");
   if (stats.some((e) => e.delta > 0)) return cue("buff", rate);
   if (stats.some((e) => e.delta < 0) || has("Silenced")) return cue("debuff", rate);
