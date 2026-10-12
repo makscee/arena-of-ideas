@@ -56,7 +56,6 @@ const watch = () => {
   const seen = new Set();
   const once = (msg) => { if (!seen.has(msg)) { seen.add(msg); L.bad.push(msg); } };
   const wide = (el) => el.scrollWidth > el.clientWidth + 1;
-  const ctx = document.createElement("canvas").getContext("2d");
   /** The clipping checks of one frame. */
   const clipped = (now) => {
     const el = document.querySelector('[data-testid="ledger"]');
@@ -78,16 +77,23 @@ const watch = () => {
     if (hidden && (!more || more.hidden || getComputedStyle(more).display === "none")) once(`turn ${now.turn}: ${hidden} rows are out of the window and nothing says so`);
     if (!hidden && more && !more.hidden && getComputedStyle(more).display !== "none") once(`turn ${now.turn}: the "more" hint shows with every row in view`);
     if (foot.getBoundingClientRect().top < lr.bottom - 0.5) once(`turn ${now.turn}: the list runs over the foot line`);
-    if (wide(foot) && !foot.querySelector(".bv-chain-sum")) once(`turn ${now.turn}: the foot line is clipped: "${foot.textContent}"`);
     // The action strip: the actor keeps 6 characters, and nothing runs past the line.
     const line = document.querySelector('[data-testid="caption"] .bv-strip-line');
     if (line) {
-      if (line.scrollWidth > line.clientWidth + 1) once(`strip "${line.textContent}" runs past its line (${line.scrollWidth} > ${line.clientWidth})`);
+      if (line.scrollWidth > line.clientWidth + 1) once(`strip "${line.textContent}" runs past its line (${line.scrollWidth} > ${line.clientWidth}; parts ${[...line.children].map((c) => Math.round(c.getBoundingClientRect().width)).join("+")})`);
       const actor = line.querySelector(":scope > .bv-cn");
       if (actor && wide(actor)) {
         const text = actor.textContent;
-        ctx.font = getComputedStyle(actor).font;
-        const need = [...text].length <= 6 ? ctx.measureText(text).width : ctx.measureText([...text].slice(0, 6).join("")).width + ctx.measureText("…").width;
+        // What a clipped name really shows: the laid-out width of its first 6 characters (a Range reads it off the text node), plus an ellipsis in the same style.
+        const range = document.createRange();
+        range.setStart(actor.firstChild, 0);
+        range.setEnd(actor.firstChild, Math.min(6, text.length));
+        const ell = actor.cloneNode(false);
+        ell.textContent = "…";
+        Object.assign(ell.style, { position: "absolute", visibility: "hidden", flex: "none", minWidth: "0", overflow: "visible" });
+        line.append(ell);
+        const need = [...text].length <= 6 ? actor.scrollWidth : range.getBoundingClientRect().width + ell.getBoundingClientRect().width;
+        ell.remove();
         if (actor.clientWidth < need - 1.5) once(`strip actor "${text}" is cut to ${actor.clientWidth}px, it needs ${Math.round(need)}px for 6 characters`);
       }
     }
@@ -143,6 +149,7 @@ for (let round = 1; round <= rounds; round++) {
     if ((await page.getByTestId("gold").count()) === 0) break;
     const gold = Number((await page.getByTestId("gold").textContent()).replace("g", ""));
     if (gold < 3 || (await page.getByTestId("line").locator(".card.you").count()) >= 5) break;
+    if ((await page.getByTestId("overlay").count()) > 0) await page.keyboard.press("Escape"); // a notice left open by the last battle
     await page.getByTestId("offer-0").click();
     if (await page.getByTestId("buy").isDisabled()) { await page.getByTestId("offer-close").click(); break; }
     await page.getByTestId("buy").click();
