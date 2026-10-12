@@ -451,76 +451,90 @@ export interface PlayBeat {
   start: number;
 }
 
-/** Milliseconds between waves at 1×, the shortest a beat lasts, and the cap
- * (round 3, note 14: about 1.5× round 2's, so every hit can be followed). */
-export const WAVE_MS = 220;
-export const BEAT_MS = 1300;
-export const BEAT_MAX_MS = 2200;
-/** A quiet beat (one wave, a plain hit or a status tick, nothing dies) is
- * shorter: a −1 trade shouldn't take as long as a kill (pacing by weight). */
-export const QUIET_BEAT_MS = 900;
-/** A quiet beat of a few waves (a −1 hit and the +1 heal it sets off) holds
- * its last wave this long, and lasts at least QUIET_MULTI_MS (R3-26). */
-const QUIET_HOLD_MS = 650;
-export const QUIET_MULTI_MS = 1000;
-/** A quiet beat that repeats one of the turn before (the same lines again:
- * Medic heals itself +1 each turn against a 1-PWR striker) plays at this
- * share of its time (R3-26: early fights were 40+ s of the same lines). */
-export const REPEAT_SHARE = 0.7;
-/** How long the last wave stays before the next beat. */
-const BEAT_HOLD_MS = 800;
+/** Pacing at 1× (mission 1007, slice 4; the report's timing table). Every
+ * wave is one line in the strip and stays on screen at least LINE_FLOOR_MS at
+ * 1× (lineFloorMs at other speeds), except a chain's links, which are dots in
+ * the strip and rows in the ledger. A strike (any wave that hurts) lasts
+ * STRIKE_MS, a heal / buff / status / summon wave EFFECT_MS; a hit that kills
+ * is read for HIT_BEFORE_DEATH_MS, then the death wave runs DEATH_MS (the
+ * freeze 150 ms and the fall 350 ms, read to the floor). */
+export const LINE_FLOOR_MS = 600;
+export const STRIKE_MS = 750;
+export const EFFECT_MS = 650;
+export const HIT_BEFORE_DEATH_MS = 600;
+export const DEATH_MS = 600;
+/** The shortest a line stays on screen at `speed` (real ms): 600 / 300 / 200 at 1× / 2× / 4×. */
+export function lineFloorMs(speed: number): number {
+  return Math.max(200, Math.round(LINE_FLOOR_MS / speed));
+}
 /** How long the line-up shows before the first beat, at 1×. */
-export const LINEUP_MS = 900;
+export const LINEUP_MS = 700;
 /** The empty beat after the deciding blow (the battle's end, no change on
  * the board): short, so the end card follows the blow's own hold. */
 export const END_BEAT_MS = 150;
-/** The time a beat's big moments add at 1× (note 14): a kill, a hit of
+/** The time a beat's big moments add at 1× after its last wave: a hit of
  * BIG_HIT_MIN or more, a summon or revive, the first fatigue beat, and the
- * battle's last beat (the deciding blow, before the end card). */
-export const EMPHASIS_MS = { kill: 350, big: 200, summon: 250, fatigue: 500, last: 600 } as const;
+ * battle's last beat (the deciding blow, before the end card). A kill's time
+ * is in its death wave. */
+export const EMPHASIS_MS = { big: 200, summon: 250, fatigue: 500, last: 600 } as const;
+/** The Fatigue banner's time on screen at 1× (the first fatigue beat's emphasis plus a second-and-a-bit). */
+export const FATIGUE_BANNER_MS = EMPHASIS_MS.fatigue + 1300;
 /** How long a card stands still after its killing blow lands, before it pops. */
 export const KILL_FREEZE_MS = 120;
 /** A hit counts as big at this much damage (the timeline's marks also scale it to the battle). */
 export const BIG_HIT_MIN = 4;
 
-/** What a beat holds that earns it more time; `quiet` (only small changes)
- * and `repeat` (a quiet beat the turn before already played) earn it less. */
-export type BeatWeight = Partial<Record<keyof typeof EMPHASIS_MS | "end" | "quiet" | "repeat", boolean>>;
-
-/** Only small changes: hits under BIG_HIT_MIN, heals, statuses, PWR / HP, a silence; no death or summon. */
-function quietBeat(log: BattleEvent[], b: PlayBeat): boolean {
-  return b.waves.every((w) => w.changes.every((c) => {
-    if (c.kind === "death" || c.kind === "summon") return false;
-    const e = log[c.eventId];
-    return !(e?.type === "Hurt" && e.amount >= BIG_HIT_MIN);
-  }));
-}
-/** A beat's lines, to tell a repeat: its waves' captions. */
+/** What a beat holds that earns it more time. */
+export type BeatWeight = Partial<Record<keyof typeof EMPHASIS_MS | "kill" | "end", boolean>>;
+/** A beat's lines, to tell a repeat turn: its waves' captions. */
 const linesOf = (b: PlayBeat) => b.waves.map((w) => w.caption).join("\n");
 
-/** When each wave lands (ms from the beat's start, at 1×) and how long the
- * beat lasts: waves 220 ms apart, squeezed so the last lands by 1.4 s; the
- * beat lasts 1.3 s, up to 2.2 s for a long cascade, and 0.9 s when quiet. */
-/** A beat of CHAIN_MIN waves or more plays as a chain (#913): each link
- * gets CHAIN_LINK_MS at 1×, however long the chain, and the chain's summary
- * holds CHAIN_SUM_MS after its last link. Under the old 2.2 s cap a 19-step
- * Start chain ran at 70 ms a link: one flash nobody could follow. */
+/** A beat of CHAIN_MIN waves or more plays as a chain (#913): its links
+ * start at CHAIN_LINK_MS and speed up (chainLinkMs), a CHAIN_END_MS stays after
+ * the last link, and the ledger holds the totals. Under the old 2.2 s cap a
+ * 19-step Start chain ran at 70 ms a link: one flash nobody could follow. */
 export const CHAIN_MIN = 4;
-export const CHAIN_LINK_MS = 520;
-export const CHAIN_SUM_MS = 1800;
+export const CHAIN_LINK_MS = 450;
+export const CHAIN_END_MS = 400;
+/** A chain's links run at the first rate for two links, the third at CHAIN_THIRD_MS,
+ * then each is CHAIN_DECAY of the one before, down to CHAIN_FLOOR_MS. */
+export const CHAIN_THIRD_MS = 400;
+export const CHAIN_DECAY = 0.85;
+export const CHAIN_FLOOR_MS = 220;
 export const isChain = (beat: Pick<PlayBeat, "waves">): boolean => beat.waves.length >= CHAIN_MIN;
 
-export function beatTiming(waves: number, quiet = false): { at: number[]; ms: number } {
-  if (waves >= CHAIN_MIN) {
-    const at = Array.from({ length: waves }, (_, i) => i * CHAIN_LINK_MS);
-    return { at, ms: at.at(-1)! + CHAIN_SUM_MS };
+/** The time link `i` (from 0) of a chain stays, at 1×: 520, 520, 450, 383, 325, 276, 250, … */
+export function chainLinkMs(i: number): number {
+  if (i < 2) return CHAIN_LINK_MS;
+  return Math.max(CHAIN_FLOOR_MS, Math.round(CHAIN_THIRD_MS * CHAIN_DECAY ** (i - 2)));
+}
+
+const dies = (w: Pick<Step, "changes">) => w.changes.some((c) => c.kind === "death");
+
+/** When each wave lands (ms from the beat's start, at 1×) and how long the
+ * beat lasts, before its big moments' time: each wave stays for its own
+ * time, a chain's links for theirs. */
+export function beatTiming(waves: readonly Pick<Step, "changes">[]): { at: number[]; ms: number } {
+  const n = waves.length;
+  if (n >= CHAIN_MIN) {
+    const at: number[] = [];
+    let t = 0;
+    for (let i = 0; i < n; i++) {
+      at.push(t);
+      t += chainLinkMs(i);
+    }
+    return { at, ms: at[n - 1]! + chainLinkMs(n - 1) + CHAIN_END_MS };
   }
-  if (quiet && waves <= 1) return { at: [0], ms: QUIET_BEAT_MS };
-  const span = BEAT_MAX_MS - BEAT_HOLD_MS;
-  const gap = waves > 1 ? Math.min(WAVE_MS, span / (waves - 1)) : 0;
-  const at = Array.from({ length: waves }, (_, i) => Math.round(i * gap));
-  if (quiet) return { at, ms: Math.min(BEAT_MAX_MS, Math.max(QUIET_MULTI_MS, (at.at(-1) ?? 0) + QUIET_HOLD_MS)) };
-  return { at, ms: Math.min(BEAT_MAX_MS, Math.max(BEAT_MS, (at.at(-1) ?? 0) + BEAT_HOLD_MS)) };
+  const at: number[] = [];
+  let t = 0;
+  waves.forEach((w, i) => {
+    at.push(t);
+    const next = waves[i + 1];
+    if (dies(w)) t += w.changes.some((c) => c.kind === "damage") ? HIT_BEFORE_DEATH_MS + DEATH_MS : DEATH_MS;
+    else if (next && dies(next)) t += HIT_BEFORE_DEATH_MS;
+    else t += w.changes.some((c) => c.kind === "damage") ? STRIKE_MS : EFFECT_MS;
+  });
+  return { at, ms: t };
 }
 
 /** Each beat's weight: a kill, a big hit, a summon or revive, the first
@@ -542,30 +556,65 @@ export function weightsOf(log: BattleEvent[], beats: PlayBeat[]): BeatWeight[] {
     if (i === firstFatigue) w.fatigue = true;
     if (i === (decisive >= 0 ? decisive : beats.length - 1)) w.last = true;
     if (decisive >= 0 && i > decisive && b.waves.every((x) => !x.changes.length)) w.end = true;
-    // Empty time (R3-26): a beat with only small changes and nothing to
-    // emphasise is quiet; one that replays a line of the turn before, a repeat.
-    if (!w.kill && !w.big && !w.summon && !w.fatigue && !w.last && !w.end && b.waves.some((x) => x.changes.length) && quietBeat(log, b)) {
-      w.quiet = true;
-      const lines = linesOf(b);
-      if (b.turn >= 1 && beats.some((o) => o.turn === b.turn - 1 && linesOf(o) === lines)) w.repeat = true;
-    }
     return w;
   });
 }
 
-/** A beat's timing at 1×, by its weight: one wave of plain hits, status
- * changes or nothing at all is quiet; anything more plays full length. Each
- * big moment then adds its EMPHASIS_MS after the last wave (past the cap: a
- * long cascade that kills still gets its beat of stillness). An empty beat
- * after the deciding blow lasts END_BEAT_MS. */
+/** A beat's timing at 1×, by its weight: its waves' times (beatTiming), then
+ * each big moment adds its EMPHASIS_MS after the last wave (past a chain's
+ * end too: a long cascade that kills still gets its beat of stillness). An
+ * empty beat after the deciding blow lasts END_BEAT_MS. */
 export function timingOf(beat: PlayBeat, weight: BeatWeight = {}): { at: number[]; ms: number } {
   if (weight.end) return { at: beat.waves.map(() => 0), ms: END_BEAT_MS };
-  const quiet = weight.quiet || (beat.waves.length === 1 && beat.waves[0]!.changes.every((c) => c.kind === "damage" || c.kind === "status"));
-  const t = beatTiming(beat.waves.length, quiet);
+  const t = beatTiming(beat.waves);
   const extra = (Object.keys(EMPHASIS_MS) as (keyof typeof EMPHASIS_MS)[]).reduce((n, k) => n + (weight[k] ? EMPHASIS_MS[k] : 0), 0);
-  // A repeat keeps its waves' spacing and cuts its hold (never below its last wave plus 0.4 s).
-  if (weight.repeat) return { at: t.at, ms: Math.max((t.at.at(-1) ?? 0) + 400, Math.round(t.ms * REPEAT_SHARE)) + extra };
   return { at: t.at, ms: t.ms + extra };
+}
+
+/** How long wave `wave` of a beat stays on screen at `speed`, in real ms: its
+ * time at 1× divided by the speed, never under the line floor (a chain's
+ * links and the empty end beat have no line to read). */
+export function waveWaitMs(beat: PlayBeat, weight: BeatWeight, wave: number, speed: number): number {
+  const t = timingOf(beat, weight);
+  const ms = wave < beat.waves.length - 1 ? t.at[wave + 1]! - t.at[wave]! : t.ms - t.at[wave]!;
+  const real = ms / speed;
+  return weight.end || isChain(beat) ? real : Math.max(real, lineFloorMs(speed));
+}
+
+/** The fastest playback goes (the speeds are 1×, 2× and 4×). */
+export const MAX_SPEED = 4;
+/** A turn that repeats the last plays at this many times the speed. */
+export const REPEAT_RATE = 2;
+
+/** The turns whose lines are the turn before's, line for line (Medic heals
+ * itself +1 each turn against a 1-PWR striker): they play at REPEAT_RATE
+ * and hold no turn-end summary. The first of a pattern plays whole. */
+export function repeatTurnsOf(beats: readonly PlayBeat[]): Set<number> {
+  const lines = new Map<number, string>();
+  for (const b of beats) {
+    if (b.waves.every((w) => !w.changes.length)) continue;
+    lines.set(b.turn, `${lines.get(b.turn) ?? ""}${linesOf(b)}\n--\n`);
+  }
+  const out = new Set<number>();
+  for (const [turn, text] of lines) if (turn >= 1 && lines.get(turn - 1) === text) out.add(turn);
+  return out;
+}
+
+/** The speed a beat plays at: the viewer's, doubled (to MAX_SPEED) on a repeat turn. */
+export function playSpeed(speed: number, repeat: boolean): number {
+  return repeat ? Math.min(MAX_SPEED, speed * REPEAT_RATE) : speed;
+}
+
+/** What a whole playback takes at `speed`, in real ms: the line-up, every
+ * beat at its own speed, and the turn-end holds of the turns that aren't repeats. */
+export function playbackMs(beats: readonly PlayBeat[], weights: readonly BeatWeight[], ends: Iterable<number>, repeats: ReadonlySet<number>, lineupMs: number, speed: number): number {
+  let ms = lineupMs / speed;
+  beats.forEach((b, i) => {
+    const sp = playSpeed(speed, repeats.has(b.turn));
+    for (let w = 0; w < b.waves.length; w++) ms += waveWaitMs(b, weights[i] ?? {}, w, sp);
+  });
+  for (const i of ends) if (!repeats.has(beats[i]!.turn)) ms += turnEndHoldMs(speed);
+  return ms;
 }
 
 /** What a trigger badge shows (R2-13): the trigger a unit's ability answered
@@ -2036,7 +2085,7 @@ export function chainSideText(t: ChainSide, status: (s: string) => string = (s) 
 /** How long playback holds on a turn's totals at 1×, after the turn's last
  * beat (R4-12, viewer.md (6)): divided by the speed, and none from
  * TURN_END_SKIP_SPEED up. */
-export const TURN_END_MS = 1200;
+export const TURN_END_MS = 900;
 export const TURN_END_SKIP_SPEED = 4;
 
 /** The hold at `speed`, in real ms. */
