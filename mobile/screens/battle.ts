@@ -20,7 +20,7 @@
 import { boardAt, type BoardState, type BoardUnit } from "../../src/board";
 import type { BattleRecord, BattleUnit, FightResult, MvpContent, RunView, SummonContent } from "../../src/mvp/contract";
 import { chainCappedTip, STATUS_TERMS, suddenDeathTip, termDef, timeUpTip, termIcon, triggerLabel, type IconId, type TermId } from "../../src/glossary";
-import { isChain, chainSummaryOf, chainSideText, BEAT_MS, NO_ROOM, NO_ROOM_RU, setTraceLang, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, foldTurnsOf, isLogFold, keyMomentsOf, logRowsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, whyILost as lossChains, sidesOf, turnSummaryOf, turnEndsOf, turnEndHoldMs, totalsText, TURN_END_MS, runningTotalsOf, runRowText, turnSoFarIds, beatIdsOf, changeOf, type RunRow, type TurnSummary, type UnitTurnTotals, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type LogRow, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
+import { isChain, chainSummaryOf, chainSideText, BEAT_MS, NO_ROOM, NO_ROOM_RU, setTraceLang, BIG_HIT_MIN, EMPHASIS_MS, KILL_FREEZE_MS, LINEUP_MS, beatPlayOf, beamsOf, causeOf, chainOf, damageByUnit, foldTurnsOf, isLogFold, keyMomentsOf, logRowsOf, stepsOf, timelineOf, timingOf, traceOf, weightsOf, whyILost as lossChains, sidesOf, turnSummaryOf, turnEndsOf, turnEndHoldMs, TURN_END_MS, runningTotalsOf, runRowText, turnSoFarIds, beatIdsOf, changeOf, type RunRow, type TurnSummary, type UnitTurnTotals, type Chain, type ChainNode, type Beam, type Cause, type Change, type KeyMoment, type LogRow, type Step, type Trace, type WhenOf } from "../../src/mvp/trace";
 import { displayNames, type NameOf } from "../../src/trace";
 import type { Side } from "../../src/types";
 import { summonId } from "../../src/describe";
@@ -298,9 +298,6 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   }
   setPlaying(playing);
   const caption = h("button", { class: "bv-caption", "data-testid": "caption" });
-  /** Reduced motion's list of the beat's changes: below your line, its height
-   * fixed, so nothing on the board moves while it fills. */
-  const still = h("div", { class: "bv-stillbox" });
   const sheet = h("div", { class: "bv-sheet panel", "data-testid": "trace" });
   // The desktop side panel: Why and Log tabs over the same sheet (the phone shows only Why, as a sheet).
   const whyBody = h("div", { class: "bv-tab-body stack bv-why-body" });
@@ -352,10 +349,19 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
   const skipBtn = button(tr("battle.chain.skip"), () => skipChain(), "bv-skip", "chain-skip");
   skipBtn.title = tr("battle.chain.skipKey");
   /** The turn ledger (mission 1007): one fixed box under the board, its height set by the screen and never by what it holds. Its head names the turn and
-   * holds Skip chain while a chain plays; its body holds a chain's summary at the last link and reduced motion's list of changes. */
+   * holds Skip chain while a chain plays; its list has one row per unit the turn has changed (side, name, what it took, healed, gained, ✝), filling in
+   * as beats land and never sliding or reordering; its foot is one line: a chain's summary at its last link, the turn's bottom line once the turn ends. */
   const ledgerHead = h("div", { class: "bv-ledger-head" });
-  const ledgerBody = h("div", { class: "bv-ledger-body" }, still);
-  const ledger = h("div", { class: "bv-ledger", "data-testid": "ledger", "aria-live": "polite" }, ledgerHead, ledgerBody);
+  /** Your units' rows on the left, theirs on the right (the desktop board's own sides). */
+  const ledgerCols = new Map<Side, HTMLElement>([[you, h("div", { class: "bv-lcol you" })], [them, h("div", { class: "bv-lcol ghost" })]]);
+  const ledgerList = h("div", { class: "bv-ledger-list", "data-testid": "ledger-rows" }, ...ledgerCols.values());
+  const ledgerFoot = h("div", { class: "bv-ledger-foot", "data-testid": "ledger-foot", role: "status" });
+  const ledgerBody = h("div", { class: "bv-ledger-body" }, ledgerList, ledgerFoot);
+  const ledger = h("div", { class: "bv-ledger", "data-testid": "ledger" }, ledgerHead, ledgerBody);
+  /** The ledger's rows by unit, kept between renders so their numbers count in place. */
+  interface LedgerRow { el: HTMLElement; box: HTMLElement; chips: Map<string, RunEl>; mark: HTMLElement | null }
+  const ledgerRows = new Map<string, LedgerRow>();
+  let ledgerTurn: number | null = null;
   replayBtn.setAttribute("aria-label", tr("battle.replayAria"));
   // Desktop's keys, as the mockup lists them (the phone hides the line).
   const kbd = (k: string) => h("kbd", {}, k);
@@ -1320,19 +1326,20 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     // size showed "−…" for a frame on a narrow card (R2-17 batch F).
     if (mine.isConnected) fitText(mine.parentElement ?? mine);
     drawBeams(v.waves);
-    drawRuns(runningTotalsOf(log, soFar), turnKey, v.waves.some((w) => w.age !== null));
+    const runRows = runningTotalsOf(log, soFar);
+    drawRuns(runRows, turnKey, v.waves.some((w) => w.age !== null));
     // After the beams: they aim at each card's slot, not where its slide starts.
     for (const [sl, p] of slides) sl.animate([{ transform: `translateX(${p.dx}px)` }, { transform: "none" }], { duration: PUSH_MS / speed, delay: -(now - p.at), easing: "ease-out", fill: "backwards" });
     // The action strip (mission 1007): one line, actor → effect → target → number, a chain's links as dots.
     const chained = !sum && !!beat && isChain(beat);
     caption.replaceChildren(h("span", { class: "bv-strip-line bv-cap" }, ...(sum ? [h("span", { class: "bv-strip-text", "data-testid": "caption-turn-end" }, sum.turn >= 1 ? tr("battle.totals.turn", { n: sum.turn }) : tr("battle.totals.start"))] : stripKids(step)), ...(chained ? [chainDots(beat!.waves.length, wave)] : [])));
     caption.setAttribute("aria-label", sum ? tr("battle.totals.turn", { n: sum.turn }) : plainCaption(step));
-    // The ledger (below the board): the turn, Skip chain while a chain plays, a chain's summary at its last link.
+    // The ledger (below the board): the turn, Skip chain while a chain plays, a row per unit changed, a chain's summary or the turn's bottom line.
     ledgerHead.replaceChildren(h("span", { class: "bv-ledger-turn", "data-testid": "ledger-turn" }, turnLabel(shownTurn)), ...(inChain() ? [skipBtn] : []));
-    ledgerBody.replaceChildren(...(chained && !inChain() && wave === lastWave(at) ? [chainSummary(beat!)] : []), still);
-    still.replaceChildren(...(reduced() ? (sum ? stillTotals(sum) : stillList(v.changes)) : []));
-    still.style.display = reduced() && !finished ? "" : "none";
-    fitStill();
+    const ledgerLive = v.waves.some((w) => w.age !== null) && !reduced();
+    drawLedger(runRows, turnKey, v.dead ?? new Set(), ledgerLive);
+    ledger.classList.toggle("frozen", !!sum);
+    ledgerFoot.replaceChildren(...(sum ? [turnLine(sum)] : chained && !inChain() && wave === lastWave(at) ? [chainSummary(beat!)] : []));
     caption.classList.toggle("tappable", !sum && !!step?.changes.length);
     controls.dataset.turnEnd = sum ? String(sum.turn) : "";
     // Under the end card the phone's caption keeps only its line (style.css).
@@ -1432,13 +1439,13 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     }
     placeRuns();
   }
-  function runRowClass(r: RunRow): string {
-    return `bv-run-row ${r.kind}${r.value === 0 ? " zero" : ""}`;
+  function runRowClass(r: RunRow, base = "bv-run-row"): string {
+    return `${base} ${r.kind}${r.value === 0 ? " zero" : ""}`;
   }
-  function runRowEl(r: RunRow): RunEl {
+  function runRowEl(r: RunRow, base = "bv-run-row", testid = "run-row"): RunEl {
     const num = h("span", { class: "n" }, runRowText(r.kind, r.key, r.value));
     const lead = r.kind === "blocked" ? icon("shield", 12, "tone-shield") : r.kind === "status" ? statusMark(r.status!) : null;
-    const el = h("button", { class: runRowClass(r), "data-testid": "run-row", "data-key": r.key, "data-value": String(r.value), tabindex: "-1" }, ...(lead ? [lead] : []), num);
+    const el = h("button", { class: runRowClass(r, base), "data-testid": testid, "data-key": r.key, "data-value": String(r.value), tabindex: "-1" }, ...(lead ? [lead] : []), num);
     const x: RunEl = { el, num, shown: r.value, target: r.value, anim: 0, row: r };
     // A row traces its latest change, with the rest of the turn's of its kind listed.
     el.addEventListener("click", (ev) => {
@@ -1471,6 +1478,77 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     };
     x.anim = requestAnimationFrame(tick);
     x.el.animate([{ scale: 1 }, { scale: 1.3 }, { scale: 1 }], { duration: RUN_POP_MS / speed, easing: "ease-out" });
+  }
+  /** The ledger's rows (mission 1007): one per unit the turn has changed, in the order each was first changed, each holding that unit's running
+   * totals (the same rows the overlay above the cards kept, damage, healing, PWR/HP, Shield blocked, statuses) and a ✝ once it has fallen. A row
+   * is made once and only filled in after: a chip is added or counts to its new sum, nothing slides or reorders; a new turn clears the list.
+   * Scrubbing or reduced motion sets the numbers still. A tap on a row traces the unit's latest change, a tap on a chip its kind's. */
+  function drawLedger(all: Map<string, RunRow[]>, turnKey: number, dead: Set<string>, animate: boolean): void {
+    if (turnKey !== ledgerTurn) {
+      ledgerRows.clear();
+      for (const c of ledgerCols.values()) c.replaceChildren();
+      ledgerTurn = turnKey;
+      ledger.dataset.turn = String(turnKey);
+    }
+    // A unit that fell this turn has its row even when no total sums for it.
+    const units = new Map(all);
+    for (const d of dead) if (!units.has(d) && sides.has(d)) units.set(d, []);
+    for (const [unit, r] of ledgerRows) if (!units.has(unit)) { r.el.remove(); ledgerRows.delete(unit); }
+    const order = new Map<Side, HTMLElement[]>([[you, []], [them, []]]);
+    for (const [unit, rs] of units) {
+      let row = ledgerRows.get(unit);
+      if (!row) {
+        const box = h("span", { class: "bv-lchips" });
+        const el = h("div", { class: `bv-lrow ${sides.get(unit) === you ? "you" : "ghost"}`, "data-testid": "ledger-row", "data-unit": unit, role: "button", tabindex: "-1" }, h("span", { class: "bv-lname" }, unitName(unit)), box);
+        el.addEventListener("click", () => {
+          const cs = [...(ledgerRows.get(unit)?.chips.values() ?? [])].flatMap((x) => x.row.eventIds).sort((p, q) => p - q);
+          const group = cs.flatMap((id) => { const c = log[id] ? changeOf(log[id]!) : null; return c ? [c] : []; });
+          if (cs.length) openTrace(cs.at(-1)!, group);
+        });
+        row = { el, box, chips: new Map(), mark: null };
+        ledgerRows.set(unit, row);
+        if (animate) el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: RUN_IN_MS / speed, easing: "ease-out" });
+      }
+      const keys = new Set(rs.map((r) => r.key));
+      for (const [k, x] of row.chips) if (!keys.has(k)) { cancelAnimationFrame(x.anim); x.el.remove(); row.chips.delete(k); }
+      for (const r of rs) {
+        let x = row.chips.get(r.key);
+        if (!x) {
+          x = runRowEl(r, "bv-lchip", "ledger-chip");
+          x.el.tabIndex = -1;
+          row.chips.set(r.key, x);
+          if (animate) x.el.animate([{ opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1 }], { duration: RUN_IN_MS / speed, easing: "ease-out" });
+        } else {
+          x.row = r;
+          x.el.className = runRowClass(r, "bv-lchip");
+          x.el.dataset.value = String(r.value);
+          if (x.target !== r.value) countTo(x, r.value, !animate);
+        }
+      }
+      const fallen = dead.has(unit);
+      if (fallen && !row.mark) { row.mark = h("span", { class: "bv-lchip dead", "data-testid": "ledger-dead", title: tr("battle.ledger.fell", { names: name(unit) }) }, "✝"); if (animate) row.mark.animate([{ opacity: 0, scale: 1.8 }, { opacity: 1, scale: 1 }], { duration: RUN_IN_MS / speed, easing: "ease-out" }); }
+      if (!fallen && row.mark) { row.mark.remove(); row.mark = null; }
+      row.el.classList.toggle("fallen", fallen);
+      // The chips in the order their kinds first landed, then the ✝.
+      const want = [...rs.map((r) => row!.chips.get(r.key)!.el), ...(row.mark ? [row.mark] : [])];
+      if (want.some((n, i) => row!.box.children[i] !== n) || row.box.children.length !== want.length) row.box.replaceChildren(...want);
+      order.get(sides.get(unit) ?? you)!.push(row.el);
+    }
+    for (const [side, rows] of order) {
+      const col = ledgerCols.get(side)!;
+      if (rows.some((n, i) => col.children[i] !== n) || col.children.length !== rows.length) col.replaceChildren(...rows);
+    }
+    const none = !order.get(you)!.length && !order.get(them)!.length;
+    ledgerList.classList.toggle("empty", none);
+    ledgerList.dataset.empty = none ? tr("battle.ledger.empty") : "";
+  }
+  /** The turn's bottom line, once it ends: "You dealt 2 · took 4 · Spore fell" (a spectator: "@a dealt 2 · @b dealt 4"). */
+  function turnLine(sum: TurnSummary): HTMLElement {
+    const dmg = (side: Side) => sum.units.reduce((n, u) => n + ((u.side ?? sides.get(u.unit)) === side ? u.damage : 0), 0);
+    const fell = sum.units.filter((u) => u.died).map((u) => u.unit);
+    const main = a.you ? tr("battle.ledger.line", { dealt: dmg(them), took: dmg(you) }) : tr("battle.ledger.lineWatch", { a: owner(you), da: dmg(them), b: owner(them), db: dmg(you) });
+    const parts = [main, ...(fell.length ? [tr("battle.ledger.fell", { names: fell.length > 3 ? tr("battle.ledger.many", { n: fell.length }) : fell.map(name).join(", ") })] : [])];
+    return h("span", { class: "bv-turn-line", "data-testid": "turn-line" }, parts.join(" · "));
   }
   /** Each box sits above its unit's slot (a phone: on the card, see .bv-runs); it eases along when the line closes up. */
   function placeRuns(): void {
@@ -1770,46 +1848,6 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     return document.createTextNode(t);
   }
 
-  /** Reduced motion: no floats, so the caption lists every change of the
-   * beat so far, as the floats would have shown them. */
-  function stillList(changes: Change[]): Node[] {
-    if (!changes.length) return [];
-    // One entry a change label, its units listed ("+1 PWR: Rose, Ace"), so a
-    // buff on the whole line takes one entry, not five (R2-17).
-    const groups: { c: Change; units: string[] }[] = [];
-    for (const c of changes) {
-      const g = groups.find((x) => x.c.kind === c.kind && x.c.label === c.label);
-      if (g) { if (!g.units.includes(c.unit)) g.units.push(c.unit); }
-      else groups.push({ c, units: [c.unit] });
-    }
-    return [
-      h(
-        "span",
-        { class: "bv-still", "data-testid": "caption-changes" },
-        ...groups.map((g) => h("span", { class: `bv-l ${g.c.kind}` }, ...g.units.flatMap((u, i) => (i ? [", ", unitName(u)] : [unitName(u)])), ` ${g.c.label}`)),
-      ),
-    ];
-  }
-  /** Reduced motion's caption on a turn's totals (R4-12): each unit and its totals. */
-  function stillTotals(sum: TurnSummary): Node[] {
-    return [h("span", { class: "bv-still", "data-testid": "caption-changes" }, ...sum.units.map((u) => h("span", { class: "bv-l" }, unitName(u.unit), ` ${totalsText(u)}`)))];
-  }
-  /** The reduced-motion list never runs past its box: the oldest entries
-   * give way to a count ("+3 earlier") until the rest fits (R2-17). */
-  function fitStill(): void {
-    const list = still.querySelector(".bv-still");
-    if (!list || still.style.display === "none") return;
-    let dropped = 0;
-    let more: HTMLElement | null = null;
-    while (still.scrollHeight > still.clientHeight + 1) {
-      const entries = [...list.children].filter((c) => c !== more);
-      if (entries.length <= 1) break;
-      entries[0]!.remove();
-      dropped++;
-      if (!more) list.prepend((more = h("span", { class: "bv-l dim bv-still-more" })));
-      more.textContent = `+${dropped} earlier`;
-    }
-  }
   /** The end card sits under the caption on the phone (its last line, "They
    * win", stays readable) and under the HUD on desktop, as tall as what it
    * holds and clear of the timeline; it scrolls inside itself when it runs
