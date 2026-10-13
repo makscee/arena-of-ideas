@@ -284,3 +284,6 @@ Trigger-context effects; each logs a `RuleMod {unit, op, other}` event (caused b
 
 ### 11.7 Guardrails, as built
 Seeded and deterministic: `flip` and `randomAlly` are draws from the battle seed. `actAgain`/`performRemembered` firings are steps against the chain cap. A redirect applies once per event; a transform once per battle per unit. Rule-modifying effects sit at the root tier of the chain order (`src/mvp/units.ts`): the validator rejects a rule with `copyRule`, `actAgain`, `remember`, `performRemembered` or `swapRules` that triggers on a chain link (`StatusApplied`, `StatusRemoved`, `Heal`, `StatChanged`).
+
+### 11.8 Composed words (macros)
+A composed word (`src/words/macros.ts`, §7 of the design) is an effect `{kind: "macro", name}` that the compiler (`expandAbilities`, run by the engine on its input registries and by the validator) replaces with the primitives it names, nested macros included; the kernel never sees a macro, so a battle through a macro logs exactly what its primitives would. `echo` = `remember` + `delay 1` + `performRemembered once` (Déjà Vu's Echo). A macro carries its own EN and RU clause (`{target}` is the rule's Who); its trace is its primitives' lines. An unknown macro is an illegal rule.
