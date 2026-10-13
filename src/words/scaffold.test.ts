@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { ALL_WORDS } from "./index.js";
 import { WORD_CLASSES, addToUnion, isWordKind, registerInIndex, wordSource } from "./scaffold.js";
 
 const src = (f: string) => readFileSync(join(import.meta.dirname, f), "utf8");
@@ -30,6 +31,12 @@ describe("the word card scaffold (#1052)", () => {
       expect(decl.slice(0, decl.indexOf("\n\n"))).toMatch(/\| \{ kind: "probe" \};$/);
       expect(() => addToUnion(types, cls, "probe")).toThrow(/already used/);
     }
+  });
+
+  it("lets no registered word keep a TODO from the scaffold", () => {
+    // the scaffold's placeholders say TODO; the registry test alone would pass
+    // its sentences and write a missing golden, so a word with one never lands
+    for (const w of ALL_WORDS) expect(src(`${w.kind}.ts`), `src/words/${w.kind}.ts`).not.toMatch(/TODO/);
   });
 
   it("takes a kind that is a camelCase name", () => {
