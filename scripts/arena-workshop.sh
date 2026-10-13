@@ -7,20 +7,21 @@
 #                                                   (the orchestrator runs this after each checked merge)
 #   scripts/arena-workshop.sh <ref> --fresh        also start a new world: the old database moves
 #                                                   aside to data/workshop.db.bak-<time>
-#   scripts/arena-workshop.sh invite <name>        print <name>'s invite link (made once, then the same
-#                                                   link); --admin lets them use the dev tools
+#   scripts/arena-workshop.sh invite <name>        make <name>'s invite and print its link; --admin lets
+#                                                   them use the dev tools
+#   scripts/arena-workshop.sh list                 every invite with its link (the way back to a link made earlier)
 #   npm run mvp:workshop -- <ref>                  the same, from a checkout
 #
 # It runs its own clone ~/arena-workshop (npm ci when the lock changed, the
 # client built for /arena-workshop/) under launchd ru.makscee.arena-workshop on
-# :8797, with MVP_DEV=1 (End day now, fake votes), MVP_INVITES=1 and MVP_OPEN=0
+# :8794, with MVP_DEV=1 (End day now, fake votes), MVP_INVITES=1 and MVP_OPEN=0
 # (invite links only), ARENA_TUNER=instant and a fake idea reader, on
 # ~/arena-workshop/data/workshop.db. The world persists across commits (the
 # server migrates it at start); --fresh is for a commit whose migration can't.
 # Never the live game's database, never the public domain: tailnet only.
 set -euo pipefail
 export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH
-PORT="${ARENA_WORKSHOP_PORT:-8797}"
+PORT="${ARENA_WORKSHOP_PORT:-8794}"
 DIR="${ARENA_WORKSHOP_DIR:-$HOME/arena-workshop}"
 LABEL=ru.makscee.arena-workshop
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
@@ -38,7 +39,13 @@ if [ "${1:-}" = invite ]; then
   exit 0
 fi
 
-REF="${1:?usage: $0 <commit-or-branch> [--fresh] | invite <name> [--admin]}"
+if [ "${1:-}" = list ]; then # every invite with its link (a name that has one is refused by `invite`)
+  cd "$DIR"
+  MVP_DB="$DB" MVP_PUBLIC_URL="$PUBLIC_URL" "$NODE" --import tsx/esm server/src/mvp/invite-cli.ts list
+  exit 0
+fi
+
+REF="${1:?usage: $0 <commit-or-branch> [--fresh] | invite <name> [--admin] | list}"
 FRESH=0
 [ "${2:-}" = --fresh ] && FRESH=1
 

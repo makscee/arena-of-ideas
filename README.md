@@ -56,7 +56,7 @@ what's coming) and nobody can start a run. Two m1 scripts, both run on m1
   page (scene `holding`), and 503 on every other API route. The reopen is on
   Maks's word: `npm run mvp:redeploy -- mvp-live` stops the holding server first.
 - **The workshop** (`https://m1.twin-pogona.ts.net/arena-workshop/`, launchd
-  `ru.makscee.arena-workshop`, `:8797`, clone `~/arena-workshop`, DB
+  `ru.makscee.arena-workshop`, `:8794`, clone `~/arena-workshop`, DB
   `~/arena-workshop/data/workshop.db`): a persistent, invite-only world that
   runs the mission branch with `MVP_DEV=1`. **The one command that points it at
   a commit** (the orchestrator runs it after each checked merge, on m1):
@@ -64,7 +64,8 @@ what's coming) and nobody can start a run. Two m1 scripts, both run on m1
   ```
   scripts/arena-workshop.sh <commit-or-branch>          # npm run mvp:workshop -- <ref>
   scripts/arena-workshop.sh <ref> --fresh               # also a new world (old DB moved aside)
-  scripts/arena-workshop.sh invite <name> [--admin]     # prints that person's invite link
+  scripts/arena-workshop.sh invite <name> [--admin]     # makes that person's invite, prints its link
+  scripts/arena-workshop.sh list                        # every invite with its link
   ```
 
   The world keeps its data across commits (the server migrates it at start);
