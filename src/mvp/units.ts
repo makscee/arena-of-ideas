@@ -395,6 +395,7 @@ function unitOf(row: AnyRow): UnitContent {
       archetype: row.archetype,
       tier: row.tier,
       base: { pwr: row.pwr, hp: row.hp },
+      ...(row.awoken && (row.awoken.pwr || row.awoken.hp) ? { awokenBonus: { ...row.awoken } } : {}),
       forms: structuredClone(row.forms),
     };
   }

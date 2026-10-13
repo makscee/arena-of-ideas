@@ -24,6 +24,9 @@ export interface V2Row {
   shape: Shape;
   pwr: number;
   hp: number;
+  /** PWR and HP the unit gains when it awakens (the tune's awoken knob, so
+   * Awoken always adds to the team; units-v2-numbers.ts). */
+  awoken?: { pwr: number; hp: number };
   /** One sentence on what the unit is about (unique across the pool). */
   archetype: string;
   forms: { sleeping: UnitForm; awoken: UnitForm };
