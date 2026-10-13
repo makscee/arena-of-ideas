@@ -15,6 +15,7 @@
 // - Caches that aren't the game's record stay out of MvpStore (slice 10's name
 //   cache lives in ./fusions.ts).
 import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, Idea, IdeaState, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
+import type { CodexClaim, CodexPair } from "../../../src/mvp/codex.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
 import type { Row } from "../../../src/mvp/units.js";
 
@@ -40,6 +41,20 @@ export interface MvpStore {
   /** Stores or replaces the pair's discovery (replacing is how a human claims a bot's pair). */
   putFusion(f: FusionDiscovery): void;
   fusions(): FusionDiscovery[];
+  // Rules v2, the Codex (slice #1049, ./codex.ts): one row per unordered pair
+  // (a < b). The night batch (#1050) writes candidates; ./codex.ts claims.
+  codexPair(a: UnitId, b: UnitId): CodexPair | undefined;
+  /** Stores or replaces the pair (the night batch's candidates). */
+  putCodexPair(p: CodexPair): void;
+  /** Claims the pair for `claim.by` only if it has candidates and no claim
+   * yet; true when this call claimed it (claims are final forever). */
+  claimCodexPair(a: UnitId, b: UnitId, claim: CodexClaim): boolean;
+  codexPairs(): CodexPair[];
+  /** A wish on a pair: one per player, pair and day; true when it is new. */
+  addWish(w: CodexWish): boolean;
+  /** Day `seq`'s wishes per pair, most wished first (tonight's list weight). */
+  wishes(seq: number): { a: UnitId; b: UnitId; count: number }[];
+  wishedBy(a: UnitId, b: UnitId, playerId: string, seq: number): boolean;
   // The day (contract.ts, "day, champion, rating", says who writes what).
   /** The latest day (highest seq); read it through RunDeps.today(). */
   currentDay(): DayState | undefined;
@@ -184,6 +199,16 @@ export interface DailyPost {
 /** An idea the reader couldn't fully make (M2-5): the game word it lacks
  * ("steal gold"), as the model named it, and the part of the idea's text
  * that needed it. */
+/** A player's wish on an unordered pair (a < b) on day `seq`. */
+export interface CodexWish {
+  a: UnitId;
+  b: UnitId;
+  playerId: string;
+  seq: number;
+  /** ISO time. */
+  at: string;
+}
+
 export interface WordRequest {
   ideaId: string;
   word: string;
@@ -407,6 +432,35 @@ export class MemoryMvpStore implements MvpStore {
   fusion(first: UnitId, second: UnitId): FusionDiscovery | undefined { return this.fusionsByPair.get(pairKey(first, second)); }
   putFusion(f: FusionDiscovery): void { this.fusionsByPair.set(pairKey(f.first, f.second), f); }
   fusions(): FusionDiscovery[] { return [...this.fusionsByPair.values()]; }
+  private codex = new Map<string, CodexPair>();
+  private wishRows: CodexWish[] = [];
+  codexPair(a: UnitId, b: UnitId): CodexPair | undefined { const p = this.codex.get(codexKey(a, b)); return p && structuredClone(p); }
+  putCodexPair(p: CodexPair): void { this.codex.set(codexKey(p.a, p.b), structuredClone(p)); }
+  claimCodexPair(a: UnitId, b: UnitId, claim: CodexClaim): boolean {
+    const p = this.codex.get(codexKey(a, b));
+    if (!p || p.claim || p.candidates.length === 0) return false;
+    p.claim = structuredClone(claim);
+    return true;
+  }
+  codexPairs(): CodexPair[] { return [...this.codex.values()].map((p) => structuredClone(p)); }
+  addWish(w: CodexWish): boolean {
+    if (this.wishedBy(w.a, w.b, w.playerId, w.seq)) return false;
+    this.wishRows.push({ ...w });
+    return true;
+  }
+  wishes(seq: number): { a: UnitId; b: UnitId; count: number }[] {
+    const counts = new Map<string, { a: UnitId; b: UnitId; count: number }>();
+    for (const w of this.wishRows.filter((r) => r.seq === seq)) {
+      const k = codexKey(w.a, w.b);
+      const row = counts.get(k) ?? { a: w.a, b: w.b, count: 0 };
+      row.count++;
+      counts.set(k, row);
+    }
+    return [...counts.values()].sort((x, y) => y.count - x.count || codexKey(x.a, x.b).localeCompare(codexKey(y.a, y.b)));
+  }
+  wishedBy(a: UnitId, b: UnitId, playerId: string, seq: number): boolean {
+    return this.wishRows.some((w) => w.a === a && w.b === b && w.playerId === playerId && w.seq === seq);
+  }
   champion(seq: number): Champion | undefined { return this.championsBySeq.get(seq); }
   currentChampion(): Champion | undefined { return this.champions().at(-1); }
   putChampion(c: Champion): void { this.championsBySeq.set(c.seq, c); }
@@ -593,6 +647,11 @@ export class MemoryMvpStore implements MvpStore {
 }
 
 export const NO_IDEAS: IdeaCounts = { spent: 0, granted: 0, forfeited: 0 };
+
+/** The Codex's key: the stored (a, b), already sorted. */
+function codexKey(a: UnitId, b: UnitId): string {
+  return JSON.stringify([a, b]);
+}
 
 /** Ordered: (a, b) and (b, a) are different fusions. */
 function pairKey(first: UnitId, second: UnitId): string {

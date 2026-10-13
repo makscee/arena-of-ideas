@@ -40,6 +40,9 @@ export interface MvpDeps {
   hooks?: RunHooks[];
   /** Serves /dev/* (main.ts: MVP_DEV=1); without it they answer 404. */
   dev?: boolean;
+  /** Rules v2's Codex (#1049, main.ts: ARENA_CODEX=1): fuses use designed
+   * fusions and claims (./codex.ts). Off: the v1 splice. */
+  codex?: boolean;
   /** Serves the test scenes, /dev/scenes (#1026, main.ts: ARENA_SCENES=1, only with MVP_DEV=1 on :memory:). */
   scenes?: boolean;
   /** Invite-only (slice 13, main.ts: MVP_INVITES=1): players come from
@@ -97,6 +100,7 @@ export function mvpRuntime(deps: MvpDeps): MvpRuntime {
     hooks: [naming.hooks, statsHooks(base), ...(deps.hooks ?? [])],
     nameFusion: deps.nameFusion ?? naming.nameFusion,
     peekFusionName: naming.peek,
+    codex: deps.codex ?? false,
     dev: deps.dev ?? false,
     scenes: (deps.dev ?? false) && (deps.scenes ?? false),
     invites: deps.invites ?? false,

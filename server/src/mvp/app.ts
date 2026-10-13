@@ -15,6 +15,7 @@ import { declineOptions, myIdea, pickArchetype, pickReading } from "./idea-readi
 import { cancelIdea, grantIdea, IdeaRefused, ideasOf, myIdeas, writeIdea } from "./ideas.js";
 import { isAdmin, isJoinCode, JoinRefused, joinOpen, NAME_RE, openJoin, redeemInvite, sessionPlayer } from "./invites.js";
 import { abandon, currentRun, decide, preview, startRun } from "./runs.js";
+import { codexView, forgeOf, wish } from "./codex.js";
 import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
 import { servedContent } from "./pool.js";
 import { championSvg, shareLang, sharePng, unitSvg } from "./share.js";
@@ -316,6 +317,30 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     if (playerOf(c)?.id !== run.player.id) return bad(c, 401, "not your run");
     try {
       return c.json(abandon(rt, run));
+    } catch (err) {
+      return refused(c, err);
+    }
+  });
+
+  // Rules v2's Codex (#1049, ./codex.ts): the forge of a run (every pair it
+  // can fuse now, in its state; a ready pair's three designs), a pair's view
+  // (sealed), and a wish on an unforged pair. 404 while the Codex is off.
+  api.get("/runs/:runId/forge", (c) => {
+    if (!rt.codex) return bad(c, 404, "the Codex is off");
+    const run = store.run(c.req.param("runId"));
+    if (!run) return bad(c, 404, "no such run");
+    if (playerOf(c)?.id !== run.player.id) return bad(c, 401, "not your run");
+    return c.json({ pairs: forgeOf(rt, run) });
+  });
+  api.get("/codex/:a/:b", (c) => (rt.codex ? c.json(codexView(rt, c.req.param("a"), c.req.param("b"), playerOf(c))) : bad(c, 404, "the Codex is off")));
+  api.post("/codex/wish", async (c) => {
+    if (!rt.codex) return bad(c, 404, "the Codex is off");
+    const p = playerOf(c);
+    if (!p) return unknownPlayer(c);
+    const body = (await c.req.json().catch(() => null)) as { a?: unknown; b?: unknown } | null;
+    if (!body || typeof body.a !== "string" || typeof body.b !== "string") return bad(c, 400, "body must be { a, b }: two unit ids");
+    try {
+      return c.json(wish(rt, p, body.a, body.b));
     } catch (err) {
       return refused(c, err);
     }

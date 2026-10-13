@@ -8,6 +8,7 @@
 
 import type { AbilityRegistry, BattleEvent, Condition, Selector, Side, Stats, StatusRegistry, When } from "../types.js";
 import type { AwokenRow, WhenKey, WhoKey } from "./units.js";
+import type { FusionDesign } from "./codex.js";
 
 export const MVP_API_VERSION = 1;
 /** Every API path hangs off this prefix, relative to the app's base URL
@@ -282,6 +283,9 @@ export interface FusionParts {
 export interface FuseContext {
   name: string;
   discoveredBy: PlayerRef | null;
+  /** Rules v2 (the Codex, src/mvp/codex.ts): the designed fusion this fuse
+   * makes. Absent: the v1 splice (fuseUnits). */
+  design?: FusionDesign;
 }
 
 /** A discovered ordered pair, stored once per (first, second); the same pair
@@ -363,7 +367,9 @@ export type Decision =
    * uid and stands in the front-most line slot of the two, or the lower bench
    * slot when both are on the bench, so swapping the order changes only the
    * recipe. */
-  | { kind: "fuse"; first: number; second: number }
+  /** `pick` (rules v2, the Codex): which sealed design to claim when the pair
+   * is ready to claim; ignored otherwise. */
+  | { kind: "fuse"; first: number; second: number; pick?: number }
   /** Ends the shop phase: fight this round's opponent (or the Crown after the last round). */
   | { kind: "fight" }
   /** Takes the waiting awakening gift: `pick` indexes RunView.gift, null
@@ -925,6 +931,9 @@ export interface MyIdeasView {
 //   GET  /api/v1/runs/:runId                 → RunView
 //   POST /api/v1/runs/:runId/decisions  Decision → DecisionResponse
 //   POST /api/v1/runs/:runId/preview    Decision → DecisionResponse  (dry run, no writes; 400 for a fight)
+//   GET  /api/v1/runs/:runId/forge      → { pairs: ForgeSlot[] }  (rules v2 Codex, ARENA_CODEX=1; 404 off)
+//   GET  /api/v1/codex/:a/:b            → ForgeView  (a pair, order-free; candidates sealed)
+//   POST /api/v1/codex/wish             { a, b } → ForgeView  (unforged pairs; one per player, pair and day)
 //   POST /api/v1/runs/:runId/abandon             → RunView            (gives the run up: endedBy "abandoned"; 409 when over)
 //   GET  /api/v1/battles/:battleId           → BattleRecord
 //   GET  /api/v1/fusions                     → FusionDiscovery[]  (slice 10)

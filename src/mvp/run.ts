@@ -38,6 +38,7 @@ import {
 import { MvpBadDecision, MvpDecisionError } from "./errors.js";
 import { fightLines } from "./fight.js";
 import { addCopy, fuseCheck, fuseUnits, lineUnitOf, mergeTarget } from "./forms.js";
+import { fuseDesigned } from "./codex.js";
 
 export interface MvpRunState extends RunView {
   /** The next fight's opponent, picked at round start (setOpponent): a saved
@@ -79,6 +80,7 @@ export function checkDecision(d: Decision): void {
     if (v === null && NULLABLE_INDEXES[d.kind]?.includes(f)) continue;
     if (!Number.isInteger(v) || (v as number) < 0) throw new MvpBadDecision(d.kind, `${f} must be a whole number ≥ 0, got ${JSON.stringify(v) ?? String(v)}`);
   }
+  if (d.kind === "fuse" && d.pick !== undefined && (!Number.isInteger(d.pick) || d.pick < 0)) throw new MvpBadDecision("fuse", `pick must be a whole number ≥ 0, got ${JSON.stringify(d.pick)}`);
 }
 /** Moved to fight.ts; re-exported for scripts that import it from here (slice 7's meta report). */
 export { toBattleDef } from "./fight.js";
@@ -296,7 +298,7 @@ export function applyMvpDecision(state: MvpRunState, d: Decision, content: MvpCo
       // slots: a line slot when either part is on the line (board slots put
       // the line first), else the lower bench slot. The other part leaves.
       // Swapping the tap order changes only the recipe, never where it stands.
-      const fused = fuseUnits(first, second, ctx.fuse, content, s.rules);
+      const fused = ctx.fuse.design ? fuseDesigned(first, second, ctx.fuse.design, ctx.fuse.discoveredBy) : fuseUnits(first, second, ctx.fuse, content, s.rules);
       const [keep, drop] = d.first < d.second ? [a, b] : [b, a];
       drop.units.splice(drop.index, 1);
       keep.units[keep.index] = fused;
