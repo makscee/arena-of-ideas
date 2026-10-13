@@ -10,6 +10,7 @@ import { sceneId } from "./scene";
 import type { BattleRecord, CandidateScore, DayView, FightResult, HomeView, IdeasView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView } from "../src/mvp/contract";
 import { benchSizeOf, lockedFull, MVP_RULES, offersAt, sellValue } from "../src/mvp/contract";
 import { mergeTarget } from "../src/mvp/forms";
+import type { ForgeSlot, ForgeView } from "../src/mvp/codex";
 import { buttonRefusal, plainRefusal } from "./ui/refusal";
 import { ApiError, api, savedPlayer } from "./api";
 import { getContent, unitIn } from "./content";
@@ -748,6 +749,9 @@ function playoffPanel(p: PlayoffResult | null, champion: PlayerRef | null, conte
 
 // ---------- shop ----------
 
+/** A forge scene's pair to open in the next shop, and a button to click once it shows (#1049). */
+let forgeScene: [number, number, string | undefined] | null = null;
+
 /** What the shop is in the middle of: nothing, a unit picked, or a fuse waiting for its second unit. */
 type Pick = { mode: "none" } | { mode: "picked"; index: number } | { mode: "fuse"; first: number };
 
@@ -1009,6 +1013,15 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
    * cancels) instead of a pop-up sheet. */
   const fusePreview = (first: number, second: number) =>
     guarded(err, async () => {
+      // Rules v2: with the Codex on, the pair's forge decides (a 404: v1's splice preview).
+      const forge = await api.forge(run.runId).catch((e: unknown) => {
+        if (e instanceof ApiError && e.status === 404) return null;
+        throw e;
+      });
+      if (forge) {
+        const slot = forge.pairs.find((p) => (p.first === first && p.second === second) || (p.first === second && p.second === first));
+        if (slot) return forgeSheet(slot);
+      }
       const orders = [
         { first, second },
         { first: second, second: first },
@@ -1057,21 +1070,93 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       renderLine();
     });
 
+  /** Rules v2's forge (#1049, server/src/mvp/codex.ts): the pair's Codex
+   * state decides the sheet. Discovered: its canonical design and credit,
+   * Fuse. Ready to claim: the three sealed designs as cards; Claim one and it
+   * becomes the pair's fusion for everyone, with your name. Unforged: Wish,
+   * which puts the pair on tonight's list. */
+  const forgeSheet = async (slot: ForgeSlot) => {
+    const o = { first: slot.first, second: slot.second };
+    const names = { a: unitAt(o.first)!.name, b: unitAt(o.second)!.name };
+    const fusedOf = (res: { run: RunView }) => [...res.run.line, ...res.run.bench].find((u) => u.uid === unitAt(o.first)!.uid)!;
+    const head = h("div", { class: "label" }, t(`forge.${slot.state}`));
+    const body = h("div", { class: "stack", "data-testid": `forge-${slot.state}` });
+    let close: () => void = () => {};
+    const cancel = () => button(t("fuse.cancel"), () => close(), "grow", "preview-cancel");
+    if (slot.state === "discovered") {
+      const fused = fusedOf(await api.preview(run.runId, { kind: "fuse", ...o }));
+      const date = slot.claimedAt ? new Date(slot.claimedAt).toLocaleDateString(uiLang()) : "";
+      body.replaceChildren(
+        h("div", { class: "preview-card" }, card(fused, { side: "you", extra: [copiesBadge(fused)] })),
+        h("div", { class: "dim small", "data-testid": "forge-credit" }, t("forge.by", { name: slot.claimedBy?.name ?? "?", date })),
+        h("div", { class: "row sheet-actions" }, cancel(), button(t("fuse.confirm"), () => (close(), void fuse(o, fused)), "primary grow", "preview-confirm")),
+        unitSheet(fused, content, { preview: true }),
+      );
+    } else if (slot.state === "ready") {
+      const designs = await Promise.all((slot.candidates ?? []).map((_, pick) => api.preview(run.runId, { kind: "fuse", ...o, pick }).then(fusedOf)));
+      let at = 0;
+      const render = () => {
+        const chosen = designs[at]!;
+        const flavour = (i: number) => {
+          const d = slot.candidates![i]!;
+          return (uiLang() === "ru" ? d.texts?.ru?.flavour : undefined) ?? d.flavour ?? "";
+        };
+        body.replaceChildren(
+          h("div", { class: "dim small" }, t("forge.sealed", { n: designs.length })),
+          h(
+            "div",
+            { class: "forge-cards", "data-testid": "forge-cards" },
+            ...designs.map((u, i) => {
+              const b = h("button", { class: `forge-card${i === at ? " on" : ""}`, "data-testid": `forge-card-${i}`, "aria-pressed": String(i === at) }, card(u, { side: "you" }), h("span", { class: "forge-flavour" }, flavour(i)));
+              b.addEventListener("click", () => ((at = i), render()));
+              return b;
+            }),
+          ),
+          h("div", { class: "row sheet-actions" }, cancel(), button(t("forge.claim", { name: chosen.name }), () => (close(), void fuse({ ...o, pick: at }, chosen, true)), "primary grow", "forge-claim")),
+          unitSheet(chosen, content, { preview: true }),
+        );
+      };
+      render();
+    } else {
+      const render = (view: ForgeView) =>
+        body.replaceChildren(
+          h("div", { class: "dim small" }, t("forge.notYet", names)),
+          h("div", { class: "small", "data-testid": "forge-wishes" }, t("forge.wishes", { n: view.wishes })),
+          h(
+            "div",
+            { class: "row sheet-actions" },
+            cancel(),
+            view.wished
+              ? h("button", { class: "grow", disabled: "", "data-testid": "forge-wished" }, t("forge.wished"))
+              : button(t("forge.wish"), () => void guarded(err, async () => render(await api.wish(slot.a, slot.b))), "primary grow", "forge-wish"),
+          ),
+        );
+      render(slot);
+    }
+    pick = { mode: "none" };
+    if (desk) {
+      fuseView = h("div", { class: "stack", "data-testid": "fuse-preview" }, head, body);
+      close = () => ((fuseView = null), renderLine());
+    } else close = overlay(head, body);
+    renderLine();
+  };
+
   /** Confirm a fuse; a pair nobody had fused (or only bots had) then shows
-   * its name with "You discovered". */
-  const fuse = (o: { first: number; second: number }, previewed: LineUnit) =>
+   * its name with "You discovered"; a claim (rules v2) with "You claimed". */
+  const fuse = (o: { first: number; second: number; pick?: number }, previewed: LineUnit, claimed = false) =>
     guarded(err, async () => {
       const res = await api.decide(run.runId, { kind: "fuse", ...o });
       play(shopSound({ kind: "fuse", ...o }, run, res.run));
       shopScreen(res.run, content);
       const fused = [...res.run.line, ...res.run.bench].find((u) => u.uid === unitAt(o.first)!.uid);
-      const me = savedPlayer()?.id;
-      const discovered = previewed.fusion?.name === "" || previewed.fusion?.discoveredBy === null;
+      // A scene's player lives only in api.player, never saved.
+      const me = api.player?.id ?? savedPlayer()?.id;
+      const discovered = claimed || previewed.fusion?.name === "" || previewed.fusion?.discoveredBy === null;
       if (!fused || !discovered || fused.fusion?.discoveredBy?.id !== me) return;
       play("discover");
       closable(
         h("div", { class: "label" }, t("fuse.new")),
-        h("h2", { class: "reveal", "data-testid": "fusion-reveal" }, t("fuse.discovered", { name: fused.name })),
+        h("h2", { class: "reveal", "data-testid": "fusion-reveal" }, t(claimed ? "forge.claimed" : "fuse.discovered", { name: fused.name })),
         h("div", { class: "preview-card" }, card(fused, { side: "you", extra: [copiesBadge(fused)] })),
         unitSheet(fused, content),
       );
@@ -1452,6 +1537,17 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
     }
     return false;
   });
+  // A forge scene (#1049) opens its pair's forge at once.
+  if (forgeScene) {
+    const f = forgeScene;
+    forgeScene = null;
+    // After the scene's own guarded call lets go (guarded ignores a call while one is out).
+    setTimeout(() =>
+      void fusePreview(f[0], f[1]).then(() => {
+        if (f[2]) document.querySelector<HTMLElement>(`[data-testid="${f[2]}"]`)?.click();
+      }),
+    );
+  }
   if (!desk) return;
   // ← / → pressed while the last move was out: the unit goes on by as many slots.
   const queued = moveQueue;
@@ -1715,6 +1811,7 @@ function openScene(id: string): void {
         if (entry.scroll) settle(() => document.querySelector(`[data-testid="${entry.scroll}"]`)?.scrollIntoView({ block: "center" }));
         return;
       case "shop":
+        if (entry.forge) forgeScene = [entry.forge[0], entry.forge[1], entry.click];
         return shopScreen(await api.run(entry.runId), content);
       case "run-over":
         return runOverScreen(await api.run(entry.runId), content);

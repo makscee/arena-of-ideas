@@ -7,6 +7,8 @@
  *   BASE_PATH   public mount path (default /arena); requests may arrive with
  *               or without it, depending on how the proxy forwards them.
  *   MVP_DEV     1 serves the dev tools (/api/v1/dev/*, "end day now")
+ *   ARENA_CODEX 1: rules v2's Codex (#1049): fuses use designed fusions and
+ *               claims; an unforged pair can only be wished for
  *   MVP_INVITES 1 makes it invite-only (slice 13): players come from invite
  *               links (npm run mvp:invite), the dev tools only for admin invites
  *   MVP_VOTE_MIN votes a candidate needs before it can qualify (MvpRules.voteMin,
@@ -76,7 +78,7 @@ const voteMin = Number(process.env.MVP_VOTE_MIN);
 const rules = Number.isInteger(voteMin) && voteMin > 0 ? { ...MVP_RULES, voteMin } : undefined;
 const telegram = telegramFromEnv(process.env, dev);
 const mail = mailFromEnv(process.env, dev);
-const rt = mvpRuntime({ content, store, dev, scenes, ...(rules ? { rules } : {}), ...(tuner ? { tuner } : {}), invites: process.env.MVP_INVITES === "1", open: process.env.MVP_OPEN === "1", rotation: process.env.MVP_ROTATION === "1", ...(telegram ? { telegram } : {}), ...(mail ? { mail } : {}) });
+const rt = mvpRuntime({ content, store, dev, scenes, ...(rules ? { rules } : {}), ...(tuner ? { tuner } : {}), invites: process.env.MVP_INVITES === "1", open: process.env.MVP_OPEN === "1", rotation: process.env.MVP_ROTATION === "1", codex: process.env.ARENA_CODEX === "1", ...(telegram ? { telegram } : {}), ...(mail ? { mail } : {}) });
 const build = buildOf();
 const publicUrl = (process.env.ARENA_PUBLIC_URL ?? "https://arena.makscee.ru/arena").replace(/\/$/, "");
 const app = mvpServerApp(createMvpApp(rt), { staticRoot: root, build, pageMeta: (url, lang) => shareMeta(rt, url, publicUrl, lang) });

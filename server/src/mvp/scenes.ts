@@ -18,6 +18,8 @@ import { grantIdea, writeIdea } from "./ideas.js";
 import { decide, startRun } from "./runs.js";
 import type { MvpRuntime } from "./runtime.js";
 import { fixtureBattle } from "./scene-fixtures.js";
+import { codexPair, type FusionDesign, type PairState } from "../../../src/mvp/codex.js";
+import { codexForged, forgeOf } from "./codex.js";
 import { instantTuner, nextCard, overnightCheck, seedCandidate } from "./votes.js";
 
 /** What the client opens once the fixture is built (mobile/main.ts openScene). */
@@ -25,7 +27,8 @@ export type SceneEntry =
   | { screen: "name" }
   | { screen: "holding" }
   | { screen: "home"; ended?: number; click?: string; scroll?: string }
-  | { screen: "shop"; runId: string }
+  /** `forge`: open that pair's forge (#1049); `click`: then press that button. */
+  | { screen: "shop"; runId: string; forge?: [number, number]; click?: string }
   | { screen: "battle"; battleId: string; runId?: string; keys?: string[] }
   | { screen: "run-over"; runId: string }
   | { screen: "codex"; tab: "units" | "fusions" | "library" | "keywords" | "champions" | "howto" }
@@ -81,7 +84,8 @@ async function playTo(rt: MvpRuntime, stop: (run: MvpRunState) => boolean, what:
       if (stop(run)) return run;
       if (run.phase === "over") break;
       if (run.round !== round) [round, rerolled] = [run.round, 0];
-      const d = botDecision(run, rt.contentFor(run.contentVersion), rt.rules, rerolled);
+      // With the Codex on, an unforged pair can't be fused: the bots skip it.
+      const d = botDecision(run, rt.contentFor(run.contentVersion), rt.rules, rerolled, rt.codex ? (x, y) => codexForged(rt, x, y) : undefined);
       if (d.kind === "reroll") rerolled++;
       decide(rt, run, d);
       run = rt.store.run(run.runId)!;
@@ -131,6 +135,30 @@ async function ideaAtArchetypes(rt: MvpRuntime, text = "A lantern keeper who hea
   return { player, ideaId: idea.ideaId };
 }
 
+/** Three designs for a forge scene's pair: the rules of other pool units'
+ * Awoken forms, named and flavoured, standing in for a night batch (#1050). */
+function sceneDesigns(rt: MvpRuntime, a: UnitId, b: UnitId): FusionDesign[] {
+  const others = rt.content.units.filter((u) => u.id !== a && u.id !== b && u.forms?.awoken);
+  const pickOf = (i: number) => structuredClone(others[(i * 7) % others.length]!.forms.awoken);
+  return [
+    { name: "Ember Warden", emoji: "🔥", lean: "a", recipe: pickOf(1), flavour: "Leans toward the first: it keeps the fire.", texts: { ru: { name: "Страж углей", flavour: "Ближе к первому: хранит огонь." } } },
+    { name: "Tide Caller", emoji: "🌊", lean: "b", recipe: pickOf(2), flavour: "Leans toward the second: it calls the water.", texts: { ru: { name: "Зовущий прилив", flavour: "Ближе ко второму: зовёт воду." } } },
+    { name: "Hollow Echo", emoji: "🌀", lean: "twist", recipe: pickOf(3), flavour: "A twist: neither parent, a third creature.", texts: { ru: { name: "Пустое эхо", flavour: "Поворот: ни один из родителей, третье существо." } } },
+  ];
+}
+
+/** A shop with two Awoken to fuse and the forge open on their pair, in
+ * Codex `state` (#1049); `click` then presses a button (the claim). Needs a
+ * scenes server with the Codex on (ARENA_CODEX=1). */
+const forge = (state: PairState, click?: string) => async (rt: MvpRuntime): Promise<SceneBuilt> => {
+  if (!rt.codex) throw new SceneMissing("the forge scenes need the Codex: start the scenes server with ARENA_CODEX=1");
+  const run = await playTo(rt, (r) => r.phase === "shop" && !r.gift && forgeOf(rt, r).some((p) => p.state === "unforged"), "two Awoken to fuse", 80);
+  const slot = forgeOf(rt, run).find((p) => p.state === "unforged")!;
+  if (state !== "unforged") rt.store.putCodexPair({ ...codexPair(slot.a, slot.b), candidates: sceneDesigns(rt, slot.a, slot.b), preparedAt: rt.now().toISOString() });
+  if (state === "discovered") rt.store.claimCodexPair(slot.a, slot.b, { pick: 2, by: fixturePlayer(rt), at: rt.now().toISOString() });
+  return { player: run.player, entry: { screen: "shop", runId: run.runId, forge: [slot.first, slot.second], ...(click ? { click } : {}) } };
+};
+
 let dayEnded: number | null = null;
 
 /** A rules v2 fixture battle (#1045): the golden battle of src/words/fixtures.ts, stored and opened as a replay. */
@@ -160,6 +188,10 @@ export const SCENES: Scene[] = [
     build: async (rt) => shop(await playTo(rt, (r) => r.phase === "shop" && !r.gift && botDecision(r, rt.contentFor(r.contentVersion), rt.rules, 9).kind === "fuse", "two Awoken to fuse", 80)),
   },
 
+  { id: "forge-unforged", group: "Awaken & fuse", title: "The forge: not forged yet (Wish)", look: "Rules v2 (#1049): a pair with no designs yet: 'not forged yet', today's wishes, Wish", desktop: true, build: forge("unforged") },
+  { id: "forge-ready", group: "Awaken & fuse", title: "The forge: ready to claim", look: "Rules v2 (#1049): three sealed designs as cards with flavour; pick one, Claim", desktop: true, build: forge("ready") },
+  { id: "forge-claim", group: "Awaken & fuse", title: "The forge: a claim", look: "Rules v2 (#1049): Claim pressed on the first design: 'You claimed …', the fused unit", desktop: true, build: forge("ready", "forge-claim") },
+  { id: "forge-discovered", group: "Awaken & fuse", title: "The forge: discovered", look: "Rules v2 (#1049): the canonical design, 'Discovered by @… · date', Fuse", desktop: true, build: forge("discovered") },
   { id: "battle-win", keep: true, group: "Battle", title: "A battle you win", look: "Pacing, the current beam, step numbers and spent cards, the end card", desktop: true, build: battleOf("round", "win") },
   { id: "battle-loss", keep: true, group: "Battle", title: "A battle you lose", look: "The loss end card, hearts lost", desktop: true, build: battleOf("round", "loss") },
   { id: "battle-draw", keep: true, group: "Battle", title: "A draw", look: "The draw end card", desktop: true, build: battleOf("round", "draw") },
