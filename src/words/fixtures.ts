@@ -63,7 +63,8 @@ export const FIXTURE_ABILITIES: AbilityRegistry = {
   Echo: {
     name: "Echo",
     family: "Arcane",
-    effects: [{ kind: "remember" }, { kind: "delay", turns: 1, effect: { kind: "performRemembered", mode: "once" } }],
+    // The composed word "echo" (macros.ts): remember + delay 1 + performRemembered once.
+    effects: [{ kind: "macro", name: "echo" }],
   },
   Sapling: {
     name: "Sapling",

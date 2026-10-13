@@ -19,6 +19,7 @@ import type {
 } from "./types.js";
 import type { TermId } from "./glossary.js";
 import { amountWord, conditionWord, effectWord, isV2Effect, selectorWord } from "./words/index.js";
+import { macro } from "./words/macros.js";
 import { describeAbilitySegmentsRu, describeStatusSegmentsRu } from "./describe-ru.js";
 
 /** The language card text is written in (M4-3): English, or Russian from
@@ -341,6 +342,7 @@ export function describeEffectSegments(
   // Effect-text runs carry this effect's Part ref (the codex Effect card).
   const ref: PartRef = { family: "effect", kind: e.kind };
   // A v2 effect says itself through its word (src/words/).
+  if (e.kind === "macro") return [{ text: (macro(e.name)?.en ?? e.name).replace("{target}", joinSegments(tgt)), partRef: ref }];
   const word = effectWord(e.kind);
   if (word) return [{ text: word.en(e, { amount: (a) => describeAmount(a), who: (s) => describeSelector(s, opts) }, joinSegments(tgt)), partRef: ref }];
   if (isV2Effect(e)) return [];
@@ -575,6 +577,7 @@ function terseAmount(a: Amount): string {
 /** An effect as a terse action chip: verb + magnitude, the target folded out
  * (it has its own chip). "Poison 2", "Deal 3", "Summon Imp", "Silence". */
 function terseAction(e: Effect): string {
+  if (e.kind === "macro") return e.name;
   if (isV2Effect(e)) return e.kind;
   switch (e.kind) {
     case "damage":

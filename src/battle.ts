@@ -1,6 +1,7 @@
 // The battle resolver — a pure function: battle(teamA, teamB, seed) → causal event log.
 // Every state change flows through one pipeline: propose → intercept → apply → trigger (SPEC §5).
 
+import { expandAbilities, expandStatuses } from "./words/macros.js";
 import type {
   Ability,
   AbilityRef,
@@ -171,8 +172,9 @@ class Engine {
     this.anyActed = JSON.stringify([input.teamA, input.teamB, input.abilities ?? {}, input.statuses ?? {}]).includes('"on":"Acted"');
     Object.defineProperty(this.wordCtx, "turn", { get: () => this.turn });
     this.rng = mulberry32(input.seed);
-    this.registry = input.statuses ?? {};
-    this.abilities = input.abilities ?? {};
+    // Composed words (§7) are expanded here; the kernel only runs primitives.
+    this.registry = expandStatuses(input.statuses ?? {});
+    this.abilities = expandAbilities(input.abilities ?? {});
     this.chainStepCap = input.chainStepCap ?? DEFAULT_CHAIN_STEP_CAP;
     if (!Number.isInteger(this.chainStepCap) || this.chainStepCap < 1) {
       throw new Error(`chainStepCap must be a positive integer, got ${String(input.chainStepCap)}`);

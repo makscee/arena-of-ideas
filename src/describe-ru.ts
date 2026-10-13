@@ -11,6 +11,7 @@
 // 5 Щитов). Display-only, like describe.ts.
 
 import { amountWord, conditionWord, effectWord, isV2Effect, selectorWord } from "./words/index.js";
+import { macro } from "./words/macros.js";
 import type { Ability, Amount, Condition, Effect, EventPattern, EventPatternV1, Selector, SelectorV1, StatusDef, UnitFilter, When } from "./types.js";
 import type { DescribeOpts, DescribeSegment, PartRef, Side } from "./describe.js";
 import type { TermId } from "./glossary.js";
@@ -272,6 +273,7 @@ interface EffectCtx extends DescribeOpts {
 
 function effectSegs(e: Effect, ctx: EffectCtx): DescribeSegment[] {
   const ref: PartRef = { family: "effect", kind: e.kind };
+  if (e.kind === "macro") return [{ text: (macro(e.name)?.ru ?? e.name).replace("{target}", targetSegs(ctx.selectors, "acc", ctx).map((g) => g.text).join("")), partRef: ref }];
   const word = effectWord(e.kind);
   if (word) {
     // Rule words take their Who in the accusative (= genitive for the animate units).

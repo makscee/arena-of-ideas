@@ -13,6 +13,7 @@
 import { TEAM_SIZE } from "./battle.js";
 import type { AbilityRegistry, StatusRegistry, UnitDef } from "./types.js";
 import { AMOUNT_WORDS, CONDITION_WORDS, amountWord, conditionWord, effectWord, selectorWord } from "./words/index.js";
+import { MACROS, macro } from "./words/macros.js";
 
 export interface ValidationIssue {
   path: string; // e.g. "teamA[0].abilities[0].effects[1]"
@@ -512,6 +513,15 @@ function validateEffect(e: unknown, registry: StatusRegistry, abilities: Ability
     return;
   }
   const kind = e["kind"];
+  if (kind === "macro") {
+    const m = typeof e["name"] === "string" ? macro(e["name"]) : undefined;
+    if (!m) {
+      issues.push({ path: `${path}.name`, message: `unknown composed word ${JSON.stringify(e["name"])} — macros: ${Object.keys(MACROS).join(", ")}` });
+      return;
+    }
+    m.effects.forEach((x, i) => validateEffect(x, registry, abilities, owner, contexts, `${path}<${m.name}>[${i}]`, issues));
+    return;
+  }
   const word = effectWord(kind);
   const isTrigger = oneOf(kind, TRIGGER_EFFECTS) || word?.context === "trigger";
   const isInterceptor = oneOf(kind, INTERCEPTOR_EFFECTS) || word?.context === "interceptor";

@@ -202,7 +202,10 @@ export type AmountV1 =
   | { kind: "level"; of: "holder" } // holder's level — shop-layer growth, readable like a stat
   | { kind: "stacks" }; // current stacks of the owning status instance (status content only)
 
-export type Effect = EffectV1 | EffectV2;
+export type Effect = EffectV1 | EffectV2 | MacroEffect;
+
+/** A composed word (#1043 §7, src/words/macros.ts): the compiler expands it to its primitives before the kernel sees it. */
+export type MacroEffect = { kind: "macro"; name: string };
 
 /** Rules v2 effects (#1043 §3.4–3.6); each kind is a word in src/words/. */
 export type EffectV2 =
