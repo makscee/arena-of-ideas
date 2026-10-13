@@ -12,7 +12,7 @@
 
 import { TEAM_SIZE } from "./battle.js";
 import type { AbilityRegistry, StatusRegistry, UnitDef } from "./types.js";
-import { AMOUNT_WORDS, CONDITION_WORDS, amountWord, conditionWord, selectorWord } from "./words/index.js";
+import { AMOUNT_WORDS, CONDITION_WORDS, amountWord, conditionWord, effectWord, selectorWord } from "./words/index.js";
 
 export interface ValidationIssue {
   path: string; // e.g. "teamA[0].abilities[0].effects[1]"
@@ -491,8 +491,9 @@ function validateEffect(e: unknown, registry: StatusRegistry, abilities: Ability
     return;
   }
   const kind = e["kind"];
-  const isTrigger = oneOf(kind, TRIGGER_EFFECTS);
-  const isInterceptor = oneOf(kind, INTERCEPTOR_EFFECTS);
+  const word = effectWord(kind);
+  const isTrigger = oneOf(kind, TRIGGER_EFFECTS) || word?.context === "trigger";
+  const isInterceptor = oneOf(kind, INTERCEPTOR_EFFECTS) || word?.context === "interceptor";
   if (!isTrigger && !isInterceptor) {
     issues.push({ path: `${path}.kind`, message: `unknown effect kind "${kind}" — trigger-context: ${list(TRIGGER_EFFECTS)}; interceptor-context: ${list(INTERCEPTOR_EFFECTS)}` });
     return;
@@ -506,6 +507,19 @@ function validateEffect(e: unknown, registry: StatusRegistry, abilities: Ability
   }
 
   switch (kind) {
+    case "redirect":
+      if (!isObject(e["to"]) || !(oneOf(e["to"]["kind"], SELECTOR_KINDS) || (typeof e["to"]["kind"] === "string" && selectorWord(e["to"]["kind"])))) {
+        issues.push({ path: `${path}.to`, message: "redirect needs a selector to land on" });
+      }
+      return;
+    case "preventDeath":
+      if (!Number.isInteger(e["at"]) || (e["at"] as number) < 1) issues.push({ path: `${path}.at`, message: "at must be an integer ≥ 1" });
+      if (!isObject(e["cost"]) || !oneOf(e["cost"]["stat"], STAT_NAMES) || !Number.isInteger(e["cost"]["amount"]) || (e["cost"]["amount"] as number) < 0) {
+        issues.push({ path: `${path}.cost`, message: "cost must be {stat, amount ≥ 0}" });
+      }
+      return;
+    case "replaceAmount":
+      return validateAmount(e["amount"], owner, `${path}.amount`, issues);
     case "damage":
       return validateAmount(e["amount"], owner, `${path}.amount`, issues);
     case "heal":

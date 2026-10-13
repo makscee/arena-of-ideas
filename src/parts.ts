@@ -26,6 +26,7 @@ import type {
   Condition,
   ConditionV1,
   Effect,
+  EffectV1,
   EventPattern,
   Selector,
   SelectorV1,
@@ -53,7 +54,7 @@ const SAMPLE_SUMMON_UNIT: UnitDef = { name: "a token", base: { hp: 1, pwr: 1 }, 
 // ---------------------------------------------------------------------------
 
 /** Every Effect kind → a representative atom. Key set = Effect["kind"]. */
-const EFFECT_SAMPLES: Record<Effect["kind"], Effect> = {
+const EFFECT_SAMPLES: Record<EffectV1["kind"], Effect> = {
   damage: { kind: "damage", amount: { kind: "const", value: 3 } },
   heal: { kind: "heal", amount: { kind: "const", value: 3 } },
   applyStatus: { kind: "applyStatus", status: "a status", stacks: { kind: "const", value: 1 } },
@@ -177,7 +178,7 @@ export function partAtoms(): PartAtom[] {
     });
   }
 
-  for (const kind of Object.keys(EFFECT_SAMPLES) as Effect["kind"][]) {
+  for (const kind of Object.keys(EFFECT_SAMPLES) as EffectV1["kind"][]) {
     atoms.push({
       family: "effect",
       kind,

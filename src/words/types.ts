@@ -109,3 +109,34 @@ export interface AmountWord<A = any> extends WordMeta {
   en(a: A, say: (a: import("../types.js").Amount) => string): string;
   ru(a: A, say: (a: import("../types.js").Amount) => string): string;
 }
+
+/** What a word's sentence can ask the renderer to say. */
+export interface Say {
+  amount(a: import("../types.js").Amount): string;
+  who(s: import("../types.js").Selector): string;
+}
+
+/** Where an interceptor effect runs: the holder, the proposed event (the
+ * word may change it) and the kernel moves a replacement may make. */
+export interface InterceptAt {
+  holder: WordUnit;
+  draft: import("../types.js").EventBody;
+  eval(a: import("../types.js").Amount): number;
+  select(s: import("../types.js").Selector): WordUnit[];
+  /** Move the proposed event onto `to`; false when it was already
+   * redirected once, or has no unit to move. */
+  redirect(to: WordUnit): boolean;
+  /** After the cancelled Death: set the unit to `hp` and take `amount` from
+   * its `stat`. */
+  survive(unit: string, hp: number, stat: import("../types.js").StatName, amount: number): void;
+}
+
+/** An effect (§3.4–3.6). Interceptor words change or cancel the proposal. */
+export interface EffectWord<E = any> extends WordMeta {
+  kind: string;
+  context: "trigger" | "interceptor";
+  intercept?(ctx: WordCtx, e: E, at: InterceptAt): "pass" | "cancel";
+  /** The clause in a card sentence; `target` is the rule's Who already said. */
+  en(e: E, say: Say, target: string): string;
+  ru(e: E, say: Say, target: string): string;
+}

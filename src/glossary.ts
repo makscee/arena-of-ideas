@@ -14,7 +14,7 @@ import { describeStatus, type Lang } from "./describe.js";
 import { RU_STATUSES } from "./describe-ru.js";
 import { chainCappedTipRu, fatigueTipRu, RU_SCOPE_WHO, RU_SCOPED_EVENT, RU_TERMS, ruStatusTerm, scopeLabelRu, suddenDeathTipRu, timeUpTipRu } from "./glossary-ru.js";
 import { MVP_RULES, ROUND3_TURN_CAP } from "./mvp/contract.js";
-import type { Condition, ConditionV1, Effect, EventPattern, Selector, SelectorV1, StatusRegistry, UnitFilter } from "./types.js";
+import type { Condition, ConditionV1, Effect, EffectV1, EventPattern, Selector, SelectorV1, StatusRegistry, UnitFilter } from "./types.js";
 
 /** Every term id. `status:` takes a registry name ("Shield", "Poison", …). */
 export type TermId =
@@ -23,7 +23,7 @@ export type TermId =
   | `trigger:${EventPattern["on"]}`
   | `condition:${ConditionV1["kind"]}`
   | `target:${SelectorV1["kind"]}`
-  | `effect:${Effect["kind"]}`
+  | `effect:${EffectV1["kind"]}`
   | `state:${"sleeping" | "awoken" | "fused"}`
   | `battle:${"fatigue" | "suddenDeath" | "chainCapped" | "timeUp" | "noRoom"}`
   | `term:${"stacks" | "would"}`;

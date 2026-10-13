@@ -27,10 +27,13 @@ import { plus } from "./plus.js";
 import { stacksOf } from "./stacksOf.js";
 import { statOf } from "./statOf.js";
 import { twice } from "./twice.js";
-import type { AmountWord, ConditionWord, SelectorWord } from "./types.js";
-import type { AmountV2, ConditionV2, PositionSelector } from "../types.js";
+import { preventDeath } from "./preventDeath.js";
+import { redirect } from "./redirect.js";
+import { replaceAmount } from "./replaceAmount.js";
+import type { AmountWord, ConditionWord, EffectWord, SelectorWord } from "./types.js";
+import type { AmountV2, ConditionV2, Effect, EffectV2, PositionSelector } from "../types.js";
 
-export type { AmountAt, AmountWord, CondAt, ConditionWord, SelectorWord, WordCtx, WordUnit } from "./types.js";
+export type { EffectWord, InterceptAt, Say, AmountAt, AmountWord, CondAt, ConditionWord, SelectorWord, WordCtx, WordUnit } from "./types.js";
 
 export const SELECTOR_WORDS: Record<PositionSelector["kind"], SelectorWord> = {
   allyBehind, allyAhead, neighbours, alliesBehind, lastEnemy, randomAlly, eventTarget,
@@ -44,9 +47,15 @@ export const AMOUNT_WORDS: Record<AmountV2["kind"], AmountWord> = {
   stacksOf, count, statOf, missingHp, half, twice, plus,
 };
 
+export const EFFECT_WORDS: Record<EffectV2["kind"], EffectWord> = {
+  redirect, preventDeath, replaceAmount,
+};
+
+export const effectWord = (kind: string): EffectWord | undefined => (EFFECT_WORDS as Record<string, EffectWord>)[kind];
+export const isV2Effect = (e: Effect): e is EffectV2 => effectWord(e.kind) !== undefined;
 export const amountWord = (kind: string): AmountWord | undefined => (AMOUNT_WORDS as Record<string, AmountWord>)[kind];
 export const selectorWord = (kind: string): SelectorWord | undefined => (SELECTOR_WORDS as Record<string, SelectorWord>)[kind];
 export const conditionWord = (kind: string): ConditionWord | undefined => (CONDITION_WORDS as Record<string, ConditionWord>)[kind];
 
 /** Every registered word, for the registry test. */
-export const ALL_WORDS: Array<SelectorWord | ConditionWord | AmountWord> = [...Object.values(SELECTOR_WORDS), ...Object.values(CONDITION_WORDS), ...Object.values(AMOUNT_WORDS)];
+export const ALL_WORDS: Array<SelectorWord | ConditionWord | AmountWord | EffectWord> = [...Object.values(SELECTOR_WORDS), ...Object.values(CONDITION_WORDS), ...Object.values(AMOUNT_WORDS), ...Object.values(EFFECT_WORDS)];

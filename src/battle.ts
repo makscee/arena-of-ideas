@@ -26,7 +26,7 @@ import type {
 } from "./types.js";
 import { mulberry32 } from "./rng.js";
 import { legacyRecipe } from "./content-grammar.js";
-import { amountWord, conditionWord, selectorWord, type CondAt, type WordCtx, type WordUnit } from "./words/index.js";
+import { amountWord, conditionWord, effectWord, selectorWord, type CondAt, type WordCtx, type WordUnit } from "./words/index.js";
 
 export const TEAM_SIZE = 5;
 export const FATIGUE_START = 10;
@@ -322,6 +322,7 @@ class Engine {
     const draft: EventBody = { ...body };
     const followUps: Array<(parentId: number) => void> = [];
     const handled = new Set<string>();
+    const redirected = { done: false }; // rules v2 §3.4: a redirect applies once per event
     let cancelledBy: AbilityRef | null = null;
     // Sudden death's fatigue, and the death it deals, pass every interceptor.
     const pierced = (draft.type === "Hurt" || draft.type === "Death") && draft.pierced === true;
@@ -345,7 +346,7 @@ class Engine {
         if (r.ability.condition && !this.checkCondition(r.ability.condition, holder, { ...draft, id: -1, turn: this.turn, causedBy, source } as BattleEvent, r.ref)) continue;
         handled.add(k);
         if (r.ref.status === undefined) this.chainActed.add(r.holder);
-        const res = this.runInterceptor(stamped, draft, followUps);
+        const res = this.runInterceptor(stamped, draft, followUps, causedBy, redirected);
         if (res === "cancel") {
           cancelledBy = stamped.ref;
           break;
@@ -727,7 +728,13 @@ class Engine {
 
   // ---------- interceptor execution ----------
 
-  private runInterceptor(r: ReactorEntry, draft: EventBody, followUps: Array<(parentId: number) => void>): "pass" | "cancel" {
+  private runInterceptor(
+    r: ReactorEntry,
+    draft: EventBody,
+    followUps: Array<(parentId: number) => void>,
+    causedBy: number | null,
+    redirected: { done: boolean },
+  ): "pass" | "cancel" {
     const holder = this.units.get(r.holder);
     if (!holder) return "pass";
     const own = r.ref.status !== undefined ? holder.statuses.find((s) => s.def.name === r.ref.status) : undefined;
@@ -772,8 +779,46 @@ class Engine {
           if (effect.removeSelf && own && r.ref.status !== undefined) consumeOwn(own.stacks);
           return "cancel";
         }
-        default:
-          break; // trigger-context atoms are inert in interceptor context
+        default: {
+          // A v2 interceptor effect is a word (src/words/); trigger-context
+          // atoms stay inert here.
+          const word = effectWord(effect.kind);
+          if (!word?.intercept) break;
+          const res = word.intercept(this.wordCtx, effect, {
+            holder,
+            draft,
+            eval: (a) => this.evalAmount(a, { holder, ref }),
+            select: (s) => {
+              const probe = { ...draft, id: -1, turn: this.turn, causedBy, source: "kernel" } as BattleEvent;
+              return this.evalSelector(s, holder, probe);
+            },
+            redirect: (to) => {
+              if (redirected.done) return false;
+              const from = draft.type === "Strike" ? draft.defender : "unit" in draft && typeof draft.unit === "string" ? draft.unit : undefined;
+              if (from === undefined || from === to.id || !to.alive) return false;
+              if (draft.type === "Strike") draft.defender = to.id;
+              else (draft as { unit: string }).unit = to.id;
+              redirected.done = true;
+              this.applyEvent({ type: "Redirected", by: ref, original: draft.type, from, to: to.id }, causedBy, "kernel");
+              return true;
+            },
+            survive: (unitId, hp, stat, amount) => {
+              followUps.push((parentId) => {
+                const u = this.units.get(unitId);
+                if (!u) return;
+                const heal = hp - this.curHp(u);
+                if (heal > 0) this.propose({ type: "Heal", unit: unitId, amount: heal }, parentId, ref);
+                if (amount > 0) {
+                  const before = this.effStat(u, stat);
+                  u.base[stat] -= amount;
+                  this.propose({ type: "StatChanged", unit: unitId, stat, delta: this.effStat(u, stat) - before, now: this.effStat(u, stat) }, parentId, ref);
+                }
+              });
+            },
+          });
+          if (res === "cancel") return "cancel";
+          break;
+        }
       }
     }
     return "pass";
@@ -883,7 +928,7 @@ class Engine {
         const striker = this.units.get(ev.striker);
         const defender = this.units.get(ev.defender);
         if (!striker || !defender || !defender.alive) return;
-        const amount = this.effStat(striker, "pwr");
+        const amount = ev.amount ?? this.effStat(striker, "pwr");
         this.propose({ type: "Hurt", unit: ev.defender, amount }, ev.id, "kernel");
         return;
       }

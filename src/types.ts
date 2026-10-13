@@ -194,7 +194,18 @@ export type AmountV1 =
   | { kind: "level"; of: "holder" } // holder's level — shop-layer growth, readable like a stat
   | { kind: "stacks" }; // current stacks of the owning status instance (status content only)
 
-export type Effect =
+export type Effect = EffectV1 | EffectV2;
+
+/** Rules v2 effects (#1043 §3.4–3.6); each kind is a word in src/words/. */
+export type EffectV2 =
+  // interceptor: the proposed Hurt, Heal, Strike or status lands on another unit; once per event
+  | { kind: "redirect"; to: Selector }
+  // interceptor: cancel a Death, stay at `at` hp and pay `cost` from a stat (Candle)
+  | { kind: "preventDeath"; at: number; cost: { stat: StatName; amount: number } }
+  // interceptor: the proposed Hurt or Heal (or a Strike's hit) becomes this amount
+  | { kind: "replaceAmount"; amount: Amount };
+
+export type EffectV1 =
   // trigger-context atoms
   | { kind: "damage"; amount: Amount }
   | { kind: "heal"; amount: Amount }
@@ -250,7 +261,8 @@ export type EventBody =
   | { type: "TurnStart" }
   | { type: "TurnEnd" }
   | { type: "PairFaced"; a: string; b: string; first: string }
-  | { type: "Strike"; striker: string; defender: string }
+  // amount: set by a replaceAmount interceptor (rules v2); absent = the striker's pwr
+  | { type: "Strike"; striker: string; defender: string; amount?: number }
   // hpAfter = the unit's current hp after the event applied; stamped at apply time
   // (optional only because proposals are drafted without it — every logged event carries it).
   // pierced: sudden death's fatigue (R4-1), which no interceptor (Shield) can stop.
@@ -295,6 +307,8 @@ export type EventBody =
   | { type: "Intercepted"; by: AbilityRef; original: string; unit?: string }
   // A flip condition (rules v2, §3.2) drew its coin for `unit`'s firing.
   | { type: "Flipped"; unit: string; by: AbilityRef; heads: boolean }
+  // A redirect interceptor (rules v2, §3.4) moved a proposed event from one unit to another.
+  | { type: "Redirected"; by: AbilityRef; original: string; from: string; to: string }
   // timeUp: the turn cap ran out with both sides standing (a draw); absent otherwise.
   | { type: "BattleEnd"; winner: Side | "draw"; turns: number; timeUp?: true };
 

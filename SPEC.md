@@ -258,3 +258,9 @@ A status with `counter: true` is a counter: tracked like stacks, drawn as a smal
 - `statOf {stat, of: target | eventUnit}` — someone else's effective stat.
 - `missingHp` — the holder's damage taken.
 - `half {of}` (rounded down), `twice {of}`, `plus {a, b}` — the only arithmetic.
+
+### 11.4 Replacement interceptors
+Interceptor-context effects beside `cancel`, `absorbHurt`, `preventDeathHeal`:
+- `redirect {to: Selector}` — the proposed Hurt, Heal, Strike (its defender) or StatusApplied lands on the unit `to` picks (its first pick, living, not already the subject). **An event is redirected at most once**, whoever tries second. A `Redirected {by, original, from, to}` event is logged before the moved event applies. Interceptors earlier in reactor order than the redirect don't see the new subject (a known limit, revisit with Magnet's tune).
+- `preventDeath {at, cost: {stat, amount}}` — cancel a Death (an `Intercepted` event): the unit is healed to `at` HP and its base stat drops by `amount` (a `StatChanged`), both caused by the `Intercepted`. When the stat is already below `amount`, it can't pay and the Death goes ahead (Candle: at 0 power it dies).
+- `replaceAmount {amount}` — the proposed Hurt or Heal takes this amount; on a Strike it sets the Strike's `amount`, and the Hurt the Strike proposes uses it instead of the striker's power (`Strike.amount` is absent on every other Strike, so v1 logs are unchanged).

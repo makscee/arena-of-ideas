@@ -22,6 +22,22 @@ export function traceLines(input: BattleInput, log: readonly BattleEvent[]): str
       out.push(`${name(e.unit)} flips: ${e.heads ? "heads" : "tails"}`);
       continue;
     }
+    if (e.type === "Redirected") {
+      const what = e.original === "Hurt" ? "the hit" : e.original === "Strike" ? "the strike" : e.original === "StatusApplied" ? "the status" : "the heal";
+      out.push(`${name(e.by.unit)} intercepts: ${what} on ${name(e.from)} lands on ${name(e.to)}`);
+      continue;
+    }
+    if (e.type === "Strike" && e.amount !== undefined) {
+      out.push(`${name(e.striker)}'s strike on ${name(e.defender)} hits for ${e.amount}`);
+      continue;
+    }
+    if (e.type === "Intercepted" && e.original === "Death") {
+      const paid = log.find((x) => x.causedBy === e.id && x.type === "StatChanged");
+      const cost = paid?.type === "StatChanged" ? `, loses ${-paid.delta} ${paid.stat.toUpperCase()}` : "";
+      const healed = log.find((x) => x.causedBy === e.id && x.type === "Heal");
+      out.push(`${name(e.by.unit)} intercepts: ${name(e.unit ?? e.by.unit)} survives${healed?.type === "Heal" ? ` at ${healed.hpAfter} HP` : ""}${cost}`);
+      continue;
+    }
     if (e.source === "kernel" || e.source.status !== undefined || !("unit" in e) || typeof e.unit !== "string") continue;
     const def = defOf(input, e.source.unit);
     if (!def?.selectors) continue;

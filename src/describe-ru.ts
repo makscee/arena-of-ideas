@@ -10,7 +10,7 @@
 // a counted noun takes its form by Intl.PluralRules("ru") (1 Щит, 2 Щита,
 // 5 Щитов). Display-only, like describe.ts.
 
-import { amountWord, conditionWord, selectorWord } from "./words/index.js";
+import { amountWord, conditionWord, effectWord, isV2Effect, selectorWord } from "./words/index.js";
 import type { Ability, Amount, Condition, Effect, EventPattern, Selector, SelectorV1, StatusDef, UnitFilter, When } from "./types.js";
 import type { DescribeOpts, DescribeSegment, PartRef, Side } from "./describe.js";
 import type { TermId } from "./glossary.js";
@@ -268,6 +268,12 @@ interface EffectCtx extends DescribeOpts {
 
 function effectSegs(e: Effect, ctx: EffectCtx): DescribeSegment[] {
   const ref: PartRef = { family: "effect", kind: e.kind };
+  const word = effectWord(e.kind);
+  if (word) {
+    const target = targetSegs(ctx.selectors, "dat", ctx).map((g) => g.text).join("");
+    return [{ text: word.ru(e, { amount: (a) => amountDat(a).map((g) => g.text).join(""), who: (s) => selectorText(s, "dat", ctx) }, target), partRef: ref }];
+  }
+  if (isV2Effect(e)) return [];
   const e0 = (text: string): DescribeSegment => ({ text, partRef: ref });
   const eT = (text: string): DescribeSegment => ({ text, partRef: ref, term: `effect:${e.kind}` });
   const statusSeg = (status: string, text: string): DescribeSegment => ({ text, statusRef: status, term: `status:${status}` });
