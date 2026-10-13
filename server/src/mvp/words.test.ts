@@ -60,7 +60,7 @@ describe("the Dictionary (#1052)", () => {
     expect(forgedWordsIn({ name: "Plain", effects: [{ kind: "damage" }] }, [steal])).toEqual([]);
     expect(foundWordsIn(s, design, pairKey("Shadow", "Magpie"), "kim", at, [steal])).toEqual([steal]);
     expect(foundWordsIn(s, design, "Cat+Dog", "lee", at, [steal])).toEqual([]);
-    const [e] = dictionary(s, [steal]);
+    const e = dictionary(s, [steal])[0]!;
     expect(e.state).toBe("found");
     expect(e.found).toMatchObject({ pair: "Magpie+Shadow", playerId: "kim", kind: "steal" });
     expect(forgedNotFound(dictionary(s, [steal]))).toBe(0);
@@ -86,7 +86,7 @@ describe("the word card (#1052)", () => {
     const s = new MemoryMvpStore();
     requestWord(s, "idea", "i1", { word: "steal", part: "steals the enemy's gold" }, at);
     requestForPair(s, "Shadow", "Magpie", [{ word: "steal", part: "takes a power" }], at);
-    const { title, body } = wordCard(dictionary(s, [])[0]);
+    const { title, body } = wordCard(dictionary(s, [])[0]!);
     expect(title).toBe("Arena v2 · word forge: steal");
     expect(body).toContain("- idea `i1`: steals the enemy's gold (2026-10-14)");
     expect(body).toContain("- night `Magpie+Shadow`: takes a power");

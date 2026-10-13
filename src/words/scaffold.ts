@@ -105,7 +105,7 @@ export function addToUnion(types: string, cls: WordClass, kind: string): string 
   const lines = types.slice(decl).split("\n");
   const i = lines.findIndex((l) => /^\s*\|.*;( *\/\/.*)?$/.test(l));
   if (i < 0) throw new Error(`types.ts: end of ${c.union} not found`);
-  const m = /^(\s*\|.*?)(;)( *\/\/.*)?$/.exec(lines[i])!;
+  const m = /^(\s*\|.*?)(;)( *\/\/.*)?$/.exec(lines[i]!)!;
   lines[i] = `${m[1]}${m[3] ?? ""}`;
   lines.splice(i + 1, 0, `  | { kind: "${kind}" };`);
   return types.slice(0, decl) + lines.join("\n");
