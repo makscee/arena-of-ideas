@@ -93,7 +93,7 @@ if [ -f "$LIVE_PLIST" ]; then
   if [ -f "$LIVE_DIR/data/arena-mvp.db" ]; then
     B="$LIVE_DIR/data/dark-backup-$(date +%Y%m%d-%H%M%S)"
     mkdir -p "$B"
-    cp -p "$LIVE_DIR"/data/arena-mvp.db* "$B"/
+    for f in arena-mvp.db arena-mvp.db-wal arena-mvp.db-shm; do [ -f "$LIVE_DIR/data/$f" ] && cp -p "$LIVE_DIR/data/$f" "$B"/ || true; done
     echo "live database copied to $B"
   fi
 fi
