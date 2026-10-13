@@ -7,6 +7,7 @@ import { addCopy, contentFormProblems, lineUnitOf } from "./forms.js";
 import { fightLines, toBattleDef } from "./fight.js";
 import { MVP_RULES } from "./contract.js";
 import { ROWS_V2 } from "./units-v2.js";
+import { V2_NUMBERS } from "./units-v2-numbers.js";
 import { traceLines } from "../words/trace.js";
 import { formSegments, formText } from "./form-text.js";
 import { ruStatusName, setKnownStatusNames } from "../status-names.js";
@@ -88,7 +89,7 @@ describe("rules v2 pool", () => {
     expect(say("Drummer", "sleeping", "en")).toBe("Ally strikes: 1 Beats to self. Turn end, if it has 3+ Beats: 1 Strength to every ally behind, and spend 3 Beats.");
     expect(say("Raven", "sleeping", "en")).toBe("Ally dies: remember the rule of that unit. Turn start: perform a remembered rule once.");
     expect(say("Raven", "awoken", "en")).toMatch(/Turn start: perform every remembered rule\.$/);
-    expect(say("Seed", "awoken", "en")).toBe("Battle start: in 2 turns: become Tree (0/16). Tree: Turn start: 1 Strength to the ally behind, and 1 Shield to its neighbours.");
+    expect(say("Seed", "awoken", "en")).toBe(`Battle start: in 2 turns: become Tree (0/${8 + V2_NUMBERS["Seed"]!.awoken!.hp}). Tree: Turn start: 1 Strength to the ally behind, and 1 Shield to its neighbours.`);
     expect(say("Chrysalis", "sleeping", "en")).toBe("Turn start, on turn 3: become Butterfly (2/6). Butterfly: Turn start: PWR damage to all enemies.");
     // every form that gives or starts with a status carrying a rule, or
     // becomes a unit with a rule, says more than its own clause

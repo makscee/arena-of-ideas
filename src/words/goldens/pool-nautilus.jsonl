@@ -1,4 +1,4 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Nautilus","name":"Nautilus","hp":3,"pwr":1},{"id":"A2:Seed","name":"Seed","hp":9,"pwr":0}],"B":[{"id":"B1:Metronome","name":"Metronome","hp":6,"pwr":2},{"id":"B2:Chrysalis","name":"Chrysalis","hp":3,"pwr":0},{"id":"B3:Understudy","name":"Understudy","hp":15,"pwr":2}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Nautilus","name":"Nautilus","hp":3,"pwr":1},{"id":"A2:Seed","name":"Seed","hp":11,"pwr":0}],"B":[{"id":"B1:Metronome","name":"Metronome","hp":6,"pwr":2},{"id":"B2:Chrysalis","name":"Chrysalis","hp":3,"pwr":0},{"id":"B3:Understudy","name":"Understudy","hp":17,"pwr":2}]}}
 {"id":1,"turn":0,"causedBy":0,"source":{"unit":"A2:Seed","ability":0,"when":0},"type":"Delayed","unit":"A2:Seed","by":{"unit":"A2:Seed","ability":0,"when":0},"at":2}
 {"id":2,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":3,"turn":1,"causedBy":2,"source":"kernel","type":"PairFaced","a":"A1:Nautilus","b":"B1:Metronome","first":"B1:Metronome"}

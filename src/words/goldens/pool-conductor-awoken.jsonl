@@ -1,9 +1,9 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Conductor","name":"Conductor","hp":13,"pwr":3},{"id":"A2:Candle","name":"Candle","hp":15,"pwr":6}],"B":[{"id":"B1:Raven","name":"Raven","hp":11,"pwr":2},{"id":"B2:Leech","name":"Leech","hp":16,"pwr":6},{"id":"B3:Lone Wolf","name":"Lone Wolf","hp":8,"pwr":3}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Conductor","name":"Conductor","hp":12,"pwr":3},{"id":"A2:Candle","name":"Candle","hp":15,"pwr":6}],"B":[{"id":"B1:Raven","name":"Raven","hp":11,"pwr":2},{"id":"B2:Leech","name":"Leech","hp":16,"pwr":6},{"id":"B3:Lone Wolf","name":"Lone Wolf","hp":8,"pwr":3}]}}
 {"id":1,"turn":0,"causedBy":0,"source":"kernel","type":"StatusApplied","unit":"B1:Raven","status":"Memory","stacks":1,"total":1}
 {"id":2,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":3,"turn":1,"causedBy":2,"source":"kernel","type":"PairFaced","a":"A1:Conductor","b":"B1:Raven","first":"B1:Raven"}
 {"id":4,"turn":1,"causedBy":2,"source":"kernel","type":"Strike","striker":"B1:Raven","defender":"A1:Conductor"}
-{"id":5,"turn":1,"causedBy":4,"source":"kernel","type":"Hurt","unit":"A1:Conductor","amount":2,"hpAfter":11}
+{"id":5,"turn":1,"causedBy":4,"source":"kernel","type":"Hurt","unit":"A1:Conductor","amount":2,"hpAfter":10}
 {"id":6,"turn":1,"causedBy":2,"source":"kernel","type":"Strike","striker":"A1:Conductor","defender":"B1:Raven"}
 {"id":7,"turn":1,"causedBy":6,"source":"kernel","type":"Hurt","unit":"B1:Raven","amount":3,"hpAfter":8}
 {"id":8,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
@@ -12,13 +12,13 @@
 {"id":11,"turn":2,"causedBy":9,"source":{"unit":"A1:Conductor","ability":1,"when":0},"type":"StatusApplied","unit":"A2:Candle","status":"Strength","stacks":1,"total":1}
 {"id":12,"turn":2,"causedBy":11,"source":"kernel","type":"StatChanged","unit":"A2:Candle","stat":"pwr","delta":1,"now":7}
 {"id":13,"turn":2,"causedBy":9,"source":"kernel","type":"Strike","striker":"B1:Raven","defender":"A1:Conductor"}
-{"id":14,"turn":2,"causedBy":13,"source":"kernel","type":"Hurt","unit":"A1:Conductor","amount":2,"hpAfter":9}
+{"id":14,"turn":2,"causedBy":13,"source":"kernel","type":"Hurt","unit":"A1:Conductor","amount":2,"hpAfter":8}
 {"id":15,"turn":2,"causedBy":9,"source":"kernel","type":"Strike","striker":"A1:Conductor","defender":"B1:Raven"}
 {"id":16,"turn":2,"causedBy":15,"source":"kernel","type":"Hurt","unit":"B1:Raven","amount":3,"hpAfter":5}
 {"id":17,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":18,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":19,"turn":3,"causedBy":18,"source":"kernel","type":"Strike","striker":"B1:Raven","defender":"A1:Conductor"}
-{"id":20,"turn":3,"causedBy":19,"source":"kernel","type":"Hurt","unit":"A1:Conductor","amount":2,"hpAfter":7}
+{"id":20,"turn":3,"causedBy":19,"source":"kernel","type":"Hurt","unit":"A1:Conductor","amount":2,"hpAfter":6}
 {"id":21,"turn":3,"causedBy":18,"source":"kernel","type":"Strike","striker":"A1:Conductor","defender":"B1:Raven"}
 {"id":22,"turn":3,"causedBy":21,"source":"kernel","type":"Hurt","unit":"B1:Raven","amount":3,"hpAfter":2}
 {"id":23,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
@@ -27,7 +27,7 @@
 {"id":26,"turn":4,"causedBy":24,"source":{"unit":"A1:Conductor","ability":1,"when":0},"type":"StatusApplied","unit":"A2:Candle","status":"Strength","stacks":1,"total":2}
 {"id":27,"turn":4,"causedBy":26,"source":"kernel","type":"StatChanged","unit":"A2:Candle","stat":"pwr","delta":1,"now":8}
 {"id":28,"turn":4,"causedBy":24,"source":"kernel","type":"Strike","striker":"B1:Raven","defender":"A1:Conductor"}
-{"id":29,"turn":4,"causedBy":28,"source":"kernel","type":"Hurt","unit":"A1:Conductor","amount":2,"hpAfter":5}
+{"id":29,"turn":4,"causedBy":28,"source":"kernel","type":"Hurt","unit":"A1:Conductor","amount":2,"hpAfter":4}
 {"id":30,"turn":4,"causedBy":24,"source":"kernel","type":"Strike","striker":"A1:Conductor","defender":"B1:Raven"}
 {"id":31,"turn":4,"causedBy":30,"source":"kernel","type":"Hurt","unit":"B1:Raven","amount":3,"hpAfter":-1}
 {"id":32,"turn":4,"causedBy":31,"source":"kernel","type":"Death","unit":"B1:Raven"}
@@ -37,7 +37,7 @@
 {"id":36,"turn":5,"causedBy":34,"source":"kernel","type":"Strike","striker":"A1:Conductor","defender":"B2:Leech"}
 {"id":37,"turn":5,"causedBy":36,"source":"kernel","type":"Hurt","unit":"B2:Leech","amount":3,"hpAfter":13}
 {"id":38,"turn":5,"causedBy":34,"source":"kernel","type":"Strike","striker":"B2:Leech","defender":"A1:Conductor"}
-{"id":39,"turn":5,"causedBy":38,"source":"kernel","type":"Hurt","unit":"A1:Conductor","amount":6,"hpAfter":-1}
+{"id":39,"turn":5,"causedBy":38,"source":"kernel","type":"Hurt","unit":"A1:Conductor","amount":6,"hpAfter":-2}
 {"id":40,"turn":5,"causedBy":39,"source":"kernel","type":"Death","unit":"A1:Conductor"}
 {"id":41,"turn":5,"causedBy":38,"source":{"unit":"B2:Leech","ability":0,"when":0},"type":"Heal","unit":"B2:Leech","amount":3,"hpAfter":16}
 {"id":42,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}

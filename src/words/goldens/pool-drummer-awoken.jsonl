@@ -1,4 +1,4 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Drummer","name":"Drummer","hp":13,"pwr":3},{"id":"A2:Conductor","name":"Conductor","hp":3,"pwr":1}],"B":[{"id":"B1:Bodyguard","name":"Bodyguard","hp":9,"pwr":1},{"id":"B2:Chrysalis","name":"Chrysalis","hp":3,"pwr":0},{"id":"B3:Trickster","name":"Trickster","hp":7,"pwr":2}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Drummer","name":"Drummer","hp":13,"pwr":3},{"id":"A2:Conductor","name":"Conductor","hp":2,"pwr":1}],"B":[{"id":"B1:Bodyguard","name":"Bodyguard","hp":9,"pwr":1},{"id":"B2:Chrysalis","name":"Chrysalis","hp":3,"pwr":0},{"id":"B3:Trickster","name":"Trickster","hp":7,"pwr":2}]}}
 {"id":1,"turn":0,"causedBy":0,"source":{"unit":"B3:Trickster","ability":0,"when":0},"type":"RuleMod","unit":"B3:Trickster","op":"swapRules","other":"A1:Drummer"}
 {"id":2,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":3,"turn":1,"causedBy":2,"source":"kernel","type":"PairFaced","a":"A1:Drummer","b":"B1:Bodyguard","first":"B1:Bodyguard"}
@@ -34,7 +34,7 @@
 {"id":33,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":34,"turn":4,"causedBy":33,"source":{"unit":"A2:Conductor","ability":0,"when":0},"type":"RuleMod","unit":"A2:Conductor","op":"actAgain","other":"A1:Drummer"}
 {"id":35,"turn":4,"causedBy":33,"source":{"unit":"B2:Chrysalis","ability":0,"when":0},"type":"Hurt","unit":"A1:Drummer","amount":3,"hpAfter":7}
-{"id":36,"turn":4,"causedBy":33,"source":{"unit":"B2:Chrysalis","ability":0,"when":0},"type":"Hurt","unit":"A2:Conductor","amount":3,"hpAfter":0}
+{"id":36,"turn":4,"causedBy":33,"source":{"unit":"B2:Chrysalis","ability":0,"when":0},"type":"Hurt","unit":"A2:Conductor","amount":3,"hpAfter":-1}
 {"id":37,"turn":4,"causedBy":36,"source":"kernel","type":"Death","unit":"A2:Conductor"}
 {"id":38,"turn":4,"causedBy":33,"source":"kernel","type":"PairFaced","a":"A1:Drummer","b":"B2:Chrysalis","first":"A1:Drummer"}
 {"id":39,"turn":4,"causedBy":33,"source":"kernel","type":"Strike","striker":"A1:Drummer","defender":"B2:Chrysalis"}

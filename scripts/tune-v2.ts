@@ -43,7 +43,7 @@ const BAND = 0.08;
 /** Far out: HP moves by 2. */
 const FAR = 0.16;
 const PWR = { min: 1, max: 8 };
-const HP = { min: 3, max: 24 };
+const HP = { min: 2, max: 24 };
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 const median = (xs: number[]) => {

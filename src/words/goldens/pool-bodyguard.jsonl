@@ -1,4 +1,4 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Bodyguard","name":"Bodyguard","hp":9,"pwr":1},{"id":"A2:Gravedigger","name":"Gravedigger","hp":3,"pwr":1}],"B":[{"id":"B1:Raven","name":"Raven","hp":11,"pwr":2},{"id":"B2:Sniper","name":"Sniper","hp":14,"pwr":4},{"id":"B3:Leech","name":"Leech","hp":16,"pwr":6}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Bodyguard","name":"Bodyguard","hp":9,"pwr":1},{"id":"A2:Gravedigger","name":"Gravedigger","hp":2,"pwr":1}],"B":[{"id":"B1:Raven","name":"Raven","hp":11,"pwr":2},{"id":"B2:Sniper","name":"Sniper","hp":14,"pwr":4},{"id":"B3:Leech","name":"Leech","hp":16,"pwr":6}]}}
 {"id":1,"turn":0,"causedBy":0,"source":"kernel","type":"StatusApplied","unit":"B1:Raven","status":"Memory","stacks":1,"total":1}
 {"id":2,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":3,"turn":1,"causedBy":2,"source":{"unit":"A2:Gravedigger","ability":0,"when":0},"type":"Hurt","unit":"B1:Raven","amount":1,"hpAfter":10}
@@ -19,10 +19,7 @@
 {"id":18,"turn":2,"causedBy":12,"source":"kernel","type":"Strike","striker":"A2:Gravedigger","defender":"B1:Raven"}
 {"id":19,"turn":2,"causedBy":18,"source":"kernel","type":"Hurt","unit":"B1:Raven","amount":1,"hpAfter":7}
 {"id":20,"turn":2,"causedBy":12,"source":"kernel","type":"Strike","striker":"B1:Raven","defender":"A2:Gravedigger"}
-{"id":21,"turn":2,"causedBy":20,"source":"kernel","type":"Hurt","unit":"A2:Gravedigger","amount":2,"hpAfter":1}
-{"id":22,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":23,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":24,"turn":3,"causedBy":23,"source":{"unit":"A2:Gravedigger","ability":0,"when":0},"type":"Hurt","unit":"B1:Raven","amount":2,"hpAfter":5}
-{"id":25,"turn":3,"causedBy":23,"source":{"unit":"B2:Sniper","ability":0,"when":0},"type":"Hurt","unit":"A2:Gravedigger","amount":4,"hpAfter":-3}
-{"id":26,"turn":3,"causedBy":25,"source":"kernel","type":"Death","unit":"A2:Gravedigger"}
-{"id":27,"turn":3,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":3}
+{"id":21,"turn":2,"causedBy":20,"source":"kernel","type":"Hurt","unit":"A2:Gravedigger","amount":2,"hpAfter":0}
+{"id":22,"turn":2,"causedBy":21,"source":"kernel","type":"Death","unit":"A2:Gravedigger"}
+{"id":23,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":24,"turn":2,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":2}

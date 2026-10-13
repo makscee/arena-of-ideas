@@ -1,4 +1,4 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Medic","name":"Medic","hp":19,"pwr":1},{"id":"A2:Metronome","name":"Metronome","hp":6,"pwr":2}],"B":[{"id":"B1:Drummer","name":"Drummer","hp":3,"pwr":1},{"id":"B2:Chrysalis","name":"Chrysalis","hp":3,"pwr":0},{"id":"B3:Understudy","name":"Understudy","hp":15,"pwr":2}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Medic","name":"Medic","hp":19,"pwr":1},{"id":"A2:Metronome","name":"Metronome","hp":6,"pwr":2}],"B":[{"id":"B1:Drummer","name":"Drummer","hp":3,"pwr":1},{"id":"B2:Chrysalis","name":"Chrysalis","hp":3,"pwr":0},{"id":"B3:Understudy","name":"Understudy","hp":17,"pwr":2}]}}
 {"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":2,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Medic","b":"B1:Drummer","first":"B1:Drummer"}
 {"id":3,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Drummer","defender":"A1:Medic"}

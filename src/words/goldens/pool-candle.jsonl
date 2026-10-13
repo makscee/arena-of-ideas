@@ -1,4 +1,4 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Candle","name":"Candle","hp":15,"pwr":6},{"id":"A2:Magnet","name":"Magnet","hp":21,"pwr":5}],"B":[{"id":"B1:Medic","name":"Medic","hp":19,"pwr":1},{"id":"B2:Drummer","name":"Drummer","hp":3,"pwr":1},{"id":"B3:Chrysalis","name":"Chrysalis","hp":3,"pwr":0}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Candle","name":"Candle","hp":15,"pwr":6},{"id":"A2:Magnet","name":"Magnet","hp":24,"pwr":7}],"B":[{"id":"B1:Medic","name":"Medic","hp":19,"pwr":1},{"id":"B2:Drummer","name":"Drummer","hp":3,"pwr":1},{"id":"B3:Chrysalis","name":"Chrysalis","hp":3,"pwr":0}]}}
 {"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":2,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Candle","b":"B1:Medic","first":"B1:Medic"}
 {"id":3,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Medic","defender":"A1:Candle"}
@@ -27,7 +27,7 @@
 {"id":26,"turn":3,"causedBy":23,"source":{"unit":"B2:Drummer","status":"Beats","ability":1,"when":0},"type":"StatusRemoved","unit":"B2:Drummer","status":"Beats","stacks":3,"remaining":0}
 {"id":27,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":28,"turn":4,"causedBy":27,"source":{"unit":"B3:Chrysalis","ability":0,"when":0},"type":"Hurt","unit":"A1:Candle","amount":3,"hpAfter":9}
-{"id":29,"turn":4,"causedBy":27,"source":{"unit":"B3:Chrysalis","ability":0,"when":0},"type":"Hurt","unit":"A2:Magnet","amount":3,"hpAfter":18}
+{"id":29,"turn":4,"causedBy":27,"source":{"unit":"B3:Chrysalis","ability":0,"when":0},"type":"Hurt","unit":"A2:Magnet","amount":3,"hpAfter":21}
 {"id":30,"turn":4,"causedBy":27,"source":"kernel","type":"Strike","striker":"B1:Medic","defender":"A1:Candle"}
 {"id":31,"turn":4,"causedBy":30,"source":"kernel","type":"Hurt","unit":"A1:Candle","amount":1,"hpAfter":8}
 {"id":32,"turn":4,"causedBy":30,"source":{"unit":"B2:Drummer","ability":0,"when":0},"type":"StatusApplied","unit":"B2:Drummer","status":"Beats","stacks":1,"total":1}
@@ -37,7 +37,7 @@
 {"id":36,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":37,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":38,"turn":5,"causedBy":37,"source":{"unit":"B3:Chrysalis","ability":0,"when":0},"type":"Hurt","unit":"A1:Candle","amount":3,"hpAfter":5}
-{"id":39,"turn":5,"causedBy":37,"source":{"unit":"B3:Chrysalis","ability":0,"when":0},"type":"Hurt","unit":"A2:Magnet","amount":3,"hpAfter":15}
+{"id":39,"turn":5,"causedBy":37,"source":{"unit":"B3:Chrysalis","ability":0,"when":0},"type":"Hurt","unit":"A2:Magnet","amount":3,"hpAfter":18}
 {"id":40,"turn":5,"causedBy":37,"source":"kernel","type":"PairFaced","a":"A1:Candle","b":"B2:Drummer","first":"A1:Candle"}
 {"id":41,"turn":5,"causedBy":37,"source":"kernel","type":"Strike","striker":"A1:Candle","defender":"B2:Drummer"}
 {"id":42,"turn":5,"causedBy":41,"source":"kernel","type":"Hurt","unit":"B2:Drummer","amount":6,"hpAfter":-3}
@@ -45,7 +45,7 @@
 {"id":44,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":45,"turn":6,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":46,"turn":6,"causedBy":45,"source":{"unit":"B3:Chrysalis","ability":0,"when":0},"type":"Hurt","unit":"A1:Candle","amount":3,"hpAfter":2}
-{"id":47,"turn":6,"causedBy":45,"source":{"unit":"B3:Chrysalis","ability":0,"when":0},"type":"Hurt","unit":"A2:Magnet","amount":3,"hpAfter":12}
+{"id":47,"turn":6,"causedBy":45,"source":{"unit":"B3:Chrysalis","ability":0,"when":0},"type":"Hurt","unit":"A2:Magnet","amount":3,"hpAfter":15}
 {"id":48,"turn":6,"causedBy":45,"source":"kernel","type":"PairFaced","a":"A1:Candle","b":"B3:Chrysalis","first":"B3:Chrysalis"}
 {"id":49,"turn":6,"causedBy":45,"source":"kernel","type":"Strike","striker":"B3:Chrysalis","defender":"A1:Candle"}
 {"id":50,"turn":6,"causedBy":49,"source":"kernel","type":"Hurt","unit":"A1:Candle","amount":3,"hpAfter":-1}
@@ -60,7 +60,7 @@
 {"id":59,"turn":7,"causedBy":58,"source":{"unit":"A1:Candle","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A1:Candle","ability":0,"when":0},"original":"Death","unit":"A1:Candle"}
 {"id":60,"turn":7,"causedBy":59,"source":{"unit":"A1:Candle","ability":0,"when":0},"type":"Heal","unit":"A1:Candle","amount":3,"hpAfter":1}
 {"id":61,"turn":7,"causedBy":59,"source":{"unit":"A1:Candle","ability":0,"when":0},"type":"StatChanged","unit":"A1:Candle","stat":"pwr","delta":-1,"now":4}
-{"id":62,"turn":7,"causedBy":57,"source":{"unit":"B3:Chrysalis","ability":0,"when":0},"type":"Hurt","unit":"A2:Magnet","amount":3,"hpAfter":9}
+{"id":62,"turn":7,"causedBy":57,"source":{"unit":"B3:Chrysalis","ability":0,"when":0},"type":"Hurt","unit":"A2:Magnet","amount":3,"hpAfter":12}
 {"id":63,"turn":7,"causedBy":57,"source":"kernel","type":"Strike","striker":"B3:Chrysalis","defender":"A1:Candle"}
 {"id":64,"turn":7,"causedBy":63,"source":"kernel","type":"Hurt","unit":"A1:Candle","amount":3,"hpAfter":-2}
 {"id":65,"turn":7,"causedBy":64,"source":{"unit":"A1:Candle","ability":0,"when":0},"type":"Intercepted","by":{"unit":"A1:Candle","ability":0,"when":0},"original":"Death","unit":"A1:Candle"}
