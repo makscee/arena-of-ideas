@@ -28,6 +28,8 @@
     "mvp:server": "node --import tsx/esm server/src/mvp/main.ts",
     "mvp:invite": "node --import tsx/esm server/src/mvp/invite-cli.ts",
     "mvp:pool": "node --import tsx/esm server/src/mvp/pool-cli.ts",
+    "mvp:words": "node --import tsx/esm server/src/mvp/words-cli.ts",
+    "word:new": "node --import tsx/esm scripts/word-new.ts",
     "mvp:rotate": "node --import tsx/esm server/src/mvp/rotate-cli.ts",
     "mvp:post": "node --import tsx/esm server/src/mvp/post-cli.ts",
     "mvp:invite-e2e": "node e2e/mvp-invite.mjs",

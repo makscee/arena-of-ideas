@@ -39,6 +39,7 @@ import { swapRules } from "./swapRules.js";
 import { redirect } from "./redirect.js";
 import { replaceAmount } from "./replaceAmount.js";
 import type { AmountWord, ConditionWord, EffectWord, SelectorWord } from "./types.js";
+import { unhurt } from "./unhurt.js";
 import type { AmountV2, ConditionV2, Effect, EffectV2, PositionSelector } from "../types.js";
 
 export type { EffectWord, InterceptAt, Say, AmountAt, AmountWord, CondAt, ConditionWord, SelectorWord, WordCtx, WordUnit } from "./types.js";
@@ -48,7 +49,7 @@ export const SELECTOR_WORDS: Record<PositionSelector["kind"], SelectorWord> = {
 };
 
 export const CONDITION_WORDS: Record<ConditionV2["kind"], ConditionWord> = {
-  and, not, turnIs, turnAtLeast, turnEvery, stacksAtLeast, alliesAlive, enemiesAlive, flip, onceHolder, oncePerTurn,
+  and, not, turnIs, turnAtLeast, turnEvery, stacksAtLeast, alliesAlive, enemiesAlive, flip, onceHolder, oncePerTurn, unhurt,
 };
 
 export const AMOUNT_WORDS: Record<AmountV2["kind"], AmountWord> = {

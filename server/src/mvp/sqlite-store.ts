@@ -11,7 +11,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, Idea, IdeaState, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
-import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type TelegramCode, type TelegramLink, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally, type Vote, type WordRequest, type DailyPost, type EmailCode, type EmailLink } from "./store.js";
+import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type TelegramCode, type TelegramLink, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally, type Vote, type WordRequest, type FoundWord, type DailyPost, type EmailCode, type EmailLink } from "./store.js";
 
 const SQL_DIR = fileURLToPath(new URL("./sql/", import.meta.url));
 
@@ -308,10 +308,17 @@ export class SqliteMvpStore implements MvpStore {
       .map((r) => ({ playerId: r.player_id, candidateId: r.candidate_id, otherId: r.other_id, pick: r.pick, createdAt: r.created_at }));
   }
   addWordRequest(w: WordRequest): void {
-    this.write("INSERT INTO mvp_word_requests (idea_id, word, part, created_at) VALUES (?, ?, ?, ?)", w.ideaId, w.word, w.part, w.createdAt);
+    // idea_id is the column from before the queue held other sources; it mirrors ref
+    this.write("INSERT INTO mvp_word_requests (idea_id, source, ref, word, part, created_at) VALUES (?, ?, ?, ?, ?, ?)", w.ref, w.source, w.ref, w.word, w.part, w.createdAt);
+  }
+  addFoundWord(f: FoundWord): boolean {
+    return this.db.prepare("INSERT OR IGNORE INTO mvp_words_found (key, word, kind, pair, player_id, found_at) VALUES (?, ?, ?, ?, ?, ?)").run(f.key, f.word, f.kind, f.pair, f.playerId, f.foundAt).changes > 0;
+  }
+  foundWords(): FoundWord[] {
+    return this.db.prepare("SELECT key, word, kind, pair, player_id AS playerId, found_at AS foundAt FROM mvp_words_found ORDER BY found_at, key").all() as FoundWord[];
   }
   wordRequests(): WordRequest[] {
-    return this.db.prepare("SELECT idea_id AS ideaId, word, part, created_at AS createdAt FROM mvp_word_requests ORDER BY id").all() as WordRequest[];
+    return this.db.prepare("SELECT source, ref, word, part, created_at AS createdAt FROM mvp_word_requests ORDER BY id").all() as WordRequest[];
   }
   claimDailyPost(seq: number, key: string, at: string): boolean {
     return this.db.prepare("INSERT OR IGNORE INTO mvp_daily_posts (seq, key, state, tries, at) VALUES (?, ?, 'sending', 0, ?)").run(seq, key, at).changes > 0;

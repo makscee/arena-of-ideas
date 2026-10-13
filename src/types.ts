@@ -152,7 +152,8 @@ export type ConditionV2 =
   // one seeded coin per firing, heads with probability p; a Flipped event logs it
   | { kind: "flip"; p: number }
   | { kind: "onceHolder" }
-  | { kind: "oncePerTurn" };
+  | { kind: "oncePerTurn" }
+  | { kind: "unhurt" };
 
 export type Condition = ConditionV1 | ConditionV2;
 
