@@ -33,4 +33,20 @@ describe("test scenes (#1026)", () => {
     expect((await app.request("/api/v1/dev/scenes/vote", { method: "POST" })).status).toBe(200);
     expect((await app.request("/api/v1/dev/scenes/nope", { method: "POST" })).status).toBe(404);
   }, 120_000);
+
+  it("open the forge in each Codex state, with the Codex on (#1049)", async () => {
+    const app = createMvpApp(mvpRuntime({ content: mvpContent(), dev: true, scenes: true, codex: true }));
+    for (const state of ["unforged", "ready", "discovered"]) {
+      const built = (await (await app.request(`/api/v1/dev/scenes/forge-${state}`, { method: "POST" })).json()) as { player: { id: string }; entry: { runId: string; forge: [number, number] } };
+      const forge = (await (await app.request(`/api/v1/runs/${built.entry.runId}/forge`, { headers: { "X-Arena-Player": built.player.id } })).json()) as { pairs: { first: number; second: number; state: string; candidates?: unknown[] }[] };
+      const slot = forge.pairs.find((p) => p.first === built.entry.forge[0] && p.second === built.entry.forge[1]);
+      expect(slot?.state).toBe(state);
+      if (state === "ready") expect(slot?.candidates).toHaveLength(3);
+    }
+    const claim = (await (await app.request("/api/v1/dev/scenes/forge-claim", { method: "POST" })).json()) as { entry: { click?: string } };
+    expect(claim.entry.click).toBe("forge-claim");
+    // Off, the forge scenes say why instead of building.
+    const off = createMvpApp(mvpRuntime({ content: mvpContent(), dev: true, scenes: true }));
+    expect((await off.request("/api/v1/dev/scenes/forge-ready", { method: "POST" })).status).not.toBe(200);
+  }, 240_000);
 });

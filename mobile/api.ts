@@ -35,6 +35,7 @@ import {
 } from "../src/mvp/contract";
 import { uiLang } from "./lang";
 import type { SceneBuilt } from "../server/src/mvp/scenes";
+import type { ForgeSlot, ForgeView } from "../src/mvp/codex";
 
 const BASE = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "") + MVP_API_PREFIX;
 const PLAYER_KEY = "arena.player";
@@ -226,6 +227,10 @@ export const api = {
   decide: (id: string, d: Decision) => call<DecisionResponse>("POST", `/runs/${id}/decisions`, d),
   /** What a shop decision would do, without doing it (the awakening and fusion result cards). */
   preview: (id: string, d: Decision) => call<DecisionResponse>("POST", `/runs/${id}/preview`, d),
+  /** Rules v2's forge (#1049): every pair the run can fuse now, in its Codex state; a 404 while the Codex is off. */
+  forge: (id: string) => call<{ pairs: ForgeSlot[] }>("GET", `/runs/${id}/forge`),
+  /** A wish on an unforged pair: it goes on tonight's list. */
+  wish: (a: string, b: string) => call<ForgeView>("POST", "/codex/wish", { a, b }),
   /** Gives the run up (slice R2-2): it ends "abandoned", every heart left
    * rated a lost fight. A bare RunView, not a DecisionResponse. */
   abandon: (id: string) => call<RunView>("POST", `/runs/${id}/abandon`),

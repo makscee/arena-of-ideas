@@ -33,6 +33,7 @@ import { fightLines } from "../../../src/mvp/fight.js";
 import { fuseCheck, lineUnitOf, mergeTarget } from "../../../src/mvp/forms.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
 import { todaysChampion } from "./day.js";
+import { botForge, codexForged } from "./codex.js";
 import { awaitFusionName, fusionNameReady, recordFusion } from "./fusions.js";
 import { decide, startRun, type RunDeps } from "./runs.js";
 import type { MvpJob, MvpRuntime } from "./runtime.js";
@@ -194,13 +195,17 @@ export function playBotRun(deps: RunDeps, player: PlayerRef = botPlayer(deps.see
   let run = startRun(deps, player);
   let round = run.round;
   let rerolled = 0;
-  const ready = (first: LineUnit, second: LineUnit) => fusionNameReady(deps.store, first.unitId, second.unitId);
+  const ready = deps.codex
+    ? (first: LineUnit, second: LineUnit) => codexForged(deps, first, second)
+    : (first: LineUnit, second: LineUnit) => fusionNameReady(deps.store, first.unitId, second.unitId);
   for (let guard = 0; run.phase !== "over" && guard < 1000; guard++) {
     if (run.round !== round) {
       round = run.round;
       rerolled = 0;
     }
-    const d = botDecision(run, deps.contentFor(run.contentVersion), deps.rules, rerolled, ready);
+    let d = botDecision(run, deps.contentFor(run.contentVersion), deps.rules, rerolled, ready);
+    // Rules v2: a ready pair's design is picked by simulation (./codex.ts).
+    if (deps.codex && d.kind === "fuse") d = botForge(deps, run, d);
     if (d.kind === "reroll") rerolled++;
     decide(deps, run, d);
     run = deps.store.run(run.runId)!;
@@ -232,8 +237,10 @@ export async function playBotRunWaiting(deps: RunDeps, stopped: () => boolean = 
       round = run.round;
       rerolled = 0;
     }
-    const d = botDecision(run, deps.contentFor(run.contentVersion), deps.rules, rerolled);
-    if (d.kind === "fuse") {
+    let d = botDecision(run, deps.contentFor(run.contentVersion), deps.rules, rerolled, deps.codex ? (first, second) => codexForged(deps, first, second) : undefined);
+    // Rules v2: no name to wait for; a ready pair's design is picked by simulation.
+    if (deps.codex && d.kind === "fuse") d = botForge(deps, run, d);
+    else if (d.kind === "fuse") {
       const [first, second] = [boardUnit(run, run.rules, d.first)!, boardUnit(run, run.rules, d.second)!];
       if (!fusionNameReady(deps.store, first.unitId, second.unitId)) {
         await awaitFusionName(deps.store, first.unitId, second.unitId);

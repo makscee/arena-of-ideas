@@ -39,6 +39,19 @@ export const shop = {
   "fuse.new": "New fusion",
   "fuse.discovered": "✨ You discovered {name}",
 
+  // The forge (rules v2's Codex, #1049): a pair's three states.
+  "forge.discovered": "The forge · discovered",
+  "forge.ready": "The forge · ready to claim",
+  "forge.unforged": "The forge · not forged yet",
+  "forge.by": "Discovered by {name} · {date}",
+  "forge.sealed": "{n} sealed designs, unclaimed. Pick one: it becomes this pair's fusion for everyone, with your name. Credit only, final forever.",
+  "forge.claim": "Claim {name}",
+  "forge.notYet": "Nobody has forged {a} + {b} yet. Wish for it: tonight's designs are made for the pairs players wish for most.",
+  "forge.wishes": "Wishes today: {n}",
+  "forge.wish": "Wish",
+  "forge.wished": "Wished ✓",
+  "forge.claimed": "✨ You claimed {name}",
+
   // Buying.
   "buy.giftFirst": "Pick your gift first",
   "buy.needs": "Needs {cost}g",
