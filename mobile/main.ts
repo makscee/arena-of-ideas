@@ -1149,7 +1149,8 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
       play(shopSound({ kind: "fuse", ...o }, run, res.run));
       shopScreen(res.run, content);
       const fused = [...res.run.line, ...res.run.bench].find((u) => u.uid === unitAt(o.first)!.uid);
-      const me = savedPlayer()?.id;
+      // A scene's player lives only in api.player, never saved.
+      const me = api.player?.id ?? savedPlayer()?.id;
       const discovered = claimed || previewed.fusion?.name === "" || previewed.fusion?.discoveredBy === null;
       if (!fused || !discovered || fused.fusion?.discoveredBy?.id !== me) return;
       play("discover");
@@ -1540,9 +1541,12 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   if (forgeScene) {
     const f = forgeScene;
     forgeScene = null;
-    void fusePreview(f[0], f[1]).then(() => {
-      if (f[2]) document.querySelector<HTMLElement>(`[data-testid="${f[2]}"]`)?.click();
-    });
+    // After the scene's own guarded call lets go (guarded ignores a call while one is out).
+    setTimeout(() =>
+      void fusePreview(f[0], f[1]).then(() => {
+        if (f[2]) document.querySelector<HTMLElement>(`[data-testid="${f[2]}"]`)?.click();
+      }),
+    );
   }
   if (!desk) return;
   // ← / → pressed while the last move was out: the unit goes on by as many slots.
