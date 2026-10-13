@@ -48,7 +48,16 @@ export function withStatusNames<T>(statuses: StatusRegistry | undefined, render:
 /** A status in Russian: the shipped table, then the status's own names. A
  * status with neither (player-made before v2) keeps its own name in every case. */
 export function statusRu(s: string): RuStatus {
-  return RU_STATUSES[s] ?? scope?.[s]?.names?.ru ?? { name: s, acc: s, count: [s, s, s] };
+  return RU_STATUSES[s] ?? scope?.[s]?.names?.ru ?? known?.[s]?.names?.ru ?? { name: s, acc: s, count: [s, s, s] };
+}
+
+// The content pack's statuses, for the renders that run outside a
+// withStatusNames scope (a battle's status chips and log rows, #1046).
+let known: StatusRegistry | undefined;
+
+/** Keep the content pack's coined status names in reach of every render. */
+export function setKnownStatusNames(statuses: StatusRegistry | undefined): void {
+  known = statuses;
 }
 
 /** A status's Russian name (its label), or its own name when it has none. */

@@ -9,6 +9,7 @@ import { MVP_RULES } from "./contract.js";
 import { ROWS_V2 } from "./units-v2.js";
 import { traceLines } from "../words/trace.js";
 import { formSegments, formText } from "./form-text.js";
+import { ruStatusName, setKnownStatusNames } from "../status-names.js";
 
 const content = contentOf(ROWS_V2);
 
@@ -91,6 +92,16 @@ describe("rules v2 pool", () => {
       if (!holds) continue;
       const bare = formText({ ...f, statuses: [] }, content.abilities, "en");
       expect(say(u.name, form, "en").length, `${u.name} ${form}`).toBeGreaterThan(bare.length);
+    }
+  });
+
+  it("a battle's status chip and log row say a coined status's RU name once the pack is loaded", () => {
+    expect(ruStatusName("Grains")).toBe("Grains");
+    setKnownStatusNames(content.statuses);
+    try {
+      expect(["Grains", "Sands", "Beats", "Drums", "Memory", "Memories"].map(ruStatusName)).toEqual(["Песчинки", "Пески", "Такты", "Барабаны", "Память", "Воспоминания"]);
+    } finally {
+      setKnownStatusNames(undefined);
     }
   });
 });
