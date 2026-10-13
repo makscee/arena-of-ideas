@@ -7,8 +7,11 @@
 // are forged but not yet found. The claim moment shows a ready pair's three
 // sealed cards: the player picks one, and it is canonical with their name.
 //
-// The Codex data slice (#1049) serves these from the world; until then the
-// test scenes draw them from forgeFixture() below.
+// The server builds the world's view (GET /codex, server/src/mvp/codex-view.ts)
+// with the mappers below; the test scenes draw it from forgeFixture().
+import type { FusionDesign } from "./codex.js";
+import type { MvpContent, UnitContent } from "./contract.js";
+import { formText } from "./form-text.js";
 
 /** One text in both languages (unit and word texts aren't in the client catalog). */
 export interface Both {
@@ -88,6 +91,8 @@ export interface ForgeView {
   words: WordEntry[];
   /** Words forged that no claimed design has used yet. */
   forgedNotFound: number;
+  /** Their names, when the world shows them (the Dictionary's sealed list). */
+  forged?: Both[];
 }
 
 /** The claim moment: a ready pair and its three sealed candidates. */
@@ -97,6 +102,38 @@ export interface ClaimView {
 }
 
 const b = (en: string, ru: string): Both => ({ en, ru });
+
+type Texts = Pick<MvpContent, "abilities" | "statuses">;
+/** A form as one sentence in both languages ("" when a word isn't in the registry). */
+function sentence(form: UnitContent["forms"]["sleeping"] | undefined, content: Texts): Both {
+  const one = (lang?: "ru"): string => {
+    if (!form) return "";
+    try {
+      return formText(form, content.abilities, lang, content.statuses);
+    } catch {
+      return form.text ?? "";
+    }
+  };
+  return { en: one(), ru: one("ru") };
+}
+
+/** A pool unit as the Codex shows it: its sleeping sentence, its RU name when translated. */
+export function forgeUnitOf(u: UnitContent, content: Texts): ForgeUnit {
+  return { id: u.id, emoji: u.emoji, name: b(u.name, u.texts?.ru?.name ?? u.name), hp: u.base.hp, pwr: u.base.pwr, rule: sentence(u.forms.sleeping, content) };
+}
+
+/** A designed fusion as the Codex shows it: its own RU name and flavour when it has them. */
+export function forgeDesignOf(d: FusionDesign, pair: [UnitContent | undefined, UnitContent | undefined], content: Texts, newWords: string[] = []): ForgeDesign {
+  const ru = d.texts?.ru;
+  return {
+    emoji: d.emoji ?? pair.map((u) => u?.emoji ?? "").join(""),
+    name: b(d.name, ru?.name ?? d.name),
+    rule: sentence(d.recipe, content),
+    flavour: b(d.flavour ?? "", ru?.flavour ?? d.flavour ?? ""),
+    lean: d.lean,
+    ...(newWords.length ? { newWords: newWords.map((w) => b(w, w)) } : {}),
+  };
+}
 
 /** The eight units of the design page (§4) and their partners in every state. */
 export function forgeFixture(viewer = "you"): ForgeView {

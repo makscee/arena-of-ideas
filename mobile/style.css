@@ -1814,3 +1814,4 @@ button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padd
   #app[data-screen="forge"] .forge-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .forge.claim-moment .forge-candidates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 }
+.forge-sealed-words { display: flex; flex-wrap: wrap; gap: 6px; }

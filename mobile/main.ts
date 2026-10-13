@@ -7,7 +7,7 @@
 // opens in battleScreen) and, on dev servers only (HomeView.dev), "End day
 // now" under "Dev". The shop's ☰ (Esc on desktop) is the in-run menu.
 import { sceneId } from "./scene";
-import type { BattleRecord, CandidateScore, DayView, FightResult, HomeView, IdeasView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView } from "../src/mvp/contract";
+import type { BattleRecord, CandidateScore, DayView, FightResult, HomeView, IdeasView, LineUnit, MvpContent, MvpRules, Offer, PlayerRef, PlayoffResult, RunView, UnitContent } from "../src/mvp/contract";
 import { benchSizeOf, lockedFull, MVP_RULES, offersAt, sellValue } from "../src/mvp/contract";
 import { mergeTarget } from "../src/mvp/forms";
 import type { ForgeSlot, ForgeView } from "../src/mvp/codex";
@@ -16,7 +16,8 @@ import { ApiError, api, savedPlayer } from "./api";
 import { getContent, unitIn } from "./content";
 import { battleScreen, type RunOutro } from "./screens/battle";
 import { codexScreen, newCodexCache, type CodexState } from "./screens/codex";
-import { claimScreen, forgeScreen } from "./screens/forge";
+import { claimScreen, forgeScreen, type ForgeTab } from "./screens/forge";
+import { forgeDesignOf, forgeUnitOf } from "../src/mvp/forge-view";
 import { setCodexLink } from "./ui/term";
 import { ideasScreen, refillTime } from "./screens/ideas";
 import { votePanel } from "./screens/vote";
@@ -377,7 +378,8 @@ function nameForm(tg: HTMLElement | null = null, mail = false): void {
 async function homeScreen(ended: number | null = null): Promise<void> {
   const err = errorLine();
   void loadUnitRates(); // the rates hint on unit sheets (slice 11)
-  const [home, content]: [HomeView, MvpContent] = await Promise.all([api.home(), getContent()]);
+  const [home, content, health]: [HomeView, MvpContent, { codex?: boolean }] = await Promise.all([api.home(), getContent(), api.health().catch(() => ({}))]);
+  codexOn = !!health.codex;
   // #929: a player from before email login adds an email before playing.
   if (home.email?.required && !home.email.address) return emailAttach({ playerName: api.player?.name ?? "", onDone: () => void homeScreen() });
   rules = home.rules;
@@ -407,6 +409,8 @@ async function homeScreen(ended: number | null = null): Promise<void> {
     : null;
   const codex = button(t("menu.codex"), () => void guarded(err, () => openCodex()), "throne-link", "codex");
   const stats = button(t("home.stats"), () => void guarded(err, () => openCodex({ tab: "champions" })), "throne-link", "stats");
+  const forge = codexOn ? button(t("menu.forge"), () => void guarded(err, () => openForge()), "throne-link", "forge-open") : null;
+  const words = codexOn ? button(t("menu.dictionary"), () => void guarded(err, () => openForge("words")), "throne-link", "dictionary-open") : null;
   const endDay = button(
     t("dev.endDay"),
     () =>
@@ -479,7 +483,7 @@ async function homeScreen(ended: number | null = null): Promise<void> {
         lastRunPanel(r?.rating ?? null, pill),
       ),
       h("div", { class: "spacer" }),
-      h("nav", { class: "throne-nav" }, codex, stats),
+      h("nav", { class: "throne-nav" }, codex, forge, words, stats),
       home.dev
         ? h("details", { class: "dev" }, h("summary", {}, t("dev.title")), h("div", { class: "row wrap" }, endDay, grantIdea, creditUnit, seedCandidate, overnight, fakeVotes, candidates))
         : null,
@@ -655,6 +659,31 @@ async function openCodex(state?: Partial<CodexState>): Promise<void> {
   codexRedraw = () => void codexScreen({ content, state: { ...codexCache.state, term: undefined, scope: undefined }, onBack, onUnknown, cache: codexCache, howTo });
   await codexScreen({ content, state, onBack, onUnknown, cache: codexCache, howTo });
 }
+/** Rules v2's Codex (#1051): unit pages with their partners, Today, the
+ * Dictionary, read from GET /codex. It opens over the current screen, as
+ * the Codex does; a wish redraws it from the server. `codexOn`: whether the
+ * server runs the Codex (/health), so its links show only then. */
+let codexOn = false;
+void api.health().then((h) => (codexOn = !!h.codex), () => undefined);
+async function openForge(tab: ForgeTab = "units"): Promise<void> {
+  const back = keepScreen();
+  let view = await api.codex();
+  let unit: string | undefined;
+  const draw = (at: ForgeTab) =>
+    forgeScreen({
+      view,
+      tab: at,
+      unit,
+      onBack: back,
+      onWish: async (p, _on, state) => {
+        unit = state.unit;
+        await api.wish(p.a, p.b);
+        view = await api.codex();
+        draw(state.tab);
+      },
+    });
+  draw(tab);
+}
 // Every highlighted term's "Open in Codex" lands on its Keywords row (a scoped trigger's line in it).
 setCodexLink((term, scope) => void openCodex({ tab: "keywords", term, scope }));
 
@@ -668,6 +697,7 @@ function runMenu(run: RunView, content: MvpContent, err: HTMLElement, fought?: F
   const round = fought ? fought.round : run.round;
   const crown = fought ? fought.kind === "crown" : round > rules.rounds;
   const codex = button(t("menu.codex"), () => (close(), void guarded(err, () => openCodex())), "", "menu-codex");
+  const forge = codexOn ? button(t("menu.forge"), () => (close(), void guarded(err, () => openForge())), "", "menu-forge") : null;
   const menu = h(
     "div",
     { class: "stack run-menu", "data-testid": "run-menu" },
@@ -675,6 +705,7 @@ function runMenu(run: RunView, content: MvpContent, err: HTMLElement, fought?: F
     // Over a battle that was playing, Resume plays on (R2-17 batch F).
     button(t("menu.resume"), () => (close(), resume?.()), "primary", "menu-resume"),
     codex,
+    forge,
     soundRow(),
     langRow(),
     themeRow(),
@@ -1113,7 +1144,7 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
               return b;
             }),
           ),
-          h("div", { class: "row sheet-actions" }, cancel(), button(t("forge.claim", { name: chosen.name }), () => (close(), void fuse({ ...o, pick: at }, chosen, true)), "primary grow", "forge-claim")),
+          h("div", { class: "row sheet-actions" }, cancel(), button(t("forge.claim", { name: chosen.name }), () => (close(), void fuse({ ...o, pick: at }, chosen, slot)), "primary grow", "forge-claim")),
           unitSheet(chosen, content, { preview: true }),
         );
       };
@@ -1143,11 +1174,25 @@ function shopScreen(run: RunView, content: MvpContent, notice = "", selected = -
   };
 
   /** Confirm a fuse; a pair nobody had fused (or only bots had) then shows
-   * its name with "You discovered"; a claim (rules v2) with "You claimed". */
-  const fuse = (o: { first: number; second: number; pick?: number }, previewed: LineUnit, claimed = false) =>
+   * its name with "You discovered". A claim (rules v2, `claim`: the ready
+   * pair's forge) shows the claim moment: the picked design with your name
+   * on it, the other two sealed away (#1051); Back returns to the shop. */
+  const fuse = (o: { first: number; second: number; pick?: number }, previewed: LineUnit, claim?: ForgeSlot) =>
     guarded(err, async () => {
       const res = await api.decide(run.runId, { kind: "fuse", ...o });
       play(shopSound({ kind: "fuse", ...o }, run, res.run));
+      const claimed = !!claim;
+      if (claim?.candidates && o.pick !== undefined) {
+        const parts: [UnitContent | undefined, UnitContent | undefined] = [unitIn(content, claim.a), unitIn(content, claim.b)];
+        play("discover");
+        return claimScreen({
+          claim: { pair: [claim.a, claim.b], candidates: claim.candidates.map((d) => forgeDesignOf(d, parts, content)) },
+          units: parts.filter((u): u is UnitContent => !!u).map((u) => forgeUnitOf(u, content)),
+          viewer: api.player?.name ?? savedPlayer()?.name ?? "",
+          picked: o.pick,
+          onDone: () => shopScreen(res.run, content),
+        });
+      }
       shopScreen(res.run, content);
       const fused = [...res.run.line, ...res.run.bench].find((u) => u.uid === unitAt(o.first)!.uid);
       // A scene's player lives only in api.player, never saved.

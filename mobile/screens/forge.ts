@@ -20,8 +20,9 @@ export interface ForgeArgs {
   tab?: ForgeTab;
   unit?: string | undefined;
   onBack: () => void;
-  /** Puts a pair on tonight's list (or takes it off); the screen redraws on its own. */
-  onWish?: (pair: ForgePair, on: boolean) => Promise<void> | void;
+  /** Puts a pair on tonight's list and redraws the screen (from the server)
+   * in `state`. Without it (a scene's fixture), Wish toggles on the screen. */
+  onWish?: (pair: ForgePair, on: boolean, state: { tab: ForgeTab; unit: string }) => Promise<void> | void;
 }
 
 const tr = (s: Both): string => (currentLang() === "ru" ? s.ru : s.en);
@@ -42,7 +43,7 @@ function wide(emoji: string, name: string, rule: string, extra: (Node | null)[] 
 export function forgeScreen(a: ForgeArgs): void {
   const v = a.view;
   let tab: ForgeTab = a.tab ?? "units";
-  let unit = a.unit ?? v.units[0]!.id;
+  let unit = a.unit ?? v.units[0]?.id ?? "";
   const tabs = h("div", { class: "tabs", role: "tablist" });
   const body = h("div", { class: "stack forge-body" });
   const tabBtn = (id: ForgeTab, text: string) => {
@@ -56,7 +57,8 @@ export function forgeScreen(a: ForgeArgs): void {
   };
 
   const unitPage = (): Node[] => {
-    const u = unitOf(v, unit);
+    const u = v.units.find((x) => x.id === unit);
+    if (!u) return [h("div", { class: "dim" }, t("forge.feedEmpty"))];
     const picker = h(
       "div",
       { class: "forge-picker", "data-testid": "forge-picker" },
@@ -66,9 +68,12 @@ export function forgeScreen(a: ForgeArgs): void {
         return b;
       }),
     );
-    const mine = v.pairs.filter((p) => p.a === unit || p.b === unit);
+    // Partners nobody has a row for yet are unforged, with no wishes today.
+    const stored = v.pairs.filter((p) => p.a === unit || p.b === unit);
+    const has = new Set(stored.map((p) => (p.a === unit ? p.b : p.a)));
+    const mine = [...stored, ...v.units.filter((x) => x.id !== unit && !has.has(x.id)).map((x): ForgePair => ({ a: unit, b: x.id, state: "unforged", wishes: 0 }))];
     const partner = (p: ForgePair) => unitOf(v, p.a === unit ? p.b : p.a);
-    const group = (state: PairState, key: "forge.discovered" | "forge.ready" | "forge.unforged", row: (p: ForgePair) => HTMLElement): Node[] => {
+    const group = (state: PairState, key: "forge.groupDiscovered" | "forge.groupReady" | "forge.groupUnforged", row: (p: ForgePair) => HTMLElement): Node[] => {
       const ps = mine.filter((p) => p.state === state);
       if (!ps.length) return [];
       return [h("div", { class: "label", "data-testid": `forge-${state}` }, t(key, { n: ps.length })), ...ps.map(row)];
@@ -78,22 +83,24 @@ export function forgeScreen(a: ForgeArgs): void {
       return wide(d.emoji, tr(d.name), tr(d.rule), [h("div", { class: "dim small forge-with" }, "+ " + label(partner(p))), h("div", { class: "forge-credit small" }, t("forge.discoveredBy", { name: p.claimedBy!, date: day(p.claimedAt!) }))], "found");
     };
     const ready = (p: ForgePair): HTMLElement =>
-      h("div", { class: "forge-pair ready", "data-testid": "forge-ready-row" }, h("span", { class: "forge-emoji" }, partner(p).emoji), h("div", { class: "grow" }, h("b", {}, tr(partner(p).name)), h("div", { class: "small" }, "🔒 " + t("forge.sealed"))));
+      h("div", { class: "forge-pair ready", "data-testid": "forge-ready-row" }, h("span", { class: "forge-emoji" }, partner(p).emoji), h("div", { class: "grow" }, h("b", {}, tr(partner(p).name)), h("div", { class: "small" }, "🔒 " + t("forge.sealedRow"))));
     const unforged = (p: ForgePair): HTMLElement => {
       const n = p.wishes ?? 0;
       const side = p.waitingWord
         ? h("span", { class: "forge-waiting small" }, t("forge.waitingWord", { word: tr(p.waitingWord) }))
-        : button(p.wished ? "★ " + t("forge.wished") : "☆ " + t("forge.wish"), () => {
-            p.wished = !p.wished;
-            p.wishes = n + (p.wished ? 1 : -1);
-            draw();
-            void a.onWish?.(p, !!p.wished);
-          }, p.wished ? "forge-wish on" : "forge-wish", "forge-wish");
+        : p.wished && a.onWish
+          ? h("button", { class: "forge-wish on", disabled: "", "data-testid": "forge-wished" }, t("forge.wished"))
+          : button(p.wished ? t("forge.wished") : "☆ " + t("forge.wish"), () => {
+              if (a.onWish) return void a.onWish(p, true, { tab, unit });
+              p.wished = !p.wished;
+              p.wishes = n + (p.wished ? 1 : -1);
+              draw();
+            }, p.wished ? "forge-wish on" : "forge-wish", "forge-wish");
       return h(
         "div",
         { class: "forge-pair unforged", "data-testid": "forge-unforged-row" },
         h("span", { class: "forge-emoji" }, partner(p).emoji),
-        h("div", { class: "grow" }, h("b", {}, tr(partner(p).name)), h("div", { class: "dim small" }, n ? t("forge.wishes", { n }) : t("forge.notForged"))),
+        h("div", { class: "grow" }, h("b", {}, tr(partner(p).name)), h("div", { class: "dim small" }, n ? t("forge.wishCount", { n }) : t("forge.notForged"))),
         side,
       );
     };
@@ -101,21 +108,23 @@ export function forgeScreen(a: ForgeArgs): void {
       picker,
       wide(u.emoji, tr(u.name), tr(u.rule), [h("div", { class: "dim small" }, t("forge.stats", { hp: u.hp, pwr: u.pwr }))], "unit"),
       h("h2", { class: "forge-sub" }, t("forge.partners", { name: tr(u.name) })),
-      ...group("discovered", "forge.discovered", discovered),
-      ...group("ready", "forge.ready", ready),
+      ...group("discovered", "forge.groupDiscovered", discovered),
+      ...group("ready", "forge.groupReady", ready),
       ...(mine.some((p) => p.state === "ready") ? [h("div", { class: "dim small" }, t("forge.readyHint"))] : []),
-      ...group("unforged", "forge.unforged", unforged),
+      ...group("unforged", "forge.groupUnforged", unforged),
       ...(mine.some((p) => p.state === "unforged") ? [h("div", { class: "dim small" }, t("forge.wishHint"))] : []),
     ];
   };
 
   const feed = (): Node[] => {
-    const days = [...new Set(v.feed.map((f) => f.at.slice(0, 10)))];
+    // Days are the player's own: a claim after their midnight is today's.
+    const local = (iso: string): string => (iso.length <= 10 ? iso : new Date(iso).toLocaleDateString("sv-SE"));
+    const days = [...new Set(v.feed.map((f) => local(f.at)))];
     if (!days.length) return [h("div", { class: "dim" }, t("forge.feedEmpty"))];
     return days.flatMap((d) => [
       h("div", { class: "label" }, day(d)),
       ...v.feed
-        .filter((f) => f.at.startsWith(d))
+        .filter((f) => local(f.at) === d)
         .map((f) => {
           const line =
             f.kind === "arrived"
@@ -130,6 +139,7 @@ export function forgeScreen(a: ForgeArgs): void {
 
   const dictionary = (): Node[] => [
     h("div", { class: "forge-notfound", "data-testid": "forge-notfound" }, "✦ " + t("forge.notFound", { n: v.forgedNotFound })),
+    ...(v.forged?.length ? [h("div", { class: "forge-sealed-words small", "data-testid": "forge-sealed-words" }, ...v.forged.map((w) => h("span", { class: "forge-chip forged" }, "🔒 " + tr(w))))] : []),
     h("div", { class: "dim small" }, t("forge.wordsHint")),
     ...v.words.map((w) =>
       h(
