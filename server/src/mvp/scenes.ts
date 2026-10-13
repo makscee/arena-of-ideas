@@ -18,6 +18,9 @@ import { grantIdea, writeIdea } from "./ideas.js";
 import { decide, startRun } from "./runs.js";
 import type { MvpRuntime } from "./runtime.js";
 import { fixtureBattle } from "./scene-fixtures.js";
+import { contentOf } from "./content.js";
+import { poolBattle, poolBattleId } from "../../../src/mvp/pool-battles.js";
+import { ROWS_V2 } from "../../../src/mvp/units-v2.js";
 import { codexPair, type FusionDesign, type PairState } from "../../../src/mvp/codex.js";
 import { codexForged, forgeOf } from "./codex.js";
 import { instantTuner, nextCard, overnightCheck, seedCandidate } from "./votes.js";
@@ -169,6 +172,19 @@ const v2 = (name: string) => (rt: MvpRuntime): SceneBuilt => {
   return { player, entry: { screen: "battle", battleId: rec.battleId } };
 };
 
+/** `v2-unit-<slug>[-awoken]`: a battle of the v2 pool where the unit acts (#1046). */
+const v2unit = (name: string, awoken: boolean) => (rt: MvpRuntime): SceneBuilt => {
+  const player = fixturePlayer(rt);
+  const { record } = poolBattle(contentOf(ROWS_V2), name, awoken, player, rt.now().toISOString(), rt.content.version);
+  rt.store.putBattle(record);
+  return { player, entry: { screen: "battle", battleId: record.battleId } };
+};
+const v2unitScenes = (): Scene[] =>
+  ROWS_V2.slice(8).flatMap((row) => [
+    { id: poolBattleId(row.name, false), keep: true, group: "Rules v2 (unit batch 1, #1046)", title: `${row.name} (sleeping) in a pool battle`, look: `${row.shape}, tier ${row.tier}: ${row.archetype}`, desktop: true, build: v2unit(row.name, false) },
+    { id: poolBattleId(row.name, true), keep: true, group: "Rules v2 (unit batch 1, #1046)", title: `${row.name} (awoken) in a pool battle`, look: `the awoken upgrade of one clause, see the report page`, desktop: true, build: v2unit(row.name, true) },
+  ]);
+
 export const SCENES: Scene[] = [
   { id: "signin", group: "Start", title: "Create a player", look: "The first screen: name field, sign-in options", desktop: true, build: () => ({ player: null, entry: { screen: "name" } }) },
   { id: "holding", group: "Start", title: "Holding page (Arena dark)", look: "What the public URL shows while Arena is rebuilt: title, what's coming, language switch", desktop: true, build: () => ({ player: null, entry: { screen: "holding" } }) },
@@ -291,6 +307,7 @@ export const SCENES: Scene[] = [
   { id: "v2-seed-awoken", keep: true, group: "Rules v2 (unit batch 1, #1046)", title: "Awoken Seed: the Tree shields its neighbours", look: "the Tree also gives Squire and Archer 1 Shield each turn", desktop: true, build: v2("seedAwoken") },
   { id: "v2-deja-vu", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Déjà Vu (Hourglass + Mirror)", look: "§5 fusion: what the front enemy does, Déjà Vu does one turn later", desktop: true, build: v2("dejaVu") },
   { id: "v2-grave-tree", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Grave Tree (Raven + Seed)", look: "§5 fusion, 3.6 summonWithRule: a Sapling with the fallen Archer's rule, at its slot", desktop: true, build: v2("graveTree") },
+  ...v2unitScenes(),
 ];
 
 export const sceneById = (id: string): Scene | undefined => SCENES.find((s) => s.id === id);

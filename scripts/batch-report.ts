@@ -13,6 +13,7 @@ import { ROWS_V2, V2_STATUSES } from "../src/mvp/units-v2.js";
 import { FIXTURES } from "../src/words/fixtures.js";
 import { traceLines } from "../src/words/trace.js";
 import { slug } from "../src/mvp/units.js";
+import { poolBattle, poolBattleId } from "../src/mvp/pool-battles.js";
 
 const args = process.argv.slice(2);
 const opt = (n: string) => {
@@ -36,6 +37,13 @@ function trace(name: string): string[] {
   return [fx.trace, ...lines.filter((l) => l !== fx.trace).slice(0, 2)];
 }
 
+const player = { id: "report", name: "report", bot: true };
+/** A unit without a fixture: the lines naming it in its pool battle (the lab's `v2-unit-` scene). */
+function poolTrace(name: string, awoken: boolean): string[] {
+  const { own, lines } = poolBattle(content, name, awoken, player, "2026-10-13T00:00:00.000Z");
+  return own.length ? own.slice(0, 3) : lines.slice(0, 2);
+}
+
 const statusRule = (form: { statuses?: { status: string }[] }, lang: "en" | "ru") =>
   (form.statuses ?? []).map((s) => `${s.status}: ${describeStatus(V2_STATUSES[s.status]!, lang)}`);
 
@@ -45,11 +53,12 @@ const cards = ROWS_V2.map((row) => {
   const fx = key.charAt(0).toLowerCase() + key.slice(1);
   const forms = (["sleeping", "awoken"] as const).map((f) => {
     const form = u.forms[f];
-    const sceneId = f === "sleeping" ? `v2-${slug(row.name)}` : `v2-${slug(row.name)}-awoken`;
     const fixture = f === "sleeping" ? fx : `${fx}Awoken`;
+    const hasFixture = FIXTURES[fixture] !== undefined;
+    const sceneId = hasFixture ? (f === "sleeping" ? `v2-${slug(row.name)}` : `v2-${slug(row.name)}-awoken`) : poolBattleId(row.name, f === "awoken");
     const extra = statusRule(form, "en").map((l) => `<li class="status">${esc(l)}</li>`).join("");
     const extraRu = statusRule(form, "ru").map((l) => `<li class="status">${esc(l)}</li>`).join("");
-    const tr = trace(fixture).map((l, i) => `<li class="${i === 0 ? "trace main" : "trace"}">${esc(l)}</li>`).join("");
+    const tr = (hasFixture ? trace(fixture) : poolTrace(row.name, f === "awoken")).map((l, i) => `<li class="${i === 0 ? "trace main" : "trace"}">${esc(l)}</li>`).join("");
     return `<div class="form">
   <h3>${f === "sleeping" ? "Sleeping · Спящий" : "Awoken · Пробуждённый"}</h3>
   <p class="en">${esc(text(formSegments(form, content.abilities, "en")))}</p>
@@ -84,8 +93,8 @@ header{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.emoji{font-siz
 .note{border-left:4px solid var(--acc);padding:8px 12px;margin:0 0 24px;background:var(--card)}
 </style></head><body>
 <h1>Arena · rules v2 · unit batch 1</h1>
-<p class="sub">The eight units of the design's §4, built on branch <code>vb-1046-unit-batch-1</code>. Design: <a href="arena-rules-v2.html">arena-rules-v2.html</a>. Scenes open on the lab.</p>
-${tuned ? "" : `<div class="note"><b>Untuned draft.</b> The numbers are the fixtures' placeholders; the tune and the meta run come next. The remaining 12 units of the batch are not designed yet.</div>`}
+<p class="sub">Unit batch 1 of 3: the eight units of the design's §4, then twelve more (every shape class and tier), built on branch <code>vb-1046-unit-batch-1</code>. Design: <a href="arena-rules-v2.html">arena-rules-v2.html</a>. Scenes open on the lab.</p>
+${tuned ? "" : `<div class="note"><b>Untuned draft.</b> The numbers are placeholders; the tune and the meta run come next. The eight §4 units have fixture battles with goldens; the twelve have pool battles (the lab's <code>v2-unit-</code> scenes).</div>`}
 ${cards.join("\n")}
 </body></html>
 `;

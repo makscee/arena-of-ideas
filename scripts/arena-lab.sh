@@ -53,6 +53,7 @@ cat > "$PLIST" <<PL
     <key>ARENA_TUNER</key><string>instant</string>
     <key>ARENA_IDEA_READER</key><string>fake</string>
     <key>MVP_BUILD</key><string>$BUILD ($BRANCH)</string>
+    <key>MVP_POOL</key><string>${MVP_POOL:-v2}</string>
   </dict>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>

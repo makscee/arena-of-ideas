@@ -13,7 +13,7 @@ import { ALL_OR_NOTHING } from "../words/branch.js";
 import type { Tier, UnitForm } from "./contract.js";
 
 /** The six shape classes of rules v2 §3, as the design tags each unit. */
-export type Shape = "counter" | "copy" | "replacement" | "swing" | "scaling" | "redirect" | "memory" | "form";
+export type Shape = "counter" | "copy" | "replacement" | "swing" | "scaling" | "redirect" | "memory" | "form" | "position" | "condition" | "rule";
 
 export interface V2Row {
   v2: true;
@@ -59,6 +59,28 @@ export const V2_STATUSES: StatusRegistry = {
       { selectors: [{ kind: "holder" }], effects: [{ kind: "consumeStacks", stacks: c(3) }] },
     ],
   },
+  // Drummer's counter: at 3 beats, spend them and every ally behind gains 1
+  // power (awoken: Drums, the whole line).
+  Beats: {
+    name: "Beats",
+    counter: true,
+    triggers: [{ kind: "trigger", on: { on: "TurnEnd" } }],
+    condition: { kind: "stacksAtLeast", status: "Beats", n: 3, of: "holder" },
+    abilities: [
+      { selectors: [{ kind: "alliesBehind" }], effects: [{ kind: "applyStatus", status: "Strength", stacks: c(1) }] },
+      { selectors: [{ kind: "holder" }], effects: [{ kind: "consumeStacks", stacks: c(3) }] },
+    ],
+  },
+  Drums: {
+    name: "Drums",
+    counter: true,
+    triggers: [{ kind: "trigger", on: { on: "TurnEnd" } }],
+    condition: { kind: "stacksAtLeast", status: "Drums", n: 3, of: "holder" },
+    abilities: [
+      { selectors: [{ kind: "allAllies" }], effects: [{ kind: "applyStatus", status: "Strength", stacks: c(1) }] },
+      { selectors: [{ kind: "holder" }], effects: [{ kind: "consumeStacks", stacks: c(3) }] },
+    ],
+  },
   // Raven's second rule: at turn start, perform a remembered rule once (awoken: all).
   Memory: {
     name: "Memory",
@@ -88,8 +110,30 @@ const tree = (awoken: boolean) => ({
   ...(awoken ? { also: [{ selectors: [{ kind: "neighbours" as const }], abilities: ["Guard"] }] } : {}),
 });
 
+/** The Chrysalis becomes: a Butterfly that strikes every enemy each turn
+ * (awoken: a Monarch, which also powers every ally). */
+const butterfly = (awoken: boolean) => ({
+  name: awoken ? "Monarch" : "Butterfly",
+  base: { hp: 6, pwr: 2 },
+  triggers: [{ kind: "trigger" as const, on: { on: "TurnStart" as const } }],
+  selectors: [{ kind: "allEnemies" as const }],
+  abilities: ["Smite"],
+  ...(awoken ? { also: [{ selectors: [{ kind: "allAllies" as const }], abilities: ["Charge"] }] } : {}),
+});
+
 /** Named abilities of the v2 units: each is a word sentence, not a "Hit 1". */
 export const V2_ABILITIES: AbilityRegistry = {
+  // batch 1, the twelve after the eight (#1046)
+  Sip: { name: "Sip", family: "Heal", effects: [{ kind: "heal", amount: { kind: "half", of: pwrOfHolder } }] },
+  Fury: { name: "Fury", family: "Strike", effects: [{ kind: "replaceAmount", amount: { kind: "twice", of: pwrOfHolder } }] },
+  FuryAgain: { name: "FuryAgain", family: "Strike", effects: [{ kind: "replaceAmount", amount: { kind: "twice", of: pwrOfHolder } }, { kind: "strikeAgain" }] },
+  Beat: { name: "Beat", family: "Arcane", effects: [{ kind: "applyStatus", status: "Beats", stacks: c(1) }] },
+  Drum: { name: "Drum", family: "Arcane", effects: [{ kind: "applyStatus", status: "Drums", stacks: c(1) }] },
+  Emerge: { name: "Emerge", family: "Summon", effects: [{ kind: "transform", into: butterfly(false) }] },
+  EmergeMonarch: { name: "EmergeMonarch", family: "Summon", effects: [{ kind: "transform", into: butterfly(true) }] },
+  Swap: { name: "Swap", family: "Arcane", effects: [{ kind: "swapRules" }] },
+  Toll: { name: "Toll", family: "Strike", effects: [{ kind: "damage", amount: { kind: "plus", a: pwrOfHolder, b: { kind: "count", fact: "deadAllies" } } }] },
+  Encore: { name: "Encore", family: "Arcane", effects: [{ kind: "actAgain" }] },
   Grain: { name: "Grain", family: "Arcane", effects: [{ kind: "applyStatus", status: "Grains", stacks: c(1) }] },
   Sand: { name: "Sand", family: "Arcane", effects: [{ kind: "applyStatus", status: "Sands", stacks: c(1) }] },
   Copy: { name: "Copy", family: "Arcane", effects: [{ kind: "copyRule" }] },
@@ -142,6 +186,21 @@ const Magnet = sleeping(
 const Raven = sleeping(trig({ on: "Death", unit: "otherAlly" }), [{ kind: "eventUnit" }], "Recall", { statuses: [{ status: "Memory", stacks: 1 }] });
 const Seed = sleeping(trig({ on: "BattleStart" }), me, "Sprout");
 
+// The twelve after the eight: every shape class and tier again, higher tiers
+// with more clauses (page §8).
+const Sniper = sleeping(trig({ on: "TurnStart" }), [{ kind: "lastEnemy" }], "Smite");
+const Medic = sleeping(trig({ on: "Hurt", unit: "otherAlly" }), [{ kind: "eventUnit" }], "Mend");
+const Leech = sleeping(trig({ on: "Strike", striker: "holder" }), me, "Sip");
+const Metronome = sleeping(trig({ on: "TurnStart" }), [{ kind: "allyBehind" }], "Charge", { condition: { kind: "turnEvery", n: 2 } });
+const LoneWolf = sleeping(intercept({ on: "Strike", striker: "holder" }), me, "Fury", { condition: { kind: "alliesAlive", op: "=", n: 0 } });
+const Drummer = sleeping(trig({ on: "Strike", striker: "otherAlly" }), me, "Beat");
+const Bodyguard = sleeping(intercept({ on: "Hurt", unit: "otherAlly" }), me, "Pull", { condition: { kind: "oncePerTurn" } });
+const Chrysalis = sleeping(trig({ on: "TurnStart" }), me, "Emerge", { condition: { kind: "turnIs", n: 3 } });
+const Trickster = sleeping(trig({ on: "BattleStart" }), [{ kind: "frontEnemy" }], "Swap");
+const Understudy = sleeping(trig({ on: "Death", unit: "otherAlly" }), [{ kind: "eventUnit" }], "Copy", { condition: { kind: "onceHolder" } });
+const Gravedigger = sleeping(trig({ on: "TurnStart" }), [{ kind: "frontEnemy" }], "Toll");
+const Conductor = sleeping(trig({ on: "TurnStart" }), [{ kind: "neighbours" }], "Encore", { condition: { kind: "turnEvery", n: 2 } });
+
 /* eslint-disable prettier/prettier */
 export const ROWS_V2: V2Row[] = [
   v2("Hourglass", "⏳", 2, "counter",     1,  8, "Keeps time: every third grain, the ally behind it acts again.",            Hourglass, { does: "Sand" }),
@@ -152,5 +211,18 @@ export const ROWS_V2: V2Row[] = [
   v2("Magnet",    "🧲", 3, "redirect",    1, 12, "Pulls the enemy's random shots onto itself.",                             Magnet,    { also: [{ who: me, does: ["Charge"] }] }),
   v2("Raven",     "🐦‍⬛", 4, "memory",      1,  8, "Remembers the rules of the fallen and performs them.",                   Raven,     { statuses: [{ status: "Memories", stacks: 1 }] }),
   v2("Seed",      "🌱", 2, "form",        0,  4, "Waits two turns, then grows into a Tree that feeds the ally behind it.",  Seed,      { does: "SproutAwoken" }),
+  // the twelve
+  v2("Sniper",      "🎯", 1, "position",    2,  6, "Shoots the enemy at the back every turn.",                              Sniper,      { who: [{ kind: "lastEnemy" }, { kind: "frontEnemy" }] }),
+  v2("Medic",       "💉", 1, "position",    1,  8, "Heals whichever ally just got hurt.",                                   Medic,       { does: "Mend + Guard" }),
+  v2("Leech",       "🧛", 1, "scaling",     2,  7, "Drinks from every strike it makes.",                                    Leech,       { does: "Glow" }),
+  v2("Metronome",   "🎵", 2, "condition",   1,  8, "Every second turn, powers the ally behind it.",                         Metronome,   { who: [{ kind: "alliesBehind" }] }),
+  v2("Lone Wolf",   "🐺", 2, "replacement", 3,  7, "Alone, its strikes deal double.",                                       LoneWolf,    { does: "FuryAgain" }),
+  v2("Drummer",     "🥁", 2, "counter",     1,  9, "Every third ally strike, the line behind it beats stronger.",           Drummer,     { does: "Drum" }),
+  v2("Bodyguard",   "🕴️", 2, "redirect",    1, 11, "Once a turn, takes a hit meant for an ally.",                           Bodyguard,   { also: [{ who: [{ kind: "eventUnit" }], does: ["Guard"] }] }),
+  v2("Chrysalis",   "🐛", 3, "form",        0,  7, "On the third turn, becomes a Butterfly that strikes every enemy.",      Chrysalis,   { does: "EmergeMonarch" }),
+  v2("Trickster",   "🃏", 3, "rule",        2,  8, "Trades rules with the front enemy before the first blow.",             Trickster,   { who: [{ kind: "frontEnemy" }, { kind: "lastEnemy" }] }),
+  v2("Understudy",  "🎭", 3, "copy",        1,  8, "When an ally falls, takes over its rule for good.",                     Understudy,  { does: "CopyPower" }),
+  v2("Gravedigger", "⚰️", 4, "scaling",     2, 10, "Hits the front enemy harder for every fallen ally.",                    Gravedigger, { who: [{ kind: "allEnemies" }] }),
+  v2("Conductor",   "🎼", 4, "rule",        1,  9, "Every second turn, its neighbours act again.",                          Conductor,   { also: [{ who: [{ kind: "neighbours" }], does: ["Charge"] }] }),
 ];
 /* eslint-enable prettier/prettier */
