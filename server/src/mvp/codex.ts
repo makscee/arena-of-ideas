@@ -15,7 +15,9 @@ import { benchSizeOf, boardUnit, type Decision, type FuseContext, type LineUnit,
 import { canonicalDesign, claimCheck, forgeView, pairState, sortPair, type CodexClaim, type FusionDesign, type ForgeView } from "../../../src/mvp/codex.js";
 import { fuseCheck } from "../../../src/mvp/forms.js";
 import { MvpDecisionError } from "../../../src/mvp/errors.js";
-import type { MvpRunState } from "../../../src/mvp/run.js";
+import { fightLines } from "../../../src/mvp/fight.js";
+import { applyMvpDecision, type MvpRunState } from "../../../src/mvp/run.js";
+import { lineResolves } from "../../../src/mvp/units.js";
 import type { RunDeps } from "./runs.js";
 
 /** A fuse through the Codex: its context, and the claim to store once the
@@ -102,4 +104,46 @@ export function wish(deps: RunDeps, player: PlayerRef, x: UnitId, y: UnitId): Fo
   const seq = deps.today().seq;
   deps.store.addWish({ a, b, playerId: player.id, seq, at: deps.now().toISOString() });
   return codexView(deps, a, b, player, seq);
+}
+
+// ---------- bots at the forge ----------
+
+/** How many of the round's newest ghosts a bot fights each design against. */
+export const BOT_FORGE_GHOSTS = 5;
+
+/** Whether a bot may fuse the pair: forged (ready or discovered). */
+export function codexForged(deps: RunDeps, first: LineUnit, second: LineUnit): boolean {
+  const [a, b] = sortPair(first.unitId, second.unitId);
+  return pairState(deps.store.codexPair(a, b)) !== "unforged";
+}
+
+/** A bot's fuse `d` with its pick: on a ready pair, each candidate is fused
+ * into the bot's line and fought against the round's newest ghosts (fixed
+ * seeds, so the pick is deterministic); the most wins takes it, a draw half,
+ * ties to the earlier candidate. Bots stay heuristic everywhere else. */
+export function botForge(deps: RunDeps, run: MvpRunState, d: Extract<Decision, { kind: "fuse" }>): Extract<Decision, { kind: "fuse" }> {
+  const first = boardUnit(run, run.rules, d.first);
+  const second = boardUnit(run, run.rules, d.second);
+  if (!first || !second) return d;
+  const [a, b] = sortPair(first.unitId, second.unitId);
+  const pair = deps.store.codexPair(a, b);
+  if (pairState(pair) !== "ready") return d;
+  const content = deps.contentFor(run.contentVersion);
+  const ghosts = deps.store.ghosts(run.round, { excludePlayerId: run.player.id, limit: BOT_FORGE_GHOSTS }).filter((g) => lineResolves(g.line, content.abilities));
+  let pick = 0;
+  let best = -1;
+  pair!.candidates.forEach((design, i) => {
+    let wins = 0;
+    try {
+      const line = applyMvpDecision(run, { kind: "fuse", first: d.first, second: d.second }, content, { fuse: { name: design.name, discoveredBy: null, design } }).state.line;
+      ghosts.forEach((g, k) => {
+        const r = fightLines({ player: run.player, line }, { player: g.player, line: g.line }, { battleId: "forge-sim", seed: k + 1, kind: "round", round: run.round, runId: null, at: "", content, rules: run.rules });
+        wins += r.winner === "A" ? 1 : r.winner === "draw" ? 0.5 : 0;
+      });
+    } catch {
+      return; // a design the engine can't fight is never picked
+    }
+    if (wins > best) [pick, best] = [i, wins];
+  });
+  return { ...d, pick };
 }
