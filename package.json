@@ -52,6 +52,7 @@
     "mvp:dark": "scripts/arena-dark.sh",
     "mvp:meta": "node --import tsx/esm scripts/meta-health.ts",
     "mvp:tune": "node --import tsx/esm scripts/tune-unit.ts",
+    "mvp:tune-v2": "node --import tsx/esm scripts/tune-v2.ts",
     "mvp:batch-report": "node --import tsx/esm scripts/batch-report.ts",
     "mvp:translate": "node --import tsx/esm server/src/mvp/translate-cli.ts",
     "mvp:texts": "node --import tsx/esm scripts/unit-texts.ts",

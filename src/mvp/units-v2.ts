@@ -11,6 +11,7 @@
 import type { AbilityRegistry, StatusRegistry } from "../types.js";
 import { ALL_OR_NOTHING } from "../words/branch.js";
 import type { Tier, UnitForm } from "./contract.js";
+import { V2_NUMBERS } from "./units-v2-numbers.js";
 
 /** The six shape classes of rules v2 §3, as the design tags each unit. */
 export type Shape = "counter" | "copy" | "replacement" | "swing" | "scaling" | "redirect" | "memory" | "form" | "position" | "condition" | "rule";
@@ -169,10 +170,11 @@ const me: UnitForm["who"] = [{ kind: "holder" }];
 const awake = (s: UnitForm, up: Partial<Form>): UnitForm => ({ ...s, ...(up.does !== undefined ? { does: [up.does] } : {}), ...(up.who ? { who: up.who } : {}), ...(up.also ? { also: up.also } : {}), ...(up.statuses ? { statuses: up.statuses } : {}) });
 
 const v2 = (name: string, emoji: string, tier: Tier, shape: Shape, pwr: number, hp: number, archetype: string, s: UnitForm, up: Partial<Form>): V2Row =>
-  ({ v2: true, name, emoji, tier, shape, pwr, hp, archetype, forms: { sleeping: s, awoken: awake(s, up) } });
+  ({ v2: true, name, emoji, tier, shape, pwr, hp, ...V2_NUMBERS[name], archetype, forms: { sleeping: s, awoken: awake(s, up) } });
 
-// Numbers are the fixtures' placeholders until the tune (next attempt): a
-// V2Row's knobs are pwr and hp only.
+// The pwr and hp columns are the designer's placeholders; the tune's numbers
+// (units-v2-numbers.ts, scripts/tune-v2.ts) replace them. A V2Row's knobs are
+// pwr and hp only.
 const Hourglass = sleeping(trig({ on: "TurnEnd" }), me, "Grain");
 const Mirror = sleeping(trig({ on: "BattleStart" }), [{ kind: "frontEnemy" }], "Copy");
 const Candle = sleeping(intercept({ on: "Death", unit: "holder" }), me, "Gutter");
