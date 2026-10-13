@@ -5,6 +5,7 @@ import type {
   Ability,
   AbilityRef,
   AbilityRegistry,
+  BattleFact,
   Reaction,
   Amount,
   BattleEvent,
@@ -25,7 +26,7 @@ import type {
 } from "./types.js";
 import { mulberry32 } from "./rng.js";
 import { legacyRecipe } from "./content-grammar.js";
-import { conditionWord, selectorWord, type CondAt, type WordCtx, type WordUnit } from "./words/index.js";
+import { amountWord, conditionWord, selectorWord, type CondAt, type WordCtx, type WordUnit } from "./words/index.js";
 
 export const TEAM_SIZE = 5;
 export const FATIGUE_START = 10;
@@ -70,6 +71,8 @@ interface UnitState {
   fellAt?: number;
   /** Revived already this battle; with reviveInPlace it never returns again (#918). */
   revived?: boolean;
+  /** Hurt events it has taken this battle (rules v2 §3.3, count hitsTaken). */
+  hits?: number;
 }
 
 interface ReactorEntry {
@@ -149,6 +152,9 @@ class Engine {
     turn: 0,
     hp: (u) => this.curHp(u as UnitState),
     stacks: (u, status) => (u as UnitState).statuses.find((s) => s.def.name === status)?.stacks ?? 0,
+    stat: (u, stat) => this.effStat(u as UnitState, stat),
+    missingHp: (u) => Math.max(0, (u as UnitState).damage),
+    fact: (fact, holder) => this.battleFact(fact, holder as UnitState),
   };
 
   constructor(input: BattleInput) {
@@ -592,7 +598,7 @@ class Engine {
   // ---------- effects (trigger context) ----------
 
   private runEffect(e: Effect, target: UnitState, holder: UnitState, f: Firing): void {
-    const amountCtx = { holder, ref: f.ref };
+    const amountCtx = { holder, ref: f.ref, target, event: f.event };
     switch (e.kind) {
       case "damage": {
         if (!target.alive) return;
@@ -782,6 +788,7 @@ class Engine {
         return;
       case "Hurt": {
         const u = this.units.get(ev.unit);
+        if (u) u.hits = (u.hits ?? 0) + 1;
         if (u && u.alive) u.damage += ev.amount;
         if (u) ev.hpAfter = this.curHp(u);
         return;
@@ -936,7 +943,7 @@ class Engine {
     return this.effStat(u, "hp") - u.damage;
   }
 
-  private evalAmount(a: Amount, ctx: { holder: UnitState; ref: AbilityRef }): number {
+  private evalAmount(a: Amount, ctx: { holder: UnitState; ref: AbilityRef; target?: UnitState; event?: EventBody }): number {
     switch (a.kind) {
       case "const":
         return a.value;
@@ -948,6 +955,36 @@ class Engine {
         if (ctx.ref.status === undefined) return 0;
         return ctx.holder.statuses.find((s) => s.def.name === ctx.ref.status)?.stacks ?? 0;
       }
+      default: {
+        // A v2 amount is a word (src/words/).
+        const subj = ctx.event ? subjectOf(ctx.event) : undefined;
+        const eventUnit = subj !== undefined ? this.units.get(subj) : undefined;
+        return Math.max(0, amountWord(a.kind)!.value(this.wordCtx, a, {
+          holder: ctx.holder,
+          ...(ctx.target ? { target: ctx.target } : {}),
+          ...(eventUnit ? { eventUnit } : {}),
+          eval: (x) => this.evalAmount(x, ctx),
+        }));
+      }
+    }
+  }
+
+  /** The battle facts the count amount reads (rules v2 §3.3). */
+  private battleFact(fact: BattleFact, holder: UnitState): number {
+    const side = (s: Side) => [...this.units.values()].filter((u) => u.side === s);
+    switch (fact) {
+      case "hitsTaken":
+        return holder.hits ?? 0;
+      case "hitsTakenByAllies":
+        return side(holder.side).filter((u) => u.id !== holder.id).reduce((n, u) => n + (u.hits ?? 0), 0);
+      case "deadAllies":
+        return side(holder.side).filter((u) => !u.alive).length;
+      case "alliesAlive":
+        return this.lines[holder.side].length;
+      case "enemiesAlive":
+        return this.lines[other(holder.side)].length;
+      case "turn":
+        return this.turn;
     }
   }
 

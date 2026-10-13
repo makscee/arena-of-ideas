@@ -14,6 +14,6 @@ export const and: ConditionWord<C> = {
   ru: (c, say) => c.all.map(say).join(" и "),
   example: {
     input: example([rule("Clock", 6, 1, { on: "TurnStart" }, { kind: "frontEnemy" }, "Zap", { kind: "and", all: [{ kind: "turnAtLeast", n: 2 }, { kind: "enemiesAlive", op: ">=", n: 1 }] })], [plain("Brute", 9, 1)]),
-    trace: "Clock (from turn 2 and if at least 1 enemy stands) → front enemy (Brute)",
+    trace: "Clock (from turn 2 and if at least 1 enemy stands) → front enemy (Brute) → 1 damage",
   },
 };

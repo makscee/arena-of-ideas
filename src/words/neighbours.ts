@@ -15,6 +15,6 @@ export const neighbours: SelectorWord = {
   ru: { dat: "соседям", acc: "соседей", chip: "Соседи", trace: "соседи" },
   example: {
     input: example([plain("Archer", 3, 2), rule("Candle", 4, 1, { on: "BattleStart" }, { kind: "neighbours" }, "Empower"), plain("Squire", 3, 1)], [plain("Brute", 6, 2)]),
-    trace: "Candle → its neighbours (Archer, Squire)",
+    trace: "Candle → its neighbours (Archer, Squire) → Strength 1",
   },
 };

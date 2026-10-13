@@ -91,6 +91,7 @@ EventTypes v1: `BattleStart, TurnStart, PairFaced, Strike, Hurt, Heal, Death, Su
 - `Hurt {unit, amount, hpAfter, absorbed?}` / `Heal {unit, amount, hpAfter}` — hp deltas. `Strike` proposes a `Hurt` of the striker's effective pwr. `hpAfter` is the unit's current hp after the event applied, stamped by the kernel at apply time — consumers (replay, client) read it instead of re-deriving hp bookkeeping. `absorbed?` records how many hp a Shield interceptor consumed; a fully-absorbed Hurt still applies with `amount` 0.
 - `StatChanged {unit, stat, delta, now, hpAfter?}` — an effective-stat change from a statMod attaching or detaching; `now` is the new effective stat. An hp change moves current hp with the max (cur = effective − damage), so hp StatChanged events also carry `hpAfter`, stamped like Hurt/Heal; pwr changes carry none.
 - `ChainBlocked {ability, at, spent?}` — a would-be firing suppressed by the no-self-retrigger law (§5), or, with `spent: true`, by the once-per-chain law (§5). The replay explains chain stops with this event.
+- `Flipped {unit, by, heads}` (v2, §11) — a `flip` condition drew its coin for the firing `by` of `unit`'s rule: one draw from the battle seed, logged heads or tails, caused by the event the firing reacted to. A tails flip stops the firing; the coin still shows.
 - `BattleEnd {winner, turns, timeUp?}` — the last event. `timeUp: true` only when the turn cap ran out with both sides standing (a draw); absent otherwise.
 - `ChainCapped {root, steps}` — a cascade hit the step cap (§5) and stopped; `root` is the event its first firing reacted to, `steps` the firings it ran. It is caused by the event the next, dropped firing reacted to, so a trace shows where the chain was cut.
 - `Intercepted {by, original, unit?}` — emitted when an interceptor cancels a proposed event (e.g. Freeze cancelling a Strike, Blessing cancelling a Death); cancellations must be visible or the replay can't explain them. Interceptor side-effects (stack consumption, the replacement Heal) are caused by this event.
@@ -231,3 +232,29 @@ The layer above battle(): `src/run.ts` (transitions), `src/ladder.ts` (the stora
 - **Champion rule:** an empty draw means the run has outrun every ghost at this round and challenges the champion. A win — or a vacant spot — crowns the fielded team: the run ends `crown`, and the spot persists across runs. A dethroned champion loses only the spot; its ghosts stay. A lost challenge is a normal loss. The vacant-spot crown is a kernel edge only: openLadder seats a champion, so it is unreachable on any opened ladder.
 - **Run-end states:** a loss costs a life; at 0 lives the run ends `out-of-lives`. An over run rejects every further decision, loudly.
 - **Bootstrap:** an empty ladder seeds rounds 1..BOOTSTRAP_DEPTH from the shipped bootstrap teams (tunables), escalating in strength, and seats BOOTSTRAP_CHAMPION — the strongest shipped team — in the champion spot, so a first-ever run has a real climb and a crown is always earned by beating someone (a fresh ladder crowned every run through the vacant spot, most with losing records). Every bootstrap team passes the content gate at open. A played-on ladder can never have an empty round-1 pool — snapshot-before-fight fills it.
+
+## 11. Rules v2: the word registry (normative, #1043)
+
+Rules v2 (design: `arena-rules-v2.html` §3) adds six classes of primitive. Each primitive is a **word**: one file in `src/words/` with how it applies, its English and Russian sentence templates, its trace line, and an example battle whose golden log is `src/words/goldens/<kind>.jsonl` (`src/words/words.test.ts` runs every word). **A rule the renderer can't say is not legal:** `validate.ts` accepts a v2 kind only when its word is registered (`src/words/index.ts`). Words never change v1 content: every golden battle of the current pool is unchanged.
+
+### 11.1 Position selectors
+`allyBehind`, `allyAhead` (the living ally one slot behind / ahead of the holder), `neighbours` (ahead, then behind), `alliesBehind` (every living ally behind, front to back), `lastEnemy` (the enemy at the back), `randomAlly` (one seeded draw among the other living allies; none when alone), `eventTarget` (the unit an event was aimed at: a Strike's defender, else the unit a Hurt, Heal or status landed on; none once dead). A holder that has left the line has no neighbours.
+
+### 11.2 Conditions
+All compose with `and {all: Condition[]}` (in order, stopping at the first that fails) and `not {cond}`.
+- `turnIs n`, `turnAtLeast n`, `turnEvery n` — the turn clock (`turn % n = 0`).
+- `stacksAtLeast {status, n, of: holder | eventUnit}` — a counter or status threshold.
+- `alliesAlive {op, n}`, `enemiesAlive {op, n}` — the living line's length (allies include the holder), `op` one of `<=`, `=`, `>=`.
+- `flip {p}` — one draw from the battle seed per firing that reaches it; heads when the draw < p. Each coin is a `Flipped` event (§2), logged before the firing's effects.
+- `onceHolder`, `oncePerTurn` — the rule fires at most once per battle / per turn. A once-mark is committed only when the whole condition holds, so `and [turnAtLeast 3, onceHolder]` waits for turn 3.
+
+A condition is checked when the firing runs (after the no-self and once-per-chain laws, §5), against the holder and the event the firing reacted to; an interceptor's condition sees the proposed event.
+
+
+### 11.3 Counters and scaling amounts
+A status with `counter: true` is a counter: tracked like stacks, drawn as a small number on the card, not as a buff (display only; the kernel treats it as any status). New amounts, all clamped at 0 when they land:
+- `stacksOf {status, of: holder | target}` — a named counter or status, not only the owning one.
+- `count {fact}` — a battle fact the kernel keeps: `hitsTaken` (Hurt events the holder took this battle, absorbed ones included), `hitsTakenByAllies` (the same, summed over its other allies, fallen included), `deadAllies`, `alliesAlive` (holder included), `enemiesAlive`, `turn`.
+- `statOf {stat, of: target | eventUnit}` — someone else's effective stat.
+- `missingHp` — the holder's damage taken.
+- `half {of}` (rounded down), `twice {of}`, `plus {a, b}` — the only arithmetic.

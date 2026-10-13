@@ -15,6 +15,6 @@ export const eventTarget: SelectorWord = {
   ru: { dat: "цели", acc: "цель", chip: "Цель", trace: "цель" },
   example: {
     input: example([plain("Archer", 5, 2), rule("Medic", 4, 1, { on: "Strike", striker: "enemy" }, { kind: "eventTarget" }, "Mend")], [plain("Brute", 6, 2)]),
-    trace: "Medic → the target (Archer)",
+    trace: "Medic → the target (Archer) → heal 1",
   },
 };

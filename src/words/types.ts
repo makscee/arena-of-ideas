@@ -25,6 +25,10 @@ export interface WordCtx {
   readonly turn: number;
   hp(u: WordUnit): number;
   stacks(u: WordUnit, status: string): number;
+  stat(u: WordUnit, stat: import("../types.js").StatName): number;
+  missingHp(u: WordUnit): number;
+  /** A battle fact the kernel keeps, seen from `holder` (§3.3). */
+  fact(fact: import("../types.js").BattleFact, holder: WordUnit): number;
 }
 
 /** A sentence in both languages. RU selectors come in the two cases the
@@ -86,4 +90,22 @@ export interface ConditionWord<C = any> extends WordMeta {
   /** The clause in a card sentence: "on turn 3", "на 3-м ходу". */
   en(c: C, say: (c: import("../types.js").Condition) => string): string;
   ru(c: C, say: (c: import("../types.js").Condition) => string): string;
+}
+
+/** Where an amount is evaluated: the firing's holder, the effect's target
+ * (absent in an interceptor) and the unit the triggering event is about. */
+export interface AmountAt {
+  holder: WordUnit;
+  target?: WordUnit;
+  eventUnit?: WordUnit;
+  eval(a: import("../types.js").Amount): number;
+}
+
+/** A scaling amount (§3.3). `en`/`ru` read as the noun after "equal to" /
+ * "равный" (Russian dative). */
+export interface AmountWord<A = any> extends WordMeta {
+  kind: string;
+  value(ctx: WordCtx, a: A, at: AmountAt): number;
+  en(a: A, say: (a: import("../types.js").Amount) => string): string;
+  ru(a: A, say: (a: import("../types.js").Amount) => string): string;
 }

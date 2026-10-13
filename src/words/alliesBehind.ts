@@ -15,6 +15,6 @@ export const alliesBehind: SelectorWord = {
   ru: { dat: "всем союзникам позади", acc: "всех союзников позади", chip: "Союзники позади", trace: "все союзники позади" },
   example: {
     input: example([rule("Hourglass", 4, 1, { on: "BattleStart" }, { kind: "alliesBehind" }, "Empower"), plain("Archer", 3, 2), plain("Squire", 3, 1)], [plain("Brute", 6, 2)]),
-    trace: "Hourglass → every ally behind it (Archer, Squire)",
+    trace: "Hourglass → every ally behind it (Archer, Squire) → Strength 1",
   },
 };

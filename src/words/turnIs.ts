@@ -15,6 +15,6 @@ export const turnIs: ConditionWord<C> = {
   ru: (c, say) => `на ${c.n}-м ходу`,
   example: {
     input: example([rule("Clock", 6, 1, { on: "TurnStart" }, { kind: "frontEnemy" }, "Zap", { kind: "turnIs", n: 2 })], [plain("Brute", 9, 1)]),
-    trace: "Clock (on turn 2) → front enemy (Brute)",
+    trace: "Clock (on turn 2) → front enemy (Brute) → 1 damage",
   },
 };

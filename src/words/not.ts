@@ -13,6 +13,6 @@ export const not: ConditionWord<C> = {
   ru: (c, say) => `если не ${say(c.cond).replace(/^если /, "")}`,
   example: {
     input: example([rule("Clock", 6, 1, { on: "TurnStart" }, { kind: "frontEnemy" }, "Zap", { kind: "not", cond: { kind: "turnIs", n: 1 } })], [plain("Brute", 9, 1)]),
-    trace: "Clock (unless on turn 1) → front enemy (Brute)",
+    trace: "Clock (unless on turn 1) → front enemy (Brute) → 1 damage",
   },
 };

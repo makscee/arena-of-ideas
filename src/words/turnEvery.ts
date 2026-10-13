@@ -15,6 +15,6 @@ export const turnEvery: ConditionWord<C> = {
   ru: (c, say) => `каждый ${c.n}-й ход`,
   example: {
     input: example([rule("Clock", 6, 1, { on: "TurnStart" }, { kind: "frontEnemy" }, "Zap", { kind: "turnEvery", n: 2 })], [plain("Brute", 9, 1)]),
-    trace: "Clock (every second turn) → front enemy (Brute)",
+    trace: "Clock (every second turn) → front enemy (Brute) → 1 damage",
   },
 };

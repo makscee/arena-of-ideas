@@ -18,6 +18,6 @@ export const onceHolder: ConditionWord<C> = {
   ru: () => "раз за бой",
   example: {
     input: example([rule("Clock", 6, 1, { on: "TurnStart" }, { kind: "frontEnemy" }, "Zap", { kind: "onceHolder" })], [plain("Brute", 9, 1)]),
-    trace: "Clock (once per battle) → front enemy (Brute)",
+    trace: "Clock (once per battle) → front enemy (Brute) → 1 damage",
   },
 };

@@ -15,6 +15,6 @@ export const turnAtLeast: ConditionWord<C> = {
   ru: (c, say) => `начиная с ${c.n}-го хода`,
   example: {
     input: example([rule("Clock", 6, 1, { on: "TurnStart" }, { kind: "frontEnemy" }, "Zap", { kind: "turnAtLeast", n: 2 })], [plain("Brute", 9, 1)]),
-    trace: "Clock (from turn 2) → front enemy (Brute)",
+    trace: "Clock (from turn 2) → front enemy (Brute) → 1 damage",
   },
 };

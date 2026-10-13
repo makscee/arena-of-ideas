@@ -10,7 +10,7 @@
 // a counted noun takes its form by Intl.PluralRules("ru") (1 Щит, 2 Щита,
 // 5 Щитов). Display-only, like describe.ts.
 
-import { conditionWord, selectorWord } from "./words/index.js";
+import { amountWord, conditionWord, selectorWord } from "./words/index.js";
 import type { Ability, Amount, Condition, Effect, EventPattern, Selector, SelectorV1, StatusDef, UnitFilter, When } from "./types.js";
 import type { DescribeOpts, DescribeSegment, PartRef, Side } from "./describe.js";
 import type { TermId } from "./glossary.js";
@@ -73,6 +73,8 @@ function amountDat(a: Amount): DescribeSegment[] {
       return [seg("уровню")];
     case "stacks":
       return [seg("числу "), { text: "зарядов", term: "term:stacks" }];
+    default:
+      return [seg(amountWord(a.kind)!.ru(a, (x) => amountDat(x).map((g) => g.text).join("")))];
   }
 }
 
@@ -87,6 +89,9 @@ function amountAcc(a: Amount): DescribeSegment[] {
       return [seg("уровень")];
     case "stacks":
       return [seg("число "), { text: "зарядов", term: "term:stacks" }];
+    default:
+      // A v2 amount's word reads in the dative: "на величину, равную …".
+      return [seg("величину, равную "), ...amountDat(a)];
   }
 }
 

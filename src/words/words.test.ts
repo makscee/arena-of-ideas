@@ -24,8 +24,9 @@ describe("word registry", () => {
         assertValidContent(input.teamB, input.statuses!, input.abilities!, "teamB");
       });
       it("says its example in English and Russian", () => {
-        const unit = [...input.teamA, ...input.teamB].find((u) => JSON.stringify(u).includes(`"kind":"${word.kind}"`))!;
-        const action = unitActionsOf(unit, input.abilities!)[0]!;
+        const action = [...input.teamA, ...input.teamB]
+          .flatMap((u) => unitActionsOf(u, input.abilities!))
+          .find((a) => JSON.stringify(a).includes(`"kind":"${word.kind}"`))!;
         const en = describeAbilitySegments(action).map((s) => s.text).join("");
         const ru = describeAbilitySegmentsRu(action, {}).map((s) => s.text).join("");
         expect(en).not.toMatch(/undefined/);
@@ -41,6 +42,7 @@ describe("word registry", () => {
       });
       it(`traces: ${trace}`, () => {
         expect(traceLines(input, battle(input))).toContain(trace);
+        expect(JSON.stringify(word.example)).toContain(`"kind":"${word.kind}"`);
       });
     });
   }

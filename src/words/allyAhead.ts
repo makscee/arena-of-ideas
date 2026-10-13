@@ -16,6 +16,6 @@ export const allyAhead: SelectorWord = {
   ru: { dat: "союзнику впереди", acc: "союзника впереди", chip: "Союзник впереди", trace: "союзник впереди" },
   example: {
     input: example([plain("Archer", 3, 2), rule("Banner", 4, 1, { on: "BattleStart" }, { kind: "allyAhead" }, "Empower")], [plain("Brute", 6, 2)]),
-    trace: "Banner → the ally ahead of it (Archer)",
+    trace: "Banner → the ally ahead of it (Archer) → Strength 1",
   },
 };

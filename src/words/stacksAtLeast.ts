@@ -16,6 +16,6 @@ export const stacksAtLeast: ConditionWord<C> = {
   ru: (c, say) => `если у ${c.of === "holder" ? "него" : "цели"} ${c.n}+ ${c.status}`,
   example: {
     input: example([rule("Hoarder", 6, 1, { on: "TurnStart" }, { kind: "holder" }, "Empower", { kind: "not", cond: { kind: "stacksAtLeast", status: "Strength", n: 2, of: "holder" } })], [plain("Brute", 9, 1)]),
-    trace: "Hoarder (unless it has 2+ Strength) → self (Hoarder)",
+    trace: "Hoarder (unless it has 2+ Strength) → self (Hoarder) → Strength 1",
   },
 };

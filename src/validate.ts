@@ -12,7 +12,7 @@
 
 import { TEAM_SIZE } from "./battle.js";
 import type { AbilityRegistry, StatusRegistry, UnitDef } from "./types.js";
-import { CONDITION_WORDS, conditionWord, selectorWord } from "./words/index.js";
+import { AMOUNT_WORDS, CONDITION_WORDS, amountWord, conditionWord, selectorWord } from "./words/index.js";
 
 export interface ValidationIssue {
   path: string; // e.g. "teamA[0].abilities[0].effects[1]"
@@ -544,8 +544,8 @@ function validateEffect(e: unknown, registry: StatusRegistry, abilities: Ability
 }
 
 function validateAmount(a: unknown, owner: Owner, path: string, issues: ValidationIssue[]): void {
-  if (!isObject(a) || typeof a["kind"] !== "string" || !oneOf(a["kind"], AMOUNT_KINDS)) {
-    issues.push({ path, message: `amount must be one of kinds ${list(AMOUNT_KINDS)}` });
+  if (!isObject(a) || typeof a["kind"] !== "string" || !(oneOf(a["kind"], AMOUNT_KINDS) || amountWord(a["kind"]))) {
+    issues.push({ path, message: `amount must be one of kinds ${list(AMOUNT_KINDS)} or the words ${list(Object.keys(AMOUNT_WORDS))}` });
     return;
   }
   switch (a["kind"]) {
@@ -564,6 +564,23 @@ function validateAmount(a: unknown, owner: Owner, path: string, issues: Validati
         issues.push({ path, message: "a stacks amount reads the owning status's stacks — on a unit ability it silently evaluates to 0" });
       }
       return;
+    case "stacksOf":
+      if (typeof a["status"] !== "string") issues.push({ path: `${path}.status`, message: "stacksOf needs a status name" });
+      if (!oneOf(a["of"], ["holder", "target"] as const)) issues.push({ path: `${path}.of`, message: "of must be holder or target" });
+      return;
+    case "count":
+      if (!oneOf(a["fact"], ["hitsTaken", "hitsTakenByAllies", "deadAllies", "alliesAlive", "enemiesAlive", "turn"] as const)) issues.push({ path: `${path}.fact`, message: "unknown battle fact" });
+      return;
+    case "statOf":
+      if (!oneOf(a["stat"], STAT_NAMES)) issues.push({ path: `${path}.stat`, message: `unknown stat ${JSON.stringify(a["stat"])} — stats are ${list(STAT_NAMES)}` });
+      if (!oneOf(a["of"], ["target", "eventUnit"] as const)) issues.push({ path: `${path}.of`, message: "of must be target or eventUnit" });
+      return;
+    case "half":
+    case "twice":
+      return validateAmount(a["of"], owner, `${path}.of`, issues);
+    case "plus":
+      validateAmount(a["a"], owner, `${path}.a`, issues);
+      return validateAmount(a["b"], owner, `${path}.b`, issues);
   }
 }
 

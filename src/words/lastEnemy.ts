@@ -15,6 +15,6 @@ export const lastEnemy: SelectorWord = {
   ru: { dat: "заднему врагу", acc: "заднего врага", chip: "Задний враг", trace: "задний враг" },
   example: {
     input: example([rule("Sniper", 4, 1, { on: "TurnStart" }, { kind: "lastEnemy" }, "Zap")], [plain("Brute", 6, 2), plain("Healer", 2, 1)]),
-    trace: "Sniper → the enemy at the back (Healer)",
+    trace: "Sniper → the enemy at the back (Healer) → 1 damage",
   },
 };

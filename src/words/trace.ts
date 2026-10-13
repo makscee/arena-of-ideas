@@ -16,7 +16,7 @@ function defOf(input: BattleInput, id: string): UnitDef | undefined {
 export function traceLines(input: BattleInput, log: readonly BattleEvent[]): string[] {
   const name = (id: string) => id.replace(/^[AB]\d+:/, "");
   const out: string[] = [];
-  const firings = new Map<string, { line: number; holder: string; def: UnitDef; targets: string[] }>();
+  const firings = new Map<string, { line: number; holder: string; def: UnitDef; targets: string[]; did: string[] }>();
   for (const e of log) {
     if (e.type === "Flipped") {
       out.push(`${name(e.unit)} flips: ${e.heads ? "heads" : "tails"}`);
@@ -28,16 +28,18 @@ export function traceLines(input: BattleInput, log: readonly BattleEvent[]): str
     const key = `${e.source.unit}|${e.causedBy}`;
     let f = firings.get(key);
     if (!f) {
-      f = { line: out.length, holder: e.source.unit, def, targets: [] };
+      f = { line: out.length, holder: e.source.unit, def, targets: [], did: [] };
       firings.set(key, f);
       out.push("");
     }
     if (!f.targets.includes(e.unit)) f.targets.push(e.unit);
+    const did = e.type === "Hurt" ? `${e.amount} damage` : e.type === "Heal" ? `heal ${e.amount}` : e.type === "StatusApplied" ? `${e.status} ${e.stacks}` : undefined;
+    if (did !== undefined && !f.did.includes(did)) f.did.push(did);
   }
   for (const f of firings.values()) {
     const who = f.def.selectors!.map((s) => selectorWord(s.kind)?.en.trace ?? describeSelector(s)).join(" and ");
     const cond = f.def.condition ? ` (${describeCondition(f.def.condition)})` : "";
-    out[f.line] = `${name(f.holder)}${cond} → ${who} (${f.targets.map(name).join(", ")})`;
+    out[f.line] = `${name(f.holder)}${cond} → ${who} (${f.targets.map(name).join(", ")})${f.did.length ? ` → ${f.did.join(", ")}` : ""}`;
   }
   return out;
 }

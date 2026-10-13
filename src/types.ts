@@ -171,7 +171,24 @@ export type SelectorV1 =
   | { kind: "lastDeadAlly" }; // most recent graveyard entry still dead
 
 /** Magnitude expressions. Stat scaling is opt-in content, priced by the budget (not v1). */
-export type Amount =
+export type Amount = AmountV1 | AmountV2;
+
+/** Rules v2 scaling amounts (#1043 §3.3); each kind is a word in src/words/. */
+export type BattleFact = "hitsTaken" | "hitsTakenByAllies" | "deadAllies" | "alliesAlive" | "enemiesAlive" | "turn";
+export type AmountV2 =
+  // a named counter or status on the holder or the effect's target
+  | { kind: "stacksOf"; status: string; of: "holder" | "target" }
+  // a battle fact the kernel keeps
+  | { kind: "count"; fact: BattleFact }
+  // someone else's effective stat
+  | { kind: "statOf"; stat: StatName; of: "target" | "eventUnit" }
+  // the holder's missing hp
+  | { kind: "missingHp" }
+  | { kind: "half"; of: Amount } // rounded down
+  | { kind: "twice"; of: Amount }
+  | { kind: "plus"; a: Amount; b: Amount };
+
+export type AmountV1 =
   | { kind: "const"; value: number }
   | { kind: "stat"; stat: StatName; of: "holder" } // holder's effective stat
   | { kind: "level"; of: "holder" } // holder's level — shop-layer growth, readable like a stat
@@ -193,6 +210,9 @@ export type Effect =
 
 export interface StatusDef {
   name: string;
+  /** A counter (rules v2 §3.3): tracked like stacks, drawn as a small
+   * number on the card rather than as a buff. Display only. */
+  counter?: true;
   /** Contribution per stack while attached. Effective stat = max(0, base + Σ contributions) — computed, never baked. */
   statMods?: Partial<Stats>;
   /** Status recipe context. Empty for modifier-only statuses. */

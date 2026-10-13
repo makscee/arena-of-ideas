@@ -18,7 +18,7 @@ import type {
   When,
 } from "./types.js";
 import type { TermId } from "./glossary.js";
-import { conditionWord, selectorWord } from "./words/index.js";
+import { amountWord, conditionWord, selectorWord } from "./words/index.js";
 import { describeAbilitySegmentsRu, describeStatusSegmentsRu } from "./describe-ru.js";
 
 /** The language card text is written in (M4-3): English, or Russian from
@@ -137,6 +137,8 @@ export function amountSegments(a: Amount, _opts: DescribeOpts = {}): DescribeSeg
       return [seg("level")];
     case "stacks":
       return [{ text: "stacks", term: "term:stacks" }];
+    default:
+      return [seg(amountWord(a.kind)!.en(a, (x) => describeAmount(x)))];
   }
 }
 
@@ -557,6 +559,8 @@ function terseAmount(a: Amount): string {
       return "level";
     case "stacks":
       return "stacks";
+    default:
+      return a.kind;
   }
 }
 

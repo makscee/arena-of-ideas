@@ -15,6 +15,6 @@ export const randomAlly: SelectorWord = {
   ru: { dat: "случайному союзнику", acc: "случайного союзника", chip: "Случайный союзник", trace: "случайный союзник" },
   example: {
     input: example([rule("Jester", 4, 1, { on: "BattleStart" }, { kind: "randomAlly" }, "Empower"), plain("Archer", 3, 2), plain("Squire", 3, 1)], [plain("Brute", 6, 2)]),
-    trace: "Jester → a random ally (Squire)",
+    trace: "Jester → a random ally (Squire) → Strength 1",
   },
 };

@@ -18,6 +18,6 @@ export const oncePerTurn: ConditionWord<C> = {
   ru: () => "раз за ход",
   example: {
     input: example([plain("Archer", 9, 1), rule("Medic", 6, 1, { on: "Hurt", unit: "ally" }, { kind: "eventUnit" }, "Mend", { kind: "oncePerTurn" })], [plain("Brute", 9, 1), plain("Imp", 3, 1)]),
-    trace: "Medic (once per turn) → it (Archer)",
+    trace: "Medic (once per turn) → it (Archer) → heal 1",
   },
 };

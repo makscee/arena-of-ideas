@@ -16,6 +16,6 @@ export const enemiesAlive: ConditionWord<C> = {
   ru: (c, say) => `если врагов ${opRu(c.op)} ${c.n}`,
   example: {
     input: example([rule("Duelist", 6, 2, { on: "TurnStart" }, { kind: "holder" }, "Empower", { kind: "enemiesAlive", op: "<=", n: 1 })], [plain("Imp", 1, 1), plain("Brute", 9, 1)]),
-    trace: "Duelist (if at most 1 enemy stands) → self (Duelist)",
+    trace: "Duelist (if at most 1 enemy stands) → self (Duelist) → Strength 1",
   },
 };

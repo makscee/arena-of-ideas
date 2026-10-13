@@ -5,11 +5,21 @@ import type { AbilityRegistry, BattleInput, Condition, EventPattern, Selector, S
 
 export const EXAMPLE_STATUSES: StatusRegistry = {
   Strength: { name: "Strength", statMods: { pwr: 1 }, abilities: [] },
+  // a counter: no stat, no rule, just a number on the card
+  Ward: { name: "Ward", counter: true, abilities: [] },
 };
 
 export const EXAMPLE_ABILITIES: AbilityRegistry = {
   Empower: { name: "Empower", family: "Control", effects: [{ kind: "applyStatus", status: "Strength", stacks: { kind: "const", value: 1 } }] },
   Zap: { name: "Zap", family: "Strike", effects: [{ kind: "damage", amount: { kind: "const", value: 1 } }] },
+  Hit: { name: "Hit", family: "Strike", effects: [{ kind: "damage", amount: { kind: "stat", stat: "pwr", of: "holder" } }] },
+  Mirror: { name: "Mirror", family: "Control", effects: [{ kind: "applyStatus", status: "Strength", stacks: { kind: "stacksOf", status: "Strength", of: "target" } }] },
+  Brace: { name: "Brace", family: "Shield", effects: [{ kind: "applyStatus", status: "Ward", stacks: { kind: "count", fact: "hitsTaken" } }] },
+  BraceAll: { name: "BraceAll", family: "Shield", effects: [{ kind: "applyStatus", status: "Ward", stacks: { kind: "plus", a: { kind: "count", fact: "hitsTaken" }, b: { kind: "count", fact: "hitsTakenByAllies" } } }] },
+  Riposte: { name: "Riposte", family: "Strike", effects: [{ kind: "damage", amount: { kind: "statOf", stat: "pwr", of: "target" } }] },
+  Rage: { name: "Rage", family: "Strike", effects: [{ kind: "damage", amount: { kind: "missingHp" } }] },
+  HalfHit: { name: "HalfHit", family: "Strike", effects: [{ kind: "damage", amount: { kind: "half", of: { kind: "stat", stat: "pwr", of: "holder" } } }] },
+  DoubleHit: { name: "DoubleHit", family: "Strike", effects: [{ kind: "damage", amount: { kind: "twice", of: { kind: "stat", stat: "pwr", of: "holder" } } }] },
   Mend: { name: "Mend", family: "Heal", effects: [{ kind: "heal", amount: { kind: "const", value: 1 } }] },
 };
 

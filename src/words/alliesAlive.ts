@@ -16,6 +16,6 @@ export const alliesAlive: ConditionWord<C> = {
   ru: (c, say) => `если союзников ${opRu(c.op)} ${c.n}`,
   example: {
     input: example([plain("Squire", 1, 1), rule("Last Stand", 3, 1, { on: "Death", unit: "otherAlly" }, { kind: "holder" }, "Empower", { kind: "alliesAlive", op: "=", n: 1 })], [plain("Brute", 9, 2)]),
-    trace: "Last Stand (if exactly 1 ally stands) → self (Last Stand)",
+    trace: "Last Stand (if exactly 1 ally stands) → self (Last Stand) → Strength 1",
   },
 };
