@@ -410,8 +410,19 @@ function validateAbility(ab: unknown, registry: StatusRegistry, abilities: Abili
     issues.push({ path: `${path}.effects`, message: "an ability needs ≥1 effects" });
   } else {
     ab["effects"].forEach((e, i) => validateEffect(e, registry, abilities, owner, contexts, `${path}.effects[${i}]`, issues));
+    // Rules v2 guardrail (#1043 §3): a rule-modifying effect sits at the root
+    // tier of the chain order (units.ts), so it never listens to a chain link
+    // (shield gained, healed, power gained, status applied) and can't loop with chains.
+    const ruleMod = ab["effects"].some((e) => isObject(e) && oneOf(e["kind"], RULE_MOD_EFFECTS));
+    const linked = Array.isArray(ab["whens"]) && ab["whens"].some((w) => isObject(w) && isObject(w["on"]) && oneOf(w["on"]["on"], CHAIN_LINK_EVENTS));
+    if (ruleMod && linked) {
+      issues.push({ path: `${path}.whens`, message: `a rule-modifying effect (${list(RULE_MOD_EFFECTS)}) must trigger on a root event, not a chain link (${list(CHAIN_LINK_EVENTS)})` });
+    }
   }
 }
+
+const RULE_MOD_EFFECTS = ["copyRule", "actAgain", "remember", "performRemembered", "swapRules"] as const;
+const CHAIN_LINK_EVENTS = ["StatusApplied", "StatusRemoved", "Heal", "StatChanged"] as const;
 
 /** A condition: the v1 hp threshold, or a v2 word (src/words/) with its own
  * fields checked by hand; and / not nest. */

@@ -53,3 +53,12 @@ describe("conditions", () => {
     expect(describeCondition({ kind: "and", all: [{ kind: "turnAtLeast", n: 2 }, { kind: "not", cond: { kind: "onceHolder" } }] })).toBe("from turn 2 and unless once per battle");
   });
 });
+
+describe("guardrails", () => {
+  it("a rule-modifying effect can't listen to a chain link", () => {
+    const echo = { name: "Echo", base: { hp: 4, pwr: 1 }, triggers: [{ kind: "trigger" as const, on: { on: "Heal" as const, unit: "ally" as const } }], selectors: [{ kind: "eventUnit" as const }], abilities: ["Again"] };
+    const abilities = { Again: { name: "Again", family: "Arcane" as const, effects: [{ kind: "actAgain" as const }] } };
+    expect(() => assertValidContent([echo], {}, abilities, "team")).toThrow(/root event, not a chain link/);
+    expect(() => assertValidContent([{ ...echo, triggers: [{ kind: "trigger" as const, on: { on: "TurnEnd" as const } }] }], {}, abilities, "team")).not.toThrow();
+  });
+});
