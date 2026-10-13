@@ -93,7 +93,7 @@ describe("the attacker in the reader", () => {
     expect(r.state).toBe("pick-reading");
     expect(r.data.cantExpress).toBeUndefined();
     expect(store.wordRequests()).toEqual([
-      { ideaId: idea.ideaId, word: "the weakest enemy (read as random)", part: "a sniper that shoots the weakest enemy", createdAt: "2026-10-08T08:00:00.000Z" },
+      { source: "idea", ref: idea.ideaId, word: "the weakest enemy (read as random)", part: "a sniper that shoots the weakest enemy", createdAt: "2026-10-08T08:00:00.000Z" },
     ]);
   });
 
