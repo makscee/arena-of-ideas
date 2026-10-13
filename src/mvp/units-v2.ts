@@ -110,11 +110,13 @@ export const V2_STATUSES: StatusRegistry = {
 
 const pwrOfHolder = { kind: "stat" as const, stat: "pwr" as const, of: "holder" as const };
 
-/** The Tree Seed becomes: gives the ally behind it 1 power each turn (awoken: and shields its neighbours). */
+/** The Tree Seed becomes: gives the ally behind it 1 power each turn (awoken: and shields its neighbours).
+ * An awoken Seed's Tree keeps what awakening gave it (Seed's awoken knob), else the transform drops it. */
+const seedAwoken = () => V2_NUMBERS["Seed"]?.awoken ?? { pwr: 0, hp: 0 };
 const tree = (awoken: boolean) => ({
   name: "Tree",
   names: { ru: { name: "Дерево", acc: "Дерево" } },
-  base: { hp: 8, pwr: 0 },
+  base: awoken ? { hp: 8 + seedAwoken().hp, pwr: seedAwoken().pwr } : { hp: 8, pwr: 0 },
   triggers: [{ kind: "trigger" as const, on: { on: "TurnStart" as const } }],
   selectors: [{ kind: "allyBehind" as const }],
   abilities: ["Grow"],

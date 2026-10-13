@@ -24,6 +24,7 @@
 // docs/mvp/tune-v2.md and .json (each round's scores and moves, the final
 // meta verdict).
 
+import { spawn } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { DEFAULT_SEED, META_FULL, META_QUICK, metaHealth, type MetaResult } from "../src/mvp/meta.js";
 import { ROWS_V2, type V2Row } from "../src/mvp/units-v2.js";
@@ -35,12 +36,14 @@ const arg = (name: string, dflt: number) => {
   return i < 0 ? dflt : Number(process.argv[i + 1]);
 };
 const ROUNDS = arg("--rounds", 8);
+/** Quick meta checks per round, each on its own seed, run in parallel and averaged. */
+const SEEDS = arg("--seeds", 3);
 /** Inside the band: within this much of the pool's median field score. */
 const BAND = 0.08;
 /** Far out: HP moves by 2. */
 const FAR = 0.16;
-const PWR = { min: 1, max: 6 };
-const HP = { min: 3, max: 16 };
+const PWR = { min: 1, max: 8 };
+const HP = { min: 3, max: 24 };
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 const median = (xs: number[]) => {
@@ -48,6 +51,26 @@ const median = (xs: number[]) => {
   return s.length % 2 ? s[(s.length - 1) / 2]! : (s[s.length / 2 - 1]! + s[s.length / 2]!) / 2;
 };
 const scoresOf = (r: MetaResult) => new Map(r.found.map((f) => [f.unit, r.fieldOf(f.team)]));
+
+type Measured = { scores: Record<string, number>; margins: Record<string, number>; healthy: boolean };
+/** One quick meta check on `rs` and `seed`: each unit's best team's field
+ * score and what Awoken adds to it. */
+function measureOnce(rs: V2Row[], seed: number): Measured {
+  const r = metaHealth(contentOf(rs), seed, META_QUICK);
+  const m = marginsOf(rs, r);
+  return { scores: Object.fromEntries(scoresOf(r)), margins: Object.fromEntries([...m].map(([k, v]) => [k, v.score - v.sleeping])), healthy: r.healthy };
+}
+/** measureOnce in a child process, so a round's seeds run in parallel. */
+function measureChild(rs: V2Row[], seed: number): Promise<Measured> {
+  return new Promise((resolve, reject) => {
+    const c = spawn(process.execPath, [...process.execArgv, process.argv[1]!, "--measure", String(seed)], { stdio: ["pipe", "pipe", "inherit"] });
+    let out = "";
+    c.stdout.on("data", (b) => (out += b));
+    c.on("error", reject);
+    c.on("close", (code) => (code === 0 ? resolve(JSON.parse(out)) : reject(new Error(`measure ${seed} exited ${code}`))));
+    c.stdin.end(JSON.stringify(rs));
+  });
+}
 
 let rows: V2Row[] = ROWS_V2.map((r) => ({ ...r, awoken: r.awoken ?? { pwr: 0, hp: 0 } }));
 const t0 = Date.now();
@@ -73,21 +96,36 @@ const marginsOf = (rs: V2Row[], r: MetaResult) => {
   return new Map(r.found.map((f) => [f.unit, measureTeam(c, f.team, f.unit, r.teams, TUNE_DEFAULT)]));
 };
 
+if (process.argv.includes("--measure")) {
+  const seed = arg("--measure", DEFAULT_SEED);
+  const chunks: Buffer[] = [];
+  for await (const b of process.stdin) chunks.push(b as Buffer);
+  process.stdout.write(JSON.stringify(measureOnce(JSON.parse(Buffer.concat(chunks).toString()), seed)));
+  process.exit(0);
+}
+
 // Steadier than one step per quick meta: a unit whose last move went the
 // other way holds still one round (no oscillating), and the rows of the
 // round with the most units in band (then the smallest worst miss) are kept.
 let best: { rows: V2Row[]; inBand: number; worst: number; round: number } | null = null;
 const lastDir = new Map<string, number>();
 for (let round = 1; round <= ROUNDS; round++) {
-  const r = metaHealth(contentOf(rows), DEFAULT_SEED + round - 1, META_QUICK);
-  const scores = scoresOf(r);
+  const ms = await Promise.all(Array.from({ length: SEEDS }, (_, k) => measureChild(rows, DEFAULT_SEED + (round - 1) * SEEDS + k)));
+  const avgOf = (pick: (m: Measured) => Record<string, number>) => {
+    const sum = new Map<string, number[]>();
+    for (const m of ms) for (const [k, v] of Object.entries(pick(m))) sum.set(k, [...(sum.get(k) ?? []), v]);
+    return new Map([...sum].map(([k, vs]) => [k, vs.reduce((a, b) => a + b, 0) / vs.length]));
+  };
+  const scores = avgOf((m) => m.scores);
+  const r = { healthy: ms.filter((m) => m.healthy).length * 2 > ms.length };
   const mid = median([...scores.values()]);
   const offs = rows.map((row) => (scores.get(slugOf(row.name)) ?? mid) - mid);
   const inBand = offs.filter((o) => Math.abs(o) <= BAND).length;
   const worst = Math.max(...offs.map(Math.abs));
   if (!best || inBand > best.inBand || (inBand === best.inBand && worst < best.worst)) best = { rows: rows.map((x) => ({ ...x })), inBand, worst, round };
   // the awoken knob: units whose Awoken adds too little to their best team
-  const margins = marginsOf(rows, r);
+  const avgMargin = avgOf((m) => m.margins);
+  const margins = new Map([...avgMargin].map(([k, v]) => [k, { score: v, sleeping: 0 }]));
   const moves: string[] = [];
   rows = rows.map((row, i) => {
     const id = slugOf(row.name);
@@ -109,15 +147,15 @@ for (let round = 1; round <= ROUNDS; round++) {
     const far = Math.abs(off) > FAR;
     const hp = Math.max(HP.min, Math.min(HP.max, row.hp + d * (far ? 2 : 1)));
     // PWR is the coarse knob (one point moves a unit's every strike): it
-    // turns only when HP is at its bound.
-    const pwrMoves = row.pwr > 0 && hp === row.hp;
+    // turns when HP is at its bound, or with HP when the unit is far out.
+    const pwrMoves = row.pwr > 0 && (hp === row.hp || far);
     const pwr = pwrMoves ? Math.max(PWR.min, Math.min(PWR.max, row.pwr + d)) : row.pwr;
     if (hp === row.hp && pwr === row.pwr) return next;
     moves.push(`${row.name} ${pct(s)}: ${row.pwr}/${row.hp}→${pwr}/${hp}`);
     return { ...next, pwr, hp };
   });
   rounds.push({ round, median: +mid.toFixed(3), inBand, scores: Object.fromEntries([...scores].map(([k, v]) => [k, +v.toFixed(3)])), moves, healthy: r.healthy });
-  console.error(`round ${round}: median ${pct(mid)}, ${inBand}/20 in band, worst ${pct(worst)}, ${moves.length} moves, quick meta ${r.healthy ? "healthy" : "not healthy"}  ${((Date.now() - t0) / 1000).toFixed(0)}s`);
+  console.error(`round ${round} (${SEEDS} seeds): median ${pct(mid)}, ${inBand}/20 in band, worst ${pct(worst)}, ${moves.length} moves, quick meta ${r.healthy ? "healthy" : "not healthy"}  ${((Date.now() - t0) / 1000).toFixed(0)}s`);
   for (const m of moves) console.error(`  ${m}`);
   if (!moves.length) {
     best = { rows: rows.map((x) => ({ ...x })), inBand, worst, round };
@@ -174,7 +212,7 @@ writeFileSync(
   [
     "# Rules v2 pool tune",
     "",
-    `Generated by \`npm run mvp:tune-v2\` (scripts/tune-v2.ts): ${rounds.length} rounds of the quick meta check (kept round ${best!.round}), then the ${process.argv.includes("--quick") ? "quick" : "full"} one. ${report.seconds}s.`,
+    `Generated by \`npm run mvp:tune-v2\` (scripts/tune-v2.ts): ${rounds.length} rounds of ${SEEDS} quick meta checks each, averaged (kept round ${best!.round}), then the ${process.argv.includes("--quick") ? "quick" : "full"} one. ${report.seconds}s.`,
     "",
     `**Meta ${final.healthy ? "healthy" : "not healthy"}**: ${Object.values(final.checks).map((c) => `${c.rule} → ${c.value} ${c.pass ? "✅" : "❌"}`).join(" · ")}.`,
     "",
