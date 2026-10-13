@@ -68,6 +68,16 @@ export interface ForgeView {
   wished: boolean;
 }
 
+/** One fusable pair on a run's board, as the forge in the shop shows it
+ * (GET /runs/:id/forge). */
+export interface ForgeSlot extends ForgeView {
+  /** Board slots of the two units (the fuse's first and second). */
+  first: number;
+  second: number;
+  /** A ready pair this run holds: the three designs to claim from. */
+  candidates?: FusionDesign[];
+}
+
 /** The order-free key of a pair: "a+b" with the ids sorted. */
 export function pairKey(x: UnitId, y: UnitId): string {
   const [a, b] = sortPair(x, y);

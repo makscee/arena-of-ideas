@@ -12,7 +12,7 @@
 // with its state; for a ready pair the run holds, the three designs show, so
 // the claim is a choice. Elsewhere (GET /codex/:a/:b) they stay sealed.
 import { benchSizeOf, boardUnit, type Decision, type FuseContext, type LineUnit, type PlayerRef, type UnitId } from "../../../src/mvp/contract.js";
-import { canonicalDesign, claimCheck, forgeView, pairState, sortPair, type CodexClaim, type FusionDesign, type ForgeView } from "../../../src/mvp/codex.js";
+import { canonicalDesign, claimCheck, forgeView, pairState, sortPair, type CodexClaim, type ForgeSlot, type ForgeView } from "../../../src/mvp/codex.js";
 import { fuseCheck } from "../../../src/mvp/forms.js";
 import { MvpDecisionError } from "../../../src/mvp/errors.js";
 import { fightLines } from "../../../src/mvp/fight.js";
@@ -51,15 +51,6 @@ export function codexFuse(deps: RunDeps, run: MvpRunState, d: Decision): CodexFu
   const design = pair!.candidates[d.pick!]!;
   const claim: CodexClaim = { pick: d.pick!, by: run.player, at: deps.now().toISOString() };
   return { ctx: { name: design.name, discoveredBy: run.player, design }, claim: { a, b, claim } };
-}
-
-/** One fusable pair on a run's board, as the forge shows it. */
-export interface ForgeSlot extends ForgeView {
-  /** Board slots of the two units (the fuse's first and second). */
-  first: number;
-  second: number;
-  /** A ready pair this run holds: the three designs to claim from. */
-  candidates?: FusionDesign[];
 }
 
 /** Every pair the run can fuse now (two Awoken, neither fused), front first. */
