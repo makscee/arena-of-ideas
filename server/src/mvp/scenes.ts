@@ -130,7 +130,7 @@ const codex = (tab: Extract<SceneEntry, { screen: "codex" }>["tab"]) => async (r
 };
 /** Codex v2 (#1051): the screens over the design page's eight units, from
  * forgeFixture until the Codex data (#1049) serves the world's own. */
-const forge = (tab: "units" | "feed" | "words", unit?: string) => (rt: MvpRuntime): SceneBuilt => {
+const codexV2 = (tab: "units" | "feed" | "words", unit?: string) => (rt: MvpRuntime): SceneBuilt => {
   const player = fixturePlayer(rt);
   return { player, entry: { screen: "forge", tab, ...(unit ? { unit } : {}), view: forgeFixture(player.name) } };
 };
@@ -284,10 +284,10 @@ export const SCENES: Scene[] = [
   { id: "codex-keywords", group: "Codex", title: "Codex: keywords", look: "Terms and the units that use them", desktop: true, build: codex("keywords") },
   { id: "codex-champions", group: "Codex", title: "Codex: champions / stats", look: "Records and past champions", desktop: true, build: codex("champions") },
   { id: "codex-howto", group: "Codex", title: "Codex: how to play", look: "The rules page", desktop: true, build: codex("howto") },
-  { id: "codex-unit", group: "Codex v2 (#1051)", title: "A unit's Codex page", look: "Hourglass: its partners Discovered (credit), Ready to claim (sealed), Not forged yet (Wish, a pair waiting for a word)", desktop: true, build: forge("units", "hourglass") },
-  { id: "codex-unit-mine", group: "Codex v2 (#1051)", title: "A page with your own claim", look: "Raven: Grave Tree discovered by you; the unit picker", desktop: true, build: forge("units", "raven") },
-  { id: "codex-today", group: "Codex v2 (#1051)", title: "Today: the daily feed", look: "What tonight's batch brought, who claimed what, words found, by day", desktop: true, build: forge("feed") },
-  { id: "codex-dictionary", group: "Codex v2 (#1051)", title: "The Dictionary", look: "'N words forged, not yet found'; each found word with credit and lineage", desktop: true, build: forge("words") },
+  { id: "codex-unit", group: "Codex v2 (#1051)", title: "A unit's Codex page", look: "Hourglass: its partners Discovered (credit), Ready to claim (sealed), Not forged yet (Wish, a pair waiting for a word)", desktop: true, build: codexV2("units", "hourglass") },
+  { id: "codex-unit-mine", group: "Codex v2 (#1051)", title: "A page with your own claim", look: "Raven: Grave Tree discovered by you; the unit picker", desktop: true, build: codexV2("units", "raven") },
+  { id: "codex-today", group: "Codex v2 (#1051)", title: "Today: the daily feed", look: "What tonight's batch brought, who claimed what, words found, by day", desktop: true, build: codexV2("feed") },
+  { id: "codex-dictionary", group: "Codex v2 (#1051)", title: "The Dictionary", look: "'N words forged, not yet found'; each found word with credit and lineage", desktop: true, build: codexV2("words") },
   { id: "claim", group: "Codex v2 (#1051)", title: "The claim moment", look: "Three sealed cards turn over (lean A, lean B, the twist with a new word); tap one, then Claim", desktop: true, build: claim() },
   { id: "claim-done", group: "Codex v2 (#1051)", title: "Claimed: your name on it", look: "The picked design with 'Forged by @you', the other two sealed away", desktop: true, build: claim(2) },
   { id: "v2-hourglass", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Hourglass: a counter, then Archer acts again", look: "3.3 counter (Grains) and 3.5 actAgain: the grain count on the card, 'Hourglass: Archer acts again'", desktop: true, build: v2("hourglass") },
