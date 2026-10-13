@@ -5,6 +5,8 @@ import type { MvpContent, PlayerRef, UnitContent } from "../../../src/mvp/contra
 import { lineUnitOf } from "../../../src/mvp/forms.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
 import { createMvpApp } from "./app.js";
+import { playBotRun } from "./bots.js";
+import { botForge, codexForged } from "./codex.js";
 import { mvpContent } from "./content.js";
 import { decide, preview, startRun } from "./runs.js";
 import { mvpRuntime, type MvpDeps } from "./runtime.js";
@@ -187,6 +189,33 @@ describe("the forge in a run", () => {
     expect(done.run.line[0]!.name).toBe("Other");
     expect(done.run.line[0]!.fusion!.discoveredBy).toBeNull();
     expect(pairState(rt.store.codexPair(...([a!.id, b!.id].sort() as [string, string])))).toBe("ready");
+  });
+
+  it("has bots pick a ready pair's design by fighting each against ghosts: the most wins, the same pick every time", () => {
+    const rt = world();
+    const [a, b] = rt.content.units;
+    rt.store.putCodexPair(ready(rt.content, a!.id, b!.id));
+    // Ghosts to fight: other players' lines this round.
+    for (const [i, who] of [kim, maks].entries()) {
+      rt.store.addPlayer(who);
+      rt.store.addGhost({ ghostId: `g-${who.id}`, runId: `r-${who.id}`, player: who, round: 1, line: rt.content.units.slice(2 + i, 5 + i).map((u, k) => lineUnitOf(u, `${who.id}-g${k}`, 1, rt.rules)), contentVersion: rt.content.version, createdAt: "2026-10-13T00:00:00.000Z", rating: 1000 });
+    }
+    const run = holding(rt, botP);
+    const d = botForge(rt, run, { kind: "fuse", first: 0, second: 1 });
+    expect(d.pick).toBeGreaterThanOrEqual(0);
+    expect(d.pick).toBeLessThan(3);
+    expect(botForge(rt, run, { kind: "fuse", first: 0, second: 1 }).pick).toBe(d.pick);
+    // An unforged pair is never fused by a bot; a discovered one keeps its decision as is.
+    expect(codexForged(rt, run.line[0]!, run.line[1]!)).toBe(true);
+    const [c, e] = rt.content.units.slice(5, 7);
+    expect(codexForged(rt, lineUnitOf(c!, "x", 3, rt.rules), lineUnitOf(e!, "y", 3, rt.rules))).toBe(false);
+  });
+
+  it("plays a whole bot run with the Codex on: no fuse of an unforged pair is refused", () => {
+    const rt = world();
+    rt.store.addPlayer(botP);
+    const run = playBotRun(rt, botP);
+    expect(run.phase).toBe("over");
   });
 
   it("answers 404 for the Codex routes while it is off", async () => {
