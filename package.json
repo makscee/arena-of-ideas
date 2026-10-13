@@ -39,7 +39,6 @@
     "mvp:underlines": "node e2e/probe-underlines.mjs",
     "mvp:beats": "node e2e/beat-frames.mjs",
     "mvp:battle-layout": "node e2e/battle-layout.mjs",
-    "mvp:battle-ledger": "node e2e/battle-ledger.mjs",
     "mvp:now-sheet": "node e2e/probe-now-sheet.mjs",
     "mvp:cause": "node e2e/probe-cause.mjs",
     "mvp:fusion-names": "node --import tsx/esm e2e/mvp-fusion-names.ts",
