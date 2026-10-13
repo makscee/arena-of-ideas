@@ -150,7 +150,8 @@ export interface Naming {
 export interface Designer {
   readonly kind: string;
   design(a: Parent, b: Parent): Promise<DesignDraft[]>;
-  name(a: Parent, b: Parent, d: DesignDraft): Promise<Naming>;
+  /** `taken`: names the pair's earlier candidates got (each name is unique within the pair). */
+  name(a: Parent, b: Parent, d: DesignDraft, taken: string[]): Promise<Naming>;
 }
 
 // ---------- compile, check, tune ----------
@@ -403,9 +404,17 @@ export async function runBatch(list: ListedPair[], o: BatchOptions): Promise<Pai
 
 async function designPair(pair: ListedPair, a: Parent, b: Parent, o: BatchOptions): Promise<Candidate[]> {
   const drafts = (await o.designer.design(a, b)).slice(0, 3);
+  // named one after another, so the namer sees the names the pair already has
+  const namings: Naming[] = [];
+  for (const d of drafts) {
+    const taken = namings.map((n) => n.name.en);
+    let naming = await o.designer.name(a, b, d, taken).catch((): Naming => ({ name: { en: `${pair.a}·${pair.b} ${d.lean}`, ru: `${pair.a}·${pair.b} ${d.lean}` }, flavour: { en: "", ru: "" } }));
+    if (taken.includes(naming.name.en)) naming = { ...naming, name: { en: `${naming.name.en} ${d.lean}`, ru: `${naming.name.ru} ${d.lean}` } };
+    namings.push(naming);
+  }
   return Promise.all(
-    drafts.map(async (d): Promise<Candidate> => {
-      const naming = await o.designer.name(a, b, d).catch((): Naming => ({ name: { en: `${pair.a}·${pair.b} ${d.lean}`, ru: `${pair.a}·${pair.b} ${d.lean}` }, flavour: { en: "", ru: "" } }));
+    drafts.map(async (d, i): Promise<Candidate> => {
+      const naming = namings[i]!;
       const base = { pair: pair.key, lean: d.lean, intent: d.intent ?? "", name: naming.name, flavour: naming.flavour };
       const empty = { unit: { name: naming.name.en, base: { hp: a.def.base.hp + b.def.base.hp, pwr: a.def.base.pwr + b.def.base.pwr } }, abilities: {}, statuses: {}, text: { en: "", ru: "" }, check: null };
       if (d.wordRequest?.word) return { ...base, ...empty, state: "word", wordRequest: d.wordRequest, why: `waiting for a new word: ${d.wordRequest.word}` };

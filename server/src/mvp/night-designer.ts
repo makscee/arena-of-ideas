@@ -87,8 +87,9 @@ export const DESIGN_SCHEMA = {
 export const NAMER_SYSTEM =
   "You name fusions in Arena of Ideas, an auto-battler whose units are players' ideas. Give the new creature a short evocative name (one or two words, not the parents' names glued) and one line of flavour (under 90 characters), in English and in Russian. The Russian is written natively, not translated word for word.";
 
-export function namePrompt(a: Parent, b: Parent, d: DesignDraft): string {
-  return `Parents: ${a.emoji ?? ""} ${a.id} and ${b.emoji ?? ""} ${b.id}.\nThe fusion (${d.lean === "twist" ? "a third creature" : `leaning to ${d.lean === "A" ? a.id : b.id}`}): ${d.intent}`;
+export function namePrompt(a: Parent, b: Parent, d: DesignDraft, taken: string[] = []): string {
+  const not = taken.length ? `\nThis pair's other candidates are already named ${taken.map((n) => `"${n}"`).join(", ")}: give this one a different name.` : "";
+  return `Parents: ${a.emoji ?? ""} ${a.id} and ${b.emoji ?? ""} ${b.id}.\nThe fusion (${d.lean === "twist" ? "a third creature" : `leaning to ${d.lean === "A" ? a.id : b.id}`}): ${d.intent}${not}`;
 }
 
 const PAIR = { type: "object", properties: { en: { type: "string" }, ru: { type: "string" } }, required: ["en", "ru"] };
@@ -110,8 +111,8 @@ export function claudeDesigner(o: ClaudeDesignerOptions): Designer {
       if (!Array.isArray(out?.candidates)) throw new Error("claude -p gave no candidates");
       return (out.candidates as DesignDraft[]).filter((c) => c && LEANS.includes(c.lean) && c.rule && typeof c.rule === "object");
     },
-    async name(a, b, d) {
-      const out = (await callClaude({ model: o.namerModel, bin: o.bin, timeoutMs: o.timeoutMs }, NAMER_SYSTEM, namePrompt(a, b, d), NAME_SCHEMA)) as Naming;
+    async name(a, b, d, taken) {
+      const out = (await callClaude({ model: o.namerModel, bin: o.bin, timeoutMs: o.timeoutMs }, NAMER_SYSTEM, namePrompt(a, b, d, taken), NAME_SCHEMA)) as Naming;
       if (!out?.name?.en || !out?.name?.ru) throw new Error("claude -p gave no name");
       return out;
     },

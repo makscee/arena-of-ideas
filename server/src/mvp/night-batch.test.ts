@@ -5,7 +5,7 @@ import { Candle, FIXTURE_ABILITIES, FIXTURE_STATUSES, Gambler, Hourglass, Mirror
 import { plain, rule } from "../../../src/words/examples.js";
 import type { UnitDef } from "../../../src/types.js";
 import { BATCH_MAX, BATCH_MIN, compile, type DesignDraft, type Field, type Parent, pairKey, pickPairs, REDESIGN_AFTER_MS, runBatch } from "./night-batch.js";
-import { DESIGN_SCHEMA, DESIGNER_RULES, designerSystemPrompt, designPrompt, designerFromEnv, fakeDesigner } from "./night-designer.js";
+import { DESIGN_SCHEMA, DESIGNER_RULES, designerSystemPrompt, designPrompt, designerFromEnv, fakeDesigner, namePrompt } from "./night-designer.js";
 import { nightReport } from "./night-report.js";
 
 const DAY = 24 * 3600 * 1000;
@@ -62,6 +62,15 @@ describe("one pair through the batch", () => {
       }
     }
   });
+  it("names a pair's candidates one by one, each name unique within the pair", async () => {
+    const designer = fakeDesigner();
+    const seen: string[][] = [];
+    const same = { ...designer, name: async (a: Parent, b: Parent, d: DesignDraft, taken: string[]) => (seen.push(taken), { name: { en: "Echo", ru: "Эхо" }, flavour: { en: "", ru: "" } }) };
+    const list = pickPairs({ units, now, size: 1, small: true, requests: ["Hourglass+Mirror"] });
+    const [r] = await runBatch(list, { designer: same, field, parents: { Hourglass: parent(Hourglass), Mirror: parent(Mirror) } });
+    expect(seen).toEqual([[], ["Echo"], ["Echo", "Echo B"]]);
+    expect(r!.candidates.map((c) => c.name.en)).toEqual(["Echo", "Echo B", "Echo twist"]);
+  });
   it("stores a design that needs a missing word as a word request, not a bent rule", async () => {
     const designer = fakeDesigner();
     const wordy = { ...designer, design: async (a: Parent, b: Parent) => (await designer.design(a, b)).map((d, i) => (i === 2 ? { ...d, wordRequest: { word: "steal", meaning: "take a stat from the target" } } : d)) };
@@ -73,7 +82,7 @@ describe("one pair through the batch", () => {
     expect(twist.why).toMatch(/waiting for a new word: steal/);
   });
   it("rejects a rule the engine can't validate", () => {
-    const d: DesignDraft = { lean: "A", intent: "nonsense", rule: { triggers: [{ kind: "trigger", on: "TurnStart" }], selectors: [{ kind: "frontEnemy" }], abilities: ["NoSuch"] }, abilities: {} };
+    const d: DesignDraft = { lean: "A", intent: "nonsense", rule: { triggers: [{ kind: "trigger", on: { on: "TurnStart" } }], selectors: [{ kind: "frontEnemy" }], abilities: ["NoSuch"] }, abilities: {} };
     const c = compile(d, parent(Hourglass), parent(Mirror), "X", new Set());
     expect("issues" in c && c.issues.length > 0).toBe(true);
   });
@@ -92,6 +101,8 @@ describe("the designer", () => {
     expect(sys).toContain("Grave Tree");
     expect(sys).toContain("export interface UnitDef");
     expect(designPrompt(parent(Hourglass), parent(Mirror))).toMatch(/<parentA id="Hourglass">.*<parentB id="Mirror">/s);
+    const d: DesignDraft = { lean: "twist", intent: "x", rule: {}, abilities: {} };
+    expect(namePrompt(parent(Hourglass), parent(Mirror), d, ["Echo Glass"])).toContain('already named "Echo Glass"');
     expect((DESIGN_SCHEMA.properties.candidates.items.properties.lean as { enum: string[] }).enum).toEqual(["A", "B", "twist"]);
   });
   it("is the fake unless ARENA_NIGHT_DESIGNER=claude", () => {
