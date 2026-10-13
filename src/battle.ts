@@ -74,6 +74,8 @@ interface UnitState {
   revived?: boolean;
   /** Hurt events it has taken this battle (rules v2 §3.3, count hitsTaken). */
   hits?: number;
+  /** Transformed already this battle (rules v2 §3.6: once per battle). */
+  transformed?: boolean;
   /** Rules it remembered (rules v2 §3.5), oldest first, with whose they were. */
   remembered?: { from: string; rule: Reaction[] }[];
 }
@@ -226,6 +228,7 @@ class Engine {
 
       const te = this.propose({ type: "TurnEnd" }, null, "kernel");
       this.settle();
+      if (te) this.runDelays(te);
       if (te && this.turn >= FATIGUE_START && this.bothAlive()) {
         const amount = fatigueAmount(this.turn, this.suddenDeathAt);
         this.propose({ type: "Fatigue", amount, ...(this.suddenDeath() ? { suddenDeath: true as const } : {}) }, te.id, "kernel");
@@ -746,6 +749,24 @@ class Engine {
     return { ref: does[0]!.ref, holder: holder.id, ability: first, does, event, again: true };
   }
 
+  /** Delayed effects (rules v2 §3.6), in the order they were set. */
+  private delays: { at: number; effect: Effect; target: string; holder: string; ref: AbilityRef; cause: number }[] = [];
+
+  /** At turn end, run the delays that come due this turn, in the order set. */
+  private runDelays(te: BattleEvent): void {
+    const due = this.delays.filter((d) => d.at <= this.turn);
+    if (due.length === 0) return;
+    this.delays = this.delays.filter((d) => d.at > this.turn);
+    for (const d of due) {
+      const holder = this.units.get(d.holder);
+      const target = this.units.get(d.target);
+      if (!holder || !target) continue;
+      const f: Firing = { ref: d.ref, holder: holder.id, ability: holder.abilities[0] ?? { triggers: [], selectors: [], effects: [] }, does: [], event: te };
+      this.runEffect(d.effect, target, holder, f);
+      this.settle();
+    }
+  }
+
   /** actAgain: at most once per event per target (§3.4 guardrails). */
   private actedAgain = new Set<string>();
 
@@ -790,6 +811,46 @@ class Engine {
           return [fr];
         });
         this.queue.unshift(...firings);
+        return;
+      }
+      case "delay": {
+        const at = this.turn + Math.max(0, e.turns);
+        this.delays.push({ at, effect: e.effect, target: target.id, holder: holder.id, ref: f.ref, cause: f.event.id });
+        this.applyEvent({ type: "Delayed", unit: target.id, by: f.ref, at }, f.event.id, f.ref);
+        return;
+      }
+      case "transform": {
+        if (!target.alive || target.transformed) return;
+        const frac = this.effStat(target, "hp") > 0 ? Math.max(0, this.curHp(target)) / this.effStat(target, "hp") : 1;
+        const into = this.makeUnit(e.into, target.side, target.id);
+        target.name = into.name;
+        target.base = into.base;
+        target.abilities = into.abilities;
+        target.transformed = true;
+        target.damage = Math.max(0, this.effStat(target, "hp") - Math.max(1, Math.round(this.effStat(target, "hp") * frac)));
+        this.applyEvent({ type: "Transformed", unit: target.id, name: into.name, hp: this.curHp(target), pwr: this.effStat(target, "pwr") }, f.event.id, f.ref);
+        return;
+      }
+      case "summonWithRule": {
+        const side = holder.side;
+        if (this.suddenDeath()) {
+          this.applyEvent({ type: "SummonFailed", name: e.unit.name, side, reason: "suddenDeath" }, f.event.id, f.ref);
+          return;
+        }
+        if (this.lines[side].length >= this.lineCap) {
+          this.applyEvent({ type: "NoRoom", unit: f.ref.unit, side, name: e.unit.name }, f.event.id, f.ref);
+          return;
+        }
+        const id = `${side}+${++this.summonCounter}:${e.unit.name}`;
+        const u = this.makeUnit(e.unit, side, id);
+        u.abilities = [...target.abilities];
+        const slot = !target.alive && target.side === side && target.fellAt !== undefined ? Math.min(target.fellAt, this.lines[side].length) : undefined;
+        this.propose(
+          { type: "Summon", unit: id, name: u.name, side, hp: u.base.hp, pwr: u.base.pwr, ...(slot === undefined ? { front: true as const } : { slot }) },
+          f.event.id,
+          f.ref,
+          { summon: u },
+        );
         return;
       }
       default:
@@ -947,8 +1008,10 @@ class Engine {
           } else line.push(u.id);
         } else if (pending?.summon) {
           this.units.set(pending.summon.id, pending.summon);
-          // a summon enters at the front so it acts at once; the newest summon is the front
-          this.lines[pending.summon.side].unshift(pending.summon.id);
+          // a summon enters at the front so it acts at once; the newest summon is the front.
+          // A rules-v2 summonWithRule may name a slot instead (§3.6).
+          if (ev.slot !== undefined) this.lines[pending.summon.side].splice(ev.slot, 0, pending.summon.id);
+          else this.lines[pending.summon.side].unshift(pending.summon.id);
         }
         return;
       }

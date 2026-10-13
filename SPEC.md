@@ -273,3 +273,11 @@ Trigger-context effects; each logs a `RuleMod {unit, op, other}` event (caused b
 - `actAgain` — the target's rule fires now, on the event the firing reacted to, as if its trigger had fired.
 
 **actAgain and the once-per-chain law (#1030).** A firing put on the queue by `actAgain` or `performRemembered` goes to the front of the queue and is an *again-firing*: the once-per-chain law neither blocks it nor counts it, so the unit's own reaction in that chain still happens (Hourglass's "acts again" is an extra action, not a replacement). Three things keep it bounded: it is a step against the chain cap (§5, `ChainCapped`); a unit acts again at most once per event (a second `actAgain` on the same target for the same event does nothing); and the no-self law still applies to it.
+
+### 11.6 Timing and forms
+- `delay {turns, effect}` — the effect lands on the target at the end of turn *now + turns*, after that TurnEnd's chain settles and before Fatigue, in the order the delays were set. A `Delayed {unit, by, at}` event logs it when set. (Kernel state, not a visible status: the "hidden counter" of the design.)
+- `transform {into}` — the target becomes `into` in place (same id and slot): its name, base stats and rule are the new unit's, its statuses stay, and its HP carries over proportionally (rounded, at least 1). Once per battle per unit. A `Transformed {unit, name, hp, pwr}` event logs it.
+- `summonWithRule {unit}` — a summon that carries the target's rule (its own stats). When the target is a fallen ally it enters at the slot where the target fell (the `Summon` event says `slot`); otherwise at the front, as `summon`.
+
+### 11.7 Guardrails, as built
+Seeded and deterministic: `flip` and `randomAlly` are draws from the battle seed. `actAgain`/`performRemembered` firings are steps against the chain cap. A redirect applies once per event; a transform once per battle per unit. Still open for the next attempt: rule-modifying effects at the root tier of the chain order, and the §4 units and §5 fusions as fixtures.

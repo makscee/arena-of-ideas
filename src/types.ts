@@ -213,7 +213,13 @@ export type EffectV2 =
   // the holder performs its remembered rules: the oldest once (then forgets it), or all (kept)
   | { kind: "performRemembered"; mode: "once" | "all" }
   // the holder and the target trade rules
-  | { kind: "swapRules" };
+  | { kind: "swapRules" }
+  // timing and forms (§3.6): the effect runs on the target at the end of the turn `turns` turns from now
+  | { kind: "delay"; turns: number; effect: Effect }
+  // the target becomes another unit in place; HP carries over proportionally; once per battle
+  | { kind: "transform"; into: UnitDef }
+  // summon `unit` carrying the target's rule, at the target's slot when it has fallen (else the front)
+  | { kind: "summonWithRule"; unit: UnitDef };
 
 export type EffectV1 =
   // trigger-context atoms
@@ -321,6 +327,10 @@ export type EventBody =
   | { type: "Redirected"; by: AbilityRef; original: string; from: string; to: string }
   // A rule-modifying effect (rules v2, §3.5) acted: `unit` is the holder, `other` the unit whose rule it took, ran or traded.
   | { type: "RuleMod"; unit: string; op: "copyRule" | "actAgain" | "remember" | "performRemembered" | "swapRules"; other?: string }
+  // A delay (rules v2, §3.6) was set on `unit`: its effect lands at the end of turn `at`.
+  | { type: "Delayed"; unit: string; by: AbilityRef; at: number }
+  // A transform (rules v2, §3.6): `unit` is now `name` with these stats.
+  | { type: "Transformed"; unit: string; name: string; hp: number; pwr: number }
   // timeUp: the turn cap ran out with both sides standing (a draw); absent otherwise.
   | { type: "BattleEnd"; winner: Side | "draw"; turns: number; timeUp?: true };
 

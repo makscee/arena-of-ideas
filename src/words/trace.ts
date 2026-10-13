@@ -14,7 +14,7 @@ function defOf(input: BattleInput, id: string): UnitDef | undefined {
 }
 
 export function traceLines(input: BattleInput, log: readonly BattleEvent[]): string[] {
-  const name = (id: string) => id.replace(/^[AB]\d+:/, "");
+  const name = (id: string) => id.replace(/^[AB]\+?\d+:/, "");
   const out: string[] = [];
   const firings = new Map<string, { line: number; holder: string; def: UnitDef; targets: string[]; did: string[] }>();
   for (const e of log) {
@@ -26,6 +26,21 @@ export function traceLines(input: BattleInput, log: readonly BattleEvent[]): str
       const what = e.original === "Hurt" ? "the hit" : e.original === "Strike" ? "the strike" : e.original === "StatusApplied" ? "the status" : "the heal";
       out.push(`${name(e.by.unit)} intercepts: ${what} on ${name(e.from)} lands on ${name(e.to)}`);
       continue;
+    }
+    if (e.type === "Delayed") {
+      out.push(`${name(e.by.unit)} sets a delay on ${name(e.unit)}: lands at the end of turn ${e.at}`);
+      continue;
+    }
+    if (e.type === "Transformed") {
+      out.push(`${name(e.unit)} becomes ${e.name} (${e.pwr}/${e.hp})`);
+      continue;
+    }
+    if (e.type === "Summon" && e.source !== "kernel" && e.source.status === undefined) {
+      const fallen = log.find((x) => x.id === e.causedBy);
+      if (fallen?.type === "Death" && defOf(input, e.source.unit)?.abilities?.some((id) => input.abilities?.[id]?.effects.some((x) => x.kind === "summonWithRule"))) {
+        out.push(`${name(e.source.unit)} grows ${e.name} with the rule of ${name(fallen.unit)}`);
+        continue;
+      }
     }
     if (e.type === "RuleMod") {
       const o = name(e.other ?? "");

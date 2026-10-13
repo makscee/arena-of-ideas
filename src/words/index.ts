@@ -29,6 +29,9 @@ import { statOf } from "./statOf.js";
 import { twice } from "./twice.js";
 import { actAgain } from "./actAgain.js";
 import { copyRule } from "./copyRule.js";
+import { delay } from "./delay.js";
+import { summonWithRule } from "./summonWithRule.js";
+import { transform } from "./transform.js";
 import { performRemembered } from "./performRemembered.js";
 import { preventDeath } from "./preventDeath.js";
 import { remember } from "./remember.js";
@@ -53,7 +56,7 @@ export const AMOUNT_WORDS: Record<AmountV2["kind"], AmountWord> = {
 };
 
 export const EFFECT_WORDS: Record<EffectV2["kind"], EffectWord> = {
-  redirect, preventDeath, replaceAmount, copyRule, actAgain, remember, performRemembered, swapRules,
+  redirect, preventDeath, replaceAmount, copyRule, actAgain, remember, performRemembered, swapRules, delay, transform, summonWithRule,
 };
 
 export const effectWord = (kind: string): EffectWord | undefined => (EFFECT_WORDS as Record<string, EffectWord>)[kind];

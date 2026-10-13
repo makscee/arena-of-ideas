@@ -520,6 +520,16 @@ function validateEffect(e: unknown, registry: StatusRegistry, abilities: Ability
       return;
     case "replaceAmount":
       return validateAmount(e["amount"], owner, `${path}.amount`, issues);
+    case "delay":
+      if (!Number.isInteger(e["turns"]) || (e["turns"] as number) < 1) issues.push({ path: `${path}.turns`, message: "turns must be an integer ≥ 1" });
+      return validateEffect(e["effect"], registry, abilities, owner, new Set(["trigger"]), `${path}.effect`, issues);
+    case "transform":
+    case "summonWithRule": {
+      const k = kind === "transform" ? "into" : "unit";
+      const u = e[k];
+      if (!isObject(u) || typeof u["name"] !== "string" || !isObject(u["base"])) issues.push({ path: `${path}.${k}`, message: `${kind} needs a unit with a name and base stats` });
+      return;
+    }
     case "performRemembered":
       if (!oneOf(e["mode"], ["once", "all"] as const)) issues.push({ path: `${path}.mode`, message: "mode must be once or all" });
       return;
