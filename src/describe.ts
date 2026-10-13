@@ -344,7 +344,7 @@ export function describeEffectSegments(
   // A v2 effect says itself through its word (src/words/).
   if (e.kind === "macro") return [{ text: (macro(e.name)?.en ?? e.name).replace("{target}", joinSegments(tgt)), partRef: ref }];
   const word = effectWord(e.kind);
-  if (word) return [{ text: word.en(e, { amount: (a) => describeAmount(a), who: (s) => describeSelector(s, opts) }, joinSegments(tgt)), partRef: ref }];
+  if (word) return [{ text: word.en(e, { amount: (a) => describeAmount(a), who: (s) => describeSelector(s, opts), effect: (x) => joinSegments(describeEffectSegments(x, tgt, opts)) }, joinSegments(tgt)), partRef: ref }];
   if (isV2Effect(e)) return [];
   const e0 = (text: string): DescribeSegment => ({ text, partRef: ref });
   // A highlighted effect run: the Part ref plus the effect's term.

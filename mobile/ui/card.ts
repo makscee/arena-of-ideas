@@ -205,12 +205,12 @@ export function iconKey(form: UnitForm | undefined): HTMLElement | null {
 /** A form as one line of text: its authored text, else described from the
  * content's abilities (When → Who → Does, each Does in order). */
 export function formText(form: UnitForm, content: MvpContent): string {
-  return sharedFormText(form, content.abilities, rulesLangOpt());
+  return sharedFormText(form, content.abilities, rulesLangOpt(), content.statuses);
 }
 
 /** A form as highlighted text (R2-8): its terms tinted, iconed and tappable. */
 export function formRich(form: UnitForm, content: MvpContent): Node[] {
-  return richText(formSegments(form, content.abilities, rulesLangOpt()));
+  return richText(formSegments(form, content.abilities, rulesLangOpt(), content.statuses));
 }
 
 /** Everything about one unit: exact numbers and the form it has now. A
@@ -271,8 +271,8 @@ export function unitSheet(
   }
   if (sleeping && c && now) {
     const left = Math.max(1, MVP_RULES.copiesToAwaken - copies);
-    const sleepPieces = formSegments(now, content.abilities, rulesLangOpt());
-    const awokePieces = formSegments(c.forms.awoken, content.abilities, rulesLangOpt());
+    const sleepPieces = formSegments(now, content.abilities, rulesLangOpt(), content.statuses);
+    const awokePieces = formSegments(c.forms.awoken, content.abilities, rulesLangOpt(), content.statuses);
     // Short enough for one line in the 1024px inspector (R2-17).
     const see = opts.candidate ? t("card.seeAwoken") : t("card.awokenIn", { n: left });
     const back = t("card.backToSleeping");
