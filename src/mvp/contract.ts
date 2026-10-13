@@ -230,6 +230,9 @@ export interface UnitContent {
   archetype: string;
   tier: Tier;
   base: Stats;
+  /** Rules v2 (#1046): PWR and HP the unit gains when it awakens, on top of
+   * the copies' growth (the tune's awoken knob; absent means none). */
+  awokenBonus?: Stats;
   forms: Record<FormKey, UnitForm>;
   /** M4-4, GET /content only: the name and line (`archetype`) in Russian,
    * when the unit has been translated. Never part of the version. */

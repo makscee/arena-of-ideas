@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 import { contentOf } from "../../server/src/mvp/content.js";
-import { contentFormProblems, lineUnitOf } from "./forms.js";
+import { addCopy, contentFormProblems, lineUnitOf } from "./forms.js";
 import { fightLines, toBattleDef } from "./fight.js";
 import { MVP_RULES } from "./contract.js";
 import { ROWS_V2 } from "./units-v2.js";
@@ -13,6 +13,16 @@ import { formSegments } from "./form-text.js";
 const content = contentOf(ROWS_V2);
 
 describe("rules v2 pool", () => {
+  it("a unit gains its awoken bonus (the tune's awoken knob) when it awakens, merged or bought awake", () => {
+    const u = { ...content.units[0]!, base: { pwr: 1, hp: 4 }, awokenBonus: { pwr: 1, hp: 2 } };
+    const c = { ...content, units: [u, ...content.units.slice(1)] };
+    const g = MVP_RULES.copyGrowth;
+    const n = MVP_RULES.copiesToAwaken;
+    expect(lineUnitOf(u, "a", n - 1).stats).toEqual({ pwr: 1 + (n - 2) * g.pwr, hp: 4 + (n - 2) * g.hp });
+    expect(lineUnitOf(u, "a", n).stats).toEqual({ pwr: 2 + (n - 1) * g.pwr, hp: 6 + (n - 1) * g.hp });
+    expect(addCopy(lineUnitOf(u, "a", n - 1), c).stats).toEqual(lineUnitOf(u, "a", n).stats);
+  });
+
   it("the eight §4 units build into content with no form problems", () => {
     expect(content.units.map((u) => u.name).slice(0, 8)).toEqual(["Hourglass", "Mirror", "Candle", "Gambler", "Nautilus", "Magnet", "Raven", "Seed"]);
     expect(content.units).toHaveLength(20);

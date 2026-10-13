@@ -1,7 +1,7 @@
 // PWR and HP of the rules v2 pool, written by `npm run mvp:tune-v2`
 // (scripts/tune-v2.ts): the numbers come from the tune, never from the
 // designer. A unit missing here keeps its row's placeholder numbers.
-export const V2_NUMBERS: Record<string, { pwr: number; hp: number }> = {
+export const V2_NUMBERS: Record<string, { pwr: number; hp: number; awoken?: { pwr: number; hp: number } }> = {
   "Hourglass": { pwr: 1, hp: 4 },
   "Mirror": { pwr: 2, hp: 16 },
   "Candle": { pwr: 6, hp: 16 },
