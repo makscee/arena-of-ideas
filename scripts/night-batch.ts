@@ -1,7 +1,12 @@
 // One night batch run (makscee/void-board#1050): tonight's list, the designs,
 // the checks, the stored candidates and a report page.
 //
-//   npm run mvp:night -- --pairs 5 --out /tmp/night [--report ~/reports/arena-night.html]
+//   npm run mvp:night -- --pairs 5 --out /tmp/night [--report ~/reports/arena-night.html] [--db data/workshop.db]
+//
+// With --db (or MVP_DB): the world's wishes weight tonight's list, its Codex
+// pairs are the history, and the candidates land in the Codex tables (ready
+// to claim) and the word queue (server/src/mvp/night-codex.ts). Pairs are
+// keyed by the pool's unit ids (slug: "hourglass+mirror").
 //
 // ARENA_NIGHT_DESIGNER=claude uses Opus and Sonnet (`claude -p`); the default
 // fake designer never calls a model. Until unit batch 1 (#1046) is in the
@@ -17,6 +22,9 @@ import { plain, rule } from "../src/words/examples.js";
 import { type Field, type Parent, pickPairs, runBatch } from "../server/src/mvp/night-batch.js";
 import { designerFromEnv } from "../server/src/mvp/night-designer.js";
 import { nightReport } from "../server/src/mvp/night-report.js";
+import { listInputFrom, storeNight } from "../server/src/mvp/night-codex.js";
+import { SqliteMvpStore } from "../server/src/mvp/sqlite-store.js";
+import { slug } from "../src/mvp/units.js";
 
 const arg = (name: string, dflt?: string): string | undefined => {
   const i = process.argv.indexOf(`--${name}`);
@@ -69,9 +77,12 @@ const day = arg("day", new Date().toISOString().slice(0, 10))!;
 const pairs = Number(arg("pairs", "5"));
 const designer = designerFromEnv();
 const now = Date.now();
-const list = pickPairs({ units: UNITS.map((u, i) => ({ id: u.name, addedAt: now - i * 3600_000 })), now, size: pairs, small: pairs < 50 });
-const parents = Object.fromEntries(UNITS.map((u) => [u.name, parentOf(u)]));
-console.log(`night batch ${day}: ${list.length} pairs, designer ${designer.kind}`);
+const dbPath = arg("db", process.env.MVP_DB);
+const store = dbPath ? new SqliteMvpStore(dbPath) : undefined;
+const units = UNITS.map((u, i) => ({ id: slug(u.name), addedAt: now - i * 3600_000 }));
+const list = pickPairs({ units, now, size: pairs, small: pairs < 50, ...(store ? listInputFrom(store, units, now) : {}) });
+const parents = Object.fromEntries(UNITS.map((u) => [slug(u.name), parentOf(u)]));
+console.log(`night batch ${day}: ${list.length} pairs (${list.map((p) => `${p.key} ${p.why}`).join(", ")}), designer ${designer.kind}${dbPath ? `, world ${dbPath}` : ""}`);
 const started = Date.now();
 const results = await runBatch(list, { designer, field: trialField(), parents, parallel: Number(arg("parallel", "5")), log: (l) => console.log(`  ${l}`) });
 const batch = { day, designer: designer.kind, ranAt: new Date().toISOString(), seconds: Math.round((Date.now() - started) / 1000), parents: Object.fromEntries(Object.entries(parents).map(([k, p]) => [k, p.emoji ? { emoji: p.emoji } : {}])), results };
@@ -79,6 +90,10 @@ mkdirSync(out, { recursive: true });
 writeFileSync(join(out, `night-${day}.json`), JSON.stringify(batch, null, 1));
 const report = arg("report", join(out, `night-${day}.html`))!;
 writeFileSync(report, nightReport(batch));
+if (store) {
+  const stored = storeNight(store, results, new Date(), (a, b) => `${parents[a]?.emoji ?? ""}${parents[b]?.emoji ?? ""}` || undefined);
+  console.log(`codex: ${stored.ready.length} pairs ready to claim (${stored.ready.join(", ")}), ${stored.claimed.length} already claimed and left alone, ${stored.words} word requests queued`);
+}
 const all = results.flatMap((r) => r.candidates);
 console.log(`stored ${all.filter((c) => c.state === "ready").length} ready, ${all.filter((c) => c.state === "word").length} waiting for a word, ${all.filter((c) => c.state === "rejected").length} rejected, ${results.filter((r) => r.error).length} pairs failed; ${batch.seconds}s`);
 console.log(`json ${join(out, `night-${day}.json`)}\nreport ${report}`);

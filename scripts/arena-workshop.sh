@@ -16,7 +16,9 @@
 # client built for /arena-workshop/) under launchd ru.makscee.arena-workshop on
 # :8794, with MVP_DEV=1 (End day now, fake votes), MVP_INVITES=1 and MVP_OPEN=0
 # (invite links only), ARENA_TUNER=instant and a fake idea reader, on
-# ~/arena-workshop/data/workshop.db. The world persists across commits (the
+# ~/arena-workshop/data/workshop.db, with the Codex on (ARENA_CODEX=1: the
+# forge, wishes, the night batch's candidates; scripts/arena-night.sh runs
+# the batch nightly). The world persists across commits (the
 # server migrates it at start); --fresh is for a commit whose migration can't.
 # Never the live game's database, never the public domain: tailnet only.
 set -euo pipefail
@@ -83,6 +85,7 @@ cat > "$PLIST" <<PL
     <key>MVP_ROTATION</key><string>0</string>
     <key>ARENA_TUNER</key><string>instant</string>
     <key>ARENA_IDEA_READER</key><string>fake</string>
+    <key>ARENA_CODEX</key><string>1</string>
     <key>MVP_DB</key><string>$DB</string>
     <key>MVP_BUILD</key><string>$BUILD (workshop)</string>
   </dict>
