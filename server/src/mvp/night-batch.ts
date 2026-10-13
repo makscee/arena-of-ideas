@@ -205,16 +205,13 @@ export interface Candidate {
   wordRequest?: { word: string; meaning: string };
 }
 
-/** The draft's ids, renamed where they clash with the parents' or the
- * field's (name = key, as the validator wants). Each candidate fights with its
- * own registry, so two pairs' "Echo" never meet. */
+/** The draft's own ids (name = key, as the validator wants). An id the
+ * parents or the field already have (Shield, Strength) is the registry's: the
+ * draft's redeclaration is dropped, so no "Shield2" reaches the card. Each
+ * candidate fights with its own registry, so two pairs' "Echo" never meet. */
 function owned(d: DesignDraft, taken: Set<string>): { rule: DesignDraft["rule"]; abilities: AbilityRegistry; statuses: StatusRegistry } {
-  const fresh = (id: string): string => {
-    if (!taken.has(id)) return id;
-    for (let n = 2; ; n++) if (!taken.has(`${id}${n}`)) return `${id}${n}`;
-  };
-  const aMap = new Map(Object.keys(d.abilities ?? {}).map((id) => [id, fresh(id)]));
-  const sMap = new Map(Object.keys(d.statuses ?? {}).map((id) => [id, fresh(id)]));
+  const aMap = new Map(Object.keys(d.abilities ?? {}).map((id) => [id, id]));
+  const sMap = new Map(Object.keys(d.statuses ?? {}).map((id) => [id, id]));
   const walk = (x: unknown): unknown => {
     if (Array.isArray(x)) return x.map(walk);
     if (x && typeof x === "object") {
@@ -229,9 +226,9 @@ function owned(d: DesignDraft, taken: Set<string>): { rule: DesignDraft["rule"];
     return x;
   };
   const abilities: AbilityRegistry = {};
-  for (const [id, def] of Object.entries(d.abilities ?? {})) abilities[aMap.get(id)!] = { ...(walk(def) as AbilityDef), name: aMap.get(id)! };
+  for (const [id, def] of Object.entries(d.abilities ?? {})) if (!taken.has(id)) abilities[id] = { ...(walk(def) as AbilityDef), name: id };
   const statuses: StatusRegistry = {};
-  for (const [id, def] of Object.entries(d.statuses ?? {})) statuses[sMap.get(id)!] = { ...(walk(def) as StatusDef), name: sMap.get(id)! };
+  for (const [id, def] of Object.entries(d.statuses ?? {})) if (!taken.has(id)) statuses[id] = { ...(walk(def) as StatusDef), name: id };
   return { rule: walk(d.rule) as DesignDraft["rule"], abilities, statuses };
 }
 

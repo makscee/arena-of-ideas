@@ -87,6 +87,16 @@ describe("one pair through the batch", () => {
     const c = compile(d, parent(Hourglass), parent(Mirror), "X", new Set());
     expect("issues" in c && c.issues.length > 0).toBe(true);
   });
+  it("keeps the registry's Shield when a design redeclares it, so no Shield2 reaches the card", () => {
+    const d: DesignDraft = { lean: "A", intent: "shield", rule: { triggers: [{ kind: "trigger", on: { on: "TurnStart" } }], selectors: [{ kind: "holder" }], abilities: ["Harden"] }, abilities: { Harden: { name: "Harden", family: "Shield", effects: [{ kind: "applyStatus", status: "Shield", stacks: { kind: "const", value: 2 } }] } }, statuses: { Shield: { name: "Shield", stacks: true } as never } };
+    const c = compile(d, parent(Nautilus), parent(Mirror), "X", new Set(Object.keys(FIXTURE_STATUSES)));
+    expect("ok" in c).toBe(true);
+    if ("ok" in c) {
+      expect(c.ok.statuses.Shield).toBe(FIXTURE_STATUSES.Shield);
+      expect(Object.keys(c.ok.statuses)).not.toContain("Shield2");
+      expect([...c.own]).toEqual(["Harden"]);
+    }
+  });
   it("names a missing parent as the pair's error", async () => {
     const list = pickPairs({ units, now, size: 1, small: true, requests: ["Seed+Raven"] });
     const [r] = await runBatch(list, { designer: fakeDesigner(), field, parents: {} });
