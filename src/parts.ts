@@ -24,9 +24,11 @@ import {
 } from "./describe.js";
 import type {
   Condition,
+  ConditionV1,
   Effect,
   EventPattern,
   Selector,
+  SelectorV1,
   UnitDef,
   When,
 } from "./types.js";
@@ -65,7 +67,7 @@ const EFFECT_SAMPLES: Record<Effect["kind"], Effect> = {
 };
 
 /** Every Selector kind → a representative atom. Key set = Selector["kind"]. */
-const SELECTOR_SAMPLES: Record<Selector["kind"], Selector> = {
+const SELECTOR_SAMPLES: Record<SelectorV1["kind"], Selector> = {
   holder: { kind: "holder" },
   eventUnit: { kind: "eventUnit" },
   attacker: { kind: "attacker" },
@@ -77,7 +79,7 @@ const SELECTOR_SAMPLES: Record<Selector["kind"], Selector> = {
 };
 
 /** Every Condition kind → a representative atom. Key set = Condition["kind"]. */
-const CONDITION_SAMPLES: Record<Condition["kind"], Condition> = {
+const CONDITION_SAMPLES: Record<ConditionV1["kind"], Condition> = {
   holderHpAtMost: { kind: "holderHpAtMost", value: 3 },
 };
 
@@ -156,7 +158,7 @@ export function partAtoms(): PartAtom[] {
     }
   }
 
-  for (const kind of Object.keys(CONDITION_SAMPLES) as Condition["kind"][]) {
+  for (const kind of Object.keys(CONDITION_SAMPLES) as ConditionV1["kind"][]) {
     atoms.push({
       family: "condition",
       kind,
@@ -165,7 +167,7 @@ export function partAtoms(): PartAtom[] {
     });
   }
 
-  for (const kind of Object.keys(SELECTOR_SAMPLES) as Selector["kind"][]) {
+  for (const kind of Object.keys(SELECTOR_SAMPLES) as SelectorV1["kind"][]) {
     atoms.push({
       family: "selector",
       kind,

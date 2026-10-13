@@ -126,9 +126,41 @@ export type EventPattern =
   // follows from its status event, so there is nothing to intercept.
   | { on: "StatChanged"; unit?: UnitFilter; stat?: StatName; sign?: "gain" | "loss" };
 
-export type Condition = { kind: "holderHpAtMost"; value: number };
+export type ConditionV1 = { kind: "holderHpAtMost"; value: number };
 
-export type Selector =
+/** Rules v2 conditions (#1043 §3.2), all composable with and / not. Each kind
+ * is a word in src/words/. */
+export type CompareOp = "<=" | "=" | ">=";
+export type ConditionV2 =
+  | { kind: "and"; all: Condition[] }
+  | { kind: "not"; cond: Condition }
+  | { kind: "turnIs"; n: number }
+  | { kind: "turnAtLeast"; n: number }
+  | { kind: "turnEvery"; n: number }
+  // of: the holder, or the unit the triggering event is about
+  | { kind: "stacksAtLeast"; status: string; n: number; of: "holder" | "eventUnit" }
+  | { kind: "alliesAlive"; op: CompareOp; n: number }
+  | { kind: "enemiesAlive"; op: CompareOp; n: number }
+  // one seeded coin per firing, heads with probability p; a Flipped event logs it
+  | { kind: "flip"; p: number }
+  | { kind: "onceHolder" }
+  | { kind: "oncePerTurn" };
+
+export type Condition = ConditionV1 | ConditionV2;
+
+/** Rules v2 position selectors (#1043 §3.1); each kind is a word in src/words/. */
+export type PositionSelector =
+  | { kind: "allyBehind" } // the living ally one slot behind the holder
+  | { kind: "allyAhead" } // … one slot ahead
+  | { kind: "neighbours" } // both of the above, ahead first
+  | { kind: "alliesBehind" } // every living ally behind the holder, in line order
+  | { kind: "lastEnemy" } // the enemy at the back
+  | { kind: "randomAlly" } // one seeded draw among the other living allies
+  | { kind: "eventTarget" }; // the unit an event was aimed at (a Strike's defender)
+
+export type Selector = SelectorV1 | PositionSelector;
+
+export type SelectorV1 =
   | { kind: "holder" } // the owning unit; resolves even if it just died (on-death abilities)
   | { kind: "eventUnit" } // the subject unit of the triggering event (striker for Strike)
   | { kind: "attacker" } // who dealt the triggering Hurt, while alive; none for status damage
@@ -241,6 +273,8 @@ export type EventBody =
   // returns once per battle, so its second revive fails ("revivedOnce", #918).
   | { type: "SummonFailed"; name: string; side: Side; unit?: string; revive?: true; reason: "suddenDeath" | "revivedOnce" }
   | { type: "Intercepted"; by: AbilityRef; original: string; unit?: string }
+  // A flip condition (rules v2, §3.2) drew its coin for `unit`'s firing.
+  | { type: "Flipped"; unit: string; by: AbilityRef; heads: boolean }
   // timeUp: the turn cap ran out with both sides standing (a draw); absent otherwise.
   | { type: "BattleEnd"; winner: Side | "draw"; turns: number; timeUp?: true };
 

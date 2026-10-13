@@ -25,6 +25,7 @@ import type {
 } from "./types.js";
 import { mulberry32 } from "./rng.js";
 import { legacyRecipe } from "./content-grammar.js";
+import { conditionWord, selectorWord, type CondAt, type WordCtx, type WordUnit } from "./words/index.js";
 
 export const TEAM_SIZE = 5;
 export const FATIGUE_START = 10;
@@ -138,9 +139,21 @@ class Engine {
   private lineCap: number;
   /** The units that have reacted in the chain being settled (a unit acts at most once per chain, #1030). */
   private chainActed = new Set<string>();
+  /** Once-rules already spent (rules v2 §3.2: onceHolder, oncePerTurn). */
+  private onceMarks = new Set<string>();
+  /** The battle as the v2 words see it (src/words/). */
+  private wordCtx: WordCtx = {
+    line: (side) => this.lines[side].map((id) => this.units.get(id)!).filter(Boolean),
+    unit: (id) => this.units.get(id),
+    draw: () => this.rng(),
+    turn: 0,
+    hp: (u) => this.curHp(u as UnitState),
+    stacks: (u, status) => (u as UnitState).statuses.find((s) => s.def.name === status)?.stacks ?? 0,
+  };
 
   constructor(input: BattleInput) {
     this.input = input;
+    Object.defineProperty(this.wordCtx, "turn", { get: () => this.turn });
     this.rng = mulberry32(input.seed);
     this.registry = input.statuses ?? {};
     this.abilities = input.abilities ?? {};
@@ -323,7 +336,7 @@ class Engine {
         }
         const holder = this.units.get(r.holder);
         if (!holder || (r.ref.status === undefined && holder.silenced)) continue;
-        if (r.ability.condition && !this.checkCondition(r.ability.condition, holder)) continue;
+        if (r.ability.condition && !this.checkCondition(r.ability.condition, holder, { ...draft, id: -1, turn: this.turn, causedBy, source } as BattleEvent, r.ref)) continue;
         handled.add(k);
         if (r.ref.status === undefined) this.chainActed.add(r.holder);
         const res = this.runInterceptor(stamped, draft, followUps);
@@ -402,7 +415,7 @@ class Engine {
     const holder = this.units.get(f.holder);
     if (!holder) return;
     if (f.ref.status === undefined && holder.silenced) return;
-    if (f.ability.condition && !this.checkCondition(f.ability.condition, holder)) return;
+    if (f.ability.condition && !this.checkCondition(f.ability.condition, holder, f.event, f.ref)) return;
     if (f.ref.status === undefined) this.chainActed.add(f.holder);
     // One reaction per unit: each Who is picked once, then every Does that
     // shares it applies to those targets, in order. A run of Does with the
@@ -511,11 +524,26 @@ class Engine {
     return f === "ally" ? u.side === holder.side : u.side !== holder.side;
   }
 
-  private checkCondition(c: Condition, holder: UnitState): boolean {
-    switch (c.kind) {
-      case "holderHpAtMost":
-        return this.curHp(holder) <= c.value;
+  /** Check a firing's condition. A v2 condition is a word (src/words/): its
+   * once-marks are committed only when the whole condition holds, and each
+   * coin it flipped is logged as a Flipped event, heads or tails. */
+  private checkCondition(c: Condition, holder: UnitState, event: BattleEvent, ref: AbilityRef): boolean {
+    if (c.kind === "holderHpAtMost") return this.curHp(holder) <= c.value;
+    const at: CondAt = {
+      holder,
+      event,
+      key: refKey(ref),
+      marks: [],
+      flips: [],
+      marked: (m) => this.onceMarks.has(m),
+      check: (x) => (x.kind === "holderHpAtMost" ? this.curHp(holder) <= x.value : conditionWord(x.kind)!.check(this.wordCtx, x, at)),
+    };
+    const ok = at.check(c);
+    for (const heads of at.flips) {
+      this.applyEvent({ type: "Flipped", unit: holder.id, by: ref, heads }, event.id >= 0 ? event.id : event.causedBy, "kernel");
     }
+    if (ok) for (const m of at.marks) this.onceMarks.add(m);
+    return ok;
   }
 
   // ---------- selectors ----------
@@ -556,6 +584,8 @@ class Engine {
         }
         return [];
       }
+      default:
+        return selectorWord(sel.kind)!.select(this.wordCtx, holder, event) as UnitState[];
     }
   }
 

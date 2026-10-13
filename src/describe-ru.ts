@@ -10,7 +10,8 @@
 // a counted noun takes its form by Intl.PluralRules("ru") (1 Щит, 2 Щита,
 // 5 Щитов). Display-only, like describe.ts.
 
-import type { Ability, Amount, Condition, Effect, EventPattern, Selector, StatusDef, UnitFilter, When } from "./types.js";
+import { conditionWord, selectorWord } from "./words/index.js";
+import type { Ability, Amount, Condition, Effect, EventPattern, Selector, SelectorV1, StatusDef, UnitFilter, When } from "./types.js";
 import type { DescribeOpts, DescribeSegment, PartRef, Side } from "./describe.js";
 import type { TermId } from "./glossary.js";
 
@@ -180,7 +181,7 @@ export function describeWhenSegmentsRu(w: When): DescribeSegment[] {
 
 /** A selector in the two cases the sentences need: dative after a status or
  * damage ("всем врагам"), accusative after a verb ("павшего союзника"). */
-const SELECTOR: Record<Exclude<Selector["kind"], "holder" | "eventUnit">, { dat: string; acc: string }> = {
+const SELECTOR: Record<Exclude<SelectorV1["kind"], "holder" | "eventUnit">, { dat: string; acc: string }> = {
   attacker: { dat: "атакующему", acc: "атакующего" },
   frontEnemy: { dat: "переднему врагу", acc: "переднего врага" },
   allEnemies: { dat: "всем врагам", acc: "всех врагов" },
@@ -195,7 +196,7 @@ const holderCase = (opts: DescribeOpts, c: Case): string => (opts.holder === "ho
 
 type Case = "dat" | "acc";
 
-const SELECTOR_SIDE: Record<Selector["kind"], Side | undefined> = {
+const SELECTOR_SIDE: Record<SelectorV1["kind"], Side | undefined> = {
   holder: "ally",
   eventUnit: undefined,
   attacker: "enemy",
@@ -213,8 +214,10 @@ function selectorText(s: Selector, c: Case, opts: DescribeOpts): string {
     case "eventUnit":
       // "it": the unit the trigger is about; the holder's own event reads as the holder.
       return opts.eventUnit?.text === (opts.holder ?? "self") ? holderCase(opts, c) : c === "dat" ? "ему" : "его";
-    default:
-      return SELECTOR[s.kind][c];
+    default: {
+      const word = selectorWord(s.kind);
+      return word ? word.ru[c] : SELECTOR[s.kind as Exclude<SelectorV1["kind"], "holder" | "eventUnit">][c];
+    }
   }
 }
 
@@ -222,8 +225,9 @@ function targetSegs(selectors: Selector[], c: Case, opts: DescribeOpts): Describ
   const out: DescribeSegment[] = [];
   selectors.forEach((s, i) => {
     if (i > 0) out.push(seg(" и "));
-    const side = s.kind === "eventUnit" ? opts.eventUnit?.side : SELECTOR_SIDE[s.kind];
-    out.push({ text: selectorText(s, c, opts), partRef: { family: "selector", kind: s.kind }, term: `target:${s.kind}`, ...(side ? { side } : {}) });
+    const word = selectorWord(s.kind);
+    const side = s.kind === "eventUnit" ? opts.eventUnit?.side : word ? word.side : SELECTOR_SIDE[s.kind as SelectorV1["kind"]];
+    out.push({ text: selectorText(s, c, opts), partRef: { family: "selector", kind: s.kind }, ...(word ? {} : { term: `target:${s.kind as SelectorV1["kind"]}` as const }), ...(side ? { side } : {}) });
   });
   return out;
 }
@@ -324,6 +328,8 @@ function describeConditionSegmentsRu(c: Condition): DescribeSegment[] {
   switch (c.kind) {
     case "holderHpAtMost":
       return [{ text: `при ${c.value} ОЗ или меньше`, partRef, term: `condition:${c.kind}` }];
+    default:
+      return [{ text: conditionWord(c.kind)!.ru(c, (x) => describeConditionSegmentsRu(x).map((g) => g.text).join("")), partRef }];
   }
 }
 

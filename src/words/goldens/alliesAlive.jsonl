@@ -1,0 +1,24 @@
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Squire","name":"Squire","hp":1,"pwr":1},{"id":"A2:Last Stand","name":"Last Stand","hp":3,"pwr":1}],"B":[{"id":"B1:Brute","name":"Brute","hp":9,"pwr":2}]}}
+{"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":2,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Squire","b":"B1:Brute","first":"B1:Brute"}
+{"id":3,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Brute","defender":"A1:Squire"}
+{"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"Hurt","unit":"A1:Squire","amount":2,"hpAfter":-1}
+{"id":5,"turn":1,"causedBy":4,"source":"kernel","type":"Death","unit":"A1:Squire"}
+{"id":6,"turn":1,"causedBy":5,"source":{"unit":"A2:Last Stand","ability":0,"when":0},"type":"StatusApplied","unit":"A2:Last Stand","status":"Strength","stacks":1,"total":1}
+{"id":7,"turn":1,"causedBy":6,"source":"kernel","type":"StatChanged","unit":"A2:Last Stand","stat":"pwr","delta":1,"now":2}
+{"id":8,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":9,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":10,"turn":2,"causedBy":9,"source":"kernel","type":"PairFaced","a":"A2:Last Stand","b":"B1:Brute","first":"A2:Last Stand"}
+{"id":11,"turn":2,"causedBy":9,"source":"kernel","type":"Strike","striker":"A2:Last Stand","defender":"B1:Brute"}
+{"id":12,"turn":2,"causedBy":11,"source":"kernel","type":"Hurt","unit":"B1:Brute","amount":2,"hpAfter":7}
+{"id":13,"turn":2,"causedBy":9,"source":"kernel","type":"Strike","striker":"B1:Brute","defender":"A2:Last Stand"}
+{"id":14,"turn":2,"causedBy":13,"source":"kernel","type":"Hurt","unit":"A2:Last Stand","amount":2,"hpAfter":1}
+{"id":15,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":16,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":17,"turn":3,"causedBy":16,"source":"kernel","type":"Strike","striker":"A2:Last Stand","defender":"B1:Brute"}
+{"id":18,"turn":3,"causedBy":17,"source":"kernel","type":"Hurt","unit":"B1:Brute","amount":2,"hpAfter":5}
+{"id":19,"turn":3,"causedBy":16,"source":"kernel","type":"Strike","striker":"B1:Brute","defender":"A2:Last Stand"}
+{"id":20,"turn":3,"causedBy":19,"source":"kernel","type":"Hurt","unit":"A2:Last Stand","amount":2,"hpAfter":-1}
+{"id":21,"turn":3,"causedBy":20,"source":"kernel","type":"Death","unit":"A2:Last Stand"}
+{"id":22,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":23,"turn":3,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":3}

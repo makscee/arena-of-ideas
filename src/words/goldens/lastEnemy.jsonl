@@ -1,0 +1,17 @@
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Sniper","name":"Sniper","hp":4,"pwr":1}],"B":[{"id":"B1:Brute","name":"Brute","hp":6,"pwr":2},{"id":"B2:Healer","name":"Healer","hp":2,"pwr":1}]}}
+{"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":2,"turn":1,"causedBy":1,"source":{"unit":"A1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"B2:Healer","amount":1,"hpAfter":1}
+{"id":3,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Sniper","b":"B1:Brute","first":"B1:Brute"}
+{"id":4,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Brute","defender":"A1:Sniper"}
+{"id":5,"turn":1,"causedBy":4,"source":"kernel","type":"Hurt","unit":"A1:Sniper","amount":2,"hpAfter":2}
+{"id":6,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Sniper","defender":"B1:Brute"}
+{"id":7,"turn":1,"causedBy":6,"source":"kernel","type":"Hurt","unit":"B1:Brute","amount":1,"hpAfter":5}
+{"id":8,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":9,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":10,"turn":2,"causedBy":9,"source":{"unit":"A1:Sniper","ability":0,"when":0},"type":"Hurt","unit":"B2:Healer","amount":1,"hpAfter":0}
+{"id":11,"turn":2,"causedBy":10,"source":"kernel","type":"Death","unit":"B2:Healer"}
+{"id":12,"turn":2,"causedBy":9,"source":"kernel","type":"Strike","striker":"B1:Brute","defender":"A1:Sniper"}
+{"id":13,"turn":2,"causedBy":12,"source":"kernel","type":"Hurt","unit":"A1:Sniper","amount":2,"hpAfter":0}
+{"id":14,"turn":2,"causedBy":13,"source":"kernel","type":"Death","unit":"A1:Sniper"}
+{"id":15,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":16,"turn":2,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":2}

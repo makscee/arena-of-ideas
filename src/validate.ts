@@ -12,6 +12,7 @@
 
 import { TEAM_SIZE } from "./battle.js";
 import type { AbilityRegistry, StatusRegistry, UnitDef } from "./types.js";
+import { CONDITION_WORDS, conditionWord, selectorWord } from "./words/index.js";
 
 export interface ValidationIssue {
   path: string; // e.g. "teamA[0].abilities[0].effects[1]"
@@ -389,12 +390,7 @@ function validateAbility(ab: unknown, registry: StatusRegistry, abilities: Abili
 
   // condition
   if (ab["condition"] !== undefined) {
-    const p = `${path}.condition`;
-    if (!isObject(ab["condition"]) || !oneOf(ab["condition"]["kind"], CONDITION_KINDS)) {
-      issues.push({ path: p, message: `unknown condition kind — conditions are ${list(CONDITION_KINDS)}` });
-    } else if (typeof ab["condition"]["value"] !== "number") {
-      issues.push({ path: `${p}.value`, message: "condition value must be a number" });
-    }
+    validateCondition(ab["condition"], registry, `${path}.condition`, issues);
   }
 
   // selectors
@@ -403,7 +399,7 @@ function validateAbility(ab: unknown, registry: StatusRegistry, abilities: Abili
   } else {
     ab["selectors"].forEach((s, i) => {
       const kind = isObject(s) ? s["kind"] : undefined;
-      if (!oneOf(kind, SELECTOR_KINDS)) {
+      if (!oneOf(kind, SELECTOR_KINDS) && !(typeof kind === "string" && selectorWord(kind))) {
         issues.push({ path: `${path}.selectors[${i}]`, message: `unknown selector kind ${JSON.stringify(kind)} — selectors are ${list(SELECTOR_KINDS)}` });
       }
     });
@@ -414,6 +410,48 @@ function validateAbility(ab: unknown, registry: StatusRegistry, abilities: Abili
     issues.push({ path: `${path}.effects`, message: "an ability needs ≥1 effects" });
   } else {
     ab["effects"].forEach((e, i) => validateEffect(e, registry, abilities, owner, contexts, `${path}.effects[${i}]`, issues));
+  }
+}
+
+/** A condition: the v1 hp threshold, or a v2 word (src/words/) with its own
+ * fields checked by hand; and / not nest. */
+function validateCondition(c: unknown, registry: StatusRegistry, p: string, issues: ValidationIssue[]): void {
+  if (!isObject(c) || !(oneOf(c["kind"], CONDITION_KINDS) || (typeof c["kind"] === "string" && conditionWord(c["kind"])))) {
+    issues.push({ path: p, message: `unknown condition kind — conditions are ${list(CONDITION_KINDS)} and the words ${list(Object.keys(CONDITION_WORDS))}` });
+    return;
+  }
+  const int = (k: string, min: number) => {
+    if (!Number.isInteger(c[k]) || (c[k] as number) < min) issues.push({ path: `${p}.${k}`, message: `${k} must be an integer ≥ ${min}` });
+  };
+  switch (c["kind"]) {
+    case "holderHpAtMost":
+      if (typeof c["value"] !== "number") issues.push({ path: `${p}.value`, message: "condition value must be a number" });
+      return;
+    case "and":
+      if (!Array.isArray(c["all"]) || c["all"].length < 2) issues.push({ path: `${p}.all`, message: "and needs ≥2 conditions" });
+      else c["all"].forEach((x, i) => validateCondition(x, registry, `${p}.all[${i}]`, issues));
+      return;
+    case "not":
+      validateCondition(c["cond"], registry, `${p}.cond`, issues);
+      return;
+    case "turnIs":
+    case "turnAtLeast":
+      return int("n", 1);
+    case "turnEvery":
+      return int("n", 2);
+    case "stacksAtLeast":
+      int("n", 1);
+      if (!oneOf(c["of"], ["holder", "eventUnit"] as const)) issues.push({ path: `${p}.of`, message: "of must be holder or eventUnit" });
+      checkStatusRef(c["status"], registry, p, issues);
+      return;
+    case "alliesAlive":
+    case "enemiesAlive":
+      int("n", 0);
+      if (!oneOf(c["op"], ["<=", "=", ">="] as const)) issues.push({ path: `${p}.op`, message: "op must be <=, = or >=" });
+      return;
+    case "flip":
+      if (typeof c["p"] !== "number" || !(c["p"] > 0 && c["p"] < 1)) issues.push({ path: `${p}.p`, message: "p must be a number between 0 and 1" });
+      return;
   }
 }
 

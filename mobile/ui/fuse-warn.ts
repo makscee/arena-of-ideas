@@ -20,7 +20,16 @@ export function sideOf(sel: Selector, when: When[]): Side {
     case "frontEnemy":
     case "allEnemies":
     case "randomEnemy":
+    case "lastEnemy":
       return "enemy";
+    case "allyBehind":
+    case "allyAhead":
+    case "neighbours":
+    case "alliesBehind":
+    case "randomAlly":
+      return "ally";
+    case "eventTarget":
+      return null;
     case "eventUnit": {
       const sides = new Set(
         when.map((w) => {
