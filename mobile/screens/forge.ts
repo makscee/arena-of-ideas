@@ -99,7 +99,7 @@ export function forgeScreen(a: ForgeArgs): void {
     };
     return [
       picker,
-      wide(u.emoji, tr(u.name), tr(u.rule), [h("div", { class: "dim small" }, `${u.hp} ${currentLang() === "ru" ? "ОЗ" : "HP"} · ${u.pwr} ${currentLang() === "ru" ? "АТК" : "PWR"}`)], "unit"),
+      wide(u.emoji, tr(u.name), tr(u.rule), [h("div", { class: "dim small" }, t("forge.stats", { hp: u.hp, pwr: u.pwr }))], "unit"),
       h("h2", { class: "forge-sub" }, t("forge.partners", { name: tr(u.name) })),
       ...group("discovered", "forge.discovered", discovered),
       ...group("ready", "forge.ready", ready),

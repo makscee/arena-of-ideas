@@ -93,6 +93,7 @@ export const codex = {
   "forge.tab.feed": "Today",
   "forge.tab.words": "Dictionary",
   "forge.partners": "Fusions with {name}",
+  "forge.stats": "{hp} HP · {pwr} PWR",
   "forge.discovered": "Discovered · {n}",
   "forge.ready": "Ready to claim · {n}",
   "forge.unforged": "Not forged yet · {n}",

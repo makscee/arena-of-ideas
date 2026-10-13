@@ -94,6 +94,7 @@ export const codex = {
   "forge.tab.feed": "Сегодня",
   "forge.tab.words": "Словарь",
   "forge.partners": "Слияния: {name}",
+  "forge.stats": "{hp} ОЗ · {pwr} АТК",
   "forge.discovered": "Открыты · {n}",
   "forge.ready": "Ждут Заявки · {n}",
   "forge.unforged": "Ещё не выкованы · {n}",
