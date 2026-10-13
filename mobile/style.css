@@ -623,7 +623,7 @@ button.bv-badge.past { z-index: 2; }
  * buffed one a soft one; the chips hold the numbers in place, and the
  * caption lists every change of the beat (.bv-still). */
 /* Effects over the board (#1011): damage drops, heal rises, a block pops a bubble, a status flies in. */
-.bv-fxnums { position: fixed; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
+.bv-fxnums { position: fixed; inset: 0; z-index: 40; pointer-events: none; overflow: hidden; }
 .bv-fxn { position: absolute; translate: -50% -50%; display: inline-flex; align-items: center; gap: 2px; font-family: var(--font-num); font-size: 21px; font-weight: 800; line-height: 22px; white-space: nowrap; text-shadow: 0 0 3px var(--ground), 0 0 2px var(--ground), 0 1px 0 var(--ground); }
 .bv-fxn.damage { color: var(--k-dmg); }
 .bv-fxn.heal { color: var(--k-heal); }
@@ -632,12 +632,18 @@ button.bv-badge.past { z-index: 2; }
 .bv-fxn.status { color: var(--k-status); }
 .bv-fxn.death { color: var(--k-silence); }
 .bv-fxn.summon { font-family: var(--font-body); font-size: 14px; }
-.bv-fxn.damage.big { scale: 1.35; }
-.bv-fxn.damage { animation: bv-fx-drop calc(0.9s / var(--bv-sp, 1)) ease-in calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
-.bv-fxn.heal, .bv-fxn.summon { animation: bv-fx-rise calc(0.9s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
+/* Damage and heal numbers (#1030): a solid pill in the kind's colour with
+ * outline-dark digits, readable on every palette and over any card or beam,
+ * on top of everything, held about a second before it goes. */
+.bv-fxn.damage, .bv-fxn.heal { font-size: 30px; line-height: 30px; padding: 2px 9px 3px; border-radius: 12px; color: var(--outline); border: 2px solid var(--outline); box-shadow: 2px 2px 0 var(--outline); text-shadow: none; }
+.bv-fxn.damage { background: var(--k-dmg); }
+.bv-fxn.heal { background: var(--k-heal); }
+.bv-fxn.damage.big { scale: 1.25; }
+.bv-fxn.damage { animation: bv-fx-drop calc(1.6s / var(--bv-sp, 1)) ease-in calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
+.bv-fxn.heal, .bv-fxn.summon { animation: bv-fx-rise calc(1.6s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
 .bv-fxn.blocked { animation: bv-fx-pop calc(0.8s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
-@keyframes bv-fx-drop { 0% { opacity: 0; transform: translateY(-8px); } 15% { opacity: 1; transform: none; } 65% { opacity: 1; } 100% { opacity: 0; transform: translateY(14px); } }
-@keyframes bv-fx-rise { 0% { opacity: 0; transform: translateY(10px); } 15% { opacity: 1; transform: none; } 65% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
+@keyframes bv-fx-drop { 0% { opacity: 0; transform: translateY(-8px) scale(0.7); } 10% { opacity: 1; transform: none; } 80% { opacity: 1; transform: translateY(4px); } 100% { opacity: 0; transform: translateY(14px); } }
+@keyframes bv-fx-rise { 0% { opacity: 0; transform: translateY(10px) scale(0.7); } 10% { opacity: 1; transform: none; } 80% { opacity: 1; transform: translateY(-4px); } 100% { opacity: 0; transform: translateY(-14px); } }
 @keyframes bv-fx-pop { 0% { opacity: 0; transform: scale(0.6); } 20% { opacity: 1; transform: scale(1.15); } 35% { transform: none; } 75% { opacity: 1; } 100% { opacity: 0; } }
 .bv-fxb { position: absolute; translate: -50% -50%; width: 46px; height: 46px; border-radius: 50%; border: 2.5px solid var(--k-shield); background: color-mix(in srgb, var(--k-shield) 22%, transparent); box-shadow: 0 0 8px var(--k-shield); animation: bv-fx-bubble calc(0.7s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
 @keyframes bv-fx-bubble { 0% { opacity: 0; transform: scale(0.5); } 25% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0; transform: scale(1.2); } }
@@ -1719,6 +1725,12 @@ button.reroll-btn:disabled .cost-chip { background: var(--soft); }
 /* The card acting in a chain's link wears the link's number, top left. */
 .bv-card > .bv-chain-chip { position: absolute; bottom: 4px; left: 4px; z-index: 4; min-width: 26px; height: 26px; padding: 0 5px; border-radius: 13px; display: inline-flex; align-items: center; justify-content: center; background: var(--action); color: var(--outline); border: 2px solid var(--outline); box-shadow: 2px 2px 0 var(--outline); font-family: var(--font-head, inherit); font-size: 15px; line-height: 1; pointer-events: none; animation: bv-chip-in calc(220ms / var(--bv-sp, 1)) ease-out backwards; }
 .bv-card > .bv-chain-chip.still { animation: none; }
+/* A card that has acted in the chain on screen sits it out (#1030): dimmed until the chain ends. */
+.bv-card.bv-spent > :not(.bv-chain-chip) { opacity: 0.32; filter: grayscale(0.8); }
+.bv-card.bv-spent { border-color: color-mix(in srgb, var(--outline) 45%, transparent); box-shadow: none; }
+@media (max-width: 1023.98px) {
+  .bv-fxn.damage, .bv-fxn.heal { font-size: 24px; line-height: 24px; padding: 1px 7px 2px; border-radius: 10px; }
+}
 @keyframes bv-chip-in { from { transform: scale(0.4); opacity: 0; } to { transform: none; opacity: 1; } }
 /* The turn ledger below the board (mission 1007): one box whose height the
  * screen sets and its content never does (on desktop the board centres above

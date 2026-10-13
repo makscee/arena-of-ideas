@@ -89,15 +89,12 @@ const TAG = /\uE000([^\uE001]*)\uE001/g;
 /** The playback speeds, and where the viewer's choice is kept (per device). */
 const SPEEDS = [1, 2, 4] as const;
 const SPEED_KEY = "arena.battleSpeed";
-/** Without a remembered choice, battles from this round on play at 2×. */
-const FAST_FROM_ROUND = 4;
-
-/** The viewer's speed: the one they chose last, else 1×, or 2× from round 4.
+/** The viewer's speed: the one they chose last, else 1× (#1030: before, 2× from round 4).
  * localStorage may throw or be empty: then the default. */
-export function speedFor(round: number, stored: string | null): number {
+export function speedFor(_round: number, stored: string | null): number {
   const s = Number(stored);
   if ((SPEEDS as readonly number[]).includes(s)) return s;
-  return round >= FAST_FROM_ROUND ? 2 : 1;
+  return 1;
 }
 function storedSpeed(): string | null {
   try {
@@ -1434,11 +1431,21 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
         if (p && (now - p.at) * speed < PUSH_MS) slides.push([sl, p]);
       }
     }
-    // A chain's link (#913): the card acting in it wears the link's number.
+    // A chain (#913, #1030): each card that has acted wears its step's
+    // number, and once its step is over it fades (spent) until the chain
+    // ends: a unit acts at most once per chain, so the numbers read as a
+    // short walk across the board.
     if (!sum && beat && isChain(beat) && step) {
-      const who = step.actor ?? step.subject;
-      const card = who ? [enemy, mine].map((r) => r.querySelector<HTMLElement>(`.bv-card[data-unit="${CSS.escape(who)}"]`)).find((x) => x) : null;
-      card?.append(h("span", { class: `bv-chain-chip${landed[wave] !== undefined ? "" : " still"}`, "data-testid": "chain-chip", "aria-hidden": "true" }, String(wave + 1)));
+      const cardOf = (who: string) => [enemy, mine].map((r) => r.querySelector<HTMLElement>(`.bv-card[data-unit="${CSS.escape(who)}"]`)).find((x) => x) ?? null;
+      const cur = step.actor ?? step.subject;
+      beat.waves.slice(0, wave + 1).forEach((w, i) => {
+        const who = w.actor ?? w.subject;
+        const card = who ? cardOf(who) : null;
+        if (!card) return;
+        card.querySelector(".bv-chain-chip")?.remove();
+        card.classList.toggle("bv-spent", who !== cur);
+        card.append(h("span", { class: `bv-chain-chip${i === wave && landed[wave] !== undefined ? "" : " still"}`, "data-testid": "chain-chip", "data-step": String(i + 1), "aria-hidden": "true" }, String(i + 1)));
+      });
     }
     // Fit names and chips now, not a frame later: a chip drawn at full
     // size showed "−…" for a frame on a narrow card (R2-17 batch F).
@@ -1755,6 +1762,8 @@ export function battleScreen(a: { battle: BattleRecord; content: MvpContent; you
     const bright = beamsBy.map((bs) => bs.length > 0).lastIndexOf(true);
     waves.forEach(({ age }, i) => {
       const newest = i === bright;
+      // Only the step on screen draws its beam (#1030): the step numbers and the spent cards tell the earlier ones.
+      if (!newest) return;
       const moving = newest && age !== null && !reduce && age * speed < MOTION_MS;
       const cls = `bv-beam ${newest ? "now" : "old"}${moving ? " draw" : ""}`;
       const delay = moving ? `${-Math.round(age! * speed)}ms` : "";

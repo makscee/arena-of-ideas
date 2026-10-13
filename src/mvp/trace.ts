@@ -458,12 +458,12 @@ export interface PlayBeat {
  * STRIKE_MS, a heal / buff / status / summon wave EFFECT_MS; a hit that kills
  * is read for HIT_BEFORE_DEATH_MS, then the death wave runs DEATH_MS (the
  * freeze 150 ms and the fall 350 ms, read to the floor). */
-export const LINE_FLOOR_MS = 600;
-export const STRIKE_MS = 750;
-export const EFFECT_MS = 650;
-export const HIT_BEFORE_DEATH_MS = 600;
-export const DEATH_MS = 600;
-/** The shortest a line stays on screen at `speed` (real ms): 600 / 300 / 200 at 1× / 2× / 4×. */
+export const LINE_FLOOR_MS = 900;
+export const STRIKE_MS = 1200;
+export const EFFECT_MS = 1100;
+export const HIT_BEFORE_DEATH_MS = 1000;
+export const DEATH_MS = 900;
+/** The shortest a line stays on screen at `speed` (real ms): 900 / 450 / 225 at 1× / 2× / 4×. */
 export function lineFloorMs(speed: number): number {
   return Math.max(200, Math.round(LINE_FLOOR_MS / speed));
 }
@@ -489,24 +489,21 @@ export type BeatWeight = Partial<Record<keyof typeof EMPHASIS_MS | "kill" | "end
 /** A beat's lines, to tell a repeat turn: its waves' captions. */
 const linesOf = (b: PlayBeat) => b.waves.map((w) => w.caption).join("\n");
 
-/** A beat of CHAIN_MIN waves or more plays as a chain (#913): its links
- * start at CHAIN_LINK_MS and speed up (chainLinkMs), a CHAIN_END_MS stays after
- * the last link, and the ledger holds the totals. Under the old 2.2 s cap a
- * 19-step Start chain ran at 70 ms a link: one flash nobody could follow. */
+/** A beat of CHAIN_MIN waves or more plays as a chain (#913): each link
+ * stays CHAIN_LINK_MS, so a first-time viewer sees every step before the next
+ * (#1030: a unit acts once per chain, so a chain is a short walk across the
+ * board), and a CHAIN_END_MS stays after the last link. Before #1030 links
+ * sped up from 450 ms to 220 ms: too fast to follow. */
 export const CHAIN_MIN = 4;
-export const CHAIN_LINK_MS = 450;
-export const CHAIN_END_MS = 400;
-/** A chain's links run at the first rate for two links, the third at CHAIN_THIRD_MS,
- * then each is CHAIN_DECAY of the one before, down to CHAIN_FLOOR_MS. */
-export const CHAIN_THIRD_MS = 400;
-export const CHAIN_DECAY = 0.85;
-export const CHAIN_FLOOR_MS = 220;
+export const CHAIN_LINK_MS = 1100;
+export const CHAIN_END_MS = 900;
+/** Every link holds as long as the first (#1030): no speed-up along a chain. */
+export const CHAIN_FLOOR_MS = CHAIN_LINK_MS;
 export const isChain = (beat: Pick<PlayBeat, "waves">): boolean => beat.waves.length >= CHAIN_MIN;
 
-/** The time link `i` (from 0) of a chain stays, at 1×: 520, 520, 450, 383, 325, 276, 250, … */
-export function chainLinkMs(i: number): number {
-  if (i < 2) return CHAIN_LINK_MS;
-  return Math.max(CHAIN_FLOOR_MS, Math.round(CHAIN_THIRD_MS * CHAIN_DECAY ** (i - 2)));
+/** The time link `i` (from 0) of a chain stays, at 1×: CHAIN_LINK_MS each. */
+export function chainLinkMs(_i: number): number {
+  return CHAIN_LINK_MS;
 }
 
 const dies = (w: Pick<Step, "changes">) => w.changes.some((c) => c.kind === "death");
