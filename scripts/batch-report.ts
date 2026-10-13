@@ -100,7 +100,7 @@ header{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.emoji{font-siz
 .note{border-left:4px solid var(--acc);padding:8px 12px;margin:0 0 24px;background:var(--card)}
 </style></head><body>
 <h1>Arena · rules v2 · unit batch 1</h1>
-<p class="sub">Unit batch 1 of 3: the eight units of the design's §4, then twelve more (every shape class and tier), built on branch <code>vb-1046-unit-batch-1</code>. Design: <a href="arena-rules-v2.html">arena-rules-v2.html</a>. Scenes open on the lab.</p>
+<p class="sub">Unit batch 1 of 3: the eight units of the design's §4, then twelve more (every shape class and tier), on the mission branch <code>mission-1043-rules-v2</code>. Design: <a href="arena-rules-v2.html">arena-rules-v2.html</a>. Scenes open on the lab.</p>
 ${tune ? `<div class="note"><b>Tuned.</b> PWR and HP come from <code>npm run mvp:tune-v2</code>: ${tune.rounds.length} rounds of the quick meta check move each unit toward the pool's median field score (${pct(tune.median)} ± ${pct(tune.band)}), then the full meta check: <b>${tune.healthy ? "healthy" : "not healthy"}</b> (${Object.values(tune.checks).map((c) => `${esc(c.rule)}: ${c.value < 1 && c.value > 0 ? pct(c.value) : c.value} ${c.pass ? "✓" : "✗"}`).join("; ")}). ${tune.units.filter((u) => u.inBand).length} of ${tune.units.length} units in band. Field: the unit's best team's mean score against the meta's teams. Awoken: what three copies add over sleeping, same team.</div>` : ""}
 ${tuned ? "" : `<div class="note"><b>Untuned draft.</b> The numbers are placeholders; the tune and the meta run come next. The eight §4 units have fixture battles with goldens; the twelve have pool battles (the lab's <code>v2-unit-</code> scenes).</div>`}
 ${cards.join("\n")}
