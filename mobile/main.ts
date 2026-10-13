@@ -16,6 +16,7 @@ import { ApiError, api, savedPlayer } from "./api";
 import { getContent, unitIn } from "./content";
 import { battleScreen, type RunOutro } from "./screens/battle";
 import { codexScreen, newCodexCache, type CodexState } from "./screens/codex";
+import { claimScreen, forgeScreen } from "./screens/forge";
 import { setCodexLink } from "./ui/term";
 import { ideasScreen, refillTime } from "./screens/ideas";
 import { votePanel } from "./screens/vote";
@@ -1828,6 +1829,10 @@ function openScene(id: string): void {
         await ideasScreen({ onBack: () => void homeScreen(), onUnknown: () => location.reload() });
         if (entry.click) settle(() => document.querySelector<HTMLElement>(`[data-testid="${entry.click}"]`)?.click());
         return;
+      case "forge":
+        return forgeScreen({ view: entry.view, tab: entry.tab, unit: entry.unit, onBack: () => location.reload() });
+      case "claim":
+        return claimScreen({ claim: entry.claim, units: entry.view.units, viewer: entry.view.viewer, picked: entry.picked, onDone: () => forgeScreen({ view: entry.view, tab: "feed", onBack: () => location.reload() }) });
       case "pick":
         return pickScreen(entry.ideaId, { toIdeas: (notice) => void ideasScreen({ onBack: () => void homeScreen(), onUnknown: () => location.reload() }, notice ?? null), onUnknown: () => location.reload() });
     }
