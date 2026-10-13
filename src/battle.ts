@@ -12,6 +12,7 @@ import type {
   BattleInput,
   Condition,
   Effect,
+  EffectV2,
   EventBody,
   EventPattern,
   RosterEntry,
@@ -26,7 +27,7 @@ import type {
 } from "./types.js";
 import { mulberry32 } from "./rng.js";
 import { legacyRecipe } from "./content-grammar.js";
-import { amountWord, conditionWord, effectWord, selectorWord, type CondAt, type WordCtx, type WordUnit } from "./words/index.js";
+import { amountWord, conditionWord, effectWord, isV2Effect, selectorWord, type CondAt, type WordCtx, type WordUnit } from "./words/index.js";
 
 export const TEAM_SIZE = 5;
 export const FATIGUE_START = 10;
@@ -73,6 +74,8 @@ interface UnitState {
   revived?: boolean;
   /** Hurt events it has taken this battle (rules v2 §3.3, count hitsTaken). */
   hits?: number;
+  /** Rules it remembered (rules v2 §3.5), oldest first, with whose they were. */
+  remembered?: { from: string; rule: Reaction[] }[];
 }
 
 interface ReactorEntry {
@@ -87,6 +90,9 @@ interface ReactorEntry {
 
 interface Firing extends ReactorEntry {
   event: BattleEvent;
+  /** Put on the queue by actAgain or performRemembered (rules v2 §3.5): the
+   * once-per-chain law lets it through; the step cap still counts it. */
+  again?: true;
 }
 
 /** Side-channel for state that an event payload can't carry (defs are not serialized). */
@@ -415,7 +421,7 @@ class Engine {
       this.applyEvent({ type: "ChainBlocked", ability: f.ref, at: f.event.id }, f.event.id, "kernel");
       return;
     }
-    if (this.spentInChain(f.ref)) {
+    if (!f.again && this.spentInChain(f.ref)) {
       this.applyEvent({ type: "ChainBlocked", ability: f.ref, at: f.event.id, spent: true }, f.event.id, "kernel");
       return;
     }
@@ -423,7 +429,9 @@ class Engine {
     if (!holder) return;
     if (f.ref.status === undefined && holder.silenced) return;
     if (f.ability.condition && !this.checkCondition(f.ability.condition, holder, f.event, f.ref)) return;
-    if (f.ref.status === undefined) this.chainActed.add(f.holder);
+    // An again-firing (actAgain, performRemembered) is the extra action: it
+    // neither waits on nor spends the unit's once-per-chain reaction.
+    if (f.ref.status === undefined && !f.again) this.chainActed.add(f.holder);
     // One reaction per unit: each Who is picked once, then every Does that
     // shares it applies to those targets, in order. A run of Does with the
     // same Who is one clause; an "and" clause with its own Who picks its own
@@ -600,6 +608,7 @@ class Engine {
 
   private runEffect(e: Effect, target: UnitState, holder: UnitState, f: Firing): void {
     const amountCtx = { holder, ref: f.ref, target, event: f.event };
+    if (isV2Effect(e)) return this.runRuleMod(e, target, holder, f);
     switch (e.kind) {
       case "damage": {
         if (!target.alive) return;
@@ -724,6 +733,68 @@ class Engine {
     if (!u || !u.alive) return;
     const cur = u.statuses.find((s) => s.def.name === status)?.stacks ?? 0;
     this.propose({ type: "StatusApplied", unit: unitId, status, stacks, total: cur + stacks }, causedBy, source);
+  }
+
+  // ---------- rule modification (rules v2 §3.5) ----------
+
+  /** A unit's rule as a firing on `event`, sourced to `ref` (its own, or the
+   * holder's for a remembered rule). */
+  private firingOf(holder: UnitState, rule: Reaction[], event: BattleEvent, ref: AbilityRef): Firing | undefined {
+    const first = rule[0];
+    if (!first) return undefined;
+    const does = rule.map((ab, i) => ({ ref: { ...ref, ability: i }, effects: ab.effects, selectors: ab.selectors }));
+    return { ref: does[0]!.ref, holder: holder.id, ability: first, does, event, again: true };
+  }
+
+  /** actAgain: at most once per event per target (§3.4 guardrails). */
+  private actedAgain = new Set<string>();
+
+  private runRuleMod(e: EffectV2, target: UnitState, holder: UnitState, f: Firing): void {
+    const note = (op: Extract<EventBody, { type: "RuleMod" }>["op"], other?: string) =>
+      this.applyEvent({ type: "RuleMod", unit: holder.id, op, ...(other !== undefined ? { other } : {}) }, f.event.id, f.ref);
+    switch (e.kind) {
+      case "copyRule":
+        if (!target.alive || target.id === holder.id || target.abilities.length === 0) return;
+        holder.abilities = [...target.abilities];
+        note("copyRule", target.id);
+        return;
+      case "swapRules": {
+        if (!target.alive || target.id === holder.id) return;
+        [holder.abilities, target.abilities] = [target.abilities, holder.abilities];
+        note("swapRules", target.id);
+        return;
+      }
+      case "remember":
+        if (target.abilities.length === 0) return;
+        (holder.remembered ??= []).push({ from: target.id, rule: [...target.abilities] });
+        note("remember", target.id);
+        return;
+      case "actAgain": {
+        const key = `${f.event.id}|${target.id}`;
+        if (!target.alive || target.silenced || this.actedAgain.has(key)) return;
+        const again = this.firingOf(target, target.abilities, f.event, { unit: target.id, ability: 0 });
+        if (!again) return;
+        this.actedAgain.add(key);
+        note("actAgain", target.id);
+        this.queue.unshift(again);
+        return;
+      }
+      case "performRemembered": {
+        const list = holder.remembered ?? [];
+        const run = e.mode === "once" ? list.splice(0, 1) : [...list];
+        // Runs go to the front in their remembered order.
+        const firings = run.flatMap((m) => {
+          const fr = this.firingOf(holder, m.rule, f.event, { unit: holder.id, ability: 0 });
+          if (!fr) return [];
+          note("performRemembered", m.from);
+          return [fr];
+        });
+        this.queue.unshift(...firings);
+        return;
+      }
+      default:
+        return; // interceptor-context words are inert in trigger context
+    }
   }
 
   // ---------- interceptor execution ----------

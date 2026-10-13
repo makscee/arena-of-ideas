@@ -27,6 +27,12 @@ export function traceLines(input: BattleInput, log: readonly BattleEvent[]): str
       out.push(`${name(e.by.unit)} intercepts: ${what} on ${name(e.from)} lands on ${name(e.to)}`);
       continue;
     }
+    if (e.type === "RuleMod") {
+      const o = name(e.other ?? "");
+      const said = { copyRule: `${name(e.unit)} copies the rule of ${o}`, actAgain: `${name(e.unit)}: ${o} acts again`, remember: `${name(e.unit)} remembers the rule of ${o}`, performRemembered: `${name(e.unit)} performs the rule of ${o}`, swapRules: `${name(e.unit)} trades rules with ${o}` };
+      out.push(said[e.op]);
+      continue;
+    }
     if (e.type === "Strike" && e.amount !== undefined) {
       out.push(`${name(e.striker)}'s strike on ${name(e.defender)} hits for ${e.amount}`);
       continue;

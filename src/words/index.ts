@@ -27,7 +27,12 @@ import { plus } from "./plus.js";
 import { stacksOf } from "./stacksOf.js";
 import { statOf } from "./statOf.js";
 import { twice } from "./twice.js";
+import { actAgain } from "./actAgain.js";
+import { copyRule } from "./copyRule.js";
+import { performRemembered } from "./performRemembered.js";
 import { preventDeath } from "./preventDeath.js";
+import { remember } from "./remember.js";
+import { swapRules } from "./swapRules.js";
 import { redirect } from "./redirect.js";
 import { replaceAmount } from "./replaceAmount.js";
 import type { AmountWord, ConditionWord, EffectWord, SelectorWord } from "./types.js";
@@ -48,7 +53,7 @@ export const AMOUNT_WORDS: Record<AmountV2["kind"], AmountWord> = {
 };
 
 export const EFFECT_WORDS: Record<EffectV2["kind"], EffectWord> = {
-  redirect, preventDeath, replaceAmount,
+  redirect, preventDeath, replaceAmount, copyRule, actAgain, remember, performRemembered, swapRules,
 };
 
 export const effectWord = (kind: string): EffectWord | undefined => (EFFECT_WORDS as Record<string, EffectWord>)[kind];

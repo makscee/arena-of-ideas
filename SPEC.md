@@ -264,3 +264,12 @@ Interceptor-context effects beside `cancel`, `absorbHurt`, `preventDeathHeal`:
 - `redirect {to: Selector}` — the proposed Hurt, Heal, Strike (its defender) or StatusApplied lands on the unit `to` picks (its first pick, living, not already the subject). **An event is redirected at most once**, whoever tries second. A `Redirected {by, original, from, to}` event is logged before the moved event applies. Interceptors earlier in reactor order than the redirect don't see the new subject (a known limit, revisit with Magnet's tune).
 - `preventDeath {at, cost: {stat, amount}}` — cancel a Death (an `Intercepted` event): the unit is healed to `at` HP and its base stat drops by `amount` (a `StatChanged`), both caused by the `Intercepted`. When the stat is already below `amount`, it can't pay and the Death goes ahead (Candle: at 0 power it dies).
 - `replaceAmount {amount}` — the proposed Hurt or Heal takes this amount; on a Strike it sets the Strike's `amount`, and the Hurt the Strike proposes uses it instead of the striker's power (`Strike.amount` is absent on every other Strike, so v1 logs are unchanged).
+
+### 11.5 Rule modification
+Trigger-context effects; each logs a `RuleMod {unit, op, other}` event (caused by the event the firing reacted to), which the trace reads ("Mirror copies the rule of Hedgehog", "Hourglass: Archer acts again").
+- `copyRule` — the holder's rule becomes a copy of the target's for the rest of the battle; stats untouched.
+- `swapRules` — the holder and the target trade rules.
+- `remember` — the holder keeps a copy of the target's rule (a list, oldest first); `performRemembered {mode}` runs the oldest once and forgets it (`once`), or runs every one and keeps them (`all`). A performed rule fires as the holder, sourced to the holder.
+- `actAgain` — the target's rule fires now, on the event the firing reacted to, as if its trigger had fired.
+
+**actAgain and the once-per-chain law (#1030).** A firing put on the queue by `actAgain` or `performRemembered` goes to the front of the queue and is an *again-firing*: the once-per-chain law neither blocks it nor counts it, so the unit's own reaction in that chain still happens (Hourglass's "acts again" is an extra action, not a replacement). Three things keep it bounded: it is a step against the chain cap (§5, `ChainCapped`); a unit acts again at most once per event (a second `actAgain` on the same target for the same event does nothing); and the no-self law still applies to it.

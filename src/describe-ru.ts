@@ -270,7 +270,8 @@ function effectSegs(e: Effect, ctx: EffectCtx): DescribeSegment[] {
   const ref: PartRef = { family: "effect", kind: e.kind };
   const word = effectWord(e.kind);
   if (word) {
-    const target = targetSegs(ctx.selectors, "dat", ctx).map((g) => g.text).join("");
+    // Rule words take their Who in the accusative (= genitive for the animate units).
+    const target = targetSegs(ctx.selectors, "acc", ctx).map((g) => g.text).join("");
     return [{ text: word.ru(e, { amount: (a) => amountDat(a).map((g) => g.text).join(""), who: (s) => selectorText(s, "dat", ctx) }, target), partRef: ref }];
   }
   if (isV2Effect(e)) return [];

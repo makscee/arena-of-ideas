@@ -203,7 +203,17 @@ export type EffectV2 =
   // interceptor: cancel a Death, stay at `at` hp and pay `cost` from a stat (Candle)
   | { kind: "preventDeath"; at: number; cost: { stat: StatName; amount: number } }
   // interceptor: the proposed Hurt or Heal (or a Strike's hit) becomes this amount
-  | { kind: "replaceAmount"; amount: Amount };
+  | { kind: "replaceAmount"; amount: Amount }
+  // rule modification (§3.5): the holder's rule becomes the target's for the battle
+  | { kind: "copyRule" }
+  // the target's rule fires now, as if its trigger had fired; once per event per target
+  | { kind: "actAgain" }
+  // the holder remembers the target's rule
+  | { kind: "remember" }
+  // the holder performs its remembered rules: the oldest once (then forgets it), or all (kept)
+  | { kind: "performRemembered"; mode: "once" | "all" }
+  // the holder and the target trade rules
+  | { kind: "swapRules" };
 
 export type EffectV1 =
   // trigger-context atoms
@@ -309,6 +319,8 @@ export type EventBody =
   | { type: "Flipped"; unit: string; by: AbilityRef; heads: boolean }
   // A redirect interceptor (rules v2, §3.4) moved a proposed event from one unit to another.
   | { type: "Redirected"; by: AbilityRef; original: string; from: string; to: string }
+  // A rule-modifying effect (rules v2, §3.5) acted: `unit` is the holder, `other` the unit whose rule it took, ran or traded.
+  | { type: "RuleMod"; unit: string; op: "copyRule" | "actAgain" | "remember" | "performRemembered" | "swapRules"; other?: string }
   // timeUp: the turn cap ran out with both sides standing (a draw); absent otherwise.
   | { type: "BattleEnd"; winner: Side | "draw"; turns: number; timeUp?: true };
 

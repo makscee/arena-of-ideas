@@ -520,6 +520,9 @@ function validateEffect(e: unknown, registry: StatusRegistry, abilities: Ability
       return;
     case "replaceAmount":
       return validateAmount(e["amount"], owner, `${path}.amount`, issues);
+    case "performRemembered":
+      if (!oneOf(e["mode"], ["once", "all"] as const)) issues.push({ path: `${path}.mode`, message: "mode must be once or all" });
+      return;
     case "damage":
       return validateAmount(e["amount"], owner, `${path}.amount`, issues);
     case "heal":
