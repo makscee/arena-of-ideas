@@ -109,12 +109,12 @@ describe("a unit is revived once per battle", () => {
     expect(lineAt(log, again.id)).toEqual(["A", "C", "Necromancer"]);
   });
 
-  test("two different allies die → both revived (the limit is per unit)", () => {
+  test("two different allies die in one chain → only the first is revived (a unit acts once per chain, #1030)", () => {
     const log = run([dummy("A", 1), dummy("B", 1), dummy("C"), Necromancer], [bomber("Bomber", 1)]);
     const atStart = revives(log).filter((e) => e.turn === 0);
-    expect(atStart.map((e) => e.name).sort()).toEqual(["A", "B"]);
+    expect(atStart).toHaveLength(1);
+    expect(log.some((e) => e.type === "ChainBlocked" && e.spent && e.ability.unit.endsWith(":Necromancer"))).toBe(true);
     expect(failed(log).filter((e) => e.turn === 0)).toHaveLength(0);
-    expect(lineAt(log, atStart[1]!.id)).toEqual(["A", "B", "C", "Necromancer"]);
   });
 
   test("without the rule → unchanged: revives at the back, no limit", () => {

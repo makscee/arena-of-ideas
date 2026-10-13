@@ -145,15 +145,16 @@ describe("line order", () => {
 
   test("a cascade resolves breadth-first: every reaction to one event, front to back, before reactions to their results", () => {
     // Shieldbearer (A1) and a second Shieldbearer (A3) both react to BattleStart;
-    // Smith (A2) reacts to their Shields only after both have fired.
+    // Smith (A2) reacts to their Shields only after both have fired, and
+    // only once: a unit acts at most once per chain (#1030).
     const log = run([Shieldbearer, Smith, { ...Shieldbearer, name: "Warden" }], [dummy("Dummy", 9, 1)]);
     const order = log.filter((e) => e.type === "StatusApplied").map(show);
     expect(order).toEqual([
       "Shield on A1:Shieldbearer by A1:Shieldbearer",
       "Shield on A3:Warden by A3:Warden",
       "Strength on A1:Shieldbearer by A2:Smith",
-      "Strength on A3:Warden by A2:Smith",
     ]);
+    expect(log.filter((e) => e.type === "ChainBlocked" && e.spent).map((e) => e.type === "ChainBlocked" && e.ability.unit)).toEqual(["A2:Smith"]);
   });
 });
 
