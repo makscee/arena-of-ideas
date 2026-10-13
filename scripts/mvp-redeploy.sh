@@ -260,6 +260,10 @@ cat > "\$PLIST" <<PL
 </dict></plist>
 PL
 # bootout returns before the job is gone; bootstrap too early fails with EIO.
+# The holding server (scripts/arena-dark.sh, #1044) holds this port while Arena is dark: the reopen takes its place.
+HOLDING=ru.makscee.arena-holding
+launchctl bootout "gui/\$(id -u)/\$HOLDING" 2>/dev/null || true
+for i in \$(seq 1 20); do launchctl print "gui/\$(id -u)/\$HOLDING" >/dev/null 2>&1 || break; sleep 0.5; done
 launchctl bootout "gui/\$(id -u)/\$LABEL" 2>/dev/null || true
 for i in \$(seq 1 20); do launchctl print "gui/\$(id -u)/\$LABEL" >/dev/null 2>&1 || break; sleep 0.5; done
 # Still loaded after the wait: the old server keeps running. Say so and stop,

@@ -218,7 +218,7 @@ export const api = {
    * `telegram` (M4-6): Telegram login is on, with the real bot or the fake.
    * `mail` (#929): email login is on, by SMTP or the fake mailer.
    * `contentVersion`: the live pool's; ./content.ts refetches when it moves. */
-  health: () => call<{ invites?: boolean; open?: boolean; contentVersion?: string; telegram?: false | "bot" | "fake"; mail?: false | "smtp" | "fake" }>("GET", "/health"),
+  health: () => call<{ dark?: boolean; invites?: boolean; open?: boolean; contentVersion?: string; telegram?: false | "bot" | "fake"; mail?: false | "smtp" | "fake" }>("GET", "/health"),
   content: () => call<MvpContent>("GET", "/content"),
   home: () => call<HomeView>("GET", "/home"),
   startRun: () => call<RunView>("POST", "/runs"),

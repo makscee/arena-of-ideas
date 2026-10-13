@@ -22,6 +22,7 @@ import { instantTuner, nextCard, overnightCheck, seedCandidate } from "./votes.j
 /** What the client opens once the fixture is built (mobile/main.ts openScene). */
 export type SceneEntry =
   | { screen: "name" }
+  | { screen: "holding" }
   | { screen: "home"; ended?: number; click?: string; scroll?: string }
   | { screen: "shop"; runId: string }
   | { screen: "battle"; battleId: string; runId?: string; keys?: string[] }
@@ -133,6 +134,7 @@ let dayEnded: number | null = null;
 
 export const SCENES: Scene[] = [
   { id: "signin", group: "Start", title: "Create a player", look: "The first screen: name field, sign-in options", desktop: true, build: () => ({ player: null, entry: { screen: "name" } }) },
+  { id: "holding", group: "Start", title: "Holding page (Arena dark)", look: "What the public URL shows while Arena is rebuilt: title, what's coming, language switch", desktop: true, build: () => ({ player: null, entry: { screen: "holding" } }) },
   { id: "home", group: "Start", title: "Home / Throne", look: "Champion hero, Play, ideas meter, vote card, nav", desktop: true, build: home() },
   { id: "settings", group: "Start", title: "Settings sheet", look: "Sound, music, language, palette rows, How to play", desktop: true, build: home({ click: "settings" }) },
 

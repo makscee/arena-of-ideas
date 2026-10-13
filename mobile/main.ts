@@ -279,6 +279,18 @@ function legendPage(): HTMLElement {
 
 // ---------- name ----------
 
+/** Arena is dark while rules v2 are built (#1044): a server that answers /health with `dark` (holding/server.mjs) has no game behind it, so this replaces every screen. */
+function holdingScreen(): void {
+  music("home");
+  show(
+    h("h1", {}, t("name.title")),
+    h("h2", { "data-testid": "holding-title" }, t("holding.title")),
+    h("p", { class: "dim", "data-testid": "holding-lead" }, t("holding.lead")),
+    h("ul", { class: "holding-list", "data-testid": "holding-list" }, h("li", {}, t("holding.units")), h("li", {}, t("holding.fusions")), h("li", {}, t("holding.codex"))),
+    langRow(),
+  );
+}
+
 function nameScreen(): void {
   music("home");
   // An invite-only server (slice 13) takes no new names: a player comes from
@@ -1695,6 +1707,8 @@ function openScene(id: string): void {
     switch (entry.screen) {
       case "name":
         return nameScreen();
+      case "holding":
+        return holdingScreen();
       case "home":
         await homeScreen(entry.ended ?? null);
         if (entry.click) settle(() => document.querySelector<HTMLElement>(`[data-testid="${entry.click}"]`)?.click());
@@ -1843,23 +1857,32 @@ addEventListener("hashchange", () => {
 
 if (sceneId) {
   openScene(sceneId);
-} else if (battleLink) {
-  openBattleLink(battleLink);
-} else if (inviteCode) {
-  openInvite(inviteCode);
-} else if (joinCode) {
-  openJoinLink(joinCode);
-} else if (api.player) {
-  const err = errorLine();
-  void guarded(err, async () => {
-    // A name from before invites (no token) is no login on an invite-only
-    // server: forget it and ask for the link.
-    if (!api.hasToken && (await api.health()).invites) {
-      api.forget();
-      return nameScreen();
-    }
-    await homeScreen();
-  }).then(() => {
-    if (err.textContent) show(h("h1", {}, t("invite.title")), err, button(t("invite.retry"), () => location.reload(), "primary"));
-  });
-} else nameScreen();
+} else {
+  // A dark server (holding/server.mjs) holds the page while the game is rebuilt: ask before anything else.
+  void api.health().then(
+    (hl) => (hl.dark ? holdingScreen() : boot()),
+    () => boot(),
+  );
+}
+function boot(): void {
+  if (battleLink) {
+    openBattleLink(battleLink);
+  } else if (inviteCode) {
+    openInvite(inviteCode);
+  } else if (joinCode) {
+    openJoinLink(joinCode);
+  } else if (api.player) {
+    const err = errorLine();
+    void guarded(err, async () => {
+      // A name from before invites (no token) is no login on an invite-only
+      // server: forget it and ask for the link.
+      if (!api.hasToken && (await api.health()).invites) {
+        api.forget();
+        return nameScreen();
+      }
+      await homeScreen();
+    }).then(() => {
+      if (err.textContent) show(h("h1", {}, t("invite.title")), err, button(t("invite.retry"), () => location.reload(), "primary"));
+    });
+  } else nameScreen();
+}
