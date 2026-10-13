@@ -74,6 +74,12 @@ export const main = {
 
   "name.title": "ARENA OF IDEAS",
   "name.inviteOnly": "Arena is invite-only for now. Open your invite link on this device to play.",
+  // The holding page while Arena is rebuilt (#1044, rules v2): shown instead of every screen when /health says dark.
+  "holding.title": "Arena is being rebuilt",
+  "holding.lead": "The game is closed while we remake it from the ground up. It reopens when the new units are ready.",
+  "holding.units": "Unique units: every unit gets its own signature sentence, not a mix of stock parts.",
+  "holding.fusions": "Designed fusions: two awoken units fuse into a third creature made for the pair.",
+  "holding.codex": "The Codex: see which fusions you found, which are ready to claim and which are still unforged, and wish for the ones you want.",
   "name.placeholder": "Your name",
   "name.intro": "An auto-battler of chains. Pick a name; it stays on this device.",
   "name.enter": "Enter",

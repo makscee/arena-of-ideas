@@ -46,6 +46,8 @@
     "mvp:scenes": "node e2e/scenes.mjs",
     "mvp:scenes-index": "node --import tsx/esm scripts/scenes-index.ts",
     "mvp:lab": "scripts/arena-lab.sh",
+    "mvp:workshop": "scripts/arena-workshop.sh",
+    "mvp:dark": "scripts/arena-dark.sh",
     "mvp:meta": "node --import tsx/esm scripts/meta-health.ts",
     "mvp:tune": "node --import tsx/esm scripts/tune-unit.ts",
     "mvp:translate": "node --import tsx/esm server/src/mvp/translate-cli.ts",

@@ -1758,3 +1758,7 @@ button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padd
   .bv-ledger button.bv-skip { min-height: 28px; padding: 0 12px; }
   #app[data-screen="battle"] .bv-chain-sum { font-size: 16px; max-width: 900px; }
 }
+
+/* The holding page while Arena is rebuilt (#1044). */
+.holding-list { margin: 0; padding-left: 20px; display: grid; gap: 10px; }
+.holding-list + .lang-row { margin-top: 12px; }

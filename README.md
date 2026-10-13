@@ -39,6 +39,39 @@ The index of them all is https://m1.twin-pogona.ts.net/r/arena-scenes.html (tail
 and its How to try gives those scene links (point the lab at the card's
 branch first: `npm run mvp:lab -- <branch>`).
 
+## Dark, and the workshop (mission #1043, rules v2)
+
+While rules v2 are built, `arena.makscee.ru/arena` shows a holding page (EN/RU:
+what's coming) and nobody can start a run. Two m1 scripts, both run on m1
+(`ssh m1 'zsh -lic "cd ~/arena-mvp && …"'` from elsewhere):
+
+- **Dark** (`npm run mvp:dark -- [branch]`, default `mission-1043-rules-v2`):
+  builds `holding/server.mjs` + the client in `~/arena-holding`, stops the live
+  game (`ru.makscee.arena-mvp`), copies its database files to
+  `~/arena-mvp/data/dark-backup-<time>/`, moves its plist to
+  `~/arena-mvp/data/live.plist.aside`, and runs the holding server
+  (`ru.makscee.arena-holding`) on the same port, 8791. The holding server has
+  no database: the live world is never opened, wiped or migrated. It answers
+  `/api/v1/health` with `dark: true`, which makes the client draw the holding
+  page (scene `holding`), and 503 on every other API route. The reopen is on
+  Maks's word: `npm run mvp:redeploy -- mvp-live` stops the holding server first.
+- **The workshop** (`https://m1.twin-pogona.ts.net/arena-workshop/`, launchd
+  `ru.makscee.arena-workshop`, `:8794`, clone `~/arena-workshop`, DB
+  `~/arena-workshop/data/workshop.db`): a persistent, invite-only world that
+  runs the mission branch with `MVP_DEV=1`. **The one command that points it at
+  a commit** (the orchestrator runs it after each checked merge, on m1):
+
+  ```
+  scripts/arena-workshop.sh <commit-or-branch>          # npm run mvp:workshop -- <ref>
+  scripts/arena-workshop.sh <ref> --fresh               # also a new world (old DB moved aside)
+  scripts/arena-workshop.sh invite <name> [--admin]     # makes that person's invite, prints its link
+  scripts/arena-workshop.sh list                        # every invite with its link
+  ```
+
+  The world keeps its data across commits (the server migrates it at start);
+  `--fresh` is for a commit whose migration can't. It is tailnet only and
+  never touches the live database.
+
 ## Deploy
 
 One container ships the whole game: the arena server (`server/`, see
