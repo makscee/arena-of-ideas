@@ -1,4 +1,4 @@
-import { example, plain } from "./examples.js";
+import { EXAMPLE_ABILITIES, example, plain } from "./examples.js";
 import type { EffectWord } from "./types.js";
 import type { EffectV2, UnitDef } from "../types.js";
 
@@ -21,7 +21,7 @@ export const strikeAgain: EffectWord<E> = {
   en: () => "it strikes again",
   ru: () => "он бьёт ещё раз",
   example: {
-    input: { ...example([Twin], [plain("Brute", 30, 1)]), abilities: { Again: { name: "Again", family: "Strike", effects: [{ kind: "strikeAgain" }] } } },
+    input: { ...example([Twin], [plain("Brute", 30, 1)]), abilities: { ...EXAMPLE_ABILITIES, Again: { name: "Again", family: "Strike", effects: [{ kind: "strikeAgain" }] } } },
     trace: "Twin strikes again",
   },
 };

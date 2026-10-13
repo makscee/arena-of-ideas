@@ -89,7 +89,7 @@ export const FIXTURE_ABILITIES: AbilityRegistry = {
   Glow: { name: "Glow", family: "Heal", effects: [{ kind: "heal", amount: { kind: "stat", stat: "pwr", of: "holder" } }] },
   ShellAll: { name: "ShellAll", family: "Shield", effects: [{ kind: "applyStatus", status: "Shield", stacks: { kind: "plus", a: { kind: "count", fact: "hitsTaken" }, b: { kind: "count", fact: "hitsTakenByAllies" } } }] },
   Charge: { name: "Charge", family: "Control", effects: [{ kind: "applyStatus", status: "Strength", stacks: c(1) }] },
-  Venom: { name: "Venom", family: "Status", effects: [{ kind: "applyStatus", status: "Poison", stacks: c(1) }] },
+  Venom: { name: "Venom", family: "Poison", effects: [{ kind: "applyStatus", status: "Poison", stacks: c(1) }] },
   Guard: { name: "Guard", family: "Shield", effects: [{ kind: "applyStatus", status: "Shield", stacks: c(1) }] },
   SproutAwoken: {
     name: "SproutAwoken",
@@ -156,7 +156,10 @@ const Hedgehog: UnitDef = rule("Hedgehog", 8, 1, { on: "Hurt", unit: "holder" },
 
 /** An enemy that poisons a random enemy at each turn start. */
 const Spitter = (hp = 30): UnitDef => rule("Spitter", hp, 1, { on: "TurnStart" }, { kind: "randomEnemy" }, "Venom");
+/** An enemy that shoots a random enemy at each turn start (a randomly aimed Hurt). */
+const Slinger = (hp = 30): UnitDef => rule("Slinger", hp, 1, { on: "TurnStart" }, { kind: "randomEnemy" }, "Shoot");
 
+const SEED_MAGNET = 2;
 const fight = (teamA: UnitDef[], teamB: UnitDef[], seed = 1): BattleInput => ({ teamA, teamB, seed, statuses: FIXTURE_STATUSES, abilities: FIXTURE_ABILITIES });
 
 /** name → its battle and the trace line the battle shows. */
@@ -166,7 +169,8 @@ export const FIXTURES: Record<string, { input: BattleInput; trace: string }> = {
   candle: { input: fight([Candle], [plain("Brute", 30, 2)]), trace: "Candle intercepts: Candle survives at 1 HP, loses 1 PWR" },
   gambler: { input: fight([Gambler], [plain("Brute", 30, 1)]), trace: "Gambler flips: heads" },
   nautilus: { input: fight([Nautilus], [plain("Brute", 30, 3)]), trace: "Nautilus → self (Nautilus) → Shield 3" },
-  magnet: { input: fight([Archer(), Magnet], [plain("Brute", 30, 2)]), trace: "Magnet intercepts: the hit on Archer lands on Magnet" },
+  // A randomly aimed shot at Archer lands on Magnet; Brute's front strikes on Archer pass (no Redirected in the golden).
+  magnet: { input: fight([Archer(6), Magnet], [Slinger()], SEED_MAGNET), trace: "Magnet intercepts: the hit on Archer lands on Magnet" },
   raven: { input: fight([Archer(1), Raven], [plain("Brute", 30, 2)]), trace: "Raven performs the rule of Archer" },
   seed: { input: fight([Seed, Archer()], [plain("Brute", 30, 1)]), trace: "Seed becomes Tree (0/4)" },
   gamblerTails: { input: fight([Gambler], [plain("Brute", 30, 1)], 2), trace: "Gambler's strike on Brute hits for 0" },
@@ -178,7 +182,7 @@ export const FIXTURES: Record<string, { input: BattleInput; trace: string }> = {
   nautilusAwoken: { input: fight([plain("Squire", 4, 1), NautilusAwoken], [plain("Brute", 30, 3)]), trace: "Nautilus → self (Nautilus) → Shield 3" },
   magnetAwoken: { input: fight([Archer(6), MagnetAwoken], [Spitter()], 3), trace: "Magnet intercepts: the status on Archer lands on Magnet" },
   ravenAwoken: { input: fight([Archer(1), rule("Bowman", 1, 1, { on: "TurnStart" }, { kind: "frontEnemy" }, "Shoot"), RavenAwoken], [plain("Brute", 30, 2)]), trace: "Raven performs the rule of Bowman" },
-  seedAwoken: { input: fight([plain("Squire", 6, 1), SeedAwoken, Archer()], [plain("Brute", 30, 1)]), trace: "Seed becomes Tree (0/4)" },
+  seedAwoken: { input: fight([plain("Squire", 6, 1), SeedAwoken, Archer()], [plain("Brute", 30, 1)]), trace: "Seed becomes Tree (0/8)" },
   dejaVu: { input: fight([DejaVu], [Archer(12)]), trace: "Déjà Vu performs the rule of Archer" },
   graveTree: { input: fight([Archer(1), GraveTree], [plain("Brute", 30, 2)]), trace: "Grave Tree grows Sapling with the rule of Archer" },
 };
