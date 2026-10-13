@@ -149,7 +149,7 @@ An ability instance never fires in response to an event whose `causedBy` ancestr
 _Avoid_: recursion guard, loop limit, cascade energy (dormant [DEFER] fallback)
 
 **ChainBlocked**:
-The log event for a firing suppressed by the no-self-retrigger law — the replay explains chain stops with it.
+The log event for a firing suppressed by the no-self-retrigger law, or (`spent: true`) by the once-per-chain law: a unit acts at most once per chain — the replay explains chain stops with it.
 _Avoid_: trigger skipped, loop detected
 
 **Intercepted**:
