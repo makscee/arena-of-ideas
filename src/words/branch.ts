@@ -3,6 +3,7 @@ import type { EffectWord, Say } from "./types.js";
 import type { Condition, Effect, EffectV2, UnitDef } from "../types.js";
 import { describeCondition, describeEffect } from "../describe.js";
 import { conditionWord } from "./index.js";
+import { ALL_OR_NOTHING } from "./all-or-nothing.js";
 
 type E = Extract<EffectV2, { kind: "branch" }>;
 
@@ -14,13 +15,7 @@ const Gambler: UnitDef = {
   abilities: ["AllOrNothing"],
 };
 
-/** Gambler's rule: heads deals double, tails none. */
-export const ALL_OR_NOTHING: Effect = {
-  kind: "branch",
-  if: { kind: "flip", p: 0.5 },
-  then: [{ kind: "replaceAmount", amount: { kind: "twice", of: { kind: "stat", stat: "pwr", of: "holder" } } }],
-  else: [{ kind: "replaceAmount", amount: { kind: "const", value: 0 } }],
-};
+export { ALL_OR_NOTHING };
 
 /** If / else: check the condition (a flip logs its coin) and run one side.
  * Runs in either context; Gambler's "double damage or none" (§4). */

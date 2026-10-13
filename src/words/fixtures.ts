@@ -6,7 +6,7 @@
 // (§4's "awoken" lines), unit batch 1 (#1046).
 
 import type { AbilityRegistry, BattleInput, StatusRegistry, UnitDef } from "../types.js";
-import { ALL_OR_NOTHING } from "./branch.js";
+import { ALL_OR_NOTHING } from "./all-or-nothing.js";
 import { plain, rule } from "./examples.js";
 
 export const FIXTURE_STATUSES: StatusRegistry = {
@@ -36,6 +36,7 @@ export const FIXTURE_STATUSES: StatusRegistry = {
   // Awoken Hourglass's counter: the same, but every ally behind acts again.
   Sands: {
     name: "Sands",
+    names: { en: "Sands", ru: { name: "Пески", acc: "Пески", count: ["Песок", "Песка", "Песков"] } },
     counter: true,
     triggers: [{ kind: "trigger", on: { on: "TurnEnd" } }],
     condition: { kind: "stacksAtLeast", status: "Sands", n: 3, of: "holder" },
@@ -47,6 +48,7 @@ export const FIXTURE_STATUSES: StatusRegistry = {
   // An enemy's random poison: 1 damage at each turn end.
   Poison: {
     name: "Poison",
+    names: { en: "Poison", ru: { name: "Яд", acc: "Яд", count: ["Яд", "Яда", "Ядов"] } },
     triggers: [{ kind: "trigger", on: { on: "TurnEnd" } }],
     selectors: [{ kind: "holder" }],
     abilities: [{ effects: [{ kind: "damage", amount: { kind: "const", value: 1 } }] }],
@@ -62,6 +64,7 @@ export const FIXTURE_STATUSES: StatusRegistry = {
   },
   Memories: {
     name: "Memories",
+    names: { en: "Memories", ru: { name: "Воспоминания", acc: "Воспоминания", count: ["Воспоминание", "Воспоминания", "Воспоминаний"] } },
     counter: true,
     triggers: [{ kind: "trigger", on: { on: "TurnStart" } }],
     selectors: [{ kind: "holder" }],

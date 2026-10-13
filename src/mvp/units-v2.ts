@@ -9,7 +9,7 @@
 // fixtures in src/words/fixtures.ts (goldens there).
 
 import type { AbilityRegistry, StatusRegistry } from "../types.js";
-import { ALL_OR_NOTHING } from "../words/branch.js";
+import { ALL_OR_NOTHING } from "../words/all-or-nothing.js";
 import type { Tier, UnitForm } from "./contract.js";
 import { V2_NUMBERS } from "./units-v2-numbers.js";
 
