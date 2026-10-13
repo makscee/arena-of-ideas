@@ -10,7 +10,7 @@ import type {
   Amount,
   Condition,
   Effect,
-  EventPattern,
+  EventPattern, EventPatternV1,
   Selector,
   SelectorV1,
   StatusDef,
@@ -170,7 +170,11 @@ export function describeWhen(w: When, opts: DescribeOpts = {}): string {
  * ("strikes"), and Poison or Fatigue damage isn't a strike; "is damaged"
  * promises the HP loss again. */
 export function describeWhenSegments(w: When, _opts: DescribeOpts = {}): DescribeSegment[] {
-  const p: EventPattern = w.on;
+  if (w.on.on === "Acted") {
+    const who = w.on.unit === "enemy" ? (w.on.front ? "front enemy" : "enemy") : w.on.unit === "otherAlly" || w.on.unit === "ally" ? "ally" : "unit";
+    return [{ text: `${who} acts`, partRef: { family: "trigger", kind: "Acted" } }];
+  }
+  const p: EventPatternV1 = w.on;
   const intercept = w.kind === "interceptor";
   // The when clause names a Trigger or Interceptor Part (keyed on the event
   // pattern's `on` tag) — the clause's lead phrasing carries the codex ref.
@@ -524,7 +528,7 @@ export interface AbilityChips {
  * words (the glossary's labels): "Strikes", not "after this unit strikes". An
  * interceptor reuses its event's label — the chip line names the moment, not
  * the trigger/interceptor split. */
-const TRIGGER_CHIP: Record<EventPattern["on"], { label: string; glyph: string }> = {
+const TRIGGER_CHIP: Record<EventPatternV1["on"], { label: string; glyph: string }> = {
   BattleStart: { label: "Battle start", glyph: "⚑" },
   TurnStart: { label: "Turn start", glyph: "⟳" },
   TurnEnd: { label: "Turn end", glyph: "⟲" },
@@ -601,7 +605,7 @@ function terseAction(e: Effect): string {
  * describeAbility sentence stays the inspector's; this is the at-a-glance read. */
 export function abilityChips(ab: Ability): AbilityChips {
   const w0 = ab.whens?.[0];
-  const t = w0 !== undefined ? TRIGGER_CHIP[w0.on.on] : undefined;
+  const t = w0 !== undefined && w0.on.on !== "Acted" ? TRIGGER_CHIP[w0.on.on] : undefined;
   const s0 = ab.selectors?.[0];
   const e0 = ab.effects[0];
   return {

@@ -279,5 +279,8 @@ Trigger-context effects; each logs a `RuleMod {unit, op, other}` event (caused b
 - `transform {into}` — the target becomes `into` in place (same id and slot): its name, base stats and rule are the new unit's, its statuses stay, and its HP carries over proportionally (rounded, at least 1). Once per battle per unit. A `Transformed {unit, name, hp, pwr}` event logs it.
 - `summonWithRule {unit}` — a summon that carries the target's rule (its own stats). When the target is a fallen ally it enters at the slot where the target fell (the `Summon` event says `slot`); otherwise at the front, as `summon`.
 
+### 11.6a "Whenever it acts"
+`{ on: "Acted", unit?, front?: true }` (trigger-only) matches a unit's own rule firing, not its statuses': once the firing has run, the reactors listening for it are queued on the event the actor reacted to. It logs no event of its own, so no v1 log changes; the once-per-chain law keeps two listeners from echoing each other. `front: true` matches only while the actor is at the front of its line (Déjà Vu: "whatever the enemy in front of it does").
+
 ### 11.7 Guardrails, as built
 Seeded and deterministic: `flip` and `randomAlly` are draws from the battle seed. `actAgain`/`performRemembered` firings are steps against the chain cap. A redirect applies once per event; a transform once per battle per unit. Rule-modifying effects sit at the root tier of the chain order (`src/mvp/units.ts`): the validator rejects a rule with `copyRule`, `actAgain`, `remember`, `performRemembered` or `swapRules` that triggers on a chain link (`StatusApplied`, `StatusRemoved`, `Heal`, `StatChanged`).

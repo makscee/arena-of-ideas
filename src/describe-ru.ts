@@ -11,7 +11,7 @@
 // 5 Щитов). Display-only, like describe.ts.
 
 import { amountWord, conditionWord, effectWord, isV2Effect, selectorWord } from "./words/index.js";
-import type { Ability, Amount, Condition, Effect, EventPattern, Selector, SelectorV1, StatusDef, UnitFilter, When } from "./types.js";
+import type { Ability, Amount, Condition, Effect, EventPattern, EventPatternV1, Selector, SelectorV1, StatusDef, UnitFilter, When } from "./types.js";
 import type { DescribeOpts, DescribeSegment, PartRef, Side } from "./describe.js";
 import type { TermId } from "./glossary.js";
 
@@ -134,7 +134,11 @@ function eventOf(on: keyof typeof EVENT, f: UnitFilter | undefined): string {
  * Part ref, `clause: "when"`, the scope; an interceptor's "перед" its own
  * `term:would` run; a status its own run). */
 export function describeWhenSegmentsRu(w: When): DescribeSegment[] {
-  const p: EventPattern = w.on;
+  if (w.on.on === "Acted") {
+    const who = w.on.unit === "enemy" ? (w.on.front ? "передний враг" : "враг") : w.on.unit === "otherAlly" || w.on.unit === "ally" ? "союзник" : "боец";
+    return [{ text: `${who} действует`, partRef: { family: "trigger", kind: "Acted" } }];
+  }
+  const p: EventPatternV1 = w.on;
   const intercept = w.kind === "interceptor";
   const ref: PartRef = { family: intercept ? "interceptor" : "trigger", kind: p.on };
   const term: TermId = `trigger:${p.on}`;
@@ -259,11 +263,11 @@ function shortHead(e: Effect): DescribeSegment[] | undefined {
 
 /** The event an ability's "cancel it" cancels, by its noun's gender: атаку
  * → "её", удар → "его". */
-const CANCEL_IT: Partial<Record<EventPattern["on"], string>> = { Strike: "её", Death: "её" };
+const CANCEL_IT: Partial<Record<EventPatternV1["on"], string>> = { Strike: "её", Death: "её" };
 
 interface EffectCtx extends DescribeOpts {
   selectors: Selector[];
-  event?: EventPattern["on"];
+  event?: EventPatternV1["on"];
 }
 
 function effectSegs(e: Effect, ctx: EffectCtx): DescribeSegment[] {
@@ -357,7 +361,7 @@ export function describeAbilitySegmentsRu(ab: Ability, opts: DescribeOpts): Desc
   if (ab.condition !== undefined) segs.push(seg(", "), ...describeConditionSegmentsRu(ab.condition));
   segs.push(seg(": "));
   const gone = (ab.whens ?? []).some((w) => w.kind !== "interceptor" && w.on.on === "Death" && w.on.unit === "holder");
-  const ctx: EffectCtx = { ...opts, selectors: ab.selectors ?? [], ...(gone ? { holderGone: true } : {}), ...(ab.whens?.[0] ? { event: ab.whens[0].on.on } : {}) };
+  const ctx: EffectCtx = { ...opts, selectors: ab.selectors ?? [], ...(gone ? { holderGone: true } : {}), ...(ab.whens?.[0] && ab.whens[0].on.on !== "Acted" ? { event: ab.whens[0].on.on } : {}) };
   // The same merging as English: a run of "amount, word, to T" effects names T
   // once, joined by commas and a final "и"; any other pair keeps ", затем".
   ab.effects.forEach((e, i) => {

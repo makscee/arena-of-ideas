@@ -472,6 +472,16 @@ function validatePattern(on: unknown, registry: StatusRegistry, path: string, is
     return;
   }
   const name = on["on"];
+  if (name === "Acted") {
+    // Rules v2 "whenever <unit> acts" (types.ts ActedPattern).
+    for (const key of Object.keys(on)) {
+      if (key === "on") continue;
+      if (key === "unit" && oneOf(on[key], UNIT_FILTERS)) continue;
+      if (key === "front" && on[key] === true) continue;
+      issues.push({ path: `${path}.${key}`, message: `"Acted" patterns take only "unit" (a filter) and "front: true"` });
+    }
+    return;
+  }
   if (!oneOf(name, EVENT_NAMES)) {
     issues.push({ path: `${path}.on`, message: `unknown event ${JSON.stringify(name)} — patterns can match ${list(EVENT_NAMES)}` });
     return;

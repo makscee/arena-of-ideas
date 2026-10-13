@@ -27,7 +27,7 @@ import type {
   ConditionV1,
   Effect,
   EffectV1,
-  EventPattern,
+  EventPattern, EventPatternV1,
   Selector,
   SelectorV1,
   UnitDef,
@@ -85,10 +85,10 @@ const CONDITION_SAMPLES: Record<ConditionV1["kind"], Condition> = {
 };
 
 /** Every EventPattern `on` tag → a representative pattern. Key set =
- * EventPattern["on"] (the union of the `on` discriminants). A Trigger fires
+ * EventPatternV1["on"] (the union of the `on` discriminants). A Trigger fires
  * after the event; an Interceptor fires instead of a proposed one — so each tag
  * appears once per `When.kind` it is valid in (below). */
-const EVENT_PATTERN_SAMPLES: Record<EventPattern["on"], EventPattern> = {
+const EVENT_PATTERN_SAMPLES: Record<EventPatternV1["on"], EventPattern> = {
   BattleStart: { on: "BattleStart" },
   TurnStart: { on: "TurnStart" },
   TurnEnd: { on: "TurnEnd" },
@@ -109,7 +109,7 @@ const EVENT_PATTERN_SAMPLES: Record<EventPattern["on"], EventPattern> = {
 // proposable subset (those that go through the propose→settle path) are also
 // interceptors. Listed as a typed subset so a new proposable event must be
 // classified here consciously.
-const INTERCEPTABLE: ReadonlySet<EventPattern["on"]> = new Set<EventPattern["on"]>([
+const INTERCEPTABLE: ReadonlySet<EventPatternV1["on"]> = new Set<EventPatternV1["on"]>([
   "Strike",
   "Hurt",
   "Heal",
@@ -139,7 +139,7 @@ export function partAtoms(): PartAtom[] {
   // Triggers + interceptors: one card per (When.kind, EventPattern) the type
   // space allows. The meaning is describeWhen of a sample When carrying that
   // pattern — kernel-derived, the same sentence an ability's clause would read.
-  for (const on of Object.keys(EVENT_PATTERN_SAMPLES) as EventPattern["on"][]) {
+  for (const on of Object.keys(EVENT_PATTERN_SAMPLES) as EventPatternV1["on"][]) {
     const pattern = EVENT_PATTERN_SAMPLES[on];
     const trigger: When = { kind: "trigger", on: pattern };
     atoms.push({

@@ -117,7 +117,15 @@ export interface When {
  * "otherAlly" is the holder's side minus the holder ("after an ally dies" never fires on its own death). */
 export type UnitFilter = "holder" | "ally" | "otherAlly" | "enemy" | "any";
 
-export type EventPattern =
+export type EventPattern = EventPatternV1 | ActedPattern;
+
+/** Rules v2 (#1043 §5, Déjà Vu): "whenever <unit> acts". It matches a unit's
+ * own rule firing (not its statuses'), with no event of its own in the log:
+ * the reaction is caused by the event the actor reacted to. `front`: only
+ * while the actor is at the front of its line. Trigger-only. */
+export type ActedPattern = { on: "Acted"; unit?: UnitFilter; front?: true };
+
+export type EventPatternV1 =
   | { on: "BattleStart" | "TurnStart" | "TurnEnd" }
   | { on: "Strike"; striker?: UnitFilter }
   | { on: "Hurt" | "Heal" | "Death" | "Summon"; unit?: UnitFilter }

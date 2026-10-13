@@ -14,13 +14,13 @@ import { describeStatus, type Lang } from "./describe.js";
 import { RU_STATUSES } from "./describe-ru.js";
 import { chainCappedTipRu, fatigueTipRu, RU_SCOPE_WHO, RU_SCOPED_EVENT, RU_TERMS, ruStatusTerm, scopeLabelRu, suddenDeathTipRu, timeUpTipRu } from "./glossary-ru.js";
 import { MVP_RULES, ROUND3_TURN_CAP } from "./mvp/contract.js";
-import type { Condition, ConditionV1, Effect, EffectV1, EventPattern, Selector, SelectorV1, StatusRegistry, UnitFilter } from "./types.js";
+import type { Condition, ConditionV1, Effect, EffectV1, EventPattern, EventPatternV1, Selector, SelectorV1, StatusRegistry, UnitFilter } from "./types.js";
 
 /** Every term id. `status:` takes a registry name ("Shield", "Poison", …). */
 export type TermId =
   | `stat:${"pwr" | "hp"}`
   | `status:${string}`
-  | `trigger:${EventPattern["on"]}`
+  | `trigger:${EventPatternV1["on"]}`
   | `condition:${ConditionV1["kind"]}`
   | `target:${SelectorV1["kind"]}`
   | `effect:${EffectV1["kind"]}`
@@ -256,7 +256,7 @@ export function termIcon(id: TermId, status?: string): IconId | undefined {
 
 /** What a unit trigger watches for, said of someone else (its tip is said of
  * the holder: "When it dies …"). */
-const SCOPED_EVENT: Partial<Record<EventPattern["on"], string>> = {
+const SCOPED_EVENT: Partial<Record<EventPatternV1["on"], string>> = {
   Strike: "makes its normal attack.",
   Hurt: "is hit by any damage, from anything. It counts even if all of it is blocked.",
   Heal: "gets HP back. A unit at full HP can't be healed, so this doesn't fire.",
@@ -280,7 +280,7 @@ const SCOPE_WHO: Record<Exclude<UnitFilter, "holder">, string> = {
 export function scopedTip(id: TermId, scope?: UnitFilter, lang?: Lang): string | undefined {
   const def = termDef(id, {}, lang);
   if (!def || !scope || scope === "holder" || !id.startsWith("trigger:")) return def?.tip;
-  const on = id.slice("trigger:".length) as EventPattern["on"];
+  const on = id.slice("trigger:".length) as EventPatternV1["on"];
   const event = (lang === "ru" ? RU_SCOPED_EVENT : SCOPED_EVENT)[on];
   return event ? `${(lang === "ru" ? RU_SCOPE_WHO : SCOPE_WHO)[scope]} ${event}` : def.tip;
 }
@@ -298,7 +298,7 @@ const SCOPE_SUBJECT: Record<Exclude<UnitFilter, "holder">, string> = {
  * isn't a unit trigger) keeps the plain label. */
 export function scopedLabel(id: TermId, scope?: UnitFilter, lang?: Lang): string | undefined {
   const def = termDef(id, {}, lang);
-  const on = id.slice("trigger:".length) as EventPattern["on"];
+  const on = id.slice("trigger:".length) as EventPatternV1["on"];
   if (!def || !id.startsWith("trigger:") || !SCOPED_EVENT[on]) return def?.label;
   return lang === "ru" ? scopeLabelRu(on, def.label, scope) : scopeLabel(def.label, scope);
 }

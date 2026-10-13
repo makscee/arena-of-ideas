@@ -59,6 +59,12 @@ export const FIXTURE_ABILITIES: AbilityRegistry = {
     effects: [{ kind: "delay", turns: 2, effect: { kind: "transform", into: rule("Tree", 8, 0, { on: "TurnStart" }, { kind: "allyBehind" }, "Grow") } }],
   },
   Grow: { name: "Grow", family: "Control", effects: [{ kind: "applyStatus", status: "Strength", stacks: c(1) }] },
+  // Déjà Vu: remember what the front enemy just did, do it one turn later.
+  Echo: {
+    name: "Echo",
+    family: "Arcane",
+    effects: [{ kind: "remember" }, { kind: "delay", turns: 1, effect: { kind: "performRemembered", mode: "once" } }],
+  },
   Sapling: {
     name: "Sapling",
     family: "Summon",
@@ -79,6 +85,7 @@ export const Nautilus: UnitDef = rule("Nautilus", 10, 1, { on: "Hurt", unit: "ho
 export const Magnet: UnitDef = { ...rule("Magnet", 12, 1, { on: "Hurt", unit: "otherAlly" }, { kind: "holder" }, "Pull"), triggers: [{ kind: "interceptor", on: { on: "Hurt", unit: "otherAlly" } }] };
 export const Raven: UnitDef = { ...rule("Raven", 8, 1, { on: "Death", unit: "otherAlly" }, { kind: "eventUnit" }, "Recall"), statuses: [{ status: "Memory", stacks: 1 }] };
 export const Seed: UnitDef = rule("Seed", 4, 0, { on: "BattleStart" }, { kind: "holder" }, "Sprout");
+export const DejaVu: UnitDef = { ...rule("Déjà Vu", 10, 2, { on: "TurnStart" }, { kind: "frontEnemy" }, "Echo"), triggers: [{ kind: "trigger", on: { on: "Acted", unit: "enemy", front: true } }] };
 export const GraveTree: UnitDef = rule("Grave Tree", 8, 1, { on: "Death", unit: "otherAlly" }, { kind: "eventUnit" }, "Sapling");
 
 const Hedgehog: UnitDef = rule("Hedgehog", 8, 1, { on: "Hurt", unit: "holder" }, { kind: "frontEnemy" }, "Zap");
@@ -95,5 +102,6 @@ export const FIXTURES: Record<string, { input: BattleInput; trace: string }> = {
   magnet: { input: fight([Archer(), Magnet], [plain("Brute", 30, 2)]), trace: "Magnet intercepts: the hit on Archer lands on Magnet" },
   raven: { input: fight([Archer(1), Raven], [plain("Brute", 30, 2)]), trace: "Raven performs the rule of Archer" },
   seed: { input: fight([Seed, Archer()], [plain("Brute", 30, 1)]), trace: "Seed becomes Tree (0/4)" },
+  dejaVu: { input: fight([DejaVu], [Archer(12)]), trace: "Déjà Vu performs the rule of Archer" },
   graveTree: { input: fight([Archer(1), GraveTree], [plain("Brute", 30, 2)]), trace: "Grave Tree grows Sapling with the rule of Archer" },
 };

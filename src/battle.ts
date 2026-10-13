@@ -167,6 +167,8 @@ class Engine {
 
   constructor(input: BattleInput) {
     this.input = input;
+    // Only battles with an Acted listener anywhere pay for looking for one.
+    this.anyActed = JSON.stringify([input.teamA, input.teamB, input.abilities ?? {}, input.statuses ?? {}]).includes('"on":"Acted"');
     Object.defineProperty(this.wordCtx, "turn", { get: () => this.turn });
     this.rng = mulberry32(input.seed);
     this.registry = input.statuses ?? {};
@@ -451,6 +453,25 @@ class Engine {
           }
         }
       }
+    }
+    this.enqueueActed(holder, f);
+  }
+
+  private anyActed: boolean;
+
+  /** Rules v2 "whenever <unit> acts": once a unit's own rule has fired, queue
+   * the reactors listening for it, on the event the actor reacted to. No event
+   * is logged, so v1 logs are unchanged. */
+  private enqueueActed(actor: UnitState, f: Firing): void {
+    if (!this.anyActed || f.ref.status !== undefined) return;
+    const atFront = this.lines[actor.side][0] === actor.id;
+    for (const r of this.orderedReactors()) {
+      const holder = this.units.get(r.holder);
+      if (!holder) continue;
+      const when = r.ability.triggers.findIndex(
+        (w) => w.kind === "trigger" && w.on.on === "Acted" && (!w.on.front || atFront) && this.filterMatches(w.on.unit, actor.id, holder),
+      );
+      if (when >= 0) this.queue.push({ ...withWhen(r, when), event: f.event });
     }
   }
 
