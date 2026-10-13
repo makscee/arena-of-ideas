@@ -26,6 +26,7 @@ import { formSegments } from "../../../src/mvp/form-text.js";
 import type { AbilityDef, AbilityRegistry, Amount, BattleEvent, Effect, StatusDef, StatusRegistry, UnitDef } from "../../../src/types.js";
 import { validateAbilityRegistry, validateTeam } from "../../../src/validate.js";
 import { expandAbilities, expandStatuses } from "../../../src/words/macros.js";
+import { namesMissing } from "../../../src/status-names.js";
 import { traceLines } from "../../../src/words/trace.js";
 
 // ---------- tonight's list ----------
@@ -247,6 +248,12 @@ export function compile(d: DesignDraft, a: Parent, b: Parent, name: string, take
   };
   const statuses = { ...a.statuses, ...b.statuses, ...n.statuses };
   const abilities = { ...a.abilities, ...b.abilities, ...n.abilities };
+  // A coined status says itself in EN and RU, or the rule isn't legal (§3 guardrail).
+  const unnamed = Object.entries(n.statuses).flatMap(([id, def]) => {
+    const why = namesMissing(def);
+    return why ? [`statuses.${id}: ${why}`] : [];
+  });
+  if (unnamed.length) return { issues: unnamed };
   let issues: string[];
   try {
     const xs = expandStatuses(statuses);
@@ -347,6 +354,8 @@ export function ruleText(c: Compiled, lang: Lang): string {
         { when: u.triggers ?? [], ...(u.condition ? { condition: u.condition } : {}), who: u.selectors ?? [], does: u.abilities ?? [], also: (u.also ?? []).map((x) => ({ who: x.selectors, does: x.abilities })) },
         abilities,
         lang,
+        c.statuses,
+        (u.statuses ?? []).map((s) => s.status),
       ),
     );
   } catch (e) {

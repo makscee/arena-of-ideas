@@ -168,6 +168,9 @@ export interface MvpStore {
   // Mission 2's new-words log (M2-5): what ideas needed that the game can't
   // say yet. Only additions; ./idea-reading.ts writes it.
   addWordRequest(w: WordRequest): void;
+  /** Records the word as found; false when it already was (the first claim keeps the credit). */
+  addFoundWord(f: FoundWord): boolean;
+  foundWords(): FoundWord[];
   /** Every request, oldest first. */
   wordRequests(): WordRequest[];
   // Mission 2's votes (M2-8); only ./votes.ts writes them.
@@ -210,10 +213,28 @@ export interface CodexWish {
 }
 
 export interface WordRequest {
-  ideaId: string;
+  /** Who asked (#1052): an idea reading, a night design or a unit batch. */
+  source: WordSource;
+  /** What asked: an idea id, a pair key ("a+b", order dropped) or a unit id. */
+  ref: string;
   word: string;
   part: string;
   createdAt: string;
+}
+
+/** The three places a request for a new word comes from; one queue holds them all. */
+export type WordSource = "idea" | "night" | "batch";
+
+/** A word found (#1052): the first claimed design that uses a forged word.
+ * `key` is the word's normalised request key (../words.ts wordKey). */
+export interface FoundWord {
+  key: string;
+  word: string;
+  kind: string;
+  /** The pair key of the claimed design, and the player who claimed it. */
+  pair: string;
+  playerId: string;
+  foundAt: string;
 }
 
 /** One player's either/or between a candidate and a live unit (M2-8):
@@ -630,6 +651,13 @@ export class MemoryMvpStore implements MvpStore {
     return this.votesList.filter((v) => (opts.candidateId === undefined || v.candidateId === opts.candidateId) && (opts.playerId === undefined || v.playerId === opts.playerId)).map((v) => ({ ...v }));
   }
   private words: WordRequest[] = [];
+  private found: FoundWord[] = [];
+  addFoundWord(f: FoundWord): boolean {
+    if (this.found.some((x) => x.key === f.key)) return false;
+    this.found.push({ ...f });
+    return true;
+  }
+  foundWords(): FoundWord[] { return this.found.map((f) => ({ ...f })); }
   addWordRequest(w: WordRequest): void { this.words.push({ ...w }); }
   wordRequests(): WordRequest[] { return this.words.map((w) => ({ ...w })); }
   private posts: DailyPost[] = [];

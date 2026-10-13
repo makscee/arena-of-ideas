@@ -164,6 +164,21 @@ describe("the forge in a run", () => {
     expect(again.run.line[0]!.name).toBe("Twist");
     expect(again.run.line[0]!.fusion!.discoveredBy).toEqual(maks);
     expect(rt.store.codexPair(pair.a, pair.b)!.claim).toEqual(pair.claim);
+    // its design uses no forged word: nothing is found
+    expect(rt.store.foundWords()).toEqual([]);
+  });
+
+  it("finds a forged word with the first claim of a design that uses it (#1052)", () => {
+    const rt = world();
+    const [a, b] = rt.content.units;
+    const p = ready(rt.content, a!.id, b!.id);
+    // the word as the design's JSON names it; unhurt is in registry/forged-words.json
+    p.candidates[1] = { ...p.candidates[1]!, uses: { kind: "unhurt" } } as FusionDesign;
+    rt.store.putCodexPair(p);
+    decide(rt, holding(rt, kim), { kind: "fuse", first: 0, second: 1, pick: 1 });
+    expect(rt.store.foundWords()).toEqual([expect.objectContaining({ word: "unhurt", kind: "unhurt", pair: [a!.id, b!.id].sort().join("+"), playerId: kim.id })]);
+    decide(rt, holding(rt, maks), { kind: "fuse", first: 0, second: 1 });
+    expect(rt.store.foundWords().map((f) => f.playerId)).toEqual([kim.id]);
   });
 
   it("shows a ready pair's three designs on the forge of a run that holds it, and keeps them sealed elsewhere", async () => {

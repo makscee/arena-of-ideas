@@ -22,6 +22,7 @@ export const FIXTURE_STATUSES: StatusRegistry = {
   // reads the grain just added at the same turn end.
   Grains: {
     name: "Grains",
+    names: { en: "Grains", ru: { name: "Песчинки", acc: "Песчинки", count: ["Песчинка", "Песчинки", "Песчинок"] } },
     counter: true,
     triggers: [{ kind: "trigger", on: { on: "TurnEnd" } }],
     condition: { kind: "stacksAtLeast", status: "Grains", n: 3, of: "holder" },
@@ -53,6 +54,7 @@ export const FIXTURE_STATUSES: StatusRegistry = {
   // Raven's second rule: at turn start, perform a remembered rule once (awoken: all).
   Memory: {
     name: "Memory",
+    names: { en: "Memory", ru: { name: "Память", acc: "Память", count: ["Память", "Памяти", "Памяти"] } },
     counter: true,
     triggers: [{ kind: "trigger", on: { on: "TurnStart" } }],
     selectors: [{ kind: "holder" }],

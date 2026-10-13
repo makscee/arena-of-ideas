@@ -306,10 +306,10 @@ function unitsTab(
     const t = trig.get(u.id);
     if (t && !triggers.has(t.key)) triggers.set(t.key, t);
   }
-  const text = new Map(units.map((u) => [u.id, `${u.name} ${englishName(u)} ${u.archetype ?? ""} ${formText(u.forms.sleeping, content.abilities, rulesLangOpt())} ${formText(u.forms.awoken, content.abilities, rulesLangOpt())}`.toLowerCase()]));
+  const text = new Map(units.map((u) => [u.id, `${u.name} ${englishName(u)} ${u.archetype ?? ""} ${formText(u.forms.sleeping, content.abilities, rulesLangOpt(), content.statuses)} ${formText(u.forms.awoken, content.abilities, rulesLangOpt(), content.statuses)}`.toLowerCase()]));
 
   const summons = content.summons ?? [];
-  const summonText = new Map(summons.map((x) => [x.id, `${x.name} ${x.form ? formText(x.form, content.abilities, rulesLangOpt()) : ""}`.toLowerCase()]));
+  const summonText = new Map(summons.map((x) => [x.id, `${x.name} ${x.form ? formText(x.form, content.abilities, rulesLangOpt(), content.statuses) : ""}`.toLowerCase()]));
   const grid = h("div", { class: "slots codex-grid", "data-testid": "codex-units" });
   const count = h("div", { class: "dim small", "data-testid": "codex-count" });
   const order = st.sort === "tier" ? t("codex.orderTier") : st.sort === "win" ? t("codex.orderWin") : t("codex.orderPick");
@@ -608,7 +608,7 @@ function usersByTerm(content: MvpContent): Map<string, UnitContent[]> {
   const out = new Map<string, UnitContent[]>();
   for (const u of [...content.units].sort(byTierName)) {
     const keys = new Set<string>();
-    for (const form of [u.forms.sleeping, u.forms.awoken]) for (const s of formSegments(form, content.abilities, rulesLangOpt())) if (s.term) keys.add(useKey(s.term, s.scope));
+    for (const form of [u.forms.sleeping, u.forms.awoken]) for (const s of formSegments(form, content.abilities, rulesLangOpt(), content.statuses)) if (s.term) keys.add(useKey(s.term, s.scope));
     for (const k of keys) out.set(k, [...(out.get(k) ?? []), u]);
   }
   return out;

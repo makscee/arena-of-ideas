@@ -311,11 +311,23 @@ export function describeMvpStore(name: string, make: () => MvpStore): void {
     it("logs new-word requests (M2-5), oldest first", () => {
       const s = make();
       expect(s.wordRequests()).toEqual([]);
-      const w = (ideaId: string, word: string) => ({ ideaId, word, part: `the ${word} part`, createdAt: "2026-10-08T08:00:00.000Z" });
+      const w = (ref: string, word: string) => ({ source: "idea" as const, ref, word, part: `the ${word} part`, createdAt: "2026-10-08T08:00:00.000Z" });
       s.addWordRequest(w("i1", "steal gold"));
       s.addWordRequest(w("i2", "swap places"));
       s.addWordRequest(w("i1", "steal gold"));
       expect(s.wordRequests()).toEqual([w("i1", "steal gold"), w("i2", "swap places"), w("i1", "steal gold")]);
+      s.addWordRequest({ ...w("a+b", "steal"), source: "night" });
+      s.addWordRequest({ ...w("u7", "steal"), source: "batch" });
+      expect(s.wordRequests().slice(3).map((r) => [r.source, r.ref, r.word])).toEqual([["night", "a+b", "steal"], ["batch", "u7", "steal"]]);
+    });
+
+    it("keeps the first claim of a found word (#1052)", () => {
+      const s = make();
+      const f = (playerId: string, foundAt: string) => ({ key: "steal", word: "steal", kind: "steal", pair: "magpie+shadow", playerId, foundAt });
+      expect(s.foundWords()).toEqual([]);
+      expect(s.addFoundWord(f("kim", "2026-10-14T01:00:00.000Z"))).toBe(true);
+      expect(s.addFoundWord(f("lee", "2026-10-14T02:00:00.000Z"))).toBe(false);
+      expect(s.foundWords()).toEqual([f("kim", "2026-10-14T01:00:00.000Z")]);
     });
 
     it("claims a day's post message once (M4-8), and records how it went", () => {

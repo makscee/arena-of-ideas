@@ -23,6 +23,7 @@ import { poolBattle, poolBattleId } from "../../../src/mvp/pool-battles.js";
 import { ROWS_V2 } from "../../../src/mvp/units-v2.js";
 import { codexPair, type FusionDesign, type PairState } from "../../../src/mvp/codex.js";
 import { codexForged, forgeOf } from "./codex.js";
+import { claimFixture, forgeFixture, type ClaimView, type ForgeView } from "../../../src/mvp/forge-view.js";
 import { instantTuner, nextCard, overnightCheck, seedCandidate } from "./votes.js";
 
 /** What the client opens once the fixture is built (mobile/main.ts openScene). */
@@ -36,7 +37,9 @@ export type SceneEntry =
   | { screen: "run-over"; runId: string }
   | { screen: "codex"; tab: "units" | "fusions" | "library" | "keywords" | "champions" | "howto" }
   | { screen: "ideas"; click?: string }
-  | { screen: "pick"; ideaId: string };
+  | { screen: "pick"; ideaId: string }
+  | { screen: "forge"; tab: "units" | "feed" | "words"; unit?: string; view: ForgeView }
+  | { screen: "claim"; claim: ClaimView; view: ForgeView; picked?: number };
 
 export interface SceneBuilt {
   /** The fixture's player, or null for the sign-in screen. */
@@ -127,6 +130,16 @@ const home = (extra: Omit<Extract<SceneEntry, { screen: "home" }>, "screen"> = {
 const codex = (tab: Extract<SceneEntry, { screen: "codex" }>["tab"]) => async (rt: MvpRuntime): Promise<SceneBuilt> => {
   await world(rt);
   return { player: fixturePlayer(rt), entry: { screen: "codex", tab } };
+};
+/** Codex v2 (#1051): the screens over the design page's eight units, from
+ * forgeFixture until the Codex data (#1049) serves the world's own. */
+const codexV2 = (tab: "units" | "feed" | "words", unit?: string) => (rt: MvpRuntime): SceneBuilt => {
+  const player = fixturePlayer(rt);
+  return { player, entry: { screen: "forge", tab, ...(unit ? { unit } : {}), view: forgeFixture(player.name) } };
+};
+const claim = (picked?: number) => (rt: MvpRuntime): SceneBuilt => {
+  const player = fixturePlayer(rt);
+  return { player, entry: { screen: "claim", claim: claimFixture(), view: forgeFixture(player.name), ...(picked === undefined ? {} : { picked }) } };
 };
 /** A player holding an idea written as `text`, read by the fake reader up to its archetype pick. */
 async function ideaAtArchetypes(rt: MvpRuntime, text = "A lantern keeper who heals the ally behind it whenever an enemy dies"): Promise<{ player: PlayerRef; ideaId: string }> {
@@ -287,6 +300,12 @@ export const SCENES: Scene[] = [
   { id: "codex-keywords", group: "Codex", title: "Codex: keywords", look: "Terms and the units that use them", desktop: true, build: codex("keywords") },
   { id: "codex-champions", group: "Codex", title: "Codex: champions / stats", look: "Records and past champions", desktop: true, build: codex("champions") },
   { id: "codex-howto", group: "Codex", title: "Codex: how to play", look: "The rules page", desktop: true, build: codex("howto") },
+  { id: "codex-unit", group: "Codex v2 (#1051)", title: "A unit's Codex page", look: "Hourglass: its partners Discovered (credit), Ready to claim (sealed), Not forged yet (Wish, a pair waiting for a word)", desktop: true, build: codexV2("units", "hourglass") },
+  { id: "codex-unit-mine", group: "Codex v2 (#1051)", title: "A page with your own claim", look: "Raven: Grave Tree discovered by you; the unit picker", desktop: true, build: codexV2("units", "raven") },
+  { id: "codex-today", group: "Codex v2 (#1051)", title: "Today: the daily feed", look: "What tonight's batch brought, who claimed what, words found, by day", desktop: true, build: codexV2("feed") },
+  { id: "codex-dictionary", group: "Codex v2 (#1051)", title: "The Dictionary", look: "'N words forged, not yet found'; each found word with credit and lineage", desktop: true, build: codexV2("words") },
+  { id: "claim", group: "Codex v2 (#1051)", title: "The claim moment", look: "Three sealed cards turn over (lean A, lean B, the twist with a new word); tap one, then Claim", desktop: true, build: claim() },
+  { id: "claim-done", group: "Codex v2 (#1051)", title: "Claimed: your name on it", look: "The picked design with 'Forged by @you', the other two sealed away", desktop: true, build: claim(2) },
   { id: "v2-hourglass", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Hourglass: a counter, then Archer acts again", look: "3.3 counter (Grains) and 3.5 actAgain: the grain count on the card, 'Hourglass: Archer acts again'", desktop: true, build: v2("hourglass") },
   { id: "v2-mirror", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Mirror copies the front enemy's rule", look: "3.5 copyRule at battle start: Mirror then fights with Hedgehog's rule", desktop: true, build: v2("mirror") },
   { id: "v2-candle", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Candle survives at 1 HP, pays 1 PWR", look: "3.4 preventDeath: the intercepted Death, the stat drop, death at 0 PWR", desktop: true, build: v2("candle") },

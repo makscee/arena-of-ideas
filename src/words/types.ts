@@ -114,6 +114,8 @@ export interface AmountWord<A = any> extends WordMeta {
 export interface Say {
   amount(a: import("../types.js").Amount): string;
   who(s: import("../types.js").Selector): string;
+  /** A nested effect (delay's), in the sentence's language, against the same Who. */
+  effect(e: import("../types.js").Effect): string;
 }
 
 /** Where an interceptor effect runs: the holder, the proposed event (the
