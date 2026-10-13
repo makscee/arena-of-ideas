@@ -28,7 +28,7 @@ export interface V2Row {
   forms: { sleeping: UnitForm; awoken: UnitForm };
 }
 
-export const isV2Row = (row: { v2?: true }): row is V2Row => row.v2 === true;
+export const isV2Row = (row: object): row is V2Row => (row as { v2?: true }).v2 === true;
 
 const c = (value: number) => ({ kind: "const" as const, value });
 

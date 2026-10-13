@@ -16,7 +16,7 @@
 //   cache lives in ./fusions.ts).
 import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, Idea, IdeaState, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
-import type { AnyRow } from "../../../src/mvp/units.js";
+import type { Row } from "../../../src/mvp/units.js";
 
 export interface MvpStore {
   addPlayer(p: PlayerRef): void;
@@ -209,7 +209,7 @@ export type UnitOrigin = "idea" | "evolution" | "return" | "seed";
 export interface StoredUnit {
   unitId: UnitId;
   status: UnitStatus;
-  row: AnyRow;
+  row: Row;
   /** The player whose idea it was; null for the seed. */
   authorId: string | null;
   origin: UnitOrigin;
@@ -237,7 +237,7 @@ export interface PoolSnapshot {
   /** The units' rows as they were in this pool (M2-2), so a run pinned to it
    * buys what it bought before a later change to a unit's row. Missing on the
    * seed snapshot: its rows are the stored units'. */
-  rows?: AnyRow[];
+  rows?: Row[];
 }
 
 /** Why a stint began or ended: the seed pool, an idea's or an evolution's
