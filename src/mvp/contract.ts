@@ -273,6 +273,10 @@ export interface FusionParts {
   /** Who is credited with discovering the pair (see FusionDiscovery); null
    * while only bots have made it. */
   discoveredBy: PlayerRef | null;
+  /** A designed fusion's own registry entries (FusionDesign, #1050): the
+   * fight adds them to the pool's. Absent on a v1 splice. */
+  abilities?: AbilityRegistry;
+  statuses?: StatusRegistry;
 }
 
 /** What the server hands a fuse: the pair's name and who is credited.

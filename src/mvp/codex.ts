@@ -12,6 +12,7 @@
 //   summed stats and gets the design's rule, read as one sentence.
 import { fuseCheck } from "./forms.js";
 import type { LineUnit, PlayerRef, UnitForm, UnitId } from "./contract.js";
+import type { AbilityRegistry, StatusRegistry } from "../types.js";
 
 export type PairState = "discovered" | "ready" | "unforged";
 
@@ -28,6 +29,10 @@ export interface FusionDesign {
   texts?: { ru?: { name: string; flavour?: string } };
   /** Forged words the design uses (design §7: a claim can bring a word in). */
   words?: string[];
+  /** The registry entries the rule coins (the night batch's own abilities and
+   * statuses, #1050); the fused unit carries them into its fights. */
+  abilities?: AbilityRegistry;
+  statuses?: StatusRegistry;
 }
 
 export interface CodexClaim {
@@ -143,6 +148,13 @@ export function fuseDesigned(first: LineUnit, second: LineUnit, design: FusionDe
     form: "awoken",
     stats: { pwr: first.stats.pwr + second.stats.pwr, hp: first.stats.hp + second.stats.hp },
     recipe: structuredClone(design.recipe),
-    fusion: { first: a, second: b, name: design.name, discoveredBy },
+    fusion: {
+      first: a,
+      second: b,
+      name: design.name,
+      discoveredBy,
+      ...(design.abilities && Object.keys(design.abilities).length ? { abilities: structuredClone(design.abilities) } : {}),
+      ...(design.statuses && Object.keys(design.statuses).length ? { statuses: structuredClone(design.statuses) } : {}),
+    },
   };
 }

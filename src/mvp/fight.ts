@@ -23,6 +23,14 @@ export function toBattleDef(u: LineUnit): UnitDef {
   };
 }
 
+/** The registry entries designed fusions on these lines coin (#1050): a
+ * night design's own abilities or statuses, which the pool doesn't have. */
+function fusionRegistry<K extends "abilities" | "statuses">(lines: LineUnit[][], k: K): NonNullable<LineUnit["fusion"]>[K] {
+  const out: Record<string, unknown> = {};
+  for (const line of lines) for (const u of line) Object.assign(out, u.fusion?.[k] ?? {});
+  return out as NonNullable<LineUnit["fusion"]>[K];
+}
+
 /** A line as it entered the battle, each unit tagged with its kernel instance
  * id from the log's BattleStart roster. */
 function battleTeam(line: LineUnit[], side: Side, log: BattleEvent[]): BattleUnit[] {
@@ -71,8 +79,8 @@ export function fightLines(a: FightSide, b: FightSide, o: FightOptions): BattleR
     teamB: b.line.map(toBattleDef),
     seed: o.seed,
     // A line made on another pool (a ghost, the champion) brings its own names (M2-2).
-    abilities: withLineAbilities(o.content.abilities, [a.line, b.line]),
-    statuses: o.content.statuses,
+    abilities: withLineAbilities({ ...o.content.abilities, ...fusionRegistry([a.line, b.line], "abilities") }, [a.line, b.line]),
+    statuses: { ...o.content.statuses, ...fusionRegistry([a.line, b.line], "statuses") },
     chainStepCap: o.rules.chainStepCap,
     ...(o.rules.turnCap !== undefined ? { turnCap: o.rules.turnCap } : {}),
     ...(o.rules.suddenDeathAt !== undefined ? { suddenDeathAt: o.rules.suddenDeathAt } : {}),
