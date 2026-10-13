@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { ALL_WORDS } from "../../../src/words/index.js";
 import { MemoryMvpStore } from "./store.js";
 import { wordCard } from "./words-cli.js";
-import { dictionary, forgedNotFound, forgedWords, forgedWordsIn, foundWordsIn, pairKey, requestForPair, requestForUnit, requestWord, sealedLine, waitingOn, wordKey } from "./words.js";
+import { creditLine, dictionary, forgedNotFound, notFoundLine, forgedWords, forgedWordsIn, foundWordsIn, pairKey, requestForPair, requestForUnit, requestWord, sealedLine, waitingOn, wordKey } from "./words.js";
 
 const at = new Date("2026-10-14T01:00:00.000Z");
 const steal = { word: "steal", kind: "steal", card: 2001 };
@@ -64,6 +64,10 @@ describe("the Dictionary (#1052)", () => {
     expect(e.state).toBe("found");
     expect(e.found).toMatchObject({ pair: "Magpie+Shadow", playerId: "kim", kind: "steal" });
     expect(forgedNotFound(dictionary(s, [steal]))).toBe(0);
+    expect(creditLine(e.found!, "kim")).toBe("steal, found in Magpie + Shadow by @kim");
+    expect(creditLine(e.found!, "kim", "ru")).toBe("steal: найдено в Magpie + Shadow, @kim");
+    expect(notFoundLine(3)).toBe("3 words forged, not yet found");
+    expect(notFoundLine(1)).toBe("1 word forged, not yet found");
   });
 
   it("reads the forged list from the repo, and every entry is a registered word with a card", () => {

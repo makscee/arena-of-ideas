@@ -115,6 +115,17 @@ export function waitingOn(store: MvpStore, pair: string, entries: DictionaryEntr
 export const sealedLine = (words: string[], lang: "en" | "ru" = "en"): string =>
   lang === "ru" ? `ждёт нового слова: ${words.join(", ")}` : `waiting for a new word: ${words.join(", ")}`;
 
+/** The Dictionary's credit for a found word (design §7): "steal, found in
+ * Magpie + Shadow by @kim". `name` is the claimer's display name. */
+export const creditLine = (f: FoundWord, name: string, lang: "en" | "ru" = "en"): string => {
+  const pair = f.pair.split("+").join(" + ");
+  return lang === "ru" ? `${f.word}: найдено в ${pair}, @${name}` : `${f.word}, found in ${pair} by @${name}`;
+};
+
+/** The Dictionary's line while forged words wait for a claim: "3 words forged, not yet found". */
+export const notFoundLine = (n: number, lang: "en" | "ru" = "en"): string =>
+  lang === "ru" ? `выковано слов, ещё не найдено: ${n}` : `${n} word${n === 1 ? "" : "s"} forged, not yet found`;
+
 /** The forged words a design uses: its JSON names the word's kind (`"kind":"unhurt"`). */
 export function forgedWordsIn(design: unknown, forged: ForgedWord[] = forgedWords()): ForgedWord[] {
   const json = JSON.stringify(design);

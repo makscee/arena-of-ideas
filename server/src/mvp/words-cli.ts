@@ -14,7 +14,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { SqliteMvpStore } from "./sqlite-store.js";
 import type { WordSource } from "./store.js";
-import { WORD_SOURCES, dictionary, forgedNotFound, pairKey, requestWord, sealedLine, waitingOn, wordKey, type DictionaryEntry } from "./words.js";
+import { WORD_SOURCES, creditLine, dictionary, forgedNotFound, notFoundLine, pairKey, requestWord, sealedLine, waitingOn, wordKey, type DictionaryEntry } from "./words.js";
 
 const CARD_FILE = fileURLToPath(new URL("../../../docs/words/CARD.md", import.meta.url));
 
@@ -29,7 +29,7 @@ export function wordCard(e: DictionaryEntry, template = readFileSync(CARD_FILE, 
 
 const line = (e: DictionaryEntry): string => {
   const by = new Set(e.requests.map((r) => r.source));
-  const state = e.state === "found" ? `found in ${e.found!.pair} by ${e.found!.playerId}` : e.state === "forged" ? `forged as ${e.kind} (card #${e.card}), not yet found` : "requested";
+  const state = e.state === "found" ? creditLine(e.found!, e.found!.playerId).slice(e.word.length + 2) : e.state === "forged" ? `forged as ${e.kind} (card #${e.card}), not yet found` : "requested";
   return `${e.word}: ${state}${by.size ? ` · ${e.requests.length} request${e.requests.length === 1 ? "" : "s"} (${[...by].join(", ")})` : ""}`;
 };
 
@@ -48,7 +48,7 @@ function main(argv: string[], store: SqliteMvpStore): number {
   if (cmd === "list") {
     const entries = dictionary(store);
     for (const e of entries) console.log(line(e));
-    console.log(`${entries.length} words; ${forgedNotFound(entries)} forged, not yet found`);
+    console.log(`${entries.length} words; ${notFoundLine(forgedNotFound(entries))}`);
     return 0;
   }
   if (cmd === "card") {
