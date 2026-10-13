@@ -626,6 +626,17 @@ export function lineResolves(line: LineUnit[], abilities: AbilityRegistry): bool
   }
 }
 
+/** Every `abilities: string[]` inside a value (a summoned or transformed body's). */
+function nestedAbilityNames(value: unknown, out: string[] = []): string[] {
+  if (Array.isArray(value)) for (const v of value) nestedAbilityNames(v, out);
+  else if (value && typeof value === "object") {
+    const abilities = (value as { abilities?: unknown }).abilities;
+    if (Array.isArray(abilities)) for (const n of abilities) if (typeof n === "string") out.push(n);
+    for (const [k, v] of Object.entries(value)) if (k !== "abilities") nestedAbilityNames(v, out);
+  }
+  return out;
+}
+
 export function mvpPool(rows: AnyRow[] = ROWS): MvpPool {
   const units = rows.map(unitOf);
   // The v2 counters join the registry only with a v2 unit in the pool, so
@@ -633,7 +644,15 @@ export function mvpPool(rows: AnyRow[] = ROWS): MvpPool {
   const statuses: StatusRegistry = rows.some(isV2Row) ? { ...stressRegistry, ...V2_STATUSES } : { ...stressRegistry };
   const names = new Set<string>(["Strike"]);
   for (const u of units) for (const f of [u.forms.sleeping, u.forms.awoken]) for (const d of allDoes(f)) names.add(d);
-  const abilities = registryOf(names);
+  let abilities = registryOf(names);
+  // An ability's effects can carry a body with abilities of its own (a v2
+  // transform's Tree does "Grow"): those join the registry too, to a fixpoint.
+  for (;;) {
+    const before = names.size;
+    for (const ab of Object.values(abilities)) for (const n of nestedAbilityNames(ab.effects)) names.add(n);
+    if (names.size === before) break;
+    abilities = registryOf(names);
+  }
   // Every body a summon effect in the pool makes, once each. Names are unique
   // among summons, so a Summon event's name finds exactly one body.
   const bodies = new Map<string, UnitDef>();

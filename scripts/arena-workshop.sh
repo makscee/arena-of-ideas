@@ -18,6 +18,9 @@
 # (invite links only), ARENA_TUNER=instant and a fake idea reader, on
 # ~/arena-workshop/data/workshop.db. The world persists across commits (the
 # server migrates it at start); --fresh is for a commit whose migration can't.
+# The world plays the rules v2 pool (MVP_POOL=v2, src/mvp/units-v2.ts; set
+# MVP_POOL=grid for the old name grammar's). A world seeded on one pool keeps
+# it: use --fresh to start on the other.
 # Never the live game's database, never the public domain: tailnet only.
 set -euo pipefail
 export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH
@@ -85,6 +88,7 @@ cat > "$PLIST" <<PL
     <key>ARENA_IDEA_READER</key><string>fake</string>
     <key>MVP_DB</key><string>$DB</string>
     <key>MVP_BUILD</key><string>$BUILD (workshop)</string>
+    <key>MVP_POOL</key><string>${MVP_POOL:-v2}</string>
   </dict>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
