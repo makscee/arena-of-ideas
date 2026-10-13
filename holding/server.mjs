@@ -51,8 +51,9 @@ export const server = createServer(async (req, res) => {
   } catch {
     return json(res, 400, { error: "bad path" });
   }
-  if (path !== base && !path.startsWith(base + "/")) return json(res, 404, { error: "not found" });
-  const rest = path.slice(base.length) || "/";
+  // Requests arrive with the base path or without it (tailscale serve strips its mount path), as in server/src/mvp/main.ts.
+  const underBase = path === base || path.startsWith(base + "/");
+  const rest = underBase ? path.slice(base.length) || "/" : path;
   if (rest === "/api/v1/health") return json(res, 200, { ok: true, dark: true, build });
   if (rest.startsWith("/api/")) return json(res, 503, { error: "Arena is being rebuilt" });
   if (req.method !== "GET" && req.method !== "HEAD") return json(res, 405, { error: "method not allowed" });

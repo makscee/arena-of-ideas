@@ -48,7 +48,13 @@ describe("holding server", () => {
     const bare = await fetch(`${url}/arena`, { redirect: "manual" });
     expect(bare.status).toBe(301);
     expect(bare.headers.get("location")).toBe("/arena/");
-    expect((await fetch(`${url}/elsewhere`)).status).toBe(404);
+  });
+
+  it("answers the same without the base path, as when tailscale serve strips it", async () => {
+    expect(await (await fetch(`${url}/api/v1/health`)).json()).toMatchObject({ dark: true });
+    expect((await fetch(`${url}/api/v1/home`)).status).toBe(503);
+    expect(await (await fetch(`${url}/`)).text()).toContain("<title>client</title>");
+    expect((await fetch(`${url}/assets/app-abc.js`)).status).toBe(200);
   });
 
   it("never reads outside dist", async () => {

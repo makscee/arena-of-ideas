@@ -86,15 +86,16 @@ if launchctl print "gui/$UIDN/$LIVE_LABEL" >/dev/null 2>&1; then
   launchctl bootout "gui/$UIDN/$LIVE_LABEL" || true
   gone "$LIVE_LABEL"
 fi
+# Only the run that takes the live game down copies its data: a rerun (a newer holding build) finds the live plist already aside.
 if [ -f "$LIVE_PLIST" ]; then
   mkdir -p "$LIVE_DIR/data"
   mv "$LIVE_PLIST" "$ASIDE"
-fi
-if [ -f "$LIVE_DIR/data/arena-mvp.db" ]; then
-  B="$LIVE_DIR/data/dark-backup-$(date +%Y%m%d-%H%M%S)"
-  mkdir -p "$B"
-  cp -p "$LIVE_DIR"/data/arena-mvp.db* "$B"/
-  echo "live database copied to $B"
+  if [ -f "$LIVE_DIR/data/arena-mvp.db" ]; then
+    B="$LIVE_DIR/data/dark-backup-$(date +%Y%m%d-%H%M%S)"
+    mkdir -p "$B"
+    cp -p "$LIVE_DIR"/data/arena-mvp.db* "$B"/
+    echo "live database copied to $B"
+  fi
 fi
 
 launchctl bootout "gui/$UIDN/$LABEL" 2>/dev/null || true
