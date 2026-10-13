@@ -92,7 +92,7 @@ describe("desktop-v1-integrated-season fixture integrity", () => {
       pwr: 7,
       hp: 25,
       gold: 0,
-      lives: 4,
+      lives: 3, // 4 before a unit acted at most once per chain (#1030): a round fight now costs a heart
     });
     expect(fused.fusion?.parents.map((parent) => [parent.name, parent.def._creator ?? null])).toEqual([
       ["Frostbiter", "Maks"],
@@ -162,6 +162,6 @@ describe("desktop-v1-integrated-season fixture integrity", () => {
 
   test("AOI-63 battle golden remains byte-identical", () => {
     const bytes = readFileSync(join(root, "src/__fixtures__/golden-battles.jsonl"));
-    expect(createHash("sha256").update(bytes).digest("hex")).toBe("d6a129a11a70be4dff5d079e35b63031cda662b0058723e9786599ae5e20f6a9");
+    expect(createHash("sha256").update(bytes).digest("hex")).toBe("6cee376663c5b0253e1d0e18574d4b6535185ff000c60021fbecaf3ed2bc6aa2");
   });
 });

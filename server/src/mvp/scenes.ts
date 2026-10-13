@@ -97,6 +97,13 @@ const battleOf = (kind: "round" | "crown", outcome: "win" | "loss" | "draw", key
   const run = await playTo(rt, (r) => r.phase === "over" && !!fightOf(kind, outcome)(r), `a ${kind} ${outcome}`, 80);
   return { player: run.player, entry: { screen: "battle", battleId: fightOf(kind, outcome)(run)!.battleId, runId: run.runId, ...(keys ? { keys } : {}) } };
 };
+/** A round fight where a unit that had already acted in a chain was stopped from acting again (#1030). */
+const spentFight = (rt: MvpRuntime) => (run: MvpRunState) =>
+  run.fights.find((f) => f.kind === "round" && !!rt.store.battle(f.battleId)?.log.some((e) => e.type === "ChainBlocked" && e.spent));
+const chainOnce = async (rt: MvpRuntime): Promise<SceneBuilt> => {
+  const run = await playTo(rt, (r) => r.phase === "over" && !!spentFight(rt)(r), "a fight where a unit is stopped from acting twice in a chain", 80);
+  return { player: run.player, entry: { screen: "battle", battleId: spentFight(rt)(run)!.battleId, runId: run.runId } };
+};
 const ended = (reasons: string[]) => async (rt: MvpRuntime): Promise<SceneBuilt> => {
   const run = await playTo(rt, (r) => r.phase === "over" && reasons.includes(r.endedBy ?? ""), `a run ended by ${reasons.join("/")}`, 80);
   return { player: run.player, entry: { screen: "run-over", runId: run.runId } };
@@ -142,10 +149,11 @@ export const SCENES: Scene[] = [
     build: async (rt) => shop(await playTo(rt, (r) => r.phase === "shop" && !r.gift && botDecision(r, rt.contentFor(r.contentVersion), rt.rules, 9).kind === "fuse", "two Awoken to fuse", 80)),
   },
 
-  { id: "battle-win", keep: true, group: "Battle", title: "A battle you win", look: "Pacing, beams, the ledger, the end card", desktop: true, build: battleOf("round", "win") },
+  { id: "battle-win", keep: true, group: "Battle", title: "A battle you win", look: "Pacing, the current beam, step numbers and spent cards, the end card", desktop: true, build: battleOf("round", "win") },
   { id: "battle-loss", keep: true, group: "Battle", title: "A battle you lose", look: "The loss end card, hearts lost", desktop: true, build: battleOf("round", "loss") },
   { id: "battle-draw", keep: true, group: "Battle", title: "A draw", look: "The draw end card", desktop: true, build: battleOf("round", "draw") },
-  { id: "battle-ledger", keep: true, group: "Battle", title: "The ledger, paused mid-battle", look: "Stepped a few beats and paused: the turn ledger readable?", desktop: true, build: battleOf("round", "win", ["Space", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight"]) },
+  { id: "battle-chain-once", keep: true, group: "Battle", title: "A unit acts once per chain", look: "A chain where a unit would have acted twice before #1030: step numbers, spent cards fade, big numbers", desktop: true, build: chainOnce },
+  { id: "battle-ledger", keep: true, group: "Battle", title: "Paused mid-battle", look: "Stepped a few beats and paused: the turn bar, the board", desktop: true, build: battleOf("round", "win", ["Space", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight"]) },
 
   { id: "crown", group: "Crown & day", title: "The Crown fight is next", look: "After round 12: the champion's team, the Crown button", desktop: true, build: async (rt) => shop(await playTo(rt, (r) => r.phase === "crown", "the Crown", 80)) },
   { id: "crown-fight", keep: true, group: "Crown & day", title: "The Crown fight, lost", look: "Your team against the champion", desktop: true, build: battleOf("crown", "loss") },

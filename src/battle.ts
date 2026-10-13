@@ -136,6 +136,8 @@ class Engine {
   private turnCap: number;
   private suddenDeathAt: number | undefined;
   private lineCap: number;
+  /** The units that have reacted in the chain being settled (a unit acts at most once per chain, #1030). */
+  private chainActed = new Set<string>();
 
   constructor(input: BattleInput) {
     this.input = input;
@@ -315,10 +317,15 @@ class Engine {
           this.applyEvent({ type: "ChainBlocked", ability: stamped.ref, at: causedBy ?? -1 }, causedBy, "kernel");
           continue;
         }
+        if (this.spentInChain(r.ref)) {
+          this.applyEvent({ type: "ChainBlocked", ability: stamped.ref, at: causedBy ?? -1, spent: true }, causedBy, "kernel");
+          continue;
+        }
         const holder = this.units.get(r.holder);
         if (!holder || (r.ref.status === undefined && holder.silenced)) continue;
         if (r.ability.condition && !this.checkCondition(r.ability.condition, holder)) continue;
         handled.add(k);
+        if (r.ref.status === undefined) this.chainActed.add(r.holder);
         const res = this.runInterceptor(stamped, draft, followUps);
         if (res === "cancel") {
           cancelledBy = stamped.ref;
@@ -374,11 +381,13 @@ class Engine {
       if (steps >= this.chainStepCap) {
         this.queue = [];
         this.applyEvent({ type: "ChainCapped", root, steps }, f.event.id, "kernel");
+        this.chainActed.clear();
         return;
       }
       steps++;
       this.processFiring(f);
     }
+    this.chainActed.clear();
   }
 
   private processFiring(f: Firing): void {
@@ -386,10 +395,15 @@ class Engine {
       this.applyEvent({ type: "ChainBlocked", ability: f.ref, at: f.event.id }, f.event.id, "kernel");
       return;
     }
+    if (this.spentInChain(f.ref)) {
+      this.applyEvent({ type: "ChainBlocked", ability: f.ref, at: f.event.id, spent: true }, f.event.id, "kernel");
+      return;
+    }
     const holder = this.units.get(f.holder);
     if (!holder) return;
     if (f.ref.status === undefined && holder.silenced) return;
     if (f.ability.condition && !this.checkCondition(f.ability.condition, holder)) return;
+    if (f.ref.status === undefined) this.chainActed.add(f.holder);
     // One reaction per unit: each Who is picked once, then every Does that
     // shares it applies to those targets, in order. A run of Does with the
     // same Who is one clause; an "and" clause with its own Who picks its own
@@ -407,6 +421,13 @@ class Engine {
         }
       }
     }
+  }
+
+  // ---------- the once-per-chain law (#1030) ----------
+
+  /** A unit acts at most once per chain: its own reactions (not its statuses') after the first are blocked. */
+  private spentInChain(ref: AbilityRef): boolean {
+    return ref.status === undefined && this.chainActed.has(ref.unit);
   }
 
   // ---------- the no-self-retrigger law ----------

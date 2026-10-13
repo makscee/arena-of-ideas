@@ -623,7 +623,7 @@ button.bv-badge.past { z-index: 2; }
  * buffed one a soft one; the chips hold the numbers in place, and the
  * caption lists every change of the beat (.bv-still). */
 /* Effects over the board (#1011): damage drops, heal rises, a block pops a bubble, a status flies in. */
-.bv-fxnums { position: fixed; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
+.bv-fxnums { position: fixed; inset: 0; z-index: 40; pointer-events: none; overflow: hidden; }
 .bv-fxn { position: absolute; translate: -50% -50%; display: inline-flex; align-items: center; gap: 2px; font-family: var(--font-num); font-size: 21px; font-weight: 800; line-height: 22px; white-space: nowrap; text-shadow: 0 0 3px var(--ground), 0 0 2px var(--ground), 0 1px 0 var(--ground); }
 .bv-fxn.damage { color: var(--k-dmg); }
 .bv-fxn.heal { color: var(--k-heal); }
@@ -632,12 +632,18 @@ button.bv-badge.past { z-index: 2; }
 .bv-fxn.status { color: var(--k-status); }
 .bv-fxn.death { color: var(--k-silence); }
 .bv-fxn.summon { font-family: var(--font-body); font-size: 14px; }
-.bv-fxn.damage.big { scale: 1.35; }
-.bv-fxn.damage { animation: bv-fx-drop calc(0.9s / var(--bv-sp, 1)) ease-in calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
-.bv-fxn.heal, .bv-fxn.summon { animation: bv-fx-rise calc(0.9s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
+/* Damage and heal numbers (#1030): a solid pill in the kind's colour with
+ * outline-dark digits, readable on every palette and over any card or beam,
+ * on top of everything, held about a second before it goes. */
+.bv-fxn.damage, .bv-fxn.heal { font-size: 30px; line-height: 30px; padding: 2px 9px 3px; border-radius: 12px; color: var(--outline); border: 2px solid var(--outline); box-shadow: 2px 2px 0 var(--outline); text-shadow: none; }
+.bv-fxn.damage { background: var(--k-dmg); }
+.bv-fxn.heal { background: var(--k-heal); }
+.bv-fxn.damage.big { scale: 1.25; }
+.bv-fxn.damage { animation: bv-fx-drop calc(1.6s / var(--bv-sp, 1)) ease-in calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
+.bv-fxn.heal, .bv-fxn.summon { animation: bv-fx-rise calc(1.6s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
 .bv-fxn.blocked { animation: bv-fx-pop calc(0.8s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
-@keyframes bv-fx-drop { 0% { opacity: 0; transform: translateY(-8px); } 15% { opacity: 1; transform: none; } 65% { opacity: 1; } 100% { opacity: 0; transform: translateY(14px); } }
-@keyframes bv-fx-rise { 0% { opacity: 0; transform: translateY(10px); } 15% { opacity: 1; transform: none; } 65% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
+@keyframes bv-fx-drop { 0% { opacity: 0; transform: translateY(-8px) scale(0.7); } 10% { opacity: 1; transform: none; } 80% { opacity: 1; transform: translateY(4px); } 100% { opacity: 0; transform: translateY(14px); } }
+@keyframes bv-fx-rise { 0% { opacity: 0; transform: translateY(10px) scale(0.7); } 10% { opacity: 1; transform: none; } 80% { opacity: 1; transform: translateY(-4px); } 100% { opacity: 0; transform: translateY(-14px); } }
 @keyframes bv-fx-pop { 0% { opacity: 0; transform: scale(0.6); } 20% { opacity: 1; transform: scale(1.15); } 35% { transform: none; } 75% { opacity: 1; } 100% { opacity: 0; } }
 .bv-fxb { position: absolute; translate: -50% -50%; width: 46px; height: 46px; border-radius: 50%; border: 2.5px solid var(--k-shield); background: color-mix(in srgb, var(--k-shield) 22%, transparent); box-shadow: 0 0 8px var(--k-shield); animation: bv-fx-bubble calc(0.7s / var(--bv-sp, 1)) ease-out calc((0.08s + var(--bv-ft, 0s)) / var(--bv-sp, 1)) both; }
 @keyframes bv-fx-bubble { 0% { opacity: 0; transform: scale(0.5); } 25% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0; transform: scale(1.2); } }
@@ -1719,39 +1725,22 @@ button.reroll-btn:disabled .cost-chip { background: var(--soft); }
 /* The card acting in a chain's link wears the link's number, top left. */
 .bv-card > .bv-chain-chip { position: absolute; bottom: 4px; left: 4px; z-index: 4; min-width: 26px; height: 26px; padding: 0 5px; border-radius: 13px; display: inline-flex; align-items: center; justify-content: center; background: var(--action); color: var(--outline); border: 2px solid var(--outline); box-shadow: 2px 2px 0 var(--outline); font-family: var(--font-head, inherit); font-size: 15px; line-height: 1; pointer-events: none; animation: bv-chip-in calc(220ms / var(--bv-sp, 1)) ease-out backwards; }
 .bv-card > .bv-chain-chip.still { animation: none; }
+/* A card that has acted in the chain on screen sits it out (#1030): dimmed until the chain ends. */
+.bv-card.bv-spent > :not(.bv-chain-chip) { opacity: 0.32; filter: grayscale(0.8); }
+.bv-card.bv-spent { border-color: color-mix(in srgb, var(--outline) 45%, transparent); box-shadow: none; }
+@media (max-width: 1023.98px) {
+  .bv-fxn.damage, .bv-fxn.heal { font-size: 24px; line-height: 24px; padding: 1px 7px 2px; border-radius: 10px; }
+}
 @keyframes bv-chip-in { from { transform: scale(0.4); opacity: 0; } to { transform: none; opacity: 1; } }
 /* The turn ledger below the board (mission 1007): one box whose height the
  * screen sets and its content never does (on desktop the board centres above
  * it, and a box growing or shrinking moved every card). Its head holds the
  * turn and Skip chain; its body, a chain's summary at its last link. */
-.bv-ledger { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 4px; padding: 0 12px 6px; border: var(--bw) solid var(--outline); border-radius: 10px; background: var(--panel); }
+.bv-ledger { flex: none; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 4px; padding: 0 12px 6px; border: var(--bw) solid var(--outline); border-radius: 10px; background: var(--panel); }
 .bv-ledger-head { flex: none; height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.bv-ledger-more { margin-left: auto; font-size: 13px; font-weight: 700; color: var(--dim); white-space: nowrap; }
-.bv-ledger-more[hidden] { display: none; }
 .bv-ledger-turn { font-family: var(--font-head); font-weight: var(--head-weight); font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--dim); }
-.bv-ledger-body { flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 4px; }
-/* One row per unit changed this turn, your side's column and theirs. Rows only fill in, they never slide; a short phone scrolls the list by hand (the log has every number). */
-.bv-ledger-list { flex: none; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scroll-snap-type: y mandatory; scrollbar-width: none; align-content: start; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 8px; }
-.bv-lcol { grid-row: 1; display: grid; grid-auto-rows: 24px; gap: 2px; align-content: start; min-width: 0; }
-.bv-ledger-list.empty::before { content: attr(data-empty); grid-column: 1 / -1; grid-row: 1; color: var(--dim); font-size: 14px; line-height: 24px; }
-.bv-lrow { scroll-snap-align: start; display: flex; align-items: center; gap: 4px; min-width: 0; height: 24px; border-left: 3px solid var(--you); padding-left: 5px; overflow: hidden; cursor: pointer; }
-.bv-lrow.ghost { border-left-color: var(--them); }
-.bv-lrow.fallen .bv-lname { text-decoration: line-through; opacity: 0.7; }
-.bv-lchips { flex: 0 1 auto; min-width: 0; display: flex; align-items: center; gap: 2px; overflow: hidden; }
-.bv-lname { flex: 0 1 auto; min-width: 0; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; }
-button.bv-lchip, span.bv-lchip { flex: none; pointer-events: auto; min-height: 0; height: 20px; padding: 0 2px; display: inline-flex; align-items: center; gap: 2px; border: none; border-radius: 3px; clip-path: none; box-shadow: none; translate: none; background: none; text-transform: none; letter-spacing: 0; font-family: var(--font-num); font-size: 14px; font-weight: 700; line-height: 20px; white-space: nowrap; color: var(--text); }
-button.bv-lchip.damage, button.bv-lchip.debuff, span.bv-lchip.dead { color: var(--them); }
-button.bv-lchip.heal { color: var(--you); }
-button.bv-lchip.buff { color: var(--action); }
-button.bv-lchip.zero { opacity: 0.45; }
-.bv-lchip svg { flex: none; }
-/* A phone's column is narrow: the name takes a line of its own, the unit's numbers the next. */
+.bv-ledger-body { flex: none; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 4px; }
 @media (max-width: 1023.98px) {
-  .bv-lcol { grid-auto-rows: 32px; }
-  .bv-lrow { height: 32px; flex-direction: column; align-items: stretch; justify-content: center; gap: 0; }
-  .bv-lname { flex: none; max-width: none; line-height: 16px; }
-  .bv-lchips { flex: none; height: 16px; }
-  button.bv-lchip, span.bv-lchip { height: 16px; line-height: 16px; font-size: 13px; }
   .bv-ledger-head { height: 34px; }
   .bv-ledger button.bv-skip { min-height: 30px; padding: 0 12px; font-size: 14px; }
 }
@@ -1764,11 +1753,8 @@ button.bv-lchip.zero { opacity: 0.45; }
 button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padding: 0 16px; font-size: 15px; }
 @media (prefers-reduced-motion: reduce) { .bv-card > .bv-chain-chip, .bv-chain-sum { animation: none; } }
 @media (min-width: 1024px) {
-  #app[data-screen="battle"] .bv-ledger { flex: none; height: 208px; }
+  #app[data-screen="battle"] .bv-ledger { flex: none; height: 64px; }
   #app[data-screen="battle"] .bv-ledger-head { height: 32px; }
   .bv-ledger button.bv-skip { min-height: 28px; padding: 0 12px; }
-  .bv-ledger-list { gap: 0 24px; }
-  .bv-lname { font-size: 16px; max-width: 55%; }
-  button.bv-lchip, span.bv-lchip { font-size: 16px; }
   #app[data-screen="battle"] .bv-chain-sum { font-size: 16px; max-width: 900px; }
 }

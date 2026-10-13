@@ -239,13 +239,13 @@ describe("one beat at a time (R2-12)", () => {
   const death = { changes: [{ kind: "death" }] } as never;
 
   test("a strike stays STRIKE_MS, a heal / buff / status wave EFFECT_MS, each line on its own clock (mission 1007)", () => {
-    expect([STRIKE_MS, EFFECT_MS]).toEqual([750, 650]);
+    expect([STRIKE_MS, EFFECT_MS]).toEqual([1200, 1100]);
     expect(beatTiming([hit])).toEqual({ at: [0], ms: STRIKE_MS });
     expect(beatTiming([heal])).toEqual({ at: [0], ms: EFFECT_MS });
     expect(beatTiming([hit, heal, heal])).toEqual({ at: [0, STRIKE_MS, STRIKE_MS + EFFECT_MS], ms: STRIKE_MS + 2 * EFFECT_MS });
   });
 
-  test("a hit that kills is read for 600 ms, then the death wave runs; every line is at least the floor", () => {
+  test("a hit that kills is read for 1000 ms, then the death wave runs; every line is at least the floor", () => {
     expect(beatTiming([hit, death])).toEqual({ at: [0, HIT_BEFORE_DEATH_MS], ms: HIT_BEFORE_DEATH_MS + DEATH_MS });
     expect(HIT_BEFORE_DEATH_MS).toBeGreaterThanOrEqual(LINE_FLOOR_MS);
     expect(DEATH_MS).toBeGreaterThanOrEqual(LINE_FLOOR_MS);
@@ -253,30 +253,27 @@ describe("one beat at a time (R2-12)", () => {
     expect(EFFECT_MS).toBeGreaterThanOrEqual(LINE_FLOOR_MS);
   });
 
-  test("the floor: 600 / 300 / 200 ms at 1× / 2× / 4×, for lines but not a chain's links", () => {
-    expect([1, 2, 4].map(lineFloorMs)).toEqual([600, 300, 200]);
+  test("the floor: 900 / 450 / 225 ms at 1× / 2× / 4×, for lines but not a chain's links", () => {
+    expect([1, 2, 4].map(lineFloorMs)).toEqual([900, 450, 225]);
     const log = run([dummy("Squire", 20, 1)], [dummy("Dummy", 20, 1)]);
     const beat = beatPlayOf(log, stepsOf(log)).find((b) => b.waves.length === 1 && b.waves[0]!.changes.length)!;
     expect(waveWaitMs(beat, {}, 0, 1)).toBe(STRIKE_MS);
     expect(waveWaitMs(beat, {}, 0, 2)).toBe(STRIKE_MS / 2);
-    // At 4× the strike would be 188 ms: the floor holds it at 200.
-    expect(waveWaitMs(beat, {}, 0, 4)).toBe(200);
+    expect(waveWaitMs(beat, {}, 0, 4)).toBe(STRIKE_MS / 4);
     const chain = { ...beat, waves: Array.from({ length: 8 }, () => beat.waves[0]!) } as PlayBeat;
     expect(waveWaitMs(chain, {}, 6, 4)).toBe(chainLinkMs(6) / 4);
-    expect(waveWaitMs(chain, {}, 6, 4)).toBeLessThan(200);
   });
 
-  test("a chain of 4+ links speeds up: 450, 450, 400, then ×0.85 a link down to 220; the end holds 400 (mission 1007)", () => {
-    expect(CHAIN_LINK_MS).toBe(450);
-    expect(Array.from({ length: 10 }, (_, i) => chainLinkMs(i))).toEqual([450, 450, 400, 340, 289, 246, 220, 220, 220, 220]);
+  test("a chain of 4+ links holds every link 1.1 s, no speed-up; the end holds 0.9 s (#1030)", () => {
+    expect([CHAIN_LINK_MS, CHAIN_END_MS]).toEqual([1100, 900]);
+    expect(Array.from({ length: 10 }, (_, i) => chainLinkMs(i))).toEqual(Array.from({ length: 10 }, () => 1100));
     const short = beatTiming(Array.from({ length: 4 }, () => hit));
-    expect(short.at).toEqual([0, 450, 900, 1300]);
-    expect(short.ms).toBe(1300 + chainLinkMs(3) + CHAIN_END_MS);
+    expect(short.at).toEqual([0, 1100, 2200, 3300]);
+    expect(short.ms).toBe(3300 + chainLinkMs(3) + CHAIN_END_MS);
     const long = beatTiming(Array.from({ length: 30 }, () => hit));
     expect(long.at.at(-1)! - long.at.at(-2)!).toBe(CHAIN_FLOOR_MS);
     expect(long.ms).toBe(long.at.at(-1)! + CHAIN_FLOOR_MS + CHAIN_END_MS);
-    // Accelerating: a 12-link chain is well under 12 flat links.
-    expect(beatTiming(Array.from({ length: 12 }, () => hit)).ms).toBeLessThan(12 * CHAIN_LINK_MS);
+    expect(beatTiming(Array.from({ length: 12 }, () => hit)).ms).toBe(12 * CHAIN_LINK_MS + CHAIN_END_MS);
   });
 
   test("a chain's summary sums what it did to each side (#913)", () => {
@@ -357,8 +354,8 @@ describe("one beat at a time (R2-12)", () => {
     const at2 = playbackMs(beats, weights, ends.keys(), new Set(), LINEUP_MS, 2);
     expect(at2).toBeLessThan(at1 * 0.55);
     const at4 = playbackMs(beats, weights, ends.keys(), new Set(), LINEUP_MS, 4);
-    // 4× is not 4× faster than 1×: lines are held to 200 ms.
-    expect(at4).toBeGreaterThan((LINEUP_MS + body) / 4);
+    // 4× is never faster than 4×: lines are held to 225 ms (#1030: every wave is at least that at 4× now).
+    expect(at4).toBeGreaterThanOrEqual((LINEUP_MS + body) / 4);
   });
 
   test("weightsOf: big hits at 4+, the last beat, and fatigue only on its first beat", () => {
