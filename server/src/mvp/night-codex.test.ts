@@ -76,7 +76,7 @@ describe.each([
     expect(storeNight(store, results, at)).toEqual({ ready: [], claimed: ["hourglass+mirror"], words: 0 });
     expect(store.codexPair("hourglass", "mirror")).toEqual(before);
     const input = listInputFrom(store, units, at.getTime());
-    expect(input.history["hourglass+mirror"]).toEqual({ designedAt: at.getTime() - 10 * DAY, claimed: true });
+    expect(input.history!["hourglass+mirror"]).toEqual({ designedAt: at.getTime() - 10 * DAY, claimed: true });
     expect(pickPairs({ units, now: at.getTime(), size: 10, small: true, ...input }).map((p) => p.key)).not.toContain("hourglass+mirror");
   });
   it("puts a pair wished in the forge ahead of unwished ones, and a pair designed this week waits", () => {
@@ -99,7 +99,7 @@ describe("a stored night design", () => {
     const list = pickPairs({ units, now, size: 1, small: true, requests: ["hourglass+mirror"] });
     const [r] = await runBatch(list, { designer: fakeDesigner(), field, parents });
     const c = r!.candidates.find((x) => x.state === "ready")!;
-    const design = designOf({ ...c, unit: { ...c.unit, abilities: ["Night Echo"] }, abilities: { ...c.abilities, "Night Echo": { name: "Night Echo", effects: [{ kind: "damage", amount: { kind: "const", value: 2 } }] } } });
+    const design = designOf({ ...c, unit: { ...c.unit, abilities: ["Night Echo"] }, abilities: { ...c.abilities, "Night Echo": { name: "Night Echo", family: "Strike", effects: [{ kind: "damage", amount: { kind: "const", value: 2 } }] } } });
     expect(design.abilities?.["Night Echo"]).toBeDefined();
     const content = mvpContent();
     const [a, b] = content.units;
