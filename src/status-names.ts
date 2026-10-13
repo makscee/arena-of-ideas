@@ -14,6 +14,10 @@ export interface RuStatus {
   name: string;
   acc: string;
   count: Forms;
+  /** Grammatical gender, when the singular's ending misleads (a masculine
+   * noun in -ь). Otherwise read from the singular: -а/-я/-ь feminine,
+   * -е/-о neuter, else masculine. */
+  gender?: "m" | "f" | "n";
 }
 
 export const RU_STATUSES: Record<string, RuStatus> = {
@@ -68,4 +72,12 @@ export function ruStatusCount(n: number, s: string): string {
   const forms = statusRu(s).count;
   const cat = PLURAL.select(n);
   return `${n} ${cat === "one" ? forms[0] : cat === "few" ? forms[1] : forms[2]}`;
+}
+
+/** "равный" agreeing with the status ("Щит, равный …", "Сила, равная …",
+ * "Проклятие, равное …"). */
+export function ruEqualTo(s: string): string {
+  const ru = statusRu(s);
+  const g = ru.gender ?? (/[аяь]$/.test(ru.count[0]) ? "f" : /[еоё]$/.test(ru.count[0]) ? "n" : "m");
+  return g === "f" ? "равная" : g === "n" ? "равное" : "равный";
 }

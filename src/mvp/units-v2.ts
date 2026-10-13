@@ -41,6 +41,7 @@ export const V2_STATUSES: StatusRegistry = {
   // its condition reads the grain just added at the same turn end.
   Grains: {
     name: "Grains",
+    names: { en: "Grains", ru: { name: "Песчинки", acc: "Песчинки", count: ["Песчинка", "Песчинки", "Песчинок"] } },
     counter: true,
     triggers: [{ kind: "trigger", on: { on: "TurnEnd" } }],
     condition: { kind: "stacksAtLeast", status: "Grains", n: 3, of: "holder" },
@@ -52,6 +53,7 @@ export const V2_STATUSES: StatusRegistry = {
   },
   Sands: {
     name: "Sands",
+    names: { en: "Sands", ru: { name: "Пески", acc: "Пески", count: ["Песок", "Песка", "Песков"] } },
     counter: true,
     triggers: [{ kind: "trigger", on: { on: "TurnEnd" } }],
     condition: { kind: "stacksAtLeast", status: "Sands", n: 3, of: "holder" },
@@ -64,6 +66,7 @@ export const V2_STATUSES: StatusRegistry = {
   // power (awoken: Drums, the whole line).
   Beats: {
     name: "Beats",
+    names: { en: "Beats", ru: { name: "Такты", acc: "Такты", count: ["Такт", "Такта", "Тактов"] } },
     counter: true,
     triggers: [{ kind: "trigger", on: { on: "TurnEnd" } }],
     condition: { kind: "stacksAtLeast", status: "Beats", n: 3, of: "holder" },
@@ -74,6 +77,7 @@ export const V2_STATUSES: StatusRegistry = {
   },
   Drums: {
     name: "Drums",
+    names: { en: "Drums", ru: { name: "Барабаны", acc: "Барабаны", count: ["Барабан", "Барабана", "Барабанов"] } },
     counter: true,
     triggers: [{ kind: "trigger", on: { on: "TurnEnd" } }],
     condition: { kind: "stacksAtLeast", status: "Drums", n: 3, of: "holder" },
@@ -85,6 +89,7 @@ export const V2_STATUSES: StatusRegistry = {
   // Raven's second rule: at turn start, perform a remembered rule once (awoken: all).
   Memory: {
     name: "Memory",
+    names: { en: "Memory", ru: { name: "Память", acc: "Память", count: ["Память", "Памяти", "Памяти"] } },
     counter: true,
     triggers: [{ kind: "trigger", on: { on: "TurnStart" } }],
     selectors: [{ kind: "holder" }],
@@ -92,6 +97,7 @@ export const V2_STATUSES: StatusRegistry = {
   },
   Memories: {
     name: "Memories",
+    names: { en: "Memories", ru: { name: "Воспоминания", acc: "Воспоминания", count: ["Воспоминание", "Воспоминания", "Воспоминаний"] } },
     counter: true,
     triggers: [{ kind: "trigger", on: { on: "TurnStart" } }],
     selectors: [{ kind: "holder" }],
@@ -104,6 +110,7 @@ const pwrOfHolder = { kind: "stat" as const, stat: "pwr" as const, of: "holder" 
 /** The Tree Seed becomes: gives the ally behind it 1 power each turn (awoken: and shields its neighbours). */
 const tree = (awoken: boolean) => ({
   name: "Tree",
+  names: { ru: { name: "Дерево", acc: "Дерево" } },
   base: { hp: 8, pwr: 0 },
   triggers: [{ kind: "trigger" as const, on: { on: "TurnStart" as const } }],
   selectors: [{ kind: "allyBehind" as const }],
@@ -115,6 +122,7 @@ const tree = (awoken: boolean) => ({
  * (awoken: a Monarch, which also powers every ally). */
 const butterfly = (awoken: boolean) => ({
   name: awoken ? "Monarch" : "Butterfly",
+  names: { ru: awoken ? { name: "Монарх", acc: "Монарха" } : { name: "Бабочка", acc: "Бабочку" } },
   base: { hp: 6, pwr: 2 },
   triggers: [{ kind: "trigger" as const, on: { on: "TurnStart" as const } }],
   selectors: [{ kind: "allEnemies" as const }],

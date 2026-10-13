@@ -9,9 +9,8 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { contentOf } from "../server/src/mvp/content.js";
 import { battle } from "../src/battle.js";
-import { describeStatus } from "../src/describe.js";
 import { formSegments } from "../src/mvp/form-text.js";
-import { ROWS_V2, V2_STATUSES } from "../src/mvp/units-v2.js";
+import { ROWS_V2 } from "../src/mvp/units-v2.js";
 import { FIXTURES } from "../src/words/fixtures.js";
 import { traceLines } from "../src/words/trace.js";
 import { slug } from "../src/mvp/units.js";
@@ -58,9 +57,6 @@ function poolTrace(name: string, awoken: boolean): string[] {
   return own.length ? own.slice(0, 3) : lines.slice(0, 2);
 }
 
-const statusRule = (form: { statuses?: { status: string }[] }, lang: "en" | "ru") =>
-  (form.statuses ?? []).map((s) => `${s.status}: ${describeStatus(V2_STATUSES[s.status]!, lang)}`);
-
 const cards = ROWS_V2.map((row) => {
   const u = content.units.find((x) => x.id === slug(row.name))!;
   const key = row.name.replace(/[^A-Za-z]/g, "");
@@ -70,14 +66,11 @@ const cards = ROWS_V2.map((row) => {
     const fixture = f === "sleeping" ? fx : `${fx}Awoken`;
     const hasFixture = FIXTURES[fixture] !== undefined;
     const sceneId = hasFixture ? (f === "sleeping" ? `v2-${slug(row.name)}` : `v2-${slug(row.name)}-awoken`) : poolBattleId(row.name, f === "awoken");
-    const extra = statusRule(form, "en").map((l) => `<li class="status">${esc(l)}</li>`).join("");
-    const extraRu = statusRule(form, "ru").map((l) => `<li class="status">${esc(l)}</li>`).join("");
     const tr = (hasFixture ? trace(fixture) : poolTrace(row.name, f === "awoken")).map((l, i) => `<li class="${i === 0 ? "trace main" : "trace"}">${esc(l)}</li>`).join("");
     return `<div class="form">
   <h3>${f === "sleeping" ? "Sleeping · Спящий" : "Awoken · Пробуждённый"}</h3>
-  <p class="en">${esc(text(formSegments(form, content.abilities, "en")))}</p>
-  <p class="ru">${esc(text(formSegments(form, content.abilities, "ru")))}</p>
-  ${extra || extraRu ? `<ul class="statuses">${extra}${extraRu}</ul>` : ""}
+  <p class="en">${esc(text(formSegments(form, content.abilities, "en", content.statuses)))}</p>
+  <p class="ru">${esc(text(formSegments(form, content.abilities, "ru", content.statuses)))}</p>
   ${tr ? `<ul class="traces">${tr}</ul>` : ""}
   <p class="go">Scene: <a href="${esc(scene(sceneId, "en"))}" target="_blank" rel="noopener">EN</a> <a href="${esc(scene(sceneId, "ru"))}" target="_blank" rel="noopener">RU</a> <code>${sceneId}</code></p>
 </div>`;

@@ -5,17 +5,20 @@
 
 import { describeAbilitySegments, type DescribeSegment, type Lang } from "../describe.js";
 import { withStatusNames } from "../status-names.js";
-import type { AbilityRegistry, Effect, StatusDef, StatusRegistry } from "../types.js";
+import type { AbilityRegistry, Effect, StatusDef, StatusRegistry, UnitDef } from "../types.js";
 import type { UnitForm } from "./contract.js";
 
 /** A form as segments: its authored text (one plain segment), else described
  * from its abilities. The form's own Does share its When and Who: one sentence,
  * the Does joined by "then" ("When the battle begins: summon …, then apply 3
  * Vitality to every ally."), unless a Does carries a condition of its own. */
-export function formSegments(form: UnitForm, abilities: AbilityRegistry, lang?: Lang, statuses?: StatusRegistry, carries: readonly string[] = []): DescribeSegment[] {
+export function formSegments(form: UnitForm, abilities: AbilityRegistry, lang?: Lang, statuses?: StatusRegistry, carries: readonly string[] = (form.statuses ?? []).map((s) => s.status)): DescribeSegment[] {
   if (form.text) return [{ text: form.text }];
   return withStatusNames(statuses, () => {
     const out = ruleSegments(form, abilities, lang);
+    // A unit it becomes (rules v2: Seed's Tree, Chrysalis's Butterfly) brings
+    // a rule of its own: the card says it, named, so the whole unit is read.
+    for (const body of bodies(form, abilities)) out.push({ text: ` ${lang === "ru" ? (body.names?.ru.name ?? body.name) : body.name}: ` }, ...ruleSegments(bodyForm(body), abilities, lang));
     // A second rule lives on a counter status (rules v2: Hourglass's grains,
     // Raven's memory): the card reads it on after the form's own, so the
     // whole rule is said. `carries`: the statuses the unit starts with.
@@ -55,6 +58,26 @@ function counterRules(form: UnitForm, abilities: AbilityRegistry, statuses: Stat
   ids.push(...carries);
   return [...new Set(ids)].filter((id) => statuses[id]?.counter && statuses[id]!.abilities.length > 0);
 }
+
+/** The units the form's effects transform into, in order, once each. */
+function bodies(form: UnitForm, abilities: AbilityRegistry): UnitDef[] {
+  const out: UnitDef[] = [];
+  const visit = (e: Effect): void => {
+    if (e.kind === "transform" && e.into.abilities?.length && !out.some((b) => b.name === e.into.name)) out.push(e.into);
+    else if (e.kind === "delay") visit(e.effect);
+  };
+  for (const id of [...form.does, ...(form.also ?? []).flatMap((c) => c.does)]) for (const e of abilities[id]?.effects ?? []) visit(e);
+  return out;
+}
+
+/** A transform's body as a form: its When, Who, Does and "and" clauses. */
+const bodyForm = (b: UnitDef): UnitForm => ({
+  when: b.triggers ?? [],
+  who: b.selectors ?? [],
+  does: b.abilities ?? [],
+  ...(b.condition ? { condition: b.condition } : {}),
+  ...(b.also ? { also: b.also.map((c) => ({ who: c.selectors, does: c.abilities })) } : {}),
+});
 
 /** A counter status's rule as the form's own would read: its first ability
  * the clause, the rest its "and" clauses. Its own stacks are named ("spend 3
