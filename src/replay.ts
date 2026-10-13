@@ -217,6 +217,10 @@ class Renderer {
       case "ChainBlocked": {
         const what = this.refDesc(e.ability);
         const after = this.shortDesc(e.at >= 0 ? this.log[e.at] : undefined);
+        if (e.spent) {
+          this.push(e, `(chain stopped: ${what} stayed quiet after ${after} — its unit already acted in this chain, and a unit acts at most once per chain)`);
+          return;
+        }
         this.push(
           e,
           `(chain stopped: ${what} stayed quiet after ${after} — it already acted in this chain, and an ability never triggers itself)`,

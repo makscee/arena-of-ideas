@@ -228,7 +228,7 @@ export type EventBody =
   | { type: "Silenced"; unit: string }
   // suddenDeath: from BattleInput.suddenDeathAt on (R4-1): doubled, piercing.
   | { type: "Fatigue"; amount: number; suddenDeath?: true }
-  | { type: "ChainBlocked"; ability: AbilityRef; at: number }
+  | { type: "ChainBlocked"; ability: AbilityRef; at: number; spent?: true }
   // A cascade hit the step cap: `root` is the event its first firing reacted
   // to, `steps` the firings it ran; the firings still queued were dropped.
   | { type: "ChainCapped"; root: number; steps: number }
