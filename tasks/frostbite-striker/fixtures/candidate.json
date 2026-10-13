@@ -1,5 +1,5 @@
 {
-  "_comment": "A passing candidate, hand-authored to prove the contract under the per-matchup floor (slice 2). Frost striker: a Shielded front body tanks the first hits, poisons what it strikes (chipping fat status-stacked boards over time) and curses to weaken it; a durable mid and a body give it staying power vs the attrition meta. Overall 61% (in [35,65]) with every matchup above the 25% floor (Aggro 100% / SustainControl 48% / StatStack 34%; retuned to Shield 1, Poison 1, Curse 2 when #466 softened StatStack, then to Shield 2 and Glacier 11 HP when R3 (#642) put summons at the front) — broadly viable, not a one-matchup hard-counter. #081: the unit references one Ability (Frostbite) carried in-file — the same Poison+Curse-on-strike mechanic it had as two inline abilities, now one ability with two effects (behavior-identical).",
+  "_comment": "A passing candidate, hand-authored to prove the contract under the per-matchup floor (slice 2). Frost striker: a Shielded body behind the Squire tanks the first hits, poisons what it strikes (chipping fat status-stacked boards over time) and curses to weaken it; a durable mid and a body give it staying power vs the attrition meta. Overall 62% (in [35,65]) with every matchup above the 25% floor (Aggro 100% / SustainControl 42% / StatStack 44%; retuned to Shield 1, Poison 1, Curse 2 when #466 softened StatStack, then to Shield 2 and Glacier 11 HP when R3 (#642) put summons at the front, then to Squire in front, Glacier 3 HP and Curse 1 when a unit acting at most once per chain (#1030) stopped Necromancer re-reviving: SustainControl's Silencer hushes the front body, so the striker now stands second) — broadly viable, not a one-matchup hard-counter. #081: the unit references one Ability (Frostbite) carried in-file — the same Poison+Curse-on-strike mechanic it had as two inline abilities, now one ability with two effects (behavior-identical).",
   "abilities": {
     "Frostbite": {
       "name": "Frostbite",
@@ -8,18 +8,18 @@
       "selectors": [{ "kind": "frontEnemy" }],
       "effects": [
         { "kind": "applyStatus", "status": "Poison", "stacks": { "kind": "const", "value": 1 } },
-        { "kind": "applyStatus", "status": "Curse", "stacks": { "kind": "const", "value": 2 } }
+        { "kind": "applyStatus", "status": "Curse", "stacks": { "kind": "const", "value": 1 } }
       ]
     }
   },
   "units": [
+    { "name": "Squire", "base": { "hp": 8, "pwr": 2 }, "ability": "Strike" },
     {
       "name": "Frostbiter",
       "base": { "hp": 11, "pwr": 2 },
       "ability": "Frostbite",
       "statuses": [{ "status": "Shield", "stacks": 2 }]
     },
-    { "name": "Glacier", "base": { "hp": 11, "pwr": 2 }, "ability": "Strike" },
-    { "name": "Squire", "base": { "hp": 8, "pwr": 2 }, "ability": "Strike" }
+    { "name": "Glacier", "base": { "hp": 3, "pwr": 2 }, "ability": "Strike" }
   ]
 }

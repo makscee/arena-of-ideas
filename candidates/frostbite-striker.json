@@ -2,6 +2,29 @@
   "id": "frostbite-striker",
   "units": [
     {
+      "name": "Squire",
+      "base": {
+        "hp": 8,
+        "pwr": 2
+      },
+      "triggers": [
+        {
+          "kind": "trigger",
+          "on": {
+            "on": "BattleStart"
+          }
+        }
+      ],
+      "selectors": [
+        {
+          "kind": "holder"
+        }
+      ],
+      "abilities": [
+        "Strike"
+      ]
+    },
+    {
       "name": "Frostbiter",
       "base": {
         "hp": 11,
@@ -34,30 +57,7 @@
     {
       "name": "Glacier",
       "base": {
-        "hp": 11,
-        "pwr": 2
-      },
-      "triggers": [
-        {
-          "kind": "trigger",
-          "on": {
-            "on": "BattleStart"
-          }
-        }
-      ],
-      "selectors": [
-        {
-          "kind": "holder"
-        }
-      ],
-      "abilities": [
-        "Strike"
-      ]
-    },
-    {
-      "name": "Squire",
-      "base": {
-        "hp": 8,
+        "hp": 3,
         "pwr": 2
       },
       "triggers": [
@@ -96,7 +96,7 @@
           "status": "Curse",
           "stacks": {
             "kind": "const",
-            "value": 2
+            "value": 1
           }
         }
       ]
@@ -112,7 +112,7 @@
   },
   "gate": {
     "verdict": "in-band",
-    "overallWinRate": 0.6066666666666667,
+    "overallWinRate": 0.62,
     "band": {
       "min": 0.35,
       "max": 0.65
@@ -121,7 +121,7 @@
     "matchups": [
       {
         "opponent": "AggroVenom",
-        "winRate": 1,
+        "winRate": 1.0,
         "wins": 50,
         "losses": 0,
         "draws": 0,
@@ -129,18 +129,18 @@
       },
       {
         "opponent": "SustainControl",
-        "winRate": 0.48,
-        "wins": 24,
-        "losses": 26,
+        "winRate": 0.42,
+        "wins": 21,
+        "losses": 29,
         "draws": 0,
         "seeds": 50
       },
       {
         "opponent": "StatStack",
-        "winRate": 0.34,
-        "wins": 17,
-        "losses": 26,
-        "draws": 7,
+        "winRate": 0.44,
+        "wins": 22,
+        "losses": 23,
+        "draws": 5,
         "seeds": 50
       }
     ]

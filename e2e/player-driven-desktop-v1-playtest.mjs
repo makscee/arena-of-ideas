@@ -203,7 +203,7 @@ check(JSON.stringify(await offers(maks)) === JSON.stringify(["Frostbiter", "Snip
 await maks.click('[data-buy="0"]');
 check((await badge(maks, 0)).includes("Awakened 3/3") && (await badge(maks, 1)).includes("Awakened 3/3"), "both bases visibly reach Awakened 3/3");
 run = await readRun(maks);
-check(run.gold === 0 && run.lives === 4, "pre-fusion economy/lives are exact", `gold=${run.gold} lives=${run.lives}`);
+check(run.gold === 0 && run.lives === 3, "pre-fusion economy/lives are exact", `gold=${run.gold} lives=${run.lives}`);
 await capture(maks, "still-11-both-bases-awakened.png", "Venomancer and Frostbiter are both visibly Awakened after literal supported buys; gold 0, lives 4.");
 await capture(maks, "motion-01-both-awakened.png", "Frame walk: both legal base parents reach Awakened 3/3.");
 
@@ -222,7 +222,7 @@ await maks.click('[data-fuse="1:0"]');
 run = await readRun(maks);
 const fused = run.team[0];
 check(run.team.length === 1 && fused.name === fusedName, "commit creates one equal-identity ordered composite");
-check(fused.base.pwr === 7 && fused.base.hp === 25 && run.gold === 0 && run.lives === 4, "fused stats/economy/lives are exact", JSON.stringify({ base: fused.base, gold: run.gold, lives: run.lives }));
+check(fused.base.pwr === 7 && fused.base.hp === 25 && run.gold === 0 && run.lives === 3, "fused stats/economy/lives are exact", JSON.stringify({ base: fused.base, gold: run.gold, lives: run.lives }));
 check(JSON.stringify(fused.def.abilities) === JSON.stringify(["Frostbite", "Venom"]), "composite has exactly two ordered Abilities", JSON.stringify(fused.def.abilities));
 check(fused.fusion.parents[0].name === "Frostbiter" && fused.fusion.parents[1].name === "Venomancer", "ordered parent identity is persisted");
 await capture(maks, "still-13-fused-line.png", "Committed Frostbiter + Venomancer is one Fusion Fresh 0/3 Unit at 7 PWR/25 HP.");
