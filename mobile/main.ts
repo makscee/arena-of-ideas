@@ -664,6 +664,7 @@ async function openCodex(state?: Partial<CodexState>): Promise<void> {
  * the Codex does; a wish redraws it from the server. `codexOn`: whether the
  * server runs the Codex (/health), so its links show only then. */
 let codexOn = false;
+void api.health().then((h) => (codexOn = !!h.codex), () => undefined);
 async function openForge(tab: ForgeTab = "units"): Promise<void> {
   const back = keepScreen();
   let view = await api.codex();

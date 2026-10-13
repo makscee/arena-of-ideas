@@ -117,12 +117,14 @@ export function forgeScreen(a: ForgeArgs): void {
   };
 
   const feed = (): Node[] => {
-    const days = [...new Set(v.feed.map((f) => f.at.slice(0, 10)))];
+    // Days are the player's own: a claim after their midnight is today's.
+    const local = (iso: string): string => (iso.length <= 10 ? iso : new Date(iso).toLocaleDateString("sv-SE"));
+    const days = [...new Set(v.feed.map((f) => local(f.at)))];
     if (!days.length) return [h("div", { class: "dim" }, t("forge.feedEmpty"))];
     return days.flatMap((d) => [
       h("div", { class: "label" }, day(d)),
       ...v.feed
-        .filter((f) => f.at.startsWith(d))
+        .filter((f) => local(f.at) === d)
         .map((f) => {
           const line =
             f.kind === "arrived"
