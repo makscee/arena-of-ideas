@@ -217,7 +217,7 @@ type Logged = CantExpress & { near?: true };
  * those quoted from the idea's own text (the player's words, never the
  * model's), as the text has them. */
 function logCantExpress(deps: ReadDeps, idea: Idea, cant: Logged[]): string[] {
-  const logged = new Set(deps.store.wordRequests().filter((w) => w.ideaId === idea.ideaId).map((w) => w.word.toLowerCase()));
+  const logged = new Set(deps.store.wordRequests().filter((w) => w.source === "idea" && w.ref === idea.ideaId).map((w) => w.word.toLowerCase()));
   const parts: string[] = [];
   for (const c of cant) {
     const word = c.word.trim().slice(0, 60);
@@ -225,7 +225,7 @@ function logCantExpress(deps: ReadDeps, idea: Idea, cant: Logged[]): string[] {
     if (!word) continue;
     if (!logged.has(word.toLowerCase())) {
       logged.add(word.toLowerCase());
-      deps.store.addWordRequest({ ideaId: idea.ideaId, word, part, createdAt: deps.now().toISOString() });
+      deps.store.addWordRequest({ source: "idea", ref: idea.ideaId, word, part, createdAt: deps.now().toISOString() });
     }
     if (c.near) continue;
     const at = part ? idea.text.toLowerCase().indexOf(part.toLowerCase()) : -1;

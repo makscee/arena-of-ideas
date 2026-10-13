@@ -12,6 +12,7 @@ import { codexFuse } from "./codex.js";
 import { todaysChampion } from "./day.js";
 import type { NameFusion } from "./fusions.js";
 import type { MvpStore } from "./store.js";
+import { foundWordsIn, pairKey } from "./words.js";
 
 /** Observers of the run engine (slice 10's fusion names, slice 11's stats,
  * whatever slice 5 needs). decide() calls them after its store writes,
@@ -98,7 +99,11 @@ export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionRe
   }
   const step = applyMvpDecision(run, d, content, ctx);
   // Only after the rules accepted the fuse: a human's pick on a ready pair.
-  if (forged?.claim && !store.claimCodexPair(forged.claim.a, forged.claim.b, forged.claim.claim)) throw new MvpDecisionError("fuse", "already claimed");
+  if (forged?.claim) {
+    if (!store.claimCodexPair(forged.claim.a, forged.claim.b, forged.claim.claim)) throw new MvpDecisionError("fuse", "already claimed");
+    // a forged word is found by the first claimed design that uses it (#1052)
+    foundWordsIn(store, forged.ctx.design, pairKey(forged.claim.a, forged.claim.b), forged.claim.claim.by.id, now());
+  }
   // The line as it went into a round's fight becomes someone's ghost, win or
   // lose; only after the rules accepted the fight, so a refused one adds
   // nothing. An empty line (a walkover) is nobody's opponent.

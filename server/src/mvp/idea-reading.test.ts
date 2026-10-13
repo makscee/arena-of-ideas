@@ -87,7 +87,7 @@ describe("reading ideas with the fake reader (M2-5)", () => {
     await readIdeas(two.deps, fakeIdeaReader());
     expect(one.store.idea(i1.ideaId)!.data).toEqual(two.store.idea(i2.ideaId)!.data);
     expect(one.store.idea(i1.ideaId)!.data.cantExpress).toEqual(["steals the enemy's gold"]);
-    expect(one.store.wordRequests()).toEqual([{ ideaId: i1.ideaId, word: "steal gold", part: "steals the enemy's gold", createdAt: "2026-10-08T08:00:00.000Z" }]);
+    expect(one.store.wordRequests()).toEqual([{ source: "idea", ref: i1.ideaId, word: "steal gold", part: "steals the enemy's gold", createdAt: "2026-10-08T08:00:00.000Z" }]);
   });
 
   it("reads a few at a time, oldest first", async () => {
