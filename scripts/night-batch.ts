@@ -51,7 +51,7 @@ function parentOf(def: UnitDef): Parent {
     }
   };
   visit(def);
-  return { id: def.name, emoji: EMOJI[def.name], def, abilities, statuses };
+  return { id: def.name, ...(EMOJI[def.name] ? { emoji: EMOJI[def.name]! } : {}), def, abilities, statuses };
 }
 
 const Archer = rule("Archer", 6, 1, { on: "TurnStart" }, { kind: "frontEnemy" }, "Shoot");
@@ -74,7 +74,7 @@ const parents = Object.fromEntries(UNITS.map((u) => [u.name, parentOf(u)]));
 console.log(`night batch ${day}: ${list.length} pairs, designer ${designer.kind}`);
 const started = Date.now();
 const results = await runBatch(list, { designer, field: trialField(), parents, parallel: Number(arg("parallel", "5")), log: (l) => console.log(`  ${l}`) });
-const batch = { day, designer: designer.kind, ranAt: new Date().toISOString(), seconds: Math.round((Date.now() - started) / 1000), parents: Object.fromEntries(Object.entries(parents).map(([k, p]) => [k, { emoji: p.emoji }])), results };
+const batch = { day, designer: designer.kind, ranAt: new Date().toISOString(), seconds: Math.round((Date.now() - started) / 1000), parents: Object.fromEntries(Object.entries(parents).map(([k, p]) => [k, p.emoji ? { emoji: p.emoji } : {}])), results };
 mkdirSync(out, { recursive: true });
 writeFileSync(join(out, `night-${day}.json`), JSON.stringify(batch, null, 1));
 const report = arg("report", join(out, `night-${day}.html`))!;
