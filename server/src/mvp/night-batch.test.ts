@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { Candle, FIXTURE_ABILITIES, FIXTURE_STATUSES, Gambler, Hourglass, Mirror, Nautilus } from "../../../src/words/fixtures.js";
 import { plain, rule } from "../../../src/words/examples.js";
 import type { UnitDef } from "../../../src/types.js";
-import { BATCH_MAX, BATCH_MIN, compile, type DesignDraft, type Field, type Parent, pairKey, pickPairs, REDESIGN_AFTER_MS, runBatch } from "./night-batch.js";
+import { BATCH_MAX, BATCH_MIN, compile, type DesignDraft, type Field, type Parent, pairKey, pickPairs, REDESIGN_AFTER_MS, ruleText, runBatch } from "./night-batch.js";
 import { DESIGN_SCHEMA, DESIGNER_RULES, designerSystemPrompt, designPrompt, designerFromEnv, fakeDesigner, namePrompt } from "./night-designer.js";
 import { nightReport } from "./night-report.js";
 
@@ -96,6 +96,22 @@ describe("one pair through the batch", () => {
       expect(Object.keys(c.ok.statuses)).not.toContain("Shield2");
       expect([...c.own]).toEqual(["Harden"]);
     }
+  });
+  it("refuses a coined status without EN and RU names, takes it with them", () => {
+    const wax = (names?: unknown): DesignDraft => ({
+      lean: "A",
+      intent: "wax",
+      rule: { triggers: [{ kind: "trigger", on: { on: "TurnStart" } }], selectors: [{ kind: "holder" }], abilities: ["Drip"] },
+      abilities: { Drip: { name: "Drip", family: "Shield", effects: [{ kind: "applyStatus", status: "Wax", stacks: { kind: "const", value: 1 } }] } },
+      statuses: { Wax: { name: "Wax", counter: true, abilities: [], ...(names ? { names } : {}) } as never },
+    });
+    const bare = compile(wax(), parent(Candle), parent(Mirror), "X", new Set(Object.keys(FIXTURE_STATUSES)));
+    expect("issues" in bare && bare.issues).toEqual(["statuses.Wax: a coined status needs names.en"]);
+    const enOnly = compile(wax({ en: "Wax" }), parent(Candle), parent(Mirror), "X", new Set(Object.keys(FIXTURE_STATUSES)));
+    expect("issues" in enOnly && enOnly.issues[0]).toMatch(/names\.ru/);
+    const named = compile(wax({ en: "Wax", ru: { name: "Воск", acc: "Воск", count: ["Воск", "Воска", "Воска"] } }), parent(Candle), parent(Mirror), "X", new Set(Object.keys(FIXTURE_STATUSES)));
+    expect("ok" in named).toBe(true);
+    if ("ok" in named) expect(ruleText(named.ok, "ru")).toBe("Начало хода: 1 Воск себе.");
   });
   it("names a missing parent as the pair's error", async () => {
     const list = pickPairs({ units, now, size: 1, small: true, requests: ["Seed+Raven"] });

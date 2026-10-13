@@ -252,6 +252,10 @@ export interface StatusDef {
   /** A counter (rules v2 §3.3): tracked like stacks, drawn as a small
    * number on the card rather than as a buff. Display only. */
   counter?: true;
+  /** A coined status's names (rules v2: a rule the renderer can't say is not
+   * legal): the night batch refuses a coined status without them. Shipped
+   * statuses take their RU names from src/status-names.ts. */
+  names?: { en: string; ru: { name: string; acc: string; count: readonly [one: string, few: string, many: string] } };
   /** Contribution per stack while attached. Effective stat = max(0, base + Σ contributions) — computed, never baked. */
   statMods?: Partial<Stats>;
   /** Status recipe context. Empty for modifier-only statuses. */

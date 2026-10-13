@@ -12,6 +12,7 @@
 
 import { amountWord, conditionWord, effectWord, isV2Effect, selectorWord } from "./words/index.js";
 import { macro } from "./words/macros.js";
+import { statusRu, type Forms } from "./status-names.js";
 import type { Ability, Amount, Condition, Effect, EventPattern, EventPatternV1, Selector, SelectorV1, StatusDef, UnitFilter, When } from "./types.js";
 import type { DescribeOpts, DescribeSegment, PartRef, Side } from "./describe.js";
 import type { TermId } from "./glossary.js";
@@ -22,38 +23,13 @@ const capitalize = (s: string): string => (s.length > 0 ? s[0]!.toUpperCase() + 
 
 const PLURAL = new Intl.PluralRules("ru");
 
-/** A counted noun's three forms: 1 щит, 2 щита, 5 щитов. */
-type Forms = readonly [one: string, few: string, many: string];
-
 /** The form a number takes: "one" (1, 21), "few" (2–4, 22), else "many". */
 export function ruCount(n: number, forms: Forms): string {
   const cat = PLURAL.select(n);
   return cat === "one" ? forms[0] : cat === "few" ? forms[1] : forms[2];
 }
 
-/** A shipped status in Russian: its name (nominative, as a label), the
- * accusative ("получает Силу") and its counted forms ("2 Силы"). A status
- * the table doesn't know (player-made) keeps its own name in every case. */
-interface RuStatus {
-  name: string;
-  acc: string;
-  count: Forms;
-}
-
-export const RU_STATUSES: Record<string, RuStatus> = {
-  Strength: { name: "Сила", acc: "Силу", count: ["Сила", "Силы", "Сил"] },
-  Vitality: { name: "Живучесть", acc: "Живучесть", count: ["Живучесть", "Живучести", "Живучести"] },
-  Curse: { name: "Проклятие", acc: "Проклятие", count: ["Проклятие", "Проклятия", "Проклятий"] },
-  Poison: { name: "Яд", acc: "Яд", count: ["Яд", "Яда", "Ядов"] },
-  Shield: { name: "Щит", acc: "Щит", count: ["Щит", "Щита", "Щитов"] },
-  Freeze: { name: "Заморозка", acc: "Заморозку", count: ["Заморозка", "Заморозки", "Заморозок"] },
-  Blessing: { name: "Благословение", acc: "Благословение", count: ["Благословение", "Благословения", "Благословений"] },
-};
-
-const statusRu = (s: string): RuStatus => RU_STATUSES[s] ?? { name: s, acc: s, count: [s, s, s] };
-
-/** A status's Russian name (its label), or its own name when it has none. */
-export const ruStatusName = (s: string): string => statusRu(s).name;
+export { RU_STATUSES, ruStatusName } from "./status-names.js";
 
 /** Stats, as the card shows them: АТК (PWR), ОЗ (HP). */
 export const RU_STAT: Record<"pwr" | "hp", string> = { pwr: "АТК", hp: "ОЗ" };
@@ -278,7 +254,8 @@ function effectSegs(e: Effect, ctx: EffectCtx): DescribeSegment[] {
   if (word) {
     // Rule words take their Who in the accusative (= genitive for the animate units).
     const target = targetSegs(ctx.selectors, "acc", ctx).map((g) => g.text).join("");
-    return [{ text: word.ru(e, { amount: (a) => amountDat(a).map((g) => g.text).join(""), who: (s) => selectorText(s, "dat", ctx) }, target), partRef: ref }];
+    const say = { amount: (a: Amount) => amountDat(a).map((g) => g.text).join(""), who: (s: Selector) => selectorText(s, "dat", ctx), effect: (x: Effect) => effectSegs(x, ctx).map((g) => g.text).join("") };
+    return [{ text: word.ru(e, say, target), partRef: ref }];
   }
   if (isV2Effect(e)) return [];
   const e0 = (text: string): DescribeSegment => ({ text, partRef: ref });

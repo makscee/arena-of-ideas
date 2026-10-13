@@ -1,5 +1,6 @@
 import { example, plain, rule } from "./examples.js";
 import type { AmountWord } from "./types.js";
+import { statusRu } from "../status-names.js";
 import type { AmountV2 } from "../types.js";
 
 type A = Extract<AmountV2, { kind: "stacksOf" }>;
@@ -13,7 +14,7 @@ export const stacksOf: AmountWord<A> = {
     return u ? ctx.stacks(u, a.status) : 0;
   },
   en: (a, say) => `${a.of === "holder" ? "its" : "the target's"} ${a.status}`,
-  ru: (a, say) => `${a.status} ${a.of === "holder" ? "у себя" : "у цели"}`,
+  ru: (a, say) => `числу ${statusRu(a.status).count[2]} ${a.of === "holder" ? "у себя" : "у цели"}`,
   example: {
     input: example([rule("Drummer", 6, 1, { on: "TurnStart" }, { kind: "holder" }, "Empower"), rule("Echo", 6, 1, { on: "TurnStart" }, { kind: "allyAhead" }, "Mirror")], [plain("Brute", 12, 1)]),
     trace: "Echo → the ally ahead of it (Drummer) → Strength 1",

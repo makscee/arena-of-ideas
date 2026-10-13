@@ -217,7 +217,7 @@ export function proposeScreen(unit: UnitContent, content: MvpContent, nav: Ideas
         "div",
         { class: "panel propose-now", "data-testid": "propose-rule" },
         h("span", { class: "dim small" }, t("ideas.now")),
-        ...richText(formSegments(unit.forms.sleeping, content.abilities, rulesLangOpt()), { size: 14 }),
+        ...richText(formSegments(unit.forms.sleeping, content.abilities, rulesLangOpt(), content.statuses), { size: 14 }),
       ),
     ],
     label: t("ideas.proposeLabel"),

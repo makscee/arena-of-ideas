@@ -40,6 +40,7 @@ export function designerSystemPrompt(): string {
     "",
     "The rule is engine JSON in the types below: `rule` holds the unit's triggers, optional condition, selectors, abilities (ids) and optional also-clauses and starting statuses; `abilities` and `statuses` hold the registry entries your rule refers to (ids you make up; you may also reuse the parents' ids).",
     "A unit has one When. A second rule lives on a counter status (StatusDef with counter: true and its own triggers), as Hourglass's Grains and Raven's Memory do below.",
+    "A status you make up carries its names, as Grains and Memory do: `names` {en, ru: {name, acc, count: [one, few, many]}}, the Russian written natively with its accusative and its three counted forms (1 Песчинка, 2 Песчинки, 5 Песчинок). A status without them is refused.",
     "Rule-modifying effects (copyRule, swapRules, remember, performRemembered, actAgain) may not listen to a chain link: use them on root events (BattleStart, TurnStart, TurnEnd, Death, Acted).",
     `Composed words you may use as {"kind":"macro","name":…}:\n${macros}`,
     "If the design truly needs a word the language lacks, do not bend it: set `wordRequest` {word, meaning} and still give your best rule without it.",

@@ -4,15 +4,28 @@
 // the plain sentence.
 
 import { describeAbilitySegments, type DescribeSegment, type Lang } from "../describe.js";
-import type { AbilityRegistry, Effect } from "../types.js";
+import { withStatusNames } from "../status-names.js";
+import type { AbilityRegistry, Effect, StatusDef, StatusRegistry } from "../types.js";
 import type { UnitForm } from "./contract.js";
 
 /** A form as segments: its authored text (one plain segment), else described
  * from its abilities. The form's own Does share its When and Who: one sentence,
  * the Does joined by "then" ("When the battle begins: summon …, then apply 3
  * Vitality to every ally."), unless a Does carries a condition of its own. */
-export function formSegments(form: UnitForm, abilities: AbilityRegistry, lang?: Lang): DescribeSegment[] {
+export function formSegments(form: UnitForm, abilities: AbilityRegistry, lang?: Lang, statuses?: StatusRegistry, carries: readonly string[] = []): DescribeSegment[] {
   if (form.text) return [{ text: form.text }];
+  return withStatusNames(statuses, () => {
+    const out = ruleSegments(form, abilities, lang);
+    // A second rule lives on a counter status (rules v2: Hourglass's grains,
+    // Raven's memory): the card reads it on after the form's own, so the
+    // whole rule is said. `carries`: the statuses the unit starts with.
+    for (const id of counterRules(form, abilities, statuses ?? {}, carries)) out.push({ text: " " }, ...statusRuleSegments(id, statuses![id]!, lang));
+    return out;
+  });
+}
+
+/** The form's own rule: its clause, then its "and" clauses. */
+function ruleSegments(form: UnitForm, abilities: AbilityRegistry, lang?: Lang): DescribeSegment[] {
   const out = clauseSegments(form, abilities, lang);
   // Each "and" clause (R4-7) reads on after the form's own Does, with its own
   // Who and without the When again: "Ally dies: 2 Strength to self, and
@@ -28,6 +41,31 @@ export function formSegments(form: UnitForm, abilities: AbilityRegistry, lang?: 
     out.push({ text: lang === "ru" ? ", и " : ", and " }, ...segs.slice(colon + 1));
   }
   return out;
+}
+
+/** The counter statuses with a rule of their own that the form gives (or
+ * the unit starts with), in order, once each. */
+function counterRules(form: UnitForm, abilities: AbilityRegistry, statuses: StatusRegistry, carries: readonly string[]): string[] {
+  const ids: string[] = [];
+  const visit = (e: Effect): void => {
+    if (e.kind === "applyStatus") ids.push(e.status);
+    else if (e.kind === "delay") visit(e.effect);
+  };
+  for (const id of [...form.does, ...(form.also ?? []).flatMap((c) => c.does)]) for (const e of abilities[id]?.effects ?? []) visit(e);
+  ids.push(...carries);
+  return [...new Set(ids)].filter((id) => statuses[id]?.counter && statuses[id]!.abilities.length > 0);
+}
+
+/** A counter status's rule as the form's own would read: its first ability
+ * the clause, the rest its "and" clauses. Its own stacks are named ("spend 3
+ * Grains", not "spend 3 stacks"), since the card is the unit's, not the status's. */
+function statusRuleSegments(id: string, def: StatusDef, lang?: Lang): DescribeSegment[] {
+  const named = (e: Effect): Effect => (e.kind === "consumeStacks" && e.status === undefined ? { ...e, status: id } : e);
+  const abilities: AbilityRegistry = {};
+  def.abilities.forEach((ab, i) => (abilities[`${id}#${i}`] = { name: id, family: "Arcane", ...ab, effects: ab.effects.map(named) }));
+  const [first, ...rest] = def.abilities.map((ab, i) => ({ who: def.selectors ?? ab.selectors ?? [], does: [`${id}#${i}`] }));
+  const condition = def.condition ?? def.abilities[0]?.condition;
+  return ruleSegments({ when: def.triggers ?? def.abilities[0]?.whens ?? [], ...(condition ? { condition } : {}), who: first!.who, does: first!.does, also: rest }, abilities, lang);
 }
 
 /** One clause (a form's Who and its Does) as one sentence. */
@@ -63,5 +101,5 @@ function sumStatuses(effects: Effect[]): Effect[] {
 }
 
 /** formSegments joined: the form's plain sentence. */
-export const formText = (form: UnitForm, abilities: AbilityRegistry, lang?: Lang): string =>
-  formSegments(form, abilities, lang).map((s) => s.text).join("");
+export const formText = (form: UnitForm, abilities: AbilityRegistry, lang?: Lang, statuses?: StatusRegistry, carries?: readonly string[]): string =>
+  formSegments(form, abilities, lang, statuses, carries).map((s) => s.text).join("");
