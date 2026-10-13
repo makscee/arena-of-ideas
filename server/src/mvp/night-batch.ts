@@ -423,7 +423,9 @@ async function designPair(pair: ListedPair, a: Parent, b: Parent, o: BatchOption
       if ("issues" in c) return { ...base, ...empty, state: "rejected", why: c.issues.slice(0, 3).join("; ") };
       const tuned = quickTune(c.ok, c.own, o.field);
       const text = { en: ruleText(tuned.compiled, "en"), ru: ruleText(tuned.compiled, "ru") };
-      const state = tuned.check.terminates ? "ready" : "rejected";
+      // in band, or as close as the tune's scales get: out of band is stored with its why, not claimable
+      const state = tuned.check.inBand ? "ready" : "rejected";
+      const why = !tuned.check.terminates ? `doesn't terminate (${tuned.check.capped} capped, ${tuned.check.timeUp} time-up of ${tuned.check.games})` : `out of band: wins ${Math.round(tuned.check.score * 100)}% at best (band ${BAND.low * 100}-${BAND.high * 100}%)`;
       return {
         ...base,
         unit: tuned.compiled.unit,
@@ -433,7 +435,7 @@ async function designPair(pair: ListedPair, a: Parent, b: Parent, o: BatchOption
         text,
         check: tuned.check,
         state,
-        ...(state === "rejected" ? { why: `doesn't terminate (${tuned.check.capped} capped, ${tuned.check.timeUp} time-up of ${tuned.check.games})` } : {}),
+        ...(state === "rejected" ? { why } : {}),
       };
     }),
   );

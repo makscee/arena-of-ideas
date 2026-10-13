@@ -59,7 +59,8 @@ describe("one pair through the batch", () => {
         expect(c.text.en).toMatch(/enemy/i);
         expect(c.text.ru.length).toBeGreaterThan(3);
         expect(c.check!.terminates).toBe(true);
-      }
+        expect(c.check!.inBand).toBe(true);
+      } else expect(c.why).toMatch(/doesn't terminate|out of band/);
     }
   });
   it("names a pair's candidates one by one, each name unique within the pair", async () => {
