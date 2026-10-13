@@ -17,6 +17,7 @@ import { pickArchetype, readIdea } from "./idea-reading.js";
 import { grantIdea, writeIdea } from "./ideas.js";
 import { decide, startRun } from "./runs.js";
 import type { MvpRuntime } from "./runtime.js";
+import { fixtureBattle } from "./scene-fixtures.js";
 import { instantTuner, nextCard, overnightCheck, seedCandidate } from "./votes.js";
 
 /** What the client opens once the fixture is built (mobile/main.ts openScene). */
@@ -131,6 +132,14 @@ async function ideaAtArchetypes(rt: MvpRuntime, text = "A lantern keeper who hea
 
 let dayEnded: number | null = null;
 
+/** A rules v2 fixture battle (#1045): the golden battle of src/words/fixtures.ts, stored and opened as a replay. */
+const v2 = (name: string) => (rt: MvpRuntime): SceneBuilt => {
+  const player = fixturePlayer(rt);
+  const rec = fixtureBattle(name, player, rt.content.version, rt.now().toISOString());
+  rt.store.putBattle(rec);
+  return { player, entry: { screen: "battle", battleId: rec.battleId } };
+};
+
 export const SCENES: Scene[] = [
   { id: "signin", group: "Start", title: "Create a player", look: "The first screen: name field, sign-in options", desktop: true, build: () => ({ player: null, entry: { screen: "name" } }) },
   { id: "home", group: "Start", title: "Home / Throne", look: "Champion hero, Play, ideas meter, vote card, nav", desktop: true, build: home() },
@@ -228,6 +237,16 @@ export const SCENES: Scene[] = [
   { id: "codex-keywords", group: "Codex", title: "Codex: keywords", look: "Terms and the units that use them", desktop: true, build: codex("keywords") },
   { id: "codex-champions", group: "Codex", title: "Codex: champions / stats", look: "Records and past champions", desktop: true, build: codex("champions") },
   { id: "codex-howto", group: "Codex", title: "Codex: how to play", look: "The rules page", desktop: true, build: codex("howto") },
+  { id: "v2-hourglass", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Hourglass: a counter, then Archer acts again", look: "3.3 counter (Grains) and 3.5 actAgain: the grain count on the card, 'Hourglass: Archer acts again'", desktop: true, build: v2("hourglass") },
+  { id: "v2-mirror", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Mirror copies the front enemy's rule", look: "3.5 copyRule at battle start: Mirror then fights with Hedgehog's rule", desktop: true, build: v2("mirror") },
+  { id: "v2-candle", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Candle survives at 1 HP, pays 1 PWR", look: "3.4 preventDeath: the intercepted Death, the stat drop, death at 0 PWR", desktop: true, build: v2("candle") },
+  { id: "v2-gambler", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Gambler flips on each strike", look: "3.2 flip and 3.4 replaceAmount: heads doubles the hit; the coin in the trace", desktop: true, build: v2("gambler") },
+  { id: "v2-nautilus", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Nautilus shields by hits taken", look: "3.3 count hitsTaken: the shield grows 1, 2, 3 with each hit", desktop: true, build: v2("nautilus") },
+  { id: "v2-magnet", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Magnet takes the hit aimed at Archer", look: "3.4 redirect: 'the hit on Archer lands on Magnet', once per event", desktop: true, build: v2("magnet") },
+  { id: "v2-raven", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Raven remembers a fallen ally's rule", look: "3.5 remember / performRemembered: Archer dies, Raven shoots in its place next turn", desktop: true, build: v2("raven") },
+  { id: "v2-seed", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Seed becomes a Tree after two turns", look: "3.6 delay and transform: the delay set, 'Seed becomes Tree', the Tree's rule", desktop: true, build: v2("seed") },
+  { id: "v2-deja-vu", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Déjà Vu (Hourglass + Mirror)", look: "§5 fusion: what the front enemy does, Déjà Vu does one turn later", desktop: true, build: v2("dejaVu") },
+  { id: "v2-grave-tree", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Grave Tree (Raven + Seed)", look: "§5 fusion, 3.6 summonWithRule: a Sapling with the fallen Archer's rule, at its slot", desktop: true, build: v2("graveTree") },
 ];
 
 export const sceneById = (id: string): Scene | undefined => SCENES.find((s) => s.id === id);
