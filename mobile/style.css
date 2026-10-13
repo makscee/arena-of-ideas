@@ -1762,3 +1762,10 @@ button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padd
 /* The holding page while Arena is rebuilt (#1044). */
 .holding-list { margin: 0; padding-left: 20px; display: grid; gap: 10px; }
 .holding-list + .lang-row { margin-top: 12px; }
+
+/* The forge (rules v2's Codex, #1049): three sealed designs to claim from. */
+.forge-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.forge-card { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 4px; background: transparent; border: var(--bw, 2px) solid transparent; box-shadow: none; color: var(--text); }
+.forge-card .card { width: 64px; }
+.forge-card.on { border-color: var(--action); }
+.forge-flavour { font-size: 11px; line-height: 1.3; color: var(--dim); text-align: center; }

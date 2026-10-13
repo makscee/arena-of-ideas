@@ -7,6 +7,8 @@ import { boardUnit, type BattleRecord, type Champion, type DayState, type Decisi
 import { fuseCheck } from "../../../src/mvp/forms.js";
 import { lineResolves } from "../../../src/mvp/units.js";
 import { abandonRun, applyMvpDecision, championGhost, endRun, initMvpRun, ratingChange, runView, setOpponent, slewChampion, synthGhost, unitById, type DecisionContext, type MvpRunState, type MvpStep } from "../../../src/mvp/run.js";
+import { MvpDecisionError } from "../../../src/mvp/errors.js";
+import { codexFuse } from "./codex.js";
 import { todaysChampion } from "./day.js";
 import type { NameFusion } from "./fusions.js";
 import type { MvpStore } from "./store.js";
@@ -52,6 +54,9 @@ export interface RunDeps {
    * prefetched model name, else the portmanteau. It never records or waits.
    * preview() uses it for the credit; it hides an unfused pair's name. */
   peekFusionName: NameFusion;
+  /** Rules v2 (#1049, ./codex.ts): fuses go through the Codex (designed
+   * fusions, claims) instead of the v1 splice. Off: the v1 rules. */
+  codex?: boolean;
 }
 
 /** Starts a run for `player` on today's day and the live pool, with round
@@ -83,7 +88,8 @@ export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionRe
   // A rollover since round 12 ended crowned a new champion: fight that one.
   if (d.kind === "fight" && run.phase === "crown") run = currentCrown(deps, run);
   const ctx: DecisionContext = {};
-  const fuse = fuseContext(deps.nameFusion, content, run, d);
+  const forged = deps.codex ? codexFuse(deps, run, d) : undefined;
+  const fuse = deps.codex ? forged?.ctx : fuseContext(deps.nameFusion, content, run, d);
   if (fuse) ctx.fuse = fuse;
   if (d.kind === "fight") {
     // The opponent picked at round start; a run stored without one picks now.
@@ -91,6 +97,8 @@ export function decide(deps: RunDeps, run: MvpRunState, d: Decision): DecisionRe
     ctx.fight = { ghost, battleId: randomUUID(), battleSeed: seed(), at: now().toISOString() };
   }
   const step = applyMvpDecision(run, d, content, ctx);
+  // Only after the rules accepted the fuse: a human's pick on a ready pair.
+  if (forged?.claim && !store.claimCodexPair(forged.claim.a, forged.claim.b, forged.claim.claim)) throw new MvpDecisionError("fuse", "already claimed");
   // The line as it went into a round's fight becomes someone's ghost, win or
   // lose; only after the rules accepted the fight, so a refused one adds
   // nothing. An empty line (a walkover) is nobody's opponent.
@@ -224,6 +232,12 @@ function finish(deps: RunDeps, run: MvpRunState): MvpRunState {
 export function preview(deps: RunDeps, run: MvpRunState, d: Decision): DecisionResponse {
   const content = deps.contentFor(run.contentVersion);
   const ctx: DecisionContext = {};
+  if (deps.codex) {
+    // The same design the fuse would make; nothing is claimed.
+    const forged = codexFuse(deps, run, d);
+    if (forged) ctx.fuse = forged.ctx;
+    return { run: runView(applyMvpDecision(run, d, content, ctx).state) };
+  }
   const fuse = fuseContext(deps.peekFusionName, content, run, d);
   if (fuse && d.kind === "fuse") {
     // A pair nobody has fused gets its name only from the fuse itself, so the

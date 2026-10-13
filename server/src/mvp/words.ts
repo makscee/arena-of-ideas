@@ -66,6 +66,17 @@ export function requestWord(store: MvpStore, source: WordSource, ref: string, as
 export const requestForPair = (store: MvpStore, a: string, b: string, asks: WordAsk[], now: Date): number =>
   asks.filter((ask) => requestWord(store, "night", pairKey(a, b), ask, now)).length;
 
+/** The night batch's results (./night-batch.ts runBatch) into the queue: each
+ * candidate left waiting for a word asks for it, once per pair and word.
+ * Returns how many requests were new. */
+export function queueNightResults(store: MvpStore, results: { pair: { key: string }; candidates: { state: string; wordRequest?: { word: string; meaning: string } }[] }[], now: Date): number {
+  let added = 0;
+  for (const r of results)
+    for (const c of r.candidates)
+      if (c.state === "word" && c.wordRequest && requestWord(store, "night", r.pair.key, { word: c.wordRequest.word, part: c.wordRequest.meaning }, now)) added++;
+  return added;
+}
+
 /** The words a unit of a batch asks for. */
 export const requestForUnit = (store: MvpStore, unitId: string, asks: WordAsk[], now: Date): number =>
   asks.filter((ask) => requestWord(store, "batch", unitId, ask, now)).length;

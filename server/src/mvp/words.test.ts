@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { ALL_WORDS } from "../../../src/words/index.js";
 import { MemoryMvpStore } from "./store.js";
 import { wordCard } from "./words-cli.js";
-import { creditLine, dictionary, forgedNotFound, notFoundLine, forgedWords, forgedWordsIn, foundWordsIn, pairKey, requestForPair, requestForUnit, requestWord, sealedLine, waitingOn, wordKey } from "./words.js";
+import { queueNightResults, creditLine, dictionary, forgedNotFound, notFoundLine, forgedWords, forgedWordsIn, foundWordsIn, pairKey, requestForPair, requestForUnit, requestWord, sealedLine, waitingOn, wordKey } from "./words.js";
 
 const at = new Date("2026-10-14T01:00:00.000Z");
 const steal = { word: "steal", kind: "steal", card: 2001 };
@@ -31,6 +31,19 @@ describe("the word queue (#1052)", () => {
     expect(requestWord(s, "night", "a+b", { word: "  ", part: "y" }, at)).toBe(false);
     expect(requestWord(s, "batch", "a+b", { word: "steal", part: "y" }, at)).toBe(true);
     expect(s.wordRequests()).toHaveLength(2);
+  });
+
+  it("queues the night batch's candidates that wait for a word, once per pair and word", () => {
+    const s = new MemoryMvpStore();
+    const waiting = { state: "word", wordRequest: { word: "steal", meaning: "takes the front enemy's power" } };
+    const results = [
+      { pair: { key: "Magpie+Shadow" }, candidates: [waiting, { ...waiting }, { state: "ready" }] },
+      { pair: { key: "Candle+Mirror" }, candidates: [{ state: "rejected" }] },
+    ];
+    expect(queueNightResults(s, results, at)).toBe(1);
+    expect(queueNightResults(s, results, at)).toBe(0);
+    expect(s.wordRequests().map((r) => [r.source, r.ref, r.word, r.part])).toEqual([["night", "Magpie+Shadow", "steal", "takes the front enemy's power"]]);
+    expect(waitingOn(s, "Magpie+Shadow")).toEqual(["steal"]);
   });
 
   it("order is dropped: A+B and B+A are one pair", () => {

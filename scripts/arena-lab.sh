@@ -2,7 +2,8 @@
 # The Arena lab (#1026): a scenes server on m1 for judging changes from
 # #scene= links, tailnet only at https://m1.twin-pogona.ts.net/arena-lab/.
 # It runs a branch (default main) from its own clone ~/arena-lab with
-# MVP_DEV=1 ARENA_SCENES=1 MVP_DB=:memory: (a world built in memory at each
+# MVP_DEV=1 ARENA_SCENES=1 MVP_DB=:memory: ARENA_CODEX=1 (rules v2's Codex, #1049;
+# the forge scenes need it) (a world built in memory at each
 # start, never the live one), under launchd ru.makscee.arena-lab on :8796,
 # and rewrites the index page ~/reports/arena-scenes.html (/r/arena-scenes.html).
 #   scripts/arena-lab.sh [branch]     run on m1; e.g. a card's branch for its check
@@ -47,6 +48,7 @@ cat > "$PLIST" <<PL
     <key>BASE_PATH</key><string>/arena-lab</string>
     <key>MVP_DEV</key><string>1</string>
     <key>ARENA_SCENES</key><string>1</string>
+    <key>ARENA_CODEX</key><string>1</string>
     <key>MVP_DB</key><string>:memory:</string>
     <key>ARENA_TUNER</key><string>instant</string>
     <key>ARENA_IDEA_READER</key><string>fake</string>

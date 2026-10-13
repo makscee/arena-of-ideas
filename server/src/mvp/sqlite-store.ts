@@ -10,8 +10,9 @@ import Database from "better-sqlite3";
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { BattleRecord, Champion, DayState, FightKind, FusionDiscovery, Ghost, Idea, IdeaState, PlayerRef, PlayoffResult, Rating, Slay, UnitId } from "../../../src/mvp/contract.js";
+import type { CodexClaim, CodexPair } from "../../../src/mvp/codex.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
-import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type TelegramCode, type TelegramLink, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally, type Vote, type WordRequest, type FoundWord, type DailyPost, type EmailCode, type EmailLink } from "./store.js";
+import { MAX_SESSIONS, NO_IDEAS, nameKey, type DayTallies, type IdeaCounts, type Invite, type MvpStore, type PoolSnapshot, type PoolStint, type StoredUnit, type TelegramCode, type TelegramLink, type UnitDayTally, type UnitStatus, type UnitTallies, type UnitTally, type Vote, type WordRequest, type CodexWish, type FoundWord, type DailyPost, type EmailCode, type EmailLink } from "./store.js";
 
 const SQL_DIR = fileURLToPath(new URL("./sql/", import.meta.url));
 
@@ -99,6 +100,28 @@ export class SqliteMvpStore implements MvpStore {
     this.write("INSERT INTO mvp_fusions (first, second, json) VALUES (?, ?, ?) ON CONFLICT(first, second) DO UPDATE SET json = excluded.json", f.first, f.second, JSON.stringify(f));
   }
   fusions(): FusionDiscovery[] { return this.all("SELECT json FROM mvp_fusions ORDER BY rowid"); }
+
+  codexPair(a: UnitId, b: UnitId): CodexPair | undefined { return this.one("SELECT json FROM mvp_codex_pairs WHERE a = ? AND b = ?", a, b); }
+  putCodexPair(p: CodexPair): void {
+    this.write("INSERT INTO mvp_codex_pairs (a, b, claimed, json) VALUES (?, ?, ?, ?) ON CONFLICT(a, b) DO UPDATE SET claimed = excluded.claimed, json = excluded.json", p.a, p.b, p.claim ? 1 : 0, JSON.stringify(p));
+  }
+  claimCodexPair(a: UnitId, b: UnitId, claim: CodexClaim): boolean {
+    // One statement: only an unclaimed pair with candidates takes the claim.
+    const r = this.db
+      .prepare("UPDATE mvp_codex_pairs SET claimed = 1, json = json_set(json, '$.claim', json(?)) WHERE a = ? AND b = ? AND claimed = 0 AND json_array_length(json, '$.candidates') > 0")
+      .run(JSON.stringify(claim), a, b);
+    return r.changes === 1;
+  }
+  codexPairs(): CodexPair[] { return this.all("SELECT json FROM mvp_codex_pairs ORDER BY a, b"); }
+  addWish(w: CodexWish): boolean {
+    return this.db.prepare("INSERT OR IGNORE INTO mvp_codex_wishes (a, b, player_id, seq, at) VALUES (?, ?, ?, ?, ?)").run(w.a, w.b, w.playerId, w.seq, w.at).changes === 1;
+  }
+  wishes(seq: number): { a: UnitId; b: UnitId; count: number }[] {
+    return this.db.prepare("SELECT a, b, COUNT(*) AS count FROM mvp_codex_wishes WHERE seq = ? GROUP BY a, b ORDER BY count DESC, a, b").all(seq) as { a: UnitId; b: UnitId; count: number }[];
+  }
+  wishedBy(a: UnitId, b: UnitId, playerId: string, seq: number): boolean {
+    return this.db.prepare("SELECT 1 FROM mvp_codex_wishes WHERE a = ? AND b = ? AND player_id = ? AND seq = ?").get(a, b, playerId, seq) !== undefined;
+  }
 
   currentDay(): DayState | undefined { return this.one("SELECT json FROM mvp_days ORDER BY seq DESC LIMIT 1"); }
   putDay(d: DayState): void { this.write("INSERT OR REPLACE INTO mvp_days (seq, json) VALUES (?, ?)", d.seq, JSON.stringify(d)); }
