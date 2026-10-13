@@ -932,6 +932,7 @@ export interface MyIdeasView {
 //   POST /api/v1/runs/:runId/decisions  Decision → DecisionResponse
 //   POST /api/v1/runs/:runId/preview    Decision → DecisionResponse  (dry run, no writes; 400 for a fight)
 //   GET  /api/v1/runs/:runId/forge      → { pairs: ForgeSlot[] }  (rules v2 Codex, ARENA_CODEX=1; 404 off)
+//   GET  /api/v1/codex                 → ForgeView of forge-view.ts  (the Codex screens: units, pairs, feed, Dictionary; #1051)
 //   GET  /api/v1/codex/:a/:b            → ForgeView  (a pair, order-free; candidates sealed)
 //   POST /api/v1/codex/wish             { a, b } → ForgeView  (unforged pairs; one per player, pair and day)
 //   POST /api/v1/runs/:runId/abandon             → RunView            (gives the run up: endedBy "abandoned"; 409 when over)

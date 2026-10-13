@@ -36,6 +36,7 @@ import {
 import { uiLang } from "./lang";
 import type { SceneBuilt } from "../server/src/mvp/scenes";
 import type { ForgeSlot, ForgeView } from "../src/mvp/codex";
+import type { ForgeView as CodexOverview } from "../src/mvp/forge-view";
 
 const BASE = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "") + MVP_API_PREFIX;
 const PLAYER_KEY = "arena.player";
@@ -219,7 +220,7 @@ export const api = {
    * `telegram` (M4-6): Telegram login is on, with the real bot or the fake.
    * `mail` (#929): email login is on, by SMTP or the fake mailer.
    * `contentVersion`: the live pool's; ./content.ts refetches when it moves. */
-  health: () => call<{ dark?: boolean; invites?: boolean; open?: boolean; contentVersion?: string; telegram?: false | "bot" | "fake"; mail?: false | "smtp" | "fake" }>("GET", "/health"),
+  health: () => call<{ dark?: boolean; codex?: boolean; invites?: boolean; open?: boolean; contentVersion?: string; telegram?: false | "bot" | "fake"; mail?: false | "smtp" | "fake" }>("GET", "/health"),
   content: () => call<MvpContent>("GET", "/content"),
   home: () => call<HomeView>("GET", "/home"),
   startRun: () => call<RunView>("POST", "/runs"),
@@ -230,6 +231,8 @@ export const api = {
   /** Rules v2's forge (#1049): every pair the run can fuse now, in its Codex state; a 404 while the Codex is off. */
   forge: (id: string) => call<{ pairs: ForgeSlot[] }>("GET", `/runs/${id}/forge`),
   /** A wish on an unforged pair: it goes on tonight's list. */
+  /** The Codex screens' view (#1051): units, stored pairs, the feed, the Dictionary; a 404 while the Codex is off. */
+  codex: () => call<CodexOverview>("GET", "/codex"),
   wish: (a: string, b: string) => call<ForgeView>("POST", "/codex/wish", { a, b }),
   /** Gives the run up (slice R2-2): it ends "abandoned", every heart left
    * rated a lost fight. A bare RunView, not a DecisionResponse. */

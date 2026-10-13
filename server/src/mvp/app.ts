@@ -16,6 +16,7 @@ import { cancelIdea, grantIdea, IdeaRefused, ideasOf, myIdeas, writeIdea } from 
 import { isAdmin, isJoinCode, JoinRefused, joinOpen, NAME_RE, openJoin, redeemInvite, sessionPlayer } from "./invites.js";
 import { abandon, currentRun, decide, preview, startRun } from "./runs.js";
 import { codexView, forgeOf, wish } from "./codex.js";
+import { codexOverview } from "./codex-view.js";
 import { isMvpRuntime, mvpRuntime, type MvpDeps, type MvpRuntime } from "./runtime.js";
 import { servedContent } from "./pool.js";
 import { championSvg, shareLang, sharePng, unitSvg } from "./share.js";
@@ -75,7 +76,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
       await next();
     });
 
-  api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: rt.content.version, invites: rt.invites, open: rt.open, telegram: rt.telegram ? (rt.telegram instanceof FakeTelegram ? "fake" : "bot") : false, mail: rt.mail ? (rt.mail instanceof FakeMailer ? "fake" : "smtp") : false }));
+  api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: rt.content.version, invites: rt.invites, open: rt.open, codex: rt.codex, telegram: rt.telegram ? (rt.telegram instanceof FakeTelegram ? "fake" : "bot") : false, mail: rt.mail ? (rt.mail instanceof FakeMailer ? "fake" : "smtp") : false }));
   // A scenes server also serves the rules v2 fixtures' words (#1045, scene-fixtures.ts).
   api.get("/content", (c) => c.json(rt.scenes ? withSceneFixtures(servedContent(rt)) : servedContent(rt)));
 
@@ -332,6 +333,7 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     if (playerOf(c)?.id !== run.player.id) return bad(c, 401, "not your run");
     return c.json({ pairs: forgeOf(rt, run) });
   });
+  api.get("/codex", (c) => (rt.codex ? c.json(codexOverview(rt, playerOf(c))) : bad(c, 404, "the Codex is off")));
   api.get("/codex/:a/:b", (c) => (rt.codex ? c.json(codexView(rt, c.req.param("a"), c.req.param("b"), playerOf(c))) : bad(c, 404, "the Codex is off")));
   api.post("/codex/wish", async (c) => {
     if (!rt.codex) return bad(c, 404, "the Codex is off");

@@ -147,6 +147,8 @@ export const main = {
   "abandon.confirm": "Бросить",
 
   "menu.codex": "Кодекс",
+  "menu.forge": "Кузня",
+  "menu.dictionary": "Словарь",
   "menu.runOver": "Забег · окончен",
   "menu.runCrown": "Забег · Корона",
   "menu.runRound": "Забег · раунд {round} из {rounds}",

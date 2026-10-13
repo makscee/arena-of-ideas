@@ -139,6 +139,8 @@ export const main = {
   "abandon.confirm": "Abandon",
 
   "menu.codex": "Codex",
+  "menu.forge": "Forge",
+  "menu.dictionary": "Dictionary",
   "menu.runOver": "Run · over",
   "menu.runCrown": "Run · the Crown",
   "menu.runRound": "Run · round {round} of {rounds}",
