@@ -1769,3 +1769,48 @@ button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padd
 .forge-card .card { width: 64px; }
 .forge-card.on { border-color: var(--action); }
 .forge-flavour { font-size: 11px; line-height: 1.3; color: var(--dim); text-align: center; }
+/* Codex v2 (#1051): unit pages, Today, the Dictionary, the claim moment (mobile/screens/forge.ts). Tokens only, so every palette carries it. */
+.forge-head { gap: 12px; }
+.forge-head h1 { font-size: 26px; }
+.forge-sub { font-family: var(--font-head); font-size: 17px; margin: 4px 0 0; }
+.forge .small { font-size: 12px; line-height: 1.35; }
+.forge .grow { flex: 1; min-width: 0; }
+.forge-picker { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; }
+.forge-picker button { padding: 0; font-size: 20px; min-height: 44px; }
+.forge-picker button.on { background: var(--you); }
+.forge-emoji { font-size: 22px; line-height: 1; flex: none; white-space: nowrap; }
+.forge-card { background: var(--panel); border: var(--bw) solid var(--outline); border-radius: var(--radius); box-shadow: var(--drop); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+.forge-card-top { display: flex; align-items: center; gap: 8px; }
+.forge-name { font-family: var(--font-head); font-size: 16px; }
+.forge-rule { font-size: 14px; line-height: 1.35; }
+.forge-card.unit { border-color: var(--you); }
+.forge-card.found { border-color: var(--action); }
+.forge-credit { color: var(--action); }
+.forge-pair { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: var(--bw) solid var(--outline); border-radius: var(--radius); background: var(--panel); }
+.forge-pair.ready { border-style: dashed; border-color: var(--action); }
+.forge-pair.unforged { background: transparent; border-color: var(--muted); }
+.forge-wish { min-height: 40px; padding: 0 12px; font-size: 13px; white-space: nowrap; }
+.forge-wish.on { background: var(--action); color: var(--outline); }
+.forge-waiting { color: var(--dim); font-style: italic; max-width: 40%; text-align: right; }
+.forge-feed { display: flex; align-items: flex-start; gap: 10px; padding: 6px 2px; border-bottom: 1px solid var(--muted); }
+.forge-notfound { font-family: var(--font-head); font-size: 16px; color: var(--action); }
+.forge-word-name { font-family: var(--font-head); font-size: 18px; color: var(--action); }
+.forge-chip { display: inline-block; align-self: flex-start; font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--muted); color: var(--dim); }
+.forge-chip.forged { border-color: var(--action); color: var(--action); }
+.forge-flavour { font-style: italic; color: var(--dim); }
+.forge-lean { color: var(--dim); text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; }
+.forge-card.claim { cursor: pointer; }
+.forge-card.claim.sealed { animation: forge-unseal 0.6s ease-out both; animation-delay: calc(0.25s + var(--i, 0) * 0.35s); }
+.forge-card.claim.picked { outline: 3px solid var(--action); outline-offset: -1px; }
+.forge-card.claimed { border-color: var(--action); animation: forge-signed-in 0.5s ease-out both; }
+.forge-signed { font-family: var(--font-head); color: var(--action); font-size: 15px; margin-top: 4px; }
+.forge-sealed-away { display: flex; align-items: center; gap: 8px; }
+.forge-card.sealed-back { width: 44px; height: 56px; align-items: center; justify-content: center; padding: 0; opacity: 0.5; background: var(--muted); }
+@keyframes forge-unseal { from { transform: rotateY(90deg); opacity: 0.2; } to { transform: none; opacity: 1; } }
+@keyframes forge-signed-in { from { transform: scale(0.94); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .forge-card.claim.sealed, .forge-card.claimed { animation: none; } }
+@media (min-width: 1024px) {
+  #app[data-screen="forge"] { max-width: 880px; padding: 32px; }
+  #app[data-screen="forge"] .forge-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .forge.claim-moment .forge-candidates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+}
