@@ -102,6 +102,8 @@ interface Firing extends ReactorEntry {
 interface Pending {
   summon?: UnitState;
   resurrect?: { unit: string; hp: number };
+  /** Aimed by a random selector (a Hurt or status pattern's aim "random"). */
+  aimedRandom?: true;
 }
 
 /** A firing's Does split into runs that share one Who, in order. Does
@@ -116,6 +118,9 @@ function clausesOf(does: ReactorEntry["does"], fallback: Selector[]): { selector
   }
   return out;
 }
+
+/** Trigger-context atoms an interceptor's "and" clause may carry. */
+const TRIGGER_ATOMS = new Set(["damage", "heal", "applyStatus"]);
 
 export function battle(input: BattleInput): BattleEvent[] {
   return new Engine(input).run();
@@ -342,7 +347,7 @@ class Engine {
 
     for (const r of pierced ? [] : this.orderedReactors()) {
       for (const when of r.ability.triggers) {
-        if (when.kind !== "interceptor" || !this.matches(when.on, draft, r.holder)) continue;
+        if (when.kind !== "interceptor" || !this.matches(when.on, draft, r.holder, pending)) continue;
         const k = refKey(r.ref);
         if (handled.has(k)) continue;
         const stamped = withWhen(r, r.ability.triggers.indexOf(when));
@@ -446,11 +451,12 @@ class Engine {
     for (const clause of clausesOf(f.does, f.ability.selectors)) {
       for (const sel of clause.selectors) {
         const targets = this.evalSelector(sel, holder, f.event);
+        const aimed = sel.kind === "randomEnemy"; // an enemy's random pick (Magnet's "aim random")
         for (const d of clause.does) {
           const firing = d.ref === f.ref ? f : { ...f, ref: d.ref };
           for (const target of targets) {
             for (const effect of d.effects) {
-              this.runEffect(effect, target, holder, firing);
+              this.runEffect(effect, target, holder, firing, aimed);
             }
           }
         }
@@ -535,10 +541,11 @@ class Engine {
 
   // ---------- matching ----------
 
-  private matches(p: EventPattern, body: EventBody, holderId: string): boolean {
+  private matches(p: EventPattern, body: EventBody, holderId: string, pending?: Pending): boolean {
     if (p.on !== body.type) return false;
     const holder = this.units.get(holderId);
     if (!holder) return false;
+    if ("aim" in p && p.aim === "random" && !pending?.aimedRandom) return false;
     if ("striker" in p && body.type === "Strike") return this.filterMatches(p.striker, body.striker, holder);
     if ("status" in p && (body.type === "StatusApplied" || body.type === "StatusRemoved")) {
       if (p.status !== undefined && p.status !== body.status) return false;
@@ -632,14 +639,14 @@ class Engine {
 
   // ---------- effects (trigger context) ----------
 
-  private runEffect(e: Effect, target: UnitState, holder: UnitState, f: Firing): void {
+  private runEffect(e: Effect, target: UnitState, holder: UnitState, f: Firing, aimed = false): void {
     const amountCtx = { holder, ref: f.ref, target, event: f.event };
-    if (isV2Effect(e)) return this.runRuleMod(e, target, holder, f);
+    if (isV2Effect(e)) return this.runRuleMod(e, target, holder, f, aimed);
     switch (e.kind) {
       case "damage": {
         if (!target.alive) return;
         const amount = this.evalAmount(e.amount, amountCtx);
-        this.propose({ type: "Hurt", unit: target.id, amount }, f.event.id, f.ref);
+        this.propose({ type: "Hurt", unit: target.id, amount }, f.event.id, f.ref, aimed ? { aimedRandom: true } : undefined);
         return;
       }
       case "heal": {
@@ -651,7 +658,7 @@ class Engine {
       }
       case "applyStatus": {
         if (!target.alive) return;
-        this.proposeStatusApplied(target.id, e.status, this.evalAmount(e.stacks, amountCtx), f.event.id, f.ref);
+        this.proposeStatusApplied(target.id, e.status, this.evalAmount(e.stacks, amountCtx), f.event.id, f.ref, aimed);
         return;
       }
       case "consumeStacks": {
@@ -751,14 +758,14 @@ class Engine {
     }
   }
 
-  private proposeStatusApplied(unitId: string, status: string, stacks: number, causedBy: number, source: SourceRef): void {
+  private proposeStatusApplied(unitId: string, status: string, stacks: number, causedBy: number, source: SourceRef, aimed = false): void {
     const def = this.registry[status];
     if (!def) throw new Error(`unknown status "${status}" — not in registry`);
     if (stacks <= 0) return;
     const u = this.units.get(unitId);
     if (!u || !u.alive) return;
     const cur = u.statuses.find((s) => s.def.name === status)?.stacks ?? 0;
-    this.propose({ type: "StatusApplied", unit: unitId, status, stacks, total: cur + stacks }, causedBy, source);
+    this.propose({ type: "StatusApplied", unit: unitId, status, stacks, total: cur + stacks }, causedBy, source, aimed ? { aimedRandom: true } : undefined);
   }
 
   // ---------- rule modification (rules v2 §3.5) ----------
@@ -793,14 +800,20 @@ class Engine {
   /** actAgain: at most once per event per target (§3.4 guardrails). */
   private actedAgain = new Set<string>();
 
-  private runRuleMod(e: EffectV2, target: UnitState, holder: UnitState, f: Firing): void {
+  private runRuleMod(e: EffectV2, target: UnitState, holder: UnitState, f: Firing, aimed = false): void {
     const note = (op: Extract<EventBody, { type: "RuleMod" }>["op"], other?: string) =>
       this.applyEvent({ type: "RuleMod", unit: holder.id, op, ...(other !== undefined ? { other } : {}) }, f.event.id, f.ref);
     switch (e.kind) {
+      case "branch": {
+        const ok = this.checkCondition(e.if, holder, f.event, f.ref);
+        for (const x of ok ? e.then : e.else) this.runEffect(x, target, holder, f, aimed);
+        return;
+      }
       case "copyRule":
         if (!target.alive || target.id === holder.id || target.abilities.length === 0) return;
         holder.abilities = [...target.abilities];
         note("copyRule", target.id);
+        if (e.withPower) this.proposeStatusApplied(holder.id, "Strength", this.effStat(target, "pwr"), f.event.id, f.ref);
         return;
       case "swapRules": {
         if (!target.alive || target.id === holder.id) return;
@@ -906,7 +919,24 @@ class Engine {
       );
     };
 
-    for (const { ref, effects } of r.does) for (const effect of effects) {
+    const probe = { ...draft, id: -1, turn: this.turn, causedBy, source: "kernel" } as BattleEvent;
+    // A branch (rules v2) checks its condition here and stands for the side it picked.
+    const expand = (effects: Effect[], ref: AbilityRef): Effect[] =>
+      effects.flatMap((e) => (e.kind === "branch" ? expand(this.checkCondition(e.if, holder, probe, ref) ? e.then : e.else, ref) : [e]));
+    for (const { ref, effects: own0, selectors } of r.does) for (const effect of expand(own0, ref)) {
+      // An "and" clause's trigger-context effect runs once the intercepted
+      // event (or its Intercepted note) has landed, on that clause's Who
+      // (rules v2: Candle and Magnet awoken).
+      if (selectors && !isV2Effect(effect) && TRIGGER_ATOMS.has(effect.kind)) {
+        followUps.push((parentId) => {
+          const ev = this.log[parentId];
+          const h = this.units.get(r.holder);
+          if (!ev || !h?.alive) return;
+          const firing: Firing = { ...r, ref, event: ev };
+          for (const sel of selectors) for (const t of this.evalSelector(sel, h, ev)) this.runEffect(effect, t, h, firing);
+        });
+        continue;
+      }
       switch (effect.kind) {
         case "cancel": {
           if (effect.consumeSelf !== undefined) consumeOwn(effect.consumeSelf);
@@ -933,6 +963,16 @@ class Engine {
           });
           if (effect.removeSelf && own && r.ref.status !== undefined) consumeOwn(own.stacks);
           return "cancel";
+        }
+        case "strikeAgain": {
+          if (draft.type !== "Strike" || draft.again) break;
+          const again = { type: "Strike" as const, striker: draft.striker, defender: draft.defender, again: true as const };
+          followUps.push((parentId) => {
+            const s = this.units.get(again.striker);
+            const d = this.units.get(again.defender);
+            if (s?.alive && d?.alive) this.propose(again, parentId, ref);
+          });
+          break;
         }
         default: {
           // A v2 interceptor effect is a word (src/words/); trigger-context

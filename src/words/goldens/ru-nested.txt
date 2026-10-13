@@ -43,6 +43,12 @@ delay transform
 delay summonWithRule
   en: Turn start: in 2 turns: summon Sapling (0/4) with the rule of front enemy.
   ru: Начало хода: через 2 хода: призвать Sapling (0/4) с правилом переднего врага.
+delay branch
+  en: Turn start: in 2 turns: on heads, it becomes twice PWR; otherwise, it becomes 0.
+  ru: Начало хода: через 2 хода: если выпал орёл, он становится равным удвоенному АТК; иначе он становится равным 0.
+delay strikeAgain
+  en: Turn start: in 2 turns: it strikes again.
+  ru: Начало хода: через 2 хода: он бьёт ещё раз.
 and(flip, not turnIs)
   en: Turn start, on heads and unless on turn 2: in 1 turn: 1 damage to front enemy.
   ru: Начало хода, если выпал орёл и если не на 2-м ходу: через 1 ход: 1 урон переднему врагу.

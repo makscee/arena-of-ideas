@@ -48,6 +48,7 @@ export function traceLines(input: BattleInput, log: readonly BattleEvent[]): str
       out.push(said[e.op]);
       continue;
     }
+    if (e.type === "Strike" && e.again) out.push(`${name(e.striker)} strikes again`);
     if (e.type === "Strike" && e.amount !== undefined) {
       out.push(`${name(e.striker)}'s strike on ${name(e.defender)} hits for ${e.amount}`);
       continue;

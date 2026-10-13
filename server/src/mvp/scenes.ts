@@ -18,6 +18,9 @@ import { grantIdea, writeIdea } from "./ideas.js";
 import { decide, startRun } from "./runs.js";
 import type { MvpRuntime } from "./runtime.js";
 import { fixtureBattle } from "./scene-fixtures.js";
+import { contentOf } from "./content.js";
+import { poolBattle, poolBattleId } from "../../../src/mvp/pool-battles.js";
+import { ROWS_V2 } from "../../../src/mvp/units-v2.js";
 import { codexPair, type FusionDesign, type PairState } from "../../../src/mvp/codex.js";
 import { codexForged, forgeOf } from "./codex.js";
 import { claimFixture, forgeFixture, type ClaimView, type ForgeView } from "../../../src/mvp/forge-view.js";
@@ -182,6 +185,19 @@ const v2 = (name: string) => (rt: MvpRuntime): SceneBuilt => {
   return { player, entry: { screen: "battle", battleId: rec.battleId } };
 };
 
+/** `v2-unit-<slug>[-awoken]`: a battle of the v2 pool where the unit acts (#1046). */
+const v2unit = (name: string, awoken: boolean) => (rt: MvpRuntime): SceneBuilt => {
+  const player = fixturePlayer(rt);
+  const { record } = poolBattle(contentOf(ROWS_V2), name, awoken, player, rt.now().toISOString(), rt.content.version);
+  rt.store.putBattle(record);
+  return { player, entry: { screen: "battle", battleId: record.battleId } };
+};
+const v2unitScenes = (): Scene[] =>
+  ROWS_V2.slice(8).flatMap((row) => [
+    { id: poolBattleId(row.name, false), keep: true, group: "Rules v2 (unit batch 1, #1046)", title: `${row.name} (sleeping) in a pool battle`, look: `${row.shape}, tier ${row.tier}: ${row.archetype}`, desktop: true, build: v2unit(row.name, false) },
+    { id: poolBattleId(row.name, true), keep: true, group: "Rules v2 (unit batch 1, #1046)", title: `${row.name} (awoken) in a pool battle`, look: `the awoken upgrade of one clause, see the report page`, desktop: true, build: v2unit(row.name, true) },
+  ]);
+
 export const SCENES: Scene[] = [
   { id: "signin", group: "Start", title: "Create a player", look: "The first screen: name field, sign-in options", desktop: true, build: () => ({ player: null, entry: { screen: "name" } }) },
   { id: "holding", group: "Start", title: "Holding page (Arena dark)", look: "What the public URL shows while Arena is rebuilt: title, what's coming, language switch", desktop: true, build: () => ({ player: null, entry: { screen: "holding" } }) },
@@ -298,8 +314,19 @@ export const SCENES: Scene[] = [
   { id: "v2-magnet", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Magnet takes the hit aimed at Archer", look: "3.4 redirect: 'the hit on Archer lands on Magnet', once per event", desktop: true, build: v2("magnet") },
   { id: "v2-raven", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Raven remembers a fallen ally's rule", look: "3.5 remember / performRemembered: Archer dies, Raven shoots in its place next turn", desktop: true, build: v2("raven") },
   { id: "v2-seed", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Seed becomes a Tree after two turns", look: "3.6 delay and transform: the delay set, 'Seed becomes Tree', the Tree's rule", desktop: true, build: v2("seed") },
+  { id: "v2-gambler-tails", keep: true, group: "Rules v2 (unit batch 1, #1046)", title: "Gambler: tails deals none", look: "the branch word's else: 'Gambler flips: tails', the strike hits for 0", desktop: true, build: v2("gamblerTails") },
+  { id: "v2-magnet-random", keep: true, group: "Rules v2 (unit batch 1, #1046)", title: "Magnet takes a randomly aimed poison", look: "aim random: Spitter's poison on Archer lands on Magnet; front strikes pass", desktop: true, build: v2("magnetRandom") },
+  { id: "v2-hourglass-awoken", keep: true, group: "Rules v2 (unit batch 1, #1046)", title: "Awoken Hourglass: every ally behind acts again", look: "Sands at 3: Archer and Bowman both act again", desktop: true, build: v2("hourglassAwoken") },
+  { id: "v2-mirror-awoken", keep: true, group: "Rules v2 (unit batch 1, #1046)", title: "Awoken Mirror takes the rule and the power", look: "copyRule withPower: Mirror gains Strength equal to Hedgehog's power", desktop: true, build: v2("mirrorAwoken") },
+  { id: "v2-candle-awoken", keep: true, group: "Rules v2 (unit batch 1, #1046)", title: "Awoken Candle heals its neighbours", look: "each survival heals Squire by Candle's power", desktop: true, build: v2("candleAwoken") },
+  { id: "v2-gambler-awoken", keep: true, group: "Rules v2 (unit batch 1, #1046)", title: "Awoken Gambler strikes again on heads", look: "'Gambler strikes again' after a heads flip, never twice", desktop: true, build: v2("gamblerAwoken") },
+  { id: "v2-nautilus-awoken", keep: true, group: "Rules v2 (unit batch 1, #1046)", title: "Awoken Nautilus counts allies' hits", look: "Shield grows by hits taken plus hits allies took", desktop: true, build: v2("nautilusAwoken") },
+  { id: "v2-magnet-awoken", keep: true, group: "Rules v2 (unit batch 1, #1046)", title: "Awoken Magnet gains 1 power per redirect", look: "each redirected effect: 1 Strength to Magnet", desktop: true, build: v2("magnetAwoken") },
+  { id: "v2-raven-awoken", keep: true, group: "Rules v2 (unit batch 1, #1046)", title: "Awoken Raven performs every remembered rule", look: "Archer and Bowman fall; Raven performs both rules each turn", desktop: true, build: v2("ravenAwoken") },
+  { id: "v2-seed-awoken", keep: true, group: "Rules v2 (unit batch 1, #1046)", title: "Awoken Seed: the Tree shields its neighbours", look: "the Tree also gives Squire and Archer 1 Shield each turn", desktop: true, build: v2("seedAwoken") },
   { id: "v2-deja-vu", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Déjà Vu (Hourglass + Mirror)", look: "§5 fusion: what the front enemy does, Déjà Vu does one turn later", desktop: true, build: v2("dejaVu") },
   { id: "v2-grave-tree", keep: true, group: "Rules v2 (fixtures, #1045)", title: "Grave Tree (Raven + Seed)", look: "§5 fusion, 3.6 summonWithRule: a Sapling with the fallen Archer's rule, at its slot", desktop: true, build: v2("graveTree") },
+  ...v2unitScenes(),
 ];
 
 export const sceneById = (id: string): Scene | undefined => SCENES.find((s) => s.id === id);

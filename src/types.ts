@@ -128,8 +128,12 @@ export type ActedPattern = { on: "Acted"; unit?: UnitFilter; front?: true };
 export type EventPatternV1 =
   | { on: "BattleStart" | "TurnStart" | "TurnEnd" }
   | { on: "Strike"; striker?: UnitFilter }
-  | { on: "Hurt" | "Heal" | "Death" | "Summon"; unit?: UnitFilter }
-  | { on: "StatusApplied" | "StatusRemoved"; unit?: UnitFilter; status?: string }
+  // aim "random": only a Hurt or status an enemy's rule aimed by a random
+  // pick (its randomEnemy Who) — Magnet, rules v2 §4
+  | { on: "Hurt"; unit?: UnitFilter; aim?: "random" }
+  | { on: "Heal" | "Death" | "Summon"; unit?: UnitFilter }
+  | { on: "StatusApplied"; unit?: UnitFilter; status?: string; aim?: "random" }
+  | { on: "StatusRemoved"; unit?: UnitFilter; status?: string }
   // A stat moved (a statMod status landed or left). Trigger-only: the change
   // follows from its status event, so there is nothing to intercept.
   | { on: "StatChanged"; unit?: UnitFilter; stat?: StatName; sign?: "gain" | "loss" };
@@ -217,7 +221,8 @@ export type EffectV2 =
   // interceptor: the proposed Hurt or Heal (or a Strike's hit) becomes this amount
   | { kind: "replaceAmount"; amount: Amount }
   // rule modification (§3.5): the holder's rule becomes the target's for the battle
-  | { kind: "copyRule" }
+  // withPower (Mirror awoken): the holder also gains Strength equal to the target's power
+  | { kind: "copyRule"; withPower?: true }
   // the target's rule fires now, as if its trigger had fired; once per event per target
   | { kind: "actAgain" }
   // the holder remembers the target's rule
@@ -231,7 +236,12 @@ export type EffectV2 =
   // the target becomes another unit in place; HP carries over proportionally; once per battle
   | { kind: "transform"; into: UnitDef }
   // summon `unit` carrying the target's rule, at the target's slot when it has fallen (else the front)
-  | { kind: "summonWithRule"; unit: UnitDef };
+  | { kind: "summonWithRule"; unit: UnitDef }
+  // either context: check `if` (a flip logs its coin) and run `then` or `else` (Gambler's tails)
+  | { kind: "branch"; if: Condition; then: Effect[]; else: Effect[] }
+  // interceptor: the proposed Strike's striker strikes the same defender again
+  // after it; a strike made this way never strikes again (Gambler awoken)
+  | { kind: "strikeAgain" };
 
 export type EffectV1 =
   // trigger-context atoms
@@ -294,7 +304,7 @@ export type EventBody =
   | { type: "TurnEnd" }
   | { type: "PairFaced"; a: string; b: string; first: string }
   // amount: set by a replaceAmount interceptor (rules v2); absent = the striker's pwr
-  | { type: "Strike"; striker: string; defender: string; amount?: number }
+  | { type: "Strike"; striker: string; defender: string; again?: true; amount?: number }
   // hpAfter = the unit's current hp after the event applied; stamped at apply time
   // (optional only because proposals are drafted without it — every logged event carries it).
   // pierced: sudden death's fatigue (R4-1), which no interceptor (Shield) can stop.

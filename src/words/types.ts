@@ -136,7 +136,8 @@ export interface InterceptAt {
 /** An effect (§3.4–3.6). Interceptor words change or cancel the proposal. */
 export interface EffectWord<E = any> extends WordMeta {
   kind: string;
-  context: "trigger" | "interceptor";
+  /** "either": a word that runs in both (branch). */
+  context: "trigger" | "interceptor" | "either";
   intercept?(ctx: WordCtx, e: E, at: InterceptAt): "pass" | "cancel";
   /** The clause in a card sentence; `target` is the rule's Who already said. */
   en(e: E, say: Say, target: string): string;

@@ -208,6 +208,9 @@ export interface UnitForm {
   also?: AndClause[];
   /** Optional authored one-liner; clients fall back to describe(). */
   text?: string;
+  /** Statuses the unit starts the battle with (rules v2: Raven's Memory
+   * counter carries its second rule). */
+  statuses?: { status: string; stacks: number }[];
 }
 
 /** One "and" clause of a form: its own Who, and the Does it applies to them. */

@@ -5,8 +5,8 @@
 // one snapshot whose version is the code pool's, so nothing changes for runs
 // in progress.
 import type { MvpContent, UnitContent } from "../../../src/mvp/contract.js";
-import { ROWS, type Row } from "../../../src/mvp/units.js";
-import { contentOf } from "./content.js";
+import { ROWS, type AnyRow, type Row } from "../../../src/mvp/units.js";
+import { contentOf, seedRows } from "./content.js";
 import type { MvpStore, PoolSnapshot, PoolStint, StoredUnit } from "./store.js";
 
 /** The 8 units cut in round 4 (R4-15, b4ce175; docs/round4/units.md "Cuts and
@@ -29,15 +29,20 @@ export const CUT_IN_ROUND_4: Row[] = [
  * so stored lines, ghosts and fusions keep resolving. */
 export function seedUnits(store: MvpStore, now: Date): boolean {
   if (store.currentPool()) return false;
-  const live = contentOf(ROWS);
-  const libraryIds = contentOf(CUT_IN_ROUND_4).units.map((u) => u.id);
+  const seed = seedRows();
+  const live = contentOf(seed);
+  // The library (the cut units) belongs to the name grammar's pool only.
+  const library = seed === ROWS ? CUT_IN_ROUND_4 : [];
+  const libraryIds = contentOf(library).units.map((u) => u.id);
   const createdAt = now.toISOString();
   const daySeq = store.currentDay()?.seq ?? 1;
-  const unit = (row: Row, unitId: string, status: StoredUnit["status"]): StoredUnit =>
-    ({ unitId, status, row, authorId: null, origin: "seed", parentId: null, createdAt });
+  // The store types rows as the name grammar's; a v2 row passes through as data
+  // (the ideas and the rotation read grid rows and stay off a v2 world for now).
+  const unit = (row: AnyRow, unitId: string, status: StoredUnit["status"]): StoredUnit =>
+    ({ unitId, status, row: row as Row, authorId: null, origin: "seed", parentId: null, createdAt });
   const units = [
-    ...ROWS.map((row, i) => unit(row, live.units[i]!.id, "live")),
-    ...CUT_IN_ROUND_4.map((row, i) => unit(row, libraryIds[i]!, "library")),
+    ...seed.map((row, i) => unit(row, live.units[i]!.id, "live")),
+    ...library.map((row, i) => unit(row, libraryIds[i]!, "library")),
   ];
   const ids = new Set(units.map((u) => u.unitId));
   if (ids.size !== units.length) throw new Error("seed unit ids collide");
@@ -153,17 +158,18 @@ export function syncSeed(store: MvpStore, now: Date, opts: { dryRun?: boolean } 
 function syncSeedNow(store: MvpStore, now: Date, opts: { dryRun?: boolean }): SeedSync {
   const pool = store.currentPool();
   if (!pool) throw new Error("no pool: start the server once to seed it");
-  const code = contentOf(ROWS);
+  const seed = seedRows();
+  const code = contentOf(seed);
   const changed: string[] = [];
   const added: string[] = [];
-  ROWS.forEach((row, i) => {
+  seed.forEach((row, i) => {
     const id = code.units[i]!.id;
     const stored = store.unit(id);
     if (!stored) added.push(id);
     else if (JSON.stringify(stored.row) !== JSON.stringify(row)) changed.push(id);
   });
   const unitIds = [...pool.unitIds, ...added.filter((id) => !pool.unitIds.includes(id))];
-  const rowById = new Map(ROWS.map((row, i) => [code.units[i]!.id, row]));
+  const rowById = new Map(seed.map((row, i) => [code.units[i]!.id, row as Row]));
   const oldRows = rowsOf(store, pool);
   if (!oldRows) throw new Error(`the current pool ${pool.version} names a unit the store doesn't have`);
   const rows = unitIds.map((id, i) => rowById.get(id) ?? oldRows[i]!);

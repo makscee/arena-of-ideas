@@ -38,6 +38,8 @@ import { remember } from "./remember.js";
 import { swapRules } from "./swapRules.js";
 import { redirect } from "./redirect.js";
 import { replaceAmount } from "./replaceAmount.js";
+import { branch } from "./branch.js";
+import { strikeAgain } from "./strikeAgain.js";
 import type { AmountWord, ConditionWord, EffectWord, SelectorWord } from "./types.js";
 import { unhurt } from "./unhurt.js";
 import type { AmountV2, ConditionV2, Effect, EffectV2, PositionSelector } from "../types.js";
@@ -57,7 +59,7 @@ export const AMOUNT_WORDS: Record<AmountV2["kind"], AmountWord> = {
 };
 
 export const EFFECT_WORDS: Record<EffectV2["kind"], EffectWord> = {
-  redirect, preventDeath, replaceAmount, copyRule, actAgain, remember, performRemembered, swapRules, delay, transform, summonWithRule,
+  redirect, preventDeath, replaceAmount, copyRule, actAgain, remember, performRemembered, swapRules, delay, transform, summonWithRule, branch, strikeAgain,
 };
 
 export const effectWord = (kind: string): EffectWord | undefined => (EFFECT_WORDS as Record<string, EffectWord>)[kind];

@@ -52,8 +52,8 @@ const INTERCEPTOR_EFFECTS = ["cancel", "absorbHurt", "preventDeathHeal"] as cons
 const PATTERN_FIELDS: Record<(typeof EVENT_NAMES)[number], string[]> = {
   BattleStart: [], TurnStart: [], TurnEnd: [],
   Strike: ["striker"],
-  Hurt: ["unit"], Heal: ["unit"], Death: ["unit"], Summon: ["unit"],
-  StatusApplied: ["unit", "status"], StatusRemoved: ["unit", "status"],
+  Hurt: ["unit", "aim"], Heal: ["unit"], Death: ["unit"], Summon: ["unit"],
+  StatusApplied: ["unit", "status", "aim"], StatusRemoved: ["unit", "status"],
   StatChanged: ["unit", "stat", "sign"],
 };
 
@@ -307,7 +307,7 @@ function validateUnit(u: unknown, registry: StatusRegistry, abilities: AbilityRe
           clause["abilities"].forEach((id, i) => {
             checkAbilityRef(id, abilities, `${at}.abilities[${i}]`, issues);
             const action = typeof id === "string" ? abilities[id] : undefined;
-            if (action) validateAbility({ whens: u["triggers"], selectors: clause["selectors"], ...(u["condition"] !== undefined ? { condition: u["condition"] } : {}), effects: action.effects }, registry, abilities, "unit", `${at}.recipe[${i}]`, issues);
+            if (action) validateAbility({ andClause: true, whens: u["triggers"], selectors: clause["selectors"], ...(u["condition"] !== undefined ? { condition: u["condition"] } : {}), effects: action.effects }, registry, abilities, "unit", `${at}.recipe[${i}]`, issues);
           });
         });
       }
@@ -410,6 +410,9 @@ function validateAbility(ab: unknown, registry: StatusRegistry, abilities: Abili
   if (!Array.isArray(ab["effects"]) || ab["effects"].length === 0) {
     issues.push({ path: `${path}.effects`, message: "an ability needs ≥1 effects" });
   } else {
+    // An interceptor's "and" clause runs once the event has landed (rules v2,
+    // Candle and Magnet awoken), so trigger-context effects fit it too.
+    if (ab["andClause"] === true && contexts.has("interceptor")) contexts.add("trigger");
     ab["effects"].forEach((e, i) => validateEffect(e, registry, abilities, owner, contexts, `${path}.effects[${i}]`, issues));
     // Rules v2 guardrail (#1043 §3): a rule-modifying effect sits at the root
     // tier of the chain order (units.ts), so it never listens to a chain link
@@ -495,6 +498,9 @@ function validatePattern(on: unknown, registry: StatusRegistry, path: string, is
       continue;
     }
     if (key === "status") checkStatusRef(on[key], registry, path, issues);
+    else if (key === "aim") {
+      if (on[key] !== "random") issues.push({ path: `${path}.aim`, message: `unknown aim ${JSON.stringify(on[key])} — the only aim is "random"` });
+    }
     else if (key === "stat") {
       if (!oneOf(on[key], STAT_NAMES)) issues.push({ path: `${path}.stat`, message: `unknown stat ${JSON.stringify(on[key])} — stats are ${list(STAT_NAMES)}` });
     } else if (key === "sign") {
@@ -523,17 +529,18 @@ function validateEffect(e: unknown, registry: StatusRegistry, abilities: Ability
     return;
   }
   const word = effectWord(kind);
-  const isTrigger = oneOf(kind, TRIGGER_EFFECTS) || word?.context === "trigger";
-  const isInterceptor = oneOf(kind, INTERCEPTOR_EFFECTS) || word?.context === "interceptor";
+  const either = word?.context === "either";
+  const isTrigger = oneOf(kind, TRIGGER_EFFECTS) || word?.context === "trigger" || either;
+  const isInterceptor = oneOf(kind, INTERCEPTOR_EFFECTS) || word?.context === "interceptor" || either;
   if (!isTrigger && !isInterceptor) {
     issues.push({ path: `${path}.kind`, message: `unknown effect kind "${kind}" — trigger-context: ${list(TRIGGER_EFFECTS)}; interceptor-context: ${list(INTERCEPTOR_EFFECTS)}` });
     return;
   }
   // Context fit: an atom offered only the wrong context can never run (runEffect/runInterceptor default arms).
-  if (isTrigger && !contexts.has("trigger") && contexts.size > 0) {
+  if (isTrigger && !either && !contexts.has("trigger") && contexts.size > 0) {
     issues.push({ path, message: `"${kind}" is a trigger-context effect, but this ability has only interceptor whens — it can never run` });
   }
-  if (isInterceptor && !contexts.has("interceptor") && contexts.size > 0) {
+  if (isInterceptor && !either && !contexts.has("interceptor") && contexts.size > 0) {
     issues.push({ path, message: `"${kind}" is an interceptor-context effect, but this ability has only trigger whens — it can never run` });
   }
 
@@ -551,6 +558,18 @@ function validateEffect(e: unknown, registry: StatusRegistry, abilities: Ability
       return;
     case "replaceAmount":
       return validateAmount(e["amount"], owner, `${path}.amount`, issues);
+    case "copyRule":
+      if (e["withPower"] !== undefined && e["withPower"] !== true) issues.push({ path: `${path}.withPower`, message: "withPower is true or absent" });
+      else if (e["withPower"]) checkStatusRef("Strength", registry, `${path}.withPower`, issues);
+      return;
+    case "branch":
+      validateCondition(e["if"], registry, `${path}.if`, issues);
+      for (const side of ["then", "else"] as const) {
+        const xs = e[side];
+        if (!Array.isArray(xs)) issues.push({ path: `${path}.${side}`, message: `branch needs a "${side}" list of effects (may be empty)` });
+        else xs.forEach((x, i) => validateEffect(x, registry, abilities, owner, contexts, `${path}.${side}[${i}]`, issues));
+      }
+      return;
     case "delay":
       if (!Number.isInteger(e["turns"]) || (e["turns"] as number) < 1) issues.push({ path: `${path}.turns`, message: "turns must be an integer ≥ 1" });
       return validateEffect(e["effect"], registry, abilities, owner, new Set(["trigger"]), `${path}.effect`, issues);

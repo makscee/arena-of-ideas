@@ -9,8 +9,8 @@ export const copyRule: EffectWord<E> = {
   kind: "copyRule",
   class: "ruleMod",
   context: "trigger",
-  en: (_e, _say, target) => `take the rule of ${target}`,
-  ru: (_e, _say, target) => `взять правило ${target}`,
+  en: (e, _say, target) => `take the rule of ${target}${e.withPower ? " and its power" : ""}`,
+  ru: (e, _say, target) => `взять правило ${target}${e.withPower ? " и его силу" : ""}`,
   example: {
     input: { ...example([rule("Mirror", 6, 1, { on: "BattleStart" }, { kind: "frontEnemy" }, "Copy")], [rule("Hedgehog", 8, 1, { on: "Hurt", unit: "holder" }, { kind: "frontEnemy" }, "Zap")]), abilities: { ...EXAMPLE_ABILITIES, Copy: { name: "Copy", family: "Arcane", effects: [{ kind: "copyRule" }] } } },
     trace: "Mirror copies the rule of Hedgehog",
