@@ -16,8 +16,8 @@
 // The awoken knob: the meta plays every unit at 3 copies, awoken, so each
 // round also measures what Awoken adds to the unit's best team (that team
 // with the unit asleep, tune.ts's measureTeam); a unit whose Awoken adds
-// under MARGIN gains +2 HP when it awakens (up to +8), then +1 PWR (up to
-// +2, units that strike). After the full meta check the same step runs again
+// under MARGIN gains +2 HP when it awakens (up to +12), then +1 PWR (up to
+// +3, units that strike). After the full meta check the same step runs again
 // on the final field until every margin clears.
 //
 // Writes src/mvp/units-v2-numbers.ts (the numbers ROWS_V2 plays with) and
@@ -76,7 +76,7 @@ let rows: V2Row[] = ROWS_V2.map((r) => ({ ...r, awoken: r.awoken ?? { pwr: 0, hp
 const t0 = Date.now();
 const rounds: { round: number; median: number; inBand: number; scores: Record<string, number>; moves: string[]; healthy: boolean }[] = [];
 /** The awoken knob's step and cap: HP first, then PWR for units that strike. */
-const AWOKEN = { hp: 8, pwr: 2 };
+const AWOKEN = { hp: 12, pwr: 3 };
 /** Awoken must add at least this much to its team's field score. */
 const MARGIN = 0.02;
 const bonusUp = (row: V2Row): V2Row => {
