@@ -3,7 +3,9 @@
 // numbers, a trace line from its fixture battle, and #scene= links to the lab
 // battles where it acts. Maks judges a batch from this page plus the workshop.
 //   npm run mvp:batch-report -- [--out ~/reports/arena-batch1.html] [--base https://m1.twin-pogona.ts.net/arena-lab/] [--tuned]
-import { writeFileSync } from "node:fs";
+// --tuned reads docs/mvp/tune-v2.json (npm run mvp:tune-v2) for the balance:
+// the meta verdict, and each unit's field score, Awoken's margin and share.
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { contentOf } from "../server/src/mvp/content.js";
 import { battle } from "../src/battle.js";
@@ -23,6 +25,18 @@ const opt = (n: string) => {
 const out = (opt("out") ?? "~/reports/arena-batch1.html").replace(/^~/, homedir());
 const base = (opt("base") ?? "https://m1.twin-pogona.ts.net/arena-lab/").replace(/\/?$/, "/");
 const tuned = args.includes("--tuned");
+interface TuneUnit { name: string; fieldScore: number; awokenMargin: number; share: number; inBand: boolean; team: string[] }
+interface TuneReport { median: number; band: number; healthy: boolean; checks: Record<string, { value: number; pass: boolean; rule: string }>; units: TuneUnit[]; rounds: unknown[]; seconds: number }
+const TUNE_FILE = "docs/mvp/tune-v2.json";
+const tune: TuneReport | null = tuned && existsSync(TUNE_FILE) ? JSON.parse(readFileSync(TUNE_FILE, "utf8")) : null;
+if (tuned && !tune) throw new Error(`--tuned needs ${TUNE_FILE}: run npm run mvp:tune-v2 first`);
+const pct = (x: number) => `${Math.round(x * 100)}%`;
+const balanceOf = (name: string) => {
+  const t = tune?.units.find((u) => u.name === name);
+  if (!t || !tune) return "";
+  const side = t.inBand ? "in band" : t.fieldScore > tune.median ? "strong" : "weak";
+  return ` · field ${pct(t.fieldScore)} (${side}) · Awoken ${t.awokenMargin >= 0 ? "+" : ""}${pct(t.awokenMargin)} · ${pct(t.share)} of the meta`;
+};
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 
 const content = contentOf(ROWS_V2);
@@ -69,7 +83,7 @@ const cards = ROWS_V2.map((row) => {
 </div>`;
   });
   return `<section class="card" id="${u.id}">
-  <header><span class="emoji">${u.emoji}</span><h2>${esc(u.name)}</h2><span class="meta">tier ${u.tier} · ${row.shape} · ${u.base.pwr}/${u.base.hp}</span></header>
+  <header><span class="emoji">${u.emoji}</span><h2>${esc(u.name)}</h2><span class="meta">tier ${u.tier} · ${row.shape} · ${u.base.pwr}/${u.base.hp}${esc(balanceOf(row.name))}</span></header>
   <p class="arch">${esc(u.archetype)}</p>
   <div class="forms">${forms.join("\n")}</div>
 </section>`;
@@ -94,6 +108,7 @@ header{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.emoji{font-siz
 </style></head><body>
 <h1>Arena · rules v2 · unit batch 1</h1>
 <p class="sub">Unit batch 1 of 3: the eight units of the design's §4, then twelve more (every shape class and tier), built on branch <code>vb-1046-unit-batch-1</code>. Design: <a href="arena-rules-v2.html">arena-rules-v2.html</a>. Scenes open on the lab.</p>
+${tune ? `<div class="note"><b>Tuned.</b> PWR and HP come from <code>npm run mvp:tune-v2</code>: ${tune.rounds.length} rounds of the quick meta check move each unit toward the pool's median field score (${pct(tune.median)} ± ${pct(tune.band)}), then the full meta check: <b>${tune.healthy ? "healthy" : "not healthy"}</b> (${Object.values(tune.checks).map((c) => `${esc(c.rule)}: ${c.value < 1 && c.value > 0 ? pct(c.value) : c.value} ${c.pass ? "✓" : "✗"}`).join("; ")}). ${tune.units.filter((u) => u.inBand).length} of ${tune.units.length} units in band. Field: the unit's best team's mean score against the meta's teams. Awoken: what three copies add over sleeping, same team.</div>` : ""}
 ${tuned ? "" : `<div class="note"><b>Untuned draft.</b> The numbers are placeholders; the tune and the meta run come next. The eight §4 units have fixture battles with goldens; the twelve have pool battles (the lab's <code>v2-unit-</code> scenes).</div>`}
 ${cards.join("\n")}
 </body></html>

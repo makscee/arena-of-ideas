@@ -37,9 +37,10 @@ export const branch: EffectWord<E> = {
   },
 };
 
-function side(effects: Effect[], _say: Say, target: string, lang: "en" | "ru"): string {
+function side(effects: Effect[], say: Say, target: string, lang: "en" | "ru"): string {
   if (effects.length === 0) return lang === "en" ? "nothing" : "ничего";
-  return effects.map((x) => (lang === "en" ? describeEffect(x, target) : describeEffect(x, target, { lang: "ru" }))).join(lang === "en" ? " and " : " и ");
+  // RU: through say, so a v2 word on a side (Gambler's replaceAmount) says itself in Russian
+  return effects.map((x) => (lang === "en" ? describeEffect(x, target) : say.effect(x))).join(lang === "en" ? " and " : " и ");
 }
 
 function condRu(c: Condition): string {

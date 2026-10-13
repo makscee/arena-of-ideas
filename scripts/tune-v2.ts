@@ -7,8 +7,8 @@
 // against itself. Each round runs the quick meta check on the pool
 // (metaHealth: a breaker team per unit, then the equilibrium), reads every
 // unit's best team's field score, and moves each unit outside the band
-// around the pool's median one step back toward it: HP first (by 2 when far
-// out), PWR when HP is at its bound or the unit is far out. Units with no
+// around the pool's median one step back toward it: HP (by 2 when far
+// out), PWR only when HP is at its bound. Units with no
 // strike of their own (PWR 0) keep PWR 0. It stops when every unit is inside
 // the band or after --rounds rounds, then runs the full meta check once.
 //
@@ -26,10 +26,10 @@ const arg = (name: string, dflt: number) => {
   const i = process.argv.indexOf(name);
   return i < 0 ? dflt : Number(process.argv[i + 1]);
 };
-const ROUNDS = arg("--rounds", 6);
+const ROUNDS = arg("--rounds", 12);
 /** Inside the band: within this much of the pool's median field score. */
 const BAND = 0.08;
-/** Far out: HP moves by 2 and PWR moves too. */
+/** Far out: HP moves by 2. */
 const FAR = 0.16;
 const PWR = { min: 1, max: 6 };
 const HP = { min: 3, max: 16 };
@@ -57,7 +57,9 @@ for (let round = 1; round <= ROUNDS; round++) {
     const d = off > 0 ? -1 : 1;
     const far = Math.abs(off) > FAR;
     const hp = Math.max(HP.min, Math.min(HP.max, row.hp + d * (far ? 2 : 1)));
-    const pwrMoves = row.pwr > 0 && (far || hp === row.hp);
+    // PWR is the coarse knob (one point moves a unit's every strike): it
+    // turns only when HP is at its bound.
+    const pwrMoves = row.pwr > 0 && hp === row.hp;
     const pwr = pwrMoves ? Math.max(PWR.min, Math.min(PWR.max, row.pwr + d)) : row.pwr;
     if (hp === row.hp && pwr === row.pwr) return row;
     moves.push(`${row.name} ${pct(s)}: ${row.pwr}/${row.hp}→${pwr}/${hp}`);
