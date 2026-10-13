@@ -19,6 +19,7 @@ import { stressRegistry } from "../content/stress.js";
 import { summonId } from "../describe.js";
 import type { AbilityDef, AbilityRegistry, Effect, EventPattern, Family, Selector, StatusRegistry, UnitDef, When } from "../types.js";
 import type { LineUnit, SummonContent, Tier, UnitContent, UnitForm } from "./contract.js";
+import { isV2Row, V2_ABILITIES, V2_STATUSES, type V2Row } from "./units-v2.js";
 
 // ---------- When ----------
 
@@ -98,6 +99,8 @@ export function summonContentOf(def: UnitDef, emoji: string): SummonContent {
  * "A + B" is one Ability doing A then B on the same target (a sleeping form
  * Does exactly one Ability); its family is A's. */
 function abilityOf(name: string): AbilityDef {
+  const v2 = V2_ABILITIES[name];
+  if (v2) return v2;
   if (name.includes(" + ")) {
     const parts = name.split(" + ").map(abilityOf);
     return { name, family: parts[0]!.family, effects: parts.flatMap((p) => p.effects) };
@@ -380,7 +383,21 @@ export function slug(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
-function unitOf(row: Row): UnitContent {
+/** A pool row: the name grammar's, or a rules v2 unit written in words. */
+export type AnyRow = Row | V2Row;
+
+function unitOf(row: AnyRow): UnitContent {
+  if (isV2Row(row)) {
+    return {
+      id: slug(row.name),
+      name: row.name,
+      emoji: row.emoji,
+      archetype: row.archetype,
+      tier: row.tier,
+      base: { pwr: row.pwr, hp: row.hp },
+      forms: structuredClone(row.forms),
+    };
+  }
   const sleeping: UnitForm = { when: WHEN[row.when], who: [WHO[row.who]], does: [row.does] };
   const a = row.awoken;
   const awoken: UnitForm = {
@@ -609,8 +626,11 @@ export function lineResolves(line: LineUnit[], abilities: AbilityRegistry): bool
   }
 }
 
-export function mvpPool(rows: Row[] = ROWS): MvpPool {
+export function mvpPool(rows: AnyRow[] = ROWS): MvpPool {
   const units = rows.map(unitOf);
+  // The v2 counters join the registry only with a v2 unit in the pool, so
+  // the grid pool's content version stays what it was.
+  const statuses: StatusRegistry = rows.some(isV2Row) ? { ...stressRegistry, ...V2_STATUSES } : { ...stressRegistry };
   const names = new Set<string>(["Strike"]);
   for (const u of units) for (const f of [u.forms.sleeping, u.forms.awoken]) for (const d of allDoes(f)) names.add(d);
   const abilities = registryOf(names);
@@ -629,5 +649,5 @@ export function mvpPool(rows: Row[] = ROWS): MvpPool {
     if (!emoji) throw new Error(`summon "${d.name}" has no emoji`);
     return summonContentOf(d, emoji);
   });
-  return { units, abilities, statuses: { ...stressRegistry }, summons };
+  return { units, abilities, statuses, summons };
 }

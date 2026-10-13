@@ -106,6 +106,9 @@ export function fuseUnits(
   // Each part's "and" clauses keep their own Who: the first's, then the second's.
   const also = [...(first.recipe.also ?? []), ...(second.recipe.also ?? [])];
   if (also.length) recipe.also = structuredClone(also);
+  // Both parts' starting statuses (rules v2), the first's then the second's.
+  const statuses = [...(first.recipe.statuses ?? []), ...(second.recipe.statuses ?? [])];
+  if (statuses.length) recipe.statuses = structuredClone(statuses);
   return {
     uid: first.uid,
     kind: "fused",
@@ -138,6 +141,7 @@ function formDef(u: UnitContent, form: UnitForm, key: string): UnitDef {
     abilities: form.does,
     ...(form.condition ? { condition: form.condition } : {}),
     ...(form.also?.length ? { also: form.also.map((c) => ({ selectors: c.who, abilities: c.does })) } : {}),
+    ...(form.statuses?.length ? { statuses: form.statuses } : {}),
   };
 }
 
@@ -154,7 +158,8 @@ export function formProblems(u: UnitContent, content: Pick<MvpContent, "abilitie
   if (!same(sleeping.when, awoken.when) || !same(sleeping.condition, awoken.condition)) {
     out.push(`${u.id}: the awoken form must keep the sleeping form's When`);
   }
-  if (same(sleeping.who, awoken.who) && same(sleeping.does, awoken.does) && !awoken.also?.length) {
+  // (a rules v2 unit may instead upgrade the status it starts with: Raven's Memory → Memories)
+  if (same(sleeping.who, awoken.who) && same(sleeping.does, awoken.does) && !awoken.also?.length && same(sleeping.statuses, awoken.statuses)) {
     out.push(`${u.id}: the awoken form must upgrade the Who and/or the Does`);
   }
   for (const [key, form] of [["sleeping", sleeping], ["awoken", awoken]] as const) {
