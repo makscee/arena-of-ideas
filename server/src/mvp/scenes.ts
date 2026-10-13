@@ -19,7 +19,7 @@ import { decide, startRun } from "./runs.js";
 import type { MvpRuntime } from "./runtime.js";
 import { fixtureBattle } from "./scene-fixtures.js";
 import { codexPair, type FusionDesign, type PairState } from "../../../src/mvp/codex.js";
-import { forgeOf } from "./codex.js";
+import { codexForged, forgeOf } from "./codex.js";
 import { instantTuner, nextCard, overnightCheck, seedCandidate } from "./votes.js";
 
 /** What the client opens once the fixture is built (mobile/main.ts openScene). */
@@ -84,7 +84,8 @@ async function playTo(rt: MvpRuntime, stop: (run: MvpRunState) => boolean, what:
       if (stop(run)) return run;
       if (run.phase === "over") break;
       if (run.round !== round) [round, rerolled] = [run.round, 0];
-      const d = botDecision(run, rt.contentFor(run.contentVersion), rt.rules, rerolled);
+      // With the Codex on, an unforged pair can't be fused: the bots skip it.
+      const d = botDecision(run, rt.contentFor(run.contentVersion), rt.rules, rerolled, rt.codex ? (x, y) => codexForged(rt, x, y) : undefined);
       if (d.kind === "reroll") rerolled++;
       decide(rt, run, d);
       run = rt.store.run(run.runId)!;
