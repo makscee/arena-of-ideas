@@ -137,10 +137,13 @@ export const creditLine = (f: FoundWord, name: string, lang: "en" | "ru" = "en")
 export const notFoundLine = (n: number, lang: "en" | "ru" = "en"): string =>
   lang === "ru" ? `выковано слов, ещё не найдено: ${n}` : `${n} word${n === 1 ? "" : "s"} forged, not yet found`;
 
-/** The forged words a design uses: its JSON names the word's kind (`"kind":"unhurt"`). */
+/** The forged words a design uses: its JSON names the word's kind
+ * (`"kind":"unhurt"`), or its `words` list (../../../src/mvp/codex.ts) names it. */
 export function forgedWordsIn(design: unknown, forged: ForgedWord[] = forgedWords()): ForgedWord[] {
   const json = JSON.stringify(design);
-  return forged.filter((f) => json.includes(`"kind":"${f.kind}"`));
+  const listed = (design as { words?: unknown } | null)?.words;
+  const named = new Set(Array.isArray(listed) ? listed.filter((w): w is string => typeof w === "string").map(wordKey) : []);
+  return forged.filter((f) => json.includes(`"kind":"${f.kind}"`) || named.has(wordKey(f.word)) || named.has(wordKey(f.kind)));
 }
 
 /** A claim of `pair` by `playerId` with this design: every forged word it uses

@@ -71,6 +71,7 @@ describe("the Dictionary (#1052)", () => {
 
     const design = { name: "Pickpocket", abilities: { Take: { effects: [{ kind: "steal", stat: "pwr" }] } } };
     expect(forgedWordsIn({ name: "Plain", effects: [{ kind: "damage" }] }, [steal])).toEqual([]);
+    expect(forgedWordsIn({ name: "Listed", words: ["Steal"] }, [steal])).toEqual([steal]);
     expect(foundWordsIn(s, design, pairKey("Shadow", "Magpie"), "kim", at, [steal])).toEqual([steal]);
     expect(foundWordsIn(s, design, "Cat+Dog", "lee", at, [steal])).toEqual([]);
     const e = dictionary(s, [steal])[0]!;
