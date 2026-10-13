@@ -24,9 +24,12 @@ import {
 } from "./describe.js";
 import type {
   Condition,
+  ConditionV1,
   Effect,
-  EventPattern,
+  EffectV1,
+  EventPattern, EventPatternV1,
   Selector,
+  SelectorV1,
   UnitDef,
   When,
 } from "./types.js";
@@ -51,7 +54,7 @@ const SAMPLE_SUMMON_UNIT: UnitDef = { name: "a token", base: { hp: 1, pwr: 1 }, 
 // ---------------------------------------------------------------------------
 
 /** Every Effect kind → a representative atom. Key set = Effect["kind"]. */
-const EFFECT_SAMPLES: Record<Effect["kind"], Effect> = {
+const EFFECT_SAMPLES: Record<EffectV1["kind"], Effect> = {
   damage: { kind: "damage", amount: { kind: "const", value: 3 } },
   heal: { kind: "heal", amount: { kind: "const", value: 3 } },
   applyStatus: { kind: "applyStatus", status: "a status", stacks: { kind: "const", value: 1 } },
@@ -65,7 +68,7 @@ const EFFECT_SAMPLES: Record<Effect["kind"], Effect> = {
 };
 
 /** Every Selector kind → a representative atom. Key set = Selector["kind"]. */
-const SELECTOR_SAMPLES: Record<Selector["kind"], Selector> = {
+const SELECTOR_SAMPLES: Record<SelectorV1["kind"], Selector> = {
   holder: { kind: "holder" },
   eventUnit: { kind: "eventUnit" },
   attacker: { kind: "attacker" },
@@ -77,15 +80,15 @@ const SELECTOR_SAMPLES: Record<Selector["kind"], Selector> = {
 };
 
 /** Every Condition kind → a representative atom. Key set = Condition["kind"]. */
-const CONDITION_SAMPLES: Record<Condition["kind"], Condition> = {
+const CONDITION_SAMPLES: Record<ConditionV1["kind"], Condition> = {
   holderHpAtMost: { kind: "holderHpAtMost", value: 3 },
 };
 
 /** Every EventPattern `on` tag → a representative pattern. Key set =
- * EventPattern["on"] (the union of the `on` discriminants). A Trigger fires
+ * EventPatternV1["on"] (the union of the `on` discriminants). A Trigger fires
  * after the event; an Interceptor fires instead of a proposed one — so each tag
  * appears once per `When.kind` it is valid in (below). */
-const EVENT_PATTERN_SAMPLES: Record<EventPattern["on"], EventPattern> = {
+const EVENT_PATTERN_SAMPLES: Record<EventPatternV1["on"], EventPattern> = {
   BattleStart: { on: "BattleStart" },
   TurnStart: { on: "TurnStart" },
   TurnEnd: { on: "TurnEnd" },
@@ -106,7 +109,7 @@ const EVENT_PATTERN_SAMPLES: Record<EventPattern["on"], EventPattern> = {
 // proposable subset (those that go through the propose→settle path) are also
 // interceptors. Listed as a typed subset so a new proposable event must be
 // classified here consciously.
-const INTERCEPTABLE: ReadonlySet<EventPattern["on"]> = new Set<EventPattern["on"]>([
+const INTERCEPTABLE: ReadonlySet<EventPatternV1["on"]> = new Set<EventPatternV1["on"]>([
   "Strike",
   "Hurt",
   "Heal",
@@ -136,7 +139,7 @@ export function partAtoms(): PartAtom[] {
   // Triggers + interceptors: one card per (When.kind, EventPattern) the type
   // space allows. The meaning is describeWhen of a sample When carrying that
   // pattern — kernel-derived, the same sentence an ability's clause would read.
-  for (const on of Object.keys(EVENT_PATTERN_SAMPLES) as EventPattern["on"][]) {
+  for (const on of Object.keys(EVENT_PATTERN_SAMPLES) as EventPatternV1["on"][]) {
     const pattern = EVENT_PATTERN_SAMPLES[on];
     const trigger: When = { kind: "trigger", on: pattern };
     atoms.push({
@@ -156,7 +159,7 @@ export function partAtoms(): PartAtom[] {
     }
   }
 
-  for (const kind of Object.keys(CONDITION_SAMPLES) as Condition["kind"][]) {
+  for (const kind of Object.keys(CONDITION_SAMPLES) as ConditionV1["kind"][]) {
     atoms.push({
       family: "condition",
       kind,
@@ -165,7 +168,7 @@ export function partAtoms(): PartAtom[] {
     });
   }
 
-  for (const kind of Object.keys(SELECTOR_SAMPLES) as Selector["kind"][]) {
+  for (const kind of Object.keys(SELECTOR_SAMPLES) as SelectorV1["kind"][]) {
     atoms.push({
       family: "selector",
       kind,
@@ -175,7 +178,7 @@ export function partAtoms(): PartAtom[] {
     });
   }
 
-  for (const kind of Object.keys(EFFECT_SAMPLES) as Effect["kind"][]) {
+  for (const kind of Object.keys(EFFECT_SAMPLES) as EffectV1["kind"][]) {
     atoms.push({
       family: "effect",
       kind,

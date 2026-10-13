@@ -1,0 +1,98 @@
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Archer","name":"Archer","hp":1,"pwr":1},{"id":"A2:Grave Tree","name":"Grave Tree","hp":8,"pwr":1}],"B":[{"id":"B1:Brute","name":"Brute","hp":14,"pwr":2}]}}
+{"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":2,"turn":1,"causedBy":1,"source":{"unit":"A1:Archer","ability":0,"when":0},"type":"Hurt","unit":"B1:Brute","amount":1,"hpAfter":13}
+{"id":3,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Archer","b":"B1:Brute","first":"B1:Brute"}
+{"id":4,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Brute","defender":"A1:Archer"}
+{"id":5,"turn":1,"causedBy":4,"source":"kernel","type":"Hurt","unit":"A1:Archer","amount":2,"hpAfter":-1}
+{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Death","unit":"A1:Archer"}
+{"id":7,"turn":1,"causedBy":6,"source":{"unit":"A2:Grave Tree","ability":0,"when":0},"type":"Summon","unit":"A+1:Sapling","name":"Sapling","side":"A","hp":4,"pwr":0,"slot":0}
+{"id":8,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":9,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":10,"turn":2,"causedBy":9,"source":{"unit":"A+1:Sapling","ability":0,"when":0},"type":"Hurt","unit":"B1:Brute","amount":1,"hpAfter":12}
+{"id":11,"turn":2,"causedBy":9,"source":"kernel","type":"PairFaced","a":"A+1:Sapling","b":"B1:Brute","first":"A+1:Sapling"}
+{"id":12,"turn":2,"causedBy":9,"source":"kernel","type":"Strike","striker":"A+1:Sapling","defender":"B1:Brute"}
+{"id":13,"turn":2,"causedBy":12,"source":"kernel","type":"Hurt","unit":"B1:Brute","amount":0,"hpAfter":12}
+{"id":14,"turn":2,"causedBy":9,"source":"kernel","type":"Strike","striker":"B1:Brute","defender":"A+1:Sapling"}
+{"id":15,"turn":2,"causedBy":14,"source":"kernel","type":"Hurt","unit":"A+1:Sapling","amount":2,"hpAfter":2}
+{"id":16,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":17,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":18,"turn":3,"causedBy":17,"source":{"unit":"A+1:Sapling","ability":0,"when":0},"type":"Hurt","unit":"B1:Brute","amount":1,"hpAfter":11}
+{"id":19,"turn":3,"causedBy":17,"source":"kernel","type":"Strike","striker":"A+1:Sapling","defender":"B1:Brute"}
+{"id":20,"turn":3,"causedBy":19,"source":"kernel","type":"Hurt","unit":"B1:Brute","amount":0,"hpAfter":11}
+{"id":21,"turn":3,"causedBy":17,"source":"kernel","type":"Strike","striker":"B1:Brute","defender":"A+1:Sapling"}
+{"id":22,"turn":3,"causedBy":21,"source":"kernel","type":"Hurt","unit":"A+1:Sapling","amount":2,"hpAfter":0}
+{"id":23,"turn":3,"causedBy":22,"source":"kernel","type":"Death","unit":"A+1:Sapling"}
+{"id":24,"turn":3,"causedBy":23,"source":{"unit":"A2:Grave Tree","ability":0,"when":0},"type":"Summon","unit":"A+2:Sapling","name":"Sapling","side":"A","hp":4,"pwr":0,"slot":0}
+{"id":25,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":26,"turn":4,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":27,"turn":4,"causedBy":26,"source":{"unit":"A+2:Sapling","ability":0,"when":0},"type":"Hurt","unit":"B1:Brute","amount":1,"hpAfter":10}
+{"id":28,"turn":4,"causedBy":26,"source":"kernel","type":"PairFaced","a":"A+2:Sapling","b":"B1:Brute","first":"B1:Brute"}
+{"id":29,"turn":4,"causedBy":26,"source":"kernel","type":"Strike","striker":"B1:Brute","defender":"A+2:Sapling"}
+{"id":30,"turn":4,"causedBy":29,"source":"kernel","type":"Hurt","unit":"A+2:Sapling","amount":2,"hpAfter":2}
+{"id":31,"turn":4,"causedBy":26,"source":"kernel","type":"Strike","striker":"A+2:Sapling","defender":"B1:Brute"}
+{"id":32,"turn":4,"causedBy":31,"source":"kernel","type":"Hurt","unit":"B1:Brute","amount":0,"hpAfter":10}
+{"id":33,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":34,"turn":5,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":35,"turn":5,"causedBy":34,"source":{"unit":"A+2:Sapling","ability":0,"when":0},"type":"Hurt","unit":"B1:Brute","amount":1,"hpAfter":9}
+{"id":36,"turn":5,"causedBy":34,"source":"kernel","type":"Strike","striker":"B1:Brute","defender":"A+2:Sapling"}
+{"id":37,"turn":5,"causedBy":36,"source":"kernel","type":"Hurt","unit":"A+2:Sapling","amount":2,"hpAfter":0}
+{"id":38,"turn":5,"causedBy":37,"source":"kernel","type":"Death","unit":"A+2:Sapling"}
+{"id":39,"turn":5,"causedBy":38,"source":{"unit":"A2:Grave Tree","ability":0,"when":0},"type":"Summon","unit":"A+3:Sapling","name":"Sapling","side":"A","hp":4,"pwr":0,"slot":0}
+{"id":40,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":41,"turn":6,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":42,"turn":6,"causedBy":41,"source":{"unit":"A+3:Sapling","ability":0,"when":0},"type":"Hurt","unit":"B1:Brute","amount":1,"hpAfter":8}
+{"id":43,"turn":6,"causedBy":41,"source":"kernel","type":"PairFaced","a":"A+3:Sapling","b":"B1:Brute","first":"B1:Brute"}
+{"id":44,"turn":6,"causedBy":41,"source":"kernel","type":"Strike","striker":"B1:Brute","defender":"A+3:Sapling"}
+{"id":45,"turn":6,"causedBy":44,"source":"kernel","type":"Hurt","unit":"A+3:Sapling","amount":2,"hpAfter":2}
+{"id":46,"turn":6,"causedBy":41,"source":"kernel","type":"Strike","striker":"A+3:Sapling","defender":"B1:Brute"}
+{"id":47,"turn":6,"causedBy":46,"source":"kernel","type":"Hurt","unit":"B1:Brute","amount":0,"hpAfter":8}
+{"id":48,"turn":6,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":49,"turn":7,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":50,"turn":7,"causedBy":49,"source":{"unit":"A+3:Sapling","ability":0,"when":0},"type":"Hurt","unit":"B1:Brute","amount":1,"hpAfter":7}
+{"id":51,"turn":7,"causedBy":49,"source":"kernel","type":"Strike","striker":"B1:Brute","defender":"A+3:Sapling"}
+{"id":52,"turn":7,"causedBy":51,"source":"kernel","type":"Hurt","unit":"A+3:Sapling","amount":2,"hpAfter":0}
+{"id":53,"turn":7,"causedBy":52,"source":"kernel","type":"Death","unit":"A+3:Sapling"}
+{"id":54,"turn":7,"causedBy":53,"source":{"unit":"A2:Grave Tree","ability":0,"when":0},"type":"Summon","unit":"A+4:Sapling","name":"Sapling","side":"A","hp":4,"pwr":0,"slot":0}
+{"id":55,"turn":7,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":56,"turn":8,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":57,"turn":8,"causedBy":56,"source":{"unit":"A+4:Sapling","ability":0,"when":0},"type":"Hurt","unit":"B1:Brute","amount":1,"hpAfter":6}
+{"id":58,"turn":8,"causedBy":56,"source":"kernel","type":"PairFaced","a":"A+4:Sapling","b":"B1:Brute","first":"B1:Brute"}
+{"id":59,"turn":8,"causedBy":56,"source":"kernel","type":"Strike","striker":"B1:Brute","defender":"A+4:Sapling"}
+{"id":60,"turn":8,"causedBy":59,"source":"kernel","type":"Hurt","unit":"A+4:Sapling","amount":2,"hpAfter":2}
+{"id":61,"turn":8,"causedBy":56,"source":"kernel","type":"Strike","striker":"A+4:Sapling","defender":"B1:Brute"}
+{"id":62,"turn":8,"causedBy":61,"source":"kernel","type":"Hurt","unit":"B1:Brute","amount":0,"hpAfter":6}
+{"id":63,"turn":8,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":64,"turn":9,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":65,"turn":9,"causedBy":64,"source":{"unit":"A+4:Sapling","ability":0,"when":0},"type":"Hurt","unit":"B1:Brute","amount":1,"hpAfter":5}
+{"id":66,"turn":9,"causedBy":64,"source":"kernel","type":"Strike","striker":"B1:Brute","defender":"A+4:Sapling"}
+{"id":67,"turn":9,"causedBy":66,"source":"kernel","type":"Hurt","unit":"A+4:Sapling","amount":2,"hpAfter":0}
+{"id":68,"turn":9,"causedBy":67,"source":"kernel","type":"Death","unit":"A+4:Sapling"}
+{"id":69,"turn":9,"causedBy":68,"source":{"unit":"A2:Grave Tree","ability":0,"when":0},"type":"Summon","unit":"A+5:Sapling","name":"Sapling","side":"A","hp":4,"pwr":0,"slot":0}
+{"id":70,"turn":9,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":71,"turn":10,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":72,"turn":10,"causedBy":71,"source":{"unit":"A+5:Sapling","ability":0,"when":0},"type":"Hurt","unit":"B1:Brute","amount":1,"hpAfter":4}
+{"id":73,"turn":10,"causedBy":71,"source":"kernel","type":"PairFaced","a":"A+5:Sapling","b":"B1:Brute","first":"A+5:Sapling"}
+{"id":74,"turn":10,"causedBy":71,"source":"kernel","type":"Strike","striker":"A+5:Sapling","defender":"B1:Brute"}
+{"id":75,"turn":10,"causedBy":74,"source":"kernel","type":"Hurt","unit":"B1:Brute","amount":0,"hpAfter":4}
+{"id":76,"turn":10,"causedBy":71,"source":"kernel","type":"Strike","striker":"B1:Brute","defender":"A+5:Sapling"}
+{"id":77,"turn":10,"causedBy":76,"source":"kernel","type":"Hurt","unit":"A+5:Sapling","amount":2,"hpAfter":2}
+{"id":78,"turn":10,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":79,"turn":10,"causedBy":78,"source":"kernel","type":"Fatigue","amount":1}
+{"id":80,"turn":10,"causedBy":79,"source":"kernel","type":"Hurt","unit":"A+5:Sapling","amount":1,"hpAfter":1}
+{"id":81,"turn":10,"causedBy":79,"source":"kernel","type":"Hurt","unit":"A2:Grave Tree","amount":1,"hpAfter":7}
+{"id":82,"turn":10,"causedBy":79,"source":"kernel","type":"Hurt","unit":"B1:Brute","amount":1,"hpAfter":3}
+{"id":83,"turn":11,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":84,"turn":11,"causedBy":83,"source":{"unit":"A+5:Sapling","ability":0,"when":0},"type":"Hurt","unit":"B1:Brute","amount":1,"hpAfter":2}
+{"id":85,"turn":11,"causedBy":83,"source":"kernel","type":"Strike","striker":"A+5:Sapling","defender":"B1:Brute"}
+{"id":86,"turn":11,"causedBy":85,"source":"kernel","type":"Hurt","unit":"B1:Brute","amount":0,"hpAfter":2}
+{"id":87,"turn":11,"causedBy":83,"source":"kernel","type":"Strike","striker":"B1:Brute","defender":"A+5:Sapling"}
+{"id":88,"turn":11,"causedBy":87,"source":"kernel","type":"Hurt","unit":"A+5:Sapling","amount":2,"hpAfter":-1}
+{"id":89,"turn":11,"causedBy":88,"source":"kernel","type":"Death","unit":"A+5:Sapling"}
+{"id":90,"turn":11,"causedBy":89,"source":{"unit":"A2:Grave Tree","ability":0,"when":0},"type":"Summon","unit":"A+6:Sapling","name":"Sapling","side":"A","hp":4,"pwr":0,"slot":0}
+{"id":91,"turn":11,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":92,"turn":11,"causedBy":91,"source":"kernel","type":"Fatigue","amount":2}
+{"id":93,"turn":11,"causedBy":92,"source":"kernel","type":"Hurt","unit":"A+6:Sapling","amount":2,"hpAfter":2}
+{"id":94,"turn":11,"causedBy":92,"source":"kernel","type":"Hurt","unit":"A2:Grave Tree","amount":2,"hpAfter":5}
+{"id":95,"turn":11,"causedBy":92,"source":"kernel","type":"Hurt","unit":"B1:Brute","amount":2,"hpAfter":0}
+{"id":96,"turn":11,"causedBy":95,"source":"kernel","type":"Death","unit":"B1:Brute"}
+{"id":97,"turn":11,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"A","turns":11}

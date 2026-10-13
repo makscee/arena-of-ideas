@@ -10,13 +10,16 @@ import type {
   Amount,
   Condition,
   Effect,
-  EventPattern,
+  EventPattern, EventPatternV1,
   Selector,
+  SelectorV1,
   StatusDef,
   UnitFilter,
   When,
 } from "./types.js";
 import type { TermId } from "./glossary.js";
+import { amountWord, conditionWord, effectWord, isV2Effect, selectorWord } from "./words/index.js";
+import { macro } from "./words/macros.js";
 import { describeAbilitySegmentsRu, describeStatusSegmentsRu } from "./describe-ru.js";
 
 /** The language card text is written in (M4-3): English, or Russian from
@@ -135,6 +138,8 @@ export function amountSegments(a: Amount, _opts: DescribeOpts = {}): DescribeSeg
       return [seg("level")];
     case "stacks":
       return [{ text: "stacks", term: "term:stacks" }];
+    default:
+      return [seg(amountWord(a.kind)!.en(a, (x) => describeAmount(x)))];
   }
 }
 
@@ -166,7 +171,11 @@ export function describeWhen(w: When, opts: DescribeOpts = {}): string {
  * ("strikes"), and Poison or Fatigue damage isn't a strike; "is damaged"
  * promises the HP loss again. */
 export function describeWhenSegments(w: When, _opts: DescribeOpts = {}): DescribeSegment[] {
-  const p: EventPattern = w.on;
+  if (w.on.on === "Acted") {
+    const who = w.on.unit === "enemy" ? (w.on.front ? "front enemy" : "enemy") : w.on.unit === "otherAlly" || w.on.unit === "ally" ? "ally" : "unit";
+    return [{ text: `${who} acts`, partRef: { family: "trigger", kind: "Acted" } }];
+  }
+  const p: EventPatternV1 = w.on;
   const intercept = w.kind === "interceptor";
   // The when clause names a Trigger or Interceptor Part (keyed on the event
   // pattern's `on` tag) — the clause's lead phrasing carries the codex ref.
@@ -263,11 +272,14 @@ export function describeConditionSegments(c: Condition, _opts: DescribeOpts = {}
   switch (c.kind) {
     case "holderHpAtMost":
       return [{ text: `at ${c.value} HP or less`, partRef, term: `condition:${c.kind}` }];
+    default:
+      // A v2 condition says itself through its word (src/words/).
+      return [{ text: conditionWord(c.kind)!.en(c, (x) => describeCondition(x)), partRef }];
   }
 }
 
 /** Which side each selector kind picks from (eventUnit: from the trigger). */
-const SELECTOR_SIDE: Record<Selector["kind"], Side | undefined> = {
+const SELECTOR_SIDE: Record<SelectorV1["kind"], Side | undefined> = {
   holder: "ally",
   eventUnit: undefined,
   attacker: "enemy",
@@ -281,8 +293,9 @@ const SELECTOR_SIDE: Record<Selector["kind"], Side | undefined> = {
 /** describeSelector as one segment, carrying its Selector Part ref, term and
  * side — the noun phrase a UI makes tappable to the selector's codex card. */
 export function describeSelectorSegments(s: Selector, opts: DescribeOpts = {}): DescribeSegment[] {
-  const side = s.kind === "eventUnit" ? opts.eventUnit?.side : SELECTOR_SIDE[s.kind];
-  return [{ text: describeSelector(s, opts), partRef: { family: "selector", kind: s.kind }, term: `target:${s.kind}`, ...(side ? { side } : {}) }];
+  const word = selectorWord(s.kind);
+  const side = s.kind === "eventUnit" ? opts.eventUnit?.side : word ? word.side : SELECTOR_SIDE[s.kind as SelectorV1["kind"]];
+  return [{ text: describeSelector(s, opts), partRef: { family: "selector", kind: s.kind }, ...(word ? {} : { term: `target:${s.kind as SelectorV1["kind"]}` as const }), ...(side ? { side } : {}) }];
 }
 
 /** A selector as the noun phrase of what it picks. */
@@ -305,6 +318,8 @@ export function describeSelector(s: Selector, opts: DescribeOpts = {}): string {
       return "random enemy";
     case "lastDeadAlly":
       return "fallen ally";
+    default:
+      return selectorWord(s.kind)!.en.phrase;
   }
 }
 
@@ -326,6 +341,11 @@ export function describeEffectSegments(
   const tgt: DescribeSegment[] = typeof target === "string" ? [seg(target)] : target;
   // Effect-text runs carry this effect's Part ref (the codex Effect card).
   const ref: PartRef = { family: "effect", kind: e.kind };
+  // A v2 effect says itself through its word (src/words/).
+  if (e.kind === "macro") return [{ text: (macro(e.name)?.en ?? e.name).replace("{target}", joinSegments(tgt)), partRef: ref }];
+  const word = effectWord(e.kind);
+  if (word) return [{ text: word.en(e, { amount: (a) => describeAmount(a), who: (s) => describeSelector(s, opts) }, joinSegments(tgt)), partRef: ref }];
+  if (isV2Effect(e)) return [];
   const e0 = (text: string): DescribeSegment => ({ text, partRef: ref });
   // A highlighted effect run: the Part ref plus the effect's term.
   const eT = (text: string): DescribeSegment => ({ text, partRef: ref, term: `effect:${e.kind}` });
@@ -510,7 +530,7 @@ export interface AbilityChips {
  * words (the glossary's labels): "Strikes", not "after this unit strikes". An
  * interceptor reuses its event's label — the chip line names the moment, not
  * the trigger/interceptor split. */
-const TRIGGER_CHIP: Record<EventPattern["on"], { label: string; glyph: string }> = {
+const TRIGGER_CHIP: Record<EventPatternV1["on"], { label: string; glyph: string }> = {
   BattleStart: { label: "Battle start", glyph: "⚑" },
   TurnStart: { label: "Turn start", glyph: "⟳" },
   TurnEnd: { label: "Turn end", glyph: "⟲" },
@@ -526,7 +546,7 @@ const TRIGGER_CHIP: Record<EventPattern["on"], { label: string; glyph: string }>
 
 /** Terse target label per selector, in the card's words (the glossary's
  * labels). "Front enemy", not "the front enemy". */
-const SELECTOR_CHIP: Record<Selector["kind"], string> = {
+const SELECTOR_CHIP: Record<SelectorV1["kind"], string> = {
   holder: "Self",
   eventUnit: "It",
   attacker: "Attacker",
@@ -549,12 +569,16 @@ function terseAmount(a: Amount): string {
       return "level";
     case "stacks":
       return "stacks";
+    default:
+      return a.kind;
   }
 }
 
 /** An effect as a terse action chip: verb + magnitude, the target folded out
  * (it has its own chip). "Poison 2", "Deal 3", "Summon Imp", "Silence". */
 function terseAction(e: Effect): string {
+  if (e.kind === "macro") return e.name;
+  if (isV2Effect(e)) return e.kind;
   switch (e.kind) {
     case "damage":
       return `Deal ${terseAmount(e.amount)}`;
@@ -584,13 +608,13 @@ function terseAction(e: Effect): string {
  * describeAbility sentence stays the inspector's; this is the at-a-glance read. */
 export function abilityChips(ab: Ability): AbilityChips {
   const w0 = ab.whens?.[0];
-  const t = w0 !== undefined ? TRIGGER_CHIP[w0.on.on] : undefined;
+  const t = w0 !== undefined && w0.on.on !== "Acted" ? TRIGGER_CHIP[w0.on.on] : undefined;
   const s0 = ab.selectors?.[0];
   const e0 = ab.effects[0];
   return {
     trigger: t?.label,
     triggerGlyph: t?.glyph,
-    target: s0 !== undefined ? SELECTOR_CHIP[s0.kind] : undefined,
+    target: s0 !== undefined ? (selectorWord(s0.kind)?.en.chip ?? SELECTOR_CHIP[s0.kind as SelectorV1["kind"]]) : undefined,
     action: e0 !== undefined ? terseAction(e0) : undefined,
   };
 }

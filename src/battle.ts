@@ -1,16 +1,19 @@
 // The battle resolver — a pure function: battle(teamA, teamB, seed) → causal event log.
 // Every state change flows through one pipeline: propose → intercept → apply → trigger (SPEC §5).
 
+import { expandAbilities, expandStatuses } from "./words/macros.js";
 import type {
   Ability,
   AbilityRef,
   AbilityRegistry,
+  BattleFact,
   Reaction,
   Amount,
   BattleEvent,
   BattleInput,
   Condition,
   Effect,
+  EffectV2,
   EventBody,
   EventPattern,
   RosterEntry,
@@ -25,6 +28,7 @@ import type {
 } from "./types.js";
 import { mulberry32 } from "./rng.js";
 import { legacyRecipe } from "./content-grammar.js";
+import { amountWord, conditionWord, effectWord, isV2Effect, selectorWord, type CondAt, type WordCtx, type WordUnit } from "./words/index.js";
 
 export const TEAM_SIZE = 5;
 export const FATIGUE_START = 10;
@@ -69,6 +73,12 @@ interface UnitState {
   fellAt?: number;
   /** Revived already this battle; with reviveInPlace it never returns again (#918). */
   revived?: boolean;
+  /** Hurt events it has taken this battle (rules v2 §3.3, count hitsTaken). */
+  hits?: number;
+  /** Transformed already this battle (rules v2 §3.6: once per battle). */
+  transformed?: boolean;
+  /** Rules it remembered (rules v2 §3.5), oldest first, with whose they were. */
+  remembered?: { from: string; rule: Reaction[] }[];
 }
 
 interface ReactorEntry {
@@ -83,6 +93,9 @@ interface ReactorEntry {
 
 interface Firing extends ReactorEntry {
   event: BattleEvent;
+  /** Put on the queue by actAgain or performRemembered (rules v2 §3.5): the
+   * once-per-chain law lets it through; the step cap still counts it. */
+  again?: true;
 }
 
 /** Side-channel for state that an event payload can't carry (defs are not serialized). */
@@ -138,12 +151,30 @@ class Engine {
   private lineCap: number;
   /** The units that have reacted in the chain being settled (a unit acts at most once per chain, #1030). */
   private chainActed = new Set<string>();
+  /** Once-rules already spent (rules v2 §3.2: onceHolder, oncePerTurn). */
+  private onceMarks = new Set<string>();
+  /** The battle as the v2 words see it (src/words/). */
+  private wordCtx: WordCtx = {
+    line: (side) => this.lines[side].map((id) => this.units.get(id)!).filter(Boolean),
+    unit: (id) => this.units.get(id),
+    draw: () => this.rng(),
+    turn: 0,
+    hp: (u) => this.curHp(u as UnitState),
+    stacks: (u, status) => (u as UnitState).statuses.find((s) => s.def.name === status)?.stacks ?? 0,
+    stat: (u, stat) => this.effStat(u as UnitState, stat),
+    missingHp: (u) => Math.max(0, (u as UnitState).damage),
+    fact: (fact, holder) => this.battleFact(fact, holder as UnitState),
+  };
 
   constructor(input: BattleInput) {
     this.input = input;
+    // Only battles with an Acted listener anywhere pay for looking for one.
+    this.anyActed = JSON.stringify([input.teamA, input.teamB, input.abilities ?? {}, input.statuses ?? {}]).includes('"on":"Acted"');
+    Object.defineProperty(this.wordCtx, "turn", { get: () => this.turn });
     this.rng = mulberry32(input.seed);
-    this.registry = input.statuses ?? {};
-    this.abilities = input.abilities ?? {};
+    // Composed words (§7) are expanded here; the kernel only runs primitives.
+    this.registry = expandStatuses(input.statuses ?? {});
+    this.abilities = expandAbilities(input.abilities ?? {});
     this.chainStepCap = input.chainStepCap ?? DEFAULT_CHAIN_STEP_CAP;
     if (!Number.isInteger(this.chainStepCap) || this.chainStepCap < 1) {
       throw new Error(`chainStepCap must be a positive integer, got ${String(input.chainStepCap)}`);
@@ -201,6 +232,7 @@ class Engine {
 
       const te = this.propose({ type: "TurnEnd" }, null, "kernel");
       this.settle();
+      if (te) this.runDelays(te);
       if (te && this.turn >= FATIGUE_START && this.bothAlive()) {
         const amount = fatigueAmount(this.turn, this.suddenDeathAt);
         this.propose({ type: "Fatigue", amount, ...(this.suddenDeath() ? { suddenDeath: true as const } : {}) }, te.id, "kernel");
@@ -303,6 +335,7 @@ class Engine {
     const draft: EventBody = { ...body };
     const followUps: Array<(parentId: number) => void> = [];
     const handled = new Set<string>();
+    const redirected = { done: false }; // rules v2 §3.4: a redirect applies once per event
     let cancelledBy: AbilityRef | null = null;
     // Sudden death's fatigue, and the death it deals, pass every interceptor.
     const pierced = (draft.type === "Hurt" || draft.type === "Death") && draft.pierced === true;
@@ -323,10 +356,10 @@ class Engine {
         }
         const holder = this.units.get(r.holder);
         if (!holder || (r.ref.status === undefined && holder.silenced)) continue;
-        if (r.ability.condition && !this.checkCondition(r.ability.condition, holder)) continue;
+        if (r.ability.condition && !this.checkCondition(r.ability.condition, holder, { ...draft, id: -1, turn: this.turn, causedBy, source } as BattleEvent, r.ref)) continue;
         handled.add(k);
         if (r.ref.status === undefined) this.chainActed.add(r.holder);
-        const res = this.runInterceptor(stamped, draft, followUps);
+        const res = this.runInterceptor(stamped, draft, followUps, causedBy, redirected);
         if (res === "cancel") {
           cancelledBy = stamped.ref;
           break;
@@ -395,15 +428,17 @@ class Engine {
       this.applyEvent({ type: "ChainBlocked", ability: f.ref, at: f.event.id }, f.event.id, "kernel");
       return;
     }
-    if (this.spentInChain(f.ref)) {
+    if (!f.again && this.spentInChain(f.ref)) {
       this.applyEvent({ type: "ChainBlocked", ability: f.ref, at: f.event.id, spent: true }, f.event.id, "kernel");
       return;
     }
     const holder = this.units.get(f.holder);
     if (!holder) return;
     if (f.ref.status === undefined && holder.silenced) return;
-    if (f.ability.condition && !this.checkCondition(f.ability.condition, holder)) return;
-    if (f.ref.status === undefined) this.chainActed.add(f.holder);
+    if (f.ability.condition && !this.checkCondition(f.ability.condition, holder, f.event, f.ref)) return;
+    // An again-firing (actAgain, performRemembered) is the extra action: it
+    // neither waits on nor spends the unit's once-per-chain reaction.
+    if (f.ref.status === undefined && !f.again) this.chainActed.add(f.holder);
     // One reaction per unit: each Who is picked once, then every Does that
     // shares it applies to those targets, in order. A run of Does with the
     // same Who is one clause; an "and" clause with its own Who picks its own
@@ -420,6 +455,25 @@ class Engine {
           }
         }
       }
+    }
+    this.enqueueActed(holder, f);
+  }
+
+  private anyActed: boolean;
+
+  /** Rules v2 "whenever <unit> acts": once a unit's own rule has fired, queue
+   * the reactors listening for it, on the event the actor reacted to. No event
+   * is logged, so v1 logs are unchanged. */
+  private enqueueActed(actor: UnitState, f: Firing): void {
+    if (!this.anyActed || f.ref.status !== undefined) return;
+    const atFront = this.lines[actor.side][0] === actor.id;
+    for (const r of this.orderedReactors()) {
+      const holder = this.units.get(r.holder);
+      if (!holder) continue;
+      const when = r.ability.triggers.findIndex(
+        (w) => w.kind === "trigger" && w.on.on === "Acted" && (!w.on.front || atFront) && this.filterMatches(w.on.unit, actor.id, holder),
+      );
+      if (when >= 0) this.queue.push({ ...withWhen(r, when), event: f.event });
     }
   }
 
@@ -511,11 +565,26 @@ class Engine {
     return f === "ally" ? u.side === holder.side : u.side !== holder.side;
   }
 
-  private checkCondition(c: Condition, holder: UnitState): boolean {
-    switch (c.kind) {
-      case "holderHpAtMost":
-        return this.curHp(holder) <= c.value;
+  /** Check a firing's condition. A v2 condition is a word (src/words/): its
+   * once-marks are committed only when the whole condition holds, and each
+   * coin it flipped is logged as a Flipped event, heads or tails. */
+  private checkCondition(c: Condition, holder: UnitState, event: BattleEvent, ref: AbilityRef): boolean {
+    if (c.kind === "holderHpAtMost") return this.curHp(holder) <= c.value;
+    const at: CondAt = {
+      holder,
+      event,
+      key: refKey(ref),
+      marks: [],
+      flips: [],
+      marked: (m) => this.onceMarks.has(m),
+      check: (x) => (x.kind === "holderHpAtMost" ? this.curHp(holder) <= x.value : conditionWord(x.kind)!.check(this.wordCtx, x, at)),
+    };
+    const ok = at.check(c);
+    for (const heads of at.flips) {
+      this.applyEvent({ type: "Flipped", unit: holder.id, by: ref, heads }, event.id >= 0 ? event.id : event.causedBy, "kernel");
     }
+    if (ok) for (const m of at.marks) this.onceMarks.add(m);
+    return ok;
   }
 
   // ---------- selectors ----------
@@ -556,13 +625,16 @@ class Engine {
         }
         return [];
       }
+      default:
+        return selectorWord(sel.kind)!.select(this.wordCtx, holder, event) as UnitState[];
     }
   }
 
   // ---------- effects (trigger context) ----------
 
   private runEffect(e: Effect, target: UnitState, holder: UnitState, f: Firing): void {
-    const amountCtx = { holder, ref: f.ref };
+    const amountCtx = { holder, ref: f.ref, target, event: f.event };
+    if (isV2Effect(e)) return this.runRuleMod(e, target, holder, f);
     switch (e.kind) {
       case "damage": {
         if (!target.alive) return;
@@ -689,9 +761,135 @@ class Engine {
     this.propose({ type: "StatusApplied", unit: unitId, status, stacks, total: cur + stacks }, causedBy, source);
   }
 
+  // ---------- rule modification (rules v2 §3.5) ----------
+
+  /** A unit's rule as a firing on `event`, sourced to `ref` (its own, or the
+   * holder's for a remembered rule). */
+  private firingOf(holder: UnitState, rule: Reaction[], event: BattleEvent, ref: AbilityRef): Firing | undefined {
+    const first = rule[0];
+    if (!first) return undefined;
+    const does = rule.map((ab, i) => ({ ref: { ...ref, ability: i }, effects: ab.effects, selectors: ab.selectors }));
+    return { ref: does[0]!.ref, holder: holder.id, ability: first, does, event, again: true };
+  }
+
+  /** Delayed effects (rules v2 §3.6), in the order they were set. */
+  private delays: { at: number; effect: Effect; target: string; holder: string; ref: AbilityRef; cause: number }[] = [];
+
+  /** At turn end, run the delays that come due this turn, in the order set. */
+  private runDelays(te: BattleEvent): void {
+    const due = this.delays.filter((d) => d.at <= this.turn);
+    if (due.length === 0) return;
+    this.delays = this.delays.filter((d) => d.at > this.turn);
+    for (const d of due) {
+      const holder = this.units.get(d.holder);
+      const target = this.units.get(d.target);
+      if (!holder || !target) continue;
+      const f: Firing = { ref: d.ref, holder: holder.id, ability: holder.abilities[0] ?? { triggers: [], selectors: [], effects: [] }, does: [], event: te };
+      this.runEffect(d.effect, target, holder, f);
+      this.settle();
+    }
+  }
+
+  /** actAgain: at most once per event per target (§3.4 guardrails). */
+  private actedAgain = new Set<string>();
+
+  private runRuleMod(e: EffectV2, target: UnitState, holder: UnitState, f: Firing): void {
+    const note = (op: Extract<EventBody, { type: "RuleMod" }>["op"], other?: string) =>
+      this.applyEvent({ type: "RuleMod", unit: holder.id, op, ...(other !== undefined ? { other } : {}) }, f.event.id, f.ref);
+    switch (e.kind) {
+      case "copyRule":
+        if (!target.alive || target.id === holder.id || target.abilities.length === 0) return;
+        holder.abilities = [...target.abilities];
+        note("copyRule", target.id);
+        return;
+      case "swapRules": {
+        if (!target.alive || target.id === holder.id) return;
+        [holder.abilities, target.abilities] = [target.abilities, holder.abilities];
+        note("swapRules", target.id);
+        return;
+      }
+      case "remember":
+        if (target.abilities.length === 0) return;
+        (holder.remembered ??= []).push({ from: target.id, rule: [...target.abilities] });
+        note("remember", target.id);
+        return;
+      case "actAgain": {
+        const key = `${f.event.id}|${target.id}`;
+        if (!target.alive || target.silenced || this.actedAgain.has(key)) return;
+        const again = this.firingOf(target, target.abilities, f.event, { unit: target.id, ability: 0 });
+        if (!again) return;
+        this.actedAgain.add(key);
+        note("actAgain", target.id);
+        this.queue.unshift(again);
+        return;
+      }
+      case "performRemembered": {
+        const list = holder.remembered ?? [];
+        const run = e.mode === "once" ? list.splice(0, 1) : [...list];
+        // Runs go to the front in their remembered order.
+        const firings = run.flatMap((m) => {
+          const fr = this.firingOf(holder, m.rule, f.event, { unit: holder.id, ability: 0 });
+          if (!fr) return [];
+          note("performRemembered", m.from);
+          return [fr];
+        });
+        this.queue.unshift(...firings);
+        return;
+      }
+      case "delay": {
+        const at = this.turn + Math.max(0, e.turns);
+        this.delays.push({ at, effect: e.effect, target: target.id, holder: holder.id, ref: f.ref, cause: f.event.id });
+        this.applyEvent({ type: "Delayed", unit: target.id, by: f.ref, at }, f.event.id, f.ref);
+        return;
+      }
+      case "transform": {
+        if (!target.alive || target.transformed) return;
+        const frac = this.effStat(target, "hp") > 0 ? Math.max(0, this.curHp(target)) / this.effStat(target, "hp") : 1;
+        const into = this.makeUnit(e.into, target.side, target.id);
+        target.name = into.name;
+        target.base = into.base;
+        target.abilities = into.abilities;
+        target.transformed = true;
+        target.damage = Math.max(0, this.effStat(target, "hp") - Math.max(1, Math.round(this.effStat(target, "hp") * frac)));
+        this.applyEvent({ type: "Transformed", unit: target.id, name: into.name, hp: this.curHp(target), pwr: this.effStat(target, "pwr") }, f.event.id, f.ref);
+        return;
+      }
+      case "summonWithRule": {
+        const side = holder.side;
+        if (this.suddenDeath()) {
+          this.applyEvent({ type: "SummonFailed", name: e.unit.name, side, reason: "suddenDeath" }, f.event.id, f.ref);
+          return;
+        }
+        if (this.lines[side].length >= this.lineCap) {
+          this.applyEvent({ type: "NoRoom", unit: f.ref.unit, side, name: e.unit.name }, f.event.id, f.ref);
+          return;
+        }
+        const id = `${side}+${++this.summonCounter}:${e.unit.name}`;
+        const u = this.makeUnit(e.unit, side, id);
+        u.abilities = [...target.abilities];
+        const slot = !target.alive && target.side === side && target.fellAt !== undefined ? Math.min(target.fellAt, this.lines[side].length) : undefined;
+        this.propose(
+          { type: "Summon", unit: id, name: u.name, side, hp: u.base.hp, pwr: u.base.pwr, ...(slot === undefined ? { front: true as const } : { slot }) },
+          f.event.id,
+          f.ref,
+          { summon: u },
+        );
+        return;
+      }
+      default:
+        return; // interceptor-context words are inert in trigger context
+    }
+  }
+
   // ---------- interceptor execution ----------
 
-  private runInterceptor(r: ReactorEntry, draft: EventBody, followUps: Array<(parentId: number) => void>): "pass" | "cancel" {
+  private runInterceptor(
+    r: ReactorEntry,
+    draft: EventBody,
+    followUps: Array<(parentId: number) => void>,
+    causedBy: number | null,
+    redirected: { done: boolean },
+  ): "pass" | "cancel" {
     const holder = this.units.get(r.holder);
     if (!holder) return "pass";
     const own = r.ref.status !== undefined ? holder.statuses.find((s) => s.def.name === r.ref.status) : undefined;
@@ -736,8 +934,46 @@ class Engine {
           if (effect.removeSelf && own && r.ref.status !== undefined) consumeOwn(own.stacks);
           return "cancel";
         }
-        default:
-          break; // trigger-context atoms are inert in interceptor context
+        default: {
+          // A v2 interceptor effect is a word (src/words/); trigger-context
+          // atoms stay inert here.
+          const word = effectWord(effect.kind);
+          if (!word?.intercept) break;
+          const res = word.intercept(this.wordCtx, effect, {
+            holder,
+            draft,
+            eval: (a) => this.evalAmount(a, { holder, ref }),
+            select: (s) => {
+              const probe = { ...draft, id: -1, turn: this.turn, causedBy, source: "kernel" } as BattleEvent;
+              return this.evalSelector(s, holder, probe);
+            },
+            redirect: (to) => {
+              if (redirected.done) return false;
+              const from = draft.type === "Strike" ? draft.defender : "unit" in draft && typeof draft.unit === "string" ? draft.unit : undefined;
+              if (from === undefined || from === to.id || !to.alive) return false;
+              if (draft.type === "Strike") draft.defender = to.id;
+              else (draft as { unit: string }).unit = to.id;
+              redirected.done = true;
+              this.applyEvent({ type: "Redirected", by: ref, original: draft.type, from, to: to.id }, causedBy, "kernel");
+              return true;
+            },
+            survive: (unitId, hp, stat, amount) => {
+              followUps.push((parentId) => {
+                const u = this.units.get(unitId);
+                if (!u) return;
+                const heal = hp - this.curHp(u);
+                if (heal > 0) this.propose({ type: "Heal", unit: unitId, amount: heal }, parentId, ref);
+                if (amount > 0) {
+                  const before = this.effStat(u, stat);
+                  u.base[stat] -= amount;
+                  this.propose({ type: "StatChanged", unit: unitId, stat, delta: this.effStat(u, stat) - before, now: this.effStat(u, stat) }, parentId, ref);
+                }
+              });
+            },
+          });
+          if (res === "cancel") return "cancel";
+          break;
+        }
       }
     }
     return "pass";
@@ -752,6 +988,7 @@ class Engine {
         return;
       case "Hurt": {
         const u = this.units.get(ev.unit);
+        if (u) u.hits = (u.hits ?? 0) + 1;
         if (u && u.alive) u.damage += ev.amount;
         if (u) ev.hpAfter = this.curHp(u);
         return;
@@ -794,8 +1031,10 @@ class Engine {
           } else line.push(u.id);
         } else if (pending?.summon) {
           this.units.set(pending.summon.id, pending.summon);
-          // a summon enters at the front so it acts at once; the newest summon is the front
-          this.lines[pending.summon.side].unshift(pending.summon.id);
+          // a summon enters at the front so it acts at once; the newest summon is the front.
+          // A rules-v2 summonWithRule may name a slot instead (§3.6).
+          if (ev.slot !== undefined) this.lines[pending.summon.side].splice(ev.slot, 0, pending.summon.id);
+          else this.lines[pending.summon.side].unshift(pending.summon.id);
         }
         return;
       }
@@ -846,7 +1085,7 @@ class Engine {
         const striker = this.units.get(ev.striker);
         const defender = this.units.get(ev.defender);
         if (!striker || !defender || !defender.alive) return;
-        const amount = this.effStat(striker, "pwr");
+        const amount = ev.amount ?? this.effStat(striker, "pwr");
         this.propose({ type: "Hurt", unit: ev.defender, amount }, ev.id, "kernel");
         return;
       }
@@ -906,7 +1145,7 @@ class Engine {
     return this.effStat(u, "hp") - u.damage;
   }
 
-  private evalAmount(a: Amount, ctx: { holder: UnitState; ref: AbilityRef }): number {
+  private evalAmount(a: Amount, ctx: { holder: UnitState; ref: AbilityRef; target?: UnitState; event?: EventBody }): number {
     switch (a.kind) {
       case "const":
         return a.value;
@@ -918,6 +1157,36 @@ class Engine {
         if (ctx.ref.status === undefined) return 0;
         return ctx.holder.statuses.find((s) => s.def.name === ctx.ref.status)?.stacks ?? 0;
       }
+      default: {
+        // A v2 amount is a word (src/words/).
+        const subj = ctx.event ? subjectOf(ctx.event) : undefined;
+        const eventUnit = subj !== undefined ? this.units.get(subj) : undefined;
+        return Math.max(0, amountWord(a.kind)!.value(this.wordCtx, a, {
+          holder: ctx.holder,
+          ...(ctx.target ? { target: ctx.target } : {}),
+          ...(eventUnit ? { eventUnit } : {}),
+          eval: (x) => this.evalAmount(x, ctx),
+        }));
+      }
+    }
+  }
+
+  /** The battle facts the count amount reads (rules v2 §3.3). */
+  private battleFact(fact: BattleFact, holder: UnitState): number {
+    const side = (s: Side) => [...this.units.values()].filter((u) => u.side === s);
+    switch (fact) {
+      case "hitsTaken":
+        return holder.hits ?? 0;
+      case "hitsTakenByAllies":
+        return side(holder.side).filter((u) => u.id !== holder.id).reduce((n, u) => n + (u.hits ?? 0), 0);
+      case "deadAllies":
+        return side(holder.side).filter((u) => !u.alive).length;
+      case "alliesAlive":
+        return this.lines[holder.side].length;
+      case "enemiesAlive":
+        return this.lines[other(holder.side)].length;
+      case "turn":
+        return this.turn;
     }
   }
 

@@ -12,6 +12,8 @@
 
 import { TEAM_SIZE } from "./battle.js";
 import type { AbilityRegistry, StatusRegistry, UnitDef } from "./types.js";
+import { AMOUNT_WORDS, CONDITION_WORDS, amountWord, conditionWord, effectWord, selectorWord } from "./words/index.js";
+import { MACROS, macro } from "./words/macros.js";
 
 export interface ValidationIssue {
   path: string; // e.g. "teamA[0].abilities[0].effects[1]"
@@ -389,12 +391,7 @@ function validateAbility(ab: unknown, registry: StatusRegistry, abilities: Abili
 
   // condition
   if (ab["condition"] !== undefined) {
-    const p = `${path}.condition`;
-    if (!isObject(ab["condition"]) || !oneOf(ab["condition"]["kind"], CONDITION_KINDS)) {
-      issues.push({ path: p, message: `unknown condition kind — conditions are ${list(CONDITION_KINDS)}` });
-    } else if (typeof ab["condition"]["value"] !== "number") {
-      issues.push({ path: `${p}.value`, message: "condition value must be a number" });
-    }
+    validateCondition(ab["condition"], registry, `${path}.condition`, issues);
   }
 
   // selectors
@@ -403,7 +400,7 @@ function validateAbility(ab: unknown, registry: StatusRegistry, abilities: Abili
   } else {
     ab["selectors"].forEach((s, i) => {
       const kind = isObject(s) ? s["kind"] : undefined;
-      if (!oneOf(kind, SELECTOR_KINDS)) {
+      if (!oneOf(kind, SELECTOR_KINDS) && !(typeof kind === "string" && selectorWord(kind))) {
         issues.push({ path: `${path}.selectors[${i}]`, message: `unknown selector kind ${JSON.stringify(kind)} — selectors are ${list(SELECTOR_KINDS)}` });
       }
     });
@@ -414,6 +411,59 @@ function validateAbility(ab: unknown, registry: StatusRegistry, abilities: Abili
     issues.push({ path: `${path}.effects`, message: "an ability needs ≥1 effects" });
   } else {
     ab["effects"].forEach((e, i) => validateEffect(e, registry, abilities, owner, contexts, `${path}.effects[${i}]`, issues));
+    // Rules v2 guardrail (#1043 §3): a rule-modifying effect sits at the root
+    // tier of the chain order (units.ts), so it never listens to a chain link
+    // (shield gained, healed, power gained, status applied) and can't loop with chains.
+    const ruleMod = ab["effects"].some((e) => isObject(e) && oneOf(e["kind"], RULE_MOD_EFFECTS));
+    const linked = Array.isArray(ab["whens"]) && ab["whens"].some((w) => isObject(w) && isObject(w["on"]) && oneOf(w["on"]["on"], CHAIN_LINK_EVENTS));
+    if (ruleMod && linked) {
+      issues.push({ path: `${path}.whens`, message: `a rule-modifying effect (${list(RULE_MOD_EFFECTS)}) must trigger on a root event, not a chain link (${list(CHAIN_LINK_EVENTS)})` });
+    }
+  }
+}
+
+const RULE_MOD_EFFECTS = ["copyRule", "actAgain", "remember", "performRemembered", "swapRules"] as const;
+const CHAIN_LINK_EVENTS = ["StatusApplied", "StatusRemoved", "Heal", "StatChanged"] as const;
+
+/** A condition: the v1 hp threshold, or a v2 word (src/words/) with its own
+ * fields checked by hand; and / not nest. */
+function validateCondition(c: unknown, registry: StatusRegistry, p: string, issues: ValidationIssue[]): void {
+  if (!isObject(c) || !(oneOf(c["kind"], CONDITION_KINDS) || (typeof c["kind"] === "string" && conditionWord(c["kind"])))) {
+    issues.push({ path: p, message: `unknown condition kind — conditions are ${list(CONDITION_KINDS)} and the words ${list(Object.keys(CONDITION_WORDS))}` });
+    return;
+  }
+  const int = (k: string, min: number) => {
+    if (!Number.isInteger(c[k]) || (c[k] as number) < min) issues.push({ path: `${p}.${k}`, message: `${k} must be an integer ≥ ${min}` });
+  };
+  switch (c["kind"]) {
+    case "holderHpAtMost":
+      if (typeof c["value"] !== "number") issues.push({ path: `${p}.value`, message: "condition value must be a number" });
+      return;
+    case "and":
+      if (!Array.isArray(c["all"]) || c["all"].length < 2) issues.push({ path: `${p}.all`, message: "and needs ≥2 conditions" });
+      else c["all"].forEach((x, i) => validateCondition(x, registry, `${p}.all[${i}]`, issues));
+      return;
+    case "not":
+      validateCondition(c["cond"], registry, `${p}.cond`, issues);
+      return;
+    case "turnIs":
+    case "turnAtLeast":
+      return int("n", 1);
+    case "turnEvery":
+      return int("n", 2);
+    case "stacksAtLeast":
+      int("n", 1);
+      if (!oneOf(c["of"], ["holder", "eventUnit"] as const)) issues.push({ path: `${p}.of`, message: "of must be holder or eventUnit" });
+      checkStatusRef(c["status"], registry, p, issues);
+      return;
+    case "alliesAlive":
+    case "enemiesAlive":
+      int("n", 0);
+      if (!oneOf(c["op"], ["<=", "=", ">="] as const)) issues.push({ path: `${p}.op`, message: "op must be <=, = or >=" });
+      return;
+    case "flip":
+      if (typeof c["p"] !== "number" || !(c["p"] > 0 && c["p"] < 1)) issues.push({ path: `${p}.p`, message: "p must be a number between 0 and 1" });
+      return;
   }
 }
 
@@ -423,6 +473,16 @@ function validatePattern(on: unknown, registry: StatusRegistry, path: string, is
     return;
   }
   const name = on["on"];
+  if (name === "Acted") {
+    // Rules v2 "whenever <unit> acts" (types.ts ActedPattern).
+    for (const key of Object.keys(on)) {
+      if (key === "on") continue;
+      if (key === "unit" && oneOf(on[key], UNIT_FILTERS)) continue;
+      if (key === "front" && on[key] === true) continue;
+      issues.push({ path: `${path}.${key}`, message: `"Acted" patterns take only "unit" (a filter) and "front: true"` });
+    }
+    return;
+  }
   if (!oneOf(name, EVENT_NAMES)) {
     issues.push({ path: `${path}.on`, message: `unknown event ${JSON.stringify(name)} — patterns can match ${list(EVENT_NAMES)}` });
     return;
@@ -453,8 +513,18 @@ function validateEffect(e: unknown, registry: StatusRegistry, abilities: Ability
     return;
   }
   const kind = e["kind"];
-  const isTrigger = oneOf(kind, TRIGGER_EFFECTS);
-  const isInterceptor = oneOf(kind, INTERCEPTOR_EFFECTS);
+  if (kind === "macro") {
+    const m = typeof e["name"] === "string" ? macro(e["name"]) : undefined;
+    if (!m) {
+      issues.push({ path: `${path}.name`, message: `unknown composed word ${JSON.stringify(e["name"])} — macros: ${Object.keys(MACROS).join(", ")}` });
+      return;
+    }
+    m.effects.forEach((x, i) => validateEffect(x, registry, abilities, owner, contexts, `${path}<${m.name}>[${i}]`, issues));
+    return;
+  }
+  const word = effectWord(kind);
+  const isTrigger = oneOf(kind, TRIGGER_EFFECTS) || word?.context === "trigger";
+  const isInterceptor = oneOf(kind, INTERCEPTOR_EFFECTS) || word?.context === "interceptor";
   if (!isTrigger && !isInterceptor) {
     issues.push({ path: `${path}.kind`, message: `unknown effect kind "${kind}" — trigger-context: ${list(TRIGGER_EFFECTS)}; interceptor-context: ${list(INTERCEPTOR_EFFECTS)}` });
     return;
@@ -468,6 +538,32 @@ function validateEffect(e: unknown, registry: StatusRegistry, abilities: Ability
   }
 
   switch (kind) {
+    case "redirect":
+      if (!isObject(e["to"]) || !(oneOf(e["to"]["kind"], SELECTOR_KINDS) || (typeof e["to"]["kind"] === "string" && selectorWord(e["to"]["kind"])))) {
+        issues.push({ path: `${path}.to`, message: "redirect needs a selector to land on" });
+      }
+      return;
+    case "preventDeath":
+      if (!Number.isInteger(e["at"]) || (e["at"] as number) < 1) issues.push({ path: `${path}.at`, message: "at must be an integer ≥ 1" });
+      if (!isObject(e["cost"]) || !oneOf(e["cost"]["stat"], STAT_NAMES) || !Number.isInteger(e["cost"]["amount"]) || (e["cost"]["amount"] as number) < 0) {
+        issues.push({ path: `${path}.cost`, message: "cost must be {stat, amount ≥ 0}" });
+      }
+      return;
+    case "replaceAmount":
+      return validateAmount(e["amount"], owner, `${path}.amount`, issues);
+    case "delay":
+      if (!Number.isInteger(e["turns"]) || (e["turns"] as number) < 1) issues.push({ path: `${path}.turns`, message: "turns must be an integer ≥ 1" });
+      return validateEffect(e["effect"], registry, abilities, owner, new Set(["trigger"]), `${path}.effect`, issues);
+    case "transform":
+    case "summonWithRule": {
+      const k = kind === "transform" ? "into" : "unit";
+      const u = e[k];
+      if (!isObject(u) || typeof u["name"] !== "string" || !isObject(u["base"])) issues.push({ path: `${path}.${k}`, message: `${kind} needs a unit with a name and base stats` });
+      return;
+    }
+    case "performRemembered":
+      if (!oneOf(e["mode"], ["once", "all"] as const)) issues.push({ path: `${path}.mode`, message: "mode must be once or all" });
+      return;
     case "damage":
       return validateAmount(e["amount"], owner, `${path}.amount`, issues);
     case "heal":
@@ -506,8 +602,8 @@ function validateEffect(e: unknown, registry: StatusRegistry, abilities: Ability
 }
 
 function validateAmount(a: unknown, owner: Owner, path: string, issues: ValidationIssue[]): void {
-  if (!isObject(a) || typeof a["kind"] !== "string" || !oneOf(a["kind"], AMOUNT_KINDS)) {
-    issues.push({ path, message: `amount must be one of kinds ${list(AMOUNT_KINDS)}` });
+  if (!isObject(a) || typeof a["kind"] !== "string" || !(oneOf(a["kind"], AMOUNT_KINDS) || amountWord(a["kind"]))) {
+    issues.push({ path, message: `amount must be one of kinds ${list(AMOUNT_KINDS)} or the words ${list(Object.keys(AMOUNT_WORDS))}` });
     return;
   }
   switch (a["kind"]) {
@@ -526,6 +622,23 @@ function validateAmount(a: unknown, owner: Owner, path: string, issues: Validati
         issues.push({ path, message: "a stacks amount reads the owning status's stacks — on a unit ability it silently evaluates to 0" });
       }
       return;
+    case "stacksOf":
+      if (typeof a["status"] !== "string") issues.push({ path: `${path}.status`, message: "stacksOf needs a status name" });
+      if (!oneOf(a["of"], ["holder", "target"] as const)) issues.push({ path: `${path}.of`, message: "of must be holder or target" });
+      return;
+    case "count":
+      if (!oneOf(a["fact"], ["hitsTaken", "hitsTakenByAllies", "deadAllies", "alliesAlive", "enemiesAlive", "turn"] as const)) issues.push({ path: `${path}.fact`, message: "unknown battle fact" });
+      return;
+    case "statOf":
+      if (!oneOf(a["stat"], STAT_NAMES)) issues.push({ path: `${path}.stat`, message: `unknown stat ${JSON.stringify(a["stat"])} — stats are ${list(STAT_NAMES)}` });
+      if (!oneOf(a["of"], ["target", "eventUnit"] as const)) issues.push({ path: `${path}.of`, message: "of must be target or eventUnit" });
+      return;
+    case "half":
+    case "twice":
+      return validateAmount(a["of"], owner, `${path}.of`, issues);
+    case "plus":
+      validateAmount(a["a"], owner, `${path}.a`, issues);
+      return validateAmount(a["b"], owner, `${path}.b`, issues);
   }
 }
 

@@ -22,6 +22,7 @@ import { statsView } from "./stats.js";
 import { attachEmail, EMAIL_STARTS_PER_ADDRESS_HOUR, EMAIL_STARTS_PER_HOUR, EmailRefused, emailRequired, emailStatus, FakeMailer, startEmailLogin, verifyEmailLogin } from "./email.js";
 import { FakeTelegram, pollTelegramLogin, startTelegramLogin, TELEGRAM_STARTS_PER_HOUR, TelegramRefused } from "./telegram.js";
 import { buildScene, sceneById, SceneMissing, sceneList } from "./scenes.js";
+import { withSceneFixtures } from "./scene-fixtures.js";
 import { candidateScores, castVote, fakeVotes, nextCard, overnightCheck, seedCandidate, waitingForCheck } from "./votes.js";
 
 /** New players the open join link (R4-20) makes per hour, server-wide. */
@@ -74,7 +75,8 @@ export function createMvpApp(deps: MvpDeps | MvpRuntime): Hono {
     });
 
   api.get("/health", (c) => c.json({ ok: true, api: MVP_API_VERSION, contentVersion: rt.content.version, invites: rt.invites, open: rt.open, telegram: rt.telegram ? (rt.telegram instanceof FakeTelegram ? "fake" : "bot") : false, mail: rt.mail ? (rt.mail instanceof FakeMailer ? "fake" : "smtp") : false }));
-  api.get("/content", (c) => c.json(servedContent(rt)));
+  // A scenes server also serves the rules v2 fixtures' words (#1045, scene-fixtures.ts).
+  api.get("/content", (c) => c.json(rt.scenes ? withSceneFixtures(servedContent(rt)) : servedContent(rt)));
 
   api.post("/players", async (c) => {
     if (rt.invites) return bad(c, 403, "invite only: open your invite link");

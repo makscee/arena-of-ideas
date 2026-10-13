@@ -91,6 +91,7 @@ EventTypes v1: `BattleStart, TurnStart, PairFaced, Strike, Hurt, Heal, Death, Su
 - `Hurt {unit, amount, hpAfter, absorbed?}` / `Heal {unit, amount, hpAfter}` — hp deltas. `Strike` proposes a `Hurt` of the striker's effective pwr. `hpAfter` is the unit's current hp after the event applied, stamped by the kernel at apply time — consumers (replay, client) read it instead of re-deriving hp bookkeeping. `absorbed?` records how many hp a Shield interceptor consumed; a fully-absorbed Hurt still applies with `amount` 0.
 - `StatChanged {unit, stat, delta, now, hpAfter?}` — an effective-stat change from a statMod attaching or detaching; `now` is the new effective stat. An hp change moves current hp with the max (cur = effective − damage), so hp StatChanged events also carry `hpAfter`, stamped like Hurt/Heal; pwr changes carry none.
 - `ChainBlocked {ability, at, spent?}` — a would-be firing suppressed by the no-self-retrigger law (§5), or, with `spent: true`, by the once-per-chain law (§5). The replay explains chain stops with this event.
+- `Flipped {unit, by, heads}` (v2, §11) — a `flip` condition drew its coin for the firing `by` of `unit`'s rule: one draw from the battle seed, logged heads or tails, caused by the event the firing reacted to. A tails flip stops the firing; the coin still shows.
 - `BattleEnd {winner, turns, timeUp?}` — the last event. `timeUp: true` only when the turn cap ran out with both sides standing (a draw); absent otherwise.
 - `ChainCapped {root, steps}` — a cascade hit the step cap (§5) and stopped; `root` is the event its first firing reacted to, `steps` the firings it ran. It is caused by the event the next, dropped firing reacted to, so a trace shows where the chain was cut.
 - `Intercepted {by, original, unit?}` — emitted when an interceptor cancels a proposed event (e.g. Freeze cancelling a Strike, Blessing cancelling a Death); cancellations must be visible or the replay can't explain them. Interceptor side-effects (stack consumption, the replacement Heal) are caused by this event.
@@ -231,3 +232,58 @@ The layer above battle(): `src/run.ts` (transitions), `src/ladder.ts` (the stora
 - **Champion rule:** an empty draw means the run has outrun every ghost at this round and challenges the champion. A win — or a vacant spot — crowns the fielded team: the run ends `crown`, and the spot persists across runs. A dethroned champion loses only the spot; its ghosts stay. A lost challenge is a normal loss. The vacant-spot crown is a kernel edge only: openLadder seats a champion, so it is unreachable on any opened ladder.
 - **Run-end states:** a loss costs a life; at 0 lives the run ends `out-of-lives`. An over run rejects every further decision, loudly.
 - **Bootstrap:** an empty ladder seeds rounds 1..BOOTSTRAP_DEPTH from the shipped bootstrap teams (tunables), escalating in strength, and seats BOOTSTRAP_CHAMPION — the strongest shipped team — in the champion spot, so a first-ever run has a real climb and a crown is always earned by beating someone (a fresh ladder crowned every run through the vacant spot, most with losing records). Every bootstrap team passes the content gate at open. A played-on ladder can never have an empty round-1 pool — snapshot-before-fight fills it.
+
+## 11. Rules v2: the word registry (normative, #1043)
+
+Rules v2 (design: `arena-rules-v2.html` §3) adds six classes of primitive. Each primitive is a **word**: one file in `src/words/` with how it applies, its English and Russian sentence templates, its trace line, and an example battle whose golden log is `src/words/goldens/<kind>.jsonl` (`src/words/words.test.ts` runs every word). **A rule the renderer can't say is not legal:** `validate.ts` accepts a v2 kind only when its word is registered (`src/words/index.ts`). Words never change v1 content: every golden battle of the current pool is unchanged.
+
+### 11.1 Position selectors
+`allyBehind`, `allyAhead` (the living ally one slot behind / ahead of the holder), `neighbours` (ahead, then behind), `alliesBehind` (every living ally behind, front to back), `lastEnemy` (the enemy at the back), `randomAlly` (one seeded draw among the other living allies; none when alone), `eventTarget` (the unit an event was aimed at: a Strike's defender, else the unit a Hurt, Heal or status landed on; none once dead). A holder that has left the line has no neighbours.
+
+### 11.2 Conditions
+All compose with `and {all: Condition[]}` (in order, stopping at the first that fails) and `not {cond}`.
+- `turnIs n`, `turnAtLeast n`, `turnEvery n` — the turn clock (`turn % n = 0`).
+- `stacksAtLeast {status, n, of: holder | eventUnit}` — a counter or status threshold.
+- `alliesAlive {op, n}`, `enemiesAlive {op, n}` — the living line's length (allies include the holder), `op` one of `<=`, `=`, `>=`.
+- `flip {p}` — one draw from the battle seed per firing that reaches it; heads when the draw < p. Each coin is a `Flipped` event (§2), logged before the firing's effects.
+- `onceHolder`, `oncePerTurn` — the rule fires at most once per battle / per turn. A once-mark is committed only when the whole condition holds, so `and [turnAtLeast 3, onceHolder]` waits for turn 3.
+
+A condition is checked when the firing runs (after the no-self and once-per-chain laws, §5), against the holder and the event the firing reacted to; an interceptor's condition sees the proposed event.
+
+
+### 11.3 Counters and scaling amounts
+A status with `counter: true` is a counter: tracked like stacks, drawn as a small number on the card, not as a buff (display only; the kernel treats it as any status). New amounts, all clamped at 0 when they land:
+- `stacksOf {status, of: holder | target}` — a named counter or status, not only the owning one.
+- `count {fact}` — a battle fact the kernel keeps: `hitsTaken` (Hurt events the holder took this battle, absorbed ones included), `hitsTakenByAllies` (the same, summed over its other allies, fallen included), `deadAllies`, `alliesAlive` (holder included), `enemiesAlive`, `turn`.
+- `statOf {stat, of: target | eventUnit}` — someone else's effective stat.
+- `missingHp` — the holder's damage taken.
+- `half {of}` (rounded down), `twice {of}`, `plus {a, b}` — the only arithmetic.
+
+### 11.4 Replacement interceptors
+Interceptor-context effects beside `cancel`, `absorbHurt`, `preventDeathHeal`:
+- `redirect {to: Selector}` — the proposed Hurt, Heal, Strike (its defender) or StatusApplied lands on the unit `to` picks (its first pick, living, not already the subject). **An event is redirected at most once**, whoever tries second. A `Redirected {by, original, from, to}` event is logged before the moved event applies. Interceptors earlier in reactor order than the redirect don't see the new subject (a known limit, revisit with Magnet's tune).
+- `preventDeath {at, cost: {stat, amount}}` — cancel a Death (an `Intercepted` event): the unit is healed to `at` HP and its base stat drops by `amount` (a `StatChanged`), both caused by the `Intercepted`. When the stat is already below `amount`, it can't pay and the Death goes ahead (Candle: at 0 power it dies).
+- `replaceAmount {amount}` — the proposed Hurt or Heal takes this amount; on a Strike it sets the Strike's `amount`, and the Hurt the Strike proposes uses it instead of the striker's power (`Strike.amount` is absent on every other Strike, so v1 logs are unchanged).
+
+### 11.5 Rule modification
+Trigger-context effects; each logs a `RuleMod {unit, op, other}` event (caused by the event the firing reacted to), which the trace reads ("Mirror copies the rule of Hedgehog", "Hourglass: Archer acts again").
+- `copyRule` — the holder's rule becomes a copy of the target's for the rest of the battle; stats untouched.
+- `swapRules` — the holder and the target trade rules.
+- `remember` — the holder keeps a copy of the target's rule (a list, oldest first); `performRemembered {mode}` runs the oldest once and forgets it (`once`), or runs every one and keeps them (`all`). A performed rule fires as the holder, sourced to the holder.
+- `actAgain` — the target's rule fires now, on the event the firing reacted to, as if its trigger had fired.
+
+**actAgain and the once-per-chain law (#1030).** A firing put on the queue by `actAgain` or `performRemembered` goes to the front of the queue and is an *again-firing*: the once-per-chain law neither blocks it nor counts it, so the unit's own reaction in that chain still happens (Hourglass's "acts again" is an extra action, not a replacement). Three things keep it bounded: it is a step against the chain cap (§5, `ChainCapped`); a unit acts again at most once per event (a second `actAgain` on the same target for the same event does nothing); and the no-self law still applies to it.
+
+### 11.6 Timing and forms
+- `delay {turns, effect}` — the effect lands on the target at the end of turn *now + turns*, after that TurnEnd's chain settles and before Fatigue, in the order the delays were set. A `Delayed {unit, by, at}` event logs it when set. (Kernel state, not a visible status: the "hidden counter" of the design.)
+- `transform {into}` — the target becomes `into` in place (same id and slot): its name, base stats and rule are the new unit's, its statuses stay, and its HP carries over proportionally (rounded, at least 1). Once per battle per unit. A `Transformed {unit, name, hp, pwr}` event logs it.
+- `summonWithRule {unit}` — a summon that carries the target's rule (its own stats). When the target is a fallen ally it enters at the slot where the target fell (the `Summon` event says `slot`); otherwise at the front, as `summon`.
+
+### 11.6a "Whenever it acts"
+`{ on: "Acted", unit?, front?: true }` (trigger-only) matches a unit's own rule firing, not its statuses': once the firing has run, the reactors listening for it are queued on the event the actor reacted to. It logs no event of its own, so no v1 log changes; the once-per-chain law keeps two listeners from echoing each other. `front: true` matches only while the actor is at the front of its line (Déjà Vu: "whatever the enemy in front of it does").
+
+### 11.7 Guardrails, as built
+Seeded and deterministic: `flip` and `randomAlly` are draws from the battle seed. `actAgain`/`performRemembered` firings are steps against the chain cap. A redirect applies once per event; a transform once per battle per unit. Rule-modifying effects sit at the root tier of the chain order (`src/mvp/units.ts`): the validator rejects a rule with `copyRule`, `actAgain`, `remember`, `performRemembered` or `swapRules` that triggers on a chain link (`StatusApplied`, `StatusRemoved`, `Heal`, `StatChanged`).
+
+### 11.8 Composed words (macros)
+A composed word (`src/words/macros.ts`, §7 of the design) is an effect `{kind: "macro", name}` that the compiler (`expandAbilities`, run by the engine on its input registries and by the validator) replaces with the primitives it names, nested macros included; the kernel never sees a macro, so a battle through a macro logs exactly what its primitives would. `echo` = `remember` + `delay 1` + `performRemembered once` (Déjà Vu's Echo). A macro carries its own EN and RU clause (`{target}` is the rule's Who); its trace is its primitives' lines. An unknown macro is an illegal rule.

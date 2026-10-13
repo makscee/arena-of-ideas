@@ -10,7 +10,9 @@
 // a counted noun takes its form by Intl.PluralRules("ru") (1 Щит, 2 Щита,
 // 5 Щитов). Display-only, like describe.ts.
 
-import type { Ability, Amount, Condition, Effect, EventPattern, Selector, StatusDef, UnitFilter, When } from "./types.js";
+import { amountWord, conditionWord, effectWord, isV2Effect, selectorWord } from "./words/index.js";
+import { macro } from "./words/macros.js";
+import type { Ability, Amount, Condition, Effect, EventPattern, EventPatternV1, Selector, SelectorV1, StatusDef, UnitFilter, When } from "./types.js";
 import type { DescribeOpts, DescribeSegment, PartRef, Side } from "./describe.js";
 import type { TermId } from "./glossary.js";
 
@@ -72,6 +74,8 @@ function amountDat(a: Amount): DescribeSegment[] {
       return [seg("уровню")];
     case "stacks":
       return [seg("числу "), { text: "зарядов", term: "term:stacks" }];
+    default:
+      return [seg(amountWord(a.kind)!.ru(a, (x) => amountDat(x).map((g) => g.text).join("")))];
   }
 }
 
@@ -86,6 +90,9 @@ function amountAcc(a: Amount): DescribeSegment[] {
       return [seg("уровень")];
     case "stacks":
       return [seg("число "), { text: "зарядов", term: "term:stacks" }];
+    default:
+      // A v2 amount's word reads in the dative: "на величину, равную …".
+      return [seg("величину, равную "), ...amountDat(a)];
   }
 }
 
@@ -128,7 +135,11 @@ function eventOf(on: keyof typeof EVENT, f: UnitFilter | undefined): string {
  * Part ref, `clause: "when"`, the scope; an interceptor's "перед" its own
  * `term:would` run; a status its own run). */
 export function describeWhenSegmentsRu(w: When): DescribeSegment[] {
-  const p: EventPattern = w.on;
+  if (w.on.on === "Acted") {
+    const who = w.on.unit === "enemy" ? (w.on.front ? "передний враг" : "враг") : w.on.unit === "otherAlly" || w.on.unit === "ally" ? "союзник" : "боец";
+    return [{ text: `${who} действует`, partRef: { family: "trigger", kind: "Acted" } }];
+  }
+  const p: EventPatternV1 = w.on;
   const intercept = w.kind === "interceptor";
   const ref: PartRef = { family: intercept ? "interceptor" : "trigger", kind: p.on };
   const term: TermId = `trigger:${p.on}`;
@@ -180,7 +191,7 @@ export function describeWhenSegmentsRu(w: When): DescribeSegment[] {
 
 /** A selector in the two cases the sentences need: dative after a status or
  * damage ("всем врагам"), accusative after a verb ("павшего союзника"). */
-const SELECTOR: Record<Exclude<Selector["kind"], "holder" | "eventUnit">, { dat: string; acc: string }> = {
+const SELECTOR: Record<Exclude<SelectorV1["kind"], "holder" | "eventUnit">, { dat: string; acc: string }> = {
   attacker: { dat: "атакующему", acc: "атакующего" },
   frontEnemy: { dat: "переднему врагу", acc: "переднего врага" },
   allEnemies: { dat: "всем врагам", acc: "всех врагов" },
@@ -195,7 +206,7 @@ const holderCase = (opts: DescribeOpts, c: Case): string => (opts.holder === "ho
 
 type Case = "dat" | "acc";
 
-const SELECTOR_SIDE: Record<Selector["kind"], Side | undefined> = {
+const SELECTOR_SIDE: Record<SelectorV1["kind"], Side | undefined> = {
   holder: "ally",
   eventUnit: undefined,
   attacker: "enemy",
@@ -213,8 +224,10 @@ function selectorText(s: Selector, c: Case, opts: DescribeOpts): string {
     case "eventUnit":
       // "it": the unit the trigger is about; the holder's own event reads as the holder.
       return opts.eventUnit?.text === (opts.holder ?? "self") ? holderCase(opts, c) : c === "dat" ? "ему" : "его";
-    default:
-      return SELECTOR[s.kind][c];
+    default: {
+      const word = selectorWord(s.kind);
+      return word ? word.ru[c] : SELECTOR[s.kind as Exclude<SelectorV1["kind"], "holder" | "eventUnit">][c];
+    }
   }
 }
 
@@ -222,8 +235,9 @@ function targetSegs(selectors: Selector[], c: Case, opts: DescribeOpts): Describ
   const out: DescribeSegment[] = [];
   selectors.forEach((s, i) => {
     if (i > 0) out.push(seg(" и "));
-    const side = s.kind === "eventUnit" ? opts.eventUnit?.side : SELECTOR_SIDE[s.kind];
-    out.push({ text: selectorText(s, c, opts), partRef: { family: "selector", kind: s.kind }, term: `target:${s.kind}`, ...(side ? { side } : {}) });
+    const word = selectorWord(s.kind);
+    const side = s.kind === "eventUnit" ? opts.eventUnit?.side : word ? word.side : SELECTOR_SIDE[s.kind as SelectorV1["kind"]];
+    out.push({ text: selectorText(s, c, opts), partRef: { family: "selector", kind: s.kind }, ...(word ? {} : { term: `target:${s.kind as SelectorV1["kind"]}` as const }), ...(side ? { side } : {}) });
   });
   return out;
 }
@@ -250,15 +264,23 @@ function shortHead(e: Effect): DescribeSegment[] | undefined {
 
 /** The event an ability's "cancel it" cancels, by its noun's gender: атаку
  * → "её", удар → "его". */
-const CANCEL_IT: Partial<Record<EventPattern["on"], string>> = { Strike: "её", Death: "её" };
+const CANCEL_IT: Partial<Record<EventPatternV1["on"], string>> = { Strike: "её", Death: "её" };
 
 interface EffectCtx extends DescribeOpts {
   selectors: Selector[];
-  event?: EventPattern["on"];
+  event?: EventPatternV1["on"];
 }
 
 function effectSegs(e: Effect, ctx: EffectCtx): DescribeSegment[] {
   const ref: PartRef = { family: "effect", kind: e.kind };
+  if (e.kind === "macro") return [{ text: (macro(e.name)?.ru ?? e.name).replace("{target}", targetSegs(ctx.selectors, "acc", ctx).map((g) => g.text).join("")), partRef: ref }];
+  const word = effectWord(e.kind);
+  if (word) {
+    // Rule words take their Who in the accusative (= genitive for the animate units).
+    const target = targetSegs(ctx.selectors, "acc", ctx).map((g) => g.text).join("");
+    return [{ text: word.ru(e, { amount: (a) => amountDat(a).map((g) => g.text).join(""), who: (s) => selectorText(s, "dat", ctx) }, target), partRef: ref }];
+  }
+  if (isV2Effect(e)) return [];
   const e0 = (text: string): DescribeSegment => ({ text, partRef: ref });
   const eT = (text: string): DescribeSegment => ({ text, partRef: ref, term: `effect:${e.kind}` });
   const statusSeg = (status: string, text: string): DescribeSegment => ({ text, statusRef: status, term: `status:${status}` });
@@ -324,6 +346,8 @@ function describeConditionSegmentsRu(c: Condition): DescribeSegment[] {
   switch (c.kind) {
     case "holderHpAtMost":
       return [{ text: `при ${c.value} ОЗ или меньше`, partRef, term: `condition:${c.kind}` }];
+    default:
+      return [{ text: conditionWord(c.kind)!.ru(c, (x) => describeConditionSegmentsRu(x).map((g) => g.text).join("")), partRef }];
   }
 }
 
@@ -339,7 +363,7 @@ export function describeAbilitySegmentsRu(ab: Ability, opts: DescribeOpts): Desc
   if (ab.condition !== undefined) segs.push(seg(", "), ...describeConditionSegmentsRu(ab.condition));
   segs.push(seg(": "));
   const gone = (ab.whens ?? []).some((w) => w.kind !== "interceptor" && w.on.on === "Death" && w.on.unit === "holder");
-  const ctx: EffectCtx = { ...opts, selectors: ab.selectors ?? [], ...(gone ? { holderGone: true } : {}), ...(ab.whens?.[0] ? { event: ab.whens[0].on.on } : {}) };
+  const ctx: EffectCtx = { ...opts, selectors: ab.selectors ?? [], ...(gone ? { holderGone: true } : {}), ...(ab.whens?.[0] && ab.whens[0].on.on !== "Acted" ? { event: ab.whens[0].on.on } : {}) };
   // The same merging as English: a run of "amount, word, to T" effects names T
   // once, joined by commas and a final "и"; any other pair keeps ", затем".
   ab.effects.forEach((e, i) => {

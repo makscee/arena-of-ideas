@@ -4,7 +4,7 @@
 
 import { FATIGUE_START, fatigueAmount } from "./battle.js";
 import { RU_STATUSES, RU_STAT } from "./describe-ru.js";
-import type { EventPattern, UnitFilter } from "./types.js";
+import type { EventPattern, EventPatternV1, UnitFilter } from "./types.js";
 
 /** A term's Russian words. */
 export interface RuTerm {
@@ -105,7 +105,7 @@ export function timeUpTipRu(cap: number): string {
 }
 
 /** A unit trigger said of someone else (glossary.ts's SCOPED_EVENT). */
-export const RU_SCOPED_EVENT: Partial<Record<EventPattern["on"], string>> = {
+export const RU_SCOPED_EVENT: Partial<Record<EventPatternV1["on"], string>> = {
   Strike: "делает обычную атаку.",
   Hurt: "получает любой урон, от чего угодно. Считается, даже если весь урон заблокирован.",
   Heal: "восстанавливает ОЗ. Юнита с полными ОЗ вылечить нельзя, тогда это не срабатывает.",
@@ -135,7 +135,7 @@ const WHO: Record<Exclude<UnitFilter, "holder">, { nom: string; gen: string; dat
 /** A trigger's Russian label said of a scope, the card's way: event nouns
  * take the unit after them ("Смерть союзника", "Удар по врагу"), verbs before
  * ("Союзник получает Щит"). */
-export function scopeLabelRu(on: EventPattern["on"] | undefined, label: string, scope?: UnitFilter): string {
+export function scopeLabelRu(on: EventPatternV1["on"] | undefined, label: string, scope?: UnitFilter): string {
   if (!scope || scope === "holder") return label;
   const w = WHO[scope];
   if (on === "Hurt") return `${label} по ${w.dat}`;
