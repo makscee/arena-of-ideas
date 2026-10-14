@@ -162,7 +162,7 @@ const tree = (awoken: boolean) => ({
 const butterfly = (awoken: boolean) => ({
   name: awoken ? "Monarch" : "Butterfly",
   names: { ru: awoken ? { name: "Монарх", acc: "Монарха" } : { name: "Бабочка", acc: "Бабочку" } },
-  base: { hp: 6, pwr: 2 },
+  base: { hp: 4, pwr: 2 }, // #1047 pass 2: 4 HP, was 6
   triggers: [{ kind: "trigger" as const, on: { on: "TurnStart" as const } }],
   selectors: [{ kind: "allEnemies" as const }],
   abilities: ["Smite"],
@@ -176,7 +176,7 @@ const direWolf = (awoken: boolean) => ({
   base: awoken ? { hp: 12, pwr: 5 } : { hp: 10, pwr: 4 }, // #1047: bigger, Wolf Pup sat low
   triggers: [{ kind: "trigger" as const, on: { on: "TurnEnd" as const } }],
   selectors: [{ kind: "holder" as const }],
-  abilities: ["Charge"],
+  abilities: ["Surge"], // #1047 pass 2: 2 Strength a turn end, was 1 (Wolf Pup sat weak at the cap)
 });
 
 /** Hydra's heads: each a 2/3 whose strikes heal it by half its power. */
@@ -227,6 +227,7 @@ export const V2_ABILITIES: AbilityRegistry = {
   SproutAwoken: { name: "SproutAwoken", family: "Summon", effects: [{ kind: "delay", turns: 2, effect: { kind: "transform", into: tree(true) } }] },
   Grow: { name: "Grow", family: "Control", effects: [{ kind: "applyStatus", status: "Strength", stacks: c(1) }] },
   Guard: { name: "Guard", family: "Shield", effects: [{ kind: "applyStatus", status: "Shield", stacks: c(1) }] },
+  Surge: { name: "Surge", family: "Control", effects: [{ kind: "applyStatus", status: "Strength", stacks: c(2) }] },
   // batch 2 (#1047)
   Prick: { name: "Prick", family: "Strike", effects: [{ kind: "damage", amount: c(1) }] },
   Spine: { name: "Spine", family: "Strike", effects: [{ kind: "damage", amount: pwrOfHolder }] },
@@ -239,8 +240,8 @@ export const V2_ABILITIES: AbilityRegistry = {
   Howl: { name: "Howl", family: "Summon", effects: [{ kind: "transform", into: direWolf(false) }] },
   HowlAwoken: { name: "HowlAwoken", family: "Summon", effects: [{ kind: "transform", into: direWolf(true) }] },
   Hush2: { name: "Hush2", family: "Control", effects: [{ kind: "silence" }] },
-  Fortune: { name: "Fortune", family: "Control", effects: [{ kind: "branch", if: { kind: "flip", p: 0.5 }, then: [{ kind: "applyStatus", status: "Strength", stacks: c(2) }], else: [{ kind: "applyStatus", status: "Shield", stacks: c(2) }] }] },
-  FortuneAwoken: { name: "FortuneAwoken", family: "Control", effects: [{ kind: "branch", if: { kind: "flip", p: 0.5 }, then: [{ kind: "applyStatus", status: "Strength", stacks: c(3) }], else: [{ kind: "applyStatus", status: "Shield", stacks: c(3) }] }] },
+  Fortune: { name: "Fortune", family: "Control", effects: [{ kind: "branch", if: { kind: "flip", p: 0.5 }, then: [{ kind: "applyStatus", status: "Strength", stacks: c(1) }], else: [{ kind: "applyStatus", status: "Shield", stacks: c(1) }] }] }, // #1047 pass 2: 1, was 2
+  FortuneAwoken: { name: "FortuneAwoken", family: "Control", effects: [{ kind: "branch", if: { kind: "flip", p: 0.5 }, then: [{ kind: "applyStatus", status: "Strength", stacks: c(2) }], else: [{ kind: "applyStatus", status: "Shield", stacks: c(2) }] }] },
   Block: { name: "Block", family: "Shield", effects: [{ kind: "cancel" }] },
   Raise: { name: "Raise", family: "Summon", effects: [{ kind: "resurrect", hp: c(1) }] },
   RaiseAwoken: { name: "RaiseAwoken", family: "Summon", effects: [{ kind: "resurrect", hp: pwrOfHolder }] },
@@ -301,7 +302,7 @@ const Chrysalis = sleeping(trig({ on: "TurnStart" }), me, "Emerge", { condition:
 const Trickster = sleeping(trig({ on: "BattleStart" }), [{ kind: "frontEnemy" }], "Swap");
 const Understudy = sleeping(trig({ on: "Death", unit: "otherAlly" }), [{ kind: "eventUnit" }], "Copy", { condition: { kind: "onceHolder" } });
 const Gravedigger = sleeping(trig({ on: "TurnStart" }), [{ kind: "frontEnemy" }], "Toll");
-const Conductor = sleeping(trig({ on: "TurnStart" }), [{ kind: "neighbours" }], "Encore", { condition: { kind: "turnEvery", n: 2 } });
+const Conductor = sleeping(trig({ on: "TurnStart" }), [{ kind: "neighbours" }], "Encore", { condition: { kind: "turnEvery", n: 3 } }); // #1047 pass 2: every 3rd turn, was 2nd
 
 // Batch 2 (#1047): twenty more, every shape class and tier again.
 const Thornback = sleeping(trig({ on: "Hurt", unit: "holder" }), [{ kind: "attacker" }], "Prick");
@@ -349,7 +350,7 @@ export const ROWS_V2: V2Row[] = [
   v2("Trickster",   "🃏", 3, "rule",        2,  8, "Trades rules with the front enemy before the first blow.",             Trickster,   { who: [{ kind: "frontEnemy" }, { kind: "lastEnemy" }] }),
   v2("Understudy",  "🎭", 3, "copy",        1,  8, "When an ally falls, takes over its rule for good.",                     Understudy,  { does: "CopyPower" }),
   v2("Gravedigger", "⚰️", 4, "scaling",     2, 10, "Hits the front enemy for every fallen ally.",                    Gravedigger, { who: [{ kind: "allEnemies" }] }),
-  v2("Conductor",   "🎼", 4, "rule",        1,  9, "On every even turn, its neighbours act again.",                          Conductor,   { also: [{ who: [{ kind: "neighbours" }], does: ["Charge"] }] }),
+  v2("Conductor",   "🎼", 4, "rule",        1,  9, "On turns 3, 6, 9…, its neighbours act again.",                          Conductor,   { also: [{ who: [{ kind: "neighbours" }], does: ["Charge"] }] }),
   // batch 2 (#1047)
   v2("Thornback",   "🦔", 1, "position",    1,  8, "Pricks whoever hits it.",                                               Thornback,   { does: "Spine" }),
   v2("Coin Thief",  "🪙", 1, "swing",       2,  6, "Each turn, an even chance to rob a random enemy.",   CoinThief,   { does: "PilferLucky" }),
@@ -369,7 +370,7 @@ export const ROWS_V2: V2Row[] = [
   v2("Jester",      "🤡", 3, "rule",        1,  8, "The first one to hit it walks away with its rule.",                     Jester,      { also: [{ who: me, does: ["Guard"] }] }),
   v2("Hydra",       "🐉", 4, "form",        2,  8, "Cut it down and two Heads take its place.",                             Hydra,       { does: "HeadsAwoken" }),
   v2("Archmage",    "🧙", 4, "counter",     2,  7, "Gathers mana; every third turn end, it spends it to strike every enemy.",           Archmage,    { does: "FocusAwoken" }),
-  v2("Oracle",      "👁️", 4, "condition",   1,  8, "From the third turn on, curses the enemy in front.",                    Oracle,      { who: [{ kind: "allEnemies" }] }),
+  v2("Oracle",      "👁️", 4, "condition",   1,  8, "From the third turn on, curses the enemy in front.",                    Oracle,      { who: [{ kind: "frontEnemy" }, { kind: "lastEnemy" }] }),
   v2("Berserker",   "🪓", 4, "scaling",     2,  9, "The more it bleeds, the harder it strikes.",                            Berserker,   { also: [{ who: me, does: ["Sip"] }] }),
 ];
 /* eslint-enable prettier/prettier */

@@ -103,10 +103,10 @@ export const V2_SAY: Record<string, (tree: { hp: number; awokenHp: number }) => 
     "Первый за ход удар по союзнику принимает на себя и даёт этому союзнику 1 Щит.",
   ],
   Chrysalis: () => [
-    "At the start of turn 3, it becomes a Butterfly (2/6) that strikes every enemy for its power at each turn start.",
-    "At the start of turn 3, it becomes a Monarch (2/6) that, at each turn start, strikes every enemy and gives every ally 1 Strength.",
-    "В начале 3-го хода превращается в Бабочку (2/6), которая в начале каждого хода бьёт всех врагов на свою АТК.",
-    "В начале 3-го хода превращается в Монарха (2/6), который в начале каждого хода бьёт всех врагов и даёт всем союзникам 1 Силу.",
+    "At the start of turn 3, it becomes a Butterfly (2/4) that strikes every enemy for its power at each turn start.",
+    "At the start of turn 3, it becomes a Monarch (2/4) that, at each turn start, strikes every enemy and gives every ally 1 Strength.",
+    "В начале 3-го хода превращается в Бабочку (2/4), которая в начале каждого хода бьёт всех врагов на свою АТК.",
+    "В начале 3-го хода превращается в Монарха (2/4), который в начале каждого хода бьёт всех врагов и даёт всем союзникам 1 Силу.",
   ],
   Trickster: () => [
     "At battle start, trades rules with the enemy in front of it.",
@@ -127,10 +127,10 @@ export const V2_SAY: Record<string, (tree: { hp: number; awokenHp: number }) => 
     "В начале каждого хода бьёт всех врагов на 1 за каждого павшего союзника.",
   ],
   Conductor: () => [
-    "At the start of turns 2, 4, 6…, its neighbours act again.",
-    "At the start of turns 2, 4, 6…, its neighbours act again and gain 1 Strength.",
-    "В начале 2-го, 4-го, 6-го… хода его соседи действуют ещё раз.",
-    "В начале 2-го, 4-го, 6-го… хода его соседи действуют ещё раз и получают 1 Силу.",
+    "At the start of turns 3, 6, 9…, its neighbours act again.",
+    "At the start of turns 3, 6, 9…, its neighbours act again and gain 1 Strength.",
+    "В начале 3-го, 6-го, 9-го… хода его соседи действуют ещё раз.",
+    "В начале 3-го, 6-го, 9-го… хода его соседи действуют ещё раз и получают 1 Силу.",
   ],
   // batch 2 (#1047)
   Thornback: () => [
@@ -176,10 +176,10 @@ export const V2_SAY: Record<string, (tree: { hp: number; awokenHp: number }) => 
     "Случайный удар по нему вместо этого уходит в случайного врага, и он получает 1 Щит.",
   ],
   "Wolf Pup": () => [
-    "The first time an ally falls in a battle, it grows into a Dire Wolf (4/10) that gains 1 Strength at each turn end.",
-    "The first time an ally falls in a battle, it grows into a Dire Wolf (5/12) that gains 1 Strength at each turn end.",
-    "Когда в бою впервые падает союзник, вырастает в Лютоволка (4/10), который в конце каждого хода получает 1 Силу.",
-    "Когда в бою впервые падает союзник, вырастает в Лютоволка (5/12), который в конце каждого хода получает 1 Силу.",
+    "The first time an ally falls in a battle, it grows into a Dire Wolf (4/10) that gains 2 Strength at each turn end.",
+    "The first time an ally falls in a battle, it grows into a Dire Wolf (5/12) that gains 2 Strength at each turn end.",
+    "Когда в бою впервые падает союзник, вырастает в Лютоволка (4/10), который в конце каждого хода получает 2 Силы.",
+    "Когда в бою впервые падает союзник, вырастает в Лютоволка (5/12), который в конце каждого хода получает 2 Силы.",
   ],
   "War Horn": () => [
     "At each turn start, with 3 or fewer allies standing, it gives every ally 1 Strength.",
@@ -206,10 +206,10 @@ export const V2_SAY: Record<string, (tree: { hp: number; awokenHp: number }) => 
     "В начале 2-го хода заглушает заднего и переднего врага: они теряют правила и статусы.",
   ],
   "Fortune Teller": () => [
+    "At battle start, 50% chance: every ally gains 1 Strength; otherwise every ally gains 1 Shield.",
     "At battle start, 50% chance: every ally gains 2 Strength; otherwise every ally gains 2 Shield.",
-    "At battle start, 50% chance: every ally gains 3 Strength; otherwise every ally gains 3 Shield.",
+    "В начале боя с вероятностью 50% все союзники получают 1 Силу, иначе — 1 Щит.",
     "В начале боя с вероятностью 50% все союзники получают 2 Силы, иначе — 2 Щита.",
-    "В начале боя с вероятностью 50% все союзники получают 3 Силы, иначе — 3 Щита.",
   ],
   Aegis: () => [
     "The first hit on it each turn deals nothing.",
@@ -243,9 +243,9 @@ export const V2_SAY: Record<string, (tree: { hp: number; awokenHp: number }) => 
   ],
   Oracle: () => [
     "At the start of turn 3 and every turn after, it curses the enemy in front: −1 power.",
-    "At the start of turn 3 and every turn after, it curses every enemy: −1 power.",
+    "At the start of turn 3 and every turn after, it curses the enemies at the front and at the back: −1 power.",
     "В начале 3-го хода и каждого следующего проклинает переднего врага: −1 АТК.",
-    "В начале 3-го хода и каждого следующего проклинает всех врагов: −1 АТК.",
+    "В начале 3-го хода и каждого следующего проклинает переднего и заднего врага: −1 АТК.",
   ],
   Berserker: () => [
     "Its strikes deal its power plus the HP it has lost.",
