@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { canonicalDesign, codexPair, forgeView, fuseDesigned, pairKey, pairState, type CodexPair, type FusionDesign } from "../../../src/mvp/codex.js";
 import type { MvpContent, PlayerRef, UnitContent } from "../../../src/mvp/contract.js";
-import { lineUnitOf } from "../../../src/mvp/forms.js";
+import { fusedStats, lineUnitOf } from "../../../src/mvp/forms.js";
 import type { MvpRunState } from "../../../src/mvp/run.js";
 import { createMvpApp } from "./app.js";
 import { playBotRun } from "./bots.js";
@@ -74,7 +74,14 @@ describe("the Codex kernel", () => {
     expect(d.claimedBy).toEqual(kim);
   });
 
-  it("fuses into the design: summed stats and copies, the design's rule, final", () => {
+  it("fusedStats: the stronger parent (PWR+HP) plus half the weaker, rounded down; a tie keeps the first", () => {
+    expect(fusedStats({ pwr: 3, hp: 9 }, { pwr: 5, hp: 15 })).toEqual({ pwr: 6, hp: 19 });
+    expect(fusedStats({ pwr: 5, hp: 15 }, { pwr: 3, hp: 9 })).toEqual({ pwr: 6, hp: 19 });
+    expect(fusedStats({ pwr: 2, hp: 10 }, { pwr: 6, hp: 6 })).toEqual({ pwr: 5, hp: 13 });
+    expect(fusedStats({ pwr: 6, hp: 6 }, { pwr: 2, hp: 10 })).toEqual({ pwr: 7, hp: 11 });
+  });
+
+  it("fuses into the design: the stronger parent's stats plus half the other's, summed copies, the design's rule, final", () => {
     const content = mvpContent();
     const [a, b] = content.units;
     const ua = lineUnitOf(a!, "u1", 3);
@@ -84,7 +91,7 @@ describe("the Codex kernel", () => {
     expect(f.uid).toBe("u2");
     expect(f.kind).toBe("fused");
     expect(f.name).toBe("Twist");
-    expect(f.stats).toEqual({ pwr: ua.stats.pwr + ub.stats.pwr, hp: ua.stats.hp + ub.stats.hp });
+    expect(f.stats).toEqual(fusedStats(ub.stats, ua.stats));
     expect(f.copies).toBe(6);
     expect(f.recipe).toEqual(design.recipe);
     expect([f.fusion!.first, f.fusion!.second]).toEqual([a!.id, b!.id].sort());

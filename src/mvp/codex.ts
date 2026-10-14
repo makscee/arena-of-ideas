@@ -9,8 +9,9 @@
 //   candidates, nobody picked) or discovered (a human picked one: it is
 //   canonical, with their name, final forever). Claiming gives credit only.
 // - A fusion needs two Awoken (fuseCheck). The fused unit keeps the parents'
-//   summed stats and gets the design's rule, read as one sentence.
-import { fuseCheck } from "./forms.js";
+//   stats by fusedStats (the stronger plus half the other) and gets the
+//   design's rule, read as one sentence.
+import { fuseCheck, fusedStats } from "./forms.js";
 import type { LineUnit, PlayerRef, UnitForm, UnitId } from "./contract.js";
 import type { AbilityRegistry, StatusRegistry } from "../types.js";
 
@@ -154,8 +155,8 @@ export function claimCheck(p: CodexPair | undefined, pick: number | undefined): 
   return null;
 }
 
-/** Fuse two Awoken units into `design`: the parents' summed PWR, HP and
- * copies, the design's rule. The unit keeps `first`'s uid and is final;
+/** Fuse two Awoken units into `design`: PWR and HP by fusedStats (the
+ * stronger parent plus half the other), summed copies, the design's rule. The unit keeps `first`'s uid and is final;
  * `fusion` records the pair in key order and the credit. */
 export function fuseDesigned(first: LineUnit, second: LineUnit, design: FusionDesign, discoveredBy: PlayerRef | null): LineUnit {
   const why = fuseCheck(first, second);
@@ -169,7 +170,7 @@ export function fuseDesigned(first: LineUnit, second: LineUnit, design: FusionDe
     emoji: design.emoji ?? `${first.emoji}${second.emoji}`,
     copies: first.copies + second.copies,
     form: "awoken",
-    stats: { pwr: first.stats.pwr + second.stats.pwr, hp: first.stats.hp + second.stats.hp },
+    stats: fusedStats(first.stats, second.stats),
     recipe: structuredClone(design.recipe),
     fusion: {
       first: a,

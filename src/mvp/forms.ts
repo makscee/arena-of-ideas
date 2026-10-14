@@ -34,6 +34,15 @@ function grown(base: Stats, extraCopies: number, rules: MvpRules): Stats {
   return { pwr: base.pwr + extraCopies * rules.copyGrowth.pwr, hp: base.hp + extraCopies * rules.copyGrowth.hp };
 }
 
+/** A fusion's PWR and HP (Maks, 10-14, #1065): the stronger parent's stats
+ * plus half of the weaker one's, rounded down. Stronger is the higher PWR+HP;
+ * on a tie, the first. Every place a fusion is built uses this: the run's
+ * fuse, the forge preview, the night batch and its tune. */
+export function fusedStats(first: Stats, second: Stats): Stats {
+  const [big, small] = second.pwr + second.hp > first.pwr + first.hp ? [second, first] : [first, second];
+  return { pwr: big.pwr + Math.floor(small.pwr / 2), hp: big.hp + Math.floor(small.hp / 2) };
+}
+
 /** Stats with a unit's awoken bonus added (rules v2's awoken knob). */
 function withBonus(s: Stats, bonus: Stats | undefined): Stats {
   return bonus ? { pwr: s.pwr + bonus.pwr, hp: s.hp + bonus.hp } : s;

@@ -3,6 +3,7 @@
 //
 //   npm run mvp:night -- --pairs 5 --out /tmp/night [--report ~/reports/arena-night.html] [--db data/workshop.db]
 //   npm run mvp:night -- --pool v2 --list hourglass+gambler,mirror+trickster --out /tmp/night [--db …]
+//   npm run mvp:night -- --pool v2 --list a+b,… --retune night.json --out /tmp/night   (no designer: re-tune stored candidates)
 //
 // --pool v2 (#1065): the parents are the rules v2 pool's Awoken units
 // (src/mvp/units-v2.ts) and the field is seeded lines of them; --list names
@@ -19,12 +20,12 @@
 // (src/words/fixtures.ts); the job reads the live pool and the day's ghosts
 // once the pool is v2.
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { UnitDef } from "../src/types.js";
 import { Candle, FIXTURE_ABILITIES, FIXTURE_STATUSES, Gambler, Hourglass, Magnet, Mirror, Nautilus, Raven, Seed } from "../src/words/fixtures.js";
 import { plain, rule } from "../src/words/examples.js";
-import { type Field, type Parent, pickPairs, runBatch } from "../server/src/mvp/night-batch.js";
+import { BAND, type Candidate, type Field, type PairResult, type Parent, fusedBase, pickPairs, quickTune, ruleText, runBatch } from "../server/src/mvp/night-batch.js";
 import { designerFromEnv } from "../server/src/mvp/night-designer.js";
 import { nightReport } from "../server/src/mvp/night-report.js";
 import { listInputFrom, storeNight } from "../server/src/mvp/night-codex.js";
@@ -115,6 +116,37 @@ function v2Field(): Field {
   const breakers = [["nautilus", "medic", "archmage", "sniper"].map(by), ["bodyguard", "hornet", "alchemist", "drummer"].map(by)];
   // a fusion uses up two units, so it stands in for two of a line's (#1065)
   return { ghosts, breakers, abilities: v2content!.abilities, statuses: v2content!.statuses, replaces: 2 };
+}
+const retune = arg("retune");
+if (retune) {
+  // --retune <night.json> (#1065): no designing. Each listed pair's stored
+  // candidates get today's fused stats (fusedBase) and the quick tune again,
+  // from the numbers they have; a candidate that never compiled stays as is.
+  const before = JSON.parse(readFileSync(retune, "utf8")) as { results: PairResult[] };
+  const field = v2 ? v2Field() : trialField();
+  const keys = new Set(list.map((p) => p.key));
+  const started = Date.now();
+  const results = before.results.filter((r) => keys.has(r.pair.key)).map((r): PairResult => {
+    const a = parents[r.pair.a]!;
+    const b = parents[r.pair.b]!;
+    const taken = new Set([...Object.keys(a.abilities), ...Object.keys(b.abilities), ...Object.keys(a.statuses), ...Object.keys(b.statuses), ...Object.keys(field.abilities), ...Object.keys(field.statuses)]);
+    const candidates = r.candidates.map((c): Candidate => {
+      if (!c.check) return c;
+      const own = new Set([...Object.keys(c.abilities), ...Object.keys(c.statuses)].filter((id) => !taken.has(id)));
+      const tuned = quickTune({ unit: { ...c.unit, base: fusedBase(a, b) }, abilities: c.abilities, statuses: c.statuses }, own, field);
+      const inBand = tuned.check.inBand;
+      const why = !tuned.check.terminates ? `doesn't terminate (${tuned.check.capped} capped, ${tuned.check.timeUp} time-up of ${tuned.check.games})` : `out of band: wins ${Math.round(tuned.check.score * 100)}% at best (band ${BAND.low * 100}-${BAND.high * 100}%)`;
+      const { why: _old, ...rest } = c;
+      return { ...rest, unit: tuned.compiled.unit, abilities: tuned.compiled.abilities, statuses: tuned.compiled.statuses, text: { en: ruleText(tuned.compiled, "en"), ru: ruleText(tuned.compiled, "ru") }, check: tuned.check, state: inBand ? "ready" : "rejected", ...(inBand ? {} : { why }) };
+    });
+    console.log(`  ${r.pair.key}: ${candidates.map((c) => `${c.lean} ${c.state}${c.check ? ` ${c.check.score.toFixed(2)} ×${c.check.scale}` : ""}`).join(", ")}`);
+    return { ...r, candidates };
+  });
+  const batch = { day, designer: "retune", ranAt: new Date().toISOString(), seconds: Math.round((Date.now() - started) / 1000), parents: Object.fromEntries(Object.entries(parents).map(([k, p]) => [k, p.emoji ? { emoji: p.emoji } : {}])), results };
+  mkdirSync(out, { recursive: true });
+  writeFileSync(join(out, `night-${day}.json`), JSON.stringify(batch, null, 1));
+  console.log(`retuned ${results.length} pairs in ${batch.seconds}s: json ${join(out, `night-${day}.json`)}`);
+  process.exit(0);
 }
 console.log(`night batch ${day}: ${list.length} pairs (${list.map((p) => `${p.key} ${p.why}`).join(", ")}), designer ${designer.kind}${dbPath ? `, world ${dbPath}` : ""}`);
 const started = Date.now();
