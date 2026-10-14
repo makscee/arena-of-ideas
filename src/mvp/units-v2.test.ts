@@ -116,7 +116,7 @@ describe("rules v2 pool", () => {
     expect(say("Chrysalis", "sleeping", "ru")).toContain("превратиться в Бабочку");
     expect(say("Chrysalis", "awoken", "ru")).toContain("превратиться в Монарха");
     expect(say("Raven", "sleeping", "ru")).toContain("запомнить его правило");
-    expect(say("Nautilus", "sleeping", "ru")).toContain("Щит, равный ");
+    expect(say("Nautilus", "sleeping", "ru")).toContain("получить 1 Щит");
   });
 
   it("a unit's sentence says the rules on its counters, the statuses it starts with and the units it becomes", () => {

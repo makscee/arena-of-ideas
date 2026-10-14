@@ -173,7 +173,7 @@ const butterfly = (awoken: boolean) => ({
 const direWolf = (awoken: boolean) => ({
   name: "Dire Wolf",
   names: { ru: { name: "Лютоволк", acc: "Лютоволка" } },
-  base: awoken ? { hp: 10, pwr: 4 } : { hp: 8, pwr: 3 },
+  base: awoken ? { hp: 12, pwr: 5 } : { hp: 10, pwr: 4 }, // #1047: bigger, Wolf Pup sat low
   triggers: [{ kind: "trigger" as const, on: { on: "TurnEnd" as const } }],
   selectors: [{ kind: "holder" as const }],
   abilities: ["Charge"],
@@ -200,7 +200,8 @@ export const V2_ABILITIES: AbilityRegistry = {
   Emerge: { name: "Emerge", family: "Summon", effects: [{ kind: "transform", into: butterfly(false) }] },
   EmergeMonarch: { name: "EmergeMonarch", family: "Summon", effects: [{ kind: "transform", into: butterfly(true) }] },
   Swap: { name: "Swap", family: "Arcane", effects: [{ kind: "swapRules" }] },
-  Toll: { name: "Toll", family: "Strike", effects: [{ kind: "damage", amount: { kind: "plus", a: pwrOfHolder, b: { kind: "count", fact: "deadAllies" } } }] },
+  // #1047 (Maks's (b)): 1 per fallen ally, no longer its power on top
+  Toll: { name: "Toll", family: "Strike", effects: [{ kind: "damage", amount: { kind: "count", fact: "deadAllies" } }] },
   Encore: { name: "Encore", family: "Arcane", effects: [{ kind: "actAgain" }] },
   Grain: { name: "Grain", family: "Arcane", effects: [{ kind: "applyStatus", status: "Grains", stacks: c(1) }] },
   Sand: { name: "Sand", family: "Arcane", effects: [{ kind: "applyStatus", status: "Sands", stacks: c(1) }] },
@@ -216,8 +217,9 @@ export const V2_ABILITIES: AbilityRegistry = {
     family: "Strike",
     effects: [{ kind: "branch", if: { kind: "flip", p: 0.5 }, then: [{ kind: "replaceAmount", amount: { kind: "twice", of: pwrOfHolder } }, { kind: "strikeAgain" }], else: [{ kind: "replaceAmount", amount: c(0) }] }],
   },
-  Shell: { name: "Shell", family: "Shield", effects: [{ kind: "applyStatus", status: "Shield", stacks: { kind: "count", fact: "hitsTaken" } }] },
-  ShellAll: { name: "ShellAll", family: "Shield", effects: [{ kind: "applyStatus", status: "Shield", stacks: { kind: "plus", a: { kind: "count", fact: "hitsTaken" }, b: { kind: "count", fact: "hitsTakenByAllies" } } }] },
+  // #1047 (Maks's (b)): a flat shell per hit, no longer the running count of hits
+  Shell: { name: "Shell", family: "Shield", effects: [{ kind: "applyStatus", status: "Shield", stacks: c(1) }] },
+  ShellAll: { name: "ShellAll", family: "Shield", effects: [{ kind: "applyStatus", status: "Shield", stacks: c(2) }] },
   Pull: { name: "Pull", family: "Control", effects: [{ kind: "redirect", to: { kind: "holder" } }] },
   Charge: { name: "Charge", family: "Control", effects: [{ kind: "applyStatus", status: "Strength", stacks: c(1) }] },
   Recall: { name: "Recall", family: "Arcane", effects: [{ kind: "remember" }] },
@@ -228,8 +230,9 @@ export const V2_ABILITIES: AbilityRegistry = {
   // batch 2 (#1047)
   Prick: { name: "Prick", family: "Strike", effects: [{ kind: "damage", amount: c(1) }] },
   Spine: { name: "Spine", family: "Strike", effects: [{ kind: "damage", amount: pwrOfHolder }] },
-  Pilfer: { name: "Pilfer", family: "Strike", effects: [{ kind: "branch", if: { kind: "flip", p: 0.5 }, then: [{ kind: "damage", amount: { kind: "twice", of: pwrOfHolder } }], else: [] }] },
-  PilferLucky: { name: "PilferLucky", family: "Strike", effects: [{ kind: "branch", if: { kind: "flip", p: 0.75 }, then: [{ kind: "damage", amount: { kind: "twice", of: pwrOfHolder } }], else: [] }] },
+  // #1047 (Maks's (b)): its power, no longer double
+  Pilfer: { name: "Pilfer", family: "Strike", effects: [{ kind: "branch", if: { kind: "flip", p: 0.5 }, then: [{ kind: "damage", amount: pwrOfHolder }], else: [] }] },
+  PilferLucky: { name: "PilferLucky", family: "Strike", effects: [{ kind: "branch", if: { kind: "flip", p: 0.75 }, then: [{ kind: "damage", amount: pwrOfHolder }], else: [] }] },
   Feast: { name: "Feast", family: "Control", effects: [{ kind: "applyStatus", status: "Strength", stacks: c(1) }, { kind: "heal", amount: pwrOfHolder }] },
   Sting: { name: "Sting", family: "Poison", effects: [{ kind: "applyStatus", status: "Poison", stacks: c(1) }] },
   Bounce: { name: "Bounce", family: "Control", effects: [{ kind: "redirect", to: { kind: "randomEnemy" } }] },
@@ -309,10 +312,12 @@ const Hornet = sleeping(trig({ on: "Strike", striker: "holder" }), [{ kind: "eve
 const EchoBell = sleeping(trig({ on: "BattleStart" }), [{ kind: "allyBehind" }], "Recall", { statuses: [{ status: "Chime", stacks: 1 }] });
 const Prism = sleeping(intercept({ on: "Hurt", unit: "holder", aim: "random" }), me, "Bounce");
 const WolfPup = sleeping(trig({ on: "Death", unit: "otherAlly" }), me, "Howl", { condition: { kind: "onceHolder" } });
-const Horn = sleeping(trig({ on: "TurnStart" }), [{ kind: "allAllies" }], "Charge", { condition: { kind: "alliesAlive", op: "<=", n: 2 } });
+// #1047: from 3 allies standing (was 2), War Horn sat low at the PWR/HP cap
+const Horn = sleeping(trig({ on: "TurnStart" }), [{ kind: "allAllies" }], "Charge", { condition: { kind: "alliesAlive", op: "<=", n: 3 } });
 const Copycat = sleeping(trig({ on: "BattleStart" }), [{ kind: "allyAhead" }], "Copy");
 const Vulture = sleeping(trig({ on: "Death", unit: "enemy" }), me, "Charge");
-const Hexer = sleeping(trig({ on: "BattleStart" }), [{ kind: "lastEnemy" }], "Hush2");
+// #1047 (Maks's (b)): on turn 2, so the back enemy's battle-start rule still fires
+const Hexer = sleeping(trig({ on: "TurnStart" }), [{ kind: "lastEnemy" }], "Hush2", { condition: { kind: "turnIs", n: 2 } });
 const Fortune = sleeping(trig({ on: "BattleStart" }), [{ kind: "allAllies" }], "Fortune");
 const Aegis = sleeping(intercept({ on: "Hurt", unit: "holder" }), me, "Block", { condition: { kind: "oncePerTurn" } });
 const Gravecaller = sleeping(trig({ on: "Death", unit: "otherAlly" }), [{ kind: "lastDeadAlly" }], "Raise", { condition: { kind: "onceHolder" } });

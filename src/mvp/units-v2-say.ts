@@ -37,10 +37,10 @@ export const V2_SAY: Record<string, (tree: { hp: number; awokenHp: number }) => 
     "Каждая его атака — бросок монеты: орёл — двойной урон и ещё одна атака, решка — никакого.",
   ],
   Nautilus: () => [
-    "Each time it is hit, it gains Shield equal to the hits it has taken.",
-    "Each time it is hit, it gains Shield equal to the hits it and its allies have taken.",
-    "Каждый раз, когда его бьют, получает Щит, равный числу полученных ударов.",
-    "Каждый раз, когда его бьют, получает Щит, равный числу ударов по нему и его союзникам.",
+    "Each time it is hit, it gains 1 Shield.",
+    "Each time it is hit, it gains 2 Shield.",
+    "\u041a\u0430\u0436\u0434\u044b\u0439 \u0440\u0430\u0437, \u043a\u043e\u0433\u0434\u0430 \u0435\u0433\u043e \u0431\u044c\u044e\u0442, \u043f\u043e\u043b\u0443\u0447\u0430\u0435\u0442 1 \u0429\u0438\u0442.",
+    "\u041a\u0430\u0436\u0434\u044b\u0439 \u0440\u0430\u0437, \u043a\u043e\u0433\u0434\u0430 \u0435\u0433\u043e \u0431\u044c\u044e\u0442, \u043f\u043e\u043b\u0443\u0447\u0430\u0435\u0442 2 \u0429\u0438\u0442\u0430.",
   ],
   Magnet: () => [
     "Pulls random hits and statuses aimed at its allies onto itself.",
@@ -121,10 +121,10 @@ export const V2_SAY: Record<string, (tree: { hp: number; awokenHp: number }) => 
     "Когда впервые погибает союзник, навсегда забирает его правило и силу.",
   ],
   Gravedigger: () => [
-    "At each turn start, hits the enemy in front for its power plus 1 per fallen ally.",
-    "At each turn start, hits every enemy for its power plus 1 per fallen ally.",
-    "В начале каждого хода бьёт переднего врага на свою АТК плюс 1 за каждого павшего союзника.",
-    "В начале каждого хода бьёт всех врагов на свою АТК плюс 1 за каждого павшего союзника.",
+    "At each turn start, hits the enemy in front for 1 per fallen ally.",
+    "At each turn start, hits every enemy for 1 per fallen ally.",
+    "\u0412 \u043d\u0430\u0447\u0430\u043b\u0435 \u043a\u0430\u0436\u0434\u043e\u0433\u043e \u0445\u043e\u0434\u0430 \u0431\u044c\u0451\u0442 \u043f\u0435\u0440\u0435\u0434\u043d\u0435\u0433\u043e \u0432\u0440\u0430\u0433\u0430 \u043d\u0430 1 \u0437\u0430 \u043a\u0430\u0436\u0434\u043e\u0433\u043e \u043f\u0430\u0432\u0448\u0435\u0433\u043e \u0441\u043e\u044e\u0437\u043d\u0438\u043a\u0430.",
+    "\u0412 \u043d\u0430\u0447\u0430\u043b\u0435 \u043a\u0430\u0436\u0434\u043e\u0433\u043e \u0445\u043e\u0434\u0430 \u0431\u044c\u0451\u0442 \u0432\u0441\u0435\u0445 \u0432\u0440\u0430\u0433\u043e\u0432 \u043d\u0430 1 \u0437\u0430 \u043a\u0430\u0436\u0434\u043e\u0433\u043e \u043f\u0430\u0432\u0448\u0435\u0433\u043e \u0441\u043e\u044e\u0437\u043d\u0438\u043a\u0430.",
   ],
   Conductor: () => [
     "Every second turn, its neighbours act again.",
@@ -140,10 +140,10 @@ export const V2_SAY: Record<string, (tree: { hp: number; awokenHp: number }) => 
     "Когда его бьют, колет обидчика на свою АТК.",
   ],
   "Coin Thief": () => [
-    "At each turn start, flips a coin: on heads, it robs a random enemy for double its power.",
-    "At each turn start, flips a loaded coin (heads 3 times in 4): on heads, it robs a random enemy for double its power.",
-    "В начале каждого хода бросает монету: на орле грабит случайного врага на двойную АТК.",
-    "В начале каждого хода бросает краплёную монету (орёл 3 раза из 4): на орле грабит случайного врага на двойную АТК.",
+    "At each turn start, 50% chance: it robs a random enemy for its power.",
+    "At each turn start, 75% chance: it robs a random enemy for its power.",
+    "\u0412 \u043d\u0430\u0447\u0430\u043b\u0435 \u043a\u0430\u0436\u0434\u043e\u0433\u043e \u0445\u043e\u0434\u0430 \u0441 \u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c\u044e 50% \u0433\u0440\u0430\u0431\u0438\u0442 \u0441\u043b\u0443\u0447\u0430\u0439\u043d\u043e\u0433\u043e \u0432\u0440\u0430\u0433\u0430 \u043d\u0430 \u0441\u0432\u043e\u044e \u0410\u0422\u041a.",
+    "\u0412 \u043d\u0430\u0447\u0430\u043b\u0435 \u043a\u0430\u0436\u0434\u043e\u0433\u043e \u0445\u043e\u0434\u0430 \u0441 \u0432\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c\u044e 75% \u0433\u0440\u0430\u0431\u0438\u0442 \u0441\u043b\u0443\u0447\u0430\u0439\u043d\u043e\u0433\u043e \u0432\u0440\u0430\u0433\u0430 \u043d\u0430 \u0441\u0432\u043e\u044e \u0410\u0422\u041a.",
   ],
   Scavenger: () => [
     "When an ally falls, it gains 1 Strength.",
@@ -176,16 +176,16 @@ export const V2_SAY: Record<string, (tree: { hp: number; awokenHp: number }) => 
     "Случайный удар по нему вместо этого уходит в случайного врага, и он получает 1 Щит.",
   ],
   "Wolf Pup": () => [
-    "When the first ally falls, it grows into a Dire Wolf (3/8) that gains 1 Strength at each turn end.",
     "When the first ally falls, it grows into a Dire Wolf (4/10) that gains 1 Strength at each turn end.",
-    "Когда падает первый союзник, вырастает в Лютоволка (3/8), который в конце каждого хода получает 1 Силу.",
-    "Когда падает первый союзник, вырастает в Лютоволка (4/10), который в конце каждого хода получает 1 Силу.",
+    "When the first ally falls, it grows into a Dire Wolf (5/12) that gains 1 Strength at each turn end.",
+    "\u041a\u043e\u0433\u0434\u0430 \u043f\u0430\u0434\u0430\u0435\u0442 \u043f\u0435\u0440\u0432\u044b\u0439 \u0441\u043e\u044e\u0437\u043d\u0438\u043a, \u0432\u044b\u0440\u0430\u0441\u0442\u0430\u0435\u0442 \u0432 \u041b\u044e\u0442\u043e\u0432\u043e\u043b\u043a\u0430 (4/10), \u043a\u043e\u0442\u043e\u0440\u044b\u0439 \u0432 \u043a\u043e\u043d\u0446\u0435 \u043a\u0430\u0436\u0434\u043e\u0433\u043e \u0445\u043e\u0434\u0430 \u043f\u043e\u043b\u0443\u0447\u0430\u0435\u0442 1 \u0421\u0438\u043b\u0443.",
+    "\u041a\u043e\u0433\u0434\u0430 \u043f\u0430\u0434\u0430\u0435\u0442 \u043f\u0435\u0440\u0432\u044b\u0439 \u0441\u043e\u044e\u0437\u043d\u0438\u043a, \u0432\u044b\u0440\u0430\u0441\u0442\u0430\u0435\u0442 \u0432 \u041b\u044e\u0442\u043e\u0432\u043e\u043b\u043a\u0430 (5/12), \u043a\u043e\u0442\u043e\u0440\u044b\u0439 \u0432 \u043a\u043e\u043d\u0446\u0435 \u043a\u0430\u0436\u0434\u043e\u0433\u043e \u0445\u043e\u0434\u0430 \u043f\u043e\u043b\u0443\u0447\u0430\u0435\u0442 1 \u0421\u0438\u043b\u0443.",
   ],
   "War Horn": () => [
-    "At each turn start, with 2 or fewer allies standing, it gives every ally 1 Strength.",
-    "At each turn start, with 2 or fewer allies standing, it gives every ally 1 Strength and 1 Shield.",
-    "В начале каждого хода, если союзников осталось 2 или меньше, даёт всем союзникам 1 Силу.",
-    "В начале каждого хода, если союзников осталось 2 или меньше, даёт всем союзникам 1 Силу и 1 Щит.",
+    "At each turn start, with 3 or fewer allies standing, it gives every ally 1 Strength.",
+    "At each turn start, with 3 or fewer allies standing, it gives every ally 1 Strength and 1 Shield.",
+    "\u0412 \u043d\u0430\u0447\u0430\u043b\u0435 \u043a\u0430\u0436\u0434\u043e\u0433\u043e \u0445\u043e\u0434\u0430, \u0435\u0441\u043b\u0438 \u0441\u043e\u044e\u0437\u043d\u0438\u043a\u043e\u0432 \u043e\u0441\u0442\u0430\u043b\u043e\u0441\u044c 3 \u0438\u043b\u0438 \u043c\u0435\u043d\u044c\u0448\u0435, \u0434\u0430\u0451\u0442 \u0432\u0441\u0435\u043c \u0441\u043e\u044e\u0437\u043d\u0438\u043a\u0430\u043c 1 \u0421\u0438\u043b\u0443.",
+    "\u0412 \u043d\u0430\u0447\u0430\u043b\u0435 \u043a\u0430\u0436\u0434\u043e\u0433\u043e \u0445\u043e\u0434\u0430, \u0435\u0441\u043b\u0438 \u0441\u043e\u044e\u0437\u043d\u0438\u043a\u043e\u0432 \u043e\u0441\u0442\u0430\u043b\u043e\u0441\u044c 3 \u0438\u043b\u0438 \u043c\u0435\u043d\u044c\u0448\u0435, \u0434\u0430\u0451\u0442 \u0432\u0441\u0435\u043c \u0441\u043e\u044e\u0437\u043d\u0438\u043a\u0430\u043c 1 \u0421\u0438\u043b\u0443 \u0438 1 \u0429\u0438\u0442.",
   ],
   Copycat: () => [
     "At battle start, copies the rule of the ally ahead of it.",
@@ -200,10 +200,10 @@ export const V2_SAY: Record<string, (tree: { hp: number; awokenHp: number }) => 
     "Когда падает враг, все союзники получают 1 Силу.",
   ],
   Hexer: () => [
-    "At battle start, silences the enemy at the back: it loses its rule and statuses.",
-    "At battle start, silences the enemies at the back and at the front: they lose their rules and statuses.",
-    "В начале боя заглушает заднего врага: тот теряет правило и статусы.",
-    "В начале боя заглушает заднего и переднего врага: они теряют правила и статусы.",
+    "At the start of turn 2, silences the enemy at the back: it loses its rule and statuses.",
+    "At the start of turn 2, silences the enemies at the back and at the front: they lose their rules and statuses.",
+    "\u0412 \u043d\u0430\u0447\u0430\u043b\u0435 2-\u0433\u043e \u0445\u043e\u0434\u0430 \u0437\u0430\u0433\u043b\u0443\u0448\u0430\u0435\u0442 \u0437\u0430\u0434\u043d\u0435\u0433\u043e \u0432\u0440\u0430\u0433\u0430: \u0442\u043e\u0442 \u0442\u0435\u0440\u044f\u0435\u0442 \u043f\u0440\u0430\u0432\u0438\u043b\u043e \u0438 \u0441\u0442\u0430\u0442\u0443\u0441\u044b.",
+    "\u0412 \u043d\u0430\u0447\u0430\u043b\u0435 2-\u0433\u043e \u0445\u043e\u0434\u0430 \u0437\u0430\u0433\u043b\u0443\u0448\u0430\u0435\u0442 \u0437\u0430\u0434\u043d\u0435\u0433\u043e \u0438 \u043f\u0435\u0440\u0435\u0434\u043d\u0435\u0433\u043e \u0432\u0440\u0430\u0433\u0430: \u043e\u043d\u0438 \u0442\u0435\u0440\u044f\u044e\u0442 \u043f\u0440\u0430\u0432\u0438\u043b\u0430 \u0438 \u0441\u0442\u0430\u0442\u0443\u0441\u044b.",
   ],
   "Fortune Teller": () => [
     "At battle start, flips a coin: heads, every ally gains 2 Strength; tails, every ally gains 2 Shield.",
