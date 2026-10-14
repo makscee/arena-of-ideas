@@ -256,7 +256,7 @@ export const SCENES: Scene[] = [
   { id: "awaken", group: "Awaken & fuse", title: "Awaken: the 3rd copy on offer", look: "Buying it awakens the unit: the hint on the offer", desktop: true, build: async (rt) => shop(await playTo(rt, copyOffer(2), "a 3rd copy on offer", 80)) },
   { id: "gift", group: "Awaken & fuse", title: "The awakening gift", look: "The gift's choices after an awakening", desktop: true, build: async (rt) => shop(await playTo(rt, (r) => r.phase === "shop" && !!r.gift, "a gift", 80)) },
   {
-    id: "fuse", group: "Awaken & fuse", title: "Fuse two Awoken", look: "Two Awoken units on the board, ready to fuse", desktop: true,
+    id: "fuse", group: "Awaken & fuse", title: "Two Awoken from play", look: "Two Awoken units reached in play; with the Codex on their pair has no design yet, so no Fuse (fusion-now shows one that fuses)", desktop: true,
     build: async (rt) => shop(await playTo(rt, (r) => r.phase === "shop" && !r.gift && botDecision(r, rt.contentFor(r.contentVersion), rt.rules, 9).kind === "fuse", "two Awoken to fuse", 80)),
   },
 
