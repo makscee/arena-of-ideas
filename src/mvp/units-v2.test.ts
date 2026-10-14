@@ -127,7 +127,7 @@ describe("rules v2 pool", () => {
     expect(say("Drummer", "sleeping", "en")).toBe("Ally strikes: gain 1 Beats. Turn end, if it has 3+ Beats: give every ally behind 1 Strength, and spend 3 Beats.");
     expect(say("Raven", "sleeping", "en")).toBe("Ally dies: remember the rule of that unit. Turn start: perform a remembered rule once.");
     expect(say("Raven", "awoken", "en")).toMatch(/Turn start: perform every remembered rule\.$/);
-    expect(say("Seed", "awoken", "en")).toBe(`Battle start: in 2 turns: become Tree (0/${8 + V2_NUMBERS["Seed"]!.awoken!.hp}). Tree: Turn start: 1 Strength to the ally behind, and 1 Shield to its neighbours.`);
+    expect(say("Seed", "awoken", "en")).toBe(`Battle start: in 2 turns: become Tree (0/${8 + V2_NUMBERS["Seed"]!.awoken!.hp}). Tree: Turn start: give the ally behind 1 Strength, and give its neighbours 1 Shield.`);
     expect(say("Chrysalis", "sleeping", "en")).toBe("Turn start, on turn 3: become Butterfly (2/6). Butterfly: Turn start: PWR damage to all enemies.");
     // every form that gives or starts with a status carrying a rule, or
     // becomes a unit with a rule, says more than its own clause
