@@ -1,0 +1,26 @@
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Ox","name":"Ox","hp":14,"pwr":3},{"id":"A2:Paladin","name":"Paladin","hp":9,"pwr":2}],"B":[{"id":"B1:Siphon","name":"Siphon","hp":10,"pwr":2},{"id":"B2:Witch Doctor","name":"Witch Doctor","hp":9,"pwr":2},{"id":"B3:Dragon","name":"Dragon","hp":7,"pwr":2}]}}
+{"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":2,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Ox","b":"B1:Siphon","first":"B1:Siphon"}
+{"id":3,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Siphon","defender":"A1:Ox"}
+{"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"Hurt","unit":"A1:Ox","amount":2,"hpAfter":12}
+{"id":5,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Ox","defender":"B1:Siphon","amount":17}
+{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Hurt","unit":"B1:Siphon","amount":17,"hpAfter":-7}
+{"id":7,"turn":1,"causedBy":6,"source":"kernel","type":"Death","unit":"B1:Siphon"}
+{"id":8,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":9,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":10,"turn":2,"causedBy":9,"source":"kernel","type":"PairFaced","a":"A1:Ox","b":"B2:Witch Doctor","first":"A1:Ox"}
+{"id":11,"turn":2,"causedBy":9,"source":"kernel","type":"Strike","striker":"A1:Ox","defender":"B2:Witch Doctor","amount":17}
+{"id":12,"turn":2,"causedBy":11,"source":"kernel","type":"Hurt","unit":"B2:Witch Doctor","amount":17,"hpAfter":-8}
+{"id":13,"turn":2,"causedBy":12,"source":"kernel","type":"Death","unit":"B2:Witch Doctor"}
+{"id":14,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":15,"turn":3,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":16,"turn":3,"causedBy":15,"source":"kernel","type":"PairFaced","a":"A1:Ox","b":"B3:Dragon","first":"B3:Dragon"}
+{"id":17,"turn":3,"causedBy":15,"source":"kernel","type":"Strike","striker":"B3:Dragon","defender":"A1:Ox"}
+{"id":18,"turn":3,"causedBy":17,"source":"kernel","type":"Hurt","unit":"A1:Ox","amount":2,"hpAfter":10}
+{"id":19,"turn":3,"causedBy":17,"source":{"unit":"B3:Dragon","ability":0,"when":0},"type":"Hurt","unit":"A1:Ox","amount":1,"hpAfter":9}
+{"id":20,"turn":3,"causedBy":17,"source":{"unit":"B3:Dragon","ability":0,"when":0},"type":"Hurt","unit":"A2:Paladin","amount":1,"hpAfter":8}
+{"id":21,"turn":3,"causedBy":15,"source":"kernel","type":"Strike","striker":"A1:Ox","defender":"B3:Dragon","amount":17}
+{"id":22,"turn":3,"causedBy":21,"source":"kernel","type":"Hurt","unit":"B3:Dragon","amount":17,"hpAfter":-10}
+{"id":23,"turn":3,"causedBy":22,"source":"kernel","type":"Death","unit":"B3:Dragon"}
+{"id":24,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":25,"turn":3,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"A","turns":3}

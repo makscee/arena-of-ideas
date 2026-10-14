@@ -1,10 +1,10 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Prism","name":"Prism","hp":12,"pwr":6},{"id":"A2:Hexer","name":"Hexer","hp":2,"pwr":0}],"B":[{"id":"B1:Hydra","name":"Hydra","hp":12,"pwr":4},{"id":"B2:Frostling","name":"Frostling","hp":10,"pwr":3},{"id":"B3:Battery","name":"Battery","hp":12,"pwr":2}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Prism","name":"Prism","hp":12,"pwr":6},{"id":"A2:Hexer","name":"Hexer","hp":2,"pwr":0}],"B":[{"id":"B1:Hydra","name":"Hydra","hp":10,"pwr":4},{"id":"B2:Frostling","name":"Frostling","hp":11,"pwr":3},{"id":"B3:Battery","name":"Battery","hp":12,"pwr":2}]}}
 {"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":2,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Prism","b":"B1:Hydra","first":"B1:Hydra"}
 {"id":3,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Hydra","defender":"A1:Prism"}
 {"id":4,"turn":1,"causedBy":3,"source":"kernel","type":"Hurt","unit":"A1:Prism","amount":4,"hpAfter":8}
 {"id":5,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Prism","defender":"B1:Hydra"}
-{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Hurt","unit":"B1:Hydra","amount":6,"hpAfter":6}
+{"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"Hurt","unit":"B1:Hydra","amount":6,"hpAfter":4}
 {"id":7,"turn":1,"causedBy":6,"source":{"unit":"B3:Battery","ability":0,"when":0},"type":"StatusApplied","unit":"B3:Battery","status":"Charge","stacks":1,"total":1}
 {"id":8,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":9,"turn":2,"causedBy":null,"source":"kernel","type":"TurnStart"}
@@ -13,7 +13,7 @@
 {"id":12,"turn":2,"causedBy":9,"source":"kernel","type":"Strike","striker":"B1:Hydra","defender":"A1:Prism"}
 {"id":13,"turn":2,"causedBy":12,"source":"kernel","type":"Hurt","unit":"A1:Prism","amount":4,"hpAfter":4}
 {"id":14,"turn":2,"causedBy":9,"source":"kernel","type":"Strike","striker":"A1:Prism","defender":"B1:Hydra"}
-{"id":15,"turn":2,"causedBy":14,"source":"kernel","type":"Hurt","unit":"B1:Hydra","amount":6,"hpAfter":0}
+{"id":15,"turn":2,"causedBy":14,"source":"kernel","type":"Hurt","unit":"B1:Hydra","amount":6,"hpAfter":-2}
 {"id":16,"turn":2,"causedBy":15,"source":"kernel","type":"Death","unit":"B1:Hydra"}
 {"id":17,"turn":2,"causedBy":16,"source":{"unit":"B1:Hydra","ability":0,"when":0},"type":"Summon","unit":"B+1:Head","name":"Head","side":"B","hp":3,"pwr":2,"front":true}
 {"id":18,"turn":2,"causedBy":16,"source":{"unit":"B1:Hydra","ability":0,"when":0},"type":"Summon","unit":"B+2:Head","name":"Head","side":"B","hp":3,"pwr":2,"front":true}
@@ -43,7 +43,7 @@
 {"id":42,"turn":6,"causedBy":41,"source":{"unit":"B2:Frostling","status":"Freeze","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B2:Frostling","status":"Freeze","ability":0,"when":0},"original":"Strike","unit":"B2:Frostling"}
 {"id":43,"turn":6,"causedBy":42,"source":{"unit":"B2:Frostling","status":"Freeze","ability":0,"when":0},"type":"StatusRemoved","unit":"B2:Frostling","status":"Freeze","stacks":1,"remaining":0}
 {"id":44,"turn":6,"causedBy":41,"source":"kernel","type":"Strike","striker":"A1:Prism","defender":"B2:Frostling"}
-{"id":45,"turn":6,"causedBy":44,"source":"kernel","type":"Hurt","unit":"B2:Frostling","amount":6,"hpAfter":4}
+{"id":45,"turn":6,"causedBy":44,"source":"kernel","type":"Hurt","unit":"B2:Frostling","amount":6,"hpAfter":5}
 {"id":46,"turn":6,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":47,"turn":7,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":48,"turn":7,"causedBy":47,"source":"kernel","type":"Strike","striker":"B2:Frostling","defender":"A1:Prism"}

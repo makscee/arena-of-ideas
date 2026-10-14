@@ -243,7 +243,7 @@ describe("rules v2 pool", () => {
       ["Heckler", ["Heckler"], ["Leech", "Seed"], /^Heckler → it \(Leech\) → \d+ damage$/],
       ["Broodmother", ["Broodmother"], ["Nautilus", "Seed"], /^Broodmother \(on turns 2, 4, 6…\) → self \(Spiderling\)$/],
       ["Dragon", ["Dragon"], ["Nautilus", "Seed"], /^Dragon → all enemies \(Nautilus, Seed\) → \d+ damage/],
-      ["Puppeteer", ["Puppeteer"], ["Leech", "Seed"], /^Puppeteer intercepts: the strike on Puppeteer lands on Seed$/],
+      ["Puppeteer", ["Seed", "Puppeteer"], ["Seed", "Seed"], /^Puppeteer intercepts: the strike on \w+ lands on Seed$/],
       ["Phoenix", ["Phoenix"], ["Berserker", "Leech"], /^Phoenix \(once per battle\) → self \(Phoenix\)$/],
       ["Volcano", ["Volcano", "Sniper"], ["Nautilus", "Seed"], /^Volcano \(on turns 2, 4, 6…\) → all enemies \(Nautilus, Seed, Volcano, Sniper\) → .*1 damage$/],
     ];

@@ -1,4 +1,4 @@
-{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Lantern","name":"Lantern","hp":17,"pwr":8},{"id":"A2:War Horn","name":"War Horn","hp":11,"pwr":5}],"B":[{"id":"B1:Aegis","name":"Aegis","hp":9,"pwr":2},{"id":"B2:Oracle","name":"Oracle","hp":6,"pwr":1},{"id":"B3:Frostling","name":"Frostling","hp":10,"pwr":3}]}}
+{"id":0,"turn":0,"causedBy":null,"source":"kernel","type":"BattleStart","teams":{"A":[{"id":"A1:Lantern","name":"Lantern","hp":16,"pwr":8},{"id":"A2:War Horn","name":"War Horn","hp":9,"pwr":5}],"B":[{"id":"B1:Aegis","name":"Aegis","hp":9,"pwr":2},{"id":"B2:Oracle","name":"Oracle","hp":7,"pwr":1},{"id":"B3:Frostling","name":"Frostling","hp":11,"pwr":3}]}}
 {"id":1,"turn":1,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":2,"turn":1,"causedBy":1,"source":{"unit":"A1:Lantern","ability":0,"when":0},"type":"StatusApplied","unit":"A2:War Horn","status":"Shield","stacks":1,"total":1}
 {"id":3,"turn":1,"causedBy":1,"source":{"unit":"A2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Lantern","status":"Strength","stacks":1,"total":1}
@@ -7,7 +7,7 @@
 {"id":6,"turn":1,"causedBy":5,"source":"kernel","type":"StatChanged","unit":"A2:War Horn","stat":"pwr","delta":1,"now":6}
 {"id":7,"turn":1,"causedBy":1,"source":"kernel","type":"PairFaced","a":"A1:Lantern","b":"B1:Aegis","first":"B1:Aegis"}
 {"id":8,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"B1:Aegis","defender":"A1:Lantern"}
-{"id":9,"turn":1,"causedBy":8,"source":"kernel","type":"Hurt","unit":"A1:Lantern","amount":2,"hpAfter":15}
+{"id":9,"turn":1,"causedBy":8,"source":"kernel","type":"Hurt","unit":"A1:Lantern","amount":2,"hpAfter":14}
 {"id":10,"turn":1,"causedBy":1,"source":"kernel","type":"Strike","striker":"A1:Lantern","defender":"B1:Aegis"}
 {"id":11,"turn":1,"causedBy":10,"source":{"unit":"B1:Aegis","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B1:Aegis","ability":0,"when":0},"original":"Hurt","unit":"B1:Aegis"}
 {"id":12,"turn":1,"causedBy":null,"source":"kernel","type":"TurnEnd"}
@@ -17,7 +17,7 @@
 {"id":16,"turn":2,"causedBy":13,"source":{"unit":"A2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"A2:War Horn","status":"Strength","stacks":1,"total":2}
 {"id":17,"turn":2,"causedBy":16,"source":"kernel","type":"StatChanged","unit":"A2:War Horn","stat":"pwr","delta":1,"now":7}
 {"id":18,"turn":2,"causedBy":13,"source":"kernel","type":"Strike","striker":"B1:Aegis","defender":"A1:Lantern"}
-{"id":19,"turn":2,"causedBy":18,"source":"kernel","type":"Hurt","unit":"A1:Lantern","amount":2,"hpAfter":13}
+{"id":19,"turn":2,"causedBy":18,"source":"kernel","type":"Hurt","unit":"A1:Lantern","amount":2,"hpAfter":12}
 {"id":20,"turn":2,"causedBy":13,"source":"kernel","type":"Strike","striker":"A1:Lantern","defender":"B1:Aegis"}
 {"id":21,"turn":2,"causedBy":20,"source":{"unit":"B1:Aegis","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B1:Aegis","ability":0,"when":0},"original":"Hurt","unit":"B1:Aegis"}
 {"id":22,"turn":2,"causedBy":null,"source":"kernel","type":"TurnEnd"}
@@ -29,7 +29,7 @@
 {"id":28,"turn":3,"causedBy":23,"source":{"unit":"B2:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Lantern","status":"Curse","stacks":1,"total":1}
 {"id":29,"turn":3,"causedBy":28,"source":"kernel","type":"StatChanged","unit":"A1:Lantern","stat":"pwr","delta":-1,"now":10}
 {"id":30,"turn":3,"causedBy":23,"source":"kernel","type":"Strike","striker":"B1:Aegis","defender":"A1:Lantern"}
-{"id":31,"turn":3,"causedBy":30,"source":"kernel","type":"Hurt","unit":"A1:Lantern","amount":2,"hpAfter":11}
+{"id":31,"turn":3,"causedBy":30,"source":"kernel","type":"Hurt","unit":"A1:Lantern","amount":2,"hpAfter":10}
 {"id":32,"turn":3,"causedBy":23,"source":"kernel","type":"Strike","striker":"A1:Lantern","defender":"B1:Aegis"}
 {"id":33,"turn":3,"causedBy":32,"source":{"unit":"B1:Aegis","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B1:Aegis","ability":0,"when":0},"original":"Hurt","unit":"B1:Aegis"}
 {"id":34,"turn":3,"causedBy":null,"source":"kernel","type":"TurnEnd"}
@@ -41,7 +41,7 @@
 {"id":40,"turn":4,"causedBy":35,"source":{"unit":"B2:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Lantern","status":"Curse","stacks":1,"total":2}
 {"id":41,"turn":4,"causedBy":40,"source":"kernel","type":"StatChanged","unit":"A1:Lantern","stat":"pwr","delta":-1,"now":10}
 {"id":42,"turn":4,"causedBy":35,"source":"kernel","type":"Strike","striker":"B1:Aegis","defender":"A1:Lantern"}
-{"id":43,"turn":4,"causedBy":42,"source":"kernel","type":"Hurt","unit":"A1:Lantern","amount":2,"hpAfter":9}
+{"id":43,"turn":4,"causedBy":42,"source":"kernel","type":"Hurt","unit":"A1:Lantern","amount":2,"hpAfter":8}
 {"id":44,"turn":4,"causedBy":35,"source":"kernel","type":"Strike","striker":"A1:Lantern","defender":"B1:Aegis"}
 {"id":45,"turn":4,"causedBy":44,"source":{"unit":"B1:Aegis","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B1:Aegis","ability":0,"when":0},"original":"Hurt","unit":"B1:Aegis"}
 {"id":46,"turn":4,"causedBy":null,"source":"kernel","type":"TurnEnd"}
@@ -53,7 +53,7 @@
 {"id":52,"turn":5,"causedBy":47,"source":{"unit":"B2:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Lantern","status":"Curse","stacks":1,"total":3}
 {"id":53,"turn":5,"causedBy":52,"source":"kernel","type":"StatChanged","unit":"A1:Lantern","stat":"pwr","delta":-1,"now":10}
 {"id":54,"turn":5,"causedBy":47,"source":"kernel","type":"Strike","striker":"B1:Aegis","defender":"A1:Lantern"}
-{"id":55,"turn":5,"causedBy":54,"source":"kernel","type":"Hurt","unit":"A1:Lantern","amount":2,"hpAfter":7}
+{"id":55,"turn":5,"causedBy":54,"source":"kernel","type":"Hurt","unit":"A1:Lantern","amount":2,"hpAfter":6}
 {"id":56,"turn":5,"causedBy":47,"source":"kernel","type":"Strike","striker":"A1:Lantern","defender":"B1:Aegis"}
 {"id":57,"turn":5,"causedBy":56,"source":{"unit":"B1:Aegis","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B1:Aegis","ability":0,"when":0},"original":"Hurt","unit":"B1:Aegis"}
 {"id":58,"turn":5,"causedBy":null,"source":"kernel","type":"TurnEnd"}
@@ -65,7 +65,7 @@
 {"id":64,"turn":6,"causedBy":59,"source":{"unit":"B2:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Lantern","status":"Curse","stacks":1,"total":4}
 {"id":65,"turn":6,"causedBy":64,"source":"kernel","type":"StatChanged","unit":"A1:Lantern","stat":"pwr","delta":-1,"now":10}
 {"id":66,"turn":6,"causedBy":59,"source":"kernel","type":"Strike","striker":"B1:Aegis","defender":"A1:Lantern"}
-{"id":67,"turn":6,"causedBy":66,"source":"kernel","type":"Hurt","unit":"A1:Lantern","amount":2,"hpAfter":5}
+{"id":67,"turn":6,"causedBy":66,"source":"kernel","type":"Hurt","unit":"A1:Lantern","amount":2,"hpAfter":4}
 {"id":68,"turn":6,"causedBy":59,"source":"kernel","type":"Strike","striker":"A1:Lantern","defender":"B1:Aegis"}
 {"id":69,"turn":6,"causedBy":68,"source":{"unit":"B1:Aegis","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B1:Aegis","ability":0,"when":0},"original":"Hurt","unit":"B1:Aegis"}
 {"id":70,"turn":6,"causedBy":null,"source":"kernel","type":"TurnEnd"}
@@ -77,7 +77,7 @@
 {"id":76,"turn":7,"causedBy":71,"source":{"unit":"B2:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Lantern","status":"Curse","stacks":1,"total":5}
 {"id":77,"turn":7,"causedBy":76,"source":"kernel","type":"StatChanged","unit":"A1:Lantern","stat":"pwr","delta":-1,"now":10}
 {"id":78,"turn":7,"causedBy":71,"source":"kernel","type":"Strike","striker":"B1:Aegis","defender":"A1:Lantern"}
-{"id":79,"turn":7,"causedBy":78,"source":"kernel","type":"Hurt","unit":"A1:Lantern","amount":2,"hpAfter":3}
+{"id":79,"turn":7,"causedBy":78,"source":"kernel","type":"Hurt","unit":"A1:Lantern","amount":2,"hpAfter":2}
 {"id":80,"turn":7,"causedBy":71,"source":"kernel","type":"Strike","striker":"A1:Lantern","defender":"B1:Aegis"}
 {"id":81,"turn":7,"causedBy":80,"source":{"unit":"B1:Aegis","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B1:Aegis","ability":0,"when":0},"original":"Hurt","unit":"B1:Aegis"}
 {"id":82,"turn":7,"causedBy":null,"source":"kernel","type":"TurnEnd"}
@@ -89,68 +89,60 @@
 {"id":88,"turn":8,"causedBy":83,"source":{"unit":"B2:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Lantern","status":"Curse","stacks":1,"total":6}
 {"id":89,"turn":8,"causedBy":88,"source":"kernel","type":"StatChanged","unit":"A1:Lantern","stat":"pwr","delta":-1,"now":10}
 {"id":90,"turn":8,"causedBy":83,"source":"kernel","type":"Strike","striker":"B1:Aegis","defender":"A1:Lantern"}
-{"id":91,"turn":8,"causedBy":90,"source":"kernel","type":"Hurt","unit":"A1:Lantern","amount":2,"hpAfter":1}
-{"id":92,"turn":8,"causedBy":83,"source":"kernel","type":"Strike","striker":"A1:Lantern","defender":"B1:Aegis"}
-{"id":93,"turn":8,"causedBy":92,"source":{"unit":"B1:Aegis","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B1:Aegis","ability":0,"when":0},"original":"Hurt","unit":"B1:Aegis"}
-{"id":94,"turn":8,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":95,"turn":9,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":96,"turn":9,"causedBy":95,"source":{"unit":"A2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Lantern","status":"Strength","stacks":1,"total":9}
-{"id":97,"turn":9,"causedBy":96,"source":"kernel","type":"StatChanged","unit":"A1:Lantern","stat":"pwr","delta":1,"now":11}
-{"id":98,"turn":9,"causedBy":95,"source":{"unit":"A2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"A2:War Horn","status":"Strength","stacks":1,"total":9}
-{"id":99,"turn":9,"causedBy":98,"source":"kernel","type":"StatChanged","unit":"A2:War Horn","stat":"pwr","delta":1,"now":14}
-{"id":100,"turn":9,"causedBy":95,"source":{"unit":"B2:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A1:Lantern","status":"Curse","stacks":1,"total":7}
-{"id":101,"turn":9,"causedBy":100,"source":"kernel","type":"StatChanged","unit":"A1:Lantern","stat":"pwr","delta":-1,"now":10}
-{"id":102,"turn":9,"causedBy":95,"source":"kernel","type":"Strike","striker":"B1:Aegis","defender":"A1:Lantern"}
-{"id":103,"turn":9,"causedBy":102,"source":"kernel","type":"Hurt","unit":"A1:Lantern","amount":2,"hpAfter":-1}
-{"id":104,"turn":9,"causedBy":103,"source":"kernel","type":"Death","unit":"A1:Lantern"}
+{"id":91,"turn":8,"causedBy":90,"source":"kernel","type":"Hurt","unit":"A1:Lantern","amount":2,"hpAfter":0}
+{"id":92,"turn":8,"causedBy":91,"source":"kernel","type":"Death","unit":"A1:Lantern"}
+{"id":93,"turn":8,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":94,"turn":9,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":95,"turn":9,"causedBy":94,"source":{"unit":"A2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"A2:War Horn","status":"Strength","stacks":1,"total":9}
+{"id":96,"turn":9,"causedBy":95,"source":"kernel","type":"StatChanged","unit":"A2:War Horn","stat":"pwr","delta":1,"now":14}
+{"id":97,"turn":9,"causedBy":94,"source":{"unit":"B2:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A2:War Horn","status":"Curse","stacks":1,"total":1}
+{"id":98,"turn":9,"causedBy":97,"source":"kernel","type":"StatChanged","unit":"A2:War Horn","stat":"pwr","delta":-1,"now":13}
+{"id":99,"turn":9,"causedBy":94,"source":"kernel","type":"PairFaced","a":"A2:War Horn","b":"B1:Aegis","first":"A2:War Horn"}
+{"id":100,"turn":9,"causedBy":94,"source":"kernel","type":"Strike","striker":"A2:War Horn","defender":"B1:Aegis"}
+{"id":101,"turn":9,"causedBy":100,"source":{"unit":"B1:Aegis","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B1:Aegis","ability":0,"when":0},"original":"Hurt","unit":"B1:Aegis"}
+{"id":102,"turn":9,"causedBy":94,"source":"kernel","type":"Strike","striker":"B1:Aegis","defender":"A2:War Horn"}
+{"id":103,"turn":9,"causedBy":102,"source":"kernel","type":"Hurt","unit":"A2:War Horn","amount":1,"absorbed":1,"hpAfter":8}
+{"id":104,"turn":9,"causedBy":103,"source":{"unit":"A2:War Horn","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:War Horn","status":"Shield","stacks":1,"remaining":0}
 {"id":105,"turn":9,"causedBy":null,"source":"kernel","type":"TurnEnd"}
 {"id":106,"turn":10,"causedBy":null,"source":"kernel","type":"TurnStart"}
 {"id":107,"turn":10,"causedBy":106,"source":{"unit":"A2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"A2:War Horn","status":"Strength","stacks":1,"total":10}
-{"id":108,"turn":10,"causedBy":107,"source":"kernel","type":"StatChanged","unit":"A2:War Horn","stat":"pwr","delta":1,"now":15}
-{"id":109,"turn":10,"causedBy":106,"source":{"unit":"B2:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A2:War Horn","status":"Curse","stacks":1,"total":1}
-{"id":110,"turn":10,"causedBy":109,"source":"kernel","type":"StatChanged","unit":"A2:War Horn","stat":"pwr","delta":-1,"now":14}
-{"id":111,"turn":10,"causedBy":106,"source":"kernel","type":"PairFaced","a":"A2:War Horn","b":"B1:Aegis","first":"A2:War Horn"}
-{"id":112,"turn":10,"causedBy":106,"source":"kernel","type":"Strike","striker":"A2:War Horn","defender":"B1:Aegis"}
-{"id":113,"turn":10,"causedBy":112,"source":{"unit":"B1:Aegis","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B1:Aegis","ability":0,"when":0},"original":"Hurt","unit":"B1:Aegis"}
-{"id":114,"turn":10,"causedBy":106,"source":"kernel","type":"Strike","striker":"B1:Aegis","defender":"A2:War Horn"}
-{"id":115,"turn":10,"causedBy":114,"source":"kernel","type":"Hurt","unit":"A2:War Horn","amount":1,"absorbed":1,"hpAfter":10}
-{"id":116,"turn":10,"causedBy":115,"source":{"unit":"A2:War Horn","status":"Shield","ability":0,"when":0},"type":"StatusRemoved","unit":"A2:War Horn","status":"Shield","stacks":1,"remaining":0}
-{"id":117,"turn":10,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":118,"turn":10,"causedBy":117,"source":"kernel","type":"Fatigue","amount":1}
-{"id":119,"turn":10,"causedBy":118,"source":"kernel","type":"Hurt","unit":"A2:War Horn","amount":1,"hpAfter":9}
-{"id":120,"turn":10,"causedBy":118,"source":"kernel","type":"Hurt","unit":"B1:Aegis","amount":1,"hpAfter":8}
-{"id":121,"turn":10,"causedBy":118,"source":"kernel","type":"Hurt","unit":"B2:Oracle","amount":1,"hpAfter":5}
-{"id":122,"turn":10,"causedBy":118,"source":"kernel","type":"Hurt","unit":"B3:Frostling","amount":1,"hpAfter":9}
-{"id":123,"turn":11,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":124,"turn":11,"causedBy":123,"source":{"unit":"A2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"A2:War Horn","status":"Strength","stacks":1,"total":11}
-{"id":125,"turn":11,"causedBy":124,"source":"kernel","type":"StatChanged","unit":"A2:War Horn","stat":"pwr","delta":1,"now":15}
-{"id":126,"turn":11,"causedBy":123,"source":{"unit":"B2:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A2:War Horn","status":"Curse","stacks":1,"total":2}
-{"id":127,"turn":11,"causedBy":126,"source":"kernel","type":"StatChanged","unit":"A2:War Horn","stat":"pwr","delta":-1,"now":14}
-{"id":128,"turn":11,"causedBy":123,"source":"kernel","type":"Strike","striker":"A2:War Horn","defender":"B1:Aegis"}
-{"id":129,"turn":11,"causedBy":128,"source":{"unit":"B1:Aegis","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B1:Aegis","ability":0,"when":0},"original":"Hurt","unit":"B1:Aegis"}
-{"id":130,"turn":11,"causedBy":123,"source":"kernel","type":"Strike","striker":"B1:Aegis","defender":"A2:War Horn"}
-{"id":131,"turn":11,"causedBy":130,"source":"kernel","type":"Hurt","unit":"A2:War Horn","amount":2,"hpAfter":7}
-{"id":132,"turn":11,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":133,"turn":11,"causedBy":132,"source":"kernel","type":"Fatigue","amount":2}
-{"id":134,"turn":11,"causedBy":133,"source":"kernel","type":"Hurt","unit":"A2:War Horn","amount":2,"hpAfter":5}
-{"id":135,"turn":11,"causedBy":133,"source":"kernel","type":"Hurt","unit":"B1:Aegis","amount":2,"hpAfter":6}
-{"id":136,"turn":11,"causedBy":133,"source":"kernel","type":"Hurt","unit":"B2:Oracle","amount":2,"hpAfter":3}
-{"id":137,"turn":11,"causedBy":133,"source":"kernel","type":"Hurt","unit":"B3:Frostling","amount":2,"hpAfter":7}
-{"id":138,"turn":12,"causedBy":null,"source":"kernel","type":"TurnStart"}
-{"id":139,"turn":12,"causedBy":138,"source":{"unit":"A2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"A2:War Horn","status":"Strength","stacks":1,"total":12}
-{"id":140,"turn":12,"causedBy":139,"source":"kernel","type":"StatChanged","unit":"A2:War Horn","stat":"pwr","delta":1,"now":15}
-{"id":141,"turn":12,"causedBy":138,"source":{"unit":"B2:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A2:War Horn","status":"Curse","stacks":1,"total":3}
-{"id":142,"turn":12,"causedBy":141,"source":"kernel","type":"StatChanged","unit":"A2:War Horn","stat":"pwr","delta":-1,"now":14}
-{"id":143,"turn":12,"causedBy":138,"source":"kernel","type":"Strike","striker":"A2:War Horn","defender":"B1:Aegis"}
-{"id":144,"turn":12,"causedBy":143,"source":{"unit":"B1:Aegis","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B1:Aegis","ability":0,"when":0},"original":"Hurt","unit":"B1:Aegis"}
-{"id":145,"turn":12,"causedBy":138,"source":"kernel","type":"Strike","striker":"B1:Aegis","defender":"A2:War Horn"}
-{"id":146,"turn":12,"causedBy":145,"source":"kernel","type":"Hurt","unit":"A2:War Horn","amount":2,"hpAfter":3}
-{"id":147,"turn":12,"causedBy":null,"source":"kernel","type":"TurnEnd"}
-{"id":148,"turn":12,"causedBy":147,"source":"kernel","type":"Fatigue","amount":3}
-{"id":149,"turn":12,"causedBy":148,"source":"kernel","type":"Hurt","unit":"A2:War Horn","amount":3,"hpAfter":0}
-{"id":150,"turn":12,"causedBy":149,"source":"kernel","type":"Death","unit":"A2:War Horn"}
-{"id":151,"turn":12,"causedBy":148,"source":"kernel","type":"Hurt","unit":"B1:Aegis","amount":3,"hpAfter":3}
-{"id":152,"turn":12,"causedBy":148,"source":"kernel","type":"Hurt","unit":"B2:Oracle","amount":3,"hpAfter":0}
-{"id":153,"turn":12,"causedBy":152,"source":"kernel","type":"Death","unit":"B2:Oracle"}
-{"id":154,"turn":12,"causedBy":148,"source":"kernel","type":"Hurt","unit":"B3:Frostling","amount":3,"hpAfter":4}
-{"id":155,"turn":12,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":12}
+{"id":108,"turn":10,"causedBy":107,"source":"kernel","type":"StatChanged","unit":"A2:War Horn","stat":"pwr","delta":1,"now":14}
+{"id":109,"turn":10,"causedBy":106,"source":{"unit":"B2:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A2:War Horn","status":"Curse","stacks":1,"total":2}
+{"id":110,"turn":10,"causedBy":109,"source":"kernel","type":"StatChanged","unit":"A2:War Horn","stat":"pwr","delta":-1,"now":13}
+{"id":111,"turn":10,"causedBy":106,"source":"kernel","type":"Strike","striker":"A2:War Horn","defender":"B1:Aegis"}
+{"id":112,"turn":10,"causedBy":111,"source":{"unit":"B1:Aegis","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B1:Aegis","ability":0,"when":0},"original":"Hurt","unit":"B1:Aegis"}
+{"id":113,"turn":10,"causedBy":106,"source":"kernel","type":"Strike","striker":"B1:Aegis","defender":"A2:War Horn"}
+{"id":114,"turn":10,"causedBy":113,"source":"kernel","type":"Hurt","unit":"A2:War Horn","amount":2,"hpAfter":6}
+{"id":115,"turn":10,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":116,"turn":10,"causedBy":115,"source":"kernel","type":"Fatigue","amount":1}
+{"id":117,"turn":10,"causedBy":116,"source":"kernel","type":"Hurt","unit":"A2:War Horn","amount":1,"hpAfter":5}
+{"id":118,"turn":10,"causedBy":116,"source":"kernel","type":"Hurt","unit":"B1:Aegis","amount":1,"hpAfter":8}
+{"id":119,"turn":10,"causedBy":116,"source":"kernel","type":"Hurt","unit":"B2:Oracle","amount":1,"hpAfter":6}
+{"id":120,"turn":10,"causedBy":116,"source":"kernel","type":"Hurt","unit":"B3:Frostling","amount":1,"hpAfter":10}
+{"id":121,"turn":11,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":122,"turn":11,"causedBy":121,"source":{"unit":"A2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"A2:War Horn","status":"Strength","stacks":1,"total":11}
+{"id":123,"turn":11,"causedBy":122,"source":"kernel","type":"StatChanged","unit":"A2:War Horn","stat":"pwr","delta":1,"now":14}
+{"id":124,"turn":11,"causedBy":121,"source":{"unit":"B2:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A2:War Horn","status":"Curse","stacks":1,"total":3}
+{"id":125,"turn":11,"causedBy":124,"source":"kernel","type":"StatChanged","unit":"A2:War Horn","stat":"pwr","delta":-1,"now":13}
+{"id":126,"turn":11,"causedBy":121,"source":"kernel","type":"Strike","striker":"A2:War Horn","defender":"B1:Aegis"}
+{"id":127,"turn":11,"causedBy":126,"source":{"unit":"B1:Aegis","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B1:Aegis","ability":0,"when":0},"original":"Hurt","unit":"B1:Aegis"}
+{"id":128,"turn":11,"causedBy":121,"source":"kernel","type":"Strike","striker":"B1:Aegis","defender":"A2:War Horn"}
+{"id":129,"turn":11,"causedBy":128,"source":"kernel","type":"Hurt","unit":"A2:War Horn","amount":2,"hpAfter":3}
+{"id":130,"turn":11,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":131,"turn":11,"causedBy":130,"source":"kernel","type":"Fatigue","amount":2}
+{"id":132,"turn":11,"causedBy":131,"source":"kernel","type":"Hurt","unit":"A2:War Horn","amount":2,"hpAfter":1}
+{"id":133,"turn":11,"causedBy":131,"source":"kernel","type":"Hurt","unit":"B1:Aegis","amount":2,"hpAfter":6}
+{"id":134,"turn":11,"causedBy":131,"source":"kernel","type":"Hurt","unit":"B2:Oracle","amount":2,"hpAfter":4}
+{"id":135,"turn":11,"causedBy":131,"source":"kernel","type":"Hurt","unit":"B3:Frostling","amount":2,"hpAfter":8}
+{"id":136,"turn":12,"causedBy":null,"source":"kernel","type":"TurnStart"}
+{"id":137,"turn":12,"causedBy":136,"source":{"unit":"A2:War Horn","ability":0,"when":0},"type":"StatusApplied","unit":"A2:War Horn","status":"Strength","stacks":1,"total":12}
+{"id":138,"turn":12,"causedBy":137,"source":"kernel","type":"StatChanged","unit":"A2:War Horn","stat":"pwr","delta":1,"now":14}
+{"id":139,"turn":12,"causedBy":136,"source":{"unit":"B2:Oracle","ability":0,"when":0},"type":"StatusApplied","unit":"A2:War Horn","status":"Curse","stacks":1,"total":4}
+{"id":140,"turn":12,"causedBy":139,"source":"kernel","type":"StatChanged","unit":"A2:War Horn","stat":"pwr","delta":-1,"now":13}
+{"id":141,"turn":12,"causedBy":136,"source":"kernel","type":"Strike","striker":"A2:War Horn","defender":"B1:Aegis"}
+{"id":142,"turn":12,"causedBy":141,"source":{"unit":"B1:Aegis","ability":0,"when":0},"type":"Intercepted","by":{"unit":"B1:Aegis","ability":0,"when":0},"original":"Hurt","unit":"B1:Aegis"}
+{"id":143,"turn":12,"causedBy":136,"source":"kernel","type":"Strike","striker":"B1:Aegis","defender":"A2:War Horn"}
+{"id":144,"turn":12,"causedBy":143,"source":"kernel","type":"Hurt","unit":"A2:War Horn","amount":2,"hpAfter":-1}
+{"id":145,"turn":12,"causedBy":144,"source":"kernel","type":"Death","unit":"A2:War Horn"}
+{"id":146,"turn":12,"causedBy":null,"source":"kernel","type":"TurnEnd"}
+{"id":147,"turn":12,"causedBy":null,"source":"kernel","type":"BattleEnd","winner":"B","turns":12}
