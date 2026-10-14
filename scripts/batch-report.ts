@@ -1,6 +1,6 @@
 // The unit batch report page (rules v2, #1046): every unit of the v2 pool in
 // EN and RU with emoji, name, sleeping and awoken sentences, shape, tier,
-// numbers, a trace line from its fixture battle, and #scene= links to the lab
+// numbers, a trace line from its pool battle, and #scene= links to the lab
 // battles where it acts. Maks judges a batch from this page plus the workshop.
 //   npm run mvp:batch-report -- [--out ~/reports/arena-batch1.html] [--base https://m1.twin-pogona.ts.net/arena-lab/] [--tuned]
 // --tuned reads docs/mvp/tune-v2.json (npm run mvp:tune-v2) for the balance:
@@ -8,11 +8,8 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { contentOf } from "../server/src/mvp/content.js";
-import { battle } from "../src/battle.js";
 import { formText, sentenceText } from "../src/mvp/form-text.js";
 import { ROWS_V2 } from "../src/mvp/units-v2.js";
-import { FIXTURES } from "../src/words/fixtures.js";
-import { traceLines } from "../src/words/trace.js";
 import { slug } from "../src/mvp/units.js";
 import { poolBattle, poolBattleId } from "../src/mvp/pool-battles.js";
 import { ruleText } from "../server/src/mvp/night-batch.js";
@@ -69,16 +66,8 @@ ${nightFile ? `<h3>Night fusions (${esc(nightFile.split("/").pop()!)}), re-rende
   : "";
 const scene = (id: string, lang: string) => `${base}#scene=${id}&lang=${lang}`;
 
-/** The fixture's trace line, and the first other line that names the unit. */
-function trace(name: string): string[] {
-  const fx = FIXTURES[name];
-  if (!fx) return [];
-  const lines = traceLines(fx.input, battle(fx.input));
-  return [fx.trace, ...lines.filter((l) => l !== fx.trace).slice(0, 2)];
-}
-
 const player = { id: "report", name: "report", bot: true };
-/** A unit without a fixture: the lines naming it in its pool battle (the lab's `v2-unit-` scene). */
+/** The lines naming a unit in its pool battle in its pool battle (the lab's `v2-unit-` scene). */
 function poolTrace(name: string, awoken: boolean): string[] {
   const { own, lines } = poolBattle(content, name, awoken, player, "2026-10-13T00:00:00.000Z");
   return own.length ? own.slice(0, 3) : lines.slice(0, 2);
@@ -91,14 +80,12 @@ const ordered = batches.flat();
 const HEADINGS = ["Batch 3 · new (#1048)", "Batch 2 · after the rethink (#1063)", "Batch 1 · after the rethink (#1063)"];
 const cards = ordered.map((row, i) => {
   const u = content.units.find((x) => x.id === slug(row.name))!;
-  const key = row.name.replace(/[^A-Za-z]/g, "");
-  const fx = key.charAt(0).toLowerCase() + key.slice(1);
   const forms = (["sleeping", "awoken"] as const).map((f) => {
     const form = u.forms[f];
-    const fixture = f === "sleeping" ? fx : `${fx}Awoken`;
-    const hasFixture = FIXTURES[fixture] !== undefined;
-    const sceneId = hasFixture ? (f === "sleeping" ? `v2-${slug(row.name)}` : `v2-${slug(row.name)}-awoken`) : poolBattleId(row.name, f === "awoken");
-    const tr = (hasFixture ? trace(fixture) : poolTrace(row.name, f === "awoken")).map((l, i) => `<li class="${i === 0 ? "trace main" : "trace"}">${esc(l)}</li>`).join("");
+    // the pool battle for every unit (#1048): the §4 word fixtures keep the
+    // §4 designs (Hourglass's Grains, Seed's Tree), not the rethought ones
+    const sceneId = poolBattleId(row.name, f === "awoken");
+    const tr = poolTrace(row.name, f === "awoken").map((l, i) => `<li class="${i === 0 ? "trace main" : "trace"}">${esc(l)}</li>`).join("");
     return `<div class="form">
   <h3>${f === "sleeping" ? "Sleeping · Спящий" : "Awoken · Пробуждённый"}</h3>
   <p class="en">${esc(sentenceText(form, content.abilities, "en", content.statuses))}</p>
