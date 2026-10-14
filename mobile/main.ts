@@ -1947,7 +1947,8 @@ const checkpointPair = new URLSearchParams(location.hash.slice(1)).get("checkpoi
 function openCheckpoint(pair: string): void {
   const err = errorLine();
   void guarded(err, async () => {
-    const [a = "", b = ""] = pair.split("+");
+    // URLSearchParams reads the link's "+" as a space
+    const [a = "", b = ""] = pair.split(/[+ ]/);
     const { runId } = await api.checkpoint(a, b);
     const url = new URL(location.href);
     url.hash = "";
@@ -2012,6 +2013,7 @@ const dropInvite = () => {
 };
 function openInvite(code: string): void {
   const err = errorLine();
+  let redeemed = false;
   void guarded(err, async () => {
     const mine = api.player;
     if (mine) {
@@ -2019,10 +2021,12 @@ function openInvite(code: string): void {
       if (theirs.id !== mine.id) return switchScreen(code, mine, theirs);
     }
     await api.redeem(code);
+    redeemed = true;
     dropInvite();
-    if (checkpointPair) return openCheckpoint(checkpointPair);
+    if (checkpointPair) return; // opened once this guarded call settles (guarded ignores a nested one)
     await homeScreen();
   }).then(() => {
+    if (!err.textContent && checkpointPair && redeemed) openCheckpoint(checkpointPair);
     if (!err.textContent) return;
     const own = api.player && api.hasToken;
     const dead = err.textContent.startsWith("no such invite");
@@ -2099,12 +2103,17 @@ function nameJoinForm(code: string, tg: HTMLElement | null): void {
 }
 function switchScreen(code: string, mine: PlayerRef, theirs: PlayerRef): void {
   const stay = () => (dropInvite(), void guarded(errorLine(), () => homeScreen()));
-  const go = () => void guarded(errorLine(), async () => {
-    await api.redeem(code);
-    dropInvite();
-    if (checkpointPair) return openCheckpoint(checkpointPair);
-    await homeScreen();
-  });
+  const go = () => {
+    const err = errorLine();
+    void guarded(err, async () => {
+      await api.redeem(code);
+      dropInvite();
+      if (!checkpointPair) await homeScreen();
+    }).then(() => {
+      // the checkpoint once this guarded call settles (guarded ignores a nested one)
+      if (!err.textContent && checkpointPair) openCheckpoint(checkpointPair);
+    });
+  };
   show(
     h("h1", {}, t("invite.title")),
     h("p", { "data-testid": "invite-switch" }, t("switch.for", { theirs: theirs.name, mine: mine.name })),
