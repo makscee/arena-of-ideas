@@ -21,6 +21,7 @@ export function sideOf(sel: Selector, when: When[]): Side {
     case "allEnemies":
     case "randomEnemy":
     case "lastEnemy":
+    case "poisonedEnemies":
       return "enemy";
     case "allyBehind":
     case "allyAhead":
@@ -29,6 +30,7 @@ export function sideOf(sel: Selector, when: When[]): Side {
     case "randomAlly":
       return "ally";
     case "eventTarget":
+    case "applier": // whoever gave the status: either side
       return null;
     case "eventUnit": {
       const sides = new Set(
