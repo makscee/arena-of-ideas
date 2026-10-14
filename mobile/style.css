@@ -1780,6 +1780,14 @@ button.bv-skip { align-self: center; white-space: nowrap; min-height: 36px; padd
    instead of an ellipsis, and the PWR/HP badges stay inside the card */
 .seal > .card { height: auto; min-height: 92px; padding-bottom: 7px; gap: 3px; }
 .seal > .card .name { white-space: normal; line-height: 13px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: clip; overflow-wrap: break-word; }
+/* on desktop too: the big-card sizes (17 px names, 16 px pills) don't fit a 72 px card */
+@media (min-width: 1024px) {
+  #app[data-screen] .seal > .card { width: 84px; height: auto; min-height: 150px; padding: 10px 4px 8px; }
+  #app[data-screen] .seal > .card .emoji { font-size: 34px; line-height: 40px; height: 40px; margin-top: 4px; }
+  #app[data-screen] .seal > .card .name { font-size: 13px; line-height: 14px; }
+  #app[data-screen] .seal > .card .stats:not(.big) { gap: 3px; }
+  #app[data-screen] .seal > .card .stats:not(.big) > span { padding: 0 4px; font-size: 12px; line-height: 13px; border-width: 1.5px; border-radius: 7px; }
+}
 .seal.on { border-color: var(--action); }
 .seal-words { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
 .seal-name { font-size: 15px; }

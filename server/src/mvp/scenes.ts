@@ -320,6 +320,15 @@ export const SCENES: Scene[] = [
     const { player, ideaId } = await ideaAtArchetypes(rt);
     return { player, entry: { screen: "pick", ideaId } };
   } },
+  // #1122: the archetype icon pictures the idea's subject, the same on all three
+  { id: "idea-archetype-ru", group: "Ideas", title: "Pick an archetype (a Russian idea)", look: "#1122: 'Старый волк…' gives 🐺 on all three archetypes", desktop: true, build: async (rt) => {
+    const { player, ideaId } = await ideaAtArchetypes(rt, "Старый волк, который бьёт сильнее, когда остаётся один");
+    return { player, entry: { screen: "pick", ideaId } };
+  } },
+  { id: "idea-archetype-plain", group: "Ideas", title: "Pick an archetype (nothing to picture)", look: "#1122: an idea with no subject to picture gives one neutral ✨ on all three, never random animals", desktop: true, build: async (rt) => {
+    const { player, ideaId } = await ideaAtArchetypes(rt, "Whenever an ally is healed, it gets a little stronger");
+    return { player, entry: { screen: "pick", ideaId } };
+  } },
   {
     id: "idea-implementation", group: "Ideas", title: "Pick an implementation", look: "The archetype's readings as cards", desktop: true,
     build: async (rt) => {
