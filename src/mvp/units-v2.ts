@@ -38,7 +38,7 @@ export const isV2Row = (row: object): row is V2Row => (row as { v2?: true }).v2 
 const c = (value: number) => ({ kind: "const" as const, value });
 
 /** Statuses the v2 units need beyond the stress registry: counters carrying
- * a rule of their own (Hourglass's grains, Raven's memory). */
+ * a rule of their own: today only Charge. */
 export const V2_STATUSES: StatusRegistry = {
   // Charge ⚡ (#1063): the one shared counter of the pool. Any unit may build
   // it up and spend it; the counter itself has no rule. A Charge unit gains 1
@@ -50,16 +50,6 @@ export const V2_STATUSES: StatusRegistry = {
     names: { en: "Charge", ru: { name: "Заряд", acc: "Заряд", count: ["Заряд", "Заряда", "Зарядов"] } },
     counter: true,
     abilities: [],
-  },
-  // Raven's second rule (awoken, #1063): the rule it took from a fallen ally,
-  // performed at each turn start for the rest of the battle.
-  Memories: {
-    name: "Memories",
-    names: { en: "Memories", ru: { name: "Воспоминания", acc: "Воспоминания", count: ["Воспоминание", "Воспоминания", "Воспоминаний"] } },
-    counter: true,
-    triggers: [{ kind: "trigger", on: { on: "TurnStart" } }],
-    selectors: [{ kind: "holder" }],
-    abilities: [{ effects: [{ kind: "performRemembered", mode: "all" }] }],
   },
 };
 
@@ -126,6 +116,8 @@ export const V2_ABILITIES: AbilityRegistry = {
   Recall: { name: "Recall", family: "Arcane", effects: [{ kind: "remember" }] },
   // Raven (#1063): take the fallen ally's rule and use it once, right away
   RecallNow: { name: "RecallNow", family: "Arcane", effects: [{ kind: "remember" }, { kind: "performRemembered", mode: "once" }] },
+  // Raven awoken (#1063): and keeps that rule as a second rule of its own for the rest of the battle
+  Keep: { name: "Keep", family: "Arcane", effects: [{ kind: "keepRule" }] },
   Grow: { name: "Grow", family: "Control", effects: [{ kind: "applyStatus", status: "Strength", stacks: c(1) }] },
   Guard: { name: "Guard", family: "Shield", effects: [{ kind: "applyStatus", status: "Shield", stacks: c(1) }] },
   // Seed (#1063): grows 2 HP a turn, no Tree
@@ -275,7 +267,7 @@ export const ROWS_V2: V2Row[] = [
   v2("Gambler",   "🎲", 1, "swing",       2,  8, "Every strike is a gamble: double or nothing.",                               Gambler,   { does: "AllInAgain" }),
   v2("Nautilus",  "🐚", 1, "scaling",     1, 10, "Grows a shell from every hit it takes.",                                  Nautilus,  { does: "ShellAll" }),
   v2("Magnet",    "🧲", 3, "redirect",    1, 12, "Draws the Poison, Curse and Freeze aimed at its allies onto itself.",    Magnet,    { also: [{ who: me, does: ["Guard"] }] }),
-  v2("Raven",     "🐦‍⬛", 4, "memory",      1,  8, "Uses the rule of each ally that falls.",                                  Raven,     { statuses: [{ status: "Memories", stacks: 1 }] }),
+  v2("Raven",     "🐦‍⬛", 4, "memory",      1,  8, "Uses the rule of each ally that falls.",                                  Raven,     { does: "RecallNow + Keep" }),
   v2("Seed",      "🌱", 2, "form",        0,  4, "Sleeps two turns, then grows and feeds the ally behind it.",              Seed,      { condition: { kind: "turnAtLeast", n: 2 } }),
   // the twelve
   v2("Sniper",      "🎯", 1, "position",    2,  6, "Shoots the enemy at the back every turn.",                              Sniper,      { who: [{ kind: "lastEnemy" }, { kind: "frontEnemy" }] }),

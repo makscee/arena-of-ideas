@@ -10,7 +10,7 @@
     "card": 1063
   },
   {
-    "word": "the target has Poison, Curse or Freeze",
+    "word": "the target has poison, curse or freeze",
     "kind": "targetHas",
     "card": 1063
   },
@@ -37,6 +37,11 @@
   {
     "word": "that unit gets the same amount too",
     "kind": "reflectStatus",
+    "card": 1063
+  },
+  {
+    "word": "keeps that rule as a second rule of its own",
+    "kind": "keepRule",
     "card": 1063
   }
 ]

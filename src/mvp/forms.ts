@@ -166,7 +166,7 @@ export function formProblems(u: UnitContent, content: Pick<MvpContent, "abilitie
   if (!same(sleeping.when, awoken.when)) {
     out.push(`${u.id}: the awoken form must keep the sleeping form's When`);
   }
-  // (a rules v2 unit may instead upgrade the status it starts with: Raven's Memory → Memories)
+  // (a rules v2 unit may instead upgrade the statuses it starts with)
   if (same(sleeping.who, awoken.who) && same(sleeping.does, awoken.does) && !awoken.also?.length && same(sleeping.statuses, awoken.statuses)) {
     out.push(`${u.id}: the awoken form must upgrade the Who and/or the Does`);
   }
