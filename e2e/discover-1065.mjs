@@ -45,8 +45,9 @@ const tabTo = async (id) => {
   return false;
 };
 const open = async (pair) => {
+  // a fresh document each time: a hash change on the open page reloads it (the app's hashchange) under the keys
+  await page.goto("about:blank");
   await page.goto(`${url}#invite=${invite}&checkpoint=${pair}`);
-  await page.reload();
   await tid("line").waitFor({ timeout: 20_000 });
   await page.waitForFunction(() => document.querySelectorAll('[data-testid^="fuse-mark-"]').length >= 2, null, { timeout: 15_000 }).catch(() => {});
   await settle();
