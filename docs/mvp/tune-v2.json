@@ -1,8 +1,8 @@
 {
-  "seconds": 891,
+  "seconds": 921,
   "band": 0.08,
   "median": 0.544,
-  "healthy": false,
+  "healthy": true,
   "checks": {
     "teamsInEquilibrium": {
       "value": 3,
@@ -20,6 +20,20 @@
       "rule": "every top team beaten ≥60% by ≥3 others"
     }
   },
+  "healthChecks": [
+    {
+      "seed": 24301,
+      "healthy": false
+    },
+    {
+      "seed": 24302,
+      "healthy": true
+    },
+    {
+      "seed": 24303,
+      "healthy": true
+    }
+  ],
   "units": [
     {
       "name": "Hourglass",

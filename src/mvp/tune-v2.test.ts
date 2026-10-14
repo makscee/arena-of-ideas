@@ -19,8 +19,9 @@ describe("rules v2 tune (batch 1)", () => {
   it("awakening is an upgrade for every unit", () => {
     expect(tune.units.filter((u) => u.awokenMargin <= 0).map((u) => `${u.name} ${u.awokenMargin}`)).toEqual([]);
   });
-  it("at least 16 of 20 in band, none far out", () => {
+  // The orchestrator's ruling (10-14): the bar plus the measure's ±2 noise.
+  it("at least 16 of 20 in band, none under 33% or over 67%", () => {
     expect(tune.units.filter((u) => u.inBand).length).toBeGreaterThanOrEqual(16);
-    expect(tune.units.filter((u) => u.fieldScore < 0.35 || u.fieldScore > 0.65).map((u) => `${u.name} ${u.fieldScore}`)).toEqual([]);
+    expect(tune.units.filter((u) => u.fieldScore < 0.33 || u.fieldScore > 0.67).map((u) => `${u.name} ${u.fieldScore}`)).toEqual([]);
   });
 });
