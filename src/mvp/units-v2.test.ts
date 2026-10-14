@@ -28,7 +28,7 @@ describe("rules v2 pool", () => {
 
   it("the eight §4 units build into content with no form problems", () => {
     expect(content.units.map((u) => u.name).slice(0, 8)).toEqual(["Hourglass", "Mirror", "Candle", "Gambler", "Nautilus", "Magnet", "Raven", "Seed"]);
-    expect(content.units).toHaveLength(40);
+    expect(content.units).toHaveLength(60);
     expect(new Set(content.units.map((u) => u.tier))).toEqual(new Set([1, 2, 3, 4]));
     expect(contentFormProblems(content)).toEqual([]);
     expect(Object.keys(content.statuses)).toEqual(expect.arrayContaining(["Charge", "Shield", "Strength", "Freeze", "Blessing"]));
@@ -225,6 +225,34 @@ describe("rules v2 pool", () => {
       expect(["Charge"].map(ruStatusName)).toEqual(["Заряд"]);
     } finally {
       setKnownStatusNames(undefined);
+    }
+  });
+  it("batch 3 (#1048): each new rule fires in a battle the way its sentence says", () => {
+    const unit = (name: string, uid: string, copies = 1) => lineUnitOf(content.units.find((u) => u.name === name)!, uid, copies);
+    const p = { id: "bot", name: "bot", bot: true };
+    const cases: [string, string[], string[], RegExp][] = [
+      ["Plague Rat", ["Plague Rat", "Sniper"], ["Berserker", "Leech"], /^Plague Rat → all enemies \(Berserker, Leech\) → Poison 1$/],
+      ["Martyr", ["Martyr", "Sniper"], ["Berserker", "Leech"], /^Martyr → all allies \(Sniper\) → Strength 1$/],
+      ["Ox", ["Ox"], ["Nautilus"], /^Ox's strike on Nautilus hits for 6$/],
+      ["Daredevil", ["Daredevil"], ["Seed", "Seed"], /^Daredevil's strike on Seed hits for 4$/],
+      ["Duelist", ["Duelist"], ["Berserker"], /^Duelist's strike on Berserker hits for 2$/],
+      ["Squire", ["Squire", "Paladin", "Lantern"], ["Nautilus"], /^Squire → self \(Squire\) → Strength 1$/],
+      ["Dynamo", ["Dynamo"], ["Seed", "Seed"], /^Dynamo strikes again$/],
+      ["Siphon", ["Siphon"], ["Leech", "Medic"], /^Siphon intercepts: the heal on Leech lands on Siphon$/],
+      ["Comet", ["Comet"], ["Seed", "Seed"], /^Comet → random enemy \(Seed\) → 2 damage$/],
+      ["Heckler", ["Heckler"], ["Leech", "Seed"], /^Heckler → it \(Leech\) → \d+ damage$/],
+      ["Broodmother", ["Broodmother"], ["Nautilus", "Seed"], /^Broodmother \(on turns 2, 4, 6…\) → self \(Spiderling\)$/],
+      ["Dragon", ["Dragon"], ["Nautilus", "Seed"], /^Dragon → all enemies \(Nautilus, Seed\) → \d+ damage/],
+      ["Puppeteer", ["Puppeteer"], ["Leech", "Seed"], /^Puppeteer intercepts: the strike on Puppeteer lands on Seed$/],
+      ["Phoenix", ["Phoenix"], ["Berserker", "Leech"], /^Phoenix \(once per battle\) → self \(Phoenix\)$/],
+      ["Volcano", ["Volcano", "Sniper"], ["Nautilus", "Seed"], /^Volcano → all enemies \(Nautilus, Seed, Volcano, Sniper\) → 1 damage$/],
+    ];
+    for (const [name, A, B, want] of cases) {
+      const a = A.map((n, i) => unit(n, `a${i}`));
+      const b = B.map((n, i) => unit(n, `b${i}`));
+      const rec = fightLines({ player: p, line: a }, { player: p, line: b }, { battleId: "x", seed: 2, kind: "round", round: 1, runId: null, at: "2026-10-14T00:00:00.000Z", content, rules: MVP_RULES });
+      const lines = traceLines({ teamA: a.map(toBattleDef), teamB: b.map(toBattleDef), seed: 2, statuses: content.statuses, abilities: content.abilities }, rec.log);
+      expect(lines.some((l) => want.test(l)), `${name}:\n${lines.join("\n")}`).toBe(true);
     }
   });
 });

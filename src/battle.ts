@@ -1015,7 +1015,13 @@ class Engine {
           const res = word.intercept(this.wordCtx, effect, {
             holder,
             draft,
-            eval: (a) => this.evalAmount(a, { holder, ref }),
+            // the target of an amount is the unit the draft is aimed at: a
+            // Strike's defender (Duelist, #1048), a Hurt's or Heal's unit
+            eval: (a) => {
+              const aimed = draft.type === "Strike" ? draft.defender : draft.type === "Hurt" || draft.type === "Heal" ? draft.unit : undefined;
+              const target = aimed !== undefined ? this.units.get(aimed) : undefined;
+              return this.evalAmount(a, { holder, ref, ...(target ? { target } : {}) });
+            },
             select: (s) => {
               const probe = { ...draft, id: -1, turn: this.turn, causedBy, source } as BattleEvent;
               return this.evalSelector(s, holder, probe);

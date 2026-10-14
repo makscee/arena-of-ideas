@@ -79,6 +79,16 @@ const head = {
   abilities: ["Mend"],
 };
 
+/** Broodmother's Spiderling (#1048): a 1/1 whose strikes poison. */
+const spiderling = {
+  name: "Spiderling",
+  names: { ru: { name: "Паучок", acc: "Паучка" } },
+  base: { hp: 1, pwr: 1 },
+  triggers: [{ kind: "trigger" as const, on: { on: "Strike" as const, striker: "holder" as const } }],
+  selectors: [{ kind: "eventTarget" as const }],
+  abilities: ["Sting"],
+};
+
 /** "It holds 3 Charge": the moment a Charge unit reaches 3, its charged
  * clauses fire and Spend takes the 3 back (#1063). */
 const charged = { kind: "stacksAtLeast" as const, status: "Charge", n: 3, of: "holder" as const };
@@ -157,6 +167,27 @@ export const V2_ABILITIES: AbilityRegistry = {
   Sting2: { name: "Sting2", family: "Poison", effects: [{ kind: "applyStatus", status: "Poison", stacks: c(2) }] },
   Again: { name: "Again", family: "Strike", effects: [{ kind: "strikeAgain" }] },
   Take: { name: "Take", family: "Arcane", effects: [{ kind: "takeRule" }] },
+  // batch 3 (#1048)
+  Inspire: { name: "Inspire", family: "Control", effects: [{ kind: "applyStatus", status: "Strength", stacks: pwrOfHolder }] },
+  InspireHalf: { name: "InspireHalf", family: "Control", effects: [{ kind: "applyStatus", status: "Strength", stacks: { kind: "half", of: pwrOfHolder } }] },
+  Trample: { name: "Trample", family: "Strike", effects: [{ kind: "replaceAmount", amount: { kind: "stat", stat: "hp", of: "holder" } }] },
+  TrampleAwoken: { name: "TrampleAwoken", family: "Strike", effects: [{ kind: "replaceAmount", amount: { kind: "plus", a: { kind: "stat", stat: "hp", of: "holder" }, b: pwrOfHolder } }] },
+  Fury3: { name: "Fury3", family: "Strike", effects: [{ kind: "replaceAmount", amount: { kind: "plus", a: { kind: "twice", of: pwrOfHolder }, b: pwrOfHolder } }] },
+  Match: { name: "Match", family: "Strike", effects: [{ kind: "replaceAmount", amount: { kind: "statOf", stat: "pwr", of: "target" } }] },
+  MatchAwoken: { name: "MatchAwoken", family: "Strike", effects: [{ kind: "replaceAmount", amount: { kind: "plus", a: { kind: "statOf", stat: "pwr", of: "target" }, b: pwrOfHolder } }] },
+  Bash: { name: "Bash", family: "Strike", effects: [{ kind: "replaceAmount", amount: { kind: "plus", a: pwrOfHolder, b: { kind: "stacksOf", status: "Shield", of: "holder" } } }] },
+  AgainCharged: { name: "AgainCharged", family: "Strike", effects: [whenCharged([{ kind: "strikeAgain" }])] },
+  Avenge: { name: "Avenge", family: "Strike", effects: [{ kind: "damage", amount: { kind: "statOf", stat: "pwr", of: "eventUnit" } }] },
+  Steal: { name: "Steal", family: "Control", effects: [{ kind: "redirect", to: { kind: "holder" } }] },
+  Comet: { name: "Comet", family: "Strike", effects: [{ kind: "damage", amount: { kind: "count", fact: "turn" } }] },
+  CometAwoken: { name: "CometAwoken", family: "Strike", effects: [{ kind: "damage", amount: { kind: "plus", a: { kind: "count", fact: "turn" }, b: pwrOfHolder } }] },
+  MendAllCharged: { name: "MendAllCharged", family: "Heal", effects: [whenCharged([{ kind: "heal", amount: pwrOfHolder }])] },
+  MendGuardAllCharged: { name: "MendGuardAllCharged", family: "Heal", effects: [whenCharged([{ kind: "heal", amount: pwrOfHolder }, { kind: "applyStatus", status: "Shield", stacks: c(1) }])] },
+  Brood: { name: "Brood", family: "Summon", effects: [{ kind: "summon", unit: spiderling }] },
+  Scorch: { name: "Scorch", family: "Strike", effects: [{ kind: "damage", amount: { kind: "half", of: pwrOfHolder } }] },
+  Grudge: { name: "Grudge", family: "Strike", effects: [{ kind: "damage", amount: { kind: "count", fact: "hitsTaken" } }] },
+  Puppet: { name: "Puppet", family: "Control", effects: [{ kind: "redirect", to: { kind: "lastEnemy" } }] },
+  Rebirth: { name: "Rebirth", family: "Summon", effects: [{ kind: "resurrect", hp: pwrOfHolder }] },
 };
 
 type Form = Omit<UnitForm, "who" | "does"> & { who?: UnitForm["who"]; does: string };
@@ -259,6 +290,38 @@ const Alchemist = sleeping(trig({ on: "TurnEnd" }), [{ kind: "poisonedEnemies" }
 // #1063: "the killer is this unit" is the word killedByHolder; the extra strike lands on the enemy now in front
 const Executioner = sleeping(trig({ on: "Death", unit: "enemy" }), [{ kind: "frontEnemy" }], "Again", { condition: { kind: "killedByHolder" } });
 
+// Batch 3 (#1048): twenty more on the shared vocabulary, every shape class and tier.
+const PlagueRat = sleeping(trig({ on: "Death", unit: "holder" }), [{ kind: "allEnemies" }], "Sting");
+// its place in the line is gone once it dies, so it feeds the whole line
+const Martyr = sleeping(trig({ on: "Death", unit: "holder" }), [{ kind: "allAllies" }], "InspireHalf");
+const Ox = sleeping(intercept({ on: "Strike", striker: "holder" }), me, "Trample");
+const Daredevil = sleeping(intercept({ on: "Strike", striker: "holder" }), me, "Fury", { condition: { kind: "unhurt" } });
+const Duelist = sleeping(intercept({ on: "Strike", striker: "holder" }), [{ kind: "eventTarget" }], "Match");
+const Paladin = sleeping(intercept({ on: "Strike", striker: "holder" }), me, "Bash");
+const Squire = sleeping(trig({ on: "StatusApplied", unit: "otherAlly", status: "Shield" }), me, "Rally");
+const Dynamo = sleeping(trig({ on: "Strike", striker: "holder" }), me, "Spark", { also: [{ who: [{ kind: "eventTarget" }], does: ["AgainCharged"] }, { who: me, does: ["Spend"] }] });
+const Avenger = sleeping(trig({ on: "Death", unit: "otherAlly" }), [{ kind: "frontEnemy" }], "Avenge");
+const Siphon = sleeping(intercept({ on: "Heal", unit: "enemy" }), me, "Steal");
+const Comet = sleeping(trig({ on: "TurnStart" }), [{ kind: "randomEnemy" }], "Comet");
+const Reaper = sleeping(trig({ on: "TurnStart" }), [{ kind: "allEnemies" }], "Smite", { condition: { kind: "enemiesAlive", op: "<=", n: 2 } });
+const Heckler = sleeping(trig({ on: "Acted", unit: "enemy", front: true }), [{ kind: "eventUnit" }], "Spine");
+const WitchDoctor = sleeping(
+  [
+    { kind: "trigger", on: { on: "StatusApplied", unit: "enemy", status: "Poison" } },
+    { kind: "trigger", on: { on: "StatusApplied", unit: "enemy", status: "Curse" } },
+    { kind: "trigger", on: { on: "StatusApplied", unit: "enemy", status: "Freeze" } },
+  ],
+  me,
+  "Spark",
+  { also: [{ who: [{ kind: "allAllies" }], does: ["MendAllCharged"] }, { who: me, does: ["Spend"] }] },
+);
+const Broodmother = sleeping(trig({ on: "TurnStart" }), me, "Brood", { condition: { kind: "turnEvery", n: 2 } });
+const Dragon = sleeping(trig({ on: "Strike", striker: "holder" }), [{ kind: "allEnemies" }], "Scorch");
+const Kraken = sleeping(trig({ on: "TurnEnd" }), [{ kind: "frontEnemy" }], "Grudge");
+const Puppeteer = sleeping(intercept({ on: "Strike", striker: "enemy" }), me, "Puppet", { condition: { kind: "oncePerTurn" } });
+const Phoenix = sleeping(trig({ on: "Death", unit: "holder" }), me, "Rebirth", { condition: { kind: "onceHolder" } });
+const Volcano = sleeping(trig({ on: "TurnStart" }), [{ kind: "allEnemies" }], "Prick", { also: [{ who: [{ kind: "allAllies" }], does: ["Prick"] }] });
+
 /* eslint-disable prettier/prettier */
 export const ROWS_V2: V2Row[] = [
   v2("Hourglass", "⏳", 2, "counter",     1,  8, "Keeps time: every third turn end, the ally behind it acts again.",            Hourglass, { also: [{ who: [{ kind: "alliesBehind" }], does: ["EncoreCharged"] }, { who: me, does: ["Spend"] }] }),
@@ -304,5 +367,26 @@ export const ROWS_V2: V2Row[] = [
   v2("Bully",       "🥊", 2, "condition",   2,  7, "Hits an enemy that has Poison, Curse or Freeze for double.",            Bully,       { also: [{ who: me, does: ["Glow"] }] }),
   v2("Alchemist",   "⚗️", 3, "scaling",     1,  7, "Each turn end, every poisoned enemy takes 1 more Poison.",              Alchemist,   { does: "Sting2" }),
   v2("Executioner", "🗡️", 3, "rule",        3,  6, "A kill by its strike earns it another strike.",                         Executioner, { also: [{ who: me, does: ["Rally"] }] }),
+  // batch 3 (#1048)
+  v2("Plague Rat",   "🐀", 1, "position",    1,  5, "Its death poisons the whole enemy line.",                               PlagueRat,   { does: "Sting2" }),
+  v2("Martyr",       "⚱️", 1, "position",    2,  5, "Falls so the whole line hits harder.",                                  Martyr,      { does: "Inspire" }),
+  v2("Ox",           "🐂", 1, "replacement", 1,  6, "Strikes with its HP, not its power.",                                   Ox,          { does: "TrampleAwoken" }),
+  v2("Daredevil",    "🏍️", 1, "swing",       2,  5, "Hits for double until it gets hurt.",                                   Daredevil,   { does: "Fury3" }),
+  v2("Duelist",      "🤺", 1, "copy",        1,  6, "Strikes with the power of whoever it fights.",                          Duelist,     { does: "MatchAwoken" }),
+  v2("Paladin",      "⚜️", 2, "scaling",     1,  7, "Its Shield is also its weapon.",                                        Paladin,     { statuses: [{ status: "Shield", stacks: 2 }] }),
+  v2("Squire",       "🛡", 2, "scaling",     1,  7, "Grows stronger each time an ally gains Shield.",                        Squire,      { also: [{ who: [{ kind: "eventUnit" }], does: ["Rally"] }] }),
+  v2("Dynamo",       "⚙️", 2, "counter",     2,  6, "Its own strikes build Charge; at 3, it strikes again.",                 Dynamo,      { also: [{ who: [{ kind: "eventTarget" }], does: ["AgainCharged"] }, { who: me, does: ["RallyCharged"] }, { who: me, does: ["Spend"] }] }),
+  v2("Avenger",      "⚔️", 2, "memory",      1,  7, "Answers each fallen ally with that ally's power.",                      Avenger,     { also: [{ who: me, does: ["Rally"] }] }),
+  v2("Siphon",       "🌀", 2, "redirect",    1,  7, "Every heal meant for an enemy comes to it instead.",                    Siphon,      { also: [{ who: me, does: ["Rally"] }] }),
+  v2("Comet",        "☄️", 3, "scaling",     1,  7, "Hits harder every turn the battle runs.",                               Comet,       { does: "CometAwoken" }),
+  v2("Reaper",       "🌾", 3, "condition",   2,  7, "When the enemy line runs thin, it cuts through all of it.",             Reaper,      { condition: { kind: "enemiesAlive", op: "<=", n: 3 } }),
+  v2("Heckler",      "📣", 3, "rule",        1,  7, "Punishes the front enemy every time it uses its rule.",                 Heckler,     { also: [{ who: [{ kind: "eventUnit" }], does: ["Hex"] }] }),
+  v2("Witch Doctor", "🪶", 3, "counter",     1,  7, "Each Poison, Curse or Freeze on an enemy builds its Charge; at 3, it heals every ally.", WitchDoctor, { also: [{ who: [{ kind: "allAllies" }], does: ["MendGuardAllCharged"] }, { who: me, does: ["Spend"] }] }),
+  v2("Broodmother",  "🕷️", 3, "form",        1,  7, "Lays a poisoning Spiderling at the front every other turn.",            Broodmother, { condition: { kind: "turnAtLeast", n: 1 } }),
+  v2("Dragon",       "🐲", 4, "position",    2,  8, "Every strike it makes scorches the whole enemy line.",                  Dragon,      { does: "Spine" }),
+  v2("Kraken",       "🦑", 4, "scaling",     1,  9, "Pays back every hit it has taken, each turn end.",                      Kraken,      { who: [{ kind: "allEnemies" }] }),
+  v2("Puppeteer",    "🪆", 4, "redirect",    1,  8, "Once a turn, turns an enemy's strike onto the enemy at the back.",      Puppeteer,   { also: [{ who: me, does: ["Guard"] }] }),
+  v2("Phoenix",      "🐦‍🔥", 4, "form",        2,  7, "Comes back once from death, at the back of its line.",                  Phoenix,     { also: [{ who: [{ kind: "allEnemies" }], does: ["Spine"] }] }),
+  v2("Volcano",      "🌋", 4, "rule",        2,  9, "Burns every unit on the field each turn, its own side included.",       Volcano,     { also: [{ who: [{ kind: "allAllies" }], does: ["Guard"] }] }),
 ];
 /* eslint-enable prettier/prettier */
