@@ -96,7 +96,9 @@ export function richText(segs: DescribeSegment[], o: RichOptions = {}): Node[] {
     // "1 Strength" is one term (R3-26): the number, a space and its word are
     // one button, so a tap can't miss into a 23 px "1".
     const word = seg.amount && seg.term && seg.clause !== "when" && segs[i + 1]?.text === " " && segs[i + 2]?.term === seg.term && !segs[i + 2]!.unitRef ? segs[i + 2]! : null;
-    if (word) joined.add(i + 1).add(i + 2);
+    // #1122: only a term with a glossary entry takes its word in; else
+    // "gains 1 Charge" lost " Charge" (Charge has no entry) and read "gains 1"
+    if (word && !seg.unitRef && clauseInfo(seg, segs, i)) joined.add(i + 1).add(i + 2);
     if (joined.has(i)) return;
     // "1 damage" never wraps between the number and its word.
     const kids = segs[i - 1]?.amount && seg.text === " " ? ["\u00a0"] : (o.content?.[i] ?? [seg.text]);
@@ -118,7 +120,7 @@ export function richText(segs: DescribeSegment[], o: RichOptions = {}): Node[] {
     const info = seg.unitRef ? undefined : clauseInfo(seg, segs, i);
     const nodes: Node[] = seg.unitRef
       ? unitRefButton(seg, kids)
-      : info && word
+      : info && word && joined.has(i + 2)
         ? [joinedTerm(seg, word, info, kids, o.content?.[i + 2] ?? [word.text], withAmount, size)]
         : info
           ? edgeSpaced(kids, (inner) => termButton(seg, info, inner, withAmount, size, !!pill))
